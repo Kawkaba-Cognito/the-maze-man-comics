@@ -15,6 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
 
     <style>
@@ -446,6 +447,27 @@
         .sub-perks li { color: rgba(255,255,255,0.85); padding: 5px 0; border-bottom: 1px dashed rgba(255,255,255,0.15); font-size: 0.9em; font-weight: bold; }
         .sub-upgrade-btn { display: block; width: 100%; padding: 14px; background: #ffe66d; border: 4px solid #000; border-radius: 12px; font-family: 'Bangers', cursive; font-size: 1.6em; cursor: pointer; box-shadow: 5px 5px 0 #000; color: #000; transition: all 0.1s; text-align: center; }
         .sub-upgrade-btn:active { transform: translate(5px,5px); box-shadow: 0 0 0 #000; }
+
+        /* ═══════════════ AUTH MODAL ═══════════════ */
+        #auth-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; }
+        #auth-modal.show { display:flex; }
+        .auth-box { background:#1a0b2e; border:5px solid #ffe66d; border-radius:20px; padding:30px 24px; width:90%; max-width:380px; box-shadow:8px 8px 0 #ffe66d; position:relative; }
+        .auth-close { position:absolute; top:12px; right:16px; background:none; border:none; color:#fff; font-size:1.6em; cursor:pointer; }
+        .auth-logo { font-family:'Bangers',cursive; font-size:2em; color:#ffe66d; text-align:center; margin-bottom:6px; letter-spacing:2px; }
+        .auth-sub { text-align:center; color:#aaa; font-size:0.88em; margin-bottom:20px; }
+        .auth-tabs { display:flex; border:3px solid #000; border-radius:10px; overflow:hidden; margin-bottom:18px; }
+        .auth-tab { flex:1; padding:10px; background:#2d1b4e; color:#aaa; border:none; font-family:'Bangers',cursive; font-size:1.2em; letter-spacing:1px; cursor:pointer; transition:all 0.15s; }
+        .auth-tab.active { background:#ffe66d; color:#000; }
+        .auth-field { width:100%; padding:12px 14px; margin-bottom:12px; background:#2d1b4e; border:3px solid #4ecdc4; border-radius:10px; color:#fff; font-family:'Comic Neue',cursive; font-size:1em; outline:none; display:block; }
+        .auth-field::placeholder { color:#666; }
+        .auth-field:focus { border-color:#ffe66d; }
+        .auth-submit { width:100%; padding:14px; background:#ff6b6b; border:4px solid #000; border-radius:12px; font-family:'Bangers',cursive; font-size:1.5em; letter-spacing:2px; cursor:pointer; box-shadow:5px 5px 0 #000; color:#fff; transition:all 0.1s; }
+        .auth-submit:active { transform:translate(5px,5px); box-shadow:0 0 0 #000; }
+        .auth-submit:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:5px 5px 0 #000; }
+        .auth-error { font-size:0.88em; margin-bottom:10px; text-align:center; min-height:20px; color:#ff6b6b; }
+        .auth-error.success { color:#4ecdc4; }
+        .auth-switch { text-align:center; color:#aaa; font-size:0.88em; margin-top:14px; }
+        .auth-switch span { color:#4ecdc4; cursor:pointer; text-decoration:underline; }
         .avatar-picker { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; }
         .avatar-opt { font-size: 2em; cursor: pointer; padding: 6px; border-radius: 8px; transition: transform 0.1s; border: 2px solid transparent; }
         .avatar-opt.selected, .avatar-opt:active { border-color: #ffe66d; transform: scale(1.2); }
@@ -632,6 +654,16 @@
         </div>
 
         <div id="screen-profile" class="ui-screen">
+            <!-- AUTH STATE — shown/hidden by JS -->
+            <div id="auth-banner" style="background:#ffe66d; border:4px solid #000; border-radius:16px; padding:20px; margin-bottom:20px; text-align:center; box-shadow:6px 6px 0 #000;">
+                <div style="font-family:'Bangers',cursive; font-size:1.8em; color:#000; margin-bottom:6px;">🔐 SAVE YOUR PROGRESS</div>
+                <div style="color:#333; font-size:0.88em; margin-bottom:16px;">Sign in to sync your XP, streak & badges across all devices</div>
+                <button onclick="openAuth()" style="background:#1a0b2e; color:#ffe66d; border:4px solid #000; border-radius:12px; font-family:'Bangers',cursive; font-size:1.4em; padding:10px 28px; cursor:pointer; box-shadow:4px 4px 0 #000; letter-spacing:1px;">SIGN IN / SIGN UP</button>
+            </div>
+            <div id="auth-user-bar" style="display:none; background:#4ecdc4; border:4px solid #000; border-radius:16px; padding:12px 20px; margin-bottom:20px; align-items:center; justify-content:space-between; box-shadow:4px 4px 0 #000; flex-wrap:wrap; gap:8px;">
+                <div style="font-family:'Bangers',cursive; font-size:1.1em; color:#000;" id="auth-user-email">📧 user@email.com</div>
+                <button onclick="signOut()" style="background:#ff6b6b; border:3px solid #000; border-radius:8px; font-family:'Bangers',cursive; font-size:1.1em; padding:6px 14px; cursor:pointer; box-shadow:3px 3px 0 #000; color:#fff; letter-spacing:1px;">SIGN OUT</button>
+            </div>
             <div class="profile-top">
                 <div class="profile-avatar-ring" id="profile-avatar" onclick="toggleAvatarPicker()">🧠
                     <div class="profile-level-badge" id="profile-level-badge">LVL 1</div>
@@ -797,6 +829,27 @@
             </div>
             <div class="nav-item" onclick="switchTab('shop', this)">
                 <span class="nav-icon">🛒</span><span class="nav-label">SHOP</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTH MODAL -->
+    <div id="auth-modal">
+        <div class="auth-box">
+            <button class="auth-close" onclick="closeAuth()">✕</button>
+            <div class="auth-logo">🌀 MAZE MAN</div>
+            <div class="auth-sub">Sign in to save your progress &amp; unlock premium</div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-signin" onclick="switchAuthTab('signin')">SIGN IN</button>
+                <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">SIGN UP</button>
+            </div>
+            <div id="auth-error" class="auth-error"></div>
+            <input class="auth-field" id="auth-email" type="email" placeholder="📧 your@email.com" autocomplete="email">
+            <input class="auth-field" id="auth-password" type="password" placeholder="🔑 Password" autocomplete="current-password">
+            <input class="auth-field" id="auth-confirm" type="password" placeholder="🔑 Confirm Password" style="display:none;" autocomplete="new-password">
+            <button class="auth-submit" id="auth-submit-btn" onclick="submitAuth()">SIGN IN</button>
+            <div class="auth-switch" id="auth-switch-text">
+                No account? <span onclick="switchAuthTab('signup')">Sign up free</span>
             </div>
         </div>
     </div>
@@ -1897,6 +1950,8 @@
                 profileData.fragments = globalXP > 0 ? Math.floor(globalXP / 10) : 0;
                 localStorage.setItem('mazeman_profile', JSON.stringify(profileData));
             } catch(e) {}
+            // Also sync to Supabase when logged in (fire-and-forget)
+            if (currentUser) saveProfileToDB();
         }
 
         function getLevel(xp) { return Math.floor(xp / XP_PER_LEVEL) + 1; }
@@ -2019,11 +2074,181 @@
         window.onload = () => {
             if (_origOnload) _origOnload();
             renderFact();
-            renderComicsGrid();
             loadProfile();
             refreshProfileUI();
+            initSupabase(); // Supabase auth state will trigger renderComicsGrid on resolve
         };
 
+    </script>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         SUPABASE AUTH + PROFILE SYNC  (maze-man v8)
+         ═══════════════════════════════════════════════════════════════ -->
+    <script>
+    /* ─── SUPABASE INIT ─── */
+    const SUPA_URL = 'https://eozfvyryhrriwjvrqmac.supabase.co';
+    const SUPA_KEY = 'sb_publishable_Vdke6WlxX038btpYlEvfew__lXKSpt1';
+    let supabase = null;
+    let currentUser = null;
+
+    function initSupabase() {
+        try {
+            supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+            supabase.auth.onAuthStateChange((event, session) => {
+                currentUser = session?.user ?? null;
+                onAuthChange(event, session);
+            });
+        } catch(e) {
+            console.warn('Supabase init failed — running offline:', e);
+            renderComicsGrid(); // Still render grid for guest users
+        }
+    }
+
+    async function onAuthChange(event, session) {
+        if (session?.user) {
+            currentUser = session.user;
+            await loadProfileFromDB();
+            updateAuthUI(true, session.user.email);
+        } else {
+            currentUser = null;
+            userIsPremium = false;
+            updateAuthUI(false, null);
+        }
+        renderComicsGrid();
+    }
+
+    function updateAuthUI(loggedIn, email) {
+        const banner  = document.getElementById('auth-banner');
+        const userBar = document.getElementById('auth-user-bar');
+        const emailEl = document.getElementById('auth-user-email');
+        if (banner)  { banner.style.display  = loggedIn ? 'none' : 'block'; }
+        if (userBar) { userBar.style.display  = loggedIn ? 'flex' : 'none'; }
+        if (emailEl && email) emailEl.textContent = '📧 ' + email;
+    }
+
+    /* ─── AUTH MODAL ─── */
+    let authMode = 'signin';
+
+    function openAuth() {
+        playSfx('click');
+        document.getElementById('auth-modal').classList.add('show');
+        document.getElementById('auth-error').textContent = '';
+        document.getElementById('auth-error').className = 'auth-error';
+    }
+    function closeAuth() {
+        document.getElementById('auth-modal').classList.remove('show');
+    }
+    function switchAuthTab(mode) {
+        authMode = mode;
+        document.getElementById('tab-signin').classList.toggle('active', mode === 'signin');
+        document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
+        document.getElementById('auth-confirm').style.display = mode === 'signup' ? 'block' : 'none';
+        document.getElementById('auth-submit-btn').textContent = mode === 'signin' ? 'SIGN IN' : 'CREATE ACCOUNT';
+        document.getElementById('auth-switch-text').innerHTML = mode === 'signin'
+            ? 'No account? <span onclick="switchAuthTab(\'signup\')">Sign up free</span>'
+            : 'Have an account? <span onclick="switchAuthTab(\'signin\')">Sign in</span>';
+        document.getElementById('auth-error').textContent = '';
+    }
+
+    async function submitAuth() {
+        if (!supabase) { alert('Connection not ready. Please try again.'); return; }
+        const email    = document.getElementById('auth-email').value.trim();
+        const password = document.getElementById('auth-password').value;
+        const confirm  = document.getElementById('auth-confirm').value;
+        const errEl    = document.getElementById('auth-error');
+        const btn      = document.getElementById('auth-submit-btn');
+        errEl.className = 'auth-error';
+        errEl.textContent = '';
+
+        if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+        if (authMode === 'signup' && password !== confirm) { errEl.textContent = "Passwords don't match."; return; }
+        if (password.length < 6)  { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+
+        btn.disabled = true;
+        btn.textContent = '...';
+
+        try {
+            if (authMode === 'signin') {
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) {
+                    errEl.textContent = error.message;
+                    btn.disabled = false; btn.textContent = 'SIGN IN'; return;
+                }
+                closeAuth(); playSfx('win');
+            } else {
+                const { error } = await supabase.auth.signUp({ email, password });
+                if (error) {
+                    errEl.textContent = error.message;
+                    btn.disabled = false; btn.textContent = 'CREATE ACCOUNT'; return;
+                }
+                errEl.className = 'auth-error success';
+                errEl.textContent = '✅ Check your email to confirm your account!';
+                btn.disabled = false; btn.textContent = 'CREATE ACCOUNT';
+                return;
+            }
+        } catch(e) {
+            errEl.textContent = 'Network error. Please try again.';
+            btn.disabled = false;
+            btn.textContent = authMode === 'signin' ? 'SIGN IN' : 'CREATE ACCOUNT';
+        }
+    }
+
+    async function signOut() {
+        if (!supabase) return;
+        await supabase.auth.signOut();
+        currentUser = null; userIsPremium = false;
+        renderComicsGrid();
+        playSfx('click');
+    }
+
+    /* ─── PROFILE DB SYNC ─── */
+    async function loadProfileFromDB() {
+        if (!supabase || !currentUser) return;
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('xp_points, level, streak_days, display_name, avatar_emoji, is_premium, comics_read')
+                .eq('id', currentUser.id)
+                .single();
+            if (error || !data) return;
+
+            // Sync DB values into local state
+            globalXP       = data.xp_points   || 0;
+            userIsPremium  = data.is_premium   || false;
+            comicsRead     = data.comics_read  || 0;
+            profileData.avatar    = data.avatar_emoji  || '🧠';
+            profileData.username  = data.display_name  || emailToUsername(currentUser.email);
+            profileData.streak    = data.streak_days   || 0;
+
+            // Update XP display in header
+            const xpEl = document.getElementById('global-xp-1');
+            if (xpEl) xpEl.innerText = `⚡ ${globalXP} XP`;
+            const xpEl2 = document.getElementById('global-xp-2');
+            if (xpEl2) xpEl2.innerText = `⚡ ${globalXP} XP`;
+
+            refreshProfileUI();
+        } catch(e) { console.warn('loadProfileFromDB error:', e); }
+    }
+
+    async function saveProfileToDB() {
+        if (!supabase || !currentUser) return;
+        try {
+            await supabase.from('profiles').upsert({
+                id:              currentUser.id,
+                xp_points:       globalXP,
+                comics_read:     comicsRead,
+                avatar_emoji:    profileData.avatar,
+                display_name:    profileData.username,
+                streak_days:     profileData.streak,
+                last_visit_date: new Date().toISOString().split('T')[0],
+                updated_at:      new Date().toISOString()
+            }, { onConflict: 'id' });
+        } catch(e) { console.warn('saveProfileToDB error:', e); }
+    }
+
+    function emailToUsername(email) {
+        return (email || '').split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g,'_').substring(0,16) || 'MAZE WALKER';
+    }
     </script>
 </body>
 </html>
