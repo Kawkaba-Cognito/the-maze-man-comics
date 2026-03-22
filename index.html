@@ -9,13 +9,40 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Maze Man">
-    <link rel="manifest" id="pwa-manifest-link">
-    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/png" sizes="32x32"  href="icons/icon-96.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="180x180"      href="icons/icon-180.png">
+    <link rel="shortcut icon"                         href="favicon.ico">
+
+    <!-- Capacitor (injected at runtime for native builds) -->
+    <script>
+      // Register Service Worker (PWA offline support)
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => {
+              reg.onupdatefound = () => {
+                const w = reg.installing;
+                w.onstatechange = () => {
+                  if (w.state === 'installed' && navigator.serviceWorker.controller) {
+                    w.postMessage('skipWaiting'); // auto-activate new SW
+                  }
+                };
+              };
+            })
+            .catch(err => console.warn('SW registration failed:', err));
+        });
+      }
+    </script>
+
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
 
     <style>
@@ -447,27 +474,6 @@
         .sub-perks li { color: rgba(255,255,255,0.85); padding: 5px 0; border-bottom: 1px dashed rgba(255,255,255,0.15); font-size: 0.9em; font-weight: bold; }
         .sub-upgrade-btn { display: block; width: 100%; padding: 14px; background: #ffe66d; border: 4px solid #000; border-radius: 12px; font-family: 'Bangers', cursive; font-size: 1.6em; cursor: pointer; box-shadow: 5px 5px 0 #000; color: #000; transition: all 0.1s; text-align: center; }
         .sub-upgrade-btn:active { transform: translate(5px,5px); box-shadow: 0 0 0 #000; }
-
-        /* ═══════════════ AUTH MODAL ═══════════════ */
-        #auth-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; }
-        #auth-modal.show { display:flex; }
-        .auth-box { background:#1a0b2e; border:5px solid #ffe66d; border-radius:20px; padding:30px 24px; width:90%; max-width:380px; box-shadow:8px 8px 0 #ffe66d; position:relative; }
-        .auth-close { position:absolute; top:12px; right:16px; background:none; border:none; color:#fff; font-size:1.6em; cursor:pointer; }
-        .auth-logo { font-family:'Bangers',cursive; font-size:2em; color:#ffe66d; text-align:center; margin-bottom:6px; letter-spacing:2px; }
-        .auth-sub { text-align:center; color:#aaa; font-size:0.88em; margin-bottom:20px; }
-        .auth-tabs { display:flex; border:3px solid #000; border-radius:10px; overflow:hidden; margin-bottom:18px; }
-        .auth-tab { flex:1; padding:10px; background:#2d1b4e; color:#aaa; border:none; font-family:'Bangers',cursive; font-size:1.2em; letter-spacing:1px; cursor:pointer; transition:all 0.15s; }
-        .auth-tab.active { background:#ffe66d; color:#000; }
-        .auth-field { width:100%; padding:12px 14px; margin-bottom:12px; background:#2d1b4e; border:3px solid #4ecdc4; border-radius:10px; color:#fff; font-family:'Comic Neue',cursive; font-size:1em; outline:none; display:block; }
-        .auth-field::placeholder { color:#666; }
-        .auth-field:focus { border-color:#ffe66d; }
-        .auth-submit { width:100%; padding:14px; background:#ff6b6b; border:4px solid #000; border-radius:12px; font-family:'Bangers',cursive; font-size:1.5em; letter-spacing:2px; cursor:pointer; box-shadow:5px 5px 0 #000; color:#fff; transition:all 0.1s; }
-        .auth-submit:active { transform:translate(5px,5px); box-shadow:0 0 0 #000; }
-        .auth-submit:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:5px 5px 0 #000; }
-        .auth-error { font-size:0.88em; margin-bottom:10px; text-align:center; min-height:20px; color:#ff6b6b; }
-        .auth-error.success { color:#4ecdc4; }
-        .auth-switch { text-align:center; color:#aaa; font-size:0.88em; margin-top:14px; }
-        .auth-switch span { color:#4ecdc4; cursor:pointer; text-decoration:underline; }
         .avatar-picker { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; }
         .avatar-opt { font-size: 2em; cursor: pointer; padding: 6px; border-radius: 8px; transition: transform 0.1s; border: 2px solid transparent; }
         .avatar-opt.selected, .avatar-opt:active { border-color: #ffe66d; transform: scale(1.2); }
@@ -567,10 +573,10 @@
                         <div class="comic-barcode"></div>
                     </div>
                     
-                    <div class="comic-square cognitive" onclick="openComic('cognitive')">
-                        <div class="issue-badge">VOL 2</div>
-                        <div class="comic-cover-art"><span class="comic-icon">🧠</span></div>
-                        <span class="comic-cover-title">COGNITIVE<br>PSYCHOLOGY</span>
+                    <div class="comic-square cognitive" onclick="window.location.href='episode-1-problem-solving.html'">
+                        <div class="issue-badge">EP.01</div>
+                        <div class="comic-cover-art"><span class="comic-icon">🧩</span></div>
+                        <span class="comic-cover-title">PROBLEM<br>SOLVING</span>
                         <div class="comic-barcode"></div>
                     </div>
                 </div>
@@ -588,7 +594,6 @@
         </div>
 
         <div id="screen-comics" class="ui-screen">
-            <div class="ad-banner">📢 <span>AD SPACE</span> — Your brand here · ads@mazeman.com</div>
             <div class="comics-filter">
                 <button class="filter-btn active" onclick="filterComics('all',this)">ALL</button>
                 <button class="filter-btn" onclick="filterComics('social',this)">SOCIAL</button>
@@ -654,16 +659,6 @@
         </div>
 
         <div id="screen-profile" class="ui-screen">
-            <!-- AUTH STATE — shown/hidden by JS -->
-            <div id="auth-banner" style="background:#ffe66d; border:4px solid #000; border-radius:16px; padding:20px; margin-bottom:20px; text-align:center; box-shadow:6px 6px 0 #000;">
-                <div style="font-family:'Bangers',cursive; font-size:1.8em; color:#000; margin-bottom:6px;">🔐 SAVE YOUR PROGRESS</div>
-                <div style="color:#333; font-size:0.88em; margin-bottom:16px;">Sign in to sync your XP, streak & badges across all devices</div>
-                <button onclick="openAuth()" style="background:#1a0b2e; color:#ffe66d; border:4px solid #000; border-radius:12px; font-family:'Bangers',cursive; font-size:1.4em; padding:10px 28px; cursor:pointer; box-shadow:4px 4px 0 #000; letter-spacing:1px;">SIGN IN / SIGN UP</button>
-            </div>
-            <div id="auth-user-bar" style="display:none; background:#4ecdc4; border:4px solid #000; border-radius:16px; padding:12px 20px; margin-bottom:20px; align-items:center; justify-content:space-between; box-shadow:4px 4px 0 #000; flex-wrap:wrap; gap:8px;">
-                <div style="font-family:'Bangers',cursive; font-size:1.1em; color:#000;" id="auth-user-email">📧 user@email.com</div>
-                <button onclick="signOut()" style="background:#ff6b6b; border:3px solid #000; border-radius:8px; font-family:'Bangers',cursive; font-size:1.1em; padding:6px 14px; cursor:pointer; box-shadow:3px 3px 0 #000; color:#fff; letter-spacing:1px;">SIGN OUT</button>
-            </div>
             <div class="profile-top">
                 <div class="profile-avatar-ring" id="profile-avatar" onclick="toggleAvatarPicker()">🧠
                     <div class="profile-level-badge" id="profile-level-badge">LVL 1</div>
@@ -829,27 +824,6 @@
             </div>
             <div class="nav-item" onclick="switchTab('shop', this)">
                 <span class="nav-icon">🛒</span><span class="nav-label">SHOP</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- AUTH MODAL -->
-    <div id="auth-modal">
-        <div class="auth-box">
-            <button class="auth-close" onclick="closeAuth()">✕</button>
-            <div class="auth-logo">🌀 MAZE MAN</div>
-            <div class="auth-sub">Sign in to save your progress &amp; unlock premium</div>
-            <div class="auth-tabs">
-                <button class="auth-tab active" id="tab-signin" onclick="switchAuthTab('signin')">SIGN IN</button>
-                <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">SIGN UP</button>
-            </div>
-            <div id="auth-error" class="auth-error"></div>
-            <input class="auth-field" id="auth-email" type="email" placeholder="📧 your@email.com" autocomplete="email">
-            <input class="auth-field" id="auth-password" type="password" placeholder="🔑 Password" autocomplete="current-password">
-            <input class="auth-field" id="auth-confirm" type="password" placeholder="🔑 Confirm Password" style="display:none;" autocomplete="new-password">
-            <button class="auth-submit" id="auth-submit-btn" onclick="submitAuth()">SIGN IN</button>
-            <div class="auth-switch" id="auth-switch-text">
-                No account? <span onclick="switchAuthTab('signup')">Sign up free</span>
             </div>
         </div>
     </div>
@@ -1853,22 +1827,27 @@
            COMICS DATA & GRID
         ══════════════════════════════════════════ */
         const COMICS_DATA = [
-            { id:'c1', vol:'VOL.01', title:'THE CONFORMITY TRAP', cat:'social', catLabel:'Social Psych', icon:'👥', bg:'#ff9aa2', free:true,
-              pages:["Page 1: Solomon Asch's conformity experiments showed that 75% of people gave obviously wrong answers to match a group.", "Page 2: When the group says the sky is green — do you agree? The pressure to belong rewires our perception of truth.", "Page 3: Conformity kept early humans safe in tribes. Today it keeps us silent in meetings. Are you conforming right now?"] },
-            { id:'c2', vol:'VOL.02', title:'MIRROR NEURONS', cat:'neuro', catLabel:'Neuroscience', icon:'🪞', bg:'#a8e6cf', free:true,
-              pages:["Page 1: In the 1990s, Giacomo Rizzolatti discovered mirror neurons — cells that fire when you act AND when you watch.", "Page 2: This is the neural basis of empathy. Your brain literally simulates the pain, joy, and fear of others.", "Page 3: Actors aren't pretending. Their mirror neuron systems are running a full simulation. So are you, right now."] },
-            { id:'c3', vol:'VOL.03', title:'THE MAZE WITHIN', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🌀', bg:'#b8c0ff', free:true,
-              pages:["Page 1: The mind is not a container. It is a process — constantly constructing reality from incomplete data.", "Page 2: Working memory holds 7±2 items. Everything else is compressed, distorted, or forgotten forever.", "Page 3: You are not remembering the past. You are reconstructing it, each time slightly differently."] },
-            { id:'c4', vol:'VOL.04', title:'GROUP DYNAMICS', cat:'social', catLabel:'Social Psych', icon:'🤝', bg:'#ffe66d', free:true,
-              pages:["Page 1: In any group of 3 or more, roles emerge: the leader, the challenger, the peacemaker, the shadow.", "Page 2: Group polarization: groups don't moderate views — they amplify them. Extremes become the norm.", "Page 3: Groupthink silenced the warnings before the Challenger disaster. The pressure to agree is lethal."] },
-            { id:'c5', vol:'VOL.05', title:'MEMORY PALACE', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🏛️', bg:'#b8c0ff', free:false,
-              pages:["[PREMIUM] Page 1: The method of loci dates to ancient Greece. Simonides of Ceos first discovered it after a building collapsed.", "[PREMIUM] Page 2: Your spatial memory is your most powerful memory system. The hippocampus maps space AND story.", "[PREMIUM] Page 3: World memory champions memorize the order of a shuffled deck in under 20 seconds using this technique."] },
-            { id:'c6', vol:'VOL.06', title:'THE SHADOW SELF', cat:'cognitive', catLabel:'Depth Psych', icon:'🌑', bg:'#1a0b2e', free:false,
-              pages:["[PREMIUM] Page 1: Carl Jung's Shadow is the unconscious repository of everything we deny about ourselves.", "[PREMIUM] Page 2: We project our shadow onto others — the flaws we hate most in people are the ones we disown in ourselves.", "[PREMIUM] Page 3: Integration of the shadow is not defeat. It is the bravest act of self-knowledge."] },
-            { id:'c7', vol:'VOL.07', title:'COGNITIVE BIASES', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🔍', bg:'#ff9aa2', free:false,
-              pages:["[PREMIUM] Page 1: 180+ cognitive biases have been catalogued. We are not rational animals — we are rationalizing ones.", "[PREMIUM] Page 2: The availability heuristic: we judge probability by how easily examples come to mind, not by actual data.", "[PREMIUM] Page 3: Debiasing is possible but hard. The first step: assume you are biased right now, about something."] },
-            { id:'c8', vol:'VOL.08', title:'THE SOCIAL NETWORK', cat:'social', catLabel:'Social Psych', icon:'🕸️', bg:'#4ecdc4', free:false,
-              pages:["[PREMIUM] Page 1: Dunbar's number: humans can maintain stable social relationships with approximately 150 people.", "[PREMIUM] Page 2: Social media shattered this limit — but the brain didn't evolve to handle thousands of 'connections'.", "[PREMIUM] Page 3: The loneliness epidemic is not despite more connections. It is because of the wrong kind."] },
+            // ── COGNITIVE PSYCHOLOGY ──
+            { id:'ep1', vol:'EP.01', title:'PROBLEM SOLVING', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🧩', bg:'#b8c0ff', free:true, type:'game', url:'episode-1-problem-solving.html',
+              pages:[] },
+            { id:'c3', vol:'EP.02', title:'THE MAZE WITHIN', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🌀', bg:'#c8d0ff', free:true,
+              pages:["🧠 The mind is not a container — it is a process, constantly constructing reality from incomplete data.", "⚙️ Working memory holds only 7±2 items at a time. Everything else is compressed, distorted, or lost.", "🔁 You are not remembering the past. You are reconstructing it — and each time, it shifts slightly."] },
+            { id:'c5', vol:'EP.03', title:'MEMORY PALACE', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🏛️', bg:'#b8c0ff', free:false,
+              pages:["🏛️ The method of loci dates back to ancient Greece. Simonides of Ceos first used it after a building collapse.", "🗺️ Your spatial memory is your most powerful storage system — the hippocampus maps both place and story.", "🃏 World memory champions memorize a shuffled deck in under 20 seconds using spatial anchoring."] },
+            { id:'c6', vol:'EP.04', title:'THE SHADOW SELF', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🌑', bg:'#2a1b3e', free:false,
+              pages:["🌑 Carl Jung's Shadow is the unconscious repository of everything we deny about ourselves.", "🪞 We project our shadow onto others — the flaws we hate most in people are the ones we disown in ourselves.", "✨ Integrating the shadow is not defeat. It is the bravest act of self-knowledge you can undertake."] },
+            { id:'c7', vol:'EP.05', title:'COGNITIVE BIASES', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🔍', bg:'#ffc8c8', free:false,
+              pages:["📋 Over 180 cognitive biases have been catalogued. We are not rational animals — we are rationalizing ones.", "📊 The availability heuristic: we judge probability by how easily examples come to mind, not by real data.", "🎯 Debiasing is possible but hard. First step: assume you are biased right now, about something important."] },
+            // ── SOCIAL PSYCHOLOGY ──
+            { id:'c1', vol:'EP.01', title:'THE CONFORMITY TRAP', cat:'social', catLabel:'Social Psych', icon:'👥', bg:'#ff9aa2', free:true,
+              pages:["👥 Solomon Asch's experiments showed 75% of people gave obviously wrong answers just to match the group.", "🟢 When the group says the sky is green — do you agree? The pressure to belong rewires our sense of truth.", "🏕️ Conformity kept early humans safe in tribes. Today it keeps us silent in meetings when we should speak."] },
+            { id:'c4', vol:'EP.02', title:'GROUP DYNAMICS', cat:'social', catLabel:'Social Psych', icon:'🤝', bg:'#ffe66d', free:true,
+              pages:["🎭 In any group of 3+, roles emerge naturally: the leader, the challenger, the peacemaker, the silent one.", "📡 Group polarization: groups don't moderate views — they amplify them. Extremes become the new center.", "🚀 Groupthink silenced the warnings before the Challenger disaster. The pressure to agree can be lethal."] },
+            { id:'c8', vol:'EP.03', title:'THE SOCIAL NETWORK', cat:'social', catLabel:'Social Psych', icon:'🕸️', bg:'#4ecdc4', free:false,
+              pages:["🧮 Dunbar's number: humans can maintain stable social relationships with approximately 150 people.", "📱 Social media shattered this limit — but the brain never evolved to handle thousands of 'connections'.", "💔 The loneliness epidemic is not despite more connections. It is because of the wrong kind of connection."] },
+            // ── NEUROSCIENCE ──
+            { id:'c2', vol:'EP.01', title:'MIRROR NEURONS', cat:'neuro', catLabel:'Neuroscience', icon:'🪞', bg:'#a8e6cf', free:true,
+              pages:["🔬 In 1992, Rizzolatti's team discovered mirror neurons — cells that fire when you act AND when you watch.", "💞 This is the neural basis of empathy. Your brain literally simulates the pain, joy, and fear of others.", "🎭 Actors aren't pretending — their mirror neuron systems are running a full simulation. So are you right now."] },
         ];
 
         let activeFilter = 'all';
@@ -1879,20 +1858,28 @@
             const grid = document.getElementById('comics-grid');
             if (!grid) return;
             const filtered = activeFilter === 'all' ? COMICS_DATA : COMICS_DATA.filter(c => c.cat === activeFilter);
-            grid.innerHTML = filtered.map(c => `
-                <div class="comic-card" onclick="${c.free || userIsPremium ? `readComic('${c.id}')` : 'openPaywall()'}">
+            grid.innerHTML = filtered.map(c => {
+                const isLocked = !c.free && !userIsPremium;
+                const isGame   = c.type === 'game';
+                const btnLabel = isLocked ? '🔒 UNLOCK PRO' : isGame ? '▶ PLAY NOW' : '📖 READ NOW';
+                const gameBadge = isGame ? '<span class="comic-lock" style="background:#b8c0ff;border-color:#4455cc;">🎮 GAME</span>' : '';
+                return `
+                <div class="comic-card" onclick="${isLocked ? 'openPaywall()' : `readComic('${c.id}')`}"
+                     style="${isGame ? 'border-color:#4455cc;box-shadow:5px 5px 0 #4455cc;' : ''}">
                     <div class="comic-card-cover" style="background:${c.bg};">
                         <span class="issue-num">${c.vol}</span>
                         <span class="comic-big-icon">${c.icon}</span>
-                        ${!c.free && !userIsPremium ? '<span class="comic-lock">🔒 PRO</span>' : ''}
+                        ${isLocked ? '<span class="comic-lock">🔒 PRO</span>' : gameBadge}
                     </div>
                     <div class="comic-card-info">
                         <div class="comic-card-title">${c.title}</div>
                         <span class="comic-card-cat" style="background:${c.bg};">${c.catLabel}</span>
-                        <button class="comic-card-btn ${!c.free && !userIsPremium ? 'locked' : ''}">${!c.free && !userIsPremium ? '🔒 UNLOCK PRO' : '📖 READ NOW'}</button>
+                        <button class="comic-card-btn ${isLocked ? 'locked' : ''}"
+                                style="${isGame && !isLocked ? 'background:#4455cc;color:#fff;border-color:#2233aa;' : ''}"
+                        >${btnLabel}</button>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         }
 
         function filterComics(cat, btn) {
@@ -1907,6 +1894,11 @@
             playSfx('click');
             const c = COMICS_DATA.find(x => x.id === id);
             if (!c) return;
+            // Game-type comics navigate to their own page
+            if (c.type === 'game' && c.url) {
+                window.location.href = c.url;
+                return;
+            }
             currentComic = c;
             currentPage = 0;
             document.getElementById('comic-title').innerText = c.title;
@@ -1950,8 +1942,6 @@
                 profileData.fragments = globalXP > 0 ? Math.floor(globalXP / 10) : 0;
                 localStorage.setItem('mazeman_profile', JSON.stringify(profileData));
             } catch(e) {}
-            // Also sync to Supabase when logged in (fire-and-forget)
-            if (currentUser) saveProfileToDB();
         }
 
         function getLevel(xp) { return Math.floor(xp / XP_PER_LEVEL) + 1; }
@@ -2074,181 +2064,11 @@
         window.onload = () => {
             if (_origOnload) _origOnload();
             renderFact();
+            renderComicsGrid();
             loadProfile();
             refreshProfileUI();
-            initSupabase(); // Supabase auth state will trigger renderComicsGrid on resolve
         };
 
-    </script>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         SUPABASE AUTH + PROFILE SYNC  (maze-man v8)
-         ═══════════════════════════════════════════════════════════════ -->
-    <script>
-    /* ─── SUPABASE INIT ─── */
-    const SUPA_URL = 'https://eozfvyryhrriwjvrqmac.supabase.co';
-    const SUPA_KEY = 'sb_publishable_Vdke6WlxX038btpYlEvfew__lXKSpt1';
-    let supabase = null;
-    let currentUser = null;
-
-    function initSupabase() {
-        try {
-            supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
-            supabase.auth.onAuthStateChange((event, session) => {
-                currentUser = session?.user ?? null;
-                onAuthChange(event, session);
-            });
-        } catch(e) {
-            console.warn('Supabase init failed — running offline:', e);
-            renderComicsGrid(); // Still render grid for guest users
-        }
-    }
-
-    async function onAuthChange(event, session) {
-        if (session?.user) {
-            currentUser = session.user;
-            await loadProfileFromDB();
-            updateAuthUI(true, session.user.email);
-        } else {
-            currentUser = null;
-            userIsPremium = false;
-            updateAuthUI(false, null);
-        }
-        renderComicsGrid();
-    }
-
-    function updateAuthUI(loggedIn, email) {
-        const banner  = document.getElementById('auth-banner');
-        const userBar = document.getElementById('auth-user-bar');
-        const emailEl = document.getElementById('auth-user-email');
-        if (banner)  { banner.style.display  = loggedIn ? 'none' : 'block'; }
-        if (userBar) { userBar.style.display  = loggedIn ? 'flex' : 'none'; }
-        if (emailEl && email) emailEl.textContent = '📧 ' + email;
-    }
-
-    /* ─── AUTH MODAL ─── */
-    let authMode = 'signin';
-
-    function openAuth() {
-        playSfx('click');
-        document.getElementById('auth-modal').classList.add('show');
-        document.getElementById('auth-error').textContent = '';
-        document.getElementById('auth-error').className = 'auth-error';
-    }
-    function closeAuth() {
-        document.getElementById('auth-modal').classList.remove('show');
-    }
-    function switchAuthTab(mode) {
-        authMode = mode;
-        document.getElementById('tab-signin').classList.toggle('active', mode === 'signin');
-        document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
-        document.getElementById('auth-confirm').style.display = mode === 'signup' ? 'block' : 'none';
-        document.getElementById('auth-submit-btn').textContent = mode === 'signin' ? 'SIGN IN' : 'CREATE ACCOUNT';
-        document.getElementById('auth-switch-text').innerHTML = mode === 'signin'
-            ? 'No account? <span onclick="switchAuthTab(\'signup\')">Sign up free</span>'
-            : 'Have an account? <span onclick="switchAuthTab(\'signin\')">Sign in</span>';
-        document.getElementById('auth-error').textContent = '';
-    }
-
-    async function submitAuth() {
-        if (!supabase) { alert('Connection not ready. Please try again.'); return; }
-        const email    = document.getElementById('auth-email').value.trim();
-        const password = document.getElementById('auth-password').value;
-        const confirm  = document.getElementById('auth-confirm').value;
-        const errEl    = document.getElementById('auth-error');
-        const btn      = document.getElementById('auth-submit-btn');
-        errEl.className = 'auth-error';
-        errEl.textContent = '';
-
-        if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
-        if (authMode === 'signup' && password !== confirm) { errEl.textContent = "Passwords don't match."; return; }
-        if (password.length < 6)  { errEl.textContent = 'Password must be at least 6 characters.'; return; }
-
-        btn.disabled = true;
-        btn.textContent = '...';
-
-        try {
-            if (authMode === 'signin') {
-                const { error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) {
-                    errEl.textContent = error.message;
-                    btn.disabled = false; btn.textContent = 'SIGN IN'; return;
-                }
-                closeAuth(); playSfx('win');
-            } else {
-                const { error } = await supabase.auth.signUp({ email, password });
-                if (error) {
-                    errEl.textContent = error.message;
-                    btn.disabled = false; btn.textContent = 'CREATE ACCOUNT'; return;
-                }
-                errEl.className = 'auth-error success';
-                errEl.textContent = '✅ Check your email to confirm your account!';
-                btn.disabled = false; btn.textContent = 'CREATE ACCOUNT';
-                return;
-            }
-        } catch(e) {
-            errEl.textContent = 'Network error. Please try again.';
-            btn.disabled = false;
-            btn.textContent = authMode === 'signin' ? 'SIGN IN' : 'CREATE ACCOUNT';
-        }
-    }
-
-    async function signOut() {
-        if (!supabase) return;
-        await supabase.auth.signOut();
-        currentUser = null; userIsPremium = false;
-        renderComicsGrid();
-        playSfx('click');
-    }
-
-    /* ─── PROFILE DB SYNC ─── */
-    async function loadProfileFromDB() {
-        if (!supabase || !currentUser) return;
-        try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('xp_points, level, streak_days, display_name, avatar_emoji, is_premium, comics_read')
-                .eq('id', currentUser.id)
-                .single();
-            if (error || !data) return;
-
-            // Sync DB values into local state
-            globalXP       = data.xp_points   || 0;
-            userIsPremium  = data.is_premium   || false;
-            comicsRead     = data.comics_read  || 0;
-            profileData.avatar    = data.avatar_emoji  || '🧠';
-            profileData.username  = data.display_name  || emailToUsername(currentUser.email);
-            profileData.streak    = data.streak_days   || 0;
-
-            // Update XP display in header
-            const xpEl = document.getElementById('global-xp-1');
-            if (xpEl) xpEl.innerText = `⚡ ${globalXP} XP`;
-            const xpEl2 = document.getElementById('global-xp-2');
-            if (xpEl2) xpEl2.innerText = `⚡ ${globalXP} XP`;
-
-            refreshProfileUI();
-        } catch(e) { console.warn('loadProfileFromDB error:', e); }
-    }
-
-    async function saveProfileToDB() {
-        if (!supabase || !currentUser) return;
-        try {
-            await supabase.from('profiles').upsert({
-                id:              currentUser.id,
-                xp_points:       globalXP,
-                comics_read:     comicsRead,
-                avatar_emoji:    profileData.avatar,
-                display_name:    profileData.username,
-                streak_days:     profileData.streak,
-                last_visit_date: new Date().toISOString().split('T')[0],
-                updated_at:      new Date().toISOString()
-            }, { onConflict: 'id' });
-        } catch(e) { console.warn('saveProfileToDB error:', e); }
-    }
-
-    function emailToUsername(email) {
-        return (email || '').split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g,'_').substring(0,16) || 'MAZE WALKER';
-    }
     </script>
 </body>
 </html>
