@@ -1,0 +1,34 @@
+{
+  "name": "The Maze Man Comics",
+  "short_name": "Maze Man",
+  "description": "Interactive bilingual psychology comics — solve problems with The Maze Man",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05050f",
+  "theme_color": "#00f5ff",
+  "lang": "en",
+  "categories": ["education", "entertainment", "games"],
+  "icons": [
+    { "src": "icons/icon-72.png",  "sizes": "72x72",   "type": "image/png", "purpose": "maskable any" },
+    { "src": "icons/icon-96.png",  "sizes": "96x96",   "type": "image/png", "purpose": "maskable any" },
+    { "src": "icons/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "maskable any" },
+    { "src": "icons/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "maskable any" },
+    { "src": "icons/icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "maskable any" },
+    { "src": "icons/icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "maskable any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable any" },
+    { "src": "icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "maskable any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any" }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Episode 1: Problem Solving",
+      "short_name": "Ep. 1",
+      "description": "Play the first episode",
+      "url": "./episode-1-problem-solving.html",
+      "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
+    }
+  ]
+}
