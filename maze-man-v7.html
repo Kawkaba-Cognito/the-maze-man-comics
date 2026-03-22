@@ -1,0 +1,2029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Maze Man | Psychological Comics</title>
+    <meta name="description" content="Psychological comics — social & cognitive psychology, gamified.">
+    <meta name="theme-color" content="#1a0b2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Maze Man">
+    <link rel="manifest" id="pwa-manifest-link">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+
+    <style>
+        * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; }
+        body { overflow: hidden; min-height: 100vh; background-color: #1a0b2e; }
+
+        /* ═══════════════════════ 2D UI (COMIC INTERFACE) ═══════════════════════ */
+        #ui-shell {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            font-family: 'Comic Neue', cursive; color: #333; 
+            overflow-y: auto; overflow-x: hidden; z-index: 100;
+            background-color: #1a0b2e;
+        }
+
+        /* NEW: Layer 1 - Colorful Glowing Orbs */
+        #ui-shell::before {
+            content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                radial-gradient(circle at 15% 25%, rgba(255, 107, 107, 0.3) 0%, transparent 45%),
+                radial-gradient(circle at 85% 65%, rgba(78, 205, 196, 0.3) 0%, transparent 45%),
+                radial-gradient(circle at 50% 85%, rgba(255, 230, 109, 0.2) 0%, transparent 55%),
+                linear-gradient(180deg, #1a0b2e 0%, #2d1b4e 50%, #1a0b2e 100%);
+            z-index: -2;
+        }
+
+        /* NEW: Layer 2 - Cyber Maze Lines in Background */
+        #ui-shell::after {
+            content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            opacity: 0.15; /* Subtly integrated */
+            z-index: -1;
+            /* A CSS generated geometric maze pattern */
+            background-image:
+              repeating-conic-gradient(#333 0% 25%, #1a0b2e 0% 50%);
+            background-size: 80px 80px;
+            filter: blur(1px);
+        }
+
+        .comic-header { 
+            position: fixed; top: 0; width: 100%; height: 70px; background: rgba(26, 11, 46, 0.95); padding: 0 20px; 
+            display: flex; justify-content: space-between; align-items: center; z-index: 1000; border-bottom: 5px solid #000; backdrop-filter: blur(10px); 
+        }
+        .comic-logo { font-family: 'Bangers', cursive; color: #ffe66d; font-size: 2em; text-shadow: 3px 3px 0px #000; letter-spacing: 1px; }
+        .xp-pill { background: #ff6b6b; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 5px 15px; border-radius: 20px; font-weight: bold; color: #fff; font-size: 1.2em; transition: transform 0.2s;}
+
+        .bottom-nav {
+            position: fixed; bottom: 0; width: 100%; height: 85px; background: #4ecdc4; border-top: 5px solid #000;
+            display: flex; justify-content: space-around; align-items: center; padding: 0 10px 10px 10px; z-index: 1000;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; border: 4px solid #000; border-radius: 12px;
+            padding: 8px 15px; cursor: pointer; box-shadow: 4px 4px 0px #000; transition: all 0.1s ease; width: 22%;
+        }
+        .nav-item.active { background: #ffe66d; transform: translate(4px, 4px); box-shadow: 0px 0px 0px #000; }
+        .nav-item:active { transform: translate(4px, 4px); box-shadow: 0px 0px 0px #000; }
+        .nav-icon { font-size: 1.5em; margin-bottom: 2px; }
+        .nav-label { font-family: 'Bangers', cursive; font-size: 1.1em; letter-spacing: 1px; }
+
+        .ui-screen { display: none; opacity: 0; transition: opacity 0.3s ease-out; min-height: 100vh; width: 100%; padding: 90px 20px 120px 20px; position: relative;} 
+        .ui-screen.active { display: block; opacity: 1; }
+        .hero-section {
+            position: relative;
+            min-height: min(88vh, 920px);
+            width: 100%;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+        
+        /* --- UPDATED: DRAGGABLE PSYCHOLOGICAL STICKERS --- */
+        .sticker-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 50; overflow: hidden;
+        }
+        .sticker {
+            position: absolute;
+            font-size: 3.5em;
+            cursor: grab; /* Shows it can be picked up */
+            pointer-events: auto; /* Required for dragging */
+            touch-action: none; /* Prevents page scrolling while dragging */
+            
+            /* Comic style outline and shadow */
+            filter: 
+                drop-shadow(2px 0 0 #fff) drop-shadow(0 2px 0 #fff) 
+                drop-shadow(-2px 0 0 #fff) drop-shadow(0 -2px 0 #fff) 
+                drop-shadow(4px 4px 0 #000);
+            
+            /* Pulsing glow animation instead of floating */
+            animation: sticker-glow 1.5s ease-in-out infinite alternate;
+        }
+        .sticker:active { cursor: grabbing; scale: 1.1; animation: none;} /* Effect when held */
+
+        @keyframes sticker-glow {
+            0% { filter: drop-shadow(2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(4px 4px 0 #000); }
+            100% { filter: drop-shadow(2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(4px 4px 0 #ffe66d) drop-shadow(0 0 10px #ffe66d); }
+        }
+
+        .character-container { position: relative; margin-bottom: 30px; display: flex; justify-content: center; align-items: center; width: 220px; height: 220px; z-index: 10;}
+        .hero-portal {
+            position: absolute; width: 200px; height: 200px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 107, 107, 0.8) 0%, rgba(124, 58, 237, 0.4) 50%, transparent 70%);
+            border: 4px dashed #ffe66d; animation: spin-pulse 10s linear infinite; z-index: 1;
+        }
+        @keyframes spin-pulse { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.1); } 100% { transform: rotate(360deg) scale(1); } }
+
+        /* PURE CSS MAZE MAN CHARACTER */
+        .css-maze-man { position: relative; width: 150px; height: 190px; animation: idle-float 3s ease-in-out infinite; z-index: 10; }
+        .cmm-cloak-bg { position: absolute; bottom: 15px; left: 15px; width: 120px; height: 110px; background: #333; border-radius: 40px 40px 10px 10px; border: 5px solid #000; box-shadow: inset -10px -10px 0 rgba(0,0,0,0.6); }
+        .cmm-hood { position: absolute; top: 0; left: 25px; width: 100px; height: 110px; background: #555; border-radius: 50px 50px 20px 20px; border: 5px solid #000; box-shadow: inset -10px -10px 0 rgba(0,0,0,0.4), 8px 8px 0px rgba(0,0,0,0.8); z-index: 3; }
+        .cmm-face { position: absolute; top: 25px; left: 15px; width: 70px; height: 75px; background: #000; border-radius: 35px 35px 25px 25px; overflow: hidden; }
+        .cmm-eye { position: absolute; top: 25px; width: 22px; height: 12px; background: #ffe66d; border-radius: 50% 50% 20% 20%; box-shadow: 0 0 15px #ffe66d; }
+        .cmm-eye.left { left: 8px; transform: rotate(15deg); }
+        .cmm-eye.right { right: 8px; transform: rotate(-15deg); }
+        .cmm-mask { position: absolute; bottom: -5px; left: -5px; width: 80px; height: 45px; background: #222; border-radius: 50% 50% 10px 10px; border-top: 4px solid #000; }
+        .cmm-arm { position: absolute; top: 70px; width: 40px; height: 85px; background: #555; border: 5px solid #000; border-radius: 20px; z-index: 2; box-shadow: inset -5px -5px 0 rgba(0,0,0,0.4);}
+        .cmm-arm.left { left: -5px; transform: rotate(15deg); }
+        .cmm-arm.right { right: -5px; transform: rotate(-15deg); }
+        .cmm-foot { position: absolute; bottom: 0; width: 45px; height: 25px; background: #111; border: 5px solid #000; border-radius: 20px 20px 5px 5px; z-index: 1; box-shadow: inset -5px -5px 0 rgba(255,255,255,0.2);}
+        .cmm-foot.left { left: 20px; }
+        .cmm-foot.right { right: 20px; }
+        @keyframes idle-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        .title-card { background: #fff; border: 5px solid #000; box-shadow: 8px 8px 0px #000; padding: 15px 20px 25px 20px; transform: rotate(-2deg); margin-bottom: 30px; width: 100%; max-width: 400px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; position: relative; z-index: 10;}
+        .main-title { font-family: 'Bangers', cursive; font-size: 3.2em; margin: 0; color: #000; line-height: 1; letter-spacing: 2px;}
+        .colorful-comics { font-family: 'Bangers', cursive; font-size: 2.8em; letter-spacing: 5px; margin-top: -5px; transform: rotate(2deg); text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000; }
+
+        .btn-wrapper { position: relative; display: inline-block; width: 100%; max-width: 300px; margin-bottom: 10px; z-index: 10;}
+        .btn-ripple { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 16px; border: 4px solid #ffe66d; animation: ripple 1.5s infinite; z-index: 0; pointer-events: none;}
+        @keyframes ripple { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.15) translate(8px, 8px); opacity: 0; } }
+
+        .comic-btn { position: relative; z-index: 2; background: #ffe66d; border: 5px solid #000; box-shadow: 8px 8px 0px #000; padding: 15px 30px; font-family: 'Bangers', cursive; font-size: 2.2em; cursor: pointer; transition: all 0.1s ease; border-radius: 16px; color: #000; letter-spacing: 2px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+        .comic-btn:hover { transform: translate(-2px, -2px); box-shadow: 10px 10px 0px #000; }
+        .comic-btn:active { transform: translate(8px, 8px); box-shadow: 0px 0px 0px #000; }
+
+        .comics-showcase { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 40px; width: 100%; max-width: 500px; padding: 10px; perspective: 1000px; position: relative; z-index: 10;}
+        .comic-square { flex: 1; aspect-ratio: 1 / 1.4; max-width: 120px; border: 4px solid #000; border-radius: 4px; box-shadow: 4px 4px 0px #000; cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 8px; text-align: center; position: relative; background: #fff; }
+        .comic-square.social { transform: rotate(-6deg) translateY(10px); z-index: 1;}
+        .comic-square.center { transform: rotate(2deg) scale(1.1); z-index: 3; box-shadow: 8px 8px 0px #000;}
+        .comic-square.cognitive { transform: rotate(5deg) translateY(10px); z-index: 1;}
+        .comic-square:hover { transform: translateY(-10px) scale(1.15); z-index: 10; box-shadow: 10px 10px 0px #000; }
+        .comic-square:active { transform: translateY(0px) scale(1); box-shadow: 0px 0px 0px #000; }
+
+        .comic-square::before { content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px; border: 2px solid rgba(0,0,0,0.1); border-radius: 2px; pointer-events: none;}
+        .issue-badge { position: absolute; top: 0; left: 0; background: #000; color: #fff; font-size: 0.6em; font-family: 'DM Mono', monospace; padding: 2px 4px; font-weight: bold;}
+        .comic-barcode { position: absolute; bottom: 4px; left: 4px; width: 20px; height: 12px; background: repeating-linear-gradient(90deg, #000, #000 1px, #fff 1px, #fff 3px); border: 1px solid #000;}
+        
+        .comic-cover-art { flex-grow: 1; width: 100%; display: flex; align-items: center; justify-content: center; border: 2px solid #000; margin-top: 12px; margin-bottom: 8px; background-size: cover; background-position: center;}
+        .social .comic-cover-art { background-color: #ff9aa2; }
+        .center .comic-cover-art { background-color: #a8e6cf; }
+        .cognitive .comic-cover-art { background-color: #b8c0ff; }
+        .comic-icon { font-size: 2.5em; filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.3)); }
+        .comic-cover-title { font-family: 'Bangers', cursive; font-size: 1em; line-height: 1; color: #000; letter-spacing: 1px; width: 100%;}
+        .comic-square.center .comic-cover-title { font-size: 1.1em; }
+
+        .content-card { background: #fff; border: 5px solid #000; border-radius: 20px; padding: 30px 20px; margin-bottom: 20px; text-align: center; box-shadow: 8px 8px 0px #000; }
+
+        /* --- CODED VIDEO PLAYER UI --- */
+        .coded-video-player { position: relative; width: 100%; max-width: 400px; height: 250px; background: #000; border: 6px solid #000; border-radius: 12px; margin: 0 auto; overflow: hidden; box-shadow: 6px 6px 0px #000; }
+        #video-canvas { width: 100%; height: 100%; display: block; }
+        .video-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 10; }
+        .play-video-btn { background: #ffe66d; border: 4px solid #000; font-family: 'Bangers', cursive; font-size: 2em; padding: 10px 25px; border-radius: 12px; cursor: pointer; box-shadow: 4px 4px 0 #000; transition: transform 0.1s; }
+        .play-video-btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #000; }
+        .video-title-text { color: #fff; font-family: 'Bangers'; font-size: 1.5em; margin-bottom: 15px; letter-spacing: 1px; }
+
+        /* --- COMIC READER OVERLAY --- */
+        #comic-reader { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .reader-panel { background: #fff; border: 6px solid #000; border-radius: 16px; width: 100%; max-width: 500px; height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; box-shadow: 10px 10px 0 var(--amber); position: relative; }
+        .reader-close { position: absolute; top: -15px; right: -15px; background: #ff6b6b; border: 4px solid #000; width: 40px; height: 40px; border-radius: 50%; font-family: 'Bangers'; font-size: 1.5em; cursor: pointer; color: #fff; box-shadow: 2px 2px 0 #000; }
+        .reader-controls { display: flex; gap: 20px; margin-top: 20px; }
+        .reader-btn { background: #4ecdc4; border: 4px solid #000; font-family: 'Bangers'; font-size: 1.5em; padding: 10px 20px; border-radius: 12px; cursor: pointer; box-shadow: 4px 4px 0 #000; }
+        .reader-btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #000; }
+        #comic-page-text { font-size: 1.5em; font-weight: bold; }
+
+        /* ═══════════════════════ 3D ENGINE (MARTIAN SYSTEM) ═══════════════════════ */
+        #maze-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5000; background: #000; display: none; font-family: 'Outfit', sans-serif; color: #ffffff; }
+        #renderCanvas { width: 100%; height: 100%; display: block; outline: none; }
+        #content-wrapper { position: absolute; top: 0; left: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; padding: 20px 16px; pointer-events: none; }
+
+        :root { --amber: #ff5a00; --amber-ring: rgba(255, 90, 0, 0.3); --border: rgba(255, 90, 0, 0.3); --border2: rgba(255, 90, 0, 0.5); --ink2: #cccccc; --r: 15px; --shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.8); }
+        .glass-panel { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); pointer-events: auto; background: linear-gradient(135deg, rgba(20,10,10,0.8), rgba(15,5,5,0.6)); }
+        .maze-screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 540px; animation: rise .4s cubic-bezier(0.2, 0.8, 0.2, 1); border: 1px solid var(--border); border-radius: var(--r); padding: 32px 24px; box-shadow: var(--shadow); margin-top: 15px; }
+        .maze-screen.active { display: flex; }
+        @keyframes rise { from{opacity:0;transform:translateY(20px) scale(0.98)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+        #floating-instruction { position: absolute; bottom: 10%; width: 100%; text-align: center; font-size: 18px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--amber); text-shadow: 0 0 15px var(--amber-ring), 0 0 30px #000; pointer-events: none; transition: opacity 0.5s; }
+        #joystick-wrapper { position: absolute; bottom: 40px; right: 40px; width: 150px; height: 150px; z-index: 50; display: none; pointer-events: auto; touch-action: none; }
+        #joystick-canvas { width: 100%; height: 100%; }
+
+        .maze-topbar { width: 100%; max-width: 540px; display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; border: 1px solid var(--border); border-radius: var(--r); pointer-events: auto; transition: opacity 0.4s; z-index: 30; }
+        .brand { display:flex; align-items:center; gap:12px; }
+        .brand-logo { width: 42px; height: 42px; border-radius: 8px; object-fit: contain; box-shadow: 0 0 15px var(--amber-ring); background: #000; border: 1px solid var(--border2);}
+        .brand-name { font-weight:900; font-size:18px; color:var(--amber); text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px var(--amber-ring);}
+        .brand-sub { font-family:'DM Mono',monospace; font-size:10px; color:var(--ink2); letter-spacing:.1em; text-transform: uppercase; }
+        
+        .hero-title { font-size:32px; font-weight:900; letter-spacing:3px; color:var(--amber); text-align:center; text-transform: uppercase; margin-bottom: 5px; text-shadow: 0 0 15px var(--amber-ring);}
+        .hero-sub { font-size:14px; color:var(--ink2); text-align:center; line-height:1.6; max-width: 400px; margin-bottom: 25px;}
+        .btn-cta { width:100%; padding:18px; background:rgba(255, 90, 0, 0.1); color:var(--amber); border:1px solid var(--amber); border-radius:5px; font-family:'Outfit',sans-serif; font-size:16px; font-weight:700; cursor:pointer; transition:all .2s; text-transform: uppercase; letter-spacing: 2px; }
+        .btn-cta:hover { background:var(--amber); color:#000; box-shadow: 0 0 20px rgba(255, 90, 0, 0.4); }
+
+        .btn-hub { background: #ff6b6b; border: 3px solid #000; padding: 8px 16px; font-family: 'Bangers', cursive; font-size: 1.2em; border-radius: 12px; cursor: pointer; color: #fff; box-shadow: 4px 4px 0px #000; transition: transform 0.1s; pointer-events: auto;}
+        .btn-hub:active { transform: translate(4px, 4px); box-shadow: 0px 0px 0px #000; }
+
+        .puzzle-input { background: #000; border: 1px solid var(--amber); color: #fff; padding: 15px; font-size: 1.2em; border-radius: 8px; text-align: center; margin-bottom: 15px; width: 100%; font-family: 'DM Mono', monospace; text-transform: uppercase;}
+        .puzzle-input:focus { outline: none; box-shadow: 0 0 15px var(--amber-ring); }
+
+        /* ── MAZE BACKGROUND ── */
+        #maze-bg-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none; opacity: 0.1;
+        }
+        /* Wikimedia Commons maze textures (CC BY-SA 3.0) — see HTML comment near #maze-photo-layer */
+        #maze-photo-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+            opacity: 0.2;
+            background-image:
+                url("https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Prim_Maze.svg/500px-Prim_Maze.svg.png"),
+                url("https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Simple_maze_3.svg/960px-Simple_maze_3.svg.png");
+            background-size: 380px 380px, 520px 520px;
+            background-position: 0 0, 40% 60%;
+            background-repeat: repeat, repeat;
+            mix-blend-mode: soft-light;
+        }
+        #ui-shell { position: relative; z-index: 1; }
+
+        /* ── LANGUAGE BUTTON ── */
+        #lang-btn {
+            background: #4ecdc4; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+            padding: 5px 14px; border-radius: 10px; font-family: 'Bangers', cursive;
+            font-size: 1em; letter-spacing: 1px; color: #000; cursor: pointer; transition: .1s;
+        }
+        #lang-btn:active { transform: translate(3px,3px); box-shadow: 0 0 0 #000; }
+
+        /* ── VIDEO PLAYER ── */
+        .video-player-wrap {
+            position: relative; width: 100%; max-width: 420px; margin: 0 auto;
+            background: #000; border-radius: 10px; overflow: hidden;
+            border: 5px solid #000; box-shadow: 6px 6px 0 #000;
+            /* outer bezel texture */
+            outline: 8px solid #111; outline-offset: -1px;
+        }
+        /* diagonal stripe bezel like Image 1 */
+        .video-player-wrap::before {
+            content: ''; position: absolute; inset: -8px; z-index: -1;
+            background: repeating-linear-gradient(
+                -45deg, #1a1a1a 0px, #1a1a1a 3px, #222 3px, #222 9px
+            );
+        }
+        #vid-canvas { display: block; width: 100%; height: 200px; background: #000; cursor: pointer; }
+
+        /* Controls bar */
+        .vid-controls {
+            background: linear-gradient(180deg,#1c1c1c,#111);
+            padding: 6px 10px 8px; border-top: 2px solid #000;
+        }
+        /* Progress row */
+        .vid-prog-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .vid-time { font-family: 'DM Mono',monospace; font-size: .68em; color: #ccc; white-space: nowrap; min-width: 80px; }
+        .vid-bar-outer {
+            flex: 1; height: 8px; background: #3a3a3a; border-radius: 4px;
+            position: relative; cursor: pointer;
+        }
+        .vid-bar-inner { height: 100%; background: #e00; border-radius: 4px; width: 0%; pointer-events: none; }
+        .vid-thumb {
+            position: absolute; top: 50%; right: -6px; transform: translateY(-50%);
+            width: 14px; height: 14px; border-radius: 50%;
+            background: #e00; border: 2px solid #fff;
+            box-shadow: 0 0 6px rgba(220,0,0,.8); pointer-events: none;
+        }
+        /* Button row */
+        .vid-btn-row { display: flex; align-items: center; justify-content: space-between; }
+        .vid-left-btns { display: flex; align-items: center; gap: 10px; }
+        .vid-right-btns { display: flex; align-items: center; gap: 10px; }
+        .vid-ic-btn {
+            background: none; border: none; color: #ccc; cursor: pointer;
+            font-size: 1.05em; display: flex; align-items: center; justify-content: center;
+            padding: 2px; transition: color .15s;
+        }
+        .vid-ic-btn:hover { color: #fff; }
+        .vid-play-btn {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%,#555,#111);
+            border: 1.5px solid #444; color: #fff; font-size: .85em;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.1);
+        }
+        .vid-vol-slider { width: 55px; height: 4px; appearance: none; background: #444; border-radius: 2px; cursor: pointer; }
+        .vid-vol-slider::-webkit-slider-thumb { appearance: none; width: 10px; height: 10px; background: #e00; border-radius: 50%; }
+        /* Overlay (before playing) */
+        .vid-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 200px;
+            background: rgba(0,0,0,.55); backdrop-filter: blur(2px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10;
+        }
+        .vid-overlay-title { color: #fff; font-family: 'Bangers',cursive; font-size: 1.3em; letter-spacing: 1px; text-shadow: 2px 2px 0 #000; margin-bottom: 14px; }
+        .vid-big-play {
+            width: 62px; height: 62px; border-radius: 50%;
+            background: radial-gradient(circle at 38% 38%,#555,#111);
+            border: 2px solid #444; color: #fff; font-size: 1.5em;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 6px 24px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.12);
+            transition: transform .1s;
+        }
+        .vid-big-play:active { transform: scale(.92); }
+
+        /* Fullscreen overlay */
+        #vid-fullscreen {
+            display: none; position: fixed; inset: 0; z-index: 9000;
+            background: #000; flex-direction: column;
+        }
+        #vid-fullscreen.on { display: flex; }
+        #vid-fs-canvas { flex: 1; width: 100%; display: block; background: #000; }
+        .vid-fs-bar {
+            background: #111; border-top: 2px solid #000;
+            padding: 8px 14px; display: flex; align-items: center; gap: 10px;
+        }
+        .vid-fs-bar .vid-bar-outer { flex: 1; }
+        .vid-fs-close {
+            background: #ff6b6b; border: 3px solid #000; border-radius: 50%;
+            width: 36px; height: 36px; font-family: 'Bangers',cursive;
+            font-size: 1.1em; cursor: pointer; color: #fff;
+            box-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* ── STICKERS — float automatically, draggable ── */
+        .sticker {
+            position: absolute; font-size: 3.5em; cursor: grab;
+            pointer-events: auto; touch-action: none;
+            filter: drop-shadow(2px 0 0 #fff) drop-shadow(0 2px 0 #fff)
+                    drop-shadow(-2px 0 0 #fff) drop-shadow(0 -2px 0 #fff)
+                    drop-shadow(4px 4px 0 #000);
+            transition: filter .2s;
+            will-change: transform, left, top;
+        }
+        .sticker:active { cursor: grabbing; }
+        .sticker.floating {
+            animation: stickerFloat var(--dur,3s) ease-in-out infinite var(--delay,0s);
+        }
+        @keyframes stickerFloat {
+            0%,100% { transform: rotate(var(--rot,0deg)) translateY(0); }
+            50% { transform: rotate(var(--rot,0deg)) translateY(-10px); }
+        }
+
+
+        /* ── FACT OF THE DAY ── */
+        .fact-card { background: #fff; border: 5px solid #000; border-radius: 16px; padding: 22px 18px 18px; margin: 0 0 20px; position: relative; box-shadow: 8px 8px 0 #000; max-width: 400px; width: 100%; z-index: 10; }
+        .fact-badge { position: absolute; top: -14px; left: 18px; background: #ff6b6b; border: 3px solid #000; border-radius: 20px; padding: 3px 12px; font-family: 'Bangers', cursive; font-size: 1em; color: #fff; letter-spacing: 1px; box-shadow: 2px 2px 0 #000; }
+        .fact-text { font-size: 1.05em; font-weight: bold; color: #000; line-height: 1.5; margin-top: 6px; }
+        .fact-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+        .fact-cat { display: inline-block; background: #4ecdc4; border: 2px solid #000; border-radius: 10px; padding: 3px 10px; font-family: 'Bangers', cursive; font-size: 0.9em; }
+        .fact-next { background: none; border: 2px solid #000; border-radius: 8px; padding: 3px 8px; font-family: 'Bangers', cursive; font-size: 0.9em; cursor: pointer; }
+
+        /* ── COMICS GRID ── */
+        .comics-filter { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        .filter-btn { background: #fff; border: 3px solid #000; border-radius: 20px; padding: 5px 14px; font-family: 'Bangers', cursive; font-size: 1em; cursor: pointer; box-shadow: 3px 3px 0 #000; letter-spacing: 1px; transition: all 0.1s; }
+        .filter-btn.active, .filter-btn:active { background: #ffe66d; transform: translate(3px,3px); box-shadow: 0 0 0 #000; }
+        .comics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; }
+        .comic-card { background: #fff; border: 4px solid #000; border-radius: 12px; overflow: hidden; box-shadow: 5px 5px 0 #000; cursor: pointer; transition: transform 0.1s; }
+        .comic-card:active { transform: translate(5px, 5px); box-shadow: 0 0 0 #000; }
+        .comic-card-cover { height: 130px; display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 3px solid #000; }
+        .comic-card-cover .issue-num { position: absolute; top: 6px; left: 6px; background: #000; color: #fff; font-family: 'DM Mono', monospace; font-size: 0.65em; padding: 2px 5px; border-radius: 3px; }
+        .comic-lock { position: absolute; top: 6px; right: 6px; background: #ffe66d; border: 2px solid #000; border-radius: 8px; padding: 2px 6px; font-size: 0.85em; box-shadow: 2px 2px 0 #000; }
+        .comic-big-icon { font-size: 3.2em; }
+        .comic-card-info { padding: 10px 12px 12px; }
+        .comic-card-title { font-family: 'Bangers', cursive; font-size: 1.25em; letter-spacing: 1px; color: #000; margin-bottom: 4px; line-height: 1.1; }
+        .comic-card-cat { display: inline-block; padding: 2px 7px; border: 2px solid #000; border-radius: 10px; font-size: 0.7em; font-family: 'DM Mono', monospace; font-weight: bold; }
+        .comic-card-btn { display: block; width: 100%; margin-top: 10px; padding: 8px; background: #ffe66d; border: 3px solid #000; border-radius: 8px; font-family: 'Bangers', cursive; font-size: 1.15em; cursor: pointer; box-shadow: 3px 3px 0 #000; text-align: center; transition: all 0.1s; }
+        .comic-card-btn.locked { background: #ddd; color: #888; }
+        .comic-card-btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 #000; }
+
+        /* ── AD BANNER ── */
+        .ad-banner { width: 100%; background: rgba(255,255,255,0.07); border: 2px dashed rgba(255,255,255,0.2); border-radius: 8px; padding: 10px; text-align: center; margin-bottom: 18px; color: rgba(255,255,255,0.3); font-family: 'DM Mono', monospace; font-size: 0.75em; letter-spacing: 1px; }
+        .ad-banner span { color: rgba(255,255,255,0.5); font-weight: bold; }
+
+        /* ── PAYWALL MODAL ── */
+        #paywall-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #paywall-modal.show { display: flex; }
+        .paywall-card { background: #fff; border: 6px solid #000; border-radius: 20px; padding: 30px 20px; max-width: 360px; width: 100%; text-align: center; box-shadow: 10px 10px 0 #ffe66d; position: relative; }
+        .paywall-close { position: absolute; top: -15px; right: -15px; background: #ff6b6b; border: 4px solid #000; width: 40px; height: 40px; border-radius: 50%; font-family: 'Bangers', cursive; font-size: 1.4em; cursor: pointer; color: #fff; box-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center; }
+        .paywall-icon { font-size: 3em; margin-bottom: 10px; }
+        .paywall-title { font-family: 'Bangers', cursive; font-size: 2em; letter-spacing: 2px; margin-bottom: 8px; }
+        .paywall-perks { text-align: left; list-style: none; margin: 12px 0; padding: 0; }
+        .paywall-perks li { padding: 7px 0; border-bottom: 1px dashed #ccc; font-weight: bold; font-size: 0.95em; }
+        .paywall-btn { display: block; width: 100%; padding: 15px; background: #ffe66d; border: 4px solid #000; border-radius: 12px; font-family: 'Bangers', cursive; font-size: 1.8em; cursor: pointer; box-shadow: 5px 5px 0 #000; margin-top: 15px; color: #000; transition: all 0.1s; }
+        .paywall-btn:active { transform: translate(5px, 5px); box-shadow: 0 0 0 #000; }
+        .paywall-sub { font-size: 0.8em; color: #888; margin-top: 10px; }
+
+        /* ── TIP JAR ── */
+        #tip-btn { position: fixed; right: 20px; bottom: 105px; z-index: 500; background: #ff6b6b; border: 4px solid #000; border-radius: 50%; width: 54px; height: 54px; font-size: 1.4em; cursor: pointer; box-shadow: 4px 4px 0 #000; display: flex; align-items: center; justify-content: center; animation: tipBounce 2.5s ease-in-out infinite; }
+        @keyframes tipBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        #tip-btn:active { transform: translate(4px, 4px) !important; box-shadow: 0 0 0 #000; animation: none; }
+        #tip-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3001; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #tip-modal.show { display: flex; }
+        .tip-card { background: #fff; border: 6px solid #000; border-radius: 20px; padding: 28px 20px; max-width: 340px; width: 100%; text-align: center; box-shadow: 10px 10px 0 #4ecdc4; position: relative; }
+        .tip-card-close { position: absolute; top: -15px; right: -15px; background: #ff6b6b; border: 4px solid #000; width: 40px; height: 40px; border-radius: 50%; font-family: 'Bangers'; font-size: 1.4em; cursor: pointer; color: #fff; box-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center; }
+        .tip-amounts { display: flex; gap: 10px; justify-content: center; margin: 18px 0; flex-wrap: wrap; }
+        .tip-amount { background: #4ecdc4; border: 4px solid #000; border-radius: 12px; padding: 10px 14px; font-family: 'Bangers', cursive; font-size: 1.4em; cursor: pointer; box-shadow: 4px 4px 0 #000; transition: all 0.1s; }
+        .tip-amount:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #000; }
+        .tip-platforms { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+        .tip-platform-btn { display: block; width: 100%; padding: 12px; border: 3px solid #000; border-radius: 10px; font-family: 'Bangers', cursive; font-size: 1.15em; cursor: pointer; box-shadow: 3px 3px 0 #000; transition: all 0.1s; color: #000; }
+        .tip-platform-btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 #000; }
+
+        /* ── PROFILE PAGE ── */
+        .profile-top { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+        .profile-avatar-ring { width: 88px; height: 88px; border: 6px solid #000; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 2.8em; box-shadow: 6px 6px 0 #000; margin-bottom: 12px; position: relative; cursor: pointer; }
+        .profile-level-badge { position: absolute; bottom: -8px; right: -8px; background: #ffe66d; border: 3px solid #000; border-radius: 20px; font-family: 'Bangers', cursive; font-size: 0.85em; padding: 2px 8px; box-shadow: 2px 2px 0 #000; white-space: nowrap; }
+        .profile-username { font-family: 'Bangers', cursive; font-size: 2em; letter-spacing: 2px; color: #fff; text-shadow: 3px 3px 0 #000; }
+        .xp-bar-wrap { width: 100%; background: rgba(255,255,255,0.15); border: 3px solid #000; border-radius: 20px; height: 26px; margin: 8px 0 4px; overflow: hidden; position: relative; box-shadow: 3px 3px 0 #000; }
+        .xp-bar-fill { height: 100%; background: linear-gradient(90deg, #ff6b6b, #ffe66d); border-radius: 20px; transition: width 0.6s ease; min-width: 10%; }
+        .xp-bar-label { font-family: 'DM Mono', monospace; font-size: 0.75em; font-weight: bold; color: #000; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
+        .xp-subtext { font-size: 0.85em; color: rgba(255,255,255,0.7); font-family: 'DM Mono', monospace; }
+        .streak-card { display: flex; align-items: center; gap: 15px; background: #ffe66d; border: 4px solid #000; border-radius: 16px; padding: 14px 18px; box-shadow: 6px 6px 0 #000; margin-bottom: 20px; }
+        .streak-num { font-family: 'Bangers', cursive; font-size: 2.5em; line-height: 1; color: #000; }
+        .streak-info { flex: 1; text-align: left; }
+        .streak-title { font-family: 'Bangers', cursive; font-size: 1.3em; letter-spacing: 1px; color: #000; }
+        .streak-sub { font-size: 0.8em; font-weight: bold; color: #555; }
+        .profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .stat-box { background: #fff; border: 4px solid #000; border-radius: 12px; padding: 12px 8px; text-align: center; box-shadow: 4px 4px 0 #000; }
+        .stat-num { font-family: 'Bangers', cursive; font-size: 2em; line-height: 1; color: #000; }
+        .stat-label { font-size: 0.72em; font-weight: bold; color: #555; margin-top: 3px; letter-spacing: 0.5px; }
+        .section-heading { font-family: 'Bangers', cursive; font-size: 1.6em; letter-spacing: 2px; color: #fff; text-shadow: 3px 3px 0 #000; margin-bottom: 12px; text-align: left; }
+        .badges-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .badge-item { background: #fff; border: 4px solid #000; border-radius: 12px; padding: 12px 6px; text-align: center; box-shadow: 4px 4px 0 #000; }
+        .badge-item.locked { opacity: 0.35; filter: grayscale(1); }
+        .badge-icon { font-size: 2em; margin-bottom: 4px; display: block; }
+        .badge-name { font-family: 'Bangers', cursive; font-size: 0.85em; letter-spacing: 1px; color: #000; }
+        .sub-card { background: linear-gradient(135deg, #1a0b2e, #2d1b4e); border: 4px solid #ffe66d; border-radius: 16px; padding: 20px 18px; box-shadow: 6px 6px 0 #000; }
+        .sub-title { font-family: 'Bangers', cursive; font-size: 1.8em; color: #ffe66d; letter-spacing: 2px; margin-bottom: 6px; text-shadow: 2px 2px 0 #000; }
+        .sub-perks { list-style: none; padding: 0; margin-bottom: 15px; }
+        .sub-perks li { color: rgba(255,255,255,0.85); padding: 5px 0; border-bottom: 1px dashed rgba(255,255,255,0.15); font-size: 0.9em; font-weight: bold; }
+        .sub-upgrade-btn { display: block; width: 100%; padding: 14px; background: #ffe66d; border: 4px solid #000; border-radius: 12px; font-family: 'Bangers', cursive; font-size: 1.6em; cursor: pointer; box-shadow: 5px 5px 0 #000; color: #000; transition: all 0.1s; text-align: center; }
+        .sub-upgrade-btn:active { transform: translate(5px,5px); box-shadow: 0 0 0 #000; }
+        .avatar-picker { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+        .avatar-opt { font-size: 2em; cursor: pointer; padding: 6px; border-radius: 8px; transition: transform 0.1s; border: 2px solid transparent; }
+        .avatar-opt.selected, .avatar-opt:active { border-color: #ffe66d; transform: scale(1.2); }
+
+        /* ── SHOP PAGE ── */
+        .shop-section-title { font-family: 'Bangers', cursive; font-size: 1.7em; letter-spacing: 2px; color: #fff; text-shadow: 3px 3px 0 #000; margin: 20px 0 12px; text-align: left; }
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 10px; }
+        .shop-item { background: #fff; border: 4px solid #000; border-radius: 12px; overflow: hidden; box-shadow: 5px 5px 0 #000; }
+        .shop-item-img { height: 110px; display: flex; align-items: center; justify-content: center; font-size: 3.5em; border-bottom: 3px solid #000; }
+        .shop-item-info { padding: 10px 12px 12px; }
+        .shop-item-name { font-family: 'Bangers', cursive; font-size: 1.15em; letter-spacing: 1px; color: #000; margin-bottom: 3px; }
+        .shop-item-price { font-family: 'DM Mono', monospace; font-size: 0.95em; font-weight: bold; color: #ff6b6b; margin-bottom: 8px; }
+        .shop-btn { display: block; width: 100%; padding: 8px; background: #ff6b6b; border: 3px solid #000; border-radius: 8px; font-family: 'Bangers', cursive; font-size: 1.05em; cursor: pointer; box-shadow: 3px 3px 0 #000; text-align: center; color: #fff; transition: all 0.1s; }
+        .shop-btn.coming-soon { background: #ddd; color: #888; }
+        .shop-btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 #000; }
+        .shop-banner { background: linear-gradient(135deg, #ffe66d, #ff6b6b); border: 4px solid #000; border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 20px; box-shadow: 6px 6px 0 #000; }
+        .shop-banner-title { font-family: 'Bangers', cursive; font-size: 2em; letter-spacing: 2px; color: #000; }
+        .shop-banner-sub { font-size: 0.9em; font-weight: bold; color: #000; margin-top: 4px; }
+
+        /* ── 5-item NAV override ── */
+        .nav-item { padding: 6px 8px !important; width: 19% !important; }
+        .nav-label { font-size: 0.85em !important; }
+
+    </style>
+</head>
+<body>
+
+    <!-- MAZE BACKGROUND - drawn in code -->
+    <canvas id="maze-bg-canvas"></canvas>
+    <!-- Maze textures: Prim_Maze.svg (Nandhp, CC BY-SA 3.0), Simple_maze_3.svg (Ebaychatter0, CC BY-SA 3.0) — Wikimedia Commons -->
+    <div id="maze-photo-layer" aria-hidden="true"></div>
+
+    <div id="ui-shell">
+        <header class="comic-header">
+            <div class="comic-logo" id="logo-text">THE MAZE MAN</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <button id="lang-btn" onclick="toggleLang()">عربي</button>
+                <div class="xp-pill" id="global-xp-1">⚡ 0 XP</div>
+            </div>
+        </header>
+
+        <div id="screen-home" class="ui-screen active">
+            <div class="hero-section">
+                
+                <div class="sticker-canvas" id="sticker-canvas">
+                    <div class="sticker social-sticker" style="top: 10%; left: 8%;" data-initial-rot="-15">🧠</div>
+                    <div class="sticker cognitive-sticker" style="top: 25%; right: 10%;" data-initial-rot="20">💡</div>
+                    <div class="sticker" style="top: 55%; left: 12%;" data-initial-rot="10">🎭</div>
+                    <div class="sticker" style="top: 68%; right: 15%;" data-initial-rot="-25">🧩</div>
+                    <div class="sticker" style="top: 40%; left: 5%;" data-initial-rot="5">👁️</div>
+                    <div class="sticker" style="top: 82%; left: 20%;" data-initial-rot="-10">🧬</div>
+                    <div class="sticker" style="top: 5%; right: 20%;" data-initial-rot="15">🌟</div>
+                    <div class="sticker" style="top: 80%; right: 8%;" data-initial-rot="0">❤️</div>
+                </div>
+
+                <div class="character-container">
+                    <div class="hero-portal"></div>
+                    <div class="css-maze-man">
+                        <div class="cmm-foot left"></div><div class="cmm-foot right"></div>
+                        <div class="cmm-cloak-bg"></div>
+                        <div class="cmm-arm left"></div><div class="cmm-arm right"></div>
+                        <div class="cmm-hood">
+                            <div class="cmm-face">
+                                <div class="cmm-eye left"></div><div class="cmm-eye right"></div>
+                                <div class="cmm-mask"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="title-card">
+                    <h1 class="main-title">THE MAZE MAN</h1>
+                    <div class="colorful-comics">
+                        <span style="color: #ff6b6b;">C</span><span style="color: #4ecdc4;">O</span><span style="color: #ffe66d;">M</span><span style="color: #a8e6cf;">I</span><span style="color: #ff9aa2;">C</span><span style="color: #b8c0ff;">S</span>
+                    </div>
+                </div>
+                
+                <div class="btn-wrapper">
+                    <div class="btn-ripple"></div>
+                    <button class="comic-btn" onclick="enterMaze()">
+                        ENTER MAZE <span style="font-size: 0.8em;">➡️</span>
+                    </button>
+                </div>
+
+                <div class="comics-showcase">
+                    <div class="comic-square social" onclick="openComic('social')">
+                        <div class="issue-badge">VOL 1</div>
+                        <div class="comic-cover-art"><span class="comic-icon">👥</span></div>
+                        <span class="comic-cover-title">SOCIAL<br>PSYCHOLOGY</span>
+                        <div class="comic-barcode"></div>
+                    </div>
+                    
+                    <div class="comic-square center" onclick="openComic('about')">
+                        <div class="issue-badge">INFO</div>
+                        <div class="comic-cover-art"><span class="comic-icon">ℹ️</span></div>
+                        <span class="comic-cover-title">ABOUT<br>THE PAGE</span>
+                        <div class="comic-barcode"></div>
+                    </div>
+                    
+                    <div class="comic-square cognitive" onclick="openComic('cognitive')">
+                        <div class="issue-badge">VOL 2</div>
+                        <div class="comic-cover-art"><span class="comic-icon">🧠</span></div>
+                        <span class="comic-cover-title">COGNITIVE<br>PSYCHOLOGY</span>
+                        <div class="comic-barcode"></div>
+                    </div>
+                </div>
+
+                <!-- FACT OF THE DAY -->
+                <div class="fact-card" style="margin-top:30px;">
+                    <div class="fact-badge">🧠 PSYCH FACT</div>
+                    <p class="fact-text" id="fact-text">Loading...</p>
+                    <div class="fact-meta">
+                        <span class="fact-cat" id="fact-cat">Social Psychology</span>
+                        <button class="fact-next" onclick="nextFact()">Next ➡</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-comics" class="ui-screen">
+            <div class="ad-banner">📢 <span>AD SPACE</span> — Your brand here · ads@mazeman.com</div>
+            <div class="comics-filter">
+                <button class="filter-btn active" onclick="filterComics('all',this)">ALL</button>
+                <button class="filter-btn" onclick="filterComics('social',this)">SOCIAL</button>
+                <button class="filter-btn" onclick="filterComics('cognitive',this)">COGNITIVE</button>
+                <button class="filter-btn" onclick="filterComics('neuro',this)">NEURO</button>
+            </div>
+            <div class="comics-grid" id="comics-grid"></div>
+        </div>
+
+        <div id="screen-videos" class="ui-screen">
+            <div class="content-card" style="background: #ff9aa2;">
+                <h2 id="vid-screen-title" style="font-family: 'Bangers', cursive; font-size: 2.5em; margin-bottom: 15px;">VIDEO LESSONS</h2>
+
+                <!-- Real coded video player -->
+                <div class="video-player-wrap">
+                    <!-- Main canvas -->
+                    <canvas id="vid-canvas" width="420" height="200" onclick="vidTogglePlay()"></canvas>
+                    <!-- Pre-play overlay -->
+                    <div class="vid-overlay" id="vid-overlay">
+                        <div class="vid-overlay-title" id="vid-ep-title">Episode 1: Greeting</div>
+                        <button class="vid-big-play" onclick="vidPlay()">▶</button>
+                    </div>
+                    <!-- Controls bar -->
+                    <div class="vid-controls">
+                        <div class="vid-prog-row">
+                            <span class="vid-time" id="vid-time">0:00 / 0:00</span>
+                            <div class="vid-bar-outer" id="vid-bar-outer" onclick="vidSeek(event)">
+                                <div class="vid-bar-inner" id="vid-bar"></div>
+                                <div class="vid-thumb" id="vid-thumb"></div>
+                            </div>
+                        </div>
+                        <div class="vid-btn-row">
+                            <div class="vid-left-btns">
+                                <button class="vid-play-btn" id="vid-play-btn" onclick="vidTogglePlay()">▶</button>
+                                <button class="vid-ic-btn" onclick="vidToggleMute()" id="vid-mute-btn" title="Volume">🔊</button>
+                                <input type="range" class="vid-vol-slider" id="vid-vol" min="0" max="1" step="0.05" value="1" oninput="vidSetVolume(this.value)">
+                            </div>
+                            <div class="vid-right-btns">
+                                <button class="vid-ic-btn" onclick="vidRestart()" title="Restart">↺</button>
+                                <button class="vid-ic-btn" onclick="vidFullscreen()" title="Fullscreen">⛶</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="vid-sub-text" style="font-size:1.1em; font-weight:bold; margin-top:14px;">Listen as The Maze Man welcomes you!</p>
+            </div>
+        </div>
+
+        <!-- FULLSCREEN PLAYER -->
+        <div id="vid-fullscreen">
+            <canvas id="vid-fs-canvas" width="420" height="200" onclick="vidTogglePlay()"></canvas>
+            <div class="vid-fs-bar">
+                <button class="vid-fs-close" onclick="vidExitFullscreen()">✕</button>
+                <button class="vid-play-btn" id="vid-fs-play-btn" onclick="vidTogglePlay()">▶</button>
+                <div class="vid-bar-outer" style="flex:1;" onclick="vidSeek(event)">
+                    <div class="vid-bar-inner" id="vid-fs-bar"></div>
+                    <div class="vid-thumb" id="vid-fs-thumb"></div>
+                </div>
+                <span class="vid-time" id="vid-fs-time" style="color:#ccc;font-family:'DM Mono',monospace;font-size:.68em;">0:00 / 0:00</span>
+                <button class="vid-ic-btn" onclick="vidToggleMute()" style="color:#ccc;">🔊</button>
+            </div>
+        </div>
+
+        <div id="screen-profile" class="ui-screen">
+            <div class="profile-top">
+                <div class="profile-avatar-ring" id="profile-avatar" onclick="toggleAvatarPicker()">🧠
+                    <div class="profile-level-badge" id="profile-level-badge">LVL 1</div>
+                </div>
+                <div id="avatar-picker-wrap" style="display:none;">
+                    <div class="avatar-picker" id="avatar-picker">
+                        <span class="avatar-opt" onclick="setAvatar('🧠')">🧠</span>
+                        <span class="avatar-opt" onclick="setAvatar('🕵️')">🕵️</span>
+                        <span class="avatar-opt" onclick="setAvatar('🦊')">🦊</span>
+                        <span class="avatar-opt" onclick="setAvatar('🌀')">🌀</span>
+                        <span class="avatar-opt" onclick="setAvatar('🔮')">🔮</span>
+                        <span class="avatar-opt" onclick="setAvatar('👁️')">👁️</span>
+                    </div>
+                </div>
+                <div class="profile-username" id="profile-username">MAZE WALKER</div>
+                <div class="xp-bar-wrap" style="max-width:320px;">
+                    <div class="xp-bar-fill" id="profile-xp-bar" style="width:5%;"></div>
+                    <span class="xp-bar-label" id="profile-xp-label">0 / 200 XP</span>
+                </div>
+                <div class="xp-subtext" id="profile-xp-subtext">0 XP to next level</div>
+            </div>
+
+            <div class="streak-card">
+                <div style="font-size:2.5em;">🔥</div>
+                <div class="streak-info">
+                    <div class="streak-title">DAILY STREAK</div>
+                    <div class="streak-num" id="streak-num">1</div>
+                    <div class="streak-sub" id="streak-sub">Day in a row!</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:1.8em;">⚡</div>
+                    <div style="font-family:'Bangers';font-size:1.1em;color:#000;" id="profile-total-xp">0 XP</div>
+                </div>
+            </div>
+
+            <div class="section-heading">📊 STATS</div>
+            <div class="profile-stats">
+                <div class="stat-box"><div class="stat-num" id="stat-comics">0</div><div class="stat-label">COMICS READ</div></div>
+                <div class="stat-box"><div class="stat-num" id="stat-videos">0</div><div class="stat-label">VIDEOS WATCHED</div></div>
+                <div class="stat-box"><div class="stat-num" id="stat-frags">0</div><div class="stat-label">FRAGMENTS</div></div>
+                <div class="stat-box"><div class="stat-num" id="stat-puzzles">0</div><div class="stat-label">PUZZLES SOLVED</div></div>
+            </div>
+
+            <div class="section-heading">🏅 BADGES</div>
+            <div class="badges-grid">
+                <div class="badge-item" id="badge-reader"><span class="badge-icon">📖</span><div class="badge-name">FIRST READ</div></div>
+                <div class="badge-item locked" id="badge-explorer"><span class="badge-icon">🗺️</span><div class="badge-name">EXPLORER</div></div>
+                <div class="badge-item locked" id="badge-scholar"><span class="badge-icon">🎓</span><div class="badge-name">SCHOLAR</div></div>
+                <div class="badge-item locked" id="badge-maze"><span class="badge-icon">🌀</span><div class="badge-name">MAZE RUNNER</div></div>
+                <div class="badge-item locked" id="badge-social"><span class="badge-icon">🤝</span><div class="badge-name">SOCIAL</div></div>
+                <div class="badge-item locked" id="badge-master"><span class="badge-icon">🧠</span><div class="badge-name">MIND MASTER</div></div>
+            </div>
+
+            <div class="section-heading">⭐ MEMBERSHIP</div>
+            <div class="sub-card">
+                <div class="sub-title">FREE EXPLORER</div>
+                <ul class="sub-perks">
+                    <li>✅ 4 Free Comic Issues</li>
+                    <li>✅ Video Episode 1</li>
+                    <li>✅ Maze Game Access</li>
+                    <li>🔒 Premium Comics (VOL.05–08)</li>
+                    <li>🔒 Exclusive Videos & Interviews</li>
+                </ul>
+                <button class="sub-upgrade-btn" onclick="openPaywall()">⭐ GO PREMIUM — $4.99/mo</button>
+            </div>
+            <div style="height:10px;"></div>
+        </div>
+
+        <!-- SHOP SCREEN -->
+        <div id="screen-shop" class="ui-screen">
+            <div class="shop-banner">
+                <div class="shop-banner-title">🛒 MAZE STORE</div>
+                <div class="shop-banner-sub">Support the creator · Wear the mind</div>
+            </div>
+            <div class="ad-banner">📢 <span>SPONSORED</span> — Promote your brand here · ads@mazeman.com</div>
+
+            <div class="shop-section-title">👕 MERCH</div>
+            <div class="shop-grid">
+                <div class="shop-item">
+                    <div class="shop-item-img" style="background:#ffe66d;">👕</div>
+                    <div class="shop-item-info">
+                        <div class="shop-item-name">MAZE MAN TEE</div>
+                        <div class="shop-item-price">$24.99</div>
+                        <button class="shop-btn" onclick="shopClick(this,'MAZE MAN TEE')">ADD TO CART</button>
+                    </div>
+                </div>
+                <div class="shop-item">
+                    <div class="shop-item-img" style="background:#b8c0ff;">🧥</div>
+                    <div class="shop-item-info">
+                        <div class="shop-item-name">LABYRINTH HOODIE</div>
+                        <div class="shop-item-price">$49.99</div>
+                        <button class="shop-btn" onclick="shopClick(this,'LABYRINTH HOODIE')">ADD TO CART</button>
+                    </div>
+                </div>
+                <div class="shop-item">
+                    <div class="shop-item-img" style="background:#ff9aa2;">🪧</div>
+                    <div class="shop-item-info">
+                        <div class="shop-item-name">STICKER PACK</div>
+                        <div class="shop-item-price">$8.99</div>
+                        <button class="shop-btn" onclick="shopClick(this,'STICKER PACK')">ADD TO CART</button>
+                    </div>
+                </div>
+                <div class="shop-item">
+                    <div class="shop-item-img" style="background:#a8e6cf;">🖼️</div>
+                    <div class="shop-item-info">
+                        <div class="shop-item-name">POSTER PRINT</div>
+                        <div class="shop-item-price">$19.99</div>
+                        <button class="shop-btn" onclick="shopClick(this,'POSTER PRINT')">ADD TO CART</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="shop-section-title">📥 DIGITAL</div>
+            <div class="shop-grid">
+                <div class="shop-item">
+                    <div class="shop-item-img" style="background:#4ecdc4;">📚</div>
+                    <div class="shop-item-info">
+                        <div class="shop-item-name">COMIC BUNDLE PDF</div>
+                        <div class="shop-item-price">$9.99</div>
+                        <button class="shop-btn" onclick="shopClick(this,'COMIC BUNDLE PDF')">BUY NOW</button>
+                    </div>
+                </div>
+                <div class="shop-item">
+                    <div class="shop-item-img" style="background:#1a0b2e;">🖼️</div>
+                    <div class="shop-item-info">
+                        <div class="shop-item-name">WALLPAPER PACK</div>
+                        <div class="shop-item-price">$4.99</div>
+                        <button class="shop-btn" onclick="shopClick(this,'WALLPAPER PACK')">BUY NOW</button>
+                    </div>
+                </div>
+                <div class="shop-item">
+                    <div class="shop-item-img" style="background:#ffe66d;">🧠</div>
+                    <div class="shop-item-info">
+                        <div class="shop-item-name">PSYCH WORKBOOK</div>
+                        <div class="shop-item-price">$14.99</div>
+                        <button class="shop-btn coming-soon">COMING SOON</button>
+                    </div>
+                </div>
+                <div class="shop-item">
+                    <div class="shop-item-img" style="background:#ff6b6b;">🎨</div>
+                    <div class="shop-item-info">
+                        <div class="shop-item-name">ART PRINTS NFT</div>
+                        <div class="shop-item-price">TBD</div>
+                        <button class="shop-btn coming-soon">COMING SOON</button>
+                    </div>
+                </div>
+            </div>
+            <div style="height:10px;"></div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('home', this)">
+                <span class="nav-icon">🏠</span><span class="nav-label">HOME</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('comics', this)">
+                <span class="nav-icon">📚</span><span class="nav-label">COMICS</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('videos', this)">
+                <span class="nav-icon">🎬</span><span class="nav-label">VIDEOS</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('profile', this)">
+                <span class="nav-icon">👤</span><span class="nav-label">PROFILE</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('shop', this)">
+                <span class="nav-icon">🛒</span><span class="nav-label">SHOP</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAYWALL MODAL -->
+    <div id="paywall-modal">
+        <div class="paywall-card">
+            <button class="paywall-close" onclick="closePaywall()">✕</button>
+            <div class="paywall-icon">⭐</div>
+            <div class="paywall-title">GO PREMIUM</div>
+            <p style="font-size:0.9em;color:#555;">Unlock the full Maze Man universe</p>
+            <ul class="paywall-perks">
+                <li>📚 All 8+ Comic Issues (incl. future)</li>
+                <li>🎬 Full Video Library + Interviews</li>
+                <li>🎮 Exclusive Maze Levels</li>
+                <li>🏅 Premium Badges & Avatar Frames</li>
+                <li>📥 Monthly Digital Downloads</li>
+            </ul>
+            <button class="paywall-btn" onclick="paywallSubscribe()">⭐ $4.99 / MONTH</button>
+            <button class="paywall-btn" style="background:#4ecdc4;margin-top:8px;" onclick="paywallSubscribe()">🔥 $39.99 / YEAR (SAVE 33%)</button>
+            <p class="paywall-sub">Cancel anytime. Secure payment via Stripe.</p>
+        </div>
+    </div>
+
+    <!-- TIP JAR MODAL -->
+    <div id="tip-modal">
+        <div class="tip-card">
+            <button class="tip-card-close" onclick="closeTip()">✕</button>
+            <div style="font-size:2.5em;margin-bottom:8px;">☕</div>
+            <div style="font-family:'Bangers',cursive;font-size:1.8em;letter-spacing:2px;margin-bottom:6px;">SUPPORT ELIE</div>
+            <p style="font-size:0.9em;color:#555;margin-bottom:4px;">Buy a coffee to keep The Maze Man running!</p>
+            <div class="tip-amounts">
+                <div class="tip-amount" onclick="tipAmount(2)">☕ $2</div>
+                <div class="tip-amount" onclick="tipAmount(5)">🧃 $5</div>
+                <div class="tip-amount" onclick="tipAmount(10)">🍕 $10</div>
+            </div>
+            <div class="tip-platforms">
+                <button class="tip-platform-btn" style="background:#ffe66d;" onclick="tipPlatform('Ko-fi')">☕ Ko-fi</button>
+                <button class="tip-platform-btn" style="background:#ff6b6b;color:#fff;" onclick="tipPlatform('Patreon')">🎨 Patreon</button>
+                <button class="tip-platform-btn" style="background:#4ecdc4;" onclick="tipPlatform('Buy Me a Coffee')">☕ Buy Me a Coffee</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FLOATING TIP BUTTON -->
+    <button id="tip-btn" onclick="openTip()" title="Support the creator!">☕</button>
+
+    <div id="comic-reader">
+        <div class="reader-panel">
+            <button class="reader-close" onclick="closeComic()">X</button>
+            <h2 id="comic-title" style="font-family: 'Bangers'; font-size: 2em; margin-bottom: 20px;">Title</h2>
+            <div id="comic-page-text">Page text goes here...</div>
+            <div class="reader-controls">
+                <button class="reader-btn" onclick="turnPage(-1)">⬅️ PREV</button>
+                <button class="reader-btn" onclick="turnPage(1)">NEXT ➡️</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="maze-container">
+        <canvas id="renderCanvas"></canvas>
+        <div id="joystick-wrapper"><canvas id="joystick-canvas" width="150" height="150"></canvas></div>
+
+        <div id="content-wrapper">
+            <div class="maze-topbar glass-panel" id="main-topbar">
+              <div class="brand">
+                <div class="xp-pill" id="global-xp-2" style="background: var(--amber); box-shadow: 0 0 10px var(--amber-ring);">⚡ 0 XP</div>
+                <div>
+                  <div class="brand-name">The Core</div>
+                  <div class="brand-sub">Martian Sector</div>
+                </div>
+              </div>
+              <button class="btn-hub" onclick="exitToHub()">EXIT TO HUB</button>
+            </div>
+
+            <div id="floating-instruction">Look down. Click the labyrinth to enter.</div>
+
+            <div id="screen-puzzle" class="maze-screen glass-panel">
+                <div class="hero-title">Core Firewall</div>
+                <div class="hero-sub">Cognitive Override Required.<br>What is the primary gateway domain to the mind?</div>
+                <input type="text" id="puzzle-answer" class="puzzle-input" placeholder="Enter Domain Name...">
+                <button class="btn-cta" onclick="checkPuzzle()">Submit Override</button>
+            </div>
+
+            <div id="screen-victory" class="maze-screen glass-panel">
+                <div class="hero-title">Core Unlocked</div>
+                <div class="hero-sub">Data secured. Memory fragments uploaded successfully.</div>
+                <button class="btn-cta" onclick="exitCinematicMaze(); showMazeScreen('none');">Return to Orbit</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ══════════════════════════════════════════
+           CORE STATE & AUDIO
+        ══════════════════════════════════════════ */
+        let globalXP = 0;
+        let audioCtx = null;
+
+        function updateXP(amount) {
+            globalXP += amount;
+            document.getElementById('global-xp-1').innerText = `⚡ ${globalXP} XP`;
+            const el2 = document.getElementById('global-xp-2');
+            if (el2) el2.innerText = `⚡ ${globalXP} XP`;
+            const pill = document.getElementById('global-xp-1');
+            pill.style.transform = 'scale(1.2)';
+            setTimeout(() => pill.style.transform = 'scale(1)', 200);
+        }
+
+        function initAudio() {
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (AC && !audioCtx) audioCtx = new AC();
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            } catch(e) {}
+        }
+
+        function playTone(freq, type, dur, vol=0.12) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                g.gain.setValueAtTime(vol, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+                osc.connect(g); g.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + dur);
+            } catch(e) {}
+        }
+
+        function playSfx(name) {
+            initAudio();
+            if (name==='click')   playTone(600,'sine',0.1);
+            if (name==='collect') { playTone(800,'sine',0.1); setTimeout(()=>playTone(1200,'sine',0.15),100); }
+            if (name==='error')   playTone(200,'sawtooth',0.3);
+            if (name==='win')     { playTone(400,'square',0.1); setTimeout(()=>playTone(600,'square',0.1),100); setTimeout(()=>playTone(800,'square',0.3),200); }
+        }
+
+        function stopSpeech() {
+            try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch(e) {}
+        }
+
+        /* ══════════════════════════════════════════
+           LANGUAGE TOGGLE
+        ══════════════════════════════════════════ */
+        let currentLang = 'en';
+        const LANG = {
+            en: {
+                logo:'THE MAZE MAN', btn:'عربي',
+                nav:['HOME','COMICS','VIDEOS','PROFILE'],
+                comicsEN:['SOCIAL<br>PSYCHOLOGY','ABOUT<br>THE PAGE','COGNITIVE<br>PSYCHOLOGY'],
+                enterMaze:'ENTER MAZE',
+                vidTitle:'VIDEO LESSONS', epTitle:'Episode 1: Greeting',
+                vidSub:'Listen as The Maze Man welcomes you!',
+                speech:'Greetings... traveler. I am the Maze Man. Your mind is a labyrinth. Welcome to the core of cognitive psychology. Prepare yourself... the maze is watching.',
+                floatInstr:'Look down. Click the labyrinth to enter.',
+                exitHub:'EXIT TO HUB',
+            },
+            ar: {
+                logo:'رجل المتاهة', btn:'English',
+                nav:['البيت','القصص','فيديو','ملفي'],
+                comicsAR:['علم النفس<br>الاجتماعي','عن<br>الصفحة','علم النفس<br>المعرفي'],
+                enterMaze:'ادخل المتاهة',
+                vidTitle:'مقاطع الفيديو', epTitle:'الحلقة ١: التحية',
+                vidSub:'!استمع لرجل المتاهة وهو يرحب بك',
+                speech:'تحياتي... أيها المسافر. أنا رجل المتاهة. عقلك متاهة. أهلاً بك في قلب علم النفس المعرفي. استعد... المتاهة تراقبك.',
+                floatInstr:'انظر لأسفل. انقر المتاهة للدخول.',
+                exitHub:'خروج',
+            }
+        };
+
+        function toggleLang() {
+            playSfx('click');
+            currentLang = currentLang==='en' ? 'ar' : 'en';
+            const isAr = currentLang==='ar';
+            const t = LANG[currentLang];
+            document.documentElement.lang = currentLang;
+            document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+
+            // logo
+            const logo = document.getElementById('logo-text');
+            logo.textContent = t.logo;
+            logo.style.fontFamily = isAr ? "'Cairo',sans-serif" : "'Bangers',cursive";
+            logo.style.fontSize = isAr ? '1.5em' : '2em';
+            document.getElementById('lang-btn').textContent = t.btn;
+
+            // nav
+            document.querySelectorAll('.nav-label').forEach((el,i) => {
+                el.textContent = t.nav[i]||el.textContent;
+                el.style.fontFamily = isAr ? "'Cairo',sans-serif" : "'Bangers',cursive";
+            });
+
+            // home title
+            const mt = document.querySelector('.main-title');
+            if (mt) {
+                mt.textContent = isAr ? 'رجل المتاهة' : 'THE MAZE MAN';
+                mt.style.fontFamily = isAr ? "'Cairo',sans-serif" : "'Bangers',cursive";
+                mt.style.fontSize = isAr ? '2.4em' : '3.2em';
+            }
+            const cc = document.querySelector('.colorful-comics');
+            if (cc) {
+                cc.innerHTML = isAr
+                    ? '<span style="color:#ff6b6b">ك</span><span style="color:#4ecdc4">و</span><span style="color:#ffe66d">م</span><span style="color:#a8e6cf">ي</span><span style="color:#ff9aa2">ك</span><span style="color:#b8c0ff">س</span>'
+                    : '<span style="color:#ff6b6b;">C</span><span style="color:#4ecdc4;">O</span><span style="color:#ffe66d;">M</span><span style="color:#a8e6cf;">I</span><span style="color:#ff9aa2;">C</span><span style="color:#b8c0ff;">S</span>';
+                cc.style.fontFamily = isAr ? "'Cairo',sans-serif" : "'Bangers',cursive";
+                cc.style.fontSize = isAr ? '2em' : '2.8em';
+            }
+            // comic squares
+            const sqT = document.querySelectorAll('.comic-cover-title');
+            const sqE = ['SOCIAL<br>PSYCHOLOGY','ABOUT<br>THE PAGE','COGNITIVE<br>PSYCHOLOGY'];
+            const sqA = ['علم النفس<br>الاجتماعي','عن<br>الصفحة','علم النفس<br>المعرفي'];
+            sqT.forEach((el,i)=>{ el.innerHTML=isAr?(sqA[i]||el.innerHTML):(sqE[i]||el.innerHTML); el.style.fontFamily=isAr?"'Cairo',sans-serif":"'Bangers',cursive"; });
+            // enter maze btn
+            const eb = document.querySelector('.comic-btn');
+            if (eb) eb.innerHTML = t.enterMaze+' <span style="font-size:.8em">➡️</span>';
+
+            // video
+            const vst = document.getElementById('vid-screen-title');
+            if (vst) { vst.textContent=t.vidTitle; vst.style.fontFamily=isAr?"'Cairo',sans-serif":"'Bangers',cursive"; }
+            const vet = document.getElementById('vid-ep-title');
+            if (vet) vet.textContent = t.epTitle;
+            const vsub = document.getElementById('vid-sub-text');
+            if (vsub) vsub.textContent = t.vidSub;
+
+            // maze
+            const fi = document.getElementById('floating-instruction');
+            if (fi) fi.textContent = t.floatInstr;
+            const hub = document.querySelector('.btn-hub');
+            if (hub) hub.textContent = t.exitHub;
+        }
+
+        // Pre-warm speech
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        }
+
+        /* ══════════════════════════════════════════
+           MAZE BACKGROUND — drawn in code
+           Recursive backtracker, semi-transparent
+        ══════════════════════════════════════════ */
+        (function() {
+            const c = document.getElementById('maze-bg-canvas');
+            if (!c) return;
+            const ctx = c.getContext('2d');
+            const CELL = 30;
+            let cols, rows, grid, raf;
+
+            function resize() {
+                c.width  = window.innerWidth;
+                c.height = window.innerHeight;
+                cols = Math.max(2, Math.floor(c.width  / CELL));
+                rows = Math.max(2, Math.floor(c.height / CELL));
+                generate();
+                draw();
+            }
+
+            function generate() {
+                grid = Array.from({length:rows}, () =>
+                    Array.from({length:cols}, () => ({t:true,r:true,b:true,l:true,v:false}))
+                );
+                function carve(cc,rr) {
+                    grid[rr][cc].v=true;
+                    [[0,-1,'t','b'],[1,0,'r','l'],[0,1,'b','t'],[-1,0,'l','r']]
+                        .sort(()=>Math.random()-.5)
+                        .forEach(([dc,dr,wa,wb])=>{
+                            const nc=cc+dc, nr=rr+dr;
+                            if(nc>=0&&nc<cols&&nr>=0&&nr<rows&&!grid[nr][nc].v){
+                                grid[rr][cc][wa]=false; grid[nr][nc][wb]=false; carve(nc,nr);
+                            }
+                        });
+                }
+                carve(0,0);
+            }
+
+            function draw() {
+                ctx.clearRect(0,0,c.width,c.height);
+                // White background for maze
+                ctx.fillStyle='#fff';
+                ctx.fillRect(0,0,c.width,c.height);
+                // Black walls
+                ctx.strokeStyle='#000'; ctx.lineWidth=2.2; ctx.lineCap='square';
+                for(let r=0;r<rows;r++) for(let cc=0;cc<cols;cc++) {
+                    const cell=grid[r][cc];
+                    const x=cc*CELL, y=r*CELL;
+                    if(cell.t){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+CELL,y);ctx.stroke();}
+                    if(cell.r){ctx.beginPath();ctx.moveTo(x+CELL,y);ctx.lineTo(x+CELL,y+CELL);ctx.stroke();}
+                    if(cell.b){ctx.beginPath();ctx.moveTo(x,y+CELL);ctx.lineTo(x+CELL,y+CELL);ctx.stroke();}
+                    if(cell.l){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+CELL);ctx.stroke();}
+                }
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+        })();
+
+        /* ══════════════════════════════════════════
+           STICKERS — auto-float + proper drag (viewport vs offsetParent fixed via getBoundingClientRect)
+        ══════════════════════════════════════════ */
+        function initStickers() {
+            const stickers = Array.from(document.querySelectorAll('.sticker'));
+            const canvas = document.getElementById('sticker-canvas');
+            if (!canvas) return;
+            const durations = [2.8,3.4,2.5,3.8,3.1,2.7,3.5,2.9];
+            const delays    = [0,0.6,1.2,0.3,1.8,0.9,0.4,1.5];
+
+            stickers.forEach((s,i) => {
+                const rot = s.dataset.initialRot || 0;
+                s.style.setProperty('--rot', rot+'deg');
+                s.style.setProperty('--dur', durations[i%durations.length]+'s');
+                s.style.setProperty('--delay', delays[i%delays.length]+'s');
+                s.classList.add('floating');
+            });
+
+            stickers.forEach(s => {
+                let dragging = false;
+                let grabDX = 0, grabDY = 0;
+
+                function onPointerDown(e) {
+                    if (e.pointerType === 'mouse' && e.button !== 0) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try { s.setPointerCapture(e.pointerId); } catch (_) {}
+                    dragging = true;
+                    playSfx('click');
+                    s.classList.remove('floating');
+                    s.style.zIndex = '200';
+                    s.style.transition = 'none';
+                    s.style.right = 'auto';
+                    s.style.bottom = 'auto';
+                    const sRect = s.getBoundingClientRect();
+                    const cRect = canvas.getBoundingClientRect();
+                    grabDX = e.clientX - sRect.left;
+                    grabDY = e.clientY - sRect.top;
+                    s.style.left = (sRect.left - cRect.left + canvas.scrollLeft) + 'px';
+                    s.style.top = (sRect.top - cRect.top + canvas.scrollTop) + 'px';
+                }
+                function onPointerMove(e) {
+                    if (!dragging) return;
+                    e.preventDefault();
+                    const cRect = canvas.getBoundingClientRect();
+                    const nx = e.clientX - cRect.left - grabDX;
+                    const ny = e.clientY - cRect.top - grabDY;
+                    s.style.left = nx + 'px';
+                    s.style.top = ny + 'px';
+                }
+                function onPointerUp(e) {
+                    if (!dragging) return;
+                    dragging = false;
+                    try { s.releasePointerCapture(e.pointerId); } catch (_) {}
+                    s.style.zIndex = '50';
+                    s.classList.add('floating');
+                }
+
+                s.addEventListener('pointerdown', onPointerDown);
+                s.addEventListener('pointermove', onPointerMove);
+                s.addEventListener('pointerup', onPointerUp);
+                s.addEventListener('pointercancel', onPointerUp);
+            });
+        }
+
+        /* ══════════════════════════════════════════
+           VIDEO PLAYER — fully coded, real controls
+        ══════════════════════════════════════════ */
+        let vidAnimFrame = null;
+        let vidPlaying   = false;
+        let vidMuted     = false;
+        let vidVolume    = 1;
+        let vidStart     = 0;
+        let vidDuration  = 0;
+        let vidElapsed   = 0;
+        let vidPauseAt   = 0;
+        let vidSpeechUtt = null;
+        let vidIsFS      = false;
+
+        function vidGetCanvas() {
+            return vidIsFS
+                ? document.getElementById('vid-fs-canvas')
+                : document.getElementById('vid-canvas');
+        }
+
+        function vidDraw(time) {
+            const canvas = vidGetCanvas();
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width, H = canvas.height;
+            const t = time;
+            const cx = W/2, cy = H/2;
+
+            // BG
+            ctx.fillStyle='#0d0520'; ctx.fillRect(0,0,W,H);
+            // halftone
+            ctx.fillStyle='rgba(255,255,255,.025)';
+            for(let rr=0;rr<H;rr+=10) for(let cc=0;cc<W;cc+=10){ctx.beginPath();ctx.arc(cc,rr,1,0,Math.PI*2);ctx.fill();}
+
+            // Ground shadow
+            ctx.fillStyle='rgba(0,0,0,.35)';
+            ctx.beginPath();ctx.ellipse(cx,H-12,65,12,0,0,Math.PI*2);ctx.fill();
+
+            // Cloak
+            ctx.fillStyle='#252530';ctx.strokeStyle='#000';ctx.lineWidth=4;
+            ctx.beginPath();ctx.moveTo(cx-75,H-15);ctx.lineTo(cx+75,H-15);ctx.lineTo(cx+55,cy+15);ctx.lineTo(cx,cy+5);ctx.lineTo(cx-55,cy+15);ctx.closePath();ctx.fill();ctx.stroke();
+            // Trim
+            ctx.strokeStyle='#424252';ctx.lineWidth=2.5;
+            ctx.beginPath();ctx.moveTo(cx-55,cy+15);ctx.lineTo(cx-75,H-15);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(cx+55,cy+15);ctx.lineTo(cx+75,H-15);ctx.stroke();
+            // Fists
+            ctx.fillStyle='#1a1a28';ctx.strokeStyle='#000';ctx.lineWidth=2.5;
+            ctx.beginPath();ctx.ellipse(cx-78,cy+50,13,10,.3,0,Math.PI*2);ctx.fill();ctx.stroke();
+            ctx.beginPath();ctx.ellipse(cx+78,cy+50,13,10,-.3,0,Math.PI*2);ctx.fill();ctx.stroke();
+            // Boots
+            ctx.fillStyle='#111';ctx.strokeStyle='#000';ctx.lineWidth=2.5;
+            ctx.beginPath();ctx.ellipse(cx-32,H-14,22,9,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+            ctx.beginPath();ctx.ellipse(cx+32,H-14,22,9,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+
+            // Hood back
+            ctx.fillStyle='#1a1a28';ctx.strokeStyle='#000';ctx.lineWidth=4;
+            ctx.beginPath();ctx.arc(cx,cy-28,65,0,Math.PI*2);ctx.fill();ctx.stroke();
+            // Hood front
+            ctx.fillStyle='#222230';
+            ctx.beginPath();ctx.arc(cx,cy-20,54,0,Math.PI*2);ctx.fill();
+            // Face void
+            ctx.fillStyle='#04040a';
+            ctx.beginPath();ctx.arc(cx,cy-16,42,0,Math.PI*2);ctx.fill();
+
+            // Eyes glow
+            const glow=8+Math.sin(t*2)*5;
+            ctx.fillStyle='#ffe66d';ctx.shadowColor='#ffe66d';ctx.shadowBlur=glow;
+            ctx.save();ctx.translate(cx-18,cy-26);ctx.rotate(Math.PI/8);ctx.beginPath();ctx.ellipse(0,0,13,5.5,0,0,Math.PI*2);ctx.fill();ctx.restore();
+            ctx.save();ctx.translate(cx+18,cy-26);ctx.rotate(-Math.PI/8);ctx.beginPath();ctx.ellipse(0,0,13,5.5,0,0,Math.PI*2);ctx.fill();ctx.restore();
+            ctx.shadowBlur=0;
+
+            // Mask
+            ctx.fillStyle='#1e1e2a';ctx.strokeStyle='#000';ctx.lineWidth=3;
+            ctx.beginPath();ctx.arc(cx,cy-4,32,Math.PI,0,true);ctx.fill();ctx.stroke();
+            // Mouth animate
+            const mOpen=Math.abs(Math.sin(t*4.5))*14;
+            ctx.fillStyle='#000';
+            ctx.beginPath();ctx.ellipse(cx,cy-4,13,mOpen+1.5,0,0,Math.PI*2);ctx.fill();
+
+            // Hood rim highlight
+            ctx.strokeStyle='#363646';ctx.lineWidth=2;
+            ctx.beginPath();ctx.arc(cx,cy-28,65,Math.PI*1.1,Math.PI*1.9);ctx.stroke();
+
+            // Labels
+            const isAr=currentLang==='ar';
+            ctx.fillStyle='rgba(255,230,109,.9)';
+            ctx.font=`bold ${Math.round(W*.032)}px Bangers,cursive`;
+            ctx.textAlign='center';
+            ctx.fillText(isAr?'الحلقة ١ — التحية':'EP.01 — THE GREETING', cx, 20);
+            ctx.font=`${Math.round(W*.025)}px Comic Neue,cursive`;
+            ctx.fillStyle='rgba(255,255,255,.3)';
+            ctx.fillText(isAr?'...رجل المتاهة يتحدث إليك':'The Maze Man speaks to you...', cx, 36);
+        }
+
+        function vidAnimLoop() {
+            if (!vidPlaying) return;
+            const now = Date.now();
+            vidElapsed = vidPauseAt + (now - vidStart);
+            const t = vidElapsed / 1000;
+            vidDraw(t);
+            vidUpdateProgress(vidElapsed, vidDuration);
+            if (vidElapsed < vidDuration) {
+                vidAnimFrame = requestAnimationFrame(vidAnimLoop);
+            } else {
+                vidEnd();
+            }
+        }
+
+        function vidUpdateProgress(elapsed, total) {
+            const pct = total > 0 ? Math.min(100, elapsed/total*100) : 0;
+            const fmt = n => { const s=Math.floor(n/1000); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+            const timeStr = fmt(elapsed)+' / '+fmt(total);
+
+            // Normal player
+            const bar  = document.getElementById('vid-bar');
+            const thb  = document.getElementById('vid-thumb');
+            const tim  = document.getElementById('vid-time');
+            if (bar) bar.style.width = pct+'%';
+            if (thb) thb.style.left  = pct+'%';
+            if (tim) tim.textContent = timeStr;
+
+            // Fullscreen player
+            const fb  = document.getElementById('vid-fs-bar');
+            const fth = document.getElementById('vid-fs-thumb');
+            const ft  = document.getElementById('vid-fs-time');
+            if (fb) fb.style.width = pct+'%';
+            if (fth) fth.style.left = pct+'%';
+            if (ft) ft.textContent = timeStr;
+        }
+
+        function vidSpeakGreeting() {
+            if (!('speechSynthesis' in window) || vidMuted) return;
+            window.speechSynthesis.cancel();
+            const isAr = currentLang==='ar';
+            const text = LANG[currentLang].speech;
+            vidSpeechUtt = new SpeechSynthesisUtterance(text);
+            vidSpeechUtt.lang   = isAr ? 'ar-SA' : 'en-US';
+            vidSpeechUtt.pitch  = 0.4;
+            vidSpeechUtt.rate   = 0.85;
+            vidSpeechUtt.volume = vidMuted ? 0 : vidVolume;
+            // Pick best voice
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length) {
+                const v = isAr
+                    ? voices.find(v=>v.lang&&v.lang.startsWith('ar'))
+                    : voices.find(v=>v.lang&&v.lang.startsWith('en')&&/daniel|alex|google uk|google us|fred|thomas/i.test(v.name))
+                      || voices.find(v=>v.lang&&v.lang.startsWith('en'));
+                if (v) vidSpeechUtt.voice = v;
+            }
+            vidSpeechUtt.onend   = () => {};
+            vidSpeechUtt.onerror = () => {};
+            window.speechSynthesis.speak(vidSpeechUtt);
+        }
+
+        function vidPlay() {
+            initAudio();
+            playSfx('click');
+            const overlay = document.getElementById('vid-overlay');
+            if (overlay) overlay.style.display = 'none';
+
+            const isAr = currentLang==='ar';
+            const charCount = LANG[currentLang].speech.length;
+            vidDuration = Math.max(9000, charCount*68);
+            vidElapsed  = 0;
+            vidPauseAt  = 0;
+            vidPlaying  = true;
+            vidStart    = Date.now();
+
+            document.getElementById('vid-play-btn').textContent     = '⏸';
+            const fp = document.getElementById('vid-fs-play-btn');
+            if (fp) fp.textContent = '⏸';
+
+            vidSpeakGreeting();
+            vidAnimFrame = requestAnimationFrame(vidAnimLoop);
+        }
+
+        function vidTogglePlay() {
+            if (!vidPlaying) {
+                if (vidElapsed >= vidDuration && vidDuration > 0) vidElapsed = 0;
+                vidPauseAt = vidElapsed;
+                vidPlaying = true;
+                vidStart   = Date.now();
+                vidSpeakGreeting();
+                vidAnimFrame = requestAnimationFrame(vidAnimLoop);
+                document.getElementById('vid-play-btn').textContent = '⏸';
+                const fp = document.getElementById('vid-fs-play-btn');
+                if (fp) fp.textContent='⏸';
+            } else {
+                vidPlaying = false;
+                vidPauseAt = vidElapsed;
+                cancelAnimationFrame(vidAnimFrame);
+                stopSpeech();
+                document.getElementById('vid-play-btn').textContent = '▶';
+                const fp = document.getElementById('vid-fs-play-btn');
+                if (fp) fp.textContent='▶';
+            }
+        }
+
+        function vidEnd() {
+            vidPlaying = false;
+            cancelAnimationFrame(vidAnimFrame);
+            stopSpeech();
+            const overlay = document.getElementById('vid-overlay');
+            if (overlay) overlay.style.display='flex';
+            document.getElementById('vid-play-btn').textContent='▶';
+            const fp = document.getElementById('vid-fs-play-btn');
+            if (fp) fp.textContent='▶';
+            vidUpdateProgress(0,0);
+        }
+
+        function vidRestart() { stopSpeech(); vidElapsed=0; vidPauseAt=0; vidPlay(); }
+
+        function vidToggleMute() {
+            vidMuted = !vidMuted;
+            const btn = document.getElementById('vid-mute-btn');
+            if (btn) btn.textContent = vidMuted ? '🔇' : '🔊';
+            if (vidSpeechUtt) vidSpeechUtt.volume = vidMuted ? 0 : vidVolume;
+            if (vidMuted) stopSpeech();
+            else if (vidPlaying) vidSpeakGreeting();
+        }
+
+        function vidSetVolume(v) {
+            vidVolume = parseFloat(v);
+            if (vidSpeechUtt) vidSpeechUtt.volume = vidMuted ? 0 : vidVolume;
+        }
+
+        function vidSeek(e) {
+            const bar = e.currentTarget;
+            const rect = bar.getBoundingClientRect();
+            const pct = Math.max(0, Math.min(1, (e.clientX - rect.left)/rect.width));
+            vidElapsed  = pct * vidDuration;
+            vidPauseAt  = vidElapsed;
+            if (vidPlaying) {
+                vidStart = Date.now();
+                stopSpeech();
+                vidSpeakGreeting();
+            }
+            vidDraw(vidElapsed/1000);
+            vidUpdateProgress(vidElapsed, vidDuration);
+        }
+
+        function vidFullscreen() {
+            const fs = document.getElementById('vid-fullscreen');
+            fs.classList.add('on');
+            vidIsFS = true;
+            const fsc = document.getElementById('vid-fs-canvas');
+            fsc.width  = window.innerWidth;
+            fsc.height = window.innerHeight - 60;
+            if (vidPlaying) vidDraw(vidElapsed/1000);
+        }
+
+        function vidExitFullscreen() {
+            document.getElementById('vid-fullscreen').classList.remove('on');
+            vidIsFS = false;
+        }
+
+        // Draw initial frame on load
+        function vidInitDraw() {
+            const c = document.getElementById('vid-canvas');
+            if (!c) return;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle='#000'; ctx.fillRect(0,0,c.width,c.height);
+        }
+
+        /* ══════════════════════════════════════════
+           NAV TAB SWITCHING
+        ══════════════════════════════════════════ */
+        function switchTab(screenId, element) {
+            playSfx('click');
+            stopSpeech();
+            if (vidPlaying) { vidPlaying=false; cancelAnimationFrame(vidAnimFrame); }
+            document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+            element.classList.add('active');
+            document.querySelectorAll('.ui-screen').forEach(s=>{
+                s.style.opacity='0'; setTimeout(()=>s.classList.remove('active'),200);
+            });
+            setTimeout(()=>{
+                const target=document.getElementById('screen-'+screenId);
+                target.classList.add('active');
+                setTimeout(()=>target.style.opacity='1',50);
+                document.getElementById('ui-shell').scrollTo(0,0);
+            },200);
+        }
+
+        /* ══════════════════════════════════════════
+           INIT ON LOAD
+        ══════════════════════════════════════════ */
+        window.onload = () => {
+            vidInitDraw();
+            initStickers();
+        };
+
+        /* ══════════════════════════════════════════
+           COMIC READER LOGIC
+        ══════════════════════════════════════════ */
+        // --- COMIC READER LOGIC ---
+        const comics = {
+            social: { title: "Social Psychology", pages: ["Page 1: Humans are inherently social creatures. We thrive in tribes.", "Page 2: Group dynamics shape our reality, defining our norms and behaviors.", "Page 3: But what happens when the group goes wrong? End of Issue 1."] },
+            about: { title: "About The Page", pages: ["Welcome to The Maze Man.", "This is a prototype blending clinical psychology with interactive gameplay.", "Created to make learning cognitive concepts engaging and visceral."] },
+            cognitive: { title: "Cognitive Psychology", pages: ["Page 1: The brain is an information processing engine.", "Page 2: Attention, Memory, Language, and Perception are the gears.", "Page 3: Hack the gears, hack the mind. End of Issue 1."] }
+        };
+        let currentComic = null; let currentPage = 0;
+
+        function openComic(type) {
+            playSfx('click'); currentComic = comics[type]; currentPage = 0;
+            document.getElementById('comic-title').innerText = currentComic.title;
+            renderPage(); document.getElementById('comic-reader').style.display = 'flex';
+        }
+        function renderPage() { document.getElementById('comic-page-text').innerText = currentComic.pages[currentPage]; }
+        function turnPage(dir) {
+            playSfx('click'); currentPage += dir;
+            if(currentPage < 0) currentPage = 0;
+            if(currentPage >= currentComic.pages.length) currentPage = currentComic.pages.length - 1;
+            renderPage();
+        }
+        function closeComic() { playSfx('click'); document.getElementById('comic-reader').style.display = 'none'; }
+
+        // --- TRANSITIONS ---
+        function enterMaze() {
+            playSfx('click'); stopSpeech();
+            if (typeof BABYLON === 'undefined') { alert("Requires internet connection to load 3D Engine."); return; }
+            document.getElementById('ui-shell').style.display = 'none';
+            document.getElementById('maze-container').style.display = 'block';
+            if (engine) engine.resize();
+        }
+
+        function exitToHub() {
+            playSfx('click');
+            if (isMazeActive) exitCinematicMaze(); 
+            document.getElementById('maze-container').style.display = 'none';
+            document.getElementById('ui-shell').style.display = 'block';
+        }
+
+        // --- 3D BABYLON ENGINE LOGIC ---
+        function showMazeScreen(id){
+          document.querySelectorAll('.maze-screen').forEach(s => s.classList.remove('active'));
+          if(id !== 'none') document.getElementById('screen-' + id).classList.add('active');
+        }
+
+        function checkPuzzle() {
+            const answer = document.getElementById('puzzle-answer').value.toLowerCase().trim();
+            if(answer === "attention") { playSfx('win'); updateXP(100); showMazeScreen('victory');
+            } else { playSfx('error'); document.getElementById('puzzle-answer').value = ""; document.getElementById('puzzle-answer').placeholder = "ERROR. Try again..."; }
+        }
+
+        let bjsPlanetMat, camera, shadowGenerator, particleSystem, engine, scene;
+        let isMazeActive = false; let isAtBoss = false;
+        
+        const size = 31; const cellSize = 4; const MAZE_OFFSET_Y = -60; 
+        let maze = Array(size).fill().map(() => Array(size).fill(1));
+        
+        let playerCollider, playerVisual; let stickmanRig = {}; let collectibles = []; 
+        const inputMap = {}; let joyInput = { x: 0, z: 0 };
+        let targetPosition = null; let isPointerDown = false; let bossPosition = null;
+
+        const canvas3D = document.getElementById("renderCanvas");
+        
+        if (typeof BABYLON !== 'undefined') {
+            try {
+                engine = new BABYLON.Engine(canvas3D, true, { antialias: true });
+
+                const createScene = function () {
+                    const scene = new BABYLON.Scene(engine);
+                    scene.clearColor = new BABYLON.Color4(0.01, 0.01, 0.02, 1); scene.collisionsEnabled = true;
+
+                    camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 15, BABYLON.Vector3.Zero(), scene);
+                    camera.attachControl(canvas3D, true); camera.lowerRadiusLimit = 5; camera.upperRadiusLimit = 80;
+
+                    const ambientLight = new BABYLON.HemisphericLight("ambient", new BABYLON.Vector3(0, 1, 0), scene); ambientLight.intensity = 0.3; 
+                    const dirLight = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(-1, -2, 1), scene); dirLight.intensity = 1.0; dirLight.position = new BABYLON.Vector3(0, 50, 0);
+                    shadowGenerator = new BABYLON.ShadowGenerator(1024, dirLight); shadowGenerator.useBlurExponentialShadowMap = true; shadowGenerator.blurKernel = 32;
+
+                    const pipeline = new BABYLON.DefaultRenderingPipeline("pipeline", true, scene, [camera]);
+                    pipeline.bloomEnabled = true; pipeline.bloomThreshold = 0.3; pipeline.bloomWeight = 1.2;
+
+                    const skybox = BABYLON.MeshBuilder.CreateBox("skyBox", {size:1000.0}, scene);
+                    const skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene); skyboxMaterial.backFaceCulling = false; skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("https://playground.babylonjs.com/textures/skybox", scene); skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE; skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0); skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0); skybox.material = skyboxMaterial;
+
+                    bjsPlanetMat = new BABYLON.PBRMaterial("planet", scene); bjsPlanetMat.albedoColor = new BABYLON.Color3(0.8, 0.35, 0.15); bjsPlanetMat.metallic = 0.05; bjsPlanetMat.roughness = 0.9; bjsPlanetMat.bumpTexture = new BABYLON.Texture("https://playground.babylonjs.com/textures/rockn.png", scene); bjsPlanetMat.bumpTexture.level = 1.5;
+                    const planet = BABYLON.MeshBuilder.CreateSphere("planet", { diameter: 6, segments: 64 }, scene); planet.material = bjsPlanetMat;
+
+                    let bjsStars = new BABYLON.ParticleSystem("stars", 3000, scene); bjsStars.particleTexture = new BABYLON.Texture("https://playground.babylonjs.com/textures/flare.png", scene); bjsStars.emitter = new BABYLON.Vector3(0, 0, 80); bjsStars.minEmitBox = new BABYLON.Vector3(-60, -60, 0); bjsStars.maxEmitBox = new BABYLON.Vector3(60, 60, 0); bjsStars.direction1 = new BABYLON.Vector3(0, 0, -1); bjsStars.direction2 = new BABYLON.Vector3(0, 0, -1); bjsStars.minEmitPower = 40; bjsStars.maxEmitPower = 80; bjsStars.updateSpeed = 0.015; bjsStars.color1 = new BABYLON.Color4(1, 0.8, 0.6, 1); bjsStars.colorDead = new BABYLON.Color4(0, 0, 0, 0); bjsStars.minSize = 0.05; bjsStars.maxSize = 0.4; bjsStars.minLifeTime = 1; bjsStars.maxLifeTime = 3; bjsStars.emitRate = 1200; bjsStars.start();
+
+                    buildPlayer(scene); buildMaze(scene); setupEffects(scene); setupControls(scene); initVirtualJoystick();
+
+                    scene.onPointerObservable.add((pointerInfo) => {
+                        if (!isMazeActive) {
+                            if (!isAtBoss && pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN && pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh && pointerInfo.pickInfo.pickedMesh.isMaze) { enterCinematicMaze(); } return;
+                        }
+                        switch (pointerInfo.type) {
+                            case BABYLON.PointerEventTypes.POINTERDOWN: isPointerDown = true; if (pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh.name === "ground") { targetPosition = pointerInfo.pickInfo.pickedPoint.clone(); targetPosition.y = playerCollider.position.y; } break;
+                            case BABYLON.PointerEventTypes.POINTERMOVE: if (isPointerDown && pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh.name === "ground") { targetPosition = pointerInfo.pickInfo.pickedPoint.clone(); targetPosition.y = playerCollider.position.y; } break;
+                            case BABYLON.PointerEventTypes.POINTERUP: isPointerDown = false; break;
+                        }
+                    });
+
+                    scene.registerBeforeRender(() => {
+                        planet.rotation.y += 0.001; skybox.rotation.y += 0.0003; 
+                        if (isMazeActive && !isAtBoss) { camera.target.x = playerCollider.position.x; camera.target.z = playerCollider.position.z; }
+                    });
+                    return scene;
+                };
+
+                function buildPlayer(scene) {
+                    playerCollider = BABYLON.MeshBuilder.CreateBox("collider", {width: 1.5, height: 4.0, depth: 1.5}, scene);
+                    playerCollider.isVisible = false; playerCollider.checkCollisions = true; playerCollider.ellipsoid = new BABYLON.Vector3(0.7, 2.0, 0.7); 
+                    playerVisual = new BABYLON.TransformNode("stickman"); playerVisual.parent = playerCollider; playerVisual.position.y = -2.0; 
+
+                    const blackMat = new BABYLON.StandardMaterial("blackMat", scene); blackMat.diffuseColor = new BABYLON.Color3(0.01, 0.01, 0.01); blackMat.specularColor = new BABYLON.Color3(0.4, 0.4, 0.4); 
+                    const torso = BABYLON.MeshBuilder.CreateCylinder("torso", {height: 1.5, diameterTop: 0.8, diameterBottom: 0.4}, scene); torso.position.y = 1.8; torso.material = blackMat; torso.parent = playerVisual; shadowGenerator.addShadowCaster(torso);
+                    const head = BABYLON.MeshBuilder.CreateSphere("head", {diameter: 0.8}, scene); head.position.y = 1.0; head.material = blackMat; head.parent = torso; shadowGenerator.addShadowCaster(head);
+
+                    const leftHip = new BABYLON.TransformNode("leftHip"); leftHip.parent = torso; leftHip.position = new BABYLON.Vector3(-0.25, -0.75, 0);
+                    const rightHip = new BABYLON.TransformNode("rightHip"); rightHip.parent = torso; rightHip.position = new BABYLON.Vector3(0.25, -0.75, 0);
+                    const leftShoulder = new BABYLON.TransformNode("leftShoulder"); leftShoulder.parent = torso; leftShoulder.position = new BABYLON.Vector3(-0.5, 0.6, 0);
+                    const rightShoulder = new BABYLON.TransformNode("rightShoulder"); rightShoulder.parent = torso; rightShoulder.position = new BABYLON.Vector3(0.5, 0.6, 0);
+
+                    const legL = BABYLON.MeshBuilder.CreateCylinder("legL", {height: 1.4, diameterTop: 0.35, diameterBottom: 0.15}, scene); legL.position.y = -0.7; legL.material = blackMat; legL.parent = leftHip; shadowGenerator.addShadowCaster(legL);
+                    const legR = BABYLON.MeshBuilder.CreateCylinder("legR", {height: 1.4, diameterTop: 0.35, diameterBottom: 0.15}, scene); legR.position.y = -0.7; legR.material = blackMat; legR.parent = rightHip; shadowGenerator.addShadowCaster(legR);
+                    const armL = BABYLON.MeshBuilder.CreateCylinder("armL", {height: 1.2, diameterTop: 0.3, diameterBottom: 0.15}, scene); armL.position.y = -0.6; armL.material = blackMat; armL.parent = leftShoulder; shadowGenerator.addShadowCaster(armL);
+                    const armR = BABYLON.MeshBuilder.CreateCylinder("armR", {height: 1.2, diameterTop: 0.3, diameterBottom: 0.15}, scene); armR.position.y = -0.6; armR.material = blackMat; armR.parent = rightShoulder; shadowGenerator.addShadowCaster(armR);
+
+                    stickmanRig = { torso, leftHip, rightHip, leftShoulder, rightShoulder };
+                    let playerLight = new BABYLON.PointLight("pLight", new BABYLON.Vector3(0, 3, 0), scene); playerLight.diffuse = new BABYLON.Color3(1, 0.6, 0.2); playerLight.intensity = 1.8; playerLight.parent = playerVisual;
+                }
+
+                function buildMaze(scene) {
+                    function carve(x, y) {
+                        maze[y][x] = 0; let dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]]; dirs.sort(() => Math.random() - 0.5); 
+                        for (let i = 0; i < dirs.length; i++) { let nx = x + dirs[i][0] * 2; let ny = y + dirs[i][1] * 2; if (nx > 0 && nx < size - 1 && ny > 0 && ny < size - 1 && maze[ny][nx] === 1) { maze[y + dirs[i][1]][x + dirs[i][0]] = 0; carve(nx, ny); } }
+                    } carve(1, 1);
+
+                    let c = Math.floor(size / 2);
+                    for(let dy=-1; dy<=1; dy++){ for(let dx=-1; dx<=1; dx++){ maze[c+dy][c+dx] = 0; } } maze[c-2][c] = 0; maze[c-3][c] = 0; 
+
+                    const wallBase = BABYLON.MeshBuilder.CreateBox("wallBase", {width: cellSize, height: cellSize*1.5, depth: cellSize}, scene);
+                    const wallMat = new BABYLON.PBRMaterial("wallMat", scene); wallMat.albedoTexture = new BABYLON.Texture("https://playground.babylonjs.com/textures/rock.png", scene); wallMat.bumpTexture = new BABYLON.Texture("https://playground.babylonjs.com/textures/rockn.png", scene); wallMat.metallic = 0.2; wallMat.roughness = 0.9; wallMat.albedoColor = new BABYLON.Color3(0.5, 0.2, 0.1); wallBase.material = wallMat; wallBase.isVisible = false; 
+
+                    const fragMat = new BABYLON.StandardMaterial("fragMat", scene); fragMat.emissiveColor = new BABYLON.Color3(0, 1, 0.5); fragMat.wireframe = true;
+
+                    const offset = (size * cellSize) / 2;
+                    for(let y = 0; y < size; y++) { 
+                        for(let x = 0; x < size; x++) { 
+                            if (maze[y][x] === 1) { 
+                                let newWall = wallBase.createInstance(`w_${x}_${y}`); newWall.position = new BABYLON.Vector3((x * cellSize) - offset, MAZE_OFFSET_Y + cellSize/2, (y * cellSize) - offset); newWall.checkCollisions = true; newWall.isMaze = true; shadowGenerator.addShadowCaster(newWall); 
+                            } else if (maze[y][x] === 0 && Math.random() < 0.08 && !(x === c && y === c)) {
+                                let frag = BABYLON.MeshBuilder.CreateIcoSphere("frag", {radius: 0.6, subdivisions: 2}, scene); frag.position = new BABYLON.Vector3((x * cellSize) - offset, MAZE_OFFSET_Y + 1.5, (y * cellSize) - offset); frag.material = fragMat; collectibles.push(frag);
+                            }
+                        } 
+                    }
+
+                    const ground = BABYLON.MeshBuilder.CreateGround("ground", {width: size*cellSize + 10, height: size*cellSize + 10}, scene);
+                    const groundMat = new BABYLON.StandardMaterial("grassMat", scene); const grassTexture = new BABYLON.Texture("https://playground.babylonjs.com/textures/grass.png", scene); grassTexture.uScale = 25; grassTexture.vScale = 25; groundMat.diffuseTexture = grassTexture; groundMat.specularColor = new BABYLON.Color3(0.05, 0.05, 0.05); ground.material = groundMat; ground.receiveShadows = true; ground.checkCollisions = true; ground.isMaze = true; ground.position.y = MAZE_OFFSET_Y;
+
+                    playerCollider.position = new BABYLON.Vector3((1 * cellSize) - offset, MAZE_OFFSET_Y + 2.0, (1 * cellSize) - offset);
+                    bossPosition = new BABYLON.Vector3((c * cellSize) - offset, MAZE_OFFSET_Y + 0.5, (c * cellSize) - offset);
+                    let bossOrb = BABYLON.MeshBuilder.CreateSphere("bossOrb", { diameter: 2.5 }, scene); bossOrb.material = scene.getMaterialByName("planet"); bossOrb.position = bossPosition;
+                    let nodeLight = new BABYLON.PointLight("nodeLight", new BABYLON.Vector3(bossPosition.x, MAZE_OFFSET_Y + 3, bossPosition.z), scene); nodeLight.diffuse = new BABYLON.Color3(1, 0.4, 0); nodeLight.intensity = 2;
+                }
+
+                function setupEffects(scene) {
+                    const dt = new BABYLON.DynamicTexture("dustTex", 64, scene); const ctx = dt.getContext(); ctx.fillStyle = "rgba(100,150,100,1)"; ctx.beginPath(); ctx.arc(32, 32, 30, 0, Math.PI*2); ctx.fill(); dt.update();
+                    particleSystem = new BABYLON.ParticleSystem("dust", 500, scene); particleSystem.particleTexture = dt; particleSystem.emitter = playerCollider; particleSystem.color1 = new BABYLON.Color4(0.3, 0.5, 0.3, 0.6); particleSystem.colorDead = new BABYLON.Color4(0, 0, 0, 0); particleSystem.minSize = 0.3; particleSystem.maxSize = 0.8; particleSystem.minLifeTime = 0.2; particleSystem.maxLifeTime = 0.5; particleSystem.createSphereEmitter(0.5); particleSystem.emitRate = 0; 
+                }
+
+                function initVirtualJoystick() {
+                    const wrapper = document.getElementById('joystick-wrapper'); const joyCanvas = document.getElementById('joystick-canvas'); const jCtx = joyCanvas.getContext('2d'); let touchPos = null;
+                    function drawJoystick() { jCtx.clearRect(0, 0, 150, 150); jCtx.beginPath(); jCtx.arc(75, 75, 50, 0, Math.PI*2); jCtx.fillStyle = 'rgba(255, 255, 255, 0.1)'; jCtx.fill(); jCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; jCtx.stroke(); let kx = 75, ky = 75; if (touchPos) { kx = touchPos.x; ky = touchPos.y; } jCtx.beginPath(); jCtx.arc(kx, ky, 25, 0, Math.PI*2); jCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'; jCtx.fill(); requestAnimationFrame(drawJoystick); } drawJoystick();
+                    function updateJoystick(e) { e.preventDefault(); let clientX, clientY; if(e.touches) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; } else { clientX = e.clientX; clientY = e.clientY; } const rect = joyCanvas.getBoundingClientRect(); let dx = (clientX - rect.left) - 75; let dy = (clientY - rect.top) - 75; let distance = Math.min(Math.hypot(dx, dy), 50); let angle = Math.atan2(dy, dx); touchPos = { x: 75 + Math.cos(angle)*distance, y: 75 + Math.sin(angle)*distance }; joyInput.x = Math.cos(angle) * (distance / 50); joyInput.z = -Math.sin(angle) * (distance / 50); }
+                    wrapper.addEventListener('touchstart', updateJoystick, {passive: false}); wrapper.addEventListener('touchmove', updateJoystick, {passive: false}); wrapper.addEventListener('touchend', () => { touchPos = null; joyInput = {x: 0, z: 0}; }); let isMouseJoy = false; wrapper.addEventListener('mousedown', (e) => { isMouseJoy = true; updateJoystick(e); }); wrapper.addEventListener('mousemove', (e) => { if(isMouseJoy) updateJoystick(e); }); window.addEventListener('mouseup', () => { isMouseJoy = false; touchPos = null; joyInput = {x: 0, z: 0}; });
+                }
+
+                function enterCinematicMaze() {
+                    camera.detachControl(); document.getElementById('floating-instruction').style.opacity = '0'; targetPosition = null; 
+                    const frames = 90; 
+                    const targetAnim = new BABYLON.Animation("tAnim", "target", 60, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT); targetAnim.setKeys([{frame: 0, value: camera.target}, {frame: frames, value: playerCollider.position.clone()}]);
+                    const betaAnim = new BABYLON.Animation("bAnim", "beta", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT); betaAnim.setKeys([{frame: 0, value: camera.beta}, {frame: frames, value: 0.01}]); 
+                    const radiusAnim = new BABYLON.Animation("rAnim", "radius", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT); radiusAnim.setKeys([{frame: 0, value: camera.radius}, {frame: frames, value: 45}]); 
+                    const alphaAnim = new BABYLON.Animation("aAnim", "alpha", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT); alphaAnim.setKeys([{frame: 0, value: camera.alpha}, {frame: frames, value: -Math.PI / 2}]); 
+                    let ease = new BABYLON.CubicEase(); ease.setEasingMode(BABYLON.EasingFunction.EASINGMODE_EASEINOUT); targetAnim.setEasingFunction(ease); betaAnim.setEasingFunction(ease); radiusAnim.setEasingFunction(ease); alphaAnim.setEasingFunction(ease);
+
+                    camera.animations = [targetAnim, betaAnim, radiusAnim, alphaAnim];
+                    scene.beginAnimation(camera, 0, frames, false, 1, () => {
+                        isMazeActive = true; document.getElementById('joystick-wrapper').style.display = 'block';
+                        const instr = document.getElementById('floating-instruction'); instr.innerText = "Use Joystick or WASD to navigate. Collect fragments!"; instr.style.opacity = '1';
+                    });
+                }
+
+                function exitCinematicMaze() {
+                    isMazeActive = false; document.getElementById('joystick-wrapper').style.display = 'none'; document.getElementById('floating-instruction').style.opacity = '0'; 
+                    const offset = (size * cellSize) / 2; playerCollider.position = new BABYLON.Vector3((1 * cellSize) - offset, MAZE_OFFSET_Y + 2.0, (1 * cellSize) - offset); isAtBoss = false; 
+
+                    const frames = 90; 
+                    const targetAnim = new BABYLON.Animation("tAnim2", "target", 60, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT); targetAnim.setKeys([{frame: 0, value: camera.target}, {frame: frames, value: BABYLON.Vector3.Zero()}]);
+                    const betaAnim = new BABYLON.Animation("bAnim2", "beta", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT); betaAnim.setKeys([{frame: 0, value: camera.beta}, {frame: frames, value: Math.PI / 2.5}]); 
+                    const radiusAnim = new BABYLON.Animation("rAnim2", "radius", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT); radiusAnim.setKeys([{frame: 0, value: camera.radius}, {frame: frames, value: 15}]);
+                    let ease = new BABYLON.CubicEase(); ease.setEasingMode(BABYLON.EasingFunction.EASINGMODE_EASEINOUT); targetAnim.setEasingFunction(ease); betaAnim.setEasingFunction(ease); radiusAnim.setEasingFunction(ease);
+
+                    camera.animations = [targetAnim, betaAnim, radiusAnim];
+                    scene.beginAnimation(camera, 0, frames, false, 1, () => {
+                        camera.attachControl(canvas3D, true); 
+                        const instr = document.getElementById('floating-instruction'); instr.innerText = "Look down. Click the labyrinth to enter."; instr.style.opacity = '1';
+                    });
+                }
+
+                function setupControls(scene) {
+                    scene.actionManager = new BABYLON.ActionManager(scene);
+                    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, (evt) => { inputMap[evt.sourceEvent.key.toLowerCase()] = true; }));
+                    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, (evt) => { inputMap[evt.sourceEvent.key.toLowerCase()] = false; }));
+
+                    let speed = 0.35; let walkCycle = 0; 
+                    scene.onBeforeRenderObservable.add(() => {
+                        if(!isMazeActive || isAtBoss) return;
+
+                        for(let i=collectibles.length-1; i>=0; i--) {
+                            let col = collectibles[i]; col.rotation.y += 0.05;
+                            if(BABYLON.Vector3.Distance(playerCollider.position, col.position) < 2) {
+                                playSfx('collect'); updateXP(10); col.dispose(); collectibles.splice(i, 1);
+                            }
+                        }
+
+                        let moveVec = new BABYLON.Vector3(0, -0.2, 0); let isMoving = false; let isManualInput = false; let dirX = 0; let dirZ = 0;
+                        if (inputMap["w"] || inputMap["arrowup"]) { dirZ = 1; isManualInput = true; }
+                        if (inputMap["s"] || inputMap["arrowdown"]) { dirZ = -1; isManualInput = true; }
+                        if (inputMap["a"] || inputMap["arrowleft"]) { dirX = -1; isManualInput = true; }
+                        if (inputMap["d"] || inputMap["arrowright"]) { dirX = 1; isManualInput = true; }
+
+                        if (isManualInput) { targetPosition = null; let length = Math.sqrt(dirX * dirX + dirZ * dirZ); if (length > 0) { dirX /= length; dirZ /= length; } isMoving = true; } 
+                        else if (Math.abs(joyInput.x) > 0.05 || Math.abs(joyInput.z) > 0.05) { targetPosition = null; dirX = joyInput.x; dirZ = joyInput.z; isMoving = true; }
+                        else if (targetPosition) { let direction = targetPosition.subtract(playerCollider.position); direction.y = 0; let distance = direction.length(); if (distance > 0.5) { direction.normalize(); dirX = direction.x; dirZ = direction.z; isMoving = true; } else { targetPosition = null; } }
+
+                        if (isMoving) {
+                            let currentSpeed = Math.sqrt(dirX*dirX + dirZ*dirZ) * speed; moveVec.x = dirX * speed; moveVec.z = dirZ * speed;
+                            let targetAngle = Math.atan2(dirX, dirZ); playerVisual.rotation.y = BABYLON.Scalar.LerpAngle(playerVisual.rotation.y, targetAngle, 0.2);
+                            walkCycle += currentSpeed * 1.5; let swing = Math.sin(walkCycle) * (Math.PI / 4);
+                            stickmanRig.leftHip.rotation.x = swing; stickmanRig.rightHip.rotation.x = -swing; stickmanRig.leftShoulder.rotation.x = -swing; stickmanRig.rightShoulder.rotation.x = swing;
+                            stickmanRig.torso.rotation.x = BABYLON.Scalar.Lerp(stickmanRig.torso.rotation.x, Math.PI / 16, 0.1); stickmanRig.torso.position.y = 1.8 + Math.abs(Math.sin(walkCycle * 2)) * 0.15;
+                            particleSystem.emitRate = Math.abs(Math.sin(walkCycle * 2)) < 0.2 ? 40 : 0; 
+                        } else {
+                            stickmanRig.leftHip.rotation.x = BABYLON.Scalar.Lerp(stickmanRig.leftHip.rotation.x, 0, 0.1); stickmanRig.rightHip.rotation.x = BABYLON.Scalar.Lerp(stickmanRig.rightHip.rotation.x, 0, 0.1); stickmanRig.leftShoulder.rotation.x = BABYLON.Scalar.Lerp(stickmanRig.leftShoulder.rotation.x, 0, 0.1); stickmanRig.rightShoulder.rotation.x = BABYLON.Scalar.Lerp(stickmanRig.rightShoulder.rotation.x, 0, 0.1); stickmanRig.torso.rotation.x = BABYLON.Scalar.Lerp(stickmanRig.torso.rotation.x, 0, 0.1); stickmanRig.torso.position.y = BABYLON.Scalar.Lerp(stickmanRig.torso.position.y, 1.8, 0.1); particleSystem.emitRate = 0; 
+                        }
+
+                        playerCollider.moveWithCollisions(moveVec);
+
+                        if (BABYLON.Vector3.Distance(playerCollider.position, bossPosition) < 5) {
+                            isAtBoss = true; isMazeActive = false; 
+                            document.getElementById('joystick-wrapper').style.display = 'none'; document.getElementById('floating-instruction').style.opacity = '0';
+                            let finalAngle = Math.atan2(bossPosition.x - playerCollider.position.x, bossPosition.z - playerCollider.position.z); playerVisual.rotation.y = finalAngle;
+                            stickmanRig.torso.rotation.x = 0; stickmanRig.leftHip.rotation.x = 0; stickmanRig.rightHip.rotation.x = 0;
+                            document.getElementById('puzzle-answer').value = ""; document.getElementById('puzzle-answer').placeholder = "Enter Domain Name...";
+                            showMazeScreen('puzzle'); 
+                        }
+                    });
+                };
+
+                const engineInit = async () => { scene = await createScene(); engine.runRenderLoop(() => { scene.render(); }); };
+                engineInit();
+                window.addEventListener("resize", () => { if(engine) engine.resize(); });
+
+            } catch (e) {
+                console.warn("Babylon 3D Engine failed to load.", e);
+            }
+        }
+
+        /* ══════════════════════════════════════════
+           PWA — MANIFEST + SERVICE WORKER (INLINE)
+        ══════════════════════════════════════════ */
+        (function setupPWA() {
+            const manifest = {
+                name: "The Maze Man",
+                short_name: "Maze Man",
+                description: "Psychological comics — social & cognitive psychology, gamified.",
+                start_url: ".",
+                display: "standalone",
+                background_color: "#1a0b2e",
+                theme_color: "#1a0b2e",
+                orientation: "portrait",
+                icons: [
+                    { src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%231a0b2e'/><text y='75' x='10' font-size='75'>🧠</text></svg>", sizes: "192x192", type: "image/svg+xml" },
+                    { src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%231a0b2e'/><text y='75' x='10' font-size='75'>🧠</text></svg>", sizes: "512x512", type: "image/svg+xml" }
+                ]
+            };
+            const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+            const url  = URL.createObjectURL(blob);
+            const link = document.getElementById('pwa-manifest-link');
+            if (link) link.href = url;
+
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    const CACHE = 'maze-man-v7';
+                    self.addEventListener('install', e => {
+                        e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html'])));
+                        self.skipWaiting();
+                    });
+                    self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });
+                    self.addEventListener('fetch', e => {
+                        e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+                    });
+                `;
+                const swBlob = new Blob([swCode], { type: 'text/javascript' });
+                navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+            }
+        })();
+
+        /* ══════════════════════════════════════════
+           PSYCH FACTS — FACT OF THE DAY
+        ══════════════════════════════════════════ */
+        const PSYCH_FACTS = [
+            { text: "The bystander effect: the more people present in an emergency, the less likely any one person is to help.", cat: "Social Psychology" },
+            { text: "Cognitive dissonance occurs when we hold two conflicting beliefs — the discomfort pushes us to resolve the tension.", cat: "Cognitive Psychology" },
+            { text: "Mirror neurons fire both when we perform an action AND when we observe someone else doing it.", cat: "Neuroscience" },
+            { text: "The Dunning-Kruger effect: people with limited knowledge often overestimate their own competence.", cat: "Cognitive Biases" },
+            { text: "Social conformity is so powerful that people will deny obvious truths to match a group consensus.", cat: "Social Psychology" },
+            { text: "Working memory can hold only 7 ± 2 chunks of information at any time (Miller's Law).", cat: "Cognitive Psychology" },
+            { text: "Priming: exposure to one stimulus influences a response to a later stimulus, without conscious guidance.", cat: "Cognitive Psychology" },
+            { text: "The mere exposure effect: we tend to develop a preference for things simply because we are familiar with them.", cat: "Social Psychology" },
+            { text: "Stress shrinks the hippocampus — the brain region central to learning and memory formation.", cat: "Neuroscience" },
+            { text: "Emotional memories are stronger: the amygdala tags experiences with emotional significance to aid recall.", cat: "Neuroscience" },
+            { text: "The spotlight effect: we overestimate how much others notice and judge our appearance and behavior.", cat: "Social Psychology" },
+            { text: "Confirmation bias leads us to seek, interpret, and recall information that confirms our pre-existing beliefs.", cat: "Cognitive Biases" },
+        ];
+        const factCatColors = { "Social Psychology": "#ff9aa2", "Cognitive Psychology": "#b8c0ff", "Neuroscience": "#a8e6cf", "Cognitive Biases": "#ffe66d" };
+        let currentFactIdx = Math.floor(Math.random() * PSYCH_FACTS.length);
+
+        function renderFact() {
+            const f = PSYCH_FACTS[currentFactIdx];
+            const el = document.getElementById('fact-text');
+            const cat = document.getElementById('fact-cat');
+            if (el) el.textContent = f.text;
+            if (cat) { cat.textContent = f.cat; cat.style.background = factCatColors[f.cat] || '#4ecdc4'; }
+        }
+        function nextFact() {
+            playSfx('click');
+            currentFactIdx = (currentFactIdx + 1) % PSYCH_FACTS.length;
+            renderFact();
+            updateXP(2);
+        }
+
+        /* ══════════════════════════════════════════
+           COMICS DATA & GRID
+        ══════════════════════════════════════════ */
+        const COMICS_DATA = [
+            { id:'c1', vol:'VOL.01', title:'THE CONFORMITY TRAP', cat:'social', catLabel:'Social Psych', icon:'👥', bg:'#ff9aa2', free:true,
+              pages:["Page 1: Solomon Asch's conformity experiments showed that 75% of people gave obviously wrong answers to match a group.", "Page 2: When the group says the sky is green — do you agree? The pressure to belong rewires our perception of truth.", "Page 3: Conformity kept early humans safe in tribes. Today it keeps us silent in meetings. Are you conforming right now?"] },
+            { id:'c2', vol:'VOL.02', title:'MIRROR NEURONS', cat:'neuro', catLabel:'Neuroscience', icon:'🪞', bg:'#a8e6cf', free:true,
+              pages:["Page 1: In the 1990s, Giacomo Rizzolatti discovered mirror neurons — cells that fire when you act AND when you watch.", "Page 2: This is the neural basis of empathy. Your brain literally simulates the pain, joy, and fear of others.", "Page 3: Actors aren't pretending. Their mirror neuron systems are running a full simulation. So are you, right now."] },
+            { id:'c3', vol:'VOL.03', title:'THE MAZE WITHIN', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🌀', bg:'#b8c0ff', free:true,
+              pages:["Page 1: The mind is not a container. It is a process — constantly constructing reality from incomplete data.", "Page 2: Working memory holds 7±2 items. Everything else is compressed, distorted, or forgotten forever.", "Page 3: You are not remembering the past. You are reconstructing it, each time slightly differently."] },
+            { id:'c4', vol:'VOL.04', title:'GROUP DYNAMICS', cat:'social', catLabel:'Social Psych', icon:'🤝', bg:'#ffe66d', free:true,
+              pages:["Page 1: In any group of 3 or more, roles emerge: the leader, the challenger, the peacemaker, the shadow.", "Page 2: Group polarization: groups don't moderate views — they amplify them. Extremes become the norm.", "Page 3: Groupthink silenced the warnings before the Challenger disaster. The pressure to agree is lethal."] },
+            { id:'c5', vol:'VOL.05', title:'MEMORY PALACE', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🏛️', bg:'#b8c0ff', free:false,
+              pages:["[PREMIUM] Page 1: The method of loci dates to ancient Greece. Simonides of Ceos first discovered it after a building collapsed.", "[PREMIUM] Page 2: Your spatial memory is your most powerful memory system. The hippocampus maps space AND story.", "[PREMIUM] Page 3: World memory champions memorize the order of a shuffled deck in under 20 seconds using this technique."] },
+            { id:'c6', vol:'VOL.06', title:'THE SHADOW SELF', cat:'cognitive', catLabel:'Depth Psych', icon:'🌑', bg:'#1a0b2e', free:false,
+              pages:["[PREMIUM] Page 1: Carl Jung's Shadow is the unconscious repository of everything we deny about ourselves.", "[PREMIUM] Page 2: We project our shadow onto others — the flaws we hate most in people are the ones we disown in ourselves.", "[PREMIUM] Page 3: Integration of the shadow is not defeat. It is the bravest act of self-knowledge."] },
+            { id:'c7', vol:'VOL.07', title:'COGNITIVE BIASES', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🔍', bg:'#ff9aa2', free:false,
+              pages:["[PREMIUM] Page 1: 180+ cognitive biases have been catalogued. We are not rational animals — we are rationalizing ones.", "[PREMIUM] Page 2: The availability heuristic: we judge probability by how easily examples come to mind, not by actual data.", "[PREMIUM] Page 3: Debiasing is possible but hard. The first step: assume you are biased right now, about something."] },
+            { id:'c8', vol:'VOL.08', title:'THE SOCIAL NETWORK', cat:'social', catLabel:'Social Psych', icon:'🕸️', bg:'#4ecdc4', free:false,
+              pages:["[PREMIUM] Page 1: Dunbar's number: humans can maintain stable social relationships with approximately 150 people.", "[PREMIUM] Page 2: Social media shattered this limit — but the brain didn't evolve to handle thousands of 'connections'.", "[PREMIUM] Page 3: The loneliness epidemic is not despite more connections. It is because of the wrong kind."] },
+        ];
+
+        let activeFilter = 'all';
+        let userIsPremium = false;
+        let comicsRead = 0;
+
+        function renderComicsGrid() {
+            const grid = document.getElementById('comics-grid');
+            if (!grid) return;
+            const filtered = activeFilter === 'all' ? COMICS_DATA : COMICS_DATA.filter(c => c.cat === activeFilter);
+            grid.innerHTML = filtered.map(c => `
+                <div class="comic-card" onclick="${c.free || userIsPremium ? `readComic('${c.id}')` : 'openPaywall()'}">
+                    <div class="comic-card-cover" style="background:${c.bg};">
+                        <span class="issue-num">${c.vol}</span>
+                        <span class="comic-big-icon">${c.icon}</span>
+                        ${!c.free && !userIsPremium ? '<span class="comic-lock">🔒 PRO</span>' : ''}
+                    </div>
+                    <div class="comic-card-info">
+                        <div class="comic-card-title">${c.title}</div>
+                        <span class="comic-card-cat" style="background:${c.bg};">${c.catLabel}</span>
+                        <button class="comic-card-btn ${!c.free && !userIsPremium ? 'locked' : ''}">${!c.free && !userIsPremium ? '🔒 UNLOCK PRO' : '📖 READ NOW'}</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterComics(cat, btn) {
+            playSfx('click');
+            activeFilter = cat;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderComicsGrid();
+        }
+
+        function readComic(id) {
+            playSfx('click');
+            const c = COMICS_DATA.find(x => x.id === id);
+            if (!c) return;
+            currentComic = c;
+            currentPage = 0;
+            document.getElementById('comic-title').innerText = c.title;
+            renderPage();
+            document.getElementById('comic-reader').style.display = 'flex';
+            comicsRead++;
+            updateXP(15);
+            saveProfile();
+            refreshProfileUI();
+        }
+
+        /* ══════════════════════════════════════════
+           PROFILE & GAMIFICATION
+        ══════════════════════════════════════════ */
+        const XP_PER_LEVEL = 200;
+        let profileData = {
+            avatar: '🧠', username: 'MAZE WALKER',
+            streak: 1, lastVisit: null,
+            comicsRead: 0, videosWatched: 0, fragments: 0, puzzlesSolved: 0,
+            badges: { reader: false, explorer: false, scholar: false, maze: false, social: false, master: false }
+        };
+
+        function loadProfile() {
+            try {
+                const saved = localStorage.getItem('mazeman_profile');
+                if (saved) profileData = Object.assign(profileData, JSON.parse(saved));
+                // streak logic
+                const today = new Date().toDateString();
+                if (profileData.lastVisit !== today) {
+                    const yesterday = new Date(Date.now() - 86400000).toDateString();
+                    profileData.streak = profileData.lastVisit === yesterday ? (profileData.streak || 0) + 1 : 1;
+                    profileData.lastVisit = today;
+                    saveProfile();
+                }
+            } catch(e) {}
+        }
+
+        function saveProfile() {
+            try {
+                profileData.comicsRead = comicsRead;
+                profileData.fragments = globalXP > 0 ? Math.floor(globalXP / 10) : 0;
+                localStorage.setItem('mazeman_profile', JSON.stringify(profileData));
+            } catch(e) {}
+        }
+
+        function getLevel(xp) { return Math.floor(xp / XP_PER_LEVEL) + 1; }
+        function xpToNextLevel(xp) { return XP_PER_LEVEL - (xp % XP_PER_LEVEL); }
+
+        function refreshProfileUI() {
+            const lv = getLevel(globalXP);
+            const pct = Math.min(100, ((globalXP % XP_PER_LEVEL) / XP_PER_LEVEL) * 100);
+            const el = (id) => document.getElementById(id);
+            if (el('profile-avatar')) el('profile-avatar').childNodes[0].nodeValue = profileData.avatar;
+            if (el('profile-level-badge')) el('profile-level-badge').textContent = `LVL ${lv}`;
+            if (el('profile-username')) el('profile-username').textContent = profileData.username;
+            if (el('profile-xp-bar')) el('profile-xp-bar').style.width = Math.max(5, pct) + '%';
+            if (el('profile-xp-label')) el('profile-xp-label').textContent = `${globalXP % XP_PER_LEVEL} / ${XP_PER_LEVEL} XP`;
+            if (el('profile-xp-subtext')) el('profile-xp-subtext').textContent = `${xpToNextLevel(globalXP)} XP to Level ${lv + 1}`;
+            if (el('profile-total-xp')) el('profile-total-xp').textContent = `${globalXP} XP`;
+            if (el('streak-num')) el('streak-num').textContent = profileData.streak;
+            if (el('streak-sub')) el('streak-sub').textContent = `Day${profileData.streak !== 1 ? 's' : ''} in a row!`;
+            // stats
+            if (el('stat-comics')) el('stat-comics').textContent = comicsRead;
+            if (el('stat-videos')) el('stat-videos').textContent = profileData.videosWatched || 0;
+            if (el('stat-frags')) el('stat-frags').textContent = Math.floor(globalXP / 10);
+            if (el('stat-puzzles')) el('stat-puzzles').textContent = profileData.puzzlesSolved || 0;
+            // badges
+            checkBadges();
+            const badges = ['reader','explorer','scholar','maze','social','master'];
+            badges.forEach(b => {
+                const el2 = el('badge-' + b);
+                if (el2) { profileData.badges[b] ? el2.classList.remove('locked') : el2.classList.add('locked'); }
+            });
+        }
+
+        function checkBadges() {
+            if (comicsRead >= 1) profileData.badges.reader = true;
+            if (comicsRead >= 3) profileData.badges.social = true;
+            if (comicsRead >= 6) profileData.badges.scholar = true;
+            if (globalXP >= 50) profileData.badges.explorer = true;
+            if (globalXP >= 100) profileData.badges.maze = true;
+            if (globalXP >= 300) profileData.badges.master = true;
+        }
+
+        function setAvatar(emoji) {
+            profileData.avatar = emoji;
+            const ring = document.getElementById('profile-avatar');
+            if (ring) ring.childNodes[0].nodeValue = emoji;
+            document.querySelectorAll('.avatar-opt').forEach(o => o.classList.toggle('selected', o.textContent === emoji));
+            saveProfile();
+            playSfx('click');
+        }
+
+        function toggleAvatarPicker() {
+            const w = document.getElementById('avatar-picker-wrap');
+            if (w) w.style.display = w.style.display === 'none' ? 'block' : 'none';
+        }
+
+        /* ══════════════════════════════════════════
+           PAYWALL & TIP JAR
+        ══════════════════════════════════════════ */
+        function openPaywall() {
+            playSfx('click');
+            document.getElementById('paywall-modal').classList.add('show');
+        }
+        function closePaywall() {
+            document.getElementById('paywall-modal').classList.remove('show');
+        }
+        function paywallSubscribe() {
+            playSfx('win');
+            closePaywall();
+            alert('🎉 Redirecting to secure checkout! (Demo mode — payment not implemented yet)');
+        }
+
+        function openTip() {
+            playSfx('click');
+            document.getElementById('tip-modal').classList.add('show');
+        }
+        function closeTip() {
+            document.getElementById('tip-modal').classList.remove('show');
+        }
+        function tipAmount(amt) {
+            playSfx('collect');
+            closeTip();
+            alert(`☕ Thank you for the $${amt} tip! Redirecting to payment... (Demo mode)`);
+        }
+        function tipPlatform(platform) {
+            playSfx('collect');
+            closeTip();
+            alert(`🎉 Opening ${platform}... (Demo — link your ${platform} URL here)`);
+        }
+
+        /* ══════════════════════════════════════════
+           SHOP
+        ══════════════════════════════════════════ */
+        function shopClick(btn, item) {
+            playSfx('collect');
+            btn.textContent = '✅ ADDED!';
+            btn.style.background = '#a8e6cf';
+            setTimeout(() => { btn.textContent = 'ADD TO CART'; btn.style.background = ''; }, 2000);
+            alert(`🛒 ${item} added to cart! (Demo — connect your Shopify/Gumroad store here)`);
+        }
+
+        /* ══════════════════════════════════════════
+           PATCH updateXP to also sync profile UI
+        ══════════════════════════════════════════ */
+        const _baseUpdateXP = updateXP;
+        updateXP = function(amount) {
+            globalXP += amount;
+            document.getElementById('global-xp-1').innerText = `⚡ ${globalXP} XP`;
+            const el2 = document.getElementById('global-xp-2');
+            if (el2) el2.innerText = `⚡ ${globalXP} XP`;
+            const pill = document.getElementById('global-xp-1');
+            pill.style.transform = 'scale(1.2)';
+            setTimeout(() => pill.style.transform = 'scale(1)', 200);
+            refreshProfileUI();
+        };
+
+        /* ══════════════════════════════════════════
+           OVERRIDE window.onload to init new systems
+        ══════════════════════════════════════════ */
+        const _origOnload = window.onload;
+        window.onload = () => {
+            if (_origOnload) _origOnload();
+            renderFact();
+            renderComicsGrid();
+            loadProfile();
+            refreshProfileUI();
+        };
+
+    </script>
+</body>
+</html>
