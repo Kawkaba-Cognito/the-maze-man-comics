@@ -1,9 +1,2 @@
 node_modules/
-android/
-ios/
 dist/
-.DS_Store
-Thumbs.db
-*.log
-.env
-.env.local

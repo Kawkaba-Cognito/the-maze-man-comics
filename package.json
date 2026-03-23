@@ -2,23 +2,37 @@
   "name": "maze-man-comics",
   "version": "1.0.0",
   "description": "The Maze Man Comics — Interactive bilingual psychology PWA",
-  "main": "index.html",
   "scripts": {
-    "cap:sync":    "npx cap sync",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "cap:sync": "npx cap sync",
     "cap:android": "npx cap open android",
-    "cap:ios":     "npx cap open ios",
+    "cap:ios": "npx cap open ios",
     "cap:run:android": "npx cap run android",
-    "cap:run:ios":     "npx cap run ios"
+    "cap:run:ios": "npx cap run ios"
   },
   "dependencies": {
-    "@capacitor/core": "^6.2.0"
+    "@capacitor/core": "^6.2.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
-    "@capacitor/cli":     "^6.2.0",
     "@capacitor/android": "^6.2.0",
-    "@capacitor/ios":     "^6.2.0"
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/ios": "^6.2.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "vite": "^8.0.2",
+    "vite-plugin-pwa": "^1.2.0"
   },
-  "keywords": ["pwa", "comics", "psychology", "arabic", "education"],
+  "keywords": [
+    "pwa",
+    "comics",
+    "psychology",
+    "arabic",
+    "education"
+  ],
   "author": "Kawkaba Cognito",
   "license": "UNLICENSED",
   "private": true
