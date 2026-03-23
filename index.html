@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <title>The Maze Man | Psychological Comics</title>
     <meta name="description" content="Psychological comics — social & cognitive psychology, gamified.">
     <meta name="theme-color" content="#1a0b2e">
@@ -47,37 +47,21 @@
 
     <style>
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; }
-        body { overflow: hidden; min-height: 100vh; background-color: #1a0b2e; }
+        body { overflow: hidden; min-height: 100dvh; background-color: #1a0b2e; }
 
         /* ═══════════════════════ 2D UI (COMIC INTERFACE) ═══════════════════════ */
         #ui-shell {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            font-family: 'Comic Neue', cursive; color: #333; 
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh;
+            font-family: 'Comic Neue', cursive; color: #333;
             overflow-y: auto; overflow-x: hidden; z-index: 100;
             background-color: #1a0b2e;
-        }
-
-        /* NEW: Layer 1 - Colorful Glowing Orbs */
-        #ui-shell::before {
-            content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background-image: 
-                radial-gradient(circle at 15% 25%, rgba(255, 107, 107, 0.3) 0%, transparent 45%),
-                radial-gradient(circle at 85% 65%, rgba(78, 205, 196, 0.3) 0%, transparent 45%),
-                radial-gradient(circle at 50% 85%, rgba(255, 230, 109, 0.2) 0%, transparent 55%),
-                linear-gradient(180deg, #1a0b2e 0%, #2d1b4e 50%, #1a0b2e 100%);
-            z-index: -2;
-        }
-
-        /* NEW: Layer 2 - Cyber Maze Lines in Background */
-        #ui-shell::after {
-            content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            opacity: 0.15; /* Subtly integrated */
-            z-index: -1;
-            /* A CSS generated geometric maze pattern */
+            /* Stack: dark overlay on top, then the background image */
             background-image:
-              repeating-conic-gradient(#333 0% 25%, #1a0b2e 0% 50%);
-            background-size: 80px 80px;
-            filter: blur(1px);
+                linear-gradient(rgba(10, 4, 30, 0.55), rgba(10, 4, 30, 0.55)),
+                url('Assets/Homepagebackground.png.png');
+            background-size: cover;
+            background-position: center top;
+            background-attachment: scroll;
         }
 
         .comic-header { 
@@ -89,7 +73,9 @@
 
         .bottom-nav {
             position: fixed; bottom: 0; width: 100%; height: 85px; background: #4ecdc4; border-top: 5px solid #000;
-            display: flex; justify-content: space-around; align-items: center; padding: 0 10px 10px 10px; z-index: 1000;
+            display: flex; justify-content: space-around; align-items: center;
+            padding: 0 10px max(10px, env(safe-area-inset-bottom)) 10px;
+            z-index: 1000;
         }
         .nav-item {
             display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; border: 4px solid #000; border-radius: 12px;
@@ -100,7 +86,7 @@
         .nav-icon { font-size: 1.5em; margin-bottom: 2px; }
         .nav-label { font-family: 'Bangers', cursive; font-size: 1.1em; letter-spacing: 1px; }
 
-        .ui-screen { display: none; opacity: 0; transition: opacity 0.3s ease-out; min-height: 100vh; width: 100%; padding: 90px 20px 120px 20px; position: relative;} 
+        .ui-screen { display: none; opacity: 0; transition: opacity 0.3s ease-out; min-height: 100dvh; width: 100%; padding: 80px 16px 110px 16px; position: relative;}
         .ui-screen.active { display: block; opacity: 1; }
         .hero-section {
             position: relative;
@@ -109,34 +95,6 @@
             display: flex; flex-direction: column; align-items: center; text-align: center;
         }
         
-        /* --- UPDATED: DRAGGABLE PSYCHOLOGICAL STICKERS --- */
-        .sticker-canvas {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 50; overflow: hidden;
-        }
-        .sticker {
-            position: absolute;
-            font-size: 3.5em;
-            cursor: grab; /* Shows it can be picked up */
-            pointer-events: auto; /* Required for dragging */
-            touch-action: none; /* Prevents page scrolling while dragging */
-            
-            /* Comic style outline and shadow */
-            filter: 
-                drop-shadow(2px 0 0 #fff) drop-shadow(0 2px 0 #fff) 
-                drop-shadow(-2px 0 0 #fff) drop-shadow(0 -2px 0 #fff) 
-                drop-shadow(4px 4px 0 #000);
-            
-            /* Pulsing glow animation instead of floating */
-            animation: sticker-glow 1.5s ease-in-out infinite alternate;
-        }
-        .sticker:active { cursor: grabbing; scale: 1.1; animation: none;} /* Effect when held */
-
-        @keyframes sticker-glow {
-            0% { filter: drop-shadow(2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(4px 4px 0 #000); }
-            100% { filter: drop-shadow(2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(4px 4px 0 #ffe66d) drop-shadow(0 0 10px #ffe66d); }
-        }
-
         .character-container { position: relative; margin-bottom: 30px; display: flex; justify-content: center; align-items: center; width: 220px; height: 220px; z-index: 10;}
         .hero-portal {
             position: absolute; width: 200px; height: 200px; border-radius: 50%;
@@ -205,7 +163,7 @@
         .video-title-text { color: #fff; font-family: 'Bangers'; font-size: 1.5em; margin-bottom: 15px; letter-spacing: 1px; }
 
         /* --- COMIC READER OVERLAY --- */
-        #comic-reader { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        #comic-reader { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         .reader-panel { background: #fff; border: 6px solid #000; border-radius: 16px; width: 100%; max-width: 500px; height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; box-shadow: 10px 10px 0 var(--amber); position: relative; }
         .reader-close { position: absolute; top: -15px; right: -15px; background: #ff6b6b; border: 4px solid #000; width: 40px; height: 40px; border-radius: 50%; font-family: 'Bangers'; font-size: 1.5em; cursor: pointer; color: #fff; box-shadow: 2px 2px 0 #000; }
         .reader-controls { display: flex; gap: 20px; margin-top: 20px; }
@@ -214,7 +172,7 @@
         #comic-page-text { font-size: 1.5em; font-weight: bold; }
 
         /* ═══════════════════════ 3D ENGINE (MARTIAN SYSTEM) ═══════════════════════ */
-        #maze-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5000; background: #000; display: none; font-family: 'Outfit', sans-serif; color: #ffffff; }
+        #maze-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 5000; background: #000; display: none; font-family: 'Outfit', sans-serif; color: #ffffff; }
         #renderCanvas { width: 100%; height: 100%; display: block; outline: none; }
         #content-wrapper { position: absolute; top: 0; left: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; padding: 20px 16px; pointer-events: none; }
 
@@ -366,26 +324,6 @@
             flex-shrink: 0;
         }
 
-        /* ── STICKERS — float automatically, draggable ── */
-        .sticker {
-            position: absolute; font-size: 3.5em; cursor: grab;
-            pointer-events: auto; touch-action: none;
-            filter: drop-shadow(2px 0 0 #fff) drop-shadow(0 2px 0 #fff)
-                    drop-shadow(-2px 0 0 #fff) drop-shadow(0 -2px 0 #fff)
-                    drop-shadow(4px 4px 0 #000);
-            transition: filter .2s;
-            will-change: transform, left, top;
-        }
-        .sticker:active { cursor: grabbing; }
-        .sticker.floating {
-            animation: stickerFloat var(--dur,3s) ease-in-out infinite var(--delay,0s);
-        }
-        @keyframes stickerFloat {
-            0%,100% { transform: rotate(var(--rot,0deg)) translateY(0); }
-            50% { transform: rotate(var(--rot,0deg)) translateY(-10px); }
-        }
-
-
         /* ── FACT OF THE DAY ── */
         .fact-card { background: #fff; border: 5px solid #000; border-radius: 16px; padding: 22px 18px 18px; margin: 0 0 20px; position: relative; box-shadow: 8px 8px 0 #000; max-width: 400px; width: 100%; z-index: 10; }
         .fact-badge { position: absolute; top: -14px; left: 18px; background: #ff6b6b; border: 3px solid #000; border-radius: 20px; padding: 3px 12px; font-family: 'Bangers', cursive; font-size: 1em; color: #fff; letter-spacing: 1px; box-shadow: 2px 2px 0 #000; }
@@ -398,9 +336,10 @@
         .comics-filter { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
         .filter-btn { background: #fff; border: 3px solid #000; border-radius: 20px; padding: 5px 14px; font-family: 'Bangers', cursive; font-size: 1em; cursor: pointer; box-shadow: 3px 3px 0 #000; letter-spacing: 1px; transition: all 0.1s; }
         .filter-btn.active, .filter-btn:active { background: #ffe66d; transform: translate(3px,3px); box-shadow: 0 0 0 #000; }
-        .comics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; }
-        .comic-card { background: #fff; border: 4px solid #000; border-radius: 12px; overflow: hidden; box-shadow: 5px 5px 0 #000; cursor: pointer; transition: transform 0.1s; }
-        .comic-card:active { transform: translate(5px, 5px); box-shadow: 0 0 0 #000; }
+        .comics-grid { display: grid; grid-template-columns: 1fr; gap: 14px; width: 100%; max-width: 500px; margin: 0 auto; }
+        .comic-card { background: #fff; border: 4px solid #4455cc; border-radius: 12px; overflow: hidden; box-shadow: 5px 5px 0 #4455cc; cursor: pointer; transition: transform 0.1s; }
+        .comic-card:active { transform: translate(5px, 5px); box-shadow: 0 0 0 #4455cc; }
+        .featured-card .comic-card-cover { height: 220px; display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 3px solid #000; }
         .comic-card-cover { height: 130px; display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 3px solid #000; }
         .comic-card-cover .issue-num { position: absolute; top: 6px; left: 6px; background: #000; color: #fff; font-family: 'DM Mono', monospace; font-size: 0.65em; padding: 2px 5px; border-radius: 3px; }
         .comic-lock { position: absolute; top: 6px; right: 6px; background: #ffe66d; border: 2px solid #000; border-radius: 8px; padding: 2px 6px; font-size: 0.85em; box-shadow: 2px 2px 0 #000; }
@@ -497,6 +436,64 @@
         .nav-item { padding: 6px 8px !important; width: 19% !important; }
         .nav-label { font-size: 0.85em !important; }
 
+        /* ══════════════════════════════════════════
+           RESPONSIVE — Mobile-first adjustments
+        ══════════════════════════════════════════ */
+
+        /* Base: stack hero content more tightly on small screens */
+        @media (max-width: 480px) {
+            .comic-header { height: 56px; padding: 0 12px; }
+            .comic-logo { font-size: 1.5em; }
+            .xp-pill { font-size: 0.95em; padding: 4px 10px; }
+
+            #ui-shell { padding-top: 56px; }
+
+            .hero-section { min-height: unset; padding: 12px 16px 16px; gap: 0; }
+
+            .character-container { width: 160px; height: 160px; margin-bottom: 16px; }
+            .hero-portal { width: 140px; height: 140px; }
+            .css-maze-man { width: 110px; height: 140px; }
+
+            .title-card { padding: 10px 14px 18px; margin-bottom: 16px; transform: rotate(-1deg); }
+            .main-title { font-size: 2.2em !important; }
+            .colorful-comics { font-size: 2em !important; letter-spacing: 4px !important; }
+
+            .btn-wrapper { max-width: 100%; margin-bottom: 8px; }
+            .comic-btn { font-size: 1.5em !important; padding: 12px 24px !important; }
+
+            .comics-showcase { gap: 6px; margin-top: 20px; padding: 6px; }
+            .comic-square { max-width: 95px; padding: 5px; }
+            .comic-cover-title { font-size: 0.85em; }
+
+            .fact-card { padding: 18px 14px 14px; margin-top: 20px; }
+            .fact-text { font-size: 0.95em; }
+
+            .bottom-nav { height: 72px; padding: 0 6px max(8px, env(safe-area-inset-bottom)) 6px; }
+            .nav-item { padding: 5px 4px !important; width: 18% !important; border-width: 3px; }
+            .nav-icon { font-size: 1.2em; }
+            .nav-label { font-size: 0.72em !important; }
+
+            .content-card { padding: 16px 12px; }
+            .comics-grid { padding: 12px; gap: 12px; }
+            .featured-card .comic-card-cover { height: 180px; }
+        }
+
+        /* Desktop: bigger layout with max-width container */
+        @media (min-width: 768px) {
+            #ui-shell { display: flex; flex-direction: column; align-items: center; }
+            .comic-header { max-width: 900px; left: 50%; transform: translateX(-50%); border-radius: 0 0 16px 16px; }
+            .bottom-nav { max-width: 700px; left: 50%; transform: translateX(-50%); border-radius: 20px 20px 0 0; border: 4px solid #000; }
+            .ui-screen { max-width: 700px; width: 100%; margin: 0 auto; }
+            .hero-section { padding: 20px 40px 40px; }
+            .character-container { width: 260px; height: 260px; }
+            .hero-portal { width: 240px; height: 240px; }
+            .main-title { font-size: 3.5em !important; }
+            .comics-showcase { gap: 16px; }
+            .comic-square { max-width: 140px; }
+            .comics-grid { max-width: 600px; }
+            .featured-card .comic-card-cover { height: 280px; }
+        }
+
     </style>
 </head>
 <body>
@@ -518,17 +515,6 @@
         <div id="screen-home" class="ui-screen active">
             <div class="hero-section">
                 
-                <div class="sticker-canvas" id="sticker-canvas">
-                    <div class="sticker social-sticker" style="top: 10%; left: 8%;" data-initial-rot="-15">🧠</div>
-                    <div class="sticker cognitive-sticker" style="top: 25%; right: 10%;" data-initial-rot="20">💡</div>
-                    <div class="sticker" style="top: 55%; left: 12%;" data-initial-rot="10">🎭</div>
-                    <div class="sticker" style="top: 68%; right: 15%;" data-initial-rot="-25">🧩</div>
-                    <div class="sticker" style="top: 40%; left: 5%;" data-initial-rot="5">👁️</div>
-                    <div class="sticker" style="top: 82%; left: 20%;" data-initial-rot="-10">🧬</div>
-                    <div class="sticker" style="top: 5%; right: 20%;" data-initial-rot="15">🌟</div>
-                    <div class="sticker" style="top: 80%; right: 8%;" data-initial-rot="0">❤️</div>
-                </div>
-
                 <div class="character-container">
                     <div class="hero-portal"></div>
                     <div class="css-maze-man">
@@ -575,7 +561,7 @@
                     
                     <div class="comic-square cognitive" onclick="window.location.href='episode-1-problem-solving.html'">
                         <div class="issue-badge">EP.01</div>
-                        <div class="comic-cover-art"><span class="comic-icon">🧩</span></div>
+                        <div class="comic-cover-art" style="background-image:url('Assets/cover_art.jpg');background-size:cover;background-position:center;"></div>
                         <span class="comic-cover-title">PROBLEM<br>SOLVING</span>
                         <div class="comic-barcode"></div>
                     </div>
@@ -594,12 +580,6 @@
         </div>
 
         <div id="screen-comics" class="ui-screen">
-            <div class="comics-filter">
-                <button class="filter-btn active" onclick="filterComics('all',this)">ALL</button>
-                <button class="filter-btn" onclick="filterComics('social',this)">SOCIAL</button>
-                <button class="filter-btn" onclick="filterComics('cognitive',this)">COGNITIVE</button>
-                <button class="filter-btn" onclick="filterComics('neuro',this)">NEURO</button>
-            </div>
             <div class="comics-grid" id="comics-grid"></div>
         </div>
 
@@ -1121,71 +1101,6 @@
         })();
 
         /* ══════════════════════════════════════════
-           STICKERS — auto-float + proper drag (viewport vs offsetParent fixed via getBoundingClientRect)
-        ══════════════════════════════════════════ */
-        function initStickers() {
-            const stickers = Array.from(document.querySelectorAll('.sticker'));
-            const canvas = document.getElementById('sticker-canvas');
-            if (!canvas) return;
-            const durations = [2.8,3.4,2.5,3.8,3.1,2.7,3.5,2.9];
-            const delays    = [0,0.6,1.2,0.3,1.8,0.9,0.4,1.5];
-
-            stickers.forEach((s,i) => {
-                const rot = s.dataset.initialRot || 0;
-                s.style.setProperty('--rot', rot+'deg');
-                s.style.setProperty('--dur', durations[i%durations.length]+'s');
-                s.style.setProperty('--delay', delays[i%delays.length]+'s');
-                s.classList.add('floating');
-            });
-
-            stickers.forEach(s => {
-                let dragging = false;
-                let grabDX = 0, grabDY = 0;
-
-                function onPointerDown(e) {
-                    if (e.pointerType === 'mouse' && e.button !== 0) return;
-                    e.preventDefault();
-                    e.stopPropagation();
-                    try { s.setPointerCapture(e.pointerId); } catch (_) {}
-                    dragging = true;
-                    playSfx('click');
-                    s.classList.remove('floating');
-                    s.style.zIndex = '200';
-                    s.style.transition = 'none';
-                    s.style.right = 'auto';
-                    s.style.bottom = 'auto';
-                    const sRect = s.getBoundingClientRect();
-                    const cRect = canvas.getBoundingClientRect();
-                    grabDX = e.clientX - sRect.left;
-                    grabDY = e.clientY - sRect.top;
-                    s.style.left = (sRect.left - cRect.left + canvas.scrollLeft) + 'px';
-                    s.style.top = (sRect.top - cRect.top + canvas.scrollTop) + 'px';
-                }
-                function onPointerMove(e) {
-                    if (!dragging) return;
-                    e.preventDefault();
-                    const cRect = canvas.getBoundingClientRect();
-                    const nx = e.clientX - cRect.left - grabDX;
-                    const ny = e.clientY - cRect.top - grabDY;
-                    s.style.left = nx + 'px';
-                    s.style.top = ny + 'px';
-                }
-                function onPointerUp(e) {
-                    if (!dragging) return;
-                    dragging = false;
-                    try { s.releasePointerCapture(e.pointerId); } catch (_) {}
-                    s.style.zIndex = '50';
-                    s.classList.add('floating');
-                }
-
-                s.addEventListener('pointerdown', onPointerDown);
-                s.addEventListener('pointermove', onPointerMove);
-                s.addEventListener('pointerup', onPointerUp);
-                s.addEventListener('pointercancel', onPointerUp);
-            });
-        }
-
-        /* ══════════════════════════════════════════
            VIDEO PLAYER — fully coded, real controls
         ══════════════════════════════════════════ */
         let vidAnimFrame = null;
@@ -1474,7 +1389,6 @@
         ══════════════════════════════════════════ */
         window.onload = () => {
             vidInitDraw();
-            initStickers();
         };
 
         /* ══════════════════════════════════════════
@@ -1827,27 +1741,8 @@
            COMICS DATA & GRID
         ══════════════════════════════════════════ */
         const COMICS_DATA = [
-            // ── COGNITIVE PSYCHOLOGY ──
             { id:'ep1', vol:'EP.01', title:'PROBLEM SOLVING', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🧩', bg:'#b8c0ff', free:true, type:'game', url:'episode-1-problem-solving.html',
-              pages:[] },
-            { id:'c3', vol:'EP.02', title:'THE MAZE WITHIN', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🌀', bg:'#c8d0ff', free:true,
-              pages:["🧠 The mind is not a container — it is a process, constantly constructing reality from incomplete data.", "⚙️ Working memory holds only 7±2 items at a time. Everything else is compressed, distorted, or lost.", "🔁 You are not remembering the past. You are reconstructing it — and each time, it shifts slightly."] },
-            { id:'c5', vol:'EP.03', title:'MEMORY PALACE', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🏛️', bg:'#b8c0ff', free:false,
-              pages:["🏛️ The method of loci dates back to ancient Greece. Simonides of Ceos first used it after a building collapse.", "🗺️ Your spatial memory is your most powerful storage system — the hippocampus maps both place and story.", "🃏 World memory champions memorize a shuffled deck in under 20 seconds using spatial anchoring."] },
-            { id:'c6', vol:'EP.04', title:'THE SHADOW SELF', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🌑', bg:'#2a1b3e', free:false,
-              pages:["🌑 Carl Jung's Shadow is the unconscious repository of everything we deny about ourselves.", "🪞 We project our shadow onto others — the flaws we hate most in people are the ones we disown in ourselves.", "✨ Integrating the shadow is not defeat. It is the bravest act of self-knowledge you can undertake."] },
-            { id:'c7', vol:'EP.05', title:'COGNITIVE BIASES', cat:'cognitive', catLabel:'Cognitive Psych', icon:'🔍', bg:'#ffc8c8', free:false,
-              pages:["📋 Over 180 cognitive biases have been catalogued. We are not rational animals — we are rationalizing ones.", "📊 The availability heuristic: we judge probability by how easily examples come to mind, not by real data.", "🎯 Debiasing is possible but hard. First step: assume you are biased right now, about something important."] },
-            // ── SOCIAL PSYCHOLOGY ──
-            { id:'c1', vol:'EP.01', title:'THE CONFORMITY TRAP', cat:'social', catLabel:'Social Psych', icon:'👥', bg:'#ff9aa2', free:true,
-              pages:["👥 Solomon Asch's experiments showed 75% of people gave obviously wrong answers just to match the group.", "🟢 When the group says the sky is green — do you agree? The pressure to belong rewires our sense of truth.", "🏕️ Conformity kept early humans safe in tribes. Today it keeps us silent in meetings when we should speak."] },
-            { id:'c4', vol:'EP.02', title:'GROUP DYNAMICS', cat:'social', catLabel:'Social Psych', icon:'🤝', bg:'#ffe66d', free:true,
-              pages:["🎭 In any group of 3+, roles emerge naturally: the leader, the challenger, the peacemaker, the silent one.", "📡 Group polarization: groups don't moderate views — they amplify them. Extremes become the new center.", "🚀 Groupthink silenced the warnings before the Challenger disaster. The pressure to agree can be lethal."] },
-            { id:'c8', vol:'EP.03', title:'THE SOCIAL NETWORK', cat:'social', catLabel:'Social Psych', icon:'🕸️', bg:'#4ecdc4', free:false,
-              pages:["🧮 Dunbar's number: humans can maintain stable social relationships with approximately 150 people.", "📱 Social media shattered this limit — but the brain never evolved to handle thousands of 'connections'.", "💔 The loneliness epidemic is not despite more connections. It is because of the wrong kind of connection."] },
-            // ── NEUROSCIENCE ──
-            { id:'c2', vol:'EP.01', title:'MIRROR NEURONS', cat:'neuro', catLabel:'Neuroscience', icon:'🪞', bg:'#a8e6cf', free:true,
-              pages:["🔬 In 1992, Rizzolatti's team discovered mirror neurons — cells that fire when you act AND when you watch.", "💞 This is the neural basis of empathy. Your brain literally simulates the pain, joy, and fear of others.", "🎭 Actors aren't pretending — their mirror neuron systems are running a full simulation. So are you right now."] },
+              cover:'Assets/cover_art.jpg', pages:[] },
         ];
 
         let activeFilter = 'all';
@@ -1857,26 +1752,21 @@
         function renderComicsGrid() {
             const grid = document.getElementById('comics-grid');
             if (!grid) return;
-            const filtered = activeFilter === 'all' ? COMICS_DATA : COMICS_DATA.filter(c => c.cat === activeFilter);
-            grid.innerHTML = filtered.map(c => {
-                const isLocked = !c.free && !userIsPremium;
-                const isGame   = c.type === 'game';
-                const btnLabel = isLocked ? '🔒 UNLOCK PRO' : isGame ? '▶ PLAY NOW' : '📖 READ NOW';
-                const gameBadge = isGame ? '<span class="comic-lock" style="background:#b8c0ff;border-color:#4455cc;">🎮 GAME</span>' : '';
+            grid.innerHTML = COMICS_DATA.map(c => {
+                const isGame = c.type === 'game';
+                const coverBg = c.cover
+                    ? `background-image:url('${c.cover}');background-size:cover;background-position:center;`
+                    : `background:${c.bg};`;
                 return `
-                <div class="comic-card" onclick="${isLocked ? 'openPaywall()' : `readComic('${c.id}')`}"
-                     style="${isGame ? 'border-color:#4455cc;box-shadow:5px 5px 0 #4455cc;' : ''}">
-                    <div class="comic-card-cover" style="background:${c.bg};">
+                <div class="comic-card featured-card" onclick="readComic('${c.id}')">
+                    <div class="comic-card-cover" style="${coverBg}">
                         <span class="issue-num">${c.vol}</span>
-                        <span class="comic-big-icon">${c.icon}</span>
-                        ${isLocked ? '<span class="comic-lock">🔒 PRO</span>' : gameBadge}
+                        <span class="comic-lock" style="background:#4455cc;border-color:#2233aa;color:#fff;">🎮 GAME</span>
                     </div>
                     <div class="comic-card-info">
                         <div class="comic-card-title">${c.title}</div>
                         <span class="comic-card-cat" style="background:${c.bg};">${c.catLabel}</span>
-                        <button class="comic-card-btn ${isLocked ? 'locked' : ''}"
-                                style="${isGame && !isLocked ? 'background:#4455cc;color:#fff;border-color:#2233aa;' : ''}"
-                        >${btnLabel}</button>
+                        <button class="comic-card-btn" style="background:#4455cc;color:#fff;border-color:#2233aa;">▶ PLAY NOW</button>
                     </div>
                 </div>`;
             }).join('');

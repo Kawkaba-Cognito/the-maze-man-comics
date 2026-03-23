@@ -2,13 +2,16 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <title>Episode 1: Problem Solving — The Maze Man Comics</title>
   <!-- Google Fonts: free, requires internet. Bangers = comic title, Cairo = Arabic -->
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
   <link rel="shortcut icon" href="favicon.ico">
   <meta name="theme-color" content="#05050f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Maze Man">
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Cairo:wght@600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -22,6 +25,7 @@
       display: flex;
       flex-direction: column;
       touch-action: manipulation;
+      padding-top: env(safe-area-inset-top);
     }
 
     /* ── HEADER ── */
@@ -160,6 +164,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 8px 24px;
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
       background: #08081a;
       border-top: 1px solid #00f5ff22;
       flex-shrink: 0;
@@ -576,9 +581,213 @@
       transition: all 0.15s;
     }
     #btn-back-home:hover { transform: scale(1.06); }
+
+    /* ══════════════════════════════════════
+       RESPONSIVE — Mobile & Desktop
+    ══════════════════════════════════════ */
+
+    /* On very small phones, shrink the header and controls */
+    @media (max-width: 480px) {
+      #ep-header { padding: 6px 10px; }
+      #ep-title { font-size: 12px; }
+      #back-btn, #lang-btn { font-size: 11px; padding: 3px 8px; }
+      .ctrl-btn { width: 44px; height: 44px; font-size: 18px; }
+      #controls { padding: 5px 14px; padding-bottom: max(5px, env(safe-area-inset-bottom)); }
+      #score-val { font-size: 16px; }
+      #floor-label { font-size: 9px; }
+      #floor-indicator { padding: 3px; gap: 7px; }
+      .floor-dot { width: 7px; height: 7px; }
+    }
+
+    /* On desktop/tablet, center and constrain the game area */
+    @media (min-width: 768px) {
+      body { align-items: center; background: #02020c; }
+      #ep-header { max-width: 700px; width: 100%; border-radius: 0 0 12px 12px; }
+      #progress-bar, #xp-bar, #floor-indicator { max-width: 700px; width: 100%; }
+      #canvas-wrapper {
+        max-width: 700px;
+        width: 100%;
+        border-left: 2px solid #00f5ff22;
+        border-right: 2px solid #00f5ff22;
+      }
+      #controls { max-width: 700px; width: 100%; }
+
+      /* On desktop, make mini-game overlay respect the game width */
+      #minigame-overlay { max-width: 700px; left: 50%; transform: translateX(-50%); right: auto; width: 100%; }
+      #completion-screen { max-width: 700px; left: 50%; transform: translateX(-50%); right: auto; width: 100%; }
+    }
+
+    /* ══════════════════════════════════════
+       COMIC INTRO OVERLAY
+    ══════════════════════════════════════ */
+    #comic-intro {
+      position: fixed; inset: 0; z-index: 1000;
+      background: #000;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    #comic-intro.hidden { display: none; }
+
+    /* Panel area */
+    #intro-panel-area {
+      flex: 1; position: relative; overflow: hidden;
+      cursor: pointer;
+    }
+    .intro-panel {
+      position: absolute; inset: 0;
+      display: none;
+      flex-direction: column;
+    }
+    .intro-panel.active { display: flex; }
+
+    /* Panel image */
+    .intro-panel-img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: center top;
+    }
+
+    /* Speech bubble / caption overlay */
+    .intro-caption {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.92) 30%);
+      padding: 40px 20px 20px;
+    }
+    .intro-caption-box {
+      background: #fff;
+      border: 3px solid #000;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-family: 'Bangers', cursive;
+      font-size: clamp(14px, 4vw, 20px);
+      color: #000;
+      letter-spacing: 0.5px;
+      line-height: 1.4;
+      box-shadow: 4px 4px 0 #000;
+      max-width: 480px;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+    }
+    .intro-caption-box::before {
+      content: '';
+      position: absolute; top: -14px; left: 50%;
+      transform: translateX(-50%);
+      border: 7px solid transparent;
+      border-bottom-color: #000;
+    }
+    .intro-caption-box::after {
+      content: '';
+      position: absolute; top: -10px; left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-bottom-color: #fff;
+    }
+
+    /* Tap hint */
+    #intro-tap-hint {
+      font-family: 'Cairo', sans-serif;
+      font-size: 12px;
+      color: #ffffff88;
+      text-align: center;
+      margin-top: 8px;
+      letter-spacing: 1px;
+      animation: intro-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes intro-pulse { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
+
+    /* Progress dots */
+    #intro-dots {
+      display: flex; justify-content: center; gap: 8px;
+      padding: 10px;
+      background: #000;
+      flex-shrink: 0;
+    }
+    .intro-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #ffffff33;
+      transition: background 0.3s;
+    }
+    .intro-dot.active { background: #fff; }
+
+    /* Skip button */
+    #intro-skip {
+      position: absolute; top: 14px; right: 14px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid #ffffff44;
+      color: #ffffffaa;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 12px;
+      cursor: pointer;
+      z-index: 10;
+      letter-spacing: 1px;
+    }
+
+    /* Panel number badge */
+    .intro-panel-num {
+      position: absolute; top: 14px; left: 14px;
+      background: #000; color: #fff;
+      font-family: 'Bangers', cursive;
+      font-size: 13px; letter-spacing: 1px;
+      padding: 3px 10px; border-radius: 4px;
+      border: 2px solid #fff;
+    }
   </style>
 </head>
 <body>
+
+<!-- ══════════════════════════════════════
+     COMIC INTRO OVERLAY
+══════════════════════════════════════ -->
+<div id="comic-intro">
+  <button id="intro-skip" onclick="skipIntro()">SKIP ▶</button>
+  <div id="intro-panel-area" onclick="nextIntroPanel()">
+
+    <div class="intro-panel active" id="intro-p0">
+      <img class="intro-panel-img" src="Assets/panel_city_panorama.jpg" alt="City panorama" onerror="this.style.background='#1a1a2e';this.style.minHeight='200px'">
+      <div class="intro-caption">
+        <div class="intro-caption-box">The city never sleeps — and neither do its problems.</div>
+        <div id="intro-tap-hint">TAP TO CONTINUE</div>
+      </div>
+      <div class="intro-panel-num">01 / 04</div>
+    </div>
+
+    <div class="intro-panel" id="intro-p1">
+      <img class="intro-panel-img" src="Assets/panel1_alley_dark.jpg" alt="Dark alley" onerror="this.style.background='#0a0a0a';this.style.minHeight='200px'">
+      <div class="intro-caption">
+        <div class="intro-caption-box">A figure moves through the shadows — Maze Man. Every person he meets is stuck in a puzzle of their own.</div>
+      </div>
+      <div class="intro-panel-num">02 / 04</div>
+    </div>
+
+    <div class="intro-panel" id="intro-p2">
+      <img class="intro-panel-img" src="Assets/panel2_alley_blue.jpg" alt="Alley blue" onerror="this.style.background='#0a1030';this.style.minHeight='200px'">
+      <div class="intro-caption">
+        <div class="intro-caption-box">"Every dead end is just a door waiting to be unlocked with the right way of thinking."</div>
+      </div>
+      <div class="intro-panel-num">03 / 04</div>
+    </div>
+
+    <div class="intro-panel" id="intro-p3">
+      <img class="intro-panel-img" src="Assets/panel3_alley_warm.jpg" alt="Alley warm" onerror="this.style.background='#1a0800';this.style.minHeight='200px'">
+      <div class="intro-caption">
+        <div class="intro-caption-box">Your mission: navigate the maze, help the lost souls, and master the psychology of Problem Solving.</div>
+      </div>
+      <div class="intro-panel-num">04 / 04</div>
+    </div>
+
+  </div>
+  <div id="intro-dots">
+    <div class="intro-dot active" id="idot-0"></div>
+    <div class="intro-dot" id="idot-1"></div>
+    <div class="intro-dot" id="idot-2"></div>
+    <div class="intro-dot" id="idot-3"></div>
+  </div>
+</div>
 
 <div id="ep-header">
   <a id="back-btn" href="index.html">← BACK</a>
@@ -939,6 +1148,24 @@ window.addEventListener('resize', () => { resize(); initBgElements(); });
 
 
 // ══════════════════════════════════════════════════════
+//  PANEL BACKGROUND IMAGES
+// ══════════════════════════════════════════════════════
+const BGI = {};
+function loadBGImages() {
+  const srcs = {
+    city: 'Assets/panel_city_panorama.jpg',
+    dark: 'Assets/panel1_alley_dark.jpg',
+    blue: 'Assets/panel2_alley_blue.jpg',
+    warm: 'Assets/panel3_alley_warm.jpg'
+  };
+  Object.entries(srcs).forEach(([k, src]) => {
+    const img = new Image();
+    img.src = src;
+    BGI[k] = img;
+  });
+}
+
+// ══════════════════════════════════════════════════════
 //  GAME STATE
 // ══════════════════════════════════════════════════════
 const G = { floor: 0, score: 0, transitioning: false, inDialogue: false };
@@ -1181,9 +1408,15 @@ function drawBackground() {
 }
 
 function drawCityStreet() {
-  const sky = ctx.createLinearGradient(0, 0, 0, H);
-  sky.addColorStop(0, '#060318'); sky.addColorStop(1, '#150830');
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  if (BGI.city && BGI.city.complete && BGI.city.naturalWidth > 0) {
+    ctx.drawImage(BGI.city, 0, 0, W, H);
+    ctx.fillStyle = 'rgba(6,3,24,0.52)';
+    ctx.fillRect(0, 0, W, H);
+  } else {
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#060318'); sky.addColorStop(1, '#150830');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  }
   ctx.fillStyle = '#ffffff55';
   for (let i = 0; i < 55; i++) ctx.fillRect((i*137.5)%W, (i*91.3)%(H*0.55), 1.5, 1.5);
   bgE[0].forEach(b => {
@@ -1209,9 +1442,15 @@ function drawCityStreet() {
 }
 
 function drawWorkshop() {
-  const bg = ctx.createLinearGradient(0,0,0,H);
-  bg.addColorStop(0,'#0c130a'); bg.addColorStop(1,'#080f06');
-  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+  if (BGI.dark && BGI.dark.complete && BGI.dark.naturalWidth > 0) {
+    ctx.drawImage(BGI.dark, 0, 0, W, H);
+    ctx.fillStyle = 'rgba(12,19,10,0.52)';
+    ctx.fillRect(0, 0, W, H);
+  } else {
+    const bg = ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,'#0c130a'); bg.addColorStop(1,'#080f06');
+    ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+  }
   ctx.fillStyle = '#2a1a0a';
   ctx.fillRect(0,H*0.22,W,10); ctx.fillRect(0,H*0.52,W,10);
   const now = Date.now()/1000;
@@ -1242,7 +1481,13 @@ function drawGear(cx, cy, r, teeth, angle) {
 }
 
 function drawMazeWorld() {
-  ctx.fillStyle = '#040410'; ctx.fillRect(0,0,W,H);
+  if (BGI.warm && BGI.warm.complete && BGI.warm.naturalWidth > 0) {
+    ctx.drawImage(BGI.warm, 0, 0, W, H);
+    ctx.fillStyle = 'rgba(4,4,16,0.60)';
+    ctx.fillRect(0, 0, W, H);
+  } else {
+    ctx.fillStyle = '#040410'; ctx.fillRect(0,0,W,H);
+  }
   const cellW=W/9, cellH=(H-80)/4;
   bgE[2].forEach(cell => {
     ctx.shadowColor='#00f5ff'; ctx.shadowBlur=5;
@@ -1677,9 +1922,10 @@ function checkNPCProximity() {
 }
 
 function openNPCDialogue(npc) {
-  if (G.inDialogue || activeNPC) return;
-  activeNPC    = npc;
-  G.inDialogue = true;
+  if (activeNPC) return;            // already showing one
+  activeNPC = npc;
+  // NOTE: G.inDialogue is NOT set here — player can keep moving freely.
+  // The box auto-dismisses when the player walks away (checkNPCProximity).
 
   const box    = document.getElementById('npc-box');
   const isAr   = lang === 'ar';
@@ -1700,8 +1946,8 @@ function closeNPCDialogue(skipState) {
   box.classList.remove('visible');
   setTimeout(() => { box.style.display='none'; }, 220);
   if (skipState && activeNPC) activeNPC.state = 'skipped';
-  activeNPC    = null;
-  G.inDialogue = false;
+  activeNPC = null;
+  // G.inDialogue is NOT cleared here — it's only managed by mini-game / insight card
 }
 
 function handleHelp() {
@@ -1957,6 +2203,7 @@ function roundRect(x,y,w,h,r) {
 // ══════════════════════════════════════════════════════
 function init() {
   resize();
+  loadBGImages();
   initBgElements();
   setupButtons();
   updateFloorDots();
@@ -1968,7 +2215,8 @@ function init() {
   loop();
 }
 
-window.addEventListener('load', init);
+// Game starts after comic intro (skipIntro() calls init())
+// window.addEventListener('load', init);  ← deferred to skipIntro()
 
 // ══════════════════════════════════════════════════════
 //  GAMIFICATION — XP, Streaks, Badges (localStorage, no Supabase)
@@ -2510,6 +2758,34 @@ function showCompletionScreen() {
   document.getElementById('completion-screen').classList.add('visible');
   if (AC) [523,659,784,1047,1319].forEach((f,i) => synth('triangle', f, AC.currentTime+i*0.16, 0.3, 0.55));
 }
+
+// ══════════════════════════════════════
+//  COMIC INTRO
+// ══════════════════════════════════════
+let _introPage = 0;
+const _INTRO_TOTAL = 4;
+let _introReady = false; // prevents click-through from navigation tap
+
+function nextIntroPanel() {
+  if (!_introReady) return; // block accidental click-through on page load
+  _introPage++;
+  if (_introPage >= _INTRO_TOTAL) { skipIntro(); return; }
+  document.querySelectorAll('.intro-panel').forEach((p,i) => p.classList.toggle('active', i === _introPage));
+  document.querySelectorAll('.intro-dot').forEach((d,i) => d.classList.toggle('active', i === _introPage));
+}
+
+function skipIntro() {
+  if (!_introReady) return;
+  document.getElementById('comic-intro').classList.add('hidden');
+  init();
+}
+
+// Preload intro images & unlock clicks after 400ms (prevents navigation click-through)
+window.addEventListener('load', () => {
+  ['Assets/panel_city_panorama.jpg','Assets/panel1_alley_dark.jpg','Assets/panel2_alley_blue.jpg','Assets/panel3_alley_warm.jpg']
+    .forEach(src => { const img = new Image(); img.src = src; });
+  setTimeout(() => { _introReady = true; }, 400);
+});
 </script>
 </body>
 </html>
