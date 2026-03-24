@@ -799,7 +799,7 @@
 </div>
 
 <div id="ep-header">
-  <a id="back-btn" href="index.html">← BACK</a>
+  <a id="back-btn" href="index.html" role="button">← BACK</a>
   <div id="ep-title">Episode 1: Problem Solving</div>
   <button id="lang-btn" onclick="toggleLang()">عربي</button>
 </div>
@@ -895,7 +895,7 @@
     <div id="comp-subtitle">You mastered Problem Solving</div>
     <div id="comp-stats">
       <div class="comp-stat"><div class="comp-stat-val" id="comp-xp">0</div><div class="comp-stat-label">Total XP</div></div>
-      <div class="comp-stat"><div class="comp-stat-val" id="comp-helped">0/9</div><div class="comp-stat-label">NPCs Helped</div></div>
+      <div class="comp-stat"><div class="comp-stat-val" id="comp-helped">0/3</div><div class="comp-stat-label">Guardians Helped</div></div>
       <div class="comp-stat"><div class="comp-stat-val" id="comp-streak">0</div><div class="comp-stat-label">Best Streak</div></div>
       <div class="comp-stat"><div class="comp-stat-val" id="comp-badges-count">0</div><div class="comp-stat-label">Badges</div></div>
     </div>
@@ -990,7 +990,7 @@ const STRINGS = {
       'A workshop full of unsolved puzzles…',
       'The maze at the heart of it all…'
     ],
-    exitHint:   '➜ Walk to the green door to descend',
+    exitHint:   '➜ Help the guardian to unlock the door',
   },
   ar: {
     title:      'الحلقة ١: حل المشكلات',
@@ -1003,7 +1003,7 @@ const STRINGS = {
       'ورشة مليئة بالألغاز…',
       'المتاهة في قلب كل شيء…'
     ],
-    exitHint:   'امشِ نحو الباب الأخضر للنزول ➜',
+    exitHint:   'ساعد الحارس لفتح الباب ➜',
   }
 };
 
@@ -1030,96 +1030,36 @@ function updateFloorLabel() {
 //  NPC DATA  —  3 floors × 3 NPCs each
 // ══════════════════════════════════════════════════════
 const NPC_DATA = [
-  // ── Floor 0: The City Street ──
+  // ── Floor 0: The City Street — gate guardian ──
   [
     {
-      id:'f0n0', xr:0.18, type:'robot',
+      id:'f0n0', xr:0.80, type:'robot',
       color:'#4488ff', accent:'#88bbff',
       name:     { en:'Pixel Pete',   ar:'بيكسل بيت'   },
-      problem:  { en:'I need to choose between two roads… but both feel right!',
-                  ar:'أحتاج الاختيار بين طريقين… كلاهما يبدو صحيحاً!' },
+      problem:  { en:'I need to choose between two roads… but both feel right! Help me decide!',
+                  ar:'أحتاج الاختيار بين طريقين… كلاهما يبدو صحيحاً! ساعدني في الاختيار!' },
       insight:  { en:'That\'s decisional paralysis! Listing pros & cons — even roughly — activates your prefrontal cortex and cuts the freeze.',
                   ar:'هذا شلل القرار! كتابة الإيجابيات والسلبيات تنشّط قشرة الفص الجبهي وتكسر الجمود.' },
       icon:'🤖', game:'grid', state:'idle', helped:false
     },
-    {
-      id:'f0n1', xr:0.45, type:'cloud',
-      color:'#aabbff', accent:'#ffffff',
-      name:     { en:'Cloudy Clara',  ar:'كلاودي كلارا' },
-      problem:  { en:'My mind loops the same thoughts over and over — I can\'t move forward!',
-                  ar:'عقلي يكرر نفس الأفكار مراراً — لا أستطيع المضي قدماً!' },
-      insight:  { en:'Rumination loops are a cognitive trap. Setting a 5-minute "worry timer" then pivoting to action breaks the cycle.',
-                  ar:'حلقات الاجترار فخ معرفي. ضع مؤقتاً للقلق 5 دقائق ثم انتقل للعمل لكسر الدورة.' },
-      icon:'☁️', game:'sequence', state:'idle', helped:false
-    },
-    {
-      id:'f0n2', xr:0.72, type:'block',
-      color:'#ff8844', accent:'#ffcc88',
-      name:     { en:'Rusty Rex',    ar:'راستي ريكس'   },
-      problem:  { en:'I keep using the same solution that stopped working! Why can\'t I try something new?',
-                  ar:'أكرر نفس الحل الذي توقف عن العمل! لماذا لا أستطيع تجربة شيء جديد؟' },
-      insight:  { en:'Functional fixedness! Your brain defaults to familiar tools. Ask: "What if I did the opposite?" — it forces new pathways.',
-                  ar:'الجمود الوظيفي! دماغك يتحول للأدوات المألوفة. اسأل: "ماذا لو فعلت العكس؟" — يفتح مسارات جديدة.' },
-      icon:'🧱', game:'matching', state:'idle', helped:false
-    },
   ],
-  // ── Floor 1: The Workshop ──
+  // ── Floor 1: The Workshop — gate guardian ──
   [
     {
-      id:'f1n0', xr:0.20, type:'inventor',
-      color:'#ffdd00', accent:'#fff176',
-      name:     { en:'Gizmo',        ar:'جيزمو'         },
-      problem:  { en:'I see all these parts but can\'t figure out how they connect!',
-                  ar:'أرى كل هذه القطع لكن لا أعرف كيف تتصل!' },
-      insight:  { en:'Pattern blindness. Try chunking — group pieces by shape or function first, then look for relationships between groups.',
-                  ar:'عمى الأنماط. جرّب التجميع — صنّف القطع حسب الشكل أو الوظيفة أولاً ثم ابحث عن العلاقات.' },
-      icon:'⚙️', game:'grid', state:'idle', helped:false
-    },
-    {
-      id:'f1n1', xr:0.48, type:'scientist',
+      id:'f1n0', xr:0.80, type:'scientist',
       color:'#44dd88', accent:'#88ffcc',
       name:     { en:'Dr. Spark',    ar:'د. سبارك'      },
-      problem:  { en:'I sense the answer is right there — but I can\'t see it clearly!',
-                  ar:'أحس أن الإجابة هناك — لكن لا أستطيع رؤيتها بوضوح!' },
+      problem:  { en:'I sense the answer is right there — but I can\'t see it clearly! Can you help?',
+                  ar:'أحس أن الإجابة هناك — لكن لا أستطيع رؤيتها بوضوح! هل تساعدني؟' },
       insight:  { en:'That\'s your intuition vs analytical mind clashing! Insight often arrives after stepping away. Take a break — seriously.',
                   ar:'هذا صراع الحدس مع العقل التحليلي! الإلهام يأتي بعد الابتعاد. خذ استراحة — بجدية.' },
       icon:'🔬', game:'sequence', state:'idle', helped:false
     },
-    {
-      id:'f1n2', xr:0.76, type:'professor',
-      color:'#cc88ff', accent:'#ffaaff',
-      name:     { en:'Prof. Pippin', ar:'بروف. بيبين'   },
-      problem:  { en:'There are 47 possible solutions! I am completely paralyzed by choice!',
-                  ar:'هناك 47 حلاً ممكناً! أنا مشلول تماماً من كثرة الخيارات!' },
-      insight:  { en:'Paradox of choice — more options reduce satisfaction. Limit yourself to just 3 candidates, then pick the best.',
-                  ar:'مفارقة الاختيار — المزيد من الخيارات يقلل الرضا. حدّد نفسك بـ3 مرشحين فقط، ثم اختر الأفضل.' },
-      icon:'📚', game:'matching', state:'idle', helped:false
-    },
   ],
-  // ── Floor 2: The Maze World ──
+  // ── Floor 2: The Maze World — final guardian ──
   [
     {
-      id:'f2n0', xr:0.18, type:'shadow',
-      color:'#556677', accent:'#8899aa',
-      name:     { en:'The Shadow',   ar:'الظل'           },
-      problem:  { en:'Every path I take leads back to the same place. I\'m lost.',
-                  ar:'كل طريق آخذه يعود لنفس المكان. أنا ضائع.' },
-      insight:  { en:'You\'re stuck in a mental loop — a fixed mindset! Reframe the maze: each dead-end is data, not failure.',
-                  ar:'أنت في حلقة ذهنية مقيدة! أعِد تأطير المتاهة: كل طريق مسدود هو بيانات، ليس فشلاً.' },
-      icon:'🌑', game:'maze', state:'idle', helped:false
-    },
-    {
-      id:'f2n1', xr:0.48, type:'oracle',
-      color:'#00ddff', accent:'#88ffff',
-      name:     { en:'The Oracle',   ar:'العرّافة'        },
-      problem:  { en:'I see many futures — but which problem is the real one to solve?',
-                  ar:'أرى مستقبلات كثيرة — لكن أي مشكلة هي الحقيقية للحل؟' },
-      insight:  { en:'Root cause analysis! Ask "Why?" five times in a row about the problem — you\'ll reach the real issue every time.',
-                  ar:'تحليل السبب الجذري! اسأل "لماذا؟" خمس مرات متتالية عن المشكلة — ستصل للقضية الحقيقية في كل مرة.' },
-      icon:'🔮', game:'grid', state:'idle', helped:false
-    },
-    {
-      id:'f2n2', xr:0.76, type:'king',
+      id:'f2n0', xr:0.50, type:'king',
       color:'#ffcc00', accent:'#fff8aa',
       name:     { en:'Maze King',    ar:'ملك المتاهة'    },
       problem:  { en:'You\'ve come far, wanderer. One final challenge to prove your mastery.',
@@ -1154,6 +1094,10 @@ function resize() {
   if (MM.x > W - 80) MM.x = W - 100;
 }
 window.addEventListener('resize', () => { resize(); initBgElements(); });
+
+// ── Floor layout: all 3 panels visible simultaneously ──
+function floorH() { return Math.round(H / 3); }
+function floorY(f) { return f * floorH(); }
 
 
 // ══════════════════════════════════════════════════════
@@ -1194,8 +1138,8 @@ const MM = {
   isWalking: false,
   shadowPulse: 0,
 
-  get groundY()  { return H - 80; },
-  get spriteH()  { return Math.round(H * SPRITE_CFG.heightRatio); },
+  get groundY()  { return floorY(G.floor) + floorH() - 20; },
+  get spriteH()  { return Math.round(floorH() * 0.50); },
   get spriteW()  {
     if (!IMG.sprites) return this.spriteH * 0.6;
     const cfg = SPRITE_CFG.sheet;
@@ -1220,7 +1164,12 @@ const MM = {
     }
 
     this.x += this.vx;
-    this.x  = Math.max(10, Math.min(this.x, W - this.spriteW - 10));
+    // Door acts as physical wall when locked
+    let maxX = W - this.spriteW - 10;
+    if (G.floor < 2 && !NPC_DATA[G.floor][0].helped) {
+      maxX = Math.min(maxX, W - 46 - this.spriteW - 8);
+    }
+    this.x = Math.max(10, Math.min(this.x, maxX));
     checkExit();
   },
 
@@ -1408,152 +1357,182 @@ function initBgElements() {
 
 
 // ══════════════════════════════════════════════════════
-//  BACKGROUNDS
+//  BACKGROUNDS — all 3 panels visible at once (book layout)
 // ══════════════════════════════════════════════════════
-function drawBackground() {
-  if      (G.floor === 0) drawCityStreet();
-  else if (G.floor === 1) drawWorkshop();
-  else                    drawMazeWorld();
-}
+const FLOOR_ACCENTS = ['#7766ff', '#44dd88', '#ffcc00'];
 
-function drawCityStreet() {
+function drawBackground() {
+  // Single shared background across all 3 floors
   if (BGI.city && BGI.city.complete && BGI.city.naturalWidth > 0) {
     ctx.drawImage(BGI.city, 0, 0, W, H);
-    ctx.fillStyle = 'rgba(6,3,24,0.52)';
+    ctx.fillStyle = 'rgba(4,3,18,0.65)';
     ctx.fillRect(0, 0, W, H);
   } else {
     const sky = ctx.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, '#060318'); sky.addColorStop(1, '#150830');
+    sky.addColorStop(0, '#060318'); sky.addColorStop(0.5, '#0d0420'); sky.addColorStop(1, '#150830');
     ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffffff33';
+    for (let i = 0; i < 70; i++) ctx.fillRect((i*137.5)%W, (i*91.3)%(H*0.9), 1.5, 1.5);
   }
-  ctx.fillStyle = '#ffffff55';
-  for (let i = 0; i < 55; i++) ctx.fillRect((i*137.5)%W, (i*91.3)%(H*0.55), 1.5, 1.5);
-  bgE[0].forEach(b => {
-    const bx = b.x % W, by = H - 80 - b.h;
-    ctx.fillStyle = `hsl(${b.hue},35%,11%)`; ctx.fillRect(bx, by, b.w, b.h);
-    for (let wr = 0; wr < b.winRows; wr++) {
-      for (let wc = 0; wc < 2; wc++) {
-        ctx.fillStyle = (bx+wr+wc)%3!==0 ? '#ffd70033' : '#00f5ff22';
-        ctx.fillRect(bx+8+wc*Math.floor(b.w/3), by+10+wr*18, 9, 11);
-      }
-    }
-    ctx.strokeStyle = `hsl(${b.hue},75%,45%)`; ctx.lineWidth = 1;
-    ctx.strokeRect(bx, by, b.w, b.h);
-  });
-  const grd = ctx.createLinearGradient(0, H-80, 0, H);
-  grd.addColorStop(0,'#1a0a45'); grd.addColorStop(1,'#05030f');
-  ctx.fillStyle = grd; ctx.fillRect(0, H-80, W, 80);
-  ctx.shadowColor = '#ff00ff'; ctx.shadowBlur = 12;
-  ctx.strokeStyle = '#ff00ff'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(0,H-80); ctx.lineTo(W,H-80); ctx.stroke();
-  ctx.shadowBlur = 0;
-  drawSceneLabel(S('floorNames')[0], S('intro')[0]);
+  // Draw each floor panel
+  for (let f = 0; f < 3; f++) drawFloorPanel(f);
 }
 
-function drawWorkshop() {
-  if (BGI.dark && BGI.dark.complete && BGI.dark.naturalWidth > 0) {
-    ctx.drawImage(BGI.dark, 0, 0, W, H);
-    ctx.fillStyle = 'rgba(12,19,10,0.52)';
-    ctx.fillRect(0, 0, W, H);
-  } else {
-    const bg = ctx.createLinearGradient(0,0,0,H);
-    bg.addColorStop(0,'#0c130a'); bg.addColorStop(1,'#080f06');
-    ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
-  }
-  ctx.fillStyle = '#2a1a0a';
-  ctx.fillRect(0,H*0.22,W,10); ctx.fillRect(0,H*0.52,W,10);
-  const now = Date.now()/1000;
-  bgE[1].forEach((g,i) => drawGear(g.x%W, H*g.y, g.r, g.teeth, now*0.4*(i%2===0?1:-1)));
-  ctx.fillStyle = '#100c04'; ctx.fillRect(0,H-80,W,80);
-  ctx.shadowColor = '#ffaa00'; ctx.shadowBlur = 10;
-  ctx.strokeStyle = '#ffaa00'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(0,H-80); ctx.lineTo(W,H-80); ctx.stroke();
-  ctx.shadowBlur = 0;
-  drawSceneLabel(S('floorNames')[1], S('intro')[1]);
-}
+function drawFloorPanel(f) {
+  const fH  = floorH();
+  const fy  = floorY(f);
+  const acc = FLOOR_ACCENTS[f];
 
-function drawGear(cx, cy, r, teeth, angle) {
-  ctx.save(); ctx.translate(cx,cy); ctx.rotate(angle);
-  ctx.strokeStyle = '#ffaa0066'; ctx.lineWidth = 2;
-  ctx.shadowColor = '#ffaa0088'; ctx.shadowBlur = 6;
-  for (let i = 0; i < teeth; i++) {
-    const a=(i/teeth)*Math.PI*2, a2=((i+0.4)/teeth)*Math.PI*2;
-    ctx.beginPath();
-    ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);
-    ctx.lineTo(Math.cos(a)*(r+7),Math.sin(a)*(r+7));
-    ctx.lineTo(Math.cos(a2)*(r+7),Math.sin(a2)*(r+7));
-    ctx.lineTo(Math.cos(a2)*r,Math.sin(a2)*r);
-    ctx.stroke();
-  }
-  ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
-  ctx.restore();
-}
+  // Subtle per-floor colour tint
+  const tints = ['rgba(0,0,80,0.12)', 'rgba(0,60,20,0.12)', 'rgba(60,20,0,0.12)'];
+  ctx.fillStyle = tints[f];
+  ctx.fillRect(0, fy, W, fH);
 
-function drawMazeWorld() {
-  if (BGI.warm && BGI.warm.complete && BGI.warm.naturalWidth > 0) {
-    ctx.drawImage(BGI.warm, 0, 0, W, H);
-    ctx.fillStyle = 'rgba(4,4,16,0.60)';
-    ctx.fillRect(0, 0, W, H);
-  } else {
-    ctx.fillStyle = '#040410'; ctx.fillRect(0,0,W,H);
-  }
-  const cellW=W/9, cellH=(H-80)/4;
-  bgE[2].forEach(cell => {
-    ctx.shadowColor='#00f5ff'; ctx.shadowBlur=5;
-    ctx.strokeStyle='#00f5ff44'; ctx.lineWidth=1.5;
-    ctx.strokeRect(cell.col*cellW+3, cell.row*cellH+3, cellW-6, cellH-6);
-    ctx.shadowBlur=0;
-  });
-  ctx.strokeStyle='#00f5ff0d'; ctx.lineWidth=1;
-  for (let i=0;i<=9;i++){ctx.beginPath();ctx.moveTo(i*cellW,0);ctx.lineTo(i*cellW,H-80);ctx.stroke();}
-  for (let i=0;i<=4;i++){ctx.beginPath();ctx.moveTo(0,i*cellH);ctx.lineTo(W,i*cellH);ctx.stroke();}
-  ctx.fillStyle='#040410'; ctx.fillRect(0,H-80,W,80);
-  ctx.shadowColor='#00f5ff'; ctx.shadowBlur=18;
-  ctx.strokeStyle='#00f5ff'; ctx.lineWidth=3;
-  ctx.beginPath(); ctx.moveTo(0,H-80); ctx.lineTo(W,H-80); ctx.stroke();
-  ctx.shadowBlur=0;
-  drawSceneLabel(S('floorNames')[2], S('intro')[2]);
-}
-
-function drawSceneLabel(name, sub) {
+  // ── Architectural platform (floor shelf) ──
+  const platY = fy + fH - 20;
   ctx.save();
-  const align = lang==='ar' ? 'right' : 'left';
-  const tx    = lang==='ar' ? W-12 : 12;
-  ctx.textAlign = align;
-  ctx.font = `${clamp(14,W*0.038,20)}px Bangers`;
-  ctx.fillStyle = '#ffffff33'; ctx.shadowColor='#00000088'; ctx.shadowBlur=6;
-  ctx.fillText(name, tx, 28);
-  ctx.font = `${clamp(10,W*0.025,14)}px Cairo`;
-  ctx.fillStyle = '#ffffff28';
-  ctx.fillText(sub, tx, 48);
+  ctx.shadowColor = acc; ctx.shadowBlur = 8;
+  ctx.fillStyle = '#06050f';
+  ctx.fillRect(0, platY, W, 20);
+  ctx.strokeStyle = acc; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, platY); ctx.lineTo(W, platY); ctx.stroke();
+  // Perspective tile marks
+  ctx.globalAlpha = 0.18; ctx.lineWidth = 1;
+  for (let tx = 0; tx < W; tx += 44) {
+    ctx.beginPath(); ctx.moveTo(tx, platY); ctx.lineTo(tx, platY + 20); ctx.stroke();
+  }
+  ctx.restore();
+
+  // ── Door arch on right side (floors 0 and 1 only) ──
+  if (f < 2) drawDoorArch(f, fy, fH, acc);
+
+  // ── Connecting shaft between floors ──
+  if (f < 2) drawConnectingShaft(f, fy, fH);
+
+  // ── Decorative background elements per floor ──
+  drawFloorDecor(f, fy, fH, acc);
+
+  // ── Panel separator ──
+  if (f > 0) {
+    ctx.save();
+    ctx.strokeStyle = '#ffffff14';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 6]);
+    ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(W, fy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  // ── Floor label ──
+  const names = S('floorNames');
+  ctx.save();
+  const lx = lang === 'ar' ? W - 10 : 10;
+  ctx.textAlign = lang === 'ar' ? 'right' : 'left';
+  ctx.font = `${clamp(11, W * 0.030, 16)}px Bangers`;
+  ctx.fillStyle = acc + '55';
+  ctx.shadowColor = '#00000066'; ctx.shadowBlur = 4;
+  ctx.fillText(names[f], lx, fy + 18);
   ctx.restore();
 }
 
+function drawDoorArch(f, fy, fH, acc) {
+  const npc    = NPC_DATA[f][0];
+  const isOpen = npc.helped;
+  const col    = isOpen ? '#00ff88' : '#ff4444';
+  const glow   = 6 + Math.sin(Date.now() / 350) * 3;
+  const platY  = fy + fH - 20;
+
+  const aW = 30, aH = 48;
+  const ax  = W - 46, ay = platY - aH;
+
+  ctx.save();
+  ctx.shadowColor = col; ctx.shadowBlur = glow;
+  // Arch body
+  ctx.fillStyle   = isOpen ? '#001812' : '#1c0808';
+  ctx.strokeStyle = col; ctx.lineWidth = 2;
+  ctx.fillRect(ax, ay + aH * 0.38, aW, aH * 0.62);
+  ctx.strokeRect(ax, ay + aH * 0.38, aW, aH * 0.62);
+  // Arch top semicircle
+  ctx.beginPath();
+  ctx.arc(ax + aW / 2, ay + aH * 0.38, aW / 2, Math.PI, 0);
+  ctx.fillStyle = isOpen ? '#002016' : '#1f0606';
+  ctx.fill(); ctx.stroke();
+  // Door handle
+  ctx.shadowBlur = 3;
+  ctx.beginPath(); ctx.arc(ax + aW * 0.78, ay + aH * 0.68, 3, 0, Math.PI * 2);
+  ctx.fillStyle = col; ctx.fill();
+  // Status indicator
+  ctx.font = '11px Bangers'; ctx.textAlign = 'center';
+  ctx.fillStyle = col + 'cc';
+  ctx.fillText(isOpen ? '▼' : '🔒', ax + aW / 2, ay - 6);
+  ctx.restore();
+}
+
+function drawConnectingShaft(f, fy, fH) {
+  const npc  = NPC_DATA[f][0];
+  const open = npc.helped;
+  const cx   = W - 46 + 15; // center of door
+  const sW   = 10;
+  const top  = fy + fH - 20;
+  const bot  = top + 20;
+
+  ctx.save();
+  ctx.fillStyle = open ? '#00ff8828' : '#ffffff08';
+  ctx.fillRect(cx - sW / 2, top, sW, bot - top);
+  ctx.restore();
+}
+
+function drawFloorDecor(f, fy, fH, acc) {
+  // Subtle architectural background details per floor
+  ctx.save();
+  ctx.globalAlpha = 0.10;
+  ctx.strokeStyle = acc;
+  ctx.lineWidth   = 1;
+  const midY = fy + fH / 2;
+  if (f === 0) {
+    // City: faint building silhouettes
+    bgE[0].forEach(b => {
+      const bx = b.x % W, bh = b.h * 0.55, by = fy + fH - 20 - bh;
+      ctx.fillStyle = acc;
+      ctx.fillRect(bx, by, b.w * 0.6, bh);
+    });
+  } else if (f === 1) {
+    // Workshop: faint gear shapes
+    bgE[1].forEach(g => {
+      ctx.beginPath();
+      ctx.arc(g.x % W, fy + fH * g.y * 0.5, g.r * 0.6, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+  } else {
+    // Maze world: faint grid lines
+    const cellW = W / 6, cellH = (fH - 20) / 2;
+    for (let i = 1; i < 6; i++) { ctx.beginPath(); ctx.moveTo(i * cellW, fy); ctx.lineTo(i * cellW, fy + fH - 20); ctx.stroke(); }
+    for (let i = 1; i < 2; i++) { ctx.beginPath(); ctx.moveTo(0, fy + i * cellH); ctx.lineTo(W, fy + i * cellH); ctx.stroke(); }
+  }
+  ctx.restore();
+}
 
 // ══════════════════════════════════════════════════════
-//  NPC DRAWING
+//  NPC DRAWING — all 3 floor guardians drawn each frame
 // ══════════════════════════════════════════════════════
 function drawNPCs() {
-  const npcs = NPC_DATA[G.floor];
-  npcs.forEach(npc => {
-    const nx  = npc.xr * W;
-    const ny  = H - 80;   // ground level
-    const nh  = Math.round(H * 0.22);  // NPC height
-    npc._x    = nx;       // cache for proximity check
-    npc._y    = ny;
-    npc._h    = nh;
+  for (let f = 0; f < 3; f++) {
+    const fH  = floorH();
+    const fy  = floorY(f);
+    const npc = NPC_DATA[f][0];
 
-    // Facing direction toward Maze Man
-    const facingRight = MM.cx > nx;
+    const nx = npc.xr * W;
+    const ny = fy + fH - 20;         // ground of this floor
+    const nh = Math.round(fH * 0.52); // fits in 1/3 of screen
 
+    npc._x = nx; npc._y = ny; npc._h = nh; npc._floor = f;
+
+    const facingRight = (f === G.floor) ? (MM.cx > nx) : true;
     drawNPCBody(npc, nx, ny, nh, facingRight);
 
-    // Speech bubble when near
     if (npc.state === 'near') drawProximityBubble(nx, ny - nh - 10);
-
-    // ✓ badge when helped
     if (npc.helped) drawHelpedBadge(nx, ny - nh - 6);
-  });
+  }
 }
 
 function drawNPCBody(npc, cx, groundY, h, facingRight) {
@@ -1911,23 +1890,20 @@ const PROXIMITY_DIST = 90;
 
 function checkNPCProximity() {
   if (G.transitioning || G.inDialogue) return;
-  const npcs = NPC_DATA[G.floor];
-  let nearAny = false;
-
-  npcs.forEach(npc => {
-    if (npc.helped || npc.state === 'skipped') { npc.state = npc.helped ? 'helped' : 'skipped'; return; }
-    if (!npc._x) return;
-    const dist = Math.abs(MM.cx - npc._x);
-    if (dist < PROXIMITY_DIST) {
-      npc.state = 'near';
-      nearAny   = true;
-      if (!activeNPC) openNPCDialogue(npc);
-    } else {
-      if (npc.state === 'near') npc.state = 'idle';
-    }
-  });
-
-  if (!nearAny && activeNPC && !G.inDialogue) closeNPCDialogue(false);
+  const npc = NPC_DATA[G.floor][0];
+  if (!npc._x) return;
+  if (npc.helped || npc.state === 'skipped') {
+    npc.state = npc.helped ? 'helped' : 'skipped';
+    return;
+  }
+  const dist = Math.abs(MM.cx - npc._x);
+  if (dist < PROXIMITY_DIST) {
+    npc.state = 'near';
+    if (!activeNPC) openNPCDialogue(npc);
+  } else {
+    if (npc.state === 'near') npc.state = 'idle';
+    if (activeNPC === npc && !G.inDialogue) closeNPCDialogue(false);
+  }
 }
 
 function openNPCDialogue(npc) {
@@ -2007,48 +1983,34 @@ function playInsightChime() {
 
 
 // ══════════════════════════════════════════════════════
-//  EXIT DOOR
+//  EXIT / FLOOR TRANSITION
 // ══════════════════════════════════════════════════════
-function drawExitDoor() {
-  if (G.floor >= 2) return;
-  const dx  = W - 58, dy = H - 80 - 58;
-  const glow = 8 + Math.sin(Date.now()/350)*4;
-  ctx.save();
-  ctx.shadowColor='#00ff88'; ctx.shadowBlur=glow;
-  ctx.fillStyle='#001f10'; ctx.strokeStyle='#00ff88'; ctx.lineWidth=2.5;
-  roundRect(dx, dy, 36, 54, 4); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.arc(dx+18,dy,18,Math.PI,0);
-  ctx.fillStyle='#002a18'; ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.arc(dx+27,dy+30,3.5,0,Math.PI*2);
-  ctx.fillStyle='#00ff88'; ctx.fill();
-  ctx.shadowBlur=5;
-  ctx.font='14px Bangers'; ctx.fillStyle='#00ff88bb'; ctx.textAlign='center';
-  ctx.fillText('▼', dx+18, dy-10);
-  ctx.restore();
-}
+// Doors are drawn inside drawFloorPanel() — no separate drawExitDoor needed.
 
 function checkExit() {
   if (G.floor >= 2 || G.transitioning) return;
-  if (MM.x + MM.spriteW > W - 58 - 4 && MM.x < W - 20) triggerFloorTransition();
+  if (!NPC_DATA[G.floor][0].helped) return;  // door locked
+  if (MM.x + MM.spriteW > W - 46 - 4) triggerFloorTransition();
 }
 
 function triggerFloorTransition() {
   if (G.transitioning) return;
   G.transitioning = true;
   playChime();
+  // Brief flash then instantly move to next floor (all floors stay visible)
   const ov = document.getElementById('transition-overlay');
   ov.classList.add('fade-in');
   setTimeout(() => {
     G.floor++;
-    MM.x = 60; MM.facing = 1;
+    MM.x = 50; MM.facing = 1;
     activeNPC = null; G.inDialogue = false;
     updateFloorDots(); updateProgressBar(); updateFloorLabel();
+    ov.classList.remove('fade-in');
     setTimeout(() => {
-      ov.classList.remove('fade-in');
       G.transitioning = false;
-      showHint(S('intro')[G.floor], 3200);
-    }, 100);
-  }, 500);
+      showHint(S('intro')[G.floor], 2800);
+    }, 200);
+  }, 220);
 }
 
 
@@ -2185,7 +2147,6 @@ function render() {
   ctx.clearRect(0,0,W,H);
   drawBackground();
   drawNPCs();
-  drawExitDoor();
   MM.draw();
 }
 
@@ -2220,7 +2181,7 @@ function init() {
   updateFloorLabel();
   MM.x = 60;
   loadImages();  // load sprite sheet + portrait
-  setTimeout(() => showHint(S('intro')[0]+'  '+S('exitHint'), 4500), 900);
+  setTimeout(() => showHint(S('exitHint'), 4500), 900);
   loop();
 }
 
@@ -2255,8 +2216,8 @@ const STATS = {
 const BADGES_DEF = [
   { id:'first_helper', icon:'🤝', name:'First Helper',        sub:'Helped your first NPC',         check: () => STATS.helped >= 1 },
   { id:'on_fire',      icon:'🔥', name:'On Fire!',            sub:'3 wins in a row',               check: () => STATS.streak >= 3 },
-  { id:'halfway',      icon:'⚡', name:'Halfway There',       sub:'Helped 5 NPCs',                 check: () => STATS.helped >= 5 },
-  { id:'solver',       icon:'🧠', name:'Problem Solver Lv.1', sub:'All 9 NPCs helped',             check: () => STATS.helped >= 9 },
+  { id:'halfway',      icon:'⚡', name:'Halfway There',       sub:'Helped 2 guardians',            check: () => STATS.helped >= 2 },
+  { id:'solver',       icon:'🧠', name:'Problem Solver Lv.1', sub:'All 3 guardians helped',        check: () => STATS.helped >= 3 },
 ];
 
 function addXP(n) {
@@ -2738,7 +2699,7 @@ function checkCompletion() {
   if (completionShown) return;
   const totalHelped = NPC_DATA.flat().filter(n => n.helped).length;
   const floor2Done  = NPC_DATA[2].every(n => n.helped);
-  if (floor2Done || totalHelped >= 9) {
+  if (floor2Done || totalHelped >= 3) {
     completionShown = true;
     setTimeout(showCompletionScreen, 2200);
   }
@@ -2746,7 +2707,7 @@ function checkCompletion() {
 
 function showCompletionScreen() {
   document.getElementById('comp-xp').textContent           = STATS.xp;
-  document.getElementById('comp-helped').textContent       = STATS.helped + '/9';
+  document.getElementById('comp-helped').textContent       = STATS.helped + '/3';
   document.getElementById('comp-streak').textContent       = STATS.bestStreak;
   document.getElementById('comp-badges-count').textContent = STATS.badges.length;
 
@@ -2794,6 +2755,23 @@ window.addEventListener('load', () => {
   ['Assets/panel_city_panorama.jpg','Assets/panel1_alley_dark.jpg','Assets/panel2_alley_blue.jpg','Assets/panel3_alley_warm.jpg']
     .forEach(src => { const img = new Image(); img.src = src; });
   setTimeout(() => { _introReady = true; }, 400);
+
+  // Smart back button: close open overlays first, navigate only when all are closed
+  document.getElementById('back-btn').addEventListener('click', function(e) {
+    e.preventDefault();
+    if (document.getElementById('minigame-overlay')?.classList.contains('visible')) {
+      closeMiniGame(); return;
+    }
+    if (document.getElementById('insight-card')?.classList.contains('visible')) {
+      closeInsight(); return;
+    }
+    if (document.getElementById('npc-box')?.classList.contains('visible')) {
+      handleSkip(); return;
+    }
+    // Nothing open — stop speech and navigate home
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    window.location.href = 'index.html';
+  });
 });
 </script>
 </body>
