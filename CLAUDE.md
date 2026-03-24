@@ -57,3 +57,44 @@ Live URL: https://kawkaba-cognito.github.io/the-maze-man-comics/
 
 ### Audio
 Synthesized via Web Audio API (no audio files). Narration uses Web Speech API text-to-speech.
+
+---
+
+## PENDING WORK: Security & Database
+
+### Status
+- Supabase was set up in a previous session but is NOT yet integrated into the React app.
+- Security hardening has NOT been done yet.
+- These must be completed before any public/production launch.
+
+### Database (Supabase)
+- [ ] Connect Supabase client to the React app (`@supabase/supabase-js`)
+- [ ] Store Supabase URL and anon key in `.env` file (NEVER hardcode in source)
+- [ ] Add `.env` to `.gitignore` so secrets never reach GitHub
+- [ ] Tables needed: `users`, `progress` (XP, floors unlocked), `comics_read`, `profiles`
+- [ ] Use Supabase Auth for login (email/password + Google OAuth)
+- [ ] Row Level Security (RLS): every table must have RLS enabled — users can only read/write their own rows
+- [ ] Never expose service role key to the frontend — server-side only
+
+### Security Checklist (PWA Hardening)
+- [ ] **Content Security Policy (CSP)**: Add strict CSP headers — allow only trusted CDNs (BabylonJS, Google Fonts), block inline scripts except where needed
+- [ ] **HTTPS only**: GitHub Pages already enforces HTTPS — maintain this on any future hosting
+- [ ] **No secrets in source**: All API keys, Supabase URL/keys in `.env`, never committed to Git
+- [ ] **Input sanitization**: Sanitize any user-submitted text (username, profile data) before storing in Supabase
+- [ ] **Rate limiting**: Enable Supabase rate limiting on auth endpoints to prevent brute force
+- [ ] **Auth token storage**: Store Supabase session in `localStorage` (Supabase default) — never in URL params
+- [ ] **XSS prevention**: React already escapes JSX output — avoid `dangerouslySetInnerHTML` everywhere
+- [ ] **CSRF protection**: Not needed for pure SPA + Supabase (token-based auth, no cookies)
+- [ ] **Dependency audit**: Run `npm audit` before every release and fix critical/high vulnerabilities
+- [ ] **Subresource Integrity (SRI)**: Add `integrity` hash attributes to CDN script tags in `index.html` (Babylon.js CDN)
+- [ ] **Service Worker scope**: Ensure SW only caches intended routes — never cache auth tokens
+- [ ] **Capacitor native**: When building for iOS/Android, enable Capacitor's HTTPS-only mode and disable `cleartext` traffic
+- [ ] **Environment separation**: Use separate Supabase projects for dev vs. production
+
+### Priority Order
+1. Supabase Auth + user table + RLS
+2. `.env` setup and secret management
+3. CSP headers
+4. Input sanitization
+5. `npm audit` clean
+6. SRI for CDN scripts
