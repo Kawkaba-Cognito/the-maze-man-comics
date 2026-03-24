@@ -4,7 +4,7 @@ export const COMICS_DATA = [
     cat: 'cognitive', catLabel: 'Cognitive Psych',
     icon: '🧩', bg: '#b8c0ff', free: true,
     type: 'game', url: './episode-1-problem-solving.html',
-    cover: '/Assets/cover_art.jpg', pages: []
+    cover: './Assets/cover_art.jpg', pages: []
   },
 ];
 
