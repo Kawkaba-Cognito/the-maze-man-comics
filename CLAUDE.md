@@ -15,14 +15,17 @@ npm run dev                      # local dev server at localhost:5173
 
 ## Deploying to GitHub Pages
 
-After any update, build and deploy with:
+**ALWAYS run this after every update — no exceptions:**
 
 ```bash
 npm run build && npx gh-pages -d dist
 ```
 
-GitHub Pages is configured to serve from the `gh-pages` branch (root folder).
+GitHub Pages serves from the `gh-pages` branch (root folder).
 Live URL: https://kawkaba-cognito.github.io/the-maze-man-comics/
+
+> NOTE: Windows filesystem is case-insensitive but GitHub Pages (Linux) is case-sensitive.
+> `assetsDir` in vite.config.js is set to `Assets` (uppercase) to match `public/Assets/`.
 
 ## Architecture
 
