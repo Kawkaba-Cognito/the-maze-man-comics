@@ -52,5 +52,6 @@ export default defineConfig({
       }
     })
   ],
+  base: '/the-maze-man-comics/',
   build: { outDir: 'dist' }
 });
