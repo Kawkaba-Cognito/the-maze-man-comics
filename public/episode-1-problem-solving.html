@@ -198,6 +198,47 @@
     #score-val { font-size: 22px; color: #ffd700; text-shadow: 0 0 10px #ffd70088; }
     #floor-label { display: block; font-family: 'Cairo', sans-serif; font-size: 11px; color: #aaa; margin-top: 2px; }
 
+    /* ── VIRTUAL JOYSTICK (mobile only) ── */
+    #joystick-zone {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      width: 96px;
+      height: 96px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      touch-action: none;
+    }
+    #joystick-base {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: rgba(0,245,255,0.06);
+      border: 2px solid rgba(0,245,255,0.25);
+      position: relative;
+    }
+    #joystick-knob {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(0,245,255,0.35);
+      border: 2px solid rgba(0,245,255,0.7);
+      box-shadow: 0 0 14px rgba(0,245,255,0.45);
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    /* On touch devices: hide d-pad buttons, shrink bar, show joystick */
+    @media (pointer: coarse) {
+      .ctrl-btn { display: none; }
+      #controls { justify-content: center; padding: 4px 16px; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+      #joystick-zone { display: flex; }
+    }
+
     /* ── NPC DIALOGUE BOX ── */
     #npc-box {
       position: absolute;
@@ -816,6 +857,12 @@
 
 <div id="canvas-wrapper">
   <canvas id="game-canvas"></canvas>
+  <!-- Virtual joystick — visible on touch devices only -->
+  <div id="joystick-zone">
+    <div id="joystick-base">
+      <div id="joystick-knob"></div>
+    </div>
+  </div>
   <div id="dialogue"></div>
 
   <!-- NPC Dialogue Box -->
@@ -1142,7 +1189,7 @@ const MM = {
   shadowPulse: 0,
 
   get groundY()  { return floorY(G.floor) + floorH() - 20; },
-  get spriteH()  { return Math.round(floorH() * 0.50); },
+  get spriteH()  { return Math.round(floorH() * 0.36); },
   get spriteW()  {
     if (!IMG.sprites) return this.spriteH * 0.6;
     const cfg = SPRITE_CFG.sheet;
@@ -2758,6 +2805,59 @@ window.addEventListener('load', () => {
   ['Assets/panel_city_panorama.jpg','Assets/panel1_alley_dark.jpg','Assets/panel2_alley_blue.jpg','Assets/panel3_alley_warm.jpg']
     .forEach(src => { const img = new Image(); img.src = src; });
   setTimeout(() => { _introReady = true; }, 400);
+
+  // ── Virtual joystick ──
+  (function() {
+    const zone = document.getElementById('joystick-zone');
+    const base = document.getElementById('joystick-base');
+    const knob = document.getElementById('joystick-knob');
+    const RADIUS = 28;
+    let activeTid = null, baseCX = 0;
+
+    function cacheCenter() {
+      const r = base.getBoundingClientRect();
+      baseCX = r.left + r.width / 2;
+    }
+
+    function applyDX(dx) {
+      const clamped = Math.max(-RADIUS, Math.min(RADIUS, dx));
+      // position knob
+      knob.style.left = (50 + (clamped / (base.offsetWidth / 2)) * 50) + '%';
+      if (dx < -6)      { keys.left = true;  keys.right = false; }
+      else if (dx > 6)  { keys.right = true; keys.left = false;  }
+      else              { keys.left = false;  keys.right = false; }
+    }
+
+    function resetJoy() {
+      activeTid = null;
+      keys.left = false;
+      keys.right = false;
+      knob.style.left = '50%';
+    }
+
+    zone.addEventListener('touchstart', e => {
+      e.preventDefault();
+      ensureAudio();
+      cacheCenter();
+      activeTid = e.changedTouches[0].identifier;
+      applyDX(e.changedTouches[0].clientX - baseCX);
+    }, { passive: false });
+
+    zone.addEventListener('touchmove', e => {
+      e.preventDefault();
+      for (const t of e.touches) {
+        if (t.identifier === activeTid) { applyDX(t.clientX - baseCX); return; }
+      }
+    }, { passive: false });
+
+    zone.addEventListener('touchend', e => {
+      for (const t of e.changedTouches) {
+        if (t.identifier === activeTid) { resetJoy(); return; }
+      }
+    }, { passive: false });
+
+    zone.addEventListener('touchcancel', resetJoy, { passive: false });
+  })();
 
   // Smart back button: close open overlays first, navigate only when all are closed
   document.getElementById('back-btn').addEventListener('click', function(e) {
