@@ -1,0 +1,2778 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>Episode 1: Problem Solving — The Maze Man Comics</title>
+  <!-- Google Fonts: free, requires internet. Bangers = comic title, Cairo = Arabic -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+  <link rel="shortcut icon" href="favicon.ico">
+  <meta name="theme-color" content="#05050f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Maze Man">
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Cairo:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #05050f;
+      color: #fff;
+      font-family: 'Bangers', cursive;
+      overflow: hidden;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      touch-action: manipulation;
+      padding-top: env(safe-area-inset-top);
+    }
+
+    /* ── HEADER ── */
+    #ep-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: #08081a;
+      border-bottom: 2px solid #00f5ff;
+      flex-shrink: 0;
+    }
+    #back-btn {
+      background: transparent;
+      border: 1.5px solid #00f5ff44;
+      color: #00f5ff99;
+      padding: 4px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: 'Bangers', cursive;
+      letter-spacing: 1px;
+      text-decoration: none;
+    }
+    #ep-title {
+      font-size: clamp(13px, 3vw, 19px);
+      color: #00f5ff;
+      text-shadow: 0 0 12px #00f5ff88;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+    #lang-btn {
+      background: transparent;
+      border: 1.5px solid #00f5ff;
+      color: #00f5ff;
+      padding: 4px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-family: 'Cairo', sans-serif;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    #lang-btn:hover { background: #00f5ff22; }
+
+    /* ── PROGRESS ── */
+    #progress-bar { height: 4px; background: #111; flex-shrink: 0; }
+    #progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00f5ff, #ff00ff);
+      width: 0%;
+      transition: width 0.6s ease;
+    }
+
+    /* ── FLOOR DOTS ── */
+    #floor-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 5px;
+      background: #08081a;
+      flex-shrink: 0;
+    }
+    .floor-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      border: 1.5px solid #00f5ff33;
+      transition: all 0.35s;
+    }
+    .floor-dot.active { background: #00f5ff; border-color: #00f5ff; box-shadow: 0 0 8px #00f5ffcc; }
+    .floor-dot.visited { background: #00f5ff55; border-color: #00f5ff88; }
+
+    /* ── CANVAS ── */
+    #canvas-wrapper {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+      width: 100%;
+    }
+    #game-canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+    /* ── DIALOGUE ── */
+    #dialogue {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0a0a1aee;
+      border: 2px solid #00f5ff;
+      border-radius: 14px;
+      padding: 10px 18px;
+      max-width: 88%;
+      font-family: 'Cairo', sans-serif;
+      font-size: clamp(12px, 2.5vw, 15px);
+      color: #fff;
+      display: none;
+      text-align: center;
+      box-shadow: 0 0 24px #00f5ff44;
+      z-index: 5;
+      line-height: 1.5;
+      pointer-events: none;
+    }
+    #dialogue.rtl { direction: rtl; text-align: right; }
+
+    /* ── SPRITE LOADING BANNER ── */
+    #sprite-status {
+      position: absolute;
+      top: 8px; left: 50%;
+      transform: translateX(-50%);
+      background: #ff880033;
+      border: 1px solid #ff8800;
+      border-radius: 8px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-family: 'Cairo', sans-serif;
+      color: #ff8800;
+      display: none;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* ── TRANSITION ── */
+    #transition-overlay {
+      position: absolute;
+      inset: 0;
+      background: #05050f;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.45s ease;
+      z-index: 20;
+    }
+    #transition-overlay.fade-in { opacity: 1; pointer-events: all; }
+
+    /* ── CONTROLS ── */
+    #controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 24px;
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+      background: #08081a;
+      border-top: 1px solid #00f5ff22;
+      flex-shrink: 0;
+    }
+    .ctrl-btn {
+      background: #00f5ff18;
+      border: 1.5px solid #00f5ff66;
+      color: #00f5ff;
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      font-size: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    .ctrl-btn:active, .ctrl-btn.pressed {
+      background: #00f5ff44;
+      transform: scale(0.9);
+      box-shadow: 0 0 12px #00f5ff66;
+    }
+    #hud-center { text-align: center; }
+    #score-val { font-size: 22px; color: #ffd700; text-shadow: 0 0 10px #ffd70088; }
+    #floor-label { display: block; font-family: 'Cairo', sans-serif; font-size: 11px; color: #aaa; margin-top: 2px; }
+
+    /* ── NPC DIALOGUE BOX ── */
+    #npc-box {
+      position: absolute;
+      left: 50%;
+      bottom: 52%;
+      transform: translateX(-50%) scale(0.92);
+      background: #0c0c20ee;
+      border: 2px solid #ffcc00;
+      border-radius: 16px;
+      padding: 14px 18px 12px;
+      max-width: 86%;
+      min-width: 220px;
+      z-index: 8;
+      text-align: center;
+      box-shadow: 0 0 32px #ffcc0044;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+    }
+    #npc-box.visible {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+      pointer-events: all;
+    }
+    #npc-box.rtl { direction: rtl; text-align: right; }
+    #npc-name-tag {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(15px, 4vw, 20px);
+      color: #ffcc00;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      text-shadow: 0 0 8px #ffcc0088;
+    }
+    #npc-speech {
+      font-family: 'Cairo', sans-serif;
+      font-size: clamp(12px, 2.8vw, 14px);
+      color: #ddd;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    #npc-btn-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .npc-btn {
+      padding: 7px 18px;
+      border-radius: 22px;
+      border: none;
+      font-family: 'Bangers', cursive;
+      font-size: clamp(14px, 3.5vw, 17px);
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.5px;
+    }
+    #btn-help {
+      background: linear-gradient(135deg, #00f5ff, #0088cc);
+      color: #05050f;
+      box-shadow: 0 0 12px #00f5ff55;
+    }
+    #btn-help:hover { transform: scale(1.06); box-shadow: 0 0 18px #00f5ff88; }
+    #btn-skip {
+      background: transparent;
+      color: #888;
+      border: 1.5px solid #444;
+    }
+    #btn-skip:hover { color: #bbb; border-color: #666; }
+
+    /* ── INSIGHT CARD ── */
+    #insight-card {
+      position: absolute;
+      left: 50%; bottom: 52%;
+      transform: translateX(-50%) scale(0.92);
+      background: #05150aee;
+      border: 2px solid #00ff88;
+      border-radius: 16px;
+      padding: 14px 18px 14px;
+      max-width: 86%; min-width: 220px;
+      z-index: 9;
+      text-align: center;
+      box-shadow: 0 0 32px #00ff8844;
+      display: none; opacity: 0;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      pointer-events: none;
+    }
+    #insight-card.visible {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+      pointer-events: all;
+    }
+    #insight-card.rtl { direction: rtl; text-align: right; }
+    #insight-icon { font-size: 26px; margin-bottom: 4px; }
+    #insight-title {
+      font-family: 'Bangers', cursive;
+      color: #00ff88;
+      font-size: clamp(14px, 3.5vw, 18px);
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    #insight-text {
+      font-family: 'Cairo', sans-serif;
+      font-size: clamp(11px, 2.6vw, 13px);
+      color: #ccc;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    #btn-insight-ok {
+      background: linear-gradient(135deg,#00ff88,#007744);
+      color: #05050f;
+      padding: 7px 24px;
+      border-radius: 22px;
+      border: none;
+      font-family: 'Bangers', cursive;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    #btn-insight-ok:hover { transform: scale(1.06); }
+
+    /* ── XP BAR ── */
+    #xp-bar { height: 3px; background: #0a0a18; flex-shrink: 0; }
+    #xp-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ffd700, #ff8c00);
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+
+    /* ── STREAK DISPLAY ── */
+    #streak-display {
+      font-family: 'Bangers', cursive;
+      font-size: 13px;
+      color: #ff8800;
+      margin-top: 1px;
+      display: none;
+      text-shadow: 0 0 8px #ff880088;
+    }
+
+    /* ── BADGE NOTIFICATION ── */
+    #badge-notif {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: #0a0a1af0;
+      border: 2px solid #ffd700;
+      border-radius: 12px;
+      padding: 10px 14px;
+      z-index: 50;
+      display: none;
+      max-width: 190px;
+      text-align: center;
+      box-shadow: 0 0 20px #ffd70066;
+      animation: badgeSlideIn 0.4s ease;
+      pointer-events: none;
+    }
+    @keyframes badgeSlideIn {
+      from { transform: translateX(110%); opacity: 0; }
+      to   { transform: translateX(0);   opacity: 1; }
+    }
+    #badge-notif-icon { font-size: 24px; margin-bottom: 3px; }
+    #badge-notif-name { font-family: 'Bangers', cursive; font-size: 13px; color: #ffd700; letter-spacing: 0.5px; }
+    #badge-notif-sub  { font-family: 'Cairo', sans-serif; font-size: 10px; color: #aaa; margin-top: 2px; }
+
+    /* ── MINI-GAME OVERLAY ── */
+    #minigame-overlay {
+      position: absolute; inset: 0;
+      background: #03030ef2;
+      backdrop-filter: blur(3px);
+      z-index: 35;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+    #minigame-overlay.visible { display: flex; }
+    #mg-header {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(17px, 4vw, 24px);
+      color: #00f5ff;
+      text-shadow: 0 0 12px #00f5ff88;
+      margin-bottom: 4px;
+      letter-spacing: 1px;
+    }
+    #mg-subtitle {
+      font-family: 'Cairo', sans-serif;
+      font-size: clamp(11px, 2.5vw, 13px);
+      color: #888;
+      margin-bottom: 8px;
+    }
+    #mg-timer {
+      font-family: 'Bangers', cursive;
+      font-size: 18px;
+      color: #ffcc00;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    /* ── GRID PUZZLE ── */
+    #grid-puzzle {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      width: min(252px, 78vw);
+    }
+    .gp-tile {
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, #151530, #0d0d22);
+      border: 2px solid #00f5ff55;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Bangers', cursive;
+      font-size: clamp(22px, 6vw, 34px);
+      color: #00f5ff;
+      cursor: pointer;
+      transition: border-color 0.12s, box-shadow 0.12s;
+      user-select: none;
+    }
+    .gp-tile:hover:not(.empty) { border-color: #00f5ff; box-shadow: 0 0 14px #00f5ff44; }
+    .gp-tile.empty { background: #080814; border-color: #1a1a2a; cursor: default; }
+
+    /* ── SEQUENCE GAME ── */
+    #seq-game { text-align: center; width: min(310px, 88vw); }
+    .seq-display  { display: flex; gap: 7px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap; }
+    .seq-item {
+      width: 46px; height: 46px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      border: 2px solid #00f5ff44;
+      background: #10103a;
+    }
+    .seq-question { animation: seqPulse 0.7s ease-in-out infinite alternate; }
+    @keyframes seqPulse { from { opacity: 0.4; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    .seq-round-info { font-family: 'Cairo', sans-serif; font-size: 12px; color: #777; margin-bottom: 10px; }
+    .seq-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .seq-choice {
+      padding: 10px;
+      border-radius: 10px;
+      border: 2px solid #00f5ff33;
+      background: #0d0d22;
+      font-size: 24px;
+      cursor: pointer;
+      transition: all 0.13s;
+    }
+    .seq-choice:hover { border-color: #00f5ffaa; transform: scale(1.06); box-shadow: 0 0 10px #00f5ff33; }
+
+    /* ── MATCHING GAME ── */
+    #match-game {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      width: min(288px, 84vw);
+    }
+    .match-card {
+      aspect-ratio: 1;
+      border-radius: 9px;
+      border: 2px solid #00f5ff33;
+      background: linear-gradient(135deg, #0d0d22, #18183a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: clamp(18px, 4.5vw, 25px);
+      cursor: pointer;
+      transition: all 0.25s;
+      user-select: none;
+    }
+    .match-card.face-up { background: linear-gradient(135deg, #1a2a3a, #0d1a2a); border-color: #00f5ffaa; }
+    .match-card.matched { border-color: #00ff88; background: #0a2214; cursor: default; box-shadow: 0 0 10px #00ff8844; }
+    .match-card.back::before { content: '❓'; opacity: 0.7; }
+
+    /* ── MINI-MAZE ── */
+    #maze-mini-wrap { flex-direction: column; align-items: center; gap: 8px; }
+    #maze-canvas { border: 2px solid #00f5ff44; border-radius: 7px; }
+    .maze-row { display: flex; gap: 6px; justify-content: center; }
+    .maze-btn {
+      width: 42px; height: 42px;
+      background: #0d0d22;
+      border: 2px solid #00f5ff55;
+      border-radius: 8px;
+      color: #00f5ff;
+      font-size: 17px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.1s;
+    }
+    .maze-btn:active { background: #00f5ff22; transform: scale(0.9); }
+
+    /* ── MINI-GAME RESULT ── */
+    #mg-result {
+      position: absolute; inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      background: #03030ef5;
+      z-index: 5;
+      text-align: center;
+      padding: 22px;
+    }
+    #mg-result.visible { display: flex; }
+    #result-icon { font-size: 52px; margin-bottom: 10px; }
+    #result-title {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(20px, 5vw, 28px);
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    #result-msg {
+      font-family: 'Cairo', sans-serif;
+      font-size: clamp(11px, 2.6vw, 14px);
+      color: #bbb;
+      margin-bottom: 18px;
+      line-height: 1.6;
+      max-width: 280px;
+    }
+    #btn-result-ok {
+      padding: 10px 28px; border-radius: 22px; border: none;
+      font-family: 'Bangers', cursive; font-size: 18px;
+      cursor: pointer; letter-spacing: 0.5px; transition: all 0.15s;
+    }
+    #btn-result-ok.win  { background: linear-gradient(135deg,#00ff88,#007744); color: #05050f; box-shadow: 0 0 14px #00ff8866; }
+    #btn-result-ok.lose { background: linear-gradient(135deg,#ff4444,#881111); color: #fff; }
+    #btn-result-ok:hover { transform: scale(1.07); }
+
+    /* ── COMPLETION SCREEN ── */
+    #completion-screen {
+      position: absolute; inset: 0;
+      background: #03030ef8;
+      z-index: 60;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 18px 20px;
+      overflow-y: auto;
+    }
+    #completion-screen.visible { display: flex; }
+    #comp-emoji { font-size: 48px; margin-bottom: 6px; }
+    #comp-title {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(22px, 6vw, 34px);
+      color: #ffd700;
+      text-shadow: 0 0 20px #ffd70088;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+    #comp-subtitle {
+      font-family: 'Cairo', sans-serif;
+      font-size: clamp(12px, 2.5vw, 14px);
+      color: #aaa;
+      margin-bottom: 16px;
+    }
+    #comp-stats {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 9px; width: min(296px, 86vw);
+      margin-bottom: 14px;
+    }
+    .comp-stat {
+      background: #0d0d22;
+      border: 1.5px solid #00f5ff33;
+      border-radius: 10px;
+      padding: 10px 6px;
+    }
+    .comp-stat-val   { font-family: 'Bangers', cursive; font-size: 26px; color: #00f5ff; }
+    .comp-stat-label { font-family: 'Cairo', sans-serif; font-size: 10px; color: #666; margin-top: 2px; }
+    #comp-badges { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 14px; min-height: 14px; }
+    .comp-badge { font-size: 28px; filter: drop-shadow(0 0 6px #ffd70088); }
+    #ep2-teaser {
+      background: #0d0d22;
+      border: 2px solid #ff00ff44;
+      border-radius: 12px;
+      padding: 10px 16px;
+      width: min(280px, 82vw);
+      margin-bottom: 16px;
+    }
+    #ep2-teaser-label { font-family: 'Cairo', sans-serif; font-size: 10px; color: #ff00ff66; letter-spacing: 1px; margin-bottom: 3px; }
+    #ep2-teaser-name  { font-family: 'Bangers', cursive; font-size: 17px; color: #ff00ffcc; letter-spacing: 0.5px; }
+    #btn-back-home {
+      padding: 11px 32px; border-radius: 24px; border: none;
+      background: linear-gradient(135deg,#00f5ff,#0088cc);
+      color: #05050f;
+      font-family: 'Bangers', cursive; font-size: 20px;
+      cursor: pointer; letter-spacing: 1px;
+      box-shadow: 0 0 18px #00f5ff55;
+      transition: all 0.15s;
+    }
+    #btn-back-home:hover { transform: scale(1.06); }
+
+    /* ══════════════════════════════════════
+       RESPONSIVE — Mobile & Desktop
+    ══════════════════════════════════════ */
+
+    /* On very small phones, shrink the header and controls */
+    @media (max-width: 480px) {
+      #ep-header { padding: 6px 10px; }
+      #ep-title { font-size: 12px; }
+      #back-btn, #lang-btn { font-size: 11px; padding: 3px 8px; }
+      .ctrl-btn { width: 52px; height: 52px; font-size: 20px; }
+      #controls { padding: 6px 20px; padding-bottom: max(8px, env(safe-area-inset-bottom)); gap: 0; }
+      #score-val { font-size: 18px; }
+      #floor-label { font-size: 9px; }
+      #floor-indicator { padding: 3px; gap: 7px; }
+      .floor-dot { width: 7px; height: 7px; }
+      /* Keep minigame overlays fully visible on small screens */
+      #npc-box, #insight-card { bottom: 44%; max-width: 94%; }
+      #minigame-overlay { padding: 8px; }
+    }
+
+    /* Phones with notch/dynamic island */
+    @supports (padding-top: env(safe-area-inset-top)) {
+      body { padding-top: env(safe-area-inset-top); }
+    }
+
+    /* On desktop/tablet, center and constrain the game area */
+    @media (min-width: 768px) {
+      body { align-items: center; background: #02020c; }
+      #ep-header { max-width: 700px; width: 100%; border-radius: 0 0 12px 12px; }
+      #progress-bar, #xp-bar, #floor-indicator { max-width: 700px; width: 100%; }
+      #canvas-wrapper {
+        max-width: 700px;
+        width: 100%;
+        border-left: 2px solid #00f5ff22;
+        border-right: 2px solid #00f5ff22;
+      }
+      #controls { max-width: 700px; width: 100%; }
+
+      /* On desktop, make mini-game overlay respect the game width */
+      #minigame-overlay { max-width: 700px; left: 50%; transform: translateX(-50%); right: auto; width: 100%; }
+      #completion-screen { max-width: 700px; left: 50%; transform: translateX(-50%); right: auto; width: 100%; }
+    }
+
+    /* ══════════════════════════════════════
+       COMIC INTRO OVERLAY
+    ══════════════════════════════════════ */
+    #comic-intro {
+      position: fixed; inset: 0; z-index: 1000;
+      background: #000;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    #comic-intro.hidden { display: none; }
+
+    /* Panel area */
+    #intro-panel-area {
+      flex: 1; position: relative; overflow: hidden;
+      cursor: pointer;
+    }
+    .intro-panel {
+      position: absolute; inset: 0;
+      display: none;
+      flex-direction: column;
+    }
+    .intro-panel.active { display: flex; }
+
+    /* Panel image */
+    .intro-panel-img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: center top;
+    }
+
+    /* Speech bubble / caption overlay */
+    .intro-caption {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.92) 30%);
+      padding: 40px 20px 20px;
+    }
+    .intro-caption-box {
+      background: #fff;
+      border: 3px solid #000;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-family: 'Bangers', cursive;
+      font-size: clamp(14px, 4vw, 20px);
+      color: #000;
+      letter-spacing: 0.5px;
+      line-height: 1.4;
+      box-shadow: 4px 4px 0 #000;
+      max-width: 480px;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+    }
+    .intro-caption-box::before {
+      content: '';
+      position: absolute; top: -14px; left: 50%;
+      transform: translateX(-50%);
+      border: 7px solid transparent;
+      border-bottom-color: #000;
+    }
+    .intro-caption-box::after {
+      content: '';
+      position: absolute; top: -10px; left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-bottom-color: #fff;
+    }
+
+    /* Tap hint */
+    #intro-tap-hint {
+      font-family: 'Cairo', sans-serif;
+      font-size: 12px;
+      color: #ffffff88;
+      text-align: center;
+      margin-top: 8px;
+      letter-spacing: 1px;
+      animation: intro-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes intro-pulse { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
+
+    /* Progress dots */
+    #intro-dots {
+      display: flex; justify-content: center; gap: 8px;
+      padding: 10px;
+      background: #000;
+      flex-shrink: 0;
+    }
+    .intro-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #ffffff33;
+      transition: background 0.3s;
+    }
+    .intro-dot.active { background: #fff; }
+
+    /* Skip button */
+    #intro-skip {
+      position: absolute; top: 14px; right: 14px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid #ffffff44;
+      color: #ffffffaa;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 12px;
+      cursor: pointer;
+      z-index: 10;
+      letter-spacing: 1px;
+    }
+
+    /* Panel number badge */
+    .intro-panel-num {
+      position: absolute; top: 14px; left: 14px;
+      background: #000; color: #fff;
+      font-family: 'Bangers', cursive;
+      font-size: 13px; letter-spacing: 1px;
+      padding: 3px 10px; border-radius: 4px;
+      border: 2px solid #fff;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     COMIC INTRO OVERLAY
+══════════════════════════════════════ -->
+<div id="comic-intro">
+  <button id="intro-skip" onclick="skipIntro()">SKIP ▶</button>
+  <div id="intro-panel-area" onclick="nextIntroPanel()">
+
+    <div class="intro-panel active" id="intro-p0">
+      <img class="intro-panel-img" src="Assets/panel_city_panorama.jpg" alt="City panorama" onerror="this.style.background='#1a1a2e';this.style.minHeight='200px'">
+      <div class="intro-caption">
+        <div class="intro-caption-box">The city never sleeps — and neither do its problems.</div>
+        <div id="intro-tap-hint">TAP TO CONTINUE</div>
+      </div>
+      <div class="intro-panel-num">01 / 04</div>
+    </div>
+
+    <div class="intro-panel" id="intro-p1">
+      <img class="intro-panel-img" src="Assets/panel1_alley_dark.jpg" alt="Dark alley" onerror="this.style.background='#0a0a0a';this.style.minHeight='200px'">
+      <div class="intro-caption">
+        <div class="intro-caption-box">A figure moves through the shadows — Maze Man. Every person he meets is stuck in a puzzle of their own.</div>
+      </div>
+      <div class="intro-panel-num">02 / 04</div>
+    </div>
+
+    <div class="intro-panel" id="intro-p2">
+      <img class="intro-panel-img" src="Assets/panel2_alley_blue.jpg" alt="Alley blue" onerror="this.style.background='#0a1030';this.style.minHeight='200px'">
+      <div class="intro-caption">
+        <div class="intro-caption-box">"Every dead end is just a door waiting to be unlocked with the right way of thinking."</div>
+      </div>
+      <div class="intro-panel-num">03 / 04</div>
+    </div>
+
+    <div class="intro-panel" id="intro-p3">
+      <img class="intro-panel-img" src="Assets/panel3_alley_warm.jpg" alt="Alley warm" onerror="this.style.background='#1a0800';this.style.minHeight='200px'">
+      <div class="intro-caption">
+        <div class="intro-caption-box">Your mission: navigate the maze, help the lost souls, and master the psychology of Problem Solving.</div>
+      </div>
+      <div class="intro-panel-num">04 / 04</div>
+    </div>
+
+  </div>
+  <div id="intro-dots">
+    <div class="intro-dot active" id="idot-0"></div>
+    <div class="intro-dot" id="idot-1"></div>
+    <div class="intro-dot" id="idot-2"></div>
+    <div class="intro-dot" id="idot-3"></div>
+  </div>
+</div>
+
+<div id="ep-header">
+  <a id="back-btn" href="index.html" role="button">← BACK</a>
+  <div id="ep-title">Episode 1: Problem Solving</div>
+  <button id="lang-btn" onclick="toggleLang()">عربي</button>
+</div>
+<div id="progress-bar"><div id="progress-fill"></div></div>
+<div id="xp-bar"><div id="xp-fill"></div></div>
+<div id="floor-indicator">
+  <div class="floor-dot active" id="dot-0"></div>
+  <div class="floor-dot" id="dot-1"></div>
+  <div class="floor-dot" id="dot-2"></div>
+</div>
+
+<div id="canvas-wrapper">
+  <canvas id="game-canvas"></canvas>
+  <div id="dialogue"></div>
+
+  <!-- NPC Dialogue Box -->
+  <div id="npc-box">
+    <div id="npc-name-tag"></div>
+    <div id="npc-speech"></div>
+    <div id="npc-btn-row">
+      <button class="npc-btn" id="btn-help"  onclick="handleHelp()">🤝 Help!</button>
+      <button class="npc-btn" id="btn-skip"  onclick="handleSkip()">→ Move On</button>
+    </div>
+  </div>
+
+  <!-- Psychology Insight Card -->
+  <div id="insight-card">
+    <img src="Assets/mazeman_character.jpg" alt="Maze Man"
+         onerror="this.style.display='none'"
+         style="width:44px;height:44px;object-fit:cover;border-radius:50%;
+                border:2px solid #00ff8866;margin-bottom:6px;
+                filter:drop-shadow(0 0 8px #00ff8855);">
+    <div id="insight-icon">🧠</div>
+    <div id="insight-title">Psychology Insight</div>
+    <div id="insight-text"></div>
+    <button id="btn-insight-ok" onclick="closeInsight()">Got it! ✓</button>
+  </div>
+
+  <!-- ── MINI-GAME OVERLAY ── -->
+  <div id="minigame-overlay">
+    <img src="Assets/mazeman_character.jpg" id="mg-portrait" alt="Maze Man"
+         onerror="this.style.display='none'"
+         style="width:50px;height:50px;object-fit:cover;border-radius:50%;
+                border:2px solid #ffcc0066;position:absolute;top:10px;left:12px;
+                filter:drop-shadow(0 0 8px #ffcc0055);">
+    <div id="mg-header">Mini Challenge</div>
+    <div id="mg-subtitle"></div>
+    <div id="mg-timer"></div>
+    <!-- Grid Puzzle -->
+    <div id="grid-puzzle" style="display:none"></div>
+    <!-- Sequence Game -->
+    <div id="seq-game" style="display:none">
+      <div class="seq-display" id="seq-display"></div>
+      <div class="seq-round-info" id="seq-round-info"></div>
+      <div class="seq-choices" id="seq-choices"></div>
+    </div>
+    <!-- Matching Game -->
+    <div id="match-game" style="display:none"></div>
+    <!-- Mini-Maze -->
+    <div id="maze-mini-wrap" style="display:none">
+      <canvas id="maze-canvas"></canvas>
+      <div class="maze-row"><button class="maze-btn" id="mz-up">▲</button></div>
+      <div class="maze-row">
+        <button class="maze-btn" id="mz-left">◀</button>
+        <button class="maze-btn" id="mz-down">▼</button>
+        <button class="maze-btn" id="mz-right">▶</button>
+      </div>
+    </div>
+    <!-- Result -->
+    <div id="mg-result">
+      <div id="result-icon">🎉</div>
+      <div id="result-title">You did it!</div>
+      <div id="result-msg"></div>
+      <button id="btn-result-ok" class="win" onclick="handleResultOk()">Continue ✓</button>
+    </div>
+  </div>
+
+  <!-- ── BADGE NOTIFICATION ── -->
+  <div id="badge-notif">
+    <div id="badge-notif-icon">🏅</div>
+    <div id="badge-notif-name">Badge!</div>
+    <div id="badge-notif-sub"></div>
+  </div>
+
+  <!-- ── COMPLETION SCREEN ── -->
+  <div id="completion-screen">
+    <img src="Assets/mazeman_character.jpg" id="comp-portrait" alt="Maze Man"
+         onerror="this.src=''; this.outerHTML='<div id=comp-emoji style=font-size:54px>🧠</div>'"
+         style="width:90px;height:90px;object-fit:cover;border-radius:50%;
+                border:3px solid #ffd700;margin-bottom:10px;
+                filter:drop-shadow(0 0 16px #ffd70088);">
+    <div id="comp-title">EPISODE 1 COMPLETE!</div>
+    <div id="comp-subtitle">You mastered Problem Solving</div>
+    <div id="comp-stats">
+      <div class="comp-stat"><div class="comp-stat-val" id="comp-xp">0</div><div class="comp-stat-label">Total XP</div></div>
+      <div class="comp-stat"><div class="comp-stat-val" id="comp-helped">0/3</div><div class="comp-stat-label">Guardians Helped</div></div>
+      <div class="comp-stat"><div class="comp-stat-val" id="comp-streak">0</div><div class="comp-stat-label">Best Streak</div></div>
+      <div class="comp-stat"><div class="comp-stat-val" id="comp-badges-count">0</div><div class="comp-stat-label">Badges</div></div>
+    </div>
+    <div id="comp-badges"></div>
+    <div id="ep2-teaser">
+      <div id="ep2-teaser-label">COMING NEXT</div>
+      <div id="ep2-teaser-name">Episode 2: Memory &amp; Learning</div>
+    </div>
+    <button id="btn-back-home" onclick="window.location='index.html'">🏠 Back to Home</button>
+  </div>
+
+  <div id="sprite-status">⚠ Place mazeman-sprites.png &amp; mazeman-portrait.png inside the Assets folder</div>
+  <div id="transition-overlay"></div>
+</div>
+
+<div id="controls">
+  <button class="ctrl-btn" id="btn-left" aria-label="Move left">◀</button>
+  <div id="hud-center">
+    <span id="score-val">0</span> <span id="pts-label">XP</span>
+    <small id="floor-label">Floor 1 of 3</small>
+    <div id="streak-display">🔥 1</div>
+  </div>
+  <button class="ctrl-btn" id="btn-right" aria-label="Move right">▶</button>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════
+//  SPRITE SHEET CONFIGURATION
+//  Adjust these if your sprite sheet layout is different
+// ══════════════════════════════════════════════════════
+const SPRITE_CFG = {
+  // ── sprite sheet (mazeman-sprites.png) ──
+  sheet: {
+    cols: 5,          // number of columns in sprite sheet
+    rows: 5,          // number of rows in sprite sheet
+    walkRow: 0,       // row index (0=first) used for walk animation
+    walkFrames: 5,    // how many frames in the walk cycle
+    idleRow: 0,       // row for idle pose
+    idleFrame: 0,     // column for idle pose
+  },
+  // ── display ──
+  heightRatio: 0.28,  // sprite height as fraction of canvas height
+  bgMode: 'screen',   // blend mode to remove black bg — 'screen' or 'source-over'
+};
+
+// ══════════════════════════════════════════════════════
+//  IMAGE ASSETS — expected alongside this HTML file
+// ══════════════════════════════════════════════════════
+const IMG = {
+  sprites:  null,   // mazeman-sprites.png  — 5×5 walk sprite sheet (black bg)
+  portrait: null,   // mazeman-portrait.png — standing portrait (white bg)
+  spritesOk:  false,
+  portraitOk: false,
+};
+
+function loadImages() {
+  const sheet = new Image();
+  sheet.onload  = () => { IMG.sprites  = sheet; IMG.spritesOk  = true; checkImagesLoaded(); };
+  sheet.onerror = () => { IMG.spritesOk  = false; checkImagesLoaded(); };
+  sheet.src = 'Assets/mazeman-sprites.png';
+
+  const port = new Image();
+  port.onload  = () => { IMG.portrait = port; IMG.portraitOk  = true; };
+  port.onerror = () => { IMG.portraitOk = false; };
+  port.src = 'Assets/mazeman-portrait.png';
+}
+
+function checkImagesLoaded() {
+  const status = document.getElementById('sprite-status');
+  if (!IMG.spritesOk) {
+    status.style.display = 'block';
+  } else {
+    status.style.display = 'none';
+  }
+}
+
+
+// ══════════════════════════════════════════════════════
+//  INTERNATIONALISATION
+// ══════════════════════════════════════════════════════
+const STRINGS = {
+  en: {
+    title:      'Episode 1: Problem Solving',
+    langBtn:    'عربي',
+    pts:        'pts',
+    floorOf:    (n, t) => `Floor ${n} of ${t}`,
+    floorNames: ['The City Street', 'The Workshop', 'The Maze World'],
+    intro: [
+      'A strange city where everyone is stuck…',
+      'A workshop full of unsolved puzzles…',
+      'The maze at the heart of it all…'
+    ],
+    exitHint:   '➜ Help the guardian to unlock the door',
+  },
+  ar: {
+    title:      'الحلقة ١: حل المشكلات',
+    langBtn:    'English',
+    pts:        'نقطة',
+    floorOf:    (n, t) => `الطابق ${n} من ${t}`,
+    floorNames: ['شارع المدينة', 'الورشة', 'عالم المتاهة'],
+    intro: [
+      'مدينة غريبة حيث الجميع عالق…',
+      'ورشة مليئة بالألغاز…',
+      'المتاهة في قلب كل شيء…'
+    ],
+    exitHint:   'ساعد الحارس لفتح الباب ➜',
+  }
+};
+
+let lang = 'en';
+function S(key, ...args) {
+  const v = STRINGS[lang][key];
+  return typeof v === 'function' ? v(...args) : v;
+}
+function toggleLang() {
+  lang = lang === 'en' ? 'ar' : 'en';
+  document.documentElement.lang = lang;
+  document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
+  document.getElementById('lang-btn').textContent  = S('langBtn');
+  document.getElementById('ep-title').textContent   = S('title');
+  document.getElementById('pts-label').textContent  = S('pts');
+  updateFloorLabel();
+}
+function updateFloorLabel() {
+  document.getElementById('floor-label').textContent = S('floorOf', G.floor + 1, 3);
+}
+
+
+// ══════════════════════════════════════════════════════
+//  NPC DATA  —  3 floors × 3 NPCs each
+// ══════════════════════════════════════════════════════
+const NPC_DATA = [
+  // ── Floor 0: The City Street — gate guardian ──
+  [
+    {
+      id:'f0n0', xr:0.80, type:'robot',
+      color:'#4488ff', accent:'#88bbff',
+      name:     { en:'Pixel Pete',   ar:'بيكسل بيت'   },
+      problem:  { en:'I need to choose between two roads… but both feel right! Help me decide!',
+                  ar:'أحتاج الاختيار بين طريقين… كلاهما يبدو صحيحاً! ساعدني في الاختيار!' },
+      insight:  { en:'That\'s decisional paralysis! Listing pros & cons — even roughly — activates your prefrontal cortex and cuts the freeze.',
+                  ar:'هذا شلل القرار! كتابة الإيجابيات والسلبيات تنشّط قشرة الفص الجبهي وتكسر الجمود.' },
+      icon:'🤖', game:'grid', state:'idle', helped:false
+    },
+  ],
+  // ── Floor 1: The Workshop — gate guardian ──
+  [
+    {
+      id:'f1n0', xr:0.80, type:'scientist',
+      color:'#44dd88', accent:'#88ffcc',
+      name:     { en:'Dr. Spark',    ar:'د. سبارك'      },
+      problem:  { en:'I sense the answer is right there — but I can\'t see it clearly! Can you help?',
+                  ar:'أحس أن الإجابة هناك — لكن لا أستطيع رؤيتها بوضوح! هل تساعدني؟' },
+      insight:  { en:'That\'s your intuition vs analytical mind clashing! Insight often arrives after stepping away. Take a break — seriously.',
+                  ar:'هذا صراع الحدس مع العقل التحليلي! الإلهام يأتي بعد الابتعاد. خذ استراحة — بجدية.' },
+      icon:'🔬', game:'sequence', state:'idle', helped:false
+    },
+  ],
+  // ── Floor 2: The Maze World — final guardian ──
+  [
+    {
+      id:'f2n0', xr:0.50, type:'king',
+      color:'#ffcc00', accent:'#fff8aa',
+      name:     { en:'Maze King',    ar:'ملك المتاهة'    },
+      problem:  { en:'You\'ve come far, wanderer. One final challenge to prove your mastery.',
+                  ar:'لقد قطعت شوطاً طويلاً أيها الرحّالة. تحدٍّ أخير لإثبات إتقانك.' },
+      insight:  { en:'Problem solving is a skill, not a talent. You just trained yours — and earned your badge!',
+                  ar:'حل المشكلات مهارة لا موهبة. لقد دربت مهارتك للتو — واستحققت شارتك!' },
+      icon:'👑', game:'maze', state:'idle', helped:false
+    },
+  ],
+];
+
+// Active NPC being talked to
+let activeNPC = null;
+
+// Reset NPC states when floor changes
+function resetFloorNPCs(floor) {
+  NPC_DATA[floor].forEach(n => { n.state = 'idle'; });
+}
+
+
+// ══════════════════════════════════════════════════════
+//  CANVAS SETUP
+// ══════════════════════════════════════════════════════
+const canvas = document.getElementById('game-canvas');
+const ctx    = canvas.getContext('2d');
+let W = 0, H = 0;
+
+function resize() {
+  const wrap = document.getElementById('canvas-wrapper');
+  W = canvas.width  = wrap.clientWidth;
+  H = canvas.height = wrap.clientHeight;
+  if (MM.x > W - 80) MM.x = W - 100;
+}
+window.addEventListener('resize', () => { resize(); initBgElements(); });
+
+// ── Floor layout: all 3 panels visible simultaneously ──
+function floorH() { return Math.round(H / 3); }
+function floorY(f) { return f * floorH(); }
+
+
+// ══════════════════════════════════════════════════════
+//  PANEL BACKGROUND IMAGES
+// ══════════════════════════════════════════════════════
+const BGI = {};
+function loadBGImages() {
+  const srcs = {
+    city: 'Assets/panel_city_panorama.jpg',
+    dark: 'Assets/panel1_alley_dark.jpg',
+    blue: 'Assets/panel2_alley_blue.jpg',
+    warm: 'Assets/panel3_alley_warm.jpg'
+  };
+  Object.entries(srcs).forEach(([k, src]) => {
+    const img = new Image();
+    img.src = src;
+    BGI[k] = img;
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════════════════
+const G = { floor: 0, score: 0, transitioning: false, inDialogue: false };
+
+
+// ══════════════════════════════════════════════════════
+//  MAZE MAN — sprite-sheet driven
+// ══════════════════════════════════════════════════════
+const MM = {
+  x: 60,
+  vx: 0,
+  speed: 3.8,
+  facing: 1,       // 1=right, -1=left
+  walkFrame: 0,
+  walkTick: 0,
+  walkCycle: 7,    // canvas ticks per sprite frame
+  isWalking: false,
+  shadowPulse: 0,
+
+  get groundY()  { return floorY(G.floor) + floorH() - 20; },
+  get spriteH()  { return Math.round(floorH() * 0.50); },
+  get spriteW()  {
+    if (!IMG.sprites) return this.spriteH * 0.6;
+    const cfg = SPRITE_CFG.sheet;
+    const fw = IMG.sprites.naturalWidth  / cfg.cols;
+    const fh = IMG.sprites.naturalHeight / cfg.rows;
+    return Math.round(this.spriteH * (fw / fh));
+  },
+  get cx()       { return this.x + this.spriteW / 2; },
+
+  update() {
+    this.shadowPulse += 0.07;
+
+    if (this.isWalking) {
+      this.walkTick++;
+      if (this.walkTick >= this.walkCycle) {
+        this.walkTick = 0;
+        this.walkFrame = (this.walkFrame + 1) % SPRITE_CFG.sheet.walkFrames;
+      }
+    } else {
+      this.walkTick  = 0;
+      this.walkFrame = SPRITE_CFG.sheet.idleFrame;
+    }
+
+    this.x += this.vx;
+    // Door acts as physical wall when locked
+    let maxX = W - this.spriteW - 10;
+    if (G.floor < 2 && !NPC_DATA[G.floor][0].helped) {
+      maxX = Math.min(maxX, W - 46 - this.spriteW - 8);
+    }
+    this.x = Math.max(10, Math.min(this.x, maxX));
+    checkExit();
+  },
+
+  draw() {
+    const sH   = this.spriteH;
+    const sW   = this.spriteW;
+    const drawX = this.x;
+    const drawY = this.groundY - sH;
+    const cx    = this.cx;
+
+    // ── Glow shadow under character ──
+    const glowR = 8 + Math.sin(this.shadowPulse) * 3;
+    ctx.save();
+    ctx.shadowColor = '#ffaa0066';
+    ctx.shadowBlur  = glowR;
+    ctx.fillStyle   = '#ffaa0022';
+    ctx.beginPath();
+    ctx.ellipse(cx, this.groundY + 4, sW * 0.35, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    if (IMG.spritesOk && IMG.sprites) {
+      this._drawSprite(drawX, drawY, sW, sH, cx);
+    } else {
+      this._drawFallback(drawX, drawY, sW, sH, cx);
+    }
+  },
+
+  // Real sprite sheet rendering
+  _drawSprite(drawX, drawY, sW, sH, cx) {
+    const cfg  = SPRITE_CFG.sheet;
+    const img  = IMG.sprites;
+    const fw   = img.naturalWidth  / cfg.cols;   // source frame width
+    const fh   = img.naturalHeight / cfg.rows;   // source frame height
+
+    // Pick correct row/column
+    const col = this.isWalking ? this.walkFrame : cfg.idleFrame;
+    const row = this.isWalking ? cfg.walkRow    : cfg.idleRow;
+
+    const sx = col * fw;
+    const sy = row * fh;
+
+    ctx.save();
+
+    // Mirror horizontally when facing left
+    if (this.facing === -1) {
+      ctx.translate(cx * 2, 0);
+      ctx.scale(-1, 1);
+    }
+
+    // 'screen' blend mode makes black pixels transparent — perfect for black-bg sprites
+    ctx.globalCompositeOperation = SPRITE_CFG.bgMode;
+
+    // Optional: add subtle amber glow to match character's eye color
+    ctx.shadowColor = '#ffcc0055';
+    ctx.shadowBlur  = 12;
+
+    ctx.drawImage(img, sx, sy, fw, fh, drawX, drawY, sW, sH);
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.restore();
+  },
+
+  // Fallback canvas drawing (shown while sprites load / if files missing)
+  // Styled to match the actual character: hooded dark figure, amber eyes
+  _drawFallback(drawX, drawY, sW, sH, cx) {
+    const top  = drawY;
+    const mid  = drawY + sH * 0.5;
+    const bot  = drawY + sH;
+    const glow = 8 + Math.sin(this.shadowPulse) * 3;
+    const bob  = this.isWalking ? Math.sin(this.walkFrame * Math.PI / 2) * 2 : 0;
+    const frame = this.walkFrame;
+
+    ctx.save();
+    if (this.facing === -1) { ctx.translate(cx * 2, 0); ctx.scale(-1, 1); }
+
+    // ── CLOAK / BODY ──
+    ctx.fillStyle   = '#1a1a22';
+    ctx.strokeStyle = '#444455';
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    // Wide cloak shape — narrow top, wide bottom
+    ctx.moveTo(cx - sW * 0.18, top + sH * 0.22 + bob);
+    ctx.lineTo(cx - sW * 0.42, bot - 4);
+    ctx.lineTo(cx + sW * 0.42, bot - 4);
+    ctx.lineTo(cx + sW * 0.18, top + sH * 0.22 + bob);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // cloak edge highlight
+    ctx.strokeStyle = '#2a2a3a';
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - sW * 0.18, top + sH * 0.22 + bob);
+    ctx.lineTo(cx - sW * 0.42, bot - 4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + sW * 0.18, top + sH * 0.22 + bob);
+    ctx.lineTo(cx + sW * 0.42, bot - 4);
+    ctx.stroke();
+
+    // ── HOOD ──
+    ctx.fillStyle = '#141420';
+    ctx.beginPath();
+    // Hood = large rounded shape at top
+    ctx.ellipse(cx, top + sH * 0.18 + bob, sW * 0.28, sH * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#2a2a3a';
+    ctx.lineWidth   = 1.5;
+    ctx.stroke();
+
+    // hood inner shadow
+    ctx.fillStyle = '#0a0a14';
+    ctx.beginPath();
+    ctx.ellipse(cx, top + sH * 0.2 + bob, sW * 0.2, sH * 0.16, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── GLOWING AMBER EYES ──
+    ctx.shadowColor = '#ffcc00';
+    ctx.shadowBlur  = glow + 4;
+    ctx.fillStyle   = '#ffcc00';
+    // left eye (angular slash)
+    ctx.save();
+    ctx.translate(cx - sW * 0.1, top + sH * 0.18 + bob);
+    ctx.rotate(-0.15);
+    ctx.fillRect(-sW * 0.07, -sH * 0.025, sW * 0.07, sH * 0.04);
+    ctx.restore();
+    // right eye
+    ctx.save();
+    ctx.translate(cx + sW * 0.1, top + sH * 0.18 + bob);
+    ctx.rotate(0.15);
+    ctx.fillRect(0, -sH * 0.025, sW * 0.07, sH * 0.04);
+    ctx.restore();
+    ctx.shadowBlur = 0;
+
+    // ── BOOTS ──
+    const legSwing = this.isWalking ? [0, 5, 0, -5][frame % 4] : 0;
+    ctx.fillStyle   = '#111118';
+    ctx.strokeStyle = '#222230';
+    ctx.lineWidth   = 1;
+    // left boot
+    ctx.beginPath();
+    ctx.ellipse(cx - sW * 0.12 - legSwing * 0.5, bot, sW * 0.1, sH * 0.055, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    // right boot
+    ctx.beginPath();
+    ctx.ellipse(cx + sW * 0.12 + legSwing * 0.5, bot, sW * 0.1, sH * 0.055, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+
+    ctx.restore();
+  }
+};
+
+
+// ══════════════════════════════════════════════════════
+//  BACKGROUND ELEMENTS (procedural)
+// ══════════════════════════════════════════════════════
+let bgE = [[], [], []];
+
+function seeded(seed) {
+  let s = seed;
+  return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+}
+
+function initBgElements() {
+  const r0 = seeded(42), r1 = seeded(77), r2 = seeded(13);
+  bgE[0] = Array.from({length: 9}, (_, i) => ({
+    x: i * Math.floor(W / 8) + 10,
+    w: 55 + Math.floor(r0() * 55),
+    h: 60 + Math.floor(r0() * 110),
+    hue: 210 + Math.floor(r0() * 40),
+    winRows: 2 + Math.floor(r0() * 4),
+  }));
+  bgE[1] = Array.from({length: 6}, (_, i) => ({
+    x: 60 + i * Math.floor(W / 6),
+    y: 0.18 + r1() * 0.35,
+    r: 22 + Math.floor(r1() * 28),
+    teeth: 6 + Math.floor(r1() * 4),
+  }));
+  bgE[2] = [];
+  for (let row = 0; row < 4; row++)
+    for (let col = 0; col < 9; col++)
+      if (r2() > 0.38) bgE[2].push({ row, col });
+}
+
+
+// ══════════════════════════════════════════════════════
+//  BACKGROUNDS — all 3 panels visible at once (book layout)
+// ══════════════════════════════════════════════════════
+const FLOOR_ACCENTS = ['#7766ff', '#44dd88', '#ffcc00'];
+
+function drawBackground() {
+  // Single shared background across all 3 floors
+  if (BGI.city && BGI.city.complete && BGI.city.naturalWidth > 0) {
+    ctx.drawImage(BGI.city, 0, 0, W, H);
+    ctx.fillStyle = 'rgba(4,3,18,0.65)';
+    ctx.fillRect(0, 0, W, H);
+  } else {
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#060318'); sky.addColorStop(0.5, '#0d0420'); sky.addColorStop(1, '#150830');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffffff33';
+    for (let i = 0; i < 70; i++) ctx.fillRect((i*137.5)%W, (i*91.3)%(H*0.9), 1.5, 1.5);
+  }
+  // Draw each floor panel
+  for (let f = 0; f < 3; f++) drawFloorPanel(f);
+}
+
+function drawFloorPanel(f) {
+  const fH  = floorH();
+  const fy  = floorY(f);
+  const acc = FLOOR_ACCENTS[f];
+
+  // Subtle per-floor colour tint
+  const tints = ['rgba(0,0,80,0.12)', 'rgba(0,60,20,0.12)', 'rgba(60,20,0,0.12)'];
+  ctx.fillStyle = tints[f];
+  ctx.fillRect(0, fy, W, fH);
+
+  // ── Architectural platform (floor shelf) ──
+  const platY = fy + fH - 20;
+  ctx.save();
+  ctx.shadowColor = acc; ctx.shadowBlur = 8;
+  ctx.fillStyle = '#06050f';
+  ctx.fillRect(0, platY, W, 20);
+  ctx.strokeStyle = acc; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, platY); ctx.lineTo(W, platY); ctx.stroke();
+  // Perspective tile marks
+  ctx.globalAlpha = 0.18; ctx.lineWidth = 1;
+  for (let tx = 0; tx < W; tx += 44) {
+    ctx.beginPath(); ctx.moveTo(tx, platY); ctx.lineTo(tx, platY + 20); ctx.stroke();
+  }
+  ctx.restore();
+
+  // ── Door arch on right side (floors 0 and 1 only) ──
+  if (f < 2) drawDoorArch(f, fy, fH, acc);
+
+  // ── Connecting shaft between floors ──
+  if (f < 2) drawConnectingShaft(f, fy, fH);
+
+  // ── Decorative background elements per floor ──
+  drawFloorDecor(f, fy, fH, acc);
+
+  // ── Panel separator ──
+  if (f > 0) {
+    ctx.save();
+    ctx.strokeStyle = '#ffffff14';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 6]);
+    ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(W, fy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  // ── Floor label ──
+  const names = S('floorNames');
+  ctx.save();
+  const lx = lang === 'ar' ? W - 10 : 10;
+  ctx.textAlign = lang === 'ar' ? 'right' : 'left';
+  ctx.font = `${clamp(11, W * 0.030, 16)}px Bangers`;
+  ctx.fillStyle = acc + '55';
+  ctx.shadowColor = '#00000066'; ctx.shadowBlur = 4;
+  ctx.fillText(names[f], lx, fy + 18);
+  ctx.restore();
+}
+
+function drawDoorArch(f, fy, fH, acc) {
+  const npc    = NPC_DATA[f][0];
+  const isOpen = npc.helped;
+  const col    = isOpen ? '#00ff88' : '#ff4444';
+  const glow   = 6 + Math.sin(Date.now() / 350) * 3;
+  const platY  = fy + fH - 20;
+
+  const aW = 30, aH = 48;
+  const ax  = W - 46, ay = platY - aH;
+
+  ctx.save();
+  ctx.shadowColor = col; ctx.shadowBlur = glow;
+  // Arch body
+  ctx.fillStyle   = isOpen ? '#001812' : '#1c0808';
+  ctx.strokeStyle = col; ctx.lineWidth = 2;
+  ctx.fillRect(ax, ay + aH * 0.38, aW, aH * 0.62);
+  ctx.strokeRect(ax, ay + aH * 0.38, aW, aH * 0.62);
+  // Arch top semicircle
+  ctx.beginPath();
+  ctx.arc(ax + aW / 2, ay + aH * 0.38, aW / 2, Math.PI, 0);
+  ctx.fillStyle = isOpen ? '#002016' : '#1f0606';
+  ctx.fill(); ctx.stroke();
+  // Door handle
+  ctx.shadowBlur = 3;
+  ctx.beginPath(); ctx.arc(ax + aW * 0.78, ay + aH * 0.68, 3, 0, Math.PI * 2);
+  ctx.fillStyle = col; ctx.fill();
+  // Status indicator
+  ctx.font = '11px Bangers'; ctx.textAlign = 'center';
+  ctx.fillStyle = col + 'cc';
+  ctx.fillText(isOpen ? '▼' : '🔒', ax + aW / 2, ay - 6);
+  ctx.restore();
+}
+
+function drawConnectingShaft(f, fy, fH) {
+  const npc  = NPC_DATA[f][0];
+  const open = npc.helped;
+  const cx   = W - 46 + 15; // center of door
+  const sW   = 10;
+  const top  = fy + fH - 20;
+  const bot  = top + 20;
+
+  ctx.save();
+  ctx.fillStyle = open ? '#00ff8828' : '#ffffff08';
+  ctx.fillRect(cx - sW / 2, top, sW, bot - top);
+  ctx.restore();
+}
+
+function drawFloorDecor(f, fy, fH, acc) {
+  // Subtle architectural background details per floor
+  ctx.save();
+  ctx.globalAlpha = 0.10;
+  ctx.strokeStyle = acc;
+  ctx.lineWidth   = 1;
+  const midY = fy + fH / 2;
+  if (f === 0) {
+    // City: faint building silhouettes
+    bgE[0].forEach(b => {
+      const bx = b.x % W, bh = b.h * 0.55, by = fy + fH - 20 - bh;
+      ctx.fillStyle = acc;
+      ctx.fillRect(bx, by, b.w * 0.6, bh);
+    });
+  } else if (f === 1) {
+    // Workshop: faint gear shapes
+    bgE[1].forEach(g => {
+      ctx.beginPath();
+      ctx.arc(g.x % W, fy + fH * g.y * 0.5, g.r * 0.6, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+  } else {
+    // Maze world: faint grid lines
+    const cellW = W / 6, cellH = (fH - 20) / 2;
+    for (let i = 1; i < 6; i++) { ctx.beginPath(); ctx.moveTo(i * cellW, fy); ctx.lineTo(i * cellW, fy + fH - 20); ctx.stroke(); }
+    for (let i = 1; i < 2; i++) { ctx.beginPath(); ctx.moveTo(0, fy + i * cellH); ctx.lineTo(W, fy + i * cellH); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════════════════
+//  NPC DRAWING — all 3 floor guardians drawn each frame
+// ══════════════════════════════════════════════════════
+function drawNPCs() {
+  for (let f = 0; f < 3; f++) {
+    const fH  = floorH();
+    const fy  = floorY(f);
+    const npc = NPC_DATA[f][0];
+
+    const nx = npc.xr * W;
+    const ny = fy + fH - 20;         // ground of this floor
+    const nh = Math.round(fH * 0.52); // fits in 1/3 of screen
+
+    npc._x = nx; npc._y = ny; npc._h = nh; npc._floor = f;
+
+    const facingRight = (f === G.floor) ? (MM.cx > nx) : true;
+    drawNPCBody(npc, nx, ny, nh, facingRight);
+
+    if (npc.state === 'near') drawProximityBubble(nx, ny - nh - 10);
+    if (npc.helped) drawHelpedBadge(nx, ny - nh - 6);
+  }
+}
+
+function drawNPCBody(npc, cx, groundY, h, facingRight) {
+  const w   = h * 0.65;
+  const top = groundY - h;
+  const alpha = npc.state === 'skipped' ? 0.45 : 1.0;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  if (!facingRight) { ctx.translate(cx * 2, 0); ctx.scale(-1, 1); }
+
+  const glow = npc.state === 'near' ? 14 : 6;
+  ctx.shadowColor = npc.color;
+  ctx.shadowBlur  = glow;
+
+  switch (npc.type) {
+    case 'robot':     drawRobot    (cx, top, w, h, npc.color, npc.accent); break;
+    case 'cloud':     drawCloudPerson(cx, top, w, h, npc.color, npc.accent); break;
+    case 'block':     drawBlockPerson(cx, top, w, h, npc.color, npc.accent); break;
+    case 'inventor':  drawInventor (cx, top, w, h, npc.color, npc.accent); break;
+    case 'scientist': drawScientist(cx, top, w, h, npc.color, npc.accent); break;
+    case 'professor': drawProfessor(cx, top, w, h, npc.color, npc.accent); break;
+    case 'shadow':    drawShadow   (cx, top, w, h, npc.color, npc.accent); break;
+    case 'oracle':    drawOracle   (cx, top, w, h, npc.color, npc.accent); break;
+    case 'king':      drawKing     (cx, top, w, h, npc.color, npc.accent); break;
+  }
+
+  ctx.restore();
+}
+
+// ── Floor 0 NPCs ──
+
+function drawRobot(cx, top, w, h, col, acc) {
+  // Square head
+  ctx.fillStyle = col; ctx.strokeStyle = acc; ctx.lineWidth = 2;
+  roundRect(cx-w*0.35, top, w*0.7, h*0.3, 4); ctx.fill(); ctx.stroke();
+  // Eyes (LEDs)
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(cx-w*0.22, top+h*0.06, w*0.14, h*0.1);
+  ctx.fillRect(cx+w*0.08, top+h*0.06, w*0.14, h*0.1);
+  ctx.fillStyle = col==='#4488ff' ? '#00ffff' : '#ff4400';
+  ctx.fillRect(cx-w*0.19, top+h*0.08, w*0.08, h*0.06);
+  ctx.fillRect(cx+w*0.11, top+h*0.08, w*0.08, h*0.06);
+  // Antenna
+  ctx.strokeStyle = acc; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(cx, top); ctx.lineTo(cx, top-h*0.1); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, top-h*0.12, h*0.04, 0, Math.PI*2);
+  ctx.fillStyle = acc; ctx.fill();
+  // Body
+  ctx.fillStyle = col; ctx.strokeStyle = acc; ctx.lineWidth = 2;
+  roundRect(cx-w*0.38, top+h*0.3, w*0.76, h*0.38, 5); ctx.fill(); ctx.stroke();
+  // Panel on body
+  ctx.strokeStyle = acc+'88'; ctx.lineWidth = 1;
+  ctx.strokeRect(cx-w*0.2, top+h*0.36, w*0.4, h*0.18);
+  // Arms
+  ctx.strokeStyle = col; ctx.lineWidth = w*0.12; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx-w*0.38, top+h*0.38); ctx.lineTo(cx-w*0.58, top+h*0.5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+w*0.38, top+h*0.38); ctx.lineTo(cx+w*0.58, top+h*0.5); ctx.stroke();
+  // Legs
+  ctx.lineWidth = w*0.15;
+  ctx.beginPath(); ctx.moveTo(cx-w*0.2, top+h*0.68); ctx.lineTo(cx-w*0.2, top+h); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+w*0.2, top+h*0.68); ctx.lineTo(cx+w*0.2, top+h); ctx.stroke();
+}
+
+function drawCloudPerson(cx, top, w, h, col, acc) {
+  // Cloud body (multiple circles)
+  ctx.fillStyle = col; ctx.strokeStyle = acc; ctx.lineWidth = 1.5;
+  const puffs = [
+    [cx,       top+h*0.15, w*0.3],
+    [cx-w*0.2, top+h*0.22, w*0.24],
+    [cx+w*0.2, top+h*0.22, w*0.24],
+    [cx-w*0.28,top+h*0.34, w*0.22],
+    [cx+w*0.28,top+h*0.34, w*0.22],
+    [cx,       top+h*0.38, w*0.32],
+  ];
+  puffs.forEach(([px,py,pr]) => {
+    ctx.beginPath(); ctx.arc(px,py,pr,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  });
+  // Face
+  ctx.fillStyle = '#222';
+  ctx.beginPath(); ctx.arc(cx-w*0.1, top+h*0.14, w*0.06, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx+w*0.1, top+h*0.14, w*0.06, 0, Math.PI*2); ctx.fill();
+  // Worried mouth
+  ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, top+h*0.22, w*0.1, 0.2, Math.PI-0.2); ctx.stroke();
+  // Tiny legs
+  ctx.strokeStyle = col; ctx.lineWidth = w*0.12; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(cx-w*0.12, top+h*0.55); ctx.lineTo(cx-w*0.15, top+h*0.78); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+w*0.12, top+h*0.55); ctx.lineTo(cx+w*0.15, top+h*0.78); ctx.stroke();
+}
+
+function drawBlockPerson(cx, top, w, h, col, acc) {
+  // Very blocky — rectangle stack
+  ctx.fillStyle = col; ctx.strokeStyle = acc; ctx.lineWidth = 2;
+  // Head
+  ctx.fillRect(cx-w*0.28, top, w*0.56, h*0.28); ctx.strokeRect(cx-w*0.28, top, w*0.56, h*0.28);
+  // Eyes — angry
+  ctx.fillStyle = '#111';
+  ctx.fillRect(cx-w*0.2, top+h*0.06, w*0.13, h*0.06);
+  ctx.fillRect(cx+w*0.07, top+h*0.06, w*0.13, h*0.06);
+  // Angry brows
+  ctx.strokeStyle = '#111'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(cx-w*0.22, top+h*0.04); ctx.lineTo(cx-w*0.07, top+h*0.05); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+w*0.22, top+h*0.04); ctx.lineTo(cx+w*0.07, top+h*0.05); ctx.stroke();
+  // Mouth
+  ctx.beginPath(); ctx.moveTo(cx-w*0.12, top+h*0.2); ctx.lineTo(cx+w*0.12, top+h*0.2); ctx.stroke();
+  // Body
+  ctx.fillStyle = col;
+  ctx.fillRect(cx-w*0.35, top+h*0.28, w*0.7, h*0.42); ctx.strokeRect(cx-w*0.35, top+h*0.28, w*0.7, h*0.42);
+  // Arms
+  ctx.fillRect(cx-w*0.58, top+h*0.3, w*0.22, h*0.22); ctx.strokeRect(cx-w*0.58, top+h*0.3, w*0.22, h*0.22);
+  ctx.fillRect(cx+w*0.36, top+h*0.3, w*0.22, h*0.22); ctx.strokeRect(cx+w*0.36, top+h*0.3, w*0.22, h*0.22);
+  // Legs
+  ctx.fillRect(cx-w*0.28, top+h*0.7, w*0.22, h*0.3); ctx.strokeRect(cx-w*0.28, top+h*0.7, w*0.22, h*0.3);
+  ctx.fillRect(cx+w*0.06, top+h*0.7, w*0.22, h*0.3); ctx.strokeRect(cx+w*0.06, top+h*0.7, w*0.22, h*0.3);
+}
+
+// ── Floor 1 NPCs ──
+
+function drawInventor(cx, top, w, h, col, acc) {
+  // Round head with big goggles
+  ctx.fillStyle = '#f5d0a0'; ctx.strokeStyle = col; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, top+h*0.16, w*0.28, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  // Goggles
+  ctx.fillStyle = col+'aa'; ctx.strokeStyle = acc; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx-w*0.12, top+h*0.14, w*0.1, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx+w*0.12, top+h*0.14, w*0.1, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-w*0.02, top+h*0.14); ctx.lineTo(cx+w*0.02, top+h*0.14); ctx.strokeStyle=acc; ctx.stroke();
+  // Smile
+  ctx.strokeStyle = '#333'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(cx, top+h*0.2, w*0.1, 0.1, Math.PI-0.1, true); ctx.stroke();
+  // Messy hair
+  ctx.strokeStyle = acc; ctx.lineWidth=3;
+  for(let i=-2;i<=2;i++){
+    ctx.beginPath(); ctx.moveTo(cx+i*w*0.1, top+h*0.04);
+    ctx.lineTo(cx+i*w*0.08+(i%2===0?-4:4), top-h*0.06); ctx.stroke();
+  }
+  // Lab coat body
+  ctx.fillStyle='#eee'; ctx.strokeStyle='#ccc'; ctx.lineWidth=1.5;
+  roundRect(cx-w*0.35, top+h*0.3, w*0.7, h*0.42, 4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=col+'33'; ctx.fillRect(cx-w*0.1, top+h*0.32, w*0.2, h*0.38);
+  // Arms — one holding a wrench shape
+  ctx.strokeStyle='#ccc'; ctx.lineWidth=w*0.12; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(cx-w*0.35, top+h*0.38); ctx.lineTo(cx-w*0.55, top+h*0.55); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+w*0.35, top+h*0.38); ctx.lineTo(cx+w*0.56, top+h*0.52); ctx.stroke();
+  // Legs
+  ctx.lineWidth=w*0.15;
+  ctx.beginPath(); ctx.moveTo(cx-w*0.18, top+h*0.72); ctx.lineTo(cx-w*0.2, top+h); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+w*0.18, top+h*0.72); ctx.lineTo(cx+w*0.2, top+h); ctx.stroke();
+}
+
+function drawScientist(cx, top, w, h, col, acc) {
+  // Round head
+  ctx.fillStyle = '#d0f0d0'; ctx.strokeStyle = col; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, top+h*0.16, w*0.26, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  // Eyes with glasses
+  ctx.fillStyle='#333';
+  ctx.beginPath(); ctx.arc(cx-w*0.1, top+h*0.13, w*0.04, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx+w*0.1, top+h*0.13, w*0.04, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#888'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(cx-w*0.1, top+h*0.13, w*0.09, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx+w*0.1, top+h*0.13, w*0.09, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-w*0.01, top+h*0.13); ctx.lineTo(cx+w*0.01, top+h*0.13); ctx.stroke();
+  // Excited mouth
+  ctx.strokeStyle='#333'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(cx, top+h*0.22, w*0.09, 0.1, Math.PI-0.1, true); ctx.stroke();
+  // Body (green tshirt)
+  ctx.fillStyle=col; ctx.strokeStyle=acc; ctx.lineWidth=2;
+  roundRect(cx-w*0.32, top+h*0.3, w*0.64, h*0.4, 5); ctx.fill(); ctx.stroke();
+  // Flask in hand
+  ctx.fillStyle='#aaffcc88'; ctx.strokeStyle=acc; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(cx+w*0.52, top+h*0.47, w*0.1, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle=acc; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(cx+w*0.32, top+h*0.36); ctx.lineTo(cx+w*0.42, top+h*0.47); ctx.stroke();
+  // Other arm
+  ctx.lineWidth=w*0.12; ctx.strokeStyle=col; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(cx-w*0.32, top+h*0.38); ctx.lineTo(cx-w*0.5, top+h*0.52); ctx.stroke();
+  // Legs
+  ctx.lineWidth=w*0.15;
+  ctx.beginPath(); ctx.moveTo(cx-w*0.16, top+h*0.7); ctx.lineTo(cx-w*0.18, top+h); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+w*0.16, top+h*0.7); ctx.lineTo(cx+w*0.18, top+h); ctx.stroke();
+}
+
+function drawProfessor(cx, top, w, h, col, acc) {
+  // Head with hat
+  ctx.fillStyle='#e8d0ff'; ctx.strokeStyle=col; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(cx, top+h*0.2, w*0.26, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  // Mortarboard hat
+  ctx.fillStyle=col;
+  roundRect(cx-w*0.3, top+h*0.04, w*0.6, h*0.1, 2); ctx.fill();
+  ctx.fillRect(cx-w*0.2, top-h*0.06, w*0.4, h*0.12); ctx.strokeRect(cx-w*0.2, top-h*0.06, w*0.4, h*0.12);
+  ctx.strokeStyle=acc; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(cx+w*0.2, top-h*0.04); ctx.lineTo(cx+w*0.28, top+h*0.06); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx+w*0.28, top+h*0.07, w*0.04, 0, Math.PI*2);
+  ctx.fillStyle=acc; ctx.fill();
+  // Face
+  ctx.fillStyle='#333';
+  ctx.beginPath(); ctx.arc(cx-w*0.09, top+h*0.17, w*0.04, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx+w*0.09, top+h*0.17, w*0.04, 0, Math.PI*2); ctx.fill();
+  // Stressed expression
+  ctx.strokeStyle='#444'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(cx, top+h*0.25, w*0.09, 0, Math.PI); ctx.stroke();
+  // Robe body
+  ctx.fillStyle=col+'cc'; ctx.strokeStyle=acc; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(cx-w*0.16, top+h*0.32);
+  ctx.lineTo(cx-w*0.42, top+h);
+  ctx.lineTo(cx+w*0.42, top+h);
+  ctx.lineTo(cx+w*0.16, top+h*0.32);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Floating book
+  ctx.fillStyle='#fff8cc'; ctx.strokeStyle='#aa8800'; ctx.lineWidth=1.5;
+  ctx.fillRect(cx+w*0.35, top+h*0.32, w*0.22, h*0.16); ctx.strokeRect(cx+w*0.35, top+h*0.32, w*0.22, h*0.16);
+}
+
+// ── Floor 2 NPCs ──
+
+function drawShadow(cx, top, w, h, col, acc) {
+  ctx.save();
+  ctx.globalAlpha *= 0.85;
+  // Dark hooded silhouette — mirror of Maze Man style but darker
+  const glow = 6 + Math.sin(Date.now()/600)*3;
+  ctx.shadowColor=col; ctx.shadowBlur=glow;
+  // Hood
+  ctx.fillStyle='#1a2030'; ctx.strokeStyle=col; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.ellipse(cx, top+h*0.18, w*0.28, h*0.2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  // Glowing eyes (reddish)
+  ctx.shadowColor='#ff4444'; ctx.shadowBlur=12;
+  ctx.fillStyle='#ff6666';
+  ctx.save(); ctx.translate(cx-w*0.1, top+h*0.17); ctx.rotate(-0.2);
+  ctx.fillRect(-w*0.07, -h*0.022, w*0.07, h*0.04); ctx.restore();
+  ctx.save(); ctx.translate(cx+w*0.1, top+h*0.17); ctx.rotate(0.2);
+  ctx.fillRect(0, -h*0.022, w*0.07, h*0.04); ctx.restore();
+  ctx.shadowBlur=glow;
+  // Cloak
+  ctx.fillStyle='#101520'; ctx.strokeStyle=col; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx-w*0.18, top+h*0.28);
+  ctx.lineTo(cx-w*0.42, top+h);
+  ctx.lineTo(cx+w*0.42, top+h);
+  ctx.lineTo(cx+w*0.18, top+h*0.28); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Boots
+  ctx.fillStyle='#0a0a14';
+  ctx.beginPath(); ctx.ellipse(cx-w*0.12, top+h, w*0.1, h*0.05, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+w*0.12, top+h, w*0.1, h*0.05, 0, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawOracle(cx, top, w, h, col, acc) {
+  const bob = Math.sin(Date.now()/700)*h*0.03; // floating
+  // Crystalline floating form
+  ctx.strokeStyle=col; ctx.lineWidth=2;
+  // Crystal body
+  ctx.fillStyle=col+'44';
+  ctx.beginPath();
+  ctx.moveTo(cx, top+h*0.05+bob);
+  ctx.lineTo(cx+w*0.28, top+h*0.32+bob);
+  ctx.lineTo(cx+w*0.22, top+h*0.7+bob);
+  ctx.lineTo(cx, top+h*0.82+bob);
+  ctx.lineTo(cx-w*0.22, top+h*0.7+bob);
+  ctx.lineTo(cx-w*0.28, top+h*0.32+bob);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Inner glow
+  ctx.fillStyle=col+'22';
+  ctx.beginPath();
+  ctx.moveTo(cx, top+h*0.15+bob);
+  ctx.lineTo(cx+w*0.18, top+h*0.38+bob);
+  ctx.lineTo(cx, top+h*0.62+bob);
+  ctx.lineTo(cx-w*0.18, top+h*0.38+bob);
+  ctx.closePath(); ctx.fill();
+  // Eyes
+  ctx.shadowColor=acc; ctx.shadowBlur=15;
+  ctx.fillStyle=acc;
+  ctx.beginPath(); ctx.arc(cx-w*0.08, top+h*0.3+bob, w*0.05, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx+w*0.08, top+h*0.3+bob, w*0.05, 0, Math.PI*2); ctx.fill();
+  // Star sparkles
+  ctx.shadowColor=col; ctx.shadowBlur=8; ctx.fillStyle=col;
+  [[cx-w*0.35,top+h*0.2+bob],[cx+w*0.38,top+h*0.18+bob],[cx,top-h*0.05+bob]].forEach(([sx,sy])=>{
+    ctx.beginPath(); ctx.arc(sx,sy,w*0.04,0,Math.PI*2); ctx.fill();
+  });
+}
+
+function drawKing(cx, top, w, h, col, acc) {
+  // Crowned majestic figure
+  ctx.fillStyle='#c0a830'; ctx.strokeStyle=col; ctx.lineWidth=2;
+  // Crown
+  ctx.shadowColor=col; ctx.shadowBlur=14;
+  ctx.beginPath();
+  ctx.moveTo(cx-w*0.28, top+h*0.1);
+  ctx.lineTo(cx-w*0.28, top-h*0.04);
+  ctx.lineTo(cx-w*0.14, top+h*0.06);
+  ctx.lineTo(cx,        top-h*0.08);
+  ctx.lineTo(cx+w*0.14, top+h*0.06);
+  ctx.lineTo(cx+w*0.28, top-h*0.04);
+  ctx.lineTo(cx+w*0.28, top+h*0.1); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Jewels in crown
+  ctx.fillStyle='#ff4444'; ctx.beginPath(); ctx.arc(cx, top-h*0.04, w*0.05, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle='#4444ff'; ctx.beginPath(); ctx.arc(cx-w*0.14, top+h*0.04, w*0.04, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx+w*0.14, top+h*0.04, w*0.04, 0, Math.PI*2); ctx.fill();
+  // Head
+  ctx.shadowBlur=6;
+  ctx.fillStyle='#f5d090'; ctx.strokeStyle=col; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(cx, top+h*0.22, w*0.26, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  // Wise face
+  ctx.fillStyle='#333';
+  ctx.beginPath(); ctx.arc(cx-w*0.09, top+h*0.18, w*0.04, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx+w*0.09, top+h*0.18, w*0.04, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#333'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(cx, top+h*0.26, w*0.1, 0.1, Math.PI-0.1, true); ctx.stroke();
+  // Robe
+  ctx.fillStyle=col+'cc'; ctx.strokeStyle=col; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(cx-w*0.2, top+h*0.35);
+  ctx.lineTo(cx-w*0.45, top+h);
+  ctx.lineTo(cx+w*0.45, top+h);
+  ctx.lineTo(cx+w*0.2, top+h*0.35); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Scepter
+  ctx.strokeStyle=col; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(cx+w*0.3, top+h*0.38); ctx.lineTo(cx+w*0.46, top+h*0.7); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx+w*0.3, top+h*0.34, w*0.07, 0, Math.PI*2);
+  ctx.fillStyle=acc; ctx.fill(); ctx.stroke();
+}
+
+// ── NPC UI elements ──
+function drawProximityBubble(cx, y) {
+  // Small "!" bubble to hint interaction
+  const pulse = 0.8 + Math.sin(Date.now()/300)*0.2;
+  ctx.save();
+  ctx.globalAlpha = pulse;
+  ctx.shadowColor='#ffcc00'; ctx.shadowBlur=10;
+  ctx.fillStyle='#ffcc00'; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(cx, y, 13, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#111';
+  ctx.font='bold 14px Bangers'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('!', cx, y);
+  ctx.restore();
+}
+
+function drawHelpedBadge(cx, y) {
+  ctx.save();
+  ctx.shadowColor='#00ff88'; ctx.shadowBlur=10;
+  ctx.fillStyle='#00ff88'; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(cx, y, 10, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#003311';
+  ctx.font='bold 12px Bangers'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('✓', cx, y);
+  ctx.restore();
+}
+
+
+// ══════════════════════════════════════════════════════
+//  NPC PROXIMITY + DIALOGUE
+// ══════════════════════════════════════════════════════
+const PROXIMITY_DIST = 90;
+
+function checkNPCProximity() {
+  if (G.transitioning || G.inDialogue) return;
+  const npc = NPC_DATA[G.floor][0];
+  if (!npc._x) return;
+  if (npc.helped || npc.state === 'skipped') {
+    npc.state = npc.helped ? 'helped' : 'skipped';
+    return;
+  }
+  const dist = Math.abs(MM.cx - npc._x);
+  if (dist < PROXIMITY_DIST) {
+    npc.state = 'near';
+    if (!activeNPC) openNPCDialogue(npc);
+  } else {
+    if (npc.state === 'near') npc.state = 'idle';
+    if (activeNPC === npc && !G.inDialogue) closeNPCDialogue(false);
+  }
+}
+
+function openNPCDialogue(npc) {
+  if (activeNPC) return;            // already showing one
+  activeNPC = npc;
+  // NOTE: G.inDialogue is NOT set here — player can keep moving freely.
+  // The box auto-dismisses when the player walks away (checkNPCProximity).
+
+  const box    = document.getElementById('npc-box');
+  const isAr   = lang === 'ar';
+
+  document.getElementById('npc-name-tag').textContent = npc.name[lang];
+  document.getElementById('npc-speech').textContent   = npc.problem[lang];
+  document.getElementById('btn-help').textContent     = isAr ? '🤝 ساعد!' : '🤝 Help!';
+  document.getElementById('btn-skip').textContent     = isAr ? '← تجاوز' : '→ Move On';
+
+  box.className = isAr ? 'rtl' : '';
+  box.style.display = 'block';
+  requestAnimationFrame(() => box.classList.add('visible'));
+  playNPCApproach();
+}
+
+function closeNPCDialogue(skipState) {
+  const box = document.getElementById('npc-box');
+  box.classList.remove('visible');
+  setTimeout(() => { box.style.display='none'; }, 220);
+  if (skipState && activeNPC) activeNPC.state = 'skipped';
+  activeNPC = null;
+  // G.inDialogue is NOT cleared here — it's only managed by mini-game / insight card
+}
+
+function handleHelp() {
+  if (!activeNPC) return;
+  const npc = activeNPC;
+  closeNPCDialogue(false);
+  setTimeout(() => launchMiniGame(npc), 200);
+}
+
+function handleSkip() {
+  if (!activeNPC) return;
+  closeNPCDialogue(true);
+}
+
+function showInsight(npc) {
+  G.inDialogue = true;
+  const card = document.getElementById('insight-card');
+  const isAr = lang === 'ar';
+
+  document.getElementById('insight-icon').textContent  = npc.icon;
+  document.getElementById('insight-title').textContent = isAr ? '💡 رؤية نفسية' : '💡 Psychology Insight';
+  document.getElementById('insight-text').textContent  = npc.insight[lang];
+  document.getElementById('btn-insight-ok').textContent= isAr ? 'فهمت! ✓' : 'Got it! ✓';
+
+  card.className = isAr ? 'rtl' : '';
+  card.style.display = 'block';
+  requestAnimationFrame(() => card.classList.add('visible'));
+  playInsightChime();
+}
+
+function closeInsight() {
+  const card = document.getElementById('insight-card');
+  card.classList.remove('visible');
+  setTimeout(() => { card.style.display='none'; }, 250);
+  G.inDialogue = false;
+  activeNPC    = null;
+}
+
+function playNPCApproach() {
+  if(!AC) return;
+  synth('sine', 440, AC.currentTime, 0.25, 0.12);
+  synth('sine', 550, AC.currentTime+0.1, 0.2, 0.1);
+}
+function playInsightChime() {
+  if(!AC) return;
+  [660,880,1100,880].forEach((f,i)=>synth('triangle',f,AC.currentTime+i*0.08,0.22,0.18));
+}
+
+
+// ══════════════════════════════════════════════════════
+//  EXIT / FLOOR TRANSITION
+// ══════════════════════════════════════════════════════
+// Doors are drawn inside drawFloorPanel() — no separate drawExitDoor needed.
+
+function checkExit() {
+  if (G.floor >= 2 || G.transitioning) return;
+  if (!NPC_DATA[G.floor][0].helped) return;  // door locked
+  if (MM.x + MM.spriteW > W - 46 - 4) triggerFloorTransition();
+}
+
+function triggerFloorTransition() {
+  if (G.transitioning) return;
+  G.transitioning = true;
+  playChime();
+  // Brief flash then instantly move to next floor (all floors stay visible)
+  const ov = document.getElementById('transition-overlay');
+  ov.classList.add('fade-in');
+  setTimeout(() => {
+    G.floor++;
+    MM.x = 50; MM.facing = 1;
+    activeNPC = null; G.inDialogue = false;
+    updateFloorDots(); updateProgressBar(); updateFloorLabel();
+    ov.classList.remove('fade-in');
+    setTimeout(() => {
+      G.transitioning = false;
+      showHint(S('intro')[G.floor], 2800);
+    }, 200);
+  }, 220);
+}
+
+
+// ══════════════════════════════════════════════════════
+//  UI
+// ══════════════════════════════════════════════════════
+function updateFloorDots() {
+  document.querySelectorAll('.floor-dot').forEach((d,i) => {
+    d.classList.toggle('active',  i === G.floor);
+    d.classList.toggle('visited', i < G.floor);
+  });
+}
+function updateProgressBar() {
+  document.getElementById('progress-fill').style.width = (G.floor/2*100)+'%';
+}
+
+let hintTimer;
+function showHint(text, ms=3000) {
+  const d = document.getElementById('dialogue');
+  d.textContent = text;
+  d.className   = lang==='ar' ? 'rtl' : '';
+  d.style.display = 'block';
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => { d.style.display='none'; }, ms);
+}
+
+function addScore(n) {
+  // Legacy — routes through XP now
+  addXP(n);
+}
+
+
+// ══════════════════════════════════════════════════════
+//  AUDIO — Web Audio API (no external files)
+// ══════════════════════════════════════════════════════
+let AC, masterGain, musicStarted = false;
+
+function ensureAudio() {
+  if (musicStarted) return;
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = AC.createGain(); masterGain.gain.value = 0.18;
+    masterGain.connect(AC.destination);
+    scheduleAmbient();
+    musicStarted = true;
+  } catch(e) {}
+}
+
+const PENTA   = [130.81, 146.83, 164.81, 196.0, 220.0];
+const PATTERN = [0, 2, 4, 2, 1, 3, 4, 1];
+
+function scheduleAmbient() {
+  let t = AC.currentTime + 0.1;
+  PATTERN.forEach(ni => {
+    synth('triangle', PENTA[ni]*2, t, 0.35, 0.38);
+    synth('sine',     PENTA[ni],   t, 0.22, 0.75);
+    t += 0.48;
+  });
+  setTimeout(scheduleAmbient, (t - AC.currentTime - 0.2)*1000);
+}
+
+function synth(type, freq, start, gain, dur) {
+  const osc=AC.createOscillator(), env=AC.createGain();
+  osc.type=type; osc.frequency.value=freq;
+  env.gain.setValueAtTime(0,start);
+  env.gain.linearRampToValueAtTime(gain, start+0.04);
+  env.gain.exponentialRampToValueAtTime(0.001, start+dur);
+  osc.connect(env); env.connect(masterGain);
+  osc.start(start); osc.stop(start+dur+0.05);
+}
+
+function playStep()  { if(!AC) return; synth('sine',200+Math.random()*90,AC.currentTime,0.1,0.07); }
+function playChime() { if(!AC) return; [523.25,659.25,783.99].forEach((f,i)=>synth('sine',f,AC.currentTime+i*0.12,0.3,0.4)); }
+
+
+// ══════════════════════════════════════════════════════
+//  INPUT
+// ══════════════════════════════════════════════════════
+const keys = { left:false, right:false };
+
+document.addEventListener('keydown', e => {
+  ensureAudio();
+  // Maze mini-game arrow keys
+  const mazeWrap = document.getElementById('maze-mini-wrap');
+  if (mazeWrap && mazeWrap.style.display !== 'none' &&
+      document.getElementById('minigame-overlay')?.classList.contains('visible')) {
+    if (e.key==='ArrowUp')    { movePlayer(-1, 0); e.preventDefault(); return; }
+    if (e.key==='ArrowDown')  { movePlayer( 1, 0); e.preventDefault(); return; }
+    if (e.key==='ArrowLeft')  { movePlayer( 0,-1); e.preventDefault(); return; }
+    if (e.key==='ArrowRight') { movePlayer( 0, 1); e.preventDefault(); return; }
+  }
+  if(e.key==='ArrowLeft')  { keys.left=true;  e.preventDefault(); }
+  if(e.key==='ArrowRight') { keys.right=true; e.preventDefault(); }
+});
+document.addEventListener('keyup', e => {
+  if(e.key==='ArrowLeft')  keys.left=false;
+  if(e.key==='ArrowRight') keys.right=false;
+});
+
+function setupButtons() {
+  const btnL=document.getElementById('btn-left');
+  const btnR=document.getElementById('btn-right');
+  ['mousedown','touchstart'].forEach(ev => {
+    btnL.addEventListener(ev, e=>{ ensureAudio(); keys.left=true;  btnL.classList.add('pressed');    e.preventDefault(); },{passive:false});
+    btnR.addEventListener(ev, e=>{ ensureAudio(); keys.right=true; btnR.classList.add('pressed');    e.preventDefault(); },{passive:false});
+  });
+  ['mouseup','touchend','touchcancel','mouseleave'].forEach(ev => {
+    btnL.addEventListener(ev, ()=>{ keys.left=false;  btnL.classList.remove('pressed'); });
+    btnR.addEventListener(ev, ()=>{ keys.right=false; btnR.classList.remove('pressed'); });
+  });
+}
+
+
+// ══════════════════════════════════════════════════════
+//  GAME LOOP
+// ══════════════════════════════════════════════════════
+let lastStep = 0;
+
+function update() {
+  MM.vx=0; MM.isWalking=false;
+  if (!G.transitioning && !G.inDialogue) {
+    if(keys.left)  { MM.vx=-MM.speed; MM.facing=-1; MM.isWalking=true; }
+    if(keys.right) { MM.vx= MM.speed; MM.facing= 1; MM.isWalking=true; }
+  }
+  checkNPCProximity();
+  if(MM.isWalking && MM.walkFrame%2===0 && MM.walkTick===0) {
+    const now=performance.now();
+    if(now-lastStep>240) { playStep(); lastStep=now; }
+  }
+  MM.update();
+}
+
+function render() {
+  ctx.clearRect(0,0,W,H);
+  drawBackground();
+  drawNPCs();
+  MM.draw();
+}
+
+function loop() { update(); render(); requestAnimationFrame(loop); }
+
+
+// ══════════════════════════════════════════════════════
+//  UTILITY
+// ══════════════════════════════════════════════════════
+function clamp(min,val,max) { return Math.max(min,Math.min(max,val)); }
+
+function roundRect(x,y,w,h,r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+  ctx.closePath();
+}
+
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+function init() {
+  resize();
+  loadBGImages();
+  initBgElements();
+  setupButtons();
+  updateFloorDots();
+  updateProgressBar();
+  updateFloorLabel();
+  MM.x = 60;
+  loadImages();  // load sprite sheet + portrait
+  setTimeout(() => showHint(S('exitHint'), 4500), 900);
+  loop();
+}
+
+// Game starts after comic intro (skipIntro() calls init())
+// window.addEventListener('load', init);  ← deferred to skipIntro()
+
+// ══════════════════════════════════════════════════════
+//  GAMIFICATION — XP, Streaks, Badges (localStorage, no Supabase)
+// ══════════════════════════════════════════════════════
+const STATS_KEY = 'mazeman_ep1_stats';
+const STATS = {
+  xp: 0, streak: 0, bestStreak: 0, helped: 0, badges: [],
+  save() {
+    try {
+      localStorage.setItem(STATS_KEY, JSON.stringify({
+        xp: this.xp, bestStreak: this.bestStreak,
+        badges: this.badges, helped: this.helped
+      }));
+    } catch(e) {}
+  },
+  load() {
+    try {
+      const d = JSON.parse(localStorage.getItem(STATS_KEY) || '{}');
+      this.xp = d.xp || 0;
+      this.bestStreak = d.bestStreak || 0;
+      this.badges = d.badges || [];
+      this.helped = d.helped || 0;
+    } catch(e) {}
+  }
+};
+
+const BADGES_DEF = [
+  { id:'first_helper', icon:'🤝', name:'First Helper',        sub:'Helped your first NPC',         check: () => STATS.helped >= 1 },
+  { id:'on_fire',      icon:'🔥', name:'On Fire!',            sub:'3 wins in a row',               check: () => STATS.streak >= 3 },
+  { id:'halfway',      icon:'⚡', name:'Halfway There',       sub:'Helped 2 guardians',            check: () => STATS.helped >= 2 },
+  { id:'solver',       icon:'🧠', name:'Problem Solver Lv.1', sub:'All 3 guardians helped',        check: () => STATS.helped >= 3 },
+];
+
+function addXP(n) {
+  STATS.xp += n;
+  G.score    = STATS.xp;
+  document.getElementById('score-val').textContent = STATS.xp;
+  const pct = Math.min(100, (STATS.xp / 900) * 100);
+  document.getElementById('xp-fill').style.width = pct + '%';
+  STATS.save();
+}
+
+function incrementStreak() {
+  STATS.streak++;
+  if (STATS.streak > STATS.bestStreak) STATS.bestStreak = STATS.streak;
+  const el = document.getElementById('streak-display');
+  if (STATS.streak >= 2) { el.textContent = '🔥 ' + STATS.streak; el.style.display = 'block'; }
+  STATS.save();
+}
+
+function resetStreak() {
+  STATS.streak = 0;
+  document.getElementById('streak-display').style.display = 'none';
+}
+
+function checkBadges() {
+  BADGES_DEF.forEach(b => {
+    if (!STATS.badges.includes(b.id) && b.check()) {
+      STATS.badges.push(b.id);
+      STATS.save();
+      showBadgeNotif(b);
+    }
+  });
+}
+
+function showBadgeNotif(badge) {
+  const notif = document.getElementById('badge-notif');
+  document.getElementById('badge-notif-icon').textContent = badge.icon;
+  document.getElementById('badge-notif-name').textContent = badge.name;
+  document.getElementById('badge-notif-sub').textContent  = badge.sub;
+  notif.style.display = 'block';
+  if (AC) [880, 1100, 1320].forEach((f,i) => synth('triangle', f, AC.currentTime + i*0.1, 0.22, 0.28));
+  setTimeout(() => { notif.style.display = 'none'; }, 3200);
+}
+
+
+// ══════════════════════════════════════════════════════
+//  MINI-GAME ENGINE
+// ══════════════════════════════════════════════════════
+let mgNPC  = null;
+let mgWon  = false;
+let mgTimerInterval = null;
+
+function launchMiniGame(npc) {
+  mgNPC = npc; mgWon = false;
+  G.inDialogue = true;
+
+  const overlay = document.getElementById('minigame-overlay');
+  overlay.classList.add('visible');
+  document.getElementById('mg-result').classList.remove('visible');
+
+  // Hide all game panels
+  ['grid-puzzle','seq-game','match-game','maze-mini-wrap'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+
+  const titles = {
+    grid:     '🧩 ' + (lang==='ar' ? 'رتّب القطع!' : 'Slide to Solve!'),
+    sequence: '🔮 ' + (lang==='ar' ? 'أكمل النمط!' : 'Complete the Pattern!'),
+    matching: '🃏 ' + (lang==='ar' ? 'ابحث عن الأزواج!' : 'Match the Pairs!'),
+    maze:     '🌀 ' + (lang==='ar' ? 'اعبر المتاهة!' : 'Navigate the Maze!'),
+  };
+  document.getElementById('mg-header').textContent   = titles[npc.game] || '🎮 Challenge';
+  document.getElementById('mg-subtitle').textContent = npc.name[lang] + (lang==='ar' ? ' يحتاج مساعدتك!' : ' needs your help!');
+
+  switch (npc.game) {
+    case 'grid':     startGridPuzzle();   break;
+    case 'sequence': startSeqGame();      break;
+    case 'matching': startMatchGame();    break;
+    case 'maze':     startMazeGame();     break;
+  }
+}
+
+function closeMiniGame() {
+  document.getElementById('minigame-overlay').classList.remove('visible');
+  clearMgTimer();
+  G.inDialogue = false;
+}
+
+function startMgTimer(sec, onTimeout) {
+  clearMgTimer();
+  let left = sec;
+  const el = document.getElementById('mg-timer');
+  el.textContent = '⏱ ' + left + 's';
+  el.style.color = '#ffcc00';
+  el.style.display = 'block';
+  mgTimerInterval = setInterval(() => {
+    left--;
+    el.textContent = '⏱ ' + left + 's';
+    if (left <= 10) el.style.color = '#ff4444';
+    if (left <= 0) { clearMgTimer(); onTimeout(); }
+  }, 1000);
+}
+
+function clearMgTimer() {
+  if (mgTimerInterval) { clearInterval(mgTimerInterval); mgTimerInterval = null; }
+  const el = document.getElementById('mg-timer');
+  el.style.display = 'none';
+  el.style.color = '#ffcc00';
+}
+
+function showMgResult(win, msg) {
+  clearMgTimer();
+  mgWon = win;
+  const result = document.getElementById('mg-result');
+  document.getElementById('result-icon').textContent  = win ? '🎉' : '😔';
+  document.getElementById('result-title').textContent = win
+    ? (lang==='ar' ? 'رائع! نجحت!' : 'Awesome! You did it!')
+    : (lang==='ar' ? 'حاول مجدداً!' : 'Not quite — try again!');
+  document.getElementById('result-msg').textContent   = msg;
+  const btn = document.getElementById('btn-result-ok');
+  btn.className   = win ? 'win' : 'lose';
+  btn.textContent = win ? (lang==='ar' ? 'متابعة ✓' : 'Continue ✓')
+                        : (lang==='ar' ? 'حاول مجدداً ↺' : 'Try Again ↺');
+  result.classList.add('visible');
+  if (win) {
+    if (AC) [523, 659, 784, 1047].forEach((f,i) => synth('sine', f, AC.currentTime + i*0.13, 0.28, 0.45));
+  } else {
+    if (AC) [330, 260, 196].forEach((f,i) => synth('sawtooth', f, AC.currentTime + i*0.1, 0.18, 0.2));
+  }
+}
+
+function handleResultOk() {
+  if (mgWon) {
+    closeMiniGame();
+    if (mgNPC) {
+      mgNPC.helped = true;
+      mgNPC.state  = 'helped';
+      STATS.helped++;
+      addXP(100);
+      incrementStreak();
+      updateProgressBar();
+      checkBadges();
+      STATS.save();
+      setTimeout(() => showInsight(mgNPC), 300);
+      checkCompletion();
+    }
+  } else {
+    // Retry — reset streak, re-launch game
+    resetStreak();
+    document.getElementById('mg-result').classList.remove('visible');
+    switch (mgNPC?.game) {
+      case 'grid':     startGridPuzzle(); break;
+      case 'sequence': startSeqGame();    break;
+      case 'matching': startMatchGame();  break;
+      case 'maze':     startMazeGame();   break;
+    }
+  }
+}
+
+// Also check completion after closing the insight card
+const _origCloseInsight = closeInsight;
+closeInsight = function() {
+  _origCloseInsight();
+  checkCompletion();
+};
+
+
+// ══════════════════════════════════════════════════════
+//  MINI-GAME 1: SLIDING GRID PUZZLE (3×3)
+// ══════════════════════════════════════════════════════
+let gpTiles = [];
+
+function startGridPuzzle() {
+  const container = document.getElementById('grid-puzzle');
+  container.style.display = 'grid';
+  // Start solved, then shuffle with valid swaps to ensure solvability
+  gpTiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+  for (let i = 0; i < 100; i++) {
+    const ei = gpTiles.indexOf(0);
+    const nb = getGridNeighbors(ei);
+    const pick = nb[Math.floor(Math.random() * nb.length)];
+    [gpTiles[ei], gpTiles[pick]] = [gpTiles[pick], gpTiles[ei]];
+  }
+  renderGridPuzzle();
+  startMgTimer(90, () => showMgResult(false, lang==='ar'
+    ? 'نفد الوقت! رتّب الأرقام من 1 إلى 8.'
+    : "Time's up! Arrange 1–8 in order and try again."));
+}
+
+function getGridNeighbors(idx) {
+  const r = Math.floor(idx / 3), c = idx % 3, nb = [];
+  if (r > 0) nb.push(idx - 3);
+  if (r < 2) nb.push(idx + 3);
+  if (c > 0) nb.push(idx - 1);
+  if (c < 2) nb.push(idx + 1);
+  return nb;
+}
+
+function renderGridPuzzle() {
+  const container = document.getElementById('grid-puzzle');
+  container.innerHTML = '';
+  gpTiles.forEach((val, idx) => {
+    const tile = document.createElement('div');
+    tile.className = val === 0 ? 'gp-tile empty' : 'gp-tile';
+    if (val !== 0) {
+      tile.textContent = val;
+      tile.onclick = () => trySlide(idx);
+    }
+    container.appendChild(tile);
+  });
+}
+
+function trySlide(idx) {
+  const ei = gpTiles.indexOf(0);
+  if (!getGridNeighbors(ei).includes(idx)) return;
+  [gpTiles[ei], gpTiles[idx]] = [gpTiles[idx], gpTiles[ei]];
+  if (AC) synth('sine', 400 + gpTiles[ei] * 30, AC.currentTime, 0.1, 0.07);
+  renderGridPuzzle();
+  if (gpTiles.join(',') === '1,2,3,4,5,6,7,8,0') {
+    showMgResult(true, lang==='ar'
+      ? 'رتّبت القطع بالترتيب الصحيح! عقلك المنظَّم يحل أي لغز.'
+      : 'Tiles in perfect order! A structured mind conquers any puzzle.');
+  }
+}
+
+
+// ══════════════════════════════════════════════════════
+//  MINI-GAME 2: SEQUENCE PATTERN GAME
+// ══════════════════════════════════════════════════════
+const SEQ_SETS = [
+  { items:['🔴','🔵','🔴','🔵','🔴','❓'], answer:'🔵', choices:['🔵','🔴','🟡','🟢'] },
+  { items:['⬆️','⬆️','⬇️','⬆️','⬆️','❓'],  answer:'⬇️',  choices:['⬇️','⬆️','↔️','🔄'] },
+  { items:['⭐','⭐','🌟','⭐','⭐','❓'],   answer:'🌟', choices:['🌟','⭐','💫','✨'] },
+  { items:['🔺','🔺','🔻','🔺','🔺','❓'],  answer:'🔻', choices:['🔻','🔺','🟠','🟣'] },
+  { items:['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','❓'], answer:'6️⃣', choices:['6️⃣','7️⃣','5️⃣','4️⃣'] },
+  { items:['🎵','🎶','🎵','🎶','🎵','❓'],  answer:'🎶', choices:['🎶','🎵','🎸','🎹'] },
+  { items:['🌑','🌒','🌓','🌔','🌕','❓'],  answer:'🌖', choices:['🌖','🌕','🌑','🌗'] },
+  { items:['🐛','🐛','🦋','🐛','🐛','❓'],  answer:'🦋', choices:['🦋','🐛','🐝','🐞'] },
+];
+let seqRound = 0;
+const SEQ_TOTAL = 3;
+let seqUsed = [];
+
+function startSeqGame() {
+  seqRound = 0; seqUsed = [];
+  document.getElementById('seq-game').style.display = 'block';
+  renderSeqRound();
+  startMgTimer(70, () => showMgResult(false, lang==='ar'
+    ? 'نفد الوقت! تدرّب على إيجاد الأنماط.'
+    : "Time's up! Pattern recognition gets better with practice."));
+}
+
+function renderSeqRound() {
+  if (seqRound >= SEQ_TOTAL) {
+    showMgResult(true, lang==='ar'
+      ? 'أكملت جميع الأنماط! تفكيرك التسلسلي قوي جداً.'
+      : 'All patterns cracked! Your sequential thinking is outstanding.');
+    return;
+  }
+  let idx;
+  do { idx = Math.floor(Math.random() * SEQ_SETS.length); } while (seqUsed.includes(idx));
+  seqUsed.push(idx);
+  const set = SEQ_SETS[idx];
+
+  const dispEl = document.getElementById('seq-display');
+  dispEl.innerHTML = '';
+  set.items.forEach(item => {
+    const el = document.createElement('div');
+    el.className = item === '❓' ? 'seq-item seq-question' : 'seq-item';
+    el.textContent = item;
+    dispEl.appendChild(el);
+  });
+  document.getElementById('seq-round-info').textContent =
+    lang==='ar' ? `الجولة ${seqRound+1} من ${SEQ_TOTAL}` : `Round ${seqRound+1} of ${SEQ_TOTAL}`;
+
+  const choicesEl = document.getElementById('seq-choices');
+  choicesEl.innerHTML = '';
+  [...set.choices].sort(() => Math.random() - 0.5).forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'seq-choice';
+    btn.textContent = choice;
+    btn.onclick = () => {
+      if (choice === set.answer) {
+        if (AC) synth('triangle', 880, AC.currentTime, 0.2, 0.2);
+        seqRound++;
+        renderSeqRound();
+      } else {
+        showMgResult(false, lang==='ar'
+          ? 'ليس هذا النمط الصحيح — راقب التسلسل وحاول مجدداً!'
+          : 'That breaks the pattern — look closely and try again!');
+      }
+    };
+    choicesEl.appendChild(btn);
+  });
+}
+
+
+// ══════════════════════════════════════════════════════
+//  MINI-GAME 3: MEMORY MATCHING CARDS
+// ══════════════════════════════════════════════════════
+const MATCH_ICONS = ['🧠','💡','🔍','⚡','🎯','🔑','💎','🌟'];
+let matchCards = [], matchFlipped = [], matchMatched = 0, matchLocked = false;
+
+function startMatchGame() {
+  const container = document.getElementById('match-game');
+  container.style.display = 'grid';
+  matchFlipped = []; matchMatched = 0; matchLocked = false;
+  const chosen = [...MATCH_ICONS].sort(() => Math.random() - 0.5).slice(0, 4);
+  const deck   = [...chosen, ...chosen].sort(() => Math.random() - 0.5);
+  matchCards   = deck.map((icon, idx) => ({ icon, idx, flipped: false, matched: false }));
+  renderMatchGame();
+  startMgTimer(60, () => showMgResult(false, lang==='ar'
+    ? 'نفد الوقت! الذاكرة تتحسّن بالممارسة.'
+    : "Time's up! Memory sharpens with every attempt."));
+}
+
+function renderMatchGame() {
+  const container = document.getElementById('match-game');
+  container.innerHTML = '';
+  matchCards.forEach((card, idx) => {
+    const el = document.createElement('div');
+    let cls = 'match-card';
+    if (card.matched)                   cls += ' matched face-up';
+    else if (card.flipped)              cls += ' face-up';
+    else                                cls += ' back';
+    el.className = cls;
+    if (card.flipped || card.matched)   el.textContent = card.icon;
+    if (!card.matched)                  el.onclick = () => flipMatchCard(idx);
+    container.appendChild(el);
+  });
+}
+
+function flipMatchCard(idx) {
+  if (matchLocked) return;
+  const card = matchCards[idx];
+  if (card.flipped || card.matched) return;
+  card.flipped = true;
+  matchFlipped.push(idx);
+  renderMatchGame();
+  if (AC) synth('sine', 550 + idx * 30, AC.currentTime, 0.12, 0.1);
+  if (matchFlipped.length === 2) {
+    matchLocked = true;
+    const [a, b] = matchFlipped;
+    if (matchCards[a].icon === matchCards[b].icon) {
+      matchCards[a].matched = matchCards[b].matched = true;
+      matchCards[a].flipped = matchCards[b].flipped = false;
+      matchFlipped = []; matchMatched++; matchLocked = false;
+      renderMatchGame();
+      if (AC) [660, 880].forEach((f,i) => synth('triangle', f, AC.currentTime + i*0.08, 0.2, 0.2));
+      if (matchMatched === 4) {
+        showMgResult(true, lang==='ar'
+          ? 'وجدت جميع الأزواج! ذاكرتك الترابطية قوية.'
+          : 'All pairs matched! Your associative memory is sharp.');
+      }
+    } else {
+      setTimeout(() => {
+        matchCards[a].flipped = matchCards[b].flipped = false;
+        matchFlipped = []; matchLocked = false;
+        renderMatchGame();
+      }, 900);
+    }
+  }
+}
+
+
+// ══════════════════════════════════════════════════════
+//  MINI-GAME 4: MINI-MAZE (7×7 DFS-generated)
+// ══════════════════════════════════════════════════════
+const MAZE_SIZE = 7;
+let mazeGrid = [], mazePlayer = { r:0, c:0 };
+let mazeCvs, mazeCx2;
+
+function generateMaze(size) {
+  const grid = Array.from({length:size}, () =>
+    Array.from({length:size}, () => ({N:true,E:true,S:true,W:true,visited:false}))
+  );
+  function carve(r,c) {
+    grid[r][c].visited = true;
+    const dirs = [
+      {dr:-1,dc:0,w:'N',op:'S'},{dr:0,dc:1,w:'E',op:'W'},
+      {dr:1,dc:0,w:'S',op:'N'},{dr:0,dc:-1,w:'W',op:'E'}
+    ].sort(() => Math.random()-0.5);
+    for (const {dr,dc,w,op} of dirs) {
+      const nr=r+dr, nc=c+dc;
+      if (nr>=0&&nr<size&&nc>=0&&nc<size&&!grid[nr][nc].visited) {
+        grid[r][c][w]=false; grid[nr][nc][op]=false; carve(nr,nc);
+      }
+    }
+  }
+  carve(0,0);
+  return grid;
+}
+
+function startMazeGame() {
+  mazeGrid  = generateMaze(MAZE_SIZE);
+  mazePlayer = {r:0, c:0};
+  const wrap = document.getElementById('maze-mini-wrap');
+  wrap.style.display = 'flex';
+  mazeCvs = document.getElementById('maze-canvas');
+  const sz = Math.min(252, Math.floor(window.innerWidth * 0.74));
+  mazeCvs.width = mazeCvs.height = sz;
+  mazeCx2 = mazeCvs.getContext('2d');
+  document.getElementById('mz-up').onclick    = () => movePlayer(-1, 0);
+  document.getElementById('mz-left').onclick  = () => movePlayer( 0,-1);
+  document.getElementById('mz-down').onclick  = () => movePlayer( 1, 0);
+  document.getElementById('mz-right').onclick = () => movePlayer( 0, 1);
+  drawMazeCanvas();
+  startMgTimer(90, () => showMgResult(false, lang==='ar'
+    ? 'نفد الوقت! كل طريق مسدود يعلّمك شيئاً.'
+    : "Time's up! Every dead end is data — keep exploring."));
+}
+
+function movePlayer(dr, dc) {
+  const {r,c} = mazePlayer;
+  const nr=r+dr, nc=c+dc;
+  if (nr<0||nr>=MAZE_SIZE||nc<0||nc>=MAZE_SIZE) return;
+  let wall;
+  if      (dr===-1) wall='N';
+  else if (dr=== 1) wall='S';
+  else if (dc===-1) wall='W';
+  else              wall='E';
+  if (mazeGrid[r][c][wall]) return; // blocked
+  mazePlayer = {r:nr, c:nc};
+  drawMazeCanvas();
+  if (AC) synth('sine', 320 + nc*20, AC.currentTime, 0.07, 0.05);
+  if (nr===MAZE_SIZE-1 && nc===MAZE_SIZE-1) {
+    setTimeout(() => showMgResult(true, lang==='ar'
+      ? 'وجدت الطريق! الإصرار يغلب كل متاهة.'
+      : 'You found the exit! Persistence beats every maze.'), 150);
+  }
+}
+
+function drawMazeCanvas() {
+  if (!mazeCx2) return;
+  const S = mazeCvs.width / MAZE_SIZE;
+  mazeCx2.fillStyle = '#040410';
+  mazeCx2.fillRect(0, 0, mazeCvs.width, mazeCvs.height);
+  // Walls
+  mazeCx2.strokeStyle = '#00f5ff66';
+  mazeCx2.lineWidth   = 1.5;
+  for (let r=0; r<MAZE_SIZE; r++) {
+    for (let c=0; c<MAZE_SIZE; c++) {
+      const x=c*S, y=r*S, cell=mazeGrid[r][c];
+      if (cell.N) { mazeCx2.beginPath(); mazeCx2.moveTo(x,y);    mazeCx2.lineTo(x+S,y);   mazeCx2.stroke(); }
+      if (cell.E) { mazeCx2.beginPath(); mazeCx2.moveTo(x+S,y);  mazeCx2.lineTo(x+S,y+S); mazeCx2.stroke(); }
+      if (cell.S) { mazeCx2.beginPath(); mazeCx2.moveTo(x,y+S);  mazeCx2.lineTo(x+S,y+S); mazeCx2.stroke(); }
+      if (cell.W) { mazeCx2.beginPath(); mazeCx2.moveTo(x,y);    mazeCx2.lineTo(x,y+S);   mazeCx2.stroke(); }
+    }
+  }
+  // Exit glow
+  const ex=(MAZE_SIZE-1)*S, ey=(MAZE_SIZE-1)*S;
+  mazeCx2.fillStyle = '#00ff8844';
+  mazeCx2.fillRect(ex+2, ey+2, S-4, S-4);
+  mazeCx2.fillStyle = '#00ff88';
+  mazeCx2.font = `bold ${Math.floor(S*0.38)}px Bangers`;
+  mazeCx2.textAlign = 'center'; mazeCx2.textBaseline = 'middle';
+  mazeCx2.fillText('EXIT', ex+S/2, ey+S/2);
+  // Start marker
+  mazeCx2.fillStyle = '#ffffff22';
+  mazeCx2.fillRect(1, 1, S-2, S-2);
+  // Player
+  const {r,c} = mazePlayer;
+  mazeCx2.save();
+  mazeCx2.shadowColor = '#ffcc00'; mazeCx2.shadowBlur = 10;
+  mazeCx2.fillStyle = '#ffcc00';
+  mazeCx2.beginPath();
+  mazeCx2.arc(c*S+S/2, r*S+S/2, S*0.28, 0, Math.PI*2);
+  mazeCx2.fill();
+  mazeCx2.restore();
+}
+
+
+// ══════════════════════════════════════════════════════
+//  COMPLETION SCREEN
+// ══════════════════════════════════════════════════════
+let completionShown = false;
+
+function checkCompletion() {
+  if (completionShown) return;
+  const totalHelped = NPC_DATA.flat().filter(n => n.helped).length;
+  const floor2Done  = NPC_DATA[2].every(n => n.helped);
+  if (floor2Done || totalHelped >= 3) {
+    completionShown = true;
+    setTimeout(showCompletionScreen, 2200);
+  }
+}
+
+function showCompletionScreen() {
+  document.getElementById('comp-xp').textContent           = STATS.xp;
+  document.getElementById('comp-helped').textContent       = STATS.helped + '/3';
+  document.getElementById('comp-streak').textContent       = STATS.bestStreak;
+  document.getElementById('comp-badges-count').textContent = STATS.badges.length;
+
+  const badgesEl = document.getElementById('comp-badges');
+  badgesEl.innerHTML = '';
+  BADGES_DEF.forEach(b => {
+    if (STATS.badges.includes(b.id)) {
+      const el = document.createElement('span');
+      el.className = 'comp-badge'; el.title = b.name;
+      el.textContent = b.icon;
+      badgesEl.appendChild(el);
+    }
+  });
+
+  const compTitle = document.getElementById('comp-subtitle');
+  compTitle.textContent = lang==='ar' ? 'أتقنت حل المشكلات!' : 'You mastered Problem Solving!';
+
+  document.getElementById('completion-screen').classList.add('visible');
+  if (AC) [523,659,784,1047,1319].forEach((f,i) => synth('triangle', f, AC.currentTime+i*0.16, 0.3, 0.55));
+}
+
+// ══════════════════════════════════════
+//  COMIC INTRO
+// ══════════════════════════════════════
+let _introPage = 0;
+const _INTRO_TOTAL = 4;
+let _introReady = false; // prevents click-through from navigation tap
+
+function nextIntroPanel() {
+  if (!_introReady) return; // block accidental click-through on page load
+  _introPage++;
+  if (_introPage >= _INTRO_TOTAL) { skipIntro(); return; }
+  document.querySelectorAll('.intro-panel').forEach((p,i) => p.classList.toggle('active', i === _introPage));
+  document.querySelectorAll('.intro-dot').forEach((d,i) => d.classList.toggle('active', i === _introPage));
+}
+
+function skipIntro() {
+  if (!_introReady) return;
+  document.getElementById('comic-intro').classList.add('hidden');
+  init();
+}
+
+// Preload intro images & unlock clicks after 400ms (prevents navigation click-through)
+window.addEventListener('load', () => {
+  ['Assets/panel_city_panorama.jpg','Assets/panel1_alley_dark.jpg','Assets/panel2_alley_blue.jpg','Assets/panel3_alley_warm.jpg']
+    .forEach(src => { const img = new Image(); img.src = src; });
+  setTimeout(() => { _introReady = true; }, 400);
+
+  // Smart back button: close open overlays first, navigate only when all are closed
+  document.getElementById('back-btn').addEventListener('click', function(e) {
+    e.preventDefault();
+    if (document.getElementById('minigame-overlay')?.classList.contains('visible')) {
+      closeMiniGame(); return;
+    }
+    if (document.getElementById('insight-card')?.classList.contains('visible')) {
+      closeInsight(); return;
+    }
+    if (document.getElementById('npc-box')?.classList.contains('visible')) {
+      handleSkip(); return;
+    }
+    // Nothing open — stop speech and navigate home
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    window.location.href = 'index.html';
+  });
+});
+</script>
+</body>
+</html>

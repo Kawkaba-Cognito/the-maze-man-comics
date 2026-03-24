@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/the-maze-man-comics/sw.js', { scope: '/the-maze-man-comics/' })})}
