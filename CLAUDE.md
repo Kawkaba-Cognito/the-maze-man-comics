@@ -4,45 +4,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Maze Man** is a single-file educational web application (`maze-man-v6.html`) that combines interactive psychology-themed comics, video lessons, and a 3D maze game. Everything — HTML structure, CSS, and JavaScript — lives in one file (~1,400 lines).
+**Maze Man** is a React 19 + Vite 8 PWA with Capacitor support. It's an interactive bilingual (EN/AR) psychology comics app with a Canvas 2D episode game and a 3D Babylon.js maze.
 
 ## Running the Project
 
-Open `maze-man-v6.html` directly in any modern browser. No build step, no package manager, no server required.
+```bash
+npm install --legacy-peer-deps   # first time only
+npm run dev                      # local dev server at localhost:5173
+```
 
-**Requirements:**
-- Internet connection (loads Babylon.js from CDN and Google Fonts)
-- Modern browser with WebGL, Canvas 2D, Web Audio API, and Web Speech API support
+## Deploying to GitHub Pages
+
+After any update, build and deploy with:
+
+```bash
+npm run build && npx gh-pages -d dist
+```
+
+GitHub Pages is configured to serve from the `gh-pages` branch (root folder).
+Live URL: https://kawkaba-cognito.github.io/the-maze-man-comics/
 
 ## Architecture
 
-The entire app is a monolithic single-file design with clearly commented sections. All state is in-memory; there is no backend or database.
+- `src/` — React components, context, data, styles
+- `public/` — Static files served as-is (episode HTML files, assets, icons)
+- `index.html` — Thin Vite shell (loads Babylon.js from CDN)
+- `vite.config.js` — Vite + React Compiler + PWA config, base: '/the-maze-man-comics/'
+- `capacitor.config.json` — Native app config, webDir: 'dist'
 
-### Major Sections
+### Key Source Files
+- `src/context/AppContext.jsx` — Global state (XP, lang, tabs, maze, profile)
+- `src/components/screens/HomeScreen.jsx` — CSS Maze Man character, comics showcase
+- `src/components/maze/MazeOverlay.jsx` — Full Babylon.js 3D maze
+- `src/components/video/VideoPlayer.jsx` — Canvas 2D player + Web Speech API
+- `src/styles/global.css` — All CSS including mobile responsive fixes
+- `public/episode-1-problem-solving.html` — Standalone Canvas 2D episode game
 
-**2D UI Shell**
-- Navigation tabs: Home, Comics, Videos, Profile
-- Language toggle: English / Arabic (RTL support)
-- XP pill tracker in the header
-
-**Home Screen**
-- Animated "Maze Man" CSS character
-- Three comic book cover cards (Social Psychology, About The Page, Cognitive Psychology)
-- "Enter Maze" button to launch the 3D game
-
-**Comics Screen**
-- Page-by-page comic reader with multi-language content
-
-**Videos Screen**
-- Custom Canvas 2D video player (not an HTML5 `<video>` element)
-- Web Speech API drives narration playback
-- Episodic psychology lessons
-
-**3D Maze Game (Babylon.js)**
-- Procedural maze via recursive backtracker algorithm
-- Stick-figure player with walk animation
-- Controls: WASD/arrow keys, on-screen joystick, click-to-walk
-- Collectible fragments, boss encounter, XP rewards, particle effects
+### Episode-1 Game (3-Panel Book Layout)
+- All 3 floors visible simultaneously (Monument Valley style)
+- 1 gate guardian per floor: Pixel Pete (robot), Dr. Spark (scientist), Maze King (king)
+- Guardian blocks a locked door arch on the right; solve their mini-game to unlock
+- Locked door is a physical wall; player can't walk through until NPC is helped
+- Back button: closes open overlays first (minigame → insight → NPC), then navigates home
+- 3 mini-game types: grid, sequence, maze
 
 ### External Dependencies (CDN only)
 - **Babylon.js** — 3D engine for the maze game
