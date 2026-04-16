@@ -3,6 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <!-- Content Security Policy: restrict what can load and execute on this page -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'none';
+    script-src 'self' https://cdn.jsdelivr.net;
+    style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: blob:;
+    connect-src 'self';
+    worker-src 'self';
+    manifest-src 'self';
+    base-uri 'self';
+    form-action 'self';
+  " />
   <title>The Maze Man | Psychological Comics</title>
   <meta name="description" content="Psychological comics — social & cognitive psychology, gamified." />
   <meta name="theme-color" content="#1a0b2e" />
@@ -16,8 +29,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet" />
-  <script src="https://cdn.babylonjs.com/babylon.js"></script>
-  <script type="module" crossorigin src="/the-maze-man-comics/Assets/index-BkxxFCKQ.js"></script>
+  <!-- Babylon.js pinned to v9.3.0 with Subresource Integrity — if the CDN is compromised, browsers will refuse to load it -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/babylonjs@9.3.0/babylon.js"
+    integrity="sha384-njRDUHF4B9J1R9UM37SngP7eFHJLRAgxTwnC1OfT4w10QPKaL4VTUUDZamQYcpQn"
+    crossorigin="anonymous"
+  ></script>
+  <script type="module" crossorigin src="/the-maze-man-comics/Assets/index-BT1jeX6U.js"></script>
   <link rel="stylesheet" crossorigin href="/the-maze-man-comics/Assets/index-gv3pz4E6.css">
 <link rel="manifest" href="/the-maze-man-comics/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/the-maze-man-comics/registerSW.js"></script></head>
 <body>
