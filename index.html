@@ -3,42 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
-  <!-- Content Security Policy: restrict what can load and execute on this page -->
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src 'none';
-    script-src 'self' https://cdn.jsdelivr.net;
-    style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
-    font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data: blob: https://upload.wikimedia.org https://playground.babylonjs.com;
-    connect-src 'self' https://cdn.jsdelivr.net https://playground.babylonjs.com;
-    worker-src 'self';
-    manifest-src 'self';
-    base-uri 'self';
-    form-action 'self';
-  " />
   <title>The Maze Man | Psychological Comics</title>
   <meta name="description" content="Psychological comics — social & cognitive psychology, gamified." />
   <meta name="theme-color" content="#1a0b2e" />
-  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="MAZE MAN" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/the-maze-man-comics/Assets/icon-96-Rsz6XIqM.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/the-maze-man-comics/Assets/icon-192-AkRhZ3ol.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/the-maze-man-comics/Assets/icon-180-ChDUgDE1.png" />
-  <link rel="shortcut icon" href="/the-maze-man-comics/Assets/favicon-I81xNR65.ico" />
+  <meta name="apple-mobile-web-app-title" content="Maze Man" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/the-maze-man-comics/icons/icon-96.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/the-maze-man-comics/icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/the-maze-man-comics/icons/icon-180.png" />
+  <link rel="shortcut icon" href="/the-maze-man-comics/favicon.ico" />
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
-  <!-- Babylon.js is loaded on-demand when user enters the maze (not on every page visit) -->
-  <!-- Preload background images so they appear instantly -->
-  <link rel="preload" as="image" href="./Assets/bg-mobile.webp" media="(max-width: 767px)" type="image/webp" />
-  <link rel="preload" as="image" href="./Assets/bg-desktop.webp" media="(min-width: 768px)" type="image/webp" />
-  <script type="module" crossorigin src="/the-maze-man-comics/Assets/index-BYW97hNs.js"></script>
-  <link rel="stylesheet" crossorigin href="/the-maze-man-comics/Assets/index-BQ8X6teH.css">
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script type="module" crossorigin src="/the-maze-man-comics/Assets/index-BYdC60F5.js"></script>
+  <link rel="stylesheet" crossorigin href="/the-maze-man-comics/Assets/index-b7r40RtA.css">
 <link rel="manifest" href="/the-maze-man-comics/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/the-maze-man-comics/registerSW.js"></script></head>
 <body>
-  <div id="root"></div>
+  <div id="root"></div>
 </body>
 </html>
