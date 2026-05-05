@@ -1,25 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useApp } from '../../context/AppContext';
 
 const XP_PER_LEVEL = 200;
-const AVATARS = ['🧠', '🕵️', '🦊', '🌀', '🔮', '👁️'];
 
 function getLevel(xp) { return Math.floor(xp / XP_PER_LEVEL) + 1; }
 function xpToNext(xp) { return XP_PER_LEVEL - (xp % XP_PER_LEVEL); }
 
 export default function ProfileScreen() {
-  const { globalXP, profileData, setProfileData, comicsRead, saveProfile, playSfx, openPaywall } = useApp();
-  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const { globalXP, profileData, comicsRead, openPaywall } = useApp();
 
   const lv = getLevel(globalXP);
   const pct = Math.min(100, ((globalXP % XP_PER_LEVEL) / XP_PER_LEVEL) * 100);
-
-  function setAvatar(emoji) {
-    playSfx('click');
-    const updated = { ...profileData, avatar: emoji };
-    setProfileData(updated);
-    saveProfile(updated, globalXP, comicsRead);
-  }
 
   const badges = [
     { id: 'reader',   icon: '📖', name: 'FIRST READ',  unlocked: comicsRead >= 1 },
@@ -32,36 +23,30 @@ export default function ProfileScreen() {
 
   return (
     <div>
+      {/* Avatar & XP display — editing is in Settings */}
       <div className="profile-top">
-        <div className="profile-avatar-ring" onClick={() => setShowAvatarPicker(v => !v)}>
+        <div className="profile-avatar-ring" style={{ cursor: 'default' }}>
           {profileData.avatar}
           <div className="profile-level-badge">LVL {lv}</div>
         </div>
-        {showAvatarPicker && (
-          <div className="avatar-picker">
-            {AVATARS.map(e => (
-              <span key={e} className={`avatar-opt ${profileData.avatar === e ? 'selected' : ''}`} onClick={() => setAvatar(e)}>{e}</span>
-            ))}
-          </div>
-        )}
         <div className="profile-username">{profileData.username}</div>
-        <div className="xp-bar-wrap" style={{maxWidth:'320px'}}>
-          <div className="xp-bar-fill" style={{width: Math.max(5, pct) + '%'}}></div>
+        <div className="xp-bar-wrap" style={{ maxWidth: '320px' }}>
+          <div className="xp-bar-fill" style={{ width: Math.max(5, pct) + '%' }}></div>
           <span className="xp-bar-label">{globalXP % XP_PER_LEVEL} / {XP_PER_LEVEL} XP</span>
         </div>
         <div className="xp-subtext">{xpToNext(globalXP)} XP to Level {lv + 1}</div>
       </div>
 
       <div className="streak-card">
-        <div style={{fontSize:'2.5em'}}>🔥</div>
+        <div style={{ fontSize: '2.5em' }}>🔥</div>
         <div className="streak-info">
           <div className="streak-title">DAILY STREAK</div>
           <div className="streak-num">{profileData.streak}</div>
           <div className="streak-sub">Day{profileData.streak !== 1 ? 's' : ''} in a row!</div>
         </div>
-        <div style={{textAlign:'right'}}>
-          <div style={{fontSize:'1.8em'}}>⚡</div>
-          <div style={{fontFamily:"'Bangers'",fontSize:'1.1em',color:'#000'}}>{globalXP} XP</div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '1.8em' }}>⚡</div>
+          <div style={{ fontFamily: "'Bangers'", fontSize: '1.1em', color: '#000' }}>{globalXP} XP</div>
         </div>
       </div>
 
@@ -95,7 +80,7 @@ export default function ProfileScreen() {
         </ul>
         <button className="sub-upgrade-btn" onClick={openPaywall}>⭐ GO PREMIUM — $4.99/mo</button>
       </div>
-      <div style={{height:'10px'}}></div>
+      <div style={{ height: '10px' }}></div>
     </div>
   );
 }

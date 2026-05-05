@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { LANG } from '../../data/langStrings';
 
 export default function MazeOverlay() {
-  const { exitMaze, updateXP, playSfx, currentLang } = useApp();
+  const { exitMaze, updateXP, playSfx, currentLang, globalXP } = useApp();
   const [mazeScreen, setMazeScreen] = useState('none'); // 'none' | 'puzzle' | 'victory'
   const [instruction, setInstruction] = useState('Look down. Click the labyrinth to enter.');
   const canvasRef = useRef(null);
@@ -313,11 +313,11 @@ export default function MazeOverlay() {
       <div id="content-wrapper">
         <div className="maze-topbar glass-panel">
           <div className="brand">
-            <div className="xp-pill" style={{background:'var(--amber)',boxShadow:'0 0 10px var(--amber-ring)'}}>
-              ⚡ XP
+            <div className="xp-pill" style={{background:'var(--amber)',boxShadow:'0 0 10px var(--amber-ring)',minWidth:'80px',textAlign:'center'}}>
+              ⚡ {globalXP} XP
             </div>
             <div>
-              <div className="brand-name">The Core</div>
+              <div className="brand-name">THE CORE</div>
               <div className="brand-sub">Martian Sector</div>
             </div>
           </div>
