@@ -23,13 +23,10 @@ export const DOMAINS = [
     id: 'attention',
     name: 'Attention',
     short: 'ATT',
-    desc: 'Holding, directing & distributing focus',
+    desc: 'Cancellation — level modes, 20 levels each, and same-grid challenge (FocusQuest-style).',
     glyph: 'ᚨ',
     subs: [
-      { id: 'sustained',   name: 'Sustained Attention',   games: 3, progress: 0 },
-      { id: 'selective',   name: 'Selective Attention',   games: 2, progress: 0 },
-      { id: 'divided',     name: 'Divided Attention',     games: 2, progress: 0 },
-      { id: 'alternating', name: 'Alternating Attention', games: 1, progress: 0 },
+      { id: 'cancellation', name: 'Cancellation task', games: 1, progress: 0, game: 'cancel-task' },
     ],
   },
   {
@@ -98,7 +95,6 @@ export const DOMAINS = [
 ];
 
 export const DOMAIN_ABOUT = {
-  attention:   'Attention is the gateway to every other process. These mazes train sustained focus, filtering, and the ability to shift between tasks without losing your thread.',
   speed:       'Processing speed is the engine of thought. These mazes challenge how quickly you can take in, interpret, and act on information — reacting before the path fades.',
   memory:      "Memory binds past to future. Working memory is the mind's workbench — these mazes stretch it by asking you to hold routes and rules in mind while acting.",
   language:    'Language is thought made portable. These mazes weave words and meaning into navigation — spell, decode, and name your way through.',

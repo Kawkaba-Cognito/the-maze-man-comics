@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
 import { IconBack, IconLock } from './TrainingIcons';
 import { PALETTE, DOMAIN_COLOR, DOMAINS, DOMAIN_ABOUT } from './trainingData';
 
@@ -65,7 +66,72 @@ function StonePlaque({ col, sub, idx }) {
   );
 }
 
-export default function ShrinePage({ domainId, onBack }) {
+function ActivePlaque({ col, sub, idx, onOpen, isAr }) {
+  const cta = isAr ? 'جاهز · اضغط للبدء' : 'Ready · tap to start';
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(sub.game)}
+      style={{
+        position: 'relative',
+        padding: '13px 14px',
+        borderRadius: 4,
+        cursor: 'pointer',
+        textAlign: 'left',
+        width: '100%',
+        display: 'block',
+        background: 'rgba(10, 6, 2, 0.48)',
+        border: '1px solid rgba(255, 180, 60, 0.42)',
+        boxShadow:
+          '0 0 14px rgba(255, 150, 30, 0.12), inset 0 0 0 1px rgba(255, 200, 100, 0.06)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: 3, flexShrink: 0,
+          background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255, 180, 60, 0.25)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <PlaqueMaze col="rgba(255, 210, 140, 0.85)" seed={idx}/>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: "'Bangers', cursive",
+            fontSize: 15,
+            letterSpacing: 2,
+            color: 'rgba(255, 228, 148, 0.95)',
+            textTransform: 'uppercase',
+            textShadow: '0 0 10px rgba(255, 160, 40, 0.25)',
+          }}>{sub.name}</div>
+          <div style={{
+            fontSize: 10,
+            color: 'rgba(255, 210, 160, 0.55)',
+            marginTop: 3,
+            letterSpacing: 1.6,
+            textTransform: 'uppercase',
+            fontWeight: 600,
+          }}>
+            {cta}
+          </div>
+        </div>
+        <div style={{
+          fontFamily: "'Bangers', cursive",
+          fontSize: 13,
+          color: col,
+          letterSpacing: 2,
+          opacity: 0.9,
+        }}>▶</div>
+      </div>
+    </button>
+  );
+}
+
+export default function ShrinePage({ domainId, onBack, onOpenGame = () => {} }) {
+  const { currentLang } = useApp();
+  const isAr = currentLang === 'ar';
   const d = DOMAINS.find(x => x.id === domainId);
   if (!d) return null;
   const col = DOMAIN_COLOR[d.id];
@@ -181,21 +247,28 @@ export default function ShrinePage({ domainId, onBack }) {
         </div>
       </div>
 
-      {/* Subdomains */}
+      {/* Subdomains / task */}
       <div style={{ padding: '26px 14px 0', position: 'relative', zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 6px 10px' }}>
           <div style={{ flex: 1, height: 1, background: `${col}33` }}/>
-          <div style={{ fontSize: 9.5, letterSpacing: 3, color: col, fontWeight: 700 }}>SUBDOMAINS</div>
+          <div style={{ fontSize: 9.5, letterSpacing: 3, color: col, fontWeight: 700 }}>
+            {d.subs.length === 1 ? 'TASK' : 'SUBDOMAINS'}
+          </div>
           <div style={{ flex: 1, height: 1, background: `${col}33` }}/>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {d.subs.map((sub, i) => (
-            <StonePlaque key={sub.id} col={col} sub={sub} idx={i}/>
+            sub.game ? (
+              <ActivePlaque key={sub.id} col={col} sub={sub} idx={i} onOpen={onOpenGame} isAr={isAr}/>
+            ) : (
+              <StonePlaque key={sub.id} col={col} sub={sub} idx={i}/>
+            )
           ))}
         </div>
       </div>
 
       {/* Domain lore */}
+      {DOMAIN_ABOUT[d.id] && (
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 10 }}>
         <div style={{
           padding: '14px 16px', borderRadius: 14, position: 'relative',
@@ -210,6 +283,7 @@ export default function ShrinePage({ domainId, onBack }) {
           <div style={{ position: 'absolute', bottom: 10, right: 16, fontSize: 20, color: col, opacity: 0.6 }}>❞</div>
         </div>
       </div>
+      )}
     </div>
   );
 }

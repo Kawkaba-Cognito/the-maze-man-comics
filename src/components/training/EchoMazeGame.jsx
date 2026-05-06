@@ -158,7 +158,25 @@ function WonPanel({ score, time, hits, onRetry, onBack }) {
   );
 }
 
-function EchoIntro({ onStart }) {
+const INTRO_VARIANT = {
+  'memory-working': {
+    metaRows: [
+      ['4 min', 'duration'],
+      ['Memory', 'domain'],
+      ['★★★☆☆', 'level 3'],
+    ],
+  },
+  'attention-sustained': {
+    metaRows: [
+      ['~4 min', 'duration'],
+      ['Sustained', 'focus'],
+      ['★★☆☆☆', 'intro'],
+    ],
+  },
+};
+
+function EchoIntro({ onStart, variant }) {
+  const vr = INTRO_VARIANT[variant] || INTRO_VARIANT['memory-working'];
   return (
     <div style={{ padding: '18px 16px', borderRadius: 18, background: c.card, border: `1px solid ${c.cardBorder}`, textAlign: 'center' }}>
       <div style={{ fontFamily: '"Cinzel", serif', fontSize: 18, color: c.text, fontWeight: 600, marginBottom: 6 }}>
@@ -170,9 +188,9 @@ function EchoIntro({ onStart }) {
         One <span style={{ color: c.rune }}>peek</span> is allowed.
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 14, fontSize: 10, color: c.muted }}>
-        <div><div style={{ color: c.accent, fontWeight: 700, fontSize: 13 }}>4 min</div>duration</div>
-        <div><div style={{ color: c.accent, fontWeight: 700, fontSize: 13 }}>Memory</div>domain</div>
-        <div><div style={{ color: c.accent, fontWeight: 700, fontSize: 13 }}>★★★☆☆</div>level 3</div>
+        {vr.metaRows.map(([a, b]) => (
+          <div key={b}><div style={{ color: c.accent, fontWeight: 700, fontSize: 13 }}>{a}</div>{b}</div>
+        ))}
       </div>
       <button onClick={onStart} style={{
         width: '100%', padding: '12px 20px', borderRadius: 12,

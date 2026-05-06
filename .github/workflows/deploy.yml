@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Audit FocusQuest level math & generation
+        run: npm run audit:fq
+
       - name: Build
         run: npm run build
 
