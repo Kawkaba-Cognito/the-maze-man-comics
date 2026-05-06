@@ -3,9 +3,11 @@ import { useApp } from '../../context/AppContext';
 import { LANG } from '../../data/langStrings';
 
 export default function MazeOverlay() {
-  const { exitMaze, updateXP, playSfx, currentLang } = useApp();
+  const { exitMaze, updateXP, playSfx, currentLang, toggleLang } = useApp();
   const [mazeScreen, setMazeScreen] = useState('none'); // 'none' | 'puzzle' | 'victory'
+  const [showSettings, setShowSettings] = useState(false);
   const [instruction, setInstruction] = useState('Look down. Click the labyrinth to enter.');
+  const isAr = currentLang === 'ar';
   const canvasRef = useRef(null);
   const joyCanvasRef = useRef(null);
   const joyWrapRef = useRef(null);
@@ -321,8 +323,25 @@ export default function MazeOverlay() {
               <div className="brand-sub">Martian Sector</div>
             </div>
           </div>
-          <button className="btn-hub" onClick={handleExitToHub}>{t.exitHub}</button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button className="btn-hub" onClick={() => setShowSettings(s => !s)}>⚙</button>
+            <button className="btn-hub" onClick={handleExitToHub}>{isAr ? 'خروج' : 'QUIT'}</button>
+          </div>
         </div>
+
+        {/* In-game settings panel */}
+        {showSettings && (
+          <div className="maze-settings-panel" dir={isAr ? 'rtl' : 'ltr'}>
+            <div className="maze-settings-title">{isAr ? 'الإعدادات' : 'SETTINGS'}</div>
+            <button className="maze-settings-row" onClick={toggleLang}>
+              <span>{isAr ? 'اللغة' : 'Language'}</span>
+              <span className="maze-settings-badge">{isAr ? 'EN' : 'عر'}</span>
+            </button>
+            <button className="maze-settings-close" onClick={() => setShowSettings(false)}>
+              {isAr ? 'إغلاق' : 'CLOSE'}
+            </button>
+          </div>
+        )}
 
         {instruction && (
           <div id="floating-instruction">{instruction}</div>

@@ -7,8 +7,8 @@ const XP_PER_LEVEL = 200;
 const DEFAULT_PROFILE = {
   avatar: '🧠', username: 'MAZE WALKER',
   streak: 1, lastVisit: null,
-  comicsRead: 0, videosWatched: 0, fragments: 0, puzzlesSolved: 0,
-  badges: { reader: false, explorer: false, scholar: false, maze: false, social: false, master: false }
+  videosWatched: 0, fragments: 0, puzzlesSolved: 0,
+  badges: { explorer: false, maze: false, master: false }
 };
 
 export function AppProvider({ children }) {
@@ -16,10 +16,10 @@ export function AppProvider({ children }) {
   const [currentLang, setCurrentLang] = useState('en');
   const [activeTab, setActiveTab] = useState('home');
   const [mazeVisible, setMazeVisible] = useState(false);
+  const [mazeEntryPending, setMazeEntryPending] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [tipOpen, setTipOpen] = useState(false);
   const [profileData, setProfileData] = useState(DEFAULT_PROFILE);
-  const [comicsRead, setComicsRead] = useState(0);
   const audioCtxRef = useRef(null);
 
   // Load profile on mount
@@ -39,7 +39,6 @@ export function AppProvider({ children }) {
           parsed.lastVisit = today;
         }
         setProfileData(parsed);
-        setComicsRead(parsed.comicsRead || 0);
         localStorage.setItem('mazeman_profile', JSON.stringify(parsed));
       } else {
         const today = new Date().toDateString();
@@ -105,46 +104,58 @@ export function AppProvider({ children }) {
     setActiveTab(tabId);
   }, [playSfx, stopSpeech]);
 
-  const enterMaze = useCallback(() => {
+  const requestMazeEntry = useCallback(() => {
     playSfx('click');
     stopSpeech();
-    if (typeof window.BABYLON === 'undefined') {
-      alert('Requires internet connection to load 3D Engine.');
+
+    // If Babylon already loaded, enter immediately
+    if (typeof window.BABYLON !== 'undefined') {
+      setMazeEntryPending(true);
       return;
     }
-    setMazeVisible(true);
+
+    // Dynamically load Babylon.js only when needed
+    setMazeEntryPending(true); // show transition overlay immediately
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/babylonjs@9.3.0/babylon.js';
+    script.integrity = 'sha384-njRDUHF4B9J1R9UM37SngP7eFHJLRAgxTwnC1OfT4w10QPKaL4VTUUDZamQYcpQn';
+    script.crossOrigin = 'anonymous';
+    script.onload = () => {
+      // Script loaded — enterMaze will fire after the 4s transition
+    };
+    script.onerror = () => {
+      setMazeEntryPending(false);
+      alert('Requires internet connection to load 3D Engine.');
+    };
+    document.head.appendChild(script);
   }, [playSfx, stopSpeech]);
+
+  const enterMaze = useCallback(() => {
+    setMazeEntryPending(false);
+    setMazeVisible(true);
+  }, []);
 
   const exitMaze = useCallback(() => {
     playSfx('click');
     setMazeVisible(false);
   }, [playSfx]);
 
-  const saveProfile = useCallback((data, xp, cr) => {
+  const saveProfile = useCallback((data, xp) => {
     try {
       const toSave = {
         ...data,
-        comicsRead: cr,
         fragments: xp > 0 ? Math.floor(xp / 10) : 0,
       };
       localStorage.setItem('mazeman_profile', JSON.stringify(toSave));
     } catch (e) {}
   }, []);
 
-  const incrementComicsRead = useCallback(() => {
-    setComicsRead(prev => {
-      const next = prev + 1;
-      return next;
-    });
-    updateXP(15);
-  }, [updateXP]);
-
   return (
     <AppContext.Provider value={{
-      globalXP, currentLang, activeTab, mazeVisible,
-      paywallOpen, tipOpen, profileData, comicsRead,
-      updateXP, toggleLang, switchTab, enterMaze, exitMaze,
-      playSfx, stopSpeech, saveProfile, incrementComicsRead,
+      globalXP, currentLang, activeTab, mazeVisible, mazeEntryPending,
+      paywallOpen, tipOpen, profileData,
+      updateXP, toggleLang, switchTab, requestMazeEntry, enterMaze, exitMaze,
+      playSfx, stopSpeech, saveProfile,
       setProfileData,
       openPaywall: () => { playSfx('click'); setPaywallOpen(true); },
       closePaywall: () => setPaywallOpen(false),
