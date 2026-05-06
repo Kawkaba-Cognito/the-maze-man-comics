@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { id: 'home',    icon: '🏠' },
   { id: 'comics',  icon: '📚' },
   { id: 'videos',  icon: '🎬' },
+  { id: 'training', icon: '🎯' },
   { id: 'profile', icon: '👤' },
   { id: 'shop',    icon: '🛒' },
 ];
