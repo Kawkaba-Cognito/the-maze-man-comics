@@ -38,7 +38,7 @@ function SettingsModal({ title, onClose, children }) {
 }
 
 export default function SplashScreen({ onDone }) {
-  const { currentLang, toggleLang, profileData, setProfileData, saveProfile, globalXP, comicsRead } = useApp();
+  const { currentLang, toggleLang, profileData, setProfileData, saveProfile, globalXP } = useApp();
   const isAr = currentLang === 'ar';
   const [ready, setReady] = useState(false);
   const [fading, setFading] = useState(false);
@@ -58,7 +58,7 @@ export default function SplashScreen({ onDone }) {
   function setAvatar(emoji) {
     const updated = { ...profileData, avatar: emoji };
     setProfileData(updated);
-    saveProfile(updated, globalXP, comicsRead);
+    saveProfile(updated, globalXP);
   }
 
   const XP_PER_LEVEL = 200;

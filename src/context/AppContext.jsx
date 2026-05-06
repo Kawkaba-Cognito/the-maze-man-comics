@@ -7,8 +7,8 @@ const XP_PER_LEVEL = 200;
 const DEFAULT_PROFILE = {
   avatar: '🧠', username: 'MAZE WALKER',
   streak: 1, lastVisit: null,
-  comicsRead: 0, videosWatched: 0, fragments: 0, puzzlesSolved: 0,
-  badges: { reader: false, explorer: false, scholar: false, maze: false, social: false, master: false }
+  videosWatched: 0, fragments: 0, puzzlesSolved: 0,
+  badges: { explorer: false, maze: false, master: false }
 };
 
 export function AppProvider({ children }) {
@@ -20,7 +20,6 @@ export function AppProvider({ children }) {
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [tipOpen, setTipOpen] = useState(false);
   const [profileData, setProfileData] = useState(DEFAULT_PROFILE);
-  const [comicsRead, setComicsRead] = useState(0);
   const audioCtxRef = useRef(null);
 
   // Load profile on mount
@@ -40,7 +39,6 @@ export function AppProvider({ children }) {
           parsed.lastVisit = today;
         }
         setProfileData(parsed);
-        setComicsRead(parsed.comicsRead || 0);
         localStorage.setItem('mazeman_profile', JSON.stringify(parsed));
       } else {
         const today = new Date().toDateString();
@@ -142,31 +140,22 @@ export function AppProvider({ children }) {
     setMazeVisible(false);
   }, [playSfx]);
 
-  const saveProfile = useCallback((data, xp, cr) => {
+  const saveProfile = useCallback((data, xp) => {
     try {
       const toSave = {
         ...data,
-        comicsRead: cr,
         fragments: xp > 0 ? Math.floor(xp / 10) : 0,
       };
       localStorage.setItem('mazeman_profile', JSON.stringify(toSave));
     } catch (e) {}
   }, []);
 
-  const incrementComicsRead = useCallback(() => {
-    setComicsRead(prev => {
-      const next = prev + 1;
-      return next;
-    });
-    updateXP(15);
-  }, [updateXP]);
-
   return (
     <AppContext.Provider value={{
       globalXP, currentLang, activeTab, mazeVisible, mazeEntryPending,
-      paywallOpen, tipOpen, profileData, comicsRead,
+      paywallOpen, tipOpen, profileData,
       updateXP, toggleLang, switchTab, requestMazeEntry, enterMaze, exitMaze,
-      playSfx, stopSpeech, saveProfile, incrementComicsRead,
+      playSfx, stopSpeech, saveProfile,
       setProfileData,
       openPaywall: () => { playSfx('click'); setPaywallOpen(true); },
       closePaywall: () => setPaywallOpen(false),

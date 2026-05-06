@@ -7,7 +7,6 @@ import VideosScreen from './screens/VideosScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import ShopScreen from './screens/ShopScreen';
 import MazeOverlay from './maze/MazeOverlay';
-import ComicReader from './comics/ComicReader';
 import PaywallModal from './modals/PaywallModal';
 import TipJarModal from './modals/TipJarModal';
 import TipButton from './shared/TipButton';
@@ -78,7 +77,6 @@ export default function AppShell({ onBackToMenu }) {
       </div>
 
       {mazeVisible && <MazeOverlay />}
-      <ComicReader />
       <PaywallModal />
       <TipJarModal />
       {isHome && <TipButton />}

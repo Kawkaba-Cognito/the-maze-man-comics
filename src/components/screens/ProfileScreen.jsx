@@ -145,7 +145,7 @@ const MODAL_CONTENT = {
 };
 
 export default function ProfileScreen() {
-  const { globalXP, profileData, setProfileData, comicsRead, saveProfile, playSfx, openPaywall } = useApp();
+  const { globalXP, profileData, setProfileData, saveProfile, playSfx, openPaywall } = useApp();
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -157,18 +157,15 @@ export default function ProfileScreen() {
     playSfx('click');
     const updated = { ...profileData, avatar: emoji };
     setProfileData(updated);
-    saveProfile(updated, globalXP, comicsRead);
+    saveProfile(updated, globalXP);
   }
 
   function openModal(key) { playSfx('click'); setActiveModal(key); }
   function closeModal() { setActiveModal(null); setDeleteConfirm(false); }
 
   const badges = [
-    { id: 'reader',   icon: '📖', name: 'FIRST READ',  unlocked: comicsRead >= 1 },
     { id: 'explorer', icon: '🗺️', name: 'EXPLORER',    unlocked: globalXP >= 50 },
-    { id: 'scholar',  icon: '🎓', name: 'SCHOLAR',     unlocked: comicsRead >= 3 },
     { id: 'maze',     icon: '🌀', name: 'MAZE RUNNER', unlocked: globalXP >= 100 },
-    { id: 'social',   icon: '🤝', name: 'SOCIAL',      unlocked: comicsRead >= 6 },
     { id: 'master',   icon: '🧠', name: 'MIND MASTER', unlocked: globalXP >= 300 },
   ];
 
@@ -211,7 +208,6 @@ export default function ProfileScreen() {
 
       <div className="section-heading">📊 STATS</div>
       <div className="profile-stats">
-        <div className="stat-box"><div className="stat-num">{comicsRead}</div><div className="stat-label">COMICS READ</div></div>
         <div className="stat-box"><div className="stat-num">{profileData.videosWatched || 0}</div><div className="stat-label">VIDEOS WATCHED</div></div>
         <div className="stat-box"><div className="stat-num">{Math.floor(globalXP / 10)}</div><div className="stat-label">FRAGMENTS</div></div>
         <div className="stat-box"><div className="stat-num">{profileData.puzzlesSolved || 0}</div><div className="stat-label">PUZZLES SOLVED</div></div>
