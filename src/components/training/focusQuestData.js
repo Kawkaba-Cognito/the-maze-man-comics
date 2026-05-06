@@ -413,6 +413,40 @@ export function assignFillColors(cells, diff, interference, tgtCol) {
 /** Linear curriculum for Free mode: easy 1–20 → … → deadly 20, then stays at deadly 20. */
 export const FREE_PROGRESS_ORDER = ['easy', 'inter', 'hard', 'xhard', 'deadly'];
 
+/** Starting session bank (seconds); clock runs continuously across rounds until 0. */
+export const FREE_SESSION_START_SEC = 52;
+
+/** Hard cap on bank so bonuses cannot pile up without bound. */
+export const FREE_SESSION_CAP_SEC = 210;
+
+/**
+ * How fast the session clock drains at this stage (1 = real-time).
+ * Mild rational ramp: mult = 1 + min(cap, k * s) so late survival feels tighter but stays fair.
+ */
+export function freeTimeDrainMultiplier(stageIndex) {
+  const s = Math.max(0, stageIndex | 0);
+  const k = 0.0048;
+  const cap = 0.2;
+  return 1 + Math.min(cap, k * s);
+}
+
+/**
+ * Bonus seconds after clearing free round at `stageCompleted` (0 = first round finished).
+ * Scales with nominal par time for that round and decays with depth so skilled runs can go deep.
+ *
+ *   bonus = clamp( B_min, B_max,  b0 + u(s) * (b1 + k * par) )
+ *   u(s) = 1 / (1 + s / τ)   (harmonic-style decay, τ controls mid-game)
+ */
+export function freeClearBonusSec(stageCompleted, nominalParSec) {
+  const s = Math.max(0, stageCompleted | 0);
+  const par = Math.max(6, Number(nominalParSec) || 20);
+  const tau = 22;
+  const u = 1 / (1 + s / tau);
+  const raw = 4.2 + u * (6.4 + 0.36 * par);
+  const bonus = Math.min(40, Math.max(3.2, raw));
+  return +bonus.toFixed(1);
+}
+
 export function freeStageToDiffLv(stageIndex) {
   const s = Math.max(0, stageIndex | 0);
   const maxLinear = FREE_PROGRESS_ORDER.length * 20 - 1;
