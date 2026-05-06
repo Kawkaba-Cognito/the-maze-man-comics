@@ -1,41 +1,63 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const BASE = import.meta.env.BASE_URL;
 
+/* Background-removal pass for the white-canvas Maze Man PNG. Soft alpha edge
+ * around brightness 170–210. Heavy on large images, so we run it lazily —
+ * `useTransparentBg` returns null until the work finishes, and the avatar
+ * shows the raw image in the meantime. Errors (e.g. tainted canvas under
+ * unusual hosting) fall through to the raw image too. */
 function useTransparentBg(src) {
   const [dataUrl, setDataUrl] = useState(null);
   useEffect(() => {
-    if (!src) return;
+    if (!src) return undefined;
+    let cancelled = false;
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const d = imageData.data;
-      const HARD = 210;   // above this → fully transparent
-      const SOFT = 170;   // SOFT–HARD range → blend to 0
-      for (let i = 0; i < d.length; i += 4) {
-        const r = d[i], g = d[i + 1], b = d[i + 2];
-        const brightness = (r + g + b) / 3;
-        if (brightness >= HARD) {
-          d[i + 3] = 0;
-        } else if (brightness >= SOFT) {
-          // soft edge: fade alpha
-          const t = (brightness - SOFT) / (HARD - SOFT);
-          d[i + 3] = Math.round(d[i + 3] * (1 - t));
+      if (cancelled) return;
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const d = imageData.data;
+        const HARD = 210;
+        const SOFT = 170;
+        for (let i = 0; i < d.length; i += 4) {
+          const r = d[i], g = d[i + 1], b = d[i + 2];
+          const brightness = (r + g + b) / 3;
+          if (brightness >= HARD) {
+            d[i + 3] = 0;
+          } else if (brightness >= SOFT) {
+            const t = (brightness - SOFT) / (HARD - SOFT);
+            d[i + 3] = Math.round(d[i + 3] * (1 - t));
+          }
         }
+        ctx.putImageData(imageData, 0, 0);
+        if (!cancelled) setDataUrl(canvas.toDataURL('image/png'));
+      } catch {
+        // Tainted canvas / OOM — fall back to the raw src silently.
       }
-      ctx.putImageData(imageData, 0, 0);
-      setDataUrl(canvas.toDataURL('image/png'));
     };
+    img.onerror = () => { /* keep dataUrl null; raw src takes over */ };
     img.src = src;
+    return () => {
+      cancelled = true;
+    };
   }, [src]);
   return dataUrl;
 }
 
+/**
+ * Maze Man character avatar. Always renders the image and animates from the
+ * first paint — the transparent-background processing is an enhancement that
+ * swaps in once it's ready. Floating + glow keyframes live in global.css
+ * (`mmFloat`, `mmPulse`) so the animation cannot be lost to React's style-tag
+ * hoisting behaviour or strict-mode double-mounts.
+ */
 export default function MazeManAvatar({ size = 140, mood = 'ready', glow = true }) {
   const glowColor = {
     ready:   '#f5a623',
@@ -46,47 +68,35 @@ export default function MazeManAvatar({ size = 140, mood = 'ready', glow = true 
 
   const src = `${BASE}Assets/maze-man-3d.png`;
   const processedSrc = useTransparentBg(src);
-
-  const floatStyle = {
-    animation: 'mmFloat 3.4s ease-in-out infinite',
-  };
+  const displaySrc = processedSrc || src;
 
   return (
-    <>
-      <style>{`
-        @keyframes mmFloat {
-          0%, 100% { transform: translateY(0px); }
-          50%       { transform: translateY(-7px); }
-        }
-        @keyframes mmPulse {
-          0%, 100% { opacity: 0.55; transform: scale(1); }
-          50%       { opacity: 0.85; transform: scale(1.08); }
-        }
-      `}</style>
-
-      <div style={{
+    <div
+      style={{
         position: 'relative',
         width: size,
         height: size,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-      }}>
-
-        {/* Outer ambient glow ring */}
-        {glow && (
-          <div style={{
+      }}
+    >
+      {glow && (
+        <div
+          className="mm-glow-ring"
+          style={{
             position: 'absolute',
             inset: -size * 0.18,
             borderRadius: '50%',
             background: `radial-gradient(circle, ${glowColor}44 0%, ${glowColor}11 45%, transparent 70%)`,
-            animation: 'mmPulse 2.8s ease-in-out infinite',
             pointerEvents: 'none',
-          }}/>
-        )}
+          }}
+        />
+      )}
 
-        {/* Ground shadow */}
-        <div style={{
+      <div
+        className="mm-shadow"
+        style={{
           position: 'absolute',
           bottom: -6,
           left: '50%',
@@ -96,38 +106,30 @@ export default function MazeManAvatar({ size = 140, mood = 'ready', glow = true 
           borderRadius: '50%',
           background: 'rgba(0,0,0,0.45)',
           filter: 'blur(6px)',
-          animation: 'mmFloat 3.4s ease-in-out infinite',
-          animationDelay: '0.1s',
           pointerEvents: 'none',
-        }}/>
+        }}
+      />
 
-        {/* Character image */}
-        <div style={{ ...floatStyle, position: 'relative', zIndex: 2 }}>
-          {processedSrc ? (
-            <img
-              src={processedSrc}
-              alt="Maze Man"
-              width={size}
-              height={size}
-              style={{
-                objectFit: 'contain',
-                display: 'block',
-                filter: glow
-                  ? `drop-shadow(0 0 ${size * 0.08}px ${glowColor}cc) drop-shadow(0 0 ${size * 0.14}px ${glowColor}66)`
-                  : 'none',
-              }}
-            />
-          ) : (
-            // Placeholder while canvas processes
-            <div style={{
-              width: size,
-              height: size,
-              borderRadius: '50%',
-              background: `radial-gradient(circle, ${glowColor}22 0%, transparent 70%)`,
-            }}/>
-          )}
-        </div>
+      <div
+        className="mm-float"
+        style={{ position: 'relative', zIndex: 2 }}
+      >
+        <img
+          src={displaySrc}
+          alt="Maze Man"
+          width={size}
+          height={size}
+          draggable={false}
+          style={{
+            objectFit: 'contain',
+            display: 'block',
+            mixBlendMode: processedSrc ? 'normal' : 'screen',
+            filter: glow
+              ? `drop-shadow(0 0 ${size * 0.08}px ${glowColor}cc) drop-shadow(0 0 ${size * 0.14}px ${glowColor}66)`
+              : 'none',
+          }}
+        />
       </div>
-    </>
+    </div>
   );
 }

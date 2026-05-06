@@ -25,6 +25,10 @@ import {
 } from './focusQuestData';
 import { PALETTE, DOMAIN_COLOR } from './trainingData';
 import { IconBack } from './TrainingIcons';
+import FocusQuestTutorial, {
+  buildTutorialQueueFor,
+  markTutorialSeen,
+} from './FocusQuestTutorial';
 
 const TR = PALETTE;
 const ATT = DOMAIN_COLOR.attention;
@@ -131,7 +135,14 @@ function FqTrainingBackdrop({ patternId }) {
   );
 }
 
-function FqTrainingMenuBar({ onBack, playSfx, center, hubSpaced = false }) {
+function FqTrainingMenuBar({
+  onBack,
+  playSfx,
+  center,
+  hubSpaced = false,
+  onReplayTutorial,
+  replayHint,
+}) {
   return (
     <div
       className={`ct-fq-training-menubar${hubSpaced ? ' ct-fq-training-menubar--hub' : ''}`}
@@ -163,7 +174,28 @@ function FqTrainingMenuBar({ onBack, playSfx, center, hubSpaced = false }) {
       <div style={{ flex: 1, minWidth: 0, padding: '0 8px' }} role="presentation">
         {center}
       </div>
-      <div style={{ width: 34, flexShrink: 0 }} aria-hidden="true" />
+      {onReplayTutorial ? (
+        <button
+          type="button"
+          style={{
+            ...fqTrainingChromeBtn(),
+            fontFamily: "'Cormorant Garamond', 'Cinzel', serif",
+            fontSize: 18,
+            fontWeight: 700,
+            color: TR.accent,
+          }}
+          onClick={() => {
+            playSfx('click');
+            onReplayTutorial();
+          }}
+          aria-label={replayHint || 'Replay tutorial'}
+          title={replayHint || 'Replay tutorial'}
+        >
+          ?
+        </button>
+      ) : (
+        <div style={{ width: 34, flexShrink: 0 }} aria-hidden="true" />
+      )}
     </div>
   );
 }
@@ -1015,6 +1047,8 @@ export default function CancellationTaskGame({ onBack }) {
   const [freeStrikes, setFreeStrikes] = useState(0);
   const [gridMetrics, setGridMetrics] = useState({ cell: 32, gap: 3, pad: 6 });
   const shakeTimerRef = useRef(0);
+  const [tutorialQueue, setTutorialQueue] = useState([]);
+  const pendingTutorialActionRef = useRef(null);
 
   useEffect(() => () => {
     if (shakeTimerRef.current) {
@@ -1463,6 +1497,49 @@ export default function CancellationTaskGame({ onBack }) {
     setPhase('hub');
   };
 
+  /* --- Tutorial gating ------------------------------------------------------
+   * gateWithTutorial(action, modeKind) wraps the user's intent (start free,
+   * open levels, open challenge). If any tutorial step is unseen, we queue it
+   * and stash the action; tutorials run in sequence (main → mode-tip), then
+   * the original action fires after a microtask so the overlay finishes
+   * unmounting cleanly. */
+  const gateWithTutorial = useCallback((action, modeKind) => {
+    const q = buildTutorialQueueFor(modeKind);
+    if (q.length === 0) {
+      action();
+      return;
+    }
+    pendingTutorialActionRef.current = action;
+    setTutorialQueue(q);
+  }, []);
+
+  const advanceTutorial = useCallback(() => {
+    setTutorialQueue((prev) => {
+      const finished = prev[0];
+      if (finished) {
+        const sk =
+          finished.kind === 'main'
+            ? 'main'
+            : finished.kind === 'free-tip'
+              ? 'free'
+              : 'challenge';
+        markTutorialSeen(sk);
+      }
+      const remaining = prev.slice(1);
+      if (remaining.length === 0 && pendingTutorialActionRef.current) {
+        const action = pendingTutorialActionRef.current;
+        pendingTutorialActionRef.current = null;
+        queueMicrotask(action);
+      }
+      return remaining;
+    });
+  }, []);
+
+  const replayTutorial = useCallback(() => {
+    pendingTutorialActionRef.current = null;
+    setTutorialQueue([{ kind: 'main' }]);
+  }, []);
+
   return (
     <div
       className="cancellation-task-game ct-fq-root"
@@ -1476,6 +1553,8 @@ export default function CancellationTaskGame({ onBack }) {
               onBack={onBack}
               playSfx={playSfx}
               hubSpaced
+              onReplayTutorial={replayTutorial}
+              replayHint={isAr ? 'إعادة الشرح' : 'Replay tutorial'}
               center={
                 <div className="ct-fq-hub-attn-head">
                   <div className="ct-fq-hub-attn-big">{t.hubAttentionWord}</div>
@@ -1487,9 +1566,9 @@ export default function CancellationTaskGame({ onBack }) {
               t={t}
               isAr={isAr}
               playSfx={playSfx}
-              onFree={startFreeMode}
-              onLevels={() => setPhase('diff')}
-              onChallenge={() => setPhase('chal')}
+              onFree={() => gateWithTutorial(startFreeMode, 'free')}
+              onLevels={() => gateWithTutorial(() => setPhase('diff'), 'levels')}
+              onChallenge={() => gateWithTutorial(() => setPhase('chal'), 'challenge')}
             />
           </div>
         </div>
@@ -2012,6 +2091,15 @@ export default function CancellationTaskGame({ onBack }) {
           <div className="ct-fq-cd-num">{cdVal}</div>
           <div className="ct-fq-cd-lbl">{t.countdownHint}</div>
         </div>
+      )}
+
+      {tutorialQueue.length > 0 && (
+        <FocusQuestTutorial
+          kind={tutorialQueue[0].kind}
+          isAr={isAr}
+          onClose={advanceTutorial}
+          playSfx={playSfx}
+        />
       )}
     </div>
   );
