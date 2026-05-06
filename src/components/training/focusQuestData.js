@@ -176,55 +176,66 @@ export const PAL={
 };
 
 // =============================================================================
-// Level mathematics (visual search / selective attention)
+// Level mathematics — empirically grounded against the visual-search literature.
 // -----------------------------------------------------------------------------
-// Scientific basis (simplified): pop-out vs conjunction search: as distractors
-// resemble the target on more feature dimensions, search becomes serial and
-// RT grows with display set size; interference ramps feature overlap on colour.
+// References:
+//   Treisman & Gelade (1980) — Feature Integration Theory: feature/pop-out search
+//     is parallel (slope ≈ 0 ms/item); conjunction search is serial.
+//   Wolfe (1989) Guided Search; Palmer et al. (2011) — conjunction search slope
+//     ≈ 20–30 ms/item for target-present; baseline (decision+motor) ≈ 400–600 ms.
+//   Mesulam Symbol Cancellation (Uttl & Pilkenton-Taylor 2001) — healthy young
+//     adults cross out ~1.06 targets/s on a feature cancellation task.
+//   Duncan & Humphreys (1989) — search efficiency falls with target–distractor
+//     similarity; the colour-interference ramp models this for hard+ tiers.
 //
-// 1) Time limit T(li): logistic in game level L = li+1
-//    T_raw(L) = A + R / (1 + exp(k(L - L0)))
-//    Then scale by difficulty tier (easy … deadly) for global pacing.
+// Per-level time T(diff, L) interpolates between two empirically-anchored
+// endpoints with a logistic in L (1..20):
+//   T_raw(L) = T20 + (T1 - T20) / (1 + exp(k (L - L_mid)))
+// where T1 (beginner ceiling, ~3–4× expert search time) and T20 (expert
+// performance floor, ~1.0–1.2× the search-slope ceiling for that tier+target
+// count) come from TIER_TIME_ENDPOINTS below.
 //
-// 2) Target count T_n(li): convex target span [n0, n1] over normalized progress
-//    u = li/19,  T* = n0 + (n1 - n0) * u^gamma; rounded, capped to grid, then
-//    forced monotone non-decreasing in li so difficulty never “relaxes”
-//    within a tier.
-//
-// 3) Feature interference I(li): ramps from 0 after early levels so colour
-//    noise on distractors increases gradually: I = clamp((li - 4) / 10, 0, 1).
+// Target counts and colour interference are unchanged in shape — both are
+// already principled — but capped against the grid for safety.
 // =============================================================================
 
-/** Logistic time curve parameters (seconds). Inflection at L0 ≈ mid curriculum. */
-export const TIME_LOGISTIC = {
-  /** Baseline floor of logistic (before tier scale). */
-  asymptoteLow: 15,
-  /** Height of logistic curve. */
-  amplitude: 75,
-  /** Steepness; larger → sharper transition around inflection. */
-  k: 0.4,
-  /** Game level (1-based) where slope is steepest. */
-  inflectionLevel: 10,
+/**
+ * Per-tier time endpoints in seconds.
+ *   L1  = beginner-friendly ceiling (generous; ~3× expert search time).
+ *   L20 = expert performance floor, derived from
+ *         per-target = 700 ms (Mesulam ~1.06 targets/s baseline)
+ *                    + slope_ms × (set_size / 2)
+ *         × target_count_at_L20 (TC[diff][19]).
+ *   slope: 0 ms/item for feature, 12 ms/item for feature+colour binding,
+ *   25 ms/item for conjunction search (mid of Wolfe 20–30 range).
+ */
+export const TIER_TIME_ENDPOINTS = {
+  easy:   { L1: 30,  L20: 10 },  // 5×5 feature search, ≤13 targets
+  inter:  { L1: 40,  L20: 12 },  // 7×7 feature search, ≤15 targets
+  hard:   { L1: 60,  L20: 18 },  // 8×8 feature+binding, ≤18 targets
+  xhard:  { L1: 90,  L20: 30 },  // 9×9 conjunction, ≤20 targets
+  deadly: { L1: 120, L20: 55 },  // 10×10 conjunction, ≤32 targets
 };
 
-/** Per-tier scale on raw logistic (smaller → stricter time on same shape of curve). */
-export const DIFFICULTY_TIME_SCALE = {
-  easy: 1.0,
-  inter: 0.88,
-  hard: 0.72,
-  xhard: 0.58,
-  deadly: 0.52,
-};
+/** Logistic steepness across the 20-level curriculum. */
+const LEVEL_LOGISTIC_K = 0.35;
+/** 1-based level where the logistic crosses its mid-point. */
+const LEVEL_LOGISTIC_MID = 10.5;
+/** Hard floor — no level ever drops below this even if endpoints are misconfigured. */
+export const ABSOLUTE_TIME_FLOOR_SEC = 8;
 
-export const TIME_FLOOR_SEC = 10;
+/** Sigmoid weight at 1-based level (1.0 at L≪Lmid, 0 at L≫Lmid). */
+function levelSigmoid(level1Based) {
+  return 1 / (1 + Math.exp(LEVEL_LOGISTIC_K * (level1Based - LEVEL_LOGISTIC_MID)));
+}
 
 /**
- * Raw logistic time at game level L (1..20): higher L → less time (asymptotic low A).
- * T(L) = A_low + R / (1 + exp(k(L - L0)))
+ * Backwards-compatible shim. Returns the easy-tier curve when called without a
+ * tier argument; new callers should use `sigmoidTime(diff, li)`.
  */
 export function rawLogisticTimeSeconds(level1Based) {
-  const { asymptoteLow, amplitude, k, inflectionLevel } = TIME_LOGISTIC;
-  return asymptoteLow + amplitude / (1 + Math.exp(k * (level1Based - inflectionLevel)));
+  const ep = TIER_TIME_ENDPOINTS.easy;
+  return ep.L20 + (ep.L1 - ep.L20) * levelSigmoid(level1Based);
 }
 
 /** Target-count curve per tier: endpoints (n0,n1) and gamma>0 (gamma>1 → easier early). */
@@ -267,13 +278,16 @@ export const TC = Object.fromEntries(
   Object.keys(DM).map((d) => [d, buildMonotonicTargetSeries(d)]),
 );
 
+/**
+ * Per-level time limit (seconds). Logistic interpolation between the
+ * empirically-derived T1 and T20 endpoints for the tier. Strictly
+ * non-increasing in L within a tier (audit invariant).
+ */
 export function sigmoidTime(diff, li) {
+  const ep = TIER_TIME_ENDPOINTS[diff] ?? TIER_TIME_ENDPOINTS.easy;
   const level = li + 1;
-  const base = rawLogisticTimeSeconds(level);
-  const scale = DIFFICULTY_TIME_SCALE[diff] ?? 1;
-  const t = base * scale;
-  const floor = diff === 'deadly' ? 12 : TIME_FLOOR_SEC;
-  return +Math.max(floor, t).toFixed(1);
+  const t = ep.L20 + (ep.L1 - ep.L20) * levelSigmoid(level);
+  return +Math.max(ABSOLUTE_TIME_FLOOR_SEC, t).toFixed(1);
 }
 
 /**
@@ -342,6 +356,31 @@ export const SHAPE_NAMES = {
 };
 
 
+/**
+ * Fisher-Yates in-place shuffle. Uniform distribution over permutations,
+ * unlike `Array.prototype.sort(() => Math.random() - 0.5)` which is biased.
+ * Accepts an optional rng so callers (e.g. challenge mode) can seed it.
+ */
+export function fisherYatesInPlace(arr, rng = Math.random) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+  return arr;
+}
+
+/** Linear-congruential PRNG. Deterministic given the same seed; used so a
+ *  challenge layout is bit-identical for every player who plays it. */
+export function makeLcgRng(seed) {
+  let s = (seed >>> 0) || 1;
+  return () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
+
 export function buildCellsFromParams(grid, pool, tc, diff, seed, interference) {
   const searchMode = (diff === 'xhard' || diff === 'deadly') ? 'identity' : 'categorical';
   const pal = PAL[diff] || PAL.easy;
@@ -385,11 +424,11 @@ export function buildCellsFromParams(grid, pool, tc, diff, seed, interference) {
       cells.push({ shape: dshp, col: dcol, isT: false });
     }
   }
-  cells.sort(() => Math.random() - 0.5);
+  fisherYatesInPlace(cells);
   return { cells, tgt, tgtCol, tc: guaranteedTc };
 }
 
-export function assignFillColors(cells, diff, interference, tgtCol) {
+export function assignFillColors(cells, diff, interference, tgtCol, rng = Math.random) {
   const pal = PAL[diff] || PAL.easy;
   const tgtColIdx = pal.indexOf(tgtCol) >= 0 ? pal.indexOf(tgtCol) : 0;
   return cells.map((cell) => {
@@ -399,12 +438,12 @@ export function assignFillColors(cells, diff, interference, tgtCol) {
     } else if (cell.isT) {
       fill = tgtCol;
     } else if (interference > 0) {
-      if (Math.random() < interference * 0.7) {
-        const adj = (tgtColIdx + Math.floor(Math.random() * 2) + 1) % pal.length;
+      if (rng() < interference * 0.7) {
+        const adj = (tgtColIdx + Math.floor(rng() * 2) + 1) % pal.length;
         fill = pal[adj];
-      } else fill = pal[Math.floor(Math.random() * pal.length)];
+      } else fill = pal[Math.floor(rng() * pal.length)];
     } else {
-      fill = pal[Math.floor(Math.random() * pal.length)];
+      fill = pal[Math.floor(rng() * pal.length)];
     }
     return { ...cell, fill };
   });
@@ -413,37 +452,47 @@ export function assignFillColors(cells, diff, interference, tgtCol) {
 /** Linear curriculum for Free mode: easy 1–20 → … → deadly 20, then stays at deadly 20. */
 export const FREE_PROGRESS_ORDER = ['easy', 'inter', 'hard', 'xhard', 'deadly'];
 
-/** Starting session bank (seconds); clock runs continuously across rounds until 0. */
-export const FREE_SESSION_START_SEC = 52;
+/** Starting session bank (seconds); clock runs continuously across rounds until 0.
+ *  Sized so the first easy round (par ≈ 30 s under new endpoints) is comfortable. */
+export const FREE_SESSION_START_SEC = 60;
 
-/** Hard cap on bank so bonuses cannot pile up without bound. */
-export const FREE_SESSION_CAP_SEC = 210;
+/** Hard cap on bank so bonuses cannot pile up without bound. Sized to accommodate
+ *  a single attempt at deadly L1 (par ≈ 120 s) from a healthy mid-game bank. */
+export const FREE_SESSION_CAP_SEC = 240;
 
 /**
- * How fast the session clock drains at this stage (1 = real-time).
- * Mild rational ramp: mult = 1 + min(cap, k * s) so late survival feels tighter but stays fair.
+ * Session-clock drain multiplier (1.0 = real-time). Ramps slowly across the
+ * curriculum so late-tier rounds feel tighter — but late-game pressure should
+ * come mainly from larger set sizes and harder search, not from a faster bleed.
+ *   mult = 1 + min(cap, k · stageIndex)
  */
 export function freeTimeDrainMultiplier(stageIndex) {
   const s = Math.max(0, stageIndex | 0);
-  const k = 0.0048;
-  const cap = 0.2;
+  const k = 0.0035;
+  const cap = 0.18;
   return 1 + Math.min(cap, k * s);
 }
 
 /**
- * Bonus seconds after clearing free round at `stageCompleted` (0 = first round finished).
- * Scales with nominal par time for that round and decays with depth so skilled runs can go deep.
+ * Bonus seconds awarded after clearing the free round at `stageCompleted`
+ * (0 = first round). Scales with the round's nominal par so deep, long rounds
+ * refund proportionally; decays harmonically with stage depth so skilled runs
+ * can still go deep without becoming infinite.
  *
- *   bonus = clamp( B_min, B_max,  b0 + u(s) * (b1 + k * par) )
- *   u(s) = 1 / (1 + s / τ)   (harmonic-style decay, τ controls mid-game)
+ *   bonus = clamp( B_min, B_max,  b0 + u(s) · (b1 + k · par) )
+ *   u(s)  = 1 / (1 + s / τ)
+ *
+ * Coefficients tuned so deadly-tier rounds (par 55–120 s) refund 12–22 s,
+ * keeping bank dynamics non-trivially positive for skilled players in mid-game
+ * and approximately neutral at the upper tail.
  */
 export function freeClearBonusSec(stageCompleted, nominalParSec) {
   const s = Math.max(0, stageCompleted | 0);
   const par = Math.max(6, Number(nominalParSec) || 20);
-  const tau = 22;
+  const tau = 28;
   const u = 1 / (1 + s / tau);
-  const raw = 4.2 + u * (6.4 + 0.36 * par);
-  const bonus = Math.min(40, Math.max(3.2, raw));
+  const raw = 4.2 + u * (8 + 0.5 * par);
+  const bonus = Math.min(60, Math.max(3.2, raw));
   return +bonus.toFixed(1);
 }
 
@@ -488,36 +537,55 @@ export function prepareLevelRound(diff, lv) {
   };
 }
 
+/**
+ * Build a deterministic challenge seed. Every choice (target identity, target
+ * colour, distractor shapes, cell ordering, distractor fill colours) is drawn
+ * from a single seeded LCG, so the resulting `seed.cells` array is the
+ * authoritative layout — every player who plays this challenge sees a
+ * bit-identical grid. Fairness is preserved across player turns and rounds.
+ */
 export function prepareChallengeSeed() {
   const pool = SP.xhard[8];
   const pal = PAL.xhard;
-  const tgt = pool[Math.floor(Math.random() * pool.length)];
-  const tgtCol = pal[Math.floor(Math.random() * pal.length)];
-  const dist = pool.filter((s) => s !== tgt);
   const grid = 9;
   const tc = 15;
   const total = grid * grid;
-  let cells = [];
+  // Mix epoch ms with one Math.random() draw so two seeds requested in the
+  // same millisecond still diverge.
+  const seedNum = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+  const rng = makeLcgRng(seedNum);
+  const tgt = pool[Math.floor(rng() * pool.length)];
+  const tgtCol = pal[Math.floor(rng() * pal.length)];
+  const dist = pool.filter((s) => s !== tgt);
+  const cells = [];
   for (let i = 0; i < tc; i++) cells.push({ shape: tgt, isT: true });
-  while (cells.length < total) cells.push({ shape: dist[Math.floor(Math.random() * dist.length)], isT: false });
-  let s = Date.now();
-  function rnd() {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
+  while (cells.length < total) {
+    cells.push({ shape: dist[Math.floor(rng() * dist.length)], isT: false });
   }
-  const a = [...cells];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return { pool, tgt, tgtCol, cells: a, grid, tc };
+  fisherYatesInPlace(cells, rng);
+  // Bake fill colours so every player sees the exact same coloured grid.
+  // Challenge mode runs interference=0; non-target fills draw uniformly from the
+  // tier palette using the same seeded rng.
+  const cellsWithFill = cells.map((c) => ({
+    shape: c.shape,
+    isT: c.isT,
+    fill: c.isT ? tgtCol : pal[Math.floor(rng() * pal.length)],
+  }));
+  return { pool, tgt, tgtCol, cells: cellsWithFill, grid, tc, seed: seedNum };
 }
 
 export function prepareChallengePlayState(cSeed, tlim = 50) {
-  const diff = 'xhard';
-  const cellsRaw = cSeed.cells.map((c) => ({ shape: c.shape, isT: c.isT }));
-  const withFill = assignFillColors(cellsRaw, diff, 0, cSeed.tgtCol);
-  const cells = withFill.map((c, i) => ({ ...c, id: i, tapped: false, feedback: null }));
+  // Use baked fills directly — no re-randomisation. Two players invoking this
+  // with the same cSeed get identical `cells` arrays (modulo per-cell react ids).
+  const cells = cSeed.cells.map((c, i) => ({
+    shape: c.shape,
+    isT: c.isT,
+    fill: c.fill,
+    col: null,
+    id: i,
+    tapped: false,
+    feedback: null,
+  }));
   const targetCount = cells.filter((c) => c.isT).length;
   return {
     mode: 'challenge',
@@ -535,18 +603,55 @@ export function prepareChallengePlayState(cSeed, tlim = 50) {
   };
 }
 
+/**
+ * Compute end-of-round metrics.
+ *
+ * `taps` is an array of inter-tap milliseconds plus the search-onset latency for
+ * the first tap (collected by the game loop). We filter out implausibly fast
+ * taps (<50 ms — double-touch noise) and idle gaps (>30 s — likely user paused
+ * or got distracted) before averaging, matching standard practice in cancellation
+ * task analysis.
+ *
+ * Returns:
+ *   ies / score — Rate-Correct Score (Woltz & Was 2006): items per second
+ *     weighted by accuracy, scaled ×1000. Higher is better. The UI surfaces this.
+ *   iesMs       — true Inverse Efficiency Score (Townsend & Ashby 1983): mean
+ *     RT divided by accuracy, in ms. Lower is better. Reported only when the
+ *     error rate is < 15 % (Bruyer & Brysbaert 2011 validity gate); else null.
+ *   iesValid    — boolean flag for the IES validity gate.
+ *   avgRt       — robust mean of inter-tap RT, in ms.
+ */
 export function computeRoundStats({ tlim, tl, found, errors, tc, taps, diff, won }) {
   const timeUsed = +(tlim - tl).toFixed(1);
   const total = found + errors;
   const acc = total > 0 ? Math.round((found / total) * 100) : 100;
   const accRaw = total > 0 ? found / total : 1;
-  const avgRt = taps.length ? Math.round(taps.reduce((s, x) => s + x, 0) / taps.length) : 999;
+  const tapList = Array.isArray(taps) ? taps : [];
+  // Trim implausible RTs before averaging (Whelan 2008, robust RT analysis).
+  const validTaps = tapList.filter((t) => t > 50 && t < 30000);
+  const meanRtMs = validTaps.length
+    ? validTaps.reduce((s, x) => s + x, 0) / validTaps.length
+    : null;
+  const avgRt = meanRtMs != null ? Math.round(meanRtMs) : 999;
   const tps = timeUsed > 0 ? +(found / timeUsed).toFixed(3) : 0;
-  const meanRtSec = found > 0 ? timeUsed / found : timeUsed + 1;
-  let ies = +(1000 * (accRaw / meanRtSec)).toFixed(1);
+  // RCS denominator: prefer real per-tap RT, fall back to time-per-found.
+  const rtSecForScore =
+    meanRtMs != null && meanRtMs >= 100
+      ? meanRtMs / 1000
+      : found > 0
+        ? timeUsed / found
+        : timeUsed + 1;
+  let ies = +(1000 * (accRaw / rtSecForScore)).toFixed(1);
+  // Tap-spam clamp: if the player tapped wildly more than 2.5× the target
+  // count, halve the score so brute-forcing can't beat focused search.
   if (total > tc * 2.5) ies = +(ies * 0.5).toFixed(1);
   const score = Math.max(0, ies);
-  return { timeUsed, acc, avgRt, tps, ies, score, accRaw, won };
+  // True IES — published, lower-is-better, ms — gated on Bruyer & Brysbaert
+  // validity (error rate must be < 15 %).
+  const errRate = total > 0 ? errors / total : 0;
+  const iesValid = accRaw > 0 && errRate < 0.15 && meanRtMs != null;
+  const iesMs = iesValid ? Math.round(meanRtMs / accRaw) : null;
+  return { timeUsed, acc, avgRt, tps, ies, score, accRaw, won, iesMs, iesValid };
 }
 
 export function isLevelUnlocked(diff, lv, doneMap) {

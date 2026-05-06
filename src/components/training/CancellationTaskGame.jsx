@@ -434,7 +434,13 @@ const FQ_HUB_MAZE = buildPolarFocusQuestHubMaze();
 
 /** Orbit button positions on rim (deg from top, clockwise). */
 function fqHubOrbitPos(degFromTop) {
-  const ORBIT_R = 48;
+  // Orbit radius in % of the disc. On phones the disc is at most 90vw and the
+  // floater nodes are min(120px, 32vw); at the original R=48 the side nodes
+  // (120°/240°) overflow the viewport. Tighten R on small screens so nodes
+  // always sit inside the disc on mobile while keeping the decorative outer
+  // orbit on tablets and desktops.
+  const w = typeof window !== 'undefined' ? window.innerWidth : 768;
+  const ORBIT_R = w < 520 ? 40 : 48;
   const rad = (degFromTop * Math.PI) / 180;
   const x = 50 + ORBIT_R * Math.sin(rad);
   const y = 50 - ORBIT_R * Math.cos(rad);
@@ -1008,6 +1014,14 @@ export default function CancellationTaskGame({ onBack }) {
   const freeStrikesRef = useRef(0);
   const [freeStrikes, setFreeStrikes] = useState(0);
   const [gridMetrics, setGridMetrics] = useState({ cell: 32, gap: 3, pad: 6 });
+  const shakeTimerRef = useRef(0);
+
+  useEffect(() => () => {
+    if (shakeTimerRef.current) {
+      clearTimeout(shakeTimerRef.current);
+      shakeTimerRef.current = 0;
+    }
+  }, []);
 
   useEffect(() => {
     chalIdxRef.current = chalIdx;
@@ -1262,7 +1276,20 @@ export default function CancellationTaskGame({ onBack }) {
         fixed += el.getBoundingClientRect().height;
       });
       fixed += 28;
-      const availW = Math.floor(vpW * 0.95);
+      // Compute the wrap's actual content width (excluding its own padding)
+      // and reserve a small overhead for the grid-outer and grid-inner
+      // padding inside it, so the rendered grid never overflows the wrap.
+      // Cap by 0.98·vpW as a viewport-edge safety net.
+      const cs = window.getComputedStyle(wrap);
+      const wrapPadX =
+        (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      const wrapBoundW = wrap.getBoundingClientRect().width || vpW;
+      const GRID_OUTER_INNER_OVERHEAD = 16;
+      const availFromWrap = Math.max(
+        120,
+        Math.floor(wrapBoundW - wrapPadX - GRID_OUTER_INNER_OVERHEAD),
+      );
+      const availW = Math.min(availFromWrap, Math.floor(vpW * 0.98));
       const availRatio = isDeadly ? 0.86 : 0.8;
       const availH = Math.floor(Math.min(vpH * availRatio, vpH - fixed));
       const square = Math.max(Math.min(availW, availH), isDeadly ? 72 : 64);
@@ -1364,7 +1391,11 @@ export default function CancellationTaskGame({ onBack }) {
         }
       }
       setShake(true);
-      setTimeout(() => setShake(false), 350);
+      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+      shakeTimerRef.current = setTimeout(() => {
+        setShake(false);
+        shakeTimerRef.current = 0;
+      }, 350);
       return prev.map((x, i) =>
         i === idx ? { ...x, tapped: true, feedback: 'bad' } : x,
       );

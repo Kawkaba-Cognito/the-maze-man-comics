@@ -1047,14 +1047,16 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
     font-size: 0.72rem;
     color: var(--fq-pdk);
     line-height: 1.15;
-    max-width: 130px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
 }
 .ct-fq-hub-node-hint {
     font-size: 0.56rem;
     font-weight: 700;
     color: var(--fq-mut);
     line-height: 1.2;
-    max-width: 132px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
     opacity: 0.88;
 }
 .ct-fq-hub-node-hint-ar {
@@ -1368,9 +1370,9 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
     position: absolute;
     z-index: 8;
     transform: translate(-50%, -50%) translateY(-5px);
-    width: min(124px, 34vw);
-    min-height: 76px;
-    padding: 10px 12px 11px;
+    width: min(120px, 32vw);
+    min-height: 72px;
+    padding: 9px 10px 10px;
     border-radius: 999px;
     border: 1px solid rgba(232, 172, 78, 0.55);
     background:
@@ -1992,3 +1994,79 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
 .ct-fq-lbnm { font-weight: 800; font-size: 0.84rem; }
 .ct-fq-lbdt { font-size: 0.62rem; color: var(--fq-mut); }
 .ct-fq-lbsc { font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: var(--fq-pdk); margin-inline-start: auto; }
+
+/* ============================================================================
+ * Cancellation task — narrow-viewport (small phones <380px) layout corrections.
+ *
+ * Resolves on-mobile overflow caused by:
+ *   - Hub orbit nodes (.ct-fq-hub-orbit-floater) running past the disc rim and
+ *     sometimes past the viewport when ORBIT_R is large and node padding wide.
+ *   - Screen padding (12px 14px) eating cell-budget on the play grid.
+ *   - Levels grid (5 columns) cells getting cramped at default gap.
+ * ========================================================================= */
+@media (max-width: 380px) {
+    .cancellation-task-game .ct-fq-screen {
+        padding: 10px 10px 20px;
+    }
+    .cancellation-task-game .ct-fq-hub-disc-shell {
+        max-width: min(404px, 92vw);
+    }
+    .cancellation-task-game .ct-fq-training-screen--hub .ct-fq-hub-disc-shell {
+        margin-top: clamp(14px, 4vw, 24px);
+        margin-bottom: 14px;
+    }
+    .cancellation-task-game .ct-fq-hub-orbit-floater {
+        width: min(108px, 30vw);
+        min-height: 66px;
+        padding: 7px 8px 8px;
+    }
+    .cancellation-task-game .ct-fq-hub-node-ic {
+        font-size: 1.15rem;
+    }
+    .cancellation-task-game .ct-fq-hub-orbit-floater .ct-fq-hub-node-lb {
+        font-size: 0.66rem;
+    }
+    .cancellation-task-game .ct-fq-hub-orbit-floater .ct-fq-hub-node-hint {
+        font-size: 0.5rem;
+        line-height: 1.18;
+    }
+    .cancellation-task-game .ct-fq-lg {
+        gap: 5px;
+    }
+    .cancellation-task-game .ct-fq-lg-training {
+        gap: 6px;
+    }
+    .cancellation-task-game .ct-fq-lb {
+        padding: 7px 1px;
+    }
+    .cancellation-task-game .ct-fq-db {
+        padding: 11px 12px;
+        font-size: 0.84rem;
+    }
+    .cancellation-task-game .ct-fq-tb {
+        padding: 6px 8px;
+    }
+    .cancellation-task-game .ct-fq-g-wrap {
+        padding: 4px 4px 6px;
+    }
+    .cancellation-task-game .ct-fq-g-top {
+        padding: 5px 6px;
+        gap: 4px;
+    }
+    .cancellation-task-game .ct-fq-grid-outer {
+        padding: 2px;
+    }
+    .cancellation-task-game .ct-fq-grid-inner {
+        padding: 4px;
+    }
+}
+
+/* Mid-phone refinements (380–520px): keep ample play area but trim chrome. */
+@media (min-width: 381px) and (max-width: 520px) {
+    .cancellation-task-game .ct-fq-screen {
+        padding: 12px 12px 22px;
+    }
+    .cancellation-task-game .ct-fq-g-wrap {
+        padding: 5px 5px 8px;
+    }
+}
