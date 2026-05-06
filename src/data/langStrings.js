@@ -1,7 +1,7 @@
 export const LANG = {
   en: {
-    logo: 'THE MAZE MAN', btn: 'عربي',
-    nav: ['HOME', 'COMICS', 'VIDEOS', 'PROFILE', 'SHOP'],
+    logo: 'MAZE MAN', btn: 'عربي',
+    nav: ['HOME', 'TRAINING', 'LEARN', 'PROFILE', 'SHOP'],
     comicTitles: ['SOCIAL<br>PSYCHOLOGY', 'ABOUT<br>THE PAGE', 'PROBLEM<br>SOLVING'],
     enterMaze: 'ENTER MAZE',
     vidTitle: 'VIDEO LESSONS', epTitle: 'Episode 1: Greeting',
@@ -12,7 +12,7 @@ export const LANG = {
   },
   ar: {
     logo: 'رجل المتاهة', btn: 'English',
-    nav: ['البيت', 'القصص', 'فيديو', 'ملفي', 'المتجر'],
+    nav: ['البيت', 'تدريب', 'تعلم', 'ملفي', 'المتجر'],
     comicTitles: ['علم النفس<br>الاجتماعي', 'عن<br>الصفحة', 'علم النفس<br>المعرفي'],
     enterMaze: 'ادخل المتاهة',
     vidTitle: 'مقاطع الفيديو', epTitle: 'الحلقة ١: التحية',

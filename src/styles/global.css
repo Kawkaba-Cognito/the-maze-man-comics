@@ -1,88 +1,313 @@
 * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; }
-body { overflow: hidden; min-height: 100dvh; background-color: #1a0b2e; }
+body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
+
+/* ── STATIC BACKGROUND POSTER (responsive) ── */
+/* Mobile default: 9:16 portrait image — WebP for speed, CSS handles fallback */
+.bg-poster {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100dvh;
+    background-image: url('/the-maze-man-comics/Assets/bg-mobile.webp');
+    background-size: cover;
+    background-position: center top;
+    z-index: 0; pointer-events: none;
+}
+/* Desktop: switch to 16:9 landscape image */
+@media (min-width: 768px) {
+    .bg-poster {
+        background-image: url('/the-maze-man-comics/Assets/bg-desktop.webp');
+        background-position: center center;
+    }
+}
+
+.bg-overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100dvh;
+    background: linear-gradient(
+        180deg,
+        rgba(5, 5, 15, 0.20) 0%,
+        rgba(10, 4, 30, 0.05) 40%,
+        rgba(5, 5, 15, 0.35) 100%
+    );
+    z-index: 2; pointer-events: none;
+}
 
 /* ═══════════════════════ 2D UI (COMIC INTERFACE) ═══════════════════════ */
 #ui-shell {
     position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh;
     font-family: 'Comic Neue', cursive; color: #333;
-    overflow-y: auto; overflow-x: hidden; z-index: 100;
-    background-color: #1a0b2e;
-    /* Stack: dark overlay on top, then the background image */
-    background-image:
-        linear-gradient(rgba(10, 4, 30, 0.55), rgba(10, 4, 30, 0.55)),
-        url('/Assets/Homepagebackground.png.png');
-    background-size: cover;
-    background-position: center top;
-    background-attachment: scroll;
+    overflow-y: auto; overflow-x: hidden; z-index: 10;
+    background: transparent;
 }
 
-.comic-header {
-    position: fixed; top: 0; width: 100%; height: 70px; background: rgba(26, 11, 46, 0.95); padding: 0 20px;
-    display: flex; justify-content: space-between; align-items: center; z-index: 1000; border-bottom: 5px solid #000; backdrop-filter: blur(10px);
+/* ── FLOATING HUD (replaces header) ── */
+.floating-hud {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: max(14px, env(safe-area-inset-top)) 20px 12px;
+    z-index: 1000; pointer-events: none;
 }
-.comic-logo { font-family: 'Bangers', cursive; color: #ffe66d; font-size: 2em; text-shadow: 3px 3px 0px #000; letter-spacing: 1px; }
-.xp-pill { background: #ff6b6b; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 5px 15px; border-radius: 20px; font-weight: bold; color: #fff; font-size: 1.2em; transition: transform 0.2s;}
+.floating-hud > * { pointer-events: auto; }
 
-.bottom-nav {
-    position: fixed; bottom: 0; width: 100%; height: 85px; background: #4ecdc4; border-top: 5px solid #000;
-    display: flex; justify-content: space-around; align-items: center;
-    padding: 0 10px max(10px, env(safe-area-inset-bottom)) 10px;
-    z-index: 1000;
+.back-to-menu-btn {
+    background: rgba(10, 6, 2, 0.55);
+    border: 1px solid rgba(255, 180, 60, 0.4);
+    box-shadow: 0 0 12px rgba(255, 150, 30, 0.25);
+    padding: 5px 14px; border-radius: 3px;
+    font-family: 'Bangers', cursive;
+    font-weight: bold;
+    color: rgba(255, 210, 100, 0.9);
+    font-size: 0.9em;
+    letter-spacing: 2px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: background 0.15s;
 }
-.nav-item {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; border: 4px solid #000; border-radius: 12px;
-    padding: 8px 15px; cursor: pointer; box-shadow: 4px 4px 0px #000; transition: all 0.1s ease; width: 22%;
-}
-.nav-item.active { background: #ffe66d; transform: translate(4px, 4px); box-shadow: 0px 0px 0px #000; }
-.nav-item:active { transform: translate(4px, 4px); box-shadow: 0px 0px 0px #000; }
-.nav-icon { font-size: 1.5em; margin-bottom: 2px; }
-.nav-label { font-family: 'Bangers', cursive; font-size: 1.1em; letter-spacing: 1px; }
+.back-to-menu-btn:hover { background: rgba(255, 150, 30, 0.2); }
 
-.ui-screen { display: none; opacity: 0; transition: opacity 0.3s ease-out; min-height: 100dvh; width: 100%; padding: 80px 16px 110px 16px; position: relative;}
+#lang-btn {
+    background: rgba(10, 6, 2, 0.55);
+    border: 1px solid rgba(255, 180, 60, 0.4);
+    box-shadow: 0 0 10px rgba(255, 150, 30, 0.2), inset 0 0 8px rgba(255, 150, 30, 0.06);
+    padding: 5px 14px; border-radius: 3px;
+    font-family: 'Bangers', cursive;
+    font-size: 1em; letter-spacing: 2px;
+    color: rgba(255, 210, 100, 0.9);
+    cursor: pointer;
+    text-shadow: 0 0 8px rgba(255, 180, 50, 0.7);
+    backdrop-filter: blur(6px);
+    transition: .15s;
+}
+#lang-btn:active { transform: scale(0.96); opacity: 0.8; }
+
+/* ── BACK BUTTON ── */
+.back-btn {
+    position: fixed;
+    top: max(14px, env(safe-area-inset-top));
+    left: 20px;
+    z-index: 1001;
+    background: rgba(10, 6, 2, 0.7);
+    border: 1px solid rgba(255, 180, 60, 0.5);
+    border-radius: 3px;
+    color: rgba(255, 210, 100, 0.9);
+    font-family: 'Bangers', cursive;
+    font-size: 1em; letter-spacing: 2px;
+    padding: 5px 14px;
+    cursor: pointer;
+    text-shadow: 0 0 8px rgba(255, 180, 50, 0.7);
+    box-shadow: 0 0 14px rgba(255, 150, 30, 0.2);
+    backdrop-filter: blur(8px);
+    transition: .15s;
+}
+.back-btn:hover { background: rgba(30, 15, 5, 0.85); border-color: rgba(255, 200, 100, 0.7); }
+.back-btn:active { transform: scale(0.96); }
+
+/* screens */
+.ui-screen { display: none; opacity: 0; transition: opacity 0.3s ease-out; min-height: 100dvh; width: 100%; padding: 70px 16px 40px; position: relative; }
 .ui-screen.active { display: block; opacity: 1; }
-.hero-section {
-    position: relative;
-    min-height: min(88vh, 920px);
-    width: 100%;
-    display: flex; flex-direction: column; align-items: center; text-align: center;
+
+/* home screen takes full viewport, no padding */
+#screen-home { padding: 0; }
+/* ── HOME SCREEN ── */
+.home-screen { width: 100%; height: 100dvh; position: relative; }
+
+/* ═══════════════════════════════════
+   DOOR PLAQUES — wooden nameplate signs
+   mounted below each painted door arch
+═══════════════════════════════════ */
+.maze-door-btn {
+    position: fixed;
+    z-index: 200;
+    transform: translateX(-50%);
+    cursor: pointer;
+    white-space: nowrap;
+    /* Wooden plaque */
+    background: linear-gradient(170deg,
+        #3e1a06 0%, #5e2a0c 18%, #4a2008 36%,
+        #6a3212 52%, #4a2008 68%, #5e2a0c 84%, #3e1a06 100%);
+    border: 1.5px solid #9a6828;
+    border-radius: 2px;
+    /* Frame: bright top-left edge, dark bottom-right (carved wood) */
+    box-shadow:
+        inset 0 1px 0 rgba(220,170,70,0.35),
+        inset 0 -1px 0 rgba(0,0,0,0.6),
+        inset 1px 0 0 rgba(220,170,70,0.2),
+        inset -1px 0 0 rgba(0,0,0,0.4),
+        0 4px 12px rgba(0,0,0,0.75),
+        0 1px 3px rgba(0,0,0,0.5),
+        0 0 0 1px rgba(0,0,0,0.4);
+    color: rgba(255, 228, 148, 0.95);
+    font-family: 'Bangers', cursive;
+    font-size: clamp(0.65em, 3vw, 0.85em);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    /* Engraved text: bright top highlight, dark bottom shadow */
+    text-shadow:
+        0 1px 0 rgba(255,210,100,0.5),
+        0 -1px 0 rgba(0,0,0,0.8),
+        0 0 6px rgba(255,160,40,0.25);
+    padding: 5px 14px 6px;
+    transition: all 0.2s ease;
+}
+/* Nail-head rivets at corners */
+.maze-door-btn::before,
+.maze-door-btn::after {
+    content: '•';
+    position: absolute;
+    font-size: 7px;
+    color: rgba(210,160,60,0.7);
+    top: 50%; transform: translateY(-50%);
+    line-height: 1;
+}
+.maze-door-btn::before { left: 5px; }
+.maze-door-btn::after  { right: 5px; }
+
+.maze-door-btn:hover {
+    background: linear-gradient(170deg,
+        #4e2208 0%, #722e10 18%, #5a260a 36%,
+        #7e3c14 52%, #5a260a 68%, #722e10 84%, #4e2208 100%);
+    border-color: #c08030;
+    box-shadow:
+        inset 0 1px 0 rgba(220,170,70,0.4),
+        inset 0 -1px 0 rgba(0,0,0,0.6),
+        0 4px 14px rgba(0,0,0,0.8),
+        0 0 18px rgba(255,160,40,0.35),
+        0 0 35px rgba(255,130,20,0.18);
+    color: #fff8d8;
+    text-shadow:
+        0 1px 0 rgba(255,220,120,0.7),
+        0 -1px 0 rgba(0,0,0,0.9),
+        0 0 12px rgba(255,180,60,0.55);
+    transform: translateX(-50%) translateY(-2px);
+}
+.maze-door-btn:active { transform: translateX(-50%) translateY(0px) scale(0.97); }
+
+/* ── MOBILE (9:16) — posters mounted ON the doors ── */
+.maze-door-left   { left: 20%; top: 19%; }
+.maze-door-center { left: 50%; top: 16%; }
+.maze-door-right  { left: 80%; top: 19%; }
+
+/* ── DESKTOP (16:9) — posters mounted ON the doors ── */
+@media (min-width: 768px) {
+    .maze-door-btn { font-size: clamp(0.65em, 1.1vw, 0.9em); padding: 5px 16px 6px; }
+    .maze-door-left   { left: 33%; top: 24%; }
+    .maze-door-center { left: 50%; top: 21%; }
+    .maze-door-right  { left: 67%; top: 24%; }
 }
 
-.character-container { position: relative; margin-bottom: 30px; display: flex; justify-content: center; align-items: center; width: 220px; height: 220px; z-index: 10;}
-.hero-portal {
-    position: absolute; width: 200px; height: 200px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 107, 107, 0.8) 0%, rgba(124, 58, 237, 0.4) 50%, transparent 70%);
-    border: 4px dashed #ffe66d; animation: spin-pulse 10s linear infinite; z-index: 1;
+/* ═══════════════════════════════════
+   ENTER THE MAZE — ornate carpet/rug
+   laid in front of the entry arch
+═══════════════════════════════════ */
+.home-maze-btn {
+    position: fixed;
+    left: 50%; transform: translateX(-50%);
+    z-index: 201;
+    cursor: pointer;
+    white-space: nowrap;
+    text-align: center;
+    /* Carpet: deep crimson/burgundy with ornate pattern */
+    background:
+        /* outer ornate border pattern */
+        repeating-linear-gradient(90deg,
+            transparent 0, transparent 8px,
+            rgba(255,200,100,0.08) 8px, rgba(255,200,100,0.08) 10px),
+        /* main carpet color */
+        linear-gradient(180deg,
+            #3a1208 0%,
+            #5a1e10 45%,
+            #4a1608 55%,
+            #2a0a04 100%);
+    /* Thin gold border like embroidered edge */
+    border: 1px solid #a06830;
+    border-top-color: #c08040;
+    border-bottom-color: #604020;
+    border-radius: 1px;
+    box-shadow:
+        /* Inner gold border stripe */
+        inset 0 0 0 2px rgba(180,130,50,0.15),
+        inset 0 0 0 3px rgba(100,60,20,0.4),
+        /* carpet sitting on floor shadow */
+        0 6px 14px rgba(0,0,0,0.85),
+        0 2px 4px rgba(0,0,0,0.6);
+    color: rgba(255, 220, 140, 0.95);
+    font-family: 'Bangers', cursive;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    text-shadow:
+        0 1px 0 rgba(255,200,90,0.4),
+        0 -1px 0 rgba(0,0,0,0.9),
+        0 0 10px rgba(255,150,30,0.35);
+    font-size: clamp(0.58em, 2.3vw, 0.78em);
+    padding: 7px 34px 8px;
+    animation: maze-btn-pulse 3s ease-in-out infinite;
+    transition: all 0.25s ease;
+    /* Mobile: over the entry arch at bottom of maze */
+    top: 83%;
 }
-@keyframes spin-pulse { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.1); } 100% { transform: rotate(360deg) scale(1); } }
+/* Carpet tassels — fringe on left and right ends */
+.home-maze-btn::before,
+.home-maze-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    width: 6px; height: 80%;
+    background: repeating-linear-gradient(90deg,
+        #a08050 0, #a08050 1px,
+        transparent 1px, transparent 2px);
+    opacity: 0.8;
+}
+.home-maze-btn::before { left: -7px; }
+.home-maze-btn::after  { right: -7px; }
 
-/* PURE CSS MAZE MAN CHARACTER */
-.css-maze-man { position: relative; width: 150px; height: 190px; animation: idle-float 3s ease-in-out infinite; z-index: 10; }
-.cmm-cloak-bg { position: absolute; bottom: 15px; left: 15px; width: 120px; height: 110px; background: #333; border-radius: 40px 40px 10px 10px; border: 5px solid #000; box-shadow: inset -10px -10px 0 rgba(0,0,0,0.6); }
-.cmm-hood { position: absolute; top: 0; left: 25px; width: 100px; height: 110px; background: #555; border-radius: 50px 50px 20px 20px; border: 5px solid #000; box-shadow: inset -10px -10px 0 rgba(0,0,0,0.4), 8px 8px 0px rgba(0,0,0,0.8); z-index: 3; }
-.cmm-face { position: absolute; top: 25px; left: 15px; width: 70px; height: 75px; background: #000; border-radius: 35px 35px 25px 25px; overflow: hidden; }
-.cmm-eye { position: absolute; top: 25px; width: 22px; height: 12px; background: #ffe66d; border-radius: 50% 50% 20% 20%; box-shadow: 0 0 15px #ffe66d; }
-.cmm-eye.left { left: 8px; transform: rotate(15deg); }
-.cmm-eye.right { right: 8px; transform: rotate(-15deg); }
-.cmm-mask { position: absolute; bottom: -5px; left: -5px; width: 80px; height: 45px; background: #222; border-radius: 50% 50% 10px 10px; border-top: 4px solid #000; }
-.cmm-arm { position: absolute; top: 70px; width: 40px; height: 85px; background: #555; border: 5px solid #000; border-radius: 20px; z-index: 2; box-shadow: inset -5px -5px 0 rgba(0,0,0,0.4);}
-.cmm-arm.left { left: -5px; transform: rotate(15deg); }
-.cmm-arm.right { right: -5px; transform: rotate(-15deg); }
-.cmm-foot { position: absolute; bottom: 0; width: 45px; height: 25px; background: #111; border: 5px solid #000; border-radius: 20px 20px 5px 5px; z-index: 1; box-shadow: inset -5px -5px 0 rgba(255,255,255,0.2);}
-.cmm-foot.left { left: 20px; }
-.cmm-foot.right { right: 20px; }
-@keyframes idle-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@media (min-width: 768px) {
+    .home-maze-btn {
+        top: 88%;
+        font-size: clamp(0.6em, 0.95vw, 0.82em);
+        letter-spacing: 7px;
+        padding: 8px 40px 9px;
+    }
+}
+.home-maze-btn:hover {
+    border-color: #d09040;
+    box-shadow:
+        inset 0 0 0 2px rgba(220,160,70,0.25),
+        inset 0 0 0 3px rgba(100,60,20,0.4),
+        0 8px 18px rgba(0,0,0,0.9),
+        0 0 25px rgba(255,150,30,0.35);
+    color: #fff8d0;
+    text-shadow:
+        0 1px 0 rgba(255,220,100,0.6),
+        0 -1px 0 rgba(0,0,0,0.9),
+        0 0 14px rgba(255,180,50,0.6);
+    transform: translateX(-50%) scale(1.04);
+    animation: none;
+}
+.home-maze-btn:active { transform: translateX(-50%) scale(0.97); }
+@keyframes maze-btn-pulse {
+    0%, 100% { filter: brightness(1); }
+    50%       { filter: brightness(1.15); }
+}
 
-.title-card { background: #fff; border: 5px solid #000; box-shadow: 8px 8px 0px #000; padding: 15px 20px 25px 20px; transform: rotate(-2deg); margin-bottom: 30px; width: 100%; max-width: 400px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; position: relative; z-index: 10;}
-.main-title { font-family: 'Bangers', cursive; font-size: 3.2em; margin: 0; color: #000; line-height: 1; letter-spacing: 2px;}
-.colorful-comics { font-family: 'Bangers', cursive; font-size: 2.8em; letter-spacing: 5px; margin-top: -5px; transform: rotate(2deg); text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000; }
-
-.btn-wrapper { position: relative; display: inline-block; width: 100%; max-width: 300px; margin-bottom: 10px; z-index: 10;}
-.btn-ripple { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 16px; border: 4px solid #ffe66d; animation: ripple 1.5s infinite; z-index: 0; pointer-events: none;}
-@keyframes ripple { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.15) translate(8px, 8px); opacity: 0; } }
-
-.comic-btn { position: relative; z-index: 2; background: #ffe66d; border: 5px solid #000; box-shadow: 8px 8px 0px #000; padding: 15px 30px; font-family: 'Bangers', cursive; font-size: 2.2em; cursor: pointer; transition: all 0.1s ease; border-radius: 16px; color: #000; letter-spacing: 2px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
-.comic-btn:hover { transform: translate(-2px, -2px); box-shadow: 10px 10px 0px #000; }
-.comic-btn:active { transform: translate(8px, 8px); box-shadow: 0px 0px 0px #000; }
+/* Cinematic fade-to-black on maze entry */
+.maze-transition-overlay {
+  position: fixed; inset: 0;
+  background: #000; z-index: 9999;
+  animation: fade-black 4s ease-in forwards;
+  pointer-events: none;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 60px;
+}
+.maze-transition-overlay::after {
+  content: 'LOADING THE MAZE...';
+  font-family: 'Bangers', cursive;
+  font-size: clamp(0.8em, 2vw, 1em);
+  letter-spacing: 5px;
+  color: rgba(255, 200, 80, 0.7);
+  text-shadow: 0 0 14px rgba(255,160,40,0.5);
+  animation: loading-pulse 1.2s ease-in-out infinite, fade-black 4s ease-in forwards;
+}
+@keyframes fade-black { 0%,50% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes loading-pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
 
 .comics-showcase { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 40px; width: 100%; max-width: 500px; padding: 10px; perspective: 1000px; position: relative; z-index: 10;}
 .comic-square { flex: 1; aspect-ratio: 1 / 1.4; max-width: 120px; border: 4px solid #000; border-radius: 4px; box-shadow: 4px 4px 0px #000; cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 8px; text-align: center; position: relative; background: #fff; }
@@ -177,11 +402,16 @@ body { overflow: hidden; min-height: 100dvh; background-color: #1a0b2e; }
 
 /* ── LANGUAGE BUTTON ── */
 #lang-btn {
-    background: #4ecdc4; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
-    padding: 5px 14px; border-radius: 10px; font-family: 'Bangers', cursive;
-    font-size: 1em; letter-spacing: 1px; color: #000; cursor: pointer; transition: .1s;
+    background: rgba(0,245,255,0.06);
+    border: 1px solid rgba(0,245,255,0.4);
+    box-shadow: 0 0 10px rgba(0,245,255,0.15);
+    padding: 5px 14px; border-radius: 4px;
+    font-family: 'Bangers', cursive;
+    font-size: 1em; letter-spacing: 1px;
+    color: #00f5ff; cursor: pointer; transition: .15s;
+    text-shadow: 0 0 8px #00f5ff;
 }
-#lang-btn:active { transform: translate(3px,3px); box-shadow: 0 0 0 #000; }
+#lang-btn:active { transform: scale(0.96); opacity: 0.8; }
 
 /* ── VIDEO PLAYER ── */
 .video-player-wrap {
@@ -392,56 +622,331 @@ body { overflow: hidden; min-height: 100dvh; background-color: #1a0b2e; }
    RESPONSIVE — Mobile-first adjustments
 ══════════════════════════════════════════ */
 
-/* Base: stack hero content more tightly on small screens */
+/* Small mobile tweaks */
 @media (max-width: 480px) {
-    .comic-header { height: 56px; padding: 0 12px; }
-    .comic-logo { font-size: 1.5em; }
-    .xp-pill { font-size: 0.95em; padding: 4px 10px; }
-
-    #ui-shell { padding-top: 56px; }
-
-    .hero-section { min-height: unset; padding: 12px 16px 16px; gap: 0; }
-
-    .character-container { width: 170px; height: 210px; margin-bottom: 8px; overflow: visible; }
-    .hero-portal { width: 150px; height: 150px; }
-    .css-maze-man { width: 150px; height: 190px; animation: idle-float 3s ease-in-out infinite; }
-
-    .title-card { padding: 10px 14px 18px; margin-bottom: 16px; transform: rotate(-1deg); }
-    .main-title { font-size: 2.2em !important; }
-    .colorful-comics { font-size: 2em !important; letter-spacing: 4px !important; }
-
-    .btn-wrapper { max-width: 100%; margin-bottom: 8px; }
-    .comic-btn { font-size: 1.5em !important; padding: 12px 24px !important; }
-
-    .comics-showcase { gap: 6px; margin-top: 20px; padding: 6px; }
-    .comic-square { max-width: 95px; padding: 5px; }
-    .comic-cover-title { font-size: 0.85em; }
-
-    .fact-card { padding: 18px 14px 14px; margin-top: 20px; }
-    .fact-text { font-size: 0.95em; }
-
-    .bottom-nav { height: 72px; padding: 0 6px max(8px, env(safe-area-inset-bottom)) 6px; }
-    .nav-item { padding: 5px 4px !important; width: 18% !important; border-width: 3px; }
-    .nav-icon { font-size: 1.2em; }
-    .nav-label { font-size: 0.72em !important; }
-
+    .home-doors { width: min(280px, 90vw); gap: 8px; }
+    .maze-door-btn { padding: 8px 6px; }
+    .door-label { font-size: 0.72em; letter-spacing: 2px; }
     .content-card { padding: 16px 12px; }
     .comics-grid { padding: 12px; gap: 12px; }
     .featured-card .comic-card-cover { height: 180px; }
 }
 
-/* Desktop: bigger layout with max-width container */
+/* Desktop: center content columns */
 @media (min-width: 768px) {
-    #ui-shell { display: flex; flex-direction: column; align-items: center; }
-    .comic-header { max-width: 900px; left: 50%; transform: translateX(-50%); border-radius: 0 0 16px 16px; }
-    .bottom-nav { max-width: 700px; left: 50%; transform: translateX(-50%); border-radius: 20px 20px 0 0; border: 4px solid #000; }
-    .ui-screen { max-width: 700px; width: 100%; margin: 0 auto; }
-    .hero-section { padding: 20px 40px 40px; }
-    .character-container { width: 260px; height: 260px; }
-    .hero-portal { width: 240px; height: 240px; }
-    .main-title { font-size: 3.5em !important; }
-    .comics-showcase { gap: 16px; }
-    .comic-square { max-width: 140px; }
-    .comics-grid { max-width: 600px; }
+    .ui-screen { max-width: 800px; width: 100%; margin: 0 auto; }
+    .comics-grid { max-width: 700px; }
     .featured-card .comic-card-cover { height: 280px; }
 }
+
+/* ── SPLASH SCREEN ── */
+.splash-screen {
+    position: fixed; inset: 0;
+    background-color: #f5f0e8;
+    background-image: url('/the-maze-man-comics/Assets/splash-mobile.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center top;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: space-between;
+    padding: max(20px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom) + 16px);
+    z-index: 9999;
+    opacity: 1; transition: opacity 0.7s ease;
+}
+@media (min-width: 768px) {
+    .splash-screen {
+        background-image: url('/the-maze-man-comics/Assets/splash-desktop.png');
+        background-size: cover;
+        background-position: center center;
+    }
+}
+.splash-screen.splash-out { opacity: 0; pointer-events: none; }
+
+/* Bottom group — START + sub-buttons sit here */
+.splash-bottom {
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    width: 100%;
+}
+
+.splash-title {
+    font-family: 'Bangers', cursive;
+    font-size: clamp(2rem, 9vw, 3.6rem);
+    letter-spacing: 0.14em;
+    color: #1a1a2e;
+    text-align: center;
+    line-height: 1;
+    margin: 0;
+}
+.splash-loading {
+    font-family: 'Comic Neue', cursive;
+    font-size: clamp(0.9rem, 3vw, 1.1rem);
+    color: #555;
+    letter-spacing: 0.2em;
+}
+.splash-ellipsis::after {
+    content: '';
+    animation: ellipsis-dots 1.4s steps(4, end) infinite;
+}
+@keyframes ellipsis-dots {
+    0%   { content: ''; }
+    25%  { content: '.'; }
+    50%  { content: '..'; }
+    75%  { content: '...'; }
+}
+.splash-start {
+    font-family: 'Bangers', cursive;
+    font-size: clamp(1.6rem, 7vw, 2.4rem);
+    letter-spacing: 0.15em;
+    color: #f5f0e8;
+    background: rgba(10, 6, 2, 0.75);
+    border: 2px solid rgba(255, 180, 60, 0.6);
+    box-shadow: 0 0 24px rgba(255, 150, 30, 0.35), inset 0 0 12px rgba(255, 150, 30, 0.1);
+    padding: 14px 52px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, background 0.2s ease;
+    animation: start-pulse 1.6s ease-in-out infinite;
+}
+.splash-start:hover, .splash-start:active {
+    background: rgba(255, 150, 30, 0.2);
+    box-shadow: 0 0 40px rgba(255, 150, 30, 0.6), inset 0 0 16px rgba(255, 150, 30, 0.2);
+}
+@keyframes start-pulse {
+    0%, 100% { box-shadow: 0 0 24px rgba(255, 150, 30, 0.35), inset 0 0 12px rgba(255, 150, 30, 0.1); }
+    50%       { box-shadow: 0 0 42px rgba(255, 150, 30, 0.65), inset 0 0 18px rgba(255, 150, 30, 0.2); }
+}
+
+/* Splash sub-buttons (SETTINGS · ABOUT · QUIT) */
+.splash-sub-btns {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+.splash-sub-divider {
+    color: #1a1a2e;
+    opacity: 0.35;
+    font-size: 1em;
+    pointer-events: none;
+    padding: 0 2px;
+}
+.splash-sub-btn {
+    font-family: 'Bangers', cursive;
+    font-size: clamp(0.85rem, 3vw, 1rem);
+    letter-spacing: 0.14em;
+    color: #1a1a2e;
+    background: transparent;
+    border: none;
+    padding: 6px 12px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+}
+.splash-sub-btn:hover { opacity: 1; }
+.splash-sub-btn--quit { color: #8b2020; }
+.splash-sub-btn--quit:hover { opacity: 1; }
+
+/* ── FULL-SCREEN SETTINGS ── */
+.stg-screen {
+    position: fixed; inset: 0;
+    background: #f2f2f7;
+    z-index: 10010;
+    display: flex; flex-direction: column;
+    font-family: 'Outfit', -apple-system, sans-serif;
+}
+.stg-topbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: max(14px, env(safe-area-inset-top) + 10px) 16px 14px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e5;
+}
+.stg-back {
+    background: none; border: none; font-size: 1.6em;
+    color: #007aff; cursor: pointer; padding: 0 8px 0 0; line-height: 1;
+}
+.stg-topbar-title {
+    font-size: 1.05em; font-weight: 600; color: #1c1c1e; letter-spacing: -0.01em;
+}
+.stg-scroll {
+    flex: 1; overflow-y: auto;
+    padding: 20px 0 40px;
+}
+
+/* Account card */
+.stg-account-card {
+    display: flex; align-items: center; gap: 14px;
+    background: #fff;
+    margin: 0 0 6px;
+    padding: 16px;
+    border-top: 1px solid #e0e0e5;
+    border-bottom: 1px solid #e0e0e5;
+}
+.stg-avatar {
+    font-size: 2.6em; line-height: 1;
+    width: 56px; height: 56px;
+    display: flex; align-items: center; justify-content: center;
+    background: #f2f2f7; border-radius: 50%;
+    flex-shrink: 0;
+}
+.stg-account-info { flex: 1; min-width: 0; }
+.stg-account-name {
+    font-size: 1em; font-weight: 600; color: #1c1c1e;
+    margin-bottom: 2px;
+}
+.stg-account-level {
+    font-size: 0.78em; color: #636366; margin-bottom: 6px;
+}
+.stg-xp-bar {
+    height: 4px; background: #e5e5ea; border-radius: 2px; overflow: hidden;
+}
+.stg-xp-fill {
+    height: 100%; background: #007aff; border-radius: 2px;
+    transition: width 0.4s;
+}
+
+/* Avatar picker row */
+.stg-avatar-row {
+    display: flex; justify-content: space-around;
+    background: #fff;
+    padding: 10px 16px 12px;
+    border-bottom: 1px solid #e0e0e5;
+    margin-bottom: 22px;
+}
+.stg-avatar-opt {
+    font-size: 1.7em; background: none; border: 2px solid transparent;
+    border-radius: 50%; width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+.stg-avatar-opt.active {
+    border-color: #007aff;
+    background: rgba(0, 122, 255, 0.08);
+}
+
+/* Sections */
+.stg-section { margin-bottom: 22px; }
+.stg-section-title {
+    font-size: 0.72em; font-weight: 600;
+    color: #6e6e73;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 0 16px 6px;
+}
+.stg-section-body {
+    background: #fff;
+    border-top: 1px solid #e0e0e5;
+    border-bottom: 1px solid #e0e0e5;
+}
+
+/* Setting rows */
+.stg-row {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; background: none; border: none;
+    padding: 13px 16px;
+    cursor: pointer; text-align: left;
+    border-bottom: 1px solid #f0f0f3;
+    transition: background 0.1s;
+}
+.stg-row:last-child { border-bottom: none; }
+.stg-row:active { background: #f5f5f5; }
+.stg-row-icon { font-size: 1.1em; width: 22px; text-align: center; flex-shrink: 0; }
+.stg-row-label { flex: 1; font-size: 0.95em; color: #1c1c1e; font-weight: 400; }
+.stg-row-value { font-size: 0.85em; color: #636366; }
+.stg-row-chevron { color: #c7c7cc; font-size: 1.1em; margin-left: 4px; }
+.stg-row--danger .stg-row-label { color: #ff3b30; }
+
+/* Sub-modals */
+.stg-modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 10020;
+    display: flex; align-items: flex-end;
+}
+.stg-modal-box {
+    background: #fff; width: 100%;
+    border-radius: 18px 18px 0 0;
+    max-height: 70vh; overflow-y: auto;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+.stg-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid #e0e0e5;
+}
+.stg-modal-title { font-size: 1em; font-weight: 600; color: #1c1c1e; }
+.stg-modal-close {
+    background: #e5e5ea; border: none; border-radius: 50%;
+    width: 28px; height: 28px; font-size: 0.8em; cursor: pointer;
+    color: #636366; display: flex; align-items: center; justify-content: center;
+}
+.stg-modal-body { padding: 16px 20px; }
+.stg-modal-text { font-size: 0.9em; color: #3a3a3c; line-height: 1.7; margin-bottom: 6px; }
+.stg-modal-subtext { font-size: 0.78em; color: #8e8e93; margin-top: 12px; }
+.stg-textarea {
+    width: 100%; min-height: 90px;
+    border: 1px solid #d1d1d6; border-radius: 10px;
+    padding: 10px 12px; font-size: 0.9em; color: #1c1c1e;
+    font-family: inherit; resize: vertical; margin-bottom: 12px;
+    background: #f9f9fb;
+}
+.stg-send-btn {
+    width: 100%; background: #007aff; color: #fff;
+    border: none; border-radius: 10px; padding: 13px;
+    font-size: 0.95em; font-weight: 600; cursor: pointer;
+}
+.stg-delete-btn {
+    width: 100%; background: #ff3b30; color: #fff;
+    border: none; border-radius: 10px; padding: 13px;
+    font-size: 0.95em; font-weight: 600; cursor: pointer; margin-top: 10px;
+}
+
+/* In-game (maze) settings panel */
+.maze-settings-panel {
+    position: absolute;
+    top: 70px; right: 16px;
+    background: rgba(8, 6, 18, 0.97);
+    border: 1px solid rgba(100, 181, 194, 0.4);
+    border-radius: 12px;
+    padding: 14px;
+    min-width: 200px;
+    z-index: 200;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+}
+.maze-settings-title {
+    font-family: 'Bangers', cursive;
+    font-size: 1em; letter-spacing: 2.5px;
+    color: rgba(200, 230, 255, 0.9);
+    text-align: center;
+    margin-bottom: 10px;
+}
+.maze-settings-row {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%;
+    background: rgba(100, 181, 194, 0.07);
+    border: 1px solid rgba(100, 181, 194, 0.2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: rgba(200, 230, 255, 0.9);
+    font-size: 13px; cursor: pointer;
+    margin-bottom: 8px;
+    transition: background 0.15s;
+}
+.maze-settings-row:active { background: rgba(100, 181, 194, 0.15); }
+.maze-settings-badge {
+    background: rgba(100, 181, 194, 0.2);
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 11px; color: rgba(200, 230, 255, 0.9);
+    font-family: 'Bangers', cursive; letter-spacing: 1px;
+}
+.maze-settings-close {
+    width: 100%;
+    font-family: 'Bangers', cursive; font-size: 0.9em; letter-spacing: 2px;
+    color: rgba(200, 230, 255, 0.5);
+    background: transparent;
+    border: 1px solid rgba(100, 181, 194, 0.2);
+    border-radius: 8px; padding: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.maze-settings-close:active { background: rgba(100, 181, 194, 0.1); }

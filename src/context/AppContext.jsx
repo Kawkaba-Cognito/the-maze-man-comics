@@ -16,6 +16,7 @@ export function AppProvider({ children }) {
   const [currentLang, setCurrentLang] = useState('en');
   const [activeTab, setActiveTab] = useState('home');
   const [mazeVisible, setMazeVisible] = useState(false);
+  const [mazeEntryPending, setMazeEntryPending] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [tipOpen, setTipOpen] = useState(false);
   const [profileData, setProfileData] = useState(DEFAULT_PROFILE);
@@ -105,15 +106,36 @@ export function AppProvider({ children }) {
     setActiveTab(tabId);
   }, [playSfx, stopSpeech]);
 
-  const enterMaze = useCallback(() => {
+  const requestMazeEntry = useCallback(() => {
     playSfx('click');
     stopSpeech();
-    if (typeof window.BABYLON === 'undefined') {
-      alert('Requires internet connection to load 3D Engine.');
+
+    // If Babylon already loaded, enter immediately
+    if (typeof window.BABYLON !== 'undefined') {
+      setMazeEntryPending(true);
       return;
     }
-    setMazeVisible(true);
+
+    // Dynamically load Babylon.js only when needed
+    setMazeEntryPending(true); // show transition overlay immediately
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/babylonjs@9.3.0/babylon.js';
+    script.integrity = 'sha384-njRDUHF4B9J1R9UM37SngP7eFHJLRAgxTwnC1OfT4w10QPKaL4VTUUDZamQYcpQn';
+    script.crossOrigin = 'anonymous';
+    script.onload = () => {
+      // Script loaded — enterMaze will fire after the 4s transition
+    };
+    script.onerror = () => {
+      setMazeEntryPending(false);
+      alert('Requires internet connection to load 3D Engine.');
+    };
+    document.head.appendChild(script);
   }, [playSfx, stopSpeech]);
+
+  const enterMaze = useCallback(() => {
+    setMazeEntryPending(false);
+    setMazeVisible(true);
+  }, []);
 
   const exitMaze = useCallback(() => {
     playSfx('click');
@@ -141,9 +163,9 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      globalXP, currentLang, activeTab, mazeVisible,
+      globalXP, currentLang, activeTab, mazeVisible, mazeEntryPending,
       paywallOpen, tipOpen, profileData, comicsRead,
-      updateXP, toggleLang, switchTab, enterMaze, exitMaze,
+      updateXP, toggleLang, switchTab, requestMazeEntry, enterMaze, exitMaze,
       playSfx, stopSpeech, saveProfile, incrementComicsRead,
       setProfileData,
       openPaywall: () => { playSfx('click'); setPaywallOpen(true); },

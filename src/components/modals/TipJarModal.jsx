@@ -12,7 +12,7 @@ export default function TipJarModal() {
       <div className="tip-card">
         <button className="tip-card-close" onClick={closeTip}>✕</button>
         <div style={{fontSize:'2.5em',marginBottom:'8px'}}>☕</div>
-        <div style={{fontFamily:"'Bangers',cursive",fontSize:'1.8em',letterSpacing:'2px',marginBottom:'6px'}}>SUPPORT ELIE</div>
+        <div style={{fontFamily:"'Bangers',cursive",fontSize:'1.8em',letterSpacing:'2px',marginBottom:'6px'}}>SUPPORT MAZE MAN</div>
         <p style={{fontSize:'0.9em',color:'#555',marginBottom:'4px'}}>Buy a coffee to keep The Maze Man running!</p>
         <div className="tip-amounts">
           <div className="tip-amount" onClick={() => tipAmount(2)}>☕ $2</div>
