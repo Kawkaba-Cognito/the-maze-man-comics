@@ -1,10 +1,12 @@
+const base = import.meta.env.BASE_URL;
+
 export const COMICS_DATA = [
   {
     id: 'ep1', vol: 'EP.01', title: 'PROBLEM SOLVING',
     cat: 'cognitive', catLabel: 'Cognitive Psych',
     icon: '🧩', bg: '#b8c0ff', free: true,
-    type: 'game', url: './episode-1-problem-solving.html',
-    cover: './Assets/cover_art.jpg', pages: []
+    type: 'game', url: `${base}episode-1-problem-solving.html`,
+    cover: `${base}Assets/cover_art.jpg`, pages: []
   },
 ];
 

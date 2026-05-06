@@ -81,9 +81,21 @@ export default function HomeScreen() {
           <span className="comic-cover-title" dangerouslySetInnerHTML={{__html: comicTitles[1]}} />
           <div className="comic-barcode"></div>
         </div>
-        <div className="comic-square cognitive" onClick={() => { window.location.href = '/episode-1-problem-solving.html'; }}>
+        <div
+          className="comic-square cognitive"
+          onClick={() => {
+            window.location.href = `${import.meta.env.BASE_URL}episode-1-problem-solving.html`;
+          }}
+        >
           <div className="issue-badge">EP.01</div>
-          <div className="comic-cover-art" style={{backgroundImage:"url('/Assets/cover_art.jpg')",backgroundSize:'cover',backgroundPosition:'center'}}></div>
+          <div
+            className="comic-cover-art"
+            style={{
+              backgroundImage: `url('${import.meta.env.BASE_URL}Assets/cover_art.jpg')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          />
           <span className="comic-cover-title" dangerouslySetInnerHTML={{__html: comicTitles[2]}} />
           <div className="comic-barcode"></div>
         </div>

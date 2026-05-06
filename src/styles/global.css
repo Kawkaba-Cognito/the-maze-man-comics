@@ -10,7 +10,7 @@ body { overflow: hidden; min-height: 100dvh; background-color: #1a0b2e; }
     /* Stack: dark overlay on top, then the background image */
     background-image:
         linear-gradient(rgba(10, 4, 30, 0.55), rgba(10, 4, 30, 0.55)),
-        url('/Assets/Homepagebackground.png.png');
+        var(--bg-homepage-url, url('/Assets/Homepagebackground.png.png'));
     background-size: cover;
     background-position: center top;
     background-attachment: scroll;
