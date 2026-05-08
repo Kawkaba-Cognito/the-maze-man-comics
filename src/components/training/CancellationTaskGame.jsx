@@ -22,8 +22,11 @@ import {
   FREE_SESSION_CAP_SEC,
   freeClearBonusSec,
   freeTimeDrainMultiplier,
+  freeTapPoints,
+  freeRoundClearPoints,
+  freeWrongTapPenalty,
 } from './focusQuestData';
-import { PALETTE, DOMAIN_COLOR } from './trainingData';
+import { PALETTE } from './trainingData';
 import { IconBack } from './TrainingIcons';
 import FocusQuestTutorial, {
   buildTutorialQueueFor,
@@ -31,7 +34,6 @@ import FocusQuestTutorial, {
 } from './FocusQuestTutorial';
 
 const TR = PALETTE;
-const ATT = DOMAIN_COLOR.attention;
 
 function fqTrainingChromeBtn() {
   return {
@@ -50,88 +52,75 @@ function fqTrainingChromeBtn() {
   };
 }
 
-/** Same layered atmosphere as Training / RadialMazeHub (scoped pattern id). */
-function FqTrainingBackdrop({ patternId }) {
-  const p = `url(#${patternId})`;
+/** Menu chrome for attention hub on cream paper background */
+function fqTrainingChromeBtnPaper() {
+  return {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    border: '1px solid rgba(107, 90, 72, 0.38)',
+    background: 'linear-gradient(180deg, rgba(255, 252, 248, 0.98) 0%, rgba(245, 238, 230, 0.99) 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#3a3228',
+    cursor: 'pointer',
+    boxShadow:
+      '0 2px 10px rgba(45, 45, 40, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.65) inset',
+    flexShrink: 0,
+  };
+}
+
+/** Light attention hub: cream asset bg handled in CSS; full-page faint maze strokes */
+function FqAttentionHubBackdrop() {
+  const uid = React.useId().replace(/:/g, '');
+  const mazePat = `ct-fq-attn-mz-${uid}`;
   return (
-    <>
-      <div
-        className="ct-fq-tr-bg"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: `radial-gradient(ellipse 420px 520px at 50% 42%, ${TR.accent}24 0%, transparent 70%)`,
-          zIndex: 1,
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          top: -80,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 300,
-          height: 180,
-          background: `radial-gradient(ellipse, ${TR.accent}40 0%, transparent 65%)`,
-          zIndex: 1,
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: `radial-gradient(ellipse 600px 800px at 50% 50%, transparent 40%, ${TR.bg} 100%)`,
-          zIndex: 2,
-          pointerEvents: 'none',
-        }}
-      />
+    <div
+      className="ct-fq-attn-hub-backdrop"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 1,
+        pointerEvents: 'none',
+        overflow: 'hidden',
+      }}
+      aria-hidden="true"
+    >
       <svg
         width="100%"
         height="100%"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          opacity: 0.07,
-          pointerEvents: 'none',
-          zIndex: 0,
-        }}
-        aria-hidden="true"
+        preserveAspectRatio="none"
+        style={{ position: 'absolute', inset: 0, display: 'block' }}
       >
         <defs>
           <pattern
-            id={patternId}
-            x="0"
-            y="0"
-            width="100"
-            height="100"
+            id={mazePat}
+            width="200"
+            height="200"
             patternUnits="userSpaceOnUse"
           >
             <path
-              d="M20 20v20M20 20l10 10-10 10"
-              stroke={TR.accent}
-              strokeWidth="1"
+              d="M 0 52 L 92 52 L 92 138 L 168 138 L 168 0 M 132 52 L 132 200 M 44 94 L 44 200 M 0 166 L 78 166 M 200 84 L 136 84 L 136 200 M 200 184 L 96 184 L 96 108"
               fill="none"
+              stroke="rgba(92, 78, 62, 0.11)"
+              strokeWidth="1.15"
+              strokeLinecap="square"
+              strokeLinejoin="miter"
             />
             <path
-              d="M60 24l6 10-6 10M60 24v20"
-              stroke={TR.accent}
-              strokeWidth="1"
+              d="M 200 28 L 178 28 L 178 74 M 58 0 L 58 38 L 116 38 M 0 118 L 28 118 L 28 78 M 154 156 L 154 200 M 72 124 L 124 124 L 124 76"
               fill="none"
+              stroke="rgba(118, 102, 82, 0.075)"
+              strokeWidth="0.95"
+              strokeLinecap="square"
+              strokeLinejoin="miter"
             />
-            <path
-              d="M40 70h10M45 65v10"
-              stroke={TR.accent}
-              strokeWidth="1"
-              fill="none"
-            />
-            <circle cx="78" cy="78" r="5" stroke={TR.accent} strokeWidth="1" fill="none" />
           </pattern>
         </defs>
-        <rect width="100%" height="100%" fill={p} />
+        <rect width="100%" height="100%" fill={`url(#${mazePat})`} />
       </svg>
-    </>
+    </div>
   );
 }
 
@@ -142,7 +131,10 @@ function FqTrainingMenuBar({
   hubSpaced = false,
   onReplayTutorial,
   replayHint,
+  paperChrome = false,
 }) {
+  const chrome = paperChrome ? fqTrainingChromeBtnPaper : fqTrainingChromeBtn;
+  const iconC = paperChrome ? '#3a3228' : TR.text;
   return (
     <div
       className={`ct-fq-training-menubar${hubSpaced ? ' ct-fq-training-menubar--hub' : ''}`}
@@ -162,14 +154,14 @@ function FqTrainingMenuBar({
     >
       <button
         type="button"
-        style={fqTrainingChromeBtn()}
+        style={chrome()}
         onClick={() => {
           playSfx('click');
           onBack();
         }}
         aria-label="Back"
       >
-        <IconBack size={18} c={TR.text} />
+        <IconBack size={18} c={iconC} />
       </button>
       <div style={{ flex: 1, minWidth: 0, padding: '0 8px' }} role="presentation">
         {center}
@@ -178,11 +170,11 @@ function FqTrainingMenuBar({
         <button
           type="button"
           style={{
-            ...fqTrainingChromeBtn(),
+            ...chrome(),
             fontFamily: "'Cormorant Garamond', 'Cinzel', serif",
             fontSize: 18,
             fontWeight: 700,
-            color: TR.accent,
+            color: paperChrome ? '#8a5a18' : TR.accent,
           }}
           onClick={() => {
             playSfx('click');
@@ -245,12 +237,13 @@ function loadProfile() {
         tel: parsed.tel || [],
         done: parsed.done || {},
         freeBest: parsed.freeBest ?? 0,
+        freeBestScore: parsed.freeBestScore ?? 0,
       };
     }
   } catch {
     /* ignore */
   }
-  return { tel: [], done: {}, freeBest: 0 };
+  return { tel: [], done: {}, freeBest: 0, freeBestScore: 0 };
 }
 
 function saveProfile(p) {
@@ -274,459 +267,60 @@ const ShapeSvg = React.memo(function ShapeSvg({ shape, color, size = 40 }) {
   );
 });
 
-/** Deterministic PRNG for stable hub maze (same layout every load). */
-function fqMazeRng(seed) {
-  let s = seed >>> 0;
-  return () => {
-    s = Math.imul(s ^ (s << 13), 1597334677);
-    s = Math.imul(s ^ (s >>> 15), 3812015801);
-    return (s >>> 0) / 4294967296;
-  };
-}
-
-function fqShuffle(arr, rng) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-/** Polar cell midpoint in viewBox 0–100 (θ = 0 at top). */
-function fqPolarCellMid(CX, CY, rLo, rHi, s, S) {
-  const th = -Math.PI / 2 + ((s + 0.5) * 2 * Math.PI) / S;
-  const rm = (rLo + rHi) / 2;
-  return [CX + rm * Math.cos(th), CY + rm * Math.sin(th)];
-}
-
-/**
- * Circular polar maze (rings × sectors): real DFS carve, arcs + radials.
- * Outer radius fits inside the hub disc; interior is annular maze (not a square grid).
- */
-function buildPolarFocusQuestHubMaze() {
-  const CX = 50;
-  const CY = 50;
-  const S = 16;
-  const RINGS = 7;
-  const rInner = 8.5;
-  const rOuter = 45.5;
-  const rB = Array.from({ length: RINGS + 1 }, (_, k) => rInner + (k * (rOuter - rInner)) / RINGS);
-
-  const radialWall = Array.from({ length: RINGS }, () => Array(S).fill(true));
-  const downWall = Array.from({ length: RINGS - 1 }, () => Array(S).fill(true));
-  const vis = Array.from({ length: RINGS }, () => Array(S).fill(false));
-
-  const rng = fqMazeRng(0x4d617a65);
-  const ang = (sector) => -Math.PI / 2 + (sector * 2 * Math.PI) / S;
-  const polar = (rad, th) => [CX + rad * Math.cos(th), CY + rad * Math.sin(th)];
-
-  function dfs(ring, s) {
-    vis[ring][s] = true;
-    const opts = fqShuffle(
-      [
-        [ring, (s + 1) % S, 'cw'],
-        [ring, (s - 1 + S) % S, 'ccw'],
-        [ring + 1, s, 'out'],
-        [ring - 1, s, 'in'],
-      ],
-      rng,
-    );
-    for (const [nr, ns, d] of opts) {
-      if (nr < 0 || nr >= RINGS || vis[nr][ns]) continue;
-      if (d === 'cw' && radialWall[ring][s]) {
-        radialWall[ring][s] = false;
-        dfs(nr, ns);
-      } else if (d === 'ccw' && radialWall[ring][(s - 1 + S) % S]) {
-        radialWall[ring][(s - 1 + S) % S] = false;
-        dfs(nr, ns);
-      } else if (d === 'out' && ring < RINGS - 1 && downWall[ring][s]) {
-        downWall[ring][s] = false;
-        dfs(nr, ns);
-      } else if (d === 'in' && ring > 0 && downWall[ring - 1][s]) {
-        downWall[ring - 1][s] = false;
-        dfs(nr, ns);
-      }
-    }
-  }
-  dfs(0, 0);
-
-  function neighbors(ring, s) {
-    const o = [];
-    if (!radialWall[ring][s]) o.push([ring, (s + 1) % S]);
-    const sp = (s - 1 + S) % S;
-    if (!radialWall[ring][sp]) o.push([ring, sp]);
-    if (ring < RINGS - 1 && !downWall[ring][s]) o.push([ring + 1, s]);
-    if (ring > 0 && !downWall[ring - 1][s]) o.push([ring - 1, s]);
-    return o;
-  }
-
-  const SR = 0;
-  const SS = 0;
-  const G1 = { ring: RINGS - 1, s: Math.floor(S / 4) };
-  const G2 = { ring: RINGS - 1, s: Math.floor((3 * S) / 4) };
-
-  function bfsPath(gr, gs) {
-    const prev = new Map();
-    const key = (a, b) => `${a},${b}`;
-    const q = [[SR, SS]];
-    prev.set(key(SR, SS), null);
-    while (q.length) {
-      const [r, s] = q.shift();
-      if (r === gr && s === gs) break;
-      for (const [nr, ns] of neighbors(r, s)) {
-        const k = key(nr, ns);
-        if (prev.has(k)) continue;
-        prev.set(k, [r, s]);
-        q.push([nr, ns]);
-      }
-    }
-    if (!prev.has(key(gr, gs))) return null;
-    const chain = [];
-    let cur = [gr, gs];
-    while (cur) {
-      chain.push(cur);
-      cur = prev.get(key(cur[0], cur[1]));
-    }
-    chain.reverse();
-    return chain;
-  }
-
-  const chain1 = bfsPath(G1.ring, G1.s) || [[SR, SS]];
-  const chain2 = bfsPath(G2.ring, G2.s) || [[SR, SS]];
-
-  function chainToPathD(chain) {
-    if (!chain.length) return '';
-    const [x0, y0] = fqPolarCellMid(CX, CY, rB[chain[0][0]], rB[chain[0][0] + 1], chain[0][1], S);
-    let d = `M ${x0.toFixed(2)} ${y0.toFixed(2)}`;
-    for (let i = 1; i < chain.length; i++) {
-      const [x, y] = fqPolarCellMid(CX, CY, rB[chain[i][0]], rB[chain[i][0] + 1], chain[i][1], S);
-      d += ` L ${x.toFixed(2)} ${y.toFixed(2)}`;
-    }
-    return d;
-  }
-
-  let fork = 0;
-  for (; fork < chain1.length && fork < chain2.length; fork++) {
-    if (chain1[fork][0] !== chain2[fork][0] || chain1[fork][1] !== chain2[fork][1]) break;
-  }
-  if (fork === 0) fork = 1;
-  const trunkD = chainToPathD(chain1.slice(0, fork));
-  const armLeftD = chainToPathD(chain1.slice(fork - 1));
-  const armRightD = chainToPathD(chain2.slice(fork - 1));
-
-  let wallPathD = '';
-  for (let r = 0; r < RINGS; r++) {
-    for (let s = 0; s < S; s++) {
-      if (radialWall[r][s]) {
-        const th = ang(s + 1);
-        const [x1, y1] = polar(rB[r], th);
-        const [x2, y2] = polar(rB[r + 1], th);
-        wallPathD += `M${x1.toFixed(2)},${y1.toFixed(2)} L${x2.toFixed(2)},${y2.toFixed(2)} `;
-      }
-    }
-  }
-  for (let r = 0; r < RINGS - 1; r++) {
-    for (let s = 0; s < S; s++) {
-      if (downWall[r][s]) {
-        const rad = rB[r + 1];
-        const a0 = ang(s);
-        const a1 = ang(s + 1);
-        const [x1, y1] = polar(rad, a0);
-        const [x2, y2] = polar(rad, a1);
-        wallPathD += `M${x1.toFixed(2)},${y1.toFixed(2)} A${rad.toFixed(3)},${rad.toFixed(3)} 0 0 1 ${x2.toFixed(2)},${y2.toFixed(2)} `;
-      }
-    }
-  }
-  for (let s = 0; s < S; s++) {
-    const rad = rB[RINGS];
-    const a0 = ang(s);
-    const a1 = ang(s + 1);
-    const [x1, y1] = polar(rad, a0);
-    const [x2, y2] = polar(rad, a1);
-    wallPathD += `M${x1.toFixed(2)},${y1.toFixed(2)} A${rad.toFixed(3)},${rad.toFixed(3)} 0 0 1 ${x2.toFixed(2)},${y2.toFixed(2)} `;
-  }
-
-  function stripLeadingMove(d) {
-    return d.replace(/^M\s*[\d.-]+\s+[\d.-]+\s*/, '').trim();
-  }
-
-  return {
-    wallPathD: wallPathD.trim(),
-    armLeftD,
-    armRightD,
-    trunkD,
-    stripLeadingMove,
-    innerHubR: rInner,
-    outerR: rOuter,
-  };
-}
-
-const FQ_HUB_MAZE = buildPolarFocusQuestHubMaze();
-
-/** Orbit button positions on rim (deg from top, clockwise). */
-function fqHubOrbitPos(degFromTop) {
-  // Orbit radius in % of the disc. On phones the disc is at most 90vw and the
-  // floater nodes are min(120px, 32vw); at the original R=48 the side nodes
-  // (120°/240°) overflow the viewport. Tighten R on small screens so nodes
-  // always sit inside the disc on mobile while keeping the decorative outer
-  // orbit on tablets and desktops.
-  const w = typeof window !== 'undefined' ? window.innerWidth : 768;
-  const ORBIT_R = w < 520 ? 40 : 48;
-  const rad = (degFromTop * Math.PI) / 180;
-  const x = 50 + ORBIT_R * Math.sin(rad);
-  const y = 50 - ORBIT_R * Math.cos(rad);
-  return {
-    left: `${Math.round(x * 100) / 100}%`,
-    top: `${Math.round(y * 100) / 100}%`,
-  };
-}
-
-function FqHubModeMap({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
-  const uid = React.useId().replace(/:/g, '');
-  const pathGlowId = `fq-pg-${uid}`;
-  const gradGold = `fq-gg-${uid}`;
-  const wallGrad = `fq-wg-${uid}`;
-  const polarBg = `fq-pbg-${uid}`;
-  const bhGrad = `fq-bh-${uid}`;
-  const { wallPathD, armLeftD, armRightD, trunkD, stripLeadingMove, innerHubR } = FQ_HUB_MAZE;
-
-  const solLeft = `${trunkD} ${stripLeadingMove(armLeftD)}`.trim();
-  const solRight = `${trunkD} ${stripLeadingMove(armRightD)}`.trim();
-
-  const posFree = fqHubOrbitPos(0);
-  const posLevels = fqHubOrbitPos(120);
-  const posChallenge = fqHubOrbitPos(240);
-
+/** Light attention hub — three mode rows (no circular maze). */
+function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
+  const items = [
+    {
+      k: 'free',
+      ic: '♾️',
+      lb: t.freeMode,
+      hint: t.hubNodeFreeHint,
+      on: onFree,
+      mod: 'ct-fq-attn-mode--free',
+    },
+    {
+      k: 'levels',
+      ic: '🎯',
+      lb: t.levelMode,
+      hint: t.hubNodeLevelsHint,
+      on: onLevels,
+      mod: 'ct-fq-attn-mode--levels',
+    },
+    {
+      k: 'chal',
+      ic: '⚔️',
+      lb: t.challengeMode,
+      hint: t.hubNodeChallengeHint,
+      on: onChallenge,
+      mod: 'ct-fq-attn-mode--chal',
+    },
+  ];
   return (
-    <div className="ct-fq-hub-disc-shell">
-      <div className="ct-fq-hub-orbit-stage">
-        <div className="ct-fq-hub-disc-stack">
-          <div className="ct-fq-hub-disc-cavity">
-            <div
-              className="ct-fq-hub-maze ct-fq-hub-maze-training ct-fq-hub-maze--real ct-fq-hub-maze--disc"
-              dir="ltr"
-              aria-label={t.hubMapAria}
-            >
-              <svg
-                className="ct-fq-hub-maze-svg ct-fq-hub-maze-svg--real ct-fq-hub-maze-svg--polar"
-                viewBox="0 0 100 100"
-                aria-hidden="true"
-              >
-                <defs>
-                  <radialGradient id={polarBg} cx="50%" cy="50%" r="52%">
-                    <stop offset="35%" stopColor="#1a0f09" />
-                    <stop offset="72%" stopColor="#0c0604" />
-                    <stop offset="100%" stopColor="#050302" />
-                  </radialGradient>
-                  <radialGradient id={bhGrad} cx="38%" cy="32%" r="72%">
-                    <stop offset="0%" stopColor="#000000" />
-                    <stop offset="42%" stopColor="#050201" />
-                    <stop offset="68%" stopColor="#0c0705" />
-                    <stop offset="100%" stopColor="#120c09" />
-                  </radialGradient>
-                  <linearGradient id={wallGrad} x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#2a1810" />
-                    <stop offset="45%" stopColor="#1a0e08" />
-                    <stop offset="100%" stopColor="#3d2818" />
-                  </linearGradient>
-                  <linearGradient id={gradGold} x1="18" y1="8" x2="82" y2="88" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#fff6d8" />
-                    <stop offset="35%" stopColor={ATT} />
-                    <stop offset="100%" stopColor="#9a7020" />
-                  </linearGradient>
-                  <filter id={pathGlowId} x="-80%" y="-80%" width="260%" height="260%">
-                    <feGaussianBlur stdDeviation="1.4" result="blur" />
-                    <feMerge>
-                      <feMergeNode in="blur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-                <circle cx="50" cy="50" r="50" fill={`url(#${polarBg})`} />
-                <circle cx="50" cy="50" r={innerHubR} fill={`url(#${bhGrad})`} />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r={innerHubR}
-                  fill="none"
-                  stroke="rgba(232,172,78,0.22)"
-                  strokeWidth="0.45"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r={(Number(innerHubR) * 0.92).toFixed(2)}
-                  fill="none"
-                  stroke="rgba(255,200,120,0.12)"
-                  strokeWidth="0.28"
-                />
-                <path
-                  d={wallPathD}
-                  fill="none"
-                  stroke={`url(#${wallGrad})`}
-                  strokeWidth="1.35"
-                  strokeLinecap="square"
-                  strokeLinejoin="miter"
-                  className="ct-fq-hub-wall-depth"
-                />
-                <path
-                  d={wallPathD}
-                  fill="none"
-                  stroke="rgba(0,0,0,0.5)"
-                  strokeWidth="1.65"
-                  strokeLinecap="square"
-                  strokeLinejoin="round"
-                  opacity="0.85"
-                  transform="translate(0.12 0.14)"
-                />
-                <path
-                  d={wallPathD}
-                  fill="none"
-                  stroke={ATT}
-                  strokeWidth="0.25"
-                  strokeLinecap="square"
-                  opacity="0.26"
-                />
-                <path
-                  d={trunkD}
-                  fill="none"
-                  stroke="rgba(0,0,0,0.55)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d={solLeft}
-                  fill="none"
-                  stroke={`url(#${gradGold})`}
-                  strokeWidth="1"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  filter={`url(#${pathGlowId})`}
-                  className="ct-fq-hub-sol-branch ct-fq-hub-sol-left"
-                />
-                <path
-                  d={solRight}
-                  fill="none"
-                  stroke={`url(#${gradGold})`}
-                  strokeWidth="1"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  filter={`url(#${pathGlowId})`}
-                  className="ct-fq-hub-sol-branch ct-fq-hub-sol-right"
-                />
-                <path
-                  d={solLeft}
-                  fill="none"
-                  stroke="#fff9e8"
-                  strokeWidth="0.28"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  opacity="0.38"
-                />
-                <path
-                  d={solRight}
-                  fill="none"
-                  stroke="#fff9e8"
-                  strokeWidth="0.28"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  opacity="0.38"
-                />
-                <path
-                  d={solLeft}
-                  fill="none"
-                  stroke={ATT}
-                  strokeWidth="0.4"
-                  strokeDasharray="0.5 2.5"
-                  strokeLinecap="round"
-                  opacity="0.42"
-                  className="ct-fq-hub-path-flow"
-                />
-                <path
-                  d={solRight}
-                  fill="none"
-                  stroke={ATT}
-                  strokeWidth="0.4"
-                  strokeDasharray="0.5 2.5"
-                  strokeLinecap="round"
-                  opacity="0.42"
-                  className="ct-fq-hub-path-flow ct-fq-hub-path-flow-d"
-                />
-                <g className="ct-fq-hub-attn-sig" transform="translate(50 50)" pointerEvents="none">
-                  <circle r="6.4" fill="none" stroke="#e8ac4e" strokeWidth="0.42" opacity="0.92" />
-                  <circle r="3.9" fill="none" stroke="#e8ac4e" strokeWidth="0.32" opacity="0.78" />
-                  <circle r="1.2" fill="#e8ac4e" opacity="0.95" />
-                  <path
-                    d="M0 -7.4 L0 -5.6 M7.4 0 L5.6 0 M0 7.4 L0 5.6 M-7.4 0 L-5.6 0"
-                    fill="none"
-                    stroke="#e8ac4e"
-                    strokeWidth="0.48"
-                    strokeLinecap="round"
-                    opacity="0.88"
-                  />
-                </g>
-              </svg>
-            </div>
-          </div>
-        </div>
-
+    <div className="ct-fq-attn-modes" role="group" aria-label={t.hubMapAria}>
+      {items.map((m) => (
         <button
+          key={m.k}
           type="button"
-          className="ct-fq-hub-node ct-fq-hub-node-training ct-fq-hub-node-free ct-fq-hub-orbit-floater"
-          style={posFree}
+          className={`ct-fq-attn-mode ${m.mod}`}
           onClick={() => {
             playSfx('click');
-            onFree();
+            m.on();
           }}
         >
-          <span className="ct-fq-hub-orbit-ring" aria-hidden="true" />
-          <span className="ct-fq-hub-node-ic" aria-hidden="true">
-            ♾️
+          <span className="ct-fq-attn-mode-ic" aria-hidden="true">
+            {m.ic}
           </span>
-          <span className="ct-fq-hub-node-lb">{t.freeMode}</span>
-          <span className={`ct-fq-hub-node-hint${isAr ? ' ct-fq-hub-node-hint-ar' : ''}`}>
-            {t.hubNodeFreeHint}
+          <span className="ct-fq-attn-mode-body">
+            <span className="ct-fq-attn-mode-lb">{m.lb}</span>
+            <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>
+              {m.hint}
+            </span>
           </span>
-        </button>
-        <button
-          type="button"
-          className="ct-fq-hub-node ct-fq-hub-node-training ct-fq-hub-node-levels ct-fq-hub-orbit-floater"
-          style={posLevels}
-          onClick={() => {
-            playSfx('click');
-            onLevels();
-          }}
-        >
-          <span className="ct-fq-hub-orbit-ring" aria-hidden="true" />
-          <span className="ct-fq-hub-node-ic" aria-hidden="true">
-            🎯
-          </span>
-          <span className="ct-fq-hub-node-lb">{t.levelMode}</span>
-          <span className={`ct-fq-hub-node-hint${isAr ? ' ct-fq-hub-node-hint-ar' : ''}`}>
-            {t.hubNodeLevelsHint}
+          <span className="ct-fq-attn-mode-chev" aria-hidden="true">
+            ›
           </span>
         </button>
-        <button
-          type="button"
-          className="ct-fq-hub-node ct-fq-hub-node-training ct-fq-hub-node-chal ct-fq-hub-orbit-floater"
-          style={posChallenge}
-          onClick={() => {
-            playSfx('click');
-            onChallenge();
-          }}
-        >
-          <span className="ct-fq-hub-orbit-ring" aria-hidden="true" />
-          <span className="ct-fq-hub-node-ic" aria-hidden="true">
-            ⚔️
-          </span>
-          <span className="ct-fq-hub-node-lb">{t.challengeMode}</span>
-          <span className={`ct-fq-hub-node-hint${isAr ? ' ct-fq-hub-node-hint-ar' : ''}`}>
-            {t.hubNodeChallengeHint}
-          </span>
-        </button>
-      </div>
+      ))}
     </div>
   );
 }
@@ -763,6 +357,7 @@ function CtLiveHud({
   lvlLabel,
   onPause,
   onQuit,
+  freeScore,
 }) {
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -819,6 +414,12 @@ function CtLiveHud({
           <div className="ct-fq-gv sm">{lvlLabel}</div>
           <div className="ct-fq-gl">{t.lvl}</div>
         </div>
+        {freeScore != null && (
+          <div className="ct-fq-gs">
+            <div className="ct-fq-gv">{freeScore}</div>
+            <div className="ct-fq-gl">{t.score}</div>
+          </div>
+        )}
         <div className="ct-fq-g-actions">
           <button type="button" className="ct-fq-mini" onClick={onPause}>
             {t.pause}
@@ -855,13 +456,20 @@ const UI = {
     title: 'CANCELLATION',
     subtitle: 'Selective attention & inhibition',
     freeMode: '♾️ Free mode',
-    freeMenuSub: 'One clock for the whole run · Clear rounds to gain time · 3 strikes ends the run',
+    freeMenuSub:
+      'One session clock · small time refill each clear · 3 strikes end the run · score from taps, clears & streaks',
     freeStrikes: 'Strikes',
     freeLvlLabel: (tier, lv) => `Free · ${tier} ${lv}`,
     freeGameOver: 'Run ended',
     freeRoundsCleared: (n) => `Rounds cleared: ${n}`,
-    freeBest: (n) => `Best: ${n}`,
+    freeBest: (n) => `Best clears: ${n}`,
+    freeBestScoreLine: (n) => `Best score: ${n}`,
     freePlayAgain: 'Play again',
+    freeIntroTitle: 'Free mode',
+    freeIntroBody:
+      'One session timer for your whole run. Clear rounds to earn a little extra time. Score from correct taps and full clears — streaks boost the clear bonus. Three wrong taps end the run.',
+    freeIntroReady: 'Ready',
+    score: 'Score',
     hubChamberKicker: '⟡ FOCUS QUEST ⟡',
     hubAttentionWord: 'Attention',
     hubTrainingTag: 'training',
@@ -869,7 +477,7 @@ const UI = {
     resultsLevelRetryTitle: 'Try again',
     resultsChalTitle: 'Challenge results',
     hubMapAria: 'Modes map — choose a path',
-    hubNodeFreeHint: 'Session timer · bonus per clear',
+    hubNodeFreeHint: 'Tight timer · score · streak clears',
     hubNodeLevelsHint: 'Tier grid · unlock 20',
     hubNodeChallengeHint: 'Same maze · pass & play',
     levelMode: '🎯 Level mode',
@@ -925,13 +533,20 @@ const UI = {
     title: 'مهمة الإلغاء',
     subtitle: 'انتباه انتقائي وكبح استجابي',
     freeMode: '♾️ وضع حر',
-    freeMenuSub: 'وقت واحد للجولة كاملة · إكمال الجولات يضيف وقتاً · ٣ أخطاء تنهي المحاولة',
+    freeMenuSub:
+      'مؤقت واحد للجولة · وقت قليل جداً بعد كل إكمال · ٣ أخطاء تنهي المحاولة · النقاط للمسات الصحيحة والسلسلة',
     freeStrikes: 'الأخطاء',
     freeLvlLabel: (tier, lv) => `حر · ${tier} ${lv}`,
     freeGameOver: 'انتهت المحاولة',
     freeRoundsCleared: (n) => `جولات ناجحة: ${n}`,
-    freeBest: (n) => `الأفضل: ${n}`,
+    freeBest: (n) => `أفضل إكمال: ${n}`,
+    freeBestScoreLine: (n) => `أفضل نقاط: ${n}`,
     freePlayAgain: 'العب مجددًا',
+    freeIntroTitle: 'وضع حر',
+    freeIntroBody:
+      'مؤقت واحد يدوّر معك طوال المحاولة. أكمل الجولات لتربح وقتاً إضافياً قليلاً. اجمع النقاط باللمسات الصحيحة وعند إكمال الجولة — السلسلة ترفع مكافأة الإكمال. ثلاثة أخطاء تنهي المحاولة.',
+    freeIntroReady: 'جاهز',
+    score: 'نقاط',
     hubChamberKicker: '⟡ مهمة التركيز ⟡',
     hubAttentionWord: 'الانتباه',
     hubTrainingTag: 'تدريب',
@@ -939,7 +554,7 @@ const UI = {
     resultsLevelRetryTitle: 'حاول مجددًا',
     resultsChalTitle: 'نتائج التحدي',
     hubMapAria: 'خريطة الأوضاع — اختر مسارًا',
-    hubNodeFreeHint: 'مؤقت مستمر · مكافأة وقت عند النجاح',
+    hubNodeFreeHint: 'مؤقت ضيق · نقاط · سلسلة الإكمال',
     hubNodeLevelsHint: 'شبكة · ٢٠ مستوى',
     hubNodeChallengeHint: 'نفس المتاهة · مع الأصدقاء',
     levelMode: '🎯 وضع المستويات',
@@ -997,7 +612,6 @@ export default function CancellationTaskGame({ onBack }) {
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
   const settings = loadGameSettings();
-  const trainingPatternId = React.useId().replace(/:/g, '');
 
   const [profile, setProfile] = useState(() => loadProfile());
   const [phase, setPhase] = useState('hub');
@@ -1045,6 +659,9 @@ export default function CancellationTaskGame({ onBack }) {
   const freeRoundsWonRef = useRef(0);
   const freeStrikesRef = useRef(0);
   const [freeStrikes, setFreeStrikes] = useState(0);
+  const [freeScore, setFreeScore] = useState(0);
+  const freeScoreRef = useRef(0);
+  const freeStreakRef = useRef(0);
   const [gridMetrics, setGridMetrics] = useState({ cell: 32, gap: 3, pad: 6 });
   const shakeTimerRef = useRef(0);
   const [tutorialQueue, setTutorialQueue] = useState([]);
@@ -1101,7 +718,6 @@ export default function CancellationTaskGame({ onBack }) {
     async (stageIndex) => {
       try {
         setPhase('play');
-        setPlayStep('idle');
         setCdShow(false);
         const r = prepareFreeRound(stageIndex);
         roundRef.current = r;
@@ -1118,9 +734,14 @@ export default function CancellationTaskGame({ onBack }) {
         pendingPenaltyRef.current = 0;
         const s = loadGameSettings();
         if (!s.countdown) {
-          setPlayStep('running');
+          // Must not set idle→running in the same sync turn: React batches to a
+          // no-op while playStep stays 'running', so the timer effect never
+          // re-runs after stopTimer() cleared runRef (frozen clock on round 2+).
+          setPlayStep('idle');
+          queueMicrotask(() => setPlayStep('running'));
           return;
         }
+        setPlayStep('idle');
         setCdShow(true);
         for (let i = 3; i > 0; i--) {
           setCdVal(i);
@@ -1143,9 +764,17 @@ export default function CancellationTaskGame({ onBack }) {
     freeStageRef.current = 0;
     freeRoundsWonRef.current = 0;
     freeStrikesRef.current = 0;
+    freeScoreRef.current = 0;
+    freeStreakRef.current = 0;
     setFreeStrikes(0);
+    setFreeScore(0);
+    setPhase('freeIntro');
+  }, []);
+
+  const onFreeIntroReady = useCallback(() => {
+    playSfx('click');
     void beginFreeRoundAtStage(0);
-  }, [beginFreeRoundAtStage]);
+  }, [playSfx, beginFreeRoundAtStage]);
 
   const endRound = useCallback(
     (won) => {
@@ -1219,6 +848,10 @@ export default function CancellationTaskGame({ onBack }) {
         if (won) {
           playSfx('win');
           const completed = r.freeStage ?? 0;
+          freeStreakRef.current += 1;
+          const clearPts = freeRoundClearPoints(r.tlim, freeStreakRef.current);
+          freeScoreRef.current += clearPts;
+          setFreeScore(freeScoreRef.current);
           const bonus = freeClearBonusSec(completed, r.tlim);
           tlRef.current = Math.min(FREE_SESSION_CAP_SEC, tlRef.current + bonus);
           tlimRef.current = Math.max(tlimRef.current, tlRef.current);
@@ -1229,14 +862,22 @@ export default function CancellationTaskGame({ onBack }) {
         } else {
           playSfx('error');
           const rw = freeRoundsWonRef.current;
+          const runScore = freeScoreRef.current;
           setProfile((prev) => {
-            const prevB = prev.freeBest ?? 0;
-            if (rw <= prevB) return prev;
-            const p = { ...prev, freeBest: rw };
-            saveProfile(p);
-            return p;
+            let next = { ...prev };
+            let changed = false;
+            if (runScore > (prev.freeBestScore ?? 0)) {
+              next = { ...next, freeBestScore: runScore };
+              changed = true;
+            }
+            if (rw > (prev.freeBest ?? 0)) {
+              next = { ...next, freeBest: rw };
+              changed = true;
+            }
+            if (changed) saveProfile(next);
+            return changed ? next : prev;
           });
-          setLastResult({ type: 'free', roundsWon: rw, lastR: r });
+          setLastResult({ type: 'free', roundsWon: rw, score: runScore, lastR: r });
           setPhase('freeRes');
           setPlayStep('idle');
           setPauseOpen(false);
@@ -1303,32 +944,37 @@ export default function CancellationTaskGame({ onBack }) {
     const isDeadly = round.diff === 'deadly';
     let raf = 0;
     const measure = () => {
-      const vpH = window.visualViewport?.height ?? window.innerHeight;
-      const vpW = window.visualViewport?.width ?? window.innerWidth;
+      const vv = window.visualViewport;
+      const vpH = vv?.height ?? window.innerHeight;
+      const vpW = vv?.width ?? window.innerWidth;
       let fixed = 0;
       wrap.querySelectorAll('[data-fq-chrome]').forEach((el) => {
         fixed += el.getBoundingClientRect().height;
       });
-      fixed += 28;
-      // Compute the wrap's actual content width (excluding its own padding)
-      // and reserve a small overhead for the grid-outer and grid-inner
-      // padding inside it, so the rendered grid never overflows the wrap.
-      // Cap by 0.98·vpW as a viewport-edge safety net.
+      // Cushion for grid wrapper padding / rounding — keep small so cells use real space.
+      fixed += 12;
       const cs = window.getComputedStyle(wrap);
       const wrapPadX =
         (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
       const wrapBoundW = wrap.getBoundingClientRect().width || vpW;
-      const GRID_OUTER_INNER_OVERHEAD = 16;
+      const GRID_OUTER_INNER_OVERHEAD = 8;
       const availFromWrap = Math.max(
         120,
         Math.floor(wrapBoundW - wrapPadX - GRID_OUTER_INNER_OVERHEAD),
       );
-      const availW = Math.min(availFromWrap, Math.floor(vpW * 0.98));
-      const availRatio = isDeadly ? 0.86 : 0.8;
-      const availH = Math.floor(Math.min(vpH * availRatio, vpH - fixed));
+      const availW = Math.min(availFromWrap, Math.floor(vpW * 0.995));
+      // Use almost all space below measured HUD (visualViewport already omits mobile browser chrome).
+      const verticalReserve = 6;
+      const availH = Math.max(
+        isDeadly ? 72 : 64,
+        Math.min(
+          Math.floor(vpH - fixed - verticalReserve),
+          Math.floor(vpH * 0.99),
+        ),
+      );
       const square = Math.max(Math.min(availW, availH), isDeadly ? 72 : 64);
-      const gap = gridN >= 9 ? 2 : 3;
-      const INNER_PAD = 6;
+      const gap = gridN >= 7 ? 2 : 3;
+      const INNER_PAD = 4;
       const totalGap = gap * (gridN - 1);
       const minCell = gridN >= 10 ? (isDeadly ? 22 : 16) : 8;
       const cell = Math.max(
@@ -1343,8 +989,16 @@ export default function CancellationTaskGame({ onBack }) {
       raf = requestAnimationFrame(measure);
     });
     ro.observe(wrap);
+    const onVv = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measure);
+    };
+    window.visualViewport?.addEventListener('resize', onVv);
+    window.visualViewport?.addEventListener('scroll', onVv);
     return () => {
       cancelAnimationFrame(raf);
+      window.visualViewport?.removeEventListener('resize', onVv);
+      window.visualViewport?.removeEventListener('scroll', onVv);
       ro.disconnect();
     };
   }, [phase, round, cells.length]);
@@ -1389,7 +1043,7 @@ export default function CancellationTaskGame({ onBack }) {
   };
 
   const onCellTap = useCallback((idx) => {
-    if (playStep !== 'running' || pauseOpen) return;
+    if (playStep !== 'running' || pauseOpen || cdShow) return;
     const r = roundRef.current;
     if (!r) return;
     setCells((prev) => {
@@ -1398,7 +1052,7 @@ export default function CancellationTaskGame({ onBack }) {
       const now = performance.now();
       if (lastTapRef.current) tapsRef.current.push(now - lastTapRef.current);
       lastTapRef.current = now;
-      if (c.isT) {
+        if (c.isT) {
         playSfx('collect');
         const nextCells = prev.map((x, i) =>
           i === idx ? { ...x, tapped: true, feedback: 'ok' } : x,
@@ -1407,6 +1061,11 @@ export default function CancellationTaskGame({ onBack }) {
         const tappedTargets = nextCells.filter((x) => x.isT && x.tapped).length;
         talliesRef.current.found = tappedTargets;
         setFound(tappedTargets);
+        if (r.mode === 'free') {
+          const add = freeTapPoints(r.diff, r.freeStage ?? 0);
+          freeScoreRef.current += add;
+          queueMicrotask(() => setFreeScore(freeScoreRef.current));
+        }
         if (totalTargets > 0 && tappedTargets === totalTargets) {
           queueMicrotask(() => endRoundRef.current(true));
         }
@@ -1420,6 +1079,9 @@ export default function CancellationTaskGame({ onBack }) {
         const ns = freeStrikesRef.current + 1;
         freeStrikesRef.current = ns;
         setFreeStrikes(ns);
+        const pen = freeWrongTapPenalty(r.diff);
+        freeScoreRef.current = Math.max(0, freeScoreRef.current - pen);
+        queueMicrotask(() => setFreeScore(freeScoreRef.current));
         if (ns >= 3) {
           queueMicrotask(() => endRoundRef.current(false));
         }
@@ -1434,7 +1096,7 @@ export default function CancellationTaskGame({ onBack }) {
         i === idx ? { ...x, tapped: true, feedback: 'bad' } : x,
       );
     });
-  }, [playStep, pauseOpen, playSfx]);
+  }, [playStep, pauseOpen, cdShow, playSfx]);
 
   const onHudPause = useCallback(() => {
     if (playStep !== 'running') return;
@@ -1546,13 +1208,14 @@ export default function CancellationTaskGame({ onBack }) {
       dir={isAr ? 'rtl' : 'ltr'}
     >
       {phase === 'hub' && (
-        <div className="ct-fq-training-shell">
-          <FqTrainingBackdrop patternId={trainingPatternId} />
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
             <FqTrainingMenuBar
               onBack={onBack}
               playSfx={playSfx}
               hubSpaced
+              paperChrome
               onReplayTutorial={replayTutorial}
               replayHint={isAr ? 'إعادة الشرح' : 'Replay tutorial'}
               center={
@@ -1562,7 +1225,7 @@ export default function CancellationTaskGame({ onBack }) {
                 </div>
               }
             />
-            <FqHubModeMap
+            <FqAttentionLightModes
               t={t}
               isAr={isAr}
               playSfx={playSfx}
@@ -1574,13 +1237,41 @@ export default function CancellationTaskGame({ onBack }) {
         </div>
       )}
 
+      {phase === 'freeIntro' && (
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <FqAttentionHubBackdrop />
+          <div className="ct-fq-screen ct-fq-training-screen">
+            <FqTrainingMenuBar
+              onBack={() => {
+                playSfx('click');
+                setPhase('hub');
+              }}
+              playSfx={playSfx}
+              paperChrome
+              center={
+                <div style={{ textAlign: 'center' }}>
+                  <div className="ct-fq-training-title ct-fq-training-title-sm">{t.freeIntroTitle}</div>
+                </div>
+              }
+            />
+            <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 4 }}>
+              {t.freeIntroBody}
+            </p>
+            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={onFreeIntroReady}>
+              {t.freeIntroReady}
+            </button>
+          </div>
+        </div>
+      )}
+
       {phase === 'diff' && (
-        <div className="ct-fq-training-shell">
-          <FqTrainingBackdrop patternId={trainingPatternId} />
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
               onBack={() => setPhase('hub')}
               playSfx={playSfx}
+              paperChrome
               center={
                 <div style={{ textAlign: 'center' }}>
                   <div className="ct-fq-training-title ct-fq-training-title-sm">{t.pickDiff}</div>
@@ -1610,12 +1301,13 @@ export default function CancellationTaskGame({ onBack }) {
       )}
 
       {phase === 'levels' && (
-        <div className="ct-fq-training-shell">
-          <FqTrainingBackdrop patternId={trainingPatternId} />
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
               onBack={() => setPhase('diff')}
               playSfx={playSfx}
+              paperChrome
               center={
                 <div style={{ textAlign: 'center' }}>
                   <div className="ct-fq-training-title ct-fq-training-title-sm">{DM[diffKey].label}</div>
@@ -1656,12 +1348,13 @@ export default function CancellationTaskGame({ onBack }) {
       )}
 
       {phase === 'chal' && (
-        <div className="ct-fq-training-shell">
-          <FqTrainingBackdrop patternId={trainingPatternId} />
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
               onBack={() => setPhase('hub')}
               playSfx={playSfx}
+              paperChrome
               center={
                 <div style={{ textAlign: 'center' }}>
                   <div className="ct-fq-training-title ct-fq-training-title-sm">{t.challengeTitle}</div>
@@ -1783,6 +1476,7 @@ export default function CancellationTaskGame({ onBack }) {
               }
               onPause={onHudPause}
               onQuit={onHudQuit}
+              freeScore={round.mode === 'free' ? freeScore : undefined}
             />
             <div className="ct-fq-tb" data-fq-chrome>
               <div className="ct-fq-tb-row">
@@ -1905,8 +1599,8 @@ export default function CancellationTaskGame({ onBack }) {
       )}
 
       {phase === 'res' && lastResult?.type === 'level' && (
-        <div className="ct-fq-training-shell">
-          <FqTrainingBackdrop patternId={trainingPatternId} />
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
               onBack={() => {
@@ -1914,6 +1608,7 @@ export default function CancellationTaskGame({ onBack }) {
                 setPhase('hub');
               }}
               playSfx={playSfx}
+              paperChrome
               center={
                 <div style={{ textAlign: 'center' }}>
                   <div className="ct-fq-training-title ct-fq-training-title-sm">
@@ -1984,8 +1679,8 @@ export default function CancellationTaskGame({ onBack }) {
       )}
 
       {phase === 'freeRes' && lastResult?.type === 'free' && (
-        <div className="ct-fq-training-shell">
-          <FqTrainingBackdrop patternId={trainingPatternId} />
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
               onBack={() => {
@@ -1993,15 +1688,24 @@ export default function CancellationTaskGame({ onBack }) {
                 setPhase('hub');
               }}
               playSfx={playSfx}
+              paperChrome
               center={
                 <div style={{ textAlign: 'center' }}>
                   <div className="ct-fq-training-title ct-fq-training-title-sm">{t.freeGameOver}</div>
                 </div>
               }
             />
-            <div className="ct-fq-sbig">{lastResult.roundsWon}</div>
-            <div className="ct-fq-ies-lbl">{t.freeRoundsCleared(lastResult.roundsWon)}</div>
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.freeBest(profile.freeBest ?? 0)}</p>
+            <div className="ct-fq-sbig">{lastResult.score ?? 0}</div>
+            <div className="ct-fq-ies-lbl">{t.score}</div>
+            <div
+              className="ct-fq-sub ct-fq-training-blurb"
+              style={{ marginTop: 10, fontWeight: 700, fontSize: '0.92rem' }}
+            >
+              {t.freeRoundsCleared(lastResult.roundsWon)}
+            </div>
+            <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 6 }}>
+              {t.freeBest(profile.freeBest ?? 0)} · {t.freeBestScoreLine(profile.freeBestScore ?? 0)}
+            </p>
             <button
               type="button"
               className="ct-fq-btn ct-fq-btn-pri"
@@ -2028,8 +1732,8 @@ export default function CancellationTaskGame({ onBack }) {
       )}
 
       {phase === 'chalRes' && lastResult?.type === 'challenge' && lastResult.rows && (
-        <div className="ct-fq-training-shell">
-          <FqTrainingBackdrop patternId={trainingPatternId} />
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
               onBack={() => {
@@ -2037,6 +1741,7 @@ export default function CancellationTaskGame({ onBack }) {
                 setPhase('hub');
               }}
               playSfx={playSfx}
+              paperChrome
               center={
                 <div style={{ textAlign: 'center' }}>
                   <div className="ct-fq-training-title ct-fq-training-title-sm">{t.resultsChalTitle}</div>

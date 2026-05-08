@@ -2,7 +2,15 @@ import React, { createContext, useContext, useState, useRef, useEffect, useCallb
 
 const AppContext = createContext(null);
 
-const XP_PER_LEVEL = 200;
+const SFX_KEY = 'mazeman_sfx_enabled';
+
+function readSfxEnabled() {
+  try {
+    return localStorage.getItem(SFX_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
 
 const DEFAULT_PROFILE = {
   avatar: '🧠', username: 'MAZE WALKER',
@@ -21,6 +29,8 @@ export function AppProvider({ children }) {
   const [tipOpen, setTipOpen] = useState(false);
   const [profileData, setProfileData] = useState(DEFAULT_PROFILE);
   const audioCtxRef = useRef(null);
+  const sfxEnabledRef = useRef(readSfxEnabled());
+  const [sfxEnabled, setSfxEnabledState] = useState(() => readSfxEnabled());
 
   // Load profile on mount
   useEffect(() => {
@@ -77,7 +87,16 @@ export function AppProvider({ children }) {
     } catch (e) {}
   }, []);
 
+  const setSfxEnabled = useCallback((on) => {
+    sfxEnabledRef.current = on;
+    setSfxEnabledState(on);
+    try {
+      localStorage.setItem(SFX_KEY, on ? '1' : '0');
+    } catch (e) {}
+  }, []);
+
   const playSfx = useCallback((name) => {
+    if (!sfxEnabledRef.current) return;
     initAudio();
     if (name === 'click')   playTone(600, 'sine', 0.1);
     if (name === 'collect') { playTone(800, 'sine', 0.1); setTimeout(() => playTone(1200, 'sine', 0.15), 100); }
@@ -154,6 +173,7 @@ export function AppProvider({ children }) {
     <AppContext.Provider value={{
       globalXP, currentLang, activeTab, mazeVisible, mazeEntryPending,
       paywallOpen, tipOpen, profileData,
+      sfxEnabled, setSfxEnabled,
       updateXP, toggleLang, switchTab, requestMazeEntry, enterMaze, exitMaze,
       playSfx, stopSpeech, saveProfile,
       setProfileData,

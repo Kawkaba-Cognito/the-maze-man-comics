@@ -452,13 +452,11 @@ export function assignFillColors(cells, diff, interference, tgtCol, rng = Math.r
 /** Linear curriculum for Free mode: easy 1–20 → … → deadly 20, then stays at deadly 20. */
 export const FREE_PROGRESS_ORDER = ['easy', 'inter', 'hard', 'xhard', 'deadly'];
 
-/** Starting session bank (seconds); clock runs continuously across rounds until 0.
- *  Sized so the first easy round (par ≈ 30 s under new endpoints) is comfortable. */
-export const FREE_SESSION_START_SEC = 60;
+/** Starting session bank (seconds); clock runs continuously across rounds until 0. */
+export const FREE_SESSION_START_SEC = 48;
 
-/** Hard cap on bank so bonuses cannot pile up without bound. Sized to accommodate
- *  a single attempt at deadly L1 (par ≈ 120 s) from a healthy mid-game bank. */
-export const FREE_SESSION_CAP_SEC = 240;
+/** Hard cap on bank so bonuses cannot pile up without bound (keeps pressure up). */
+export const FREE_SESSION_CAP_SEC = 168;
 
 /**
  * Session-clock drain multiplier (1.0 = real-time). Ramps slowly across the
@@ -468,32 +466,47 @@ export const FREE_SESSION_CAP_SEC = 240;
  */
 export function freeTimeDrainMultiplier(stageIndex) {
   const s = Math.max(0, stageIndex | 0);
-  const k = 0.0035;
-  const cap = 0.18;
+  const k = 0.0085;
+  const cap = 0.38;
   return 1 + Math.min(cap, k * s);
 }
 
 /**
- * Bonus seconds awarded after clearing the free round at `stageCompleted`
- * (0 = first round). Scales with the round's nominal par so deep, long rounds
- * refund proportionally; decays harmonically with stage depth so skilled runs
- * can still go deep without becoming infinite.
- *
- *   bonus = clamp( B_min, B_max,  b0 + u(s) · (b1 + k · par) )
- *   u(s)  = 1 / (1 + s / τ)
- *
- * Coefficients tuned so deadly-tier rounds (par 55–120 s) refund 12–22 s,
- * keeping bank dynamics non-trivially positive for skilled players in mid-game
- * and approximately neutral at the upper tail.
+ * Bonus seconds after clearing a free round. Kept small so the session clock
+ * stays tense — clears should feel like a sip of air, not a full refill.
  */
 export function freeClearBonusSec(stageCompleted, nominalParSec) {
   const s = Math.max(0, stageCompleted | 0);
   const par = Math.max(6, Number(nominalParSec) || 20);
-  const tau = 28;
+  const tau = 20;
   const u = 1 / (1 + s / tau);
-  const raw = 4.2 + u * (8 + 0.5 * par);
-  const bonus = Math.min(60, Math.max(3.2, raw));
+  const raw = 0.55 + u * (1.2 + 0.065 * par);
+  const bonus = Math.min(12, Math.max(0.75, raw));
   return +bonus.toFixed(1);
+}
+
+const FREE_SCORE_WEIGHT = { easy: 1, inter: 1.12, hard: 1.28, xhard: 1.55, deadly: 1.95 };
+
+/** Points per correct target tap in free mode. */
+export function freeTapPoints(diff, freeStage) {
+  const w = FREE_SCORE_WEIGHT[diff] ?? 1;
+  const depth = Math.min(freeStage, 99);
+  return Math.max(1, Math.round((5 + depth * 0.14) * w));
+}
+
+/** Bonus points when a full free round is cleared (streak = consecutive clears this run). */
+export function freeRoundClearPoints(parSec, clearStreak) {
+  const par = Math.max(6, Number(parSec) || 20);
+  const streak = Math.max(1, clearStreak);
+  const streakMult = 1 + Math.min(streak - 1, 25) * 0.035;
+  const base = 14 + par * 0.2;
+  return Math.max(8, Math.round(base * streakMult));
+}
+
+/** Score removed on a wrong tap in free mode (scaled by tier). */
+export function freeWrongTapPenalty(diff) {
+  const w = FREE_SCORE_WEIGHT[diff] ?? 1;
+  return Math.max(6, Math.round(11 * w));
 }
 
 export function freeStageToDiffLv(stageIndex) {

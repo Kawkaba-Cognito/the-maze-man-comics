@@ -620,7 +620,7 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
     background-position: center top;
     display: flex; flex-direction: column;
     align-items: center; justify-content: space-between;
-    padding: max(20px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom) + 16px);
+    padding: 0  clamp(18px, 4vw, 28px) max(18px, env(safe-area-inset-bottom) + 10px);
     z-index: 9999;
     opacity: 1; transition: opacity 0.7s ease;
 }
@@ -633,26 +633,289 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
 }
 .splash-screen.splash-out { opacity: 0; pointer-events: none; }
 
-/* Bottom group — START + sub-buttons sit here */
-.splash-bottom {
-    display: flex; flex-direction: column; align-items: center; gap: 14px;
+.splash-header {
+    flex: 0 0 auto;
     width: 100%;
+    text-align: center;
+    padding-top: max(16px, env(safe-area-inset-top) + 6px);
+}
+
+.splash-hero-inner {
+    width: 100%;
+    max-width: min(340px, 94vw);
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .splash-title {
-    font-family: 'Bangers', cursive;
-    font-size: clamp(2rem, 9vw, 3.6rem);
-    letter-spacing: 0.14em;
-    color: #1a1a2e;
+    font-family: 'Fredoka One', 'Bangers', cursive;
+    font-size: clamp(2.35rem, 9vw, 3.85rem);
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    color: #14121a;
     text-align: center;
-    line-height: 1;
-    margin: 0;
+    line-height: 1.06;
+    margin: 0 0 0.06em;
+    text-shadow: 0 2px 0 rgba(255, 200, 90, 0.35), 0 4px 18px rgba(26, 26, 46, 0.12);
 }
+
+.splash-screen[dir="rtl"] .splash-title {
+    font-family: 'Cairo', sans-serif;
+    font-weight: 900;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.splash-subbrand {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: clamp(12px, 2.8vw, 18px);
+    margin-top: 0.35rem;
+    padding: 0.4rem 0 0.1rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    border-top: 1px solid rgba(20, 18, 26, 0.09);
+}
+
+.splash-screen[dir="rtl"] .splash-subbrand {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.splash-subbrand-visual {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.splash-subbrand-title {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+    padding: 0 0 0.12em;
+    align-self: center;
+    justify-self: start;
+    text-align: start;
+    min-width: 0;
+}
+
+.splash-screen[dir="rtl"] .splash-subbrand-visual {
+    grid-column: 2;
+}
+
+.splash-screen[dir="rtl"] .splash-subbrand-title {
+    grid-column: 1;
+    justify-self: end;
+    text-align: end;
+}
+
+.splash-brain-side {
+    height: clamp(2.35rem, 9vw, 3.6rem);
+    width: auto;
+    max-width: min(30vw, 5.5rem);
+    flex-shrink: 0;
+    display: block;
+    object-fit: contain;
+    object-position: center center;
+    filter: drop-shadow(0 1px 4px rgba(120, 60, 40, 0.14));
+}
+
+.splash-subbrand-label {
+    display: inline-block;
+    font-family: 'Outfit', 'Cairo', sans-serif;
+    font-size: clamp(1.45rem, 5.5vw, 2.1rem);
+    font-weight: 900;
+    letter-spacing: 0.03em;
+    text-transform: none;
+    color: #c91c1c;
+    line-height: 1.1;
+    text-shadow:
+        1px 1px 0 #960f0f,
+        2px 2px 0 #7a0c0c,
+        3px 3px 0 #620a0a,
+        3px 3px 8px rgba(0, 0, 0, 0.28);
+}
+
+.splash-screen[dir="rtl"] .splash-subbrand-label {
+    font-family: 'Cairo', sans-serif;
+    font-weight: 900;
+    letter-spacing: 0;
+    text-transform: none;
+    text-shadow:
+        -1px 1px 0 #960f0f,
+        -2px 2px 0 #7a0c0c,
+        -3px 3px 0 #620a0a,
+        -3px 3px 8px rgba(0, 0, 0, 0.28);
+}
+
+/* Splash sub-brand: stack on very narrow screens for a tidy mobile layout */
+@media (max-width: 380px) {
+    .splash-subbrand {
+        grid-template-columns: 1fr;
+        row-gap: 0.65rem;
+        justify-items: center;
+    }
+    .splash-subbrand-visual {
+        grid-column: 1;
+        grid-row: 1;
+    }
+    .splash-subbrand-title {
+        grid-column: 1;
+        grid-row: 2;
+        justify-self: center;
+        text-align: center;
+        padding-bottom: 0.2em;
+    }
+    .splash-screen[dir="rtl"] .splash-subbrand {
+        grid-template-columns: 1fr;
+    }
+    .splash-screen[dir="rtl"] .splash-subbrand-visual {
+        grid-column: 1;
+        grid-row: 1;
+    }
+    .splash-screen[dir="rtl"] .splash-subbrand-title {
+        grid-column: 1;
+        grid-row: 2;
+        justify-self: center;
+        text-align: center;
+    }
+}
+
+/* Bottom — vertical menu */
+.splash-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+    flex: 0 0 auto;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.splash-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: min(340px, 94vw);
+    gap: clamp(5px, 1.4vw, 8px);
+}
+
+.splash-menu-btn {
+    font-family: 'Outfit', 'Cairo', sans-serif;
+    font-size: clamp(0.78rem, 2.65vw, 0.92rem);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    color: #14121a;
+    background: rgba(255, 255, 255, 0.62);
+    border: 2px solid rgba(26, 18, 36, 0.16);
+    border-radius: 10px;
+    padding: 9px 16px;
+    min-height: 38px;
+    cursor: pointer;
+    box-shadow: 0 2px 0 rgba(26, 18, 36, 0.06);
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.splash-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(26, 18, 36, 0.24);
+}
+
+.splash-menu-btn:active {
+    transform: scale(0.985);
+}
+
+.splash-screen[dir="rtl"] .splash-menu-btn {
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 700;
+}
+
+.splash-menu-btn--quit {
+    color: #8b2020;
+    border-color: rgba(139, 32, 32, 0.22);
+    background: rgba(255, 248, 248, 0.75);
+}
+
+.splash-menu-btn--quit:hover {
+    background: rgba(255, 238, 238, 0.92);
+    border-color: rgba(139, 32, 32, 0.32);
+}
+
+/*
+ * Legacy splash (Start + SETTINGS · ABOUT · QUIT in .splash-sub-btns):
+ * when row-specific CSS was removed, buttons defaulted to inline and sat side-by-side.
+ * Keep these rules so either old or new markup stacks correctly.
+ */
+.splash-sub-btns {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100%;
+    max-width: min(300px, 92vw);
+    margin: 0 auto;
+    gap: clamp(5px, 1.4vw, 8px);
+}
+.splash-sub-divider {
+    display: none !important;
+}
+.splash-sub-btn {
+    font-family: 'Outfit', 'Cairo', sans-serif;
+    font-size: clamp(0.78rem, 2.65vw, 0.92rem);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    color: #14121a;
+    background: rgba(255, 255, 255, 0.62);
+    border: 2px solid rgba(26, 18, 36, 0.16);
+    border-radius: 10px;
+    padding: 9px 16px;
+    min-height: 38px;
+    width: 100%;
+    cursor: pointer;
+    box-shadow: 0 2px 0 rgba(26, 18, 36, 0.06);
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+    opacity: 1;
+}
+.splash-sub-btn:hover {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(26, 18, 36, 0.24);
+}
+.splash-sub-btn:active {
+    transform: scale(0.985);
+}
+.splash-screen[dir="rtl"] .splash-sub-btn {
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 700;
+}
+.splash-sub-btn--quit {
+    color: #8b2020;
+    border-color: rgba(139, 32, 32, 0.22);
+    background: rgba(255, 248, 248, 0.75);
+}
+.splash-sub-btn--quit:hover {
+    background: rgba(255, 238, 238, 0.92);
+    border-color: rgba(139, 32, 32, 0.32);
+}
+
 .splash-loading {
-    font-family: 'Comic Neue', cursive;
+    font-family: 'Outfit', 'Comic Neue', cursive;
     font-size: clamp(0.9rem, 3vw, 1.1rem);
     color: #555;
     letter-spacing: 0.2em;
+    text-align: center;
+    width: 100%;
+    padding-bottom: max(24px, env(safe-area-inset-bottom) + 12px);
 }
 .splash-ellipsis::after {
     content: '';
@@ -665,210 +928,502 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
     75%  { content: '...'; }
 }
 .splash-start {
-    font-family: 'Bangers', cursive;
-    font-size: clamp(1.6rem, 7vw, 2.4rem);
-    letter-spacing: 0.15em;
-    color: #f5f0e8;
-    background: rgba(10, 6, 2, 0.75);
-    border: 2px solid rgba(255, 180, 60, 0.6);
-    box-shadow: 0 0 24px rgba(255, 150, 30, 0.35), inset 0 0 12px rgba(255, 150, 30, 0.1);
-    padding: 14px 52px;
-    border-radius: 4px;
+    font-family: 'Fredoka One', 'Bangers', cursive;
+    font-size: clamp(1.05rem, 4vw, 1.45rem);
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: none;
+    color: #fdfaf5;
+    background: linear-gradient(180deg, rgba(18, 12, 8, 0.88) 0%, rgba(10, 6, 4, 0.92) 100%);
+    border: 2px solid rgba(255, 180, 60, 0.55);
+    border-radius: 11px;
+    box-shadow: 0 3px 0 rgba(26, 18, 8, 0.35), 0 0 22px rgba(255, 150, 30, 0.3), inset 0 1px 0 rgba(255, 220, 160, 0.18);
+    padding: 11px 20px;
+    min-height: 42px;
+    width: 100%;
     cursor: pointer;
-    transition: box-shadow 0.2s ease, background 0.2s ease;
+    transition: box-shadow 0.2s ease, filter 0.2s ease, transform 0.1s ease;
     animation: start-pulse 1.6s ease-in-out infinite;
 }
-.splash-start:hover, .splash-start:active {
-    background: rgba(255, 150, 30, 0.2);
-    box-shadow: 0 0 40px rgba(255, 150, 30, 0.6), inset 0 0 16px rgba(255, 150, 30, 0.2);
+.splash-screen[dir="rtl"] .splash-start {
+    font-family: 'Cairo', sans-serif;
+    font-weight: 800;
+    letter-spacing: 0;
 }
+.splash-start:hover, .splash-start:active {
+    filter: brightness(1.06);
+    box-shadow: 0 3px 0 rgba(26, 18, 8, 0.4), 0 0 36px rgba(255, 150, 30, 0.48), inset 0 1px 0 rgba(255, 220, 160, 0.25);
+}
+.splash-start:active { transform: scale(0.99); }
 @keyframes start-pulse {
-    0%, 100% { box-shadow: 0 0 24px rgba(255, 150, 30, 0.35), inset 0 0 12px rgba(255, 150, 30, 0.1); }
-    50%       { box-shadow: 0 0 42px rgba(255, 150, 30, 0.65), inset 0 0 18px rgba(255, 150, 30, 0.2); }
+    0%, 100% { box-shadow: 0 3px 0 rgba(26, 18, 8, 0.35), 0 0 22px rgba(255, 150, 30, 0.3), inset 0 1px 0 rgba(255, 220, 160, 0.18); }
+    50%       { box-shadow: 0 3px 0 rgba(26, 18, 8, 0.35), 0 0 38px rgba(255, 150, 30, 0.52), inset 0 1px 0 rgba(255, 220, 160, 0.22); }
 }
 
-/* Splash sub-buttons (SETTINGS · ABOUT · QUIT) */
-.splash-sub-btns {
+@media (min-width: 768px) {
+    /* ── Desktop two-column layout ── */
+    .splash-screen {
+        flex-direction: row;
+        align-items: stretch;
+        justify-content: flex-start;
+        padding: 0;
+        /* desktop art already set above (cover, center) */
+    }
+
+    /* Left column — transparent, branding sits over the art */
+    .splash-header {
+        flex: 1 1 auto;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-start;
+        padding: clamp(44px, 6vh, 72px) clamp(36px, 5vw, 72px) 0;
+        text-align: start;
+    }
+    .splash-hero-inner {
+        max-width: min(420px, 46vw);
+        align-items: flex-start;
+        margin-inline: 0;
+    }
+    .splash-title {
+        font-size: clamp(3rem, 5.2vw, 4.2rem);
+        text-align: start;
+    }
+    .splash-subbrand {
+        column-gap: clamp(12px, 1.6vw, 18px);
+        padding-top: 0.45rem;
+    }
+    .splash-brain-side {
+        height: clamp(2.8rem, 3.8vw, 3.8rem);
+        max-width: min(18vw, 5rem);
+    }
+    .splash-subbrand-label {
+        font-size: clamp(1.4rem, 2.2vw, 2rem);
+    }
+
+    /* Right column — frosted glass menu panel */
+    .splash-bottom {
+        flex: 0 0 auto;
+        width: clamp(260px, 28vw, 360px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(32px, 5vh, 60px) clamp(24px, 3vw, 40px);
+        background: rgba(253, 248, 245, 0.72);
+        backdrop-filter: blur(18px) saturate(1.1);
+        -webkit-backdrop-filter: blur(18px) saturate(1.1);
+        border-left: 1px solid rgba(255, 255, 255, 0.55);
+        box-shadow: -8px 0 32px rgba(30, 20, 10, 0.12);
+    }
+    .splash-menu {
+        max-width: 100%;
+        width: 100%;
+        gap: 9px;
+    }
+
+    /* RTL: flip columns — menu on left, branding on right */
+    .splash-screen[dir="rtl"] .splash-header {
+        align-items: flex-start;
+        justify-content: flex-end;
+        padding-top: clamp(44px, 6vh, 72px);
+        padding-bottom: 0;
+        padding-inline-start: clamp(36px, 5vw, 72px);
+        padding-inline-end: clamp(36px, 5vw, 72px);
+    }
+    .splash-screen[dir="rtl"] .splash-bottom {
+        order: -1;
+        border-left: none;
+        border-right: 1px solid rgba(255, 255, 255, 0.55);
+        box-shadow: 8px 0 32px rgba(30, 20, 10, 0.12);
+    }
+    .splash-screen[dir="rtl"] .splash-hero-inner {
+        align-items: flex-end;
+    }
+    .splash-screen[dir="rtl"] .splash-title {
+        text-align: end;
+    }
+}
+
+/* ── FULL-SCREEN SETTINGS & MODALS (Attention hub — cream paper) ── */
+.stg-screen--paper,
+.stg-screen.stg-screen--paper {
+    position: fixed;
+    inset: 0;
+    z-index: 10010;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
+    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    background-color: #fdf8f5;
+    background-image: url('/the-maze-man-comics/Assets/cancel-task-bg-mobile.png');
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    color: #2d2d2d;
+    overflow: hidden;
+}
+@media (min-width: 768px) {
+    .stg-screen--paper,
+    .stg-screen.stg-screen--paper {
+        background-image: url('/the-maze-man-comics/Assets/cancel-task-bg-desktop.png');
+        background-position: center center;
+    }
+}
+
+.stg-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: max(14px, env(safe-area-inset-top) + 8px) 16px 14px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(253, 248, 245, 0.25) 100%);
+    border-bottom: 1px solid rgba(107, 158, 122, 0.35);
+    flex-shrink: 0;
+}
+
+.stg-back {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    border: 1px solid rgba(107, 90, 72, 0.38);
+    background: linear-gradient(180deg, rgba(255, 252, 248, 0.98) 0%, rgba(245, 238, 230, 0.99) 100%);
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-}
-.splash-sub-divider {
-    color: #1a1a2e;
-    opacity: 0.35;
-    font-size: 1em;
-    pointer-events: none;
-    padding: 0 2px;
-}
-.splash-sub-btn {
-    font-family: 'Bangers', cursive;
-    font-size: clamp(0.85rem, 3vw, 1rem);
-    letter-spacing: 0.14em;
-    color: #1a1a2e;
-    background: transparent;
-    border: none;
-    padding: 6px 12px;
     cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.15s;
+    flex-shrink: 0;
+    box-shadow:
+        0 2px 10px rgba(45, 45, 40, 0.08),
+        0 0 0 1px rgba(255, 255, 255, 0.65) inset;
+    -webkit-tap-highlight-color: transparent;
 }
-.splash-sub-btn:hover { opacity: 1; }
-.splash-sub-btn--quit { color: #8b2020; }
-.splash-sub-btn--quit:hover { opacity: 1; }
+.stg-back:active {
+    transform: scale(0.98);
+}
 
-/* ── FULL-SCREEN SETTINGS ── */
-.stg-screen {
-    position: fixed; inset: 0;
-    background: #f2f2f7;
-    z-index: 10010;
-    display: flex; flex-direction: column;
-    font-family: 'Outfit', -apple-system, sans-serif;
-}
-.stg-topbar {
-    display: flex; align-items: center; gap: 8px;
-    padding: max(14px, env(safe-area-inset-top) + 10px) 16px 14px;
-    background: #fff;
-    border-bottom: 1px solid #e0e0e5;
-}
-.stg-back {
-    background: none; border: none; font-size: 1.6em;
-    color: #007aff; cursor: pointer; padding: 0 8px 0 0; line-height: 1;
-}
 .stg-topbar-title {
-    font-size: 1.05em; font-weight: 600; color: #1c1c1e; letter-spacing: -0.01em;
+    flex: 1;
+    min-width: 0;
+    font-family: 'Bangers', cursive;
+    font-size: clamp(1.25rem, 4.2vw, 1.55rem);
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #1a1208;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
 }
+
 .stg-scroll {
-    flex: 1; overflow-y: auto;
-    padding: 20px 0 40px;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px 0 max(28px, env(safe-area-inset-bottom) + 16px);
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Account card */
 .stg-account-card {
-    display: flex; align-items: center; gap: 14px;
-    background: #fff;
-    margin: 0 0 6px;
-    padding: 16px;
-    border-top: 1px solid #e0e0e5;
-    border-bottom: 1px solid #e0e0e5;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0 16px 10px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(107, 158, 122, 0.38);
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 246, 240, 0.99) 100%);
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.92) inset,
+        0 8px 22px rgba(45, 60, 48, 0.07),
+        0 1px 3px rgba(45, 45, 40, 0.05);
 }
+
 .stg-avatar {
-    font-size: 2.6em; line-height: 1;
-    width: 56px; height: 56px;
-    display: flex; align-items: center; justify-content: center;
-    background: #f2f2f7; border-radius: 50%;
+    font-size: 2.6em;
+    line-height: 1;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(107, 158, 122, 0.28);
+    border-radius: 50%;
     flex-shrink: 0;
 }
+
 .stg-account-info { flex: 1; min-width: 0; }
 .stg-account-name {
-    font-size: 1em; font-weight: 600; color: #1c1c1e;
+    font-size: 1em;
+    font-weight: 700;
+    color: #1a1208;
     margin-bottom: 2px;
 }
 .stg-account-level {
-    font-size: 0.78em; color: #636366; margin-bottom: 6px;
+    font-size: 0.78em;
+    color: #5c534c;
+    margin-bottom: 6px;
 }
 .stg-xp-bar {
-    height: 4px; background: #e5e5ea; border-radius: 2px; overflow: hidden;
+    height: 5px;
+    background: rgba(107, 90, 72, 0.15);
+    border-radius: 3px;
+    overflow: hidden;
 }
 .stg-xp-fill {
-    height: 100%; background: #007aff; border-radius: 2px;
+    height: 100%;
+    background: linear-gradient(90deg, #e8ac4e 0%, #d47a4a 100%);
+    border-radius: 3px;
     transition: width 0.4s;
 }
 
-/* Avatar picker row */
+/* Avatar picker */
 .stg-avatar-row {
-    display: flex; justify-content: space-around;
-    background: #fff;
-    padding: 10px 16px 12px;
-    border-bottom: 1px solid #e0e0e5;
-    margin-bottom: 22px;
+    display: flex;
+    justify-content: space-around;
+    gap: 8px;
+    margin: 0 16px 20px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(107, 158, 122, 0.38);
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 246, 240, 0.99) 100%);
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.92) inset,
+        0 6px 18px rgba(45, 60, 48, 0.06);
 }
 .stg-avatar-opt {
-    font-size: 1.7em; background: none; border: 2px solid transparent;
-    border-radius: 50%; width: 44px; height: 44px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    font-size: 1.7em;
+    background: rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(107, 90, 72, 0.2);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent;
 }
 .stg-avatar-opt.active {
-    border-color: #007aff;
-    background: rgba(0, 122, 255, 0.08);
+    border-color: #b07d1e;
+    background: rgba(232, 172, 78, 0.18);
+    box-shadow: 0 0 0 1px rgba(232, 172, 78, 0.35);
 }
 
-/* Sections */
-.stg-section { margin-bottom: 22px; }
+/* Sections — stacked “cards” like Attention mode rows */
+.stg-section { margin-bottom: 18px; }
 .stg-section-title {
-    font-size: 0.72em; font-weight: 600;
-    color: #6e6e73;
-    text-transform: uppercase; letter-spacing: 0.06em;
-    padding: 0 16px 6px;
+    font-family: 'Bangers', cursive;
+    font-size: 0.82rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #5c4a38;
+    padding: 0 20px 8px;
+    margin: 0;
 }
 .stg-section-body {
-    background: #fff;
-    border-top: 1px solid #e0e0e5;
-    border-bottom: 1px solid #e0e0e5;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 16px;
+    background: transparent;
+    border: none;
 }
 
-/* Setting rows */
 .stg-row {
-    display: flex; align-items: center; gap: 12px;
-    width: 100%; background: none; border: none;
-    padding: 13px 16px;
-    cursor: pointer; text-align: left;
-    border-bottom: 1px solid #f0f0f3;
-    transition: background 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin: 0;
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(107, 158, 122, 0.38);
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 246, 240, 0.99) 100%);
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.92) inset,
+        0 8px 22px rgba(45, 60, 48, 0.07),
+        0 1px 3px rgba(45, 45, 40, 0.05);
+    cursor: pointer;
+    text-align: start;
+    font: inherit;
+    color: inherit;
+    transition: filter 0.12s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
 }
-.stg-row:last-child { border-bottom: none; }
-.stg-row:active { background: #f5f5f5; }
-.stg-row-icon { font-size: 1.1em; width: 22px; text-align: center; flex-shrink: 0; }
-.stg-row-label { flex: 1; font-size: 0.95em; color: #1c1c1e; font-weight: 400; }
-.stg-row-value { font-size: 0.85em; color: #636366; }
-.stg-row-chevron { color: #c7c7cc; font-size: 1.1em; margin-left: 4px; }
-.stg-row--danger .stg-row-label { color: #ff3b30; }
+.stg-row:hover {
+    filter: brightness(1.02);
+}
+.stg-row:active {
+    transform: scale(0.99);
+    filter: brightness(0.98);
+}
+.stg-row-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.95em;
+    font-weight: 600;
+    color: #1a1208;
+    line-height: 1.3;
+}
+.stg-row-value {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: #6b5c4a;
+    flex-shrink: 0;
+}
+.stg-row-chevron {
+    color: rgba(90, 78, 62, 0.55);
+    font-size: 1.15em;
+    flex-shrink: 0;
+    line-height: 1;
+}
+.stg-screen[dir='rtl'] .stg-row-chevron {
+    transform: scaleX(-1);
+}
 
-/* Sub-modals */
+.stg-row--danger .stg-row-label {
+    color: #b91c1c;
+}
+.stg-row--danger .stg-row-value {
+    color: #b91c1c;
+}
+
+/* Sub-modals — paper sheet */
 .stg-modal-backdrop {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.45);
+    position: fixed;
+    inset: 0;
     z-index: 10020;
-    display: flex; align-items: flex-end;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(26, 18, 8, 0.42);
+    backdrop-filter: blur(3px);
 }
 .stg-modal-box {
-    background: #fff; width: 100%;
+    width: 100%;
+    max-width: 520px;
+    max-height: min(85vh, 640px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #fffefb 0%, #faf6f0 100%);
+    border: 1px solid rgba(107, 158, 122, 0.4);
     border-radius: 18px 18px 0 0;
-    max-height: 70vh; overflow-y: auto;
-    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    box-shadow:
+        0 -8px 40px rgba(45, 45, 40, 0.12),
+        0 2px 0 rgba(255, 255, 255, 0.9) inset;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
 }
+@media (min-width: 520px) {
+    .stg-modal-backdrop {
+        align-items: center;
+        padding: 24px;
+    }
+    .stg-modal-box {
+        border-radius: 18px;
+    }
+}
+
 .stg-modal-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px 12px;
-    border-bottom: 1px solid #e0e0e5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid rgba(107, 158, 122, 0.28);
+    flex-shrink: 0;
 }
-.stg-modal-title { font-size: 1em; font-weight: 600; color: #1c1c1e; }
+.stg-modal-title {
+    font-family: 'Bangers', cursive;
+    font-size: 1.15rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #1a1208;
+}
 .stg-modal-close {
-    background: #e5e5ea; border: none; border-radius: 50%;
-    width: 28px; height: 28px; font-size: 0.8em; cursor: pointer;
-    color: #636366; display: flex; align-items: center; justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    border: 1px solid rgba(107, 90, 72, 0.35);
+    background: linear-gradient(180deg, rgba(255, 252, 248, 0.98) 0%, rgba(245, 238, 230, 0.99) 100%);
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: #3a3228;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(45, 45, 40, 0.06);
+    -webkit-tap-highlight-color: transparent;
 }
-.stg-modal-body { padding: 16px 20px; }
-.stg-modal-text { font-size: 0.9em; color: #3a3a3c; line-height: 1.7; margin-bottom: 6px; }
-.stg-modal-subtext { font-size: 0.78em; color: #8e8e93; margin-top: 12px; }
+.stg-modal-close:active {
+    transform: scale(0.97);
+}
+
+.stg-modal-body {
+    padding: 16px 20px 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+.stg-modal-text {
+    font-size: 0.92em;
+    color: #3d3830;
+    line-height: 1.65;
+    margin-bottom: 8px;
+}
+.stg-modal-subtext {
+    font-size: 0.8em;
+    color: #6b6358;
+    margin-top: 14px;
+}
 .stg-textarea {
-    width: 100%; min-height: 90px;
-    border: 1px solid #d1d1d6; border-radius: 10px;
-    padding: 10px 12px; font-size: 0.9em; color: #1c1c1e;
-    font-family: inherit; resize: vertical; margin-bottom: 12px;
-    background: #f9f9fb;
+    width: 100%;
+    min-height: 96px;
+    box-sizing: border-box;
+    border: 1px solid rgba(107, 90, 72, 0.32);
+    border-radius: 12px;
+    padding: 11px 13px;
+    font-size: 0.9em;
+    color: #1a1208;
+    font-family: inherit;
+    resize: vertical;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.85);
 }
 .stg-send-btn {
-    width: 100%; background: #007aff; color: #fff;
-    border: none; border-radius: 10px; padding: 13px;
-    font-size: 0.95em; font-weight: 600; cursor: pointer;
+    width: 100%;
+    border: 2px solid #1a1208;
+    border-radius: 12px;
+    padding: 13px;
+    font-family: 'Bangers', cursive;
+    letter-spacing: 2px;
+    font-size: 1rem;
+    cursor: pointer;
+    background: linear-gradient(180deg, #ffe66d 0%, #f0c040 100%);
+    color: #1a1208;
+    box-shadow: 3px 3px 0 #1a1208;
+    -webkit-tap-highlight-color: transparent;
+}
+.stg-send-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 #1a1208;
 }
 .stg-delete-btn {
-    width: 100%; background: #ff3b30; color: #fff;
-    border: none; border-radius: 10px; padding: 13px;
-    font-size: 0.95em; font-weight: 600; cursor: pointer; margin-top: 10px;
+    width: 100%;
+    border: 2px solid #1a1208;
+    border-radius: 12px;
+    padding: 13px;
+    font-family: 'Bangers', cursive;
+    letter-spacing: 2px;
+    font-size: 1rem;
+    cursor: pointer;
+    background: linear-gradient(180deg, #ff8a7a 0%, #e85545 100%);
+    color: #1a1208;
+    box-shadow: 3px 3px 0 #1a1208;
+    margin-top: 12px;
+    -webkit-tap-highlight-color: transparent;
+}
+.stg-delete-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 #1a1208;
 }
 
 /* In-game (maze) settings panel */
@@ -1083,6 +1638,276 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
     overflow-x: hidden;
     overflow-y: auto;
 }
+
+/* Attention hub — cream paper art + faint maze grid (see FqAttentionHubBackdrop) */
+.ct-fq-training-shell--hub-light {
+    background-color: #fdf8f5;
+    background-image: url('/the-maze-man-comics/Assets/cancel-task-bg-mobile.png');
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    color: #2d2d2d;
+}
+@media (min-width: 768px) {
+    .ct-fq-training-shell--hub-light {
+        background-image: url('/the-maze-man-comics/Assets/cancel-task-bg-desktop.png');
+        background-position: center center;
+    }
+}
+.ct-fq-training-shell--hub-light .ct-fq-hub-attn-big {
+    font-family: 'Fredoka One', 'Nunito', system-ui, sans-serif;
+    font-size: clamp(3.25rem, 14vw, 5.35rem);
+    font-weight: 400; /* Fredoka One is a single display weight */
+    color: #000;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    -webkit-text-stroke: 0;
+    text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.85),
+        0 2px 0 rgba(0, 0, 0, 0.06);
+}
+.ct-fq-training-shell--hub-light .ct-fq-training-screen--hub .ct-fq-hub-attn-sub {
+    color: #4a4f4d;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.94) 0%,
+        rgba(250, 246, 240, 0.96) 100%
+    );
+    border: 1px solid rgba(107, 158, 122, 0.38);
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.7) inset,
+        0 6px 18px rgba(45, 60, 48, 0.08),
+        0 1px 3px rgba(45, 45, 40, 0.06);
+    text-shadow: none;
+}
+[dir='rtl'] .ct-fq-training-shell--hub-light .ct-fq-hub-attn-big {
+    font-family: 'Cairo', 'Fredoka One', system-ui, sans-serif;
+    font-weight: 900;
+}
+[dir='rtl'] .ct-fq-training-shell--hub-light .ct-fq-training-screen--hub .ct-fq-hub-attn-sub {
+    font-family: 'Cairo', 'Source Sans 3', sans-serif;
+    color: #3d4542;
+}
+
+/* Attention sub-screens (difficulty, levels, challenge, results) — paper chrome on cream bg */
+.ct-fq-training-shell--hub-light .ct-fq-training-title {
+    color: #141414;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+.ct-fq-training-shell--hub-light .ct-fq-training-blurb,
+.ct-fq-training-shell--hub-light .ct-fq-training-screen .ct-fq-sub {
+    color: #4a4f4d !important;
+    font-style: normal;
+}
+.ct-fq-training-shell--hub-light.ct-fq-training-shell .ct-fq-btn-pri {
+    background: linear-gradient(180deg, #f2c56a 0%, #e8ac4e 100%);
+    color: #1a1208;
+    border: 1.5px solid rgba(26, 18, 8, 0.2);
+    box-shadow: 0 4px 0 rgba(26, 18, 8, 0.12), 0 8px 20px rgba(45, 60, 48, 0.12);
+}
+.ct-fq-training-shell--hub-light.ct-fq-training-shell .ct-fq-btn-ghost {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(250, 246, 240, 0.98) 100%);
+    color: #3d4542;
+    border: 1px solid rgba(107, 158, 122, 0.38);
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.85) inset,
+        0 4px 14px rgba(45, 60, 48, 0.06);
+}
+
+.ct-fq-training-shell--hub-light .ct-fq-db-training {
+    border: 1px solid rgba(45, 45, 40, 0.12) !important;
+    box-shadow: 0 6px 18px rgba(45, 60, 48, 0.08), 0 1px 0 rgba(255, 255, 255, 0.5) inset !important;
+}
+
+.ct-fq-training-shell--hub-light .ct-fq-card-training {
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 246, 240, 0.99) 100%) !important;
+    border: 1px solid rgba(107, 158, 122, 0.38) !important;
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.92) inset,
+        0 8px 22px rgba(45, 60, 48, 0.07) !important;
+    color: #2d2d2d;
+}
+.ct-fq-training-shell--hub-light .ct-fq-card-training h3 {
+    color: #0f0f0f !important;
+}
+.ct-fq-training-shell--hub-light .ct-fq-card-training .ct-fq-pr input {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: rgba(107, 158, 122, 0.35) !important;
+    color: #1a1a1a !important;
+}
+.ct-fq-training-shell--hub-light .ct-fq-apb-training {
+    border-color: rgba(107, 158, 122, 0.45) !important;
+    color: #2a4a32 !important;
+    background: rgba(255, 252, 248, 0.95) !important;
+}
+.ct-fq-training-shell--hub-light .ct-fq-rrb-training {
+    border-color: rgba(107, 158, 122, 0.35) !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #2d2d2d !important;
+}
+.ct-fq-training-shell--hub-light .ct-fq-rrb-on-training,
+.ct-fq-training-shell--hub-light .ct-fq-rrb-on.ct-fq-rrb-on-training {
+    border-color: #6b9e7a !important;
+    background: linear-gradient(180deg, rgba(200, 232, 208, 0.55) 0%, rgba(168, 216, 168, 0.35) 100%) !important;
+    color: #143018 !important;
+}
+
+.ct-fq-training-shell--hub-light .ct-fq-rm-training .ct-fq-rmi {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 246, 240, 0.99) 100%);
+    border: 1px solid rgba(107, 158, 122, 0.28);
+}
+.ct-fq-training-shell--hub-light .ct-fq-rm-training .ct-fq-rv {
+    color: #1a6b3a;
+}
+.ct-fq-training-shell--hub-light .ct-fq-rm-training .ct-fq-rl {
+    color: #5c605d;
+}
+
+.ct-fq-training-shell--hub-light .ct-fq-training-screen .ct-fq-sbig {
+    color: #b87220;
+    font-family: 'Fredoka One', 'Nunito', cursive;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.ct-fq-training-shell--hub-light .ct-fq-training-screen .ct-fq-ies-lbl {
+    color: #5c605d;
+}
+
+.ct-fq-training-shell--hub-light .ct-fq-lbr-training {
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 246, 240, 0.99) 100%) !important;
+    border: 1px solid rgba(107, 158, 122, 0.28) !important;
+}
+.ct-fq-training-shell--hub-light .ct-fq-lbr-training.win {
+    border-color: rgba(212, 175, 55, 0.65) !important;
+    background: linear-gradient(135deg, #fff8e8, #fff0c8) !important;
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.18);
+}
+.ct-fq-training-shell--hub-light .ct-fq-lbr-training .ct-fq-lbnm {
+    color: #1a1a1a;
+}
+.ct-fq-training-shell--hub-light .ct-fq-lbr-training .ct-fq-lbdt {
+    color: #5c605d;
+}
+.ct-fq-training-shell--hub-light .ct-fq-lbr-training .ct-fq-lbsc {
+    color: #b87220;
+}
+
+[dir='rtl'] .ct-fq-training-shell--hub-light .ct-fq-training-title {
+    font-family: 'Cairo', 'Cormorant Garamond', serif;
+}
+
+/* Attention hub — light mode list (replaces circular maze) */
+.ct-fq-attn-modes {
+    width: 100%;
+    max-width: 380px;
+    margin: clamp(16px, 4vw, 28px) auto 22px;
+    padding: 0 16px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    z-index: 6;
+}
+.ct-fq-attn-mode {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    margin: 0;
+    padding: 17px 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(107, 158, 122, 0.38);
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 246, 240, 0.99) 100%);
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.92) inset,
+        0 8px 22px rgba(45, 60, 48, 0.07),
+        0 1px 3px rgba(45, 45, 40, 0.05);
+    cursor: pointer;
+    text-align: start;
+    font: inherit;
+    color: inherit;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+.ct-fq-attn-mode:hover {
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.95) inset,
+        0 10px 26px rgba(45, 60, 48, 0.1),
+        0 0 0 1px rgba(107, 158, 122, 0.12);
+}
+.ct-fq-attn-mode:active {
+    transform: scale(0.985);
+}
+.ct-fq-attn-mode:focus-visible {
+    outline: 3px solid rgba(107, 158, 122, 0.55);
+    outline-offset: 2px;
+}
+.ct-fq-attn-mode--free {
+    border: 3px solid #000;
+}
+.ct-fq-attn-mode--levels {
+    border: 3px solid #000;
+}
+.ct-fq-attn-mode--chal {
+    border: 3px solid #000;
+}
+.ct-fq-attn-mode-ic {
+    font-size: 2.2rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.ct-fq-attn-mode-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.ct-fq-attn-mode-lb {
+    font-family: 'Fredoka One', 'Nunito', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: clamp(1.22rem, 4.2vw, 1.42rem);
+    letter-spacing: 0.03em;
+    color: #0f0f0f;
+    line-height: 1.15;
+    text-transform: none;
+}
+.ct-fq-attn-mode-hint {
+    font-family: 'Nunito', 'Source Sans 3', 'Outfit', sans-serif;
+    font-size: clamp(0.86rem, 3.1vw, 1.02rem);
+    font-weight: 800;
+    color: #2a2a2a;
+    line-height: 1.3;
+    letter-spacing: 0.02em;
+}
+.ct-fq-attn-mode-hint-ar {
+    font-family: 'Cairo', 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: clamp(0.86rem, 3.1vw, 1.02rem);
+    letter-spacing: 0.01em;
+}
+.ct-fq-attn-mode-chev {
+    flex-shrink: 0;
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: rgba(40, 55, 45, 0.55);
+    line-height: 1;
+}
+[dir='rtl'] .ct-fq-attn-mode {
+    text-align: right;
+}
+[dir='rtl'] .ct-fq-attn-mode-lb {
+    font-family: 'Cairo', 'Fredoka One', system-ui, sans-serif;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+}
+[dir='rtl'] .ct-fq-attn-mode-hint:not(.ct-fq-attn-mode-hint-ar) {
+    font-family: 'Cairo', 'Nunito', sans-serif;
+}
+[dir='rtl'] .ct-fq-attn-mode-chev {
+    transform: scaleX(-1);
+}
+
 .ct-fq-training-screen.ct-fq-screen {
     position: relative;
     z-index: 5;
@@ -1095,8 +1920,8 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
     padding-bottom: 8px;
 }
 
-.ct-fq-training-screen--hub .ct-fq-hub-disc-shell {
-    margin-top: clamp(22px, 5.5vw, 36px);
+.ct-fq-training-screen--hub .ct-fq-attn-modes {
+    margin-top: clamp(12px, 3.5vw, 22px);
     margin-bottom: 20px;
 }
 
@@ -1996,39 +2821,196 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
 .ct-fq-lbsc { font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: var(--fq-pdk); margin-inline-start: auto; }
 
 /* ============================================================================
+ * Cancellation task — desktop layout (≥768px).
+ * Scoped to .cancellation-task-game so mobile is never affected.
+ * Approach: centred content column on the hub; wider panels on sub-screens;
+ *           10-col level grid; 4-col result stats; bigger mode cards.
+ * ========================================================================= */
+@media (min-width: 768px) {
+
+    /* ── All menu / nav screens: centred, generous padding ─────────────── */
+    .cancellation-task-game .ct-fq-screen {
+        padding: 0 clamp(24px, 4vw, 48px) 48px;
+    }
+
+    /* ── Attention hub: limit width so content sits in a nice column ───── */
+    .cancellation-task-game .ct-fq-training-screen--hub.ct-fq-training-screen.ct-fq-screen {
+        max-width: 560px;
+        width: 100%;
+        margin-inline: auto;
+    }
+
+    /* Hub heading: slightly larger on wide screens */
+    .cancellation-task-game .ct-fq-hub-attn-big {
+        font-size: clamp(4rem, 7vw, 5.8rem);
+    }
+
+    /* Mode selector list: wider, centred nicely */
+    .cancellation-task-game .ct-fq-attn-modes {
+        max-width: 480px;
+        padding: 0 0;
+        gap: 14px;
+    }
+
+    /* Each mode card: more padding, bigger icon area */
+    .cancellation-task-game .ct-fq-attn-mode {
+        padding: 20px 22px;
+        border-radius: 18px;
+        gap: 18px;
+    }
+    .cancellation-task-game .ct-fq-attn-mode-ic {
+        font-size: 2.55rem;
+    }
+    .cancellation-task-game .ct-fq-attn-mode-lb {
+        font-size: clamp(1.32rem, 2.4vw, 1.55rem);
+    }
+    .cancellation-task-game .ct-fq-attn-mode-hint {
+        font-size: clamp(0.92rem, 1.7vw, 1.06rem);
+    }
+
+    /* ── Sub-screens (difficulty, levels, challenge, results): centred card ── */
+    .cancellation-task-game .ct-fq-training-screen.ct-fq-screen:not(.ct-fq-training-screen--hub) {
+        max-width: 580px;
+        width: 100%;
+        margin-inline: auto;
+    }
+
+    /* Level grid: 10 columns so numbers aren't cramped on wide screens */
+    .cancellation-task-game .ct-fq-lg {
+        grid-template-columns: repeat(10, 1fr);
+        max-width: 520px;
+        gap: 7px;
+    }
+    .cancellation-task-game .ct-fq-lb {
+        padding: 10px 2px;
+        border-radius: 10px;
+    }
+    .cancellation-task-game .ct-fq-ln {
+        font-size: 1.15rem;
+    }
+
+    /* Difficulty buttons: wider, more breathing room */
+    .cancellation-task-game .ct-fq-db {
+        max-width: 520px;
+        padding: 18px 22px;
+        font-size: 1rem;
+    }
+
+    /* Result stats grid: 4 columns on desktop */
+    .cancellation-task-game .ct-fq-rm {
+        grid-template-columns: repeat(4, 1fr);
+        max-width: 480px;
+        gap: 8px;
+    }
+    .cancellation-task-game .ct-fq-rmi {
+        padding: 12px 6px;
+        border-radius: 10px;
+    }
+    .cancellation-task-game .ct-fq-rv {
+        font-size: 1.2rem;
+    }
+    .cancellation-task-game .ct-fq-rl {
+        font-size: 0.6rem;
+    }
+    .cancellation-task-game .ct-fq-sbig {
+        font-size: clamp(3rem, 5.5vw, 4.2rem);
+    }
+
+    /* Leaderboard entries: wider */
+    .cancellation-task-game .ct-fq-lbr {
+        max-width: 500px;
+    }
+
+    /* Action button row: wider max on desktop */
+    .cancellation-task-game .ct-fq-btn {
+        max-width: 380px;
+        padding: 15px 18px;
+        font-size: 1rem;
+    }
+    .cancellation-task-game .ct-fq-btn-ghost {
+        max-width: 240px;
+    }
+
+    /* Cards (challenge settings etc.) */
+    .cancellation-task-game .ct-fq-card {
+        max-width: 520px;
+    }
+    .cancellation-task-game .ct-fq-row {
+        max-width: 460px;
+    }
+
+    /* Training menu-bar topbar: bigger safe-area on wide screens */
+    .cancellation-task-game .ct-fq-topbar {
+        padding-left: clamp(12px, 2vw, 28px);
+        padding-right: clamp(12px, 2vw, 28px);
+    }
+}
+
+/* Cancellation task — mobile play: tighter HUD/bars so the grid can use more of the viewport. */
+@media (max-width: 720px) {
+    .cancellation-task-game .ct-fq-g-wrap {
+        padding: 4px max(4px, env(safe-area-inset-right, 0px))
+            max(6px, env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px));
+    }
+    .cancellation-task-game .ct-fq-cpb {
+        margin-bottom: 3px;
+        padding: 3px 8px;
+    }
+    .cancellation-task-game .ct-fq-g-top {
+        margin-bottom: 3px;
+        padding: 5px 6px;
+        gap: 4px;
+    }
+    .cancellation-task-game .ct-fq-cbw,
+    .cancellation-task-game .ct-fq-pbw {
+        margin-bottom: 2px;
+    }
+    .cancellation-task-game .ct-fq-tb {
+        margin-bottom: 3px;
+        padding: 6px 8px;
+    }
+    .cancellation-task-game .ct-fq-tb-row {
+        gap: 8px;
+    }
+    .cancellation-task-game .ct-fq-grid-outer {
+        padding: 2px;
+    }
+    .cancellation-task-game .ct-fq-grid-inner {
+        padding: 4px;
+    }
+}
+
+/* ============================================================================
  * Cancellation task — narrow-viewport (small phones <380px) layout corrections.
  *
  * Resolves on-mobile overflow caused by:
- *   - Hub orbit nodes (.ct-fq-hub-orbit-floater) running past the disc rim and
- *     sometimes past the viewport when ORBIT_R is large and node padding wide.
- *   - Screen padding (12px 14px) eating cell-budget on the play grid.
+ *   - Attention hub mode rows (.ct-fq-attn-mode) and screen padding on tiny screens.
  *   - Levels grid (5 columns) cells getting cramped at default gap.
  * ========================================================================= */
 @media (max-width: 380px) {
     .cancellation-task-game .ct-fq-screen {
         padding: 10px 10px 20px;
     }
-    .cancellation-task-game .ct-fq-hub-disc-shell {
-        max-width: min(404px, 92vw);
+    .cancellation-task-game .ct-fq-attn-modes {
+        padding: 0 12px;
+        gap: 10px;
     }
-    .cancellation-task-game .ct-fq-training-screen--hub .ct-fq-hub-disc-shell {
-        margin-top: clamp(14px, 4vw, 24px);
+    .cancellation-task-game .ct-fq-training-screen--hub .ct-fq-attn-modes {
+        margin-top: clamp(10px, 3vw, 18px);
         margin-bottom: 14px;
     }
-    .cancellation-task-game .ct-fq-hub-orbit-floater {
-        width: min(108px, 30vw);
-        min-height: 66px;
-        padding: 7px 8px 8px;
+    .cancellation-task-game .ct-fq-attn-mode {
+        padding: 13px 14px;
+        gap: 11px;
     }
-    .cancellation-task-game .ct-fq-hub-node-ic {
-        font-size: 1.15rem;
+    .cancellation-task-game .ct-fq-attn-mode-ic {
+        font-size: 1.95rem;
     }
-    .cancellation-task-game .ct-fq-hub-orbit-floater .ct-fq-hub-node-lb {
-        font-size: 0.66rem;
+    .cancellation-task-game .ct-fq-attn-mode-lb {
+        font-size: clamp(1.08rem, 4.8vw, 1.28rem);
     }
-    .cancellation-task-game .ct-fq-hub-orbit-floater .ct-fq-hub-node-hint {
-        font-size: 0.5rem;
-        line-height: 1.18;
+    .cancellation-task-game .ct-fq-attn-mode-hint {
+        font-size: clamp(0.8rem, 3.4vw, 0.95rem);
     }
     .cancellation-task-game .ct-fq-lg {
         gap: 5px;
@@ -2061,13 +3043,10 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
     }
 }
 
-/* Mid-phone refinements (380–520px): keep ample play area but trim chrome. */
-@media (min-width: 381px) and (max-width: 520px) {
+/* Mid-phone refinements (380–720px): menu screens; play grid uses max-width:720 block above. */
+@media (min-width: 381px) and (max-width: 720px) {
     .cancellation-task-game .ct-fq-screen {
         padding: 12px 12px 22px;
-    }
-    .cancellation-task-game .ct-fq-g-wrap {
-        padding: 5px 5px 8px;
     }
 }
 
@@ -2107,7 +3086,7 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
 }
 
 /* ============================================================================
- * Focus Quest tutorial overlay (Maze Man + animated hand walkthrough).
+ * Focus Quest tutorial overlay (Maze Man + text + demo board).
  * ========================================================================= */
 .ct-fq-tut-root {
     position: fixed;
@@ -2134,10 +3113,7 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
     z-index: 0;
 }
 
-/* Demo card (the fake game board). `position: relative` makes the card the
- * containing block for the absolutely-positioned hand pointer, so its `left`
- * and `top` percentages are interpreted against the card's own dimensions.
- * Sized to fit comfortably above the dock on a 640px-tall phone. */
+/* Demo card (the fake game board). */
 .ct-fq-tut-card {
     position: relative;
     z-index: 2;
@@ -2273,59 +3249,16 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
     animation: ct-fq-pop 0.35s ease;
 }
 
-/* Animated pointing hand. Pinned to viewport coordinates measured from the
- * current step's anchor element so it lines up perfectly across screen sizes. */
-.ct-fq-tut-hand {
-    position: fixed;
-    width: 56px;
-    height: 56px;
-    pointer-events: none;
-    z-index: 1510;
-    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.55));
-    transition:
-        left 0.55s cubic-bezier(0.2, 0.8, 0.2, 1),
-        top 0.55s cubic-bezier(0.2, 0.8, 0.2, 1),
-        transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-@keyframes ctFqTutTap {
-    0%, 100% { transform: translate(-50%, -50%) rotate(-16deg) scale(1); }
-    45%      { transform: translate(-50%, -50%) rotate(-16deg) scale(0.78); }
-}
-.ct-fq-tut-hand.tap {
-    animation: ctFqTutTap 0.65s ease 1 0.3s;
-}
-
-/* Spotlight rings — emphasise the chrome the hand is pointing at. */
+/* Subtle spotlight — static outline on the UI region the step talks about. */
 .ct-fq-tut-main.spot-banner [data-tut-anchor='banner'],
 .ct-fq-tut-main.spot-time [data-tut-anchor='time'],
 .ct-fq-tut-main.spot-strikes [data-tut-anchor='strikes'] {
     box-shadow:
-        0 0 0 2px rgba(232, 172, 78, 0.65),
-        0 0 18px rgba(232, 172, 78, 0.4),
-        0 2px 8px rgba(0, 0, 0, 0.35);
-    animation: ctFqTutPulse 1.6s ease-in-out infinite;
+        0 0 0 1.5px rgba(232, 172, 78, 0.5),
+        0 2px 8px rgba(0, 0, 0, 0.3);
 }
 .ct-fq-tut-main.spot-strikes [data-tut-anchor='strikes'] {
     border-radius: 10px;
-}
-.ct-fq-tut-main.spot-cell-1 .ct-fq-tut-grid {
-    box-shadow:
-        0 0 0 2px rgba(232, 172, 78, 0.5),
-        0 0 16px rgba(232, 172, 78, 0.28);
-}
-@keyframes ctFqTutPulse {
-    0%, 100% {
-        box-shadow:
-            0 0 0 2px rgba(232, 172, 78, 0.55),
-            0 0 14px rgba(232, 172, 78, 0.3),
-            0 2px 8px rgba(0, 0, 0, 0.35);
-    }
-    50% {
-        box-shadow:
-            0 0 0 3px rgba(232, 172, 78, 0.85),
-            0 0 22px rgba(232, 172, 78, 0.5),
-            0 2px 10px rgba(0, 0, 0, 0.4);
-    }
 }
 
 /* Bottom dock: Maze Man + speech bubble. */
@@ -2384,18 +3317,33 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
     border-top: 1.5px solid rgba(232, 172, 78, 0.5);
 }
 .ct-fq-tut-bubble-progress {
-    font-family: 'Cormorant Garamond', 'Cinzel', serif;
-    font-size: 0.66rem;
+    font-family: 'Nunito', 'Source Sans 3', system-ui, sans-serif;
+    font-size: 0.62rem;
+    font-weight: 800;
     color: #e8ac4e;
-    letter-spacing: 0.18em;
-    margin-bottom: 4px;
-    opacity: 0.85;
+    letter-spacing: 0.14em;
+    margin-bottom: 6px;
+    opacity: 0.95;
+    text-transform: uppercase;
+}
+.ct-fq-tut-bubble-title {
+    font-family: 'Fredoka One', 'Nunito', system-ui, sans-serif;
+    font-size: 1.05rem;
+    font-weight: 400;
+    line-height: 1.2;
+    margin: 0 0 8px;
+    color: #fff8f0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+[dir='rtl'] .ct-fq-tut-bubble-title {
+    font-family: 'Cairo', 'Fredoka One', system-ui, sans-serif;
+    font-weight: 900;
 }
 .ct-fq-tut-bubble-text {
-    font-size: 0.92rem;
-    line-height: 1.42;
+    font-size: 0.88rem;
+    line-height: 1.48;
     margin: 0 0 10px;
-    color: #f0e2c0;
+    color: #e8dfd0;
 }
 [dir='rtl'] .ct-fq-tut-bubble-text {
     font-family: 'Cairo', 'Source Sans 3', sans-serif;
@@ -2459,10 +3407,6 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
     box-shadow:
         0 14px 32px rgba(0, 0, 0, 0.55),
         0 0 0 1px rgba(0, 0, 0, 0.4) inset;
-}
-.ct-fq-tut-tip-emoji {
-    font-size: 1.4rem;
-    margin-bottom: 4px;
 }
 .ct-fq-tut-tip-text {
     font-size: 0.94rem;

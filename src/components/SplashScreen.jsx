@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { IconBack } from './training/TrainingIcons';
 
 const AVATARS = ['🧠', '🕵️', '🦊', '🌀', '🔮', '👁️'];
 
-function SettingsRow({ icon, label, value, onClick, danger }) {
+function SettingsRow({ label, value, onClick, danger }) {
   return (
-    <button onClick={onClick} className={`stg-row${danger ? ' stg-row--danger' : ''}`}>
-      <span className="stg-row-icon">{icon}</span>
+    <button type="button" onClick={onClick} className={`stg-row${danger ? ' stg-row--danger' : ''}`}>
       <span className="stg-row-label">{label}</span>
       {value && <span className="stg-row-value">{value}</span>}
-      <span className="stg-row-chevron">›</span>
+      <span className="stg-row-chevron" aria-hidden>›</span>
     </button>
   );
 }
@@ -23,13 +23,31 @@ function SettingsSection({ title, children }) {
   );
 }
 
-function SettingsModal({ title, onClose, children }) {
+/** Real brain photo — transparent PNG, lateral (side) view. */
+function SplashBrainSide({ className }) {
   return (
-    <div className="stg-modal-backdrop" onClick={onClose}>
-      <div className="stg-modal-box" onClick={e => e.stopPropagation()}>
+    <img
+      className={className}
+      src="/the-maze-man-comics/Assets/brain-side.png"
+      alt=""
+      aria-hidden="true"
+      draggable="false"
+    />
+  );
+}
+
+function SettingsModal({ title, onClose, children }) {
+  const { playSfx } = useApp();
+  const close = () => {
+    playSfx('click');
+    onClose();
+  };
+  return (
+    <div className="stg-modal-backdrop" onClick={close}>
+      <div className="stg-modal-box" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="stg-modal-header">
           <span className="stg-modal-title">{title}</span>
-          <button className="stg-modal-close" onClick={onClose}>✕</button>
+          <button type="button" className="stg-modal-close" onClick={close} aria-label="Close">✕</button>
         </div>
         <div className="stg-modal-body">{children}</div>
       </div>
@@ -38,7 +56,17 @@ function SettingsModal({ title, onClose, children }) {
 }
 
 export default function SplashScreen({ onDone }) {
-  const { currentLang, toggleLang, profileData, setProfileData, saveProfile, globalXP } = useApp();
+  const {
+    currentLang,
+    toggleLang,
+    profileData,
+    setProfileData,
+    saveProfile,
+    globalXP,
+    playSfx,
+    sfxEnabled,
+    setSfxEnabled,
+  } = useApp();
   const isAr = currentLang === 'ar';
   const [ready, setReady] = useState(false);
   const [fading, setFading] = useState(false);
@@ -65,36 +93,67 @@ export default function SplashScreen({ onDone }) {
   const level = Math.floor(globalXP / XP_PER_LEVEL) + 1;
   const xpPct = Math.min(100, ((globalXP % XP_PER_LEVEL) / XP_PER_LEVEL) * 100);
 
-  return (
-    <div className={`splash-screen${fading || quitting ? ' splash-out' : ''}`}>
+  /** Inline so layout never depends on cached CSS (column stack, full-width rows). */
+  const splashStackStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    width: '100%',
+    maxWidth: 'min(340px, 94vw)',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    gap: 7,
+    boxSizing: 'border-box',
+  };
+  const splashRowBtn = {
+    display: 'block',
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box',
+    flexShrink: 0,
+  };
 
-      <h1 className="splash-title">MAZE MAN</h1>
+  return (
+    <div className={`splash-screen${fading || quitting ? ' splash-out' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>
+
+      <header className="splash-header">
+        <div className="splash-hero-inner">
+          <h1 className="splash-title">
+            {isAr ? 'رجل المتاهة' : 'Maze Man'}
+          </h1>
+          <div className="splash-subbrand">
+            <div className="splash-subbrand-visual">
+              <SplashBrainSide className="splash-brain-side" />
+            </div>
+            <p className="splash-subbrand-title">
+              <span className="splash-subbrand-label" dir={isAr ? 'rtl' : 'ltr'}>
+                {isAr ? 'لعبة العقل' : 'Brain Game'}
+              </span>
+            </p>
+          </div>
+        </div>
+      </header>
 
       <div className="splash-bottom">
         {ready ? (
-          <>
-            <button
-              className="splash-start"
-              style={isAr ? { fontFamily: "'Cairo', sans-serif", letterSpacing: 0 } : {}}
-              onClick={handleStart}
-            >
-              {isAr ? 'ابدأ' : 'START'}
+          <nav
+            className="splash-menu"
+            style={splashStackStyle}
+            aria-label={isAr ? 'القائمة الرئيسية' : 'Main menu'}
+          >
+            <button type="button" className="splash-start" style={splashRowBtn} onClick={handleStart}>
+              {isAr ? 'ابدأ' : 'Start'}
             </button>
-
-            <div className="splash-sub-btns">
-              <button className="splash-sub-btn" onClick={() => setShowSettings(true)}>
-                {isAr ? 'الإعدادات' : 'SETTINGS'}
-              </button>
-              <span className="splash-sub-divider">·</span>
-              <button className="splash-sub-btn" onClick={() => setShowAbout(true)}>
-                {isAr ? 'عن التطبيق' : 'ABOUT'}
-              </button>
-              <span className="splash-sub-divider">·</span>
-              <button className="splash-sub-btn splash-sub-btn--quit" onClick={handleQuit}>
-                {isAr ? 'خروج' : 'QUIT'}
-              </button>
-            </div>
-          </>
+            <button type="button" className="splash-menu-btn" style={splashRowBtn} onClick={() => setShowSettings(true)}>
+              {isAr ? 'الإعدادات' : 'Settings'}
+            </button>
+            <button type="button" className="splash-menu-btn" style={splashRowBtn} onClick={() => setShowAbout(true)}>
+              {isAr ? 'عن التطبيق' : 'About'}
+            </button>
+            <button type="button" className="splash-menu-btn splash-menu-btn--quit" style={splashRowBtn} onClick={handleQuit}>
+              {isAr ? 'خروج' : 'Quit'}
+            </button>
+          </nav>
         ) : (
           <p className="splash-loading">loading<span className="splash-ellipsis" /></p>
         )}
@@ -102,9 +161,19 @@ export default function SplashScreen({ onDone }) {
 
       {/* ── FULL-SCREEN SETTINGS ── */}
       {showSettings && (
-        <div className="stg-screen" dir={isAr ? 'rtl' : 'ltr'}>
+        <div className="stg-screen stg-screen--paper" dir={isAr ? 'rtl' : 'ltr'}>
           <div className="stg-topbar">
-            <button className="stg-back" onClick={() => setShowSettings(false)}>‹</button>
+            <button
+              type="button"
+              className="stg-back"
+              aria-label={isAr ? 'رجوع' : 'Back'}
+              onClick={() => {
+                playSfx('click');
+                setShowSettings(false);
+              }}
+            >
+              <IconBack size={18} c="#3a3228" />
+            </button>
             <span className="stg-topbar-title">{isAr ? 'الإعدادات' : 'Settings'}</span>
           </div>
 
@@ -134,26 +203,34 @@ export default function SplashScreen({ onDone }) {
 
             <SettingsSection title={isAr ? 'التفضيلات' : 'Preferences'}>
               <SettingsRow
-                icon="🌐"
                 label={isAr ? 'اللغة' : 'Language'}
                 value={isAr ? 'العربية' : 'English'}
                 onClick={toggleLang}
               />
+              <SettingsRow
+                label={isAr ? 'المؤثرات الصوتية' : 'Sound effects'}
+                value={sfxEnabled ? (isAr ? 'تشغيل' : 'On') : (isAr ? 'إيقاف' : 'Off')}
+                onClick={() => {
+                  const next = !sfxEnabled;
+                  setSfxEnabled(next);
+                  if (next) playSfx('click');
+                }}
+              />
             </SettingsSection>
 
             <SettingsSection title={isAr ? 'الدعم' : 'Support'}>
-              <SettingsRow icon="❓" label={isAr ? 'المساعدة' : 'Help'} onClick={() => setSubModal('help')} />
-              <SettingsRow icon="💬" label={isAr ? 'ملاحظاتك' : 'Your Feedback'} onClick={() => setSubModal('feedback')} />
+              <SettingsRow label={isAr ? 'المساعدة' : 'Help'} onClick={() => { playSfx('click'); setSubModal('help'); }} />
+              <SettingsRow label={isAr ? 'ملاحظاتك' : 'Your Feedback'} onClick={() => { playSfx('click'); setSubModal('feedback'); }} />
             </SettingsSection>
 
             <SettingsSection title={isAr ? 'قانوني' : 'Legal'}>
-              <SettingsRow icon="📄" label={isAr ? 'شروط الاستخدام' : 'Terms of Use'} onClick={() => setSubModal('terms')} />
-              <SettingsRow icon="🔒" label={isAr ? 'سياسة الخصوصية' : 'Privacy Policy'} onClick={() => setSubModal('privacy')} />
+              <SettingsRow label={isAr ? 'شروط الاستخدام' : 'Terms of Use'} onClick={() => { playSfx('click'); setSubModal('terms'); }} />
+              <SettingsRow label={isAr ? 'سياسة الخصوصية' : 'Privacy Policy'} onClick={() => { playSfx('click'); setSubModal('privacy'); }} />
             </SettingsSection>
 
             <SettingsSection title={isAr ? 'البيانات' : 'Data'}>
-              <SettingsRow icon="📤" label={isAr ? 'تصدير بياناتي' : 'Export My Data'} onClick={() => setSubModal('export')} />
-              <SettingsRow icon="🗑️" label={isAr ? 'حذف الحساب' : 'Delete Account'} onClick={() => setSubModal('delete')} danger />
+              <SettingsRow label={isAr ? 'تصدير بياناتي' : 'Export My Data'} onClick={() => { playSfx('click'); setSubModal('export'); }} />
+              <SettingsRow label={isAr ? 'حذف الحساب' : 'Delete Account'} onClick={() => { playSfx('click'); setSubModal('delete'); }} danger />
             </SettingsSection>
 
           </div>

@@ -4,6 +4,8 @@
   "description": "The Maze Man Comics — Interactive bilingual psychology PWA",
   "scripts": {
     "dev": "vite",
+    "dev:8080": "vite --host --port 8080 --strictPort --open /the-maze-man-comics/",
+    "preview": "vite preview",
     "build": "vite build",
     "audit:fq": "node scripts/audit-focus-quest-levels.mjs",
     "cap:sync": "npx cap sync",

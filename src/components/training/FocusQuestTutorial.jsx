@@ -1,12 +1,12 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import MazeManAvatar from './MazeManAvatar';
 import { SH } from './focusQuestData';
 
 /* =============================================================================
- * Focus Quest tutorial — Maze Man + animated hand walkthrough.
+ * Focus Quest tutorial — short text + demo board (no pointers or arrows).
  *
  * Main tutorial (7 steps): runs once on the first time a user enters any play
- * mode. Self-contained: renders its own demo round (5×5, 3 known targets) so
+ * mode. Self-contained: renders its own demo round (4×4, 3 known targets) so
  * nothing in the real game state has to be paused or mocked.
  *
  * Mode tips (1 step each): brief Maze Man speech bubble explaining the rules
@@ -58,21 +58,50 @@ const STR = {
     next: 'Next',
     done: 'Got it!',
     start: "Let's go!",
-    progress: (n, t) => `${n} / ${t}`,
+    progress: (n, t) => `Step ${n} of ${t}`,
     bannerCue: 'Tap every tile that matches this.',
     timeLbl: 'Time',
     foundLbl: 'Found',
     strikesLbl: 'Strikes',
     main: {
-      welcome: "Hi! I'm Maze Man. I'll show you the ropes in 30 seconds.",
-      target: 'This is your target — the shape (and colour, on harder rounds) you need to find.',
-      firstTap: 'Tap any tile that matches it. Watch my hand!',
-      practiceTap: 'Your turn! Find the other matching tiles to continue.',
-      timer: 'In a real round, beat this timer. When the bar empties, the round ends.',
-      strikes: 'Wrong taps cost time. In Free mode, three wrong taps end your run.',
-      ready: "That's it — you're ready, friend. Good luck out there!",
+      welcome: {
+        title: 'Focus Quest',
+        body:
+          'Tap every tile that matches the shape in the banner. A few short screens — use Next or Skip.',
+      },
+      target: {
+        title: 'Match the banner',
+        body:
+          'Same shape as the banner counts (on harder modes, same colour too). Ignore everything else.',
+      },
+      firstTap: {
+        title: 'A correct tap',
+        body:
+          'The board plays one hit for you so you can see a tile clear as found.',
+      },
+      practiceTap: {
+        title: 'Try it',
+        body:
+          'Tap every tile that matches the banner. Wrong shapes only shake here — it is practice.',
+      },
+      timer: {
+        title: 'Time',
+        body:
+          'The bar is your countdown. When it is empty, the round ends.',
+      },
+      strikes: {
+        title: 'Mistakes',
+        body:
+          'Wrong taps add strikes. In Free mode, three strikes end the run.',
+      },
+      ready: {
+        title: 'Ready',
+        body:
+          'Match the banner, watch the bar, and tap carefully.',
+      },
     },
-    free: 'Free mode: one timer for the whole run. Each clear adds time. Three wrong taps end it. Play as long as you can!',
+    free:
+      'Free mode: one session timer. Each full clear adds only a little time — the clock should feel tight. Earn score on every correct tap and a bigger chunk when you clear a round; streaks of clears multiply that bonus. Wrong taps cost score & build strikes — three strikes end the run.',
     challenge: 'Challenge mode: every player faces the EXACT same grid. Hand the device around and compare scores fairly!',
     replayHint: 'Replay tutorial',
   },
@@ -82,58 +111,62 @@ const STR = {
     next: 'التالي',
     done: 'فهمت!',
     start: 'لنبدأ!',
-    progress: (n, t) => `${n} / ${t}`,
+    progress: (n, t) => `الخطوة ${n} من ${t}`,
     bannerCue: 'انقر كل مربع يطابق هذا.',
     timeLbl: 'الوقت',
     foundLbl: 'مُوجَد',
     strikesLbl: 'الأخطاء',
     main: {
-      welcome: 'أهلًا! أنا Maze Man. سأشرح لك الطريقة في 30 ثانية.',
-      target: 'هذا هو الشكل المطلوب — تبحث عن الشكل (واللون في المراحل الأصعب).',
-      firstTap: 'انقر على أي مربع يطابقه. راقب يدي!',
-      practiceTap: 'دورك! ابحث عن باقي المربعات المطابقة للمتابعة.',
-      timer: 'في الجولة الحقيقية اسبق هذا المؤقت. عند فراغ الشريط تنتهي الجولة.',
-      strikes: 'النقرات الخاطئة تكلف وقتًا. في الوضع الحر ثلاث أخطاء تنهي المحاولة.',
-      ready: 'هذا كل شيء — أنت جاهز يا صديقي. حظًا موفقًا!',
+      welcome: {
+        title: 'مهمة التركيز',
+        body:
+          'انقر كل مربع يطابق شكل الشريط في الأعلى. بضع شاشات قصيرة — التالي أو التخطّي.',
+      },
+      target: {
+        title: 'طابق الشريط',
+        body:
+          'نفس شكل الشريط فقط (وفي مستويات أصعب نفس اللون أيضاً). تجاهل الباقي.',
+      },
+      firstTap: {
+        title: 'نقرة صحيحة',
+        body:
+          'نؤدي نقرة واحدة تلقائياً لترى كيف يُعلَّم المربع كـ«مُوجَد».',
+      },
+      practiceTap: {
+        title: 'جرّب',
+        body:
+          'انقر كل مربع يطابق الشريط. الشكل الخاطئ يهتز هنا فقط — هذه تجربة.',
+      },
+      timer: {
+        title: 'الوقت',
+        body:
+          'الشريط يعدّ تنازلياً. عندما ينفد تنتهي الجولة.',
+      },
+      strikes: {
+        title: 'الأخطاء',
+        body:
+          'النقر الخاطئ يزيد الأخطاء. في الوضع الحر ثلاثة أخطاء تنهي المحاولة.',
+      },
+      ready: {
+        title: 'جاهز',
+        body:
+          'طابق الشريط، راقب الشريط، وانقر بهدوء.',
+      },
     },
-    free: 'الوضع الحر: مؤقت واحد للجولة كاملة. كل إكمال يضيف وقتًا. ثلاث أخطاء تنهي المحاولة. العب أطول ما يمكن!',
+    free:
+      'الوضع الحر: مؤقت واحد للجولة. كل إكمال كامل يضيف وقتاً قليلاً فقط — ابقَ تحت ضغط الوقت. اجمع نقاطاً بكل نقرة صحيحة ومكافأة أكبر عند إكمال الجولة؛ سلسلة إكمالات متتالية تزيد المكافأة. النقر الخاطئ يخصم نقاطاً ويصبح خطأً — ثلاثة أخطاء تنهي المحاولة.',
     challenge: 'وضع التحدي: كل اللاعبين يلعبون نفس الشبكة بالضبط. سلّم الجهاز للجميع وقارنوا النتائج بإنصاف!',
     replayHint: 'إعادة الشرح',
   },
 };
 
-/** Pointing-finger SVG. Renders inline so colour and drop-shadow scale freely. */
-function PointingHand({ size = 60 }) {
-  const gradId = `fq-tut-hand-${React.useId().replace(/:/g, '')}`;
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fde2bf" />
-          <stop offset="100%" stopColor="#d39459" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M28 4 C25.5 4 23.5 6 23.5 9 L23.5 28 L20 30 C15 32.5 11 36 11 42 L11 51 C11 55 13.5 57.5 17.5 57.5 L41 57.5 C45 57.5 49 54.5 49 49.5 L49 36 C49 33 47 31 44 31 L34.5 31 L34.5 9 C34.5 6 32.5 4 30 4 Z"
-        fill={`url(#${gradId})`}
-        stroke="#7a4a1f"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      {/* Highlight on the finger pad */}
-      <ellipse cx="29" cy="11" rx="3" ry="4.5" fill="#fff5e0" opacity="0.55" />
-    </svg>
-  );
-}
-
 /* ---------------------------------------------------------------------------
  * Demo round content for the main tutorial.
  *
  * Fixed seed: a 4×4 grid (compact enough to fit above the speech-bubble dock
- * on small phones), three target stars (orange) at known indices. The
- * remaining 13 cells are filled deterministically so the hand can point at
- * the first-target cell reliably across every run. Distractors avoid the
- * target shape so the categorical-search rule reads cleanly.
+ * on small phones), three target stars at known indices. Remaining cells are
+ * filled deterministically. Distractors avoid the target shape so the rule
+ * reads cleanly.
  * --------------------------------------------------------------------------- */
 const DEMO = {
   grid: 4,
@@ -198,7 +231,6 @@ export default function FocusQuestTutorial({ kind, isAr, onClose, playSfx }) {
         isAr={isAr}
         text={t.free}
         mood="ready"
-        emoji="♾️"
         onClose={onClose}
         playSfx={playSfx}
       />
@@ -211,7 +243,6 @@ export default function FocusQuestTutorial({ kind, isAr, onClose, playSfx }) {
         isAr={isAr}
         text={t.challenge}
         mood="focused"
-        emoji="⚔️"
         onClose={onClose}
         playSfx={playSfx}
       />
@@ -223,7 +254,7 @@ export default function FocusQuestTutorial({ kind, isAr, onClose, playSfx }) {
 /* ---------------------------------------------------------------------------
  * Mode tip — tiny single-screen overlay with Maze Man + a one-liner.
  * --------------------------------------------------------------------------- */
-function ModeTip({ t, isAr, text, mood, emoji, onClose, playSfx }) {
+function ModeTip({ t, isAr, text, mood, onClose, playSfx }) {
   return (
     <div className="ct-fq-tut-root" role="dialog" aria-modal="true" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="ct-fq-tut-backdrop" />
@@ -232,7 +263,6 @@ function ModeTip({ t, isAr, text, mood, emoji, onClose, playSfx }) {
           <MazeManAvatar size={120} mood={mood} glow />
         </div>
         <div className="ct-fq-tut-tip-bubble">
-          <div className="ct-fq-tut-tip-emoji" aria-hidden="true">{emoji}</div>
           <p className="ct-fq-tut-tip-text">{text}</p>
           <button
             type="button"
@@ -256,11 +286,9 @@ function MainTutorial({ t, isAr, onClose, playSfx }) {
   const [stepIdx, setStepIdx] = useState(0);
   const [cells, setCells] = useState(() => buildDemoCells());
   const [shake, setShake] = useState(false);
-  const [handPos, setHandPos] = useState(null);
   const shakeTimerRef = useRef(0);
   const autoTapTimerRef = useRef(0);
   const advanceTimerRef = useRef(0);
-  const cardRef = useRef(null);
   const step = STEPS[stepIdx];
 
   const foundCount = cells.filter((c) => c.isT && c.tapped).length;
@@ -343,66 +371,6 @@ function MainTutorial({ t, isAr, onClose, playSfx }) {
     onClose?.();
   };
 
-  // Re-measure the hand anchor whenever the step changes or the card layout
-  // settles (font load, language flip). Position is fixed-viewport so it never
-  // gets confused by parent containing-block changes.
-  useLayoutEffect(() => {
-    const card = cardRef.current;
-    if (!card) {
-      setHandPos(null);
-      return undefined;
-    }
-    let raf = 0;
-    const measure = () => {
-      let anchorEl = null;
-      let tilt = -10;
-      let tap = false;
-      if (step === 'target') {
-        anchorEl = card.querySelector('[data-tut-anchor="banner"]');
-        tilt = -10;
-      } else if (step === 'firstTap') {
-        anchorEl = card.querySelector(`[data-tut-cell="${DEMO.targetIndices[0]}"]`);
-        tilt = -16;
-        tap = true;
-      } else if (step === 'timer') {
-        anchorEl = card.querySelector('[data-tut-anchor="time"]');
-        tilt = -10;
-      } else if (step === 'strikes') {
-        anchorEl = card.querySelector('[data-tut-anchor="strikes"]');
-        tilt = 16;
-      }
-      if (!anchorEl) {
-        setHandPos(null);
-        return;
-      }
-      const r = anchorEl.getBoundingClientRect();
-      // Aim the fingertip slightly above the anchor centre so the finger pad
-      // visibly overlays the target instead of the palm.
-      const offsetY = step === 'firstTap' ? -6 : -10;
-      setHandPos({
-        x: r.left + r.width / 2,
-        y: r.top + r.height / 2 + offsetY,
-        tilt,
-        tap,
-      });
-    };
-    measure();
-    const onResize = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(measure);
-    };
-    window.addEventListener('resize', onResize);
-    window.addEventListener('orientationchange', onResize);
-    const ro = new ResizeObserver(onResize);
-    ro.observe(card);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener('resize', onResize);
-      window.removeEventListener('orientationchange', onResize);
-      ro.disconnect();
-    };
-  }, [step]);
-
   // Mood per step.
   const mood = step === 'welcome'
     ? 'ready'
@@ -417,15 +385,13 @@ function MainTutorial({ t, isAr, onClose, playSfx }) {
   // Spotlight target — highlights the relevant chrome by adding a class.
   const spotlightClass = step === 'target'
     ? 'spot-banner'
-    : step === 'firstTap'
-      ? 'spot-cell-1'
-      : step === 'timer'
-        ? 'spot-time'
-        : step === 'strikes'
-          ? 'spot-strikes'
-          : '';
+    : step === 'timer'
+      ? 'spot-time'
+      : step === 'strikes'
+        ? 'spot-strikes'
+        : '';
 
-  const speech = t.main[step];
+  const stepCopy = t.main[step];
 
   return (
     <div
@@ -437,7 +403,7 @@ function MainTutorial({ t, isAr, onClose, playSfx }) {
       <div className="ct-fq-tut-backdrop" />
 
       {/* Demo "round" UI — all controlled by the tutorial. */}
-      <div className="ct-fq-tut-card" ref={cardRef}>
+      <div className="ct-fq-tut-card">
         <div className="ct-fq-tut-hud" data-tut-anchor="hud">
           <div className="ct-fq-tut-hud-stat ct-fq-tut-hud-time">
             <div className="ct-fq-tut-hud-val">12.0s</div>
@@ -482,31 +448,17 @@ function MainTutorial({ t, isAr, onClose, playSfx }) {
         </div>
       </div>
 
-      {/* Pointing hand — fixed to viewport coordinates measured from the
-          current step's anchor element. Sits above the card on z-index. */}
-      {handPos && (
-        <div
-          className={`ct-fq-tut-hand${handPos.tap ? ' tap' : ''}`}
-          style={{
-            left: `${handPos.x}px`,
-            top: `${handPos.y}px`,
-            transform: `translate(-50%, -50%) rotate(${handPos.tilt || 0}deg)`,
-          }}
-        >
-          <PointingHand size={56} />
-        </div>
-      )}
-
       {/* Maze Man + speech bubble dock — bottom of the screen. */}
       <div className="ct-fq-tut-dock">
         <div className="ct-fq-tut-dock-mm">
           <MazeManAvatar size={92} mood={mood} glow />
         </div>
         <div className="ct-fq-tut-bubble">
-          <div className="ct-fq-tut-bubble-progress">
+          <div className="ct-fq-tut-bubble-progress" aria-live="polite">
             {t.progress(stepIdx + 1, STEPS.length)}
           </div>
-          <p className="ct-fq-tut-bubble-text">{speech}</p>
+          <h3 className="ct-fq-tut-bubble-title">{stepCopy.title}</h3>
+          <p className="ct-fq-tut-bubble-text">{stepCopy.body}</p>
           <div className="ct-fq-tut-bubble-actions">
             {stepIdx === 0 && (
               <>
