@@ -2,15 +2,14 @@ import React, { useEffect, useState } from 'react';
 
 const BASE = import.meta.env.BASE_URL;
 
-/* Background-removal pass for the white-canvas Maze Man PNG. Soft alpha edge
- * around brightness 170–210. Heavy on large images, so we run it lazily —
- * `useTransparentBg` returns null until the work finishes, and the avatar
- * shows the raw image in the meantime. Errors (e.g. tainted canvas under
- * unusual hosting) fall through to the raw image too. */
+/* Global cache — process the image once, reuse everywhere. */
+const _bgCache = {};
+
 function useTransparentBg(src) {
-  const [dataUrl, setDataUrl] = useState(null);
+  const [dataUrl, setDataUrl] = useState(_bgCache[src] || null);
   useEffect(() => {
     if (!src) return undefined;
+    if (_bgCache[src]) { setDataUrl(_bgCache[src]); return undefined; }
     let cancelled = false;
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -27,26 +26,19 @@ function useTransparentBg(src) {
         const HARD = 210;
         const SOFT = 170;
         for (let i = 0; i < d.length; i += 4) {
-          const r = d[i], g = d[i + 1], b = d[i + 2];
-          const brightness = (r + g + b) / 3;
-          if (brightness >= HARD) {
-            d[i + 3] = 0;
-          } else if (brightness >= SOFT) {
-            const t = (brightness - SOFT) / (HARD - SOFT);
-            d[i + 3] = Math.round(d[i + 3] * (1 - t));
-          }
+          const brightness = (d[i] + d[i + 1] + d[i + 2]) / 3;
+          if (brightness >= HARD) d[i + 3] = 0;
+          else if (brightness >= SOFT) d[i + 3] = Math.round(d[i + 3] * (1 - (brightness - SOFT) / (HARD - SOFT)));
         }
         ctx.putImageData(imageData, 0, 0);
-        if (!cancelled) setDataUrl(canvas.toDataURL('image/png'));
-      } catch {
-        // Tainted canvas / OOM — fall back to the raw src silently.
-      }
+        const url = canvas.toDataURL('image/png');
+        _bgCache[src] = url;
+        if (!cancelled) setDataUrl(url);
+      } catch { /* fallback to raw */ }
     };
-    img.onerror = () => { /* keep dataUrl null; raw src takes over */ };
+    img.onerror = () => {};
     img.src = src;
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [src]);
   return dataUrl;
 }
@@ -58,7 +50,7 @@ function useTransparentBg(src) {
  * (`mmFloat`, `mmPulse`) so the animation cannot be lost to React's style-tag
  * hoisting behaviour or strict-mode double-mounts.
  */
-export default function MazeManAvatar({ size = 140, mood = 'ready', glow = true }) {
+export default React.memo(function MazeManAvatar({ size = 140, mood = 'ready', glow = true }) {
   const glowColor = {
     ready:   '#f5a623',
     focused: '#8fb84a',
@@ -132,4 +124,4 @@ export default function MazeManAvatar({ size = 140, mood = 'ready', glow = true 
       </div>
     </div>
   );
-}
+})

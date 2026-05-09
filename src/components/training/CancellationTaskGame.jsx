@@ -144,8 +144,8 @@ function FqTrainingMenuBar({
         justifyContent: 'space-between',
         width: '100%',
         paddingTop: 'max(52px, env(safe-area-inset-top))',
-        paddingLeft: 18,
-        paddingRight: 18,
+        paddingLeft: hubSpaced ? undefined : 18,
+        paddingRight: hubSpaced ? undefined : 18,
         paddingBottom: hubSpaced ? 22 : 10,
         position: 'relative',
         zIndex: 5,
@@ -163,7 +163,11 @@ function FqTrainingMenuBar({
       >
         <IconBack size={18} c={iconC} />
       </button>
-      <div style={{ flex: 1, minWidth: 0, padding: '0 8px' }} role="presentation">
+      <div
+        className="ct-fq-training-menubar-center"
+        style={{ flex: 1, minWidth: 0, padding: '0 8px' }}
+        role="presentation"
+      >
         {center}
       </div>
       {onReplayTutorial ? (
@@ -662,7 +666,12 @@ export default function CancellationTaskGame({ onBack }) {
   const [freeScore, setFreeScore] = useState(0);
   const freeScoreRef = useRef(0);
   const freeStreakRef = useRef(0);
-  const [gridMetrics, setGridMetrics] = useState({ cell: 32, gap: 3, pad: 6 });
+  const [gridMetrics, setGridMetrics] = useState({
+    cellW: 32,
+    cellH: 32,
+    gap: 3,
+    pad: 6,
+  });
   const shakeTimerRef = useRef(0);
   const [tutorialQueue, setTutorialQueue] = useState([]);
   const pendingTutorialActionRef = useRef(null);
@@ -714,12 +723,33 @@ export default function CancellationTaskGame({ onBack }) {
     runRef.current = false;
   }, []);
 
+  /** Drop any in-progress round so hub / challenge / diff never see a stale `round`. */
+  const clearPlayRoundState = useCallback(() => {
+    stopTimer();
+    roundEndedRef.current = false;
+    roundRef.current = null;
+    setRound(null);
+    setCells([]);
+    setPlayStep('idle');
+    setPauseOpen(false);
+    setQuitOpen(false);
+    setCdShow(false);
+  }, [stopTimer]);
+
   const beginFreeRoundAtStage = useCallback(
     async (stageIndex) => {
       try {
         setPhase('play');
         setCdShow(false);
-        const r = prepareFreeRound(stageIndex);
+        let r;
+        try {
+          r = prepareFreeRound(stageIndex);
+        } catch (err) {
+          console.error('[Focus Quest] prepareFreeRound failed', stageIndex, err);
+          clearPlayRoundState();
+          setPhase('hub');
+          return;
+        }
         roundRef.current = r;
         setRound(r);
         setCells(r.cells);
@@ -743,21 +773,24 @@ export default function CancellationTaskGame({ onBack }) {
         }
         setPlayStep('idle');
         setCdShow(true);
-        for (let i = 3; i > 0; i--) {
-          setCdVal(i);
-          playSfx('click');
-          await sleep(380);
+        try {
+          for (let i = 3; i > 0; i--) {
+            setCdVal(i);
+            playSfx('click');
+            await sleep(380);
+          }
+          setCdVal('GO');
+          playSfx('collect');
+          await sleep(320);
+        } finally {
+          setCdShow(false);
         }
-        setCdVal('GO');
-        playSfx('collect');
-        await sleep(320);
-        setCdShow(false);
         setPlayStep('running');
       } finally {
         roundEndedRef.current = false;
       }
     },
-    [playSfx],
+    [playSfx, clearPlayRoundState],
   );
 
   const startFreeMode = useCallback(() => {
@@ -965,23 +998,45 @@ export default function CancellationTaskGame({ onBack }) {
       const availW = Math.min(availFromWrap, Math.floor(vpW * 0.995));
       // Use almost all space below measured HUD (visualViewport already omits mobile browser chrome).
       const verticalReserve = 6;
-      const availH = Math.max(
+      let availHCalc = Math.max(
         isDeadly ? 72 : 64,
         Math.min(
           Math.floor(vpH - fixed - verticalReserve),
           Math.floor(vpH * 0.99),
         ),
       );
-      const square = Math.max(Math.min(availW, availH), isDeadly ? 72 : 64);
+      const outerEl = wrap.querySelector('.ct-fq-grid-outer');
+      const outerRectH =
+        outerEl &&
+        typeof outerEl.getBoundingClientRect === 'function'
+          ? Math.floor(outerEl.getBoundingClientRect().height)
+          : 0;
+      // Prefer the real flex slot height so the grid matches the phone layout below the HUD.
+      const availH =
+        outerRectH > 80
+          ? Math.max(isDeadly ? 72 : 64, outerRectH - 10)
+          : availHCalc;
       const gap = gridN >= 7 ? 2 : 3;
       const INNER_PAD = 4;
       const totalGap = gap * (gridN - 1);
       const minCell = gridN >= 10 ? (isDeadly ? 22 : 16) : 8;
-      const cell = Math.max(
-        minCell,
-        Math.floor((square - totalGap - INNER_PAD * 2) / gridN),
-      );
-      setGridMetrics({ cell, gap, pad: INNER_PAD });
+      // Use width and height independently so portrait phones fill the screen
+      // instead of a small square with empty vertical space.
+      const innerBudgetW = Math.max(40, availW - INNER_PAD * 2);
+      const innerBudgetH = Math.max(40, availH - INNER_PAD * 2);
+      let cellW = Math.floor((innerBudgetW - totalGap) / gridN);
+      let cellH = Math.floor((innerBudgetH - totalGap) / gridN);
+      cellW = Math.max(minCell, cellW);
+      cellH = Math.max(minCell, cellH);
+      const needW = cellW * gridN + totalGap + INNER_PAD * 2;
+      const needH = cellH * gridN + totalGap + INNER_PAD * 2;
+      if (needW > availW) {
+        cellW = Math.max(8, Math.floor((availW - totalGap - INNER_PAD * 2) / gridN));
+      }
+      if (needH > availH) {
+        cellH = Math.max(8, Math.floor((availH - totalGap - INNER_PAD * 2) / gridN));
+      }
+      setGridMetrics({ cellW, cellH, gap, pad: INNER_PAD });
     };
     measure();
     const ro = new ResizeObserver(() => {
@@ -1009,15 +1064,18 @@ export default function CancellationTaskGame({ onBack }) {
       return;
     }
     setCdShow(true);
-    for (let n = 3; n > 0; n--) {
-      setCdVal(n);
-      playSfx('click');
-      await sleep(380);
+    try {
+      for (let n = 3; n > 0; n--) {
+        setCdVal(n);
+        playSfx('click');
+        await sleep(380);
+      }
+      setCdVal('GO');
+      playSfx('collect');
+      await sleep(320);
+    } finally {
+      setCdShow(false);
     }
-    setCdVal('GO');
-    playSfx('collect');
-    await sleep(320);
-    setCdShow(false);
     onDone();
   };
 
@@ -1025,7 +1083,15 @@ export default function CancellationTaskGame({ onBack }) {
     setPhase('play');
     setPlayStep('idle');
     setCdShow(false);
-    const r = prepareLevelRound(diff, lv);
+    let r;
+    try {
+      r = prepareLevelRound(diff, lv);
+    } catch (err) {
+      console.error('[Focus Quest] prepareLevelRound failed', diff, lv, err);
+      clearPlayRoundState();
+      setPhase('levels');
+      return;
+    }
     roundRef.current = r;
     setRound(r);
     setCells(r.cells);
@@ -1115,6 +1181,7 @@ export default function CancellationTaskGame({ onBack }) {
       alert(t.needTwo);
       return;
     }
+    clearPlayRoundState();
     setChalNames(names);
     chalRoundsTotalRef.current = chalRoundsTotal;
     chalCycleRef.current = 0;
@@ -1151,11 +1218,7 @@ export default function CancellationTaskGame({ onBack }) {
 
   const confirmQuit = () => {
     setQuitOpen(false);
-    stopTimer();
-    roundEndedRef.current = false;
-    setPlayStep('idle');
-    setRound(null);
-    setCells([]);
+    clearPlayRoundState();
     setPhase('hub');
   };
 
@@ -1244,6 +1307,7 @@ export default function CancellationTaskGame({ onBack }) {
             <FqTrainingMenuBar
               onBack={() => {
                 playSfx('click');
+                clearPlayRoundState();
                 setPhase('hub');
               }}
               playSfx={playSfx}
@@ -1269,7 +1333,10 @@ export default function CancellationTaskGame({ onBack }) {
           <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
-              onBack={() => setPhase('hub')}
+              onBack={() => {
+                clearPlayRoundState();
+                setPhase('hub');
+              }}
               playSfx={playSfx}
               paperChrome
               center={
@@ -1352,7 +1419,10 @@ export default function CancellationTaskGame({ onBack }) {
           <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
-              onBack={() => setPhase('hub')}
+              onBack={() => {
+                clearPlayRoundState();
+                setPhase('hub');
+              }}
               playSfx={playSfx}
               paperChrome
               center={
@@ -1507,17 +1577,28 @@ export default function CancellationTaskGame({ onBack }) {
               <div
                 className="ct-fq-grid-inner"
                 style={{
-                  width: round.grid * gridMetrics.cell + (round.grid - 1) * gridMetrics.gap + gridMetrics.pad * 2,
-                  height: round.grid * gridMetrics.cell + (round.grid - 1) * gridMetrics.gap + gridMetrics.pad * 2,
+                  width:
+                    round.grid * gridMetrics.cellW +
+                    (round.grid - 1) * gridMetrics.gap +
+                    gridMetrics.pad * 2,
+                  height:
+                    round.grid * gridMetrics.cellH +
+                    (round.grid - 1) * gridMetrics.gap +
+                    gridMetrics.pad * 2,
                 }}
               >
                 <div
                   className={`ct-fq-sg ${shake ? 'shake' : ''}`}
                   style={{
-                    gridTemplateColumns: `repeat(${round.grid}, ${gridMetrics.cell}px)`,
-                    gridTemplateRows: `repeat(${round.grid}, ${gridMetrics.cell}px)`,
+                    gridTemplateColumns: `repeat(${round.grid}, ${gridMetrics.cellW}px)`,
+                    gridTemplateRows: `repeat(${round.grid}, ${gridMetrics.cellH}px)`,
                     gap: gridMetrics.gap,
-                    width: round.grid * gridMetrics.cell + (round.grid - 1) * gridMetrics.gap,
+                    width:
+                      round.grid * gridMetrics.cellW +
+                      (round.grid - 1) * gridMetrics.gap,
+                    height:
+                      round.grid * gridMetrics.cellH +
+                      (round.grid - 1) * gridMetrics.gap,
                   }}
                 >
                   {cells.map((c, idx) => (
@@ -1525,7 +1606,10 @@ export default function CancellationTaskGame({ onBack }) {
                       key={c.id}
                       cell={c}
                       idx={idx}
-                      size={Math.max(16, gridMetrics.cell - 6)}
+                      size={Math.max(
+                        16,
+                        Math.min(gridMetrics.cellW, gridMetrics.cellH) - 6,
+                      )}
                       running={playStep === 'running' && !pauseOpen}
                       onTap={onCellTap}
                     />
@@ -1605,6 +1689,7 @@ export default function CancellationTaskGame({ onBack }) {
             <FqTrainingMenuBar
               onBack={() => {
                 setLastResult(null);
+                clearPlayRoundState();
                 setPhase('hub');
               }}
               playSfx={playSfx}
@@ -1668,6 +1753,7 @@ export default function CancellationTaskGame({ onBack }) {
                 className="ct-fq-btn ct-fq-btn-ghost"
                 onClick={() => {
                   setLastResult(null);
+                  clearPlayRoundState();
                   setPhase('hub');
                 }}
               >
@@ -1685,6 +1771,7 @@ export default function CancellationTaskGame({ onBack }) {
             <FqTrainingMenuBar
               onBack={() => {
                 setLastResult(null);
+                clearPlayRoundState();
                 setPhase('hub');
               }}
               playSfx={playSfx}
@@ -1722,6 +1809,7 @@ export default function CancellationTaskGame({ onBack }) {
               className="ct-fq-btn ct-fq-btn-ghost"
               onClick={() => {
                 setLastResult(null);
+                clearPlayRoundState();
                 setPhase('hub');
               }}
             >
@@ -1738,6 +1826,7 @@ export default function CancellationTaskGame({ onBack }) {
             <FqTrainingMenuBar
               onBack={() => {
                 setLastResult(null);
+                clearPlayRoundState();
                 setPhase('hub');
               }}
               playSfx={playSfx}
@@ -1771,6 +1860,7 @@ export default function CancellationTaskGame({ onBack }) {
               className="ct-fq-btn ct-fq-btn-pri"
               onClick={() => {
                 setLastResult(null);
+                clearPlayRoundState();
                 setPhase('chal');
                 setChalSeed(null);
               }}
@@ -1782,6 +1872,7 @@ export default function CancellationTaskGame({ onBack }) {
               className="ct-fq-btn ct-fq-btn-ghost"
               onClick={() => {
                 setLastResult(null);
+                clearPlayRoundState();
                 setPhase('hub');
               }}
             >

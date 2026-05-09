@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import RadialMazeHub from '../training/RadialMazeHub';
 import CancellationTaskGame from '../training/CancellationTaskGame';
+import RushHourGame from '../training/RushHourGame';
 import { DOMAINS } from '../training/trainingData';
 import { IconBack } from '../training/TrainingIcons';
 
 const GAME_COMPONENTS = {
   'cancel-task': CancellationTaskGame,
+  'rush-hour': RushHourGame,
 };
 
 /** Match radial training hub — no brown shrine layer. */

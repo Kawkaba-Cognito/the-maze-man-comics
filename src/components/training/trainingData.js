@@ -73,7 +73,7 @@ export const DOMAINS = [
     desc: 'Logic, planning & problem-solving',
     glyph: 'ᛉ',
     subs: [
-      { id: 'logical',   name: 'Logical Deduction',  games: 2, progress: 0 },
+      { id: 'logical',   name: 'Logical Deduction',  games: 2, progress: 0, game: 'rush-hour' },
       { id: 'problem',   name: 'Problem Solving',    games: 2, progress: 0 },
       { id: 'planning',  name: 'Strategic Planning', games: 2, progress: 0 },
       { id: 'causal',    name: 'Causal Reasoning',   games: 1, progress: 0 },

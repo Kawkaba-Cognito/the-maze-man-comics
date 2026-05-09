@@ -8,6 +8,8 @@
     "preview": "vite preview",
     "build": "vite build",
     "audit:fq": "node scripts/audit-focus-quest-levels.mjs",
+    "validate:rh": "node scripts/validate-rush-hour.mjs",
+    "validate:rh:full": "node scripts/validate-rush-hour.mjs --full",
     "cap:sync": "npx cap sync",
     "cap:android": "npx cap open android",
     "cap:ios": "npx cap open ios",
