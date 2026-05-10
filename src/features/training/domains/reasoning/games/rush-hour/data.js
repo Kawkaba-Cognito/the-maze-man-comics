@@ -22,6 +22,12 @@ export { isLevelUnlocked };
 const LS_KEY_V2 = 'mm_rh_progress_v2';
 const LS_KEY_V1 = 'mm_rh_progress_v1';
 
+/** Persisted puzzle cache. Keyed by `cacheKey()` which embeds RH_GEN_VERSION,
+ *  so bumping the version implicitly invalidates everything the user has
+ *  collected — no migration code needed. The whole map is ≤ 100 entries
+ *  (5 tiers × 20 levels) so we serialize the entire object on every write. */
+const LS_KEY_PUZZLES = 'mm_rh_puzzles_v1';
+
 const BASE = RUSH_HOUR_BASE_LAYOUTS[0];
 
 /** Level 1 — curated tutorial on easy tier only (6×6 classic). */
@@ -34,11 +40,41 @@ const LEVEL_1_EASY = {
   par: 4,
 };
 
-let generatedCache = Object.create(null);
-
 function cacheKey(diffKey, levelIndex) {
   return `v${RH_GEN_VERSION}-${diffKey}-${levelIndex}`;
 }
+
+function loadPuzzleCache() {
+  try {
+    const raw = localStorage.getItem(LS_KEY_PUZZLES);
+    if (!raw) return Object.create(null);
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return Object.create(null);
+    const out = Object.create(null);
+    /* Drop entries from previous generator versions — keys carry the version
+     * prefix, so a simple startsWith filter is enough. */
+    const prefix = `v${RH_GEN_VERSION}-`;
+    for (const [k, v] of Object.entries(parsed)) {
+      if (k.startsWith(prefix) && v && Array.isArray(v.pieces)) out[k] = v;
+    }
+    return out;
+  } catch {
+    return Object.create(null);
+  }
+}
+
+function savePuzzleCache(cache) {
+  try {
+    localStorage.setItem(LS_KEY_PUZZLES, JSON.stringify(cache));
+  } catch {
+    /* Quota / private mode — degrade silently to in-memory only. */
+  }
+}
+
+const hasLocalStorage =
+  typeof globalThis !== 'undefined' && typeof globalThis.localStorage !== 'undefined';
+
+let generatedCache = hasLocalStorage ? loadPuzzleCache() : Object.create(null);
 
 
 /* ─── Rush Hour–specific free-mode scoring ─── */
@@ -168,6 +204,7 @@ export function getRushHourLevel(diffKey, levelIndex) {
     par: gen.par,
   };
   generatedCache[ck] = def;
+  if (hasLocalStorage) savePuzzleCache(generatedCache);
   return def;
 }
 
