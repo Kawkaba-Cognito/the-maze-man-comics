@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import MazeManAvatar from '../../features/training/shared/MazeManAvatar';
 import { IconBack } from '../../features/training/shared/TrainingIcons';
 import { DOMAIN_COLOR, DOMAINS } from './trainingData';
 import { useApp } from '../../context/AppContext';
@@ -13,7 +12,8 @@ const L = {
   paper: tokens.stone,
   paperEdge: tokens.stoneEdge,
   shadow: 'rgba(0, 0, 0, 0.55)',
-  grid: 'rgba(232, 172, 78, 0.06)',
+  /** Slightly softer so modular grid reads as structure, not noise */
+  grid: 'rgba(232, 172, 78, 0.045)',
 };
 
 const DOMAIN_LABEL_AR = {
@@ -214,19 +214,30 @@ function AtmosphericBgLight() {
           pointerEvents: 'none',
         }}
       />
-      {/* Same navy overlay as home, slightly stronger so the radial UI stays readable */}
+      {/* Same navy overlay as home, kept light so the large background Maze Man stays visible. */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
           background: `linear-gradient(
             180deg,
-            rgba(5, 5, 15, 0.55) 0%,
-            rgba(10, 4, 30, 0.45) 40%,
-            rgba(5, 5, 15, 0.7) 100%
+            rgba(5, 5, 15, 0.38) 0%,
+            rgba(10, 4, 30, 0.26) 42%,
+            rgba(5, 5, 15, 0.58) 100%
           )`,
           zIndex: 1,
           pointerEvents: 'none',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'radial-gradient(ellipse 58% 46% at 50% 39%, rgba(255, 214, 132, 0.16) 0%, rgba(255, 214, 132, 0.04) 44%, transparent 72%)',
+          zIndex: 2,
+          pointerEvents: 'none',
+          mixBlendMode: 'screen',
         }}
       />
     </>
@@ -287,42 +298,71 @@ function StatsScroll() {
   );
 }
 
-const CX = 180, CY = 320;
+/** 30px path lattice; every visible guide line is 60px so the map reads cleanly. */
+const GRID = 30;
+const GUIDE_GRID = GRID * 2;
 
 const SHRINE_POSITIONS = [
-  { ...DOMAINS[0], x: 60,  y: 140 },
-  { ...DOMAINS[1], x: 180, y: 78 },
-  { ...DOMAINS[2], x: 300, y: 140 },
-  { ...DOMAINS[3], x: 60,  y: 490 },
-  { ...DOMAINS[4], x: 180, y: 555 },
-  { ...DOMAINS[5], x: 300, y: 490 },
+  { ...DOMAINS[0], x: 60,  y: 180 },
+  { ...DOMAINS[1], x: 180, y: 120 },
+  { ...DOMAINS[2], x: 300, y: 180 },
+  { ...DOMAINS[3], x: 60,  y: 480 },
+  { ...DOMAINS[4], x: 180, y: 540 },
+  { ...DOMAINS[5], x: 300, y: 480 },
 ];
 
-/** Hub exit — slightly above geometric center to tuck under Maze Man. */
-const HX = 180, HY = 312;
-
 /**
- * Hand-tuned orthogonal “maze corridor” routes: each branch has its own weave
- * so corridors read as paths through walls, not plumbing elbows.
+ * Hub-and-spoke world map (one readable topology — standard for RTS/skill trees):
+ *
+ *                    Speed      ← spine only (north portal)
+ *                      │
+ *   Attention ────┬────┼────┬─── Memory    ← east/west “collector” highways
+ *                 │    │    │
+ *              [west│ nexus│east]
+ *                 │    │    │
+ *   Language  ────┴────┼────┴─── Flex
+ *                      │
+ *                  Reasoning    ← spine only (south portal)
+ *
+ * West lanes mirror east (180±60). Every vertex snaps to GRID so corridors align
+ * with the modular backdrop instead of looking like stray scribbles.
  */
+const HUB_NEXUS = [180, 360];
+const COLLECTOR_W = 120;
+const COLLECTOR_E = 240;
+
 const MAZE_WAYPOINTS = {
   attention: [
-    [HX, HY], [132, HY], [132, 272], [88, 272], [88, 208], [52, 208], [52, 162], [60, 162], [60, 140],
+    HUB_NEXUS,
+    [COLLECTOR_W, HUB_NEXUS[1]],
+    [COLLECTOR_W, 180],
+    [60, 180],
   ],
   speed: [
-    [HX, HY], [180, 268], [218, 268], [218, 196], [198, 196], [198, 132], [180, 132], [180, 78],
+    HUB_NEXUS,
+    [180, 120],
   ],
   memory: [
-    [HX, HY], [210, HY], [210, 244], [284, 244], [284, 196], [318, 196], [318, 162], [300, 162], [300, 140],
+    HUB_NEXUS,
+    [COLLECTOR_E, HUB_NEXUS[1]],
+    [COLLECTOR_E, 180],
+    [300, 180],
   ],
   language: [
-    [HX, HY], [180, 372], [100, 372], [100, 438], [58, 438], [58, 478], [60, 478], [60, 490],
+    HUB_NEXUS,
+    [COLLECTOR_W, HUB_NEXUS[1]],
+    [COLLECTOR_W, 480],
+    [60, 480],
   ],
   reasoning: [
-    [HX, HY], [180, 388], [124, 388], [124, 472], [192, 472], [192, 518], [180, 518], [180, 555],
+    HUB_NEXUS,
+    [180, 540],
   ],
   flexibility: [
-    [HX, HY], [252, HY], [252, 358], [306, 358], [306, 422], [322, 422], [322, 474], [300, 474], [300, 490],
+    HUB_NEXUS,
+    [COLLECTOR_E, HUB_NEXUS[1]],
+    [COLLECTOR_E, 480],
+    [300, 480],
   ],
 };
 
@@ -418,11 +458,6 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
               <feComposite in2="o" operator="in" result="s"/>
               <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
             </filter>
-            <radialGradient id="plinthGrad" cx="0.5" cy="0.5" r="0.5">
-              <stop offset="0%" stopColor="#6b9e7a" stopOpacity="0.22"/>
-              <stop offset="45%" stopColor="#e8ac4e" stopOpacity="0.1"/>
-              <stop offset="100%" stopColor="#6b9e7a" stopOpacity="0"/>
-            </radialGradient>
             {SHRINE_POSITIONS.map(s => (
               <linearGradient key={`arch-${s.id}`} id={`archStone-${s.id}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#3a2b18"/>
@@ -439,33 +474,15 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
             ))}
           </defs>
 
-          {/* Faint grid */}
+          {/* Sparse guide grid — enough structure to feel designed, not noisy */}
           <g opacity="1">
-            {Array.from({ length: 13 }).map((_, i) => (
-              <line key={`h${i}`} x1="0" x2="360" y1={i * 52} y2={i * 52} stroke={L.grid} strokeWidth="0.6"/>
+            {Array.from({ length: 660 / GUIDE_GRID + 1 }, (_, i) => (
+              <line key={`h${i}`} x1="0" x2="360" y1={i * GUIDE_GRID} y2={i * GUIDE_GRID} stroke={L.grid} strokeWidth="0.55"/>
             ))}
-            {Array.from({ length: 8 }).map((_, i) => (
-              <line key={`v${i}`} x1={i * 52} x2={i * 52} y1="0" y2="660" stroke={L.grid} strokeWidth="0.6"/>
+            {Array.from({ length: 360 / GUIDE_GRID + 1 }, (_, i) => (
+              <line key={`v${i}`} x1={i * GUIDE_GRID} x2={i * GUIDE_GRID} y1="0" y2="660" stroke={L.grid} strokeWidth="0.55"/>
             ))}
           </g>
-
-          {/* Central plinth glow */}
-          <circle cx={CX} cy={CY} r="100" fill="url(#plinthGrad)"/>
-
-          {/* Rune rings */}
-          <circle cx={CX} cy={CY} r="70" fill="none" stroke="#6b9e7a" strokeWidth="1" opacity="0.35" strokeDasharray="2 5"/>
-          <circle cx={CX} cy={CY} r="54" fill="none" stroke="#b07d1e" strokeWidth="0.9" opacity="0.45"/>
-          <circle cx={CX} cy={CY} r="42" fill="none" stroke="#9c8a70" strokeWidth="0.6" opacity="0.4"/>
-
-          {/* Rune ticks */}
-          {Array.from({ length: 24 }).map((_, i) => {
-            const a = (i / 24) * Math.PI * 2;
-            const r1 = 70, r2 = i % 4 === 0 ? 76 : 73;
-            return <line key={i}
-              x1={CX + Math.cos(a) * r1} y1={CY + Math.sin(a) * r1}
-              x2={CX + Math.cos(a) * r2} y2={CY + Math.sin(a) * r2}
-              stroke="#6b9e7a" strokeWidth="1" opacity={i % 4 === 0 ? 0.55 : 0.28}/>;
-          })}
 
           {/* Maze corridors — thin grid paths with junctions (not pipe elbows) */}
           {SHRINE_POSITIONS.map(s => {
@@ -477,37 +494,40 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
             const wCorridor = isHovered ? 2.85 : 2.15;
             const wFloor = isHovered ? 12 : 9;
             const dashPattern = '6 5';
+            const floorStroke = isHovered ? col : 'rgba(232,172,78,0.58)';
+            const corridorStroke = isHovered ? col : 'rgba(232,172,78,0.7)';
+            const runnerStroke = isHovered ? col : '#e8ac4e';
             return (
               <g key={`path-${s.id}`}>
                 <path
                   d={d}
                   fill="none"
-                  stroke={col}
+                  stroke={floorStroke}
                   strokeWidth={wFloor}
                   strokeLinecap="butt"
                   strokeLinejoin="miter"
                   strokeMiterlimit="8"
-                  opacity={isHovered ? 0.14 : 0.08}
+                  opacity={isHovered ? 0.14 : 0.055}
                 />
                 <path
                   d={d}
                   fill="none"
-                  stroke={col}
+                  stroke={corridorStroke}
                   strokeWidth={wCorridor + 1.6}
                   strokeLinecap="butt"
                   strokeLinejoin="miter"
                   strokeMiterlimit="8"
-                  opacity={isHovered ? 0.38 : 0.22}
+                  opacity={isHovered ? 0.38 : 0.16}
                 />
                 <path
                   d={d}
                   fill="none"
-                  stroke={col}
+                  stroke={corridorStroke}
                   strokeWidth={wCorridor}
                   strokeLinecap="butt"
                   strokeLinejoin="miter"
                   strokeMiterlimit="8"
-                  opacity={isHovered ? 1 : 0.82}
+                  opacity={isHovered ? 1 : 0.52}
                   strokeDasharray={isHovered ? '6 5' : undefined}
                 >
                   {isHovered && (
@@ -536,17 +556,17 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
                   <g key={`j-${s.id}-${ji}`}>
                     <rect
                       x={jx - 2.8} y={jy - 2.8} width={5.6} height={5.6}
-                      fill="#fffefb" stroke={col} strokeWidth={1.15} rx={0.9}
-                      opacity={isHovered ? 0.95 : 0.72}
+                      fill="#fffefb" stroke={runnerStroke} strokeWidth={1.15} rx={0.9}
+                      opacity={isHovered ? 0.95 : 0.48}
                       transform={`rotate(45 ${jx} ${jy})`}
                     />
-                    <circle cx={jx} cy={jy} r={1.35} fill={col} opacity={isHovered ? 0.9 : 0.65} />
+                    <circle cx={jx} cy={jy} r={1.35} fill={runnerStroke} opacity={isHovered ? 0.9 : 0.45} />
                   </g>
                 ))}
-                <circle r={isHovered ? 3 : 2.5} fill="#fffefb" stroke={col} strokeWidth={1.5} opacity={isHovered ? 1 : 0.9}>
+                <circle r={isHovered ? 3 : 2.5} fill="#fffefb" stroke={runnerStroke} strokeWidth={1.5} opacity={isHovered ? 1 : 0.58}>
                   <animateMotion dur={isHovered ? '1.15s' : '2.65s'} repeatCount="indefinite" path={d}/>
                 </circle>
-                <circle r={isHovered ? 1.2 : 1} fill={col} opacity={isHovered ? 1 : 0.85}>
+                <circle r={isHovered ? 1.2 : 1} fill={runnerStroke} opacity={isHovered ? 1 : 0.56}>
                   <animateMotion dur={isHovered ? '1.15s' : '2.65s'} repeatCount="indefinite" path={d}/>
                 </circle>
               </g>
@@ -597,22 +617,6 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
               </g>
             );
           })}
-
-          {/* Central plinth */}
-          <circle cx={CX} cy={CY + 16} r="42" fill="none" stroke="#6b9e7a" strokeWidth="1.2" opacity="0.55"/>
-          <circle cx={CX} cy={CY + 16} r="30" fill="#e8ac4e" opacity="0.08"/>
-          {Array.from({ length: 8 }).map((_, i) => {
-            const a = (i / 8) * Math.PI * 2;
-            return <circle key={i}
-              cx={CX + Math.cos(a) * 42} cy={CY + 16 + Math.sin(a) * 42}
-              r="2" fill="#b07d1e" opacity={0.65}/>;
-          })}
-
-          <foreignObject x={CX - 70} y={CY - 58} width="140" height="150">
-            <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 140, height: 150, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <MazeManAvatar size={130} mood="ready" glow/>
-            </div>
-          </foreignObject>
 
           {/* Embers */}
           {Array.from({ length: 14 }).map((_, i) => {

@@ -11,21 +11,12 @@
  *   .ct-rh-*              — rush hour (reasoning) game
  */
 
-/* Cancellation task — user-provided cream paper backgrounds */
+/* Attention + reasoning — splash menu paper; dvh height blocks global bg-poster bleed-through */
 .cancellation-task-game {
-    min-height: 100%;
+    min-height: min(100vh, 100dvh);
     position: relative;
-    background-color: #fdf8f5;
-    background-image: url('/the-maze-man-comics/Assets/cancel-task-bg-mobile.png');
-    background-size: cover;
-    background-position: center top;
-    background-repeat: no-repeat;
-}
-@media (min-width: 768px) {
-    .cancellation-task-game {
-        background-image: url('/the-maze-man-comics/Assets/cancel-task-bg-desktop.png');
-        background-position: center center;
-    }
+    background: var(--color-training-palette-surface) !important;
+    background-image: none !important;
 }
 
 /* FocusQuest-style gameplay inside cancellation task (scoped) */
@@ -36,8 +27,8 @@
     --fq-ac2: #c9847a;
     --fq-txt: #2d2d2d;
     --fq-mut: #6b6b6b;
-    --fq-bdr: #e0dbd4;
-    --fq-sur: rgba(250, 248, 245, 0.88);
+    --fq-bdr: #eadfd8;
+    --fq-sur: rgba(255, 247, 242, 0.94);
     --fq-card: rgba(255, 255, 255, 0.92);
     --fq-r: 16px;
     font-family: 'Source Sans 3', 'Outfit', system-ui, sans-serif;
@@ -173,20 +164,11 @@
     overflow-y: auto;
 }
 
-/* Attention hub — cream paper art + faint maze grid (see FqAttentionHubBackdrop) */
+/* Attention / reasoning menu layers — same surface as .cancellation-task-game */
 .ct-fq-training-shell--hub-light {
-    background-color: #fdf8f5;
-    background-image: url('/the-maze-man-comics/Assets/cancel-task-bg-mobile.png');
-    background-size: cover;
-    background-position: center top;
-    background-repeat: no-repeat;
+    background: var(--color-training-palette-surface) !important;
+    background-image: none !important;
     color: #2d2d2d;
-}
-@media (min-width: 768px) {
-    .ct-fq-training-shell--hub-light {
-        background-image: url('/the-maze-man-comics/Assets/cancel-task-bg-desktop.png');
-        background-position: center center;
-    }
 }
 .ct-fq-training-shell--hub-light .ct-fq-hub-attn-big {
     font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
@@ -532,12 +514,13 @@
 .ct-fq-training-screen.ct-fq-screen {
     position: relative;
     z-index: 5;
-    background: transparent;
+    background: var(--color-training-palette-surface);
     color: inherit;
     padding-top: 0;
 }
 
 .ct-fq-training-screen--hub.ct-fq-training-screen.ct-fq-screen {
+    background: var(--color-training-palette-surface) !important;
     padding-bottom: 8px;
 }
 

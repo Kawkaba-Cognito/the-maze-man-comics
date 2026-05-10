@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
+import { tokens } from '../../../../../../styles/tokens';
 import { IconBack } from '../../../../shared/TrainingIcons';
 import MazeManAvatar from '../../../../shared/MazeManAvatar';
 import { getRange, isWon, clonePieces, RUSH_HOUR_BASE_LAYOUTS } from './engine';
@@ -66,37 +67,6 @@ function BlockDecor({ dir }) {
       <line x1="5" y1="22" x2="15" y2="22" stroke={light} strokeWidth="2" strokeLinecap="round" />
       <line x1="3" y1="29" x2="17" y2="29" stroke={light} strokeWidth="2" strokeLinecap="round" />
     </svg>
-  );
-}
-
-function PaperBackdrop() {
-  const uid = React.useId().replace(/:/g, '');
-  const pat = `rh-mz-${uid}`;
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 0,
-        pointerEvents: 'none',
-        overflow: 'hidden',
-      }}
-      aria-hidden="true"
-    >
-      <svg width="100%" height="100%" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0 }}>
-        <defs>
-          <pattern id={pat} width="160" height="160" patternUnits="userSpaceOnUse">
-            <path
-              d="M 0 40 L 70 40 L 70 110 L 120 110 L 120 0 M 96 40 L 96 160 M 36 72 L 36 160 M 0 124 L 58 124"
-              fill="none"
-              stroke="rgba(92, 78, 62, 0.09)"
-              strokeWidth="1"
-            />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill={`url(#${pat})`} />
-      </svg>
-    </div>
   );
 }
 
@@ -685,7 +655,6 @@ export default function RushHourGame({ onBack }) {
           overflowX: 'hidden',
         }}
       >
-        <PaperBackdrop />
         <div style={{ position: 'relative', zIndex: 2 }}>
           <div
             style={{
@@ -832,7 +801,6 @@ export default function RushHourGame({ onBack }) {
           padding: pad,
         }}
       >
-        <PaperBackdrop />
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 440, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <button
@@ -913,7 +881,6 @@ export default function RushHourGame({ onBack }) {
           padding: pad,
         }}
       >
-        <PaperBackdrop />
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 400, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <button
@@ -973,7 +940,6 @@ export default function RushHourGame({ onBack }) {
           padding: pad,
         }}
       >
-        <PaperBackdrop />
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 400, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <button
@@ -1082,7 +1048,6 @@ export default function RushHourGame({ onBack }) {
           padding: pad,
         }}
       >
-        <PaperBackdrop />
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 400, margin: '0 auto', textAlign: 'center' }}>
           <div className="ct-fq-training-title ct-fq-training-title-sm" style={{ marginBottom: 12 }}>
             {t.freeResTitle}
@@ -1138,7 +1103,6 @@ export default function RushHourGame({ onBack }) {
           padding: pad,
         }}
       >
-        <PaperBackdrop />
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 420, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <button
@@ -1229,7 +1193,6 @@ export default function RushHourGame({ onBack }) {
             'max(48px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left))',
         }}
       >
-        <PaperBackdrop />
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 440, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <button
@@ -1309,8 +1272,7 @@ export default function RushHourGame({ onBack }) {
         dir={isAr ? 'rtl' : 'ltr'}
         style={{
           minHeight: '100vh',
-          background: '#fdf8f5',
-          color: '#141210',
+          color: tokens.textDark,
           fontFamily: "'Outfit', system-ui, sans-serif",
           display: 'flex',
           alignItems: 'center',
@@ -1339,8 +1301,7 @@ export default function RushHourGame({ onBack }) {
       dir={isAr ? 'rtl' : 'ltr'}
       style={{
         minHeight: '100vh',
-        background: '#fdf8f5',
-        color: '#141210',
+        color: tokens.textDark,
         fontFamily: "'Outfit', system-ui, sans-serif",
         display: 'flex',
         flexDirection: 'column',
@@ -1360,10 +1321,7 @@ export default function RushHourGame({ onBack }) {
           inset: 0,
           zIndex: 0,
           pointerEvents: 'none',
-          background: `
-            linear-gradient(180deg, rgba(255,255,255,0.65) 0%, transparent 42%),
-            radial-gradient(ellipse 110% 55% at 50% 0%, rgba(182,150,212,0.09) 0%, transparent 52%)
-          `,
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 38%)',
         }}
       />
 

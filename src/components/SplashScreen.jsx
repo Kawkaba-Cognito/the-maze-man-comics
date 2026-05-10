@@ -38,10 +38,10 @@ export default function SplashScreen({ onDone }) {
     flexDirection: 'column',
     alignItems: 'stretch',
     width: '100%',
-    maxWidth: 'min(340px, 94vw)',
+    maxWidth: 'min(380px, 92vw)',
     marginLeft: 'auto',
     marginRight: 'auto',
-    gap: 7,
+    gap: 'clamp(7px, 1.8vw, 10px)',
     boxSizing: 'border-box',
   };
   const splashRowBtn = {

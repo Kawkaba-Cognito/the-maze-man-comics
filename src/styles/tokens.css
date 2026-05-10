@@ -23,6 +23,9 @@
   --color-text-dark: #14121a;     /* on light surfaces (splash, cream UI) */
   --color-text-soft: #2a1a16;     /* warm charcoal for splash subbrand */
 
+  /* Training — attention/reasoning in-app screens: warm menu paper from the palette reference */
+  --color-training-palette-surface: #fff7f2;
+
   /* ─── Amber / accent (canon: home plaque + lang button + training accents) ─── */
   --color-amber: #e8ac4e;
   --color-amber-bright: #ffd47e;

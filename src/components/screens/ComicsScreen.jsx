@@ -1,5 +1,6 @@
 import React, { useState, Suspense } from 'react';
 import { useApp } from '../../context/AppContext';
+import { tokens } from '../../styles/tokens';
 import RadialMazeHub from '../training/RadialMazeHub';
 import { DOMAINS } from '../training/trainingData';
 import { IconBack } from '../../features/training/shared/TrainingIcons';
@@ -11,7 +12,7 @@ function GameLoading({ isAr }) {
     <div style={{
       position: 'absolute', inset: 0,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: '#fdf8f5', color: '#5c534c',
+      background: tokens.trainingPaletteSurface, color: '#5c534c',
       fontFamily: "'Outfit', system-ui, sans-serif",
       fontSize: 14, letterSpacing: 1.5,
     }}>
@@ -20,9 +21,9 @@ function GameLoading({ isAr }) {
   );
 }
 
-/** Match radial training hub — no brown shrine layer. */
+/** Pick-a-sub-activity screen — same paper as splash / training games. */
 const HUB_LIGHT = {
-  bg: '#fdf8f5',
+  bg: tokens.trainingPaletteSurface,
   text: '#141210',
   muted: '#5c534c',
   border: '#1a1208',
@@ -72,7 +73,21 @@ export default function ComicsScreen() {
   const d = DOMAINS.find((x) => x.id === activeDomain);
 
   return (
-    <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden' }}>
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        minHeight: 'min(100vh, 100dvh)',
+        ...(screen === 'game'
+          ? {
+              backgroundColor: tokens.trainingPaletteSurface,
+              isolation: 'isolate',
+            }
+          : {}),
+      }}
+    >
       {screen === 'hub' && (
         <RadialMazeHub
           onBack={() => switchTab('home')}

@@ -27,6 +27,7 @@ import {
   freeWrongTapPenalty,
 } from '../../../../shared/focusQuestData';
 import { PALETTE } from '../../../../shared/palette';
+import { tokens } from '../../../../../../styles/tokens';
 import { IconBack } from '../../../../shared/TrainingIcons';
 import FocusQuestTutorial, {
   buildTutorialQueueFor,
@@ -59,7 +60,7 @@ function fqTrainingChromeBtnPaper() {
     height: 34,
     borderRadius: 11,
     border: '1px solid rgba(107, 90, 72, 0.38)',
-    background: 'linear-gradient(180deg, rgba(255, 252, 248, 0.98) 0%, rgba(245, 238, 230, 0.99) 100%)',
+    background: `linear-gradient(180deg, ${tokens.trainingPaletteSurface} 0%, #f3e7df 100%)`,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -69,59 +70,6 @@ function fqTrainingChromeBtnPaper() {
       '0 2px 10px rgba(45, 45, 40, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.65) inset',
     flexShrink: 0,
   };
-}
-
-/** Light attention hub: cream asset bg handled in CSS; full-page faint maze strokes */
-function FqAttentionHubBackdrop() {
-  const uid = React.useId().replace(/:/g, '');
-  const mazePat = `ct-fq-attn-mz-${uid}`;
-  return (
-    <div
-      className="ct-fq-attn-hub-backdrop"
-      style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 1,
-        pointerEvents: 'none',
-        overflow: 'hidden',
-      }}
-      aria-hidden="true"
-    >
-      <svg
-        width="100%"
-        height="100%"
-        preserveAspectRatio="none"
-        style={{ position: 'absolute', inset: 0, display: 'block' }}
-      >
-        <defs>
-          <pattern
-            id={mazePat}
-            width="200"
-            height="200"
-            patternUnits="userSpaceOnUse"
-          >
-            <path
-              d="M 0 52 L 92 52 L 92 138 L 168 138 L 168 0 M 132 52 L 132 200 M 44 94 L 44 200 M 0 166 L 78 166 M 200 84 L 136 84 L 136 200 M 200 184 L 96 184 L 96 108"
-              fill="none"
-              stroke="rgba(92, 78, 62, 0.11)"
-              strokeWidth="1.15"
-              strokeLinecap="square"
-              strokeLinejoin="miter"
-            />
-            <path
-              d="M 200 28 L 178 28 L 178 74 M 58 0 L 58 38 L 116 38 M 0 118 L 28 118 L 28 78 M 154 156 L 154 200 M 72 124 L 124 124 L 124 76"
-              fill="none"
-              stroke="rgba(118, 102, 82, 0.075)"
-              strokeWidth="0.95"
-              strokeLinecap="square"
-              strokeLinejoin="miter"
-            />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill={`url(#${mazePat})`} />
-      </svg>
-    </div>
-  );
 }
 
 function FqTrainingMenuBar({
@@ -1272,7 +1220,6 @@ export default function CancellationTaskGame({ onBack }) {
     >
       {phase === 'hub' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
             <FqTrainingMenuBar
               onBack={onBack}
@@ -1302,7 +1249,6 @@ export default function CancellationTaskGame({ onBack }) {
 
       {phase === 'freeIntro' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
               onBack={() => {
@@ -1330,7 +1276,6 @@ export default function CancellationTaskGame({ onBack }) {
 
       {phase === 'diff' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
               onBack={() => {
@@ -1369,7 +1314,6 @@ export default function CancellationTaskGame({ onBack }) {
 
       {phase === 'levels' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
               onBack={() => setPhase('diff')}
@@ -1416,7 +1360,6 @@ export default function CancellationTaskGame({ onBack }) {
 
       {phase === 'chal' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
               onBack={() => {
@@ -1684,7 +1627,6 @@ export default function CancellationTaskGame({ onBack }) {
 
       {phase === 'res' && lastResult?.type === 'level' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
               onBack={() => {
@@ -1766,7 +1708,6 @@ export default function CancellationTaskGame({ onBack }) {
 
       {phase === 'freeRes' && lastResult?.type === 'free' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
               onBack={() => {
@@ -1821,7 +1762,6 @@ export default function CancellationTaskGame({ onBack }) {
 
       {phase === 'chalRes' && lastResult?.type === 'challenge' && lastResult.rows && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <FqAttentionHubBackdrop />
           <div className="ct-fq-screen ct-fq-training-screen">
             <FqTrainingMenuBar
               onBack={() => {

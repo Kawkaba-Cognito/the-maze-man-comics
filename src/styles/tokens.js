@@ -25,6 +25,9 @@ export const tokens = {
   textDark: '#14121a',
   textSoft: '#2a1a16',
 
+  /** Attention + reasoning training — warm menu paper from the palette reference */
+  trainingPaletteSurface: '#fff7f2',
+
   /* Amber / accent */
   amber: '#e8ac4e',
   amberBright: '#ffd47e',
