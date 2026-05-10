@@ -384,25 +384,28 @@ export function generateLevelPieces({
 }
 
 /**
- * Fast puzzle generation — scramble only, no BFS validation.
- * Solvability guaranteed: forward scramble from a solvable layout preserves solvability.
- * Uses a quick BFS (small budget) to estimate par; falls back to heuristic if BFS times out.
+ * Generate a puzzle by forward-scrambling a baseline, then BFS-verifying it.
+ *
+ * BFS is the correctness gate, not just a par measurement: procedural baselines
+ * for grid > 6 aren't guaranteed solvable, so a forward-scramble can land in a
+ * dead component. Returning `null` on `solvable: false` lets the caller retry
+ * with a different seed instead of shipping an unsolvable board.
+ *
+ * Budget is sized to stay snappy on mobile (grid 6: <50ms, grid 7: ~300ms-1s
+ * worst case). If a puzzle's solution exceeds the budget, we treat it as
+ * "unverifiable in reasonable time" and skip — same retry path.
  */
 export function generateFastPuzzle({ basePieces, grid, exitRow, seed, scrambleSteps }) {
   const rng = rngFactory(seed);
   const scrambled = forwardScramble(basePieces, grid, scrambleSteps, rng);
   if (isWon(scrambled, grid, exitRow)) return null;
-  /* Quick BFS on small grids for exact par; larger grids use heuristic estimate.
-     Solvability is guaranteed by forward scramble — no validation needed. */
-  if (grid <= 6) {
-    const quickBfs = bfsSolve(
-      { pieces: scrambled, grid, exitRow },
-      { maxStatesExplored: 15_000 },
-    );
-    if (quickBfs.solvable) return { pieces: scrambled, par: quickBfs.minMoves };
-  }
-  const par = Math.max(4, Math.round(scrambleSteps * 0.12));
-  return { pieces: scrambled, par };
+  const budget = grid <= 6 ? 50_000 : 80_000;
+  const bfs = bfsSolve(
+    { pieces: scrambled, grid, exitRow },
+    { maxStatesExplored: budget },
+  );
+  if (!bfs.solvable) return null;
+  return { pieces: scrambled, par: bfs.minMoves };
 }
 
 /**
@@ -482,15 +485,30 @@ export function buildProceduralBaseline(grid, exitRow, seed, carTarget) {
   return null;
 }
 
-/** Baseline pieces for a size, or null if procedural failed. */
+/** Baseline pieces for a size, or null if procedural failed.
+ *
+ *  For grid > 6 we re-roll until we find a baseline whose hero can actually
+ *  reach the exit. `buildProceduralBaseline` packs cars randomly without a
+ *  solvability constraint — many packings genuinely trap the hero. Forward-
+ *  scrambling can't recover from a trapped baseline, so we filter here and
+ *  let the caller treat baseline-resolution failure as "try a different seed". */
 export function resolveBaselinePieces(grid, exitRow, seed, densityBump = 0) {
   const classic = RUSH_HOUR_BASE_LAYOUTS.find((b) => b.grid === grid);
   if (classic && grid === 6 && exitRow === classic.exitRow) {
     return clonePieces(classic.pieces);
   }
   const carTarget = Math.round(5 + grid * 1.15 + densityBump + (grid - 6) * 1.4);
-  const built = buildProceduralBaseline(grid, exitRow, seed, carTarget);
-  return built;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const trySeed = (seed + attempt * 524_287) >>> 0;
+    const built = buildProceduralBaseline(grid, exitRow, trySeed, carTarget);
+    if (!built) continue;
+    const bfs = bfsSolve(
+      { pieces: built, grid, exitRow },
+      { maxStatesExplored: 35_000 },
+    );
+    if (bfs.solvable) return built;
+  }
+  return null;
 }
 
 /** Starter layouts: hero on exit row, mixed truck lengths (2 and 3). */
