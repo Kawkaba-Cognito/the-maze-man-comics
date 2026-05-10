@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import MazeManAvatar from './MazeManAvatar';
-import { SH } from './focusQuestData';
+import MazeManAvatar from '../../../../shared/MazeManAvatar';
+import { SH } from '../../../../shared/focusQuestData';
 
 /* =============================================================================
  * Focus Quest tutorial — short text + demo board (no pointers or arrows).

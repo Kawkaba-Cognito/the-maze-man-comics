@@ -1,13 +1,14 @@
 import {
   freeStageToDiffLv,
   isLevelUnlocked,
-} from './focusQuestData';
+} from '../../../../shared/focusQuestData';
 import {
   clonePieces,
   generateFastPuzzle,
   resolveBaselinePieces,
   RUSH_HOUR_BASE_LAYOUTS,
-} from './rushHourEngine';
+} from './engine';
+import puzzleBank from './puzzleBank.json';
 
 export const RH_LEVELS_PER_TIER = 20;
 
@@ -15,7 +16,23 @@ export const RH_LEVELS_PER_TIER = 20;
 export const RH_DIFF_KEYS = ['easy', 'inter', 'hard', 'xhard', 'deadly'];
 
 /** Bump when generation math / baselines change (invalidates cached boards). */
-const RH_GEN_VERSION = 4;
+const RH_GEN_VERSION = 5;
+
+/** Pull a pre-verified puzzle from the offline bank if the script generated
+ *  one for this slot. Bank entries have BFS-exact par (`scripts/generate-rush-hour-bank.mjs`).
+ *  Returns null when missing — caller falls back to runtime generation. */
+function bankLevel(diffKey, levelIndex) {
+  const tier = puzzleBank?.levels?.[diffKey];
+  if (!Array.isArray(tier)) return null;
+  const entry = tier.find((p) => p.level === levelIndex);
+  if (!entry || !Array.isArray(entry.pieces)) return null;
+  return {
+    grid: entry.grid,
+    exitRow: entry.exitRow,
+    pieces: clonePieces(entry.pieces),
+    par: entry.par,
+  };
+}
 
 export { isLevelUnlocked };
 
@@ -125,6 +142,21 @@ export function getRushHourLevel(diffKey, levelIndex) {
 
   const ck = cacheKey(diffKey, levelIndex);
   if (generatedCache[ck]) return generatedCache[ck];
+
+  const banked = bankLevel(diffKey, levelIndex);
+  if (banked) {
+    const def = {
+      labelKey: 'level',
+      level: levelIndex,
+      diff: diffKey,
+      grid: banked.grid,
+      exitRow: banked.exitRow,
+      pieces: banked.pieces,
+      par: banked.par,
+    };
+    generatedCache[ck] = def;
+    return def;
+  }
 
   const spec = specificationForLevel(diffKey, levelIndex);
   const { grid: G, exitRow: eR } = spec;
@@ -238,6 +270,25 @@ export function buildChallengeRhPuzzle(seed, cycleIndex = 0, totalRounds = 1) {
   const s = (seed >>> 0) || 1;
   const c = Math.max(0, cycleIndex | 0);
   const R = Math.max(1, totalRounds | 0);
+
+  /* Prefer the BFS-verified challenge pool from the offline bank — every entry
+   * has exact par. Same (seed, cycleIndex) → same puzzle (fair for pass-and-play). */
+  const pool = puzzleBank?.challenge;
+  if (Array.isArray(pool) && pool.length) {
+    const idx = (s + Math.imul(c + 1, 0x9e3779b1)) >>> 0;
+    const pick = pool[idx % pool.length];
+    if (pick && Array.isArray(pick.pieces)) {
+      return {
+        labelKey: 'challenge',
+        grid: pick.grid,
+        exitRow: pick.exitRow,
+        pieces: clonePieces(pick.pieces),
+        par: pick.par,
+        seed: s,
+      };
+    }
+  }
+
   const grid = Math.min(7, 6 + (c >= 2 ? 1 : 0));
   const exitRow = Math.floor((grid - 1) / 2);
   const steps = 50 + 20 * c + 10 * (grid - 6) + (s % 20);

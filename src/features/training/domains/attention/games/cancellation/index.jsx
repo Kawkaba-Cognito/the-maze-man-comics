@@ -6,7 +6,7 @@ import React, {
   useLayoutEffect,
   useReducer,
 } from 'react';
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../../../../../context/AppContext';
 import {
   SH,
   DM,
@@ -25,13 +25,13 @@ import {
   freeTapPoints,
   freeRoundClearPoints,
   freeWrongTapPenalty,
-} from './focusQuestData';
-import { PALETTE } from './trainingData';
-import { IconBack } from './TrainingIcons';
+} from '../../../../shared/focusQuestData';
+import { PALETTE } from '../../../../shared/palette';
+import { IconBack } from '../../../../shared/TrainingIcons';
 import FocusQuestTutorial, {
   buildTutorialQueueFor,
   markTutorialSeen,
-} from './FocusQuestTutorial';
+} from './tutorial';
 
 const TR = PALETTE;
 

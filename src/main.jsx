@@ -1,6 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import './styles/tokens.css';
 import './styles/global.css';
+import './styles/splash.css';
+import './styles/settings.css';
+import './styles/training.css';
 import App from './App';
 
 /* Dev: drop SW + Cache Storage so no stale precached JS/CSS can mask the current source. */

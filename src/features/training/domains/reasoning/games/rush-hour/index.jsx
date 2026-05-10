@@ -1,14 +1,14 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { useApp } from '../../context/AppContext';
-import { IconBack } from './TrainingIcons';
-import MazeManAvatar from './MazeManAvatar';
-import { getRange, isWon, clonePieces, RUSH_HOUR_BASE_LAYOUTS } from './rushHourEngine';
+import { useApp } from '../../../../../../context/AppContext';
+import { IconBack } from '../../../../shared/TrainingIcons';
+import MazeManAvatar from '../../../../shared/MazeManAvatar';
+import { getRange, isWon, clonePieces, RUSH_HOUR_BASE_LAYOUTS } from './engine';
 import {
   DM,
   freeTimeDrainMultiplier,
   FREE_SESSION_START_SEC,
   FREE_SESSION_CAP_SEC,
-} from './focusQuestData';
+} from '../../../../shared/focusQuestData';
 import {
   getRushHourLevel,
   getRushHourFreeRound,
@@ -21,7 +21,7 @@ import {
   saveRhProgress,
   rhFreeClearBonusSec,
   rhFreeRoundClearPoints,
-} from './rushHourLevels';
+} from './data';
 
 const GAP = 4;
 

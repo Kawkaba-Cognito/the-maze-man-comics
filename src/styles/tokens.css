@@ -1,0 +1,79 @@
+/*
+ * DESIGN TOKENS — single source of truth for color, spacing, typography.
+ *
+ * Loaded before global.css so every var() resolves.
+ * JS-inline-style consumers should read from src/styles/tokens.js (mirror).
+ *
+ * Rule (per ARCHITECTURE.md): no hex literals in component files. If a token
+ * is missing for what you need, ADD IT HERE — don't sneak a hex back in.
+ */
+
+:root {
+  /* ─── Surface ─── */
+  --color-bg: #05050f;            /* app body — navy black, matches home photo */
+  --color-bg-shrine: #12090a;     /* domain interior (shrine pages) */
+  --color-stone: #1a1018;         /* dark stone — cards, arch interior */
+  --color-stone-mid: #1f160c;     /* shrine card surface */
+  --color-stone-deep: #150e08;
+  --color-stone-edge: #3a2b18;
+
+  /* ─── Text ─── */
+  --color-text: #f0e2c0;          /* parchment — main on-dark text */
+  --color-text-muted: #9c8a70;
+  --color-text-dark: #14121a;     /* on light surfaces (splash, cream UI) */
+  --color-text-soft: #2a1a16;     /* warm charcoal for splash subbrand */
+
+  /* ─── Amber / accent (canon: home plaque + lang button + training accents) ─── */
+  --color-amber: #e8ac4e;
+  --color-amber-bright: #ffd47e;
+  --color-amber-edge: #9a6828;
+  --color-amber-glow-soft: rgba(255, 180, 60, 0.40);
+  --color-amber-glow: rgba(255, 150, 30, 0.35);
+  --color-amber-glow-strong: rgba(255, 150, 30, 0.55);
+
+  /* ─── Wood plaque (home door buttons, stats scrolls, chrome buttons) ─── */
+  --color-wood-light: #6a3212;
+  --color-wood: #5e2a0c;
+  --color-wood-mid: #4a2008;
+  --color-wood-dark: #3e1a06;
+  --color-wood-hover-light: #7e3c14;
+  --color-wood-hover: #722e10;
+  --color-wood-hover-mid: #5a260a;
+  --color-wood-hover-dark: #4e2208;
+
+  /* ─── Carpet (home "ENTER THE MAZE" button) ─── */
+  --color-carpet-light: #5a1e10;
+  --color-carpet: #4a1608;
+  --color-carpet-dark: #2a0a04;
+  --color-carpet-edge: #a06830;
+  --color-carpet-edge-hover: #d09040;
+
+  /* ─── Domain colors (training — one per cognitive domain) ─── */
+  --color-domain-attention: #e8ac4e;
+  --color-domain-speed: #64b5c2;
+  --color-domain-memory: #9cb752;
+  --color-domain-language: #d47a4a;
+  --color-domain-reasoning: #b696d4;
+  --color-domain-flexibility: #e07aaa;
+
+  /* ─── Misc state ─── */
+  --color-danger: #8b2020;
+  --color-rune-sage: #6b9e7a;     /* secondary green for rune rings/ticks */
+
+  /* ─── Effects ─── */
+  --shadow-plaque-inset:
+    inset 0 1px 0 rgba(220, 170, 70, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+  --shadow-plaque-drop: 0 4px 12px rgba(0, 0, 0, 0.6);
+
+  /* ─── Z-index scale (single source so layers stay sane) ─── */
+  --z-bg-poster: 0;
+  --z-bg-overlay: 2;
+  --z-ui-shell: 10;
+  --z-floating-hud: 1000;
+  --z-back-btn: 1001;
+  --z-maze-overlay: 5000;
+  --z-splash: 9999;
+  --z-modal: 10000;
+  --z-settings: 10010;
+}

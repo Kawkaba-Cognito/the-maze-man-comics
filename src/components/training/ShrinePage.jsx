@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { IconBack, IconLock } from './TrainingIcons';
+import { IconBack, IconLock } from '../../features/training/shared/TrainingIcons';
 import { PALETTE, DOMAIN_COLOR, DOMAINS, DOMAIN_ABOUT } from './trainingData';
 
 const c = PALETTE;

@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import MazeManAvatar from './MazeManAvatar';
-import { IconBack } from './TrainingIcons';
+import MazeManAvatar from '../../features/training/shared/MazeManAvatar';
+import { IconBack } from '../../features/training/shared/TrainingIcons';
 import { DOMAIN_COLOR, DOMAINS } from './trainingData';
 import { useApp } from '../../context/AppContext';
+import { tokens } from '../../styles/tokens';
+
+/** Local alias kept for in-file readability — values come from the central token set. */
 const L = {
-  bg: '#fdf8f5',
-  text: '#141210',
-  textMuted: '#5c534c',
-  paper: '#fffefb',
-  paperEdge: '#e8e0d6',
-  shadow: 'rgba(45, 40, 35, 0.14)',
-  grid: 'rgba(107, 158, 122, 0.07)',
+  bg: tokens.bg,
+  text: tokens.text,
+  textMuted: tokens.textMuted,
+  paper: tokens.stone,
+  paperEdge: tokens.stoneEdge,
+  shadow: 'rgba(0, 0, 0, 0.55)',
+  grid: 'rgba(232, 172, 78, 0.06)',
 };
 
 const DOMAIN_LABEL_AR = {
@@ -24,12 +27,12 @@ const DOMAIN_LABEL_AR = {
 
 /** Short, friendly door captions (EN). */
 const DOMAIN_DOOR_LABEL_EN = {
-  attention: 'Focus & attention',
-  speed: 'Speed & reflexes',
-  memory: 'Memory & recall',
-  language: 'Words & meaning',
-  reasoning: 'Logic & reasoning',
-  flexibility: 'Mental flexibility',
+  attention: 'Attention',
+  speed: 'Speed',
+  memory: 'Memory',
+  language: 'Language',
+  reasoning: 'Reasoning',
+  flexibility: 'Flexibility',
 };
 
 function domainDoorLabel(id, isAr) {
@@ -41,15 +44,15 @@ function chromeBtnLight() {
   return {
     width: 34,
     height: 34,
-    borderRadius: 12,
-    border: '2px solid #1a1208',
-    background: 'linear-gradient(180deg, #ffffff 0%, #f3ebe4 100%)',
+    borderRadius: 6,
+    border: '1.5px solid #9a6828',
+    background: 'linear-gradient(170deg, #3e1a06 0%, #5e2a0c 50%, #3e1a06 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     color: L.text,
     cursor: 'pointer',
-    boxShadow: '3px 3px 0 #1a1208, inset 0 1px 0 rgba(255,255,255,0.85)',
+    boxShadow: 'inset 0 1px 0 rgba(220,170,70,0.35), inset 0 -1px 0 rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.6)',
   };
 }
 
@@ -192,33 +195,40 @@ function ArchShape3D({ col, hovered, gradId, filterId }) {
 }
 
 function AtmosphericBgLight() {
+  const isDesktop = typeof window !== 'undefined' && window.matchMedia?.('(min-width: 768px)').matches;
+  const bgUrl = isDesktop
+    ? '/the-maze-man-comics/Assets/bg-desktop.webp'
+    : '/the-maze-man-comics/Assets/bg-mobile.webp';
   return (
     <>
+      {/* Home fortress photo — same as main menu */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
           backgroundColor: L.bg,
-          backgroundImage: `
-            linear-gradient(180deg, rgba(255,255,255,0.7) 0%, transparent 32%),
-            radial-gradient(ellipse 120% 70% at 50% 0%, rgba(232, 172, 78, 0.14) 0%, transparent 55%)
-          `,
+          backgroundImage: `url(${bgUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: isDesktop ? 'center center' : 'center top',
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
+      />
+      {/* Same navy overlay as home, slightly stronger so the radial UI stays readable */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: `linear-gradient(
+            180deg,
+            rgba(5, 5, 15, 0.55) 0%,
+            rgba(10, 4, 30, 0.45) 40%,
+            rgba(5, 5, 15, 0.7) 100%
+          )`,
           zIndex: 1,
           pointerEvents: 'none',
         }}
       />
-      <svg
-        width="100%"
-        height="100%"
-        style={{ position: 'absolute', inset: 0, opacity: 1, pointerEvents: 'none', zIndex: 0 }}
-      >
-        <defs>
-          <pattern id="atmoGridLight" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
-            <path d="M 32 0 L 0 0 0 32" stroke={L.grid} strokeWidth="1" fill="none" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#atmoGridLight)" opacity="0.85" />
-      </svg>
     </>
   );
 }
@@ -230,7 +240,7 @@ function StatCell({ glyph, val, label, accent }) {
         fontFamily: "'Fredoka One', Nunito, sans-serif",
         fontSize: 14,
         fontWeight: 400,
-        color: accent ? '#b07d1e' : L.text,
+        color: accent ? '#e8ac4e' : L.text,
         lineHeight: 1,
         display: 'flex',
         alignItems: 'center',
@@ -254,17 +264,17 @@ function StatCell({ glyph, val, label, accent }) {
 }
 
 function Sep() {
-  return <div style={{ width: 2, background: 'rgba(26,18,8,0.12)', borderRadius: 1 }} />;
+  return <div style={{ width: 2, background: 'rgba(220,170,70,0.28)', borderRadius: 1 }} />;
 }
 
 function StatsScroll() {
   return (
     <div style={{
       display: 'flex', alignItems: 'stretch', gap: 8,
-      padding: '12px 14px', borderRadius: 16,
-      background: 'linear-gradient(180deg, #ffffff 0%, #f7f1eb 100%)',
-      border: '2px solid #1a1208',
-      boxShadow: '4px 4px 0 #1a1208, inset 0 1px 0 rgba(255,255,255,0.9)',
+      padding: '12px 14px', borderRadius: 6,
+      background: 'linear-gradient(170deg, #3e1a06 0%, #5e2a0c 50%, #3e1a06 100%)',
+      border: '1.5px solid #9a6828',
+      boxShadow: 'inset 0 1px 0 rgba(220,170,70,0.35), inset 0 -1px 0 rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.6)',
     }}>
       <StatCell glyph="🔥" val="7" label="streak" accent/>
       <Sep/>
@@ -359,15 +369,15 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
         </div>
         <div style={{
           textAlign: 'center',
-          fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Bangers', cursive",
-          fontSize: isAr ? 28 : 32,
+          fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
+          fontSize: isAr ? 28 : 34,
           fontWeight: isAr ? 900 : 400,
-          letterSpacing: isAr ? 0 : 2,
-          color: L.text,
+          letterSpacing: isAr ? 0 : 3,
+          color: '#f0e2c0',
           textTransform: 'uppercase',
           lineHeight: 1.05,
           maxWidth: 200,
-          textShadow: '0 2px 0 rgba(232, 172, 78, 0.35)',
+          textShadow: '0 1px 0 rgba(255,220,120,0.45), 0 -1px 0 rgba(0,0,0,0.9), 0 0 18px rgba(232,172,78,0.55)',
         }}>
           {isAr ? 'تدريب' : 'Training'}
         </div>
@@ -379,7 +389,7 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
               fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
               fontWeight: 700, fontSize: isAr ? 13 : 14,
               letterSpacing: isAr ? 0 : 2,
-              color: '#b07d1e',
+              color: '#e8ac4e',
             }}
             onClick={toggleLang}
           >
@@ -415,9 +425,9 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
             </radialGradient>
             {SHRINE_POSITIONS.map(s => (
               <linearGradient key={`arch-${s.id}`} id={`archStone-${s.id}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#fffcf8"/>
-                <stop offset="42%" stopColor={DOMAIN_COLOR[s.id]} stopOpacity="0.32"/>
-                <stop offset="100%" stopColor="#2c2824" stopOpacity="0.38"/>
+                <stop offset="0%" stopColor="#3a2b18"/>
+                <stop offset="42%" stopColor={DOMAIN_COLOR[s.id]} stopOpacity="0.5"/>
+                <stop offset="100%" stopColor="#0c0805"/>
               </linearGradient>
             ))}
             {SHRINE_POSITIONS.map(s => (
@@ -445,7 +455,7 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
           {/* Rune rings */}
           <circle cx={CX} cy={CY} r="70" fill="none" stroke="#6b9e7a" strokeWidth="1" opacity="0.35" strokeDasharray="2 5"/>
           <circle cx={CX} cy={CY} r="54" fill="none" stroke="#b07d1e" strokeWidth="0.9" opacity="0.45"/>
-          <circle cx={CX} cy={CY} r="42" fill="none" stroke="#5c534c" strokeWidth="0.6" opacity="0.25"/>
+          <circle cx={CX} cy={CY} r="42" fill="none" stroke="#9c8a70" strokeWidth="0.6" opacity="0.4"/>
 
           {/* Rune ticks */}
           {Array.from({ length: 24 }).map((_, i) => {
@@ -482,12 +492,12 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
                 <path
                   d={d}
                   fill="none"
-                  stroke="#2a241c"
-                  strokeWidth={wCorridor + 1.35}
+                  stroke={col}
+                  strokeWidth={wCorridor + 1.6}
                   strokeLinecap="butt"
                   strokeLinejoin="miter"
                   strokeMiterlimit="8"
-                  opacity={isHovered ? 0.32 : 0.2}
+                  opacity={isHovered ? 0.38 : 0.22}
                 />
                 <path
                   d={d}
@@ -573,8 +583,8 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
                   </g>
                 </g>
                 <text x={s.x} y={s.y + 32} textAnchor="middle" fill={L.text}
-                  stroke="rgba(255,255,255,0.92)"
-                  strokeWidth="3"
+                  stroke="rgba(8,4,2,0.95)"
+                  strokeWidth="3.5"
                   paintOrder="stroke fill"
                   style={{
                     fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Nunito', sans-serif",
@@ -630,9 +640,9 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
         }}>
           <div style={{
             display: 'inline-block', padding: '8px 16px', borderRadius: 100,
-            background: 'linear-gradient(180deg, #ffffff 0%, #f5efe8 100%)',
-            border: `2px solid ${DOMAIN_COLOR[hovered]}`,
-            boxShadow: `4px 4px 0 #1a1208, 0 0 0 1px rgba(26,18,8,0.06) inset`,
+            background: 'linear-gradient(180deg, #1f160c 0%, #150e08 100%)',
+            border: `1.5px solid ${DOMAIN_COLOR[hovered]}`,
+            boxShadow: `0 4px 16px rgba(0,0,0,0.7), 0 0 18px ${DOMAIN_COLOR[hovered]}55, inset 0 1px 0 rgba(220,170,70,0.12)`,
             fontSize: 12, color: L.text, letterSpacing: 0.2,
             maxWidth: 'min(92vw, 340px)',
           }}>

@@ -1,15 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useApp } from '../../context/AppContext';
 import RadialMazeHub from '../training/RadialMazeHub';
-import CancellationTaskGame from '../training/CancellationTaskGame';
-import RushHourGame from '../training/RushHourGame';
 import { DOMAINS } from '../training/trainingData';
-import { IconBack } from '../training/TrainingIcons';
+import { IconBack } from '../../features/training/shared/TrainingIcons';
+import { getLazyGame, hasGame } from '../../features/training/lazyGames';
 
-const GAME_COMPONENTS = {
-  'cancel-task': CancellationTaskGame,
-  'rush-hour': RushHourGame,
-};
+/** Tiny fallback shown while a game's bundle is being fetched the first time. */
+function GameLoading({ isAr }) {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: '#fdf8f5', color: '#5c534c',
+      fontFamily: "'Outfit', system-ui, sans-serif",
+      fontSize: 14, letterSpacing: 1.5,
+    }}>
+      {isAr ? 'جارِ التحميل…' : 'Loading…'}
+    </div>
+  );
+}
 
 /** Match radial training hub — no brown shrine layer. */
 const HUB_LIGHT = {
@@ -27,11 +36,11 @@ export default function ComicsScreen() {
   const [activeGame, setActiveGame] = useState(null);
   const [pickList, setPickList] = useState([]);
 
-  const GameView = activeGame ? GAME_COMPONENTS[activeGame] : null;
+  const GameView = activeGame ? getLazyGame(activeGame) : null;
 
   const playableSubs = (domainId) => {
     const domain = DOMAINS.find((d) => d.id === domainId);
-    return (domain?.subs || []).filter((s) => s.game && GAME_COMPONENTS[s.game]);
+    return (domain?.subs || []).filter((s) => s.game && hasGame(s.game));
   };
 
   const openDomain = (id) => {
@@ -147,7 +156,9 @@ export default function ComicsScreen() {
         </div>
       )}
       {screen === 'game' && GameView && (
-        <GameView onBack={exitGame} />
+        <Suspense fallback={<GameLoading isAr={isAr} />}>
+          <GameView onBack={exitGame} />
+        </Suspense>
       )}
     </div>
   );

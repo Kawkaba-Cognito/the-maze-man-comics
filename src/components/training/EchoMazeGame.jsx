@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import MazeManAvatar from './MazeManAvatar';
-import { IconBack } from './TrainingIcons';
-import { PALETTE } from './trainingData';
+import MazeManAvatar from '../../features/training/shared/MazeManAvatar';
+import { IconBack } from '../../features/training/shared/TrainingIcons';
+import { PALETTE } from '../../features/training/shared/palette';
 
 const c = PALETTE;
 
