@@ -504,9 +504,8 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
                   fill="none"
                   stroke={floorStroke}
                   strokeWidth={wFloor}
-                  strokeLinecap="butt"
-                  strokeLinejoin="miter"
-                  strokeMiterlimit="8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   opacity={isHovered ? 0.14 : 0.055}
                 />
                 <path
@@ -514,9 +513,8 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
                   fill="none"
                   stroke={corridorStroke}
                   strokeWidth={wCorridor + 1.6}
-                  strokeLinecap="butt"
-                  strokeLinejoin="miter"
-                  strokeMiterlimit="8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   opacity={isHovered ? 0.38 : 0.16}
                 />
                 <path
@@ -524,9 +522,8 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
                   fill="none"
                   stroke={corridorStroke}
                   strokeWidth={wCorridor}
-                  strokeLinecap="butt"
-                  strokeLinejoin="miter"
-                  strokeMiterlimit="8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   opacity={isHovered ? 1 : 0.52}
                   strokeDasharray={isHovered ? '6 5' : undefined}
                 >
@@ -545,9 +542,8 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
                   fill="none"
                   stroke="rgba(255,252,248,0.55)"
                   strokeWidth={0.9}
-                  strokeLinecap="butt"
-                  strokeLinejoin="miter"
-                  strokeMiterlimit="8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   strokeDasharray={isHovered ? dashPattern : '3 4'}
                   opacity={isHovered ? 0.9 : 0.5}
                   pointerEvents="none"

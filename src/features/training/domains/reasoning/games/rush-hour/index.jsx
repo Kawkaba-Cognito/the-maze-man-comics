@@ -242,22 +242,38 @@ export default function RushHourGame({ onBack }) {
   const [levelDef, setLevelDef] = useState(null);
   const [generating, setGenerating] = useState(false);
 
+  /* Only resolve a board when actually in play — avoids wiring Free/Level generators
+   * while the user is on hub/lobby (and fixes Challenge briefly loading the wrong tier). */
   useEffect(() => {
-    if (playMode === 'challenge' && chalFrozenDef) {
-      setLevelDef(chalFrozenDef);
-      setGenerating(false);
-      return;
+    if (phase !== 'play') return undefined;
+    if (playMode === 'challenge') {
+      if (chalFrozenDef) {
+        setLevelDef(chalFrozenDef);
+        setGenerating(false);
+      } else {
+        setGenerating(true);
+      }
+      return undefined;
     }
     setGenerating(true);
     const id = setTimeout(() => {
-      const def = playMode === 'free'
-        ? getRushHourFreeRound(freeStage, freeSessionNonce)
-        : getRushHourLevel(diffKey, levelIndex);
+      const def =
+        playMode === 'free'
+          ? getRushHourFreeRound(freeStage, freeSessionNonce)
+          : getRushHourLevel(diffKey, levelIndex);
       setLevelDef(def);
       setGenerating(false);
     }, 16);
     return () => clearTimeout(id);
-  }, [playMode, diffKey, levelIndex, freeStage, freeSessionNonce, chalFrozenDef]);
+  }, [
+    phase,
+    playMode,
+    diffKey,
+    levelIndex,
+    freeStage,
+    freeSessionNonce,
+    chalFrozenDef,
+  ]);
 
   const grid = levelDef?.grid ?? 6;
   const exitRow = levelDef?.exitRow ?? 2;
@@ -350,17 +366,15 @@ export default function RushHourGame({ onBack }) {
     }));
     chalScoresRef.current = initial;
     setChalScores(initial);
+    const board = buildChallengeRhPuzzle(
+      (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0,
+      0,
+      chalRoundsTotal,
+    );
+    setChalFrozenDef(board);
     setChalTurnOpen(true);
     setPlayMode('challenge');
     setPhase('play');
-    setTimeout(() => {
-      const board = buildChallengeRhPuzzle(
-        (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0,
-        0,
-        chalRoundsTotal,
-      );
-      setChalFrozenDef(board);
-    }, 16);
   }, [chalNames, chalRoundsTotal, isAr, playSfx, t.needTwo]);
 
   const startRhChallengeRound = useCallback(() => {
@@ -407,17 +421,14 @@ export default function RushHourGame({ onBack }) {
           setChalRoundIdx(chalCycleRef.current);
           chalIdxRef.current = 0;
           setChalIdx(0);
-          setGenerating(true);
-          setTimeout(() => {
-            const board = buildChallengeRhPuzzle(
-              (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0,
-              chalCycleRef.current,
-              totalR,
-            );
-            setChalFrozenDef(board);
-            setChalTurnOpen(true);
-            setGenerating(false);
-          }, 16);
+          setGenerating(false);
+          const board = buildChallengeRhPuzzle(
+            (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0,
+            chalCycleRef.current,
+            totalR,
+          );
+          setChalFrozenDef(board);
+          setChalTurnOpen(true);
         } else {
           setLastRhChalRows(base);
           setPhase('chalRes');
