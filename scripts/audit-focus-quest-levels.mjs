@@ -17,7 +17,7 @@ import {
   sigmoidTime,
   computeFeatureInterference,
   getLevelDifficultyModel,
-} from '../src/components/training/focusQuestData.js';
+} from '../src/features/training/shared/focusQuestData.js';
 
 const SHAPES = new Set(Object.keys(SH));
 
