@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IconBack } from '../../features/training/shared/TrainingIcons';
+import MazeManAvatar from '../../features/training/shared/MazeManAvatar';
 import { DOMAIN_COLOR, DOMAINS } from './trainingData';
 import { useApp } from '../../context/AppContext';
 import { tokens } from '../../styles/tokens';
@@ -197,11 +198,10 @@ function ArchShape3D({ col, hovered, gradId, filterId }) {
 function AtmosphericBgLight() {
   const isDesktop = typeof window !== 'undefined' && window.matchMedia?.('(min-width: 768px)').matches;
   const bgUrl = isDesktop
-    ? '/the-maze-man-comics/Assets/bg-desktop.webp'
-    : '/the-maze-man-comics/Assets/bg-mobile.webp';
+    ? '/the-maze-man-comics/Assets/bg-training-desktop.png'
+    : '/the-maze-man-comics/Assets/bg-training-mobile.png';
   return (
     <>
-      {/* Home fortress photo — same as main menu */}
       <div
         style={{
           position: 'absolute',
@@ -214,16 +214,16 @@ function AtmosphericBgLight() {
           pointerEvents: 'none',
         }}
       />
-      {/* Same navy overlay as home, kept light so the large background Maze Man stays visible. */}
+      {/* Subtle overlay for contrast with UI elements */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
           background: `linear-gradient(
             180deg,
-            rgba(5, 5, 15, 0.38) 0%,
-            rgba(10, 4, 30, 0.26) 42%,
-            rgba(5, 5, 15, 0.58) 100%
+            rgba(5, 5, 15, 0.3) 0%,
+            rgba(10, 4, 30, 0.2) 42%,
+            rgba(5, 5, 15, 0.45) 100%
           )`,
           zIndex: 1,
           pointerEvents: 'none',
@@ -328,48 +328,21 @@ const SHRINE_POSITIONS = [
  * with the modular backdrop instead of looking like stray scribbles.
  */
 const HUB_NEXUS = [180, 360];
-const COLLECTOR_W = 120;
-const COLLECTOR_E = 240;
-
-const MAZE_WAYPOINTS = {
-  attention: [
-    HUB_NEXUS,
-    [COLLECTOR_W, HUB_NEXUS[1]],
-    [COLLECTOR_W, 180],
-    [60, 180],
-  ],
-  speed: [
-    HUB_NEXUS,
-    [180, 120],
-  ],
-  memory: [
-    HUB_NEXUS,
-    [COLLECTOR_E, HUB_NEXUS[1]],
-    [COLLECTOR_E, 180],
-    [300, 180],
-  ],
-  language: [
-    HUB_NEXUS,
-    [COLLECTOR_W, HUB_NEXUS[1]],
-    [COLLECTOR_W, 480],
-    [60, 480],
-  ],
-  reasoning: [
-    HUB_NEXUS,
-    [180, 540],
-  ],
-  flexibility: [
-    HUB_NEXUS,
-    [COLLECTOR_E, HUB_NEXUS[1]],
-    [COLLECTOR_E, 480],
-    [300, 480],
-  ],
-};
+const AVATAR_R = 48;
 
 function mazeCorridorD(domainId) {
-  const pts = MAZE_WAYPOINTS[domainId];
-  if (!pts?.length) return '';
-  return pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ');
+  const s = SHRINE_POSITIONS.find(p => p.id === domainId);
+  if (!s) return '';
+  const dx = s.x - HUB_NEXUS[0];
+  const dy = s.y - HUB_NEXUS[1];
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const nx = dx / dist;
+  const ny = dy / dist;
+  const sx = HUB_NEXUS[0] + nx * AVATAR_R;
+  const sy = HUB_NEXUS[1] + ny * AVATAR_R;
+  const cpx = HUB_NEXUS[0] + dx * 0.5;
+  const cpy = HUB_NEXUS[1] + dy * 0.5;
+  return `M ${sx} ${sy} Q ${cpx} ${cpy} ${s.x} ${s.y}`;
 }
 
 export default function RadialMazeHub({ onBack, onOpenDomain }) {
@@ -472,6 +445,11 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
                 <stop offset="100%" stopColor={DOMAIN_COLOR[s.id]} stopOpacity="0"/>
               </radialGradient>
             ))}
+            <radialGradient id="centerGlow" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0%" stopColor="#ffd85a" stopOpacity="0.6"/>
+              <stop offset="40%" stopColor="#f5a623" stopOpacity="0.3"/>
+              <stop offset="100%" stopColor="#f5a623" stopOpacity="0"/>
+            </radialGradient>
           </defs>
 
           {/* Sparse guide grid — enough structure to feel designed, not noisy */}
@@ -484,38 +462,23 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
             ))}
           </g>
 
-          {/* Maze corridors — thin grid paths with junctions (not pipe elbows) */}
+          {/* Radial corridors — smooth spokes from center avatar to each portal */}
           {SHRINE_POSITIONS.map(s => {
             const col = DOMAIN_COLOR[s.id];
             const isHovered = hovered === s.id;
             const d = mazeCorridorD(s.id);
-            const wpts = MAZE_WAYPOINTS[s.id] ?? [];
-            const junctions = wpts.slice(1, -1);
-            const wCorridor = isHovered ? 2.85 : 2.15;
-            const wFloor = isHovered ? 12 : 9;
-            const dashPattern = '6 5';
-            const floorStroke = isHovered ? col : 'rgba(232,172,78,0.58)';
-            const corridorStroke = isHovered ? col : 'rgba(232,172,78,0.7)';
+            const wCorridor = isHovered ? 2.6 : 1.8;
+            const corridorStroke = isHovered ? col : 'rgba(232,172,78,0.6)';
             const runnerStroke = isHovered ? col : '#e8ac4e';
             return (
               <g key={`path-${s.id}`}>
                 <path
                   d={d}
                   fill="none"
-                  stroke={floorStroke}
-                  strokeWidth={wFloor}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  opacity={isHovered ? 0.14 : 0.055}
-                />
-                <path
-                  d={d}
-                  fill="none"
                   stroke={corridorStroke}
-                  strokeWidth={wCorridor + 1.6}
+                  strokeWidth={wCorridor + 2.5}
                   strokeLinecap="round"
-                  strokeLinejoin="round"
-                  opacity={isHovered ? 0.38 : 0.16}
+                  opacity={isHovered ? 0.18 : 0.06}
                 />
                 <path
                   d={d}
@@ -523,51 +486,32 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
                   stroke={corridorStroke}
                   strokeWidth={wCorridor}
                   strokeLinecap="round"
-                  strokeLinejoin="round"
-                  opacity={isHovered ? 1 : 0.52}
-                  strokeDasharray={isHovered ? '6 5' : undefined}
+                  opacity={isHovered ? 0.9 : 0.45}
+                  strokeDasharray={isHovered ? '8 5' : '4 6'}
                 >
                   {isHovered && (
                     <animate
                       attributeName="stroke-dashoffset"
                       from="0"
-                      to="-11"
-                      dur="0.85s"
+                      to="-13"
+                      dur="0.9s"
                       repeatCount="indefinite"
                     />
                   )}
                 </path>
-                <path
-                  d={d}
-                  fill="none"
-                  stroke="rgba(255,252,248,0.55)"
-                  strokeWidth={0.9}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeDasharray={isHovered ? dashPattern : '3 4'}
-                  opacity={isHovered ? 0.9 : 0.5}
-                  pointerEvents="none"
-                />
-                {junctions.map(([jx, jy], ji) => (
-                  <g key={`j-${s.id}-${ji}`}>
-                    <rect
-                      x={jx - 2.8} y={jy - 2.8} width={5.6} height={5.6}
-                      fill="#fffefb" stroke={runnerStroke} strokeWidth={1.15} rx={0.9}
-                      opacity={isHovered ? 0.95 : 0.48}
-                      transform={`rotate(45 ${jx} ${jy})`}
-                    />
-                    <circle cx={jx} cy={jy} r={1.35} fill={runnerStroke} opacity={isHovered ? 0.9 : 0.45} />
-                  </g>
-                ))}
-                <circle r={isHovered ? 3 : 2.5} fill="#fffefb" stroke={runnerStroke} strokeWidth={1.5} opacity={isHovered ? 1 : 0.58}>
-                  <animateMotion dur={isHovered ? '1.15s' : '2.65s'} repeatCount="indefinite" path={d}/>
+                <circle r={isHovered ? 3 : 2.2} fill="#fffefb" stroke={runnerStroke} strokeWidth={1.3} opacity={isHovered ? 1 : 0.6}>
+                  <animateMotion dur={isHovered ? '1.2s' : '2.8s'} repeatCount="indefinite" path={d}/>
                 </circle>
-                <circle r={isHovered ? 1.2 : 1} fill={runnerStroke} opacity={isHovered ? 1 : 0.56}>
-                  <animateMotion dur={isHovered ? '1.15s' : '2.65s'} repeatCount="indefinite" path={d}/>
+                <circle r={isHovered ? 1.1 : 0.8} fill={runnerStroke} opacity={isHovered ? 1 : 0.55}>
+                  <animateMotion dur={isHovered ? '1.2s' : '2.8s'} repeatCount="indefinite" path={d}/>
                 </circle>
               </g>
             );
           })}
+
+          {/* Center Maze Man avatar glow */}
+          <circle cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1]} r={68} fill="url(#centerGlow)" opacity="0.75"/>
+          <circle cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1]} r={46} fill="rgba(30,20,8,0.6)" stroke="rgba(232,172,78,0.55)" strokeWidth={1.8}/>
 
           {/* Shrine portals */}
           {SHRINE_POSITIONS.map(s => {
@@ -625,6 +569,19 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
               r={0.8 + (i % 3) * 0.4} fill="#e8ac4e" opacity={op * 0.42}/>;
           })}
         </svg>
+
+        {/* Center Maze Man — bright, highlighted, above all corridors */}
+        <div style={{
+          position: 'absolute',
+          top: `${(HUB_NEXUS[1] / 660) * 100}%`,
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 8,
+          pointerEvents: 'none',
+          filter: 'drop-shadow(0 0 24px rgba(245,166,35,0.7)) drop-shadow(0 0 56px rgba(255,216,90,0.4))',
+        }}>
+          <MazeManAvatar size={92} mood="proud" glow />
+        </div>
       </div>
 
       {/* Stats scroll */}

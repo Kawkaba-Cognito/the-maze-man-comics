@@ -4,7 +4,6 @@ import React, {
   useCallback,
   useRef,
   useLayoutEffect,
-  useReducer,
 } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
@@ -568,7 +567,6 @@ export default function CancellationTaskGame({ onBack }) {
   const [profile, setProfile] = useState(() => loadProfile());
   const [phase, setPhase] = useState('hub');
   const [diffKey, setDiffKey] = useState('easy');
-  const [, bumpFrame] = useReducer((x) => x + 1, 0);
 
   const [round, setRound] = useState(null);
   const [cells, setCells] = useState([]);
@@ -593,6 +591,7 @@ export default function CancellationTaskGame({ onBack }) {
   const tlRef = useRef(0);
   const tlimRef = useRef(0);
   const runRef = useRef(false);
+  const timerRunIdRef = useRef(0);
   const pendingPenaltyRef = useRef(0);
   const lastTapRef = useRef(0);
   const tapsRef = useRef([]);
@@ -669,6 +668,7 @@ export default function CancellationTaskGame({ onBack }) {
 
   const stopTimer = useCallback(() => {
     runRef.current = false;
+    timerRunIdRef.current += 1;
   }, []);
 
   /** Drop any in-progress round so hub / challenge / diff never see a stale `round`. */
@@ -886,10 +886,12 @@ export default function CancellationTaskGame({ onBack }) {
     if (playStep !== 'running' || pauseOpen) return;
     let id;
     let last = performance.now();
+    const runId = timerRunIdRef.current + 1;
+    timerRunIdRef.current = runId;
     warned10Ref.current = false;
     runRef.current = true;
     const loop = (ts) => {
-      if (!runRef.current || pauseOpen) return;
+      if (!runRef.current || pauseOpen || timerRunIdRef.current !== runId) return;
       const dt = (ts - last) / 1000;
       last = ts;
       const rr = roundRef.current;
@@ -914,6 +916,7 @@ export default function CancellationTaskGame({ onBack }) {
     id = requestAnimationFrame(loop);
     return () => {
       cancelAnimationFrame(id);
+      if (timerRunIdRef.current === runId) runRef.current = false;
     };
   }, [playStep, pauseOpen, playSfx]);
 
@@ -1248,26 +1251,87 @@ export default function CancellationTaskGame({ onBack }) {
       )}
 
       {phase === 'freeIntro' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <FqTrainingMenuBar
-              onBack={() => {
+        <div
+          className="ct-fq-training-shell ct-fq-training-shell--hub-light"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: 'min(100vh, 100dvh)',
+          }}
+        >
+          <div
+            className="ct-fq-screen ct-fq-training-screen"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 'min(100vh, 100dvh)',
+              padding: 'max(48px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left))',
+              textAlign: 'center',
+              position: 'relative',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
                 playSfx('click');
                 clearPlayRoundState();
                 setPhase('hub');
               }}
-              playSfx={playSfx}
-              paperChrome
-              center={
-                <div style={{ textAlign: 'center' }}>
-                  <div className="ct-fq-training-title ct-fq-training-title-sm">{t.freeIntroTitle}</div>
-                </div>
-              }
-            />
-            <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 4 }}>
+              style={{
+                position: 'absolute',
+                top: 'max(52px, env(safe-area-inset-top))',
+                [isAr ? 'right' : 'left']: 'max(14px, env(safe-area-inset-left))',
+                width: 34,
+                height: 34,
+                borderRadius: 12,
+                border: '2px solid #1a1208',
+                background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '3px 3px 0 #1a1208',
+                zIndex: 10,
+              }}
+            >
+              <IconBack size={18} c="#141210" />
+            </button>
+            <div
+              style={{
+                fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', cursive",
+                fontSize: isAr ? 26 : 28,
+                fontWeight: isAr ? 900 : 400,
+                letterSpacing: isAr ? 0 : 1.5,
+                marginBottom: 20,
+                color: '#141210',
+              }}
+            >
+              {t.freeIntroTitle}
+            </div>
+            <p
+              style={{
+                fontSize: isAr ? 16 : 15,
+                color: '#4a4540',
+                lineHeight: 1.7,
+                maxWidth: 360,
+                margin: '0 auto 28px',
+                fontWeight: 500,
+                padding: '0 8px',
+                fontStyle: 'normal',
+              }}
+            >
               {t.freeIntroBody}
             </p>
-            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={onFreeIntroReady}>
+            <button
+              type="button"
+              className="ct-fq-btn ct-fq-btn-pri"
+              style={{ width: '100%', maxWidth: 280, fontSize: 16, padding: '14px 24px' }}
+              onClick={onFreeIntroReady}
+            >
               {t.freeIntroReady}
             </button>
           </div>
@@ -1571,8 +1635,6 @@ export default function CancellationTaskGame({ onBack }) {
                   className="ct-fq-btn ct-fq-btn-pri"
                   onClick={() => {
                     setPauseOpen(false);
-                    runRef.current = true;
-                    bumpFrame();
                   }}
                 >
                   {t.resume}

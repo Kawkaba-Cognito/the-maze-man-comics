@@ -4,6 +4,10 @@ import { tokens } from '../../../../../../styles/tokens';
 import { IconBack } from '../../../../shared/TrainingIcons';
 import MazeManAvatar from '../../../../shared/MazeManAvatar';
 import { getRange, isWon, clonePieces, RUSH_HOUR_BASE_LAYOUTS } from './engine';
+import RushHourTutorial, {
+  buildRhTutorialQueueFor,
+  markRhTutorialSeen,
+} from './tutorial';
 import {
   DM,
   freeTimeDrainMultiplier,
@@ -11,9 +15,6 @@ import {
   FREE_SESSION_CAP_SEC,
 } from '../../../../shared/focusQuestData';
 import {
-  getRushHourLevel,
-  getRushHourFreeRound,
-  buildChallengeRhPuzzle,
   mergeRhChallengeRow,
   RH_LEVELS_PER_TIER,
   RH_DIFF_KEYS,
@@ -23,8 +24,21 @@ import {
   rhFreeClearBonusSec,
   rhFreeRoundClearPoints,
 } from './data';
+import RhWorker from './rh-worker.js?worker';
 
 const GAP = 4;
+const SAFE_RH_BASE = RUSH_HOUR_BASE_LAYOUTS[0];
+
+function makeSafeRushHourBoard(labelKey, extra = {}) {
+  return {
+    labelKey,
+    grid: SAFE_RH_BASE.grid,
+    exitRow: SAFE_RH_BASE.exitRow,
+    pieces: clonePieces(SAFE_RH_BASE.pieces),
+    par: 4,
+    ...extra,
+  };
+}
 
 const HERO_STYLE = {
   fill: ['#f5c44a', '#e8a830'],
@@ -228,6 +242,40 @@ export default function RushHourGame({ onBack }) {
   const tlimRef = useRef(FREE_SESSION_START_SEC);
   const freeTimerEndedRef = useRef(false);
 
+  const [tutorialQueue, setTutorialQueue] = useState([]);
+  const pendingTutorialActionRef = useRef(null);
+
+  const gateWithTutorial = useCallback((action, modeKind) => {
+    const q = buildRhTutorialQueueFor(modeKind);
+    if (q.length === 0) { action(); return; }
+    pendingTutorialActionRef.current = action;
+    setTutorialQueue(q);
+  }, []);
+
+  const advanceTutorial = useCallback(() => {
+    setTutorialQueue((prev) => {
+      const finished = prev[0];
+      if (finished) {
+        const sk = finished.kind === 'main' ? 'main'
+          : finished.kind === 'free-tip' ? 'free'
+          : 'challenge';
+        markRhTutorialSeen(sk);
+      }
+      const remaining = prev.slice(1);
+      if (remaining.length === 0 && pendingTutorialActionRef.current) {
+        const action = pendingTutorialActionRef.current;
+        pendingTutorialActionRef.current = null;
+        queueMicrotask(action);
+      }
+      return remaining;
+    });
+  }, []);
+
+  const replayTutorial = useCallback(() => {
+    pendingTutorialActionRef.current = null;
+    setTutorialQueue([{ kind: 'main' }]);
+  }, []);
+
   useEffect(() => {
     chalIdxRef.current = chalIdx;
   }, [chalIdx]);
@@ -241,6 +289,22 @@ export default function RushHourGame({ onBack }) {
 
   const [levelDef, setLevelDef] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const workerRef = useRef(null);
+  const workerMsgIdRef = useRef(0);
+
+  useEffect(() => {
+    try {
+      const w = new RhWorker();
+      workerRef.current = w;
+      w.addEventListener('error', () => {
+        w.terminate();
+        workerRef.current = null;
+      });
+      return () => { w.terminate(); workerRef.current = null; };
+    } catch (_) {
+      workerRef.current = null;
+    }
+  }, []);
 
   /* Only resolve a board when actually in play — avoids wiring Free/Level generators
    * while the user is on hub/lobby (and fixes Challenge briefly loading the wrong tier). */
@@ -256,14 +320,77 @@ export default function RushHourGame({ onBack }) {
       return undefined;
     }
     setGenerating(true);
-    const id = setTimeout(() => {
-      const def =
-        playMode === 'free'
-          ? getRushHourFreeRound(freeStage, freeSessionNonce)
-          : getRushHourLevel(diffKey, levelIndex);
+    setLevelDef(null);
+
+    const msgId = ++workerMsgIdRef.current;
+    const w = workerRef.current;
+
+    const runFallbackSync = () => {
+      if (msgId !== workerMsgIdRef.current) return;
+      const def = playMode === 'free'
+        ? makeSafeRushHourBoard('free', { freeStage, diff: diffKey, lv: levelIndex })
+        : makeSafeRushHourBoard('level', { level: levelIndex, diff: diffKey });
       setLevelDef(def);
       setGenerating(false);
-    }, 16);
+    };
+
+    if (w) {
+      let responded = false;
+      let timeout = setTimeout(() => {
+        if (!responded && msgId === workerMsgIdRef.current) {
+          responded = true;
+          runFallbackSync();
+        }
+      }, 1800);
+
+      const handler = (e) => {
+        if (e.data.id !== msgId) return;
+        if (responded) return;
+        responded = true;
+        clearTimeout(timeout);
+        w.removeEventListener('message', handler);
+        if (msgId !== workerMsgIdRef.current) return;
+        if (e.data.error || !e.data.result) {
+          runFallbackSync();
+          return;
+        }
+        setLevelDef(e.data.result);
+        setGenerating(false);
+      };
+
+      const errHandler = () => {
+        if (!responded && msgId === workerMsgIdRef.current) {
+          responded = true;
+          clearTimeout(timeout);
+          runFallbackSync();
+        }
+      };
+
+      w.addEventListener('message', handler);
+      w.addEventListener('error', errHandler);
+
+      if (playMode === 'free') {
+        w.postMessage({
+          type: 'generateFree',
+          id: msgId,
+          payload: { stageIndex: freeStage, sessionNonce: freeSessionNonce },
+        });
+      } else {
+        w.postMessage({
+          type: 'generateLevel',
+          id: msgId,
+          payload: { diffKey, levelIndex },
+        });
+      }
+      return () => {
+        clearTimeout(timeout);
+        w.removeEventListener('message', handler);
+        w.removeEventListener('error', errHandler);
+      };
+    }
+
+    /* Fallback if worker not available (e.g. SSR or old browser) */
+    const id = setTimeout(runFallbackSync, 16);
     return () => clearTimeout(id);
   }, [
     phase,
@@ -366,15 +493,51 @@ export default function RushHourGame({ onBack }) {
     }));
     chalScoresRef.current = initial;
     setChalScores(initial);
-    const board = buildChallengeRhPuzzle(
-      (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0,
-      0,
-      chalRoundsTotal,
-    );
-    setChalFrozenDef(board);
-    setChalTurnOpen(true);
     setPlayMode('challenge');
     setPhase('play');
+    setGenerating(true);
+    setChalFrozenDef(null);
+
+    const w = workerRef.current;
+    const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+    if (w) {
+      const msgId = ++workerMsgIdRef.current;
+      let done = false;
+      const fallback = () => {
+        if (done) return;
+        done = true;
+        const board = makeSafeRushHourBoard('challenge', { seed });
+        setChalFrozenDef(board);
+        setChalTurnOpen(true);
+        setGenerating(false);
+      };
+      const timer = setTimeout(fallback, 1800);
+      const handler = (e) => {
+        if (e.data.id !== msgId) return;
+        if (done) return;
+        clearTimeout(timer);
+        done = true;
+        w.removeEventListener('message', handler);
+        if (msgId !== workerMsgIdRef.current) return;
+        const board = (e.data.error || !e.data.result)
+          ? makeSafeRushHourBoard('challenge', { seed })
+          : e.data.result;
+        setChalFrozenDef(board);
+        setChalTurnOpen(true);
+        setGenerating(false);
+      };
+      w.addEventListener('message', handler);
+      w.postMessage({
+        type: 'generateChallenge',
+        id: msgId,
+        payload: { seed, cycleIndex: 0, totalRounds: chalRoundsTotal },
+      });
+    } else {
+      const board = makeSafeRushHourBoard('challenge', { seed });
+      setChalFrozenDef(board);
+      setChalTurnOpen(true);
+      setGenerating(false);
+    }
   }, [chalNames, chalRoundsTotal, isAr, playSfx, t.needTwo]);
 
   const startRhChallengeRound = useCallback(() => {
@@ -421,14 +584,49 @@ export default function RushHourGame({ onBack }) {
           setChalRoundIdx(chalCycleRef.current);
           chalIdxRef.current = 0;
           setChalIdx(0);
-          setGenerating(false);
-          const board = buildChallengeRhPuzzle(
-            (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0,
-            chalCycleRef.current,
-            totalR,
-          );
-          setChalFrozenDef(board);
-          setChalTurnOpen(true);
+          setGenerating(true);
+          setChalFrozenDef(null);
+
+          const w = workerRef.current;
+          const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+          if (w) {
+            const msgId = ++workerMsgIdRef.current;
+            let done = false;
+            const fallback = () => {
+              if (done) return;
+              done = true;
+              const board = makeSafeRushHourBoard('challenge', { seed });
+              setChalFrozenDef(board);
+              setChalTurnOpen(true);
+              setGenerating(false);
+            };
+            const timer = setTimeout(fallback, 1800);
+            const handler = (e) => {
+              if (e.data.id !== msgId) return;
+              if (done) return;
+              clearTimeout(timer);
+              done = true;
+              w.removeEventListener('message', handler);
+              if (msgId !== workerMsgIdRef.current) return;
+              const board = (e.data.error || !e.data.result)
+                ? makeSafeRushHourBoard('challenge', { seed })
+                : e.data.result;
+              setChalFrozenDef(board);
+              setChalTurnOpen(true);
+              setGenerating(false);
+            };
+            w.addEventListener('message', handler);
+            w.postMessage({
+              type: 'generateChallenge',
+              id: msgId,
+              payload: { seed, cycleIndex: chalCycleRef.current, totalRounds: totalR },
+            });
+          } else {
+            const board = makeSafeRushHourBoard('challenge', { seed });
+            setChalFrozenDef(board);
+            setChalTurnOpen(true);
+            setGenerating(false);
+          }
         } else {
           setLastRhChalRows(base);
           setPhase('chalRes');
@@ -723,7 +921,29 @@ export default function RushHourGame({ onBack }) {
                 {t.subtitle}
               </div>
             </div>
-            <div style={{ width: 34 }} />
+            <button
+              type="button"
+              onClick={() => { playSfx('click'); replayTutorial(); }}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 12,
+                border: '2px solid #1a1208',
+                background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '3px 3px 0 #1a1208',
+                fontFamily: "'Bangers', cursive",
+                fontSize: 16,
+                color: '#141210',
+              }}
+              aria-label={isAr ? 'إعادة الشرح' : 'Replay tutorial'}
+              title={isAr ? 'إعادة الشرح' : 'Replay tutorial'}
+            >
+              ?
+            </button>
           </div>
 
           <div className="ct-fq-attn-modes" style={{ maxWidth: 400 }} role="group">
@@ -732,7 +952,7 @@ export default function RushHourGame({ onBack }) {
               className="ct-fq-attn-mode ct-fq-attn-mode--free"
               onClick={() => {
                 playSfx('click');
-                setPhase('freeIntro');
+                gateWithTutorial(() => setPhase('freeIntro'), 'free');
               }}
             >
               <span className="ct-fq-attn-mode-ic" aria-hidden="true">
@@ -753,8 +973,7 @@ export default function RushHourGame({ onBack }) {
               className="ct-fq-attn-mode ct-fq-attn-mode--levels"
               onClick={() => {
                 playSfx('click');
-                setPlayMode('levels');
-                setPhase('pickDiff');
+                gateWithTutorial(() => { setPlayMode('levels'); setPhase('pickDiff'); }, 'levels');
               }}
             >
               <span className="ct-fq-attn-mode-ic" aria-hidden="true">
@@ -775,7 +994,7 @@ export default function RushHourGame({ onBack }) {
               className="ct-fq-attn-mode ct-fq-attn-mode--chal"
               onClick={() => {
                 playSfx('click');
-                setPhase('chal');
+                gateWithTutorial(() => setPhase('chal'), 'challenge');
               }}
             >
               <span className="ct-fq-attn-mode-ic" aria-hidden="true">
@@ -793,6 +1012,15 @@ export default function RushHourGame({ onBack }) {
             </button>
           </div>
         </div>
+
+        {tutorialQueue.length > 0 && (
+          <RushHourTutorial
+            kind={tutorialQueue[0].kind}
+            isAr={isAr}
+            onClose={advanceTutorial}
+            playSfx={playSfx}
+          />
+        )}
       </div>
     );
   }
@@ -890,40 +1118,66 @@ export default function RushHourGame({ onBack }) {
           fontFamily: "'Outfit', system-ui, sans-serif",
           overflowX: 'hidden',
           padding: pad,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 400, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <button
-              type="button"
-              onClick={() => {
-                playSfx('click');
-                setPhase('hub');
-              }}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 12,
-                border: '2px solid #1a1208',
-                background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '3px 3px 0 #1a1208',
-              }}
-            >
-              <IconBack size={18} c="#141210" />
-            </button>
-            <div className="ct-fq-training-title ct-fq-training-title-sm">{t.freeIntroTitle}</div>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 420, width: '100%', margin: '0 auto', textAlign: 'center' }}>
+          <button
+            type="button"
+            onClick={() => {
+              playSfx('click');
+              setPhase('hub');
+            }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              [isAr ? 'right' : 'left']: 0,
+              width: 34,
+              height: 34,
+              borderRadius: 12,
+              border: '2px solid #1a1208',
+              background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '3px 3px 0 #1a1208',
+            }}
+          >
+            <IconBack size={18} c="#141210" />
+          </button>
+          <div
+            style={{
+              fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', cursive",
+              fontSize: isAr ? 26 : 28,
+              fontWeight: isAr ? 900 : 400,
+              letterSpacing: isAr ? 0 : 1.5,
+              marginBottom: 20,
+              marginTop: 8,
+            }}
+          >
+            {t.freeIntroTitle}
           </div>
-          <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 4, lineHeight: 1.5 }}>
+          <p
+            style={{
+              fontSize: isAr ? 16 : 15,
+              color: '#4a4540',
+              lineHeight: 1.7,
+              maxWidth: 360,
+              margin: '0 auto 28px',
+              fontWeight: 500,
+              padding: '0 8px',
+            }}
+          >
             {t.freeIntroBody}
           </p>
           <button
             type="button"
             className="ct-fq-btn ct-fq-btn-pri"
-            style={{ marginTop: 20, width: '100%' }}
+            style={{ width: '100%', maxWidth: 280, margin: '0 auto', fontSize: 16, padding: '14px 24px' }}
             onClick={() => {
               playSfx('click');
               startFreeRun();
@@ -1952,6 +2206,15 @@ export default function RushHourGame({ onBack }) {
             </div>
           </div>
         </div>
+      )}
+
+      {tutorialQueue.length > 0 && (
+        <RushHourTutorial
+          kind={tutorialQueue[0].kind}
+          isAr={isAr}
+          onClose={advanceTutorial}
+          playSfx={playSfx}
+        />
       )}
     </div>
   );
