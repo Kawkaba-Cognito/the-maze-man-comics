@@ -557,7 +557,9 @@ export function prepareLevelRound(diff, lv) {
  * bit-identical grid. Fairness is preserved across player turns and rounds.
  */
 export function prepareChallengeSeed() {
-  const pool = SP.hard[80];
+  // Level 80 (0-based index 79) — same pool mapping as level mode, not SP.hard[80]
+  // (shape pools are 20 entries; direct index 80 is undefined).
+  const { pool } = getLvCfg('hard', Math.min(79, FQ_LEVELS_PER_TIER - 1));
   const pal = PAL.hard;
   const grid = 9;
   const tc = 15;

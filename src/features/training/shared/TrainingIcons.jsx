@@ -13,3 +13,8 @@ export const IconFlame = (p) => <I {...p}><path d="M16 4c2 4 6 6 6 12a6 6 0 01-1
 export const IconPlay = (p) => <I {...p} sw={0}><path d="M10 6l16 10L10 26z" fill={p.c || '#f5c042'}/></I>;
 export const IconStar = (p) => <I {...p}><path d="M16 6l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill={p.c || '#f5c042'} fillOpacity="0.2"/></I>;
 export const IconClock = (p) => <I {...p}><circle cx="16" cy="16" r="11"/><path d="M16 9v7l4 3"/></I>;
+export const IconPause = (p) => (
+  <I {...p} sw={2.5}>
+    <path d="M11 8v16M21 8v16" />
+  </I>
+);

@@ -27,123 +27,18 @@ import {
   FQ_DIFF_KEYS,
   FQ_LEVELS_PER_TIER,
 } from '../../../../shared/focusQuestData';
-import { PALETTE } from '../../../../shared/palette';
-import { tokens } from '../../../../../../styles/tokens';
-import { IconBack } from '../../../../shared/TrainingIcons';
+import {
+  TrainingMenuBar,
+  TrainingPlayHeader,
+  TrainingPauseModal,
+  TrainingQuitModal,
+  TrainingChallengeHandoff,
+} from '../../../../shared/TrainingChrome';
 import FocusQuestTutorial, {
   buildTutorialQueueFor,
   markTutorialSeen,
 } from './tutorial';
 
-const TR = PALETTE;
-
-function fqTrainingChromeBtn() {
-  return {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
-    border: `1px solid ${TR.accent}33`,
-    background: `linear-gradient(180deg, ${TR.card} 0%, ${TR.cardDeep} 100%)`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: TR.text,
-    cursor: 'pointer',
-    boxShadow: `0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px ${TR.accent}11 inset`,
-    flexShrink: 0,
-  };
-}
-
-/** Menu chrome for attention hub on cream paper background */
-function fqTrainingChromeBtnPaper() {
-  return {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
-    border: '1px solid rgba(107, 90, 72, 0.38)',
-    background: `linear-gradient(180deg, ${tokens.trainingPaletteSurface} 0%, #f3e7df 100%)`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#3a3228',
-    cursor: 'pointer',
-    boxShadow:
-      '0 2px 10px rgba(45, 45, 40, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.65) inset',
-    flexShrink: 0,
-  };
-}
-
-function FqTrainingMenuBar({
-  onBack,
-  playSfx,
-  center,
-  hubSpaced = false,
-  onReplayTutorial,
-  replayHint,
-  paperChrome = false,
-}) {
-  const chrome = paperChrome ? fqTrainingChromeBtnPaper : fqTrainingChromeBtn;
-  const iconC = paperChrome ? '#3a3228' : TR.text;
-  return (
-    <div
-      className={`ct-fq-training-menubar${hubSpaced ? ' ct-fq-training-menubar--hub' : ''}`}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        width: '100%',
-        paddingTop: 'max(52px, env(safe-area-inset-top))',
-        paddingLeft: hubSpaced ? undefined : 18,
-        paddingRight: hubSpaced ? undefined : 18,
-        paddingBottom: hubSpaced ? 22 : 10,
-        position: 'relative',
-        zIndex: 5,
-        boxSizing: 'border-box',
-      }}
-    >
-      <button
-        type="button"
-        style={chrome()}
-        onClick={() => {
-          playSfx('click');
-          onBack();
-        }}
-        aria-label="Back"
-      >
-        <IconBack size={18} c={iconC} />
-      </button>
-      <div
-        className="ct-fq-training-menubar-center"
-        style={{ flex: 1, minWidth: 0, padding: '0 8px' }}
-        role="presentation"
-      >
-        {center}
-      </div>
-      {onReplayTutorial ? (
-        <button
-          type="button"
-          style={{
-            ...chrome(),
-            fontFamily: "'Cormorant Garamond', 'Cinzel', serif",
-            fontSize: 18,
-            fontWeight: 700,
-            color: paperChrome ? '#8a5a18' : TR.accent,
-          }}
-          onClick={() => {
-            playSfx('click');
-            onReplayTutorial();
-          }}
-          aria-label={replayHint || 'Replay tutorial'}
-          title={replayHint || 'Replay tutorial'}
-        >
-          ?
-        </button>
-      ) : (
-        <div style={{ width: 34, flexShrink: 0 }} aria-hidden="true" />
-      )}
-    </div>
-  );
-}
 
 /** Merge one challenge pass into running per-player aggregates (avg IES/time/etc., total errors). */
 function mergeChallengePlayerStats(prev, stats, errCount, nm) {
@@ -308,8 +203,6 @@ function CtLiveHud({
   errorsLabel,
   errorsMax,
   lvlLabel,
-  onPause,
-  onQuit,
   freeScore,
 }) {
   const [, setTick] = useState(0);
@@ -373,14 +266,6 @@ function CtLiveHud({
             <div className="ct-fq-gl">{t.score}</div>
           </div>
         )}
-        <div className="ct-fq-g-actions">
-          <button type="button" className="ct-fq-mini" onClick={onPause}>
-            {t.pause}
-          </button>
-          <button type="button" className="ct-fq-mini ct-fq-mini-warn" onClick={onQuit}>
-            {t.quit}
-          </button>
-        </div>
       </div>
       <div className="ct-fq-cbw" data-fq-chrome>
         <div
@@ -449,6 +334,9 @@ const UI = {
     ready: (n) => `Ready — ${n}`,
     handTo: (n) => `Hand the device to ${n}.`,
     goReady: 'Start round',
+    chalTurnKicker: 'Your turn',
+    chalBulletSame: 'Same grid for every player this round',
+    chalBulletPass: 'Tap Start only when the device is with this player',
     hubMenu: 'Same grid, fair compare.',
     time: 'Time',
     found: 'Found',
@@ -526,6 +414,9 @@ const UI = {
     ready: (n) => `جاهز — ${n}`,
     handTo: (n) => `سلّم الجهاز إلى ${n}.`,
     goReady: 'ابدأ الجولة',
+    chalTurnKicker: 'دورك',
+    chalBulletSame: 'نفس الشبكة لكل اللاعبين في هذه الجولة',
+    chalBulletPass: 'اضغط ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
     hubMenu: 'شبكة واحدة، مقارنة عادلة.',
     time: 'الوقت',
     found: 'مُوجَد',
@@ -1171,8 +1062,47 @@ export default function CancellationTaskGame({ onBack }) {
 
   const confirmQuit = () => {
     setQuitOpen(false);
+    const mode = roundRef.current?.mode;
     clearPlayRoundState();
-    setPhase('hub');
+    if (mode === 'challenge') setPhase('chal');
+    else if (mode === 'level') setPhase('levels');
+    else setPhase('hub');
+  };
+
+  const pauseLabels = {
+    paused: t.paused,
+    resume: t.resume,
+    restart: t.restart,
+    quitMenu: t.quitMenu,
+  };
+  const quitLabels = {
+    quitQ: t.quitQ,
+    quitLose: t.quitLose,
+    yesQuit: t.yesQuit,
+    keep: t.keep,
+  };
+
+  const playHeaderForRound = (r) => {
+    if (!r) return { title: '', subtitle: '' };
+    if (r.mode === 'free') {
+      return {
+        title: isAr ? 'وضع حر' : 'Free mode',
+        subtitle: t.freeLvlLabel(DM[r.diff]?.label ?? '', r.lv),
+      };
+    }
+    if (r.mode === 'challenge') {
+      return {
+        title: isAr ? 'تحدي' : 'Challenge',
+        subtitle:
+          chalRoundsTotal > 1
+            ? `${t.roundNofM(chalRoundIdx + 1, chalRoundsTotal)} · ${chalNames[chalIdx] ?? ''}`
+            : chalNames[chalIdx] ?? '',
+      };
+    }
+    return {
+      title: `${DM[r.diff]?.label ?? ''} · L${r.lv}`,
+      subtitle: `${r.grid}×${r.grid} · ${Number(r.tlim).toFixed(0)}s`,
+    };
   };
 
   /* --- Tutorial gating ------------------------------------------------------
@@ -1226,11 +1156,11 @@ export default function CancellationTaskGame({ onBack }) {
       {phase === 'hub' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
-            <FqTrainingMenuBar
+            <TrainingMenuBar
               onBack={onBack}
               playSfx={playSfx}
               hubSpaced
-              paperChrome
+              variant="paper"
               onReplayTutorial={replayTutorial}
               replayHint={isAr ? 'إعادة الشرح' : 'Replay tutorial'}
               center={
@@ -1276,32 +1206,25 @@ export default function CancellationTaskGame({ onBack }) {
               position: 'relative',
             }}
           >
-            <button
-              type="button"
-              onClick={() => {
-                playSfx('click');
-                clearPlayRoundState();
-                setPhase('hub');
-              }}
+            <div
               style={{
                 position: 'absolute',
-                top: 'max(52px, env(safe-area-inset-top))',
-                [isAr ? 'right' : 'left']: 'max(14px, env(safe-area-inset-left))',
-                width: 34,
-                height: 34,
-                borderRadius: 12,
-                border: '2px solid #1a1208',
-                background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '3px 3px 0 #1a1208',
+                top: 'max(48px, env(safe-area-inset-top))',
+                left: 0,
+                right: 0,
                 zIndex: 10,
               }}
             >
-              <IconBack size={18} c="#141210" />
-            </button>
+              <TrainingMenuBar
+                variant="paper"
+                playSfx={playSfx}
+                onBack={() => {
+                  clearPlayRoundState();
+                  setPhase('hub');
+                }}
+                center={null}
+              />
+            </div>
             <div
               style={{
                 fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', cursive",
@@ -1343,13 +1266,13 @@ export default function CancellationTaskGame({ onBack }) {
       {phase === 'diff' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen">
-            <FqTrainingMenuBar
+            <TrainingMenuBar
               onBack={() => {
                 clearPlayRoundState();
                 setPhase('hub');
               }}
               playSfx={playSfx}
-              paperChrome
+              variant="paper"
               center={
                 <div style={{ textAlign: 'center' }}>
                   <div className="ct-fq-training-title ct-fq-training-title-sm">{t.pickDiff}</div>
@@ -1384,10 +1307,10 @@ export default function CancellationTaskGame({ onBack }) {
       {phase === 'levels' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen">
-            <FqTrainingMenuBar
+            <TrainingMenuBar
               onBack={() => setPhase('diff')}
               playSfx={playSfx}
-              paperChrome
+              variant="paper"
               center={
                 <div style={{ textAlign: 'center' }}>
                   <div className="ct-fq-training-title ct-fq-training-title-sm">{DM[diffKey].label}</div>
@@ -1430,13 +1353,13 @@ export default function CancellationTaskGame({ onBack }) {
       {phase === 'chal' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen">
-            <FqTrainingMenuBar
+            <TrainingMenuBar
               onBack={() => {
                 clearPlayRoundState();
                 setPhase('hub');
               }}
               playSfx={playSfx}
-              paperChrome
+              variant="paper"
               center={
                 <div style={{ textAlign: 'center' }}>
                   <div className="ct-fq-training-title ct-fq-training-title-sm">{t.challengeTitle}</div>
@@ -1511,31 +1434,35 @@ export default function CancellationTaskGame({ onBack }) {
       )}
 
       {phase === 'play' && chalTurnOpen && !round && chalNames[chalIdx] && (
-        <div className="ct-fq-ov">
-          <div className="ct-fq-box">
-            {chalRoundsTotal > 1 && (
-              <p className="ct-fq-cpb" style={{ marginBottom: 10 }}>
-                {t.roundNofM(chalRoundIdx + 1, chalRoundsTotal)}
-              </p>
-            )}
-            <h2>{t.ready(chalNames[chalIdx])}</h2>
-            <p>{t.handTo(chalNames[chalIdx])}</p>
-            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={startChallengeRound}>
-              {t.goReady}
-            </button>
-          </div>
-        </div>
+        <TrainingChallengeHandoff
+          isAr={isAr}
+          kicker={t.chalTurnKicker}
+          playerName={chalNames[chalIdx]}
+          roundLine={
+            chalRoundsTotal > 1 ? t.roundNofM(chalRoundIdx + 1, chalRoundsTotal) : null
+          }
+          metaLine="Hard · 9×9 · 50s"
+          instruction={t.handTo(chalNames[chalIdx])}
+          bullets={[t.chalBulletSame, t.chalBulletPass]}
+          startLabel={t.goReady}
+          onStart={startChallengeRound}
+          playSfx={playSfx}
+        />
       )}
 
       {phase === 'play' && round && (
         <>
+          <TrainingPlayHeader
+            isAr={isAr}
+            title={playHeaderForRound(round).title}
+            subtitle={playHeaderForRound(round).subtitle}
+            playSfx={playSfx}
+            menuAriaLabel={t.menu}
+            pauseAriaLabel={t.pause}
+            onMenu={onHudQuit}
+            onPause={onHudPause}
+          />
           <div className="ct-fq-g-wrap" ref={gridWrapRef}>
-            {round.mode === 'challenge' && (
-              <div className="ct-fq-cpb" data-fq-chrome>
-                {chalRoundsTotal > 1 ? `${t.roundNofM(chalRoundIdx + 1, chalRoundsTotal)} · ` : ''}
-                {chalNames[chalIdx]} — {chalIdx + 1}/{chalNames.length}
-              </div>
-            )}
             <CtLiveHud
               t={t}
               playStep={playStep}
@@ -1551,13 +1478,11 @@ export default function CancellationTaskGame({ onBack }) {
               errorsMax={round.mode === 'free' ? 3 : undefined}
               lvlLabel={
                 round.mode === 'free'
-                  ? t.freeLvlLabel(DM[round.diff].label, round.lv)
+                  ? t.freeLvlLabel(DM[round.diff]?.label ?? '', round.lv)
                   : round.lv === 'CH'
                     ? 'CH'
                     : `L${round.lv}`
               }
-              onPause={onHudPause}
-              onQuit={onHudQuit}
               freeScore={round.mode === 'free' ? freeScore : undefined}
             />
             <div className="ct-fq-tb" data-fq-chrome>
@@ -1631,63 +1556,33 @@ export default function CancellationTaskGame({ onBack }) {
             </div>
           </div>
 
-          {pauseOpen && (
-            <div className="ct-fq-ov">
-              <div className="ct-fq-box">
-                <h2>{t.paused}</h2>
-                <button
-                  type="button"
-                  className="ct-fq-btn ct-fq-btn-pri"
-                  onClick={() => {
-                    setPauseOpen(false);
-                  }}
-                >
-                  {t.resume}
-                </button>
-                <button
-                  type="button"
-                  className="ct-fq-btn ct-fq-btn-ghost"
-                  onClick={() => {
-                    setPauseOpen(false);
-                    if (round.mode === 'level') startLevelGame(round.diff, round.lv);
-                    else if (round.mode === 'free') void beginFreeRoundAtStage(round.freeStage ?? 0);
-                    else startChallengeRound();
-                  }}
-                >
-                  {t.restart}
-                </button>
-                <button
-                  type="button"
-                  className="ct-fq-btn ct-fq-btn-ghost"
-                  onClick={() => { setPauseOpen(false); setQuitOpen(true); }}
-                >
-                  {t.quitMenu}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {quitOpen && (
-            <div className="ct-fq-ov">
-              <div className="ct-fq-box">
-                <h2>{t.quitQ}</h2>
-                <p>{t.quitLose}</p>
-                <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={confirmQuit}>
-                  {t.yesQuit}
-                </button>
-                <button
-                  type="button"
-                  className="ct-fq-btn ct-fq-btn-ghost"
-                  onClick={() => {
-                    setQuitOpen(false);
-                    if (playStep === 'running') runRef.current = true;
-                  }}
-                >
-                  {t.keep}
-                </button>
-              </div>
-            </div>
-          )}
+          <TrainingPauseModal
+            open={pauseOpen}
+            labels={pauseLabels}
+            onResume={() => {
+              setPauseOpen(false);
+              if (playStep === 'running') runRef.current = true;
+            }}
+            onRestart={() => {
+              setPauseOpen(false);
+              if (round.mode === 'level') startLevelGame(round.diff, round.lv);
+              else if (round.mode === 'free') void beginFreeRoundAtStage(round.freeStage ?? 0);
+              else startChallengeRound();
+            }}
+            onQuitMenu={() => {
+              setPauseOpen(false);
+              setQuitOpen(true);
+            }}
+          />
+          <TrainingQuitModal
+            open={quitOpen}
+            labels={quitLabels}
+            onConfirmQuit={confirmQuit}
+            onKeepPlaying={() => {
+              setQuitOpen(false);
+              if (playStep === 'running') runRef.current = true;
+            }}
+          />
 
         </>
       )}
@@ -1695,14 +1590,14 @@ export default function CancellationTaskGame({ onBack }) {
       {phase === 'res' && lastResult?.type === 'level' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen">
-            <FqTrainingMenuBar
+            <TrainingMenuBar
               onBack={() => {
                 setLastResult(null);
                 clearPlayRoundState();
                 setPhase('hub');
               }}
               playSfx={playSfx}
-              paperChrome
+              variant="paper"
               center={
                 <div style={{ textAlign: 'center' }}>
                   <div className="ct-fq-training-title ct-fq-training-title-sm">
@@ -1776,14 +1671,14 @@ export default function CancellationTaskGame({ onBack }) {
       {phase === 'freeRes' && lastResult?.type === 'free' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen">
-            <FqTrainingMenuBar
+            <TrainingMenuBar
               onBack={() => {
                 setLastResult(null);
                 clearPlayRoundState();
                 setPhase('hub');
               }}
               playSfx={playSfx}
-              paperChrome
+              variant="paper"
               center={
                 <div style={{ textAlign: 'center' }}>
                   <div className="ct-fq-training-title ct-fq-training-title-sm">{t.freeGameOver}</div>
@@ -1830,14 +1725,14 @@ export default function CancellationTaskGame({ onBack }) {
       {phase === 'chalRes' && lastResult?.type === 'challenge' && lastResult.rows && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen">
-            <FqTrainingMenuBar
+            <TrainingMenuBar
               onBack={() => {
                 setLastResult(null);
                 clearPlayRoundState();
                 setPhase('hub');
               }}
               playSfx={playSfx}
-              paperChrome
+              variant="paper"
               center={
                 <div style={{ textAlign: 'center' }}>
                   <div className="ct-fq-training-title ct-fq-training-title-sm">{t.resultsChalTitle}</div>

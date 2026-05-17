@@ -7,12 +7,18 @@ const speed = {
   short: 'SPD',
   glyph: 'ᛋ',
   color: tokens.domain.speed,
-  desc: 'Processing information quickly and accurately',
-  about: 'Processing speed is the engine of thought. These mazes challenge how quickly you can take in, interpret, and act on information — reacting before the path fades.',
+  desc: 'Vigil Test — sustained attention and impulse control for processing speed.',
+  about: 'Processing speed is the engine of thought. Vigil Test trains how quickly and accurately you respond over time with square vs. circle trials.',
   subs: [
-    { id: 'processing', name: 'Processing Velocity', gameCount: 3, progress: 0, tier: 'free' },
-    { id: 'reaction',   name: 'Reaction Speed',      gameCount: 2, progress: 0, tier: 'free' },
-    { id: 'agility',    name: 'Mental Agility',      gameCount: 2, progress: 0, tier: 'free' },
+    {
+      id: 'vigil',
+      name: 'Vigil Test',
+      gameCount: 1,
+      progress: 0,
+      gameKey: 'vigil-test',
+      tier: 'free',
+      loader: () => import('./games/vigil'),
+    },
   ],
 };
 

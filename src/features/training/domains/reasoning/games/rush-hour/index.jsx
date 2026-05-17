@@ -2,6 +2,12 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import { tokens } from '../../../../../../styles/tokens';
 import { IconBack } from '../../../../shared/TrainingIcons';
+import {
+  TrainingPlayHeader,
+  TrainingPauseModal,
+  TrainingQuitModal,
+  TrainingChallengeHandoff,
+} from '../../../../shared/TrainingChrome';
 import MazeManAvatar from '../../../../shared/MazeManAvatar';
 import { getRange, isWon, clonePieces, RUSH_HOUR_BASE_LAYOUTS } from './engine';
 import RushHourTutorial, {
@@ -133,6 +139,17 @@ const UI_EN = {
   ready: (n) => `Ready — ${n}`,
   handTo: (n) => `Hand the device to ${n}.`,
   goReady: 'Start round',
+  chalTurnKicker: 'Your turn',
+  chalBulletSame: 'Same parking puzzle for every player this round',
+  chalBulletPass: 'Tap Start only when the device is with this player',
+  paused: 'Paused',
+  resume: 'Resume',
+  restart: 'Restart puzzle',
+  quitMenu: 'Quit to menu',
+  quitQ: 'Leave game?',
+  quitLose: 'Progress on this puzzle will be lost.',
+  yesQuit: 'Yes, leave',
+  keep: 'Keep playing',
   chalHud: (roundLabel, name, i, n, G) =>
     `${roundLabel}${name} — ${i + 1}/${n} · ${G}×${G}`,
   chalResTitle: 'Challenge results',
@@ -193,6 +210,17 @@ const UI_AR = {
   ready: (n) => `جاهز — ${n}`,
   handTo: (n) => `سلّم الجهاز إلى ${n}.`,
   goReady: 'ابدأ الجولة',
+  chalTurnKicker: 'دورك',
+  chalBulletSame: 'نفس لغز المواقف لكل اللاعبين في هذه الجولة',
+  chalBulletPass: 'اضغط ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
+  paused: 'متوقف',
+  resume: 'متابعة',
+  restart: 'إعادة اللغز',
+  quitMenu: 'الخروج للقائمة',
+  quitQ: 'مغادرة اللعبة؟',
+  quitLose: 'سيتم فقدان تقدم هذا اللغز.',
+  yesQuit: 'نعم، اخرج',
+  keep: 'تابع اللعب',
   chalHud: (roundLabel, name, i, n, G) =>
     `${roundLabel}${name} — ${i + 1}/${n} · ${G}×${G}`,
   chalResTitle: 'نتائج التحدي',
@@ -219,6 +247,8 @@ export default function RushHourGame({ onBack }) {
   const [chalRoundsTotal, setChalRoundsTotal] = useState(1);
   const [chalRoundIdx, setChalRoundIdx] = useState(0);
   const [chalTurnOpen, setChalTurnOpen] = useState(false);
+  const [pauseOpen, setPauseOpen] = useState(false);
+  const [quitOpen, setQuitOpen] = useState(false);
   const [chalScores, setChalScores] = useState([]);
   const [lastRhChalRows, setLastRhChalRows] = useState(null);
 
@@ -275,6 +305,42 @@ export default function RushHourGame({ onBack }) {
     pendingTutorialActionRef.current = null;
     setTutorialQueue([{ kind: 'main' }]);
   }, []);
+
+  const pauseLabels = {
+    paused: t.paused,
+    resume: t.resume,
+    restart: t.restart,
+    quitMenu: t.quitMenu,
+  };
+  const quitLabels = {
+    quitQ: t.quitQ,
+    quitLose: t.quitLose,
+    yesQuit: t.yesQuit,
+    keep: t.keep,
+  };
+
+  const confirmRhQuit = useCallback(() => {
+    setQuitOpen(false);
+    setPauseOpen(false);
+    setWon(false);
+    wonRef.current = false;
+    if (playMode === 'free') setPhase('hub');
+    else if (playMode === 'challenge') {
+      setChalFrozenDef(null);
+      setChalTurnOpen(false);
+      setPhase('chal');
+    } else setPhase('levels');
+  }, [playMode]);
+
+  const onRhMenu = useCallback(() => {
+    playSfx('click');
+    setQuitOpen(true);
+  }, [playSfx]);
+
+  const onRhPause = useCallback(() => {
+    playSfx('click');
+    setPauseOpen(true);
+  }, [playSfx]);
 
   useEffect(() => {
     chalIdxRef.current = chalIdx;
@@ -668,7 +734,7 @@ export default function RushHourGame({ onBack }) {
 
   const handleDown = useCallback(
     (e, pid) => {
-      if (wonRef.current || phase !== 'play') return;
+      if (wonRef.current || phase !== 'play' || pauseOpen || quitOpen) return;
       if (playMode === 'challenge' && chalTurnOpen) return;
       e.preventDefault();
       const p = piecesRef.current.find((x) => x.id === pid);
@@ -698,7 +764,7 @@ export default function RushHourGame({ onBack }) {
         lastDx: 0,
       };
     },
-    [grid, phase, playMode, chalTurnOpen],
+    [grid, phase, playMode, chalTurnOpen, pauseOpen, quitOpen],
   );
 
   useEffect(() => {
@@ -806,7 +872,7 @@ export default function RushHourGame({ onBack }) {
   const freeBarEl = useRef(null);
 
   useEffect(() => {
-    if (phase !== 'play' || playMode !== 'free') return undefined;
+    if (phase !== 'play' || playMode !== 'free' || pauseOpen || quitOpen) return undefined;
     const id = setInterval(() => {
       const drain = freeTimeDrainMultiplier(freeStageRef.current);
       tlRef.current = Math.max(0, tlRef.current - 0.25 * drain);
@@ -1590,76 +1656,26 @@ export default function RushHourGame({ onBack }) {
         }}
       />
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          width: '100%',
-          maxWidth: 400,
-          padding:
-            'max(52px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 0 max(14px, env(safe-area-inset-left))',
-          position: 'relative',
-          zIndex: 5,
-          boxSizing: 'border-box',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => {
-            playSfx('click');
-            if (playMode === 'free') setPhase('hub');
-            else if (playMode === 'challenge') {
-              setChalFrozenDef(null);
-              setChalTurnOpen(false);
-              setPhase('chal');
-            } else setPhase('levels');
-          }}
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 12,
-            border: '2px solid #1a1208',
-            background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            boxShadow: '3px 3px 0 #1a1208, inset 0 1px 0 rgba(255,255,255,0.85)',
-          }}
-        >
-          <IconBack size={18} c="#141210" />
-        </button>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <div
-            style={{
-              fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', cursive",
-              fontSize: isAr ? 19 : 22,
-              fontWeight: isAr ? 900 : 400,
-              letterSpacing: isAr ? 0 : 1,
-            }}
-          >
-            {playMode === 'free' && t.free}
-            {playMode === 'challenge' && t.challenge}
-            {playMode === 'levels' &&
-              `${DM[diffKey]?.label ?? ''} · ${t.level} ${levelIndex}`}
-          </div>
-          {playMode === 'free' && levelDef?.diff != null && (
-            <div style={{ fontSize: 10, color: '#8a7868', marginTop: 2, fontWeight: 700 }}>
-              {DM[levelDef.diff]?.label} · {isAr ? 'جولة' : 'Round'} {freeStage + 1}
-            </div>
-          )}
-          <div style={{ fontSize: 11, color: '#5c534c', marginTop: 3, fontWeight: 600 }}>
-            {t.optimal}: {parMoves} · {t.moves}: {moves}
-            {playMode === 'free' && (
-              <>
-                {' · '}
-                {t.score}: {freeScore}
-              </>
-            )}
-          </div>
-        </div>
-        <div style={{ width: 34 }} />
-      </div>
+      <TrainingPlayHeader
+        isAr={isAr}
+        title={
+          playMode === 'free'
+            ? t.free
+            : playMode === 'challenge'
+              ? t.challenge
+              : `${DM[diffKey]?.label ?? ''} · ${t.level} ${levelIndex}`
+        }
+        subtitle={
+          playMode === 'free' && levelDef?.diff != null
+            ? `${DM[levelDef.diff]?.label} · ${isAr ? 'جولة' : 'Round'} ${freeStage + 1} · ${t.moves}: ${moves} · ${t.optimal}: ${parMoves}`
+            : `${t.optimal}: ${parMoves} · ${t.moves}: ${moves}${playMode === 'free' ? ` · ${t.score}: ${freeScore}` : ''}`
+        }
+        playSfx={playSfx}
+        menuAriaLabel={t.menu}
+        pauseAriaLabel={t.paused}
+        onMenu={onRhMenu}
+        onPause={onRhPause}
+      />
 
       {playMode === 'free' && (
         <div
@@ -1899,36 +1915,13 @@ export default function RushHourGame({ onBack }) {
         </div>
       </div>
 
-      <div
-        style={{
-          marginTop: 22,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          position: 'relative',
-          zIndex: 2,
-          padding: '0 12px',
-        }}
-      >
+      <div className="ct-training-play-actions">
         <button
           type="button"
+          className="ct-training-btn ct-training-btn--ghost"
           onClick={() => {
             playSfx('click');
             resetRound();
-          }}
-          style={{
-            padding: '8px 16px',
-            borderRadius: 8,
-            border: '2px solid #1a1208',
-            background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
-            fontFamily: "'Bangers', cursive",
-            fontSize: 14,
-            letterSpacing: 1.2,
-            cursor: 'pointer',
-            boxShadow: '3px 3px 0 #1a1208',
-            color: '#141210',
           }}
         >
           {t.reset}
@@ -1936,23 +1929,13 @@ export default function RushHourGame({ onBack }) {
         {playMode === 'free' && (
           <button
             type="button"
+            className="ct-training-btn ct-training-btn--pri"
+            style={{ maxWidth: 200 }}
             onClick={() => {
               playSfx('click');
               tlRef.current = Math.max(0, tlRef.current - 5);
               freeStreakRef.current = 0;
               setFreeSessionNonce((Math.imul(Date.now(), 1103515245) + 12345) >>> 0);
-            }}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 8,
-              border: '2px solid #1a1208',
-              background: 'linear-gradient(180deg, #f5c44a, #e8a830)',
-              fontFamily: "'Bangers', cursive",
-              fontSize: 14,
-              letterSpacing: 1.2,
-              cursor: 'pointer',
-              boxShadow: '3px 3px 0 #1a1208',
-              color: '#1a1208',
             }}
           >
             {isAr ? 'لغز آخر' : 'New layout'}
@@ -1961,24 +1944,41 @@ export default function RushHourGame({ onBack }) {
       </div>
 
       {phase === 'play' && playMode === 'challenge' && chalTurnOpen && chalNames[chalIdx] && (
-        <div className="ct-fq-ov">
-          <div className="ct-fq-box">
-            {chalRoundsTotal > 1 && (
-              <p className="ct-fq-cpb" style={{ marginBottom: 10 }}>
-                {t.roundNofM(chalRoundIdx + 1, chalRoundsTotal)}
-              </p>
-            )}
-            <p className="ct-fq-cpb" style={{ marginBottom: 8, fontSize: '0.85rem', opacity: 0.92 }}>
-              {grid}×{grid}
-            </p>
-            <h2>{t.ready(chalNames[chalIdx])}</h2>
-            <p>{t.handTo(chalNames[chalIdx])}</p>
-            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={startRhChallengeRound}>
-              {t.goReady}
-            </button>
-          </div>
-        </div>
+        <TrainingChallengeHandoff
+          isAr={isAr}
+          kicker={t.chalTurnKicker}
+          playerName={chalNames[chalIdx]}
+          roundLine={
+            chalRoundsTotal > 1 ? t.roundNofM(chalRoundIdx + 1, chalRoundsTotal) : null
+          }
+          metaLine={`${grid}×${grid} · ${isAr ? 'نفس اللغز للجميع' : 'Same puzzle for all'}`}
+          instruction={t.handTo(chalNames[chalIdx])}
+          bullets={[t.chalBulletSame, t.chalBulletPass]}
+          startLabel={t.goReady}
+          onStart={startRhChallengeRound}
+          playSfx={playSfx}
+        />
       )}
+
+      <TrainingPauseModal
+        open={pauseOpen}
+        labels={pauseLabels}
+        onResume={() => setPauseOpen(false)}
+        onRestart={() => {
+          setPauseOpen(false);
+          resetRound();
+        }}
+        onQuitMenu={() => {
+          setPauseOpen(false);
+          setQuitOpen(true);
+        }}
+      />
+      <TrainingQuitModal
+        open={quitOpen}
+        labels={quitLabels}
+        onConfirmQuit={confirmRhQuit}
+        onKeepPlaying={() => setQuitOpen(false)}
+      />
 
       {won && (
         <div
