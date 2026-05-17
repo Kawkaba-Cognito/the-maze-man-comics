@@ -4,8 +4,6 @@ import {
 } from '../../../../shared/focusQuestData';
 import {
   clonePieces,
-  generateFastPuzzle,
-  resolveBaselinePieces,
   RUSH_HOUR_BASE_LAYOUTS,
 } from './engine';
 import {
@@ -13,70 +11,20 @@ import {
   RH_DIFF_KEYS,
   specificationForLevel,
 } from './data-spec';
+import {
+  getCuratedRushHourChallenge,
+  getCuratedRushHourFreeRound,
+  getCuratedRushHourLevel,
+} from './curated-levels';
 
 export { RH_LEVELS_PER_TIER, RH_DIFF_KEYS, specificationForLevel };
-
-/** Bump when generation math / baselines change (invalidates cached boards). */
-const RH_GEN_VERSION = 6;
 
 export { isLevelUnlocked };
 
 const LS_KEY_V2 = 'mm_rh_progress_v2';
 const LS_KEY_V1 = 'mm_rh_progress_v1';
 
-/** Persisted puzzle cache. Keyed by `cacheKey()` which embeds RH_GEN_VERSION,
- *  so bumping the version implicitly invalidates everything the user has
- *  collected — no migration code needed. The whole map is ≤ 100 entries
- *  (5 tiers × 20 levels) so we serialize the entire object on every write. */
-const LS_KEY_PUZZLES = 'mm_rh_puzzles_v1';
-
-const BASE = RUSH_HOUR_BASE_LAYOUTS[0];
-
-/** Level 1 — curated tutorial on easy tier only (6×6 classic). */
-const LEVEL_1_EASY = {
-  level: 1,
-  diff: 'easy',
-  grid: BASE.grid,
-  exitRow: BASE.exitRow,
-  pieces: clonePieces(BASE.pieces),
-  par: 4,
-};
-
-function cacheKey(diffKey, levelIndex) {
-  return `v${RH_GEN_VERSION}-${diffKey}-${levelIndex}`;
-}
-
-function loadPuzzleCache() {
-  try {
-    const raw = localStorage.getItem(LS_KEY_PUZZLES);
-    if (!raw) return Object.create(null);
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return Object.create(null);
-    const out = Object.create(null);
-    /* Drop entries from previous generator versions — keys carry the version
-     * prefix, so a simple startsWith filter is enough. */
-    const prefix = `v${RH_GEN_VERSION}-`;
-    for (const [k, v] of Object.entries(parsed)) {
-      if (k.startsWith(prefix) && v && Array.isArray(v.pieces)) out[k] = v;
-    }
-    return out;
-  } catch {
-    return Object.create(null);
-  }
-}
-
-function savePuzzleCache(cache) {
-  try {
-    localStorage.setItem(LS_KEY_PUZZLES, JSON.stringify(cache));
-  } catch {
-    /* Quota / private mode — degrade silently to in-memory only. */
-  }
-}
-
-const hasLocalStorage =
-  typeof globalThis !== 'undefined' && typeof globalThis.localStorage !== 'undefined';
-
-let generatedCache = hasLocalStorage ? loadPuzzleCache() : Object.create(null);
+const BASE = getCuratedRushHourLevel('easy', 1) || RUSH_HOUR_BASE_LAYOUTS[0];
 
 /* ─── Rush Hour–specific free-mode scoring ─── */
 
@@ -109,110 +57,16 @@ export function rhFreeRoundClearPoints(parMoves, clearStreak) {
 export function getRushHourLevel(diffKey, levelIndex) {
   if (!RH_DIFF_KEYS.includes(diffKey)) return null;
   if (levelIndex < 1 || levelIndex > RH_LEVELS_PER_TIER) return null;
-  if (diffKey === 'easy' && levelIndex === 1) {
-    return {
-      ...LEVEL_1_EASY,
-      pieces: clonePieces(LEVEL_1_EASY.pieces),
-      labelKey: 'level',
-    };
-  }
-
-  const ck = cacheKey(diffKey, levelIndex);
-  if (generatedCache[ck]) return generatedCache[ck];
-
-  const spec = specificationForLevel(diffKey, levelIndex);
-  const { grid: G, exitRow: eR } = spec;
-  let gen = null;
-
-  for (let t = 0; t < 8; t++) {
-    const trySeed = (spec.seed + t * 131_071) >>> 0;
-    const base =
-      resolveBaselinePieces(G, eR, trySeed, (spec.densityBump || 0) + (t % 2)) ||
-      (G === 6 && eR === BASE.exitRow
-        ? clonePieces(BASE.pieces)
-        : null);
-    if (!base) continue;
-    gen = generateFastPuzzle({
-      basePieces: base,
-      grid: G,
-      exitRow: eR,
-      seed: (spec.seed + t * 17) >>> 0,
-      scrambleSteps: Math.min(250, spec.steps),
-    });
-    if (gen) break;
-  }
-
-  if (!gen) {
-    console.warn(`[RH fallback] ${diffKey}-${levelIndex} fell back to easy-1 layout`);
-    gen = {
-      pieces: clonePieces(BASE.pieces),
-      par: LEVEL_1_EASY.par,
-      grid: BASE.grid,
-      exitRow: BASE.exitRow,
-    };
-  }
-
-  const def = {
-    labelKey: 'level',
-    level: levelIndex,
-    diff: diffKey,
-    grid: gen.grid ?? G,
-    exitRow: gen.exitRow ?? eR,
-    pieces: gen.pieces,
-    par: gen.par,
-  };
-  generatedCache[ck] = def;
-  if (hasLocalStorage) savePuzzleCache(generatedCache);
-  return def;
+  const level = getCuratedRushHourLevel(diffKey, levelIndex);
+  return level ? { ...level, pieces: clonePieces(level.pieces) } : null;
 }
 
 export function getRushHourFreeRound(stageIndex, sessionNonce) {
   const { diff, lv } = freeStageToDiffLv(stageIndex);
-  const spec = specificationForLevel(diff, lv);
-  const salt =
-    (typeof sessionNonce === 'number' ? sessionNonce : 0x51c301) >>> 0;
-  const mixedSeed = (spec.seed ^ salt ^ Math.imul(stageIndex + 1, 0x9e3779b1)) >>> 0;
-  const { grid, exitRow } = spec;
-
-  for (let t = 0; t < 6; t++) {
-    const trySeed = (mixedSeed + t * 131_071) >>> 0;
-    const base =
-      resolveBaselinePieces(grid, exitRow, trySeed, (spec.densityBump || 0) + (t % 2)) ||
-      (grid === 6 && exitRow === BASE.exitRow
-        ? clonePieces(BASE.pieces)
-        : null);
-    if (!base) continue;
-    const gen = generateFastPuzzle({
-      basePieces: base,
-      grid,
-      exitRow,
-      seed: (mixedSeed + t * 17) >>> 0,
-      scrambleSteps: Math.min(200, spec.steps),
-    });
-    if (gen) {
-      return {
-        labelKey: 'free',
-        freeStage: stageIndex,
-        diff,
-        lv,
-        grid,
-        exitRow,
-        pieces: gen.pieces,
-        par: gen.par,
-      };
-    }
-  }
-
-  return {
-    labelKey: 'free',
-    freeStage: stageIndex,
-    diff,
-    lv,
-    grid: BASE.grid,
-    exitRow: BASE.exitRow,
-    pieces: clonePieces(BASE.pieces),
-    par: LEVEL_1_EASY.par,
-  };
+  const level = getCuratedRushHourFreeRound(stageIndex, sessionNonce);
+  return level
+    ? { ...level, pieces: clonePieces(level.pieces) }
+    : { ...BASE, labelKey: 'free', freeStage: stageIndex, diff, lv, pieces: clonePieces(BASE.pieces) };
 }
 
 export function rushHourUtcDateKey() {
@@ -231,48 +85,10 @@ export function rushHourUtcDateKey() {
  */
 export function buildChallengeRhPuzzle(seed, cycleIndex = 0, totalRounds = 1) {
   const s = (seed >>> 0) || 1;
-  const c = Math.max(0, cycleIndex | 0);
-  const R = Math.max(1, totalRounds | 0);
-  const grid = Math.min(7, 6 + (c >= 2 ? 1 : 0));
-  const exitRow = Math.floor((grid - 1) / 2);
-  const steps = 50 + 20 * c + 10 * (grid - 6) + (s % 20);
-  const densityBump = 1 + (s % 2) + Math.min(1, c);
-
-  for (let t = 0; t < 6; t++) {
-    const trySeed = (s + t * 131_071) >>> 0;
-    const base =
-      resolveBaselinePieces(grid, exitRow, trySeed, densityBump + (t % 2)) ||
-      (grid === 6 && exitRow === BASE.exitRow
-        ? clonePieces(BASE.pieces)
-        : null);
-    if (!base) continue;
-    const gen = generateFastPuzzle({
-      basePieces: base,
-      grid,
-      exitRow,
-      seed: (s + t * 17) >>> 0,
-      scrambleSteps: steps,
-    });
-    if (gen) {
-      return {
-        labelKey: 'challenge',
-        grid,
-        exitRow,
-        pieces: gen.pieces,
-        par: gen.par,
-        seed: s,
-      };
-    }
-  }
-
-  return {
-    labelKey: 'challenge',
-    grid: BASE.grid,
-    exitRow: BASE.exitRow,
-    pieces: clonePieces(BASE.pieces),
-    par: LEVEL_1_EASY.par,
-    seed: s,
-  };
+  const level = getCuratedRushHourChallenge(s, cycleIndex, totalRounds);
+  return level
+    ? { ...level, pieces: clonePieces(level.pieces) }
+    : { ...BASE, labelKey: 'challenge', seed: s, pieces: clonePieces(BASE.pieces) };
 }
 
 function defaultProgress() {

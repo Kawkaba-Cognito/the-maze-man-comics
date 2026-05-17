@@ -13,8 +13,10 @@
     background-repeat: no-repeat;
     background-position: center top;
     display: flex; flex-direction: column;
-    align-items: center; justify-content: space-between;
-    padding: 0 clamp(18px, 4vw, 28px) max(28px, env(safe-area-inset-bottom) + 24px);
+    align-items: center;
+    /* flex-start + menu margin-top: tall phones don’t stretch an empty gap to the bottom */
+    justify-content: flex-start;
+    padding: 0 clamp(16px, 4vw, 28px) max(18px, env(safe-area-inset-bottom) + 14px);
     z-index: 9999;
     opacity: 1; transition: opacity 0.7s ease;
 }
@@ -54,6 +56,29 @@
     line-height: 1.06;
     margin: 0 0 0.06em;
     text-shadow: 0 2px 0 rgba(255, 200, 90, 0.35), 0 4px 18px rgba(26, 26, 46, 0.12);
+    position: relative;
+    display: inline-block;
+    isolation: isolate;
+}
+
+.splash-title::after {
+    content: attr(data-title);
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    color: transparent;
+    pointer-events: none;
+    background-image:
+        linear-gradient(90deg, transparent 0 14%, rgba(232, 172, 78, 0.95) 14% 19%, transparent 19% 43%, rgba(120, 74, 22, 0.78) 43% 47%, transparent 47%),
+        linear-gradient(0deg, transparent 0 24%, rgba(232, 172, 78, 0.88) 24% 29%, transparent 29% 61%, rgba(120, 74, 22, 0.68) 61% 66%, transparent 66%),
+        linear-gradient(135deg, transparent 0 43%, rgba(255, 213, 103, 0.72) 43% 47%, transparent 47%);
+    background-size: 42px 42px, 38px 38px, 56px 56px;
+    background-position: center;
+    -webkit-background-clip: text;
+    background-clip: text;
+    opacity: 0.68;
+    text-shadow: none;
+    mix-blend-mode: normal;
 }
 
 .splash-screen[dir="rtl"] .splash-title {
@@ -64,10 +89,8 @@
 }
 
 .splash-subbrand {
-    display: inline-flex;
-    align-items: center;
+    display: inline-block;
     justify-content: center;
-    gap: clamp(10px, 2.6vw, 16px);
     margin: 0.6rem auto 0;
     padding: 0.95rem clamp(8px, 2vw, 14px) 0.15rem;
     box-sizing: border-box;
@@ -95,14 +118,16 @@
 }
 
 .splash-screen[dir="rtl"] .splash-subbrand {
-    flex-direction: row-reverse;
+    direction: rtl;
 }
 
 .splash-subbrand-visual {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    flex: 0 0 auto;
+    margin-inline: clamp(8px, 2.1vw, 12px);
+    transform: translateY(0.08em);
 }
 
 .splash-subbrand-title {
@@ -113,9 +138,9 @@
 }
 
 .splash-brain-side {
-    height: clamp(2.35rem, 9vw, 3.6rem);
+    height: clamp(1.75rem, 6.5vw, 2.35rem);
     width: auto;
-    max-width: min(30vw, 5.5rem);
+    max-width: min(22vw, 3.25rem);
     flex-shrink: 0;
     display: block;
     object-fit: contain;
@@ -124,9 +149,11 @@
 }
 
 .splash-subbrand-label {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     font-family: 'Cinzel', 'Outfit', 'Cairo', serif;
-    font-size: clamp(1.02rem, 4vw, 1.38rem);
+    font-size: clamp(1.32rem, 5.8vw, 1.72rem);
     font-weight: 700;
     letter-spacing: 0.2em;
     text-transform: uppercase;
@@ -152,6 +179,13 @@
         0 2px 6px rgba(60, 30, 10, 0.18);
 }
 
+/* Short phones: pull menu up slightly so it still clears the art */
+@media (max-width: 767px) and (max-height: 680px) {
+    .splash-bottom {
+        margin-top: clamp(9.5rem, 34svh, 14rem);
+    }
+}
+
 /* Splash sub-brand: stack on very narrow screens for a tidy mobile layout */
 @media (max-width: 380px) {
     .splash-subbrand,
@@ -174,8 +208,9 @@
     justify-content: flex-end;
     width: 100%;
     flex: 0 0 auto;
+    margin-top: clamp(11.5rem, 38svh, 19.5rem);
     padding-bottom: env(safe-area-inset-bottom, 0);
-    transform: translateY(clamp(4px, 3vh, 20px));
+    transform: none;
 }
 
 .splash-menu {
@@ -183,13 +218,13 @@
     flex-direction: column;
     align-items: stretch;
     width: 100%;
-    max-width: min(380px, 92vw);
-    gap: clamp(7px, 1.8vw, 10px);
+    max-width: min(400px, 94vw);
+    gap: clamp(9px, 2.2vw, 12px);
 }
 
 .splash-menu-btn {
     font-family: 'Outfit', 'Cairo', sans-serif;
-    font-size: clamp(0.94rem, 3.35vw, 1.08rem);
+    font-size: clamp(1.05rem, 3.9vw, 1.18rem);
     font-weight: 800;
     letter-spacing: 0.035em;
     text-transform: none;
@@ -197,8 +232,8 @@
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(247, 241, 235, 0.9) 100%);
     border: 2px solid rgba(26, 18, 36, 0.18);
     border-radius: 14px;
-    padding: 10px 18px;
-    min-height: clamp(40px, 9vw, 46px);
+    padding: 12px 20px;
+    min-height: clamp(48px, 11vw, 54px);
     cursor: pointer;
     box-shadow:
         0 2px 0 rgba(26, 18, 36, 0.08),
@@ -311,7 +346,7 @@
 }
 .splash-start {
     font-family: 'Fredoka One', 'Bangers', cursive;
-    font-size: clamp(1.32rem, 5vw, 1.75rem);
+    font-size: clamp(1.5rem, 5.8vw, 1.95rem);
     font-weight: 400;
     letter-spacing: 0.045em;
     text-transform: none;
@@ -320,8 +355,8 @@
     border: 2px solid rgba(255, 180, 60, 0.55);
     border-radius: 15px;
     box-shadow: 0 4px 0 rgba(26, 18, 8, 0.38), 0 0 24px rgba(255, 150, 30, 0.28), inset 0 1px 0 rgba(255, 220, 160, 0.22);
-    padding: 12px 22px;
-    min-height: clamp(50px, 10.2vw, 56px);
+    padding: 14px 24px;
+    min-height: clamp(54px, 12.5vw, 62px);
     width: 100%;
     cursor: pointer;
     transition: box-shadow 0.2s ease, filter 0.2s ease, transform 0.1s ease;
@@ -349,6 +384,7 @@
         align-items: stretch;
         justify-content: flex-start;
         padding: 0;
+        /* desktop keeps side panel; mobile-only margin-top on .splash-bottom is reset below */
         /* desktop art already set above (cover, center) */
     }
 
@@ -390,6 +426,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        margin-top: 0;
         padding: clamp(32px, 5vh, 60px) clamp(24px, 3vw, 40px);
         transform: none;
         background: rgba(253, 248, 245, 0.72);

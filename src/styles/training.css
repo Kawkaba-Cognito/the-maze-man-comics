@@ -1049,6 +1049,7 @@
 }
 .ct-fq-dbg { font-size: 0.67rem; opacity: 0.85; text-align: right; line-height: 1.35; font-weight: 600; max-width: 52%; }
 .ct-fq-db-easy { background: linear-gradient(135deg, #a8d8a8, #7ab87a); color: #1a4a1a; }
+.ct-fq-db-medium { background: linear-gradient(135deg, #a8d8e8, #7ab8c4); color: #0a3040; }
 .ct-fq-db-inter { background: linear-gradient(135deg, #a8d8e8, #7ab8c4); color: #0a3040; }
 .ct-fq-db-hard { background: linear-gradient(135deg, #f5e09a, #e8c47a); color: #4a3a00; }
 .ct-fq-db-xhard { background: linear-gradient(135deg, #f5c09a, #e8a07a); color: #4a2a00; }

@@ -24,6 +24,8 @@ import {
   freeTapPoints,
   freeRoundClearPoints,
   freeWrongTapPenalty,
+  FQ_DIFF_KEYS,
+  FQ_LEVELS_PER_TIER,
 } from '../../../../shared/focusQuestData';
 import { PALETTE } from '../../../../shared/palette';
 import { tokens } from '../../../../../../styles/tokens';
@@ -439,7 +441,7 @@ const UI = {
     levelsSub: (pop, g) => `${pop} · ${g}×${g} grid · Levels 1–20`,
     levelsBack: '← Back',
     challengeTitle: '⚔️ Challenge mode',
-    challengeSub: 'Same shape layout for everyone · Extra hard 9×9 · 50s',
+    challengeSub: 'Same shape layout for everyone · Hard 9×9 · 50s',
     players: 'Players (2–10)',
     addPl: '＋ Add player',
     startCh: '⚔️ Start',
@@ -516,7 +518,7 @@ const UI = {
     levelsSub: (pop, g) => `${pop} · شبكة ${g}×${g} · مستويات 1–20`,
     levelsBack: '← رجوع',
     challengeTitle: '⚔️ وضع التحدي',
-    challengeSub: 'نفس تخطيط الأشكال للجميع · صعب جداً 9×9 · 50ث',
+    challengeSub: 'نفس تخطيط الأشكال للجميع · صعب 9×9 · 50ث',
     players: 'اللاعبون (2–10)',
     addPl: '＋ إضافة لاعب',
     startCh: '⚔️ ابدأ',
@@ -925,7 +927,7 @@ export default function CancellationTaskGame({ onBack }) {
     const wrap = gridWrapRef.current;
     if (!wrap) return;
     const gridN = round.grid;
-    const isDeadly = round.diff === 'deadly';
+    const isDenseHard = round.diff === 'hard' && gridN >= 9;
     let raf = 0;
     const measure = () => {
       const vv = window.visualViewport;
@@ -950,7 +952,7 @@ export default function CancellationTaskGame({ onBack }) {
       // Use almost all space below measured HUD (visualViewport already omits mobile browser chrome).
       const verticalReserve = 6;
       let availHCalc = Math.max(
-        isDeadly ? 72 : 64,
+        isDenseHard ? 72 : 64,
         Math.min(
           Math.floor(vpH - fixed - verticalReserve),
           Math.floor(vpH * 0.99),
@@ -965,12 +967,12 @@ export default function CancellationTaskGame({ onBack }) {
       // Prefer the real flex slot height so the grid matches the phone layout below the HUD.
       const availH =
         outerRectH > 80
-          ? Math.max(isDeadly ? 72 : 64, outerRectH - 10)
+          ? Math.max(isDenseHard ? 72 : 64, outerRectH - 10)
           : availHCalc;
       const gap = gridN >= 7 ? 2 : 3;
       const INNER_PAD = 4;
       const totalGap = gap * (gridN - 1);
-      const minCell = gridN >= 10 ? (isDeadly ? 22 : 16) : 8;
+      const minCell = gridN >= 10 ? 16 : 8;
       // Use width and height independently so portrait phones fill the screen
       // instead of a small square with empty vertical space.
       const innerBudgetW = Math.max(40, availW - INNER_PAD * 2);
@@ -1355,7 +1357,9 @@ export default function CancellationTaskGame({ onBack }) {
               }
             />
             <p className="ct-fq-sub ct-fq-training-blurb">{t.pickDiffSub}</p>
-            {Object.entries(DM).map(([k, m]) => (
+            {FQ_DIFF_KEYS.map((k) => {
+              const m = DM[k];
+              return (
               <button
                 key={k}
                 type="button"
@@ -1371,7 +1375,8 @@ export default function CancellationTaskGame({ onBack }) {
                   {m.pop} · {m.grid}×{m.grid}
                 </span>
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -1393,7 +1398,7 @@ export default function CancellationTaskGame({ onBack }) {
               {t.levelsSub(DM[diffKey].pop, DM[diffKey].grid)}
             </p>
             <div className="ct-fq-lg ct-fq-lg-training">
-              {Array.from({ length: 20 }, (_, i) => i + 1).map((lv) => {
+              {Array.from({ length: FQ_LEVELS_PER_TIER }, (_, i) => i + 1).map((lv) => {
                 const un = isLevelUnlocked(diffKey, lv, doneMap);
                 const dn = !!doneMap[`${diffKey}-${lv}`];
                 const cfg = getLvCfg(diffKey, lv - 1);
@@ -1558,7 +1563,7 @@ export default function CancellationTaskGame({ onBack }) {
             <div className="ct-fq-tb" data-fq-chrome>
               <div className="ct-fq-tb-row">
                 <div
-                  className={`ct-fq-tb-icon-wrap${round.diff === 'deadly' ? ' ct-fq-tb-icon-deadly' : ''}`}
+                  className={`ct-fq-tb-icon-wrap${round.diff === 'hard' ? ' ct-fq-tb-icon-deadly' : ''}`}
                   aria-hidden="true"
                 >
                   <ShapeSvg
@@ -1572,7 +1577,7 @@ export default function CancellationTaskGame({ onBack }) {
                       cells.find((c) => c.isT)?.fill ||
                       '#2d2d2d'
                     }
-                    size={round.diff === 'deadly' ? 40 : 34}
+                    size={round.diff === 'hard' ? 40 : 34}
                   />
                 </div>
                 <span className="ct-fq-tb-cue">

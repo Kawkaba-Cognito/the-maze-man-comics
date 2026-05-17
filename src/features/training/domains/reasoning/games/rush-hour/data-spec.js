@@ -3,24 +3,18 @@
  * Separated from data.js so the Web Worker can import without localStorage deps.
  */
 
-export const RH_LEVELS_PER_TIER = 20;
-export const RH_DIFF_KEYS = ['easy', 'inter', 'hard', 'xhard', 'deadly'];
+export const RH_LEVELS_PER_TIER = 100;
+export const RH_DIFF_KEYS = ['easy', 'medium', 'hard'];
 
 /**
- * Curriculum parameters from tier index T∈[0,4] and stage L∈[1,20].
- * Grid width G∈[6,9], scramble depth, and BFS par window all grow smoothly.
+ * Legacy pure spec helper kept for tooling compatibility. Runtime levels now
+ * come from curated-levels.js, where every board is BFS-verified.
  */
 export function specificationForLevel(diffKey, levelIndex) {
   const T = Math.max(0, RH_DIFF_KEYS.indexOf(diffKey));
   const L = Math.max(1, Math.min(RH_LEVELS_PER_TIER, levelIndex));
 
-  const G = Math.min(
-    7,
-    Math.max(
-      6,
-      6 + Math.floor(0.4 * T + 0.05 * L + 0.024 * T * L),
-    ),
-  );
+  const G = 6;
   const exitRow = Math.floor((G - 1) / 2);
 
   const scrambleBase = 14 + 5.2 * L + (0.55 * L * L) / 20;

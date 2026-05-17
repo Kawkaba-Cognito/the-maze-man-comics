@@ -109,9 +109,9 @@ const UI_EN = {
   locked: 'Locked',
   training: 'Brain logic',
   pickDiff: 'Choose difficulty',
-  pickDiffSub: 'Tiers match Attention · 20 stages each · unlock in order',
+  pickDiffSub: '3 difficulties · 100 verified stages each · unlock in order',
   hubNodeFreeHint: 'Session timer · score · streak clears',
-  hubNodeLevelsHint: 'Tier grid · unlock 20',
+  hubNodeLevelsHint: '3 tiers · 100 levels each',
   hubNodeChallengeHint: 'Same parking jam for everyone · pass & play',
   freeIntroTitle: 'Free mode',
   freeIntroBody:
@@ -168,9 +168,9 @@ const UI_AR = {
   locked: 'مقفل',
   training: 'تدريب منطقي',
   pickDiff: 'اختر الصعوبة',
-  pickDiffSub: 'مستويات كالانتباه · 20 مرحلة · افتح بالترتيب',
+  pickDiffSub: '٣ صعوبات · ١٠٠ مرحلة مؤكدة لكل صعوبة · افتح بالترتيب',
   hubNodeFreeHint: 'وقت الجلسة · نقاط · سلسلة نجاح',
-  hubNodeLevelsHint: 'شبكة المراحل · 20',
+  hubNodeLevelsHint: '٣ صعوبات · ١٠٠ مرحلة لكل صعوبة',
   hubNodeChallengeHint: 'نفس ازدحام المواقف للجميع · مرّر الجهاز',
   freeIntroTitle: 'وضع حر',
   freeIntroBody:

@@ -44,11 +44,12 @@ export const SH={
 // ══════════════════════════════════════════
 export const DM={
   easy:  {label:'Easy',        lvc:'lve', col:'#7ab87a', grid:5,  bt:90,  ts:1.4, pop:'~90% of people'},
-  inter: {label:'Intermediate',lvc:'lvi', col:'#7ab8c4', grid:7,  bt:75,  ts:1.3, pop:'Top 50%'},
-  hard:  {label:'Hard',        lvc:'lvh', col:'#e8c47a', grid:8,  bt:60,  ts:1.2, pop:'Top 20%'},
-  xhard: {label:'Extra Hard',  lvc:'lvx', col:'#e8a07a', grid:9,  bt:50,  ts:1.1, pop:'Top 5%'},
-  deadly:{label:'Deadly',      lvc:'lvd', col:'#c97a7a', grid:10, bt:22,  ts:0.35, pop:'Top 1% of humanity'},
+  medium:{label:'Medium',      lvc:'lvi', col:'#7ab8c4', grid:7,  bt:75,  ts:1.25, pop:'Top 50%'},
+  hard:  {label:'Hard',        lvc:'lvh', col:'#e8c47a', grid:9,  bt:60,  ts:1.0, pop:'Top 20%'},
 };
+
+export const FQ_LEVELS_PER_TIER = 100;
+export const FQ_DIFF_KEYS = ['easy', 'medium', 'hard'];
 
 // Shape pools — increasingly similar within each mode
 export const SP={
@@ -74,7 +75,7 @@ export const SP={
     ['circle','square','triangle','star','cross','pentagon','hexagon','diamond','heart','moon'],
     ['circle','square','triangle','star','cross','pentagon','hexagon','diamond','heart','moon','lightning'],
   ],
-  inter:[
+  medium:[
     ['circle','roundsq','triangle','diamond','star'],
     ['circle','roundsq','ovalH','star','diamond'],
     ['circle','roundsq','ovalH','ovalV','star'],
@@ -169,10 +170,8 @@ export const SP={
 
 export const PAL={
   easy:  ['#6b9e7a','#7ab8c4','#9a7ab8','#c4a87a'],
-  inter: ['#5a8eb8','#7a9ab8','#6a8aaa','#8ab0cc'],
+  medium:['#5a8eb8','#7a9ab8','#6a8aaa','#8ab0cc'],
   hard:  ['#c4a87a','#b87a7a','#7a9ab8','#8ab87a'],
-  xhard: ['#b87a7a','#9a7ab8','#7a8ab8','#b8a07a'],
-  deadly: ['#2e6f95', '#c45d35', '#4a7c59', '#7a3e6e'], // high-Δ hue: conjunction stays legible at small size
 };
 
 // =============================================================================
@@ -210,17 +209,15 @@ export const PAL={
  *   25 ms/item for conjunction search (mid of Wolfe 20–30 range).
  */
 export const TIER_TIME_ENDPOINTS = {
-  easy:   { L1: 30,  L20: 10 },  // 5×5 feature search, ≤13 targets
-  inter:  { L1: 40,  L20: 12 },  // 7×7 feature search, ≤15 targets
-  hard:   { L1: 60,  L20: 18 },  // 8×8 feature+binding, ≤18 targets
-  xhard:  { L1: 90,  L20: 30 },  // 9×9 conjunction, ≤20 targets
-  deadly: { L1: 120, L20: 55 },  // 10×10 conjunction, ≤32 targets
+  easy:   { L1: 34,  L100: 12 },
+  medium: { L1: 54,  L100: 18 },
+  hard:   { L1: 95,  L100: 34 },
 };
 
 /** Logistic steepness across the 20-level curriculum. */
 const LEVEL_LOGISTIC_K = 0.35;
 /** 1-based level where the logistic crosses its mid-point. */
-const LEVEL_LOGISTIC_MID = 10.5;
+const LEVEL_LOGISTIC_MID = 50.5;
 /** Hard floor — no level ever drops below this even if endpoints are misconfigured. */
 export const ABSOLUTE_TIME_FLOOR_SEC = 8;
 
@@ -235,17 +232,14 @@ function levelSigmoid(level1Based) {
  */
 export function rawLogisticTimeSeconds(level1Based) {
   const ep = TIER_TIME_ENDPOINTS.easy;
-  return ep.L20 + (ep.L1 - ep.L20) * levelSigmoid(level1Based);
+  return ep.L100 + (ep.L1 - ep.L100) * levelSigmoid(level1Based);
 }
 
 /** Target-count curve per tier: endpoints (n0,n1) and gamma>0 (gamma>1 → easier early). */
 export const TARGET_CURVE = {
-  easy:  { n0: 3, n1: 13, gamma: 1.0 },
-  inter: { n0: 7, n1: 15, gamma: 1.0 },
-  hard:  { n0: 9, n1: 18, gamma: 1.0 },
-  xhard: { n0: 12, n1: 20, gamma: 1.0 },
-  /** Deadly: slightly lower caps + gentler exponent so late levels stay hard but fair. */
-  deadly: { n0: 20, n1: 32, gamma: 1.04 },
+  easy:  { n0: 3, n1: 15, gamma: 1.0 },
+  medium:{ n0: 8, n1: 22, gamma: 1.0 },
+  hard:  { n0: 14, n1: 32, gamma: 1.04 },
 };
 
 /** Minimum non-target cells to keep (visual variety + generator stability). */
@@ -256,18 +250,18 @@ function buildMonotonicTargetSeries(diff) {
   const grid = DM[diff].grid;
   const cap = Math.min(p.n1, grid * grid - MIN_NON_TARGET_CELLS);
   const arr = [];
-  for (let li = 0; li < 20; li++) {
-    const u = li / 19;
+  for (let li = 0; li < FQ_LEVELS_PER_TIER; li++) {
+    const u = li / (FQ_LEVELS_PER_TIER - 1);
     const raw = p.n0 + (p.n1 - p.n0) * Math.pow(u, p.gamma);
     let tc = Math.round(raw);
     tc = Math.max(p.n0, Math.min(p.n1, tc));
     tc = Math.min(cap, Math.max(3, tc));
     arr.push(tc);
   }
-  for (let i = 1; i < 20; i++) {
+  for (let i = 1; i < FQ_LEVELS_PER_TIER; i++) {
     if (arr[i] < arr[i - 1]) arr[i] = arr[i - 1];
   }
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < FQ_LEVELS_PER_TIER; i++) {
     arr[i] = Math.min(arr[i], cap);
   }
   return arr;
@@ -286,7 +280,7 @@ export const TC = Object.fromEntries(
 export function sigmoidTime(diff, li) {
   const ep = TIER_TIME_ENDPOINTS[diff] ?? TIER_TIME_ENDPOINTS.easy;
   const level = li + 1;
-  const t = ep.L20 + (ep.L1 - ep.L20) * levelSigmoid(level);
+  const t = ep.L100 + (ep.L1 - ep.L100) * levelSigmoid(level);
   return +Math.max(ABSOLUTE_TIME_FLOOR_SEC, t).toFixed(1);
 }
 
@@ -296,10 +290,13 @@ export function sigmoidTime(diff, li) {
  * Deadly:   I = min(1, max(0, (li - 5) / 11))
  */
 export function computeFeatureInterference(li, diff) {
-  if (diff === 'deadly') {
-    return +Math.min(1.0, Math.max(0, (li - 5) / 11)).toFixed(2);
+  if (diff === 'hard') {
+    return +Math.min(1.0, Math.max(0, (li - 25) / 60)).toFixed(2);
   }
-  return +Math.min(1.0, Math.max(0, (li - 4) / 10)).toFixed(2);
+  if (diff === 'medium') {
+    return +Math.min(0.55, Math.max(0, (li - 30) / 95)).toFixed(2);
+  }
+  return 0;
 }
 
 /** One row for tooling / UI: reproducible description of level parameters. */
@@ -311,7 +308,7 @@ export function getLevelDifficultyModel(diff, li) {
   const tc = TC[diff][li];
   const interference = computeFeatureInterference(li, diff);
   const search =
-    diff === 'xhard' || diff === 'deadly' ? 'conjunction' : 'featureSingleton';
+    diff === 'hard' ? 'conjunction' : 'featureSingleton';
   return {
     difficulty: diff,
     levelIndex0Based: li,
@@ -330,10 +327,12 @@ export function getLevelDifficultyModel(diff, li) {
 
 export function getLvCfg(diff, li) {
   const m = DM[diff];
+  const poolList = SP[diff] || SP.easy;
+  const pool = poolList[Math.max(0, Math.min(poolList.length - 1, Math.floor(li * poolList.length / FQ_LEVELS_PER_TIER)))];
   const time = sigmoidTime(diff, li);
   const interference = computeFeatureInterference(li, diff);
   return {
-    pool: SP[diff][li],
+    pool,
     tc: TC[diff][li],
     time,
     grid: m.grid,
@@ -382,7 +381,7 @@ export function makeLcgRng(seed) {
 }
 
 export function buildCellsFromParams(grid, pool, tc, diff, seed, interference) {
-  const searchMode = (diff === 'xhard' || diff === 'deadly') ? 'identity' : 'categorical';
+  const searchMode = diff === 'hard' ? 'identity' : 'categorical';
   const pal = PAL[diff] || PAL.easy;
   const tgt = seed?.tgt ?? pool[Math.floor(Math.random() * pool.length)];
   const tgtCol = seed?.tgtCol ?? pal[Math.floor(Math.random() * pal.length)];
@@ -396,7 +395,7 @@ export function buildCellsFromParams(grid, pool, tc, diff, seed, interference) {
   let cells = [];
   // Never ask for more targets than cells; keeps UI count and grid in sync.
   const guaranteedTc = Math.min(Math.max(tc, 3), total);
-  const useFeatureBinding = diff === 'hard' || diff === 'xhard' || diff === 'deadly';
+  const useFeatureBinding = diff === 'medium' || diff === 'hard';
   if (searchMode === 'identity') {
     for (let k = 0; k < guaranteedTc; k++) cells.push({ shape: tgt, col: tgtCol, isT: true });
     while (cells.length < total) {
@@ -449,8 +448,8 @@ export function assignFillColors(cells, diff, interference, tgtCol, rng = Math.r
   });
 }
 
-/** Linear curriculum for Free mode: easy 1–20 → … → deadly 20, then stays at deadly 20. */
-export const FREE_PROGRESS_ORDER = ['easy', 'inter', 'hard', 'xhard', 'deadly'];
+/** Linear curriculum for Free mode: easy 1–100 → medium 1–100 → hard 1–100. */
+export const FREE_PROGRESS_ORDER = FQ_DIFF_KEYS;
 
 /** Starting session bank (seconds); clock runs continuously across rounds until 0. */
 export const FREE_SESSION_START_SEC = 48;
@@ -485,7 +484,7 @@ export function freeClearBonusSec(stageCompleted, nominalParSec) {
   return +bonus.toFixed(1);
 }
 
-const FREE_SCORE_WEIGHT = { easy: 1, inter: 1.12, hard: 1.28, xhard: 1.55, deadly: 1.95 };
+const FREE_SCORE_WEIGHT = { easy: 1, medium: 1.25, hard: 1.7 };
 
 /** Points per correct target tap in free mode. */
 export function freeTapPoints(diff, freeStage) {
@@ -511,10 +510,10 @@ export function freeWrongTapPenalty(diff) {
 
 export function freeStageToDiffLv(stageIndex) {
   const s = Math.max(0, stageIndex | 0);
-  const maxLinear = FREE_PROGRESS_ORDER.length * 20 - 1;
+  const maxLinear = FREE_PROGRESS_ORDER.length * FQ_LEVELS_PER_TIER - 1;
   const capped = Math.min(s, maxLinear);
-  const diffIx = Math.floor(capped / 20);
-  const lv = (capped % 20) + 1;
+  const diffIx = Math.floor(capped / FQ_LEVELS_PER_TIER);
+  const lv = (capped % FQ_LEVELS_PER_TIER) + 1;
   return { diff: FREE_PROGRESS_ORDER[diffIx], lv };
 }
 
@@ -529,7 +528,7 @@ export function prepareLevelRound(diff, lv) {
   const pal = PAL[diff] || PAL.easy;
   const lockedTarget = cfg.pool[Math.floor(Math.random() * cfg.pool.length)];
   const lockedCol = pal[Math.floor(Math.random() * pal.length)];
-  const searchMode = diff === 'xhard' || diff === 'deadly' ? 'identity' : 'categorical';
+  const searchMode = diff === 'hard' ? 'identity' : 'categorical';
   const built = buildCellsFromParams(cfg.grid, cfg.pool, cfg.tc, diff, { tgt: lockedTarget, tgtCol: lockedCol }, cfg.interference);
   const withFill = assignFillColors(built.cells, diff, cfg.interference, built.tgtCol);
   const cells = withFill.map((c, i) => ({ ...c, id: i, tapped: false, feedback: null }));
@@ -558,8 +557,8 @@ export function prepareLevelRound(diff, lv) {
  * bit-identical grid. Fairness is preserved across player turns and rounds.
  */
 export function prepareChallengeSeed() {
-  const pool = SP.xhard[8];
-  const pal = PAL.xhard;
+  const pool = SP.hard[80];
+  const pal = PAL.hard;
   const grid = 9;
   const tc = 15;
   const total = grid * grid;
@@ -602,7 +601,7 @@ export function prepareChallengePlayState(cSeed, tlim = 50) {
   const targetCount = cells.filter((c) => c.isT).length;
   return {
     mode: 'challenge',
-    diff: 'xhard',
+    diff: 'hard',
     lv: 'CH',
     grid: cSeed.grid,
     pool: cSeed.pool,

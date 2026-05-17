@@ -38,10 +38,10 @@ export default function SplashScreen({ onDone }) {
     flexDirection: 'column',
     alignItems: 'stretch',
     width: '100%',
-    maxWidth: 'min(380px, 92vw)',
+    maxWidth: 'min(400px, 94vw)',
     marginLeft: 'auto',
     marginRight: 'auto',
-    gap: 'clamp(7px, 1.8vw, 10px)',
+    gap: 'clamp(9px, 2.2vw, 12px)',
     boxSizing: 'border-box',
   };
   const splashRowBtn = {
@@ -57,16 +57,17 @@ export default function SplashScreen({ onDone }) {
 
       <header className="splash-header">
         <div className="splash-hero-inner">
-          <h1 className="splash-title">
+          <h1 className="splash-title" data-title={isAr ? 'رجل المتاهة' : 'Maze Man'}>
             {isAr ? 'رجل المتاهة' : 'Maze Man'}
           </h1>
           <div className="splash-subbrand">
-            <div className="splash-subbrand-visual">
-              <SplashBrainSide className="splash-brain-side" />
-            </div>
             <p className="splash-subbrand-title">
               <span className="splash-subbrand-label" dir={isAr ? 'rtl' : 'ltr'}>
-                {isAr ? 'لعبة العقل' : 'Brain Game'}
+                <span>{isAr ? 'لعبة' : 'Brain'}</span>
+                <span className="splash-subbrand-visual">
+                  <SplashBrainSide className="splash-brain-side" />
+                </span>
+                <span>{isAr ? 'العقل' : 'Games'}</span>
               </span>
             </p>
           </div>
