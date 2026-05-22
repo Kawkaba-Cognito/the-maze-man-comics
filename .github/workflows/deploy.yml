@@ -1,8 +1,8 @@
 name: Deploy to GitHub Pages
 
+# Manual deploy only — avoids publishing a public Pages site on every push to a private repo.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
