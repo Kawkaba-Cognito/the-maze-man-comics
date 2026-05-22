@@ -309,6 +309,9 @@ export default function VigilTestGame({ onBack }) {
 
   const finishBlockRef = useRef(() => {});
   const pauseRef = useRef(false);
+  const playStepRef = useRef('idle');
+  const stimVisibleRef = useRef(false);
+  const currentTrialRef = useRef(null);
   const trialIdxRef = useRef(0);
 
   const doneMap = profile.done || {};
@@ -319,6 +322,14 @@ export default function VigilTestGame({ onBack }) {
   useEffect(() => {
     pauseRef.current = pauseOpen;
   }, [pauseOpen]);
+
+  useEffect(() => {
+    playStepRef.current = playStep;
+  }, [playStep]);
+
+  useEffect(() => {
+    stimVisibleRef.current = stimVisible;
+  }, [stimVisible]);
 
   useEffect(() => {
     trialIdxRef.current = trialIdx;
@@ -350,9 +361,12 @@ export default function VigilTestGame({ onBack }) {
     blockRef.current = null;
     blockEndedRef.current = false;
     setPlayStep('idle');
+    playStepRef.current = 'idle';
     setPauseOpen(false);
     setQuitOpen(false);
+    stimVisibleRef.current = false;
     setStimVisible(false);
+    currentTrialRef.current = null;
     setChalTurnOpen(false);
   }, [clearTimers, stopSessionTimer]);
 
@@ -408,7 +422,9 @@ export default function VigilTestGame({ onBack }) {
       const runId = runIdRef.current;
       respondedRef.current = false;
       rtRef.current = null;
+      currentTrialRef.current = trial;
       setTrialIdx(idx);
+      stimVisibleRef.current = false;
       setStimVisible(false);
 
       const add = (fn, ms) => {
@@ -420,11 +436,15 @@ export default function VigilTestGame({ onBack }) {
       };
 
       add(() => {
+        stimVisibleRef.current = true;
+        stimOnRef.current = performance.now();
         setStimVisible(true);
-        stimOnRef.current = Date.now();
       }, spec.fixationMs);
 
-      add(() => setStimVisible(false), spec.fixationMs + spec.stimulusMs);
+      add(() => {
+        stimVisibleRef.current = false;
+        setStimVisible(false);
+      }, spec.fixationMs + spec.stimulusMs);
 
       add(() => {
         finishTrial(trial);
@@ -436,9 +456,10 @@ export default function VigilTestGame({ onBack }) {
   );
 
   const recordResponse = useCallback(() => {
-    if (playStep !== 'running' || pauseOpen) return;
+    if (playStepRef.current !== 'running' || pauseRef.current) return;
+    if (!currentTrialRef.current) return;
 
-    if (!stimVisible) {
+    if (!stimVisibleRef.current) {
       resultsRef.current.push({
         earlyTap: true,
         isTarget: false,
@@ -450,9 +471,40 @@ export default function VigilTestGame({ onBack }) {
 
     if (respondedRef.current) return;
     respondedRef.current = true;
-    rtRef.current = Date.now() - stimOnRef.current;
+    rtRef.current = Math.max(0, Math.round(performance.now() - stimOnRef.current));
     playSfx('click');
-  }, [playStep, pauseOpen, stimVisible, playSfx]);
+  }, [playSfx]);
+
+  const handleTapPointerDown = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const el = e.currentTarget;
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+      recordResponse();
+    },
+    [recordResponse],
+  );
+
+  const handleTapPointerUp = useCallback((e) => {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const handleTapPointerCancel = useCallback((e) => {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const finishBlock = useCallback(() => {
     if (blockEndedRef.current) return;
@@ -642,10 +694,12 @@ export default function VigilTestGame({ onBack }) {
 
   const startBlockAfterBriefing = useCallback(() => {
     if (!settings.countdown) {
+      playStepRef.current = 'running';
       setPlayStep('running');
       scheduleNext(0);
       return;
     }
+    playStepRef.current = 'countdown';
     setPlayStep('countdown');
     setCdVal(3);
   }, [scheduleNext, settings.countdown]);
@@ -667,7 +721,9 @@ export default function VigilTestGame({ onBack }) {
       setPauseOpen(false);
       setQuitOpen(false);
       setTrialIdx(0);
+      stimVisibleRef.current = false;
       setStimVisible(false);
+      currentTrialRef.current = null;
       respondedRef.current = false;
 
       if (block.mode === 'free' && freeStageRef.current === 0 && freeBlocksWonRef.current === 0) {
@@ -685,6 +741,7 @@ export default function VigilTestGame({ onBack }) {
   useEffect(() => {
     if (phase !== 'play' || playStep !== 'countdown') return undefined;
     if (cdVal <= 0) {
+      playStepRef.current = 'running';
       setPlayStep('running');
       scheduleNext(0);
       return undefined;
@@ -1258,10 +1315,9 @@ export default function VigilTestGame({ onBack }) {
                       : ' ct-vigil-tap-pad--idle'
                 }`}
                 aria-label={stimVisible && trial?.isTarget ? t.tapNow : t.tapPad}
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  recordResponse();
-                }}
+                onPointerDown={handleTapPointerDown}
+                onPointerUp={handleTapPointerUp}
+                onPointerCancel={handleTapPointerCancel}
               >
                 <span className="ct-vigil-tap-pad-label">
                   {stimVisible && trial?.isTarget

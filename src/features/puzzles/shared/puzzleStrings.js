@@ -1,0 +1,63 @@
+export const PUZZLE_UI = {
+  en: {
+    hubTitle: 'Puzzles',
+    hubTag: 'logic games',
+    hubSub: 'Pick a puzzle, choose your grid size, and play.',
+    pickGrid: 'Choose grid size',
+    pickGridSub: 'Tap a size to start a new puzzle.',
+    gridLabel: (n) => `${n}×${n}`,
+    gridHint3: 'Quick & cozy',
+    gridHint4: 'Classic starter',
+    gridHint5: 'Balanced challenge',
+    gridHint6: 'Expert grid',
+    start: 'New puzzle',
+    shuffle: 'Shuffle',
+    reset: 'Reset',
+    solved: 'Solved!',
+    moves: (n) => `${n} moves`,
+    time: (s) => `${s}s`,
+    playAgain: 'Play again',
+    changeSize: 'Change size',
+    menu: 'Menu',
+    check: 'Check',
+    hint: 'Tap cells to play. Use New puzzle for a fresh board.',
+    slidingHint: 'Tap a tile next to the empty space to slide it.',
+    takuzuHint: 'Tap to cycle: empty → 0 → 1. Equal counts per row & column; no three in a row.',
+    hitoriHint: 'Tap to shade. No adjacent shaded cells; row & column counts must match.',
+    mazeHint: 'One solution — wrong turns hit dead ends. Trace carefully from START to GOAL.',
+  },
+  ar: {
+    hubTitle: 'ألغاز',
+    hubTag: 'ألعاب منطق',
+    hubSub: 'اختر لغزاً، حدّد حجم الشبكة، والعب.',
+    pickGrid: 'اختر حجم الشبكة',
+    pickGridSub: 'اضغط على الحجم لبدء لغز جديد.',
+    gridLabel: (n) => `${n}×${n}`,
+    gridHint3: 'سريع ومريح',
+    gridHint4: 'بداية كلاسيكية',
+    gridHint5: 'تحدّ متوازن',
+    gridHint6: 'شبكة خبير',
+    start: 'لغز جديد',
+    shuffle: 'خلط',
+    reset: 'إعادة',
+    solved: 'تم الحل!',
+    moves: (n) => `${n} حركة`,
+    time: (s) => `${s} ث`,
+    playAgain: 'العب مجدداً',
+    changeSize: 'تغيير الحجم',
+    menu: 'القائمة',
+    check: 'تحقق',
+    hint: 'اضغط الخلايا للعب. «لغز جديد» لصفحة جديدة.',
+    slidingHint: 'اضغط لوحاً بجانب الفراغ لتحريكه.',
+    takuzuHint: 'اضغط للتبديل: فارغ ← ٠ ← ١. تساوي العدد في كل صف وعمود؛ لا ثلاثة متتالية.',
+    hitoriHint: 'اضغط للتظليل. لا خلايا متظللة متجاورة؛ العدد يطابق الأرقام على الحافة.',
+    mazeHint: 'حل واحد — المسارات الخاطئة تصل إلى ممرات مسدودة. ارسم بعناية من START إلى GOAL.',
+  },
+};
+
+export function gridHintKey(size) {
+  if (size === 3) return 'gridHint3';
+  if (size === 4) return 'gridHint4';
+  if (size === 5) return 'gridHint5';
+  return 'gridHint6';
+}

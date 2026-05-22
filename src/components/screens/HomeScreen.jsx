@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext';
 const DOORS = [
   { tab: 'comics',  enLabel: 'TRAINING', arLabel: 'تدريب', pos: 'left'   },
   { tab: 'profile', enLabel: 'PROFILE',  arLabel: 'ملفي',  pos: 'center' },
-  { tab: 'videos',  enLabel: 'LEARN',    arLabel: 'تعلم',  pos: 'right'  },
+  { tab: 'puzzles', enLabel: 'PUZZLES', arLabel: 'ألغاز', pos: 'right'  },
 ];
 
 export default function HomeScreen() {

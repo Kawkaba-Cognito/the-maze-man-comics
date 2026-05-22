@@ -1,0 +1,118 @@
+/*
+ * PUZZLE REGISTRY — single source of truth for puzzle types.
+ * Each puzzle declares supported grid sizes and a lazy loader.
+ */
+
+const sliding = {
+  id: 'sliding',
+  gameKey: 'sliding',
+  name: 'Sliding Puzzle',
+  nameAr: 'الألواح المنزلقة',
+  icon: '🧩',
+  desc: 'Slide tiles into place — one empty slot.',
+  descAr: 'حرّك الألواح إلى مكانها — خانة فارغة واحدة.',
+  accent: '#64b5c2',
+  sizes: [3, 4, 5, 6],
+  loader: () => import('./games/sliding'),
+};
+
+const takuzu = {
+  id: 'takuzu',
+  gameKey: 'takuzu',
+  name: 'Takuzu',
+  nameAr: 'تاكوزو',
+  icon: '⚫',
+  desc: 'Fill with 0 and 1 — balance each row and column.',
+  descAr: 'املأ بالصفر والواحد — وازِن كل صف وعمود.',
+  accent: '#b696d4',
+  sizes: [4, 6],
+  loader: () => import('./games/takuzu'),
+};
+
+const hitori = {
+  id: 'hitori',
+  gameKey: 'hitori',
+  name: 'Hitori',
+  nameAr: 'هيتوري',
+  icon: '⬛',
+  desc: 'Shade duplicates — no adjacent shaded cells.',
+  descAr: 'ظلّل المكررات — لا خلايا متظللة متجاورة.',
+  accent: '#e07aaa',
+  sizes: [3, 4, 5, 6],
+  loader: () => import('./games/hitori'),
+};
+
+const maze = {
+  id: 'maze',
+  gameKey: 'maze',
+  name: 'Logic Maze',
+  nameAr: 'متاهة منطقية',
+  icon: '🌀',
+  desc: 'Porteus-style labyrinth — dead ends, false trails, one true path.',
+  descAr: 'متاهة بأسلوب Porteus — ممرات مسدودة ومسارات خادعة وحل واحد.',
+  accent: '#9cb752',
+  sizes: [3, 4, 5, 6],
+  loader: () => import('./games/maze'),
+};
+
+const sudoku = {
+  id: 'sudoku',
+  gameKey: 'sudoku',
+  name: 'Sudoku',
+  nameAr: 'سودوكو',
+  icon: '🔢',
+  desc: 'Rows, columns, and boxes — no repeated numbers.',
+  descAr: 'صفوف وأعمدة وصناديق — بلا أرقام مكررة.',
+  accent: '#e8ac4e',
+  sizes: [4, 6, 9],
+  loader: () => import('./games/sudoku'),
+};
+
+const kenken = {
+  id: 'kenken',
+  gameKey: 'kenken',
+  name: 'KenKen',
+  nameAr: 'كين كين',
+  icon: '✳️',
+  desc: 'Math cages plus Latin-square logic.',
+  descAr: 'أقفاص حسابية مع منطق الصفوف والأعمدة.',
+  accent: '#d47a4a',
+  sizes: [4, 5, 6],
+  loader: () => import('./games/kenken'),
+};
+
+const nonogram = {
+  id: 'nonogram',
+  gameKey: 'nonogram',
+  name: 'Nonogram',
+  nameAr: 'نونوغرام',
+  icon: '▦',
+  desc: 'Use row and column clues to reveal the picture.',
+  descAr: 'استخدم دلائل الصفوف والأعمدة لكشف الصورة.',
+  accent: '#64b5c2',
+  sizes: [5, 10, 15],
+  loader: () => import('./games/nonogram'),
+};
+
+const kakuro = {
+  id: 'kakuro',
+  gameKey: 'kakuro',
+  name: 'Kakuro',
+  nameAr: 'كاكورو',
+  icon: 'Σ',
+  desc: 'Crossword sums with digits 1-9.',
+  descAr: 'كلمات متقاطعة حسابية بالأرقام ١-٩.',
+  accent: '#b696d4',
+  sizes: [7, 9],
+  loader: () => import('./games/kakuro'),
+};
+
+export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, maze, sudoku, kenken, nonogram, kakuro];
+
+export const PUZZLES_BY_KEY = Object.fromEntries(
+  PUZZLE_CONFIGS.map((p) => [p.gameKey, p])
+);
+
+export function getPuzzle(key) {
+  return PUZZLES_BY_KEY[key] ?? null;
+}

@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import MazeBackground from './MazeBackground';
 import HomeScreen from './screens/HomeScreen';
 import ComicsScreen from './screens/ComicsScreen';
-import VideosScreen from './screens/VideosScreen';
+import PuzzlesScreen from './screens/PuzzlesScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import ShopScreen from './screens/ShopScreen';
 import MazeOverlay from './maze/MazeOverlay';
@@ -49,7 +49,7 @@ export default function AppShell({ onBackToMenu }) {
             </button>
           )}
           {/* Lang toggle hidden on comics/training (it has its own) */}
-          {activeTab !== 'comics' && (
+          {activeTab !== 'comics' && activeTab !== 'puzzles' && (
             <button
               id="lang-btn"
               onClick={toggleLang}
@@ -61,7 +61,7 @@ export default function AppShell({ onBackToMenu }) {
         </div>
 
         {/* Back button — visible on non-home screens except comics (training has its own) */}
-        {!isHome && activeTab !== 'comics' && (
+        {!isHome && activeTab !== 'comics' && activeTab !== 'puzzles' && (
           <button className="back-btn" onClick={() => switchTab('home')}>
             ‹ {isAr ? 'رجوع' : 'BACK'}
           </button>
@@ -70,7 +70,7 @@ export default function AppShell({ onBackToMenu }) {
         {/* Screens */}
         <div id="screen-home"    className={`ui-screen ${activeTab === 'home'    ? 'active' : ''}`}><HomeScreen /></div>
         <div id="screen-comics"  className={`ui-screen ${activeTab === 'comics'  ? 'active' : ''}`}><ComicsScreen /></div>
-        <div id="screen-videos"  className={`ui-screen ${activeTab === 'videos'  ? 'active' : ''}`}><VideosScreen /></div>
+        <div id="screen-puzzles" className={`ui-screen ${activeTab === 'puzzles' ? 'active' : ''}`}><PuzzlesScreen /></div>
         <div id="screen-profile" className={`ui-screen ${activeTab === 'profile' ? 'active' : ''}`}><ProfileScreen /></div>
         <div id="screen-shop"    className={`ui-screen ${activeTab === 'shop'    ? 'active' : ''}`}><ShopScreen /></div>
 

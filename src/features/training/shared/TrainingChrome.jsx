@@ -74,15 +74,17 @@ export function TrainingMenuBar({
   );
 }
 
-/** In-game header: back (menu), title, optional pause. */
+/** In-game header: back (menu), title, optional pause or tutorial (?). */
 export function TrainingPlayHeader({
   isAr,
   title,
   subtitle,
   onMenu,
   onPause,
+  onTutorial,
   pauseAriaLabel = 'Pause',
   menuAriaLabel = 'Menu',
+  tutorialAriaLabel = 'How to play',
   playSfx,
 }) {
   return (
@@ -109,7 +111,19 @@ export function TrainingPlayHeader({
         </div>
         {subtitle ? <div className="ct-training-play-sub">{subtitle}</div> : null}
       </div>
-      {onPause ? (
+      {onTutorial ? (
+        <TrainingChromeBtn
+          ariaLabel={tutorialAriaLabel}
+          title={tutorialAriaLabel}
+          className="ct-training-chrome-btn--tutorial"
+          onClick={() => {
+            playSfx('click');
+            onTutorial();
+          }}
+        >
+          <span aria-hidden="true">?</span>
+        </TrainingChromeBtn>
+      ) : onPause ? (
         <TrainingChromeBtn
           ariaLabel={pauseAriaLabel}
           onClick={() => {

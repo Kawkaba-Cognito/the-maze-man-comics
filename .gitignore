@@ -1,5 +1,6 @@
 node_modules/
 dist/
+scripts/words_alpha.txt
 .claude/
 
 # Secrets and local credentials — never commit
