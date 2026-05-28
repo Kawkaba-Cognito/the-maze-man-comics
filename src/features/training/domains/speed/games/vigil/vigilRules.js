@@ -108,7 +108,7 @@ export function describeBriefing(rule, spec, isAr) {
       headline: 'مهمة هذه الكتلة',
       tapLine: `اضغط عند: ${shapeListLabel(tapShapes, true)}`,
       avoidLine: `تجنّب: ${shapeListLabel(avoidShapes, true)}`,
-      detailLine: `${trials} محاولة · نحو ${min} د · استخدم زر الضغط فقط`,
+      detailLine: `${trials} محاولة · نحو ${min} د · اضغط على الشكل مباشرة`,
       startLabel: 'ابدأ الكتلة',
       tapShapes,
       avoidShapes,
@@ -116,9 +116,9 @@ export function describeBriefing(rule, spec, isAr) {
   }
   return {
     headline: 'Your task this block',
-    tapLine: `Press TAP for: ${shapeListLabel(tapShapes, false)}`,
+    tapLine: `Tap for: ${shapeListLabel(tapShapes, false)}`,
     avoidLine: `Do not tap for: ${shapeListLabel(avoidShapes, false)}`,
-    detailLine: `${trials} trials · ~${min} min · use the TAP button only`,
+    detailLine: `${trials} trials · ~${min} min · tap the shape directly`,
     startLabel: 'Start block',
     tapShapes,
     avoidShapes,
@@ -146,7 +146,7 @@ export function playHintForRule(rule, isAr) {
   const map = isAr ? SHAPE_LABEL.ar : SHAPE_LABEL.en;
   const target = map[rule.targetShape];
   if (isAr) {
-    return `زر الضغط بالأسفل — فقط عند ظهور ${target}.`;
+    return `اضغط عند ظهور ${target}.`;
   }
-  return `Use the TAP button below — only when you see a ${target}.`;
+  return `Tap when you see a ${target}.`;
 }

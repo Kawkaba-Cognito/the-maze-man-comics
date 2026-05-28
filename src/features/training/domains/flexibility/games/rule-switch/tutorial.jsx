@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import MazeManAvatar from '../../../../shared/MazeManAvatar';
-import VigilShape from '../../../speed/games/vigil/VigilShape';
+
 import { WCST_REFERENCE_CARDS } from './ruleSwitchData';
 
 const TUTORIAL_KEY = 'mm_wcst_tutorial_seen_v1';
@@ -113,39 +113,42 @@ const STR = {
   },
 };
 
-function CountDots({ n }) {
-  return (
-    <div className="ct-wcst-count" aria-hidden="true">
-      {Array.from({ length: n }, (_, i) => (
-        <span key={i} className="ct-wcst-count-dot" />
-      ))}
-    </div>
-  );
-}
-
-function RefCard({ card, small }) {
+function TutCardFace({ card, small }) {
+  const size = small ? 'sm' : 'md';
+  const shapes = Array.from({ length: card.count }, (_, i) => i);
   return (
     <div className={`ct-wcst-tut-card${small ? ' ct-wcst-tut-card--sm' : ''}`}>
-      <VigilShape shape={card.shape} size={small ? 'sm' : 'md'} />
-      <CountDots n={card.count} />
-      <span className={`ct-wcst-color-bar ct-wcst-color-bar--${card.color}`} />
+      <div className="ct-wcst-shapes">
+        {shapes.map((i) => (
+          <div
+            key={i}
+            className={`ct-wcst-shape ct-wcst-shape--${card.shape} ct-wcst-shape--${card.color} ct-wcst-shape--${size}`}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
 function DemoBoard({ step }) {
+  const demoProbe = { color: 'blue', shape: 'square', count: 2 };
   return (
     <div className="ct-wcst-tut-demo">
       <div className="ct-wcst-refs">
         {WCST_REFERENCE_CARDS.map((c) => (
-          <RefCard key={c.id} card={c} small />
+          <TutCardFace key={c.id} card={c} small />
         ))}
       </div>
       {step === 'probe' || step === 'shift' ? (
         <div className="ct-wcst-probe-card">
-          <VigilShape shape="square" size="lg" />
-          <CountDots n={2} />
-          <span className="ct-wcst-color-bar ct-wcst-color-bar--blue" />
+          <div className="ct-wcst-shapes">
+            {Array.from({ length: demoProbe.count }, (_, i) => (
+              <div
+                key={i}
+                className={`ct-wcst-shape ct-wcst-shape--${demoProbe.shape} ct-wcst-shape--${demoProbe.color} ct-wcst-shape--lg`}
+              />
+            ))}
+          </div>
         </div>
       ) : null}
       {step === 'shift' && (

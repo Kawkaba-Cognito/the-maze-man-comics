@@ -22,8 +22,8 @@ import {
   prepareFreeRound,
   prepareChallengeSeed,
   prepareChallengeRound,
-  gradeRecognition,
-  starsForRecognition,
+  gradeSerialRecall,
+  starsForSerialRecall,
   isMemoSpanLevelUnlocked,
   mergeMemoChallengeRow,
   compareMemoChallengeRows,
@@ -39,39 +39,41 @@ const UI = {
     levelMode: '🎯 Level mode',
     challengeMode: '⚔️ Challenge',
     hubMapAria: 'Modes',
-    hubNodeFreeHint: 'More objects when you pass',
-    hubNodeLevelsHint: 'Memorize objects · Yes/No · 20 levels',
-    hubNodeChallengeHint: 'Same list for everyone · pass & play',
+    hubNodeFreeHint: 'Longer sequences when you pass',
+    hubNodeLevelsHint: 'Watch sequence · tap in order · 20 levels',
+    hubNodeChallengeHint: 'Same sequence for everyone · pass & play',
     pickDiff: 'Choose difficulty',
-    pickDiffSub: 'Memorize everyday objects, then answer “Did you see this?”',
+    pickDiffSub: 'Watch a sequence of objects, then tap them back in the same order.',
     levelsSub: (pop) => `${pop} · ${MS_LEVELS_PER_TIER} levels`,
     levelHeader: (diff, lv) => `${MS_DM[diff]?.label ?? diff} · L${lv}`,
-    levelMeta: (n, q) => `${n} obj · ${q} Qs`,
-    memorizePhase: 'Memorize…',
+    levelMeta: (n, p) => `${n} obj · ${p} grid`,
+    memorizePhase: 'Memorize the order…',
     studyItem: (n, total, name) => `${name} · ${n} of ${total}`,
-    didYouSee: 'Did you see this?',
-    yes: 'Yes — I saw it',
-    no: 'No — not in the list',
-    testProgress: (n, total) => `Question ${n} / ${total}`,
-    feedbackOk: 'Correct!',
-    feedbackBad: 'That was wrong',
+    recallPrompt: 'Tap the objects in the order shown',
+    recallProgress: (n, total) => `Tapped: ${n} / ${total}`,
+    correctSeqLabel: 'Correct sequence:',
+    wrongTap: 'Wrong! Sequence ended.',
+    testProgress: (n, total) => `Step ${n} / ${total}`,
+    feedbackOk: 'Perfect sequence!',
+    feedbackBad: 'Sequence broken',
     resultsPass: 'Nice memory!',
     resultsFail: 'Keep practicing',
     stars: 'Stars',
     scoreLabel: 'Score',
+    spanLabel: 'Span',
     retry: 'Retry',
     nextLv: 'Next level',
     menu: 'Menu',
     freeTitle: 'Free mode',
-    freeSub: 'More objects when you pass; fewer when you miss.',
-    freeCount: (n) => `List size: ${n} objects`,
-    freeBest: (n) => `Best list: ${n}`,
+    freeSub: 'Sequence gets longer when you nail it, shorter when you slip.',
+    freeCount: (n) => `Sequence length: ${n}`,
+    freeBest: (n) => `Best span: ${n}`,
     freePlayAgain: 'Play again',
     freeIntroReady: 'Ready',
-    readyForTest: 'Get ready for the questions…',
-    startQuestions: 'Start questions',
+    readyForTest: 'Get ready to recall…',
+    startQuestions: 'Start recall',
     challengeTitle: '⚔️ Challenge mode',
-    challengeSub: 'Same objects & questions for every player · Medium L8',
+    challengeSub: 'Same sequence for every player · Medium L8',
     players: 'Players (2–10)',
     addPl: '＋ Add player',
     startCh: '⚔️ Start',
@@ -80,14 +82,14 @@ const UI = {
     chalRoundsHint: 'Each player plays once per round',
     roundNofM: (n, m) => `Round ${n}/${m}`,
     chalTurnKicker: 'Your turn',
-    chalBulletSame: 'Same memorize list and questions this round',
+    chalBulletSame: 'Same sequence this round',
     chalBulletPass: 'Start only when this player has the device',
     handTo: (n) => `Hand the device to ${n}.`,
     goReady: 'Start round',
-    chalMeta: 'Medium · L8 · object memory',
+    chalMeta: 'Medium · L8 · serial recall',
     challengeHeader: 'Challenge',
     resultsChalTitle: 'Challenge results',
-    chalResDetail: (pct, c, t) => `${pct}% · ${c}/${t} correct`,
+    chalResDetail: (pct, c, t) => `${pct}% · ${c}/${t} in order`,
     newCh: 'New challenge',
   },
   ar: {
@@ -98,39 +100,41 @@ const UI = {
     levelMode: '🎯 وضع المستويات',
     challengeMode: '⚔️ تحدي',
     hubMapAria: 'الأوضاع',
-    hubNodeFreeHint: 'مزيد من الأشياء عند النجاح',
-    hubNodeLevelsHint: 'احفظ الأشياء · نعم/لا · ٢٠ مستوى',
-    hubNodeChallengeHint: 'نفس القائمة للجميع · تمرير الجهاز',
+    hubNodeFreeHint: 'تسلسل أطول عند النجاح',
+    hubNodeLevelsHint: 'شاهد التسلسل · اضغط بالترتيب · ٢٠ مستوى',
+    hubNodeChallengeHint: 'نفس التسلسل للجميع · تمرير الجهاز',
     pickDiff: 'اختر الصعوبة',
-    pickDiffSub: 'احفظ أشياء يومية، ثم أجب «هل رأيت هذا؟»',
+    pickDiffSub: 'شاهد تسلسل أشياء، ثم اضغطها بنفس الترتيب.',
     levelsSub: (pop) => `${pop} · ${MS_LEVELS_PER_TIER} مستوى`,
     levelHeader: (diff, lv) => `${MS_DM[diff]?.label ?? diff} · ${lv}`,
-    levelMeta: (n, q) => `${n} أشياء · ${q} س`,
-    memorizePhase: 'احفظ…',
+    levelMeta: (n, p) => `${n} أشياء · ${p} شبكة`,
+    memorizePhase: 'احفظ الترتيب…',
     studyItem: (n, total, name) => `${name} · ${n} من ${total}`,
-    didYouSee: 'هل رأيت هذا؟',
-    yes: 'نعم — رأيته',
-    no: 'لا — لم يكن في القائمة',
-    testProgress: (n, total) => `السؤال ${n} / ${total}`,
-    feedbackOk: 'صحيح!',
-    feedbackBad: 'خطأ',
+    recallPrompt: 'اضغط الأشياء بنفس الترتيب الذي ظهرت به',
+    recallProgress: (n, total) => `مضغوط: ${n} / ${total}`,
+    correctSeqLabel: 'الترتيب الصحيح:',
+    wrongTap: 'خطأ! انتهى التسلسل.',
+    testProgress: (n, total) => `الخطوة ${n} / ${total}`,
+    feedbackOk: 'تسلسل ممتاز!',
+    feedbackBad: 'انكسر التسلسل',
     resultsPass: 'ذاكرة جيدة!',
     resultsFail: 'واصل التدريب',
     stars: 'نجوم',
     scoreLabel: 'النتيجة',
+    spanLabel: 'المدى',
     retry: 'إعادة',
     nextLv: 'المستوى التالي',
     menu: 'القائمة',
     freeTitle: 'وضع حر',
-    freeSub: 'تزيد الأشياء عند النجاح وتنقص عند الخطأ.',
-    freeCount: (n) => `حجم القائمة: ${n} أشياء`,
-    freeBest: (n) => `أفضل قائمة: ${n}`,
+    freeSub: 'يطول التسلسل عند النجاح ويقصر عند الخطأ.',
+    freeCount: (n) => `طول التسلسل: ${n}`,
+    freeBest: (n) => `أفضل مدى: ${n}`,
     freePlayAgain: 'العب مجدداً',
     freeIntroReady: 'جاهز',
-    readyForTest: 'استعد للأسئلة…',
-    startQuestions: 'ابدأ الأسئلة',
+    readyForTest: 'استعد للاستدعاء…',
+    startQuestions: 'ابدأ الاستدعاء',
     challengeTitle: '⚔️ وضع التحدي',
-    challengeSub: 'نفس الأشياء والأسئلة للجميع · متوسط L8',
+    challengeSub: 'نفس التسلسل للجميع · متوسط L8',
     players: 'اللاعبون (2–10)',
     addPl: '＋ إضافة لاعب',
     startCh: '⚔️ ابدأ',
@@ -139,14 +143,14 @@ const UI = {
     chalRoundsHint: 'كل لاعب يلعب مرة في الجولة',
     roundNofM: (n, m) => `الجولة ${n}/${m}`,
     chalTurnKicker: 'دورك',
-    chalBulletSame: 'نفس قائمة الحفظ والأسئلة في هذه الجولة',
+    chalBulletSame: 'نفس التسلسل في هذه الجولة',
     chalBulletPass: 'ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
     handTo: (n) => `سلّم الجهاز إلى ${n}.`,
     goReady: 'ابدأ الجولة',
-    chalMeta: 'متوسط · L8 · ذاكرة أشياء',
+    chalMeta: 'متوسط · L8 · استدعاء تسلسلي',
     challengeHeader: 'تحدي',
     resultsChalTitle: 'نتائج التحدي',
-    chalResDetail: (pct, c, t) => `${pct}% · ${c}/${t} صحيح`,
+    chalResDetail: (pct, c, t) => `${pct}% · ${c}/${t} بالترتيب`,
     newCh: 'تحدي جديد',
   },
 };
@@ -162,8 +166,8 @@ export default function MemoSpanGame({ onBack }) {
   const [round, setRound] = useState(null);
   const [playStep, setPlayStep] = useState('idle');
   const [studyIdx, setStudyIdx] = useState(0);
-  const [qIdx, setQIdx] = useState(0);
-  const [answers, setAnswers] = useState([]);
+  const [tapsSoFar, setTapsSoFar] = useState([]);
+  const [showCorrectSequence, setShowCorrectSequence] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [lastResult, setLastResult] = useState(null);
   const [freeStudyCount, setFreeStudyCount] = useState(3);
@@ -180,7 +184,7 @@ export default function MemoSpanGame({ onBack }) {
   const studySeqRef = useRef(null);
   const readySeqRef = useRef(null);
   const roundRef = useRef(null);
-  const answersRef = useRef([]);
+  const tapsRef = useRef([]);
   const pendingTutorialActionRef = useRef(null);
   const chalIdxRef = useRef(0);
   const chalNamesRef = useRef(chalNames);
@@ -210,8 +214,8 @@ export default function MemoSpanGame({ onBack }) {
   }, [round]);
 
   useEffect(() => {
-    answersRef.current = answers;
-  }, [answers]);
+    tapsRef.current = tapsSoFar;
+  }, [tapsSoFar]);
 
   useEffect(() => {
     chalIdxRef.current = chalIdx;
@@ -221,13 +225,13 @@ export default function MemoSpanGame({ onBack }) {
   }, [chalNames]);
 
   const finishRound = useCallback(
-    (answerList) => {
+    (taps) => {
       const r = roundRef.current;
       if (!r) return;
       clearTimers();
-      const grade = gradeRecognition(r.questions, answerList);
-      const won = grade.pct >= r.spec.passPct;
-      const stars = starsForRecognition(grade.pct, r.spec);
+      const grade = gradeSerialRecall(r.studyItems, taps);
+      const won = grade.correctSequence || grade.pct >= r.spec.passPct;
+      const stars = starsForSerialRecall(grade, r.spec);
       playSfx(won ? 'win' : 'error');
 
       if (r.mode === 'challenge') {
@@ -246,6 +250,9 @@ export default function MemoSpanGame({ onBack }) {
           setRound(null);
           setPlayStep('idle');
           setFeedback(null);
+          setShowCorrectSequence(false);
+          setTapsSoFar([]);
+          tapsRef.current = [];
           return;
         }
 
@@ -262,6 +269,9 @@ export default function MemoSpanGame({ onBack }) {
           setRound(null);
           setPlayStep('idle');
           setFeedback(null);
+          setShowCorrectSequence(false);
+          setTapsSoFar([]);
+          tapsRef.current = [];
           return;
         }
 
@@ -271,6 +281,9 @@ export default function MemoSpanGame({ onBack }) {
         setRound(null);
         setPlayStep('idle');
         setFeedback(null);
+        setShowCorrectSequence(false);
+        setTapsSoFar([]);
+        tapsRef.current = [];
         return;
       }
 
@@ -286,8 +299,8 @@ export default function MemoSpanGame({ onBack }) {
         setLastResult({ type: 'level', won, stars, grade, round: r });
         setPhase('res');
       } else if (r.mode === 'free') {
-        if (won) {
-          setFreeStudyCount((c) => Math.min(7, c + 1));
+        if (grade.correctSequence) {
+          setFreeStudyCount((c) => Math.min(8, c + 1));
           setProfile((prev) => {
             const next = {
               ...prev,
@@ -305,6 +318,9 @@ export default function MemoSpanGame({ onBack }) {
       setPlayStep('idle');
       setRound(null);
       setFeedback(null);
+      setShowCorrectSequence(false);
+      setTapsSoFar([]);
+      tapsRef.current = [];
     },
     [playSfx, clearTimers],
   );
@@ -314,7 +330,10 @@ export default function MemoSpanGame({ onBack }) {
       clearTimeout(readySeqRef.current);
       readySeqRef.current = null;
     }
-    setQIdx(0);
+    setTapsSoFar([]);
+    tapsRef.current = [];
+    setShowCorrectSequence(false);
+    setFeedback(null);
     setPlayStep('test');
   }, []);
 
@@ -352,9 +371,9 @@ export default function MemoSpanGame({ onBack }) {
     studySeqRef.current = null;
     readySeqRef.current = null;
     setStudyIdx(0);
-    setQIdx(0);
-    setAnswers([]);
-    answersRef.current = [];
+    setTapsSoFar([]);
+    tapsRef.current = [];
+    setShowCorrectSequence(false);
     setFeedback(null);
     runStudySequence(0);
   }, [runStudySequence]);
@@ -369,8 +388,9 @@ export default function MemoSpanGame({ onBack }) {
       clearTimers();
       setRound(r);
       setStudyIdx(0);
-      setQIdx(0);
-      setAnswers([]);
+      setTapsSoFar([]);
+      tapsRef.current = [];
+      setShowCorrectSequence(false);
       setFeedback(null);
       setPhase('play');
       setPlayStep('briefing');
@@ -378,31 +398,40 @@ export default function MemoSpanGame({ onBack }) {
     [clearTimers],
   );
 
-  const onAnswer = useCallback(
-    (saidYes) => {
+  const onRecallTap = useCallback(
+    (objectId) => {
       if (playStep !== 'test' || !round || feedback) return;
-      const q = round.questions[qIdx];
-      const ok = saidYes === q.wasShown;
-      playSfx(ok ? 'click' : 'error');
-      setFeedback(ok ? 'ok' : 'bad');
+      const expectedIdx = tapsRef.current.length;
+      const expected = round.studyItems[expectedIdx]?.objectId;
+      const correct = objectId === expected;
 
-      const nextAnswers = [...answersRef.current, saidYes];
-      answersRef.current = nextAnswers;
-      setAnswers(nextAnswers);
+      const newTaps = [...tapsRef.current, objectId];
+      tapsRef.current = newTaps;
+      setTapsSoFar(newTaps);
 
-      timersRef.current.push(
-        setTimeout(() => {
-          setFeedback(null);
-          const nextQ = qIdx + 1;
-          if (nextQ >= round.questions.length) {
-            finishRound(nextAnswers);
-          } else {
-            setQIdx(nextQ);
-          }
-        }, ok ? 420 : 720),
-      );
+      if (!correct) {
+        playSfx('error');
+        setFeedback('bad');
+        setShowCorrectSequence(true);
+        timersRef.current.push(
+          setTimeout(() => {
+            finishRound(newTaps);
+          }, 2000),
+        );
+        return;
+      }
+
+      playSfx('click');
+      if (newTaps.length === round.studyItems.length) {
+        setFeedback('ok');
+        timersRef.current.push(
+          setTimeout(() => {
+            finishRound(newTaps);
+          }, 600),
+        );
+      }
     },
-    [playStep, round, qIdx, feedback, playSfx, finishRound],
+    [playStep, round, feedback, playSfx, finishRound],
   );
 
   const startLevel = (diff, lv) => {
@@ -467,14 +496,16 @@ export default function MemoSpanGame({ onBack }) {
     setChalSeed(seed);
     setChalIdx(0);
     chalIdxRef.current = 0;
-    const initial = names.map((nm) => ({ nm, rounds: [], avgPct: 0 }));
+    const initial = names.map((nm) => ({ nm, rounds: [], avgPct: 0, fullCount: 0 }));
     chalScoresRef.current = initial;
     setChalScores(initial);
     setChalTurnOpen(true);
     setRound(null);
     setPlayStep('idle');
     setStudyIdx(0);
-    setQIdx(0);
+    setTapsSoFar([]);
+    tapsRef.current = [];
+    setShowCorrectSequence(false);
     setFeedback(null);
     setPhase('play');
   };
@@ -490,10 +521,6 @@ export default function MemoSpanGame({ onBack }) {
   const studyItem =
     round && playStep === 'study' && studyIdx < round.studyItems.length
       ? round.studyItems[studyIdx]
-      : null;
-  const question =
-    round && playStep === 'test' && qIdx < round.questions.length
-      ? round.questions[qIdx]
       : null;
 
   const headerSubtitle = () => {
@@ -511,8 +538,8 @@ export default function MemoSpanGame({ onBack }) {
         : chalNames[chalIdx] ?? '';
     }
     if (playStep === 'ready') return t.readyForTest;
-    if (playStep === 'test' && question) {
-      return t.testProgress(qIdx + 1, round.questions.length);
+    if (playStep === 'test') {
+      return t.testProgress(tapsSoFar.length, round.studyItems.length);
     }
     return briefing?.headline ?? '';
   };
@@ -626,7 +653,7 @@ export default function MemoSpanGame({ onBack }) {
                       <span className="ct-ms-lv-badge">{isAr ? 'مقدمة' : 'Intro'}</span>
                     )}
                     <span className="ct-ms-lv-meta">
-                      {t.levelMeta(spec.studyCount, spec.questionCount)}
+                      {t.levelMeta(spec.studyCount, spec.poolCount)}
                     </span>
                   </button>
                 );
@@ -766,7 +793,7 @@ export default function MemoSpanGame({ onBack }) {
                 </button>
               </div>
             )}
-            {(playStep === 'study' || playStep === 'ready') && studyItem && (
+            {playStep === 'study' && studyItem && (
               <>
                 <p className="ct-ms-phase-label">{t.memorizePhase}</p>
                 <div className="ct-ms-stim-wrap">
@@ -774,7 +801,7 @@ export default function MemoSpanGame({ onBack }) {
                 </div>
               </>
             )}
-            {playStep === 'ready' && !studyItem && (
+            {playStep === 'ready' && (
               <div className="ct-ms-ready-block">
                 <p className="ct-ms-phase-label">{t.readyForTest}</p>
                 <button
@@ -789,28 +816,49 @@ export default function MemoSpanGame({ onBack }) {
                 </button>
               </div>
             )}
-            {playStep === 'test' && question && (
-              <>
-                <p className="ct-ms-phase-label ct-ms-did-you-see">{t.didYouSee}</p>
-                <div className={`ct-ms-stim-wrap${feedback === 'bad' ? ' ct-ms-stim-wrap--wrong' : ''}${feedback === 'ok' ? ' ct-ms-stim-wrap--ok' : ''}`}>
-                  <MemoObject objectId={question.objectId} isAr={isAr} size="lg" showName />
+            {playStep === 'test' && round && (
+              <div className="ct-ms-recall">
+                <h3>{t.recallPrompt}</h3>
+                <div className="ct-ms-recall-progress">
+                  {t.recallProgress(tapsSoFar.length, round.studyItems.length)}
+                </div>
+                <div className="ct-ms-recall-grid">
+                  {round.recallPool.map((objId, i) => {
+                    const tappedAt = tapsSoFar.indexOf(objId);
+                    const isTapped = tappedAt >= 0;
+                    return (
+                      <button
+                        key={`${objId}-${i}`}
+                        type="button"
+                        className={`ct-ms-recall-item${isTapped ? ' ct-ms-recall-item--tapped' : ''}`}
+                        disabled={isTapped || !!feedback}
+                        onPointerDown={() => onRecallTap(objId)}
+                      >
+                        <MemoObject objectId={objId} isAr={isAr} size="md" />
+                        {isTapped && <span className="ct-ms-recall-num">{tappedAt + 1}</span>}
+                      </button>
+                    );
+                  })}
                 </div>
                 {feedback && (
                   <p className={`ct-ms-feedback ct-ms-feedback--${feedback}`}>
-                    {feedback === 'ok' ? t.feedbackOk : t.feedbackBad}
+                    {feedback === 'ok' ? t.feedbackOk : t.wrongTap}
                   </p>
                 )}
-                {!feedback && (
-                  <div className="ct-ms-answer-row">
-                    <button type="button" className="ct-ms-answer ct-ms-answer--yes" onClick={() => onAnswer(true)}>
-                      {t.yes}
-                    </button>
-                    <button type="button" className="ct-ms-answer ct-ms-answer--no" onClick={() => onAnswer(false)}>
-                      {t.no}
-                    </button>
+                {showCorrectSequence && (
+                  <div className="ct-ms-correct-seq">
+                    <p>{t.correctSeqLabel}</p>
+                    <div className="ct-ms-correct-seq-row">
+                      {round.studyItems.map((item, i) => (
+                        <div key={i} className="ct-ms-correct-seq-item">
+                          <span className="ct-ms-correct-seq-num">{i + 1}</span>
+                          <MemoObject objectId={item.objectId} isAr={isAr} size="sm" />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -825,7 +873,10 @@ export default function MemoSpanGame({ onBack }) {
               {t.stars}: {'★'.repeat(lastResult.stars)}{'☆'.repeat(3 - lastResult.stars)}
             </p>
             <p className="ct-ms-result-meta">
-              {t.scoreLabel}: {lastResult.grade.pct}% ({lastResult.grade.correct}/{lastResult.grade.total})
+              {t.scoreLabel}: {lastResult.grade.pct}% ({lastResult.grade.correctCount}/{lastResult.grade.total})
+            </p>
+            <p className="ct-ms-result-meta">
+              {t.spanLabel}: {lastResult.grade.correctCount}
             </p>
             <div className="ct-ms-result-actions">
               {!lastResult.won && (
@@ -866,7 +917,7 @@ export default function MemoSpanGame({ onBack }) {
             <TrainingMenuBar variant="paper" playSfx={playSfx} onBack={() => setPhase('hub')} center={null} />
             <p className="ct-ms-result-kicker">{lastResult.won ? t.resultsPass : t.resultsFail}</p>
             <p className="ct-ms-result-meta">
-              {t.scoreLabel}: {lastResult.grade.pct}%
+              {t.scoreLabel}: {lastResult.grade.pct}% ({lastResult.grade.correctCount}/{lastResult.grade.total})
             </p>
             <p className="ct-ms-result-meta">{t.freeCount(freeStudyCount)}</p>
             {profile.bestStudy != null && (

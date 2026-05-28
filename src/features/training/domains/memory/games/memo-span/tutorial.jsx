@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import MazeManAvatar from '../../../../shared/MazeManAvatar';
 import MemoObject, { MemoObjectRow } from './MemoObject';
 
-const TUTORIAL_KEY = 'mm_memo_span_tutorial_seen_v1';
+const TUTORIAL_KEY = 'mm_memo_span_tutorial_seen_v2';
 
 export function loadTutorialSeen() {
   try {
@@ -41,29 +41,29 @@ const STR = {
     progress: (n, t) => `Step ${n} of ${t}`,
     main: {
       welcome: {
-        title: 'Memo Span',
-        body: 'Remember everyday objects, then answer quick memory questions.',
+        title: 'Serial Recall',
+        body: 'Watch a short sequence of objects, then tap them back in the SAME order.',
       },
       memorize: {
-        title: 'Memorize',
-        body: 'Objects appear one at a time — ball, cup, chair, and more. Focus on each one.',
+        title: 'Watch the order',
+        body: 'Objects appear one by one. Burn the order into your mind — 1, 2, 3…',
       },
-      question: {
-        title: 'Did you see this?',
-        body: 'We show an object and ask if it was in your list. Tap Yes or No.',
+      recall: {
+        title: 'Tap them in order',
+        body: 'A grid appears with the objects (plus some extras). Tap them in the exact order they appeared.',
       },
-      lures: {
-        title: 'Watch for tricks',
-        body: 'Some objects were NOT shown. Say No when you never saw them.',
+      foils: {
+        title: 'Extra objects',
+        body: 'Some objects in the grid were never shown. Ignore those — they are foils to test your memory.',
       },
       ready: {
-        title: 'Ready!',
-        body: 'Read the task card every round. Accurate answers win stars.',
+        title: 'One slip ends it',
+        body: 'First wrong tap stops the round. Full sequence = 3 stars. Ready?',
       },
     },
-    free: 'Free mode: list size grows when you pass and shrinks when you miss.',
+    free: 'Free mode: the sequence grows longer when you nail it, shorter when you slip.',
     challenge:
-      'Challenge: everyone gets the same objects and questions. Hand the device around — highest score wins!',
+      'Challenge: everyone gets the same sequence. Hand the device around — longest correct span wins!',
   },
   ar: {
     skip: 'تخطّي',
@@ -74,42 +74,63 @@ const STR = {
     progress: (n, t) => `الخطوة ${n} من ${t}`,
     main: {
       welcome: {
-        title: 'ذاكرة الأشياء',
-        body: 'تذكّر أشياء يومية، ثم أجب عن أسئلة الذاكرة بسرعة.',
+        title: 'استدعاء تسلسلي',
+        body: 'شاهد تسلسل أشياء قصير، ثم اضغطها بنفس الترتيب.',
       },
       memorize: {
-        title: 'احفظ',
-        body: 'تظهر الأشياء واحداً تلو الآخر — كرة، كوب، كرسي… ركّز على كل واحد.',
+        title: 'احفظ الترتيب',
+        body: 'تظهر الأشياء واحداً تلو الآخر. ركّز على الترتيب — 1، 2، 3…',
       },
-      question: {
-        title: 'هل رأيت هذا؟',
-        body: 'نعرض شيئاً ونسأل إن كان في قائمتك. اضغط نعم أو لا.',
+      recall: {
+        title: 'اضغطها بالترتيب',
+        body: 'تظهر شبكة فيها الأشياء (وأخرى إضافية). اضغطها بنفس ترتيب ظهورها.',
       },
-      lures: {
-        title: 'انتبه للفخاخ',
-        body: 'بعض الأشياء لم تُعرض. قل لا إذا لم تره.',
+      foils: {
+        title: 'أشياء إضافية',
+        body: 'بعض الأشياء في الشبكة لم تُعرض. تجاهلها — هي فقط لاختبار ذاكرتك.',
       },
       ready: {
-        title: 'جاهز!',
-        body: 'اقرأ بطاقة المهمة كل جولة. الإجابات الدقيقة تربح نجوماً.',
+        title: 'خطأ واحد ينهي الجولة',
+        body: 'أول ضغطة خاطئة تنهي الجولة. التسلسل الكامل = 3 نجوم. مستعد؟',
       },
     },
-    free: 'الوضع الحر: يزيد عدد الأشياء عند النجاح وينقص عند الخطأ.',
-    challenge: 'التحدي: نفس الأشياء والأسئلة للجميع. سلّم الجهاز — أعلى نتيجة يفوز!',
+    free: 'الوضع الحر: يطول التسلسل عند النجاح ويقصر عند الخطأ.',
+    challenge: 'التحدي: نفس التسلسل للجميع. سلّم الجهاز — أطول مدى صحيح يفوز!',
   },
 };
 
-const STEPS = ['welcome', 'memorize', 'question', 'lures', 'ready'];
+const STEPS = ['welcome', 'memorize', 'recall', 'foils', 'ready'];
 
 function DemoCard({ step, isAr }) {
   if (step === 'memorize') {
-    return <MemoObject objectId="cup" isAr={isAr} size="lg" showName />;
+    return <MemoObjectRow objectIds={['ball', 'cup', 'book']} isAr={isAr} size="md" />;
   }
-  if (step === 'question') {
-    return <MemoObject objectId="ball" isAr={isAr} size="lg" showName />;
+  if (step === 'recall') {
+    return (
+      <div className="ct-ms-tut-demo-grid">
+        <div className="ct-ms-tut-demo-item ct-ms-tut-demo-item--tap" data-num="1">
+          <MemoObject objectId="ball" isAr={isAr} size="sm" />
+        </div>
+        <div className="ct-ms-tut-demo-item">
+          <MemoObject objectId="chair" isAr={isAr} size="sm" />
+        </div>
+        <div className="ct-ms-tut-demo-item ct-ms-tut-demo-item--tap" data-num="2">
+          <MemoObject objectId="cup" isAr={isAr} size="sm" />
+        </div>
+        <div className="ct-ms-tut-demo-item">
+          <MemoObject objectId="phone" isAr={isAr} size="sm" />
+        </div>
+        <div className="ct-ms-tut-demo-item ct-ms-tut-demo-item--tap" data-num="3">
+          <MemoObject objectId="book" isAr={isAr} size="sm" />
+        </div>
+        <div className="ct-ms-tut-demo-item">
+          <MemoObject objectId="apple" isAr={isAr} size="sm" />
+        </div>
+      </div>
+    );
   }
-  if (step === 'lures') {
-    return <MemoObjectRow objectIds={['chair', 'phone', 'computer']} isAr={isAr} size="sm" />;
+  if (step === 'foils') {
+    return <MemoObjectRow objectIds={['chair', 'phone', 'apple']} isAr={isAr} size="sm" />;
   }
   return <MemoObjectRow objectIds={['ball', 'cup', 'book']} isAr={isAr} size="sm" />;
 }
@@ -163,7 +184,7 @@ function MainTutorial({ t, isAr, onClose, playSfx }) {
   const next = () => { playSfx?.('click'); setStepIdx((s) => Math.min(s + 1, STEPS.length - 1)); };
   const back = () => { playSfx?.('click'); setStepIdx((s) => Math.max(s - 1, 0)); };
   const finish = () => { playSfx?.('win'); onClose?.(); };
-  const mood = step === 'welcome' ? 'ready' : step === 'ready' ? 'proud' : step === 'lures' ? 'tired' : 'focused';
+  const mood = step === 'welcome' ? 'ready' : step === 'ready' ? 'proud' : step === 'foils' ? 'tired' : 'focused';
   const stepCopy = t.main[step];
   return (
     <div className="ct-fq-tut-root ct-fq-tut-main" role="dialog" aria-modal="true" dir={isAr ? 'rtl' : 'ltr'}>

@@ -29,27 +29,32 @@ const BASE = getCuratedRushHourLevel('easy', 1) || RUSH_HOUR_BASE_LAYOUTS[0];
 /* ─── Rush Hour–specific free-mode scoring ─── */
 
 /**
- * Bonus seconds after clearing a free Rush Hour puzzle.
- * Unlike the attention task (which keys off parSec), Rush Hour keys off parMoves.
+ * Efficiency-based scoring for free Rush Hour puzzles.
+ * Awards points based on how close the player is to par:
+ *   basePoints * (parMoves / actualMoves)
+ * Streak multiplier rewards consecutive solves.
+ *
+ * @param {number} parMoves  — optimal move count for this puzzle
+ * @param {number} actualMoves — how many moves the player actually used
+ * @param {number} streak — consecutive clears (1 = first clear)
+ * @returns {number} points earned (minimum 5)
  */
-export function rhFreeClearBonusSec(stageCompleted, parMoves) {
-  const s = Math.max(0, stageCompleted | 0);
+export function rhFreeParPoints(parMoves, actualMoves, streak) {
   const par = Math.max(3, Number(parMoves) || 6);
-  const tau = 20;
-  const u = 1 / (1 + s / tau);
-  const raw = 1.2 + u * (1.8 + 0.08 * par);
-  return +Math.min(14, Math.max(1, raw)).toFixed(1);
+  const actual = Math.max(1, Number(actualMoves) || par);
+  const st = Math.max(1, Number(streak) || 1);
+  const basePoints = 20 + par * 0.8;
+  const efficiency = Math.min(1, par / actual);
+  const streakMult = 1 + Math.min(st - 1, 30) * 0.05;
+  return Math.max(5, Math.round(basePoints * efficiency * streakMult));
 }
 
 /**
  * Points for clearing a free Rush Hour puzzle (streak = consecutive clears).
+ * @deprecated Use rhFreeParPoints instead — kept for backward compatibility.
  */
 export function rhFreeRoundClearPoints(parMoves, clearStreak) {
-  const par = Math.max(3, Number(parMoves) || 6);
-  const streak = Math.max(1, clearStreak);
-  const streakMult = 1 + Math.min(streak - 1, 25) * 0.04;
-  const base = 18 + par * 0.6;
-  return Math.max(10, Math.round(base * streakMult));
+  return rhFreeParPoints(parMoves, parMoves, clearStreak);
 }
 
 

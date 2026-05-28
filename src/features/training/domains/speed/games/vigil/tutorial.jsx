@@ -42,7 +42,7 @@ const STR = {
     main: {
       welcome: {
         title: 'Vigil Test',
-        body: 'Shapes appear in the center. Use the big TAP button at the bottom — only when you should respond.',
+        body: 'Shapes appear in the center. Tap the shape directly when you should respond.',
       },
       watch: {
         title: 'Watch the center',
@@ -50,7 +50,7 @@ const STR = {
       },
       square: {
         title: 'Tap target only',
-        body: 'Press TAP only for the shape named on your task card (often a square). Other shapes are distractors.',
+        body: 'Tap only when you see the shape named on your task card (often a square). Other shapes are distractors.',
       },
       circle: {
         title: 'Ignore distractors',
@@ -75,7 +75,7 @@ const STR = {
     main: {
       welcome: {
         title: 'اختبار اليقظة',
-        body: 'تظهر أشكال في الوسط. استخدم زر الضغط الكبير بالأسفل — فقط عندما يجب أن تستجيب.',
+        body: 'تظهر أشكال في الوسط. اضغط على الشكل مباشرة عندما يجب أن تستجيب.',
       },
       watch: {
         title: 'راقب الوسط',

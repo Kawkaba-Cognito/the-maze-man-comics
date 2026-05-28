@@ -8,7 +8,7 @@ const flexibility = {
   glyph: 'ᚾ',
   color: tokens.domain.flexibility,
   desc: 'Wisconsin Card Sort — set-shifting & cognitive flexibility (WCST)',
-  about: "Flexibility is the mind's ability to bend without breaking. These mazes shift rules mid-run, invert controls, and force you to abandon your current strategy and adapt.",
+  about: "Flexibility is your ability to adapt when the rules change. In this test, you discover a hidden sorting rule, master it — then it shifts. Your challenge: let go of what worked and find the new pattern. High perseveration (sticking to old rules) = low flexibility.",
   subs: [
     {
       id: 'switching',

@@ -14,13 +14,13 @@ export const WCST_DIFF_KEYS = ['easy', 'medium', 'hard'];
 export const WCST_PROGRESS_ORDER = ['easy', 'medium', 'hard'];
 
 export const WCST_DM = {
-  easy: { label: 'Easy', pop: '6-match shifts · 2 categories', lvc: 'fq-lve' },
+  easy: { label: 'Easy', pop: '4–8 match shifts · 2–3 categories', lvc: 'fq-lve' },
   medium: { label: 'Medium', pop: '8–10 shifts · 3 dimensions', lvc: 'fq-lvm' },
   hard: { label: 'Hard', pop: 'Clinical 10 · full C→F→N', lvc: 'fq-lvh' },
 };
 
-export const WCST_FREE_SESSION_START_SEC = 90;
-export const WCST_FREE_SESSION_CAP_SEC = 180;
+export const WCST_FREE_SESSION_START_SEC = 300;
+export const WCST_FREE_SESSION_CAP_SEC = 480;
 export const WCST_FREE_MAX_ERRORS = 8;
 
 export const WCST_REFERENCE_CARDS = [
@@ -42,9 +42,9 @@ const FREE_PASS = { minEfficiency: 0.68, minCC: 1, maxPersevRate: 0.5 };
 
 const PARAM = {
   easy: {
-    streak: [6, 8],
-    maxTrials: [36, 52],
-    categories: [2, 2],
+    streak: [4, 8],
+    maxTrials: [32, 56],
+    categories: [2, 3],
     responseMs: [6500, 5500],
     rules: 2,
   },
@@ -357,13 +357,9 @@ export function isWcstLevelUnlocked(diff, lv, doneMap) {
 
 export function freeStageToDiffLv(stage) {
   const s = Math.max(0, stage | 0);
-  const max = WCST_PROGRESS_ORDER.length * WCST_LEVELS_PER_TIER - 1;
-  const capped = Math.min(s, max);
-  const diffIx = Math.floor(capped / WCST_LEVELS_PER_TIER);
-  return {
-    diff: WCST_PROGRESS_ORDER[diffIx],
-    lv: (capped % WCST_LEVELS_PER_TIER) + 1,
-  };
+  if (s < 5) return { diff: 'easy', lv: Math.floor(s * 4) + 1 };
+  if (s < 10) return { diff: 'medium', lv: Math.floor((s - 5) * 4) + 1 };
+  return { diff: 'hard', lv: Math.min(WCST_LEVELS_PER_TIER, s - 9) };
 }
 
 export function prepareFreeBlock(stage, seed) {
@@ -412,9 +408,8 @@ export function prepareChallengeBlock(cSeed) {
   };
 }
 
-export function freeClearBonusSec(stage, maxTrials) {
-  const u = 1 / (1 + Math.max(0, stage) / 16);
-  return +Math.min(10, Math.max(0.8, 0.5 + u * (1.2 + maxTrials * 0.03))).toFixed(1);
+export function freeClearBonusSec(_stage, _maxTrials) {
+  return 45;
 }
 
 export function freeBlockPoints(spec, streak) {
@@ -455,14 +450,27 @@ export function compareChallengeRows(a, b) {
   return rtA - rtB;
 }
 
-export function feedbackLabel(correct, isAr) {
+export function feedbackLabel(correct, isAr, timeout = false) {
+  if (timeout) return isAr ? 'بطيء جدًا!' : 'Too slow!';
   return correct ? (isAr ? 'صحيح' : 'Correct') : isAr ? 'غير صحيح' : 'Not correct';
 }
 
 export function playHint(isAr) {
   return isAr
-    ? 'طابق البطاقة الوسطى مع إحدى الكوم الأربع. القاعدة مخفية — تعلّم من التغذية الراجعة فقط.'
-    : 'Match the center card to one of four piles. The rule is hidden — learn from feedback only.';
+    ? 'لكل بطاقة 3 خصائص: اللون، الشكل، والعدد. قاعدة الفرز تستخدم واحدة منها — اكتشف أيها! بعد عدة إجابات صحيحة، ستتغيّر القاعدة. تكيّف بسرعة!'
+    : 'Each card has 3 properties: Color, Shape, and Count. The sorting rule uses ONE of these — discover which! After several correct matches, the rule will CHANGE. Adapt quickly!';
+}
+
+/**
+ * Returns which dimensions match between a probe card and a reference card.
+ * Used for educational feedback after each answer.
+ */
+export function matchingDimensions(probe, refCard) {
+  const dims = [];
+  if (probe.color === refCard.color) dims.push('color');
+  if (probe.shape === refCard.shape) dims.push('shape');
+  if (probe.count === refCard.count) dims.push('count');
+  return dims;
 }
 
 export function prepareLevel1(seed) {

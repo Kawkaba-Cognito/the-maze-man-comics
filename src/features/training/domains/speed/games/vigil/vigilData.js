@@ -41,25 +41,25 @@ const VE_EXCELLENT_MS = { easy: 520, medium: 460, hard: 400 };
 
 const PARAM_BOUNDS = {
   easy: {
-    trials: [40, 56],
-    targetRate: [0.22, 0.18],
-    stimulusMs: [220, 160],
-    isiMin: [1400, 1100],
-    isiMax: [2000, 1600],
+    trials: [44, 64],
+    targetRate: [0.22, 0.15],
+    stimulusMs: [250, 120],
+    isiMin: [1300, 950],
+    isiMax: [1900, 1400],
   },
   medium: {
-    trials: [48, 64],
-    targetRate: [0.2, 0.15],
-    stimulusMs: [200, 140],
-    isiMin: [1200, 900],
-    isiMax: [1800, 1400],
+    trials: [52, 72],
+    targetRate: [0.2, 0.13],
+    stimulusMs: [200, 100],
+    isiMin: [1100, 780],
+    isiMax: [1700, 1200],
   },
   hard: {
-    trials: [56, 72],
-    targetRate: [0.18, 0.12],
-    stimulusMs: [180, 120],
-    isiMin: [1000, 800],
-    isiMax: [1600, 1200],
+    trials: [60, 80],
+    targetRate: [0.18, 0.1],
+    stimulusMs: [160, 80],
+    isiMin: [900, 650],
+    isiMax: [1500, 1000],
   },
 };
 

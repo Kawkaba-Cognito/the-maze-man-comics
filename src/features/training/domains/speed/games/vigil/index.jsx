@@ -55,7 +55,7 @@ const UI = {
     tapNow: 'TAP NOW!',
     hold: 'HOLD',
     watchCenter: 'Watch here',
-    playHint: 'Use the big TAP button below — only when you see a square.',
+    playHint: 'Tap when you see the target shape.',
     cueSquare: '■ Square — tap the button!',
     cueCircle: '● Circle — hands off the button',
     cueWait: 'Next shape coming…',
@@ -150,7 +150,7 @@ const UI = {
     tapNow: 'اضغط الآن!',
     hold: 'توقّف',
     watchCenter: 'راقب هنا',
-    playHint: 'استخدم زر الضغط الكبير بالأسفل — فقط عند ظهور المربع.',
+    playHint: 'اضغط عند ظهور الشكل المطلوب.',
     cueSquare: '■ مربع — اضغط الزر!',
     cueCircle: '● دائرة — لا تلمس الزر',
     cueWait: 'الشكل التالي قريباً…',
@@ -285,6 +285,7 @@ export default function VigilTestGame({ onBack }) {
   const respondedRef = useRef(false);
   const rtRef = useRef(null);
   const stimOnRef = useRef(0);
+  const responseWindowRef = useRef(false);
   const timersRef = useRef([]);
   const runIdRef = useRef(0);
   const blockEndedRef = useRef(false);
@@ -315,6 +316,10 @@ export default function VigilTestGame({ onBack }) {
   const trialIdxRef = useRef(0);
 
   const doneMap = profile.done || {};
+
+  const [tapPressed, setTapPressed] = useState(false);
+  const [tapFeedback, setTapFeedback] = useState(null);
+  const tapFeedbackTimer = useRef(null);
 
   const [tutorialQueue, setTutorialQueue] = useState([]);
   const pendingTutorialActionRef = useRef(null);
@@ -365,6 +370,7 @@ export default function VigilTestGame({ onBack }) {
     setPauseOpen(false);
     setQuitOpen(false);
     stimVisibleRef.current = false;
+    responseWindowRef.current = false;
     setStimVisible(false);
     currentTrialRef.current = null;
     setChalTurnOpen(false);
@@ -423,6 +429,7 @@ export default function VigilTestGame({ onBack }) {
       respondedRef.current = false;
       rtRef.current = null;
       currentTrialRef.current = trial;
+      responseWindowRef.current = false;
       setTrialIdx(idx);
       stimVisibleRef.current = false;
       setStimVisible(false);
@@ -437,6 +444,7 @@ export default function VigilTestGame({ onBack }) {
 
       add(() => {
         stimVisibleRef.current = true;
+        responseWindowRef.current = true;
         stimOnRef.current = performance.now();
         setStimVisible(true);
       }, spec.fixationMs);
@@ -447,6 +455,7 @@ export default function VigilTestGame({ onBack }) {
       }, spec.fixationMs + spec.stimulusMs);
 
       add(() => {
+        responseWindowRef.current = false;
         finishTrial(trial);
         setTrialIdx(idx + 1);
         scheduleNext(idx + 1);
@@ -455,25 +464,39 @@ export default function VigilTestGame({ onBack }) {
     [finishTrial],
   );
 
+  const showTapFeedback = useCallback((kind) => {
+    if (tapFeedbackTimer.current) clearTimeout(tapFeedbackTimer.current);
+    setTapFeedback(kind);
+    tapFeedbackTimer.current = setTimeout(() => setTapFeedback(null), 320);
+  }, []);
+
   const recordResponse = useCallback(() => {
     if (playStepRef.current !== 'running' || pauseRef.current) return;
     if (!currentTrialRef.current) return;
 
-    if (!stimVisibleRef.current) {
+    if (!responseWindowRef.current) {
       resultsRef.current.push({
         earlyTap: true,
         isTarget: false,
         responded: true,
       });
       playSfx('error');
+      showTapFeedback('miss');
       return;
     }
 
     if (respondedRef.current) return;
     respondedRef.current = true;
     rtRef.current = Math.max(0, Math.round(performance.now() - stimOnRef.current));
-    playSfx('click');
-  }, [playSfx]);
+    const trial = currentTrialRef.current;
+    if (trial?.isTarget) {
+      playSfx('click');
+      showTapFeedback('hit');
+    } else {
+      playSfx('error');
+      showTapFeedback('miss');
+    }
+  }, [playSfx, showTapFeedback]);
 
   const handleTapPointerDown = useCallback(
     (e) => {
@@ -485,6 +508,7 @@ export default function VigilTestGame({ onBack }) {
       } catch {
         /* ignore */
       }
+      setTapPressed(true);
       recordResponse();
     },
     [recordResponse],
@@ -496,6 +520,7 @@ export default function VigilTestGame({ onBack }) {
     } catch {
       /* ignore */
     }
+    setTapPressed(false);
   }, []);
 
   const handleTapPointerCancel = useCallback((e) => {
@@ -504,6 +529,7 @@ export default function VigilTestGame({ onBack }) {
     } catch {
       /* ignore */
     }
+    setTapPressed(false);
   }, []);
 
   const finishBlock = useCallback(() => {
@@ -1243,40 +1269,60 @@ export default function VigilTestGame({ onBack }) {
             onPause={() => setPauseOpen(true)}
             pauseAriaLabel={t.paused}
           />
-          {playStep === 'running' && (
-            <p className="ct-vigil-play-hint">{playHintText}</p>
+          {playStep !== 'running' && (
+            <div className="ct-vigil-stimulus-panel" aria-live="polite">
+              {playStep === 'briefing' && blockBriefing && (
+                <div className="ct-vigil-briefing" role="region" aria-labelledby="vigil-brief-title">
+                  <h2 id="vigil-brief-title" className="ct-vigil-briefing-title">
+                    {blockBriefing.headline}
+                  </h2>
+                  <div className="ct-vigil-briefing-rule ct-vigil-briefing-rule--tap">
+                    <p className="ct-vigil-briefing-line">{blockBriefing.tapLine}</p>
+                    <VigilShapeRow shapes={blockBriefing.tapShapes} size="md" />
+                  </div>
+                  <div className="ct-vigil-briefing-rule ct-vigil-briefing-rule--avoid">
+                    <p className="ct-vigil-briefing-line">{blockBriefing.avoidLine}</p>
+                    <VigilShapeRow shapes={blockBriefing.avoidShapes} size="md" />
+                  </div>
+                  <p className="ct-vigil-briefing-meta">{blockBriefing.detailLine}</p>
+                  <button
+                    type="button"
+                    className="ct-vigil-briefing-start"
+                    onClick={confirmBriefing}
+                  >
+                    {blockBriefing.startLabel}
+                  </button>
+                </div>
+              )}
+              {playStep === 'countdown' && (
+                <div className="ct-vigil-countdown">
+                  <p className="ct-vigil-countdown-hint">{t.countdown}</p>
+                  <div className="ct-vigil-countdown-n">{cdVal || 'Go!'}</div>
+                </div>
+              )}
+              <div className="ct-vigil-stage">
+              </div>
+            </div>
           )}
-          <div className="ct-vigil-stimulus-panel" aria-live="polite">
-            {playStep === 'briefing' && blockBriefing && (
-              <div className="ct-vigil-briefing" role="region" aria-labelledby="vigil-brief-title">
-                <h2 id="vigil-brief-title" className="ct-vigil-briefing-title">
-                  {blockBriefing.headline}
-                </h2>
-                <div className="ct-vigil-briefing-rule ct-vigil-briefing-rule--tap">
-                  <p className="ct-vigil-briefing-line">{blockBriefing.tapLine}</p>
-                  <VigilShapeRow shapes={blockBriefing.tapShapes} size="md" />
-                </div>
-                <div className="ct-vigil-briefing-rule ct-vigil-briefing-rule--avoid">
-                  <p className="ct-vigil-briefing-line">{blockBriefing.avoidLine}</p>
-                  <VigilShapeRow shapes={blockBriefing.avoidShapes} size="md" />
-                </div>
-                <p className="ct-vigil-briefing-meta">{blockBriefing.detailLine}</p>
-                <button
-                  type="button"
-                  className="ct-vigil-briefing-start"
-                  onClick={confirmBriefing}
-                >
-                  {blockBriefing.startLabel}
-                </button>
-              </div>
-            )}
-            {playStep === 'countdown' && (
-              <div className="ct-vigil-countdown">
-                <p className="ct-vigil-countdown-hint">{t.countdown}</p>
-                <div className="ct-vigil-countdown-n">{cdVal || 'Go!'}</div>
-              </div>
-            )}
-            {playStep === 'running' && (
+          {playStep === 'running' && (
+            <div
+              className={`ct-vigil-stimulus-panel ct-vigil-stimulus-panel--play${
+                tapPressed ? ' ct-vigil-stimulus-panel--active' : ''
+              }${
+                tapFeedback === 'hit'
+                  ? ' ct-vigil-stimulus-panel--fb-hit'
+                  : tapFeedback === 'miss'
+                    ? ' ct-vigil-stimulus-panel--fb-miss'
+                    : ''
+              }`}
+              aria-live="polite"
+              role="button"
+              tabIndex={0}
+              aria-label={stimVisible && trial?.isTarget ? t.tapNow : t.tapPad}
+              onPointerDown={handleTapPointerDown}
+              onPointerUp={handleTapPointerUp}
+              onPointerCancel={handleTapPointerCancel}
+            >
               <p
                 className={`ct-vigil-live-cue${
                   stimVisible && trial?.isTarget
@@ -1290,51 +1336,22 @@ export default function VigilTestGame({ onBack }) {
                   ? liveCueForTrial(block.rule, trial, isAr, t)
                   : t.cueWait}
               </p>
-            )}
-            <div className="ct-vigil-stage">
-              {playStep === 'running' && trial && (
-                <StimulusShape trial={trial} visible={stimVisible} />
-              )}
-              {playStep === 'running' && !stimVisible && (
-                <div className="ct-vigil-fixation" aria-hidden="true" />
-              )}
-            </div>
-          </div>
-          {playStep === 'running' && (
-            <div className="ct-vigil-tap-zone">
-              <div className="ct-vigil-tap-arrow" aria-hidden="true">
-                ↑
+              <div className="ct-vigil-stage">
+                {trial && (
+                  <StimulusShape trial={trial} visible={stimVisible} />
+                )}
+                {!stimVisible && (
+                  <div className="ct-vigil-fixation" aria-hidden="true" />
+                )}
               </div>
-              <button
-                type="button"
-                className={`ct-vigil-tap-pad${
-                  stimVisible && trial?.isTarget
-                    ? ' ct-vigil-tap-pad--go'
-                    : stimVisible && trial
-                      ? ' ct-vigil-tap-pad--nogo'
-                      : ' ct-vigil-tap-pad--idle'
-                }`}
-                aria-label={stimVisible && trial?.isTarget ? t.tapNow : t.tapPad}
-                onPointerDown={handleTapPointerDown}
-                onPointerUp={handleTapPointerUp}
-                onPointerCancel={handleTapPointerCancel}
-              >
-                <span className="ct-vigil-tap-pad-label">
-                  {stimVisible && trial?.isTarget
-                    ? t.tapNow
-                    : stimVisible && trial
-                      ? t.hold
-                      : t.tapPad}
-                </span>
-                <span className="ct-vigil-tap-pad-sub">
-                  {stimVisible && trial?.isTarget
-                    ? t.tapTarget
-                    : stimVisible && trial
-                      ? t.withhold
-                      : t.watchCenter}
-                </span>
-              </button>
+              <p className="ct-vigil-tap-instruction">{playHintText}</p>
             </div>
+          )}
+          {tapFeedback && (
+            <div
+              className={`ct-vigil-screen-flash ct-vigil-screen-flash--${tapFeedback}`}
+              aria-hidden="true"
+            />
           )}
           <div className="ct-vigil-hud" data-fq-chrome>
             {hudRules && (

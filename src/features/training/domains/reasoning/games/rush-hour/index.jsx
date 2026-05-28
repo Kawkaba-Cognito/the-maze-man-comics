@@ -16,9 +16,6 @@ import RushHourTutorial, {
 } from './tutorial';
 import {
   DM,
-  freeTimeDrainMultiplier,
-  FREE_SESSION_START_SEC,
-  FREE_SESSION_CAP_SEC,
 } from '../../../../shared/focusQuestData';
 import {
   mergeRhChallengeRow,
@@ -27,8 +24,7 @@ import {
   isLevelUnlocked,
   loadRhProgress,
   saveRhProgress,
-  rhFreeClearBonusSec,
-  rhFreeRoundClearPoints,
+  rhFreeParPoints,
 } from './data';
 import RhWorker from './rh-worker.js?worker';
 
@@ -111,19 +107,19 @@ const UI_EN = {
   perfect: 'Perfect',
   good: 'Nice solve',
   tryLower: 'Try fewer moves',
-  freeHint: 'Session clock · curriculum scales like Attention',
+  freeHint: 'Endless puzzles · efficiency scoring · no time limit',
   locked: 'Locked',
   training: 'Brain logic',
   pickDiff: 'Choose difficulty',
   pickDiffSub: '3 difficulties · 100 verified stages each · unlock in order',
-  hubNodeFreeHint: 'Session timer · score · streak clears',
+  hubNodeFreeHint: '10 min + 1 min per solve · easy→hard',
   hubNodeLevelsHint: '3 tiers · 100 levels each',
   hubNodeChallengeHint: 'Same parking jam for everyone · pass & play',
   freeIntroTitle: 'Free mode',
   freeIntroBody:
-    'One session timer for your whole run. Each solved puzzle adds a little time. Score from clears — streaks boost the bonus. When time hits zero, the run ends.',
+    'You start with 10 minutes. Each puzzle you solve adds 1 minute. Puzzles start easy and get harder. Solve in fewer moves for more points — streaks multiply your score. When time runs out, the run ends.',
   freeIntroReady: 'Ready',
-  freeResTitle: 'Run ended',
+  freeResTitle: 'Run complete',
   freeRoundsCleared: (n) => `Puzzles cleared: ${n}`,
   freeBestLine: (n) => `Best clears: ${n}`,
   freeBestScoreLine: (n) => `Best score: ${n}`,
@@ -181,19 +177,19 @@ const UI_AR = {
   perfect: 'تصويب مثالي',
   good: 'حل جيد',
   tryLower: 'حاول بحركات أقل',
-  freeHint: 'عداد جلسة · نفس تدرّج الانتباه',
+  freeHint: 'ألغاز لا نهائية · تسجيل بالكفاءة · بلا وقت',
   locked: 'مقفل',
   training: 'تدريب منطقي',
   pickDiff: 'اختر الصعوبة',
   pickDiffSub: '٣ صعوبات · ١٠٠ مرحلة مؤكدة لكل صعوبة · افتح بالترتيب',
-  hubNodeFreeHint: 'وقت الجلسة · نقاط · سلسلة نجاح',
+  hubNodeFreeHint: '١٠ دقائق + دقيقة لكل حل · سهل→صعب',
   hubNodeLevelsHint: '٣ صعوبات · ١٠٠ مرحلة لكل صعوبة',
   hubNodeChallengeHint: 'نفس ازدحام المواقف للجميع · مرّر الجهاز',
   freeIntroTitle: 'وضع حر',
   freeIntroBody:
-    'وقت واحد للجلسة. كل لغز تحله يضيف وقتاً. النقاط من الإكمال — السلسلة تزيد المكافأة. عند انتهاء الوقت تنتهي المحاولة.',
+    'تبدأ بـ ١٠ دقائق. كل لغز تحله يضيف دقيقة. الألغاز تبدأ سهلة وتزداد صعوبة. حل بحركات أقل لنقاط أكثر — السلسلة تضاعف النقاط. عند انتهاء الوقت تنتهي المحاولة.',
   freeIntroReady: 'جاهز',
-  freeResTitle: 'انتهت المحاولة',
+  freeResTitle: 'اكتملت المحاولة',
   freeRoundsCleared: (n) => `ألغاز ناجحة: ${n}`,
   freeBestLine: (n) => `أفضل إكمال: ${n}`,
   freeBestScoreLine: (n) => `أفضل نقاط: ${n}`,
@@ -262,15 +258,17 @@ export default function RushHourGame({ onBack }) {
   const [freeSessionNonce, setFreeSessionNonce] = useState(0);
   const [freeScore, setFreeScore] = useState(0);
   const [freeRoundsWon, setFreeRoundsWon] = useState(0);
-  const [freeResSnapshot, setFreeResSnapshot] = useState({ rounds: 0, score: 0 });
+  const [freeStreak, setFreeStreak] = useState(0);
+  const [freeResSnapshot, setFreeResSnapshot] = useState({ rounds: 0, score: 0, bestStreak: 0 });
 
   const freeStageRef = useRef(0);
   const freeStreakRef = useRef(0);
   const freeRoundsWonRef = useRef(0);
   const freeScoreRef = useRef(0);
-  const tlRef = useRef(FREE_SESSION_START_SEC);
-  const tlimRef = useRef(FREE_SESSION_START_SEC);
+  const freeBestStreakRef = useRef(0);
+  const freeTimeRef = useRef(600);
   const freeTimerEndedRef = useRef(false);
+  const freeTimeEl = useRef(null);
 
   const [tutorialQueue, setTutorialQueue] = useState([]);
   const pendingTutorialActionRef = useRef(null);
@@ -319,18 +317,40 @@ export default function RushHourGame({ onBack }) {
     keep: t.keep,
   };
 
+  const endFreeRun = useCallback(() => {
+    setFreeResSnapshot({
+      rounds: freeRoundsWonRef.current,
+      score: freeScoreRef.current,
+      bestStreak: freeBestStreakRef.current,
+    });
+    setProgress((prev) => {
+      const n = {
+        ...prev,
+        freeBest: Math.max(prev.freeBest, freeRoundsWonRef.current),
+        freeBestScore: Math.max(prev.freeBestScore, freeScoreRef.current),
+        lastFreeSeed: Date.now(),
+      };
+      saveRhProgress(n);
+      return n;
+    });
+    wonRef.current = false;
+    setWon(false);
+    setPhase('freeRes');
+  }, []);
+
   const confirmRhQuit = useCallback(() => {
     setQuitOpen(false);
     setPauseOpen(false);
     setWon(false);
     wonRef.current = false;
-    if (playMode === 'free') setPhase('hub');
-    else if (playMode === 'challenge') {
+    if (playMode === 'free') {
+      endFreeRun();
+    } else if (playMode === 'challenge') {
       setChalFrozenDef(null);
       setChalTurnOpen(false);
       setPhase('chal');
     } else setPhase('levels');
-  }, [playMode]);
+  }, [playMode, endFreeRun]);
 
   const onRhMenu = useCallback(() => {
     playSfx('click');
@@ -713,19 +733,23 @@ export default function RushHourGame({ onBack }) {
     setMoves(0);
     setWon(false);
     wonRef.current = false;
-    if (playMode === 'free') freeStreakRef.current = 0;
+    if (playMode === 'free') {
+      freeStreakRef.current = 0;
+      setFreeStreak(0);
+    }
   }, [levelDef, playMode]);
 
   const startFreeRun = useCallback(() => {
     freeTimerEndedRef.current = false;
-    tlRef.current = FREE_SESSION_START_SEC;
-    tlimRef.current = FREE_SESSION_START_SEC;
+    freeTimeRef.current = 600;
     freeStageRef.current = 0;
     freeStreakRef.current = 0;
+    freeBestStreakRef.current = 0;
     freeRoundsWonRef.current = 0;
     freeScoreRef.current = 0;
     setFreeStage(0);
     setFreeScore(0);
+    setFreeStreak(0);
     setFreeRoundsWon(0);
     setFreeSessionNonce((Math.imul(Date.now(), 1103515245) + 12345) >>> 0);
     setPlayMode('free');
@@ -826,16 +850,17 @@ export default function RushHourGame({ onBack }) {
               const dk = diffKeyRef.current;
               if (mode === 'levels') syncProgressWin(dk, lv, nextM);
               if (mode === 'free') {
-                const st = freeStageRef.current;
-                const bonus = rhFreeClearBonusSec(st, parMoves);
-                tlRef.current = Math.min(FREE_SESSION_CAP_SEC, tlRef.current + bonus);
-                tlimRef.current = Math.max(tlimRef.current, tlRef.current);
                 freeStreakRef.current += 1;
-                const pts = rhFreeRoundClearPoints(parMoves, freeStreakRef.current);
+                if (freeStreakRef.current > freeBestStreakRef.current) {
+                  freeBestStreakRef.current = freeStreakRef.current;
+                }
+                const pts = rhFreeParPoints(parMoves, nextM, freeStreakRef.current);
                 freeScoreRef.current += pts;
                 setFreeScore(freeScoreRef.current);
+                setFreeStreak(freeStreakRef.current);
                 freeRoundsWonRef.current += 1;
                 setFreeRoundsWon(freeRoundsWonRef.current);
+                freeTimeRef.current = Math.min(900, freeTimeRef.current + 60);
               }
             }, 280);
           }
@@ -868,47 +893,24 @@ export default function RushHourGame({ onBack }) {
     };
   }, [cellSize, playSfx, grid, exitRow, parMoves, syncProgressWin]);
 
-  const freeTimeEl = useRef(null);
-  const freeBarEl = useRef(null);
-
   useEffect(() => {
     if (phase !== 'play' || playMode !== 'free' || pauseOpen || quitOpen) return undefined;
     const id = setInterval(() => {
-      const drain = freeTimeDrainMultiplier(freeStageRef.current);
-      tlRef.current = Math.max(0, tlRef.current - 0.25 * drain);
-      /* Direct DOM update — avoids full React re-render every 250ms */
+      freeTimeRef.current = Math.max(0, freeTimeRef.current - 1);
       if (freeTimeEl.current) {
-        freeTimeEl.current.textContent = `${Math.max(0, Math.ceil(tlRef.current))}s`;
+        const m = Math.floor(freeTimeRef.current / 60);
+        const s = freeTimeRef.current % 60;
+        freeTimeEl.current.textContent = `${m}:${String(s).padStart(2, '0')}`;
       }
-      if (freeBarEl.current) {
-        freeBarEl.current.style.width = `${Math.min(100, (tlRef.current / Math.max(tlimRef.current, 1)) * 100)}%`;
-        freeBarEl.current.style.background = tlRef.current > 10
-          ? 'linear-gradient(90deg,#6b9e7a,#7ab87a)'
-          : 'linear-gradient(90deg,#e8a07a,#c97a7a)';
-      }
-      if (tlRef.current <= 0 && !freeTimerEndedRef.current) {
+      if (freeTimeRef.current <= 0 && !freeTimerEndedRef.current) {
         freeTimerEndedRef.current = true;
-        setFreeResSnapshot({
-          rounds: freeRoundsWonRef.current,
-          score: freeScoreRef.current,
-        });
-        setProgress((prev) => {
-          const n = {
-            ...prev,
-            freeBest: Math.max(prev.freeBest, freeRoundsWonRef.current),
-            freeBestScore: Math.max(prev.freeBestScore, freeScoreRef.current),
-            lastFreeSeed: Date.now(),
-          };
-          saveRhProgress(n);
-          return n;
-        });
         wonRef.current = false;
         setWon(false);
-        setPhase('freeRes');
+        endFreeRun();
       }
-    }, 250);
+    }, 1000);
     return () => clearInterval(id);
-  }, [phase, playMode]);
+  }, [phase, playMode, pauseOpen, quitOpen]);
 
   const exitTop = exitRow * cellSize;
   const exitBot = (exitRow + 1) * cellSize;
@@ -1387,6 +1389,9 @@ export default function RushHourGame({ onBack }) {
           <p style={{ color: '#5c534c', fontWeight: 600, marginTop: 6 }}>
             {isAr ? 'النقاط' : 'Score'}: {freeResSnapshot.score}
           </p>
+          <p style={{ color: '#5c534c', fontWeight: 600, marginTop: 4 }}>
+            {isAr ? 'أفضل سلسلة' : 'Best streak'}: {freeResSnapshot.bestStreak}
+          </p>
           <p style={{ fontSize: 12, color: '#8a7868', marginTop: 12 }}>
             {t.freeBestLine(progress.freeBest)}
           </p>
@@ -1695,37 +1700,20 @@ export default function RushHourGame({ onBack }) {
               fontSize: 11,
               fontWeight: 800,
               color: '#5c534c',
-              marginBottom: 4,
             }}
           >
-            <span>
-              {t.time}: <span ref={freeTimeEl}>{Math.max(0, Math.ceil(tlRef.current))}s</span>
+            <span ref={freeTimeEl} style={{ color: freeTimeRef.current <= 60 ? '#c97a7a' : '#5c534c' }}>
+              {`${Math.floor(freeTimeRef.current / 60)}:${String(freeTimeRef.current % 60).padStart(2, '0')}`}
             </span>
             <span>
-              {isAr ? 'نجح' : 'Cleared'}: {freeRoundsWon}
+              {isAr ? 'نجح' : 'Solved'}: {freeRoundsWon}
             </span>
-          </div>
-          <div
-            style={{
-              height: 8,
-              borderRadius: 4,
-              background: 'rgba(26,18,8,0.1)',
-              overflow: 'hidden',
-              border: '1px solid rgba(26,18,8,0.12)',
-            }}
-          >
-            <div
-              ref={freeBarEl}
-              style={{
-                width: `${Math.min(100, (tlRef.current / Math.max(tlimRef.current, 1)) * 100)}%`,
-                height: '100%',
-                background:
-                  tlRef.current > 10
-                    ? 'linear-gradient(90deg,#6b9e7a,#7ab87a)'
-                    : 'linear-gradient(90deg,#e8a07a,#c97a7a)',
-                transition: 'width 0.2s linear',
-              }}
-            />
+            <span>
+              {isAr ? 'سلسلة' : 'Streak'}: {freeStreak}
+            </span>
+            <span>
+              {t.score}: {freeScore}
+            </span>
           </div>
         </div>
       )}
@@ -1933,12 +1921,25 @@ export default function RushHourGame({ onBack }) {
             style={{ maxWidth: 200 }}
             onClick={() => {
               playSfx('click');
-              tlRef.current = Math.max(0, tlRef.current - 5);
               freeStreakRef.current = 0;
+              setFreeStreak(0);
               setFreeSessionNonce((Math.imul(Date.now(), 1103515245) + 12345) >>> 0);
             }}
           >
-            {isAr ? 'لغز آخر' : 'New layout'}
+            {isAr ? 'لغز آخر' : 'Skip puzzle'}
+          </button>
+        )}
+        {playMode === 'free' && (
+          <button
+            type="button"
+            className="ct-training-btn ct-training-btn--ghost"
+            style={{ maxWidth: 200 }}
+            onClick={() => {
+              playSfx('click');
+              endFreeRun();
+            }}
+          >
+            {isAr ? 'إنهاء المحاولة' : 'End run'}
           </button>
         )}
       </div>
@@ -2183,8 +2184,11 @@ export default function RushHourGame({ onBack }) {
                       playSfx('click');
                       setWon(false);
                       wonRef.current = false;
-                      if (playMode === 'free') setPhase('hub');
-                      else setPhase('levels');
+                      if (playMode === 'free') {
+                        endFreeRun();
+                      } else {
+                        setPhase('levels');
+                      }
                     }}
                     style={{
                       padding: '10px 18px',
@@ -2199,7 +2203,7 @@ export default function RushHourGame({ onBack }) {
                       color: '#141210',
                     }}
                   >
-                    {t.hub}
+                    {playMode === 'free' ? (isAr ? 'إنهاء المحاولة' : 'End run') : t.hub}
                   </button>
                 </>
               )}

@@ -7,7 +7,7 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
-import VigilShape from '../../../speed/games/vigil/VigilShape';
+
 import CardSortModes from './CardSortModes';
 import CardSortTutorial, { buildTutorialQueueFor, markTutorialSeen } from './tutorial';
 import {
@@ -37,6 +37,7 @@ import {
   compareChallengeRows,
   feedbackLabel,
   playHint,
+  matchingDimensions,
 } from './ruleSwitchData';
 import { loadWcstProfile, saveWcstProfile } from './ruleSwitchProgress';
 
@@ -50,7 +51,7 @@ const UI = {
     levelMode: '🎯 Level mode',
     challengeMode: '⚔️ Challenge',
     hubMapAria: 'Modes',
-    hubNodeFreeHint: 'Session timer · adapt as rules shift',
+    hubNodeFreeHint: 'Discover hidden rules, then adapt when they change',
     hubNodeLevelsHint: '20 levels · WCST neuroscience metrics',
     hubNodeChallengeHint: 'Same deck · highest CFS wins',
     pickDiff: 'Choose difficulty',
@@ -58,7 +59,7 @@ const UI = {
     levelsSub: (pop) => `${pop} · ${WCST_LEVELS_PER_TIER} levels`,
     freeIntroTitle: 'Free mode',
     freeIntroBody:
-      'Discover hidden sort rules from feedback alone. Pass blocks to earn time and score. Too many errors ends the run.',
+      'Your brain builds a strategy — then the rule shifts without warning. Can you let go of what worked and find the new pattern? This trains cognitive flexibility: the ability to adapt when conditions change.',
     freeIntroReady: 'Ready',
     challengeTitle: '⚔️ Challenge',
     challengeSub: 'Hard L12 · identical sequence · Cognitive Flexibility Score (CFS)',
@@ -75,9 +76,12 @@ const UI = {
     handTo: (n) => `Hand device to ${n}.`,
     goReady: 'Start sorting',
     chalMeta: 'Hard · L12 · WCST block',
-    matchPrompt: 'Which pile matches?',
-    shiftTitle: 'Category shift',
-    shiftBody: 'The sorting rule has changed. Discover it from feedback.',
+    matchPrompt: 'Match the card — by Color? Shape? or Count?',
+    dimLabel: { color: 'Color', shape: 'Shape', count: 'Count' },
+    dimReminder: 'Color · Shape · Count',
+    shiftTitle: 'Rule Changed!',
+    shiftWas: (rule) => `You were matching by ${rule}`,
+    shiftDiscover: 'Now discover the new rule...',
     trial: (n, max) => `Card ${n} / ${max}`,
     streak: (s, r) => `Streak ${s}/${r}`,
     categories: (c, t) => `Categories ${c}/${t}`,
@@ -89,7 +93,11 @@ const UI = {
     quitLose: 'This run will be lost.',
     yesQuit: 'Yes, quit',
     keep: 'Keep playing',
-    sessionTime: (s) => `Session ${s}s`,
+    sessionTime: (s) => {
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return `${m}:${String(sec).padStart(2, '0')}`;
+    },
     freeErrors: (n, max) => `Errors ${n}/${max}`,
     freeLvl: (d, lv) => `Free · ${d} L${lv}`,
     resultsPass: 'Level passed',
@@ -128,7 +136,7 @@ const UI = {
     levelMode: '🎯 وضع المستويات',
     challengeMode: '⚔️ تحدي',
     hubMapAria: 'الأوضاع',
-    hubNodeFreeHint: 'مؤقت جلسة · قواعد متغيرة',
+    hubNodeFreeHint: 'اكتشف القواعد المخفية ثم تكيّف عندما تتغيّر',
     hubNodeLevelsHint: '٢٠ مستوى · مقاييس WCST',
     hubNodeChallengeHint: 'نفس الطابور · أعلى CFS',
     pickDiff: 'اختر الصعوبة',
@@ -136,7 +144,7 @@ const UI = {
     levelsSub: (pop) => `${pop} · ${WCST_LEVELS_PER_TIER} مستوى`,
     freeIntroTitle: 'وضع حر',
     freeIntroBody:
-      'اكتشف قواعد الفرز من التغذية الراجعة. اجتز الكتل لربح وقت ونقاط. أخطاء كثيرة تنهي المحاولة.',
+      'عقلك يبني استراتيجية — ثم تتغيّر القاعدة دون تحذير. هل يمكنك التخلي عما نجح وإيجاد النمط الجديد؟ هذا يدرّب المرونة الذهنية: القدرة على التكيّف عندما تتغيّر الظروف.',
     freeIntroReady: 'جاهز',
     challengeTitle: '⚔️ تحدي',
     challengeSub: 'صعب L12 · نفس التسلسل · درجة المرونة (CFS)',
@@ -153,9 +161,12 @@ const UI = {
     handTo: (n) => `سلّم الجهاز إلى ${n}.`,
     goReady: 'ابدأ الفرز',
     chalMeta: 'صعب · L12 · كتلة WCST',
-    matchPrompt: 'أي كومة تطابق؟',
-    shiftTitle: 'تبديل الفئة',
-    shiftBody: 'تغيّرت قاعدة الفرز. اكتشفها من التغذية الراجعة.',
+    matchPrompt: 'طابق البطاقة — بالون؟ بالشكل؟ أو بالعدد؟',
+    dimLabel: { color: 'اللون', shape: 'الشكل', count: 'العدد' },
+    dimReminder: 'اللون · الشكل · العدد',
+    shiftTitle: 'تغيّرت القاعدة!',
+    shiftWas: (rule) => `كنت تطابق حسب ${rule}`,
+    shiftDiscover: 'الآن اكتشف القاعدة الجديدة...',
     trial: (n, max) => `بطاقة ${n} / ${max}`,
     streak: (s, r) => `متتالية ${s}/${r}`,
     categories: (c, t) => `فئات ${c}/${t}`,
@@ -167,7 +178,11 @@ const UI = {
     quitLose: 'سيُلغى هذا السجل.',
     yesQuit: 'نعم',
     keep: 'متابعة',
-    sessionTime: (s) => `الجلسة ${s}ث`,
+    sessionTime: (s) => {
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return `${m}:${String(sec).padStart(2, '0')}`;
+    },
     freeErrors: (n, max) => `أخطاء ${n}/${max}`,
     freeLvl: (d, lv) => `حر · ${d} ${lv}`,
     resultsPass: 'اجتزت المستوى',
@@ -199,39 +214,40 @@ const UI = {
   },
 };
 
-function CountDots({ count }) {
-  return (
-    <div className="ct-wcst-count" aria-hidden="true">
-      {Array.from({ length: count }, (_, i) => (
-        <span key={i} className="ct-wcst-count-dot" />
-      ))}
-    </div>
-  );
-}
-
 function WcstCardFace({ card, size = 'md' }) {
+  const shapes = Array.from({ length: card.count }, (_, i) => i);
   return (
     <div className={`ct-wcst-card-face ct-wcst-card-face--${size}`}>
-      <VigilShape shape={card.shape} size={size === 'lg' ? 'lg' : 'md'} />
-      <CountDots count={card.count} />
-      <span className={`ct-wcst-color-bar ct-wcst-color-bar--${card.color}`} />
+      <div className="ct-wcst-shapes">
+        {shapes.map((i) => (
+          <div
+            key={i}
+            className={`ct-wcst-shape ct-wcst-shape--${card.shape} ct-wcst-shape--${card.color} ct-wcst-shape--${size}`}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
-function ReferencePile({ card, pileIndex, highlight, label, onPointerDown }) {
+function ReferencePile({ card, pileIndex, highlight, pressed, label, onPointerDown, onPointerUp }) {
   const hi =
     highlight === 'correct'
       ? ' ct-wcst-pile--correct'
       : highlight === 'wrong'
         ? ' ct-wcst-pile--wrong'
-        : '';
+        : highlight === 'timeout'
+          ? ' ct-wcst-pile--timeout'
+          : '';
+  const pr = pressed ? ' ct-wcst-pile--pressed' : '';
   return (
     <button
       type="button"
-      className={`ct-wcst-pile${hi}`}
+      className={`ct-wcst-pile${hi}${pr}`}
       aria-label={label}
       onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
     >
       <WcstCardFace card={card} size="sm" />
       <span className="ct-wcst-pile-num">{pileIndex + 1}</span>
@@ -251,8 +267,11 @@ export default function RuleSwitchGame({ onBack }) {
   const [feedback, setFeedback] = useState(null);
   const [pickedPile, setPickedPile] = useState(null);
   const [showShift, setShowShift] = useState(false);
+  const [feedbackDetail, setFeedbackDetail] = useState(null);
+  const [shiftOldRule, setShiftOldRule] = useState(null);
   const [streakDisplay, setStreakDisplay] = useState(0);
   const [catsDisplay, setCatsDisplay] = useState(0);
+  const [pressedPile, setPressedPile] = useState(null);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
   const [lastResult, setLastResult] = useState(null);
@@ -301,7 +320,8 @@ export default function RuleSwitchGame({ onBack }) {
 
   const block = blockRef.current;
   const session = block?.session;
-  const probe = session?.probe;
+  const [frozenProbe, setFrozenProbe] = useState(null);
+  const probe = frozenProbe || session?.probe;
   const spec = block?.spec;
 
   useEffect(() => {
@@ -338,6 +358,9 @@ export default function RuleSwitchGame({ onBack }) {
     setPauseOpen(false);
     setQuitOpen(false);
     setShowShift(false);
+    setShiftOldRule(null);
+    setFeedbackDetail(null);
+    setFrozenProbe(null);
     setChalTurnOpen(false);
     bump();
   }, [clearTimers, stopSessionTimer]);
@@ -429,7 +452,7 @@ export default function RuleSwitchGame({ onBack }) {
         setCatsDisplay(0);
         setPlayStep('running');
         playStepRef.current = 'running';
-        startTrial();
+        startTrialRef.current();
         bump();
         return;
       }
@@ -485,7 +508,9 @@ export default function RuleSwitchGame({ onBack }) {
     if (pauseRef.current) return;
 
     respondedRef.current = false;
+    setFrozenProbe(null);
     setFeedback(null);
+    setFeedbackDetail(null);
     setPickedPile(null);
     setPlayStep('running');
     playStepRef.current = 'running';
@@ -505,7 +530,8 @@ export default function RuleSwitchGame({ onBack }) {
           timeout: true,
           rule,
         });
-        setFeedback('wrong');
+        setFrozenProbe(s.probe ? { ...s.probe } : null);
+        setFeedback('timeout');
         playSfx('error');
         if (b.mode === 'free') {
           freeErrRef.current += 1;
@@ -535,16 +561,18 @@ export default function RuleSwitchGame({ onBack }) {
       return;
     }
     if (outcome.categoryShift) {
+      setShiftOldRule(outcome.rule);
       setShowShift(true);
       setPlayStep('shift');
       playStepRef.current = 'shift';
       timersRef.current.push(
         setTimeout(() => {
           setShowShift(false);
+          setShiftOldRule(null);
           setPlayStep('running');
           playStepRef.current = 'running';
           startTrialRef.current();
-        }, 1400),
+        }, 2200),
       );
       return;
     }
@@ -560,6 +588,7 @@ export default function RuleSwitchGame({ onBack }) {
       } catch {
         /* ignore */
       }
+      setPressedPile(null);
       if (playStepRef.current !== 'running' || pauseRef.current) return;
       const b = blockRef.current;
       const s = b?.session;
@@ -569,6 +598,9 @@ export default function RuleSwitchGame({ onBack }) {
       clearTimers();
       runIdRef.current += 1;
 
+      const currentProbe = { ...s.probe };
+      const currentRule = activeRule(s);
+      setFrozenProbe(currentProbe);
       const rtMs = Math.max(0, Math.round(performance.now() - stimOnRef.current));
       const outcome = applyWcstAnswer(s, pileIndex);
       resultsRef.current.push({
@@ -582,6 +614,16 @@ export default function RuleSwitchGame({ onBack }) {
 
       setPickedPile(pileIndex);
       setFeedback(outcome.correct ? 'correct' : 'wrong');
+
+      const chosenRef = WCST_REFERENCE_CARDS[pileIndex];
+      const dims = matchingDimensions(currentProbe, chosenRef);
+      const frozenCorrectIdx = correctPileIndex(currentProbe, currentRule);
+      if (outcome.correct) {
+        setFeedbackDetail({ type: 'correct', dims, pileIndex, correctIdx: frozenCorrectIdx });
+      } else {
+        setFeedbackDetail({ type: 'wrong', dims, pileIndex, correctIdx: frozenCorrectIdx });
+      }
+
       setStreakDisplay(outcome.streak);
       setCatsDisplay(outcome.categoriesCompleted);
       playSfx(outcome.correct ? 'click' : 'error');
@@ -616,39 +658,34 @@ export default function RuleSwitchGame({ onBack }) {
       setPhase('play');
       setPlayStep('running');
       playStepRef.current = 'running';
-      startTrial();
+      startTrialRef.current();
       bump();
     },
-    [clearTimers, startTrial],
+    [clearTimers],
   );
 
   useEffect(() => {
-    if (phase !== 'play' || playStep !== 'running' || blockRef.current?.mode !== 'free') {
+    if (phase !== 'play' || (playStep !== 'running' && playStep !== 'shift') || blockRef.current?.mode !== 'free') {
       return undefined;
     }
-    let id;
-    let last = performance.now();
     const runId = timerRunIdRef.current + 1;
     timerRunIdRef.current = runId;
     runRef.current = true;
-    const loop = (ts) => {
-      if (!runRef.current || pauseRef.current || timerRunIdRef.current !== runId) return;
-      const dt = (ts - last) / 1000;
-      last = ts;
-      tlRef.current = Math.max(0, tlRef.current - dt);
+    const id = setInterval(() => {
+      if (!runRef.current || timerRunIdRef.current !== runId) return;
+      if (pauseRef.current) return;
+      tlRef.current = Math.max(0, tlRef.current - 1);
       setSessionSec(Math.ceil(tlRef.current));
       if (tlRef.current <= 0) {
+        clearInterval(id);
         finishBlockRef.current();
-        return;
       }
-      id = requestAnimationFrame(loop);
-    };
-    id = requestAnimationFrame(loop);
+    }, 1000);
     return () => {
-      cancelAnimationFrame(id);
+      clearInterval(id);
       if (timerRunIdRef.current === runId) runRef.current = false;
     };
-  }, [phase, playStep, pauseOpen]);
+  }, [phase, playStep]);
 
   const gateWithTutorial = useCallback((action, kind) => {
     const q = buildTutorialQueueFor(kind);
@@ -750,7 +787,7 @@ export default function RuleSwitchGame({ onBack }) {
   };
 
   const rule = session ? activeRule(session) : 'color';
-  const correctPile = probe ? correctPileIndex(probe, rule) : -1;
+  const correctPile = feedbackDetail?.correctIdx ?? (probe ? correctPileIndex(probe, rule) : -1);
 
   return (
     <div className="ct-rswitch-root ct-wcst-root cancellation-task-game" dir={isAr ? 'rtl' : 'ltr'}>
@@ -978,7 +1015,7 @@ export default function RuleSwitchGame({ onBack }) {
       )}
 
       {phase === 'play' && block && session && !chalTurnOpen && (
-        <div className="ct-rswitch-play-wrap ct-wcst-play-wrap">
+        <div className={`ct-rswitch-play-wrap ct-wcst-play-wrap${block.mode === 'free' && sessionSec < 30 ? ' ct-wcst-timer--red' : block.mode === 'free' && sessionSec < 60 ? ' ct-wcst-timer--orange' : ''}`}>
           <TrainingPlayHeader
             isAr={isAr}
             title={
@@ -1002,14 +1039,29 @@ export default function RuleSwitchGame({ onBack }) {
           <p className="ct-wcst-formula-hint">{t.formulaHint}</p>
           {(playStep === 'running' || playStep === 'shift') && probe && (
             <div className="ct-wcst-board">
+              <p className="ct-wcst-dim-reminder">{t.dimReminder}</p>
               <p className="ct-wcst-match-prompt">{t.matchPrompt}</p>
+              <div className="ct-wcst-streak-bar">
+                <div
+                  className="ct-wcst-streak-fill"
+                  style={{ width: `${(streakDisplay / session.streakToSwitch) * 100}%` }}
+                />
+              </div>
+              <div className="ct-wcst-hud-cats">
+                {Array.from({ length: session.categoriesToComplete }, (_, i) => (
+                  <span
+                    key={i}
+                    className={`ct-wcst-cat-dot${i < catsDisplay ? ' ct-wcst-cat-dot--done' : ''}`}
+                  />
+                ))}
+              </div>
               <div className="ct-wcst-refs">
                 {WCST_REFERENCE_CARDS.map((c, i) => {
                   let highlight = null;
                   if (feedback && playStep === 'running') {
                     if (feedback === 'correct' && i === correctPile) highlight = 'correct';
-                    if (feedback === 'wrong') {
-                      if (i === pickedPile) highlight = 'wrong';
+                    if (feedback === 'wrong' || feedback === 'timeout') {
+                      if (i === pickedPile) highlight = feedback === 'timeout' ? 'timeout' : 'wrong';
                       if (i === correctPile) highlight = 'correct';
                     }
                   }
@@ -1019,8 +1071,13 @@ export default function RuleSwitchGame({ onBack }) {
                       card={c}
                       pileIndex={i}
                       highlight={highlight}
+                      pressed={pressedPile === i}
                       label={isAr ? `كومة ${i + 1}` : `Pile ${i + 1}`}
-                      onPointerDown={(e) => onPickPile(i, e)}
+                      onPointerDown={(e) => {
+                        setPressedPile(i);
+                        onPickPile(i, e);
+                      }}
+                      onPointerUp={() => setPressedPile(null)}
                     />
                   );
                 })}
@@ -1032,18 +1089,34 @@ export default function RuleSwitchGame({ onBack }) {
                       ? ' ct-wcst-probe-card--ok'
                       : feedback === 'wrong'
                         ? ' ct-wcst-probe-card--bad'
-                        : ''
+                        : feedback === 'timeout'
+                          ? ' ct-wcst-probe-card--bad'
+                          : ''
                   }`}
                 >
                   <WcstCardFace card={probe} size="lg" />
                 </div>
                 {feedback && playStep === 'running' && (
-                  <p
-                    className={`ct-wcst-feedback ct-wcst-feedback--${feedback}`}
-                    role="status"
-                  >
-                    {feedbackLabel(feedback === 'correct', isAr)}
-                  </p>
+                  <div className="ct-wcst-feedback-wrap" role="status">
+                    <p className={`ct-wcst-feedback ct-wcst-feedback--${feedback}`}>
+                      {feedbackLabel(feedback === 'correct', isAr, feedback === 'timeout')}
+                    </p>
+                    {feedbackDetail && feedback !== 'timeout' && (
+                      <p className={`ct-wcst-feedback-detail ct-wcst-feedback-detail--${feedback}`}>
+                        {feedbackDetail.type === 'correct' && feedbackDetail.dims.length > 0
+                          ? (isAr ? 'تطابق حسب ' : 'matched by ') +
+                            feedbackDetail.dims.map((d) => t.dimLabel[d]).join(isAr ? ' و' : ' & ')
+                          : feedbackDetail.type === 'wrong'
+                            ? (isAr ? 'جرّب خاصية مختلفة' : 'try matching by a different property')
+                            : null}
+                      </p>
+                    )}
+                    {feedback === 'timeout' && (
+                      <p className="ct-wcst-feedback-detail ct-wcst-feedback-detail--timeout">
+                        {isAr ? 'أجب بسرعة أكبر' : 'respond faster next time'}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -1051,7 +1124,12 @@ export default function RuleSwitchGame({ onBack }) {
           {playStep === 'shift' && showShift && (
             <div className="ct-wcst-shift-overlay">
               <p className="ct-wcst-shift-title">{t.shiftTitle}</p>
-              <p>{t.shiftBody}</p>
+              {shiftOldRule && (
+                <p className="ct-wcst-shift-was">
+                  {t.shiftWas(t.dimLabel[shiftOldRule] || shiftOldRule)}
+                </p>
+              )}
+              <p className="ct-wcst-shift-discover">{t.shiftDiscover}</p>
             </div>
           )}
         </div>
@@ -1273,8 +1351,18 @@ export default function RuleSwitchGame({ onBack }) {
           if (!b) return;
           if (b.mode === 'level') startLevelGame(b.diff, b.lv);
           else if (b.mode === 'free') {
+            freeErrRef.current = 0;
+            setFreeErrDisplay(0);
+            freeScoreRef.current = 0;
+            setFreeScore(0);
+            freeStreakRef.current = 0;
+            freeBlocksRef.current = 0;
+            freeStageRef.current = 0;
+            tlRef.current = WCST_FREE_SESSION_START_SEC;
+            tlimRef.current = WCST_FREE_SESSION_START_SEC;
+            setSessionSec(WCST_FREE_SESSION_START_SEC);
             const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-            beginBlock(prepareFreeBlock(b.freeStage ?? 0, seed));
+            beginBlock(prepareFreeBlock(0, seed));
           } else if (chalSeed) startChallengeBlock();
         }}
         onQuitMenu={() => {
