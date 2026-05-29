@@ -106,13 +106,6 @@ export function generateSudoku(size, seed) {
   };
 }
 
-export function cycleSudokuCell(state, r, c) {
-  if (state.fixed[r][c]) return state;
-  const player = state.player.map((row) => row.slice());
-  player[r][c] = player[r][c] === state.size ? 0 : player[r][c] + 1;
-  return { ...state, player };
-}
-
 export function setSudokuCell(state, r, c, value) {
   if (state.fixed[r][c]) return state;
   const player = state.player.map((row) => row.slice());
@@ -129,25 +122,48 @@ export function isSudokuSolved(state) {
   return true;
 }
 
-export function sudokuHasConflict(state) {
+/**
+ * Returns the set of `"r-c"` keys for every cell that repeats a value within
+ * its row, column, or box. Boxes are included (the old check skipped them), and
+ * returning the offending cells lets the UI highlight only those.
+ */
+export function sudokuConflicts(state) {
   const { size, player } = state;
-  for (let r = 0; r < size; r++) {
-    const seen = new Set();
-    for (let c = 0; c < size; c++) {
+  const { boxRows, boxCols } = SUDOKU_SIZES[size];
+  const bad = new Set();
+
+  const markGroup = (cells) => {
+    const byVal = new Map();
+    for (const [r, c] of cells) {
       const v = player[r][c];
       if (!v) continue;
-      if (seen.has(v)) return true;
-      seen.add(v);
+      if (!byVal.has(v)) byVal.set(v, []);
+      byVal.get(v).push(`${r}-${c}`);
     }
+    for (const keys of byVal.values()) {
+      if (keys.length > 1) keys.forEach((k) => bad.add(k));
+    }
+  };
+
+  for (let r = 0; r < size; r++) {
+    markGroup(Array.from({ length: size }, (_, c) => [r, c]));
   }
   for (let c = 0; c < size; c++) {
-    const seen = new Set();
-    for (let r = 0; r < size; r++) {
-      const v = player[r][c];
-      if (!v) continue;
-      if (seen.has(v)) return true;
-      seen.add(v);
+    markGroup(Array.from({ length: size }, (_, r) => [r, c]));
+  }
+  for (let br = 0; br < size; br += boxRows) {
+    for (let bc = 0; bc < size; bc += boxCols) {
+      const cells = [];
+      for (let r = br; r < br + boxRows; r++) {
+        for (let c = bc; c < bc + boxCols; c++) cells.push([r, c]);
+      }
+      markGroup(cells);
     }
   }
-  return false;
+
+  return bad;
+}
+
+export function sudokuHasConflict(state) {
+  return sudokuConflicts(state).size > 0;
 }

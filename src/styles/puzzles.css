@@ -260,6 +260,9 @@
   display: flex;
   justify-content: center;
   margin-bottom: 12px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .ct-puzzle-grid {
@@ -301,15 +304,46 @@
   cursor: default;
 }
 
-/* Sliding */
-.ct-puzzle-cell--slide {
-  background: linear-gradient(180deg, #fff 0%, #e8dfd6 100%);
+/* Sliding — absolute-positioned tiles that glide between cells */
+.ct-slide-board {
+  position: relative;
+  width: min(92vw, 360px);
+  aspect-ratio: 1;
+  margin: 0 auto 12px;
+  border: 3px solid #1a1208;
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 #1a1208;
+  background: #e3d8cb;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-.ct-puzzle-cell--empty {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
+.ct-slide-tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% / var(--slide-n, 4));
+  height: calc(100% / var(--slide-n, 4));
+  box-sizing: border-box;
+  border: 2px solid #1a1208;
+  border-radius: 9px;
+  background: linear-gradient(180deg, #fffaf2 0%, #ecdfce 100%);
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(1rem, 6vw, 1.9rem);
+  color: #1a1208;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.16s ease;
+  will-change: transform;
+}
+
+.ct-slide-tile:active:not(:disabled) {
+  background: linear-gradient(180deg, #fff6da 0%, #f3ddb0 100%);
+}
+
+.ct-slide-tile:disabled {
   cursor: default;
 }
 
@@ -322,6 +356,33 @@
 .ct-puzzle-cell--t1 {
   background: linear-gradient(180deg, #2a2a2a 0%, #141210 100%);
   color: #fff;
+}
+
+/* Fixed given clues — locked, marked with an accent ring so they read as
+ * "can't change me" on both the light 0 and dark 1 tiles. */
+.ct-puzzle-cell--takuzu-fixed {
+  box-shadow:
+    inset 0 0 0 3px rgba(182, 150, 212, 0.95),
+    2px 2px 0 rgba(26, 18, 8, 0.25);
+  cursor: default;
+}
+
+/* Larger Takuzu boards get more room (and a thinner ring) so cells stay tappable. */
+.ct-puzzle-grid--takuzu.ct-puzzle-grid--n8 {
+  width: min(95vw, 400px);
+  gap: 3px;
+}
+
+.ct-puzzle-grid--takuzu.ct-puzzle-grid--n10 {
+  width: min(96vw, 432px);
+  gap: 3px;
+}
+
+.ct-puzzle-grid--takuzu.ct-puzzle-grid--n8 .ct-puzzle-cell--takuzu-fixed,
+.ct-puzzle-grid--takuzu.ct-puzzle-grid--n10 .ct-puzzle-cell--takuzu-fixed {
+  box-shadow:
+    inset 0 0 0 2px rgba(182, 150, 212, 0.95),
+    2px 2px 0 rgba(26, 18, 8, 0.25);
 }
 
 /* Medium puzzle number boards */
@@ -357,6 +418,42 @@
 .ct-puzzle-cell--err-soft {
   outline: 2px solid rgba(139, 32, 32, 0.28);
   outline-offset: -2px;
+}
+
+/* Sudoku — render as a real grid. The board itself is dark, so the 2px gaps
+ * between cells show through as thin grid lines. Cells become flat squares
+ * (no per-cell border/shadow/radius) so the lines stay crisp and continuous. */
+.ct-puzzle-grid--sudoku {
+  gap: 2px;
+  padding: 3px;
+  background: #1a1208;
+  border-color: #1a1208;
+}
+
+.ct-puzzle-grid--sudoku .ct-puzzle-cell {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: #fffaf5;
+}
+
+.ct-puzzle-grid--sudoku .ct-puzzle-cell--fixed {
+  background: #e7dccd;
+}
+
+.ct-puzzle-grid--sudoku .ct-puzzle-cell--selected {
+  background: linear-gradient(180deg, #fff6da 0%, #f7ddb0 100%);
+}
+
+/* Box dividers — cells on a box edge add extra margin, so the dark board shows
+ * through as a THICK line between the 3×3 / 2×3 / 2×2 boxes (vs the thin 2px
+ * gap between ordinary cells). Logical props keep it correct under RTL. */
+.ct-puzzle-cell--box-r {
+  margin-inline-end: 3px;
+}
+
+.ct-puzzle-cell--box-b {
+  margin-block-end: 3px;
 }
 
 .ct-puzzle-numberpad {
@@ -413,33 +510,59 @@
   right: 3px;
 }
 
-/* Nonogram */
-.ct-nonogram-wrap {
+/* Nonogram — clues outside board; cell grid matches Sudoku paper style */
+.ct-nonogram-board {
+  /* Lock LTR so Arabic page dir doesn't flip clue/grid alignment */
+  direction: ltr;
+  /* Total width matches Sudoku board; grid is what's left after row-clue gutter */
+  --nono-board-max: min(100%, min(94vw, 380px));
+  --nono-row-clue-w: clamp(28px, 8vw, 44px);
+  --nono-gap: 6px;
+  --nono-grid-w: calc(var(--nono-board-max) - var(--nono-row-clue-w) - var(--nono-gap));
+  width: var(--nono-board-max);
+  max-width: 100%;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+
+.ct-nonogram-board--n8 {
+  --nono-board-max: min(100%, min(95vw, 400px));
+}
+
+.ct-nonogram-board--n10 {
+  --nono-board-max: min(100%, min(96vw, 432px));
+}
+
+.ct-nonogram-top {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 12px;
+  gap: var(--nono-gap);
+  margin-bottom: 6px;
+}
+
+.ct-nonogram-corner {
+  width: var(--nono-row-clue-w);
+  flex-shrink: 0;
 }
 
 .ct-nonogram-col-clues {
+  width: var(--nono-grid-w);
+  flex-shrink: 0;
   display: grid;
   grid-template-columns: repeat(var(--puzzle-grid-n, 5), 1fr);
-  width: min(94vw, 360px);
-  margin-left: clamp(48px, 16vw, 74px);
   gap: 2px;
 }
 
-.ct-nonogram-body {
+.ct-nonogram-play {
   display: flex;
+  gap: var(--nono-gap);
   align-items: stretch;
-  justify-content: center;
-  gap: 4px;
 }
 
 .ct-nonogram-row-clues {
+  width: var(--nono-row-clue-w);
+  flex-shrink: 0;
   display: grid;
   grid-template-rows: repeat(var(--puzzle-grid-n, 5), 1fr);
-  width: clamp(48px, 16vw, 74px);
   gap: 2px;
 }
 
@@ -447,37 +570,98 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #5c534c;
-  font-size: clamp(0.48rem, 2vw, 0.7rem);
+  font-family: 'Outfit', 'Cairo', sans-serif;
   font-weight: 900;
-  line-height: 1.05;
+  font-size: clamp(0.55rem, 2.4vw, 0.76rem);
+  color: #5c534c;
+  line-height: 1.1;
   text-align: center;
+  min-width: 0;
+  min-height: 0;
 }
 
 .ct-nonogram-clue--col {
-  min-height: 34px;
-  writing-mode: vertical-rl;
+  align-items: flex-end;
+  padding-bottom: 2px;
 }
 
 .ct-nonogram-clue--row {
   justify-content: flex-end;
-  padding-right: 4px;
+  padding-right: 2px;
 }
 
+[dir='rtl'] .ct-nonogram-clue--row {
+  justify-content: flex-start;
+  padding-right: 0;
+  padding-left: 2px;
+}
+
+/* Same dark-board treatment as Sudoku */
 .ct-puzzle-grid--nonogram {
-  gap: 1px;
-  padding: 6px;
-  width: min(94vw, 360px);
+  width: var(--nono-grid-w);
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  padding: 3px;
+  background: #1a1208;
+  border-color: #1a1208;
 }
 
-.ct-puzzle-cell--nono {
-  border-radius: 3px;
-  border-width: 1px;
+.ct-puzzle-grid--nonogram .ct-puzzle-cell--nono {
+  border: none;
+  border-radius: 0;
   box-shadow: none;
+  background: #fffaf5;
+  font-family: 'Outfit', 'Cairo', sans-serif;
 }
 
-.ct-puzzle-cell--filled {
+.ct-puzzle-grid--nonogram .ct-puzzle-cell--filled {
   background: #141210;
+}
+
+.ct-puzzle-grid--nonogram .ct-puzzle-cell--marked {
+  color: #b04a4a;
+  font-size: clamp(0.6rem, 2.6vw, 0.95rem);
+  font-weight: 900;
+}
+
+.ct-nonogram-tools {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  width: min(100%, min(94vw, 380px));
+  margin: 0 auto 12px;
+  box-sizing: border-box;
+}
+
+.ct-nonogram-tool {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+}
+
+.ct-nonogram-tool--active {
+  background: linear-gradient(180deg, #fff6da 0%, #f7ddb0 100%);
+  outline: 3px solid rgba(232, 172, 78, 0.8);
+  outline-offset: -3px;
+}
+
+.ct-nonogram-tool-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #b04a4a;
+}
+
+.ct-nonogram-tool-ic--fill {
+  background: #141210;
+  border-radius: 2px;
 }
 
 /* Kakuro */
@@ -492,6 +676,14 @@
   border-color: #141210;
   box-shadow: none;
   overflow: hidden;
+}
+
+/* Locked starting digits — clearly given, not editable. */
+.ct-puzzle-cell--kakuro-given {
+  background: linear-gradient(180deg, #ede0f2 0%, #d9c4e6 100%);
+  color: #4a2d63;
+  box-shadow: inset 0 0 0 2px rgba(182, 150, 212, 0.95);
+  cursor: default;
 }
 
 .ct-puzzle-cell--kakuro-block::after {
@@ -527,46 +719,14 @@
 }
 
 /* Hitori */
-.ct-puzzle-hitori-layout {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
-  align-items: flex-start;
-  margin-bottom: 12px;
+.ct-puzzle-grid--hitori.ct-puzzle-grid--n7 {
+  width: min(94vw, 384px);
+  gap: 3px;
 }
 
-.ct-puzzle-hitori-col-clues {
-  display: grid;
-  grid-template-rows: repeat(var(--puzzle-grid-n, 4), 1fr);
-  gap: 4px;
-  padding-top: 28px;
-  width: 22px;
-}
-
-.ct-puzzle-hitori-main {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.ct-puzzle-hitori-row-clues {
-  display: grid;
-  grid-template-columns: repeat(var(--puzzle-grid-n, 4), 1fr);
-  gap: 4px;
-  height: 22px;
-  padding-left: 8px;
-  padding-right: 8px;
-  box-sizing: border-box;
-  width: min(92vw, 340px);
-}
-
-.ct-puzzle-clue {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: #5c534c;
+.ct-puzzle-grid--hitori.ct-puzzle-grid--n8 {
+  width: min(95vw, 408px);
+  gap: 3px;
 }
 
 .ct-puzzle-cell--hitori.ct-puzzle-cell--shaded {
@@ -615,7 +775,6 @@
     4px 4px 0 #1a1208,
     inset 0 0 0 1px rgba(0, 0, 0, 0.06);
   background: #ffffff;
-  cursor: crosshair;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -626,6 +785,50 @@
     0 1px 0 rgba(255, 255, 255, 0.9) inset,
     4px 4px 0 #1a1208,
     0 8px 24px rgba(26, 18, 8, 0.12);
+}
+
+/* Analog joystick for moving the maze avatar */
+.ct-maze-joystick-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 14px;
+}
+
+.ct-maze-joystick {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 3px solid #1a1208;
+  background:
+    radial-gradient(circle at 50% 38%, #fffaf2 0%, #efe2d2 70%, #e2d2bd 100%);
+  box-shadow:
+    4px 4px 0 #1a1208,
+    inset 0 2px 6px rgba(26, 18, 8, 0.18);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ct-maze-joystick.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.ct-maze-joystick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border-radius: 50%;
+  border: 2px solid #1a1208;
+  background: radial-gradient(circle at 50% 35%, #f7c873 0%, #e8ac4e 60%, #c98a2f 100%);
+  box-shadow:
+    0 3px 8px rgba(26, 18, 8, 0.35),
+    inset 0 2px 4px rgba(255, 255, 255, 0.5);
+  pointer-events: none;
 }
 
 /* Draw-path maze (legacy grid — removed) */

@@ -185,43 +185,45 @@ export function generateLogicMaze(tier, seed) {
   };
 }
 
-export function beginDrawAt(state, r, c) {
-  const { size, wallGrid, path } = state;
-  if (r < 0 || r >= size || c < 0 || c >= size) return state;
+/** Direction name → [dr, dc] step. Used by the joystick to move the avatar. */
+export const MAZE_DIRS = {
+  up: [-1, 0],
+  down: [1, 0],
+  left: [0, -1],
+  right: [0, 1],
+};
 
-  const onPathIdx = path.findIndex(([pr, pc]) => pr === r && pc === c);
-  if (onPathIdx >= 0) {
-    return { ...state, path: path.slice(0, onPathIdx + 1) };
-  }
+/**
+ * Move the avatar one cell in `dir` ('up'|'down'|'left'|'right').
+ *
+ * The wall check comes FIRST: pushing into a wall is always a no-op, even if
+ * the cell beyond the wall is already part of the trail. (The old version
+ * delegated to extendDrawPath, whose on-path truncation ran before the wall
+ * check — so shoving against a wall could chop the trail back to a grid-
+ * adjacent cell it touches through that wall.)
+ *
+ * Stepping back onto the previous cell retraces (shortens) the trail.
+ */
+export function moveMaze(state, dir) {
+  const delta = MAZE_DIRS[dir];
+  if (!delta) return state;
 
-  const last = path[path.length - 1];
-  if (isAdjacent(last, [r, c]) && passageOpen(wallGrid, last[0], last[1], r, c)) {
-    return { ...state, path: [...path, [r, c]] };
-  }
+  const { wallGrid, path } = state;
+  const [lr, lc] = path[path.length - 1];
+  const r = lr + delta[0];
+  const c = lc + delta[1];
 
-  return state;
-}
+  if (!passageOpen(wallGrid, lr, lc, r, c)) return state; // blocked → stay put
 
-export function extendDrawPath(state, r, c) {
-  const { size, wallGrid, path } = state;
-  if (r < 0 || r >= size || c < 0 || c >= size) return state;
-
-  const last = path[path.length - 1];
-  if (last[0] === r && last[1] === c) return state;
-
+  // Reversing onto the previous cell shortens the trail.
   if (path.length >= 2) {
-    const prev = path[path.length - 2];
-    if (prev[0] === r && prev[1] === c) {
-      return { ...state, path: path.slice(0, -1) };
-    }
+    const [pr, pc] = path[path.length - 2];
+    if (pr === r && pc === c) return { ...state, path: path.slice(0, -1) };
   }
 
-  const onPathIdx = path.findIndex(([pr, pc]) => pr === r && pc === c);
-  if (onPathIdx >= 0) {
-    return { ...state, path: path.slice(0, onPathIdx + 1) };
-  }
-
-  if (!isAdjacent(last, [r, c]) || !passageOpen(wallGrid, last[0], last[1], r, c)) return state;
+  // Re-entering an earlier (open) cell truncates back to it; otherwise advance.
+  const onPathIdx = path.findIndex(([qr, qc]) => qr === r && qc === c);
+  if (onPathIdx >= 0) return { ...state, path: path.slice(0, onPathIdx + 1) };
   return { ...state, path: [...path, [r, c]] };
 }
 

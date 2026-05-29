@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../../../../context/AppContext';
 import { TrainingMenuBar, TrainingPlayHeader } from '../../../training/shared/TrainingChrome';
 import { getPuzzle } from '../../registry';
@@ -12,10 +12,19 @@ import {
   generateLogicMaze,
   isMazeSolved,
   resetMazePath,
+  moveMaze,
   MAZE_TIER_HINTS,
   tierSubtitle,
 } from './mazeEngine';
 import MazeCanvas from './MazeCanvas';
+import MazeJoystick from './MazeJoystick';
+
+const STEP_MS = 135; // auto-step cadence while a direction is held
+const KEY_DIRS = {
+  ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+  w: 'up', s: 'down', a: 'left', d: 'right',
+  W: 'up', S: 'down', A: 'left', D: 'right',
+};
 
 const CONFIG = getPuzzle('maze');
 const PUZZLE_ID = 'maze';
@@ -33,12 +42,47 @@ export default function LogicMazePuzzle({ onBack }) {
   const [state, setState] = useState(null);
   const [elapsed, setElapsed] = useState(0);
   const [solved, setSolved] = useState(false);
+  const dirRef = useRef(null);
 
   const newGame = useCallback((gridSize, seed = randomSeed()) => {
     setState(generateLogicMaze(gridSize, seed));
     setElapsed(0);
     setSolved(false);
+    dirRef.current = null;
   }, []);
+
+  const step = useCallback((dir) => {
+    setState((s) => (s ? moveMaze(s, dir) : s));
+  }, []);
+
+  /* Joystick reports the held direction (or null on release). Step once
+   * immediately for snappy response, then the hold-loop keeps stepping. */
+  const handleDirection = useCallback((dir) => {
+    dirRef.current = dir;
+    if (dir) step(dir);
+  }, [step]);
+
+  // Hold-to-move: auto-step every STEP_MS while a direction is held.
+  useEffect(() => {
+    if (screen !== 'play' || solved) return undefined;
+    const id = setInterval(() => {
+      if (dirRef.current) step(dirRef.current);
+    }, STEP_MS);
+    return () => clearInterval(id);
+  }, [screen, solved, step]);
+
+  // Keyboard (arrows / WASD) as a desktop alternative to the joystick.
+  useEffect(() => {
+    if (screen !== 'play' || solved) return undefined;
+    const onKey = (e) => {
+      const dir = KEY_DIRS[e.key];
+      if (!dir) return;
+      e.preventDefault();
+      step(dir);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [screen, solved, step]);
 
   useEffect(() => {
     if (screen !== 'play' || solved) return undefined;
@@ -123,24 +167,30 @@ export default function LogicMazePuzzle({ onBack }) {
         menuAriaLabel={t.menu}
       />
       <div className="ct-puzzle-play-body">
-        <PuzzleHint>{t.mazeHint}</PuzzleHint>
-        <MazeCanvas
-          state={state}
-          solved={solved}
-          onPathChange={setState}
-          playSfx={playSfx}
-        />
+        <PuzzleHint>
+          {isAr
+            ? 'حرّك الكرة من البداية إلى الهدف باستخدام عصا التحكم.'
+            : 'Move your token from START to GOAL with the joystick.'}
+        </PuzzleHint>
+        <MazeCanvas state={state} solved={solved} />
         <div className="ct-puzzle-stats">
           <span>{t.moves(pathLen)}</span>
           <span>{t.time(elapsed)}</span>
         </div>
         {!solved ? (
-          <PuzzleToolbar
-            t={t}
-            playSfx={playSfx}
-            onNew={() => newGame(size)}
-            onReset={() => setState((s) => resetMazePath(s))}
-          />
+          <>
+            <MazeJoystick
+              onDirection={handleDirection}
+              disabled={solved}
+              ariaLabel={isAr ? 'عصا التحكم' : 'Movement joystick'}
+            />
+            <PuzzleToolbar
+              t={t}
+              playSfx={playSfx}
+              onNew={() => newGame(size)}
+              onReset={() => setState((s) => resetMazePath(s))}
+            />
+          </>
         ) : (
           <PuzzleWinBanner
             t={t}

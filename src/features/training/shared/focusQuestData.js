@@ -303,7 +303,7 @@ export function computeFeatureInterference(li, diff) {
 export function getLevelDifficultyModel(diff, li) {
   const m = DM[diff];
   const level = li + 1;
-  const pool = SP[diff][li];
+  const { pool } = getLvCfg(diff, li);
   const area = m.grid * m.grid;
   const tc = TC[diff][li];
   const interference = computeFeatureInterference(li, diff);

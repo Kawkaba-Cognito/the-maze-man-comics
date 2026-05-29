@@ -2,9 +2,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-/** Dev-only: `/` → `/the-maze-man-comics/` so the root URL is not an empty shell. */
-function redirectDevRootToBase() {
-  const basePath = '/the-maze-man-comics/';
+const WEB_BASE = '/the-maze-man-comics/';
+const CAPACITOR_BASE = './';
+
+/** Dev-only: `/` → web base so the root URL is not an empty shell. */
+function redirectDevRootToBase(basePath) {
   return {
     name: 'redirect-dev-root-to-base',
     configureServer(server) {
@@ -70,31 +72,36 @@ function pwaPlugin() {
   });
 }
 
-export default defineConfig(({ command }) => ({
-  plugins: [
-    redirectDevRootToBase(),
-    react({
-      babel: {
-        plugins: [['babel-plugin-react-compiler']],
-      },
-    }),
-    ...(command === 'build' ? [pwaPlugin()] : []),
-  ],
-  base: '/the-maze-man-comics/',
-  server: {
-    host: true,
-    port: 5173,
-    strictPort: true,
-    open: '/the-maze-man-comics/',
-    watch: { usePolling: true, interval: 150 },
-    // Avoid browser disk cache serving an old module graph while iterating on UI.
-    headers: { 'Cache-Control': 'no-store' },
-  },
-  preview: {
-    host: true,
-    port: 4173,
-    strictPort: true,
-    open: '/the-maze-man-comics/',
-  },
-  build: { outDir: 'dist', assetsDir: 'Assets' },
-}));
+export default defineConfig(({ command, mode }) => {
+  const isCapacitor = mode === 'capacitor';
+  const base = isCapacitor ? CAPACITOR_BASE : WEB_BASE;
+
+  return {
+    plugins: [
+      ...(!isCapacitor ? [redirectDevRootToBase(WEB_BASE)] : []),
+      react({
+        babel: {
+          plugins: [['babel-plugin-react-compiler']],
+        },
+      }),
+      ...(command === 'build' && !isCapacitor ? [pwaPlugin()] : []),
+    ],
+    base,
+    server: {
+      host: true,
+      port: 5173,
+      strictPort: true,
+      open: WEB_BASE,
+      watch: { usePolling: true, interval: 150 },
+      // Avoid browser disk cache serving an old module graph while iterating on UI.
+      headers: { 'Cache-Control': 'no-store' },
+    },
+    preview: {
+      host: true,
+      port: 4173,
+      strictPort: true,
+      open: WEB_BASE,
+    },
+    build: { outDir: 'dist', assetsDir: 'Assets' },
+  };
+});

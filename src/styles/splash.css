@@ -8,7 +8,7 @@
 .splash-screen {
     position: fixed; inset: 0;
     background-color: #f5f0e8;
-    background-image: url('/the-maze-man-comics/Assets/splash-mobile.png');
+    background-image: var(--asset-splash-mobile);
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center top;
@@ -22,7 +22,7 @@
 }
 @media (min-width: 768px) {
     .splash-screen {
-        background-image: url('/the-maze-man-comics/Assets/splash-desktop.png');
+        background-image: var(--asset-splash-desktop);
         background-size: cover;
         background-position: center center;
     }

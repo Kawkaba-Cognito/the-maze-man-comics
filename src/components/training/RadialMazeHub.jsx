@@ -3,6 +3,7 @@ import { IconBack } from '../../features/training/shared/TrainingIcons';
 import MazeManAvatar from '../../features/training/shared/MazeManAvatar';
 import { DOMAIN_COLOR, DOMAINS } from './trainingData';
 import { useApp } from '../../context/AppContext';
+import { assetUrl } from '../../lib/assetUrl';
 import { tokens } from '../../styles/tokens';
 
 /** Local alias kept for in-file readability — values come from the central token set. */
@@ -198,8 +199,8 @@ function ArchShape3D({ col, hovered, gradId, filterId }) {
 function AtmosphericBgLight() {
   const isDesktop = typeof window !== 'undefined' && window.matchMedia?.('(min-width: 768px)').matches;
   const bgUrl = isDesktop
-    ? '/the-maze-man-comics/Assets/bg-training-desktop.png'
-    : '/the-maze-man-comics/Assets/bg-training-mobile.png';
+    ? assetUrl('Assets/bg-training-desktop.png')
+    : assetUrl('Assets/bg-training-mobile.png');
   return (
     <>
       <div

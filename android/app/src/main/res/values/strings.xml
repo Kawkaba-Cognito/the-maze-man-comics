@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">The Maze Man Comics</string>
+    <string name="title_activity_main">The Maze Man Comics</string>
+    <string name="package_name">io.kawkaba.mazeman</string>
+    <string name="custom_url_scheme">io.kawkaba.mazeman</string>
+</resources>

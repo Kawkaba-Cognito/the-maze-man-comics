@@ -12,11 +12,16 @@ import {
   generateHitori,
   toggleHitoriCell,
   isHitoriSolved,
-  hitoriHasError,
+  resetHitori,
 } from './hitoriEngine';
 
 const CONFIG = getPuzzle('hitori');
 const PUZZLE_ID = 'hitori';
+
+const SIZE_HINTS = {
+  en: { 5: 'Warm-up', 6: 'Classic', 7: 'Tricky', 8: 'Expert' },
+  ar: { 5: 'تمهيدي', 6: 'كلاسيكي', 7: 'صعب', 8: 'خبير' },
+};
 
 export default function HitoriPuzzle({ onBack }) {
   const { currentLang, playSfx } = useApp();
@@ -31,13 +36,11 @@ export default function HitoriPuzzle({ onBack }) {
   const [state, setState] = useState(null);
   const [elapsed, setElapsed] = useState(0);
   const [solved, setSolved] = useState(false);
-  const [error, setError] = useState(false);
 
   const newGame = useCallback((gridSize, seed = randomSeed()) => {
     setState(generateHitori(gridSize, seed));
     setElapsed(0);
     setSolved(false);
-    setError(false);
   }, []);
 
   useEffect(() => {
@@ -46,14 +49,11 @@ export default function HitoriPuzzle({ onBack }) {
     return () => clearInterval(id);
   }, [screen, solved]);
 
+  // Win silently when the shading is correct — no live right/wrong feedback.
   useEffect(() => {
-    if (!state) return;
-    if (isHitoriSolved(state)) {
+    if (state && isHitoriSolved(state)) {
       setSolved(true);
-      setError(false);
       playSfx('win');
-    } else {
-      setError(hitoriHasError(state));
     }
   }, [state, playSfx]);
 
@@ -93,7 +93,14 @@ export default function HitoriPuzzle({ onBack }) {
         />
         <div className="ct-puzzle-hub-body">
           <p className="ct-puzzle-hub-sub">{t.pickGridSub}</p>
-          <GridSizePicker t={t} isAr={isAr} sizes={CONFIG.sizes} onPick={pickSize} playSfx={playSfx} />
+          <GridSizePicker
+            t={t}
+            isAr={isAr}
+            sizes={CONFIG.sizes}
+            onPick={pickSize}
+            playSfx={playSfx}
+            hintForSize={(n) => SIZE_HINTS[isAr ? 'ar' : 'en'][n]}
+          />
         </div>
         {tutorialOpen ? (
           <PuzzleTutorial steps={steps} isAr={isAr} onClose={closeTutorial} playSfx={playSfx} />
@@ -116,49 +123,34 @@ export default function HitoriPuzzle({ onBack }) {
       />
       <div className="ct-puzzle-play-body">
         <PuzzleHint>{t.hitoriHint}</PuzzleHint>
-        <div className="ct-puzzle-hitori-layout" style={{ '--puzzle-grid-n': size }}>
-          <div className="ct-puzzle-hitori-col-clues">
-            {state.colCounts.map((n, c) => (
-              <span key={c} className="ct-puzzle-clue">{n}</span>
-            ))}
-          </div>
-          <div className="ct-puzzle-hitori-main">
-            <div className="ct-puzzle-hitori-row-clues">
-              {state.rowCounts.map((n, r) => (
-                <span key={r} className="ct-puzzle-clue">{n}</span>
-              ))}
-            </div>
-            <div className="ct-puzzle-grid ct-puzzle-grid--hitori" style={{ '--puzzle-grid-n': size }}>
-              {state.numbers.map((row, r) =>
-                row.map((num, c) => {
-                  const shaded = state.player[r][c];
-                  return (
-                    <button
-                      key={`${r}-${c}`}
-                      type="button"
-                      className={`ct-puzzle-cell ct-puzzle-cell--hitori${
-                        shaded ? ' ct-puzzle-cell--shaded' : ''
-                      }${error && shaded ? ' ct-puzzle-cell--err' : ''}`}
-                      disabled={solved}
-                      onClick={() => {
-                        playSfx('click');
-                        setState((s) => toggleHitoriCell(s, r, c));
-                      }}
-                    >
-                      {shaded ? '' : num}
-                    </button>
-                  );
-                })
-              )}
-            </div>
+        <div className="ct-puzzle-grid-wrap">
+          <div className={`ct-puzzle-grid ct-puzzle-grid--hitori ct-puzzle-grid--n${size}`} style={{ '--puzzle-grid-n': size }}>
+            {state.numbers.map((row, r) =>
+              row.map((num, c) => {
+                const shaded = state.player[r][c];
+                return (
+                  <button
+                    key={`${r}-${c}`}
+                    type="button"
+                    className={`ct-puzzle-cell ct-puzzle-cell--hitori${shaded ? ' ct-puzzle-cell--shaded' : ''}`}
+                    disabled={solved}
+                    onClick={() => {
+                      playSfx('click');
+                      setState((s) => toggleHitoriCell(s, r, c));
+                    }}
+                  >
+                    {shaded ? '' : num}
+                  </button>
+                );
+              })
+            )}
           </div>
         </div>
-        {error ? <p className="ct-puzzle-error">{isAr ? 'تحقق من القواعد' : 'Check the rules'}</p> : null}
         <div className="ct-puzzle-stats">
           <span>{t.time(elapsed)}</span>
         </div>
         {!solved ? (
-          <PuzzleToolbar t={t} playSfx={playSfx} onNew={() => newGame(size)} onReset={() => newGame(size, state.seed)} />
+          <PuzzleToolbar t={t} playSfx={playSfx} onNew={() => newGame(size)} onReset={() => setState((s) => resetHitori(s))} />
         ) : (
           <PuzzleWinBanner
             t={t}

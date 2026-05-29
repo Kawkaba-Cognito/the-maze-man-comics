@@ -7,6 +7,8 @@
     "dev:8080": "vite --host --port 8080 --strictPort --open /the-maze-man-comics/",
     "preview": "vite preview",
     "build": "vite build",
+    "build:capacitor": "vite build --mode capacitor",
+    "build:android": "npm run build:capacitor && npx cap sync android",
     "audit:fq": "node scripts/audit-focus-quest-levels.mjs",
     "validate:rh": "node scripts/validate-rush-hour.mjs",
     "validate:rh:full": "node scripts/validate-rush-hour.mjs --full",
@@ -17,7 +19,9 @@
     "cap:ios": "npx cap open ios",
     "cap:run:android": "npx cap run android",
     "cap:run:ios": "npx cap run ios",
-    "push:both": "git push origin main && git push kawkaba-origin main"
+    "push:both": "git push origin main && git push kawkaba-origin main",
+    "deploy:live": "npm run build && npx gh-pages -d dist -r https://github.com/kawkaba-cognito/the-maze-man-comics.git",
+    "ship:live": "npm run push:both && npm run deploy:live"
   },
   "dependencies": {
     "@capacitor/core": "^6.2.0",

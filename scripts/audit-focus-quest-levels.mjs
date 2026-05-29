@@ -10,6 +10,7 @@ import {
   SP,
   TC,
   SH,
+  FQ_LEVELS_PER_TIER,
   prepareLevelRound,
   prepareChallengeSeed,
   prepareChallengePlayState,
@@ -65,17 +66,20 @@ function auditOneRound(r, label) {
   }
 }
 
-// Config shape pools: length 20, every name known, ≥2 shapes for distractors
+// Config shape pools; TC has one entry per level (FQ_LEVELS_PER_TIER).
 // Gradual difficulty: targets non-decreasing, time non-increasing, interference non-decreasing
 for (const diff of Object.keys(DM)) {
-  assert(Array.isArray(SP[diff]) && SP[diff].length === 20, `${diff}: SP must have 20 entries`);
-  assert(Array.isArray(TC[diff]) && TC[diff].length === 20, `${diff}: TC must have 20 entries`);
+  assert(Array.isArray(SP[diff]) && SP[diff].length >= 2, `${diff}: SP must have shape pools`);
+  assert(
+    Array.isArray(TC[diff]) && TC[diff].length === FQ_LEVELS_PER_TIER,
+    `${diff}: TC must have ${FQ_LEVELS_PER_TIER} entries`,
+  );
 
   let prevT = Infinity;
   let prevI = -1;
   let prevTc = -1;
 
-  for (let li = 0; li < 20; li++) {
+  for (let li = 0; li < FQ_LEVELS_PER_TIER; li++) {
     const cfg = getLvCfg(diff, li);
     const m = getLevelDifficultyModel(diff, li);
     assert(m.targetCount === cfg.tc, `${diff} L${li + 1}: model tc mismatch`);
@@ -101,8 +105,9 @@ for (const diff of Object.keys(DM)) {
 }
 
 const ITERS = 12;
+const AUDIT_LEVEL_SAMPLE = Math.min(20, FQ_LEVELS_PER_TIER);
 for (const diff of Object.keys(DM)) {
-  for (let lv = 1; lv <= 20; lv++) {
+  for (let lv = 1; lv <= AUDIT_LEVEL_SAMPLE; lv++) {
     for (let i = 0; i < ITERS; i++) {
       const r = prepareLevelRound(diff, lv);
       auditOneRound(r, `${diff} L${lv} sample ${i}`);
@@ -120,6 +125,7 @@ for (let i = 0; i < 40; i++) {
 
 console.log('audit-focus-quest-levels: OK', {
   difficulties: Object.keys(DM).length,
+  levelsPerTier: FQ_LEVELS_PER_TIER,
   samplesPerLevel: ITERS,
-  totalPrepareSamples: Object.keys(DM).length * 20 * ITERS,
+  totalPrepareSamples: Object.keys(DM).length * AUDIT_LEVEL_SAMPLE * ITERS,
 });

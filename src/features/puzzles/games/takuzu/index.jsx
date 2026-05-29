@@ -12,11 +12,16 @@ import {
   generateTakuzu,
   cycleTakuzuCell,
   isTakuzuSolved,
-  isTakuzuComplete,
+  resetTakuzu,
 } from './takuzuEngine';
 
 const CONFIG = getPuzzle('takuzu');
 const PUZZLE_ID = 'takuzu';
+
+const SIZE_HINTS = {
+  en: { 4: 'Quick & cozy', 6: 'Classic', 8: 'Big board', 10: 'Marathon' },
+  ar: { 4: 'سريع ومريح', 6: 'كلاسيكي', 8: 'لوحة كبيرة', 10: 'ماراثون' },
+};
 
 export default function TakuzuPuzzle({ onBack }) {
   const { currentLang, playSfx } = useApp();
@@ -31,13 +36,11 @@ export default function TakuzuPuzzle({ onBack }) {
   const [state, setState] = useState(null);
   const [elapsed, setElapsed] = useState(0);
   const [solved, setSolved] = useState(false);
-  const [error, setError] = useState(false);
 
   const newGame = useCallback((gridSize, seed = randomSeed()) => {
     setState(generateTakuzu(gridSize, seed));
     setElapsed(0);
     setSolved(false);
-    setError(false);
   }, []);
 
   useEffect(() => {
@@ -46,16 +49,12 @@ export default function TakuzuPuzzle({ onBack }) {
     return () => clearInterval(id);
   }, [screen, solved]);
 
+  // Win silently when the board is complete and correct — no live right/wrong
+  // feedback while the player is filling cells.
   useEffect(() => {
-    if (!state) return;
-    if (isTakuzuSolved(state)) {
+    if (state && isTakuzuSolved(state)) {
       setSolved(true);
-      setError(false);
       playSfx('win');
-    } else if (isTakuzuComplete(state.player, state.size)) {
-      setError(true);
-    } else {
-      setError(false);
     }
   }, [state, playSfx]);
 
@@ -95,7 +94,14 @@ export default function TakuzuPuzzle({ onBack }) {
         />
         <div className="ct-puzzle-hub-body">
           <p className="ct-puzzle-hub-sub">{t.pickGridSub}</p>
-          <GridSizePicker t={t} isAr={isAr} sizes={CONFIG.sizes} onPick={pickSize} playSfx={playSfx} />
+          <GridSizePicker
+            t={t}
+            isAr={isAr}
+            sizes={CONFIG.sizes}
+            onPick={pickSize}
+            playSfx={playSfx}
+            hintForSize={(n) => SIZE_HINTS[isAr ? 'ar' : 'en'][n]}
+          />
         </div>
         {tutorialOpen ? (
           <PuzzleTutorial steps={steps} isAr={isAr} onClose={closeTutorial} playSfx={playSfx} />
@@ -119,33 +125,35 @@ export default function TakuzuPuzzle({ onBack }) {
       <div className="ct-puzzle-play-body">
         <PuzzleHint>{t.takuzuHint}</PuzzleHint>
         <div className="ct-puzzle-grid-wrap">
-          <div className="ct-puzzle-grid ct-puzzle-grid--takuzu" style={{ '--puzzle-grid-n': size }}>
+          <div className={`ct-puzzle-grid ct-puzzle-grid--takuzu ct-puzzle-grid--n${size}`} style={{ '--puzzle-grid-n': size }}>
             {state.player.map((row, r) =>
-              row.map((val, c) => (
-                <button
-                  key={`${r}-${c}`}
-                  type="button"
-                  className={`ct-puzzle-cell ct-puzzle-cell--takuzu${
-                    val === 0 ? ' ct-puzzle-cell--t0' : val === 1 ? ' ct-puzzle-cell--t1' : ''
-                  }${error ? ' ct-puzzle-cell--err' : ''}`}
-                  disabled={solved}
-                  onClick={() => {
-                    playSfx('click');
-                    setState((s) => cycleTakuzuCell(s, r, c));
-                  }}
-                >
-                  {val == null ? '' : val}
-                </button>
-              ))
+              row.map((val, c) => {
+                const fixed = state.fixed[r][c];
+                return (
+                  <button
+                    key={`${r}-${c}`}
+                    type="button"
+                    className={`ct-puzzle-cell ct-puzzle-cell--takuzu${
+                      val === 0 ? ' ct-puzzle-cell--t0' : val === 1 ? ' ct-puzzle-cell--t1' : ''
+                    }${fixed ? ' ct-puzzle-cell--takuzu-fixed' : ''}`}
+                    disabled={solved || fixed}
+                    onClick={() => {
+                      playSfx('click');
+                      setState((s) => cycleTakuzuCell(s, r, c));
+                    }}
+                  >
+                    {val == null ? '' : val}
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
-        {error ? <p className="ct-puzzle-error">{isAr ? 'تحقق من القواعد' : 'Check the rules'}</p> : null}
         <div className="ct-puzzle-stats">
           <span>{t.time(elapsed)}</span>
         </div>
         {!solved ? (
-          <PuzzleToolbar t={t} playSfx={playSfx} onNew={() => newGame(size)} onReset={() => newGame(size, state.seed)} />
+          <PuzzleToolbar t={t} playSfx={playSfx} onNew={() => newGame(size)} onReset={() => setState((s) => resetTakuzu(s))} />
         ) : (
           <PuzzleWinBanner
             t={t}

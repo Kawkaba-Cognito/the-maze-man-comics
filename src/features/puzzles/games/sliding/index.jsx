@@ -113,21 +113,29 @@ export default function SlidingPuzzle({ onBack }) {
       <div className="ct-puzzle-play-body">
         <PuzzleHint>{t.slidingHint}</PuzzleHint>
         <div className="ct-puzzle-grid-wrap">
-          <div className="ct-puzzle-grid ct-puzzle-grid--sliding" style={{ '--puzzle-grid-n': size }}>
-            {state.tiles.map((val, idx) => (
-              <button
-                key={idx}
-                type="button"
-                className={`ct-puzzle-cell ct-puzzle-cell--slide${val === 0 ? ' ct-puzzle-cell--empty' : ''}`}
-                disabled={val === 0 || solved}
-                onClick={() => {
-                  playSfx('click');
-                  setState((s) => trySlide(s, idx));
-                }}
-              >
-                {val === 0 ? '' : val}
-              </button>
-            ))}
+          {/* Tiles are keyed by value and positioned by transform, so a slide
+           * animates (the same DOM node glides to its new cell). */}
+          <div className="ct-slide-board" style={{ '--slide-n': size }}>
+            {Array.from({ length: size * size - 1 }, (_, i) => i + 1).map((val) => {
+              const idx = state.tiles.indexOf(val);
+              const r = Math.floor(idx / size);
+              const c = idx % size;
+              return (
+                <button
+                  key={val}
+                  type="button"
+                  className="ct-slide-tile"
+                  style={{ transform: `translate(${c * 100}%, ${r * 100}%)` }}
+                  disabled={solved}
+                  onClick={() => {
+                    playSfx('click');
+                    setState((s) => trySlide(s, idx));
+                  }}
+                >
+                  {val}
+                </button>
+              );
+            })}
           </div>
         </div>
         <div className="ct-puzzle-stats">

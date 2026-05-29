@@ -18,16 +18,23 @@ function cageOp(cells, solution, rng) {
   const vals = cells.map(([r, c]) => solution[r][c]);
   if (vals.length === 1) return { op: '', target: vals[0] };
   if (vals.length === 2) {
+    // Weight the tightly-constraining operations (− and ÷) higher so puzzles
+    // need far fewer freebie splits to become unique.
     const [a, b] = vals;
-    const ops = [
-      { op: '+', target: a + b },
-      { op: '-', target: Math.abs(a - b) },
-      { op: '×', target: a * b },
+    const hi = Math.max(a, b);
+    const lo = Math.min(a, b);
+    const choices = [
+      { op: '-', target: hi - lo, w: 3 },
+      { op: '+', target: a + b, w: 1 },
+      { op: '×', target: a * b, w: 1 },
     ];
-    if (Math.max(a, b) % Math.min(a, b) === 0) ops.push({ op: '÷', target: Math.max(a, b) / Math.min(a, b) });
-    return ops[Math.floor(rng() * ops.length)];
+    if (hi % lo === 0) choices.push({ op: '÷', target: hi / lo, w: 3 });
+    const total = choices.reduce((s, ch) => s + ch.w, 0);
+    let x = rng() * total;
+    for (const ch of choices) { if ((x -= ch.w) < 0) return { op: ch.op, target: ch.target }; }
+    return choices[0];
   }
-  if (rng() < 0.55) return { op: '+', target: vals.reduce((a, b) => a + b, 0) };
+  if (rng() < 0.5) return { op: '+', target: vals.reduce((a, b) => a + b, 0) };
   return { op: '×', target: vals.reduce((a, b) => a * b, 1) };
 }
 
@@ -40,7 +47,10 @@ function buildCages(size, solution, rng) {
     const start = Array.from(unused)[Math.floor(rng() * unused.size)];
     const cells = [[Math.floor(start / size), start % size]];
     unused.delete(start);
-    const targetLen = Math.min(3, 1 + Math.floor(rng() * (size >= 5 ? 3 : 2)));
+    // Aim for mostly 2-cell cages with some triples; avoid intentional singles
+    // (lone cells only appear when a region can't grow). Tighter cages → unique
+    // with very few freebies.
+    const targetLen = rng() < 0.7 ? 2 : 3;
 
     while (cells.length < targetLen) {
       const frontier = cells.flatMap(([r, c]) => neighbors(size, r, c)).filter(([r, c]) => unused.has(key(r, c)));
@@ -59,24 +69,116 @@ function buildCages(size, solution, rng) {
   return { cages, cageMap };
 }
 
+function rebuildCageMap(size, cages) {
+  const cageMap = Array.from({ length: size }, () => Array(size).fill(null));
+  cages.forEach((cage) => cage.cells.forEach(([r, c]) => { cageMap[r][c] = cage.id; }));
+  return cageMap;
+}
+
+function recomputeCage(cage, solution, rng) {
+  if (cage.cells.length === 1) {
+    const [r, c] = cage.cells[0];
+    cage.op = '';
+    cage.target = solution[r][c];
+  } else {
+    const { op, target } = cageOp(cage.cells, solution, rng);
+    cage.op = op;
+    cage.target = target;
+  }
+}
+
+/**
+ * Count fillings of the grid that obey the Latin-square rule AND every cage,
+ * capped at `cap`. Returns -1 if the search budget is exceeded.
+ */
+function kenkenSolutionCount(size, cages, cageMap, cap = 2, budget = 3_000_000) {
+  const cageById = Object.fromEntries(cages.map((c) => [c.id, c]));
+  const grid = Array.from({ length: size }, () => Array(size).fill(0));
+  const rowUsed = Array.from({ length: size }, () => new Array(size + 1).fill(false));
+  const colUsed = Array.from({ length: size }, () => new Array(size + 1).fill(false));
+  let count = 0;
+  let nodes = 0;
+  let blown = false;
+
+  const feasible = (cage) => {
+    const vals = cage.cells.map(([r, c]) => grid[r][c]);
+    const filled = vals.filter((v) => v !== 0);
+    const remaining = vals.length - filled.length;
+    if (cage.op === '') return remaining > 0 || filled[0] === cage.target;
+    if (cage.op === '+') {
+      const s = filled.reduce((a, b) => a + b, 0);
+      if (remaining === 0) return s === cage.target;
+      return s + remaining <= cage.target && s + remaining * size >= cage.target;
+    }
+    if (cage.op === '×') {
+      const p = filled.reduce((a, b) => a * b, 1);
+      if (remaining === 0) return p === cage.target;
+      return cage.target % p === 0 && p <= cage.target;
+    }
+    if (cage.op === '-') return remaining > 0 || Math.abs(vals[0] - vals[1]) === cage.target;
+    if (cage.op === '÷') {
+      if (remaining > 0) return true;
+      const hi = Math.max(...vals);
+      const lo = Math.min(...vals);
+      return lo !== 0 && hi % lo === 0 && hi / lo === cage.target;
+    }
+    return true;
+  };
+
+  const order = [];
+  for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) order.push([r, c]);
+
+  const rec = (idx) => {
+    if (count >= cap || blown) return;
+    if (++nodes > budget) { blown = true; return; }
+    if (idx === order.length) { count++; return; }
+    const [r, c] = order[idx];
+    const cage = cageById[cageMap[r][c]];
+    for (let v = 1; v <= size; v++) {
+      if (rowUsed[r][v] || colUsed[c][v]) continue;
+      grid[r][c] = v; rowUsed[r][v] = true; colUsed[c][v] = true;
+      if (feasible(cage)) rec(idx + 1);
+      grid[r][c] = 0; rowUsed[r][v] = false; colUsed[c][v] = false;
+      if (count >= cap || blown) return;
+    }
+  };
+  rec(0);
+  return blown ? -1 : count;
+}
+
+/** Split one cell off a multi-cell cage into a single-cell "freebie" clue. */
+function splitOneCell(cages, solution, rng) {
+  const multi = cages.filter((c) => c.cells.length > 1);
+  if (multi.length === 0) return false;
+  const cage = multi[Math.floor(rng() * multi.length)];
+  const [cell] = cage.cells.splice(Math.floor(rng() * cage.cells.length), 1);
+  recomputeCage(cage, solution, rng);
+  cages.push({ id: cages.length, cells: [cell], op: '', target: solution[cell[0]][cell[1]] });
+  return true;
+}
+
 export function generateKenKen(size, seed) {
   const rng = createRng(seed);
   const solution = latinSquare(size, rng);
-  const { cages, cageMap } = buildCages(size, solution, rng);
+  const { cages } = buildCages(size, solution, rng);
+
+  // Force a unique solution: while ambiguous, peel a cell off a cage as a
+  // freebie. Strictly tightens constraints, so it always converges.
+  let guard = 0;
+  while (guard++ < size * size + 4) {
+    const count = kenkenSolutionCount(size, cages, rebuildCageMap(size, cages), 2);
+    if (count === 1) break;
+    if (!splitOneCell(cages, solution, rng)) break; // all singles → already unique
+  }
+
   return {
     size,
     solution,
     cages,
-    cageMap,
+    cageMap: rebuildCageMap(size, cages),
     player: Array.from({ length: size }, () => Array(size).fill(0)),
     seed,
   };
-}
-
-export function cycleKenKenCell(state, r, c) {
-  const player = state.player.map((row) => row.slice());
-  player[r][c] = player[r][c] === state.size ? 0 : player[r][c] + 1;
-  return { ...state, player };
 }
 
 export function setKenKenCell(state, r, c, value) {

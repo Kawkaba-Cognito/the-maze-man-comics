@@ -6,28 +6,26 @@ import { randomSeed } from '../../shared/rng';
 import { NumberPuzzleFrame } from '../../shared/NumberPuzzleFrame';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
 import { NumberPad } from '../../shared/GridSizePicker';
-import { generateKakuro, isKakuroSolved, kakuroHasConflict, setKakuroCell } from './kakuroEngine';
+import { generateKakuro, isKakuroSolved, resetKakuro, setKakuroCell } from './kakuroEngine';
 
 const CONFIG = getPuzzle('kakuro');
-const SIZES = [7, 9];
+const SIZES = [6, 7];
 
 export default function KakuroPuzzle({ onBack }) {
   const { currentLang, playSfx } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutorial = usePuzzleTutorial('kakuro', isAr);
-  const [size, setSize] = useState(7);
+  const [size, setSize] = useState(6);
   const [state, setState] = useState(null);
   const [elapsed, setElapsed] = useState(0);
   const [solved, setSolved] = useState(false);
-  const [error, setError] = useState(false);
   const [selected, setSelected] = useState(null);
 
   const newGame = useCallback((n, seed = randomSeed()) => {
     setState(generateKakuro(n, seed));
     setElapsed(0);
     setSolved(false);
-    setError(false);
     setSelected(null);
   }, []);
 
@@ -37,14 +35,11 @@ export default function KakuroPuzzle({ onBack }) {
     return () => clearInterval(id);
   }, [state, solved]);
 
+  // Win silently when the grid is complete and correct — no live feedback.
   useEffect(() => {
-    if (!state) return;
-    if (isKakuroSolved(state)) {
+    if (state && isKakuroSolved(state)) {
       setSolved(true);
-      setError(false);
       playSfx('win');
-    } else {
-      setError(kakuroHasConflict(state));
     }
   }, [state, playSfx]);
 
@@ -63,7 +58,7 @@ export default function KakuroPuzzle({ onBack }) {
       solved={solved}
       elapsed={elapsed}
       newGame={newGame}
-      onReset={() => setState((s) => ({ ...s, player: s.board.map((row) => row.map((cell) => (cell.block ? null : 0))) }))}
+      onReset={() => setState((s) => resetKakuro(s))}
       hint={isAr ? 'املأ ١-٩. مجموع كل مسار يطابق الرقم ولا تكرار داخله.' : 'Fill 1-9. Each run must match its clue sum with no repeats.'}
       {...tutorial}
     >
@@ -83,12 +78,13 @@ export default function KakuroPuzzle({ onBack }) {
                   </div>
                 );
               }
+              const fixed = state.fixed[r][c];
               return (
                 <button
                   key={`${r}-${c}`}
                   type="button"
-                  className={`ct-puzzle-cell ct-puzzle-cell--num ct-puzzle-cell--kakuro${selected?.[0] === r && selected?.[1] === c ? ' ct-puzzle-cell--selected' : ''}${error ? ' ct-puzzle-cell--err-soft' : ''}`}
-                  disabled={solved}
+                  className={`ct-puzzle-cell ct-puzzle-cell--num ct-puzzle-cell--kakuro${selected?.[0] === r && selected?.[1] === c ? ' ct-puzzle-cell--selected' : ''}${fixed ? ' ct-puzzle-cell--kakuro-given' : ''}`}
+                  disabled={solved || fixed}
                   onClick={() => {
                     playSfx('click');
                     setSelected([r, c]);
@@ -109,7 +105,6 @@ export default function KakuroPuzzle({ onBack }) {
         onPick={(n) => setState((s) => setKakuroCell(s, selected[0], selected[1], n))}
         onClear={() => setState((s) => setKakuroCell(s, selected[0], selected[1], 0))}
       />
-      {error ? <p className="ct-puzzle-error">{isAr ? 'يوجد تكرار في مسار' : 'A run has a repeat'}</p> : null}
     </NumberPuzzleFrame>
   );
 }

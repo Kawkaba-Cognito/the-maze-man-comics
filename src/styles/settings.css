@@ -14,7 +14,7 @@
     flex-direction: column;
     font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
     background-color: #fdf8f5;
-    background-image: url('/the-maze-man-comics/Assets/cancel-task-bg-mobile.png');
+    background-image: var(--asset-settings-mobile);
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
@@ -24,7 +24,7 @@
 @media (min-width: 768px) {
     .stg-screen--paper,
     .stg-screen.stg-screen--paper {
-        background-image: url('/the-maze-man-comics/Assets/cancel-task-bg-desktop.png');
+        background-image: var(--asset-settings-desktop);
         background-position: center center;
     }
 }

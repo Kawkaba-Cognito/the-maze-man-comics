@@ -6,7 +6,7 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
 .bg-poster {
     position: fixed; top: 0; left: 0;
     width: 100%; height: 100dvh;
-    background-image: url('/the-maze-man-comics/Assets/bg-mobile.webp');
+    background-image: var(--asset-bg-mobile);
     background-size: cover;
     background-position: center top;
     z-index: 0; pointer-events: none;
@@ -14,7 +14,7 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
 /* Desktop: switch to 16:9 landscape image */
 @media (min-width: 768px) {
     .bg-poster {
-        background-image: url('/the-maze-man-comics/Assets/bg-desktop.webp');
+        background-image: var(--asset-bg-desktop);
         background-position: center center;
     }
 }

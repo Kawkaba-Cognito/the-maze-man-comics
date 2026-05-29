@@ -1,14 +1,7 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import {
-  beginDrawAt,
-  extendDrawPath,
-  cellCenter,
-  cellFromPixel,
-  mazeLayout,
-  mazePortals,
-} from './mazeEngine';
+import { cellCenter, mazeLayout, mazePortals } from './mazeEngine';
 
-/** Porteus maze test palette — black ink walls on white paper, pencil-blue path. */
+/** Porteus maze test palette — black ink walls on white paper, pencil-blue trail. */
 const COLORS = {
   paper: '#ffffff',
   paperEdge: '#e8e0d4',
@@ -16,6 +9,8 @@ const COLORS = {
   path: '#1e4a8a',
   pathSoft: 'rgba(30, 74, 138, 0.35)',
   solved: '#1a6b3c',
+  token: '#e8ac4e',
+  tokenSolved: '#36c46a',
   label: '#0d0d0d',
   labelBg: '#ffffff',
 };
@@ -43,24 +38,19 @@ function drawMaze(ctx, state, solved, layout) {
     }
   }
 
-  // Solid wall blocks first — continuous Porteus-style borders
+  // Solid wall blocks — continuous Porteus-style borders
   ctx.fillStyle = COLORS.wall;
   for (let gr = 0; gr < dim; gr++) {
     for (let gc = 0; gc < dim; gc++) {
       if (wallGrid[gr][gc]) {
-        ctx.fillRect(
-          pad + gc * unit - 0.5,
-          pad + gr * unit - 0.5,
-          unit + 1,
-          unit + 1
-        );
+        ctx.fillRect(pad + gc * unit - 0.5, pad + gr * unit - 0.5, unit + 1, unit + 1);
       }
     }
   }
 
-  // Pencil path on top of corridors
-  if (path.length > 0) {
-    const lineW = Math.max(3, unit * 0.55);
+  // Breadcrumb trail showing where the avatar has walked
+  if (path.length > 1) {
+    const lineW = Math.max(2.5, unit * 0.42);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
@@ -85,6 +75,27 @@ function drawMaze(ctx, state, solved, layout) {
     ctx.stroke();
   }
 
+  // The avatar — a glowing token sitting on the current cell
+  const [cr, cc] = path[path.length - 1];
+  const center = cellCenter(cr, cc, pad, unit, dim);
+  const tokenColor = solved ? COLORS.tokenSolved : COLORS.token;
+  const radius = Math.max(3, unit * 0.34);
+
+  ctx.save();
+  ctx.shadowColor = tokenColor;
+  ctx.shadowBlur = radius * 1.6;
+  ctx.fillStyle = tokenColor;
+  ctx.beginPath();
+  ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Bright core for a "glow" read
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.beginPath();
+  ctx.arc(center.x, center.y, radius * 0.42, 0, Math.PI * 2);
+  ctx.fill();
+
   // START / GOAL labels (Porteus test style)
   const portals = mazePortals(size, pad, unit, dim);
   const fontSize = Math.max(9, unit * 0.72);
@@ -108,10 +119,8 @@ function drawMaze(ctx, state, solved, layout) {
   ctx.fillText('GOAL', portals.exit.x, portals.exit.y);
 }
 
-export default function MazeCanvas({ state, solved, onPathChange, playSfx }) {
+export default function MazeCanvas({ state, solved }) {
   const canvasRef = useRef(null);
-  const layoutRef = useRef({ pad: 0, inner: 0, displaySize: 0, unit: 1, dim: 1 });
-  const drawingRef = useRef(false);
 
   const paint = useCallback(() => {
     const canvas = canvasRef.current;
@@ -124,9 +133,6 @@ export default function MazeCanvas({ state, solved, onPathChange, playSfx }) {
     canvas.height = Math.round(displaySize * dpr);
 
     const layout = mazeLayout(displaySize);
-    const unit = layout.inner / state.dim;
-    layoutRef.current = { ...layout, unit, dim: state.dim, displaySize };
-
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawMaze(ctx, state, solved, layout);
@@ -141,67 +147,12 @@ export default function MazeCanvas({ state, solved, onPathChange, playSfx }) {
     return () => ro.disconnect();
   }, [paint]);
 
-  const hitCell = useCallback(
-    (clientX, clientY) => {
-      const canvas = canvasRef.current;
-      if (!canvas || !state) return null;
-      const rect = canvas.getBoundingClientRect();
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
-      const { pad, unit, dim } = layoutRef.current;
-      return cellFromPixel(x, y, pad, unit, state.size, dim);
-    },
-    [state]
-  );
-
-  const applyCell = useCallback(
-    (r, c, isStart) => {
-      if (solved || r == null) return;
-      onPathChange((s) => (isStart ? beginDrawAt(s, r, c) : extendDrawPath(s, r, c)));
-    },
-    [solved, onPathChange]
-  );
-
-  const handlePointerDown = useCallback(
-    (e) => {
-      if (solved) return;
-      e.preventDefault();
-      drawingRef.current = true;
-      canvasRef.current?.setPointerCapture(e.pointerId);
-      const hit = hitCell(e.clientX, e.clientY);
-      if (hit) {
-        applyCell(hit[0], hit[1], true);
-        playSfx('click');
-      }
-    },
-    [solved, hitCell, applyCell, playSfx]
-  );
-
-  const handlePointerMove = useCallback(
-    (e) => {
-      if (!drawingRef.current || solved) return;
-      e.preventDefault();
-      const hit = hitCell(e.clientX, e.clientY);
-      if (hit) applyCell(hit[0], hit[1], false);
-    },
-    [solved, hitCell, applyCell]
-  );
-
-  const handlePointerUp = useCallback(() => {
-    drawingRef.current = false;
-  }, []);
-
   return (
     <div className="ct-puzzle-maze-wrap">
       <canvas
         ref={canvasRef}
         className="ct-puzzle-maze-canvas ct-puzzle-maze-canvas--porteus"
-        aria-label="Draw a path through the maze from START to GOAL"
-        style={{ touchAction: 'none' }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        aria-label="Maze. Move your token from START to GOAL using the joystick."
       />
     </div>
   );

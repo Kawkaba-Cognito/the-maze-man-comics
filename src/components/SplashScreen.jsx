@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import SettingsScreen, { AboutModal } from '../features/settings/SettingsScreen';
+import { assetUrl } from '../lib/assetUrl';
 
 /** Real brain photo — transparent PNG, lateral (side) view. */
 function SplashBrainSide({ className }) {
   return (
     <img
       className={className}
-      src="/the-maze-man-comics/Assets/brain-side.png"
+      src={assetUrl('Assets/brain-side.png')}
       alt=""
       aria-hidden="true"
       draggable="false"

@@ -25,7 +25,7 @@ const takuzu = {
   desc: 'Fill with 0 and 1 — balance each row and column.',
   descAr: 'املأ بالصفر والواحد — وازِن كل صف وعمود.',
   accent: '#b696d4',
-  sizes: [4, 6],
+  sizes: [4, 6, 8, 10],
   loader: () => import('./games/takuzu'),
 };
 
@@ -38,7 +38,7 @@ const hitori = {
   desc: 'Shade duplicates — no adjacent shaded cells.',
   descAr: 'ظلّل المكررات — لا خلايا متظللة متجاورة.',
   accent: '#e07aaa',
-  sizes: [3, 4, 5, 6],
+  sizes: [5, 6, 7, 8],
   loader: () => import('./games/hitori'),
 };
 
@@ -90,7 +90,7 @@ const nonogram = {
   desc: 'Use row and column clues to reveal the picture.',
   descAr: 'استخدم دلائل الصفوف والأعمدة لكشف الصورة.',
   accent: '#64b5c2',
-  sizes: [5, 10, 15],
+  sizes: [5, 8, 10],
   loader: () => import('./games/nonogram'),
 };
 
@@ -103,7 +103,7 @@ const kakuro = {
   desc: 'Crossword sums with digits 1-9.',
   descAr: 'كلمات متقاطعة حسابية بالأرقام ١-٩.',
   accent: '#b696d4',
-  sizes: [7, 9],
+  sizes: [6, 7],
   loader: () => import('./games/kakuro'),
 };
 

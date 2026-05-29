@@ -21,9 +21,9 @@ export const PUZZLE_UI = {
     menu: 'Menu',
     check: 'Check',
     hint: 'Tap cells to play. Use New puzzle for a fresh board.',
-    slidingHint: 'Tap a tile next to the empty space to slide it.',
+    slidingHint: 'Tap a tile to slide it toward the gap — a whole row or column slides at once.',
     takuzuHint: 'Tap to cycle: empty → 0 → 1. Equal counts per row & column; no three in a row.',
-    hitoriHint: 'Tap to shade. No adjacent shaded cells; row & column counts must match.',
+    hitoriHint: 'Tap to shade duplicates. No two shaded cells touch; unshaded cells stay connected.',
     mazeHint: 'One solution — wrong turns hit dead ends. Trace carefully from START to GOAL.',
   },
   ar: {
@@ -48,9 +48,9 @@ export const PUZZLE_UI = {
     menu: 'القائمة',
     check: 'تحقق',
     hint: 'اضغط الخلايا للعب. «لغز جديد» لصفحة جديدة.',
-    slidingHint: 'اضغط لوحاً بجانب الفراغ لتحريكه.',
+    slidingHint: 'اضغط لوحاً لينزلق نحو الفراغ — ينزلق صف أو عمود كامل دفعة واحدة.',
     takuzuHint: 'اضغط للتبديل: فارغ ← ٠ ← ١. تساوي العدد في كل صف وعمود؛ لا ثلاثة متتالية.',
-    hitoriHint: 'اضغط للتظليل. لا خلايا متظللة متجاورة؛ العدد يطابق الأرقام على الحافة.',
+    hitoriHint: 'ظلّل المكررات. لا خليتان متظللتان متجاورتان؛ تبقى الخلايا البيضاء متصلة.',
     mazeHint: 'حل واحد — المسارات الخاطئة تصل إلى ممرات مسدودة. ارسم بعناية من START إلى GOAL.',
   },
 };
