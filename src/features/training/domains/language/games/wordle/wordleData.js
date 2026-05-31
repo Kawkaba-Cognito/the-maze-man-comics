@@ -3,9 +3,10 @@
  */
 
 import { LINK_WORDS_EN } from './link-words-en';
+import { LINK_WORDS_AR } from './link-words-ar';
 import { computeGridWords } from './linkDictionary';
 
-export const WORDLE_LEVELS_PER_TIER = 20;
+export const WORDLE_LEVELS_PER_TIER = 100;
 export const WORDLE_DIFF_KEYS = ['easy', 'medium', 'hard'];
 export const WORDLE_PROGRESS_ORDER = ['easy', 'medium', 'hard'];
 
@@ -18,12 +19,29 @@ export const WORDLE_DM = {
 export const WORDLE_FREE_SESSION_START_SEC = 90;
 export const WORDLE_FREE_SESSION_CAP_SEC = 180;
 
+/** Free mode is endless and lives-based: reach the (small) word target on each
+ *  grid before its timer runs out. Clear → harder grid; time out → lose a life;
+ *  run ends at 0 lives. */
+export const WORDLE_FREE_LIVES = 3;
+
 const CHALLENGE_LEVEL = { diff: 'medium', lv: 10 };
+/** Pass-n-Play representative level per difficulty. */
+export const WORDLE_PASS_PLAY_LV = { easy: 10, medium: 10, hard: 10 };
 
 const PLACE_POOL = LINK_WORDS_EN.filter((w) => w.length >= 3 && w.length <= 5);
+const PLACE_POOL_AR = LINK_WORDS_AR.filter((w) => w.length >= 3 && w.length <= 5);
 
 const VOWELS = 'eeeeaaaoooiiiuu';
 const CONSONANTS = 'rstlnccddppmmhbbffwwyyggvvkk';
+// Arabic filler weighted by rough letter frequency (long vowels + common consonants).
+const VOWELS_AR = 'اااااويييه';
+const CONSONANTS_AR = 'لللنننممرررتتببسسددعففقققككهحجشطزخصضذثغ';
+
+function langPools(lang) {
+  return lang === 'ar'
+    ? { place: PLACE_POOL_AR, vowels: VOWELS_AR, consonants: CONSONANTS_AR, vowelRate: 0.5 }
+    : { place: PLACE_POOL, vowels: VOWELS, consonants: CONSONANTS, vowelRate: 0.42 };
+}
 
 const DIRS = [
   [-1, -1], [-1, 0], [-1, 1],
@@ -54,8 +72,8 @@ function rcToIdx(r, c, size) {
   return r * size + c;
 }
 
-function pickWeightedLetter(rng) {
-  const pool = rng() < 0.42 ? VOWELS : CONSONANTS;
+function pickWeightedLetter(rng, pools) {
+  const pool = rng() < pools.vowelRate ? pools.vowels : pools.consonants;
   return pool[Math.floor(rng() * pool.length)];
 }
 
@@ -88,17 +106,18 @@ function tryPlaceWord(grid, size, word, rng) {
   return false;
 }
 
-export function generateLetterGrid(size, seed) {
+export function generateLetterGrid(size, seed, lang = 'en') {
+  const pools = langPools(lang);
   const rng = mulberry32(seed >>> 0);
   const grid = Array(size * size).fill('');
   const picks = [];
   const nPlace = Math.min(6, 3 + Math.floor(size * 0.8));
   for (let i = 0; i < nPlace; i++) {
-    const w = PLACE_POOL[Math.floor(rng() * PLACE_POOL.length)];
+    const w = pools.place[Math.floor(rng() * pools.place.length)];
     if (w && tryPlaceWord(grid, size, w, rng)) picks.push(w);
   }
   for (let i = 0; i < grid.length; i++) {
-    if (!grid[i]) grid[i] = pickWeightedLetter(rng);
+    if (!grid[i]) grid[i] = pickWeightedLetter(rng, pools);
   }
   return grid;
 }
@@ -138,11 +157,20 @@ export function specificationForLevel(diff, lv) {
   return { diff: key, lv: li, size, minLen, targetWords, timeSec };
 }
 
-export function createRound(seed, spec, extra = {}) {
-  const grid = generateLetterGrid(spec.size, seed);
-  const gridWords = computeGridWords(grid, spec.size, spec.minLen);
+export function createRound(seed, spec, extra = {}, lang = 'en') {
+  const grid = generateLetterGrid(spec.size, seed, lang);
+  const gridWords = computeGridWords(grid, spec.size, spec.minLen, lang);
+  // Keep the pass target achievable on THIS grid (essential for the sparser
+  // Arabic dictionary): never ask for more than ~60% of the findable words.
+  let targetWords = spec.targetWords;
+  if (extra.mode === 'level' || extra.mode === 'free') {
+    targetWords = Math.max(3, Math.min(targetWords, Math.floor(gridWords.size * 0.6)));
+  }
   return {
     ...spec,
+    ...extra,
+    targetWords,
+    lang,
     seed: seed >>> 0,
     grid,
     gridWords,
@@ -151,7 +179,6 @@ export function createRound(seed, spec, extra = {}) {
     timeLeft: spec.timeSec ?? 75,
     complete: false,
     failed: false,
-    ...extra,
   };
 }
 
@@ -171,19 +198,31 @@ export function trySubmitWord(round, path) {
   if (word.length < round.minLen) {
     return { ok: false, reason: 'short' };
   }
-  if (!isValidLinkedWord(word, round.gridWords, round.minLen)) {
+  // Accept the word; for Arabic also accept it traced right-to-left (the same
+  // letters in reverse order), since RTL players may drag the other way.
+  let canonical = null;
+  if (isValidLinkedWord(word, round.gridWords, round.minLen)) {
+    canonical = word;
+  } else if (round.lang === 'ar') {
+    const rev = word.split('').reverse().join('');
+    if (isValidLinkedWord(rev, round.gridWords, round.minLen)) canonical = rev;
+  }
+  if (!canonical) {
     return { ok: false, reason: 'invalid' };
   }
-  if (round.found.includes(word)) {
+  if (round.found.includes(canonical)) {
     return { ok: false, reason: 'duplicate' };
   }
-  const pts = scoreLinkedWord(word);
-  round.found.push(word);
+  const pts = scoreLinkedWord(canonical);
+  round.found.push(canonical);
   round.score += pts;
-  if (round.mode === 'level' && round.found.length >= round.targetWords) {
+  if (
+    (round.mode === 'level' || round.mode === 'free') &&
+    round.found.length >= round.targetWords
+  ) {
     round.complete = true;
   }
-  return { ok: true, word, pts };
+  return { ok: true, word: canonical, pts };
 }
 
 /** Verbal Fluency Score from words found vs target (levels) or efficiency (timed). */
@@ -232,21 +271,37 @@ export function freeStageToDiffLv(stage) {
   };
 }
 
-export function prepareFreeRound(stage, seed) {
+export function prepareFreeRound(stage, seed, lang = 'en') {
   const { diff, lv } = freeStageToDiffLv(stage);
   const spec = specificationForLevel(diff, lv);
-  return createRound(seed, { ...spec, timeSec: 9999 }, { mode: 'free', freeStage: stage });
+  // Small per-grid target that grows slowly, on a shrinking per-grid clock.
+  const targetWords = Math.min(6, 3 + Math.floor(stage / 10));
+  const timeSec = Math.max(35, 60 - Math.floor(stage * 0.8));
+  return createRound(seed, { ...spec, targetWords, timeSec }, { mode: 'free', freeStage: stage }, lang);
 }
 
-export function prepareLevelRound(diff, lv, seed) {
+export function prepareLevelRound(diff, lv, seed, lang = 'en') {
   const spec = specificationForLevel(diff, lv);
-  return createRound(seed, spec, { mode: 'level' });
+  return createRound(seed, spec, { mode: 'level' }, lang);
 }
 
-export function prepareChallengeSeed() {
+/** One fixed, open-ended timed grid for the global assessment (verbal fluency). */
+export function prepareAssessRound(seed, lang = 'en') {
+  const spec = specificationForLevel('medium', 50);
+  return createRound(
+    seed,
+    { ...spec, timeSec: 90, targetWords: 999 },
+    { mode: 'assess' },
+    lang,
+  );
+}
+
+export function prepareChallengeSeed(diff = 'medium', lang = 'en') {
+  const d = WORDLE_DIFF_KEYS.includes(diff) ? diff : 'medium';
+  const lv = WORDLE_PASS_PLAY_LV[d] ?? CHALLENGE_LEVEL.lv;
   const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-  const spec = specificationForLevel(CHALLENGE_LEVEL.diff, CHALLENGE_LEVEL.lv);
-  return { seed, spec, diff: CHALLENGE_LEVEL.diff, lv: CHALLENGE_LEVEL.lv };
+  const spec = specificationForLevel(d, lv);
+  return { seed, spec, diff: d, lv, lang };
 }
 
 export function prepareChallengeRound(cSeed) {
@@ -255,6 +310,7 @@ export function prepareChallengeRound(cSeed) {
     cSeed.seed,
     { ...spec, timeSec: 90, targetWords: 999 },
     { mode: 'challenge' },
+    cSeed.lang ?? 'en',
   );
 }
 

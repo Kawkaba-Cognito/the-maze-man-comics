@@ -28,6 +28,16 @@ export const VIGIL_FREE_SESSION_START_SEC = 90;
 export const VIGIL_FREE_SESSION_CAP_SEC = 180;
 export const VIGIL_FREE_MAX_COMMISSIONS = 3;
 
+/**
+ * Free mode is endless: the run ends only when lives run out. You have 3 lives;
+ * failing a block (too many misses / false taps to pass) costs one life. Clearing
+ * a block ramps to a harder one; failing with lives left replays the same stage.
+ */
+export const VIGIL_FREE_LIVES = 3;
+
+/** Representative curriculum level used by each Pass-n-Play difficulty. */
+export const VIGIL_PASS_PLAY_LV = { easy: 12, medium: 12, hard: 12 };
+
 const PASS_THRESHOLDS = {
   easy: { minHit: 75, maxCommission: 20, maxOmission: 25 },
   medium: { minHit: 78, maxCommission: 15, maxOmission: 20 },
@@ -326,18 +336,20 @@ export function prepareLevelBlock(diff, lv, seed) {
   };
 }
 
-export function prepareChallengeSeed() {
+export function prepareChallengeSeed(diff = 'hard') {
   const seed =
     (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-  const { diff, lv } = CHALLENGE_LEVEL;
-  const spec = specificationForLevel(diff, lv);
-  return { seed, spec, diff, lv };
+  const d = VIGIL_DIFF_KEYS.includes(diff) ? diff : 'hard';
+  const lv = VIGIL_PASS_PLAY_LV[d] ?? CHALLENGE_LEVEL.lv;
+  const spec = specificationForLevel(d, lv);
+  return { seed, spec, diff: d, lv };
 }
 
 export function prepareChallengeBlock(cSeed) {
-  const spec = cSeed.spec ?? specificationForLevel(CHALLENGE_LEVEL.diff, CHALLENGE_LEVEL.lv);
+  const diff = cSeed.diff ?? CHALLENGE_LEVEL.diff;
+  const lv = cSeed.lv ?? CHALLENGE_LEVEL.lv;
+  const spec = cSeed.spec ?? specificationForLevel(diff, lv);
   const seed = cSeed.seed >>> 0;
-  const { diff, lv } = CHALLENGE_LEVEL;
   return {
     mode: 'challenge',
     diff: spec.diff,

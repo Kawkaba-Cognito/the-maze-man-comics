@@ -46,33 +46,33 @@ const STR = {
     progress: (n, t) => `Step ${n} of ${t}`,
     main: {
       welcome: {
-        title: 'Card Sort (WCST)',
-        body: 'A neuroscience classic: sort by a hidden rule using only Correct / Not correct feedback.',
+        title: 'Card Sort',
+        body: 'Sort each card by the rule shown at the top — colour, shape, or number. The rule keeps switching.',
       },
       piles: {
         title: 'Four reference piles',
-        body: 'These key cards stay fixed. Each shows color, shape, and count (1–4 dots).',
+        body: 'These key cards stay fixed. Each shows a colour, a shape, and a count (1–4 dots).',
       },
       probe: {
-        title: 'Match the center card',
-        body: 'A new card appears. Tap the pile it matches — by color, shape, or count. The rule is never told.',
+        title: 'Match by the shown rule',
+        body: 'A card appears. The banner says which rule is active (e.g. COLOR) — tap the pile that matches the card by that rule.',
       },
       shift: {
-        title: 'Rule shifts',
-        body: 'After R consecutive correct sorts (R = 6–10), the rule changes with no warning. Flexibility = adapting fast.',
+        title: '⚡ The rule switches',
+        body: 'After a streak, a banner announces the NEW rule (e.g. → SHAPE). Let go of the old rule and follow the new one fast — that is cognitive flexibility.',
       },
       science: {
         title: 'What we measure',
-        body: 'Categories completed (CC), perseverative errors (PE), efficiency η = correct/total, and Cognitive Flexibility Score (CFS).',
+        body: 'How well you adapt at each switch: efficiency, switches completed, and perseverative errors (sorting by the old rule). It all feeds your Flexibility score.',
       },
       ready: {
         title: 'Ready!',
-        body: 'Use feedback to discover each rule. Avoid sorting by the old rule after a shift.',
+        body: 'Always follow the rule on the banner. When it switches, switch with it — don’t keep using the old rule.',
       },
     },
-    free: 'Free mode: session timer, blocks get harder when you pass. Too many errors ends the run.',
+    free: 'Free mode: endless, and it gets harder. Sort by the shown rule; it keeps switching. Solid play continues the run.',
     challenge:
-      'Challenge: identical card sequence for every player. Highest CFS wins — pass the device each turn.',
+      'Pass n Play: identical card sequence for every player. Highest flexibility wins — pass the device each turn.',
   },
   ar: {
     skip: 'تخطّي',
@@ -83,33 +83,33 @@ const STR = {
     progress: (n, t) => `الخطوة ${n} من ${t}`,
     main: {
       welcome: {
-        title: 'فرز البطاقات (WCST)',
-        body: 'اختبار عصبي كلاسيكي: فرز بقاعدة مخفية من تغذية «صحيح / غير صحيح» فقط.',
+        title: 'فرز البطاقات',
+        body: 'افرز كل بطاقة حسب القاعدة المعروضة في الأعلى — اللون أو الشكل أو العدد. القاعدة تتبدّل باستمرار.',
       },
       piles: {
         title: 'أربع كوم مرجعية',
         body: 'بطاقات ثابتة: لون، شكل، وعدد (١–٤ نقاط).',
       },
       probe: {
-        title: 'طابق البطاقة الوسطى',
-        body: 'بطاقة جديدة كل مرة. اضغط الكومة المطابقة — باللون أو الشكل أو العدد. القاعدة لا تُقال.',
+        title: 'طابق حسب القاعدة المعروضة',
+        body: 'تظهر بطاقة. الشارة تخبرك بالقاعدة الحالية (مثلاً اللون) — اضغط الكومة التي تطابق البطاقة بتلك القاعدة.',
       },
       shift: {
-        title: 'تبديل القاعدة',
-        body: 'بعد R إجابات صحيحة متتالية (٦–١٠) تتغير القاعدة دون تنبيه. المرونة = التكيف بسرعة.',
+        title: '⚡ تتبدّل القاعدة',
+        body: 'بعد سلسلة نجاحات تعلن شارة القاعدة الجديدة (مثلاً ← الشكل). اترك القديمة واتبع الجديدة بسرعة — هذه هي المرونة الذهنية.',
       },
       science: {
         title: 'ما نقيسه',
-        body: 'فئات مكتملة (CC)، أخطاء إصرار (PE)، كفاءة η = صحيح/المجموع، ودرجة المرونة المعرفية (CFS).',
+        body: 'مدى تكيّفك عند كل تبديل: الكفاءة، عدد التبديلات، وأخطاء الإصرار (الفرز بالقاعدة القديمة). كله يغذّي درجة مرونتك.',
       },
       ready: {
         title: 'جاهز!',
-        body: 'اكتشف القاعدة من التغذية الراجعة. تجنب الفرز بالقاعدة القديمة بعد التبديل.',
+        body: 'اتبع دائماً القاعدة على الشارة. عند تبديلها بدّل معها — لا تستمر بالقاعدة القديمة.',
       },
     },
-    free: 'وضع حر: مؤقت جلسة، الكتل تصعب عند النجاح. أخطاء كثيرة تنهي المحاولة.',
+    free: 'وضع حر: لا ينتهي ويزداد صعوبة. افرز حسب القاعدة المعروضة؛ وهي تتبدّل. اللعب الجيد يواصل المحاولة.',
     challenge:
-      'تحدي: نفس تسلسل البطاقات للجميع. أعلى CFS يفوز — مرّر الجهاز كل دور.',
+      'مرّر والعب: نفس تسلسل البطاقات للجميع. أعلى مرونة يفوز — مرّر الجهاز كل دور.',
   },
 };
 
@@ -130,7 +130,7 @@ function TutCardFace({ card, small }) {
   );
 }
 
-function DemoBoard({ step }) {
+function DemoBoard({ step, isAr }) {
   const demoProbe = { color: 'blue', shape: 'square', count: 2 };
   return (
     <div className="ct-wcst-tut-demo">
@@ -152,7 +152,7 @@ function DemoBoard({ step }) {
         </div>
       ) : null}
       {step === 'shift' && (
-        <p className="ct-wcst-tut-shift-tag">Rule changed — discover again</p>
+        <p className="ct-wcst-tut-shift-tag">{isAr ? '⚡ تبدّلت القاعدة — اتبع الجديدة' : '⚡ Rule switched — follow the new one'}</p>
       )}
     </div>
   );
@@ -231,7 +231,7 @@ function MainTutorial({ t, isAr, onClose, playSfx }) {
     >
       <div className="ct-fq-tut-backdrop" />
       <div className="ct-fq-tut-card" style={{ padding: '14px 12px' }}>
-        <DemoBoard step={step} />
+        <DemoBoard step={step} isAr={isAr} />
       </div>
       <div className="ct-fq-tut-dock">
         <div className="ct-fq-tut-dock-mm">

@@ -1,32 +1,51 @@
-/** Memo Span — object study + serial-recall (Corsi-style) test.
+/* =============================================================================
+ * MEMO SPAN — visuospatial WORKING-MEMORY span (Corsi / Digit-Span-Backward)
  *
- * Player watches a sequence of objects flash one at a time, then must tap
- * them back IN THE EXACT ORDER from a grid that also contains distractor
- * "foil" objects that were never shown. First wrong tap ends the round.
- */
+ * Objects sit in a fixed grid. A sequence of cells lights up one-by-one; the
+ * player reproduces it by tapping the cells back — in the SAME order (forward
+ * span = short-term storage) on the gentle on-ramp, then in REVERSE order
+ * (backward span = working-memory MANIPULATION) for most of the game.
+ *
+ * This is the Corsi block-tapping test (Corsi 1972) plus the backward variant
+ * used clinically (WAIS Digit Span Backward / Spatial Span Backward) — the
+ * canonical measures of visuospatial working memory. Primary metric: span
+ * (longest sequence reproduced), which feeds the assessment.
+ * ========================================================================== */
 
 import { objectIds } from './memoObjects';
 
-export const MS_LEVELS_PER_TIER = 20;
+export const MS_LEVELS_PER_TIER = 100;
 export const MS_DIFF_KEYS = ['easy', 'medium', 'hard'];
+export const MS_PROGRESS_ORDER = MS_DIFF_KEYS;
+export const MS_FREE_LIVES = 3;
 
 export const MS_DM = {
-  easy: { label: 'Easy', pop: 'Short sequence · clear timing', lvc: 'lve' },
-  medium: { label: 'Medium', pop: 'Longer sequence · faster', lvc: 'lvm' },
-  hard: { label: 'Hard', pop: 'Long sequence · quick flashes', lvc: 'lvh' },
+  easy: { label: 'Easy', pop: '6 cells · forward → reverse', lvc: 'lve' },
+  medium: { label: 'Medium', pop: '9 cells · reverse · faster', lvc: 'lvm' },
+  hard: { label: 'Hard', pop: '12 cells · reverse · long', lvc: 'lvh' },
 };
 
-const CHALLENGE_LEVEL = { diff: 'medium', lv: 8 };
+/** Pass-n-Play presets per difficulty (fixed span + direction). */
+export const MS_PASS_PLAY = {
+  easy: { span: 5, backward: false, gridCells: 6 },
+  medium: { span: 5, backward: true, gridCells: 9 },
+  hard: { span: 6, backward: true, gridCells: 12 },
+};
+
+const TIER = {
+  easy: { span: [2, 5], grid: 6, flash: [900, 650], gap: [350, 230] },
+  medium: { span: [3, 6], grid: 9, flash: [820, 580], gap: [320, 200] },
+  hard: { span: [4, 8], grid: 12, flash: [720, 480], gap: [280, 160] },
+};
 
 function lerp(a, b, t) {
   return a + (b - a) * t;
 }
-
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 
-function mulberry32(seed) {
+export function mulberry32(seed) {
   let a = seed >>> 0;
   return () => {
     a |= 0;
@@ -36,7 +55,6 @@ function mulberry32(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-
 function shuffle(arr, rnd) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -46,116 +64,98 @@ function shuffle(arr, rnd) {
   return a;
 }
 
+/** Columns for a given cell count (keeps the grid roughly square). */
+export function colsFor(gridCells) {
+  if (gridCells <= 6) return 3;
+  if (gridCells <= 9) return 3;
+  return 4;
+}
+
 /**
- * Difficulty curve tuned for serial recall (harder than recognition).
- *   - easy:   3 → 5 objects, flash 1100 → 850ms, foils = studyCount,     passPct 70 → 80
- *   - medium: 4 → 6 objects, flash 1000 → 700ms, foils = studyCount + 1, passPct 75 → 85
- *   - hard:   5 → 8 objects, flash  850 → 500ms, foils = studyCount + 2, passPct 80 → 90
+ * Whether a level uses REVERSE recall (working memory).
+ * Forward only on the first 10 easy levels (on-ramp); reverse from then on, so
+ * the overwhelming majority of the game trains working-memory manipulation.
  */
-export function specificationForLevel(diff, levelIndex) {
+export function isBackward(diff, lv) {
+  if (diff === 'easy') return lv > 10;
+  if (diff === 'medium') return lv > 4;
+  return true;
+}
+
+export function specForLevel(diff, levelIndex) {
   const key = MS_DIFF_KEYS.includes(diff) ? diff : 'easy';
-  const li = clamp(Math.floor(levelIndex) || 1, 1, MS_LEVELS_PER_TIER) - 1;
-  const t = li / (MS_LEVELS_PER_TIER - 1);
-
-  let studyMin;
-  let studyMax;
-  let flashStart;
-  let flashEnd;
-  let foilBonus;
-  let passStart;
-  let passEnd;
-  if (key === 'easy') {
-    studyMin = 3; studyMax = 5;
-    flashStart = 1100; flashEnd = 850;
-    foilBonus = 0;
-    passStart = 70; passEnd = 80;
-  } else if (key === 'medium') {
-    studyMin = 4; studyMax = 6;
-    flashStart = 1000; flashEnd = 700;
-    foilBonus = 1;
-    passStart = 75; passEnd = 85;
-  } else {
-    studyMin = 5; studyMax = 8;
-    flashStart = 850; flashEnd = 500;
-    foilBonus = 2;
-    passStart = 80; passEnd = 90;
-  }
-
-  const studyCount = Math.round(lerp(studyMin, studyMax, t));
-  const foilCount = studyCount + foilBonus;
-  const flashMs = Math.round(lerp(flashStart, flashEnd, t));
-  const gapStart = key === 'hard' ? 350 : 400;
-  const gapEnd = key === 'hard' ? 200 : 280;
-  const gapMs = Math.round(lerp(gapStart, gapEnd, t));
-  const passPct = Math.round(lerp(passStart, passEnd, t));
-
+  const lv = clamp(Math.floor(levelIndex) || 1, 1, MS_LEVELS_PER_TIER);
+  const t = (lv - 1) / (MS_LEVELS_PER_TIER - 1);
+  const b = TIER[key];
+  const span = Math.round(lerp(b.span[0], b.span[1], t));
+  const gridCells = b.grid;
   return {
     diff: key,
-    lv: li + 1,
-    studyCount,
-    foilCount,
-    poolCount: studyCount + foilCount,
-    flashMs,
-    gapMs,
-    passPct,
+    lv,
+    span: clamp(span, 2, gridCells),
+    gridCells,
+    cols: colsFor(gridCells),
+    flashMs: Math.round(lerp(b.flash[0], b.flash[1], t)),
+    gapMs: Math.round(lerp(b.gap[0], b.gap[1], t)),
+    backward: isBackward(key, lv),
+  };
+}
+
+export function specForFree(span) {
+  const s = clamp(span, 2, 9);
+  const gridCells = clamp(s + 3, 6, 16);
+  return {
+    diff: 'free',
+    lv: 0,
+    span: s,
+    gridCells,
+    cols: colsFor(gridCells),
+    flashMs: clamp(Math.round(900 - s * 35), 480, 900),
+    gapMs: clamp(Math.round(340 - s * 14), 170, 340),
+    backward: s >= 4, // forward warm-up at very short spans, then reverse
   };
 }
 
 /**
- * Build a single serial-recall round.
- *   studyItems:  ordered list of objects the player must reproduce
- *   recallPool:  shuffled grid containing every studied object + foils
+ * Build a round: assign objects to grid cells, pick a sequence of DISTINCT cells.
+ *   gridObjects: objectId per cell (index 0..gridCells-1)
+ *   sequence:    cell indices in the order they light up
+ *   expected:    the order the player must tap (reversed when backward)
  */
-export function buildSerialRecallRound(spec, seed = Date.now()) {
+export function buildRound(spec, seed = Date.now()) {
   const rnd = mulberry32(seed >>> 0);
-  const studyObjectIds = objectIds(spec.studyCount, rnd);
-  const studySet = new Set(studyObjectIds);
-  const foilIds = objectIds(spec.foilCount ?? spec.studyCount, rnd, studySet);
-
-  const studyItems = studyObjectIds.map((objectId, i) => ({ id: `s${i}`, objectId }));
-  const recallPool = shuffle([...studyObjectIds, ...foilIds], rnd);
-
-  return { studyItems, recallPool };
+  const gridObjects = objectIds(spec.gridCells, rnd);
+  const cellIdx = shuffle(
+    Array.from({ length: spec.gridCells }, (_, i) => i),
+    rnd,
+  );
+  const sequence = cellIdx.slice(0, spec.span);
+  const expected = spec.backward ? [...sequence].reverse() : sequence;
+  return { gridObjects, sequence, expected };
 }
 
-/**
- * Grade a serial-recall attempt.
- *   playerTaps: ordered array of objectIds the player tapped (stops at first wrong)
- *   Returns:
- *     correctSequence — true only if every studied position was tapped correctly
- *     correctCount    — positions matched in order before the first error
- *     total           — total study positions
- *     pct             — correctCount / total as a percentage
- */
-export function gradeSerialRecall(studyItems, playerTaps) {
-  const total = studyItems.length;
-  const taps = Array.isArray(playerTaps) ? playerTaps : [];
+/** Grade tapped cell indices against the expected order (stops at first error). */
+export function gradeRecall(expected, taps) {
+  const total = expected.length;
+  const t = Array.isArray(taps) ? taps : [];
   let correctCount = 0;
   for (let i = 0; i < total; i++) {
-    if (i >= taps.length) break;
-    if (taps[i] === studyItems[i].objectId) {
-      correctCount++;
-    } else {
-      break;
-    }
+    if (i >= t.length) break;
+    if (t[i] === expected[i]) correctCount++;
+    else break;
   }
+  const correctSequence = correctCount === total && t.length === total;
   const pct = total ? Math.round((correctCount / total) * 100) : 0;
-  const correctSequence = correctCount === total && taps.length === total;
-  return { correctSequence, correctCount, total, pct };
+  return { correctCount, total, correctSequence, pct };
 }
 
-/**
- * Stars for a serial-recall grade.
- *   3 stars — full sequence correct
- *   2 stars — ≥ 80% positions correct
- *   1 star  — ≥ passPct positions correct
- *   0 stars — below passPct
- */
-export function starsForSerialRecall(grade, spec) {
-  if (grade.correctSequence) return 3;
-  if (grade.pct >= 80) return 2;
-  if (grade.pct >= spec.passPct) return 1;
-  return 0;
+/** Stars: pass = full sequence; 2–3 stars reward fluent (fast) recall. */
+export function starsForRecall(grade, recallMs, span) {
+  if (!grade.correctSequence) return 0;
+  const perItem = recallMs / Math.max(1, span);
+  if (perItem <= 750) return 3;
+  if (perItem <= 1200) return 2;
+  return 1;
 }
 
 export function isMemoSpanLevelUnlocked(diff, lv, doneMap) {
@@ -164,84 +164,68 @@ export function isMemoSpanLevelUnlocked(diff, lv, doneMap) {
 }
 
 export function describeBriefing(spec, isAr) {
+  const dir = spec.backward
+    ? (isAr ? 'بترتيب معكوس' : 'in REVERSE order')
+    : (isAr ? 'بنفس الترتيب' : 'in the SAME order');
   if (isAr) {
     return {
       headline: 'مهمة هذه الجولة',
-      watchLine: 'سنريك أشياء واحداً تلو الآخر — احفظ ترتيبها',
-      tapLine: 'بعدها اضغط الأشياء بنفس الترتيب الذي ظهرت به',
-      detailLine: `${spec.studyCount} في التسلسل · ${spec.poolCount} في الشبكة · ${spec.passPct}% للنجاح`,
+      watchLine: 'ستضيء الخلايا واحدة تلو الأخرى — احفظ ترتيبها',
+      tapLine: `ثم اضغط الخلايا ${dir}`,
+      detailLine: `${spec.span} في التسلسل · ${spec.gridCells} خلية`,
       startLabel: 'ابدأ الجولة',
+      backward: spec.backward,
     };
   }
   return {
     headline: 'Your task this round',
-    watchLine: 'Watch objects appear one by one — remember their order',
-    tapLine: 'Then tap them back in the EXACT same order',
-    detailLine: `${spec.studyCount} in sequence · ${spec.poolCount} in grid · ${spec.passPct}% to pass`,
+    watchLine: 'Cells light up one by one — remember the order',
+    tapLine: `Then tap the cells back ${dir}`,
+    detailLine: `${spec.span} in sequence · ${spec.gridCells} cells`,
     startLabel: 'Start round',
+    backward: spec.backward,
   };
 }
 
+/* --- Round preparation ---------------------------------------------------- */
 export function prepareLevelRound(diff, lv, seed) {
-  const spec = specificationForLevel(diff, lv);
-  const { studyItems, recallPool } = buildSerialRecallRound(spec, seed);
-  return { mode: 'level', diff, lv, spec, studyItems, recallPool, seed };
+  const spec = specForLevel(diff, lv);
+  const built = buildRound(spec, seed);
+  return { mode: 'level', diff, lv, spec, ...built, seed };
 }
 
-export function prepareFreeRound(studyCount, seed) {
-  const sc = clamp(studyCount, 3, 8);
-  const spec = {
-    diff: 'easy',
-    lv: 0,
-    studyCount: sc,
-    foilCount: sc,
-    poolCount: sc * 2,
-    flashMs: 950,
-    gapMs: 350,
-    passPct: 75,
-  };
-  const { studyItems, recallPool } = buildSerialRecallRound(spec, seed);
-  return {
-    mode: 'free',
-    diff: 'easy',
-    lv: 0,
-    spec,
-    studyItems,
-    recallPool,
-    seed,
-    freeStudy: sc,
-  };
+export function prepareFreeRound(span, seed) {
+  const spec = specForFree(span);
+  const built = buildRound(spec, seed);
+  return { mode: 'free', diff: 'free', lv: 0, spec, ...built, seed };
 }
 
-export function prepareChallengeSeed() {
+export function prepareChallengeSeed(diff = 'medium') {
+  const d = MS_DIFF_KEYS.includes(diff) ? diff : 'medium';
+  const preset = MS_PASS_PLAY[d];
   const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-  const { diff, lv } = CHALLENGE_LEVEL;
-  const spec = specificationForLevel(diff, lv);
-  return { seed, spec, diff, lv };
+  const spec = {
+    diff: d,
+    lv: 0,
+    span: preset.span,
+    gridCells: preset.gridCells,
+    cols: colsFor(preset.gridCells),
+    flashMs: 700,
+    gapMs: 250,
+    backward: preset.backward,
+  };
+  return { seed, diff: d, spec };
 }
 
 export function prepareChallengeRound(cSeed) {
-  const spec = cSeed.spec ?? specificationForLevel(CHALLENGE_LEVEL.diff, CHALLENGE_LEVEL.lv);
-  const seed = cSeed.seed >>> 0;
-  const { studyItems, recallPool } = buildSerialRecallRound(spec, seed);
-  return {
-    mode: 'challenge',
-    diff: spec.diff,
-    lv: spec.lv,
-    spec,
-    studyItems,
-    recallPool,
-    seed,
-  };
+  const spec = cSeed.spec;
+  const built = buildRound(spec, cSeed.seed >>> 0);
+  return { mode: 'challenge', diff: spec.diff, lv: 0, spec, ...built, seed: cSeed.seed };
 }
 
+/* --- Challenge aggregation ------------------------------------------------ */
 export function mergeMemoChallengeRow(prev, grade, playerName) {
-  const snap = {
-    pct: grade.pct,
-    correct: grade.correctCount,
-    total: grade.total,
-    full: !!grade.correctSequence,
-  };
+  const snap = { pct: grade.pct, correct: grade.correctCount, total: grade.total, full: !!grade.correctSequence };
   const rounds = [...(prev?.rounds || []), snap];
   const n = rounds.length;
   const avgPct = Math.round(rounds.reduce((s, r) => s + r.pct, 0) / n);
@@ -254,7 +238,5 @@ export function compareMemoChallengeRows(a, b) {
   const aFull = a.fullCount ?? 0;
   const bFull = b.fullCount ?? 0;
   if (bFull !== aFull) return bFull - aFull;
-  const aLast = a.last?.pct ?? 0;
-  const bLast = b.last?.pct ?? 0;
-  return bLast - aLast;
+  return (b.last?.pct ?? 0) - (a.last?.pct ?? 0);
 }

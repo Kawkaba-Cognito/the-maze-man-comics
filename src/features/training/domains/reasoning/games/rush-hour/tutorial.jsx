@@ -64,8 +64,8 @@ const STR = {
         body: 'Slide, think, solve. Fewer moves = better score.',
       },
     },
-    free: 'Free mode: a session timer counts down. Each puzzle you solve adds a little time. Score from clears — streaks boost the bonus. When time hits zero, the run ends.',
-    challenge: 'Challenge mode: every player faces the same puzzle. Hand the device around — lowest average moves wins!',
+    free: 'Free mode: endless puzzles that get harder. Each puzzle has its own timer — solve it in time. You have 3 lives; run out of time on a puzzle and you lose one. Fewer moves score more. The run ends at zero lives.',
+    challenge: 'Pass n Play: every player faces the same puzzle. Hand the device around — lowest average moves wins!',
   },
   ar: {
     skip: 'تخطّي',
@@ -100,8 +100,8 @@ const STR = {
         body: 'حرّك، فكّر، حُل. حركات أقل = نتيجة أفضل.',
       },
     },
-    free: 'الوضع الحر: مؤقت جلسة يعدّ تنازلياً. كل لغز تحله يضيف وقتاً. النقاط من الإكمال — السلسلة تزيد المكافأة. عند انتهاء الوقت تنتهي المحاولة.',
-    challenge: 'وضع التحدي: كل اللاعبين يلعبون نفس اللغز. سلّم الجهاز — أقل متوسط حركات يفوز!',
+    free: 'الوضع الحر: ألغاز لا تنتهي وتزداد صعوبة. لكل لغز مؤقته — حلّه في الوقت. لديك ٣ أرواح؛ إذا نفد وقت لغز تخسر روحاً. حركات أقل = نقاط أكثر. تنتهي المحاولة عند نفاد الأرواح.',
+    challenge: 'مرّر والعب: كل اللاعبين يلعبون نفس اللغز. سلّم الجهاز — أقل متوسط حركات يفوز!',
   },
 };
 

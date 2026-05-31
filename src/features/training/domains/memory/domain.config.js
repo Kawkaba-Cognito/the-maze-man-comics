@@ -7,8 +7,8 @@ const memory = {
   short: 'MEM',
   glyph: 'ᛗ',
   color: tokens.domain.memory,
-  desc: 'Holding, binding & recalling information',
-  about: "Memory binds past to future. Working memory is the mind's workbench — these mazes stretch it by asking you to hold routes and rules in mind while acting.",
+  desc: 'Working memory — hold and manipulate a sequence',
+  about: "Working memory is the mind's workbench. Memo Span uses the Corsi block test and its backward variant: watch a grid light up in sequence, then reproduce it — in the same order (storage) or in reverse (manipulation = working memory).",
   subs: [
     {
       id: 'working',

@@ -7,17 +7,17 @@ const speed = {
   short: 'SPD',
   glyph: 'ᛋ',
   color: tokens.domain.speed,
-  desc: 'Vigil Test — sustained attention and impulse control for processing speed.',
-  about: 'Processing speed is the engine of thought. Vigil Test trains how quickly and accurately you respond over time with square vs. circle trials.',
+  desc: 'Speed Match — Digit-Symbol substitution for processing speed.',
+  about: 'Processing speed is the engine of thought. Speed Match uses the Digit-Symbol paradigm (the classic clinical measure of processing speed): match symbols to numbers as fast as you can.',
   subs: [
     {
-      id: 'vigil',
-      name: 'Vigil Test',
+      id: 'speed-match',
+      name: 'Speed Match',
       gameCount: 1,
       progress: 0,
-      gameKey: 'vigil-test',
+      gameKey: 'speed-match',
       tier: 'free',
-      loader: () => import('./games/vigil'),
+      loader: () => import('./games/speed-match'),
     },
   ],
 };

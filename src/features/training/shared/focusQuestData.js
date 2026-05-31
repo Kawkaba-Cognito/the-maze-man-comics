@@ -451,11 +451,31 @@ export function assignFillColors(cells, diff, interference, tgtCol, rng = Math.r
 /** Linear curriculum for Free mode: easy 1–100 → medium 1–100 → hard 1–100. */
 export const FREE_PROGRESS_ORDER = FQ_DIFF_KEYS;
 
+/**
+ * Free mode is endless: the run only ends when the player runs out of lives.
+ * Each round carries its own (shrinking-with-stage) time limit. A round is
+ * FAILED — costing one life — when its timer expires before all targets are
+ * cleared, OR when wrong taps in that round exceed the per-round error cap.
+ * Clearing a round advances the curriculum (harder next round); failing repeats
+ * the same stage so the ramp never spikes past the player.
+ */
+export const FREE_LIVES = 3;
+
 /** Starting session bank (seconds); clock runs continuously across rounds until 0. */
 export const FREE_SESSION_START_SEC = 48;
 
 /** Hard cap on bank so bonuses cannot pile up without bound (keeps pressure up). */
 export const FREE_SESSION_CAP_SEC = 168;
+
+/**
+ * Per-round wrong-tap budget in free mode. Exceeding it fails the round (−1 life).
+ * Scales with the round's target count so denser boards tolerate a few more
+ * slips, but never becomes generous: ⌈targetCount × 0.4⌉, clamped to [2, 6].
+ */
+export function freeRoundErrorCap(targetCount) {
+  const tc = Math.max(1, targetCount | 0);
+  return Math.min(6, Math.max(2, Math.ceil(tc * 0.4)));
+}
 
 /**
  * Session-clock drain multiplier (1.0 = real-time). Ramps slowly across the
@@ -550,19 +570,34 @@ export function prepareLevelRound(diff, lv) {
 }
 
 /**
- * Build a deterministic challenge seed. Every choice (target identity, target
- * colour, distractor shapes, cell ordering, distractor fill colours) is drawn
- * from a single seeded LCG, so the resulting `seed.cells` array is the
- * authoritative layout — every player who plays this challenge sees a
- * bit-identical grid. Fairness is preserved across player turns and rounds.
+ * Pass-n-Play difficulty presets. The pass-and-play challenge is a single fair
+ * grid every player faces; difficulty picks the grid size, target count, time
+ * limit, and which curriculum level supplies the distractor pool.
+ *   easy   — 5×5 feature search (shape only)
+ *   medium — 7×7 feature search with colour interference
+ *   hard   — 9×9 conjunction (identity) search, the original challenge
  */
-export function prepareChallengeSeed() {
-  // Level 80 (0-based index 79) — same pool mapping as level mode, not SP.hard[80]
-  // (shape pools are 20 entries; direct index 80 is undefined).
-  const { pool } = getLvCfg('hard', Math.min(79, FQ_LEVELS_PER_TIER - 1));
-  const pal = PAL.hard;
-  const grid = 9;
-  const tc = 15;
+export const PASS_PLAY_CONFIG = {
+  easy:   { grid: 5, tc: 8,  tlim: 40, poolLevel: 49 },
+  medium: { grid: 7, tc: 12, tlim: 45, poolLevel: 59 },
+  hard:   { grid: 9, tc: 15, tlim: 50, poolLevel: 79 },
+};
+
+/**
+ * Build a deterministic challenge seed for the chosen difficulty. Every choice
+ * (target identity, target colour, distractor shapes, cell ordering, distractor
+ * fill colours) is drawn from a single seeded LCG, so the resulting
+ * `seed.cells` array is the authoritative layout — every player who plays this
+ * challenge sees a bit-identical grid. Fairness is preserved across turns/rounds.
+ */
+export function prepareChallengeSeed(diff = 'hard') {
+  const cfg = PASS_PLAY_CONFIG[diff] ?? PASS_PLAY_CONFIG.hard;
+  // Use the same pool mapping as level mode (shape pools are 20 entries, so map
+  // the curriculum level through getLvCfg rather than indexing SP directly).
+  const { pool } = getLvCfg(diff, Math.min(cfg.poolLevel, FQ_LEVELS_PER_TIER - 1));
+  const pal = PAL[diff] || PAL.hard;
+  const grid = cfg.grid;
+  const tc = cfg.tc;
   const total = grid * grid;
   // Mix epoch ms with one Math.random() draw so two seeds requested in the
   // same millisecond still diverge.
@@ -585,10 +620,13 @@ export function prepareChallengeSeed() {
     isT: c.isT,
     fill: c.isT ? tgtCol : pal[Math.floor(rng() * pal.length)],
   }));
-  return { pool, tgt, tgtCol, cells: cellsWithFill, grid, tc, seed: seedNum };
+  return {
+    pool, tgt, tgtCol, cells: cellsWithFill, grid, tc, seed: seedNum,
+    diff, tlim: cfg.tlim,
+  };
 }
 
-export function prepareChallengePlayState(cSeed, tlim = 50) {
+export function prepareChallengePlayState(cSeed, tlimOverride) {
   // Use baked fills directly — no re-randomisation. Two players invoking this
   // with the same cSeed get identical `cells` arrays (modulo per-cell react ids).
   const cells = cSeed.cells.map((c, i) => ({
@@ -601,17 +639,18 @@ export function prepareChallengePlayState(cSeed, tlim = 50) {
     feedback: null,
   }));
   const targetCount = cells.filter((c) => c.isT).length;
+  const diff = cSeed.diff || 'hard';
   return {
     mode: 'challenge',
-    diff: 'hard',
+    diff,
     lv: 'CH',
     grid: cSeed.grid,
     pool: cSeed.pool,
     tc: targetCount,
-    tlim,
+    tlim: tlimOverride ?? cSeed.tlim ?? 50,
     target: cSeed.tgt,
     targetCol: cSeed.tgtCol,
-    searchMode: 'identity',
+    searchMode: diff === 'hard' ? 'identity' : 'categorical',
     interference: 0,
     cells,
   };

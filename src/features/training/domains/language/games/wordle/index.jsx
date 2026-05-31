@@ -15,24 +15,24 @@ import {
   WORDLE_LEVELS_PER_TIER,
   WORDLE_DIFF_KEYS,
   WORDLE_DM,
-  WORDLE_FREE_SESSION_START_SEC,
-  WORDLE_FREE_SESSION_CAP_SEC,
+  WORDLE_FREE_LIVES,
   specificationForLevel,
   prepareFreeRound,
   prepareLevelRound,
   prepareChallengeSeed,
   prepareChallengeRound,
+  prepareAssessRound,
   trySubmitWord,
   wordFromPath,
   gradeRound,
   isWordleLevelUnlocked,
-  freeClearBonusSec,
   freeWordPoints,
   mergeWordleChallengeRow,
   compareWordleChallengeRows,
 } from './wordleData';
 import { loadWordleProfile, saveWordleProfile } from './wordleProgress';
 import { prewarmLinkTrie } from './linkDictionary';
+import AssessmentReady from '../../../../assessment/AssessmentReady';
 
 const UI = {
   en: {
@@ -45,24 +45,30 @@ const UI = {
     replayTutorial: 'Replay tutorial',
     freeMode: '♾️ Free mode',
     levelMode: '🎯 Level mode',
-    challengeMode: '⚔️ Challenge',
+    challengeMode: '⚔️ Pass n Play',
     hubMapAria: 'Modes',
-    hubNodeFreeHint: 'Session timer · find as many words as you can',
-    hubNodeLevelsHint: '20 levels · connect letters on the grid',
-    hubNodeChallengeHint: 'Same grid · highest score wins',
+    hubNodeFreeHint: 'Endless · 3 lives · grids ramp up',
+    hubNodeLevelsHint: '100 levels · connect letters on the grid',
+    hubNodeChallengeHint: 'Same grid for all · pick a difficulty',
     pickDiff: 'Choose difficulty',
     pickDiffSub: 'Drag across touching letters (including diagonals) to spell words',
-    levelsSub: (pop, g) => `${pop} · ${g}×${g} grid · Levels 1–20`,
+    diffDesc: {
+      easy: 'Common words · 3+ letters · 4×4 grid.',
+      medium: 'Mixed vocabulary · 3+ letters · 5×5 grid.',
+      hard: 'Tougher words · 4+ letters · 5×5 grid.',
+    },
+    chalPickDiff: 'Difficulty',
+    levelsSub: (pop, g) => `${pop} · ${g}×${g} grid · Levels 1–100`,
     time: 'Time',
     found: 'Words',
     lvl: 'Level',
     resultsLevelRetryTitle: 'Try again',
     freeIntroTitle: 'Free mode',
     freeIntroBody:
-      'Connect adjacent letters to form words (minimum length shown in the header). Find as many valid words as you can before time runs out.',
+      'Endless grids that get harder. Each grid asks for a few words before its timer runs out. You have 3 lives — miss the target in time and you lose one. The run ends only when your lives reach zero.',
     freeIntroReady: 'Ready',
-    challengeTitle: '⚔️ Challenge',
-    challengeSub: 'Medium L10 · identical letter grid · highest score wins',
+    challengeTitle: '⚔️ Pass n Play',
+    challengeSub: 'Same letter grid for everyone · pick a difficulty · pass the device',
     players: 'Players (2–10)',
     addPl: '＋ Add player',
     startCh: '⚔️ Start',
@@ -75,7 +81,7 @@ const UI = {
     chalBulletPass: 'Start only when this player holds the device',
     handTo: (n) => `Hand device to ${n}.`,
     goReady: 'Start linking',
-    chalMeta: 'Medium · L10 · 90s',
+    chalMeta: (label) => `${label} · 90s`,
     connectHint: 'Drag through touching letters · lift finger to submit',
     tooShort: (n) => `Need at least ${n} letters`,
     notAWord: "Can't spell that on this grid",
@@ -109,12 +115,12 @@ const UI = {
     freeStages: (n) => `Words found: ${n}`,
     freeBest: (n) => `Best words: ${n}`,
     freePlayAgain: 'Play again',
-    resultsChalTitle: 'Challenge results',
+    resultsChalTitle: 'Pass n Play results',
     chalRes: (vfs, sc) => `VFS ${vfs} · ${sc} pts`,
-    newCh: 'New challenge',
+    newCh: 'New game',
     levelHeader: (d, lv) => `${WORDLE_DM[d]?.label ?? d} · L${lv}`,
     levelMeta: (n, min) => `Find ${n} words · ${min}+ letters`,
-    challengeHeader: 'Challenge',
+    challengeHeader: 'Pass n Play',
     freeHeader: 'Free mode',
     minLetters: (n) => `Min ${n} letters`,
     formulaHint: 'Any real word you can connect on the grid counts. Longer words score more.',
@@ -129,24 +135,30 @@ const UI = {
     replayTutorial: 'إعادة الشرح',
     freeMode: '♾️ وضع حر',
     levelMode: '🎯 وضع المستويات',
-    challengeMode: '⚔️ تحدي',
+    challengeMode: '⚔️ مرّر والعب',
     hubMapAria: 'الأوضاع',
-    hubNodeFreeHint: 'مؤقت جلسة · أكبر عدد من الكلمات',
-    hubNodeLevelsHint: '٢٠ مستوى · وصّل الحروف',
-    hubNodeChallengeHint: 'نفس الشبكة · أعلى نقاط',
+    hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · شبكات تزداد صعوبة',
+    hubNodeLevelsHint: '١٠٠ مستوى · وصّل الحروف',
+    hubNodeChallengeHint: 'نفس الشبكة للجميع · اختر الصعوبة',
     pickDiff: 'اختر الصعوبة',
     pickDiffSub: 'اسحب على حروف متجاورة (بما فيها القطر) لتكوين كلمات',
-    levelsSub: (pop, g) => `${pop} · شبكة ${g}×${g} · مستويات 1–20`,
+    diffDesc: {
+      easy: 'كلمات شائعة · ٣+ أحرف · شبكة ٤×٤.',
+      medium: 'مفردات متنوعة · ٣+ أحرف · شبكة ٥×٥.',
+      hard: 'كلمات أصعب · ٤+ أحرف · شبكة ٥×٥.',
+    },
+    chalPickDiff: 'الصعوبة',
+    levelsSub: (pop, g) => `${pop} · شبكة ${g}×${g} · مستويات 1–100`,
     time: 'الوقت',
     found: 'كلمات',
     lvl: 'مستوى',
     resultsLevelRetryTitle: 'حاول مجددًا',
     freeIntroTitle: 'وضع حر',
     freeIntroBody:
-      'وصّل الحروف المتجاورة لتكوين كلمات. ابحث عن أكبر عدد قبل انتهاء الوقت.',
+      'شبكات لا تنتهي وتزداد صعوبة. كل شبكة تطلب بضع كلمات قبل نفاد مؤقتها. لديك ٣ أرواح — إن لم تبلغ الهدف في الوقت تخسر روحاً. تنتهي المحاولة فقط عند نفاد الأرواح.',
     freeIntroReady: 'جاهز',
-    challengeTitle: '⚔️ تحدي',
-    challengeSub: 'متوسط L10 · نفس الشبكة · أعلى نقاط',
+    challengeTitle: '⚔️ مرّر والعب',
+    challengeSub: 'نفس الشبكة للجميع · اختر الصعوبة · مرّر الجهاز',
     players: 'اللاعبون (2–10)',
     addPl: '＋ إضافة لاعب',
     startCh: '⚔️ ابدأ',
@@ -159,7 +171,7 @@ const UI = {
     chalBulletPass: 'ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
     handTo: (n) => `سلّم الجهاز إلى ${n}.`,
     goReady: 'ابدأ الوصل',
-    chalMeta: 'متوسط · L10 · ٩٠ث',
+    chalMeta: (label) => `${label} · ٩٠ث`,
     connectHint: 'اسحب على حروف متلامسة · ارفع الإصبع للإرسال',
     tooShort: (n) => `يلزم ${n} أحرف على الأقل`,
     notAWord: 'لا يمكن تكوينها على هذه الشبكة',
@@ -193,25 +205,26 @@ const UI = {
     freeStages: (n) => `كلمات: ${n}`,
     freeBest: (n) => `أفضل: ${n}`,
     freePlayAgain: 'العب مجددًا',
-    resultsChalTitle: 'نتائج التحدي',
+    resultsChalTitle: 'نتائج مرّر والعب',
     chalRes: (vfs, sc) => `VFS ${vfs} · ${sc}`,
-    newCh: 'تحدي جديد',
+    newCh: 'لعبة جديدة',
     levelHeader: (d, lv) => `${WORDLE_DM[d]?.label ?? d} · ${lv}`,
     levelMeta: (n, min) => `${n} كلمات · ${min}+ أحرف`,
-    challengeHeader: 'تحدي',
+    challengeHeader: 'مرّر والعب',
     freeHeader: 'وضع حر',
     minLetters: (n) => `الحد ${n} أحرف`,
     formulaHint: 'الكلمات الأطول = نقاط أكثر. الحروف متجاورة دون تكرار.',
   },
 };
 
-export default function WordleGame({ onBack }) {
+export default function WordleGame({ onBack, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
   const { playSfx, currentLang } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
+  const lang = isAr ? 'ar' : 'en';
 
   const [profile, setProfile] = useState(() => loadWordleProfile());
-  const [phase, setPhase] = useState('hub');
+  const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
   const [diffKey, setDiffKey] = useState('easy');
   const [round, setRound] = useState(null);
   const [path, setPath] = useState([]);
@@ -221,7 +234,7 @@ export default function WordleGame({ onBack }) {
   const [lastGrade, setLastGrade] = useState(null);
   const [lastResult, setLastResult] = useState(null);
 
-  const [sessionSec, setSessionSec] = useState(WORDLE_FREE_SESSION_START_SEC);
+  const [freeLives, setFreeLives] = useState(WORDLE_FREE_LIVES);
   const [freeScore, setFreeScore] = useState(0);
 
   const [chalNames, setChalNames] = useState(['Player 1', 'Player 2']);
@@ -231,19 +244,19 @@ export default function WordleGame({ onBack }) {
   const [chalTurnOpen, setChalTurnOpen] = useState(false);
   const [chalRoundsTotal, setChalRoundsTotal] = useState(1);
   const [chalRoundIdx, setChalRoundIdx] = useState(0);
+  const [chalDiff, setChalDiff] = useState('medium');
+  const chalDiffRef = useRef('medium');
 
   const roundRef = useRef(null);
   const pathRef = useRef([]);
-  const tlRef = useRef(WORDLE_FREE_SESSION_START_SEC);
-  const tlimRef = useRef(WORDLE_FREE_SESSION_START_SEC);
-  const timerRunIdRef = useRef(0);
-  const runRef = useRef(false);
+  const tlRef = useRef(60);
+  const tlimRef = useRef(60);
   const roundTimerIdRef = useRef(0);
   const freeStageRef = useRef(0);
   const freeWordsRef = useRef(0);
   const freeScoreRef = useRef(0);
   const freeStreakRef = useRef(0);
-  const sessionTimedOutRef = useRef(false);
+  const freeLivesRef = useRef(WORDLE_FREE_LIVES);
   const chalIdxRef = useRef(0);
   const chalNamesRef = useRef(chalNames);
   const chalScoresRef = useRef([]);
@@ -261,8 +274,8 @@ export default function WordleGame({ onBack }) {
   }, [pauseOpen]);
 
   useEffect(() => {
-    prewarmLinkTrie();
-  }, []);
+    prewarmLinkTrie(lang);
+  }, [lang]);
 
   useEffect(() => {
     pathRef.current = path;
@@ -275,34 +288,11 @@ export default function WordleGame({ onBack }) {
     chalNamesRef.current = chalNames;
   }, [chalNames]);
 
-  const stopSessionTimer = useCallback(() => {
-    runRef.current = false;
-    timerRunIdRef.current += 1;
-  }, []);
-
   const stopRoundTimer = useCallback(() => {
     roundTimerIdRef.current += 1;
   }, []);
 
-  const startSessionTimer = useCallback(() => {
-    runRef.current = true;
-    const rid = ++timerRunIdRef.current;
-    const tick = () => {
-      if (!runRef.current || timerRunIdRef.current !== rid) return;
-      tlRef.current -= 1;
-      setSessionSec(Math.max(0, Math.ceil(tlRef.current)));
-      if (tlRef.current <= 0) {
-        sessionTimedOutRef.current = true;
-        runRef.current = false;
-        return;
-      }
-      setTimeout(tick, 1000);
-    };
-    setTimeout(tick, 1000);
-  }, []);
-
   const clearPlay = useCallback(() => {
-    stopSessionTimer();
     stopRoundTimer();
     roundRef.current = null;
     setRound(null);
@@ -311,7 +301,7 @@ export default function WordleGame({ onBack }) {
     setPauseOpen(false);
     setQuitOpen(false);
     setChalTurnOpen(false);
-  }, [stopSessionTimer, stopRoundTimer]);
+  }, [stopRoundTimer]);
 
   const persistLevel = useCallback(
     (r, grade) => {
@@ -345,6 +335,13 @@ export default function WordleGame({ onBack }) {
       roundRef.current = r;
       setRound({ ...r });
 
+      if (r.mode === 'assess') {
+        stopRoundTimer();
+        const avgLen = r.found.length ? (r.found.reduce((s, w) => s + w.length, 0) / r.found.length) : 0;
+        onAssessmentComplete?.({ score: grade.vfs, line: `${r.found.length} words · ⌀${avgLen.toFixed(1)}` });
+        return;
+      }
+
       if (r.mode === 'level') {
         setLastResult({
           type: 'level',
@@ -364,7 +361,30 @@ export default function WordleGame({ onBack }) {
       }
 
       if (r.mode === 'free') {
-        stopSessionTimer();
+        stopRoundTimer();
+        const newGrid = (stage) => {
+          const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+          const nr = prepareFreeRound(stage, seed, lang);
+          roundRef.current = nr;
+          setRound(nr);
+          setPath([]);
+          setMsg('');
+          tlRef.current = nr.timeLeft;
+          tlimRef.current = nr.timeSec;
+        };
+        if (r.complete) {
+          // Reached the target → ramp to a harder grid (lives unchanged).
+          freeStageRef.current += 1;
+          newGrid(freeStageRef.current);
+          return;
+        }
+        // Timed out before the target → lose a life.
+        freeLivesRef.current = Math.max(0, freeLivesRef.current - 1);
+        setFreeLives(freeLivesRef.current);
+        if (freeLivesRef.current > 0) {
+          newGrid(freeStageRef.current);
+          return;
+        }
         const p = {
           ...profile,
           bestStages: Math.max(profile.bestStages ?? 0, freeWordsRef.current),
@@ -407,7 +427,7 @@ export default function WordleGame({ onBack }) {
           chalIdxRef.current = 0;
           setChalIdx(0);
           setChalRoundIdx(cycle);
-          const seed = prepareChallengeSeed();
+          const seed = prepareChallengeSeed(chalDiffRef.current, lang);
           setChalSeed(seed);
           roundRef.current = null;
           setRound(null);
@@ -422,7 +442,7 @@ export default function WordleGame({ onBack }) {
 
       setPhase('res');
     },
-    [profile, persistLevel, stopSessionTimer, stopRoundTimer],
+    [profile, persistLevel, stopRoundTimer, lang, onAssessmentComplete],
   );
 
   const commitPath = useCallback(() => {
@@ -449,15 +469,8 @@ export default function WordleGame({ onBack }) {
     if (r.mode === 'free') {
       freeWordsRef.current += 1;
       freeStreakRef.current += 1;
-      const pts = freeWordPoints(out.pts, freeStreakRef.current);
-      freeScoreRef.current += pts;
+      freeScoreRef.current += freeWordPoints(out.pts, freeStreakRef.current);
       setFreeScore(freeScoreRef.current);
-      tlRef.current = Math.min(
-        WORDLE_FREE_SESSION_CAP_SEC,
-        tlRef.current + freeClearBonusSec(freeStageRef.current),
-      );
-      setSessionSec(Math.ceil(tlRef.current));
-      freeStageRef.current += 1;
     }
 
     if (r.complete) {
@@ -471,7 +484,6 @@ export default function WordleGame({ onBack }) {
     const tick = () => {
       const r = roundRef.current;
       if (!r || roundTimerIdRef.current !== rid || pauseRef.current) return;
-      if (r.mode === 'free') return;
       r.timeLeft -= 1;
       tlRef.current = r.timeLeft;
       setRound({ ...r });
@@ -486,18 +498,9 @@ export default function WordleGame({ onBack }) {
 
   useEffect(() => {
     if (phase !== 'play' || !round) return undefined;
-    if (round.mode === 'free') return undefined;
     startRoundTimer();
     return () => stopRoundTimer();
   }, [phase, round?.seed, round?.mode, startRoundTimer, stopRoundTimer]);
-
-  useEffect(() => {
-    if (phase !== 'play' || round?.mode !== 'free') return undefined;
-    const id = setInterval(() => {
-      if (sessionTimedOutRef.current) finishRound(roundRef.current);
-    }, 400);
-    return () => clearInterval(id);
-  }, [phase, round, finishRound]);
 
   const beginRound = useCallback(
     (r) => {
@@ -508,16 +511,10 @@ export default function WordleGame({ onBack }) {
       setLastGrade(null);
       setLastResult(null);
       setPhase('play');
-      if (r.mode === 'free') {
-        tlRef.current = WORDLE_FREE_SESSION_START_SEC;
-        tlimRef.current = WORDLE_FREE_SESSION_START_SEC;
-        startSessionTimer();
-      } else if (r.mode === 'level' || r.mode === 'challenge') {
-        tlRef.current = r.timeLeft;
-        tlimRef.current = r.timeSec ?? r.timeLeft;
-      }
+      tlRef.current = r.timeLeft;
+      tlimRef.current = r.timeSec ?? r.timeLeft;
     },
-    [startSessionTimer],
+    [],
   );
 
   const gateWithTutorial = useCallback((action, modeKind) => {
@@ -561,71 +558,61 @@ export default function WordleGame({ onBack }) {
     const mode = roundRef.current?.mode;
     setQuitOpen(false);
     clearPlay();
+    if (mode === 'assess') { (onAssessmentExit || onBack)?.(); return; }
     if (mode === 'challenge') setPhase('chal');
     else if (mode === 'level') setPhase('levels');
     else setPhase('hub');
-  }, [clearPlay]);
+  }, [clearPlay, onAssessmentExit, onBack]);
 
   const handlePauseOpen = useCallback(() => {
-    const mode = roundRef.current?.mode;
-    if (mode === 'free') stopSessionTimer();
-    else if (mode === 'level' || mode === 'challenge') stopRoundTimer();
+    stopRoundTimer();
     setPauseOpen(true);
-  }, [stopSessionTimer, stopRoundTimer]);
+  }, [stopRoundTimer]);
 
   const handlePauseResume = useCallback(() => {
     setPauseOpen(false);
-    const r = roundRef.current;
-    if (!r) return;
-    if (r.mode === 'free' && !sessionTimedOutRef.current) {
-      startSessionTimer();
-    } else if (r.mode === 'level' || r.mode === 'challenge') {
-      startRoundTimer();
-    }
-  }, [startSessionTimer, startRoundTimer]);
+    if (roundRef.current) startRoundTimer();
+  }, [startRoundTimer]);
 
   const handlePauseRestart = useCallback(() => {
     setPauseOpen(false);
     const r = roundRef.current;
     if (!r) return;
     const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-    if (r.mode === 'free') {
-      const nr = prepareFreeRound(r.freeStage ?? freeStageRef.current, seed);
-      roundRef.current = nr;
-      setRound(nr);
-      setPath([]);
-      setMsg('');
-      if (!sessionTimedOutRef.current) startSessionTimer();
-      return;
-    }
-    if (r.mode === 'level') beginRound(prepareLevelRound(r.diff, r.lv, seed));
+    if (r.mode === 'free') beginRound(prepareFreeRound(r.freeStage ?? freeStageRef.current, seed, lang));
+    else if (r.mode === 'level') beginRound(prepareLevelRound(r.diff, r.lv, seed, lang));
     else if (chalSeed) beginRound(prepareChallengeRound(chalSeed));
-  }, [beginRound, chalSeed, startSessionTimer]);
+  }, [beginRound, chalSeed, lang]);
+
+  const startAssessment = useCallback(() => {
+    const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+    beginRound(prepareAssessRound(seed, lang));
+  }, [beginRound, lang]);
 
   const startFree = useCallback(() => {
-    sessionTimedOutRef.current = false;
     freeStageRef.current = 0;
     freeWordsRef.current = 0;
     freeScoreRef.current = 0;
     freeStreakRef.current = 0;
+    freeLivesRef.current = WORDLE_FREE_LIVES;
     setFreeScore(0);
-    tlRef.current = WORDLE_FREE_SESSION_START_SEC;
-    setSessionSec(WORDLE_FREE_SESSION_START_SEC);
+    setFreeLives(WORDLE_FREE_LIVES);
     const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-    beginRound(prepareFreeRound(0, seed));
-  }, [beginRound]);
+    beginRound(prepareFreeRound(0, seed, lang));
+  }, [beginRound, lang]);
 
   const startLevelGame = useCallback(
     (diff, lv) => {
       const seed = ((diff.charCodeAt(0) * 997 + lv * 7919) ^ 0x5eed) >>> 0;
-      beginRound(prepareLevelRound(diff, lv, seed));
+      beginRound(prepareLevelRound(diff, lv, seed, lang));
     },
-    [beginRound],
+    [beginRound, lang],
   );
 
   const openChallenge = useCallback(() => {
     if (chalNames.length < 2) return;
-    const seed = prepareChallengeSeed();
+    chalDiffRef.current = chalDiff;
+    const seed = prepareChallengeSeed(chalDiffRef.current, lang);
     setChalSeed(seed);
     chalScoresRef.current = chalNames.map((nm) => ({ nm, rounds: [] }));
     setChalScores(chalScoresRef.current);
@@ -635,7 +622,7 @@ export default function WordleGame({ onBack }) {
     setChalRoundIdx(0);
     setChalTurnOpen(true);
     setPhase('play');
-  }, [chalNames]);
+  }, [chalNames, chalDiff, lang]);
 
   const startChallengeBlock = useCallback(() => {
     setChalTurnOpen(false);
@@ -648,6 +635,12 @@ export default function WordleGame({ onBack }) {
 
   const playHeaderForRound = (r) => {
     if (!r) return { title: '', subtitle: '' };
+    if (r.mode === 'assess') {
+      return {
+        title: assessmentLabel || t.title,
+        subtitle: `${Number(r.timeLeft).toFixed(0)}s · ${r.found.length} ${t.foundList}`,
+      };
+    }
     if (r.mode === 'free') {
       return {
         title: t.freeHeader,
@@ -674,6 +667,17 @@ export default function WordleGame({ onBack }) {
           isAr={isAr}
           playSfx={playSfx}
           onClose={advanceTutorial}
+        />
+      )}
+
+      {phase === 'assessStart' && (
+        <AssessmentReady
+          isAr={isAr}
+          label={assessmentLabel}
+          step={assessmentStep}
+          onStart={startAssessment}
+          onBack={onAssessmentExit || onBack}
+          playSfx={playSfx}
         />
       )}
 
@@ -753,27 +757,35 @@ export default function WordleGame({ onBack }) {
                 </div>
               }
             />
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.pickDiffSub}</p>
-            {WORDLE_DIFF_KEYS.map((k) => {
-              const m = WORDLE_DM[k];
-              return (
-                <button
-                  key={k}
-                  type="button"
-                  className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training`}
-                  onClick={() => {
-                    playSfx('click');
-                    setDiffKey(k);
-                    setPhase('levels');
-                  }}
-                >
-                  <span>{m.label}</span>
-                  <span className="ct-fq-dbg">
-                    {m.pop} · {m.grid}×{m.grid}
-                  </span>
-                </button>
-              );
-            })}
+            <div className="ct-fq-diff-body">
+              <p className="ct-fq-sub ct-fq-training-blurb">{t.pickDiffSub}</p>
+              <div className="ct-fq-diff-cards">
+                {WORDLE_DIFF_KEYS.map((k) => {
+                  const m = WORDLE_DM[k];
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training ct-fq-diffcard`}
+                      onClick={() => {
+                        playSfx('click');
+                        setDiffKey(k);
+                        setPhase('levels');
+                      }}
+                    >
+                      <span className="ct-fq-diffcard-main">
+                        <span className="ct-fq-diffcard-label">{m.label}</span>
+                        <span className="ct-fq-diffcard-desc">{t.diffDesc[k]}</span>
+                      </span>
+                      <span className="ct-fq-diffcard-meta">
+                        <span className="ct-fq-diffcard-grid">{m.grid}×{m.grid}</span>
+                        <span className="ct-fq-diffcard-pop">{m.pop}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -848,7 +860,23 @@ export default function WordleGame({ onBack }) {
             />
             <p className="ct-fq-sub ct-fq-training-blurb">{t.challengeSub}</p>
             <div className="ct-fq-card ct-fq-card-training">
-              <h3>{t.players}</h3>
+              <h3>{t.chalPickDiff}</h3>
+              <div className="ct-fq-rr ct-fq-rr-diff" role="group" aria-label={t.chalPickDiff}>
+                {WORDLE_DIFF_KEYS.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    className={`ct-fq-rrb ct-fq-rrb-diff${chalDiff === k ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
+                    onClick={() => {
+                      playSfx('click');
+                      setChalDiff(k);
+                    }}
+                  >
+                    {WORDLE_DM[k].label}
+                  </button>
+                ))}
+              </div>
+              <h3 style={{ marginTop: 14 }}>{t.players}</h3>
               {chalNames.map((nm, i) => (
                 <div key={i} className="ct-fq-pr">
                   <input
@@ -938,7 +966,7 @@ export default function WordleGame({ onBack }) {
               ? t.roundNofM(chalRoundIdx + 1, chalRoundsTotal)
               : null
           }
-          metaLine={t.chalMeta}
+          metaLine={t.chalMeta(WORDLE_DM[chalDiff]?.label ?? '')}
           instruction={t.handTo(chalNames[chalIdx])}
           bullets={[t.chalBulletSame, t.chalBulletPass]}
           startLabel={t.goReady}
@@ -1037,7 +1065,7 @@ export default function WordleGame({ onBack }) {
             title={playHeaderForRound(round).title}
             subtitle={
               round.mode === 'free'
-                ? `${t.sessionTime(sessionSec)} · ${t.score} ${freeScore}`
+                ? `${Math.ceil(round.timeLeft)}s · ${'♥'.repeat(freeLives)}${'♡'.repeat(Math.max(0, WORDLE_FREE_LIVES - freeLives))} · ${round.found.length}/${round.targetWords} · ${freeScore}`
                 : playHeaderForRound(round).subtitle
             }
             playSfx={playSfx}
@@ -1118,13 +1146,7 @@ export default function WordleGame({ onBack }) {
         onConfirmQuit={confirmQuit}
         onKeepPlaying={() => {
           setQuitOpen(false);
-          if (
-            roundRef.current?.mode === 'free' &&
-            !sessionTimedOutRef.current &&
-            !runRef.current
-          ) {
-            startSessionTimer();
-          }
+          if (roundRef.current) startRoundTimer();
         }}
       />
 

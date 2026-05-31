@@ -5,6 +5,7 @@ import RadialMazeHub from '../training/RadialMazeHub';
 import { DOMAINS } from '../training/trainingData';
 import { IconBack } from '../../features/training/shared/TrainingIcons';
 import { getLazyGame, hasGame } from '../../features/training/lazyGames';
+import AssessmentFlow from '../../features/training/assessment/AssessmentFlow';
 
 /** Tiny fallback shown while a game's bundle is being fetched the first time. */
 function GameLoading({ isAr }) {
@@ -92,7 +93,11 @@ export default function ComicsScreen() {
         <RadialMazeHub
           onBack={() => switchTab('home')}
           onOpenDomain={openDomain}
+          onOpenAssessment={() => setScreen('assessment')}
         />
+      )}
+      {screen === 'assessment' && (
+        <AssessmentFlow onBack={backToHub} />
       )}
       {screen === 'pick' && d && (
         <div

@@ -1,0 +1,1093 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useApp } from '../../../../../../context/AppContext';
+import {
+  TrainingMenuBar,
+  TrainingPlayHeader,
+  TrainingPauseModal,
+  TrainingQuitModal,
+  TrainingChallengeHandoff,
+} from '../../../../shared/TrainingChrome';
+import { loadGameSettings } from '../../../../shared/focusQuestData';
+import AssessmentReady from '../../../../assessment/AssessmentReady';
+import SpeedMatchTutorial, {
+  buildTutorialQueueFor,
+  markTutorialSeen,
+} from './tutorial';
+import {
+  SH,
+  SM_DIFF_KEYS,
+  SM_DM,
+  SM_LEVELS_PER_TIER,
+  SM_FREE_LIVES,
+  specForLevel,
+  buildLegend,
+  pickItem,
+  summarize,
+  gradeBlock,
+  isLevelUnlocked,
+  prepareLevelBlock,
+  prepareChallengeSeed,
+  prepareChallengeBlock,
+  freeLegendSize,
+  freeItemMs,
+  freeItemPoints,
+  mulberry32,
+} from './speedMatchData';
+
+const PROFILE_KEY = 'mm_speedmatch_v1';
+function loadProfile() {
+  try {
+    const j = JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}');
+    return { done: j.done || {}, bestFree: j.bestFree ?? 0, bestStreak: j.bestStreak ?? 0 };
+  } catch {
+    return { done: {}, bestFree: 0, bestStreak: 0 };
+  }
+}
+function saveProfile(p) {
+  try {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+  } catch {
+    /* ignore */
+  }
+}
+
+const UI = {
+  en: {
+    hub: 'Speed',
+    tag: 'training',
+    title: 'Speed Match',
+    replayTutorial: 'Replay tutorial',
+    freeMode: '♾️ Free mode',
+    levelMode: '🎯 Level mode',
+    challengeMode: '⚔️ Pass n Play',
+    hubMapAria: 'Modes — choose a path',
+    hubNodeFreeHint: 'Endless · 3 lives · speeds up',
+    hubNodeLevelsHint: '100 levels per tier · unlock in order',
+    hubNodeChallengeHint: 'Same key for all · pick a difficulty',
+    freeIntroTitle: 'Free mode',
+    freeIntroBody:
+      'Match the symbol to its number as fast as you can. The key grows and the clock per symbol shrinks as you go. You have 3 lives — a wrong tap or running out of time on a symbol costs one. The run ends only when your lives reach zero.',
+    freeIntroReady: 'Ready',
+    pickDiff: 'Choose difficulty',
+    pickDiffSub: 'Each tier has 100 levels. Unlock them in order.',
+    diffDesc: {
+      easy: 'Few symbols, gentle pace — learn the matching.',
+      medium: 'More symbols, brisker — build speed.',
+      hard: 'Up to 9 symbols, fast, and the key remaps.',
+    },
+    chalPickDiff: 'Difficulty',
+    levelsSub: (pop) => `${pop} · ${SM_LEVELS_PER_TIER} levels`,
+    challengeTitle: '⚔️ Pass n Play',
+    challengeSub: 'Same key & symbols for everyone · pick a difficulty · pass the device',
+    players: 'Players (2–10)',
+    addPl: '＋ Add player',
+    startCh: '⚔️ Start',
+    needTwo: 'Add at least 2 players.',
+    chalRounds: 'Rounds',
+    chalRoundsHint: 'Each player plays once per round · new fair key each round',
+    roundNofM: (n, m) => `Round ${n}/${m}`,
+    chalTurnKicker: 'Your turn',
+    chalBulletSame: 'Same key and symbol order for everyone this round',
+    chalBulletPass: 'Tap Start only when the device is with this player',
+    handTo: (n) => `Hand the device to ${n}.`,
+    goReady: 'Start',
+    chalMeta: (label, sec) => `${label} · ${sec}s`,
+    key: 'Key',
+    tapNumber: 'Tap the number that matches the symbol',
+    countdown: 'Get ready…',
+    go: 'GO!',
+    time: 'Time',
+    correct: 'Correct',
+    combo: 'Combo',
+    lives: 'Lives',
+    score: 'Score',
+    paused: 'Paused',
+    resume: 'Resume',
+    restart: 'Restart',
+    quitMenu: 'Quit to menu',
+    quitQ: 'Quit?',
+    quitLose: 'This run will be lost.',
+    yesQuit: 'Yes, quit',
+    keep: 'Keep playing',
+    levelHeader: (diff, lv) => `${SM_DM[diff]?.label ?? diff} · L${lv}`,
+    freeHeader: 'Free mode',
+    challengeHeader: 'Pass n Play',
+    targetSub: (n) => `Reach ${n} correct`,
+    resultsLevelPass: 'Level passed',
+    resultsLevelRetry: 'Try again',
+    stars: 'Stars',
+    speedScore: 'Speed score',
+    ipm: 'Matches / min',
+    accuracy: 'Accuracy',
+    meanRt: 'Avg match time',
+    ms: 'ms',
+    nextLv: 'Next level',
+    retry: 'Retry',
+    menu: 'Menu',
+    freeGameOver: 'Run ended',
+    freeCorrect: (n) => `Matches: ${n}`,
+    freeBest: (n) => `Best score: ${n}`,
+    freePlayAgain: 'Play again',
+    resultsChalTitle: 'Pass n Play results',
+    chalResDetail: (nr, c, acc, rt) =>
+      nr > 1
+        ? `${nr}× · ${c} correct avg · ${acc}% · ${rt ?? '—'}ms`
+        : `${c} correct · ${acc}% · ${rt ?? '—'}ms`,
+    newCh: 'New game',
+    perfect: 'Lightning fast!',
+    good: 'Quick work',
+    tryAgain: 'Keep practicing',
+  },
+  ar: {
+    hub: 'سرعة',
+    tag: 'تدريب',
+    title: 'مطابقة سريعة',
+    replayTutorial: 'إعادة الشرح',
+    freeMode: '♾️ وضع حر',
+    levelMode: '🎯 وضع المستويات',
+    challengeMode: '⚔️ مرّر والعب',
+    hubMapAria: 'الأوضاع — اختر مسارًا',
+    hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · يتسارع',
+    hubNodeLevelsHint: '١٠٠ مستوى لكل صعوبة · بالترتيب',
+    hubNodeChallengeHint: 'نفس المفتاح للجميع · اختر الصعوبة',
+    freeIntroTitle: 'وضع حر',
+    freeIntroBody:
+      'طابق الرمز مع رقمه بأسرع ما يمكن. يكبر المفتاح ويقصر وقت كل رمز كلما تقدمت. لديك ٣ أرواح — النقر الخاطئ أو نفاد وقت الرمز يكلّفك روحاً. تنتهي المحاولة فقط عند نفاد الأرواح.',
+    freeIntroReady: 'جاهز',
+    pickDiff: 'اختر الصعوبة',
+    pickDiffSub: 'كل صعوبة تحتوي ١٠٠ مستوى. افتحها بالترتيب.',
+    diffDesc: {
+      easy: 'رموز قليلة وإيقاع هادئ — تعلّم المطابقة.',
+      medium: 'رموز أكثر وأسرع — ابنِ سرعتك.',
+      hard: 'حتى ٩ رموز وسريع والمفتاح يتغيّر.',
+    },
+    chalPickDiff: 'الصعوبة',
+    levelsSub: (pop) => `${pop} · ${SM_LEVELS_PER_TIER} مستوى`,
+    challengeTitle: '⚔️ مرّر والعب',
+    challengeSub: 'نفس المفتاح والرموز للجميع · اختر الصعوبة · مرّر الجهاز',
+    players: 'اللاعبون (2–10)',
+    addPl: '＋ إضافة لاعب',
+    startCh: '⚔️ ابدأ',
+    needTwo: 'أضف لاعبين على الأقل.',
+    chalRounds: 'الجولات',
+    chalRoundsHint: 'كل لاعب يلعب مرة في الجولة · مفتاح عادل جديد كل جولة',
+    roundNofM: (n, m) => `الجولة ${n}/${m}`,
+    chalTurnKicker: 'دورك',
+    chalBulletSame: 'نفس المفتاح وترتيب الرموز للجميع في هذه الجولة',
+    chalBulletPass: 'اضغط ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
+    handTo: (n) => `سلّم الجهاز إلى ${n}.`,
+    goReady: 'ابدأ',
+    chalMeta: (label, sec) => `${label} · ${sec}ث`,
+    key: 'المفتاح',
+    tapNumber: 'اضغط الرقم المطابق للرمز',
+    countdown: 'استعد…',
+    go: 'انطلق!',
+    time: 'الوقت',
+    correct: 'صحيح',
+    combo: 'تتابع',
+    lives: 'الأرواح',
+    score: 'نقاط',
+    paused: 'متوقف',
+    resume: 'متابعة',
+    restart: 'إعادة',
+    quitMenu: 'الخروج للقائمة',
+    quitQ: 'خروج؟',
+    quitLose: 'سيُلغى هذا السجل.',
+    yesQuit: 'نعم، خروج',
+    keep: 'متابعة اللعب',
+    levelHeader: (diff, lv) => `${SM_DM[diff]?.label ?? diff} · ${lv}`,
+    freeHeader: 'وضع حر',
+    challengeHeader: 'مرّر والعب',
+    targetSub: (n) => `اجمع ${n} صحيحة`,
+    resultsLevelPass: 'المستوى اجتُاز',
+    resultsLevelRetry: 'حاول مجددًا',
+    stars: 'نجوم',
+    speedScore: 'درجة السرعة',
+    ipm: 'مطابقات / دقيقة',
+    accuracy: 'الدقة',
+    meanRt: 'متوسط زمن المطابقة',
+    ms: 'ملث',
+    nextLv: 'المستوى التالي',
+    retry: 'إعادة',
+    menu: 'القائمة',
+    freeGameOver: 'انتهت المحاولة',
+    freeCorrect: (n) => `مطابقات: ${n}`,
+    freeBest: (n) => `أفضل نقاط: ${n}`,
+    freePlayAgain: 'العب مجددًا',
+    resultsChalTitle: 'نتائج مرّر والعب',
+    chalResDetail: (nr, c, acc, rt) =>
+      nr > 1
+        ? `${nr}× · ${c} صحيحة بالمتوسط · ${acc}% · ${rt ?? '—'}ملث`
+        : `${c} صحيحة · ${acc}% · ${rt ?? '—'}ملث`,
+    newCh: 'لعبة جديدة',
+    perfect: 'سرعة البرق!',
+    good: 'عمل سريع',
+    tryAgain: 'واصل التدريب',
+  },
+};
+
+/** Crisp SVG glyph from the shared SH set. */
+function SmSymbol({ shape, size = 48, color = '#2d2d2d' }) {
+  const inner = SH[shape] || SH.circle;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+      style={{ color, display: 'block' }}
+      dangerouslySetInnerHTML={{ __html: inner }}
+    />
+  );
+}
+
+function LegendBar({ legend, t }) {
+  return (
+    <div className="ct-sm-legend" aria-label={t.key}>
+      {legend.map((p) => (
+        <div className="ct-sm-legend-pair" key={p.digit}>
+          <SmSymbol shape={p.symbol} size={26} />
+          <span className="ct-sm-legend-digit">{p.digit}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Light hub mode list (shared visual with the other games). */
+function SpeedModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
+  const items = [
+    { k: 'free', ic: '♾️', lb: t.freeMode, hint: t.hubNodeFreeHint, on: onFree, mod: 'ct-fq-attn-mode--free' },
+    { k: 'levels', ic: '🎯', lb: t.levelMode, hint: t.hubNodeLevelsHint, on: onLevels, mod: 'ct-fq-attn-mode--levels' },
+    { k: 'chal', ic: '⚔️', lb: t.challengeMode, hint: t.hubNodeChallengeHint, on: onChallenge, mod: 'ct-fq-attn-mode--chal' },
+  ];
+  return (
+    <div className="ct-fq-attn-modes" role="group" aria-label={t.hubMapAria}>
+      {items.map((m) => (
+        <button key={m.k} type="button" className={`ct-fq-attn-mode ${m.mod}`} onClick={() => { playSfx('click'); m.on(); }}>
+          <span className="ct-fq-attn-mode-ic" aria-hidden="true">{m.ic}</span>
+          <span className="ct-fq-attn-mode-body">
+            <span className="ct-fq-attn-mode-lb">{m.lb}</span>
+            <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>{m.hint}</span>
+          </span>
+          <span className="ct-fq-attn-mode-chev" aria-hidden="true">›</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export default function SpeedMatchGame({ onBack, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
+  const { playSfx, currentLang } = useApp();
+  const isAr = currentLang === 'ar';
+  const t = isAr ? UI.ar : UI.en;
+  const settings = loadGameSettings();
+
+  const [profile, setProfile] = useState(() => loadProfile());
+  const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
+  const [diffKey, setDiffKey] = useState('easy');
+
+  const [playStep, setPlayStep] = useState('idle');
+  const [cdVal, setCdVal] = useState(3);
+  const [legend, setLegend] = useState([]);
+  const [item, setItem] = useState(null);
+  const [feedback, setFeedback] = useState(null);
+  const [pressedKey, setPressedKey] = useState(null);
+  const [pauseOpen, setPauseOpen] = useState(false);
+  const [quitOpen, setQuitOpen] = useState(false);
+  const [lastResult, setLastResult] = useState(null);
+
+  // Live display values (repainted from the loop / answer handler).
+  const [score, setScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [correct, setCorrect] = useState(0);
+  const [lives, setLives] = useState(SM_FREE_LIVES);
+  const [, setTick] = useState(0);
+
+  // Challenge / pass-n-play
+  const [chalNames, setChalNames] = useState(['Player 1', 'Player 2']);
+  const [chalSeed, setChalSeed] = useState(null);
+  const [chalIdx, setChalIdx] = useState(0);
+  const [chalScores, setChalScores] = useState([]);
+  const [chalTurnOpen, setChalTurnOpen] = useState(false);
+  const [chalRoundsTotal, setChalRoundsTotal] = useState(1);
+  const [chalRoundIdx, setChalRoundIdx] = useState(0);
+  const [chalDiff, setChalDiff] = useState('hard');
+  const chalDiffRef = useRef('hard');
+  const chalIdxRef = useRef(0);
+  const chalNamesRef = useRef(chalNames);
+  const chalScoresRef = useRef([]);
+  const chalRoundsTotalRef = useRef(1);
+  const chalCycleRef = useRef(0);
+
+  const blockRef = useRef(null);
+  const rngRef = useRef(Math.random);
+  const eventsRef = useRef([]);
+  const correctRef = useRef(0);
+  const wrongRef = useRef(0);
+  const comboRef = useRef(0);
+  const scoreRef = useRef(0);
+  const livesRef = useRef(SM_FREE_LIVES);
+  const lastDigitRef = useRef(0);
+  const itemRef = useRef(null);
+  const answeredRef = useRef(false);
+  const blockEndAtRef = useRef(0);
+  const itemStartRef = useRef(0);
+  const itemEndAtRef = useRef(Infinity);
+  const itemMsRef = useRef(2600);
+  const rafRef = useRef(0);
+  const runIdRef = useRef(0);
+  const endedRef = useRef(false);
+  const playStepRef = useRef('idle');
+  const pauseRef = useRef(false);
+  const fbTimerRef = useRef(0);
+
+  const doneMap = profile.done || {};
+
+  const finishBlockRef = useRef(() => {});
+  const nextItemRef = useRef(() => {});
+
+  useEffect(() => { playStepRef.current = playStep; }, [playStep]);
+  useEffect(() => { pauseRef.current = pauseOpen; }, [pauseOpen]);
+  useEffect(() => { chalIdxRef.current = chalIdx; }, [chalIdx]);
+  useEffect(() => { chalNamesRef.current = chalNames; }, [chalNames]);
+
+  const stopLoop = useCallback(() => {
+    runIdRef.current += 1;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = 0;
+  }, []);
+
+  const clearPlay = useCallback(() => {
+    stopLoop();
+    if (fbTimerRef.current) clearTimeout(fbTimerRef.current);
+    blockRef.current = null;
+    endedRef.current = false;
+    setPlayStep('idle');
+    playStepRef.current = 'idle';
+    setPauseOpen(false);
+    setQuitOpen(false);
+    setItem(null);
+    setFeedback(null);
+    setChalTurnOpen(false);
+  }, [stopLoop]);
+
+  useEffect(() => () => { stopLoop(); if (fbTimerRef.current) clearTimeout(fbTimerRef.current); }, [stopLoop]);
+
+  const flash = useCallback((kind) => {
+    if (fbTimerRef.current) clearTimeout(fbTimerRef.current);
+    setFeedback(kind);
+    fbTimerRef.current = setTimeout(() => setFeedback(null), 260);
+  }, []);
+
+  const nextItem = useCallback((now) => {
+    const block = blockRef.current;
+    if (!block) return;
+    if (block.mode === 'free') {
+      const size = freeLegendSize(correctRef.current);
+      if (block.legend.length !== size) {
+        block.legend = buildLegend(size);
+        setLegend(block.legend);
+      }
+      itemMsRef.current = freeItemMs(correctRef.current);
+      itemEndAtRef.current = now + itemMsRef.current;
+    } else {
+      const remap = block.spec.remapEvery;
+      if (remap > 0 && correctRef.current > 0 && correctRef.current % remap === 0) {
+        block.legend = buildLegend(block.spec.pairCount, rngRef.current);
+        setLegend(block.legend);
+      }
+      itemEndAtRef.current = Infinity;
+    }
+    const it = pickItem(block.legend, rngRef.current, lastDigitRef.current);
+    lastDigitRef.current = it?.digit ?? 0;
+    itemRef.current = it;
+    answeredRef.current = false;
+    itemStartRef.current = now;
+    setItem(it);
+  }, []);
+  useEffect(() => { nextItemRef.current = nextItem; }, [nextItem]);
+
+  const persistLevelDone = useCallback((diff, lv) => {
+    setProfile((prev) => {
+      const next = { ...prev, done: { ...prev.done, [`${diff}-${lv}`]: true } };
+      saveProfile(next);
+      return next;
+    });
+  }, []);
+
+  const finishBlock = useCallback(() => {
+    if (endedRef.current) return;
+    endedRef.current = true;
+    stopLoop();
+    const block = blockRef.current;
+    if (!block) { endedRef.current = false; return; }
+    const summary = summarize(eventsRef.current, block.spec.durationSec);
+    const grade = gradeBlock(summary, block.spec, { freeMode: false });
+
+    if (assessmentMode) {
+      playSfx('win');
+      const line = `${summary.itemsPerMin}/min · ${summary.accuracyPct}%`;
+      blockRef.current = null;
+      onAssessmentComplete?.({ score: grade.score, line });
+      return;
+    }
+
+    if (block.mode === 'challenge') {
+      const idx = chalIdxRef.current;
+      const names = chalNamesRef.current;
+      const base = [...chalScoresRef.current];
+      const snap = { correct: summary.correct, accuracyPct: summary.accuracyPct, meanRt: summary.meanRt, score: grade.score };
+      const prev = base[idx];
+      const rounds = [...(prev?.rounds || []), snap];
+      const avgCorrect = Math.round(rounds.reduce((s, r) => s + r.correct, 0) / rounds.length);
+      base[idx] = { nm: names[idx], rounds, correct: avgCorrect, last: snap };
+      chalScoresRef.current = base;
+      setChalScores(base);
+      playSfx('win');
+      const nextIdx = idx + 1;
+      if (nextIdx < names.length) {
+        setChalIdx(nextIdx);
+        setChalTurnOpen(true);
+        setPhase('play');
+        setPlayStep('idle');
+        blockRef.current = null;
+        endedRef.current = false;
+      } else {
+        const cycle = chalCycleRef.current;
+        if (cycle + 1 < chalRoundsTotalRef.current) {
+          chalCycleRef.current = cycle + 1;
+          setChalRoundIdx(chalCycleRef.current);
+          setChalSeed(prepareChallengeSeed(chalDiffRef.current));
+          setChalIdx(0);
+          chalIdxRef.current = 0;
+          setChalTurnOpen(true);
+          setPhase('play');
+          setPlayStep('idle');
+          blockRef.current = null;
+          endedRef.current = false;
+        } else {
+          setLastResult({ type: 'challenge', rows: base });
+          setPhase('chalRes');
+          setPlayStep('idle');
+          blockRef.current = null;
+        }
+      }
+      return;
+    }
+
+    // level
+    if (grade.won) { playSfx('win'); persistLevelDone(block.diff, block.lv); }
+    else playSfx('error');
+    setLastResult({ type: 'level', block, summary, grade });
+    setPhase('res');
+    setPlayStep('idle');
+    blockRef.current = null;
+  }, [stopLoop, playSfx, persistLevelDone, assessmentMode, onAssessmentComplete]);
+  useEffect(() => { finishBlockRef.current = finishBlock; }, [finishBlock]);
+
+  const finishFreeRun = useCallback(() => {
+    if (endedRef.current) return;
+    endedRef.current = true;
+    stopLoop();
+    playSfx('error');
+    const runScore = scoreRef.current;
+    const c = correctRef.current;
+    setProfile((prev) => {
+      let next = { ...prev };
+      let changed = false;
+      if (runScore > (prev.bestFree ?? 0)) { next = { ...next, bestFree: runScore }; changed = true; }
+      if (c > (prev.bestStreak ?? 0)) { next = { ...next, bestStreak: c }; changed = true; }
+      if (changed) saveProfile(next);
+      return changed ? next : prev;
+    });
+    setLastResult({ type: 'free', score: runScore, correct: c });
+    setPhase('freeRes');
+    setPlayStep('idle');
+    blockRef.current = null;
+  }, [stopLoop, playSfx]);
+
+  const startLoop = useCallback(() => {
+    stopLoop();
+    const myRun = runIdRef.current;
+    let last = performance.now();
+    const loop = (ts) => {
+      if (runIdRef.current !== myRun) return;
+      if (pauseRef.current) { rafRef.current = requestAnimationFrame(loop); last = ts; return; }
+      const block = blockRef.current;
+      if (!block) return;
+      last = ts;
+      if (block.mode === 'free') {
+        if (ts >= itemEndAtRef.current) {
+          // Item timed out → miss → lose a life.
+          eventsRef.current.push({ correct: false, rtMs: null });
+          wrongRef.current += 1;
+          comboRef.current = 0;
+          setCombo(0);
+          flash('miss');
+          livesRef.current = Math.max(0, livesRef.current - 1);
+          setLives(livesRef.current);
+          if (livesRef.current <= 0) { finishFreeRun(); return; }
+          nextItemRef.current(ts);
+        }
+      } else if (ts >= blockEndAtRef.current) {
+        finishBlockRef.current();
+        return;
+      }
+      setTick((n) => (n + 1) % 1000000);
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+  }, [stopLoop, flash, finishFreeRun]);
+
+  const answer = useCallback((digit) => {
+    if (playStepRef.current !== 'running' || pauseRef.current) return;
+    const block = blockRef.current;
+    const it = itemRef.current;
+    if (!block || !it || answeredRef.current) return;
+    answeredRef.current = true;
+    const now = performance.now();
+    const rt = Math.round(now - itemStartRef.current);
+    const isRight = digit === it.digit;
+    eventsRef.current.push({ correct: isRight, rtMs: isRight ? rt : null });
+    setPressedKey(digit);
+    setTimeout(() => setPressedKey(null), 120);
+    if (isRight) {
+      playSfx('click');
+      correctRef.current += 1;
+      comboRef.current += 1;
+      setCorrect(correctRef.current);
+      setCombo(comboRef.current);
+      if (block.mode === 'free') {
+        scoreRef.current += freeItemPoints(comboRef.current);
+        setScore(scoreRef.current);
+      }
+      flash('hit');
+      nextItemRef.current(now);
+    } else {
+      playSfx('error');
+      wrongRef.current += 1;
+      comboRef.current = 0;
+      setCombo(0);
+      flash('miss');
+      if (block.mode === 'free') {
+        livesRef.current = Math.max(0, livesRef.current - 1);
+        setLives(livesRef.current);
+        if (livesRef.current <= 0) { finishFreeRun(); return; }
+      }
+      nextItemRef.current(now);
+    }
+  }, [playSfx, flash, finishFreeRun]);
+
+  // Countdown → running.
+  useEffect(() => {
+    if (phase !== 'play' || playStep !== 'countdown') return undefined;
+    if (cdVal <= 0) {
+      const now = performance.now();
+      const block = blockRef.current;
+      if (block && block.mode !== 'free') {
+        blockEndAtRef.current = now + block.spec.durationSec * 1000;
+      }
+      setPlayStep('running');
+      playStepRef.current = 'running';
+      nextItemRef.current(now);
+      startLoop();
+      return undefined;
+    }
+    const id = setTimeout(() => setCdVal((c) => c - 1), 650);
+    return () => clearTimeout(id);
+  }, [phase, playStep, cdVal, startLoop]);
+
+  const beginBlock = useCallback((block, rng) => {
+    stopLoop();
+    runIdRef.current += 1;
+    blockRef.current = block;
+    rngRef.current = rng || Math.random;
+    eventsRef.current = [];
+    correctRef.current = 0;
+    wrongRef.current = 0;
+    comboRef.current = 0;
+    scoreRef.current = 0;
+    lastDigitRef.current = 0;
+    endedRef.current = false;
+    setLegend(block.legend);
+    setItem(null);
+    setScore(0);
+    setCombo(0);
+    setCorrect(0);
+    setFeedback(null);
+    setPhase('play');
+    setPauseOpen(false);
+    setQuitOpen(false);
+    setCdVal(3);
+    setPlayStep('countdown');
+  }, [stopLoop]);
+
+  const startFreeMode = useCallback(() => {
+    livesRef.current = SM_FREE_LIVES;
+    setLives(SM_FREE_LIVES);
+    const block = { mode: 'free', diff: 'free', lv: 0, spec: { durationSec: 0, remapEvery: 0, pairCount: 4 }, legend: buildLegend(4) };
+    beginBlock(block, Math.random);
+  }, [beginBlock]);
+
+  const startLevel = useCallback((diff, lv) => {
+    beginBlock(prepareLevelBlock(diff, lv), Math.random);
+  }, [beginBlock]);
+
+  // Assessment: one fixed, standardized DSST block (same for every user).
+  const startAssessment = useCallback(() => {
+    beginBlock(prepareLevelBlock('medium', 12), Math.random);
+  }, [beginBlock]);
+
+  const openChallenge = () => {
+    const names = chalNames.map((s, i) => s.trim() || `Player ${i + 1}`);
+    if (names.length < 2) { window.alert(t.needTwo); return; }
+    clearPlay();
+    setChalNames(names);
+    chalRoundsTotalRef.current = chalRoundsTotal;
+    chalDiffRef.current = chalDiff;
+    chalCycleRef.current = 0;
+    setChalRoundIdx(0);
+    setChalSeed(prepareChallengeSeed(chalDiffRef.current));
+    setChalIdx(0);
+    chalIdxRef.current = 0;
+    const initial = names.map((nm) => ({ nm, rounds: [] }));
+    chalScoresRef.current = initial;
+    setChalScores(initial);
+    setChalTurnOpen(true);
+    setPhase('play');
+  };
+
+  const startChallengeBlock = () => {
+    if (!chalSeed) return;
+    setChalTurnOpen(false);
+    beginBlock(prepareChallengeBlock(chalSeed), mulberry32(chalSeed.seed));
+    playSfx('click');
+  };
+
+  const onPause = () => {
+    if (playStepRef.current !== 'running') return;
+    // Halt the loop synchronously BEFORE rewriting deadlines, so a stray frame
+    // can't read a "remaining" value as an absolute time and misfire.
+    pauseRef.current = true;
+    const now = performance.now();
+    if (blockRef.current) blockRef.current.__blockRem = blockEndAtRef.current - now;
+    itemEndAtRef.current = itemEndAtRef.current === Infinity ? Infinity : itemEndAtRef.current - now;
+    setPauseOpen(true);
+  };
+  const onResume = () => {
+    const now = performance.now();
+    if (blockRef.current && blockRef.current.__blockRem != null) {
+      blockEndAtRef.current = now + blockRef.current.__blockRem;
+      blockRef.current.__blockRem = null;
+    }
+    itemEndAtRef.current = itemEndAtRef.current === Infinity ? Infinity : now + itemEndAtRef.current;
+    itemStartRef.current = now;
+    pauseRef.current = false;
+    setPauseOpen(false);
+  };
+
+  const confirmQuit = () => {
+    setQuitOpen(false);
+    const mode = blockRef.current?.mode;
+    clearPlay();
+    if (assessmentMode) { (onAssessmentExit || onBack)?.(); return; }
+    if (mode === 'challenge') setPhase('chal');
+    else if (mode === 'level') setPhase('levels');
+    else setPhase('hub');
+  };
+
+  /* --- Tutorial gating --- */
+  const [tutorialQueue, setTutorialQueue] = useState([]);
+  const pendingTutorialActionRef = useRef(null);
+  const gateWithTutorial = useCallback((action, modeKind) => {
+    const q = buildTutorialQueueFor(modeKind);
+    if (q.length === 0) { action(); return; }
+    pendingTutorialActionRef.current = action;
+    setTutorialQueue(q);
+  }, []);
+  const advanceTutorial = useCallback(() => {
+    setTutorialQueue((prev) => {
+      const finished = prev[0];
+      if (finished) {
+        markTutorialSeen(finished.kind === 'main' ? 'main' : finished.kind === 'free-tip' ? 'free' : 'challenge');
+      }
+      const rem = prev.slice(1);
+      if (rem.length === 0 && pendingTutorialActionRef.current) {
+        const a = pendingTutorialActionRef.current;
+        pendingTutorialActionRef.current = null;
+        queueMicrotask(a);
+      }
+      return rem;
+    });
+  }, []);
+  const replayTutorial = useCallback(() => {
+    pendingTutorialActionRef.current = null;
+    setTutorialQueue([{ kind: 'main' }]);
+  }, []);
+
+  const block = blockRef.current;
+  const now = performance.now();
+  const blockTimeLeft = block && block.mode !== 'free' && playStep === 'running'
+    ? Math.max(0, Math.ceil((blockEndAtRef.current - now) / 1000))
+    : block && block.mode !== 'free' ? block.spec.durationSec : 0;
+  const itemPct = block?.mode === 'free' && playStep === 'running' && itemEndAtRef.current !== Infinity
+    ? Math.max(0, Math.min(1, (itemEndAtRef.current - now) / (itemMsRef.current || 1)))
+    : 1;
+
+  const header = (() => {
+    if (!block) return { title: t.title, subtitle: '' };
+    if (block.mode === 'free') return { title: t.freeHeader, subtitle: '' };
+    if (block.mode === 'challenge') {
+      return {
+        title: t.challengeHeader,
+        subtitle: chalRoundsTotal > 1 ? `${t.roundNofM(chalRoundIdx + 1, chalRoundsTotal)} · ${chalNames[chalIdx] ?? ''}` : (chalNames[chalIdx] ?? ''),
+      };
+    }
+    return { title: t.levelHeader(block.diff, block.lv), subtitle: t.targetSub(block.spec.targetCorrect) };
+  })();
+
+  const starLabel = lastResult?.grade?.stars === 3 ? t.perfect : lastResult?.grade?.stars === 2 ? t.good : t.tryAgain;
+
+  return (
+    <div className="cancellation-task-game ct-sm-root" dir={isAr ? 'rtl' : 'ltr'}>
+      {phase === 'assessStart' && (
+        <AssessmentReady
+          isAr={isAr}
+          label={assessmentLabel}
+          step={assessmentStep}
+          onStart={startAssessment}
+          onBack={onAssessmentExit || onBack}
+          playSfx={playSfx}
+        />
+      )}
+      {phase === 'hub' && (
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
+            <TrainingMenuBar
+              onBack={onBack}
+              playSfx={playSfx}
+              hubSpaced
+              variant="paper"
+              onReplayTutorial={replayTutorial}
+              replayHint={t.replayTutorial}
+              center={
+                <div className="ct-fq-hub-attn-head">
+                  <div className="ct-fq-hub-attn-big">{t.hub}</div>
+                  <div className="ct-fq-hub-attn-sub">{t.tag}</div>
+                </div>
+              }
+            />
+            <SpeedModes
+              t={t}
+              isAr={isAr}
+              playSfx={playSfx}
+              onFree={() => gateWithTutorial(startFreeMode, 'free')}
+              onLevels={() => gateWithTutorial(() => setPhase('diff'), 'levels')}
+              onChallenge={() => gateWithTutorial(() => setPhase('chal'), 'challenge')}
+            />
+          </div>
+        </div>
+      )}
+
+      {phase === 'freeIntro' && null}
+
+      {phase === 'diff' && (
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-screen ct-fq-training-screen">
+            <TrainingMenuBar
+              onBack={() => setPhase('hub')}
+              playSfx={playSfx}
+              variant="paper"
+              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.pickDiff}</div></div>}
+            />
+            <div className="ct-fq-diff-body">
+              <p className="ct-fq-sub ct-fq-training-blurb">{t.pickDiffSub}</p>
+              <div className="ct-fq-diff-cards">
+                {SM_DIFF_KEYS.map((k) => {
+                  const m = SM_DM[k];
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training ct-fq-diffcard`}
+                      onClick={() => { playSfx('click'); setDiffKey(k); setPhase('levels'); }}
+                    >
+                      <span className="ct-fq-diffcard-main">
+                        <span className="ct-fq-diffcard-label">{m.label}</span>
+                        <span className="ct-fq-diffcard-desc">{t.diffDesc[k]}</span>
+                      </span>
+                      <span className="ct-fq-diffcard-meta">
+                        <span className="ct-fq-diffcard-pop">{m.pop}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {phase === 'levels' && (
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-screen ct-fq-training-screen">
+            <TrainingMenuBar
+              onBack={() => setPhase('diff')}
+              playSfx={playSfx}
+              variant="paper"
+              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{SM_DM[diffKey].label}</div></div>}
+            />
+            <p className="ct-fq-sub ct-fq-training-blurb">{t.levelsSub(SM_DM[diffKey].pop)}</p>
+            <div className="ct-fq-lg ct-fq-lg-training">
+              {Array.from({ length: SM_LEVELS_PER_TIER }, (_, i) => i + 1).map((lv) => {
+                const un = isLevelUnlocked(diffKey, lv, doneMap);
+                const dn = !!doneMap[`${diffKey}-${lv}`];
+                const spec = specForLevel(diffKey, lv);
+                const cls = `ct-fq-lb ${un ? `ct-${SM_DM[diffKey].lvc}` : 'ct-lvk'}`;
+                return (
+                  <button key={lv} type="button" className={cls} disabled={!un}
+                    onClick={() => { if (!un) return; playSfx('click'); startLevel(diffKey, lv); }}>
+                    <span className="ct-ln">{dn ? '✓' : lv}</span>
+                    <span className="ct-ls">{un ? `${spec.pairCount}◆·${spec.targetCorrect}` : '🔒'}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {phase === 'chal' && (
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-screen ct-fq-training-screen">
+            <TrainingMenuBar
+              onBack={() => { clearPlay(); setPhase('hub'); }}
+              playSfx={playSfx}
+              variant="paper"
+              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.challengeTitle}</div></div>}
+            />
+            <p className="ct-fq-sub ct-fq-training-blurb">{t.challengeSub}</p>
+            <div className="ct-fq-card ct-fq-card-training">
+              <h3>{t.chalPickDiff}</h3>
+              <div className="ct-fq-rr ct-fq-rr-diff" role="group" aria-label={t.chalPickDiff}>
+                {SM_DIFF_KEYS.map((k) => (
+                  <button key={k} type="button"
+                    className={`ct-fq-rrb ct-fq-rrb-diff${chalDiff === k ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
+                    onClick={() => { playSfx('click'); setChalDiff(k); }}>
+                    {SM_DM[k].label}
+                  </button>
+                ))}
+              </div>
+              <h3 style={{ marginTop: 14 }}>{t.players}</h3>
+              {chalNames.map((nm, i) => (
+                <div key={i} className="ct-fq-pr">
+                  <input value={nm} maxLength={20} onChange={(e) => { const n = [...chalNames]; n[i] = e.target.value; setChalNames(n); }} />
+                  {chalNames.length > 2 && (
+                    <button type="button" className="ct-fq-prm" onClick={() => setChalNames(chalNames.filter((_, j) => j !== i))}>×</button>
+                  )}
+                </div>
+              ))}
+              {chalNames.length < 10 && (
+                <button type="button" className="ct-fq-apb ct-fq-apb-training" onClick={() => setChalNames([...chalNames, `Player ${chalNames.length + 1}`])}>{t.addPl}</button>
+              )}
+              <h3 style={{ marginTop: 14 }}>{t.chalRounds}</h3>
+              <p className="ct-fq-sub" style={{ marginTop: 2, marginBottom: 8, fontSize: '0.78rem' }}>{t.chalRoundsHint}</p>
+              <div className="ct-fq-rr" role="group" aria-label={t.chalRounds}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button key={n} type="button"
+                    className={`ct-fq-rrb${chalRoundsTotal === n ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
+                    onClick={() => { playSfx('click'); setChalRoundsTotal(n); }}>{n}</button>
+                ))}
+              </div>
+            </div>
+            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); openChallenge(); }}>{t.startCh}</button>
+          </div>
+        </div>
+      )}
+
+      {phase === 'play' && chalTurnOpen && !block && chalNames[chalIdx] && (
+        <TrainingChallengeHandoff
+          isAr={isAr}
+          kicker={t.chalTurnKicker}
+          playerName={chalNames[chalIdx]}
+          roundLine={chalRoundsTotal > 1 ? t.roundNofM(chalRoundIdx + 1, chalRoundsTotal) : null}
+          metaLine={t.chalMeta(SM_DM[chalDiff]?.label ?? '', chalSeed?.spec?.durationSec ?? 45)}
+          instruction={t.handTo(chalNames[chalIdx])}
+          bullets={[t.chalBulletSame, t.chalBulletPass]}
+          startLabel={t.goReady}
+          onStart={startChallengeBlock}
+          playSfx={playSfx}
+        />
+      )}
+
+      {phase === 'play' && block && (
+        <div className="ct-sm-play">
+          <TrainingPlayHeader
+            isAr={isAr}
+            title={header.title}
+            subtitle={header.subtitle}
+            playSfx={playSfx}
+            onMenu={() => setQuitOpen(true)}
+            onPause={onPause}
+            pauseAriaLabel={t.paused}
+          />
+          <div className={`ct-sm-stage${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}`}>
+            <div className="ct-sm-legend-wrap" data-fq-chrome>
+              <div className="ct-sm-legend-label">{t.key}</div>
+              <LegendBar legend={legend} t={t} />
+            </div>
+
+            <div className="ct-sm-hud" data-fq-chrome>
+              {block.mode === 'free' ? (
+                <>
+                  <span className="ct-sm-hud-stat ct-fq-lives" aria-label={`${lives} lives`}>
+                    {'♥'.repeat(Math.max(0, lives))}<span className="ct-fq-lives-spent">{'♥'.repeat(Math.max(0, SM_FREE_LIVES - lives))}</span>
+                  </span>
+                  <span className="ct-sm-hud-stat">{t.score} {score}</span>
+                  <span className="ct-sm-hud-stat">{t.combo} ×{combo}</span>
+                </>
+              ) : (
+                <>
+                  <span className="ct-sm-hud-stat ct-sm-hud-time">{blockTimeLeft}s</span>
+                  <span className="ct-sm-hud-stat">{t.correct} {correct}/{block.spec.targetCorrect}</span>
+                  <span className="ct-sm-hud-stat">×{combo}</span>
+                </>
+              )}
+            </div>
+
+            {block.mode === 'free' && (
+              <div className="ct-sm-itembar" data-fq-chrome aria-hidden="true">
+                <div className="ct-sm-itembar-fill" style={{ width: `${itemPct * 100}%`, background: itemPct > 0.4 ? 'linear-gradient(90deg,#6b9e7a,#7ab87a)' : 'linear-gradient(90deg,#e8a07a,#c97a7a)' }} />
+              </div>
+            )}
+
+            <div className="ct-sm-card" aria-live="polite">
+              {playStep === 'countdown' ? (
+                <div className="ct-sm-countdown">{cdVal > 0 ? cdVal : t.go}</div>
+              ) : item ? (
+                <SmSymbol shape={item.symbol} size={92} />
+              ) : null}
+            </div>
+            <p className="ct-sm-prompt">{t.tapNumber}</p>
+
+            <div className="ct-sm-pad" role="group" aria-label={t.tapNumber}>
+              {legend.map((p) => (
+                <button
+                  key={p.digit}
+                  type="button"
+                  className={`ct-sm-key${pressedKey === p.digit ? ' ct-sm-key--press' : ''}`}
+                  disabled={playStep !== 'running'}
+                  onPointerDown={(e) => { e.preventDefault(); answer(p.digit); }}
+                >
+                  {p.digit}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <TrainingPauseModal
+            open={pauseOpen}
+            labels={{ paused: t.paused, resume: t.resume, restart: t.restart, quitMenu: t.quitMenu }}
+            showRestart
+            onResume={onResume}
+            onRestart={() => {
+              setPauseOpen(false);
+              const b = blockRef.current;
+              if (!b) return;
+              if (b.mode === 'level') startLevel(b.diff, b.lv);
+              else if (b.mode === 'free') startFreeMode();
+              else startChallengeBlock();
+            }}
+            onQuitMenu={() => { setPauseOpen(false); setQuitOpen(true); }}
+          />
+          <TrainingQuitModal
+            open={quitOpen}
+            labels={{ quitQ: t.quitQ, quitLose: t.quitLose, yesQuit: t.yesQuit, keep: t.keep }}
+            onConfirmQuit={confirmQuit}
+            onKeepPlaying={() => setQuitOpen(false)}
+          />
+        </div>
+      )}
+
+      {phase === 'res' && lastResult?.type === 'level' && (
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-screen ct-fq-training-screen">
+            <TrainingMenuBar
+              onBack={() => { setLastResult(null); clearPlay(); setPhase('levels'); }}
+              playSfx={playSfx}
+              variant="paper"
+              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{lastResult.grade.won ? t.resultsLevelPass : t.resultsLevelRetry}</div></div>}
+            />
+            {lastResult.grade.won && (
+              <div style={{ textAlign: 'center', fontSize: '1.5rem', color: '#e8ac4e', marginTop: 8, fontWeight: 700 }}>
+                {'★'.repeat(lastResult.grade.stars)} <span style={{ fontSize: '0.85rem', color: '#5c534c' }}>{starLabel}</span>
+              </div>
+            )}
+            <div className={`ct-fq-sbig ct-fq-band-text-${lastResult.grade.score >= 75 ? 'high' : lastResult.grade.score >= 50 ? 'mid' : 'low'}`}>{lastResult.grade.score}</div>
+            <div className="ct-fq-ies-lbl">{t.speedScore}</div>
+            <div className="ct-fq-rm ct-fq-rm-training ct-fq-assess-grid">
+              <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.itemsPerMin}</div><div className="ct-fq-rl">{t.ipm}</div></div>
+              <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.accuracyPct}%</div><div className="ct-fq-rl">{t.accuracy}</div></div>
+              <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.meanRt != null ? lastResult.summary.meanRt : '—'}</div><div className="ct-fq-rl">{t.meanRt}</div></div>
+            </div>
+            <div className="ct-fq-row">
+              {lastResult.grade.won && lastResult.block.lv < SM_LEVELS_PER_TIER && (
+                <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); setLastResult(null); startLevel(lastResult.block.diff, lastResult.block.lv + 1); }}>{t.nextLv}</button>
+              )}
+              <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { playSfx('click'); setLastResult(null); startLevel(lastResult.block.diff, lastResult.block.lv); }}>{t.retry}</button>
+              <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { setLastResult(null); clearPlay(); setPhase('levels'); }}>{t.menu}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {phase === 'freeRes' && lastResult?.type === 'free' && (
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-screen ct-fq-training-screen">
+            <TrainingMenuBar
+              onBack={() => { setLastResult(null); clearPlay(); setPhase('hub'); }}
+              playSfx={playSfx}
+              variant="paper"
+              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.freeGameOver}</div></div>}
+            />
+            <div className="ct-fq-sbig">{lastResult.score ?? 0}</div>
+            <div className="ct-fq-ies-lbl">{t.score}</div>
+            <div className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 10, fontWeight: 700 }}>{t.freeCorrect(lastResult.correct)}</div>
+            <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 6 }}>{t.freeBest(profile.bestFree ?? 0)}</p>
+            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); setLastResult(null); startFreeMode(); }}>{t.freePlayAgain}</button>
+            <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { setLastResult(null); clearPlay(); setPhase('hub'); }}>{t.menu}</button>
+          </div>
+        </div>
+      )}
+
+      {phase === 'chalRes' && lastResult?.type === 'challenge' && lastResult.rows && (
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-screen ct-fq-training-screen">
+            <TrainingMenuBar
+              onBack={() => { setLastResult(null); clearPlay(); setPhase('hub'); }}
+              playSfx={playSfx}
+              variant="paper"
+              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.resultsChalTitle}</div></div>}
+            />
+            {[...lastResult.rows].sort((a, b) => b.correct - a.correct).map((row, i) => (
+              <div key={row.nm} className={`ct-fq-lbr ct-fq-lbr-training ${i === 0 ? 'win' : ''}`}>
+                <div className="ct-fq-lbrk">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</div>
+                <div>
+                  <div className="ct-fq-lbnm">{row.nm}</div>
+                  <div className="ct-fq-lbdt">{t.chalResDetail(row.rounds?.length || 1, row.correct, row.last?.accuracyPct ?? 0, row.last?.meanRt)}</div>
+                </div>
+                <div className="ct-fq-lbsc">{row.correct}</div>
+              </div>
+            ))}
+            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { setLastResult(null); clearPlay(); setPhase('chal'); setChalSeed(null); }}>{t.newCh}</button>
+            <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { setLastResult(null); clearPlay(); setPhase('hub'); }}>{t.menu}</button>
+          </div>
+        </div>
+      )}
+
+      {tutorialQueue.length > 0 && (
+        <SpeedMatchTutorial kind={tutorialQueue[0].kind} isAr={isAr} onClose={advanceTutorial} playSfx={playSfx} />
+      )}
+    </div>
+  );
+}

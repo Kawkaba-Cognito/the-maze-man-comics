@@ -346,7 +346,7 @@ function mazeCorridorD(domainId) {
   return `M ${sx} ${sy} Q ${cpx} ${cpy} ${s.x} ${s.y}`;
 }
 
-export default function RadialMazeHub({ onBack, onOpenDomain }) {
+export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }) {
   const { currentLang, toggleLang } = useApp();
   const isAr = currentLang === 'ar';
   const [hovered, setHovered] = useState(null);
@@ -571,17 +571,52 @@ export default function RadialMazeHub({ onBack, onOpenDomain }) {
           })}
         </svg>
 
-        {/* Center Maze Man — bright, highlighted, above all corridors */}
+        {/* Center fox — tappable "Assessment" entry, above all corridors */}
         <div style={{
           position: 'absolute',
           top: `${(HUB_NEXUS[1] / 660) * 100}%`,
           left: '50%',
           transform: 'translate(-50%, -50%)',
           zIndex: 8,
-          pointerEvents: 'none',
-          filter: 'drop-shadow(0 0 24px rgba(245,166,35,0.7)) drop-shadow(0 0 56px rgba(255,216,90,0.4))',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 8,
         }}>
-          <MazeManAvatar size={92} mood="proud" glow />
+          <button
+            type="button"
+            onClick={onOpenAssessment}
+            aria-label={isAr ? 'ابدأ التقييم' : 'Start assessment'}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              filter: 'drop-shadow(0 0 24px rgba(245,166,35,0.7)) drop-shadow(0 0 56px rgba(255,216,90,0.4))',
+            }}
+          >
+            <MazeManAvatar size={92} mood="proud" glow />
+          </button>
+          <button
+            type="button"
+            onClick={onOpenAssessment}
+            aria-label={isAr ? 'التقييم' : 'Assessment'}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              color: L.text,
+              fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Nunito', sans-serif",
+              fontSize: isAr ? 12.5 : 14,
+              fontWeight: isAr ? 800 : 400,
+              letterSpacing: isAr ? 0 : 0.35,
+              whiteSpace: 'nowrap',
+              textShadow: '-1.4px 0 rgba(8,4,2,0.95), 1.4px 0 rgba(8,4,2,0.95), 0 -1.4px rgba(8,4,2,0.95), 0 1.4px rgba(8,4,2,0.95), 0 0 18px rgba(232,172,78,0.55)',
+            }}
+          >
+            {isAr ? 'التقييم' : 'Assessment'}
+          </button>
         </div>
       </div>
 

@@ -57,10 +57,10 @@ function generateFreeRound(stageIndex) {
     fallbackBoard('free', { freeStage: stageIndex, diff, lv });
 }
 
-function generateChallenge(seed, cycleIndex, totalRounds) {
+function generateChallenge(seed, cycleIndex, diff) {
   const s = (seed >>> 0) || 1;
   const c = Math.max(0, cycleIndex | 0);
-  return getCuratedRushHourChallenge(s, c, totalRounds) ||
+  return getCuratedRushHourChallenge(s, c, diff) ||
     fallbackBoard('challenge', { seed: s });
 }
 
@@ -75,7 +75,7 @@ self.onmessage = (e) => {
       const result = generateFreeRound(payload.stageIndex, payload.sessionNonce);
       self.postMessage({ id, result });
     } else if (type === 'generateChallenge') {
-      const result = generateChallenge(payload.seed, payload.cycleIndex, payload.totalRounds);
+      const result = generateChallenge(payload.seed, payload.cycleIndex, payload.diff);
       self.postMessage({ id, result });
     }
   } catch (err) {

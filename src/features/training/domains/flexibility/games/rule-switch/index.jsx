@@ -15,11 +15,11 @@ import {
   WCST_LEVELS_PER_TIER,
   WCST_DIFF_KEYS,
   WCST_DM,
-  WCST_FREE_SESSION_START_SEC,
-  WCST_FREE_SESSION_CAP_SEC,
-  WCST_FREE_MAX_ERRORS,
+  WCST_FREE_LIVES,
   specificationForLevel,
-  prepareFreeBlock,
+  prepareFreeRunBlock,
+  freeSortPoints,
+  prepareAssessBlock,
   prepareLevelBlock,
   prepareChallengeSeed,
   prepareChallengeBlock,
@@ -31,15 +31,13 @@ import {
   summarizeWcst,
   gradeBlock,
   isWcstLevelUnlocked,
-  freeClearBonusSec,
-  freeBlockPoints,
   mergeWcstChallengeRow,
   compareChallengeRows,
   feedbackLabel,
-  playHint,
   matchingDimensions,
 } from './ruleSwitchData';
 import { loadWcstProfile, saveWcstProfile } from './ruleSwitchProgress';
+import AssessmentReady from '../../../../assessment/AssessmentReady';
 
 const UI = {
   en: {
@@ -49,20 +47,25 @@ const UI = {
     replayTutorial: 'Replay tutorial',
     freeMode: '♾️ Free mode',
     levelMode: '🎯 Level mode',
-    challengeMode: '⚔️ Challenge',
+    challengeMode: '⚔️ Pass n Play',
     hubMapAria: 'Modes',
-    hubNodeFreeHint: 'Discover hidden rules, then adapt when they change',
-    hubNodeLevelsHint: '20 levels · WCST neuroscience metrics',
-    hubNodeChallengeHint: 'Same deck · highest CFS wins',
+    hubNodeFreeHint: 'Sort by the rule shown · it keeps switching',
+    hubNodeLevelsHint: '100 levels · cued rule switching',
+    hubNodeChallengeHint: 'Same deck for all · highest flexibility wins',
     pickDiff: 'Choose difficulty',
-    pickDiffSub: 'Wisconsin-style sorting · hidden rules · feedback only',
+    pickDiffSub: 'Sort each card by the rule shown — the rule switches; adapt fast',
+    diffDesc: {
+      easy: 'Fewer switches, slower pace — ease in.',
+      medium: 'Three rules, quicker switches.',
+      hard: 'Rapid switches, tight timing.',
+    },
     levelsSub: (pop) => `${pop} · ${WCST_LEVELS_PER_TIER} levels`,
     freeIntroTitle: 'Free mode',
     freeIntroBody:
-      'Your brain builds a strategy — then the rule shifts without warning. Can you let go of what worked and find the new pattern? This trains cognitive flexibility: the ability to adapt when conditions change.',
+      'Sort each card by the rule shown at the top (colour, shape, or number). After a streak the rule SWITCHES — let go of the old rule and follow the new one fast. This trains cognitive flexibility: adapting when the rule changes.',
     freeIntroReady: 'Ready',
-    challengeTitle: '⚔️ Challenge',
-    challengeSub: 'Hard L12 · identical sequence · Cognitive Flexibility Score (CFS)',
+    challengeTitle: '⚔️ Pass n Play',
+    challengeSub: 'Same card sequence for everyone · highest flexibility wins',
     players: 'Players (2–10)',
     addPl: '＋ Add player',
     startCh: '⚔️ Start',
@@ -77,10 +80,13 @@ const UI = {
     goReady: 'Start sorting',
     chalMeta: 'Hard · L12 · WCST block',
     matchPrompt: 'Match the card — by Color? Shape? or Count?',
-    dimLabel: { color: 'Color', shape: 'Shape', count: 'Count' },
-    dimReminder: 'Color · Shape · Count',
-    shiftTitle: 'Rule Changed!',
-    shiftWas: (rule) => `You were matching by ${rule}`,
+    dimLabel: { color: 'Color', shape: 'Shape', count: 'Number' },
+    dimReminder: 'tap the matching pile',
+    sortByLabel: 'SORT BY',
+    cuedHint: 'Tap the pile that matches the card by the rule above.',
+    shiftTitle: '⚡ Rule Changed!',
+    shiftWas: (rule) => `Was: ${rule}`,
+    shiftNow: (rule) => `Now sort by ${rule}`,
     shiftDiscover: 'Now discover the new rule...',
     trial: (n, max) => `Card ${n} / ${max}`,
     streak: (s, r) => `Streak ${s}/${r}`,
@@ -115,15 +121,15 @@ const UI = {
     menu: 'Menu',
     freeGameOver: 'Run ended',
     score: 'Score',
-    freeStages: (n) => `Blocks cleared: ${n}`,
-    freeBest: (n) => `Best blocks: ${n}`,
+    freeStages: (n) => `Correct sorts: ${n}`,
+    freeBest: (n) => `Best sorts: ${n}`,
     freePlayAgain: 'Play again',
-    resultsChalTitle: 'Challenge results',
+    resultsChalTitle: 'Pass n Play results',
     chalRes: (cfs, pe, cc) => `CFS ${cfs} · PE ${pe}% · CC ${cc}`,
-    newCh: 'New challenge',
+    newCh: 'New game',
     levelHeader: (d, lv) => `${WCST_DM[d]?.label ?? d} · L${lv}`,
-    levelMeta: (r, cc) => `R=${r} consecutive · ${cc} categories`,
-    challengeHeader: 'Challenge',
+    levelMeta: (r, cc) => `switch every ${r} · ${cc} switches`,
+    challengeHeader: 'Pass n Play',
     freeHeader: 'Free mode',
     formulaHint: 'η = correct/total · CFS blends η, CC, and perseveration',
   },
@@ -134,20 +140,25 @@ const UI = {
     replayTutorial: 'إعادة الشرح',
     freeMode: '♾️ وضع حر',
     levelMode: '🎯 وضع المستويات',
-    challengeMode: '⚔️ تحدي',
+    challengeMode: '⚔️ مرّر والعب',
     hubMapAria: 'الأوضاع',
-    hubNodeFreeHint: 'اكتشف القواعد المخفية ثم تكيّف عندما تتغيّر',
-    hubNodeLevelsHint: '٢٠ مستوى · مقاييس WCST',
-    hubNodeChallengeHint: 'نفس الطابور · أعلى CFS',
+    hubNodeFreeHint: 'افرز حسب القاعدة المعروضة · وهي تتبدّل',
+    hubNodeLevelsHint: '١٠٠ مستوى · تبديل قواعد معلن',
+    hubNodeChallengeHint: 'نفس الطابور للجميع · أعلى مرونة يفوز',
     pickDiff: 'اختر الصعوبة',
-    pickDiffSub: 'فرز بأسلوب ويسكونسن · قواعد مخفية · تغذية راجعة فقط',
+    pickDiffSub: 'افرز كل بطاقة حسب القاعدة المعروضة — وهي تتبدّل؛ تكيّف بسرعة',
+    diffDesc: {
+      easy: 'تبديلات أقل وإيقاع أبطأ.',
+      medium: '٣ قواعد وتبديلات أسرع.',
+      hard: 'تبديلات سريعة وتوقيت ضيق.',
+    },
     levelsSub: (pop) => `${pop} · ${WCST_LEVELS_PER_TIER} مستوى`,
     freeIntroTitle: 'وضع حر',
     freeIntroBody:
-      'عقلك يبني استراتيجية — ثم تتغيّر القاعدة دون تحذير. هل يمكنك التخلي عما نجح وإيجاد النمط الجديد؟ هذا يدرّب المرونة الذهنية: القدرة على التكيّف عندما تتغيّر الظروف.',
+      'افرز كل بطاقة حسب القاعدة المعروضة في الأعلى (اللون أو الشكل أو العدد). بعد سلسلة نجاحات تتبدّل القاعدة — اترك القديمة واتبع الجديدة بسرعة. هذا يدرّب المرونة الذهنية: التكيّف عند تغيّر القاعدة.',
     freeIntroReady: 'جاهز',
-    challengeTitle: '⚔️ تحدي',
-    challengeSub: 'صعب L12 · نفس التسلسل · درجة المرونة (CFS)',
+    challengeTitle: '⚔️ مرّر والعب',
+    challengeSub: 'نفس تسلسل البطاقات للجميع · أعلى مرونة يفوز',
     players: 'اللاعبون (2–10)',
     addPl: '＋ إضافة',
     startCh: '⚔️ ابدأ',
@@ -163,9 +174,12 @@ const UI = {
     chalMeta: 'صعب · L12 · كتلة WCST',
     matchPrompt: 'طابق البطاقة — بالون؟ بالشكل؟ أو بالعدد؟',
     dimLabel: { color: 'اللون', shape: 'الشكل', count: 'العدد' },
-    dimReminder: 'اللون · الشكل · العدد',
-    shiftTitle: 'تغيّرت القاعدة!',
-    shiftWas: (rule) => `كنت تطابق حسب ${rule}`,
+    dimReminder: 'اضغط الكومة المطابقة',
+    sortByLabel: 'افرز حسب',
+    cuedHint: 'اضغط الكومة التي تطابق البطاقة حسب القاعدة بالأعلى.',
+    shiftTitle: '⚡ تغيّرت القاعدة!',
+    shiftWas: (rule) => `كانت: ${rule}`,
+    shiftNow: (rule) => `الآن افرز حسب ${rule}`,
     shiftDiscover: 'الآن اكتشف القاعدة الجديدة...',
     trial: (n, max) => `بطاقة ${n} / ${max}`,
     streak: (s, r) => `متتالية ${s}/${r}`,
@@ -200,15 +214,15 @@ const UI = {
     menu: 'القائمة',
     freeGameOver: 'انتهت المحاولة',
     score: 'نقاط',
-    freeStages: (n) => `كتل: ${n}`,
-    freeBest: (n) => `أفضل كتل: ${n}`,
+    freeStages: (n) => `فرز صحيح: ${n}`,
+    freeBest: (n) => `أفضل: ${n}`,
     freePlayAgain: 'العب مجددًا',
-    resultsChalTitle: 'نتائج التحدي',
+    resultsChalTitle: 'نتائج مرّر والعب',
     chalRes: (cfs, pe, cc) => `CFS ${cfs} · إصرار ${pe}% · فئات ${cc}`,
-    newCh: 'تحدي جديد',
+    newCh: 'لعبة جديدة',
     levelHeader: (d, lv) => `${WCST_DM[d]?.label ?? d} · ${lv}`,
-    levelMeta: (r, cc) => `R=${r} متتالية · ${cc} فئات`,
-    challengeHeader: 'تحدي',
+    levelMeta: (r, cc) => `تبديل كل ${r} · ${cc} تبديلات`,
+    challengeHeader: 'مرّر والعب',
     freeHeader: 'وضع حر',
     formulaHint: 'η = صحيح/المجموع · CFS يدمج η والفئات والإصرار',
   },
@@ -255,13 +269,13 @@ function ReferencePile({ card, pileIndex, highlight, pressed, label, onPointerDo
   );
 }
 
-export default function RuleSwitchGame({ onBack }) {
+export default function RuleSwitchGame({ onBack, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
   const { playSfx, currentLang } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
 
   const [profile, setProfile] = useState(() => loadWcstProfile());
-  const [phase, setPhase] = useState('hub');
+  const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
   const [diffKey, setDiffKey] = useState('easy');
   const [playStep, setPlayStep] = useState('idle');
   const [feedback, setFeedback] = useState(null);
@@ -275,9 +289,8 @@ export default function RuleSwitchGame({ onBack }) {
   const [pauseOpen, setPauseOpen] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
   const [lastResult, setLastResult] = useState(null);
-  const [sessionSec, setSessionSec] = useState(WCST_FREE_SESSION_START_SEC);
+  const [freeLives, setFreeLives] = useState(WCST_FREE_LIVES);
   const [freeScore, setFreeScore] = useState(0);
-  const [freeErrDisplay, setFreeErrDisplay] = useState(0);
   const [chalNames, setChalNames] = useState(['Player 1', 'Player 2']);
   const [chalSeed, setChalSeed] = useState(null);
   const [chalIdx, setChalIdx] = useState(0);
@@ -285,6 +298,8 @@ export default function RuleSwitchGame({ onBack }) {
   const [chalTurnOpen, setChalTurnOpen] = useState(false);
   const [chalRoundsTotal, setChalRoundsTotal] = useState(1);
   const [chalRoundIdx, setChalRoundIdx] = useState(0);
+  const [chalDiff, setChalDiff] = useState('hard');
+  const chalDiffRef = useRef('hard');
   const [tutorialQueue, setTutorialQueue] = useState([]);
   const [, tick] = useState(0);
 
@@ -299,15 +314,11 @@ export default function RuleSwitchGame({ onBack }) {
   const finishBlockRef = useRef(() => {});
   const startTrialRef = useRef(() => {});
 
-  const tlRef = useRef(WCST_FREE_SESSION_START_SEC);
-  const tlimRef = useRef(WCST_FREE_SESSION_START_SEC);
-  const timerRunIdRef = useRef(0);
-  const runRef = useRef(false);
   const freeStageRef = useRef(0);
   const freeBlocksRef = useRef(0);
-  const freeErrRef = useRef(0);
   const freeScoreRef = useRef(0);
   const freeStreakRef = useRef(0);
+  const freeLivesRef = useRef(WCST_FREE_LIVES);
   const chalIdxRef = useRef(0);
   const chalNamesRef = useRef(chalNames);
   const chalScoresRef = useRef([]);
@@ -344,14 +355,8 @@ export default function RuleSwitchGame({ onBack }) {
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 
-  const stopSessionTimer = useCallback(() => {
-    runRef.current = false;
-    timerRunIdRef.current += 1;
-  }, []);
-
   const clearPlayState = useCallback(() => {
     clearTimers();
-    stopSessionTimer();
     runIdRef.current += 1;
     blockRef.current = null;
     setPlayStep('idle');
@@ -363,7 +368,7 @@ export default function RuleSwitchGame({ onBack }) {
     setFrozenProbe(null);
     setChalTurnOpen(false);
     bump();
-  }, [clearTimers, stopSessionTimer]);
+  }, [clearTimers]);
 
   const persistLevel = useCallback(
     (b, summary, grade) => {
@@ -389,10 +394,17 @@ export default function RuleSwitchGame({ onBack }) {
     const b = blockRef.current;
     if (!b?.session) return;
     clearTimers();
-    stopSessionTimer();
 
     const summary = summarizeWcst(resultsRef.current, b.session);
     const grade = gradeBlock(summary, b.diff, { freeMode: b.mode === 'free' });
+
+    if (b.mode === 'assess') {
+      playSfx('win');
+      blockRef.current = null;
+      onAssessmentComplete?.({ score: grade.cfs, line: `PE ${summary.persevPct}% · CC ${summary.categoriesCompleted}` });
+      bump();
+      return;
+    }
 
     if (b.mode === 'challenge') {
       const idx = chalIdxRef.current;
@@ -414,7 +426,7 @@ export default function RuleSwitchGame({ onBack }) {
         if (cycle + 1 < chalRoundsTotalRef.current) {
           chalCycleRef.current = cycle + 1;
           setChalRoundIdx(chalCycleRef.current);
-          const newSeed = prepareChallengeSeed();
+          const newSeed = prepareChallengeSeed(chalDiffRef.current);
           setChalSeed(newSeed);
           setChalIdx(0);
           chalIdxRef.current = 0;
@@ -433,30 +445,7 @@ export default function RuleSwitchGame({ onBack }) {
     }
 
     if (b.mode === 'free') {
-      if (grade.won) {
-        playSfx('win');
-        freeStreakRef.current += 1;
-        freeScoreRef.current += freeBlockPoints(b.spec, freeStreakRef.current);
-        setFreeScore(freeScoreRef.current);
-        const bonus = freeClearBonusSec(freeBlocksRef.current, b.spec.maxTrials);
-        tlRef.current = Math.min(WCST_FREE_SESSION_CAP_SEC, tlRef.current + bonus);
-        tlimRef.current = Math.max(tlimRef.current, tlRef.current);
-        setSessionSec(Math.ceil(tlRef.current));
-        freeBlocksRef.current += 1;
-        freeStageRef.current += 1;
-        const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-        blockRef.current = prepareFreeBlock(freeStageRef.current, seed);
-        resultsRef.current = [];
-        startWcstProbe(blockRef.current.session);
-        setStreakDisplay(0);
-        setCatsDisplay(0);
-        setPlayStep('running');
-        playStepRef.current = 'running';
-        startTrialRef.current();
-        bump();
-        return;
-      }
-
+      // Endless cued free: the run only ends when lives reach zero.
       playSfx('error');
       setProfile((prev) => {
         let next = { ...prev };
@@ -476,7 +465,6 @@ export default function RuleSwitchGame({ onBack }) {
         type: 'free',
         blocksWon: freeBlocksRef.current,
         score: freeScoreRef.current,
-        reason: 'block',
         summary,
         grade,
       });
@@ -492,7 +480,7 @@ export default function RuleSwitchGame({ onBack }) {
     setPhase('res');
     blockRef.current = null;
     bump();
-  }, [clearTimers, stopSessionTimer, persistLevel, playSfx]);
+  }, [clearTimers, persistLevel, playSfx, assessmentMode, onAssessmentComplete]);
 
   useEffect(() => {
     finishBlockRef.current = finishBlock;
@@ -534,9 +522,10 @@ export default function RuleSwitchGame({ onBack }) {
         setFeedback('timeout');
         playSfx('error');
         if (b.mode === 'free') {
-          freeErrRef.current += 1;
-          setFreeErrDisplay(freeErrRef.current);
-          if (freeErrRef.current >= WCST_FREE_MAX_ERRORS) {
+          freeStreakRef.current = 0;
+          freeLivesRef.current = Math.max(0, freeLivesRef.current - 1);
+          setFreeLives(freeLivesRef.current);
+          if (freeLivesRef.current <= 0) {
             finishBlockRef.current();
             return;
           }
@@ -627,13 +616,25 @@ export default function RuleSwitchGame({ onBack }) {
       setStreakDisplay(outcome.streak);
       setCatsDisplay(outcome.categoriesCompleted);
       playSfx(outcome.correct ? 'click' : 'error');
-      if (!outcome.correct && b.mode === 'free') {
-        freeErrRef.current += 1;
-        setFreeErrDisplay(freeErrRef.current);
-        if (freeErrRef.current >= WCST_FREE_MAX_ERRORS) {
-          bump();
-          finishBlockRef.current();
-          return;
+      if (b.mode === 'free') {
+        if (outcome.correct) {
+          freeStreakRef.current += 1;
+          freeBlocksRef.current += 1; // total correct sorts this run
+          freeScoreRef.current += freeSortPoints(freeStreakRef.current);
+          setFreeScore(freeScoreRef.current);
+          // Gradual ramp: tighten the response window as the run grows.
+          if (b.session && freeBlocksRef.current % 8 === 0) {
+            b.session.responseLimitMs = Math.max(2500, b.session.responseLimitMs - 200);
+          }
+        } else {
+          freeStreakRef.current = 0;
+          freeLivesRef.current = Math.max(0, freeLivesRef.current - 1);
+          setFreeLives(freeLivesRef.current);
+          if (freeLivesRef.current <= 0) {
+            bump();
+            finishBlockRef.current();
+            return;
+          }
         }
       }
       bump();
@@ -663,29 +664,6 @@ export default function RuleSwitchGame({ onBack }) {
     },
     [clearTimers],
   );
-
-  useEffect(() => {
-    if (phase !== 'play' || (playStep !== 'running' && playStep !== 'shift') || blockRef.current?.mode !== 'free') {
-      return undefined;
-    }
-    const runId = timerRunIdRef.current + 1;
-    timerRunIdRef.current = runId;
-    runRef.current = true;
-    const id = setInterval(() => {
-      if (!runRef.current || timerRunIdRef.current !== runId) return;
-      if (pauseRef.current) return;
-      tlRef.current = Math.max(0, tlRef.current - 1);
-      setSessionSec(Math.ceil(tlRef.current));
-      if (tlRef.current <= 0) {
-        clearInterval(id);
-        finishBlockRef.current();
-      }
-    }, 1000);
-    return () => {
-      clearInterval(id);
-      if (timerRunIdRef.current === runId) runRef.current = false;
-    };
-  }, [phase, playStep]);
 
   const gateWithTutorial = useCallback((action, kind) => {
     const q = buildTutorialQueueFor(kind);
@@ -722,21 +700,18 @@ export default function RuleSwitchGame({ onBack }) {
   const startFreeMode = useCallback(() => {
     freeStageRef.current = 0;
     freeBlocksRef.current = 0;
-    freeErrRef.current = 0;
     freeScoreRef.current = 0;
     freeStreakRef.current = 0;
-    tlRef.current = WCST_FREE_SESSION_START_SEC;
-    tlimRef.current = WCST_FREE_SESSION_START_SEC;
-    setSessionSec(WCST_FREE_SESSION_START_SEC);
+    freeLivesRef.current = WCST_FREE_LIVES;
+    setFreeLives(WCST_FREE_LIVES);
     setFreeScore(0);
-    setFreeErrDisplay(0);
     setPhase('freeIntro');
   }, []);
 
   const onFreeIntroReady = useCallback(() => {
     playSfx('click');
     const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-    beginBlock(prepareFreeBlock(0, seed));
+    beginBlock(prepareFreeRunBlock(seed));
   }, [playSfx, beginBlock]);
 
   const startLevelGame = useCallback(
@@ -747,6 +722,11 @@ export default function RuleSwitchGame({ onBack }) {
     [beginBlock],
   );
 
+  const startAssessment = useCallback(() => {
+    const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+    beginBlock(prepareAssessBlock(seed));
+  }, [beginBlock]);
+
   const openChallenge = () => {
     const names = chalNames.map((s, i) => s.trim() || `Player ${i + 1}`);
     if (names.length < 2) {
@@ -756,9 +736,10 @@ export default function RuleSwitchGame({ onBack }) {
     clearPlayState();
     setChalNames(names);
     chalRoundsTotalRef.current = chalRoundsTotal;
+    chalDiffRef.current = chalDiff;
     chalCycleRef.current = 0;
     setChalRoundIdx(0);
-    const seed = prepareChallengeSeed();
+    const seed = prepareChallengeSeed(chalDiffRef.current);
     setChalSeed(seed);
     setChalIdx(0);
     chalIdxRef.current = 0;
@@ -780,6 +761,7 @@ export default function RuleSwitchGame({ onBack }) {
     setQuitOpen(false);
     const mode = blockRef.current?.mode;
     clearPlayState();
+    if (mode === 'assess') { (onAssessmentExit || onBack)?.(); return; }
     if (mode === 'challenge') setPhase('chal');
     else if (mode === 'level') setPhase('levels');
     else if (mode === 'free') setPhase('hub');
@@ -791,6 +773,16 @@ export default function RuleSwitchGame({ onBack }) {
 
   return (
     <div className="ct-rswitch-root ct-wcst-root cancellation-task-game" dir={isAr ? 'rtl' : 'ltr'}>
+      {phase === 'assessStart' && (
+        <AssessmentReady
+          isAr={isAr}
+          label={assessmentLabel}
+          step={assessmentStep}
+          onStart={startAssessment}
+          onBack={onAssessmentExit || onBack}
+          playSfx={playSfx}
+        />
+      )}
       {phase === 'hub' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen">
@@ -834,22 +826,31 @@ export default function RuleSwitchGame({ onBack }) {
                 <div className="ct-fq-training-title ct-fq-training-title-sm">{t.pickDiff}</div>
               }
             />
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.pickDiffSub}</p>
-            {WCST_DIFF_KEYS.map((k) => (
-              <button
-                key={k}
-                type="button"
-                className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training`}
-                onClick={() => {
-                  playSfx('click');
-                  setDiffKey(k);
-                  setPhase('levels');
-                }}
-              >
-                <span>{WCST_DM[k].label}</span>
-                <span className="ct-fq-dbg">{WCST_DM[k].pop}</span>
-              </button>
-            ))}
+            <div className="ct-fq-diff-body">
+              <p className="ct-fq-sub ct-fq-training-blurb">{t.pickDiffSub}</p>
+              <div className="ct-fq-diff-cards">
+                {WCST_DIFF_KEYS.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training ct-fq-diffcard`}
+                    onClick={() => {
+                      playSfx('click');
+                      setDiffKey(k);
+                      setPhase('levels');
+                    }}
+                  >
+                    <span className="ct-fq-diffcard-main">
+                      <span className="ct-fq-diffcard-label">{WCST_DM[k].label}</span>
+                      <span className="ct-fq-diffcard-desc">{t.diffDesc[k]}</span>
+                    </span>
+                    <span className="ct-fq-diffcard-meta">
+                      <span className="ct-fq-diffcard-pop">{WCST_DM[k].pop}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -918,7 +919,20 @@ export default function RuleSwitchGame({ onBack }) {
             />
             <p className="ct-fq-sub ct-fq-training-blurb">{t.challengeSub}</p>
             <div className="ct-fq-card ct-fq-card-training">
-              <h3>{t.players}</h3>
+              <h3>{t.pickDiff}</h3>
+              <div className="ct-fq-rr ct-fq-rr-diff" role="group" aria-label={t.pickDiff}>
+                {WCST_DIFF_KEYS.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    className={`ct-fq-rrb ct-fq-rrb-diff${chalDiff === k ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
+                    onClick={() => { playSfx('click'); setChalDiff(k); }}
+                  >
+                    {WCST_DM[k].label}
+                  </button>
+                ))}
+              </div>
+              <h3 style={{ marginTop: 14 }}>{t.players}</h3>
               {chalNames.map((nm, i) => (
                 <div key={i} className="ct-fq-pr">
                   <input
@@ -1015,7 +1029,7 @@ export default function RuleSwitchGame({ onBack }) {
       )}
 
       {phase === 'play' && block && session && !chalTurnOpen && (
-        <div className={`ct-rswitch-play-wrap ct-wcst-play-wrap${block.mode === 'free' && sessionSec < 30 ? ' ct-wcst-timer--red' : block.mode === 'free' && sessionSec < 60 ? ' ct-wcst-timer--orange' : ''}`}>
+        <div className="ct-rswitch-play-wrap ct-wcst-play-wrap">
           <TrainingPlayHeader
             isAr={isAr}
             title={
@@ -1027,34 +1041,40 @@ export default function RuleSwitchGame({ onBack }) {
             }
             subtitle={
               block.mode === 'free'
-                ? `${t.sessionTime(sessionSec)} · ${t.freeErrors(freeErrDisplay, WCST_FREE_MAX_ERRORS)} · ${t.freeLvl(WCST_DM[block.diff]?.label, block.lv)}`
-                : `${t.trial(session.trialNumber, session.maxTrials)} · ${t.streak(streakDisplay, session.streakToSwitch)} · ${t.categories(catsDisplay, session.categoriesToComplete)}`
+                ? `${'♥'.repeat(Math.max(0, freeLives))}${'♡'.repeat(Math.max(0, WCST_FREE_LIVES - freeLives))} · ${t.score} ${freeScore}`
+                : block.mode === 'assess'
+                  ? `${t.trial(session.trialNumber, session.maxTrials)} · ${t.streak(streakDisplay, session.streakToSwitch)}`
+                  : `${t.trial(session.trialNumber, session.maxTrials)} · ${t.streak(streakDisplay, session.streakToSwitch)} · ${t.categories(catsDisplay, session.categoriesToComplete)}`
             }
             playSfx={playSfx}
             onMenu={() => setQuitOpen(true)}
             onPause={() => setPauseOpen(true)}
             pauseAriaLabel={t.paused}
           />
-          <p className="ct-wcst-play-hint">{playHint(isAr)}</p>
-          <p className="ct-wcst-formula-hint">{t.formulaHint}</p>
+          <p className="ct-wcst-play-hint">{t.cuedHint}</p>
           {(playStep === 'running' || playStep === 'shift') && probe && (
             <div className="ct-wcst-board">
-              <p className="ct-wcst-dim-reminder">{t.dimReminder}</p>
-              <p className="ct-wcst-match-prompt">{t.matchPrompt}</p>
+              <div className={`ct-wcst-rule-banner ct-wcst-rule-banner--${rule}`}>
+                <span className="ct-wcst-rule-banner-label">{t.sortByLabel}</span>
+                <span className="ct-wcst-rule-banner-rule">{t.dimLabel[rule] || rule}</span>
+              </div>
+              <p className="ct-wcst-match-prompt">{t.dimReminder}</p>
               <div className="ct-wcst-streak-bar">
                 <div
                   className="ct-wcst-streak-fill"
                   style={{ width: `${(streakDisplay / session.streakToSwitch) * 100}%` }}
                 />
               </div>
-              <div className="ct-wcst-hud-cats">
-                {Array.from({ length: session.categoriesToComplete }, (_, i) => (
-                  <span
-                    key={i}
-                    className={`ct-wcst-cat-dot${i < catsDisplay ? ' ct-wcst-cat-dot--done' : ''}`}
-                  />
-                ))}
-              </div>
+              {session.categoriesToComplete <= 12 && (
+                <div className="ct-wcst-hud-cats">
+                  {Array.from({ length: session.categoriesToComplete }, (_, i) => (
+                    <span
+                      key={i}
+                      className={`ct-wcst-cat-dot${i < catsDisplay ? ' ct-wcst-cat-dot--done' : ''}`}
+                    />
+                  ))}
+                </div>
+              )}
               <div className="ct-wcst-refs">
                 {WCST_REFERENCE_CARDS.map((c, i) => {
                   let highlight = null;
@@ -1129,7 +1149,9 @@ export default function RuleSwitchGame({ onBack }) {
                   {t.shiftWas(t.dimLabel[shiftOldRule] || shiftOldRule)}
                 </p>
               )}
-              <p className="ct-wcst-shift-discover">{t.shiftDiscover}</p>
+              <p className={`ct-wcst-shift-now ct-wcst-rule-banner--${rule}`}>
+                {t.shiftNow(t.dimLabel[rule] || rule)}
+              </p>
             </div>
           )}
         </div>
@@ -1351,18 +1373,15 @@ export default function RuleSwitchGame({ onBack }) {
           if (!b) return;
           if (b.mode === 'level') startLevelGame(b.diff, b.lv);
           else if (b.mode === 'free') {
-            freeErrRef.current = 0;
-            setFreeErrDisplay(0);
             freeScoreRef.current = 0;
             setFreeScore(0);
             freeStreakRef.current = 0;
             freeBlocksRef.current = 0;
             freeStageRef.current = 0;
-            tlRef.current = WCST_FREE_SESSION_START_SEC;
-            tlimRef.current = WCST_FREE_SESSION_START_SEC;
-            setSessionSec(WCST_FREE_SESSION_START_SEC);
+            freeLivesRef.current = WCST_FREE_LIVES;
+            setFreeLives(WCST_FREE_LIVES);
             const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-            beginBlock(prepareFreeBlock(0, seed));
+            beginBlock(prepareFreeRunBlock(seed));
           } else if (chalSeed) startChallengeBlock();
         }}
         onQuitMenu={() => {

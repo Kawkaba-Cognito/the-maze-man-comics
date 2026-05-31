@@ -67,9 +67,9 @@ const STR = {
         body: 'Try common stems like STAR, LINE, or BRAIN — then branch with prefixes and suffixes on the grid.',
       },
     },
-    free: 'Free mode: one session timer. Each valid word adds score and a little bonus time.',
+    free: 'Free mode: endless grids that get harder. Find a few words on each grid before its timer runs out. You have 3 lives — miss the target in time and you lose one. Run ends at zero lives.',
     challenge:
-      'Challenge: identical letter grid for every player. Highest total score wins — pass the device each turn.',
+      'Pass n Play: pick a difficulty, then every player gets the identical letter grid. Highest total score wins — pass the device each turn.',
   },
   ar: {
     skip: 'تخطّي',
@@ -100,8 +100,8 @@ const STR = {
         body: 'جرّب جذورًا شائعة ثم امتد بأحرف متجاورة على الشبكة.',
       },
     },
-    free: 'وضع حر: مؤقت واحد. كل كلمة صالحة تضيف نقاطًا ووقتًا إضافيًا.',
-    challenge: 'تحدي: نفس الشبكة للجميع. أعلى نقاط يفوز.',
+    free: 'وضع حر: شبكات لا تنتهي وتزداد صعوبة. جِد بضع كلمات في كل شبكة قبل نفاد مؤقتها. لديك ٣ أرواح — إن لم تبلغ الهدف تخسر روحاً. تنتهي عند نفاد الأرواح.',
+    challenge: 'مرّر والعب: اختر الصعوبة، ثم نفس الشبكة للجميع. أعلى نقاط يفوز — مرّر الجهاز كل دور.',
   },
 };
 

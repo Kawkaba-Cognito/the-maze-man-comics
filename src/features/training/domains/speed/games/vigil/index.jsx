@@ -13,9 +13,8 @@ import {
   VIGIL_LEVELS_PER_TIER,
   VIGIL_DIFF_KEYS,
   VIGIL_DM,
-  VIGIL_FREE_SESSION_START_SEC,
-  VIGIL_FREE_SESSION_CAP_SEC,
-  VIGIL_FREE_MAX_COMMISSIONS,
+  VIGIL_FREE_LIVES,
+  VIGIL_PASS_PLAY_LV,
   specificationForLevel,
   summarizeVigil,
   gradeBlock,
@@ -24,7 +23,6 @@ import {
   prepareLevelBlock,
   prepareChallengeSeed,
   prepareChallengeBlock,
-  freeClearBonusSec,
   freeHitPoints,
   freeBlockClearPoints,
   mergeVigilChallengeRow,
@@ -72,20 +70,27 @@ const UI = {
     ms: 'ms',
     freeMode: '♾️ Free mode',
     levelMode: '🎯 Level mode',
-    challengeMode: '⚔️ Challenge',
+    challengeMode: '⚔️ Pass n Play',
+    lives: 'Lives',
     hubMapAria: 'Modes — choose a path',
-    hubNodeFreeHint: 'Session timer · 3 false taps end run',
+    hubNodeFreeHint: 'Endless · 3 lives · ramps up',
     hubNodeLevelsHint: '20 levels per tier · unlock in order',
-    hubNodeChallengeHint: 'Same trials · pass & play',
+    hubNodeChallengeHint: 'Same trials for all · pick a difficulty',
     freeIntroTitle: 'Free mode',
     freeIntroBody:
-      'Each block shows your task before you start (which shape to tap, which to ignore). One session clock for the whole run — three false taps end the run.',
+      'Endless blocks that keep getting harder. Before each block you get a task card (which shape to tap, which to ignore). You have 3 lives — fail a block and you lose one. The run ends only when your lives reach zero.',
     freeIntroReady: 'Ready',
     pickDiff: 'Choose difficulty',
-    pickDiffSub: 'Each tier has levels 1–20. Unlock in order.',
+    pickDiffSub: 'Each tier has 20 levels. Unlock them in order.',
+    diffDesc: {
+      easy: 'Slower flashes, frequent targets — warm up.',
+      medium: 'Balanced pace and target rate.',
+      hard: 'Fast flashes, rare targets — true vigilance.',
+    },
+    chalPickDiff: 'Difficulty',
     levelsSub: (pop) => `${pop} · ${VIGIL_LEVELS_PER_TIER} levels`,
-    challengeTitle: '⚔️ Challenge mode',
-    challengeSub: 'Same trial sequence for everyone · Hard L12',
+    challengeTitle: '⚔️ Pass n Play',
+    challengeSub: 'Same trials for everyone · pick a difficulty · pass the device',
     players: 'Players (2–10)',
     addPl: '＋ Add player',
     startCh: '⚔️ Start',
@@ -98,9 +103,7 @@ const UI = {
     chalBulletPass: 'Tap Start only when the device is with this player',
     handTo: (n) => `Hand the device to ${n}.`,
     goReady: 'Start block',
-    chalMeta: 'Hard · L12 · trial block',
-    sessionTime: (s) => `Session ${s}s`,
-    freeCommissions: (n, max) => `False taps ${n}/${max}`,
+    chalMeta: (label) => `${label} · trial block`,
     freeLvlLabel: (tier, lv) => `Free · ${tier} L${lv}`,
     resultsLevelPass: 'Level passed',
     resultsLevelRetry: 'Try again',
@@ -125,15 +128,15 @@ const UI = {
     freeBest: (n) => `Best blocks: ${n}`,
     freeBestScore: (n) => `Best score: ${n}`,
     freePlayAgain: 'Play again',
-    resultsChalTitle: 'Challenge results',
+    resultsChalTitle: 'Pass n Play results',
     chalResDetail: (nr, vs, comm, hit, ve) =>
       nr > 1
         ? `${nr}× · VS ${vs} · ${comm} comm total · ${hit}% hits · VE ${ve ?? '—'}`
         : `VS ${vs} · ${comm} comm · ${hit}% hits · VE ${ve ?? '—'}`,
-    newCh: 'New challenge',
+    newCh: 'New game',
     levelHeader: (diff, lv) => `${VIGIL_DM[diff]?.label ?? diff} · L${lv}`,
     levelPlaySub: (n, pct) => `${n} trials · ${pct}% ■`,
-    challengeHeader: 'Challenge',
+    challengeHeader: 'Pass n Play',
     freeHeader: 'Free mode',
     perfect: 'Perfect vigil!',
     good: 'Solid focus',
@@ -167,20 +170,27 @@ const UI = {
     ms: 'ملث',
     freeMode: '♾️ وضع حر',
     levelMode: '🎯 وضع المستويات',
-    challengeMode: '⚔️ تحدي',
+    challengeMode: '⚔️ مرّر والعب',
+    lives: 'الأرواح',
     hubMapAria: 'الأوضاع — اختر مسارًا',
-    hubNodeFreeHint: 'مؤقت جلسة · ٣ ضغطات خاطئة تنهي المحاولة',
+    hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · يزداد صعوبة',
     hubNodeLevelsHint: '٢٠ مستوى لكل صعوبة · بالترتيب',
-    hubNodeChallengeHint: 'نفس المحاولات · تمرير الجهاز',
+    hubNodeChallengeHint: 'نفس المحاولات للجميع · اختر الصعوبة',
     freeIntroTitle: 'وضع حر',
     freeIntroBody:
-      'كل كتلة تعرض مهمتك قبل البدء (أي شكل تضغط وأي شكل تتجاهل). مؤقت واحد للجلسة — ثلاث ضغطات خاطئة تنهي المحاولة.',
+      'كتل لا تنتهي وتزداد صعوبة. قبل كل كتلة تظهر بطاقة المهمة (أي شكل تضغط وأي تتجاهل). لديك ٣ أرواح — إذا فشلت كتلة تخسر روحاً. تنتهي المحاولة فقط عند نفاد الأرواح.',
     freeIntroReady: 'جاهز',
     pickDiff: 'اختر الصعوبة',
-    pickDiffSub: 'كل مستوى يحتوي ٢٠ مرحلة. افتحها بالترتيب.',
+    pickDiffSub: 'كل صعوبة تحتوي ٢٠ مستوى. افتحها بالترتيب.',
+    diffDesc: {
+      easy: 'ومضات أبطأ وأهداف متكررة — إحماء.',
+      medium: 'إيقاع ومعدل أهداف متوازن.',
+      hard: 'ومضات سريعة وأهداف نادرة — يقظة حقيقية.',
+    },
+    chalPickDiff: 'الصعوبة',
     levelsSub: (pop) => `${pop} · ${VIGIL_LEVELS_PER_TIER} مستوى`,
-    challengeTitle: '⚔️ وضع التحدي',
-    challengeSub: 'نفس تسلسل المحاولات للجميع · صعب L12',
+    challengeTitle: '⚔️ مرّر والعب',
+    challengeSub: 'نفس المحاولات للجميع · اختر الصعوبة · مرّر الجهاز',
     players: 'اللاعبون (2–10)',
     addPl: '＋ إضافة لاعب',
     startCh: '⚔️ ابدأ',
@@ -193,9 +203,7 @@ const UI = {
     chalBulletPass: 'اضغط ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
     handTo: (n) => `سلّم الجهاز إلى ${n}.`,
     goReady: 'ابدأ الكتلة',
-    chalMeta: 'صعب · L12 · كتلة محاولات',
-    sessionTime: (s) => `الجلسة ${s}ث`,
-    freeCommissions: (n, max) => `ضغط خاطئ ${n}/${max}`,
+    chalMeta: (label) => `${label} · كتلة محاولات`,
     freeLvlLabel: (tier, lv) => `حر · ${tier} ${lv}`,
     resultsLevelPass: 'المستوى اجتُاز',
     resultsLevelRetry: 'حاول مجددًا',
@@ -220,15 +228,15 @@ const UI = {
     freeBest: (n) => `أفضل كتل: ${n}`,
     freeBestScore: (n) => `أفضل نقاط: ${n}`,
     freePlayAgain: 'العب مجددًا',
-    resultsChalTitle: 'نتائج التحدي',
+    resultsChalTitle: 'نتائج مرّر والعب',
     chalResDetail: (nr, vs, comm, hit, ve) =>
       nr > 1
         ? `${nr}× · VS ${vs} · ${comm} اندفاع · ${hit}% إصابة · VE ${ve ?? '—'}`
         : `VS ${vs} · ${comm} اندفاع · ${hit}% إصابة · VE ${ve ?? '—'}`,
-    newCh: 'تحدي جديد',
+    newCh: 'لعبة جديدة',
     levelHeader: (diff, lv) => `${VIGIL_DM[diff]?.label ?? diff} · ${lv}`,
     levelPlaySub: (n, pct) => `${n} محاولة · ${pct}% ■`,
-    challengeHeader: 'تحدي',
+    challengeHeader: 'مرّر والعب',
     freeHeader: 'وضع حر',
     perfect: 'يقظة ممتازة!',
     good: 'تركيز جيد',
@@ -267,9 +275,8 @@ export default function VigilTestGame({ onBack }) {
   const [pauseOpen, setPauseOpen] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
   const [lastResult, setLastResult] = useState(null);
-  const [sessionSec, setSessionSec] = useState(VIGIL_FREE_SESSION_START_SEC);
   const [freeScore, setFreeScore] = useState(0);
-  const [freeCommDisplay, setFreeCommDisplay] = useState(0);
+  const [freeLives, setFreeLives] = useState(VIGIL_FREE_LIVES);
 
   const [chalNames, setChalNames] = useState(['Player 1', 'Player 2']);
   const [chalSeed, setChalSeed] = useState(null);
@@ -278,6 +285,8 @@ export default function VigilTestGame({ onBack }) {
   const [chalTurnOpen, setChalTurnOpen] = useState(false);
   const [chalRoundsTotal, setChalRoundsTotal] = useState(1);
   const [chalRoundIdx, setChalRoundIdx] = useState(0);
+  const [chalDiff, setChalDiff] = useState('hard');
+  const chalDiffRef = useRef('hard');
 
   const blockRef = useRef(null);
   const trialsRef = useRef([]);
@@ -290,14 +299,9 @@ export default function VigilTestGame({ onBack }) {
   const runIdRef = useRef(0);
   const blockEndedRef = useRef(false);
 
-  const tlRef = useRef(VIGIL_FREE_SESSION_START_SEC);
-  const tlimRef = useRef(VIGIL_FREE_SESSION_START_SEC);
-  const timerRunIdRef = useRef(0);
-  const runRef = useRef(false);
-
   const freeStageRef = useRef(0);
   const freeBlocksWonRef = useRef(0);
-  const freeCommissionsRef = useRef(0);
+  const freeLivesRef = useRef(VIGIL_FREE_LIVES);
   const freeScoreRef = useRef(0);
   const freeStreakRef = useRef(0);
 
@@ -306,7 +310,6 @@ export default function VigilTestGame({ onBack }) {
   const chalScoresRef = useRef([]);
   const chalRoundsTotalRef = useRef(1);
   const chalCycleRef = useRef(0);
-  const sessionTimedOutRef = useRef(false);
 
   const finishBlockRef = useRef(() => {});
   const pauseRef = useRef(false);
@@ -354,14 +357,8 @@ export default function VigilTestGame({ onBack }) {
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 
-  const stopSessionTimer = useCallback(() => {
-    runRef.current = false;
-    timerRunIdRef.current += 1;
-  }, []);
-
   const clearPlayState = useCallback(() => {
     clearTimers();
-    stopSessionTimer();
     runIdRef.current += 1;
     blockRef.current = null;
     blockEndedRef.current = false;
@@ -374,7 +371,7 @@ export default function VigilTestGame({ onBack }) {
     setStimVisible(false);
     currentTrialRef.current = null;
     setChalTurnOpen(false);
-  }, [clearTimers, stopSessionTimer]);
+  }, [clearTimers]);
 
   const persistLevel = useCallback(
     (block, summary, grade) => {
@@ -536,7 +533,6 @@ export default function VigilTestGame({ onBack }) {
     if (blockEndedRef.current) return;
     blockEndedRef.current = true;
     clearTimers();
-    stopSessionTimer();
 
     const block = blockRef.current;
     if (!block) {
@@ -575,7 +571,7 @@ export default function VigilTestGame({ onBack }) {
         if (cycle + 1 < totalR) {
           chalCycleRef.current = cycle + 1;
           setChalRoundIdx(chalCycleRef.current);
-          const newSeed = prepareChallengeSeed();
+          const newSeed = prepareChallengeSeed(chalDiffRef.current);
           setChalSeed(newSeed);
           setChalIdx(0);
           chalIdxRef.current = 0;
@@ -595,59 +591,10 @@ export default function VigilTestGame({ onBack }) {
     }
 
     if (block.mode === 'free') {
-      freeCommissionsRef.current += summary.commissions;
-      setFreeCommDisplay(freeCommissionsRef.current);
-
-      if (freeCommissionsRef.current >= VIGIL_FREE_MAX_COMMISSIONS) {
-        playSfx('error');
-        const blocksWon = freeBlocksWonRef.current;
-        const runScore = freeScoreRef.current;
-        setProfile((prev) => {
-          let next = { ...prev };
-          let changed = false;
-          if (runScore > (prev.bestFree ?? 0)) {
-            next = { ...next, bestFree: runScore };
-            changed = true;
-          }
-          if (blocksWon > (prev.bestStages ?? 0)) {
-            next = { ...next, bestStages: blocksWon };
-            changed = true;
-          }
-          if (changed) saveVigilProfile(next);
-          return changed ? next : prev;
-        });
-        sessionTimedOutRef.current = false;
-        setLastResult({
-          type: 'free',
-          blocksWon,
-          score: runScore,
-          reason: 'commissions',
-        });
-        setPhase('freeRes');
-        setPlayStep('idle');
-        blockRef.current = null;
-        return;
-      }
-
-      if (grade.won && !sessionTimedOutRef.current) {
-        playSfx('win');
-        const completed = block.freeStage ?? 0;
-        freeStreakRef.current += 1;
-        const clearPts = freeBlockClearPoints(spec, freeStreakRef.current);
-        const hitPts = freeHitPoints(block.diff, completed);
-        freeScoreRef.current += clearPts + hitPts;
-        setFreeScore(freeScoreRef.current);
-
-        const bonus = freeClearBonusSec(completed, spec.trialCount);
-        tlRef.current = Math.min(VIGIL_FREE_SESSION_CAP_SEC, tlRef.current + bonus);
-        tlimRef.current = Math.max(tlimRef.current, tlRef.current);
-        setSessionSec(Math.ceil(tlRef.current));
-
-        freeBlocksWonRef.current += 1;
-        freeStageRef.current += 1;
+      const advanceTo = (stageIndex) => {
         blockEndedRef.current = false;
         const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-        const nextBlock = prepareFreeBlock(freeStageRef.current, seed);
+        const nextBlock = prepareFreeBlock(stageIndex, seed);
         blockRef.current = nextBlock;
         trialsRef.current = nextBlock.trials;
         resultsRef.current = [];
@@ -656,15 +603,38 @@ export default function VigilTestGame({ onBack }) {
         respondedRef.current = false;
         setPlayStep('briefing');
         setCdVal(3);
+      };
+
+      if (grade.won) {
+        // Cleared the block — bank score and ramp to a harder one.
+        playSfx('win');
+        const completed = block.freeStage ?? 0;
+        freeStreakRef.current += 1;
+        freeScoreRef.current +=
+          freeBlockClearPoints(spec, freeStreakRef.current) +
+          freeHitPoints(block.diff, completed);
+        setFreeScore(freeScoreRef.current);
+        freeBlocksWonRef.current += 1;
+        freeStageRef.current += 1;
+        advanceTo(freeStageRef.current);
         return;
       }
 
+      // Failed the block — lose a life.
+      freeStreakRef.current = 0;
+      freeLivesRef.current = Math.max(0, freeLivesRef.current - 1);
+      setFreeLives(freeLivesRef.current);
+      if (freeLivesRef.current > 0) {
+        // Lives left — replay the same stage with a fresh seed.
+        playSfx('error');
+        advanceTo(freeStageRef.current);
+        return;
+      }
+
+      // Out of lives — run over.
       playSfx('error');
       const blocksWon = freeBlocksWonRef.current;
       const runScore = freeScoreRef.current;
-      const reason = sessionTimedOutRef.current
-        ? 'time'
-        : 'threshold';
       setProfile((prev) => {
         let next = { ...prev };
         let changed = false;
@@ -679,12 +649,10 @@ export default function VigilTestGame({ onBack }) {
         if (changed) saveVigilProfile(next);
         return changed ? next : prev;
       });
-      sessionTimedOutRef.current = false;
       setLastResult({
         type: 'free',
         blocksWon,
         score: runScore,
-        reason,
         lastSummary: summary,
         lastGrade: grade,
       });
@@ -708,7 +676,6 @@ export default function VigilTestGame({ onBack }) {
     blockRef.current = null;
   }, [
     clearTimers,
-    stopSessionTimer,
     persistLevel,
     playSfx,
     scheduleNext,
@@ -752,12 +719,6 @@ export default function VigilTestGame({ onBack }) {
       currentTrialRef.current = null;
       respondedRef.current = false;
 
-      if (block.mode === 'free' && freeStageRef.current === 0 && freeBlocksWonRef.current === 0) {
-        tlRef.current = VIGIL_FREE_SESSION_START_SEC;
-        tlimRef.current = VIGIL_FREE_SESSION_START_SEC;
-        setSessionSec(VIGIL_FREE_SESSION_START_SEC);
-      }
-
       setPlayStep('briefing');
       setCdVal(3);
     },
@@ -776,45 +737,14 @@ export default function VigilTestGame({ onBack }) {
     return () => clearTimeout(id);
   }, [phase, playStep, cdVal, scheduleNext]);
 
-  useEffect(() => {
-    const block = blockRef.current;
-    if (playStep !== 'running' || pauseOpen || block?.mode !== 'free') return undefined;
-
-    let id;
-    let last = performance.now();
-    const runId = timerRunIdRef.current + 1;
-    timerRunIdRef.current = runId;
-    runRef.current = true;
-
-    const loop = (ts) => {
-      if (!runRef.current || pauseOpen || timerRunIdRef.current !== runId) return;
-      const dt = (ts - last) / 1000;
-      last = ts;
-      tlRef.current = Math.max(0, tlRef.current - dt);
-      setSessionSec(Math.ceil(tlRef.current));
-      if (tlRef.current <= 0) {
-        sessionTimedOutRef.current = true;
-        finishBlockRef.current();
-        return;
-      }
-      id = requestAnimationFrame(loop);
-    };
-    id = requestAnimationFrame(loop);
-    return () => {
-      cancelAnimationFrame(id);
-      if (timerRunIdRef.current === runId) runRef.current = false;
-    };
-  }, [playStep, pauseOpen, phase]);
-
   const startFreeMode = useCallback(() => {
     freeStageRef.current = 0;
     freeBlocksWonRef.current = 0;
-    freeCommissionsRef.current = 0;
+    freeLivesRef.current = VIGIL_FREE_LIVES;
     freeScoreRef.current = 0;
     freeStreakRef.current = 0;
-    sessionTimedOutRef.current = false;
     setFreeScore(0);
-    setFreeCommDisplay(0);
+    setFreeLives(VIGIL_FREE_LIVES);
     setPhase('freeIntro');
   }, []);
 
@@ -841,9 +771,10 @@ export default function VigilTestGame({ onBack }) {
     clearPlayState();
     setChalNames(names);
     chalRoundsTotalRef.current = chalRoundsTotal;
+    chalDiffRef.current = chalDiff;
     chalCycleRef.current = 0;
     setChalRoundIdx(0);
-    const seed = prepareChallengeSeed();
+    const seed = prepareChallengeSeed(chalDiffRef.current);
     setChalSeed(seed);
     setChalIdx(0);
     chalIdxRef.current = 0;
@@ -917,7 +848,7 @@ export default function VigilTestGame({ onBack }) {
     if (block.mode === 'free') {
       return {
         title: t.freeHeader,
-        subtitle: `${t.sessionTime(sessionSec)} · ${t.freeCommissions(freeCommDisplay, VIGIL_FREE_MAX_COMMISSIONS)} · ${t.freeLvlLabel(VIGIL_DM[block.diff]?.label ?? '', block.lv)}`,
+        subtitle: t.freeLvlLabel(VIGIL_DM[block.diff]?.label ?? '', block.lv),
       };
     }
     if (block.mode === 'challenge') {
@@ -1078,25 +1009,34 @@ export default function VigilTestGame({ onBack }) {
                 </div>
               }
             />
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.pickDiffSub}</p>
-            {VIGIL_DIFF_KEYS.map((k) => {
-              const m = VIGIL_DM[k];
-              return (
-                <button
-                  key={k}
-                  type="button"
-                  className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training`}
-                  onClick={() => {
-                    playSfx('click');
-                    setDiffKey(k);
-                    setPhase('levels');
-                  }}
-                >
-                  <span>{m.label}</span>
-                  <span className="ct-fq-dbg">{m.pop}</span>
-                </button>
-              );
-            })}
+            <div className="ct-fq-diff-body">
+              <p className="ct-fq-sub ct-fq-training-blurb">{t.pickDiffSub}</p>
+              <div className="ct-fq-diff-cards">
+                {VIGIL_DIFF_KEYS.map((k) => {
+                  const m = VIGIL_DM[k];
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training ct-fq-diffcard`}
+                      onClick={() => {
+                        playSfx('click');
+                        setDiffKey(k);
+                        setPhase('levels');
+                      }}
+                    >
+                      <span className="ct-fq-diffcard-main">
+                        <span className="ct-fq-diffcard-label">{m.label}</span>
+                        <span className="ct-fq-diffcard-desc">{t.diffDesc[k]}</span>
+                      </span>
+                      <span className="ct-fq-diffcard-meta">
+                        <span className="ct-fq-diffcard-pop">{m.pop}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1170,7 +1110,23 @@ export default function VigilTestGame({ onBack }) {
             />
             <p className="ct-fq-sub ct-fq-training-blurb">{t.challengeSub}</p>
             <div className="ct-fq-card ct-fq-card-training">
-              <h3>{t.players}</h3>
+              <h3>{t.chalPickDiff}</h3>
+              <div className="ct-fq-rr ct-fq-rr-diff" role="group" aria-label={t.chalPickDiff}>
+                {VIGIL_DIFF_KEYS.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    className={`ct-fq-rrb ct-fq-rrb-diff${chalDiff === k ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
+                    onClick={() => {
+                      playSfx('click');
+                      setChalDiff(k);
+                    }}
+                  >
+                    {VIGIL_DM[k].label}
+                  </button>
+                ))}
+              </div>
+              <h3 style={{ marginTop: 14 }}>{t.players}</h3>
               {chalNames.map((nm, i) => (
                 <div key={i} className="ct-fq-pr">
                   <input
@@ -1249,7 +1205,7 @@ export default function VigilTestGame({ onBack }) {
           roundLine={
             chalRoundsTotal > 1 ? t.roundNofM(chalRoundIdx + 1, chalRoundsTotal) : null
           }
-          metaLine={t.chalMeta}
+          metaLine={t.chalMeta(VIGIL_DM[chalDiff]?.label ?? '')}
           instruction={t.handTo(chalNames[chalIdx])}
           bullets={[t.chalBulletSame, t.chalBulletPass]}
           startLabel={t.goReady}
@@ -1363,6 +1319,13 @@ export default function VigilTestGame({ onBack }) {
             )}
             {block.mode === 'free' && (
               <>
+                <span className="ct-vigil-hud-sep">·</span>
+                <span className="ct-vigil-hud-rule ct-fq-lives" aria-label={`${freeLives} lives`}>
+                  {'♥'.repeat(Math.max(0, freeLives))}
+                  <span className="ct-fq-lives-spent">
+                    {'♥'.repeat(Math.max(0, VIGIL_FREE_LIVES - freeLives))}
+                  </span>
+                </span>
                 <span className="ct-vigil-hud-sep">·</span>
                 <span className="ct-vigil-hud-rule">{t.score}: {freeScore}</span>
               </>

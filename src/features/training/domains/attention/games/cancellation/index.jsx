@@ -9,6 +9,7 @@ import { useApp } from '../../../../../../context/AppContext';
 import {
   SH,
   DM,
+  TC,
   prepareLevelRound,
   prepareChallengeSeed,
   prepareChallengePlayState,
@@ -17,13 +18,12 @@ import {
   isLevelUnlocked,
   getLvCfg,
   loadGameSettings,
-  FREE_SESSION_START_SEC,
-  FREE_SESSION_CAP_SEC,
-  freeClearBonusSec,
-  freeTimeDrainMultiplier,
+  FREE_LIVES,
+  freeRoundErrorCap,
   freeTapPoints,
   freeRoundClearPoints,
   freeWrongTapPenalty,
+  PASS_PLAY_CONFIG,
   FQ_DIFF_KEYS,
   FQ_LEVELS_PER_TIER,
 } from '../../../../shared/focusQuestData';
@@ -38,6 +38,15 @@ import FocusQuestTutorial, {
   buildTutorialQueueFor,
   markTutorialSeen,
 } from './tutorial';
+import {
+  prepareAssessmentTrial,
+  computeAssessmentSummary,
+  saveAssessSession,
+  loadAssessHistory,
+  compositeBand,
+  ASSESSMENT_PROTOCOL,
+} from './assessmentData';
+import { loadAssessProfile } from '../../../../assessment/assessmentProfile';
 
 
 /** Merge one challenge pass into running per-player aggregates (avg IES/time/etc., total errors). */
@@ -115,7 +124,7 @@ const ShapeSvg = React.memo(function ShapeSvg({ shape, color, size = 40 }) {
   );
 });
 
-/** Light attention hub — three mode rows (no circular maze). */
+/** Light attention hub — mode rows (no circular maze). */
 function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
   const items = [
     {
@@ -204,6 +213,7 @@ function CtLiveHud({
   errorsMax,
   lvlLabel,
   freeScore,
+  freeLives,
 }) {
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -260,6 +270,17 @@ function CtLiveHud({
           <div className="ct-fq-gv sm">{lvlLabel}</div>
           <div className="ct-fq-gl">{t.lvl}</div>
         </div>
+        {freeLives != null && (
+          <div className="ct-fq-gs">
+            <div className="ct-fq-gv ct-fq-lives" aria-label={`${freeLives} lives`}>
+              {'♥'.repeat(Math.max(0, freeLives))}
+              <span className="ct-fq-lives-spent">
+                {'♥'.repeat(Math.max(0, FREE_LIVES - freeLives))}
+              </span>
+            </div>
+            <div className="ct-fq-gl">{t.lives}</div>
+          </div>
+        )}
         {freeScore != null && (
           <div className="ct-fq-gs">
             <div className="ct-fq-gv">{freeScore}</div>
@@ -288,6 +309,18 @@ function CtLiveHud({
   );
 }
 
+/** One metric tile on the assessment results screen, with a colour band chip. */
+function AssessMetricTile({ value, label, sub, band, bandLabel }) {
+  return (
+    <div className={`ct-fq-rmi ct-fq-assess-tile${band ? ` ct-fq-band-${band}` : ''}`}>
+      <div className="ct-fq-rv">{value}</div>
+      <div className="ct-fq-rl">{label}</div>
+      {sub ? <div className="ct-fq-assess-tile-sub">{sub}</div> : null}
+      {band ? <span className={`ct-fq-band-chip ct-fq-band-chip-${band}`}>{bandLabel}</span> : null}
+    </div>
+  );
+}
+
 const UI = {
   en: {
     back: '‹ BACK',
@@ -295,8 +328,9 @@ const UI = {
     subtitle: 'Selective attention & inhibition',
     freeMode: '♾️ Free mode',
     freeMenuSub:
-      'One session clock · small time refill each clear · 3 strikes end the run · score from taps, clears & streaks',
-    freeStrikes: 'Strikes',
+      'Endless rounds that ramp up · 3 lives · a round costs a life if time runs out or you make too many wrong taps · score from taps, clears & streaks',
+    freeStrikes: 'Errors',
+    lives: 'Lives',
     freeLvlLabel: (tier, lv) => `Free · ${tier} ${lv}`,
     freeGameOver: 'Run ended',
     freeRoundsCleared: (n) => `Rounds cleared: ${n}`,
@@ -305,7 +339,7 @@ const UI = {
     freePlayAgain: 'Play again',
     freeIntroTitle: 'Free mode',
     freeIntroBody:
-      'One session timer for your whole run. Clear rounds to earn a little extra time. Score from correct taps and full clears — streaks boost the clear bonus. Three wrong taps end the run.',
+      'Endless practice that keeps getting harder. You have 3 lives. Each round has its own timer — clear every target before it runs out. Run out of time, or make too many wrong taps in a round, and you lose a life. Score on correct taps and full clears; streaks of clears multiply the bonus. The run only ends when your lives reach zero.',
     freeIntroReady: 'Ready',
     score: 'Score',
     hubChamberKicker: '⟡ FOCUS QUEST ⟡',
@@ -313,20 +347,28 @@ const UI = {
     hubTrainingTag: 'training',
     resultsLevelPass: 'Level passed',
     resultsLevelRetryTitle: 'Try again',
-    resultsChalTitle: 'Challenge results',
+    resultsChalTitle: 'Pass n Play results',
     hubMapAria: 'Modes map — choose a path',
-    hubNodeFreeHint: 'Tight timer · score · streak clears',
-    hubNodeLevelsHint: 'Tier grid · unlock 20',
-    hubNodeChallengeHint: 'Same maze · pass & play',
+    hubNodeFreeHint: 'Endless · 3 lives · ramps up',
+    hubNodeLevelsHint: '100 levels per tier · unlock in order',
+    hubNodeChallengeHint: 'Same board for all · pick a difficulty',
     levelMode: '🎯 Level mode',
-    challengeMode: '⚔️ Challenge',
+    challengeMode: '⚔️ Pass n Play',
     menuHint: 'Visual search training: bind features, suppress distractors, and respond quickly—like lab tasks for attention and cognitive control.',
     pickDiff: 'Choose difficulty',
-    pickDiffSub: 'Every mode has levels 1–20. Unlock in order.',
-    levelsSub: (pop, g) => `${pop} · ${g}×${g} grid · Levels 1–20`,
+    pickDiffSub: 'Each tier has 100 levels — unlock them in order.',
+    diffDesc: {
+      easy: 'Distinct shapes — spot the odd one out fast.',
+      medium: 'Similar shapes & colours — look more carefully.',
+      hard: 'Near-identical shapes — match shape and colour.',
+    },
+    diffTargets: 'targets',
+    diffGrid: 'grid',
+    levelsSub: (pop, g) => `${pop} · ${g}×${g} grid · Levels 1–100`,
     levelsBack: '← Back',
-    challengeTitle: '⚔️ Challenge mode',
-    challengeSub: 'Same shape layout for everyone · Hard 9×9 · 50s',
+    challengeTitle: '⚔️ Pass n Play',
+    challengeSub: 'Same board for everyone · pick a difficulty · pass the device',
+    chalPickDiff: 'Difficulty',
     players: 'Players (2–10)',
     addPl: '＋ Add player',
     startCh: '⚔️ Start',
@@ -355,7 +397,7 @@ const UI = {
     nextLv: 'Next level',
     retry: 'Retry',
     menu: 'Menu',
-    newCh: 'New challenge',
+    newCh: 'New game',
     chalRounds: 'Rounds',
     chalRoundsHint: 'Each player plays once per round · New fair grid each round',
     roundNofM: (n, m) => `Round ${n}/${m}`,
@@ -368,6 +410,49 @@ const UI = {
     countdownHint: 'Get ready…',
     cueExact: 'Tap every tile that looks exactly like this.',
     cueShape: 'Tap every tile that shows this shape.',
+    assessMode: '📊 Assessment',
+    hubNodeAssessHint: 'Standardized test · track your attention',
+    assessIntroTitle: 'Attention Assessment',
+    assessIntroBody:
+      'A standardized 3-trial test. Each trial shows the same kind of board — find every matching tile before the timer runs out. Work quickly but accurately; wrong taps and missed targets both count.',
+    assessIntroMeasures: 'It measures selective attention, processing speed, response inhibition, and attentional stability (how consistent your reaction times are).',
+    assessIntroNote:
+      'Self-referenced: best used to track your own change over time. These are guideline scores, not a clinical diagnosis.',
+    assessStart: 'Start assessment',
+    assessTrialLabel: (n, m) => `Trial ${n} / ${m}`,
+    assessResTitle: 'Your results',
+    assessIndex: 'Attention Index',
+    assessIndexSub: 'Composite · 0–100',
+    mDetection: 'Detection',
+    mDetectionSub: 'targets found',
+    mPrecision: 'Precision',
+    mPrecisionSub: 'taps correct',
+    mSpeed: 'Speed',
+    mSpeedSub: 'targets/sec',
+    mRt: 'Reaction',
+    mRtSub: 'avg ms',
+    mStability: 'Stability',
+    mStabilitySub: 'RT consistency',
+    mErrors: 'Errors',
+    mErrorsSub: 'miss · false',
+    bandHigh: 'Strong',
+    bandMid: 'Typical',
+    bandLow: 'Developing',
+    assessAgain: 'Test again',
+    assessViewHistory: '📈 History',
+    assessHistTitle: 'Assessment history',
+    assessNoHistory: 'No sessions yet — run an assessment to start tracking.',
+    assessHistBest: (n) => `Best index: ${n}`,
+    assessHistRecent: 'Recent sessions',
+    assessVsPrev: (d) => (d > 0 ? `▲ +${d}` : d < 0 ? `▼ ${d}` : '— 0'),
+    sciTitle: 'About the science',
+    sciParas: [
+      'This is a cancellation task — one of the most validated attention paradigms in neuropsychology (Mesulam symbol cancellation), used to measure selective and sustained attention, processing speed, and inhibitory control.',
+      'Difficulty follows visual-search theory: Easy/Medium are feature search (Treisman & Gelade, 1980); Hard is conjunction search where you must bind shape and colour (Wolfe, Guided Search). Per-level time limits are derived from published search-slope estimates.',
+      'Scoring uses real psychometrics: Inverse Efficiency Score (Townsend & Ashby, 1983) and Rate-Correct Score (Woltz & Was, 2006), with reaction-time trimming (Whelan, 2008). Reaction-time variability is included because elevated intra-individual variability is a robust marker of attentional lapses (Castellanos, 2005).',
+      'Honest limits: practice reliably improves performance on this task and on visual search; broad "far transfer" to everyday attention is debated in the literature (Simons et al., 2016). Use this to train and track these specific skills — not as a medical test.',
+    ],
+    sciClose: 'Close',
   },
   ar: {
     back: '‹ رجوع',
@@ -375,8 +460,9 @@ const UI = {
     subtitle: 'انتباه انتقائي وكبح استجابي',
     freeMode: '♾️ وضع حر',
     freeMenuSub:
-      'مؤقت واحد للجولة · وقت قليل جداً بعد كل إكمال · ٣ أخطاء تنهي المحاولة · النقاط للمسات الصحيحة والسلسلة',
-    freeStrikes: 'الأخطاء',
+      'جولات لا تنتهي وتزداد صعوبة · ٣ أرواح · تخسر روحاً إذا نفد الوقت أو أكثرت النقر الخاطئ في الجولة · النقاط للمسات والإكمال والسلسلة',
+    freeStrikes: 'أخطاء',
+    lives: 'الأرواح',
     freeLvlLabel: (tier, lv) => `حر · ${tier} ${lv}`,
     freeGameOver: 'انتهت المحاولة',
     freeRoundsCleared: (n) => `جولات ناجحة: ${n}`,
@@ -385,7 +471,7 @@ const UI = {
     freePlayAgain: 'العب مجددًا',
     freeIntroTitle: 'وضع حر',
     freeIntroBody:
-      'مؤقت واحد يدوّر معك طوال المحاولة. أكمل الجولات لتربح وقتاً إضافياً قليلاً. اجمع النقاط باللمسات الصحيحة وعند إكمال الجولة — السلسلة ترفع مكافأة الإكمال. ثلاثة أخطاء تنهي المحاولة.',
+      'تدريب لا ينتهي ويزداد صعوبة باستمرار. لديك ٣ أرواح. لكل جولة مؤقتها الخاص — أكمل كل الأهداف قبل نفاده. إذا نفد الوقت أو أكثرت النقر الخاطئ في الجولة تخسر روحاً. اجمع النقاط باللمسات الصحيحة وإكمال الجولات؛ السلاسل تضاعف المكافأة. تنتهي المحاولة فقط عند نفاد الأرواح.',
     freeIntroReady: 'جاهز',
     score: 'نقاط',
     hubChamberKicker: '⟡ مهمة التركيز ⟡',
@@ -393,20 +479,28 @@ const UI = {
     hubTrainingTag: 'تدريب',
     resultsLevelPass: 'المستوى اجتُاز',
     resultsLevelRetryTitle: 'حاول مجددًا',
-    resultsChalTitle: 'نتائج التحدي',
+    resultsChalTitle: 'نتائج مرّر والعب',
     hubMapAria: 'خريطة الأوضاع — اختر مسارًا',
-    hubNodeFreeHint: 'مؤقت ضيق · نقاط · سلسلة الإكمال',
-    hubNodeLevelsHint: 'شبكة · ٢٠ مستوى',
-    hubNodeChallengeHint: 'نفس المتاهة · مع الأصدقاء',
+    hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · يزداد صعوبة',
+    hubNodeLevelsHint: '١٠٠ مستوى لكل صعوبة · بالترتيب',
+    hubNodeChallengeHint: 'نفس اللوحة للجميع · اختر الصعوبة',
     levelMode: '🎯 وضع المستويات',
-    challengeMode: '⚔️ تحدي',
+    challengeMode: '⚔️ مرّر والعب',
     menuHint: 'تدريب بحث بصري: ربط السمات، كبح المشتتات، والاستجابة بسرعة—كمهام الانتباه في العلوم المعرفية.',
     pickDiff: 'اختر الصعوبة',
-    pickDiffSub: 'كل وضع يحتوي على مستويات 1–20. افتحها بالترتيب.',
-    levelsSub: (pop, g) => `${pop} · شبكة ${g}×${g} · مستويات 1–20`,
+    pickDiffSub: 'كل صعوبة تحتوي على ١٠٠ مستوى — افتحها بالترتيب.',
+    diffDesc: {
+      easy: 'أشكال مختلفة — اكتشف المختلف بسرعة.',
+      medium: 'أشكال وألوان متشابهة — دقّق أكثر.',
+      hard: 'أشكال شبه متطابقة — طابق الشكل واللون.',
+    },
+    diffTargets: 'أهداف',
+    diffGrid: 'شبكة',
+    levelsSub: (pop, g) => `${pop} · شبكة ${g}×${g} · مستويات 1–100`,
     levelsBack: '← رجوع',
-    challengeTitle: '⚔️ وضع التحدي',
-    challengeSub: 'نفس تخطيط الأشكال للجميع · صعب 9×9 · 50ث',
+    challengeTitle: '⚔️ مرّر والعب',
+    challengeSub: 'نفس اللوحة للجميع · اختر الصعوبة · مرّر الجهاز',
+    chalPickDiff: 'الصعوبة',
     players: 'اللاعبون (2–10)',
     addPl: '＋ إضافة لاعب',
     startCh: '⚔️ ابدأ',
@@ -435,7 +529,7 @@ const UI = {
     nextLv: 'المستوى التالي',
     retry: 'إعادة',
     menu: 'القائمة',
-    newCh: 'تحدي جديد',
+    newCh: 'لعبة جديدة',
     chalRounds: 'الجولات',
     chalRoundsHint: 'كل لاعب يلعب مرة في الجولة · شبكة جديدة عادلة كل جولة',
     roundNofM: (n, m) => `الجولة ${n}/${m}`,
@@ -448,17 +542,62 @@ const UI = {
     countdownHint: 'استعد…',
     cueExact: 'المس كل مربع يطابق هذا الرمز تمامًا.',
     cueShape: 'المس كل مربع يحتوي على هذا الشكل.',
+    assessMode: '📊 تقييم',
+    hubNodeAssessHint: 'اختبار موحّد · تابع انتباهك',
+    assessIntroTitle: 'تقييم الانتباه',
+    assessIntroBody:
+      'اختبار موحّد من ٣ محاولات. كل محاولة تعرض نفس نوع اللوحة — جِد كل المربعات المطابقة قبل نفاد الوقت. اعمل بسرعة وبدقة؛ النقر الخاطئ والأهداف المفقودة كلاهما يُحتسب.',
+    assessIntroMeasures: 'يقيس الانتباه الانتقائي وسرعة المعالجة وكبح الاستجابة واستقرار الانتباه (مدى ثبات زمن استجابتك).',
+    assessIntroNote:
+      'مرجعي ذاتي: الأفضل لتتبّع تغيّرك مع الوقت. هذه درجات إرشادية وليست تشخيصاً سريرياً.',
+    assessStart: 'ابدأ التقييم',
+    assessTrialLabel: (n, m) => `محاولة ${n} / ${m}`,
+    assessResTitle: 'نتائجك',
+    assessIndex: 'مؤشر الانتباه',
+    assessIndexSub: 'مركّب · ٠–١٠٠',
+    mDetection: 'الاكتشاف',
+    mDetectionSub: 'الأهداف المُوجَدة',
+    mPrecision: 'الدقة',
+    mPrecisionSub: 'نقرات صحيحة',
+    mSpeed: 'السرعة',
+    mSpeedSub: 'هدف/ث',
+    mRt: 'زمن الاستجابة',
+    mRtSub: 'متوسط مللي ثانية',
+    mStability: 'الثبات',
+    mStabilitySub: 'ثبات زمن الاستجابة',
+    mErrors: 'الأخطاء',
+    mErrorsSub: 'فوات · خاطئ',
+    bandHigh: 'قوي',
+    bandMid: 'معتاد',
+    bandLow: 'قيد التطوّر',
+    assessAgain: 'أعد الاختبار',
+    assessViewHistory: '📈 السجل',
+    assessHistTitle: 'سجل التقييمات',
+    assessNoHistory: 'لا جلسات بعد — شغّل تقييماً لتبدأ المتابعة.',
+    assessHistBest: (n) => `أفضل مؤشر: ${n}`,
+    assessHistRecent: 'الجلسات الأخيرة',
+    assessVsPrev: (d) => (d > 0 ? `▲ +${d}` : d < 0 ? `▼ ${d}` : '— 0'),
+    sciTitle: 'عن العِلم',
+    sciParas: [
+      'هذه مهمة إلغاء — من أكثر نماذج قياس الانتباه توثيقاً في علم النفس العصبي (مهمة ميسولام)، تُستخدم لقياس الانتباه الانتقائي والمستمر وسرعة المعالجة وكبح الاستجابة.',
+      'تتبع الصعوبة نظرية البحث البصري: السهل/المتوسط بحث سمة (Treisman & Gelade, 1980)؛ والصعب بحث اقتران حيث تربط الشكل واللون (Wolfe). حدود الوقت لكل مستوى مشتقة من تقديرات منشورة لميل البحث.',
+      'التقييم يستخدم مقاييس نفسية حقيقية: درجة الكفاءة العكسية (Townsend & Ashby, 1983) ودرجة المعدل الصحيح (Woltz & Was, 2006)، مع تشذيب لأزمنة الاستجابة (Whelan, 2008). ويُدرَج تباين زمن الاستجابة لأن ارتفاعه مؤشر قوي على هفوات الانتباه (Castellanos, 2005).',
+      'حدود صادقة: التمرين يحسّن الأداء في هذه المهمة وفي البحث البصري بشكل موثوق؛ أما الانتقال الواسع إلى الانتباه اليومي فمختلَف عليه علمياً (Simons et al., 2016). استخدمه لتدريب وتتبّع هذه المهارات تحديداً — لا كاختبار طبي.',
+    ],
+    sciClose: 'إغلاق',
   },
 };
 
-export default function CancellationTaskGame({ onBack }) {
+export default function CancellationTaskGame({ onBack, assessmentMode = false, onAssessmentExit, onAssessmentComplete, assessmentLabel, assessmentStep }) {
   const { playSfx, currentLang } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
   const settings = loadGameSettings();
 
   const [profile, setProfile] = useState(() => loadProfile());
-  const [phase, setPhase] = useState('hub');
+  // When launched as an assessment (from the training-page fox), skip the game
+  // hub and go straight into the standardized assessment intro.
+  const [phase, setPhase] = useState(assessmentMode ? 'assessIntro' : 'hub');
   const [diffKey, setDiffKey] = useState('easy');
 
   const [round, setRound] = useState(null);
@@ -480,6 +619,8 @@ export default function CancellationTaskGame({ onBack }) {
   const [chalTurnOpen, setChalTurnOpen] = useState(false);
   const [chalRoundsTotal, setChalRoundsTotal] = useState(1);
   const [chalRoundIdx, setChalRoundIdx] = useState(0);
+  const [chalDiff, setChalDiff] = useState('hard');
+  const chalDiffRef = useRef('hard');
 
   const tlRef = useRef(0);
   const tlimRef = useRef(0);
@@ -501,11 +642,17 @@ export default function CancellationTaskGame({ onBack }) {
   const endRoundRef = useRef((_won) => {});
   const freeStageRef = useRef(0);
   const freeRoundsWonRef = useRef(0);
-  const freeStrikesRef = useRef(0);
-  const [freeStrikes, setFreeStrikes] = useState(0);
+  const freeLivesRef = useRef(FREE_LIVES);
+  const [freeLives, setFreeLives] = useState(FREE_LIVES);
   const [freeScore, setFreeScore] = useState(0);
   const freeScoreRef = useRef(0);
   const freeStreakRef = useRef(0);
+  const assessTrialsRef = useRef([]);
+  const assessTapsRef = useRef([]);
+  const assessIdxRef = useRef(0);
+  const [assessResult, setAssessResult] = useState(null);
+  const [assessHistory, setAssessHistory] = useState(() => loadAssessHistory());
+  const [sciOpen, setSciOpen] = useState(false);
   const [gridMetrics, setGridMetrics] = useState({
     cellW: 32,
     cellH: 32,
@@ -597,10 +744,10 @@ export default function CancellationTaskGame({ onBack }) {
         setFound(0);
         setErrors(0);
         talliesRef.current = { found: 0, errors: 0 };
-        if (stageIndex === 0 && freeRoundsWonRef.current === 0) {
-          tlRef.current = FREE_SESSION_START_SEC;
-          tlimRef.current = FREE_SESSION_START_SEC;
-        }
+        // Every free round has its own timer (from the level curve); the run is
+        // bounded by lives, not by one global session clock.
+        tlRef.current = r.tlim;
+        tlimRef.current = r.tlim;
         tapsRef.current = [];
         pendingPenaltyRef.current = 0;
         const s = loadGameSettings();
@@ -637,10 +784,10 @@ export default function CancellationTaskGame({ onBack }) {
   const startFreeMode = useCallback(() => {
     freeStageRef.current = 0;
     freeRoundsWonRef.current = 0;
-    freeStrikesRef.current = 0;
+    freeLivesRef.current = FREE_LIVES;
     freeScoreRef.current = 0;
     freeStreakRef.current = 0;
-    setFreeStrikes(0);
+    setFreeLives(FREE_LIVES);
     setFreeScore(0);
     setPhase('freeIntro');
   }, []);
@@ -649,6 +796,71 @@ export default function CancellationTaskGame({ onBack }) {
     playSfx('click');
     void beginFreeRoundAtStage(0);
   }, [playSfx, beginFreeRoundAtStage]);
+
+  const beginAssessmentTrial = useCallback(
+    async (idx) => {
+      try {
+        setPhase('play');
+        setCdShow(false);
+        let r;
+        try {
+          r = prepareAssessmentTrial(idx);
+        } catch (err) {
+          console.error('[Assessment] prepareAssessmentTrial failed', idx, err);
+          clearPlayRoundState();
+          setPhase('hub');
+          return;
+        }
+        roundRef.current = r;
+        setRound(r);
+        setCells(r.cells);
+        setFound(0);
+        setErrors(0);
+        talliesRef.current = { found: 0, errors: 0 };
+        tlRef.current = r.tlim;
+        tlimRef.current = r.tlim;
+        tapsRef.current = [];
+        pendingPenaltyRef.current = 0;
+        const s = loadGameSettings();
+        if (!s.countdown) {
+          setPlayStep('idle');
+          queueMicrotask(() => setPlayStep('running'));
+          return;
+        }
+        setPlayStep('idle');
+        setCdShow(true);
+        try {
+          for (let i = 3; i > 0; i--) {
+            setCdVal(i);
+            playSfx('click');
+            await sleep(380);
+          }
+          setCdVal('GO');
+          playSfx('collect');
+          await sleep(320);
+        } finally {
+          setCdShow(false);
+        }
+        setPlayStep('running');
+      } finally {
+        roundEndedRef.current = false;
+      }
+    },
+    [playSfx, clearPlayRoundState],
+  );
+
+  const startAssessment = useCallback(() => {
+    assessTrialsRef.current = [];
+    assessTapsRef.current = [];
+    assessIdxRef.current = 0;
+    setAssessResult(null);
+    setPhase('assessIntro');
+  }, []);
+
+  const onAssessIntroReady = useCallback(() => {
+    playSfx('click');
+    void beginAssessmentTrial(0);
+  }, [playSfx, beginAssessmentTrial]);
 
   const endRound = useCallback(
     (won) => {
@@ -701,7 +913,7 @@ export default function CancellationTaskGame({ onBack }) {
           if (cycle + 1 < totalR) {
             chalCycleRef.current = cycle + 1;
             setChalRoundIdx(chalCycleRef.current);
-            const newSeed = prepareChallengeSeed();
+            const newSeed = prepareChallengeSeed(chalDiffRef.current);
             setChalSeed(newSeed);
             setChalIdx(0);
             chalIdxRef.current = 0;
@@ -720,46 +932,97 @@ export default function CancellationTaskGame({ onBack }) {
       }
       if (r.mode === 'free') {
         if (won) {
+          // Cleared the round — bank the clear bonus and ramp to a harder stage.
           playSfx('win');
-          const completed = r.freeStage ?? 0;
           freeStreakRef.current += 1;
           const clearPts = freeRoundClearPoints(r.tlim, freeStreakRef.current);
           freeScoreRef.current += clearPts;
           setFreeScore(freeScoreRef.current);
-          const bonus = freeClearBonusSec(completed, r.tlim);
-          tlRef.current = Math.min(FREE_SESSION_CAP_SEC, tlRef.current + bonus);
-          tlimRef.current = Math.max(tlimRef.current, tlRef.current);
           freeRoundsWonRef.current += 1;
           freeStageRef.current += 1;
           setPauseOpen(false);
           void beginFreeRoundAtStage(freeStageRef.current);
-        } else {
-          playSfx('error');
-          const rw = freeRoundsWonRef.current;
-          const runScore = freeScoreRef.current;
-          setProfile((prev) => {
-            let next = { ...prev };
-            let changed = false;
-            if (runScore > (prev.freeBestScore ?? 0)) {
-              next = { ...next, freeBestScore: runScore };
-              changed = true;
-            }
-            if (rw > (prev.freeBest ?? 0)) {
-              next = { ...next, freeBest: rw };
-              changed = true;
-            }
-            if (changed) saveProfile(next);
-            return changed ? next : prev;
-          });
-          setLastResult({ type: 'free', roundsWon: rw, score: runScore, lastR: r });
-          setPhase('freeRes');
-          setPlayStep('idle');
-          setPauseOpen(false);
-          setQuitOpen(false);
-          setCdShow(false);
-          setRound(null);
-          setCells([]);
+          return;
         }
+        // Round failed (timed out or too many wrong taps): lose a life.
+        freeStreakRef.current = 0;
+        freeLivesRef.current = Math.max(0, freeLivesRef.current - 1);
+        setFreeLives(freeLivesRef.current);
+        if (freeLivesRef.current > 0) {
+          // Lives left — replay the SAME stage so the ramp never spikes.
+          playSfx('error');
+          setPauseOpen(false);
+          void beginFreeRoundAtStage(freeStageRef.current);
+          return;
+        }
+        // Out of lives — the run is over.
+        playSfx('error');
+        const rw = freeRoundsWonRef.current;
+        const runScore = freeScoreRef.current;
+        setProfile((prev) => {
+          let next = { ...prev };
+          let changed = false;
+          if (runScore > (prev.freeBestScore ?? 0)) {
+            next = { ...next, freeBestScore: runScore };
+            changed = true;
+          }
+          if (rw > (prev.freeBest ?? 0)) {
+            next = { ...next, freeBest: rw };
+            changed = true;
+          }
+          if (changed) saveProfile(next);
+          return changed ? next : prev;
+        });
+        setLastResult({ type: 'free', roundsWon: rw, score: runScore, lastR: r });
+        setPhase('freeRes');
+        setPlayStep('idle');
+        setPauseOpen(false);
+        setQuitOpen(false);
+        setCdShow(false);
+        setRound(null);
+        setCells([]);
+        return;
+      }
+      if (r.mode === 'assess') {
+        // Record this trial (hits, false taps, time, efficiency) + its taps.
+        assessTrialsRef.current.push({
+          tc: targetTc || r.tc,
+          found: f,
+          errors: e,
+          timeUsed: stats.timeUsed,
+          ies: stats.ies,
+        });
+        assessTapsRef.current.push(...tapsRef.current);
+        const total = r.assessTrialsTotal ?? ASSESSMENT_PROTOCOL.trials;
+        const nextIdx = assessIdxRef.current + 1;
+        if (nextIdx < total) {
+          playSfx(won ? 'win' : 'click');
+          assessIdxRef.current = nextIdx;
+          setPauseOpen(false);
+          void beginAssessmentTrial(nextIdx);
+          return;
+        }
+        // Battery complete — compute the standardized summary and persist it.
+        playSfx('win');
+        const summary = computeAssessmentSummary(
+          assessTrialsRef.current,
+          assessTapsRef.current,
+          { age: loadAssessProfile().age },
+        );
+        setAssessHistory(saveAssessSession(summary));
+        setPlayStep('idle');
+        setPauseOpen(false);
+        setQuitOpen(false);
+        setCdShow(false);
+        setRound(null);
+        setCells([]);
+        if (onAssessmentComplete) {
+          const line = `${Math.round(summary.detection * 100)}% · ${summary.meanRT != null ? `${summary.meanRT}ms` : '—'}`;
+          onAssessmentComplete({ score: summary.composite, line });
+          return;
+        }
+        setAssessResult(summary);
+        setPhase('assessRes');
         return;
       }
       if (won) playSfx('win');
@@ -768,7 +1031,7 @@ export default function CancellationTaskGame({ onBack }) {
       setLastResult({ type: 'level', stats, r, won, found: f, errors: e });
       setPhase('res');
     },
-    [stopTimer, persistLevel, playSfx, beginFreeRoundAtStage],
+    [stopTimer, persistLevel, playSfx, beginFreeRoundAtStage, beginAssessmentTrial, onAssessmentComplete],
   );
 
   useEffect(() => {
@@ -787,12 +1050,9 @@ export default function CancellationTaskGame({ onBack }) {
       if (!runRef.current || pauseOpen || timerRunIdRef.current !== runId) return;
       const dt = (ts - last) / 1000;
       last = ts;
-      const rr = roundRef.current;
-      const drainMult =
-        rr?.mode === 'free' ? freeTimeDrainMultiplier(rr.freeStage ?? 0) : 1;
       tlRef.current = Math.max(
         0,
-        tlRef.current - dt * drainMult - pendingPenaltyRef.current,
+        tlRef.current - dt - pendingPenaltyRef.current,
       );
       pendingPenaltyRef.current = 0;
       if (!warned10Ref.current && tlRef.current <= 10) {
@@ -864,23 +1124,23 @@ export default function CancellationTaskGame({ onBack }) {
       const INNER_PAD = 4;
       const totalGap = gap * (gridN - 1);
       const minCell = gridN >= 10 ? 16 : 8;
-      // Use width and height independently so portrait phones fill the screen
-      // instead of a small square with empty vertical space.
+      // SQUARE cells: shapes in a cancellation task must stay recognisable, so
+      // the cell is sized to the smaller of the width-fit and height-fit. The
+      // grid then fits both axes (no scrolling) and is centred by .ct-fq-grid-outer.
       const innerBudgetW = Math.max(40, availW - INNER_PAD * 2);
       const innerBudgetH = Math.max(40, availH - INNER_PAD * 2);
-      let cellW = Math.floor((innerBudgetW - totalGap) / gridN);
-      let cellH = Math.floor((innerBudgetH - totalGap) / gridN);
-      cellW = Math.max(minCell, cellW);
-      cellH = Math.max(minCell, cellH);
-      const needW = cellW * gridN + totalGap + INNER_PAD * 2;
-      const needH = cellH * gridN + totalGap + INNER_PAD * 2;
-      if (needW > availW) {
-        cellW = Math.max(8, Math.floor((availW - totalGap - INNER_PAD * 2) / gridN));
+      const fitW = Math.floor((innerBudgetW - totalGap) / gridN);
+      const fitH = Math.floor((innerBudgetH - totalGap) / gridN);
+      let cell = Math.max(minCell, Math.min(fitW, fitH));
+      // Guard against either axis overflowing if min-cell forced an oversize.
+      const needSide = cell * gridN + totalGap + INNER_PAD * 2;
+      if (needSide > availW || needSide > availH) {
+        cell = Math.max(
+          8,
+          Math.floor((Math.min(availW, availH) - totalGap - INNER_PAD * 2) / gridN),
+        );
       }
-      if (needH > availH) {
-        cellH = Math.max(8, Math.floor((availH - totalGap - INNER_PAD * 2) / gridN));
-      }
-      setGridMetrics({ cellW, cellH, gap, pad: INNER_PAD });
+      setGridMetrics({ cellW: cell, cellH: cell, gap, pad: INNER_PAD });
     };
     measure();
     const ro = new ResizeObserver(() => {
@@ -986,13 +1246,11 @@ export default function CancellationTaskGame({ onBack }) {
       talliesRef.current.errors += 1;
       setErrors(talliesRef.current.errors);
       if (r.mode === 'free') {
-        const ns = freeStrikesRef.current + 1;
-        freeStrikesRef.current = ns;
-        setFreeStrikes(ns);
         const pen = freeWrongTapPenalty(r.diff);
         freeScoreRef.current = Math.max(0, freeScoreRef.current - pen);
         queueMicrotask(() => setFreeScore(freeScoreRef.current));
-        if (ns >= 3) {
+        // Too many wrong taps this round → fail the round (costs one life).
+        if (talliesRef.current.errors >= freeRoundErrorCap(r.tc)) {
           queueMicrotask(() => endRoundRef.current(false));
         }
       }
@@ -1028,9 +1286,10 @@ export default function CancellationTaskGame({ onBack }) {
     clearPlayRoundState();
     setChalNames(names);
     chalRoundsTotalRef.current = chalRoundsTotal;
+    chalDiffRef.current = chalDiff;
     chalCycleRef.current = 0;
     setChalRoundIdx(0);
-    const seed = prepareChallengeSeed();
+    const seed = prepareChallengeSeed(chalDiffRef.current);
     setChalSeed(seed);
     setChalIdx(0);
     chalIdxRef.current = 0;
@@ -1066,8 +1325,21 @@ export default function CancellationTaskGame({ onBack }) {
     clearPlayRoundState();
     if (mode === 'challenge') setPhase('chal');
     else if (mode === 'level') setPhase('levels');
-    else setPhase('hub');
+    else if (mode === 'assess') {
+      if (assessmentMode && onAssessmentExit) onAssessmentExit();
+      else setPhase('hub');
+    } else setPhase('hub');
   };
+
+  const bandLbl = (b) => (b === 'high' ? t.bandHigh : b === 'mid' ? t.bandMid : t.bandLow);
+
+  /** Leave the assessment: back to the global assessment flow when launched from
+   *  the training-page fox, otherwise back to the game hub. */
+  const exitAssess = useCallback(() => {
+    clearPlayRoundState();
+    if (assessmentMode && onAssessmentExit) onAssessmentExit();
+    else setPhase('hub');
+  }, [assessmentMode, onAssessmentExit, clearPlayRoundState]);
 
   const pauseLabels = {
     paused: t.paused,
@@ -1092,11 +1364,20 @@ export default function CancellationTaskGame({ onBack }) {
     }
     if (r.mode === 'challenge') {
       return {
-        title: isAr ? 'تحدي' : 'Challenge',
+        title: isAr ? 'مرّر والعب' : 'Pass n Play',
         subtitle:
           chalRoundsTotal > 1
             ? `${t.roundNofM(chalRoundIdx + 1, chalRoundsTotal)} · ${chalNames[chalIdx] ?? ''}`
             : chalNames[chalIdx] ?? '',
+      };
+    }
+    if (r.mode === 'assess') {
+      return {
+        title: t.assessIntroTitle,
+        subtitle: t.assessTrialLabel(
+          (r.assessTrial ?? 0) + 1,
+          r.assessTrialsTotal ?? ASSESSMENT_PROTOCOL.trials,
+        ),
       };
     }
     return {
@@ -1279,27 +1560,41 @@ export default function CancellationTaskGame({ onBack }) {
                 </div>
               }
             />
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.pickDiffSub}</p>
-            {FQ_DIFF_KEYS.map((k) => {
-              const m = DM[k];
-              return (
-              <button
-                key={k}
-                type="button"
-                className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training`}
-                onClick={() => {
-                  playSfx('click');
-                  setDiffKey(k);
-                  setPhase('levels');
-                }}
-              >
-                <span>{m.label}</span>
-                <span className="ct-fq-dbg">
-                  {m.pop} · {m.grid}×{m.grid}
-                </span>
-              </button>
-              );
-            })}
+            <div className="ct-fq-diff-body">
+              <p className="ct-fq-sub ct-fq-training-blurb">{t.pickDiffSub}</p>
+              <div className="ct-fq-diff-cards">
+                {FQ_DIFF_KEYS.map((k) => {
+                  const m = DM[k];
+                  const tcArr = TC[k];
+                  const tcLo = tcArr?.[0];
+                  const tcHi = tcArr?.[tcArr.length - 1];
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training ct-fq-diffcard`}
+                      onClick={() => {
+                        playSfx('click');
+                        setDiffKey(k);
+                        setPhase('levels');
+                      }}
+                    >
+                      <span className="ct-fq-diffcard-main">
+                        <span className="ct-fq-diffcard-label">{m.label}</span>
+                        <span className="ct-fq-diffcard-desc">{t.diffDesc[k]}</span>
+                      </span>
+                      <span className="ct-fq-diffcard-meta">
+                        <span className="ct-fq-diffcard-grid">{m.grid}×{m.grid}</span>
+                        <span className="ct-fq-diffcard-tgts">
+                          {tcLo}–{tcHi} {t.diffTargets}
+                        </span>
+                        <span className="ct-fq-diffcard-pop">{m.pop}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1368,7 +1663,23 @@ export default function CancellationTaskGame({ onBack }) {
             />
             <p className="ct-fq-sub ct-fq-training-blurb">{t.challengeSub}</p>
             <div className="ct-fq-card ct-fq-card-training">
-              <h3>{t.players}</h3>
+              <h3>{t.chalPickDiff}</h3>
+              <div className="ct-fq-rr ct-fq-rr-diff" role="group" aria-label={t.chalPickDiff}>
+                {FQ_DIFF_KEYS.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    className={`ct-fq-rrb ct-fq-rrb-diff${chalDiff === k ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
+                    onClick={() => {
+                      playSfx('click');
+                      setChalDiff(k);
+                    }}
+                  >
+                    {DM[k].label}
+                  </button>
+                ))}
+              </div>
+              <h3 style={{ marginTop: 14 }}>{t.players}</h3>
               {chalNames.map((nm, i) => (
                 <div key={i} className="ct-fq-pr">
                   <input
@@ -1441,7 +1752,7 @@ export default function CancellationTaskGame({ onBack }) {
           roundLine={
             chalRoundsTotal > 1 ? t.roundNofM(chalRoundIdx + 1, chalRoundsTotal) : null
           }
-          metaLine="Hard · 9×9 · 50s"
+          metaLine={`${DM[chalDiff]?.label ?? ''} · ${PASS_PLAY_CONFIG[chalDiff]?.grid ?? 9}×${PASS_PLAY_CONFIG[chalDiff]?.grid ?? 9} · ${PASS_PLAY_CONFIG[chalDiff]?.tlim ?? 50}s`}
           instruction={t.handTo(chalNames[chalIdx])}
           bullets={[t.chalBulletSame, t.chalBulletPass]}
           startLabel={t.goReady}
@@ -1452,6 +1763,7 @@ export default function CancellationTaskGame({ onBack }) {
 
       {phase === 'play' && round && (
         <>
+          <div className="ct-fq-play">
           <TrainingPlayHeader
             isAr={isAr}
             title={playHeaderForRound(round).title}
@@ -1470,20 +1782,23 @@ export default function CancellationTaskGame({ onBack }) {
               tlRef={tlRef}
               tlimRef={tlimRef}
               roundTlim={round.tlim}
-              useSessionTimer={round.mode === 'free'}
+              useSessionTimer={false}
               found={found}
               tc={cells.filter((c) => c.isT).length}
-              errors={round.mode === 'free' ? freeStrikes : errors}
+              errors={errors}
               errorsLabel={round.mode === 'free' ? t.freeStrikes : undefined}
-              errorsMax={round.mode === 'free' ? 3 : undefined}
+              errorsMax={round.mode === 'free' ? freeRoundErrorCap(round.tc) : undefined}
               lvlLabel={
                 round.mode === 'free'
                   ? t.freeLvlLabel(DM[round.diff]?.label ?? '', round.lv)
-                  : round.lv === 'CH'
-                    ? 'CH'
-                    : `L${round.lv}`
+                  : round.mode === 'assess'
+                    ? `${(round.assessTrial ?? 0) + 1}/${round.assessTrialsTotal ?? ASSESSMENT_PROTOCOL.trials}`
+                    : round.lv === 'CH'
+                      ? 'CH'
+                      : `L${round.lv}`
               }
               freeScore={round.mode === 'free' ? freeScore : undefined}
+              freeLives={round.mode === 'free' ? freeLives : undefined}
             />
             <div className="ct-fq-tb" data-fq-chrome>
               <div className="ct-fq-tb-row">
@@ -1555,10 +1870,12 @@ export default function CancellationTaskGame({ onBack }) {
               </div>
             </div>
           </div>
+          </div>
 
           <TrainingPauseModal
             open={pauseOpen}
             labels={pauseLabels}
+            showRestart={round.mode !== 'assess'}
             onResume={() => {
               setPauseOpen(false);
               if (playStep === 'running') runRef.current = true;
@@ -1567,7 +1884,7 @@ export default function CancellationTaskGame({ onBack }) {
               setPauseOpen(false);
               if (round.mode === 'level') startLevelGame(round.diff, round.lv);
               else if (round.mode === 'free') void beginFreeRoundAtStage(round.freeStage ?? 0);
-              else startChallengeRound();
+              else if (round.mode === 'challenge') startChallengeRound();
             }}
             onQuitMenu={() => {
               setPauseOpen(false);
@@ -1779,6 +2096,283 @@ export default function CancellationTaskGame({ onBack }) {
               }}
             >
               {t.menu}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {phase === 'assessIntro' && (
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-screen ct-fq-training-screen">
+            <TrainingMenuBar
+              onBack={exitAssess}
+              playSfx={playSfx}
+              variant="paper"
+              center={
+                <div style={{ textAlign: 'center' }}>
+                  <div className="ct-fq-training-title ct-fq-training-title-sm">{t.assessIntroTitle}</div>
+                </div>
+              }
+            />
+            <div className="ct-fq-diff-body">
+              <div className="ct-fq-assess-intro">
+                <p className="ct-fq-sub ct-fq-training-blurb">{t.assessIntroBody}</p>
+                <p className="ct-fq-sub ct-fq-training-blurb">{t.assessIntroMeasures}</p>
+                <p className="ct-fq-assess-note">{t.assessIntroNote}</p>
+              </div>
+              <button
+                type="button"
+                className="ct-fq-btn ct-fq-btn-pri"
+                style={{ width: '100%', maxWidth: 320 }}
+                onClick={onAssessIntroReady}
+              >
+                {t.assessStart}
+              </button>
+              {assessHistory.length > 0 && (
+                <button
+                  type="button"
+                  className="ct-fq-btn ct-fq-btn-ghost"
+                  style={{ width: '100%', maxWidth: 320 }}
+                  onClick={() => {
+                    playSfx('click');
+                    setPhase('assessHistory');
+                  }}
+                >
+                  {t.assessViewHistory}
+                </button>
+              )}
+              <button
+                type="button"
+                className="ct-fq-sci-link"
+                onClick={() => {
+                  playSfx('click');
+                  setSciOpen(true);
+                }}
+              >
+                {`ⓘ ${t.sciTitle}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {phase === 'assessRes' && assessResult && (
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-screen ct-fq-training-screen">
+            <TrainingMenuBar
+              onBack={exitAssess}
+              playSfx={playSfx}
+              variant="paper"
+              center={
+                <div style={{ textAlign: 'center' }}>
+                  <div className="ct-fq-training-title ct-fq-training-title-sm">{t.assessResTitle}</div>
+                </div>
+              }
+            />
+            <div className={`ct-fq-sbig ct-fq-band-text-${assessResult.bands.composite}`}>
+              {assessResult.composite}
+            </div>
+            <div className="ct-fq-ies-lbl">{t.assessIndex} · {t.assessIndexSub}</div>
+            <div className="ct-fq-rm ct-fq-rm-training ct-fq-assess-grid">
+              <AssessMetricTile
+                value={`${Math.round(assessResult.detection * 100)}%`}
+                label={t.mDetection}
+                sub={t.mDetectionSub}
+                band={assessResult.bands.detection}
+                bandLabel={bandLbl(assessResult.bands.detection)}
+              />
+              <AssessMetricTile
+                value={`${Math.round(assessResult.precision * 100)}%`}
+                label={t.mPrecision}
+                sub={t.mPrecisionSub}
+                band={assessResult.bands.precision}
+                bandLabel={bandLbl(assessResult.bands.precision)}
+              />
+              <AssessMetricTile
+                value={assessResult.speed.toFixed(2)}
+                label={t.mSpeed}
+                sub={t.mSpeedSub}
+                band={assessResult.bands.speed}
+                bandLabel={bandLbl(assessResult.bands.speed)}
+              />
+              <AssessMetricTile
+                value={assessResult.meanRT != null ? `${assessResult.meanRT}` : '—'}
+                label={t.mRt}
+                sub={t.mRtSub}
+              />
+              <AssessMetricTile
+                value={assessResult.rtCV != null ? assessResult.rtCV.toFixed(2) : '—'}
+                label={t.mStability}
+                sub={t.mStabilitySub}
+                band={assessResult.bands.rtcv}
+                bandLabel={bandLbl(assessResult.bands.rtcv)}
+              />
+              <AssessMetricTile
+                value={`${assessResult.totalOmissions}·${assessResult.totalCommissions}`}
+                label={t.mErrors}
+                sub={t.mErrorsSub}
+              />
+            </div>
+            <div className="ct-fq-row">
+              <button
+                type="button"
+                className="ct-fq-btn ct-fq-btn-pri"
+                onClick={() => {
+                  playSfx('click');
+                  startAssessment();
+                }}
+              >
+                {t.assessAgain}
+              </button>
+              <button
+                type="button"
+                className="ct-fq-btn ct-fq-btn-ghost"
+                onClick={() => {
+                  playSfx('click');
+                  setPhase('assessHistory');
+                }}
+              >
+                {t.assessViewHistory}
+              </button>
+              <button
+                type="button"
+                className="ct-fq-btn ct-fq-btn-ghost"
+                onClick={exitAssess}
+              >
+                {t.menu}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {phase === 'assessHistory' && (
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-screen ct-fq-training-screen">
+            <TrainingMenuBar
+              onBack={() => {
+                if (assessResult) setPhase('assessRes');
+                else exitAssess();
+              }}
+              playSfx={playSfx}
+              variant="paper"
+              center={
+                <div style={{ textAlign: 'center' }}>
+                  <div className="ct-fq-training-title ct-fq-training-title-sm">{t.assessHistTitle}</div>
+                </div>
+              }
+            />
+            {assessHistory.length === 0 ? (
+              <p className="ct-fq-sub ct-fq-training-blurb">{t.assessNoHistory}</p>
+            ) : (
+              <>
+                {(() => {
+                  const best = Math.max(...assessHistory.map((s) => s.composite));
+                  const comps = assessHistory.map((s) => s.composite);
+                  const lo = Math.min(...comps);
+                  const hi = Math.max(...comps);
+                  const span = hi - lo || 1;
+                  const W = 280;
+                  const H = 56;
+                  const n = comps.length;
+                  const pts = comps
+                    .map((c, i) => {
+                      const x = n === 1 ? W / 2 : (i / (n - 1)) * W;
+                      const y = H - ((c - lo) / span) * H;
+                      return `${x.toFixed(1)},${y.toFixed(1)}`;
+                    })
+                    .join(' ');
+                  return (
+                    <>
+                      <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginBottom: 6 }}>
+                        {t.assessHistBest(best)}
+                      </p>
+                      {n > 1 && (
+                        <svg
+                          className="ct-fq-spark"
+                          viewBox={`0 0 ${W} ${H}`}
+                          preserveAspectRatio="none"
+                          aria-hidden="true"
+                        >
+                          <polyline points={pts} fill="none" stroke="#b87220" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                        </svg>
+                      )}
+                    </>
+                  );
+                })()}
+                <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 4, marginBottom: 8, fontWeight: 700 }}>
+                  {t.assessHistRecent}
+                </p>
+                {[...assessHistory]
+                  .map((s, i) => ({ s, i }))
+                  .reverse()
+                  .map(({ s, i }) => {
+                    const prev = i > 0 ? assessHistory[i - 1].composite : null;
+                    const delta = prev != null ? s.composite - prev : 0;
+                    const d = new Date(s.ts);
+                    const when = `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                    return (
+                      <div key={s.ts} className="ct-fq-lbr ct-fq-lbr-training">
+                        <div className={`ct-fq-lbrk ct-fq-band-text-${compositeBand(s.composite)}`}>
+                          {s.composite}
+                        </div>
+                        <div>
+                          <div className="ct-fq-lbnm">{when}</div>
+                          <div className="ct-fq-lbdt">
+                            {Math.round(s.detection * 100)}% · {s.speed.toFixed(2)}/s · {s.meanRT ?? '—'}ms · CV {s.rtCV ?? '—'}
+                          </div>
+                        </div>
+                        <div className="ct-fq-lbsc" style={{ fontSize: '0.9rem' }}>
+                          {prev != null ? t.assessVsPrev(delta) : ''}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </>
+            )}
+            <button
+              type="button"
+              className="ct-fq-btn ct-fq-btn-pri"
+              onClick={() => {
+                playSfx('click');
+                startAssessment();
+              }}
+            >
+              {t.assessAgain}
+            </button>
+            <button
+              type="button"
+              className="ct-fq-btn ct-fq-btn-ghost"
+              onClick={exitAssess}
+            >
+              {t.menu}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {sciOpen && (
+        <div
+          className="ct-fq-sci-ov"
+          role="dialog"
+          aria-modal="true"
+          dir={isAr ? 'rtl' : 'ltr'}
+          onClick={() => setSciOpen(false)}
+        >
+          <div className="ct-fq-sci-panel" onClick={(e) => e.stopPropagation()}>
+            <h2 className="ct-fq-sci-title">{t.sciTitle}</h2>
+            {t.sciParas.map((p, i) => (
+              <p key={i} className="ct-fq-sci-para">{p}</p>
+            ))}
+            <button
+              type="button"
+              className="ct-fq-btn ct-fq-btn-pri"
+              onClick={() => {
+                playSfx('click');
+                setSciOpen(false);
+              }}
+            >
+              {t.sciClose}
             </button>
           </div>
         </div>

@@ -366,13 +366,14 @@ export function getCuratedRushHourFreeRound(stageIndex) {
   return level ? { ...level, labelKey: 'free', freeStage: s, diff, lv } : getCuratedRushHourLevel('easy', 1);
 }
 
-export function getCuratedRushHourChallenge(seed, cycleIndex = 0) {
+export function getCuratedRushHourChallenge(seed, cycleIndex = 0, diff = '') {
   const s = (seed >>> 0) || 1;
   const c = Math.max(0, cycleIndex | 0);
-  const tier = c <= 0 ? 'medium' : 'hard';
+  // Explicit Pass-n-Play difficulty wins; otherwise auto-ramp medium → hard.
+  const tier = RH_DIFF_KEYS.includes(diff) ? diff : (c <= 0 ? 'medium' : 'hard');
   const bank = BANK[tier];
   const ix = (s + c * 17) % bank.length;
-  return { labelKey: 'challenge', seed: s, ...decodeEntry(bank[ix]) };
+  return { labelKey: 'challenge', seed: s, diff: tier, ...decodeEntry(bank[ix]) };
 }
 
 export function getAllCuratedRushHourLevels() {

@@ -3,22 +3,21 @@ import { useApp } from '../context/AppContext';
 import SettingsScreen, { AboutModal } from '../features/settings/SettingsScreen';
 import { assetUrl } from '../lib/assetUrl';
 
-/** Real brain photo — transparent PNG, lateral (side) view. */
-function SplashBrainSide({ className }) {
-  return (
-    <img
-      className={className}
-      src={assetUrl('Assets/brain-side.png')}
-      alt=""
-      aria-hidden="true"
-      draggable="false"
-    />
-  );
-}
+const SPLASH_BG = {
+  en: {
+    mobile: 'Assets/splash-menu-mobile-en.png',
+    desktop: 'Assets/splash-menu-desktop-en.png',
+  },
+  ar: {
+    mobile: 'Assets/splash-menu-mobile-ar.png',
+    desktop: 'Assets/splash-menu-desktop-ar.png',
+  },
+};
 
 export default function SplashScreen({ onDone }) {
   const { currentLang } = useApp();
   const isAr = currentLang === 'ar';
+  const lang = isAr ? 'ar' : 'en';
   const [ready, setReady] = useState(false);
   const [fading, setFading] = useState(false);
   const [quitting, setQuitting] = useState(false);
@@ -33,65 +32,31 @@ export default function SplashScreen({ onDone }) {
   function handleStart() { setFading(true); setTimeout(onDone, 700); }
   function handleQuit() { setQuitting(true); setTimeout(() => { try { window.close(); } catch (_) {} }, 400); }
 
-  /** Inline so layout never depends on cached CSS (column stack, full-width rows). */
-  const splashStackStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'stretch',
-    width: '100%',
-    maxWidth: 'min(400px, 94vw)',
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    gap: 'clamp(9px, 2.2vw, 12px)',
-    boxSizing: 'border-box',
-  };
-  const splashRowBtn = {
-    display: 'block',
-    width: '100%',
-    maxWidth: '100%',
-    boxSizing: 'border-box',
-    flexShrink: 0,
+  const bgStyle = {
+    '--splash-bg-mobile': `url("${assetUrl(SPLASH_BG[lang].mobile)}")`,
+    '--splash-bg-desktop': `url("${assetUrl(SPLASH_BG[lang].desktop)}")`,
   };
 
   return (
-    <div className={`splash-screen${fading || quitting ? ' splash-out' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>
-
-      <header className="splash-header">
-        <div className="splash-hero-inner">
-          <h1 className="splash-title" data-title={isAr ? 'رجل المتاهة' : 'Maze Man'}>
-            {isAr ? 'رجل المتاهة' : 'Maze Man'}
-          </h1>
-          <div className="splash-subbrand">
-            <p className="splash-subbrand-title">
-              <span className="splash-subbrand-label" dir={isAr ? 'rtl' : 'ltr'}>
-                <span>{isAr ? 'لعبة' : 'Brain'}</span>
-                <span className="splash-subbrand-visual">
-                  <SplashBrainSide className="splash-brain-side" />
-                </span>
-                <span>{isAr ? 'العقل' : 'Games'}</span>
-              </span>
-            </p>
-          </div>
-        </div>
-      </header>
-
+    <div
+      className={`splash-screen${fading || quitting ? ' splash-out' : ''}`}
+      dir={isAr ? 'rtl' : 'ltr'}
+      data-lang={lang}
+      style={bgStyle}
+    >
       <div className="splash-bottom">
         {ready ? (
-          <nav
-            className="splash-menu"
-            style={splashStackStyle}
-            aria-label={isAr ? 'القائمة الرئيسية' : 'Main menu'}
-          >
-            <button type="button" className="splash-start" style={splashRowBtn} onClick={handleStart}>
+          <nav className="splash-menu" aria-label={isAr ? 'القائمة الرئيسية' : 'Main menu'}>
+            <button type="button" className="splash-start" onClick={handleStart}>
               {isAr ? 'ابدأ' : 'Start'}
             </button>
-            <button type="button" className="splash-menu-btn" style={splashRowBtn} onClick={() => setShowSettings(true)}>
+            <button type="button" className="splash-menu-btn" onClick={() => setShowSettings(true)}>
               {isAr ? 'الإعدادات' : 'Settings'}
             </button>
-            <button type="button" className="splash-menu-btn" style={splashRowBtn} onClick={() => setShowAbout(true)}>
+            <button type="button" className="splash-menu-btn" onClick={() => setShowAbout(true)}>
               {isAr ? 'عن التطبيق' : 'About'}
             </button>
-            <button type="button" className="splash-menu-btn splash-menu-btn--quit" style={splashRowBtn} onClick={handleQuit}>
+            <button type="button" className="splash-menu-btn splash-menu-btn--quit" onClick={handleQuit}>
               {isAr ? 'خروج' : 'Quit'}
             </button>
           </nav>
@@ -102,7 +67,6 @@ export default function SplashScreen({ onDone }) {
 
       {showSettings && <SettingsScreen onClose={() => setShowSettings(false)} />}
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
-
     </div>
   );
 }

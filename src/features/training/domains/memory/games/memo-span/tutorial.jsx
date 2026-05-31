@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import MazeManAvatar from '../../../../shared/MazeManAvatar';
-import MemoObject, { MemoObjectRow } from './MemoObject';
+import MemoObject from './MemoObject';
 
 const TUTORIAL_KEY = 'mm_memo_span_tutorial_seen_v2';
 
@@ -41,29 +41,29 @@ const STR = {
     progress: (n, t) => `Step ${n} of ${t}`,
     main: {
       welcome: {
-        title: 'Serial Recall',
-        body: 'Watch a short sequence of objects, then tap them back in the SAME order.',
+        title: 'Memory Grid',
+        body: 'Cells in a grid light up one by one. Watch the order, then tap the cells back.',
       },
-      memorize: {
+      watch: {
         title: 'Watch the order',
-        body: 'Objects appear one by one. Burn the order into your mind — 1, 2, 3…',
+        body: 'Each cell lights up for a moment. Remember which cells, and in what order — 1, 2, 3…',
       },
       recall: {
-        title: 'Tap them in order',
-        body: 'A grid appears with the objects (plus some extras). Tap them in the exact order they appeared.',
+        title: 'Tap them back',
+        body: 'Then tap the same cells in the order they lit up. The number shows your taps.',
       },
-      foils: {
-        title: 'Extra objects',
-        body: 'Some objects in the grid were never shown. Ignore those — they are foils to test your memory.',
+      reverse: {
+        title: 'Reverse = working memory',
+        body: 'On harder rounds you tap them in REVERSE order. Holding the list and flipping it is working memory. A badge tells you which way.',
       },
       ready: {
-        title: 'One slip ends it',
-        body: 'First wrong tap stops the round. Full sequence = 3 stars. Ready?',
+        title: 'Ready!',
+        body: 'Watch closely, then reproduce the order — forward or reverse. Go!',
       },
     },
-    free: 'Free mode: the sequence grows longer when you nail it, shorter when you slip.',
+    free: 'Free mode: endless, and the sequence grows each time you nail it. You have 3 lives — a broken sequence costs one. The run ends when your lives reach zero.',
     challenge:
-      'Challenge: everyone gets the same sequence. Hand the device around — longest correct span wins!',
+      'Pass n Play: pick a difficulty, everyone gets the same sequence. Hand the device around — best memory wins!',
   },
   ar: {
     skip: 'تخطّي',
@@ -74,65 +74,62 @@ const STR = {
     progress: (n, t) => `الخطوة ${n} من ${t}`,
     main: {
       welcome: {
-        title: 'استدعاء تسلسلي',
-        body: 'شاهد تسلسل أشياء قصير، ثم اضغطها بنفس الترتيب.',
+        title: 'شبكة الذاكرة',
+        body: 'تضيء خلايا الشبكة واحدة تلو الأخرى. راقب الترتيب ثم أعد الضغط على الخلايا.',
       },
-      memorize: {
+      watch: {
         title: 'احفظ الترتيب',
-        body: 'تظهر الأشياء واحداً تلو الآخر. ركّز على الترتيب — 1، 2، 3…',
+        body: 'تضيء كل خلية للحظة. تذكّر أي الخلايا وبأي ترتيب — 1، 2، 3…',
       },
       recall: {
-        title: 'اضغطها بالترتيب',
-        body: 'تظهر شبكة فيها الأشياء (وأخرى إضافية). اضغطها بنفس ترتيب ظهورها.',
+        title: 'أعد الضغط',
+        body: 'ثم اضغط نفس الخلايا بترتيب إضاءتها. الرقم يبيّن ترتيب ضغطك.',
       },
-      foils: {
-        title: 'أشياء إضافية',
-        body: 'بعض الأشياء في الشبكة لم تُعرض. تجاهلها — هي فقط لاختبار ذاكرتك.',
+      reverse: {
+        title: 'المعكوس = ذاكرة عاملة',
+        body: 'في الجولات الأصعب تضغطها بترتيب معكوس. الاحتفاظ بالقائمة وعكسها هو الذاكرة العاملة. شارة تخبرك بالاتجاه.',
       },
       ready: {
-        title: 'خطأ واحد ينهي الجولة',
-        body: 'أول ضغطة خاطئة تنهي الجولة. التسلسل الكامل = 3 نجوم. مستعد؟',
+        title: 'جاهز!',
+        body: 'راقب جيداً ثم أعد الترتيب — مباشر أو معكوس. انطلق!',
       },
     },
-    free: 'الوضع الحر: يطول التسلسل عند النجاح ويقصر عند الخطأ.',
-    challenge: 'التحدي: نفس التسلسل للجميع. سلّم الجهاز — أطول مدى صحيح يفوز!',
+    free: 'الوضع الحر: لا ينتهي ويطول التسلسل كلما نجحت. لديك ٣ أرواح — كسر التسلسل يكلّفك روحاً. تنتهي المحاولة عند نفاد الأرواح.',
+    challenge: 'مرّر والعب: اختر الصعوبة، الجميع يحصل على نفس التسلسل. سلّم الجهاز — أفضل ذاكرة تفوز!',
   },
 };
 
-const STEPS = ['welcome', 'memorize', 'recall', 'foils', 'ready'];
+const STEPS = ['welcome', 'watch', 'recall', 'reverse', 'ready'];
+
+const DEMO_OBJ = ['ball', 'cup', 'book', 'chair', 'phone', 'apple'];
+
+function DemoGrid({ nums, lit, isAr }) {
+  return (
+    <div className="ct-ms-tut-demo-grid">
+      {DEMO_OBJ.map((id, i) => {
+        const num = nums?.[i];
+        const isLit = lit?.includes(i);
+        return (
+          <div
+            key={id}
+            className={`ct-ms-tut-demo-item${num ? ' ct-ms-tut-demo-item--tap' : ''}`}
+            data-num={num || undefined}
+            style={isLit ? { background: 'linear-gradient(180deg,#e8f4c8,#9cb752)', boxShadow: '0 0 0 3px #c4d88a' } : undefined}
+          >
+            <MemoObject objectId={id} isAr={isAr} size="sm" />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function DemoCard({ step, isAr }) {
-  if (step === 'memorize') {
-    return <MemoObjectRow objectIds={['ball', 'cup', 'book']} isAr={isAr} size="md" />;
-  }
-  if (step === 'recall') {
-    return (
-      <div className="ct-ms-tut-demo-grid">
-        <div className="ct-ms-tut-demo-item ct-ms-tut-demo-item--tap" data-num="1">
-          <MemoObject objectId="ball" isAr={isAr} size="sm" />
-        </div>
-        <div className="ct-ms-tut-demo-item">
-          <MemoObject objectId="chair" isAr={isAr} size="sm" />
-        </div>
-        <div className="ct-ms-tut-demo-item ct-ms-tut-demo-item--tap" data-num="2">
-          <MemoObject objectId="cup" isAr={isAr} size="sm" />
-        </div>
-        <div className="ct-ms-tut-demo-item">
-          <MemoObject objectId="phone" isAr={isAr} size="sm" />
-        </div>
-        <div className="ct-ms-tut-demo-item ct-ms-tut-demo-item--tap" data-num="3">
-          <MemoObject objectId="book" isAr={isAr} size="sm" />
-        </div>
-        <div className="ct-ms-tut-demo-item">
-          <MemoObject objectId="apple" isAr={isAr} size="sm" />
-        </div>
-      </div>
-    );
-  }
-  if (step === 'foils') {
-    return <MemoObjectRow objectIds={['chair', 'phone', 'apple']} isAr={isAr} size="sm" />;
-  }
-  return <MemoObjectRow objectIds={['ball', 'cup', 'book']} isAr={isAr} size="sm" />;
+  // Sequence is cells 0,1,2 (ball, cup, book).
+  if (step === 'watch') return <DemoGrid lit={[0, 1, 2]} nums={{ 0: '1', 1: '2', 2: '3' }} isAr={isAr} />;
+  if (step === 'recall') return <DemoGrid nums={{ 0: '1', 1: '2', 2: '3' }} isAr={isAr} />;
+  if (step === 'reverse') return <DemoGrid nums={{ 0: '3', 1: '2', 2: '1' }} isAr={isAr} />;
+  return <DemoGrid nums={{ 0: '1', 1: '2', 2: '3' }} isAr={isAr} />;
 }
 
 export default function MemoSpanTutorial({ kind, isAr, onClose, playSfx }) {

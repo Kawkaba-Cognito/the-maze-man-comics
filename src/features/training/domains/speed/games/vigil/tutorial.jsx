@@ -61,9 +61,9 @@ const STR = {
         body: 'Read the task card every block. Tap targets only. Stay steady.',
       },
     },
-    free: 'Free mode: one session timer for the whole run. Clear blocks to earn bonus time and score. Three false taps end the run.',
+    free: 'Free mode: endless blocks that keep getting harder. You have 3 lives — fail a block and you lose one. Clear blocks to score. The run ends only when your lives reach zero.',
     challenge:
-      'Challenge mode: every player gets the same trial sequence. Hand the device around — highest vigil score wins!',
+      'Pass n Play: pick a difficulty, then every player gets the same trial sequence. Hand the device around — highest vigil score wins!',
   },
   ar: {
     skip: 'تخطّي',
@@ -94,9 +94,9 @@ const STR = {
         body: 'اقرأ بطاقة المهمة كل كتلة. اضغط للأهداف فقط. ابقَ مركزاً.',
       },
     },
-    free: 'الوضع الحر: مؤقت واحد لكل المحاولة. أكمل الكتل لربح وقت ونقاط. ثلاث ضغطات خاطئة تنهي المحاولة.',
+    free: 'الوضع الحر: كتل لا تنتهي وتزداد صعوبة. لديك ٣ أرواح — إذا فشلت كتلة تخسر روحاً. أكمل الكتل لجمع النقاط. تنتهي المحاولة فقط عند نفاد الأرواح.',
     challenge:
-      'وضع التحدي: كل اللاعبين يلعبون نفس تسلسل المحاولات. سلّم الجهاز — أعلى درجة يقظة يفوز!',
+      'مرّر والعب: اختر الصعوبة، ثم يحصل كل اللاعبين على نفس تسلسل المحاولات. سلّم الجهاز — أعلى درجة يقظة يفوز!',
   },
 };
 

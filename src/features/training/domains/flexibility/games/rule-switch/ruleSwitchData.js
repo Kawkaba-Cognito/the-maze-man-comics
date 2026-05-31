@@ -9,7 +9,7 @@
  */
 
 export const WCST_RULES = ['color', 'shape', 'count'];
-export const WCST_LEVELS_PER_TIER = 20;
+export const WCST_LEVELS_PER_TIER = 100;
 export const WCST_DIFF_KEYS = ['easy', 'medium', 'hard'];
 export const WCST_PROGRESS_ORDER = ['easy', 'medium', 'hard'];
 
@@ -376,6 +376,39 @@ export function prepareFreeBlock(stage, seed) {
   };
 }
 
+/** Endless cued free run: the rule keeps switching forever; lives govern the end. */
+export const WCST_FREE_LIVES = 3;
+export function prepareFreeRunBlock(seed) {
+  const base = specificationForLevel('medium', 8);
+  const spec = {
+    ...base,
+    streakToSwitch: 5,
+    maxTrials: 1e9,
+    categoriesToComplete: 1e9,
+    ruleSequence: WCST_RULES.slice(0, 3),
+    responseLimitMs: 5000,
+  };
+  return { mode: 'free', diff: 'free', lv: 0, spec, seed: seed >>> 0, session: createWcstSession(seed, spec) };
+}
+/** Points for a correct sort in free mode (streak combo). */
+export function freeSortPoints(streak) {
+  return Math.max(5, Math.round(10 * (1 + Math.min(streak, 15) * 0.08)));
+}
+
+/** One fixed, standardized cued task-switching block for the global assessment. */
+export function prepareAssessBlock(seed) {
+  const base = specificationForLevel('medium', 10);
+  const spec = {
+    ...base,
+    streakToSwitch: 4,
+    maxTrials: 24,
+    categoriesToComplete: 1e9,
+    ruleSequence: WCST_RULES.slice(0, 3),
+    responseLimitMs: 5000,
+  };
+  return { mode: 'assess', diff: 'medium', lv: 0, spec, seed: seed >>> 0, session: createWcstSession(seed, spec) };
+}
+
 export function prepareLevelBlock(diff, lv, seed) {
   const spec = specificationForLevel(diff, lv);
   return {
@@ -388,11 +421,13 @@ export function prepareLevelBlock(diff, lv, seed) {
   };
 }
 
-export function prepareChallengeSeed() {
+export const WCST_PASS_PLAY_LV = { easy: 12, medium: 12, hard: 12 };
+export function prepareChallengeSeed(diff = 'hard') {
   const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-  const { diff, lv } = CHALLENGE_LEVEL;
-  const spec = specificationForLevel(diff, lv);
-  return { seed, spec, diff, lv };
+  const d = WCST_DIFF_KEYS.includes(diff) ? diff : 'hard';
+  const lv = WCST_PASS_PLAY_LV[d] ?? CHALLENGE_LEVEL.lv;
+  const spec = specificationForLevel(d, lv);
+  return { seed, spec, diff: d, lv };
 }
 
 export function prepareChallengeBlock(cSeed) {

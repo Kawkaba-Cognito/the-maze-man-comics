@@ -62,10 +62,10 @@ const STR = {
     bannerCue: 'Tap every tile that matches this.',
     timeLbl: 'Time',
     foundLbl: 'Found',
-    strikesLbl: 'Strikes',
+    strikesLbl: 'Errors',
     main: {
       welcome: {
-        title: 'Focus Quest',
+        title: 'Cancellation',
         body:
           'Tap every tile that matches the shape in the banner. A few short screens — use Next or Skip.',
       },
@@ -87,12 +87,12 @@ const STR = {
       timer: {
         title: 'Time',
         body:
-          'The bar is your countdown. When it is empty, the round ends.',
+          'The bar is your countdown. In Free mode, if it runs out before you clear the board, you lose a life.',
       },
       strikes: {
         title: 'Mistakes',
         body:
-          'Wrong taps add strikes. In Free mode, three strikes end the run.',
+          'Wrong taps cost score and time. In Free mode, too many in one round costs a life — you start with three.',
       },
       ready: {
         title: 'Ready',
@@ -101,8 +101,8 @@ const STR = {
       },
     },
     free:
-      'Free mode: one session timer. Each full clear adds only a little time — the clock should feel tight. Earn score on every correct tap and a bigger chunk when you clear a round; streaks of clears multiply that bonus. Wrong taps cost score & build strikes — three strikes end the run.',
-    challenge: 'Challenge mode: every player faces the EXACT same grid. Hand the device around and compare scores fairly!',
+      'Free mode: endless rounds that keep getting harder. You have 3 lives. Clear every target before the round timer runs out. Run out of time — or make too many wrong taps in a round — and you lose a life. Score on every correct tap and a bigger chunk for a full clear; streaks of clears multiply the bonus. The run ends only when your lives reach zero.',
+    challenge: 'Pass n Play: pick a difficulty, then every player faces the EXACT same board. Hand the device around and compare scores fairly!',
     replayHint: 'Replay tutorial',
   },
   ar: {
@@ -115,10 +115,10 @@ const STR = {
     bannerCue: 'انقر كل مربع يطابق هذا.',
     timeLbl: 'الوقت',
     foundLbl: 'مُوجَد',
-    strikesLbl: 'الأخطاء',
+    strikesLbl: 'أخطاء',
     main: {
       welcome: {
-        title: 'مهمة التركيز',
+        title: 'مهمة الإلغاء',
         body:
           'انقر كل مربع يطابق شكل الشريط في الأعلى. بضع شاشات قصيرة — التالي أو التخطّي.',
       },
@@ -140,12 +140,12 @@ const STR = {
       timer: {
         title: 'الوقت',
         body:
-          'الشريط يعدّ تنازلياً. عندما ينفد تنتهي الجولة.',
+          'الشريط يعدّ تنازلياً. في الوضع الحر، إذا نفد قبل إكمال اللوحة تخسر روحاً.',
       },
       strikes: {
         title: 'الأخطاء',
         body:
-          'النقر الخاطئ يزيد الأخطاء. في الوضع الحر ثلاثة أخطاء تنهي المحاولة.',
+          'النقر الخاطئ يخصم النقاط والوقت. في الوضع الحر، كثرة الأخطاء في جولة واحدة تكلّفك روحاً — تبدأ بثلاث.',
       },
       ready: {
         title: 'جاهز',
@@ -154,8 +154,8 @@ const STR = {
       },
     },
     free:
-      'الوضع الحر: مؤقت واحد للجولة. كل إكمال كامل يضيف وقتاً قليلاً فقط — ابقَ تحت ضغط الوقت. اجمع نقاطاً بكل نقرة صحيحة ومكافأة أكبر عند إكمال الجولة؛ سلسلة إكمالات متتالية تزيد المكافأة. النقر الخاطئ يخصم نقاطاً ويصبح خطأً — ثلاثة أخطاء تنهي المحاولة.',
-    challenge: 'وضع التحدي: كل اللاعبين يلعبون نفس الشبكة بالضبط. سلّم الجهاز للجميع وقارنوا النتائج بإنصاف!',
+      'الوضع الحر: جولات لا تنتهي وتزداد صعوبة. لديك ٣ أرواح. أكمل كل الأهداف قبل نفاد مؤقت الجولة. إذا نفد الوقت — أو أكثرت النقر الخاطئ في الجولة — تخسر روحاً. اجمع النقاط بكل نقرة صحيحة ومكافأة أكبر عند إكمال الجولة؛ السلاسل تضاعف المكافأة. تنتهي المحاولة فقط عند نفاد الأرواح.',
+    challenge: 'مرّر والعب: اختر الصعوبة، ثم يلعب كل اللاعبين نفس اللوحة بالضبط. سلّم الجهاز للجميع وقارنوا النتائج بإنصاف!',
     replayHint: 'إعادة الشرح',
   },
 };
