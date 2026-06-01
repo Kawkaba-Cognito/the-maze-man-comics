@@ -1,256 +1,456 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { tokens } from '../../styles/tokens';
+import { IconBack } from '../../features/training/shared/TrainingIcons';
+import { assetUrl } from '../../lib/assetUrl';
+import { DOMAINS_BY_ID } from '../../features/training/registry';
+import {
+  ASSESS_DOMAINS,
+  loadAssessSessions,
+  loadAssessProfile,
+  scoreBand,
+} from '../../features/training/assessment/assessmentProfile';
+
+/* ─────────────────────────────────────────────────────────────
+ * PROFILE — full-bleed page in the amber/stone "world map" style.
+ * Centrepiece is the 6-domain Cognitive Profile (radar + index)
+ * built from saved assessment sessions, alongside XP / streak /
+ * activity stats, badges and membership.
+ * ──────────────────────────────────────────────────────────── */
 
 const XP_PER_LEVEL = 200;
 const AVATARS = ['🧠', '🕵️', '🦊', '🌀', '🔮', '👁️'];
 
-function getLevel(xp) { return Math.floor(xp / XP_PER_LEVEL) + 1; }
-function xpToNext(xp) { return XP_PER_LEVEL - (xp % XP_PER_LEVEL); }
+const L = {
+  bg: tokens.bg,
+  text: tokens.text,
+  textMuted: tokens.textMuted,
+  amber: tokens.amber,
+  paper: tokens.stone,
+};
 
-function MenuRow({ icon, label, onClick, danger }) {
+const DOMAIN_DISPLAY = {
+  attention:   { en: 'Attention', ar: 'انتباه' },
+  speed:       { en: 'Speed',     ar: 'سرعة' },
+  memory:      { en: 'Memory',    ar: 'ذاكرة' },
+  language:    { en: 'Language',  ar: 'لغة' },
+  reasoning:   { en: 'Logic',     ar: 'تفكير' },
+  flexibility: { en: 'Flex',      ar: 'مرونة' },
+};
+
+const BAND = {
+  high: { col: tokens.runeSage, en: 'Strong', ar: 'قوي' },
+  mid:  { col: tokens.amber,    en: 'Steady', ar: 'متوسط' },
+  low:  { col: '#d4694a',       en: 'Growing', ar: 'ينمو' },
+};
+
+const getLevel = (xp) => Math.floor(xp / XP_PER_LEVEL) + 1;
+const xpToNext = (xp) => XP_PER_LEVEL - (xp % XP_PER_LEVEL);
+
+/* ── Shared bits ──────────────────────────────────────────── */
+
+function AtmosphericBg() {
+  const isDesktop = typeof window !== 'undefined' && window.matchMedia?.('(min-width: 768px)').matches;
+  const bgUrl = isDesktop ? assetUrl('Assets/bg-training-desktop.png') : assetUrl('Assets/bg-training-mobile.png');
   return (
-    <button onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', gap: 14, width: '100%',
-      background: danger ? 'rgba(220,50,50,0.08)' : 'rgba(255,255,255,0.06)',
-      border: `2px solid ${danger ? 'rgba(220,50,50,0.5)' : '#000'}`,
-      borderRadius: 12, padding: '13px 16px',
-      cursor: 'pointer', textAlign: 'left',
-      boxShadow: danger ? 'none' : '3px 3px 0 #000',
-      transition: 'transform 0.1s',
-    }}>
-      <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
-      <span style={{
-        fontFamily: "'Bangers', cursive", fontSize: '1.15em', letterSpacing: '1.5px',
-        color: danger ? '#ff6b6b' : '#fff',
-        textShadow: danger ? 'none' : '2px 2px 0 #000',
-        flex: 1,
-      }}>{label}</span>
-      <span style={{ color: danger ? '#ff6b6b' : 'rgba(255,255,255,0.4)', fontSize: 18 }}>›</span>
-    </button>
+    <>
+      <div style={{
+        position: 'absolute', inset: 0, backgroundColor: L.bg,
+        backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover',
+        backgroundPosition: isDesktop ? 'center center' : 'center top',
+        zIndex: 0, pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(180deg, rgba(5,5,15,0.55) 0%, rgba(10,4,30,0.45) 42%, rgba(5,5,15,0.7) 100%)',
+        zIndex: 1, pointerEvents: 'none',
+      }} />
+    </>
   );
 }
 
-function Modal({ title, onClose, children }) {
+function chromeBtn() {
+  return {
+    width: 34, height: 34, borderRadius: 6, border: '1.5px solid #9a6828',
+    background: 'linear-gradient(170deg, #3e1a06 0%, #5e2a0c 50%, #3e1a06 100%)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: L.text, cursor: 'pointer',
+    boxShadow: 'inset 0 1px 0 rgba(220,170,70,0.35), inset 0 -1px 0 rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.6)',
+  };
+}
+
+function SectionDivider({ label }) {
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
-      zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 20,
-    }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: '#1a0b2e', border: '4px solid #ffe66d',
-        borderRadius: 16, padding: '24px 20px', width: '100%', maxWidth: 420,
-        boxShadow: '8px 8px 0 #000', maxHeight: '80vh', overflowY: 'auto',
-      }}>
-        <div style={{
-          fontFamily: "'Bangers', cursive", fontSize: '1.6em', letterSpacing: 2,
-          color: '#ffe66d', textShadow: '2px 2px 0 #000', marginBottom: 16,
-        }}>{title}</div>
-        {children}
-        <button onClick={onClose} style={{
-          marginTop: 20, width: '100%', fontFamily: "'Bangers', cursive",
-          fontSize: '1.1em', letterSpacing: 2, background: '#ffe66d',
-          border: '3px solid #000', borderRadius: 10, padding: '10px',
-          cursor: 'pointer', boxShadow: '3px 3px 0 #000',
-        }}>CLOSE</button>
-      </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px 12px' }}>
+      <div style={{ flex: 1, height: 1, background: 'rgba(232,172,78,0.28)' }} />
+      <div style={{ fontSize: 10, letterSpacing: 3, color: L.amber, fontWeight: 800, textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ flex: 1, height: 1, background: 'rgba(232,172,78,0.28)' }} />
     </div>
   );
 }
 
-const MODAL_CONTENT = {
-  settings: {
-    title: '⚙ SETTINGS',
-    body: (
-      <div style={{ color: '#ccc', fontSize: 14, lineHeight: 1.7 }}>
-        <p style={{ color: '#ffe66d', fontFamily: "'Bangers'", fontSize: 16, letterSpacing: 1, marginBottom: 8 }}>COMING SOON</p>
-        <p>Full settings (notifications, sound, theme, language) will be available once your account is connected. Language can be toggled from the top bar.</p>
-      </div>
-    ),
-  },
-  terms: {
-    title: '📄 TERMS OF USE',
-    body: (
-      <div style={{ color: '#ccc', fontSize: 13, lineHeight: 1.8 }}>
-        <p style={{ marginBottom: 10 }}>By using The Maze Man, you agree to use the app for personal, non-commercial purposes only.</p>
-        <p style={{ marginBottom: 10 }}>You may not reproduce, distribute, or reverse-engineer any part of the app without written permission.</p>
-        <p style={{ marginBottom: 10 }}>Content in this app is for educational and entertainment purposes. It does not constitute medical or psychological advice.</p>
-        <p style={{ marginBottom: 10 }}>We reserve the right to update these terms. Continued use of the app means you accept the updated terms.</p>
-        <p style={{ color: '#9c9', fontSize: 12 }}>Last updated: May 2026</p>
-      </div>
-    ),
-  },
-  privacy: {
-    title: '🔒 PRIVACY POLICY',
-    body: (
-      <div style={{ color: '#ccc', fontSize: 13, lineHeight: 1.8 }}>
-        <p style={{ marginBottom: 10 }}>We collect only the data you provide: username, avatar, XP progress, and comics read. No personal data is sold to third parties.</p>
-        <p style={{ marginBottom: 10 }}>Progress data is stored locally on your device. Cloud sync (when available) will use Supabase with row-level security — your data is accessible only to you.</p>
-        <p style={{ marginBottom: 10 }}>We may use anonymized, aggregated analytics to improve the app experience.</p>
-        <p style={{ marginBottom: 10 }}>You can request deletion of your data at any time via the Delete Account option.</p>
-        <p style={{ color: '#9c9', fontSize: 12 }}>Last updated: May 2026</p>
-      </div>
-    ),
-  },
-  help: {
-    title: '❓ HELP',
-    body: (
-      <div style={{ color: '#ccc', fontSize: 13, lineHeight: 1.8 }}>
-        <p style={{ color: '#ffe66d', fontFamily: "'Bangers'", fontSize: 15, letterSpacing: 1, marginBottom: 6 }}>HOW TO PLAY</p>
-        <p style={{ marginBottom: 10 }}>Navigate the home screen by tapping the door signs to reach different sections. Enter the 3D maze from the center door.</p>
-        <p style={{ color: '#ffe66d', fontFamily: "'Bangers'", fontSize: 15, letterSpacing: 1, marginBottom: 6 }}>EARNING XP</p>
-        <p style={{ marginBottom: 10 }}>Read comics, watch videos, and solve puzzles to earn XP and level up.</p>
-        <p style={{ color: '#ffe66d', fontFamily: "'Bangers'", fontSize: 15, letterSpacing: 1, marginBottom: 6 }}>CONTACT</p>
-        <p>For support: <span style={{ color: '#ffe66d' }}>support@mazeman.app</span></p>
-      </div>
-    ),
-  },
-  export: {
-    title: '📤 DATA EXPORT',
-    body: (
-      <div style={{ color: '#ccc', fontSize: 13, lineHeight: 1.8 }}>
-        <p style={{ color: '#ffe66d', fontFamily: "'Bangers'", fontSize: 15, letterSpacing: 1, marginBottom: 8 }}>YOUR DATA</p>
-        <p style={{ marginBottom: 10 }}>Full data export will be available once cloud sync is enabled. Your current local data includes:</p>
-        <ul style={{ paddingLeft: 18, marginBottom: 10 }}>
-          <li>Username &amp; avatar</li>
-          <li>XP &amp; level</li>
-          <li>Comics read count</li>
-          <li>Streak &amp; puzzle stats</li>
-        </ul>
-        <p style={{ color: '#9c9', fontSize: 12 }}>Cloud export coming with Supabase integration.</p>
-      </div>
-    ),
-  },
-  feedback: {
-    title: '💬 YOUR FEEDBACK',
-    body: (
-      <div style={{ color: '#ccc', fontSize: 13, lineHeight: 1.8 }}>
-        <p style={{ marginBottom: 12 }}>We'd love to hear what you think about The Maze Man!</p>
-        <textarea placeholder="Tell us what you love, what's missing, or what confused you..." style={{
-          width: '100%', minHeight: 100, background: 'rgba(255,255,255,0.07)',
-          border: '2px solid #ffe66d55', borderRadius: 10, padding: 12,
-          color: '#fff', fontSize: 13, resize: 'vertical', fontFamily: 'Comic Neue, sans-serif',
-        }}/>
-        <button style={{
-          marginTop: 12, width: '100%', fontFamily: "'Bangers', cursive",
-          fontSize: '1.1em', letterSpacing: 2, background: '#4ecdc4',
-          border: '3px solid #000', borderRadius: 10, padding: '10px',
-          cursor: 'pointer', boxShadow: '3px 3px 0 #000',
-        }} onClick={() => alert('Thank you! Feedback submission coming soon.')}>
-          SEND FEEDBACK
-        </button>
-      </div>
-    ),
-  },
+const stoneCard = {
+  background: 'linear-gradient(180deg, rgba(31,22,12,0.92) 0%, rgba(21,14,8,0.92) 100%)',
+  border: '1px solid rgba(232,172,78,0.22)',
+  borderRadius: 14,
+  boxShadow: '0 8px 30px rgba(0,0,0,0.45)',
 };
 
+/* ── Cognitive radar ──────────────────────────────────────── */
+
+const R = 96, CX = 150, CY = 142;
+const axisPt = (i, frac) => {
+  const ang = ((-90 + i * 60) * Math.PI) / 180;
+  return [CX + Math.cos(ang) * R * frac, CY + Math.sin(ang) * R * frac];
+};
+
+function CognitiveRadar({ scores, index, isAr }) {
+  const rings = [0.25, 0.5, 0.75, 1];
+  const hasData = index != null;
+  const polyPoints = ASSESS_DOMAINS
+    .map((d, i) => axisPt(i, Math.max(0, Math.min(100, scores[d] ?? 0)) / 100))
+    .map((p) => p.join(','))
+    .join(' ');
+
+  return (
+    <svg width="100%" viewBox="0 0 300 300" style={{ display: 'block', maxWidth: 320, margin: '0 auto' }}>
+      {/* grid rings */}
+      {rings.map((f, ri) => (
+        <polygon
+          key={ri}
+          points={ASSESS_DOMAINS.map((_, i) => axisPt(i, f).join(',')).join(' ')}
+          fill="none"
+          stroke="rgba(232,172,78,0.16)"
+          strokeWidth="1"
+        />
+      ))}
+      {/* spokes */}
+      {ASSESS_DOMAINS.map((d, i) => {
+        const [x, y] = axisPt(i, 1);
+        return <line key={d} x1={CX} y1={CY} x2={x} y2={y} stroke="rgba(232,172,78,0.16)" strokeWidth="1" />;
+      })}
+
+      {/* score polygon */}
+      {hasData && (
+        <>
+          <polygon points={polyPoints} fill="rgba(232,172,78,0.22)" stroke={L.amber} strokeWidth="1.8" strokeLinejoin="round" />
+          {ASSESS_DOMAINS.map((d, i) => {
+            const [x, y] = axisPt(i, Math.max(0, Math.min(100, scores[d] ?? 0)) / 100);
+            const col = DOMAINS_BY_ID[d]?.color ?? L.amber;
+            return <circle key={d} cx={x} cy={y} r="3.4" fill={col} stroke="#150e08" strokeWidth="1" />;
+          })}
+        </>
+      )}
+
+      {/* axis labels */}
+      {ASSESS_DOMAINS.map((d, i) => {
+        const ang = ((-90 + i * 60) * Math.PI) / 180;
+        const lx = CX + Math.cos(ang) * (R + 24);
+        const ly = CY + Math.sin(ang) * (R + 24);
+        const cos = Math.cos(ang);
+        const anchor = cos > 0.3 ? 'start' : cos < -0.3 ? 'end' : 'middle';
+        const col = DOMAINS_BY_ID[d]?.color ?? L.amber;
+        return (
+          <text
+            key={d}
+            x={lx}
+            y={ly + 3}
+            textAnchor={anchor}
+            fill={col}
+            style={{ fontSize: 11, fontWeight: 700, fontFamily: isAr ? "'Cairo',sans-serif" : "'Nunito',sans-serif" }}
+          >
+            {isAr ? DOMAIN_DISPLAY[d].ar : DOMAIN_DISPLAY[d].en}
+          </text>
+        );
+      })}
+
+      {/* centre index */}
+      <text x={CX} y={CY - 4} textAnchor="middle" fill={hasData ? '#fff' : L.textMuted}
+        style={{ fontSize: 34, fontWeight: 400, fontFamily: "'Fredoka One', cursive" }}>
+        {hasData ? index : '—'}
+      </text>
+      <text x={CX} y={CY + 14} textAnchor="middle" fill={L.textMuted}
+        style={{ fontSize: 8.5, letterSpacing: 2, fontWeight: 800, fontFamily: "'Nunito',sans-serif" }}>
+        {isAr ? 'المؤشر' : 'INDEX'}
+      </text>
+    </svg>
+  );
+}
+
+/* ── Component ────────────────────────────────────────────── */
+
 export default function ProfileScreen() {
-  const { globalXP, profileData, setProfileData, saveProfile, playSfx, openPaywall } = useApp();
-  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const [activeModal, setActiveModal] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const { globalXP, profileData, setProfileData, saveProfile, playSfx, switchTab, toggleLang, currentLang, openPaywall } = useApp();
+  const isAr = currentLang === 'ar';
+  const [showPicker, setShowPicker] = useState(false);
 
   const lv = getLevel(globalXP);
   const pct = Math.min(100, ((globalXP % XP_PER_LEVEL) / XP_PER_LEVEL) * 100);
+
+  const sessions = loadAssessSessions();
+  const latest = sessions.length ? sessions[sessions.length - 1] : null;
+  const prev = sessions.length > 1 ? sessions[sessions.length - 2] : null;
+  const scores = latest?.scores ?? {};
+  const index = latest?.overall ?? null;
+  const trend = latest && prev && latest.overall != null && prev.overall != null ? latest.overall - prev.overall : null;
+  const assessProfile = loadAssessProfile();
+
+  const lastDate = latest ? new Date(latest.ts).toLocaleDateString(isAr ? 'ar' : 'en', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
 
   function setAvatar(emoji) {
     playSfx('click');
     const updated = { ...profileData, avatar: emoji };
     setProfileData(updated);
     saveProfile(updated, globalXP);
+    setShowPicker(false);
   }
 
-  function openModal(key) { playSfx('click'); setActiveModal(key); }
-  function closeModal() { setActiveModal(null); setDeleteConfirm(false); }
-
   const badges = [
-    { id: 'explorer', icon: '🗺️', name: 'EXPLORER',    unlocked: globalXP >= 50 },
-    { id: 'maze',     icon: '🌀', name: 'MAZE RUNNER', unlocked: globalXP >= 100 },
-    { id: 'master',   icon: '🧠', name: 'MIND MASTER', unlocked: globalXP >= 300 },
+    { id: 'explorer', icon: '🗺️', en: 'Explorer', ar: 'مستكشف', unlocked: globalXP >= 50 },
+    { id: 'maze', icon: '🌀', en: 'Maze Runner', ar: 'عدّاء المتاهة', unlocked: globalXP >= 100 },
+    { id: 'master', icon: '🧠', en: 'Mind Master', ar: 'سيّد العقل', unlocked: globalXP >= 300 },
+    { id: 'assessed', icon: '📡', en: 'Assessed', ar: 'تم التقييم', unlocked: !!latest },
   ];
 
-  const modal = activeModal && MODAL_CONTENT[activeModal];
+  const statCells = [
+    { glyph: '🔥', val: profileData.streak ?? 0, label: isAr ? 'سلسلة' : 'streak', accent: true },
+    { glyph: '★', val: lv, label: isAr ? 'مستوى' : 'level', accent: true },
+    { glyph: '⚡', val: globalXP, label: isAr ? 'نقاط' : 'xp' },
+    { glyph: '◆', val: Math.floor(globalXP / 10), label: isAr ? 'شظايا' : 'shards' },
+  ];
+
+  const activity = [
+    { val: sessions.length, label: isAr ? 'تدريب' : 'training' },
+    { val: profileData.puzzlesSolved || 0, label: isAr ? 'ألغاز' : 'puzzles' },
+  ];
 
   return (
-    <div>
-      <div className="profile-top">
-        <div className="profile-avatar-ring" onClick={() => setShowAvatarPicker(v => !v)}>
-          {profileData.avatar}
-          <div className="profile-level-badge">LVL {lv}</div>
+    <div style={{
+      position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden',
+      background: L.bg, color: L.text, fontFamily: 'Inter, system-ui, sans-serif', isolation: 'isolate',
+    }}>
+      <div style={{ position: 'relative', minHeight: '100%', paddingBottom: 40 }}>
+        <AtmosphericBg />
+
+        {/* Top bar */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '64px 18px 8px', position: 'relative', zIndex: 5,
+        }}>
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+            <button type="button" style={chromeBtn()} onClick={() => { playSfx('click'); switchTab('home'); }} aria-label={isAr ? 'رجوع' : 'Back'}>
+              <IconBack size={18} c={L.text} />
+            </button>
+          </div>
+          <div style={{
+            textAlign: 'center',
+            fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
+            fontSize: isAr ? 26 : 32, fontWeight: isAr ? 900 : 400,
+            letterSpacing: isAr ? 0 : 3, color: '#f0e2c0', textTransform: 'uppercase', lineHeight: 1.05,
+            textShadow: '0 1px 0 rgba(255,220,120,0.45), 0 -1px 0 rgba(0,0,0,0.9), 0 0 18px rgba(232,172,78,0.55)',
+          }}>
+            {isAr ? 'الملف' : 'Profile'}
+          </div>
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+            <button type="button" style={{
+              ...chromeBtn(), width: 'auto', padding: '0 12px',
+              fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
+              fontWeight: 700, fontSize: isAr ? 13 : 14, letterSpacing: isAr ? 0 : 2, color: L.amber,
+            }} onClick={() => { playSfx('click'); toggleLang(); }}>
+              {isAr ? 'EN' : 'عر'}
+            </button>
+          </div>
         </div>
-        {showAvatarPicker && (
-          <div className="avatar-picker">
-            {AVATARS.map(e => (
-              <span key={e} className={`avatar-opt ${profileData.avatar === e ? 'selected' : ''}`} onClick={() => setAvatar(e)}>{e}</span>
+
+        <div style={{ position: 'relative', zIndex: 4, maxWidth: 460, margin: '0 auto', padding: '0 16px' }}>
+
+          {/* Identity */}
+          <div style={{ textAlign: 'center', paddingTop: 8 }}>
+            <button type="button" onClick={() => { playSfx('click'); setShowPicker((v) => !v); }} style={{
+              position: 'relative', width: 96, height: 96, borderRadius: '50%', cursor: 'pointer',
+              border: '2px solid rgba(232,172,78,0.6)', background: 'radial-gradient(circle at 50% 35%, rgba(232,172,78,0.22), rgba(20,12,6,0.9))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 46, margin: '0 auto',
+              boxShadow: '0 0 26px rgba(232,172,78,0.35), inset 0 2px 6px rgba(0,0,0,0.5)',
+            }}>
+              {profileData.avatar}
+              <span style={{
+                position: 'absolute', bottom: -8, left: '50%', transform: 'translateX(-50%)',
+                background: 'linear-gradient(170deg, #5e2a0c, #3e1a06)', border: '1.5px solid #9a6828',
+                color: L.amber, fontFamily: "'Bangers', cursive", fontSize: 12, letterSpacing: 1,
+                padding: '2px 10px', borderRadius: 20, whiteSpace: 'nowrap',
+              }}>{isAr ? `مستوى ${lv}` : `LVL ${lv}`}</span>
+            </button>
+
+            {showPicker && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
+                {AVATARS.map((e) => (
+                  <button key={e} type="button" onClick={() => setAvatar(e)} style={{
+                    fontSize: 24, width: 44, height: 44, borderRadius: 10, cursor: 'pointer',
+                    background: profileData.avatar === e ? 'rgba(232,172,78,0.2)' : 'rgba(255,255,255,0.04)',
+                    border: `1.5px solid ${profileData.avatar === e ? L.amber : 'rgba(232,172,78,0.25)'}`,
+                  }}>{e}</button>
+                ))}
+              </div>
+            )}
+
+            <div style={{
+              marginTop: 18, fontFamily: isAr ? "'Cairo',sans-serif" : "'Fredoka One', cursive",
+              fontSize: 22, fontWeight: isAr ? 900 : 400, color: '#fff',
+            }}>{profileData.username}</div>
+            {assessProfile.age != null && (
+              <div style={{ fontSize: 11, color: L.textMuted, marginTop: 2 }}>
+                {isAr ? `العمر ${assessProfile.age}` : `Age ${assessProfile.age}`}
+              </div>
+            )}
+
+            {/* XP bar */}
+            <div style={{ maxWidth: 300, margin: '14px auto 0' }}>
+              <div style={{ height: 8, borderRadius: 6, background: 'rgba(0,0,0,0.5)', boxShadow: 'inset 0 0 0 1px rgba(232,172,78,0.25)', overflow: 'hidden' }}>
+                <div style={{ width: `${Math.max(4, pct)}%`, height: '100%', background: `linear-gradient(90deg, ${L.amber}, #ffd47e)`, boxShadow: '0 0 10px rgba(232,172,78,0.7)' }} />
+              </div>
+              <div style={{ fontSize: 10.5, color: L.textMuted, marginTop: 6, letterSpacing: 0.5 }}>
+                {globalXP % XP_PER_LEVEL} / {XP_PER_LEVEL} XP · {xpToNext(globalXP)} {isAr ? `للمستوى ${lv + 1}` : `to level ${lv + 1}`}
+              </div>
+            </div>
+          </div>
+
+          {/* Stat scroll */}
+          <div style={{
+            display: 'flex', alignItems: 'stretch', gap: 8, padding: '12px 10px', borderRadius: 8, marginTop: 22,
+            background: 'linear-gradient(170deg, #3e1a06 0%, #5e2a0c 50%, #3e1a06 100%)',
+            border: '1.5px solid #9a6828',
+            boxShadow: 'inset 0 1px 0 rgba(220,170,70,0.35), inset 0 -1px 0 rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.6)',
+          }}>
+            {statCells.map((s, i) => (
+              <React.Fragment key={s.label}>
+                {i > 0 && <div style={{ width: 2, background: 'rgba(220,170,70,0.28)', borderRadius: 1 }} />}
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ fontFamily: "'Fredoka One', sans-serif", fontSize: 16, color: s.accent ? L.amber : L.text, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, lineHeight: 1 }}>
+                    <span style={{ fontSize: 12, opacity: 0.85 }}>{s.glyph}</span>{s.val}
+                  </div>
+                  <div style={{ fontSize: 8, color: L.textMuted, letterSpacing: 1.3, marginTop: 4, textTransform: 'uppercase', fontWeight: 800 }}>{s.label}</div>
+                </div>
+              </React.Fragment>
             ))}
           </div>
-        )}
-        <div className="profile-username">{profileData.username}</div>
-        <div className="xp-bar-wrap" style={{maxWidth:'320px'}}>
-          <div className="xp-bar-fill" style={{width: Math.max(5, pct) + '%'}}></div>
-          <span className="xp-bar-label">{globalXP % XP_PER_LEVEL} / {XP_PER_LEVEL} XP</span>
-        </div>
-        <div className="xp-subtext">{xpToNext(globalXP)} XP to Level {lv + 1}</div>
-      </div>
 
-      <div className="streak-card">
-        <div style={{fontSize:'2.5em'}}>🔥</div>
-        <div className="streak-info">
-          <div className="streak-title">DAILY STREAK</div>
-          <div className="streak-num">{profileData.streak}</div>
-          <div className="streak-sub">Day{profileData.streak !== 1 ? 's' : ''} in a row!</div>
-        </div>
-        <div style={{textAlign:'right'}}>
-          <div style={{fontSize:'1.8em'}}>⚡</div>
-          <div style={{fontFamily:"'Bangers'",fontSize:'1.1em',color:'#000'}}>{globalXP} XP</div>
-        </div>
-      </div>
+          {/* Cognitive profile */}
+          <div style={{ marginTop: 28 }}>
+            <SectionDivider label={isAr ? 'الملف الإدراكي' : 'Cognitive Profile'} />
+            <div style={{ ...stoneCard, padding: '14px 14px 18px' }}>
+              <CognitiveRadar scores={scores} index={index} isAr={isAr} />
 
-      <div className="section-heading">📊 STATS</div>
-      <div className="profile-stats">
-        <div className="stat-box"><div className="stat-num">{profileData.videosWatched || 0}</div><div className="stat-label">VIDEOS WATCHED</div></div>
-        <div className="stat-box"><div className="stat-num">{Math.floor(globalXP / 10)}</div><div className="stat-label">FRAGMENTS</div></div>
-        <div className="stat-box"><div className="stat-num">{profileData.puzzlesSolved || 0}</div><div className="stat-label">PUZZLES SOLVED</div></div>
-      </div>
-
-      <div className="section-heading">🏅 BADGES</div>
-      <div className="badges-grid">
-        {badges.map(b => (
-          <div key={b.id} className={`badge-item ${b.unlocked ? '' : 'locked'}`}>
-            <span className="badge-icon">{b.icon}</span>
-            <div className="badge-name">{b.name}</div>
+              {latest ? (
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                    {ASSESS_DOMAINS.map((d) => {
+                      const v = scores[d];
+                      const has = typeof v === 'number';
+                      const band = BAND[scoreBand(v)];
+                      const col = DOMAINS_BY_ID[d]?.color ?? L.amber;
+                      return (
+                        <div key={d} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{
+                            width: 24, height: 24, borderRadius: 7, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: `${col}22`, border: `1px solid ${col}66`, color: col, fontSize: 13, fontWeight: 700,
+                          }}>{DOMAINS_BY_ID[d]?.glyph ?? '•'}</span>
+                          <span style={{ width: 78, flexShrink: 0, fontSize: 12, color: L.text, fontFamily: isAr ? "'Cairo',sans-serif" : 'inherit' }}>
+                            {isAr ? DOMAIN_DISPLAY[d].ar : DOMAIN_DISPLAY[d].en}
+                          </span>
+                          <span style={{ flex: 1, height: 6, borderRadius: 4, background: 'rgba(0,0,0,0.45)', overflow: 'hidden' }}>
+                            <span style={{ display: 'block', width: `${has ? v : 0}%`, height: '100%', background: col, boxShadow: `0 0 8px ${col}` }} />
+                          </span>
+                          <span style={{ width: 28, textAlign: 'right', fontSize: 12, fontWeight: 700, color: has ? '#fff' : L.textMuted }}>{has ? v : '—'}</span>
+                          <span style={{ width: 52, textAlign: 'right', fontSize: 9, fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', color: has ? band.col : L.textMuted }}>
+                            {has ? (isAr ? band.ar : band.en) : ''}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, fontSize: 10.5, color: L.textMuted }}>
+                    <span>{isAr ? `آخر تقييم · ${lastDate}` : `Last assessed · ${lastDate}`}</span>
+                    {trend != null && trend !== 0 && (
+                      <span style={{ color: trend > 0 ? tokens.runeSage : '#d4694a', fontWeight: 800 }}>
+                        {trend > 0 ? '▲' : '▼'} {Math.abs(trend)}
+                      </span>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '4px 8px 6px' }}>
+                  <div style={{ fontSize: 13, color: L.text, fontWeight: 600, marginBottom: 6 }}>
+                    {isAr ? 'لا يوجد تقييم بعد' : 'No assessment yet'}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: L.textMuted, lineHeight: 1.6, maxWidth: 260, margin: '0 auto' }}>
+                    {isAr
+                      ? 'افتح التدريب وابدأ التقييم لكشف ملفك الإدراكي عبر الميادين الستة.'
+                      : 'Open Training and start the assessment to reveal your six-domain cognitive profile.'}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        ))}
-      </div>
 
-      <div className="section-heading">⭐ MEMBERSHIP</div>
-      <div className="sub-card">
-        <div className="sub-title">FREE EXPLORER</div>
-        <ul className="sub-perks">
-          <li>✅ 4 Free Comic Issues</li>
-          <li>✅ Video Episode 1</li>
-          <li>✅ Maze Game Access</li>
-          <li>🔒 Premium Comics (VOL.05–08)</li>
-          <li>🔒 Exclusive Videos &amp; Interviews</li>
-        </ul>
-        <button className="sub-upgrade-btn" onClick={openPaywall}>⭐ GO PREMIUM — $4.99/mo</button>
-      </div>
+          {/* Activity */}
+          <div style={{ marginTop: 28 }}>
+            <SectionDivider label={isAr ? 'النشاط' : 'Activity'} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+              {activity.map((a) => (
+                <div key={a.label} style={{ ...stoneCard, padding: '14px 8px', textAlign: 'center' }}>
+                  <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: 24, color: L.amber, lineHeight: 1 }}>{a.val}</div>
+                  <div style={{ fontSize: 9, color: L.textMuted, letterSpacing: 1.3, marginTop: 6, textTransform: 'uppercase', fontWeight: 800 }}>{a.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
 
-      {deleteConfirm && (
-        <Modal title="🗑️ DELETE ACCOUNT" onClose={closeModal}>
-          <p style={{ color: '#ccc', fontSize: 13, lineHeight: 1.7, marginBottom: 16 }}>
-            This will permanently delete your profile, XP, and progress. This action cannot be undone.
-          </p>
-          <button onClick={closeModal} style={{
-            width: '100%', fontFamily: "'Bangers', cursive", fontSize: '1.1em',
-            letterSpacing: 2, background: '#ff6b6b', border: '3px solid #000',
-            borderRadius: 10, padding: '10px', cursor: 'pointer',
-            boxShadow: '3px 3px 0 #000', color: '#fff', marginBottom: 10,
-          }} onClick={() => alert('Account deletion will be available once cloud accounts are enabled.')}>
-            YES, DELETE EVERYTHING
-          </button>
-        </Modal>
-      )}
+          {/* Badges */}
+          <div style={{ marginTop: 28 }}>
+            <SectionDivider label={isAr ? 'الأوسمة' : 'Badges'} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+              {badges.map((b) => (
+                <div key={b.id} style={{
+                  ...stoneCard, padding: '12px 4px', textAlign: 'center',
+                  opacity: b.unlocked ? 1 : 0.4, filter: b.unlocked ? 'none' : 'grayscale(1)',
+                }}>
+                  <div style={{ fontSize: 26, lineHeight: 1 }}>{b.unlocked ? b.icon : '🔒'}</div>
+                  <div style={{ fontSize: 8.5, color: L.text, letterSpacing: 0.5, marginTop: 6, fontWeight: 700, fontFamily: isAr ? "'Cairo',sans-serif" : 'inherit' }}>
+                    {isAr ? b.ar : b.en}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Membership */}
+          <div style={{ marginTop: 28 }}>
+            <SectionDivider label={isAr ? 'العضوية' : 'Membership'} />
+            <div style={{ ...stoneCard, padding: 16 }}>
+              <div style={{ fontFamily: isAr ? "'Cairo',sans-serif" : "'Bangers', cursive", fontSize: isAr ? 16 : 18, letterSpacing: isAr ? 0 : 1.5, color: L.amber }}>
+                {isAr ? 'مستكشف مجاني' : 'Free Explorer'}
+              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 16px', fontSize: 12.5, color: L.text, lineHeight: 2 }}>
+                <li>✅ {isAr ? '٤ إصدارات كوميكس مجانية' : '4 free comic issues'}</li>
+                <li>✅ {isAr ? 'الحلقة الأولى' : 'Video episode 1'}</li>
+                <li>✅ {isAr ? 'الوصول للمتاهة' : 'Maze game access'}</li>
+                <li style={{ color: L.textMuted }}>🔒 {isAr ? 'كوميكس مميّزة (٥–٨)' : 'Premium comics (vol. 5–8)'}</li>
+                <li style={{ color: L.textMuted }}>🔒 {isAr ? 'فيديوهات حصرية' : 'Exclusive videos & interviews'}</li>
+              </ul>
+              <button type="button" onClick={openPaywall} style={{
+                width: '100%', padding: '12px', borderRadius: 10, cursor: 'pointer',
+                border: '1.5px solid #9a6828', background: `linear-gradient(170deg, ${L.amber}, #c98a2e)`,
+                color: '#2a1a06', fontFamily: isAr ? "'Cairo',sans-serif" : "'Bangers', cursive",
+                fontSize: isAr ? 14 : 16, letterSpacing: isAr ? 0 : 1.5, fontWeight: isAr ? 800 : 400,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+              }}>
+                ⭐ {isAr ? 'الترقية — $4.99/شهر' : 'Go Premium — $4.99/mo'}
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }

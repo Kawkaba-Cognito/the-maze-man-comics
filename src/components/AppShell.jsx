@@ -48,8 +48,8 @@ export default function AppShell({ onBackToMenu }) {
               {isAr ? '‹ القائمة' : '‹ MENU'}
             </button>
           )}
-          {/* Lang toggle hidden on comics/training (it has its own) */}
-          {activeTab !== 'comics' && activeTab !== 'puzzles' && (
+          {/* Lang toggle hidden on screens that render their own chrome */}
+          {activeTab !== 'comics' && activeTab !== 'puzzles' && activeTab !== 'profile' && (
             <button
               id="lang-btn"
               onClick={toggleLang}
@@ -60,8 +60,8 @@ export default function AppShell({ onBackToMenu }) {
           )}
         </div>
 
-        {/* Back button — visible on non-home screens except comics (training has its own) */}
-        {!isHome && activeTab !== 'comics' && activeTab !== 'puzzles' && (
+        {/* Back button — visible on non-home screens that don't render their own chrome */}
+        {!isHome && activeTab !== 'comics' && activeTab !== 'puzzles' && activeTab !== 'profile' && (
           <button className="back-btn" onClick={() => switchTab('home')}>
             ‹ {isAr ? 'رجوع' : 'BACK'}
           </button>
