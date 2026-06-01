@@ -1,6 +1,6 @@
-const KEY = 'mm_wcst_profile_v1';
+const KEY = 'mm_stroop_profile_v1';
 
-export function loadWcstProfile() {
+export function loadStroopProfile() {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
@@ -18,7 +18,7 @@ export function loadWcstProfile() {
   return { tel: [], done: {}, bestFree: 0, bestStages: 0 };
 }
 
-export function saveWcstProfile(profile) {
+export function saveStroopProfile(profile) {
   try {
     localStorage.setItem(KEY, JSON.stringify(profile));
   } catch {

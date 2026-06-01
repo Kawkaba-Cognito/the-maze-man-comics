@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
   TrainingMenuBar,
@@ -7,8 +7,13 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
+import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import { useJuice } from '../../../../shared/juice/useJuice';
+import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
+import { useCoach } from '../../../../shared/coach/useCoach';
+import CoachOverlay from '../../../../shared/coach/CoachOverlay';
 import WordleModes from './WordleModes';
-import WordleTutorial, { buildTutorialQueueFor, markTutorialSeen } from './tutorial';
+import { buildWordleCoachSteps } from './tutorialScript';
 import LetterLinkBoard from './LetterLinkBoard';
 import WordleLiveHud from './WordleLiveHud';
 import {
@@ -263,8 +268,15 @@ export default function WordleGame({ onBack, assessmentMode = false, onAssessmen
   const chalRoundsTotalRef = useRef(1);
   const chalCycleRef = useRef(0);
 
-  const [tutorialQueue, setTutorialQueue] = useState([]);
-  const pendingTutorialActionRef = useRef(null);
+  const juice = useJuice();
+  const [coachActive, setCoachActive] = useState(false);
+  const coachActiveRef = useRef(false);
+  const coachRef = useRef(null);
+  const pendingAfterCoachRef = useRef(null);
+  const boardRef = useRef(null);
+  useEffect(() => {
+    coachActiveRef.current = coachActive;
+  }, [coachActive]);
   const pauseRef = useRef(false);
 
   const doneMap = profile.done || {};
@@ -466,6 +478,12 @@ export default function WordleGame({ onBack, assessmentMode = false, onAssessmen
     setMsg(t.found(out.word, out.pts));
     setRound({ ...r });
 
+    if (r.mode === 'tutorial') {
+      juice.celebrate();
+      coachRef.current?.notify('word');
+      return;
+    }
+
     if (r.mode === 'free') {
       freeWordsRef.current += 1;
       freeStreakRef.current += 1;
@@ -498,6 +516,7 @@ export default function WordleGame({ onBack, assessmentMode = false, onAssessmen
 
   useEffect(() => {
     if (phase !== 'play' || !round) return undefined;
+    if (coachActiveRef.current) return undefined; // tutorial: no timer
     startRoundTimer();
     return () => stopRoundTimer();
   }, [phase, round?.seed, round?.mode, startRoundTimer, stopRoundTimer]);
@@ -517,42 +536,58 @@ export default function WordleGame({ onBack, assessmentMode = false, onAssessmen
     [],
   );
 
-  const gateWithTutorial = useCallback((action, modeKind) => {
-    const q = buildTutorialQueueFor(modeKind);
-    if (q.length === 0) {
-      action();
-      return;
+  /* --- Coached interactive tutorial --- */
+  const beginTutorial = useCallback(() => {
+    const seed = 0x5eed >>> 0;
+    const r = { ...prepareLevelRound('easy', 1, seed, lang), mode: 'tutorial' };
+    juice.reset();
+    beginRound(r);
+  }, [beginRound, lang, juice]);
+
+  const finishCoach = useCallback(() => {
+    try {
+      localStorage.setItem('mm_wordle_coach_seen', '1');
+    } catch {
+      /* ignore */
     }
-    pendingTutorialActionRef.current = action;
-    setTutorialQueue(q);
-  }, []);
+    setCoachActive(false);
+    coachActiveRef.current = false;
+    clearPlay();
+    const fn = pendingAfterCoachRef.current;
+    pendingAfterCoachRef.current = null;
+    if (fn) fn();
+    else setPhase('hub');
+  }, [clearPlay]);
 
-  const advanceTutorial = useCallback(() => {
-    setTutorialQueue((prev) => {
-      const finished = prev[0];
-      if (finished) {
-        const sk =
-          finished.kind === 'main'
-            ? 'main'
-            : finished.kind === 'free-tip'
-              ? 'free'
-              : 'challenge';
-        markTutorialSeen(sk);
-      }
-      const remaining = prev.slice(1);
-      if (remaining.length === 0 && pendingTutorialActionRef.current) {
-        const action = pendingTutorialActionRef.current;
-        pendingTutorialActionRef.current = null;
-        queueMicrotask(action);
-      }
-      return remaining;
-    });
-  }, []);
+  const coachSteps = useMemo(() => buildWordleCoachSteps(isAr, { boardRef }), [isAr]);
+  const coach = useCoach(coachSteps, { active: coachActive, onDone: finishCoach });
+  useEffect(() => {
+    coachRef.current = coach;
+  }, [coach]);
 
-  const replayTutorial = useCallback(() => {
-    pendingTutorialActionRef.current = null;
-    setTutorialQueue([{ kind: 'main' }]);
-  }, []);
+  const startCoach = useCallback(
+    (thenFn) => {
+      pendingAfterCoachRef.current = thenFn || null;
+      coachActiveRef.current = true;
+      setCoachActive(true);
+      beginTutorial();
+    },
+    [beginTutorial],
+  );
+  const maybeCoach = useCallback(
+    (fn) => {
+      let seen = false;
+      try {
+        seen = !!localStorage.getItem('mm_wordle_coach_seen');
+      } catch {
+        /* ignore */
+      }
+      if (seen) fn();
+      else startCoach(fn);
+    },
+    [startCoach],
+  );
+  const replayTutorial = useCallback(() => startCoach(null), [startCoach]);
 
   const confirmQuit = useCallback(() => {
     const mode = roundRef.current?.mode;
@@ -661,12 +696,14 @@ export default function WordleGame({ onBack, assessmentMode = false, onAssessmen
 
   return (
     <div className="cancellation-task-game ct-fq-root ct-wordle-root" dir={isAr ? 'rtl' : 'ltr'}>
-      {tutorialQueue[0] && (
-        <WordleTutorial
-          kind={tutorialQueue[0].kind}
+      {coachActive && coach.step && (
+        <CoachOverlay
+          step={coach.step}
+          index={coach.index}
+          total={coach.total}
+          onNext={coach.next}
+          onSkip={coach.skip}
           isAr={isAr}
-          playSfx={playSfx}
-          onClose={advanceTutorial}
         />
       )}
 
@@ -702,13 +739,9 @@ export default function WordleGame({ onBack, assessmentMode = false, onAssessmen
               t={t}
               isAr={isAr}
               playSfx={playSfx}
-              onFree={() =>
-                gateWithTutorial(() => setPhase('freeIntro'), 'free')
-              }
-              onLevels={() => gateWithTutorial(() => setPhase('diff'), 'levels')}
-              onChallenge={() =>
-                gateWithTutorial(() => setPhase('chal'), 'challenge')
-              }
+              onFree={() => maybeCoach(() => setPhase('freeIntro'))}
+              onLevels={() => maybeCoach(() => setPhase('diff'))}
+              onChallenge={() => maybeCoach(() => setPhase('chal'))}
             />
           </div>
         </div>
@@ -740,104 +773,42 @@ export default function WordleGame({ onBack, assessmentMode = false, onAssessmen
       )}
 
       {phase === 'diff' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar
-              onBack={() => {
-                clearPlay();
-                setPhase('hub');
-              }}
-              playSfx={playSfx}
-              variant="paper"
-              center={
-                <div style={{ textAlign: 'center' }}>
-                  <div className="ct-fq-training-title ct-fq-training-title-sm">
-                    {t.pickDiff}
-                  </div>
-                </div>
-              }
-            />
-            <div className="ct-fq-diff-body">
-              <p className="ct-fq-sub ct-fq-training-blurb">{t.pickDiffSub}</p>
-              <div className="ct-fq-diff-cards">
-                {WORDLE_DIFF_KEYS.map((k) => {
-                  const m = WORDLE_DM[k];
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training ct-fq-diffcard`}
-                      onClick={() => {
-                        playSfx('click');
-                        setDiffKey(k);
-                        setPhase('levels');
-                      }}
-                    >
-                      <span className="ct-fq-diffcard-main">
-                        <span className="ct-fq-diffcard-label">{m.label}</span>
-                        <span className="ct-fq-diffcard-desc">{t.diffDesc[k]}</span>
-                      </span>
-                      <span className="ct-fq-diffcard-meta">
-                        <span className="ct-fq-diffcard-grid">{m.grid}×{m.grid}</span>
-                        <span className="ct-fq-diffcard-pop">{m.pop}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
+        <TrainingDifficultySelect
+          isAr={isAr}
+          playSfx={playSfx}
+          onBack={() => {
+            clearPlay();
+            setPhase('hub');
+          }}
+          title={t.pickDiff}
+          blurb={t.pickDiffSub}
+          diffKeys={WORDLE_DIFF_KEYS}
+          dm={WORDLE_DM}
+          descs={t.diffDesc}
+          onPick={(k) => {
+            setDiffKey(k);
+            setPhase('levels');
+          }}
+        />
       )}
 
       {phase === 'levels' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar
-              onBack={() => setPhase('diff')}
-              playSfx={playSfx}
-              variant="paper"
-              center={
-                <div style={{ textAlign: 'center' }}>
-                  <div className="ct-fq-training-title ct-fq-training-title-sm">
-                    {WORDLE_DM[diffKey].label}
-                  </div>
-                </div>
-              }
-            />
-            <p className="ct-fq-sub ct-fq-training-blurb">
-              {t.levelsSub(WORDLE_DM[diffKey].pop, WORDLE_DM[diffKey].grid)}
-            </p>
-            <div className="ct-fq-lg ct-fq-lg-training">
-              {Array.from({ length: WORDLE_LEVELS_PER_TIER }, (_, i) => i + 1).map(
-                (lv) => {
-                  const un = isWordleLevelUnlocked(diffKey, lv, doneMap);
-                  const dn = !!doneMap[`${diffKey}-${lv}`];
-                  const spec = specificationForLevel(diffKey, lv);
-                  const cls = `ct-fq-lb ${un ? `ct-${WORDLE_DM[diffKey].lvc}` : 'ct-lvk'}`;
-                  return (
-                    <button
-                      key={lv}
-                      type="button"
-                      className={cls}
-                      disabled={!un}
-                      onClick={() => {
-                        if (!un) return;
-                        playSfx('click');
-                        startLevelGame(diffKey, lv);
-                      }}
-                    >
-                      <span className="ct-ln">{dn ? '✓' : lv}</span>
-                      <span className="ct-ls">
-                        {un ? `${spec.targetWords}w·${spec.timeSec}s` : '🔒'}
-                      </span>
-                    </button>
-                  );
-                },
-              )}
-            </div>
-          </div>
-        </div>
+        <TrainingLevelGrid
+          isAr={isAr}
+          playSfx={playSfx}
+          onBack={() => setPhase('diff')}
+          title={WORDLE_DM[diffKey].label}
+          blurb={t.levelsSub(WORDLE_DM[diffKey].pop, WORDLE_DM[diffKey].grid)}
+          count={WORDLE_LEVELS_PER_TIER}
+          lvc={WORDLE_DM[diffKey].lvc}
+          isUnlocked={(lv) => isWordleLevelUnlocked(diffKey, lv, doneMap)}
+          isDone={(lv) => !!doneMap[`${diffKey}-${lv}`]}
+          sublabel={(lv) => {
+            const spec = specificationForLevel(diffKey, lv);
+            return `${spec.targetWords}w·${spec.timeSec}s`;
+          }}
+          onPick={(lv) => startLevelGame(diffKey, lv)}
+        />
       )}
 
       {phase === 'chal' && (
@@ -1062,32 +1033,44 @@ export default function WordleGame({ onBack, assessmentMode = false, onAssessmen
         <div className="ct-wordle-play-wrap">
           <TrainingPlayHeader
             isAr={isAr}
-            title={playHeaderForRound(round).title}
+            title={round.mode === 'tutorial' ? (isAr ? 'كيفية اللعب' : 'How to play') : playHeaderForRound(round).title}
             subtitle={
-              round.mode === 'free'
-                ? `${Math.ceil(round.timeLeft)}s · ${'♥'.repeat(freeLives)}${'♡'.repeat(Math.max(0, WORDLE_FREE_LIVES - freeLives))} · ${round.found.length}/${round.targetWords} · ${freeScore}`
-                : playHeaderForRound(round).subtitle
+              round.mode === 'tutorial'
+                ? ''
+                : round.mode === 'free'
+                  ? `${Math.ceil(round.timeLeft)}s · ${'♥'.repeat(freeLives)}${'♡'.repeat(Math.max(0, WORDLE_FREE_LIVES - freeLives))} · ${round.found.length}/${round.targetWords} · ${freeScore}`
+                  : playHeaderForRound(round).subtitle
             }
             playSfx={playSfx}
-            onMenu={() => {
+            onMenu={round.mode === 'tutorial' ? () => coach.skip() : () => {
               if (pauseOpen) setPauseOpen(false);
               setQuitOpen(true);
             }}
-            onPause={handlePauseOpen}
+            onPause={round.mode === 'tutorial' ? undefined : handlePauseOpen}
             pauseAriaLabel={t.paused}
           />
           <p className="ct-wordle-connect-hint">{t.connectHint}</p>
           <p className="ct-wordle-min-len">{t.minLetters(round.minLen)}</p>
           {msg && <p className="ct-wordle-msg ct-wordle-msg--ok">{msg}</p>}
-          <LetterLinkBoard
-            grid={round.grid}
-            size={round.size}
-            path={path}
-            setPath={setPath}
-            disabled={pauseOpen || round.complete}
-            currentWord={currentWord}
-            onCommit={commitPath}
-          />
+          <div className="ct-juice-host" ref={boardRef} style={{ position: 'relative' }}>
+            <JuiceLayer
+              combo={juice.combo}
+              particle={juice.particle}
+              rtFx={juice.rtFx}
+              toast={juice.toast}
+              burst={juice.burst}
+              showCombo={false}
+            />
+            <LetterLinkBoard
+              grid={round.grid}
+              size={round.size}
+              path={path}
+              setPath={setPath}
+              disabled={pauseOpen || round.complete}
+              currentWord={currentWord}
+              onCommit={commitPath}
+            />
+          </div>
           <div className="ct-wordle-link-actions">
             <button
               type="button"

@@ -8,9 +8,51 @@ import {
   hasAssessProfile,
   saveAssessSession,
   loadAssessSessions,
-  scoreBand,
   GENDER_OPTIONS,
+  ageBand,
+  domainSeries,
+  deltaVsBaseline,
 } from './assessmentProfile';
+import {
+  domainStats,
+  cognitiveIndex,
+  ordinal,
+  ssConfInterval,
+  reliableChange,
+  reliabilityFor,
+  NORM_DISCLAIMER,
+} from './assessmentNorms';
+import {
+  DOMAIN_SCIENCE,
+  REFERENCES,
+  METHODOLOGY,
+  NORM_DISCLAIMER_AR,
+  VALIDITY_NOTE,
+  RELIABILITY_NOTE,
+} from './assessmentRefs';
+
+/** 5-level normative band → existing 3-tone colour class. */
+function bandColor(b) {
+  if (b === 'high' || b === 'above') return 'high';
+  if (b === 'low' || b === 'below') return 'low';
+  return 'mid';
+}
+
+/** Tiny sparkline from a numeric series. */
+function Spark({ values, w = 280, h = 44 }) {
+  if (!values || values.length < 2) return null;
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
+  const span = hi - lo || 1;
+  const pts = values
+    .map((c, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - ((c - lo) / span) * h).toFixed(1)}`)
+    .join(' ');
+  return (
+    <svg className="ct-fq-spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+      <polyline points={pts} fill="none" stroke="#b87220" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 /* =============================================================================
  * GLOBAL ASSESSMENT FLOW  (all 6 domains)
@@ -28,7 +70,7 @@ const PARTS = [
   { id: 'memory', gameKey: 'memo-span' },
   { id: 'language', gameKey: 'wordle' },
   { id: 'reasoning', gameKey: 'rush-hour' },
-  { id: 'flexibility', gameKey: 'rule-switch' },
+  { id: 'flexibility', gameKey: 'spatial-stroop' },
 ];
 
 const STR = {
@@ -56,12 +98,27 @@ const STR = {
     loading: 'Loading…',
     resultsTitle: 'Your results',
     cognitiveIndex: 'Cognitive Index',
-    indexSub: 'Average of areas tested · 0–100',
-    band: { high: 'Strong', mid: 'Typical', low: 'Developing' },
+    indexSub: 'Standard score · mean 100',
+    bandLabel: { low: 'Low', below: 'Below average', average: 'Average', above: 'Above average', high: 'High' },
+    pctOfAge: (p, band) => `${ordinal(p)} percentile for your age · ${band}`,
+    ciLabel: (lo, hi) => `90% CI ${lo}–${hi}`,
+    ageRange: (lo, hi) => `Compared with ages ${lo}–${hi}`,
+    domainCol: 'Area',
+    ssLabel: 'SS',
+    changeReliable: (d) => `${d > 0 ? '▲ +' + d + ' reliable gain' : '▼ ' + d + ' reliable decline'}`,
+    changeNoise: (d) => `±${Math.abs(d)} vs baseline (within normal variation)`,
+    progressTitle: 'Progress over time',
+    baselineNote: 'Your first session is your baseline. Re-test to track reliable change.',
+    relLabel: 'Reliability (test–retest r)',
+    methTitle: 'Methodology & science',
+    methShow: 'Show methodology & references',
+    methHide: 'Hide methodology & references',
+    measuresLabel: 'Measures',
+    referencesLabel: 'References',
     historyBest: (n) => `Best index: ${n}`,
     again: 'Test again',
     done: 'Done',
-    note: 'Self-referenced guideline — track your own change over time, not a clinical diagnosis.',
+    note: NORM_DISCLAIMER,
   },
   ar: {
     title: 'التقييم',
@@ -87,12 +144,27 @@ const STR = {
     loading: 'جارِ التحميل…',
     resultsTitle: 'نتائجك',
     cognitiveIndex: 'المؤشر المعرفي',
-    indexSub: 'متوسط المجالات المختبَرة · ٠–١٠٠',
-    band: { high: 'قوي', mid: 'معتاد', low: 'قيد التطوّر' },
+    indexSub: 'درجة معيارية · المتوسط ١٠٠',
+    bandLabel: { low: 'منخفض', below: 'دون المتوسط', average: 'متوسط', above: 'فوق المتوسط', high: 'مرتفع' },
+    pctOfAge: (p, band) => `المئوية ${p} لفئتك العمرية · ${band}`,
+    ciLabel: (lo, hi) => `فاصل ثقة ٩٠٪ ${lo}–${hi}`,
+    ageRange: (lo, hi) => `مقارنة بأعمار ${lo}–${hi}`,
+    domainCol: 'المجال',
+    ssLabel: 'درجة',
+    changeReliable: (d) => `${d > 0 ? '▲ +' + d + ' تحسّن موثوق' : '▼ ' + d + ' تراجع موثوق'}`,
+    changeNoise: (d) => `±${Math.abs(d)} عن الأساس (ضمن التغيّر الطبيعي)`,
+    progressTitle: 'التقدّم عبر الزمن',
+    baselineNote: 'جلستك الأولى هي خط الأساس. أعد الاختبار لتتبّع التغيّر الموثوق.',
+    relLabel: 'الموثوقية (إعادة-اختبار r)',
+    methTitle: 'المنهجية والعلم',
+    methShow: 'عرض المنهجية والمراجع',
+    methHide: 'إخفاء المنهجية والمراجع',
+    measuresLabel: 'يقيس',
+    referencesLabel: 'المراجع',
     historyBest: (n) => `أفضل مؤشر: ${n}`,
     again: 'أعد الاختبار',
     done: 'تم',
-    note: 'مؤشر إرشادي مرجعي ذاتي — لتتبّع تغيّرك مع الوقت، وليس تشخيصاً سريرياً.',
+    note: NORM_DISCLAIMER_AR,
   },
 };
 
@@ -120,6 +192,7 @@ export default function AssessmentFlow({ onBack }) {
   const resultsRef = useRef({});
   const [report, setReport] = useState(null); // { scores, lines, full }
   const [sessions, setSessions] = useState(() => loadAssessSessions());
+  const [methOpen, setMethOpen] = useState(false);
 
   const saveAndContinue = () => {
     const n = Number(ageInput);
@@ -227,43 +300,117 @@ export default function AssessmentFlow({ onBack }) {
 
   /* ----- REPORT ----- */
   if (step === 'report' && report) {
+    const age = profile.age ?? null;
     const ran = PARTS.map((p) => p.id).filter((id) => report.scores[id] != null);
-    const vals = ran.map((id) => report.scores[id]);
-    const overall = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
-    const overalls = sessions.map((s) => s.overall).filter((v) => typeof v === 'number');
-    const best = overalls.length ? Math.max(...overalls) : overall;
-    const W = 280, H = 50, n = overalls.length;
-    const lo = Math.min(...overalls, overall), hi = Math.max(...overalls, overall), span = hi - lo || 1;
-    const pts = overalls.map((c, i) => `${(n === 1 ? W / 2 : (i / (n - 1)) * W).toFixed(1)},${(H - ((c - lo) / span) * H).toFixed(1)}`).join(' ');
+    const ci = cognitiveIndex(report.scores, age);
+    const band = ageBand(age);
+    const overallSpark = sessions.map((s) => s.overall).filter((v) => typeof v === 'number');
+    const sci = isAr ? DOMAIN_SCIENCE.ar : DOMAIN_SCIENCE.en;
     return (
       <div className="ct-fq-training-shell ct-fq-training-shell--hub-light" dir={isAr ? 'rtl' : 'ltr'}>
         <div className="ct-fq-screen ct-fq-training-screen">
           <TrainingMenuBar onBack={onBack} playSfx={playSfx} variant="paper"
             center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.resultsTitle}</div></div>} />
-          <div className={`ct-fq-sbig ct-fq-band-text-${scoreBand(overall)}`}>{overall}</div>
-          <div className="ct-fq-ies-lbl">{t.cognitiveIndex} · {t.indexSub}</div>
+
+          {/* Overall Cognitive Index */}
+          {ci && (
+            <>
+              <div className={`ct-fq-sbig ct-fq-band-text-${bandColor(ci.band)}`}>{ci.index}</div>
+              <div className="ct-fq-ies-lbl">{t.cognitiveIndex} · {t.indexSub}</div>
+              <p className="ct-assess-overall-pct">{t.pctOfAge(ci.percentile, t.bandLabel[ci.band])}</p>
+              <p className="ct-assess-ci">{t.ciLabel(ci.ciLo, ci.ciHi)}</p>
+              {band && <p className="ct-assess-agerange">{t.ageRange(band.min, band.max)}</p>}
+            </>
+          )}
+
+          {/* Per-domain rows */}
           <div className="ct-assess-domain-list">
             {ran.map((id) => {
               const v = report.scores[id];
-              const b = scoreBand(v);
+              const st = domainStats(id, v, age);
+              const color = bandColor(st?.band);
+              const delta = deltaVsBaseline(id, sessions);
+              const rc = reliableChange(delta, id);
+              const ssCI = st ? ssConfInterval(st.standardScore, id) : null;
+              const series = domainSeries(id, sessions).map((s) => s.score);
               return (
-                <div key={id} className="ct-assess-domain-row">
-                  <span className="ct-assess-domain-name">{t.parts[id]}</span>
-                  <span className="ct-assess-domain-bar">
-                    <span className={`ct-assess-domain-fill ct-fq-band-${b}`} style={{ width: `${v}%` }} />
-                  </span>
-                  <span className={`ct-assess-domain-score ct-fq-band-text-${b}`}>{v}</span>
+                <div key={id} className="ct-assess-drow">
+                  <div className="ct-assess-drow-top">
+                    <span className="ct-assess-domain-name">{t.parts[id]}</span>
+                    <span className={`ct-assess-band-chip ct-fq-band-${color}`}>
+                      {st ? t.bandLabel[st.band] : '—'}
+                    </span>
+                  </div>
+                  <div className="ct-assess-domain-bar">
+                    <span className={`ct-assess-domain-fill ct-fq-band-${color}`} style={{ width: `${st ? st.percentile : v}%` }} />
+                  </div>
+                  <div className="ct-assess-drow-meta">
+                    <span className="ct-assess-pct">{st ? `${ordinal(st.percentile)} pct` : `${v}`}</span>
+                    {st && (
+                      <span className="ct-assess-ss">
+                        {t.ssLabel} {st.standardScore}
+                        {ssCI ? ` (${ssCI[0]}–${ssCI[1]})` : ''}
+                      </span>
+                    )}
+                    {report.lines[id] ? <span className="ct-assess-raw">{report.lines[id]}</span> : null}
+                    {rc && (
+                      <span
+                        className={`ct-assess-delta ct-assess-delta--${rc.reliable ? rc.direction : 'flat'}`}
+                      >
+                        {rc.reliable ? t.changeReliable(delta) : t.changeNoise(delta)}
+                      </span>
+                    )}
+                  </div>
+                  {series.length > 1 && <Spark values={series} h={28} />}
                 </div>
               );
             })}
           </div>
-          {n > 1 && (
-            <svg className="ct-fq-spark" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
-              <polyline points={pts} fill="none" stroke="#b87220" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-            </svg>
+
+          {/* Progress over time */}
+          {overallSpark.length > 1 && (
+            <div className="ct-assess-progress">
+              <div className="ct-assess-section-title">{t.progressTitle}</div>
+              <Spark values={overallSpark} />
+            </div>
           )}
-          <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 4 }}>{t.historyBest(best)}</p>
-          <p className="ct-fq-assess-note">{t.note}</p>
+          {overallSpark.length <= 1 && <p className="ct-fq-sub ct-fq-training-blurb">{t.baselineNote}</p>}
+
+          {/* Methodology & science (collapsible) */}
+          <button
+            type="button"
+            className="ct-assess-meth-toggle"
+            onClick={() => { playSfx('click'); setMethOpen((o) => !o); }}
+          >
+            {methOpen ? t.methHide : t.methShow}
+          </button>
+          {methOpen && (
+            <div className="ct-assess-meth">
+              <p className="ct-assess-meth-blurb">{isAr ? METHODOLOGY.ar : METHODOLOGY.en}</p>
+              <p className="ct-assess-meth-blurb">{isAr ? RELIABILITY_NOTE.ar : RELIABILITY_NOTE.en}</p>
+              <p className="ct-assess-meth-blurb">{isAr ? VALIDITY_NOTE.ar : VALIDITY_NOTE.en}</p>
+
+              {/* Per-domain construct + reliability */}
+              {ran.map((id) => (
+                <div key={id} className="ct-assess-meth-domain">
+                  <div className="ct-assess-meth-name">
+                    {t.parts[id]}
+                    <span className="ct-assess-meth-rel"> · r = {reliabilityFor(id).toFixed(2)}</span>
+                  </div>
+                  <p className="ct-assess-meth-measures">{sci[id]?.measures}</p>
+                  <p className="ct-assess-meth-cites">{(sci[id]?.cites || []).join(' · ')}</p>
+                </div>
+              ))}
+              <div className="ct-assess-meth-name">{t.referencesLabel}</div>
+              <ul className="ct-assess-refs">
+                {REFERENCES.map((r) => (
+                  <li key={r}>{r}</li>
+                ))}
+              </ul>
+              <p className="ct-fq-assess-note">{t.note}</p>
+            </div>
+          )}
+
           <div className="ct-fq-row">
             <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); setReport(null); setStep('choose'); }}>{t.again}</button>
             <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={onBack}>{t.done}</button>

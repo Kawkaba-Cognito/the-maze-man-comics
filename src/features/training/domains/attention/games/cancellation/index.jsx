@@ -2,6 +2,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   useRef,
   useLayoutEffect,
 } from 'react';
@@ -34,10 +35,13 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
-import FocusQuestTutorial, {
-  buildTutorialQueueFor,
-  markTutorialSeen,
-} from './tutorial';
+import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import { useJuice } from '../../../../shared/juice/useJuice';
+import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
+import { ratingLabels } from '../../../../shared/juice/juiceUtils';
+import { useCoach } from '../../../../shared/coach/useCoach';
+import CoachOverlay from '../../../../shared/coach/CoachOverlay';
+import { buildCancelCoachSteps } from './tutorialScript';
 import {
   prepareAssessmentTrial,
   computeAssessmentSummary,
@@ -660,8 +664,18 @@ export default function CancellationTaskGame({ onBack, assessmentMode = false, o
     pad: 6,
   });
   const shakeTimerRef = useRef(0);
-  const [tutorialQueue, setTutorialQueue] = useState([]);
-  const pendingTutorialActionRef = useRef(null);
+
+  // juice + coached tutorial
+  const juice = useJuice();
+  const rLabels = ratingLabels(isAr);
+  const [coachActive, setCoachActive] = useState(false);
+  const coachActiveRef = useRef(false);
+  const coachRef = useRef(null);
+  const pendingAfterCoachRef = useRef(null);
+  const targetBarRef = useRef(null);
+  useEffect(() => {
+    coachActiveRef.current = coachActive;
+  }, [coachActive]);
 
   useEffect(() => () => {
     if (shakeTimerRef.current) {
@@ -1040,6 +1054,7 @@ export default function CancellationTaskGame({ onBack, assessmentMode = false, o
 
   useEffect(() => {
     if (playStep !== 'running' || pauseOpen) return;
+    if (coachActiveRef.current) return; // tutorial: no countdown
     let id;
     let last = performance.now();
     const runId = timerRunIdRef.current + 1;
@@ -1231,13 +1246,24 @@ export default function CancellationTaskGame({ onBack, assessmentMode = false, o
         const tappedTargets = nextCells.filter((x) => x.isT && x.tapped).length;
         talliesRef.current.found = tappedTargets;
         setFound(tappedTargets);
+        queueMicrotask(() => {
+          juice.hit({});
+          if (coachActiveRef.current) coachRef.current?.notify('tap');
+        });
         if (r.mode === 'free') {
           const add = freeTapPoints(r.diff, r.freeStage ?? 0);
           freeScoreRef.current += add;
           queueMicrotask(() => setFreeScore(freeScoreRef.current));
         }
         if (totalTargets > 0 && tappedTargets === totalTargets) {
-          queueMicrotask(() => endRoundRef.current(true));
+          if (coachActiveRef.current) {
+            queueMicrotask(() => coachRef.current?.notify('allfound'));
+          } else {
+            queueMicrotask(() => {
+              juice.celebrate();
+              endRoundRef.current(true);
+            });
+          }
         }
         return nextCells;
       }
@@ -1386,48 +1412,79 @@ export default function CancellationTaskGame({ onBack, assessmentMode = false, o
     };
   };
 
-  /* --- Tutorial gating ------------------------------------------------------
-   * gateWithTutorial(action, modeKind) wraps the user's intent (start free,
-   * open levels, open challenge). If any tutorial step is unseen, we queue it
-   * and stash the action; tutorials run in sequence (main → mode-tip), then
-   * the original action fires after a microtask so the overlay finishes
-   * unmounting cleanly. */
-  const gateWithTutorial = useCallback((action, modeKind) => {
-    const q = buildTutorialQueueFor(modeKind);
-    if (q.length === 0) {
-      action();
+  /* --- Coached interactive tutorial --- */
+  const beginTutorial = useCallback(() => {
+    setPhase('play');
+    setCdShow(false);
+    let r;
+    try {
+      r = prepareLevelRound('easy', 1);
+    } catch {
       return;
     }
-    pendingTutorialActionRef.current = action;
-    setTutorialQueue(q);
-  }, []);
+    r = { ...r, mode: 'tutorial' };
+    roundRef.current = r;
+    setRound(r);
+    setCells(r.cells);
+    setFound(0);
+    setErrors(0);
+    talliesRef.current = { found: 0, errors: 0 };
+    tlRef.current = r.tlim;
+    tlimRef.current = r.tlim;
+    tapsRef.current = [];
+    pendingPenaltyRef.current = 0;
+    roundEndedRef.current = false;
+    juice.reset();
+    setPlayStep('running');
+  }, [juice]);
 
-  const advanceTutorial = useCallback(() => {
-    setTutorialQueue((prev) => {
-      const finished = prev[0];
-      if (finished) {
-        const sk =
-          finished.kind === 'main'
-            ? 'main'
-            : finished.kind === 'free-tip'
-              ? 'free'
-              : 'challenge';
-        markTutorialSeen(sk);
-      }
-      const remaining = prev.slice(1);
-      if (remaining.length === 0 && pendingTutorialActionRef.current) {
-        const action = pendingTutorialActionRef.current;
-        pendingTutorialActionRef.current = null;
-        queueMicrotask(action);
-      }
-      return remaining;
-    });
-  }, []);
+  const finishCoach = useCallback(() => {
+    try {
+      localStorage.setItem('mm_cancel_coach_seen', '1');
+    } catch {
+      /* ignore */
+    }
+    setCoachActive(false);
+    coachActiveRef.current = false;
+    clearPlayRoundState();
+    const fn = pendingAfterCoachRef.current;
+    pendingAfterCoachRef.current = null;
+    if (fn) fn();
+    else setPhase('hub');
+  }, [clearPlayRoundState]);
 
-  const replayTutorial = useCallback(() => {
-    pendingTutorialActionRef.current = null;
-    setTutorialQueue([{ kind: 'main' }]);
-  }, []);
+  const coachSteps = useMemo(
+    () => buildCancelCoachSteps(isAr, { targetRef: targetBarRef, gridRef: gridWrapRef }),
+    [isAr],
+  );
+  const coach = useCoach(coachSteps, { active: coachActive, onDone: finishCoach });
+  useEffect(() => {
+    coachRef.current = coach;
+  }, [coach]);
+
+  const startCoach = useCallback(
+    (thenFn) => {
+      pendingAfterCoachRef.current = thenFn || null;
+      coachActiveRef.current = true;
+      setCoachActive(true);
+      beginTutorial();
+    },
+    [beginTutorial],
+  );
+  const maybeCoach = useCallback(
+    (fn) => {
+      let seen = false;
+      try {
+        seen = !!localStorage.getItem('mm_cancel_coach_seen');
+      } catch {
+        /* ignore */
+      }
+      if (seen) fn();
+      else startCoach(fn);
+    },
+    [startCoach],
+  );
+  const replayTutorial = useCallback(() => startCoach(null), [startCoach]);
 
   return (
     <div
@@ -1455,9 +1512,9 @@ export default function CancellationTaskGame({ onBack, assessmentMode = false, o
               t={t}
               isAr={isAr}
               playSfx={playSfx}
-              onFree={() => gateWithTutorial(startFreeMode, 'free')}
-              onLevels={() => gateWithTutorial(() => setPhase('diff'), 'levels')}
-              onChallenge={() => gateWithTutorial(() => setPhase('chal'), 'challenge')}
+              onFree={() => maybeCoach(startFreeMode)}
+              onLevels={() => maybeCoach(() => setPhase('diff'))}
+              onChallenge={() => maybeCoach(() => setPhase('chal'))}
             />
           </div>
         </div>
@@ -1545,104 +1602,42 @@ export default function CancellationTaskGame({ onBack, assessmentMode = false, o
       )}
 
       {phase === 'diff' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar
-              onBack={() => {
-                clearPlayRoundState();
-                setPhase('hub');
-              }}
-              playSfx={playSfx}
-              variant="paper"
-              center={
-                <div style={{ textAlign: 'center' }}>
-                  <div className="ct-fq-training-title ct-fq-training-title-sm">{t.pickDiff}</div>
-                </div>
-              }
-            />
-            <div className="ct-fq-diff-body">
-              <p className="ct-fq-sub ct-fq-training-blurb">{t.pickDiffSub}</p>
-              <div className="ct-fq-diff-cards">
-                {FQ_DIFF_KEYS.map((k) => {
-                  const m = DM[k];
-                  const tcArr = TC[k];
-                  const tcLo = tcArr?.[0];
-                  const tcHi = tcArr?.[tcArr.length - 1];
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training ct-fq-diffcard`}
-                      onClick={() => {
-                        playSfx('click');
-                        setDiffKey(k);
-                        setPhase('levels');
-                      }}
-                    >
-                      <span className="ct-fq-diffcard-main">
-                        <span className="ct-fq-diffcard-label">{m.label}</span>
-                        <span className="ct-fq-diffcard-desc">{t.diffDesc[k]}</span>
-                      </span>
-                      <span className="ct-fq-diffcard-meta">
-                        <span className="ct-fq-diffcard-grid">{m.grid}×{m.grid}</span>
-                        <span className="ct-fq-diffcard-tgts">
-                          {tcLo}–{tcHi} {t.diffTargets}
-                        </span>
-                        <span className="ct-fq-diffcard-pop">{m.pop}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
+        <TrainingDifficultySelect
+          isAr={isAr}
+          playSfx={playSfx}
+          onBack={() => {
+            clearPlayRoundState();
+            setPhase('hub');
+          }}
+          title={t.pickDiff}
+          blurb={t.pickDiffSub}
+          diffKeys={FQ_DIFF_KEYS}
+          dm={DM}
+          descs={t.diffDesc}
+          onPick={(k) => {
+            setDiffKey(k);
+            setPhase('levels');
+          }}
+        />
       )}
 
       {phase === 'levels' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar
-              onBack={() => setPhase('diff')}
-              playSfx={playSfx}
-              variant="paper"
-              center={
-                <div style={{ textAlign: 'center' }}>
-                  <div className="ct-fq-training-title ct-fq-training-title-sm">{DM[diffKey].label}</div>
-                </div>
-              }
-            />
-            <p className="ct-fq-sub ct-fq-training-blurb">
-              {t.levelsSub(DM[diffKey].pop, DM[diffKey].grid)}
-            </p>
-            <div className="ct-fq-lg ct-fq-lg-training">
-              {Array.from({ length: FQ_LEVELS_PER_TIER }, (_, i) => i + 1).map((lv) => {
-                const un = isLevelUnlocked(diffKey, lv, doneMap);
-                const dn = !!doneMap[`${diffKey}-${lv}`];
-                const cfg = getLvCfg(diffKey, lv - 1);
-                const cls = `ct-fq-lb ${un ? `ct-${DM[diffKey].lvc}` : 'ct-lvk'}`;
-                return (
-                  <button
-                    key={lv}
-                    type="button"
-                    className={cls}
-                    disabled={!un}
-                    onClick={() => {
-                      if (!un) return;
-                      playSfx('click');
-                      startLevelGame(diffKey, lv);
-                    }}
-                  >
-                    <span className="ct-ln">{dn ? '✓' : lv}</span>
-                    <span className="ct-ls">
-                      {un ? `${cfg.tc}t·${cfg.time}s` : '🔒'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <TrainingLevelGrid
+          isAr={isAr}
+          playSfx={playSfx}
+          onBack={() => setPhase('diff')}
+          title={DM[diffKey].label}
+          blurb={t.levelsSub(DM[diffKey].pop, DM[diffKey].grid)}
+          count={FQ_LEVELS_PER_TIER}
+          lvc={DM[diffKey].lvc}
+          isUnlocked={(lv) => isLevelUnlocked(diffKey, lv, doneMap)}
+          isDone={(lv) => !!doneMap[`${diffKey}-${lv}`]}
+          sublabel={(lv) => {
+            const cfg = getLvCfg(diffKey, lv - 1);
+            return `${cfg.tc}t·${cfg.time}s`;
+          }}
+          onPick={(lv) => startLevelGame(diffKey, lv)}
+        />
       )}
 
       {phase === 'chal' && (
@@ -1766,15 +1761,24 @@ export default function CancellationTaskGame({ onBack, assessmentMode = false, o
           <div className="ct-fq-play">
           <TrainingPlayHeader
             isAr={isAr}
-            title={playHeaderForRound(round).title}
-            subtitle={playHeaderForRound(round).subtitle}
+            title={round.mode === 'tutorial' ? (isAr ? 'كيفية اللعب' : 'How to play') : playHeaderForRound(round).title}
+            subtitle={round.mode === 'tutorial' ? '' : playHeaderForRound(round).subtitle}
             playSfx={playSfx}
             menuAriaLabel={t.menu}
             pauseAriaLabel={t.pause}
-            onMenu={onHudQuit}
-            onPause={onHudPause}
+            onMenu={round.mode === 'tutorial' ? () => coach.skip() : onHudQuit}
+            onPause={round.mode === 'tutorial' ? undefined : onHudPause}
           />
-          <div className="ct-fq-g-wrap" ref={gridWrapRef}>
+          <div className={`ct-fq-g-wrap ct-juice-host${juice.shake ? ' ct-juice-shake' : ''}`} ref={gridWrapRef}>
+            <JuiceLayer
+              combo={juice.combo}
+              particle={juice.particle}
+              rtFx={juice.rtFx}
+              toast={juice.toast}
+              burst={juice.burst}
+              ratingLabels={rLabels}
+              showCombo={false}
+            />
             <CtLiveHud
               t={t}
               playStep={playStep}
@@ -1800,7 +1804,7 @@ export default function CancellationTaskGame({ onBack, assessmentMode = false, o
               freeScore={round.mode === 'free' ? freeScore : undefined}
               freeLives={round.mode === 'free' ? freeLives : undefined}
             />
-            <div className="ct-fq-tb" data-fq-chrome>
+            <div className="ct-fq-tb" data-fq-chrome ref={targetBarRef}>
               <div className="ct-fq-tb-row">
                 <div
                   className={`ct-fq-tb-icon-wrap${round.diff === 'hard' ? ' ct-fq-tb-icon-deadly' : ''}`}
@@ -2385,12 +2389,14 @@ export default function CancellationTaskGame({ onBack, assessmentMode = false, o
         </div>
       )}
 
-      {tutorialQueue.length > 0 && (
-        <FocusQuestTutorial
-          kind={tutorialQueue[0].kind}
+      {coachActive && coach.step && (
+        <CoachOverlay
+          step={coach.step}
+          index={coach.index}
+          total={coach.total}
+          onNext={coach.next}
+          onSkip={coach.skip}
           isAr={isAr}
-          onClose={advanceTutorial}
-          playSfx={playSfx}
         />
       )}
     </div>

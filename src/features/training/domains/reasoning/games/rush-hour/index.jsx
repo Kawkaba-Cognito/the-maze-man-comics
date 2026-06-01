@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import { tokens } from '../../../../../../styles/tokens';
 import { IconBack } from '../../../../shared/TrainingIcons';
@@ -8,12 +8,14 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
+import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import { useJuice } from '../../../../shared/juice/useJuice';
+import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
+import { useCoach } from '../../../../shared/coach/useCoach';
+import CoachOverlay from '../../../../shared/coach/CoachOverlay';
 import MazeManAvatar from '../../../../shared/MazeManAvatar';
 import { getRange, isWon, clonePieces, RUSH_HOUR_BASE_LAYOUTS } from './engine';
-import RushHourTutorial, {
-  buildRhTutorialQueueFor,
-  markRhTutorialSeen,
-} from './tutorial';
+import { buildRushCoachSteps } from './tutorialScript';
 import {
   DM,
 } from '../../../../shared/focusQuestData';
@@ -291,39 +293,16 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
   const assessStartRef = useRef(0);
   const assessEndedRef = useRef(false);
 
-  const [tutorialQueue, setTutorialQueue] = useState([]);
-  const pendingTutorialActionRef = useRef(null);
-
-  const gateWithTutorial = useCallback((action, modeKind) => {
-    const q = buildRhTutorialQueueFor(modeKind);
-    if (q.length === 0) { action(); return; }
-    pendingTutorialActionRef.current = action;
-    setTutorialQueue(q);
-  }, []);
-
-  const advanceTutorial = useCallback(() => {
-    setTutorialQueue((prev) => {
-      const finished = prev[0];
-      if (finished) {
-        const sk = finished.kind === 'main' ? 'main'
-          : finished.kind === 'free-tip' ? 'free'
-          : 'challenge';
-        markRhTutorialSeen(sk);
-      }
-      const remaining = prev.slice(1);
-      if (remaining.length === 0 && pendingTutorialActionRef.current) {
-        const action = pendingTutorialActionRef.current;
-        pendingTutorialActionRef.current = null;
-        queueMicrotask(action);
-      }
-      return remaining;
-    });
-  }, []);
-
-  const replayTutorial = useCallback(() => {
-    pendingTutorialActionRef.current = null;
-    setTutorialQueue([{ kind: 'main' }]);
-  }, []);
+  // juice + coached tutorial (functions defined after board state below)
+  const juice = useJuice();
+  const [coachActive, setCoachActive] = useState(false);
+  const coachActiveRef = useRef(false);
+  const coachRef = useRef(null);
+  const pendingAfterCoachRef = useRef(null);
+  const boardRef = useRef(null);
+  useEffect(() => {
+    coachActiveRef.current = coachActive;
+  }, [coachActive]);
 
   const pauseLabels = {
     paused: t.paused,
@@ -593,6 +572,67 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
     setWon(false);
     wonRef.current = false;
   }, [levelDef, phase, playMode, chalIdx, chalRoundIdx, chalFrozenDef]);
+
+  /* --- Coached interactive tutorial --- */
+  const tutorialDef = useMemo(() => {
+    const base = RUSH_HOUR_BASE_LAYOUTS[0];
+    return { ...base, diff: 'tutorial', par: base.par ?? 6, pieces: clonePieces(base.pieces) };
+  }, []);
+  const beginTutorial = useCallback(() => {
+    juice.reset();
+    setGenerating(false);
+    setPlayMode('tutorial');
+    setLevelDef(tutorialDef);
+    setWon(false);
+    wonRef.current = false;
+    setPhase('play');
+  }, [juice, tutorialDef]);
+  const finishCoach = useCallback(() => {
+    try {
+      localStorage.setItem('mm_rushhour_coach_seen', '1');
+    } catch {
+      /* ignore */
+    }
+    setCoachActive(false);
+    coachActiveRef.current = false;
+    setWon(false);
+    wonRef.current = false;
+    const fn = pendingAfterCoachRef.current;
+    pendingAfterCoachRef.current = null;
+    if (fn) fn();
+    else {
+      setPlayMode('levels');
+      setPhase('hub');
+    }
+  }, []);
+  const coachSteps = useMemo(() => buildRushCoachSteps(isAr, { boardRef }), [isAr]);
+  const coach = useCoach(coachSteps, { active: coachActive, onDone: finishCoach });
+  useEffect(() => {
+    coachRef.current = coach;
+  }, [coach]);
+  const startCoach = useCallback(
+    (thenFn) => {
+      pendingAfterCoachRef.current = thenFn || null;
+      coachActiveRef.current = true;
+      setCoachActive(true);
+      beginTutorial();
+    },
+    [beginTutorial],
+  );
+  const maybeCoach = useCallback(
+    (fn) => {
+      let seen = false;
+      try {
+        seen = !!localStorage.getItem('mm_rushhour_coach_seen');
+      } catch {
+        /* ignore */
+      }
+      if (seen) fn();
+      else startCoach(fn);
+    },
+    [startCoach],
+  );
+  const replayTutorial = useCallback(() => startCoach(null), [startCoach]);
 
   useEffect(() => {
     const measure = () => {
@@ -917,6 +957,11 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
             setTimeout(() => {
               playSfx('win');
               setWon(true);
+              if (mode === 'tutorial') {
+                juice.celebrate();
+                coachRef.current?.notify('solve');
+                return;
+              }
               const dk = diffKeyRef.current;
               if (mode === 'levels') syncProgressWin(dk, lv, nextM);
               if (mode === 'free') {
@@ -1122,7 +1167,7 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
               className="ct-fq-attn-mode ct-fq-attn-mode--free"
               onClick={() => {
                 playSfx('click');
-                gateWithTutorial(() => setPhase('freeIntro'), 'free');
+                maybeCoach(() => setPhase('freeIntro'));
               }}
             >
               <span className="ct-fq-attn-mode-ic" aria-hidden="true">
@@ -1143,7 +1188,7 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
               className="ct-fq-attn-mode ct-fq-attn-mode--levels"
               onClick={() => {
                 playSfx('click');
-                gateWithTutorial(() => { setPlayMode('levels'); setPhase('pickDiff'); }, 'levels');
+                maybeCoach(() => { setPlayMode('levels'); setPhase('pickDiff'); });
               }}
             >
               <span className="ct-fq-attn-mode-ic" aria-hidden="true">
@@ -1164,7 +1209,7 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
               className="ct-fq-attn-mode ct-fq-attn-mode--chal"
               onClick={() => {
                 playSfx('click');
-                gateWithTutorial(() => setPhase('chal'), 'challenge');
+                maybeCoach(() => setPhase('chal'));
               }}
             >
               <span className="ct-fq-attn-mode-ic" aria-hidden="true">
@@ -1183,100 +1228,26 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
           </div>
         </div>
 
-        {tutorialQueue.length > 0 && (
-          <RushHourTutorial
-            kind={tutorialQueue[0].kind}
-            isAr={isAr}
-            onClose={advanceTutorial}
-            playSfx={playSfx}
-          />
-        )}
       </div>
     );
   }
 
   if (phase === 'pickDiff') {
-    const pad = `max(48px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left))`;
     return (
-      <div
-        className="cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light"
-        dir={isAr ? 'rtl' : 'ltr'}
-        style={{
-          minHeight: '100%',
-          position: 'relative',
-          color: '#141210',
-          fontFamily: "'Outfit', system-ui, sans-serif",
-          overflowX: 'hidden',
-          padding: pad,
+      <TrainingDifficultySelect
+        isAr={isAr}
+        playSfx={playSfx}
+        onBack={() => setPhase('hub')}
+        title={t.pickDiff}
+        blurb={t.pickDiffSub}
+        diffKeys={RH_DIFF_KEYS}
+        dm={DM}
+        descs={t.diffDesc}
+        onPick={(k) => {
+          setDiffKey(k);
+          setPhase('levels');
         }}
-      >
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 440, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <button
-              type="button"
-              onClick={() => {
-                playSfx('click');
-                setPhase('hub');
-              }}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 12,
-                border: '2px solid #1a1208',
-                background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '3px 3px 0 #1a1208',
-              }}
-            >
-              <IconBack size={18} c="#141210" />
-            </button>
-            <div
-              style={{
-                fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', cursive",
-                fontSize: 20,
-                fontWeight: isAr ? 800 : 400,
-              }}
-            >
-              {t.pickDiff}
-            </div>
-          </div>
-          <p
-            style={{
-              fontSize: 13,
-              color: '#5c534c',
-              margin: '0 0 16px',
-              lineHeight: 1.45,
-            }}
-          >
-            {t.pickDiffSub}
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {RH_DIFF_KEYS.map((k) => (
-              <button
-                key={k}
-                type="button"
-                className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training ct-fq-diffcard`}
-                onClick={() => {
-                  playSfx('click');
-                  setDiffKey(k);
-                  setPhase('levels');
-                }}
-              >
-                <span className="ct-fq-diffcard-main">
-                  <span className="ct-fq-diffcard-label">{DM[k].label}</span>
-                  <span className="ct-fq-diffcard-desc">{t.diffDesc?.[k] ?? DM[k].pop}</span>
-                </span>
-                <span className="ct-fq-diffcard-meta">
-                  <span className="ct-fq-diffcard-pop">{DM[k].pop}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      />
     );
   }
 
@@ -1637,86 +1608,28 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
 
   /* ─── Level pick ─── */
   if (phase === 'levels') {
+    const doneMap = progress.done || {};
     return (
-      <div
-        className="cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light"
-        dir={isAr ? 'rtl' : 'ltr'}
-        style={{
-          minHeight: '100%',
-          position: 'relative',
-          overflowX: 'hidden',
-          padding:
-            'max(48px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left))',
+      <TrainingLevelGrid
+        isAr={isAr}
+        playSfx={playSfx}
+        onBack={() => setPhase('pickDiff')}
+        title={DM[diffKey]?.label ?? diffKey}
+        blurb={t.levelsSub(DM[diffKey]?.pop ?? '')}
+        count={RH_LEVELS_PER_TIER}
+        lvc={DM[diffKey]?.lvc ?? 'lvi'}
+        isUnlocked={(lv) => isLevelUnlocked(diffKey, lv, doneMap)}
+        isDone={() => false}
+        sublabel={(lv) => {
+          const best = progress.best?.[`${diffKey}-${lv}`];
+          return best != null ? `★ ${best}` : '—';
         }}
-      >
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 440, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <button
-              type="button"
-              onClick={() => {
-                playSfx('click');
-                setPhase('pickDiff');
-              }}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 12,
-                border: '2px solid #1a1208',
-                background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '3px 3px 0 #1a1208',
-              }}
-            >
-              <IconBack size={18} c="#141210" />
-            </button>
-            <div
-              style={{
-                fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', cursive",
-                fontSize: 20,
-                fontWeight: isAr ? 800 : 400,
-              }}
-            >
-              {DM[diffKey]?.label ?? diffKey}
-            </div>
-          </div>
-          <p style={{ fontSize: 12, color: '#5c534c', margin: '0 0 12px', lineHeight: 1.4 }}>
-            {t.levelsSub(DM[diffKey]?.pop ?? '')}
-          </p>
-          <div className="ct-fq-lg" style={{ maxWidth: '100%' }}>
-            {Array.from({ length: RH_LEVELS_PER_TIER }, (_, i) => {
-              const lv = i + 1;
-              const doneMap = progress.done || {};
-              const unlocked = isLevelUnlocked(diffKey, lv, doneMap);
-              const bk = `${diffKey}-${lv}`;
-              const best = progress.best?.[bk];
-              const cls = `ct-fq-lb ${unlocked ? `ct-${DM[diffKey]?.lvc ?? 'lvi'}` : 'ct-lvk'}`;
-              return (
-                <button
-                  key={bk}
-                  type="button"
-                  disabled={!unlocked}
-                  className={cls}
-                  onClick={() => {
-                    if (!unlocked) return;
-                    playSfx('click');
-                    setLevelIndex(lv);
-                    setPlayMode('levels');
-                    setPhase('play');
-                  }}
-                >
-                  <span className="ct-ln">{lv}</span>
-                  <span className="ct-ls">
-                    {unlocked ? (best != null ? `★ ${best}` : '—') : t.locked}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+        onPick={(lv) => {
+          setLevelIndex(lv);
+          setPlayMode('levels');
+          setPhase('play');
+        }}
+      />
     );
   }
 
@@ -1784,24 +1697,28 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
       <TrainingPlayHeader
         isAr={isAr}
         title={
-          playMode === 'assess'
-            ? (assessmentLabel || t.title)
-            : playMode === 'free'
-              ? t.free
-              : playMode === 'challenge'
-                ? t.challenge
-                : `${DM[diffKey]?.label ?? ''} · ${t.level} ${levelIndex}`
+          playMode === 'tutorial'
+            ? (isAr ? 'كيفية اللعب' : 'How to play')
+            : playMode === 'assess'
+              ? (assessmentLabel || t.title)
+              : playMode === 'free'
+                ? t.free
+                : playMode === 'challenge'
+                  ? t.challenge
+                  : `${DM[diffKey]?.label ?? ''} · ${t.level} ${levelIndex}`
         }
         subtitle={
-          playMode === 'free' && levelDef?.diff != null
-            ? `${DM[levelDef.diff]?.label} · ${isAr ? 'جولة' : 'Round'} ${freeStage + 1} · ${t.moves}: ${moves} · ${t.optimal}: ${parMoves}`
-            : `${t.optimal}: ${parMoves} · ${t.moves}: ${moves}${playMode === 'free' ? ` · ${t.score}: ${freeScore}` : ''}`
+          playMode === 'tutorial'
+            ? ''
+            : playMode === 'free' && levelDef?.diff != null
+              ? `${DM[levelDef.diff]?.label} · ${isAr ? 'جولة' : 'Round'} ${freeStage + 1} · ${t.moves}: ${moves} · ${t.optimal}: ${parMoves}`
+              : `${t.optimal}: ${parMoves} · ${t.moves}: ${moves}${playMode === 'free' ? ` · ${t.score}: ${freeScore}` : ''}`
         }
         playSfx={playSfx}
         menuAriaLabel={t.menu}
         pauseAriaLabel={t.paused}
-        onMenu={onRhMenu}
-        onPause={onRhPause}
+        onMenu={playMode === 'tutorial' ? () => coach.skip() : onRhMenu}
+        onPause={playMode === 'tutorial' ? undefined : onRhPause}
       />
 
       {playMode === 'free' && (
@@ -1878,7 +1795,15 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
         {isAr ? 'اسحب القطع على صفها — هدفك إيصال رجل المتاهة إلى المخرج' : 'Slide cars on their rails — get Maze Man to the exit'}
       </p>
 
-      <div style={{ position: 'relative', zIndex: 2 }}>
+      <div ref={boardRef} className="ct-juice-host" style={{ position: 'relative', zIndex: 2 }}>
+        <JuiceLayer
+          combo={juice.combo}
+          particle={juice.particle}
+          rtFx={juice.rtFx}
+          toast={juice.toast}
+          burst={juice.burst}
+          showCombo={false}
+        />
         <svg
           width={boardPx + 28}
           height={boardPx + 8}
@@ -2104,7 +2029,7 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
         onKeepPlaying={() => setQuitOpen(false)}
       />
 
-      {won && playMode !== 'assess' && (
+      {won && playMode !== 'assess' && playMode !== 'tutorial' && (
         <div
           style={{
             position: 'fixed',
@@ -2335,12 +2260,14 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
         </div>
       )}
 
-      {tutorialQueue.length > 0 && (
-        <RushHourTutorial
-          kind={tutorialQueue[0].kind}
+      {coachActive && coach.step && (
+        <CoachOverlay
+          step={coach.step}
+          index={coach.index}
+          total={coach.total}
+          onNext={coach.next}
+          onSkip={coach.skip}
           isAr={isAr}
-          onClose={advanceTutorial}
-          playSfx={playSfx}
         />
       )}
     </div>

@@ -120,3 +120,34 @@ export function scoreBand(v) {
   if (v >= 50) return 'mid';
   return 'low';
 }
+
+/* =============================================================================
+ * Baseline + progress (self-referenced) — derived from session history.
+ * ========================================================================== */
+
+/** Chronological raw-score series for a domain across all sessions that tested it. */
+export function domainSeries(domain, sessions = loadAssessSessions()) {
+  return sessions
+    .filter((s) => typeof s?.scores?.[domain] === 'number')
+    .map((s) => ({ ts: s.ts, age: s.age ?? null, score: s.scores[domain] }));
+}
+
+/** The first ("baseline") recorded score for a domain, or null. */
+export function baselineFor(domain, sessions = loadAssessSessions()) {
+  const series = domainSeries(domain, sessions);
+  return series.length ? series[0] : null;
+}
+
+/** latest − baseline for a domain (null if fewer than 2 points). */
+export function deltaVsBaseline(domain, sessions = loadAssessSessions()) {
+  const series = domainSeries(domain, sessions);
+  if (series.length < 2) return null;
+  return series[series.length - 1].score - series[0].score;
+}
+
+/** Chronological overall Cognitive-Index-style series (mean of each session's scores). */
+export function overallSeries(sessions = loadAssessSessions()) {
+  return sessions
+    .map((s) => ({ ts: s.ts, overall: typeof s.overall === 'number' ? s.overall : null }))
+    .filter((s) => s.overall != null);
+}

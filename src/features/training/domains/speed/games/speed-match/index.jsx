@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
   TrainingMenuBar,
@@ -7,12 +7,15 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
+import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import { useJuice } from '../../../../shared/juice/useJuice';
+import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
+import { ratingLabels } from '../../../../shared/juice/juiceUtils';
+import { useCoach } from '../../../../shared/coach/useCoach';
+import CoachOverlay from '../../../../shared/coach/CoachOverlay';
 import { loadGameSettings } from '../../../../shared/focusQuestData';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
-import SpeedMatchTutorial, {
-  buildTutorialQueueFor,
-  markTutorialSeen,
-} from './tutorial';
+import { buildSpeedCoachSteps } from './tutorialScript';
 import {
   SH,
   SM_DIFF_KEYS,
@@ -282,6 +285,20 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
   const t = isAr ? UI.ar : UI.en;
   const settings = loadGameSettings();
 
+  const juice = useJuice();
+  const rLabels = ratingLabels(isAr);
+  const legendRef = useRef(null);
+  const cardRef = useRef(null);
+  const padRef = useRef(null);
+  const [coachActive, setCoachActive] = useState(false);
+  const pendingAfterCoachRef = useRef(null);
+  const coachRef = useRef(null);
+  const tutScriptRef = useRef(0);
+  const tutorialData = useMemo(() => {
+    const lg = buildLegend(3, mulberry32(7));
+    return { legend: lg, items: [lg[1] || lg[0], lg[2] || lg[0]] };
+  }, []);
+
   const [profile, setProfile] = useState(() => loadProfile());
   const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
   const [diffKey, setDiffKey] = useState('easy');
@@ -543,7 +560,34 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
     if (playStepRef.current !== 'running' || pauseRef.current) return;
     const block = blockRef.current;
     const it = itemRef.current;
-    if (!block || !it || answeredRef.current) return;
+    if (!block || !it) return;
+
+    // Coached tutorial: gate on the correct digit, let the player retry, no scoring.
+    if (block.mode === 'tutorial') {
+      const ok = digit === it.digit;
+      setPressedKey(digit);
+      setTimeout(() => setPressedKey(null), 120);
+      if (ok) {
+        playSfx('click');
+        juice.hit({});
+        flash('hit');
+        coachRef.current?.notify('answer', { digit });
+        const nextIdx = tutScriptRef.current + 1;
+        tutScriptRef.current = nextIdx;
+        const nx = tutorialData.items[nextIdx];
+        if (nx) {
+          itemRef.current = nx;
+          setItem(nx);
+        }
+      } else {
+        playSfx('error');
+        juice.miss();
+        flash('miss');
+      }
+      return;
+    }
+
+    if (answeredRef.current) return;
     answeredRef.current = true;
     const now = performance.now();
     const rt = Math.round(now - itemStartRef.current);
@@ -553,6 +597,7 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
     setTimeout(() => setPressedKey(null), 120);
     if (isRight) {
       playSfx('click');
+      juice.hit({ rtMs: rt, limitMs: block.mode === 'free' ? itemMsRef.current : 1600 });
       correctRef.current += 1;
       comboRef.current += 1;
       setCorrect(correctRef.current);
@@ -565,6 +610,7 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
       nextItemRef.current(now);
     } else {
       playSfx('error');
+      juice.miss();
       wrongRef.current += 1;
       comboRef.current = 0;
       setCombo(0);
@@ -576,7 +622,7 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
       }
       nextItemRef.current(now);
     }
-  }, [playSfx, flash, finishFreeRun]);
+  }, [playSfx, flash, finishFreeRun, juice, tutorialData]);
 
   // Countdown → running.
   useEffect(() => {
@@ -609,6 +655,7 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
     scoreRef.current = 0;
     lastDigitRef.current = 0;
     endedRef.current = false;
+    juice.reset();
     setLegend(block.legend);
     setItem(null);
     setScore(0);
@@ -696,34 +743,83 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
     else setPhase('hub');
   };
 
-  /* --- Tutorial gating --- */
-  const [tutorialQueue, setTutorialQueue] = useState([]);
-  const pendingTutorialActionRef = useRef(null);
-  const gateWithTutorial = useCallback((action, modeKind) => {
-    const q = buildTutorialQueueFor(modeKind);
-    if (q.length === 0) { action(); return; }
-    pendingTutorialActionRef.current = action;
-    setTutorialQueue(q);
-  }, []);
-  const advanceTutorial = useCallback(() => {
-    setTutorialQueue((prev) => {
-      const finished = prev[0];
-      if (finished) {
-        markTutorialSeen(finished.kind === 'main' ? 'main' : finished.kind === 'free-tip' ? 'free' : 'challenge');
+  /* --- Coached interactive tutorial --- */
+  const beginTutorial = useCallback(() => {
+    stopLoop();
+    runIdRef.current += 1;
+    tutScriptRef.current = 0;
+    blockRef.current = {
+      mode: 'tutorial',
+      diff: 'tutorial',
+      lv: 0,
+      spec: { durationSec: 0, remapEvery: 0, pairCount: 3 },
+      legend: tutorialData.legend,
+    };
+    eventsRef.current = [];
+    endedRef.current = false;
+    answeredRef.current = false;
+    juice.reset();
+    setLegend(tutorialData.legend);
+    itemRef.current = tutorialData.items[0];
+    setItem(tutorialData.items[0]);
+    setFeedback(null);
+    setPauseOpen(false);
+    setQuitOpen(false);
+    setPhase('play');
+    setPlayStep('running');
+    playStepRef.current = 'running';
+  }, [stopLoop, tutorialData, juice]);
+
+  const finishCoach = useCallback(() => {
+    try {
+      localStorage.setItem('mm_speedmatch_coach_seen', '1');
+    } catch {
+      /* ignore */
+    }
+    setCoachActive(false);
+    clearPlay();
+    const fn = pendingAfterCoachRef.current;
+    pendingAfterCoachRef.current = null;
+    if (fn) fn();
+    else setPhase('hub');
+  }, [clearPlay]);
+
+  const coachSteps = useMemo(
+    () =>
+      buildSpeedCoachSteps(
+        isAr,
+        { legendRef, cardRef, padRef },
+        [tutorialData.items[0]?.digit, tutorialData.items[1]?.digit],
+      ),
+    [isAr, tutorialData],
+  );
+  const coach = useCoach(coachSteps, { active: coachActive, onDone: finishCoach });
+  useEffect(() => {
+    coachRef.current = coach;
+  }, [coach]);
+
+  const startCoach = useCallback(
+    (thenFn) => {
+      pendingAfterCoachRef.current = thenFn || null;
+      setCoachActive(true);
+      beginTutorial();
+    },
+    [beginTutorial],
+  );
+  const maybeCoach = useCallback(
+    (fn) => {
+      let seen = false;
+      try {
+        seen = !!localStorage.getItem('mm_speedmatch_coach_seen');
+      } catch {
+        /* ignore */
       }
-      const rem = prev.slice(1);
-      if (rem.length === 0 && pendingTutorialActionRef.current) {
-        const a = pendingTutorialActionRef.current;
-        pendingTutorialActionRef.current = null;
-        queueMicrotask(a);
-      }
-      return rem;
-    });
-  }, []);
-  const replayTutorial = useCallback(() => {
-    pendingTutorialActionRef.current = null;
-    setTutorialQueue([{ kind: 'main' }]);
-  }, []);
+      if (seen) fn();
+      else startCoach(fn);
+    },
+    [startCoach],
+  );
+  const replayTutorial = useCallback(() => startCoach(null), [startCoach]);
 
   const block = blockRef.current;
   const now = performance.now();
@@ -781,9 +877,9 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
               t={t}
               isAr={isAr}
               playSfx={playSfx}
-              onFree={() => gateWithTutorial(startFreeMode, 'free')}
-              onLevels={() => gateWithTutorial(() => setPhase('diff'), 'levels')}
-              onChallenge={() => gateWithTutorial(() => setPhase('chal'), 'challenge')}
+              onFree={() => maybeCoach(startFreeMode)}
+              onLevels={() => maybeCoach(() => setPhase('diff'))}
+              onChallenge={() => maybeCoach(() => setPhase('chal'))}
             />
           </div>
         </div>
@@ -792,69 +888,39 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
       {phase === 'freeIntro' && null}
 
       {phase === 'diff' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar
-              onBack={() => setPhase('hub')}
-              playSfx={playSfx}
-              variant="paper"
-              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.pickDiff}</div></div>}
-            />
-            <div className="ct-fq-diff-body">
-              <p className="ct-fq-sub ct-fq-training-blurb">{t.pickDiffSub}</p>
-              <div className="ct-fq-diff-cards">
-                {SM_DIFF_KEYS.map((k) => {
-                  const m = SM_DM[k];
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training ct-fq-diffcard`}
-                      onClick={() => { playSfx('click'); setDiffKey(k); setPhase('levels'); }}
-                    >
-                      <span className="ct-fq-diffcard-main">
-                        <span className="ct-fq-diffcard-label">{m.label}</span>
-                        <span className="ct-fq-diffcard-desc">{t.diffDesc[k]}</span>
-                      </span>
-                      <span className="ct-fq-diffcard-meta">
-                        <span className="ct-fq-diffcard-pop">{m.pop}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
+        <TrainingDifficultySelect
+          isAr={isAr}
+          playSfx={playSfx}
+          onBack={() => setPhase('hub')}
+          title={t.pickDiff}
+          blurb={t.pickDiffSub}
+          diffKeys={SM_DIFF_KEYS}
+          dm={SM_DM}
+          descs={t.diffDesc}
+          onPick={(k) => {
+            setDiffKey(k);
+            setPhase('levels');
+          }}
+        />
       )}
 
       {phase === 'levels' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar
-              onBack={() => setPhase('diff')}
-              playSfx={playSfx}
-              variant="paper"
-              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{SM_DM[diffKey].label}</div></div>}
-            />
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.levelsSub(SM_DM[diffKey].pop)}</p>
-            <div className="ct-fq-lg ct-fq-lg-training">
-              {Array.from({ length: SM_LEVELS_PER_TIER }, (_, i) => i + 1).map((lv) => {
-                const un = isLevelUnlocked(diffKey, lv, doneMap);
-                const dn = !!doneMap[`${diffKey}-${lv}`];
-                const spec = specForLevel(diffKey, lv);
-                const cls = `ct-fq-lb ${un ? `ct-${SM_DM[diffKey].lvc}` : 'ct-lvk'}`;
-                return (
-                  <button key={lv} type="button" className={cls} disabled={!un}
-                    onClick={() => { if (!un) return; playSfx('click'); startLevel(diffKey, lv); }}>
-                    <span className="ct-ln">{dn ? '✓' : lv}</span>
-                    <span className="ct-ls">{un ? `${spec.pairCount}◆·${spec.targetCorrect}` : '🔒'}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <TrainingLevelGrid
+          isAr={isAr}
+          playSfx={playSfx}
+          onBack={() => setPhase('diff')}
+          title={SM_DM[diffKey].label}
+          blurb={t.levelsSub(SM_DM[diffKey].pop)}
+          count={SM_LEVELS_PER_TIER}
+          lvc={SM_DM[diffKey].lvc}
+          isUnlocked={(lv) => isLevelUnlocked(diffKey, lv, doneMap)}
+          isDone={(lv) => !!doneMap[`${diffKey}-${lv}`]}
+          sublabel={(lv) => {
+            const spec = specForLevel(diffKey, lv);
+            return `${spec.pairCount}◆·${spec.targetCorrect}`;
+          }}
+          onPick={(lv) => startLevel(diffKey, lv)}
+        />
       )}
 
       {phase === 'chal' && (
@@ -924,15 +990,24 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
         <div className="ct-sm-play">
           <TrainingPlayHeader
             isAr={isAr}
-            title={header.title}
-            subtitle={header.subtitle}
+            title={block.mode === 'tutorial' ? (isAr ? 'كيفية اللعب' : 'How to play') : header.title}
+            subtitle={block.mode === 'tutorial' ? '' : header.subtitle}
             playSfx={playSfx}
-            onMenu={() => setQuitOpen(true)}
-            onPause={onPause}
+            onMenu={block.mode === 'tutorial' ? () => coach.skip() : () => setQuitOpen(true)}
+            onPause={block.mode === 'tutorial' ? undefined : onPause}
             pauseAriaLabel={t.paused}
           />
-          <div className={`ct-sm-stage${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}`}>
-            <div className="ct-sm-legend-wrap" data-fq-chrome>
+          <div className={`ct-sm-stage ct-juice-host${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}${juice.shake ? ' ct-juice-shake' : ''}`}>
+            <JuiceLayer
+              combo={juice.combo}
+              particle={juice.particle}
+              rtFx={juice.rtFx}
+              toast={juice.toast}
+              burst={juice.burst}
+              ratingLabels={rLabels}
+              showCombo={false}
+            />
+            <div className="ct-sm-legend-wrap" data-fq-chrome ref={legendRef}>
               <div className="ct-sm-legend-label">{t.key}</div>
               <LegendBar legend={legend} t={t} />
             </div>
@@ -961,7 +1036,7 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
               </div>
             )}
 
-            <div className="ct-sm-card" aria-live="polite">
+            <div className="ct-sm-card" aria-live="polite" ref={cardRef}>
               {playStep === 'countdown' ? (
                 <div className="ct-sm-countdown">{cdVal > 0 ? cdVal : t.go}</div>
               ) : item ? (
@@ -970,7 +1045,7 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
             </div>
             <p className="ct-sm-prompt">{t.tapNumber}</p>
 
-            <div className="ct-sm-pad" role="group" aria-label={t.tapNumber}>
+            <div className="ct-sm-pad" role="group" aria-label={t.tapNumber} ref={padRef}>
               {legend.map((p) => (
                 <button
                   key={p.digit}
@@ -1085,8 +1160,15 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
         </div>
       )}
 
-      {tutorialQueue.length > 0 && (
-        <SpeedMatchTutorial kind={tutorialQueue[0].kind} isAr={isAr} onClose={advanceTutorial} playSfx={playSfx} />
+      {coachActive && coach.step && (
+        <CoachOverlay
+          step={coach.step}
+          index={coach.index}
+          total={coach.total}
+          onNext={coach.next}
+          onSkip={coach.skip}
+          isAr={isAr}
+        />
       )}
     </div>
   );
