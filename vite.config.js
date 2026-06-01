@@ -56,6 +56,7 @@ function pwaPlugin() {
     workbox: {
       skipWaiting: true,
       clientsClaim: true,
+      cleanupOutdatedCaches: true,
       runtimeCaching: [
         {
           urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com/,
