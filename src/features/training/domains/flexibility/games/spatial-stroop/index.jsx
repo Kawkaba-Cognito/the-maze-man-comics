@@ -298,7 +298,7 @@ function Particles({ data }) {
 }
 
 export default function SpatialStroopGame({ onBack, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
-  const { playSfx, currentLang } = useApp();
+  const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
 
@@ -541,6 +541,7 @@ export default function SpatialStroopGame({ onBack, assessmentMode = false, onAs
         if (changed) saveStroopProfile(next);
         return changed ? next : prev;
       });
+      awardFreeRun('stroop', Math.floor(freeBlocksRef.current / 5));
       setLastResult({
         type: 'free',
         blocksWon: freeBlocksRef.current,
@@ -556,6 +557,7 @@ export default function SpatialStroopGame({ onBack, assessmentMode = false, onAs
     }
 
     playSfx(grade.won ? 'win' : 'error');
+    if (grade.won) awardTrainingWin('stroop', b.diff, b.lv, STROOP_LEVELS_PER_TIER);
     persistLevel(b, summary, grade);
     setLastResult({ type: 'level', block: b, summary, grade });
     setPhase('res');

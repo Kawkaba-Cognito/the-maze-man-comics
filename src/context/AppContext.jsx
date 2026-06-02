@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
+import { trainingWinPoints } from '../lib/points';
 
 const AppContext = createContext(null);
 
@@ -19,8 +20,12 @@ const DEFAULT_PROFILE = {
   badges: { explorer: false, maze: false, master: false }
 };
 
+const POINTS_KEY = 'mazeman_points';
+
 export function AppProvider({ children }) {
   const [globalXP, setGlobalXP] = useState(0);
+  const [points, setPoints] = useState(0);
+  const pointsRef = useRef(0);
   const [currentLang, setCurrentLang] = useState('en');
   const [activeTab, setActiveTab] = useState('home');
   const [mazeVisible, setMazeVisible] = useState(false);
@@ -112,6 +117,75 @@ export function AppProvider({ children }) {
     setGlobalXP(prev => prev + amount);
   }, []);
 
+  // ----- Points economy (spendable currency for characters / skins / world) -----
+  useEffect(() => {
+    try {
+      const p = parseInt(localStorage.getItem(POINTS_KEY) || '0', 10);
+      if (Number.isFinite(p)) { pointsRef.current = p; setPoints(p); }
+    } catch (e) { /* ignore */ }
+  }, []);
+
+  const awardPoints = useCallback((amount) => {
+    const a = Number(amount) || 0;
+    if (a <= 0) return;
+    const next = Math.max(0, pointsRef.current + a);
+    pointsRef.current = next;
+    setPoints(next);
+    try { localStorage.setItem(POINTS_KEY, String(next)); } catch (e) { /* ignore */ }
+  }, []);
+
+  const spendPoints = useCallback((amount) => {
+    const a = Number(amount) || 0;
+    if (a <= 0 || pointsRef.current < a) return false;
+    const next = pointsRef.current - a;
+    pointsRef.current = next;
+    setPoints(next);
+    try { localStorage.setItem(POINTS_KEY, String(next)); } catch (e) { /* ignore */ }
+    return true;
+  }, []);
+
+  /**
+   * Award points for a TRAINING level win — but only the FIRST time that exact
+   * level is cleared (a persisted ledger keyed by game:diff:level prevents
+   * farming the same level). Returns the points granted (0 if already claimed).
+   */
+  const awardTrainingWin = useCallback((gameKey, diff, level, levelsPerTier = 100) => {
+    const key = `${gameKey}:${diff}:${level}`;
+    let claimed = {};
+    try { claimed = JSON.parse(localStorage.getItem('mazeman_claimed_wins') || '{}') || {}; } catch (e) { /* ignore */ }
+    if (claimed[key]) return 0;
+    claimed[key] = 1;
+    try { localStorage.setItem('mazeman_claimed_wins', JSON.stringify(claimed)); } catch (e) { /* ignore */ }
+    const gained = trainingWinPoints(diff, level, levelsPerTier);
+    awardPoints(gained);
+    return gained;
+  }, [awardPoints]);
+
+  /**
+   * Award points for a FREE-mode run — gradual & farm-proof. Each free LEVEL you
+   * reach is worth its level number (level 1 → 1pt, level 2 → 2pts, …), and each
+   * level pays only the FIRST time it's reached (persisted ledger keyed by
+   * game:level). So points climb gradually as you go deeper, pushing further keeps
+   * adding, but replaying shallow runs earns nothing. Returns points granted.
+   */
+  const awardFreeRun = useCallback((gameKey, levelsReached) => {
+    const L = Math.max(0, Math.floor(Number(levelsReached) || 0));
+    if (L <= 0) return 0;
+    let claimed = {};
+    try { claimed = JSON.parse(localStorage.getItem('mazeman_claimed_free') || '{}') || {}; } catch (e) { /* ignore */ }
+    let gained = 0;
+    let changed = false;
+    for (let k = 1; k <= L; k++) {
+      const key = `${gameKey}:${k}`;
+      if (!claimed[key]) { claimed[key] = 1; gained += k; changed = true; } // level k → k points
+    }
+    if (changed) {
+      try { localStorage.setItem('mazeman_claimed_free', JSON.stringify(claimed)); } catch (e) { /* ignore */ }
+      awardPoints(gained);
+    }
+    return gained;
+  }, [awardPoints]);
+
   const toggleLang = useCallback(() => {
     playSfx('click');
     setCurrentLang(prev => prev === 'en' ? 'ar' : 'en');
@@ -171,10 +245,10 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      globalXP, currentLang, activeTab, mazeVisible, mazeEntryPending,
+      globalXP, points, currentLang, activeTab, mazeVisible, mazeEntryPending,
       paywallOpen, tipOpen, profileData,
       sfxEnabled, setSfxEnabled,
-      updateXP, toggleLang, switchTab, requestMazeEntry, enterMaze, exitMaze,
+      updateXP, awardPoints, spendPoints, awardTrainingWin, awardFreeRun, toggleLang, switchTab, requestMazeEntry, enterMaze, exitMaze,
       playSfx, stopSpeech, saveProfile,
       setProfileData,
       openPaywall: () => { playSfx('click'); setPaywallOpen(true); },

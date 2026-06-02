@@ -280,7 +280,7 @@ function SpeedModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
 }
 
 export default function SpeedMatchGame({ onBack, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
-  const { playSfx, currentLang } = useApp();
+  const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
   const settings = loadGameSettings();
@@ -493,7 +493,7 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
     }
 
     // level
-    if (grade.won) { playSfx('win'); persistLevelDone(block.diff, block.lv); }
+    if (grade.won) { playSfx('win'); persistLevelDone(block.diff, block.lv); awardTrainingWin('speed', block.diff, block.lv, SM_LEVELS_PER_TIER); }
     else playSfx('error');
     setLastResult({ type: 'level', block, summary, grade });
     setPhase('res');
@@ -517,6 +517,7 @@ export default function SpeedMatchGame({ onBack, assessmentMode = false, onAsses
       if (changed) saveProfile(next);
       return changed ? next : prev;
     });
+    awardFreeRun('speed', Math.floor(c / 5));
     setLastResult({ type: 'free', score: runScore, correct: c });
     setPhase('freeRes');
     setPlayStep('idle');

@@ -8,6 +8,7 @@ import { randomSeed } from '../../shared/rng';
 import GridSizePicker, { PuzzleHint, PuzzleWinBanner, PuzzleToolbar } from '../../shared/GridSizePicker';
 import PuzzleTutorial from '../../shared/PuzzleTutorial';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
+import { puzzleWinPoints } from '../../../../lib/points';
 import {
   createSlidingPuzzle,
   trySlide,
@@ -18,7 +19,7 @@ const CONFIG = getPuzzle('sliding');
 const PUZZLE_ID = 'sliding';
 
 export default function SlidingPuzzle({ onBack }) {
-  const { currentLang, playSfx } = useApp();
+  const { currentLang, playSfx, awardPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
@@ -47,11 +48,12 @@ export default function SlidingPuzzle({ onBack }) {
   }, [screen, solved]);
 
   useEffect(() => {
-    if (state && isSlidingSolved(state)) {
+    if (state && !solved && isSlidingSolved(state)) {
       setSolved(true);
       playSfx('win');
+      awardPoints(puzzleWinPoints(size, CONFIG.sizes));
     }
-  }, [state, playSfx]);
+  }, [state, solved, size, playSfx, awardPoints]);
 
   useEffect(() => {
     if (screen === 'play') maybeShowTutorial();

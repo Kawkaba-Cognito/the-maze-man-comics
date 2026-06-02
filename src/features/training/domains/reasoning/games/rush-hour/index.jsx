@@ -243,7 +243,7 @@ const UI_AR = {
 };
 
 export default function RushHourGame({ onBack, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
-  const { playSfx, currentLang } = useApp();
+  const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI_AR : UI_EN;
 
@@ -318,6 +318,7 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
   };
 
   const endFreeRun = useCallback(() => {
+    awardFreeRun('rush', freeRoundsWonRef.current);
     setFreeResSnapshot({
       rounds: freeRoundsWonRef.current,
       score: freeScoreRef.current,
@@ -963,7 +964,7 @@ export default function RushHourGame({ onBack, assessmentMode = false, onAssessm
                 return;
               }
               const dk = diffKeyRef.current;
-              if (mode === 'levels') syncProgressWin(dk, lv, nextM);
+              if (mode === 'levels') { syncProgressWin(dk, lv, nextM); awardTrainingWin('rush', dk, lv, RH_LEVELS_PER_TIER); }
               if (mode === 'free') {
                 freeStreakRef.current += 1;
                 if (freeStreakRef.current > freeBestStreakRef.current) {

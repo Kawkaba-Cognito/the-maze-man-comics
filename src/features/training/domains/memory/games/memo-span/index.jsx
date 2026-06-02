@@ -150,7 +150,7 @@ const UI = {
 const ASSESS_TRIALS = 10; // fixed standardized span ladder
 
 export default function MemoSpanGame({ onBack, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
-  const { playSfx, currentLang } = useApp();
+  const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
 
@@ -321,6 +321,7 @@ export default function MemoSpanGame({ onBack, assessmentMode = false, onAssessm
         beginRoundRef.current(prepareFreeRound(freeSpanRef.current, rngSeed()));
         return;
       }
+      awardFreeRun('memo', Math.max(0, span - 1));
       setLastResult({ type: 'free', score: freeScoreRef.current, bestSpan: profile.bestStudy ?? span });
       goNext('freeRes');
       return;
@@ -328,6 +329,7 @@ export default function MemoSpanGame({ onBack, assessmentMode = false, onAssessm
 
     // level
     if (won) {
+      awardTrainingWin('memo', r.diff, r.lv, MS_LEVELS_PER_TIER);
       const key = `${r.diff}-${r.lv}`;
       setProfile((prev) => {
         const next = { ...prev, done: { ...(prev.done || {}), [key]: true } };

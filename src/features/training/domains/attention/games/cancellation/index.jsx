@@ -593,7 +593,7 @@ const UI = {
 };
 
 export default function CancellationTaskGame({ onBack, assessmentMode = false, onAssessmentExit, onAssessmentComplete, assessmentLabel, assessmentStep }) {
-  const { playSfx, currentLang } = useApp();
+  const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
   const settings = loadGameSettings();
@@ -987,6 +987,7 @@ export default function CancellationTaskGame({ onBack, assessmentMode = false, o
           if (changed) saveProfile(next);
           return changed ? next : prev;
         });
+        awardFreeRun('cancel', rw);
         setLastResult({ type: 'free', roundsWon: rw, score: runScore, lastR: r });
         setPhase('freeRes');
         setPlayStep('idle');
@@ -1041,6 +1042,7 @@ export default function CancellationTaskGame({ onBack, assessmentMode = false, o
       }
       if (won) playSfx('win');
       else playSfx('error');
+      if (won) awardTrainingWin('cancel', r.diff, r.lv, FQ_LEVELS_PER_TIER);
       persistLevel(r, stats, f, e);
       setLastResult({ type: 'level', stats, r, won, found: f, errors: e });
       setPhase('res');

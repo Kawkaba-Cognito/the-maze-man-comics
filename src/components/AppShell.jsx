@@ -6,6 +6,8 @@ import ComicsScreen from './screens/ComicsScreen';
 import PuzzlesScreen from './screens/PuzzlesScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import ShopScreen from './screens/ShopScreen';
+import RewardsShopScreen from './screens/RewardsShopScreen';
+import CharacterScreen from './screens/CharacterScreen';
 import MazeOverlay from './maze/MazeOverlay';
 import PaywallModal from './modals/PaywallModal';
 import TipJarModal from './modals/TipJarModal';
@@ -73,6 +75,8 @@ export default function AppShell({ onBackToMenu }) {
         <div id="screen-puzzles" className={`ui-screen ${activeTab === 'puzzles' ? 'active' : ''}`}><PuzzlesScreen /></div>
         <div id="screen-profile" className={`ui-screen ${activeTab === 'profile' ? 'active' : ''}`}><ProfileScreen /></div>
         <div id="screen-shop"    className={`ui-screen ${activeTab === 'shop'    ? 'active' : ''}`}><ShopScreen /></div>
+        <div id="screen-pointshop" className={`ui-screen ${activeTab === 'pointshop' ? 'active' : ''}`}><RewardsShopScreen /></div>
+        <div id="screen-character" className={`ui-screen ${activeTab === 'character' ? 'active' : ''}`}><CharacterScreen /></div>
 
       </div>
 

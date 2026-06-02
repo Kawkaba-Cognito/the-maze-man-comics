@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { TrainingMenuBar, TrainingPlayHeader } from '../../training/shared/TrainingChrome';
 import GridSizePicker, { PuzzleHint, PuzzleWinBanner, PuzzleToolbar } from './GridSizePicker';
 import PuzzleTutorial from './PuzzleTutorial';
 import { TUTORIAL_UI } from './tutorialContent';
+import { useApp } from '../../../context/AppContext';
+import { puzzleWinPoints } from '../../../lib/points';
 
 export function NumberPuzzleFrame({
   config,
@@ -29,10 +31,22 @@ export function NumberPuzzleFrame({
 }) {
   const [screen, setScreen] = useState('hub');
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
+  const { awardPoints } = useApp();
+  const awardedRef = useRef(false);
 
   useEffect(() => {
     if (screen === 'play') maybeShowTutorial();
   }, [screen, maybeShowTutorial]);
+
+  // Award points once per solve (puzzle difficulty ≈ grid size).
+  useEffect(() => {
+    if (solved && !awardedRef.current) {
+      awardedRef.current = true;
+      awardPoints(puzzleWinPoints(size, sizes));
+    } else if (!solved) {
+      awardedRef.current = false;
+    }
+  }, [solved, size, awardPoints]);
 
   const hubCenter = (
     <>

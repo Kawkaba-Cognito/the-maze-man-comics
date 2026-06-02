@@ -223,7 +223,7 @@ const UI = {
 };
 
 export default function WordleGame({ onBack, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
-  const { playSfx, currentLang } = useApp();
+  const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
   const lang = isAr ? 'ar' : 'en';
@@ -332,6 +332,7 @@ export default function WordleGame({ onBack, assessmentMode = false, onAssessmen
       });
       if (grade.won && r.mode === 'level') {
         p.done[`${r.diff}-${r.lv}`] = true;
+        awardTrainingWin('wordle', r.diff, r.lv, WORDLE_LEVELS_PER_TIER);
       }
       saveWordleProfile(p);
       setProfile(p);
@@ -405,6 +406,7 @@ export default function WordleGame({ onBack, assessmentMode = false, onAssessmen
         };
         saveWordleProfile(p);
         setProfile(p);
+        awardFreeRun('wordle', Math.floor(freeWordsRef.current / 3));
         setPhase('freeRes');
         return;
       }

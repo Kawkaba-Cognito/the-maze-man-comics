@@ -18,6 +18,7 @@ import {
 } from './mazeEngine';
 import MazeCanvas from './MazeCanvas';
 import MazeJoystick from './MazeJoystick';
+import { puzzleWinPoints } from '../../../../lib/points';
 
 const STEP_MS = 135; // auto-step cadence while a direction is held
 const KEY_DIRS = {
@@ -30,7 +31,7 @@ const CONFIG = getPuzzle('maze');
 const PUZZLE_ID = 'maze';
 
 export default function LogicMazePuzzle({ onBack }) {
-  const { currentLang, playSfx } = useApp();
+  const { currentLang, playSfx, awardPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
@@ -91,11 +92,12 @@ export default function LogicMazePuzzle({ onBack }) {
   }, [screen, solved]);
 
   useEffect(() => {
-    if (state && isMazeSolved(state)) {
+    if (state && !solved && isMazeSolved(state)) {
       setSolved(true);
       playSfx('win');
+      awardPoints(puzzleWinPoints(size, CONFIG.sizes));
     }
-  }, [state, playSfx]);
+  }, [state, solved, size, playSfx, awardPoints]);
 
   useEffect(() => {
     if (screen === 'play') maybeShowTutorial();
