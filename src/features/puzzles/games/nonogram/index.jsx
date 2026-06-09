@@ -5,13 +5,14 @@ import { PUZZLE_UI } from '../../shared/puzzleStrings';
 import { randomSeed } from '../../shared/rng';
 import { NumberPuzzleFrame } from '../../shared/NumberPuzzleFrame';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
-import { FILLED, MARK, generateNonogram, nonogramLineCluesMatch, setNonogramCell } from './nonogramEngine';
+import { makeHint } from '../../shared/useHint';
+import { FILLED, MARK, generateNonogram, nonogramLineCluesMatch, setNonogramCell, hintReveal } from './nonogramEngine';
 
 const CONFIG = getPuzzle('nonogram');
 const SIZES = [5, 8, 10];
 
 export default function NonogramPuzzle({ onBack }) {
-  const { currentLang, playSfx } = useApp();
+  const { currentLang, playSfx, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutorial = usePuzzleTutorial('nonogram', isAr);
@@ -56,6 +57,7 @@ export default function NonogramPuzzle({ onBack }) {
       solved={solved}
       elapsed={elapsed}
       newGame={newGame}
+      hintCfg={makeHint({ points, spendPoints, solved, state, setState, hintReveal })}
       onReset={() => setState((s) => ({ ...s, player: Array.from({ length: s.size }, () => Array(s.size).fill(0)) }))}
       hint={isAr ? 'الأرقام تخبرك بطول الكتل السوداء في كل صف وعمود.' : 'Clues show the lengths of filled blocks in each row and column.'}
       {...tutorial}

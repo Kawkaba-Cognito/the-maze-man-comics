@@ -194,3 +194,18 @@ export function isTakuzuComplete(player, size) {
 export function isTakuzuSolved(state) {
   return isTakuzuComplete(state.player, state.size);
 }
+
+/** Reveal one correct cell (paid hint). Returns { next, revealed }. */
+export function hintReveal(state) {
+  const { size, solution, player, fixed } = state;
+  const pool = [];
+  for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
+    if (!fixed[r][c] && player[r][c] !== solution[r][c]) pool.push([r, c]);
+  }
+  if (!pool.length) return { next: state, revealed: false };
+  const [r, c] = pool[Math.floor(Math.random() * pool.length)];
+  const np = player.map((row) => row.slice());
+  const nf = fixed.map((row) => row.slice());
+  np[r][c] = solution[r][c]; nf[r][c] = true;
+  return { next: { ...state, player: np, fixed: nf }, revealed: true };
+}

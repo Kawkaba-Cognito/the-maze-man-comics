@@ -26,6 +26,7 @@ export function NumberPuzzleFrame({
   closeTutorial,
   maybeShowTutorial,
   hint,
+  hintCfg,
   children,
   onReset,
 }) {
@@ -115,6 +116,7 @@ export function NumberPuzzleFrame({
             playSfx={playSfx}
             onNew={() => newGame(size)}
             onReset={onReset}
+            hint={hintCfg}
           />
         ) : (
           <PuzzleWinBanner

@@ -48,32 +48,7 @@ function drawMaze(ctx, state, solved, layout) {
     }
   }
 
-  // Breadcrumb trail showing where the avatar has walked
-  if (path.length > 1) {
-    const lineW = Math.max(2.5, unit * 0.42);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    ctx.strokeStyle = COLORS.pathSoft;
-    ctx.lineWidth = lineW + 2;
-    ctx.beginPath();
-    path.forEach(([r, c], i) => {
-      const { x, y } = cellCenter(r, c, pad, unit, dim);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    ctx.strokeStyle = solved ? COLORS.solved : COLORS.path;
-    ctx.lineWidth = lineW;
-    ctx.beginPath();
-    path.forEach(([r, c], i) => {
-      const { x, y } = cellCenter(r, c, pad, unit, dim);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-  }
+  // (No breadcrumb trail — the avatar moves cleanly without leaving a path.)
 
   // The avatar — a glowing token sitting on the current cell
   const [cr, cc] = path[path.length - 1];

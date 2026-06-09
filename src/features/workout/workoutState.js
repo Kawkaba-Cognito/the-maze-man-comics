@@ -1,0 +1,95 @@
+/*
+ * DAILY WORKOUT — persisted state (localStorage).
+ *
+ * Holds the user's prefs (goal + size), today's generated plan with per-exercise
+ * completion, the streak, and per-domain session counts that feed adaptive
+ * difficulty. All pure functions returning the updated state.
+ */
+import { todayKey, generatePlan } from './workoutPlan';
+import { loadAssessProfile, loadAssessSessions } from '../training/assessment/assessmentProfile';
+
+const KEY = 'mm_workout_v1';
+
+export function loadWorkout() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; }
+}
+function save(st) {
+  try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { /* ignore */ }
+  return st;
+}
+
+/** Most recent assessment's per-domain scores (or {}). */
+function latestScores() {
+  const ss = loadAssessSessions();
+  for (let i = ss.length - 1; i >= 0; i--) {
+    if (ss[i]?.scores) return ss[i].scores;
+  }
+  return {};
+}
+
+/** age + scores used by the planner / difficulty. */
+export function getDerived() {
+  return { age: loadAssessProfile().age, scores: latestScores() };
+}
+
+export function savePrefs(goal, size) {
+  const st = loadWorkout();
+  st.prefs = { goal, size };
+  st.today = null; // regenerate for the new prefs
+  return ensureToday(save(st));
+}
+
+/** Generate today's plan if missing / stale (new day or changed prefs). */
+export function ensureToday(st = loadWorkout()) {
+  if (!st.prefs) return st;
+  const date = todayKey();
+  const t = st.today;
+  if (t && t.date === date && t.goal === st.prefs.goal && t.size === st.prefs.size) return st;
+  const { age, scores } = getDerived();
+  const exercises = generatePlan({
+    date, goal: st.prefs.goal, size: st.prefs.size, age, scores,
+    domainCompleted: st.domainCompleted || {},
+  });
+  st.today = { date, goal: st.prefs.goal, size: st.prefs.size, exercises, done: exercises.map(() => false) };
+  return save(st);
+}
+
+/** Mark exercise `idx` done; bumps domain count and (if the day is complete) the streak. */
+export function markDone(idx) {
+  const st = loadWorkout();
+  if (!st.today || st.today.done[idx]) return st;
+  st.today.done[idx] = true;
+  const ex = st.today.exercises[idx];
+  st.domainCompleted = st.domainCompleted || {};
+  st.domainCompleted[ex.domainId] = (st.domainCompleted[ex.domainId] || 0) + 1;
+
+  // Per-day history for the calendar (date → { done, total }).
+  st.history = st.history || {};
+  st.history[st.today.date] = {
+    done: st.today.done.filter(Boolean).length,
+    total: st.today.exercises.length,
+  };
+
+  if (st.today.done.every(Boolean) && st.lastCompleteDate !== st.today.date) {
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    const yk = y.toISOString().slice(0, 10);
+    st.streak = st.lastCompleteDate === yk ? (st.streak || 0) + 1 : 1;
+    st.lastCompleteDate = st.today.date;
+    st.justCompleted = true; // one-shot flag for the UI celebration + bonus
+  }
+  return save(st);
+}
+
+export function consumeJustCompleted() {
+  const st = loadWorkout();
+  if (!st.justCompleted) return false;
+  st.justCompleted = false;
+  save(st);
+  return true;
+}
+
+export function resetPrefs() {
+  const st = loadWorkout();
+  st.prefs = null; st.today = null;
+  return save(st);
+}

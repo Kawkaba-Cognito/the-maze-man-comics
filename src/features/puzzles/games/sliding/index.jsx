@@ -9,17 +9,19 @@ import GridSizePicker, { PuzzleHint, PuzzleWinBanner, PuzzleToolbar } from '../.
 import PuzzleTutorial from '../../shared/PuzzleTutorial';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
 import { puzzleWinPoints } from '../../../../lib/points';
+import { makeHint } from '../../shared/useHint';
 import {
   createSlidingPuzzle,
   trySlide,
   isSlidingSolved,
+  hintReveal,
 } from './slidingEngine';
 
 const CONFIG = getPuzzle('sliding');
 const PUZZLE_ID = 'sliding';
 
 export default function SlidingPuzzle({ onBack }) {
-  const { currentLang, playSfx, awardPoints } = useApp();
+  const { currentLang, playSfx, awardPoints, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
@@ -150,6 +152,7 @@ export default function SlidingPuzzle({ onBack }) {
             playSfx={playSfx}
             onNew={() => newGame(size)}
             onReset={() => newGame(size, state.seed)}
+            hint={makeHint({ points, spendPoints, solved, state, setState, hintReveal })}
           />
         ) : (
           <PuzzleWinBanner

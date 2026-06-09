@@ -6,13 +6,14 @@ import { randomSeed } from '../../shared/rng';
 import { NumberPuzzleFrame } from '../../shared/NumberPuzzleFrame';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
 import { NumberPad } from '../../shared/GridSizePicker';
-import { generateKakuro, isKakuroSolved, resetKakuro, setKakuroCell } from './kakuroEngine';
+import { makeHint } from '../../shared/useHint';
+import { generateKakuro, isKakuroSolved, resetKakuro, setKakuroCell, hintReveal } from './kakuroEngine';
 
 const CONFIG = getPuzzle('kakuro');
 const SIZES = [6, 7];
 
 export default function KakuroPuzzle({ onBack }) {
-  const { currentLang, playSfx } = useApp();
+  const { currentLang, playSfx, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutorial = usePuzzleTutorial('kakuro', isAr);
@@ -58,6 +59,7 @@ export default function KakuroPuzzle({ onBack }) {
       solved={solved}
       elapsed={elapsed}
       newGame={newGame}
+      hintCfg={makeHint({ points, spendPoints, solved, state, setState, hintReveal })}
       onReset={() => setState((s) => resetKakuro(s))}
       hint={isAr ? 'املأ ١-٩. مجموع كل مسار يطابق الرقم ولا تكرار داخله.' : 'Fill 1-9. Each run must match its clue sum with no repeats.'}
       {...tutorial}
@@ -71,8 +73,9 @@ export default function KakuroPuzzle({ onBack }) {
                   <div key={`${r}-${c}`} className="ct-puzzle-cell ct-puzzle-cell--kakuro-block">
                     {(cell.down || cell.across) ? (
                       <span className="ct-kakuro-clue">
-                        {cell.down ? <b>{cell.down}</b> : null}
-                        {cell.across ? <i>{cell.across}</i> : null}
+                        {/* across sum (run to the right) → top-right; down sum → bottom-left */}
+                        {cell.across ? <b>{cell.across}</b> : null}
+                        {cell.down ? <i>{cell.down}</i> : null}
                       </span>
                     ) : null}
                   </div>

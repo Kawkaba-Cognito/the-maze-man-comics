@@ -107,7 +107,33 @@ const kakuro = {
   loader: () => import('./games/kakuro'),
 };
 
-export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, maze, sudoku, kenken, nonogram, kakuro];
+const crowns = {
+  id: 'crowns',
+  gameKey: 'crowns',
+  name: 'Crowns',
+  nameAr: 'تيجان',
+  icon: '👑',
+  desc: 'One crown per row, column & color — none may touch.',
+  descAr: 'تاج واحد لكل صف وعمود ولون — ولا يتلامسان.',
+  accent: '#e6c66a',
+  sizes: [5, 6, 7, 8],
+  loader: () => import('./games/crowns'),
+};
+
+const blockburst = {
+  id: 'blockburst',
+  gameKey: 'blockburst',
+  name: 'Block Burst',
+  nameAr: 'انفجار المكعّبات',
+  icon: '🧱',
+  desc: 'Drop blocks, fill rows & columns to blast them. Endless!',
+  descAr: 'أسقِط المكعّبات، واملأ الصفوف والأعمدة لتفجيرها. بلا نهاية!',
+  accent: '#5fa9d8',
+  sizes: [8],
+  loader: () => import('./games/blockburst'),
+};
+
+export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, maze, sudoku, kenken, nonogram, kakuro, crowns, blockburst];
 
 export const PUZZLES_BY_KEY = Object.fromEntries(
   PUZZLE_CONFIGS.map((p) => [p.gameKey, p])

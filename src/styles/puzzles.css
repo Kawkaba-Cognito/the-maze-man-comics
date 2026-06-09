@@ -690,9 +690,12 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, transparent calc(50% - 1px), rgba(255,255,255,0.45) 50%, transparent calc(50% + 1px));
+  /* "\" slash: separates the across sum (top-right) from the down sum (bottom-left) */
+  background: linear-gradient(45deg, transparent calc(50% - 1px), rgba(255,255,255,0.45) 50%, transparent calc(50% + 1px));
   opacity: 0.75;
 }
+/* only draw the slash on clue cells that actually carry sums */
+.ct-puzzle-cell--kakuro-block:not(:has(.ct-kakuro-clue))::after { display: none; }
 
 .ct-kakuro-clue {
   position: absolute;
@@ -872,6 +875,42 @@
   filter: drop-shadow(0 4px 8px rgba(26, 18, 8, 0.15));
 }
 
+/* ── Diagram tutorials (code-drawn problem→solution) ── */
+.ct-puzzle-tut-demo--diagram {
+  max-width: 320px;
+  min-height: 140px;
+  background: linear-gradient(180deg, #fffdf8 0%, #f4ece0 100%);
+  border: 1.5px solid #1a1208;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(26, 18, 8, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  padding: 14px 12px;
+}
+.ct-tut-board {
+  display: grid;
+  gap: 0;
+  border: 2px solid #1a1208;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.ct-tut-cell {
+  display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid rgba(26, 18, 8, 0.16);
+  line-height: 1;
+}
+.ct-tut-cell--good { box-shadow: inset 0 0 0 3px #2e9e4f; border-color: #2e9e4f; }
+.ct-tut-cell--bad { box-shadow: inset 0 0 0 3px #c0392b; border-color: #c0392b; }
+.ct-tut-diagram-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.ct-tut-arrow { font-size: 1.4rem; color: #8a6a3a; }
+.ct-tut-cap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ct-tut-cap-art { display: flex; }
+.ct-tut-tag {
+  font-family: 'Outfit', sans-serif; font-size: 0.72rem; font-weight: 800;
+  padding: 2px 9px; border-radius: 999px; letter-spacing: 0.3px;
+}
+.ct-tut-tag--good { background: #e0f3e4; color: #1f6b39; }
+.ct-tut-tag--bad { background: #f6e0dd; color: #962a20; }
+
 .ct-puzzle-cell--err {
   animation: ct-puzzle-shake 0.35s ease;
   outline: 2px solid rgba(139, 32, 32, 0.55);
@@ -968,3 +1007,53 @@
     width: min(360px, 92vw);
   }
 }
+
+/* ═══════════════════════ CROWNS ═══════════════════════ */
+.ct-crowns-wrap { display: flex; justify-content: center; margin: 6px 0 10px; }
+.ct-crowns-grid {
+  display: grid; width: min(92vw, 430px); aspect-ratio: 1;
+  border: 2.5px solid #1a1208; box-sizing: border-box; background: #1a1208;
+  border-radius: 6px; overflow: hidden;
+}
+.ct-crowns-cell {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent;
+}
+.ct-crowns-cell:disabled { cursor: default; }
+.ct-crowns-mark { font-size: clamp(13px, 4.4vw, 26px); line-height: 1; }
+.ct-crowns-x { color: rgba(26, 18, 8, 0.5); font-weight: 800; }
+.ct-crowns-crown.is-bad { background: rgba(192, 57, 43, 0.9); border-radius: 50%; padding: 1px; }
+
+/* ═══════════════════════ BLOCK BURST ═══════════════════════ */
+.bb-score { text-align: center; font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 1.7rem; color: #e8ac4e; margin: 2px 0 10px; }
+.bb-board-wrap { position: relative; display: flex; justify-content: center; }
+.bb-board {
+  display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+  width: min(92vw, 420px); aspect-ratio: 1; gap: 3px; padding: 6px;
+  background: #160f06; border-radius: 12px; border: 1.5px solid #6e4420;
+}
+.bb-cell { border-radius: 5px; background: rgba(255, 255, 255, 0.05); transition: background .08s; }
+.bb-cell.is-filled { box-shadow: inset 0 -3px 0 rgba(0,0,0,0.28), inset 0 2px 0 rgba(255,255,255,0.28); }
+.bb-cell.is-ghost { background: rgba(255, 255, 255, 0.3); }
+.bb-cell.is-ghost-bad { background: rgba(192, 57, 43, 0.45); }
+.bb-tray { display: flex; justify-content: space-around; align-items: center; gap: 8px; margin-top: 16px; min-height: 86px; }
+.bb-tray-slot { flex: 1; display: flex; align-items: center; justify-content: center; height: 82px; touch-action: none; cursor: grab; }
+.bb-tray-slot.is-dragging { opacity: 0.3; }
+.bb-piece { display: grid; gap: 2px; }
+.bb-pcell { width: 15px; height: 15px; }
+.bb-pcell.on { border-radius: 4px; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.28); }
+.bb-drag-ghost { position: fixed; z-index: 3000; pointer-events: none; display: grid; gap: 3px; }
+.bb-over {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; background: rgba(10, 6, 2, 0.84); border-radius: 12px; color: #f3ead9; text-align: center; padding: 16px;
+}
+.bb-over-title { font-family: 'Fredoka One', 'Bangers', cursive; font-size: 1.9rem; color: #fff2cf; }
+.bb-over-score { color: #c9bca6; font-size: 0.95rem; }
+
+/* paid hint button */
+.ct-puzzle-tool-btn--hint {
+  border-color: #c08040;
+  background: linear-gradient(180deg, #3a2a10, #2a1c08);
+  color: #ffd98a;
+}
+.ct-puzzle-tool-btn--hint:disabled { opacity: 0.45; }

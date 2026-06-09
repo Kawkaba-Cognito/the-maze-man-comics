@@ -6,13 +6,14 @@ import { randomSeed } from '../../shared/rng';
 import { NumberPuzzleFrame } from '../../shared/NumberPuzzleFrame';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
 import { NumberPad } from '../../shared/GridSizePicker';
-import { generateKenKen, isKenKenSolved, setKenKenCell } from './kenkenEngine';
+import { makeHint } from '../../shared/useHint';
+import { generateKenKen, isKenKenSolved, setKenKenCell, hintReveal } from './kenkenEngine';
 
 const CONFIG = getPuzzle('kenken');
 const SIZES = [4, 5, 6, 7];
 
 export default function KenKenPuzzle({ onBack }) {
-  const { currentLang, playSfx } = useApp();
+  const { currentLang, playSfx, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutorial = usePuzzleTutorial('kenken', isAr);
@@ -60,6 +61,7 @@ export default function KenKenPuzzle({ onBack }) {
       solved={solved}
       elapsed={elapsed}
       newGame={newGame}
+      hintCfg={makeHint({ points, spendPoints, solved, state, setState, hintReveal })}
       onReset={() => setState((s) => ({ ...s, player: Array.from({ length: s.size }, () => Array(s.size).fill(0)) }))}
       hint={isAr ? 'املأ ١ إلى حجم الشبكة دون تكرار، واحترم عمليات الأقفاص.' : 'Fill 1 to grid size with no repeats, and satisfy each cage clue.'}
       {...tutorial}
@@ -68,14 +70,27 @@ export default function KenKenPuzzle({ onBack }) {
         <div className="ct-puzzle-grid ct-puzzle-grid--kenken" style={{ '--puzzle-grid-n': size }}>
           {state?.player.map((row, r) =>
             row.map((val, c) => {
-              const cage = cageById[state.cageMap[r][c]];
-              const isLeader = cage?.cells[0]?.[0] === r && cage?.cells[0]?.[1] === c;
+              const cageId = state.cageMap[r][c];
+              const cage = cageById[cageId];
+              const leader = cage?.cells.reduce(
+                (best, cell) => (cell[0] < best[0] || (cell[0] === best[0] && cell[1] < best[1]) ? cell : best),
+                cage.cells[0],
+              );
+              const isLeader = leader?.[0] === r && leader?.[1] === c;
+              const diff = (rr, cc) => rr < 0 || rr >= size || cc < 0 || cc >= size || state.cageMap[rr][cc] !== cageId;
+              const edge = (cond) => (cond ? '2.5px solid #1a1208' : '1px solid rgba(26,18,8,0.16)');
               return (
                 <button
                   key={`${r}-${c}`}
                   type="button"
                   className={`ct-puzzle-cell ct-puzzle-cell--num ct-puzzle-cell--kenken${selected?.[0] === r && selected?.[1] === c ? ' ct-puzzle-cell--selected' : ''}`}
                   disabled={solved}
+                  style={{
+                    borderTop: edge(diff(r - 1, c)),
+                    borderBottom: edge(diff(r + 1, c)),
+                    borderLeft: edge(diff(r, c - 1)),
+                    borderRight: edge(diff(r, c + 1)),
+                  }}
                   onClick={() => {
                     playSfx('click');
                     setSelected([r, c]);

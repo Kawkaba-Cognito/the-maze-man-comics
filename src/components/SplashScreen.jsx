@@ -15,7 +15,7 @@ const SPLASH_BG = {
 };
 
 export default function SplashScreen({ onDone }) {
-  const { currentLang } = useApp();
+  const { currentLang, switchTab } = useApp();
   const isAr = currentLang === 'ar';
   const lang = isAr ? 'ar' : 'en';
   const [ready, setReady] = useState(false);
@@ -30,6 +30,7 @@ export default function SplashScreen({ onDone }) {
   }, []);
 
   function handleStart() { setFading(true); setTimeout(onDone, 700); }
+  function handleWorkout() { switchTab('workout'); setFading(true); setTimeout(onDone, 700); }
   function handleQuit() { setQuitting(true); setTimeout(() => { try { window.close(); } catch (_) {} }, 400); }
 
   const bgStyle = {
@@ -49,6 +50,9 @@ export default function SplashScreen({ onDone }) {
           <nav className="splash-menu" aria-label={isAr ? 'القائمة الرئيسية' : 'Main menu'}>
             <button type="button" className="splash-start" onClick={handleStart}>
               {isAr ? 'ابدأ' : 'Start'}
+            </button>
+            <button type="button" className="splash-menu-btn splash-menu-btn--workout" onClick={handleWorkout}>
+              💪 {isAr ? 'تمرين اليوم' : 'Daily Workout'}
             </button>
             <button type="button" className="splash-menu-btn" onClick={() => setShowSettings(true)}>
               {isAr ? 'الإعدادات' : 'Settings'}

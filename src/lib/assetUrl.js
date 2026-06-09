@@ -9,8 +9,8 @@ export function applyAssetCssVars() {
   const root = document.documentElement;
   const set = (name, path) => root.style.setProperty(name, `url("${assetUrl(path)}")`);
 
-  set('--asset-bg-mobile', 'Assets/bg-mobile-fox.png');
-  set('--asset-bg-desktop', 'Assets/bg-mobile-fox.png');
+  set('--asset-bg-mobile', 'Assets/bg-training-mobile.png');
+  set('--asset-bg-desktop', 'Assets/bg-training-desktop.png');
   set('--asset-splash-mobile', 'Assets/splash-menu-mobile-en.png');
   set('--asset-splash-desktop', 'Assets/splash-menu-desktop-en.png');
   set('--asset-settings-mobile', 'Assets/cancel-task-bg-mobile.png');

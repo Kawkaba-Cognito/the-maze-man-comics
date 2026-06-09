@@ -89,3 +89,64 @@ export function isSlidingSolved({ size, tiles }) {
   }
   return tiles[total - 1] === 0;
 }
+
+function manhattanDist(tiles, size) {
+  let d = 0;
+  for (let i = 0; i < tiles.length; i++) {
+    const v = tiles[i];
+    if (v === 0) continue;
+    const gr = Math.floor((v - 1) / size), gc = (v - 1) % size;
+    d += Math.abs(Math.floor(i / size) - gr) + Math.abs((i % size) - gc);
+  }
+  return d;
+}
+
+/**
+ * Hint: look ahead a bounded number of moves and return the FIRST single-tile
+ * slide that leads to the best (closest-to-solved) board found in that horizon.
+ * Lookahead avoids the trap where a good maneuver needs a temporary setback.
+ * Bounded (depth + state cap) so it never hangs.
+ */
+export function hintReveal(state) {
+  if (isSlidingSolved(state)) return { next: state, revealed: false };
+  const { size, tiles } = state;
+  let frontier = [{ tiles, blank: tiles.indexOf(0), first: null }];
+  const seen = new Set([tiles.join(',')]);
+  let bestD = manhattanDist(tiles, size);
+  let bestFirst = null;
+  const DEPTH = 14, CAP = 30000;
+  for (let depth = 0; depth < DEPTH && frontier.length && seen.size < CAP; depth++) {
+    const nf = [];
+    for (const node of frontier) {
+      const br = Math.floor(node.blank / size), bc = node.blank % size;
+      for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+        const nr = br + dr, nc = bc + dc;
+        if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
+        const ni = nr * size + nc;
+        const nt = node.tiles.slice();
+        nt[node.blank] = nt[ni]; nt[ni] = 0;
+        const k = nt.join(',');
+        if (seen.has(k)) continue;
+        seen.add(k);
+        const first = node.first == null ? ni : node.first; // first move = neighbor that slid in
+        const d = manhattanDist(nt, size);
+        if (d < bestD) { bestD = d; bestFirst = first; }
+        nf.push({ tiles: nt, blank: ni, first });
+      }
+    }
+    frontier = nf;
+  }
+  if (bestFirst == null) {
+    // Nothing improved within the horizon — take the least-worsening single move.
+    const empty = tiles.indexOf(0);
+    const er = Math.floor(empty / size), ec = empty % size;
+    const nbrs = [];
+    if (er > 0) nbrs.push(empty - size);
+    if (er < size - 1) nbrs.push(empty + size);
+    if (ec > 0) nbrs.push(empty - 1);
+    if (ec < size - 1) nbrs.push(empty + 1);
+    let bD = Infinity;
+    for (const idx of nbrs) { const d = manhattanDist(trySlide(state, idx).tiles, size); if (d < bD) { bD = d; bestFirst = idx; } }
+  }
+  return bestFirst == null ? { next: state, revealed: false } : { next: trySlide(state, bestFirst), revealed: true };
+}

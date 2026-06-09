@@ -80,29 +80,42 @@ export function PuzzleWinBanner({ t, moves, elapsed, onPlayAgain, onChangeSize, 
   );
 }
 
-export function PuzzleToolbar({ t, onNew, onReset, playSfx, extra }) {
+export function PuzzleToolbar({ t, onNew, onReset, playSfx, extra, hint }) {
+  const [needMsg, setNeedMsg] = React.useState(false);
+
+  const onHintClick = () => {
+    if (!hint || hint.disabled) return;
+    if (hint.points < hint.cost) {
+      playSfx?.('error');
+      setNeedMsg(true);
+      setTimeout(() => setNeedMsg(false), 1500);
+      return;
+    }
+    const did = hint.onReveal(); // true only if a cell was actually revealed
+    if (did) {
+      hint.spendPoints(hint.cost);
+      playSfx?.('collect');
+    }
+  };
+
   return (
     <div className="ct-puzzle-toolbar">
-      <button
-        type="button"
-        className="ct-puzzle-tool-btn ct-puzzle-tool-btn--pri"
-        onClick={() => {
-          playSfx('click');
-          onNew();
-        }}
-      >
+      <button type="button" className="ct-puzzle-tool-btn ct-puzzle-tool-btn--pri" onClick={() => { playSfx('click'); onNew(); }}>
         {t.start}
       </button>
       {onReset ? (
+        <button type="button" className="ct-puzzle-tool-btn" onClick={() => { playSfx('click'); onReset(); }}>
+          {t.reset}
+        </button>
+      ) : null}
+      {hint ? (
         <button
           type="button"
-          className="ct-puzzle-tool-btn"
-          onClick={() => {
-            playSfx('click');
-            onReset();
-          }}
+          className="ct-puzzle-tool-btn ct-puzzle-tool-btn--hint"
+          disabled={hint.disabled}
+          onClick={onHintClick}
         >
-          {t.reset}
+          {needMsg ? t.needPoints(hint.cost) : t.hintBtn(hint.cost)}
         </button>
       ) : null}
       {extra}

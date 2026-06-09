@@ -61,6 +61,11 @@ const UI = {
     correctSeqLabel: 'Correct order:',
     wrongTap: 'Wrong — sequence broken',
     feedbackOk: 'Perfect!',
+    ruleChangedTitle: '⚡ Rule Changed!',
+    ruleReverseTitle: 'Now tap in REVERSE order',
+    ruleReverseBody: 'The cells still light up one by one — but tap them back from LAST to FIRST.',
+    lessonGotIt: 'Got it — continue',
+    shownLbl: 'Shown', tapRevLbl: 'Tap (reverse)',
     dirForward: 'TAP IN ORDER', dirReverse: 'TAP IN REVERSE',
     watchForward: 'Watch — then tap in ORDER', watchReverse: 'Watch — then tap in REVERSE',
     yourTurn: 'Your turn',
@@ -116,6 +121,11 @@ const UI = {
     correctSeqLabel: 'الترتيب الصحيح:',
     wrongTap: 'خطأ — انكسر التسلسل',
     feedbackOk: 'ممتاز!',
+    ruleChangedTitle: '⚡ تغيّرت القاعدة!',
+    ruleReverseTitle: 'الآن اضغط بترتيب معكوس',
+    ruleReverseBody: 'تضيء الخلايا واحدة تلو الأخرى — لكن اضغطها من الأخيرة إلى الأولى.',
+    lessonGotIt: 'فهمت — متابعة',
+    shownLbl: 'يُعرض', tapRevLbl: 'اضغط (عكس)',
     dirForward: 'اضغط بالترتيب', dirReverse: 'اضغط بالعكس',
     watchForward: 'راقب — ثم اضغط بالترتيب', watchReverse: 'راقب — ثم اضغط بالعكس',
     yourTurn: 'دورك',
@@ -149,6 +159,36 @@ const UI = {
 
 const ASSESS_TRIALS = 10; // fixed standardized span ladder
 
+// First-time "stop and learn" lesson when recall flips forward → reverse.
+const MEMO_DIR_KEY = 'mm_memospan_dirs';
+function loadTaughtDirs() {
+  try { return new Set(JSON.parse(localStorage.getItem(MEMO_DIR_KEY) || '[]')); } catch { return new Set(); }
+}
+function saveTaughtDirs(set) {
+  try { localStorage.setItem(MEMO_DIR_KEY, JSON.stringify([...set])); } catch { /* ignore */ }
+}
+
+/** Diagram for the reverse-recall lesson: shown 1-2-3, tapped 3-2-1. */
+function MemoRuleLessonArt({ t }) {
+  const Cell = ({ n, hl }) => (
+    <div style={{
+      width: 38, height: 38, margin: 3, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontWeight: 800, fontSize: 18, color: '#f3ead9',
+      background: hl ? 'rgba(54,196,106,0.18)' : 'rgba(255,255,255,0.08)',
+      border: hl ? '2px solid #36c46a' : '2px solid rgba(255,255,255,0.18)',
+    }}>{n}</div>
+  );
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+      <div style={{ fontSize: 11, opacity: 0.7, color: '#e8dcc6' }}>{t.shownLbl}</div>
+      <div style={{ display: 'flex' }}>{[1, 2, 3].map((n) => <Cell key={n} n={n} />)}</div>
+      <div style={{ fontSize: 16, color: '#e8ac4e' }}>↓</div>
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#36c46a' }}>{t.tapRevLbl}</div>
+      <div style={{ display: 'flex' }}>{[3, 2, 1].map((n) => <Cell key={n} n={n} hl />)}</div>
+    </div>
+  );
+}
+
 export default function MemoSpanGame({ onBack, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
@@ -164,6 +204,8 @@ export default function MemoSpanGame({ onBack, assessmentMode = false, onAssessm
   const [showCorrect, setShowCorrect] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [lastResult, setLastResult] = useState(null);
+  const [dirLesson, setDirLesson] = useState(null); // shows when recall flips to reverse the first time
+  const taughtDirsRef = useRef(loadTaughtDirs());
 
   // Free mode
   const [freeLives, setFreeLives] = useState(MS_FREE_LIVES);
@@ -227,6 +269,7 @@ export default function MemoSpanGame({ onBack, assessmentMode = false, onAssessm
     tapsRef.current = [];
     setShowCorrect(false);
     setFeedback(null);
+    setDirLesson(null);
   };
 
   const finishRound = useCallback((finalTaps) => {
@@ -379,7 +422,12 @@ export default function MemoSpanGame({ onBack, assessmentMode = false, onAssessm
     resetPlayState();
     setPhase('play');
     setPlayStep('briefing');
-  }, [clearTimers]);
+    // First time recall flips to REVERSE (the rule change) → pop a lesson.
+    if (r?.spec?.backward && (r.mode === 'free' || r.mode === 'level') && !taughtDirsRef.current.has('backward')) {
+      setDirLesson({});
+      playSfx('win');
+    }
+  }, [clearTimers, playSfx]);
   const beginRoundRef = useRef(beginRound);
   useEffect(() => { beginRoundRef.current = beginRound; }, [beginRound]);
 
@@ -816,6 +864,27 @@ export default function MemoSpanGame({ onBack, assessmentMode = false, onAssessm
             ))}
             <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { setLastResult(null); setChalSeed(null); setChalTurnOpen(false); setPhase('chal'); }}>{t.newCh}</button>
             <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { setLastResult(null); setPhase('hub'); }}>{t.menu}</button>
+          </div>
+        </div>
+      )}
+
+      {dirLesson && (
+        <div
+          dir={isAr ? 'rtl' : 'ltr'}
+          style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(8,6,2,0.82)' }}
+        >
+          <div style={{ background: 'linear-gradient(180deg,#241405,#341c08)', border: '1.5px solid #c08040', borderRadius: 16, padding: '22px', maxWidth: 340, width: '86%', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <p style={{ margin: 0, fontFamily: "'Bangers', cursive", letterSpacing: 1, fontSize: '1.3rem', color: '#ffb84a' }}>{t.ruleChangedTitle}</p>
+            <p style={{ margin: 0, fontWeight: 800, color: '#fff2cf', fontSize: '1.05rem' }}>{t.ruleReverseTitle}</p>
+            <MemoRuleLessonArt t={t} />
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#e8dcc6', lineHeight: 1.45 }}>{t.ruleReverseBody}</p>
+            <button
+              type="button"
+              className="ct-fq-btn ct-fq-btn-pri"
+              onClick={() => { playSfx('click'); taughtDirsRef.current.add('backward'); saveTaughtDirs(taughtDirsRef.current); setDirLesson(null); }}
+            >
+              {t.lessonGotIt}
+            </button>
           </div>
         </div>
       )}

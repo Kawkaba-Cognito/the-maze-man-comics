@@ -28,7 +28,7 @@ const L = {
 const CANVAS_W = 360;
 const COL_L = 100;
 const COL_R = 260;
-const ROW_Y = [122, 302, 482, 662];
+const ROW_Y = [122, 302, 482, 662, 842];
 const CANVAS_H = ROW_Y[ROW_Y.length - 1] + 110;
 const ARCH_HALF = 32; // arch is 64 wide in local coords
 

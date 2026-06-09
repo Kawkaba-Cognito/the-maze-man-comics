@@ -22,11 +22,8 @@ export function useJuice() {
   const shakeTimer = useRef(null);
   const toastTimer = useRef(null);
 
-  const triggerShake = useCallback(() => {
-    setShake(true);
-    clearTimeout(shakeTimer.current);
-    shakeTimer.current = setTimeout(() => setShake(false), 380);
-  }, []);
+  // Screen shake disabled — it was distracting. Kept as a no-op for callers.
+  const triggerShake = useCallback(() => {}, []);
 
   const flashToast = useCallback((text) => {
     setToast({ text, id: Date.now() });
@@ -34,24 +31,22 @@ export function useJuice() {
     toastTimer.current = setTimeout(() => setToast(null), 1100);
   }, []);
 
-  /** Correct action. Returns { combo, rating } so callers can score. */
-  const hit = useCallback(({ rtMs = null, limitMs = null, particles = true } = {}) => {
+  /** Correct action. Returns { combo, rating } so callers can score.
+   *  Visuals (particles, RT floats) are intentionally OFF — they were too
+   *  distracting; only combo/rating tracking remains for scoring. */
+  const hit = useCallback(({ rtMs = null, limitMs = null } = {}) => {
     comboRef.current += 1;
     if (comboRef.current > bestComboRef.current) bestComboRef.current = comboRef.current;
     setCombo(comboRef.current);
-    if (particles) setParticle({ id: performance.now(), type: 'ok' });
     const rating = rtRating(rtMs, limitMs);
-    if (rating.key !== 'good') setRtFx({ id: performance.now(), key: rating.key });
     return { combo: comboRef.current, rating };
   }, []);
 
-  /** Wrong / timeout. Resets combo, shakes, red particles. */
+  /** Wrong / timeout. Resets combo (no particles / screen shake). */
   const miss = useCallback(() => {
     comboRef.current = 0;
     setCombo(0);
-    setParticle({ id: performance.now(), type: 'bad' });
-    triggerShake();
-  }, [triggerShake]);
+  }, []);
 
   /** One-shot celebration burst (puzzle / word solves). */
   const celebrate = useCallback(() => {

@@ -160,3 +160,19 @@ export function nonogramLineCluesMatch(state) {
   }
   return true;
 }
+
+/** Reveal one correct cell (paid hint). Returns { next, revealed }. */
+export function hintReveal(state) {
+  const { size, solution, player } = state;
+  const pool = [];
+  for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
+    const wantFilled = !!solution[r][c];
+    const isFilled = player[r][c] === 1;
+    if (wantFilled !== isFilled) pool.push([r, c]);
+  }
+  if (!pool.length) return { next: state, revealed: false };
+  const [r, c] = pool[Math.floor(Math.random() * pool.length)];
+  const np = player.map((row) => row.slice());
+  np[r][c] = solution[r][c] ? 1 : 0;
+  return { next: { ...state, player: np }, revealed: true };
+}

@@ -21,13 +21,27 @@ const DEFAULT_PROFILE = {
 };
 
 const POINTS_KEY = 'mazeman_points';
+const CHAR_KEY = 'mazeman_character';
+const OWNED_KEY = 'mazeman_owned';
+const EQUIP_KEY = 'mazeman_equipped';
+
+function readCharacter() {
+  try { return localStorage.getItem(CHAR_KEY) || 'fox'; } catch { return 'fox'; }
+}
+function readJSON(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
+}
 
 export function AppProvider({ children }) {
   const [globalXP, setGlobalXP] = useState(0);
   const [points, setPoints] = useState(0);
   const pointsRef = useRef(0);
+  const [character, setCharacterState] = useState(readCharacter);
+  const [owned, setOwned] = useState(() => readJSON(OWNED_KEY, {}));
+  const [equipped, setEquipped] = useState(() => readJSON(EQUIP_KEY, {}));
   const [currentLang, setCurrentLang] = useState('en');
   const [activeTab, setActiveTab] = useState('home');
+  const [assessmentRequested, setAssessmentRequested] = useState(false);
   const [mazeVisible, setMazeVisible] = useState(false);
   const [mazeEntryPending, setMazeEntryPending] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
@@ -134,6 +148,34 @@ export function AppProvider({ children }) {
     try { localStorage.setItem(POINTS_KEY, String(next)); } catch (e) { /* ignore */ }
   }, []);
 
+  const setCharacter = useCallback((id) => {
+    setCharacterState(id);
+    try { localStorage.setItem(CHAR_KEY, id); } catch (e) { /* ignore */ }
+  }, []);
+
+  // ----- Shop: own (buy) + equip cosmetic items -----
+  const buyItem = useCallback((id, cost) => {
+    if (pointsRef.current < cost) return false;
+    const next = pointsRef.current - cost;
+    pointsRef.current = next; setPoints(next);
+    try { localStorage.setItem(POINTS_KEY, String(next)); } catch (e) { /* ignore */ }
+    setOwned((o) => {
+      const n = { ...o, [id]: 1 };
+      try { localStorage.setItem(OWNED_KEY, JSON.stringify(n)); } catch (e) { /* ignore */ }
+      return n;
+    });
+    return true;
+  }, []);
+
+  const equipItem = useCallback((slot, id) => {
+    setEquipped((e) => {
+      const n = { ...e };
+      if (n[slot] === id) delete n[slot]; else n[slot] = id;
+      try { localStorage.setItem(EQUIP_KEY, JSON.stringify(n)); } catch (err) { /* ignore */ }
+      return n;
+    });
+  }, []);
+
   const spendPoints = useCallback((amount) => {
     const a = Number(amount) || 0;
     if (a <= 0 || pointsRef.current < a) return false;
@@ -197,6 +239,15 @@ export function AppProvider({ children }) {
     setActiveTab(tabId);
   }, [playSfx, stopSpeech]);
 
+  // Deep-link into the cognitive assessment (e.g. from the Daily Workout nudge).
+  const openAssessment = useCallback(() => {
+    playSfx('click');
+    stopSpeech();
+    setAssessmentRequested(true);
+    setActiveTab('comics');
+  }, [playSfx, stopSpeech]);
+  const consumeAssessmentRequest = useCallback(() => setAssessmentRequested(false), []);
+
   const requestMazeEntry = useCallback(() => {
     playSfx('click');
     stopSpeech();
@@ -247,7 +298,10 @@ export function AppProvider({ children }) {
     <AppContext.Provider value={{
       globalXP, points, currentLang, activeTab, mazeVisible, mazeEntryPending,
       paywallOpen, tipOpen, profileData,
+      character, setCharacter,
+      owned, equipped, buyItem, equipItem,
       sfxEnabled, setSfxEnabled,
+      assessmentRequested, openAssessment, consumeAssessmentRequest,
       updateXP, awardPoints, spendPoints, awardTrainingWin, awardFreeRun, toggleLang, switchTab, requestMazeEntry, enterMaze, exitMaze,
       playSfx, stopSpeech, saveProfile,
       setProfileData,

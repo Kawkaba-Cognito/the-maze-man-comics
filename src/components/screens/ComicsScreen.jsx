@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useApp } from '../../context/AppContext';
 import { tokens } from '../../styles/tokens';
 import RadialMazeHub from '../training/RadialMazeHub';
@@ -31,9 +31,17 @@ const HUB_LIGHT = {
 };
 
 export default function ComicsScreen() {
-  const { switchTab, currentLang } = useApp();
+  const { switchTab, currentLang, assessmentRequested, consumeAssessmentRequest } = useApp();
   const isAr = currentLang === 'ar';
   const [screen, setScreen] = useState('hub');
+
+  // Deep-link from the Daily Workout nudge → open the assessment directly.
+  useEffect(() => {
+    if (assessmentRequested) {
+      setScreen('assessment');
+      consumeAssessmentRequest();
+    }
+  }, [assessmentRequested, consumeAssessmentRequest]);
   const [activeDomain, setActiveDomain] = useState('memory');
   const [activeGame, setActiveGame] = useState(null);
   const [pickList, setPickList] = useState([]);

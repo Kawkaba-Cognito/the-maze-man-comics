@@ -275,3 +275,22 @@ export function isKakuroSolved(state) {
   }
   return [...state.across, ...state.down].every((run) => runValid(run, state.player, true));
 }
+
+/** Reveal one correct white cell (paid hint). Returns { next, revealed }. */
+export function hintReveal(state) {
+  const { size, board, player, fixed } = state;
+  const empties = [], wrongs = [];
+  for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
+    if (board[r][c].block || fixed[r][c]) continue;
+    const v = board[r][c].value;
+    if (!player[r][c]) empties.push([r, c, v]);
+    else if (player[r][c] !== v) wrongs.push([r, c, v]);
+  }
+  const pool = empties.length ? empties : wrongs;
+  if (!pool.length) return { next: state, revealed: false };
+  const [r, c, v] = pool[Math.floor(Math.random() * pool.length)];
+  const np = player.map((row) => row.slice());
+  const nf = fixed.map((row) => row.slice());
+  np[r][c] = v; nf[r][c] = true;
+  return { next: { ...state, player: np, fixed: nf }, revealed: true };
+}

@@ -1,5 +1,7 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { assetUrl } from '../../lib/assetUrl';
+import { getCharacter } from '../../features/character/registry';
 
 const DOORS = [
   { tab: 'comics',  enLabel: 'TRAINING', arLabel: 'تدريب', pos: 'left'   },
@@ -8,8 +10,9 @@ const DOORS = [
 ];
 
 export default function HomeScreen() {
-  const { requestMazeEntry, playSfx, switchTab, currentLang, points } = useApp();
+  const { requestMazeEntry, playSfx, switchTab, currentLang, points, character, equipped } = useApp();
   const isAr = currentLang === 'ar';
+  const Hero = getCharacter(character).Component;
 
   function handleDoor(tab) {
     playSfx('click');
@@ -20,6 +23,19 @@ export default function HomeScreen() {
 
   return (
     <div className="home-screen">
+      {/* Empty maze chamber — character is drawn on the pedestal (code, not art) */}
+      <div
+        className="home-stage-bg"
+        style={{ backgroundImage: `url("${assetUrl('Assets/bg-training-mobile.png')}")` }}
+      />
+      <button
+        className="home-character"
+        onClick={() => handleDoor('character')}
+        aria-label={isAr ? 'الشخصية' : 'character'}
+      >
+        <Hero size={200} float glow equipped={equipped} />
+      </button>
+
       {/* Points balance — top of the home page */}
       <div className="home-points" aria-label={isAr ? 'نقاطك' : 'your points'}>
         ⚡ <span className="home-points-num">{points}</span>

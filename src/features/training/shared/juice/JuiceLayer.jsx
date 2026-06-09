@@ -55,23 +55,15 @@ export function SolveBurst({ id }) {
 
 /**
  * JuiceLayer — drop inside a game's play stage (a position:relative container).
- * Renders particles, the combo chip, the RT-rating float, the solve burst and toasts.
+ * Deliberately CALM: the per-action particle bursts, combo chip and RT-rating
+ * floats were too distracting, so only an informational toast and a single
+ * end-of-solve celebration remain. (Extra props are accepted but ignored so
+ * existing call sites keep working.)
  */
-export function JuiceLayer({ combo, particle, rtFx, toast, burst, ratingLabels, showCombo = true }) {
+export function JuiceLayer({ toast, burst }) {
   return (
     <>
-      <Particles data={particle} />
       <SolveBurst id={burst} />
-      {rtFx && rtFx.key !== 'good' && (
-        <div key={rtFx.id} className={`ct-juice-rtfx ct-juice-rtfx--${rtFx.key}`}>
-          {ratingLabels?.[rtFx.key]}
-        </div>
-      )}
-      {showCombo && combo > 1 && (
-        <div className="ct-juice-combo" key={combo}>
-          ×{combo}
-        </div>
-      )}
       {toast && (
         <div key={toast.id} className="ct-juice-toast">
           {toast.text}

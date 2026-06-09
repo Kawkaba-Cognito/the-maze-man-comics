@@ -231,3 +231,19 @@ export function isKenKenSolved(state) {
   if (kenKenHasConflict(state)) return false;
   return cages.every((cage) => cageValid(cage, player, true));
 }
+
+/** Reveal one correct cell (paid hint). Returns { next, revealed }. */
+export function hintReveal(state) {
+  const { size, solution, player } = state;
+  const empties = [], wrongs = [];
+  for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
+    if (!player[r][c]) empties.push([r, c]);
+    else if (player[r][c] !== solution[r][c]) wrongs.push([r, c]);
+  }
+  const pool = empties.length ? empties : wrongs;
+  if (!pool.length) return { next: state, revealed: false };
+  const [r, c] = pool[Math.floor(Math.random() * pool.length)];
+  const np = player.map((row) => row.slice());
+  np[r][c] = solution[r][c];
+  return { next: { ...state, player: np }, revealed: true };
+}

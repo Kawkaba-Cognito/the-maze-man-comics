@@ -8,6 +8,7 @@ import { randomSeed } from '../../shared/rng';
 import GridSizePicker, { PuzzleHint, PuzzleWinBanner, PuzzleToolbar } from '../../shared/GridSizePicker';
 import PuzzleTutorial from '../../shared/PuzzleTutorial';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
+import { makeHint } from '../../shared/useHint';
 import {
   generateLogicMaze,
   isMazeSolved,
@@ -15,6 +16,7 @@ import {
   moveMaze,
   MAZE_TIER_HINTS,
   tierSubtitle,
+  hintReveal,
 } from './mazeEngine';
 import MazeCanvas from './MazeCanvas';
 import MazeJoystick from './MazeJoystick';
@@ -31,7 +33,7 @@ const CONFIG = getPuzzle('maze');
 const PUZZLE_ID = 'maze';
 
 export default function LogicMazePuzzle({ onBack }) {
-  const { currentLang, playSfx, awardPoints } = useApp();
+  const { currentLang, playSfx, awardPoints, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
@@ -191,6 +193,7 @@ export default function LogicMazePuzzle({ onBack }) {
               playSfx={playSfx}
               onNew={() => newGame(size)}
               onReset={() => setState((s) => resetMazePath(s))}
+              hint={makeHint({ points, spendPoints, solved, state, setState, hintReveal })}
             />
           </>
         ) : (

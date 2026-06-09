@@ -167,3 +167,21 @@ export function sudokuConflicts(state) {
 export function sudokuHasConflict(state) {
   return sudokuConflicts(state).size > 0;
 }
+
+/** Reveal one correct cell (paid hint). Returns { next, revealed }. */
+export function hintReveal(state) {
+  const { size, solution, player, fixed } = state;
+  const empties = [], wrongs = [];
+  for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
+    if (fixed[r][c]) continue;
+    if (!player[r][c]) empties.push([r, c]);
+    else if (player[r][c] !== solution[r][c]) wrongs.push([r, c]);
+  }
+  const pool = empties.length ? empties : wrongs;
+  if (!pool.length) return { next: state, revealed: false };
+  const [r, c] = pool[Math.floor(Math.random() * pool.length)];
+  const np = player.map((row) => row.slice());
+  const nf = fixed.map((row) => row.slice());
+  np[r][c] = solution[r][c]; nf[r][c] = true;
+  return { next: { ...state, player: np, fixed: nf }, revealed: true };
+}

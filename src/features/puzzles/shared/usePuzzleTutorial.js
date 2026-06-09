@@ -4,11 +4,13 @@ import {
   markPuzzleTutorialSeen,
   getTutorialSteps,
 } from './tutorialContent';
+import { getDiagramSteps } from './tutorialSteps';
 
-/** Manages tutorial open state + first-visit auto-show for a puzzle game. */
+/** Manages tutorial open state + first-visit auto-show for a puzzle game.
+ *  Diagram-based tutorials (tutorialSteps.jsx) take priority over emoji ones. */
 export function usePuzzleTutorial(puzzleId, isAr) {
   const [tutorialOpen, setTutorialOpen] = useState(false);
-  const steps = getTutorialSteps(puzzleId, isAr);
+  const steps = getDiagramSteps(puzzleId, isAr) ?? getTutorialSteps(puzzleId, isAr);
 
   const openTutorial = useCallback(() => setTutorialOpen(true), []);
 

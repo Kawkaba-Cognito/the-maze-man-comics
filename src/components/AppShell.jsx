@@ -8,6 +8,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import ShopScreen from './screens/ShopScreen';
 import RewardsShopScreen from './screens/RewardsShopScreen';
 import CharacterScreen from './screens/CharacterScreen';
+import WorkoutScreen from './screens/WorkoutScreen';
 import MazeOverlay from './maze/MazeOverlay';
 import PaywallModal from './modals/PaywallModal';
 import TipJarModal from './modals/TipJarModal';
@@ -51,7 +52,7 @@ export default function AppShell({ onBackToMenu }) {
             </button>
           )}
           {/* Lang toggle hidden on screens that render their own chrome */}
-          {activeTab !== 'comics' && activeTab !== 'puzzles' && activeTab !== 'profile' && (
+          {activeTab !== 'comics' && activeTab !== 'puzzles' && activeTab !== 'profile' && activeTab !== 'workout' && (
             <button
               id="lang-btn"
               onClick={toggleLang}
@@ -63,7 +64,7 @@ export default function AppShell({ onBackToMenu }) {
         </div>
 
         {/* Back button — visible on non-home screens that don't render their own chrome */}
-        {!isHome && activeTab !== 'comics' && activeTab !== 'puzzles' && activeTab !== 'profile' && (
+        {!isHome && activeTab !== 'comics' && activeTab !== 'puzzles' && activeTab !== 'profile' && activeTab !== 'workout' && (
           <button className="back-btn" onClick={() => switchTab('home')}>
             ‹ {isAr ? 'رجوع' : 'BACK'}
           </button>
@@ -77,6 +78,7 @@ export default function AppShell({ onBackToMenu }) {
         <div id="screen-shop"    className={`ui-screen ${activeTab === 'shop'    ? 'active' : ''}`}><ShopScreen /></div>
         <div id="screen-pointshop" className={`ui-screen ${activeTab === 'pointshop' ? 'active' : ''}`}><RewardsShopScreen /></div>
         <div id="screen-character" className={`ui-screen ${activeTab === 'character' ? 'active' : ''}`}><CharacterScreen /></div>
+        <div id="screen-workout"   className={`ui-screen ${activeTab === 'workout'   ? 'active' : ''}`}><WorkoutScreen /></div>
 
       </div>
 

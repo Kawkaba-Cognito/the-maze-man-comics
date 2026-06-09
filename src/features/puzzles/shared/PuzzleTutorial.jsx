@@ -33,8 +33,8 @@ export default function PuzzleTutorial({ steps, isAr, onClose, playSfx }) {
   return (
     <div className="ct-fq-tut-root ct-fq-tut-main" role="dialog" aria-modal="true" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="ct-fq-tut-backdrop" />
-      <div className="ct-puzzle-tut-demo" aria-hidden="true">
-        <span className="ct-puzzle-tut-demo-icon">{step.icon ?? '?'}</span>
+      <div className={`ct-puzzle-tut-demo${step.diagram ? ' ct-puzzle-tut-demo--diagram' : ''}`} aria-hidden="true">
+        {step.diagram ? step.diagram : <span className="ct-puzzle-tut-demo-icon">{step.icon ?? '?'}</span>}
       </div>
       <div className="ct-fq-tut-dock">
         <div className="ct-fq-tut-dock-mm">

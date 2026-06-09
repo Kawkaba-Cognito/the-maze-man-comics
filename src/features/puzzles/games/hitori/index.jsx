@@ -8,11 +8,13 @@ import { randomSeed } from '../../shared/rng';
 import GridSizePicker, { PuzzleHint, PuzzleWinBanner, PuzzleToolbar } from '../../shared/GridSizePicker';
 import PuzzleTutorial from '../../shared/PuzzleTutorial';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
+import { makeHint } from '../../shared/useHint';
 import {
   generateHitori,
   toggleHitoriCell,
   isHitoriSolved,
   resetHitori,
+  hintReveal,
 } from './hitoriEngine';
 
 const CONFIG = getPuzzle('hitori');
@@ -24,7 +26,7 @@ const SIZE_HINTS = {
 };
 
 export default function HitoriPuzzle({ onBack }) {
-  const { currentLang, playSfx } = useApp();
+  const { currentLang, playSfx, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
@@ -150,7 +152,8 @@ export default function HitoriPuzzle({ onBack }) {
           <span>{t.time(elapsed)}</span>
         </div>
         {!solved ? (
-          <PuzzleToolbar t={t} playSfx={playSfx} onNew={() => newGame(size)} onReset={() => setState((s) => resetHitori(s))} />
+          <PuzzleToolbar t={t} playSfx={playSfx} onNew={() => newGame(size)} onReset={() => setState((s) => resetHitori(s))}
+            hint={makeHint({ points, spendPoints, solved, state, setState, hintReveal })} />
         ) : (
           <PuzzleWinBanner
             t={t}

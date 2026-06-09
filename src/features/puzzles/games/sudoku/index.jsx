@@ -6,19 +6,21 @@ import { randomSeed } from '../../shared/rng';
 import { NumberPuzzleFrame } from '../../shared/NumberPuzzleFrame';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
 import { NumberPad } from '../../shared/GridSizePicker';
+import { makeHint } from '../../shared/useHint';
 import {
   SUDOKU_SIZES,
   generateSudoku,
   isSudokuSolved,
   setSudokuCell,
   sudokuConflicts,
+  hintReveal,
 } from './sudokuEngine';
 
 const CONFIG = getPuzzle('sudoku');
 const SIZES = [4, 6, 9];
 
 export default function SudokuPuzzle({ onBack }) {
-  const { currentLang, playSfx } = useApp();
+  const { currentLang, playSfx, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutorial = usePuzzleTutorial('sudoku', isAr);
@@ -75,6 +77,7 @@ export default function SudokuPuzzle({ onBack }) {
       solved={solved}
       elapsed={elapsed}
       newGame={newGame}
+      hintCfg={makeHint({ points, spendPoints, solved, state, setState, hintReveal })}
       onReset={() => setState((s) => ({ ...s, player: s.puzzle.map((row) => row.slice()) }))}
       hint={isAr ? 'املأ كل صف وعمود وصندوق بالأرقام دون تكرار.' : 'Fill every row, column, and box with no repeats.'}
       {...tutorial}

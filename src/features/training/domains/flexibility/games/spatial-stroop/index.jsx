@@ -50,6 +50,44 @@ import AssessmentReady from '../../../../assessment/AssessmentReady';
 
 const POWERUP_ICON = { shield: '🛡️', slowmo: '⏱️', x2: '✨', freeze: '❄️' };
 
+// First-time-per-rule "stop and learn" lessons when the rule switches.
+const RULE_LESSON_KEY = 'mm_stroop_rule_lessons';
+function loadTaughtRules() {
+  try { return new Set(JSON.parse(localStorage.getItem(RULE_LESSON_KEY) || '[]')); } catch { return new Set(); }
+}
+function saveTaughtRules(set) {
+  try { localStorage.setItem(RULE_LESSON_KEY, JSON.stringify([...set])); } catch { /* ignore */ }
+}
+
+/** Tiny diagram for a rule lesson: shows the stimulus and which side to tap. */
+function RuleLessonArt({ rule }) {
+  const cfg = {
+    point: { left: null, right: '▶', correct: 'right', color: '#f3ead9' },
+    side: { left: '▶', right: null, correct: 'left', color: '#f3ead9' },
+    color: { left: '▶', right: null, correct: 'left', color: '#e0795f' },
+  }[rule] || { correct: 'left' };
+  const Zone = ({ side, arrow }) => {
+    const ok = cfg.correct === side;
+    return (
+      <div style={{
+        position: 'relative', flex: 1, height: 66, margin: 4, borderRadius: 12,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        border: ok ? '3px solid #36c46a' : '2px solid rgba(255,255,255,0.18)',
+        background: ok ? 'rgba(54,196,106,0.16)' : 'rgba(255,255,255,0.05)',
+      }}>
+        <span style={{ fontSize: 36, color: arrow ? cfg.color : 'transparent', lineHeight: 1 }}>{arrow || '·'}</span>
+        {ok && <span style={{ position: 'absolute', top: 3, insetInlineEnd: 6, fontSize: 14 }}>👆</span>}
+      </div>
+    );
+  };
+  return (
+    <div style={{ display: 'flex', width: 'min(78vw, 300px)' }}>
+      <Zone side="left" arrow={cfg.left} />
+      <Zone side="right" arrow={cfg.right} />
+    </div>
+  );
+}
+
 const UI = {
   en: {
     hubFlex: 'Flexibility',
@@ -105,6 +143,12 @@ const UI = {
     shiftTitle: '⚡ Rule Changed!',
     shiftWas: (rule) => `Was: ${rule}`,
     shiftNow: (rule) => `Now: ${rule}`,
+    lessonContinue: 'Got it — continue',
+    ruleLessons: {
+      point: { title: 'New rule: WHERE IT POINTS', body: 'Tap the side the arrow POINTS to. Ignore where it sits and its colour.' },
+      side: { title: 'New rule: WHERE IT SITS', body: 'Tap the side the arrow is ON — its position. Ignore the way it points.' },
+      color: { title: 'New rule: MATCH THE COLOUR', body: 'Tap by colour: red → LEFT, green → RIGHT. Ignore where it points or sits.' },
+    },
     trial: (n, max) => `Trial ${n} / ${max}`,
     streak: (s, r) => `Streak ${s}/${r}`,
     categories: (c, t) => `Switches ${c}/${t}`,
@@ -196,6 +240,12 @@ const UI = {
     shiftTitle: '⚡ تغيّرت القاعدة!',
     shiftWas: (rule) => `كانت: ${rule}`,
     shiftNow: (rule) => `الآن: ${rule}`,
+    lessonContinue: 'فهمت — متابعة',
+    ruleLessons: {
+      point: { title: 'قاعدة جديدة: جهة الإشارة', body: 'اضغط الجانب الذي يشير إليه السهم. تجاهل مكانه ولونه.' },
+      side: { title: 'قاعدة جديدة: مكان الجلوس', body: 'اضغط الجانب الذي يوجد فيه السهم — موضعه. تجاهل اتجاه إشارته.' },
+      color: { title: 'قاعدة جديدة: طابق اللون', body: 'اضغط حسب اللون: أحمر → يسار، أخضر → يمين. تجاهل اتجاهه وموضعه.' },
+    },
     trial: (n, max) => `محاولة ${n} / ${max}`,
     streak: (s, r) => `متتالية ${s}/${r}`,
     categories: (c, t) => `تبديلات ${c}/${t}`,
@@ -309,6 +359,8 @@ export default function SpatialStroopGame({ onBack, assessmentMode = false, onAs
   const [feedback, setFeedback] = useState(null);
   const [pickedSide, setPickedSide] = useState(null);
   const [showShift, setShowShift] = useState(false);
+  const [ruleLesson, setRuleLesson] = useState(null); // {rule} when a first-time rule lesson is showing
+  const taughtRulesRef = useRef(loadTaughtRules());
   const [showBlitz, setShowBlitz] = useState(false);
   const [feedbackDetail, setFeedbackDetail] = useState(null);
   const [shiftOldRule, setShiftOldRule] = useState(null);
@@ -432,6 +484,7 @@ export default function SpatialStroopGame({ onBack, assessmentMode = false, onAs
     setShowShift(false);
     setShowBlitz(false);
     setShiftOldRule(null);
+    setRuleLesson(null);
     setFeedbackDetail(null);
     setFrozenProbe(null);
     setChalTurnOpen(false);
@@ -598,10 +651,20 @@ export default function SpatialStroopGame({ onBack, assessmentMode = false, onAs
       return;
     }
     if (outcome.categoryShift) {
+      const newRule = activeRule(b.session);
+      const teach =
+        (b.mode === 'free' || b.mode === 'level' || b.mode === 'challenge') &&
+        !taughtRulesRef.current.has(newRule);
       setShiftOldRule(outcome.rule);
       setShowShift(true);
       setPlayStep('shift');
       playStepRef.current = 'shift';
+      if (teach) {
+        // Stop and teach the new rule; player resumes by acknowledging.
+        setRuleLesson({ rule: newRule });
+        playSfx('win');
+        return;
+      }
       timersRef.current.push(
         setTimeout(() => {
           setShowShift(false);
@@ -1221,7 +1284,7 @@ export default function SpatialStroopGame({ onBack, assessmentMode = false, onAs
       )}
 
       {phase === 'play' && block && session && !chalTurnOpen && (
-        <div className={`ct-stroop-play-wrap${shake ? ' ct-stroop-shake' : ''}${blitzActive ? ' ct-stroop-blitz-on' : ''}`}>
+        <div className={`ct-stroop-play-wrap${blitzActive ? ' ct-stroop-blitz-on' : ''}`}>
           <TrainingPlayHeader
             isAr={isAr}
             title={
@@ -1302,13 +1365,6 @@ export default function SpatialStroopGame({ onBack, assessmentMode = false, onAs
                     </div>
                   )}
                 </div>
-                <Particles data={particle} />
-                {rtFx && rtFx.key !== 'good' && (
-                  <div key={rtFx.id} className={`ct-stroop-rtfx ct-stroop-rtfx--${rtFx.key}`}>
-                    {t.rating[rtFx.key]}
-                  </div>
-                )}
-                {combo > 1 && <div className="ct-stroop-combo" key={combo}>×{combo}</div>}
               </div>
               {feedback && playStep === 'running' && (
                 <div className="ct-stroop-feedback-wrap" role="status">
@@ -1376,11 +1432,41 @@ export default function SpatialStroopGame({ onBack, assessmentMode = false, onAs
               {toast && <div key={toast.id} className="ct-stroop-toast">{toast.text}</div>}
             </div>
           )}
-          {playStep === 'shift' && showShift && (
+          {playStep === 'shift' && showShift && !ruleLesson && (
             <div className="ct-stroop-shift-overlay">
               <p className="ct-stroop-shift-title">{t.shiftTitle}</p>
               {shiftOldRule && <p className="ct-stroop-shift-was">{t.shiftWas(t.ruleShort[shiftOldRule] || shiftOldRule)}</p>}
               <p className={`ct-stroop-shift-now ct-stroop-rule--${rule}`}>{t.shiftNow(t.ruleShort[rule] || rule)}</p>
+            </div>
+          )}
+          {playStep === 'shift' && ruleLesson && (
+            <div className="ct-stroop-shift-overlay" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '20px 22px' }}>
+              <p className="ct-stroop-shift-title">{t.shiftTitle}</p>
+              <p style={{ fontWeight: 800, fontSize: '1.05rem', color: '#fff2cf', textAlign: 'center', margin: 0 }}>
+                {t.ruleLessons[ruleLesson.rule]?.title}
+              </p>
+              <RuleLessonArt rule={ruleLesson.rule} />
+              <p style={{ fontSize: '0.9rem', color: '#e8dcc6', textAlign: 'center', maxWidth: 300, margin: 0, lineHeight: 1.45 }}>
+                {t.ruleLessons[ruleLesson.rule]?.body}
+              </p>
+              <button
+                type="button"
+                className="ct-fq-btn ct-fq-btn-pri"
+                onClick={() => {
+                  playSfx('click');
+                  const r = ruleLesson.rule;
+                  taughtRulesRef.current.add(r);
+                  saveTaughtRules(taughtRulesRef.current);
+                  setRuleLesson(null);
+                  setShowShift(false);
+                  setShiftOldRule(null);
+                  setPlayStep('running');
+                  playStepRef.current = 'running';
+                  startTrialRef.current();
+                }}
+              >
+                {t.lessonContinue}
+              </button>
             </div>
           )}
           {playStep === 'shift' && showBlitz && (

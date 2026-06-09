@@ -282,3 +282,31 @@ export function tierSubtitle(state, isAr) {
   const t = isAr ? 'ممرات مسدودة' : 'dead ends';
   return `${tierLabel(state.tier, isAr)} · ${state.deadEnds ?? '?'} ${t}`;
 }
+
+/** Hint: step the token one cell along the shortest path toward the goal. */
+export function hintReveal(state) {
+  const { wallGrid, size, end, path } = state;
+  const cur = path[path.length - 1];
+  if (cur[0] === end[0] && cur[1] === end[1]) return { next: state, revealed: false };
+  const key = (r, c) => r * size + c;
+  const dist = new Map([[key(end[0], end[1]), 0]]);
+  const q = [[end[0], end[1]]];
+  while (q.length) {
+    const [r, c] = q.shift();
+    const d = dist.get(key(r, c));
+    for (const [nr, nc] of cellNeighbors(wallGrid, size, r, c)) {
+      if (!dist.has(key(nr, nc))) { dist.set(key(nr, nc), d + 1); q.push([nr, nc]); }
+    }
+  }
+  const curD = dist.get(key(cur[0], cur[1]));
+  if (curD == null) return { next: state, revealed: false };
+  for (const [nr, nc] of cellNeighbors(wallGrid, size, cur[0], cur[1])) {
+    if (dist.get(key(nr, nc)) === curD - 1) {
+      const dr = nr - cur[0], dc = nc - cur[1];
+      const dir = dr === -1 ? 'up' : dr === 1 ? 'down' : dc === -1 ? 'left' : 'right';
+      const next = moveMaze(state, dir);
+      return { next, revealed: next !== state };
+    }
+  }
+  return { next: state, revealed: false };
+}
