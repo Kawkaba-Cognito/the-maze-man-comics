@@ -8,6 +8,7 @@
  */
 import { DOMAIN_CONFIGS, getPlayableSubs } from '../training/registry';
 import { ageBand } from '../training/assessment/assessmentProfile';
+import { domainRating, ratingToLevel } from '../training/rating';
 
 /** Goal presets → per-domain weighting. `weights: null` = dynamic (target weak areas). */
 export const GOALS = [
@@ -89,17 +90,25 @@ function ageBaseLevel(age) {
 }
 
 /**
- * Adaptive difficulty for a domain: age band → adjusted by latest assessment
- * score → nudged up as the user banks sessions in that domain.
+ * Adaptive difficulty for a domain.
+ * Primary signal: the TRAINING RATING for the domain (measured from free-run
+ * performance, seeded by the assessment) — as the rating climbs, the workout
+ * climbs with it. Fallback (unrated, unassessed): age band + session count.
  */
 export function difficultyFor(domainId, age, scores, domainCompleted) {
-  let lvl = ageBaseLevel(age);
-  const s = scores?.[domainId];
-  if (typeof s === 'number') {
-    if (s >= 75) lvl += 1;
-    else if (s < 50) lvl -= 1;
+  let lvl;
+  const r = domainRating(domainId);
+  if (r != null) {
+    lvl = ratingToLevel(r);
+  } else {
+    lvl = ageBaseLevel(age);
+    const s = scores?.[domainId];
+    if (typeof s === 'number') {
+      if (s >= 75) lvl += 1;
+      else if (s < 50) lvl -= 1;
+    }
+    lvl += Math.floor((domainCompleted?.[domainId] || 0) / 5); // every 5 sessions, +1
   }
-  lvl += Math.floor((domainCompleted?.[domainId] || 0) / 5); // every 5 sessions, +1
   lvl = Math.max(1, Math.min(5, lvl));
   return { level: lvl, en: LEVELS_EN[lvl - 1], ar: LEVELS_AR[lvl - 1] };
 }

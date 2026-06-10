@@ -38,6 +38,9 @@ export function weightsFor(goalId, scores) {
   return w;
 }
 
+/** Seconds reserved for the weekly reaction check-in at session start. */
+export const TEST_RESERVE_SECS = 60;
+
 export function generatePlan({ date, goal, size, age, scores, domainCompleted }) {
   const sizeDef = SIZES_BY_ID[size] || SIZES_BY_ID.standard;
   const count = sizeDef.count;
@@ -64,5 +67,18 @@ export function generatePlan({ date, goal, size, age, scores, domainCompleted })
     const diff = difficultyFor(dom, age, scores, domainCompleted);
     picks.push({ ...g, level: diff.level, levelEn: diff.en, levelAr: diff.ar });
   }
+
+  // ── Timed blocks: split the session minutes across the picks in proportion
+  //    to how much the goal weights each pick's domain (the target domain gets
+  //    the longest block). Clamped so no block is a blink or a marathon.
+  const playSecs = Math.max(sizeDef.minutes * 60 - TEST_RESERVE_SECS, count * 90);
+  const wsum = picks.reduce((a, p) => a + (weights[p.domainId] || 0.1), 0);
+  picks.forEach((p) => {
+    const share = ((weights[p.domainId] || 0.1) / wsum) * playSecs;
+    p.seconds = Math.max(90, Math.min(360, Math.round(share / 15) * 15));
+  });
+  // Periodized order: shortest block first (warm-up) ramping to the longest
+  // (the goal's peak block) — standard session structure in training design.
+  picks.sort((a, b) => a.seconds - b.seconds);
   return picks;
 }

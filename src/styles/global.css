@@ -318,6 +318,46 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
 }
 .char-shop-link:active { transform: scale(0.97); }
 
+/* ── Living 2D characters: idle micro-animations on SVG groups ── */
+.mmv-blink { animation: mmvBlink 4.6s infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes mmvBlink {
+    0%, 92.5%, 97%, 100% { transform: scaleY(1); }
+    94.5% { transform: scaleY(0.06); }
+}
+.mmv-tail { animation: mmvTail 5.2s ease-in-out infinite; transform-box: fill-box; transform-origin: 8% 88%; }
+@keyframes mmvTail {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(4deg); }
+}
+.mmv-ear-l { animation: mmvEarL 7.3s infinite; transform-box: fill-box; transform-origin: 75% 95%; }
+.mmv-ear-r { animation: mmvEarR 9.1s infinite; transform-box: fill-box; transform-origin: 25% 95%; }
+@keyframes mmvEarL {
+    0%, 86%, 94%, 100% { transform: rotate(0deg); }
+    88% { transform: rotate(-7deg); }
+    91% { transform: rotate(4deg); }
+}
+@keyframes mmvEarR {
+    0%, 90%, 98%, 100% { transform: rotate(0deg); }
+    92% { transform: rotate(7deg); }
+    95% { transform: rotate(-4deg); }
+}
+.mmv-breathe { animation: mmvBreathe 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes mmvBreathe {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(1.014); }
+}
+.mmv-spin { animation: mmvSpin 1.4s linear infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes mmvSpin {
+    from { transform: rotate(0deg) scaleX(1); }
+    25% { transform: rotate(0deg) scaleX(0.15); }
+    50% { transform: rotate(0deg) scaleX(-1); }
+    75% { transform: rotate(0deg) scaleX(0.15); }
+    to { transform: rotate(0deg) scaleX(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .mmv-blink, .mmv-tail, .mmv-ear-l, .mmv-ear-r, .mmv-breathe, .mmv-spin { animation: none; }
+}
+
 /* ── Shop grid ── */
 .shop-screen { justify-content: flex-start; padding-top: 56px; }
 .shop-preview { width: 150px; height: 180px; }
@@ -337,6 +377,17 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
 .shop-card.is-on { border-color: #ffd066; box-shadow: 0 0 14px rgba(255, 180, 60, 0.5); }
 .shop-card.is-locked { opacity: 0.5; cursor: not-allowed; }
 .shop-card-ic { font-size: 1.9rem; line-height: 1; }
+.shop-card-art {
+    height: 50px; display: flex; align-items: center; justify-content: center;
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
+}
+.shop-card:hover .shop-card-art { transform: scale(1.12) rotate(-3deg); transition: transform .15s; }
+.shop-section { width: 100%; max-width: 380px; }
+.shop-section-title {
+    font-family: 'Bangers', cursive; letter-spacing: 1.5px; font-size: 1.05rem;
+    color: #ffd98a; text-align: start; margin: 14px 2px 8px;
+    border-bottom: 1.5px solid #6e4420; padding-bottom: 4px;
+}
 .shop-card-name { font-family: 'Comic Neue', cursive; font-weight: 700; font-size: 0.74rem; color: #f3ead9; text-align: center; }
 .shop-card-cost { font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 0.82rem; color: #ffd98a; }
 .shop-card.is-on .shop-card-cost { color: #9be85a; }
@@ -1021,6 +1072,71 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
 .wk-trans-count { font-size: 0.85rem; color: #9a8d76; margin: 6px 0; }
 .wk-trans-card .workout-cta { width: 100%; margin-top: 4px; }
 .wk-trans-end { background: none; border: none; color: #9a8d76; font-size: 0.85rem; cursor: pointer; padding: 6px; }
+
+/* ── Workout: session HUD (block clock floating over the hosted game) ── */
+.wk-hud {
+    position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+    z-index: 9000; display: flex; gap: 10px; align-items: center;
+    background: rgba(12, 9, 16, 0.85); border: 1.5px solid #6e4420;
+    border-radius: 999px; padding: 5px 14px; backdrop-filter: blur(6px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+.wk-hud-step { color: #b9ad99; font-size: 0.72rem; font-weight: 700; }
+.wk-hud-time { font-family: 'DM Mono', monospace; color: #ffd98a; font-weight: 700; font-size: 0.92rem; min-width: 58px; text-align: center; }
+.wk-hud-time.is-low { color: #ff5d73; animation: wkPulse 1s infinite; }
+@keyframes wkPulse { 50% { opacity: 0.45; } }
+.wk-hud-btn { background: none; border: none; color: #ffd98a; font-size: 0.74rem; font-weight: 700; cursor: pointer; padding: 2px 4px; }
+
+/* ── Workout: pre/post reaction test ── */
+.wk-test {
+    position: absolute; inset: 0; z-index: 50;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 22px; padding: 24px; background: radial-gradient(circle at 50% 30%, #241405, #120a04);
+}
+.wk-test-card { max-width: 340px; text-align: center; display: flex; flex-direction: column; gap: 12px; }
+.wk-test-title { font-family: 'Bangers', cursive; letter-spacing: 1.5px; font-size: 1.5rem; color: #ffd98a; }
+.wk-test-body { color: #d8cbb4; font-size: 0.92rem; line-height: 1.45; }
+.wk-test-how { color: #b9ad99; font-size: 0.82rem; }
+.wk-test-skip { background: none; border: none; color: #9a8d76; font-size: 0.82rem; cursor: pointer; padding: 6px; }
+.wk-test-step { color: #b9ad99; font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; }
+.wk-stim {
+    width: 180px; height: 180px; border-radius: 50%; cursor: pointer;
+    border: 3px solid #4a3a28; background: #221a26;
+    color: #9a8d76; font-family: 'Bangers', cursive; font-size: 1.1rem; letter-spacing: 1px;
+    transition: transform 0.08s; touch-action: manipulation; user-select: none;
+}
+.wk-stim:active { transform: scale(0.96); }
+.wk-stim.is-go {
+    background: radial-gradient(circle at 42% 35%, #ffe89a, #f5c542 55%, #b8860b);
+    border-color: #fff3c4; color: #4a3000; font-size: 1.6rem;
+    box-shadow: 0 0 40px rgba(245, 197, 66, 0.75);
+}
+.wk-test-dots { display: flex; gap: 8px; }
+.wk-test-dot { width: 10px; height: 10px; border-radius: 50%; background: #3a2c1c; }
+.wk-test-dot.is-done { background: #f5c542; box-shadow: 0 0 6px rgba(245, 197, 66, 0.7); }
+
+/* ── Workout: session summary ── */
+.wk-summary-card {
+    width: min(92vw, 380px); display: flex; flex-direction: column; gap: 14px;
+    background: linear-gradient(180deg, #241405, #341c08);
+    border: 1.5px solid #6e4420; border-radius: 18px; padding: 22px 18px; text-align: center;
+}
+.wk-summary-title { font-family: 'Bangers', cursive; letter-spacing: 1.5px; font-size: 1.5rem; color: #ffd98a; }
+.wk-summary-rows { display: flex; flex-direction: column; gap: 8px; }
+.wk-summary-row {
+    display: flex; justify-content: space-between; gap: 10px; align-items: center;
+    background: rgba(0, 0, 0, 0.22); border-radius: 10px; padding: 8px 12px;
+    color: #b9ad99; font-size: 0.85rem;
+}
+.wk-summary-row b { color: #f3ead9; font-size: 0.9rem; }
+.wk-summary-effect {
+    font-size: 0.86rem; line-height: 1.4; color: #d8cbb4;
+    background: rgba(0, 0, 0, 0.2); border-radius: 10px; padding: 10px 12px;
+}
+.wk-summary-effect.is-up { color: #9be85a; }
+.wk-rating-delta { color: #c0563f; font-size: 0.78em; }
+.wk-rating-delta.is-up { color: #9be85a; }
+.wk-rating-cal { color: #9a8d76; font-size: 0.7em; font-weight: 400; }
 
 /* ── Workout: assessment nudge ── */
 .workout-nudge {

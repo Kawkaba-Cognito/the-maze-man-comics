@@ -1,227 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { ITEMS_BY_ID, SHOP_SLOTS } from '../../features/character/items';
+import { createKit } from './worldKit';
+import { buildCharacter } from './characters3d';
 
 /**
- * The 3D world (built on the original Babylon maze foundation).
+ * The 3D world — a comic-styled night town, 100% code-built (no model or
+ * texture files; see worldKit.js). You roam as your chosen character
+ * (fox / man / woman) with the shop gear you equipped.
  *
- * Same engine / controls / look as the maze, but it's now an OPEN, top-down
- * world instead of a labyrinth: no planet, no maze walls. You roam as your
- * chosen character (fox / man / woman), each drawn in code from primitives and
- * styled like the black-and-gold cast, with a shared walk rig.
- * Built data-first where it counts so it can grow into a buildable world later.
+ * Look: procedural night sky + gold moon, ACES tone mapping, glow layer,
+ * fog, rim-lit characters. Feel: acceleration, camera damping, footstep
+ * dust, coin bursts, wandering critters, chimney smoke, fireflies.
  */
-/**
- * Build the player avatar (fox / man / woman) from Babylon primitives and
- * return a generic walk rig so the render loop can animate any of them.
- * Parented under `parent` (the collider); root sits on the ground.
- */
-function buildCharacter(BABYLON, s, parent, shadowGenerator, variant, equipped) {
-  const root = new BABYLON.TransformNode('charRoot', s);
-  root.parent = parent;
-  root.position.y = -2.0; // collider centre is at y=2 → drop to ground
-
-  const std = (name, r, g, b, opts = {}) => {
-    const m = new BABYLON.StandardMaterial(name, s);
-    m.diffuseColor = new BABYLON.Color3(r, g, b);
-    const sp = opts.spec ?? 0.2;
-    m.specularColor = new BABYLON.Color3(sp, sp, sp);
-    if (opts.emis) m.emissiveColor = new BABYLON.Color3(opts.emis[0], opts.emis[1], opts.emis[2]);
-    return m;
-  };
-  const matBlack = std('cBlack', 0.07, 0.07, 0.09, { spec: 0.3 });
-  const matGold = std('cGold', 0.85, 0.65, 0.18, { emis: [0.4, 0.3, 0.06], spec: 0.5 });
-  const matEye = std('cEye', 1, 0.8, 0.3, { emis: [1, 0.78, 0.25] });
-  const add = (mesh, mat, x, y, z) => {
-    mesh.material = mat; mesh.position.set(x, y, z); mesh.parent = root;
-    shadowGenerator.addShadowCaster(mesh); return mesh;
-  };
-
-  // Equipped gear → parented to the matching BONE node so it moves with the body.
-  const mats = { black: matBlack, gold: matGold, eye: matEye, make: (r, g, b, emis) => std('itm', r, g, b, emis ? { emis } : {}) };
-  const node = (name, x, y, z, par) => { const n = new BABYLON.TransformNode(name, s); n.parent = par || root; n.position.set(x, y, z); return n; };
-  const cast = (m) => { shadowGenerator.addShadowCaster(m); return m; };
-  const applyEquip = (attach) => {
-    if (!equipped) return;
-    SHOP_SLOTS.forEach((slot) => {
-      const it = ITEMS_BY_ID[equipped[slot]];
-      if (!it || !it.build3d) return;
-      const par = attach[it.attach || slot];
-      if (!par) return;
-      it.build3d({ BABYLON, s, parent: par, mats, shadow: shadowGenerator });
-    });
-  };
-
-  // ───────────────── Humanoid (man / woman) — jointed rig ─────────────────
-  if (variant === 'male' || variant === 'female') {
-    const V3 = (x, y, z) => new BABYLON.Vector3(x, y, z);
-    const female = variant === 'female';
-    const skin = std('cSkin', female ? 0.86 : 0.78, female ? 0.63 : 0.54, female ? 0.47 : 0.37, { spec: 0.12 });
-    const hair = std('cHair', female ? 0.09 : 0.12, female ? 0.07 : 0.09, female ? 0.13 : 0.06, { spec: 0.3 });
-    const cloth = std('cCloth', 0.1, 0.1, 0.13, { spec: 0.18 });
-    const sh = female ? 0.6 : 0.8;
-
-    // Bone = a pivot node + a tapered cylinder hanging from it.
-    const segment = (par, px, py, pz, len, dT, dB, mat, nm) => {
-      const piv = node(nm + 'P', px, py, pz, par);
-      const m = BABYLON.MeshBuilder.CreateCylinder(nm, { diameterTop: dT, diameterBottom: dB, height: len, tessellation: 12 }, s);
-      m.parent = piv; m.position.y = -len / 2; m.material = mat; cast(m);
-      return piv;
-    };
-
-    const hipY = 1.62;
-    const mkLeg = (sgn) => {
-      const thigh = segment(root, sgn * 0.26, hipY, 0, 0.8, 0.34, 0.42, cloth, 'thigh');
-      const shin = segment(thigh, 0, -0.8, 0, 0.76, 0.26, 0.32, cloth, 'shin');
-      const foot = BABYLON.MeshBuilder.CreateBox('foot', { width: 0.42, height: 0.26, depth: 0.72 }, s);
-      foot.parent = shin; foot.position.set(0, -0.78, 0.14); foot.material = matBlack; cast(foot);
-      return { thigh, shin };
-    };
-    const legL = mkLeg(-1), legR = mkLeg(1);
-
-    // Upper body node — sways / twists / bobs as one unit.
-    const upper = node('upper', 0, hipY, 0, root);
-    const torso = BABYLON.MeshBuilder.CreateCylinder('torso', { diameterTop: sh * 1.7, diameterBottom: 0.8, height: 1.12, tessellation: 18 }, s);
-    torso.parent = upper; torso.position.y = 0.5; torso.material = cloth; cast(torso);
-    const shoulders = BABYLON.MeshBuilder.CreateSphere('shB', { diameter: sh * 2, segments: 14 }, s);
-    shoulders.parent = upper; shoulders.position.y = 1.0; shoulders.scaling = V3(1, 0.55, 0.85); shoulders.material = cloth; cast(shoulders);
-    const belt = BABYLON.MeshBuilder.CreateTorus('belt', { diameter: 0.95, thickness: 0.12, tessellation: 18 }, s);
-    belt.rotation.x = Math.PI / 2; belt.parent = upper; belt.position.y = -0.03; belt.material = matGold; cast(belt);
-    if (female) {
-      const skirt = BABYLON.MeshBuilder.CreateCylinder('skirt', { diameterTop: 0.82, diameterBottom: 1.45, height: 0.95, tessellation: 18 }, s);
-      skirt.parent = upper; skirt.position.y = -0.5; skirt.material = cloth; cast(skirt);
-      const col = BABYLON.MeshBuilder.CreateTorus('col', { diameter: 0.46, thickness: 0.06, tessellation: 16 }, s);
-      col.rotation.x = Math.PI / 2; col.parent = upper; col.position.y = 1.12; col.material = matGold;
-    }
-
-    const mkArm = (sgn) => {
-      const up = segment(upper, sgn * (sh + 0.05), 1.0, 0, 0.66, 0.24, 0.28, cloth, 'uarm');
-      const fore = segment(up, 0, -0.66, 0, 0.62, 0.2, 0.24, skin, 'farm');
-      const hand = node('hand', 0, -0.62, 0, fore);
-      const hm = BABYLON.MeshBuilder.CreateSphere('handM', { diameter: 0.24, segments: 10 }, s);
-      hm.parent = hand; hm.material = skin; cast(hm);
-      return { up, fore, hand };
-    };
-    const armL = mkArm(-1), armR = mkArm(1);
-    if (!female) {
-      [-1, 1].forEach((sgn) => { const p = BABYLON.MeshBuilder.CreateSphere('pau', { diameter: 0.5 }, s); p.parent = upper; p.position.set(sgn * (sh + 0.05), 1.04, 0); p.scaling = V3(1, 0.7, 1); p.material = matGold; cast(p); });
-    }
-
-    // Neck → head (headPivot lets the head bob/turn).
-    const neckN = node('neckN', 0, 1.3, 0.02, upper);
-    const neckM = BABYLON.MeshBuilder.CreateCylinder('neckM', { diameter: 0.26, height: 0.28 }, s);
-    neckM.parent = neckN; neckM.position.y = -0.04; neckM.material = skin; cast(neckM);
-    const headPivot = node('headP', 0, 0.12, 0, neckN);
-    const headN = node('headN', 0, 0.44, 0, headPivot);
-    const headM = BABYLON.MeshBuilder.CreateSphere('headM', { diameter: 0.92, segments: 20 }, s);
-    headM.parent = headN; headM.scaling = V3(0.95, 1.02, 0.96); headM.material = skin; cast(headM);
-
-    // Face: eye whites + amber iris + pupil, brows, nose, mouth.
-    const matWhite = std('eyeW', 0.96, 0.96, 0.93, { spec: 0.1 });
-    const matPup = std('pup', 0.03, 0.03, 0.04);
-    [-1, 1].forEach((sgn) => {
-      const w = BABYLON.MeshBuilder.CreateSphere('eyeW', { diameter: 0.17, segments: 10 }, s); w.parent = headN; w.position.set(sgn * 0.17, 0.04, 0.4); w.scaling = V3(1, 1, 0.55); w.material = matWhite;
-      const ir = BABYLON.MeshBuilder.CreateSphere('iris', { diameter: 0.1 }, s); ir.parent = headN; ir.position.set(sgn * 0.17, 0.04, 0.46); ir.material = matEye;
-      const pu = BABYLON.MeshBuilder.CreateSphere('pup', { diameter: 0.05 }, s); pu.parent = headN; pu.position.set(sgn * 0.17, 0.04, 0.49); pu.material = matPup;
-      const br = BABYLON.MeshBuilder.CreateBox('brow', { width: 0.15, height: 0.035, depth: 0.04 }, s); br.parent = headN; br.position.set(sgn * 0.17, 0.15, 0.42); br.material = hair;
-    });
-    const nose = BABYLON.MeshBuilder.CreateSphere('nose', { diameter: 0.11 }, s); nose.parent = headN; nose.position.set(0, -0.03, 0.47); nose.scaling = V3(0.8, 1, 1.1); nose.material = skin; cast(nose);
-    const mouth = BABYLON.MeshBuilder.CreateBox('mouth', { width: 0.2, height: 0.035, depth: 0.03 }, s); mouth.parent = headN; mouth.position.set(0, -0.2, 0.42); mouth.material = std('mouth', female ? 0.72 : 0.5, 0.3, 0.3);
-    if (female) { const hb = BABYLON.MeshBuilder.CreateSphere('hairB', { diameter: 1.02, segments: 14 }, s); hb.parent = headN; hb.position.set(0, -0.06, -0.12); hb.scaling = V3(1, 1.55, 0.9); hb.material = hair; cast(hb); }
-    const hc = BABYLON.MeshBuilder.CreateSphere('hairC', { diameter: 0.98, segments: 14 }, s); hc.parent = headN; hc.position.set(0, 0.2, -0.04); hc.scaling = V3(1, 0.8, 1); hc.material = hair; cast(hc);
-
-    const backN = node('backN', 0, 1.0, -0.2, upper);
-    applyEquip({ hat: headN, face: headN, neck: neckN, back: backN, hand: armR.hand });
-    const holding = !!(equipped && equipped.back === 'balloon'); // hand-held item → pose the right arm
-
-    const update = (moving, cyc, time) => {
-      const L = BABYLON.Scalar.Lerp;
-      if (moving) {
-        const sw = Math.sin(cyc);
-        legL.thigh.rotation.x = sw * 0.55; legR.thigh.rotation.x = -sw * 0.55;
-        legL.shin.rotation.x = -Math.max(0, Math.sin(cyc + Math.PI * 0.5)) * 0.9; // knee bends on swing
-        legR.shin.rotation.x = -Math.max(0, Math.sin(cyc - Math.PI * 0.5)) * 0.9;
-        armL.up.rotation.x = -sw * 0.5; armL.fore.rotation.x = -0.25 - Math.max(0, -sw) * 0.25;
-        if (holding) { armR.up.rotation.x = -0.85; armR.fore.rotation.x = -1.15; }
-        else { armR.up.rotation.x = sw * 0.5; armR.fore.rotation.x = -0.25 - Math.max(0, sw) * 0.25; }
-        upper.position.y = hipY + Math.abs(Math.sin(cyc * 2)) * 0.06;
-        upper.rotation.z = sw * 0.045;
-        upper.rotation.y = sw * 0.07;
-        headPivot.rotation.x = Math.sin(cyc * 2) * 0.02;
-      } else {
-        legL.thigh.rotation.x = L(legL.thigh.rotation.x, 0, 0.15); legR.thigh.rotation.x = L(legR.thigh.rotation.x, 0, 0.15);
-        legL.shin.rotation.x = L(legL.shin.rotation.x, 0, 0.15); legR.shin.rotation.x = L(legR.shin.rotation.x, 0, 0.15);
-        armL.up.rotation.x = L(armL.up.rotation.x, 0.05, 0.1); armL.fore.rotation.x = L(armL.fore.rotation.x, -0.22, 0.1);
-        if (holding) { armR.up.rotation.x = L(armR.up.rotation.x, -0.85, 0.12); armR.fore.rotation.x = L(armR.fore.rotation.x, -1.15, 0.12); }
-        else { armR.up.rotation.x = L(armR.up.rotation.x, 0.05, 0.1); armR.fore.rotation.x = L(armR.fore.rotation.x, -0.22, 0.1); }
-        upper.position.y = L(upper.position.y, hipY + Math.sin(time * 1.4) * 0.02, 0.1); // breathing
-        upper.rotation.z = L(upper.rotation.z, Math.sin(time * 0.7) * 0.015, 0.08);
-        upper.rotation.y = L(upper.rotation.y, 0, 0.1);
-        headPivot.rotation.x = L(headPivot.rotation.x, 0, 0.1);
-      }
-    };
-
-    return { rig: { root, update } };
-  }
-
-  // ───────────────── Fox (default) ─────────────────
-  const body = BABYLON.MeshBuilder.CreateSphere('body', { diameter: 1.5, segments: 10 }, s);
-  body.scaling = new BABYLON.Vector3(1, 0.85, 1.7); add(body, matBlack, 0, 1.2, -0.1);
-  const head = BABYLON.MeshBuilder.CreateSphere('head', { diameter: 1.05, segments: 10 }, s); add(head, matBlack, 0, 1.5, 1.05);
-  const snout = BABYLON.MeshBuilder.CreateCylinder('snout', { diameterTop: 0.05, diameterBottom: 0.45, height: 0.55, tessellation: 12 }, s);
-  snout.rotation.x = Math.PI / 2; add(snout, matBlack, 0, 1.42, 1.65);
-  const earL = BABYLON.MeshBuilder.CreateCylinder('earL', { diameterTop: 0, diameterBottom: 0.5, height: 0.8, tessellation: 4 }, s);
-  earL.rotation.z = 0.18; add(earL, matBlack, -0.34, 2.05, 0.95);
-  const earR = BABYLON.MeshBuilder.CreateCylinder('earR', { diameterTop: 0, diameterBottom: 0.5, height: 0.8, tessellation: 4 }, s);
-  earR.rotation.z = -0.18; add(earR, matBlack, 0.34, 2.05, 0.95);
-  const earLin = BABYLON.MeshBuilder.CreateCylinder('earLin', { diameterTop: 0, diameterBottom: 0.26, height: 0.5, tessellation: 4 }, s); add(earLin, matGold, -0.34, 2.05, 1.02);
-  const earRin = BABYLON.MeshBuilder.CreateCylinder('earRin', { diameterTop: 0, diameterBottom: 0.26, height: 0.5, tessellation: 4 }, s); add(earRin, matGold, 0.34, 2.05, 1.02);
-  const eyeL = BABYLON.MeshBuilder.CreateSphere('eyeL', { diameter: 0.22 }, s); add(eyeL, matEye, -0.27, 1.58, 1.5);
-  const eyeR = BABYLON.MeshBuilder.CreateSphere('eyeR', { diameter: 0.22 }, s); add(eyeR, matEye, 0.27, 1.58, 1.5);
-  const collar = BABYLON.MeshBuilder.CreateTorus('collar', { diameter: 1.15, thickness: 0.13, tessellation: 16 }, s);
-  collar.rotation.x = Math.PI / 2; add(collar, matGold, 0, 1.28, 0.5);
-  // forehead gem
-  const gem = BABYLON.MeshBuilder.CreatePolyhedron('gem', { type: 1, size: 0.16 }, s); add(gem, matGold, 0, 1.78, 1.42);
-  // collar gem (glowing)
-  const cgem = BABYLON.MeshBuilder.CreatePolyhedron('cgem', { type: 1, size: 0.13 }, s); add(cgem, matEye, 0, 1.18, 1.02);
-  // cheek ruffs (fluff) + chest mane
-  const ruffL = BABYLON.MeshBuilder.CreateSphere('ruffL', { diameter: 0.6, segments: 8 }, s); ruffL.scaling = new BABYLON.Vector3(0.7, 1, 0.9); add(ruffL, matBlack, -0.52, 1.42, 1.18);
-  const ruffR = BABYLON.MeshBuilder.CreateSphere('ruffR', { diameter: 0.6, segments: 8 }, s); ruffR.scaling = new BABYLON.Vector3(0.7, 1, 0.9); add(ruffR, matBlack, 0.52, 1.42, 1.18);
-  const mane = BABYLON.MeshBuilder.CreateSphere('mane', { diameter: 0.85, segments: 8 }, s); mane.scaling = new BABYLON.Vector3(1, 1.1, 0.6); add(mane, matBlack, 0, 1.05, 0.95);
-  const mkLeg = (name, x, z) => { const l = BABYLON.MeshBuilder.CreateCylinder(name, { diameter: 0.32, height: 1.0 }, s); return add(l, matBlack, x, 0.5, z); };
-  const legFL = mkLeg('legFL', -0.42, 0.6), legFR = mkLeg('legFR', 0.42, 0.6), legBL = mkLeg('legBL', -0.42, -0.7), legBR = mkLeg('legBR', 0.42, -0.7);
-  const tailPivot = new BABYLON.TransformNode('tailPivot', s); tailPivot.parent = root; tailPivot.position.set(0, 1.35, -0.95);
-  // bushier tail: base cone + volume spheres + flame-tip
-  const tail = BABYLON.MeshBuilder.CreateCylinder('tail', { diameterTop: 0.2, diameterBottom: 1.0, height: 1.8, tessellation: 12 }, s);
-  tail.material = matBlack; tail.parent = tailPivot; tail.position.set(0, 0.2, -0.7); tail.rotation.x = -0.9; shadowGenerator.addShadowCaster(tail);
-  const tailV1 = BABYLON.MeshBuilder.CreateSphere('tailV1', { diameter: 0.95, segments: 8 }, s); tailV1.material = matBlack; tailV1.parent = tailPivot; tailV1.position.set(0, 0.1, -0.55); shadowGenerator.addShadowCaster(tailV1);
-  const tailV2 = BABYLON.MeshBuilder.CreateSphere('tailV2', { diameter: 0.7, segments: 8 }, s); tailV2.material = matBlack; tailV2.parent = tailPivot; tailV2.position.set(0, 0.42, -1.05); shadowGenerator.addShadowCaster(tailV2);
-  const tailTip = BABYLON.MeshBuilder.CreateSphere('tailTip', { diameter: 0.62 }, s); tailTip.material = matGold; tailTip.parent = tailPivot; tailTip.position.set(0, 0.6, -1.4);
-  [-0.18, 0.18].forEach((dx, i) => { const fl = BABYLON.MeshBuilder.CreateCylinder(`flame${i}`, { diameterTop: 0, diameterBottom: 0.24, height: 0.45, tessellation: 8 }, s); fl.material = matGold; fl.parent = tailPivot; fl.position.set(dx, 0.78, -1.5); fl.rotation.x = -1.4; });
-
-  // Bone nodes for equipped gear (balloon is held in the mouth).
-  const fHead = node('fHead', 0, 1.5, 1.05);
-  const fNeck = node('fNeck', 0, 1.28, 0.5);
-  const fBack = node('fBack', 0, 1.4, -0.8);
-  const fMouth = node('fMouth', 0, 1.4, 1.75);
-  applyEquip({ hat: fHead, face: fHead, neck: fNeck, back: fBack, hand: fMouth });
-
-  const update = (moving, cyc) => {
-    const L = BABYLON.Scalar.Lerp;
-    if (moving) {
-      const sw = Math.sin(cyc) * 0.5;
-      legFL.rotation.x = sw; legBR.rotation.x = sw; legFR.rotation.x = -sw; legBL.rotation.x = -sw;
-      body.position.y = 1.2 + Math.abs(Math.sin(cyc * 2)) * 0.1;
-      tailPivot.rotation.z = Math.sin(cyc * 2) * 0.35;
-    } else {
-      [legFL, legFR, legBL, legBR].forEach((l) => { l.rotation.x = L(l.rotation.x, 0, 0.15); });
-      body.position.y = L(body.position.y, 1.2, 0.15);
-      tailPivot.rotation.z = L(tailPivot.rotation.z, 0, 0.1);
-    }
-  };
-  return { rig: { root, update } };
-}
-
 export default function MazeOverlay() {
   const { exitMaze, updateXP, playSfx, currentLang, toggleLang, points, character, equipped } = useApp();
   const [showSettings, setShowSettings] = useState(false);
@@ -245,11 +35,12 @@ export default function MazeOverlay() {
 
     let engine;
     const WORLD = 300; // open ground size
+    const isSmall = Math.min(window.innerWidth, window.innerHeight) < 700; // budget for phones
     const inputMap = {};
     let joyInput = { x: 0, z: 0 };
     let targetPosition = null;
     let isPointerDown = false;
-    let collectibles = [];
+    let coins = [];
 
     try {
       engine = new BABYLON.Engine(canvas3D, true, { antialias: true });
@@ -260,84 +51,134 @@ export default function MazeOverlay() {
         s.clearColor = new BABYLON.Color4(0.01, 0.01, 0.02, 1);
         s.collisionsEnabled = true;
 
-        // Top-down follow camera (slight tilt so the fox reads as 3D).
-        const camera = new BABYLON.ArcRotateCamera('camera', -Math.PI / 2, 0.5, 32, BABYLON.Vector3.Zero(), s);
+        const kit = createKit(BABYLON, s);
+
+        // ── Camera: top-down follow with damping ──
+        const camera = new BABYLON.ArcRotateCamera('camera', -Math.PI / 2, 0.95, 26, BABYLON.Vector3.Zero(), s);
         camera.attachControl(canvas3D, true);
         camera.lowerRadiusLimit = 14;
         camera.upperRadiusLimit = 70;
         camera.lowerBetaLimit = 0.15;
         camera.upperBetaLimit = Math.PI / 2.3;
 
+        // ── Lighting: cool moonlight + warm purple bounce ──
         const ambientLight = new BABYLON.HemisphericLight('ambient', new BABYLON.Vector3(0, 1, 0), s);
-        ambientLight.intensity = 0.45;
-        const dirLight = new BABYLON.DirectionalLight('sun', new BABYLON.Vector3(-1, -2, 1), s);
-        dirLight.intensity = 1.0;
+        ambientLight.intensity = 0.8;
+        ambientLight.diffuse = new BABYLON.Color3(0.62, 0.66, 0.85);
+        ambientLight.groundColor = new BABYLON.Color3(0.32, 0.24, 0.36);
+        const dirLight = new BABYLON.DirectionalLight('moon', new BABYLON.Vector3(-1, -2, 1), s);
+        dirLight.intensity = 1.35;
+        dirLight.diffuse = new BABYLON.Color3(0.95, 0.9, 0.8);
         dirLight.position = new BABYLON.Vector3(0, 60, 0);
-        const shadowGenerator = new BABYLON.ShadowGenerator(1024, dirLight);
+        const shadowGenerator = new BABYLON.ShadowGenerator(isSmall ? 1024 : 2048, dirLight);
         shadowGenerator.useBlurExponentialShadowMap = true;
         shadowGenerator.blurKernel = 24;
+        shadowGenerator.setDarkness(0.35);
 
+        // ── Post-processing: ACES tone mapping, FXAA, bloom, vignette ──
         const pipeline = new BABYLON.DefaultRenderingPipeline('pipeline', true, s, [camera]);
+        pipeline.fxaaEnabled = true;
         pipeline.bloomEnabled = true;
-        pipeline.bloomThreshold = 0.4;
-        pipeline.bloomWeight = 0.7;
+        pipeline.bloomThreshold = 0.6;
+        pipeline.bloomWeight = 0.45;
+        pipeline.imageProcessingEnabled = true;
+        pipeline.imageProcessing.toneMappingEnabled = true;
+        pipeline.imageProcessing.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES;
+        pipeline.imageProcessing.exposure = 1.5;
+        pipeline.imageProcessing.contrast = 1.1;
+        pipeline.imageProcessing.vignetteEnabled = true;
+        pipeline.imageProcessing.vignetteWeight = 1.2;
+        pipeline.imageProcessing.vignetteColor = new BABYLON.Color4(0.04, 0.02, 0.1, 0);
 
-        // Keep the maze's starry skybox backdrop (minus the planet).
-        const skybox = BABYLON.MeshBuilder.CreateBox('skyBox', { size: 1000.0 }, s);
-        const skyboxMaterial = new BABYLON.StandardMaterial('skyBox', s);
-        skyboxMaterial.backFaceCulling = false;
-        skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture('https://playground.babylonjs.com/textures/skybox', s);
-        skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
-        skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-        skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
-        skybox.material = skyboxMaterial;
+        // ── Sky + atmosphere (all procedural — no CDN textures) ──
+        const dome = kit.skyDome();
+        dome.applyFog = false;
+        kit.starDust();
+        s.fogMode = BABYLON.Scene.FOGMODE_EXP2;
+        s.fogDensity = 0.0045;
+        s.fogColor = new BABYLON.Color3(0.1, 0.07, 0.16);
 
-        const stars = new BABYLON.ParticleSystem('stars', 1500, s);
-        stars.particleTexture = new BABYLON.Texture('https://playground.babylonjs.com/textures/flare.png', s);
-        stars.emitter = new BABYLON.Vector3(0, 120, 0);
-        stars.minEmitBox = new BABYLON.Vector3(-200, 0, -200);
-        stars.maxEmitBox = new BABYLON.Vector3(200, 40, 200);
-        stars.color1 = new BABYLON.Color4(1, 0.9, 0.7, 1);
-        stars.colorDead = new BABYLON.Color4(0, 0, 0, 0);
-        stars.minSize = 0.1; stars.maxSize = 0.5;
-        stars.minLifeTime = 3; stars.maxLifeTime = 6;
-        stars.emitRate = 200;
-        stars.direction1 = new BABYLON.Vector3(0, -0.2, 0);
-        stars.direction2 = new BABYLON.Vector3(0, -0.4, 0);
-        stars.minEmitPower = 0.2; stars.maxEmitPower = 0.6;
-        stars.start();
-
-        // ---- Open ground (big) ----
+        // ── Ground: night meadow ──
         const ground = BABYLON.MeshBuilder.CreateGround('ground', { width: WORLD, height: WORLD }, s);
         const groundMat = new BABYLON.StandardMaterial('grassMat', s);
-        const grassTex = new BABYLON.Texture('https://playground.babylonjs.com/textures/grass.png', s);
-        grassTex.uScale = 60; grassTex.vScale = 60;
+        const grassTex = kit.grassTexture();
+        grassTex.uScale = 26; grassTex.vScale = 26;
         groundMat.diffuseTexture = grassTex;
-        groundMat.specularColor = new BABYLON.Color3(0.04, 0.05, 0.04);
+        groundMat.specularColor = new BABYLON.Color3(0.02, 0.03, 0.02);
         ground.material = groundMat;
         ground.receiveShadows = true;
         ground.checkCollisions = true;
 
-        // ---- Town layout: border wall, roads, the fox's house, props ----
+        // ── Town palette ──
         const BORDER = 58; // playable half-size (≈116×116 enclosed)
-        const mkMat = (name, r, g, b, emis) => {
-          const m = new BABYLON.StandardMaterial(name, s);
-          m.diffuseColor = new BABYLON.Color3(r, g, b);
-          m.specularColor = new BABYLON.Color3(0.05, 0.05, 0.05);
-          if (emis) m.emissiveColor = new BABYLON.Color3(emis[0], emis[1], emis[2]);
-          return m;
-        };
-        const matStone = mkMat('stone', 0.78, 0.72, 0.58);
-        const matRoad = mkMat('road', 0.42, 0.37, 0.3);
-        const matWall = mkMat('houseWall', 0.86, 0.79, 0.62);
-        const matRoof = mkMat('houseRoof', 0.5, 0.16, 0.13);
-        const matDark = mkMat('dark', 0.13, 0.13, 0.16);
-        const matTrim = mkMat('trim', 0.85, 0.65, 0.18, [0.4, 0.3, 0.06]);
-        const matWin = mkMat('win', 1, 0.82, 0.4, [1, 0.7, 0.3]);
-        const matTrunk = mkMat('trunk', 0.34, 0.22, 0.12);
-        const matLeaf = mkMat('leaf', 0.18, 0.45, 0.2);
+        const matStone = kit.toonMat('stone', 0.52, 0.47, 0.55);
+        const matWall = kit.toonMat('houseWall', 0.82, 0.74, 0.58);
+        const matRoof = kit.toonMat('houseRoof', 0.5, 0.16, 0.13);
+        const matDark = kit.toonMat('dark', 0.13, 0.13, 0.16, { rim: [0.3, 0.22, 0.08] });
+        const matTrim = kit.toonMat('trim', 0.85, 0.65, 0.18, { emis: [0.3, 0.22, 0.05], spec: 0.5 });
+        const matWin = kit.toonMat('win', 1, 0.82, 0.4, { emis: [0.9, 0.6, 0.25] });
+        const matTrunk = kit.toonMat('trunk', 0.3, 0.2, 0.12);
+        const matLeaf = kit.toonMat('leaf', 0.14, 0.34, 0.18);
+        const matPine = kit.toonMat('pine', 0.1, 0.27, 0.17);
 
-        // Border wall (with an entrance gap on the front/-z side) + corner posts
+        // ── Roads: cobblestone cross + spur + central plaza ──
+        // (a fresh DynamicTexture per road: clone() doesn't copy canvas content)
+        const mkRoad = (x, z, w, d) => {
+          const r = BABYLON.MeshBuilder.CreateBox('road', { width: w, height: 0.15, depth: d }, s);
+          r.position.set(x, 0.08, z);
+          const m = new BABYLON.StandardMaterial('roadMat', s);
+          const t = kit.roadTexture();
+          t.uScale = Math.max(1, w / 5); t.vScale = Math.max(1, d / 5);
+          m.diffuseTexture = t;
+          m.specularColor = new BABYLON.Color3(0.03, 0.03, 0.04);
+          r.material = m;
+          r.receiveShadows = true;
+        };
+        mkRoad(0, 0, 7, BORDER * 2);   // north–south
+        mkRoad(0, 0, BORDER * 2, 7);   // east–west
+        mkRoad(-7, -34, 14, 4);        // spur to the fox's house
+        const plaza = BABYLON.MeshBuilder.CreateCylinder('plaza', { diameter: 24, height: 0.18, tessellation: 48 }, s);
+        plaza.position.y = 0.09;
+        const plazaMat = new BABYLON.StandardMaterial('plazaMat', s);
+        const plazaTex = kit.roadTexture();
+        plazaTex.uScale = 5; plazaTex.vScale = 5;
+        plazaMat.diffuseTexture = plazaTex;
+        plazaMat.specularColor = new BABYLON.Color3(0.03, 0.03, 0.04);
+        plaza.material = plazaMat;
+        plaza.receiveShadows = true;
+
+        // ── Plaza centerpiece: gold fox statue on a pedestal ──
+        const pedestal = BABYLON.MeshBuilder.CreateCylinder('pedestal', { diameterTop: 2.6, diameterBottom: 3.4, height: 1.4, tessellation: 24 }, s);
+        pedestal.position.set(0, 0.7, 0);
+        pedestal.material = matStone;
+        pedestal.checkCollisions = true;
+        shadowGenerator.addShadowCaster(pedestal);
+        const ring = BABYLON.MeshBuilder.CreateTorus('pedRing', { diameter: 2.7, thickness: 0.14, tessellation: 24 }, s);
+        ring.position.set(0, 1.38, 0);
+        ring.material = matTrim;
+        {
+          const statueMat = kit.toonMat('statue', 0.85, 0.65, 0.18, { emis: [0.28, 0.2, 0.04], spec: 0.6 });
+          const parts = [];
+          const sp = (d, x, y, z, sx = 1, sy = 1, sz = 1) => {
+            const m = BABYLON.MeshBuilder.CreateSphere('stp', { diameter: d, segments: 10 }, s);
+            m.position.set(x, y, z); m.scaling.set(sx, sy, sz);
+            parts.push(m);
+            return m;
+          };
+          sp(1.3, 0, 2.2, 0, 1, 1.25, 0.95);          // seated body
+          sp(0.85, 0, 3.25, 0.18);                     // head
+          for (let i = 0; i < 6; i++) sp(0.7 - i * 0.09, 0, 1.65 + i * 0.28, -0.65 - i * 0.12); // tail curl
+          const statue = BABYLON.Mesh.MergeMeshes(parts, true, true);
+          statue.material = statueMat;
+          shadowGenerator.addShadowCaster(statue);
+          kit.glow(statue);
+          [[-0.26, 1], [0.26, -1]].forEach(([ex, sgn]) => {
+            const ear = BABYLON.MeshBuilder.CreateCylinder('stEar', { diameterTop: 0, diameterBottom: 0.36, height: 0.55, tessellation: 6 }, s);
+            ear.position.set(ex, 3.75, 0.1); ear.rotation.z = sgn * -0.15; ear.material = statueMat;
+          });
+        }
+
+        // ── Border wall (entrance gap on the front) + glowing corner posts ──
         const BH = 2.8;
         const mkWall = (x, z, w, d) => {
           const wall = BABYLON.MeshBuilder.CreateBox('border', { width: w, height: BH, depth: d }, s);
@@ -353,77 +194,157 @@ export default function MazeOverlay() {
         const seg = BORDER - 6;                       // front split (12-wide gate)
         mkWall(-(6 + seg / 2), -BORDER, seg, 1.2);
         mkWall(6 + seg / 2, -BORDER, seg, 1.2);
-        [[-BORDER, -BORDER], [BORDER, -BORDER], [-BORDER, BORDER], [BORDER, BORDER]].forEach(([x, z]) => {
+        [[-BORDER, -BORDER], [BORDER, -BORDER], [-BORDER, BORDER], [BORDER, BORDER], [-6, -BORDER], [6, -BORDER]].forEach(([x, z]) => {
           const post = BABYLON.MeshBuilder.CreateBox('post', { width: 1.8, height: 4, depth: 1.8 }, s);
           post.position.set(x, 2, z); post.material = matDark; post.checkCollisions = true;
-          const cap = BABYLON.MeshBuilder.CreateSphere('cap', { diameter: 1 }, s);
-          cap.position.set(x, 4.3, z); cap.material = matTrim;
+          shadowGenerator.addShadowCaster(post);
+          const cap = BABYLON.MeshBuilder.CreateSphere('cap', { diameter: 0.9 }, s);
+          cap.position.set(x, 4.4, z); cap.material = matWin; kit.glow(cap);
         });
 
-        // Roads (flat, slightly above grass; main cross + a spur to the house)
-        const mkRoad = (x, z, w, d) => {
-          const r = BABYLON.MeshBuilder.CreateBox('road', { width: w, height: 0.15, depth: d }, s);
-          r.position.set(x, 0.08, z); r.material = matRoad; r.receiveShadows = true;
-        };
-        mkRoad(0, 0, 8, BORDER * 2);   // north–south
-        mkRoad(0, 0, BORDER * 2, 8);   // east–west
-        mkRoad(-7, -34, 14, 4);        // spur to the fox's house
-
-        // The fox's house
+        // ── The fox's house: porch, glowing windows, chimney smoke ──
         const houseX = -14, houseZ = -34;
         const hWalls = BABYLON.MeshBuilder.CreateBox('houseWalls', { width: 9, height: 6, depth: 9 }, s);
         hWalls.position.set(houseX, 3, houseZ); hWalls.material = matWall; hWalls.checkCollisions = true; shadowGenerator.addShadowCaster(hWalls);
         const hRoof = BABYLON.MeshBuilder.CreateCylinder('houseRoof', { diameterTop: 0, diameterBottom: 13, height: 4.5, tessellation: 4 }, s);
         hRoof.position.set(houseX, 8.2, houseZ); hRoof.rotation.y = Math.PI / 4; hRoof.material = matRoof; shadowGenerator.addShadowCaster(hRoof);
+        // gold trim under the roofline
+        const trim = BABYLON.MeshBuilder.CreateBox('houseTrim', { width: 9.4, height: 0.3, depth: 9.4 }, s);
+        trim.position.set(houseX, 6.05, houseZ); trim.material = matTrim;
         const door = BABYLON.MeshBuilder.CreateBox('door', { width: 2.2, height: 3.4, depth: 0.4 }, s);
         door.position.set(houseX, 1.7, houseZ + 4.6); door.material = matDark;
         const doorFrame = BABYLON.MeshBuilder.CreateTorus('doorFrame', { diameter: 2.6, thickness: 0.18, tessellation: 16 }, s);
         doorFrame.position.set(houseX, 2.6, houseZ + 4.55); doorFrame.material = matTrim;
         [[-2.6], [2.6]].forEach(([dx]) => {
           const win = BABYLON.MeshBuilder.CreateBox('win', { width: 1.4, height: 1.4, depth: 0.3 }, s);
-          win.position.set(houseX + dx, 3.6, houseZ + 4.55); win.material = matWin;
+          win.position.set(houseX + dx, 3.6, houseZ + 4.55); win.material = matWin; kit.glow(win);
+          // window cross bars
+          const bar = BABYLON.MeshBuilder.CreateBox('winBar', { width: 0.12, height: 1.4, depth: 0.34 }, s);
+          bar.position.set(houseX + dx, 3.6, houseZ + 4.56); bar.material = matDark;
+          const bar2 = BABYLON.MeshBuilder.CreateBox('winBar2', { width: 1.4, height: 0.12, depth: 0.34 }, s);
+          bar2.position.set(houseX + dx, 3.6, houseZ + 4.56); bar2.material = matDark;
         });
+        // porch: two posts + a small awning over the door
+        [[-1.6], [1.6]].forEach(([dx]) => {
+          const p = BABYLON.MeshBuilder.CreateCylinder('porchPost', { diameter: 0.32, height: 3.4 }, s);
+          p.position.set(houseX + dx, 1.7, houseZ + 6.2); p.material = matDark; shadowGenerator.addShadowCaster(p);
+        });
+        const awning = BABYLON.MeshBuilder.CreateBox('awning', { width: 4.6, height: 0.24, depth: 2.6 }, s);
+        awning.position.set(houseX, 3.55, houseZ + 5.6); awning.rotation.x = 0.12; awning.material = matRoof; shadowGenerator.addShadowCaster(awning);
         const chimney = BABYLON.MeshBuilder.CreateBox('chimney', { width: 1, height: 2.4, depth: 1 }, s);
         chimney.position.set(houseX + 2.6, 9, houseZ - 1.5); chimney.material = matDark; shadowGenerator.addShadowCaster(chimney);
+        kit.smoke(houseX + 2.6, 10.3, houseZ - 1.5);
         const houseLamp = new BABYLON.PointLight('houseLamp', new BABYLON.Vector3(houseX, 4, houseZ + 6), s);
         houseLamp.diffuse = new BABYLON.Color3(1, 0.8, 0.45); houseLamp.intensity = 0.6; houseLamp.range = 18;
 
-        // Props: trees + lamps (base meshes built once, then instanced)
-        const treeTrunk = BABYLON.MeshBuilder.CreateCylinder('treeTrunk', { diameterTop: 0.5, diameterBottom: 0.8, height: 3 }, s);
-        treeTrunk.material = matTrunk; treeTrunk.isVisible = false;
-        const treeCanopy = BABYLON.MeshBuilder.CreateSphere('treeCanopy', { diameter: 4, segments: 6 }, s);
-        treeCanopy.material = matLeaf; treeCanopy.isVisible = false;
-        const lampPole = BABYLON.MeshBuilder.CreateCylinder('lampPole', { diameter: 0.3, height: 4.5 }, s);
-        lampPole.material = matDark; lampPole.isVisible = false;
-        const lampBulb = BABYLON.MeshBuilder.CreateSphere('lampBulb', { diameter: 0.7, segments: 6 }, s);
-        lampBulb.material = matWin; lampBulb.isVisible = false;
-        const PROPS = [
-          { t: 'tree', x: 18, z: -10 }, { t: 'tree', x: -26, z: 10 }, { t: 'tree', x: 26, z: 20 },
-          { t: 'tree', x: -34, z: -22 }, { t: 'tree', x: 34, z: -34 }, { t: 'tree', x: 10, z: 34 },
-          { t: 'tree', x: -10, z: 40 }, { t: 'tree', x: 40, z: 6 },
-          { t: 'lamp', x: 6, z: -7 }, { t: 'lamp', x: -6, z: -7 }, { t: 'lamp', x: 6, z: 9 },
-          { t: 'lamp', x: -6, z: 9 }, { t: 'lamp', x: 0, z: -52 }, { t: 'lamp', x: 0, z: 30 },
-        ];
+        // ── Props: trees (two kinds), bushes, rocks, flowers, lamps — instanced ──
+        const mkHidden = (m, mat) => { m.material = mat; m.isVisible = false; return m; };
+        // round tree: trunk + cloud canopy (3 merged spheres)
+        const trunkBase = mkHidden(BABYLON.MeshBuilder.CreateCylinder('treeTrunk', { diameterTop: 0.5, diameterBottom: 0.8, height: 3, tessellation: 8 }, s), matTrunk);
+        const canopyBase = (() => {
+          const a = BABYLON.MeshBuilder.CreateSphere('c1', { diameter: 4, segments: 8 }, s);
+          const b = BABYLON.MeshBuilder.CreateSphere('c2', { diameter: 2.6, segments: 8 }, s); b.position.set(1.4, 0.8, 0.4);
+          const c = BABYLON.MeshBuilder.CreateSphere('c3', { diameter: 2.2, segments: 8 }, s); c.position.set(-1.2, 1.0, -0.3);
+          return mkHidden(BABYLON.Mesh.MergeMeshes([a, b, c], true, true), matLeaf);
+        })();
+        // pine tree: trunk + 3 stacked cones
+        const pineBase = (() => {
+          const cones = [0, 1, 2].map((i) => {
+            const c = BABYLON.MeshBuilder.CreateCylinder('p' + i, { diameterTop: 0, diameterBottom: 3.2 - i * 0.8, height: 2.2, tessellation: 10 }, s);
+            c.position.y = i * 1.3;
+            return c;
+          });
+          return mkHidden(BABYLON.Mesh.MergeMeshes(cones, true, true), matPine);
+        })();
+        const bushBase = mkHidden(BABYLON.MeshBuilder.CreateSphere('bush', { diameter: 1.6, segments: 6 }, s), matLeaf);
+        const rockBase = mkHidden(BABYLON.MeshBuilder.CreatePolyhedron('rock', { type: 2, size: 0.7 }, s), matStone);
+        const lampPole = mkHidden(BABYLON.MeshBuilder.CreateCylinder('lampPole', { diameter: 0.28, height: 4.5, tessellation: 8 }, s), matDark);
+        const stemBase = mkHidden(BABYLON.MeshBuilder.CreateCylinder('stem', { diameter: 0.06, height: 0.5 }, s), matLeaf);
+        const bloomBase = mkHidden(BABYLON.MeshBuilder.CreateSphere('bloom', { diameter: 0.22, segments: 6 }, s), kit.toonMat('bloomM', 1, 0.75, 0.35, { emis: [0.7, 0.45, 0.15] }));
+        const lampBulbBase = BABYLON.MeshBuilder.CreateSphere('lampBulb', { diameter: 0.7, segments: 8 }, s);
+        lampBulbBase.material = matWin; lampBulbBase.isVisible = false;
+
+        const rnd = (a, b) => a + Math.random() * (b - a);
         let pc = 0;
-        PROPS.forEach((p) => {
-          if (p.t === 'tree') {
-            const tr = treeTrunk.createInstance(`tr${pc}`); tr.position.set(p.x, 1.5, p.z); shadowGenerator.addShadowCaster(tr);
-            const cn = treeCanopy.createInstance(`cn${pc}`); cn.position.set(p.x, 4.2, p.z); shadowGenerator.addShadowCaster(cn);
-          } else {
-            const pl = lampPole.createInstance(`pl${pc}`); pl.position.set(p.x, 2.25, p.z);
-            const bl = lampBulb.createInstance(`bl${pc}`); bl.position.set(p.x, 4.6, p.z);
-          }
-          pc += 1;
+        const inst = (base, x, y, z, sc = 1, rot = true, cast = false) => {
+          const i = base.createInstance(base.name + pc++);
+          i.position.set(x, y, z);
+          i.scaling.setAll(sc);
+          if (rot) i.rotation.y = Math.random() * Math.PI * 2;
+          if (cast) shadowGenerator.addShadowCaster(i);
+          return i;
+        };
+        const TREES = [
+          { k: 'round', x: 18, z: -10 }, { k: 'pine', x: -26, z: 10 }, { k: 'round', x: 26, z: 20 },
+          { k: 'pine', x: -34, z: -22 }, { k: 'round', x: 34, z: -34 }, { k: 'pine', x: 10, z: 34 },
+          { k: 'round', x: -10, z: 40 }, { k: 'pine', x: 40, z: 6 }, { k: 'round', x: -42, z: 32 },
+          { k: 'pine', x: 46, z: 40 }, { k: 'round', x: -48, z: -40 }, { k: 'pine', x: 22, z: 48 },
+        ];
+        TREES.forEach((t) => {
+          const sc = rnd(0.85, 1.3);
+          inst(trunkBase, t.x, 1.5 * sc, t.z, sc, true, true);
+          if (t.k === 'round') inst(canopyBase, t.x, 4.2 * sc, t.z, sc, true, true);
+          else inst(pineBase, t.x, 3.4 * sc, t.z, sc, true, true);
+        });
+        for (let i = 0; i < 14; i++) {
+          const x = rnd(-52, 52), z = rnd(-52, 52);
+          if (Math.abs(x) < 6 || Math.abs(z) < 6) continue; // keep roads clear
+          inst(bushBase, x, 0.5, z, rnd(0.7, 1.4));
+        }
+        for (let i = 0; i < 10; i++) {
+          const x = rnd(-54, 54), z = rnd(-54, 54);
+          if (Math.abs(x) < 6 || Math.abs(z) < 6) continue;
+          inst(rockBase, x, 0.4, z, rnd(0.5, 1.3), true, true);
+        }
+        for (let i = 0; i < 24; i++) {
+          const x = rnd(-50, 50), z = rnd(-50, 50);
+          if (Math.abs(x) < 5.5 || Math.abs(z) < 5.5) continue;
+          inst(stemBase, x, 0.25, z, 1, false);
+          inst(bloomBase, x, 0.55, z, rnd(0.8, 1.3), false);
+        }
+        // street lamps: instanced poles + cloned glowing bulbs (clones so the glow layer can include them)
+        [[6, -7], [-6, 9], [6, 9], [-6, -7], [0, -50], [0, 30], [14, 0], [-14, 0]].forEach(([x, z]) => {
+          inst(lampPole, x, 2.25, z, 1, false);
+          const bulb = lampBulbBase.clone('bulb' + pc++);
+          bulb.isVisible = true;
+          bulb.position.set(x, 4.6, z);
+          kit.glow(bulb);
         });
 
-        // ---- The fox (drawn in code) ----
+        // ── Wandering critters (little gray bunnies) ──
+        const critters = [];
+        const mkCritter = (cx, cz) => {
+          const n = new BABYLON.TransformNode('critter', s);
+          n.position.set(cx, 0, cz);
+          const fur = kit.toonMat('bunFur', 0.5, 0.48, 0.55, { rim: [0.3, 0.25, 0.12] });
+          const cAdd = (m, x, y, z) => { m.material = fur; m.position.set(x, y, z); m.parent = n; shadowGenerator.addShadowCaster(m); return m; };
+          const bod = cAdd(BABYLON.MeshBuilder.CreateSphere('cb', { diameter: 0.55, segments: 8 }, s), 0, 0.32, 0);
+          bod.scaling.set(0.9, 0.8, 1.15);
+          cAdd(BABYLON.MeshBuilder.CreateSphere('ch', { diameter: 0.4, segments: 8 }, s), 0, 0.62, 0.28);
+          [[-0.09], [0.09]].forEach(([ex]) => {
+            const ear = cAdd(BABYLON.MeshBuilder.CreateCylinder('ce', { diameterTop: 0.06, diameterBottom: 0.12, height: 0.42, tessellation: 6 }, s), ex, 0.95, 0.22);
+            ear.rotation.x = -0.15;
+          });
+          const tail = cAdd(BABYLON.MeshBuilder.CreateSphere('ct', { diameter: 0.18, segments: 6 }, s), 0, 0.34, -0.34);
+          tail.material = kit.toonMat('bunTail', 0.9, 0.88, 0.92);
+          [[-0.1], [0.1]].forEach(([ex]) => {
+            const eye = BABYLON.MeshBuilder.CreateSphere('cey', { diameter: 0.06 }, s);
+            eye.material = kit.toonMat('bunEye', 0.04, 0.04, 0.05);
+            eye.position.set(ex, 0.66, 0.46); eye.parent = n;
+          });
+          critters.push({ n, target: null, pauseUntil: 0, phase: Math.random() * 10 });
+        };
+        mkCritter(20, 14); mkCritter(-24, -12); mkCritter(8, -28);
+
+        // ── Player ──
         const playerCollider = BABYLON.MeshBuilder.CreateBox('collider', { width: 1.6, height: 4.0, depth: 1.8 }, s);
         playerCollider.isVisible = false;
         playerCollider.checkCollisions = true;
         playerCollider.ellipsoid = new BABYLON.Vector3(0.8, 2.0, 0.9);
-        playerCollider.position = new BABYLON.Vector3(0, 2.0, 0);
+        playerCollider.position = new BABYLON.Vector3(0, 2.0, -16);
 
-        const { rig } = buildCharacter(BABYLON, s, playerCollider, shadowGenerator, character, equipped);
+        const { rig } = buildCharacter(BABYLON, s, playerCollider, shadowGenerator, character, equipped, kit);
+        const dust = kit.dustPuffs(playerCollider);
 
         const foxLight = new BABYLON.PointLight('foxLight', new BABYLON.Vector3(0, 3, 0), s);
         foxLight.diffuse = new BABYLON.Color3(1, 0.75, 0.35);
@@ -431,18 +352,25 @@ export default function MazeOverlay() {
         foxLight.range = 14;
         foxLight.parent = playerCollider;
 
-        // ---- Collectibles (XP) scattered in the open world ----
-        const fragMat = new BABYLON.StandardMaterial('fragMat', s);
-        fragMat.emissiveColor = new BABYLON.Color3(0, 1, 0.5);
-        fragMat.wireframe = true;
+        // ── Ambience ──
+        kit.fireflies(0, 0, 26);
+        kit.fireflies(houseX, houseZ + 8, 8);
+
+        // ── Coins (XP collectibles) ──
+        const coinMat = kit.toonMat('coinMat', 1, 0.8, 0.25, { emis: [0.55, 0.4, 0.1], spec: 0.6 });
         for (let i = 0; i < 18; i++) {
-          const frag = BABYLON.MeshBuilder.CreateIcoSphere(`frag${i}`, { radius: 0.6, subdivisions: 2 }, s);
-          frag.position = new BABYLON.Vector3((Math.random() - 0.5) * 100, 1.5, (Math.random() - 0.5) * 100);
-          frag.material = fragMat;
-          collectibles.push(frag);
+          const holder = new BABYLON.TransformNode('coinH', s);
+          const x = rnd(-50, 50), z = rnd(-50, 50);
+          holder.position.set(x, 1.3, z);
+          const coin = BABYLON.MeshBuilder.CreateCylinder('coin', { diameter: 0.9, height: 0.12, tessellation: 20 }, s);
+          coin.rotation.x = Math.PI / 2;
+          coin.material = coinMat;
+          coin.parent = holder;
+          kit.glow(coin);
+          coins.push({ holder, coin, baseY: 1.3, phase: Math.random() * 10 });
         }
 
-        // ---- Virtual joystick ----
+        // ── Virtual joystick ──
         const joyCanvas = joyCanvasRef.current;
         const joyWrap = joyWrapRef.current;
         if (joyCanvas && joyWrap) {
@@ -478,15 +406,16 @@ export default function MazeOverlay() {
           joyWrap.style.display = 'block';
         }
 
-        // ---- Tap / click-to-move on the ground ----
+        // ── Tap / click-to-move on any walkable surface ──
+        const walkable = (m) => m && (m.name === 'ground' || m.name === 'road' || m.name === 'plaza');
         s.onPointerObservable.add((pi) => {
           if (pi.type === BABYLON.PointerEventTypes.POINTERDOWN) {
             isPointerDown = true;
-            if (pi.pickInfo.hit && pi.pickInfo.pickedMesh && pi.pickInfo.pickedMesh.name === 'ground') {
+            if (pi.pickInfo.hit && walkable(pi.pickInfo.pickedMesh)) {
               targetPosition = pi.pickInfo.pickedPoint.clone(); targetPosition.y = playerCollider.position.y;
             }
           } else if (pi.type === BABYLON.PointerEventTypes.POINTERMOVE) {
-            if (isPointerDown && pi.pickInfo.hit && pi.pickInfo.pickedMesh && pi.pickInfo.pickedMesh.name === 'ground') {
+            if (isPointerDown && pi.pickInfo.hit && walkable(pi.pickInfo.pickedMesh)) {
               targetPosition = pi.pickInfo.pickedPoint.clone(); targetPosition.y = playerCollider.position.y;
             }
           } else if (pi.type === BABYLON.PointerEventTypes.POINTERUP) {
@@ -498,19 +427,52 @@ export default function MazeOverlay() {
         s.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, (evt) => { inputMap[evt.sourceEvent.key.toLowerCase()] = true; }));
         s.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, (evt) => { inputMap[evt.sourceEvent.key.toLowerCase()] = false; }));
 
-        // ---- Movement + camera follow + fox animation ----
-        const speed = 0.34;
+        // ── Movement: acceleration + camera damping + character animation ──
+        const SPEED = 0.34;
+        let vel = { x: 0, z: 0 };
         let walkCycle = 0;
+        let prevYaw = 0;
         s.onBeforeRenderObservable.add(() => {
-          // spin collectibles + collect on proximity
-          for (let i = collectibles.length - 1; i >= 0; i--) {
-            collectibles[i].rotation.y += 0.05;
-            if (BABYLON.Vector3.Distance(playerCollider.position, collectibles[i].position) < 2.2) {
-              playSfx('collect'); updateXP(10); collectibles[i].dispose(); collectibles.splice(i, 1);
+          const time = performance.now() / 1000;
+          const L = BABYLON.Scalar.Lerp;
+
+          // coins: spin + bob, collect on proximity with a burst
+          for (let i = coins.length - 1; i >= 0; i--) {
+            const c = coins[i];
+            c.holder.rotation.y += 0.04;
+            c.holder.position.y = c.baseY + Math.sin(time * 2.2 + c.phase) * 0.18;
+            if (BABYLON.Vector3.Distance(playerCollider.position, c.holder.position) < 2.4) {
+              kit.burst(c.holder.position);
+              playSfx('collect'); updateXP(10);
+              c.holder.dispose(); // children go too; coinMat is shared, leave it alive
+              coins.splice(i, 1);
             }
           }
 
-          let dirX = 0, dirZ = 0, isMoving = false, manual = false;
+          // critters: wander-pause-wander with a hop
+          critters.forEach((cr) => {
+            if (!cr.target || cr.pauseUntil > time) {
+              if (cr.pauseUntil <= time) {
+                cr.target = new BABYLON.Vector3(rnd(-46, 46), 0, rnd(-46, 46));
+              }
+              return;
+            }
+            const d = cr.target.subtract(cr.n.position); d.y = 0;
+            if (d.length() < 1) {
+              cr.target = null;
+              cr.pauseUntil = time + 1.5 + Math.random() * 3;
+              cr.n.position.y = 0;
+              return;
+            }
+            d.normalize();
+            cr.n.position.x += d.x * 0.055;
+            cr.n.position.z += d.z * 0.055;
+            cr.n.position.y = Math.abs(Math.sin(time * 7 + cr.phase)) * 0.22;
+            cr.n.rotation.y = Math.atan2(d.x, d.z);
+          });
+
+          // player input → desired direction
+          let dirX = 0, dirZ = 0, manual = false;
           if (inputMap['w'] || inputMap['arrowup']) { dirZ = 1; manual = true; }
           if (inputMap['s'] || inputMap['arrowdown']) { dirZ = -1; manual = true; }
           if (inputMap['a'] || inputMap['arrowleft']) { dirX = -1; manual = true; }
@@ -518,26 +480,38 @@ export default function MazeOverlay() {
           if (manual) {
             targetPosition = null;
             const len = Math.hypot(dirX, dirZ); if (len > 0) { dirX /= len; dirZ /= len; }
-            isMoving = true;
           } else if (Math.abs(joyInput.x) > 0.05 || Math.abs(joyInput.z) > 0.05) {
-            targetPosition = null; dirX = joyInput.x; dirZ = joyInput.z; isMoving = true;
+            targetPosition = null; dirX = joyInput.x; dirZ = joyInput.z;
           } else if (targetPosition) {
             const d = targetPosition.subtract(playerCollider.position); d.y = 0;
-            if (d.length() > 0.6) { d.normalize(); dirX = d.x; dirZ = d.z; isMoving = true; } else targetPosition = null;
+            if (d.length() > 0.6) { d.normalize(); dirX = d.x; dirZ = d.z; } else targetPosition = null;
           }
 
-          const move = new BABYLON.Vector3(0, -0.25, 0);
+          // accelerate / decelerate toward the desired velocity
+          vel.x = L(vel.x, dirX * SPEED, 0.16);
+          vel.z = L(vel.z, dirZ * SPEED, 0.16);
+          const speedNow = Math.hypot(vel.x, vel.z);
+          const isMoving = speedNow > 0.03;
+
           if (isMoving) {
-            move.x = dirX * speed; move.z = dirZ * speed;
-            const ta = Math.atan2(dirX, dirZ);
+            const ta = Math.atan2(vel.x, vel.z);
             rig.root.rotation.y = BABYLON.Scalar.LerpAngle(rig.root.rotation.y, ta, 0.2);
-            walkCycle += speed * 2.2;
+            walkCycle += speedNow * 2.2;
           }
-          rig.update(isMoving, walkCycle, performance.now() / 1000);
-          playerCollider.moveWithCollisions(move);
-          camera.target.x = playerCollider.position.x;
-          camera.target.z = playerCollider.position.z;
-          camera.target.y = playerCollider.position.y;
+          // yaw velocity drives lean + tail/head lag in the rig
+          let yawVel = rig.root.rotation.y - prevYaw;
+          if (yawVel > Math.PI) yawVel -= Math.PI * 2;
+          if (yawVel < -Math.PI) yawVel += Math.PI * 2;
+          prevYaw = rig.root.rotation.y;
+
+          rig.update(isMoving, walkCycle, time, yawVel);
+          dust.rate(isMoving);
+          playerCollider.moveWithCollisions(new BABYLON.Vector3(vel.x, -0.25, vel.z));
+
+          // damped camera follow with a touch of lead in the move direction
+          camera.target.x = L(camera.target.x, playerCollider.position.x + vel.x * 5, 0.12);
+          camera.target.z = L(camera.target.z, playerCollider.position.z + vel.z * 5, 0.12);
+          camera.target.y = L(camera.target.y, playerCollider.position.y, 0.12);
         });
 
         return s;

@@ -189,10 +189,18 @@ function MemoRuleLessonArt({ t }) {
   );
 }
 
-export default function MemoSpanGame({ onBack, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
+export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
+
+  // WORKOUT MODE: launched from the Daily Workout — skip the hub and jump
+  // straight into free play; the workout shell owns timing and exit.
+  const workoutLaunched = useRef(false);
+  useEffect(() => {
+    if (workoutMode && !workoutLaunched.current) { workoutLaunched.current = true; startFree(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workoutMode]);
 
   const [profile, setProfile] = useState(() => loadMemoSpanProfile());
   const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');

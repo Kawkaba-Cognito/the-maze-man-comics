@@ -84,6 +84,75 @@ export const ITEMS = [
     },
   },
 
+  {
+    id: 'halo', slot: 'hat', layer: 'front', en: 'Angel Halo', ar: 'هالة ملاك', cost: 110, icon: '😇',
+    render2d: ({ gold, accent }) => (
+      <g>
+        <ellipse cx="0" cy="-14" rx="14" ry="4.5" fill="none" stroke={gold || accent} strokeWidth="3.5" />
+        <ellipse cx="0" cy="-15" rx="14" ry="4.5" fill="none" stroke="#fff7d8" strokeWidth="1.2" opacity="0.7" />
+      </g>
+    ),
+    build3d: ({ BABYLON, s, parent, mats }) => {
+      const halo = BABYLON.MeshBuilder.CreateTorus('halo', { diameter: 0.85, thickness: 0.09, tessellation: 24 }, s);
+      halo.material = mats.make(1, 0.88, 0.45, [0.9, 0.7, 0.3]);
+      halo.parent = parent; halo.position.set(0, 0.95, 0); halo.rotation.x = 0.12;
+      if (mats.glow) mats.glow(halo);
+    },
+  },
+
+  {
+    id: 'propeller', slot: 'hat', layer: 'front', en: 'Propeller Cap', ar: 'قبعة مروحة', cost: 55, icon: '🚁',
+    render2d: ({ gold, accent }) => (
+      <g>
+        <path d="M-14,1 A14,14 0 0 1 14,1 Z" fill="#e8453c" />
+        <path d="M-14,1 A14,14 0 0 1 -4.6,-12.2 L-4.6,1 Z" fill="#3b7fe0" />
+        <path d="M14,1 A14,14 0 0 0 4.6,-12.2 L4.6,1 Z" fill="#f5b32e" />
+        <rect x="-15" y="-1" width="30" height="3.5" rx="1.7" fill="#c93830" />
+        <rect x="-1.2" y="-18" width="2.4" height="5" fill="#888" />
+        <g className="mmv-spin">
+          <ellipse cx="0" cy="-19" rx="16" ry="3" fill={gold || accent} stroke="#7a5408" strokeWidth="0.8" />
+        </g>
+        <circle cx="0" cy="-19" r="2" fill="#c93830" />
+      </g>
+    ),
+    build3d: ({ BABYLON, s, parent, mats, shadow }) => {
+      const dome = BABYLON.MeshBuilder.CreateSphere('prc', { diameter: 0.9, segments: 12 }, s);
+      dome.scaling = new BABYLON.Vector3(1, 0.55, 1);
+      dome.material = mats.make(0.85, 0.25, 0.2); dome.parent = parent; dome.position.set(0, 0.42, 0); shadow.addShadowCaster(dome);
+      const stem = BABYLON.MeshBuilder.CreateCylinder('prs', { diameter: 0.08, height: 0.3 }, s);
+      stem.material = mats.make(0.5, 0.5, 0.55); stem.parent = parent; stem.position.set(0, 0.74, 0);
+      [0, Math.PI / 2].forEach((a, i) => {
+        const blade = BABYLON.MeshBuilder.CreateBox('prb' + i, { width: 1.1, height: 0.03, depth: 0.14 }, s);
+        blade.material = mats.gold; blade.parent = parent; blade.position.set(0, 0.9, 0); blade.rotation.y = a;
+      });
+    },
+  },
+  {
+    id: 'pirate', slot: 'hat', layer: 'front', en: 'Pirate Hat', ar: 'قبعة قرصان', cost: 95, icon: '🏴‍☠️',
+    render2d: ({ gold, accent }) => (
+      <g>
+        <path d="M-22,-4 C-14,-22 14,-22 22,-4 C24,0 20,2 16,0 C8,4 -8,4 -16,0 C-20,2 -24,0 -22,-4 Z" fill="#15151c" />
+        <path d="M-22,-4 C-14,-22 14,-22 22,-4" fill="none" stroke={gold || accent} strokeWidth="1.6" />
+        <circle cx="0" cy="-9" r="3.4" fill="#f4efe6" />
+        <circle cx="-1.2" cy="-9.8" r="0.8" fill="#15151c" /><circle cx="1.2" cy="-9.8" r="0.8" fill="#15151c" />
+        <path d="M-3,-6.5 L3,-6.5 M-2.5,-5 L2.5,-5" stroke="#f4efe6" strokeWidth="1.1" strokeLinecap="round" />
+        <path d="M-4.5,-13 L4.5,-5 M4.5,-13 L-4.5,-5" stroke="#f4efe6" strokeWidth="1.4" strokeLinecap="round" opacity="0.9" />
+      </g>
+    ),
+    build3d: ({ BABYLON, s, parent, mats, shadow }) => {
+      const brim = BABYLON.MeshBuilder.CreateSphere('pir', { diameter: 1.5, segments: 12 }, s);
+      brim.scaling = new BABYLON.Vector3(1, 0.34, 0.78);
+      brim.material = mats.black; brim.parent = parent; brim.position.set(0, 0.55, 0); shadow.addShadowCaster(brim);
+      const crown = BABYLON.MeshBuilder.CreateSphere('pic', { diameter: 0.85, segments: 10 }, s);
+      crown.scaling = new BABYLON.Vector3(1, 0.6, 0.85);
+      crown.material = mats.black; crown.parent = parent; crown.position.set(0, 0.62, 0);
+      const band = BABYLON.MeshBuilder.CreateTorus('pib', { diameter: 1.45, thickness: 0.06, tessellation: 20 }, s);
+      band.material = mats.gold; band.parent = parent; band.position.set(0, 0.56, 0); band.scaling.z = 0.78;
+      const skull = BABYLON.MeshBuilder.CreateSphere('pis', { diameter: 0.22 }, s);
+      skull.material = mats.make(0.93, 0.91, 0.86); skull.parent = parent; skull.position.set(0, 0.62, 0.6);
+    },
+  },
+
   // ───────── FACE ─────────
   {
     id: 'shades', slot: 'face', layer: 'front', en: 'Cool Shades', ar: 'نظارات شمسية', cost: 60, icon: '😎',
@@ -109,6 +178,38 @@ export const ITEMS = [
     ),
     build3d: ({ BABYLON, s, parent, mats }) => {
       const m = BABYLON.MeshBuilder.CreateBox('stc', { width: 0.34, height: 0.08, depth: 0.08 }, s); m.material = mats.make(0.16, 0.11, 0.07); m.parent = parent; m.position.set(0, -0.16, 0.47);
+    },
+  },
+
+  {
+    id: 'monocle', slot: 'face', layer: 'front', en: 'Fancy Monocle', ar: 'نظارة أحادية', cost: 70, icon: '🧐',
+    render2d: ({ gold, accent }) => (
+      <g>
+        <circle cx="8" cy="0" r="7" fill="rgba(180,220,255,0.18)" stroke={gold || accent} strokeWidth="2" />
+        <path d="M8,7 C9,14 12,18 11,24" fill="none" stroke={gold || accent} strokeWidth="1" strokeDasharray="2 1.6" />
+        <path d="M4,-3 A5,5 0 0 1 11,-4" fill="none" stroke="#fff" strokeWidth="1.2" opacity="0.5" strokeLinecap="round" />
+      </g>
+    ),
+    build3d: ({ BABYLON, s, parent, mats }) => {
+      const ring = BABYLON.MeshBuilder.CreateTorus('mnc', { diameter: 0.26, thickness: 0.035, tessellation: 18 }, s);
+      ring.rotation.x = Math.PI / 2;
+      ring.material = mats.gold; ring.parent = parent; ring.position.set(0.18, 0.05, 0.48);
+      const chain = BABYLON.MeshBuilder.CreateCylinder('mnch', { diameter: 0.018, height: 0.4 }, s);
+      chain.material = mats.gold; chain.parent = parent; chain.position.set(0.26, -0.18, 0.44); chain.rotation.z = 0.25;
+    },
+  },
+  {
+    id: 'clownnose', slot: 'face', layer: 'front', en: 'Clown Nose', ar: 'أنف مهرج', cost: 15, icon: '🤡',
+    render2d: () => (
+      <g>
+        <circle cx="0" cy="5" r="6.5" fill="#e8453c" />
+        <circle cx="-2" cy="3" r="2.2" fill="#ff8a80" opacity="0.85" />
+      </g>
+    ),
+    build3d: ({ BABYLON, s, parent, mats }) => {
+      const nose = BABYLON.MeshBuilder.CreateSphere('cln', { diameter: 0.26, segments: 10 }, s);
+      nose.material = mats.make(0.9, 0.22, 0.18, [0.25, 0.04, 0.03]);
+      nose.parent = parent; nose.position.set(0, -0.06, 0.52);
     },
   },
 
@@ -142,9 +243,64 @@ export const ITEMS = [
     },
   },
 
+  {
+    id: 'bowtie', slot: 'neck', layer: 'front', en: 'Dapper Bow Tie', ar: 'ربطة عنق أنيقة', cost: 35, icon: '🎀',
+    render2d: ({ gold, accent }) => (
+      <g>
+        <path d="M-2,4 L-15,-2 C-17,-1 -17,9 -15,10 L-2,6 Z" fill="#c0392b" />
+        <path d="M2,4 L15,-2 C17,-1 17,9 15,10 L2,6 Z" fill="#c0392b" />
+        <path d="M-13,0 L-4,4 M-13,8 L-4,5.5 M13,0 L4,4 M13,8 L4,5.5" stroke="#8e2a20" strokeWidth="1" opacity="0.7" />
+        <rect x="-3" y="1.5" width="6" height="6.5" rx="1.6" fill={gold || accent} />
+      </g>
+    ),
+    build3d: ({ BABYLON, s, parent, mats }) => {
+      const red = mats.make(0.75, 0.22, 0.17);
+      [-1, 1].forEach((sgn) => {
+        const wing = BABYLON.MeshBuilder.CreateCylinder('bt', { diameterTop: 0.28, diameterBottom: 0.06, height: 0.32, tessellation: 8 }, s);
+        wing.material = red; wing.parent = parent;
+        wing.rotation.z = sgn * Math.PI / 2;
+        wing.position.set(sgn * 0.18, -0.02, 0.3);
+      });
+      const knot = BABYLON.MeshBuilder.CreateSphere('btk', { diameter: 0.14 }, s);
+      knot.material = mats.gold; knot.parent = parent; knot.position.set(0, -0.02, 0.32);
+    },
+  },
+
   // ───────── BACK ─────────
   {
-    id: 'cape', slot: 'back', layer: 'back', en: 'Hero Cape', ar: 'عباءة البطل', cost: 130, icon: '🦸',
+    id: 'jetpack', slot: 'back', layer: 'back', en: 'Rocket Jetpack', ar: 'حقيبة صاروخية', cost: 200, icon: '🚀', iconBox: '-20 -2 40 46',
+    render2d: ({ gold, accent }) => (
+      <g>
+        <rect x="-16" y="2" width="13" height="26" rx="6" fill="#3a3f4d" />
+        <rect x="3" y="2" width="13" height="26" rx="6" fill="#4a505f" />
+        <rect x="-16" y="6" width="13" height="4" fill={gold || accent} />
+        <rect x="3" y="6" width="13" height="4" fill={gold || accent} />
+        <path d="M-13,28 L-9.5,40 L-6,28 Z" fill="#ff9f2e" />
+        <path d="M-12,28 L-9.5,35 L-7,28 Z" fill="#ffe14a" />
+        <path d="M6,28 L9.5,40 L13,28 Z" fill="#ff9f2e" />
+        <path d="M7,28 L9.5,35 L12,28 Z" fill="#ffe14a" />
+        <ellipse cx="-12" cy="8" rx="1.6" ry="6" fill="#fff" opacity="0.18" />
+        <ellipse cx="7" cy="8" rx="1.6" ry="6" fill="#fff" opacity="0.18" />
+      </g>
+    ),
+    build3d: ({ BABYLON, s, parent, mats, shadow }) => {
+      const metal = mats.make(0.28, 0.3, 0.36);
+      const flameM = mats.make(1, 0.62, 0.15, [0.9, 0.45, 0.08]);
+      [-1, 1].forEach((sgn) => {
+        const tank = BABYLON.MeshBuilder.CreateCylinder('jpt', { diameter: 0.34, height: 0.95, tessellation: 12 }, s);
+        tank.material = metal; tank.parent = parent; tank.position.set(sgn * 0.24, -0.25, -0.22); shadow.addShadowCaster(tank);
+        const cap = BABYLON.MeshBuilder.CreateSphere('jpc', { diameter: 0.34, segments: 8 }, s);
+        cap.material = metal; cap.parent = parent; cap.position.set(sgn * 0.24, 0.24, -0.22);
+        const band = BABYLON.MeshBuilder.CreateTorus('jpb', { diameter: 0.34, thickness: 0.04, tessellation: 12 }, s);
+        band.material = mats.gold; band.parent = parent; band.position.set(sgn * 0.24, 0.05, -0.22);
+        const flame = BABYLON.MeshBuilder.CreateCylinder('jpf', { diameterTop: 0.18, diameterBottom: 0, height: 0.4, tessellation: 8 }, s);
+        flame.material = flameM; flame.parent = parent; flame.position.set(sgn * 0.24, -0.92, -0.22);
+        if (mats.glow) mats.glow(flame);
+      });
+    },
+  },
+  {
+    id: 'cape', slot: 'back', layer: 'back', en: 'Hero Cape', ar: 'عباءة البطل', cost: 130, icon: '🦸', iconBox: '-28 -4 56 94',
     render2d: () => (
       <g>
         <path d="M-15,0 C-24,28 -22,66 -17,86 L17,86 C22,66 24,28 15,0 C8,8 -8,8 -15,0 Z" fill="#7a1f2b" />
@@ -157,7 +313,33 @@ export const ITEMS = [
     },
   },
   {
-    id: 'balloon', slot: 'back', layer: 'front', attach: 'hand', en: 'Party Balloon', ar: 'بالون', cost: 20, icon: '🎈',
+    id: 'wings', slot: 'back', layer: 'back', en: 'Hero Wings', ar: 'أجنحة البطل', cost: 160, icon: '🪽', iconBox: '-50 -14 100 32',
+    render2d: ({ gold, accent }) => (
+      <g>
+        <path d="M-4,4 C-22,-8 -38,-10 -46,-2 C-38,2 -34,6 -30,12 C-24,8 -14,8 -4,10 Z" fill="#f4e8c8" stroke={gold || accent} strokeWidth="1.5" />
+        <path d="M4,4 C22,-8 38,-10 46,-2 C38,2 34,6 30,12 C24,8 14,8 4,10 Z" fill="#f4e8c8" stroke={gold || accent} strokeWidth="1.5" />
+        <path d="M-10,2 C-20,-3 -30,-4 -38,-1 M10,2 C20,-3 30,-4 38,-1" fill="none" stroke={gold || accent} strokeWidth="1" opacity="0.6" />
+      </g>
+    ),
+    build3d: ({ BABYLON, s, parent, mats, shadow }) => {
+      const feather = mats.make(0.95, 0.91, 0.78, [0.18, 0.16, 0.1]);
+      [-1, 1].forEach((sgn) => {
+        const main = BABYLON.MeshBuilder.CreateSphere('wing', { diameter: 1.1, segments: 10 }, s);
+        main.scaling = new BABYLON.Vector3(1.25, 0.42, 0.16);
+        main.material = feather; main.parent = parent;
+        main.position.set(sgn * 0.78, 0.22, -0.06);
+        main.rotation.z = sgn * 0.55; main.rotation.y = sgn * -0.25;
+        shadow.addShadowCaster(main);
+        const tip = BABYLON.MeshBuilder.CreateSphere('wingTip', { diameter: 0.7, segments: 8 }, s);
+        tip.scaling = new BABYLON.Vector3(1.1, 0.3, 0.14);
+        tip.material = feather; tip.parent = parent;
+        tip.position.set(sgn * 1.28, -0.12, -0.08);
+        tip.rotation.z = sgn * 0.95; tip.rotation.y = sgn * -0.25;
+      });
+    },
+  },
+  {
+    id: 'balloon', slot: 'back', layer: 'front', attach: 'hand', en: 'Party Balloon', ar: 'بالون', cost: 20, icon: '🎈', iconBox: '-2 -84 36 92',
     render2d: () => (
       <g>
         <path d="M2,2 C8,-16 14,-34 17,-54" fill="none" stroke="#ccc" strokeWidth="1" />

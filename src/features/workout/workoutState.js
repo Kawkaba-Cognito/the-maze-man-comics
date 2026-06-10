@@ -63,9 +63,11 @@ export function markDone(idx) {
   st.domainCompleted = st.domainCompleted || {};
   st.domainCompleted[ex.domainId] = (st.domainCompleted[ex.domainId] || 0) + 1;
 
-  // Per-day history for the calendar (date → { done, total }).
+  // Per-day history for the calendar (date → { done, total, preRT?, postRT? }).
+  // Merge — recordSessionTest may already have stored test results here.
   st.history = st.history || {};
   st.history[st.today.date] = {
+    ...st.history[st.today.date],
     done: st.today.done.filter(Boolean).length,
     total: st.today.exercises.length,
   };
@@ -78,6 +80,31 @@ export function markDone(idx) {
     st.justCompleted = true; // one-shot flag for the UI celebration + bonus
   }
   return save(st);
+}
+
+/**
+ * WEEKLY CHECK-IN — a reaction test (median ms) taken roughly once a week at
+ * the start of a workout. The series is the longitudinal outcome measure:
+ * comparing checks across weeks shows the training response, which is the
+ * clinically meaningful comparison (single-session pre/post mostly measures
+ * fatigue).
+ */
+export function checkDue(st = loadWorkout()) {
+  const cs = st.checks || [];
+  if (!cs.length) return { due: true, prev: null, last: null };
+  const last = cs[cs.length - 1];
+  const days = (Date.now() - new Date(last.date).getTime()) / 86400000;
+  return { due: days >= 7, prev: cs.length > 1 ? cs[cs.length - 2] : null, last };
+}
+
+export function recordCheck(ms) {
+  const st = loadWorkout();
+  st.checks = [...(st.checks || []), { date: todayKey(), ms: Math.round(ms) }].slice(-104);
+  return save(st);
+}
+
+export function allChecks(st = loadWorkout()) {
+  return st.checks || [];
 }
 
 export function consumeJustCompleted() {

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { trainingWinPoints } from '../lib/points';
+import { updateRating } from '../features/training/rating';
 
 const AppContext = createContext(null);
 
@@ -213,6 +214,9 @@ export function AppProvider({ children }) {
   const awardFreeRun = useCallback((gameKey, levelsReached) => {
     const L = Math.max(0, Math.floor(Number(levelsReached) || 0));
     if (L <= 0) return 0;
+    // every completed free run feeds the clinical training rating (EWMA),
+    // regardless of whether it pays new points
+    updateRating(gameKey, L);
     let claimed = {};
     try { claimed = JSON.parse(localStorage.getItem('mazeman_claimed_free') || '{}') || {}; } catch (e) { /* ignore */ }
     let gained = 0;

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { DOMAINS_BY_ID } from '../../features/training/registry';
 import { adherenceStats, monthCalendar, progressSnapshot } from '../../features/workout/workoutStats';
+import { allChecks } from '../../features/workout/workoutState';
+import { RATED_GAMES, gameRating, ratingBand } from '../../features/training/rating';
 import { DOMAIN_SCIENCE, METHODOLOGY, VALIDITY_NOTE, RELIABILITY_NOTE, REFERENCES } from '../../features/training/assessment/assessmentRefs';
 import { NORM_DISCLAIMER, ordinal } from '../../features/training/assessment/assessmentNorms';
 
@@ -80,6 +82,67 @@ export default function WorkoutStats({ onBack }) {
           'توزيع التدريب عبر الأيام — لا الحشو — يحسّن الترسيخ (Cepeda 2006؛ Bell 2022، PNAS). الانتظام هو الجرعة المهمة.',
         )}</p>
       </div>
+
+      {/* ── TRAINING RATINGS (per-game skill, 0–1000) ── */}
+      <div className="ws-card">
+        <div className="ws-card-title">{L('Training ratings', 'تقييمات التدريب')}</div>
+        {Object.entries(RATED_GAMES).map(([k, def]) => {
+          const r = gameRating(k);
+          const cfg = DOMAINS_BY_ID[def.domainId];
+          const band = r ? ratingBand(r.rating) : null;
+          return (
+            <div key={k} className="ws-dom">
+              <div className="ws-dom-head">
+                <span className="ws-dom-glyph" style={{ color: cfg?.color }}>{cfg?.glyph}</span>
+                <span className="ws-dom-name">{isAr ? def.ar : def.en}</span>
+                {r ? (
+                  <span className="ws-dom-band" style={{ background: `${band.color}22`, color: band.color }}>
+                    {r.rating} · {isAr ? band.ar : band.en}
+                    {r.status !== 'stable' && ` · ${r.status === 'provisional' ? L('provisional', 'مبدئي') : L('calibrating', 'معايرة')}`}
+                  </span>
+                ) : (
+                  <span className="ws-dom-band">{L('unrated — play free mode', 'غير مقيّم — العب الوضع الحر')}</span>
+                )}
+                <Sparkline data={(r?.hist || []).map((h) => h.r)} color={cfg?.color || '#e8ac4e'} w={70} h={24} min={0} max={1000} />
+              </div>
+              {r && <div className="ws-bar"><div className="ws-bar-fill" style={{ width: `${r.rating / 10}%`, background: band.color }} /></div>}
+            </div>
+          );
+        })}
+        <p className="ws-note">{L(
+          'Ratings (0–1000) are a smoothed estimate of your free-run performance per exercise — your assessment seeds them, every completed free run refines them, and tomorrow\'s workout difficulty follows them.',
+          'التقييمات (0–1000) تقدير مُنعَّم لأدائك في الوضع الحر لكل تمرين — يبدأ من تقييمك المعرفي، وتصقله كل جولة حرة مكتملة، وصعوبة تمرين الغد تتبعه.',
+        )}</p>
+      </div>
+
+      {/* ── WEEKLY REACTION CHECKS ── */}
+      {(() => {
+        const checks = allChecks();
+        if (!checks.length) return null;
+        const lastC = checks[checks.length - 1];
+        const prevC = checks.length > 1 ? checks[checks.length - 2] : null;
+        const d = prevC ? lastC.ms - prevC.ms : null;
+        return (
+          <div className="ws-card">
+            <div className="ws-card-title">{L('Weekly reaction check', 'فحص رد الفعل الأسبوعي')}</div>
+            <div className="ws-idx-row">
+              <div className="ws-idx-big" style={{ color: d != null && d < 0 ? '#5ec07a' : '#ffd066' }}>{lastC.ms}<span style={{ fontSize: '0.5em' }}> ms</span></div>
+              <div className="ws-idx-meta">
+                <div>{L('Latest check', 'آخر فحص')}: {lastC.date}</div>
+                {prevC && (
+                  <div>{L('vs previous', 'مقارنة بالسابق')}: <b style={{ color: d < 0 ? '#5ec07a' : '#c0563f' }}>{d < 0 ? '▼' : '▲'}{Math.abs(d)} ms</b> {d < 0 ? L('(faster)', '(أسرع)') : L('(slower)', '(أبطأ)')}</div>
+                )}
+                <div>{checks.length} {L('checks recorded', 'فحوصات مسجّلة')}</div>
+              </div>
+              <Sparkline data={checks.map((c) => -c.ms)} color="#ffd066" />
+            </div>
+            <p className="ws-note">{L(
+              'A 5-trial reaction test about once a week. Lower is faster; week-to-week change is the meaningful signal, single days vary with sleep and stress.',
+              'اختبار رد فعل من 5 محاولات مرة في الأسبوع تقريباً. الأقل أسرع؛ التغيّر بين الأسابيع هو الإشارة المهمة، والأيام المفردة تتأثر بالنوم والإجهاد.',
+            )}</p>
+          </div>
+        );
+      })()}
 
       {/* ── COGNITIVE INDEX (outcome) ── */}
       {snap.hasData && snap.idxNow ? (

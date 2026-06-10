@@ -258,10 +258,18 @@ function StimulusShape({ trial, visible }) {
   );
 }
 
-export default function VigilTestGame({ onBack }) {
+export default function VigilTestGame({ onBack, workoutMode = false }) {
   const { playSfx, currentLang } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
+
+  // WORKOUT MODE: launched from the Daily Workout — skip the hub and jump
+  // straight into free play; the workout shell owns timing and exit.
+  const workoutLaunched = useRef(false);
+  useEffect(() => {
+    if (workoutMode && !workoutLaunched.current) { workoutLaunched.current = true; startFreeMode(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workoutMode]);
   const settings = loadGameSettings();
 
   const [profile, setProfile] = useState(() => loadVigilProfile());

@@ -1,13 +1,31 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useApp } from '../../context/AppContext';
 import { GOALS, GOALS_BY_ID, SIZES, SIZES_BY_ID } from '../../features/workout/workoutData';
-import { loadWorkout, ensureToday, savePrefs, markDone, consumeJustCompleted, resetPrefs } from '../../features/workout/workoutState';
+import {
+  loadWorkout, ensureToday, savePrefs, markDone, consumeJustCompleted, resetPrefs,
+  checkDue, recordCheck,
+} from '../../features/workout/workoutState';
 import { getLazyGame } from '../../features/training/lazyGames';
 import { hasAssessProfile } from '../../features/training/assessment/assessmentProfile';
+import { gameRatingByGameKey, ratingBand } from '../../features/training/rating';
+import ReactionTest from '../../features/workout/ReactionTest';
 import WorkoutStats from './WorkoutStats';
 
+/*
+ * DAILY WORKOUT — a hands-free guided session.
+ *
+ * One press runs the whole professional protocol:
+ *   baseline reaction test → timed exercise blocks (auto-launched into free
+ *   play, auto-advanced when the block clock ends) → post-session reaction
+ *   test → summary with the session effect, streak and bonus.
+ * Blocks are time-budgeted by the user's goal (workoutPlan), difficulty is
+ * adaptive (age + assessment + history), and pre/post results are tracked
+ * per day for the progress view.
+ */
 const COMPLETE_BONUS = 50;
 const TRANSITION_SECS = 4;
+
+const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
 
 export default function WorkoutScreen() {
   const { currentLang, switchTab, playSfx, awardPoints, openAssessment } = useApp();
@@ -23,10 +41,23 @@ export default function WorkoutScreen() {
   const [sessionMode, setSessionMode] = useState(false);
   const [transitionIdx, setTransitionIdx] = useState(null);
   const [count, setCount] = useState(TRANSITION_SECS);
+  const [secsLeft, setSecsLeft] = useState(null);
+  const autoStarted = useRef(false);
+  const ratingsBefore = useRef({});
 
   // Setup form state
   const [goal, setGoal] = useState(st.prefs?.goal || 'weak');
   const [size, setSize] = useState(st.prefs?.size || 'standard');
+
+  // ONE-PRESS WORKOUT: opening this screen with a saved plan and unfinished
+  // exercises drops you straight into the guided session.
+  useEffect(() => {
+    if (autoStarted.current) return;
+    autoStarted.current = true;
+    const undone = (st.today?.done || []).findIndex((d) => !d);
+    if (st.prefs && undone >= 0) startSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-advance countdown on the "up next" card.
   useEffect(() => {
@@ -41,6 +72,22 @@ export default function WorkoutScreen() {
     return () => clearInterval(id);
   }, [view, transitionIdx]);
 
+  // BLOCK CLOCK: while a session game is on screen, count down its time
+  // budget; at zero the block completes and the session advances itself.
+  useEffect(() => {
+    if (view !== 'game' || !sessionMode || activeIdx == null) { setSecsLeft(null); return undefined; }
+    const ex = st.today?.exercises[activeIdx];
+    let s = ex?.seconds || 180;
+    setSecsLeft(s);
+    const id = setInterval(() => {
+      s -= 1;
+      setSecsLeft(s);
+      if (s <= 0) { clearInterval(id); playSfx('win'); finishExercise(); }
+    }, 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, sessionMode, activeIdx]);
+
   function confirmSetup() {
     playSfx('click');
     setSt(savePrefs(goal, size));
@@ -50,13 +97,20 @@ export default function WorkoutScreen() {
   function goToTransition(idx) { setTransitionIdx(idx); setView('transition'); }
   function launchNow(idx) { playSfx('click'); setActiveIdx(idx); setView('game'); }
 
-  // Start (or resume) the whole guided session from the first undone exercise.
+  // Start (or resume) the whole guided session. About once a week the session
+  // opens with the reaction check-in; otherwise straight into the first block.
   function startSession() {
-    playSfx('click');
-    const first = (st.today?.done || []).findIndex((d) => !d);
+    const doneArr = st.today?.done || [];
+    const first = doneArr.findIndex((d) => !d);
     if (first < 0) return;
     setSessionMode(true);
-    goToTransition(first);
+    // snapshot ratings so the summary can show what this session changed
+    ratingsBefore.current = {};
+    (st.today?.exercises || []).forEach((ex) => {
+      ratingsBefore.current[ex.gameKey] = gameRatingByGameKey(ex.gameKey)?.rating ?? null;
+    });
+    if (doneArr.every((d) => !d) && checkDue(st).due) setView('pretest');
+    else goToTransition(first);
   }
 
   function endSession() { playSfx('click'); setSessionMode(false); setTransitionIdx(null); setView('plan'); }
@@ -74,7 +128,7 @@ export default function WorkoutScreen() {
     if (activeIdx != null) {
       updated = markDone(activeIdx);
       setSt(updated);
-      if (consumeJustCompleted()) { awardPoints(COMPLETE_BONUS); playSfx('win'); setCelebrate(true); }
+      if (consumeJustCompleted()) { awardPoints(COMPLETE_BONUS); setCelebrate(true); }
       else playSfx('collect');
     }
     setActiveIdx(null);
@@ -82,9 +136,92 @@ export default function WorkoutScreen() {
       const doneArr = updated.today?.done || [];
       const next = doneArr.findIndex((d) => !d);
       if (next >= 0) { goToTransition(next); return; }
-      setSessionMode(false); // session complete
+      setSessionMode(false);
+      setView('summary'); // all blocks done
+      return;
     }
     setView('plan');
+  }
+
+  // ── Weekly reaction check-in (runs at session start when due) ──
+  if (view === 'pretest') {
+    return (
+      <ReactionTest
+        isAr={isAr} kind="week" playSfx={playSfx}
+        onDone={(ms) => { setSt(recordCheck(ms)); const first = (st.today?.done || []).findIndex((d) => !d); goToTransition(Math.max(first, 0)); }}
+        onSkip={() => { const first = (st.today?.done || []).findIndex((d) => !d); goToTransition(Math.max(first, 0)); }}
+      />
+    );
+  }
+
+  // ── Session summary ──
+  if (view === 'summary') {
+    const exs = st.today?.exercises || [];
+    const doneArr = st.today?.done || [];
+    const minutes = Math.round(exs.reduce((a, e, i) => a + (doneArr[i] ? (e.seconds || 180) : 0), 0) / 60);
+    const domains = [...new Set(exs.filter((_, i) => doneArr[i]).map((e) => (isAr ? e.domainNameAr : e.domainName)))];
+    // rating movement this session (only games that banked a completed run)
+    const ratingRows = exs.filter((_, i) => doneArr[i]).map((ex) => {
+      const now = gameRatingByGameKey(ex.gameKey);
+      if (!now || now.status === 'provisional') return null;
+      const before = ratingsBefore.current[ex.gameKey];
+      const d = before != null ? now.rating - before : null;
+      return { name: ex.gameName, rating: now.rating, delta: d, band: ratingBand(now.rating), calibrating: now.status === 'calibrating' };
+    }).filter(Boolean);
+    // weekly check trend (last vs previous)
+    const { last, prev } = checkDue(st);
+    const wkDelta = last && prev ? last.ms - prev.ms : null;
+    return (
+      <div className="workout-screen wk-trans" dir={isAr ? 'rtl' : 'ltr'}>
+        <div className="wk-summary-card">
+          <div className="wk-summary-title">🏁 {isAr ? 'اكتملت جلسة اليوم!' : 'Session complete!'}</div>
+          {celebrate && (
+            <div className="workout-celebrate">🎉 {isAr ? `+${COMPLETE_BONUS} نقطة · سلسلة ${st.streak} يوم` : `+${COMPLETE_BONUS} pts · ${st.streak}-day streak`}</div>
+          )}
+          <div className="wk-summary-rows">
+            <div className="wk-summary-row"><span>⏱ {isAr ? 'وقت التدريب' : 'Time trained'}</span><b>{minutes} {isAr ? 'دقيقة' : 'min'}</b></div>
+            <div className="wk-summary-row"><span>🧩 {isAr ? 'التمارين' : 'Exercises'}</span><b>{doneArr.filter(Boolean).length}/{exs.length}</b></div>
+            <div className="wk-summary-row"><span>🧠 {isAr ? 'المجالات' : 'Domains'}</span><b>{domains.join(' · ')}</b></div>
+            {ratingRows.map((r) => (
+              <div className="wk-summary-row" key={r.name}>
+                <span>📈 {r.name}</span>
+                <b style={{ color: r.band.color }}>
+                  {r.rating}
+                  {r.delta != null && r.delta !== 0 && (
+                    <span className={`wk-rating-delta${r.delta > 0 ? ' is-up' : ''}`}> {r.delta > 0 ? '▲' : '▼'}{Math.abs(r.delta)}</span>
+                  )}
+                  {r.calibrating && <span className="wk-rating-cal"> {isAr ? '· معايرة' : '· calibrating'}</span>}
+                </b>
+              </div>
+            ))}
+            {last && (
+              <div className="wk-summary-row">
+                <span>🧪 {isAr ? 'فحص الأسبوع' : 'Weekly check'}</span>
+                <b>
+                  {last.ms} ms
+                  {wkDelta != null && wkDelta !== 0 && (
+                    <span className={`wk-rating-delta${wkDelta < 0 ? ' is-up' : ''}`}> {wkDelta < 0 ? '▼' : '▲'}{Math.abs(wkDelta)}</span>
+                  )}
+                </b>
+              </div>
+            )}
+          </div>
+          {wkDelta != null && (
+            <div className={`wk-summary-effect${wkDelta <= 0 ? ' is-up' : ''}`}>
+              {wkDelta <= 0
+                ? (isAr ? `⚡ رد فعلك أسرع بـ${Math.abs(wkDelta)} م.ث من الأسبوع الماضي — التدريب يعمل!` : `⚡ ${Math.abs(wkDelta)} ms faster than last week's check — the training is working!`)
+                : (isAr ? `💤 أبطأ بـ${wkDelta} م.ث من الأسبوع الماضي — النوم والإجهاد يؤثران؛ واصل التدريب.` : `💤 ${wkDelta} ms slower than last week — sleep & stress matter; keep training.`)}
+            </div>
+          )}
+          <button className="workout-cta" onClick={() => { playSfx('click'); setCelebrate(false); setView('plan'); }}>
+            {isAr ? 'تم' : 'Done'}
+          </button>
+          <button className="wk-trans-end" onClick={() => { playSfx('click'); setCelebrate(false); setView('stats'); }}>
+            📊 {isAr ? 'عرض التقدّم' : 'View progress'}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // ── Progress & stats ──
@@ -92,16 +229,25 @@ export default function WorkoutScreen() {
     return <WorkoutStats onBack={() => setView('plan')} />;
   }
 
-  // ── Hosting a game ──
+  // ── Hosting a game (with the session HUD overlaid during guided runs) ──
   if (view === 'game' && activeIdx != null) {
     const ex = st.today?.exercises[activeIdx];
     const GameView = ex ? getLazyGame(ex.gameKey) : null;
     if (!GameView) { finishExercise(); return null; }
+    const total = st.today?.exercises.length || 0;
+    const pos = (st.today?.done || []).filter(Boolean).length + 1;
     return (
       <div style={{ position: 'absolute', inset: 0 }}>
         <Suspense fallback={<div className="workout-loading">{isAr ? 'جارِ التحميل…' : 'Loading…'}</div>}>
-          <GameView onBack={finishExercise} />
+          <GameView onBack={finishExercise} workoutMode={sessionMode} />
         </Suspense>
+        {sessionMode && secsLeft != null && (
+          <div className="wk-hud" dir={isAr ? 'rtl' : 'ltr'}>
+            <span className="wk-hud-step">{pos}/{total}</span>
+            <span className={`wk-hud-time${secsLeft <= 15 ? ' is-low' : ''}`}>⏱ {fmt(secsLeft)}</span>
+            <button className="wk-hud-btn" onClick={() => { playSfx('click'); finishExercise(); }}>{isAr ? 'التالي ↦' : 'Next ↦'}</button>
+          </div>
+        )}
       </div>
     );
   }
@@ -117,7 +263,9 @@ export default function WorkoutScreen() {
           <div className="wk-trans-step">{isAr ? `تمرين ${position} من ${total}` : `Exercise ${position} of ${total}`}</div>
           <div className="wk-trans-glyph" style={{ color: ex.color }} aria-hidden="true">{ex.glyph}</div>
           <div className="wk-trans-name">{ex.gameName}</div>
-          <div className="wk-trans-meta">{isAr ? ex.domainNameAr : ex.domainName} · {isAr ? ex.levelAr : ex.levelEn}</div>
+          <div className="wk-trans-meta">
+            {isAr ? ex.domainNameAr : ex.domainName} · {isAr ? ex.levelAr : ex.levelEn} · ⏱ {fmt(ex.seconds || 180)}
+          </div>
           <div className="wk-trans-count">{isAr ? `يبدأ خلال ${count}…` : `Starting in ${count}…`}</div>
           <button className="workout-cta" onClick={() => launchNow(transitionIdx)}>{isAr ? 'ابدأ الآن' : 'Start now'}</button>
           <button className="wk-trans-end" onClick={endSession}>{isAr ? 'إنهاء الجلسة' : 'End session'}</button>
@@ -212,15 +360,9 @@ export default function WorkoutScreen() {
 
       {/* Primary action: run the whole personalized session hands-free */}
       {!allDone && (
-        <button className="workout-cta workout-start" onClick={startSession}>
+        <button className="workout-cta workout-start" onClick={() => { playSfx('click'); startSession(); }}>
           ▶ {startedSome ? (isAr ? 'متابعة التمرين' : 'Continue Workout') : (isAr ? 'ابدأ التمرين' : 'Start Workout')}
         </button>
-      )}
-
-      {celebrate && allDone && (
-        <div className="workout-celebrate">
-          🎉 {isAr ? `أحسنت! +${COMPLETE_BONUS} نقطة · سلسلة ${st.streak} يوم` : `Nice! +${COMPLETE_BONUS} pts · ${st.streak}-day streak`}
-        </div>
       )}
 
       <div className="workout-section-label workout-plan-label">{isAr ? 'خطة اليوم' : "Today's plan"}</div>
@@ -237,7 +379,7 @@ export default function WorkoutScreen() {
             <span className="workout-item-main">
               <span className="workout-item-name">{ex.gameName}</span>
               <span className="workout-item-meta">
-                {isAr ? ex.domainNameAr : ex.domainName} · {isAr ? ex.levelAr : ex.levelEn}
+                {isAr ? ex.domainNameAr : ex.domainName} · {isAr ? ex.levelAr : ex.levelEn} · ⏱ {fmt(ex.seconds || 180)}
               </span>
             </span>
             <span className="workout-item-action">{done[i] ? '✓' : '▶'}</span>
