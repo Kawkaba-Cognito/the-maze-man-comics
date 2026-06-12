@@ -11,6 +11,7 @@ import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
 import { useCoach } from '../../../../shared/coach/useCoach';
 import CoachOverlay from '../../../../shared/coach/CoachOverlay';
+import { createTrialLog } from '../../../../shared/trialLog';
 import MemoObject from './MemoObject';
 import MemoModes from './MemoModes';
 import { buildMemoCoachSteps } from './tutorialScript';
@@ -23,6 +24,7 @@ import {
   describeBriefing,
   prepareLevelRound,
   prepareFreeRound,
+  prepareAssessRound,
   prepareChallengeSeed,
   prepareChallengeRound,
   gradeRecall,
@@ -157,7 +159,11 @@ const UI = {
   },
 };
 
-const ASSESS_TRIALS = 10; // fixed standardized span ladder
+/* Assessment follows the clinical Corsi protocol: 1 unscored practice trial,
+ * then TWO trials per span length — advance while at least one of the two is
+ * correct, stop when both fail. Run forward (storage) first, then backward
+ * (manipulation), and report the two spans separately. */
+const ASSESS_MAX_SPAN = 9;
 
 // First-time "stop and learn" lesson when recall flips forward → reverse.
 const MEMO_DIR_KEY = 'mm_memospan_dirs';
@@ -253,12 +259,11 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
   const roundRef = useRef(null);
   const tapsRef = useRef([]);
   const recallStartRef = useRef(0);
+  const trialLogRef = useRef(null);
 
-  // Assessment (standardized span ladder)
-  const assessTotalRef = useRef(0);
-  const assessCorrectRef = useRef(0);
-  const assessMaxRef = useRef(0);
-  const assessSpanRef = useRef(3);
+  // Assessment ladder state: phase 'pf'/'pb' = practice (unscored),
+  // 'fwd'/'bwd' = measured; 2 trials per length with the stop rule.
+  const assessRef = useRef(null);
 
   const doneMap = profile.done || {};
 
@@ -266,7 +271,10 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
     timersRef.current.forEach((id) => clearTimeout(id));
     timersRef.current = [];
   }, []);
-  useEffect(() => () => clearTimers(), [clearTimers]);
+  useEffect(() => () => {
+    clearTimers();
+    trialLogRef.current?.discard();
+  }, [clearTimers]);
   useEffect(() => { roundRef.current = round; }, [round]);
   useEffect(() => { chalIdxRef.current = chalIdx; }, [chalIdx]);
   useEffect(() => { chalNamesRef.current = chalNames; }, [chalNames]);
@@ -289,6 +297,18 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
     const won = grade.correctSequence;
     const stars = starsForRecall(grade, recallMs, r.spec.span);
     playSfx(won ? 'win' : 'error');
+    // One span attempt = one trial; rt is the full recall duration.
+    // Assessment practice trials ('pf'/'pb') stay out of the log — unscored.
+    const isPractice = r.mode === 'assess'
+      && (assessRef.current?.phase === 'pf' || assessRef.current?.phase === 'pb');
+    if (!isPractice) {
+      trialLogRef.current?.trial({
+        rt: Math.round(recallMs),
+        ok: won,
+        span: r.spec.span,
+        dir: r.spec.backward ? 'bwd' : 'fwd',
+      });
+    }
 
     const goNext = (nextPhase) => {
       setRound(null);
@@ -298,24 +318,54 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
     };
 
     if (r.mode === 'assess') {
-      assessTotalRef.current += 1;
-      if (won) {
-        assessCorrectRef.current += 1;
-        assessMaxRef.current = Math.max(assessMaxRef.current, r.spec.span);
-        assessSpanRef.current = Math.min(9, r.spec.span + 1);
-      } else {
-        assessSpanRef.current = Math.max(2, r.spec.span - 1);
-      }
-      if (assessTotalRef.current < ASSESS_TRIALS) {
-        beginRoundRef.current({ ...prepareFreeRound(assessSpanRef.current, rngSeed()), mode: 'assess' });
+      const a = assessRef.current;
+      if (!a) return;
+      const next = (span, backward) =>
+        beginRoundRef.current(prepareAssessRound(span, backward, rngSeed()));
+      if (a.phase === 'pf') {
+        // Forward practice done (scored or not, it's a warm-up) → measured forward.
+        a.phase = 'fwd'; a.len = 3; a.trialAtLen = 0; a.okAtLen = 0;
+        next(a.len, false);
         return;
       }
-      const maxSpan = assessMaxRef.current;
-      const acc = assessTotalRef.current ? assessCorrectRef.current / assessTotalRef.current : 0;
-      const spanScore = Math.max(0, Math.min(1, (maxSpan - 2) / 6)) * 100; // span 2→0, span 8→100
-      const score = Math.round(0.7 * spanScore + 0.3 * acc * 100);
+      if (a.phase === 'pb') {
+        a.phase = 'bwd'; a.len = 2; a.trialAtLen = 0; a.okAtLen = 0;
+        next(a.len, true);
+        return;
+      }
+      // Measured ladder — two trials per length, stop when both fail.
+      if (won) a.okAtLen += 1;
+      a.trialAtLen += 1;
+      if (a.trialAtLen < 2 && a.okAtLen === 0) {
+        next(a.len, a.phase === 'bwd');
+        return;
+      }
+      const passed = a.okAtLen > 0;
+      if (passed) {
+        if (a.phase === 'fwd') a.fwdSpan = a.len; else a.bwdSpan = a.len;
+      }
+      if (passed && a.len < ASSESS_MAX_SPAN) {
+        a.len += 1; a.trialAtLen = 0; a.okAtLen = 0;
+        next(a.len, a.phase === 'bwd');
+        return;
+      }
+      if (a.phase === 'fwd') {
+        // Forward ladder ended → backward practice, then backward ladder.
+        a.phase = 'pb';
+        next(2, true);
+        return;
+      }
+      // Backward ladder ended → score both spans (fwd 8 ≈ ceiling, bwd 7).
+      const fwdC = Math.max(0, Math.min(1, (a.fwdSpan - 2) / 6)) * 100;
+      const bwdC = Math.max(0, Math.min(1, (a.bwdSpan - 2) / 5)) * 100;
+      const score = Math.round(0.55 * fwdC + 0.45 * bwdC);
+      trialLogRef.current?.finish({ score, fwdSpan: a.fwdSpan, bwdSpan: a.bwdSpan });
+      trialLogRef.current = null;
       setRound(null); setPlayStep('idle'); resetPlayState();
-      onAssessmentComplete?.({ score, line: `span ${maxSpan} · ${Math.round(acc * 100)}%` });
+      onAssessmentComplete?.({
+        score,
+        line: isAr ? `أمامي ${a.fwdSpan} · عكسي ${a.bwdSpan}` : `fwd ${a.fwdSpan} · bwd ${a.bwdSpan}`,
+      });
       return;
     }
 
@@ -372,6 +422,8 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
         beginRoundRef.current(prepareFreeRound(freeSpanRef.current, rngSeed()));
         return;
       }
+      trialLogRef.current?.finish({ span, score: freeScoreRef.current, level: Math.max(0, span - 1) });
+      trialLogRef.current = null;
       awardFreeRun('memo', Math.max(0, span - 1));
       setLastResult({ type: 'free', score: freeScoreRef.current, bestSpan: profile.bestStudy ?? span });
       goNext('freeRes');
@@ -379,6 +431,8 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
     }
 
     // level
+    trialLogRef.current?.finish({ won, span: r.spec.span });
+    trialLogRef.current = null;
     if (won) {
       awardTrainingWin('memo', r.diff, r.lv, MS_LEVELS_PER_TIER);
       const key = `${r.diff}-${r.lv}`;
@@ -390,7 +444,7 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
     }
     setLastResult({ type: 'level', won, stars, grade, round: r });
     goNext('res');
-  }, [clearTimers, playSfx, profile.bestStudy, onAssessmentComplete]);
+  }, [clearTimers, playSfx, profile.bestStudy, onAssessmentComplete, isAr]);
 
   function rngSeed() {
     return (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
@@ -485,13 +539,19 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
     }
   }, [playStep, feedback, playSfx, finishRound]);
 
-  const startLevel = (diff, lv) => beginRound(prepareLevelRound(diff, lv, rngSeed()));
+  const startLevel = (diff, lv) => {
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'memo-span', mode: 'level', meta: { diff, lv } });
+    beginRound(prepareLevelRound(diff, lv, rngSeed()));
+  };
   const startAssessment = () => {
-    assessTotalRef.current = 0;
-    assessCorrectRef.current = 0;
-    assessMaxRef.current = 0;
-    assessSpanRef.current = 3;
-    beginRound({ ...prepareFreeRound(3, rngSeed()), mode: 'assess' });
+    // fwdSpan baseline 2 (the practice length); bwdSpan 1 = failed even span 2.
+    assessRef.current = {
+      phase: 'pf', len: 2, trialAtLen: 0, okAtLen: 0, fwdSpan: 2, bwdSpan: 1,
+    };
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'memo-span', mode: 'assess' });
+    beginRound(prepareAssessRound(2, false, rngSeed()));
   };
   const startFree = () => {
     freeLivesRef.current = MS_FREE_LIVES;
@@ -499,6 +559,8 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
     freeSpanRef.current = 2;
     setFreeLives(MS_FREE_LIVES);
     setFreeScore(0);
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'memo-span', mode: 'free' });
     beginRound(prepareFreeRound(2, rngSeed()));
   };
 
@@ -735,7 +797,7 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
             title={round.mode === 'tutorial' ? (isAr ? 'كيفية اللعب' : 'How to play') : headerTitle()}
             subtitle={round.mode === 'tutorial' ? '' : headerSub()}
             playSfx={playSfx}
-            onMenu={round.mode === 'tutorial' ? () => coach.skip() : () => { clearTimers(); setRound(null); resetPlayState(); if (round.mode === 'assess') { (onAssessmentExit || onBack)?.(); return; } setPhase(round.mode === 'free' ? 'hub' : round.mode === 'challenge' ? 'chal' : 'levels'); }}
+            onMenu={round.mode === 'tutorial' ? () => coach.skip() : () => { trialLogRef.current?.discard(); trialLogRef.current = null; clearTimers(); setRound(null); resetPlayState(); if (round.mode === 'assess') { (onAssessmentExit || onBack)?.(); return; } setPhase(round.mode === 'free' ? 'hub' : round.mode === 'challenge' ? 'chal' : 'levels'); }}
             onPause={null}
           />
           <div className={`ct-ms-stage ct-juice-host${juice.shake ? ' ct-juice-shake' : ''}`} ref={stageRef}>

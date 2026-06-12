@@ -5,7 +5,9 @@ import { adherenceStats, monthCalendar, progressSnapshot } from '../../features/
 import { allChecks } from '../../features/workout/workoutState';
 import { RATED_GAMES, gameRating, ratingBand } from '../../features/training/rating';
 import { DOMAIN_SCIENCE, METHODOLOGY, VALIDITY_NOTE, RELIABILITY_NOTE, REFERENCES } from '../../features/training/assessment/assessmentRefs';
-import { NORM_DISCLAIMER, ordinal } from '../../features/training/assessment/assessmentNorms';
+import { NORM_DISCLAIMER, ordinal, reliableChangeRaw } from '../../features/training/assessment/assessmentNorms';
+import { ANCHORS, typicalRange } from '../../features/training/assessment/paradigmAnchors';
+import { gameDeepReport } from '../../features/training/shared/reportData';
 
 const BAND_COLOR = { low: '#c0563f', below: '#d08a3a', average: '#5fa9d8', above: '#5ec07a', high: '#9be85a' };
 const BAND_LABEL = {
@@ -115,6 +117,80 @@ export default function WorkoutStats({ onBack }) {
         )}</p>
       </div>
 
+      {/* ── DEEP PERFORMANCE METRICS (per-trial psychometrics) ── */}
+      {(() => {
+        const ms = (v) => (v == null ? null : `${v}ms`);
+        const extrasLine = (gk, ex) => {
+          const p = [];
+          if (gk === 'spatial-stroop') {
+            if (ex.interferenceMs != null) p.push(`${L('interference', 'تداخل')} ${ms(ex.interferenceMs)}`);
+            if (ex.switchCostMs != null) p.push(`${L('switch cost', 'كلفة تبديل')} ${ex.switchCostMs >= 0 ? '+' : ''}${ms(ex.switchCostMs)}`);
+          } else if (gk === 'cancel-task') {
+            if (ex.omissions != null) p.push(`${L('omissions', 'إغفالات')} ${ex.omissions}`);
+            if (ex.commissions != null) p.push(`${L('false taps', 'نقرات خاطئة')} ${ex.commissions}`);
+            if (ex.fatiguePct != null) p.push(`${L('run fatigue', 'إجهاد الجولة')} ${ex.fatiguePct > 0 ? '+' : ''}${ex.fatiguePct}%`);
+          } else if (gk === 'memo-span') {
+            if (ex.fwdSpan != null) p.push(`${L('span fwd', 'مدى أمامي')} ${ex.fwdSpan}`);
+            if (ex.bwdSpan != null) p.push(`${L('bwd', 'عكسي')} ${ex.bwdSpan}`);
+          } else if (gk === 'rush-hour') {
+            if (ex.planMs != null) p.push(`${L('planning', 'تخطيط')} ${(ex.planMs / 1000).toFixed(1)}s`);
+            if (ex.movesOverPar != null) p.push(`${ex.movesOverPar >= 0 ? '+' : ''}${ex.movesOverPar} ${L('over par', 'فوق الأمثل')}`);
+          } else if (gk === 'wordle') {
+            if (ex.words != null) p.push(`${ex.words} ${L('words', 'كلمة')}`);
+            if (ex.wordGapMs != null) p.push(`${L('word gap', 'فاصل الكلمات')} ${(ex.wordGapMs / 1000).toFixed(1)}s`);
+            if (ex.bestWordLen != null) p.push(`${L('longest', 'الأطول')} ${ex.bestWordLen}`);
+          } else if (gk === 'speed-match') {
+            if (ex.maxKey != null) p.push(`${L('key up to', 'مفتاح حتى')} ${ex.maxKey} ${L('symbols', 'رمزاً')}`);
+          }
+          return p.join(' · ');
+        };
+        const reports = Object.values(RATED_GAMES)
+          .map((def) => ({ def, rep: gameDeepReport(def.gameKey) }))
+          .filter((x) => x.rep);
+        if (!reports.length) return null;
+        return (
+          <div className="ws-card">
+            <div className="ws-card-title">{L('Deep performance metrics', 'مقاييس الأداء الدقيقة')}</div>
+            {reports.map(({ def, rep }) => {
+              const cfg = DOMAINS_BY_ID[def.domainId];
+              const s = rep.summary;
+              const core = [
+                s.acc != null ? `${L('accuracy', 'الدقة')} ${Math.round(s.acc * 100)}%` : null,
+                s.medianRt != null ? `${L('median RT', 'وسيط الاستجابة')} ${ms(s.medianRt)}` : null,
+                s.sdRt != null ? `± ${ms(s.sdRt)}` : null,
+                s.ies != null ? `IES ${s.ies}` : null,
+                s.pes != null ? `${L('post-error', 'بعد الخطأ')} ${s.pes > 0 ? '+' : ''}${ms(s.pes)}` : null,
+              ].filter(Boolean).join(' · ');
+              const ex = extrasLine(def.gameKey, rep.extras || {});
+              const excl = (s.anticipations || 0) + (s.outliers || 0);
+              return (
+                <div key={def.gameKey} className="ws-dom">
+                  <div className="ws-dom-head">
+                    <span className="ws-dom-glyph" style={{ color: cfg?.color }}>{cfg?.glyph}</span>
+                    <span className="ws-dom-name">{isAr ? def.ar : def.en}</span>
+                    <span className="ws-dom-band">
+                      {rep.sessions} {L('runs', 'جولات')}
+                    </span>
+                    <Sparkline
+                      data={rep.seriesKind === 'medianRt' ? rep.series.map((v) => -v) : rep.series}
+                      color={cfg?.color || '#e8ac4e'}
+                      w={70}
+                      h={24}
+                    />
+                  </div>
+                  {core && <p className="ws-note" style={{ marginTop: 2 }}>{core}</p>}
+                  {ex && <p className="ws-note" style={{ marginTop: 0 }}>{ex}{excl > 0 ? ` · ${excl} ${L('trials excluded', 'محاولات مستبعدة')}` : ''}</p>}
+                </div>
+              );
+            })}
+            <p className="ws-note">{L(
+              'Computed from your latest banked run\'s trial-by-trial data. RT stats use correct responses only, after excluding anticipations (<150ms) and statistical outliers (median ± 3·MAD). IES = RT ÷ accuracy (penalises guessing). Post-error = how much you slow down after a mistake (adaptive control). Sparkline: trend across runs (RT trends show faster as up).',
+              'محسوبة من بيانات كل محاولة في آخر جولة مسجّلة. إحصاءات زمن الاستجابة تستخدم الإجابات الصحيحة فقط بعد استبعاد الاستباقات (<150م.ث) والقيم الشاذة (الوسيط ± 3·MAD). IES = الزمن ÷ الدقة (يعاقب التخمين). بعد الخطأ = مقدار تباطؤك بعد الغلط (تحكّم تكيفي). الخط: الاتجاه عبر الجولات (الأسرع للأعلى في اتجاهات الزمن).',
+            )}</p>
+          </div>
+        );
+      })()}
+
       {/* ── WEEKLY REACTION CHECKS ── */}
       {(() => {
         const checks = allChecks();
@@ -122,23 +198,38 @@ export default function WorkoutStats({ onBack }) {
         const lastC = checks[checks.length - 1];
         const prevC = checks.length > 1 ? checks[checks.length - 2] : null;
         const d = prevC ? lastC.ms - prevC.ms : null;
+        // Reliable-change gate: a few ms of week-to-week wobble is measurement
+        // noise — only flag faster/slower beyond the RCI threshold.
+        const rc = reliableChangeRaw(d, ANCHORS.pvtMedianMs.sd, 0.8);
+        const sig = rc?.reliable ?? false;
+        const typ = typicalRange('pvtMedianMs');
         return (
           <div className="ws-card">
             <div className="ws-card-title">{L('Weekly reaction check', 'فحص رد الفعل الأسبوعي')}</div>
             <div className="ws-idx-row">
-              <div className="ws-idx-big" style={{ color: d != null && d < 0 ? '#5ec07a' : '#ffd066' }}>{lastC.ms}<span style={{ fontSize: '0.5em' }}> ms</span></div>
+              <div className="ws-idx-big" style={{ color: sig && d < 0 ? '#5ec07a' : '#ffd066' }}>{lastC.ms}<span style={{ fontSize: '0.5em' }}> ms</span></div>
               <div className="ws-idx-meta">
                 <div>{L('Latest check', 'آخر فحص')}: {lastC.date}</div>
+                {typ && (
+                  <div>{L('Typical alert range', 'النطاق المعتاد لليقظة')}: {typ[0]}–{typ[1]} ms</div>
+                )}
                 {prevC && (
-                  <div>{L('vs previous', 'مقارنة بالسابق')}: <b style={{ color: d < 0 ? '#5ec07a' : '#c0563f' }}>{d < 0 ? '▼' : '▲'}{Math.abs(d)} ms</b> {d < 0 ? L('(faster)', '(أسرع)') : L('(slower)', '(أبطأ)')}</div>
+                  <div>
+                    {L('vs previous', 'مقارنة بالسابق')}:{' '}
+                    {sig ? (
+                      <b style={{ color: d < 0 ? '#5ec07a' : '#c0563f' }}>{d < 0 ? '▼' : '▲'}{Math.abs(d)} ms {d < 0 ? L('(reliably faster)', '(أسرع بشكل موثوق)') : L('(reliably slower)', '(أبطأ بشكل موثوق)')}</b>
+                    ) : (
+                      <span>{d === 0 ? '0 ms' : `${d < 0 ? '▼' : '▲'}${Math.abs(d)} ms`} {L('(within noise)', '(ضمن هامش الضوضاء)')}</span>
+                    )}
+                  </div>
                 )}
                 <div>{checks.length} {L('checks recorded', 'فحوصات مسجّلة')}</div>
               </div>
               <Sparkline data={checks.map((c) => -c.ms)} color="#ffd066" />
             </div>
             <p className="ws-note">{L(
-              'A 5-trial reaction test about once a week. Lower is faster; week-to-week change is the meaningful signal, single days vary with sleep and stress.',
-              'اختبار رد فعل من 5 محاولات مرة في الأسبوع تقريباً. الأقل أسرع؛ التغيّر بين الأسابيع هو الإشارة المهمة، والأيام المفردة تتأثر بالنوم والإجهاد.',
+              'A 5-trial reaction test about once a week. Lower is faster. Changes are flagged only beyond the reliable-change threshold (RCI ≥ 1.96) — smaller week-to-week swings are expected measurement noise (sleep, stress, time of day). Typical range from PVT literature (Basner & Dinges 2011); phone taps add motor latency.',
+              'اختبار رد فعل من 5 محاولات مرة في الأسبوع تقريباً. الأقل أسرع. تُعلَّم التغيّرات فقط عندما تتجاوز عتبة التغيّر الموثوق (RCI ≥ 1.96) — التقلّبات الأسبوعية الأصغر ضوضاء قياس متوقعة (النوم، الإجهاد، وقت اليوم). النطاق المعتاد من أدبيات PVT (Basner & Dinges 2011)؛ واللمس على الهاتف يضيف زمناً حركياً.',
             )}</p>
           </div>
         );

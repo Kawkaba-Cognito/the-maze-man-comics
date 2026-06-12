@@ -200,6 +200,28 @@ export function prepareFreeRound(span, seed) {
   return { mode: 'free', diff: 'free', lv: 0, spec, ...built, seed };
 }
 
+/**
+ * Standardized assessment round — explicit span + direction on a FIXED
+ * 9-cell board with FIXED timing, so every trial of every session is
+ * comparable (the free-mode spec varies grid size with span; an assessment
+ * must not).
+ */
+export function prepareAssessRound(span, backward, seed) {
+  const s = clamp(span, 2, 9);
+  const spec = {
+    diff: 'assess',
+    lv: 0,
+    span: s,
+    gridCells: 9,
+    cols: colsFor(9),
+    flashMs: 800,
+    gapMs: 250,
+    backward: !!backward,
+  };
+  const built = buildRound(spec, seed);
+  return { mode: 'assess', diff: 'assess', lv: 0, spec, ...built, seed };
+}
+
 export function prepareChallengeSeed(diff = 'medium') {
   const d = MS_DIFF_KEYS.includes(diff) ? diff : 'medium';
   const preset = MS_PASS_PLAY[d];

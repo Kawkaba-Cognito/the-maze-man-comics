@@ -69,6 +69,14 @@ export const REFERENCES = [
   'Verhaeghen P (2003). Aging and vocabulary scores: a meta-analysis. Psychol Aging.',
   'Miyake A et al. (2000). The unity and diversity of executive functions. Cogn Psychol.',
   'Townsend JT & Ashby FG (1983). Stochastic modeling of elementary psychological processes (IES).',
+  'Kessels RPC et al. (2000). The Corsi Block-Tapping Task: standardization and normative data. Appl Neuropsychol.',
+  'Monaco M et al. (2013). Forward and backward span for verbal and visuo-spatial data. Neurol Sci.',
+  'Jaeger J (2018). Digit Symbol Substitution Test: the case for sensitivity over specificity. J Clin Psychopharmacol.',
+  'Lu CH & Proctor RW (1995). The influence of irrelevant location information on performance (Simon effect). Psychon Bull Rev.',
+  'Monsell S (2003). Task switching. Trends Cogn Sci.',
+  'Basner M & Dinges DF (2011). Maximizing sensitivity of the Psychomotor Vigilance Test (PVT). Sleep.',
+  'Jacobson NS & Truax P (1991). Clinical significance: a statistical approach to meaningful change (RCI). J Consult Clin Psychol.',
+  'Levitt H (1971). Transformed up-down methods in psychoacoustics. J Acoust Soc Am.',
 ];
 
 export const METHODOLOGY = {

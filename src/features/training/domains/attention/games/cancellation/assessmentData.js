@@ -140,6 +140,15 @@ export function computeAssessmentSummary(trials, allTaps, opts = {}) {
 
   const meanIES = +mean(trials.map((t) => t.ies)).toFixed(1);
 
+  // Fatigue slope: % change in hit rate (hits/sec) from the first to the last
+  // trial — the clinical signature of sustained-attention decline across a
+  // cancellation session (negative = slowing down).
+  const perTrialSpeed = trials.map((t) => (t.timeUsed > 0 ? t.found / t.timeUsed : 0));
+  const fatigueDelta =
+    perTrialSpeed.length >= 2 && perTrialSpeed[0] > 0
+      ? +(((perTrialSpeed[perTrialSpeed.length - 1] - perTrialSpeed[0]) / perTrialSpeed[0]) * 100).toFixed(1)
+      : null;
+
   // Component scores 0..1. Speed is judged against an age-adjusted expectation.
   const speedRefAdj = ASSESS_REF.speedRef * speedFactor;
   const detectionScore = Math.max(0, Math.min(1, detection));
@@ -180,6 +189,7 @@ export function computeAssessmentSummary(trials, allTaps, opts = {}) {
     meanRT,
     rtCV,
     meanIES,
+    fatigueDelta,
     composite,
     detectionScore: +detectionScore.toFixed(2),
     precisionScore: +precisionScore.toFixed(2),
@@ -247,6 +257,7 @@ export function saveAssessSession(summary) {
     meanRT: summary.meanRT,
     rtCV: summary.rtCV,
     meanIES: summary.meanIES,
+    fatigueDelta: summary.fatigueDelta ?? null,
     omissions: summary.totalOmissions,
     commissions: summary.totalCommissions,
   };

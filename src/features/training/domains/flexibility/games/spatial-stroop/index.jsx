@@ -10,6 +10,8 @@ import {
 import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
 import { useCoach } from '../../../../shared/coach/useCoach';
 import CoachOverlay from '../../../../shared/coach/CoachOverlay';
+import { createTrialLog } from '../../../../shared/trialLog';
+import { createStaircase } from '../../../../shared/staircase';
 
 import StroopModes, { StroopTarget } from './StroopModes';
 import { buildStroopCoachSteps } from './tutorialScript';
@@ -49,6 +51,10 @@ import { loadStroopProfile, saveStroopProfile } from './spatialStroopProgress';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
 
 const POWERUP_ICON = { shield: '🛡️', slowmo: '⏱️', x2: '✨', freeze: '❄️' };
+const POWERUP_LABEL = {
+  en: { shield: 'Shield', slowmo: 'Slow-mo', x2: 'Double points', freeze: 'Freeze' },
+  ar: { shield: 'درع', slowmo: 'إبطاء', x2: 'نقاط مضاعفة', freeze: 'تجميد' },
+};
 
 // First-time-per-rule "stop and learn" lessons when the rule switches.
 const RULE_LESSON_KEY = 'mm_stroop_rule_lessons';
@@ -335,18 +341,6 @@ function DeadlineRing({ ms, k }) {
   );
 }
 
-function Particles({ data }) {
-  if (!data) return null;
-  const n = 8;
-  return (
-    <div key={data.id} className={`ct-stroop-particles ct-stroop-particles--${data.type}`}>
-      {Array.from({ length: n }, (_, i) => (
-        <span key={i} className="ct-stroop-particle" style={{ ['--a']: `${(360 / n) * i}deg` }} />
-      ))}
-    </div>
-  );
-}
-
 export default function SpatialStroopGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
@@ -400,9 +394,6 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
 
   // juice + power-up state
   const [combo, setCombo] = useState(0);
-  const [rtFx, setRtFx] = useState(null);
-  const [particle, setParticle] = useState(null);
-  const [shake, setShake] = useState(false);
   const [ringMs, setRingMs] = useState(0);
   const [trialKey, setTrialKey] = useState(0);
   const [inventory, setInventory] = useState([]);
@@ -411,6 +402,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
 
   const blockRef = useRef(null);
   const resultsRef = useRef([]);
+  const trialLogRef = useRef(null);
   const respondedRef = useRef(false);
   const stimOnRef = useRef(0);
   const timersRef = useRef([]);
@@ -423,6 +415,8 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
 
   const freeBlocksRef = useRef(0);
   const freeScoreRef = useRef(0);
+  const staircaseRef = useRef(null);
+  const freeBaseLimitRef = useRef(2000);
   const comboRef = useRef(0);
   const bestComboRef = useRef(0);
   const freeLivesRef = useRef(STROOP_FREE_LIVES);
@@ -464,7 +458,10 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
     timersRef.current = [];
   }, []);
 
-  useEffect(() => () => clearTimers(), [clearTimers]);
+  useEffect(() => () => {
+    clearTimers();
+    trialLogRef.current?.discard();
+  }, [clearTimers]);
 
   const resetJuice = useCallback(() => {
     comboRef.current = 0;
@@ -477,8 +474,6 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
     setCombo(0);
     setInventory([]);
     setMods({ shield: false, slowmo: 0, x2: 0 });
-    setRtFx(null);
-    setParticle(null);
     setToast(null);
   }, []);
 
@@ -532,6 +527,19 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
 
     const summary = summarizeStroop(resultsRef.current, b.session);
     const grade = gradeBlock(summary, b.diff, { freeMode: b.mode === 'free' });
+    trialLogRef.current?.finish(
+      b.mode === 'free'
+        ? { blocksWon: freeBlocksRef.current, score: freeScoreRef.current, cfs: grade.cfs }
+        : b.mode === 'assess'
+          ? {
+              cfs: grade.cfs,
+              congruencyEffect: summary.congruencyEffect ?? null,
+              switchCost: summary.switchCost ?? null,
+              persevPct: summary.persevPct ?? null,
+            }
+          : { cfs: grade.cfs, won: grade.won },
+    );
+    trialLogRef.current = null;
 
     if (b.mode === 'assess') {
       playSfx('win');
@@ -684,7 +692,11 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
       );
       return;
     }
-    timersRef.current.push(setTimeout(() => startTrialRef.current(), b.spec.feedbackMs));
+    // Jittered ITI (assessment): a fixed rhythm lets players anticipate the
+    // next onset; jitter keeps each RT stimulus-driven.
+    const iti = b.spec.feedbackMs
+      + (b.spec.itiJitterMs ? Math.floor(Math.random() * b.spec.itiJitterMs) : 0);
+    timersRef.current.push(setTimeout(() => startTrialRef.current(), iti));
   }, [playSfx]);
 
   const loseLifeOrShield = useCallback(
@@ -749,21 +761,32 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
         if (runIdRef.current !== runId || respondedRef.current || pauseRef.current) return;
         const rule = activeRule(s);
         const probeSnap = s.probe ? { ...s.probe } : null;
-        resultsRef.current.push({
-          kind: 'answer',
-          correct: false,
-          timeout: true,
-          rule,
-          congruent: probeSnap ? isCongruent(probeSnap, rule) : undefined,
-          isSwitchTrial: !!s.switchPending,
-        });
+        const isPractice = b.mode === 'assess' && s.trialNumber < (s.practiceTrials || 0);
+        if (!isPractice) {
+          resultsRef.current.push({
+            kind: 'answer',
+            correct: false,
+            timeout: true,
+            rule,
+            congruent: probeSnap ? isCongruent(probeSnap, rule) : undefined,
+            isSwitchTrial: !!s.switchPending,
+          });
+          trialLogRef.current?.trial({
+            ok: false,
+            timeout: true,
+            rule,
+            cong: probeSnap ? isCongruent(probeSnap, rule) : undefined,
+            sw: !!s.switchPending,
+          });
+        }
         setFrozenProbe(probeSnap);
         setFeedback('timeout');
         setFeedbackDetail({ correctSide: probeSnap ? answerFor(probeSnap, rule) : null, pickedSide: null });
         playSfx('error');
-        setShake(true);
-        timersRef.current.push(setTimeout(() => setShake(false), 380));
-        setParticle({ id: performance.now(), type: 'bad' });
+        if (b.mode === 'free') {
+          const L = staircaseRef.current?.failure() ?? 0;
+          s.responseLimitMs = Math.max(1150, freeBaseLimitRef.current - L * 28);
+        }
         const end = loseLifeOrShield(b);
         if (end) {
           finishBlockRef.current();
@@ -842,19 +865,34 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
 
       const currentProbe = { ...s.probe };
       const wasBlitz = !!s.blitzActive;
+      // Assessment opens with unscored practice trials — keep them out of the
+      // results and the trial log so first-exposure noise can't move the score.
+      const isPractice = b.mode === 'assess' && s.trialNumber < (s.practiceTrials || 0);
       setFrozenProbe(currentProbe);
       const rtMs = Math.max(0, Math.round(performance.now() - stimOnRef.current));
       const outcome = applyStroopAnswer(s, side);
-      resultsRef.current.push({
-        kind: 'answer',
-        correct: outcome.correct,
-        rule: outcome.rule,
-        perseverative: outcome.perseverative,
-        congruent: outcome.congruent,
-        isSwitchTrial: outcome.isSwitchTrial,
-        rtMs,
-        choice: side,
-      });
+      if (!isPractice) {
+        resultsRef.current.push({
+          kind: 'answer',
+          correct: outcome.correct,
+          rule: outcome.rule,
+          perseverative: outcome.perseverative,
+          congruent: outcome.congruent,
+          isSwitchTrial: outcome.isSwitchTrial,
+          rtMs,
+          choice: side,
+        });
+        trialLogRef.current?.trial({
+          rt: rtMs,
+          ok: outcome.correct,
+          rule: outcome.rule,
+          cong: outcome.congruent,
+          sw: outcome.isSwitchTrial,
+          ...(outcome.perseverative ? { persev: true } : {}),
+        });
+      } else if (s.trialNumber >= (s.practiceTrials || 0)) {
+        flashToast(isAr ? 'يبدأ الاحتساب الآن' : 'Scoring starts now');
+      }
 
       setPickedSide(side);
       setFeedback(outcome.correct ? 'correct' : 'wrong');
@@ -867,10 +905,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
         if (comboRef.current > bestComboRef.current) bestComboRef.current = comboRef.current;
         setCombo(comboRef.current);
         const rating = rtRating(rtMs, currentLimitRef.current);
-        setRtFx({ id: performance.now(), key: rating.key, side });
-        setParticle({ id: performance.now(), type: 'ok' });
         playSfx('click');
-        if (comboRef.current > 0 && comboRef.current % 5 === 0) playSfx('win');
 
         if (b.mode === 'free') {
           freeBlocksRef.current += 1;
@@ -883,10 +918,10 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
           if (wasBlitz) pts *= 2;
           freeScoreRef.current += pts;
           setFreeScore(freeScoreRef.current);
-          // gradual ramp
-          if (s && freeBlocksRef.current % 8 === 0) {
-            s.responseLimitMs = Math.max(1150, s.responseLimitMs - 110);
-          }
+          // 1-up-2-down staircase: deadline tightens after 2 straight correct,
+          // relaxes after any miss → play converges on ~71% success.
+          const L = staircaseRef.current?.success() ?? 0;
+          s.responseLimitMs = Math.max(1150, freeBaseLimitRef.current - L * 28);
           // award a power-up periodically (not during blitz)
           if (!wasBlitz) {
             correctSinceRef.current += 1;
@@ -895,15 +930,16 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
               const pick = STROOP_POWERUP_KEYS[Math.floor(Math.random() * STROOP_POWERUP_KEYS.length)];
               inventoryRef.current = [...inventoryRef.current, pick];
               setInventory(inventoryRef.current);
-              flashToast(`${POWERUP_ICON[pick]} +1`);
+              flashToast(`${(isAr ? POWERUP_LABEL.ar : POWERUP_LABEL.en)[pick]} +1`);
             }
           }
         }
       } else {
-        setParticle({ id: performance.now(), type: 'bad' });
-        setShake(true);
-        timersRef.current.push(setTimeout(() => setShake(false), 380));
         playSfx('error');
+        if (b.mode === 'free') {
+          const L = staircaseRef.current?.failure() ?? 0;
+          s.responseLimitMs = Math.max(1150, freeBaseLimitRef.current - L * 28);
+        }
         const end = loseLifeOrShield(b);
         if (end) {
           bump();
@@ -914,7 +950,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
       bump();
       advanceAfterFeedback(outcome);
     },
-    [clearTimers, playSfx, advanceAfterFeedback, loseLifeOrShield, flashToast],
+    [clearTimers, playSfx, advanceAfterFeedback, loseLifeOrShield, flashToast, isAr],
   );
 
   const activatePowerup = useCallback(
@@ -934,7 +970,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
         setMods((m) => ({ ...m, x2: x2Ref.current }));
       } else if (key === 'freeze') {
         clearTimers(); // remove the running deadline for the current trial
-        flashToast(POWERUP_ICON.freeze);
+        flashToast(isAr ? POWERUP_LABEL.ar.freeze : POWERUP_LABEL.en.freeze);
       }
       inventoryRef.current = inventoryRef.current.filter((_, i) => i !== idx);
       setInventory(inventoryRef.current);
@@ -948,6 +984,18 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
       runIdRef.current += 1;
       blockRef.current = b;
       resultsRef.current = [];
+      trialLogRef.current?.discard();
+      trialLogRef.current = b.mode === 'free' || b.mode === 'level' || b.mode === 'assess'
+        ? createTrialLog({
+            game: 'spatial-stroop',
+            mode: b.mode,
+            meta: b.mode === 'level' ? { diff: b.diff, lv: b.lv } : undefined,
+          })
+        : null;
+      if (b.mode === 'free') {
+        staircaseRef.current = createStaircase({ nDown: 2 });
+        freeBaseLimitRef.current = b.session?.responseLimitMs ?? 2000;
+      }
       startStroopProbe(b.session);
       setPauseOpen(false);
       setQuitOpen(false);
@@ -1038,7 +1086,8 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
   const startAssessment = useCallback(() => {
     const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
     beginBlock(prepareAssessBlock(seed));
-  }, [beginBlock]);
+    flashToast(isAr ? 'تجربة أولاً — بدون احتساب' : 'Practice first — not scored');
+  }, [beginBlock, flashToast, isAr]);
 
   const openChallenge = () => {
     const names = chalNames.map((s, i) => s.trim() || `Player ${i + 1}`);
@@ -1073,6 +1122,8 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
   const confirmQuit = () => {
     setQuitOpen(false);
     const mode = blockRef.current?.mode;
+    trialLogRef.current?.discard();
+    trialLogRef.current = null;
     clearPlayState();
     if (mode === 'assess') {
       (onAssessmentExit || onBack)?.();
@@ -1509,41 +1560,41 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
               </div>
             )}
             <div className="ct-stroop-results-grid">
-              <div className="ct-vigil-stat">
-                <div className="ct-vigil-stat-n">{lastResult.grade.cfs}</div>
-                <div className="ct-vigil-stat-l">{t.cfs}</div>
+              <div className="ct-stroop-stat">
+                <div className="ct-stroop-stat-n">{lastResult.grade.cfs}</div>
+                <div className="ct-stroop-stat-l">{t.cfs}</div>
               </div>
-              <div className="ct-vigil-stat">
-                <div className="ct-vigil-stat-n">{lastResult.summary.efficiencyPct}%</div>
-                <div className="ct-vigil-stat-l">{t.efficiency}</div>
+              <div className="ct-stroop-stat">
+                <div className="ct-stroop-stat-n">{lastResult.summary.efficiencyPct}%</div>
+                <div className="ct-stroop-stat-l">{t.efficiency}</div>
               </div>
-              <div className="ct-vigil-stat">
-                <div className="ct-vigil-stat-n">
+              <div className="ct-stroop-stat">
+                <div className="ct-stroop-stat-n">
                   {lastResult.summary.congruencyEffect != null ? `${lastResult.summary.congruencyEffect}ms` : '—'}
                 </div>
-                <div className="ct-vigil-stat-l">{t.interf}</div>
+                <div className="ct-stroop-stat-l">{t.interf}</div>
               </div>
-              <div className="ct-vigil-stat">
-                <div className="ct-vigil-stat-n">
+              <div className="ct-stroop-stat">
+                <div className="ct-stroop-stat-n">
                   {lastResult.summary.switchCost != null ? `${lastResult.summary.switchCost}ms` : '—'}
                 </div>
-                <div className="ct-vigil-stat-l">{t.switchCost}</div>
+                <div className="ct-stroop-stat-l">{t.switchCost}</div>
               </div>
-              <div className="ct-vigil-stat">
-                <div className="ct-vigil-stat-n">{lastResult.summary.persevPct}%</div>
-                <div className="ct-vigil-stat-l">{t.persev}</div>
+              <div className="ct-stroop-stat">
+                <div className="ct-stroop-stat-n">{lastResult.summary.persevPct}%</div>
+                <div className="ct-stroop-stat-l">{t.persev}</div>
               </div>
-              <div className="ct-vigil-stat">
-                <div className="ct-vigil-stat-n">
+              <div className="ct-stroop-stat">
+                <div className="ct-stroop-stat-n">
                   {lastResult.summary.categoriesCompleted}/{lastResult.summary.categoriesTarget}
                 </div>
-                <div className="ct-vigil-stat-l">{t.cc}</div>
+                <div className="ct-stroop-stat-l">{t.cc}</div>
               </div>
-              <div className="ct-vigil-stat ct-vigil-stat--wide">
-                <div className="ct-vigil-stat-n">
+              <div className="ct-stroop-stat ct-stroop-stat--wide">
+                <div className="ct-stroop-stat-n">
                   {lastResult.summary.meanRt != null ? `${lastResult.summary.meanRt} ms` : '—'}
                 </div>
-                <div className="ct-vigil-stat-l">{t.meanRt}</div>
+                <div className="ct-stroop-stat-l">{t.meanRt}</div>
               </div>
             </div>
             <div className="ct-fq-row">

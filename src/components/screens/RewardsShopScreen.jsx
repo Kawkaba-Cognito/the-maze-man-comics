@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { getCharacter } from '../../features/character/registry';
-import { ITEMS, SHOP_SLOTS } from '../../features/character/items';
+import { ITEMS, SHOP_SLOTS, ItemArt } from '../../features/character/items';
 
 /**
  * Points Shop — spend earned points on fun cosmetic gear. Buying adds the item
@@ -9,23 +9,12 @@ import { ITEMS, SHOP_SLOTS } from '../../features/character/items';
  * shows on the home pedestal AND in the 3D world. A live preview at the top
  * wears whatever you have on; cards show the item's real vector art.
  */
-const SLOT_BOX = { hat: '-26 -42 52 52', face: '-24 -16 48 42', neck: '-22 -8 44 46', back: '-26 -2 52 92' };
 const SLOT_TITLES = {
-  hat: ['🎩 Hats', '🎩 قبعات'],
-  face: ['🧐 Face', '🧐 الوجه'],
-  neck: ['🧣 Neck', '🧣 الرقبة'],
-  back: ['🎒 Back', '🎒 الظهر'],
+  hat: ['Hats', 'قبعات'],
+  face: ['Face', 'الوجه'],
+  neck: ['Neck', 'الرقبة'],
+  back: ['Back', 'الظهر'],
 };
-
-function ItemArt({ it }) {
-  return (
-    <span className="shop-card-art" aria-hidden="true">
-      <svg viewBox={it.iconBox || SLOT_BOX[it.slot]} width="46" height="46" style={{ overflow: 'visible' }}>
-        {it.render2d({ accent: '#f5c542', gold: '#e8b53a' })}
-      </svg>
-    </span>
-  );
-}
 
 export default function RewardsShopScreen() {
   const { points, currentLang, character, owned, equipped, buyItem, equipItem, playSfx } = useApp();
@@ -47,7 +36,7 @@ export default function RewardsShopScreen() {
       <div className="rewards-balance">
         ⚡ <span>{points}</span> {isAr ? 'نقطة' : 'points'}
       </div>
-      <div className="rewards-title">{isAr ? '🛍️ المتجر' : '🛍️ Shop'}</div>
+      <div className="rewards-title">{isAr ? 'المتجر' : 'Shop'}</div>
 
       <div className="char-preview shop-preview">
         <Hero size={150} equipped={equipped} glow float />

@@ -41,6 +41,7 @@ import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
 import { useCoach } from '../../../../shared/coach/useCoach';
 import CoachOverlay from '../../../../shared/coach/CoachOverlay';
+import { createTrialLog } from '../../../../shared/trialLog';
 import { buildCancelCoachSteps } from './tutorialScript';
 import {
   prepareAssessmentTrial,
@@ -652,6 +653,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const chalCycleRef = useRef(0);
   const roundEndedRef = useRef(false);
   const endRoundRef = useRef((_won) => {});
+  const trialLogRef = useRef(null);
   const freeStageRef = useRef(0);
   const freeRoundsWonRef = useRef(0);
   const freeLivesRef = useRef(FREE_LIVES);
@@ -816,6 +818,8 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
 
   const onFreeIntroReady = useCallback(() => {
     playSfx('click');
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'cancel-task', mode: 'free' });
     void beginFreeRoundAtStage(0);
   }, [playSfx, beginFreeRoundAtStage]);
 
@@ -826,7 +830,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         setCdShow(false);
         let r;
         try {
-          r = prepareAssessmentTrial(idx);
+          // idx -1 = unscored practice grid: same protocol, shorter clock.
+          r = prepareAssessmentTrial(Math.max(0, idx));
+          if (idx < 0) {
+            r.assessPractice = true;
+            r.tlim = 20;
+          }
         } catch (err) {
           console.error('[Assessment] prepareAssessmentTrial failed', idx, err);
           clearPlayRoundState();
@@ -881,7 +890,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
 
   const onAssessIntroReady = useCallback(() => {
     playSfx('click');
-    void beginAssessmentTrial(0);
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'cancel-task', mode: 'assess' });
+    void beginAssessmentTrial(-1); // practice grid first, unscored
   }, [playSfx, beginAssessmentTrial]);
 
   const endRound = useCallback(
@@ -910,6 +921,18 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         diff: r.diff,
         won,
       });
+      // Round marker — carries the clinical per-round counts (omissions =
+      // targets left unfound). No `ok`/`rt`, so shared RT metrics skip it.
+      if (!r.assessPractice) {
+        trialLogRef.current?.trial({
+          kind: 'round',
+          found: f,
+          errors: e,
+          omissions: Math.max(0, (targetTc || r.tc) - f),
+          timeUsed: stats.timeUsed,
+          won,
+        });
+      }
       if (r.mode === 'challenge') {
         const idx = chalIdxRef.current;
         const names = chalNamesRef.current;
@@ -971,9 +994,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         freeLivesRef.current = Math.max(0, freeLivesRef.current - 1);
         setFreeLives(freeLivesRef.current);
         if (freeLivesRef.current > 0) {
-          // Lives left — replay the SAME stage so the ramp never spikes.
+          // Lives left — step DOWN one stage (adaptive staircase: clear → +1,
+          // fail → −1, so the stage converges on the player's threshold).
           playSfx('error');
           setPauseOpen(false);
+          freeStageRef.current = Math.max(0, freeStageRef.current - 1);
           void beginFreeRoundAtStage(freeStageRef.current);
           return;
         }
@@ -995,6 +1020,8 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           if (changed) saveProfile(next);
           return changed ? next : prev;
         });
+        trialLogRef.current?.finish({ roundsWon: rw, score: runScore });
+        trialLogRef.current = null;
         awardFreeRun('cancel', rw);
         setLastResult({ type: 'free', roundsWon: rw, score: runScore, lastR: r });
         setPhase('freeRes');
@@ -1007,6 +1034,13 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         return;
       }
       if (r.mode === 'assess') {
+        if (r.assessPractice) {
+          // Practice grid done — start the measured battery, nothing recorded.
+          playSfx('win');
+          setPauseOpen(false);
+          void beginAssessmentTrial(0);
+          return;
+        }
         // Record this trial (hits, false taps, time, efficiency) + its taps.
         assessTrialsRef.current.push({
           tc: targetTc || r.tc,
@@ -1033,6 +1067,8 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           { age: loadAssessProfile().age },
         );
         setAssessHistory(saveAssessSession(summary));
+        trialLogRef.current?.finish({ composite: summary.composite });
+        trialLogRef.current = null;
         setPlayStep('idle');
         setPauseOpen(false);
         setQuitOpen(false);
@@ -1050,6 +1086,8 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       }
       if (won) playSfx('win');
       else playSfx('error');
+      trialLogRef.current?.finish({ won });
+      trialLogRef.current = null;
       if (won) awardTrainingWin('cancel', r.diff, r.lv, FQ_LEVELS_PER_TIER);
       persistLevel(r, stats, f, e);
       setLastResult({ type: 'level', stats, r, won, found: f, errors: e });
@@ -1061,6 +1099,8 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   useEffect(() => {
     endRoundRef.current = endRound;
   }, [endRound]);
+
+  useEffect(() => () => trialLogRef.current?.discard(), []);
 
   useEffect(() => {
     if (playStep !== 'running' || pauseOpen) return;
@@ -1212,6 +1252,8 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     setPhase('play');
     setPlayStep('idle');
     setCdShow(false);
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'cancel-task', mode: 'level', meta: { diff, lv } });
     let r;
     try {
       r = prepareLevelRound(diff, lv);
@@ -1245,9 +1287,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       const c = prev[idx];
       if (!c || c.tapped) return prev;
       const now = performance.now();
+      const itt = lastTapRef.current ? now - lastTapRef.current : null;
       if (lastTapRef.current) tapsRef.current.push(now - lastTapRef.current);
       lastTapRef.current = now;
         if (c.isT) {
+        if (!r.assessPractice) trialLogRef.current?.trial({ ...(itt != null ? { rt: Math.round(itt) } : {}), ok: true });
         playSfx('collect');
         const nextCells = prev.map((x, i) =>
           i === idx ? { ...x, tapped: true, feedback: 'ok' } : x,
@@ -1278,6 +1322,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         return nextCells;
       }
       playSfx('error');
+      if (!r.assessPractice) trialLogRef.current?.trial({ ...(itt != null ? { rt: Math.round(itt) } : {}), ok: false });
       pendingPenaltyRef.current += 1;
       talliesRef.current.errors += 1;
       setErrors(talliesRef.current.errors);
@@ -1358,6 +1403,8 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const confirmQuit = () => {
     setQuitOpen(false);
     const mode = roundRef.current?.mode;
+    trialLogRef.current?.discard();
+    trialLogRef.current = null;
     clearPlayRoundState();
     if (mode === 'challenge') setPhase('chal');
     else if (mode === 'level') setPhase('levels');
@@ -1372,6 +1419,8 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   /** Leave the assessment: back to the global assessment flow when launched from
    *  the training-page fox, otherwise back to the game hub. */
   const exitAssess = useCallback(() => {
+    trialLogRef.current?.discard();
+    trialLogRef.current = null;
     clearPlayRoundState();
     if (assessmentMode && onAssessmentExit) onAssessmentExit();
     else setPhase('hub');

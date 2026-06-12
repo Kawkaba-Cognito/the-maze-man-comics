@@ -30,6 +30,7 @@ import {
   VALIDITY_NOTE,
   RELIABILITY_NOTE,
 } from './assessmentRefs';
+import { assessAnchorLine } from './paradigmAnchors';
 
 /** 5-level normative band → existing 3-tone colour class. */
 function bandColor(b) {
@@ -361,6 +362,13 @@ export default function AssessmentFlow({ onBack }) {
                       </span>
                     )}
                   </div>
+                  {(() => {
+                    // Raw clinical metric vs published guideline range (Phase 4).
+                    const anchor = assessAnchorLine(id, isAr, age);
+                    return anchor ? (
+                      <div className="ct-assess-raw" style={{ marginTop: 2 }}>{anchor}</div>
+                    ) : null;
+                  })()}
                   {series.length > 1 && <Spark values={series} h={28} />}
                 </div>
               );

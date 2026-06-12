@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { CHARACTERS, getCharacter } from '../../features/character/registry';
-import { ITEMS, SHOP_SLOTS } from '../../features/character/items';
+import { ITEMS, SHOP_SLOTS, ItemArt } from '../../features/character/items';
 
 const SLOT_LABEL = {
   hat: { en: 'Hat', ar: 'قبعة' },
@@ -30,7 +30,7 @@ export default function CharacterScreen() {
       <div className="rewards-balance">
         ⚡ <span>{points}</span> {isAr ? 'نقطة' : 'points'}
       </div>
-      <div className="rewards-title">{isAr ? '🦊 الشخصية' : '🦊 Character'}</div>
+      <div className="rewards-title">{isAr ? 'الشخصية' : 'Character'}</div>
 
       <div className="char-preview">
         <Hero size={190} equipped={equipped} float glow />
@@ -69,7 +69,7 @@ export default function CharacterScreen() {
                     className={`char-chip${equipped[slot] === it.id ? ' is-on' : ''}`}
                     onClick={() => { playSfx('click'); equipItem(slot, it.id); }}
                   >
-                    <span aria-hidden="true">{it.icon}</span> {isAr ? it.ar : it.en}
+                    <ItemArt it={it} size={20} /> {isAr ? it.ar : it.en}
                   </button>
                 ))}
               </div>

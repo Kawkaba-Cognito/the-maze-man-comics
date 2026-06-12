@@ -13,6 +13,7 @@ import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { useCoach } from '../../../../shared/coach/useCoach';
 import CoachOverlay from '../../../../shared/coach/CoachOverlay';
+import { createTrialLog } from '../../../../shared/trialLog';
 import MazeManAvatar from '../../../../shared/MazeManAvatar';
 import { getRange, isWon, clonePieces, RUSH_HOUR_BASE_LAYOUTS } from './engine';
 import { buildRushCoachSteps } from './tutorialScript';
@@ -297,9 +298,12 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
   const freeLivesRef = useRef(3);
   const [freeLives, setFreeLives] = useState(3);
 
-  // Assessment: one fixed standardized puzzle, scored by efficiency + solve time.
+  // Assessment: an unscored warm-up jam first (first-exposure practice), then
+  // one fixed standardized puzzle scored by efficiency + solve time.
   const assessStartRef = useRef(0);
   const assessEndedRef = useRef(false);
+  const assessWarmupRef = useRef(false);
+  const [assessWarmup, setAssessWarmup] = useState(false);
 
   // juice + coached tutorial (functions defined after board state below)
   const juice = useJuice();
@@ -311,6 +315,8 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
   useEffect(() => {
     coachActiveRef.current = coachActive;
   }, [coachActive]);
+
+  useEffect(() => () => trialLogRef.current?.discard(), []);
 
   const pauseLabels = {
     paused: t.paused,
@@ -326,6 +332,12 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
   };
 
   const endFreeRun = useCallback(() => {
+    // Quit-to-menu also lands here: a free run banks whatever it reached.
+    trialLogRef.current?.finish({
+      roundsWon: freeRoundsWonRef.current,
+      score: freeScoreRef.current,
+    });
+    trialLogRef.current = null;
     awardFreeRun('rush', freeRoundsWonRef.current);
     setFreeResSnapshot({
       rounds: freeRoundsWonRef.current,
@@ -353,6 +365,8 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
     setWon(false);
     wonRef.current = false;
     if (playMode === 'assess') {
+      trialLogRef.current?.discard();
+      trialLogRef.current = null;
       (onAssessmentExit || onBack)?.();
     } else if (playMode === 'free') {
       endFreeRun();
@@ -360,7 +374,11 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
       setChalFrozenDef(null);
       setChalTurnOpen(false);
       setPhase('chal');
-    } else setPhase('levels');
+    } else {
+      trialLogRef.current?.discard();
+      trialLogRef.current = null;
+      setPhase('levels');
+    }
   }, [playMode, endFreeRun, onAssessmentExit, onBack]);
 
   const onRhMenu = useCallback(() => {
@@ -519,16 +537,25 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
   const wonRef = useRef(false);
   const pieceEls = useRef({});
   const dragRef = useRef(null);
+  const movesRef = useRef(0);
+  const trialLogRef = useRef(null);
+  const puzzleStartRef = useRef(0);
+  const firstMoveAtRef = useRef(0);
 
   playModeRef.current = playMode;
   levelIndexRef.current = levelIndex;
   diffKeyRef.current = diffKey;
   piecesRef.current = pieces;
+  movesRef.current = moves;
 
   const startAssessment = useCallback(() => {
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'rush-hour', mode: 'assess' });
     assessEndedRef.current = false;
-    setDiffKey('medium');
-    setLevelIndex(50);
+    assessWarmupRef.current = true;
+    setAssessWarmup(true);
+    setDiffKey('easy');
+    setLevelIndex(3); // trivial warm-up jam, unscored
     setMoves(0);
     setWon(false);
     wonRef.current = false;
@@ -546,12 +573,25 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
   // Solved → score by move efficiency + solve time, then report back.
   useEffect(() => {
     if (playMode !== 'assess' || !won || assessEndedRef.current) return;
+    if (assessWarmupRef.current) {
+      // Warm-up solved — swap in the real standardized puzzle, nothing scored.
+      assessWarmupRef.current = false;
+      setAssessWarmup(false);
+      setWon(false);
+      wonRef.current = false;
+      setMoves(0);
+      setDiffKey('medium');
+      setLevelIndex(50);
+      return;
+    }
     assessEndedRef.current = true;
     const solveSec = Math.max(1, Math.round((Date.now() - assessStartRef.current) / 1000));
     const eff = Math.max(0, Math.min(1, parMoves / Math.max(1, moves)));
     const ideal = Math.max(20, parMoves * 4);
     const timeFactor = Math.max(0.1, Math.min(1, 1 - (solveSec - ideal) / (RH_ASSESS_CAP_SEC - ideal)));
     const score = Math.round((0.6 * eff + 0.4 * timeFactor) * 100);
+    trialLogRef.current?.finish({ score });
+    trialLogRef.current = null;
     onAssessmentComplete?.({ score, line: `${moves} moves · ${solveSec}s` });
   }, [won, playMode, moves, parMoves, onAssessmentComplete]);
 
@@ -560,9 +600,13 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
     if (phase !== 'play' || playMode !== 'assess' || pauseOpen || quitOpen) return undefined;
     const id = setInterval(() => {
       if (wonRef.current || assessEndedRef.current || !assessStartRef.current) return;
+      if (assessWarmupRef.current) return; // warm-up is untimed
       if (Date.now() - assessStartRef.current >= RH_ASSESS_CAP_SEC * 1000) {
         assessEndedRef.current = true;
         clearInterval(id);
+        trialLogRef.current?.trial({ ok: false, timeout: true, moves: movesRef.current });
+        trialLogRef.current?.finish({ score: 12, timeout: true });
+        trialLogRef.current = null;
         onAssessmentComplete?.({ score: 12, line: isAr ? 'انتهى الوقت' : 'time out' });
       }
     }, 1000);
@@ -580,6 +624,18 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
     setMoves(0);
     setWon(false);
     wonRef.current = false;
+    // Each fresh board marks t0 for solve time + first-move (planning) latency.
+    puzzleStartRef.current = performance.now();
+    firstMoveAtRef.current = 0;
+    // Levels are one puzzle each → one trial-log session per level attempt.
+    if (phase === 'play' && playMode === 'levels') {
+      trialLogRef.current?.discard();
+      trialLogRef.current = createTrialLog({
+        game: 'rush-hour',
+        mode: 'level',
+        meta: { diff: diffKeyRef.current, lv: levelIndexRef.current },
+      });
+    }
   }, [levelDef, phase, playMode, chalIdx, chalRoundIdx, chalFrozenDef]);
 
   /* --- Coached interactive tutorial --- */
@@ -850,6 +906,17 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
     setMoves(0);
     setWon(false);
     wonRef.current = false;
+    puzzleStartRef.current = performance.now();
+    firstMoveAtRef.current = 0;
+    // Restarting a level is a fresh attempt → fresh trial-log session.
+    if (playMode === 'levels') {
+      trialLogRef.current?.discard();
+      trialLogRef.current = createTrialLog({
+        game: 'rush-hour',
+        mode: 'level',
+        meta: { diff: diffKeyRef.current, lv: levelIndexRef.current },
+      });
+    }
     if (playMode === 'free') {
       freeStreakRef.current = 0;
       setFreeStreak(0);
@@ -857,6 +924,8 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
   }, [levelDef, playMode]);
 
   const startFreeRun = useCallback(() => {
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'rush-hour', mode: 'free' });
     freeTimerEndedRef.current = false;
     freeTimeRef.current = 60; // real per-puzzle limit set when each board loads
     freeStageRef.current = 0;
@@ -952,6 +1021,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
       const dg = Math.round(d.lastDx / cellSize);
       if (dg === 0) return;
       playSfx('click');
+      if (!firstMoveAtRef.current) firstMoveAtRef.current = performance.now();
       setMoves((m) => {
         const nextM = m + 1;
         setPieces((prev) => {
@@ -963,6 +1033,10 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
             wonRef.current = true;
             const lv = levelIndexRef.current;
             const mode = playModeRef.current;
+            const solveMs = Math.round(performance.now() - puzzleStartRef.current);
+            const planMs = firstMoveAtRef.current
+              ? Math.round(firstMoveAtRef.current - puzzleStartRef.current)
+              : null;
             setTimeout(() => {
               playSfx('win');
               setWon(true);
@@ -971,8 +1045,23 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
                 coachRef.current?.notify('solve');
                 return;
               }
+              // One puzzle = one trial; rt = solve time, plan = first-move latency.
+              // The assessment warm-up jam is practice — not logged.
+              if (!(mode === 'assess' && assessWarmupRef.current)) {
+                trialLogRef.current?.trial({
+                  rt: solveMs,
+                  ok: true,
+                  moves: nextM,
+                  par: parMoves,
+                  ...(planMs != null ? { plan: planMs } : {}),
+                });
+              }
               const dk = diffKeyRef.current;
               if (mode === 'levels') { syncProgressWin(dk, lv, nextM); awardTrainingWin('rush', dk, lv, RH_LEVELS_PER_TIER); }
+              if (mode === 'levels') {
+                trialLogRef.current?.finish({ won: true, moves: nextM, par: parMoves });
+                trialLogRef.current = null;
+              }
               if (mode === 'free') {
                 freeStreakRef.current += 1;
                 if (freeStreakRef.current > freeBestStreakRef.current) {
@@ -1040,6 +1129,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
       if (freeTimeRef.current <= 0 && !freeTimerEndedRef.current) {
         // Ran out of time on this puzzle → lose a life.
         freeTimerEndedRef.current = true;
+        trialLogRef.current?.trial({ ok: false, timeout: true, moves: movesRef.current });
         freeStreakRef.current = 0;
         setFreeStreak(0);
         freeLivesRef.current = Math.max(0, freeLivesRef.current - 1);
@@ -1047,7 +1137,10 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
         if (freeLivesRef.current <= 0) {
           endFreeRun();
         } else {
-          setFreeSessionNonce((n) => (n + 1) >>> 0); // fresh puzzle, same stage
+          // Staircase: timing out steps the stage DOWN one (solve steps it up),
+          // so puzzle difficulty converges on the player's threshold.
+          setFreeStage((s) => Math.max(0, s - 1));
+          setFreeSessionNonce((n) => (n + 1) >>> 0);
         }
       }
     }, 1000);
@@ -1709,7 +1802,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
           playMode === 'tutorial'
             ? (isAr ? 'كيفية اللعب' : 'How to play')
             : playMode === 'assess'
-              ? (assessmentLabel || t.title)
+              ? (assessWarmup ? (isAr ? 'إحماء — غير محتسب' : 'Warm-up — not scored') : (assessmentLabel || t.title))
               : playMode === 'free'
                 ? t.free
                 : playMode === 'challenge'

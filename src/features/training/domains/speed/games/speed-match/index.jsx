@@ -13,6 +13,8 @@ import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
 import { useCoach } from '../../../../shared/coach/useCoach';
 import CoachOverlay from '../../../../shared/coach/CoachOverlay';
+import { createTrialLog } from '../../../../shared/trialLog';
+import { createStaircase } from '../../../../shared/staircase';
 import { loadGameSettings } from '../../../../shared/focusQuestData';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
 import { buildSpeedCoachSteps } from './tutorialScript';
@@ -140,6 +142,13 @@ const UI = {
     perfect: 'Lightning fast!',
     good: 'Quick work',
     tryAgain: 'Keep practicing',
+    assessPractice: 'Practice',
+    assessPracticeSub: 'Warm-up — get 4 right to begin',
+    assessMotor: 'Motor speed',
+    assessMotorSub: 'Tap the number you SEE — 25s',
+    assessMain: 'Speed Match',
+    assessMainSub: '90 seconds — match as many as you can',
+    motor: 'motor',
   },
   ar: {
     hub: 'سرعة',
@@ -226,6 +235,13 @@ const UI = {
     perfect: 'سرعة البرق!',
     good: 'عمل سريع',
     tryAgain: 'واصل التدريب',
+    assessPractice: 'تجربة',
+    assessPracticeSub: 'إحماء — أصب ٤ للبدء',
+    assessMotor: 'سرعة الحركة',
+    assessMotorSub: 'اضغط الرقم الذي تراه — ٢٥ث',
+    assessMain: 'مطابقة سريعة',
+    assessMainSub: '٩٠ ثانية — طابق أكبر عدد ممكن',
+    motor: 'حركي',
   },
 };
 
@@ -362,6 +378,11 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
   const rafRef = useRef(0);
   const runIdRef = useRef(0);
   const endedRef = useRef(false);
+  const trialLogRef = useRef(null);
+  const staircaseRef = useRef(null);
+  const assessMotorRef = useRef(null);
+  const beginMotorBlockRef = useRef(() => {});
+  const beginMainAssessRef = useRef(() => {});
   const playStepRef = useRef('idle');
   const pauseRef = useRef(false);
   const fbTimerRef = useRef(0);
@@ -396,7 +417,11 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     setChalTurnOpen(false);
   }, [stopLoop]);
 
-  useEffect(() => () => { stopLoop(); if (fbTimerRef.current) clearTimeout(fbTimerRef.current); }, [stopLoop]);
+  useEffect(() => () => {
+    stopLoop();
+    if (fbTimerRef.current) clearTimeout(fbTimerRef.current);
+    trialLogRef.current?.discard();
+  }, [stopLoop]);
 
   const flash = useCallback((kind) => {
     if (fbTimerRef.current) clearTimeout(fbTimerRef.current);
@@ -408,12 +433,15 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     const block = blockRef.current;
     if (!block) return;
     if (block.mode === 'free') {
-      const size = freeLegendSize(correctRef.current);
+      // Staircase level → the same ramp curves, via virtual progress (×2 so
+      // perfect play climbs at the old pace; failures now ease difficulty).
+      const v = (staircaseRef.current?.level ?? 0) * 2;
+      const size = freeLegendSize(v);
       if (block.legend.length !== size) {
         block.legend = buildLegend(size);
         setLegend(block.legend);
       }
-      itemMsRef.current = freeItemMs(correctRef.current);
+      itemMsRef.current = freeItemMs(v);
       itemEndAtRef.current = now + itemMsRef.current;
     } else {
       const remap = block.spec.remapEvery;
@@ -450,12 +478,47 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     const grade = gradeBlock(summary, block.spec, { freeMode: false });
 
     if (assessmentMode) {
+      const stage = block.assessStage || 'main';
+      if (stage === 'practice') {
+        // Practice timer lapsed without 4 correct — proceed anyway.
+        trialLogRef.current?.discard();
+        trialLogRef.current = null;
+        beginMotorBlockRef.current();
+        return;
+      }
+      if (stage === 'motor') {
+        trialLogRef.current?.discard();
+        trialLogRef.current = null;
+        assessMotorRef.current = summary;
+        playSfx('win');
+        beginMainAssessRef.current();
+        return;
+      }
+      // Main 90s block: score the cognitive component. The motor ratio
+      // (substitution rate / pure tapping rate) isolates lookup speed from
+      // finger speed — the reason clinical DSST runs a copy condition.
+      const motorIpm = assessMotorRef.current?.itemsPerMin || null;
+      const ratio = motorIpm ? Math.min(1, summary.itemsPerMin / motorIpm) : null;
+      const speed = Math.min(1, summary.itemsPerMin / 46);
+      const score = Math.round(100 * (ratio != null
+        ? 0.55 * speed + 0.15 * Math.min(1, ratio / 0.6) + 0.3 * summary.accuracy
+        : 0.7 * speed + 0.3 * summary.accuracy));
+      trialLogRef.current?.finish({
+        score,
+        motorIpm,
+        ipm: summary.itemsPerMin,
+        acc: summary.accuracyPct,
+      });
+      trialLogRef.current = null;
       playSfx('win');
-      const line = `${summary.itemsPerMin}/min · ${summary.accuracyPct}%`;
+      const line = `${summary.itemsPerMin}/min · ${summary.accuracyPct}%${motorIpm ? ` · ${t.motor} ${motorIpm}/min` : ''}`;
       blockRef.current = null;
-      onAssessmentComplete?.({ score: grade.score, line });
+      onAssessmentComplete?.({ score, line });
       return;
     }
+
+    trialLogRef.current?.finish({ score: grade.score, won: grade.won });
+    trialLogRef.current = null;
 
     if (block.mode === 'challenge') {
       const idx = chalIdxRef.current;
@@ -507,7 +570,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     setPhase('res');
     setPlayStep('idle');
     blockRef.current = null;
-  }, [stopLoop, playSfx, persistLevelDone, assessmentMode, onAssessmentComplete]);
+  }, [stopLoop, playSfx, persistLevelDone, assessmentMode, onAssessmentComplete, t.motor]);
   useEffect(() => { finishBlockRef.current = finishBlock; }, [finishBlock]);
 
   const finishFreeRun = useCallback(() => {
@@ -525,6 +588,8 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
       if (changed) saveProfile(next);
       return changed ? next : prev;
     });
+    trialLogRef.current?.finish({ correct: c, score: runScore, level: Math.floor(c / 5) });
+    trialLogRef.current = null;
     awardFreeRun('speed', Math.floor(c / 5));
     setLastResult({ type: 'free', score: runScore, correct: c });
     setPhase('freeRes');
@@ -546,6 +611,8 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
         if (ts >= itemEndAtRef.current) {
           // Item timed out → miss → lose a life.
           eventsRef.current.push({ correct: false, rtMs: null });
+          trialLogRef.current?.trial({ ok: false, timeout: true, key: block.legend.length });
+          staircaseRef.current?.failure();
           wrongRef.current += 1;
           comboRef.current = 0;
           setCombo(0);
@@ -602,6 +669,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     const rt = Math.round(now - itemStartRef.current);
     const isRight = digit === it.digit;
     eventsRef.current.push({ correct: isRight, rtMs: isRight ? rt : null });
+    trialLogRef.current?.trial({ rt, ok: isRight, key: block.legend.length });
     setPressedKey(digit);
     setTimeout(() => setPressedKey(null), 120);
     if (isRight) {
@@ -612,8 +680,15 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
       setCorrect(correctRef.current);
       setCombo(comboRef.current);
       if (block.mode === 'free') {
+        staircaseRef.current?.success();
         scoreRef.current += freeItemPoints(comboRef.current);
         setScore(scoreRef.current);
+      }
+      // Assessment practice ends once the player shows they get it (4 correct).
+      if (block.assessStage === 'practice' && correctRef.current >= 4) {
+        playSfx('win');
+        beginMotorBlockRef.current();
+        return;
       }
       flash('hit');
       nextItemRef.current(now);
@@ -625,6 +700,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
       setCombo(0);
       flash('miss');
       if (block.mode === 'free') {
+        staircaseRef.current?.failure();
         livesRef.current = Math.max(0, livesRef.current - 1);
         setLives(livesRef.current);
         if (livesRef.current <= 0) { finishFreeRun(); return; }
@@ -655,6 +731,16 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
   const beginBlock = useCallback((block, rng) => {
     stopLoop();
     runIdRef.current += 1;
+    // Per-trial science log — free / level / assessment runs only (challenge
+    // is hot-seat party play; tutorial never reaches beginBlock).
+    trialLogRef.current?.discard();
+    trialLogRef.current = block.mode === 'free' || block.mode === 'level'
+      ? createTrialLog({
+          game: 'speed-match',
+          mode: assessmentMode ? 'assess' : block.mode,
+          meta: block.mode === 'level' ? { diff: block.diff, lv: block.lv } : undefined,
+        })
+      : null;
     blockRef.current = block;
     rngRef.current = rng || Math.random;
     eventsRef.current = [];
@@ -676,11 +762,12 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     setQuitOpen(false);
     setCdVal(3);
     setPlayStep('countdown');
-  }, [stopLoop]);
+  }, [stopLoop, assessmentMode]);
 
   const startFreeMode = useCallback(() => {
     livesRef.current = SM_FREE_LIVES;
     setLives(SM_FREE_LIVES);
+    staircaseRef.current = createStaircase({ nDown: 2 });
     const block = { mode: 'free', diff: 'free', lv: 0, spec: { durationSec: 0, remapEvery: 0, pairCount: 4 }, legend: buildLegend(4) };
     beginBlock(block, Math.random);
   }, [beginBlock]);
@@ -689,9 +776,28 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     beginBlock(prepareLevelBlock(diff, lv), Math.random);
   }, [beginBlock]);
 
-  // Assessment: one fixed, standardized DSST block (same for every user).
+  /* --- Standardized assessment: practice → motor baseline → 90s DSST ------
+   * Follows the clinical DSST protocol: a short unscored practice (first-
+   * exposure noise), a copy-only motor block (tap the digit you SEE — no
+   * symbol lookup) so pure finger speed can be separated out, then the
+   * fixed 90-second substitution block that is actually scored. */
+  const beginMotorBlock = useCallback(() => {
+    const spec = { diff: 'medium', lv: 0, pairCount: 6, durationSec: 25, targetCorrect: 999, minAcc: 0, remapEvery: 0, itemMs: 0 };
+    const legend = Array.from({ length: 6 }, (_, i) => ({ digit: i + 1, symbol: null }));
+    beginBlock({ mode: 'level', diff: 'medium', lv: 0, spec, legend, assessStage: 'motor' }, Math.random);
+  }, [beginBlock]);
+  useEffect(() => { beginMotorBlockRef.current = beginMotorBlock; }, [beginMotorBlock]);
+
+  const beginMainAssess = useCallback(() => {
+    const spec = { diff: 'medium', lv: 0, pairCount: 6, durationSec: 90, targetCorrect: 999, minAcc: 0.8, remapEvery: 0, itemMs: 0 };
+    beginBlock({ mode: 'level', diff: 'medium', lv: 0, spec, legend: buildLegend(6), assessStage: 'main' }, Math.random);
+  }, [beginBlock]);
+  useEffect(() => { beginMainAssessRef.current = beginMainAssess; }, [beginMainAssess]);
+
   const startAssessment = useCallback(() => {
-    beginBlock(prepareLevelBlock('medium', 12), Math.random);
+    assessMotorRef.current = null;
+    const spec = { diff: 'medium', lv: 0, pairCount: 4, durationSec: 60, targetCorrect: 4, minAcc: 0, remapEvery: 0, itemMs: 0 };
+    beginBlock({ mode: 'level', diff: 'medium', lv: 0, spec, legend: buildLegend(4), assessStage: 'practice' }, Math.random);
   }, [beginBlock]);
 
   const openChallenge = () => {
@@ -745,6 +851,8 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
   const confirmQuit = () => {
     setQuitOpen(false);
     const mode = blockRef.current?.mode;
+    trialLogRef.current?.discard();
+    trialLogRef.current = null;
     clearPlay();
     if (assessmentMode) { (onAssessmentExit || onBack)?.(); return; }
     if (mode === 'challenge') setPhase('chal');
@@ -841,6 +949,9 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
 
   const header = (() => {
     if (!block) return { title: t.title, subtitle: '' };
+    if (block.assessStage === 'practice') return { title: t.assessPractice, subtitle: t.assessPracticeSub };
+    if (block.assessStage === 'motor') return { title: t.assessMotor, subtitle: t.assessMotorSub };
+    if (block.assessStage === 'main') return { title: t.assessMain, subtitle: t.assessMainSub };
     if (block.mode === 'free') return { title: t.freeHeader, subtitle: '' };
     if (block.mode === 'challenge') {
       return {
@@ -1016,10 +1127,12 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
               ratingLabels={rLabels}
               showCombo={false}
             />
-            <div className="ct-sm-legend-wrap" data-fq-chrome ref={legendRef}>
-              <div className="ct-sm-legend-label">{t.key}</div>
-              <LegendBar legend={legend} t={t} />
-            </div>
+            {block.assessStage !== 'motor' && (
+              <div className="ct-sm-legend-wrap" data-fq-chrome ref={legendRef}>
+                <div className="ct-sm-legend-label">{t.key}</div>
+                <LegendBar legend={legend} t={t} />
+              </div>
+            )}
 
             <div className="ct-sm-hud" data-fq-chrome>
               {block.mode === 'free' ? (
@@ -1033,7 +1146,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
               ) : (
                 <>
                   <span className="ct-sm-hud-stat ct-sm-hud-time">{blockTimeLeft}s</span>
-                  <span className="ct-sm-hud-stat">{t.correct} {correct}/{block.spec.targetCorrect}</span>
+                  <span className="ct-sm-hud-stat">{t.correct} {correct}{block.assessStage ? '' : `/${block.spec.targetCorrect}`}</span>
                   <span className="ct-sm-hud-stat">×{combo}</span>
                 </>
               )}
@@ -1049,7 +1162,9 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
               {playStep === 'countdown' ? (
                 <div className="ct-sm-countdown">{cdVal > 0 ? cdVal : t.go}</div>
               ) : item ? (
-                <SmSymbol shape={item.symbol} size={92} />
+                block.assessStage === 'motor'
+                  ? <div className="ct-sm-countdown">{item.digit}</div>
+                  : <SmSymbol shape={item.symbol} size={92} />
               ) : null}
             </div>
             <p className="ct-sm-prompt">{t.tapNumber}</p>

@@ -131,6 +131,23 @@ export function ssConfInterval(ss, domain) {
   const e = Z90 * semSS(domain);
   return [clamp(Math.round(ss - e), 40, 160), clamp(Math.round(ss + e), 40, 160)];
 }
+/**
+ * Reliable Change Index on a RAW metric scale (ms, span, items/min…), for
+ * measures that live outside the 0–100 score system (e.g. the weekly PVT
+ * check). Same Jacobson & Truax logic: |RCI| ≥ 1.96 = beyond noise.
+ */
+export function reliableChangeRaw(delta, sd, r) {
+  if (delta == null || !sd) return null;
+  const sdiff = sd * Math.sqrt(1 - (r ?? 0.7)) * Math.SQRT2;
+  if (!sdiff) return null;
+  const rci = delta / sdiff;
+  return {
+    rci: +rci.toFixed(2),
+    reliable: Math.abs(rci) >= 1.96,
+    direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat',
+  };
+}
+
 /** Reliable Change Index for a baseline→latest delta (0–100 points). */
 export function reliableChange(delta, domain) {
   if (delta == null) return null;

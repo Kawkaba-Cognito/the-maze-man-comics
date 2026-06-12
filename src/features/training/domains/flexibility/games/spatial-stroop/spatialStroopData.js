@@ -118,7 +118,9 @@ function probeOpts(session, forceIncong = false) {
 export function makeProbe(rng, opts = {}) {
   const { incongruentRate = 0.5, useColor = false, reverseRate = 0, flankerRate = 0 } = opts;
   const dir = rng() < 0.5 ? 'left' : 'right';
-  const incong = rng() < incongruentRate;
+  // forceIncongruent (boolean) lets the assessment draw from an exactly
+  // balanced congruent/incongruent bag instead of a per-trial coin flip.
+  const incong = opts.forceIncongruent != null ? !!opts.forceIncongruent : rng() < incongruentRate;
   const pos = incong ? opposite(dir) : dir;
   const probe = { dir, pos };
   if (useColor) {
@@ -219,7 +221,22 @@ function nextProbe(session, forceIncong = false) {
       congruent: (entry.pos ?? entry.dir) === entry.dir,
     };
   }
-  return makeProbe(session.rng, probeOpts(session, forceIncong));
+  const opts = probeOpts(session, forceIncong);
+  // Balanced mode (assessment): exact 50/50 congruency over every 4 trials,
+  // shuffled, instead of a probabilistic rate — equal cell counts are what
+  // make the congruency-effect (incong − cong RT) estimate stable.
+  if (session.balancedCongruency && !forceIncong) {
+    if (!session.congBag || session.congBag.length === 0) {
+      const bag = [true, true, false, false];
+      for (let i = bag.length - 1; i > 0; i--) {
+        const j = Math.floor(session.rng() * (i + 1));
+        [bag[i], bag[j]] = [bag[j], bag[i]];
+      }
+      session.congBag = bag;
+    }
+    opts.forceIncongruent = session.congBag.pop();
+  }
+  return makeProbe(session.rng, opts);
 }
 
 export function startStroopProbe(session) {
@@ -478,17 +495,23 @@ export function freePoints(combo) {
   return Math.max(5, Math.round(10 * (1 + Math.min(combo, 15) * 0.08)));
 }
 
-/** One fixed, standardized block for the global assessment (clean: point/side only). */
+/** One fixed, standardized block for the global assessment (clean: point/side only).
+ *  Measurement hygiene: 4 unscored practice trials, exactly balanced
+ *  congruent/incongruent counts, and a jittered inter-trial interval so
+ *  responses can't ride a rhythm. */
 export function prepareAssessBlock(seed) {
   const base = specificationForLevel('medium', 10);
   const spec = {
     ...base,
     streakToSwitch: 4,
-    maxTrials: 40,
+    maxTrials: 32, // 4 practice + 28 measured
+    practiceTrials: 4,
+    balancedCongruency: true,
+    itiJitterMs: 350,
     categoriesToComplete: 1e9,
     ruleSequence: ['point', 'side'],
     useColor: false,
-    incongruentRate: 0.55,
+    incongruentRate: 0.5,
     reverseRate: 0,
     flankerRate: 0,
     responseLimitMs: 2400,

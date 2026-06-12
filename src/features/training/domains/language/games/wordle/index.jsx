@@ -12,6 +12,7 @@ import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { useCoach } from '../../../../shared/coach/useCoach';
 import CoachOverlay from '../../../../shared/coach/CoachOverlay';
+import { createTrialLog } from '../../../../shared/trialLog';
 import WordleModes from './WordleModes';
 import { buildWordleCoachSteps } from './tutorialScript';
 import LetterLinkBoard from './LetterLinkBoard';
@@ -262,6 +263,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
 
   const roundRef = useRef(null);
   const pathRef = useRef([]);
+  const trialLogRef = useRef(null);
   const tlRef = useRef(60);
   const tlimRef = useRef(60);
   const roundTimerIdRef = useRef(0);
@@ -358,12 +360,29 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
 
       if (r.mode === 'assess') {
         stopRoundTimer();
+        if (r.practice) {
+          // Practice over — swap in the measured 90s grid (same newGrid pattern
+          // as free mode; the round timer restarts via the round.seed effect).
+          const seed2 = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+          const nr = prepareAssessRound(seed2, lang);
+          roundRef.current = nr;
+          setRound(nr);
+          setPath([]);
+          setMsg('');
+          tlRef.current = nr.timeLeft;
+          tlimRef.current = nr.timeSec;
+          return;
+        }
         const avgLen = r.found.length ? (r.found.reduce((s, w) => s + w.length, 0) / r.found.length) : 0;
+        trialLogRef.current?.finish({ score: grade.vfs, words: r.found.length });
+        trialLogRef.current = null;
         onAssessmentComplete?.({ score: grade.vfs, line: `${r.found.length} words · ⌀${avgLen.toFixed(1)}` });
         return;
       }
 
       if (r.mode === 'level') {
+        trialLogRef.current?.finish({ won: grade.won, vfs: grade.vfs, words: r.found.length });
+        trialLogRef.current = null;
         setLastResult({
           type: 'level',
           r: { diff: r.diff, lv: r.lv },
@@ -383,6 +402,8 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
 
       if (r.mode === 'free') {
         stopRoundTimer();
+        // Stage boundary marker (no ok/rt → excluded from shared RT metrics).
+        trialLogRef.current?.trial({ kind: 'round', won: !!r.complete, stage: freeStageRef.current });
         const newGrid = (stage) => {
           const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
           const nr = prepareFreeRound(stage, seed, lang);
@@ -399,10 +420,12 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
           newGrid(freeStageRef.current);
           return;
         }
-        // Timed out before the target → lose a life.
+        // Timed out before the target → lose a life and step DOWN one stage
+        // (adaptive staircase: complete → +1, fail → −1).
         freeLivesRef.current = Math.max(0, freeLivesRef.current - 1);
         setFreeLives(freeLivesRef.current);
         if (freeLivesRef.current > 0) {
+          freeStageRef.current = Math.max(0, freeStageRef.current - 1);
           newGrid(freeStageRef.current);
           return;
         }
@@ -414,6 +437,12 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
         };
         saveWordleProfile(p);
         setProfile(p);
+        trialLogRef.current?.finish({
+          words: freeWordsRef.current,
+          score: freeScoreRef.current,
+          level: Math.floor(freeWordsRef.current / 3),
+        });
+        trialLogRef.current = null;
         awardFreeRun('wordle', Math.floor(freeWordsRef.current / 3));
         setPhase('freeRes');
         return;
@@ -478,6 +507,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
 
     if (!out.ok) {
       playSfx('wrong');
+      if (r.mode !== 'tutorial' && !r.practice) trialLogRef.current?.trial({ ok: false, why: out.reason });
       if (out.reason === 'short') setMsg(t.tooShort(r.minLen));
       else if (out.reason === 'duplicate') setMsg(t.alreadyFound);
       else setMsg(t.notAWord);
@@ -493,6 +523,9 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
       coachRef.current?.notify('word');
       return;
     }
+    // Word + timestamp offset (the log adds `t`) → enables fluency
+    // clustering/switching analysis later. Practice words stay unlogged.
+    if (!r.practice) trialLogRef.current?.trial({ ok: true, w: out.word, len: out.word.length, pts: out.pts });
 
     if (r.mode === 'free') {
       freeWordsRef.current += 1;
@@ -569,6 +602,8 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
     else setPhase('hub');
   }, [clearPlay]);
 
+  useEffect(() => () => trialLogRef.current?.discard(), []);
+
   const coachSteps = useMemo(() => buildWordleCoachSteps(isAr, { boardRef }), [isAr]);
   const coach = useCoach(coachSteps, { active: coachActive, onDone: finishCoach });
   useEffect(() => {
@@ -602,6 +637,8 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
   const confirmQuit = useCallback(() => {
     const mode = roundRef.current?.mode;
     setQuitOpen(false);
+    trialLogRef.current?.discard();
+    trialLogRef.current = null;
     clearPlay();
     if (mode === 'assess') { (onAssessmentExit || onBack)?.(); return; }
     if (mode === 'challenge') setPhase('chal');
@@ -631,7 +668,15 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
 
   const startAssessment = useCallback(() => {
     const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-    beginRound(prepareAssessRound(seed, lang));
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'wordle', mode: 'assess', meta: { lang } });
+    // Short unscored practice grid first — absorbs first-exposure noise so the
+    // measured 90s fluency block starts from a warmed-up state.
+    const pr = prepareAssessRound(seed, lang);
+    pr.practice = true;
+    pr.timeSec = 25;
+    pr.timeLeft = 25;
+    beginRound(pr);
   }, [beginRound, lang]);
 
   const startFree = useCallback(() => {
@@ -643,12 +688,16 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
     setFreeScore(0);
     setFreeLives(WORDLE_FREE_LIVES);
     const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'wordle', mode: 'free', meta: { lang } });
     beginRound(prepareFreeRound(0, seed, lang));
   }, [beginRound, lang]);
 
   const startLevelGame = useCallback(
     (diff, lv) => {
       const seed = ((diff.charCodeAt(0) * 997 + lv * 7919) ^ 0x5eed) >>> 0;
+      trialLogRef.current?.discard();
+      trialLogRef.current = createTrialLog({ game: 'wordle', mode: 'level', meta: { diff, lv, lang } });
       beginRound(prepareLevelRound(diff, lv, seed, lang));
     },
     [beginRound, lang],
@@ -682,7 +731,9 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
     if (!r) return { title: '', subtitle: '' };
     if (r.mode === 'assess') {
       return {
-        title: assessmentLabel || t.title,
+        title: r.practice
+          ? (isAr ? 'تجربة — غير محتسبة' : 'Practice — not scored')
+          : (assessmentLabel || t.title),
         subtitle: `${Number(r.timeLeft).toFixed(0)}s · ${r.found.length} ${t.foundList}`,
       };
     }

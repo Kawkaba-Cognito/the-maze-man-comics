@@ -7,6 +7,8 @@ import {
 } from '../../features/workout/workoutState';
 import { getLazyGame } from '../../features/training/lazyGames';
 import { hasAssessProfile } from '../../features/training/assessment/assessmentProfile';
+import { reliableChangeRaw } from '../../features/training/assessment/assessmentNorms';
+import { ANCHORS } from '../../features/training/assessment/paradigmAnchors';
 import { gameRatingByGameKey, ratingBand } from '../../features/training/rating';
 import ReactionTest from '../../features/workout/ReactionTest';
 import WorkoutStats from './WorkoutStats';
@@ -206,13 +208,27 @@ export default function WorkoutScreen() {
               </div>
             )}
           </div>
-          {wkDelta != null && (
-            <div className={`wk-summary-effect${wkDelta <= 0 ? ' is-up' : ''}`}>
-              {wkDelta <= 0
-                ? (isAr ? `⚡ رد فعلك أسرع بـ${Math.abs(wkDelta)} م.ث من الأسبوع الماضي — التدريب يعمل!` : `⚡ ${Math.abs(wkDelta)} ms faster than last week's check — the training is working!`)
-                : (isAr ? `💤 أبطأ بـ${wkDelta} م.ث من الأسبوع الماضي — النوم والإجهاد يؤثران؛ واصل التدريب.` : `💤 ${wkDelta} ms slower than last week — sleep & stress matter; keep training.`)}
-            </div>
-          )}
+          {wkDelta != null && (() => {
+            // Only claim "the training is working" when the change clears the
+            // reliable-change threshold — smaller swings are measurement noise.
+            const rc = reliableChangeRaw(wkDelta, ANCHORS.pvtMedianMs.sd, 0.8);
+            if (!rc?.reliable) {
+              return (
+                <div className="wk-summary-effect">
+                  {isAr
+                    ? `التغيّر ${wkDelta > 0 ? '+' : ''}${wkDelta} م.ث عن الأسبوع الماضي — ضمن هامش التقلّب الطبيعي؛ الاتجاه عبر عدة أسابيع هو المهم.`
+                    : `${wkDelta > 0 ? '+' : ''}${wkDelta} ms vs last week — within normal week-to-week noise; the multi-week trend is what counts.`}
+                </div>
+              );
+            }
+            return (
+              <div className={`wk-summary-effect${wkDelta <= 0 ? ' is-up' : ''}`}>
+                {wkDelta <= 0
+                  ? (isAr ? `⚡ رد فعلك أسرع بـ${Math.abs(wkDelta)} م.ث من الأسبوع الماضي — تغيّر موثوق، التدريب يعمل!` : `⚡ ${Math.abs(wkDelta)} ms faster than last week's check — a reliable change; the training is working!`)
+                  : (isAr ? `💤 أبطأ بـ${wkDelta} م.ث من الأسبوع الماضي — النوم والإجهاد يؤثران؛ واصل التدريب.` : `💤 ${wkDelta} ms slower than last week — sleep & stress matter; keep training.`)}
+              </div>
+            );
+          })()}
           <button className="workout-cta" onClick={() => { playSfx('click'); setCelebrate(false); setView('plan'); }}>
             {isAr ? 'تم' : 'Done'}
           </button>
