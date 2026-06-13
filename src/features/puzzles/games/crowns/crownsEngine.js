@@ -66,15 +66,15 @@ function growRegions(n, seeds, rng) {
   return assigned === n * n ? region : null;
 }
 
-/** Count solutions (cap at `cap`) for a given region map under the crown rules. */
-function countSolutions(n, region, cap = 2) {
-  let count = 0;
+/** Up to `cap` solutions (each a row→col array) for a region map. */
+function solveCrowns(n, region, cap = 2) {
+  const sols = [];
   const usedCol = new Array(n).fill(false);
   const usedReg = new Array(n).fill(false);
   const rowCol = new Array(n).fill(-1);
   function rec(r) {
-    if (count >= cap) return;
-    if (r === n) { count += 1; return; }
+    if (sols.length >= cap) return;
+    if (r === n) { sols.push(rowCol.slice()); return; }
     for (let c = 0; c < n; c++) {
       if (usedCol[c]) continue;
       const reg = region[r][c];
@@ -86,26 +86,79 @@ function countSolutions(n, region, cap = 2) {
     }
   }
   rec(0);
-  return count;
+  return sols;
+}
+
+const orth4 = (n, r, c) =>
+  [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]].filter(([rr, cc]) => rr >= 0 && rr < n && cc >= 0 && cc < n);
+
+/** Would region `id` remain one connected group if cell (rr,cc) were removed? */
+function regionConnectedWithout(region, n, id, rr, cc) {
+  const member = (r, c) => region[r][c] === id && !(r === rr && c === cc);
+  let start = null;
+  let total = 0;
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (member(r, c)) { total++; if (!start) start = [r, c]; }
+  if (!start) return false; // region would become empty
+  const seen = new Set([start[0] * n + start[1]]);
+  const stack = [start];
+  let reached = 0;
+  while (stack.length) {
+    const [r, c] = stack.pop();
+    reached++;
+    for (const [a, b] of orth4(n, r, c)) if (member(a, b) && !seen.has(a * n + b)) { seen.add(a * n + b); stack.push([a, b]); }
+  }
+  return reached === total;
+}
+
+/**
+ * Reshape region boundaries until `cols` is the ONLY solution.
+ *
+ * While an alternate solution exists, pick one of its crowns that sits OFF the
+ * intended solution — cell (r, alt[r]) with alt[r] ≠ cols[r] — and reassign that
+ * cell to an adjacent region. Every region already holds exactly one of the
+ * alternate's crowns, so donating this crown's cell to a neighbour forces that
+ * neighbour to hold two ⇒ the alternate breaks. The intended solution never
+ * owns this cell (its row crown is elsewhere) ⇒ it stays valid. We only move a
+ * cell whose departure keeps its region connected, so regions remain connected
+ * and N in number. Returns false if it can't progress (caller regenerates).
+ */
+function disambiguateCrowns(n, region, cols, rng) {
+  for (let iter = 0; iter < n * n * 4; iter++) {
+    const sols = solveCrowns(n, region, 2);
+    const alt = sols.find((s) => s.some((c, r) => c !== cols[r]));
+    if (!alt) return true; // only cols remains ⇒ unique
+
+    const rows = shuffle([...Array(n).keys()], rng).filter((r) => alt[r] !== cols[r]);
+    let moved = false;
+    for (const r of rows) {
+      const ac = alt[r];
+      const X = region[r][ac];
+      if (!regionConnectedWithout(region, n, X, r, ac)) continue;
+      const target = shuffle(orth4(n, r, ac), rng).find(([nr, nc]) => region[nr][nc] !== X);
+      if (!target) continue;
+      region[r][ac] = region[target[0]][target[1]];
+      moved = true;
+      break;
+    }
+    if (!moved) return false; // no legal reshaping move — regenerate
+  }
+  return solveCrowns(n, region, 2).length === 1;
 }
 
 export function generateCrowns(n, seed) {
   const rng = createRng(seed);
-  for (let attempt = 0; attempt < 400; attempt++) {
+  for (let attempt = 0; attempt < 300; attempt++) {
     const cols = randomPlacement(n, rng);
     if (!cols) continue;
-    const seeds = cols.map((c, r) => ({ r, c }));
-    for (let g = 0; g < 12; g++) {
-      const region = growRegions(n, seeds, rng);
-      if (!region) continue;
-      if (countSolutions(n, region, 2) === 1) {
-        return {
-          n,
-          region,
-          solution: cols.slice(),
-          player: Array.from({ length: n }, () => new Array(n).fill(0)),
-        };
-      }
+    const region = growRegions(n, cols.map((c, r) => ({ r, c })), rng);
+    if (!region) continue;
+    if (disambiguateCrowns(n, region, cols, rng)) {
+      return {
+        n,
+        region,
+        solution: cols.slice(),
+        player: Array.from({ length: n }, () => new Array(n).fill(0)),
+      };
     }
   }
   // Fallback (should be rare): return a valid-but-maybe-nonunique board.

@@ -7,7 +7,7 @@ import { NumberPuzzleFrame } from '../../shared/NumberPuzzleFrame';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
 import { NumberPad } from '../../shared/GridSizePicker';
 import { makeHint } from '../../shared/useHint';
-import { generateKenKen, isKenKenSolved, setKenKenCell, hintReveal } from './kenkenEngine';
+import { generateKenKen, isKenKenSolved, setKenKenCell, hintReveal, kenKenConflicts } from './kenkenEngine';
 
 const CONFIG = getPuzzle('kenken');
 const SIZES = [4, 5, 6, 7];
@@ -45,6 +45,7 @@ export default function KenKenPuzzle({ onBack }) {
   }, [state, playSfx]);
 
   const cageById = useMemo(() => Object.fromEntries((state?.cages ?? []).map((c) => [c.id, c])), [state]);
+  const conflicts = useMemo(() => (state && !solved ? kenKenConflicts(state) : new Set()), [state, solved]);
 
   return (
     <NumberPuzzleFrame
@@ -66,6 +67,13 @@ export default function KenKenPuzzle({ onBack }) {
       hint={isAr ? 'املأ ١ إلى حجم الشبكة دون تكرار، واحترم عمليات الأقفاص.' : 'Fill 1 to grid size with no repeats, and satisfy each cage clue.'}
       {...tutorial}
     >
+      <div className="ct-kenken-legend" dir={isAr ? 'rtl' : 'ltr'}>
+        <span><b>+</b> {isAr ? 'جمع' : 'add'}</span>
+        <span><b>−</b> {isAr ? 'طرح' : 'subtract'}</span>
+        <span><b>×</b> {isAr ? 'ضرب' : 'multiply'}</span>
+        <span><b>÷</b> {isAr ? 'قسمة' : 'divide'}</span>
+        <span className="ct-kenken-legend__note">{isAr ? 'املأ كل قفص لهدفه' : 'fill each cage to its target'}</span>
+      </div>
       <div className="ct-puzzle-grid-wrap">
         <div className="ct-puzzle-grid ct-puzzle-grid--kenken" style={{ '--puzzle-grid-n': size }}>
           {state?.player.map((row, r) =>
@@ -83,7 +91,7 @@ export default function KenKenPuzzle({ onBack }) {
                 <button
                   key={`${r}-${c}`}
                   type="button"
-                  className={`ct-puzzle-cell ct-puzzle-cell--num ct-puzzle-cell--kenken${selected?.[0] === r && selected?.[1] === c ? ' ct-puzzle-cell--selected' : ''}`}
+                  className={`ct-puzzle-cell ct-puzzle-cell--num ct-puzzle-cell--kenken${selected?.[0] === r && selected?.[1] === c ? ' ct-puzzle-cell--selected' : ''}${conflicts.has(`${r}-${c}`) ? ' ct-puzzle-cell--err-soft' : ''}`}
                   disabled={solved}
                   style={{
                     borderTop: edge(diff(r - 1, c)),

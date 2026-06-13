@@ -13,6 +13,7 @@ import MazeOverlay from './maze/MazeOverlay';
 import PaywallModal from './modals/PaywallModal';
 import TipJarModal from './modals/TipJarModal';
 import TipButton from './shared/TipButton';
+import ReminderBanner from '../features/workout/ReminderBanner';
 import { LANG } from '../data/langStrings';
 
 export default function AppShell({ onBackToMenu }) {
@@ -83,6 +84,7 @@ export default function AppShell({ onBackToMenu }) {
       </div>
 
       {mazeVisible && <MazeOverlay />}
+      {!mazeVisible && <ReminderBanner />}
       <PaywallModal />
       <TipJarModal />
       {isHome && <TipButton />}

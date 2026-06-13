@@ -28,6 +28,8 @@ export const RATED_GAMES = {
   wordle: { gameKey: 'wordle', domainId: 'language', lHalf: 5, en: 'Word Builder', ar: 'باني الكلمات' },
   memo: { gameKey: 'memo-span', domainId: 'memory', lHalf: 5, en: 'Memo Span', ar: 'مدى الذاكرة' },
   rush: { gameKey: 'rush-hour', domainId: 'reasoning', lHalf: 7, en: 'Rush Hour', ar: 'ساعة الذروة' },
+  raven: { gameKey: 'raven-matrices', domainId: 'reasoning', lHalf: 6, en: 'Matrix Reasoning', ar: 'استدلال المصفوفات' },
+  hanoi: { gameKey: 'tower-hanoi', domainId: 'reasoning', lHalf: 6, en: 'Colour Sort', ar: 'فرز الألوان' },
   speed: { gameKey: 'speed-match', domainId: 'speed', lHalf: 9, en: 'Speed Match', ar: 'مطابقة سريعة' },
 };
 const BY_GAMEKEY = Object.fromEntries(Object.entries(RATED_GAMES).map(([k, v]) => [v.gameKey, k]));

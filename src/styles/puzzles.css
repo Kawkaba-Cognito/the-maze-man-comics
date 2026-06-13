@@ -491,23 +491,77 @@
   color: #8b2020;
 }
 
+/* KenKen — render flat with NO gap so each cell's cage border touches its
+ * neighbour and the thick edges join into one continuous, obvious cage outline.
+ * Rounded corners / drop shadows / a gap would break those lines apart. */
+.ct-puzzle-grid--kenken {
+  gap: 0;
+  padding: 4px;
+  background: #fffaf5;
+}
+
 .ct-puzzle-cell--kenken {
   align-items: center;
+  border-radius: 0;
+  box-shadow: none;
+  background: #fffaf5;
+}
+
+.ct-puzzle-cell--kenken.ct-puzzle-cell--selected {
+  background: linear-gradient(180deg, #fff6da 0%, #f7ddb0 100%);
 }
 
 .ct-puzzle-cage-label {
   position: absolute;
   top: 2px;
   left: 3px;
-  font-size: clamp(0.45rem, 1.8vw, 0.62rem);
+  font-size: clamp(0.55rem, 2.3vw, 0.78rem);
   font-weight: 900;
-  color: #7a5624;
+  color: #1a1208;
   line-height: 1;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 0 rgba(255, 250, 245, 0.9);
+  pointer-events: none;
 }
 
 [dir='rtl'] .ct-puzzle-cage-label {
   left: auto;
   right: 3px;
+}
+
+/* Conflict feedback reads stronger on the flat KenKen board */
+.ct-puzzle-cell--kenken.ct-puzzle-cell--err-soft {
+  outline: 2.5px solid rgba(176, 38, 38, 0.7);
+  outline-offset: -2.5px;
+  background: linear-gradient(180deg, #fdeaea 0%, #f7d6d6 100%);
+}
+
+/* Operation legend above the KenKen board */
+.ct-kenken-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 12px;
+  width: min(94vw, 380px);
+  margin: 0 auto 8px;
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: clamp(0.62rem, 2.6vw, 0.8rem);
+  font-weight: 600;
+  color: #4a3a28;
+}
+
+.ct-kenken-legend b {
+  color: #1a1208;
+  font-weight: 900;
+  font-size: 1.05em;
+}
+
+.ct-kenken-legend__note {
+  flex-basis: 100%;
+  text-align: center;
+  color: #7a5624;
+  font-style: italic;
 }
 
 /* Nonogram — clues outside board; cell grid matches Sudoku paper style */

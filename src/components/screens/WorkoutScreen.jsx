@@ -3,8 +3,9 @@ import { useApp } from '../../context/AppContext';
 import { GOALS, GOALS_BY_ID, SIZES, SIZES_BY_ID } from '../../features/workout/workoutData';
 import {
   loadWorkout, ensureToday, savePrefs, markDone, consumeJustCompleted, resetPrefs,
-  checkDue, recordCheck,
+  checkDue, recordCheck, getReminder, saveReminder,
 } from '../../features/workout/workoutState';
+import { ensureNotifPermission, syncNativeReminder, notifPermission, formatTimeLabel } from '../../features/workout/reminders';
 import { getLazyGame } from '../../features/training/lazyGames';
 import { hasAssessProfile } from '../../features/training/assessment/assessmentProfile';
 import { reliableChangeRaw } from '../../features/training/assessment/assessmentNorms';
@@ -29,6 +30,38 @@ const TRANSITION_SECS = 4;
 
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
 
+/** Apple-Fitness-style circular progress ring. `frac` 0..1. */
+function ProgressRing({ frac, done, total, allDone }) {
+  const R = 52, SW = 11, C = 2 * Math.PI * R;
+  const off = C * (1 - Math.max(0, Math.min(1, frac)));
+  return (
+    <div className="wk-ring">
+      <svg viewBox="0 0 128 128" width="128" height="128" aria-hidden="true">
+        <circle cx="64" cy="64" r={R} fill="none" stroke="#2a1606" strokeWidth={SW} />
+        <circle
+          cx="64" cy="64" r={R} fill="none"
+          stroke={allDone ? '#9be85a' : 'url(#wkRingGrad)'} strokeWidth={SW} strokeLinecap="round"
+          strokeDasharray={C} strokeDashoffset={off}
+          transform="rotate(-90 64 64)" style={{ transition: 'stroke-dashoffset .5s ease' }}
+        />
+        <defs>
+          <linearGradient id="wkRingGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#ffd574" />
+            <stop offset="100%" stopColor="#9be85a" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="wk-ring-center">
+        {allDone ? (
+          <span className="wk-ring-check">✓</span>
+        ) : (
+          <><b className="wk-ring-frac">{done}<span>/{total}</span></b></>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function WorkoutScreen() {
   const { currentLang, switchTab, playSfx, awardPoints, openAssessment } = useApp();
   const isAr = currentLang === 'ar';
@@ -50,6 +83,19 @@ export default function WorkoutScreen() {
   // Setup form state
   const [goal, setGoal] = useState(st.prefs?.goal || 'weak');
   const [size, setSize] = useState(st.prefs?.size || 'standard');
+
+  // Reminder editor state
+  const [rem, setRem] = useState(() => getReminder(st));
+  const [remOpen, setRemOpen] = useState(false);
+  const [remPerm, setRemPerm] = useState(() => notifPermission());
+
+  async function applyReminder(next) {
+    playSfx('click');
+    if (next.enabled) { await ensureNotifPermission(); setRemPerm(notifPermission()); }
+    setRem(next);
+    setSt(saveReminder(next));
+    syncNativeReminder(next, isAr ? 'ar' : 'en');
+  }
 
   // ONE-PRESS WORKOUT: opening this screen with a saved plan and unfinished
   // exercises drops you straight into the guided session.
@@ -349,37 +395,42 @@ export default function WorkoutScreen() {
   const sizeDef = SIZES_BY_ID[today?.size];
   const startedSome = doneCount > 0 && !allDone;
 
+  const minutes = sizeDef?.minutes ?? Math.round(exercises.reduce((a, e) => a + (e.seconds || 180), 0) / 60);
+
   return (
     <div className="workout-screen" dir={isAr ? 'rtl' : 'ltr'}>
       <button className="workout-back" onClick={() => switchTab('home')}>‹ {isAr ? 'رجوع' : 'BACK'}</button>
-      <div className="workout-header">
-        <div className="workout-title">💪 {isAr ? 'تمرين اليوم' : "Today's Workout"}</div>
-        <div className="workout-streak" title={isAr ? 'سلسلة الأيام' : 'day streak'}>🔥 {st.streak || 0}</div>
-      </div>
-      <p className="workout-sub">
-        {goalDef && <>{goalDef.icon} {isAr ? goalDef.ar : goalDef.en}</>}
-        {sizeDef && <> · ~{sizeDef.minutes} {isAr ? 'دقيقة' : 'min'}</>}
-        <button className="workout-edit" onClick={() => { playSfx('click'); setGoal(today.goal); setSize(today.size); resetPrefs(); setView('setup'); }}>⚙</button>
-      </p>
 
-      <div className="workout-progress">
-        <div className="workout-progress-bar" style={{ width: `${exercises.length ? (doneCount / exercises.length) * 100 : 0}%` }} />
-      </div>
-      <div className="workout-progress-text">
-        {doneCount}/{exercises.length} {isAr ? 'مكتمل' : 'done'}
-        <button className="workout-progress-link" onClick={() => { playSfx('click'); setView('stats'); }}>
-          📊 {isAr ? 'التقدّم' : 'Progress'}
-        </button>
+      {/* Progress-ring hero */}
+      <div className="wk-hero">
+        <div className="wk-hero-top">
+          <div className="workout-title">{isAr ? 'تمرين اليوم' : "Today's Workout"}</div>
+          <div className="workout-streak" title={isAr ? 'سلسلة الأيام' : 'day streak'}>🔥 {st.streak || 0}</div>
+        </div>
+        <div className="wk-hero-main">
+          <ProgressRing frac={exercises.length ? doneCount / exercises.length : 0} done={doneCount} total={exercises.length} allDone={allDone} />
+          <div className="wk-hero-chips">
+            <div className="wk-chip">⏱ ~{minutes} {isAr ? 'دقيقة' : 'min'}</div>
+            {goalDef && <div className="wk-chip">{goalDef.icon} {isAr ? goalDef.ar : goalDef.en}</div>}
+            <button className="wk-chip wk-chip-btn" onClick={() => { playSfx('click'); setGoal(today.goal); setSize(today.size); resetPrefs(); setView('setup'); }}>
+              ⚙ {isAr ? 'تعديل' : 'Edit'}
+            </button>
+            <button className="wk-chip wk-chip-btn" onClick={() => { playSfx('click'); setView('stats'); }}>
+              📊 {isAr ? 'التقدّم' : 'Progress'}
+            </button>
+          </div>
+        </div>
+
+        {!allDone ? (
+          <button className="workout-cta workout-start" onClick={() => { playSfx('click'); startSession(); }}>
+            ▶ {startedSome ? (isAr ? 'متابعة التمرين' : 'Continue Workout') : (isAr ? 'ابدأ التمرين' : 'Start Workout')}
+          </button>
+        ) : (
+          <div className="wk-hero-done">✓ {isAr ? 'اكتمل تمرين اليوم — إلى الغد!' : 'Done for today — see you tomorrow!'}</div>
+        )}
       </div>
 
       {assessNudge}
-
-      {/* Primary action: run the whole personalized session hands-free */}
-      {!allDone && (
-        <button className="workout-cta workout-start" onClick={() => { playSfx('click'); startSession(); }}>
-          ▶ {startedSome ? (isAr ? 'متابعة التمرين' : 'Continue Workout') : (isAr ? 'ابدأ التمرين' : 'Start Workout')}
-        </button>
-      )}
 
       <div className="workout-section-label workout-plan-label">{isAr ? 'خطة اليوم' : "Today's plan"}</div>
       <div className="workout-list">
@@ -406,6 +457,46 @@ export default function WorkoutScreen() {
       {allDone && (
         <p className="workout-alldone">{isAr ? 'اكتمل تمرين اليوم! عُد غداً للحفاظ على سلسلتك.' : "Today's workout complete! Come back tomorrow to keep your streak."}</p>
       )}
+
+      {/* Daily reminder */}
+      <div className={`wk-remind${remOpen ? ' is-open' : ''}`}>
+        <button className="wk-remind-head" onClick={() => { playSfx('click'); setRemOpen((o) => !o); }}>
+          <span className="wk-remind-ic" aria-hidden="true">⏰</span>
+          <span className="wk-remind-label">{isAr ? 'تذكير يومي' : 'Daily reminder'}</span>
+          <span className="wk-remind-value">{rem.enabled ? formatTimeLabel(rem.time, isAr) : (isAr ? 'متوقف' : 'Off')}</span>
+          <span className="wk-remind-chev" aria-hidden="true">{remOpen ? '▾' : '›'}</span>
+        </button>
+        {remOpen && (
+          <div className="wk-remind-body">
+            <label className="wk-remind-toggle">
+              <input
+                type="checkbox"
+                checked={rem.enabled}
+                onChange={(e) => applyReminder({ ...rem, enabled: e.target.checked })}
+              />
+              <span>{isAr ? 'ذكّرني كل يوم' : 'Remind me every day'}</span>
+            </label>
+            <div className="wk-remind-time-row">
+              <span>{isAr ? 'الوقت' : 'Time'}</span>
+              <input
+                type="time"
+                className="wk-remind-time"
+                value={rem.time}
+                onChange={(e) => applyReminder({ ...rem, time: e.target.value, enabled: true })}
+              />
+            </div>
+            {rem.enabled && remPerm === 'denied' && (
+              <p className="wk-remind-note">{isAr ? '🔕 إشعارات المتصفح محظورة — سنذكّرك داخل التطبيق عند فتحه. فعّل الإشعارات من إعدادات المتصفح لتنبيه النظام.' : '🔕 Browser notifications are blocked — we’ll still nudge you inside the app. Enable notifications in your browser settings for a system alert.'}</p>
+            )}
+            {rem.enabled && (remPerm === 'granted' || remPerm === 'native') && (
+              <p className="wk-remind-note is-ok">{isAr ? '🔔 سيصلك تنبيه يومي في الوقت المحدد.' : '🔔 You’ll get a daily alert at the set time.'}</p>
+            )}
+            {rem.enabled && remPerm === 'default' && (
+              <p className="wk-remind-note">{isAr ? 'اسمح بالإشعارات لتلقّي تنبيه النظام (وإلا سنذكّرك داخل التطبيق).' : 'Allow notifications for a system alert (otherwise we’ll nudge you in-app).'}</p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

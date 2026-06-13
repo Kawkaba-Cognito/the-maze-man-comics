@@ -120,3 +120,45 @@ export function resetPrefs() {
   st.prefs = null; st.today = null;
   return save(st);
 }
+
+/* ── Daily reminder ─────────────────────────────────────────────────────── */
+
+const DEFAULT_REMINDER = { enabled: false, time: '08:00' };
+
+export function getReminder(st = loadWorkout()) {
+  return { ...DEFAULT_REMINDER, ...(st.reminder || {}) };
+}
+
+export function saveReminder({ enabled, time }) {
+  const st = loadWorkout();
+  st.reminder = { enabled: !!enabled, time: time || DEFAULT_REMINDER.time };
+  return save(st);
+}
+
+/** Is today's workout fully complete? */
+export function isDoneToday(st = loadWorkout()) {
+  const t = st.today;
+  return !!(t && t.date === todayKey() && t.exercises?.length && t.done?.every(Boolean));
+}
+
+/**
+ * Should the in-app reminder banner show right now? True when a reminder is set,
+ * the chosen time has passed today, the workout isn't done, and the user hasn't
+ * already dismissed today's banner.
+ */
+export function reminderDue(st = loadWorkout(), now = new Date()) {
+  const r = getReminder(st);
+  if (!r.enabled) return false;
+  if (isDoneToday(st)) return false;
+  if (st.reminderDismissed === todayKey()) return false;
+  const [h, m] = r.time.split(':').map(Number);
+  const mins = now.getHours() * 60 + now.getMinutes();
+  return mins >= h * 60 + m;
+}
+
+/** Suppress the banner for the rest of today. */
+export function dismissReminder() {
+  const st = loadWorkout();
+  st.reminderDismissed = todayKey();
+  return save(st);
+}

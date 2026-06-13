@@ -975,6 +975,94 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
 .workout-alldone { text-align: center; font-size: 0.9rem; color: #b9ad99; margin-top: 16px; line-height: 1.5; }
 
 /* ═══════════════════════════════════
+   WORKOUT — PROGRESS-RING HERO
+═══════════════════════════════════ */
+.wk-hero {
+    background: linear-gradient(180deg, #241405, #190f05);
+    border: 1.5px solid #5a3a18; border-radius: 20px;
+    padding: 16px 16px 18px; margin-bottom: 18px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+.wk-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.wk-hero-top .workout-title { font-size: 1.5rem; }
+.wk-hero-main { display: flex; align-items: center; gap: 18px; margin: 12px 0 4px; }
+[dir='rtl'] .wk-hero-main { flex-direction: row-reverse; }
+
+.wk-ring { position: relative; width: 128px; height: 128px; flex: 0 0 auto; }
+.wk-ring-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; pointer-events: none;
+}
+.wk-ring-frac { font-family: 'Fredoka One', cursive; font-size: 2rem; color: #fff2cf; line-height: 1; }
+.wk-ring-frac span { font-size: 1rem; color: #b9ad99; }
+.wk-ring-check { font-size: 3rem; color: #9be85a; line-height: 1; }
+
+.wk-hero-chips { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+.wk-chip {
+    display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+    background: rgba(255,255,255,0.05); border: 1px solid #6e4420; border-radius: 999px;
+    padding: 6px 13px; font-size: 0.9rem; color: #f3ead9; font-weight: 600; max-width: 100%;
+}
+[dir='rtl'] .wk-chip { align-self: flex-end; }
+.wk-chip-btn { cursor: pointer; color: #ffd98a; }
+.wk-chip-btn:active { transform: scale(0.97); }
+.wk-hero .workout-cta { margin-top: 14px; }
+.wk-hero-done {
+    margin-top: 14px; text-align: center; padding: 12px;
+    background: linear-gradient(180deg, #2a3a10, #1d2a08); border: 1.5px solid #6f9e3f;
+    border-radius: 14px; color: #d8f5b0; font-weight: 700; font-size: 1rem;
+}
+
+/* ── Daily reminder editor ── */
+.wk-remind {
+    margin-top: 18px; border: 1.5px solid #5a3a18; border-radius: 14px;
+    background: linear-gradient(180deg, #1d1206, #150c04); overflow: hidden;
+}
+.wk-remind.is-open { border-color: #c08040; }
+.wk-remind-head {
+    width: 100%; display: flex; align-items: center; gap: 10px; padding: 14px;
+    background: none; border: none; cursor: pointer; color: #f3ead9; text-align: start;
+}
+.wk-remind-ic { font-size: 1.25rem; }
+.wk-remind-label { font-weight: 700; font-size: 0.95rem; color: #fff2cf; }
+.wk-remind-value { margin-inline-start: auto; font-family: 'DM Mono', monospace; font-size: 0.9rem; color: #ffd98a; }
+.wk-remind-chev { color: #9a8d76; font-size: 1.1rem; }
+.wk-remind-body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 12px; }
+.wk-remind-toggle { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #d8c9ad; cursor: pointer; }
+.wk-remind-toggle input { width: 18px; height: 18px; accent-color: #e8a52a; }
+.wk-remind-time-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.9rem; color: #c9bca6; }
+.wk-remind-time {
+    font-family: 'DM Mono', monospace; font-size: 1rem; color: #fff2cf;
+    background: #2a1606; border: 1.5px solid #6e4420; border-radius: 10px; padding: 8px 12px;
+    color-scheme: dark;
+}
+.wk-remind-note { font-size: 0.76rem; line-height: 1.5; color: #b9ad99; margin: 0; }
+.wk-remind-note.is-ok { color: #9be85a; }
+
+/* ── Global in-app reminder banner ── */
+.wk-reminder-banner {
+    position: fixed; left: 12px; right: 12px; bottom: max(14px, env(safe-area-inset-bottom));
+    z-index: 60; display: flex; align-items: center; gap: 12px;
+    max-width: 460px; margin: 0 auto; padding: 12px 14px;
+    background: linear-gradient(180deg, #2a1c0a, #1a1206);
+    border: 1.5px solid #e8ac4e; border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    animation: wkReminderIn .35s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes wkReminderIn { from { transform: translateY(120%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.wk-reminder-ic { font-size: 1.7rem; flex: 0 0 auto; }
+.wk-reminder-body { flex: 1; min-width: 0; }
+.wk-reminder-title { font-weight: 700; font-size: 0.92rem; color: #fff2cf; }
+.wk-reminder-sub { font-size: 0.76rem; color: #c9bca6; margin-top: 1px; }
+.wk-reminder-start {
+    flex: 0 0 auto; font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 1rem; color: #1a1206;
+    background: linear-gradient(180deg, #ffd574, #e8a52a); border: none; border-radius: 12px;
+    padding: 8px 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(255,170,50,0.4);
+}
+.wk-reminder-start:active { transform: scale(0.96); }
+.wk-reminder-x { flex: 0 0 auto; background: none; border: none; color: #9a8d76; font-size: 1rem; cursor: pointer; padding: 4px; }
+
+/* ═══════════════════════════════════
    WORKOUT — PROGRESS & STATS
 ═══════════════════════════════════ */
 .workout-progress-link {

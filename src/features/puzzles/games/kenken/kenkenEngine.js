@@ -221,6 +221,41 @@ export function kenKenHasConflict(state) {
   return cages.some((cage) => !cageValid(cage, player, false));
 }
 
+/**
+ * Per-cell live conflicts for soft feedback: a cell is flagged if its value
+ * repeats in its row or column, or if it belongs to a fully-filled cage whose
+ * math fails. Returns a Set of "r-c" keys.
+ */
+export function kenKenConflicts(state) {
+  const { size, player, cages } = state;
+  const bad = new Set();
+
+  for (let r = 0; r < size; r++) {
+    const seen = new Map();
+    for (let c = 0; c < size; c++) {
+      const v = player[r][c];
+      if (!v) continue;
+      if (seen.has(v)) { bad.add(`${r}-${c}`); bad.add(seen.get(v)); }
+      else seen.set(v, `${r}-${c}`);
+    }
+  }
+  for (let c = 0; c < size; c++) {
+    const seen = new Map();
+    for (let r = 0; r < size; r++) {
+      const v = player[r][c];
+      if (!v) continue;
+      if (seen.has(v)) { bad.add(`${r}-${c}`); bad.add(seen.get(v)); }
+      else seen.set(v, `${r}-${c}`);
+    }
+  }
+  for (const cage of cages) {
+    const vals = cage.cells.map(([r, c]) => player[r][c]);
+    if (vals.some((v) => v === 0)) continue; // only judge completed cages
+    if (!cageValid(cage, player, true)) cage.cells.forEach(([r, c]) => bad.add(`${r}-${c}`));
+  }
+  return bad;
+}
+
 export function isKenKenSolved(state) {
   const { size, player, cages } = state;
   for (let r = 0; r < size; r++) {
