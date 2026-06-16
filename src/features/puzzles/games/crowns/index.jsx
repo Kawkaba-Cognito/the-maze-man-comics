@@ -12,10 +12,10 @@ import { makeHint } from '../../shared/useHint';
 import {
   generateCrowns, cycleCrownCell, resetCrowns, isCrownsSolved, crownConflicts, REGION_COLORS, hintReveal,
 } from './crownsEngine';
+import { puzzleWinPoints } from '../../../../lib/points';
 
 const CONFIG = getPuzzle('crowns');
 const PUZZLE_ID = 'crowns';
-const SOLVE_POINTS = 20;
 
 const SIZE_HINTS = {
   en: { 5: 'Warm-up', 6: 'Classic', 7: 'Tricky', 8: 'Expert' },
@@ -51,9 +51,9 @@ export default function CrownsPuzzle({ onBack }) {
     if (state && !solved && isCrownsSolved(state)) {
       setSolved(true);
       playSfx('win');
-      awardPoints(SOLVE_POINTS);
+      awardPoints(puzzleWinPoints(size, CONFIG.sizes));
     }
-  }, [state, solved, playSfx, awardPoints]);
+  }, [state, solved, size, playSfx, awardPoints]);
 
   useEffect(() => { if (screen === 'play') maybeShowTutorial(); }, [screen, maybeShowTutorial]);
 

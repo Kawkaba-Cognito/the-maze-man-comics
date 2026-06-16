@@ -1119,9 +1119,11 @@
     align-items: center;
 }
 .ct-fq-diffcard {
-    max-width: 360px;
-    min-height: 86px;
-    padding: 16px 18px;
+    max-width: 380px;
+    min-height: clamp(96px, 16vh, 148px);
+    flex: 1 1 auto;
+    max-height: 160px;
+    padding: 20px 20px;
     align-items: stretch;
     gap: 14px;
     margin-bottom: 0;
@@ -3141,13 +3143,27 @@
     -webkit-tap-highlight-color: transparent;
     transition: background 0.1s, transform 0.08s, box-shadow 0.1s;
 }
+/* Keep cells at full brightness even when disabled — the browser dims disabled
+ * buttons, which washed out the objects during the watch sequence. */
 .ct-ms-cell:disabled {
     cursor: default;
+    opacity: 1;
 }
+/* Watch phase: cells are kept enabled (so objects stay vivid) but inert. */
+.ct-ms-cell--watch {
+    cursor: default;
+    pointer-events: none;
+}
+/* Highlight = bright tile + glowing accent ring, so the lit object pops at full
+ * colour instead of being washed by a flat fill. */
 .ct-ms-cell--lit {
-    background: linear-gradient(180deg, #e8f4c8 0%, var(--ms-pri) 100%);
-    box-shadow: 0 0 0 4px var(--ms-acc), 4px 4px 0 #1a1208;
-    transform: scale(1.06);
+    background: linear-gradient(180deg, #ffffff 0%, #fdf6e8 100%);
+    box-shadow:
+        0 0 0 4px var(--ms-acc),
+        0 0 22px 6px color-mix(in srgb, var(--ms-acc) 55%, transparent),
+        4px 4px 0 #1a1208;
+    transform: scale(1.09);
+    z-index: 1;
 }
 .ct-ms-cell--tapped {
     background: linear-gradient(180deg, #dceec0 0%, #b8d070 100%);
@@ -3626,6 +3642,10 @@
     justify-content: center;
     gap: 0.35rem;
 }
+/* Polished "sticker" look — soft drop shadow lifts each object off the tile. */
+.ct-ms-object-emoji {
+    filter: drop-shadow(0 2px 3px rgba(26, 18, 8, 0.22));
+}
 .ct-ms-object--lg .ct-ms-object-emoji {
     font-size: clamp(3.5rem, 18vw, 5.5rem);
     line-height: 1;
@@ -3650,6 +3670,138 @@
     justify-content: center;
     gap: 0.75rem 1rem;
 }
+
+/* ── Memory: strategy tip on results ── */
+.ct-ms-result-tip {
+    max-width: 320px;
+    margin: 6px auto 10px;
+    padding: 9px 14px;
+    border-radius: 12px;
+    background: rgba(232, 172, 78, 0.12);
+    border: 1px solid rgba(232, 172, 78, 0.4);
+    color: #6a5a3c;
+    font-size: 0.84rem;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+}
+
+/* ── Memory: science panel ── */
+.ct-ms-sci-ov {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(8, 6, 2, 0.78);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+.ct-ms-sci {
+    width: 100%;
+    max-width: 420px;
+    max-height: 86dvh;
+    overflow-y: auto;
+    background: linear-gradient(180deg, #fffaf2 0%, #f3e8d6 100%);
+    border: 2px solid #1a1208;
+    border-radius: 18px;
+    box-shadow: 6px 6px 0 #1a1208;
+    padding: 20px 18px;
+    box-sizing: border-box;
+}
+.ct-ms-sci-title {
+    margin: 0 0 6px;
+    font-family: 'Fredoka One', 'Bangers', cursive;
+    font-size: 1.4rem;
+    color: #2a2520;
+    text-align: center;
+}
+.ct-ms-sci-intro {
+    margin: 0 0 14px;
+    font-size: 0.86rem;
+    color: #6a5f52;
+    line-height: 1.5;
+    text-align: center;
+}
+.ct-ms-sci-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+.ct-ms-sci-item {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(26, 18, 8, 0.12);
+    border-radius: 12px;
+    padding: 11px 13px;
+}
+.ct-ms-sci-h { font-weight: 800; font-size: 0.95rem; color: #2a2520; margin-bottom: 3px; }
+.ct-ms-sci-b { font-size: 0.82rem; color: #5c5347; line-height: 1.5; }
+.ct-ms-sci-foot { font-size: 0.82rem; font-style: italic; color: #6a5f52; text-align: center; margin: 0 0 14px; }
+
+/* ── N-Back ── */
+.ct-nb-stage {
+    --nb-acc: #5b8def;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(16px, 5vh, 36px);
+    padding: 16px;
+}
+.ct-nb-card {
+    width: min(62vw, 240px);
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #1a1208;
+    border-radius: 24px;
+    background: linear-gradient(180deg, #fbf6ec 0%, #efe4d4 100%);
+    box-shadow: 5px 5px 0 #1a1208;
+    transition: transform 0.1s, box-shadow 0.12s, border-color 0.12s;
+}
+.ct-nb-card--on {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 4px var(--nb-acc), 0 0 26px 8px color-mix(in srgb, var(--nb-acc) 45%, transparent), 5px 5px 0 #1a1208;
+}
+.ct-nb-card--good { border-color: #2e9e4f; box-shadow: 0 0 0 5px #36c46a, 5px 5px 0 #1a1208; }
+.ct-nb-card--bad { border-color: #c0392b; box-shadow: 0 0 0 5px #e0584f, 5px 5px 0 #1a1208; }
+.ct-nb-card-dot { font-size: 3rem; color: rgba(26, 18, 8, 0.2); }
+.ct-nb-prompt { margin: 0; font-size: 0.92rem; font-weight: 700; color: #6a5f52; }
+.ct-nb-match {
+    min-width: 200px;
+    padding: 18px 28px;
+    border: 3px solid #1a1208;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #6fa0f4 0%, #3f6fd8 100%);
+    color: #fff;
+    font-family: 'Fredoka One', 'Bangers', cursive;
+    font-size: 1.3rem;
+    letter-spacing: 1px;
+    box-shadow: 4px 4px 0 #1a1208;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.ct-nb-match:active:not(:disabled) { transform: translateY(2px); box-shadow: 2px 2px 0 #1a1208; }
+.ct-nb-match--done { opacity: 0.5; }
+.ct-nb-intro { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 360px; margin: 8px auto 14px; }
+.ct-nb-opt {
+    display: flex; flex-direction: column; gap: 2px; text-align: start;
+    padding: 14px 16px; border-radius: 14px;
+    border: 2px solid rgba(91, 141, 239, 0.4);
+    background: rgba(91, 141, 239, 0.08); cursor: pointer;
+}
+.ct-nb-opt--on { border-color: #3f6fd8; background: rgba(91, 141, 239, 0.18); }
+.ct-nb-opt-lb { font-weight: 800; font-size: 1.05rem; color: #2a2520; }
+.ct-nb-opt-hint { font-size: 0.8rem; color: #6a5f52; }
+.ct-nb-nrow { display: flex; gap: 8px; justify-content: center; }
+.ct-nb-nbtn {
+    flex: 1; padding: 12px 8px; border-radius: 12px;
+    border: 2px solid #1a1208; background: linear-gradient(180deg, #fff, #f0e6da);
+    font-weight: 800; font-size: 0.95rem; color: #2a2520; cursor: pointer;
+    box-shadow: 2px 2px 0 #1a1208;
+}
+.ct-nb-nbtn--on { background: linear-gradient(180deg, #6fa0f4, #3f6fd8); color: #fff; }
 
 /* ── Flexibility: Spatial Stroop (Arrow Rush) ── */
 .ct-stroop-root {
@@ -4790,6 +4942,22 @@
 .ct-cs-tool:disabled { opacity: 0.4; cursor: default; }
 .ct-cs-tool--warn { color: #b0432e; border-color: #e0a99a; }
 .ct-cs-prompt { color: #6b6b6b; font-size: 0.9rem; margin: 0; text-align: center; max-width: 360px; }
+
+/* ── Use the full screen height while playing: let the play surface grow to
+ *    fill the viewport and vertically centre the board so there is no dead
+ *    space below it. `safe center` falls back to top-align when a board is
+ *    taller than the screen, so nothing is ever clipped out of reach. ── */
+.ct-rv-root:has(.ct-rv-play),
+.ct-th-root:has(.ct-th-play),
+.ct-th-root:has(.ct-cs-play) {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.ct-rv-play, .ct-th-play, .ct-cs-play {
+  flex: 1 1 auto;
+  justify-content: safe center;
+}
 
 @media (max-width: 380px) {
   .ct-cs-peg { --cs-tok-h: 25px; }

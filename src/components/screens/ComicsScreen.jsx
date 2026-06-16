@@ -111,6 +111,8 @@ export default function ComicsScreen() {
         <div
           style={{
             minHeight: '100%',
+            display: 'flex',
+            flexDirection: 'column',
             background: HUB_LIGHT.bg,
             color: HUB_LIGHT.text,
             fontFamily: 'Outfit, system-ui, sans-serif',
@@ -153,7 +155,18 @@ export default function ComicsScreen() {
           <p style={{ margin: '0 0 20px', fontSize: 14, color: HUB_LIGHT.muted, lineHeight: 1.5 }}>
             {isAr ? 'اختر نشاطاً' : 'Choose an activity'}
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              gap: 14,
+              maxWidth: 460,
+              width: '100%',
+              margin: '0 auto',
+            }}
+          >
             {pickList.map((sub) => (
               <button
                 key={sub.id}
@@ -164,20 +177,30 @@ export default function ComicsScreen() {
                   setScreen('game');
                 }}
                 style={{
-                  textAlign: 'left',
-                  padding: '14px 16px',
-                  borderRadius: 4,
+                  flex: '1 1 auto',
+                  minHeight: 'clamp(84px, 15vh, 140px)',
+                  maxHeight: 150,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  textAlign: isAr ? 'right' : 'left',
+                  padding: '20px 22px',
+                  borderRadius: 14,
                   border: '2px solid #1a1208',
                   background: 'linear-gradient(180deg, #ffffff 0%, #f7f1eb 100%)',
                   boxShadow: '4px 4px 0 #1a1208',
                   cursor: 'pointer',
                   fontFamily: "'Bangers', cursive",
-                  fontSize: 16,
+                  fontSize: 20,
                   letterSpacing: 1.5,
                   color: HUB_LIGHT.text,
                 }}
               >
-                {sub.name}
+                <span>{sub.name}</span>
+                <span aria-hidden="true" style={{ fontSize: 26, color: '#8a7868', transform: isAr ? 'scaleX(-1)' : 'none' }}>
+                  ›
+                </span>
               </button>
             ))}
           </div>

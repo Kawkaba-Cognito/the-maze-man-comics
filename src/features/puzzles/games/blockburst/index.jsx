@@ -71,6 +71,23 @@ function makePiece(rng) {
   return { ...s, color: 1 + Math.floor(rng() * COLORS.length) };
 }
 
+/**
+ * A fresh set of 3 pieces that is guaranteed to be playable on the current
+ * board (at least one piece fits), so a new tray is never an unavoidable
+ * game-over — you only lose by filling the board up through your own play.
+ */
+function makeTray(board, rng) {
+  const tray = [0, 1, 2].map(() => makePiece(rng));
+  if (tray.some((p) => anyMove(board, p.cells))) return tray;
+  for (let k = 0; k < 80; k++) {
+    const p = makePiece(rng);
+    if (anyMove(board, p.cells)) { tray[Math.floor(rng() * 3)] = p; return tray; }
+  }
+  const mono = SHAPES.find((s) => s.cells.length === 1);
+  if (anyMove(board, mono.cells)) tray[0] = { ...mono, color: 1 + Math.floor(rng() * COLORS.length) };
+  return tray;
+}
+
 export default function BlockBurst({ onBack }) {
   const { currentLang, playSfx, awardPoints } = useApp();
   const isAr = currentLang === 'ar';
@@ -81,7 +98,7 @@ export default function BlockBurst({ onBack }) {
 
   const rngRef = useRef(createRng(randomSeed()));
   const [board, setBoard] = useState(emptyBoard);
-  const [tray, setTray] = useState(() => [0, 1, 2].map(() => makePiece(rngRef.current)));
+  const [tray, setTray] = useState(() => makeTray(emptyBoard(), rngRef.current));
   const [score, setScore] = useState(0);
   const [best, setBest] = useState(() => { try { return parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0; } catch { return 0; } });
   const [over, setOver] = useState(false);
@@ -92,16 +109,16 @@ export default function BlockBurst({ onBack }) {
   const restart = useCallback(() => {
     rngRef.current = createRng(randomSeed());
     setBoard(emptyBoard());
-    setTray([0, 1, 2].map(() => makePiece(rngRef.current)));
+    setTray(makeTray(emptyBoard(), rngRef.current));
     setScore(0); setOver(false); setDrag(null);
   }, []);
 
-  // Refill the tray when empty; then test for game over against the live board.
+  // Refill the tray when empty; the new set is guaranteed playable on the board.
   useEffect(() => {
     if (tray.every((p) => p == null)) {
-      setTray([0, 1, 2].map(() => makePiece(rngRef.current)));
+      setTray(makeTray(board, rngRef.current));
     }
-  }, [tray]);
+  }, [tray, board]);
 
   useEffect(() => {
     if (over) return;

@@ -1,9 +1,9 @@
 import { createRng, shuffle } from '../../shared/rng';
 
 export const SUDOKU_SIZES = {
-  4: { boxRows: 2, boxCols: 2, clues: 7 },
-  6: { boxRows: 2, boxCols: 3, clues: 14 },
-  9: { boxRows: 3, boxCols: 3, clues: 32 },
+  4: { boxRows: 2, boxCols: 2, clueMin: 6, clueMax: 8 },
+  6: { boxRows: 2, boxCols: 3, clueMin: 12, clueMax: 16 },
+  9: { boxRows: 3, boxCols: 3, clueMin: 28, clueMax: 36 },
 };
 
 function pattern(r, c, size, boxRows, boxCols) {
@@ -79,7 +79,10 @@ export function generateSudoku(size, seed) {
   const rng = createRng(seed);
   const solution = solvedGrid(size, rng);
   const puzzle = solution.map((row) => row.slice());
-  const targetClues = SUDOKU_SIZES[size].clues;
+  // Randomise the given-count within a band so boards of the same size vary in
+  // difficulty (fewer givens = harder) instead of all being identical.
+  const { clueMin, clueMax } = SUDOKU_SIZES[size];
+  const targetClues = clueMin + Math.floor(rng() * (clueMax - clueMin + 1));
   let clues = size * size;
   const cells = shuffle(Array.from({ length: size * size }, (_, i) => i), rng);
 

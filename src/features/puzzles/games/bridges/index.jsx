@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../../../../context/AppContext';
 import { TrainingMenuBar, TrainingPlayHeader } from '../../../training/shared/TrainingChrome';
 import { getPuzzle } from '../../registry';
@@ -10,29 +10,22 @@ import PuzzleTutorial from '../../shared/PuzzleTutorial';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
 import { makeHint } from '../../shared/useHint';
 import {
-  generateLogicMaze,
-  isMazeSolved,
-  resetMazePath,
-  moveMaze,
-  MAZE_TIER_HINTS,
-  tierSubtitle,
+  generateBridges,
+  isBridgesSolved,
+  resetBridges,
+  cycleBridgeByIslands,
+  findEdgeIndex,
   hintReveal,
-} from './mazeEngine';
-import MazeCanvas from './MazeCanvas';
-import MazeJoystick from './MazeJoystick';
+  tierSubtitle,
+  BRIDGES_TIER_HINTS,
+} from './bridgesEngine';
+import BridgesBoard from './BridgesBoard';
 import { puzzleWinPoints } from '../../../../lib/points';
 
-const STEP_MS = 135; // auto-step cadence while a direction is held
-const KEY_DIRS = {
-  ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
-  w: 'up', s: 'down', a: 'left', d: 'right',
-  W: 'up', S: 'down', A: 'left', D: 'right',
-};
+const CONFIG = getPuzzle('bridges');
+const PUZZLE_ID = 'bridges';
 
-const CONFIG = getPuzzle('maze');
-const PUZZLE_ID = 'maze';
-
-export default function LogicMazePuzzle({ onBack }) {
+export default function BridgesPuzzle({ onBack }) {
   const { currentLang, playSfx, awardPoints, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
@@ -43,49 +36,18 @@ export default function LogicMazePuzzle({ onBack }) {
   const [screen, setScreen] = useState('hub');
   const [size, setSize] = useState(null);
   const [state, setState] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [moves, setMoves] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [solved, setSolved] = useState(false);
-  const dirRef = useRef(null);
 
-  const newGame = useCallback((gridSize, seed = randomSeed()) => {
-    setState(generateLogicMaze(gridSize, seed));
+  const newGame = useCallback((tier, seed = randomSeed()) => {
+    setState(generateBridges(tier, seed));
+    setSelected(null);
+    setMoves(0);
     setElapsed(0);
     setSolved(false);
-    dirRef.current = null;
   }, []);
-
-  const step = useCallback((dir) => {
-    setState((s) => (s ? moveMaze(s, dir) : s));
-  }, []);
-
-  /* Joystick reports the held direction (or null on release). Step once
-   * immediately for snappy response, then the hold-loop keeps stepping. */
-  const handleDirection = useCallback((dir) => {
-    dirRef.current = dir;
-    if (dir) step(dir);
-  }, [step]);
-
-  // Hold-to-move: auto-step every STEP_MS while a direction is held.
-  useEffect(() => {
-    if (screen !== 'play' || solved) return undefined;
-    const id = setInterval(() => {
-      if (dirRef.current) step(dirRef.current);
-    }, STEP_MS);
-    return () => clearInterval(id);
-  }, [screen, solved, step]);
-
-  // Keyboard (arrows / WASD) as a desktop alternative to the joystick.
-  useEffect(() => {
-    if (screen !== 'play' || solved) return undefined;
-    const onKey = (e) => {
-      const dir = KEY_DIRS[e.key];
-      if (!dir) return;
-      e.preventDefault();
-      step(dir);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [screen, solved, step]);
 
   useEffect(() => {
     if (screen !== 'play' || solved) return undefined;
@@ -94,8 +56,9 @@ export default function LogicMazePuzzle({ onBack }) {
   }, [screen, solved]);
 
   useEffect(() => {
-    if (state && !solved && isMazeSolved(state)) {
+    if (state && !solved && isBridgesSolved(state)) {
       setSolved(true);
+      setSelected(null);
       playSfx('win');
       awardPoints(puzzleWinPoints(size, CONFIG.sizes));
     }
@@ -105,14 +68,45 @@ export default function LogicMazePuzzle({ onBack }) {
     if (screen === 'play') maybeShowTutorial();
   }, [screen, maybeShowTutorial]);
 
-  const mazeHints = MAZE_TIER_HINTS[isAr ? 'ar' : 'en'];
-  const mazeHintFor = (n) => mazeHints[n];
+  const onIslandTap = useCallback(
+    (id) => {
+      if (solved) return;
+      if (selected == null) {
+        setSelected(id);
+        playSfx('click');
+        return;
+      }
+      if (selected === id) {
+        setSelected(null);
+        playSfx('click');
+        return;
+      }
+      if (findEdgeIndex(state, selected, id) < 0) {
+        // not an orthogonal neighbour — just move the selection
+        setSelected(id);
+        playSfx('click');
+        return;
+      }
+      const next = cycleBridgeByIslands(state, selected, id);
+      setSelected(null);
+      if (next === state) {
+        playSfx('error'); // blocked by a crossing bridge
+        return;
+      }
+      setState(next);
+      setMoves((m) => m + 1);
+      playSfx('click');
+    },
+    [state, selected, solved, playSfx]
+  );
 
-  const pickSize = (n) => {
+  const pickTier = (n) => {
     setSize(n);
     newGame(n);
     setScreen('play');
   };
+
+  const tierHints = BRIDGES_TIER_HINTS[isAr ? 'ar' : 'en'];
 
   const hubCenter = (
     <>
@@ -139,14 +133,18 @@ export default function LogicMazePuzzle({ onBack }) {
           replayHint={tutLabels.replayTutorial}
         />
         <div className="ct-puzzle-hub-body">
-          <p className="ct-puzzle-hub-sub">{isAr ? 'كل مستوى متاهة أكثر تعقيداً — خطّط قبل أن ترسم.' : 'Each level is a denser labyrinth — plan before you draw.'}</p>
+          <p className="ct-puzzle-hub-sub">
+            {isAr
+              ? 'صِل كل الجزر في شبكة واحدة — اختر الحجم للبدء.'
+              : 'Link every island into one network — pick a size to start.'}
+          </p>
           <GridSizePicker
             t={t}
             isAr={isAr}
             sizes={CONFIG.sizes}
-            onPick={pickSize}
+            onPick={pickTier}
             playSfx={playSfx}
-            hintForSize={mazeHintFor}
+            hintForSize={(n) => tierHints[n]}
           />
         </div>
         {tutorialOpen ? (
@@ -155,8 +153,6 @@ export default function LogicMazePuzzle({ onBack }) {
       </div>
     );
   }
-
-  const pathLen = Math.max(0, state.path.length - 1);
 
   return (
     <div className="ct-puzzle-screen ct-puzzle-screen--play">
@@ -173,33 +169,28 @@ export default function LogicMazePuzzle({ onBack }) {
       <div className="ct-puzzle-play-body">
         <PuzzleHint>
           {isAr
-            ? 'حرّك الكرة من البداية إلى الهدف باستخدام عصا التحكم.'
-            : 'Move your token from START to GOAL with the joystick.'}
+            ? 'اضغط جزيرة ثم جارتها لإضافة جسر (اضغط ثانيةً لجسرٍ مزدوج). الأرقام = عدد الجسور.'
+            : 'Tap an island, then a neighbour to add a bridge (tap again for a double). Numbers = bridge count.'}
         </PuzzleHint>
-        <MazeCanvas state={state} solved={solved} />
+        {state ? (
+          <BridgesBoard state={state} selected={selected} solved={solved} onIslandTap={onIslandTap} />
+        ) : null}
         <div className="ct-puzzle-stats">
-          <span>{t.moves(pathLen)}</span>
+          <span>{t.moves(moves)}</span>
           <span>{t.time(elapsed)}</span>
         </div>
         {!solved ? (
-          <>
-            <MazeJoystick
-              onDirection={handleDirection}
-              disabled={solved}
-              ariaLabel={isAr ? 'عصا التحكم' : 'Movement joystick'}
-            />
-            <PuzzleToolbar
-              t={t}
-              playSfx={playSfx}
-              onNew={() => newGame(size)}
-              onReset={() => setState((s) => resetMazePath(s))}
-              hint={makeHint({ points, spendPoints, solved, state, setState, hintReveal })}
-            />
-          </>
+          <PuzzleToolbar
+            t={t}
+            playSfx={playSfx}
+            onNew={() => newGame(size)}
+            onReset={() => { setState((s) => (s ? resetBridges(s) : s)); setSelected(null); setMoves(0); }}
+            hint={makeHint({ points, spendPoints, solved, state, setState, hintReveal })}
+          />
         ) : (
           <PuzzleWinBanner
             t={t}
-            moves={pathLen}
+            moves={moves}
             elapsed={elapsed}
             playSfx={playSfx}
             onPlayAgain={() => newGame(size)}

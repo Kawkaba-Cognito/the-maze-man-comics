@@ -14,6 +14,7 @@ import CoachOverlay from '../../../../shared/coach/CoachOverlay';
 import { createTrialLog } from '../../../../shared/trialLog';
 import MemoObject from './MemoObject';
 import MemoModes from './MemoModes';
+import MemoSciencePanel, { memoTip } from './MemoSciencePanel';
 import { buildMemoCoachSteps } from './tutorialScript';
 import {
   MS_LEVELS_PER_TIER,
@@ -40,9 +41,11 @@ const UI = {
   en: {
     hubMemory: 'Memory', hubTag: 'training', replayTutorial: 'Replay tutorial',
     freeMode: '♾️ Free mode', levelMode: '🎯 Level mode', challengeMode: '⚔️ Pass n Play',
+    nbackMode: 'N-Back', scienceLink: '🔬 Why this trains your brain', tipLabel: 'Strategy',
     hubMapAria: 'Modes',
     hubNodeFreeHint: 'Endless · 3 lives · sequence grows',
     hubNodeLevelsHint: 'Watch · tap back · 100 levels',
+    hubNodeNbackHint: 'Match the object N steps back · working memory',
     hubNodeChallengeHint: 'Same sequence for all · pick a difficulty',
     pickDiff: 'Choose difficulty',
     pickDiffSub: 'Cells light up in a sequence — tap them back. Reverse order = working memory.',
@@ -100,9 +103,11 @@ const UI = {
   ar: {
     hubMemory: 'ذاكرة', hubTag: 'تدريب', replayTutorial: 'إعادة الشرح',
     freeMode: '♾️ وضع حر', levelMode: '🎯 وضع المستويات', challengeMode: '⚔️ مرّر والعب',
+    nbackMode: 'العودة-N', scienceLink: '🔬 لماذا يدرّب دماغك', tipLabel: 'استراتيجية',
     hubMapAria: 'الأوضاع',
     hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · يطول التسلسل',
     hubNodeLevelsHint: 'شاهد · أعد التسلسل · ١٠٠ مستوى',
+    hubNodeNbackHint: 'طابق الشيء قبل N خطوات · ذاكرة عاملة',
     hubNodeChallengeHint: 'نفس التسلسل للجميع · اختر الصعوبة',
     pickDiff: 'اختر الصعوبة',
     pickDiffSub: 'تضيء الخلايا بتسلسل — أعدها. الترتيب المعكوس = ذاكرة عاملة.',
@@ -219,6 +224,7 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
   const [feedback, setFeedback] = useState(null);
   const [lastResult, setLastResult] = useState(null);
   const [dirLesson, setDirLesson] = useState(null); // shows when recall flips to reverse the first time
+  const [sciOpen, setSciOpen] = useState(false);
   const taughtDirsRef = useRef(loadTaughtDirs());
 
   // Free mode
@@ -701,10 +707,13 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
               onFree={() => maybeCoach(startFree)}
               onLevels={() => maybeCoach(() => setPhase('diff'))}
               onChallenge={() => maybeCoach(() => setPhase('chal'))}
+              onScience={() => setSciOpen(true)}
             />
           </div>
         </div>
       )}
+
+      {sciOpen && <MemoSciencePanel isAr={isAr} onClose={() => setSciOpen(false)} />}
 
       {phase === 'diff' && (
         <TrainingDifficultySelect
@@ -862,8 +871,12 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
                       <button
                         key={ci}
                         type="button"
-                        className={`ct-ms-cell${lit ? ' ct-ms-cell--lit' : ''}${isTapped ? ' ct-ms-cell--tapped' : ''}${showCorrect && correctOrder >= 0 ? ' ct-ms-cell--correct' : ''}`}
-                        disabled={playStep !== 'recall' || isTapped || !!feedback}
+                        className={`ct-ms-cell${lit ? ' ct-ms-cell--lit' : ''}${isTapped ? ' ct-ms-cell--tapped' : ''}${showCorrect && correctOrder >= 0 ? ' ct-ms-cell--correct' : ''}${playStep === 'study' ? ' ct-ms-cell--watch' : ''}`}
+                        // Stay enabled during the watch phase so the objects render at full
+                        // brightness (disabled buttons get dimmed by the browser); taps are
+                        // ignored by onCellTap until recall anyway.
+                        disabled={isTapped || !!feedback}
+                        aria-disabled={playStep !== 'recall'}
                         onPointerDown={() => onCellTap(ci)}
                       >
                         <MemoObject objectId={objId} isAr={isAr} size="md" />
@@ -893,6 +906,7 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
             <p className="ct-ms-result-kicker">{lastResult.won ? t.resultsPass : t.resultsFail}</p>
             <p className="ct-ms-result-stars">{t.stars}: {'★'.repeat(lastResult.stars)}{'☆'.repeat(3 - lastResult.stars)}</p>
             <p className="ct-ms-result-meta">{t.spanLabel}: {lastResult.grade.correctCount}/{lastResult.grade.total}</p>
+            <p className="ct-ms-result-tip">{memoTip(isAr, lastResult.stars + lastResult.grade.total)}</p>
             <div className="ct-ms-result-actions">
               {!lastResult.won && (<button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => startLevel(lastResult.round.diff, lastResult.round.lv)}>{t.retry}</button>)}
               {lastResult.won && lastResult.round.lv < MS_LEVELS_PER_TIER && (
@@ -911,6 +925,7 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
             <div className="ct-fq-sbig">{lastResult.score ?? 0}</div>
             <div className="ct-fq-ies-lbl">{t.score}</div>
             <p className="ct-ms-result-meta">{t.freeBest(profile.bestStudy ?? 2)}</p>
+            <p className="ct-ms-result-tip">{memoTip(isAr, lastResult.score ?? 0)}</p>
             <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={startFree}>{t.freePlayAgain}</button>
             <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => setPhase('hub')}>{t.menu}</button>
           </div>

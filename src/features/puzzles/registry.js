@@ -42,17 +42,17 @@ const hitori = {
   loader: () => import('./games/hitori'),
 };
 
-const maze = {
-  id: 'maze',
-  gameKey: 'maze',
-  name: 'Logic Maze',
-  nameAr: 'متاهة منطقية',
-  icon: '🌀',
-  desc: 'Porteus-style labyrinth — dead ends, false trails, one true path.',
-  descAr: 'متاهة بأسلوب Porteus — ممرات مسدودة ومسارات خادعة وحل واحد.',
-  accent: '#9cb752',
-  sizes: [3, 4, 5, 6],
-  loader: () => import('./games/maze'),
+const bridges = {
+  id: 'bridges',
+  gameKey: 'bridges',
+  name: 'Bridges',
+  nameAr: 'الجسور',
+  icon: '🌉',
+  desc: 'Connect the islands — bridge counts must match, and none may cross.',
+  descAr: 'صِل الجزر — عدد الجسور يطابق الرقم، ولا تتقاطع.',
+  accent: '#5ec6b6',
+  sizes: [7, 9, 11, 13],
+  loader: () => import('./games/bridges'),
 };
 
 const sudoku = {
@@ -133,7 +133,7 @@ const blockburst = {
   loader: () => import('./games/blockburst'),
 };
 
-export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, maze, sudoku, kenken, nonogram, kakuro, crowns, blockburst];
+export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, bridges, sudoku, kenken, nonogram, kakuro, crowns, blockburst];
 
 export const PUZZLES_BY_KEY = Object.fromEntries(
   PUZZLE_CONFIGS.map((p) => [p.gameKey, p])

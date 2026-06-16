@@ -1,6 +1,9 @@
 node_modules/
 dist/
 scripts/words_alpha.txt
+scripts/words_ar.txt
+scripts/ar_freq.txt
+.shots/
 .claude/
 
 # Secrets and local credentials — never commit

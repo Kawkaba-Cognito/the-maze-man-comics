@@ -1,5 +1,5 @@
 import React from 'react';
-import { PUZZLE_UI, gridHintKey } from './puzzleStrings';
+import { PUZZLE_UI, sizeTierHint } from './puzzleStrings';
 
 const SIZE_MODS = {
   3: 'ct-puzzle-grid-pick--s3',
@@ -12,7 +12,7 @@ const SIZE_MODS = {
 export default function GridSizePicker({ t, isAr, sizes, onPick, playSfx, hintForSize }) {
   return (
     <div className="ct-puzzle-grid-picks" role="group" aria-label={t.pickGrid}>
-      {sizes.map((size) => (
+      {sizes.map((size, idx) => (
         <button
           key={size}
           type="button"
@@ -23,12 +23,12 @@ export default function GridSizePicker({ t, isAr, sizes, onPick, playSfx, hintFo
           }}
         >
           <span className="ct-puzzle-grid-pick-ic" aria-hidden="true">
-            {size}×{size}
+            {t.gridLabel(size)}
           </span>
           <span className="ct-puzzle-grid-pick-body">
             <span className="ct-puzzle-grid-pick-lb">{t.gridLabel(size)}</span>
             <span className={`ct-puzzle-grid-pick-hint${isAr ? ' ct-puzzle-grid-pick-hint-ar' : ''}`}>
-              {hintForSize ? hintForSize(size) : t[gridHintKey(size)]}
+              {hintForSize ? hintForSize(size) : sizeTierHint(idx, sizes.length, isAr)}
             </span>
           </span>
           <span className="ct-puzzle-grid-pick-chev" aria-hidden="true">

@@ -3,7 +3,7 @@
  */
 
 import { LINK_WORDS_EN } from './link-words-en';
-import { LINK_WORDS_AR } from './link-words-ar';
+import { LINK_WORDS_AR_COMMON } from './link-words-ar-common';
 import { computeGridWords } from './linkDictionary';
 
 export const WORDLE_LEVELS_PER_TIER = 100;
@@ -29,7 +29,9 @@ const CHALLENGE_LEVEL = { diff: 'medium', lv: 10 };
 export const WORDLE_PASS_PLAY_LV = { easy: 10, medium: 10, hard: 10 };
 
 const PLACE_POOL = LINK_WORDS_EN.filter((w) => w.length >= 3 && w.length <= 5);
-const PLACE_POOL_AR = LINK_WORDS_AR.filter((w) => w.length >= 3 && w.length <= 5);
+// Seed Arabic grids from the CURATED common list so boards are made of familiar
+// words; the full corpus is still used to validate whatever the player finds.
+const PLACE_POOL_AR = LINK_WORDS_AR_COMMON.filter((w) => w.length >= 3 && w.length <= 5);
 
 const VOWELS = 'eeeeaaaoooiiiuu';
 const CONSONANTS = 'rstlnccddppmmhbbffwwyyggvvkk';

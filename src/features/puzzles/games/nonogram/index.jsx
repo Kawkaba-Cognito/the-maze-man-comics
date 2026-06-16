@@ -68,14 +68,22 @@ export default function NonogramPuzzle({ onBack }) {
             <div className="ct-nonogram-corner" aria-hidden="true" />
             <div className="ct-nonogram-col-clues">
               {state?.colClues.map((clue, c) => (
-                <div key={c} className="ct-nonogram-clue ct-nonogram-clue--col">{clue.join(' ')}</div>
+                <div key={c} className="ct-nonogram-clue ct-nonogram-clue--col">
+                  {(clue.length ? clue : [0]).map((n, i) => (
+                    <span key={i} className="ct-nonogram-clue-n">{n}</span>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
           <div className="ct-nonogram-play">
             <div className="ct-nonogram-row-clues">
               {state?.rowClues.map((clue, r) => (
-                <div key={r} className="ct-nonogram-clue ct-nonogram-clue--row">{clue.join(' ')}</div>
+                <div key={r} className="ct-nonogram-clue ct-nonogram-clue--row">
+                  {(clue.length ? clue : [0]).map((n, i) => (
+                    <span key={i} className="ct-nonogram-clue-n">{n}</span>
+                  ))}
+                </div>
               ))}
             </div>
             <div className={`ct-puzzle-grid ct-puzzle-grid--nonogram ct-puzzle-grid--n${size}`} style={{ '--puzzle-grid-n': size }}>

@@ -101,14 +101,81 @@ function manhattanDist(tiles, size) {
   return d;
 }
 
+/** Tiny binary min-heap keyed on `.f` (for the A* hint solver). */
+function makeHeap() {
+  const a = [];
+  const up = (i) => { while (i > 0) { const p = (i - 1) >> 1; if (a[p].f <= a[i].f) break; [a[p], a[i]] = [a[i], a[p]]; i = p; } };
+  const down = (i) => { const n = a.length; for (;;) { const l = 2 * i + 1, r = 2 * i + 2; let s = i; if (l < n && a[l].f < a[s].f) s = l; if (r < n && a[r].f < a[s].f) s = r; if (s === i) break; [a[s], a[i]] = [a[i], a[s]]; i = s; } };
+  return { push(x) { a.push(x); up(a.length - 1); }, pop() { const t = a[0], e = a.pop(); if (a.length) { a[0] = e; down(0); } return t; }, get size() { return a.length; } };
+}
+
 /**
- * Hint: look ahead a bounded number of moves and return the FIRST single-tile
- * slide that leads to the best (closest-to-solved) board found in that horizon.
- * Lookahead avoids the trap where a good maneuver needs a temporary setback.
- * Bounded (depth + state cap) so it never hangs.
+ * Weighted A* (f = g + 2·Manhattan) that returns the FIRST tile-slide on a real
+ * solution path from the current board. Because it follows an actual path to the
+ * goal, repeated hints make guaranteed monotonic progress and never cycle.
+ * Bounded by a node budget; returns null if the search is too large (big boards),
+ * in which case the caller falls back to the greedy heuristic.
+ */
+function solveNextMove(state) {
+  const { size, tiles } = state;
+  if (isSlidingSolved(state)) return null;
+  const total = size * size;
+  const goalKey = Array.from({ length: total }, (_, i) => (i === total - 1 ? 0 : i + 1)).join(',');
+  const startKey = tiles.join(',');
+  const W = 2;
+  const BUDGET = 120000;
+  const heap = makeHeap();
+  const g = new Map([[startKey, 0]]);
+  const parent = new Map(); // key -> { pk, move }
+  heap.push({ key: startKey, tiles, blank: tiles.indexOf(0), f: W * manhattanDist(tiles, size) });
+  let nodes = 0;
+  let found = false;
+  while (heap.size && nodes < BUDGET) {
+    const cur = heap.pop();
+    nodes++;
+    if (cur.key === goalKey) { found = true; break; }
+    const cg = g.get(cur.key);
+    if (cg === undefined) continue;
+    const br = Math.floor(cur.blank / size), bc = cur.blank % size;
+    for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+      const nr = br + dr, nc = bc + dc;
+      if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
+      const ni = nr * size + nc;
+      const nt = cur.tiles.slice();
+      nt[cur.blank] = nt[ni]; nt[ni] = 0;
+      const nk = nt.join(',');
+      const ng = cg + 1;
+      if (g.has(nk) && g.get(nk) <= ng) continue;
+      g.set(nk, ng);
+      parent.set(nk, { pk: cur.key, move: ni });
+      heap.push({ key: nk, tiles: nt, blank: ni, f: ng + W * manhattanDist(nt, size) });
+    }
+  }
+  if (!found) return null;
+  let k = goalKey;
+  let firstMove = null;
+  while (k !== startKey) {
+    const p = parent.get(k);
+    if (!p) return null;
+    firstMove = p.move;
+    k = p.pk;
+  }
+  return firstMove;
+}
+
+/**
+ * Hint: prefer an exact next move from a weighted-A* solution path (guaranteed
+ * progress, no cycling). If the board is too large for the search budget, fall
+ * back to a bounded greedy lookahead toward the closest-to-solved board.
  */
 export function hintReveal(state) {
   if (isSlidingSolved(state)) return { next: state, revealed: false };
+  // Exact A* path is fast + cycle-free on small boards; larger boards would risk
+  // a slow per-tap search, so they use the bounded greedy heuristic below.
+  if (state.size <= 4) {
+    const exact = solveNextMove(state);
+    if (exact != null) return { next: trySlide(state, exact), revealed: true };
+  }
   const { size, tiles } = state;
   let frontier = [{ tiles, blank: tiles.indexOf(0), first: null }];
   const seen = new Set([tiles.join(',')]);

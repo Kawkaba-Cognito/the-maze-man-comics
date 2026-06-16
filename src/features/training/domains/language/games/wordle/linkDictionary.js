@@ -1,11 +1,14 @@
 import { LINK_WORDS_EN } from './link-words-en';
 import { LINK_WORDS_AR } from './link-words-ar';
+import { LINK_WORDS_AR_COMMON } from './link-words-ar-common';
 import { WordTrie, findWordsOnGrid } from './wordTrie';
 
 const tries = {};
 
+// Arabic validation = the full corpus PLUS the curated common list (guarantees
+// everyday/modern words are always accepted even if missing from the corpus).
 function wordsFor(lang) {
-  return lang === 'ar' ? LINK_WORDS_AR : LINK_WORDS_EN;
+  return lang === 'ar' ? LINK_WORDS_AR.concat(LINK_WORDS_AR_COMMON) : LINK_WORDS_EN;
 }
 
 export function getLinkTrie(lang = 'en') {

@@ -157,25 +157,65 @@ function splitOneCell(cages, solution, rng) {
   return true;
 }
 
-export function generateKenKen(size, seed) {
-  const rng = createRng(seed);
+/** Merge any structural single-cell cage into an adjacent cage so the board
+ *  isn't littered with lone "give-away" number cages. Re-indexes cage ids. */
+function mergeSingletons(size, cages, solution, rng) {
+  const cellCage = new Map();
+  cages.forEach((cg) => cg.cells.forEach(([r, c]) => cellCage.set(`${r},${c}`, cg)));
+  for (const cg of [...cages]) {
+    if (cg.cells.length !== 1) continue;
+    const [r, c] = cg.cells[0];
+    const host = neighbors(size, r, c)
+      .map(([rr, cc]) => cellCage.get(`${rr},${cc}`))
+      .find((o) => o && o !== cg);
+    if (!host) continue; // (only the very first cell, pre-any-neighbour) — leave it
+    host.cells.push([r, c]);
+    cellCage.set(`${r},${c}`, host);
+    cages.splice(cages.indexOf(cg), 1);
+  }
+  cages.forEach((cg, i) => { cg.id = i; });
+  cages.forEach((cg) => recomputeCage(cg, solution, rng));
+}
+
+/** Build one candidate: cages peeled to uniqueness. Returns { solution, cages, freebies }. */
+function buildUniqueKenKen(size, rng) {
   const solution = latinSquare(size, rng);
   const { cages } = buildCages(size, solution, rng);
-
-  // Force a unique solution: while ambiguous, peel a cell off a cage as a
-  // freebie. Strictly tightens constraints, so it always converges.
+  mergeSingletons(size, cages, solution, rng);
   let guard = 0;
+  let unique = false;
   while (guard++ < size * size + 4) {
     const count = kenkenSolutionCount(size, cages, rebuildCageMap(size, cages), 2);
-    if (count === 1) break;
-    if (!splitOneCell(cages, solution, rng)) break; // all singles → already unique
+    if (count === 1) { unique = true; break; }
+    if (!splitOneCell(cages, solution, rng)) { unique = count === 1; break; }
   }
+  const freebies = cages.filter((c) => c.cells.length === 1).length;
+  return { solution, cages, freebies, unique };
+}
+
+export function generateKenKen(size, seed) {
+  // Keep difficulty consistent: a board is only as hard as it has few given
+  // (single-cell "freebie") clues. We regenerate the cage layout until we hit a
+  // unique puzzle whose freebie count is within budget, instead of peeling an
+  // unbounded number of freebies off one unlucky layout.
+  const maxFreebies = Math.max(1, Math.round(size * 0.35));
+  let best = null;
+
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const rng = createRng((seed + attempt * 0x9e3779b1) >>> 0);
+    const cand = buildUniqueKenKen(size, rng);
+    if (!cand.unique) continue;
+    if (!best || cand.freebies < best.freebies) best = cand;
+    if (cand.freebies <= maxFreebies) break;
+  }
+
+  if (!best) best = buildUniqueKenKen(size, createRng(seed)); // ultra-rare fallback
 
   return {
     size,
-    solution,
-    cages,
-    cageMap: rebuildCageMap(size, cages),
+    solution: best.solution,
+    cages: best.cages,
+    cageMap: rebuildCageMap(size, best.cages),
     player: Array.from({ length: size }, () => Array(size).fill(0)),
     seed,
   };

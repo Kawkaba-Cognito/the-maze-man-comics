@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function MemoModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
+export default function MemoModes({ t, isAr, onFree, onLevels, onChallenge, onScience, playSfx }) {
   const items = [
     {
       k: 'free',
@@ -28,31 +28,36 @@ export default function MemoModes({ t, isAr, onFree, onLevels, onChallenge, play
     },
   ];
   return (
-    <div className="ct-fq-attn-modes" role="group" aria-label={t.hubMapAria}>
-      {items.map((m) => (
-        <button
-          key={m.k}
-          type="button"
-          className={`ct-fq-attn-mode ${m.mod}`}
-          onClick={() => {
-            playSfx('click');
-            m.on();
-          }}
-        >
-          <span className="ct-fq-attn-mode-ic" aria-hidden="true">
-            {m.ic}
-          </span>
-          <span className="ct-fq-attn-mode-body">
-            <span className="ct-fq-attn-mode-lb">{m.lb}</span>
-            <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>
-              {m.hint}
+    <>
+      <div className="ct-fq-attn-modes" role="group" aria-label={t.hubMapAria}>
+        {items.map((m) => (
+          <button
+            key={m.k}
+            type="button"
+            className={`ct-fq-attn-mode ${m.mod}`}
+            onClick={() => {
+              playSfx('click');
+              m.on();
+            }}
+          >
+            <span className="ct-fq-attn-mode-ic" aria-hidden="true">{m.ic}</span>
+            <span className="ct-fq-attn-mode-body">
+              <span className="ct-fq-attn-mode-lb">{m.lb}</span>
+              <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>
+                {m.hint}
+              </span>
             </span>
-          </span>
-          <span className="ct-fq-attn-mode-chev" aria-hidden="true">
-            ›
-          </span>
+            <span className="ct-fq-attn-mode-chev" aria-hidden="true">
+              ›
+            </span>
+          </button>
+        ))}
+      </div>
+      {onScience && (
+        <button type="button" className="ct-fq-sci-link" onClick={() => { playSfx('click'); onScience(); }}>
+          {t.scienceLink}
         </button>
-      ))}
-    </div>
+      )}
+    </>
   );
 }

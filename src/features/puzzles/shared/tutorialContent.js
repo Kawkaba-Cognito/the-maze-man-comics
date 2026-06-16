@@ -88,30 +88,30 @@ export const PUZZLE_TUTORIAL_STEPS = {
       { title: 'جاهز!', body: 'اضغط للتظليل أو إزالته. هناك حل واحد فقط. الأحجام من ٥×٥ حتى ٨×٨.', icon: '★' },
     ],
   },
-  maze: {
+  bridges: {
     en: [
-      { title: 'Logic Maze', body: 'Like the Porteus maze test: black walls on white paper, START at the top, GOAL at the bottom.', icon: '🌀' },
-      { title: 'Use the joystick', body: 'Push the joystick to move your glowing token. Hold a direction to keep walking. Arrow keys / WASD work too.', icon: '🕹️' },
-      { title: 'Walls are solid', body: 'Thick black borders block you — stay in the white corridors. Turn back the way you came to retrace your steps.', icon: '🧱' },
-      { title: 'Ready!', body: 'Wrong branches are long dead ends — backtrack and rethink. Only one route reaches GOAL.', icon: '★' },
+      { title: 'Bridges', body: 'Each circle is an island; its number is how many bridges must connect to it.', icon: '🌉' },
+      { title: 'Tap to connect', body: 'Tap an island, then a neighbour in a straight line, to add a bridge. Tap the pair again for a double bridge, once more to clear it.', icon: '👆' },
+      { title: 'No crossings', body: 'Bridges run only horizontally or vertically and can never cross each other or pass over an island.', icon: '🚫' },
+      { title: 'Ready!', body: 'Match every island’s number and join them all into one connected network. Each puzzle has one solution.', icon: '★' },
     ],
     ar: [
-      { title: 'متاهة منطقية', body: 'مثل اختبار Porteus: جدران سوداء على ورق أبيض، START أعلى وGOAL أسفل.', icon: '🌀' },
-      { title: 'استخدم عصا التحكم', body: 'ادفع عصا التحكم لتحريك الكرة المضيئة. استمر بالضغط في اتجاه للسير المتواصل. مفاتيح الأسهم وWASD تعمل أيضاً.', icon: '🕹️' },
-      { title: 'جدران صلبة', body: 'الحدود السوداء تمنع العبور. ابقَ في الممرات البيضاء. عُد من حيث أتيت لتتراجع عن خطواتك.', icon: '🧱' },
-      { title: 'جاهز!', body: 'مسار واحد فقط صحيح — الممرات المسدودة تجبرك على التراجع وإعادة التفكير.', icon: '★' },
+      { title: 'الجسور', body: 'كل دائرة جزيرة، ورقمها هو عدد الجسور التي يجب أن تتصل بها.', icon: '🌉' },
+      { title: 'اضغط للوصل', body: 'اضغط جزيرة ثم جارتها على استقامة واحدة لإضافة جسر. اضغط الزوج ثانيةً لجسر مزدوج، ومرة أخرى لإزالته.', icon: '👆' },
+      { title: 'بلا تقاطع', body: 'الجسور أفقية أو عمودية فقط، ولا تتقاطع أبداً ولا تمر فوق جزيرة.', icon: '🚫' },
+      { title: 'جاهز!', body: 'طابِق رقم كل جزيرة واجمعها كلها في شبكة واحدة متصلة. لكل لغز حل واحد.', icon: '★' },
     ],
   },
   sudoku: {
     en: [
       { title: 'Sudoku', body: 'Fill the board with numbers. Every row, column, and box must contain each number once.', icon: '🔢' },
-      { title: 'Tap to enter', body: 'Tap a blank cell to cycle through the numbers. Given cells cannot be changed.', icon: '👆' },
+      { title: 'Tap to enter', body: 'Tap a blank cell, then pick a number from the pad. Given cells cannot be changed.', icon: '👆' },
       { title: 'Correct puzzle', body: 'The generator keeps a unique-solution puzzle, then checks your board against that solution.', icon: '✓' },
       { title: 'Ready!', body: 'Use 4×4 for quick play, 6×6 for medium, and 9×9 for expert.', icon: '★' },
     ],
     ar: [
       { title: 'سودوكو', body: 'املأ اللوحة بالأرقام. كل صف وعمود وصندوق يحتوي كل رقم مرة واحدة.', icon: '🔢' },
-      { title: 'اضغط للإدخال', body: 'اضغط خلية فارغة للتبديل بين الأرقام. الخلايا المعطاة ثابتة.', icon: '👆' },
+      { title: 'اضغط للإدخال', body: 'اضغط خلية فارغة ثم اختر رقماً من اللوحة. الخلايا المعطاة ثابتة.', icon: '👆' },
       { title: 'لغز صحيح', body: 'المولّد يحافظ على حل فريد، ثم يتحقق من لوحتك مع الحل.', icon: '✓' },
       { title: 'جاهز!', body: '٤×٤ سريع، ٦×٦ متوسط، و٩×٩ للخبير.', icon: '★' },
     ],

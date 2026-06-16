@@ -1,3 +1,9 @@
+const AR_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+/** Convert Western digits in a string/number to Arabic-Indic numerals. */
+export function toArabicDigits(value) {
+  return String(value).replace(/[0-9]/g, (d) => AR_DIGITS[+d]);
+}
+
 export const PUZZLE_UI = {
   en: {
     hubTitle: 'Puzzles',
@@ -26,7 +32,7 @@ export const PUZZLE_UI = {
     slidingHint: 'Tap a tile to slide it toward the gap — a whole row or column slides at once.',
     takuzuHint: 'Tap to cycle: empty → 0 → 1. Equal counts per row & column; no three in a row.',
     hitoriHint: 'Tap to shade duplicates. No two shaded cells touch; unshaded cells stay connected.',
-    mazeHint: 'One solution — wrong turns hit dead ends. Trace carefully from START to GOAL.',
+    bridgesHint: 'Tap an island, then a neighbour, to add a bridge. Match every number; no crossings.',
   },
   ar: {
     hubTitle: 'ألغاز',
@@ -34,7 +40,7 @@ export const PUZZLE_UI = {
     hubSub: 'اختر لغزاً، حدّد حجم الشبكة، والعب.',
     pickGrid: 'اختر حجم الشبكة',
     pickGridSub: 'اضغط على الحجم لبدء لغز جديد.',
-    gridLabel: (n) => `${n}×${n}`,
+    gridLabel: (n) => `${toArabicDigits(n)}×${toArabicDigits(n)}`,
     gridHint3: 'سريع ومريح',
     gridHint4: 'بداية كلاسيكية',
     gridHint5: 'تحدّ متوازن',
@@ -55,7 +61,7 @@ export const PUZZLE_UI = {
     slidingHint: 'اضغط لوحاً لينزلق نحو الفراغ — ينزلق صف أو عمود كامل دفعة واحدة.',
     takuzuHint: 'اضغط للتبديل: فارغ ← ٠ ← ١. تساوي العدد في كل صف وعمود؛ لا ثلاثة متتالية.',
     hitoriHint: 'ظلّل المكررات. لا خليتان متظللتان متجاورتان؛ تبقى الخلايا البيضاء متصلة.',
-    mazeHint: 'حل واحد — المسارات الخاطئة تصل إلى ممرات مسدودة. ارسم بعناية من START إلى GOAL.',
+    bridgesHint: 'اضغط جزيرة ثم جارتها لإضافة جسر. طابِق كل رقم؛ بلا تقاطعات.',
   },
 };
 
@@ -64,4 +70,20 @@ export function gridHintKey(size) {
   if (size === 4) return 'gridHint4';
   if (size === 5) return 'gridHint5';
   return 'gridHint6';
+}
+
+/* Difficulty caption derived from a size's POSITION in the puzzle's own size
+ * list (not its absolute number), so two sizes in the same puzzle never share
+ * the same label — e.g. KenKen 6×6 and 7×7 read "Tricky" and "Expert", not both
+ * "Expert grid". Puzzles can still pass a custom `hintForSize` to override. */
+const SIZE_TIER_SCALE = {
+  en: ['Warm-up', 'Gentle', 'Balanced', 'Tricky', 'Hard', 'Expert'],
+  ar: ['تمهيدي', 'سهل', 'متوازن', 'صعب', 'شاقّ', 'خبير'],
+};
+
+export function sizeTierHint(index, total, isAr) {
+  const scale = SIZE_TIER_SCALE[isAr ? 'ar' : 'en'];
+  if (total <= 1) return isAr ? 'كلاسيكي' : 'Classic';
+  const pos = Math.round((index / (total - 1)) * (scale.length - 1));
+  return scale[pos];
 }

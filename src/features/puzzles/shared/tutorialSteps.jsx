@@ -116,27 +116,6 @@ const HITORI = {
   ],
 };
 
-// ── MAZE ────────────────────────────────────────────────────────────
-const mz = [
-  [C('S', { bg: '#e8ac4e', fg: '#1a1208' }), GAP(), WALL(), GAP(), GAP()],
-  [WALL(), GAP(), WALL(), GAP(), WALL()],
-  [GAP(), GAP(), GAP(), GAP(), GAP()],
-  [GAP(), WALL(), WALL(), WALL(), GAP()],
-  [WALL(), WALL(), GAP(), GAP(), C('G', { bg: '#36c46a', fg: '#0c2a16' })],
-];
-const MAZE = {
-  en: [
-    { title: 'Logic Maze', body: 'Move from START (top) to GOAL (bottom). Stay in the white corridors.', diagram: <MiniBoard cell={26} cells={mz} /> },
-    { title: 'Walls are solid', body: 'Thick black blocks stop you. Use the joystick (or WASD / arrows) to walk; turn back to retrace.', diagram: <MiniBoard cell={26} cells={mz} /> },
-    { title: 'One true path', body: 'Wrong branches are long dead ends — backtrack and rethink. Only one route reaches GOAL.', diagram: <MiniBoard cell={26} cells={mz} /> },
-  ],
-  ar: [
-    { title: 'متاهة منطقية', body: 'تحرّك من البداية (أعلى) إلى الهدف (أسفل). ابقَ في الممرات البيضاء.', diagram: <MiniBoard cell={26} cells={mz} /> },
-    { title: 'جدران صلبة', body: 'الكتل السوداء تمنعك. استخدم عصا التحكم (أو WASD/الأسهم) للسير، وعُد للتراجع.', diagram: <MiniBoard cell={26} cells={mz} /> },
-    { title: 'مسار واحد صحيح', body: 'الفروع الخاطئة ممرات مسدودة طويلة — تراجع وأعد التفكير. مسار واحد يصل للهدف.', diagram: <MiniBoard cell={26} cells={mz} /> },
-  ],
-};
-
 // ── SUDOKU ──────────────────────────────────────────────────────────
 const SUDOKU = {
   en: [
@@ -252,7 +231,6 @@ export const DIAGRAM_TUTORIALS = {
   sliding: SLIDING,
   takuzu: TAKUZU,
   hitori: HITORI,
-  maze: MAZE,
   sudoku: SUDOKU,
   kenken: KENKEN,
   nonogram: NONOGRAM,
