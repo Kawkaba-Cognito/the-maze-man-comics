@@ -64,7 +64,7 @@ export function trySlide(state, tileIndex) {
   const tc = tileIndex % size;
 
   const next = tiles.slice();
-  let moved = 0;
+  let moved;
 
   if (tr === er) {
     if (tc < ec) for (let c = ec; c > tc; c--) next[tr * size + c] = next[tr * size + c - 1];

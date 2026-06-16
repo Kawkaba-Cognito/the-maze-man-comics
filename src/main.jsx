@@ -8,6 +8,7 @@ import './styles/settings.css';
 import './styles/training.css';
 import './styles/puzzles.css';
 import App from './App';
+import ErrorBoundary from './components/ErrorBoundary';
 
 applyAssetCssVars();
 
@@ -27,6 +28,8 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 );

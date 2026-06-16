@@ -32,8 +32,10 @@ function pwaPlugin() {
       name: 'The Maze Man Comics',
       short_name: 'Maze Man',
       description: 'Interactive bilingual psychology comics — solve problems with The Maze Man',
-      start_url: '/',
-      scope: '/',
+      // Served from GitHub Pages under the project base — the installed PWA must
+      // launch into the app, not the domain root.
+      start_url: WEB_BASE,
+      scope: WEB_BASE,
       display: 'fullscreen',
       display_override: ['fullscreen', 'standalone', 'minimal-ui'],
       orientation: 'portrait',

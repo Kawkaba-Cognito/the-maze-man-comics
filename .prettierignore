@@ -1,0 +1,8 @@
+dist
+node_modules
+android
+ios
+public
+*.min.js
+src/features/training/domains/language/games/wordle/link-words-*.js
+src/features/training/domains/reasoning/games/rush-hour/*bank*
