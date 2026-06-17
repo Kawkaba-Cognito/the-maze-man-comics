@@ -1,0 +1,336 @@
+/* RoomHost — full-screen Babylon room shell + shared HUD/controls */
+
+.rh-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #03040a;
+  overflow: hidden;
+  font-family: 'Courier New', monospace;
+}
+
+.rh-canvas {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  touch-action: none;
+  outline: none;
+}
+
+/* Overlay: rooms inject their own HUD here. Non-interactive by default. */
+.rh-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+/* Crosshair */
+.rh-crosshair {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  z-index: 7;
+  pointer-events: none;
+}
+.rh-crosshair::before,
+.rh-crosshair::after {
+  content: '';
+  position: absolute;
+  background: rgba(0, 255, 170, 0.85);
+}
+.rh-crosshair::before { width: 2px; height: 100%; left: 8px; }
+.rh-crosshair::after { width: 100%; height: 2px; top: 8px; }
+
+/* Fade-to-black room transition */
+.rh-fade {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: #03040a;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.rh-fade.show { opacity: 1; }
+
+/* Quit */
+.rh-quit {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 12;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.8);
+  font: 600 11px 'Courier New', monospace;
+  letter-spacing: 0.12em;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.rh-quit:hover { border-color: rgba(255, 255, 255, 0.6); color: #fff; }
+
+/* ── Room HUD pieces (injected into .rh-overlay) ── */
+.rh-zone {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 8;
+  pointer-events: none;
+}
+.rh-zone-k {
+  font-size: 9px;
+  color: #556;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.rh-zone-v {
+  font-size: 13px;
+  color: #dde;
+  margin-top: 3px;
+}
+
+.rh-hint {
+  position: fixed;
+  top: 44px;
+  right: 16px;
+  z-index: 8;
+  font-size: 9px;
+  color: #556;
+  letter-spacing: 0.1em;
+  line-height: 1.9;
+  text-align: right;
+  pointer-events: none;
+}
+
+.rh-panel {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  max-width: 480px;
+  width: calc(100% - 40px);
+  background: rgba(0, 0, 0, 0.82);
+  border: 1px solid rgba(0, 255, 170, 0.4);
+  color: #00ffaa;
+  padding: 12px 22px;
+  border-radius: 4px;
+  text-align: center;
+  pointer-events: none;
+}
+.rh-panel-lbl {
+  font-size: 9px;
+  color: #3dcfb0;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.rh-panel-ttl {
+  font-size: 15px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 5px;
+}
+.rh-panel-dsc {
+  font-size: 11px;
+  color: #aaa;
+  line-height: 1.6;
+}
+
+.rh-prompt {
+  position: fixed;
+  bottom: 110px;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  z-index: 9;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(0, 255, 170, 0.5);
+  color: #00ffaa;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  padding: 10px 20px;
+  border-radius: 30px;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.rh-prompt.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.rh-instr {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  font-size: 10px;
+  color: #667;
+  letter-spacing: 0.08em;
+  text-align: center;
+  pointer-events: none;
+}
+
+.rh-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 14;
+  background: rgba(0, 0, 0, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  padding: 12px 22px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.rh-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 13;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+
+/* ── Touch controls ── */
+.rh-joy {
+  position: fixed;
+  bottom: 30px;
+  left: 30px;
+  width: 130px;
+  height: 130px;
+  z-index: 15;
+  border-radius: 50%;
+  background: rgba(0, 255, 170, 0.07);
+  border: 2px solid rgba(0, 255, 170, 0.25);
+  touch-action: none;
+}
+.rh-joy-thumb {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0, 255, 170, 0.3);
+  border: 2px solid rgba(0, 255, 170, 0.7);
+  top: 41px;
+  left: 41px;
+}
+.rh-joy-hint {
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font: 700 9px 'Courier New', monospace;
+  letter-spacing: 0.15em;
+  color: rgba(0, 255, 170, 0.5);
+  pointer-events: none;
+}
+.rh-btns {
+  position: fixed;
+  bottom: 36px;
+  right: 28px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+.rh-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.8);
+  font: 700 10px 'Courier New', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  user-select: none;
+  cursor: pointer;
+}
+.rh-btn-jump {
+  background: rgba(0, 255, 170, 0.12);
+  border-color: rgba(0, 255, 170, 0.5);
+  color: rgba(0, 255, 170, 0.9);
+}
+.rh-btn-grab {
+  background: rgba(255, 210, 74, 0.12);
+  border-color: rgba(255, 210, 74, 0.5);
+  color: rgba(255, 210, 74, 0.9);
+}
+
+/* ── Attention Room HUD ── */
+.ar-counter {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9;
+  background: rgba(0, 0, 0, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font: 700 13px 'Courier New', monospace;
+  letter-spacing: 0.1em;
+  padding: 8px 18px;
+  border-radius: 20px;
+  pointer-events: none;
+}
+.ar-panel {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 16;
+  width: calc(100% - 48px);
+  max-width: 460px;
+  background: rgba(10, 10, 24, 0.96);
+  border: 1px solid rgba(255, 51, 204, 0.55);
+  border-radius: 14px;
+  padding: 28px 26px;
+  text-align: center;
+  pointer-events: auto;
+  box-shadow: 0 0 60px rgba(255, 51, 204, 0.25);
+}
+.ar-panel-k {
+  font: 700 10px 'Courier New', monospace;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #ff66dd;
+  margin-bottom: 10px;
+}
+.ar-panel-t {
+  font-size: 19px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 14px;
+}
+.ar-panel-d {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #c9c9e0;
+  margin-bottom: 22px;
+}
+.ar-panel-btn {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 8px;
+  background: #ff33cc;
+  color: #fff;
+  font: 700 13px 'Courier New', monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ar-panel-btn:hover { background: #ff5ad6; }

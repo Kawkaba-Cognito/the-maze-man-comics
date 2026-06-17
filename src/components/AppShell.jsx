@@ -9,7 +9,7 @@ import ShopScreen from './screens/ShopScreen';
 import RewardsShopScreen from './screens/RewardsShopScreen';
 import CharacterScreen from './screens/CharacterScreen';
 import WorkoutScreen from './screens/WorkoutScreen';
-import MazeOverlay from './maze/MazeOverlay';
+import RoomHost from './maze/RoomHost';
 import PaywallModal from './modals/PaywallModal';
 import TipJarModal from './modals/TipJarModal';
 import TipButton from './shared/TipButton';
@@ -83,7 +83,7 @@ export default function AppShell({ onBackToMenu }) {
 
       </div>
 
-      {mazeVisible && <MazeOverlay />}
+      {mazeVisible && <RoomHost />}
       {!mazeVisible && <ReminderBanner />}
       <PaywallModal />
       <TipJarModal />
