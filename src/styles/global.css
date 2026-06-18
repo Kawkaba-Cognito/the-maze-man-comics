@@ -362,6 +362,10 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
 .shop-screen { justify-content: flex-start; padding-top: 56px; }
 .shop-preview { width: 150px; height: 180px; }
 .shop-hint { font-size: 0.85rem; color: #b9ad99; margin: -4px 0 4px; }
+.shop-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 28px; opacity: 0.85; text-align: center; }
+.shop-empty-icon { font-size: 3rem; filter: grayscale(0.2); }
+.shop-empty-title { font-size: 1.1rem; font-weight: 700; color: #e7dcc6; margin: 0; }
+.shop-empty-sub { font-size: 0.85rem; color: #b9ad99; margin: 0; }
 .shop-grid {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
     width: 100%; max-width: 380px;
