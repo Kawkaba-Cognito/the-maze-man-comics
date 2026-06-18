@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useApp } from '../../context/AppContext';
 import { tokens } from '../../styles/tokens';
 import RadialMazeHub from '../training/RadialMazeHub';
-import { DOMAINS } from '../training/trainingData';
+import { DOMAINS, DOMAIN_COLOR } from '../training/trainingData';
 import { IconBack } from '../../features/training/shared/TrainingIcons';
 import { getLazyGame, hasGame } from '../../features/training/lazyGames';
 import AssessmentFlow from '../../features/training/assessment/AssessmentFlow';
@@ -56,12 +56,9 @@ export default function ComicsScreen() {
   const openDomain = (id) => {
     setActiveDomain(id);
     const playable = playableSubs(id);
-    if (playable.length === 1) {
-      setActiveGame(playable[0].game);
-      setScreen('game');
-      return;
-    }
-    if (playable.length > 1) {
+    // Always show the game picker (even for a single game) so every domain
+    // opens to the same consistent "choose a game" screen.
+    if (playable.length >= 1) {
       setPickList(playable);
       setScreen('pick');
       return;
@@ -80,6 +77,7 @@ export default function ComicsScreen() {
   };
 
   const d = DOMAINS.find((x) => x.id === activeDomain);
+  const accent = DOMAIN_COLOR[activeDomain] || '#8a7868';
 
   return (
     <div
@@ -141,33 +139,41 @@ export default function ComicsScreen() {
               <IconBack size={18} c={HUB_LIGHT.text} />
             </button>
           </div>
-          <h1
-            style={{
-              fontFamily: "'Fredoka One', Bangers, sans-serif",
-              fontSize: 'clamp(1.35rem, 5vw, 1.75rem)',
-              fontWeight: 400,
-              margin: '0 0 8px',
-              color: HUB_LIGHT.text,
-            }}
-          >
-            {d.name}
-          </h1>
-          <p style={{ margin: '0 0 20px', fontSize: 14, color: HUB_LIGHT.muted, lineHeight: 1.5 }}>
-            {isAr ? 'اختر نشاطاً' : 'Choose an activity'}
+          {/* Domain header — big name + colored glyph badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, maxWidth: 520, width: '100%', margin: '0 auto' }}>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 'clamp(58px, 16vw, 76px)', height: 'clamp(58px, 16vw, 76px)', flexShrink: 0,
+                borderRadius: 20, background: accent, color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 'clamp(30px, 8vw, 40px)', fontFamily: "'Fredoka One', sans-serif",
+                boxShadow: '4px 4px 0 #1a1208',
+              }}
+            >
+              {d.glyph}
+            </span>
+            <div style={{ textAlign: isAr ? 'right' : 'left' }}>
+              <h1
+                style={{
+                  fontFamily: "'Fredoka One', Bangers, sans-serif",
+                  fontSize: 'clamp(2rem, 9vw, 3rem)', fontWeight: 400,
+                  margin: 0, lineHeight: 1, color: HUB_LIGHT.text,
+                }}
+              >
+                {d.name}
+              </h1>
+              {d.desc && <p style={{ margin: '7px 0 0', fontSize: 13, color: HUB_LIGHT.muted, lineHeight: 1.4 }}>{d.desc}</p>}
+            </div>
+          </div>
+
+          <p style={{ maxWidth: 520, width: '100%', margin: '20px auto 12px', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: HUB_LIGHT.muted, textAlign: isAr ? 'right' : 'left' }}>
+            {isAr ? 'اختر لعبة' : 'Choose a game'}
           </p>
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              gap: 14,
-              maxWidth: 460,
-              width: '100%',
-              margin: '0 auto',
-            }}
-          >
-            {pickList.map((sub) => (
+
+          {/* Game cards */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 520, width: '100%', margin: '0 auto' }}>
+            {pickList.map((sub, i) => (
               <button
                 key={sub.id}
                 type="button"
@@ -177,28 +183,30 @@ export default function ComicsScreen() {
                   setScreen('game');
                 }}
                 style={{
-                  flex: '1 1 auto',
-                  minHeight: 'clamp(84px, 15vh, 140px)',
-                  maxHeight: 150,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
+                  display: 'flex', alignItems: 'center', gap: 14,
                   textAlign: isAr ? 'right' : 'left',
-                  padding: '20px 22px',
-                  borderRadius: 14,
+                  padding: '18px 20px', borderRadius: 16,
                   border: '2px solid #1a1208',
                   background: 'linear-gradient(180deg, #ffffff 0%, #f7f1eb 100%)',
                   boxShadow: '4px 4px 0 #1a1208',
                   cursor: 'pointer',
-                  fontFamily: "'Bangers', cursive",
-                  fontSize: 20,
-                  letterSpacing: 1.5,
-                  color: HUB_LIGHT.text,
                 }}
               >
-                <span>{sub.name}</span>
-                <span aria-hidden="true" style={{ fontSize: 26, color: '#8a7868', transform: isAr ? 'scaleX(-1)' : 'none' }}>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 46, height: 46, flexShrink: 0, borderRadius: 12,
+                    background: accent, color: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 22, fontFamily: "'Fredoka One', sans-serif",
+                  }}
+                >
+                  {i + 1}
+                </span>
+                <span style={{ flex: 1, fontFamily: "'Bangers', cursive", fontSize: 22, letterSpacing: 1.2, color: HUB_LIGHT.text }}>
+                  {sub.name}
+                </span>
+                <span aria-hidden="true" style={{ fontSize: 26, color: accent, transform: isAr ? 'scaleX(-1)' : 'none' }}>
                   ›
                 </span>
               </button>

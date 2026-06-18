@@ -45,12 +45,16 @@ export function setupControls(scene, canvas, opts = {}) {
     equipped = {},
     bounds = null, // { hw, hd } half-extents → keeps the camera inside the walls
     lowPerf = false, // phones: smaller shadow map + lighter blur
+    gridCollide = null, // (x,z)=>bool — if set, walls are checked by grid lookup
+                        // instead of moveWithCollisions (cheap for big mazes)
+    camDist = CAM_DIST, camHeight = CAM_HEIGHT, camLookY = CAM_LOOK_Y, // chase cam
+    fov = 1.0,
   } = opts;
 
   scene.collisionsEnabled = true;
 
   // ── Comic kit (glow layer + toon materials) ──
-  const kit = createKit(B, scene);
+  const kit = createKit(B, scene, lowPerf);
 
   // ── Key light + soft shadows for the rim-lit look ──
   const dir = new B.DirectionalLight('keyLight', new B.Vector3(-0.45, -1, 0.55), scene);
@@ -91,7 +95,7 @@ export function setupControls(scene, canvas, opts = {}) {
 
   // ── Chase camera (scripted — no orbit input) ──
   const camera = new B.UniversalCamera('chaseCam', player.position.clone(), scene);
-  camera.fov = 1.0;
+  camera.fov = fov;
   camera.minZ = 0.1;
   camera.inputs.clear(); // we drive it entirely from code
 
@@ -143,10 +147,21 @@ export function setupControls(scene, canvas, opts = {}) {
     jumpQueued = false;
     vy = (grounded && vy <= 0) ? -0.12 : vy - GRAV;
 
-    // Move along facing, sliding off walls via the collision system.
+    // Move along facing, sliding off walls.
     const f = new B.Vector3(Math.sin(heading), 0, Math.cos(heading));
     const mv = Math.abs(speed) > 0.0005;
-    player.moveWithCollisions(new B.Vector3(mv ? f.x * speed : 0, vy, mv ? f.z * speed : 0));
+    if (gridCollide) {
+      // Cheap grid-based walls: try each axis separately so you slide along
+      // corridors. Gravity/jump applied directly, floor clamped to GROUND_Y.
+      const sx = mv ? f.x * speed : 0;
+      const sz = mv ? f.z * speed : 0;
+      if (sx && !gridCollide(player.position.x + sx, player.position.z)) player.position.x += sx;
+      if (sz && !gridCollide(player.position.x, player.position.z + sz)) player.position.z += sz;
+      player.position.y += vy;
+      if (player.position.y < GROUND_Y) player.position.y = GROUND_Y;
+    } else {
+      player.moveWithCollisions(new B.Vector3(mv ? f.x * speed : 0, vy, mv ? f.z * speed : 0));
+    }
 
     // Drive the rig: face heading, animate the walk cycle.
     rig.root.rotation.y = heading;
@@ -163,16 +178,29 @@ export function setupControls(scene, canvas, opts = {}) {
     // room so it never slips through a wall and shows the void.
     const sinH = Math.sin(heading), cosH = Math.cos(heading);
     const px = player.position.x, pz = player.position.z;
-    let ix = px - CAM_DIST * sinH, iz = pz - CAM_DIST * cosH;
+    let ix = px - camDist * sinH, iz = pz - camDist * cosH;
     if (bounds) {
       const m = 0.6;
       ix = Math.max(-bounds.hw + m, Math.min(bounds.hw - m, ix));
       iz = Math.max(-bounds.hd + m, Math.min(bounds.hd - m, iz));
     }
-    const ideal = new B.Vector3(ix, CAM_HEIGHT, iz);
+    // GTA-style camera collision: march from the player toward the ideal spot
+    // and stop at the last wall-free point, so the camera hugs corridors and
+    // never slips behind a wall. Only active when the room supplies gridCollide.
+    if (gridCollide) {
+      let cx = px, cz = pz;
+      for (let s = 1; s <= 8; s++) {
+        const t = s / 8;
+        const tx = px + (ix - px) * t, tz = pz + (iz - pz) * t;
+        if (gridCollide(tx, tz)) break;
+        cx = tx; cz = tz;
+      }
+      ix = cx; iz = cz;
+    }
+    const ideal = new B.Vector3(ix, camHeight, iz);
     if (!started) { camera.position.copyFrom(ideal); started = true; }
     else camera.position = B.Vector3.Lerp(camera.position, ideal, 0.12);
-    camera.setTarget(new B.Vector3(px, CAM_LOOK_Y, pz));
+    camera.setTarget(new B.Vector3(px, camLookY, pz));
   };
   scene.registerBeforeRender(beforeRender);
 

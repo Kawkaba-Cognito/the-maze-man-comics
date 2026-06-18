@@ -174,6 +174,9 @@
   text-align: center;
   pointer-events: none;
 }
+/* The instruction line is keyboard-oriented and overlaps the touch buttons,
+   so hide it on touch devices (the on-screen controls are self-explanatory). */
+.rh-touch .rh-instr { display: none; }
 
 .rh-toast {
   position: fixed;
@@ -203,71 +206,191 @@
 }
 
 /* ── Touch controls ── */
+
+/* Full-screen invisible move zone. Sits below the action cluster (z-15) and
+   quit (z-12) so taps on those never start a move; everywhere else, touching
+   spawns the floating joystick. */
+.rh-touchzone {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  touch-action: none;
+  background: transparent;
+}
+
+/* Floating joystick — positioned at the touch point via JS (left/top), then
+   self-centred with translate(-50%). Hidden (opacity 0) until a touch begins. */
 .rh-joy {
   position: fixed;
-  bottom: 30px;
-  left: 30px;
-  width: 130px;
-  height: 130px;
-  z-index: 15;
+  left: 0;
+  top: 0;
+  width: 116px;
+  height: 116px;
+  margin-left: -58px;
+  margin-top: -58px;
+  z-index: 14;
   border-radius: 50%;
-  background: rgba(0, 255, 170, 0.07);
-  border: 2px solid rgba(0, 255, 170, 0.25);
-  touch-action: none;
+  background: radial-gradient(circle, rgba(0, 255, 170, 0.10) 0%, rgba(0, 255, 170, 0.04) 70%);
+  border: 2px solid rgba(0, 255, 170, 0.35);
+  box-shadow: 0 0 22px rgba(0, 255, 170, 0.18), inset 0 0 18px rgba(0, 255, 170, 0.08);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  pointer-events: none;
 }
 .rh-joy-thumb {
   position: absolute;
-  width: 48px;
-  height: 48px;
+  left: 50%;
+  top: 50%;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
-  background: rgba(0, 255, 170, 0.3);
-  border: 2px solid rgba(0, 255, 170, 0.7);
-  top: 41px;
-  left: 41px;
+  background: rgba(0, 255, 170, 0.38);
+  border: 2px solid rgba(0, 255, 170, 0.85);
+  box-shadow: 0 0 14px rgba(0, 255, 170, 0.5);
+  transform: translate(-50%, -50%);
 }
-.rh-joy-hint {
-  position: absolute;
-  bottom: -18px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font: 700 9px 'Courier New', monospace;
-  letter-spacing: 0.15em;
-  color: rgba(0, 255, 170, 0.5);
+
+/* Action cluster — a thumb-friendly arc anchored at the bottom-right, clear of
+   the phone's home indicator via safe-area insets. */
+.rh-actions {
+  position: fixed;
+  right: calc(20px + env(safe-area-inset-right, 0px));
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  width: 168px;
+  height: 168px;
+  z-index: 15;
   pointer-events: none;
 }
-.rh-btns {
-  position: fixed;
-  bottom: 36px;
-  right: 28px;
-  z-index: 15;
+.rh-act {
+  position: absolute;
   display: flex;
   flex-direction: column;
-  gap: 12px;
   align-items: center;
-}
-.rh-btn {
-  width: 64px;
-  height: 64px;
+  justify-content: center;
+  gap: 1px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(255, 255, 255, 0.28);
-  color: rgba(255, 255, 255, 0.8);
-  font: 700 10px 'Courier New', monospace;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  background: rgba(20, 24, 32, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   user-select: none;
+  -webkit-tap-highlight-color: transparent;
   cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.08s ease, filter 0.08s ease;
 }
-.rh-btn-jump {
-  background: rgba(0, 255, 170, 0.12);
-  border-color: rgba(0, 255, 170, 0.5);
-  color: rgba(0, 255, 170, 0.9);
+.rh-act:active { transform: scale(0.9); filter: brightness(1.3); }
+.rh-act-icon { font-size: 22px; line-height: 1; }
+.rh-act-lbl { font: 700 8px 'Courier New', monospace; letter-spacing: 0.12em; opacity: 0.85; }
+
+/* Primary USE button — largest, corner-anchored; JUMP + GRAB arc up/left. */
+.rh-act-use {
+  width: 78px; height: 78px;
+  right: 0; bottom: 0;
+  background: rgba(0, 255, 170, 0.18);
+  border-color: rgba(0, 255, 170, 0.65);
+  color: #aeffe4;
 }
-.rh-btn-grab {
-  background: rgba(255, 210, 74, 0.12);
-  border-color: rgba(255, 210, 74, 0.5);
-  color: rgba(255, 210, 74, 0.9);
+.rh-act-jump {
+  width: 62px; height: 62px;
+  right: 86px; bottom: 8px;
+  background: rgba(90, 200, 255, 0.16);
+  border-color: rgba(90, 200, 255, 0.6);
+  color: #bfe9ff;
+}
+.rh-act-grab {
+  width: 62px; height: 62px;
+  right: 16px; bottom: 90px;
+  background: rgba(255, 210, 74, 0.16);
+  border-color: rgba(255, 210, 74, 0.6);
+  color: #ffe9a8;
+}
+
+/* ── Gym coach panel (in-gym goal picker) ── */
+.gym-panel {
+  position: fixed;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 16;
+  width: calc(100% - 40px);
+  max-width: 440px;
+  max-height: 86vh;
+  overflow-y: auto;
+  background: rgba(12, 18, 16, 0.96);
+  border: 1px solid rgba(60, 230, 160, 0.45);
+  border-radius: 14px;
+  padding: 20px 22px;
+  text-align: center;
+  pointer-events: auto;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.7), inset 0 0 24px rgba(60, 230, 160, 0.05);
+  font-family: 'Courier New', monospace;
+}
+.gym-coach-k { font: 700 11px 'Courier New', monospace; letter-spacing: 0.28em; color: #4fe3a0; margin-bottom: 8px; }
+.gym-coach-t { font-size: 16px; color: #fff; margin-bottom: 16px; line-height: 1.4; }
+.gym-sec { font: 700 10px 'Courier New', monospace; letter-spacing: 0.2em; color: #7a8a82; text-align: left; margin: 10px 2px 6px; }
+.gym-goals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.gym-goal {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px; border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  color: #d8e6df; font: 600 12px 'Courier New', monospace; text-align: left;
+  cursor: pointer; transition: all 0.1s;
+}
+.gym-goal span { font-size: 20px; }
+.gym-goal.sel { background: rgba(60, 230, 160, 0.16); border-color: rgba(60, 230, 160, 0.7); color: #fff; }
+.gym-sizes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gym-size {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 9px; border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  color: #d8e6df; font: 700 13px 'Courier New', monospace; cursor: pointer; transition: all 0.1s;
+}
+.gym-size small { font-size: 10px; color: #8aa; font-weight: 400; }
+.gym-size.sel { background: rgba(60, 230, 160, 0.16); border-color: rgba(60, 230, 160, 0.7); color: #fff; }
+.gym-start {
+  width: 100%; margin-top: 16px; padding: 13px;
+  border: none; border-radius: 8px;
+  background: linear-gradient(to bottom, #2fbf7e, #1c8f5c);
+  color: #fff; font: 700 14px 'Courier New', monospace; letter-spacing: 0.08em;
+  text-transform: uppercase; cursor: pointer;
+}
+.gym-start:disabled { background: #2a3a33; color: #5a6a62; cursor: default; }
+.gym-close {
+  width: 100%; margin-top: 8px; padding: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 7px;
+  background: transparent; color: #8a9a92; font: 600 12px 'Courier New', monospace; cursor: pointer;
+}
+
+/* ── Perf HUD (dev measurement) ── */
+.rh-perf {
+  position: fixed;
+  bottom: 8px;
+  left: 8px;
+  z-index: 13;
+  font: 700 11px 'Courier New', monospace;
+  color: #7dffa8;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 4px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ── Maze minimap ── */
+.mz-map {
+  position: fixed;
+  top: 56px;
+  right: 14px;
+  z-index: 9;
+  width: 156px;
+  height: 156px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
 }
 
 /* ── Attention Room HUD ── */

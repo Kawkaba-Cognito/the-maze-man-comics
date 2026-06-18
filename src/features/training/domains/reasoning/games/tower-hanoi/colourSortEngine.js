@@ -67,14 +67,25 @@ export function legalMoves(pegs, cap) {
   return out;
 }
 
-/** Solved when every non-empty tube is one colour and no colour is split. */
+/**
+ * Solved when every non-empty tube is ONE colour, SIZE-ORDERED (largest at the
+ * bottom → smallest on top), and no colour is split across tubes.
+ *
+ * The size-order check matters: the scramble can deal a colour's tokens onto a
+ * single tube already grouped but in jumbled size order. Without this check the
+ * game would call that "solved" once the other colours are separated, even
+ * though that tube's numbers are still out of order.
+ */
 export function isSolved(pegs) {
   const seen = new Set();
   for (const peg of pegs) {
     if (!peg.length) continue;
     const c = peg[0].c;
-    for (const d of peg) if (d.c !== c) return false;
-    if (seen.has(c)) return false;
+    for (let i = 0; i < peg.length; i++) {
+      if (peg[i].c !== c) return false;                   // mixed colour
+      if (i > 0 && peg[i].s >= peg[i - 1].s) return false; // not strictly smaller going up
+    }
+    if (seen.has(c)) return false;                        // colour split across tubes
     seen.add(c);
   }
   return true;

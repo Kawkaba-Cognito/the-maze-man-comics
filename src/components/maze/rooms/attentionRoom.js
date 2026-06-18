@@ -31,12 +31,14 @@ const EXIT = { x: -5, z: -half + 0.25 };
 
 export function buildAttentionRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
   const scene = new B.Scene(engine);
-  const bg = B.Color3.FromHexString('#0a0a18');
+  if (B.ScenePerformancePriority) scene.performancePriority = B.ScenePerformancePriority.Intermediate;
+  const bg = B.Color3.FromHexString('#1b1b30');
   scene.clearColor = new B.Color4(bg.r, bg.g, bg.b, 1);
   scene.collisionsEnabled = true;
   scene.fogMode = B.Scene.FOGMODE_EXP2;
-  scene.fogDensity = 0.028;
+  scene.fogDensity = 0.012;
   scene.fogColor = bg;
+  scene.ambientColor = new B.Color3(0.5, 0.52, 0.62); // even fill (needs material.ambientColor)
 
   const L = (a, b, t) => a + (b - a) * t;
   const std = (name, hex, emis, alpha) => {
@@ -45,6 +47,7 @@ export function buildAttentionRoom({ engine, canvas, overlayEl, ctx, inputRef })
     m.specularColor = new B.Color3(0.05, 0.05, 0.05);
     if (emis) m.emissiveColor = B.Color3.FromHexString(emis);
     if (alpha != null) m.alpha = alpha;
+    m.ambientColor = new B.Color3(1, 1, 1); // lets scene.ambientColor lift the shadows
     return m;
   };
   const box = (name, w, h, d, x, y, z, m, col) => {
@@ -54,15 +57,66 @@ export function buildAttentionRoom({ engine, canvas, overlayEl, ctx, inputRef })
     return b;
   };
 
-  // ── Shell (dark, so the spotlight matters) ──
-  const floor = box('floor', R, 0.4, R, 0, -0.2, 0, std('aFloor', '#16161f'), true);
+  // ── Shell: a real furnished room — tiled floor, panelled walls with a gold
+  //    trim line + baseboard, corner pilasters. Still on the moody side so the
+  //    attention spotlight reads, but clearly a designed space. ──
+
+  // Tiled floor (dynamic texture: indigo tiles + gold grout + speckle).
+  const floorTex = new B.DynamicTexture('aFloorTex', { width: 512, height: 512 }, scene, true);
+  (function drawFloor(c) {
+    c.fillStyle = '#1a1a2b'; c.fillRect(0, 0, 512, 512);
+    const n = 4, cell = 512 / n;
+    for (let gy = 0; gy < n; gy++) for (let gx = 0; gx < n; gx++) {
+      const tone = 30 + Math.random() * 12;
+      c.fillStyle = `rgb(${tone | 0},${tone | 0},${(tone * 1.5) | 0})`;
+      c.fillRect(gx * cell + 4, gy * cell + 4, cell - 8, cell - 8);
+    }
+    c.strokeStyle = 'rgba(201,162,74,0.30)'; c.lineWidth = 3; // gold grout
+    for (let i = 0; i <= n; i++) {
+      c.beginPath(); c.moveTo(i * cell, 0); c.lineTo(i * cell, 512); c.stroke();
+      c.beginPath(); c.moveTo(0, i * cell); c.lineTo(512, i * cell); c.stroke();
+    }
+    for (let i = 0; i < 200; i++) { c.fillStyle = 'rgba(180,190,255,0.05)'; c.fillRect(Math.random() * 512, Math.random() * 512, 2, 2); }
+  })(floorTex.getContext());
+  floorTex.update();
+  floorTex.wrapU = floorTex.wrapV = B.Texture.WRAP_ADDRESSMODE;
+  floorTex.uScale = floorTex.vScale = 2;
+  const floorMat = std('aFloor', '#1a1a2b');
+  floorMat.diffuseTexture = floorTex;
+  const floor = box('floor', R, 0.4, R, 0, -0.2, 0, floorMat, true);
   floor.receiveShadows = true;
-  box('ceiling', R, 0.4, R, 0, H + 0.2, 0, std('aCeil', '#0c0c16'), false);
-  const wallMat = std('aWall', '#1b1b2a');
-  box('wN', R, H, 0.4, 0, H / 2, -half, wallMat, true);
-  box('wS', R, H, 0.4, 0, H / 2, half, wallMat, true);
-  box('wW', 0.4, H, R, -half, H / 2, 0, wallMat, true);
-  box('wE', 0.4, H, R, half, H / 2, 0, wallMat, true);
+
+  box('ceiling', R, 0.4, R, 0, H + 0.2, 0, std('aCeil', '#14141f'), false);
+
+  // Walls (indigo) + a darker wainscot band + gold trim + baseboard per wall.
+  const wallMat = std('aWall', '#262640');
+  const wainMat = std('aWain', '#1c1c30');
+  const trimMat = std('aTrim', '#c9a24a', '#5a4416'); // gold, slight glow
+  const baseMat = std('aBase', '#12121c');
+  const WAIN = 1.8;   // wainscot height
+  const makeWall = (nm, w, d, x, z, horiz) => {
+    box('w' + nm, w, H, d, x, H / 2, z, wallMat, true);
+    const inset = 0.05;
+    if (horiz) {
+      box('wain' + nm, w - 0.4, WAIN, 0.12, x, WAIN / 2, z + (z < 0 ? inset : -inset), wainMat, false);
+      box('trim' + nm, w - 0.4, 0.12, 0.16, x, WAIN, z + (z < 0 ? inset : -inset), trimMat, false);
+      box('base' + nm, w - 0.4, 0.28, 0.16, x, 0.14, z + (z < 0 ? inset : -inset), baseMat, false);
+    } else {
+      box('wain' + nm, 0.12, WAIN, d - 0.4, x + (x < 0 ? inset : -inset), WAIN / 2, z, wainMat, false);
+      box('trim' + nm, 0.16, 0.12, d - 0.4, x + (x < 0 ? inset : -inset), WAIN, z, trimMat, false);
+      box('base' + nm, 0.16, 0.28, d - 0.4, x + (x < 0 ? inset : -inset), 0.14, z, baseMat, false);
+    }
+  };
+  makeWall('N', R, 0.4, 0, -half, true);
+  makeWall('S', R, 0.4, 0, half, true);
+  makeWall('W', 0.4, R, -half, 0, false);
+  makeWall('E', 0.4, R, half, 0, false);
+
+  // Corner pilasters (architecture).
+  const pilMat = std('aPil', '#2e2e4c');
+  [[-half + 0.3, -half + 0.3], [half - 0.3, -half + 0.3], [-half + 0.3, half - 0.3], [half - 0.3, half - 0.3]].forEach(([px, pz], i) => {
+    box('pil' + i, 0.7, H, 0.7, px, H / 2, pz, pilMat, false);
+  });
 
   // Exit door (glowing teal) on the south wall, behind the spawn.
   box('exitDoor', 1.6, 2.6, 0.2, EXIT.x, 1.3, -half + 0.25, std('aExit', '#0c3b2a', '#16d39a'), false);
@@ -80,14 +134,30 @@ export function buildAttentionRoom({ engine, canvas, overlayEl, ctx, inputRef })
     onAction2: action2,
   });
 
-  // Keep it moody, but lit enough to move around comfortably; the player's
-  // spotlight is still the star.
-  ctrl.keyLight.intensity = 0.38;
+  // Lit enough to read the room as a designed space, while the player's
+  // spotlight stays the brightest pool.
+  ctrl.keyLight.intensity = 0.8;
   const hemi = new B.HemisphericLight('aHemi', new B.Vector3(0, 1, 0), scene);
-  hemi.intensity = 0.3;
-  hemi.diffuse = new B.Color3(0.62, 0.68, 0.95);
-  hemi.groundColor = new B.Color3(0.08, 0.08, 0.16);
+  hemi.intensity = 0.8;
+  hemi.diffuse = new B.Color3(0.82, 0.85, 1.0);
+  hemi.groundColor = new B.Color3(0.3, 0.32, 0.42);
   hemi.specular = new B.Color3(0, 0, 0);
+
+  // Ceiling light fixtures: emissive panels (free — no per-light cost) read as
+  // ceiling lights and bloom via the glow layer. On desktop a couple of warm
+  // point lights add real pools; phones skip those to keep the light count low.
+  const panelMat = std('aPanel', '#fff4d8', '#fff0cc');
+  const fixtures = [[-6, -6], [6, -6], [-6, 6], [6, 6]];
+  fixtures.forEach(([fx, fz], i) => {
+    const panel = box('lpanel' + i, 2.4, 0.12, 2.4, fx, H - 0.12, fz, panelMat, false);
+    ctrl.kit.glow(panel);
+    if (!ctx.lowPerf) {
+      const pl = new B.PointLight('aPL' + i, new B.Vector3(fx, H - 0.6, fz), scene);
+      pl.diffuse = new B.Color3(1, 0.93, 0.78);
+      pl.intensity = 0.5; pl.range = 12;
+      pl.specular = new B.Color3(0, 0, 0);
+    }
+  });
 
   // The "attention spotlight": a bright pool that follows the player.
   const spot = new B.SpotLight('attnSpot', new B.Vector3(0, 5, 0), new B.Vector3(0, -1, 0), 1.05, 12, scene);

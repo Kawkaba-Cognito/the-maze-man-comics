@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { buildDoorHall } from './rooms/doorHall';
 import { buildAttentionRoom } from './rooms/attentionRoom';
+import { buildMazeRoom } from './rooms/mazeRoom';
+import { buildGymRoom } from './rooms/gymRoom';
 import './roomHost.css';
 
 /**
@@ -16,16 +18,19 @@ import './roomHost.css';
 const ROOMS = {
   hall: buildDoorHall,
   attention: buildAttentionRoom,
+  maze: buildMazeRoom,
+  gym: buildGymRoom,
 };
 
 const B = () => window.BABYLON;
 
 export default function RoomHost() {
-  const { exitMaze, updateXP, playSfx, character, equipped } = useApp();
+  const { exitMaze, updateXP, playSfx, character, equipped, switchTab, currentLang, openWorkout, mazeStartRoom, setMazeStartRoom } = useApp();
 
   const canvasRef = useRef(null);
   const overlayRef = useRef(null);
   const fadeRef = useRef(null);
+  const perfRef = useRef(null);
 
   const engineRef = useRef(null);
   const activeRef = useRef(null);     // current room { scene, interact, dispose }
@@ -42,7 +47,8 @@ export default function RoomHost() {
     const fadeEl = fadeRef.current;
     if (!canvas || !window.BABYLON) return undefined;
 
-    const engine = new (B().Engine)(canvas, true, {
+    // Antialiasing is a real GPU cost on phones — keep it on desktop, off on touch.
+    const engine = new (B().Engine)(canvas, !isTouch, {
       stencil: true, adaptToDeviceRatio: true,
       powerPreference: 'high-performance',
     });
@@ -59,7 +65,7 @@ export default function RoomHost() {
     let disposed = false;
 
     const ctx = {
-      exitMaze, updateXP, playSfx, character, equipped,
+      exitMaze, updateXP, playSfx, character, equipped, switchTab, currentLang, openWorkout,
       lowPerf: isTouch, // rooms drop shadow quality on phones
       goToRoom: (key) => goRef.current?.(key),
     };
@@ -87,10 +93,25 @@ export default function RoomHost() {
     };
     goRef.current = goToRoom;
 
-    build('hall');
+    // Enter at the requested room (e.g. the Gym after a workout), then reset the
+    // default so a normal entry from the menu always starts in the Hall.
+    build(mazeStartRoom || 'hall');
+    if (mazeStartRoom && mazeStartRoom !== 'hall') setMazeStartRoom('hall');
+    // Perf HUD — sampled ~4×/sec so reading it never costs us frames.
+    let perfT = 0;
     engine.runRenderLoop(() => {
       const room = activeRef.current;
-      if (room?.scene?.activeCamera) room.scene.render();
+      if (room?.scene?.activeCamera) {
+        room.scene.render();
+        const now = performance.now();
+        if (perfRef.current && now - perfT > 250) {
+          perfT = now;
+          const sc = room.scene;
+          const active = sc.getActiveMeshes ? sc.getActiveMeshes().length : sc.meshes.length;
+          perfRef.current.textContent =
+            `${Math.round(engine.getFps())} fps · ${(1000 / Math.max(1, engine.getFps())).toFixed(1)} ms · ${active}/${sc.meshes.length} meshes`;
+        }
+      }
     });
 
     const onResize = () => engine.resize();
@@ -107,45 +128,53 @@ export default function RoomHost() {
       engineRef.current = null;
       if (overlayEl) overlayEl.innerHTML = '';
     };
-  }, [exitMaze, updateXP, playSfx, character, equipped]);
+  }, [exitMaze, updateXP, playSfx, character, equipped, switchTab]); // currentLang snapshotted at entry (avoid engine re-init on toggle)
 
-  // ── Touch input wiring ──
+  // ── Floating touch joystick ──
+  // The joystick has no fixed home: wherever the player first touches the move
+  // zone, the ring spawns under their thumb and tracks from there. Releasing
+  // hides it. The action buttons sit above this zone (higher z) so tapping them
+  // never starts a move. RADIUS = max thumb travel that maps to full speed.
   const joyRef = useRef(null);
   const thumbRef = useRef(null);
-  const joyState = useRef({ active: false, id: null });
+  const joyState = useRef({ active: false, id: null, ox: 0, oy: 0 });
+  const RADIUS = 52;
 
-  const onJoyStart = (e) => {
-    const t = e.changedTouches[0];
-    joyState.current = { active: true, id: t.identifier };
-    moveThumb(t);
-  };
-  const onJoyMove = (e) => {
-    if (!joyState.current.active) return;
-    for (const t of e.changedTouches) if (t.identifier === joyState.current.id) moveThumb(t);
-  };
-  const onJoyEnd = (e) => {
-    for (const t of e.changedTouches) {
-      if (t.identifier === joyState.current.id) {
-        joyState.current.active = false;
-        inputRef.current.mx = 0; inputRef.current.my = 0;
-        if (thumbRef.current) { thumbRef.current.style.left = '41px'; thumbRef.current.style.top = '41px'; }
-      }
-    }
-  };
-  const moveThumb = (t) => {
+  const showJoyAt = (x, y) => {
     const base = joyRef.current;
     if (!base) return;
-    const r = base.getBoundingClientRect();
-    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-    let dx = t.clientX - cx, dy = t.clientY - cy;
-    const dist = Math.min(Math.hypot(dx, dy), 45);
-    const ang = Math.atan2(dy, dx);
-    dx = Math.cos(ang) * dist; dy = Math.sin(ang) * dist;
-    inputRef.current.mx = dx / 45;
-    inputRef.current.my = dy / 45;
-    if (thumbRef.current) {
-      thumbRef.current.style.left = (45 + dx * 0.9 - 24) + 'px';
-      thumbRef.current.style.top = (45 + dy * 0.9 - 24) + 'px';
+    base.style.left = `${x}px`;
+    base.style.top = `${y}px`;
+    base.style.opacity = '1';
+    if (thumbRef.current) thumbRef.current.style.transform = 'translate(-50%, -50%)';
+  };
+  const trackJoy = (t) => {
+    const { ox, oy } = joyState.current;
+    let dx = t.clientX - ox, dy = t.clientY - oy;
+    const dist = Math.hypot(dx, dy);
+    if (dist > RADIUS) { const a = Math.atan2(dy, dx); dx = Math.cos(a) * RADIUS; dy = Math.sin(a) * RADIUS; }
+    inputRef.current.mx = dx / RADIUS;
+    inputRef.current.my = dy / RADIUS;
+    if (thumbRef.current) thumbRef.current.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  };
+  const onZoneStart = (e) => {
+    if (joyState.current.active) return; // first finger owns movement
+    const t = e.changedTouches[0];
+    joyState.current = { active: true, id: t.identifier, ox: t.clientX, oy: t.clientY };
+    showJoyAt(t.clientX, t.clientY);
+    trackJoy(t);
+  };
+  const onZoneMove = (e) => {
+    if (!joyState.current.active) return;
+    for (const t of e.changedTouches) if (t.identifier === joyState.current.id) { e.preventDefault(); trackJoy(t); }
+  };
+  const onZoneEnd = (e) => {
+    for (const t of e.changedTouches) {
+      if (t.identifier === joyState.current.id) {
+        joyState.current = { active: false, id: null, ox: 0, oy: 0 };
+        inputRef.current.mx = 0; inputRef.current.my = 0;
+        if (joyRef.current) joyRef.current.style.opacity = '0';
+      }
     }
   };
 
@@ -154,30 +183,39 @@ export default function RoomHost() {
   const fireAction2 = () => { activeRef.current?.action2?.(); };
 
   return (
-    <div className="rh-root">
+    <div className={`rh-root${isTouch ? ' rh-touch' : ''}`}>
       <canvas ref={canvasRef} className="rh-canvas" />
       <div ref={overlayRef} className="rh-overlay" />
       <div ref={fadeRef} className="rh-fade" />
 
       <button className="rh-quit" onClick={() => exitMaze()}>✕ QUIT</button>
+      <div className="rh-perf" ref={perfRef} />
 
       {isTouch && (
         <>
+          {/* Full-screen move zone (under the action buttons). */}
           <div
-            className="rh-joy"
-            ref={joyRef}
-            onTouchStart={onJoyStart}
-            onTouchMove={onJoyMove}
-            onTouchEnd={onJoyEnd}
-            onTouchCancel={onJoyEnd}
-          >
+            className="rh-touchzone"
+            onTouchStart={onZoneStart}
+            onTouchMove={onZoneMove}
+            onTouchEnd={onZoneEnd}
+            onTouchCancel={onZoneEnd}
+          />
+          {/* Floating joystick ring — purely visual, follows the thumb. */}
+          <div className="rh-joy" ref={joyRef}>
             <div className="rh-joy-thumb" ref={thumbRef} />
-            <div className="rh-joy-hint">MOVE</div>
           </div>
-          <div className="rh-btns">
-            <button className="rh-btn rh-btn-jump" onTouchStart={(e) => { e.preventDefault(); fireJump(); }}>JUMP</button>
-            <button className="rh-btn rh-btn-grab" onTouchStart={(e) => { e.preventDefault(); fireAction2(); }}>GRAB</button>
-            <button className="rh-btn" onTouchStart={(e) => { e.preventDefault(); fireInteract(); }}>USE</button>
+          {/* Action cluster — thumb arc, bottom-right. */}
+          <div className="rh-actions">
+            <button className="rh-act rh-act-jump" onTouchStart={(e) => { e.preventDefault(); fireJump(); }}>
+              <span className="rh-act-icon">⤒</span><span className="rh-act-lbl">JUMP</span>
+            </button>
+            <button className="rh-act rh-act-grab" onTouchStart={(e) => { e.preventDefault(); fireAction2(); }}>
+              <span className="rh-act-icon">✊</span><span className="rh-act-lbl">GRAB</span>
+            </button>
+            <button className="rh-act rh-act-use" onTouchStart={(e) => { e.preventDefault(); fireInteract(); }}>
+              <span className="rh-act-icon">⚡</span><span className="rh-act-lbl">USE</span>
+            </button>
           </div>
         </>
       )}

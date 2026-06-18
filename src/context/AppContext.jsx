@@ -45,6 +45,8 @@ export function AppProvider({ children }) {
   const [assessmentRequested, setAssessmentRequested] = useState(false);
   const [mazeVisible, setMazeVisible] = useState(false);
   const [mazeEntryPending, setMazeEntryPending] = useState(false);
+  const [mazeStartRoom, setMazeStartRoom] = useState('hall'); // initial room for RoomHost
+  const [workoutReturnRoom, setWorkoutReturnRoom] = useState(null); // re-enter 3D here after a workout
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [tipOpen, setTipOpen] = useState(false);
   const [profileData, setProfileData] = useState(DEFAULT_PROFILE);
@@ -288,6 +290,28 @@ export function AppProvider({ children }) {
     setMazeVisible(false);
   }, [playSfx]);
 
+  // Launch the Daily Workout from a 3D room (the Gym coach). `returnRoom` is
+  // where we drop the player back after they finish/leave the session.
+  const openWorkout = useCallback((returnRoom = null) => {
+    setWorkoutReturnRoom(returnRoom);
+    setActiveTab('workout');
+    setMazeVisible(false);
+  }, []);
+
+  // Leaving the workout: if we came from a 3D room, re-enter the world there;
+  // otherwise just go home. (Also resets activeTab so a later 3D-quit lands home.)
+  const leaveWorkout = useCallback(() => {
+    if (workoutReturnRoom) {
+      setMazeStartRoom(workoutReturnRoom);
+      setWorkoutReturnRoom(null);
+      setActiveTab('home');
+      setMazeEntryPending(false);
+      setMazeVisible(true);
+    } else {
+      switchTab('home');
+    }
+  }, [workoutReturnRoom, switchTab]);
+
   const saveProfile = useCallback((data, xp) => {
     try {
       const toSave = {
@@ -306,6 +330,7 @@ export function AppProvider({ children }) {
       owned, equipped, buyItem, equipItem,
       sfxEnabled, setSfxEnabled,
       assessmentRequested, openAssessment, consumeAssessmentRequest,
+      mazeStartRoom, setMazeStartRoom, openWorkout, leaveWorkout,
       updateXP, awardPoints, spendPoints, awardTrainingWin, awardFreeRun, toggleLang, switchTab, requestMazeEntry, enterMaze, exitMaze,
       playSfx, stopSpeech, saveProfile,
       setProfileData,

@@ -18,12 +18,13 @@ const ROOM = 24, H = 5, TK = 0.5, half = ROOM / 2;
 
 const DOORS = [
   { id: 'red',   label: 'The Attention Room',  room: 'attention', x: -3.5, color: '#cc1100', emissive: '#550000' },
-  { id: 'green', label: 'The Emerald Archive', room: null,    x: 0,    color: '#006622', emissive: '#002a0e' },
-  { id: 'blue',  label: 'The Azure Sanctum',   room: null,    x: 3.5,  color: '#001188', emissive: '#000533' },
+  { id: 'green', label: 'The Gym',             room: 'gym',   x: 0,    color: '#006622', emissive: '#002a0e' },
+  { id: 'blue',  label: 'The Labyrinth',       room: 'maze',  x: 3.5,  color: '#001188', emissive: '#000533' },
 ];
 
 export function buildDoorHall({ engine, canvas, overlayEl, ctx, inputRef }) {
   const scene = new B.Scene(engine);
+  if (B.ScenePerformancePriority) scene.performancePriority = B.ScenePerformancePriority.Intermediate;
   // Bright sky background + soft fog (matches the reference's airy feel).
   const sky = B.Color3.FromHexString('#87CEEB');
   scene.clearColor = new B.Color4(sky.r, sky.g, sky.b, 1);

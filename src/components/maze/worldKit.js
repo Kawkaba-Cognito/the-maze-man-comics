@@ -7,11 +7,12 @@
  * Usage: const kit = createKit(BABYLON, scene); then use kit.* helpers.
  */
 
-export function createKit(BABYLON, s) {
+export function createKit(BABYLON, s, lowPerf = false) {
   // ── Glow layer: only meshes we explicitly register glow (keeps the gold
-  //    rim-light from blooming the whole scene). ──
-  const glowLayer = new BABYLON.GlowLayer('glow', s, { blurKernelSize: 32 });
-  glowLayer.intensity = 0.8;
+  //    rim-light from blooming the whole scene). A smaller blur kernel on
+  //    phones is much cheaper (the full-screen blur pass is a top mobile cost). ──
+  const glowLayer = new BABYLON.GlowLayer('glow', s, { blurKernelSize: lowPerf ? 16 : 32 });
+  glowLayer.intensity = lowPerf ? 0.7 : 0.8;
   const glow = (mesh) => { glowLayer.addIncludedOnlyMesh(mesh); return mesh; };
 
   // ── Materials ──

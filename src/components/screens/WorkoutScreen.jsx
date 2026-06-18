@@ -63,7 +63,7 @@ function ProgressRing({ frac, done, total, allDone }) {
 }
 
 export default function WorkoutScreen() {
-  const { currentLang, switchTab, playSfx, awardPoints, openAssessment } = useApp();
+  const { currentLang, playSfx, awardPoints, openAssessment, leaveWorkout } = useApp();
   const isAr = currentLang === 'ar';
   const needsAssessment = !hasAssessProfile();
 
@@ -275,7 +275,7 @@ export default function WorkoutScreen() {
               </div>
             );
           })()}
-          <button className="workout-cta" onClick={() => { playSfx('click'); setCelebrate(false); setView('plan'); }}>
+          <button className="workout-cta" onClick={() => { playSfx('click'); setCelebrate(false); leaveWorkout(); }}>
             {isAr ? 'تم' : 'Done'}
           </button>
           <button className="wk-trans-end" onClick={() => { playSfx('click'); setCelebrate(false); setView('stats'); }}>
@@ -352,7 +352,7 @@ export default function WorkoutScreen() {
   if (view === 'setup') {
     return (
       <div className="workout-screen" dir={isAr ? 'rtl' : 'ltr'}>
-        <button className="workout-back" onClick={() => switchTab('home')}>‹ {isAr ? 'رجوع' : 'BACK'}</button>
+        <button className="workout-back" onClick={() => leaveWorkout()}>‹ {isAr ? 'رجوع' : 'BACK'}</button>
         <div className="workout-title">💪 {isAr ? 'تمرين يومي' : 'Daily Workout'}</div>
         <p className="workout-sub">{isAr ? 'صمّم تمرينك: اختر هدفك ومدّتك.' : 'Build your workout — pick your goal and how long.'}</p>
 

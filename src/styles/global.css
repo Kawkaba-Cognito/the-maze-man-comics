@@ -307,8 +307,76 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
 .rewards-empty { max-width: 360px; font-size: 0.95rem; line-height: 1.5; color: #b9ad99; }
 
 /* ── Character dress-up controls ── */
-.char-screen { gap: 12px; }
+.char-screen { gap: 16px; justify-content: flex-start; }
 .char-preview { width: 190px; height: 228px; display: flex; align-items: center; justify-content: center; }
+
+/* Hero stage */
+.char-stage {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; max-width: 320px; padding: 6px 0 2px;
+    border-radius: 20px;
+    background: radial-gradient(ellipse at 50% 42%, rgba(255, 190, 90, 0.12), rgba(0, 0, 0, 0) 70%);
+}
+
+/* Sections */
+.char-section { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 10px; }
+.char-section-title {
+    margin: 0; text-align: start;
+    font-family: 'Bangers', cursive; letter-spacing: 1px;
+    font-size: 1.05rem; color: #ffd98a;
+}
+
+/* Character picker cards */
+.char-pick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.char-card {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 12px 6px 10px; cursor: pointer;
+    background: linear-gradient(180deg, #2a1606, #3a1e08);
+    border: 2px solid #7a4a20; border-radius: 14px;
+    transition: transform .08s, border-color .12s, box-shadow .12s;
+}
+.char-card:hover { transform: translateY(-2px); }
+.char-card.is-on {
+    border-color: #ffd066; box-shadow: 0 0 14px rgba(255, 180, 60, 0.45);
+    background: linear-gradient(180deg, #3a2008, #4a280c);
+}
+.char-card-art { width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; }
+.char-card-name { font-family: 'Comic Neue', cursive; font-weight: 700; font-size: 0.85rem; color: #f3ead9; }
+.char-card.is-on .char-card-name { color: #fff2cf; }
+.char-card-badge {
+    position: absolute; top: 6px; inset-inline-end: 6px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #ffd066; color: #1a1206; font-size: 12px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* Wardrobe */
+.char-equip { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+.char-slot { display: flex; flex-direction: column; gap: 7px; }
+.char-slot-label {
+    text-align: start; font-family: 'Bangers', cursive; letter-spacing: 1px;
+    font-size: 0.78rem; color: #c79a5a; text-transform: uppercase;
+}
+.char-item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 8px; }
+.char-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 8px 4px; cursor: pointer;
+    background: linear-gradient(180deg, #241303, #321a07);
+    border: 1.5px solid #6a4018; border-radius: 12px;
+    transition: transform .08s, border-color .12s, box-shadow .12s;
+}
+.char-item:hover { transform: translateY(-1px); }
+.char-item.is-on {
+    border-color: #ffd066; box-shadow: 0 0 12px rgba(255, 180, 60, 0.4);
+    background: linear-gradient(180deg, #3a2008, #4a280c);
+}
+.char-item-art {
+    width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: #8a7a5a;
+}
+.char-item-name { font-family: 'Comic Neue', cursive; font-weight: 700; font-size: 0.72rem; color: #d8c9ad; line-height: 1.1; text-align: center; }
+.char-item.is-on .char-item-name { color: #fff2cf; }
+.char-item--none .char-item-art { font-size: 20px; color: #6a5a42; }
 .char-shop-link {
     margin-top: 6px;
     font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 1rem; color: #1a1206;

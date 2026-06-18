@@ -371,22 +371,6 @@ export const ITEMS = [
       });
     },
   },
-  {
-    id: 'balloon', slot: 'back', layer: 'front', attach: 'hand', en: 'Party Balloon', ar: 'بالون', cost: 20, icon: '🎈', iconBox: '-2 -84 36 92',
-    render2d: () => (
-      <g>
-        <path d="M2,2 C8,-16 14,-34 17,-54" fill="none" stroke={INK} strokeWidth="1" opacity="0.55" />
-        <ellipse cx="17" cy="-64" rx="11" ry="14" fill={P.red} stroke={INK} strokeWidth={SW} />
-        <path d="M17,-50 l-3,4 6,0 Z" fill={P.red} stroke={INK} strokeWidth="1" strokeLinejoin="round" />
-        <ellipse cx="13" cy="-69" rx="3.2" ry="5" fill="#fff" opacity="0.35" />
-      </g>
-    ),
-    // Held in the hand: string rises from the hand to a floating balloon.
-    build3d: ({ BABYLON, s, parent, mats }) => {
-      const str = BABYLON.MeshBuilder.CreateCylinder('bls', { diameter: 0.025, height: 1.5 }, s); str.material = mats.make(0.75, 0.75, 0.75); str.parent = parent; str.position.set(0.05, 0.75, 0);
-      const b = BABYLON.MeshBuilder.CreateSphere('blb', { diameter: 0.85, segments: 12 }, s); b.scaling = new BABYLON.Vector3(1, 1.2, 1); b.material = mats.make(1, 0.36, 0.45); b.parent = parent; b.position.set(0.1, 1.65, 0);
-    },
-  },
 ];
 
 export const ITEMS_BY_ID = Object.fromEntries(ITEMS.map((it) => [it.id, it]));
