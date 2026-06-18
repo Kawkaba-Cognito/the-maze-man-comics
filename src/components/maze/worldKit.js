@@ -8,12 +8,12 @@
  */
 
 export function createKit(BABYLON, s, lowPerf = false) {
-  // ── Glow layer: only meshes we explicitly register glow (keeps the gold
-  //    rim-light from blooming the whole scene). A smaller blur kernel on
-  //    phones is much cheaper (the full-screen blur pass is a top mobile cost). ──
-  const glowLayer = new BABYLON.GlowLayer('glow', s, { blurKernelSize: lowPerf ? 16 : 32 });
-  glowLayer.intensity = lowPerf ? 0.7 : 0.8;
-  const glow = (mesh) => { glowLayer.addIncludedOnlyMesh(mesh); return mesh; };
+  // ── Glow layer: a full-screen blur pass every frame — one of the biggest
+  //    GPU costs on phones. Skip it entirely on low-perf devices; glow()
+  //    becomes a no-op so callers don't need to branch. ──
+  const glowLayer = lowPerf ? null : new BABYLON.GlowLayer('glow', s, { blurKernelSize: 32 });
+  if (glowLayer) glowLayer.intensity = 0.8;
+  const glow = lowPerf ? (mesh) => mesh : (mesh) => { glowLayer.addIncludedOnlyMesh(mesh); return mesh; };
 
   // ── Materials ──
   /** Flat comic material: strong diffuse, low spec, optional emissive. */

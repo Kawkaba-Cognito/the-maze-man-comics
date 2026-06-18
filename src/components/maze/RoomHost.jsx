@@ -59,7 +59,9 @@ export default function RoomHost() {
     // effective DPR (lower on touch) so the GPU isn't drawing millions of extra
     // pixels for no visible gain. setHardwareScalingLevel > 1 = render smaller.
     const dpr = window.devicePixelRatio || 1;
-    const targetDpr = isTouch ? 1.0 : 1.5;
+    // With glow + shadows off on phones (see worldKit/roomControls), the GPU has
+    // headroom for a sharper image — render at ~1.5× instead of 1×.
+    const targetDpr = isTouch ? 1.5 : 1.75;
     if (dpr > targetDpr) engine.setHardwareScalingLevel(dpr / targetDpr);
 
     let disposed = false;

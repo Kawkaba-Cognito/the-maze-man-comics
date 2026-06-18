@@ -60,10 +60,17 @@ export function setupControls(scene, canvas, opts = {}) {
   const dir = new B.DirectionalLight('keyLight', new B.Vector3(-0.45, -1, 0.55), scene);
   dir.position = new B.Vector3(12, 22, -12);
   dir.intensity = 1.0;
-  const shadowGenerator = new B.ShadowGenerator(lowPerf ? 512 : 1024, dir);
-  shadowGenerator.useBlurExponentialShadowMap = true;
-  shadowGenerator.blurKernel = lowPerf ? 8 : 16;
-  shadowGenerator.darkness = 0.4;
+  // Real-time shadows = a shadow-map render + blur every frame — a major mobile
+  // cost. Skip them on phones and hand rooms a no-op shadow generator instead.
+  const shadowGenerator = lowPerf
+    ? { addShadowCaster() {}, removeShadowCaster() {}, getShadowMap() { return null; }, dispose() {} }
+    : (() => {
+        const sg = new B.ShadowGenerator(1024, dir);
+        sg.useBlurExponentialShadowMap = true;
+        sg.blurKernel = 16;
+        sg.darkness = 0.4;
+        return sg;
+      })();
 
   // ── Player collider (invisible) — the character rig is parented to it ──
   // Centre at y=1, ~2 units tall, feet on the floor.
@@ -89,7 +96,7 @@ export function setupControls(scene, canvas, opts = {}) {
       mt.emissiveColor = B.Color3.Black();
     }
   });
-  const dust = kit.dustPuffs(player);
+  const dust = lowPerf ? { rate() {} } : kit.dustPuffs(player); // particles off on phones
 
   let heading = startYaw; // the character's facing (radians)
 
