@@ -43,14 +43,24 @@ export default function RoomHost() {
     if (!canvas || !window.BABYLON) return undefined;
 
     const engine = new (B().Engine)(canvas, true, {
-      preserveDrawingBuffer: true, stencil: true, adaptToDeviceRatio: true,
+      stencil: true, adaptToDeviceRatio: true,
+      powerPreference: 'high-performance',
     });
     engineRef.current = engine;
+
+    // Cap render resolution. adaptToDeviceRatio renders at the full device pixel
+    // ratio, which on phones/retina is 2–3× and murders the framerate. Clamp the
+    // effective DPR (lower on touch) so the GPU isn't drawing millions of extra
+    // pixels for no visible gain. setHardwareScalingLevel > 1 = render smaller.
+    const dpr = window.devicePixelRatio || 1;
+    const targetDpr = isTouch ? 1.0 : 1.5;
+    if (dpr > targetDpr) engine.setHardwareScalingLevel(dpr / targetDpr);
 
     let disposed = false;
 
     const ctx = {
       exitMaze, updateXP, playSfx, character, equipped,
+      lowPerf: isTouch, // rooms drop shadow quality on phones
       goToRoom: (key) => goRef.current?.(key),
     };
 

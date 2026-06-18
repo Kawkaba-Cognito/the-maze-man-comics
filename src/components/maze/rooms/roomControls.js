@@ -26,7 +26,7 @@ const MAX_SPEED = 0.19;  // top forward walk speed (per frame)
 const MAX_BACK = 0.10;   // slower reverse
 const RUN_MULT = 1.7;    // Shift
 const TURN = 0.05;       // radians / frame at full turn input
-const CHAR_SCALE = 0.6;  // shrink the open-world rig to room scale (~1.6 units)
+const CHAR_SCALE = 0.45; // shrink the open-world rig to room scale (~1.6 units tall vs 2.7 doors)
 const CAM_DIST = 6.5;    // how far the chase camera trails behind
 const CAM_HEIGHT = 3.3;  // how high above the floor the camera sits
 const CAM_LOOK_Y = 1.1;  // height the camera aims at (character mid-body)
@@ -44,6 +44,7 @@ export function setupControls(scene, canvas, opts = {}) {
     character = 'male',
     equipped = {},
     bounds = null, // { hw, hd } half-extents → keeps the camera inside the walls
+    lowPerf = false, // phones: smaller shadow map + lighter blur
   } = opts;
 
   scene.collisionsEnabled = true;
@@ -55,9 +56,9 @@ export function setupControls(scene, canvas, opts = {}) {
   const dir = new B.DirectionalLight('keyLight', new B.Vector3(-0.45, -1, 0.55), scene);
   dir.position = new B.Vector3(12, 22, -12);
   dir.intensity = 1.0;
-  const shadowGenerator = new B.ShadowGenerator(1024, dir);
+  const shadowGenerator = new B.ShadowGenerator(lowPerf ? 512 : 1024, dir);
   shadowGenerator.useBlurExponentialShadowMap = true;
-  shadowGenerator.blurKernel = 16;
+  shadowGenerator.blurKernel = lowPerf ? 8 : 16;
   shadowGenerator.darkness = 0.4;
 
   // ── Player collider (invisible) — the character rig is parented to it ──

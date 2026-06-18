@@ -75,6 +75,7 @@ export function buildAttentionRoom({ engine, canvas, overlayEl, ctx, inputRef })
     character: ctx.character,
     equipped: ctx.equipped,
     bounds: { hw: half, hd: half },
+    lowPerf: ctx.lowPerf,
     onInteract: interact,
     onAction2: action2,
   });

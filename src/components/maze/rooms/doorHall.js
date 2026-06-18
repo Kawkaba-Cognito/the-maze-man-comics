@@ -114,6 +114,7 @@ export function buildDoorHall({ engine, canvas, overlayEl, ctx, inputRef }) {
     character: ctx.character,
     equipped: ctx.equipped,
     bounds: { hw: half, hd: half },
+    lowPerf: ctx.lowPerf,
     onInteract: tryInteract,
   });
   // Cast room shadows from the key light created in roomControls.
