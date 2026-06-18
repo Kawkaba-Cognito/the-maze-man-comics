@@ -133,20 +133,7 @@ const blockburst = {
   loader: () => import('./games/blockburst'),
 };
 
-const maze = {
-  id: 'maze',
-  gameKey: 'maze',
-  name: 'Logic Maze',
-  nameAr: 'متاهة منطقية',
-  icon: '🌀',
-  desc: 'Trace the path from start to exit — dodge the dead ends.',
-  descAr: 'تتبّع المسار من البداية إلى المخرج — وتجنّب الممرات المسدودة.',
-  accent: '#7aa6e0',
-  sizes: [3, 4, 5, 6],
-  loader: () => import('./games/maze'),
-};
-
-export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, bridges, sudoku, kenken, nonogram, kakuro, crowns, blockburst, maze];
+export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, bridges, sudoku, kenken, nonogram, kakuro, crowns, blockburst];
 
 export const PUZZLES_BY_KEY = Object.fromEntries(
   PUZZLE_CONFIGS.map((p) => [p.gameKey, p])
