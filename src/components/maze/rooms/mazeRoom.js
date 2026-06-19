@@ -133,7 +133,7 @@ export function buildMazeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
 
   const kit = createKit(Bb, scene, lowPerf);
   const { rig } = buildCharacter(Bb, scene, playerCollider, shadowGenerator, ctx.character || 'male', ctx.equipped || {}, kit);
-  rig.root.position.y = -2.0; rig.root.scaling.setAll(0.85);
+  rig.root.position.y = -2.0; rig.root.scaling.setAll(0.55); // small pixel/top-down character (matches gym/attention)
   rig.root.getChildMeshes().forEach((m) => {       // drop self-lit rim so bloom doesn't whiteout the player
     const mt = m.material;
     if (mt && mt.emissiveColor) { mt.emissiveFresnelParameters = null; mt.emissiveColor = Bb.Color3.Black(); }

@@ -50,6 +50,7 @@ export function setupControls(scene, canvas, opts = {}) {
     camDist = CAM_DIST, camHeight = CAM_HEIGHT, camLookY = CAM_LOOK_Y, // chase cam
     fov = 1.0,
     topDown = false, // fixed overhead/tilted cam + screen-relative joystick
+    charScale = CHAR_SCALE, // per-room rig scale (small for pixel/top-down rooms)
   } = opts;
 
   scene.collisionsEnabled = true;
@@ -85,7 +86,7 @@ export function setupControls(scene, canvas, opts = {}) {
   // buildCharacter assumes a y=2 collider centre (it drops the rig -2 to the
   // floor). Our centre is y=1, and we shrink the rig, so re-seat its feet at 0.
   rig.root.position.y = -1.0;
-  rig.root.scaling.set(CHAR_SCALE, CHAR_SCALE, CHAR_SCALE);
+  rig.root.scaling.set(charScale, charScale, charScale);
   rig.root.rotation.y = startYaw;
   // The open-world rig uses a glowing gold "ink rim" (emissive fresnel) that
   // reads as self-lit in a brightly-lit room. Drop the emissive glow so the

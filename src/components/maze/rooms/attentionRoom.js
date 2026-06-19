@@ -67,10 +67,19 @@ export function buildAttentionRoom({ engine, canvas, overlayEl, ctx, inputRef })
     box('leaf', 3, 2, 3, x, 3.5, z, leafMat, false);
     box('leaf2', 2, 1.4, 2, x, 4.6, z, leafMat, false);
   };
-  tree(-8, -7); tree(8, -7); tree(-8, 8);
+  tree(-8, -7); tree(8, -7); tree(-8, 8); tree(8, 8);
   box('rock1', 1, 1, 1, 4, 0.5, -7, stoneMat, false);
   box('rock2', 1, 1, 1, 5, 0.5, -6.5, stoneMat, false);
-  box('dirt1', 1, 1, 1, -3, 0.5, 7, dirtMat, false);
+
+  // Scenery: a stone path up the middle, bushes, flowers, a little pond.
+  const pathMat = toon('mcPathMat', '#c7b48c', 0.1);
+  for (let z = -8; z <= 8; z += 2) box('path' + z, 2.4, 0.08, 2.2, 0, 0.04, z, pathMat, false);
+  const bush = toon('mcBushMat', '#4f9a44', 0.12);
+  [[-6, -1], [6, 2], [-7, 5], [7, -3], [-2, -8], [3, 8]].forEach(([x, z], i) => box('bush' + i, 1.4, 0.9, 1.4, x, 0.45, z, bush, false));
+  const fl = ['#e8584f', '#f0c040', '#d27fd0', '#5fb0e0'].map((c, i) => toon('mcFlower' + i, c, 0.35));
+  [[-5, 3], [5, 5], [-9, -2], [9, 1], [2, -6], [-3, 9], [6, -8], [-8, 0]].forEach(([x, z], i) => box('fl' + i, 0.35, 0.5, 0.35, x, 0.25, z, fl[i % 4], false));
+  box('pond', 4.2, 0.06, 3.2, 7.5, 0.05, 7.5, toon('mcPondMat', '#3f8fd0', 0.18), false);
+  box('dirt1', 1, 1, 1, -3, 0.5, -2.5, dirtMat, false);
 
   // exit "portal" block (glowing) on the south wall by the spawn
   const exitMat = new B.StandardMaterial('mcExit', scene);
@@ -88,6 +97,7 @@ export function buildAttentionRoom({ engine, canvas, overlayEl, ctx, inputRef })
     bounds: { hw: half, hd: half },
     lowPerf: ctx.lowPerf,
     topDown: true, camDist: 10, camHeight: 18, fov: 0.7, // Pokémon-style top-down
+    charScale: 0.32, // small pixel/top-down character
     onInteract: interact,
   });
 
@@ -100,12 +110,17 @@ export function buildAttentionRoom({ engine, canvas, overlayEl, ctx, inputRef })
 
   // ── Collectible wool blocks ──
   const targets = TARGETS.map((t, i) => {
-    const m = new B.StandardMaterial('woolM' + i, scene);
     const base = B.Color3.FromHexString(t.color);
-    m.diffuseColor = base; m.emissiveColor = base.scale(0.4); m.specularColor = new B.Color3(0, 0, 0);
-    const cube = B.MeshBuilder.CreateBox('wool' + i, { size: 1.1 }, scene);
-    cube.position.set(t.x, 1.2, t.z); cube.material = m;
-    return { mesh: cube, x: t.x, z: t.z, collected: false };
+    const m = new B.StandardMaterial('woolM' + i, scene);
+    m.diffuseColor = base; m.emissiveColor = base.scale(0.45); m.specularColor = new B.Color3(0, 0, 0);
+    const cube = B.MeshBuilder.CreateBox('wool' + i, { size: 0.95 }, scene);
+    cube.position.set(t.x, 1.1, t.z); cube.material = m;
+    // glowing pad under it so it reads clearly from the top-down view
+    const padMat = new B.StandardMaterial('woolPad' + i, scene);
+    padMat.diffuseColor = base; padMat.emissiveColor = base.scale(0.7); padMat.specularColor = new B.Color3(0, 0, 0);
+    const pad = B.MeshBuilder.CreateDisc('woolPadD' + i, { radius: 0.95, tessellation: 18 }, scene);
+    pad.rotation.x = Math.PI / 2; pad.position.set(t.x, 0.06, t.z); pad.material = padMat;
+    return { mesh: cube, pad, x: t.x, z: t.z, collected: false };
   });
 
   // ── Perf: no pointer-move picking + stop per-frame material dirty scans ──
@@ -141,7 +156,7 @@ export function buildAttentionRoom({ engine, canvas, overlayEl, ctx, inputRef })
     if (done) { ctx.goToRoom('hall'); return; }
     if (nearType === 'exit') { ctx.playSfx?.('click'); ctx.goToRoom('hall'); return; }
     if (nearType === 'target' && nearRef && !nearRef.collected) {
-      nearRef.collected = true; nearRef.mesh.setEnabled(false);
+      nearRef.collected = true; nearRef.mesh.setEnabled(false); nearRef.pad.setEnabled(false);
       collected += 1; countEl.textContent = `Collected  ${collected} / 5`;
       ctx.playSfx?.('click'); ctx.updateXP?.(5);
       if (collected >= 5) complete();

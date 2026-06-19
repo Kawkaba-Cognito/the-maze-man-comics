@@ -60,20 +60,48 @@ export function buildGymRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
   box('wE', TK, H, ROOM, half, H / 2, 0, wallMat, true);
   [[-half, -half], [half, -half], [-half, half], [half, half]].forEach(([px, pz], i) => box('post' + i, 1, H + 0.8, 1, px, (H + 0.8) / 2, pz, postMat, false));
 
-  // ── Props: teal mats (secondary), orange/metal equipment (accent) ──
-  const orange = toon('gymOrange', '#ef7a3a', 0.18), teal = toon('gymTeal', '#3a7d86');
-  const dark = toon('gymDark', '#34303f'), metal = toon('gymMetal', '#7f8aa3');
-  box('mat1', 2.4, 0.18, 4.4, -5.5, 0.09, 1.5, teal, false);
-  box('mat2', 2.4, 0.18, 4.4, -5.5, 0.09, -3.2, teal, false);
-  box('rack', 4, 1.0, 0.8, 5.5, 0.5, -5.5, dark, false);
-  [-1.2, 0, 1.2].forEach((dx, i) => {
-    [-0.45, 0.45].forEach((s, j) => box('dbw' + i + j, 0.5, 0.46, 0.5, 5.5 + dx + s, 1.1, -5.5, metal, false));
-  });
-  const bag = Bb.MeshBuilder.CreateCylinder('bag', { diameter: 0.8, height: 2.0, tessellation: 10 }, scene);
-  bag.position.set(6, 1.2, 3.5); bag.material = orange; bag.freezeWorldMatrix();
+  // ── Props, organised into zones (read clearly from the top-down view) ──
+  const orange = toon('gymOrange', '#ef7a3a', 0.16), teal = toon('gymTeal', '#3a7d86');
+  const dark = toon('gymDark', '#34303f'), metal = toon('gymMetal', '#8893a8');
+  const red = toon('gymRedPad', '#d8554a', 0.12), blue = toon('gymBlue', '#4f9fd8', 0.12);
+  const cyl = (name, dia, h, x, y, z, m) => { const c = Bb.MeshBuilder.CreateCylinder(name, { diameter: dia, height: h, tessellation: 10 }, scene); c.position.set(x, y, z); c.material = m; c.freezeWorldMatrix(); return c; };
+
+  // Coach training pad (glowing) — stand here and USE.
+  box('trainPad', 3.2, 0.12, 3.2, 0, 0.06, -3.6, toon('gymPad', '#ffce4a', 0.5), false);
+
+  // Weights zone (east wall): rack + dumbbells + a bench.
+  box('rack', 0.8, 1.1, 4.5, half - 1.0, 0.55, -3.5, dark, false);
+  [-1.4, 0, 1.4].forEach((dz, i) => [-0.5, 0.5].forEach((s, j) => box('db' + i + j, 0.5, 0.5, 0.5, half - 1.0, 1.15, -3.5 + dz + s * 0.0, metal, false)));
+  box('benchLeg', 1.0, 0.5, 2.4, half - 3.3, 0.25, 2.5, dark, false);
+  box('benchPad', 1.1, 0.25, 2.6, half - 3.3, 0.62, 2.5, red, false);
+
+  // Cardio zone (west wall): treadmill + console.
+  box('tmBase', 1.8, 0.3, 2.6, -half + 1.4, 0.15, 2.0, dark, false);
+  box('tmBelt', 1.4, 0.36, 2.4, -half + 1.4, 0.2, 2.0, toon('gymBelt', '#2a2740', 0.05), false);
+  box('tmBar', 1.6, 1.3, 0.25, -half + 1.4, 0.9, 0.9, metal, false);
+  box('tmScreen', 1.2, 0.7, 0.12, -half + 1.4, 1.5, 0.85, blue, false);
+
+  // Punching bag (NW corner) + water cooler (SE).
+  cyl('bag', 0.8, 2.0, -half + 1.6, 1.2, -half + 2.0, orange);
+  box('cooler', 0.8, 1.4, 0.8, half - 1.2, 0.7, half - 1.6, blue, false);
+  box('coolerTop', 0.9, 0.3, 0.9, half - 1.2, 1.5, half - 1.6, toon('gymWhite', '#dfe7f0', 0.1), false);
+
+  // Yoga mats (front-centre).
+  box('mat1', 1.4, 0.1, 3.0, -2.4, 0.05, 4.6, teal, false);
+  box('mat2', 1.4, 0.1, 3.0, -0.6, 0.05, 4.6, orange, false);
+
+  // "GYM" sign on the north wall behind the coach.
+  const signTex = new Bb.DynamicTexture('gymSign', { width: 256, height: 96 }, scene, false);
+  const sc = signTex.getContext();
+  sc.fillStyle = '#241d33'; sc.fillRect(0, 0, 256, 96);
+  sc.fillStyle = '#ffce4a'; sc.font = 'bold 64px Arial'; sc.textAlign = 'center'; sc.textBaseline = 'middle'; sc.fillText('GYM', 128, 52);
+  signTex.update(); signTex.updateSamplingMode(Bb.Texture.NEAREST_SAMPLINGMODE);
+  const signMat = new Bb.StandardMaterial('gymSignMat', scene);
+  signMat.diffuseTexture = signTex; signMat.emissiveColor = new Bb.Color3(0.6, 0.6, 0.6); signMat.specularColor = new Bb.Color3(0, 0, 0);
+  const sign = box('sign', 4, 1.5, 0.2, 0, 2.0, -half + 0.35, signMat, false); sign.material = signMat;
 
   // exit pad (glowing) by the spawn
-  box('exitDoor', 1.8, 0.2, 1.8, EXIT.x, 0.11, EXIT.z, toon('gymExit', '#16d39a', 0.6), false);
+  box('exitDoor', 1.8, 0.2, 1.8, EXIT.x, 0.11, EXIT.z, toon('gymExit', '#16d39a', 0.55), false);
 
   // ── Controls: fixed isometric/top-down (CR), screen-relative joystick ──
   const ctrl = setupControls(scene, canvas, {
@@ -85,6 +113,7 @@ export function buildGymRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
     lowPerf: ctx.lowPerf,
     bounds: { hw: half, hd: half },
     topDown: true, camDist: 10, camHeight: 18, fov: 0.7, // Pokémon-style top-down
+    charScale: 0.32, // small pixel/top-down character
     onInteract: () => tryInteract(),
   });
 
@@ -96,8 +125,8 @@ export function buildGymRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
 
   // ── Coach ──
   const isAr = ctx.currentLang === 'ar';
-  const npcKit = createNpcKit(Bb, scene, { cell: 4, interactDist: 3.0 });
-  npcKit.spawn({ x: 0, z: -2, color: '#e8923a', name: isAr ? 'المدرب' : 'Coach', role: isAr ? 'تمرين اليوم' : 'Daily Training', scale: 1.05, accessory: 'cap' });
+  const npcKit = createNpcKit(Bb, scene, { cell: 4, interactDist: 3.6 });
+  npcKit.spawn({ x: 0, z: -6, color: '#e8923a', name: isAr ? 'المدرب' : 'Coach', role: isAr ? 'تمرين اليوم' : 'Daily Training', scale: 0.75, accessory: 'cap' });
 
   // ── Perf: no pointer-move picking + stop per-frame material dirty scans ──
   scene.skipPointerMovePicking = true;
