@@ -21,7 +21,11 @@
 .rh-overlay {
   position: fixed;
   inset: 0;
-  z-index: 6;
+  /* Above the touch move-zone (z10) and action cluster (z15) so injected modal
+     panels (gym training, maze return, attention) are tappable on phones. The
+     overlay itself is pointer-events:none, so empty areas still pass touches
+     through to the move-zone — only the panels (pointer-events:auto) capture. */
+  z-index: 20;
   pointer-events: none;
 }
 

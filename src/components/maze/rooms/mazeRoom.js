@@ -25,16 +25,6 @@ export function buildMazeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
   scene.collisionsEnabled = true;
   const lowPerf = !!ctx.lowPerf;
 
-  // ── PIXEL-3D: render the maze at low resolution + nearest-neighbour upscale.
-  //    A big fill-rate win on phones AND a crisp pixel-art look (low-res reads as
-  //    "pixel" instead of "blurry"). Restored on dispose. ──
-  const dpr = window.devicePixelRatio || 1;
-  const PIXEL = lowPerf ? 0.5 : 0.6; // fraction of CSS pixels actually rendered
-  const prevScale = engine.getHardwareScalingLevel();
-  const prevImgRender = canvas.style.imageRendering;
-  engine.setHardwareScalingLevel(Math.max(1, dpr / PIXEL));
-  canvas.style.imageRendering = 'pixelated';
-
   // ── Maze grid: recursive backtracker, then opened up for MORE SPACE ──
   const maze = Array.from({ length: MAP }, () => new Array(MAP).fill(1));
   (function carve(x, y) {
@@ -201,17 +191,8 @@ export function buildMazeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
     } else if (t === Bb.PointerEventTypes.POINTERUP) { pointerDown = false; }
   });
 
-  let reached = false, done = false;
-  function corePanel() {
-    if (done) return; done = true;
-    ctx.playSfx?.('chime'); ctx.updateXP?.(50);
-    const panel = document.createElement('div'); panel.className = 'gym-panel';
-    panel.innerHTML = `<div class="gym-coach-k">CORE REACHED</div>
-      <div class="gym-coach-t">You navigated the Labyrinth and reached the core.</div>
-      <button class="gym-start" id="mzCoreBtn">Return to the Hall</button>`;
-    overlayEl.appendChild(panel);
-    panel.querySelector('#mzCoreBtn').addEventListener('click', () => { ctx.playSfx?.('click'); ctx.goToRoom('hall'); });
-  }
+  const isAr = ctx.currentLang === 'ar';
+  let done = false, lastPrompt = '';
 
   const SPEED = 0.32;
   let walkCycle = 0, prevHeading = 0;
@@ -254,17 +235,26 @@ export function buildMazeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
     camera.target.x = playerCollider.position.x;
     camera.target.z = playerCollider.position.z;
 
-    if (!reached && Bb.Vector3.Distance(playerCollider.position, corePos) < 4) { reached = true; corePanel(); }
+    // Intentional return: near the core, prompt the player to press USE.
+    const near = Bb.Vector3.Distance(playerCollider.position, corePos) < 4.5;
+    const pr = near ? (isAr ? '▶ اضغط USE للعودة إلى القاعة' : '▶ press USE to return to the Hall') : '';
+    if (pr !== lastPrompt) { lastPrompt = pr; promptEl.textContent = pr; promptEl.classList.toggle('show', !!pr); }
   };
   scene.registerBeforeRender(beforeRender);
 
-  function tryInteract() { if (Bb.Vector3.Distance(playerCollider.position, corePos) < 5) corePanel(); }
+  // USE near the core → reach it and return to the Hall (intentional, not auto).
+  function tryInteract() {
+    if (done) return;
+    if (Bb.Vector3.Distance(playerCollider.position, corePos) < 4.5) {
+      done = true;
+      ctx.playSfx?.('chime'); ctx.updateXP?.(50);
+      ctx.goToRoom('hall');
+    }
+  }
 
   return {
     scene, interact: tryInteract, jump: () => {},
     dispose() {
-      engine.setHardwareScalingLevel(prevScale);   // undo the pixel-3D downscale
-      canvas.style.imageRendering = prevImgRender;
       scene.unregisterBeforeRender(beforeRender);
       scene.onPointerObservable.remove(ptr);
       window.removeEventListener('keydown', onKeyDown);
