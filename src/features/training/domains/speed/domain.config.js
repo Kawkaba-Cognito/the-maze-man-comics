@@ -13,6 +13,9 @@ const speed = {
     {
       id: 'speed-match',
       name: 'Speed Match',
+      nameAr: 'مطابقة سريعة',
+      blurb: 'Match symbols to digits as fast as you can.',
+      blurbAr: 'طابق الرموز بالأرقام بأسرع ما يمكن.',
       gameCount: 1,
       progress: 0,
       gameKey: 'speed-match',

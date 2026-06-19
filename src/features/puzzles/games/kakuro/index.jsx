@@ -12,7 +12,7 @@ import { generateKakuro, isKakuroSolved, resetKakuro, setKakuroCell, hintReveal 
 const CONFIG = getPuzzle('kakuro');
 const SIZES = [6, 7];
 
-export default function KakuroPuzzle({ onBack }) {
+export default function KakuroPuzzle({ onBack, onSolved }) {
   const { currentLang, playSfx, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
@@ -40,6 +40,7 @@ export default function KakuroPuzzle({ onBack }) {
   useEffect(() => {
     if (state && isKakuroSolved(state)) {
       setSolved(true);
+      onSolved?.();
       playSfx('win');
     }
   }, [state, playSfx]);

@@ -25,7 +25,7 @@ const ROOMS = {
 const B = () => window.BABYLON;
 
 export default function RoomHost() {
-  const { exitMaze, updateXP, playSfx, character, equipped, switchTab, currentLang, openWorkout, mazeStartRoom, setMazeStartRoom } = useApp();
+  const { exitMaze, updateXP, playSfx, character, equipped, switchTab, currentLang, openWorkout, openPuzzleChallenge, mazeStartRoom, setMazeStartRoom } = useApp();
 
   const canvasRef = useRef(null);
   const overlayRef = useRef(null);
@@ -53,6 +53,9 @@ export default function RoomHost() {
       powerPreference: 'high-performance',
     });
     engineRef.current = engine;
+    // Don't probe for .manifest files per texture (404s + needless requests, esp.
+    // for the maze's CDN textures) — we have no offline asset manifests.
+    engine.enableOfflineSupport = false;
 
     // Cap render resolution. adaptToDeviceRatio renders at the full device pixel
     // ratio, which on phones/retina is 2–3× and murders the framerate. Clamp the
@@ -67,7 +70,7 @@ export default function RoomHost() {
     let disposed = false;
 
     const ctx = {
-      exitMaze, updateXP, playSfx, character, equipped, switchTab, currentLang, openWorkout,
+      exitMaze, updateXP, playSfx, character, equipped, switchTab, currentLang, openWorkout, openPuzzleChallenge,
       lowPerf: isTouch, // rooms drop shadow quality on phones
       goToRoom: (key) => goRef.current?.(key),
     };

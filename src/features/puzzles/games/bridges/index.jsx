@@ -25,7 +25,7 @@ import { puzzleWinPoints } from '../../../../lib/points';
 const CONFIG = getPuzzle('bridges');
 const PUZZLE_ID = 'bridges';
 
-export default function BridgesPuzzle({ onBack }) {
+export default function BridgesPuzzle({ onBack, onSolved }) {
   const { currentLang, playSfx, awardPoints, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
@@ -58,6 +58,7 @@ export default function BridgesPuzzle({ onBack }) {
   useEffect(() => {
     if (state && !solved && isBridgesSolved(state)) {
       setSolved(true);
+      onSolved?.();
       setSelected(null);
       playSfx('win');
       awardPoints(puzzleWinPoints(size, CONFIG.sizes));

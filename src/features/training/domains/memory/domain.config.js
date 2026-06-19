@@ -13,6 +13,9 @@ const memory = {
     {
       id: 'working',
       name: 'Memo Span',
+      nameAr: 'مدى الذاكرة',
+      blurb: 'Watch the grid light up, then repeat it.',
+      blurbAr: 'راقب إضاءة الشبكة ثم كرّرها.',
       gameCount: 1,
       progress: 0,
       gameKey: 'memo-span',
@@ -22,6 +25,9 @@ const memory = {
     {
       id: 'nback',
       name: 'N-Back',
+      nameAr: 'إن-باك',
+      blurb: 'Spot when an item repeats from N steps back.',
+      blurbAr: 'اكتشف تكرار العنصر قبل N خطوات.',
       gameCount: 1,
       progress: 0,
       gameKey: 'nback',

@@ -28,6 +28,9 @@ export const DOMAINS = DOMAIN_CONFIGS.map((d) => ({
   subs: d.subs.map((s) => ({
     id: s.id,
     name: s.name,
+    nameAr: s.nameAr,
+    blurb: s.blurb,
+    blurbAr: s.blurbAr,
     games: s.gameCount ?? 1,
     progress: s.progress ?? 0,
     ...(s.gameKey ? { game: s.gameKey } : {}),

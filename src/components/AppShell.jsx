@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, Suspense } from 'react';
 import { useApp } from '../context/AppContext';
+import { getPuzzle } from '../features/puzzles/registry';
 import MazeBackground from './MazeBackground';
 import HomeScreen from './screens/HomeScreen';
 import ComicsScreen from './screens/ComicsScreen';
@@ -16,8 +17,29 @@ import TipButton from './shared/TipButton';
 import ReminderBanner from '../features/workout/ReminderBanner';
 import { LANG } from '../data/langStrings';
 
+/** Recruitment challenge — mounts one of the player's puzzles full-screen.
+ *  Solving it calls onSolved (recruit); the puzzle's own Back = onGiveUp. */
+function ChallengeLayer({ challenge, onSolved, onGiveUp, isAr }) {
+  const Game = useMemo(() => {
+    const p = getPuzzle(challenge.puzzleKey);
+    return p ? React.lazy(p.loader) : null;
+  }, [challenge.puzzleKey]);
+  return (
+    <div className="challenge-shell">
+      {Game ? (
+        <Suspense fallback={<div className="challenge-load">{isAr ? 'جارِ التحميل…' : 'Loading…'}</div>}>
+          <Game onBack={onGiveUp} onSolved={onSolved} />
+        </Suspense>
+      ) : (
+        <button className="challenge-load" onClick={onGiveUp}>{isAr ? 'رجوع' : 'Back'}</button>
+      )}
+      <div className="challenge-banner">⚔️ {isAr ? 'اهزم اللغز لتجنيد' : 'Solve to recruit'} <b>{challenge.name}</b></div>
+    </div>
+  );
+}
+
 export default function AppShell({ onBackToMenu }) {
-  const { activeTab, mazeVisible, mazeEntryPending, enterMaze, switchTab, toggleLang, currentLang } = useApp();
+  const { activeTab, mazeVisible, mazeEntryPending, enterMaze, switchTab, toggleLang, currentLang, challenge, finishChallenge } = useApp();
   const t = LANG[currentLang];
   const isAr = currentLang === 'ar';
   const isHome = activeTab === 'home';
@@ -84,6 +106,14 @@ export default function AppShell({ onBackToMenu }) {
       </div>
 
       {mazeVisible && <RoomHost />}
+      {challenge && (
+        <ChallengeLayer
+          challenge={challenge}
+          onSolved={() => finishChallenge(true)}
+          onGiveUp={() => finishChallenge(false)}
+          isAr={isAr}
+        />
+      )}
       {!mazeVisible && <ReminderBanner />}
       <PaywallModal />
       <TipJarModal />

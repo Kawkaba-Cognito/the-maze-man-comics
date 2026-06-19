@@ -13,6 +13,9 @@ const language = {
     {
       id: 'word-search',
       name: 'Word Maze',
+      nameAr: 'متاهة الكلمات',
+      blurb: 'Guess the hidden word from the clues.',
+      blurbAr: 'خمّن الكلمة المخفية من التلميحات.',
       gameCount: 1,
       progress: 0,
       gameKey: 'wordle',

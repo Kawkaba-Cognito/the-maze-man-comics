@@ -49,6 +49,7 @@ export function setupControls(scene, canvas, opts = {}) {
                         // instead of moveWithCollisions (cheap for big mazes)
     camDist = CAM_DIST, camHeight = CAM_HEIGHT, camLookY = CAM_LOOK_Y, // chase cam
     fov = 1.0,
+    topDown = false, // fixed overhead/tilted cam + screen-relative joystick
   } = opts;
 
   scene.collisionsEnabled = true;
@@ -131,22 +132,31 @@ export function setupControls(scene, canvas, opts = {}) {
     const inp = inputRef?.current;
     const jx = inp && Math.abs(inp.mx) > DEAD ? inp.mx : 0;
     const jy = inp && Math.abs(inp.my) > DEAD ? inp.my : 0;
-
-    // Turn: A / joystick-left = turn left; D / joystick-right = turn right.
-    // Babylon is left-handed, so turning is negated vs the right-handed
-    // reference: D / joystick-right turn clockwise, A / joystick-left counter.
-    const turnInput = (inputMap['a'] || inputMap['arrowleft'] ? 1 : 0)
-      - (inputMap['d'] || inputMap['arrowright'] ? 1 : 0) - jx;
-    heading -= turnInput * TURN;
-
-    // Forward / back (analog). Joystick up (my<0) = forward.
-    const kFwd = (inputMap['w'] || inputMap['arrowup'] ? 1 : 0) - (inputMap['s'] || inputMap['arrowdown'] ? 1 : 0);
-    const fwdInput = Math.max(-1, Math.min(1, kFwd - jy));
     const run = inputMap['shift'] ? RUN_MULT : 1;
-    const targetSpeed = (fwdInput >= 0 ? fwdInput * MAX_SPEED : fwdInput * MAX_BACK) * run;
-    const hasInput = Math.abs(fwdInput) > 0.05;
-    speed += (targetSpeed - speed) * (hasInput ? 0.2 : 0.14);
-    if (Math.abs(speed) < 0.0005) speed = 0;
+
+    if (topDown) {
+      // Screen-relative: up = north, right = east; the character faces wherever
+      // it walks (no tank turning). Joystick magnitude → analog speed.
+      const mx = jx + ((inputMap['d'] || inputMap['arrowright'] ? 1 : 0) - (inputMap['a'] || inputMap['arrowleft'] ? 1 : 0));
+      // Camera looks toward +z, so screen-up = +z. Joystick up is jy<0 → negate.
+      const mz = -jy + ((inputMap['w'] || inputMap['arrowup'] ? 1 : 0) - (inputMap['s'] || inputMap['arrowdown'] ? 1 : 0));
+      const mag = Math.min(1, Math.hypot(mx, mz));
+      const target = mag * MAX_SPEED * run;
+      speed += (target - speed) * (mag > 0.05 ? 0.2 : 0.14);
+      if (speed < 0.0005) speed = 0;
+      if (mag > 0.05) heading = Math.atan2(mx, mz); // face movement direction
+    } else {
+      // Tank: A/D turn, W/S walk along facing.
+      const turnInput = (inputMap['a'] || inputMap['arrowleft'] ? 1 : 0)
+        - (inputMap['d'] || inputMap['arrowright'] ? 1 : 0) - jx;
+      heading -= turnInput * TURN;
+      const kFwd = (inputMap['w'] || inputMap['arrowup'] ? 1 : 0) - (inputMap['s'] || inputMap['arrowdown'] ? 1 : 0);
+      const fwdInput = Math.max(-1, Math.min(1, kFwd - jy));
+      const targetSpeed = (fwdInput >= 0 ? fwdInput * MAX_SPEED : fwdInput * MAX_BACK) * run;
+      const hasInput = Math.abs(fwdInput) > 0.05;
+      speed += (targetSpeed - speed) * (hasInput ? 0.2 : 0.14);
+      if (Math.abs(speed) < 0.0005) speed = 0;
+    }
 
     // Vertical: jump + gravity (ground check off the resting collider height).
     const grounded = player.position.y <= GROUND_Y + 0.06;
@@ -181,33 +191,38 @@ export function setupControls(scene, canvas, opts = {}) {
     rig.update(moving, walkCycle, time, yawVel);
     dust.rate(moving);
 
-    // Chase camera: offset behind+above, rotated to the facing, clamped to the
-    // room so it never slips through a wall and shows the void.
-    const sinH = Math.sin(heading), cosH = Math.cos(heading);
     const px = player.position.x, pz = player.position.z;
-    let ix = px - camDist * sinH, iz = pz - camDist * cosH;
-    if (bounds) {
-      const m = 0.6;
-      ix = Math.max(-bounds.hw + m, Math.min(bounds.hw - m, ix));
-      iz = Math.max(-bounds.hd + m, Math.min(bounds.hd - m, iz));
-    }
-    // GTA-style camera collision: march from the player toward the ideal spot
-    // and stop at the last wall-free point, so the camera hugs corridors and
-    // never slips behind a wall. Only active when the room supplies gridCollide.
-    if (gridCollide) {
-      let cx = px, cz = pz;
-      for (let s = 1; s <= 8; s++) {
-        const t = s / 8;
-        const tx = px + (ix - px) * t, tz = pz + (iz - pz) * t;
-        if (gridCollide(tx, tz)) break;
-        cx = tx; cz = tz;
+    let ideal;
+    if (topDown) {
+      // Fixed overhead/tilted cam: always high above, slightly to the south, so
+      // north is always "up" on screen (matches the screen-relative controls).
+      ideal = new B.Vector3(px, camHeight, pz - camDist);
+    } else {
+      // Chase camera: offset behind+above, rotated to the facing.
+      const sinH = Math.sin(heading), cosH = Math.cos(heading);
+      let ix = px - camDist * sinH, iz = pz - camDist * cosH;
+      if (bounds) {
+        const m = 0.6;
+        ix = Math.max(-bounds.hw + m, Math.min(bounds.hw - m, ix));
+        iz = Math.max(-bounds.hd + m, Math.min(bounds.hd - m, iz));
       }
-      ix = cx; iz = cz;
+      // GTA-style camera collision: stop at the last wall-free point so the
+      // camera hugs corridors instead of slipping behind a wall.
+      if (gridCollide) {
+        let cx = px, cz = pz;
+        for (let s = 1; s <= 8; s++) {
+          const t = s / 8;
+          const tx = px + (ix - px) * t, tz = pz + (iz - pz) * t;
+          if (gridCollide(tx, tz)) break;
+          cx = tx; cz = tz;
+        }
+        ix = cx; iz = cz;
+      }
+      ideal = new B.Vector3(ix, camHeight, iz);
     }
-    const ideal = new B.Vector3(ix, camHeight, iz);
     if (!started) { camera.position.copyFrom(ideal); started = true; }
-    else camera.position = B.Vector3.Lerp(camera.position, ideal, 0.12);
-    camera.setTarget(new B.Vector3(px, camLookY, pz));
+    else camera.position = B.Vector3.Lerp(camera.position, ideal, topDown ? 0.18 : 0.12);
+    camera.setTarget(new B.Vector3(px, topDown ? 0.5 : camLookY, pz));
   };
   scene.registerBeforeRender(beforeRender);
 

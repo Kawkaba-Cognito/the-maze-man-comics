@@ -20,6 +20,9 @@ const attention = {
     {
       id: 'cancellation',
       name: 'Cancellation task',
+      nameAr: 'مهمة الشطب',
+      blurb: 'Scan and tap every target — ignore the rest.',
+      blurbAr: 'امسح كل الأهداف واضغطها — تجاهل البقية.',
       gameCount: 1,
       progress: 0,
       gameKey: 'cancel-task',

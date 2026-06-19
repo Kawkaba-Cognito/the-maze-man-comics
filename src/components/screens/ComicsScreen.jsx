@@ -167,50 +167,63 @@ export default function ComicsScreen() {
             </div>
           </div>
 
-          <p style={{ maxWidth: 520, width: '100%', margin: '20px auto 12px', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: HUB_LIGHT.muted, textAlign: isAr ? 'right' : 'left' }}>
-            {isAr ? 'اختر لعبة' : 'Choose a game'}
-          </p>
-
-          {/* Game cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 520, width: '100%', margin: '0 auto' }}>
-            {pickList.map((sub, i) => (
-              <button
-                key={sub.id}
-                type="button"
-                onClick={() => {
-                  setActiveGame(sub.game);
-                  setPickList([]);
-                  setScreen('game');
-                }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  textAlign: isAr ? 'right' : 'left',
-                  padding: '18px 20px', borderRadius: 16,
-                  border: '2px solid #1a1208',
-                  background: 'linear-gradient(180deg, #ffffff 0%, #f7f1eb 100%)',
-                  boxShadow: '4px 4px 0 #1a1208',
-                  cursor: 'pointer',
-                }}
-              >
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: 46, height: 46, flexShrink: 0, borderRadius: 12,
-                    background: accent, color: '#fff',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 22, fontFamily: "'Fredoka One', sans-serif",
-                  }}
-                >
-                  {i + 1}
-                </span>
-                <span style={{ flex: 1, fontFamily: "'Bangers', cursive", fontSize: 22, letterSpacing: 1.2, color: HUB_LIGHT.text }}>
-                  {sub.name}
-                </span>
-                <span aria-hidden="true" style={{ fontSize: 26, color: accent, transform: isAr ? 'scaleX(-1)' : 'none' }}>
-                  ›
-                </span>
-              </button>
-            ))}
+          {/* Cards centered in the remaining space → 1–3 games still look intentional */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '100%', paddingBottom: 12 }}>
+            <p style={{ maxWidth: 520, width: '100%', margin: '0 auto 12px', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: HUB_LIGHT.muted, textAlign: isAr ? 'right' : 'left' }}>
+              {isAr ? 'اختر لعبة' : 'Choose a game'}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 520, width: '100%', margin: '0 auto' }}>
+              {pickList.map((sub, i) => {
+                const subName = (isAr && sub.nameAr) ? sub.nameAr : sub.name;
+                const subBlurb = isAr ? sub.blurbAr : sub.blurb;
+                return (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveGame(sub.game);
+                      setPickList([]);
+                      setScreen('game');
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 16,
+                      textAlign: isAr ? 'right' : 'left',
+                      padding: '18px 20px', borderRadius: 18,
+                      border: '2px solid #1a1208',
+                      background: 'linear-gradient(180deg, #ffffff 0%, #f7f1eb 100%)',
+                      boxShadow: '4px 4px 0 #1a1208',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 50, height: 50, flexShrink: 0, borderRadius: 14,
+                        background: accent, color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 24, fontFamily: "'Fredoka One', sans-serif",
+                        boxShadow: '2px 2px 0 #1a1208',
+                      }}
+                    >
+                      {i + 1}
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <span style={{ fontFamily: "'Bangers', cursive", fontSize: 23, letterSpacing: 1.2, color: HUB_LIGHT.text, lineHeight: 1.05 }}>
+                        {subName}
+                      </span>
+                      {subBlurb && (
+                        <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, color: HUB_LIGHT.muted, lineHeight: 1.35 }}>
+                          {subBlurb}
+                        </span>
+                      )}
+                    </span>
+                    <span aria-hidden="true" style={{ fontSize: 26, color: accent, transform: isAr ? 'scaleX(-1)' : 'none', flexShrink: 0 }}>
+                      ›
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

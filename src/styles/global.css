@@ -306,6 +306,18 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
 .rewards-char { width: 160px; height: auto; filter: drop-shadow(0 8px 18px rgba(0,0,0,0.6)); }
 .rewards-empty { max-width: 360px; font-size: 0.95rem; line-height: 1.5; color: #b9ad99; }
 
+/* ── Recruitment challenge (a puzzle launched from the maze) ── */
+.challenge-shell { position: fixed; inset: 0; z-index: 1500; background: #f3ead9; isolation: isolate; }
+.challenge-load { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #5c534c; font-family: 'Outfit', system-ui, sans-serif; }
+.challenge-banner {
+  position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+  z-index: 1600; pointer-events: none;
+  background: rgba(20, 8, 8, 0.85); color: #ffe9a8;
+  font: 700 12px 'Bangers', cursive; letter-spacing: 1px;
+  padding: 5px 14px; border-radius: 999px; white-space: nowrap;
+}
+.challenge-banner b { color: #fff; }
+
 /* ── Character dress-up controls ── */
 .char-screen { gap: 16px; justify-content: flex-start; }
 .char-preview { width: 190px; height: 228px; display: flex; align-items: center; justify-content: center; }

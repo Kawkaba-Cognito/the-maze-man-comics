@@ -25,7 +25,7 @@ const SIZE_HINTS = {
   ar: { 4: 'سريع ومريح', 6: 'كلاسيكي', 8: 'لوحة كبيرة', 10: 'ماراثون' },
 };
 
-export default function TakuzuPuzzle({ onBack }) {
+export default function TakuzuPuzzle({ onBack, onSolved }) {
   const { currentLang, playSfx, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
@@ -56,6 +56,7 @@ export default function TakuzuPuzzle({ onBack }) {
   useEffect(() => {
     if (state && isTakuzuSolved(state)) {
       setSolved(true);
+      onSolved?.();
       playSfx('win');
     }
   }, [state, playSfx]);

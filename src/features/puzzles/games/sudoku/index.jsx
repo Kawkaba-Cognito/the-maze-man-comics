@@ -19,7 +19,7 @@ import {
 const CONFIG = getPuzzle('sudoku');
 const SIZES = [4, 6, 9];
 
-export default function SudokuPuzzle({ onBack }) {
+export default function SudokuPuzzle({ onBack, onSolved }) {
   const { currentLang, playSfx, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
@@ -53,6 +53,7 @@ export default function SudokuPuzzle({ onBack }) {
     if (!state) return;
     if (isSudokuSolved(state)) {
       setSolved(true);
+      onSolved?.();
       setConflicts(new Set());
       playSfx('win');
     } else {

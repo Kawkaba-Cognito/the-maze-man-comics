@@ -20,7 +20,7 @@ import {
 const CONFIG = getPuzzle('sliding');
 const PUZZLE_ID = 'sliding';
 
-export default function SlidingPuzzle({ onBack }) {
+export default function SlidingPuzzle({ onBack, onSolved }) {
   const { currentLang, playSfx, awardPoints, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
@@ -52,6 +52,7 @@ export default function SlidingPuzzle({ onBack }) {
   useEffect(() => {
     if (state && !solved && isSlidingSolved(state)) {
       setSolved(true);
+      onSolved?.();
       playSfx('win');
       awardPoints(puzzleWinPoints(size, CONFIG.sizes));
     }

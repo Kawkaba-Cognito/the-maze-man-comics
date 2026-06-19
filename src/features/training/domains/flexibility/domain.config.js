@@ -12,7 +12,10 @@ const flexibility = {
   subs: [
     {
       id: 'switching',
-      name: 'Arrow Rush (Spatial Stroop)',
+      name: 'Arrow Rush',
+      nameAr: 'اندفاع الأسهم',
+      blurb: 'Tap by the active rule — and the rule keeps flipping.',
+      blurbAr: 'اتبع القاعدة الفعّالة — والقاعدة تتغيّر باستمرار.',
       gameCount: 1,
       progress: 0,
       gameKey: 'spatial-stroop',

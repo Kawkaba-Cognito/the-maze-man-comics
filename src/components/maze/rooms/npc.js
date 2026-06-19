@@ -46,40 +46,57 @@ export function createNpcKit(B, scene, { cell = 4, animateDist = 26, interactDis
   const buckets = new Map();
   const bkey = (gx, gz) => gx + ',' + gz;
 
-  function makeLabel(name, role) {
-    const dt = new B.DynamicTexture('npcLbl', { width: 256, height: 80 }, scene, true);
-    const c = dt.getContext();
-    c.clearRect(0, 0, 256, 80);
-    c.fillStyle = 'rgba(0,0,0,0.55)'; c.fillRect(6, 6, 244, 68);
-    c.textAlign = 'center';
-    c.font = 'bold 27px sans-serif'; c.fillStyle = '#ffe9a8'; c.fillText(name, 128, 36);
-    c.font = '16px sans-serif'; c.fillStyle = '#cfe0ff'; c.fillText(role, 128, 62);
-    dt.hasAlpha = true; dt.update();
-    const pl = B.MeshBuilder.CreatePlane('npcLblP', { width: 1.7, height: 0.53 }, scene);
-    const m = new B.StandardMaterial('npcLblM', scene);
-    m.emissiveTexture = dt; m.opacityTexture = dt; m.disableLighting = true;
-    m.diffuseColor = B.Color3.Black(); m.specularColor = B.Color3.Black();
-    pl.material = m; pl.billboardMode = B.Mesh.BILLBOARDMODE_ALL; pl.isPickable = false;
-    return pl;
+  // Distinct headgear per soldier so they read as different characters.
+  function addAccessory(root, type, hex) {
+    const mat = (h, emis) => {
+      const m = new B.StandardMaterial('npcAcc', scene);
+      m.diffuseColor = B.Color3.FromHexString(h);
+      m.specularColor = new B.Color3(0.1, 0.1, 0.1);
+      if (emis) m.emissiveColor = B.Color3.FromHexString(emis);
+      m.maxSimultaneousLights = 6;
+      return m;
+    };
+    const metal = mat('#9aa3b0'), dark = mat('#2a2530'), col = mat(hex);
+    const add = (mesh, m, x, y, z) => { mesh.material = m; mesh.parent = root; mesh.position.set(x, y, z); return mesh; };
+    if (type === 'helmet') {
+      add(B.MeshBuilder.CreateCylinder('h', { diameterTop: 0.66, diameterBottom: 0.82, height: 0.42, tessellation: 10 }, scene), metal, 0, 1.74, 0);
+      add(B.MeshBuilder.CreateBox('hf', { width: 0.1, height: 0.46, depth: 0.5 }, scene), metal, 0, 2.0, 0); // crest
+    } else if (type === 'wizard') {
+      add(B.MeshBuilder.CreateCylinder('wz', { diameterTop: 0.02, diameterBottom: 0.74, height: 1.0, tessellation: 12 }, scene), col, 0, 2.1, 0);
+      add(B.MeshBuilder.CreateTorus('wb', { diameter: 0.92, thickness: 0.12, tessellation: 12 }, scene), col, 0, 1.66, 0);
+    } else if (type === 'cap') {
+      const dome = add(B.MeshBuilder.CreateSphere('cp', { diameter: 0.8, segments: 10 }, scene), col, 0, 1.74, 0); dome.scaling.y = 0.55;
+      add(B.MeshBuilder.CreateBox('vis', { width: 0.6, height: 0.08, depth: 0.32 }, scene), dark, 0, 1.66, 0.32); // visor
+    } else if (type === 'topknot') {
+      add(B.MeshBuilder.CreateSphere('tk', { diameter: 0.34, segments: 8 }, scene), dark, 0, 2.0, 0);
+      add(B.MeshBuilder.CreateTorus('hb', { diameter: 0.84, thickness: 0.08, tessellation: 12 }, scene), col, 0, 1.64, 0);
+    } else if (type === 'horns') {
+      add(B.MeshBuilder.CreateCylinder('hl', { diameterTop: 0, diameterBottom: 0.18, height: 0.5, tessellation: 8 }, scene), metal, -0.3, 1.96, 0).rotation.z = 0.5;
+      add(B.MeshBuilder.CreateCylinder('hr', { diameterTop: 0, diameterBottom: 0.18, height: 0.5, tessellation: 8 }, scene), metal, 0.3, 1.96, 0).rotation.z = -0.5;
+      add(B.MeshBuilder.CreateCylinder('hbn', { diameter: 0.8, height: 0.16, tessellation: 12 }, scene), dark, 0, 1.74, 0);
+    }
   }
 
-  function spawn({ x, z, color, name, role }) {
+  function spawn({ x, z, color, name, role, scale = 1, girth = 1, accessory = null }) {
     const root = new B.TransformNode('npc_' + name, scene);
     root.position.set(x, 0, z);
     root.rotation.y = Math.atan2(-x, -z); // face roughly toward the maze centre
+    root.scaling.setAll(scale); // tougher soldiers are bigger
 
     const body = bodySrc.createInstance('npcBody'); body.parent = root; body.position.y = 0.62;
+    body.scaling.x = body.scaling.z = girth; // wider = more muscle
     body.instancedBuffers.color = B.Color3.FromHexString(color).toColor4(1);
     const head = headSrc.createInstance('npcHead'); head.parent = root; head.position.y = 1.42;
     const eL = eyeSrc.createInstance('npcEyeL'); eL.parent = root; eL.position.set(-0.15, 1.47, 0.3);
     const eR = eyeSrc.createInstance('npcEyeR'); eR.parent = root; eR.position.set(0.15, 1.47, 0.3);
-    const label = makeLabel(name, role); label.parent = root; label.position.y = 2.15;
+    if (accessory) addAccessory(root, accessory, color);
 
     // blob shadow — independent of the root so the idle sway never tilts it
     const blob = blobSrc.createInstance('npcBlob');
     blob.position.set(x, 0.03, z); blob.rotation.x = Math.PI / 2; blob.isPickable = false;
+    blob.scaling.x = blob.scaling.y = scale * girth; // shadow matches footprint
 
-    const npc = { root, blob, x, z, name, role, phase: Math.random() * 6.28 };
+    const npc = { root, blob, body, x, z, name, role, phase: Math.random() * 6.28 };
     npcs.push(npc);
     const k = bkey(Math.floor(x / cell), Math.floor(z / cell));
     if (!buckets.has(k)) buckets.set(k, []);

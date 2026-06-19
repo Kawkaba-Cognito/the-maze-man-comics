@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { trainingWinPoints } from '../lib/points';
 import { updateRating } from '../features/training/rating';
+import { recruit as armyRecruit, recordAttempt as armyRecordAttempt, markGone as armyMarkGone, MAX_ATTEMPTS } from '../features/army/armyState';
 
 const AppContext = createContext(null);
 
@@ -47,6 +48,8 @@ export function AppProvider({ children }) {
   const [mazeEntryPending, setMazeEntryPending] = useState(false);
   const [mazeStartRoom, setMazeStartRoom] = useState('hall'); // initial room for RoomHost
   const [workoutReturnRoom, setWorkoutReturnRoom] = useState(null); // re-enter 3D here after a workout
+  const [challenge, setChallenge] = useState(null); // recruitment puzzle: { puzzleKey, id, name, power, returnRoom }
+  const challengeRef = useRef(null);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [tipOpen, setTipOpen] = useState(false);
   const [profileData, setProfileData] = useState(DEFAULT_PROFILE);
@@ -298,6 +301,26 @@ export function AppProvider({ children }) {
     setMazeVisible(false);
   }, []);
 
+  // Recruitment: launch a soldier's puzzle full-screen (from the maze).
+  const openPuzzleChallenge = useCallback((c) => {
+    challengeRef.current = c;
+    setChallenge(c);
+    setMazeVisible(false);
+  }, []);
+  // Resolve a challenge: write the result to the army, then drop back into the
+  // maze (where recruited soldiers respawn as followers). Guarded so it runs once.
+  const finishChallenge = useCallback((success) => {
+    const c = challengeRef.current;
+    if (!c) return;
+    challengeRef.current = null;
+    if (success) armyRecruit({ id: c.id, name: c.name, power: c.power });
+    else if (armyRecordAttempt(c.id) >= MAX_ATTEMPTS) armyMarkGone(c.id);
+    setChallenge(null);
+    setMazeStartRoom(c.returnRoom || 'maze');
+    setActiveTab('home');
+    setMazeVisible(true);
+  }, []);
+
   // Leaving the workout: if we came from a 3D room, re-enter the world there;
   // otherwise just go home. (Also resets activeTab so a later 3D-quit lands home.)
   const leaveWorkout = useCallback(() => {
@@ -331,6 +354,7 @@ export function AppProvider({ children }) {
       sfxEnabled, setSfxEnabled,
       assessmentRequested, openAssessment, consumeAssessmentRequest,
       mazeStartRoom, setMazeStartRoom, openWorkout, leaveWorkout,
+      challenge, openPuzzleChallenge, finishChallenge,
       updateXP, awardPoints, spendPoints, awardTrainingWin, awardFreeRun, toggleLang, switchTab, requestMazeEntry, enterMaze, exitMaze,
       playSfx, stopSpeech, saveProfile,
       setProfileData,
