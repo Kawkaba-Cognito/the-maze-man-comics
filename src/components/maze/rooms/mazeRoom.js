@@ -56,7 +56,7 @@ export function buildMazeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
 
   // ── Camera: fixed isometric (matches the gym/attention iso framing) ──
   //   gym uses height 16 / dist 14 → beta ≈ atan(14/16) ≈ 0.72, radius ≈ 21.3, fov 0.7.
-  const camera = new Bb.ArcRotateCamera('mzCam', -Math.PI / 2, 0.72, 32, Bb.Vector3.Zero(), scene);
+  const camera = new Bb.ArcRotateCamera('mzCam', -Math.PI / 2, 0.72, 42, Bb.Vector3.Zero(), scene);
   camera.fov = 0.7;
   camera.minZ = 0.1; camera.maxZ = 2000;
 
