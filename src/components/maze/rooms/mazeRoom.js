@@ -25,6 +25,16 @@ export function buildMazeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
   scene.collisionsEnabled = true;
   const lowPerf = !!ctx.lowPerf;
 
+  // ── PIXEL-3D: render the maze at low resolution + nearest-neighbour upscale.
+  //    A big fill-rate win on phones AND a crisp pixel-art look (low-res reads as
+  //    "pixel" instead of "blurry"). Restored on dispose. ──
+  const dpr = window.devicePixelRatio || 1;
+  const PIXEL = lowPerf ? 0.5 : 0.6; // fraction of CSS pixels actually rendered
+  const prevScale = engine.getHardwareScalingLevel();
+  const prevImgRender = canvas.style.imageRendering;
+  engine.setHardwareScalingLevel(Math.max(1, dpr / PIXEL));
+  canvas.style.imageRendering = 'pixelated';
+
   // ── Maze grid: recursive backtracker, then opened up for MORE SPACE ──
   const maze = Array.from({ length: MAP }, () => new Array(MAP).fill(1));
   (function carve(x, y) {
@@ -253,6 +263,8 @@ export function buildMazeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
   return {
     scene, interact: tryInteract, jump: () => {},
     dispose() {
+      engine.setHardwareScalingLevel(prevScale);   // undo the pixel-3D downscale
+      canvas.style.imageRendering = prevImgRender;
       scene.unregisterBeforeRender(beforeRender);
       scene.onPointerObservable.remove(ptr);
       window.removeEventListener('keydown', onKeyDown);
