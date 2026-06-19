@@ -84,7 +84,7 @@ export function buildGymRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
     equipped: ctx.equipped,
     lowPerf: ctx.lowPerf,
     bounds: { hw: half, hd: half },
-    topDown: true, camDist: 14, camHeight: 16, fov: 0.7, // iso framing
+    topDown: true, camDist: 10, camHeight: 18, fov: 0.7, // Pokémon-style top-down
     onInteract: () => tryInteract(),
   });
 

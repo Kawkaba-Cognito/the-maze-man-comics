@@ -87,7 +87,7 @@ export function buildAttentionRoom({ engine, canvas, overlayEl, ctx, inputRef })
     equipped: ctx.equipped,
     bounds: { hw: half, hd: half },
     lowPerf: ctx.lowPerf,
-    topDown: true, camDist: 14, camHeight: 16, fov: 0.7, // iso (Clash-Royale) camera
+    topDown: true, camDist: 10, camHeight: 18, fov: 0.7, // Pokémon-style top-down
     onInteract: interact,
   });
 
