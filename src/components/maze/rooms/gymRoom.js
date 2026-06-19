@@ -47,7 +47,7 @@ export function buildGymRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
     const a = '#caa97a', b = '#bb9866'; // warm wood/sand floor (dominant ~60%)
     for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { c.fillStyle = (i + j) % 2 ? a : b; c.fillRect(i * 128, j * 128, 128, 128); }
   })(floorTex.getContext());
-  floorTex.update(); floorTex.wrapU = floorTex.wrapV = Bb.Texture.WRAP_ADDRESSMODE; floorTex.uScale = floorTex.vScale = ROOM / 2;
+  floorTex.update(); floorTex.updateSamplingMode(Bb.Texture.NEAREST_SAMPLINGMODE); floorTex.wrapU = floorTex.wrapV = Bb.Texture.WRAP_ADDRESSMODE; floorTex.uScale = floorTex.vScale = ROOM / 2;
   const floorMat = toon('gymFloorMat', '#c2a172'); floorMat.diffuseTexture = floorTex;
   const floor = box('floor', ROOM, TK, ROOM, 0, -TK / 2, 0, floorMat, true);
 
@@ -113,7 +113,7 @@ export function buildGymRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
     lowPerf: ctx.lowPerf,
     bounds: { hw: half, hd: half },
     topDown: true, camDist: 10, camHeight: 18, fov: 0.7, // Pokémon-style top-down
-    charScale: 0.32, // small pixel/top-down character
+    charScale: 0.28, // small pixel/top-down character
     onInteract: () => tryInteract(),
   });
 

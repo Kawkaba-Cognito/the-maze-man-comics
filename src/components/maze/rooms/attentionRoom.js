@@ -52,7 +52,7 @@ export function buildAttentionRoom({ engine, canvas, overlayEl, ctx, inputRef })
   // ── Shell ── (checker grass floor like the gym → life + value variation) ──
   const floorTex = new B.DynamicTexture('mcFloor', { width: 256, height: 256 }, scene, false);
   (function (c) { const a = '#6fae5a', b = '#63a04e'; for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { c.fillStyle = (i + j) % 2 ? a : b; c.fillRect(i * 128, j * 128, 128, 128); } })(floorTex.getContext());
-  floorTex.update(); floorTex.wrapU = floorTex.wrapV = B.Texture.WRAP_ADDRESSMODE; floorTex.uScale = floorTex.vScale = R / 2;
+  floorTex.update(); floorTex.updateSamplingMode(B.Texture.NEAREST_SAMPLINGMODE); floorTex.wrapU = floorTex.wrapV = B.Texture.WRAP_ADDRESSMODE; floorTex.uScale = floorTex.vScale = R / 2;
   grassMat.diffuseTexture = floorTex;
   const floor = box('floor', R, TK, R, 0, -TK / 2, 0, grassMat, true);
   floor.receiveShadows = false;
@@ -97,7 +97,7 @@ export function buildAttentionRoom({ engine, canvas, overlayEl, ctx, inputRef })
     bounds: { hw: half, hd: half },
     lowPerf: ctx.lowPerf,
     topDown: true, camDist: 10, camHeight: 18, fov: 0.7, // Pokémon-style top-down
-    charScale: 0.32, // small pixel/top-down character
+    charScale: 0.28, // small pixel/top-down character
     onInteract: interact,
   });
 

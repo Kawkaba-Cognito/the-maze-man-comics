@@ -62,16 +62,12 @@ export default function RoomHost() {
     // effective DPR (lower on touch) so the GPU isn't drawing millions of extra
     // pixels for no visible gain. setHardwareScalingLevel > 1 = render smaller.
     const dpr = window.devicePixelRatio || 1;
-    if (isTouch) {
-      // Phones are fill-rate bound. Render at ~half resolution and let the browser
-      // NEAREST-upscale the canvas → a big GPU win AND a crisp pixel-art look
-      // (low-res reads as "pixel", not "blurry"). Applies to every room.
-      engine.setHardwareScalingLevel(Math.max(1, dpr / 0.5));
-      canvas.style.imageRendering = 'pixelated';
-    } else {
-      const targetDpr = 1.75; // desktop has the GPU headroom → stay crisp
-      if (dpr > targetDpr) engine.setHardwareScalingLevel(dpr / targetDpr);
-    }
+    // Render CLEAR (no framebuffer pixelation — that blurred the whole world).
+    // The pixel-art look comes from NEAREST-filtered textures on the meshes; the
+    // scenes are kept light (flat toon, no PBR/bloom/shadows) so a sharp render
+    // still holds 60fps. Cap the effective DPR so phones don't draw 2–3× pixels.
+    const targetDpr = isTouch ? 1.25 : 1.75;
+    if (dpr > targetDpr) engine.setHardwareScalingLevel(dpr / targetDpr);
 
     let disposed = false;
 
