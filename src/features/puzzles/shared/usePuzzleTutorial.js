@@ -1,27 +1,46 @@
 import { useState, useCallback } from 'react';
 import {
-  hasSeenPuzzleTutorial,
-  markPuzzleTutorialSeen,
-  getTutorialSteps,
-} from './tutorialContent';
+  markOnboardingSkipped,
+} from '../../shared/tutorials/tutorialStorage';
 import { getDiagramSteps } from './tutorialSteps';
+import { getTutorialSteps } from './tutorialContent';
+import { usePuzzleOnboarding } from './usePuzzleOnboarding';
 
-/** Manages tutorial open state + first-visit auto-show for a puzzle game.
- *  Diagram-based tutorials (tutorialSteps.jsx) take priority over emoji ones. */
-export function usePuzzleTutorial(puzzleId, isAr) {
-  const [tutorialOpen, setTutorialOpen] = useState(false);
+/** Rules steps + onboarding flow for a puzzle game. */
+export function usePuzzleTutorial(puzzleId, isAr, { onStartGame, onOnboardingComplete } = {}) {
   const steps = getDiagramSteps(puzzleId, isAr) ?? getTutorialSteps(puzzleId, isAr);
+  const onboarding = usePuzzleOnboarding(puzzleId, isAr, { onOnboardingComplete });
 
-  const openTutorial = useCallback(() => setTutorialOpen(true), []);
+  const openTutorial = useCallback(() => {
+    onboarding.openRules();
+  }, [onboarding]);
 
   const closeTutorial = useCallback(() => {
-    markPuzzleTutorialSeen(puzzleId);
-    setTutorialOpen(false);
-  }, [puzzleId]);
+    /* rules-only carousel closes via closeRules */
+  }, []);
 
-  const maybeShowTutorial = useCallback(() => {
-    if (!hasSeenPuzzleTutorial(puzzleId)) setTutorialOpen(true);
-  }, [puzzleId]);
+  const beginOnboarding = useCallback(() => {
+    onboarding.begin();
+  }, [onboarding]);
 
-  return { tutorialOpen, steps, openTutorial, closeTutorial, maybeShowTutorial };
+  const startGame = useCallback(
+    (size) => {
+      onStartGame?.(size);
+    },
+    [onStartGame],
+  );
+
+  return {
+    steps,
+    onboarding,
+    beginOnboarding,
+    startGame,
+    openTutorial,
+    closeTutorial,
+    tutorialOpen: onboarding.phase === 'carousel' || onboarding.rulesOnly,
+  };
+}
+
+export function skipPuzzleOnboardingForever(puzzleId) {
+  markOnboardingSkipped(puzzleId);
 }

@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../../../../context/AppContext';
-import { TrainingMenuBar, TrainingPlayHeader } from '../../../training/shared/TrainingChrome';
 import { getPuzzle } from '../../registry';
 import { PUZZLE_UI } from '../../shared/puzzleStrings';
-import { TUTORIAL_UI } from '../../shared/tutorialContent';
 import { randomSeed } from '../../shared/rng';
-import GridSizePicker, { PuzzleHint, PuzzleWinBanner, PuzzleToolbar } from '../../shared/GridSizePicker';
-import PuzzleTutorial from '../../shared/PuzzleTutorial';
-import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
+import { PuzzleHint, PuzzleWinBanner, PuzzleToolbar } from '../../shared/GridSizePicker';
+import PuzzleScreenFrame, { useBoardPuzzleTrial } from '../../shared/PuzzleScreenFrame';
 import { puzzleWinPoints } from '../../../../lib/points';
 import { makeHint } from '../../shared/useHint';
 import {
@@ -20,155 +17,132 @@ import {
 const CONFIG = getPuzzle('sliding');
 const PUZZLE_ID = 'sliding';
 
+function SlidingBoard({ state, setState, size, solved, playSfx }) {
+  const trial = useBoardPuzzleTrial(state, setState);
+  const active = trial.activeState ?? state;
+  const gridSize = active?.size ?? size;
+
+  if (!active) return null;
+
+  return (
+    <div className="ct-puzzle-grid-wrap">
+      <div className="ct-slide-board" style={{ '--slide-n': gridSize }}>
+        {Array.from({ length: gridSize * gridSize - 1 }, (_, i) => i + 1).map((val) => {
+          const idx = active.tiles.indexOf(val);
+          const r = Math.floor(idx / gridSize);
+          const c = idx % gridSize;
+          return (
+            <button
+              key={val}
+              type="button"
+              className="ct-slide-tile"
+              style={{ transform: `translate(${c * 100}%, ${r * 100}%)` }}
+              disabled={solved && !trial.trialMode}
+              onClick={() => {
+                playSfx('click');
+                if (trial.trialMode) {
+                  trial.notifyAction({ type: 'slide', index: idx });
+                } else {
+                  setState((s) => trySlide(s, idx));
+                }
+              }}
+            >
+              {val}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function SlidingPuzzle({ onBack, onSolved }) {
   const { currentLang, playSfx, awardPoints, points, spendPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
-  const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
-  const { tutorialOpen, steps, openTutorial, closeTutorial, maybeShowTutorial } =
-    usePuzzleTutorial(PUZZLE_ID, isAr);
 
-  const [screen, setScreen] = useState('hub');
   const [size, setSize] = useState(null);
   const [state, setState] = useState(null);
   const [elapsed, setElapsed] = useState(0);
   const [solved, setSolved] = useState(false);
+  const [trialActive, setTrialActive] = useState(false);
 
-  const newGame = useCallback(
-    (gridSize, seed = randomSeed()) => {
-      setState(createSlidingPuzzle(gridSize, seed));
-      setElapsed(0);
-      setSolved(false);
-    },
-    []
-  );
+  const newGame = useCallback((gridSize, seed = randomSeed()) => {
+    setState(createSlidingPuzzle(gridSize, seed));
+    setElapsed(0);
+    setSolved(false);
+  }, []);
 
   useEffect(() => {
-    if (screen !== 'play' || solved) return undefined;
+    if (trialActive || !state || solved) return undefined;
     const id = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(id);
-  }, [screen, solved]);
+  }, [state, solved, trialActive]);
 
   useEffect(() => {
+    if (trialActive) return;
     if (state && !solved && isSlidingSolved(state)) {
       setSolved(true);
       onSolved?.();
       playSfx('win');
       awardPoints(puzzleWinPoints(size, CONFIG.sizes));
     }
-  }, [state, solved, size, playSfx, awardPoints]);
-
-  useEffect(() => {
-    if (screen === 'play') maybeShowTutorial();
-  }, [screen, maybeShowTutorial]);
-
-  const pickSize = (n) => {
-    setSize(n);
-    newGame(n);
-    setScreen('play');
-  };
-
-  const hubCenter = (
-    <>
-      <div className="ct-puzzle-hub-kicker">{t.hubTag}</div>
-      <div
-        className="ct-puzzle-hub-title"
-        style={{ fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', cursive" }}
-      >
-        {isAr ? CONFIG.nameAr : CONFIG.name}
-      </div>
-    </>
-  );
-
-  if (screen === 'hub') {
-    return (
-      <div className="ct-puzzle-screen ct-puzzle-screen--hub">
-        <TrainingMenuBar
-          onBack={onBack}
-          playSfx={playSfx}
-          center={hubCenter}
-          hubSpaced
-          variant="paper"
-          onReplayTutorial={openTutorial}
-          replayHint={tutLabels.replayTutorial}
-        />
-        <div className="ct-puzzle-hub-body">
-          <p className="ct-puzzle-hub-sub">{t.pickGridSub}</p>
-          <GridSizePicker t={t} isAr={isAr} sizes={CONFIG.sizes} onPick={pickSize} playSfx={playSfx} />
-        </div>
-        {tutorialOpen ? (
-          <PuzzleTutorial steps={steps} isAr={isAr} onClose={closeTutorial} playSfx={playSfx} />
-        ) : null}
-      </div>
-    );
-  }
+  }, [state, solved, size, playSfx, awardPoints, onSolved, trialActive]);
 
   return (
-    <div className="ct-puzzle-screen ct-puzzle-screen--play">
-      <TrainingPlayHeader
-        isAr={isAr}
-        title={isAr ? CONFIG.nameAr : CONFIG.name}
-        subtitle={t.gridLabel(size)}
-        onMenu={() => setScreen('hub')}
-        onTutorial={openTutorial}
-        tutorialAriaLabel={tutLabels.howToPlay}
-        playSfx={playSfx}
-        menuAriaLabel={t.menu}
-      />
-      <div className="ct-puzzle-play-body">
-        <PuzzleHint>{t.slidingHint}</PuzzleHint>
-        <div className="ct-puzzle-grid-wrap">
-          {/* Tiles are keyed by value and positioned by transform, so a slide
-           * animates (the same DOM node glides to its new cell). */}
-          <div className="ct-slide-board" style={{ '--slide-n': size }}>
-            {Array.from({ length: size * size - 1 }, (_, i) => i + 1).map((val) => {
-              const idx = state.tiles.indexOf(val);
-              const r = Math.floor(idx / size);
-              const c = idx % size;
-              return (
-                <button
-                  key={val}
-                  type="button"
-                  className="ct-slide-tile"
-                  style={{ transform: `translate(${c * 100}%, ${r * 100}%)` }}
-                  disabled={solved}
-                  onClick={() => {
-                    playSfx('click');
-                    setState((s) => trySlide(s, idx));
-                  }}
-                >
-                  {val}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+    <PuzzleScreenFrame
+      puzzleId={PUZZLE_ID}
+      config={CONFIG}
+      isAr={isAr}
+      t={t}
+      playSfx={playSfx}
+      onBack={onBack}
+      sizes={CONFIG.sizes}
+      size={size}
+      setSize={setSize}
+      solved={solved}
+      elapsed={elapsed}
+      onNewGame={newGame}
+      onAwardSizes={CONFIG.sizes}
+      hintReveal={hintReveal}
+      subtitle={size ? t.gridLabel(size) : ''}
+    >
+      <TrialWatcher onTrialChange={setTrialActive} />
+      <PuzzleHint>{t.slidingHint}</PuzzleHint>
+      <SlidingBoard state={state} setState={setState} size={size} solved={solved} playSfx={playSfx} />
+      {!trialActive ? (
         <div className="ct-puzzle-stats">
-          <span>{t.moves(state.moves)}</span>
+          <span>{t.moves(state?.moves ?? 0)}</span>
           <span>{t.time(elapsed)}</span>
         </div>
-        {!solved ? (
-          <PuzzleToolbar
-            t={t}
-            playSfx={playSfx}
-            onNew={() => newGame(size)}
-            onReset={() => newGame(size, state.seed)}
-            hint={makeHint({ points, spendPoints, solved, state, setState, hintReveal })}
-          />
-        ) : (
-          <PuzzleWinBanner
-            t={t}
-            moves={state.moves}
-            elapsed={elapsed}
-            playSfx={playSfx}
-            onPlayAgain={() => newGame(size)}
-            onChangeSize={() => setScreen('hub')}
-          />
-        )}
-      </div>
-      {tutorialOpen ? (
-        <PuzzleTutorial steps={steps} isAr={isAr} onClose={closeTutorial} playSfx={playSfx} />
       ) : null}
-    </div>
+      {!trialActive && !solved ? (
+        <PuzzleToolbar
+          t={t}
+          playSfx={playSfx}
+          onNew={() => newGame(size)}
+          onReset={() => newGame(size, state?.seed)}
+          hint={makeHint({ points, spendPoints, solved, state, setState, hintReveal })}
+        />
+      ) : null}
+      {!trialActive && solved ? (
+        <PuzzleWinBanner
+          t={t}
+          moves={state.moves}
+          elapsed={elapsed}
+          playSfx={playSfx}
+          onPlayAgain={() => newGame(size)}
+          onChangeSize={() => {}}
+        />
+      ) : null}
+    </PuzzleScreenFrame>
   );
+}
+
+function TrialWatcher({ onTrialChange }) {
+  const trial = useBoardPuzzleTrial(null, () => {});
+  useEffect(() => {
+    onTrialChange(trial.trialMode);
+  }, [trial.trialMode, onTrialChange]);
+  return null;
 }

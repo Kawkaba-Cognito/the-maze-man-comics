@@ -1115,6 +1115,361 @@
 .bb-over-title { font-family: 'Fredoka One', 'Bangers', cursive; font-size: 1.9rem; color: #fff2cf; }
 .bb-over-score { color: #c9bca6; font-size: 0.95rem; }
 
+/* ═══════════════════════ MINIMAL TUTORIAL (KenKen-style) ═══════════════════════ */
+.mm-tut-root {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(18, 14, 10, 0.78);
+}
+.mm-tut-card {
+  width: min(380px, 100%);
+  min-height: min(78vh, 640px);
+  max-height: 92vh;
+  overflow: hidden;
+  background: linear-gradient(180deg, #faf6ef 0%, #ebe2d4 100%);
+  border-radius: 18px;
+  border: 1px solid rgba(26, 18, 8, 0.1);
+  box-shadow: 0 20px 56px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+}
+.mm-tut-header {
+  padding: 18px 18px 8px;
+  flex-shrink: 0;
+}
+.mm-tut-title-pill {
+  align-self: flex-end;
+  background: #e8872a;
+  color: #fff;
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 7px 12px;
+  border-radius: 8px;
+  line-height: 1.3;
+  max-width: 100%;
+  text-align: center;
+}
+[dir='rtl'] .mm-tut-title-pill { align-self: flex-start; }
+.mm-tut-step-title {
+  margin: 14px 0 0;
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #2a241c;
+  text-align: center;
+  line-height: 1.35;
+}
+.mm-tut-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+.mm-tut-body {
+  margin: 0;
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: #4a4038;
+  text-align: center;
+}
+.mm-tut-note {
+  margin: 0;
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #7a6a58;
+  text-align: center;
+  font-style: italic;
+  padding: 8px 10px;
+  background: rgba(232, 135, 42, 0.1);
+  border-radius: 8px;
+}
+.mm-tut-diagram {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  padding: 14px 10px;
+  background: #fffdf8;
+  border: 1px solid rgba(26, 18, 8, 0.08);
+  border-radius: 12px;
+}
+.mm-tut-icon { text-align: center; font-size: 3rem; padding: 24px 0; }
+.mm-tut-prob-ans {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.mm-tut-prob-ans-col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.mm-tut-prob-ans-label {
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a7a68;
+}
+.mm-tut-prob-ans-label--answer { color: #c0392b; }
+.mm-tut-prob-ans-art { display: flex; justify-content: center; }
+.mm-tut-prob-ans-arrow {
+  font-size: 1.5rem;
+  color: #e8872a;
+  font-weight: 700;
+  padding: 0 2px;
+}
+.mm-tut-inline-eq {
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #1f6b39;
+}
+.ct-tut-cell--answer { color: #c0392b !important; }
+.mm-tut-pills {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mm-tut-pills li {
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #5c534c;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(26, 18, 8, 0.06);
+  border-radius: 8px;
+  padding: 9px 12px;
+  text-align: center;
+}
+.mm-tut-footer {
+  flex-shrink: 0;
+  padding: 12px 18px 16px;
+  border-top: 1px solid rgba(26, 18, 8, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.35);
+}
+.mm-tut-footer-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: 0.72rem;
+  color: #8a7a68;
+  font-weight: 700;
+}
+.mm-tut-dots { display: flex; justify-content: center; gap: 8px; }
+.mm-tut-dot {
+  width: 9px; height: 9px; border-radius: 50%; border: none; padding: 0;
+  background: #c8bdb0; cursor: pointer;
+}
+.mm-tut-dot--on { background: #e8872a; transform: scale(1.2); }
+.mm-tut-check {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: 'Outfit', 'Cairo', sans-serif; font-size: 0.8rem; color: #4a4038; cursor: pointer;
+}
+.mm-tut-check input { width: 16px; height: 16px; accent-color: #e8872a; }
+.mm-tut-actions { display: flex; gap: 8px; }
+.mm-tut-actions--stack { flex-direction: column; }
+.mm-tut-btn {
+  flex: 1;
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 800;
+  border-radius: 10px;
+  border: none;
+  padding: 13px 12px;
+  cursor: pointer;
+}
+.mm-tut-btn--ghost {
+  background: rgba(255, 255, 255, 0.6);
+  color: #6a5a48;
+  border: 1.5px solid rgba(26, 18, 8, 0.12);
+}
+.mm-tut-btn--pri {
+  background: #e8872a;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(232, 135, 42, 0.4);
+}
+.mm-tut-btn--sm { flex: 0 1 auto; padding: 8px 14px; font-size: 0.78rem; }
+
+/* Trial intro (between rules and practice) */
+.mm-tut-card--intro {
+  min-height: auto;
+  padding: 24px 20px;
+  gap: 16px;
+}
+.mm-tut-intro-heading {
+  margin: 0;
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #2a241c;
+  text-align: center;
+}
+.mm-tut-intro-sub {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #5c534c;
+  text-align: center;
+}
+.mm-tut-intro-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mm-tut-intro-steps li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #fffdf8;
+  border: 1px solid rgba(26, 18, 8, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+}
+.mm-tut-intro-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e8872a;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mm-tut-intro-steps strong {
+  display: block;
+  font-size: 0.88rem;
+  color: #2a241c;
+  margin-bottom: 4px;
+}
+.mm-tut-intro-steps p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #6a5a48;
+}
+.mm-tut-intro-then {
+  margin: 0;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #8a7a68;
+}
+
+/* Practice mode banner (top) */
+.mm-tut-practice-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 3400;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 3px rgba(232, 135, 42, 0.55);
+}
+.mm-tut-practice-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3500;
+  padding: 8px 10px 0;
+  pointer-events: none;
+}
+.mm-tut-practice-bar-inner {
+  pointer-events: auto;
+  max-width: 520px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, #faf6ef 0%, #f0e8dc 100%);
+  border: 2px solid #e8872a;
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+  padding: 12px 14px 14px;
+}
+.mm-tut-practice-bar-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.mm-tut-practice-badge {
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: #e8872a;
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.mm-tut-practice-phase {
+  flex: 1;
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #2a241c;
+}
+.mm-tut-practice-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #8a7a68;
+}
+.mm-tut-practice-progress {
+  height: 4px;
+  background: rgba(26, 18, 8, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.mm-tut-practice-progress-fill {
+  height: 100%;
+  width: 50%;
+  background: #e8872a;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.mm-tut-practice-progress-fill--2 { width: 100%; }
+.mm-tut-practice-text {
+  margin: 0 0 10px;
+  font-family: 'Outfit', 'Cairo', sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #3a3228;
+}
+.mm-tut-practice-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.ct-puzzle-screen--trial .ct-puzzle-play-body {
+  padding-top: 140px;
+  padding-bottom: 24px;
+}
+
 /* paid hint button */
 .ct-puzzle-tool-btn--hint {
   border-color: #c08040;
@@ -1122,3 +1477,63 @@
   color: #ffd98a;
 }
 .ct-puzzle-tool-btn--hint:disabled { opacity: 0.45; }
+
+/* Ready screen after practice */
+.mm-tut-root--ready {
+  z-index: 3600;
+}
+.mm-tut-card--ready {
+  text-align: center;
+  max-width: 420px;
+}
+.mm-tut-ready-badge {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(46, 140, 87, 0.15);
+  color: #2e8c57;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.mm-tut-ready-heading {
+  margin: 0 0 10px;
+  font-size: 1.55rem;
+  color: #1a1208;
+}
+.mm-tut-ready-sub {
+  margin: 0 0 20px;
+  color: #5a4a38;
+  line-height: 1.5;
+}
+
+/* Practice banner polish */
+.mm-tut-practice-bar-inner--prominent {
+  border: 2px solid rgba(232, 135, 42, 0.85);
+  box-shadow: 0 8px 28px rgba(232, 135, 42, 0.25);
+}
+.mm-tut-practice-note {
+  margin: 4px 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #b86a18;
+}
+.mm-tut-practice-free-hint {
+  margin: 0 0 6px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #2e8c57;
+}
+.mm-tut-practice-text--cheer {
+  color: #2e8c57;
+  font-weight: 800;
+}
+.mm-tut-practice-progress-fill {
+  width: 50%;
+  transition: width 0.35s ease;
+}
+.ct-puzzle-toolbar--hint-only {
+  justify-content: center;
+  margin-top: 8px;
+}

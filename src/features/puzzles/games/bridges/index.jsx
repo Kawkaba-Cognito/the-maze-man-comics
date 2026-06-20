@@ -6,9 +6,10 @@ import { PUZZLE_UI } from '../../shared/puzzleStrings';
 import { TUTORIAL_UI } from '../../shared/tutorialContent';
 import { randomSeed } from '../../shared/rng';
 import GridSizePicker, { PuzzleHint, PuzzleWinBanner, PuzzleToolbar } from '../../shared/GridSizePicker';
-import PuzzleTutorial from '../../shared/PuzzleTutorial';
+import PuzzleOnboardingLayer from '../../shared/PuzzleOnboardingLayer';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
-import { makeHint } from '../../shared/useHint';
+import { useOnboardingPlayState } from '../../shared/useOnboardingPlayState';
+import { makeHint, makeTrialHint } from '../../shared/useHint';
 import {
   generateBridges,
   isBridgesSolved,
@@ -30,8 +31,14 @@ export default function BridgesPuzzle({ onBack, onSolved }) {
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
-  const { tutorialOpen, steps, openTutorial, closeTutorial, maybeShowTutorial } =
-    usePuzzleTutorial(PUZZLE_ID, isAr);
+  const { steps, onboarding, startGame, openTutorial } = usePuzzleTutorial(PUZZLE_ID, isAr, {
+    onStartGame: (n) => {
+      setSize(n);
+      newGame(n);
+      setScreen('play');
+    },
+    onOnboardingComplete: () => setScreen('hub'),
+  });
 
   const [screen, setScreen] = useState('hub');
   const [size, setSize] = useState(null);
@@ -40,6 +47,23 @@ export default function BridgesPuzzle({ onBack, onSolved }) {
   const [moves, setMoves] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [solved, setSolved] = useState(false);
+  const { trialMode, displayState } = useOnboardingPlayState(state, setState, onboarding);
+  const soloTrial = onboarding.phase === 'solo';
+  const view =
+    onboarding.phase === 'coached' || onboarding.phase === 'solo'
+      ? 'play'
+      : onboarding.phase === 'ready'
+        ? 'hub'
+        : screen;
+  const soloHint = soloTrial
+    ? makeTrialHint({
+        trialState: onboarding.trialState,
+        setTrialState: onboarding.setTrialState,
+        hintReveal,
+        solved: false,
+        isAr,
+      })
+    : null;
 
   const newGame = useCallback((tier, seed = randomSeed()) => {
     setState(generateBridges(tier, seed));
@@ -56,22 +80,25 @@ export default function BridgesPuzzle({ onBack, onSolved }) {
   }, [screen, solved]);
 
   useEffect(() => {
-    if (state && !solved && isBridgesSolved(state)) {
-      setSolved(true);
-      onSolved?.();
-      setSelected(null);
-      playSfx('win');
-      awardPoints(puzzleWinPoints(size, CONFIG.sizes));
-    }
-  }, [state, solved, size, playSfx, awardPoints]);
+    if (trialMode || !state || solved || !isBridgesSolved(state)) return;
+    setSolved(true);
+    onSolved?.();
+    setSelected(null);
+    playSfx('win');
+    awardPoints(puzzleWinPoints(size, CONFIG.sizes));
+  }, [state, solved, size, playSfx, awardPoints, trialMode, onSolved]);
 
   useEffect(() => {
-    if (screen === 'play') maybeShowTutorial();
-  }, [screen, maybeShowTutorial]);
+    if (onboarding.phase === 'coached' || onboarding.phase === 'solo') {
+      setScreen('play');
+    } else if (onboarding.phase === 'ready') {
+      setScreen('hub');
+    }
+  }, [onboarding.phase]);
 
   const onIslandTap = useCallback(
     (id) => {
-      if (solved) return;
+      if (solved || !displayState) return;
       if (selected == null) {
         setSelected(id);
         playSfx('click');
@@ -82,29 +109,33 @@ export default function BridgesPuzzle({ onBack, onSolved }) {
         playSfx('click');
         return;
       }
-      if (findEdgeIndex(state, selected, id) < 0) {
-        // not an orthogonal neighbour — just move the selection
+      if (findEdgeIndex(displayState, selected, id) < 0) {
         setSelected(id);
         playSfx('click');
         return;
       }
-      const next = cycleBridgeByIslands(state, selected, id);
+      if (trialMode) {
+        onboarding.applyTrialAction({ type: 'bridge', from: selected, to: id });
+        setSelected(null);
+        playSfx('click');
+        return;
+      }
+      const next = cycleBridgeByIslands(displayState, selected, id);
       setSelected(null);
-      if (next === state) {
-        playSfx('error'); // blocked by a crossing bridge
+      if (next === displayState) {
+        playSfx('error');
         return;
       }
       setState(next);
       setMoves((m) => m + 1);
       playSfx('click');
     },
-    [state, selected, solved, playSfx]
+    [displayState, selected, solved, playSfx, trialMode, onboarding],
   );
 
   const pickTier = (n) => {
     setSize(n);
-    newGame(n);
-    setScreen('play');
+    startGame(n);
   };
 
   const tierHints = BRIDGES_TIER_HINTS[isAr ? 'ar' : 'en'];
@@ -121,7 +152,7 @@ export default function BridgesPuzzle({ onBack, onSolved }) {
     </>
   );
 
-  if (screen === 'hub') {
+  if (view === 'hub') {
     return (
       <div className="ct-puzzle-screen ct-puzzle-screen--hub">
         <TrainingMenuBar
@@ -134,74 +165,94 @@ export default function BridgesPuzzle({ onBack, onSolved }) {
           replayHint={tutLabels.replayTutorial}
         />
         <div className="ct-puzzle-hub-body">
-          <p className="ct-puzzle-hub-sub">
-            {isAr
-              ? 'صِل كل الجزر في شبكة واحدة — اختر الحجم للبدء.'
-              : 'Link every island into one network — pick a size to start.'}
-          </p>
-          <GridSizePicker
-            t={t}
-            isAr={isAr}
-            sizes={CONFIG.sizes}
-            onPick={pickTier}
-            playSfx={playSfx}
-            hintForSize={(n) => tierHints[n]}
-          />
+          {onboarding.shouldRun || onboarding.phase === 'ready' ? (
+            <p className="ct-puzzle-hub-sub">
+              {isAr ? 'أكمل الدليل والتمرين لاختيار حجم الشبكة.' : 'Complete the tutorial and practice to choose your grid size.'}
+            </p>
+          ) : (
+            <>
+              <p className="ct-puzzle-hub-sub">
+                {isAr
+                  ? 'صِل كل الجزر في شبكة واحدة — اختر الحجم للبدء.'
+                  : 'Link every island into one network — pick a size to start.'}
+              </p>
+              <GridSizePicker
+                t={t}
+                isAr={isAr}
+                sizes={CONFIG.sizes}
+                onPick={pickTier}
+                playSfx={playSfx}
+                hintForSize={(n) => tierHints[n]}
+              />
+            </>
+          )}
         </div>
-        {tutorialOpen ? (
-          <PuzzleTutorial steps={steps} isAr={isAr} onClose={closeTutorial} playSfx={playSfx} />
-        ) : null}
+        <PuzzleOnboardingLayer onboarding={onboarding} config={CONFIG} steps={steps} isAr={isAr} playSfx={playSfx} />
       </div>
     );
   }
 
+  const practiceSub = soloTrial
+    ? (isAr ? 'تمرين ٢ — دورك (تلميح مجاني)' : 'Practice 2 — your turn (free hints)')
+    : (isAr ? 'تمرين ١ — اتبع التلميحات' : 'Practice 1 — follow the hints');
+
   return (
-    <div className="ct-puzzle-screen ct-puzzle-screen--play">
+    <div className={`ct-puzzle-screen ct-puzzle-screen--play${trialMode ? ' ct-puzzle-screen--trial' : ''}`}>
       <TrainingPlayHeader
         isAr={isAr}
         title={isAr ? CONFIG.nameAr : CONFIG.name}
-        subtitle={state ? tierSubtitle(state, isAr) : t.gridLabel(size)}
-        onMenu={() => setScreen('hub')}
+        subtitle={trialMode ? practiceSub : (displayState ? tierSubtitle(displayState, isAr) : t.gridLabel(size))}
+        onMenu={() => {
+          if (trialMode) onboarding.skipTrials();
+          else setScreen('hub');
+        }}
         onTutorial={openTutorial}
         tutorialAriaLabel={tutLabels.howToPlay}
         playSfx={playSfx}
         menuAriaLabel={t.menu}
       />
       <div className="ct-puzzle-play-body">
-        <PuzzleHint>
-          {isAr
-            ? 'اضغط جزيرة ثم جارتها لإضافة جسر (اضغط ثانيةً لجسرٍ مزدوج). الأرقام = عدد الجسور.'
-            : 'Tap an island, then a neighbour to add a bridge (tap again for a double). Numbers = bridge count.'}
-        </PuzzleHint>
-        {state ? (
-          <BridgesBoard state={state} selected={selected} solved={solved} onIslandTap={onIslandTap} />
+        {!trialMode ? (
+          <PuzzleHint>
+            {isAr
+              ? 'اضغط جزيرة ثم جارتها لإضافة جسر (اضغط ثانيةً لجسرٍ مزدوج). الأرقام = عدد الجسور.'
+              : 'Tap an island, then a neighbour to add a bridge (tap again for a double). Numbers = bridge count.'}
+          </PuzzleHint>
         ) : null}
-        <div className="ct-puzzle-stats">
-          <span>{t.moves(moves)}</span>
-          <span>{t.time(elapsed)}</span>
-        </div>
-        {!solved ? (
-          <PuzzleToolbar
-            t={t}
-            playSfx={playSfx}
-            onNew={() => newGame(size)}
-            onReset={() => { setState((s) => (s ? resetBridges(s) : s)); setSelected(null); setMoves(0); }}
-            hint={makeHint({ points, spendPoints, solved, state, setState, hintReveal })}
-          />
-        ) : (
-          <PuzzleWinBanner
-            t={t}
-            moves={moves}
-            elapsed={elapsed}
-            playSfx={playSfx}
-            onPlayAgain={() => newGame(size)}
-            onChangeSize={() => setScreen('hub')}
-          />
-        )}
+        {displayState ? (
+          <BridgesBoard state={displayState} selected={selected} solved={solved && !trialMode} onIslandTap={onIslandTap} />
+        ) : null}
+        {soloTrial && soloHint ? (
+          <PuzzleToolbar t={t} playSfx={playSfx} hint={soloHint} hintOnly />
+        ) : null}
+        {!trialMode ? (
+          <>
+            <div className="ct-puzzle-stats">
+              <span>{t.moves(moves)}</span>
+              <span>{t.time(elapsed)}</span>
+            </div>
+            {!solved ? (
+              <PuzzleToolbar
+                t={t}
+                playSfx={playSfx}
+                onNew={() => newGame(size)}
+                onReset={() => { setState((s) => (s ? resetBridges(s) : s)); setSelected(null); setMoves(0); }}
+                hint={makeHint({ points, spendPoints, solved, state, setState, hintReveal })}
+              />
+            ) : (
+              <PuzzleWinBanner
+                t={t}
+                moves={moves}
+                elapsed={elapsed}
+                playSfx={playSfx}
+                onPlayAgain={() => newGame(size)}
+                onChangeSize={() => setScreen('hub')}
+              />
+            )}
+          </>
+        ) : null}
       </div>
-      {tutorialOpen ? (
-        <PuzzleTutorial steps={steps} isAr={isAr} onClose={closeTutorial} playSfx={playSfx} />
-      ) : null}
+      <PuzzleOnboardingLayer onboarding={onboarding} config={CONFIG} steps={steps} isAr={isAr} playSfx={playSfx} />
     </div>
   );
 }

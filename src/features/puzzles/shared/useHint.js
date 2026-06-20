@@ -1,16 +1,16 @@
 /**
  * Build the paid-hint config consumed by PuzzleToolbar / NumberPuzzleFrame.
- * A hint costs `cost` points and reveals one correct cell via the engine's
- * `hintReveal(state) → { next, revealed }`. Spending happens in the toolbar,
- * and only when a cell is actually revealed.
+ * Pass cost: 0 for free practice hints (solo trial).
  */
 export const HINT_COST = 20;
 
 export function makeHint({ points, spendPoints, solved, state, setState, hintReveal, cost = HINT_COST }) {
+  const free = cost === 0;
   return {
     points,
     cost,
-    spendPoints,
+    free,
+    spendPoints: free ? () => {} : spendPoints,
     disabled: solved || !state,
     onReveal: () => {
       if (!state) return false;
@@ -19,5 +19,23 @@ export function makeHint({ points, spendPoints, solved, state, setState, hintRev
       setState(next);
       return true;
     },
+  };
+}
+
+/** Free hint during solo practice — works on onboarding trialState. */
+export function makeTrialHint({ trialState, setTrialState, hintReveal, solved, isAr }) {
+  return {
+    ...makeHint({
+      points: 999,
+      spendPoints: () => {},
+      solved,
+      state: trialState,
+    setState: (updater) => {
+      setTrialState((prev) => (typeof updater === 'function' ? updater(prev) : updater));
+    },
+      hintReveal,
+      cost: 0,
+    }),
+    label: isAr ? '💡 تلميح مجاني' : '💡 Free hint',
   };
 }

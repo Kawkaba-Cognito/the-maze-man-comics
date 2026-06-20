@@ -6,9 +6,10 @@ import { PUZZLE_UI } from '../../shared/puzzleStrings';
 import { TUTORIAL_UI } from '../../shared/tutorialContent';
 import { randomSeed } from '../../shared/rng';
 import GridSizePicker, { PuzzleHint, PuzzleWinBanner, PuzzleToolbar } from '../../shared/GridSizePicker';
-import PuzzleTutorial from '../../shared/PuzzleTutorial';
+import PuzzleOnboardingLayer from '../../shared/PuzzleOnboardingLayer';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
-import { makeHint } from '../../shared/useHint';
+import { useOnboardingPlayState } from '../../shared/useOnboardingPlayState';
+import { makeHint, makeTrialHint } from '../../shared/useHint';
 import {
   generateHitori,
   toggleHitoriCell,
@@ -30,14 +31,27 @@ export default function HitoriPuzzle({ onBack }) {
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
-  const { tutorialOpen, steps, openTutorial, closeTutorial, maybeShowTutorial } =
-    usePuzzleTutorial(PUZZLE_ID, isAr);
+  const { steps, onboarding, startGame, openTutorial } = usePuzzleTutorial(PUZZLE_ID, isAr, {
+    onStartGame: (n) => { setSize(n); newGame(n); setScreen('play'); },
+    onOnboardingComplete: () => setScreen('hub'),
+  });
 
   const [screen, setScreen] = useState('hub');
   const [size, setSize] = useState(null);
   const [state, setState] = useState(null);
   const [elapsed, setElapsed] = useState(0);
   const [solved, setSolved] = useState(false);
+  const { trialMode, displayState } = useOnboardingPlayState(state, setState, onboarding);
+  const soloTrial = onboarding.phase === 'solo';
+  const view =
+    onboarding.phase === 'coached' || onboarding.phase === 'solo'
+      ? 'play'
+      : onboarding.phase === 'ready'
+        ? 'hub'
+        : screen;
+  const soloHint = soloTrial
+    ? makeTrialHint({ trialState: onboarding.trialState, setTrialState: onboarding.setTrialState, hintReveal, solved: false, isAr })
+    : null;
 
   const newGame = useCallback((gridSize, seed = randomSeed()) => {
     setState(generateHitori(gridSize, seed));
@@ -53,20 +67,19 @@ export default function HitoriPuzzle({ onBack }) {
 
   // Win silently when the shading is correct — no live right/wrong feedback.
   useEffect(() => {
-    if (state && isHitoriSolved(state)) {
-      setSolved(true);
-      playSfx('win');
-    }
-  }, [state, playSfx]);
+    if (trialMode || !state || !isHitoriSolved(state)) return;
+    setSolved(true);
+    playSfx('win');
+  }, [state, playSfx, trialMode]);
 
   useEffect(() => {
-    if (screen === 'play') maybeShowTutorial();
-  }, [screen, maybeShowTutorial]);
+    if (onboarding.phase === 'coached' || onboarding.phase === 'solo') setScreen('play');
+    else if (onboarding.phase === 'ready') setScreen('hub');
+  }, [onboarding.phase]);
 
   const pickSize = (n) => {
     setSize(n);
-    newGame(n);
-    setScreen('play');
+    startGame(n);
   };
 
   const hubCenter = (
@@ -81,7 +94,7 @@ export default function HitoriPuzzle({ onBack }) {
     </>
   );
 
-  if (screen === 'hub') {
+  if (view === 'hub') {
     return (
       <div className="ct-puzzle-screen ct-puzzle-screen--hub">
         <TrainingMenuBar
@@ -94,79 +107,101 @@ export default function HitoriPuzzle({ onBack }) {
           replayHint={tutLabels.replayTutorial}
         />
         <div className="ct-puzzle-hub-body">
-          <p className="ct-puzzle-hub-sub">{t.pickGridSub}</p>
-          <GridSizePicker
-            t={t}
-            isAr={isAr}
-            sizes={CONFIG.sizes}
-            onPick={pickSize}
-            playSfx={playSfx}
-            hintForSize={(n) => SIZE_HINTS[isAr ? 'ar' : 'en'][n]}
-          />
+          {onboarding.shouldRun || onboarding.phase === 'ready' ? (
+            <p className="ct-puzzle-hub-sub">
+              {isAr ? 'أكمل الدليل والتمرين لاختيار حجم الشبكة.' : 'Complete the tutorial and practice to choose your grid size.'}
+            </p>
+          ) : (
+            <>
+              <p className="ct-puzzle-hub-sub">{t.pickGridSub}</p>
+              <GridSizePicker
+                t={t}
+                isAr={isAr}
+                sizes={CONFIG.sizes}
+                onPick={pickSize}
+                playSfx={playSfx}
+                hintForSize={(n) => SIZE_HINTS[isAr ? 'ar' : 'en'][n]}
+              />
+            </>
+          )}
         </div>
-        {tutorialOpen ? (
-          <PuzzleTutorial steps={steps} isAr={isAr} onClose={closeTutorial} playSfx={playSfx} />
-        ) : null}
+        <PuzzleOnboardingLayer onboarding={onboarding} config={CONFIG} steps={steps} isAr={isAr} playSfx={playSfx} />
       </div>
     );
   }
 
+  const practiceSub = soloTrial
+    ? (isAr ? 'تمرين ٢ — دورك (تلميح مجاني)' : 'Practice 2 — your turn (free hints)')
+    : (isAr ? 'تمرين ١ — اتبع التلميحات' : 'Practice 1 — follow the hints');
+  const gridSize = displayState?.size ?? size;
+
   return (
-    <div className="ct-puzzle-screen ct-puzzle-screen--play">
+    <div className={`ct-puzzle-screen ct-puzzle-screen--play${trialMode ? ' ct-puzzle-screen--trial' : ''}`}>
       <TrainingPlayHeader
         isAr={isAr}
         title={isAr ? CONFIG.nameAr : CONFIG.name}
-        subtitle={t.gridLabel(size)}
-        onMenu={() => setScreen('hub')}
+        subtitle={trialMode ? practiceSub : t.gridLabel(size)}
+        onMenu={() => {
+          if (trialMode) onboarding.skipTrials();
+          else setScreen('hub');
+        }}
         onTutorial={openTutorial}
         tutorialAriaLabel={tutLabels.howToPlay}
         playSfx={playSfx}
         menuAriaLabel={t.menu}
       />
       <div className="ct-puzzle-play-body">
-        <PuzzleHint>{t.hitoriHint}</PuzzleHint>
-        <div className="ct-puzzle-grid-wrap">
-          <div className={`ct-puzzle-grid ct-puzzle-grid--hitori ct-puzzle-grid--n${size}`} style={{ '--puzzle-grid-n': size }}>
-            {state.numbers.map((row, r) =>
-              row.map((num, c) => {
-                const shaded = state.player[r][c];
-                return (
-                  <button
-                    key={`${r}-${c}`}
-                    type="button"
-                    className={`ct-puzzle-cell ct-puzzle-cell--hitori${shaded ? ' ct-puzzle-cell--shaded' : ''}`}
-                    disabled={solved}
-                    onClick={() => {
-                      playSfx('click');
-                      setState((s) => toggleHitoriCell(s, r, c));
-                    }}
-                  >
-                    {shaded ? '' : num}
-                  </button>
-                );
-              })
-            )}
+        {!trialMode ? <PuzzleHint>{t.hitoriHint}</PuzzleHint> : null}
+        {displayState ? (
+          <div className="ct-puzzle-grid-wrap">
+            <div className={`ct-puzzle-grid ct-puzzle-grid--hitori ct-puzzle-grid--n${gridSize}`} style={{ '--puzzle-grid-n': gridSize }}>
+              {displayState.numbers.map((row, r) =>
+                row.map((num, c) => {
+                  const shaded = displayState.player[r][c];
+                  return (
+                    <button
+                      key={`${r}-${c}`}
+                      type="button"
+                      className={`ct-puzzle-cell ct-puzzle-cell--hitori${shaded ? ' ct-puzzle-cell--shaded' : ''}`}
+                      disabled={solved && !trialMode}
+                      onClick={() => {
+                        playSfx('click');
+                        if (trialMode) onboarding.applyTrialAction({ type: 'toggle', r, c });
+                        else setState((s) => toggleHitoriCell(s, r, c));
+                      }}
+                    >
+                      {shaded ? '' : num}
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
-        </div>
-        <div className="ct-puzzle-stats">
-          <span>{t.time(elapsed)}</span>
-        </div>
-        {!solved ? (
-          <PuzzleToolbar t={t} playSfx={playSfx} onNew={() => newGame(size)} onReset={() => setState((s) => resetHitori(s))}
-            hint={makeHint({ points, spendPoints, solved, state, setState, hintReveal })} />
-        ) : (
-          <PuzzleWinBanner
-            t={t}
-            elapsed={elapsed}
-            playSfx={playSfx}
-            onPlayAgain={() => newGame(size)}
-            onChangeSize={() => setScreen('hub')}
-          />
-        )}
+        ) : null}
+        {soloTrial && soloHint ? (
+          <PuzzleToolbar t={t} playSfx={playSfx} hint={soloHint} hintOnly />
+        ) : null}
+        {!trialMode ? (
+          <>
+            <div className="ct-puzzle-stats">
+              <span>{t.time(elapsed)}</span>
+            </div>
+            {!solved ? (
+              <PuzzleToolbar t={t} playSfx={playSfx} onNew={() => newGame(size)} onReset={() => setState((s) => resetHitori(s))}
+                hint={makeHint({ points, spendPoints, solved, state, setState, hintReveal })} />
+            ) : (
+              <PuzzleWinBanner
+                t={t}
+                elapsed={elapsed}
+                playSfx={playSfx}
+                onPlayAgain={() => newGame(size)}
+                onChangeSize={() => setScreen('hub')}
+              />
+            )}
+          </>
+        ) : null}
       </div>
-      {tutorialOpen ? (
-        <PuzzleTutorial steps={steps} isAr={isAr} onClose={closeTutorial} playSfx={playSfx} />
-      ) : null}
+      <PuzzleOnboardingLayer onboarding={onboarding} config={CONFIG} steps={steps} isAr={isAr} playSfx={playSfx} />
     </div>
   );
 }

@@ -4,8 +4,8 @@ import { TrainingPlayHeader } from '../../../training/shared/TrainingChrome';
 import { getPuzzle } from '../../registry';
 import { PUZZLE_UI } from '../../shared/puzzleStrings';
 import { TUTORIAL_UI } from '../../shared/tutorialContent';
+import PuzzleOnboardingLayer from '../../shared/PuzzleOnboardingLayer';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
-import PuzzleTutorial from '../../shared/PuzzleTutorial';
 import { createRng, randomSeed } from '../../shared/rng';
 
 const CONFIG = getPuzzle('blockburst');
@@ -93,8 +93,7 @@ export default function BlockBurst({ onBack }) {
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
-  const tut = usePuzzleTutorial('blockburst', isAr);
-  useEffect(() => { tut.maybeShowTutorial(); }, [tut.maybeShowTutorial]);
+  const tut = usePuzzleTutorial('blockburst', isAr, { onStartGame: () => restart() });
 
   const rngRef = useRef(createRng(randomSeed()));
   const [board, setBoard] = useState(emptyBoard);
@@ -273,9 +272,7 @@ export default function BlockBurst({ onBack }) {
         );
       })()}
 
-      {tut.tutorialOpen && (
-        <PuzzleTutorial steps={tut.steps} isAr={isAr} onClose={tut.closeTutorial} playSfx={playSfx} />
-      )}
+      <PuzzleOnboardingLayer onboarding={tut.onboarding} config={CONFIG} steps={tut.steps} isAr={isAr} playSfx={playSfx} />
     </div>
   );
 }

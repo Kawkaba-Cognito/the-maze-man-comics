@@ -6,9 +6,10 @@ import { PUZZLE_UI } from '../../shared/puzzleStrings';
 import { TUTORIAL_UI } from '../../shared/tutorialContent';
 import { randomSeed } from '../../shared/rng';
 import GridSizePicker, { PuzzleHint, PuzzleWinBanner, PuzzleToolbar } from '../../shared/GridSizePicker';
-import PuzzleTutorial from '../../shared/PuzzleTutorial';
+import PuzzleOnboardingLayer from '../../shared/PuzzleOnboardingLayer';
 import { usePuzzleTutorial } from '../../shared/usePuzzleTutorial';
-import { makeHint } from '../../shared/useHint';
+import { useOnboardingPlayState } from '../../shared/useOnboardingPlayState';
+import { makeHint, makeTrialHint } from '../../shared/useHint';
 import {
   generateCrowns, cycleCrownCell, resetCrowns, isCrownsSolved, crownConflicts, REGION_COLORS, hintReveal,
 } from './crownsEngine';
@@ -27,13 +28,27 @@ export default function CrownsPuzzle({ onBack }) {
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
-  const { tutorialOpen, steps, openTutorial, closeTutorial, maybeShowTutorial } = usePuzzleTutorial(PUZZLE_ID, isAr);
+  const { steps, onboarding, startGame, openTutorial } = usePuzzleTutorial(PUZZLE_ID, isAr, {
+    onStartGame: (n) => { setSize(n); newGame(n); setScreen('play'); },
+    onOnboardingComplete: () => setScreen('hub'),
+  });
 
   const [screen, setScreen] = useState('hub');
   const [size, setSize] = useState(null);
   const [state, setState] = useState(null);
   const [elapsed, setElapsed] = useState(0);
   const [solved, setSolved] = useState(false);
+  const { trialMode, displayState } = useOnboardingPlayState(state, setState, onboarding);
+  const soloTrial = onboarding.phase === 'solo';
+  const view =
+    onboarding.phase === 'coached' || onboarding.phase === 'solo'
+      ? 'play'
+      : onboarding.phase === 'ready'
+        ? 'hub'
+        : screen;
+  const soloHint = soloTrial
+    ? makeTrialHint({ trialState: onboarding.trialState, setTrialState: onboarding.setTrialState, hintReveal, solved: false, isAr })
+    : null;
 
   const newGame = useCallback((n, seed = randomSeed()) => {
     setState(generateCrowns(n, seed));
@@ -48,18 +63,23 @@ export default function CrownsPuzzle({ onBack }) {
   }, [screen, solved]);
 
   useEffect(() => {
-    if (state && !solved && isCrownsSolved(state)) {
-      setSolved(true);
-      playSfx('win');
-      awardPoints(puzzleWinPoints(size, CONFIG.sizes));
-    }
-  }, [state, solved, size, playSfx, awardPoints]);
+    if (trialMode || !state || solved || !isCrownsSolved(state)) return;
+    setSolved(true);
+    playSfx('win');
+    awardPoints(puzzleWinPoints(size, CONFIG.sizes));
+  }, [state, solved, size, playSfx, awardPoints, trialMode]);
 
-  useEffect(() => { if (screen === 'play') maybeShowTutorial(); }, [screen, maybeShowTutorial]);
+  useEffect(() => {
+    if (onboarding.phase === 'coached' || onboarding.phase === 'solo') setScreen('play');
+    else if (onboarding.phase === 'ready') setScreen('hub');
+  }, [onboarding.phase]);
 
-  const conflicts = useMemo(() => (state ? crownConflicts(state) : new Set()), [state]);
+  const conflicts = useMemo(() => (displayState ? crownConflicts(displayState) : new Set()), [displayState]);
 
-  const pickSize = (n) => { setSize(n); newGame(n); setScreen('play'); };
+  const pickSize = (n) => {
+    setSize(n);
+    startGame(n);
+  };
 
   const hubCenter = (
     <>
@@ -70,78 +90,106 @@ export default function CrownsPuzzle({ onBack }) {
     </>
   );
 
-  if (screen === 'hub') {
+  if (view === 'hub') {
     return (
       <div className="ct-puzzle-screen ct-puzzle-screen--hub">
         <TrainingMenuBar onBack={onBack} playSfx={playSfx} center={hubCenter} hubSpaced variant="paper"
           onReplayTutorial={openTutorial} replayHint={tutLabels.replayTutorial} />
         <div className="ct-puzzle-hub-body">
-          <p className="ct-puzzle-hub-sub">{t.pickGridSub}</p>
-          <GridSizePicker t={t} isAr={isAr} sizes={CONFIG.sizes} onPick={pickSize} playSfx={playSfx}
-            hintForSize={(n) => SIZE_HINTS[isAr ? 'ar' : 'en'][n]} />
+          {onboarding.shouldRun || onboarding.phase === 'ready' ? (
+            <p className="ct-puzzle-hub-sub">
+              {isAr ? 'أكمل الدليل والتمرين لاختيار حجم الشبكة.' : 'Complete the tutorial and practice to choose your grid size.'}
+            </p>
+          ) : (
+            <>
+              <p className="ct-puzzle-hub-sub">{t.pickGridSub}</p>
+              <GridSizePicker t={t} isAr={isAr} sizes={CONFIG.sizes} onPick={pickSize} playSfx={playSfx}
+                hintForSize={(n) => SIZE_HINTS[isAr ? 'ar' : 'en'][n]} />
+            </>
+          )}
         </div>
-        {tutorialOpen ? <PuzzleTutorial steps={steps} isAr={isAr} onClose={closeTutorial} playSfx={playSfx} /> : null}
+        <PuzzleOnboardingLayer onboarding={onboarding} config={CONFIG} steps={steps} isAr={isAr} playSfx={playSfx} />
       </div>
     );
   }
 
-  const n = state.n;
+  const practiceSub = soloTrial
+    ? (isAr ? 'تمرين ٢ — دورك (تلميح مجاني)' : 'Practice 2 — your turn (free hints)')
+    : (isAr ? 'تمرين ١ — اتبع التلميحات' : 'Practice 1 — follow the hints');
+  const n = displayState?.n ?? size;
+
   return (
-    <div className="ct-puzzle-screen ct-puzzle-screen--play">
-      <TrainingPlayHeader isAr={isAr} title={isAr ? CONFIG.nameAr : CONFIG.name} subtitle={t.gridLabel(size)}
-        onMenu={() => setScreen('hub')} onTutorial={openTutorial} tutorialAriaLabel={tutLabels.howToPlay}
+    <div className={`ct-puzzle-screen ct-puzzle-screen--play${trialMode ? ' ct-puzzle-screen--trial' : ''}`}>
+      <TrainingPlayHeader isAr={isAr} title={isAr ? CONFIG.nameAr : CONFIG.name}
+        subtitle={trialMode ? practiceSub : t.gridLabel(size)}
+        onMenu={() => { if (trialMode) onboarding.skipTrials(); else setScreen('hub'); }} onTutorial={openTutorial} tutorialAriaLabel={tutLabels.howToPlay}
         playSfx={playSfx} menuAriaLabel={t.menu} />
       <div className="ct-puzzle-play-body">
-        <PuzzleHint>
-          {isAr
-            ? 'اضغط للتبديل: فارغ ← × ← 👑. تاجٌ واحد لكل صف وعمود ولون، ولا تاجان متجاوران.'
-            : 'Tap to cycle: empty → × → 👑. One crown per row, column & color — and no two crowns touch.'}
-        </PuzzleHint>
-        <div className="ct-crowns-wrap">
-          <div className="ct-crowns-grid" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
-            {state.player.map((row, r) =>
-              row.map((val, c) => {
-                const reg = state.region[r][c];
-                const diff = (rr, cc) => rr < 0 || rr >= n || cc < 0 || cc >= n || state.region[rr][cc] !== reg;
-                const bw = (cond) => (cond ? '2.5px' : '1px');
-                const bc = (cond) => (cond ? '#1a1208' : 'rgba(26,18,8,0.18)');
-                const isBad = conflicts.has(`${r},${c}`);
-                return (
-                  <button
-                    key={`${r}-${c}`}
-                    type="button"
-                    className="ct-crowns-cell"
-                    disabled={solved}
-                    onClick={() => { playSfx('click'); setState((s) => cycleCrownCell(s, r, c)); }}
-                    style={{
-                      background: REGION_COLORS[reg % REGION_COLORS.length],
-                      borderTop: `${bw(diff(r - 1, c))} solid ${bc(diff(r - 1, c))}`,
-                      borderBottom: `${bw(diff(r + 1, c))} solid ${bc(diff(r + 1, c))}`,
-                      borderLeft: `${bw(diff(r, c - 1))} solid ${bc(diff(r, c - 1))}`,
-                      borderRight: `${bw(diff(r, c + 1))} solid ${bc(diff(r, c + 1))}`,
-                    }}
-                  >
-                    {val === 2 ? (
-                      <span className={`ct-crowns-mark ct-crowns-crown${isBad ? ' is-bad' : ''}`}>👑</span>
-                    ) : val === 1 ? (
-                      <span className="ct-crowns-mark ct-crowns-x">×</span>
-                    ) : ''}
-                  </button>
-                );
-              })
-            )}
+        {!trialMode ? (
+          <PuzzleHint>
+            {isAr
+              ? 'اضغط للتبديل: فارغ ← × ← 👑. تاجٌ واحد لكل صف وعمود ولون، ولا تاجان متجاوران.'
+              : 'Tap to cycle: empty → × → 👑. One crown per row, column & color — and no two crowns touch.'}
+          </PuzzleHint>
+        ) : null}
+        {displayState ? (
+          <div className="ct-crowns-wrap">
+            <div className="ct-crowns-grid" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
+              {displayState.player.map((row, r) =>
+                row.map((val, c) => {
+                  const reg = displayState.region[r][c];
+                  const diff = (rr, cc) => rr < 0 || rr >= n || cc < 0 || cc >= n || displayState.region[rr][cc] !== reg;
+                  const bw = (cond) => (cond ? '2.5px' : '1px');
+                  const bc = (cond) => (cond ? '#1a1208' : 'rgba(26,18,8,0.18)');
+                  const isBad = conflicts.has(`${r},${c}`);
+                  return (
+                    <button
+                      key={`${r}-${c}`}
+                      type="button"
+                      className="ct-crowns-cell"
+                      disabled={solved && !trialMode}
+                      onClick={() => {
+                        playSfx('click');
+                        if (trialMode) onboarding.applyTrialAction({ type: 'cycle', r, c });
+                        else setState((s) => cycleCrownCell(s, r, c));
+                      }}
+                      style={{
+                        background: REGION_COLORS[reg % REGION_COLORS.length],
+                        borderTop: `${bw(diff(r - 1, c))} solid ${bc(diff(r - 1, c))}`,
+                        borderBottom: `${bw(diff(r + 1, c))} solid ${bc(diff(r + 1, c))}`,
+                        borderLeft: `${bw(diff(r, c - 1))} solid ${bc(diff(r, c - 1))}`,
+                        borderRight: `${bw(diff(r, c + 1))} solid ${bc(diff(r, c + 1))}`,
+                      }}
+                    >
+                      {val === 2 ? (
+                        <span className={`ct-crowns-mark ct-crowns-crown${isBad ? ' is-bad' : ''}`}>👑</span>
+                      ) : val === 1 ? (
+                        <span className="ct-crowns-mark ct-crowns-x">×</span>
+                      ) : ''}
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
-        </div>
-        <div className="ct-puzzle-stats"><span>{t.time(elapsed)}</span></div>
-        {!solved ? (
-          <PuzzleToolbar t={t} playSfx={playSfx} onNew={() => newGame(size)} onReset={() => setState((s) => resetCrowns(s))}
-            hint={makeHint({ points, spendPoints, solved, state, setState, hintReveal })} />
-        ) : (
-          <PuzzleWinBanner t={t} elapsed={elapsed} playSfx={playSfx}
-            onPlayAgain={() => newGame(size)} onChangeSize={() => setScreen('hub')} />
-        )}
+        ) : null}
+        {soloTrial && soloHint ? (
+          <PuzzleToolbar t={t} playSfx={playSfx} hint={soloHint} hintOnly />
+        ) : null}
+        {!trialMode ? (
+          <>
+            <div className="ct-puzzle-stats"><span>{t.time(elapsed)}</span></div>
+            {!solved ? (
+              <PuzzleToolbar t={t} playSfx={playSfx} onNew={() => newGame(size)} onReset={() => setState((s) => resetCrowns(s))}
+                hint={makeHint({ points, spendPoints, solved, state, setState, hintReveal })} />
+            ) : (
+              <PuzzleWinBanner t={t} elapsed={elapsed} playSfx={playSfx}
+                onPlayAgain={() => newGame(size)} onChangeSize={() => setScreen('hub')} />
+            )}
+          </>
+        ) : null}
       </div>
-      {tutorialOpen ? <PuzzleTutorial steps={steps} isAr={isAr} onClose={closeTutorial} playSfx={playSfx} /> : null}
+      <PuzzleOnboardingLayer onboarding={onboarding} config={CONFIG} steps={steps} isAr={isAr} playSfx={playSfx} />
     </div>
   );
 }

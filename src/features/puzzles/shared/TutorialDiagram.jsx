@@ -1,13 +1,26 @@
 import React from 'react';
 
 /**
- * Reusable tutorial diagram primitives — small code-drawn boards that show a
- * rule and a problem→solution, so tutorials teach visually (no asset files).
- *
- *   <MiniBoard cells={[[{bg,content,fg,ring}, …], …]} />
- *   <Captioned kind="bad|good" label="…"><MiniBoard …/></Captioned>
- *   <DiagramRow> board <Arrow/> board </DiagramRow>
+ * Problem → Answer row with clear labels (KenKen-style tutorial diagrams).
  */
+export function ProblemAnswer({ problem, answer, isAr, problemLabel, answerLabel }) {
+  const prob = problemLabel ?? (isAr ? 'المسألة' : 'Problem');
+  const ans = answerLabel ?? (isAr ? 'الحل' : 'Answer');
+  return (
+    <div className="mm-tut-prob-ans">
+      <div className="mm-tut-prob-ans-col">
+        <div className="mm-tut-prob-ans-label">{prob}</div>
+        <div className="mm-tut-prob-ans-art">{problem}</div>
+      </div>
+      <div className="mm-tut-prob-ans-arrow" aria-hidden="true">→</div>
+      <div className="mm-tut-prob-ans-col">
+        <div className="mm-tut-prob-ans-label mm-tut-prob-ans-label--answer">{ans}</div>
+        <div className="mm-tut-prob-ans-art">{answer}</div>
+      </div>
+    </div>
+  );
+}
+
 export function MiniBoard({ cells, cell = 30 }) {
   const cols = cells[0]?.length || 1;
   return (
@@ -16,8 +29,15 @@ export function MiniBoard({ cells, cell = 30 }) {
         row.map((c, ci) => (
           <div
             key={`${r}-${ci}`}
-            className={`ct-tut-cell${c.ring ? ` ct-tut-cell--${c.ring}` : ''}`}
-            style={{ width: cell, height: cell, background: c.bg || '#fbf6ee', color: c.fg || '#1a1208', fontSize: Math.round(cell * 0.52) }}
+            className={`ct-tut-cell${c.ring ? ` ct-tut-cell--${c.ring}` : ''}${c.answer ? ' ct-tut-cell--answer' : ''}`}
+            style={{
+              width: cell,
+              height: cell,
+              background: c.bg || '#fbf6ee',
+              color: c.fg || '#1a1208',
+              fontSize: Math.round(cell * 0.52),
+              fontWeight: c.answer ? 800 : 600,
+            }}
           >
             {c.content ?? ''}
           </div>
@@ -39,20 +59,21 @@ export function Captioned({ kind, label, children }) {
   return (
     <div className="ct-tut-cap">
       <div className="ct-tut-cap-art">{children}</div>
-      <div className={`ct-tut-tag ct-tut-tag--${kind}`}>{kind === 'good' ? '✓ ' : kind === 'bad' ? '✗ ' : ''}{label}</div>
+      <div className={`ct-tut-tag${kind ? ` ct-tut-tag--${kind}` : ''}`}>
+        {kind === 'good' ? '✓ ' : kind === 'bad' ? '✗ ' : ''}{label}
+      </div>
     </div>
   );
 }
 
-/** Helper: build a cells matrix from a region-id grid + crown/× overlays. */
 export function crownsCells(regionGrid, colors, { crowns = [], marks = [], rings = {} } = {}) {
   const has = (list, r, c) => list.some(([rr, cc]) => rr === r && cc === c);
   return regionGrid.map((row, r) =>
-    row.map((g, c) => ({
-      bg: colors[g % colors.length],
-      content: has(crowns, r, c) ? '👑' : has(marks, r, c) ? '×' : '',
-      fg: has(marks, r, c) ? 'rgba(26,18,8,0.5)' : '#1a1208',
-      ring: rings[`${r},${c}`],
-    })),
+    row.map((reg, c) => {
+      const bg = colors[reg % colors.length];
+      if (has(crowns, r, c)) return { content: '👑', bg, ring: rings[`${r},${c}`] };
+      if (has(marks, r, c)) return { content: '×', bg, fg: 'rgba(26,18,8,0.5)' };
+      return { content: '', bg, ring: rings[`${r},${c}`] };
+    }),
   );
 }

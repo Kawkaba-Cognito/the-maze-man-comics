@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { TrainingMenuBar, TrainingPlayHeader } from '../../training/shared/TrainingChrome';
-import GridSizePicker, { PuzzleHint, PuzzleWinBanner, PuzzleToolbar } from './GridSizePicker';
+import GridSizePicker, { PuzzleToolbar } from './GridSizePicker';
 import PuzzleOnboardingLayer from './PuzzleOnboardingLayer';
 import { PuzzleFrameContext } from './PuzzleFrameContext';
 import { usePuzzlePlayState } from './usePuzzlePlayState';
@@ -8,11 +8,12 @@ import { TUTORIAL_UI } from './tutorialContent';
 import { usePuzzleTutorial } from './usePuzzleTutorial';
 import { useApp } from '../../../context/AppContext';
 import { puzzleWinPoints } from '../../../lib/points';
-import { makeHint, makeTrialHint } from './useHint';
+import { makeTrialHint } from './useHint';
 
-export function NumberPuzzleFrame({
-  config,
+/** Hub + play shell for non-number puzzles (sliding, bridges, …). */
+export default function PuzzleScreenFrame({
   puzzleId,
+  config,
   isAr,
   t,
   playSfx,
@@ -20,25 +21,25 @@ export function NumberPuzzleFrame({
   sizes,
   size,
   setSize,
-  state,
   solved,
   elapsed,
-  newGame,
-  hint,
-  hintCfg,
+  onNewGame,
+  onAwardSizes,
+  hubExtra,
+  playExtra,
+  subtitle,
   hintReveal,
   children,
-  onReset,
 }) {
   const [screen, setScreen] = useState('hub');
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
-  const { awardPoints, points, spendPoints } = useApp();
+  const { awardPoints } = useApp();
   const awardedRef = useRef(false);
 
   const tutorial = usePuzzleTutorial(puzzleId, isAr, {
     onStartGame: (n) => {
       setSize(n);
-      newGame(n);
+      onNewGame(n);
       setScreen('play');
     },
     onOnboardingComplete: () => setScreen('hub'),
@@ -64,14 +65,16 @@ export function NumberPuzzleFrame({
   }, [onboarding.phase]);
 
   useEffect(() => {
-    if (trialMode) return;
-    if (solved && !awardedRef.current) {
+    if (trialMode || !solved) return;
+    if (!awardedRef.current) {
       awardedRef.current = true;
-      awardPoints(puzzleWinPoints(size, sizes));
-    } else if (!solved) {
-      awardedRef.current = false;
+      awardPoints(puzzleWinPoints(size, onAwardSizes ?? sizes));
     }
-  }, [solved, size, awardPoints, trialMode, sizes]);
+  }, [solved, size, awardPoints, trialMode, onAwardSizes, sizes]);
+
+  useEffect(() => {
+    if (!solved) awardedRef.current = false;
+  }, [solved]);
 
   const hubCenter = (
     <>
@@ -85,7 +88,7 @@ export function NumberPuzzleFrame({
     </>
   );
 
-  const handlePickSize = (n) => {
+  const handlePick = (n) => {
     setSize(n);
     startGame(n);
   };
@@ -100,7 +103,7 @@ export function NumberPuzzleFrame({
       })
     : null;
 
-  const frameCtx = { onboarding, trialMode, applyCell: null };
+  const frameCtx = { onboarding, trialMode };
 
   if (view === 'hub') {
     return (
@@ -123,7 +126,8 @@ export function NumberPuzzleFrame({
             ) : (
               <>
                 <p className="ct-puzzle-hub-sub">{t.pickGridSub}</p>
-                <GridSizePicker t={t} isAr={isAr} sizes={sizes} onPick={handlePickSize} playSfx={playSfx} />
+                <GridSizePicker t={t} isAr={isAr} sizes={sizes} onPick={handlePick} playSfx={playSfx} />
+                {hubExtra}
               </>
             )}
           </div>
@@ -143,7 +147,7 @@ export function NumberPuzzleFrame({
         <TrainingPlayHeader
           isAr={isAr}
           title={isAr ? config.nameAr : config.name}
-          subtitle={trialMode ? practiceSub : t.gridLabel(size)}
+          subtitle={trialMode ? practiceSub : (subtitle ?? t.gridLabel(size))}
           onMenu={() => {
             if (trialMode) onboarding.skipTrials();
             else setScreen('hub');
@@ -154,28 +158,11 @@ export function NumberPuzzleFrame({
           menuAriaLabel={t.menu}
         />
         <div className="ct-puzzle-play-body">
-          {!trialMode ? <PuzzleHint>{hint}</PuzzleHint> : null}
           {children}
-          {!trialMode ? (
-            <div className="ct-puzzle-stats">
-              <span>{t.time(elapsed)}</span>
-            </div>
-          ) : null}
           {soloTrial && soloHint ? (
             <PuzzleToolbar t={t} playSfx={playSfx} hint={soloHint} hintOnly />
           ) : null}
-          {!trialMode && !solved ? (
-            <PuzzleToolbar t={t} playSfx={playSfx} onNew={() => newGame(size)} onReset={onReset} hint={hintCfg} />
-          ) : null}
-          {!trialMode && solved ? (
-            <PuzzleWinBanner
-              t={t}
-              elapsed={elapsed}
-              playSfx={playSfx}
-              onPlayAgain={() => newGame(size)}
-              onChangeSize={() => setScreen('hub')}
-            />
-          ) : null}
+          {playExtra}
         </div>
         <PuzzleOnboardingLayer onboarding={onboarding} config={config} steps={steps} isAr={isAr} playSfx={playSfx} />
       </div>
@@ -183,26 +170,12 @@ export function NumberPuzzleFrame({
   );
 }
 
-/** Read trial grid state / handlers from NumberPuzzleFrame context. */
-export function useNumberPuzzleGrid(state, setState, applyCell) {
+export function useBoardPuzzleTrial(state, setState) {
   const { activeState, setActiveState, trialMode, notifyAction } = usePuzzlePlayState(state, setState);
-
   return {
     trialMode,
-    gridState: activeState,
-    gridSize: trialMode ? (activeState?.size ?? state?.size) : state?.size,
-    onCellSelect(r, c, setSelected) {
-      setSelected([r, c]);
-      if (trialMode) notifyAction({ type: 'select', r, c });
-    },
-    onCellValue(n, selected) {
-      if (!selected) return;
-      const [r, c] = selected;
-      if (trialMode) {
-        notifyAction({ type: 'setCell', r, c, value: n });
-      } else {
-        setActiveState((s) => applyCell(s, r, c, n));
-      }
-    },
+    activeState,
+    setActiveState,
+    notifyAction,
   };
 }
