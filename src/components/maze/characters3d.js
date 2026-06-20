@@ -146,6 +146,7 @@ export function buildCharacter(BABYLON, s, parent, shadowGenerator, variant, equ
     const backN = node('backN', 0, 0.8, -0.2, upper); backN.scaling.setAll(1.2);
     applyEquip({ hat: hatN, face: faceN, neck: neckGearN, back: backN, hand: armR.hand });
     const holding = !!(equipped && equipped.back === 'balloon'); // hand-held item → pose the right arm
+    let seated = false;
 
     const update = (moving, cyc, time, yawVel = 0) => {
       const L = BABYLON.Scalar.Lerp;
@@ -155,6 +156,19 @@ export function buildCharacter(BABYLON, s, parent, shadowGenerator, variant, equ
       root.rotation.x = L(root.rotation.x, moving ? 0.06 : 0, 0.08);
       // head looks a touch into the turn, then settles
       headPivot.rotation.y = L(headPivot.rotation.y, BABYLON.Scalar.Clamp(yawVel * 4, -0.3, 0.3), 0.1);
+      if (seated) {
+        // L-shaped sit: thighs forward, shins down, hands resting on the lap.
+        const seat = (n, tgt) => { n.rotation.x = L(n.rotation.x, tgt, 0.2); };
+        seat(legL.thigh, 1.45); seat(legR.thigh, 1.45);
+        seat(legL.shin, -1.5); seat(legR.shin, -1.5);
+        seat(armL.up, 0.5); seat(armR.up, 0.5);
+        seat(armL.fore, -0.7); seat(armR.fore, -0.7);
+        upper.position.y = L(upper.position.y, hipY + Math.sin(time * 1.4) * 0.02, 0.1); // breathing
+        upper.rotation.z = L(upper.rotation.z, 0, 0.1);
+        upper.rotation.y = L(upper.rotation.y, 0, 0.1);
+        headPivot.rotation.x = L(headPivot.rotation.x, 0, 0.1);
+        return;
+      }
       if (moving) {
         const sw = Math.sin(cyc);
         legL.thigh.rotation.x = sw * 0.55; legR.thigh.rotation.x = -sw * 0.55;
@@ -181,7 +195,7 @@ export function buildCharacter(BABYLON, s, parent, shadowGenerator, variant, equ
       }
     };
 
-    return { rig: { root, update } };
+    return { rig: { root, update, setSeated: (v) => { seated = v; } } };
   }
 
   // ───────────────── Fox (default) — geometric mascot ─────────────────
@@ -252,6 +266,7 @@ export function buildCharacter(BABYLON, s, parent, shadowGenerator, variant, equ
   // ── Idle ear twitches ──
   let twitchStart = 4 + Math.random() * 4;
   let twitchSide = 1;
+  let seated = false;
 
   const update = (moving, cyc, time = 0, yawVel = 0) => {
     const L = BABYLON.Scalar.Lerp;
@@ -261,6 +276,18 @@ export function buildCharacter(BABYLON, s, parent, shadowGenerator, variant, equ
     root.rotation.x = L(root.rotation.x, moving ? 0.05 : 0, 0.08);
     // tail drags behind the turn (secondary motion) + wag
     tailPivot.rotation.y = L(tailPivot.rotation.y, BABYLON.Scalar.Clamp(-yawVel * 7, -0.9, 0.9), 0.1);
+    if (seated) {
+      // Sit on the haunches: back legs fold, front legs plant, tilt up a touch.
+      const seat = (n, tgt) => { n.rotation.x = L(n.rotation.x, tgt, 0.2); };
+      seat(legBL, 1.2); seat(legBR, 1.2);
+      seat(legFL, 0); seat(legFR, 0);
+      body.position.y = L(body.position.y, 1.25, 0.15);
+      body.scaling.y = L(body.scaling.y, 0.85, 0.1);
+      body.scaling.x = L(body.scaling.x, 1, 0.1);
+      root.rotation.x = L(root.rotation.x, -0.12, 0.1);
+      tailPivot.rotation.z = L(tailPivot.rotation.z, Math.sin(time * 1.1) * 0.12, 0.06);
+      return;
+    }
     if (moving) {
       const sw = Math.sin(cyc) * 0.5;
       legFL.rotation.x = sw; legBR.rotation.x = sw; legFR.rotation.x = -sw; legBL.rotation.x = -sw;
@@ -282,5 +309,5 @@ export function buildCharacter(BABYLON, s, parent, shadowGenerator, variant, equ
       (twitchSide > 0 ? earR : earL).rotation.z = (twitchSide > 0 ? -0.18 : 0.18) + flick;
     }
   };
-  return { rig: { root, update } };
+  return { rig: { root, update, setSeated: (v) => { seated = v; } } };
 }

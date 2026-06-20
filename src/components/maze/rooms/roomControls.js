@@ -51,12 +51,14 @@ export function setupControls(scene, canvas, opts = {}) {
     fov = 1.0,
     topDown = false, // fixed overhead/tilted cam + screen-relative joystick
     charScale = CHAR_SCALE, // per-room rig scale (small for pixel/top-down rooms)
+    shadows = true, // set false for flat/bright rooms → skip the per-frame shadow pass
+    glow = true,    // set false → skip the full-screen glow/bloom pass (perf)
   } = opts;
 
   scene.collisionsEnabled = true;
 
   // ── Comic kit (glow layer + toon materials) ──
-  const kit = createKit(B, scene, lowPerf);
+  const kit = createKit(B, scene, lowPerf || !glow);
 
   // ── Key light + soft shadows for the rim-lit look ──
   const dir = new B.DirectionalLight('keyLight', new B.Vector3(-0.45, -1, 0.55), scene);
@@ -64,7 +66,7 @@ export function setupControls(scene, canvas, opts = {}) {
   dir.intensity = 1.0;
   // Real-time shadows = a shadow-map render + blur every frame — a major mobile
   // cost. Skip them on phones and hand rooms a no-op shadow generator instead.
-  const shadowGenerator = lowPerf
+  const shadowGenerator = (lowPerf || !shadows)
     ? { addShadowCaster() {}, removeShadowCaster() {}, getShadowMap() { return null; }, dispose() {} }
     : (() => {
         const sg = new B.ShadowGenerator(1024, dir);
@@ -125,6 +127,8 @@ export function setupControls(scene, canvas, opts = {}) {
   // ── Per-frame movement + animation + camera follow ──
   let speed = 0, walkCycle = 0, prevHeading = startYaw, started = false;
   let vy = 0, jumpQueued = false;
+  let frozen = false; // when true, movement input is ignored (e.g. seated in a chat)
+  let camLocked = false; // when true, the room drives the camera (cinematic close-ups)
   const L = (a, b, t) => a + (b - a) * t;
   const DEAD = 0.1;
 
@@ -135,7 +139,11 @@ export function setupControls(scene, canvas, opts = {}) {
     const jy = inp && Math.abs(inp.my) > DEAD ? inp.my : 0;
     const run = inputMap['shift'] ? RUN_MULT : 1;
 
-    if (topDown) {
+    if (frozen) {
+      // Seated / locked: bleed speed to zero and hold the current facing.
+      speed += (0 - speed) * 0.2;
+      if (Math.abs(speed) < 0.0005) speed = 0;
+    } else if (topDown) {
       // Screen-relative: up = north, right = east; the character faces wherever
       // it walks (no tank turning). Joystick magnitude → analog speed.
       const mx = jx + ((inputMap['d'] || inputMap['arrowright'] ? 1 : 0) - (inputMap['a'] || inputMap['arrowleft'] ? 1 : 0));
@@ -192,6 +200,9 @@ export function setupControls(scene, canvas, opts = {}) {
     rig.update(moving, walkCycle, time, yawVel);
     dust.rate(moving);
 
+    // While the camera is locked the room animates it (e.g. a dialogue close-up).
+    if (camLocked) return;
+
     const px = player.position.x, pz = player.position.z;
     let ideal;
     if (topDown) {
@@ -234,6 +245,19 @@ export function setupControls(scene, canvas, opts = {}) {
     shadowGenerator,
     keyLight: dir,
     jump() { jumpQueued = true; },
+    // Lock/unlock movement (used while seated in a conversation).
+    setFrozen(v) { frozen = !!v; if (frozen) speed = 0; },
+    // Hand the camera to the room (cinematic) / give it back to the chase rig.
+    setCamLocked(v) { camLocked = !!v; },
+    // Resize the character rig (e.g. enlarge for a conversation close-up).
+    setCharScale(s) { rig.root.scaling.set(s, s, s); },
+    // Pose the character as seated / standing (for chair conversations).
+    setSeated(v) { rig.setSeated?.(v); },
+    // Snap the character to a spot and facing (yaw in radians, optional).
+    placeAt(x, z, yaw) {
+      player.position.x = x; player.position.z = z;
+      if (yaw != null) { heading = yaw; prevHeading = yaw; rig.root.rotation.y = yaw; }
+    },
     // Ray from the character's chest in the direction it's facing.
     getForwardRay(length = 4) {
       const origin = player.position.clone();

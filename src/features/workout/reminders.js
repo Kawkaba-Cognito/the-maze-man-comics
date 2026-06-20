@@ -59,22 +59,34 @@ export async function ensureNotifPermission() {
  * Reschedule (or cancel) the native daily alarm. No-op on web — there the
  * in-app timer + banner handle it. Safe to call whenever prefs change.
  */
-export async function syncNativeReminder({ enabled, time }, lang = 'en') {
+export async function syncNativeReminder({ enabled, time, days }, lang = 'en') {
   if (!isNative()) return;
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications');
-    await LocalNotifications.cancel({ notifications: [{ id: REMINDER_ID }] });
+    // Clear the daily alarm + any per-weekday alarms from a previous setting.
+    const ids = [REMINDER_ID, ...Array.from({ length: 7 }, (_, i) => REMINDER_ID + 1 + i)];
+    await LocalNotifications.cancel({ notifications: ids.map((id) => ({ id })) });
     if (!enabled || !time) return;
     const [hour, minute] = time.split(':').map(Number);
     const s = REMINDER_STRINGS[lang] || REMINDER_STRINGS.en;
-    await LocalNotifications.schedule({
-      notifications: [{
-        id: REMINDER_ID,
-        title: s.title,
-        body: s.body,
-        schedule: { on: { hour, minute }, repeats: true, allowWhileIdle: true },
-      }],
-    });
+    const dayList = Array.isArray(days) && days.length ? days : [0, 1, 2, 3, 4, 5, 6];
+    if (dayList.length >= 7) {
+      // Every day → one simple repeating daily alarm.
+      await LocalNotifications.schedule({
+        notifications: [{
+          id: REMINDER_ID, title: s.title, body: s.body,
+          schedule: { on: { hour, minute }, repeats: true, allowWhileIdle: true },
+        }],
+      });
+    } else {
+      // Specific weekdays → one weekly-repeating alarm each (Capacitor weekday: 1=Sun).
+      await LocalNotifications.schedule({
+        notifications: dayList.map((d) => ({
+          id: REMINDER_ID + 1 + d, title: s.title, body: s.body,
+          schedule: { on: { weekday: d + 1, hour, minute }, repeats: true, allowWhileIdle: true },
+        })),
+      });
+    }
   } catch { /* plugin missing or denied — fall back to web/in-app */ }
 }
 

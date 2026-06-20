@@ -123,15 +123,19 @@ export function resetPrefs() {
 
 /* ── Daily reminder ─────────────────────────────────────────────────────── */
 
-const DEFAULT_REMINDER = { enabled: false, time: '08:00' };
+// `days` = weekday indices to remind on (0=Sun … 6=Sat). Default: every day.
+const DEFAULT_REMINDER = { enabled: false, time: '08:00', days: [0, 1, 2, 3, 4, 5, 6] };
 
 export function getReminder(st = loadWorkout()) {
-  return { ...DEFAULT_REMINDER, ...(st.reminder || {}) };
+  const r = { ...DEFAULT_REMINDER, ...(st.reminder || {}) };
+  if (!Array.isArray(r.days) || !r.days.length) r.days = [...DEFAULT_REMINDER.days];
+  return r;
 }
 
-export function saveReminder({ enabled, time }) {
+export function saveReminder({ enabled, time, days }) {
   const st = loadWorkout();
-  st.reminder = { enabled: !!enabled, time: time || DEFAULT_REMINDER.time };
+  const safeDays = Array.isArray(days) && days.length ? [...new Set(days)].sort() : [...DEFAULT_REMINDER.days];
+  st.reminder = { enabled: !!enabled, time: time || DEFAULT_REMINDER.time, days: safeDays };
   return save(st);
 }
 
@@ -149,6 +153,7 @@ export function isDoneToday(st = loadWorkout()) {
 export function reminderDue(st = loadWorkout(), now = new Date()) {
   const r = getReminder(st);
   if (!r.enabled) return false;
+  if (!r.days.includes(now.getDay())) return false; // not a scheduled weekday
   if (isDoneToday(st)) return false;
   if (st.reminderDismissed === todayKey()) return false;
   const [h, m] = r.time.split(':').map(Number);

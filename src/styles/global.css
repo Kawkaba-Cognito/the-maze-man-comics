@@ -1219,6 +1219,15 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
     box-shadow: 0 6px 20px rgba(255, 170, 50, 0.5);
 }
 .workout-plan-label { margin-top: 18px; opacity: 0.85; }
+.wk-plan-head { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 12px; }
+.wk-plan-head-meta { font-size: 0.85rem; color: #cdbfa6; font-weight: 600; }
+.wk-plan-doms { display: flex; flex-wrap: wrap; gap: 6px; }
+[dir='rtl'] .wk-plan-doms { justify-content: flex-end; }
+.wk-plan-dom {
+    font-size: 0.72rem; color: #ffd98a;
+    background: rgba(255, 208, 102, 0.1); border: 1px solid #6e4420;
+    border-radius: 999px; padding: 3px 9px;
+}
 .workout-item-num {
     width: 22px; height: 22px; flex: 0 0 22px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;

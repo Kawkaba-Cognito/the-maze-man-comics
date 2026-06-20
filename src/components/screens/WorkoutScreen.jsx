@@ -396,10 +396,11 @@ export default function WorkoutScreen() {
   const startedSome = doneCount > 0 && !allDone;
 
   const minutes = sizeDef?.minutes ?? Math.round(exercises.reduce((a, e) => a + (e.seconds || 180), 0) / 60);
+  const planDomains = [...new Set(exercises.map((e) => (isAr ? e.domainNameAr : e.domainName)))];
 
   return (
     <div className="workout-screen" dir={isAr ? 'rtl' : 'ltr'}>
-      <button className="workout-back" onClick={() => switchTab('home')}>‹ {isAr ? 'رجوع' : 'BACK'}</button>
+      <button className="workout-back" onClick={() => { playSfx('click'); leaveWorkout(); }}>‹ {isAr ? 'رجوع' : 'BACK'}</button>
 
       {/* Progress-ring hero */}
       <div className="wk-hero">
@@ -433,6 +434,14 @@ export default function WorkoutScreen() {
       {assessNudge}
 
       <div className="workout-section-label workout-plan-label">{isAr ? 'خطة اليوم' : "Today's plan"}</div>
+      <div className="wk-plan-head">
+        <span className="wk-plan-head-meta">{exercises.length} {isAr ? 'تمارين' : 'exercises'} · ~{minutes} {isAr ? 'دقيقة' : 'min'} · {goalDef ? (isAr ? goalDef.ar : goalDef.en) : ''}</span>
+        {planDomains.length > 0 && (
+          <div className="wk-plan-doms">
+            {planDomains.map((d) => <span key={d} className="wk-plan-dom">{d}</span>)}
+          </div>
+        )}
+      </div>
       <div className="workout-list">
         {exercises.map((ex, i) => (
           <button

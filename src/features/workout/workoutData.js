@@ -51,15 +51,20 @@ export const SIZES = [
   { id: 'quick', en: 'Quick', ar: 'سريع', minutes: 5, count: 2 },
   { id: 'standard', en: 'Standard', ar: 'قياسي', minutes: 10, count: 3 },
   { id: 'intense', en: 'Intense', ar: 'مكثّف', minutes: 20, count: 5 },
+  { id: 'big', en: 'Big', ar: 'كبير', minutes: 30, count: 8 },
+  { id: 'pro', en: 'Pro', ar: 'احترافي', minutes: 45, count: 12 },
+  { id: 'elite', en: 'Elite', ar: 'النخبة', minutes: 60, count: 16 },
 ];
 
 export const SIZES_BY_ID = Object.fromEntries(SIZES.map((s) => [s.id, s]));
 
-/** Every wired exercise, flattened from the training registry. */
+/** Every wired exercise, flattened from the training registry. Only games with
+ *  a real lazy `loader` are included — a sub with a gameKey but no loader can't
+ *  actually be rendered, and would auto-skip (ending the session instantly). */
 export function exercisePool() {
   const pool = [];
   DOMAIN_CONFIGS.forEach((d) => {
-    getPlayableSubs(d.id).forEach((sub) => {
+    getPlayableSubs(d.id).filter((sub) => typeof sub.loader === 'function').forEach((sub) => {
       pool.push({
         domainId: d.id,
         domainName: d.name,
