@@ -1,56 +1,64 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { TrainingScreenShell, TrainingDifficultySelect, TrainingLevelGrid } from './TrainingScreens';
+import { TrainingChallengeHandoff } from './TrainingChrome';
 
 /*
- * ModeShell — the standard 3-mode flow shared by the newer Attention games
- * (Target Tracking, Attention Cue). It reproduces the structure the other
- * training games use without each game re-implementing it:
+ * ModeShell — the standard 3-mode flow shared by the newer training games,
+ * matched to the reference games (Rush Hour etc.):
  *
- *   menu  → Free · Levels · Challenge
- *   Free      → endless practice, no fail (also what Daily Workout runs)
- *   Levels    → Easy/Medium/Hard difficulty → a grid of levels (unlock + ✓)
- *   Challenge → one escalating run with lives → best score is saved
+ *   menu  → Free · Levels · Pass n Play
+ *   Free       → endless practice, no fail (also what Daily Workout runs)
+ *   Levels     → Easy/Medium/Hard → a grid of 100 levels (unlock in order, ✓)
+ *   Pass n Play → 2–10 players, N rounds, the SAME board each round (shared
+ *                 seed), pass the device between players, ranked results table
  *
- * The game supplies a `renderEngine({ mode, diff, level, onResult, onExit })`
- * that draws/owns the actual play surface and reports back:
- *   • Levels:    onResult({ won, score })
- *   • Challenge: onResult({ score })
- *   • Free:      never resolves (player exits via the in-game back button → onExit)
+ * The game supplies `renderEngine({ mode, diff, level, seed, attempt, onResult, onExit })`:
+ *   • Levels:     onResult({ won, score })
+ *   • Pass n Play (mode 'passplay'): run a fixed `attempt.trials` then onResult({ score })
+ *   • Free:       never resolves (player exits via the in-game back button → onExit)
+ * and a `pass` config: { trials, scoreLabel:{en,ar}, lowerBetter, diff }.
  *
- * Progress (cleared levels per difficulty + best challenge score) is persisted
- * in localStorage under `storageKey`.
+ * Cleared levels per difficulty are persisted in localStorage under `storageKey`.
  */
 
 const DIFF_KEYS = ['easy', 'med', 'hard'];
 
-function loadProg(key) {
-  try { return JSON.parse(localStorage.getItem(key)) || {}; } catch { return {}; }
-}
-function saveProg(key, st) {
-  try { localStorage.setItem(key, JSON.stringify(st)); } catch { /* ignore */ }
-}
+function loadProg(key) { try { return JSON.parse(localStorage.getItem(key)) || {}; } catch { return {}; } }
+function saveProg(key, st) { try { localStorage.setItem(key, JSON.stringify(st)); } catch { /* ignore */ } }
+function seedFor(diff, level) { return ((diff.charCodeAt(0) * 7919) ^ (level * 104729)) >>> 0; }
 
 export default function ModeShell({
   storageKey,
-  title,             // { en, ar }
-  hints,             // { free:{en,ar}, levels:{...}, challenge:{...} }
-  diffLabels,        // { easy:{en,ar}, med:{...}, hard:{...} }
-  levelCount = 12,
+  title,
+  hints,
+  diffLabels,
+  levelCount = 100,
   isAr,
   playSfx,
-  onBack,            // exit the whole game (back to the hub)
+  onBack,
   workoutMode = false,
   renderEngine,
+  pass = {},
 }) {
+  const passCfg = { trials: 8, scoreLabel: { en: 'Score', ar: 'النتيجة' }, lowerBetter: false, diff: 'med', ...pass };
+
   const [prog, setProg] = useState(() => {
     const p = loadProg(storageKey);
-    return { done: { easy: [], med: [], hard: [], ...(p.done || {}) }, best: p.best || 0 };
+    return { done: { easy: [], med: [], hard: [], ...(p.done || {}) } };
   });
   const [phase, setPhase] = useState(workoutMode ? 'play' : 'menu');
   const [mode, setMode] = useState(workoutMode ? 'free' : null);
   const [diff, setDiff] = useState(null);
   const [level, setLevel] = useState(null);
   const [result, setResult] = useState(null);
+
+  // Pass n Play state
+  const [players, setPlayers] = useState(['Player 1', 'Player 2']);
+  const [rounds, setRounds] = useState(2);
+  const [ppView, setPpView] = useState(null);
+  const [ppResults, setPpResults] = useState(null);
+  const scoresRef = useRef([]);
+  const seedRef = useRef(1);
 
   const dm = useMemo(() => ({
     easy: { label: isAr ? diffLabels.easy.ar : diffLabels.easy.en },
@@ -61,54 +69,73 @@ export default function ModeShell({
   const isUnlocked = useCallback((lv) => lv === 1 || (prog.done[diff] || []).includes(lv - 1), [prog, diff]);
   const isDone = useCallback((lv) => (prog.done[diff] || []).includes(lv), [prog, diff]);
 
-  const onResult = useCallback((res) => {
-    if (mode === 'levels' && res.won) {
-      setProg((p) => {
-        const cur = new Set(p.done[diff] || []);
-        cur.add(level);
-        const next = { ...p, done: { ...p.done, [diff]: [...cur] } };
-        saveProg(storageKey, next);
-        return next;
-      });
-    }
-    if (mode === 'challenge' && (res.score || 0) > prog.best) {
-      setProg((p) => {
-        const next = { ...p, best: res.score };
-        saveProg(storageKey, next);
-        return next;
-      });
-    }
-    setResult({ ...res, mode, diff, level });
-    setPhase('result');
-  }, [mode, diff, level, prog.best, storageKey]);
+  const goMenu = useCallback(() => { setPhase('menu'); setMode(null); setResult(null); setPpResults(null); }, []);
+  const T = isAr ? title.ar : title.en;
 
-  const goMenu = useCallback(() => { setPhase('menu'); setMode(null); setResult(null); }, []);
+  const onLevelResult = useCallback((res) => {
+    if (res.won) {
+      setProg((p) => {
+        const cur = new Set(p.done[diff] || []); cur.add(level);
+        const next = { ...p, done: { ...p.done, [diff]: [...cur] } };
+        saveProg(storageKey, next); return next;
+      });
+    }
+    setResult({ ...res, diff, level });
+    setPhase('result');
+  }, [diff, level, storageKey]);
+
+  // ── Pass n Play orchestration ──
+  const startPass = useCallback(() => {
+    const names = players.map((s, i) => (s.trim() || `Player ${i + 1}`));
+    if (names.length < 2) { alert(isAr ? 'أضف لاعبَين على الأقل.' : 'Add at least 2 players.'); return; }
+    playSfx?.('click');
+    scoresRef.current = names.map(() => []);
+    seedRef.current = (Math.random() * 1e9) >>> 0;
+    setPpView({ roundIdx: 0, playerIdx: 0 });
+    setPhase('pp-handoff');
+  }, [players, isAr, playSfx]);
+
+  const onPassResult = useCallback((res) => {
+    const { roundIdx, playerIdx } = ppView;
+    scoresRef.current[playerIdx].push(res.score ?? 0);
+    let nextPlayer = playerIdx + 1, nextRound = roundIdx;
+    if (nextPlayer >= players.length) { nextPlayer = 0; nextRound = roundIdx + 1; seedRef.current = (Math.random() * 1e9) >>> 0; }
+    if (nextRound >= rounds) {
+      const rows = players.map((s, i) => {
+        const list = scoresRef.current[i];
+        const total = list.reduce((a, b) => a + b, 0);
+        return { name: s.trim() || `Player ${i + 1}`, total };
+      }).sort((a, b) => (passCfg.lowerBetter ? a.total - b.total : b.total - a.total));
+      setPpResults(rows);
+      setPhase('pp-results');
+      return;
+    }
+    setPpView({ roundIdx: nextRound, playerIdx: nextPlayer });
+    setPhase('pp-handoff');
+  }, [ppView, players, rounds, passCfg.lowerBetter]);
 
   const startMode = (m) => {
     playSfx?.('click');
     setMode(m);
-    if (m === 'free' || m === 'challenge') setPhase('play');
-    else setPhase('diff');
+    if (m === 'free') setPhase('play');
+    else if (m === 'levels') setPhase('diff');
+    else setPhase('pp-setup');
   };
 
-  const T = isAr ? title.ar : title.en;
-  const L = {
-    free: isAr ? 'حر' : 'Free Play',
-    levels: isAr ? 'مستويات' : 'Levels',
-    challenge: isAr ? 'تحدٍّ' : 'Challenge',
-  };
-
-  // ── Play (engine owns the surface) ──
+  // ── PLAY (engine) ──
   if (phase === 'play') {
-    return renderEngine({ mode, diff, level, onResult, onExit: workoutMode ? onBack : goMenu, isLevel: mode === 'levels' });
+    return renderEngine({ mode, diff, level, seed: mode === 'levels' ? seedFor(diff, level) : null, attempt: null, onResult: onLevelResult, onExit: workoutMode ? onBack : goMenu });
+  }
+  if (phase === 'pp-play') {
+    return renderEngine({ mode: 'passplay', diff: passCfg.diff, level: null, seed: seedRef.current, attempt: { trials: passCfg.trials }, onResult: onPassResult, onExit: goMenu });
   }
 
-  // ── Mode menu ──
+  // ── Menu ──
   if (phase === 'menu') {
     const cards = [
-      { k: 'free', ic: '♾️', lb: L.free, hint: hints?.free, mod: 'ct-fq-attn-mode--free' },
-      { k: 'levels', ic: '🎯', lb: L.levels, hint: hints?.levels, mod: 'ct-fq-attn-mode--levels' },
-      { k: 'challenge', ic: '⚔️', lb: L.challenge, hint: hints?.challenge, mod: 'ct-fq-attn-mode--chal' },
+      { k: 'free', ic: '♾️', lb: isAr ? 'حر' : 'Free mode', hint: hints?.free, mod: 'ct-fq-attn-mode--free' },
+      { k: 'levels', ic: '🎯', lb: isAr ? 'المستويات' : 'Level mode', hint: hints?.levels, mod: 'ct-fq-attn-mode--levels' },
+      { k: 'pass', ic: '🎮', lb: isAr ? 'مرّر والعب' : 'Pass n Play', hint: hints?.pass, mod: 'ct-fq-attn-mode--chal' },
     ];
     return (
       <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} title={T} hub>
@@ -128,65 +155,128 @@ export default function ModeShell({
     );
   }
 
-  // ── Difficulty (Levels mode) ──
+  // ── Difficulty (Levels) ──
   if (phase === 'diff') {
     return (
       <TrainingDifficultySelect
         isAr={isAr} playSfx={playSfx} onBack={goMenu} title={T}
-        blurb={isAr ? 'اختر الصعوبة' : 'Choose a difficulty'}
+        blurb={isAr ? '٣ صعوبات · ١٠٠ مستوى لكل · افتح بالترتيب' : '3 difficulties · 100 levels each · unlock in order'}
         diffKeys={DIFF_KEYS} dm={dm}
         onPick={(k) => { setDiff(k); setPhase('levels'); }}
       />
     );
   }
 
-  // ── Level grid (Levels mode) ──
+  // ── Level grid (100) ──
   if (phase === 'levels') {
     return (
       <TrainingLevelGrid
         isAr={isAr} playSfx={playSfx} onBack={() => setPhase('diff')} title={`${T} · ${dm[diff].label}`}
         count={levelCount} isUnlocked={isUnlocked} isDone={isDone}
         sublabel={(lv) => `L${lv}`}
-        onPick={(lv) => { setLevel(lv); setPhase('play'); }}
+        onPick={(lv) => { setLevel(lv); setMode('levels'); setPhase('play'); }}
       />
     );
   }
 
-  // ── Result ──
+  // ── Levels result ──
   if (phase === 'result' && result) {
-    const won = result.won;
-    const isLast = result.mode === 'levels' && result.level >= levelCount;
+    const isLast = result.level >= levelCount;
     return (
       <div className="ct-training-ov" role="dialog" aria-modal="true">
         <div className="ct-training-modal" style={{ textAlign: 'center' }}>
-          <h2 className="ct-training-modal-title">
-            {result.mode === 'challenge'
-              ? (isAr ? 'انتهى التحدّي' : 'Run over')
-              : won ? (isAr ? 'أحسنت! ✓' : 'Level cleared! ✓') : (isAr ? 'حاول مجدداً' : 'Not quite')}
-          </h2>
+          <h2 className="ct-training-modal-title">{result.won ? (isAr ? 'أحسنت! ✓' : 'Level cleared! ✓') : (isAr ? 'حاول مجدداً' : 'Not quite')}</h2>
           {result.summary ? <p className="ct-training-modal-text">{result.summary}</p> : null}
-          {result.mode === 'challenge' ? (
-            <p className="ct-training-modal-text">
-              {isAr ? 'النتيجة' : 'Score'}: <b>{result.score}</b> · {isAr ? 'الأفضل' : 'Best'}: <b>{Math.max(prog.best, result.score || 0)}</b>
-            </p>
-          ) : null}
           <div className="ct-training-modal-actions">
-            {result.mode === 'levels' && won && !isLast && (
+            {result.won && !isLast && (
               <button type="button" className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); setLevel(result.level + 1); setResult(null); setPhase('play'); }}>
                 {isAr ? 'المستوى التالي' : 'Next level'}
               </button>
             )}
-            {result.mode !== 'free' && (
-              <button type="button" className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); setResult(null); setPhase('play'); }}>
-                {result.mode === 'challenge' ? (isAr ? 'العب مجدداً' : 'Play again') : won ? (isAr ? 'إعادة' : 'Replay') : (isAr ? 'حاول مجدداً' : 'Retry')}
-              </button>
-            )}
-            <button type="button" className="ct-training-btn ct-training-btn--ghost" onClick={() => { playSfx?.('click'); goMenu(); }}>
-              {isAr ? 'القائمة' : 'Menu'}
+            <button type="button" className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); setResult(null); setPhase('play'); }}>
+              {result.won ? (isAr ? 'إعادة' : 'Replay') : (isAr ? 'حاول مجدداً' : 'Retry')}
+            </button>
+            <button type="button" className="ct-training-btn ct-training-btn--ghost" onClick={() => { playSfx?.('click'); setPhase('levels'); setResult(null); }}>
+              {isAr ? 'المستويات' : 'Levels'}
             </button>
           </div>
         </div>
       </div>
+    );
+  }
+
+  // ── Pass n Play: setup ──
+  if (phase === 'pp-setup') {
+    const setName = (i, v) => setPlayers((p) => p.map((x, j) => (j === i ? v : x)));
+    return (
+      <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={goMenu} title={isAr ? 'مرّر والعب' : 'Pass n Play'}>
+        <div className="ct-pp-setup">
+          <p className="ct-fq-sub ct-fq-training-blurb">{isAr ? 'نفس اللوحة للجميع كل جولة · مرّر الجهاز · الأفضل يفوز' : 'Same board for everyone each round · pass the device · best score wins'}</p>
+          <div className="ct-pp-sec">{isAr ? 'اللاعبون (2–10)' : 'Players (2–10)'}</div>
+          {players.map((nm, i) => (
+            <div className="ct-pp-row" key={i}>
+              <input className="ct-pp-input" value={nm} onChange={(e) => setName(i, e.target.value)} maxLength={14} />
+              {players.length > 2 && (
+                <button className="ct-pp-x" onClick={() => { playSfx?.('click'); setPlayers((p) => p.filter((_, j) => j !== i)); }}>✕</button>
+              )}
+            </div>
+          ))}
+          {players.length < 10 && (
+            <button className="ct-pp-add" onClick={() => { playSfx?.('click'); setPlayers((p) => [...p, `Player ${p.length + 1}`]); }}>
+              ＋ {isAr ? 'إضافة لاعب' : 'Add player'}
+            </button>
+          )}
+          <div className="ct-pp-sec">{isAr ? 'الجولات' : 'Rounds'}</div>
+          <div className="ct-pp-rounds">
+            {[1, 2, 3, 5].map((r) => (
+              <button key={r} className={`ct-pp-round${rounds === r ? ' sel' : ''}`} onClick={() => { playSfx?.('click'); setRounds(r); }}>{r}</button>
+            ))}
+          </div>
+          <button className="ct-training-btn ct-training-btn--start" style={{ marginTop: 16 }} onClick={startPass}>🎮 {isAr ? 'ابدأ' : 'Start'}</button>
+        </div>
+      </TrainingScreenShell>
+    );
+  }
+
+  // ── Pass n Play: handoff ──
+  if (phase === 'pp-handoff' && ppView) {
+    const name = players[ppView.playerIdx].trim() || `Player ${ppView.playerIdx + 1}`;
+    return (
+      <TrainingChallengeHandoff
+        isAr={isAr}
+        kicker={isAr ? 'مرّر والعب' : 'Pass n Play'}
+        playerName={name}
+        roundLine={isAr ? `الجولة ${ppView.roundIdx + 1}/${rounds}` : `Round ${ppView.roundIdx + 1}/${rounds}`}
+        instruction={isAr ? 'سلّم الجهاز لهذا اللاعب ثم اضغط ابدأ' : 'Pass the device to this player, then tap Start'}
+        bullets={[
+          isAr ? 'نفس اللوحة لكل اللاعبين هذه الجولة' : 'Same board for every player this round',
+          isAr ? 'اضغط ابدأ فقط حين يكون الجهاز معك' : 'Tap Start only when the device is with you',
+        ]}
+        startLabel={isAr ? `جاهز — ${name}` : `Ready — ${name}`}
+        onStart={() => setPhase('pp-play')}
+        playSfx={playSfx}
+      />
+    );
+  }
+
+  // ── Pass n Play: results ──
+  if (phase === 'pp-results' && ppResults) {
+    return (
+      <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={goMenu} title={isAr ? 'نتائج مرّر والعب' : 'Pass n Play results'}>
+        <div className="ct-pp-results">
+          {ppResults.map((r, i) => (
+            <div key={r.name} className={`ct-pp-res-row${i === 0 ? ' win' : ''}`}>
+              <span className="ct-pp-rank">{i === 0 ? '🏆' : i + 1}</span>
+              <span className="ct-pp-name">{r.name}</span>
+              <span className="ct-pp-score">{r.total} {isAr ? passCfg.scoreLabel.ar : passCfg.scoreLabel.en}</span>
+            </div>
+          ))}
+          <div className="ct-training-modal-actions" style={{ marginTop: 16 }}>
+            <button className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); setPhase('pp-setup'); setPpResults(null); }}>{isAr ? 'العب مجدداً' : 'Play again'}</button>
+            <button className="ct-training-btn ct-training-btn--ghost" onClick={() => { playSfx?.('click'); goMenu(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
+          </div>
+        </div>
+      </TrainingScreenShell>
     );
   }
 

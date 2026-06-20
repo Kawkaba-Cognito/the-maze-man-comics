@@ -1,6 +1,7 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
+import { makeRng } from '../../../../shared/rng';
 
 /*
  * Multiple Object Tracking (MOT) — dynamic attention.
@@ -27,12 +28,14 @@ const BASE = {
 };
 function levelConfig(diff, level) {
   const b = BASE[diff] || BASE.med;
-  const lv = (level || 1) - 1;
-  const targets = Math.min(b.t + Math.floor(lv / 6), 5);
-  return { targets, total: targets + b.d + Math.floor(lv / 3), speed: b.sp + lv * 6, trackMs: b.tr + lv * 60 };
+  const f = ((level || 1) - 1) / 99; // ramp across the 100 levels
+  const targets = Math.min(b.t + Math.round(f * 2), 6);
+  return { targets, total: targets + b.d + Math.round(f * 4), speed: b.sp + Math.round(f * 70), trackMs: b.tr + Math.round(f * 1400) };
 }
 
-function MotEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPoints }) {
+function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+  const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
+  const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 6) : 0;
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const dotsRef = useRef([]);
@@ -107,15 +110,15 @@ function MotEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPo
 
   const nextParams = useCallback(() => {
     if (mode === 'levels') return levelConfig(diff, level);
-    if (mode === 'challenge') return freeConfig(chalRoundRef.current);
+    if (mode === 'passplay') return freeConfig(2 + roundIdxRef.current); // fixed ramp, same for all (seeded layout)
     return freeConfig(freeRoundRef.current);
   }, [mode, diff, level]);
 
   const updateHud = useCallback(() => {
     if (mode === 'levels') setHud(isAr ? `مستوى ${level} · جولة ${roundIdxRef.current}/${ROUNDS_PER_LEVEL} · ✓${wonRef.current}` : `Lvl ${level} · Round ${roundIdxRef.current}/${ROUNDS_PER_LEVEL} · ✓${wonRef.current}`);
-    else if (mode === 'challenge') setHud(isAr ? `جولة ${chalRoundRef.current + 1}` : `Round ${chalRoundRef.current + 1}`);
+    else if (mode === 'passplay') setHud(isAr ? `جولة ${roundIdxRef.current + 1}/${ppTrials} · ✓${wonRef.current}` : `Round ${roundIdxRef.current + 1}/${ppTrials} · ✓${wonRef.current}`);
     else setHud(isAr ? `جولة ${freeRoundRef.current + 1}` : `Round ${freeRoundRef.current + 1}`);
-  }, [mode, level, isAr]);
+  }, [mode, level, isAr, ppTrials]);
 
   const startRound = useCallback(() => {
     fit();
@@ -125,12 +128,12 @@ function MotEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPo
     const dots = [];
     for (let i = 0; i < cfg.total; i++) {
       let x, y, tries = 0;
-      do { x = R + Math.random() * (w - 2 * R); y = R + Math.random() * (h - 2 * R); tries += 1; }
+      do { x = R + rng() * (w - 2 * R); y = R + rng() * (h - 2 * R); tries += 1; }
       while (tries < 40 && dots.some((o) => Math.hypot(o.x - x, o.y - y) < R * 2.5));
-      const a = Math.random() * Math.PI * 2;
+      const a = rng() * Math.PI * 2;
       dots.push({ x, y, vx: Math.cos(a) * cfg.speed, vy: Math.sin(a) * cfg.speed, r: R, target: false, selected: false });
     }
-    [...dots.keys()].sort(() => Math.random() - 0.5).slice(0, cfg.targets).forEach((i) => { dots[i].target = true; });
+    [...dots.keys()].sort(() => rng() - 0.5).slice(0, cfg.targets).forEach((i) => { dots[i].target = true; });
     dotsRef.current = dots;
     setPicksLeft(cfg.targets);
     updateHud();
@@ -145,7 +148,7 @@ function MotEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPo
         setPhaseBoth('respond');
       }, cfg.trackMs);
     }, CUE_MS);
-  }, [fit, isAr, nextParams, setPhaseBoth, updateHud]);
+  }, [fit, isAr, nextParams, setPhaseBoth, updateHud, rng]);
 
   const evaluate = useCallback(() => {
     const k = cfgRef.current.targets;
@@ -164,17 +167,16 @@ function MotEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPo
           onResult({ won: wonRef.current >= LEVEL_WIN, score: scoreRef.current, summary: isAr ? `${wonRef.current}/${ROUNDS_PER_LEVEL} جولات مثالية` : `${wonRef.current}/${ROUNDS_PER_LEVEL} perfect rounds` });
           return;
         }
-      } else if (mode === 'challenge') {
-        if (perfect) { chalRoundRef.current += 1; } else {
-          livesRef.current -= 1; setLives(livesRef.current);
-          if (livesRef.current <= 0) { onResult({ score: scoreRef.current }); return; }
-        }
+      } else if (mode === 'passplay') {
+        roundIdxRef.current += 1;
+        if (perfect) wonRef.current += 1;
+        if (roundIdxRef.current >= ppTrials) { onResult({ score: wonRef.current }); return; }
       } else {
         freeRoundRef.current += 1; // free ramps forever
       }
       startRound();
     }, 1300);
-  }, [awardPoints, isAr, mode, onResult, playSfx, setPhaseBoth, startRound]);
+  }, [awardPoints, isAr, mode, onResult, playSfx, ppTrials, setPhaseBoth, startRound]);
 
   const onPointer = useCallback((e) => {
     if (phaseRef.current !== 'respond') return;
@@ -204,12 +206,15 @@ function MotEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPo
 
   const S = styles;
   return (
-    <div style={S.root}>
-      <div style={S.bar}>
-        <button style={S.back} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹ {isAr ? 'القائمة' : 'Menu'}</button>
-        <div style={S.title}>{isAr ? 'تتبّع الأهداف' : 'Target Tracking'}</div>
-        <div style={S.stats}>{mode === 'challenge' ? '❤'.repeat(lives) : hud} · {score}</div>
-      </div>
+    <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+      <header className="ct-training-play-header">
+        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        <div className="ct-training-play-header-body">
+          <div className="ct-training-play-title">{isAr ? 'تتبّع الأهداف' : 'Target Tracking'}</div>
+          <div className="ct-training-play-sub">{hud} · {score}</div>
+        </div>
+        <div className="ct-training-chrome-spacer" aria-hidden="true" />
+      </header>
       <div ref={wrapRef} style={S.play}>
         <canvas ref={canvasRef} style={S.canvas} onPointerDown={onPointer} />
         {(phase === 'cue' || phase === 'track' || phase === 'respond') && (
@@ -233,30 +238,26 @@ export default function MotGame({ onBack, workoutMode = false }) {
       title={{ en: 'Target Tracking', ar: 'تتبّع الأهداف' }}
       hints={{
         free: { en: 'Endless practice — no fail', ar: 'تدريب مفتوح — بلا خسارة' },
-        levels: { en: 'Easy → Hard · 12 levels each', ar: 'سهل → صعب · 12 مستوى لكل' },
-        challenge: { en: 'One escalating run · 3 lives', ar: 'جولة تصاعدية · 3 أرواح' },
+        levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
+        pass: { en: 'Same dots for all · pass the device', ar: 'نفس النقاط للجميع · مرّر الجهاز' },
       }}
       diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      levelCount={12}
+      pass={{ trials: 6, scoreLabel: { en: 'perfect', ar: 'مثالية' }, lowerBetter: false, diff: 'med' }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <MotEngine key={`${p.mode}-${p.diff}-${p.level}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <MotEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
       )}
     />
   );
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: '#0b1018', color: '#fff', fontFamily: "'Outfit', system-ui, sans-serif" },
-  bar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 14px', background: 'rgba(0,0,0,0.35)', borderBottom: '1px solid rgba(255,255,255,0.08)' },
-  back: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', color: '#dfe9f5', borderRadius: 9, padding: '7px 12px', fontWeight: 700, cursor: 'pointer' },
-  title: { fontWeight: 800, letterSpacing: '0.02em', fontSize: 16 },
-  stats: { fontVariantNumeric: 'tabular-nums', color: '#9fc6ef', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap' },
-  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: 'radial-gradient(circle at 50% 40%, #16243a, #0c1320)', overflow: 'hidden', border: '1px solid rgba(90,160,230,0.18)', touchAction: 'none' },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
+  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: '#fffdf8', overflow: 'hidden', border: '1.5px solid #e3d6c4', boxShadow: 'inset 0 2px 10px rgba(120,90,40,0.06)', touchAction: 'none' },
   canvas: { display: 'block', width: '100%', height: '100%' },
-  banner: { position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(8,14,24,0.82)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 999, padding: '8px 16px', fontWeight: 700, whiteSpace: 'nowrap' },
+  banner: { position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 8, background: '#fffdf8', border: '1.5px solid #d8c8ac', color: '#3a2c12', borderRadius: 999, padding: '8px 16px', fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(120,90,40,0.12)' },
   dot: { width: 12, height: 12, borderRadius: '50%', display: 'inline-block' },
 };

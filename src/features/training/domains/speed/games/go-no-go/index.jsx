@@ -1,6 +1,7 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
+import { makeRng } from '../../../../shared/rng';
 
 /*
  * Go / No-Go — response speed + inhibitory control.
@@ -25,14 +26,16 @@ const BASE = {
 };
 function levelCfg(diff, level) {
   const b = BASE[diff] || BASE.med;
-  const lv = (level || 1) - 1;
-  return { stim: Math.max(440, b.stim - lv * 15), isi: Math.max(200, b.isi - lv * 10), goP: Math.min(0.9, b.goP + lv * 0.005) };
+  const f = ((level || 1) - 1) / 99;
+  return { stim: Math.max(430, b.stim - f * 420), isi: Math.max(190, b.isi - f * 300), goP: Math.min(0.92, b.goP + f * 0.12) };
 }
 function rampCfg(n) {
   return { stim: Math.max(480, 880 - n * 12), isi: Math.max(220, 480 - n * 8), goP: Math.min(0.88, 0.72 + n * 0.004) };
 }
 
-function GoNoGoEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPoints }) {
+function GoNoGoEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+  const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
+  const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 20) : 0;
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const sizeRef = useRef({ w: 0, h: 0 });
@@ -94,31 +97,27 @@ function GoNoGoEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awar
 
   const updateHud = useCallback(() => {
     if (mode === 'levels') setHud(isAr ? `مستوى ${level} · ${idxRef.current}/${STIM_PER_LEVEL} · ✓${correctRef.current}` : `Lvl ${level} · ${idxRef.current}/${STIM_PER_LEVEL} · ✓${correctRef.current}`);
-    else if (mode === 'challenge') setHud('❤'.repeat(livesRef.current));
+    else if (mode === 'passplay') setHud(isAr ? `${idxRef.current}/${ppTrials} · ✓${correctRef.current}` : `${idxRef.current}/${ppTrials} · ✓${correctRef.current}`);
     else setHud(isAr ? `محفّز ${idxRef.current}` : `Stim ${idxRef.current}`);
-  }, [mode, level, isAr]);
+  }, [mode, level, isAr, ppTrials]);
 
   // Outcome of a single stimulus → progression. correct true on hit / correct rejection.
-  const score1 = useCallback((correct, commission) => {
+  const score1 = useCallback((correct) => {
     if (correct) { correctRef.current += 1; }
-    if (mode === 'levels') {
-      if (idxRef.current >= STIM_PER_LEVEL) {
-        const acc = correctRef.current / STIM_PER_LEVEL;
-        onResult({ won: acc >= LEVEL_WIN_ACC, score: scoreRef.current, summary: `${correctRef.current}/${STIM_PER_LEVEL} (${Math.round(acc * 100)}%)` });
-        return true;
-      }
-    } else if (mode === 'challenge' && commission) {
-      livesRef.current -= 1; setLives(livesRef.current);
-      if (livesRef.current <= 0) { onResult({ score: scoreRef.current }); return true; }
+    if (mode === 'levels' && idxRef.current >= STIM_PER_LEVEL) {
+      const acc = correctRef.current / STIM_PER_LEVEL;
+      onResult({ won: acc >= LEVEL_WIN_ACC, score: scoreRef.current, summary: `${correctRef.current}/${STIM_PER_LEVEL} (${Math.round(acc * 100)}%)` });
+      return true;
     }
+    if (mode === 'passplay' && idxRef.current >= ppTrials) { onResult({ score: correctRef.current }); return true; }
     return false;
-  }, [mode, onResult]);
+  }, [mode, onResult, ppTrials]);
 
   const nextStim = useCallback(() => {
     const c = cfg();
     idxRef.current += 1;
     updateHud();
-    const go = Math.random() < c.goP;
+    const go = rng() < c.goP;
     stimRef.current = { go };
     respondedRef.current = false;
     subRef.current = 'stim';
@@ -140,7 +139,7 @@ function GoNoGoEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awar
       }
       timerRef.current = setTimeout(nextStim, c.isi);
     }, c.stim);
-  }, [cfg, playSfx, score1, updateHud]);
+  }, [cfg, playSfx, score1, updateHud, rng]);
 
   const onPointer = useCallback(() => {
     if (subRef.current !== 'stim' || respondedRef.current) return;
@@ -176,12 +175,15 @@ function GoNoGoEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awar
 
   const S = styles;
   return (
-    <div style={S.root}>
-      <div style={S.bar}>
-        <button style={S.back} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹ {isAr ? 'القائمة' : 'Menu'}</button>
-        <div style={S.title}>{isAr ? 'قف / انطلق' : 'Go / No-Go'}</div>
-        <div style={S.stats}>{hud} · {score}</div>
-      </div>
+    <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+      <header className="ct-training-play-header">
+        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        <div className="ct-training-play-header-body">
+          <div className="ct-training-play-title">{isAr ? 'قف / انطلق' : 'Go / No-Go'}</div>
+          <div className="ct-training-play-sub">{hud} · {score}</div>
+        </div>
+        <div className="ct-training-chrome-spacer" aria-hidden="true" />
+      </header>
       <div style={S.legend}>
         <span style={S.legItem}><span style={{ ...S.swatch, background: '#3aa0ff', borderRadius: '50%' }} /> {isAr ? 'اضغط' : 'TAP'}</span>
         <span style={S.legItem}><span style={{ ...S.swatch, background: '#ff8a3a', transform: 'rotate(45deg)' }} /> {isAr ? 'توقّف' : 'HOLD'}</span>
@@ -203,32 +205,28 @@ export default function GoNoGoGame({ onBack, workoutMode = false }) {
       title={{ en: 'Go / No-Go', ar: 'قف / انطلق' }}
       hints={{
         free: { en: 'Endless practice — no fail', ar: 'تدريب مفتوح — بلا خسارة' },
-        levels: { en: 'Easy → Hard · 12 levels each', ar: 'سهل → صعب · 12 مستوى لكل' },
-        challenge: { en: 'Escalating run · lose a life on a slip', ar: 'جولة تصاعدية · تخسر روحاً عند الخطأ' },
+        levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
+        pass: { en: 'Same stream for all · pass the device', ar: 'نفس التسلسل للجميع · مرّر الجهاز' },
       }}
       diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      levelCount={12}
+      pass={{ trials: 20, scoreLabel: { en: 'correct', ar: 'صحيحة' }, lowerBetter: false, diff: 'med' }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <GoNoGoEngine key={`${p.mode}-${p.diff}-${p.level}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <GoNoGoEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
       )}
     />
   );
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: '#0b1018', color: '#fff', fontFamily: "'Outfit', system-ui, sans-serif" },
-  bar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 14px', background: 'rgba(0,0,0,0.35)', borderBottom: '1px solid rgba(255,255,255,0.08)' },
-  back: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', color: '#dfe9f5', borderRadius: 9, padding: '7px 12px', fontWeight: 700, cursor: 'pointer' },
-  title: { fontWeight: 800, letterSpacing: '0.02em', fontSize: 16 },
-  stats: { fontVariantNumeric: 'tabular-nums', color: '#9fc6ef', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap' },
-  legend: { display: 'flex', justifyContent: 'center', gap: 22, padding: '6px 0 2px', fontSize: 12, fontWeight: 800, letterSpacing: '0.06em', color: '#c4d3e6' },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
+  legend: { display: 'flex', justifyContent: 'center', gap: 22, padding: '8px 0 2px', fontSize: 12, fontWeight: 800, letterSpacing: '0.06em', color: '#5a4a32' },
   legItem: { display: 'inline-flex', alignItems: 'center', gap: 7 },
   swatch: { width: 16, height: 16, display: 'inline-block' },
-  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: 'radial-gradient(circle at 50% 45%, #16243a, #0c1320)', overflow: 'hidden', border: '1px solid rgba(90,160,230,0.18)', touchAction: 'none', cursor: 'pointer' },
+  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: '#fffdf8', overflow: 'hidden', border: '1.5px solid #e3d6c4', boxShadow: 'inset 0 2px 10px rgba(120,90,40,0.06)', touchAction: 'none', cursor: 'pointer' },
   canvas: { display: 'block', width: '100%', height: '100%' },
-  banner: { position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: 'rgba(8,14,24,0.82)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 999, padding: '8px 18px', fontWeight: 700, whiteSpace: 'nowrap' },
+  banner: { position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#fffdf8', border: '1.5px solid #d8c8ac', color: '#3a2c12', borderRadius: 999, padding: '8px 18px', fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(120,90,40,0.12)' },
 };

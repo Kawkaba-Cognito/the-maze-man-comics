@@ -1,6 +1,7 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
+import { makeRng } from '../../../../shared/rng';
 
 /*
  * Trail Making A — visuomotor scanning speed.
@@ -21,15 +22,19 @@ const BASE = {
 };
 function levelCfg(diff, level) {
   const b = BASE[diff] || BASE.med;
-  const lv = (level || 1) - 1;
-  return { n: Math.min(b.n + lv, 30), time: Math.max(12000, b.time - lv * 900) };
+  const f = ((level || 1) - 1) / 99;
+  return { n: Math.round(b.n + f * (30 - b.n)), time: Math.round(b.time - f * (b.time - 11000)) };
 }
 function rampCfg(boardIdx) {
   return { n: Math.min(8 + boardIdx * 2, 30), time: Math.max(14000, 32000 - boardIdx * 1500) };
 }
 const fmt = (ms) => `${Math.max(0, ms / 1000).toFixed(1)}s`;
 
-function TrailEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPoints }) {
+function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+  const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
+  const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 1) : 0;
+  const ppTimeRef = useRef(0);
+  const ppDoneRef = useRef(0);
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const sizeRef = useRef({ w: 0, h: 0 });
@@ -54,7 +59,7 @@ function TrailEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, award
   const [prog, setProg] = useState(0);
   const [boards, setBoards] = useState(0);
 
-  const timed = mode !== 'free';
+  const timed = mode === 'levels';
 
   const fit = useCallback(() => {
     const c = canvasRef.current, wrap = wrapRef.current;
@@ -83,7 +88,7 @@ function TrailEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, award
       const r = itemR();
       const map = mapRef.current;
       // trail lines between consecutive completed numbers
-      ctx.strokeStyle = 'rgba(110,235,170,0.7)'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(46,139,87,0.85)'; ctx.lineWidth = 4; ctx.lineCap = 'round';
       for (let m = 1; m <= nextRef.current - 2; m++) {
         const a = map[m], b = map[m + 1];
         if (!a || !b) continue;
@@ -111,19 +116,19 @@ function TrailEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, award
 
   const newBoard = useCallback(() => {
     fit();
-    const c = mode === 'levels' ? levelCfg(diff, level) : rampCfg(boardIdxRef.current);
+    const c = mode === 'levels' ? levelCfg(diff, level) : mode === 'passplay' ? { n: 15, time: Infinity } : rampCfg(boardIdxRef.current);
     cfgRef.current = c;
     const n = c.n;
     const cols = Math.ceil(Math.sqrt(n));
     const rows = Math.ceil(n / cols);
     const cells = [];
     for (let rr = 0; rr < rows; rr++) for (let cc = 0; cc < cols; cc++) cells.push([cc, rr]);
-    cells.sort(() => Math.random() - 0.5);
+    cells.sort(() => rng() - 0.5);
     const items = [];
     const map = [];
     for (let i = 0; i < n; i++) {
       const [cc, rr] = cells[i];
-      const it = { n: i + 1, fx: (cc + 0.5 + (Math.random() - 0.5) * 0.5) / cols, fy: (rr + 0.5 + (Math.random() - 0.5) * 0.5) / rows };
+      const it = { n: i + 1, fx: (cc + 0.5 + (rng() - 0.5) * 0.5) / cols, fy: (rr + 0.5 + (rng() - 0.5) * 0.5) / rows };
       items.push(it); map[i + 1] = it;
     }
     itemsRef.current = items; mapRef.current = map;
@@ -132,7 +137,7 @@ function TrailEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, award
     startRef.current = performance.now();
     deadlineRef.current = timed ? performance.now() + c.time : Infinity;
     if (timed) setTimeLeft(c.time);
-  }, [diff, fit, level, mode, timed]);
+  }, [diff, fit, level, mode, timed, rng]);
 
   const onComplete = useCallback(() => {
     if (endedRef.current) return;
@@ -144,26 +149,23 @@ function TrailEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, award
       onResult({ won: LEVEL_WIN, score: scoreRef.current, summary: `${cfgRef.current.n} · ${fmt(used)} · ${errRef.current} ${isAr ? 'أخطاء' : 'errors'}` });
       return;
     }
+    if (mode === 'passplay') {
+      ppTimeRef.current += used; ppDoneRef.current += 1;
+      if (ppDoneRef.current >= ppTrials) { endedRef.current = true; onResult({ score: Math.round(ppTimeRef.current) }); return; }
+      newBoard(); return;
+    }
     awardPoints?.(3);
     const bonus = timed ? Math.max(0, Math.round((deadlineRef.current - performance.now()) / 1000)) : 0;
     scoreRef.current += 20 + bonus; setScore(scoreRef.current);
     boardIdxRef.current += 1; setBoards(boardIdxRef.current);
     newBoard();
-  }, [awardPoints, isAr, mode, newBoard, onResult, playSfx, timed]);
+  }, [awardPoints, isAr, mode, newBoard, onResult, playSfx, timed, ppTrials]);
 
   const onTimeout = useCallback(() => {
     if (endedRef.current) return;
-    playSfx?.('lose');
-    if (mode === 'levels') {
-      endedRef.current = true;
-      onResult({ won: false, score: scoreRef.current, summary: isAr ? `وصلت إلى ${nextRef.current - 1}/${cfgRef.current.n}` : `Reached ${nextRef.current - 1}/${cfgRef.current.n}` });
-      return;
-    }
-    // challenge
-    livesRef.current -= 1; setLives(livesRef.current);
-    if (livesRef.current <= 0) { endedRef.current = true; onResult({ score: scoreRef.current }); return; }
-    newBoard();
-  }, [isAr, mode, newBoard, onResult, playSfx]);
+    playSfx?.('lose'); endedRef.current = true;
+    onResult({ won: false, score: scoreRef.current, summary: isAr ? `وصلت إلى ${nextRef.current - 1}/${cfgRef.current.n}` : `Reached ${nextRef.current - 1}/${cfgRef.current.n}` });
+  }, [isAr, onResult, playSfx]);
 
   const onPointer = useCallback((e) => {
     if (endedRef.current) return;
@@ -212,17 +214,20 @@ function TrailEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, award
   const S = styles;
   const total = cfgRef.current.n;
   return (
-    <div style={S.root}>
-      <div style={S.bar}>
-        <button style={S.back} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹ {isAr ? 'القائمة' : 'Menu'}</button>
-        <div style={S.title}>{isAr ? 'صل الأرقام' : 'Trail Making'}</div>
-        <div style={S.stats}>
-          {mode === 'challenge' ? `${'❤'.repeat(lives)} · ${score}` : mode === 'free' ? `${isAr ? 'لوحات' : 'Boards'} ${boards}` : `${isAr ? 'مستوى' : 'Lvl'} ${level}`}
+    <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+      <header className="ct-training-play-header">
+        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        <div className="ct-training-play-header-body">
+          <div className="ct-training-play-title">{isAr ? 'صل الأرقام' : 'Trail Making'}</div>
+          <div className="ct-training-play-sub">
+            {mode === 'passplay' ? `${isAr ? 'لوحة' : 'Board'} ${ppDoneRef.current + 1}/${ppTrials}` : mode === 'free' ? `${isAr ? 'لوحات' : 'Boards'} ${boards}` : `${isAr ? 'مستوى' : 'Lvl'} ${level}`}
+          </div>
         </div>
-      </div>
+        <div className="ct-training-chrome-spacer" aria-hidden="true" />
+      </header>
       <div style={S.sub}>
-        <span>{isAr ? 'التالي' : 'Next'}: <b style={{ color: '#9be85a' }}>{Math.min(prog + 1, total)}</b> / {total}</span>
-        {timed ? <span style={{ color: timeLeft < 6000 ? '#ff7a7a' : '#ffd98a' }}>⏱ {fmt(timeLeft)}</span> : null}
+        <span>{isAr ? 'التالي' : 'Next'}: <b style={{ color: '#2e8b57' }}>{Math.min(prog + 1, total)}</b> / {total}</span>
+        {timed ? <span style={{ color: timeLeft < 6000 ? '#d23b3b' : '#b9842f' }}>⏱ {fmt(timeLeft)}</span> : null}
       </div>
       <div ref={wrapRef} style={S.play}>
         <canvas ref={canvasRef} style={S.canvas} onPointerDown={onPointer} />
@@ -240,29 +245,25 @@ export default function TrailMakingGame({ onBack, workoutMode = false }) {
       title={{ en: 'Trail Making', ar: 'صل الأرقام' }}
       hints={{
         free: { en: 'Endless practice — no clock', ar: 'تدريب مفتوح — بلا وقت' },
-        levels: { en: 'Easy → Hard · 12 levels each', ar: 'سهل → صعب · 12 مستوى لكل' },
-        challenge: { en: 'Escalating boards · beat the clock · 3 lives', ar: 'لوحات تصاعدية · اسبق الوقت · 3 أرواح' },
+        levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
+        pass: { en: 'Same board for all · fastest wins', ar: 'نفس اللوحة للجميع · الأسرع يفوز' },
       }}
       diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      levelCount={12}
+      pass={{ trials: 1, scoreLabel: { en: 'ms', ar: 'م.ث' }, lowerBetter: true, diff: 'med' }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <TrailEngine key={`${p.mode}-${p.diff}-${p.level}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <TrailEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
       )}
     />
   );
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: '#0b1018', color: '#fff', fontFamily: "'Outfit', system-ui, sans-serif" },
-  bar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 14px', background: 'rgba(0,0,0,0.35)', borderBottom: '1px solid rgba(255,255,255,0.08)' },
-  back: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', color: '#dfe9f5', borderRadius: 9, padding: '7px 12px', fontWeight: 700, cursor: 'pointer' },
-  title: { fontWeight: 800, letterSpacing: '0.02em', fontSize: 16 },
-  stats: { fontVariantNumeric: 'tabular-nums', color: '#9fc6ef', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap' },
-  sub: { display: 'flex', justifyContent: 'space-between', padding: '4px 16px 0', fontSize: 14, fontWeight: 700, color: '#c4d3e6' },
-  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: 'radial-gradient(circle at 50% 45%, #16243a, #0c1320)', overflow: 'hidden', border: '1px solid rgba(90,160,230,0.18)', touchAction: 'none' },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
+  sub: { display: 'flex', justifyContent: 'space-between', padding: '6px 16px 0', fontSize: 14, fontWeight: 700, color: '#5a4a32' },
+  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: '#fffdf8', overflow: 'hidden', border: '1.5px solid #e3d6c4', boxShadow: 'inset 0 2px 10px rgba(120,90,40,0.06)', touchAction: 'none' },
   canvas: { display: 'block', width: '100%', height: '100%' },
 };

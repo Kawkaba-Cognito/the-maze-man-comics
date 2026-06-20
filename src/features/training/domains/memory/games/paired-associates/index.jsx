@@ -1,6 +1,7 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
+import { makeRng } from '../../../../shared/rng';
 
 /*
  * Paired Associates (CANTAB PAL-style) — associative / episodic memory.
@@ -26,9 +27,9 @@ const BASE = {
 };
 function levelCfg(diff, level) {
   const b = BASE[diff] || BASE.med;
-  const lv = (level || 1) - 1;
-  const boxes = Math.min(b.boxes + Math.floor(lv / 4), 10);
-  return { boxes, pairs: Math.min(b.pairs + Math.floor(lv / 3), boxes), study: Math.max(560, b.study - lv * 30) };
+  const f = ((level || 1) - 1) / 99;
+  const boxes = Math.min(b.boxes + Math.round(f * 4), 12);
+  return { boxes, pairs: Math.min(b.pairs + Math.round(f * 4), boxes), study: Math.max(520, Math.round(b.study - f * 500)) };
 }
 
 function rr(ctx, x, y, w, h, r) {
@@ -41,7 +42,11 @@ function rr(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function PalEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPoints }) {
+function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+  const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
+  const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 3) : 0;
+  const ppCorrectRef = useRef(0);
+  const ppDoneRef = useRef(0);
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const sizeRef = useRef({ w: 0, h: 0 });
@@ -119,16 +124,16 @@ function PalEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPo
 
   const cfg = useCallback(() => {
     if (mode === 'levels') return levelCfg(diff, level);
-    const boxes = mode === 'challenge' ? Math.min(4 + pairsRef.current, 10) : 6;
-    return { boxes, pairs: Math.min(pairsRef.current, boxes), study: Math.max(620, 1050 - pairsRef.current * 40) };
+    if (mode === 'passplay') return { boxes: 8, pairs: 4, study: 900 };
+    return { boxes: 6, pairs: Math.min(pairsRef.current, 6), study: Math.max(620, 1050 - pairsRef.current * 40) };
   }, [mode, diff, level]);
 
   const updateHud = useCallback(() => {
     bestRef.current = Math.max(bestRef.current, cfgRef.current.pairs);
     if (mode === 'levels') setHud(isAr ? `مستوى ${level} · جولة ${trialIdxRef.current + 1}/${ROUNDS_PER_LEVEL}` : `Lvl ${level} · Trial ${trialIdxRef.current + 1}/${ROUNDS_PER_LEVEL}`);
-    else if (mode === 'challenge') setHud(`${'❤'.repeat(livesRef.current)} · ${isAr ? 'أزواج' : 'pairs'} ${cfgRef.current.pairs}`);
+    else if (mode === 'passplay') setHud(isAr ? `جولة ${ppDoneRef.current + 1}/${ppTrials} · ✓${ppCorrectRef.current}` : `Trial ${ppDoneRef.current + 1}/${ppTrials} · ✓${ppCorrectRef.current}`);
     else setHud(isAr ? `أزواج ${cfgRef.current.pairs} · أفضل ${bestRef.current}` : `Pairs ${cfgRef.current.pairs} · best ${bestRef.current}`);
-  }, [mode, level, isAr]);
+  }, [mode, level, isAr, ppTrials]);
 
   const advance = useCallback((perfect) => {
     if (mode === 'levels') {
@@ -138,14 +143,15 @@ function PalEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPo
         onResult({ won: wonRef.current >= LEVEL_WIN, score: scoreRef.current, summary: isAr ? `${wonRef.current}/${ROUNDS_PER_LEVEL} جولات كاملة` : `${wonRef.current}/${ROUNDS_PER_LEVEL} perfect trials` });
         return true;
       }
-    } else if (mode === 'challenge') {
-      if (perfect) { pairsRef.current += 1; scoreRef.current += cfgRef.current.pairs * 8; setScore(scoreRef.current); awardPoints?.(3); }
-      else { livesRef.current -= 1; setLives(livesRef.current); if (livesRef.current <= 0) { onResult({ score: scoreRef.current }); return true; } }
+    } else if (mode === 'passplay') {
+      ppCorrectRef.current += correctRef.current;
+      ppDoneRef.current += 1;
+      if (ppDoneRef.current >= ppTrials) { onResult({ score: ppCorrectRef.current }); return true; }
     } else {
       pairsRef.current = perfect ? pairsRef.current + 1 : Math.max(2, pairsRef.current - 1);
     }
     return false;
-  }, [awardPoints, isAr, mode, onResult]);
+  }, [isAr, mode, onResult, ppTrials]);
 
   const presentCue = useCallback(() => {
     const order = cueOrderRef.current;
@@ -176,24 +182,24 @@ function PalEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPo
     const rows = Math.ceil(N / cols);
     const cells = [];
     for (let rr2 = 0; rr2 < rows; rr2++) for (let cc = 0; cc < cols; cc++) cells.push([cc, rr2]);
-    cells.sort(() => Math.random() - 0.5);
+    cells.sort(() => rng() - 0.5);
     const boxes = [];
     for (let i = 0; i < N; i++) {
       const [cc, rr2] = cells[i];
-      boxes.push({ fx: (cc + 0.5 + (Math.random() - 0.5) * 0.4) / cols, fy: (rr2 + 0.5 + (Math.random() - 0.5) * 0.4) / rows, symbol: null });
+      boxes.push({ fx: (cc + 0.5 + (rng() - 0.5) * 0.4) / cols, fy: (rr2 + 0.5 + (rng() - 0.5) * 0.4) / rows, symbol: null });
     }
-    const syms = [...SYMBOLS].sort(() => Math.random() - 0.5).slice(0, K);
-    const boxIdxs = [...boxes.keys()].sort(() => Math.random() - 0.5).slice(0, K);
+    const syms = [...SYMBOLS].sort(() => rng() - 0.5).slice(0, K);
+    const boxIdxs = [...boxes.keys()].sort(() => rng() - 0.5).slice(0, K);
     boxIdxs.forEach((bi, j) => { boxes[bi].symbol = syms[j]; });
     boxesRef.current = boxes;
-    cueOrderRef.current = boxIdxs.map((bi) => ({ boxIdx: bi, symbol: boxes[bi].symbol })).sort(() => Math.random() - 0.5);
+    cueOrderRef.current = boxIdxs.map((bi) => ({ boxIdx: bi, symbol: boxes[bi].symbol })).sort(() => rng() - 0.5);
     cueIdxRef.current = 0; correctRef.current = 0; totalRef.current = K;
     updateHud();
     setCue('');
     setMsg(isAr ? 'احفظ المواقع…' : 'Memorize the locations…');
     subRef.current = 'study';
     // reveal item-boxes one at a time
-    const studyOrder = [...boxIdxs].sort(() => Math.random() - 0.5);
+    const studyOrder = [...boxIdxs].sort(() => rng() - 0.5);
     const step = (k) => {
       if (k >= studyOrder.length) { openRef.current = -1; presentCue(); return; }
       openRef.current = studyOrder[k];
@@ -204,7 +210,7 @@ function PalEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPo
     };
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => step(0), 500);
-  }, [cfg, fit, isAr, presentCue, updateHud]);
+  }, [cfg, fit, isAr, presentCue, updateHud, rng]);
 
   const onPointer = useCallback((e) => {
     if (subRef.current !== 'recall') return;
@@ -238,12 +244,15 @@ function PalEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPo
 
   const S = styles;
   return (
-    <div style={S.root}>
-      <div style={S.bar}>
-        <button style={S.back} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹ {isAr ? 'القائمة' : 'Menu'}</button>
-        <div style={S.title}>{isAr ? 'الأزواج المترابطة' : 'Paired Associates'}</div>
-        <div style={S.stats}>{hud}{mode !== 'free' ? ` · ${score}` : ''}</div>
-      </div>
+    <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+      <header className="ct-training-play-header">
+        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        <div className="ct-training-play-header-body">
+          <div className="ct-training-play-title">{isAr ? 'الأزواج المترابطة' : 'Paired Associates'}</div>
+          <div className="ct-training-play-sub">{hud}{mode === 'levels' ? ` · ${score}` : ''}</div>
+        </div>
+        <div className="ct-training-chrome-spacer" aria-hidden="true" />
+      </header>
       <div style={S.cueRow}>
         <span>{msg}</span>
         {cue ? <span style={S.cueSym}>{cue}</span> : null}
@@ -264,30 +273,26 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
       title={{ en: 'Paired Associates', ar: 'الأزواج المترابطة' }}
       hints={{
         free: { en: 'Endless practice — pairs grow', ar: 'تدريب مفتوح — تزداد الأزواج' },
-        levels: { en: 'Easy → Hard · 12 levels each', ar: 'سهل → صعب · 12 مستوى لكل' },
-        challenge: { en: 'More pairs each round · 3 lives', ar: 'أزواج أكثر كل جولة · 3 أرواح' },
+        levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
+        pass: { en: 'Same pairs for all · pass the device', ar: 'نفس الأزواج للجميع · مرّر الجهاز' },
       }}
       diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      levelCount={12}
+      pass={{ trials: 3, scoreLabel: { en: 'correct', ar: 'صحيحة' }, lowerBetter: false, diff: 'med' }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <PalEngine key={`${p.mode}-${p.diff}-${p.level}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <PalEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
       )}
     />
   );
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: '#0b1018', color: '#fff', fontFamily: "'Outfit', system-ui, sans-serif" },
-  bar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 14px', background: 'rgba(0,0,0,0.35)', borderBottom: '1px solid rgba(255,255,255,0.08)' },
-  back: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', color: '#dfe9f5', borderRadius: 9, padding: '7px 12px', fontWeight: 700, cursor: 'pointer' },
-  title: { fontWeight: 800, letterSpacing: '0.02em', fontSize: 15 },
-  stats: { fontVariantNumeric: 'tabular-nums', color: '#9fc6ef', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' },
-  cueRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '8px 0 2px', fontSize: 15, fontWeight: 700, color: '#c4d3e6', minHeight: 40 },
-  cueSym: { fontSize: 30, lineHeight: 1, color: '#ffce4a' },
-  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: 'radial-gradient(circle at 50% 45%, #16243a, #0c1320)', overflow: 'hidden', border: '1px solid rgba(90,160,230,0.18)', touchAction: 'none' },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
+  cueRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '10px 0 2px', fontSize: 15, fontWeight: 700, color: '#5a4a32', minHeight: 40 },
+  cueSym: { fontSize: 32, lineHeight: 1, color: '#c8651a' },
+  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: '#fffdf8', overflow: 'hidden', border: '1.5px solid #e3d6c4', boxShadow: 'inset 0 2px 10px rgba(120,90,40,0.06)', touchAction: 'none' },
   canvas: { display: 'block', width: '100%', height: '100%' },
 };

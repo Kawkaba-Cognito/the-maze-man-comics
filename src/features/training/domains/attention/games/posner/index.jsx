@@ -1,6 +1,7 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
+import { makeRng } from '../../../../shared/rng';
 
 /*
  * Posner Spatial Cueing — orienting of attention.
@@ -27,15 +28,17 @@ const PBASE = {
 };
 function levelCfg(diff, level) {
   const b = PBASE[diff] || PBASE.med;
-  const lv = (level || 1) - 1;
-  return { nLoc: b.nLoc, validityP: Math.max(0.55, b.validityP - lv * 0.01), soaMin: Math.max(90, b.soaMin - lv * 6), soaMax: Math.max(180, b.soaMax - lv * 6) };
+  const f = ((level || 1) - 1) / 99;
+  return { nLoc: b.nLoc, validityP: Math.max(0.55, b.validityP - f * 0.12), soaMin: Math.max(90, b.soaMin - f * 90), soaMax: Math.max(180, b.soaMax - f * 90) };
 }
 function rampCfg(n) {
   const nLoc = n < 6 ? 2 : n < 16 ? 4 : 6;
   return { nLoc, validityP: Math.max(0.6, 0.8 - Math.floor(n / 8) * 0.05), soaMin: 150, soaMax: 320 };
 }
 
-function PosnerEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awardPoints }) {
+function PosnerEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+  const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
+  const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 12) : 0;
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const sizeRef = useRef({ w: 0, h: 0 });
@@ -84,12 +87,12 @@ function PosnerEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awar
       const { w, h } = sizeRef.current;
       ctx.clearRect(0, 0, w, h);
       const sub = subRef.current, t = trialRef.current, r = boxR(), now = performance.now(), fb = fbRef.current, fbOn = now < fb.until;
-      ctx.strokeStyle = '#9fc6ef'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      ctx.strokeStyle = '#5f6f82'; ctx.lineWidth = 4; ctx.lineCap = 'round';
       const cx = w / 2, cy = h / 2, s = 12;
       ctx.beginPath(); ctx.moveTo(cx - s, cy); ctx.lineTo(cx + s, cy); ctx.moveTo(cx, cy - s); ctx.lineTo(cx, cy + s); ctx.stroke();
       for (let i = 0; i < t.nLoc; i++) {
         const p = locPx(i);
-        let stroke = 'rgba(159,198,239,0.45)', fill = null, lw = 3;
+        let stroke = '#9aa7b8', fill = null, lw = 3;
         if (sub === 'cue' && i === t.cued) { stroke = '#ffce4a'; lw = 6; fill = 'rgba(255,206,74,0.22)'; }
         if (sub === 'target' && i === t.targetIdx) { fill = '#3aa0ff'; stroke = '#cfe6ff'; lw = 4; }
         if (fbOn) {
@@ -109,17 +112,17 @@ function PosnerEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awar
 
   const updateHud = useCallback(() => {
     if (mode === 'levels') setHud(isAr ? `مستوى ${level} · ${doneRef.current}/${TRIALS_PER_LEVEL} · ✓${correctRef.current}` : `Lvl ${level} · ${doneRef.current}/${TRIALS_PER_LEVEL} · ✓${correctRef.current}`);
-    else if (mode === 'challenge') setHud(`${'❤'.repeat(livesRef.current)}`);
+    else if (mode === 'passplay') setHud(isAr ? `محاولة ${doneRef.current}/${ppTrials} · ✓${correctRef.current}` : `Trial ${doneRef.current}/${ppTrials} · ✓${correctRef.current}`);
     else setHud(isAr ? `محاولة ${trialNumRef.current + 1}` : `Trial ${trialNumRef.current + 1}`);
-  }, [mode, level, isAr]);
+  }, [mode, level, isAr, ppTrials]);
 
   const nextTrial = useCallback(() => {
     fit();
     const cfg = cfgForTrial();
-    const cued = Math.floor(Math.random() * cfg.nLoc);
-    const valid = Math.random() < cfg.validityP;
+    const cued = Math.floor(rng() * cfg.nLoc);
+    const valid = rng() < cfg.validityP;
     let targetIdx = cued;
-    if (!valid) { do { targetIdx = Math.floor(Math.random() * cfg.nLoc); } while (targetIdx === cued); }
+    if (!valid) { do { targetIdx = Math.floor(rng() * cfg.nLoc); } while (targetIdx === cued); }
     trialRef.current = { nLoc: cfg.nLoc, cued, targetIdx, valid };
     updateHud();
     setMsg(isAr ? 'ركّز على المنتصف…' : 'Focus on the centre…');
@@ -129,7 +132,7 @@ function PosnerEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awar
       subRef.current = 'cue';
       timerRef.current = setTimeout(() => {
         subRef.current = 'soa';
-        const soa = cfg.soaMin + Math.random() * (cfg.soaMax - cfg.soaMin);
+        const soa = cfg.soaMin + rng() * (cfg.soaMax - cfg.soaMin);
         timerRef.current = setTimeout(() => {
           subRef.current = 'target';
           targetOnsetRef.current = performance.now();
@@ -139,27 +142,24 @@ function PosnerEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awar
       }, CUE_MS);
     }, FIX_MS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cfgForTrial, fit, isAr, updateHud]);
+  }, [cfgForTrial, fit, isAr, updateHud, rng]);
 
   const advance = useCallback((correct) => {
+    doneRef.current += 1;
+    if (correct) correctRef.current += 1;
     if (mode === 'levels') {
-      doneRef.current += 1;
-      if (correct) correctRef.current += 1;
       if (doneRef.current >= TRIALS_PER_LEVEL) {
         const acc = correctRef.current / TRIALS_PER_LEVEL;
         onResult({ won: acc >= LEVEL_WIN_ACC, score: scoreRef.current, summary: `${correctRef.current}/${TRIALS_PER_LEVEL} (${Math.round(acc * 100)}%)` });
         return;
       }
-    } else if (mode === 'challenge') {
-      if (correct) { trialNumRef.current += 1; } else {
-        livesRef.current -= 1; setLives(livesRef.current);
-        if (livesRef.current <= 0) { onResult({ score: scoreRef.current }); return; }
-      }
+    } else if (mode === 'passplay') {
+      if (doneRef.current >= ppTrials) { onResult({ score: correctRef.current }); return; }
     } else {
       trialNumRef.current += 1;
     }
     nextTrial();
-  }, [mode, nextTrial, onResult]);
+  }, [mode, nextTrial, onResult, ppTrials]);
 
   const finish = useCallback((tappedIdx, correct, miss = false) => {
     clearTimeout(timerRef.current);
@@ -210,12 +210,15 @@ function PosnerEngine({ mode, diff, level, onResult, onExit, isAr, playSfx, awar
 
   const S = styles;
   return (
-    <div style={S.root}>
-      <div style={S.bar}>
-        <button style={S.back} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹ {isAr ? 'القائمة' : 'Menu'}</button>
-        <div style={S.title}>{isAr ? 'توجيه الانتباه' : 'Attention Cue'}</div>
-        <div style={S.stats}>{hud} · {score}{lastRt != null ? ` · ${lastRt}ms` : ''}</div>
-      </div>
+    <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+      <header className="ct-training-play-header">
+        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        <div className="ct-training-play-header-body">
+          <div className="ct-training-play-title">{isAr ? 'توجيه الانتباه' : 'Attention Cue'}</div>
+          <div className="ct-training-play-sub">{hud} · {score}{lastRt != null ? ` · ${lastRt}ms` : ''}</div>
+        </div>
+        <div className="ct-training-chrome-spacer" aria-hidden="true" />
+      </header>
       <div ref={wrapRef} style={S.play}>
         <canvas ref={canvasRef} style={S.canvas} onPointerDown={onPointer} />
         <div style={S.banner}>{msg}</div>
@@ -233,29 +236,25 @@ export default function PosnerGame({ onBack, workoutMode = false }) {
       title={{ en: 'Attention Cue', ar: 'توجيه الانتباه' }}
       hints={{
         free: { en: 'Endless practice — no fail', ar: 'تدريب مفتوح — بلا خسارة' },
-        levels: { en: 'Easy → Hard · 12 levels each', ar: 'سهل → صعب · 12 مستوى لكل' },
-        challenge: { en: 'One escalating run · 3 lives', ar: 'جولة تصاعدية · 3 أرواح' },
+        levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
+        pass: { en: 'Same cues for all · pass the device', ar: 'نفس الإشارات للجميع · مرّر الجهاز' },
       }}
       diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      levelCount={12}
+      pass={{ trials: 12, scoreLabel: { en: 'hits', ar: 'إصابات' }, lowerBetter: false, diff: 'med' }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <PosnerEngine key={`${p.mode}-${p.diff}-${p.level}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <PosnerEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
       )}
     />
   );
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: '#0b1018', color: '#fff', fontFamily: "'Outfit', system-ui, sans-serif" },
-  bar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 14px', background: 'rgba(0,0,0,0.35)', borderBottom: '1px solid rgba(255,255,255,0.08)' },
-  back: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', color: '#dfe9f5', borderRadius: 9, padding: '7px 12px', fontWeight: 700, cursor: 'pointer' },
-  title: { fontWeight: 800, letterSpacing: '0.02em', fontSize: 16 },
-  stats: { fontVariantNumeric: 'tabular-nums', color: '#9fc6ef', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap' },
-  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: 'radial-gradient(circle at 50% 45%, #16243a, #0c1320)', overflow: 'hidden', border: '1px solid rgba(90,160,230,0.18)', touchAction: 'none' },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
+  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: '#fffdf8', overflow: 'hidden', border: '1.5px solid #e3d6c4', boxShadow: 'inset 0 2px 10px rgba(120,90,40,0.06)', touchAction: 'none' },
   canvas: { display: 'block', width: '100%', height: '100%' },
-  banner: { position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', background: 'rgba(8,14,24,0.82)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 999, padding: '8px 18px', fontWeight: 700, whiteSpace: 'nowrap' },
+  banner: { position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', background: '#fffdf8', border: '1.5px solid #d8c8ac', color: '#3a2c12', borderRadius: 999, padding: '8px 18px', fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(120,90,40,0.12)' },
 };
