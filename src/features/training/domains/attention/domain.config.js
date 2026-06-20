@@ -32,6 +32,30 @@ const attention = {
        * folder, then add a `loader` line here. The hub auto-discovers it. */
       loader: () => import('./games/cancellation'),
     },
+    {
+      id: 'mot',
+      name: 'Target Tracking',
+      nameAr: 'تتبّع الأهداف',
+      blurb: 'Follow the moving targets with your eyes, then tap them.',
+      blurbAr: 'تابع الأهداف المتحركة بعينيك ثم اضغطها.',
+      gameCount: 1,
+      progress: 0,
+      gameKey: 'mot',
+      tier: 'free',
+      loader: () => import('./games/mot'),
+    },
+    {
+      id: 'posner',
+      name: 'Attention Cue',
+      nameAr: 'توجيه الانتباه',
+      blurb: 'A spot flashes, then the target appears — tap it fast, even when it tricks you.',
+      blurbAr: 'يومض موقع ثم يظهر الهدف — اضغطه بسرعة حتى لو خدعك.',
+      gameCount: 1,
+      progress: 0,
+      gameKey: 'posner',
+      tier: 'free',
+      loader: () => import('./games/posner'),
+    },
   ],
 };
 
