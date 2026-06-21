@@ -12,6 +12,7 @@ import { TrainingMenuBar } from './TrainingChrome';
 export function TrainingScreenShell({
   onBack,
   title,
+  tag,
   children,
   playSfx,
   isAr,
@@ -19,9 +20,21 @@ export function TrainingScreenShell({
   onReplayTutorial,
   replayHint,
 }) {
+  // The canonical training screen (matches Speed Match). On the game hub a big
+  // title + tag head is shown; sub-screens (difficulty/levels) use a small title.
+  const center = hub && title
+    ? (
+      <div className="ct-fq-hub-attn-head">
+        <div className="ct-fq-hub-attn-big">{title}</div>
+        {tag ? <div className="ct-fq-hub-attn-sub">{tag}</div> : null}
+      </div>
+    )
+    : title
+      ? <div className="ct-fq-training-title ct-fq-training-title-sm">{title}</div>
+      : undefined;
   return (
     <div className="ct-fq-training-shell ct-fq-training-shell--hub-light" dir={isAr ? 'rtl' : 'ltr'}>
-      <div className="ct-fq-screen ct-fq-training-screen">
+      <div className={`ct-fq-screen ct-fq-training-screen${hub ? ' ct-fq-training-screen--hub' : ''}`}>
         <TrainingMenuBar
           variant="paper"
           playSfx={playSfx}
@@ -29,12 +42,37 @@ export function TrainingScreenShell({
           hubSpaced={hub}
           onReplayTutorial={onReplayTutorial}
           replayHint={replayHint}
-          center={
-            title ? <div className="ct-fq-training-title ct-fq-training-title-sm">{title}</div> : undefined
-          }
+          center={center}
         />
         {children}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Canonical mode list (Survival / Levels / Pass n Play) — the one component every
+ * game's hub uses, so the menu can never drift. `items`: [{ k, ic, lb, hint, on }].
+ */
+export function TrainingModeList({ items, isAr, playSfx }) {
+  const MOD = { free: 'ct-fq-attn-mode--free', levels: 'ct-fq-attn-mode--levels', chal: 'ct-fq-attn-mode--chal' };
+  return (
+    <div className="ct-fq-attn-modes" role="group">
+      {items.map((m) => (
+        <button
+          key={m.k}
+          type="button"
+          className={`ct-fq-attn-mode ${MOD[m.k] || ''}`}
+          onClick={() => { playSfx?.('click'); m.on(); }}
+        >
+          <span className="ct-fq-attn-mode-ic" aria-hidden="true">{m.ic}</span>
+          <span className="ct-fq-attn-mode-body">
+            <span className="ct-fq-attn-mode-lb">{m.lb}</span>
+            {m.hint ? <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>{m.hint}</span> : null}
+          </span>
+          <span className="ct-fq-attn-mode-chev" aria-hidden="true">›</span>
+        </button>
+      ))}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { TrainingScreenShell, TrainingDifficultySelect, TrainingLevelGrid } from './TrainingScreens';
+import { TrainingScreenShell, TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from './TrainingScreens';
 import { TrainingChallengeHandoff } from './TrainingChrome';
 
 /*
@@ -132,25 +132,15 @@ export default function ModeShell({
 
   // ── Menu ──
   if (phase === 'menu') {
-    const cards = [
-      { k: 'free', ic: '♾️', lb: isAr ? 'البقاء' : 'Survival mode', hint: hints?.free, mod: 'ct-fq-attn-mode--free' },
-      { k: 'levels', ic: '🎯', lb: isAr ? 'المستويات' : 'Level mode', hint: hints?.levels, mod: 'ct-fq-attn-mode--levels' },
-      { k: 'pass', ic: '🎮', lb: isAr ? 'مرّر والعب' : 'Pass n Play', hint: hints?.pass, mod: 'ct-fq-attn-mode--chal' },
+    const hintTxt = (h) => (h ? (isAr ? h.ar : h.en) : null);
+    const items = [
+      { k: 'free', ic: '♾️', lb: isAr ? 'البقاء' : 'Survival mode', hint: hintTxt(hints?.free), on: () => startMode('free') },
+      { k: 'levels', ic: '🎯', lb: isAr ? 'المستويات' : 'Level mode', hint: hintTxt(hints?.levels), on: () => startMode('levels') },
+      { k: 'chal', ic: '⚔️', lb: isAr ? 'مرّر والعب' : 'Pass n Play', hint: hintTxt(hints?.pass), on: () => startMode('pass') },
     ];
     return (
-      <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} title={T} hub>
-        <div className="ct-fq-attn-modes" role="group">
-          {cards.map((m) => (
-            <button key={m.k} type="button" className={`ct-fq-attn-mode ${m.mod}`} onClick={() => startMode(m.k)}>
-              <span className="ct-fq-attn-mode-ic" aria-hidden="true">{m.ic}</span>
-              <span className="ct-fq-attn-mode-body">
-                <span className="ct-fq-attn-mode-lb">{m.lb}</span>
-                {m.hint ? <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>{isAr ? m.hint.ar : m.hint.en}</span> : null}
-              </span>
-              <span className="ct-fq-attn-mode-chev" aria-hidden="true">›</span>
-            </button>
-          ))}
-        </div>
+      <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} title={T} tag={isAr ? 'تدريب' : 'training'} hub>
+        <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />
       </TrainingScreenShell>
     );
   }

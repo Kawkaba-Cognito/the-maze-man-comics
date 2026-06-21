@@ -8,7 +8,7 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
-import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { useCoach } from '../../../../shared/coach/useCoach';
@@ -93,7 +93,7 @@ function BlockDecor({ dir }) {
 }
 
 const UI_EN = {
-  title: 'Reasoning',
+  title: 'Logical Deduction',
   subtitle: 'Logic parking puzzle — slide cars to free Maze Man.',
   levels: 'Level mode',
   free: 'Survival mode',
@@ -168,7 +168,7 @@ const UI_EN = {
 };
 
 const UI_AR = {
-  title: 'التفكير',
+  title: 'الاستنتاج المنطقي',
   subtitle: 'لغز منطقي — حرّك السيارات لإخراج رجل المتاهة.',
   levels: 'وضع المراحل',
   free: 'وضع البقاء',
@@ -1217,10 +1217,12 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
             <div style={{ flex: 1, textAlign: 'center', padding: '0 8px' }}>
               <div
                 style={{
-                  fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', cursive",
-                  fontSize: isAr ? 21 : 24,
-                  fontWeight: isAr ? 900 : 400,
-                  letterSpacing: isAr ? 0 : 1,
+                  fontFamily: isAr ? "'Cairo', 'Outfit', sans-serif" : "'Outfit', system-ui, sans-serif",
+                  fontSize: 'clamp(2rem, 8.2vw, 3.4rem)',
+                  fontWeight: isAr ? 900 : 800,
+                  letterSpacing: isAr ? 0 : '-0.03em',
+                  lineHeight: 1.08,
+                  color: '#141a17',
                 }}
               >
                 {t.title}
@@ -1263,71 +1265,15 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
             </button>
           </div>
 
-          <div className="ct-fq-attn-modes" style={{ maxWidth: 400 }} role="group">
-            <button
-              type="button"
-              className="ct-fq-attn-mode ct-fq-attn-mode--free"
-              onClick={() => {
-                playSfx('click');
-                maybeCoach(() => setPhase('freeIntro'));
-              }}
-            >
-              <span className="ct-fq-attn-mode-ic" aria-hidden="true">
-                ♾️
-              </span>
-              <span className="ct-fq-attn-mode-body">
-                <span className="ct-fq-attn-mode-lb">{t.free}</span>
-                <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>
-                  {t.hubNodeFreeHint}
-                </span>
-              </span>
-              <span className="ct-fq-attn-mode-chev" aria-hidden="true">
-                ›
-              </span>
-            </button>
-            <button
-              type="button"
-              className="ct-fq-attn-mode ct-fq-attn-mode--levels"
-              onClick={() => {
-                playSfx('click');
-                maybeCoach(() => { setPlayMode('levels'); setPhase('pickDiff'); });
-              }}
-            >
-              <span className="ct-fq-attn-mode-ic" aria-hidden="true">
-                🎯
-              </span>
-              <span className="ct-fq-attn-mode-body">
-                <span className="ct-fq-attn-mode-lb">{t.levels}</span>
-                <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>
-                  {t.hubNodeLevelsHint}
-                </span>
-              </span>
-              <span className="ct-fq-attn-mode-chev" aria-hidden="true">
-                ›
-              </span>
-            </button>
-            <button
-              type="button"
-              className="ct-fq-attn-mode ct-fq-attn-mode--chal"
-              onClick={() => {
-                playSfx('click');
-                maybeCoach(() => setPhase('chal'));
-              }}
-            >
-              <span className="ct-fq-attn-mode-ic" aria-hidden="true">
-                ⚔️
-              </span>
-              <span className="ct-fq-attn-mode-body">
-                <span className="ct-fq-attn-mode-lb">{t.challenge}</span>
-                <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>
-                  {t.hubNodeChallengeHint}
-                </span>
-              </span>
-              <span className="ct-fq-attn-mode-chev" aria-hidden="true">
-                ›
-              </span>
-            </button>
-          </div>
+          <TrainingModeList
+            isAr={isAr}
+            playSfx={playSfx}
+            items={[
+              { k: 'free', ic: '♾️', lb: t.free, hint: t.hubNodeFreeHint, on: () => maybeCoach(() => setPhase('freeIntro')) },
+              { k: 'levels', ic: '🎯', lb: t.levels, hint: t.hubNodeLevelsHint, on: () => maybeCoach(() => { setPlayMode('levels'); setPhase('pickDiff'); }) },
+              { k: 'chal', ic: '⚔️', lb: t.challenge, hint: t.hubNodeChallengeHint, on: () => maybeCoach(() => setPhase('chal')) },
+            ]}
+          />
         </div>
 
       </div>

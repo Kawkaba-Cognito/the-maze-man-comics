@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import { TrainingMenuBar, TrainingPlayHeader, TrainingQuitModal, TrainingChallengeHandoff } from '../../../../shared/TrainingChrome';
-import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { useCoach } from '../../../../shared/coach/useCoach';
@@ -15,7 +15,7 @@ import { buildRavenCoachSteps } from './tutorialScript';
 const UI = {
   en: {
     hub: 'Reasoning', tag: 'training', title: 'Matrix Reasoning', replayTutorial: 'Replay tutorial',
-    freeMode: '♾️ Survival mode', levelMode: '🎯 Level mode', challengeMode: '⚔️ Pass n Play',
+    freeMode: 'Survival mode', levelMode: 'Level mode', challengeMode: 'Pass n Play',
     freeHint: 'Endless · 3 lives · adapts to you', levelsHint: '3 tiers · 20 levels each', chalHint: 'Same puzzles · pass the device',
     modesAria: 'Modes — choose a path',
     blurb: 'Find the figure that completes the pattern. Each row and column follows a hidden rule.',
@@ -31,7 +31,7 @@ const UI = {
     levelPass: 'Level passed', levelRetry: 'Try again', stars: 'Stars',
     accuracy: 'Accuracy', avgTime: 'Avg time', nextLv: 'Next level', retry: 'Retry',
     perfect: 'Flawless!', good: 'Well reasoned', tryAgain: 'Keep practicing',
-    chalTitle: '⚔️ Pass n Play', chalSub: 'Everyone gets the same puzzles · pass the device · highest score wins',
+    chalTitle: 'Pass n Play', chalSub: 'Everyone gets the same puzzles · pass the device · highest score wins',
     chalPickDiff: 'Difficulty', players: 'Players (2–10)', addPl: '＋ Add player', startCh: '⚔️ Start', needTwo: 'Add at least 2 players.',
     chalTurnKicker: 'Your turn', chalBullet1: 'Same puzzles & order for everyone', chalBullet2: 'Tap Start only when the device is with this player',
     handTo: (n) => `Hand the device to ${n}.`, goReady: 'Start', chalMeta: (lbl, n) => `${lbl} · ${n} puzzles`,
@@ -39,7 +39,7 @@ const UI = {
   },
   ar: {
     hub: 'تفكير', tag: 'تدريب', title: 'استدلال المصفوفات', replayTutorial: 'إعادة الشرح',
-    freeMode: '♾️ وضع البقاء', levelMode: '🎯 وضع المستويات', challengeMode: '⚔️ مرّر والعب',
+    freeMode: 'وضع البقاء', levelMode: 'وضع المستويات', challengeMode: 'مرّر والعب',
     freeHint: 'لا ينتهي · ٣ أرواح · يتكيّف معك', levelsHint: '٣ مستويات · ٢٠ مرحلة لكل منها', chalHint: 'نفس الألغاز · مرّر الجهاز',
     modesAria: 'الأوضاع — اختر مسارًا',
     blurb: 'اعثر على الشكل الذي يُكمل النمط. كل صف وعمود يتبع قاعدة خفية.',
@@ -55,7 +55,7 @@ const UI = {
     levelPass: 'اجتُزت المرحلة', levelRetry: 'حاول مجددًا', stars: 'نجوم',
     accuracy: 'الدقة', avgTime: 'متوسط الزمن', nextLv: 'المرحلة التالية', retry: 'إعادة',
     perfect: 'بلا أخطاء!', good: 'استدلال جيّد', tryAgain: 'واصل التدريب',
-    chalTitle: '⚔️ مرّر والعب', chalSub: 'الجميع يحصل على نفس الألغاز · مرّر الجهاز · الأعلى نقاطاً يفوز',
+    chalTitle: 'مرّر والعب', chalSub: 'الجميع يحصل على نفس الألغاز · مرّر الجهاز · الأعلى نقاطاً يفوز',
     chalPickDiff: 'الصعوبة', players: 'اللاعبون (2–10)', addPl: '＋ إضافة لاعب', startCh: '⚔️ ابدأ', needTwo: 'أضف لاعبين على الأقل.',
     chalTurnKicker: 'دورك', chalBullet1: 'نفس الألغاز والترتيب للجميع', chalBullet2: 'اضغط ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
     handTo: (n) => `سلّم الجهاز إلى ${n}.`, goReady: 'ابدأ', chalMeta: (lbl, n) => `${lbl} · ${n} ألغاز`,
@@ -100,20 +100,7 @@ function ReasoningModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
     { k: 'levels', ic: '🎯', lb: t.levelMode, hint: t.levelsHint, on: onLevels, mod: 'ct-fq-attn-mode--levels' },
     { k: 'chal', ic: '⚔️', lb: t.challengeMode, hint: t.chalHint, on: onChallenge, mod: 'ct-fq-attn-mode--chal' },
   ];
-  return (
-    <div className="ct-fq-attn-modes" role="group" aria-label={t.modesAria}>
-      {items.map((m) => (
-        <button key={m.k} type="button" className={`ct-fq-attn-mode ${m.mod}`} onClick={() => { playSfx('click'); m.on(); }}>
-          <span className="ct-fq-attn-mode-ic" aria-hidden="true">{m.ic}</span>
-          <span className="ct-fq-attn-mode-body">
-            <span className="ct-fq-attn-mode-lb">{m.lb}</span>
-            <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>{m.hint}</span>
-          </span>
-          <span className="ct-fq-attn-mode-chev" aria-hidden="true">›</span>
-        </button>
-      ))}
-    </div>
-  );
+  return <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />;
 }
 
 export default function RavenMatricesGame({ onBack, workoutMode = false }) {
@@ -389,7 +376,7 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
           <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
             <TrainingMenuBar onBack={onBack} playSfx={playSfx} hubSpaced variant="paper"
               onReplayTutorial={replayTutorial} replayHint={t.replayTutorial}
-              center={<div className="ct-fq-hub-attn-head"><div className="ct-fq-hub-attn-big">{t.hub}</div><div className="ct-fq-hub-attn-sub">{t.tag}</div></div>} />
+              center={<div className="ct-fq-hub-attn-head"><div className="ct-fq-hub-attn-big">{t.title}</div><div className="ct-fq-hub-attn-sub">{t.tag}</div></div>} />
             <div className="ct-rv-intro">
               <div className="ct-fq-training-title ct-fq-training-title-sm">{t.title}</div>
               <p className="ct-fq-sub ct-fq-training-blurb">{t.blurb}</p>

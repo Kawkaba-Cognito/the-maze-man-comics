@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
+import { SURVIVAL_MS, survivalRamp, drawSurvivalBar } from '../../../../shared/survival';
 
 /*
  * Flip — rule-following under reversal (cognitive flexibility).
@@ -104,7 +105,7 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
 
     const g = {
       lanes: cfg.lanes, lane: Math.floor(cfg.lanes / 2),
-      balls: [], spawnAcc: 0, fall: cfg.fall, spawnEvery: cfg.spawn,
+      balls: [], spawnAcc: 0, fall: cfg.fall, spawnEvery: cfg.spawn, t0: performance.now(),
       mirror: false, cued: cfg.cued, warn: cfg.warn, invert: cfg.invert, flipEvery: cfg.flipEvery,
       ruleEvery: cfg.ruleEvery, take: 0, avoid: 1,
       caught: 0, combo: 0, bestCombo: 0, resolved: 0, persev: 0, spawned: 0,
@@ -163,7 +164,13 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
         const isTake = rngLocal() < TAKE_RATIO;
         g.balls.push({ lane: pick(g.lanes), y: -r, take: isTake, color: PALETTE[isTake ? g.take : g.avoid].c });
       }
-      if (mode === 'free') { g.fall = cfg.fall + g.caught * 3; }
+      let survPct = 1;
+      if (mode === 'free') {
+        const elapsed = now - g.t0;
+        if (elapsed >= SURVIVAL_MS) { finish(); return; }
+        survPct = 1 - elapsed / SURVIVAL_MS;
+        g.fall = cfg.fall * (1 + survivalRamp(elapsed) * 1.1);
+      }
 
       for (const b of g.balls) b.y += g.fall * dt;
 
@@ -206,6 +213,7 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
 
       // draw
       ctx.clearRect(0, 0, g.W, g.H);
+      if (mode === 'free') drawSurvivalBar(ctx, g.W, survPct, FLX);
       for (let i = 0; i < g.lanes; i++) {
         ctx.fillStyle = i % 2 ? 'rgba(224,122,170,0.05)' : 'rgba(224,122,170,0.02)';
         ctx.fillRect((i / g.lanes) * g.W, 0, g.W / g.lanes, g.H);
@@ -341,7 +349,7 @@ const styles = {
   overCard: { background: '#fffdf8', borderRadius: 20, padding: '22px 26px', textAlign: 'center', boxShadow: '6px 6px 0 #1a1208', border: '2px solid #cdbfa6' },
   overTitle: { fontWeight: 900, fontSize: 24, color: '#2d2d2d' },
   overScore: { marginTop: 6, fontWeight: 700, color: '#5a4a32' },
-  overBtn: { flex: 1, padding: '12px 16px', fontWeight: 800, color: '#fff', background: FLX, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
+  overBtn: { flex: 1, padding: '15px 16px', fontWeight: 900, fontSize: 16, color: '#fff', background: FLX, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
   controls: { display: 'flex', gap: 14, padding: '14px 18px calc(14px + env(safe-area-inset-bottom))' },
   ctrlBtn: { flex: 1, height: 84, fontSize: 38, fontWeight: 900, color: '#fff', background: FLX, border: 'none', borderRadius: 20, boxShadow: '4px 4px 0 #1a1208', cursor: 'pointer', touchAction: 'none', userSelect: 'none' },
 };

@@ -7,7 +7,8 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
-import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
+import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
@@ -58,13 +59,13 @@ function saveProfile(p) {
 
 const UI = {
   en: {
-    hub: 'Speed',
+    hub: 'Speed Match',
     tag: 'training',
     title: 'Speed Match',
     replayTutorial: 'Replay tutorial',
-    freeMode: '♾️ Survival mode',
-    levelMode: '🎯 Level mode',
-    challengeMode: '⚔️ Pass n Play',
+    freeMode: 'Survival mode',
+    levelMode: 'Level mode',
+    challengeMode: 'Pass n Play',
     hubMapAria: 'Modes — choose a path',
     hubNodeFreeHint: 'Endless · 3 lives · speeds up',
     hubNodeLevelsHint: '100 levels per tier · unlock in order',
@@ -82,7 +83,7 @@ const UI = {
     },
     chalPickDiff: 'Difficulty',
     levelsSub: (pop) => `${pop} · ${SM_LEVELS_PER_TIER} levels`,
-    challengeTitle: '⚔️ Pass n Play',
+    challengeTitle: 'Pass n Play',
     challengeSub: 'Same key & symbols for everyone · pick a difficulty · pass the device',
     players: 'Players (2–10)',
     addPl: '＋ Add player',
@@ -151,13 +152,13 @@ const UI = {
     motor: 'motor',
   },
   ar: {
-    hub: 'سرعة',
+    hub: 'مطابقة سريعة',
     tag: 'تدريب',
     title: 'مطابقة سريعة',
     replayTutorial: 'إعادة الشرح',
-    freeMode: '♾️ وضع البقاء',
-    levelMode: '🎯 وضع المستويات',
-    challengeMode: '⚔️ مرّر والعب',
+    freeMode: 'وضع البقاء',
+    levelMode: 'وضع المستويات',
+    challengeMode: 'مرّر والعب',
     hubMapAria: 'الأوضاع — اختر مسارًا',
     hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · يتسارع',
     hubNodeLevelsHint: '١٠٠ مستوى لكل صعوبة · بالترتيب',
@@ -175,7 +176,7 @@ const UI = {
     },
     chalPickDiff: 'الصعوبة',
     levelsSub: (pop) => `${pop} · ${SM_LEVELS_PER_TIER} مستوى`,
-    challengeTitle: '⚔️ مرّر والعب',
+    challengeTitle: 'مرّر والعب',
     challengeSub: 'نفس المفتاح والرموز للجميع · اختر الصعوبة · مرّر الجهاز',
     players: 'اللاعبون (2–10)',
     addPl: '＋ إضافة لاعب',
@@ -279,20 +280,7 @@ function SpeedModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
     { k: 'levels', ic: '🎯', lb: t.levelMode, hint: t.hubNodeLevelsHint, on: onLevels, mod: 'ct-fq-attn-mode--levels' },
     { k: 'chal', ic: '⚔️', lb: t.challengeMode, hint: t.hubNodeChallengeHint, on: onChallenge, mod: 'ct-fq-attn-mode--chal' },
   ];
-  return (
-    <div className="ct-fq-attn-modes" role="group" aria-label={t.hubMapAria}>
-      {items.map((m) => (
-        <button key={m.k} type="button" className={`ct-fq-attn-mode ${m.mod}`} onClick={() => { playSfx('click'); m.on(); }}>
-          <span className="ct-fq-attn-mode-ic" aria-hidden="true">{m.ic}</span>
-          <span className="ct-fq-attn-mode-body">
-            <span className="ct-fq-attn-mode-lb">{m.lb}</span>
-            <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>{m.hint}</span>
-          </span>
-          <span className="ct-fq-attn-mode-chev" aria-hidden="true">›</span>
-        </button>
-      ))}
-    </div>
-  );
+  return <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />;
 }
 
 export default function SpeedMatchGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
@@ -939,6 +927,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
   const replayTutorial = useCallback(() => startCoach(null), [startCoach]);
 
   const block = blockRef.current;
+  const survivalRemaining = useSurvivalCountdown(phase === 'play' && block?.mode === 'free', finishFreeRun);
   const now = performance.now();
   const blockTimeLeft = block && block.mode !== 'free' && playStep === 'running'
     ? Math.max(0, Math.ceil((blockEndAtRef.current - now) / 1000))
@@ -1117,6 +1106,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
             onPause={block.mode === 'tutorial' ? undefined : onPause}
             pauseAriaLabel={t.paused}
           />
+          {block.mode === 'free' && <SurvivalCountdownBar remaining={survivalRemaining} color="#64b5c2" />}
           <div className={`ct-sm-stage ct-juice-host${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}${juice.shake ? ' ct-juice-shake' : ''}`}>
             <JuiceLayer
               combo={juice.combo}

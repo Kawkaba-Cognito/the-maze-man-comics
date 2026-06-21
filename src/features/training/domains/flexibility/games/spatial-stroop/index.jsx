@@ -8,6 +8,7 @@ import {
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
 import { useCoach } from '../../../../shared/coach/useCoach';
 import CoachOverlay from '../../../../shared/coach/CoachOverlay';
 import { createTrialLog } from '../../../../shared/trialLog';
@@ -96,12 +97,12 @@ function RuleLessonArt({ rule }) {
 
 const UI = {
   en: {
-    hubFlex: 'Flexibility',
+    hubFlex: 'Arrow Rush',
     hubTag: 'training',
     replayTutorial: 'Replay tutorial',
-    freeMode: '♾️ Survival mode',
-    levelMode: '🎯 Level mode',
-    challengeMode: '⚔️ Pass n Play',
+    freeMode: 'Survival mode',
+    levelMode: 'Level mode',
+    challengeMode: 'Pass n Play',
     hubMapAria: 'Modes',
     hubNodeFreeHint: 'Power-ups · Blitz rounds · it speeds up',
     hubNodeLevelsHint: '100 levels · colour rule, flankers & reverses',
@@ -118,7 +119,7 @@ const UI = {
     freeIntroBody:
       'Tap LEFT or RIGHT by the rule on the banner — POINTS, SITS, or COLOUR. The rule keeps flipping. Build combos, grab power-ups, and survive Blitz bursts. Three misses ends the run.',
     freeIntroReady: 'Ready',
-    challengeTitle: '⚔️ Pass n Play',
+    challengeTitle: 'Pass n Play',
     challengeSub: 'Same arrow sequence for everyone · highest flexibility wins',
     players: 'Players (2–10)',
     addPl: '＋ Add player',
@@ -193,12 +194,12 @@ const UI = {
     freeHeader: 'Survival mode',
   },
   ar: {
-    hubFlex: 'مرونة',
+    hubFlex: 'اندفاع الأسهم',
     hubTag: 'تدريب',
     replayTutorial: 'إعادة الشرح',
-    freeMode: '♾️ وضع البقاء',
-    levelMode: '🎯 وضع المستويات',
-    challengeMode: '⚔️ مرّر والعب',
+    freeMode: 'وضع البقاء',
+    levelMode: 'وضع المستويات',
+    challengeMode: 'مرّر والعب',
     hubMapAria: 'الأوضاع',
     hubNodeFreeHint: 'قدرات · جولات خاطفة · يتسارع',
     hubNodeLevelsHint: '١٠٠ مستوى · قاعدة اللون والمشتتات والعكس',
@@ -215,7 +216,7 @@ const UI = {
     freeIntroBody:
       'اضغط يسار أو يمين حسب القاعدة على الشارة — الإشارة أو المكان أو اللون. القاعدة تنقلب باستمرار. اجمع السلاسل، التقط القدرات، وانجُ من الجولات الخاطفة. ثلاثة أخطاء تنهي المحاولة.',
     freeIntroReady: 'جاهز',
-    challengeTitle: '⚔️ مرّر والعب',
+    challengeTitle: 'مرّر والعب',
     challengeSub: 'نفس تسلسل الأسهم للجميع · أعلى مرونة يفوز',
     players: 'اللاعبون (2–10)',
     addPl: '＋ إضافة',
@@ -439,6 +440,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
   const [frozenProbe, setFrozenProbe] = useState(null);
   const probe = frozenProbe || session?.probe;
   const blitzActive = !!session?.blitzActive;
+  const survivalRemaining = useSurvivalCountdown(phase === 'play' && block?.mode === 'free', () => finishBlockRef.current());
 
   useEffect(() => {
     pauseRef.current = pauseOpen;
@@ -1369,6 +1371,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
             onPause={block.mode === 'tutorial' ? undefined : () => setPauseOpen(true)}
             pauseAriaLabel={t.paused}
           />
+          {block.mode === 'free' && <SurvivalCountdownBar remaining={survivalRemaining} color="#e07aaa" />}
           {(playStep === 'running' || playStep === 'shift') && probe && (
             <div className="ct-stroop-board">
               <div ref={bannerRef} className={`ct-stroop-rule-banner ct-stroop-rule--${rule}${probe.reverse ? ' ct-stroop-rule--reverse' : ''}`}>

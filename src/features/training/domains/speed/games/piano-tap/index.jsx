@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
+import { SURVIVAL_MS, survivalRamp, GRADE, drawSurvivalBar } from '../../../../shared/survival';
 
 /*
  * Piano Tap — processing speed + response inhibition (Piano/Magic Tiles style).
@@ -40,7 +41,7 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
 
   const [runId, setRunId] = useState(0);
   const [over, setOver] = useState(null);
-  const [hud, setHud] = useState({ hits: 0, lives: 0, combo: 0 });
+  const [hud, setHud] = useState({ hits: 0, lives: 0, combo: 0, score: 0 });
 
   const cfg = useMemo(() => {
     if (mode === 'levels') return levelCfg(diff, level);
@@ -70,7 +71,7 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
     finishedRef.current = true;
     cancelAnimationFrame(rafRef.current);
     const g = gRef.current;
-    if (mode === 'free') { setOver({ score: g.hits }); playSfx('error'); return; }
+    if (mode === 'free') { setOver({ score: g.score, tiles: g.hits }); playSfx('error'); return; }
     if (mode === 'levels') {
       const won = g.hits >= cfg.target;
       onResult({ won, score: g.hits, summary: isAr ? `${g.hits}/${cfg.target} نقرة` : `${g.hits}/${cfg.target} tiles` });
@@ -90,7 +91,18 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
       target.hit = true; target.fade = 1;
       g.hits += 1; g.combo += 1; if (g.combo > g.bestCombo) g.bestCombo = g.combo;
       awardPoints(1); playNote();
-      if (mode !== 'free') g.speed += 1.5;
+      if (mode === 'free') {
+        // Survival: grade by how close the tile was to the hit line (on-beat) and
+        // bonus-scale with combo, so faster, tighter play scores more.
+        const center = target.y + g.tileH / 2;
+        const d = Math.abs((g.H - 10) - center);
+        const grade = d <= g.tileH * 0.55 ? 'perfect' : d <= g.tileH * 1.3 ? 'fast' : 'good';
+        const gd = GRADE[grade];
+        g.score += gd.bonus * (1 + Math.floor(g.combo / 10));
+        g.gradeFx = { label: isAr ? gd.ar : gd.en, color: gd.color, until: performance.now() + 480 };
+      } else {
+        g.speed += 1.5;
+      }
       if (mode === 'levels' && g.hits >= cfg.target) { finish(); return; }
     } else {
       // tapped an empty lane → inhibition error
@@ -115,6 +127,7 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
       tiles: [], spawnAcc: 0, spawned: 0, speed: cfg.speed, spawnEvery: cfg.spawn,
       budget: mode === 'passplay' ? ppTiles : Infinity, lastLane: -1,
       hits: 0, lives: cfg.lives, combo: 0, bestCombo: 0,
+      t0: performance.now(), score: 0, gradeFx: null,
       tileH: 0, W: 0, H: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
     };
     gRef.current = g;
@@ -134,11 +147,17 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
     const laneX = (i) => (i / LANES) * g.W;
     const laneW = () => g.W / LANES;
 
-    let hudCache = { hits: -1, lives: -1, combo: -1 };
+    let hudCache = { hits: -1, lives: -1, combo: -1, score: -1 };
     let last = performance.now();
     const frame = (now) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
-      if (mode === 'free') g.speed = cfg.speed + g.hits * 2.2;
+      let timePct = 1;
+      if (mode === 'free') {
+        const elapsed = now - g.t0;
+        if (elapsed >= SURVIVAL_MS) { finish(); return; }
+        timePct = 1 - elapsed / SURVIVAL_MS;
+        g.speed = cfg.speed * (1 + survivalRamp(elapsed) * 1.3);
+      }
 
       // spawn one tile per interval, never twice the same lane in a row
       g.spawnAcc += dt * 1000;
@@ -181,8 +200,18 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
         ctx.beginPath(); ctx.roundRect(x, tile.y, laneW() - 8, g.tileH - 6, 10); ctx.fill();
       }
 
-      if (g.hits !== hudCache.hits || g.lives !== hudCache.lives || g.combo !== hudCache.combo) {
-        hudCache = { hits: g.hits, lives: g.lives, combo: g.combo }; setHud(hudCache);
+      if (mode === 'free') drawSurvivalBar(ctx, g.W, timePct, SPD);
+      if (g.gradeFx && now < g.gradeFx.until) {
+        ctx.globalAlpha = Math.max(0, (g.gradeFx.until - now) / 480);
+        ctx.fillStyle = g.gradeFx.color;
+        ctx.font = '900 30px Outfit, system-ui, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(g.gradeFx.label, g.W / 2, g.H * 0.28);
+        ctx.globalAlpha = 1;
+      }
+
+      if (g.hits !== hudCache.hits || g.lives !== hudCache.lives || g.combo !== hudCache.combo || g.score !== hudCache.score) {
+        hudCache = { hits: g.hits, lives: g.lives, combo: g.combo, score: g.score }; setHud(hudCache);
       }
       rafRef.current = requestAnimationFrame(frame);
     };
@@ -206,7 +235,9 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
   const showLives = mode !== 'passplay';
   const head = mode === 'levels'
     ? (isAr ? `مستوى ${level} · ${hud.hits}/${cfg.target}` : `Lvl ${level} · ${hud.hits}/${cfg.target}`)
-    : (isAr ? `نقرات ${hud.hits}` : `Tiles ${hud.hits}`);
+    : mode === 'free'
+      ? (isAr ? `نقاط ${hud.score}` : `Score ${hud.score}`)
+      : (isAr ? `نقرات ${hud.hits}` : `Tiles ${hud.hits}`);
 
   return (
     <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
@@ -225,7 +256,7 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
           <div style={S.overWrap}>
             <div style={S.overCard}>
               <div style={S.overTitle}>{isAr ? 'انتهت اللعبة' : 'Game Over'}</div>
-              <div style={S.overScore}>{isAr ? `${over.score} نقرة` : `${over.score} tiles`}</div>
+              <div style={S.overScore}>{isAr ? `النقاط ${over.score} · ${over.tiles} نقرة` : `Score ${over.score} · ${over.tiles} tiles`}</div>
               <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                 <button style={S.overBtn} onClick={() => { playSfx('click'); restart(); }}>{isAr ? 'العب مجدداً' : 'Play again'}</button>
                 <button style={{ ...S.overBtn, background: '#cdbfa6' }} onClick={() => { playSfx('click'); onExit?.(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
@@ -270,5 +301,5 @@ const styles = {
   overCard: { background: '#fffdf8', borderRadius: 20, padding: '22px 26px', textAlign: 'center', boxShadow: '6px 6px 0 #1a1208', border: '2px solid #cdbfa6' },
   overTitle: { fontWeight: 900, fontSize: 24, color: '#2d2d2d' },
   overScore: { marginTop: 6, fontWeight: 700, color: '#3a6a72' },
-  overBtn: { flex: 1, padding: '12px 16px', fontWeight: 800, color: '#fff', background: SPD, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
+  overBtn: { flex: 1, padding: '15px 16px', fontWeight: 900, fontSize: 16, color: '#fff', background: SPD, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
 };

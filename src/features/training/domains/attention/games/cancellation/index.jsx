@@ -35,7 +35,7 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
-import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
@@ -157,34 +157,7 @@ function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx
       mod: 'ct-fq-attn-mode--chal',
     },
   ];
-  return (
-    <div className="ct-fq-attn-modes" role="group" aria-label={t.hubMapAria}>
-      {items.map((m) => (
-        <button
-          key={m.k}
-          type="button"
-          className={`ct-fq-attn-mode ${m.mod}`}
-          onClick={() => {
-            playSfx('click');
-            m.on();
-          }}
-        >
-          <span className="ct-fq-attn-mode-ic" aria-hidden="true">
-            {m.ic}
-          </span>
-          <span className="ct-fq-attn-mode-body">
-            <span className="ct-fq-attn-mode-lb">{m.lb}</span>
-            <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>
-              {m.hint}
-            </span>
-          </span>
-          <span className="ct-fq-attn-mode-chev" aria-hidden="true">
-            ›
-          </span>
-        </button>
-      ))}
-    </div>
-  );
+  return <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />;
 }
 
 const FqGridCell = React.memo(function FqGridCell({ cell, idx, size, running, onTap }) {
@@ -197,7 +170,7 @@ const FqGridCell = React.memo(function FqGridCell({ cell, idx, size, running, on
     >
       <ShapeSvg shape={cell.shape} color={cell.fill} size={size} />
       {cell.feedback === 'ok' && <span className="ct-fq-ck">✓</span>}
-      {cell.feedback === 'bad' && <span className="ct-fq-pi">-1s</span>}
+      {cell.feedback === 'bad' && <span className="ct-fq-pi">-3s</span>}
     </button>
   );
 });
@@ -331,7 +304,7 @@ const UI = {
     back: '‹ BACK',
     title: 'CANCELLATION',
     subtitle: 'Selective attention & inhibition',
-    freeMode: '♾️ Survival mode',
+    freeMode: 'Survival mode',
     freeMenuSub:
       'Endless rounds that ramp up · 3 lives · a round costs a life if time runs out or you make too many wrong taps · score from taps, clears & streaks',
     freeStrikes: 'Errors',
@@ -348,7 +321,7 @@ const UI = {
     freeIntroReady: 'Ready',
     score: 'Score',
     hubChamberKicker: '⟡ FOCUS QUEST ⟡',
-    hubAttentionWord: 'Attention',
+    hubAttentionWord: 'Cancellation task',
     hubTrainingTag: 'training',
     resultsLevelPass: 'Level passed',
     resultsLevelRetryTitle: 'Try again',
@@ -357,8 +330,8 @@ const UI = {
     hubNodeFreeHint: 'Endless · 3 lives · ramps up',
     hubNodeLevelsHint: '100 levels per tier · unlock in order',
     hubNodeChallengeHint: 'Same board for all · pick a difficulty',
-    levelMode: '🎯 Level mode',
-    challengeMode: '⚔️ Pass n Play',
+    levelMode: 'Level mode',
+    challengeMode: 'Pass n Play',
     menuHint: 'Visual search training: bind features, suppress distractors, and respond quickly—like lab tasks for attention and cognitive control.',
     pickDiff: 'Choose difficulty',
     pickDiffSub: 'Each tier has 100 levels — unlock them in order.',
@@ -371,7 +344,7 @@ const UI = {
     diffGrid: 'grid',
     levelsSub: (pop, g) => `${pop} · ${g}×${g} grid · Levels 1–100`,
     levelsBack: '← Back',
-    challengeTitle: '⚔️ Pass n Play',
+    challengeTitle: 'Pass n Play',
     challengeSub: 'Same board for everyone · pick a difficulty · pass the device',
     chalPickDiff: 'Difficulty',
     players: 'Players (2–10)',
@@ -463,7 +436,7 @@ const UI = {
     back: '‹ رجوع',
     title: 'مهمة الإلغاء',
     subtitle: 'انتباه انتقائي وكبح استجابي',
-    freeMode: '♾️ وضع البقاء',
+    freeMode: 'وضع البقاء',
     freeMenuSub:
       'جولات لا تنتهي وتزداد صعوبة · ٣ أرواح · تخسر روحاً إذا نفد الوقت أو أكثرت النقر الخاطئ في الجولة · النقاط للمسات والإكمال والسلسلة',
     freeStrikes: 'أخطاء',
@@ -480,7 +453,7 @@ const UI = {
     freeIntroReady: 'جاهز',
     score: 'نقاط',
     hubChamberKicker: '⟡ مهمة التركيز ⟡',
-    hubAttentionWord: 'الانتباه',
+    hubAttentionWord: 'مهمة الشطب',
     hubTrainingTag: 'تدريب',
     resultsLevelPass: 'المستوى اجتُاز',
     resultsLevelRetryTitle: 'حاول مجددًا',
@@ -489,8 +462,8 @@ const UI = {
     hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · يزداد صعوبة',
     hubNodeLevelsHint: '١٠٠ مستوى لكل صعوبة · بالترتيب',
     hubNodeChallengeHint: 'نفس اللوحة للجميع · اختر الصعوبة',
-    levelMode: '🎯 وضع المستويات',
-    challengeMode: '⚔️ مرّر والعب',
+    levelMode: 'وضع المستويات',
+    challengeMode: 'مرّر والعب',
     menuHint: 'تدريب بحث بصري: ربط السمات، كبح المشتتات، والاستجابة بسرعة—كمهام الانتباه في العلوم المعرفية.',
     pickDiff: 'اختر الصعوبة',
     pickDiffSub: 'كل صعوبة تحتوي على ١٠٠ مستوى — افتحها بالترتيب.',
@@ -503,7 +476,7 @@ const UI = {
     diffGrid: 'شبكة',
     levelsSub: (pop, g) => `${pop} · شبكة ${g}×${g} · مستويات 1–100`,
     levelsBack: '← رجوع',
-    challengeTitle: '⚔️ مرّر والعب',
+    challengeTitle: 'مرّر والعب',
     challengeSub: 'نفس اللوحة للجميع · اختر الصعوبة · مرّر الجهاز',
     chalPickDiff: 'الصعوبة',
     players: 'اللاعبون (2–10)',
@@ -1205,7 +1178,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           Math.floor((Math.min(availW, availH) - totalGap - INNER_PAD * 2) / gridN),
         );
       }
-      setGridMetrics({ cellW: cell, cellH: cell, gap, pad: INNER_PAD });
+      // Square cells leave vertical slack on tall phones (board looks empty).
+      // The shape is sized by the SMALLER dimension, so we can make cells TALLER
+      // to fill the height without distorting shapes — fewer empty gaps.
+      const cellH = Math.max(cell, Math.min(fitH, Math.round(cell * 1.6)));
+      setGridMetrics({ cellW: cell, cellH, gap, pad: INNER_PAD });
     };
     measure();
     const ro = new ResizeObserver(() => {
@@ -1323,7 +1300,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       }
       playSfx('error');
       if (!r.assessPractice) trialLogRef.current?.trial({ ...(itt != null ? { rt: Math.round(itt) } : {}), ok: false });
-      pendingPenaltyRef.current += 1;
+      pendingPenaltyRef.current += 3;
       talliesRef.current.errors += 1;
       setErrors(talliesRef.current.errors);
       if (r.mode === 'free') {

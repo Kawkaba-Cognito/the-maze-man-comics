@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
+import { SURVIVAL_MS, survivalRamp, drawSurvivalBar } from '../../../../shared/survival';
 
 /*
  * Math Gates — endless runner with rule-switching arithmetic (cognitive flexibility).
@@ -39,7 +40,7 @@ function genGate(diff, f, rng) {
     const hi = diff === 'easy' ? 9 + Math.round(f * 12) : diff === 'med' ? 25 + Math.round(f * 30) : 50 + Math.round(f * 60);
     a = ri(2, hi); b = ri(1, a); ans = a - b;
   } else if (op === '×') {
-    const hi = diff === 'med' ? 9 : 9 + Math.round(f * 4);
+    const hi = 9 + Math.round(f * (diff === 'med' ? 2 : 4));
     a = ri(2, hi); b = ri(2, hi); ans = a * b;
   } else { // ÷
     const dh = 9 + Math.round(f * 3), qh = 9 + Math.round(f * 3);
@@ -124,7 +125,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
     const rng = makeRng((seed != null ? seed : 98765) ^ ((runId * 40503) >>> 0));
 
     const g = {
-      lane: 1, gate: null, gapTimer: cfg.gap,
+      lane: 1, gate: null, gapTimer: cfg.gap, t0: performance.now(),
       passed: 0, lives: cfg.lives, combo: 0, bestCombo: 0, gatesPlayed: 0,
       flash: null, charX: 0,
       W: 0, H: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
@@ -133,7 +134,11 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
     finishedRef.current = false;
 
     const spawnGate = () => {
-      const eqObj = genGate(dkey, cfg.f, rng);
+      // Survival escalates the equation TIER and magnitude with the clock (was
+      // frozen on easiest); Levels use the level's own difficulty/ramp.
+      const f = mode === 'free' ? survivalRamp(performance.now() - g.t0) : cfg.f;
+      const dk = mode === 'free' ? (f < 0.34 ? 'easy' : f < 0.67 ? 'med' : 'hard') : dkey;
+      const eqObj = genGate(dk, f, rng);
       const bandH = Math.min(g.H * 0.16, 96);
       g.gate = { y: -bandH, eq: eqObj, t: gateTime(eqObj), speed: null };
       setEq(eqObj.text);
@@ -166,7 +171,9 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
         if (g.gate.speed == null) {
           // set a constant speed so the gate takes `t` seconds to reach the player;
           // a gentle global ramp speeds later gates a touch (floored, stays fair).
-          const pace = Math.max(0.78, 1 - g.passed * 0.012);
+          const pace = mode === 'free'
+            ? Math.max(0.6, 1 - survivalRamp(now - g.t0) * 0.4)
+            : Math.max(0.78, 1 - g.passed * 0.012);
           g.gate.speed = (catchY - g.gate.y) / Math.max(0.4, g.gate.t * pace);
         }
         g.gate.y += g.gate.speed * dt;
@@ -195,7 +202,14 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       g.charX += (targetX - g.charX) * Math.min(1, dt * 18);
 
       // draw
+      let survPct = 1;
+      if (mode === 'free') {
+        const elapsed = now - g.t0;
+        if (elapsed >= SURVIVAL_MS) { finish(); return; }
+        survPct = 1 - elapsed / SURVIVAL_MS;
+      }
       ctx.clearRect(0, 0, g.W, g.H);
+      if (mode === 'free') drawSurvivalBar(ctx, g.W, survPct, FLX);
       // road lanes
       for (let i = 0; i < LANES; i++) {
         ctx.fillStyle = i % 2 ? 'rgba(224,122,170,0.05)' : 'rgba(224,122,170,0.02)';
@@ -346,7 +360,7 @@ const styles = {
   overCard: { background: '#fffdf8', borderRadius: 20, padding: '22px 26px', textAlign: 'center', boxShadow: '6px 6px 0 #1a1208', border: '2px solid #cdbfa6' },
   overTitle: { fontWeight: 900, fontSize: 24, color: '#2d2d2d' },
   overScore: { marginTop: 6, fontWeight: 700, color: '#5a4a32' },
-  overBtn: { flex: 1, padding: '12px 16px', fontWeight: 800, color: '#fff', background: FLX, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
+  overBtn: { flex: 1, padding: '15px 16px', fontWeight: 900, fontSize: 16, color: '#fff', background: FLX, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
   controls: { display: 'flex', gap: 14, padding: '14px 18px calc(14px + env(safe-area-inset-bottom))' },
   ctrlBtn: { flex: 1, height: 84, fontSize: 38, fontWeight: 900, color: '#fff', background: FLX, border: 'none', borderRadius: 20, boxShadow: '4px 4px 0 #1a1208', cursor: 'pointer', touchAction: 'none', userSelect: 'none' },
 };

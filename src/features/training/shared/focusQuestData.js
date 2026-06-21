@@ -329,7 +329,7 @@ export function getLvCfg(diff, li) {
   const m = DM[diff];
   const poolList = SP[diff] || SP.easy;
   const pool = poolList[Math.max(0, Math.min(poolList.length - 1, Math.floor(li * poolList.length / FQ_LEVELS_PER_TIER)))];
-  const time = sigmoidTime(diff, li);
+  const time = Math.round(sigmoidTime(diff, li) * 0.78); // tighter clock — losable if sloppy
   const interference = computeFeatureInterference(li, diff);
   return {
     pool,
@@ -578,9 +578,9 @@ export function prepareLevelRound(diff, lv) {
  *   hard   — 9×9 conjunction (identity) search, the original challenge
  */
 export const PASS_PLAY_CONFIG = {
-  easy:   { grid: 5, tc: 8,  tlim: 40, poolLevel: 49 },
-  medium: { grid: 7, tc: 12, tlim: 45, poolLevel: 59 },
-  hard:   { grid: 9, tc: 15, tlim: 50, poolLevel: 79 },
+  easy:   { grid: 5, tc: 8,  tlim: 32, poolLevel: 49 },
+  medium: { grid: 7, tc: 12, tlim: 36, poolLevel: 59 },
+  hard:   { grid: 9, tc: 15, tlim: 40, poolLevel: 79 },
 };
 
 /**

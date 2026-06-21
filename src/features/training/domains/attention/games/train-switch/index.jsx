@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
+import { SURVIVAL_MS, survivalRamp, drawSurvivalBar } from '../../../../shared/survival';
 
 /*
  * Train Switch — Divided Attention & planning (Train-of-Thought style).
@@ -126,7 +127,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
 
     const g = {
       ...net, R: cfg.R, C: cfg.C, cell: 40,
-      trains: [], spawnAcc: -1600, spawned: 0, budget: mode === 'passplay' ? ppTrains : Infinity,
+      trains: [], spawnAcc: -1600, spawned: 0, budget: mode === 'passplay' ? ppTrains : Infinity, t0: performance.now(),
       maxTrains: cfg.maxTrains, cps: cfg.cps, spawnEvery: cfg.spawn, nextStation: net.stations[Math.floor(rng() * net.stations.length)],
       routed: 0, lives: cfg.lives,
       W: 0, H: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
@@ -173,7 +174,13 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     let last = performance.now();
     const frame = (now) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
-      const speed = g.cps * g.cell; // px/s
+      let survPct = 1;
+      if (mode === 'free') {
+        const elapsed = now - g.t0;
+        if (elapsed >= SURVIVAL_MS) { finish(); return; }
+        survPct = 1 - elapsed / SURVIVAL_MS;
+      }
+      const speed = g.cps * g.cell * (mode === 'free' ? 1 + survivalRamp(now - g.t0) * 0.9 : 1); // px/s
 
       // spawn (keep tunnel exit clear so the first fork can be pre-set)
       g.spawnAcc += dt * 1000;
@@ -207,6 +214,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
 
       // ── draw ──
       ctx.clearRect(0, 0, g.W, g.H);
+      if (mode === 'free') drawSurvivalBar(ctx, g.W, survPct, ATT);
       // rails: inactive first, then active on top
       for (const n of g.all) n.children.forEach((c, i) => { const active = n.children.length < 2 || i === n.sw; if (!active) drawEdge(n, c, false); });
       for (const n of g.all) n.children.forEach((c, i) => { const active = n.children.length < 2 || i === n.sw; if (active) drawEdge(n, c, true); });
@@ -333,5 +341,5 @@ const styles = {
   overCard: { background: '#fffdf8', borderRadius: 20, padding: '22px 26px', textAlign: 'center', boxShadow: '6px 6px 0 #1a1208', border: '2px solid #cdbfa6' },
   overTitle: { fontWeight: 900, fontSize: 24, color: '#2d2d2d' },
   overScore: { marginTop: 6, fontWeight: 700, color: '#7a5a1e' },
-  overBtn: { flex: 1, padding: '12px 16px', fontWeight: 800, color: '#fff', background: ATT, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
+  overBtn: { flex: 1, padding: '15px 16px', fontWeight: 900, fontSize: 16, color: '#fff', background: ATT, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
 };

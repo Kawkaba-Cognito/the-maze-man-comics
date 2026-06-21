@@ -39,8 +39,8 @@ import AssessmentReady from '../../../../assessment/AssessmentReady';
 
 const UI = {
   en: {
-    hubMemory: 'Memory', hubTag: 'training', replayTutorial: 'Replay tutorial',
-    freeMode: '♾️ Survival mode', levelMode: '🎯 Level mode', challengeMode: '⚔️ Pass n Play',
+    hubMemory: 'Memo Span', hubTag: 'training', replayTutorial: 'Replay tutorial',
+    freeMode: 'Survival mode', levelMode: 'Level mode', challengeMode: 'Pass n Play',
     nbackMode: 'N-Back', scienceLink: '🔬 Why this trains your brain', tipLabel: 'Strategy',
     hubMapAria: 'Modes',
     hubNodeFreeHint: 'Endless · 3 lives · sequence grows',
@@ -83,7 +83,7 @@ const UI = {
     freePlayAgain: 'Play again',
     freeGameOver: 'Run ended',
     startRound: 'Start',
-    challengeTitle: '⚔️ Pass n Play',
+    challengeTitle: 'Pass n Play',
     challengeSub: 'Same sequence for everyone · pick a difficulty · pass the device',
     players: 'Players (2–10)', addPl: '＋ Add player', startCh: '⚔️ Start',
     needTwo: 'Add at least 2 players.',
@@ -101,8 +101,8 @@ const UI = {
     newCh: 'New game',
   },
   ar: {
-    hubMemory: 'ذاكرة', hubTag: 'تدريب', replayTutorial: 'إعادة الشرح',
-    freeMode: '♾️ وضع البقاء', levelMode: '🎯 وضع المستويات', challengeMode: '⚔️ مرّر والعب',
+    hubMemory: 'مدى الذاكرة', hubTag: 'تدريب', replayTutorial: 'إعادة الشرح',
+    freeMode: 'وضع البقاء', levelMode: 'وضع المستويات', challengeMode: 'مرّر والعب',
     nbackMode: 'العودة-N', scienceLink: '🔬 لماذا يدرّب دماغك', tipLabel: 'استراتيجية',
     hubMapAria: 'الأوضاع',
     hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · يطول التسلسل',
@@ -145,7 +145,7 @@ const UI = {
     freePlayAgain: 'العب مجدداً',
     freeGameOver: 'انتهت المحاولة',
     startRound: 'ابدأ',
-    challengeTitle: '⚔️ مرّر والعب',
+    challengeTitle: 'مرّر والعب',
     challengeSub: 'نفس التسلسل للجميع · اختر الصعوبة · مرّر الجهاز',
     players: 'اللاعبون (2–10)', addPl: '＋ إضافة لاعب', startCh: '⚔️ ابدأ',
     needTwo: 'أضف لاعبين على الأقل.',

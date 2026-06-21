@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import { TrainingMenuBar, TrainingPlayHeader, TrainingQuitModal, TrainingChallengeHandoff } from '../../../../shared/TrainingChrome';
-import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { useCoach } from '../../../../shared/coach/useCoach';
@@ -15,7 +15,7 @@ import { buildColourSortCoachSteps } from './tutorialScript';
 const UI = {
   en: {
     hub: 'Reasoning', tag: 'training', title: 'Colour Sort', replayTutorial: 'Replay tutorial',
-    freeMode: '♾️ Survival mode', levelMode: '🎯 Level mode', challengeMode: '⚔️ Pass n Play',
+    freeMode: 'Survival mode', levelMode: 'Level mode', challengeMode: 'Pass n Play',
     freeHint: 'Endless · 3 skips · grows', levelsHint: '3 tiers · 20 levels each', chalHint: 'Same board · pass the device',
     modesAria: 'Modes — choose a path',
     blurb: 'Gather each colour onto its own peg. Stack only the same colour, never a bigger disk on a smaller one.',
@@ -30,7 +30,7 @@ const UI = {
     over: 'Run ended', best: (n) => `Best: ${n}`, again: 'Play again', menu: 'Menu',
     levelPass: 'Solved!', stars: 'Stars', nextLv: 'Next level', retry: 'Retry',
     perfect: 'Masterful!', good: 'Tidy', tryAgain: 'Solved',
-    chalTitle: '⚔️ Pass n Play', chalSub: 'Everyone sorts the same board · pass the device · fewest moves wins',
+    chalTitle: 'Pass n Play', chalSub: 'Everyone sorts the same board · pass the device · fewest moves wins',
     chalPickDiff: 'Difficulty', players: 'Players (2–10)', addPl: '＋ Add player', startCh: '⚔️ Start', needTwo: 'Add at least 2 players.',
     chalTurnKicker: 'Your turn', chalBullet1: 'Same board for everyone — fewest moves wins', chalBullet2: 'Tap Start only when the device is with this player',
     handTo: (n) => `Hand the device to ${n}.`, goReady: 'Start', chalMeta: (lbl, c) => `${lbl} · ${c} colours`,
@@ -38,7 +38,7 @@ const UI = {
   },
   ar: {
     hub: 'تفكير', tag: 'تدريب', title: 'فرز الألوان', replayTutorial: 'إعادة الشرح',
-    freeMode: '♾️ وضع البقاء', levelMode: '🎯 وضع المستويات', challengeMode: '⚔️ مرّر والعب',
+    freeMode: 'وضع البقاء', levelMode: 'وضع المستويات', challengeMode: 'مرّر والعب',
     freeHint: 'لا ينتهي · ٣ تخطّيات · يكبر', levelsHint: '٣ مستويات · ٢٠ مرحلة لكل منها', chalHint: 'نفس اللوح · مرّر الجهاز',
     modesAria: 'الأوضاع — اختر مسارًا',
     blurb: 'اجمع كل لون على عموده الخاص. كدّس نفس اللون فقط، ولا تضع قرصاً أكبر فوق أصغر.',
@@ -53,7 +53,7 @@ const UI = {
     over: 'انتهت المحاولة', best: (n) => `الأفضل: ${n}`, again: 'العب مجددًا', menu: 'القائمة',
     levelPass: 'حُلّت!', stars: 'نجوم', nextLv: 'المرحلة التالية', retry: 'إعادة',
     perfect: 'إتقان!', good: 'مرتّب', tryAgain: 'حُلّت',
-    chalTitle: '⚔️ مرّر والعب', chalSub: 'الجميع يفرز نفس اللوح · مرّر الجهاز · الأقل حركات يفوز',
+    chalTitle: 'مرّر والعب', chalSub: 'الجميع يفرز نفس اللوح · مرّر الجهاز · الأقل حركات يفوز',
     chalPickDiff: 'الصعوبة', players: 'اللاعبون (2–10)', addPl: '＋ إضافة لاعب', startCh: '⚔️ ابدأ', needTwo: 'أضف لاعبين على الأقل.',
     chalTurnKicker: 'دورك', chalBullet1: 'نفس اللوح للجميع — الأقل حركات يفوز', chalBullet2: 'اضغط ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
     handTo: (n) => `سلّم الجهاز إلى ${n}.`, goReady: 'ابدأ', chalMeta: (lbl, c) => `${lbl} · ${c} ألوان`,
@@ -73,20 +73,7 @@ function ReasoningModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
     { k: 'levels', ic: '🎯', lb: t.levelMode, hint: t.levelsHint, on: onLevels, mod: 'ct-fq-attn-mode--levels' },
     { k: 'chal', ic: '⚔️', lb: t.challengeMode, hint: t.chalHint, on: onChallenge, mod: 'ct-fq-attn-mode--chal' },
   ];
-  return (
-    <div className="ct-fq-attn-modes" role="group" aria-label={t.modesAria}>
-      {items.map((m) => (
-        <button key={m.k} type="button" className={`ct-fq-attn-mode ${m.mod}`} onClick={() => { playSfx('click'); m.on(); }}>
-          <span className="ct-fq-attn-mode-ic" aria-hidden="true">{m.ic}</span>
-          <span className="ct-fq-attn-mode-body">
-            <span className="ct-fq-attn-mode-lb">{m.lb}</span>
-            <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>{m.hint}</span>
-          </span>
-          <span className="ct-fq-attn-mode-chev" aria-hidden="true">›</span>
-        </button>
-      ))}
-    </div>
-  );
+  return <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />;
 }
 
 /** A tube holding uniform-width colour+number tokens (Ball-Sort style). */
@@ -352,15 +339,7 @@ export default function ColourSortGame({ onBack, workoutMode = false }) {
           <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
             <TrainingMenuBar onBack={onBack} playSfx={playSfx} hubSpaced variant="paper"
               onReplayTutorial={replayTutorial} replayHint={t.replayTutorial}
-              center={<div className="ct-fq-hub-attn-head"><div className="ct-fq-hub-attn-big">{t.hub}</div><div className="ct-fq-hub-attn-sub">{t.tag}</div></div>} />
-            <div className="ct-th-intro">
-              <div className="ct-cs-demo" aria-hidden="true">
-                {[['#e0584f', 3], ['#5fa9d8', 2], ['#8fbf6a', 1]].map(([c, s], i) => <span key={i} className="ct-cs-demo-disk" style={{ width: 18 + s * 7, background: c }}>{s}</span>)}
-                <span className="ct-cs-demo-peg" />
-              </div>
-              <div className="ct-fq-training-title ct-fq-training-title-sm">{t.title}</div>
-              <p className="ct-fq-sub ct-fq-training-blurb">{t.blurb}</p>
-            </div>
+              center={<div className="ct-fq-hub-attn-head"><div className="ct-fq-hub-attn-big">{t.title}</div><div className="ct-fq-hub-attn-sub">{t.tag}</div></div>} />
             <ReasoningModes t={t} isAr={isAr} playSfx={playSfx}
               onFree={() => maybeCoach(startFree)}
               onLevels={() => maybeCoach(() => setPhase('diff'))}

@@ -245,60 +245,6 @@ function AtmosphericBgLight() {
   );
 }
 
-function StatCell({ glyph, val, label, accent }) {
-  return (
-    <div style={{ flex: 1, textAlign: 'center' }}>
-      <div style={{
-        fontFamily: "'Fredoka One', Nunito, sans-serif",
-        fontSize: 14,
-        fontWeight: 400,
-        color: accent ? '#e8ac4e' : L.text,
-        lineHeight: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 4,
-      }}>
-        <span style={{ fontSize: 12, opacity: 0.85 }}>{glyph}</span>
-        <span>{val}</span>
-      </div>
-      <div style={{
-        fontSize: 8.5,
-        color: L.textMuted,
-        letterSpacing: 1.5,
-        marginTop: 4,
-        textTransform: 'uppercase',
-        fontWeight: 800,
-        fontFamily: "'Nunito', sans-serif",
-      }}>{label}</div>
-    </div>
-  );
-}
-
-function Sep() {
-  return <div style={{ width: 2, background: 'rgba(220,170,70,0.28)', borderRadius: 1 }} />;
-}
-
-function StatsScroll() {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'stretch', gap: 8,
-      padding: '12px 14px', borderRadius: 6,
-      background: 'linear-gradient(170deg, #3e1a06 0%, #5e2a0c 50%, #3e1a06 100%)',
-      border: '1.5px solid #9a6828',
-      boxShadow: 'inset 0 1px 0 rgba(220,170,70,0.35), inset 0 -1px 0 rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.6)',
-    }}>
-      <StatCell glyph="🔥" val="7" label="streak" accent/>
-      <Sep/>
-      <StatCell glyph="ᚱ" val="12" label="runes"/>
-      <Sep/>
-      <StatCell glyph="★" val="4" label="level" accent/>
-      <Sep/>
-      <StatCell glyph="⧗" val="18m" label="today"/>
-    </div>
-  );
-}
-
 /** 30px path lattice; every visible guide line is 60px so the map reads cleanly. */
 const GRID = 30;
 const GUIDE_GRID = GRID * 2;
@@ -618,11 +564,6 @@ export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }
             {isAr ? 'التقييم' : 'Assessment'}
           </button>
         </div>
-      </div>
-
-      {/* Stats scroll */}
-      <div style={{ position: 'relative', zIndex: 5, padding: '6px 18px 0', marginTop: -14 }}>
-        <StatsScroll/>
       </div>
 
       {/* Domain hover callout */}

@@ -67,8 +67,16 @@ export default function ComicsScreen() {
   };
 
   const exitGame = () => {
+    // Back from a game returns to that domain's game list (the 'pick' screen),
+    // not the main radial hub — so e.g. an Attention game lands on Attention.
     setActiveGame(null);
-    setScreen('hub');
+    const playable = playableSubs(activeDomain);
+    if (playable.length) {
+      setPickList(playable);
+      setScreen('pick');
+    } else {
+      setScreen('hub');
+    }
   };
 
   const backToHub = () => {

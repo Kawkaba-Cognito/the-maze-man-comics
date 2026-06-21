@@ -16,7 +16,7 @@ import {
 const UI = {
   en: {
     hub: 'N-Back', tag: 'working memory', replayTutorial: 'How to play',
-    freeMode: '♾️ Survival mode', levelMode: '🎯 Level mode', challengeMode: '⚔️ Pass n Play',
+    freeMode: 'Survival mode', levelMode: 'Level mode', challengeMode: 'Pass n Play',
     scienceLink: '🔬 Why this trains your brain', hubMapAria: 'Modes',
     hubNodeFreeHint: 'Adaptive — N rises with your accuracy',
     hubNodeLevelsHint: '100 levels · fixed N, faster pace',
@@ -32,7 +32,7 @@ const UI = {
     nextLv: 'Next level', retry: 'Retry', menu: 'Menu', again: 'Play again',
     freeTitle: 'Survival mode', blockDone: 'Block complete', nextN: (n) => `Next: ${n}-back`,
     best: (n) => `Best: ${n}-back`,
-    challengeTitle: '⚔️ Pass n Play', challengeSub: 'Same object stream for everyone · pass the device',
+    challengeTitle: 'Pass n Play', challengeSub: 'Same object stream for everyone · pass the device',
     chalPickDiff: 'Difficulty', players: 'Players (2–10)', addPl: '＋ Add player', startCh: '⚔️ Start',
     needTwo: 'Add at least 2 players.', chalRounds: 'Rounds', chalRoundsHint: 'Each player plays once per round',
     roundNofM: (n, m) => `Round ${n}/${m}`, chalTurnKicker: 'Your turn', chalBulletSame: 'Same stream this round',
@@ -42,7 +42,7 @@ const UI = {
   },
   ar: {
     hub: 'العودة-N', tag: 'ذاكرة عاملة', replayTutorial: 'كيف ألعب',
-    freeMode: '♾️ وضع البقاء', levelMode: '🎯 وضع المستويات', challengeMode: '⚔️ مرّر والعب',
+    freeMode: 'وضع البقاء', levelMode: 'وضع المستويات', challengeMode: 'مرّر والعب',
     scienceLink: '🔬 لماذا يدرّب دماغك', hubMapAria: 'الأوضاع',
     hubNodeFreeHint: 'تكيّفي — يرتفع N مع دقّتك',
     hubNodeLevelsHint: '١٠٠ مستوى · N ثابت وإيقاع أسرع',
@@ -58,7 +58,7 @@ const UI = {
     nextLv: 'المستوى التالي', retry: 'إعادة', menu: 'القائمة', again: 'العب مجدداً',
     freeTitle: 'وضع البقاء', blockDone: 'انتهت الجولة', nextN: (n) => `التالي: ${n}-عودة`,
     best: (n) => `الأفضل: ${n}-عودة`,
-    challengeTitle: '⚔️ مرّر والعب', challengeSub: 'نفس التدفّق للجميع · مرّر الجهاز',
+    challengeTitle: 'مرّر والعب', challengeSub: 'نفس التدفّق للجميع · مرّر الجهاز',
     chalPickDiff: 'الصعوبة', players: 'اللاعبون (2–10)', addPl: '＋ إضافة لاعب', startCh: '⚔️ ابدأ',
     needTwo: 'أضف لاعبين على الأقل.', chalRounds: 'الجولات', chalRoundsHint: 'كل لاعب يلعب مرة في الجولة',
     roundNofM: (n, m) => `الجولة ${n}/${m}`, chalTurnKicker: 'دورك', chalBulletSame: 'نفس التدفّق في هذه الجولة',
