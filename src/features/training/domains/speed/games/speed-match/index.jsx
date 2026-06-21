@@ -8,6 +8,8 @@ import {
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
+import HubScienceLink from '../../../../shared/HubScienceLink';
+import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
@@ -986,15 +988,25 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
               t={t}
               isAr={isAr}
               playSfx={playSfx}
-              onFree={() => maybeCoach(startFreeMode)}
+              onFree={() => maybeCoach(() => setPhase('freeIntro'))}
               onLevels={() => maybeCoach(() => setPhase('diff'))}
               onChallenge={() => maybeCoach(() => setPhase('chal'))}
             />
+            <HubScienceLink gameId="speed-match" isAr={isAr} playSfx={playSfx} />
           </div>
         </div>
       )}
 
-      {phase === 'freeIntro' && null}
+      {phase === 'freeIntro' && (
+        <SurvivalIntro
+          isAr={isAr}
+          playSfx={playSfx}
+          title={t.freeIntroTitle}
+          body={t.freeIntroBody}
+          onReady={startFreeMode}
+          onBack={() => setPhase('hub')}
+        />
+      )}
 
       {phase === 'diff' && (
         <TrainingDifficultySelect

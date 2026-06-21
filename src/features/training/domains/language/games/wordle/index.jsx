@@ -8,6 +8,8 @@ import {
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import HubScienceLink from '../../../../shared/HubScienceLink';
+import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { useCoach } from '../../../../shared/coach/useCoach';
@@ -802,33 +804,20 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
               onLevels={() => maybeCoach(() => setPhase('diff'))}
               onChallenge={() => maybeCoach(() => setPhase('chal'))}
             />
+            <HubScienceLink gameId="wordle" isAr={isAr} playSfx={playSfx} />
           </div>
         </div>
       )}
 
       {phase === 'freeIntro' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar
-              onBack={() => setPhase('hub')}
-              playSfx={playSfx}
-              variant="paper"
-            />
-            <h2 className="ct-fq-training-title">{t.freeIntroTitle}</h2>
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.freeIntroBody}</p>
-            <button
-              type="button"
-              className="ct-fq-btn ct-fq-btn-pri"
-              onClick={() => {
-                playSfx('click');
-                clearPlay();
-                startFree();
-              }}
-            >
-              {t.freeIntroReady}
-            </button>
-          </div>
-        </div>
+        <SurvivalIntro
+          isAr={isAr}
+          playSfx={playSfx}
+          title={t.freeIntroTitle}
+          body={t.freeIntroBody}
+          onReady={() => { clearPlay(); startFree(); }}
+          onBack={() => setPhase('hub')}
+        />
       )}
 
       {phase === 'diff' && (

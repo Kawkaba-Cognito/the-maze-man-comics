@@ -270,6 +270,7 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
   return (
     <ModeShell
       storageKey="mm_mem_pal"
+      scienceId="paired-associates"
       title={{ en: 'Paired Associates', ar: 'الأزواج المترابطة' }}
       hints={{
         free: { en: 'Endless practice — pairs grow', ar: 'تدريب مفتوح — تزداد الأزواج' },

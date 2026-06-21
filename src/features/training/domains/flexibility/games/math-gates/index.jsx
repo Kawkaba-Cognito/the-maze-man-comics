@@ -329,6 +329,7 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
   return (
     <ModeShell
       storageKey="mm_flx_mathgates"
+      scienceId="math-gates"
       title={{ en: 'Math Gates', ar: 'بوابات الحساب' }}
       hints={{
         free: { en: 'Run the right gate — operations keep changing', ar: 'اعبُر البوابة الصحيحة — العمليات تتغيّر' },

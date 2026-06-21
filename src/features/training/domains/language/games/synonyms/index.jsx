@@ -47,6 +47,7 @@ export default function SynonymsGame({ onBack, workoutMode = false }) {
   return (
     <ModeShell
       storageKey="mm_lang_syn"
+      scienceId="synonyms"
       title={{ en: 'Synonyms & Antonyms', ar: 'المرادفات والأضداد' }}
       hints={{
         free: { en: 'Endless practice — no fail', ar: 'تدريب مفتوح — بلا خسارة' },

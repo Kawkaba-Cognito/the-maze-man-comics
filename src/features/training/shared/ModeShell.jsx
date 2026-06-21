@@ -1,6 +1,8 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { TrainingScreenShell, TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from './TrainingScreens';
 import { TrainingChallengeHandoff } from './TrainingChrome';
+import HubScienceLink from './HubScienceLink';
+import SurvivalIntro from './SurvivalIntro';
 
 /*
  * ModeShell — the standard 3-mode flow shared by the newer training games,
@@ -39,6 +41,7 @@ export default function ModeShell({
   workoutMode = false,
   renderEngine,
   pass = {},
+  scienceId,
 }) {
   const passCfg = { trials: 8, scoreLabel: { en: 'Score', ar: 'النتيجة' }, lowerBetter: false, diff: 'med', ...pass };
 
@@ -117,7 +120,7 @@ export default function ModeShell({
   const startMode = (m) => {
     playSfx?.('click');
     setMode(m);
-    if (m === 'free') setPhase('play');
+    if (m === 'free') setPhase('free-intro');
     else if (m === 'levels') setPhase('diff');
     else setPhase('pp-setup');
   };
@@ -128,6 +131,11 @@ export default function ModeShell({
   }
   if (phase === 'pp-play') {
     return renderEngine({ mode: 'passplay', diff: passCfg.diff, level: null, seed: seedRef.current, attempt: { trials: passCfg.trials }, onResult: onPassResult, onExit: goMenu });
+  }
+
+  // ── Survival intro ──
+  if (phase === 'free-intro') {
+    return <SurvivalIntro isAr={isAr} playSfx={playSfx} onBack={goMenu} onReady={() => setPhase('play')} />;
   }
 
   // ── Menu ──
@@ -141,6 +149,7 @@ export default function ModeShell({
     return (
       <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} title={T} tag={isAr ? 'تدريب' : 'training'} hub>
         <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />
+        <HubScienceLink gameId={scienceId} isAr={isAr} playSfx={playSfx} />
       </TrainingScreenShell>
     );
   }

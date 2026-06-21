@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import { TrainingMenuBar, TrainingPlayHeader, TrainingQuitModal, TrainingChallengeHandoff } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
+import HubScienceLink from '../../../../shared/HubScienceLink';
+import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { useCoach } from '../../../../shared/coach/useCoach';
@@ -378,17 +380,21 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
               onReplayTutorial={replayTutorial} replayHint={t.replayTutorial}
               center={<div className="ct-fq-hub-attn-head"><div className="ct-fq-hub-attn-big">{t.title}</div><div className="ct-fq-hub-attn-sub">{t.tag}</div></div>} />
             <div className="ct-rv-intro">
-              <div className="ct-fq-training-title ct-fq-training-title-sm">{t.title}</div>
               <p className="ct-fq-sub ct-fq-training-blurb">{t.blurb}</p>
             </div>
             <ReasoningModes t={t} isAr={isAr} playSfx={playSfx}
-              onFree={() => maybeCoach(startFree)}
+              onFree={() => maybeCoach(() => setPhase('freeIntro'))}
               onLevels={() => maybeCoach(() => setPhase('diff'))}
               onChallenge={() => maybeCoach(() => setPhase('chal'))} />
+            <HubScienceLink gameId="raven-matrices" isAr={isAr} playSfx={playSfx} />
           </div>
         </div>
       </div>
     );
+  }
+
+  if (phase === 'freeIntro') {
+    return <SurvivalIntro isAr={isAr} playSfx={playSfx} onReady={startFree} onBack={() => setPhase('hub')} />;
   }
 
   if (phase === 'diff') {

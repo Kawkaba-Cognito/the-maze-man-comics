@@ -242,6 +242,7 @@ export default function TrailMakingGame({ onBack, workoutMode = false }) {
   return (
     <ModeShell
       storageKey="mm_speed_trail"
+      scienceId="trail-making"
       title={{ en: 'Trail Making', ar: 'صل الأرقام' }}
       hints={{
         free: { en: 'Endless practice — no clock', ar: 'تدريب مفتوح — بلا وقت' },

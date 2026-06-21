@@ -314,6 +314,7 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
   return (
     <ModeShell
       storageKey="mm_att_trainswitch"
+      scienceId="train-switch"
       title={{ en: 'Train Switch', ar: 'تبديل المسار' }}
       hints={{
         free: { en: 'Route the trains — endless, with lives', ar: 'وجّه القطارات — مفتوح، مع أرواح' },

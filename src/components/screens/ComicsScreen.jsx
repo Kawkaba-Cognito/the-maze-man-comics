@@ -30,6 +30,93 @@ const HUB_LIGHT = {
   border: '#1a1208',
 };
 
+/**
+ * Crisp per-game line glyph (24×24, stroke = currentColor) drawn inside the
+ * card banner. Keyed by gameKey / sub.game.
+ */
+function GameGlyph({ k, size = 48, color = 'currentColor', strokeWidth = 1.8 }) {
+  const c = {
+    width: size, height: size, viewBox: '0 0 24 24', fill: 'none',
+    stroke: color, strokeWidth, strokeLinecap: 'round', strokeLinejoin: 'round',
+  };
+  switch (k) {
+    case 'speed-match':
+      return (<svg {...c}><rect x="3" y="7" width="6" height="10" rx="1.5" /><rect x="15" y="7" width="6" height="10" rx="1.5" /><line x1="9" y1="12" x2="15" y2="12" /></svg>);
+    case 'piano-tap':
+      return (<svg {...c}><rect x="3" y="5" width="18" height="14" rx="2" /><line x1="9" y1="5" x2="9" y2="19" /><line x1="15" y1="5" x2="15" y2="19" /><rect x="7" y="5" width="4" height="7" rx="1" fill={color} stroke="none" /><rect x="13" y="5" width="4" height="7" rx="1" fill={color} stroke="none" /></svg>);
+    case 'trail-making':
+      return (<svg {...c}><path d="M6 17 L11 8 L17 14" /><circle cx="6" cy="17" r="2" /><circle cx="11" cy="8" r="2" /><circle cx="17" cy="14" r="2" /></svg>);
+    case 'cancel-task':
+      return (<svg {...c}><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /><line x1="12" y1="2" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="22" /><line x1="2" y1="12" x2="5" y2="12" /><line x1="19" y1="12" x2="22" y2="12" /></svg>);
+    case 'mot':
+      return (<svg {...c}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="2.2" fill={color} stroke="none" /><circle cx="17.5" cy="7" r="1.6" fill={color} stroke="none" /><path d="M12 3 A9 9 0 0 1 19 7" /></svg>);
+    case 'train-switch':
+      return (<svg {...c}><rect x="6" y="4" width="12" height="12" rx="2" /><line x1="9" y1="8" x2="15" y2="8" /><circle cx="9.5" cy="12" r="0.9" fill={color} stroke="none" /><circle cx="14.5" cy="12" r="0.9" fill={color} stroke="none" /><line x1="8" y1="16" x2="6.5" y2="20" /><line x1="16" y1="16" x2="17.5" y2="20" /></svg>);
+    case 'memo-span': {
+      const on = { 0: 1, 2: 1, 4: 1, 7: 1 };
+      return (<svg {...c}>{Array.from({ length: 9 }).map((_, i) => (
+        <rect key={i} x={3 + (i % 3) * 6} y={3 + Math.floor(i / 3) * 6} width="5" height="5" rx="1" fill={on[i] ? color : 'none'} />
+      ))}</svg>);
+    }
+    case 'nback':
+      return (<svg {...c}><path d="M20 11.5 A8 8 0 1 0 18 17" /><polyline points="20 6 20 11.5 14.5 11.5" /></svg>);
+    case 'paired-associates':
+      return (<svg {...c}><rect x="3" y="7" width="9" height="12" rx="1.5" /><rect x="12" y="5" width="9" height="12" rx="1.5" /></svg>);
+    case 'rush-hour':
+      return (<svg {...c}><rect x="3" y="3" width="18" height="18" rx="2" /><rect x="6" y="10" width="6" height="4" rx="1" fill={color} stroke="none" /><path d="M15 12 H21" /><path d="M18.5 9.5 L21 12 L18.5 14.5" /></svg>);
+    case 'raven-matrices':
+      return (<svg {...c}><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" /><line x1="15" y1="3" x2="15" y2="21" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="3" y1="15" x2="21" y2="15" /><text x="16.2" y="19.2" fontSize="7" fontFamily="sans-serif" fill={color} stroke="none">?</text></svg>);
+    case 'tower-hanoi': // Colour Sort — a test tube with stacked colour bands
+      return (<svg {...c}><path d="M8.5 3 V14 a3.5 3.5 0 0 0 7 0 V3" /><line x1="7.3" y1="3" x2="16.7" y2="3" /><path d="M9 12.5 V14 a3 3 0 0 0 6 0 V12.5 Z" fill={color} stroke="none" /><rect x="9" y="9" width="6" height="2.6" rx="1.2" fill={color} stroke="none" /><rect x="9" y="5.4" width="6" height="2.6" rx="1.2" fill={color} stroke="none" /></svg>);
+    case 'spatial-stroop':
+      return (<svg {...c}><path d="M4 12 H17" /><path d="M13 8 L17 12 L13 16" /></svg>);
+    case 'flip':
+      return (<svg {...c}><path d="M8 8 V15" /><path d="M5 12 L8 15 L11 12" /><path d="M16 16 V9" /><path d="M13 12 L16 9 L19 12" /></svg>);
+    case 'math-gates':
+      return (<svg {...c}><line x1="4" y1="12" x2="10" y2="12" /><line x1="7" y1="9" x2="7" y2="15" /><line x1="14" y1="9.5" x2="19" y2="14.5" /><line x1="19" y1="9.5" x2="14" y2="14.5" /></svg>);
+    case 'wordle':
+      return (<svg {...c}><rect x="2.5" y="9" width="5" height="6" rx="1" /><rect x="9.5" y="9" width="5" height="6" rx="1" fill={color} stroke="none" /><rect x="16.5" y="9" width="5" height="6" rx="1" /></svg>);
+    case 'synonyms':
+      return (<svg {...c}><circle cx="5.5" cy="12" r="1.4" fill={color} stroke="none" /><circle cx="18.5" cy="12" r="1.4" fill={color} stroke="none" /><path d="M8 12 H16" /><path d="M10 9.5 L8 12 L10 14.5" /><path d="M14 9.5 L16 12 L14 14.5" /></svg>);
+    case 'odd-one-out':
+      return (<svg {...c}><circle cx="6.5" cy="7.5" r="2.3" /><circle cx="15" cy="7.5" r="2.3" /><circle cx="6.5" cy="16" r="2.3" /><rect x="12.4" y="13.4" width="5.2" height="5.2" rx="0.8" fill={color} stroke="none" /></svg>);
+    default:
+      return null;
+  }
+}
+
+/** gameKeys that GameGlyph can draw — used to decide whether to show a banner. */
+const GAME_GLYPH_KEYS = new Set([
+  'speed-match', 'piano-tap', 'trail-making',
+  'cancel-task', 'mot', 'train-switch',
+  'memo-span', 'nback', 'paired-associates',
+  'rush-hour', 'raven-matrices', 'tower-hanoi',
+  'spatial-stroop', 'flip', 'math-gates',
+  'wordle', 'synonyms', 'odd-one-out',
+]);
+
+/**
+ * Card banner — a solid accent panel on the right edge of the card with a
+ * white game glyph (the "Speed style" we picked). Applied to every domain.
+ * Returns null for games that have no glyph yet (keeps the plain card).
+ */
+function CardBanner({ gameKey, accent }) {
+  if (!GAME_GLYPH_KEYS.has(gameKey)) return null;
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        position: 'absolute', top: 0, right: 0, bottom: 0, width: '44%', zIndex: 0,
+        pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+        paddingRight: 20,
+        background: `linear-gradient(90deg, transparent 0%, ${accent}cc 55%, ${accent} 100%)`,
+      }}
+    >
+      <GameGlyph k={gameKey} size={64} color="#fff" strokeWidth={1.7} />
+    </span>
+  );
+}
+
 export default function ComicsScreen() {
   const { switchTab, currentLang, assessmentRequested, consumeAssessmentRequest } = useApp();
   const isAr = currentLang === 'ar';
@@ -194,6 +281,7 @@ export default function ComicsScreen() {
                       setScreen('game');
                     }}
                     style={{
+                      position: 'relative', overflow: 'hidden',
                       display: 'flex', alignItems: 'center', gap: 16,
                       textAlign: isAr ? 'right' : 'left',
                       padding: '18px 20px', borderRadius: 18,
@@ -203,9 +291,11 @@ export default function ComicsScreen() {
                       cursor: 'pointer',
                     }}
                   >
+                    <CardBanner gameKey={sub.game} accent={accent} />
                     <span
                       aria-hidden="true"
                       style={{
+                        position: 'relative', zIndex: 1,
                         width: 50, height: 50, flexShrink: 0, borderRadius: 14,
                         background: accent, color: '#fff',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -215,7 +305,7 @@ export default function ComicsScreen() {
                     >
                       {i + 1}
                     </span>
-                    <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <span style={{ position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
                       <span style={{ fontFamily: "'Bangers', cursive", fontSize: 23, letterSpacing: 1.2, color: HUB_LIGHT.text, lineHeight: 1.05 }}>
                         {subName}
                       </span>
@@ -225,7 +315,7 @@ export default function ComicsScreen() {
                         </span>
                       )}
                     </span>
-                    <span aria-hidden="true" style={{ fontSize: 26, color: accent, transform: isAr ? 'scaleX(-1)' : 'none', flexShrink: 0 }}>
+                    <span aria-hidden="true" style={{ position: 'relative', zIndex: 1, fontSize: 26, color: accent, transform: isAr ? 'scaleX(-1)' : 'none', flexShrink: 0 }}>
                       ›
                     </span>
                   </button>

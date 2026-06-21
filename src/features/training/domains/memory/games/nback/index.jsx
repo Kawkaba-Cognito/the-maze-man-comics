@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import { TrainingMenuBar, TrainingPlayHeader, TrainingChallengeHandoff } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import { createTrialLog } from '../../../../shared/trialLog';
 import MemoObject from '../memo-span/MemoObject';
 import MemoSciencePanel, { memoTip } from '../memo-span/MemoSciencePanel';
@@ -244,12 +245,16 @@ export default function NBackGame({ onBack }) {
             <TrainingMenuBar onBack={onBack} playSfx={playSfx} hubSpaced variant="paper"
               center={<div className="ct-fq-hub-attn-head"><div className="ct-fq-hub-attn-big ct-ms-hub-title">{t.hub}</div><div className="ct-fq-hub-attn-sub">{t.tag}</div></div>} />
             <NBackModes t={t} isAr={isAr} playSfx={playSfx}
-              onFree={() => startFree(Math.max(2, profile.bestN ?? 2))}
+              onFree={() => setPhase('freeIntro')}
               onLevels={() => setPhase('diff')}
               onChallenge={() => setPhase('chal')}
               onScience={() => setSciOpen(true)} />
           </div>
         </div>
+      )}
+
+      {phase === 'freeIntro' && (
+        <SurvivalIntro isAr={isAr} playSfx={playSfx} onReady={() => startFree(Math.max(2, profile.bestN ?? 2))} onBack={() => setPhase('hub')} />
       )}
 
       {phase === 'diff' && (

@@ -36,6 +36,7 @@ import {
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
+import HubScienceLink from '../../../../shared/HubScienceLink';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
@@ -1552,6 +1553,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               onLevels={() => maybeCoach(() => setPhase('diff'))}
               onChallenge={() => maybeCoach(() => setPhase('chal'))}
             />
+            <HubScienceLink gameId="cancel-task" isAr={isAr} playSfx={playSfx} />
           </div>
         </div>
       )}

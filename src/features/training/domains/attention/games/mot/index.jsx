@@ -235,6 +235,7 @@ export default function MotGame({ onBack, workoutMode = false }) {
   return (
     <ModeShell
       storageKey="mm_attn_mot"
+      scienceId="mot"
       title={{ en: 'Target Tracking', ar: 'تتبّع الأهداف' }}
       hints={{
         free: { en: 'Endless practice — no fail', ar: 'تدريب مفتوح — بلا خسارة' },

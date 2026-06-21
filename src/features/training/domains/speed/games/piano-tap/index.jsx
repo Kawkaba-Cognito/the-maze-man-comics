@@ -275,6 +275,7 @@ export default function PianoTapGame({ onBack, workoutMode = false }) {
   return (
     <ModeShell
       storageKey="mm_spd_pianotap"
+      scienceId="piano-tap"
       title={{ en: 'Piano Tap', ar: 'عزف سريع' }}
       hints={{
         free: { en: 'Tap the falling tiles fast — endless, with lives', ar: 'انقر البلاطات الساقطة بسرعة — مفتوح، مع أرواح' },

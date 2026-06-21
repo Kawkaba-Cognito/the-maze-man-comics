@@ -8,6 +8,8 @@ import {
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import HubScienceLink from '../../../../shared/HubScienceLink';
+import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
 import { useCoach } from '../../../../shared/coach/useCoach';
 import CoachOverlay from '../../../../shared/coach/CoachOverlay';
@@ -1187,6 +1189,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
               onLevels={() => maybeCoach(() => setPhase('diff'))}
               onChallenge={() => maybeCoach(() => setPhase('chal'))}
             />
+            <HubScienceLink gameId="spatial-stroop" isAr={isAr} playSfx={playSfx} />
           </div>
         </div>
       )}
@@ -1317,16 +1320,14 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
       )}
 
       {phase === 'freeIntro' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen" style={{ textAlign: 'center', paddingTop: 48 }}>
-            <TrainingMenuBar onBack={() => setPhase('hub')} playSfx={playSfx} variant="paper" />
-            <h2 style={{ fontFamily: isAr ? 'Cairo' : 'Fredoka One', marginTop: 24 }}>{t.freeIntroTitle}</h2>
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.freeIntroBody}</p>
-            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={onFreeIntroReady}>
-              {t.freeIntroReady}
-            </button>
-          </div>
-        </div>
+        <SurvivalIntro
+          isAr={isAr}
+          playSfx={playSfx}
+          title={t.freeIntroTitle}
+          body={t.freeIntroBody}
+          onReady={onFreeIntroReady}
+          onBack={() => setPhase('hub')}
+        />
       )}
 
       {phase === 'play' && chalTurnOpen && !block && chalNames[chalIdx] && (

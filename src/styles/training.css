@@ -362,7 +362,7 @@
     font-weight: 600;
 }
 .ct-fq-training-shell--hub-light .ct-fq-training-screen .ct-fq-sbig {
-    font-size: clamp(2.9rem, 13vw, 3.7rem);
+    font-size: clamp(3.5rem, 16vw, 4.8rem);
     line-height: 1;
 }
 .ct-fq-training-shell--hub-light .ct-fq-training-screen .ct-fq-ies-lbl {
@@ -401,7 +401,7 @@
 /* Attention hub — light mode list (replaces circular maze) */
 .ct-fq-attn-modes {
     width: 100%;
-    max-width: 400px;
+    max-width: 440px;
     margin: clamp(12px, 3vw, 24px) auto 20px;
     padding: 0 max(12px, env(safe-area-inset-left, 0px))
         0 max(12px, env(safe-area-inset-right, 0px));
@@ -415,96 +415,88 @@
 /* Phase 3 — fill the hub: centre the mode list vertically in the space below the
  * menubar so games stop leaving a large empty gap under the cards on tall phones.
  * Works whether the hub has just the cards, or cards + a "science" footer link. */
-.ct-fq-training-screen--hub > .ct-fq-attn-modes { margin-top: auto; margin-bottom: 0; }
-.ct-fq-training-screen--hub > .ct-fq-attn-modes:last-child { margin-bottom: auto; }
+.ct-fq-training-screen--hub > .ct-fq-attn-modes {
+    flex: 1 1 auto;
+    margin-top: clamp(10px, 2.5vh, 22px);
+    margin-bottom: clamp(10px, 2.5vh, 22px);
+    justify-content: space-evenly;
+    gap: clamp(12px, 2vh, 18px);
+}
+/* The three mode cards stretch to share the column so no empty band is left
+ * under the last card on tall screens. */
+.ct-fq-training-screen--hub > .ct-fq-attn-modes > .ct-fq-attn-mode {
+    flex: 1 1 0;
+    min-height: clamp(80px, 12vh, 132px);
+}
 .ct-fq-training-screen--hub > .ct-fq-sci-link { margin-bottom: auto; }
 .ct-fq-attn-mode {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     width: 100%;
     margin: 0;
-    padding: 14px 16px;
-    border-radius: 18px;
-    border: 1px solid rgba(88, 96, 92, 0.14);
+    padding: clamp(16px, 2.2vh, 22px) 18px;
+    border-radius: 20px;
+    border: 2px solid #1a1208;
     background: linear-gradient(168deg, rgba(255, 255, 255, 0.99) 0%, rgba(252, 250, 246, 0.97) 100%);
     box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.94) inset,
-        0 10px 28px rgba(32, 40, 36, 0.06),
-        0 2px 6px rgba(32, 40, 36, 0.04);
+        4px 5px 0 #1a1208,
+        0 1px 0 rgba(255, 255, 255, 0.9) inset;
     cursor: pointer;
     text-align: start;
     font: inherit;
     color: inherit;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 0.16s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.14s ease, box-shadow 0.16s ease;
 }
 .ct-fq-attn-mode:hover {
+    transform: translate(-1px, -1px);
     box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.96) inset,
-        0 14px 32px rgba(32, 40, 36, 0.08),
-        0 0 0 1px rgba(107, 158, 122, 0.1);
-    border-color: rgba(88, 96, 92, 0.2);
+        6px 7px 0 #1a1208,
+        0 1px 0 rgba(255, 255, 255, 0.9) inset;
 }
 .ct-fq-attn-mode:active {
-    transform: scale(0.99);
+    transform: translate(2px, 2px);
+    box-shadow:
+        1px 1px 0 #1a1208,
+        0 1px 0 rgba(255, 255, 255, 0.9) inset;
 }
 .ct-fq-attn-mode:focus-visible {
     outline: 3px solid rgba(107, 158, 122, 0.45);
     outline-offset: 2px;
 }
 .ct-fq-attn-mode--free {
-    border-color: rgba(74, 124, 92, 0.4);
-    background: linear-gradient(168deg, rgba(255, 255, 255, 0.99) 0%, rgba(244, 251, 245, 0.97) 100%);
-    box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.9) inset,
-        0 10px 28px rgba(45, 94, 62, 0.07),
-        0 0 0 1px rgba(74, 124, 92, 0.08);
+    background: linear-gradient(168deg, #ffffff 0%, #e9f6ec 100%);
 }
 .ct-fq-attn-mode--levels {
-    border-color: rgba(196, 142, 74, 0.42);
-    background: linear-gradient(168deg, rgba(255, 255, 255, 0.99) 0%, rgba(255, 251, 242, 0.97) 100%);
-    box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.9) inset,
-        0 10px 28px rgba(120, 80, 40, 0.07),
-        0 0 0 1px rgba(196, 142, 74, 0.1);
+    background: linear-gradient(168deg, #ffffff 0%, #fdf1db 100%);
 }
 .ct-fq-attn-mode--chal {
-    border-color: rgba(176, 96, 92, 0.4);
-    background: linear-gradient(168deg, rgba(255, 255, 255, 0.99) 0%, rgba(255, 247, 246, 0.97) 100%);
-    box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.9) inset,
-        0 10px 28px rgba(120, 52, 48, 0.06),
-        0 0 0 1px rgba(176, 96, 92, 0.08);
+    background: linear-gradient(168deg, #ffffff 0%, #fde9e7 100%);
 }
 .ct-fq-attn-mode-ic {
-    width: 2.85rem;
-    height: 2.85rem;
-    min-width: 2.85rem;
+    width: 3.1rem;
+    height: 3.1rem;
+    min-width: 3.1rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.32rem;
+    font-size: 1.6rem;
     line-height: 1;
     flex-shrink: 0;
-    border-radius: 50%;
-    background: linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 242, 236, 0.94) 100%);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    box-shadow:
-        0 2px 8px rgba(32, 40, 36, 0.06),
-        0 1px 0 rgba(255, 255, 255, 0.88) inset;
+    border-radius: 16px;
+    background: linear-gradient(165deg, #8a8580 0%, #6c6864 100%);
+    border: 2px solid #1a1208;
+    box-shadow: 2px 2px 0 #1a1208;
 }
 .ct-fq-attn-mode--free .ct-fq-attn-mode-ic {
-    background: linear-gradient(165deg, #f3faf4 0%, #e2efe6 100%);
-    border-color: rgba(74, 124, 92, 0.22);
+    background: linear-gradient(165deg, #62b277 0%, #3c8a54 100%);
 }
 .ct-fq-attn-mode--levels .ct-fq-attn-mode-ic {
-    background: linear-gradient(165deg, #fff9f0 0%, #f5eadc 100%);
-    border-color: rgba(196, 142, 74, 0.28);
+    background: linear-gradient(165deg, #ecbb5e 0%, #cf9433 100%);
 }
 .ct-fq-attn-mode--chal .ct-fq-attn-mode-ic {
-    background: linear-gradient(165deg, #fff8f6 0%, #f5e8e6 100%);
-    border-color: rgba(176, 96, 92, 0.25);
+    background: linear-gradient(165deg, #dd7f7a 0%, #bc544e 100%);
 }
 .ct-fq-attn-mode-body {
     flex: 1;
@@ -515,11 +507,11 @@
 }
 .ct-fq-attn-mode-lb {
     font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
-    font-weight: 700;
-    font-size: clamp(1.02rem, 3.6vw, 1.22rem);
+    font-weight: 800;
+    font-size: clamp(1.16rem, 4.4vw, 1.42rem);
     letter-spacing: -0.02em;
     color: #141a17;
-    line-height: 1.2;
+    line-height: 1.18;
     text-transform: none;
     overflow-wrap: anywhere;
     word-break: break-word;
@@ -542,9 +534,9 @@
 }
 .ct-fq-attn-mode-chev {
     flex-shrink: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: rgba(46, 58, 52, 0.38);
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: rgba(26, 18, 8, 0.55);
     line-height: 1;
 }
 [dir='rtl'] .ct-fq-attn-mode {
@@ -1068,20 +1060,23 @@
     width: 100%;
     max-width: 340px;
     padding: 16px 18px;
-    border: none;
+    border: 2px solid #1a1208;
     border-radius: var(--fq-r);
     font-family: inherit;
     font-size: 1.08rem;
     font-weight: 900;
     cursor: pointer;
-    margin-bottom: 9px;
+    margin-bottom: 10px;
     text-align: center;
-    transition: transform 0.14s;
+    transition: transform 0.14s ease, box-shadow 0.16s ease;
 }
-.ct-fq-btn:active { transform: scale(0.97); }
-.ct-fq-btn-pri { background: var(--fq-pri); color: #fff; box-shadow: 0 4px 12px rgba(107, 158, 122, 0.35); }
-.ct-fq-btn-sec { background: var(--fq-acc); color: #fff; }
-.ct-fq-btn-ghost { background: var(--fq-sur); color: var(--fq-mut); border: 1px solid var(--fq-bdr); max-width: 160px; padding: 9px; font-size: 0.82rem; }
+.ct-fq-btn:active { transform: translate(2px, 2px); }
+.ct-fq-btn-pri { background: var(--fq-pri); color: #fff; box-shadow: 4px 5px 0 #1a1208; }
+.ct-fq-btn-pri:hover { transform: translate(-1px, -1px); box-shadow: 6px 7px 0 #1a1208; }
+.ct-fq-btn-pri:active { box-shadow: 1px 1px 0 #1a1208; }
+.ct-fq-btn-sec { background: var(--fq-acc); color: #fff; box-shadow: 4px 5px 0 #1a1208; }
+.ct-fq-btn-ghost { background: var(--fq-sur); color: var(--fq-mut); border: 2px solid #1a1208; box-shadow: 3px 3px 0 #1a1208; max-width: 200px; padding: 11px; font-size: 0.86rem; }
+.ct-fq-btn-ghost:active { box-shadow: 1px 1px 0 #1a1208; }
 
 .ct-fq-db {
     width: 100%;
@@ -1203,6 +1198,112 @@
     opacity: 0.85;
 }
 .ct-fq-sci-link:hover { opacity: 1; }
+
+/* ── Shared Survival-mode intro (every game) ── */
+.ct-survival-intro {
+    display: flex;
+    flex-direction: column;
+    min-height: min(100vh, 100dvh);
+    padding: max(48px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
+    box-sizing: border-box;
+}
+.ct-survival-intro-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 18px;
+    max-width: 420px;
+    width: 100%;
+    margin: 0 auto;
+}
+.ct-survival-intro-badge {
+    width: clamp(92px, 26vw, 124px);
+    height: clamp(92px, 26vw, 124px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 28px;
+    background: linear-gradient(165deg, #62b277 0%, #3c8a54 100%);
+    border: 2px solid #1a1208;
+    box-shadow: 4px 5px 0 #1a1208;
+    font-size: clamp(46px, 13vw, 62px);
+    line-height: 1;
+}
+.ct-survival-intro-title {
+    margin: 0;
+    font-family: 'Fredoka One', 'Bangers', cursive;
+    font-weight: 400;
+    font-size: clamp(2rem, 8vw, 2.8rem);
+    letter-spacing: 0.5px;
+    color: #1a1208;
+}
+[dir='rtl'] .ct-survival-intro-title { font-family: 'Cairo', sans-serif; font-weight: 900; }
+.ct-survival-intro-text {
+    margin: 0;
+    font-size: clamp(1rem, 3.6vw, 1.16rem);
+    line-height: 1.6;
+    font-weight: 500;
+    color: #4a4540;
+}
+.ct-survival-intro-go {
+    width: 100%;
+    max-width: 360px;
+    margin: 16px auto 0;
+    padding: 16px 24px;
+    border: 2px solid #1a1208;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #ffd66b 0%, #f0b94a 100%);
+    color: #1a1208;
+    font-family: 'Outfit', 'Cairo', sans-serif;
+    font-weight: 800;
+    font-size: 1.16rem;
+    cursor: pointer;
+    box-shadow: 4px 5px 0 #1a1208;
+    transition: transform 0.14s ease, box-shadow 0.16s ease;
+}
+.ct-survival-intro-go:hover { transform: translate(-1px, -1px); box-shadow: 6px 7px 0 #1a1208; }
+.ct-survival-intro-go:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #1a1208; }
+
+/* Result screens (any non-hub training screen showing a big score) center their
+   content vertically so there's no dead band under the buttons. The menubar
+   stays pinned at top; everything after it is centered as a group. */
+.ct-fq-training-screen:not(.ct-fq-training-screen--hub):has(.ct-fq-sbig) > :nth-child(2) {
+    margin-top: auto;
+}
+.ct-fq-training-screen:not(.ct-fq-training-screen--hub):has(.ct-fq-sbig) > :last-child {
+    margin-bottom: auto;
+}
+
+/* Chip variant — a clearly pressable pill under the three modes. */
+.ct-fq-sci-link--chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px auto 6px;
+    padding: 10px 20px;
+    border: 2px solid #1a1208;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ffffff 0%, #f4ece1 100%);
+    color: #2a2520;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    box-shadow: 3px 3px 0 #1a1208;
+    opacity: 1;
+    transition: transform 0.14s ease, box-shadow 0.16s ease;
+}
+.ct-fq-sci-link--chip:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 #1a1208;
+}
+.ct-fq-sci-link--chip:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 #1a1208;
+}
+.ct-fq-training-screen--hub > .ct-fq-sci-link--chip { flex: 0 0 auto; }
 
 .ct-fq-assess-intro {
     width: 100%;

@@ -6,6 +6,7 @@ import {
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
@@ -704,7 +705,7 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
             />
             <MemoModes
               t={t} isAr={isAr} playSfx={playSfx}
-              onFree={() => maybeCoach(startFree)}
+              onFree={() => maybeCoach(() => setPhase('freeIntro'))}
               onLevels={() => maybeCoach(() => setPhase('diff'))}
               onChallenge={() => maybeCoach(() => setPhase('chal'))}
               onScience={() => setSciOpen(true)}
@@ -714,6 +715,10 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
       )}
 
       {sciOpen && <MemoSciencePanel isAr={isAr} onClose={() => setSciOpen(false)} />}
+
+      {phase === 'freeIntro' && (
+        <SurvivalIntro isAr={isAr} playSfx={playSfx} onReady={startFree} onBack={() => setPhase('hub')} />
+      )}
 
       {phase === 'diff' && (
         <TrainingDifficultySelect

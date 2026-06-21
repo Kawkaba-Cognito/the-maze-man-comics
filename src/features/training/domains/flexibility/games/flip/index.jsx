@@ -315,6 +315,7 @@ export default function FlipGame({ onBack, workoutMode = false }) {
   return (
     <ModeShell
       storageKey="mm_flx_flip"
+      scienceId="flip"
       title={{ en: 'Flip', ar: 'انقلاب' }}
       hints={{
         free: { en: 'Catch the colour, avoid the other — lives!', ar: 'أمسك اللون وتجنّب الآخر — أرواح!' },

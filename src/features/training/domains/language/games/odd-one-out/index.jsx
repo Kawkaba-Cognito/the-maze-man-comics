@@ -49,6 +49,7 @@ export default function OddOneOutGame({ onBack, workoutMode = false }) {
   return (
     <ModeShell
       storageKey="mm_lang_oddone"
+      scienceId="odd-one-out"
       title={{ en: 'Odd One Out', ar: 'الشاذّ' }}
       hints={{
         free: { en: 'Endless practice — no fail', ar: 'تدريب مفتوح — بلا خسارة' },

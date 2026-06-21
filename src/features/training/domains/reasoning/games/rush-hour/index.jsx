@@ -9,6 +9,7 @@ import {
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
+import HubScienceLink from '../../../../shared/HubScienceLink';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { useCoach } from '../../../../shared/coach/useCoach';
@@ -1274,6 +1275,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
               { k: 'chal', ic: '⚔️', lb: t.challenge, hint: t.hubNodeChallengeHint, on: () => maybeCoach(() => setPhase('chal')) },
             ]}
           />
+          <HubScienceLink gameId="rush-hour" isAr={isAr} playSfx={playSfx} />
         </div>
 
       </div>
