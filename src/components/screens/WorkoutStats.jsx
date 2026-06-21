@@ -103,7 +103,7 @@ export default function WorkoutStats({ onBack }) {
                     {r.status !== 'stable' && ` · ${r.status === 'provisional' ? L('provisional', 'مبدئي') : L('calibrating', 'معايرة')}`}
                   </span>
                 ) : (
-                  <span className="ws-dom-band">{L('unrated — play free mode', 'غير مقيّم — العب الوضع الحر')}</span>
+                  <span className="ws-dom-band">{L('unrated — play survival mode', 'غير مقيّم — العب وضع البقاء')}</span>
                 )}
                 <Sparkline data={(r?.hist || []).map((h) => h.r)} color={cfg?.color || '#e8ac4e'} w={70} h={24} min={0} max={1000} />
               </div>
@@ -113,7 +113,7 @@ export default function WorkoutStats({ onBack }) {
         })}
         <p className="ws-note">{L(
           'Ratings (0–1000) are a smoothed estimate of your free-run performance per exercise — your assessment seeds them, every completed free run refines them, and tomorrow\'s workout difficulty follows them.',
-          'التقييمات (0–1000) تقدير مُنعَّم لأدائك في الوضع الحر لكل تمرين — يبدأ من تقييمك المعرفي، وتصقله كل جولة حرة مكتملة، وصعوبة تمرين الغد تتبعه.',
+          'التقييمات (0–1000) تقدير مُنعَّم لأدائك في وضع البقاء لكل تمرين — يبدأ من تقييمك المعرفي، وتصقله كل جولة حرة مكتملة، وصعوبة تمرين الغد تتبعه.',
         )}</p>
       </div>
 

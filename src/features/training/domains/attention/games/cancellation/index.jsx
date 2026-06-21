@@ -331,18 +331,18 @@ const UI = {
     back: '‹ BACK',
     title: 'CANCELLATION',
     subtitle: 'Selective attention & inhibition',
-    freeMode: '♾️ Free mode',
+    freeMode: '♾️ Survival mode',
     freeMenuSub:
       'Endless rounds that ramp up · 3 lives · a round costs a life if time runs out or you make too many wrong taps · score from taps, clears & streaks',
     freeStrikes: 'Errors',
     lives: 'Lives',
-    freeLvlLabel: (tier, lv) => `Free · ${tier} ${lv}`,
+    freeLvlLabel: (tier, lv) => `Survival · ${tier} ${lv}`,
     freeGameOver: 'Run ended',
     freeRoundsCleared: (n) => `Rounds cleared: ${n}`,
     freeBest: (n) => `Best clears: ${n}`,
     freeBestScoreLine: (n) => `Best score: ${n}`,
     freePlayAgain: 'Play again',
-    freeIntroTitle: 'Free mode',
+    freeIntroTitle: 'Survival mode',
     freeIntroBody:
       'Endless practice that keeps getting harder. You have 3 lives. Each round has its own timer — clear every target before it runs out. Run out of time, or make too many wrong taps in a round, and you lose a life. Score on correct taps and full clears; streaks of clears multiply the bonus. The run only ends when your lives reach zero.',
     freeIntroReady: 'Ready',
@@ -463,7 +463,7 @@ const UI = {
     back: '‹ رجوع',
     title: 'مهمة الإلغاء',
     subtitle: 'انتباه انتقائي وكبح استجابي',
-    freeMode: '♾️ وضع حر',
+    freeMode: '♾️ وضع البقاء',
     freeMenuSub:
       'جولات لا تنتهي وتزداد صعوبة · ٣ أرواح · تخسر روحاً إذا نفد الوقت أو أكثرت النقر الخاطئ في الجولة · النقاط للمسات والإكمال والسلسلة',
     freeStrikes: 'أخطاء',
@@ -474,7 +474,7 @@ const UI = {
     freeBest: (n) => `أفضل إكمال: ${n}`,
     freeBestScoreLine: (n) => `أفضل نقاط: ${n}`,
     freePlayAgain: 'العب مجددًا',
-    freeIntroTitle: 'وضع حر',
+    freeIntroTitle: 'وضع البقاء',
     freeIntroBody:
       'تدريب لا ينتهي ويزداد صعوبة باستمرار. لديك ٣ أرواح. لكل جولة مؤقتها الخاص — أكمل كل الأهداف قبل نفاده. إذا نفد الوقت أو أكثرت النقر الخاطئ في الجولة تخسر روحاً. اجمع النقاط باللمسات الصحيحة وإكمال الجولات؛ السلاسل تضاعف المكافأة. تنتهي المحاولة فقط عند نفاد الأرواح.',
     freeIntroReady: 'جاهز',
@@ -1443,7 +1443,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     if (!r) return { title: '', subtitle: '' };
     if (r.mode === 'free') {
       return {
-        title: isAr ? 'وضع حر' : 'Free mode',
+        title: isAr ? 'وضع البقاء' : 'Survival mode',
         subtitle: t.freeLvlLabel(DM[r.diff]?.label ?? '', r.lv),
       };
     }

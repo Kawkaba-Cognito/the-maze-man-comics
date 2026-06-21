@@ -96,7 +96,7 @@ const UI_EN = {
   title: 'Reasoning',
   subtitle: 'Logic parking puzzle — slide cars to free Maze Man.',
   levels: 'Level mode',
-  free: 'Free mode',
+  free: 'Survival mode',
   challenge: 'Pass n Play',
   level: 'Level',
   optimal: 'Par',
@@ -126,7 +126,7 @@ const UI_EN = {
   hubNodeFreeHint: 'Endless · 3 lives · solve before the timer',
   hubNodeLevelsHint: '3 tiers · 100 levels each',
   hubNodeChallengeHint: 'Same parking jam for everyone · pass the device',
-  freeIntroTitle: 'Free mode',
+  freeIntroTitle: 'Survival mode',
   freeIntroBody:
     'Endless puzzles that get harder. Each puzzle has its own timer — solve it before time runs out. You have 3 lives; run out of time on a puzzle and you lose one. Fewer moves = more points, and streaks multiply your score. The run ends only when your lives reach zero.',
   freeIntroReady: 'Ready',
@@ -171,7 +171,7 @@ const UI_AR = {
   title: 'التفكير',
   subtitle: 'لغز منطقي — حرّك السيارات لإخراج رجل المتاهة.',
   levels: 'وضع المراحل',
-  free: 'وضع حر',
+  free: 'وضع البقاء',
   challenge: 'مرّر والعب',
   level: 'مستوى',
   optimal: 'الهدف',
@@ -201,7 +201,7 @@ const UI_AR = {
   hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · حل قبل المؤقت',
   hubNodeLevelsHint: '٣ صعوبات · ١٠٠ مرحلة لكل صعوبة',
   hubNodeChallengeHint: 'نفس ازدحام المواقف للجميع · مرّر الجهاز',
-  freeIntroTitle: 'وضع حر',
+  freeIntroTitle: 'وضع البقاء',
   freeIntroBody:
     'ألغاز لا تنتهي وتزداد صعوبة. لكل لغز مؤقته الخاص — حلّه قبل نفاد الوقت. لديك ٣ أرواح؛ إذا نفد وقت لغز تخسر روحاً. حركات أقل = نقاط أكثر، والسلسلة تضاعف النقاط. تنتهي المحاولة فقط عند نفاد الأرواح.',
   freeIntroReady: 'جاهز',
@@ -1105,7 +1105,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
     };
   }, [cellSize, playSfx, grid, exitRow, parMoves, syncProgressWin]);
 
-  // Per-puzzle clock for free mode: each board gets its own time based on par.
+  // Per-puzzle clock for survival mode: each board gets its own time based on par.
   useEffect(() => {
     if (phase !== 'play' || playMode !== 'free' || !levelDef || wonRef.current) return;
     const secs = Math.max(30, Math.min(120, (levelDef.par ?? 6) * 5 + 25));

@@ -6,7 +6,7 @@ import { TrainingChallengeHandoff } from './TrainingChrome';
  * ModeShell — the standard 3-mode flow shared by the newer training games,
  * matched to the reference games (Rush Hour etc.):
  *
- *   menu  → Free · Levels · Pass n Play
+ *   menu  → Survival · Levels · Pass n Play
  *   Free       → endless practice, no fail (also what Daily Workout runs)
  *   Levels     → Easy/Medium/Hard → a grid of 100 levels (unlock in order, ✓)
  *   Pass n Play → 2–10 players, N rounds, the SAME board each round (shared
@@ -133,7 +133,7 @@ export default function ModeShell({
   // ── Menu ──
   if (phase === 'menu') {
     const cards = [
-      { k: 'free', ic: '♾️', lb: isAr ? 'حر' : 'Free mode', hint: hints?.free, mod: 'ct-fq-attn-mode--free' },
+      { k: 'free', ic: '♾️', lb: isAr ? 'البقاء' : 'Survival mode', hint: hints?.free, mod: 'ct-fq-attn-mode--free' },
       { k: 'levels', ic: '🎯', lb: isAr ? 'المستويات' : 'Level mode', hint: hints?.levels, mod: 'ct-fq-attn-mode--levels' },
       { k: 'pass', ic: '🎮', lb: isAr ? 'مرّر والعب' : 'Pass n Play', hint: hints?.pass, mod: 'ct-fq-attn-mode--chal' },
     ];

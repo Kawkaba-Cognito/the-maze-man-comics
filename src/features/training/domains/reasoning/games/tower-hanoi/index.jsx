@@ -15,7 +15,7 @@ import { buildColourSortCoachSteps } from './tutorialScript';
 const UI = {
   en: {
     hub: 'Reasoning', tag: 'training', title: 'Colour Sort', replayTutorial: 'Replay tutorial',
-    freeMode: '♾️ Free mode', levelMode: '🎯 Level mode', challengeMode: '⚔️ Pass n Play',
+    freeMode: '♾️ Survival mode', levelMode: '🎯 Level mode', challengeMode: '⚔️ Pass n Play',
     freeHint: 'Endless · 3 skips · grows', levelsHint: '3 tiers · 20 levels each', chalHint: 'Same board · pass the device',
     modesAria: 'Modes — choose a path',
     blurb: 'Gather each colour onto its own peg. Stack only the same colour, never a bigger disk on a smaller one.',
@@ -38,7 +38,7 @@ const UI = {
   },
   ar: {
     hub: 'تفكير', tag: 'تدريب', title: 'فرز الألوان', replayTutorial: 'إعادة الشرح',
-    freeMode: '♾️ وضع حر', levelMode: '🎯 وضع المستويات', challengeMode: '⚔️ مرّر والعب',
+    freeMode: '♾️ وضع البقاء', levelMode: '🎯 وضع المستويات', challengeMode: '⚔️ مرّر والعب',
     freeHint: 'لا ينتهي · ٣ تخطّيات · يكبر', levelsHint: '٣ مستويات · ٢٠ مرحلة لكل منها', chalHint: 'نفس اللوح · مرّر الجهاز',
     modesAria: 'الأوضاع — اختر مسارًا',
     blurb: 'اجمع كل لون على عموده الخاص. كدّس نفس اللون فقط، ولا تضع قرصاً أكبر فوق أصغر.',

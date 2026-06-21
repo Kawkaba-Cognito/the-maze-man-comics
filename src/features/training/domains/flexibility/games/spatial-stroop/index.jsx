@@ -99,7 +99,7 @@ const UI = {
     hubFlex: 'Flexibility',
     hubTag: 'training',
     replayTutorial: 'Replay tutorial',
-    freeMode: '♾️ Free mode',
+    freeMode: '♾️ Survival mode',
     levelMode: '🎯 Level mode',
     challengeMode: '⚔️ Pass n Play',
     hubMapAria: 'Modes',
@@ -114,7 +114,7 @@ const UI = {
       hard: 'Adds reverse trials, rapid flips, heavy conflict.',
     },
     levelsSub: (pop) => `${pop} · ${STROOP_LEVELS_PER_TIER} levels`,
-    freeIntroTitle: 'Free mode',
+    freeIntroTitle: 'Survival mode',
     freeIntroBody:
       'Tap LEFT or RIGHT by the rule on the banner — POINTS, SITS, or COLOUR. The rule keeps flipping. Build combos, grab power-ups, and survive Blitz bursts. Three misses ends the run.',
     freeIntroReady: 'Ready',
@@ -190,13 +190,13 @@ const UI = {
     newCh: 'New game',
     levelHeader: (d, lv) => `${STROOP_DM[d]?.label ?? d} · L${lv}`,
     challengeHeader: 'Pass n Play',
-    freeHeader: 'Free mode',
+    freeHeader: 'Survival mode',
   },
   ar: {
     hubFlex: 'مرونة',
     hubTag: 'تدريب',
     replayTutorial: 'إعادة الشرح',
-    freeMode: '♾️ وضع حر',
+    freeMode: '♾️ وضع البقاء',
     levelMode: '🎯 وضع المستويات',
     challengeMode: '⚔️ مرّر والعب',
     hubMapAria: 'الأوضاع',
@@ -211,7 +211,7 @@ const UI = {
       hard: 'يضيف محاولات معكوسة وانقلابات سريعة وتعارض قوي.',
     },
     levelsSub: (pop) => `${pop} · ${STROOP_LEVELS_PER_TIER} مستوى`,
-    freeIntroTitle: 'وضع حر',
+    freeIntroTitle: 'وضع البقاء',
     freeIntroBody:
       'اضغط يسار أو يمين حسب القاعدة على الشارة — الإشارة أو المكان أو اللون. القاعدة تنقلب باستمرار. اجمع السلاسل، التقط القدرات، وانجُ من الجولات الخاطفة. ثلاثة أخطاء تنهي المحاولة.',
     freeIntroReady: 'جاهز',
@@ -287,7 +287,7 @@ const UI = {
     newCh: 'لعبة جديدة',
     levelHeader: (d, lv) => `${STROOP_DM[d]?.label ?? d} · ${lv}`,
     challengeHeader: 'مرّر والعب',
-    freeHeader: 'وضع حر',
+    freeHeader: 'وضع البقاء',
   },
 };
 
@@ -738,7 +738,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
     setStreakDisplay(s.streak);
     setCatsDisplay(s.categoriesCompleted);
 
-    // effective deadline: blitz shortens, slow-mo lengthens (free mode)
+    // effective deadline: blitz shortens, slow-mo lengthens (survival mode)
     let limit = s.responseLimitMs;
     if (b.mode === 'free') {
       if (s.blitzActive) limit = Math.round(limit * 0.7);

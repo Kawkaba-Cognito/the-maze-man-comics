@@ -40,7 +40,7 @@ import AssessmentReady from '../../../../assessment/AssessmentReady';
 const UI = {
   en: {
     hubMemory: 'Memory', hubTag: 'training', replayTutorial: 'Replay tutorial',
-    freeMode: '♾️ Free mode', levelMode: '🎯 Level mode', challengeMode: '⚔️ Pass n Play',
+    freeMode: '♾️ Survival mode', levelMode: '🎯 Level mode', challengeMode: '⚔️ Pass n Play',
     nbackMode: 'N-Back', scienceLink: '🔬 Why this trains your brain', tipLabel: 'Strategy',
     hubMapAria: 'Modes',
     hubNodeFreeHint: 'Endless · 3 lives · sequence grows',
@@ -77,7 +77,7 @@ const UI = {
     resultsPass: 'Nice memory!', resultsFail: 'Keep practicing',
     stars: 'Stars', spanLabel: 'Span', score: 'Score', lives: 'Lives',
     retry: 'Retry', nextLv: 'Next level', menu: 'Menu',
-    freeTitle: 'Free mode',
+    freeTitle: 'Survival mode',
     freeBest: (n) => `Best span: ${n}`,
     freeScoreLine: (n) => `Score: ${n}`,
     freePlayAgain: 'Play again',
@@ -102,7 +102,7 @@ const UI = {
   },
   ar: {
     hubMemory: 'ذاكرة', hubTag: 'تدريب', replayTutorial: 'إعادة الشرح',
-    freeMode: '♾️ وضع حر', levelMode: '🎯 وضع المستويات', challengeMode: '⚔️ مرّر والعب',
+    freeMode: '♾️ وضع البقاء', levelMode: '🎯 وضع المستويات', challengeMode: '⚔️ مرّر والعب',
     nbackMode: 'العودة-N', scienceLink: '🔬 لماذا يدرّب دماغك', tipLabel: 'استراتيجية',
     hubMapAria: 'الأوضاع',
     hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · يطول التسلسل',
@@ -139,7 +139,7 @@ const UI = {
     resultsPass: 'ذاكرة جيدة!', resultsFail: 'واصل التدريب',
     stars: 'نجوم', spanLabel: 'المدى', score: 'نقاط', lives: 'الأرواح',
     retry: 'إعادة', nextLv: 'المستوى التالي', menu: 'القائمة',
-    freeTitle: 'وضع حر',
+    freeTitle: 'وضع البقاء',
     freeBest: (n) => `أفضل مدى: ${n}`,
     freeScoreLine: (n) => `نقاط: ${n}`,
     freePlayAgain: 'العب مجدداً',
@@ -227,7 +227,7 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
   const [sciOpen, setSciOpen] = useState(false);
   const taughtDirsRef = useRef(loadTaughtDirs());
 
-  // Free mode
+  // Survival mode
   const [freeLives, setFreeLives] = useState(MS_FREE_LIVES);
   const [freeScore, setFreeScore] = useState(0);
   const freeLivesRef = useRef(MS_FREE_LIVES);

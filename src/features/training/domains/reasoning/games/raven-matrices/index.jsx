@@ -15,7 +15,7 @@ import { buildRavenCoachSteps } from './tutorialScript';
 const UI = {
   en: {
     hub: 'Reasoning', tag: 'training', title: 'Matrix Reasoning', replayTutorial: 'Replay tutorial',
-    freeMode: '♾️ Free mode', levelMode: '🎯 Level mode', challengeMode: '⚔️ Pass n Play',
+    freeMode: '♾️ Survival mode', levelMode: '🎯 Level mode', challengeMode: '⚔️ Pass n Play',
     freeHint: 'Endless · 3 lives · adapts to you', levelsHint: '3 tiers · 20 levels each', chalHint: 'Same puzzles · pass the device',
     modesAria: 'Modes — choose a path',
     blurb: 'Find the figure that completes the pattern. Each row and column follows a hidden rule.',
@@ -39,7 +39,7 @@ const UI = {
   },
   ar: {
     hub: 'تفكير', tag: 'تدريب', title: 'استدلال المصفوفات', replayTutorial: 'إعادة الشرح',
-    freeMode: '♾️ وضع حر', levelMode: '🎯 وضع المستويات', challengeMode: '⚔️ مرّر والعب',
+    freeMode: '♾️ وضع البقاء', levelMode: '🎯 وضع المستويات', challengeMode: '⚔️ مرّر والعب',
     freeHint: 'لا ينتهي · ٣ أرواح · يتكيّف معك', levelsHint: '٣ مستويات · ٢٠ مرحلة لكل منها', chalHint: 'نفس الألغاز · مرّر الجهاز',
     modesAria: 'الأوضاع — اختر مسارًا',
     blurb: 'اعثر على الشكل الذي يُكمل النمط. كل صف وعمود يتبع قاعدة خفية.',

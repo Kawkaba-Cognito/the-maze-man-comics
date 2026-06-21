@@ -49,7 +49,7 @@ const UI = {
     title: 'Word Maze',
     subtitle: 'Connect letters to spell words',
     replayTutorial: 'Replay tutorial',
-    freeMode: '♾️ Free mode',
+    freeMode: '♾️ Survival mode',
     levelMode: '🎯 Level mode',
     challengeMode: '⚔️ Pass n Play',
     hubMapAria: 'Modes',
@@ -68,7 +68,7 @@ const UI = {
     time: 'Time',
     lvl: 'Level',
     resultsLevelRetryTitle: 'Try again',
-    freeIntroTitle: 'Free mode',
+    freeIntroTitle: 'Survival mode',
     freeIntroBody:
       'Endless grids that get harder. Each grid asks for a few words before its timer runs out. You have 3 lives — miss the target in time and you lose one. The run ends only when your lives reach zero.',
     freeIntroReady: 'Ready',
@@ -106,7 +106,7 @@ const UI = {
     quitLose: 'This run will be lost.',
     yesQuit: 'Yes, quit',
     keep: 'Keep playing',
-    freeLvl: (d, lv) => `Free · ${d} L${lv}`,
+    freeLvl: (d, lv) => `Survival · ${d} L${lv}`,
     resultsPass: 'Level complete',
     resultsFail: 'Time up — try again',
     stars: 'Stars',
@@ -126,7 +126,7 @@ const UI = {
     levelHeader: (d, lv) => `${WORDLE_DM[d]?.label ?? d} · L${lv}`,
     levelMeta: (n, min) => `Find ${n} words · ${min}+ letters`,
     challengeHeader: 'Pass n Play',
-    freeHeader: 'Free mode',
+    freeHeader: 'Survival mode',
     minLetters: (n) => `Min ${n} letters`,
     formulaHint: 'Any real word you can connect on the grid counts. Longer words score more.',
   },
@@ -138,7 +138,7 @@ const UI = {
     title: 'متاهة الكلمات',
     subtitle: 'وصّل الحروف لتكوين كلمات',
     replayTutorial: 'إعادة الشرح',
-    freeMode: '♾️ وضع حر',
+    freeMode: '♾️ وضع البقاء',
     levelMode: '🎯 وضع المستويات',
     challengeMode: '⚔️ مرّر والعب',
     hubMapAria: 'الأوضاع',
@@ -157,7 +157,7 @@ const UI = {
     time: 'الوقت',
     lvl: 'مستوى',
     resultsLevelRetryTitle: 'حاول مجددًا',
-    freeIntroTitle: 'وضع حر',
+    freeIntroTitle: 'وضع البقاء',
     freeIntroBody:
       'شبكات لا تنتهي وتزداد صعوبة. كل شبكة تطلب بضع كلمات قبل نفاد مؤقتها. لديك ٣ أرواح — إن لم تبلغ الهدف في الوقت تخسر روحاً. تنتهي المحاولة فقط عند نفاد الأرواح.',
     freeIntroReady: 'جاهز',
@@ -215,7 +215,7 @@ const UI = {
     levelHeader: (d, lv) => `${WORDLE_DM[d]?.label ?? d} · ${lv}`,
     levelMeta: (n, min) => `${n} كلمات · ${min}+ أحرف`,
     challengeHeader: 'مرّر والعب',
-    freeHeader: 'وضع حر',
+    freeHeader: 'وضع البقاء',
     minLetters: (n) => `الحد ${n} أحرف`,
     formulaHint: 'الكلمات الأطول = نقاط أكثر. الحروف متجاورة دون تكرار.',
   },
@@ -360,7 +360,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
         stopRoundTimer();
         if (r.practice) {
           // Practice over — swap in the measured 90s grid (same newGrid pattern
-          // as free mode; the round timer restarts via the round.seed effect).
+          // as survival mode; the round timer restarts via the round.seed effect).
           const seed2 = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
           const nr = prepareAssessRound(seed2, lang);
           roundRef.current = nr;
