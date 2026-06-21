@@ -6,7 +6,7 @@ import React from 'react';
  */
 const CONTENT = {
   en: {
-    title: 'The science',
+    title: 'Why this trains your brain',
     intro: 'Every mode here targets a well-studied memory system. Here is what each one trains and why it matters.',
     sections: [
       { h: '🧱 Span (Corsi block-tapping)', b: 'Reproducing a sequence of lit cells is the Corsi test (Corsi, 1972) — the standard measure of visuospatial short-term memory. The number you can hold is your span.' },
@@ -19,7 +19,7 @@ const CONTENT = {
     close: 'Got it',
   },
   ar: {
-    title: 'العلم وراء اللعبة',
+    title: 'لماذا يدرّب دماغك',
     intro: 'كل وضع هنا يستهدف نظام ذاكرة مدروساً جيداً. إليك ما يدرّبه كلٌّ منها ولماذا يهمّ.',
     sections: [
       { h: '🧱 المدى (اختبار كورسي)', b: 'إعادة تسلسل الخلايا المضيئة هو اختبار كورسي (1972) — المقياس المعياري للذاكرة البصرية-المكانية قصيرة المدى. ما تستطيع حفظه هو «مداك».' },

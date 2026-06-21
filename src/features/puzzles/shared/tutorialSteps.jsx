@@ -189,7 +189,7 @@ const SUDOKU = {
 
 // ── KENKEN ──────────────────────────────────────────────────────────
 const kkProblem = [
-  [C('2-', { fg: '#7a4a10', bg: '#fff4dd' }), C('', { bg: '#fffdf8' }), C('6×', { fg: '#7a4a10', bg: '#fff4dd' })],
+  [C('1-', { fg: '#7a4a10', bg: '#fff4dd' }), C('', { bg: '#fffdf8' }), C('6×', { fg: '#7a4a10', bg: '#fff4dd' })],
   [C(''), C('12×', { fg: '#7a4a10', bg: '#fff4dd' }), C('')],
   [C('3÷', { fg: '#7a4a10', bg: '#fff4dd' }), C(''), C('')],
 ];
@@ -214,10 +214,10 @@ const KENKEN = {
     },
     {
       title: 'Cages must work',
-      body: 'Thick outlines are cages. The small label is a target and operation — for example “2−” means the two cells in that cage must subtract to 2.',
+      body: 'Thick outlines are cages. The small label is a target and operation — for example “1−” means the two cells in that cage must subtract to 1.',
       diagram: (
         <DiagramRow>
-          <Captioned label="2− cage"><MiniBoard cell={32} cells={[[C('2', { answer: true, fg: '#c0392b' }), C('3', { answer: true, fg: '#c0392b' })]]} /></Captioned>
+          <Captioned label="1− cage"><MiniBoard cell={32} cells={[[C('2', { answer: true, fg: '#c0392b' }), C('3', { answer: true, fg: '#c0392b' })]]} /></Captioned>
           <Arrow />
           <span className="mm-tut-inline-eq">|2 − 3| = 1 ✓</span>
         </DiagramRow>
@@ -245,10 +245,10 @@ const KENKEN = {
     },
     {
       title: 'الأقفاص يجب أن تتحقق',
-      body: 'الخطوط السميكة هي أقفاص. العلامة الصغيرة هدف وعملية — مثل «2−» تعني أن الخليتين في القفص يجب أن يكون فرقهما ٢.',
+      body: 'الخطوط السميكة هي أقفاص. العلامة الصغيرة هدف وعملية — مثل «1−» تعني أن الخليتين في القفص يجب أن يكون فرقهما ١.',
       diagram: (
         <DiagramRow>
-          <Captioned label="قفص 2−"><MiniBoard cell={32} cells={[[C('2', { answer: true, fg: '#c0392b' }), C('3', { answer: true, fg: '#c0392b' })]]} /></Captioned>
+          <Captioned label="قفص 1−"><MiniBoard cell={32} cells={[[C('2', { answer: true, fg: '#c0392b' }), C('3', { answer: true, fg: '#c0392b' })]]} /></Captioned>
           <Arrow />
           <span className="mm-tut-inline-eq">|٢ − ٣| = ١ ✓</span>
         </DiagramRow>

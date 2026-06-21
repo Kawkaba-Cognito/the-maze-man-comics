@@ -46,17 +46,16 @@ export function NumberPuzzleFrame({
 
   const { steps, onboarding, startGame, openTutorial } = tutorial;
   const trialMode = onboarding.trialActive;
-  const soloTrial = onboarding.phase === 'solo';
 
   const view =
-    onboarding.phase === 'coached' || onboarding.phase === 'solo'
+    onboarding.phase === 'coached'
       ? 'play'
       : onboarding.phase === 'ready'
         ? 'hub'
         : screen;
 
   useEffect(() => {
-    if (onboarding.phase === 'coached' || onboarding.phase === 'solo') {
+    if (onboarding.phase === 'coached') {
       setScreen('play');
     } else if (onboarding.phase === 'ready') {
       setScreen('hub');
@@ -90,7 +89,7 @@ export function NumberPuzzleFrame({
     startGame(n);
   };
 
-  const soloHint = soloTrial && hintReveal
+  const practiceHint = trialMode && hintReveal
     ? makeTrialHint({
         trialState: onboarding.trialState,
         setTrialState: onboarding.setTrialState,
@@ -133,9 +132,7 @@ export function NumberPuzzleFrame({
     );
   }
 
-  const practiceSub = soloTrial
-    ? (isAr ? 'تمرين ٢ — دورك (تلميح مجاني)' : 'Practice 2 — your turn (free hints)')
-    : (isAr ? 'تمرين ١ — اتبع التلميحات' : 'Practice 1 — follow the hints');
+  const practiceSub = isAr ? 'تمرين موجّه — تلميحات مجانية' : 'Guided practice — free hints';
 
   return (
     <PuzzleFrameContext.Provider value={frameCtx}>
@@ -161,8 +158,8 @@ export function NumberPuzzleFrame({
               <span>{t.time(elapsed)}</span>
             </div>
           ) : null}
-          {soloTrial && soloHint ? (
-            <PuzzleToolbar t={t} playSfx={playSfx} hint={soloHint} hintOnly />
+          {trialMode && practiceHint ? (
+            <PuzzleToolbar t={t} playSfx={playSfx} hint={practiceHint} hintOnly />
           ) : null}
           {!trialMode && !solved ? (
             <PuzzleToolbar t={t} playSfx={playSfx} onNew={() => newGame(size)} onReset={onReset} hint={hintCfg} />

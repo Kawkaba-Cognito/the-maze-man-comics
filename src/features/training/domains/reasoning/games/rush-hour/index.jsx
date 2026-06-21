@@ -8,8 +8,9 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
-import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
+import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList, TrainingScreenShell } from '../../../../shared/TrainingScreens';
 import HubScienceLink from '../../../../shared/HubScienceLink';
+import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { useCoach } from '../../../../shared/coach/useCoach';
@@ -1171,114 +1172,28 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
   /* ─── Hub ─── */
   if (phase === 'hub') {
     return (
-      <div
-        className="cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light"
-        dir={isAr ? 'rtl' : 'ltr'}
-        style={{
-          minHeight: '100%',
-          position: 'relative',
-          color: '#141210',
-          fontFamily: "'Outfit', system-ui, sans-serif",
-          overflowX: 'hidden',
-        }}
+      <TrainingScreenShell
+        isAr={isAr}
+        playSfx={playSfx}
+        onBack={onBack}
+        title={t.title}
+        tag={t.training}
+        hub
+        onReplayTutorial={replayTutorial}
+        replayHint={isAr ? 'إعادة الشرح' : 'Replay tutorial'}
       >
-        <div style={{ position: 'relative', zIndex: 2 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              width: '100%',
-              maxWidth: 440,
-              margin: '0 auto',
-              padding:
-                'max(52px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 12px max(14px, env(safe-area-inset-left))',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                playSfx('click');
-                onBack();
-              }}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 12,
-                border: '2px solid #1a1208',
-                background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '3px 3px 0 #1a1208',
-              }}
-            >
-              <IconBack size={18} c="#141210" />
-            </button>
-            <div style={{ flex: 1, textAlign: 'center', padding: '0 8px' }}>
-              <div
-                style={{
-                  fontFamily: isAr ? "'Cairo', 'Outfit', sans-serif" : "'Outfit', system-ui, sans-serif",
-                  fontSize: 'clamp(2rem, 8.2vw, 3.4rem)',
-                  fontWeight: isAr ? 900 : 800,
-                  letterSpacing: isAr ? 0 : '-0.03em',
-                  lineHeight: 1.08,
-                  color: '#141a17',
-                }}
-              >
-                {t.title}
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: '#5c534c',
-                  marginTop: 4,
-                  maxWidth: 280,
-                  marginInline: 'auto',
-                  lineHeight: 1.35,
-                }}
-              >
-                {t.subtitle}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => { playSfx('click'); replayTutorial(); }}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 12,
-                border: '2px solid #1a1208',
-                background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '3px 3px 0 #1a1208',
-                fontFamily: "'Bangers', cursive",
-                fontSize: 16,
-                color: '#141210',
-              }}
-              aria-label={isAr ? 'إعادة الشرح' : 'Replay tutorial'}
-              title={isAr ? 'إعادة الشرح' : 'Replay tutorial'}
-            >
-              ?
-            </button>
-          </div>
-
-          <TrainingModeList
-            isAr={isAr}
-            playSfx={playSfx}
-            items={[
-              { k: 'free', ic: '♾️', lb: t.free, hint: t.hubNodeFreeHint, on: () => maybeCoach(() => setPhase('freeIntro')) },
-              { k: 'levels', ic: '🎯', lb: t.levels, hint: t.hubNodeLevelsHint, on: () => maybeCoach(() => { setPlayMode('levels'); setPhase('pickDiff'); }) },
-              { k: 'chal', ic: '⚔️', lb: t.challenge, hint: t.hubNodeChallengeHint, on: () => maybeCoach(() => setPhase('chal')) },
-            ]}
-          />
-          <HubScienceLink gameId="rush-hour" isAr={isAr} playSfx={playSfx} />
-        </div>
-
-      </div>
+        <p className="ct-fq-sub ct-fq-training-blurb">{t.subtitle}</p>
+        <TrainingModeList
+          isAr={isAr}
+          playSfx={playSfx}
+          items={[
+            { k: 'free', ic: '♾️', lb: t.free, hint: t.hubNodeFreeHint, on: () => maybeCoach(() => setPhase('freeIntro')) },
+            { k: 'levels', ic: '🎯', lb: t.levels, hint: t.hubNodeLevelsHint, on: () => maybeCoach(() => { setPlayMode('levels'); setPhase('pickDiff'); }) },
+            { k: 'chal', ic: '⚔️', lb: t.challenge, hint: t.hubNodeChallengeHint, on: () => maybeCoach(() => setPhase('chal')) },
+          ]}
+        />
+        <HubScienceLink gameId="rush-hour" isAr={isAr} playSfx={playSfx} />
+      </TrainingScreenShell>
     );
   }
 
@@ -1302,87 +1217,15 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
   }
 
   if (phase === 'freeIntro') {
-    const pad = `max(48px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left))`;
     return (
-      <div
-        className="cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light"
-        dir={isAr ? 'rtl' : 'ltr'}
-        style={{
-          minHeight: '100%',
-          position: 'relative',
-          color: '#141210',
-          fontFamily: "'Outfit', system-ui, sans-serif",
-          overflowX: 'hidden',
-          padding: pad,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 420, width: '100%', margin: '0 auto', textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={() => {
-              playSfx('click');
-              setPhase('hub');
-            }}
-            style={{
-              position: 'absolute',
-              top: 0,
-              [isAr ? 'right' : 'left']: 0,
-              width: 34,
-              height: 34,
-              borderRadius: 12,
-              border: '2px solid #1a1208',
-              background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: '3px 3px 0 #1a1208',
-            }}
-          >
-            <IconBack size={18} c="#141210" />
-          </button>
-          <div
-            style={{
-              fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', cursive",
-              fontSize: isAr ? 26 : 28,
-              fontWeight: isAr ? 900 : 400,
-              letterSpacing: isAr ? 0 : 1.5,
-              marginBottom: 20,
-              marginTop: 8,
-            }}
-          >
-            {t.freeIntroTitle}
-          </div>
-          <p
-            style={{
-              fontSize: isAr ? 16 : 15,
-              color: '#4a4540',
-              lineHeight: 1.7,
-              maxWidth: 360,
-              margin: '0 auto 28px',
-              fontWeight: 500,
-              padding: '0 8px',
-            }}
-          >
-            {t.freeIntroBody}
-          </p>
-          <button
-            type="button"
-            className="ct-fq-btn ct-fq-btn-pri"
-            style={{ width: '100%', maxWidth: 280, margin: '0 auto', fontSize: 16, padding: '14px 24px' }}
-            onClick={() => {
-              playSfx('click');
-              startFreeRun();
-            }}
-          >
-            {t.freeIntroReady}
-          </button>
-        </div>
-      </div>
+      <SurvivalIntro
+        isAr={isAr}
+        playSfx={playSfx}
+        title={t.freeIntroTitle}
+        body={t.freeIntroBody}
+        onReady={startFreeRun}
+        onBack={() => setPhase('hub')}
+      />
     );
   }
 

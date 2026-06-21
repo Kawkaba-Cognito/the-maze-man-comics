@@ -48,14 +48,13 @@ export default function BridgesPuzzle({ onBack, onSolved }) {
   const [elapsed, setElapsed] = useState(0);
   const [solved, setSolved] = useState(false);
   const { trialMode, displayState } = useOnboardingPlayState(state, setState, onboarding);
-  const soloTrial = onboarding.phase === 'solo';
   const view =
-    onboarding.phase === 'coached' || onboarding.phase === 'solo'
+    onboarding.phase === 'coached'
       ? 'play'
       : onboarding.phase === 'ready'
         ? 'hub'
         : screen;
-  const soloHint = soloTrial
+  const practiceHint = trialMode
     ? makeTrialHint({
         trialState: onboarding.trialState,
         setTrialState: onboarding.setTrialState,
@@ -89,7 +88,7 @@ export default function BridgesPuzzle({ onBack, onSolved }) {
   }, [state, solved, size, playSfx, awardPoints, trialMode, onSolved]);
 
   useEffect(() => {
-    if (onboarding.phase === 'coached' || onboarding.phase === 'solo') {
+    if (onboarding.phase === 'coached') {
       setScreen('play');
     } else if (onboarding.phase === 'ready') {
       setScreen('hub');
@@ -192,9 +191,7 @@ export default function BridgesPuzzle({ onBack, onSolved }) {
     );
   }
 
-  const practiceSub = soloTrial
-    ? (isAr ? 'تمرين ٢ — دورك (تلميح مجاني)' : 'Practice 2 — your turn (free hints)')
-    : (isAr ? 'تمرين ١ — اتبع التلميحات' : 'Practice 1 — follow the hints');
+  const practiceSub = isAr ? 'تمرين موجّه — تلميحات مجانية' : 'Guided practice — free hints';
 
   return (
     <div className={`ct-puzzle-screen ct-puzzle-screen--play${trialMode ? ' ct-puzzle-screen--trial' : ''}`}>
@@ -222,8 +219,8 @@ export default function BridgesPuzzle({ onBack, onSolved }) {
         {displayState ? (
           <BridgesBoard state={displayState} selected={selected} solved={solved && !trialMode} onIslandTap={onIslandTap} />
         ) : null}
-        {soloTrial && soloHint ? (
-          <PuzzleToolbar t={t} playSfx={playSfx} hint={soloHint} hintOnly />
+        {trialMode && practiceHint ? (
+          <PuzzleToolbar t={t} playSfx={playSfx} hint={practiceHint} hintOnly />
         ) : null}
         {!trialMode ? (
           <>

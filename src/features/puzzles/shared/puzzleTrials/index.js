@@ -37,12 +37,3 @@ export function coachStepMatches(step, action, state, trial) {
   }
   return false;
 }
-
-export function soloStep(isAr) {
-  return {
-    text: isAr
-      ? 'حلّ اللغز بنفسك. استخدم التلميح المجاني إذا احتجت — ثم أكمل اللغز.'
-      : 'Solve the puzzle yourself. Use the free hint button if you need help — then finish the grid.',
-    gate: 'solved',
-  };
-}

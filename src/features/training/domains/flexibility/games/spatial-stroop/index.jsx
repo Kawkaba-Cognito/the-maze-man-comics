@@ -1166,7 +1166,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
       )}
       {phase === 'hub' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
+          <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
             <TrainingMenuBar
               onBack={onBack}
               playSfx={playSfx}

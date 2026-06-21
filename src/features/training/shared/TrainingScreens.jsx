@@ -33,7 +33,7 @@ export function TrainingScreenShell({
       ? <div className="ct-fq-training-title ct-fq-training-title-sm">{title}</div>
       : undefined;
   return (
-    <div className="ct-fq-training-shell ct-fq-training-shell--hub-light" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className="cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light" dir={isAr ? 'rtl' : 'ltr'}>
       <div className={`ct-fq-screen ct-fq-training-screen${hub ? ' ct-fq-training-screen--hub' : ''}`}>
         <TrainingMenuBar
           variant="paper"

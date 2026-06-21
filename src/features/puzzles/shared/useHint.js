@@ -1,6 +1,6 @@
 /**
  * Build the paid-hint config consumed by PuzzleToolbar / NumberPuzzleFrame.
- * Pass cost: 0 for free practice hints (solo trial).
+ * Pass cost: 0 for free practice hints.
  */
 export const HINT_COST = 20;
 
@@ -22,7 +22,7 @@ export function makeHint({ points, spendPoints, solved, state, setState, hintRev
   };
 }
 
-/** Free hint during solo practice — works on onboarding trialState. */
+/** Free hint during practice — works on onboarding trialState. */
 export function makeTrialHint({ trialState, setTrialState, hintReveal, solved, isAr }) {
   return {
     ...makeHint({

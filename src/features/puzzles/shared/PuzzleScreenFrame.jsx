@@ -47,17 +47,16 @@ export default function PuzzleScreenFrame({
 
   const { steps, onboarding, startGame, openTutorial } = tutorial;
   const trialMode = onboarding.trialActive;
-  const soloTrial = onboarding.phase === 'solo';
 
   const view =
-    onboarding.phase === 'coached' || onboarding.phase === 'solo'
+    onboarding.phase === 'coached'
       ? 'play'
       : onboarding.phase === 'ready'
         ? 'hub'
         : screen;
 
   useEffect(() => {
-    if (onboarding.phase === 'coached' || onboarding.phase === 'solo') {
+    if (onboarding.phase === 'coached') {
       setScreen('play');
     } else if (onboarding.phase === 'ready') {
       setScreen('hub');
@@ -93,7 +92,7 @@ export default function PuzzleScreenFrame({
     startGame(n);
   };
 
-  const soloHint = soloTrial && hintReveal
+  const practiceHint = trialMode && hintReveal
     ? makeTrialHint({
         trialState: onboarding.trialState,
         setTrialState: onboarding.setTrialState,
@@ -137,9 +136,7 @@ export default function PuzzleScreenFrame({
     );
   }
 
-  const practiceSub = soloTrial
-    ? (isAr ? 'تمرين ٢ — دورك (تلميح مجاني)' : 'Practice 2 — your turn (free hints)')
-    : (isAr ? 'تمرين ١ — اتبع التلميحات' : 'Practice 1 — follow the hints');
+  const practiceSub = isAr ? 'تمرين موجّه — تلميحات مجانية' : 'Guided practice — free hints';
 
   return (
     <PuzzleFrameContext.Provider value={frameCtx}>
@@ -159,8 +156,8 @@ export default function PuzzleScreenFrame({
         />
         <div className="ct-puzzle-play-body">
           {children}
-          {soloTrial && soloHint ? (
-            <PuzzleToolbar t={t} playSfx={playSfx} hint={soloHint} hintOnly />
+          {trialMode && practiceHint ? (
+            <PuzzleToolbar t={t} playSfx={playSfx} hint={practiceHint} hintOnly />
           ) : null}
           {playExtra}
         </div>

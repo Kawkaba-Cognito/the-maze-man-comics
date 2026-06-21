@@ -16,7 +16,6 @@ function kenkenTrialState(seed, emptyCells) {
 const kenken = {
   trialSize: 3,
   makeCoachedState: () => kenkenTrialState(TRIAL_SEED, [[0, 2], [1, 1]]),
-  makeSoloState: () => kenkenTrialState(TRIAL_SEED + 1, [[0, 2], [1, 1], [2, 0]]),
   isSolved: isKenKenSolved,
   applyAction: (state, action) => {
     if (action.type === 'setCell') return setKenKenCell(state, action.r, action.c, action.value);
@@ -31,7 +30,7 @@ const kenken = {
           { gate: 'select', r: 0, c: 2, text: 'اضغط الخلية الفارغة في الصف العلوي.' },
           { gate: 'setCell', r: 0, c: 2, value: 3, text: 'اختر ٣ من لوحة الأرقام.' },
           { gate: 'next', text: 'استمر — احترم الأقفاص وعدم التكرار في الصفوف والأعمدة.' },
-          { gate: 'solved', text: 'أكمل بقية اللغz — طبّق كل القواعد.' },
+          { gate: 'solved', text: 'أكمل بقية اللغز — طبّق كل القواعد.' },
         ]
       : [
           { gate: 'next', text: '3×3 practice — no points. Learn every rule step by step.' },
@@ -52,7 +51,6 @@ function sudokuTrialState(seed) {
 const sudoku = {
   trialSize: 4,
   makeCoachedState: () => sudokuTrialState(TRIAL_SEED + 10),
-  makeSoloState: () => sudokuTrialState(TRIAL_SEED + 11),
   isSolved: isSudokuSolved,
   applyAction: (state, action) => {
     if (action.type === 'setCell') return setSudokuCell(state, action.r, action.c, action.value);
@@ -81,7 +79,6 @@ const sudoku = {
 const kakuro = {
   trialSize: 6,
   makeCoachedState: () => generateKakuro(6, TRIAL_SEED + 20),
-  makeSoloState: () => generateKakuro(6, TRIAL_SEED + 21),
   isSolved: isKakuroSolved,
   applyAction: (state, action) => {
     if (action.type === 'setCell') return setKakuroCell(state, action.r, action.c, action.value);

@@ -100,19 +100,25 @@ const GAME_GLYPH_KEYS = new Set([
  * white game glyph (the "Speed style" we picked). Applied to every domain.
  * Returns null for games that have no glyph yet (keeps the plain card).
  */
-function CardBanner({ gameKey, accent }) {
+function CardBanner({ gameKey, accent, side = 'right' }) {
   if (!GAME_GLYPH_KEYS.has(gameKey)) return null;
+  const isLeft = side === 'left';
   return (
     <span
       aria-hidden="true"
       style={{
-        position: 'absolute', top: 0, right: 0, bottom: 0, width: '44%', zIndex: 0,
+        position: 'absolute', top: 0, [side]: 0, bottom: 0, width: 'clamp(96px, 30%, 150px)', zIndex: 0,
         pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-        paddingRight: 20,
-        background: `linear-gradient(90deg, transparent 0%, ${accent}cc 55%, ${accent} 100%)`,
+        paddingRight: isLeft ? 0 : 18,
+        paddingLeft: isLeft ? 18 : 0,
+        opacity: 0.96,
+        background: isLeft
+          ? `linear-gradient(270deg, transparent 0%, ${accent}bb 58%, ${accent} 100%)`
+          : `linear-gradient(90deg, transparent 0%, ${accent}bb 58%, ${accent} 100%)`,
+        justifyContent: isLeft ? 'flex-start' : 'flex-end',
       }}
     >
-      <GameGlyph k={gameKey} size={64} color="#fff" strokeWidth={1.7} />
+      <GameGlyph k={gameKey} size={58} color="#fff" strokeWidth={1.7} />
     </span>
   );
 }
@@ -234,40 +240,49 @@ export default function ComicsScreen() {
               <IconBack size={18} c={HUB_LIGHT.text} />
             </button>
           </div>
-          {/* Domain header — big name + colored glyph badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, maxWidth: 520, width: '100%', margin: '0 auto' }}>
-            <span
-              aria-hidden="true"
-              style={{
-                width: 'clamp(58px, 16vw, 76px)', height: 'clamp(58px, 16vw, 76px)', flexShrink: 0,
-                borderRadius: 20, background: accent, color: '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 'clamp(30px, 8vw, 40px)', fontFamily: "'Fredoka One', sans-serif",
-                boxShadow: '4px 4px 0 #1a1208',
-              }}
-            >
-              {d.glyph}
-            </span>
-            <div style={{ textAlign: isAr ? 'right' : 'left' }}>
+          {/* Domain header — badge + name on one row; explanation on its own
+              full-width line below so the logo never collides with the text. */}
+          <div style={{ maxWidth: 560, width: '100%', margin: '0 auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 'clamp(54px, 14vw, 72px)', height: 'clamp(54px, 14vw, 72px)', flexShrink: 0,
+                  borderRadius: 20, background: accent, color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 'clamp(28px, 7vw, 38px)', fontFamily: "'Fredoka One', sans-serif",
+                  boxShadow: '4px 4px 0 #1a1208',
+                }}
+              >
+                {d.glyph}
+              </span>
               <h1
                 style={{
+                  flex: 1, minWidth: 0,
                   fontFamily: "'Fredoka One', Bangers, sans-serif",
-                  fontSize: 'clamp(2rem, 9vw, 3rem)', fontWeight: 400,
-                  margin: 0, lineHeight: 1, color: HUB_LIGHT.text,
+                  fontSize: 'clamp(1.85rem, 7.4vw, 2.85rem)', fontWeight: 400,
+                  margin: 0, lineHeight: 1.02, color: HUB_LIGHT.text,
+                  textAlign: isAr ? 'right' : 'left',
+                  overflowWrap: 'anywhere',
+                  textWrap: 'balance',
                 }}
               >
                 {d.name}
               </h1>
-              {d.desc && <p style={{ margin: '7px 0 0', fontSize: 13, color: HUB_LIGHT.muted, lineHeight: 1.4 }}>{d.desc}</p>}
             </div>
+            {d.desc && (
+              <p style={{ margin: '12px 2px 0', fontSize: 13, color: HUB_LIGHT.muted, lineHeight: 1.55, textAlign: isAr ? 'right' : 'left', maxWidth: 520 }}>
+                {d.desc}
+              </p>
+            )}
           </div>
 
           {/* Cards centered in the remaining space → 1–3 games still look intentional */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '100%', paddingBottom: 12 }}>
-            <p style={{ maxWidth: 520, width: '100%', margin: '0 auto 12px', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: HUB_LIGHT.muted, textAlign: isAr ? 'right' : 'left' }}>
+            <p style={{ maxWidth: 560, width: '100%', margin: '0 auto 12px', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: HUB_LIGHT.muted, textAlign: isAr ? 'right' : 'left' }}>
               {isAr ? 'اختر لعبة' : 'Choose a game'}
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 520, width: '100%', margin: '0 auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 560, width: '100%', margin: '0 auto' }}>
               {pickList.map((sub, i) => {
                 const subName = (isAr && sub.nameAr) ? sub.nameAr : sub.name;
                 const subBlurb = isAr ? sub.blurbAr : sub.blurb;
@@ -282,16 +297,18 @@ export default function ComicsScreen() {
                     }}
                     style={{
                       position: 'relative', overflow: 'hidden',
+                      minHeight: 94,
                       display: 'flex', alignItems: 'center', gap: 16,
+                      flexDirection: isAr ? 'row-reverse' : 'row',
                       textAlign: isAr ? 'right' : 'left',
-                      padding: '18px 20px', borderRadius: 18,
+                      padding: isAr ? '18px 20px 18px 116px' : '18px 116px 18px 20px', borderRadius: 18,
                       border: '2px solid #1a1208',
                       background: 'linear-gradient(180deg, #ffffff 0%, #f7f1eb 100%)',
                       boxShadow: '4px 4px 0 #1a1208',
                       cursor: 'pointer',
                     }}
                   >
-                    <CardBanner gameKey={sub.game} accent={accent} />
+                    <CardBanner gameKey={sub.game} accent={accent} side={isAr ? 'left' : 'right'} />
                     <span
                       aria-hidden="true"
                       style={{
@@ -305,12 +322,12 @@ export default function ComicsScreen() {
                     >
                       {i + 1}
                     </span>
-                    <span style={{ position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      <span style={{ fontFamily: "'Bangers', cursive", fontSize: 23, letterSpacing: 1.2, color: HUB_LIGHT.text, lineHeight: 1.05 }}>
+                    <span style={{ position: 'relative', zIndex: 1, flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '100%' }}>
+                      <span style={{ fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive", fontSize: isAr ? 21 : 23, fontWeight: isAr ? 900 : 400, letterSpacing: isAr ? 0 : 1.2, color: HUB_LIGHT.text, lineHeight: 1.08, overflowWrap: 'anywhere' }}>
                         {subName}
                       </span>
                       {subBlurb && (
-                        <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, color: HUB_LIGHT.muted, lineHeight: 1.35 }}>
+                        <span style={{ fontFamily: isAr ? "'Cairo', sans-serif" : 'Outfit, sans-serif', fontSize: 13, color: HUB_LIGHT.muted, lineHeight: 1.38, overflowWrap: 'anywhere' }}>
                           {subBlurb}
                         </span>
                       )}

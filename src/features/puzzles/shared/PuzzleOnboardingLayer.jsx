@@ -34,10 +34,9 @@ export default function PuzzleOnboardingLayer({
     );
   }
 
-  if (phase === 'coached' || phase === 'solo') {
+  if (phase === 'coached') {
     return (
       <TrialPracticePanel
-        phase={phase}
         step={onboarding.currentCoachStep}
         stepIndex={onboarding.coachIndex}
         totalSteps={onboarding.coachSteps.length}

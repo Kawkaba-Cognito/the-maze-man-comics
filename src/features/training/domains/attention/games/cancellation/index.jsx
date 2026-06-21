@@ -37,6 +37,7 @@ import {
 } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
 import HubScienceLink from '../../../../shared/HubScienceLink';
+import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
@@ -424,7 +425,7 @@ const UI = {
     assessHistBest: (n) => `Best index: ${n}`,
     assessHistRecent: 'Recent sessions',
     assessVsPrev: (d) => (d > 0 ? `▲ +${d}` : d < 0 ? `▼ ${d}` : '— 0'),
-    sciTitle: 'About the science',
+    sciTitle: 'Why this trains your brain',
     sciParas: [
       'This is a cancellation task — one of the most validated attention paradigms in neuropsychology (Mesulam symbol cancellation), used to measure selective and sustained attention, processing speed, and inhibitory control.',
       'Difficulty follows visual-search theory: Easy/Medium are feature search (Treisman & Gelade, 1980); Hard is conjunction search where you must bind shape and colour (Wolfe, Guided Search). Per-level time limits are derived from published search-slope estimates.',
@@ -556,7 +557,7 @@ const UI = {
     assessHistBest: (n) => `أفضل مؤشر: ${n}`,
     assessHistRecent: 'الجلسات الأخيرة',
     assessVsPrev: (d) => (d > 0 ? `▲ +${d}` : d < 0 ? `▼ ${d}` : '— 0'),
-    sciTitle: 'عن العِلم',
+    sciTitle: 'لماذا يدرّب دماغك',
     sciParas: [
       'هذه مهمة إلغاء — من أكثر نماذج قياس الانتباه توثيقاً في علم النفس العصبي (مهمة ميسولام)، تُستخدم لقياس الانتباه الانتقائي والمستمر وسرعة المعالجة وكبح الاستجابة.',
       'تتبع الصعوبة نظرية البحث البصري: السهل/المتوسط بحث سمة (Treisman & Gelade, 1980)؛ والصعب بحث اقتران حيث تربط الشكل واللون (Wolfe). حدود الوقت لكل مستوى مشتقة من تقديرات منشورة لميل البحث.',
@@ -1559,84 +1560,17 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       )}
 
       {phase === 'freeIntro' && (
-        <div
-          className="ct-fq-training-shell ct-fq-training-shell--hub-light"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: 'min(100vh, 100dvh)',
+        <SurvivalIntro
+          isAr={isAr}
+          playSfx={playSfx}
+          title={t.freeIntroTitle}
+          body={t.freeIntroBody}
+          onReady={onFreeIntroReady}
+          onBack={() => {
+            clearPlayRoundState();
+            setPhase('hub');
           }}
-        >
-          <div
-            className="ct-fq-screen ct-fq-training-screen"
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 'min(100vh, 100dvh)',
-              padding: 'max(48px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left))',
-              textAlign: 'center',
-              position: 'relative',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                top: 'max(48px, env(safe-area-inset-top))',
-                left: 0,
-                right: 0,
-                zIndex: 10,
-              }}
-            >
-              <TrainingMenuBar
-                variant="paper"
-                playSfx={playSfx}
-                onBack={() => {
-                  clearPlayRoundState();
-                  setPhase('hub');
-                }}
-                center={null}
-              />
-            </div>
-            <div
-              style={{
-                fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', cursive",
-                fontSize: isAr ? 26 : 28,
-                fontWeight: isAr ? 900 : 400,
-                letterSpacing: isAr ? 0 : 1.5,
-                marginBottom: 20,
-                color: '#141210',
-              }}
-            >
-              {t.freeIntroTitle}
-            </div>
-            <p
-              style={{
-                fontSize: isAr ? 16 : 15,
-                color: '#4a4540',
-                lineHeight: 1.7,
-                maxWidth: 360,
-                margin: '0 auto 28px',
-                fontWeight: 500,
-                padding: '0 8px',
-                fontStyle: 'normal',
-              }}
-            >
-              {t.freeIntroBody}
-            </p>
-            <button
-              type="button"
-              className="ct-fq-btn ct-fq-btn-pri"
-              style={{ width: '100%', maxWidth: 280, fontSize: 16, padding: '14px 24px' }}
-              onClick={onFreeIntroReady}
-            >
-              {t.freeIntroReady}
-            </button>
-          </div>
-        </div>
+        />
       )}
 
       {phase === 'diff' && (

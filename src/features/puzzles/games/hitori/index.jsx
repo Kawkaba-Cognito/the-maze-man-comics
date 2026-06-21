@@ -42,14 +42,13 @@ export default function HitoriPuzzle({ onBack }) {
   const [elapsed, setElapsed] = useState(0);
   const [solved, setSolved] = useState(false);
   const { trialMode, displayState } = useOnboardingPlayState(state, setState, onboarding);
-  const soloTrial = onboarding.phase === 'solo';
   const view =
-    onboarding.phase === 'coached' || onboarding.phase === 'solo'
+    onboarding.phase === 'coached'
       ? 'play'
       : onboarding.phase === 'ready'
         ? 'hub'
         : screen;
-  const soloHint = soloTrial
+  const practiceHint = trialMode
     ? makeTrialHint({ trialState: onboarding.trialState, setTrialState: onboarding.setTrialState, hintReveal, solved: false, isAr })
     : null;
 
@@ -73,7 +72,7 @@ export default function HitoriPuzzle({ onBack }) {
   }, [state, playSfx, trialMode]);
 
   useEffect(() => {
-    if (onboarding.phase === 'coached' || onboarding.phase === 'solo') setScreen('play');
+    if (onboarding.phase === 'coached') setScreen('play');
     else if (onboarding.phase === 'ready') setScreen('hub');
   }, [onboarding.phase]);
 
@@ -130,9 +129,7 @@ export default function HitoriPuzzle({ onBack }) {
     );
   }
 
-  const practiceSub = soloTrial
-    ? (isAr ? 'تمرين ٢ — دورك (تلميح مجاني)' : 'Practice 2 — your turn (free hints)')
-    : (isAr ? 'تمرين ١ — اتبع التلميحات' : 'Practice 1 — follow the hints');
+  const practiceSub = isAr ? 'تمرين موجّه — تلميحات مجانية' : 'Guided practice — free hints';
   const gridSize = displayState?.size ?? size;
 
   return (
@@ -178,8 +175,8 @@ export default function HitoriPuzzle({ onBack }) {
             </div>
           </div>
         ) : null}
-        {soloTrial && soloHint ? (
-          <PuzzleToolbar t={t} playSfx={playSfx} hint={soloHint} hintOnly />
+        {trialMode && practiceHint ? (
+          <PuzzleToolbar t={t} playSfx={playSfx} hint={practiceHint} hintOnly />
         ) : null}
         {!trialMode ? (
           <>

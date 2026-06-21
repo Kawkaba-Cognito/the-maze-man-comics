@@ -2,14 +2,12 @@ import React from 'react';
 
 const UI = {
   en: {
-    coached: 'Practice with hints',
-    solo: 'Your turn',
+    coached: 'Guided practice',
     skipTrial: 'Skip practice',
     next: 'Next',
   },
   ar: {
-    coached: 'تمرين مع تلميحات',
-    solo: 'دورك',
+    coached: 'تمرين موجّه',
     skipTrial: 'تخطّي التمرين',
     next: 'التالي',
   },
@@ -17,7 +15,6 @@ const UI = {
 
 /** Minimal coach bar — text only, no characters. */
 export default function TrialCoachStrip({
-  phase,
   step,
   stepIndex,
   totalSteps,
@@ -27,7 +24,7 @@ export default function TrialCoachStrip({
   playSfx,
 }) {
   const t = UI[isAr ? 'ar' : 'en'];
-  const label = phase === 'solo' ? t.solo : t.coached;
+  const label = t.coached;
   const showNext = step?.gate === 'next';
 
   return (
@@ -35,7 +32,7 @@ export default function TrialCoachStrip({
       <div className="mm-tut-coach-inner">
         <div className="mm-tut-coach-meta">
           <span className="mm-tut-coach-label">{label}</span>
-          {phase === 'coached' && totalSteps > 1 ? (
+          {totalSteps > 1 ? (
             <span className="mm-tut-coach-step">{stepIndex + 1}/{totalSteps}</span>
           ) : null}
         </div>

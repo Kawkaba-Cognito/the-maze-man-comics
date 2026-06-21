@@ -28,7 +28,6 @@ const sliding = {
     const tiles = [1, 2, 3, 4, 5, 6, 7, 0, 8];
     return { ...s, tiles, moves: 0 };
   },
-  makeSoloState: () => createSlidingPuzzle(3, SEED + 1),
   isSolved: isSlidingSolved,
   applyAction: (state, action) => {
     if (action.type === 'slide') return trySlide(state, action.index) || state;
@@ -56,7 +55,6 @@ const sliding = {
 const takuzu = {
   trialSize: 4,
   makeCoachedState: () => generateTakuzu(4, SEED + 2),
-  makeSoloState: () => generateTakuzu(4, SEED + 3),
   isSolved: isTakuzuSolved,
   applyAction: (state, action) => {
     if (action.type === 'toggle') return cycleTakuzuCell(state, action.r, action.c);
@@ -88,7 +86,6 @@ const takuzu = {
 const hitori = {
   trialSize: 5,
   makeCoachedState: () => generateHitori(5, SEED + 4),
-  makeSoloState: () => generateHitori(5, SEED + 5),
   isSolved: isHitoriSolved,
   applyAction: (state, action) => {
     if (action.type === 'toggle') return toggleHitoriCell(state, action.r, action.c);
@@ -120,7 +117,6 @@ const hitori = {
 const crowns = {
   trialSize: 5,
   makeCoachedState: () => generateCrowns(5, SEED + 6),
-  makeSoloState: () => generateCrowns(5, SEED + 7),
   isSolved: isCrownsSolved,
   applyAction: (state, action) => {
     if (action.type === 'cycle') return cycleCrownCell(state, action.r, action.c);
@@ -150,7 +146,6 @@ const crowns = {
 const nonogram = {
   trialSize: 5,
   makeCoachedState: () => generateNonogram(5, SEED + 8),
-  makeSoloState: () => generateNonogram(5, SEED + 9),
   isSolved: isNonogramSolved,
   applyAction: (state, action) => {
     if (action.type === 'setCell') return setNonogramCell(state, action.r, action.c, action.mode);
@@ -180,7 +175,6 @@ const nonogram = {
 const bridges = {
   trialSize: 7,
   makeCoachedState: () => generateBridges(7, SEED + 10),
-  makeSoloState: () => generateBridges(7, SEED + 11),
   isSolved: isBridgesSolved,
   applyAction: (state, action) => {
     if (action.type === 'bridge' && action.from != null && action.to != null) {
@@ -196,7 +190,7 @@ const bridges = {
         ? [
             'تمرين على أصغر شبكة — كل جزيرة لها رقم.',
             'الرقم = عدد الجسور الواجبة لتلك الجزيرة.',
-            'اضغط جزيرتين متجاورتين لإضافة جسr. اضغط مرة أخرى لجسر مزدوج.',
+            'اضغط جزيرتين متجاورتين لإضافة جسر. اضغط مرة أخرى لجسر مزدوج.',
             'الجسور لا تتقاطع. يجب أن تصبح كل الجزر شبكة واحدة.',
           ]
         : [
@@ -212,7 +206,6 @@ const bridges = {
 
 const blockburst = {
   makeCoachedState: () => null,
-  makeSoloState: () => null,
   isSolved: () => true,
   applyAction: (state) => state,
   coachSteps: (isAr) =>

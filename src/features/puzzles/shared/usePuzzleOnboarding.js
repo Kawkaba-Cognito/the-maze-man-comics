@@ -7,13 +7,12 @@ import {
 import {
   coachStepMatches,
   getPuzzleTrial,
-  soloStep,
 } from './puzzleTrials';
-import { coachedCompleteCheer, pickCheer } from './puzzleTrials/trialCheers';
+import { pickCheer } from './puzzleTrials/trialCheers';
 
 /**
- * Puzzle onboarding: carousel → coached trial → solo trial → ready → hub (size pick).
- * phase: null | 'carousel' | 'coached' | 'solo' | 'ready'
+ * Puzzle onboarding: carousel → guided practice → ready → hub (size pick).
+ * phase: null | 'carousel' | 'coached' | 'ready'
  */
 export function usePuzzleOnboarding(puzzleId, isAr, { onOnboardingComplete } = {}) {
   const trial = useMemo(() => getPuzzleTrial(puzzleId), [puzzleId]);
@@ -121,14 +120,6 @@ export function usePuzzleOnboarding(puzzleId, isAr, { onOnboardingComplete } = {
     });
   }, [coachSteps.length, isAr]);
 
-  const goToSolo = useCallback(() => {
-    setCoachIndex(0);
-    setSelectedCell(null);
-    setTrialState(trial.makeSoloState?.());
-    setReinforcement(coachedCompleteCheer(isAr));
-    setPhase('solo');
-  }, [isAr, trial]);
-
   const notifyCoachAction = useCallback(
     (action) => {
       if (phase !== 'coached' || !trial) return;
@@ -137,7 +128,10 @@ export function usePuzzleOnboarding(puzzleId, isAr, { onOnboardingComplete } = {
       if (step.gate === 'next') return;
       if (coachStepMatches(step, action, trialState, trial)) {
         if (coachIndex >= coachSteps.length - 1) {
-          if (trial.isSolved(trialState)) goToSolo();
+          if (trial.isSolved(trialState)) {
+            setReinforcement(isAr ? 'ممتاز! أنت جاهز للعب الحقيقي.' : 'Excellent! You\'re ready for the real game.');
+            setPhase('ready');
+          }
         } else {
           setCoachIndex((i) => {
             const next = i + 1;
@@ -147,7 +141,7 @@ export function usePuzzleOnboarding(puzzleId, isAr, { onOnboardingComplete } = {
         }
       }
     },
-    [coachIndex, coachSteps, goToSolo, isAr, phase, trial, trialState],
+    [coachIndex, coachSteps, isAr, phase, trial, trialState],
   );
 
   const applyTrialAction = useCallback(
@@ -161,27 +155,17 @@ export function usePuzzleOnboarding(puzzleId, isAr, { onOnboardingComplete } = {
     [notifyCoachAction, trial, trialState],
   );
 
-  // Solo phase: watch for solve → ready screen
-  useEffect(() => {
-    if (phase !== 'solo' || !trial || !trialState) return;
-    if (trial.isSolved(trialState)) {
-      setReinforcement(isAr ? 'ممتاز! أنت جاهز للعب الحقيقي.' : 'Excellent! You\'re ready for the real game.');
-      setPhase('ready');
-    }
-  }, [phase, trial, trialState, isAr]);
-
-  // Coached phase: auto-advance on solved for final step
+  // Coached phase: solve the single practice puzzle → ready screen.
   useEffect(() => {
     if (phase !== 'coached' || !trial || !trialState) return;
     const step = coachSteps[coachIndex];
     if (step?.gate === 'solved' && trial.isSolved(trialState)) {
-      goToSolo();
+      setReinforcement(isAr ? 'ممتاز! أنت جاهز للعب الحقيقي.' : 'Excellent! You\'re ready for the real game.');
+      setPhase('ready');
     }
-  }, [phase, trial, trialState, coachSteps, coachIndex, goToSolo]);
+  }, [phase, trial, trialState, coachSteps, coachIndex, isAr]);
 
-  const currentCoachStep = phase === 'solo'
-    ? soloStep(isAr)
-    : coachSteps[coachIndex];
+  const currentCoachStep = coachSteps[coachIndex];
 
   return {
     phase,
@@ -189,8 +173,8 @@ export function usePuzzleOnboarding(puzzleId, isAr, { onOnboardingComplete } = {
     shouldRun: shouldRunOnboarding(puzzleId),
     onboardingOpen: phase != null,
     trialState,
-    trialActive: phase === 'coached' || phase === 'solo',
-    freeHints: phase === 'solo',
+    trialActive: phase === 'coached',
+    freeHints: phase === 'coached',
     reinforcement,
     selectedCell,
     setSelectedCell,
@@ -208,6 +192,5 @@ export function usePuzzleOnboarding(puzzleId, isAr, { onOnboardingComplete } = {
     applyTrialAction,
     setTrialState,
     finishReady,
-    goToSolo,
   };
 }

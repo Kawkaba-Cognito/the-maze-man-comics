@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { GAME_SCIENCE } from './gameScience';
 
 /**
- * Shared "the science" link shown under the three modes on every game hub.
+ * Shared "why this trains your brain" link shown under the three modes on every game hub.
  * Press it to open a panel explaining what the game trains, why it matters for
  * the brain, and which classic paradigm it comes from. Content lives in
  * gameScience.js keyed by the game's gameKey.
@@ -15,7 +15,7 @@ export default function HubScienceLink({ gameId, isAr, playSfx }) {
   const entry = GAME_SCIENCE[gameId];
   if (!entry) return null;
   const c = isAr ? entry.ar : entry.en;
-  const linkLabel = isAr ? 'العلم وراء اللعبة' : 'The science';
+  const brainLabel = isAr ? 'لماذا يدرّب دماغك' : 'Why this trains your brain';
   const closeLabel = isAr ? 'فهمت' : 'Got it';
 
   return (
@@ -25,7 +25,7 @@ export default function HubScienceLink({ gameId, isAr, playSfx }) {
         className="ct-fq-sci-link ct-fq-sci-link--chip"
         onClick={() => { playSfx?.('click'); setOpen(true); }}
       >
-        {`ⓘ ${linkLabel}`}
+        {`ⓘ ${brainLabel}`}
       </button>
       {open && (
         <div
@@ -36,7 +36,7 @@ export default function HubScienceLink({ gameId, isAr, playSfx }) {
           onClick={() => { playSfx?.('click'); setOpen(false); }}
         >
           <div className="ct-ms-sci" onClick={(e) => e.stopPropagation()}>
-            <h2 className="ct-ms-sci-title">{c.title}</h2>
+            <h2 className="ct-ms-sci-title">{brainLabel}</h2>
             <p className="ct-ms-sci-intro">{c.intro}</p>
             <div className="ct-ms-sci-list">
               {c.sections.map((s) => (
