@@ -59,7 +59,25 @@ function pwaPlugin() {
       skipWaiting: true,
       clientsClaim: true,
       cleanupOutdatedCaches: true,
+      // Precache only the lightweight app shell. The app is heavily code-split
+      // (one lazy chunk per training game, plus a ~1 MB word-game bundle), so
+      // precaching ALL of it — vite-plugin-pwa's default — meant the service
+      // worker's install fired ~63 fetches / 2.4 MB at once. On localhost that
+      // finishes instantly, but on GitHub Pages the precache storm stalled the
+      // install indefinitely; while it was stuck, the page's on-demand
+      // import() for a game chunk was starved and never resolved, leaving every
+      // training game frozen on the "Loading…" Suspense fallback. JS/worker
+      // chunks are now fetched on demand and cached at runtime instead, so the
+      // install stays tiny and can't wedge first interaction.
+      globPatterns: ['**/*.{css,html,svg,ico,woff2}', 'manifest.webmanifest', 'icons/**/*.png'],
       runtimeCaching: [
+        {
+          // App + game JS and the maze worker — load from network on demand,
+          // serve cached on repeat visits (offline-capable after first load).
+          urlPattern: ({ request }) => request.destination === 'script' || request.destination === 'worker',
+          handler: 'StaleWhileRevalidate',
+          options: { cacheName: 'app-scripts', expiration: { maxEntries: 100 } },
+        },
         {
           urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com/,
           handler: 'StaleWhileRevalidate',
