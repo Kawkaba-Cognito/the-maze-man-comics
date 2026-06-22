@@ -7,7 +7,8 @@
  */
 import { setupControls } from './roomControls';
 
-const B = window.BABYLON;
+// Babylon loads lazily on maze entry — read it at build time, not module load.
+let B;
 
 const R = 22, H = 3, TK = 1, half = R / 2; // low arena walls (like the gym) → bright & open
 const EXIT = { x: -5, z: -half + 0.4 };
@@ -22,6 +23,7 @@ const TARGETS = [
 ];
 
 export function buildAttentionRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
+  B = window.BABYLON;
   const scene = new B.Scene(engine);
   if (B.ScenePerformancePriority) scene.performancePriority = B.ScenePerformancePriority.Intermediate;
   const sky = B.Color3.FromHexString('#8fc6ef'); // calm cartoon sky (matches the gym)

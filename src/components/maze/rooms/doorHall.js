@@ -12,7 +12,9 @@
  */
 import { setupControls } from './roomControls';
 
-const B = window.BABYLON;
+// Babylon now loads lazily on maze entry, so read it at build time (not at
+// module load, when window.BABYLON is still undefined).
+let B;
 
 const ROOM = 18, H = 5, TK = 0.5, half = ROOM / 2;
 
@@ -23,6 +25,7 @@ const DOORS = [
 ];
 
 export function buildDoorHall({ engine, canvas, overlayEl, ctx, inputRef }) {
+  B = window.BABYLON;
   const scene = new B.Scene(engine);
   if (B.ScenePerformancePriority) scene.performancePriority = B.ScenePerformancePriority.Intermediate;
   // Bright sky background + soft fog (matches the reference's airy feel).

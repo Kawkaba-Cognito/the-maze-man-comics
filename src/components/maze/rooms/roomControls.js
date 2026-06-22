@@ -20,7 +20,8 @@
 import { createKit } from '../worldKit';
 import { buildCharacter } from '../characters3d';
 
-const B = window.BABYLON;
+// Babylon loads lazily on maze entry — read it at build time, not module load.
+let B;
 
 const MAX_SPEED = 0.19;  // top forward walk speed (per frame)
 const MAX_BACK = 0.10;   // slower reverse
@@ -35,6 +36,7 @@ const JUMP_V = 0.23;     // initial jump velocity
 const GRAV = 0.013;      // gravity per frame
 
 export function setupControls(scene, canvas, opts = {}) {
+  B = window.BABYLON;
   const {
     start = new B.Vector3(0, 0, -8),
     startYaw = 0,

@@ -267,16 +267,18 @@ export function AppProvider({ children }) {
       return;
     }
 
-    // Dynamically load Babylon.js only when needed
+    // Dynamically load Babylon.js only when needed (was a blocking <script> in
+    // index.html that froze every boot). Pinned version + SRI; same build the
+    // maze was already running on. If it's already injected, don't add it twice.
     setMazeEntryPending(true); // show transition overlay immediately
+    if (document.getElementById('babylon-cdn')) return;
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/babylonjs@9.3.0/babylon.js';
-    script.integrity = 'sha384-njRDUHF4B9J1R9UM37SngP7eFHJLRAgxTwnC1OfT4w10QPKaL4VTUUDZamQYcpQn';
+    script.id = 'babylon-cdn';
+    script.src = 'https://cdn.babylonjs.com/v9.11.0/babylon.js';
+    script.integrity = 'sha384-uXkmKN+2jmCGDEGble8eNhnYoDGtzLMPhnublKtjvBUzerIVkBQIcJhOeW/hjVuF';
     script.crossOrigin = 'anonymous';
-    script.onload = () => {
-      // Script loaded — enterMaze will fire after the 4s transition
-    };
     script.onerror = () => {
+      script.remove();
       setMazeEntryPending(false);
       alert('Requires internet connection to load 3D Engine.');
     };
@@ -284,6 +286,13 @@ export function AppProvider({ children }) {
   }, [playSfx, stopSpeech]);
 
   const enterMaze = useCallback(() => {
+    // Babylon loads on demand now, so the maze can only mount once it's ready.
+    // If the transition finished before the engine arrived (slow network), keep
+    // the overlay up and poll until BABYLON is available.
+    if (typeof window.BABYLON === 'undefined') {
+      setTimeout(enterMaze, 150);
+      return;
+    }
     setMazeEntryPending(false);
     setMazeVisible(true);
   }, []);

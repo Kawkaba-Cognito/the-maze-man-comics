@@ -18,9 +18,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet" />
-  <!-- Pinned version + Subresource Integrity: if the CDN is tampered with, the
-       browser refuses to run the script. crossorigin required for SRI (CDN sends ACAO:*). -->
-  <script src="https://cdn.babylonjs.com/v9.11.0/babylon.js" integrity="sha384-uXkmKN+2jmCGDEGble8eNhnYoDGtzLMPhnublKtjvBUzerIVkBQIcJhOeW/hjVuF" crossorigin="anonymous"></script>
+  <!-- Babylon.js (the 3D maze engine, several MB) is NOT loaded here. A blocking
+       <script> made it parse + execute on every launch — ~2.5s of frozen boot
+       even on screens that never use 3D. It is now loaded on demand in
+       AppContext.requestMazeEntry (pinned version + SRI) when the player enters
+       the maze. Preconnect so that on-demand fetch starts fast. -->
+  <link rel="preconnect" href="https://cdn.babylonjs.com" crossorigin />
 </head>
 <body>
   <div id="root"></div>

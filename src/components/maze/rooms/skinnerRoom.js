@@ -11,7 +11,8 @@
  */
 import { setupControls } from './roomControls';
 
-const B = window.BABYLON;
+// Babylon loads lazily on maze entry — read it at build time, not module load.
+let B;
 
 const ZONES = {
   entrance: {
@@ -83,6 +84,7 @@ function makeAudio() {
 }
 
 export function buildSkinnerRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
+  B = window.BABYLON;
   const scene = new B.Scene(engine);
   scene.gravity = new B.Vector3(0, -0.5, 0);
   scene.collisionsEnabled = true;
