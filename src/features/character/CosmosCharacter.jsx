@@ -107,16 +107,20 @@ export default React.memo(function CosmosCharacter({
           <clipPath id={id('sphere')}>
             <circle cx={cx} cy={cy} r={R} />
           </clipPath>
-          <filter id={id('soft')} x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="3" />
-          </filter>
+          {/* aura as a gradient (cheap) instead of a large blur filter — big
+              blurs re-rasterise every frame on mobile and caused home-screen jank */}
+          <radialGradient id={id('aura')} cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0%" stopColor={accent} stopOpacity="0.16" />
+            <stop offset="58%" stopColor={accent} stopOpacity="0.05" />
+            <stop offset="100%" stopColor={accent} stopOpacity="0" />
+          </radialGradient>
           <filter id={id('eyeglow')} x="-150%" y="-150%" width="400%" height="400%">
             <feGaussianBlur stdDeviation="1.8" />
           </filter>
         </defs>
 
         {/* aura + ground shadow */}
-        {glow && <circle cx={cx} cy={cy} r="86" fill={accent} opacity="0.06" filter={`url(#${id('soft')})`} />}
+        {glow && <circle cx={cx} cy={cy} r="94" fill={`url(#${id('aura')})`} />}
         <ellipse cx={cx} cy="214" rx="44" ry="7.5" fill={ink} opacity="0.22" />
 
         {/* a few restrained distant stars */}
@@ -137,12 +141,11 @@ export default React.memo(function CosmosCharacter({
         {/* planet body */}
         <circle cx={cx} cy={cy} r={R} fill={`url(#${id('body')})`} stroke={ink} strokeWidth="2.2" />
 
-        {/* surface: restrained nebula band, terminator shade, a couple of craters */}
+        {/* surface: nebula band + craters (no blur filters — the body's radial
+            gradient supplies the lit/shaded form, so this stays cheap to raster) */}
         <g clipPath={`url(#${id('sphere')})`}>
-          <path d={`M${cx - 54},${cy + 10} Q${cx - 4},${cy - 8} ${cx + 40},${cy + 6} Q${cx + 56},${cy + 16} ${cx + 56},${cy + 30} L${cx + 56},${cy + 56} L${cx - 56},${cy + 56} Z`}
-            fill={nebula} opacity="0.35" filter={`url(#${id('soft')})`} />
-          <ellipse cx={cx - 18} cy={cy - 20} rx="26" ry="17" fill={lighten(fur, 0.36)} opacity="0.34" filter={`url(#${id('soft')})`} />
-          <ellipse cx={cx + 24} cy={cy + 22} rx="38" ry="32" fill={ink} opacity="0.28" filter={`url(#${id('soft')})`} />
+          <path d={`M${cx - 54},${cy + 12} Q${cx - 4},${cy - 6} ${cx + 40},${cy + 8} Q${cx + 56},${cy + 18} ${cx + 56},${cy + 32} L${cx + 56},${cy + 56} L${cx - 56},${cy + 56} Z`}
+            fill={nebula} opacity="0.28" />
           <circle cx={cx + 16} cy={cy - 18} r="6" fill={darken(fur, 0.3)} opacity="0.5" />
           <circle cx={cx - 28} cy={cy + 16} r="4.5" fill={darken(fur, 0.3)} opacity="0.45" />
           <circle cx={cx + 34} cy={cy + 2} r="3.4" fill={darken(fur, 0.32)} opacity="0.4" />

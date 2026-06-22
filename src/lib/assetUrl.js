@@ -11,8 +11,8 @@ export function applyAssetCssVars() {
 
   set('--asset-bg-mobile', 'Assets/bg-training-mobile.png');
   set('--asset-bg-desktop', 'Assets/bg-training-desktop.png');
-  set('--asset-splash-mobile', 'Assets/splash-menu-mobile-en.png');
-  set('--asset-splash-desktop', 'Assets/splash-menu-desktop-en.png');
+  set('--asset-splash-mobile', 'Assets/splash-menu-mobile-en.webp');
+  set('--asset-splash-desktop', 'Assets/splash-menu-desktop-en.webp');
   set('--asset-settings-mobile', 'Assets/cancel-task-bg-mobile.png');
   set('--asset-settings-desktop', 'Assets/cancel-task-bg-desktop.png');
 }

@@ -26,6 +26,21 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
   }
 }
 
+/* Prod: when a freshly-deployed service worker takes control of a page that was
+ * already controlled by an older one, reload once so users never sit on a stale
+ * (or half-updated) build — the cause of "it still shows the old version / two
+ * screens overlap on my phone". Guarded so the very first install (which claims
+ * a previously-uncontrolled page) does NOT trigger a reload. */
+if (import.meta.env.PROD && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloading) return;
+    reloading = true;
+    window.location.reload();
+  });
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>

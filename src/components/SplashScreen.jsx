@@ -4,8 +4,8 @@ import SettingsScreen, { AboutModal } from '../features/settings/SettingsScreen'
 import { assetUrl } from '../lib/assetUrl';
 
 const SPLASH_BG = {
-  mobile: 'Assets/splash-menu-mobile-en.png',
-  desktop: 'Assets/splash-menu-desktop-en.png',
+  mobile: 'Assets/splash-menu-mobile-en.webp',
+  desktop: 'Assets/splash-menu-desktop-en.webp',
 };
 
 export default function SplashScreen({ onDone }) {
