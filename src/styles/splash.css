@@ -8,8 +8,11 @@
     inset: 0;
     background-color: #05050f;
     background-image: var(--splash-bg-mobile);
-    background-size: cover;
-    background-position: center top;
+    /* The 9:16 art has planets at its left/right edges, so `cover` clipped them
+       on taller phones. `contain` shows the whole composition centred; the art's
+       own dark margins blend into the matching page background. */
+    background-size: contain;
+    background-position: center;
     background-repeat: no-repeat;
     display: flex;
     flex-direction: column;
@@ -110,6 +113,7 @@
 @media (min-width: 768px) {
     .splash-screen {
         background-image: var(--splash-bg-desktop);
+        background-size: cover;
         background-position: center center;
         justify-content: center;
         align-items: flex-end;
