@@ -1,15 +1,15 @@
 /*
- * SPLASH — full-art main menu (mobile + desktop, EN + AR backgrounds).
- * Title/fox/brain art is baked into splash-menu-*.png; UI overlays menu buttons only.
+ * SPLASH — cosmic brain + planets main menu (mobile 9:16 + desktop 16:9).
+ * Title and menu buttons overlay the art; backgrounds are text-free.
  */
 
 .splash-screen {
     position: fixed;
     inset: 0;
-    background-color: #140c08;
+    background-color: #05050f;
     background-image: var(--splash-bg-mobile);
     background-size: cover;
-    background-position: center center;
+    background-position: center top;
     background-repeat: no-repeat;
     display: flex;
     flex-direction: column;
@@ -25,15 +25,130 @@
     overflow: hidden;
 }
 
+.splash-screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+        180deg,
+        rgba(5, 5, 15, 0.08) 0%,
+        rgba(5, 5, 15, 0) 38%,
+        rgba(5, 5, 15, 0.42) 72%,
+        rgba(5, 5, 15, 0.82) 100%
+    );
+    z-index: 1;
+}
+
+.splash-title {
+    position: absolute;
+    top: max(18px, env(safe-area-inset-top) + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    width: min(92vw, 520px);
+    text-align: center;
+    pointer-events: none;
+}
+
+.splash-title-kicker {
+    font-family: 'Outfit', 'Cairo', sans-serif;
+    font-size: clamp(0.62rem, 2.4vw, 0.78rem);
+    font-weight: 600;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: rgba(212, 176, 110, 0.88);
+    text-shadow: 0 0 18px rgba(255, 190, 80, 0.25);
+    margin-bottom: clamp(4px, 1.2vw, 8px);
+}
+
+.splash-screen[dir="rtl"] .splash-title-kicker {
+    letter-spacing: 0.06em;
+    text-transform: none;
+    font-weight: 700;
+}
+
+.splash-title-main {
+    font-family: 'Cinzel', 'Cormorant Garamond', 'Cairo', serif;
+    font-size: clamp(1.85rem, 8.5vw, 3.1rem);
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 0;
+    background: linear-gradient(
+        180deg,
+        #fff4d4 0%,
+        #e8c878 28%,
+        #c8943e 58%,
+        #8a5a20 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 2px 0 rgba(40, 22, 8, 0.85))
+            drop-shadow(0 0 22px rgba(255, 180, 60, 0.28));
+}
+
+.splash-screen[dir="rtl"] .splash-title-main {
+    font-family: 'Cairo', serif;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    font-weight: 900;
+}
+
+.splash-title-pulse {
+    width: min(180px, 42vw);
+    height: 14px;
+    margin: clamp(6px, 1.5vw, 10px) auto 0;
+    background:
+        linear-gradient(90deg, transparent 0%, rgba(220, 170, 90, 0.15) 18%, rgba(255, 210, 120, 0.55) 50%, rgba(220, 170, 90, 0.15) 82%, transparent 100%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 14'%3E%3Cpath d='M0 7 H18 L22 2 L26 12 L30 4 L34 10 L38 7 H120' fill='none' stroke='rgba(255,200,100,0.75)' stroke-width='1.2'/%3E%3C/svg%3E") center / contain no-repeat;
+    opacity: 0.9;
+}
+
 @media (min-width: 768px) {
     .splash-screen {
         background-image: var(--splash-bg-desktop);
+        background-position: center center;
         justify-content: center;
         align-items: flex-end;
         padding:
             max(20px, env(safe-area-inset-top))
             clamp(24px, 4vw, 48px)
             max(20px, env(safe-area-inset-bottom) + 12px);
+    }
+
+    .splash-title {
+        top: max(24px, env(safe-area-inset-top) + 14px);
+        left: auto;
+        right: clamp(24px, 5vw, 64px);
+        transform: none;
+        width: min(300px, 22vw);
+        text-align: center;
+    }
+
+    .splash-screen[dir="rtl"] .splash-title {
+        right: auto;
+        left: clamp(24px, 5vw, 64px);
+    }
+
+    .splash-title-main {
+        font-size: clamp(1.65rem, 2.8vw, 2.35rem);
+    }
+
+    .splash-title-pulse {
+        width: min(140px, 18vw);
+    }
+
+    .splash-screen::after {
+        background: linear-gradient(
+            90deg,
+            rgba(5, 5, 15, 0.12) 0%,
+            rgba(5, 5, 15, 0) 42%,
+            rgba(5, 5, 15, 0.55) 78%,
+            rgba(5, 5, 15, 0.88) 100%
+        );
     }
 }
 

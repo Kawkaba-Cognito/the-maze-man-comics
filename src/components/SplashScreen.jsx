@@ -4,20 +4,13 @@ import SettingsScreen, { AboutModal } from '../features/settings/SettingsScreen'
 import { assetUrl } from '../lib/assetUrl';
 
 const SPLASH_BG = {
-  en: {
-    mobile: 'Assets/splash-menu-mobile-en.png',
-    desktop: 'Assets/splash-menu-desktop-en.png',
-  },
-  ar: {
-    mobile: 'Assets/splash-menu-mobile-ar.png',
-    desktop: 'Assets/splash-menu-desktop-ar.png',
-  },
+  mobile: 'Assets/splash-menu-mobile-en.png',
+  desktop: 'Assets/splash-menu-desktop-en.png',
 };
 
 export default function SplashScreen({ onDone }) {
   const { currentLang } = useApp();
   const isAr = currentLang === 'ar';
-  const lang = isAr ? 'ar' : 'en';
   const [ready, setReady] = useState(false);
   const [fading, setFading] = useState(false);
   const [quitting, setQuitting] = useState(false);
@@ -33,17 +26,27 @@ export default function SplashScreen({ onDone }) {
   function handleQuit() { setQuitting(true); setTimeout(() => { try { window.close(); } catch (_) {} }, 400); }
 
   const bgStyle = {
-    '--splash-bg-mobile': `url("${assetUrl(SPLASH_BG[lang].mobile)}")`,
-    '--splash-bg-desktop': `url("${assetUrl(SPLASH_BG[lang].desktop)}")`,
+    '--splash-bg-mobile': `url("${assetUrl(SPLASH_BG.mobile)}")`,
+    '--splash-bg-desktop': `url("${assetUrl(SPLASH_BG.desktop)}")`,
   };
 
   return (
     <div
       className={`splash-screen${fading || quitting ? ' splash-out' : ''}`}
       dir={isAr ? 'rtl' : 'ltr'}
-      data-lang={lang}
+      data-lang={isAr ? 'ar' : 'en'}
       style={bgStyle}
     >
+      <header className="splash-title" aria-hidden="true">
+        <p className="splash-title-kicker">
+          {isAr ? 'تدريب معرفي' : 'Cognitive Training'}
+        </p>
+        <h1 className="splash-title-main">
+          {isAr ? 'ألعاب العقل' : 'Brain Games'}
+        </h1>
+        <div className="splash-title-pulse" />
+      </header>
+
       <div className="splash-bottom">
         {ready ? (
           <nav className="splash-menu" aria-label={isAr ? 'القائمة الرئيسية' : 'Main menu'}>

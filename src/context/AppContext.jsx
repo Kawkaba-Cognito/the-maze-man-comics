@@ -28,7 +28,7 @@ const OWNED_KEY = 'mazeman_owned';
 const EQUIP_KEY = 'mazeman_equipped';
 
 function readCharacter() {
-  try { return localStorage.getItem(CHAR_KEY) || 'fox'; } catch { return 'fox'; }
+  try { return localStorage.getItem(CHAR_KEY) || 'cosmos'; } catch { return 'cosmos'; }
 }
 function readJSON(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }

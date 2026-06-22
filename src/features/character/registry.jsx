@@ -1,4 +1,5 @@
 import React from 'react';
+import CosmosCharacter from './CosmosCharacter';
 import FoxCharacter from './FoxCharacter';
 import PersonCharacter from './PersonCharacter';
 
@@ -10,6 +11,13 @@ import PersonCharacter from './PersonCharacter';
  * Add a new character = add an entry here (and a component if it's a new body).
  */
 export const CHARACTERS = [
+  {
+    id: 'cosmos',
+    en: 'The Cosmos',
+    ar: 'الكون',
+    supportsHats: true,
+    Component: CosmosCharacter,
+  },
   {
     id: 'male',
     en: 'Maze Man',
@@ -33,7 +41,7 @@ export const CHARACTERS = [
   },
 ];
 
-export const DEFAULT_CHARACTER = 'fox';
+export const DEFAULT_CHARACTER = 'cosmos';
 
 export function getCharacter(id) {
   return CHARACTERS.find((c) => c.id === id) || CHARACTERS.find((c) => c.id === DEFAULT_CHARACTER);

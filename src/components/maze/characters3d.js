@@ -198,6 +198,102 @@ export function buildCharacter(BABYLON, s, parent, shadowGenerator, variant, equ
     return { rig: { root, update, setSeated: (v) => { seated = v; } } };
   }
 
+  // ───────────────── Cosmos (main) — a living ringed planet ─────────────
+  // Matches the 2D CosmosCharacter: a deep-navy world with a precise thin cyan
+  // double-ring, small legs + arms, a quiet moon and two glowing eyes. Tuned to
+  // read clinical & professional — composed, grounded, no gendered cues.
+  if (variant === 'cosmos') {
+    const CYAN_RIM = [0.1, 0.26, 0.3];
+    const matPlanet = kit.toonMat('cPlanet', 0.145, 0.17, 0.37, { spec: 0.22, rim: CYAN_RIM, rimBias: 0.3, rimPower: 2.6 });
+    const matRing = kit.toonMat('cRing', 0.43, 0.82, 0.87, { emis: [0.18, 0.48, 0.52], spec: 0.4 });
+    const matLimb = kit.toonMat('cLimb', 0.09, 0.1, 0.18, { spec: 0.25, rim: CYAN_RIM, rimBias: 0.35 });
+    const matCap = kit.toonMat('cCap', 0.34, 0.36, 0.52, { spec: 0.2 });
+    const matMoon = kit.toonMat('cMoon', 0.5, 0.52, 0.66, { spec: 0.25 });
+    const matEyeC = kit.toonMat('cEyeC', 0.72, 0.95, 1, { emis: [0.55, 0.9, 1] });
+
+    const R = 1.05;
+    const bodyY = 1.35; // dropped a touch so the legs reach the ground
+
+    // body — the planet
+    const planet = BABYLON.MeshBuilder.CreateSphere('planet', { diameter: R * 2, segments: 24 }, s);
+    add(planet, matPlanet, 0, bodyY, 0);
+
+    // precise thin double ring, cool + glowing
+    const mkRing = (d, th) => {
+      const r = BABYLON.MeshBuilder.CreateTorus('cRingMesh', { diameter: d, thickness: th, tessellation: 48 }, s);
+      add(r, matRing, 0, bodyY, 0); r.rotation.x = Math.PI / 2 - 0.32; r.rotation.z = 0.18; kit.glow(r);
+      return r;
+    };
+    const ring = mkRing(3.15, 0.07);
+    const ring2 = mkRing(2.6, 0.045);
+
+    // glowing eyes on the front (+z) face
+    const mkEye = (x) => {
+      const e = BABYLON.MeshBuilder.CreateSphere('cEye', { diameter: 0.3, segments: 12 }, s);
+      e.scaling = new BABYLON.Vector3(0.8, 1.15, 0.55);
+      add(e, matEyeC, x, bodyY + 0.12, R - 0.08);
+      return trackEye(kit.glow(e));
+    };
+    mkEye(-0.34); mkEye(0.34);
+
+    // arms — pivot at the shoulder so they can swing
+    const mkArm = (sgn) => {
+      const pivot = node('cArmPivot', sgn * 0.78, bodyY - 0.05, 0.1);
+      const upper = BABYLON.MeshBuilder.CreateCylinder('cArm', { diameterTop: 0.2, diameterBottom: 0.16, height: 0.58, tessellation: 10 }, s);
+      upper.material = matLimb; upper.parent = pivot; upper.position.set(sgn * 0.16, -0.26, 0); upper.rotation.z = sgn * -0.5; cast(upper);
+      const hand = BABYLON.MeshBuilder.CreateSphere('cHand', { diameter: 0.26, segments: 10 }, s);
+      hand.material = matCap; hand.parent = pivot; hand.position.set(sgn * 0.34, -0.52, 0); cast(hand);
+      return pivot;
+    };
+    const armL = mkArm(-1), armR = mkArm(1);
+
+    // legs — pivot at the hip so they can walk
+    const mkLeg = (sgn) => {
+      const pivot = node('cLegPivot', sgn * 0.32, bodyY - 0.7, 0);
+      const leg = BABYLON.MeshBuilder.CreateCylinder('cLeg', { diameter: 0.22, height: 0.62, tessellation: 10 }, s);
+      leg.material = matLimb; leg.parent = pivot; leg.position.set(0, -0.31, 0); cast(leg);
+      const foot = BABYLON.MeshBuilder.CreateSphere('cFoot', { diameter: 0.3, segments: 10 }, s);
+      foot.scaling = new BABYLON.Vector3(1, 0.62, 1.35); foot.material = matCap; foot.parent = pivot; foot.position.set(0, -0.6, 0.06); cast(foot);
+      return pivot;
+    };
+    const legL = mkLeg(-1), legR = mkLeg(1);
+
+    // a quiet moon on a slow orbit
+    const moonPivot = node('moonPivot', 0, bodyY, 0); moonPivot.rotation.x = 0.32;
+    const moon = BABYLON.MeshBuilder.CreateSphere('moon', { diameter: 0.34, segments: 12 }, s);
+    moon.material = matMoon; moon.parent = moonPivot; moon.position.set(1.75, 0, 0); cast(moon);
+
+    // gear bone nodes
+    const cHead = node('cHead', 0, bodyY + 1.3, 0); cHead.scaling.setAll(1.1);
+    const cFace = node('cFace', 0, bodyY + 0.1, R);
+    const cNeck = node('cNeck', 0, bodyY - 0.9, 0.4); cNeck.scaling.setAll(1.1);
+    const cBack = node('cBack', 0, bodyY, -R); cBack.scaling.setAll(1.1);
+    applyEquip({ hat: cHead, face: cFace, neck: cNeck, back: cBack });
+
+    let seated = false;
+    const update = (moving, cyc, time = 0, yawVel = 0) => {
+      const L = BABYLON.Scalar.Lerp;
+      blinkTick(time);
+      planet.rotation.y += 0.0035 + (moving ? 0.01 : 0);                       // slow world spin
+      const hop = moving ? Math.abs(Math.sin(cyc)) * 0.06 : Math.sin(time * 1.5) * 0.02;
+      planet.position.y = bodyY + hop;
+      ring.position.y = ring2.position.y = moonPivot.position.y = planet.position.y;
+      root.rotation.z = L(root.rotation.z, BABYLON.Scalar.Clamp(-yawVel * 2, -0.14, 0.14), 0.12); // lean into turns
+      root.rotation.x = L(root.rotation.x, seated ? -0.12 : 0, 0.1);
+      moonPivot.rotation.y += 0.016 + (moving ? 0.02 : 0);                     // moon orbits
+      if (moving) {
+        const sw = Math.sin(cyc) * 0.5;
+        legL.rotation.x = sw; legR.rotation.x = -sw;
+        armL.rotation.x = -sw * 0.6; armR.rotation.x = sw * 0.6;
+      } else {
+        [legL, legR].forEach((l) => { l.rotation.x = L(l.rotation.x, 0, 0.15); });
+        armL.rotation.x = L(armL.rotation.x, Math.sin(time * 1.1) * 0.05, 0.08);
+        armR.rotation.x = L(armR.rotation.x, -Math.sin(time * 1.1) * 0.05, 0.08);
+      }
+    };
+    return { rig: { root, update, setSeated: (v) => { seated = v; } } };
+  }
+
   // ───────────────── Fox (default) — geometric mascot ─────────────────
   // Matches the 2D FoxCharacter: cream muzzle + chest, ink nose, gold inner
   // ears + tail tip; no gems/collar clutter. Bigger head for mascot ratio.
