@@ -1,8 +1,14 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { TrainingScreenShell, TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from './TrainingScreens';
 import { TrainingChallengeHandoff } from './TrainingChrome';
+import PassPlaySetup from './PassPlaySetup';
 import HubScienceLink from './HubScienceLink';
 import SurvivalIntro from './SurvivalIntro';
+import { freshSurvivalSeed } from './survival';
+import { useTrainingTutorial } from './tutorials/useTrainingTutorial';
+import { getTrainingMeta } from './tutorials/trainingMeta';
+import TrainingOnboardingLayer from './tutorials/TrainingOnboardingLayer';
+import { TUTORIAL_UI } from './tutorials/tutorialContent';
 
 /*
  * ModeShell — the standard 3-mode flow shared by the newer training games,
@@ -31,6 +37,7 @@ function seedFor(diff, level) { return ((diff.charCodeAt(0) * 7919) ^ (level * 1
 
 export default function ModeShell({
   storageKey,
+  gameId: gameIdProp,
   title,
   hints,
   diffLabels,
@@ -43,6 +50,19 @@ export default function ModeShell({
   pass = {},
   scienceId,
 }) {
+  const gameId = gameIdProp || scienceId;
+  const tutorial = useTrainingTutorial(gameId, isAr);
+  const meta = getTrainingMeta(gameId);
+  const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
+  const onboardingLayer = tutorial.onboarding.phase ? (
+    <TrainingOnboardingLayer
+      onboarding={tutorial.onboarding}
+      config={meta}
+      steps={tutorial.steps}
+      isAr={isAr}
+      playSfx={playSfx}
+    />
+  ) : null;
   const passCfg = { trials: 8, scoreLabel: { en: 'Score', ar: 'النتيجة' }, lowerBetter: false, diff: 'med', ...pass };
 
   const [prog, setProg] = useState(() => {
@@ -58,10 +78,12 @@ export default function ModeShell({
   // Pass n Play state
   const [players, setPlayers] = useState(['Player 1', 'Player 2']);
   const [rounds, setRounds] = useState(2);
+  const [ppDiff, setPpDiff] = useState(passCfg.diff);
   const [ppView, setPpView] = useState(null);
   const [ppResults, setPpResults] = useState(null);
   const scoresRef = useRef([]);
   const seedRef = useRef(1);
+  const freeSeedRef = useRef(workoutMode ? freshSurvivalSeed() : null);
 
   const dm = useMemo(() => ({
     easy: { label: isAr ? diffLabels.easy.ar : diffLabels.easy.en },
@@ -122,20 +144,34 @@ export default function ModeShell({
     setMode(m);
     if (m === 'free') setPhase('free-intro');
     else if (m === 'levels') setPhase('diff');
-    else setPhase('pp-setup');
+    else {
+      setPpDiff(passCfg.diff);
+      setPhase('pp-setup');
+    }
   };
 
   // ── PLAY (engine) ──
   if (phase === 'play') {
-    return renderEngine({ mode, diff, level, seed: mode === 'levels' ? seedFor(diff, level) : null, attempt: null, onResult: onLevelResult, onExit: workoutMode ? onBack : goMenu });
+    const playSeed = mode === 'levels' ? seedFor(diff, level) : mode === 'free' ? freeSeedRef.current : null;
+    return renderEngine({ mode, diff, level, seed: playSeed, attempt: null, onResult: onLevelResult, onExit: workoutMode ? onBack : goMenu });
   }
   if (phase === 'pp-play') {
-    return renderEngine({ mode: 'passplay', diff: passCfg.diff, level: null, seed: seedRef.current, attempt: { trials: passCfg.trials }, onResult: onPassResult, onExit: goMenu });
+    return renderEngine({ mode: 'passplay', diff: ppDiff, level: null, seed: seedRef.current, attempt: { trials: passCfg.trials }, onResult: onPassResult, onExit: goMenu });
   }
 
   // ── Survival intro ──
   if (phase === 'free-intro') {
-    return <SurvivalIntro isAr={isAr} playSfx={playSfx} onBack={goMenu} onReady={() => setPhase('play')} />;
+    return (
+      <SurvivalIntro
+        isAr={isAr}
+        playSfx={playSfx}
+        onBack={goMenu}
+        onReady={() => {
+          freeSeedRef.current = freshSurvivalSeed();
+          setPhase('play');
+        }}
+      />
+    );
   }
 
   // ── Menu ──
@@ -147,10 +183,14 @@ export default function ModeShell({
       { k: 'chal', ic: '⚔️', lb: isAr ? 'مرّر والعب' : 'Pass n Play', hint: hintTxt(hints?.pass), on: () => startMode('pass') },
     ];
     return (
-      <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} title={T} tag={isAr ? 'تدريب' : 'training'} hub>
-        <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />
-        <HubScienceLink gameId={scienceId} isAr={isAr} playSfx={playSfx} />
-      </TrainingScreenShell>
+      <>
+        <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} title={T} tag={isAr ? 'تدريب' : 'training'} hub
+          onReplayTutorial={tutorial.openTutorial} replayHint={tutLabels.replayTutorial}>
+          <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />
+          <HubScienceLink gameId={scienceId} isAr={isAr} playSfx={playSfx} />
+        </TrainingScreenShell>
+        {onboardingLayer}
+      </>
     );
   }
 
@@ -158,8 +198,9 @@ export default function ModeShell({
   if (phase === 'diff') {
     return (
       <TrainingDifficultySelect
-        isAr={isAr} playSfx={playSfx} onBack={goMenu} title={T}
-        blurb={isAr ? '٣ صعوبات · ١٠٠ مستوى لكل · افتح بالترتيب' : '3 difficulties · 100 levels each · unlock in order'}
+        isAr={isAr} playSfx={playSfx} onBack={goMenu}
+        title={isAr ? 'اختر الصعوبة' : 'Choose Difficulty'}
+        blurb={isAr ? `${T} · ٣ صعوبات · ١٠٠ مستوى لكل · افتح بالترتيب` : `${T} · 3 difficulties · 100 levels each · unlock in order`}
         diffKeys={DIFF_KEYS} dm={dm}
         onPick={(k) => { setDiff(k); setPhase('levels'); }}
       />
@@ -170,7 +211,8 @@ export default function ModeShell({
   if (phase === 'levels') {
     return (
       <TrainingLevelGrid
-        isAr={isAr} playSfx={playSfx} onBack={() => setPhase('diff')} title={`${T} · ${dm[diff].label}`}
+        isAr={isAr} playSfx={playSfx} onBack={() => setPhase('diff')} title={`${dm[diff].label}`}
+        blurb={isAr ? `${T} · ١٠٠ مستوى · افتح بالترتيب` : `${T} · 100 levels · unlock in order`}
         count={levelCount} isUnlocked={isUnlocked} isDone={isDone}
         sublabel={(lv) => `L${lv}`}
         onPick={(lv) => { setLevel(lv); setMode('levels'); setPhase('play'); }}
@@ -206,33 +248,29 @@ export default function ModeShell({
 
   // ── Pass n Play: setup ──
   if (phase === 'pp-setup') {
-    const setName = (i, v) => setPlayers((p) => p.map((x, j) => (j === i ? v : x)));
     return (
-      <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={goMenu} title={isAr ? 'مرّر والعب' : 'Pass n Play'}>
-        <div className="ct-pp-setup">
-          <p className="ct-fq-sub ct-fq-training-blurb">{isAr ? 'نفس اللوحة للجميع كل جولة · مرّر الجهاز · الأفضل يفوز' : 'Same board for everyone each round · pass the device · best score wins'}</p>
-          <div className="ct-pp-sec">{isAr ? 'اللاعبون (2–10)' : 'Players (2–10)'}</div>
-          {players.map((nm, i) => (
-            <div className="ct-pp-row" key={i}>
-              <input className="ct-pp-input" value={nm} onChange={(e) => setName(i, e.target.value)} maxLength={14} />
-              {players.length > 2 && (
-                <button className="ct-pp-x" onClick={() => { playSfx?.('click'); setPlayers((p) => p.filter((_, j) => j !== i)); }}>✕</button>
-              )}
-            </div>
-          ))}
-          {players.length < 10 && (
-            <button className="ct-pp-add" onClick={() => { playSfx?.('click'); setPlayers((p) => [...p, `Player ${p.length + 1}`]); }}>
-              ＋ {isAr ? 'إضافة لاعب' : 'Add player'}
-            </button>
-          )}
-          <div className="ct-pp-sec">{isAr ? 'الجولات' : 'Rounds'}</div>
-          <div className="ct-pp-rounds">
-            {[1, 2, 3, 5].map((r) => (
-              <button key={r} className={`ct-pp-round${rounds === r ? ' sel' : ''}`} onClick={() => { playSfx?.('click'); setRounds(r); }}>{r}</button>
-            ))}
-          </div>
-          <button className="ct-training-btn ct-training-btn--start" style={{ marginTop: 16 }} onClick={startPass}>🎮 {isAr ? 'ابدأ' : 'Start'}</button>
-        </div>
+      <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={goMenu}>
+        <PassPlaySetup
+          isAr={isAr}
+          playSfx={playSfx}
+          diffKeys={DIFF_KEYS}
+          diffLabels={dm}
+          diff={ppDiff}
+          onDiffChange={setPpDiff}
+          players={players}
+          onPlayersChange={setPlayers}
+          rounds={rounds}
+          onRoundsChange={setRounds}
+          roundOptions={[1, 2, 3, 4, 5]}
+          onStart={startPass}
+          labels={{
+            difficulty: isAr ? 'الصعوبة' : 'Difficulty',
+            players: isAr ? 'اللاعبون (2–10)' : 'Players (2–10)',
+            addPlayer: isAr ? '＋ إضافة لاعب' : '＋ Add player',
+            rounds: isAr ? 'الجولات' : 'Rounds',
+            start: isAr ? '⚔️ ابدأ' : '⚔️ Start',
+          }}
+        />
       </TrainingScreenShell>
     );
   }

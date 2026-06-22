@@ -78,32 +78,37 @@ export function TrainingModeList({ items, isAr, playSfx }) {
 }
 
 export function TrainingDifficultySelect({ isAr, playSfx, onBack, title, blurb, diffKeys, dm, descs, onPick }) {
+  const secLabel = isAr ? 'الصعوبة' : 'Difficulty';
   return (
-    <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} title={title}>
-      <div className="ct-fq-diff-body">
-        {blurb ? <p className="ct-fq-sub ct-fq-training-blurb">{blurb}</p> : null}
-        <div className="ct-fq-diff-cards">
-          {diffKeys.map((k) => (
-            <button
-              key={k}
-              type="button"
-              className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training ct-fq-diffcard`}
-              onClick={() => {
-                playSfx?.('click');
-                onPick(k);
-              }}
-            >
-              <span className="ct-fq-diffcard-main">
-                <span className="ct-fq-diffcard-label">{dm[k].label}</span>
-                {descs?.[k] ? <span className="ct-fq-diffcard-desc">{descs[k]}</span> : null}
-              </span>
-              {dm[k].pop ? (
-                <span className="ct-fq-diffcard-meta">
-                  <span className="ct-fq-diffcard-pop">{dm[k].pop}</span>
+    <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack}>
+      <div className="ct-lv-select-body">
+        {title ? <h1 className="ct-lv-hero-title">{title}</h1> : null}
+        {blurb ? <p className="ct-lv-hero-sub">{blurb}</p> : null}
+        <div className="ct-lv-select-card">
+          <div className="ct-lv-sec">{secLabel}</div>
+          <div className="ct-fq-diff-cards ct-fq-diff-cards--lv">
+            {diffKeys.map((k) => (
+              <button
+                key={k}
+                type="button"
+                className={`ct-fq-db ct-fq-db-${k} ct-fq-db-training ct-fq-diffcard`}
+                onClick={() => {
+                  playSfx?.('click');
+                  onPick(k);
+                }}
+              >
+                <span className="ct-fq-diffcard-main">
+                  <span className="ct-fq-diffcard-label">{dm[k].label}</span>
+                  {descs?.[k] ? <span className="ct-fq-diffcard-desc">{descs[k]}</span> : null}
                 </span>
-              ) : null}
-            </button>
-          ))}
+                {dm[k].pop ? (
+                  <span className="ct-fq-diffcard-meta">
+                    <span className="ct-fq-diffcard-pop">{dm[k].pop}</span>
+                  </span>
+                ) : null}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </TrainingScreenShell>
@@ -124,9 +129,11 @@ export function TrainingLevelGrid({
   onPick,
 }) {
   return (
-    <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} title={title}>
-      {blurb ? <p className="ct-fq-sub ct-fq-training-blurb">{blurb}</p> : null}
-      <div className="ct-fq-lg ct-fq-lg-training">
+    <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack}>
+      <div className="ct-lv-grid-wrap">
+        {title ? <h1 className="ct-lv-hero-title">{title}</h1> : null}
+        {blurb ? <p className="ct-lv-hero-sub">{blurb}</p> : null}
+        <div className="ct-fq-lg ct-fq-lg-training">
         {Array.from({ length: count }, (_, i) => i + 1).map((lv) => {
           const un = isUnlocked(lv);
           const dn = isDone(lv);
@@ -147,6 +154,7 @@ export function TrainingLevelGrid({
             </button>
           );
         })}
+        </div>
       </div>
     </TrainingScreenShell>
   );

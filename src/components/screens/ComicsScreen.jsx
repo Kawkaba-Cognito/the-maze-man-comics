@@ -30,6 +30,10 @@ const HUB_LIGHT = {
   border: '#1a1208',
 };
 
+/** Uniform game-card size on the domain pick screen (phone-first). */
+const PICK_CARD_HEIGHT = 112;
+const PICK_BANNER_WIDTH = 'clamp(82px, 26%, 118px)';
+
 /**
  * Crisp per-game line glyph (24×24, stroke = currentColor) drawn inside the
  * card banner. Keyed by gameKey / sub.game.
@@ -107,7 +111,7 @@ function CardBanner({ gameKey, accent, side = 'right' }) {
     <span
       aria-hidden="true"
       style={{
-        position: 'absolute', top: 0, [side]: 0, bottom: 0, width: 'clamp(96px, 30%, 150px)', zIndex: 0,
+        position: 'absolute', top: 0, [side]: 0, bottom: 0, width: PICK_BANNER_WIDTH, zIndex: 0,
         pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
         paddingRight: isLeft ? 0 : 18,
         paddingLeft: isLeft ? 18 : 0,
@@ -297,11 +301,16 @@ export default function ComicsScreen() {
                     }}
                     style={{
                       position: 'relative', overflow: 'hidden',
-                      minHeight: 94,
-                      display: 'flex', alignItems: 'center', gap: 16,
+                      height: PICK_CARD_HEIGHT,
+                      minHeight: PICK_CARD_HEIGHT,
+                      maxHeight: PICK_CARD_HEIGHT,
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      display: 'flex', alignItems: 'center', gap: 12,
                       flexDirection: isAr ? 'row-reverse' : 'row',
                       textAlign: isAr ? 'right' : 'left',
-                      padding: isAr ? '18px 20px 18px 116px' : '18px 116px 18px 20px', borderRadius: 18,
+                      padding: '12px 14px',
+                      borderRadius: 18,
                       border: '2px solid #1a1208',
                       background: 'linear-gradient(180deg, #ffffff 0%, #f7f1eb 100%)',
                       boxShadow: '4px 4px 0 #1a1208',
@@ -313,27 +322,53 @@ export default function ComicsScreen() {
                       aria-hidden="true"
                       style={{
                         position: 'relative', zIndex: 1,
-                        width: 50, height: 50, flexShrink: 0, borderRadius: 14,
+                        width: 46, height: 46, flexShrink: 0, borderRadius: 14,
                         background: accent, color: '#fff',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 24, fontFamily: "'Fredoka One', sans-serif",
+                        fontSize: 22, fontFamily: "'Fredoka One', sans-serif",
                         boxShadow: '2px 2px 0 #1a1208',
                       }}
                     >
                       {i + 1}
                     </span>
-                    <span style={{ position: 'relative', zIndex: 1, flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '100%' }}>
-                      <span style={{ fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive", fontSize: isAr ? 21 : 23, fontWeight: isAr ? 900 : 400, letterSpacing: isAr ? 0 : 1.2, color: HUB_LIGHT.text, lineHeight: 1.08, overflowWrap: 'anywhere' }}>
+                    <span
+                      style={{
+                        position: 'relative', zIndex: 1,
+                        flex: '1 1 auto', minWidth: 0,
+                        paddingInlineEnd: PICK_BANNER_WIDTH,
+                        display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 3,
+                        maxHeight: PICK_CARD_HEIGHT - 24,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
+                          fontSize: isAr ? 18 : 20,
+                          fontWeight: isAr ? 900 : 400,
+                          letterSpacing: isAr ? 0 : 1,
+                          color: HUB_LIGHT.text,
+                          lineHeight: 1.12,
+                        }}
+                      >
                         {subName}
                       </span>
                       {subBlurb && (
-                        <span style={{ fontFamily: isAr ? "'Cairo', sans-serif" : 'Outfit, sans-serif', fontSize: 13, color: HUB_LIGHT.muted, lineHeight: 1.38, overflowWrap: 'anywhere' }}>
+                        <span
+                          style={{
+                            fontFamily: isAr ? "'Cairo', sans-serif" : 'Outfit, sans-serif',
+                            fontSize: 12,
+                            color: HUB_LIGHT.muted,
+                            lineHeight: 1.35,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
                           {subBlurb}
                         </span>
                       )}
-                    </span>
-                    <span aria-hidden="true" style={{ position: 'relative', zIndex: 1, fontSize: 26, color: accent, transform: isAr ? 'scaleX(-1)' : 'none', flexShrink: 0 }}>
-                      ›
                     </span>
                   </button>
                 );

@@ -7,13 +7,6 @@
     position: fixed;
     inset: 0;
     background-color: #05050f;
-    background-image: var(--splash-bg-mobile);
-    /* The 9:16 art has planets at its left/right edges, so `cover` clipped them
-       on taller phones. `contain` shows the whole composition centred; the art's
-       own dark margins blend into the matching page background. */
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -26,6 +19,42 @@
     opacity: 1;
     transition: opacity 0.7s ease;
     overflow: hidden;
+}
+
+/* Background stack: blurred fill → sharp art → UI gradient overlay */
+.splash-art {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.splash-art-blur,
+.splash-art-sharp {
+    position: absolute;
+    inset: 0;
+    background-image: var(--splash-bg-mobile);
+    background-repeat: no-repeat;
+}
+
+/* Full-bleed soft fill — hides letterbox bars on tall/narrow phones */
+.splash-art-blur {
+    inset: -32px;
+    background-size: cover;
+    background-position: center 40%;
+    filter: blur(28px) saturate(1.08) brightness(0.58);
+    transform: scale(1.06);
+}
+
+/* Sharp composition — whole brain + side planets stay visible */
+.splash-art-sharp {
+    background-size: contain;
+    background-position: center 42%;
+}
+
+.splash-screen::before {
+    content: none;
 }
 
 .splash-screen::after {
@@ -112,15 +141,29 @@
 
 @media (min-width: 768px) {
     .splash-screen {
-        background-image: var(--splash-bg-desktop);
-        background-size: cover;
-        background-position: center center;
         justify-content: center;
         align-items: flex-end;
         padding:
             max(20px, env(safe-area-inset-top))
             clamp(24px, 4vw, 48px)
             max(20px, env(safe-area-inset-bottom) + 12px);
+    }
+
+    .splash-art-blur,
+    .splash-art-sharp {
+        background-image: var(--splash-bg-desktop);
+    }
+
+    .splash-art-blur {
+        inset: 0;
+        filter: none;
+        transform: none;
+        background-size: cover;
+        background-position: center center;
+    }
+
+    .splash-art-sharp {
+        display: none;
     }
 
     .splash-title {
@@ -297,6 +340,12 @@
 .splash-start:active { transform: scale(0.99); }
 
 @media (max-width: 767px) and (max-height: 680px) {
+    .splash-art-sharp {
+        background-position: center 38%;
+    }
+    .splash-art-blur {
+        background-position: center 36%;
+    }
     .splash-bottom { max-width: min(320px, 90vw); }
     .splash-menu-btn { min-height: 40px; padding: 9px 14px; }
     .splash-start { min-height: 44px; padding: 11px 16px; }

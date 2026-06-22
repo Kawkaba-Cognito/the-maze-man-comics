@@ -349,8 +349,9 @@ export function getCuratedRushHourLevel(diffKey, levelIndex) {
   return { labelKey: 'level', level: ix + 1, diff: diffKey, ...decodeEntry(entry) };
 }
 
-export function getCuratedRushHourFreeRound(stageIndex) {
+export function getCuratedRushHourFreeRound(stageIndex, sessionNonce = 0) {
   const s = Math.max(0, stageIndex | 0);
+  const nonce = (sessionNonce >>> 0) || 0;
   let diff, lv;
   if (s < 5) {
     diff = 'easy';
@@ -361,6 +362,19 @@ export function getCuratedRushHourFreeRound(stageIndex) {
   } else {
     diff = 'hard';
     lv = Math.min(RH_LEVELS_PER_TIER, s - 9);
+  }
+  const bank = BANK[diff];
+  if (bank?.length) {
+    const ix = (lv - 1 + s * 7 + nonce * 13) % bank.length;
+    const entry = bank[ix];
+    const decoded = decodeEntry(entry);
+    return {
+      ...decoded,
+      labelKey: 'free',
+      freeStage: s,
+      diff,
+      lv: ix + 1,
+    };
   }
   const level = getCuratedRushHourLevel(diff, lv);
   return level ? { ...level, labelKey: 'free', freeStage: s, diff, lv } : getCuratedRushHourLevel('easy', 1);

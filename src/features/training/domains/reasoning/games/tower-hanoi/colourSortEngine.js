@@ -51,6 +51,18 @@ export function canMove(pegs, from, to, cap) {
   return e.c === d.c && e.s > d.s;                 // same colour, smaller on larger
 }
 
+/** Why a move was rejected — for player-facing hints. */
+export function moveRejectReason(pegs, from, to, cap) {
+  if (from === to) return 'same';
+  if (!topDisk(pegs[from])) return 'empty';
+  if (pegs[to].length >= cap) return 'full';
+  const d = topDisk(pegs[from]);
+  const e = topDisk(pegs[to]);
+  if (e && e.c !== d.c) return 'colour';
+  if (e && e.s <= d.s) return 'size';
+  return 'unknown';
+}
+
 export function applyMove(state, from, to) {
   if (!canMove(state.pegs, from, to, state.cap)) return { state, ok: false };
   const pegs = state.pegs.map((p) => p.slice());

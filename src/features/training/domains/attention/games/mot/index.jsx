@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
+import { SURVIVAL_MS, survivalRamp } from '../../../../shared/survival';
 
 /*
  * Multiple Object Tracking (MOT) — dynamic attention.
@@ -52,6 +53,13 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
   const roundIdxRef = useRef(0);
   const wonRef = useRef(0);
   const scoreRef = useRef(0);
+  const survT0Ref = useRef(performance.now());
+  const finishedRef = useRef(false);
+
+  const isSurvival = mode === 'free';
+  const [runId, setRunId] = useState(0);
+  const [over, setOver] = useState(null);
+  const [survPct, setSurvPct] = useState(1);
 
   const [phase, setPhase] = useState('cue');
   const [score, setScore] = useState(0);
@@ -110,14 +118,17 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
 
   const nextParams = useCallback(() => {
     if (mode === 'levels') return levelConfig(diff, level);
-    if (mode === 'passplay') return freeConfig(2 + roundIdxRef.current); // fixed ramp, same for all (seeded layout)
-    return freeConfig(freeRoundRef.current);
+    if (mode === 'passplay') return freeConfig(2 + roundIdxRef.current);
+    const ramp = survivalRamp(performance.now() - survT0Ref.current);
+    return freeConfig(freeRoundRef.current + Math.floor(ramp * 5));
   }, [mode, diff, level]);
 
   const updateHud = useCallback(() => {
     if (mode === 'levels') setHud(isAr ? `مستوى ${level} · جولة ${roundIdxRef.current}/${ROUNDS_PER_LEVEL} · ✓${wonRef.current}` : `Lvl ${level} · Round ${roundIdxRef.current}/${ROUNDS_PER_LEVEL} · ✓${wonRef.current}`);
     else if (mode === 'passplay') setHud(isAr ? `جولة ${roundIdxRef.current + 1}/${ppTrials} · ✓${wonRef.current}` : `Round ${roundIdxRef.current + 1}/${ppTrials} · ✓${wonRef.current}`);
-    else setHud(isAr ? `جولة ${freeRoundRef.current + 1}` : `Round ${freeRoundRef.current + 1}`);
+    else setHud(isAr
+      ? `✓${scoreRef.current} · ${Math.ceil((SURVIVAL_MS - (performance.now() - survT0Ref.current)) / 1000)} ث`
+      : `✓${scoreRef.current} · ${Math.ceil((SURVIVAL_MS - (performance.now() - survT0Ref.current)) / 1000)}s`);
   }, [mode, level, isAr, ppTrials]);
 
   const startRound = useCallback(() => {
@@ -141,7 +152,7 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
     setPhaseBoth('cue');
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      setMsg(isAr ? 'تابعها بعينيك…' : 'Track them…');
+      setMsg(isAr ? `تابع ${cfg.targets} أهداف بعينيك…` : `Track ${cfg.targets} targets with your eyes…`);
       setPhaseBoth('track');
       timerRef.current = setTimeout(() => {
         setMsg(isAr ? `اضغط الأهداف (${cfg.targets})` : `Tap the ${cfg.targets} targets`);
@@ -172,7 +183,12 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
         if (perfect) wonRef.current += 1;
         if (roundIdxRef.current >= ppTrials) { onResult({ score: wonRef.current }); return; }
       } else {
-        freeRoundRef.current += 1; // free ramps forever
+        if (performance.now() - survT0Ref.current >= SURVIVAL_MS) {
+          finishedRef.current = true;
+          setOver({ score: scoreRef.current, rounds: freeRoundRef.current });
+          return;
+        }
+        freeRoundRef.current += 1;
       }
       startRound();
     }, 1300);
@@ -199,14 +215,47 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
     const onResize = () => fit();
     window.addEventListener('resize', onResize);
     rafRef.current = requestAnimationFrame(frame);
+    if (isSurvival) {
+      survT0Ref.current = performance.now();
+      finishedRef.current = false;
+      freeRoundRef.current = 0;
+      scoreRef.current = 0;
+      setScore(0);
+      setOver(null);
+    }
     startRound();
-    return () => { window.removeEventListener('resize', onResize); cancelAnimationFrame(rafRef.current); clearTimeout(timerRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    let survIv;
+    if (isSurvival) {
+      survIv = setInterval(() => {
+        const left = SURVIVAL_MS - (performance.now() - survT0Ref.current);
+        setSurvPct(Math.max(0, left / SURVIVAL_MS));
+        if (left <= 0 && !finishedRef.current) {
+          finishedRef.current = true;
+          setOver({ score: scoreRef.current, rounds: freeRoundRef.current });
+        }
+      }, 200);
+    }
+    return () => { window.removeEventListener('resize', onResize); cancelAnimationFrame(rafRef.current); clearTimeout(timerRef.current); clearInterval(survIv); };
+  }, [seed, runId]);
 
   const S = styles;
+
+  if (over && isSurvival) {
+    return (
+      <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+        <div style={S.overWrap}>
+          <h2 style={S.overTitle}>{isAr ? 'انتهى البقاء!' : 'Survival over!'}</h2>
+          <p style={S.overSub}>{isAr ? `${over.rounds} جولات · ${over.score} نقطة` : `${over.rounds} rounds · ${over.score} pts`}</p>
+          <button type="button" style={S.overBtn} onClick={() => { playSfx?.('click'); setRunId((n) => n + 1); }}>{isAr ? 'العب مجدداً' : 'Play again'}</button>
+          <button type="button" style={S.overBtnGhost} onClick={() => { playSfx?.('click'); onExit?.(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+      {isSurvival && <div style={S.survTrack}><div style={{ ...S.survFill, width: `${survPct * 100}%` }} /></div>}
       <header className="ct-training-play-header">
         <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
         <div className="ct-training-play-header-body">
@@ -220,7 +269,11 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
         {(phase === 'cue' || phase === 'track' || phase === 'respond') && (
           <div style={S.banner}>
             <span style={{ ...S.dot, background: phase === 'respond' ? '#fff' : '#ffce4a' }} />
-            {msg} {phase === 'respond' && <b style={{ marginInlineStart: 6 }}>· {picksLeft}</b>}
+            {msg}
+            {(phase === 'cue' || phase === 'track') && cfgRef.current?.targets && (
+              <b style={{ marginInlineStart: 6 }}>· 🎯×{cfgRef.current.targets}</b>
+            )}
+            {phase === 'respond' && <b style={{ marginInlineStart: 6 }}>· {picksLeft}</b>}
           </div>
         )}
         {phase === 'result' && <div style={S.banner}>{msg}</div>}
@@ -238,7 +291,7 @@ export default function MotGame({ onBack, workoutMode = false }) {
       scienceId="mot"
       title={{ en: 'Target Tracking', ar: 'تتبّع الأهداف' }}
       hints={{
-        free: { en: 'Endless practice — no fail', ar: 'تدريب مفتوح — بلا خسارة' },
+        free: { en: '60s survival · more targets over time', ar: '٦٠ ث بقاء · أهداف أكثر مع الوقت' },
         levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
         pass: { en: 'Same dots for all · pass the device', ar: 'نفس النقاط للجميع · مرّر الجهاز' },
       }}
@@ -261,4 +314,11 @@ const styles = {
   canvas: { display: 'block', width: '100%', height: '100%' },
   banner: { position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 8, background: '#fffdf8', border: '1.5px solid #d8c8ac', color: '#3a2c12', borderRadius: 999, padding: '8px 16px', fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(120,90,40,0.12)' },
   dot: { width: 12, height: 12, borderRadius: '50%', display: 'inline-block' },
+  survTrack: { height: 6, background: 'rgba(0,0,0,0.08)' },
+  survFill: { height: '100%', background: '#4f9fe0' },
+  overWrap: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, textAlign: 'center' },
+  overTitle: { margin: 0, fontWeight: 900, fontSize: 24 },
+  overSub: { margin: 0, fontWeight: 700, color: '#5a4a32' },
+  overBtn: { padding: '12px 20px', borderRadius: 12, border: '2px solid #1a1208', background: '#4f9fe0', color: '#fff', fontWeight: 900, cursor: 'pointer' },
+  overBtnGhost: { padding: '12px 20px', borderRadius: 12, border: '2px solid #cdbfa6', background: '#fff', fontWeight: 800, cursor: 'pointer' },
 };

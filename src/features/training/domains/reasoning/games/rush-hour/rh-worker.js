@@ -51,9 +51,9 @@ function generateLevel(diffKey, levelIndex) {
     fallbackBoard('level', { level: levelIndex, diff: diffKey });
 }
 
-function generateFreeRound(stageIndex) {
+function generateFreeRound(stageIndex, sessionNonce = 0) {
   const { diff, lv } = freeStageToDiffLv(stageIndex);
-  return getCuratedRushHourFreeRound(stageIndex) ||
+  return getCuratedRushHourFreeRound(stageIndex, sessionNonce) ||
     fallbackBoard('free', { freeStage: stageIndex, diff, lv });
 }
 

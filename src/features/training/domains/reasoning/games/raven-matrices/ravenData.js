@@ -4,16 +4,17 @@
  *
  * Difficulty = the generator "level" fed to generateMatrix, which sets how many
  * rules vary at once (d, up to 5 = expert) and how many options (4/6/8). Each
- * tier spans a band of that level and ramps across its 20 levels.
+ * tier spans a band of that level and ramps across its 100 levels.
  */
 export const RV_DIFF_KEYS = ['easy', 'medium', 'hard'];
-export const RV_LEVELS_PER_TIER = 20;
+export const RV_LEVELS_PER_TIER = 100;
 
-// Generator-level band per tier: [start, perLevelDivisor].
+// Generator-level band per tier: [start, perLevelDivisor] — div chosen so L100
+// reaches the top of each band (easy 0..3, medium 5..9, hard 9..15).
 const TIER = {
-  easy: { base: 0, div: 6 },     // genLevel 0..3  → 1–2 rules, 4 options
-  medium: { base: 5, div: 4 },   // genLevel 5..9  → 3–4 rules, 6 options
-  hard: { base: 9, div: 3 },     // genLevel 9..15 → 4–5 rules, 8 options
+  easy: { base: 0, div: 33 },    // genLevel 0..3  → 1–2 rules, 4 options
+  medium: { base: 5, div: 24 },  // genLevel 5..9  → 3–4 rules, 6 options
+  hard: { base: 9, div: 16 },    // genLevel 9..15 → 4–5 rules, 8 options
 };
 
 export function ravenGenLevel(diff, lv) {

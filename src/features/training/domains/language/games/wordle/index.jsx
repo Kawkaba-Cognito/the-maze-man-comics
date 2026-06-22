@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
   TrainingMenuBar,
@@ -10,19 +10,19 @@ import {
 import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
+import PassPlaySetup from '../../../../shared/PassPlaySetup';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
-import { useCoach } from '../../../../shared/coach/useCoach';
-import CoachOverlay from '../../../../shared/coach/CoachOverlay';
 import { createTrialLog } from '../../../../shared/trialLog';
+import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import WordleModes from './WordleModes';
-import { buildWordleCoachSteps } from './tutorialScript';
 import LetterLinkBoard from './LetterLinkBoard';
 import WordleLiveHud from './WordleLiveHud';
 import {
   WORDLE_LEVELS_PER_TIER,
   WORDLE_DIFF_KEYS,
   WORDLE_DM,
+  wordleDiffMeta,
   WORDLE_FREE_LIVES,
   specificationForLevel,
   prepareFreeRound,
@@ -279,14 +279,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
   const chalCycleRef = useRef(0);
 
   const juice = useJuice();
-  const [coachActive, setCoachActive] = useState(false);
-  const coachActiveRef = useRef(false);
-  const coachRef = useRef(null);
-  const pendingAfterCoachRef = useRef(null);
-  const boardRef = useRef(null);
-  useEffect(() => {
-    coachActiveRef.current = coachActive;
-  }, [coachActive]);
+  const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('wordle', isAr, playSfx);
   const pauseRef = useRef(false);
 
   const doneMap = profile.done || {};
@@ -507,7 +500,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
 
     if (!out.ok) {
       playSfx('wrong');
-      if (r.mode !== 'tutorial' && !r.practice) trialLogRef.current?.trial({ ok: false, why: out.reason });
+      if (!r.practice) trialLogRef.current?.trial({ ok: false, why: out.reason });
       if (out.reason === 'short') setMsg(t.tooShort(r.minLen));
       else if (out.reason === 'duplicate') setMsg(t.alreadyFound);
       else setMsg(t.notAWord);
@@ -518,11 +511,6 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
     setMsg(t.found(out.word, out.pts));
     setRound({ ...r });
 
-    if (r.mode === 'tutorial') {
-      juice.celebrate();
-      coachRef.current?.notify('word');
-      return;
-    }
     // Word + timestamp offset (the log adds `t`) → enables fluency
     // clustering/switching analysis later. Practice words stay unlogged.
     if (!r.practice) trialLogRef.current?.trial({ ok: true, w: out.word, len: out.word.length, pts: out.pts });
@@ -559,7 +547,6 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
 
   useEffect(() => {
     if (phase !== 'play' || !round) return undefined;
-    if (coachActiveRef.current) return undefined; // tutorial: no timer
     startRoundTimer();
     return () => stopRoundTimer();
   }, [phase, round?.seed, round?.mode, startRoundTimer, stopRoundTimer]);
@@ -579,60 +566,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
     [],
   );
 
-  /* --- Coached interactive tutorial --- */
-  const beginTutorial = useCallback(() => {
-    const seed = 0x5eed >>> 0;
-    const r = { ...prepareLevelRound('easy', 1, seed, lang), mode: 'tutorial' };
-    juice.reset();
-    beginRound(r);
-  }, [beginRound, lang, juice]);
-
-  const finishCoach = useCallback(() => {
-    try {
-      localStorage.setItem('mm_wordle_coach_seen', '1');
-    } catch {
-      /* ignore */
-    }
-    setCoachActive(false);
-    coachActiveRef.current = false;
-    clearPlay();
-    const fn = pendingAfterCoachRef.current;
-    pendingAfterCoachRef.current = null;
-    if (fn) fn();
-    else setPhase('hub');
-  }, [clearPlay]);
-
   useEffect(() => () => trialLogRef.current?.discard(), []);
-
-  const coachSteps = useMemo(() => buildWordleCoachSteps(isAr, { boardRef }), [isAr]);
-  const coach = useCoach(coachSteps, { active: coachActive, onDone: finishCoach });
-  useEffect(() => {
-    coachRef.current = coach;
-  }, [coach]);
-
-  const startCoach = useCallback(
-    (thenFn) => {
-      pendingAfterCoachRef.current = thenFn || null;
-      coachActiveRef.current = true;
-      setCoachActive(true);
-      beginTutorial();
-    },
-    [beginTutorial],
-  );
-  const maybeCoach = useCallback(
-    (fn) => {
-      let seen = false;
-      try {
-        seen = !!localStorage.getItem('mm_wordle_coach_seen');
-      } catch {
-        /* ignore */
-      }
-      if (seen) fn();
-      else startCoach(fn);
-    },
-    [startCoach],
-  );
-  const replayTutorial = useCallback(() => startCoach(null), [startCoach]);
 
   const confirmQuit = useCallback(() => {
     const mode = roundRef.current?.mode;
@@ -757,17 +691,6 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
 
   return (
     <div className="cancellation-task-game ct-fq-root ct-wordle-root" dir={isAr ? 'rtl' : 'ltr'}>
-      {coachActive && coach.step && (
-        <CoachOverlay
-          step={coach.step}
-          index={coach.index}
-          total={coach.total}
-          onNext={coach.next}
-          onSkip={coach.skip}
-          isAr={isAr}
-        />
-      )}
-
       {phase === 'assessStart' && (
         <AssessmentReady
           isAr={isAr}
@@ -787,8 +710,8 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
               playSfx={playSfx}
               variant="paper"
               hubSpaced
-              onReplayTutorial={replayTutorial}
-              replayHint={t.replayTutorial}
+              onReplayTutorial={openTutorial}
+              replayHint={tutReplayHint}
               center={
                 <div className="ct-fq-hub-attn-head">
                   <div className="ct-fq-hub-attn-big">{t.hubAttentionWord}</div>
@@ -796,13 +719,14 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
                 </div>
               }
             />
+            {tutLayer}
             <WordleModes
               t={t}
               isAr={isAr}
               playSfx={playSfx}
-              onFree={() => maybeCoach(() => setPhase('freeIntro'))}
-              onLevels={() => maybeCoach(() => setPhase('diff'))}
-              onChallenge={() => maybeCoach(() => setPhase('chal'))}
+              onFree={() => setPhase('freeIntro')}
+              onLevels={() => setPhase('diff')}
+              onChallenge={() => setPhase('chal')}
             />
             <HubScienceLink gameId="wordle" isAr={isAr} playSfx={playSfx} />
           </div>
@@ -845,10 +769,10 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
           isAr={isAr}
           playSfx={playSfx}
           onBack={() => setPhase('diff')}
-          title={WORDLE_DM[diffKey].label}
-          blurb={t.levelsSub(WORDLE_DM[diffKey].pop, WORDLE_DM[diffKey].grid)}
+          title={wordleDiffMeta(diffKey, isAr).label}
+          blurb={t.levelsSub(wordleDiffMeta(diffKey, isAr).pop, wordleDiffMeta(diffKey, isAr).grid)}
           count={WORDLE_LEVELS_PER_TIER}
-          lvc={WORDLE_DM[diffKey].lvc}
+          lvc={wordleDiffMeta(diffKey, isAr).lvc}
           isUnlocked={(lv) => isWordleLevelUnlocked(diffKey, lv, doneMap)}
           isDone={(lv) => !!doneMap[`${diffKey}-${lv}`]}
           sublabel={(lv) => {
@@ -869,108 +793,32 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
               }}
               playSfx={playSfx}
               variant="paper"
-              center={
-                <div style={{ textAlign: 'center' }}>
-                  <div className="ct-fq-training-title ct-fq-training-title-sm">
-                    {t.challengeTitle}
-                  </div>
-                </div>
-              }
             />
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.challengeSub}</p>
-            <div className="ct-fq-card ct-fq-card-training">
-              <h3>{t.chalPickDiff}</h3>
-              <div className="ct-fq-rr ct-fq-rr-diff" role="group" aria-label={t.chalPickDiff}>
-                {WORDLE_DIFF_KEYS.map((k) => (
-                  <button
-                    key={k}
-                    type="button"
-                    className={`ct-fq-rrb ct-fq-rrb-diff${chalDiff === k ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
-                    onClick={() => {
-                      playSfx('click');
-                      setChalDiff(k);
-                    }}
-                  >
-                    {WORDLE_DM[k].label}
-                  </button>
-                ))}
-              </div>
-              <h3 style={{ marginTop: 14 }}>{t.players}</h3>
-              {chalNames.map((nm, i) => (
-                <div key={i} className="ct-fq-pr">
-                  <input
-                    value={nm}
-                    maxLength={20}
-                    onChange={(e) => {
-                      const next = [...chalNames];
-                      next[i] = e.target.value;
-                      setChalNames(next);
-                    }}
-                  />
-                  {chalNames.length > 2 && (
-                    <button
-                      type="button"
-                      className="ct-fq-prm"
-                      onClick={() =>
-                        setChalNames(chalNames.filter((_, j) => j !== i))
-                      }
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-              {chalNames.length < 10 && (
-                <button
-                  type="button"
-                  className="ct-fq-apb ct-fq-apb-training"
-                  onClick={() =>
-                    setChalNames([...chalNames, `Player ${chalNames.length + 1}`])
-                  }
-                >
-                  {t.addPl}
-                </button>
-              )}
-              <h3 style={{ marginTop: 14 }}>{t.chalRounds}</h3>
-              <p
-                className="ct-fq-sub"
-                style={{ marginTop: 2, marginBottom: 8, fontSize: '0.78rem' }}
-              >
-                {t.chalRoundsHint}
-              </p>
-              <div className="ct-fq-rr" role="group" aria-label={t.chalRounds}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    className={`ct-fq-rrb${chalRoundsTotal === n ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
-                    onClick={() => {
-                      playSfx('click');
-                      setChalRoundsTotal(n);
-                      chalRoundsTotalRef.current = n;
-                    }}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <button
-              type="button"
-              className="ct-fq-btn ct-fq-btn-pri"
-              onClick={() => {
-                playSfx('click');
-                if (chalNames.length < 2) return;
-                openChallenge();
+            <PassPlaySetup
+              isAr={isAr}
+              playSfx={playSfx}
+              subtitle={t.challengeSub}
+              diffKeys={WORDLE_DIFF_KEYS}
+              diffLabels={WORDLE_DM}
+              diff={chalDiff}
+              onDiffChange={setChalDiff}
+              players={chalNames}
+              onPlayersChange={setChalNames}
+              rounds={chalRoundsTotal}
+              onRoundsChange={(n) => {
+                setChalRoundsTotal(n);
+                chalRoundsTotalRef.current = n;
               }}
-            >
-              {t.startCh}
-            </button>
-            {chalNames.length < 2 && (
-              <p className="ct-fq-sub" style={{ marginTop: 8 }}>
-                {t.needTwo}
-              </p>
-            )}
+              onStart={() => { playSfx('click'); openChallenge(); }}
+              labels={{
+                difficulty: t.chalPickDiff,
+                players: t.players,
+                addPlayer: t.addPl,
+                rounds: t.chalRounds,
+                roundsHint: t.chalRoundsHint,
+                start: t.startCh,
+              }}
+            />
           </div>
         </div>
       )}
@@ -1081,26 +929,24 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
         <div className="ct-wordle-play-wrap">
           <TrainingPlayHeader
             isAr={isAr}
-            title={round.mode === 'tutorial' ? (isAr ? 'كيفية اللعب' : 'How to play') : playHeaderForRound(round).title}
+            title={playHeaderForRound(round).title}
             subtitle={
-              round.mode === 'tutorial'
-                ? ''
-                : round.mode === 'free'
-                  ? `${Math.ceil(round.timeLeft)}s · ${'♥'.repeat(freeLives)}${'♡'.repeat(Math.max(0, WORDLE_FREE_LIVES - freeLives))} · ${round.found.length}/${round.targetWords} · ${freeScore}`
-                  : playHeaderForRound(round).subtitle
+              round.mode === 'free'
+                ? `${Math.ceil(round.timeLeft)}s · ${'♥'.repeat(freeLives)}${'♡'.repeat(Math.max(0, WORDLE_FREE_LIVES - freeLives))} · ${round.found.length}/${round.targetWords} · ${freeScore}`
+                : playHeaderForRound(round).subtitle
             }
             playSfx={playSfx}
-            onMenu={round.mode === 'tutorial' ? () => coach.skip() : () => {
+            onMenu={() => {
               if (pauseOpen) setPauseOpen(false);
               setQuitOpen(true);
             }}
-            onPause={round.mode === 'tutorial' ? undefined : handlePauseOpen}
+            onPause={handlePauseOpen}
             pauseAriaLabel={t.paused}
           />
           <p className="ct-wordle-connect-hint">{t.connectHint}</p>
           <p className="ct-wordle-min-len">{t.minLetters(round.minLen)}</p>
           {msg && <p className="ct-wordle-msg ct-wordle-msg--ok">{msg}</p>}
-          <div className="ct-juice-host" ref={boardRef} style={{ position: 'relative' }}>
+          <div className="ct-juice-host" style={{ position: 'relative' }}>
             <JuiceLayer
               combo={juice.combo}
               particle={juice.particle}

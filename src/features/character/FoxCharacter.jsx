@@ -11,10 +11,10 @@ import { ramp, metal, lighten, darken, mix } from './shade';
  * plane. Recolorable via `fur` + `accent`; `mood` tints the eye glow.
  */
 const MOOD_EYE = {
-  ready: '#ffd66a',
-  focused: '#b6ff7a',
-  proud: '#ffe79a',
-  tired: '#e6b86a',
+  ready: '#fff0c8',
+  focused: '#ffe79a',
+  proud: '#fff4d4',
+  tired: '#d4b870',
 };
 
 // Where each gear slot attaches (0..200 viewBox). Head r=34 @ (100,68).
@@ -27,8 +27,8 @@ const ANCHORS = {
 
 export default React.memo(function FoxCharacter({
   size = 200,
-  fur = '#0e0e16',
-  accent = '#f5c542',
+  fur = '#12121a',
+  accent = '#c8943e',
   mood = 'ready',
   equipped = null,
   glow = true,
@@ -54,7 +54,7 @@ export default React.memo(function FoxCharacter({
   // the dark fill, so warm light bleeds around the silhouette edge.
   const Rim = ({ d, sw = 2.2, fill = f.core }) => (
     <>
-      <path d={d} fill={accent} opacity="0.85" filter={`url(#${id('rim')})`} />
+      <path d={d} fill={accent} opacity="0.62" filter={`url(#${id('rim')})`} />
       <path d={d} fill={fill} stroke={ink} strokeWidth={sw} strokeLinejoin="round" />
     </>
   );
@@ -74,14 +74,14 @@ export default React.memo(function FoxCharacter({
             <circle cx={cx} cy={headY} r={headR} />
           </clipPath>
           <filter id={id('rim')} x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="2.6" />
+            <feGaussianBlur stdDeviation="1.8" />
           </filter>
           <filter id={id('eyeglow')} x="-120%" y="-120%" width="340%" height="340%">
             <feGaussianBlur stdDeviation="2.2" />
           </filter>
         </defs>
 
-        {glow && <ellipse cx={cx} cy="120" rx="78" ry="104" fill={accent} opacity="0.07" />}
+        {glow && <ellipse cx={cx} cy="120" rx="78" ry="104" fill={accent} opacity="0.05" />}
         <ellipse cx={cx} cy="212" rx="46" ry="8" fill={ink} opacity="0.2" />
 
         {/* equipped gear behind the body (cape / wings / balloon) */}

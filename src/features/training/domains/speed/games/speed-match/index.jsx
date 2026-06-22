@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
   TrainingMenuBar,
@@ -10,17 +10,18 @@ import {
 import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
+import PassPlaySetup from '../../../../shared/PassPlaySetup';
 import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
+import { SURVIVAL_MS, survivalRampFromRemaining, freshSurvivalSeed } from '../../../../shared/survival';
+import { makeRng } from '../../../../shared/rng';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
-import { useCoach } from '../../../../shared/coach/useCoach';
-import CoachOverlay from '../../../../shared/coach/CoachOverlay';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { createStaircase } from '../../../../shared/staircase';
 import { loadGameSettings } from '../../../../shared/focusQuestData';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
-import { buildSpeedCoachSteps } from './tutorialScript';
+import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import {
   SH,
   SM_DIFF_KEYS,
@@ -301,17 +302,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
 
   const juice = useJuice();
   const rLabels = ratingLabels(isAr);
-  const legendRef = useRef(null);
-  const cardRef = useRef(null);
-  const padRef = useRef(null);
-  const [coachActive, setCoachActive] = useState(false);
-  const pendingAfterCoachRef = useRef(null);
-  const coachRef = useRef(null);
-  const tutScriptRef = useRef(0);
-  const tutorialData = useMemo(() => {
-    const lg = buildLegend(3, mulberry32(7));
-    return { legend: lg, items: [lg[1] || lg[0], lg[2] || lg[0]] };
-  }, []);
+  const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('speed-match', isAr, playSfx);
 
   const [profile, setProfile] = useState(() => loadProfile());
   const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
@@ -352,6 +343,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
 
   const blockRef = useRef(null);
   const rngRef = useRef(Math.random);
+  const survivalRemainingRef = useRef(SURVIVAL_MS);
   const eventsRef = useRef([]);
   const correctRef = useRef(0);
   const wrongRef = useRef(0);
@@ -431,7 +423,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
         block.legend = buildLegend(size);
         setLegend(block.legend);
       }
-      itemMsRef.current = freeItemMs(v);
+      itemMsRef.current = Math.max(850, freeItemMs(v) * (1 - survivalRampFromRemaining(survivalRemainingRef.current ?? SURVIVAL_MS) * 0.32));
       itemEndAtRef.current = now + itemMsRef.current;
     } else {
       const remap = block.spec.remapEvery;
@@ -628,31 +620,6 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     const it = itemRef.current;
     if (!block || !it) return;
 
-    // Coached tutorial: gate on the correct digit, let the player retry, no scoring.
-    if (block.mode === 'tutorial') {
-      const ok = digit === it.digit;
-      setPressedKey(digit);
-      setTimeout(() => setPressedKey(null), 120);
-      if (ok) {
-        playSfx('click');
-        juice.hit({});
-        flash('hit');
-        coachRef.current?.notify('answer', { digit });
-        const nextIdx = tutScriptRef.current + 1;
-        tutScriptRef.current = nextIdx;
-        const nx = tutorialData.items[nextIdx];
-        if (nx) {
-          itemRef.current = nx;
-          setItem(nx);
-        }
-      } else {
-        playSfx('error');
-        juice.miss();
-        flash('miss');
-      }
-      return;
-    }
-
     if (answeredRef.current) return;
     answeredRef.current = true;
     const now = performance.now();
@@ -697,7 +664,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
       }
       nextItemRef.current(now);
     }
-  }, [playSfx, flash, finishFreeRun, juice, tutorialData]);
+  }, [playSfx, flash, finishFreeRun, juice]);
 
   // Countdown → running.
   useEffect(() => {
@@ -759,7 +726,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     setLives(SM_FREE_LIVES);
     staircaseRef.current = createStaircase({ nDown: 2 });
     const block = { mode: 'free', diff: 'free', lv: 0, spec: { durationSec: 0, remapEvery: 0, pairCount: 4 }, legend: buildLegend(4) };
-    beginBlock(block, Math.random);
+    beginBlock(block, makeRng(freshSurvivalSeed()));
   }, [beginBlock]);
 
   const startLevel = useCallback((diff, lv) => {
@@ -850,86 +817,9 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     else setPhase('hub');
   };
 
-  /* --- Coached interactive tutorial --- */
-  const beginTutorial = useCallback(() => {
-    stopLoop();
-    runIdRef.current += 1;
-    tutScriptRef.current = 0;
-    blockRef.current = {
-      mode: 'tutorial',
-      diff: 'tutorial',
-      lv: 0,
-      spec: { durationSec: 0, remapEvery: 0, pairCount: 3 },
-      legend: tutorialData.legend,
-    };
-    eventsRef.current = [];
-    endedRef.current = false;
-    answeredRef.current = false;
-    juice.reset();
-    setLegend(tutorialData.legend);
-    itemRef.current = tutorialData.items[0];
-    setItem(tutorialData.items[0]);
-    setFeedback(null);
-    setPauseOpen(false);
-    setQuitOpen(false);
-    setPhase('play');
-    setPlayStep('running');
-    playStepRef.current = 'running';
-  }, [stopLoop, tutorialData, juice]);
-
-  const finishCoach = useCallback(() => {
-    try {
-      localStorage.setItem('mm_speedmatch_coach_seen', '1');
-    } catch {
-      /* ignore */
-    }
-    setCoachActive(false);
-    clearPlay();
-    const fn = pendingAfterCoachRef.current;
-    pendingAfterCoachRef.current = null;
-    if (fn) fn();
-    else setPhase('hub');
-  }, [clearPlay]);
-
-  const coachSteps = useMemo(
-    () =>
-      buildSpeedCoachSteps(
-        isAr,
-        { legendRef, cardRef, padRef },
-        [tutorialData.items[0]?.digit, tutorialData.items[1]?.digit],
-      ),
-    [isAr, tutorialData],
-  );
-  const coach = useCoach(coachSteps, { active: coachActive, onDone: finishCoach });
-  useEffect(() => {
-    coachRef.current = coach;
-  }, [coach]);
-
-  const startCoach = useCallback(
-    (thenFn) => {
-      pendingAfterCoachRef.current = thenFn || null;
-      setCoachActive(true);
-      beginTutorial();
-    },
-    [beginTutorial],
-  );
-  const maybeCoach = useCallback(
-    (fn) => {
-      let seen = false;
-      try {
-        seen = !!localStorage.getItem('mm_speedmatch_coach_seen');
-      } catch {
-        /* ignore */
-      }
-      if (seen) fn();
-      else startCoach(fn);
-    },
-    [startCoach],
-  );
-  const replayTutorial = useCallback(() => startCoach(null), [startCoach]);
-
   const block = blockRef.current;
   const survivalRemaining = useSurvivalCountdown(phase === 'play' && block?.mode === 'free', finishFreeRun);
+  survivalRemainingRef.current = survivalRemaining;
   const now = performance.now();
   const blockTimeLeft = block && block.mode !== 'free' && playStep === 'running'
     ? Math.max(0, Math.ceil((blockEndAtRef.current - now) / 1000))
@@ -968,33 +858,36 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
         />
       )}
       {phase === 'hub' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
-            <TrainingMenuBar
-              onBack={onBack}
-              playSfx={playSfx}
-              hubSpaced
-              variant="paper"
-              onReplayTutorial={replayTutorial}
-              replayHint={t.replayTutorial}
-              center={
-                <div className="ct-fq-hub-attn-head">
-                  <div className="ct-fq-hub-attn-big">{t.hub}</div>
-                  <div className="ct-fq-hub-attn-sub">{t.tag}</div>
-                </div>
-              }
-            />
-            <SpeedModes
-              t={t}
-              isAr={isAr}
-              playSfx={playSfx}
-              onFree={() => maybeCoach(() => setPhase('freeIntro'))}
-              onLevels={() => maybeCoach(() => setPhase('diff'))}
-              onChallenge={() => maybeCoach(() => setPhase('chal'))}
-            />
-            <HubScienceLink gameId="speed-match" isAr={isAr} playSfx={playSfx} />
+        <>
+          <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+            <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
+              <TrainingMenuBar
+                onBack={onBack}
+                playSfx={playSfx}
+                hubSpaced
+                variant="paper"
+                onReplayTutorial={openTutorial}
+                replayHint={tutReplayHint}
+                center={
+                  <div className="ct-fq-hub-attn-head">
+                    <div className="ct-fq-hub-attn-big">{t.hub}</div>
+                    <div className="ct-fq-hub-attn-sub">{t.tag}</div>
+                  </div>
+                }
+              />
+              <SpeedModes
+                t={t}
+                isAr={isAr}
+                playSfx={playSfx}
+                onFree={() => setPhase('freeIntro')}
+                onLevels={() => setPhase('diff')}
+                onChallenge={() => setPhase('chal')}
+              />
+              <HubScienceLink gameId="speed-match" isAr={isAr} playSfx={playSfx} />
+            </div>
           </div>
-        </div>
+          {tutLayer}
+        </>
       )}
 
       {phase === 'freeIntro' && (
@@ -1051,43 +944,29 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
               onBack={() => { clearPlay(); setPhase('hub'); }}
               playSfx={playSfx}
               variant="paper"
-              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.challengeTitle}</div></div>}
             />
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.challengeSub}</p>
-            <div className="ct-fq-card ct-fq-card-training">
-              <h3>{t.chalPickDiff}</h3>
-              <div className="ct-fq-rr ct-fq-rr-diff" role="group" aria-label={t.chalPickDiff}>
-                {SM_DIFF_KEYS.map((k) => (
-                  <button key={k} type="button"
-                    className={`ct-fq-rrb ct-fq-rrb-diff${chalDiff === k ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
-                    onClick={() => { playSfx('click'); setChalDiff(k); }}>
-                    {SM_DM[k].label}
-                  </button>
-                ))}
-              </div>
-              <h3 style={{ marginTop: 14 }}>{t.players}</h3>
-              {chalNames.map((nm, i) => (
-                <div key={i} className="ct-fq-pr">
-                  <input value={nm} maxLength={20} onChange={(e) => { const n = [...chalNames]; n[i] = e.target.value; setChalNames(n); }} />
-                  {chalNames.length > 2 && (
-                    <button type="button" className="ct-fq-prm" onClick={() => setChalNames(chalNames.filter((_, j) => j !== i))}>×</button>
-                  )}
-                </div>
-              ))}
-              {chalNames.length < 10 && (
-                <button type="button" className="ct-fq-apb ct-fq-apb-training" onClick={() => setChalNames([...chalNames, `Player ${chalNames.length + 1}`])}>{t.addPl}</button>
-              )}
-              <h3 style={{ marginTop: 14 }}>{t.chalRounds}</h3>
-              <p className="ct-fq-sub" style={{ marginTop: 2, marginBottom: 8, fontSize: '0.78rem' }}>{t.chalRoundsHint}</p>
-              <div className="ct-fq-rr" role="group" aria-label={t.chalRounds}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <button key={n} type="button"
-                    className={`ct-fq-rrb${chalRoundsTotal === n ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
-                    onClick={() => { playSfx('click'); setChalRoundsTotal(n); }}>{n}</button>
-                ))}
-              </div>
-            </div>
-            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); openChallenge(); }}>{t.startCh}</button>
+            <PassPlaySetup
+              isAr={isAr}
+              playSfx={playSfx}
+              subtitle={t.challengeSub}
+              diffKeys={SM_DIFF_KEYS}
+              diffLabels={SM_DM}
+              diff={chalDiff}
+              onDiffChange={setChalDiff}
+              players={chalNames}
+              onPlayersChange={setChalNames}
+              rounds={chalRoundsTotal}
+              onRoundsChange={setChalRoundsTotal}
+              onStart={() => { playSfx('click'); openChallenge(); }}
+              labels={{
+                difficulty: t.chalPickDiff,
+                players: t.players,
+                addPlayer: t.addPl,
+                rounds: t.chalRounds,
+                roundsHint: t.chalRoundsHint,
+                start: t.startCh,
+              }}
+            />
           </div>
         </div>
       )}
@@ -1111,11 +990,11 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
         <div className="ct-sm-play">
           <TrainingPlayHeader
             isAr={isAr}
-            title={block.mode === 'tutorial' ? (isAr ? 'كيفية اللعب' : 'How to play') : header.title}
-            subtitle={block.mode === 'tutorial' ? '' : header.subtitle}
+            title={header.title}
+            subtitle={header.subtitle}
             playSfx={playSfx}
-            onMenu={block.mode === 'tutorial' ? () => coach.skip() : () => setQuitOpen(true)}
-            onPause={block.mode === 'tutorial' ? undefined : onPause}
+            onMenu={() => setQuitOpen(true)}
+            onPause={onPause}
             pauseAriaLabel={t.paused}
           />
           {block.mode === 'free' && <SurvivalCountdownBar remaining={survivalRemaining} color="#64b5c2" />}
@@ -1130,7 +1009,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
               showCombo={false}
             />
             {block.assessStage !== 'motor' && (
-              <div className="ct-sm-legend-wrap" data-fq-chrome ref={legendRef}>
+              <div className="ct-sm-legend-wrap" data-fq-chrome>
                 <div className="ct-sm-legend-label">{t.key}</div>
                 <LegendBar legend={legend} t={t} />
               </div>
@@ -1160,7 +1039,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
               </div>
             )}
 
-            <div className="ct-sm-card" aria-live="polite" ref={cardRef}>
+            <div className="ct-sm-card" aria-live="polite">
               {playStep === 'countdown' ? (
                 <div className="ct-sm-countdown">{cdVal > 0 ? cdVal : t.go}</div>
               ) : item ? (
@@ -1171,7 +1050,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
             </div>
             <p className="ct-sm-prompt">{t.tapNumber}</p>
 
-            <div className="ct-sm-pad" role="group" aria-label={t.tapNumber} ref={padRef}>
+            <div className="ct-sm-pad" role="group" aria-label={t.tapNumber}>
               {legend.map((p) => (
                 <button
                   key={p.digit}
@@ -1286,16 +1165,6 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
         </div>
       )}
 
-      {coachActive && coach.step && (
-        <CoachOverlay
-          step={coach.step}
-          index={coach.index}
-          total={coach.total}
-          onNext={coach.next}
-          onSkip={coach.skip}
-          isAr={isAr}
-        />
-      )}
     </div>
   );
 }

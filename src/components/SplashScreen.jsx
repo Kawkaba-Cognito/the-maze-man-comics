@@ -37,6 +37,11 @@ export default function SplashScreen({ onDone }) {
       data-lang={isAr ? 'ar' : 'en'}
       style={bgStyle}
     >
+      <div className="splash-art" aria-hidden="true">
+        <div className="splash-art-blur" />
+        <div className="splash-art-sharp" />
+      </div>
+
       <header className="splash-title" aria-hidden="true">
         <p className="splash-title-kicker">
           {isAr ? 'تدريب معرفي' : 'Cognitive Training'}

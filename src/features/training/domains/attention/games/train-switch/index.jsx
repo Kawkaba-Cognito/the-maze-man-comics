@@ -122,7 +122,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const rng = makeRng((seed != null ? seed : 24680) ^ ((runId * 19349663) >>> 0));
+    const rng = makeRng(((seed ?? 1) >>> 0) ^ ((runId * 19349663) >>> 0));
     const net = generate(cfg.R, cfg.C, cfg.stations, rng);
 
     const g = {
@@ -134,7 +134,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     };
     gRef.current = g;
     finishedRef.current = false;
-    setMsg(isAr ? 'بدّل المفاتيح ليصل كل قطار إلى محطة لونه' : 'Tap the switches so each train reaches its colour');
+    setMsg(isAr ? 'اضغط المفتاح ◯ عند التفرّع قبل وصول القطار · وجّه كل لون لمحطته' : 'Tap ◯ switches before trains arrive · match each colour to its station');
 
     const layout = () => {
       const pad = 16;
@@ -267,7 +267,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
 
     return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runId]);
+  }, [runId, seed]);
 
   const restart = () => { setOver(null); finishedRef.current = false; setRunId((n) => n + 1); };
 
@@ -290,7 +290,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
 
       <div ref={wrapRef} style={S.play}>
         <canvas ref={canvasRef} onPointerDown={(e) => { e.preventDefault(); tapAt(e.clientX, e.clientY); }} style={{ display: 'block', touchAction: 'none' }} />
-        {msg && hud.routed < 1 && !over && <div style={S.msg}>{msg}</div>}
+        {msg && !over && <div style={S.msg}>{msg}</div>}
         {over && (
           <div style={S.overWrap}>
             <div style={S.overCard}>

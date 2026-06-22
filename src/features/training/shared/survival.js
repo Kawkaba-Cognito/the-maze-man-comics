@@ -8,9 +8,40 @@
 
 export const SURVIVAL_MS = 60000; // a Survival run lasts 60s, then ends
 
-/** Elapsed time → ramp in [0,1]; games scale speed / spawn rate by this. */
+/**
+ * Elapsed time → ramp in [0,1]. Fast early curve so difficulty rises quickly
+ * without waiting half the run (~35% @ 10s, ~55% @ 20s, ~75% @ 35s, 100% @ 60s).
+ */
 export function survivalRamp(elapsedMs, ms = SURVIVAL_MS) {
-  return Math.max(0, Math.min(1, elapsedMs / ms));
+  const t = Math.max(0, Math.min(1, elapsedMs / ms));
+  return Math.pow(t, 0.55);
+}
+
+/** Ramp from remaining ms (for React countdown hooks). */
+export function survivalRampFromRemaining(remainingMs, ms = SURVIVAL_MS) {
+  return survivalRamp(ms - remainingMs, ms);
+}
+
+/** Map ramp → difficulty tier used by verbal / gate games. */
+export function survivalTier(ramp) {
+  if (ramp < 0.32) return 'easy';
+  if (ramp < 0.65) return 'med';
+  return 'hard';
+}
+
+/** Fresh seed for each Survival session — call when the player taps Start. */
+export function freshSurvivalSeed() {
+  return (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+}
+
+/** Scale a base value up as ramp rises (speed, spawn rate, etc.). */
+export function survivalScale(base, ramp, maxBoost = 1) {
+  return base * (1 + ramp * maxBoost);
+}
+
+/** Shrink a duration as ramp rises; never below minFrac of base. */
+export function survivalShrink(baseMs, ramp, minFrac = 0.55) {
+  return Math.max(baseMs * minFrac, baseMs * (1 - ramp * (1 - minFrac)));
 }
 
 /** Classify a reaction time (ms) into a grade. */

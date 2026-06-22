@@ -15,22 +15,22 @@ const UI = {
   },
 };
 
-/** Shown after both practice rounds — leads back to size picker. */
-export default function ReadyPanel({ isAr, playSfx, onContinue }) {
+/** Shown after practice — leads back to hub (size picker or mode menu). */
+export default function ReadyPanel({ isAr, playSfx, onContinue, heading, sub, cta }) {
   const t = UI[isAr ? 'ar' : 'en'];
 
   return (
     <div className="mm-tut-root mm-tut-root--ready" role="dialog" aria-modal="true" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="mm-tut-card mm-tut-card--ready">
         <span className="mm-tut-ready-badge">{t.badge}</span>
-        <h2 className="mm-tut-ready-heading">{t.heading}</h2>
-        <p className="mm-tut-ready-sub">{t.sub}</p>
+        <h2 className="mm-tut-ready-heading">{heading ?? t.heading}</h2>
+        <p className="mm-tut-ready-sub">{sub ?? t.sub}</p>
         <button
           type="button"
           className="mm-tut-btn mm-tut-btn--pri"
           onClick={() => { playSfx?.('win'); onContinue?.(); }}
         >
-          {t.cta}
+          {cta ?? t.cta}
         </button>
       </div>
     </div>

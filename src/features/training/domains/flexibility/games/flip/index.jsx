@@ -15,7 +15,11 @@ import { SURVIVAL_MS, survivalRamp, drawSurvivalBar } from '../../../../shared/s
  * Modes: Free (lives, endless) / Levels (100) / Pass n Play (fixed balls, score).
  */
 
-const FLX = '#e07aaa';
+import { drawCosmosRunner, COSMOS_GOLD, COSMOS_LANE_A, COSMOS_LANE_B, COSMOS_STING_BG } from '../../../../shared/drawCosmosCanvas';
+
+const ACCENT = COSMOS_GOLD;
+const COLOR_NAMES = { red: 'red', blue: 'blue', green: 'green', yellow: 'yellow' };
+const COLOR_NAMES_AR = { red: 'أحمر', blue: 'أزرق', green: 'أخضر', yellow: 'أصفر' };
 const PALETTE = [
   { k: 'red', c: '#ff5a5a' },
   { k: 'blue', c: '#4f9fe0' },
@@ -39,6 +43,9 @@ function levelCfg(diff, level) {
     ruleEvery: Math.max(3, Math.round(b.ruleEvery - f * 1)),
     flipEvery: Math.max(3, Math.round(b.flipEvery - f * 3)),
     budget: b.budget + Math.round(f * 14),
+    decoyRate: diff === 'easy' ? f * 0.08 : diff === 'hard' ? 0.12 + f * 0.18 : 0.06 + f * 0.12,
+    shapeRate: diff === 'easy' ? 0 : diff === 'hard' ? 0.15 + f * 0.25 : 0.08 + f * 0.15,
+    swapEvery: diff === 'hard' && f > 0.35 ? Math.max(6, Math.round(14 - f * 8)) : 0,
   };
 }
 
@@ -57,6 +64,8 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
   const [rule, setRule] = useState({ take: 0, avoid: 1 });
   const [sting, setSting] = useState(null);
   const [msg, setMsg] = useState('');
+  const [mirrored, setMirrored] = useState(false);
+  const [ruleToast, setRuleToast] = useState(null);
 
   const cfg = useMemo(() => {
     if (mode === 'levels') return levelCfg(diff, level);
@@ -100,34 +109,51 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const rngLocal = makeRng((seed != null ? seed : 12345) ^ (runId * 2654435761) >>> 0);
+    const rngLocal = makeRng(((seed ?? 1) >>> 0) ^ ((runId * 2654435761) >>> 0));
     const pick = (n) => Math.floor(rngLocal() * n);
 
     const g = {
       lanes: cfg.lanes, lane: Math.floor(cfg.lanes / 2),
       balls: [], spawnAcc: 0, fall: cfg.fall, spawnEvery: cfg.spawn, t0: performance.now(),
       mirror: false, cued: cfg.cued, warn: cfg.warn, invert: cfg.invert, flipEvery: cfg.flipEvery,
-      ruleEvery: cfg.ruleEvery, take: 0, avoid: 1,
+      ruleEvery: cfg.ruleEvery, decoyRate: cfg.decoyRate ?? 0, shapeRate: cfg.shapeRate ?? 0, swapEvery: cfg.swapEvery ?? 0,
+      take: 0, avoid: 1,
       caught: 0, combo: 0, bestCombo: 0, resolved: 0, persev: 0, spawned: 0,
       lives: cfg.lives, budget: cfg.budget,
-      sinceRule: 0, sinceFlip: 0, justFlipped: false, preFlipLast: 0, lastBtn: 0, flipsSeen: 0,
+      sinceRule: 0, sinceFlip: 0, sinceSwap: 0, justFlipped: false, preFlipLast: 0, lastBtn: 0, flipsSeen: 0,
       hopT: 1, charX: 0,
       W: 0, H: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
     };
     stateRef.current = g;
     finishedRef.current = false;
 
-    const newRule = () => {
+    const newRule = (swap = false) => {
       const t = pick(PALETTE.length);
       let a = pick(PALETTE.length); let guard = 0;
       while (a === t && guard++ < 8) a = pick(PALETTE.length);
       g.take = t; g.avoid = a; g.sinceRule = 0;
       setRule({ take: t, avoid: a });
+      const label = (i) => (isAr ? COLOR_NAMES_AR[PALETTE[i].k] : COLOR_NAMES[PALETTE[i].k]);
+      setRuleToast({
+        id: Date.now(),
+        text: swap
+          ? (isAr ? `↔️ تبدّلت الألوان! أمسك ${label(t)} · تجنّب ${label(a)}` : `↔️ Colours swapped! Catch ${label(t)} · Avoid ${label(a)}`)
+          : (isAr ? `قاعدة جديدة: أمسك ${label(t)} · تجنّب ${label(a)}` : `New rule: Catch ${label(t)} · Avoid ${label(a)}`),
+      });
     };
-    newRule();
+    const swapRule = () => {
+      const tmp = g.take; g.take = g.avoid; g.avoid = tmp; g.sinceSwap = 0;
+      setRule({ take: g.take, avoid: g.avoid });
+      setRuleToast({
+        id: Date.now(),
+        text: isAr ? '↔️ تبدّلت القاعدة — انتبه!' : '↔️ Rule swapped — stay flexible!',
+      });
+    };
+    newRule(false);
 
     const flip = () => {
       g.mirror = !g.mirror; g.justFlipped = true; g.preFlipLast = g.lastBtn; g.flipsSeen += 1;
+      setMirrored(g.mirror);
       if (g.warn || g.flipsSeen <= 2) setSting({ id: Date.now(), text: isAr ? '🔄 انقلاب!' : '🔄 FLIPPED!' });
       playSfx('win');
     };
@@ -162,7 +188,22 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
       if (g.spawnAcc >= g.spawnEvery && g.spawned < g.budget && topY > g.H * 0.52) {
         g.spawnAcc = 0; g.spawned += 1;
         const isTake = rngLocal() < TAKE_RATIO;
-        g.balls.push({ lane: pick(g.lanes), y: -r, take: isTake, color: PALETTE[isTake ? g.take : g.avoid].c });
+        const useShape = g.shapeRate > 0 && rngLocal() < g.shapeRate;
+        const isDecoy = !isTake && g.decoyRate > 0 && rngLocal() < g.decoyRate;
+        let take = isTake;
+        let colorIdx = isTake ? g.take : g.avoid;
+        if (useShape && !isDecoy) take = !take; // square = inverted rule for this ball only
+        if (isDecoy) {
+          let d = pick(PALETTE.length);
+          let guard = 0;
+          while ((d === g.take || d === g.avoid) && guard++ < 8) d = pick(PALETTE.length);
+          colorIdx = d;
+        }
+        g.balls.push({
+          lane: pick(g.lanes), y: -r, take, decoy: isDecoy,
+          square: useShape || isDecoy,
+          color: PALETTE[colorIdx].c,
+        });
       }
       let survPct = 1;
       if (mode === 'free') {
@@ -177,26 +218,30 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
       const remaining = [];
       for (const b of g.balls) {
         if (b.y >= catchY) {
-          g.resolved += 1; g.sinceFlip += 1;
+          g.resolved += 1; g.sinceFlip += 1; g.sinceSwap += 1;
           const inLane = b.lane === g.lane;
-          if (b.take) {
+          if (b.decoy) {
+            if (inLane) {
+              g.combo = 0; g.lives -= 1; playSfx('error');
+              setSting({ id: Date.now(), text: isAr ? '💥 فخ!' : '💥 Trap!' });
+              if (g.lives <= 0) { g.balls = []; finish(); return; }
+            }
+          } else if (b.take) {
             if (inLane) {
               g.caught += 1; g.combo += 1; if (g.combo > g.bestCombo) g.bestCombo = g.combo;
               g.sinceRule += 1; awardPoints(1); playSfx('collect');
-              if (g.sinceRule >= g.ruleEvery) newRule();
+              if (g.sinceRule >= g.ruleEvery) newRule(false);
+              if (g.swapEvery > 0 && g.sinceSwap >= g.swapEvery) swapRule();
             } else {
-              // missed a ball you had to catch
               g.combo = 0; g.lives -= 1; playSfx('error');
               setSting({ id: Date.now(), text: isAr ? '💔 فاتتك!' : '💔 Missed!' });
               if (g.lives <= 0) { g.balls = []; finish(); return; }
             }
           } else if (inLane) {
-            // caught a ball you had to avoid
             g.combo = 0; g.lives -= 1; playSfx('error');
             setSting({ id: Date.now(), text: isAr ? '💔 خطأ!' : '💔 Wrong!' });
             if (g.lives <= 0) { g.balls = []; finish(); return; }
           }
-          // control flip cadence
           if (g.invert && g.sinceFlip >= g.flipEvery) { g.sinceFlip = 0; flip(); }
         } else remaining.push(b);
       }
@@ -213,12 +258,12 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
 
       // draw
       ctx.clearRect(0, 0, g.W, g.H);
-      if (mode === 'free') drawSurvivalBar(ctx, g.W, survPct, FLX);
+      if (mode === 'free') drawSurvivalBar(ctx, g.W, survPct, ACCENT);
       for (let i = 0; i < g.lanes; i++) {
-        ctx.fillStyle = i % 2 ? 'rgba(224,122,170,0.05)' : 'rgba(224,122,170,0.02)';
+        ctx.fillStyle = i % 2 ? COSMOS_LANE_A : COSMOS_LANE_B;
         ctx.fillRect((i / g.lanes) * g.W, 0, g.W / g.lanes, g.H);
       }
-      if (g.cued) { ctx.lineWidth = 8; ctx.strokeStyle = g.mirror ? '#ff6aa0' : '#4f9fe0'; ctx.strokeRect(4, 4, g.W - 8, g.H - 8); }
+      if (g.cued) { ctx.lineWidth = 8; ctx.strokeStyle = g.mirror ? '#4f9fe0' : ACCENT; ctx.strokeRect(4, 4, g.W - 8, g.H - 8); }
       ctx.strokeStyle = 'rgba(0,0,0,0.10)'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(0, catchY); ctx.lineTo(g.W, catchY); ctx.stroke();
 
@@ -226,21 +271,19 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
         const x = laneX(b.lane);
         ctx.save(); ctx.translate(x, b.y);
         ctx.fillStyle = b.color;
-        ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.beginPath(); ctx.arc(-r * 0.3, -r * 0.3, r * 0.28, 0, Math.PI * 2); ctx.fill();
+        if (b.square) {
+          ctx.fillRect(-r, -r, r * 2, r * 2);
+          ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 2; ctx.strokeRect(-r, -r, r * 2, r * 2);
+        } else {
+          ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.5)';
+          ctx.beginPath(); ctx.arc(-r * 0.3, -r * 0.3, r * 0.28, 0, Math.PI * 2); ctx.fill();
+        }
         ctx.restore();
       }
 
       const cx = g.charX, cy = catchY - hopY;
-      ctx.save(); ctx.translate(cx, cy); ctx.scale(g.mirror ? -1 : 1, 1);
-      ctx.fillStyle = FLX;
-      ctx.beginPath(); ctx.arc(0, 0, r * 1.05, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(-r * 0.32, -r * 0.15, r * 0.26, 0, Math.PI * 2); ctx.arc(r * 0.32, -r * 0.15, r * 0.26, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#2d2d2d';
-      ctx.beginPath(); ctx.arc(-r * 0.26, -r * 0.13, r * 0.12, 0, Math.PI * 2); ctx.arc(r * 0.38, -r * 0.13, r * 0.12, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
+      drawCosmosRunner(ctx, cx, cy, r * 1.05, { mirror: g.mirror });
 
       if (g.caught !== hudCache.caught || g.lives !== hudCache.lives || g.combo !== hudCache.combo || g.resolved !== hudCache.resolved) {
         hudCache = { caught: g.caught, lives: g.lives, combo: g.combo, resolved: g.resolved };
@@ -252,9 +295,17 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
 
     return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runId]);
+  }, [runId, seed]);
 
   useEffect(() => { if (!sting) return; const id = setTimeout(() => setSting(null), 800); return () => clearTimeout(id); }, [sting]);
+  useEffect(() => { if (!ruleToast) return; const id = setTimeout(() => setRuleToast(null), 1400); return () => clearTimeout(id); }, [ruleToast]);
+
+  const onCanvasTap = useCallback((e) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    move(x < rect.width / 2 ? -1 : 1);
+  }, [move]);
 
   const restart = () => { setOver(null); finishedRef.current = false; setRunId((n) => n + 1); };
 
@@ -270,7 +321,7 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
         <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx('click'); onExit?.(); }}>‹</button>
         <div className="ct-training-play-header-body">
           <div className="ct-training-play-title">{isAr ? 'انقلاب' : 'Flip'}</div>
-          <div className="ct-training-play-sub">{head} · {'♥'.repeat(Math.max(0, hud.lives))}{hud.combo > 1 ? ` · 🔥${hud.combo}` : ''}</div>
+          <div className="ct-training-play-sub">{head} · {'♥'.repeat(Math.max(0, hud.lives))}{hud.combo > 1 ? ` · 🔥${hud.combo}` : ''}{mirrored ? (isAr ? ' · 🔄 معكوس' : ' · 🔄 MIRRORED') : ''}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
@@ -281,10 +332,12 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
         <span style={S.sep}>·</span>
         <span style={S.tag}>{isAr ? 'تجنّب' : 'AVOID'}</span>
         <span style={{ ...S.dot, background: PALETTE[rule.avoid].c, position: 'relative' }}><span style={S.dotX}>✕</span></span>
+        {cfg.shapeRate > 0 && <span style={S.shapeHint}>{isAr ? '■ = عكس القاعدة' : '■ = opposite rule'}</span>}
       </div>
 
       <div ref={wrapRef} style={S.play}>
-        <canvas ref={canvasRef} style={{ display: 'block', touchAction: 'none' }} />
+        <canvas ref={canvasRef} onPointerDown={onCanvasTap} style={{ display: 'block', touchAction: 'none' }} />
+        {ruleToast && <div key={ruleToast.id} style={S.ruleToast}>{ruleToast.text}</div>}
         {sting && <div key={sting.id} style={S.sting}><div style={S.stingInner}>{sting.text}</div></div>}
         {msg && hud.resolved < 2 && !over && <div style={S.msg}>{msg}</div>}
         {over && (
@@ -339,18 +392,20 @@ const styles = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
   bannerWrap: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '8px 0 4px', minHeight: 34 },
   tag: { fontWeight: 900, letterSpacing: 1, color: '#5a4a32', fontSize: 14 },
+  shapeHint: { fontWeight: 800, fontSize: 12, color: '#6a5020', marginInlineStart: 6 },
   dot: { width: 26, height: 26, borderRadius: '50%', boxShadow: '2px 2px 0 #1a1208', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
+  ruleToast: { position: 'absolute', top: 12, left: 12, right: 12, textAlign: 'center', fontWeight: 900, fontSize: 15, color: '#1a1208', background: '#ffe9b8', border: '2px solid #1a1208', borderRadius: 12, padding: '10px 14px', boxShadow: '3px 3px 0 #1a1208', pointerEvents: 'none', zIndex: 2 },
   dotX: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(0,0,0,0.55)', fontWeight: 900, fontSize: 16 },
   sep: { color: '#cdbfa6', fontWeight: 900 },
   play: { position: 'relative', flex: 1, overflow: 'hidden' },
   msg: { position: 'absolute', top: 12, left: 0, right: 0, textAlign: 'center', fontWeight: 700, color: '#5a4a32', pointerEvents: 'none', padding: '0 16px' },
   sting: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' },
-  stingInner: { fontSize: 'clamp(26px, 8vw, 56px)', fontWeight: 900, color: '#fff', background: 'rgba(224,122,170,0.92)', padding: '10px 24px', borderRadius: 16, boxShadow: '4px 4px 0 #1a1208', animation: 'flipStingPop .8s ease-out' },
+  stingInner: { fontSize: 'clamp(26px, 8vw, 56px)', fontWeight: 900, color: '#fff', background: COSMOS_STING_BG, padding: '10px 24px', borderRadius: 16, boxShadow: '4px 4px 0 #1a1208', animation: 'flipStingPop .8s ease-out' },
   overWrap: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(45,45,45,0.45)' },
   overCard: { background: '#fffdf8', borderRadius: 20, padding: '22px 26px', textAlign: 'center', boxShadow: '6px 6px 0 #1a1208', border: '2px solid #cdbfa6' },
   overTitle: { fontWeight: 900, fontSize: 24, color: '#2d2d2d' },
   overScore: { marginTop: 6, fontWeight: 700, color: '#5a4a32' },
-  overBtn: { flex: 1, padding: '15px 16px', fontWeight: 900, fontSize: 16, color: '#fff', background: FLX, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
+  overBtn: { flex: 1, padding: '15px 16px', fontWeight: 900, fontSize: 16, color: '#fff', background: ACCENT, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
   controls: { display: 'flex', gap: 14, padding: '14px 18px calc(14px + env(safe-area-inset-bottom))' },
-  ctrlBtn: { flex: 1, height: 84, fontSize: 38, fontWeight: 900, color: '#fff', background: FLX, border: 'none', borderRadius: 20, boxShadow: '4px 4px 0 #1a1208', cursor: 'pointer', touchAction: 'none', userSelect: 'none' },
+  ctrlBtn: { flex: 1, height: 84, fontSize: 38, fontWeight: 900, color: '#fff', background: ACCENT, border: 'none', borderRadius: 20, boxShadow: '4px 4px 0 #1a1208', cursor: 'pointer', touchAction: 'none', userSelect: 'none' },
 };

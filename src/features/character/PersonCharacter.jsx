@@ -3,26 +3,18 @@ import { equipped2d } from './items';
 import { ramp, metal, lighten, darken, mix } from './shade';
 
 /**
- * PersonCharacter — Maze Man / Maze Woman as a GEOMETRIC MASCOT.
+ * PersonCharacter — Maze Man / Maze Woman as a clinical geometric mascot.
  *
- * Style doctrine (applies to every character + shop item):
- *   • simple confident silhouettes (~3 heads tall), rounded forms
- *   • FLAT colour planes + exactly one shade pass (right side) and one
- *     highlight crescent — no painterly gradients, no blurs on the figure
- *   • one consistent ink outline on major silhouettes only
- * Code-drawn art reads professional when it embraces geometry; the previous
- * realistic 7-head build fought it. (Think Headspace / Monument Valley.)
- *
- *   variant 'male'   — broader body, short cap hair
- *   variant 'female' — tapered body, long hair, lashes + lips
+ * Flat planes, one shade pass, restrained expression — aligned with the
+ * splash screen's professional cognitive-training tone.
  */
 const VARIANTS = {
   male: {
-    skin: '#cf9367', hair: '#2a2018', lips: null, long: false,
+    skin: '#c4a088', hair: '#2a2520', lips: null, long: false,
     shHalf: 30, hipHalf: 28, skirt: false,
   },
   female: {
-    skin: '#e0a87b', hair: '#3a2433', lips: '#c2566b', long: true,
+    skin: '#d4b098', hair: '#342830', lips: '#a85868', long: true,
     shHalf: 23, hipHalf: 26, skirt: true,
   },
 };
@@ -38,8 +30,8 @@ const ANCHORS = {
 export default React.memo(function PersonCharacter({
   size = 200,
   variant = 'male',
-  accent = '#f5c542',
-  cloth = '#16161f',
+  accent = '#c8943e',
+  cloth = '#181820',
   glow = true,
   float = false,
   equipped = null,
@@ -53,7 +45,7 @@ export default React.memo(function PersonCharacter({
   const cl = ramp(cloth);
   const g = metal(accent);
   const ink = darken(cloth, 0.78);
-  const blush = mix(v.skin, '#c2452f', 0.45);
+  const blush = mix(v.skin, '#b87060', 0.28);
 
   const cx = 100;
   const headR = 36, headY = 64;
@@ -108,7 +100,7 @@ export default React.memo(function PersonCharacter({
           </clipPath>
         </defs>
 
-        {glow && <ellipse cx={cx} cy="120" rx="70" ry="100" fill={accent} opacity="0.06" />}
+        {glow && <ellipse cx={cx} cy="120" rx="70" ry="100" fill={accent} opacity="0.045" />}
         <ellipse cx={cx} cy="218" rx="42" ry="8" fill={ink} opacity="0.18" />
 
         {/* equipped gear behind the body (cape / wings / balloon) */}
@@ -140,16 +132,16 @@ export default React.memo(function PersonCharacter({
         <circle cx={cx + sh + 5} cy="155" r="7" fill={sk.core} stroke={ink} strokeWidth="1.6" />
 
         {/* ── torso ── */}
-        <path d={body} fill={cl.core} stroke={ink} strokeWidth="2.2" strokeLinejoin="round" />
+        <path d={body} fill={cl.core} stroke={ink} strokeWidth="2" strokeLinejoin="round" />
         {/* single flat shade plane (right third) */}
         <path d={`M${cx + sh * 0.35},${bodyTop} L${cx + sh},${bodyTop} L${cx + hip},${bodyBot} L${cx + hip * 0.35},${bodyBot} Z`}
           fill={cl.deep} opacity="0.35" clipPath={`url(#${id('bodyclip')})`} />
         {/* accent belt + chest maze emblem (brand mark) */}
         <rect x={cx - hip - 1} y={v.skirt ? 148 : 152} width={(hip + 1) * 2} height="9" rx="4.5"
           fill={`url(#${id('gold')})`} stroke={ink} strokeWidth="1.4" />
-        <rect x={cx - 10} y="116" width="20" height="20" rx="5" fill={`url(#${id('gold')})`} stroke={ink} strokeWidth="1.6" />
-        <path d="M95,121 H105 M105,121 V126 M105,126 H98 M98,126 V131 M98,131 H105"
-          fill="none" stroke={ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+        <rect x={cx - 8} y="118" width="16" height="16" rx="4" fill={`url(#${id('gold')})`} stroke={ink} strokeWidth="1.3" opacity="0.92" />
+        <path d="M96,123 H104 M104,123 V127 M104,127 H98 M98,127 V130 M98,130 H104"
+          fill="none" stroke={ink} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
           transform={`translate(${cx - 100},0)`} />
 
         {/* ── head ── */}
@@ -214,16 +206,16 @@ export default React.memo(function PersonCharacter({
               fill="none" stroke={hr.core} strokeWidth="2.4" strokeLinecap="round" />
           </>
         )}
-        <circle cx={cx - 22} cy={headY + 9} r="4.5" fill={blush} opacity={v.long ? 0.4 : 0.3} />
-        <circle cx={cx + 22} cy={headY + 9} r="4.5" fill={blush} opacity={v.long ? 0.4 : 0.3} />
+        <circle cx={cx - 22} cy={headY + 9} r="3.5" fill={blush} opacity={v.long ? 0.18 : 0.12} />
+        <circle cx={cx + 22} cy={headY + 9} r="3.5" fill={blush} opacity={v.long ? 0.18 : 0.12} />
         {v.lips ? (
           /* cupid's-bow lips: two upper arcs over a soft lower curve */
           <path
             d={`M${cx - 6.5},${headY + 14.5} Q${cx - 3},${headY + 12.5} ${cx},${headY + 14.5} Q${cx + 3},${headY + 12.5} ${cx + 6.5},${headY + 14.5} Q${cx + 3.5},${headY + 19.5} ${cx},${headY + 19.5} Q${cx - 3.5},${headY + 19.5} ${cx - 6.5},${headY + 14.5} Z`}
             fill={v.lips} stroke={darken(v.lips, 0.35)} strokeWidth="0.8" />
         ) : (
-          <path d={`M${cx - 7},${headY + 13} Q${cx},${headY + 19} ${cx + 7},${headY + 13}`}
-            fill="none" stroke={ink} strokeWidth="2.4" strokeLinecap="round" />
+          <path d={`M${cx - 6},${headY + 14} Q${cx},${headY + 16.5} ${cx + 6},${headY + 14}`}
+            fill="none" stroke={ink} strokeWidth="2" strokeLinecap="round" />
         )}
 
         {/* equipped gear in front (hat / face / neck) */}

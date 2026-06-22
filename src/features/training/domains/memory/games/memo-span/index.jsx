@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
   TrainingMenuBar,
@@ -7,16 +7,15 @@ import {
 } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
+import PassPlaySetup from '../../../../shared/PassPlaySetup';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
-import { useCoach } from '../../../../shared/coach/useCoach';
-import CoachOverlay from '../../../../shared/coach/CoachOverlay';
 import { createTrialLog } from '../../../../shared/trialLog';
+import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import MemoObject from './MemoObject';
 import MemoModes from './MemoModes';
 import MemoSciencePanel, { memoTip } from './MemoSciencePanel';
-import { buildMemoCoachSteps } from './tutorialScript';
 import {
   MS_LEVELS_PER_TIER,
   MS_DIFF_KEYS,
@@ -253,14 +252,7 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
 
   const juice = useJuice();
   const rLabels = ratingLabels(isAr);
-  const [coachActive, setCoachActive] = useState(false);
-  const coachActiveRef = useRef(false);
-  const coachRef = useRef(null);
-  const pendingAfterCoachRef = useRef(null);
-  const stageRef = useRef(null);
-  useEffect(() => {
-    coachActiveRef.current = coachActive;
-  }, [coachActive]);
+  const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('memo-span', isAr, playSfx);
 
   const timersRef = useRef([]);
   const roundRef = useRef(null);
@@ -464,7 +456,6 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
       setLitCell(-1);
       recallStartRef.current = performance.now();
       setPlayStep('recall');
-      if (r.mode === 'tutorial') queueMicrotask(() => coachRef.current?.notify('study-done'));
       return;
     }
     setLitCell(r.sequence[i]);
@@ -505,27 +496,6 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
     const r = roundRef.current;
     if (!r) return;
     if (tapsRef.current.includes(cellIdx)) return; // each cell once
-
-    // Coached tutorial: accept only the correct next cell, let wrong taps retry.
-    if (r.mode === 'tutorial') {
-      const tpos = tapsRef.current.length;
-      if (cellIdx !== r.expected[tpos]) {
-        playSfx('error');
-        juice.miss();
-        return;
-      }
-      const nt = [...tapsRef.current, cellIdx];
-      tapsRef.current = nt;
-      setTaps(nt);
-      playSfx('click');
-      juice.hit({});
-      if (nt.length === r.expected.length) {
-        setFeedback('ok');
-        juice.celebrate();
-        coachRef.current?.notify('recall-done');
-      }
-      return;
-    }
 
     const pos = tapsRef.current.length;
     const correct = cellIdx === r.expected[pos];
@@ -570,73 +540,6 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
     trialLogRef.current = createTrialLog({ game: 'memo-span', mode: 'free' });
     beginRound(prepareFreeRound(2, rngSeed()));
   };
-
-  /* --- Coached interactive tutorial --- */
-  const beginTutorial = useCallback(() => {
-    clearTimers();
-    let r;
-    try {
-      r = prepareLevelRound('easy', 1, rngSeed());
-    } catch {
-      return;
-    }
-    r = { ...r, mode: 'tutorial' };
-    roundRef.current = r;
-    setRound(r);
-    resetPlayState();
-    juice.reset();
-    setPhase('play');
-    setPlayStep('study');
-    timersRef.current.push(setTimeout(() => runStudy(0), 600));
-  }, [clearTimers, juice, runStudy]);
-
-  const finishCoach = useCallback(() => {
-    try {
-      localStorage.setItem('mm_memospan_coach_seen', '1');
-    } catch {
-      /* ignore */
-    }
-    setCoachActive(false);
-    coachActiveRef.current = false;
-    clearTimers();
-    setRound(null);
-    resetPlayState();
-    setPlayStep('idle');
-    const fn = pendingAfterCoachRef.current;
-    pendingAfterCoachRef.current = null;
-    if (fn) fn();
-    else setPhase('hub');
-  }, [clearTimers]);
-
-  const coachSteps = useMemo(() => buildMemoCoachSteps(isAr, { stageRef }), [isAr]);
-  const coach = useCoach(coachSteps, { active: coachActive, onDone: finishCoach });
-  useEffect(() => {
-    coachRef.current = coach;
-  }, [coach]);
-
-  const startCoach = useCallback(
-    (thenFn) => {
-      pendingAfterCoachRef.current = thenFn || null;
-      coachActiveRef.current = true;
-      setCoachActive(true);
-      beginTutorial();
-    },
-    [beginTutorial],
-  );
-  const maybeCoach = useCallback(
-    (fn) => {
-      let seen = false;
-      try {
-        seen = !!localStorage.getItem('mm_memospan_coach_seen');
-      } catch {
-        /* ignore */
-      }
-      if (seen) fn();
-      else startCoach(fn);
-    },
-    [startCoach],
-  );
-  const replayTutorial = useCallback(() => startCoach(null), [startCoach]);
 
   const openChallenge = () => {
     const names = chalNames.map((s, i) => s.trim() || `Player ${i + 1}`);
@@ -700,14 +603,15 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
           <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
             <TrainingMenuBar
               onBack={onBack} playSfx={playSfx} hubSpaced variant="paper"
-              onReplayTutorial={replayTutorial} replayHint={t.replayTutorial}
+              onReplayTutorial={openTutorial} replayHint={tutReplayHint}
               center={<div className="ct-fq-hub-attn-head"><div className="ct-fq-hub-attn-big ct-ms-hub-title">{t.hubMemory}</div><div className="ct-fq-hub-attn-sub">{t.hubTag}</div></div>}
             />
+            {tutLayer}
             <MemoModes
               t={t} isAr={isAr} playSfx={playSfx}
-              onFree={() => maybeCoach(() => setPhase('freeIntro'))}
-              onLevels={() => maybeCoach(() => setPhase('diff'))}
-              onChallenge={() => maybeCoach(() => setPhase('chal'))}
+              onFree={() => setPhase('freeIntro')}
+              onLevels={() => setPhase('diff')}
+              onChallenge={() => setPhase('chal')}
               onScience={() => setSciOpen(true)}
             />
           </div>
@@ -759,36 +663,29 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
       {phase === 'chal' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar onBack={() => setPhase('hub')} playSfx={playSfx} variant="paper"
-              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.challengeTitle}</div></div>} />
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.challengeSub}</p>
-            <div className="ct-fq-card ct-fq-card-training">
-              <h3>{t.chalPickDiff}</h3>
-              <div className="ct-fq-rr ct-fq-rr-diff" role="group" aria-label={t.chalPickDiff}>
-                {MS_DIFF_KEYS.map((k) => (
-                  <button key={k} type="button"
-                    className={`ct-fq-rrb ct-fq-rrb-diff${chalDiff === k ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
-                    onClick={() => { playSfx('click'); setChalDiff(k); }}>{MS_DM[k].label}</button>
-                ))}
-              </div>
-              <h3 style={{ marginTop: 14 }}>{t.players}</h3>
-              {chalNames.map((nm, i) => (
-                <div key={i} className="ct-fq-pr">
-                  <input value={nm} maxLength={20} onChange={(e) => { const n = [...chalNames]; n[i] = e.target.value; setChalNames(n); }} />
-                  {chalNames.length > 2 && (<button type="button" className="ct-fq-prm" onClick={() => setChalNames(chalNames.filter((_, j) => j !== i))}>×</button>)}
-                </div>
-              ))}
-              {chalNames.length < 10 && (<button type="button" className="ct-fq-apb ct-fq-apb-training" onClick={() => setChalNames([...chalNames, `Player ${chalNames.length + 1}`])}>{t.addPl}</button>)}
-              <h3 style={{ marginTop: 14 }}>{t.chalRounds}</h3>
-              <p className="ct-fq-sub" style={{ marginTop: 2, marginBottom: 8, fontSize: '0.78rem' }}>{t.chalRoundsHint}</p>
-              <div className="ct-fq-rr" role="group" aria-label={t.chalRounds}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <button key={n} type="button" className={`ct-fq-rrb${chalRoundsTotal === n ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
-                    onClick={() => { playSfx('click'); setChalRoundsTotal(n); }}>{n}</button>
-                ))}
-              </div>
-            </div>
-            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); openChallenge(); }}>{t.startCh}</button>
+            <TrainingMenuBar onBack={() => setPhase('hub')} playSfx={playSfx} variant="paper" />
+            <PassPlaySetup
+              isAr={isAr}
+              playSfx={playSfx}
+              subtitle={t.challengeSub}
+              diffKeys={MS_DIFF_KEYS}
+              diffLabels={MS_DM}
+              diff={chalDiff}
+              onDiffChange={setChalDiff}
+              players={chalNames}
+              onPlayersChange={setChalNames}
+              rounds={chalRoundsTotal}
+              onRoundsChange={setChalRoundsTotal}
+              onStart={() => { playSfx('click'); openChallenge(); }}
+              labels={{
+                difficulty: t.chalPickDiff,
+                players: t.players,
+                addPlayer: t.addPl,
+                rounds: t.chalRounds,
+                roundsHint: t.chalRoundsHint,
+                start: t.startCh,
+              }}
+            />
           </div>
         </div>
       )}
@@ -808,13 +705,13 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
         <div className="ct-ms-play">
           <TrainingPlayHeader
             isAr={isAr}
-            title={round.mode === 'tutorial' ? (isAr ? 'كيفية اللعب' : 'How to play') : headerTitle()}
-            subtitle={round.mode === 'tutorial' ? '' : headerSub()}
+            title={headerTitle()}
+            subtitle={headerSub()}
             playSfx={playSfx}
-            onMenu={round.mode === 'tutorial' ? () => coach.skip() : () => { trialLogRef.current?.discard(); trialLogRef.current = null; clearTimers(); setRound(null); resetPlayState(); if (round.mode === 'assess') { (onAssessmentExit || onBack)?.(); return; } setPhase(round.mode === 'free' ? 'hub' : round.mode === 'challenge' ? 'chal' : 'levels'); }}
+            onMenu={() => { trialLogRef.current?.discard(); trialLogRef.current = null; clearTimers(); setRound(null); resetPlayState(); if (round.mode === 'assess') { (onAssessmentExit || onBack)?.(); return; } setPhase(round.mode === 'free' ? 'hub' : round.mode === 'challenge' ? 'chal' : 'levels'); }}
             onPause={null}
           />
-          <div className={`ct-ms-stage ct-juice-host${juice.shake ? ' ct-juice-shake' : ''}`} ref={stageRef}>
+          <div className={`ct-ms-stage ct-juice-host${juice.shake ? ' ct-juice-shake' : ''}`}>
             <JuiceLayer
               combo={juice.combo}
               particle={juice.particle}
@@ -979,16 +876,6 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
         </div>
       )}
 
-      {coachActive && coach.step && (
-        <CoachOverlay
-          step={coach.step}
-          index={coach.index}
-          total={coach.total}
-          onNext={coach.next}
-          onSkip={coach.skip}
-          isAr={isAr}
-        />
-      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
   TrainingMenuBar,
@@ -10,14 +10,14 @@ import {
 import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
+import PassPlaySetup from '../../../../shared/PassPlaySetup';
 import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
-import { useCoach } from '../../../../shared/coach/useCoach';
-import CoachOverlay from '../../../../shared/coach/CoachOverlay';
+import { survivalRampFromRemaining } from '../../../../shared/survival';
 import { createTrialLog } from '../../../../shared/trialLog';
+import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import { createStaircase } from '../../../../shared/staircase';
 
 import StroopModes, { StroopTarget } from './StroopModes';
-import { buildStroopCoachSteps } from './tutorialScript';
 import {
   STROOP_LEVELS_PER_TIER,
   STROOP_DIFF_KEYS,
@@ -35,8 +35,6 @@ import {
   prepareChallengeBlock,
   startStroopProbe,
   startBlitz,
-  prepareTutorialBlock,
-  advanceTutorialProbe,
   applyStroopAnswer,
   applyStroopTimeout,
   answerFor,
@@ -140,6 +138,10 @@ const UI = {
     ruleLabel: { point: 'WHERE IT POINTS', side: 'WHERE IT SITS', color: 'MATCH THE COLOUR' },
     ruleShort: { point: 'POINTS', side: 'SITS', color: 'COLOUR' },
     cuedHint: 'Tap the side the rule asks for — ignore the other attributes.',
+    hintPoint: 'Follow the arrow HEAD — tap where it points, not where it sits.',
+    hintSide: 'Follow the arrow POSITION — tap the side it sits on, not where it points.',
+    hintColor: 'Match COLOUR only: red → LEFT · green → RIGHT.',
+    reverseHint: 'REVERSE trial — tap the OPPOSITE side of what the rule says.',
     reverseBadge: '⟳ REVERSE — tap the OPPOSITE',
     ansLeft: 'Left',
     ansRight: 'Right',
@@ -237,7 +239,12 @@ const UI = {
     ruleLabel: { point: 'جهة الإشارة', side: 'مكان الجلوس', color: 'طابق اللون' },
     ruleShort: { point: 'الإشارة', side: 'المكان', color: 'اللون' },
     cuedHint: 'اضغط الجانب الذي تطلبه القاعدة — وتجاهل بقية الخصائص.',
+    hintPoint: 'اتبع رأس السهم — اضغط جهة الإشارة، لا مكان السهم.',
+    hintSide: 'اتبع موضع السهم — اضغط الجانب الذي يجلس فيه، لا اتجاه الإشارة.',
+    hintColor: 'طابق اللون فقط: أحمر → يسار · أخضر → يمين.',
+    reverseHint: 'محاولة عكس — اضغط الجانب المعاكس لما تقوله القاعدة.',
     reverseBadge: '⟳ عكس — اضغط العكس',
+    frozenBanner: '❄️ متجمّد — خذ وقتك ثم أجب',
     ansLeft: 'يسار',
     ansRight: 'يمين',
     rating: { perfect: 'ممتاز!', fast: 'سريع!', good: '' },
@@ -294,6 +301,14 @@ const UI = {
   },
 };
 
+function ruleHintFor(t, rule, probe) {
+  if (probe?.reverse) return t.reverseHint;
+  if (rule === 'point') return t.hintPoint;
+  if (rule === 'side') return t.hintSide;
+  if (rule === 'color') return t.hintColor;
+  return t.cuedHint;
+}
+
 function AnswerButton({ side, label, glyph, colorCue, highlight, pressed, innerRef, onPointerDown, onPointerUp }) {
   const hi =
     highlight === 'correct'
@@ -348,6 +363,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
+  const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('spatial-stroop', isAr, playSfx);
 
   // WORKOUT MODE: launched from the Daily Workout — skip the hub and jump
   // straight into free play; the workout shell owns timing and exit.
@@ -386,14 +402,8 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
   const [chalRoundIdx, setChalRoundIdx] = useState(0);
   const [chalDiff, setChalDiff] = useState('hard');
   const chalDiffRef = useRef('hard');
-  const [coachActive, setCoachActive] = useState(false);
+  const [frozenActive, setFrozenActive] = useState(false);
   const [, tick] = useState(0);
-
-  // coach tutorial anchors
-  const bannerRef = useRef(null);
-  const leftRef = useRef(null);
-  const rightRef = useRef(null);
-  const pendingAfterCoachRef = useRef(null);
 
   // juice + power-up state
   const [combo, setCombo] = useState(0);
@@ -410,6 +420,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
   const stimOnRef = useRef(0);
   const timersRef = useRef([]);
   const runIdRef = useRef(0);
+  const survivalRemainingRef = useRef(60000);
   const playStepRef = useRef('idle');
   const pauseRef = useRef(false);
   const finishBlockRef = useRef(() => {});
@@ -443,6 +454,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
   const probe = frozenProbe || session?.probe;
   const blitzActive = !!session?.blitzActive;
   const survivalRemaining = useSurvivalCountdown(phase === 'play' && block?.mode === 'free', () => finishBlockRef.current());
+  survivalRemainingRef.current = survivalRemaining;
 
   useEffect(() => {
     pauseRef.current = pauseOpen;
@@ -745,6 +757,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
     // effective deadline: blitz shortens, slow-mo lengthens (survival mode)
     let limit = s.responseLimitMs;
     if (b.mode === 'free') {
+      limit = Math.max(950, Math.round(limit * (1 - survivalRampFromRemaining(survivalRemainingRef.current) * 0.32)));
       if (s.blitzActive) limit = Math.round(limit * 0.7);
       if (slowMoRef.current > 0) {
         limit = Math.round(limit * 1.6);
@@ -756,8 +769,6 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
     setRingMs(limit);
     setTrialKey((k) => k + 1);
     bump();
-
-    if (b.mode === 'tutorial') return; // coach drives the tutorial; no deadline
 
     const runId = runIdRef.current;
     timersRef.current.push(
@@ -822,45 +833,6 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
       const b = blockRef.current;
       const s = b?.session;
       if (!s?.probe) return;
-
-      // Coached tutorial: gate on the correct side, let the player retry, no scoring.
-      if (b.mode === 'tutorial') {
-        if (respondedRef.current) return;
-        respondedRef.current = true;
-        clearTimers();
-        const curProbe = { ...s.probe };
-        const curRule = activeRule(s);
-        const ok = answerFor(curProbe, curRule) === side;
-        setPickedSide(side);
-        setFeedbackDetail({ correctSide: answerFor(curProbe, curRule), pickedSide: side });
-        setFeedback(ok ? 'correct' : 'wrong');
-        playSfx(ok ? 'click' : 'error');
-        if (ok) {
-          coach.notify('answer', { side });
-          timersRef.current.push(
-            setTimeout(() => {
-              advanceTutorialProbe(s);
-              respondedRef.current = false;
-              setFeedback(null);
-              setFeedbackDetail(null);
-              setPickedSide(null);
-              bump();
-            }, 650),
-          );
-        } else {
-          timersRef.current.push(
-            setTimeout(() => {
-              respondedRef.current = false;
-              setFeedback(null);
-              setFeedbackDetail(null);
-              setPickedSide(null);
-              bump();
-            }, 750),
-          );
-        }
-        bump();
-        return;
-      }
 
       if (respondedRef.current) return;
       respondedRef.current = true;
@@ -973,8 +945,33 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
         x2Ref.current += 5;
         setMods((m) => ({ ...m, x2: x2Ref.current }));
       } else if (key === 'freeze') {
-        clearTimers(); // remove the running deadline for the current trial
+        clearTimers();
+        setFrozenActive(true);
         flashToast(isAr ? POWERUP_LABEL.ar.freeze : POWERUP_LABEL.en.freeze);
+        const runId = runIdRef.current;
+        const bonus = 8000;
+        timersRef.current.push(setTimeout(() => {
+          setFrozenActive(false);
+          if (runIdRef.current !== runId || respondedRef.current || pauseRef.current) return;
+          timersRef.current.push(setTimeout(() => {
+            if (runIdRef.current !== runId || respondedRef.current || pauseRef.current) return;
+            const b = blockRef.current;
+            const s = b?.session;
+            if (!s || s.finished) return;
+            const rule = activeRule(s);
+            const probeSnap = s.probe ? { ...s.probe } : null;
+            setFrozenProbe(probeSnap);
+            setFeedback('timeout');
+            setFeedbackDetail({ correctSide: probeSnap ? answerFor(probeSnap, rule) : null, pickedSide: null });
+            playSfx('error');
+            const end = loseLifeOrShield(b);
+            if (end) { finishBlockRef.current(); return; }
+            const outcome = applyStroopTimeout(s);
+            setStreakDisplay(0);
+            bump();
+            advanceAfterFeedback(outcome);
+          }, currentLimitRef.current));
+        }, bonus));
       }
       inventoryRef.current = inventoryRef.current.filter((_, i) => i !== idx);
       setInventory(inventoryRef.current);
@@ -1019,47 +1016,6 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
       bump();
     },
     [clearTimers],
-  );
-
-  const coachSteps = useMemo(
-    () => buildStroopCoachSteps(isAr, { bannerRef, leftRef, rightRef }),
-    [isAr],
-  );
-  const finishCoach = useCallback(() => {
-    try {
-      localStorage.setItem('mm_stroop_coach_seen', '1');
-    } catch {
-      /* ignore */
-    }
-    setCoachActive(false);
-    clearPlayState();
-    const fn = pendingAfterCoachRef.current;
-    pendingAfterCoachRef.current = null;
-    if (fn) fn();
-    else setPhase('hub');
-  }, [clearPlayState]);
-  const coach = useCoach(coachSteps, { active: coachActive, onDone: finishCoach });
-
-  const startCoach = useCallback(
-    (thenFn) => {
-      pendingAfterCoachRef.current = thenFn || null;
-      setCoachActive(true);
-      beginBlock(prepareTutorialBlock());
-    },
-    [beginBlock],
-  );
-  const maybeCoach = useCallback(
-    (fn) => {
-      let seen = false;
-      try {
-        seen = !!localStorage.getItem('mm_stroop_coach_seen');
-      } catch {
-        /* ignore */
-      }
-      if (seen) fn();
-      else startCoach(fn);
-    },
-    [startCoach],
   );
 
   const startFreeMode = useCallback(() => {
@@ -1141,7 +1097,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
   const rule = session ? activeRule(session) : 'point';
   const correctSide = feedbackDetail?.correctSide ?? (probe ? answerFor(probe, rule) : null);
   const awaitingAnswer =
-    playStep === 'running' && !feedback && !showShift && !showBlitz && block?.mode !== 'tutorial';
+    playStep === 'running' && !feedback && !showShift && !showBlitz;
 
   const sideHighlight = (sd) => {
     if (!feedback || playStep !== 'running') return null;
@@ -1165,33 +1121,36 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
         />
       )}
       {phase === 'hub' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
-            <TrainingMenuBar
-              onBack={onBack}
-              playSfx={playSfx}
-              hubSpaced
-              variant="paper"
-              onReplayTutorial={() => startCoach(null)}
-              replayHint={t.replayTutorial}
-              center={
-                <div className="ct-fq-hub-attn-head">
-                  <div className="ct-fq-hub-attn-big">{t.hubFlex}</div>
-                  <div className="ct-fq-hub-attn-sub">{t.hubTag}</div>
-                </div>
-              }
-            />
-            <StroopModes
-              t={t}
-              isAr={isAr}
-              playSfx={playSfx}
-              onFree={() => maybeCoach(startFreeMode)}
-              onLevels={() => maybeCoach(() => setPhase('diff'))}
-              onChallenge={() => maybeCoach(() => setPhase('chal'))}
-            />
-            <HubScienceLink gameId="spatial-stroop" isAr={isAr} playSfx={playSfx} />
+        <>
+          <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+            <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
+              <TrainingMenuBar
+                onBack={onBack}
+                playSfx={playSfx}
+                hubSpaced
+                variant="paper"
+                onReplayTutorial={openTutorial}
+                replayHint={tutReplayHint}
+                center={
+                  <div className="ct-fq-hub-attn-head">
+                    <div className="ct-fq-hub-attn-big">{t.hubFlex}</div>
+                    <div className="ct-fq-hub-attn-sub">{t.hubTag}</div>
+                  </div>
+                }
+              />
+              <StroopModes
+                t={t}
+                isAr={isAr}
+                playSfx={playSfx}
+                onFree={startFreeMode}
+                onLevels={() => setPhase('diff')}
+                onChallenge={() => setPhase('chal')}
+              />
+              <HubScienceLink gameId="spatial-stroop" isAr={isAr} playSfx={playSfx} />
+            </div>
           </div>
-        </div>
+          {tutLayer}
+        </>
       )}
 
       {phase === 'diff' && (
@@ -1240,81 +1199,32 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
               }}
               playSfx={playSfx}
               variant="paper"
-              center={<div className="ct-fq-training-title ct-fq-training-title-sm">{t.challengeTitle}</div>}
             />
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.challengeSub}</p>
-            <div className="ct-fq-card ct-fq-card-training">
-              <h3>{t.pickDiff}</h3>
-              <div className="ct-fq-rr ct-fq-rr-diff" role="group" aria-label={t.pickDiff}>
-                {STROOP_DIFF_KEYS.map((k) => (
-                  <button
-                    key={k}
-                    type="button"
-                    className={`ct-fq-rrb ct-fq-rrb-diff${chalDiff === k ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
-                    onClick={() => {
-                      playSfx('click');
-                      setChalDiff(k);
-                    }}
-                  >
-                    {STROOP_DM[k].label}
-                  </button>
-                ))}
-              </div>
-              <h3 style={{ marginTop: 14 }}>{t.players}</h3>
-              {chalNames.map((nm, i) => (
-                <div key={i} className="ct-fq-pr">
-                  <input
-                    value={nm}
-                    maxLength={20}
-                    onChange={(e) => {
-                      const next = [...chalNames];
-                      next[i] = e.target.value;
-                      setChalNames(next);
-                    }}
-                  />
-                  {chalNames.length > 2 && (
-                    <button
-                      type="button"
-                      className="ct-fq-prm"
-                      onClick={() => setChalNames(chalNames.filter((_, j) => j !== i))}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-              {chalNames.length < 10 && (
-                <button
-                  type="button"
-                  className="ct-fq-apb ct-fq-apb-training"
-                  onClick={() => setChalNames([...chalNames, `Player ${chalNames.length + 1}`])}
-                >
-                  {t.addPl}
-                </button>
-              )}
-              <h3 style={{ marginTop: 14 }}>{t.chalRounds}</h3>
-              <p className="ct-fq-sub" style={{ fontSize: '0.78rem', marginBottom: 8 }}>
-                {t.chalRoundsHint}
-              </p>
-              <div className="ct-fq-rr">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    className={`ct-fq-rrb${chalRoundsTotal === n ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
-                    onClick={() => {
-                      playSfx('click');
-                      setChalRoundsTotal(n);
-                    }}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={openChallenge}>
-              {t.startCh}
-            </button>
+            <PassPlaySetup
+              isAr={isAr}
+              playSfx={playSfx}
+              subtitle={t.challengeSub}
+              diffKeys={STROOP_DIFF_KEYS}
+              diffLabels={STROOP_DM}
+              diff={chalDiff}
+              onDiffChange={setChalDiff}
+              players={chalNames}
+              onPlayersChange={setChalNames}
+              rounds={chalRoundsTotal}
+              onRoundsChange={(n) => {
+                setChalRoundsTotal(n);
+                chalRoundsTotalRef.current = n;
+              }}
+              onStart={() => { playSfx('click'); openChallenge(); }}
+              labels={{
+                difficulty: t.pickDiff,
+                players: t.players,
+                addPlayer: t.addPl,
+                rounds: t.chalRounds,
+                roundsHint: t.chalRoundsHint,
+                start: t.startCh,
+              }}
+            />
           </div>
         </div>
       )}
@@ -1350,32 +1260,28 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
           <TrainingPlayHeader
             isAr={isAr}
             title={
-              block.mode === 'tutorial'
-                ? isAr ? 'كيفية اللعب' : 'How to play'
-                : block.mode === 'free'
-                  ? t.freeHeader
-                  : block.mode === 'challenge'
-                    ? t.challengeHeader
-                    : t.levelHeader(block.diff, block.lv)
+              block.mode === 'free'
+                ? t.freeHeader
+                : block.mode === 'challenge'
+                  ? t.challengeHeader
+                  : t.levelHeader(block.diff, block.lv)
             }
             subtitle={
-              block.mode === 'tutorial'
-                ? ''
-                : block.mode === 'free'
+              block.mode === 'free'
                 ? `${'♥'.repeat(Math.max(0, freeLives))}${'♡'.repeat(Math.max(0, STROOP_FREE_LIVES - freeLives))} · ${t.score} ${freeScore}${blitzActive ? ` · ${t.blitzTag(session.blitzRemaining)}` : ''}`
                 : block.mode === 'assess'
                   ? `${t.trial(session.trialNumber, session.maxTrials)} · ${t.streak(streakDisplay, session.streakToSwitch)}`
                   : `${t.trial(session.trialNumber, session.maxTrials)} · ${t.streak(streakDisplay, session.streakToSwitch)} · ${t.categories(catsDisplay, session.categoriesToComplete)}`
             }
             playSfx={playSfx}
-            onMenu={block.mode === 'tutorial' ? () => coach.skip() : () => setQuitOpen(true)}
-            onPause={block.mode === 'tutorial' ? undefined : () => setPauseOpen(true)}
+            onMenu={() => setQuitOpen(true)}
+            onPause={() => setPauseOpen(true)}
             pauseAriaLabel={t.paused}
           />
           {block.mode === 'free' && <SurvivalCountdownBar remaining={survivalRemaining} color="#e07aaa" />}
           {(playStep === 'running' || playStep === 'shift') && probe && (
             <div className="ct-stroop-board">
-              <div ref={bannerRef} className={`ct-stroop-rule-banner ct-stroop-rule--${rule}${probe.reverse ? ' ct-stroop-rule--reverse' : ''}`}>
+              <div className={`ct-stroop-rule-banner ct-stroop-rule--${rule}${probe.reverse ? ' ct-stroop-rule--reverse' : ''}`}>
                 <span className="ct-stroop-rule-label">{t.tapByLabel}</span>
                 <span className="ct-stroop-rule-rule">
                   {t.ruleLabel[rule]}
@@ -1388,7 +1294,8 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
                 </span>
                 {probe.reverse && <span className="ct-stroop-reverse-badge">{t.reverseBadge}</span>}
               </div>
-              <p className="ct-stroop-hint">{t.cuedHint}</p>
+              <p className="ct-stroop-hint ct-stroop-hint--rule">{ruleHintFor(t, rule, probe)}</p>
+              {frozenActive && <p className="ct-stroop-frozen-banner">{t.frozenBanner}</p>}
               <div className="ct-stroop-streak-bar">
                 <div
                   className="ct-stroop-streak-fill"
@@ -1441,7 +1348,6 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
                   side="left"
                   label={t.ansLeft}
                   glyph="◀"
-                  innerRef={leftRef}
                   colorCue={colorCueFor('left')}
                   highlight={sideHighlight('left')}
                   pressed={pressedSide === 'left'}
@@ -1455,7 +1361,6 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
                   side="right"
                   label={t.ansRight}
                   glyph="▶"
-                  innerRef={rightRef}
                   colorCue={colorCueFor('right')}
                   highlight={sideHighlight('right')}
                   pressed={pressedSide === 'right'}
@@ -1757,17 +1662,6 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
         onConfirmQuit={confirmQuit}
         onKeepPlaying={() => setQuitOpen(false)}
       />
-
-      {coachActive && coach.step && (
-        <CoachOverlay
-          step={coach.step}
-          index={coach.index}
-          total={coach.total}
-          onNext={coach.next}
-          onSkip={coach.skip}
-          isAr={isAr}
-        />
-      )}
     </div>
   );
 }

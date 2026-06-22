@@ -11,10 +11,15 @@ export const WORDLE_DIFF_KEYS = ['easy', 'medium', 'hard'];
 export const WORDLE_PROGRESS_ORDER = ['easy', 'medium', 'hard'];
 
 export const WORDLE_DM = {
-  easy: { label: 'Easy', pop: 'Common words · 3+ letters', lvc: 'lve', grid: 4 },
-  medium: { label: 'Medium', pop: 'Mixed vocabulary · 3+ letters', lvc: 'lvi', grid: 5 },
-  hard: { label: 'Hard', pop: 'Tougher words · 4+ letters', lvc: 'lvh', grid: 5 },
+  easy: { label: 'Easy', labelAr: 'سهل', pop: 'Common words · 3+ letters', popAr: 'كلمات شائعة · ٣+ حروف', lvc: 'lve', grid: 4 },
+  medium: { label: 'Medium', labelAr: 'متوسط', pop: 'Mixed vocabulary · 3+ letters', popAr: 'مفردات متنوعة · ٣+ حروف', lvc: 'lvi', grid: 5 },
+  hard: { label: 'Hard', labelAr: 'صعب', pop: 'Tougher words · 4+ letters', popAr: 'كلمات أصعب · ٤+ حروف', lvc: 'lvh', grid: 5 },
 };
+
+export function wordleDiffMeta(diff, isAr) {
+  const d = WORDLE_DM[diff] ?? WORDLE_DM.easy;
+  return { label: isAr ? d.labelAr : d.label, pop: isAr ? d.popAr : d.pop, lvc: d.lvc, grid: d.grid };
+}
 
 export const WORDLE_FREE_SESSION_START_SEC = 90;
 export const WORDLE_FREE_SESSION_CAP_SEC = 180;

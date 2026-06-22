@@ -56,4 +56,32 @@ export const CATEGORIES = [
     { en: 'doctor', ar: 'طبيب' }, { en: 'teacher', ar: 'معلّم' }, { en: 'engineer', ar: 'مهندس' },
     { en: 'farmer', ar: 'مزارع' }, { en: 'pilot', ar: 'طيّار' }, { en: 'nurse', ar: 'ممرّض' },
   ] },
+  { id: 'school', group: 'place', members: [
+    { en: 'classroom', ar: 'صف' }, { en: 'library', ar: 'مكتبة' }, { en: 'playground', ar: 'ملعب' },
+    { en: 'cafeteria', ar: 'مقصف' }, { en: 'lab', ar: 'مختبر' }, { en: 'office', ar: 'مكتب' },
+  ] },
+  { id: 'weather', group: 'nature', members: [
+    { en: 'rain', ar: 'مطر' }, { en: 'snow', ar: 'ثلج' }, { en: 'wind', ar: 'ريح' },
+    { en: 'cloud', ar: 'غيم' }, { en: 'storm', ar: 'عاصفة' }, { en: 'fog', ar: 'ضباب' },
+  ] },
+  { id: 'tool', group: 'object', members: [
+    { en: 'hammer', ar: 'مطرقة' }, { en: 'saw', ar: 'منشار' }, { en: 'drill', ar: 'مثقاب' },
+    { en: 'wrench', ar: 'مفتاح ربط' }, { en: 'scissors', ar: 'مقص' }, { en: 'ruler', ar: 'مسطرة' },
+  ] },
+  { id: 'emotion', group: 'concept', members: [
+    { en: 'happy', ar: 'سعيد' }, { en: 'sad', ar: 'حزين' }, { en: 'angry', ar: 'غاضب' },
+    { en: 'afraid', ar: 'خائف' }, { en: 'calm', ar: 'هادئ' }, { en: 'excited', ar: 'متحمّس' },
+  ] },
+  { id: 'body', group: 'living', members: [
+    { en: 'heart', ar: 'قلب' }, { en: 'brain', ar: 'دماغ' }, { en: 'lung', ar: 'رئة' },
+    { en: 'liver', ar: 'كبد' }, { en: 'bone', ar: 'عظم' }, { en: 'muscle', ar: 'عضلة' },
+  ] },
+  { id: 'country', group: 'place', members: [
+    { en: 'Egypt', ar: 'مصر' }, { en: 'Jordan', ar: 'الأردن' }, { en: 'Morocco', ar: 'المغرب' },
+    { en: 'Lebanon', ar: 'لبنان' }, { en: 'Iraq', ar: 'العراق' }, { en: 'Syria', ar: 'سوريا' },
+  ] },
+  { id: 'tech', group: 'object', members: [
+    { en: 'phone', ar: 'هاتف' }, { en: 'computer', ar: 'حاسوب' }, { en: 'tablet', ar: 'جهاز لوحي' },
+    { en: 'camera', ar: 'كاميرا' }, { en: 'printer', ar: 'طابعة' }, { en: 'router', ar: 'موجّه' },
+  ] },
 ];

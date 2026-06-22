@@ -4,28 +4,27 @@ import { TrainingMenuBar, TrainingPlayHeader, TrainingQuitModal, TrainingChallen
 import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
+import PassPlaySetup from '../../../../shared/PassPlaySetup';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
-import { useCoach } from '../../../../shared/coach/useCoach';
-import CoachOverlay from '../../../../shared/coach/CoachOverlay';
+import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import { createStaircase } from '../../../../shared/staircase';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { generateMatrix } from './ravenEngine';
 import { RV_DIFF_KEYS, RV_LEVELS_PER_TIER, ravenLevelSpec, ravenChallengeSpec, isRavenLevelUnlocked, gradeRaven } from './ravenData';
-import { buildRavenCoachSteps } from './tutorialScript';
 
 const UI = {
   en: {
     hub: 'Reasoning', tag: 'training', title: 'Matrix Reasoning', replayTutorial: 'Replay tutorial',
     freeMode: 'Survival mode', levelMode: 'Level mode', challengeMode: 'Pass n Play',
-    freeHint: 'Endless · 3 lives · adapts to you', levelsHint: '3 tiers · 20 levels each', chalHint: 'Same puzzles · pass the device',
+    freeHint: 'Endless · 3 lives · adapts to you', levelsHint: '3 tiers · 100 levels each', chalHint: 'Same puzzles · pass the device',
     modesAria: 'Modes — choose a path',
     blurb: 'Find the figure that completes the pattern. Each row and column follows a hidden rule.',
-    pickDiff: 'Choose difficulty', pickDiffSub: 'Each tier has 20 levels — unlock them in order.',
+    pickDiff: 'Choose Difficulty', pickDiffSub: 'Each tier has 100 levels · unlock them in order.',
     diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard',
     popEasy: '1 rule · 4 options', popMedium: '2–3 rules · 6 options', popHard: '3–4 rules · 8 options',
     diffDesc: { easy: 'One attribute changes — learn to read a row.', medium: 'Two or three change at once.', hard: 'Up to four, with eight choices.' },
-    levelsSub: '20 levels',
+    levelsSub: (pop) => `${pop} · 100 levels`,
     prompt: 'Which piece completes the grid?',
     lives: 'Lives', score: 'Score', solved: 'Solved', correct: 'Correct',
     quitQ: 'Quit?', quitLose: 'This run will be lost.', yesQuit: 'Yes, quit', keep: 'Keep playing',
@@ -42,14 +41,14 @@ const UI = {
   ar: {
     hub: 'تفكير', tag: 'تدريب', title: 'استدلال المصفوفات', replayTutorial: 'إعادة الشرح',
     freeMode: 'وضع البقاء', levelMode: 'وضع المستويات', challengeMode: 'مرّر والعب',
-    freeHint: 'لا ينتهي · ٣ أرواح · يتكيّف معك', levelsHint: '٣ مستويات · ٢٠ مرحلة لكل منها', chalHint: 'نفس الألغاز · مرّر الجهاز',
+    freeHint: 'لا ينتهي · ٣ أرواح · يتكيّف معك', levelsHint: '٣ مستويات · ١٠٠ مرحلة لكل منها', chalHint: 'نفس الألغاز · مرّر الجهاز',
     modesAria: 'الأوضاع — اختر مسارًا',
     blurb: 'اعثر على الشكل الذي يُكمل النمط. كل صف وعمود يتبع قاعدة خفية.',
-    pickDiff: 'اختر الصعوبة', pickDiffSub: 'كل مستوى يحتوي ٢٠ مرحلة — افتحها بالترتيب.',
+    pickDiff: 'اختر الصعوبة', pickDiffSub: 'كل صعوبة ١٠٠ مستوى · افتحها بالترتيب.',
     diffEasy: 'سهل', diffMedium: 'متوسط', diffHard: 'صعب',
     popEasy: 'قاعدة واحدة · ٤ خيارات', popMedium: '٢-٣ قواعد · ٦ خيارات', popHard: '٣-٤ قواعد · ٨ خيارات',
     diffDesc: { easy: 'سمة واحدة تتغيّر — تعلّم قراءة الصف.', medium: 'سمتان أو ثلاث معًا.', hard: 'حتى أربع، مع ثمانية خيارات.' },
-    levelsSub: '٢٠ مرحلة',
+    levelsSub: (pop) => `${pop} · ١٠٠ مستوى`,
     prompt: 'أي قطعة تُكمل الشبكة؟',
     lives: 'الأرواح', score: 'نقاط', solved: 'محلولة', correct: 'صحيحة',
     quitQ: 'خروج؟', quitLose: 'سيُلغى هذا السجل.', yesQuit: 'نعم، خروج', keep: 'متابعة اللعب',
@@ -110,6 +109,7 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
   const juice = useJuice();
+  const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('raven-matrices', isAr, playSfx);
 
   const DM = useMemo(() => ({
     easy: { label: t.diffEasy, pop: t.popEasy, lvc: 'fq-lve' },
@@ -137,14 +137,6 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
   const [chalScores, setChalScores] = useState([]);
   const [chalTurnOpen, setChalTurnOpen] = useState(false);
   const [chalDiff, setChalDiff] = useState('medium');
-
-  // Coach
-  const [coachActive, setCoachActive] = useState(false);
-  const gridRef = useRef(null);
-  const optionsRef = useRef(null);
-  const coachRef = useRef(null);
-  const pendingAfterCoachRef = useRef(null);
-  const tutPuzzleRef = useRef(null);
 
   const blockRef = useRef(null);
   const trialIdxRef = useRef(0);
@@ -231,16 +223,6 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
   const onPick = useCallback((idx) => {
     if (lockRef.current || !puzzle) return;
     const block = blockRef.current;
-
-    // Tutorial: gate on the correct option, allow retry, no scoring.
-    if (block?.mode === 'tutorial') {
-      const ok = idx === puzzle.correctIndex;
-      setPicked({ idx, ok });
-      if (ok) { playSfx('collect'); juice.hit({}); juice.celebrate(); lockRef.current = true; coachRef.current?.notify('answer', { ok: true }); }
-      else { playSfx('error'); juice.miss(); coachRef.current?.notify('answer', { ok: false }); advanceRef.current = setTimeout(() => setPicked(null), 600); }
-      return;
-    }
-
     if (!block) return;
     lockRef.current = true;
     const ok = idx === puzzle.correctIndex;
@@ -323,37 +305,6 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
     setPhase('play');
   }, [chalNames, t.needTwo]);
 
-  /* ── Coach ── */
-  const finishCoach = useCallback(() => {
-    try { localStorage.setItem('mm_raven_coach_seen', '1'); } catch { /* ignore */ }
-    setCoachActive(false);
-    clearTimers();
-    blockRef.current = null;
-    lockRef.current = false;
-    const fn = pendingAfterCoachRef.current; pendingAfterCoachRef.current = null;
-    if (fn) fn(); else setPhase('hub');
-  }, []);
-  const coachSteps = useMemo(() => buildRavenCoachSteps(isAr, { gridRef, optionsRef }), [isAr]);
-  const coach = useCoach(coachSteps, { active: coachActive, onDone: finishCoach });
-  useEffect(() => { coachRef.current = coach; }, [coach]);
-
-  const beginTutorial = useCallback(() => {
-    clearTimers();
-    const tut = generateMatrix(0, 12345);
-    tutPuzzleRef.current = tut;
-    blockRef.current = { mode: 'tutorial' };
-    setPuzzle(tut);
-    setPicked(null);
-    lockRef.current = false;
-    setPhase('play');
-  }, []);
-  const startCoach = useCallback((thenFn) => { pendingAfterCoachRef.current = thenFn || null; setCoachActive(true); beginTutorial(); }, [beginTutorial]);
-  const maybeCoach = useCallback((fn) => {
-    let seen = false; try { seen = !!localStorage.getItem('mm_raven_coach_seen'); } catch { /* ignore */ }
-    if (seen) fn(); else startCoach(fn);
-  }, [startCoach]);
-  const replayTutorial = useCallback(() => startCoach(null), [startCoach]);
-
   useEffect(() => {
     if (workoutMode && !workoutLaunched.current) { workoutLaunched.current = true; startFree(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -373,23 +324,26 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
   /* ── Hub ── */
   if (phase === 'hub') {
     return (
-      <div className="cancellation-task-game ct-rv-root" dir={isAr ? 'rtl' : 'ltr'}>
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
-            <TrainingMenuBar onBack={onBack} playSfx={playSfx} hubSpaced variant="paper"
-              onReplayTutorial={replayTutorial} replayHint={t.replayTutorial}
-              center={<div className="ct-fq-hub-attn-head"><div className="ct-fq-hub-attn-big">{t.title}</div><div className="ct-fq-hub-attn-sub">{t.tag}</div></div>} />
-            <div className="ct-rv-intro">
-              <p className="ct-fq-sub ct-fq-training-blurb">{t.blurb}</p>
+      <>
+        <div className="cancellation-task-game ct-rv-root" dir={isAr ? 'rtl' : 'ltr'}>
+          <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+            <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
+              <TrainingMenuBar onBack={onBack} playSfx={playSfx} hubSpaced variant="paper"
+                onReplayTutorial={openTutorial} replayHint={tutReplayHint}
+                center={<div className="ct-fq-hub-attn-head"><div className="ct-fq-hub-attn-big">{t.title}</div><div className="ct-fq-hub-attn-sub">{t.tag}</div></div>} />
+              <div className="ct-rv-intro">
+                <p className="ct-fq-sub ct-fq-training-blurb">{t.blurb}</p>
+              </div>
+              <ReasoningModes t={t} isAr={isAr} playSfx={playSfx}
+                onFree={() => setPhase('freeIntro')}
+                onLevels={() => setPhase('diff')}
+                onChallenge={() => setPhase('chal')} />
+              <HubScienceLink gameId="raven-matrices" isAr={isAr} playSfx={playSfx} />
             </div>
-            <ReasoningModes t={t} isAr={isAr} playSfx={playSfx}
-              onFree={() => maybeCoach(() => setPhase('freeIntro'))}
-              onLevels={() => maybeCoach(() => setPhase('diff'))}
-              onChallenge={() => maybeCoach(() => setPhase('chal'))} />
-            <HubScienceLink gameId="raven-matrices" isAr={isAr} playSfx={playSfx} />
           </div>
         </div>
-      </div>
+        {tutLayer}
+      </>
     );
   }
 
@@ -411,7 +365,7 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
     return (
       <div className="cancellation-task-game ct-rv-root" dir={isAr ? 'rtl' : 'ltr'}>
         <TrainingLevelGrid isAr={isAr} playSfx={playSfx} onBack={() => setPhase('diff')}
-          title={DM[diffKey].label} blurb={t.levelsSub} count={RV_LEVELS_PER_TIER} lvc={DM[diffKey].lvc}
+          title={DM[diffKey].label} blurb={t.levelsSub(DM[diffKey].pop)} count={RV_LEVELS_PER_TIER} lvc={DM[diffKey].lvc}
           isUnlocked={(lv) => isRavenLevelUnlocked(diffKey, lv, profile.done)}
           isDone={(lv) => !!profile.done[`${diffKey}-${lv}`]}
           sublabel={() => `${ravenLevelSpec(diffKey, 1).trials}◆`}
@@ -425,27 +379,28 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
       <div className="cancellation-task-game ct-rv-root" dir={isAr ? 'rtl' : 'ltr'}>
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar onBack={() => setPhase('hub')} playSfx={playSfx} variant="paper"
-              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.chalTitle}</div></div>} />
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.chalSub}</p>
-            <div className="ct-fq-card ct-fq-card-training">
-              <h3>{t.chalPickDiff}</h3>
-              <div className="ct-fq-rr ct-fq-rr-diff" role="group" aria-label={t.chalPickDiff}>
-                {RV_DIFF_KEYS.map((k) => (
-                  <button key={k} type="button" className={`ct-fq-rrb ct-fq-rrb-diff${chalDiff === k ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
-                    onClick={() => { playSfx('click'); setChalDiff(k); }}>{DM[k].label}</button>
-                ))}
-              </div>
-              <h3 style={{ marginTop: 14 }}>{t.players}</h3>
-              {chalNames.map((nm, i) => (
-                <div key={i} className="ct-fq-pr">
-                  <input value={nm} maxLength={20} onChange={(e) => { const n = [...chalNames]; n[i] = e.target.value; setChalNames(n); }} />
-                  {chalNames.length > 2 && <button type="button" className="ct-fq-prm" onClick={() => setChalNames(chalNames.filter((_, j) => j !== i))}>×</button>}
-                </div>
-              ))}
-              {chalNames.length < 10 && <button type="button" className="ct-fq-apb ct-fq-apb-training" onClick={() => setChalNames([...chalNames, `Player ${chalNames.length + 1}`])}>{t.addPl}</button>}
-            </div>
-            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); openChallenge(); }}>{t.startCh}</button>
+            <TrainingMenuBar onBack={() => setPhase('hub')} playSfx={playSfx} variant="paper" />
+            <PassPlaySetup
+              isAr={isAr}
+              playSfx={playSfx}
+              subtitle={t.chalSub}
+              diffKeys={RV_DIFF_KEYS}
+              diffLabels={DM}
+              diff={chalDiff}
+              onDiffChange={setChalDiff}
+              players={chalNames}
+              onPlayersChange={setChalNames}
+              rounds={1}
+              onRoundsChange={() => {}}
+              roundOptions={[1]}
+              onStart={() => { playSfx('click'); openChallenge(); }}
+              labels={{
+                difficulty: t.chalPickDiff,
+                players: t.players,
+                addPlayer: t.addPl,
+                start: t.startCh,
+              }}
+            />
           </div>
         </div>
       </div>
@@ -538,29 +493,27 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
   const total = block?.spec?.trials ?? 0;
   return (
     <div className="cancellation-task-game ct-rv-root" dir={isAr ? 'rtl' : 'ltr'}>
-      <TrainingPlayHeader isAr={isAr} title={block?.mode === 'tutorial' ? (isAr ? 'كيفية اللعب' : 'How to play') : t.title} subtitle="" playSfx={playSfx}
-        onMenu={block?.mode === 'tutorial' ? () => coach.skip() : () => setQuitOpen(true)} />
+      <TrainingPlayHeader isAr={isAr} title={t.title} subtitle="" playSfx={playSfx}
+        onMenu={() => setQuitOpen(true)} />
       <div className="ct-rv-play ct-juice-host">
         <JuiceLayer toast={juice.toast} burst={juice.burst} />
-        {block?.mode !== 'tutorial' && (
-          <div className="ct-rv-hud">
-            {block?.mode === 'free' ? (
-              <>
-                <span className="ct-rv-hud-stat ct-fq-lives" aria-label={`${lives} ${t.lives}`}>{'♥'.repeat(Math.max(0, lives))}<span className="ct-fq-lives-spent">{'♥'.repeat(Math.max(0, LIVES - lives))}</span></span>
-                <span className="ct-rv-hud-stat">{t.score} {score}</span>
-                <span className="ct-rv-hud-stat">{t.solved} {solved}</span>
-              </>
-            ) : (
-              <>
-                <span className="ct-rv-hud-stat">{Math.min(trialIdx + 1, total)}/{total}</span>
-                <span className="ct-rv-hud-stat">{t.correct} {correct}</span>
-              </>
-            )}
-          </div>
-        )}
+        <div className="ct-rv-hud">
+          {block?.mode === 'free' ? (
+            <>
+              <span className="ct-rv-hud-stat ct-fq-lives" aria-label={`${lives} ${t.lives}`}>{'♥'.repeat(Math.max(0, lives))}<span className="ct-fq-lives-spent">{'♥'.repeat(Math.max(0, LIVES - lives))}</span></span>
+              <span className="ct-rv-hud-stat">{t.score} {score}</span>
+              <span className="ct-rv-hud-stat">{t.solved} {solved}</span>
+            </>
+          ) : (
+            <>
+              <span className="ct-rv-hud-stat">{Math.min(trialIdx + 1, total)}/{total}</span>
+              <span className="ct-rv-hud-stat">{t.correct} {correct}</span>
+            </>
+          )}
+        </div>
 
         {puzzle && (
-          <div className="ct-rv-grid" ref={gridRef}>
+          <div className="ct-rv-grid">
             {puzzle.grid.flat().map((fig, i) => (
               i === 8 ? <div className="ct-rv-cell ct-rv-cell--q" key={i}>?</div> : <div className="ct-rv-cell" key={i}><Figure fig={fig} /></div>
             ))}
@@ -569,7 +522,7 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
         <p className="ct-rv-prompt">{t.prompt}</p>
 
         {puzzle && (
-          <div className={`ct-rv-options ct-rv-options--n${puzzle.optionCount}`} role="group" aria-label={t.prompt} ref={optionsRef}>
+          <div className={`ct-rv-options ct-rv-options--n${puzzle.optionCount}`} role="group" aria-label={t.prompt}>
             {puzzle.options.map((fig, i) => {
               const cls = picked ? (i === puzzle.correctIndex ? ' ct-rv-opt--correct' : i === picked.idx ? ' ct-rv-opt--wrong' : ' ct-rv-opt--dim') : '';
               return (
@@ -585,10 +538,6 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
 
       <TrainingQuitModal open={quitOpen} labels={{ quitQ: t.quitQ, quitLose: t.quitLose, yesQuit: t.yesQuit, keep: t.keep }}
         onConfirmQuit={quitToMenu} onKeepPlaying={() => setQuitOpen(false)} />
-
-      {coachActive && coach.step && (
-        <CoachOverlay step={coach.step} index={coach.index} total={coach.total} onNext={coach.next} onSkip={coach.skip} isAr={isAr} />
-      )}
     </div>
   );
 }

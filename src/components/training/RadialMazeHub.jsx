@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IconBack } from '../../features/training/shared/TrainingIcons';
-import MazeManAvatar from '../../features/training/shared/MazeManAvatar';
+import CosmosCharacter from '../../features/character/CosmosCharacter';
 import { DOMAIN_COLOR, DOMAINS } from './trainingData';
 import { useApp } from '../../context/AppContext';
 import { assetUrl } from '../../lib/assetUrl';
@@ -276,6 +276,14 @@ const SHRINE_POSITIONS = [
  */
 const HUB_NEXUS = [180, 360];
 const AVATAR_R = 48;
+/** CosmosCharacter viewBox — sphere centre used to align overlay with hub circle. */
+const HUB_PLANET_SIZE = 90;
+const COSMOS_BODY_CY = 102;
+const COSMOS_VIEW_H = 240;
+
+function hubPlanetOffsetY(size) {
+  return size * 1.2 * (0.5 - COSMOS_BODY_CY / COSMOS_VIEW_H);
+}
 
 function mazeCorridorD(domainId) {
   const s = SHRINE_POSITIONS.find(p => p.id === domainId);
@@ -517,17 +525,13 @@ export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }
           })}
         </svg>
 
-        {/* Center fox — tappable "Assessment" entry, above all corridors */}
+        {/* Center planet — tappable "Assessment" entry, aligned to hub nexus circle */}
         <div style={{
           position: 'absolute',
           top: `${(HUB_NEXUS[1] / 660) * 100}%`,
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
+          left: `${(HUB_NEXUS[0] / 360) * 100}%`,
+          transform: `translate(-50%, calc(-50% + ${hubPlanetOffsetY(HUB_PLANET_SIZE)}px))`,
           zIndex: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 8,
         }}>
           <button
             type="button"
@@ -538,16 +542,22 @@ export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }
               border: 'none',
               padding: 0,
               cursor: 'pointer',
+              display: 'block',
               filter: 'drop-shadow(0 0 24px rgba(245,166,35,0.7)) drop-shadow(0 0 56px rgba(255,216,90,0.4))',
             }}
           >
-            <MazeManAvatar size={92} mood="proud" glow />
+            <CosmosCharacter size={HUB_PLANET_SIZE} mood="proud" glow float />
           </button>
           <button
             type="button"
             onClick={onOpenAssessment}
             aria-label={isAr ? 'التقييم' : 'Assessment'}
             style={{
+              position: 'absolute',
+              top: '100%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              marginTop: 6,
               background: 'none',
               border: 'none',
               padding: 0,

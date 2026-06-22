@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
+import { SURVIVAL_MS, survivalRamp } from '../../../../shared/survival';
 
 /*
  * Trail Making A — visuomotor scanning speed.
@@ -35,6 +36,7 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 1) : 0;
   const ppTimeRef = useRef(0);
   const ppDoneRef = useRef(0);
+  const [ppBoard, setPpBoard] = useState(1);
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const sizeRef = useRef({ w: 0, h: 0 });
@@ -52,6 +54,14 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
   const cfgRef = useRef({ n: 8, time: 30000 });
   const rafRef = useRef(0);
   const clockRef = useRef(null);
+  const survT0Ref = useRef(performance.now());
+  const finishedRef = useRef(false);
+
+  const isSurvival = mode === 'free';
+  const [runId, setRunId] = useState(0);
+  const [over, setOver] = useState(null);
+  const [survPct, setSurvPct] = useState(1);
+  const [survLeft, setSurvLeft] = useState(SURVIVAL_MS);
 
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(CHAL_LIVES);
@@ -59,7 +69,30 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
   const [prog, setProg] = useState(0);
   const [boards, setBoards] = useState(0);
 
-  const timed = mode === 'levels';
+  const timed = mode === 'levels' || isSurvival;
+
+  const finishSurvival = useCallback(() => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    endedRef.current = true;
+    clearInterval(clockRef.current);
+    setOver({ score: scoreRef.current, boards: boardIdxRef.current });
+    playSfx?.('error');
+  }, [playSfx]);
+
+  const restartSurvival = () => {
+    finishedRef.current = false;
+    endedRef.current = false;
+    boardIdxRef.current = 0;
+    scoreRef.current = 0;
+    survT0Ref.current = performance.now();
+    setScore(0);
+    setBoards(0);
+    setOver(null);
+    setSurvPct(1);
+    setSurvLeft(SURVIVAL_MS);
+    setRunId((n) => n + 1);
+  };
 
   const fit = useCallback(() => {
     const c = canvasRef.current, wrap = wrapRef.current;
@@ -116,7 +149,13 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
 
   const newBoard = useCallback(() => {
     fit();
-    const c = mode === 'levels' ? levelCfg(diff, level) : mode === 'passplay' ? { n: 15, time: Infinity } : rampCfg(boardIdxRef.current);
+    let c;
+    if (mode === 'levels') c = levelCfg(diff, level);
+    else if (mode === 'passplay') c = { n: 15, time: Infinity };
+    else {
+      const ramp = survivalRamp(performance.now() - survT0Ref.current);
+      c = rampCfg(boardIdxRef.current + Math.floor(ramp * 6));
+    }
     cfgRef.current = c;
     const n = c.n;
     const cols = Math.ceil(Math.sqrt(n));
@@ -150,7 +189,7 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
       return;
     }
     if (mode === 'passplay') {
-      ppTimeRef.current += used; ppDoneRef.current += 1;
+      ppTimeRef.current += used; ppDoneRef.current += 1; setPpBoard(ppDoneRef.current + 1);
       if (ppDoneRef.current >= ppTrials) { endedRef.current = true; onResult({ score: Math.round(ppTimeRef.current) }); return; }
       newBoard(); return;
     }
@@ -158,8 +197,12 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
     const bonus = timed ? Math.max(0, Math.round((deadlineRef.current - performance.now()) / 1000)) : 0;
     scoreRef.current += 20 + bonus; setScore(scoreRef.current);
     boardIdxRef.current += 1; setBoards(boardIdxRef.current);
+    if (isSurvival && performance.now() - survT0Ref.current >= SURVIVAL_MS) {
+      finishSurvival();
+      return;
+    }
     newBoard();
-  }, [awardPoints, isAr, mode, newBoard, onResult, playSfx, timed, ppTrials]);
+  }, [awardPoints, finishSurvival, isAr, isSurvival, mode, newBoard, onResult, playSfx, timed, ppTrials]);
 
   const onTimeout = useCallback(() => {
     if (endedRef.current) return;
@@ -185,6 +228,7 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
       if (nextRef.current > cfgRef.current.n) onComplete();
     } else {
       errRef.current += 1;
+      if (timed && deadlineRef.current !== Infinity) deadlineRef.current -= 2000;
       flashRef.current = { x: hit.fx * w, y: hit.fy * h, until: performance.now() + 350 };
       playSfx?.('lose');
     }
@@ -195,9 +239,22 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
     const onResize = () => fit();
     window.addEventListener('resize', onResize);
     rafRef.current = requestAnimationFrame(draw);
+    if (isSurvival) {
+      survT0Ref.current = performance.now();
+      finishedRef.current = false;
+      endedRef.current = false;
+      boardIdxRef.current = 0;
+      scoreRef.current = 0;
+    }
     newBoard();
     if (timed) {
       clockRef.current = setInterval(() => {
+        if (isSurvival) {
+          const sLeft = SURVIVAL_MS - (performance.now() - survT0Ref.current);
+          setSurvPct(Math.max(0, sLeft / SURVIVAL_MS));
+          setSurvLeft(Math.max(0, sLeft));
+          if (sLeft <= 0) { finishSurvival(); return; }
+        }
         const left = deadlineRef.current - performance.now();
         setTimeLeft(left);
         if (left <= 0) onTimeout();
@@ -208,19 +265,39 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
       cancelAnimationFrame(rafRef.current);
       clearInterval(clockRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [runId, seed]);
 
   const S = styles;
   const total = cfgRef.current.n;
+
+  if (over && isSurvival) {
+    return (
+      <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+        <div style={S.overWrap}>
+          <h2 style={S.overTitle}>{isAr ? 'انتهى البقاء!' : 'Survival over!'}</h2>
+          <p style={S.overSub}>{isAr ? `${over.boards} لوحات · ${over.score} نقطة` : `${over.boards} boards · ${over.score} pts`}</p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+            <button type="button" style={S.overBtn} onClick={() => { playSfx?.('click'); restartSurvival(); }}>{isAr ? 'العب مجدداً' : 'Play again'}</button>
+            <button type="button" style={S.overBtnGhost} onClick={() => { playSfx?.('click'); onExit?.(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+      {isSurvival && (
+        <div style={S.survTrack}>
+          <div style={{ ...S.survFill, width: `${survPct * 100}%`, background: survPct < 0.2 ? '#d23b3b' : '#b9842f' }} />
+        </div>
+      )}
       <header className="ct-training-play-header">
         <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
         <div className="ct-training-play-header-body">
           <div className="ct-training-play-title">{isAr ? 'صل الأرقام' : 'Trail Making'}</div>
           <div className="ct-training-play-sub">
-            {mode === 'passplay' ? `${isAr ? 'لوحة' : 'Board'} ${ppDoneRef.current + 1}/${ppTrials}` : mode === 'free' ? `${isAr ? 'لوحات' : 'Boards'} ${boards}` : `${isAr ? 'مستوى' : 'Lvl'} ${level}`}
+            {mode === 'passplay' ? `${isAr ? 'لوحة' : 'Board'} ${ppBoard}/${ppTrials}` : mode === 'free' ? `${isAr ? 'لوحات' : 'Boards'} ${boards}` : `${isAr ? 'مستوى' : 'Lvl'} ${level}`}
           </div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
@@ -228,6 +305,7 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
       <div style={S.sub}>
         <span>{isAr ? 'التالي' : 'Next'}: <b style={{ color: '#2e8b57' }}>{Math.min(prog + 1, total)}</b> / {total}</span>
         {timed ? <span style={{ color: timeLeft < 6000 ? '#d23b3b' : '#b9842f' }}>⏱ {fmt(timeLeft)}</span> : null}
+        {isSurvival ? <span style={{ color: survLeft < 10000 ? '#d23b3b' : '#5a4a32' }}>{isAr ? 'بقاء' : 'Survival'} {fmt(survLeft)}</span> : null}
       </div>
       <div ref={wrapRef} style={S.play}>
         <canvas ref={canvasRef} style={S.canvas} onPointerDown={onPointer} />
@@ -245,7 +323,7 @@ export default function TrailMakingGame({ onBack, workoutMode = false }) {
       scienceId="trail-making"
       title={{ en: 'Trail Making', ar: 'صل الأرقام' }}
       hints={{
-        free: { en: 'Endless practice — no clock', ar: 'تدريب مفتوح — بلا وقت' },
+        free: { en: '60s survival · boards ramp fast', ar: '٦٠ ث بقاء · لوحات أصعب مع الوقت' },
         levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
         pass: { en: 'Same board for all · fastest wins', ar: 'نفس اللوحة للجميع · الأسرع يفوز' },
       }}
@@ -267,4 +345,11 @@ const styles = {
   sub: { display: 'flex', justifyContent: 'space-between', padding: '6px 16px 0', fontSize: 14, fontWeight: 700, color: '#5a4a32' },
   play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: '#fffdf8', overflow: 'hidden', border: '1.5px solid #e3d6c4', boxShadow: 'inset 0 2px 10px rgba(120,90,40,0.06)', touchAction: 'none' },
   canvas: { display: 'block', width: '100%', height: '100%' },
+  survTrack: { height: 6, background: 'rgba(0,0,0,0.08)' },
+  survFill: { height: '100%' },
+  overWrap: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' },
+  overTitle: { margin: '0 0 8px', fontWeight: 900, fontSize: 24 },
+  overSub: { margin: '0 0 20px', fontWeight: 700, color: '#5a4a32' },
+  overBtn: { padding: '12px 20px', borderRadius: 12, border: '2px solid #1a1208', background: '#b9842f', color: '#fff', fontWeight: 900, cursor: 'pointer' },
+  overBtnGhost: { padding: '12px 20px', borderRadius: 12, border: '2px solid #cdbfa6', background: '#fff', fontWeight: 800, cursor: 'pointer' },
 };

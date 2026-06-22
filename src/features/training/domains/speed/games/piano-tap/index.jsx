@@ -120,7 +120,7 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const rng = makeRng((seed != null ? seed : 13579) ^ ((runId * 22695477) >>> 0));
+    const rng = makeRng(((seed ?? 1) >>> 0) ^ ((runId * 22695477) >>> 0));
     noteRef.current = 0;
 
     const g = {
@@ -213,13 +213,20 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
       if (g.hits !== hudCache.hits || g.lives !== hudCache.lives || g.combo !== hudCache.combo || g.score !== hudCache.score) {
         hudCache = { hits: g.hits, lives: g.lives, combo: g.combo, score: g.score }; setHud(hudCache);
       }
+      // lane key hints
+      ctx.font = '800 13px Outfit, system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(90,74,50,0.55)';
+      ctx.textAlign = 'center';
+      for (let i = 0; i < LANES; i++) {
+        ctx.fillText(KEYS[i].toUpperCase(), laneX(i) + laneW() / 2, g.H - 6);
+      }
       rafRef.current = requestAnimationFrame(frame);
     };
     rafRef.current = requestAnimationFrame(frame);
 
     return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runId]);
+  }, [runId, seed]);
 
   useEffect(() => () => { try { acRef.current?.close(); } catch { /* ignore */ } }, []);
 

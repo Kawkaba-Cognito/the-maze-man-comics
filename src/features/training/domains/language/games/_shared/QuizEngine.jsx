@@ -88,7 +88,7 @@ export default function QuizEngine({ mode, diff, level, seed, attempt, onResult,
         <div style={S.body}>
           <div style={S.promptWrap}>
             {trial.prompt.sub ? <div style={S.promptSub}>{trial.prompt.sub}</div> : null}
-            <div style={S.promptText}>{trial.prompt.text}</div>
+            <div style={{ ...S.promptText, fontFamily: isAr ? "'Cairo', sans-serif" : S.promptText.fontFamily }}>{trial.prompt.text}</div>
           </div>
           <div style={S.options}>
             {trial.options.map((o) => {
@@ -98,7 +98,7 @@ export default function QuizEngine({ mode, diff, level, seed, attempt, onResult,
               if (showFb) { bg = fb.ok ? '#dff7e6' : '#fdeae8'; border = fb.ok ? '#4caf6e' : '#e0594a'; }
               else if (reveal) { border = '#4caf6e'; bg = '#eafaef'; }
               return (
-                <button key={o.key} style={{ ...S.opt, background: bg, borderColor: border, color: col }} onClick={() => pick(o)}>
+                <button key={o.key} style={{ ...S.opt, background: bg, borderColor: border, color: col, fontFamily: isAr ? "'Cairo', sans-serif" : S.opt.fontFamily }} onClick={() => pick(o)}>
                   {o.label}
                 </button>
               );

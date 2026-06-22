@@ -8,7 +8,7 @@
  *   easy C3 M3 P5   medium C4 M3 P6   hard C4 M4 P6   (2 spare tubes each)
  */
 export const CS_DIFF_KEYS = ['easy', 'medium', 'hard'];
-export const CS_LEVELS_PER_TIER = 20;
+export const CS_LEVELS_PER_TIER = 100;
 
 const TIER = {
   easy: { colours: 3, sizes: 3, lo: 6, hi: 12, nodeCap: 80000 },

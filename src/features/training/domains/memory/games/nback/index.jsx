@@ -3,6 +3,8 @@ import { useApp } from '../../../../../../context/AppContext';
 import { TrainingMenuBar, TrainingPlayHeader, TrainingChallengeHandoff } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
+import PassPlaySetup from '../../../../shared/PassPlaySetup';
+import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import { createTrialLog } from '../../../../shared/trialLog';
 import MemoObject from '../memo-span/MemoObject';
 import MemoSciencePanel, { memoTip } from '../memo-span/MemoSciencePanel';
@@ -76,6 +78,7 @@ export default function NBackGame({ onBack }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
+  const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('nback', isAr, playSfx);
 
   const [profile, setProfile] = useState(() => loadNbackProfile());
   const [phase, setPhase] = useState('hub');
@@ -240,17 +243,21 @@ export default function NBackGame({ onBack }) {
   return (
     <div className="cancellation-task-game ct-ms-root" dir={isAr ? 'rtl' : 'ltr'}>
       {phase === 'hub' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light ct-ms-shell">
-          <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
-            <TrainingMenuBar onBack={onBack} playSfx={playSfx} hubSpaced variant="paper"
-              center={<div className="ct-fq-hub-attn-head"><div className="ct-fq-hub-attn-big ct-ms-hub-title">{t.hub}</div><div className="ct-fq-hub-attn-sub">{t.tag}</div></div>} />
-            <NBackModes t={t} isAr={isAr} playSfx={playSfx}
-              onFree={() => setPhase('freeIntro')}
-              onLevels={() => setPhase('diff')}
-              onChallenge={() => setPhase('chal')}
-              onScience={() => setSciOpen(true)} />
+        <>
+          <div className="ct-fq-training-shell ct-fq-training-shell--hub-light ct-ms-shell">
+            <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
+              <TrainingMenuBar onBack={onBack} playSfx={playSfx} hubSpaced variant="paper"
+                onReplayTutorial={openTutorial} replayHint={tutReplayHint}
+                center={<div className="ct-fq-hub-attn-head"><div className="ct-fq-hub-attn-big ct-ms-hub-title">{t.hub}</div><div className="ct-fq-hub-attn-sub">{t.tag}</div></div>} />
+              <NBackModes t={t} isAr={isAr} playSfx={playSfx}
+                onFree={() => setPhase('freeIntro')}
+                onLevels={() => setPhase('diff')}
+                onChallenge={() => setPhase('chal')}
+                onScience={() => setSciOpen(true)} />
+            </div>
           </div>
-        </div>
+          {tutLayer}
+        </>
       )}
 
       {phase === 'freeIntro' && (
@@ -275,35 +282,29 @@ export default function NBackGame({ onBack }) {
       {phase === 'chal' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar onBack={() => setPhase('hub')} playSfx={playSfx} variant="paper"
-              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.challengeTitle}</div></div>} />
-            <p className="ct-fq-sub ct-fq-training-blurb">{t.challengeSub}</p>
-            <div className="ct-fq-card ct-fq-card-training">
-              <h3>{t.chalPickDiff}</h3>
-              <div className="ct-fq-rr ct-fq-rr-diff" role="group" aria-label={t.chalPickDiff}>
-                {NB_DIFF_KEYS.map((k) => (
-                  <button key={k} type="button" className={`ct-fq-rrb ct-fq-rrb-diff${chalDiff === k ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
-                    onClick={() => { playSfx('click'); setChalDiff(k); }}>{NB_DM[k].label}</button>
-                ))}
-              </div>
-              <h3 style={{ marginTop: 14 }}>{t.players}</h3>
-              {chalNames.map((nm, i) => (
-                <div key={i} className="ct-fq-pr">
-                  <input value={nm} maxLength={20} onChange={(e) => { const n = [...chalNames]; n[i] = e.target.value; setChalNames(n); }} />
-                  {chalNames.length > 2 && (<button type="button" className="ct-fq-prm" onClick={() => setChalNames(chalNames.filter((_, j) => j !== i))}>×</button>)}
-                </div>
-              ))}
-              {chalNames.length < 10 && (<button type="button" className="ct-fq-apb ct-fq-apb-training" onClick={() => setChalNames([...chalNames, `Player ${chalNames.length + 1}`])}>{t.addPl}</button>)}
-              <h3 style={{ marginTop: 14 }}>{t.chalRounds}</h3>
-              <p className="ct-fq-sub" style={{ marginTop: 2, marginBottom: 8, fontSize: '0.78rem' }}>{t.chalRoundsHint}</p>
-              <div className="ct-fq-rr" role="group" aria-label={t.chalRounds}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <button key={n} type="button" className={`ct-fq-rrb${chalRoundsTotal === n ? ' ct-fq-rrb-on ct-fq-rrb-on-training' : ''} ct-fq-rrb-training`}
-                    onClick={() => { playSfx('click'); setChalRoundsTotal(n); }}>{n}</button>
-                ))}
-              </div>
-            </div>
-            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); openChallenge(); }}>{t.startCh}</button>
+            <TrainingMenuBar onBack={() => setPhase('hub')} playSfx={playSfx} variant="paper" />
+            <PassPlaySetup
+              isAr={isAr}
+              playSfx={playSfx}
+              subtitle={t.challengeSub}
+              diffKeys={NB_DIFF_KEYS}
+              diffLabels={NB_DM}
+              diff={chalDiff}
+              onDiffChange={setChalDiff}
+              players={chalNames}
+              onPlayersChange={setChalNames}
+              rounds={chalRoundsTotal}
+              onRoundsChange={setChalRoundsTotal}
+              onStart={() => { playSfx('click'); openChallenge(); }}
+              labels={{
+                difficulty: t.chalPickDiff,
+                players: t.players,
+                addPlayer: t.addPl,
+                rounds: t.chalRounds,
+                roundsHint: t.chalRoundsHint,
+                start: t.startCh,
+              }}
+            />
           </div>
         </div>
       )}

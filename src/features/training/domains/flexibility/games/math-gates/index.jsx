@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
-import { SURVIVAL_MS, survivalRamp, drawSurvivalBar } from '../../../../shared/survival';
+import { SURVIVAL_MS, survivalRamp, survivalTier, drawSurvivalBar } from '../../../../shared/survival';
 
 /*
  * Math Gates — endless runner with rule-switching arithmetic (cognitive flexibility).
@@ -13,7 +13,9 @@ import { SURVIVAL_MS, survivalRamp, drawSurvivalBar } from '../../../../shared/s
  * Modes: Free (lives, endless) / Levels (100) / Pass n Play (fixed gates, score).
  */
 
-const FLX = '#e07aaa';
+import { drawCosmosRunner, COSMOS_GOLD, COSMOS_LANE_A, COSMOS_LANE_B, COSMOS_STING_BG } from '../../../../shared/drawCosmosCanvas';
+
+const ACCENT = COSMOS_GOLD;
 const LANES = 3;
 
 const BASE = {
@@ -122,7 +124,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const dkey = mode === 'levels' ? diff : mode === 'passplay' ? 'med' : 'easy';
-    const rng = makeRng((seed != null ? seed : 98765) ^ ((runId * 40503) >>> 0));
+    const rng = makeRng(((seed ?? 1) >>> 0) ^ ((runId * 40503) >>> 0));
 
     const g = {
       lane: 1, gate: null, gapTimer: cfg.gap, t0: performance.now(),
@@ -137,7 +139,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       // Survival escalates the equation TIER and magnitude with the clock (was
       // frozen on easiest); Levels use the level's own difficulty/ramp.
       const f = mode === 'free' ? survivalRamp(performance.now() - g.t0) : cfg.f;
-      const dk = mode === 'free' ? (f < 0.34 ? 'easy' : f < 0.67 ? 'med' : 'hard') : dkey;
+      const dk = mode === 'free' ? survivalTier(f) : dkey;
       const eqObj = genGate(dk, f, rng);
       const bandH = Math.min(g.H * 0.16, 96);
       g.gate = { y: -bandH, eq: eqObj, t: gateTime(eqObj), speed: null };
@@ -209,10 +211,10 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
         survPct = 1 - elapsed / SURVIVAL_MS;
       }
       ctx.clearRect(0, 0, g.W, g.H);
-      if (mode === 'free') drawSurvivalBar(ctx, g.W, survPct, FLX);
+      if (mode === 'free') drawSurvivalBar(ctx, g.W, survPct, ACCENT);
       // road lanes
       for (let i = 0; i < LANES; i++) {
-        ctx.fillStyle = i % 2 ? 'rgba(224,122,170,0.05)' : 'rgba(224,122,170,0.02)';
+        ctx.fillStyle = i % 2 ? COSMOS_LANE_A : COSMOS_LANE_B;
         ctx.fillRect((i / LANES) * g.W, 0, g.W / LANES, g.H);
       }
       for (let i = 1; i < LANES; i++) {
@@ -225,7 +227,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
         for (let i = 0; i < LANES; i++) {
           const x = (i / LANES) * g.W;
           ctx.fillStyle = '#fffdf8';
-          ctx.strokeStyle = FLX; ctx.lineWidth = 3;
+          ctx.strokeStyle = ACCENT; ctx.lineWidth = 3;
           ctx.beginPath(); ctx.roundRect(x + 6, y - bandH / 2, g.W / LANES - 12, bandH, 12); ctx.fill(); ctx.stroke();
           ctx.fillStyle = '#2d2d2d';
           ctx.font = `900 ${Math.round(bandH * 0.42)}px Outfit, system-ui, sans-serif`;
@@ -246,15 +248,8 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       }
       // runner
       const cx = g.charX, cy = charY;
-      const rr = Math.min(g.W / LANES, 90) * 0.3;
-      ctx.save(); ctx.translate(cx, cy);
-      ctx.fillStyle = FLX;
-      ctx.beginPath(); ctx.arc(0, 0, rr, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(-rr * 0.32, -rr * 0.15, rr * 0.26, 0, Math.PI * 2); ctx.arc(rr * 0.32, -rr * 0.15, rr * 0.26, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#2d2d2d';
-      ctx.beginPath(); ctx.arc(-rr * 0.28, -rr * 0.13, rr * 0.12, 0, Math.PI * 2); ctx.arc(rr * 0.36, -rr * 0.13, rr * 0.12, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
+      const rr = Math.min(g.W / LANES, 90) * 0.34;
+      drawCosmosRunner(ctx, cx, cy, rr);
 
       if (g.passed !== hudCache.passed || g.lives !== hudCache.lives || g.combo !== hudCache.combo) {
         hudCache = { passed: g.passed, lives: g.lives, combo: g.combo };
@@ -266,7 +261,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
 
     return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runId]);
+  }, [runId, seed]);
 
   useEffect(() => { if (!sting) return; const id = setTimeout(() => setSting(null), 800); return () => clearTimeout(id); }, [sting]);
 
@@ -353,15 +348,15 @@ const styles = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
   eqWrap: { display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 10, padding: '8px 0 4px', minHeight: 44 },
   eq: { fontWeight: 900, fontSize: 'clamp(28px, 8vw, 44px)', color: '#2d2d2d', letterSpacing: 1 },
-  eqQ: { fontWeight: 900, fontSize: 'clamp(20px, 6vw, 30px)', color: FLX },
+  eqQ: { fontWeight: 900, fontSize: 'clamp(20px, 6vw, 30px)', color: ACCENT },
   play: { position: 'relative', flex: 1, overflow: 'hidden' },
   sting: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' },
-  stingInner: { fontSize: 'clamp(26px, 8vw, 56px)', fontWeight: 900, color: '#fff', background: 'rgba(224,122,170,0.92)', padding: '10px 24px', borderRadius: 16, boxShadow: '4px 4px 0 #1a1208', animation: 'flipStingPop .8s ease-out' },
+  stingInner: { fontSize: 'clamp(26px, 8vw, 56px)', fontWeight: 900, color: '#fff', background: COSMOS_STING_BG, padding: '10px 24px', borderRadius: 16, boxShadow: '4px 4px 0 #1a1208', animation: 'flipStingPop .8s ease-out' },
   overWrap: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(45,45,45,0.45)' },
   overCard: { background: '#fffdf8', borderRadius: 20, padding: '22px 26px', textAlign: 'center', boxShadow: '6px 6px 0 #1a1208', border: '2px solid #cdbfa6' },
   overTitle: { fontWeight: 900, fontSize: 24, color: '#2d2d2d' },
   overScore: { marginTop: 6, fontWeight: 700, color: '#5a4a32' },
-  overBtn: { flex: 1, padding: '15px 16px', fontWeight: 900, fontSize: 16, color: '#fff', background: FLX, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
+  overBtn: { flex: 1, padding: '15px 16px', fontWeight: 900, fontSize: 16, color: '#fff', background: ACCENT, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
   controls: { display: 'flex', gap: 14, padding: '14px 18px calc(14px + env(safe-area-inset-bottom))' },
-  ctrlBtn: { flex: 1, height: 84, fontSize: 38, fontWeight: 900, color: '#fff', background: FLX, border: 'none', borderRadius: 20, boxShadow: '4px 4px 0 #1a1208', cursor: 'pointer', touchAction: 'none', userSelect: 'none' },
+  ctrlBtn: { flex: 1, height: 84, fontSize: 38, fontWeight: 900, color: '#fff', background: ACCENT, border: 'none', borderRadius: 20, boxShadow: '4px 4px 0 #1a1208', cursor: 'pointer', touchAction: 'none', userSelect: 'none' },
 };

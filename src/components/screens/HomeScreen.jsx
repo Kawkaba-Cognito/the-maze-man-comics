@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { assetUrl } from '../../lib/assetUrl';
 import { getCharacter } from '../../features/character/registry';
+import CosmosCharacter from '../../features/character/CosmosCharacter';
 
 const DOORS = [
   { tab: 'comics',  enLabel: 'TRAINING', arLabel: 'تدريب', pos: 'left'   },
@@ -58,7 +59,9 @@ export default function HomeScreen() {
         onClick={() => handleDoor('character')}
         style={labelFont}
       >
-        <span className="home-shortcut-ic" aria-hidden="true">🦊</span>
+        <span className="home-shortcut-ic home-shortcut-planet" aria-hidden="true">
+          <CosmosCharacter size={18} glow={false} faceOnly />
+        </span>
         {isAr ? 'الشخصية' : 'CHARACTER'}
       </button>
       <button
