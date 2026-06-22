@@ -82,8 +82,8 @@ function ArchShape3D({ col, hovered, gradId, filterId }) {
 function AtmosphericBg() {
   const isDesktop = typeof window !== 'undefined' && window.matchMedia?.('(min-width: 768px)').matches;
   const bgUrl = isDesktop
-    ? assetUrl('Assets/bg-training-desktop.png')
-    : assetUrl('Assets/bg-training-mobile.png');
+    ? assetUrl('Assets/bg-training-desktop.webp')
+    : assetUrl('Assets/bg-training-mobile.webp');
   return (
     <>
       <div style={{

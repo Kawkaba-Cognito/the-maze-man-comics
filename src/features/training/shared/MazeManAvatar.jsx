@@ -14,7 +14,7 @@ export default React.memo(function MazeManAvatar({ size = 140, mood = 'ready', g
     tired:   '#c9a15a',
   }[mood] || '#f5a623';
 
-  const src = `${BASE}Assets/guide-fox-sprite.png`;
+  const src = `${BASE}Assets/guide-fox-sprite.webp`;
 
   return (
     <div

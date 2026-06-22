@@ -26,7 +26,7 @@ export default function HomeScreen() {
       {/* Empty maze chamber — character is drawn on the pedestal (code, not art) */}
       <div
         className="home-stage-bg"
-        style={{ backgroundImage: `url("${assetUrl('Assets/bg-training-mobile.png')}")` }}
+        style={{ backgroundImage: `url("${assetUrl('Assets/bg-training-mobile.webp')}")` }}
       />
       <button
         className="home-character"

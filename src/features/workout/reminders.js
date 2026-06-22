@@ -16,7 +16,7 @@
 import { Capacitor } from '@capacitor/core';
 
 export const REMINDER_ID = 4242;
-const ICON = `${import.meta.env.BASE_URL}Assets/guide-fox-sprite.png`;
+const ICON = `${import.meta.env.BASE_URL}Assets/guide-fox-sprite.webp`;
 
 export const REMINDER_STRINGS = {
   en: { title: 'Time for your brain workout 🧠', body: 'A few minutes keeps your streak alive. Tap to start.' },

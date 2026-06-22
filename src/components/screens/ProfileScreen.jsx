@@ -51,7 +51,7 @@ const xpToNext = (xp) => XP_PER_LEVEL - (xp % XP_PER_LEVEL);
 
 function AtmosphericBg() {
   const isDesktop = typeof window !== 'undefined' && window.matchMedia?.('(min-width: 768px)').matches;
-  const bgUrl = isDesktop ? assetUrl('Assets/bg-training-desktop.png') : assetUrl('Assets/bg-training-mobile.png');
+  const bgUrl = isDesktop ? assetUrl('Assets/bg-training-desktop.webp') : assetUrl('Assets/bg-training-mobile.webp');
   return (
     <>
       <div style={{
