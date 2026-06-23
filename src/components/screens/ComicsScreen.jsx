@@ -4,6 +4,7 @@ import { tokens } from '../../styles/tokens';
 import RadialMazeHub from '../training/RadialMazeHub';
 import { DOMAINS, DOMAIN_COLOR } from '../training/trainingData';
 import { IconBack } from '../../features/training/shared/TrainingIcons';
+import { DomainBadge } from '../../features/training/shared/DomainIcon';
 import { getLazyGame, hasGame } from '../../features/training/lazyGames';
 import AssessmentFlow from '../../features/training/assessment/AssessmentFlow';
 
@@ -32,7 +33,8 @@ const HUB_LIGHT = {
 
 /** Uniform game-card size on the domain pick screen (phone-first). */
 const PICK_CARD_HEIGHT = 112;
-const PICK_BANNER_WIDTH = 'clamp(82px, 26%, 118px)';
+const PICK_BANNER_WIDTH = 'clamp(76px, 24%, 108px)';
+const PICK_MAX = 560;
 
 /**
  * Crisp per-game line glyph (24×24, stroke = currentColor) drawn inside the
@@ -115,10 +117,10 @@ function CardBanner({ gameKey, accent, side = 'right' }) {
         pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
         paddingRight: isLeft ? 0 : 18,
         paddingLeft: isLeft ? 18 : 0,
-        opacity: 0.96,
+        opacity: 0.88,
         background: isLeft
-          ? `linear-gradient(270deg, transparent 0%, ${accent}bb 58%, ${accent} 100%)`
-          : `linear-gradient(90deg, transparent 0%, ${accent}bb 58%, ${accent} 100%)`,
+          ? `linear-gradient(270deg, transparent 0%, color-mix(in srgb, ${accent} 55%, transparent) 52%, color-mix(in srgb, ${accent} 88%, #fff) 100%)`
+          : `linear-gradient(90deg, transparent 0%, color-mix(in srgb, ${accent} 55%, transparent) 52%, color-mix(in srgb, ${accent} 88%, #fff) 100%)`,
         justifyContent: isLeft ? 'flex-start' : 'flex-end',
       }}
     >
@@ -183,6 +185,8 @@ export default function ComicsScreen() {
 
   const d = DOMAINS.find((x) => x.id === activeDomain);
   const accent = DOMAIN_COLOR[activeDomain] || '#8a7868';
+  const domainName = d && isAr && d.nameAr ? d.nameAr : d?.name;
+  const domainDesc = d && isAr && d.descAr ? d.descAr : d?.desc;
 
   return (
     <div
@@ -219,160 +223,298 @@ export default function ComicsScreen() {
             background: HUB_LIGHT.bg,
             color: HUB_LIGHT.text,
             fontFamily: 'Outfit, system-ui, sans-serif',
-            padding: `max(52px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom))`,
+            padding: `max(52px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom))`,
             boxSizing: 'border-box',
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
-            <button
-              type="button"
-              onClick={backToHub}
+          {/* Soft domain tint wash */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              background: `
+                radial-gradient(ellipse 90% 42% at 50% -8%, color-mix(in srgb, ${accent} 22%, transparent) 0%, transparent 72%),
+                radial-gradient(ellipse 55% 35% at 100% 0%, color-mix(in srgb, ${accent} 10%, transparent) 0%, transparent 70%)
+              `,
+            }}
+          />
+
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: PICK_MAX, width: '100%', margin: '0 auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 22 }}>
+              <button
+                type="button"
+                onClick={backToHub}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  border: '1px solid #e6ddd4',
+                  background: 'rgba(255,255,255,0.92)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(26,18,8,0.06)',
+                }}
+                aria-label={isAr ? 'رجوع' : 'Back'}
+              >
+                <IconBack size={18} c={HUB_LIGHT.text} />
+              </button>
+            </div>
+
+            {/* Domain header card */}
+            <header
               style={{
-                width: 34,
-                height: 34,
-                borderRadius: 12,
-                border: `2px solid ${HUB_LIGHT.border}`,
-                background: 'linear-gradient(180deg, #ffffff 0%, #f3ebe4 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '3px 3px 0 #1a1208, inset 0 1px 0 rgba(255,255,255,0.85)',
+                borderRadius: 22,
+                border: '1px solid #ebe3db',
+                background: 'linear-gradient(180deg, #ffffff 0%, #faf6f2 100%)',
+                boxShadow: '0 8px 28px rgba(26,18,8,0.06)',
+                overflow: 'hidden',
+                marginBottom: 28,
               }}
-              aria-label={isAr ? 'رجوع' : 'Back'}
             >
-              <IconBack size={18} c={HUB_LIGHT.text} />
-            </button>
-          </div>
-          {/* Domain header — badge + name on one row; explanation on its own
-              full-width line below so the logo never collides with the text. */}
-          <div style={{ maxWidth: 560, width: '100%', margin: '0 auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-              <span
+              <div
                 aria-hidden="true"
                 style={{
-                  width: 'clamp(54px, 14vw, 72px)', height: 'clamp(54px, 14vw, 72px)', flexShrink: 0,
-                  borderRadius: 20, background: accent, color: '#fff',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 'clamp(28px, 7vw, 38px)', fontFamily: "'Fredoka One', sans-serif",
-                  boxShadow: '4px 4px 0 #1a1208',
+                  height: 4,
+                  background: `linear-gradient(90deg, color-mix(in srgb, ${accent} 55%, #fff) 0%, ${accent} 50%, color-mix(in srgb, ${accent} 55%, #fff) 100%)`,
                 }}
-              >
-                {d.glyph}
-              </span>
-              <h1
-                style={{
-                  flex: 1, minWidth: 0,
-                  fontFamily: "'Fredoka One', Bangers, sans-serif",
-                  fontSize: 'clamp(1.85rem, 7.4vw, 2.85rem)', fontWeight: 400,
-                  margin: 0, lineHeight: 1.02, color: HUB_LIGHT.text,
-                  textAlign: isAr ? 'right' : 'left',
-                  overflowWrap: 'anywhere',
-                  textWrap: 'balance',
-                }}
-              >
-                {d.name}
-              </h1>
-            </div>
-            {d.desc && (
-              <p style={{ margin: '12px 2px 0', fontSize: 13, color: HUB_LIGHT.muted, lineHeight: 1.55, textAlign: isAr ? 'right' : 'left', maxWidth: 520 }}>
-                {d.desc}
-              </p>
-            )}
-          </div>
-
-          {/* Cards centered in the remaining space → 1–3 games still look intentional */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '100%', paddingBottom: 12 }}>
-            <p style={{ maxWidth: 560, width: '100%', margin: '0 auto 12px', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: HUB_LIGHT.muted, textAlign: isAr ? 'right' : 'left' }}>
-              {isAr ? 'اختر لعبة' : 'Choose a game'}
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 560, width: '100%', margin: '0 auto' }}>
-              {pickList.map((sub, i) => {
-                const subName = (isAr && sub.nameAr) ? sub.nameAr : sub.name;
-                const subBlurb = isAr ? sub.blurbAr : sub.blurb;
-                return (
-                  <button
-                    key={sub.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveGame(sub.game);
-                      setPickList([]);
-                      setScreen('game');
-                    }}
+              />
+              <div style={{ padding: '18px 18px 20px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 16,
+                    minWidth: 0,
+                    flexDirection: isAr ? 'row-reverse' : 'row',
+                  }}
+                >
+                  <DomainBadge
+                    domainId={activeDomain}
+                    color={accent}
+                    size={72}
+                    short={d.short}
+                  />
+                  <div style={{ flex: 1, minWidth: 0, textAlign: isAr ? 'right' : 'left' }}>
+                    <p
+                      style={{
+                        margin: '0 0 6px',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: '0.16em',
+                        textTransform: 'uppercase',
+                        color: accent,
+                      }}
+                    >
+                      {isAr ? 'مجال تدريبي' : 'Training domain'}
+                    </p>
+                    <h1
+                      style={{
+                        margin: 0,
+                        fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
+                        fontSize: 'clamp(1.65rem, 6.2vw, 2.15rem)',
+                        fontWeight: 800,
+                        lineHeight: 1.08,
+                        color: HUB_LIGHT.text,
+                        overflowWrap: 'anywhere',
+                        textWrap: 'balance',
+                        letterSpacing: isAr ? 0 : '-0.02em',
+                      }}
+                    >
+                      {domainName}
+                    </h1>
+                  </div>
+                </div>
+                {domainDesc && (
+                  <p
                     style={{
-                      position: 'relative', overflow: 'hidden',
-                      height: PICK_CARD_HEIGHT,
-                      minHeight: PICK_CARD_HEIGHT,
-                      maxHeight: PICK_CARD_HEIGHT,
-                      width: '100%',
-                      boxSizing: 'border-box',
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      flexDirection: isAr ? 'row-reverse' : 'row',
+                      margin: '16px 0 0',
+                      paddingTop: 16,
+                      borderTop: '1px solid #f0e8e0',
+                      fontSize: 14,
+                      fontWeight: 500,
+                      color: '#4a4038',
+                      lineHeight: 1.6,
                       textAlign: isAr ? 'right' : 'left',
-                      padding: '12px 14px',
-                      borderRadius: 18,
-                      border: '2px solid #1a1208',
-                      background: 'linear-gradient(180deg, #ffffff 0%, #f7f1eb 100%)',
-                      boxShadow: '4px 4px 0 #1a1208',
-                      cursor: 'pointer',
                     }}
                   >
-                    <CardBanner gameKey={sub.game} accent={accent} side={isAr ? 'left' : 'right'} />
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        position: 'relative', zIndex: 1,
-                        width: 46, height: 46, flexShrink: 0, borderRadius: 14,
-                        background: accent, color: '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 22, fontFamily: "'Fredoka One', sans-serif",
-                        boxShadow: '2px 2px 0 #1a1208',
+                    {domainDesc}
+                  </p>
+                )}
+              </div>
+            </header>
+          </div>
+
+          {/* Exercise list */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              width: '100%',
+              paddingBottom: 8,
+            }}
+          >
+            <div style={{ maxWidth: PICK_MAX, width: '100%', margin: '0 auto' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  marginBottom: 14,
+                  flexDirection: isAr ? 'row-reverse' : 'row',
+                }}
+              >
+                <span
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    background: 'linear-gradient(90deg, transparent, #e8dfd6 35%, #e8dfd6 65%, transparent)',
+                  }}
+                />
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    color: '#6b5f54',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {isAr ? 'اختر تمريناً' : 'Select an exercise'}
+                </p>
+                <span
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    background: 'linear-gradient(90deg, transparent, #e8dfd6 35%, #e8dfd6 65%, transparent)',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {pickList.map((sub) => {
+                  const subName = (isAr && sub.nameAr) ? sub.nameAr : sub.name;
+                  const subBlurb = isAr ? sub.blurbAr : sub.blurb;
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveGame(sub.game);
+                        setPickList([]);
+                        setScreen('game');
                       }}
-                    >
-                      {i + 1}
-                    </span>
-                    <span
                       style={{
-                        position: 'relative', zIndex: 1,
-                        flex: '1 1 auto', minWidth: 0,
-                        paddingInlineEnd: PICK_BANNER_WIDTH,
-                        display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 3,
-                        maxHeight: PICK_CARD_HEIGHT - 24,
+                        position: 'relative',
                         overflow: 'hidden',
+                        height: PICK_CARD_HEIGHT,
+                        minHeight: PICK_CARD_HEIGHT,
+                        maxHeight: PICK_CARD_HEIGHT,
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 14,
+                        flexDirection: isAr ? 'row-reverse' : 'row',
+                        textAlign: isAr ? 'right' : 'left',
+                        padding: '12px 14px',
+                        borderRadius: 18,
+                        border: '1px solid #e6ddd4',
+                        background: 'linear-gradient(180deg, #ffffff 0%, #faf7f3 100%)',
+                        boxShadow: '0 4px 14px rgba(26,18,8,0.05)',
+                        cursor: 'pointer',
+                        transition: 'border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = `color-mix(in srgb, ${accent} 45%, #e6ddd4)`;
+                        e.currentTarget.style.boxShadow = `0 8px 22px color-mix(in srgb, ${accent} 14%, rgba(26,18,8,0.08))`;
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = '#e6ddd4';
+                        e.currentTarget.style.boxShadow = '0 4px 14px rgba(26,18,8,0.05)';
+                        e.currentTarget.style.transform = 'translateY(0)';
                       }}
                     >
+                      <CardBanner gameKey={sub.game} accent={accent} side={isAr ? 'left' : 'right'} />
                       <span
+                        aria-hidden="true"
                         style={{
-                          fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
-                          fontSize: isAr ? 18 : 20,
-                          fontWeight: isAr ? 900 : 400,
-                          letterSpacing: isAr ? 0 : 1,
-                          color: HUB_LIGHT.text,
-                          lineHeight: 1.12,
+                          position: 'relative',
+                          zIndex: 1,
+                          width: 48,
+                          height: 48,
+                          flexShrink: 0,
+                          borderRadius: 14,
+                          background: `color-mix(in srgb, ${accent} 12%, #fff)`,
+                          border: `1.5px solid color-mix(in srgb, ${accent} 28%, #e6ddd4)`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         }}
                       >
-                        {subName}
+                        <GameGlyph k={sub.game} size={26} color={accent} strokeWidth={1.65} />
                       </span>
-                      {subBlurb && (
+                      <span
+                        style={{
+                          position: 'relative',
+                          zIndex: 1,
+                          flex: '1 1 auto',
+                          minWidth: 0,
+                          paddingInlineEnd: PICK_BANNER_WIDTH,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          gap: 4,
+                          maxHeight: PICK_CARD_HEIGHT - 24,
+                          overflow: 'hidden',
+                        }}
+                      >
                         <span
                           style={{
-                            fontFamily: isAr ? "'Cairo', sans-serif" : 'Outfit, sans-serif',
-                            fontSize: 12,
-                            color: HUB_LIGHT.muted,
-                            lineHeight: 1.35,
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
+                            fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
+                            fontSize: isAr ? 17 : 18,
+                            fontWeight: 800,
+                            letterSpacing: isAr ? 0 : '-0.01em',
+                            color: HUB_LIGHT.text,
+                            lineHeight: 1.15,
                           }}
                         >
-                          {subBlurb}
+                          {subName}
                         </span>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
+                        {subBlurb && (
+                          <span
+                            style={{
+                              fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
+                              fontSize: 13,
+                              fontWeight: 500,
+                              color: '#5c534c',
+                              lineHeight: 1.45,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            {subBlurb}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

@@ -22,8 +22,10 @@ export const DOMAIN_COLOR = Object.fromEntries(
 export const DOMAINS = DOMAIN_CONFIGS.map((d) => ({
   id: d.id,
   name: d.name,
+  nameAr: d.nameAr,
   short: d.short,
   desc: d.desc,
+  descAr: d.descAr,
   glyph: d.glyph,
   subs: d.subs.map((s) => ({
     id: s.id,

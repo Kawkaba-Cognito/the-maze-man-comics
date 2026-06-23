@@ -38,19 +38,18 @@
     background-repeat: no-repeat;
 }
 
-/* Full-bleed soft fill — hides letterbox bars on tall/narrow phones */
+/* Mobile splash art is native 1080×1920 (9:16) — brain centred, dark bottom for menu */
 .splash-art-blur {
     inset: -32px;
     background-size: cover;
-    background-position: center 40%;
+    background-position: center center;
     filter: blur(28px) saturate(1.08) brightness(0.58);
     transform: scale(1.06);
 }
 
-/* Sharp composition — whole brain + side planets stay visible */
 .splash-art-sharp {
-    background-size: contain;
-    background-position: center 42%;
+    background-size: cover;
+    background-position: center center;
 }
 
 .splash-screen::before {
@@ -85,41 +84,47 @@
 
 .splash-title-kicker {
     font-family: 'Outfit', 'Cairo', sans-serif;
-    font-size: clamp(0.62rem, 2.4vw, 0.78rem);
-    font-weight: 600;
-    letter-spacing: 0.34em;
+    font-size: clamp(0.68rem, 2.6vw, 0.82rem);
+    font-weight: 700;
+    letter-spacing: 0.28em;
     text-transform: uppercase;
-    color: rgba(212, 176, 110, 0.88);
-    text-shadow: 0 0 18px rgba(255, 190, 80, 0.25);
-    margin-bottom: clamp(4px, 1.2vw, 8px);
+    color: #f3e4c4;
+    text-shadow:
+        0 0 24px rgba(255, 200, 100, 0.45),
+        0 1px 2px rgba(0, 0, 0, 0.85),
+        0 0 1px rgba(200, 148, 62, 0.9);
+    margin-bottom: clamp(5px, 1.4vw, 9px);
 }
 
 .splash-screen[dir="rtl"] .splash-title-kicker {
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     text-transform: none;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .splash-title-main {
     font-family: 'Cinzel', 'Cormorant Garamond', 'Cairo', serif;
-    font-size: clamp(1.85rem, 8.5vw, 3.1rem);
-    font-weight: 700;
-    line-height: 1.02;
-    letter-spacing: 0.06em;
+    font-size: clamp(1.95rem, 8.8vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.04;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     margin: 0;
     background: linear-gradient(
-        180deg,
-        #fff4d4 0%,
-        #e8c878 28%,
-        #c8943e 58%,
-        #8a5a20 100%
+        165deg,
+        #fffef8 0%,
+        #fff0b8 18%,
+        #ffd978 42%,
+        #e8b04a 68%,
+        #b87828 100%
     );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 2px 0 rgba(40, 22, 8, 0.85))
-            drop-shadow(0 0 22px rgba(255, 180, 60, 0.28));
+    filter:
+        drop-shadow(0 2px 0 rgba(20, 10, 4, 0.95))
+        drop-shadow(0 0 28px rgba(255, 190, 70, 0.38))
+        drop-shadow(0 4px 12px rgba(0, 0, 0, 0.55));
 }
 
 .splash-screen[dir="rtl"] .splash-title-main {
@@ -130,13 +135,13 @@
 }
 
 .splash-title-pulse {
-    width: min(180px, 42vw);
+    width: min(190px, 44vw);
     height: 14px;
-    margin: clamp(6px, 1.5vw, 10px) auto 0;
+    margin: clamp(7px, 1.6vw, 11px) auto 0;
     background:
-        linear-gradient(90deg, transparent 0%, rgba(220, 170, 90, 0.15) 18%, rgba(255, 210, 120, 0.55) 50%, rgba(220, 170, 90, 0.15) 82%, transparent 100%),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 14'%3E%3Cpath d='M0 7 H18 L22 2 L26 12 L30 4 L34 10 L38 7 H120' fill='none' stroke='rgba(255,200,100,0.75)' stroke-width='1.2'/%3E%3C/svg%3E") center / contain no-repeat;
-    opacity: 0.9;
+        linear-gradient(90deg, transparent 0%, rgba(255, 210, 130, 0.12) 16%, rgba(255, 228, 160, 0.62) 50%, rgba(255, 210, 130, 0.12) 84%, transparent 100%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 14'%3E%3Cpath d='M0 7 H18 L22 2 L26 12 L30 4 L34 10 L38 7 H120' fill='none' stroke='rgba(255,220,150,0.85)' stroke-width='1.35'/%3E%3C/svg%3E") center / contain no-repeat;
+    opacity: 0.95;
 }
 
 @media (min-width: 768px) {
@@ -226,58 +231,62 @@
     flex-direction: column;
     align-items: stretch;
     width: 100%;
-    gap: clamp(7px, 1.8vw, 10px);
+    gap: clamp(8px, 2vw, 11px);
 }
 
 .splash-menu-btn {
     font-family: 'Outfit', 'Cairo', sans-serif;
-    font-size: clamp(0.78rem, 3vw, 0.88rem);
-    font-weight: 600;
-    letter-spacing: 0.18em;
+    font-size: clamp(0.82rem, 3.2vw, 0.92rem);
+    font-weight: 700;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: rgba(232, 196, 140, 0.92);
-    background: rgba(22, 12, 8, 0.62);
-    border: 1px solid rgba(196, 148, 78, 0.38);
-    border-radius: 4px;
-    padding: 11px 16px;
-    min-height: clamp(42px, 9.5vw, 48px);
+    color: #f5e6c8;
+    background: rgba(8, 6, 12, 0.78);
+    border: 1.5px solid rgba(200, 148, 62, 0.55);
+    border-radius: 6px;
+    padding: 12px 18px;
+    min-height: clamp(44px, 10vw, 50px);
     cursor: pointer;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     box-shadow:
-        inset 0 1px 0 rgba(255, 210, 140, 0.08),
-        0 6px 18px rgba(0, 0, 0, 0.45);
-    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+        inset 0 1px 0 rgba(255, 220, 160, 0.12),
+        0 8px 22px rgba(0, 0, 0, 0.5);
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 
 .splash-menu-btn:hover {
-    background: rgba(36, 20, 12, 0.78);
-    border-color: rgba(220, 170, 90, 0.52);
+    background: rgba(18, 12, 8, 0.88);
+    border-color: rgba(232, 184, 96, 0.72);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 220, 160, 0.16),
+        0 10px 24px rgba(0, 0, 0, 0.55);
 }
 
 .splash-menu-btn:active { transform: scale(0.985); }
 
 .splash-screen[dir="rtl"] .splash-menu-btn {
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
     text-transform: none;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .splash-menu-btn--quit {
-    color: rgba(232, 160, 140, 0.88);
-    border-color: rgba(160, 70, 55, 0.42);
+    color: #f0c8bc;
+    border-color: rgba(180, 88, 68, 0.55);
 }
 
 .splash-menu-btn--quit:hover {
-    background: rgba(40, 16, 12, 0.72);
-    border-color: rgba(200, 90, 70, 0.5);
+    background: rgba(28, 10, 8, 0.86);
+    border-color: rgba(210, 100, 78, 0.62);
 }
 
 .splash-loading {
     font-family: 'Outfit', 'Cairo', sans-serif;
-    font-size: clamp(0.72rem, 2.6vw, 0.82rem);
-    color: rgba(196, 148, 78, 0.6);
-    letter-spacing: 0.22em;
+    font-size: clamp(0.76rem, 2.8vw, 0.86rem);
+    font-weight: 700;
+    color: rgba(243, 228, 196, 0.72);
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     text-align: center;
     width: 100%;
@@ -303,48 +312,53 @@
 
 .splash-start {
     font-family: 'Outfit', 'Cairo', sans-serif;
-    font-size: clamp(0.84rem, 3.2vw, 0.94rem);
-    font-weight: 700;
-    letter-spacing: 0.22em;
+    font-size: clamp(0.9rem, 3.4vw, 1rem);
+    font-weight: 800;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: rgba(26, 14, 8, 0.95);
-    background: linear-gradient(180deg, rgba(232, 196, 120, 0.95) 0%, rgba(180, 130, 60, 0.92) 100%);
-    border: 1px solid rgba(255, 220, 150, 0.55);
-    border-radius: 4px;
+    color: #140a04;
+    background: linear-gradient(
+        180deg,
+        #ffe9a8 0%,
+        #e8b04a 48%,
+        #c8943e 100%
+    );
+    border: 1.5px solid rgba(255, 232, 170, 0.75);
+    border-radius: 6px;
     box-shadow:
-        inset 0 1px 0 rgba(255, 240, 200, 0.35),
-        0 0 22px rgba(255, 180, 60, 0.22),
-        0 8px 20px rgba(0, 0, 0, 0.45);
-    padding: 13px 18px;
-    min-height: clamp(46px, 10.5vw, 52px);
+        inset 0 1px 0 rgba(255, 248, 220, 0.55),
+        inset 0 -2px 0 rgba(120, 72, 20, 0.35),
+        0 0 26px rgba(255, 180, 60, 0.28),
+        0 10px 24px rgba(0, 0, 0, 0.5);
+    padding: 14px 20px;
+    min-height: clamp(48px, 11vw, 54px);
     width: 100%;
     cursor: pointer;
     transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 
 .splash-screen[dir="rtl"] .splash-start {
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     text-transform: none;
-    font-weight: 800;
+    font-weight: 900;
 }
 
 .splash-start:hover,
 .splash-start:active {
-    filter: brightness(1.06);
+    filter: brightness(1.05);
     box-shadow:
-        inset 0 1px 0 rgba(255, 240, 200, 0.4),
-        0 0 28px rgba(255, 180, 60, 0.32),
-        0 8px 20px rgba(0, 0, 0, 0.48);
+        inset 0 1px 0 rgba(255, 248, 220, 0.6),
+        inset 0 -2px 0 rgba(120, 72, 20, 0.35),
+        0 0 32px rgba(255, 190, 70, 0.36),
+        0 12px 26px rgba(0, 0, 0, 0.52);
 }
 
 .splash-start:active { transform: scale(0.99); }
 
 @media (max-width: 767px) and (max-height: 680px) {
-    .splash-art-sharp {
-        background-position: center 38%;
-    }
+    .splash-art-sharp,
     .splash-art-blur {
-        background-position: center 36%;
+        background-position: center center;
     }
     .splash-bottom { max-width: min(320px, 90vw); }
     .splash-menu-btn { min-height: 40px; padding: 9px 14px; }

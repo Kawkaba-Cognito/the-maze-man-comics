@@ -56,7 +56,7 @@ function drawFrontEye(ctx, x, y, R, dir, { look = 'forward' } = {}) {
 
   ctx.fillStyle = 'rgba(200,148,62,0.28)';
   ctx.beginPath();
-  ctx.ellipse(0, -R * 0.04, w * 1.45, hTop * 1.15, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, w * 1.45, hTop * 1.05, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = COSMOS_GOLD_LIGHT;
@@ -68,13 +68,8 @@ function drawFrontEye(ctx, x, y, R, dir, { look = 'forward' } = {}) {
 
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();
-  ctx.arc(-w * 0.28, -hTop * 0.38, Math.max(0.9, R * 0.038), 0, Math.PI * 2);
+  ctx.arc(0, 0, Math.max(0.9, R * 0.038), 0, Math.PI * 2);
   ctx.fill();
-  ctx.beginPath();
-  ctx.arc(w * 0.38, -hTop * 0.12, Math.max(0.55, R * 0.021), 0, Math.PI * 2);
-  ctx.globalAlpha = 0.55;
-  ctx.fill();
-  ctx.globalAlpha = 1;
 
   ctx.restore();
 }

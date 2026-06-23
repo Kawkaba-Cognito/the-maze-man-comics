@@ -48,7 +48,6 @@ export default React.memo(function CosmosCharacter({
 
   const g = metal(accent);       // ring / star metal ramp
   const eye = MOOD_EYE[mood] || MOOD_EYE.ready;
-  const eyeCore = lighten(eye, 0.55);
   const edge = '#000000';
   const ink = lighten(fur, 0.18);
   const limb = lighten(fur, 0.14);
@@ -57,6 +56,8 @@ export default React.memo(function CosmosCharacter({
   const nebula = mix(fur, accent, 0.28);
 
   const cx = 100, cy = 102, R = 52;
+  const EYE_H_TOP = 11.5;
+  const EYE_H_BOT = 4.2;
 
   const width = size;
   const height = faceOnly ? size : size * 1.2;
@@ -81,22 +82,21 @@ export default React.memo(function CosmosCharacter({
     </>
   );
 
-  // Clean glowing gold eye — a soft almond with a white-hot core, gold rim,
-  // outer glow halo and a crisp catchlight. Outer corner lifts slightly so the
-  // pair reads calm + alert rather than harsh.
+  // Pivot on the almond waist (y); catchlight + glow sit on that line — the visual
+  // centre of a tapered eye — and we skip a second gradient fill that read as a
+  // second off-centre dot.
   const GlowEye = ({ x, y, dir = 1 }) => {
     const w = 10;
-    const hTop = 11.5;
-    const hBot = 4.2;
+    const hTop = EYE_H_TOP;
+    const hBot = EYE_H_BOT;
     const tilt = -dir * 7;
-    const almond = `M${x - w},${y} Q${x},${y - hTop} ${x + w},${y} Q${x},${y + hBot} ${x - w},${y} Z`;
+    const almond = `M${-w},0 Q0,${-hTop} ${w},0 Q0,${hBot} ${-w},0 Z`;
     return (
-      <g transform={`rotate(${tilt} ${x} ${y})`}>
-        <ellipse cx={x} cy={y - 2} rx={w * 1.45} ry={hTop * 1.15} fill={accent} opacity="0.3" filter={`url(#${id('eyeglowOuter')})`} />
+      <g transform={`translate(${x} ${y}) rotate(${tilt})`}>
+        <ellipse cx={0} cy={0} rx={w * 1.45} ry={hTop * 1.05} fill={accent} opacity="0.3" filter={`url(#${id('eyeglowOuter')})`} />
         <path d={almond} fill={eye} opacity="0.95" filter={`url(#${id('eyeglow')})`} />
-        <path d={almond} fill={`url(#${id('eyeCore')})`} stroke={lighten(accent, 0.35)} strokeWidth="1" strokeLinejoin="round" />
-        <circle cx={x - w * 0.28} cy={y - hTop * 0.38} r="2" fill="#fff" opacity="0.95" />
-        <circle cx={x + w * 0.38} cy={y - hTop * 0.12} r="1.1" fill="#fff" opacity="0.55" />
+        <path d={almond} fill="none" stroke={lighten(accent, 0.35)} strokeWidth="1" strokeLinejoin="round" />
+        <circle cx={0} cy={0} r="2.1" fill="#fff" opacity="0.95" />
       </g>
     );
   };
@@ -144,11 +144,6 @@ export default React.memo(function CosmosCharacter({
             <stop offset="65%" stopColor={lighten(accent, 0.35)} stopOpacity="0.82" />
             <stop offset="75%" stopColor={accent} stopOpacity="0.34" />
             <stop offset="100%" stopColor={accent} stopOpacity="0" />
-          </radialGradient>
-          <radialGradient id={id('eyeCore')} cx="0.42" cy="0.38" r="0.72">
-            <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="38%" stopColor={eyeCore} />
-            <stop offset="100%" stopColor={eye} />
           </radialGradient>
           <filter id={id('eyeglow')} x="-150%" y="-150%" width="400%" height="400%">
             <feGaussianBlur stdDeviation="2.8" />
@@ -199,11 +194,11 @@ export default React.memo(function CosmosCharacter({
         <g clipPath={`url(#${id('sphere')})`}>
           <path d={`M${cx - 54},${cy + 12} Q${cx - 4},${cy - 6} ${cx + 40},${cy + 8} Q${cx + 56},${cy + 18} ${cx + 56},${cy + 32} L${cx + 56},${cy + 56} L${cx - 56},${cy + 56} Z`}
             fill={nebula} opacity="0.22" />
-          <circle cx={cx + 16} cy={cy - 18} r="6" fill={lighten(fur, 0.05)} opacity="0.22" />
+          <circle cx={cx + 16} cy={cy + 22} r="6" fill={lighten(fur, 0.05)} opacity="0.22" />
           <circle cx={cx - 28} cy={cy + 16} r="4.5" fill={lighten(fur, 0.04)} opacity="0.18" />
           <circle cx={cx + 34} cy={cy + 2} r="3.4" fill={lighten(fur, 0.03)} opacity="0.16" />
           <circle cx={cx - 10} cy={cy + 28} r="1.3" fill={lighten(accent, 0.15)} opacity="0.28" />
-          <circle cx={cx + 38} cy={cy - 6} r="1.2" fill={lighten(accent, 0.15)} opacity="0.24" />
+          <circle cx={cx - 36} cy={cy - 8} r="1.2" fill={lighten(accent, 0.15)} opacity="0.24" />
         </g>
         {/* brighter specular rim light, upper-left */}
         <path d={`M${cx - 38},${cy - 35} A${R},${R} 0 0 1 ${cx + 4},${cy - 51}`}

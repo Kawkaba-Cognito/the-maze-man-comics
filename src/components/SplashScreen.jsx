@@ -4,8 +4,14 @@ import SettingsScreen, { AboutModal } from '../features/settings/SettingsScreen'
 import { assetUrl } from '../lib/assetUrl';
 
 const SPLASH_BG = {
-  mobile: 'Assets/splash-menu-mobile-en.webp',
-  desktop: 'Assets/splash-menu-desktop-en.webp',
+  mobile: {
+    en: 'Assets/splash-menu-mobile-en.webp',
+    ar: 'Assets/splash-menu-mobile-ar.webp',
+  },
+  desktop: {
+    en: 'Assets/splash-menu-desktop-en.webp',
+    ar: 'Assets/splash-menu-desktop-ar.webp',
+  },
 };
 
 export default function SplashScreen({ onDone }) {
@@ -25,9 +31,10 @@ export default function SplashScreen({ onDone }) {
   function handleStart() { setFading(true); setTimeout(onDone, 700); }
   function handleQuit() { setQuitting(true); setTimeout(() => { try { window.close(); } catch (_) {} }, 400); }
 
+  const lang = isAr ? 'ar' : 'en';
   const bgStyle = {
-    '--splash-bg-mobile': `url("${assetUrl(SPLASH_BG.mobile)}")`,
-    '--splash-bg-desktop': `url("${assetUrl(SPLASH_BG.desktop)}")`,
+    '--splash-bg-mobile': `url("${assetUrl(SPLASH_BG.mobile[lang])}")`,
+    '--splash-bg-desktop': `url("${assetUrl(SPLASH_BG.desktop[lang])}")`,
   };
 
   return (
