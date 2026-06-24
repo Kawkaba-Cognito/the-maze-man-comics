@@ -35,6 +35,14 @@ export function createNpcKit(B, scene, { cell = 4, animateDist = 26, interactDis
   bodySrc.material = bodyMat; bodySrc.isVisible = false;
   bodySrc.registerInstancedBuffer('color', 4);
   bodySrc.instancedBuffers.color = new B.Color4(1, 1, 1, 1);
+  // Arms — shared instanced capsule, tinted per-NPC to the body colour.
+  const armSrc = B.MeshBuilder.CreateCapsule('npcArmSrc', { height: 0.62, radius: 0.11, tessellation: 6, capSubdivisions: 2 }, scene);
+  armSrc.material = bodyMat; armSrc.isVisible = false;
+  armSrc.registerInstancedBuffer('color', 4);
+  armSrc.instancedBuffers.color = new B.Color4(1, 1, 1, 1);
+  // Hands — shared instanced sphere in skin tone.
+  const handSrc = B.MeshBuilder.CreateSphere('npcHandSrc', { diameter: 0.2, segments: 6 }, scene);
+  handSrc.material = skinMat; handSrc.isVisible = false;
   const headSrc = B.MeshBuilder.CreateSphere('npcHeadSrc', { diameter: 0.72, segments: 8 }, scene);
   headSrc.material = skinMat; headSrc.isVisible = false;
   const eyeSrc = B.MeshBuilder.CreateSphere('npcEyeSrc', { diameter: 0.12, segments: 6 }, scene);
@@ -83,9 +91,20 @@ export function createNpcKit(B, scene, { cell = 4, animateDist = 26, interactDis
     root.rotation.y = Math.atan2(-x, -z); // face roughly toward the maze centre
     root.scaling.setAll(scale); // tougher soldiers are bigger
 
+    const bodyCol = B.Color3.FromHexString(color).toColor4(1);
     const body = bodySrc.createInstance('npcBody'); body.parent = root; body.position.y = 0.62;
     body.scaling.x = body.scaling.z = girth; // wider = more muscle
-    body.instancedBuffers.color = B.Color3.FromHexString(color).toColor4(1);
+    body.instancedBuffers.color = bodyCol;
+    // Arms hanging at the sides, angled slightly outward + a hand at each end.
+    const armX = 0.34 * girth + 0.12;
+    [-1, 1].forEach((sgn) => {
+      const arm = armSrc.createInstance('npcArm'); arm.parent = root;
+      arm.position.set(sgn * armX, 0.78, 0);
+      arm.rotation.z = sgn * 0.22;
+      arm.instancedBuffers.color = bodyCol;
+      const hand = handSrc.createInstance('npcHand'); hand.parent = root;
+      hand.position.set(sgn * (armX + 0.06), 0.4, 0.02);
+    });
     const head = headSrc.createInstance('npcHead'); head.parent = root; head.position.y = 1.42;
     const eL = eyeSrc.createInstance('npcEyeL'); eL.parent = root; eL.position.set(-0.15, 1.47, 0.3);
     const eR = eyeSrc.createInstance('npcEyeR'); eR.parent = root; eR.position.set(0.15, 1.47, 0.3);

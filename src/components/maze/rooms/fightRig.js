@@ -182,7 +182,7 @@ function mkMat(B, scene, hex, emis = 0.08) {
   m.diffuseColor = c;
   m.emissiveColor = c.scale(emis);
   m.specularColor = new B.Color3(0.08, 0.08, 0.08);
-  m.maxSimultaneousLights = 4;
+  m.maxSimultaneousLights = 6;
   return m;
 }
 
@@ -248,6 +248,21 @@ export function attachFightRig(B, scene, npcRoot, { color = '#6a9fd8', skin = '#
   head.parent = headPivot;
   head.material = skinMat;
   head.isPickable = false;
+
+  // Face — white eyes + dark pupils + a brow line, so the rig reads as a person.
+  const eyeWhiteMat = mkMat(B, scene, '#f5f1ea', 0.18);
+  const pupilMat = mkMat(B, scene, '#1a1410', 0.0);
+  [-1, 1].forEach((sgn) => {
+    const w = B.MeshBuilder.CreateSphere('frEyeW', { diameter: 0.16 * scale, segments: 8 }, scene);
+    w.parent = head; w.position.set(sgn * 0.13 * scale, 0.04 * scale, 0.27 * scale);
+    w.scaling.z = 0.6; w.material = eyeWhiteMat; w.isPickable = false;
+    const p = B.MeshBuilder.CreateSphere('frEyeP', { diameter: 0.08 * scale, segments: 6 }, scene);
+    p.parent = head; p.position.set(sgn * 0.13 * scale, 0.04 * scale, 0.31 * scale);
+    p.material = pupilMat; p.isPickable = false;
+    const brow = B.MeshBuilder.CreateBox('frBrow', { width: 0.18 * scale, height: 0.035 * scale, depth: 0.04 * scale }, scene);
+    brow.parent = head; brow.position.set(sgn * 0.13 * scale, 0.13 * scale, 0.29 * scale);
+    brow.rotation.z = sgn * 0.35; brow.material = pupilMat; brow.isPickable = false;
+  });
 
   const shoulderL = new B.TransformNode('frShL', scene);
   shoulderL.parent = chest;

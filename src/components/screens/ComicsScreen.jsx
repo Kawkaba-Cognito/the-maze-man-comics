@@ -102,7 +102,7 @@ function CardBanner({ gameKey, side = 'right' }) {
 }
 
 export default function ComicsScreen() {
-  const { switchTab, currentLang, assessmentRequested, consumeAssessmentRequest, playSfx, openWorkout } = useApp();
+  const { switchTab, currentLang, assessmentRequested, consumeAssessmentRequest, playSfx } = useApp();
   const isAr = currentLang === 'ar';
   const [screen, setScreen] = useState('hub');
 
@@ -181,7 +181,6 @@ export default function ComicsScreen() {
           onBack={() => switchTab('home')}
           onOpenDomain={openDomain}
           onOpenAssessment={() => setScreen('assessment')}
-          onOpenWorkout={() => { playSfx('click'); openWorkout(); }}
         />
       )}
       {screen === 'assessment' && (

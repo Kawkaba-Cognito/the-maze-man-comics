@@ -89,6 +89,8 @@ const STR = {
     fullTitle: 'Full assessment',
     fullSub: 'All six areas, back to back',
     partsTitle: 'Or test one area',
+    workoutTitle: 'Daily Workout',
+    workoutSub: 'Guided session — warm up, train, cool down',
     profilePrefix: 'You',
     edit: 'Edit',
     years: 'yrs',
@@ -135,6 +137,8 @@ const STR = {
     fullTitle: 'تقييم كامل',
     fullSub: 'المجالات الستة تباعاً',
     partsTitle: 'أو اختبر مجالاً واحداً',
+    workoutTitle: 'تمرين يومي',
+    workoutSub: 'جلسة موجّهة — إحماء، تدريب، تهدئة',
     profilePrefix: 'أنت',
     edit: 'تعديل',
     years: 'سنة',
@@ -178,7 +182,7 @@ function Loading({ label }) {
 }
 
 export default function AssessmentFlow({ onBack }) {
-  const { currentLang, playSfx } = useApp();
+  const { currentLang, playSfx, openWorkout } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? STR.ar : STR.en;
 
@@ -456,6 +460,17 @@ export default function AssessmentFlow({ onBack }) {
             </button>
           ))}
         </div>
+        {openWorkout && (
+          <button type="button" className="ct-fq-db ct-fq-db-easy ct-fq-db-training ct-fq-diffcard"
+            style={{ marginTop: 14 }}
+            onClick={() => { playSfx('click'); openWorkout(); }}>
+            <span className="ct-fq-diffcard-main">
+              <span className="ct-fq-diffcard-label">💪 {t.workoutTitle}</span>
+              <span className="ct-fq-diffcard-desc">{t.workoutSub}</span>
+            </span>
+            <span className="ct-fq-diffcard-meta"><span className="ct-fq-diffcard-grid" aria-hidden="true">▶</span></span>
+          </button>
+        )}
       </div>
     </div>
   );

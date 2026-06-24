@@ -1,12 +1,25 @@
 /**
- * Lightweight follower trail — recruited soldiers lerp behind the player.
- * O(followers) per frame; no extra meshes beyond the NPC instances.
+ * Formation follower controller — recruited soldiers march in a wedge BESIDE and
+ * slightly behind the player instead of stacking on top of them.
+ *
+ * Each follower owns a fixed slot offset in the player's local frame (right/forward),
+ * so when the player stops they hold a tidy flanking formation rather than collapsing
+ * onto the player position (the old trail-follow bug). Heading is derived from the
+ * player's own movement and held while stationary. O(followers) per frame, no meshes.
  */
 export function createFollowerController() {
   const followers = [];
-  const trail = [];
-  const TRAIL_LEN = 48;
-  const SPACING = 1.65;
+  let heading = 0;          // smoothed facing derived from player movement
+  let lastX = null;
+  let lastZ = null;
+
+  // Slot offsets in the player's local frame: x = right, z = forward.
+  // Alternate left/right, stepping further back every pair → clean wedge.
+  function slotOffset(i) {
+    const side = i % 2 === 0 ? -1 : 1;
+    const row = Math.floor(i / 2);
+    return { sx: side * 1.15, sz: -0.85 - row * 1.25 };
+  }
 
   function add(npc) {
     if (!npc || followers.includes(npc)) return;
@@ -15,29 +28,37 @@ export function createFollowerController() {
   }
 
   function update(playerPos) {
-    trail.unshift({ x: playerPos.x, z: playerPos.z });
-    if (trail.length > TRAIL_LEN) trail.pop();
+    const px = playerPos.x;
+    const pz = playerPos.z;
+
+    // Derive heading from movement; hold last heading when standing still.
+    if (lastX !== null) {
+      const dx = px - lastX;
+      const dz = pz - lastZ;
+      if (Math.hypot(dx, dz) > 0.012) {
+        const want = Math.atan2(dx, dz);
+        // shortest-arc smoothing
+        let diff = want - heading;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        heading += diff * 0.25;
+      }
+    }
+    lastX = px;
+    lastZ = pz;
+
+    // Player-local basis: forward = (sin h, cos h), right = (cos h, -sin h).
+    const fx = Math.sin(heading);
+    const fz = Math.cos(heading);
+    const rx = Math.cos(heading);
+    const rz = -Math.sin(heading);
 
     followers.forEach((npc, idx) => {
-      const want = SPACING * (idx + 1);
-      let tx = playerPos.x;
-      let tz = playerPos.z;
-      let acc = 0;
-      for (let j = 0; j < trail.length - 1; j++) {
-        const a = trail[j];
-        const b = trail[j + 1];
-        const seg = Math.hypot(a.x - b.x, a.z - b.z);
-        if (acc + seg >= want) {
-          const f = seg > 0 ? (want - acc) / seg : 0;
-          tx = a.x + (b.x - a.x) * f;
-          tz = a.z + (b.z - a.z) * f;
-          break;
-        }
-        acc += seg;
-        tx = b.x;
-        tz = b.z;
-      }
-      const k = 0.2;
+      const { sx, sz } = slotOffset(idx);
+      const tx = px + rx * sx + fx * sz;
+      const tz = pz + rz * sx + fz * sz;
+
+      const k = 0.18;
       const nx = npc.root.position.x + (tx - npc.root.position.x) * k;
       const nz = npc.root.position.z + (tz - npc.root.position.z) * k;
       npc.root.position.x = nx;
@@ -46,9 +67,8 @@ export function createFollowerController() {
       npc.blob.position.z = nz;
       npc.x = nx;
       npc.z = nz;
-      const dx = tx - nx;
-      const dz = tz - nz;
-      if (Math.hypot(dx, dz) > 0.04) npc.root.rotation.y = Math.atan2(dx, dz);
+      // Face the same way the player is heading (marching alongside).
+      npc.root.rotation.y = heading;
     });
   }
 
