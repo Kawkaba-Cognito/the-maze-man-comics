@@ -2838,6 +2838,7 @@
     position: relative;
     z-index: 5;
     box-sizing: border-box;
+    direction: ltr;
 }
 .ct-training-menubar--hub { padding-bottom: 22px; }
 .ct-training-menubar-center {
@@ -2855,6 +2856,7 @@
     padding: max(52px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 6px
         max(14px, env(safe-area-inset-left));
     position: relative;
+    direction: ltr;
     z-index: 6;
     box-sizing: border-box;
     gap: 8px;
@@ -5253,4 +5255,416 @@
     height: 100%;
     border-radius: 3px;
     transition: width 0.12s linear;
+}
+
+/* ── Domain pick screen (6 domains × 3 games — ComicsScreen) ─────────────
+ * Warm paper shell; each domain tints the wash via --domain-accent. */
+.ct-domain-badge {
+    width: var(--badge-size, 64px);
+    height: var(--badge-size, 64px);
+    flex-shrink: 0;
+    border-radius: var(--badge-radius, 18px);
+    background: linear-gradient(
+        145deg,
+        var(--badge-color, #e8ac4e) 0%,
+        color-mix(in srgb, var(--badge-color, #e8ac4e) 68%, #1a1208) 100%
+    );
+    border: 2px solid color-mix(in srgb, #1a1208 18%, transparent);
+    box-shadow:
+        0 10px 24px color-mix(in srgb, var(--badge-color, #e8ac4e) 28%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -2px 6px rgba(0, 0, 0, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+.ct-domain-badge-shine {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.28) 0%, transparent 58%);
+    pointer-events: none;
+}
+.ct-domain-badge-icon {
+    position: relative;
+    z-index: 1;
+}
+.ct-domain-badge-code {
+    position: absolute;
+    bottom: 6px;
+    right: 7px;
+    z-index: 2;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.82);
+    font-family: 'Outfit', system-ui, sans-serif;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+[dir='rtl'] .ct-domain-badge-code {
+    right: auto;
+    left: 7px;
+}
+
+.ct-domain-pick {
+    position: relative;
+    min-height: min(100vh, 100dvh);
+    overflow-x: hidden;
+    --domain-accent: #e8ac4e;
+}
+.ct-domain-pick::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+        radial-gradient(
+            ellipse 115% 52% at 50% -10%,
+            color-mix(in srgb, var(--domain-accent) 22%, transparent) 0%,
+            transparent 56%
+        ),
+        radial-gradient(
+            ellipse 68% 40% at 100% 6%,
+            color-mix(in srgb, var(--domain-accent) 12%, transparent) 0%,
+            transparent 62%
+        ),
+        radial-gradient(
+            ellipse 58% 34% at 0% 94%,
+            color-mix(in srgb, var(--domain-accent) 10%, transparent) 0%,
+            transparent 58%
+        );
+}
+.ct-domain-pick .ct-training-menubar {
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-bottom: 6px;
+}
+.ct-domain-pick-crumb {
+    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    font-size: clamp(0.72rem, 2.8vw, 0.82rem);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #5c605d;
+}
+.ct-domain-pick-screen.ct-fq-screen {
+    position: relative;
+    z-index: 1;
+    background: transparent !important;
+    align-items: stretch;
+    padding:
+        0
+        max(16px, env(safe-area-inset-right))
+        max(28px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left));
+}
+.ct-domain-pick-inner {
+    width: 100%;
+    max-width: min(100%, 520px);
+    margin: 0 auto;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(20px, 3.5vh, 28px);
+}
+.ct-domain-pick-panel {
+    position: relative;
+    border-radius: 20px;
+    border: 2px solid #1a1208;
+    background: linear-gradient(168deg, rgba(255, 255, 255, 0.99) 0%, rgba(252, 250, 246, 0.97) 100%);
+    box-shadow:
+        4px 5px 0 #1a1208,
+        0 1px 0 rgba(255, 255, 255, 0.9) inset;
+    padding: clamp(18px, 3.5vw, 24px);
+    padding-inline-start: clamp(22px, 4vw, 28px);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+.ct-domain-pick-panel-accent {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    inset-inline-start: 0;
+    width: 5px;
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--domain-accent) 88%, #fff) 0%,
+        var(--domain-accent) 48%,
+        color-mix(in srgb, var(--domain-accent) 72%, #1a1208) 100%
+    );
+}
+.ct-domain-pick-panel-top {
+    display: flex;
+    align-items: center;
+    gap: clamp(14px, 3vw, 18px);
+}
+.ct-domain-pick-panel-copy {
+    flex: 1;
+    min-width: 0;
+    text-align: start;
+}
+.ct-domain-pick-kicker {
+    margin: 0 0 6px;
+    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    font-size: clamp(0.64rem, 2.4vw, 0.72rem);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--domain-accent);
+}
+.ct-domain-pick-panel .ct-domain-pick-title.ct-fq-hub-attn-big {
+    margin: 0;
+    text-align: start;
+    font-size: clamp(1.55rem, 5.8vw, 2.15rem);
+    line-height: 1.06;
+}
+.ct-domain-pick-desc {
+    margin: clamp(14px, 2.5vh, 18px) 0 0;
+    padding-top: clamp(14px, 2.5vh, 16px);
+    border-top: 1px solid color-mix(in srgb, var(--domain-accent) 28%, rgba(107, 158, 122, 0.22));
+    max-width: none;
+    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    font-size: clamp(0.88rem, 3.2vw, 0.98rem);
+    font-weight: 500;
+    color: #4a4f4d;
+    line-height: 1.55;
+    text-align: start;
+}
+.ct-domain-pick-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ct-domain-pick-section-divider {
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 2.5vw, 14px);
+    width: 100%;
+}
+.ct-domain-pick-section-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--domain-accent) 32%, rgba(107, 158, 122, 0.28)) 50%,
+        transparent 100%
+    );
+}
+[dir='rtl'] .ct-domain-pick-section-line {
+    background: linear-gradient(
+        270deg,
+        transparent 0%,
+        color-mix(in srgb, var(--domain-accent) 32%, rgba(107, 158, 122, 0.28)) 50%,
+        transparent 100%
+    );
+}
+.ct-domain-pick-section-title {
+    margin: 0;
+    flex-shrink: 0;
+    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    font-size: clamp(0.68rem, 2.6vw, 0.78rem);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #5c605d;
+    white-space: nowrap;
+}
+.ct-domain-pick-section-meta {
+    margin: 0 0 4px;
+    padding-inline: 2px;
+    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    font-size: clamp(0.72rem, 2.6vw, 0.82rem);
+    font-weight: 500;
+    color: #6a706d;
+    text-align: center;
+}
+.ct-domain-pick-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.ct-domain-pick-card.ct-fq-attn-mode {
+    position: relative;
+    overflow: hidden;
+    flex: none;
+    min-height: clamp(96px, 13vh, 116px);
+    max-height: none;
+    gap: clamp(10px, 2.5vw, 14px);
+    padding-inline: clamp(14px, 3vw, 18px);
+}
+.ct-domain-pick-card-idx {
+    flex-shrink: 0;
+    width: 1.65rem;
+    font-family: 'DM Mono', 'Outfit', monospace;
+    font-size: clamp(0.68rem, 2.4vw, 0.76rem);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: color-mix(in srgb, var(--domain-accent) 55%, #6a706d);
+    text-align: center;
+    line-height: 1;
+    position: relative;
+    z-index: 1;
+}
+.ct-domain-pick-card .ct-fq-attn-mode-ic {
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(
+        165deg,
+        color-mix(in srgb, var(--domain-accent) 22%, #fff) 0%,
+        color-mix(in srgb, var(--domain-accent) 12%, #f8f4ef) 100%
+    );
+    border-color: color-mix(in srgb, var(--domain-accent) 42%, #1a1208);
+}
+.ct-domain-pick-card .ct-fq-attn-mode-body {
+    position: relative;
+    z-index: 1;
+    padding-inline-end: clamp(68px, 20%, 96px);
+    gap: 5px;
+}
+.ct-domain-pick-card-hint {
+    font-weight: 500 !important;
+    line-height: 1.45 !important;
+    color: #525856 !important;
+}
+.ct-domain-pick-card-chev {
+    position: relative;
+    z-index: 1;
+    color: color-mix(in srgb, var(--domain-accent) 48%, #1a1208) !important;
+}
+.ct-domain-pick-card .ct-domain-pick-banner {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: clamp(68px, 20%, 96px);
+    z-index: 0;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    opacity: 0.88;
+}
+.ct-domain-pick-card .ct-domain-pick-banner--right {
+    right: 0;
+    justify-content: flex-end;
+    padding-right: 14px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--domain-accent) 55%, transparent) 52%,
+        color-mix(in srgb, var(--domain-accent) 88%, #fff) 100%
+    );
+}
+.ct-domain-pick-card .ct-domain-pick-banner--left {
+    left: 0;
+    justify-content: flex-start;
+    padding-left: 14px;
+    background: linear-gradient(
+        270deg,
+        transparent 0%,
+        color-mix(in srgb, var(--domain-accent) 55%, transparent) 52%,
+        color-mix(in srgb, var(--domain-accent) 88%, #fff) 100%
+    );
+}
+[dir='rtl'] .ct-domain-pick-panel-top {
+    flex-direction: row-reverse;
+}
+[dir='rtl'] .ct-domain-pick-panel-copy,
+[dir='rtl'] .ct-domain-pick-desc {
+    text-align: right;
+}
+[dir='rtl'] .ct-domain-pick-panel .ct-domain-pick-title.ct-fq-hub-attn-big {
+    text-align: right;
+}
+[dir='rtl'] .ct-domain-pick-kicker {
+    font-family: 'Cairo', 'Outfit', sans-serif;
+    letter-spacing: 0.06em;
+    text-transform: none;
+}
+[dir='rtl'] .ct-domain-pick-desc {
+    font-family: 'Cairo', 'Outfit', sans-serif;
+}
+[dir='rtl'] .ct-domain-pick-section-title,
+[dir='rtl'] .ct-domain-pick-section-meta,
+[dir='rtl'] .ct-domain-pick-crumb {
+    font-family: 'Cairo', 'Outfit', sans-serif;
+    letter-spacing: 0.06em;
+    text-transform: none;
+}
+[dir='rtl'] .ct-domain-pick-card .ct-fq-attn-mode-body {
+    padding-inline-end: 0;
+    padding-inline-start: clamp(68px, 20%, 96px);
+}
+@media (max-width: 380px) {
+    .ct-domain-pick-panel-top {
+        gap: 12px;
+    }
+    .ct-domain-badge {
+        --badge-size: 56px !important;
+    }
+    .ct-domain-pick-card.ct-fq-attn-mode {
+        min-height: 92px;
+        padding-inline: 12px;
+        gap: 8px;
+    }
+    .ct-domain-pick-card-idx {
+        width: 1.35rem;
+        font-size: 0.64rem;
+    }
+    .ct-domain-pick-card .ct-fq-attn-mode-ic {
+        width: 2.75rem;
+        height: 2.75rem;
+        min-width: 2.75rem;
+        border-radius: 14px;
+    }
+    .ct-domain-pick-section-title {
+        font-size: 0.64rem;
+        letter-spacing: 0.1em;
+    }
+}
+@media (min-width: 768px) {
+    .ct-domain-pick-inner {
+        max-width: 580px;
+    }
+    .ct-domain-pick-panel-top {
+        align-items: flex-start;
+    }
+    .ct-domain-pick-list {
+        gap: 14px;
+    }
+    .ct-domain-pick-card.ct-fq-attn-mode {
+        min-height: 108px;
+        padding-inline: 20px;
+    }
+    .ct-domain-pick-panel .ct-domain-pick-title.ct-fq-hub-attn-big {
+        font-size: clamp(1.75rem, 3.2vw, 2.25rem);
+    }
+    .ct-domain-pick-desc {
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+}
+@media (min-width: 1024px) {
+    .ct-domain-pick-inner {
+        max-width: 640px;
+        gap: 32px;
+    }
+    .ct-domain-pick-screen.ct-fq-screen {
+        padding-inline: max(28px, env(safe-area-inset-left)) max(28px, env(safe-area-inset-right));
+        padding-bottom: max(36px, env(safe-area-inset-bottom));
+    }
+    .ct-domain-pick-panel {
+        padding: 26px 28px 26px 32px;
+    }
+    .ct-domain-pick-card .ct-fq-attn-mode-lb {
+        font-size: 1.38rem;
+    }
+    .ct-domain-pick-card-hint {
+        font-size: 0.94rem !important;
+    }
 }

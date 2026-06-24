@@ -88,12 +88,13 @@ function makeTray(board, rng) {
   return tray;
 }
 
-export default function BlockBurst({ onBack }) {
+export default function BlockBurst({ onBack, onSolved, recruitMode }) {
   const { currentLang, playSfx, awardPoints } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
   const tut = usePuzzleTutorial('blockburst', isAr, { onStartGame: () => restart() });
+  const isRecruit = !!recruitMode;
 
   const rngRef = useRef(createRng(randomSeed()));
   const [board, setBoard] = useState(emptyBoard);
@@ -133,6 +134,14 @@ export default function BlockBurst({ onBack }) {
       awardPoints(Math.floor(score / 10));
     }
   }, [board, tray, over, score, playSfx, awardPoints]);
+
+  useEffect(() => {
+    if (!isRecruit || !recruitMode?.targetScore) return;
+    if (score >= recruitMode.targetScore) {
+      playSfx('win');
+      onSolved?.();
+    }
+  }, [score, isRecruit, recruitMode, onSolved, playSfx]);
 
   // Geometry helper: pointer → board anchor cell for the dragged piece.
   const computeTarget = useCallback((piece, px, py) => {
@@ -175,7 +184,7 @@ export default function BlockBurst({ onBack }) {
     fullRows.forEach((r) => { for (let c = 0; c < N; c++) b[r][c] = 0; });
     fullCols.forEach((c) => { for (let r = 0; r < N; r++) b[r][c] = 0; });
     const lines = fullRows.length + fullCols.length;
-    const gained = piece.cells.length + lines * 10 + (lines > 1 ? (lines - 1) * 8 : 0);
+    const gained = lines > 0 ? lines * 10 + (lines > 1 ? (lines - 1) * 8 : 0) : 0;
     setBoard(b);
     setScore((s) => s + gained);
     setTray((tr) => tr.map((p, idx) => (idx === i ? null : p)));
@@ -188,6 +197,69 @@ export default function BlockBurst({ onBack }) {
     const piece = tray[i];
     const target = computeTarget(piece, e.clientX, e.clientY);
     setDrag({ i, piece, x: e.clientX, y: e.clientY, target });
+  }
+
+  if (isRecruit) {
+    const target = recruitMode.targetScore || 50;
+    return (
+      <div className="mz-rec-blockburst-inner">
+        <div className="bb-score mz-rec-bb-score">⚡ {score} / {target}</div>
+        <div className="bb-board-wrap">
+          <div ref={boardRef} className="bb-board mz-rec-bb-board" style={{ touchAction: 'none' }}>
+            {board.map((row, r) =>
+              row.map((v, c) => {
+                let ghost = false;
+                let bad = false;
+                if (drag?.target) {
+                  const { row: gr, col: gc, valid } = drag.target;
+                  if (drag.piece.cells.some(([dr, dc]) => gr + dr === r && gc + dc === c)) { ghost = true; bad = !valid; }
+                }
+                return (
+                  <div key={`${r}-${c}`} className={`bb-cell${v ? ' is-filled' : ''}${ghost ? (bad ? ' is-ghost-bad' : ' is-ghost') : ''}`}
+                    style={v ? { background: COLORS[(v - 1) % COLORS.length] } : undefined} />
+                );
+              }),
+            )}
+          </div>
+        </div>
+        <div className="bb-tray mz-rec-bb-tray">
+          {tray.map((piece, i) => (
+            <div key={i} className={`bb-tray-slot${drag?.i === i ? ' is-dragging' : ''}`}
+              onPointerDown={(e) => piece && startDrag(i, e)}>
+              {piece && (
+                <div className="bb-piece" style={{ gridTemplateColumns: `repeat(${piece.w}, 1fr)`, gridTemplateRows: `repeat(${piece.h}, 1fr)` }}>
+                  {Array.from({ length: piece.h }).map((_, rr) =>
+                    Array.from({ length: piece.w }).map((__, cc) => {
+                      const on = piece.cells.some(([dr, dc]) => dr === rr && dc === cc);
+                      return <div key={`${rr}-${cc}`} className={`bb-pcell${on ? ' on' : ''}`}
+                        style={on ? { background: COLORS[(piece.color - 1) % COLORS.length] } : undefined} />;
+                    }),
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        {drag && (() => {
+          const cell = drag.target?.cell || 30;
+          return (
+            <div className="bb-drag-ghost" style={{
+              left: drag.x - (drag.piece.w * cell) / 2,
+              top: drag.y - (drag.piece.h * cell) / 2 - cell * 0.9,
+              width: drag.piece.w * cell, height: drag.piece.h * cell,
+              gridTemplateColumns: `repeat(${drag.piece.w}, 1fr)`, gridTemplateRows: `repeat(${drag.piece.h}, 1fr)`,
+            }}>
+              {Array.from({ length: drag.piece.h }).map((_, rr) =>
+                Array.from({ length: drag.piece.w }).map((__, cc) => {
+                  const on = drag.piece.cells.some(([dr, dc]) => dr === rr && dc === cc);
+                  return <div key={`${rr}-${cc}`} style={{ background: on ? COLORS[(drag.piece.color - 1) % COLORS.length] : 'transparent', borderRadius: 4, opacity: 0.85 }} />;
+                }),
+              )}
+            </div>
+          );
+        })()}
+      </div>
+    );
   }
 
   return (

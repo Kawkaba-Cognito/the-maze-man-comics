@@ -105,60 +105,24 @@ export function DomainBadge({ domainId, color, size = 72, short }) {
   return (
     <div
       aria-hidden="true"
+      className="ct-domain-badge"
       style={{
-        width: size,
-        height: size,
-        flexShrink: 0,
-        borderRadius: Math.round(size * 0.28),
-        background: `linear-gradient(145deg, ${color} 0%, color-mix(in srgb, ${color} 68%, #1a1208) 100%)`,
-        border: '2px solid color-mix(in srgb, #1a1208 18%, transparent)',
-        boxShadow: `
-          0 10px 24px color-mix(in srgb, ${color} 28%, transparent),
-          inset 0 1px 0 rgba(255,255,255,0.35),
-          inset 0 -2px 6px rgba(0,0,0,0.12)
-        `,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        overflow: 'hidden',
+        '--badge-size': `${size}px`,
+        '--badge-radius': `${Math.round(size * 0.28)}px`,
+        '--badge-color': color,
       }}
     >
-      <span
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'radial-gradient(circle at 30% 22%, rgba(255,255,255,0.28) 0%, transparent 58%)',
-          pointerEvents: 'none',
-        }}
-      />
+      <span className="ct-domain-badge-shine" />
       <svg
+        className="ct-domain-badge-icon"
         width={iconSize}
         height={iconSize}
         viewBox="-20 -20 40 40"
         fill="none"
-        style={{ position: 'relative', zIndex: 1 }}
       >
         <DomainIconArt domainId={domainId} color="#fff" strokeWidth={1.7} />
       </svg>
-      {short && (
-        <span
-          style={{
-            position: 'absolute',
-            bottom: 6,
-            right: 7,
-            zIndex: 2,
-            fontSize: 8,
-            fontWeight: 800,
-            letterSpacing: '0.08em',
-            color: 'rgba(255,255,255,0.82)',
-            fontFamily: "'Outfit', system-ui, sans-serif",
-            textShadow: '0 1px 2px rgba(0,0,0,0.35)',
-          }}
-        >
-          {short}
-        </span>
-      )}
+      {short ? <span className="ct-domain-badge-code">{short}</span> : null}
     </div>
   );
 }

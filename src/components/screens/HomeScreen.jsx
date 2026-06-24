@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { assetUrl } from '../../lib/assetUrl';
 import { getCharacter } from '../../features/character/registry';
 import CosmosCharacter from '../../features/character/CosmosCharacter';
+import { hasEnteredLabyrinth } from '../../features/campaign/campaignProgress';
 
 const DOORS = [
   { tab: 'comics',  enLabel: 'TRAINING', arLabel: 'تدريب', pos: 'left'   },
@@ -11,7 +12,7 @@ const DOORS = [
 ];
 
 export default function HomeScreen() {
-  const { requestMazeEntry, playSfx, switchTab, currentLang, points, character, equipped } = useApp();
+  const { requestOuterGate, requestContinueMaze, playSfx, switchTab, currentLang, points, character, equipped } = useApp();
   const isAr = currentLang === 'ar';
   const Hero = getCharacter(character).Component;
 
@@ -21,10 +22,10 @@ export default function HomeScreen() {
   }
 
   const labelFont = { fontFamily: isAr ? "'Cairo',sans-serif" : "'Bangers',cursive" };
+  const canContinue = hasEnteredLabyrinth();
 
   return (
     <div className="home-screen">
-      {/* Empty maze chamber — character is drawn on the pedestal (code, not art) */}
       <div
         className="home-stage-bg"
         style={{ backgroundImage: `url("${assetUrl('Assets/bg-training-mobile.webp')}")` }}
@@ -37,7 +38,6 @@ export default function HomeScreen() {
         <Hero size={200} float glow equipped={equipped} />
       </button>
 
-      {/* Points balance — top of the home page */}
       <div className="home-points" aria-label={isAr ? 'نقاطك' : 'your points'}>
         ⚡ <span className="home-points-num">{points}</span>
       </div>
@@ -53,7 +53,6 @@ export default function HomeScreen() {
         </button>
       ))}
 
-      {/* Character — under the TRAINING door (left); Shop — under PUZZLES (right) */}
       <button
         className="home-shortcut home-shortcut-left"
         onClick={() => handleDoor('character')}
@@ -73,13 +72,26 @@ export default function HomeScreen() {
         {isAr ? 'المتجر' : 'SHOP'}
       </button>
 
-      <button
-        className="home-maze-btn"
-        style={labelFont}
-        onClick={requestMazeEntry}
-      >
-        {isAr ? 'ادخل المتاهة' : 'ENTER THE MAZE'}
-      </button>
+      <div className="home-maze-actions">
+        <button
+          type="button"
+          className="home-maze-btn home-maze-btn--gate"
+          style={labelFont}
+          onClick={requestOuterGate}
+        >
+          {isAr ? '★ البوابة الخارجية' : '★ OUTER GATE'}
+        </button>
+        {canContinue && (
+          <button
+            type="button"
+            className="home-maze-btn home-maze-btn--continue"
+            style={labelFont}
+            onClick={requestContinueMaze}
+          >
+            {isAr ? 'تابع المتاهة الكبيرة' : 'CONTINUE BIG MAZE'}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { tokens } from '../../styles/tokens';
 import RadialMazeHub from '../training/RadialMazeHub';
 import { DOMAINS, DOMAIN_COLOR } from '../training/trainingData';
-import { IconBack } from '../../features/training/shared/TrainingIcons';
+import { TrainingMenuBar } from '../../features/training/shared/TrainingChrome';
 import { DomainBadge } from '../../features/training/shared/DomainIcon';
 import { getLazyGame, hasGame } from '../../features/training/lazyGames';
 import AssessmentFlow from '../../features/training/assessment/AssessmentFlow';
@@ -22,19 +22,6 @@ function GameLoading({ isAr }) {
     </div>
   );
 }
-
-/** Pick-a-sub-activity screen — same paper as splash / training games. */
-const HUB_LIGHT = {
-  bg: tokens.trainingPaletteSurface,
-  text: '#141210',
-  muted: '#5c534c',
-  border: '#1a1208',
-};
-
-/** Uniform game-card size on the domain pick screen (phone-first). */
-const PICK_CARD_HEIGHT = 112;
-const PICK_BANNER_WIDTH = 'clamp(76px, 24%, 108px)';
-const PICK_MAX = 560;
 
 /**
  * Crisp per-game line glyph (24×24, stroke = currentColor) drawn inside the
@@ -93,36 +80,21 @@ function GameGlyph({ k, size = 48, color = 'currentColor', strokeWidth = 1.8 }) 
 
 /** gameKeys that GameGlyph can draw — used to decide whether to show a banner. */
 const GAME_GLYPH_KEYS = new Set([
-  'speed-match', 'piano-tap', 'trail-making',
+  'speed-match', 'math-gates', 'trail-making',
   'cancel-task', 'mot', 'train-switch',
   'memo-span', 'nback', 'paired-associates',
   'rush-hour', 'raven-matrices', 'tower-hanoi',
-  'spatial-stroop', 'flip', 'math-gates',
+  'spatial-stroop', 'flip', 'piano-tap',
   'wordle', 'synonyms', 'odd-one-out',
 ]);
 
-/**
- * Card banner — a solid accent panel on the right edge of the card with a
- * white game glyph (the "Speed style" we picked). Applied to every domain.
- * Returns null for games that have no glyph yet (keeps the plain card).
- */
-function CardBanner({ gameKey, accent, side = 'right' }) {
+/** Side banner with white game glyph — domain accent only on the card edge. */
+function CardBanner({ gameKey, side = 'right' }) {
   if (!GAME_GLYPH_KEYS.has(gameKey)) return null;
-  const isLeft = side === 'left';
   return (
     <span
       aria-hidden="true"
-      style={{
-        position: 'absolute', top: 0, [side]: 0, bottom: 0, width: PICK_BANNER_WIDTH, zIndex: 0,
-        pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-        paddingRight: isLeft ? 0 : 18,
-        paddingLeft: isLeft ? 18 : 0,
-        opacity: 0.88,
-        background: isLeft
-          ? `linear-gradient(270deg, transparent 0%, color-mix(in srgb, ${accent} 55%, transparent) 52%, color-mix(in srgb, ${accent} 88%, #fff) 100%)`
-          : `linear-gradient(90deg, transparent 0%, color-mix(in srgb, ${accent} 55%, transparent) 52%, color-mix(in srgb, ${accent} 88%, #fff) 100%)`,
-        justifyContent: isLeft ? 'flex-start' : 'flex-end',
-      }}
+      className={`ct-domain-pick-banner ct-domain-pick-banner--${side}`}
     >
       <GameGlyph k={gameKey} size={58} color="#fff" strokeWidth={1.7} />
     </span>
@@ -130,7 +102,7 @@ function CardBanner({ gameKey, accent, side = 'right' }) {
 }
 
 export default function ComicsScreen() {
-  const { switchTab, currentLang, assessmentRequested, consumeAssessmentRequest } = useApp();
+  const { switchTab, currentLang, assessmentRequested, consumeAssessmentRequest, playSfx, openWorkout } = useApp();
   const isAr = currentLang === 'ar';
   const [screen, setScreen] = useState('hub');
 
@@ -209,6 +181,7 @@ export default function ComicsScreen() {
           onBack={() => switchTab('home')}
           onOpenDomain={openDomain}
           onOpenAssessment={() => setScreen('assessment')}
+          onOpenWorkout={() => { playSfx('click'); openWorkout(); }}
         />
       )}
       {screen === 'assessment' && (
@@ -216,305 +189,97 @@ export default function ComicsScreen() {
       )}
       {screen === 'pick' && d && (
         <div
-          style={{
-            minHeight: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            background: HUB_LIGHT.bg,
-            color: HUB_LIGHT.text,
-            fontFamily: 'Outfit, system-ui, sans-serif',
-            padding: `max(52px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom))`,
-            boxSizing: 'border-box',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
+          className={`cancellation-task-game ct-domain-pick ct-domain-pick--${activeDomain} ct-fq-training-shell ct-fq-training-shell--hub-light`}
+          dir={isAr ? 'rtl' : 'ltr'}
+          style={{ '--domain-accent': accent }}
         >
-          {/* Soft domain tint wash */}
-          <div
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              pointerEvents: 'none',
-              background: `
-                radial-gradient(ellipse 90% 42% at 50% -8%, color-mix(in srgb, ${accent} 22%, transparent) 0%, transparent 72%),
-                radial-gradient(ellipse 55% 35% at 100% 0%, color-mix(in srgb, ${accent} 10%, transparent) 0%, transparent 70%)
-              `,
-            }}
-          />
+          <div className="ct-fq-screen ct-fq-training-screen ct-domain-pick-screen">
+            <TrainingMenuBar
+              variant="paper"
+              playSfx={playSfx}
+              onBack={backToHub}
+              center={
+                <span className="ct-domain-pick-crumb">
+                  {isAr ? 'تدريب' : 'Training'}
+                </span>
+              }
+            />
 
-          <div style={{ position: 'relative', zIndex: 1, maxWidth: PICK_MAX, width: '100%', margin: '0 auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 22 }}>
-              <button
-                type="button"
-                onClick={backToHub}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
-                  border: '1px solid #e6ddd4',
-                  background: 'rgba(255,255,255,0.92)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(26,18,8,0.06)',
-                }}
-                aria-label={isAr ? 'رجوع' : 'Back'}
-              >
-                <IconBack size={18} c={HUB_LIGHT.text} />
-              </button>
-            </div>
-
-            {/* Domain header card */}
-            <header
-              style={{
-                borderRadius: 22,
-                border: '1px solid #ebe3db',
-                background: 'linear-gradient(180deg, #ffffff 0%, #faf6f2 100%)',
-                boxShadow: '0 8px 28px rgba(26,18,8,0.06)',
-                overflow: 'hidden',
-                marginBottom: 28,
-              }}
-            >
-              <div
-                aria-hidden="true"
-                style={{
-                  height: 4,
-                  background: `linear-gradient(90deg, color-mix(in srgb, ${accent} 55%, #fff) 0%, ${accent} 50%, color-mix(in srgb, ${accent} 55%, #fff) 100%)`,
-                }}
-              />
-              <div style={{ padding: '18px 18px 20px' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 16,
-                    minWidth: 0,
-                    flexDirection: isAr ? 'row-reverse' : 'row',
-                  }}
-                >
+            <div className="ct-domain-pick-inner">
+              <header className="ct-domain-pick-panel">
+                <span className="ct-domain-pick-panel-accent" aria-hidden="true" />
+                <div className="ct-domain-pick-panel-top">
                   <DomainBadge
                     domainId={activeDomain}
                     color={accent}
-                    size={72}
+                    size={64}
                     short={d.short}
                   />
-                  <div style={{ flex: 1, minWidth: 0, textAlign: isAr ? 'right' : 'left' }}>
-                    <p
-                      style={{
-                        margin: '0 0 6px',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        letterSpacing: '0.16em',
-                        textTransform: 'uppercase',
-                        color: accent,
-                      }}
-                    >
+                  <div className="ct-domain-pick-panel-copy">
+                    <p className="ct-domain-pick-kicker">
                       {isAr ? 'مجال تدريبي' : 'Training domain'}
                     </p>
-                    <h1
-                      style={{
-                        margin: 0,
-                        fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-                        fontSize: 'clamp(1.65rem, 6.2vw, 2.15rem)',
-                        fontWeight: 800,
-                        lineHeight: 1.08,
-                        color: HUB_LIGHT.text,
-                        overflowWrap: 'anywhere',
-                        textWrap: 'balance',
-                        letterSpacing: isAr ? 0 : '-0.02em',
-                      }}
-                    >
-                      {domainName}
-                    </h1>
+                    <h1 className="ct-domain-pick-title ct-fq-hub-attn-big">{domainName}</h1>
                   </div>
                 </div>
-                {domainDesc && (
-                  <p
-                    style={{
-                      margin: '16px 0 0',
-                      paddingTop: 16,
-                      borderTop: '1px solid #f0e8e0',
-                      fontSize: 14,
-                      fontWeight: 500,
-                      color: '#4a4038',
-                      lineHeight: 1.6,
-                      textAlign: isAr ? 'right' : 'left',
-                    }}
-                  >
-                    {domainDesc}
-                  </p>
-                )}
-              </div>
-            </header>
-          </div>
+                {domainDesc ? (
+                  <p className="ct-domain-pick-desc">{domainDesc}</p>
+                ) : null}
+              </header>
 
-          {/* Exercise list */}
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 1,
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              width: '100%',
-              paddingBottom: 8,
-            }}
-          >
-            <div style={{ maxWidth: PICK_MAX, width: '100%', margin: '0 auto' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  marginBottom: 14,
-                  flexDirection: isAr ? 'row-reverse' : 'row',
-                }}
+              <section
+                className="ct-domain-pick-section"
+                aria-labelledby="domain-pick-heading"
               >
-                <span
-                  style={{
-                    flex: 1,
-                    height: 1,
-                    background: 'linear-gradient(90deg, transparent, #e8dfd6 35%, #e8dfd6 65%, transparent)',
-                  }}
-                />
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '0.14em',
-                    textTransform: 'uppercase',
-                    color: '#6b5f54',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {isAr ? 'اختر تمريناً' : 'Select an exercise'}
+                <div className="ct-domain-pick-section-divider">
+                  <span className="ct-domain-pick-section-line" aria-hidden="true" />
+                  <h2 id="domain-pick-heading" className="ct-domain-pick-section-title">
+                    {isAr ? 'اختر تمريناً' : 'Select an exercise'}
+                  </h2>
+                  <span className="ct-domain-pick-section-line" aria-hidden="true" />
+                </div>
+                <p className="ct-domain-pick-section-meta">
+                  {pickList.length} {isAr ? 'تمارين متاحة' : pickList.length === 1 ? 'exercise available' : 'exercises available'}
                 </p>
-                <span
-                  style={{
-                    flex: 1,
-                    height: 1,
-                    background: 'linear-gradient(90deg, transparent, #e8dfd6 35%, #e8dfd6 65%, transparent)',
-                  }}
-                />
-              </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {pickList.map((sub) => {
-                  const subName = (isAr && sub.nameAr) ? sub.nameAr : sub.name;
-                  const subBlurb = isAr ? sub.blurbAr : sub.blurb;
-                  return (
-                    <button
-                      key={sub.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveGame(sub.game);
-                        setPickList([]);
-                        setScreen('game');
-                      }}
-                      style={{
-                        position: 'relative',
-                        overflow: 'hidden',
-                        height: PICK_CARD_HEIGHT,
-                        minHeight: PICK_CARD_HEIGHT,
-                        maxHeight: PICK_CARD_HEIGHT,
-                        width: '100%',
-                        boxSizing: 'border-box',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 14,
-                        flexDirection: isAr ? 'row-reverse' : 'row',
-                        textAlign: isAr ? 'right' : 'left',
-                        padding: '12px 14px',
-                        borderRadius: 18,
-                        border: '1px solid #e6ddd4',
-                        background: 'linear-gradient(180deg, #ffffff 0%, #faf7f3 100%)',
-                        boxShadow: '0 4px 14px rgba(26,18,8,0.05)',
-                        cursor: 'pointer',
-                        transition: 'border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = `color-mix(in srgb, ${accent} 45%, #e6ddd4)`;
-                        e.currentTarget.style.boxShadow = `0 8px 22px color-mix(in srgb, ${accent} 14%, rgba(26,18,8,0.08))`;
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = '#e6ddd4';
-                        e.currentTarget.style.boxShadow = '0 4px 14px rgba(26,18,8,0.05)';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                      }}
-                    >
-                      <CardBanner gameKey={sub.game} accent={accent} side={isAr ? 'left' : 'right'} />
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          position: 'relative',
-                          zIndex: 1,
-                          width: 48,
-                          height: 48,
-                          flexShrink: 0,
-                          borderRadius: 14,
-                          background: `color-mix(in srgb, ${accent} 12%, #fff)`,
-                          border: `1.5px solid color-mix(in srgb, ${accent} 28%, #e6ddd4)`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                <div className="ct-domain-pick-list" role="group" aria-label={isAr ? 'تمارين المجال' : 'Domain exercises'}>
+                  {pickList.map((sub, idx) => {
+                    const subName = (isAr && sub.nameAr) ? sub.nameAr : sub.name;
+                    const subBlurb = isAr ? sub.blurbAr : sub.blurb;
+                    const bannerSide = isAr ? 'left' : 'right';
+                    return (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        className="ct-fq-attn-mode ct-domain-pick-card"
+                        onClick={() => {
+                          playSfx?.('click');
+                          setActiveGame(sub.game);
+                          setPickList([]);
+                          setScreen('game');
                         }}
                       >
-                        <GameGlyph k={sub.game} size={26} color={accent} strokeWidth={1.65} />
-                      </span>
-                      <span
-                        style={{
-                          position: 'relative',
-                          zIndex: 1,
-                          flex: '1 1 auto',
-                          minWidth: 0,
-                          paddingInlineEnd: PICK_BANNER_WIDTH,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'center',
-                          gap: 4,
-                          maxHeight: PICK_CARD_HEIGHT - 24,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-                            fontSize: isAr ? 17 : 18,
-                            fontWeight: 800,
-                            letterSpacing: isAr ? 0 : '-0.01em',
-                            color: HUB_LIGHT.text,
-                            lineHeight: 1.15,
-                          }}
-                        >
-                          {subName}
+                        <CardBanner gameKey={sub.game} side={bannerSide} />
+                        <span className="ct-domain-pick-card-idx" aria-hidden="true">
+                          {String(idx + 1).padStart(2, '0')}
                         </span>
-                        {subBlurb && (
-                          <span
-                            style={{
-                              fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-                              fontSize: 13,
-                              fontWeight: 500,
-                              color: '#5c534c',
-                              lineHeight: 1.45,
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                            }}
-                          >
-                            {subBlurb}
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                        <span className="ct-fq-attn-mode-ic" aria-hidden="true">
+                          <GameGlyph k={sub.game} size={26} color={accent} strokeWidth={1.65} />
+                        </span>
+                        <span className="ct-fq-attn-mode-body">
+                          <span className="ct-fq-attn-mode-lb">{subName}</span>
+                          {subBlurb ? (
+                            <span className={`ct-fq-attn-mode-hint ct-domain-pick-card-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>
+                              {subBlurb}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="ct-fq-attn-mode-chev ct-domain-pick-card-chev" aria-hidden="true">›</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             </div>
           </div>
         </div>

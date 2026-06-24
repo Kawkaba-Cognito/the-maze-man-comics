@@ -237,7 +237,7 @@ function mazeCorridorD(domainId) {
   return `M ${sx} ${sy} Q ${cpx} ${cpy} ${s.x} ${s.y}`;
 }
 
-export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }) {
+export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment, onOpenWorkout }) {
   const { currentLang, toggleLang } = useApp();
   const isAr = currentLang === 'ar';
   const [hovered, setHovered] = useState(null);
@@ -263,7 +263,7 @@ export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }
       <AtmosphericBgLight/>
 
       {/* Top bar */}
-      <div style={{
+      <div className="app-chrome-bar" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '64px 18px 10px', position: 'relative', zIndex: 5,
       }}>
@@ -512,6 +512,37 @@ export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }
           </button>
         </div>
       </div>
+
+      {/* Daily Workout — 2D session from Training hub (replaces in-maze gym) */}
+      {onOpenWorkout && (
+        <button
+          type="button"
+          onClick={onOpenWorkout}
+          style={{
+            position: 'absolute',
+            bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+            left: 'calc(16px + env(safe-area-inset-left, 0px))',
+            zIndex: 8,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 16px',
+            borderRadius: 100,
+            border: '1.5px solid rgba(232,172,78,0.55)',
+            background: 'linear-gradient(180deg, #1f160c 0%, #150e08 100%)',
+            color: L.text,
+            fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Nunito', sans-serif",
+            fontSize: isAr ? 12 : 13,
+            fontWeight: isAr ? 800 : 400,
+            letterSpacing: isAr ? 0 : 0.35,
+            cursor: 'pointer',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.65), inset 0 1px 0 rgba(220,170,70,0.12)',
+          }}
+        >
+          <span aria-hidden="true" style={{ fontSize: 18 }}>💪</span>
+          {isAr ? 'تمرين يومي' : 'Daily Workout'}
+        </button>
+      )}
 
       {/* Domain hover callout */}
       {hovered && (

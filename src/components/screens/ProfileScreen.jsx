@@ -10,6 +10,7 @@ import {
   loadAssessProfile,
   scoreBand,
 } from '../../features/training/assessment/assessmentProfile';
+import { getCampaignFloor, resetToGate, isGateBossBeaten, hasEnteredLabyrinth } from '../../features/campaign/campaignProgress';
 
 /* ─────────────────────────────────────────────────────────────
  * PROFILE — full-bleed page in the amber/stone "world map" style.
@@ -181,6 +182,7 @@ function CognitiveRadar({ scores, index, isAr }) {
 
 export default function ProfileScreen() {
   const { globalXP, profileData, setProfileData, saveProfile, playSfx, switchTab, toggleLang, currentLang, openPaywall } = useApp();
+  const [gateDone, setGateDone] = useState(() => isGateBossBeaten());
   const isAr = currentLang === 'ar';
   const [showPicker, setShowPicker] = useState(false);
 
@@ -233,7 +235,7 @@ export default function ProfileScreen() {
         <AtmosphericBg />
 
         {/* Top bar */}
-        <div style={{
+        <div className="app-chrome-bar" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '64px 18px 8px', position: 'relative', zIndex: 5,
         }}>
@@ -420,6 +422,36 @@ export default function ProfileScreen() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Labyrinth campaign */}
+          <div style={{ marginTop: 28 }}>
+            <SectionDivider label={isAr ? 'المتاهة' : 'Labyrinth'} />
+            <div style={{ ...stoneCard, padding: 16 }}>
+              <div style={{ fontSize: 13, color: L.text, lineHeight: 1.6, marginBottom: 12 }}>
+                {hasEnteredLabyrinth()
+                  ? (isAr ? '✓ دخلت المتاهة الكبيرة' : '✓ Entered the big labyrinth')
+                  : gateDone
+                    ? (isAr ? '● البوابة مفتوحة — ادخل من البوابة' : '● Gate open — use the portal')
+                    : (isAr ? '● ابدأ من البوابة الخارجية (الغرفة الصغيرة)' : '● Start at the Outer Gate (small room)')}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  playSfx('click');
+                  resetToGate();
+                  setGateDone(false);
+                }}
+                style={{
+                  width: '100%', padding: '11px', borderRadius: 10, cursor: 'pointer',
+                  border: '1.5px solid rgba(232,172,78,0.35)', background: 'rgba(0,0,0,0.25)',
+                  color: L.amber, fontFamily: isAr ? "'Cairo',sans-serif" : "'Bangers', cursive",
+                  fontSize: isAr ? 13 : 15, letterSpacing: isAr ? 0 : 1,
+                }}
+              >
+                {isAr ? '↺ إعادة البوابة الخارجية' : '↺ Replay Outer Gate'}
+              </button>
             </div>
           </div>
 

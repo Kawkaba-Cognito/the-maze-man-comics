@@ -46,6 +46,8 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
     display: flex; justify-content: space-between; align-items: center;
     padding: max(14px, env(safe-area-inset-top)) 20px 12px;
     z-index: 1000; pointer-events: none;
+    /* Keep chrome LTR so back stays left and lang toggle stays right in Arabic */
+    direction: ltr;
 }
 .floating-hud > * { pointer-events: auto; }
 
@@ -77,6 +79,7 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
     text-shadow: 0 0 8px rgba(255, 180, 50, 0.7);
     backdrop-filter: blur(6px);
     transition: .15s;
+    margin-left: auto;
 }
 #lang-btn:active { transform: scale(0.96); opacity: 0.8; }
 
@@ -101,6 +104,11 @@ body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
 }
 .back-btn:hover { background: rgba(30, 15, 5, 0.85); border-color: rgba(255, 200, 100, 0.7); }
 .back-btn:active { transform: scale(0.96); }
+
+/* Top bars with back-left / lang-right — stay LTR even when page content is Arabic */
+.app-chrome-bar {
+    direction: ltr;
+}
 
 /* screens */
 .ui-screen { display: none; opacity: 0; transition: opacity 0.3s ease-out; min-height: 100dvh; width: 100%; padding: 70px 16px 40px; position: relative; }
@@ -518,10 +526,26 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
    ENTER THE MAZE — ornate carpet/rug
    laid in front of the entry arch
 ═══════════════════════════════════ */
-.home-maze-btn {
+.home-maze-actions {
     position: fixed;
-    left: 50%; transform: translateX(-50%);
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 201;
+    top: 83%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: min(92vw, 340px);
+}
+@media (min-width: 768px) {
+    .home-maze-actions { top: 86%; }
+}
+.home-maze-btn {
+    position: relative;
+    left: auto;
+    transform: none;
+    width: 100%;
     cursor: pointer;
     white-space: nowrap;
     text-align: center;
@@ -561,8 +585,17 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
     padding: 7px 34px 8px;
     animation: maze-btn-pulse 3s ease-in-out infinite;
     transition: all 0.25s ease;
-    /* Mobile: over the entry arch at bottom of maze */
-    top: 83%;
+}
+.home-maze-btn--gate { animation: maze-btn-pulse 3s ease-in-out infinite; }
+.home-maze-btn--continue {
+    font-size: clamp(0.5em, 2vw, 0.68em);
+    letter-spacing: 3px;
+    padding: 6px 20px 7px;
+    opacity: 0.92;
+    background: linear-gradient(180deg, #1a2848 0%, #0e1428 100%);
+    border-color: #5a78a8;
+    color: rgba(200, 220, 255, 0.95);
+    animation: none;
 }
 /* Carpet tassels — fringe on left and right ends */
 .home-maze-btn::before,
@@ -580,8 +613,7 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
 .home-maze-btn::after  { right: -7px; }
 
 @media (min-width: 768px) {
-    .home-maze-btn {
-        top: 88%;
+    .home-maze-btn--gate {
         font-size: clamp(0.6em, 0.95vw, 0.82em);
         letter-spacing: 7px;
         padding: 8px 40px 9px;
@@ -599,10 +631,10 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
         0 1px 0 rgba(255,220,100,0.6),
         0 -1px 0 rgba(0,0,0,0.9),
         0 0 14px rgba(255,180,50,0.6);
-    transform: translateX(-50%) scale(1.04);
+    transform: scale(1.04);
     animation: none;
 }
-.home-maze-btn:active { transform: translateX(-50%) scale(0.97); }
+.home-maze-btn:active { transform: scale(0.97); }
 @keyframes maze-btn-pulse {
     0%, 100% { filter: brightness(1); }
     50%       { filter: brightness(1.15); }

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useRef, useEffect, useCallb
 import { trainingWinPoints } from '../lib/points';
 import { updateRating } from '../features/training/rating';
 import { recruit as armyRecruit, recordAttempt as armyRecordAttempt, markGone as armyMarkGone, MAX_ATTEMPTS } from '../features/army/armyState';
+import { getCampaignFloor, DEFAULT_FLOOR, hasEnteredLabyrinth, prepareOuterGateEntry, ensureGateProgress } from '../features/campaign/campaignProgress';
 
 const AppContext = createContext(null);
 
@@ -46,8 +47,7 @@ export function AppProvider({ children }) {
   const [assessmentRequested, setAssessmentRequested] = useState(false);
   const [mazeVisible, setMazeVisible] = useState(false);
   const [mazeEntryPending, setMazeEntryPending] = useState(false);
-  const [mazeStartRoom, setMazeStartRoom] = useState('hall'); // initial room for RoomHost
-  const [workoutReturnRoom, setWorkoutReturnRoom] = useState(null); // re-enter 3D here after a workout
+  const [mazeStartRoom, setMazeStartRoom] = useState(DEFAULT_FLOOR);
   const [challenge, setChallenge] = useState(null); // recruitment puzzle: { puzzleKey, id, name, power, returnRoom }
   const challengeRef = useRef(null);
   const [paywallOpen, setPaywallOpen] = useState(false);
@@ -58,6 +58,7 @@ export function AppProvider({ children }) {
   const [sfxEnabled, setSfxEnabledState] = useState(() => readSfxEnabled());
 
   // Load profile on mount
+  useEffect(() => { ensureGateProgress(); }, []);
   useEffect(() => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
@@ -257,20 +258,17 @@ export function AppProvider({ children }) {
   }, [playSfx, stopSpeech]);
   const consumeAssessmentRequest = useCallback(() => setAssessmentRequested(false), []);
 
-  const requestMazeEntry = useCallback(() => {
+  const beginMazeEntry = useCallback((roomKey) => {
     playSfx('click');
     stopSpeech();
+    setMazeStartRoom(roomKey);
 
-    // If Babylon already loaded, enter immediately
     if (typeof window.BABYLON !== 'undefined') {
       setMazeEntryPending(true);
       return;
     }
 
-    // Dynamically load Babylon.js only when needed (was a blocking <script> in
-    // index.html that froze every boot). Pinned version + SRI; same build the
-    // maze was already running on. If it's already injected, don't add it twice.
-    setMazeEntryPending(true); // show transition overlay immediately
+    setMazeEntryPending(true);
     if (document.getElementById('babylon-cdn')) return;
     const script = document.createElement('script');
     script.id = 'babylon-cdn';
@@ -284,6 +282,19 @@ export function AppProvider({ children }) {
     };
     document.head.appendChild(script);
   }, [playSfx, stopSpeech]);
+
+  /** Small outer gate room — always starts here until portal entered. */
+  const requestOuterGate = useCallback(() => {
+    prepareOuterGateEntry();
+    beginMazeEntry('gate');
+  }, [beginMazeEntry]);
+
+  /** Resume the big labyrinth (floor 1+) after clearing the outer gate. */
+  const requestContinueMaze = useCallback(() => {
+    beginMazeEntry(getCampaignFloor());
+  }, [beginMazeEntry]);
+
+  const requestMazeEntry = requestOuterGate;
 
   const enterMaze = useCallback(() => {
     // Babylon loads on demand now, so the maze can only mount once it's ready.
@@ -302,13 +313,12 @@ export function AppProvider({ children }) {
     setMazeVisible(false);
   }, [playSfx]);
 
-  // Launch the Daily Workout from a 3D room (the Gym coach). `returnRoom` is
-  // where we drop the player back after they finish/leave the session.
-  const openWorkout = useCallback((returnRoom = null) => {
-    setWorkoutReturnRoom(returnRoom);
-    setActiveTab('workout');
+  const openWorkout = useCallback(() => {
+    playSfx('click');
+    stopSpeech();
     setMazeVisible(false);
-  }, []);
+    setActiveTab('workout');
+  }, [playSfx, stopSpeech]);
 
   // Recruitment: launch a soldier's puzzle full-screen (from the maze).
   const openPuzzleChallenge = useCallback((c) => {
@@ -325,24 +335,13 @@ export function AppProvider({ children }) {
     if (success) armyRecruit({ id: c.id, name: c.name, power: c.power });
     else if (armyRecordAttempt(c.id) >= MAX_ATTEMPTS) armyMarkGone(c.id);
     setChallenge(null);
-    setMazeStartRoom(c.returnRoom || 'maze');
-    setActiveTab('home');
+    setMazeStartRoom(hasEnteredLabyrinth() ? (c.returnRoom || getCampaignFloor()) : 'gate');
     setMazeVisible(true);
   }, []);
 
-  // Leaving the workout: if we came from a 3D room, re-enter the world there;
-  // otherwise just go home. (Also resets activeTab so a later 3D-quit lands home.)
   const leaveWorkout = useCallback(() => {
-    if (workoutReturnRoom) {
-      setMazeStartRoom(workoutReturnRoom);
-      setWorkoutReturnRoom(null);
-      setActiveTab('home');
-      setMazeEntryPending(false);
-      setMazeVisible(true);
-    } else {
-      switchTab('home');
-    }
-  }, [workoutReturnRoom, switchTab]);
+    switchTab('comics');
+  }, [switchTab]);
 
   const saveProfile = useCallback((data, xp) => {
     try {
@@ -364,7 +363,8 @@ export function AppProvider({ children }) {
       assessmentRequested, openAssessment, consumeAssessmentRequest,
       mazeStartRoom, setMazeStartRoom, openWorkout, leaveWorkout,
       challenge, openPuzzleChallenge, finishChallenge,
-      updateXP, awardPoints, spendPoints, awardTrainingWin, awardFreeRun, toggleLang, switchTab, requestMazeEntry, enterMaze, exitMaze,
+      updateXP, awardPoints, spendPoints, awardTrainingWin, awardFreeRun, toggleLang, switchTab,
+      requestMazeEntry, requestOuterGate, requestContinueMaze, enterMaze, exitMaze,
       playSfx, stopSpeech, saveProfile,
       setProfileData,
       openPaywall: () => { playSfx('click'); setPaywallOpen(true); },

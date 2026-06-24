@@ -146,10 +146,8 @@ export function setupControls(scene, canvas, opts = {}) {
       speed += (0 - speed) * 0.2;
       if (Math.abs(speed) < 0.0005) speed = 0;
     } else if (topDown) {
-      // Screen-relative: up = north, right = east; the character faces wherever
-      // it walks (no tank turning). Joystick magnitude → analog speed.
+      // Screen-relative: up = +Z (same as doorHall / campaign). Joystick up → jy<0.
       const mx = jx + ((inputMap['d'] || inputMap['arrowright'] ? 1 : 0) - (inputMap['a'] || inputMap['arrowleft'] ? 1 : 0));
-      // Camera looks toward +z, so screen-up = +z. Joystick up is jy<0 → negate.
       const mz = -jy + ((inputMap['w'] || inputMap['arrowup'] ? 1 : 0) - (inputMap['s'] || inputMap['arrowdown'] ? 1 : 0));
       const mag = Math.min(1, Math.hypot(mx, mz));
       const target = mag * MAX_SPEED * run;
@@ -208,8 +206,7 @@ export function setupControls(scene, canvas, opts = {}) {
     const px = player.position.x, pz = player.position.z;
     let ideal;
     if (topDown) {
-      // Fixed overhead/tilted cam: always high above, slightly to the south, so
-      // north is always "up" on screen (matches the screen-relative controls).
+      // Camera on the −Z side; +Z is screen-up (matches doorHall / campaign).
       ideal = new B.Vector3(px, camHeight, pz - camDist);
     } else {
       // Chase camera: offset behind+above, rotated to the facing.

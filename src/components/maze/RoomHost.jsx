@@ -1,31 +1,32 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
-import { buildDoorHall } from './rooms/doorHall';
-import { buildAttentionRoom } from './rooms/attentionRoom';
-import { buildMazeRoom } from './rooms/mazeRoom';
-import { buildGymRoom } from './rooms/gymRoom';
+import { buildCampaignMaze } from './rooms/campaignMaze';
+import { buildGateRoom } from './rooms/gateRoom';
+import { buildBossFightScene } from './rooms/bossFightScene';
+import { CAMPAIGN_ROOM_KEYS } from '../../features/campaign/campaignFloors';
+import { GATE_ROOM_KEY } from '../../features/campaign/gateRoomConfig';
+import { DEFAULT_FLOOR, setGateBossBeaten } from '../../features/campaign/campaignProgress';
+import MazeRecruitOverlay from './MazeRecruitOverlay';
 import './roomHost.css';
 
-/**
- * RoomHost — owns ONE Babylon engine + canvas and swaps between rooms.
- *
- * Each room (doorHall, skinnerRoom, …) builds its own BABYLON.Scene and returns
- * { scene, interact, dispose }. Only one room is ever alive: entering another
- * fades to black, DISPOSES the current scene (freeing all its meshes/textures),
- * builds the next, then fades back in. So memory/draw-cost stay flat no matter
- * how many rooms exist — that's the "loads in each room" behaviour.
- */
+const BOSS_FIGHT_KEY = 'bossfight';
+
+/** Each room is its own builder — full dispose on switch keeps FPS stable. */
 const ROOMS = {
-  hall: buildDoorHall,
-  attention: buildAttentionRoom,
-  maze: buildMazeRoom,
-  gym: buildGymRoom,
+  [GATE_ROOM_KEY]: (opts) => buildGateRoom(opts),
+  [BOSS_FIGHT_KEY]: (opts) => buildBossFightScene(opts),
+  ...Object.fromEntries(
+    CAMPAIGN_ROOM_KEYS.map((key) => [
+      key,
+      (opts) => buildCampaignMaze({ ...opts, floorId: key }),
+    ]),
+  ),
 };
 
 const B = () => window.BABYLON;
 
 export default function RoomHost() {
-  const { exitMaze, updateXP, playSfx, character, equipped, switchTab, currentLang, openWorkout, openPuzzleChallenge, mazeStartRoom, setMazeStartRoom } = useApp();
+  const { exitMaze, updateXP, playSfx, character, equipped, currentLang, mazeStartRoom } = useApp();
 
   const canvasRef = useRef(null);
   const overlayRef = useRef(null);
@@ -33,13 +34,39 @@ export default function RoomHost() {
   const perfRef = useRef(null);
 
   const engineRef = useRef(null);
-  const activeRef = useRef(null);     // current room { scene, interact, dispose }
-  const goRef = useRef(null);         // stable goToRoom for the render loop / buttons
+  const activeRef = useRef(null);
+  const goRef = useRef(null);
   const inputRef = useRef({ mx: 0, my: 0, lookDX: 0, lookDY: 0 });
+  const currentFloorRef = useRef(DEFAULT_FLOOR);
+  const bossFightPayloadRef = useRef(null);
+
+  const [recruitChallenge, setRecruitChallenge] = useState(null);
+  const [inCinematic, setInCinematic] = useState(false);
+
+  const openRecruitChallenge = useCallback((c) => {
+    setRecruitChallenge(c);
+    inputRef.current.mx = 0;
+    inputRef.current.my = 0;
+  }, []);
+
+  const closeRecruitChallenge = useCallback(() => {
+    setRecruitChallenge(null);
+  }, []);
+
+  const refreshCurrentFloor = useCallback(() => {
+    goRef.current?.(currentFloorRef.current);
+  }, []);
+
+  const startBossFight = useCallback((payload) => {
+    bossFightPayloadRef.current = payload;
+    goRef.current?.(BOSS_FIGHT_KEY);
+  }, []);
 
   const [isTouch] = useState(
     () => typeof navigator !== 'undefined' && (navigator.maxTouchPoints > 0 || 'ontouchstart' in window),
   );
+
+  const modalOpen = recruitChallenge || inCinematic;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -47,42 +74,46 @@ export default function RoomHost() {
     const fadeEl = fadeRef.current;
     if (!canvas || !window.BABYLON) return undefined;
 
-    // Antialiasing is a real GPU cost on phones — keep it on desktop, off on touch.
     const engine = new (B().Engine)(canvas, !isTouch, {
       stencil: true, adaptToDeviceRatio: true,
       powerPreference: 'high-performance',
     });
     engineRef.current = engine;
-    // Don't probe for .manifest files per texture (404s + needless requests, esp.
-    // for the maze's CDN textures) — we have no offline asset manifests.
     engine.enableOfflineSupport = false;
 
-    // Cap render resolution. adaptToDeviceRatio renders at the full device pixel
-    // ratio, which on phones/retina is 2–3× and murders the framerate. Clamp the
-    // effective DPR (lower on touch) so the GPU isn't drawing millions of extra
-    // pixels for no visible gain. setHardwareScalingLevel > 1 = render smaller.
     const dpr = window.devicePixelRatio || 1;
-    // Render CLEAR (no framebuffer pixelation — that blurred the whole world).
-    // The pixel-art look comes from NEAREST-filtered textures on the meshes; the
-    // scenes are kept light (flat toon, no PBR/bloom/shadows) so a sharp render
-    // still holds 60fps. Cap the effective DPR so phones don't draw 2–3× pixels.
     const targetDpr = isTouch ? 1.25 : 1.75;
     if (dpr > targetDpr) engine.setHardwareScalingLevel(dpr / targetDpr);
 
     let disposed = false;
 
     const ctx = {
-      exitMaze, updateXP, playSfx, character, equipped, switchTab, currentLang, openWorkout, openPuzzleChallenge,
-      lowPerf: isTouch, // rooms drop shadow quality on phones
+      exitMaze, updateXP, playSfx, character, equipped, currentLang,
+      openRecruitChallenge,
+      startBossFight,
+      lowPerf: isTouch,
       goToRoom: (key) => goRef.current?.(key),
     };
 
     const build = (key) => {
-      const builder = ROOMS[key] || ROOMS.hall;
-      activeRef.current = builder({ engine, canvas, overlayEl, ctx, inputRef });
+      currentFloorRef.current = key;
+      setInCinematic(key === BOSS_FIGHT_KEY);
+      const builder = ROOMS[key] || ROOMS[DEFAULT_FLOOR];
+      if (key === BOSS_FIGHT_KEY) {
+        activeRef.current = builder({
+          engine, canvas, overlayEl, ctx, inputRef,
+          payload: bossFightPayloadRef.current,
+          onComplete: () => {
+            setGateBossBeaten(true);
+            bossFightPayloadRef.current = null;
+            goRef.current?.(GATE_ROOM_KEY);
+          },
+        });
+      } else {
+        activeRef.current = builder({ engine, canvas, overlayEl, ctx, inputRef });
+      }
     };
 
-    // Fade-out → dispose → build → fade-in
     let switching = false;
     const goToRoom = (key) => {
       if (switching || disposed) return;
@@ -100,11 +131,19 @@ export default function RoomHost() {
     };
     goRef.current = goToRoom;
 
-    // Enter at the requested room (e.g. the Gym after a workout), then reset the
-    // default so a normal entry from the menu always starts in the Hall.
-    build(mazeStartRoom || 'hall');
-    if (mazeStartRoom && mazeStartRoom !== 'hall') setMazeStartRoom('hall');
-    // Perf HUD — sampled ~4×/sec so reading it never costs us frames.
+    const startFloor = mazeStartRoom && ROOMS[mazeStartRoom] ? mazeStartRoom : GATE_ROOM_KEY;
+    build(startFloor);
+
+    // Debug badge — shows which room loaded (gate vs floor1…)
+    if (overlayEl) {
+      const badge = document.createElement('div');
+      badge.className = 'rh-room-badge';
+      badge.textContent = startFloor === GATE_ROOM_KEY
+        ? (currentLang === 'ar' ? 'غرفة البوابة' : 'OUTER GATE')
+        : startFloor.toUpperCase();
+      overlayEl.appendChild(badge);
+    }
+
     let perfT = 0;
     engine.runRenderLoop(() => {
       const room = activeRef.current;
@@ -126,6 +165,7 @@ export default function RoomHost() {
 
     return () => {
       disposed = true;
+      setInCinematic(false);
       window.removeEventListener('resize', onResize);
       try { activeRef.current?.dispose(); } catch (e) { /* noop */ }
       activeRef.current = null;
@@ -135,13 +175,8 @@ export default function RoomHost() {
       engineRef.current = null;
       if (overlayEl) overlayEl.innerHTML = '';
     };
-  }, [exitMaze, updateXP, playSfx, character, equipped, switchTab]); // currentLang snapshotted at entry (avoid engine re-init on toggle)
+  }, [exitMaze, updateXP, playSfx, character, equipped, mazeStartRoom, openRecruitChallenge, startBossFight]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Floating touch joystick ──
-  // The joystick has no fixed home: wherever the player first touches the move
-  // zone, the ring spawns under their thumb and tracks from there. Releasing
-  // hides it. The action buttons sit above this zone (higher z) so tapping them
-  // never starts a move. RADIUS = max thumb travel that maps to full speed.
   const joyRef = useRef(null);
   const thumbRef = useRef(null);
   const joyState = useRef({ active: false, id: null, ox: 0, oy: 0 });
@@ -165,7 +200,7 @@ export default function RoomHost() {
     if (thumbRef.current) thumbRef.current.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   };
   const onZoneStart = (e) => {
-    if (joyState.current.active) return; // first finger owns movement
+    if (joyState.current.active || modalOpen) return;
     const t = e.changedTouches[0];
     joyState.current = { active: true, id: t.identifier, ox: t.clientX, oy: t.clientY };
     showJoyAt(t.clientX, t.clientY);
@@ -185,22 +220,33 @@ export default function RoomHost() {
     }
   };
 
-  const fireInteract = () => { activeRef.current?.interact?.(); };
-  const fireJump = () => { activeRef.current?.jump?.(); };
-  const fireAction2 = () => { activeRef.current?.action2?.(); };
+  const fireInteract = () => { if (modalOpen) return; activeRef.current?.interact?.(); };
+  const fireJump = () => { if (modalOpen) return; activeRef.current?.jump?.(); };
+
+  const isAr = currentLang === 'ar';
 
   return (
-    <div className={`rh-root${isTouch ? ' rh-touch' : ''}`}>
+    <div className={`rh-root${isTouch ? ' rh-touch' : ''}${modalOpen ? ' rh-recruiting' : ''}${inCinematic ? ' rh-cinematic' : ''}`}>
       <canvas ref={canvasRef} className="rh-canvas" />
       <div ref={overlayRef} className="rh-overlay" />
       <div ref={fadeRef} className="rh-fade" />
 
-      <button className="rh-quit" onClick={() => exitMaze()}>✕ QUIT</button>
-      <div className="rh-perf" ref={perfRef} />
+      {recruitChallenge && (
+        <MazeRecruitOverlay
+          challenge={recruitChallenge}
+          floorId={recruitChallenge.floorId || currentFloorRef.current}
+          onClose={closeRecruitChallenge}
+          onRefreshFloor={refreshCurrentFloor}
+        />
+      )}
 
-      {isTouch && (
+      {!inCinematic && (
+        <button type="button" className="rh-quit" onClick={() => exitMaze()}>✕ {isAr ? 'خروج' : 'QUIT'}</button>
+      )}
+      {!inCinematic && <div className="rh-perf" ref={perfRef} />}
+
+      {isTouch && !inCinematic && (
         <>
-          {/* Full-screen move zone (under the action buttons). */}
           <div
             className="rh-touchzone"
             onTouchStart={onZoneStart}
@@ -208,19 +254,14 @@ export default function RoomHost() {
             onTouchEnd={onZoneEnd}
             onTouchCancel={onZoneEnd}
           />
-          {/* Floating joystick ring — purely visual, follows the thumb. */}
           <div className="rh-joy" ref={joyRef}>
             <div className="rh-joy-thumb" ref={thumbRef} />
           </div>
-          {/* Action cluster — thumb arc, bottom-right. */}
           <div className="rh-actions">
-            <button className="rh-act rh-act-jump" onTouchStart={(e) => { e.preventDefault(); fireJump(); }}>
+            <button type="button" className="rh-act rh-act-jump" onTouchStart={(e) => { e.preventDefault(); fireJump(); }}>
               <span className="rh-act-icon">⤒</span><span className="rh-act-lbl">JUMP</span>
             </button>
-            <button className="rh-act rh-act-grab" onTouchStart={(e) => { e.preventDefault(); fireAction2(); }}>
-              <span className="rh-act-icon">✊</span><span className="rh-act-lbl">GRAB</span>
-            </button>
-            <button className="rh-act rh-act-use" onTouchStart={(e) => { e.preventDefault(); fireInteract(); }}>
+            <button type="button" className="rh-act rh-act-use" onTouchStart={(e) => { e.preventDefault(); fireInteract(); }}>
               <span className="rh-act-icon">⚡</span><span className="rh-act-lbl">USE</span>
             </button>
           </div>

@@ -171,7 +171,7 @@ export default function PuzzlesScreen() {
       <AtmosphericBg />
 
       {/* Top bar */}
-      <div style={{
+      <div className="app-chrome-bar" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '64px 18px 6px', position: 'relative', zIndex: 5,
       }}>
