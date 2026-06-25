@@ -223,8 +223,8 @@ export const PAL = {
 // constraint: Easy stays approachable, Medium bites, Hard is meant to be hard.
 export const TIER_TIME_ENDPOINTS = {
   easy:   { L1: 16, L100: 8 },
-  medium: { L1: 26, L100: 11 },
-  hard:   { L1: 46, L100: 20 },
+  medium: { L1: 24, L100: 11 },
+  hard:   { L1: 42, L100: 17 },
 };
 
 /** Logistic steepness across the 20-level curriculum. */
@@ -252,7 +252,7 @@ export function rawLogisticTimeSeconds(level1Based) {
 export const TARGET_CURVE = {
   easy:  { n0: 4,  n1: 16, gamma: 1.0 },
   medium:{ n0: 9,  n1: 24, gamma: 1.0 },
-  hard:  { n0: 16, n1: 34, gamma: 1.04 },
+  hard:  { n0: 18, n1: 36, gamma: 1.04 },
 };
 
 /** Minimum non-target cells to keep (visual variety + generator stability). */
@@ -316,6 +316,28 @@ export function computeFeatureInterference(li, diff) {
   return 0;
 }
 
+/**
+ * Conjunction strength for the HARD tier [0..1] — the fraction of distractors
+ * that share a target feature (its colour OR its shape) rather than neither.
+ *
+ * This is the real difficulty lever for hard. In a true conjunction search the
+ * target is defined by a COMBINATION of features, and it is only hard if NEITHER
+ * feature isolates it: many distractors must share the target's colour (so you
+ * can't just filter by colour) AND many must share its shape (so you can't filter
+ * by shape). With few feature-sharing distractors, colour "guides" the search to
+ * a small subset and the target pops out — which is why hard felt easy.
+ *
+ * Treisman & Gelade 1980 (conjunction = serial search); Duncan & Humphreys 1989
+ * (search slows as target–distractor similarity and distractor heterogeneity
+ * rise); Wolfe Guided Search (a unique feature guides search and must be denied).
+ * Ramps 0.66 → 0.95 across the tier so even early hard demands real conjunction.
+ */
+export function computeConjunctionStrength(li, diff) {
+  if (diff !== 'hard') return 0;
+  const u = Math.max(0, Math.min(1, li / (FQ_LEVELS_PER_TIER - 1)));
+  return +Math.min(0.95, 0.66 + 0.29 * u).toFixed(2);
+}
+
 /** One row for tooling / UI: reproducible description of level parameters. */
 export function getLevelDifficultyModel(diff, li) {
   const m = DM[diff];
@@ -342,11 +364,16 @@ export function getLevelDifficultyModel(diff, li) {
   };
 }
 
+// Per-tier clock tightness (× the empirical sigmoid time). Hard is tightest so
+// that, combined with a true conjunction search, finding EVERY target before
+// time runs out is genuinely hard to achieve, not a formality.
+export const TIER_TIME_MULT = { easy: 0.8, medium: 0.74, hard: 0.7 };
+
 export function getLvCfg(diff, li) {
   const m = DM[diff];
   const poolList = SP[diff] || SP.easy;
   const pool = poolList[Math.max(0, Math.min(poolList.length - 1, Math.floor(li * poolList.length / FQ_LEVELS_PER_TIER)))];
-  const time = Math.round(sigmoidTime(diff, li) * 0.78); // tighter clock — losable if sloppy
+  const time = Math.round(sigmoidTime(diff, li) * (TIER_TIME_MULT[diff] ?? 0.78));
   const interference = computeFeatureInterference(li, diff);
   return {
     pool,
@@ -354,6 +381,7 @@ export function getLvCfg(diff, li) {
     time,
     grid: m.grid,
     interference,
+    conjunction: computeConjunctionStrength(li, diff),
   };
 }
 
@@ -596,22 +624,25 @@ export function buildCellsFromParams(grid, pool, tc, diff, seed, interference, r
   }
   const distractors = [];
   const need = total - guaranteedTc;
+  const othCols = pal.filter((c) => c !== tgtCol);
+  const pickOthCol = () => othCols[Math.floor(rng() * othCols.length)] || pal[0];
+  // Conjunction strength (hard only): share = fraction of distractors that share
+  // a target feature; split evenly between colour-sharing and shape-sharing so
+  // neither feature isolates the target. The rest share neither (easy rejects).
+  const conj = Math.max(0, Math.min(0.98, seed?.conjunction ?? 0.8));
   for (let k = 0; k < need; k++) {
     if (searchMode === 'identity') {
       const r = rng();
-      if (useFeatureBinding && r < 0.5) {
-        if (r < 0.25) {
-          const othCols = pal.filter((c) => c !== tgtCol);
-          const dcol = othCols[Math.floor(rng() * othCols.length)] || pal[0];
-          distractors.push({ shape: tgt, col: dcol, isT: false });
-        } else {
-          const dshp = dist[Math.floor(rng() * dist.length)];
-          distractors.push({ shape: dshp, col: tgtCol, isT: false });
-        }
-      } else {
+      if (r < conj / 2) {
+        // Shares the target COLOUR, different shape (defeats colour filtering).
         const dshp = dist[Math.floor(rng() * dist.length)];
-        const dcol = pal[Math.floor(rng() * pal.length)];
-        distractors.push({ shape: dshp, col: dcol, isT: false });
+        distractors.push({ shape: dshp, col: tgtCol, isT: false });
+      } else if (r < conj) {
+        // Shares the target SHAPE, different colour (defeats shape filtering).
+        distractors.push({ shape: tgt, col: pickOthCol(), isT: false });
+      } else {
+        // Shares neither (a fast reject); keeps the board from being all-similar.
+        distractors.push({ shape: dist[Math.floor(rng() * dist.length)], col: pickOthCol(), isT: false });
       }
     } else {
       const dshp = dist[Math.floor(rng() * dist.length)];
@@ -792,7 +823,14 @@ export function prepareLevelRound(diff, lv) {
   const lockedCol = pal[Math.floor(Math.random() * pal.length)];
   const searchMode = diff === 'hard' ? 'identity' : 'categorical';
   const eccentricityBias = computeEccentricityBias(lv - 1, diff);
-  const built = buildCellsFromParams(cfg.grid, cfg.pool, cfg.tc, diff, { tgt: lockedTarget, tgtCol: lockedCol, eccentricityBias }, cfg.interference);
+  const built = buildCellsFromParams(
+    cfg.grid,
+    cfg.pool,
+    cfg.tc,
+    diff,
+    { tgt: lockedTarget, tgtCol: lockedCol, eccentricityBias, conjunction: cfg.conjunction },
+    cfg.interference,
+  );
   const withFill = assignFillColors(built.cells, diff, cfg.interference, built.tgtCol);
   const cells = withFill.map((c, i) => ({ ...c, id: i, tapped: false, feedback: null }));
   const targetCount = cells.filter((c) => c.isT).length;
@@ -821,9 +859,9 @@ export function prepareLevelRound(diff, lv) {
  *   hard   — 9×9 conjunction (identity) search, the original challenge
  */
 export const PASS_PLAY_CONFIG = {
-  easy:   { grid: 5, tc: 8,  tlim: 32, poolLevel: 49 },
-  medium: { grid: 7, tc: 12, tlim: 36, poolLevel: 59 },
-  hard:   { grid: 9, tc: 15, tlim: 40, poolLevel: 79 },
+  easy:   { grid: 5, tc: 8,  tlim: 30, poolLevel: 49 },
+  medium: { grid: 7, tc: 13, tlim: 30, poolLevel: 59 },
+  hard:   { grid: 9, tc: 17, tlim: 30, poolLevel: 79 },
 };
 
 /**
@@ -856,13 +894,27 @@ export function prepareChallengeSeed(diff = 'hard') {
     diff,
   );
   const targetPos = chooseTargetPositions(grid, tc, rng, { eccentricityBias });
-  // Bake fill colours so every player sees the exact same coloured grid.
-  // Challenge mode runs interference=0; non-target fills draw uniformly from the
-  // tier palette using the same seeded rng.
+  // Bake fill colours so every player sees the exact same coloured grid. For the
+  // HARD tier, use the same balanced conjunction as level mode (≈80% of
+  // distractors share the target's colour or shape) so colour can't guide the
+  // search — otherwise hard Pass-n-Play was a trivial pop-out. Easy/medium keep
+  // shape-only search with random fills.
+  const othCols = pal.filter((c) => c !== tgtCol);
+  const pickOth = () => othCols[Math.floor(rng() * othCols.length)] || pal[0];
+  const conj = diff === 'hard' ? 0.82 : 0;
   const cellsWithFill = new Array(total);
   for (let i = 0; i < total; i++) {
     if (targetPos.has(i)) {
       cellsWithFill[i] = { shape: tgt, isT: true, fill: tgtCol };
+    } else if (conj > 0) {
+      const r = rng();
+      if (r < conj / 2) {
+        cellsWithFill[i] = { shape: dist[Math.floor(rng() * dist.length)], isT: false, fill: tgtCol };
+      } else if (r < conj) {
+        cellsWithFill[i] = { shape: tgt, isT: false, fill: pickOth() };
+      } else {
+        cellsWithFill[i] = { shape: dist[Math.floor(rng() * dist.length)], isT: false, fill: pickOth() };
+      }
     } else {
       cellsWithFill[i] = {
         shape: dist[Math.floor(rng() * dist.length)],
