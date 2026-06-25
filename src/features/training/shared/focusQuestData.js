@@ -168,10 +168,18 @@ export const SP={
   ],
 };
 
-export const PAL={
-  easy:  ['#6b9e7a','#7ab8c4','#9a7ab8','#c4a87a'],
-  medium:['#5a8eb8','#7a9ab8','#6a8aaa','#8ab0cc'],
-  hard:  ['#c4a87a','#b87a7a','#7a9ab8','#8ab87a'],
+// Colour-vision-deficiency-safe categorical palette (Okabe-Ito subset: blue,
+// orange, bluish-green, reddish-purple). These four stay distinguishable under
+// protanopia/deuteranopia/tritanopia and are widely separated in CIELAB, so the
+// conjunction (hard/identity) tier can bind shape × colour reliably. The old
+// "medium" palette was four near-identical blues — colour was almost useless as
+// a feature there. Same set across tiers; difficulty comes from shape similarity
+// + interference, not from how confusable the base colours are.
+export const CVD_SAFE_PALETTE = ['#0072B2', '#E69F00', '#009E73', '#CC79A7'];
+export const PAL = {
+  easy: CVD_SAFE_PALETTE,
+  medium: CVD_SAFE_PALETTE,
+  hard: CVD_SAFE_PALETTE,
 };
 
 // =============================================================================
@@ -208,10 +216,15 @@ export const PAL={
  *   slope: 0 ms/item for feature, 12 ms/item for feature+colour binding,
  *   25 ms/item for conjunction search (mid of Wolfe 20–30 range).
  */
+// Tightened 2026-06-25: the old endpoints gave ~3–4× expert search time even on
+// the hardest levels, so every tier (Hard included) was trivially winnable with
+// seconds to spare. These are anchored closer to real cancellation-task pace
+// (~1 target/s feature search, slower for conjunction) so the clock is a genuine
+// constraint: Easy stays approachable, Medium bites, Hard is meant to be hard.
 export const TIER_TIME_ENDPOINTS = {
-  easy:   { L1: 34,  L100: 12 },
-  medium: { L1: 54,  L100: 18 },
-  hard:   { L1: 95,  L100: 34 },
+  easy:   { L1: 16, L100: 8 },
+  medium: { L1: 26, L100: 11 },
+  hard:   { L1: 46, L100: 20 },
 };
 
 /** Logistic steepness across the 20-level curriculum. */
@@ -237,9 +250,9 @@ export function rawLogisticTimeSeconds(level1Based) {
 
 /** Target-count curve per tier: endpoints (n0,n1) and gamma>0 (gamma>1 → easier early). */
 export const TARGET_CURVE = {
-  easy:  { n0: 3, n1: 15, gamma: 1.0 },
-  medium:{ n0: 8, n1: 22, gamma: 1.0 },
-  hard:  { n0: 14, n1: 32, gamma: 1.04 },
+  easy:  { n0: 4,  n1: 16, gamma: 1.0 },
+  medium:{ n0: 9,  n1: 24, gamma: 1.0 },
+  hard:  { n0: 16, n1: 34, gamma: 1.04 },
 };
 
 /** Minimum non-target cells to keep (visual variety + generator stability). */
@@ -290,11 +303,15 @@ export function sigmoidTime(diff, li) {
  * Deadly:   I = min(1, max(0, (li - 5) / 11))
  */
 export function computeFeatureInterference(li, diff) {
+  // Interference (distractors sharing the target's hue) is what turns a lazy
+  // pop-out scan into a real selective-attention task. It used to switch on only
+  // past level ~26–31, so most of the curriculum was pure feature search. Start
+  // it early and ramp it harder so Medium/Hard demand discrimination throughout.
   if (diff === 'hard') {
-    return +Math.min(1.0, Math.max(0, (li - 25) / 60)).toFixed(2);
+    return +Math.min(1.0, Math.max(0, (li - 5) / 45)).toFixed(2);
   }
   if (diff === 'medium') {
-    return +Math.min(0.55, Math.max(0, (li - 30) / 95)).toFixed(2);
+    return +Math.min(0.6, Math.max(0, (li - 7) / 75)).toFixed(2);
   }
   return 0;
 }
@@ -380,11 +397,182 @@ export function makeLcgRng(seed) {
   };
 }
 
-export function buildCellsFromParams(grid, pool, tc, diff, seed, interference) {
+// =============================================================================
+// SMART TARGET PLACEMENT — neuroscience-informed, not a flat Fisher-Yates shuffle.
+// -----------------------------------------------------------------------------
+// Pure-random placement has two confounds that make a cancellation round
+// accidentally easy or unevenly hard:
+//   • Lucky clumps. Targets that fall adjacent form a proximity (Gestalt) group
+//     that pops out as one textured blob and is "found" in a single fixation,
+//     bypassing the serial search the task is supposed to measure.
+//   • Hemifield imbalance. A random draw can stack most targets on one side,
+//     which both changes difficulty round-to-round and muddies any left/right
+//     (neglect-style) reading of performance.
+//
+// We replace the shuffle with a placement that encodes three findings:
+//   1. Quadrant / hemifield balance — cancellation tasks are the canonical probe
+//      for hemispatial neglect (Mesulam). Spreading targets evenly across the
+//      four quadrants trains the whole visual field and keeps left/right load
+//      equal every round.
+//   2. Anti-clustering (Poisson-disk min spacing) — enforce a minimum
+//      target-to-target distance so targets don't group; each must be found by
+//      serial search. Distractors still surround every target, giving the desired
+//      flanker crowding (Bouma's law) without letting targets self-group.
+//   3. Eccentricity weighting — acuity and attentional resolution fall with
+//      distance from fixation (centre). Biasing a growing share of targets toward
+//      the periphery as difficulty rises loads the useful field of view and
+//      peripheral/sustained attention instead of parking targets in the easy
+//      centre.
+//
+// Deterministic given the rng, so challenge mode (seeded LCG) stays bit-identical
+// for every player.
+// =============================================================================
+
+/** Eccentricity bias [0..1] for a level: how strongly targets are pushed to the
+ *  periphery. Rises with tier and within-tier level. */
+export function computeEccentricityBias(li, diff) {
+  const baseByDiff = { easy: 0.12, medium: 0.3, hard: 0.5 };
+  const base = baseByDiff[diff] ?? 0.25;
+  const ramp = (Math.max(0, li) / (FQ_LEVELS_PER_TIER - 1)) * 0.25;
+  return +Math.min(0.75, base + ramp).toFixed(2);
+}
+
+/**
+ * Choose grid indices (row-major, 0..N*N-1) for the targets. Returns a Set of
+ * exactly `min(tc, N*N)` indices placed with quadrant balance, anti-clustering,
+ * and eccentricity weighting (see header).
+ */
+export function chooseTargetPositions(grid, tc, rng = Math.random, opts = {}) {
+  const N = grid;
+  const total = N * N;
+  const want = Math.max(0, Math.min(tc | 0, total));
+  if (want === 0) return new Set();
+  if (want >= total) return new Set(Array.from({ length: total }, (_, i) => i));
+
+  const eccBias = Math.max(0, Math.min(1, opts.eccentricityBias ?? 0.3));
+  const center = (N - 1) / 2;
+  const maxEcc = Math.hypot(center, center) || 1;
+  const rc = (idx) => [Math.floor(idx / N), idx % N];
+  const ecc = (idx) => {
+    const [r, c] = rc(idx);
+    return Math.hypot(r - center, c - center) / maxEcc; // 0 centre … 1 corner
+  };
+  // Quadrant by sign of offset from centre. Cells on the centre cross (odd grids)
+  // are dealt round-robin so the middle row/col isn't biased to one quadrant.
+  let centreTie = 0;
+  const quad = (idx) => {
+    const [r, c] = rc(idx);
+    const dr = r - center;
+    const dc = c - center;
+    if (dr === 0 || dc === 0) return centreTie++ % 4;
+    return (dr < 0 ? 0 : 2) + (dc < 0 ? 0 : 1);
+  };
+
+  const buckets = [[], [], [], []];
+  for (let i = 0; i < total; i++) buckets[quad(i)].push(i);
+
+  // Even split across quadrants; leftover (rounding + capacity caps) sprinkled.
+  const perQuad = [0, 0, 0, 0];
+  let remaining = want;
+  const base = Math.floor(want / 4);
+  for (let q = 0; q < 4; q++) {
+    perQuad[q] = Math.min(base, buckets[q].length);
+    remaining -= perQuad[q];
+  }
+  const order = fisherYatesInPlace([0, 1, 2, 3], rng);
+  let guard = 0;
+  while (remaining > 0 && guard++ < 64) {
+    let placedAny = false;
+    for (const q of order) {
+      if (remaining <= 0) break;
+      if (perQuad[q] < buckets[q].length) {
+        perQuad[q]++;
+        remaining--;
+        placedAny = true;
+      }
+    }
+    if (!placedAny) break;
+  }
+
+  const chosen = new Set();
+  const chosenRC = [];
+  const fill = want / total;
+  const baseRadius =
+    fill < 0.12 ? 2.2 : fill < 0.22 ? 1.7 : fill < 0.34 ? 1.3 : 1.0;
+  const tooClose = (r, c, radius) => {
+    if (radius <= 0) return false;
+    for (const [rr, cc] of chosenRC) {
+      if (Math.max(Math.abs(rr - r), Math.abs(cc - c)) < radius) return true; // Chebyshev
+    }
+    return false;
+  };
+
+  const pickFromBucket = (cells, n) => {
+    let placed = 0;
+    let radius = baseRadius;
+    let attempts = 0;
+    const maxAttempts = cells.length * 12 + 40;
+    while (placed < n && attempts < maxAttempts) {
+      attempts++;
+      // Eccentricity-weighted draw: take a few samples, keep the best-scoring
+      // free cell (weight = (1-bias) + bias·ecc, with jitter so ties randomise).
+      let idx = -1;
+      let bestW = -1;
+      for (let p = 0; p < 5; p++) {
+        const cand = cells[Math.floor(rng() * cells.length)];
+        if (chosen.has(cand)) continue;
+        const w = (1 - eccBias) + eccBias * ecc(cand);
+        const score = w * (0.6 + 0.4 * rng());
+        if (score > bestW) {
+          bestW = score;
+          idx = cand;
+        }
+      }
+      if (idx < 0) {
+        for (const cand of cells) {
+          if (!chosen.has(cand)) {
+            idx = cand;
+            break;
+          }
+        }
+        if (idx < 0) break;
+      }
+      const [r, c] = rc(idx);
+      if (tooClose(r, c, radius)) {
+        if (attempts % (cells.length + 8) === 0 && radius > 0) {
+          radius = Math.max(0, radius - 0.4); // relax under pressure so it terminates
+        }
+        continue;
+      }
+      chosen.add(idx);
+      chosenRC.push([r, c]);
+      placed++;
+    }
+    // Spacing made the quota impossible — fill the rest ignoring spacing.
+    for (let i = 0; i < cells.length && placed < n; i++) {
+      const cand = cells[i];
+      if (!chosen.has(cand)) {
+        chosen.add(cand);
+        chosenRC.push(rc(cand));
+        placed++;
+      }
+    }
+  };
+
+  for (let q = 0; q < 4; q++) pickFromBucket(buckets[q], perQuad[q]);
+
+  // Reconcile to exactly `want` if rounding under-filled.
+  for (let i = 0; i < total && chosen.size < want; i++) {
+    if (!chosen.has(i)) chosen.add(i);
+  }
+  return chosen;
+}
+
+export function buildCellsFromParams(grid, pool, tc, diff, seed, interference, rng = Math.random) {
   const searchMode = diff === 'hard' ? 'identity' : 'categorical';
   const pal = PAL[diff] || PAL.easy;
-  const tgt = seed?.tgt ?? pool[Math.floor(Math.random() * pool.length)];
-  const tgtCol = seed?.tgtCol ?? pal[Math.floor(Math.random() * pal.length)];
+  const tgt = seed?.tgt ?? pool[Math.floor(rng() * pool.length)];
+  const tgtCol = seed?.tgtCol ?? pal[Math.floor(rng() * pal.length)];
   const dist = pool.filter((s) => s !== tgt);
   if (dist.length === 0) {
     throw new Error(
@@ -392,38 +580,56 @@ export function buildCellsFromParams(grid, pool, tc, diff, seed, interference) {
     );
   }
   const total = grid * grid;
-  let cells = [];
   // Never ask for more targets than cells; keeps UI count and grid in sync.
   const guaranteedTc = Math.min(Math.max(tc, 3), total);
   const useFeatureBinding = diff === 'medium' || diff === 'hard';
-  if (searchMode === 'identity') {
-    for (let k = 0; k < guaranteedTc; k++) cells.push({ shape: tgt, col: tgtCol, isT: true });
-    while (cells.length < total) {
-      const r = Math.random();
+
+  // Build target + distractor tokens separately, then place targets with the
+  // smart spatial sampler and drop distractors into whatever cells are left.
+  const targets = [];
+  for (let k = 0; k < guaranteedTc; k++) {
+    targets.push(
+      searchMode === 'identity'
+        ? { shape: tgt, col: tgtCol, isT: true }
+        : { shape: tgt, col: null, isT: true },
+    );
+  }
+  const distractors = [];
+  const need = total - guaranteedTc;
+  for (let k = 0; k < need; k++) {
+    if (searchMode === 'identity') {
+      const r = rng();
       if (useFeatureBinding && r < 0.5) {
         if (r < 0.25) {
           const othCols = pal.filter((c) => c !== tgtCol);
-          const dcol = othCols[Math.floor(Math.random() * othCols.length)] || pal[0];
-          cells.push({ shape: tgt, col: dcol, isT: false });
+          const dcol = othCols[Math.floor(rng() * othCols.length)] || pal[0];
+          distractors.push({ shape: tgt, col: dcol, isT: false });
         } else {
-          const dshp = dist[Math.floor(Math.random() * dist.length)];
-          cells.push({ shape: dshp, col: tgtCol, isT: false });
+          const dshp = dist[Math.floor(rng() * dist.length)];
+          distractors.push({ shape: dshp, col: tgtCol, isT: false });
         }
       } else {
-        const dshp = dist[Math.floor(Math.random() * dist.length)];
-        const dcol = pal[Math.floor(Math.random() * pal.length)];
-        cells.push({ shape: dshp, col: dcol, isT: false });
+        const dshp = dist[Math.floor(rng() * dist.length)];
+        const dcol = pal[Math.floor(rng() * pal.length)];
+        distractors.push({ shape: dshp, col: dcol, isT: false });
       }
-    }
-  } else {
-    for (let k = 0; k < guaranteedTc; k++) cells.push({ shape: tgt, col: null, isT: true });
-    while (cells.length < total) {
-      const dshp = dist[Math.floor(Math.random() * dist.length)];
-      const dcol = useFeatureBinding && Math.random() < 0.5 ? tgtCol : pal[Math.floor(Math.random() * pal.length)];
-      cells.push({ shape: dshp, col: dcol, isT: false });
+    } else {
+      const dshp = dist[Math.floor(rng() * dist.length)];
+      const dcol = useFeatureBinding && rng() < 0.5 ? tgtCol : pal[Math.floor(rng() * pal.length)];
+      distractors.push({ shape: dshp, col: dcol, isT: false });
     }
   }
-  fisherYatesInPlace(cells);
+  fisherYatesInPlace(distractors, rng);
+
+  const targetPos = chooseTargetPositions(grid, guaranteedTc, rng, {
+    eccentricityBias: seed?.eccentricityBias ?? 0.3,
+  });
+  const cells = new Array(total);
+  let ti = 0;
+  let di = 0;
+  for (let i = 0; i < total; i++) {
+    cells[i] = targetPos.has(i) ? targets[ti++] : distractors[di++];
+  }
   return { cells, tgt, tgtCol, tc: guaranteedTc };
 }
 
@@ -459,7 +665,7 @@ export const FREE_PROGRESS_ORDER = FQ_DIFF_KEYS;
  * Clearing a round advances the curriculum (harder next round); failing repeats
  * the same stage so the ramp never spikes past the player.
  */
-export const FREE_LIVES = 3;
+export const FREE_LIVES = 1;
 
 /** Starting session bank (seconds); clock runs continuously across rounds until 0. */
 export const FREE_SESSION_START_SEC = 48;
@@ -537,8 +743,44 @@ export function freeStageToDiffLv(stageIndex) {
   return { diff: FREE_PROGRESS_ORDER[diffIx], lv };
 }
 
+/**
+ * SURVIVAL ramp — deliberately steep, unlike the 300-level curriculum that the
+ * level mode walks one level at a time. Survival should *feel* like it escalates:
+ * the grid grows (tier change) every few clears, and target density climbs hard
+ * within each tier. With the ±1-stage adaptive staircase this converges on the
+ * player's ceiling fast instead of leaving them on a 5×5 board for 100 rounds.
+ *
+ * Plan (each entry = a tier the player passes through, in order):
+ *   easy  5×5 — rounds 0–3   (warm-up, density rising)
+ *   medium 7×7 — rounds 4–8  (bigger board, mild interference)
+ *   hard  9×9 — rounds 9+    (conjunction search, climbs to max density, then holds)
+ * Within a tier the position is mapped onto the curriculum level index
+ * (`liStart..liEnd`) so it reuses the tuned time/target/interference curves.
+ */
+export const SURVIVAL_TIER_PLAN = [
+  { diff: 'easy',   rounds: 4, liStart: 2,  liEnd: 78 },
+  { diff: 'medium', rounds: 5, liStart: 6,  liEnd: 82 },
+  { diff: 'hard',   rounds: 6, liStart: 8,  liEnd: 99 },
+];
+
+export function survivalStageToDiffLv(stageIndex) {
+  let s = Math.max(0, stageIndex | 0);
+  for (let i = 0; i < SURVIVAL_TIER_PLAN.length; i++) {
+    const tier = SURVIVAL_TIER_PLAN[i];
+    const last = i === SURVIVAL_TIER_PLAN.length - 1;
+    if (s < tier.rounds || last) {
+      const span = Math.max(1, tier.rounds - 1);
+      const u = Math.min(1, s / span);
+      const li = Math.round(tier.liStart + (tier.liEnd - tier.liStart) * u);
+      return { diff: tier.diff, lv: Math.min(FQ_LEVELS_PER_TIER, li + 1) };
+    }
+    s -= tier.rounds;
+  }
+  return { diff: 'hard', lv: FQ_LEVELS_PER_TIER };
+}
+
 export function prepareFreeRound(stageIndex) {
-  const { diff, lv } = freeStageToDiffLv(stageIndex);
+  const { diff, lv } = survivalStageToDiffLv(stageIndex);
   const base = prepareLevelRound(diff, lv);
   return { ...base, mode: 'free', freeStage: stageIndex };
 }
@@ -549,7 +791,8 @@ export function prepareLevelRound(diff, lv) {
   const lockedTarget = cfg.pool[Math.floor(Math.random() * cfg.pool.length)];
   const lockedCol = pal[Math.floor(Math.random() * pal.length)];
   const searchMode = diff === 'hard' ? 'identity' : 'categorical';
-  const built = buildCellsFromParams(cfg.grid, cfg.pool, cfg.tc, diff, { tgt: lockedTarget, tgtCol: lockedCol }, cfg.interference);
+  const eccentricityBias = computeEccentricityBias(lv - 1, diff);
+  const built = buildCellsFromParams(cfg.grid, cfg.pool, cfg.tc, diff, { tgt: lockedTarget, tgtCol: lockedCol, eccentricityBias }, cfg.interference);
   const withFill = assignFillColors(built.cells, diff, cfg.interference, built.tgtCol);
   const cells = withFill.map((c, i) => ({ ...c, id: i, tapped: false, feedback: null }));
   const targetCount = cells.filter((c) => c.isT).length;
@@ -606,20 +849,28 @@ export function prepareChallengeSeed(diff = 'hard') {
   const tgt = pool[Math.floor(rng() * pool.length)];
   const tgtCol = pal[Math.floor(rng() * pal.length)];
   const dist = pool.filter((s) => s !== tgt);
-  const cells = [];
-  for (let i = 0; i < tc; i++) cells.push({ shape: tgt, isT: true });
-  while (cells.length < total) {
-    cells.push({ shape: dist[Math.floor(rng() * dist.length)], isT: false });
-  }
-  fisherYatesInPlace(cells, rng);
+  // Same smart spatial placement as level mode, but seeded so every player who
+  // plays this challenge sees a bit-identical grid (quadrant-balanced, spaced).
+  const eccentricityBias = computeEccentricityBias(
+    Math.min(cfg.poolLevel, FQ_LEVELS_PER_TIER - 1),
+    diff,
+  );
+  const targetPos = chooseTargetPositions(grid, tc, rng, { eccentricityBias });
   // Bake fill colours so every player sees the exact same coloured grid.
   // Challenge mode runs interference=0; non-target fills draw uniformly from the
   // tier palette using the same seeded rng.
-  const cellsWithFill = cells.map((c) => ({
-    shape: c.shape,
-    isT: c.isT,
-    fill: c.isT ? tgtCol : pal[Math.floor(rng() * pal.length)],
-  }));
+  const cellsWithFill = new Array(total);
+  for (let i = 0; i < total; i++) {
+    if (targetPos.has(i)) {
+      cellsWithFill[i] = { shape: tgt, isT: true, fill: tgtCol };
+    } else {
+      cellsWithFill[i] = {
+        shape: dist[Math.floor(rng() * dist.length)],
+        isT: false,
+        fill: pal[Math.floor(rng() * pal.length)],
+      };
+    }
+  }
   return {
     pool, tgt, tgtCol, cells: cellsWithFill, grid, tc, seed: seedNum,
     diff, tlim: cfg.tlim,

@@ -1973,6 +1973,10 @@
     padding: 0;
     position: relative;
     overflow: hidden;
+    /* manipulation removes the ~300ms double-tap-zoom delay so tap RT is clean;
+       transparent tap highlight avoids a flash that reads as feedback. */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 /* Portrait-friendly: grid slots can be slightly rectangular; fill the slot */
 .cancellation-task-game .ct-fq-sc {
@@ -1986,6 +1990,9 @@
 .ct-fq-sc:active:not(:disabled) { transform: scale(0.88); }
 .ct-fq-sc.ok { background: #d4edda; border-color: #4caf50; }
 .ct-fq-sc.bad { background: #fde8e8; border-color: #f44336; }
+/* Feedback-free assessment: a neutral "marked" state — shows the tile was
+   tapped (so the user keeps their place) without revealing correct vs wrong. */
+.ct-fq-sc.mark { opacity: 0.3; }
 .ct-fq-sc svg { width: 90%; height: 90%; pointer-events: none; }
 .ct-fq-ck { position: absolute; font-size: 0.75rem; pointer-events: none; animation: ct-fq-pop 0.35s ease; }
 .ct-fq-pi { position: absolute; font-size: 0.6rem; font-weight: 800; color: #f44336; pointer-events: none; animation: ct-fq-float 0.65s ease forwards; }
@@ -2043,6 +2050,18 @@
     animation: ct-fq-cdpop 0.85s ease;
 }
 .ct-fq-cd-lbl { font-size: 0.95rem; color: rgba(255, 255, 255, 0.72); margin-top: 6px; }
+.ct-fq-fix-cross {
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 300;
+    font-size: clamp(3.5rem, 14vw, 5.5rem);
+    line-height: 1;
+    color: #fff;
+    animation: ct-fq-fixpop 0.28s ease;
+}
+@keyframes ct-fq-fixpop {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
 @keyframes ct-fq-cdpop {
     0% { transform: scale(1.45); opacity: 0; }
     60% { transform: scale(0.95); opacity: 1; }
