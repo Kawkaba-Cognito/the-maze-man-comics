@@ -146,7 +146,7 @@ const ShapeSvg = React.memo(function ShapeSvg({ shape, color, size = 40 }) {
 });
 
 /** Light attention hub — mode rows (no circular maze). */
-function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, onThreshold, playSfx }) {
+function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
   const items = [
     {
       k: 'free',
@@ -171,14 +171,6 @@ function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, onThres
       hint: t.hubNodeChallengeHint,
       on: onChallenge,
       mod: 'ct-fq-attn-mode--chal',
-    },
-    {
-      k: 'threshold',
-      ic: '🎚️',
-      lb: t.thresholdMode,
-      hint: t.hubNodeThresholdHint,
-      on: onThreshold,
-      mod: 'ct-fq-attn-mode--levels',
     },
   ];
   return <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />;
@@ -437,6 +429,7 @@ const UI = {
     assessIntroNote:
       'Self-referenced: best used to track your own change over time. These are guideline scores, not a clinical diagnosis.',
     assessStart: 'Start assessment',
+    assessThreshold: '🎚️ Adaptive threshold test',
     assessTrialLabel: (n, m) => `Trial ${n} / ${m}`,
     assessResTitle: 'Your results',
     assessIndex: 'Attention Index',
@@ -599,6 +592,7 @@ const UI = {
     assessIntroNote:
       'مرجعي ذاتي: الأفضل لتتبّع تغيّرك مع الوقت. هذه درجات إرشادية وليست تشخيصاً سريرياً.',
     assessStart: 'ابدأ التقييم',
+    assessThreshold: '🎚️ اختبار العتبة التكيّفي',
     assessTrialLabel: (n, m) => `محاولة ${n} / ${m}`,
     assessResTitle: 'نتائجك',
     assessIndex: 'مؤشر الانتباه',
@@ -1733,7 +1727,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                 onFree={startFreeMode}
                 onLevels={() => setPhase('diff')}
                 onChallenge={() => setPhase('chal')}
-                onThreshold={startThreshold}
               />
               <HubScienceLink gameId="cancel-task" isAr={isAr} playSfx={playSfx} />
             </div>
@@ -1765,7 +1758,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           onReady={onAdaptIntroReady}
           onBack={() => {
             clearPlayRoundState();
-            setPhase('hub');
+            setPhase('assessIntro');
           }}
         />
       )}
@@ -2165,7 +2158,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                 onBack={() => {
                   setLastResult(null);
                   clearPlayRoundState();
-                  setPhase('hub');
+                  setPhase('assessIntro');
                 }}
                 playSfx={playSfx}
                 variant="paper"
@@ -2203,7 +2196,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                 onClick={() => {
                   setLastResult(null);
                   clearPlayRoundState();
-                  setPhase('hub');
+                  setPhase('assessIntro');
                 }}
               >
                 {t.menu}
@@ -2301,6 +2294,17 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                 onClick={onAssessIntroReady}
               >
                 {t.assessStart}
+              </button>
+              <button
+                type="button"
+                className="ct-fq-btn ct-fq-btn-ghost"
+                style={{ width: '100%', maxWidth: 320 }}
+                onClick={() => {
+                  playSfx('click');
+                  startThreshold();
+                }}
+              >
+                {t.assessThreshold}
               </button>
               {assessHistory.length > 0 && (
                 <button
