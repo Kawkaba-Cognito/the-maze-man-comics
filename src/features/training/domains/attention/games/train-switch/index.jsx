@@ -2,40 +2,77 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
-import { SURVIVAL_MS, survivalRamp, drawSurvivalBar } from '../../../../shared/survival';
 
 /*
- * Train Switch — Divided Attention & planning (Train-of-Thought style).
- * Trains emerge from the tunnel and wind along a track network laid on a grid.
- * Each branch ends in a colour-matched station scattered across the board. At
- * every FORK the player taps the circled switch to point the rail; you must set
- * the switches BEFORE a train reaches the fork so it reaches its colour station,
- * while several trains share the network. The track is a grid-embedded routing
- * tree, so every train always has exactly one solvable path.
- * Modes: Free (lives) / Levels (100) / Pass n Play (fixed trains, score).
+ * Car Park — Divided Attention & planning (Train-of-Thought style, re-themed).
+ * Cars drive out of the garage and wind along a road network laid on a grid.
+ * Each branch ends in a colour-matched PARKING bay scattered across the board.
+ * At every JUNCTION the player taps the circled control to point the road; you
+ * must set the junctions BEFORE a car reaches them so it parks in its colour bay,
+ * while several cars share the network. The roads are a grid-embedded routing
+ * tree, so every car always has exactly one solvable path.
+ * Modes: Free (lives) / Levels (100) / Pass n Play (fixed cars, score).
  */
 
 const ATT = '#e8ac4e';
-const RAIL = '#7c5a30';
-const RAIL_OFF = 'rgba(0,0,0,0.12)';
-const PAL = ['#ff5a5a', '#4f9fe0', '#3be086', '#b07aff', '#ff8a3a', '#37c2c2'];
+// Parking-bay / car colours — Okabe-Ito (colour-vision-deficiency safe). Ordered
+// most-distinct first (blue · amber · green · vermillion · pink · sky), so easy
+// rounds use the four that stay clearly separable even under deuteranopia /
+// protanopia (worst-case CIELAB ΔE ≈ 18); the two blues only co-appear at the
+// hardest 6-colour level.
+const PAL = ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9'];
 const DIRV = { N: [-1, 0], S: [1, 0], W: [0, -1], E: [0, 1] };
 const OPP = { N: 'S', S: 'N', E: 'W', W: 'E' };
 
+const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+// Difficulty is grounded in divided-attention research (Train-of-Thought
+// paradigm): the dominant lever is the number of CONCURRENT cars (each adds
+// cognitive load / dual-task cost), then PLANNING DEPTH (forks), TIME PRESSURE
+// (speed, spawn rate), and DISCRIMINATION (distinct colours, kept well-separated
+// so difficulty is attentional, not colour-confusion).
 const BASE = {
-  easy: { R: 5, C: 5, stations: 3, cps: 0.85, spawn: 2600, lives: 5, target: 8, maxTrains: 1 },
-  med: { R: 6, C: 6, stations: 4, cps: 1.05, spawn: 2300, lives: 4, target: 12, maxTrains: 2 },
-  hard: { R: 7, C: 7, stations: 5, cps: 1.3, spawn: 2000, lives: 3, target: 16, maxTrains: 3 },
+  easy: { R: 5, C: 5, forks: 2, colors: 3, cps: 0.75, spawn: 2500, lives: 5, target: 8,  maxC: 1 },
+  med:  { R: 6, C: 6, forks: 3, colors: 4, cps: 0.95, spawn: 2200, lives: 4, target: 12, maxC: 2 },
+  hard: { R: 7, C: 7, forks: 4, colors: 5, cps: 1.2,  spawn: 1900, lives: 3, target: 16, maxC: 3 },
 };
 function levelCfg(diff, level) {
   const b = BASE[diff] || BASE.med;
   const f = ((level || 1) - 1) / 99;
-  return { ...b, cps: b.cps + f * 0.65, spawn: Math.max(1400, b.spawn - f * 700), target: b.target + Math.round(f * 12) };
+  return {
+    ...b,
+    R: clampN(b.R + Math.round(f * 2), 5, 9),
+    C: clampN(b.C + Math.round(f * 2), 5, 9),
+    forks: clampN(b.forks + Math.round(f * 4), 2, 8),
+    colors: clampN(b.colors + Math.round(f), 3, 6),
+    maxC: clampN(b.maxC + Math.round(f * 2), 1, 5),
+    cps: b.cps + f * 0.55,
+    spawn: Math.max(1300, b.spawn - f * 700),
+    target: b.target + Math.round(f * 12),
+    wave: false,
+  };
+}
+
+// Survival WAVES: each wave is a batch of cars; clearing one escalates load.
+function waveCfg(wave) {
+  const w = wave - 1;
+  return {
+    R: clampN(5 + Math.floor(w / 2), 5, 9),
+    C: clampN(5 + Math.floor(w / 2), 5, 9),
+    forks: clampN(2 + w, 2, 8),
+    colors: clampN(3 + Math.floor(w / 2), 3, 6),
+    cars: 3 + w,                              // cars to clear this wave
+    maxC: clampN(1 + Math.floor(w / 2), 1, 5), // concurrent on the roads
+    cps: 0.7 + w * 0.07,
+    spawn: Math.max(1100, 2400 - w * 110),
+    lives: 4,
+    wave: true,
+  };
 }
 const PP_TRAINS = 16;
 
-// build a grid-embedded routing tree (tunnel → forks → scattered stations)
-function generate(R, C, desired, rng) {
+// build a grid-embedded routing tree (garage → junctions → scattered parking bays)
+function generate(R, C, desired, rng, colorCount = 6) {
   const visited = Array.from({ length: R }, () => Array(C).fill(false));
   const mk = (r, c) => ({ r, c, children: [], kind: 'track', sw: 0, parent: null });
   const borders = [];
@@ -74,7 +111,9 @@ function generate(R, C, desired, rng) {
   }
   // any leftover childless track → station
   for (const n of all) if (n.kind === 'track' && n.children.length === 0) { n.kind = 'station'; stations.push(n); }
-  const colors = [...PAL].sort(() => rng() - 0.5);
+  // Limit to `colorCount` distinct, maximally-distinct colours (PAL is ordered).
+  const pool = PAL.slice(0, clampN(colorCount, 2, PAL.length));
+  const colors = [...pool].sort(() => rng() - 0.5);
   stations.forEach((s, i) => { s.colorHex = colors[i % colors.length]; });
   return { root, all, forks, stations };
 }
@@ -89,13 +128,13 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
 
   const [runId, setRunId] = useState(0);
   const [over, setOver] = useState(null);
-  const [hud, setHud] = useState({ routed: 0, lives: 0 });
+  const [hud, setHud] = useState({ routed: 0, lives: 0, wave: 1 });
   const [msg, setMsg] = useState('');
 
   const cfg = useMemo(() => {
     if (mode === 'levels') return levelCfg(diff, level);
     if (mode === 'passplay') return levelCfg('med', 1);
-    return levelCfg('easy', 1);
+    return waveCfg(1); // survival starts at wave 1 and escalates in-engine
   }, [mode, diff, level]);
 
   const finish = useCallback(() => {
@@ -106,7 +145,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     if (mode === 'free') { setOver({ score: g.routed }); playSfx('error'); return; }
     if (mode === 'levels') {
       const won = g.routed >= cfg.target;
-      onResult({ won, score: g.routed, summary: isAr ? `وصل ${g.routed}/${cfg.target}` : `Delivered ${g.routed}/${cfg.target}` });
+      onResult({ won, score: g.routed, summary: isAr ? `ركنت ${g.routed}/${cfg.target}` : `Parked ${g.routed}/${cfg.target}` });
     } else onResult({ score: g.routed });
   }, [mode, cfg.target, onResult, isAr, playSfx]);
 
@@ -123,18 +162,15 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const rng = makeRng(((seed ?? 1) >>> 0) ^ ((runId * 19349663) >>> 0));
-    const net = generate(cfg.R, cfg.C, cfg.stations, rng);
 
     const g = {
-      ...net, R: cfg.R, C: cfg.C, cell: 40,
-      trains: [], spawnAcc: -1600, spawned: 0, budget: mode === 'passplay' ? ppTrains : Infinity, t0: performance.now(),
-      maxTrains: cfg.maxTrains, cps: cfg.cps, spawnEvery: cfg.spawn, nextStation: net.stations[Math.floor(rng() * net.stations.length)],
+      cell: 40, trains: [], spawnAcc: -1400,
+      spawned: 0, budget: mode === 'passplay' ? ppTrains : Infinity,
       routed: 0, lives: cfg.lives,
+      isWave: !!cfg.wave, wave: 1, waveCars: cfg.cars || 0, waveSpawned: 0, waveResolved: 0,
+      banner: null, bannerT: 0, queue: [],
       W: 0, H: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
     };
-    gRef.current = g;
-    finishedRef.current = false;
-    setMsg(isAr ? 'اضغط المفتاح ◯ عند التفرّع قبل وصول القطار · وجّه كل لون لمحطته' : 'Tap ◯ switches before trains arrive · match each colour to its station');
 
     const layout = () => {
       const pad = 16;
@@ -142,6 +178,23 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
       const ox = (g.W - g.cell * g.C) / 2, oy = (g.H - g.cell * g.R) / 2;
       for (const n of g.all) { n.x = ox + (n.c + 0.5) * g.cell; n.y = oy + (n.r + 0.5) * g.cell; }
     };
+
+    const randColor = () => g.stations[Math.floor(rng() * g.stations.length)].colorHex;
+
+    // Build / rebuild the road network for a given config (used at start and on
+    // each new survival wave). Resets in-flight cars and refills the colour queue.
+    const installNet = (c) => {
+      const net = generate(c.R, c.C, c.forks, rng, c.colors);
+      g.root = net.root; g.all = net.all; g.forks = net.forks; g.stations = net.stations;
+      g.R = c.R; g.C = c.C; g.maxC = c.maxC; g.cps = c.cps; g.spawnEvery = c.spawn;
+      g.trains = []; g.spawnAcc = -1400;
+      g.queue = [randColor(), randColor(), randColor()];
+      layout();
+    };
+    installNet(cfg);
+    gRef.current = g;
+    finishedRef.current = false;
+    setMsg(isAr ? 'اضغط المفترق ◯ قبل وصول السيارة · اركن كل لون في موقفه' : 'Tap ◯ junctions before cars arrive · park each colour in its spot');
 
     const resize = () => {
       const r = wrapRef.current.getBoundingClientRect();
@@ -155,40 +208,35 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     const ro = new ResizeObserver(resize); ro.observe(wrapRef.current);
 
     const drawEdge = (a, b, active) => {
-      ctx.strokeStyle = active ? RAIL : RAIL_OFF;
-      ctx.lineWidth = active ? Math.max(5, g.cell * 0.16) : 3;
+      // Road: grey asphalt with a dashed centre lane line (inactive = faint).
       ctx.lineCap = 'round';
+      ctx.strokeStyle = active ? '#5b5650' : 'rgba(0,0,0,0.10)';
+      ctx.lineWidth = active ? Math.max(9, g.cell * 0.36) : 5;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
       if (active) {
-        const ang = Math.atan2(b.y - a.y, b.x - a.x), L = Math.hypot(b.x - a.x, b.y - a.y);
-        const px = Math.cos(ang + Math.PI / 2), py = Math.sin(ang + Math.PI / 2), tie = g.cell * 0.13;
-        ctx.strokeStyle = 'rgba(0,0,0,0.16)'; ctx.lineWidth = 2;
-        for (let d = g.cell * 0.25; d < L; d += g.cell * 0.34) {
-          const mx = a.x + Math.cos(ang) * d, my = a.y + Math.sin(ang) * d;
-          ctx.beginPath(); ctx.moveTo(mx - px * tie, my - py * tie); ctx.lineTo(mx + px * tie, my + py * tie); ctx.stroke();
-        }
+        ctx.strokeStyle = 'rgba(255,236,150,0.92)';
+        ctx.lineWidth = Math.max(1.6, g.cell * 0.04);
+        ctx.setLineDash([g.cell * 0.16, g.cell * 0.16]);
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        ctx.setLineDash([]);
       }
     };
 
-    let hudCache = { routed: -1, lives: -1 };
+    let hudCache = { routed: -1, lives: -1, wave: -1 };
     let last = performance.now();
     const frame = (now) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
-      let survPct = 1;
-      if (mode === 'free') {
-        const elapsed = now - g.t0;
-        if (elapsed >= SURVIVAL_MS) { finish(); return; }
-        survPct = 1 - elapsed / SURVIVAL_MS;
-      }
-      const speed = g.cps * g.cell * (mode === 'free' ? 1 + survivalRamp(now - g.t0) * 0.9 : 1); // px/s
+      if (g.bannerT > 0) g.bannerT -= dt; // wave banner countdown
+      const speed = g.cps * g.cell; // px/s (escalation now comes from waves, not a ramp)
 
-      // spawn (keep tunnel exit clear so the first fork can be pre-set)
+      // spawn — keep the garage exit clear so the first junction can be pre-set.
+      // Survival is gated per WAVE (g.waveCars); levels/passplay by budget.
       g.spawnAcc += dt * 1000;
       const leadBusy = g.trains.some((t) => t.from === g.root && t.t < 0.5);
-      if (g.spawnAcc >= g.spawnEvery && g.spawned < g.budget && g.trains.length < g.maxTrains && !leadBusy) {
-        g.spawnAcc = 0; g.spawned += 1;
-        const target = g.nextStation.colorHex;
-        g.nextStation = g.stations[Math.floor(rng() * g.stations.length)];
+      const waveBudgetOk = g.isWave ? g.waveSpawned < g.waveCars : g.spawned < g.budget;
+      if (g.bannerT <= 0 && g.spawnAcc >= g.spawnEvery && waveBudgetOk && g.trains.length < g.maxC && !leadBusy) {
+        g.spawnAcc = 0; g.spawned += 1; if (g.isWave) g.waveSpawned += 1;
+        const target = g.queue.shift(); g.queue.push(randColor());
         g.trains.push({ from: g.root, to: g.root.children[0], t: 0, target });
       }
 
@@ -201,6 +249,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
           if (at.kind === 'station' || at.children.length === 0) {
             if (at.colorHex === t.target) { g.routed += 1; awardPoints(1); playSfx('collect'); }
             else { g.lives -= 1; playSfx('error'); }
+            if (g.isWave) g.waveResolved += 1;
             if (mode === 'levels' && g.routed >= cfg.target) { finish(); return; }
             if ((mode === 'levels' || mode === 'free') && g.lives <= 0) { finish(); return; }
             continue;
@@ -210,57 +259,102 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
         remaining.push(t);
       }
       g.trains = remaining;
+      // Survival: wave complete → escalate to the next (harder) wave.
+      if (g.isWave && g.waveResolved >= g.waveCars && g.trains.length === 0) {
+        g.wave += 1;
+        const wc = waveCfg(g.wave);
+        g.waveCars = wc.cars; g.waveSpawned = 0; g.waveResolved = 0;
+        installNet(wc); resize();
+        g.banner = isAr ? `الموجة ${g.wave}` : `Wave ${g.wave}`; g.bannerT = 1.6;
+        playSfx('win');
+      }
       if (g.budget !== Infinity && g.spawned >= g.budget && g.trains.length === 0) { finish(); return; }
 
       // ── draw ──
       ctx.clearRect(0, 0, g.W, g.H);
-      if (mode === 'free') drawSurvivalBar(ctx, g.W, survPct, ATT);
-      // rails: inactive first, then active on top
+      // roads: inactive first, then active on top
       for (const n of g.all) n.children.forEach((c, i) => { const active = n.children.length < 2 || i === n.sw; if (!active) drawEdge(n, c, false); });
       for (const n of g.all) n.children.forEach((c, i) => { const active = n.children.length < 2 || i === n.sw; if (active) drawEdge(n, c, true); });
 
-      // stations
-      const sw = g.cell * 0.62;
+      // parking bays (colour-matched spots, white "P")
+      const sw = g.cell * 0.66;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       for (const s of g.stations) {
         ctx.fillStyle = s.colorHex;
-        ctx.beginPath(); ctx.roundRect(s.x - sw / 2, s.y - sw / 2, sw, sw, 7); ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.fillStyle = 'rgba(255,255,255,0.55)';
-        ctx.beginPath(); ctx.roundRect(s.x - sw * 0.28, s.y - sw * 0.28, sw * 0.56, sw * 0.18, 3); ctx.fill();
+        ctx.beginPath(); ctx.roundRect(s.x - sw / 2, s.y - sw / 2, sw, sw, 6); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.92)'; ctx.lineWidth = Math.max(2, sw * 0.09);
+        ctx.beginPath(); ctx.roundRect(s.x - sw / 2, s.y - sw / 2, sw, sw, 6); ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = `900 ${Math.round(sw * 0.58)}px system-ui, sans-serif`;
+        ctx.fillText('P', s.x, s.y + sw * 0.03);
       }
 
-      // tunnel
+      // garage / exit + a small QUEUE of the next cars' colours (planning aid)
       ctx.fillStyle = '#3a3328';
-      ctx.beginPath(); ctx.arc(g.root.x, g.root.y, g.cell * 0.42, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = g.nextStation.colorHex; // next-train preview
-      ctx.beginPath(); ctx.arc(g.root.x, g.root.y, g.cell * 0.16, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(g.root.x - g.cell * 0.40, g.root.y - g.cell * 0.30, g.cell * 0.80, g.cell * 0.60, 6); ctx.fill();
+      const qn = Math.min(3, g.queue.length);
+      const qd = g.cell * 0.20, qgap = g.cell * 0.06;
+      const qTotal = qn * qd + (qn - 1) * qgap;
+      for (let i = 0; i < qn; i++) {
+        ctx.fillStyle = g.queue[i];
+        const qx = g.root.x - qTotal / 2 + i * (qd + qgap);
+        ctx.globalAlpha = i === 0 ? 1 : 0.6 - i * 0.12;
+        ctx.beginPath(); ctx.roundRect(qx, g.root.y - qd / 2, qd, qd, 3); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
 
-      // fork switches (circled, lever toward active branch)
-      const kr = g.cell * 0.2;
+      // junction controls (tappable circle with a direction arrow toward the
+      // active road) — bigger for a reliable touch target.
+      const kr = g.cell * 0.26;
       for (const j of g.forks) {
         const c = j.children[j.sw];
         const ang = Math.atan2(c.y - j.y, c.x - j.x);
-        ctx.strokeStyle = ATT; ctx.lineWidth = 4; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(j.x, j.y); ctx.lineTo(j.x + Math.cos(ang) * (kr + 5), j.y + Math.sin(ang) * (kr + 5)); ctx.stroke();
-        ctx.fillStyle = '#fffdf8'; ctx.strokeStyle = ATT; ctx.lineWidth = 3;
+        ctx.fillStyle = '#fffdf8'; ctx.strokeStyle = ATT; ctx.lineWidth = 4;
         ctx.beginPath(); ctx.arc(j.x, j.y, kr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // arrow toward the currently-selected road
+        const ax = j.x + Math.cos(ang) * kr * 0.55, ay = j.y + Math.sin(ang) * kr * 0.55;
+        ctx.fillStyle = ATT;
+        ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang);
+        ctx.beginPath(); ctx.moveTo(kr * 0.42, 0); ctx.lineTo(-kr * 0.22, -kr * 0.34); ctx.lineTo(-kr * 0.22, kr * 0.34); ctx.closePath(); ctx.fill();
+        ctx.restore();
       }
 
-      // trains
-      const tw = g.cell * 0.34, tl = g.cell * 0.5;
+      // cars (body in the target colour, windshield + wheels + headlights;
+      // front points along the direction of travel)
+      const cw = g.cell * 0.34, cl = g.cell * 0.56;
       for (const t of g.trains) {
         const x = t.from.x + (t.to.x - t.from.x) * t.t, y = t.from.y + (t.to.y - t.from.y) * t.t;
         const ang = Math.atan2(t.to.y - t.from.y, t.to.x - t.from.x);
         ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
-        ctx.fillStyle = t.target;
-        ctx.beginPath(); ctx.roundRect(-tl / 2, -tw / 2, tl, tw, 5); ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.fillStyle = 'rgba(255,255,255,0.85)';
-        ctx.beginPath(); ctx.roundRect(tl * 0.1, -tw * 0.28, tl * 0.28, tw * 0.56, 2); ctx.fill();
+        ctx.fillStyle = '#1a1a1a'; // wheels
+        ctx.beginPath(); ctx.roundRect(-cl * 0.30, -cw * 0.64, cl * 0.24, cw * 0.20, 2); ctx.fill();
+        ctx.beginPath(); ctx.roundRect(-cl * 0.30, cw * 0.44, cl * 0.24, cw * 0.20, 2); ctx.fill();
+        ctx.beginPath(); ctx.roundRect(cl * 0.12, -cw * 0.64, cl * 0.24, cw * 0.20, 2); ctx.fill();
+        ctx.beginPath(); ctx.roundRect(cl * 0.12, cw * 0.44, cl * 0.24, cw * 0.20, 2); ctx.fill();
+        ctx.fillStyle = t.target; // body
+        ctx.beginPath(); ctx.roundRect(-cl / 2, -cw / 2, cl, cw, 6); ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = 'rgba(212,236,255,0.92)'; // windshield (toward front)
+        ctx.beginPath(); ctx.roundRect(cl * 0.05, -cw * 0.32, cl * 0.26, cw * 0.64, 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,246,205,0.95)'; // headlights
+        ctx.beginPath(); ctx.arc(cl * 0.44, -cw * 0.28, cw * 0.08, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cl * 0.44, cw * 0.28, cw * 0.08, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
       }
 
-      if (g.routed !== hudCache.routed || g.lives !== hudCache.lives) { hudCache = { routed: g.routed, lives: g.lives }; setHud(hudCache); }
+      // wave banner (brief, on wave change)
+      if (g.bannerT > 0 && g.banner) {
+        ctx.globalAlpha = Math.min(1, g.bannerT / 0.4);
+        ctx.fillStyle = 'rgba(45,45,45,0.82)';
+        ctx.font = `900 ${Math.round(Math.min(g.W, g.H) * 0.10)}px system-ui, sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(g.banner, g.W / 2, g.H * 0.42);
+        ctx.globalAlpha = 1;
+      }
+
+      if (g.routed !== hudCache.routed || g.lives !== hudCache.lives || g.wave !== hudCache.wave) {
+        hudCache = { routed: g.routed, lives: g.lives, wave: g.wave }; setHud(hudCache);
+      }
       rafRef.current = requestAnimationFrame(frame);
     };
     rafRef.current = requestAnimationFrame(frame);
@@ -275,14 +369,16 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
   const showLives = mode !== 'passplay';
   const head = mode === 'levels'
     ? (isAr ? `مستوى ${level} · ${hud.routed}/${cfg.target}` : `Lvl ${level} · ${hud.routed}/${cfg.target}`)
-    : (isAr ? `وصل ${hud.routed}` : `Delivered ${hud.routed}`);
+    : mode === 'free'
+      ? (isAr ? `موجة ${hud.wave} · ركنت ${hud.routed}` : `Wave ${hud.wave} · Parked ${hud.routed}`)
+      : (isAr ? `ركنت ${hud.routed}` : `Parked ${hud.routed}`);
 
   return (
     <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
       <header className="ct-training-play-header">
         <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx('click'); onExit?.(); }}>‹</button>
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title">{isAr ? 'تبديل المسار' : 'Train Switch'}</div>
+          <div className="ct-training-play-title">{isAr ? 'موقف السيارات' : 'Car Park'}</div>
           <div className="ct-training-play-sub">{head}{showLives ? ` · ${'♥'.repeat(Math.max(0, hud.lives))}` : ''}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
@@ -295,7 +391,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
           <div style={S.overWrap}>
             <div style={S.overCard}>
               <div style={S.overTitle}>{isAr ? 'انتهت اللعبة' : 'Game Over'}</div>
-              <div style={S.overScore}>{isAr ? `وصل ${over.score}` : `Delivered ${over.score}`}</div>
+              <div style={S.overScore}>{isAr ? `ركنت ${over.score}` : `Parked ${over.score}`}</div>
               <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                 <button style={S.overBtn} onClick={() => { playSfx('click'); restart(); }}>{isAr ? 'العب مجدداً' : 'Play again'}</button>
                 <button style={{ ...S.overBtn, background: '#cdbfa6' }} onClick={() => { playSfx('click'); onExit?.(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
@@ -315,14 +411,14 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
     <ModeShell
       storageKey="mm_att_trainswitch"
       scienceId="train-switch"
-      title={{ en: 'Train Switch', ar: 'تبديل المسار' }}
+      title={{ en: 'Car Park', ar: 'موقف السيارات' }}
       hints={{
-        free: { en: 'Route the trains — endless, with lives', ar: 'وجّه القطارات — مفتوح، مع أرواح' },
+        free: { en: 'Park cars by colour — escalating waves, lives', ar: 'اركن السيارات حسب اللون — موجات متصاعدة، أرواح' },
         levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
-        pass: { en: 'Same map for all · pass the device', ar: 'نفس الخريطة للجميع · مرّر الجهاز' },
+        pass: { en: 'Same lot for all · pass the device', ar: 'نفس الموقف للجميع · مرّر الجهاز' },
       }}
       diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      pass={{ trials: PP_TRAINS, scoreLabel: { en: 'delivered', ar: 'وصل' }, lowerBetter: false, diff: 'med' }}
+      pass={{ trials: PP_TRAINS, scoreLabel: { en: 'parked', ar: 'ركنت' }, lowerBetter: false, diff: 'med' }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}

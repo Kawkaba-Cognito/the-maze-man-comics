@@ -130,17 +130,22 @@ const ShapeSvg = React.memo(function ShapeSvg({ shape, color, size = 40 }) {
   useSyncExternalStore(subscribeShapeNorm, getShapeNormVersion, getShapeNormVersion);
   const inner = SH[shape] || SH.circle;
   const scale = getShapeScale(shape);
-  const html =
-    scale < 1
-      ? `<g transform="translate(50 50) scale(${scale.toFixed(3)}) translate(-50 -50)">${inner}</g>`
-      : inner;
+  // Apply the area-normalization scale as a CSS transform on the <svg> itself —
+  // NOT by injecting a <g transform> into dangerouslySetInnerHTML, which could
+  // intermittently render blank (the "no shape" bug). innerHTML stays the bare,
+  // reliable shape markup; the scale is clip-safe (≤1, centred).
+  const style = { color, display: 'block' };
+  if (scale > 0 && scale < 1) {
+    style.transform = `scale(${scale.toFixed(3)})`;
+    style.transformOrigin = 'center';
+  }
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 100 100"
-      style={{ color, display: 'block' }}
-      dangerouslySetInnerHTML={{ __html: html }}
+      style={style}
+      dangerouslySetInnerHTML={{ __html: inner }}
     />
   );
 });

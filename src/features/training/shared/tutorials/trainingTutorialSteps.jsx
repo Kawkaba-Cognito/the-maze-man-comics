@@ -30,14 +30,14 @@ const STEPS = {
   },
   'train-switch': {
     en: [
-      { title: 'Route the trains', body: 'Trains arrive from the left. Each must reach its matching station colour on the right.', icon: '🚂' },
-      { title: 'Flip switches', body: 'Tap track switches to change where a train goes. Plan ahead — wrong routes fail the round.', icon: '🔀' },
-      { title: 'Keep up the pace', body: 'More trains and faster speeds as you improve. Survival adapts; Levels unlock in order.', icon: '⚡', note: READY_NOTE.en },
+      { title: 'Park the cars', body: 'Cars drive out of the garage. Each must reach the parking bay that matches its colour.', icon: '🚗' },
+      { title: 'Set the junctions', body: 'Tap a junction ◯ to change where a car turns. Plan ahead — wrong turns fail the round.', icon: '🔀' },
+      { title: 'Keep up the pace', body: 'More cars and faster speeds as you improve. Survival adapts; Levels unlock in order.', icon: '⚡', note: READY_NOTE.en },
     ],
     ar: [
-      { title: 'وجّه القطارات', body: 'القطارات تأتي من اليسار. كل واحد يجب أن يصل محطته الملونة على اليمين.', icon: '🚂' },
-      { title: 'بدّل المسارات', body: 'اضغط المفاتيح لتغيير مسار القطار. خطّط مسبقاً — المسار الخاطئ يفشل الجولة.', icon: '🔀' },
-      { title: 'حافظ على الإيقاع', body: 'قطارات أكثر وأسرع كلما تحسّنت. البقاء يتكيّف؛ المستويات تُفتح بالترتيب.', icon: '⚡', note: READY_NOTE.ar },
+      { title: 'اركن السيارات', body: 'السيارات تخرج من المرآب. كل واحدة يجب أن تصل موقفها الملوّن المطابق.', icon: '🚗' },
+      { title: 'اضبط المفترقات', body: 'اضغط المفترق ◯ لتغيير وجهة السيارة. خطّط مسبقاً — المنعطف الخاطئ يفشل الجولة.', icon: '🔀' },
+      { title: 'حافظ على الإيقاع', body: 'سيارات أكثر وأسرع كلما تحسّنت. البقاء يتكيّف؛ المستويات تُفتح بالترتيب.', icon: '⚡', note: READY_NOTE.ar },
     ],
   },
   'speed-match': {

@@ -128,23 +128,23 @@ export const GAME_SCIENCE = {
   'train-switch': {
     en: {
       title: 'The science',
-      intro: 'Routing each train to its station trains attention you must divide across several things at once.',
+      intro: 'Routing each car to its matching-colour parking bay trains attention you must divide across several things at once.',
       sections: [
-        { h: '🎯 Divided attention', b: 'Watching multiple trains and the right junctions at the same time trains the ability to share focus without losing track.' },
-        { h: '🧭 Response selection', b: 'Flipping the correct switch at the correct moment trains rule-based action choice and timing.' },
-        { h: '🚫 Inhibition', b: 'Not flipping a switch you do not need yet trains impulse control under pressure.' },
+        { h: '🎯 Divided attention', b: 'Watching multiple cars and the right junctions at the same time trains the ability to share focus without losing track.' },
+        { h: '🧭 Response selection', b: 'Setting the correct junction at the correct moment trains rule-based action choice and timing.' },
+        { h: '🚫 Inhibition', b: 'Not setting a junction you do not need yet trains impulse control under pressure.' },
       ],
-      foot: 'Triage: handle the most urgent train first, then the next.',
+      foot: 'Triage: handle the most urgent car first, then the next.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: 'توجيه كل قطار إلى محطته يدرّب انتباهاً عليك توزيعه على عدّة أمور في آن واحد.',
+      intro: 'توجيه كل سيارة إلى موقف لونها المطابق يدرّب انتباهاً عليك توزيعه على عدّة أمور في آن واحد.',
       sections: [
-        { h: '🎯 الانتباه الموزّع', b: 'مراقبة عدّة قطارات والمفاتيح الصحيحة معاً تدرّب القدرة على تقاسم التركيز دون فقدان المسار.' },
-        { h: '🧭 اختيار الاستجابة', b: 'تبديل المفتاح الصحيح في اللحظة الصحيحة يدرّب اختيار الفعل وفق قاعدة وتوقيته.' },
-        { h: '🚫 الكبح', b: 'عدم تبديل مفتاح لا تحتاجه بعد يدرّب ضبط الاندفاع تحت الضغط.' },
+        { h: '🎯 الانتباه الموزّع', b: 'مراقبة عدّة سيارات والمفترقات الصحيحة معاً تدرّب القدرة على تقاسم التركيز دون فقدان المسار.' },
+        { h: '🧭 اختيار الاستجابة', b: 'ضبط المفترق الصحيح في اللحظة الصحيحة يدرّب اختيار الفعل وفق قاعدة وتوقيته.' },
+        { h: '🚫 الكبح', b: 'عدم ضبط مفترق لا تحتاجه بعد يدرّب ضبط الاندفاع تحت الضغط.' },
       ],
-      foot: 'رتّب الأولويات: عالج القطار الأكثر إلحاحاً أولاً ثم التالي.',
+      foot: 'رتّب الأولويات: عالج السيارة الأكثر إلحاحاً أولاً ثم التالية.',
     },
   },
 
