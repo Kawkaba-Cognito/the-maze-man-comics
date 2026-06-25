@@ -104,21 +104,23 @@ export const GAME_SCIENCE = {
   'mot': {
     en: {
       title: 'The science',
-      intro: 'Target Tracking is the Multiple Object Tracking task (Pylyshyn & Storm, 1988), a measure of dynamic, divided attention.',
+      intro: 'Target Tracking is the Multiple Object Tracking task (Pylyshyn & Storm, 1988) — the classic measure of dynamic, divided, sustained attention.',
       sections: [
-        { h: '👁 Dynamic attention', b: 'Following several moving targets among identical distractors trains attention you can split and sustain on the move.' },
-        { h: '🧠 Attentional capacity', b: 'How many objects you can track at once reflects your attentional bandwidth — typically around four for most adults.' },
-        { h: '🏃 Real-world transfer', b: 'This kind of tracking is linked to driving, team sports, and general situational awareness.' },
+        { h: '👁 Parallel tracking', b: 'You follow several moving targets among identical distractors using pre-attentive "indexes" (FINSTs). Most adults hold about 4–5 at once — your tracking capacity, shown after a survival run.' },
+        { h: '⚡ Speed vs. capacity', b: 'Tracking is a flexible resource (Alvarez & Franconeri, 2007): the faster things move, the fewer you can hold. The Assessment staircases the speed to find exactly where your tracking breaks down.' },
+        { h: '💥 Close encounters', b: 'Most errors happen when a target passes close to a distractor and the two get confused — crowding, not raw speed, is the real challenge (Franconeri et al.).' },
+        { h: '🎯 What it does (honestly)', b: 'Practice reliably improves this task and similar tracking (near transfer). Broad "far transfer" to driving or sports is debated in the research — treat it as training and tracking this specific skill, not a guaranteed real-world boost.' },
       ],
       foot: 'Use a soft, wide gaze on the whole group rather than fixating one target.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: '«تتبّع الأهداف» هي مهمة تتبّع الأجسام المتعدّدة (بيليشن وستورم، 1988)، مقياس للانتباه الديناميكي الموزّع.',
+      intro: '«تتبّع الأهداف» هي مهمة تتبّع الأجسام المتعدّدة (بيليشن وستورم، 1988) — المقياس الكلاسيكي للانتباه الديناميكي الموزّع والمستمر.',
       sections: [
-        { h: '👁 الانتباه الديناميكي', b: 'متابعة عدّة أهداف متحرّكة وسط مشتّتات متطابقة تدرّب انتباهاً يمكنك توزيعه والحفاظ عليه أثناء الحركة.' },
-        { h: '🧠 سعة الانتباه', b: 'عدد الأجسام التي يمكنك تتبّعها معاً يعكس عرض نطاق انتباهك — غالباً نحو أربعة لدى معظم البالغين.' },
-        { h: '🏃 الأثر الواقعي', b: 'هذا النوع من التتبّع مرتبط بالقيادة والرياضات الجماعية والوعي بالموقف عموماً.' },
+        { h: '👁 التتبّع المتوازي', b: 'تتابع عدّة أهداف متحرّكة وسط مشتّتات متطابقة عبر «مؤشّرات» ما قبل انتباهية. يمسك معظم البالغين بنحو ٤–٥ معاً — وهي سعة تتبّعك التي تظهر بعد جولة البقاء.' },
+        { h: '⚡ السرعة مقابل السعة', b: 'التتبّع مورد مرن (ألفاريز وفرانكونيري، 2007): كلما زادت السرعة قلّ ما يمكنك إمساكه. يضبط التقييم السرعة تدريجياً ليجد بالضبط أين ينهار تتبّعك.' },
+        { h: '💥 اللقاءات القريبة', b: 'تحدث معظم الأخطاء حين يمرّ هدف قرب مشتّت فيختلطان — الازدحام لا السرعة وحدها هو التحدّي الحقيقي (فرانكونيري وزملاؤه).' },
+        { h: '🎯 ماذا يفعل (بصدق)', b: 'التمرين يحسّن هذه المهمة والتتبّع المشابه بشكل موثوق (انتقال قريب). أمّا «الانتقال البعيد» للقيادة أو الرياضة فمختلَف عليه بحثياً — اعتبره تدريباً وتتبّعاً لهذه المهارة تحديداً، لا ضماناً لتحسّن واقعي.' },
       ],
       foot: 'استخدم نظرة واسعة ليّنة على المجموعة كلها بدل تثبيت هدف واحد.',
     },

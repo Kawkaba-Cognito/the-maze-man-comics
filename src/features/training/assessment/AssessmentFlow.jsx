@@ -88,6 +88,8 @@ const STR = {
     chooseSub: 'Run a full assessment, or test one area.',
     fullTitle: 'Full assessment',
     fullSub: 'All six areas, back to back',
+    trackingTitle: '🎯 Tracking speed',
+    trackingSub: 'Adaptive object-tracking threshold · self-referenced',
     partsTitle: 'Or test one area',
     workoutTitle: 'Daily Workout',
     workoutSub: 'Guided session — warm up, train, cool down',
@@ -136,6 +138,8 @@ const STR = {
     chooseSub: 'شغّل تقييماً كاملاً، أو اختبر مجالاً واحداً.',
     fullTitle: 'تقييم كامل',
     fullSub: 'المجالات الستة تباعاً',
+    trackingTitle: '🎯 سرعة التتبّع',
+    trackingSub: 'عتبة تتبّع أهداف تكيّفية · مرجعية ذاتية',
     partsTitle: 'أو اختبر مجالاً واحداً',
     workoutTitle: 'تمرين يومي',
     workoutSub: 'جلسة موجّهة — إحماء، تدريب، تهدئة',
@@ -198,6 +202,7 @@ export default function AssessmentFlow({ onBack }) {
   const [report, setReport] = useState(null); // { scores, lines, full }
   const [sessions, setSessions] = useState(() => loadAssessSessions());
   const [methOpen, setMethOpen] = useState(false);
+  const [motAssess, setMotAssess] = useState(false); // standalone MOT speed-threshold test
 
   const saveAndContinue = () => {
     const n = Number(ageInput);
@@ -246,6 +251,19 @@ export default function AssessmentFlow({ onBack }) {
     if (done.length > 0) finalize(done);
     else { setRunQueue([]); setRunIdx(0); setStep('choose'); }
   };
+
+  /* ----- STANDALONE: MOT speed-threshold assessment ----- */
+  if (motAssess) {
+    const Mot = getLazyGame('mot');
+    if (!Mot) { setMotAssess(false); return null; }
+    return (
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+        <Suspense fallback={<Loading label={t.loading} />}>
+          <Mot assessmentOnly onBack={() => setMotAssess(false)} />
+        </Suspense>
+      </div>
+    );
+  }
 
   /* ----- RUN ----- */
   if (step === 'run' && runQueue[runIdx]) {
@@ -460,6 +478,15 @@ export default function AssessmentFlow({ onBack }) {
             </button>
           ))}
         </div>
+        <button type="button" className="ct-fq-db ct-fq-db-easy ct-fq-db-training ct-fq-diffcard"
+          style={{ marginTop: 10 }}
+          onClick={() => { playSfx('click'); setMotAssess(true); }}>
+          <span className="ct-fq-diffcard-main">
+            <span className="ct-fq-diffcard-label">{t.trackingTitle}</span>
+            <span className="ct-fq-diffcard-desc">{t.trackingSub}</span>
+          </span>
+          <span className="ct-fq-diffcard-meta"><span className="ct-fq-diffcard-grid" aria-hidden="true">▶</span></span>
+        </button>
         {openWorkout && (
           <button type="button" className="ct-fq-db ct-fq-db-easy ct-fq-db-training ct-fq-diffcard"
             style={{ marginTop: 14 }}

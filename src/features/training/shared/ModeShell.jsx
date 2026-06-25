@@ -49,6 +49,7 @@ export default function ModeShell({
   renderEngine,
   pass = {},
   scienceId,
+  extraItems = [],
 }) {
   const gameId = gameIdProp || scienceId;
   const tutorial = useTrainingTutorial(gameId, isAr);
@@ -181,6 +182,9 @@ export default function ModeShell({
       { k: 'free', ic: '♾️', lb: isAr ? 'البقاء' : 'Survival mode', hint: hintTxt(hints?.free), on: () => startMode('free') },
       { k: 'levels', ic: '🎯', lb: isAr ? 'المستويات' : 'Level mode', hint: hintTxt(hints?.levels), on: () => startMode('levels') },
       { k: 'chal', ic: '⚔️', lb: isAr ? 'مرّر والعب' : 'Pass n Play', hint: hintTxt(hints?.pass), on: () => startMode('pass') },
+      // Optional game-supplied entries (e.g. an assessment) appended after the
+      // standard three. Each: { k, ic, lb, hint, on }.
+      ...extraItems,
     ];
     return (
       <>

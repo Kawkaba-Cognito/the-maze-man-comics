@@ -365,14 +365,34 @@ export function getLevelDifficultyModel(diff, li) {
 }
 
 // Per-tier clock tightness (× the empirical sigmoid time). Hard is tightest so
-// that, combined with a true conjunction search, finding EVERY target before
-// time runs out is genuinely hard to achieve, not a formality.
-export const TIER_TIME_MULT = { easy: 0.8, medium: 0.74, hard: 0.7 };
+// that, combined with a true conjunction search AND near-identical shapes,
+// finding EVERY target before time runs out is genuinely hard, not a formality.
+export const TIER_TIME_MULT = { easy: 0.8, medium: 0.72, hard: 0.62 };
+
+/**
+ * Shape pool for a level. The HARD tier ramps target–distractor SHAPE similarity
+ * (Duncan & Humphreys 1989 — the dominant driver of search difficulty): it walks
+ * from distinguishable curves (SP.hard) → similar (SP.xhard) → near-identical
+ * (SP.deadly: almostCircle vs circle, fatOval vs ovalH). With the colour-or-shape
+ * conjunction on top, a colour-sharing distractor is then same-colour AND nearly
+ * the same shape as the target — so you must attend to each item to tell them
+ * apart, instead of scanning by shape. This is the real "challenge attention"
+ * lever; those harder pools existed but were never used.
+ */
+function poolForLevel(diff, li) {
+  if (diff === 'hard') {
+    const u = li / (FQ_LEVELS_PER_TIER - 1); // 0..1 across the tier
+    const list = u < 0.3 ? SP.hard : u < 0.65 ? SP.xhard : SP.deadly;
+    const idx = Math.max(0, Math.min(list.length - 1, Math.floor(u * list.length)));
+    return list[idx];
+  }
+  const list = SP[diff] || SP.easy;
+  return list[Math.max(0, Math.min(list.length - 1, Math.floor((li * list.length) / FQ_LEVELS_PER_TIER)))];
+}
 
 export function getLvCfg(diff, li) {
   const m = DM[diff];
-  const poolList = SP[diff] || SP.easy;
-  const pool = poolList[Math.max(0, Math.min(poolList.length - 1, Math.floor(li * poolList.length / FQ_LEVELS_PER_TIER)))];
+  const pool = poolForLevel(diff, li);
   const time = Math.round(sigmoidTime(diff, li) * (TIER_TIME_MULT[diff] ?? 0.78));
   const interference = computeFeatureInterference(li, diff);
   return {
