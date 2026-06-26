@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
-import { SURVIVAL_MS, survivalRamp, survivalTier, drawSurvivalBar } from '../../../../shared/survival';
+import { survivalRamp, survivalTier } from '../../../../shared/survival';
 
 /*
  * Math Gates — endless runner with rule-switching arithmetic (cognitive flexibility).
@@ -30,6 +30,23 @@ function levelCfg(diff, level) {
 }
 const PP_GATES = 12;
 
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+/*
+ * Equation + distractor generation, grounded in numerical-cognition research:
+ *  • Problem-size effect — operand magnitude scales with the level/survival ramp,
+ *    and the operation hierarchy (+ < − < × < ÷) drives base difficulty (large
+ *    facts move from retrieval to procedure; PSE is strongest for ×). [Campbell;
+ *    Núñez-Peña].
+ *  • Numerical distance effect — the NEAREST wrong answer governs how hard the
+ *    choice is. The split shrinks far→near as difficulty rises (easy ≈ ±8,
+ *    hard ≈ ±2). [Dehaene; arithmetic-verification distance studies].
+ *  • Plausible, parity-matched lures — all deltas are EVEN, so every option
+ *    shares the answer's parity; the odd/even shortcut is removed and a real
+ *    comparison is forced. For × we also seed a table-confusion operand error
+ *    (ans ± a) when it is parity-safe.
+ */
 function genGate(diff, f, rng) {
   const ops = (BASE[diff] || BASE.med).ops;
   const op = ops[Math.floor(rng() * ops.length)];
@@ -48,28 +65,86 @@ function genGate(diff, f, rng) {
     const dh = 9 + Math.round(f * 3), qh = 9 + Math.round(f * 3);
     b = ri(2, dh); const q = ri(2, qh); a = b * q; ans = q;
   }
-  const opts = new Set([ans]);
-  const span = Math.max(3, Math.round(Math.abs(ans) * 0.25) + 2);
-  let guard = 0;
-  while (opts.size < 3 && guard++ < 60) {
-    const cand = ans + ri(1, span) * (rng() < 0.5 ? -1 : 1);
-    if (cand >= 0) opts.add(cand);
+
+  // Nearest-distractor distance (the discriminability driver): far when easy,
+  // down to ±2 when hard. Even, so parity never gives the answer away.
+  const nearDelta = clamp(Math.round(lerp(8, 2, f) / 2) * 2, 2, 10);
+  const deltas = new Set();
+  // Multiplication table-confusion lure (ans ± a), only if it preserves parity.
+  if (op === '×' && a % 2 === 0 && a <= 8 && ans - a > 0) {
+    deltas.add(rng() < 0.5 ? a : -a);
   }
-  while (opts.size < 3) opts.add(ans + opts.size + 1);
+  let guard = 0;
+  while (deltas.size < 2 && guard++ < 80) {
+    const step = nearDelta + 2 * Math.floor(rng() * 3); // nearDelta, +2, +4
+    const d = step * (rng() < 0.5 ? -1 : 1);
+    if (d !== 0 && ans + d >= 0) deltas.add(d);
+  }
+  const opts = new Set([ans]);
+  for (const d of deltas) { if (opts.size < 3) opts.add(ans + d); }
+  let g2 = 0;
+  while (opts.size < 3 && g2++ < 40) {
+    const d = (2 + 2 * Math.floor(rng() * 5)) * (rng() < 0.5 ? -1 : 1);
+    if (ans + d >= 0) opts.add(ans + d);
+  }
+  while (opts.size < 3) opts.add(ans + opts.size * 2 + 2);
   const arr = [...opts];
   for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
-  return { text: `${a} ${op} ${b}`, answer: ans, options: arr, correctLane: arr.indexOf(ans), op, a, b };
+  return { text: `${a} ${op} ${b}`, answer: ans, options: arr, correctLane: arr.indexOf(ans), op, a, b, split: nearDelta };
 }
 
-// Harder equations get a longer runway (more thinking time) — scales with the
-// operation and the size of the numbers, so a tough sum is never a time-trap.
-function gateTime(eq) {
-  let t = 2.6;
-  t += eq.op === '-' ? 0.5 : eq.op === '×' ? 1.5 : eq.op === '÷' ? 2.2 : 0.2;
-  const mag = String(Math.abs(eq.a)).length + String(Math.abs(eq.b)).length - 2;
-  t += mag * 0.45;
-  t += Math.max(0, String(Math.abs(eq.answer)).length - 1) * 0.4;
-  return Math.min(8, t);
+/* --- Research-grade metric layer ----------------------------------------- */
+const _mean = (xs) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
+const _sd = (xs, m) => (xs.length < 2 || m == null ? null : Math.sqrt(xs.reduce((s, x) => s + (x - m) ** 2, 0) / (xs.length - 1)));
+/** RT outlier trimming (Whelan, 2008): absolute bounds, then iterative ±2.5 SD. */
+function _trim(raw) {
+  let xs = raw.filter((r) => r != null && r >= 150 && r <= 9000);
+  for (let p = 0; p < 3 && xs.length > 3; p++) {
+    const m = _mean(xs); const s = _sd(xs, m);
+    if (!s) break;
+    const lo = m - 2.5 * s; const hi = m + 2.5 * s;
+    const n = xs.filter((x) => x >= lo && x <= hi);
+    if (n.length === xs.length) break;
+    xs = n;
+  }
+  return xs;
+}
+
+/**
+ * Summarize a run of gate events into research-grade processing-speed metrics:
+ *  • correct/min — the standard arithmetic-fluency score (correct RPM).
+ *  • accuracy, mean decision RT, RT variability (ICV = SD/mean).
+ *  • switch cost — mean RT on operation-SWITCH gates minus operation-REPEAT
+ *    gates: the cognitive-flexibility signature (Rubinsten; task-switching).
+ *  • per-operation accuracy breakdown (+ − × ÷).
+ */
+function summarizeGates(events, elapsedSec) {
+  let correct = 0;
+  const rtsAll = []; const rtsSwitch = []; const rtsRepeat = [];
+  const perOp = {};
+  for (const e of events) {
+    if (e.correct) correct++;
+    (perOp[e.op] ||= { c: 0, n: 0 }).n++;
+    if (e.correct) perOp[e.op].c++;
+    if (e.correct && e.rtMs != null) {
+      rtsAll.push(e.rtMs);
+      if (e.isSwitch === true) rtsSwitch.push(e.rtMs);
+      else if (e.isSwitch === false) rtsRepeat.push(e.rtMs);
+    }
+  }
+  const total = events.length;
+  const accuracy = total ? correct / total : 1;
+  const dur = Math.max(1, elapsedSec || 1);
+  const correctPerMin = +(correct / (dur / 60)).toFixed(1);
+  const rts = _trim(rtsAll);
+  const m = _mean(rts);
+  const meanRt = m != null ? Math.round(m) : null;
+  const s = _sd(rts, m);
+  const icv = m && s != null ? +(s / m).toFixed(2) : null;
+  const ms = _mean(_trim(rtsSwitch)); const mr = _mean(_trim(rtsRepeat));
+  const switchCost = ms != null && mr != null && rtsSwitch.length >= 3 && rtsRepeat.length >= 3
+    ? Math.round(ms - mr) : null;
+  return { correct, total, accuracy, accuracyPct: Math.round(accuracy * 100), correctPerMin, meanRt, icv, switchCost, perOp };
 }
 
 function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
@@ -79,11 +154,12 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
   const rafRef = useRef(0);
   const stateRef = useRef(null);
   const finishedRef = useRef(false);
+  const resolveRef = useRef(() => {}); // commit an answer (set inside the loop effect)
 
   const [runId, setRunId] = useState(0);
   const [over, setOver] = useState(null);
   const [hud, setHud] = useState({ passed: 0, lives: 0, combo: 0 });
-  const [eq, setEq] = useState('');
+  const [eqParts, setEqParts] = useState(null);
   const [sting, setSting] = useState(null);
 
   const cfg = useMemo(() => {
@@ -97,28 +173,38 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
     finishedRef.current = true;
     cancelAnimationFrame(rafRef.current);
     const g = stateRef.current;
-    if (mode === 'free') { setOver({ score: g.passed }); playSfx('error'); return; }
+    const elapsedSec = (performance.now() - g.t0) / 1000;
+    const summary = summarizeGates(g.events, elapsedSec);
+    if (mode === 'free') { setOver({ score: g.passed, metrics: summary }); playSfx('error'); return; }
     if (mode === 'levels') {
       const won = g.passed >= cfg.target;
-      onResult({ won, score: g.passed, summary: isAr ? `${g.passed}/${cfg.target} صحيح` : `${g.passed}/${cfg.target} correct` });
+      const sw = summary.switchCost != null
+        ? (isAr ? ` · تبديل +${summary.switchCost}مث` : ` · switch +${summary.switchCost}ms`) : '';
+      const rt = summary.meanRt != null ? `${summary.meanRt}${isAr ? 'مث' : 'ms'}` : '—';
+      onResult({ won, score: g.passed, summary: `${g.passed}/${cfg.target} · ${summary.accuracyPct}% · ${rt}${sw}` });
     } else onResult({ score: g.passed });
   }, [mode, cfg.target, onResult, isAr, playSfx]);
 
+  // Move the runner between lanes (browse only — no answer is committed).
   const setLane = useCallback((ln) => {
     const g = stateRef.current; if (!g || finishedRef.current) return;
     const next = Math.max(0, Math.min(LANES - 1, ln));
     if (next !== g.lane) { g.lane = next; playSfx('click'); }
   }, [playSfx]);
   const moveBy = useCallback((d) => { const g = stateRef.current; if (g) setLane(g.lane + d); }, [setLane]);
+  // Commit an answer: a specific lane, or the lane the runner is currently in.
+  const commitLane = useCallback((lane) => { resolveRef.current?.(Math.max(0, Math.min(LANES - 1, lane))); }, []);
+  const commitCurrent = useCallback(() => { const g = stateRef.current; if (g) resolveRef.current?.(g.lane); }, []);
 
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'ArrowLeft') { e.preventDefault(); moveBy(-1); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); moveBy(1); }
+      else if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowUp') { e.preventDefault(); commitCurrent(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [moveBy]);
+  }, [moveBy, commitCurrent]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -130,6 +216,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       lane: 1, gate: null, gapTimer: cfg.gap, t0: performance.now(),
       passed: 0, lives: cfg.lives, combo: 0, bestCombo: 0, gatesPlayed: 0,
       flash: null, charX: 0,
+      events: [], prevOp: null, // per-gate science capture
       W: 0, H: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
     };
     stateRef.current = g;
@@ -142,8 +229,38 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       const dk = mode === 'free' ? survivalTier(f) : dkey;
       const eqObj = genGate(dk, f, rng);
       const bandH = Math.min(g.H * 0.16, 96);
-      g.gate = { y: -bandH, eq: eqObj, t: gateTime(eqObj), speed: null };
-      setEq(eqObj.text);
+      g.gate = { y: -bandH, eq: eqObj, shownAt: performance.now() };
+      g.lane = 1; // recenter the runner so both side lanes are one move away
+      const switched = g.prevOp != null && eqObj.op !== g.prevOp;
+      setEqParts({ a: eqObj.a, op: eqObj.op, b: eqObj.b, switched });
+    };
+
+    // Commit the player's answer for the held gate. This is the ONLY way a gate
+    // resolves — there is no descent deadline and no run clock, so the only way
+    // to lose is an explicit wrong choice.
+    resolveRef.current = (lane) => {
+      if (finishedRef.current || !g.gate) return;
+      const eqo = g.gate.eq;
+      const now = performance.now();
+      g.gatesPlayed += 1;
+      const ok = lane === eqo.correctLane;
+      const isSwitch = g.prevOp == null ? null : eqo.op !== g.prevOp;
+      const rtMs = Math.round(now - g.gate.shownAt); // decision time (untimed, but still a fluency signal)
+      g.events.push({ op: eqo.op, a: eqo.a, b: eqo.b, answer: eqo.answer, chosen: eqo.options[lane], correct: ok, rtMs, isSwitch, split: eqo.split });
+      g.prevOp = eqo.op;
+      g.lane = lane; // snap the runner into the chosen lane
+      if (ok) {
+        g.passed += 1; g.combo += 1; if (g.combo > g.bestCombo) g.bestCombo = g.combo;
+        awardPoints(1); playSfx('collect');
+        g.flash = { ok: true, until: now + 350, lane };
+        if (mode === 'levels' && g.passed >= cfg.target) { finish(); return; }
+      } else {
+        g.combo = 0; playSfx('error');
+        g.flash = { ok: false, until: now + 450, lane: eqo.correctLane, picked: lane };
+        if (mode === 'levels' || mode === 'free') { g.lives -= 1; if (g.lives <= 0) { finish(); return; } }
+      }
+      if (mode === 'passplay' && g.gatesPlayed >= ppGates) { g.gate = null; finish(); return; }
+      g.gate = null; g.gapTimer = cfg.gap;
     };
 
     const resize = () => {
@@ -170,30 +287,12 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       const catchY = charY - bandH * 0.3;
 
       if (g.gate) {
-        if (g.gate.speed == null) {
-          // set a constant speed so the gate takes `t` seconds to reach the player;
-          // a gentle global ramp speeds later gates a touch (floored, stays fair).
-          const pace = mode === 'free'
-            ? Math.max(0.6, 1 - survivalRamp(now - g.t0) * 0.4)
-            : Math.max(0.78, 1 - g.passed * 0.012);
-          g.gate.speed = (catchY - g.gate.y) / Math.max(0.4, g.gate.t * pace);
-        }
-        g.gate.y += g.gate.speed * dt;
-        if (g.gate.y >= catchY) {
-          g.gatesPlayed += 1;
-          const ok = g.lane === g.gate.eq.correctLane;
-          if (ok) {
-            g.passed += 1; g.combo += 1; if (g.combo > g.bestCombo) g.bestCombo = g.combo;
-            awardPoints(1); playSfx('collect');
-            g.flash = { ok: true, until: now + 350 };
-            if (mode === 'levels' && g.passed >= cfg.target) { finish(); return; }
-          } else {
-            g.combo = 0; playSfx('error');
-            g.flash = { ok: false, until: now + 450, lane: g.gate.eq.correctLane };
-            if (mode === 'levels' || mode === 'free') { g.lives -= 1; if (g.lives <= 0) { finish(); return; } }
-          }
-          if (mode === 'passplay' && g.gatesPlayed >= ppGates) { g.gate = null; finish(); return; }
-          g.gate = null; g.gapTimer = cfg.gap;
+        // Slide the gate down to the hold line, then WAIT — no deadline. It only
+        // resolves when the player commits an answer (resolveRef), so the sole
+        // way to lose is a wrong choice.
+        if (g.gate.y < catchY) {
+          const descendPx = (catchY + bandH) / 0.7; // ~0.7s slide-in (purely visual)
+          g.gate.y = Math.min(catchY, g.gate.y + descendPx * dt);
         }
       } else {
         g.gapTimer -= dt * 1000;
@@ -204,14 +303,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       g.charX += (targetX - g.charX) * Math.min(1, dt * 18);
 
       // draw
-      let survPct = 1;
-      if (mode === 'free') {
-        const elapsed = now - g.t0;
-        if (elapsed >= SURVIVAL_MS) { finish(); return; }
-        survPct = 1 - elapsed / SURVIVAL_MS;
-      }
       ctx.clearRect(0, 0, g.W, g.H);
-      if (mode === 'free') drawSurvivalBar(ctx, g.W, survPct, ACCENT);
       // road lanes
       for (let i = 0; i < LANES; i++) {
         ctx.fillStyle = i % 2 ? COSMOS_LANE_A : COSMOS_LANE_B;
@@ -238,11 +330,12 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       // catch line
       ctx.strokeStyle = 'rgba(0,0,0,0.10)'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(0, charY); ctx.lineTo(g.W, charY); ctx.stroke();
-      // flash feedback on lanes
+      // flash feedback on lanes (uses the captured picked/correct lanes so it
+      // stays correct even if the next gate has already spawned)
       if (g.flash && now < g.flash.until) {
-        if (g.flash.ok) { ctx.fillStyle = 'rgba(59,224,134,0.18)'; ctx.fillRect(laneX(g.lane) - g.W / (2 * LANES), 0, g.W / LANES, g.H); }
+        if (g.flash.ok) { ctx.fillStyle = 'rgba(59,224,134,0.18)'; ctx.fillRect(laneX(g.flash.lane) - g.W / (2 * LANES), 0, g.W / LANES, g.H); }
         else {
-          ctx.fillStyle = 'rgba(255,90,90,0.16)'; ctx.fillRect(laneX(g.lane) - g.W / (2 * LANES), 0, g.W / LANES, g.H);
+          ctx.fillStyle = 'rgba(255,90,90,0.16)'; ctx.fillRect(laneX(g.flash.picked) - g.W / (2 * LANES), 0, g.W / LANES, g.H);
           ctx.fillStyle = 'rgba(59,224,134,0.22)'; ctx.fillRect(laneX(g.flash.lane) - g.W / (2 * LANES), 0, g.W / LANES, g.H);
         }
       }
@@ -267,13 +360,19 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
 
   const restart = () => { setOver(null); finishedRef.current = false; setRunId((n) => n + 1); };
 
+  // Tapping a lane IS your answer — it commits that gate immediately.
   const onCanvasTap = (e) => {
     const g = stateRef.current; if (!g) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    setLane(Math.floor(((e.clientX - rect.left) / rect.width) * LANES));
+    commitLane(Math.floor(((e.clientX - rect.left) / rect.width) * LANES));
   };
 
   const S = styles;
+  const L = isAr
+    ? { perMin: 'صحيح/دقيقة', acc: 'الدقة', rt: 'زمن القرار', rtVar: 'تغيّر الزمن', sw: 'كلفة التبديل',
+        note: 'صحيح/دقيقة هي طلاقتك الحسابية. «كلفة التبديل» هي بطؤك عندما تتغيّر العملية.' }
+    : { perMin: 'Correct/min', acc: 'Accuracy', rt: 'Decision time', rtVar: 'RT variability', sw: 'Switch cost',
+        note: 'Correct/min is your arithmetic fluency. Switch cost is how much the changing operation slows you.' };
   const showLives = mode !== 'passplay';
   const head = mode === 'levels'
     ? (isAr ? `مستوى ${level} · ${hud.passed}/${cfg.target}` : `Lvl ${level} · ${hud.passed}/${cfg.target}`)
@@ -291,7 +390,17 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
 
-      <div style={S.eqWrap}><span style={S.eq}>{eq}</span><span style={S.eqQ}>= ?</span></div>
+      <div style={S.eqWrap}>
+        <span style={S.eqNum}>{eqParts?.a}</span>
+        <span
+          key={`${eqParts?.op}-${eqParts?.a}-${eqParts?.b}`}
+          className={`mg-op${eqParts?.switched ? ' mg-op--switch' : ''}`}
+        >
+          {eqParts?.op}
+        </span>
+        <span style={S.eqNum}>{eqParts?.b}</span>
+        <span style={S.eqQ}>= ?</span>
+      </div>
 
       <div ref={wrapRef} style={S.play}>
         <canvas ref={canvasRef} onPointerDown={onCanvasTap} style={{ display: 'block', touchAction: 'none' }} />
@@ -301,6 +410,18 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
             <div style={S.overCard}>
               <div style={S.overTitle}>{isAr ? 'انتهت اللعبة' : 'Game Over'}</div>
               <div style={S.overScore}>{isAr ? `صحيح ${over.score}` : `${over.score} correct`}</div>
+              {over.metrics && (
+                <>
+                  <div className="ct-fq-rm ct-fq-rm-training ct-fq-assess-grid" style={{ marginTop: 14 }}>
+                    <div className="ct-fq-rmi"><div className="ct-fq-rv">{over.metrics.correctPerMin}</div><div className="ct-fq-rl">{L.perMin}</div></div>
+                    <div className="ct-fq-rmi"><div className="ct-fq-rv">{over.metrics.accuracyPct}%</div><div className="ct-fq-rl">{L.acc}</div></div>
+                    <div className="ct-fq-rmi"><div className="ct-fq-rv">{over.metrics.meanRt != null ? `${over.metrics.meanRt}${isAr ? 'مث' : 'ms'}` : '—'}</div><div className="ct-fq-rl">{L.rt}</div></div>
+                    <div className="ct-fq-rmi"><div className="ct-fq-rv">{over.metrics.icv != null ? `${Math.round(over.metrics.icv * 100)}%` : '—'}</div><div className="ct-fq-rl">{L.rtVar}</div></div>
+                    <div className="ct-fq-rmi"><div className="ct-fq-rv">{over.metrics.switchCost != null ? `+${over.metrics.switchCost}${isAr ? 'مث' : 'ms'}` : '—'}</div><div className="ct-fq-rl">{L.sw}</div></div>
+                  </div>
+                  <p style={S.overNote}>{L.note}</p>
+                </>
+              )}
               <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                 <button style={S.overBtn} onClick={() => { playSfx('click'); restart(); }}>{isAr ? 'العب مجدداً' : 'Play again'}</button>
                 <button style={{ ...S.overBtn, background: '#cdbfa6' }} onClick={() => { playSfx('click'); onExit?.(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
@@ -312,6 +433,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
 
       <div style={S.controls}>
         <button style={S.ctrlBtn} aria-label={isAr ? 'يسار' : 'Left'} onPointerDown={(e) => { e.preventDefault(); moveBy(-1); }}>◀</button>
+        <button style={S.commitBtn} aria-label={isAr ? 'أجب' : 'Answer'} onPointerDown={(e) => { e.preventDefault(); commitCurrent(); }}>✓</button>
         <button style={S.ctrlBtn} aria-label={isAr ? 'يمين' : 'Right'} onPointerDown={(e) => { e.preventDefault(); moveBy(1); }}>▶</button>
       </div>
     </div>
@@ -346,17 +468,19 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
 
 const styles = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
-  eqWrap: { display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 10, padding: '8px 0 4px', minHeight: 44 },
-  eq: { fontWeight: 900, fontSize: 'clamp(28px, 8vw, 44px)', color: '#2d2d2d', letterSpacing: 1 },
+  eqWrap: { display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 12, padding: '8px 0 4px', minHeight: 48 },
+  eqNum: { fontWeight: 900, fontSize: 'clamp(30px, 9vw, 48px)', color: '#2d2d2d', letterSpacing: 1 },
   eqQ: { fontWeight: 900, fontSize: 'clamp(20px, 6vw, 30px)', color: ACCENT },
-  play: { position: 'relative', flex: 1, overflow: 'hidden' },
+  play: { position: 'relative', flex: 1, overflow: 'hidden', margin: '0 8px 8px', borderRadius: 16, border: '1px solid rgba(58,51,40,0.10)', boxShadow: '0 10px 28px rgba(45,40,30,0.12), inset 0 0 0 1px rgba(255,255,255,0.4)' },
   sting: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' },
   stingInner: { fontSize: 'clamp(26px, 8vw, 56px)', fontWeight: 900, color: '#fff', background: COSMOS_STING_BG, padding: '10px 24px', borderRadius: 16, boxShadow: '4px 4px 0 #1a1208', animation: 'flipStingPop .8s ease-out' },
   overWrap: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(45,45,45,0.45)' },
-  overCard: { background: '#fffdf8', borderRadius: 20, padding: '22px 26px', textAlign: 'center', boxShadow: '6px 6px 0 #1a1208', border: '2px solid #cdbfa6' },
+  overCard: { background: '#fffdf8', borderRadius: 20, padding: '20px 22px', textAlign: 'center', boxShadow: '6px 6px 0 #1a1208', border: '2px solid #cdbfa6', width: 'min(92vw, 380px)', maxHeight: '88%', overflowY: 'auto' },
   overTitle: { fontWeight: 900, fontSize: 24, color: '#2d2d2d' },
   overScore: { marginTop: 6, fontWeight: 700, color: '#5a4a32' },
+  overNote: { marginTop: 10, fontSize: 12.5, lineHeight: 1.45, color: '#8a8078', textAlign: 'center' },
   overBtn: { flex: 1, padding: '15px 16px', fontWeight: 900, fontSize: 16, color: '#fff', background: ACCENT, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
-  controls: { display: 'flex', gap: 14, padding: '14px 18px calc(14px + env(safe-area-inset-bottom))' },
-  ctrlBtn: { flex: 1, height: 84, fontSize: 38, fontWeight: 900, color: '#fff', background: ACCENT, border: 'none', borderRadius: 20, boxShadow: '4px 4px 0 #1a1208', cursor: 'pointer', touchAction: 'none', userSelect: 'none' },
+  controls: { display: 'flex', gap: 12, padding: '14px 18px calc(14px + env(safe-area-inset-bottom))' },
+  ctrlBtn: { flex: 1, height: 84, fontSize: 38, fontWeight: 900, color: '#fff', background: '#b9a06a', border: 'none', borderRadius: 20, boxShadow: '4px 4px 0 #1a1208', cursor: 'pointer', touchAction: 'none', userSelect: 'none' },
+  commitBtn: { flex: 1.5, height: 84, fontSize: 40, fontWeight: 900, color: '#fff', background: '#2e9e5b', border: 'none', borderRadius: 20, boxShadow: '4px 4px 0 #1a1208', cursor: 'pointer', touchAction: 'none', userSelect: 'none' },
 };

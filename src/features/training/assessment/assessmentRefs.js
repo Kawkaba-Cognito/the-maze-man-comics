@@ -13,8 +13,8 @@ export const DOMAIN_SCIENCE = {
       cites: ['Mesulam (1985)', 'Castellanos et al. (2005)', 'Bellgrove et al. (2004)'],
     },
     speed: {
-      measures: 'Processing speed via a Digit-Symbol Substitution paradigm — one of the most age-sensitive cognitive measures.',
-      cites: ['Salthouse (1996)', 'Wechsler DSST', 'Deary et al. (2010)'],
+      measures: 'Processing speed via a Symbol-Digit Modalities paradigm (SDMT) — one of the most sensitive and age-sensitive cognitive measures.',
+      cites: ['Smith (1982) SDMT', 'Salthouse (1996)', 'Deary et al. (2010)'],
     },
     memory: {
       measures: 'Visuospatial working memory (storage + manipulation) via Corsi block span, forward and backward.',
@@ -39,8 +39,8 @@ export const DOMAIN_SCIENCE = {
       cites: ['Mesulam (1985)', 'Castellanos et al. (2005)', 'Bellgrove et al. (2004)'],
     },
     speed: {
-      measures: 'سرعة المعالجة عبر نموذج استبدال الرمز بالرقم (DSST) — من أكثر المقاييس حساسية للعمر.',
-      cites: ['Salthouse (1996)', 'Wechsler DSST', 'Deary et al. (2010)'],
+      measures: 'سرعة المعالجة عبر نموذج رموز–أرقام (SDMT) — من أكثر المقاييس حساسية وحساسية للعمر.',
+      cites: ['Smith (1982) SDMT', 'Salthouse (1996)', 'Deary et al. (2010)'],
     },
     memory: {
       measures: 'الذاكرة العاملة البصرية المكانية (تخزين + معالجة) عبر مدى كورسي، أماماً وعكساً.',
@@ -71,6 +71,7 @@ export const REFERENCES = [
   'Townsend JT & Ashby FG (1983). Stochastic modeling of elementary psychological processes (IES).',
   'Kessels RPC et al. (2000). The Corsi Block-Tapping Task: standardization and normative data. Appl Neuropsychol.',
   'Monaco M et al. (2013). Forward and backward span for verbal and visuo-spatial data. Neurol Sci.',
+  'Smith A (1982). Symbol Digit Modalities Test (SDMT): Manual. Western Psychological Services.',
   'Jaeger J (2018). Digit Symbol Substitution Test: the case for sensitivity over specificity. J Clin Psychopharmacol.',
   'Lu CH & Proctor RW (1995). The influence of irrelevant location information on performance (Simon effect). Psychon Bull Rev.',
   'Monsell S (2003). Task switching. Trends Cogn Sci.',

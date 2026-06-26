@@ -122,6 +122,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
   const ppTrains = mode === 'passplay' ? (attempt?.trials || PP_TRAINS) : 0;
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
+  const boardRef = useRef(null);
   const rafRef = useRef(0);
   const gRef = useRef(null);
   const finishedRef = useRef(false);
@@ -173,10 +174,16 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     };
 
     const layout = () => {
-      const pad = 16;
-      g.cell = Math.min((g.W - 2 * pad) / g.C, (g.H - 2 * pad) / g.R);
-      const ox = (g.W - g.cell * g.C) / 2, oy = (g.H - g.cell * g.R) / 2;
-      for (const n of g.all) { n.x = ox + (n.c + 0.5) * g.cell; n.y = oy + (n.r + 0.5) * g.cell; }
+      // Stretch the grid to fill the WHOLE board: cell spacing is computed per
+      // axis (cellW × cellH) so the field always uses every pixel. Drawn elements
+      // (roads, bays, junctions, cars) are sized off g.cell = min(cellW, cellH)
+      // so they stay proportional / undistorted even when the grid is stretched.
+      const pad = Math.max(6, Math.round(Math.min(g.W, g.H) * 0.025));
+      g.cellW = (g.W - 2 * pad) / g.C;
+      g.cellH = (g.H - 2 * pad) / g.R;
+      g.cell = Math.min(g.cellW, g.cellH);
+      const ox = (g.W - g.cellW * g.C) / 2, oy = (g.H - g.cellH * g.R) / 2;
+      for (const n of g.all) { n.x = ox + (n.c + 0.5) * g.cellW; n.y = oy + (n.r + 0.5) * g.cellH; }
     };
 
     const randColor = () => g.stations[Math.floor(rng() * g.stations.length)].colorHex;
@@ -196,11 +203,17 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     finishedRef.current = false;
     setMsg(isAr ? 'اضغط المفترق ◯ قبل وصول السيارة · اركن كل لون في موقفه' : 'Tap ◯ junctions before cars arrive · park each colour in its spot');
 
+    // The board fills the ENTIRE play area (minus a thin margin so the frame
+    // breathes). The grid stretches to fit via per-axis cell spacing in layout().
     const resize = () => {
       const r = wrapRef.current.getBoundingClientRect();
-      g.W = r.width; g.H = r.height;
-      canvas.width = Math.round(r.width * g.dpr); canvas.height = Math.round(r.height * g.dpr);
-      canvas.style.width = r.width + 'px'; canvas.style.height = r.height + 'px';
+      const margin = 12; // 6px play padding each side
+      const W = Math.max(140, Math.floor(r.width - margin));
+      const H = Math.max(140, Math.floor(r.height - margin));
+      g.W = W; g.H = H;
+      if (boardRef.current) { boardRef.current.style.width = W + 'px'; boardRef.current.style.height = H + 'px'; }
+      canvas.width = Math.round(W * g.dpr); canvas.height = Math.round(H * g.dpr);
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
       ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
       layout();
     };
@@ -385,8 +398,10 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
       </header>
 
       <div ref={wrapRef} style={S.play}>
-        <canvas ref={canvasRef} onPointerDown={(e) => { e.preventDefault(); tapAt(e.clientX, e.clientY); }} style={{ display: 'block', touchAction: 'none' }} />
         {msg && !over && <div style={S.msg}>{msg}</div>}
+        <div ref={boardRef} style={S.board}>
+          <canvas ref={canvasRef} onPointerDown={(e) => { e.preventDefault(); tapAt(e.clientX, e.clientY); }} style={{ display: 'block', touchAction: 'none' }} />
+        </div>
         {over && (
           <div style={S.overWrap}>
             <div style={S.overCard}>
@@ -432,8 +447,9 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
 
 const styles = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
-  play: { position: 'relative', flex: 1, overflow: 'hidden' },
-  msg: { position: 'absolute', top: 10, left: 0, right: 0, textAlign: 'center', fontWeight: 700, color: '#7a5a1e', pointerEvents: 'none', padding: '0 16px' },
+  play: { position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 6, boxSizing: 'border-box' },
+  board: { position: 'relative', flex: '0 0 auto', borderRadius: 20, background: 'linear-gradient(160deg, #fffdf8 0%, #f4ecdf 100%)', boxShadow: '0 12px 34px rgba(45, 40, 30, 0.16), inset 0 0 0 1px rgba(58, 51, 40, 0.08)', overflow: 'hidden' },
+  msg: { position: 'absolute', top: 8, left: 0, right: 0, zIndex: 2, textAlign: 'center', fontWeight: 700, fontSize: 13, color: '#7a5a1e', pointerEvents: 'none', padding: '0 16px' },
   overWrap: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(45,45,45,0.45)' },
   overCard: { background: '#fffdf8', borderRadius: 20, padding: '22px 26px', textAlign: 'center', boxShadow: '6px 6px 0 #1a1208', border: '2px solid #cdbfa6' },
   overTitle: { fontWeight: 900, fontSize: 24, color: '#2d2d2d' },

@@ -11,14 +11,12 @@ import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '.
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import PassPlaySetup from '../../../../shared/PassPlaySetup';
-import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
-import { SURVIVAL_MS, survivalRampFromRemaining, freshSurvivalSeed } from '../../../../shared/survival';
+import { freshSurvivalSeed } from '../../../../shared/survival';
 import { makeRng } from '../../../../shared/rng';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
 import { createTrialLog } from '../../../../shared/trialLog';
-import { createStaircase } from '../../../../shared/staircase';
 import { loadGameSettings } from '../../../../shared/focusQuestData';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
 import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
@@ -27,7 +25,6 @@ import {
   SM_DIFF_KEYS,
   SM_DM,
   SM_LEVELS_PER_TIER,
-  SM_FREE_LIVES,
   specForLevel,
   buildLegend,
   pickItem,
@@ -38,9 +35,10 @@ import {
   prepareChallengeSeed,
   prepareChallengeBlock,
   freeLegendSize,
-  freeItemMs,
   freeItemPoints,
   mulberry32,
+  TIME_BANK,
+  bankGainMs,
 } from './speedMatchData';
 
 const PROFILE_KEY = 'mm_speedmatch_v1';
@@ -70,19 +68,19 @@ const UI = {
     levelMode: 'Level mode',
     challengeMode: 'Pass n Play',
     hubMapAria: 'Modes — choose a path',
-    hubNodeFreeHint: 'Endless · 3 lives · speeds up',
+    hubNodeFreeHint: 'Endless · time bank · gets faster',
     hubNodeLevelsHint: '100 levels per tier · unlock in order',
     hubNodeChallengeHint: 'Same key for all · pick a difficulty',
     freeIntroTitle: 'Survival mode',
     freeIntroBody:
-      'Match the symbol to its number as fast as you can. The key grows and the clock per symbol shrinks as you go. You have 3 lives — a wrong tap or running out of time on a symbol costs one. The run ends only when your lives reach zero.',
+      'Match the symbol to its number. You have one time bank that keeps ticking down — every correct match adds time, a wrong tap subtracts it. As you go, the key grows and each correct match returns less time, so you must get faster to stay alive. The run ends when the time bank empties.',
     freeIntroReady: 'Ready',
     pickDiff: 'Choose difficulty',
     pickDiffSub: 'Each tier has 100 levels. Unlock them in order.',
     diffDesc: {
       easy: 'Few symbols, gentle pace — learn the matching.',
       medium: 'More symbols, brisker — build speed.',
-      hard: 'Up to 9 symbols, fast, and the key remaps.',
+      hard: 'Up to 9 symbols (the full key), fast and demanding.',
     },
     chalPickDiff: 'Difficulty',
     levelsSub: (pop) => `${pop} · ${SM_LEVELS_PER_TIER} levels`,
@@ -129,6 +127,10 @@ const UI = {
     ipm: 'Matches / min',
     accuracy: 'Accuracy',
     meanRt: 'Avg match time',
+    rtVar: 'RT variability',
+    ies: 'Efficiency',
+    iesHint: 'IES · lower is better',
+    metricsNote: 'Matches/min is your processing-speed score. RT variability tracks how steady you are; efficiency (IES) blends speed and accuracy.',
     ms: 'ms',
     nextLv: 'Next level',
     retry: 'Retry',
@@ -163,19 +165,19 @@ const UI = {
     levelMode: 'وضع المستويات',
     challengeMode: 'مرّر والعب',
     hubMapAria: 'الأوضاع — اختر مسارًا',
-    hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · يتسارع',
+    hubNodeFreeHint: 'لا ينتهي · بنك وقت · يتسارع',
     hubNodeLevelsHint: '١٠٠ مستوى لكل صعوبة · بالترتيب',
     hubNodeChallengeHint: 'نفس المفتاح للجميع · اختر الصعوبة',
     freeIntroTitle: 'وضع البقاء',
     freeIntroBody:
-      'طابق الرمز مع رقمه بأسرع ما يمكن. يكبر المفتاح ويقصر وقت كل رمز كلما تقدمت. لديك ٣ أرواح — النقر الخاطئ أو نفاد وقت الرمز يكلّفك روحاً. تنتهي المحاولة فقط عند نفاد الأرواح.',
+      'طابق الرمز مع رقمه. لديك بنك وقت واحد يتناقص باستمرار — كل مطابقة صحيحة تضيف وقتاً والنقر الخاطئ يخصم منه. كلما تقدمت يكبر المفتاح وتعيد كل مطابقة وقتاً أقل، فعليك أن تتسارع لتبقى. تنتهي المحاولة عند نفاد بنك الوقت.',
     freeIntroReady: 'جاهز',
     pickDiff: 'اختر الصعوبة',
     pickDiffSub: 'كل صعوبة تحتوي ١٠٠ مستوى. افتحها بالترتيب.',
     diffDesc: {
       easy: 'رموز قليلة وإيقاع هادئ — تعلّم المطابقة.',
       medium: 'رموز أكثر وأسرع — ابنِ سرعتك.',
-      hard: 'حتى ٩ رموز وسريع والمفتاح يتغيّر.',
+      hard: 'حتى ٩ رموز (المفتاح الكامل)، سريع ومُجهِد.',
     },
     chalPickDiff: 'الصعوبة',
     levelsSub: (pop) => `${pop} · ${SM_LEVELS_PER_TIER} مستوى`,
@@ -222,6 +224,10 @@ const UI = {
     ipm: 'مطابقات / دقيقة',
     accuracy: 'الدقة',
     meanRt: 'متوسط زمن المطابقة',
+    rtVar: 'تغيّر زمن الاستجابة',
+    ies: 'الكفاءة',
+    iesHint: 'IES · الأقل أفضل',
+    metricsNote: 'المطابقات/دقيقة هي درجة سرعة معالجتك. تغيّر زمن الاستجابة يقيس ثباتك؛ والكفاءة (IES) تمزج السرعة والدقة.',
     ms: 'ملث',
     nextLv: 'المستوى التالي',
     retry: 'إعادة',
@@ -250,13 +256,14 @@ const UI = {
 };
 
 /** Crisp SVG glyph from the shared SH set. */
-function SmSymbol({ shape, size = 48, color = '#2d2d2d' }) {
+function SmSymbol({ shape, size = 48, color = '#2d2d2d', className }) {
   const inner = SH[shape] || SH.circle;
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 100 100"
+      className={className}
       style={{ color, display: 'block' }}
       dangerouslySetInnerHTML={{ __html: inner }}
     />
@@ -322,7 +329,6 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [correct, setCorrect] = useState(0);
-  const [lives, setLives] = useState(SM_FREE_LIVES);
   const [, setTick] = useState(0);
 
   // Challenge / pass-n-play
@@ -343,25 +349,24 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
 
   const blockRef = useRef(null);
   const rngRef = useRef(Math.random);
-  const survivalRemainingRef = useRef(SURVIVAL_MS);
   const eventsRef = useRef([]);
   const correctRef = useRef(0);
   const wrongRef = useRef(0);
   const comboRef = useRef(0);
   const scoreRef = useRef(0);
-  const livesRef = useRef(SM_FREE_LIVES);
   const lastDigitRef = useRef(0);
   const itemRef = useRef(null);
   const answeredRef = useRef(false);
-  const blockEndAtRef = useRef(0);
+  const blockEndAtRef = useRef(0); // assessment only (fixed-window SDMT)
   const itemStartRef = useRef(0);
-  const itemEndAtRef = useRef(Infinity);
-  const itemMsRef = useRef(2600);
+  // Adaptive time bank (training modes): bankRef ms remaining, capped at bankMax.
+  const bankRef = useRef(TIME_BANK.startMs);
+  const bankMaxRef = useRef(TIME_BANK.maxMs);
+  const runStartRef = useRef(0); // when 'running' began (for elapsed/throughput)
   const rafRef = useRef(0);
   const runIdRef = useRef(0);
   const endedRef = useRef(false);
   const trialLogRef = useRef(null);
-  const staircaseRef = useRef(null);
   const assessMotorRef = useRef(null);
   const beginMotorBlockRef = useRef(() => {});
   const beginMainAssessRef = useRef(() => {});
@@ -414,24 +419,14 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
   const nextItem = useCallback((now) => {
     const block = blockRef.current;
     if (!block) return;
+    // Survival grows the key as you progress (more symbols = harder scan); the
+    // adaptive time bank supplies the speed pressure. No per-item deadline.
     if (block.mode === 'free') {
-      // Staircase level → the same ramp curves, via virtual progress (×2 so
-      // perfect play climbs at the old pace; failures now ease difficulty).
-      const v = (staircaseRef.current?.level ?? 0) * 2;
-      const size = freeLegendSize(v);
+      const size = freeLegendSize(correctRef.current);
       if (block.legend.length !== size) {
         block.legend = buildLegend(size);
         setLegend(block.legend);
       }
-      itemMsRef.current = Math.max(850, freeItemMs(v) * (1 - survivalRampFromRemaining(survivalRemainingRef.current ?? SURVIVAL_MS) * 0.32));
-      itemEndAtRef.current = now + itemMsRef.current;
-    } else {
-      const remap = block.spec.remapEvery;
-      if (remap > 0 && correctRef.current > 0 && correctRef.current % remap === 0) {
-        block.legend = buildLegend(block.spec.pairCount, rngRef.current);
-        setLegend(block.legend);
-      }
-      itemEndAtRef.current = Infinity;
     }
     const it = pickItem(block.legend, rngRef.current, lastDigitRef.current);
     lastDigitRef.current = it?.digit ?? 0;
@@ -456,7 +451,12 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     stopLoop();
     const block = blockRef.current;
     if (!block) { endedRef.current = false; return; }
-    const summary = summarize(eventsRef.current, block.spec.durationSec);
+    // Assessment uses its fixed window; training is self-paced under the time
+    // bank, so throughput is measured over the actual elapsed play time.
+    const elapsedSec = block.assessStage
+      ? block.spec.durationSec
+      : Math.max(1, (performance.now() - runStartRef.current) / 1000);
+    const summary = summarize(eventsRef.current, elapsedSec);
     const grade = gradeBlock(summary, block.spec, { freeMode: false });
 
     if (assessmentMode) {
@@ -478,7 +478,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
       }
       // Main 90s block: score the cognitive component. The motor ratio
       // (substitution rate / pure tapping rate) isolates lookup speed from
-      // finger speed — the reason clinical DSST runs a copy condition.
+      // finger speed — the reason clinical SDMT/DSST use a copy/baseline condition.
       const motorIpm = assessMotorRef.current?.itemsPerMin || null;
       const ratio = motorIpm ? Math.min(1, summary.itemsPerMin / motorIpm) : null;
       const speed = Math.min(1, summary.itemsPerMin / 46);
@@ -562,6 +562,10 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     playSfx('error');
     const runScore = scoreRef.current;
     const c = correctRef.current;
+    // Summarize the whole run over actual elapsed play time (research-grade
+    // metrics: matches/min, accuracy, RT variability, IES).
+    const elapsedSec = Math.max(1, (performance.now() - runStartRef.current) / 1000);
+    const summary = summarize(eventsRef.current, elapsedSec);
     setProfile((prev) => {
       let next = { ...prev };
       let changed = false;
@@ -573,7 +577,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     trialLogRef.current?.finish({ correct: c, score: runScore, level: Math.floor(c / 5) });
     trialLogRef.current = null;
     awardFreeRun('speed', Math.floor(c / 5));
-    setLastResult({ type: 'free', score: runScore, correct: c });
+    setLastResult({ type: 'free', score: runScore, correct: c, summary });
     setPhase('freeRes');
     setPlayStep('idle');
     blockRef.current = null;
@@ -588,31 +592,25 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
       if (pauseRef.current) { rafRef.current = requestAnimationFrame(loop); last = ts; return; }
       const block = blockRef.current;
       if (!block) return;
+      const dt = ts - last;
       last = ts;
-      if (block.mode === 'free') {
-        if (ts >= itemEndAtRef.current) {
-          // Item timed out → miss → lose a life.
-          eventsRef.current.push({ correct: false, rtMs: null });
-          trialLogRef.current?.trial({ ok: false, timeout: true, key: block.legend.length });
-          staircaseRef.current?.failure();
-          wrongRef.current += 1;
-          comboRef.current = 0;
-          setCombo(0);
-          flash('miss');
-          livesRef.current = Math.max(0, livesRef.current - 1);
-          setLives(livesRef.current);
-          if (livesRef.current <= 0) { finishFreeRun(); return; }
-          nextItemRef.current(ts);
+      if (block.assessStage) {
+        // Standardized assessment: fixed-window SDMT.
+        if (ts >= blockEndAtRef.current) { finishBlockRef.current(); return; }
+      } else {
+        // Training: the adaptive time bank drains in real time; empty = run over.
+        bankRef.current -= dt;
+        if (bankRef.current <= 0) {
+          bankRef.current = 0;
+          if (block.mode === 'free') finishFreeRun(); else finishBlockRef.current();
+          return;
         }
-      } else if (ts >= blockEndAtRef.current) {
-        finishBlockRef.current();
-        return;
       }
       setTick((n) => (n + 1) % 1000000);
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
-  }, [stopLoop, flash, finishFreeRun]);
+  }, [stopLoop, finishFreeRun]);
 
   const answer = useCallback((digit) => {
     if (playStepRef.current !== 'running' || pauseRef.current) return;
@@ -629,15 +627,17 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     trialLogRef.current?.trial({ rt, ok: isRight, key: block.legend.length });
     setPressedKey(digit);
     setTimeout(() => setPressedKey(null), 120);
+    const bankMode = !block.assessStage; // free / level / challenge use the time bank
     if (isRight) {
       playSfx('click');
-      juice.hit({ rtMs: rt, limitMs: block.mode === 'free' ? itemMsRef.current : 1600 });
+      juice.hit({ rtMs: rt, limitMs: 1600 });
       correctRef.current += 1;
       comboRef.current += 1;
       setCorrect(correctRef.current);
       setCombo(comboRef.current);
-      if (block.mode === 'free') {
-        staircaseRef.current?.success();
+      if (bankMode) {
+        // Reward time (less as the key grows) + score points.
+        bankRef.current = Math.min(bankMaxRef.current, bankRef.current + bankGainMs(block.legend.length));
         scoreRef.current += freeItemPoints(comboRef.current);
         setScore(scoreRef.current);
       }
@@ -645,6 +645,12 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
       if (block.assessStage === 'practice' && correctRef.current >= 4) {
         playSfx('win');
         beginMotorBlockRef.current();
+        return;
+      }
+      // Levels clear by reaching the target (before the bank empties).
+      if (bankMode && block.mode === 'level' && correctRef.current >= block.spec.targetCorrect) {
+        flash('hit');
+        finishBlock();
         return;
       }
       flash('hit');
@@ -656,15 +662,18 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
       comboRef.current = 0;
       setCombo(0);
       flash('miss');
-      if (block.mode === 'free') {
-        staircaseRef.current?.failure();
-        livesRef.current = Math.max(0, livesRef.current - 1);
-        setLives(livesRef.current);
-        if (livesRef.current <= 0) { finishFreeRun(); return; }
+      if (bankMode) {
+        // A wrong match costs time; if it empties the bank, the run is over.
+        bankRef.current -= TIME_BANK.penaltyMs;
+        if (bankRef.current <= 0) {
+          bankRef.current = 0;
+          if (block.mode === 'free') finishFreeRun(); else finishBlock();
+          return;
+        }
       }
       nextItemRef.current(now);
     }
-  }, [playSfx, flash, finishFreeRun, juice]);
+  }, [playSfx, flash, finishFreeRun, finishBlock, juice]);
 
   // Countdown → running.
   useEffect(() => {
@@ -672,8 +681,11 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     if (cdVal <= 0) {
       const now = performance.now();
       const block = blockRef.current;
-      if (block && block.mode !== 'free') {
+      runStartRef.current = now;
+      if (block && block.assessStage) {
         blockEndAtRef.current = now + block.spec.durationSec * 1000;
+      } else if (block) {
+        bankRef.current = TIME_BANK.startMs; // fresh adaptive time bank
       }
       setPlayStep('running');
       playStepRef.current = 'running';
@@ -722,9 +734,6 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
   }, [stopLoop, assessmentMode]);
 
   const startFreeMode = useCallback(() => {
-    livesRef.current = SM_FREE_LIVES;
-    setLives(SM_FREE_LIVES);
-    staircaseRef.current = createStaircase({ nDown: 2 });
     const block = { mode: 'free', diff: 'free', lv: 0, spec: { durationSec: 0, remapEvery: 0, pairCount: 4 }, legend: buildLegend(4) };
     beginBlock(block, makeRng(freshSurvivalSeed()));
   }, [beginBlock]);
@@ -733,8 +742,8 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     beginBlock(prepareLevelBlock(diff, lv), Math.random);
   }, [beginBlock]);
 
-  /* --- Standardized assessment: practice → motor baseline → 90s DSST ------
-   * Follows the clinical DSST protocol: a short unscored practice (first-
+  /* --- Standardized assessment: practice → motor baseline → 90s SDMT ------
+   * Follows the clinical SDMT protocol: a short unscored practice (first-
    * exposure noise), a copy-only motor block (tap the digit you SEE — no
    * symbol lookup) so pure finger speed can be separated out, then the
    * fixed 90-second substitution block that is actually scored. */
@@ -785,22 +794,20 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
 
   const onPause = () => {
     if (playStepRef.current !== 'running') return;
-    // Halt the loop synchronously BEFORE rewriting deadlines, so a stray frame
-    // can't read a "remaining" value as an absolute time and misfire.
+    // Halt the loop first. The time bank pauses naturally (the loop stops
+    // draining it); only the assessment's fixed window needs its deadline saved.
     pauseRef.current = true;
     const now = performance.now();
-    if (blockRef.current) blockRef.current.__blockRem = blockEndAtRef.current - now;
-    itemEndAtRef.current = itemEndAtRef.current === Infinity ? Infinity : itemEndAtRef.current - now;
+    if (blockRef.current?.assessStage) blockRef.current.__blockRem = blockEndAtRef.current - now;
     setPauseOpen(true);
   };
   const onResume = () => {
     const now = performance.now();
-    if (blockRef.current && blockRef.current.__blockRem != null) {
+    if (blockRef.current?.assessStage && blockRef.current.__blockRem != null) {
       blockEndAtRef.current = now + blockRef.current.__blockRem;
       blockRef.current.__blockRem = null;
     }
-    itemEndAtRef.current = itemEndAtRef.current === Infinity ? Infinity : now + itemEndAtRef.current;
-    itemStartRef.current = now;
+    itemStartRef.current = now; // don't count paused time against this item's RT
     pauseRef.current = false;
     setPauseOpen(false);
   };
@@ -818,15 +825,14 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
   };
 
   const block = blockRef.current;
-  const survivalRemaining = useSurvivalCountdown(phase === 'play' && block?.mode === 'free', finishFreeRun);
-  survivalRemainingRef.current = survivalRemaining;
+  const isAssess = !!block?.assessStage;
   const now = performance.now();
-  const blockTimeLeft = block && block.mode !== 'free' && playStep === 'running'
+  // Assessment: fixed-window countdown. Training: the adaptive time bank.
+  const blockTimeLeft = isAssess && playStep === 'running'
     ? Math.max(0, Math.ceil((blockEndAtRef.current - now) / 1000))
-    : block && block.mode !== 'free' ? block.spec.durationSec : 0;
-  const itemPct = block?.mode === 'free' && playStep === 'running' && itemEndAtRef.current !== Infinity
-    ? Math.max(0, Math.min(1, (itemEndAtRef.current - now) / (itemMsRef.current || 1)))
-    : 1;
+    : isAssess ? block.spec.durationSec : 0;
+  const bankSec = block && !isAssess ? Math.max(0, bankRef.current / 1000) : 0;
+  const bankPct = block && !isAssess ? Math.max(0, Math.min(1, bankRef.current / (bankMaxRef.current || 1))) : 0;
 
   const header = (() => {
     if (!block) return { title: t.title, subtitle: '' };
@@ -977,7 +983,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
           kicker={t.chalTurnKicker}
           playerName={chalNames[chalIdx]}
           roundLine={chalRoundsTotal > 1 ? t.roundNofM(chalRoundIdx + 1, chalRoundsTotal) : null}
-          metaLine={t.chalMeta(SM_DM[chalDiff]?.label ?? '', chalSeed?.spec?.durationSec ?? 45)}
+          metaLine={`${SM_DM[chalDiff]?.label ?? ''} · ${chalSeed?.spec?.pairCount ?? 6} ${isAr ? 'رموز' : 'symbols'}`}
           instruction={t.handTo(chalNames[chalIdx])}
           bullets={[t.chalBulletSame, t.chalBulletPass]}
           startLabel={t.goReady}
@@ -997,7 +1003,6 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
             onPause={onPause}
             pauseAriaLabel={t.paused}
           />
-          {block.mode === 'free' && <SurvivalCountdownBar remaining={survivalRemaining} color="#64b5c2" />}
           <div className={`ct-sm-stage ct-juice-host${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}${juice.shake ? ' ct-juice-shake' : ''}`}>
             <JuiceLayer
               combo={juice.combo}
@@ -1016,26 +1021,25 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
             )}
 
             <div className="ct-sm-hud" data-fq-chrome>
-              {block.mode === 'free' ? (
+              {isAssess ? (
                 <>
-                  <span className="ct-sm-hud-stat ct-fq-lives" aria-label={`${lives} lives`}>
-                    {'♥'.repeat(Math.max(0, lives))}<span className="ct-fq-lives-spent">{'♥'.repeat(Math.max(0, SM_FREE_LIVES - lives))}</span>
-                  </span>
-                  <span className="ct-sm-hud-stat">{t.score} {score}</span>
-                  <span className="ct-sm-hud-stat">{t.combo} ×{combo}</span>
+                  <span className="ct-sm-hud-stat ct-sm-hud-time">{blockTimeLeft}s</span>
+                  <span className="ct-sm-hud-stat">{t.correct} {correct}</span>
+                  <span className="ct-sm-hud-stat">×{combo}</span>
                 </>
               ) : (
                 <>
-                  <span className="ct-sm-hud-stat ct-sm-hud-time">{blockTimeLeft}s</span>
-                  <span className="ct-sm-hud-stat">{t.correct} {correct}{block.assessStage ? '' : `/${block.spec.targetCorrect}`}</span>
-                  <span className="ct-sm-hud-stat">×{combo}</span>
+                  <span className="ct-sm-hud-stat ct-sm-hud-time">{bankSec.toFixed(1)}s</span>
+                  <span className="ct-sm-hud-stat">{t.correct} {correct}{block.mode === 'level' ? `/${block.spec.targetCorrect}` : ''}</span>
+                  <span className="ct-sm-hud-stat">{t.combo} ×{combo}</span>
+                  {block.mode === 'free' && <span className="ct-sm-hud-stat">{t.score} {score}</span>}
                 </>
               )}
             </div>
 
-            {block.mode === 'free' && (
+            {!isAssess && (
               <div className="ct-sm-itembar" data-fq-chrome aria-hidden="true">
-                <div className="ct-sm-itembar-fill" style={{ width: `${itemPct * 100}%`, background: itemPct > 0.4 ? 'linear-gradient(90deg,#6b9e7a,#7ab87a)' : 'linear-gradient(90deg,#e8a07a,#c97a7a)' }} />
+                <div className="ct-sm-itembar-fill" style={{ width: `${bankPct * 100}%`, background: bankPct > 0.4 ? 'linear-gradient(90deg,#6b9e7a,#7ab87a)' : 'linear-gradient(90deg,#e8a07a,#c97a7a)' }} />
               </div>
             )}
 
@@ -1045,10 +1049,9 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
               ) : item ? (
                 block.assessStage === 'motor'
                   ? <div className="ct-sm-countdown">{item.digit}</div>
-                  : <SmSymbol shape={item.symbol} size={92} />
+                  : <SmSymbol shape={item.symbol} className="ct-sm-symbol" />
               ) : null}
             </div>
-            <p className="ct-sm-prompt">{t.tapNumber}</p>
 
             <div className="ct-sm-pad" role="group" aria-label={t.tapNumber}>
               {legend.map((p) => (
@@ -1108,8 +1111,11 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
             <div className="ct-fq-rm ct-fq-rm-training ct-fq-assess-grid">
               <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.itemsPerMin}</div><div className="ct-fq-rl">{t.ipm}</div></div>
               <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.accuracyPct}%</div><div className="ct-fq-rl">{t.accuracy}</div></div>
-              <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.meanRt != null ? lastResult.summary.meanRt : '—'}</div><div className="ct-fq-rl">{t.meanRt}</div></div>
+              <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.meanRt != null ? `${lastResult.summary.meanRt}${t.ms}` : '—'}</div><div className="ct-fq-rl">{t.meanRt}</div></div>
+              <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.icv != null ? `${Math.round(lastResult.summary.icv * 100)}%` : '—'}</div><div className="ct-fq-rl">{t.rtVar}</div></div>
+              <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.ies != null ? lastResult.summary.ies : '—'}</div><div className="ct-fq-rl">{t.ies}<span className="ct-sm-rl-hint"> · {t.iesHint}</span></div></div>
             </div>
+            <p className="ct-sm-metrics-note">{t.metricsNote}</p>
             <div className="ct-fq-row">
               {lastResult.grade.won && lastResult.block.lv < SM_LEVELS_PER_TIER && (
                 <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); setLastResult(null); startLevel(lastResult.block.diff, lastResult.block.lv + 1); }}>{t.nextLv}</button>
@@ -1133,7 +1139,15 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
             <div className="ct-fq-sbig">{lastResult.score ?? 0}</div>
             <div className="ct-fq-ies-lbl">{t.score}</div>
             <div className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 10, fontWeight: 700 }}>{t.freeCorrect(lastResult.correct)}</div>
-            <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 6 }}>{t.freeBest(profile.bestFree ?? 0)}</p>
+            {lastResult.summary && (
+              <div className="ct-fq-rm ct-fq-rm-training ct-fq-assess-grid" style={{ marginTop: 12 }}>
+                <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.itemsPerMin}</div><div className="ct-fq-rl">{t.ipm}</div></div>
+                <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.accuracyPct}%</div><div className="ct-fq-rl">{t.accuracy}</div></div>
+                <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.meanRt != null ? `${lastResult.summary.meanRt}${t.ms}` : '—'}</div><div className="ct-fq-rl">{t.meanRt}</div></div>
+                <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.icv != null ? `${Math.round(lastResult.summary.icv * 100)}%` : '—'}</div><div className="ct-fq-rl">{t.rtVar}</div></div>
+              </div>
+            )}
+            <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 10 }}>{t.freeBest(profile.bestFree ?? 0)}</p>
             <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); setLastResult(null); startFreeMode(); }}>{t.freePlayAgain}</button>
             <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { setLastResult(null); clearPlay(); setPhase('hub'); }}>{t.menu}</button>
           </div>

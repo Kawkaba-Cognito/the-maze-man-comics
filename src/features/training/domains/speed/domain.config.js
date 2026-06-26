@@ -9,7 +9,7 @@ const speed = {
   color: tokens.domain.speed,
   desc: 'Improve processing speed and accurate decisions under time pressure.',
   descAr: 'حسّن سرعة المعالجة واتخاذ القرار الدقيق تحت ضغط الوقت.',
-  about: 'Processing speed is the engine of thought. Speed Match uses the Digit-Symbol paradigm (the classic clinical measure of processing speed): match symbols to numbers as fast as you can.',
+  about: 'Processing speed is the engine of thought. Speed Match uses the Symbol-Digit paradigm (SDMT — the most sensitive clinical measure of processing speed): match symbols to numbers as fast as you can.',
   subs: [
     {
       id: 'speed-match',

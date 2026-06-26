@@ -37,11 +37,12 @@ import {
 } from '../../../../shared/focusQuestData';
 import {
   TrainingMenuBar,
-  TrainingPlayHeader,
+  TrainingChromeBtn,
   TrainingPauseModal,
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
+import { IconBack, IconPause } from '../../../../shared/TrainingIcons';
 import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
@@ -196,7 +197,12 @@ const FqGridCell = React.memo(function FqGridCell({ cell, idx, size, running, on
   );
 });
 
-/** Top stats + timer bars only; own rAF tick so the shape grid is not repainted every frame. */
+/**
+ * Single consolidated play bar: back · target chip · live stats · pause, then
+ * one slim time bar. Replaces the old stacked header + stats row + cue band +
+ * two progress bars so the grid (the real task) gets the vertical space.
+ * Owns its own rAF tick so the shape grid is not repainted every frame.
+ */
 function CtLiveHud({
   t,
   playStep,
@@ -214,6 +220,13 @@ function CtLiveHud({
   lvlLabel,
   freeScore,
   freeLives,
+  targetShape,
+  targetColor,
+  onMenu,
+  onPause,
+  menuAriaLabel,
+  pauseAriaLabel,
+  playSfx,
 }) {
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -243,51 +256,76 @@ function CtLiveHud({
       ? 1
       : Math.max(0, Math.min(1, tlRef.current / denom));
 
-  const pctFound = tc > 0 ? Math.max(0, Math.min(1, found / tc)) : 0;
-
   return (
     <>
-      <div className="ct-fq-g-top" data-fq-chrome>
-        <div className="ct-fq-gs">
-          <div className={`ct-fq-gv ${liveAnim && tlRef.current <= 10 ? 'tv' : ''}`}>
-            {`${Number(displaySeconds).toFixed(1)}s`}
-          </div>
-          <div className="ct-fq-gl">{t.time}</div>
+      <div className="ct-fq-bar" data-fq-chrome>
+        <TrainingChromeBtn
+          ariaLabel={menuAriaLabel}
+          onClick={() => {
+            playSfx('click');
+            onMenu();
+          }}
+        >
+          <IconBack size={18} c="#141210" />
+        </TrainingChromeBtn>
+        <div className="ct-fq-bar-chip" aria-hidden="true">
+          <ShapeSvg shape={targetShape} color={targetColor} size={30} />
         </div>
-        <div className="ct-fq-gs">
-          <div className="ct-fq-gv">
-            {found}/{tc}
-          </div>
-          <div className="ct-fq-gl">{t.found}</div>
-        </div>
-        {!hideErrors && (
+        <div className="ct-fq-bar-stats">
           <div className="ct-fq-gs">
-            <div className="ct-fq-gv ac2">
-              {errorsMax != null ? `${errors}/${errorsMax}` : errors}
+            <div className={`ct-fq-gv ${liveAnim && tlRef.current <= 10 ? 'tv' : ''}`}>
+              {`${Number(displaySeconds).toFixed(1)}s`}
             </div>
-            <div className="ct-fq-gl">{errorsLabel ?? t.err}</div>
+            <div className="ct-fq-gl">{t.time}</div>
           </div>
-        )}
-        <div className="ct-fq-gs">
-          <div className="ct-fq-gv sm">{lvlLabel}</div>
-          <div className="ct-fq-gl">{t.lvl}</div>
-        </div>
-        {freeLives != null && (
           <div className="ct-fq-gs">
-            <div className="ct-fq-gv ct-fq-lives" aria-label={`${freeLives} lives`}>
-              {'♥'.repeat(Math.max(0, freeLives))}
-              <span className="ct-fq-lives-spent">
-                {'♥'.repeat(Math.max(0, FREE_LIVES - freeLives))}
-              </span>
+            <div className="ct-fq-gv">
+              {found}/{tc}
             </div>
-            <div className="ct-fq-gl">{t.lives}</div>
+            <div className="ct-fq-gl">{t.found}</div>
           </div>
-        )}
-        {freeScore != null && (
-          <div className="ct-fq-gs">
-            <div className="ct-fq-gv">{freeScore}</div>
-            <div className="ct-fq-gl">{t.score}</div>
-          </div>
+          {!hideErrors && (
+            <div className="ct-fq-gs">
+              <div className="ct-fq-gv ac2">
+                {errorsMax != null ? `${errors}/${errorsMax}` : errors}
+              </div>
+              <div className="ct-fq-gl">{errorsLabel ?? t.err}</div>
+            </div>
+          )}
+          {lvlLabel != null && (
+            <div className="ct-fq-gs">
+              <div className="ct-fq-gv sm">{lvlLabel}</div>
+              <div className="ct-fq-gl">{t.lvl}</div>
+            </div>
+          )}
+          {freeLives != null && (
+            <div className="ct-fq-gs">
+              <div className="ct-fq-gv ct-fq-lives" aria-label={`${freeLives} lives`}>
+                {'♥'.repeat(Math.max(0, freeLives))}
+                <span className="ct-fq-lives-spent">
+                  {'♥'.repeat(Math.max(0, FREE_LIVES - freeLives))}
+                </span>
+              </div>
+              <div className="ct-fq-gl">{t.lives}</div>
+            </div>
+          )}
+          {freeScore != null && (
+            <div className="ct-fq-gs">
+              <div className="ct-fq-gv">{freeScore}</div>
+              <div className="ct-fq-gl">{t.score}</div>
+            </div>
+          )}
+        </div>
+        {onPause && (
+          <TrainingChromeBtn
+            ariaLabel={pauseAriaLabel}
+            onClick={() => {
+              playSfx('click');
+              onPause();
+            }}
+          >
+            <IconPause size={17} c="#141210" />
+          </TrainingChromeBtn>
         )}
       </div>
       <div className="ct-fq-cbw" data-fq-chrome>
@@ -303,9 +341,6 @@ function CtLiveHud({
                   : 'linear-gradient(90deg,#e8a07a,#c97a7a)',
           }}
         />
-      </div>
-      <div className="ct-fq-pbw" data-fq-chrome>
-        <div className="ct-fq-pb" style={{ width: `${pctFound * 100}%` }} />
       </div>
     </>
   );
@@ -680,6 +715,10 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   // Central fixation cue shown before each assessment grid — controls the start
   // gaze so Center-of-Cancellation, scan laterality and RT have a clean origin.
   const [fixShow, setFixShow] = useState(false);
+  // Brief "here's your target" cue card shown before a round starts (replaces the
+  // old always-on cue band). For countdown-off level/free rounds it's the only
+  // pre-round beat; countdown / fixation overlays carry the same cue otherwise.
+  const [cueShow, setCueShow] = useState(false);
   const [found, setFound] = useState(0);
   const [errors, setErrors] = useState(0);
   const [pauseOpen, setPauseOpen] = useState(false);
@@ -754,7 +793,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const juice = useJuice();
   const rLabels = ratingLabels(isAr);
   const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('cancel-task', isAr, playSfx);
-  const targetBarRef = useRef(null);
 
   useEffect(() => () => {
     if (shakeTimerRef.current) {
@@ -829,7 +867,16 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     setQuitOpen(false);
     setCdShow(false);
     setFixShow(false);
+    setCueShow(false);
   }, [stopTimer]);
+
+  /** Brief target-cue card before a round (used when there's no 3-2-1 countdown). */
+  const flashCue = useCallback(async () => {
+    setCueShow(true);
+    playSfx('click');
+    await sleep(720);
+    setCueShow(false);
+  }, [playSfx]);
 
   const beginFreeRoundAtStage = useCallback(
     async (stageIndex) => {
@@ -859,11 +906,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         pendingPenaltyRef.current = 0;
         const s = loadGameSettings();
         if (!s.countdown) {
-          // Must not set idle→running in the same sync turn: React batches to a
-          // no-op while playStep stays 'running', so the timer effect never
-          // re-runs after stopTimer() cleared runRef (frozen clock on round 2+).
+          // No 3-2-1: show a brief target cue card instead. The await also keeps
+          // idle and running in separate turns — React would otherwise batch
+          // idle→running to a no-op (frozen clock on round 2+).
           setPlayStep('idle');
-          queueMicrotask(() => setPlayStep('running'));
+          await flashCue();
+          setPlayStep('running');
           return;
         }
         setPlayStep('idle');
@@ -885,7 +933,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         roundEndedRef.current = false;
       }
     },
-    [playSfx, clearPlayRoundState],
+    [playSfx, clearPlayRoundState, flashCue],
   );
 
   const startFreeMode = useCallback(() => {
@@ -1420,6 +1468,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
 
   const runCountdownThen = async (onDone) => {
     if (!settings.countdown) {
+      await flashCue();
       onDone();
       return;
     }
@@ -1662,46 +1711,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     keep: t.keep,
   };
 
-  const playHeaderForRound = (r) => {
-    if (!r) return { title: '', subtitle: '' };
-    if (r.mode === 'free') {
-      return {
-        title: isAr ? 'وضع البقاء' : 'Survival mode',
-        subtitle: t.freeLvlLabel(DM[r.diff]?.label ?? '', r.lv),
-      };
-    }
-    if (r.mode === 'challenge') {
-      return {
-        title: isAr ? 'مرّر والعب' : 'Pass n Play',
-        subtitle:
-          chalRoundsTotal > 1
-            ? `${t.roundNofM(chalRoundIdx + 1, chalRoundsTotal)} · ${chalNames[chalIdx] ?? ''}`
-            : chalNames[chalIdx] ?? '',
-      };
-    }
-    if (r.mode === 'assess') {
-      return {
-        title: t.assessIntroTitle,
-        subtitle: t.assessTrialLabel(
-          (r.assessTrial ?? 0) + 1,
-          r.assessTrialsTotal ?? ASSESSMENT_PROTOCOL.trials,
-        ),
-      };
-    }
-    if (r.mode === 'adaptive') {
-      // Neutral header — no tier/level/grid, so the difficulty (which is being
-      // adapted to performance) isn't leaked back as feedback.
-      return {
-        title: t.adaptIntroTitle,
-        subtitle: t.adaptRoundLabel((staircaseRef.current?.trialCount ?? 0) + 1),
-      };
-    }
-    return {
-      title: `${DM[r.diff]?.label ?? ''} · L${r.lv}`,
-      subtitle: `${r.grid}×${r.grid} · ${Number(r.tlim).toFixed(0)}s`,
-    };
-  };
-
   return (
     <div
       className="cancellation-task-game ct-fq-root"
@@ -1864,16 +1873,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       {phase === 'play' && round && (
         <>
           <div className="ct-fq-play">
-          <TrainingPlayHeader
-            isAr={isAr}
-            title={playHeaderForRound(round).title}
-            subtitle={playHeaderForRound(round).subtitle}
-            playSfx={playSfx}
-            menuAriaLabel={t.menu}
-            pauseAriaLabel={t.pause}
-            onMenu={onHudQuit}
-            onPause={onHudPause}
-          />
           <div className={`ct-fq-g-wrap ct-juice-host${juice.shake ? ' ct-juice-shake' : ''}`} ref={gridWrapRef}>
             <JuiceLayer
               combo={juice.combo}
@@ -1900,7 +1899,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               hideErrors={round.mode === 'assess' || round.mode === 'adaptive'}
               lvlLabel={
                 round.mode === 'free'
-                  ? t.freeLvlLabel(DM[round.diff]?.label ?? '', round.lv)
+                  ? null
                   : round.mode === 'assess'
                     ? `${(round.assessTrial ?? 0) + 1}/${round.assessTrialsTotal ?? ASSESSMENT_PROTOCOL.trials}`
                     : round.mode === 'adaptive'
@@ -1911,32 +1910,20 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               }
               freeScore={round.mode === 'free' ? freeScore : undefined}
               freeLives={round.mode === 'free' ? freeLives : undefined}
+              targetShape={
+                round.target in SH
+                  ? round.target
+                  : cells.find((c) => c.isT)?.shape || 'circle'
+              }
+              targetColor={
+                round.targetCol || cells.find((c) => c.isT)?.fill || '#2d2d2d'
+              }
+              onMenu={onHudQuit}
+              onPause={onHudPause}
+              menuAriaLabel={t.menu}
+              pauseAriaLabel={t.pause}
+              playSfx={playSfx}
             />
-            <div className="ct-fq-tb" data-fq-chrome ref={targetBarRef}>
-              <div className="ct-fq-tb-row">
-                <div
-                  className={`ct-fq-tb-icon-wrap${round.diff === 'hard' ? ' ct-fq-tb-icon-deadly' : ''}`}
-                  aria-hidden="true"
-                >
-                  <ShapeSvg
-                    shape={
-                      round.target in SH
-                        ? round.target
-                        : cells.find((c) => c.isT)?.shape || 'circle'
-                    }
-                    color={
-                      round.targetCol ||
-                      cells.find((c) => c.isT)?.fill ||
-                      '#2d2d2d'
-                    }
-                    size={round.diff === 'hard' ? 40 : 34}
-                  />
-                </div>
-                <span className="ct-fq-tb-cue">
-                  {round.searchMode === 'identity' ? t.cueExact : t.cueShape}
-                </span>
-              </div>
-            </div>
             <div className="ct-fq-grid-outer">
               <div
                 className="ct-fq-grid-inner"
@@ -2612,10 +2599,32 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         </div>
       )}
 
-      {phase === 'play' && cdShow && (
+      {/* Countdown / quick-flash carry the target cue card (level · free ·
+          challenge). Assessment & adaptive use the bare centred "+" fixation so
+          the gaze origin stays clean for Center-of-Cancellation; their target
+          chip lives in the top bar and the rule is given in the intro. */}
+      {phase === 'play' && (cdShow || cueShow) && round && (
         <div className="ct-fq-cd">
-          <div className="ct-fq-cd-num">{cdVal}</div>
-          <div className="ct-fq-cd-lbl">{t.countdownHint}</div>
+          {cdShow && <div className="ct-fq-cd-num">{cdVal}</div>}
+          <div className="ct-fq-cue-card">
+            <div className="ct-fq-cue-chip">
+              <ShapeSvg
+                shape={
+                  round.target in SH
+                    ? round.target
+                    : cells.find((c) => c.isT)?.shape || 'circle'
+                }
+                color={
+                  round.targetCol || cells.find((c) => c.isT)?.fill || '#2d2d2d'
+                }
+                size={52}
+              />
+            </div>
+            <div className="ct-fq-cue-text">
+              {round.searchMode === 'identity' ? t.cueExact : t.cueShape}
+            </div>
+          </div>
+          {cdShow && <div className="ct-fq-cd-lbl">{t.countdownHint}</div>}
         </div>
       )}
 

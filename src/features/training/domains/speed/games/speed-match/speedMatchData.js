@@ -1,14 +1,16 @@
 /* =============================================================================
- * SPEED MATCH — Digit-Symbol substitution (processing speed)
+ * SPEED MATCH — Symbol-Digit substitution (processing speed)
  *
- * Based on the Digit Symbol Substitution Test (Wechsler "Coding" / DSST), the
- * most widely used clinical measure of PROCESSING SPEED (Salthouse 1996; Jaeger
- * 2018). A legend maps symbols → digits; a symbol is shown and the player taps
- * the matching digit as fast as possible. The key stays visible, so this is a
- * speeded perceptual-matching task, not a memory task.
+ * This is the SYMBOL DIGIT MODALITIES TEST (SDMT; Smith 1982) — the "reverse" of
+ * the Wechsler Coding / DSST: a symbol is shown and the player responds with the
+ * matching DIGIT (vs DSST, where a digit is shown and a symbol is drawn). SDMT is
+ * the most sensitive clinical measure of PROCESSING SPEED, with low motor demand
+ * (Salthouse 1996; Jaeger 2018; Smith 1982). The key (legend) stays visible and
+ * FIXED for the whole block, so this is a speeded perceptual-matching task, not a
+ * memory/relearning task — no key remapping (that would add working-memory load).
  *
- * Primary metric: correct matches per minute (the DSST score). We also track
- * accuracy, mean response time, and RT variability — all feed the assessment.
+ * Primary metric: correct matches per minute (the SDMT score). We also track
+ * accuracy, mean response time, RT variability (ICV) and efficiency (IES).
  * ========================================================================== */
 
 import { SH } from '../../../../shared/focusQuestData';
@@ -23,7 +25,7 @@ export const SM_FREE_LIVES = 3;
 export const SM_DM = {
   easy: { label: 'Easy', pop: '4–6 symbols · relaxed pace', lvc: 'fq-lve' },
   medium: { label: 'Medium', pop: '5–7 symbols · brisk', lvc: 'fq-lvm' },
-  hard: { label: 'Hard', pop: '6–9 symbols · rapid · key remaps', lvc: 'fq-lvh' },
+  hard: { label: 'Hard', pop: '6–9 symbols · rapid · fixed key', lvc: 'fq-lvh' },
 };
 
 /** Curated distinct glyphs (rendered via the shared SH SVG set). */
@@ -39,10 +41,29 @@ const PASS_PLAY_DURATION = 45;
 const BOUNDS = {
   easy: { pairs: [4, 6], target: [12, 22], minAcc: 0.8, remapEvery: 0, itemMs: [2600, 1900] },
   medium: { pairs: [5, 7], target: [16, 30], minAcc: 0.82, remapEvery: 0, itemMs: [2200, 1500] },
-  hard: { pairs: [6, 9], target: [20, 38], minAcc: 0.85, remapEvery: 14, itemMs: [1800, 1050] },
+  hard: { pairs: [6, 9], target: [20, 38], minAcc: 0.85, remapEvery: 0, itemMs: [1800, 1050] },
 };
 
 const LEVEL_DURATION = 60;
+
+/* --- Adaptive TIME BANK (training modes) ---------------------------------
+ * Instead of an arbitrary per-item countdown, training uses ONE self-calibrating
+ * clock. It always drains; a correct match adds time, a wrong one subtracts it;
+ * and the time a correct match returns SHRINKS as the key grows — so the player
+ * must keep getting faster, and the clock settles at the fastest pace they can
+ * sustain (~their threshold). This is the evidence-based adaptive-difficulty
+ * approach behind UFOV / the ACTIVE trial (adaptive > fixed for speed training).
+ */
+export const TIME_BANK = {
+  startMs: 12000, // bank at the first symbol
+  maxMs: 18000,   // cap so time can't be hoarded
+  penaltyMs: 1600, // a wrong match costs this much time (and the combo)
+};
+/** Time (ms) a correct match returns — large key ⇒ less time ⇒ must go faster. */
+export function bankGainMs(legendSize) {
+  const t = clamp((legendSize - 4) / 5, 0, 1); // 4→9 symbols
+  return Math.round(lerp(1500, 550, t));
+}
 
 function lerp(a, b, t) {
   return a + (b - a) * t;
@@ -121,14 +142,45 @@ export function freeItemPoints(combo) {
 }
 
 /* --- Scoring & grading ---------------------------------------------------- */
+
+/** Mean / SD helpers (sample SD). */
+function mean(xs) {
+  return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+}
+function sd(xs, m) {
+  if (xs.length < 2 || m == null) return null;
+  return Math.sqrt(xs.reduce((s, x) => s + (x - m) ** 2, 0) / (xs.length - 1));
+}
+
+/**
+ * Reaction-time outlier trimming (Whelan, 2008): drop physiologically
+ * implausible responses with absolute bounds, then iteratively remove values
+ * beyond mean ± 2.5 SD until stable. Trimming is standard in RT research because
+ * a few stray-long responses otherwise dominate the mean and SD.
+ */
+function trimRts(raw) {
+  let xs = raw.filter((r) => r != null && r >= 120 && r <= 8000);
+  for (let pass = 0; pass < 3 && xs.length > 3; pass++) {
+    const m = mean(xs);
+    const s = sd(xs, m);
+    if (s == null || s === 0) break;
+    const lo = m - 2.5 * s;
+    const hi = m + 2.5 * s;
+    const next = xs.filter((x) => x >= lo && x <= hi);
+    if (next.length === xs.length) break;
+    xs = next;
+  }
+  return xs;
+}
+
 export function summarize(events, durationSec) {
   let correct = 0;
   let wrong = 0;
-  const rts = [];
+  const rawRts = [];
   for (const e of events) {
     if (e.correct) {
       correct++;
-      if (e.rtMs != null && e.rtMs >= 120 && e.rtMs <= 8000) rts.push(e.rtMs);
+      if (e.rtMs != null) rawRts.push(e.rtMs);
     } else {
       wrong++;
     }
@@ -137,15 +189,21 @@ export function summarize(events, durationSec) {
   const accuracy = total ? correct / total : 1;
   const dur = Math.max(1, durationSec || 1);
   const itemsPerMin = +(correct / (dur / 60)).toFixed(1);
-  const meanRt = rts.length
-    ? Math.round(rts.reduce((a, b) => a + b, 0) / rts.length)
-    : null;
-  const rtSd =
-    rts.length > 1 && meanRt != null
-      ? Math.round(
-          Math.sqrt(rts.reduce((s, x) => s + (x - meanRt) ** 2, 0) / (rts.length - 1)),
-        )
-      : null;
+
+  const rts = trimRts(rawRts);
+  const m = mean(rts);
+  const meanRt = m != null ? Math.round(m) : null;
+  const s = sd(rts, m);
+  const rtSd = s != null ? Math.round(s) : null;
+  // Intra-individual RT variability as a coefficient of variation (SD / mean).
+  // Elevated ICV is a robust marker of attentional lapses (Castellanos, 2005),
+  // and is fairer than raw SD because it is independent of overall speed.
+  const icv = m && s != null ? +(s / m).toFixed(2) : null;
+  // Inverse Efficiency Score (Townsend & Ashby, 1983): mean correct RT divided
+  // by proportion correct — a single speed+accuracy number (lower = better) that
+  // guards against speed/accuracy trade-offs gaming either metric alone.
+  const ies = meanRt != null && accuracy > 0 ? Math.round(meanRt / accuracy) : null;
+
   return {
     correct,
     wrong,
@@ -155,6 +213,8 @@ export function summarize(events, durationSec) {
     itemsPerMin,
     meanRt,
     rtSd,
+    icv,
+    ies,
   };
 }
 

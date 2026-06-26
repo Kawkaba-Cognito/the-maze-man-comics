@@ -14,23 +14,27 @@ export const GAME_SCIENCE = {
   'speed-match': {
     en: {
       title: 'The science',
-      intro: 'Speed Match is built on the Digit–Symbol Substitution Test, a century-old measure of how fast your brain processes information.',
+      intro: 'Speed Match is the Symbol Digit Modalities Test (SDMT) — you see a symbol and respond with its digit, using a key that stays fixed and visible. It is the most sensitive clinical measure of processing speed.',
       sections: [
         { h: '⚡ Processing speed', b: 'How quickly you match symbols to digits indexes processing speed — the raw pace at which your brain takes in information and acts. It quietly underlies almost every other thinking skill.' },
-        { h: '🧠 What it trains', b: 'Rapid visual scanning, symbol-to-rule lookup, and fast motor responses. With practice the mapping becomes more automatic, freeing up attention for the task.' },
+        { h: '🧠 What it trains', b: 'Rapid visual scanning and symbol-to-digit lookup. The key stays fixed and on screen, so this is pure perceptual speed, not memorization — with practice the lookup becomes more automatic.' },
+        { h: '🎚️ Trains at your edge', b: 'The time bank adapts to your pace: correct matches add time, the key grows, and each match returns less time — so difficulty settles at the fastest speed you can sustain. Adapting to the individual is what makes speed training work (UFOV / the ACTIVE trial).' },
+        { h: '📊 How it\'s measured', b: 'Your main score is matches per minute — the SDMT score. We also report mean reaction time, RT variability (how steady you are — an attentional-lapse marker), and an efficiency score (IES) that blends speed with accuracy so neither can be gamed.' },
         { h: '📉 Why it matters', b: 'Processing speed is among the first abilities to slow with age and fatigue. Keeping it sharp supports reaction time, reading, and quick decisions.' },
       ],
-      foot: 'Short, frequent bursts work best — speed responds to regular practice.',
+      foot: 'Short, frequent bursts work best. Practice reliably improves this task and similar speed tests (near transfer); broad “far transfer” to everyday thinking is not well supported. This trains and tracks this specific skill — it is not a medical test.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: 'تعتمد «المطابقة السريعة» على اختبار الرمز–الرقم، وهو مقياس عمره قرن لسرعة معالجة دماغك للمعلومات.',
+      intro: 'المطابقة السريعة هي اختبار رموز–أرقام (SDMT): ترى رمزاً وتستجيب برقمه عبر مفتاح ثابت ومرئي. وهو أكثر مقاييس سرعة المعالجة حساسية.',
       sections: [
         { h: '⚡ سرعة المعالجة', b: 'سرعتك في مطابقة الرموز بالأرقام تقيس سرعة المعالجة — الإيقاع الذي يستقبل به دماغك المعلومات ويتصرّف. وهي أساس خفيّ لمعظم المهارات الذهنية الأخرى.' },
-        { h: '🧠 ما الذي تدرّبه', b: 'المسح البصري السريع، والبحث عن القاعدة، والاستجابة الحركية السريعة. مع التمرين تصبح المطابقة أكثر تلقائية فتتحرّر انتباهك.' },
+        { h: '🧠 ما الذي تدرّبه', b: 'المسح البصري السريع والبحث عن الرقم المطابق. يبقى المفتاح ثابتاً وظاهراً، فهي سرعة إدراكية صرفة لا حفظاً — ومع التمرين يصبح البحث أكثر تلقائية.' },
+        { h: '🎚️ تدريب عند حدّك', b: 'بنك الوقت يتكيّف مع إيقاعك: المطابقات الصحيحة تضيف وقتاً، ويكبر المفتاح، وتعيد كل مطابقة وقتاً أقل — فتستقر الصعوبة عند أسرع سرعة يمكنك الحفاظ عليها. التكيّف مع الفرد هو ما يجعل تدريب السرعة فعّالاً (UFOV / تجربة ACTIVE).' },
+        { h: '📊 كيف يُقاس', b: 'درجتك الأساسية هي المطابقات في الدقيقة — درجة SDMT. ونعرض أيضاً متوسط زمن الاستجابة، وتغيّره (مدى ثباتك — مؤشر على هفوات الانتباه)، ودرجة كفاءة (IES) تمزج السرعة بالدقة كي لا تُخدع أيٌّ منهما.' },
         { h: '📉 لماذا تهمّ', b: 'سرعة المعالجة من أوائل القدرات التي تتباطأ مع العمر والإرهاق. الحفاظ عليها يدعم زمن ردّ الفعل والقراءة والقرارات السريعة.' },
       ],
-      foot: 'الجلسات القصيرة المتكرّرة هي الأفضل — السرعة تستجيب للتمرين المنتظم.',
+      foot: 'الجلسات القصيرة المتكرّرة هي الأفضل. التمرين يحسّن هذه المهمة والاختبارات الشبيهة (انتقال قريب)، أما الانتقال الواسع للحياة اليومية فغير مدعوم جيداً. هذا يدرّب ويتابع هذه المهارة تحديداً، وليس اختباراً طبياً.',
     },
   },
   'piano-tap': {
@@ -332,23 +336,25 @@ export const GAME_SCIENCE = {
   'math-gates': {
     en: {
       title: 'The science',
-      intro: 'Run the gate with the right answer while the operation keeps changing — a task-switching workout with numbers.',
+      intro: 'Steer into the gate with the right answer while the operation keeps changing — self-paced mental arithmetic plus task-switching. You only lose by answering wrong, never by the clock. Arithmetic fluency is a recognized component of processing speed (CHC theory).',
       sections: [
-        { h: '🔄 Task switching', b: 'The operation changes from gate to gate, so you constantly reconfigure the rule in mind — and pay the “switch cost” when you don’t.' },
-        { h: '➗ Numerical fluency', b: 'Fast mental arithmetic under time pressure strengthens the number sense in the parietal cortex.' },
-        { h: '🧠 Working memory', b: 'Holding the current operation while computing the answer keeps working memory and executive control engaged.' },
+        { h: '➗ Arithmetic fluency', b: 'Your main score is correct answers per minute — the standard math-fluency measure. Small facts are recalled from memory; bigger ones are computed step by step, which is why large problems (especially ×) take longer (the “problem-size effect”).' },
+        { h: '🔄 Switch cost', b: 'The operation changes from gate to gate, so you reconfigure the rule each time — and pay a measurable “switch cost” (slower after a change). We report it as your switch-trial time minus your repeat-trial time.' },
+        { h: '🎯 Real number comparison', b: 'The wrong answers are plausible near-misses with the same odd/even parity, so you can’t shortcut by a glance — the closer they sit to the right answer, the harder the call (the numerical distance effect). Harder rounds bring them closer.' },
+        { h: '📊 How it’s measured', b: 'Correct/min, accuracy, decision time, RT variability (how steady you are), and switch cost. Together they separate raw speed from flexibility.' },
       ],
-      foot: 'Lock onto the operation first, the numbers second.',
+      foot: 'Lock onto the operation first, the numbers second. This trains and tracks these skills; it is not a medical test, and there are no validated adult fluency norms.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: 'اعبُر البوابة بالإجابة الصحيحة بينما تتغيّر العملية باستمرار — تمرين تبديل مهامّ بالأرقام.',
+      intro: 'توجّه إلى البوابة بالإجابة الصحيحة بينما تتغيّر العملية — حساب ذهني على إيقاعك مع تبديل المهامّ. تخسر فقط بالإجابة الخاطئة، لا بالوقت. الطلاقة الحسابية مكوّن معترف به من سرعة المعالجة (نظرية CHC).',
       sections: [
-        { h: '🔄 تبديل المهامّ', b: 'تتغيّر العملية من بوابة لأخرى، فتعيد ضبط القاعدة ذهنياً باستمرار — وتدفع «كلفة التبديل» حين لا تفعل.' },
-        { h: '➗ الطلاقة العددية', b: 'الحساب الذهني السريع تحت ضغط الوقت يقوّي الحسّ العددي في القشرة الجدارية.' },
-        { h: '🧠 الذاكرة العاملة', b: 'الاحتفاظ بالعملية الحالية أثناء حساب الإجابة يُبقي الذاكرة العاملة والتحكّم التنفيذي نشطين.' },
+        { h: '➗ الطلاقة الحسابية', b: 'درجتك الأساسية هي الإجابات الصحيحة في الدقيقة — مقياس الطلاقة الحسابية المعياري. الحقائق الصغيرة تُستدعى من الذاكرة، والأكبر تُحسب خطوة بخطوة، لذا تأخذ المسائل الكبيرة (خصوصاً ×) وقتاً أطول («تأثير حجم المسألة»).' },
+        { h: '🔄 كلفة التبديل', b: 'تتغيّر العملية من بوابة لأخرى فتعيد ضبط القاعدة في كل مرة — وتدفع «كلفة تبديل» قابلة للقياس (أبطأ بعد التغيير). نعرضها كزمن جولات التبديل ناقص زمن جولات التكرار.' },
+        { h: '🎯 مقارنة عددية حقيقية', b: 'الإجابات الخاطئة قريبة ومعقولة وبنفس الزوجية (فردي/زوجي)، فلا يمكن الاختصار بنظرة — وكلما اقتربت من الصحيحة صعُب القرار («تأثير المسافة العددية»). الجولات الأصعب تقرّبها أكثر.' },
+        { h: '📊 كيف يُقاس', b: 'صحيح/دقيقة، الدقة، زمن القرار، تغيّر زمن الاستجابة (مدى ثباتك)، وكلفة التبديل. معاً تفصل السرعة الخام عن المرونة.' },
       ],
-      foot: 'ثبّت العملية أولاً ثم الأرقام ثانياً.',
+      foot: 'ثبّت العملية أولاً ثم الأرقام. هذا يدرّب ويتابع هذه المهارات، وليس اختباراً طبياً، ولا توجد معايير راشدين موثّقة للطلاقة.',
     },
   },
 
