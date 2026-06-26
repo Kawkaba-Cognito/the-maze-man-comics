@@ -65,20 +65,22 @@ function levelCfg(diff, level) {
   };
 }
 
-// Survival WAVES: endless escalation. Concurrency is the star — it steps up every
-// 2 waves (the "dramatic increase" Lumosity adds mid-game), with speed, track
-// complexity and colours ramping alongside. Each wave is a batch of cars to clear.
+// Survival WAVES: endless escalation. Every wave is a FRESH board (no two look
+// alike) and is strictly harder: it always adds a car to clear, and concurrency
+// — the divided-attention lever — steps up every 2 waves toward and past the
+// ~4-object capacity limit. Speed/complexity ramp alongside; speed is capped so
+// it stays reactable.
 function waveCfg(wave) {
   const w = wave - 1;
   return {
     R: clampN(5 + Math.floor(w / 3), 5, 9),
     C: clampN(5 + Math.floor(w / 3), 5, 9),
-    forks: clampN(2 + Math.floor(w / 1.5), 2, 8),
+    forks: clampN(2 + Math.floor(w / 2), 2, 8),
     colors: clampN(3 + Math.floor(w / 3), 3, 6),
-    cars: 3 + w,                                  // cars to clear this wave
+    cars: 4 + w,                                  // cars to clear (always grows each wave)
     maxC: clampN(1 + Math.floor(w / 2), 1, 5),    // concurrency steps every 2 waves, capped at overload (5)
-    cps: +Math.min(1.8, 0.7 + w * 0.055).toFixed(2), // speed capped so it stays reactable
-    spawn: Math.max(900, 2200 - w * 110),
+    cps: +Math.min(1.7, 0.7 + w * 0.05).toFixed(2), // capped so it stays reactable
+    spawn: Math.max(900, 2100 - w * 100),
     lives: 4,
     wave: true,
   };
@@ -324,18 +326,14 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
       const conc = g.trains.length;
       if (conc > g.peakConc) g.peakConc = conc;
       if (conc > 0) { g.concSum += conc; g.concActiveFrames += 1; }
-      // Survival: wave complete → escalate. Keep the SAME map while only the
-      // train load changes (concurrency/speed) — Lumosity-style "same board, more
-      // trains" — and only rebuild when the board's complexity actually steps
-      // (grid / forks / colours), so it never feels disorienting.
-      if (g.isWave && g.waveResolved >= g.waveCars && g.trains.length === 0) {
+      // Survival: wave complete → escalate. Every wave gets a FRESH board and a
+      // strictly harder config, so no two waves look or feel the same (the wave
+      // banner announces the change). installNet resets cars + colour queue.
+      if (g.isWave && g.waveResolved >= g.waveCars && g.trains.length === 0 && g.bannerT <= 0) {
         g.wave += 1;
         const wc = waveCfg(g.wave);
-        const sameBoard = wc.R === g.R && wc.C === g.C && wc.forks === g.cfgForks && wc.colors === g.cfgColors;
         g.waveCars = wc.cars; g.waveSpawned = 0; g.waveResolved = 0;
-        g.maxC = wc.maxC; g.cps = wc.cps; g.spawnEvery = wc.spawn;
-        if (!sameBoard) { installNet(wc); resize(); }
-        else { g.trains = []; g.spawnAcc = -1400; }
+        installNet(wc); resize();
         g.banner = isAr ? `الموجة ${g.wave}` : `Wave ${g.wave}`; g.bannerT = 1.6;
         playSfx('win');
       }
@@ -423,8 +421,9 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
         ctx.globalAlpha = 1;
       }
 
-      if (g.routed !== hudCache.routed || g.lives !== hudCache.lives || g.wave !== hudCache.wave) {
-        hudCache = { routed: g.routed, lives: g.lives, wave: g.wave }; setHud(hudCache);
+      if (g.routed !== hudCache.routed || g.lives !== hudCache.lives || g.wave !== hudCache.wave || g.waveResolved !== hudCache.waveDone) {
+        hudCache = { routed: g.routed, lives: g.lives, wave: g.wave, waveDone: g.waveResolved, waveTot: g.waveCars };
+        setHud(hudCache);
       }
       rafRef.current = requestAnimationFrame(frame);
     };
@@ -446,7 +445,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
   const head = mode === 'levels'
     ? (isAr ? `مستوى ${level} · ${hud.routed}/${cfg.target}` : `Lvl ${level} · ${hud.routed}/${cfg.target}`)
     : mode === 'free'
-      ? (isAr ? `موجة ${hud.wave} · ركنت ${hud.routed}` : `Wave ${hud.wave} · Parked ${hud.routed}`)
+      ? (isAr ? `موجة ${hud.wave} · ${hud.waveDone ?? 0}/${hud.waveTot ?? 0} · ركنت ${hud.routed}` : `Wave ${hud.wave} · ${hud.waveDone ?? 0}/${hud.waveTot ?? 0} · Parked ${hud.routed}`)
       : (isAr ? `ركنت ${hud.routed}` : `Parked ${hud.routed}`);
 
   return (

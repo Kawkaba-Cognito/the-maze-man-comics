@@ -62,23 +62,23 @@ export const GAME_SCIENCE = {
   'trail-making': {
     en: {
       title: 'The science',
-      intro: 'Trail Making is a classic neuropsychological test of visual attention and processing speed.',
+      intro: 'This is the Trail Making Test, Part A (TMT-A) — connect the numbers 1→2→3… in order as fast as you can. It is a classic clinical measure of processing speed and visual scanning.',
       sections: [
-        { h: '🔗 Visual search & sequencing', b: 'Connecting numbers in order trains your eyes to scan efficiently while you hold the sequence in mind.' },
-        { h: '⚡ Processing speed', b: 'The timer turns this into a speed measure (Trail Making Test A) — faster trails mean faster visual-motor processing.' },
-        { h: '🧠 Executive control', b: 'Always knowing which target comes next keeps working memory and goal-tracking engaged throughout the run.' },
+        { h: '⚡ Processing speed & scanning', b: 'TMT-A indexes how fast you visually search and act. Difficulty rises with the number of circles (a longer scan path), not gimmicks.' },
+        { h: '📊 How it\'s measured', b: 'Your score is completion time and errors — exactly the clinical TMT metrics — plus a scanning rate (circles per minute). Faster, cleaner trails = faster visual-motor processing.' },
+        { h: '🔀 Part A vs Part B', b: 'This is Part A (pure speed). The Part-B form (alternating numbers and letters) adds set-shifting and lives in the Flexibility games; the B-minus-A gap is what isolates executive control.' },
       ],
-      foot: 'Plan your eye path one or two steps ahead rather than hunting tile by tile.',
+      foot: 'Plan your eye path a step or two ahead rather than hunting circle by circle. This trains and tracks this specific skill — it is not a medical test.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: '«صل الأرقام» اختبار عصبي-نفسي كلاسيكي للانتباه البصري وسرعة المعالجة.',
+      intro: 'هذا اختبار وصل الأثر — الجزء A (TMT-A): صل الأرقام ١→٢→٣… بالترتيب بأسرع ما يمكن. مقياس سريري كلاسيكي لسرعة المعالجة والمسح البصري.',
       sections: [
-        { h: '🔗 البحث البصري والتسلسل', b: 'ربط الأرقام بالترتيب يدرّب عينيك على المسح بكفاءة مع الاحتفاظ بالتسلسل في ذهنك.' },
-        { h: '⚡ سرعة المعالجة', b: 'المؤقّت يحوّلها إلى مقياس سرعة (اختبار وصل الأثر A) — المسارات الأسرع تعني معالجة بصرية-حركية أسرع.' },
-        { h: '🧠 التحكّم التنفيذي', b: 'معرفة الهدف التالي دائماً تُبقي الذاكرة العاملة وتتبّع الهدف نشطين طوال المحاولة.' },
+        { h: '⚡ سرعة المعالجة والمسح', b: 'يقيس TMT-A سرعة بحثك البصري وتصرّفك. ترتفع الصعوبة بعدد الدوائر (مسار مسح أطول)، لا بالحيل.' },
+        { h: '📊 كيف يُقاس', b: 'درجتك هي زمن الإكمال والأخطاء — وهي مقاييس TMT السريرية تماماً — مع معدّل مسح (دوائر في الدقيقة). المسارات الأسرع والأنظف = معالجة بصرية-حركية أسرع.' },
+        { h: '🔀 الجزء A مقابل B', b: 'هذا الجزء A (سرعة صرفة). الجزء B (تبديل أرقام وحروف) يضيف تبديل المجموعات ويوجد في ألعاب المرونة؛ والفرق B−A هو ما يعزل التحكّم التنفيذي.' },
       ],
-      foot: 'خطّط مسار عينك خطوة أو خطوتين مسبقاً بدل البحث بلاطة بلاطة.',
+      foot: 'خطّط مسار عينك خطوة أو خطوتين مسبقاً بدل البحث دائرة بدائرة. هذا يدرّب ويتابع هذه المهارة تحديداً، وليس اختباراً طبياً.',
     },
   },
 

@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
+import { createTrialLog } from '../../../../shared/trialLog';
 import { SURVIVAL_MS, survivalRamp } from '../../../../shared/survival';
 
 /*
@@ -15,16 +16,23 @@ import { SURVIVAL_MS, survivalRamp } from '../../../../shared/survival';
 
 const LEVEL_WIN = true; // completing the board in time clears the level
 const CHAL_LIVES = 3;
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+// Difficulty = SET SIZE (number of circles to scan) + the par time (deadline).
+// The Trail Making Test is a visual-search / processing-speed measure, so more
+// circles = a longer scan path = harder, and a tighter par adds speed pressure.
+// Per-tier [n0,n1] / [t0,t1] endpoints stay DISTINCT across the 100 levels (they
+// used to all converge on 30 circles / 11 s, erasing the tiers at high levels).
 const BASE = {
-  easy: { n: 8, time: 30000 },
-  med: { n: 14, time: 34000 },
-  hard: { n: 20, time: 38000 },
+  easy: { n0: 8,  n1: 18, t0: 32000, t1: 16000 },
+  med:  { n0: 14, n1: 26, t0: 34000, t1: 14000 },
+  hard: { n0: 20, n1: 34, t0: 36000, t1: 12000 },
 };
 function levelCfg(diff, level) {
   const b = BASE[diff] || BASE.med;
-  const f = ((level || 1) - 1) / 99;
-  return { n: Math.round(b.n + f * (30 - b.n)), time: Math.round(b.time - f * (b.time - 11000)) };
+  const f = clamp(((level || 1) - 1) / 99, 0, 1);
+  return { n: Math.round(lerp(b.n0, b.n1, f)), time: Math.round(lerp(b.t0, b.t1, f)) };
 }
 function rampCfg(boardIdx) {
   return { n: Math.min(8 + boardIdx * 2, 30), time: Math.max(14000, 32000 - boardIdx * 1500) };
@@ -56,6 +64,12 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
   const clockRef = useRef(null);
   const survT0Ref = useRef(performance.now());
   const finishedRef = useRef(false);
+  // Metric capture (assess + train): per-board completion-time / errors via the
+  // shared trial log, plus running survival totals for the scanning-rate readout.
+  const trialLogRef = useRef(null);
+  const sumUsedRef = useRef(0);
+  const sumErrRef = useRef(0);
+  const sumItemsRef = useRef(0);
 
   const isSurvival = mode === 'free';
   const [runId, setRunId] = useState(0);
@@ -76,7 +90,11 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
     finishedRef.current = true;
     endedRef.current = true;
     clearInterval(clockRef.current);
-    setOver({ score: scoreRef.current, boards: boardIdxRef.current });
+    const boards = boardIdxRef.current;
+    const avgMs = boards > 0 ? Math.round(sumUsedRef.current / boards) : 0;
+    const ipm = sumUsedRef.current > 0 ? Math.round(sumItemsRef.current / (sumUsedRef.current / 60000)) : 0;
+    trialLogRef.current?.finish({ boards, score: scoreRef.current });
+    setOver({ score: scoreRef.current, boards, avgMs, ipm, errors: sumErrRef.current });
     playSfx?.('error');
   }, [playSfx]);
 
@@ -165,9 +183,16 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
     cells.sort(() => rng() - 0.5);
     const items = [];
     const map = [];
+    // Jittered grid → a scattered, TMT-like layout (a real test isn't a neat
+    // grid). Wider jitter than before, clamped to a safe margin so circles never
+    // clip the field edge.
+    const mx = 0.62 / cols;
+    const my = 0.62 / rows;
     for (let i = 0; i < n; i++) {
       const [cc, rr] = cells[i];
-      const it = { n: i + 1, fx: (cc + 0.5 + (rng() - 0.5) * 0.5) / cols, fy: (rr + 0.5 + (rng() - 0.5) * 0.5) / rows };
+      const fx = clamp((cc + 0.5 + (rng() - 0.5) * 0.66) / cols, mx, 1 - mx);
+      const fy = clamp((rr + 0.5 + (rng() - 0.5) * 0.66) / rows, my, 1 - my);
+      const it = { n: i + 1, fx, fy };
       items.push(it); map[i + 1] = it;
     }
     itemsRef.current = items; mapRef.current = map;
@@ -181,32 +206,40 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
   const onComplete = useCallback(() => {
     if (endedRef.current) return;
     const used = performance.now() - startRef.current;
+    const n = cfgRef.current.n;
+    const errs = errRef.current;
+    // Scanning rate (circles/min) — the canonical TMT speed metric (∝ 1/time).
+    const ipm = used > 0 ? Math.round(n / (used / 60000)) : 0;
     playSfx?.('win');
+    trialLogRef.current?.trial({ n, timeMs: Math.round(used), errors: errs, ipm });
     if (mode === 'levels') {
       endedRef.current = true;
       scoreRef.current += Math.max(20, 200 - Math.round(used / 100));
-      onResult({ won: LEVEL_WIN, score: scoreRef.current, summary: `${cfgRef.current.n} · ${fmt(used)} · ${errRef.current} ${isAr ? 'أخطاء' : 'errors'}` });
+      trialLogRef.current?.finish({ won: LEVEL_WIN, level, diff });
+      onResult({ won: LEVEL_WIN, score: scoreRef.current, summary: isAr ? `${n} دائرة · ${fmt(used)} · ${errs} خطأ · ${ipm}/د` : `${n} circles · ${fmt(used)} · ${errs} err · ${ipm}/min` });
       return;
     }
     if (mode === 'passplay') {
       ppTimeRef.current += used; ppDoneRef.current += 1; setPpBoard(ppDoneRef.current + 1);
-      if (ppDoneRef.current >= ppTrials) { endedRef.current = true; onResult({ score: Math.round(ppTimeRef.current) }); return; }
+      if (ppDoneRef.current >= ppTrials) { endedRef.current = true; trialLogRef.current?.finish({}); onResult({ score: Math.round(ppTimeRef.current) }); return; }
       newBoard(); return;
     }
     awardPoints?.(3);
     const bonus = timed ? Math.max(0, Math.round((deadlineRef.current - performance.now()) / 1000)) : 0;
     scoreRef.current += 20 + bonus; setScore(scoreRef.current);
     boardIdxRef.current += 1; setBoards(boardIdxRef.current);
+    sumUsedRef.current += used; sumErrRef.current += errs; sumItemsRef.current += n;
     if (isSurvival && performance.now() - survT0Ref.current >= SURVIVAL_MS) {
       finishSurvival();
       return;
     }
     newBoard();
-  }, [awardPoints, finishSurvival, isAr, isSurvival, mode, newBoard, onResult, playSfx, timed, ppTrials]);
+  }, [awardPoints, finishSurvival, isAr, isSurvival, mode, newBoard, onResult, playSfx, timed, ppTrials, level, diff]);
 
   const onTimeout = useCallback(() => {
     if (endedRef.current) return;
     playSfx?.('lose'); endedRef.current = true;
+    trialLogRef.current?.finish({ won: false, reached: nextRef.current - 1 });
     onResult({ won: false, score: scoreRef.current, summary: isAr ? `وصلت إلى ${nextRef.current - 1}/${cfgRef.current.n}` : `Reached ${nextRef.current - 1}/${cfgRef.current.n}` });
   }, [isAr, onResult, playSfx]);
 
@@ -246,6 +279,9 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
       boardIdxRef.current = 0;
       scoreRef.current = 0;
     }
+    sumUsedRef.current = 0; sumErrRef.current = 0; sumItemsRef.current = 0;
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'trail-making', mode, meta: { diff, level } });
     newBoard();
     if (timed) {
       clockRef.current = setInterval(() => {
@@ -264,6 +300,8 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
       window.removeEventListener('resize', onResize);
       cancelAnimationFrame(rafRef.current);
       clearInterval(clockRef.current);
+      trialLogRef.current?.discard();
+      trialLogRef.current = null;
     };
   }, [runId, seed]);
 
@@ -276,6 +314,11 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
         <div style={S.overWrap}>
           <h2 style={S.overTitle}>{isAr ? 'انتهى البقاء!' : 'Survival over!'}</h2>
           <p style={S.overSub}>{isAr ? `${over.boards} لوحات · ${over.score} نقطة` : `${over.boards} boards · ${over.score} pts`}</p>
+          <div className="ct-fq-rm ct-fq-rm-training ct-fq-assess-grid" style={{ maxWidth: 360, marginBottom: 14 }}>
+            <div className="ct-fq-rmi"><div className="ct-fq-rv">{over.ipm ?? 0}</div><div className="ct-fq-rl">{isAr ? 'دائرة/دقيقة' : 'circles/min'}</div></div>
+            <div className="ct-fq-rmi"><div className="ct-fq-rv">{over.avgMs ? fmt(over.avgMs) : '—'}</div><div className="ct-fq-rl">{isAr ? 'زمن اللوحة' : 'avg/board'}</div></div>
+            <div className="ct-fq-rmi"><div className="ct-fq-rv">{over.errors ?? 0}</div><div className="ct-fq-rl">{isAr ? 'أخطاء' : 'errors'}</div></div>
+          </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
             <button type="button" style={S.overBtn} onClick={() => { playSfx?.('click'); restartSurvival(); }}>{isAr ? 'العب مجدداً' : 'Play again'}</button>
             <button type="button" style={S.overBtnGhost} onClick={() => { playSfx?.('click'); onExit?.(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
