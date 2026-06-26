@@ -61,7 +61,9 @@ const BASE = {
 };
 function levelConfig(diff, level) {
   const b = BASE[diff] || BASE.med;
-  const u = clamp(((level || 1) - 1) / 99, 0, 1);
+  // Front-loaded curve (^0.85): difficulty is felt climbing earlier (more distinct
+  // levels where players actually are); endpoints (level 1 / 100) are unchanged.
+  const u = Math.pow(clamp(((level || 1) - 1) / 99, 0, 1), 0.85);
   const targets = clamp(Math.round(lerp(b.t0, b.t1, u)), 1, MOT_CAP);
   return { targets, total: Math.round(lerp(b.n0, b.n1, u)), speedFrac: lerp(b.s0, b.s1, u), trackMs: Math.round(lerp(b.tr0, b.tr1, u)) };
 }

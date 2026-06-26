@@ -62,23 +62,25 @@ export const GAME_SCIENCE = {
   'trail-making': {
     en: {
       title: 'The science',
-      intro: 'This is the Trail Making Test, Part A (TMT-A) — connect the numbers 1→2→3… in order as fast as you can. It is a classic clinical measure of processing speed and visual scanning.',
+      intro: 'Built on the Trail Making Test family — connect circles in order as fast as you can. It rotates several validated, language-free variants so it trains a whole battery of speed and executive skills, not one flat task.',
       sections: [
-        { h: '⚡ Processing speed & scanning', b: 'TMT-A indexes how fast you visually search and act. Difficulty rises with the number of circles (a longer scan path), not gimmicks.' },
-        { h: '📊 How it\'s measured', b: 'Your score is completion time and errors — exactly the clinical TMT metrics — plus a scanning rate (circles per minute). Faster, cleaner trails = faster visual-motor processing.' },
-        { h: '🔀 Part A vs Part B', b: 'This is Part A (pure speed). The Part-B form (alternating numbers and letters) adds set-shifting and lives in the Flexibility games; the B-minus-A gap is what isolates executive control.' },
+        { h: '⚡ Speed & scanning (TMT-A)', b: 'The plain trail (1→2→3…) is the classic Trail Making Test Part A: visual search + processing speed. Difficulty rises with the number of circles (a longer scan path).' },
+        { h: '🎨 Colour Trails (flexibility)', b: 'On colour boards you alternate two colours as you count up (the Color Trails Test, CTT-2) — a language-free set-shifting / cognitive-flexibility task; the same number in the wrong colour is a built-in lure.' },
+        { h: '✕ Distractors (inhibition)', b: 'Some boards add decoy circles you must ignore (Comprehensive TMT) — selective attention and impulse control.' },
+        { h: '📊 How it\'s measured', b: 'Completion time and errors (the clinical TMT metrics), plus scanning rate (circles/min), tap-to-tap consistency (an attentional-lapse marker), and the colour interference cost (Colour time − plain time) that isolates executive control.' },
       ],
-      foot: 'Plan your eye path a step or two ahead rather than hunting circle by circle. This trains and tracks this specific skill — it is not a medical test.',
+      foot: 'Plan your eye path a step or two ahead rather than hunting circle by circle. This trains and tracks these specific skills — it is not a medical test.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: 'هذا اختبار وصل الأثر — الجزء A (TMT-A): صل الأرقام ١→٢→٣… بالترتيب بأسرع ما يمكن. مقياس سريري كلاسيكي لسرعة المعالجة والمسح البصري.',
+      intro: 'مبني على عائلة اختبار وصل الأثر — صل الدوائر بالترتيب بأسرع ما يمكن. يتنقّل بين عدّة صيغ موثّقة وخالية من اللغة فيدرّب حزمة من مهارات السرعة والوظائف التنفيذية، لا مهمة واحدة جامدة.',
       sections: [
-        { h: '⚡ سرعة المعالجة والمسح', b: 'يقيس TMT-A سرعة بحثك البصري وتصرّفك. ترتفع الصعوبة بعدد الدوائر (مسار مسح أطول)، لا بالحيل.' },
-        { h: '📊 كيف يُقاس', b: 'درجتك هي زمن الإكمال والأخطاء — وهي مقاييس TMT السريرية تماماً — مع معدّل مسح (دوائر في الدقيقة). المسارات الأسرع والأنظف = معالجة بصرية-حركية أسرع.' },
-        { h: '🔀 الجزء A مقابل B', b: 'هذا الجزء A (سرعة صرفة). الجزء B (تبديل أرقام وحروف) يضيف تبديل المجموعات ويوجد في ألعاب المرونة؛ والفرق B−A هو ما يعزل التحكّم التنفيذي.' },
+        { h: '⚡ السرعة والمسح (TMT-A)', b: 'المسار البسيط (١→٢→٣…) هو الجزء A الكلاسيكي: بحث بصري + سرعة معالجة. ترتفع الصعوبة بعدد الدوائر (مسار أطول).' },
+        { h: '🎨 مسار الألوان (المرونة)', b: 'في لوحات الألوان تبدّل بين لونين مع العدّ التصاعدي (اختبار مسار الألوان CTT-2) — مهمة تبديل/مرونة ذهنية خالية من اللغة؛ والرقم نفسه باللون الخاطئ فخّ مدمج.' },
+        { h: '✕ المشتّتات (الكبح)', b: 'بعض اللوحات تضيف دوائر شَرَك يجب تجاهلها (TMT الشامل) — انتباه انتقائي وضبط اندفاع.' },
+        { h: '📊 كيف يُقاس', b: 'زمن الإكمال والأخطاء (مقاييس TMT السريرية)، مع معدّل المسح (دوائر/دقيقة)، وثبات الزمن بين النقرات (مؤشر هفوات الانتباه)، وكلفة تداخل الألوان (زمن الألوان − الزمن البسيط) التي تعزل التحكّم التنفيذي.' },
       ],
-      foot: 'خطّط مسار عينك خطوة أو خطوتين مسبقاً بدل البحث دائرة بدائرة. هذا يدرّب ويتابع هذه المهارة تحديداً، وليس اختباراً طبياً.',
+      foot: 'خطّط مسار عينك خطوة أو خطوتين مسبقاً بدل البحث دائرة بدائرة. هذا يدرّب ويتابع هذه المهارات تحديداً، وليس اختباراً طبياً.',
     },
   },
 

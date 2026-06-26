@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
-import { survivalRamp, survivalTier } from '../../../../shared/survival';
+import { survivalTier } from '../../../../shared/survival';
 
 /*
  * Math Gates — endless runner with rule-switching arithmetic (cognitive flexibility).
@@ -29,7 +29,9 @@ const BASE = {
 };
 function levelCfg(diff, level) {
   const b = BASE[diff] || BASE.med;
-  const f = ((level || 1) - 1) / 99;
+  // Front-loaded curve (^0.85): the climb is felt earlier so levels feel more
+  // distinct; level 1 and 100 unchanged.
+  const f = Math.pow(((level || 1) - 1) / 99, 0.85);
   return { ...b, gap: Math.max(450, b.gap - f * 180), target: b.target + Math.round(f * 10), f };
 }
 const PP_GATES = 12;
@@ -224,9 +226,10 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
     finishedRef.current = false;
 
     const spawnGate = () => {
-      // Survival escalates the equation TIER and magnitude with the clock (was
-      // frozen on easiest); Levels use the level's own difficulty/ramp.
-      const f = mode === 'free' ? survivalRamp(performance.now() - g.t0) : cfg.f;
+      // Survival escalates the equation TIER and magnitude by SKILL — how many
+      // gates you've cleared — not the wall-clock, so a slower (accurate) player
+      // isn't punished and a fast one can't out-run the ramp. Reaches peak ≈36 gates.
+      const f = mode === 'free' ? clamp(g.gatesPlayed / 36, 0, 1) : cfg.f;
       const dk = mode === 'free' ? survivalTier(f) : dkey;
       const eqObj = genGate(dk, f, rng);
       const bandH = Math.min(g.H * 0.16, 96);

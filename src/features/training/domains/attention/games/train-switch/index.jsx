@@ -50,7 +50,9 @@ const LV = {
 };
 function levelCfg(diff, level) {
   const b = LV[diff] || LV.med;
-  const f = clampN(((level || 1) - 1) / 99, 0, 1);
+  // Front-loaded curve (f^0.85): the climb is felt earlier so adjacent levels
+  // feel more distinct; level 1 and 100 are unchanged (no cap/balance change).
+  const f = Math.pow(clampN(((level || 1) - 1) / 99, 0, 1), 0.85);
   const grid = Math.round(lerpN(b.grid[0], b.grid[1], f));
   return {
     R: grid, C: grid,
@@ -228,24 +230,41 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
       for (const n of g.all) { n.x = ox + (n.c + 0.5) * cellW; n.y = oy + (n.r + 0.5) * cellH; }
     };
 
-    const randColor = () => g.stations[Math.floor(rng() * g.stations.length)].colorHex;
+    const shuffleArr = (arr) => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+    // BALANCED car colours: deal from a shuffled bag of the distinct bay colours
+    // and refill when empty — so every bay gets cars evenly and the stream never
+    // clumps on one colour (a plain random pick did both).
+    const drawColor = () => {
+      if (!g.colorBag || g.colorBag.length === 0) g.colorBag = shuffleArr([...(g.bayColors || [])]);
+      return g.colorBag.pop();
+    };
 
     // Build / rebuild the road network for a given config (used at start and on
     // each new survival wave). Resets in-flight cars and refills the colour queue.
     const installNet = (c) => {
-      // Grow several candidate networks and keep the fullest, so the road tree
-      // covers the grid well (with bounding-box layout this fills the board).
-      let net = generate(c.R, c.C, c.forks, rng, c.colors);
-      const minNodes = Math.max(9, Math.floor(c.R * c.C * 0.5));
-      for (let tries = 0; net.all.length < minNodes && tries < 7; tries++) {
-        const alt = generate(c.R, c.C, c.forks, rng, c.colors);
-        if (alt.all.length > net.all.length) net = alt;
+      // ONE distinct colour per bay so a car's colour maps to exactly one bay
+      // (no ambiguous duplicate-colour bays). Aim the tree at `want` leaves so the
+      // bay count == the colour count; pick the candidate closest to that (and,
+      // tie-broken, the fullest board so the roads still fill the space).
+      const want = clampN(c.colors, 2, PAL.length);
+      const desired = Math.max(1, want - 1); // forks → roughly `want` leaves
+      const score = (net) => Math.abs(net.stations.length - want) * 1000 - net.all.length;
+      let best = generate(c.R, c.C, desired, rng, want);
+      for (let tries = 0; tries < 7; tries++) {
+        const alt = generate(c.R, c.C, desired, rng, want);
+        if (score(alt) < score(best)) best = alt;
       }
-      g.root = net.root; g.all = net.all; g.forks = net.forks; g.stations = net.stations;
+      g.root = best.root; g.all = best.all; g.forks = best.forks; g.stations = best.stations;
+      // Assign a unique colour per bay (shuffled). Only repeats if a tree somehow
+      // overshoots `want` leaves (rare; capped at the 6-colour palette).
+      const palette = shuffleArr(PAL.slice(0, want));
+      g.stations.forEach((s, i) => { s.colorHex = palette[i % palette.length]; });
+      g.bayColors = [...new Set(g.stations.map((s) => s.colorHex))];
+      g.colorBag = [];
       g.R = c.R; g.C = c.C; g.cfgForks = c.forks; g.cfgColors = c.colors;
       g.maxC = c.maxC; g.cps = c.cps; g.spawnEvery = c.spawn;
       g.trains = []; g.spawnAcc = -1400;
-      g.queue = [randColor(), randColor(), randColor()];
+      g.queue = [drawColor(), drawColor(), drawColor()];
       layout();
     };
     installNet(cfg);
@@ -299,7 +318,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
       const waveBudgetOk = g.isWave ? g.waveSpawned < g.waveCars : g.spawned < g.budget;
       if (g.bannerT <= 0 && g.spawnAcc >= g.spawnEvery && waveBudgetOk && g.trains.length < g.maxC && !leadBusy) {
         g.spawnAcc = 0; g.spawned += 1; if (g.isWave) g.waveSpawned += 1;
-        const target = g.queue.shift(); g.queue.push(randColor());
+        const target = g.queue.shift(); g.queue.push(drawColor());
         g.trains.push({ from: g.root, to: g.root.children[0], t: 0, target });
       }
 

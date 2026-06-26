@@ -96,7 +96,9 @@ function shuffle(arr, rnd) {
 export function specForLevel(diff, levelIndex) {
   const key = SM_DIFF_KEYS.includes(diff) ? diff : 'easy';
   const lv = clamp(Math.floor(levelIndex) || 1, 1, SM_LEVELS_PER_TIER);
-  const t = (lv - 1) / (SM_LEVELS_PER_TIER - 1);
+  // Front-loaded curve (^0.85): the climb is felt earlier so levels feel more
+  // distinct where players are; level 1 and 100 unchanged.
+  const t = Math.pow((lv - 1) / (SM_LEVELS_PER_TIER - 1), 0.85);
   const b = BOUNDS[key];
   return {
     diff: key,
