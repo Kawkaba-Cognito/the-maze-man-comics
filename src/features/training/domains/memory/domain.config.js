@@ -12,15 +12,15 @@ const memory = {
   subs: [
     {
       id: 'working',
-      name: 'Memo Span',
-      nameAr: 'مدى الذاكرة',
-      blurb: 'Watch cells light up in sequence, then reproduce the pattern.',
-      blurbAr: 'راقب إضاءة الخلايا بالتسلسل، ثم أعد النمط.',
+      name: 'Story Time',
+      nameAr: 'وقت القصة',
+      blurb: 'Watch a story unfold panel by panel, then rebuild it in the right order.',
+      blurbAr: 'شاهد القصة تتكشّف لوحةً لوحة، ثم أعد ترتيبها بالتسلسل الصحيح.',
       gameCount: 1,
       progress: 0,
-      gameKey: 'memo-span',
+      gameKey: 'story-grid',
       tier: 'free',
-      loader: () => import('./games/memo-span'),
+      loader: () => import('./games/story-grid'),
     },
     {
       id: 'nback',

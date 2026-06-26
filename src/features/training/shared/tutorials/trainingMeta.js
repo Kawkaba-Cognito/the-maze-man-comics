@@ -7,6 +7,7 @@ export const TRAINING_META = {
   'piano-tap': { name: 'Piano Tap', nameAr: 'عزف سريع' },
   'trail-making': { name: 'Trail Making', nameAr: 'صل الأرقام' },
   'memo-span': { name: 'Memo Span', nameAr: 'مدى الذاكرة' },
+  'story-grid': { name: 'Story Time', nameAr: 'وقت القصة' },
   nback: { name: 'N-Back', nameAr: 'إن-باك' },
   'paired-associates': { name: 'Pair Match', nameAr: 'مطابقة الأزواج' },
   wordle: { name: 'Word Maze', nameAr: 'متاهة الكلمات' },

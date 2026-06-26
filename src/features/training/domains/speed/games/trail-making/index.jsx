@@ -309,13 +309,13 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
       prevRuleRef.current = ruleKey;
       readyRef.current = true;
       deadlineRef.current = Infinity; // clock paused during the banner
-      setReadyInfo({ variant, decoys, startColor });
+      setReadyInfo({ variant, decoys, startColor, first: boardIdxRef.current === 0 });
       const t0 = performance.now();
       readyTimerRef.current = setTimeout(() => {
         setReadyInfo(null);
         survT0Ref.current += performance.now() - t0; // don't let the banner eat the survival clock
         begin();
-      }, 1400);
+      }, 1900);
     } else {
       setReadyInfo(null);
       begin();
@@ -508,20 +508,27 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
         {readyInfo && (
           <div style={S.ready}>
             <div style={S.readyCard}>
+              <div style={S.readyKicker}>
+                {readyInfo.first
+                  ? (isAr ? 'استعدّ' : 'Get ready')
+                  : (isAr ? '⚡ قاعدة جديدة' : '⚡ New rule')}
+              </div>
               <div style={S.readyTitle}>
                 {readyInfo.variant === 'color'
-                  ? (isAr ? 'بدّل بين اللونين!' : 'Alternate the colours!')
+                  ? (isAr ? 'بدّل اللون مع كل رقم!' : 'Alternate the colour each step!')
                   : (isAr ? 'صِل الأرقام بالترتيب ١→٢→٣' : 'Connect 1 → 2 → 3 in order')}
               </div>
               {readyInfo.variant === 'color' && (
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', margin: '8px 0 2px' }}>
-                  <span style={{ ...S.readyDot, background: CTT_COLORS[readyInfo.startColor] }} />
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', margin: '10px 0 2px' }}>
+                  <span style={{ ...S.readyDot, background: CTT_COLORS[readyInfo.startColor] }}>1</span>
                   <b style={{ color: '#5a4a32' }}>→</b>
-                  <span style={{ ...S.readyDot, background: CTT_COLORS[(readyInfo.startColor + 1) % 2] }} />
+                  <span style={{ ...S.readyDot, background: CTT_COLORS[(readyInfo.startColor + 1) % 2] }}>2</span>
+                  <b style={{ color: '#5a4a32' }}>→</b>
+                  <span style={{ ...S.readyDot, background: CTT_COLORS[readyInfo.startColor], opacity: 0.85 }}>3</span>
                 </div>
               )}
               {readyInfo.decoys > 0 && (
-                <div style={S.readySub}>{isAr ? 'وتجاهل دوائر ✕' : 'Ignore the ✕ circles'}</div>
+                <div style={S.readySub}>{isAr ? 'وتجاهل دوائر ✕ — إنها فخاخ' : 'Ignore the ✕ circles — they are traps'}</div>
               )}
             </div>
           </div>
@@ -566,8 +573,9 @@ const styles = {
   survFill: { height: '100%' },
   ready: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,253,248,0.78)', zIndex: 3, pointerEvents: 'none' },
   readyCard: { background: '#fffdf8', border: '2px solid #cdbfa6', borderRadius: 16, padding: '16px 22px', textAlign: 'center', boxShadow: '4px 4px 0 #1a1208', maxWidth: '82%' },
+  readyKicker: { display: 'inline-block', marginBottom: 6, padding: '2px 12px', borderRadius: 999, background: '#7a5a1e', color: '#fff7e6', fontWeight: 900, fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
   readyTitle: { fontWeight: 900, fontSize: 18, color: '#2d2d2d' },
-  readyDot: { width: 22, height: 22, borderRadius: '50%', display: 'inline-block', border: '2px solid rgba(0,0,0,0.25)' },
+  readyDot: { width: 26, height: 26, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 13, border: '2px solid rgba(0,0,0,0.25)' },
   readySub: { marginTop: 8, fontWeight: 800, fontSize: 13, color: '#7a5a1e' },
   overWrap: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' },
   overTitle: { margin: '0 0 8px', fontWeight: 900, fontSize: 24 },

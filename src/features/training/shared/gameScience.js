@@ -177,6 +177,28 @@ export const GAME_SCIENCE = {
       foot: 'جزّئ المسار إلى مجموعات من ٣–٤؛ الذاكرة تحفظ مجموعات لا أفراداً.',
     },
   },
+  'story-grid': {
+    en: {
+      title: 'The science',
+      intro: 'Story Time trains temporal-order memory — holding not just WHAT happened but the SEQUENCE it happened in, then reproducing it (the comic-strip cousin of the Picture-Arrangement task).',
+      sections: [
+        { h: '🧠 Order memory', b: 'Remembering the order of events is a distinct memory skill, leaning on the hippocampus and prefrontal cortex — the same system that lets you retell your day.' },
+        { h: '📖 Chunk it into a story', b: 'Linked events form a single narrative chunk, so memory holds far more than a loose list (Miller, 1956). A good story is easier to recall than random items.' },
+        { h: '🕵️ Filtering decoys', b: 'Ignoring scenes that never happened trains selective gating — keeping working memory clear of irrelevant material, which predicts higher capacity (Vogel et al., 2005).' },
+      ],
+      foot: 'Knit the panels into one little story as you watch — sequences stick better than lists.',
+    },
+    ar: {
+      title: 'العلم وراء اللعبة',
+      intro: '«وقت القصة» يدرّب ذاكرة التسلسل الزمني — لا حفظ ما حدث فقط بل ترتيب حدوثه، ثم إعادة إنتاجه (ابن عمّ مهمة «ترتيب الصور» على هيئة شريط مصوّر).',
+      sections: [
+        { h: '🧠 ذاكرة الترتيب', b: 'تذكّر ترتيب الأحداث مهارة ذاكرة مستقلّة، تعتمد على الحُصين والقشرة الجبهية — النظام نفسه الذي يتيح لك سرد يومك.' },
+        { h: '📖 اجعلها قصة', b: 'الأحداث المترابطة تشكّل «كتلة» سردية واحدة، فتحمل الذاكرة أكثر بكثير من قائمة مبعثرة (ميلر، 1956). القصة الجيدة أسهل استرجاعاً من عناصر عشوائية.' },
+        { h: '🕵️ تصفية الخدع', b: 'تجاهل مشاهد لم تحدث يدرّب البوّابة الانتقائية — إبقاء الذاكرة العاملة نقيّة من غير المهمّ، وهو ما يتنبأ بسعة أعلى (فوغل وآخرون، 2005).' },
+      ],
+      foot: 'انسج اللوحات في قصة صغيرة وأنت تشاهد — التسلسل أرسخ من القوائم.',
+    },
+  },
   'nback': {
     en: {
       title: 'The science',

@@ -3,6 +3,30 @@ const READY_NOTE = {
   ar: 'بعد ذلك ستختار البقاء أو المستويات أو مرّر والعب وتلعب فعلياً.',
 };
 
+/* Language-free diagrams for the Trail Making rule explanations (EN + AR). The
+ * colours below match the in-game Color Trails palette (CVD-safe blue / amber). */
+const tmCirc = (bg, label, txt = '#fff') => (
+  <span style={{
+    width: 30, height: 30, borderRadius: '50%', background: bg, color: txt,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    fontWeight: 800, fontSize: 14, border: '2px solid rgba(0,0,0,0.2)',
+  }}>{label}</span>
+);
+const tmArrow = <span style={{ fontWeight: 900, color: '#7a5a1e' }}>→</span>;
+const TM_COLOR_DIAGRAM = (
+  <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+    {tmCirc('#0072B2', '1')}{tmArrow}{tmCirc('#E69F00', '2')}{tmArrow}
+    {tmCirc('#0072B2', '3')}{tmArrow}{tmCirc('#E69F00', '4')}
+  </div>
+);
+const TM_DECOY_DIAGRAM = (
+  <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
+    {tmCirc('#1b2940', '5', '#eaf3ff')}
+    {tmCirc('#eef1f4', '✕', '#9aa6b2')}
+    {tmCirc('#1b2940', '6', '#eaf3ff')}
+  </div>
+);
+
 const STEPS = {
   'cancel-task': {
     en: [
@@ -66,14 +90,30 @@ const STEPS = {
   },
   'trail-making': {
     en: [
-      { title: 'Connect in order', body: 'Tap circles in numeric order: 1 → 2 → 3 … Race the clock to finish the trail.', icon: '🔗' },
-      { title: 'Alternate on hard', body: 'Harder levels alternate numbers and letters (1-A-2-B…). Read the prompt each round.', icon: '🔤' },
-      { title: 'Wrong tap penalty', body: 'Tapping out of order costs time. Plan your path before you start clicking.', icon: '⏱️', note: READY_NOTE.en },
+      { title: 'Connect in order', body: 'Tap the circles in number order: 1 → 2 → 3 … A green line traces your path. Finish the whole trail before the timer hits zero.', icon: '🔗', pills: ['Always start at 1', 'Beat the clock ⏱'] },
+      { title: 'The COLOUR rule', body: 'On some boards every number appears TWICE — once blue, once amber. Now you must ALTERNATE colours as you climb: blue 1 → amber 2 → blue 3 … The “Colour” chip at the top shows which colour to tap next. Tapping the right number in the wrong colour is an error.', diagram: TM_COLOR_DIAGRAM, pills: ['Right number, right colour', 'Colour chip = tap next'] },
+      { title: 'Ignore the ✕ traps', body: 'Harder boards add grey ✕ decoy circles mixed in. They are traps — never tap them. A wrong tap (a ✕, the wrong colour, or out of order) flashes red and cuts your remaining time.', diagram: TM_DECOY_DIAGRAM, pills: ['✕ = trap, skip it', 'Wrong tap = −2s'] },
+      { title: 'A banner warns you', body: 'Whenever the rule changes — colours turn on, or ✕ traps appear — a banner pauses the clock and tells you the NEW rule. Read it, then go. Boards with the same rule flow on with no pause, so you only stop when something actually changes.', icon: '🚦', note: READY_NOTE.en },
     ],
     ar: [
-      { title: 'صل بالترتيب', body: 'اضغط الدوائر بالترتيب الرقمي: ١ ← ٢ ← ٣ … سباق الزمن لإنهاء المسار.', icon: '🔗' },
-      { title: 'تناوب في الصعب', body: 'المستويات الصعبة تناوب أرقاماً وحروفاً (١-أ-٢-ب…). اقرأ التعليمات كل جولة.', icon: '🔤' },
-      { title: 'عقوبة الخطأ', body: 'الضغط خارج الترتيب يكلّف وقتاً. خطّط مسارك قبل النقر.', icon: '⏱️', note: READY_NOTE.ar },
+      { title: 'صل بالترتيب', body: 'اضغط الدوائر بترتيب الأرقام: ١ ← ٢ ← ٣ … خطٌّ أخضر يرسم مسارك. أنهِ المسار كاملاً قبل أن ينتهي الوقت.', icon: '🔗', pills: ['ابدأ دائماً من ١', 'اسبق الزمن ⏱'] },
+      { title: 'قاعدة الألوان', body: 'في بعض اللوحات يظهر كل رقم مرّتين — مرة بالأزرق ومرة بالكهرماني. الآن عليك أن تبدّل اللون مع كل رقم: أزرق ١ ← كهرماني ٢ ← أزرق ٣ … وشارة «اللون» في الأعلى تدلّك على اللون التالي. الرقم الصحيح باللون الخطأ يُحتسب خطأً.', diagram: TM_COLOR_DIAGRAM, pills: ['الرقم الصحيح باللون الصحيح', 'شارة اللون = اضغط التالي'] },
+      { title: 'تجاهل فخاخ ✕', body: 'اللوحات الأصعب تضيف دوائر ✕ رمادية خادعة. إنها فخاخ — لا تضغطها أبداً. أي ضغطة خاطئة (✕ أو لون خطأ أو خارج الترتيب) تومض بالأحمر وتقتطع من وقتك المتبقي.', diagram: TM_DECOY_DIAGRAM, pills: ['✕ = فخّ، تجاوزه', 'ضغطة خاطئة = ‎−٢ث'] },
+      { title: 'لافتة تنبّهك', body: 'كلما تغيّرت القاعدة — اشتغلت الألوان أو ظهرت فخاخ ✕ — تظهر لافتة توقِف المؤقّت وتخبرك بالقاعدة الجديدة. اقرأها ثم انطلق. اللوحات ذات القاعدة نفسها تتوالى بلا توقّف، فلا تتوقّف إلا عند تغيّر فعلي.', icon: '🚦', note: READY_NOTE.ar },
+    ],
+  },
+  'story-grid': {
+    en: [
+      { title: 'Watch Kawkab\'s story', body: 'A short story plays one panel at a time — Kawkab eats, then studies, then sleeps… Watch the ORDER the panels appear in.', icon: '📖', pills: ['One panel at a time', 'Remember the order'] },
+      { title: 'Rebuild it in order', body: 'The panels get shuffled into a tray. Tap them in the order the story happened — first panel first, and so on into the numbered slots.', icon: '🔢', pills: ['Tap in story order', 'Tap a slot to undo'] },
+      { title: 'Watch for decoys', body: 'Harder rounds slip in extra scenes that never happened. Don\'t place those — only the panels you actually saw, in their real order.', icon: '🕵️' },
+      { title: 'Stories grow', body: 'More panels, faster telling, and more decoys come as you climb. Tip: link the panels into a little story in your head — sequences stick better than lists.', icon: '🧠', note: READY_NOTE.en },
+    ],
+    ar: [
+      { title: 'شاهد قصة كوكب', body: 'تُعرض قصة قصيرة لوحةً لوحة — كوكب يأكل، ثم يدرس، ثم ينام… راقب ترتيب ظهور اللوحات.', icon: '📖', pills: ['لوحة في كل مرة', 'احفظ الترتيب'] },
+      { title: 'أعد ترتيبها', body: 'تُخلط اللوحات في صينية. اضغطها بالترتيب الذي حدثت فيه القصة — الأولى أولاً، وهكذا في الخانات المرقّمة.', icon: '🔢', pills: ['اضغط بترتيب القصة', 'اضغط خانة للتراجع'] },
+      { title: 'انتبه للخدع', body: 'الجولات الأصعب تدسّ مشاهد لم تحدث. لا تضعها — فقط اللوحات التي رأيتها فعلاً، بترتيبها الحقيقي.', icon: '🕵️' },
+      { title: 'القصص تطول', body: 'لوحات أكثر وسرد أسرع وخدع أكثر كلما تقدّمت. نصيحة: اربط اللوحات في قصة صغيرة في ذهنك — التسلسل أرسخ من القوائم.', icon: '🧠', note: READY_NOTE.ar },
     ],
   },
   'memo-span': {
