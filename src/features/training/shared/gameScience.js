@@ -132,23 +132,23 @@ export const GAME_SCIENCE = {
   'train-switch': {
     en: {
       title: 'The science',
-      intro: 'Routing each car to its matching-colour parking bay trains attention you must divide across several things at once.',
+      intro: 'A Train-of-Thought-style task: route each car to its matching-colour bay while several share the roads. It trains divided attention — tracking and managing multiple moving things at once.',
       sections: [
-        { h: '🎯 Divided attention', b: 'Watching multiple cars and the right junctions at the same time trains the ability to share focus without losing track.' },
-        { h: '🧭 Response selection', b: 'Setting the correct junction at the correct moment trains rule-based action choice and timing.' },
-        { h: '🚫 Inhibition', b: 'Not setting a junction you do not need yet trains impulse control under pressure.' },
+        { h: '🎯 Divided attention', b: 'Watching several cars and the right junctions at the same time trains the ability to share focus without losing track. Human tracking capacity is only about four objects, so difficulty rises mainly by adding concurrent cars — easy stays under that limit, hard pushes past it.' },
+        { h: '🧭 Plan ahead', b: 'You must set each junction BEFORE a car reaches it, so you anticipate conflicts and time decisions — planning and prioritising under pressure.' },
+        { h: '🚫 Response selection & inhibition', b: 'Choosing the right junction at the right moment, and leaving alone the ones you do not need yet, trains rule-based action choice and impulse control.' },
       ],
-      foot: 'Triage: handle the most urgent car first, then the next.',
+      foot: 'Triage: handle the most urgent car first, then the next. This trains and tracks this specific skill — it is not a medical test.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: 'توجيه كل سيارة إلى موقف لونها المطابق يدرّب انتباهاً عليك توزيعه على عدّة أمور في آن واحد.',
+      intro: 'مهمة على نمط «قطار الأفكار»: وجّه كل سيارة إلى موقف لونها المطابق بينما تتشارك عدّة سيارات الطرق. تدرّب الانتباه الموزّع — تتبّع وإدارة عدّة أشياء متحرّكة معاً.',
       sections: [
-        { h: '🎯 الانتباه الموزّع', b: 'مراقبة عدّة سيارات والمفترقات الصحيحة معاً تدرّب القدرة على تقاسم التركيز دون فقدان المسار.' },
-        { h: '🧭 اختيار الاستجابة', b: 'ضبط المفترق الصحيح في اللحظة الصحيحة يدرّب اختيار الفعل وفق قاعدة وتوقيته.' },
-        { h: '🚫 الكبح', b: 'عدم ضبط مفترق لا تحتاجه بعد يدرّب ضبط الاندفاع تحت الضغط.' },
+        { h: '🎯 الانتباه الموزّع', b: 'مراقبة عدّة سيارات والمفترقات الصحيحة معاً تدرّب تقاسم التركيز دون فقدان المسار. سعة التتبّع لدى الإنسان نحو أربعة أجسام فقط، لذا ترتفع الصعوبة أساساً بزيادة السيارات المتزامنة — السهل يبقى دون هذا الحدّ والصعب يتجاوزه.' },
+        { h: '🧭 خطّط مسبقاً', b: 'عليك ضبط كل مفترق قبل وصول السيارة إليه، فتتوقّع التعارضات وتوقّت قراراتك — تخطيط وترتيب أولويات تحت الضغط.' },
+        { h: '🚫 اختيار الاستجابة والكبح', b: 'اختيار المفترق الصحيح في اللحظة الصحيحة، وترك ما لا تحتاجه بعد، يدرّب اختيار الفعل وفق قاعدة وضبط الاندفاع.' },
       ],
-      foot: 'رتّب الأولويات: عالج السيارة الأكثر إلحاحاً أولاً ثم التالية.',
+      foot: 'رتّب الأولويات: عالج السيارة الأكثر إلحاحاً أولاً ثم التالية. هذا يدرّب ويتابع هذه المهارة تحديداً، وليس اختباراً طبياً.',
     },
   },
 
@@ -336,7 +336,7 @@ export const GAME_SCIENCE = {
   'math-gates': {
     en: {
       title: 'The science',
-      intro: 'Steer into the gate with the right answer while the operation keeps changing — self-paced mental arithmetic plus task-switching. You only lose by answering wrong, never by the clock. Arithmetic fluency is a recognized component of processing speed (CHC theory).',
+      intro: 'Steer the runner into the gate with the right answer while the operation keeps changing — mental arithmetic plus task-switching. The gate drifts down at a relaxed pace with no countdown; you lose only by steering wrong, after several mistakes. Arithmetic fluency is a recognized component of processing speed (CHC theory).',
       sections: [
         { h: '➗ Arithmetic fluency', b: 'Your main score is correct answers per minute — the standard math-fluency measure. Small facts are recalled from memory; bigger ones are computed step by step, which is why large problems (especially ×) take longer (the “problem-size effect”).' },
         { h: '🔄 Switch cost', b: 'The operation changes from gate to gate, so you reconfigure the rule each time — and pay a measurable “switch cost” (slower after a change). We report it as your switch-trial time minus your repeat-trial time.' },
@@ -347,7 +347,7 @@ export const GAME_SCIENCE = {
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: 'توجّه إلى البوابة بالإجابة الصحيحة بينما تتغيّر العملية — حساب ذهني على إيقاعك مع تبديل المهامّ. تخسر فقط بالإجابة الخاطئة، لا بالوقت. الطلاقة الحسابية مكوّن معترف به من سرعة المعالجة (نظرية CHC).',
+      intro: 'وجّه العدّاء إلى البوابة بالإجابة الصحيحة بينما تتغيّر العملية — حساب ذهني مع تبديل المهامّ. تنزل البوابة بإيقاع مريح دون عدّاد؛ تخسر فقط بالتوجيه الخاطئ، وبعد عدة أخطاء. الطلاقة الحسابية مكوّن معترف به من سرعة المعالجة (نظرية CHC).',
       sections: [
         { h: '➗ الطلاقة الحسابية', b: 'درجتك الأساسية هي الإجابات الصحيحة في الدقيقة — مقياس الطلاقة الحسابية المعياري. الحقائق الصغيرة تُستدعى من الذاكرة، والأكبر تُحسب خطوة بخطوة، لذا تأخذ المسائل الكبيرة (خصوصاً ×) وقتاً أطول («تأثير حجم المسألة»).' },
         { h: '🔄 كلفة التبديل', b: 'تتغيّر العملية من بوابة لأخرى فتعيد ضبط القاعدة في كل مرة — وتدفع «كلفة تبديل» قابلة للقياس (أبطأ بعد التغيير). نعرضها كزمن جولات التبديل ناقص زمن جولات التكرار.' },

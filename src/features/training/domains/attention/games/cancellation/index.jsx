@@ -131,21 +131,24 @@ const ShapeSvg = React.memo(function ShapeSvg({ shape, color, size = 40 }) {
   useSyncExternalStore(subscribeShapeNorm, getShapeNormVersion, getShapeNormVersion);
   const inner = SH[shape] || SH.circle;
   const scale = getShapeScale(shape);
-  // Apply the area-normalization scale as a CSS transform on the <svg> itself —
-  // NOT by injecting a <g transform> into dangerouslySetInnerHTML, which could
-  // intermittently render blank (the "no shape" bug). innerHTML stays the bare,
-  // reliable shape markup; the scale is clip-safe (≤1, centred).
-  const style = { color, display: 'block' };
+  // Apply the area-normalization scale through the VIEWBOX, not a CSS transform.
+  // A CSS `transform: scale()` with `transform-origin: center` on an SVG that is
+  // also CSS-sized (the cell sets svg width/height to 90%) is browser-flaky and
+  // could intermittently push the shape off-canvas → a blank cell (the "no shape"
+  // bug). Widening the viewBox around the centre (50,50) shrinks the drawn shape
+  // with pure coordinates — no transform, no origin, always renders.
+  let viewBox = '0 0 100 100';
   if (scale > 0 && scale < 1) {
-    style.transform = `scale(${scale.toFixed(3)})`;
-    style.transformOrigin = 'center';
+    const span = 100 / scale;
+    const off = (span - 100) / 2;
+    viewBox = `${-off.toFixed(2)} ${-off.toFixed(2)} ${span.toFixed(2)} ${span.toFixed(2)}`;
   }
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 100 100"
-      style={style}
+      viewBox={viewBox}
+      style={{ color: color || '#2d2d2d', display: 'block' }}
       dangerouslySetInnerHTML={{ __html: inner }}
     />
   );
@@ -1389,7 +1392,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         fixed += el.getBoundingClientRect().height;
       });
       // Cushion for grid wrapper padding / rounding — keep small so cells use real space.
-      fixed += 12;
+      fixed += 6;
       const cs = window.getComputedStyle(wrap);
       const wrapPadX =
         (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
@@ -1401,7 +1404,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       );
       const availW = Math.min(availFromWrap, Math.floor(vpW * 0.995));
       // Use almost all space below measured HUD (visualViewport already omits mobile browser chrome).
-      const verticalReserve = 6;
+      const verticalReserve = 3;
       let availHCalc = Math.max(
         isDenseHard ? 72 : 64,
         Math.min(
@@ -1421,7 +1424,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           ? Math.max(isDenseHard ? 72 : 64, outerRectH - 10)
           : availHCalc;
       const gap = gridN >= 7 ? 2 : 3;
-      const INNER_PAD = 4;
+      const INNER_PAD = 3;
       const totalGap = gap * (gridN - 1);
       const minCell = gridN >= 10 ? 16 : 8;
       // SQUARE cells: shapes in a cancellation task must stay recognisable, so
@@ -1441,9 +1444,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         );
       }
       // Square cells leave vertical slack on tall phones (board looks empty).
-      // The shape is sized by the SMALLER dimension, so we can make cells TALLER
-      // to fill the height without distorting shapes — fewer empty gaps.
-      const cellH = Math.max(cell, Math.min(fitH, Math.round(cell * 1.6)));
+      // The shape is sized by the SMALLER dimension, so we make cells TALLER to
+      // fill the height without distorting shapes (the shape stays centred with
+      // even spacing) — this exploits the phone's spare vertical space and gives
+      // bigger, more comfortable tap targets. Capped so cells never look stretched.
+      const cellH = Math.max(cell, Math.min(fitH, Math.round(cell * 1.85)));
       setGridMetrics({ cellW: cell, cellH, gap, pad: INNER_PAD });
     };
     measure();

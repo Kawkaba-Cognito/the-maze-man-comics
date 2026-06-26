@@ -17,6 +17,10 @@ import { drawCosmosRunner, COSMOS_GOLD, COSMOS_LANE_A, COSMOS_LANE_B, COSMOS_STI
 
 const ACCENT = COSMOS_GOLD;
 const LANES = 3;
+// Seconds for a gate to drift from the top to the runner line — a relaxed,
+// constant pace (no countdown, no speed-up). Generous so it never feels like a
+// timer; the only way to lose is steering into the wrong answer.
+const DESCEND_SEC = 3.8;
 
 const BASE = {
   easy: { ops: ['+', '-'], gap: 700, lives: 5, target: 8 },
@@ -185,26 +189,23 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
     } else onResult({ score: g.passed });
   }, [mode, cfg.target, onResult, isAr, playSfx]);
 
-  // Move the runner between lanes (browse only — no answer is committed).
+  // Steer the runner between lanes — the lane you're in when the gate arrives is
+  // your answer. `lastMoveAt` records when you last steered (for decision time).
   const setLane = useCallback((ln) => {
     const g = stateRef.current; if (!g || finishedRef.current) return;
     const next = Math.max(0, Math.min(LANES - 1, ln));
-    if (next !== g.lane) { g.lane = next; playSfx('click'); }
+    if (next !== g.lane) { g.lane = next; g.lastMoveAt = performance.now(); playSfx('click'); }
   }, [playSfx]);
   const moveBy = useCallback((d) => { const g = stateRef.current; if (g) setLane(g.lane + d); }, [setLane]);
-  // Commit an answer: a specific lane, or the lane the runner is currently in.
-  const commitLane = useCallback((lane) => { resolveRef.current?.(Math.max(0, Math.min(LANES - 1, lane))); }, []);
-  const commitCurrent = useCallback(() => { const g = stateRef.current; if (g) resolveRef.current?.(g.lane); }, []);
 
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'ArrowLeft') { e.preventDefault(); moveBy(-1); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); moveBy(1); }
-      else if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowUp') { e.preventDefault(); commitCurrent(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [moveBy, commitCurrent]);
+  }, [moveBy]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -216,7 +217,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       lane: 1, gate: null, gapTimer: cfg.gap, t0: performance.now(),
       passed: 0, lives: cfg.lives, combo: 0, bestCombo: 0, gatesPlayed: 0,
       flash: null, charX: 0,
-      events: [], prevOp: null, // per-gate science capture
+      events: [], prevOp: null, lastMoveAt: null, // per-gate science capture
       W: 0, H: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
     };
     stateRef.current = g;
@@ -230,14 +231,15 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       const eqObj = genGate(dk, f, rng);
       const bandH = Math.min(g.H * 0.16, 96);
       g.gate = { y: -bandH, eq: eqObj, shownAt: performance.now() };
-      g.lane = 1; // recenter the runner so both side lanes are one move away
+      g.lastMoveAt = null; // decision time is measured from this gate's onset
       const switched = g.prevOp != null && eqObj.op !== g.prevOp;
       setEqParts({ a: eqObj.a, op: eqObj.op, b: eqObj.b, switched });
     };
 
-    // Commit the player's answer for the held gate. This is the ONLY way a gate
-    // resolves — there is no descent deadline and no run clock, so the only way
-    // to lose is an explicit wrong choice.
+    // Resolve the gate by the lane the runner is in when it ARRIVES (called from
+    // the frame loop on arrival). There is no clock/time-bank — the gate just
+    // drifts down at a relaxed, constant pace; you lose only by steering wrong,
+    // and only multiple wrong answers (lives) end the run.
     resolveRef.current = (lane) => {
       if (finishedRef.current || !g.gate) return;
       const eqo = g.gate.eq;
@@ -245,10 +247,10 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       g.gatesPlayed += 1;
       const ok = lane === eqo.correctLane;
       const isSwitch = g.prevOp == null ? null : eqo.op !== g.prevOp;
-      const rtMs = Math.round(now - g.gate.shownAt); // decision time (untimed, but still a fluency signal)
+      // Decision time = onset → last steer (null if the runner never moved).
+      const rtMs = g.lastMoveAt != null ? Math.round(g.lastMoveAt - g.gate.shownAt) : null;
       g.events.push({ op: eqo.op, a: eqo.a, b: eqo.b, answer: eqo.answer, chosen: eqo.options[lane], correct: ok, rtMs, isSwitch, split: eqo.split });
       g.prevOp = eqo.op;
-      g.lane = lane; // snap the runner into the chosen lane
       if (ok) {
         g.passed += 1; g.combo += 1; if (g.combo > g.bestCombo) g.bestCombo = g.combo;
         awardPoints(1); playSfx('collect');
@@ -287,12 +289,16 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       const catchY = charY - bandH * 0.3;
 
       if (g.gate) {
-        // Slide the gate down to the hold line, then WAIT — no deadline. It only
-        // resolves when the player commits an answer (resolveRef), so the sole
-        // way to lose is a wrong choice.
-        if (g.gate.y < catchY) {
-          const descendPx = (catchY + bandH) / 0.7; // ~0.7s slide-in (purely visual)
-          g.gate.y = Math.min(catchY, g.gate.y + descendPx * dt);
+        // The gate drifts down at a relaxed, CONSTANT pace (no clock, no speed-up).
+        // Steer the runner under the correct answer before it arrives; on arrival
+        // the current lane is your answer. Generous travel time so it's not a
+        // time trap — you lose only by choosing wrong.
+        const descendPx = (catchY + bandH) / DESCEND_SEC;
+        g.gate.y += descendPx * dt;
+        if (g.gate.y >= catchY) {
+          g.gate.y = catchY;
+          resolveRef.current(g.lane);
+          if (finishedRef.current) return;
         }
       } else {
         g.gapTimer -= dt * 1000;
@@ -360,11 +366,12 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
 
   const restart = () => { setOver(null); finishedRef.current = false; setRunId((n) => n + 1); };
 
-  // Tapping a lane IS your answer — it commits that gate immediately.
+  // Tapping a lane STEERS the runner there (your answer is whichever lane you're
+  // in when the gate arrives).
   const onCanvasTap = (e) => {
     const g = stateRef.current; if (!g) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    commitLane(Math.floor(((e.clientX - rect.left) / rect.width) * LANES));
+    setLane(Math.floor(((e.clientX - rect.left) / rect.width) * LANES));
   };
 
   const S = styles;
@@ -433,7 +440,6 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
 
       <div style={S.controls}>
         <button style={S.ctrlBtn} aria-label={isAr ? 'يسار' : 'Left'} onPointerDown={(e) => { e.preventDefault(); moveBy(-1); }}>◀</button>
-        <button style={S.commitBtn} aria-label={isAr ? 'أجب' : 'Answer'} onPointerDown={(e) => { e.preventDefault(); commitCurrent(); }}>✓</button>
         <button style={S.ctrlBtn} aria-label={isAr ? 'يمين' : 'Right'} onPointerDown={(e) => { e.preventDefault(); moveBy(1); }}>▶</button>
       </div>
     </div>
@@ -480,7 +486,6 @@ const styles = {
   overScore: { marginTop: 6, fontWeight: 700, color: '#5a4a32' },
   overNote: { marginTop: 10, fontSize: 12.5, lineHeight: 1.45, color: '#8a8078', textAlign: 'center' },
   overBtn: { flex: 1, padding: '15px 16px', fontWeight: 900, fontSize: 16, color: '#fff', background: ACCENT, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
-  controls: { display: 'flex', gap: 12, padding: '14px 18px calc(14px + env(safe-area-inset-bottom))' },
-  ctrlBtn: { flex: 1, height: 84, fontSize: 38, fontWeight: 900, color: '#fff', background: '#b9a06a', border: 'none', borderRadius: 20, boxShadow: '4px 4px 0 #1a1208', cursor: 'pointer', touchAction: 'none', userSelect: 'none' },
-  commitBtn: { flex: 1.5, height: 84, fontSize: 40, fontWeight: 900, color: '#fff', background: '#2e9e5b', border: 'none', borderRadius: 20, boxShadow: '4px 4px 0 #1a1208', cursor: 'pointer', touchAction: 'none', userSelect: 'none' },
+  controls: { display: 'flex', gap: 14, padding: '14px 18px calc(14px + env(safe-area-inset-bottom))' },
+  ctrlBtn: { flex: 1, height: 84, fontSize: 38, fontWeight: 900, color: '#fff', background: ACCENT, border: 'none', borderRadius: 20, boxShadow: '4px 4px 0 #1a1208', cursor: 'pointer', touchAction: 'none', userSelect: 'none' },
 };

@@ -25,46 +25,60 @@ const DIRV = { N: [-1, 0], S: [1, 0], W: [0, -1], E: [0, 1] };
 const OPP = { N: 'S', S: 'N', E: 'W', W: 'E' };
 
 const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const lerpN = (a, b, t) => a + (b - a) * t;
 
-// Difficulty is grounded in divided-attention research (Train-of-Thought
-// paradigm): the dominant lever is the number of CONCURRENT cars (each adds
-// cognitive load / dual-task cost), then PLANNING DEPTH (forks), TIME PRESSURE
-// (speed, spawn rate), and DISCRIMINATION (distinct colours, kept well-separated
-// so difficulty is attentional, not colour-confusion).
-const BASE = {
-  easy: { R: 5, C: 5, forks: 2, colors: 3, cps: 0.75, spawn: 2500, lives: 5, target: 8,  maxC: 1 },
-  med:  { R: 6, C: 6, forks: 3, colors: 4, cps: 0.95, spawn: 2200, lives: 4, target: 12, maxC: 2 },
-  hard: { R: 7, C: 7, forks: 4, colors: 5, cps: 1.2,  spawn: 1900, lives: 3, target: 16, maxC: 3 },
+/*
+ * DIFFICULTY — grounded in the Train-of-Thought / divided-attention literature
+ * (Lumosity Train of Thought; the validated construct is DIVIDED ATTENTION —
+ * monitoring & routing several moving targets at once). The dominant lever is
+ * therefore the number of CONCURRENT cars (`maxC`); secondary levers are SPEED
+ * (`cps`, spawn rate), TRACK COMPLEXITY (`forks`) and DISCRIMINATION (number of
+ * colours/bays, kept CVD-separable so difficulty is attentional, not colour
+ * confusion). Each lever ramps on its own [start,end] track across the 100
+ * levels so the curve is readable and concurrency clearly leads.
+ */
+// Tiers are differentiated mainly by CONCURRENCY (maxC), anchored on the ~4-object
+// divided-attention capacity limit (Pylyshyn & Storm 1988): EASY stays below it
+// (1–3 cars), MEDIUM rides it (2–4), HARD pushes past it into overload (3–5),
+// where accuracy is known to fall sharply. Colour count (discrimination / spatial
+// memory of bays) and track forks are the secondary tier markers; speed is a
+// modifier kept within reactable bounds (≥~1 s lead time to the first fork).
+const LV = {
+  easy: { grid: [5, 6], maxC: [1, 3], colors: [3, 4], forks: [2, 4], cps: [0.65, 0.95], spawn: [2200, 1400], target: [6, 16], lives: 5 },
+  med:  { grid: [6, 8], maxC: [2, 4], colors: [4, 5], forks: [3, 6], cps: [0.80, 1.15], spawn: [1900, 1150], target: [8, 20], lives: 4 },
+  hard: { grid: [7, 9], maxC: [3, 5], colors: [5, 6], forks: [4, 8], cps: [0.95, 1.40], spawn: [1700, 950],  target: [10, 24], lives: 3 },
 };
 function levelCfg(diff, level) {
-  const b = BASE[diff] || BASE.med;
-  const f = ((level || 1) - 1) / 99;
+  const b = LV[diff] || LV.med;
+  const f = clampN(((level || 1) - 1) / 99, 0, 1);
+  const grid = Math.round(lerpN(b.grid[0], b.grid[1], f));
   return {
-    ...b,
-    R: clampN(b.R + Math.round(f * 2), 5, 9),
-    C: clampN(b.C + Math.round(f * 2), 5, 9),
-    forks: clampN(b.forks + Math.round(f * 4), 2, 8),
-    colors: clampN(b.colors + Math.round(f), 3, 6),
-    maxC: clampN(b.maxC + Math.round(f * 2), 1, 5),
-    cps: b.cps + f * 0.55,
-    spawn: Math.max(1300, b.spawn - f * 700),
-    target: b.target + Math.round(f * 12),
+    R: grid, C: grid,
+    forks: Math.round(lerpN(b.forks[0], b.forks[1], f)),
+    colors: Math.round(lerpN(b.colors[0], b.colors[1], f)),
+    maxC: Math.round(lerpN(b.maxC[0], b.maxC[1], f)),
+    cps: +lerpN(b.cps[0], b.cps[1], f).toFixed(2),
+    spawn: Math.round(lerpN(b.spawn[0], b.spawn[1], f)),
+    target: Math.round(lerpN(b.target[0], b.target[1], f)),
+    lives: b.lives,
     wave: false,
   };
 }
 
-// Survival WAVES: each wave is a batch of cars; clearing one escalates load.
+// Survival WAVES: endless escalation. Concurrency is the star — it steps up every
+// 2 waves (the "dramatic increase" Lumosity adds mid-game), with speed, track
+// complexity and colours ramping alongside. Each wave is a batch of cars to clear.
 function waveCfg(wave) {
   const w = wave - 1;
   return {
-    R: clampN(5 + Math.floor(w / 2), 5, 9),
-    C: clampN(5 + Math.floor(w / 2), 5, 9),
-    forks: clampN(2 + w, 2, 8),
-    colors: clampN(3 + Math.floor(w / 2), 3, 6),
-    cars: 3 + w,                              // cars to clear this wave
-    maxC: clampN(1 + Math.floor(w / 2), 1, 5), // concurrent on the roads
-    cps: 0.7 + w * 0.07,
-    spawn: Math.max(1100, 2400 - w * 110),
+    R: clampN(5 + Math.floor(w / 3), 5, 9),
+    C: clampN(5 + Math.floor(w / 3), 5, 9),
+    forks: clampN(2 + Math.floor(w / 1.5), 2, 8),
+    colors: clampN(3 + Math.floor(w / 3), 3, 6),
+    cars: 3 + w,                                  // cars to clear this wave
+    maxC: clampN(1 + Math.floor(w / 2), 1, 5),    // concurrency steps every 2 waves, capped at overload (5)
+    cps: +Math.min(1.8, 0.7 + w * 0.055).toFixed(2), // speed capped so it stays reactable
+    spawn: Math.max(900, 2200 - w * 110),
     lives: 4,
     wave: true,
   };
@@ -134,7 +148,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
 
   const cfg = useMemo(() => {
     if (mode === 'levels') return levelCfg(diff, level);
-    if (mode === 'passplay') return levelCfg('med', 1);
+    if (mode === 'passplay') return levelCfg('med', 30); // representative mid challenge for all players
     return waveCfg(1); // survival starts at wave 1 and escalates in-engine
   }, [mode, diff, level]);
 
@@ -143,10 +157,21 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     finishedRef.current = true;
     cancelAnimationFrame(rafRef.current);
     const g = gRef.current;
-    if (mode === 'free') { setOver({ score: g.routed }); playSfx('error'); return; }
+    const total = g.routed + g.wrong;
+    const acc = total ? Math.round((100 * g.routed) / total) : 100;
+    const peak = g.peakConc;
+    const meanLoad = g.concActiveFrames ? +(g.concSum / g.concActiveFrames).toFixed(1) : 0;
+    const metrics = { routed: g.routed, acc, peak, meanLoad, wave: g.wave };
+    if (mode === 'free') { setOver({ score: g.routed, metrics }); playSfx('error'); return; }
     if (mode === 'levels') {
       const won = g.routed >= cfg.target;
-      onResult({ won, score: g.routed, summary: isAr ? `ركنت ${g.routed}/${cfg.target}` : `Parked ${g.routed}/${cfg.target}` });
+      onResult({
+        won,
+        score: g.routed,
+        summary: isAr
+          ? `ركنت ${g.routed}/${cfg.target} · ${acc}% · ذروة ${peak}`
+          : `Parked ${g.routed}/${cfg.target} · ${acc}% · peak ${peak}`,
+      });
     } else onResult({ score: g.routed });
   }, [mode, cfg.target, onResult, isAr, playSfx]);
 
@@ -167,23 +192,38 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     const g = {
       cell: 40, trains: [], spawnAcc: -1400,
       spawned: 0, budget: mode === 'passplay' ? ppTrains : Infinity,
-      routed: 0, lives: cfg.lives,
+      routed: 0, wrong: 0, lives: cfg.lives,
       isWave: !!cfg.wave, wave: 1, waveCars: cfg.cars || 0, waveSpawned: 0, waveResolved: 0,
+      // Divided-attention metric capture: peak & mean CONCURRENT load (a tracking-
+      // capacity proxy vs the ~4-object limit) and routing accuracy under that load.
+      peakConc: 0, concSum: 0, concActiveFrames: 0,
       banner: null, bannerT: 0, queue: [],
       W: 0, H: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
     };
 
     const layout = () => {
-      // Stretch the grid to fill the WHOLE board: cell spacing is computed per
-      // axis (cellW × cellH) so the field always uses every pixel. Drawn elements
-      // (roads, bays, junctions, cars) are sized off g.cell = min(cellW, cellH)
-      // so they stay proportional / undistorted even when the grid is stretched.
-      const pad = Math.max(6, Math.round(Math.min(g.W, g.H) * 0.025));
-      g.cellW = (g.W - 2 * pad) / g.C;
-      g.cellH = (g.H - 2 * pad) / g.R;
-      g.cell = Math.min(g.cellW, g.cellH);
-      const ox = (g.W - g.cellW * g.C) / 2, oy = (g.H - g.cellH * g.R) / 2;
-      for (const n of g.all) { n.x = ox + (n.c + 0.5) * g.cellW; n.y = oy + (n.r + 0.5) * g.cellH; }
+      // Fit to the tree's ACTUAL bounding box (not the nominal R×C grid) so the
+      // road network always fills the WHOLE board — no empty quadrants when the
+      // tree happened to grow in one corner. Spacing is per-axis (cellW × cellH);
+      // drawn elements are sized off g.cell = min(cellW, cellH) (capped) so cars
+      // and bays stay proportional even on sparse / lopsided boards.
+      const pad = Math.max(6, Math.round(Math.min(g.W, g.H) * 0.03));
+      if (!g.all || !g.all.length) return;
+      let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+      for (const n of g.all) {
+        if (n.r < minR) minR = n.r; if (n.r > maxR) maxR = n.r;
+        if (n.c < minC) minC = n.c; if (n.c > maxC) maxC = n.c;
+      }
+      const usedC = Math.max(1, maxC - minC + 1);
+      const usedR = Math.max(1, maxR - minR + 1);
+      const cellW = (g.W - 2 * pad) / usedC;
+      const cellH = (g.H - 2 * pad) / usedR;
+      g.cellW = cellW; g.cellH = cellH;
+      // Cap element scale so a sparse axis can't produce giant cars/roads.
+      g.cell = Math.min(cellW, cellH, Math.min(g.W, g.H) * 0.34);
+      const ox = (g.W - cellW * usedC) / 2 - minC * cellW;
+      const oy = (g.H - cellH * usedR) / 2 - minR * cellH;
+      for (const n of g.all) { n.x = ox + (n.c + 0.5) * cellW; n.y = oy + (n.r + 0.5) * cellH; }
     };
 
     const randColor = () => g.stations[Math.floor(rng() * g.stations.length)].colorHex;
@@ -191,9 +231,17 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     // Build / rebuild the road network for a given config (used at start and on
     // each new survival wave). Resets in-flight cars and refills the colour queue.
     const installNet = (c) => {
-      const net = generate(c.R, c.C, c.forks, rng, c.colors);
+      // Grow several candidate networks and keep the fullest, so the road tree
+      // covers the grid well (with bounding-box layout this fills the board).
+      let net = generate(c.R, c.C, c.forks, rng, c.colors);
+      const minNodes = Math.max(9, Math.floor(c.R * c.C * 0.5));
+      for (let tries = 0; net.all.length < minNodes && tries < 7; tries++) {
+        const alt = generate(c.R, c.C, c.forks, rng, c.colors);
+        if (alt.all.length > net.all.length) net = alt;
+      }
       g.root = net.root; g.all = net.all; g.forks = net.forks; g.stations = net.stations;
-      g.R = c.R; g.C = c.C; g.maxC = c.maxC; g.cps = c.cps; g.spawnEvery = c.spawn;
+      g.R = c.R; g.C = c.C; g.cfgForks = c.forks; g.cfgColors = c.colors;
+      g.maxC = c.maxC; g.cps = c.cps; g.spawnEvery = c.spawn;
       g.trains = []; g.spawnAcc = -1400;
       g.queue = [randColor(), randColor(), randColor()];
       layout();
@@ -261,7 +309,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
           const at = t.to;
           if (at.kind === 'station' || at.children.length === 0) {
             if (at.colorHex === t.target) { g.routed += 1; awardPoints(1); playSfx('collect'); }
-            else { g.lives -= 1; playSfx('error'); }
+            else { g.wrong += 1; g.lives -= 1; playSfx('error'); }
             if (g.isWave) g.waveResolved += 1;
             if (mode === 'levels' && g.routed >= cfg.target) { finish(); return; }
             if ((mode === 'levels' || mode === 'free') && g.lives <= 0) { finish(); return; }
@@ -272,12 +320,22 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
         remaining.push(t);
       }
       g.trains = remaining;
-      // Survival: wave complete → escalate to the next (harder) wave.
+      // Sample concurrent load for the divided-attention metrics.
+      const conc = g.trains.length;
+      if (conc > g.peakConc) g.peakConc = conc;
+      if (conc > 0) { g.concSum += conc; g.concActiveFrames += 1; }
+      // Survival: wave complete → escalate. Keep the SAME map while only the
+      // train load changes (concurrency/speed) — Lumosity-style "same board, more
+      // trains" — and only rebuild when the board's complexity actually steps
+      // (grid / forks / colours), so it never feels disorienting.
       if (g.isWave && g.waveResolved >= g.waveCars && g.trains.length === 0) {
         g.wave += 1;
         const wc = waveCfg(g.wave);
+        const sameBoard = wc.R === g.R && wc.C === g.C && wc.forks === g.cfgForks && wc.colors === g.cfgColors;
         g.waveCars = wc.cars; g.waveSpawned = 0; g.waveResolved = 0;
-        installNet(wc); resize();
+        g.maxC = wc.maxC; g.cps = wc.cps; g.spawnEvery = wc.spawn;
+        if (!sameBoard) { installNet(wc); resize(); }
+        else { g.trains = []; g.spawnAcc = -1400; }
         g.banner = isAr ? `الموجة ${g.wave}` : `Wave ${g.wave}`; g.bannerT = 1.6;
         playSfx('win');
       }
@@ -379,6 +437,11 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
   const restart = () => { setOver(null); finishedRef.current = false; setRunId((n) => n + 1); };
 
   const S = styles;
+  const L = isAr
+    ? { parked: 'مركونة', acc: 'الدقة', peak: 'ذروة التزامن', mean: 'متوسط الحمل', wave: 'الموجة',
+        note: 'سعة الانتباه الموزّع ≈ ٤ أجسام؛ «ذروة التزامن» هي أكبر عدد سيارات أدرتها معاً.' }
+    : { parked: 'Parked', acc: 'Accuracy', peak: 'Peak load', mean: 'Avg load', wave: 'Wave',
+        note: 'Divided-attention capacity is ≈4 objects; "peak load" is the most cars you juggled at once.' };
   const showLives = mode !== 'passplay';
   const head = mode === 'levels'
     ? (isAr ? `مستوى ${level} · ${hud.routed}/${cfg.target}` : `Lvl ${level} · ${hud.routed}/${cfg.target}`)
@@ -407,6 +470,17 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
             <div style={S.overCard}>
               <div style={S.overTitle}>{isAr ? 'انتهت اللعبة' : 'Game Over'}</div>
               <div style={S.overScore}>{isAr ? `ركنت ${over.score}` : `Parked ${over.score}`}</div>
+              {over.metrics && (
+                <>
+                  <div className="ct-fq-rm ct-fq-rm-training ct-fq-assess-grid" style={{ marginTop: 14 }}>
+                    <div className="ct-fq-rmi"><div className="ct-fq-rv">{over.metrics.acc}%</div><div className="ct-fq-rl">{L.acc}</div></div>
+                    <div className="ct-fq-rmi"><div className="ct-fq-rv">{over.metrics.peak}</div><div className="ct-fq-rl">{L.peak}</div></div>
+                    <div className="ct-fq-rmi"><div className="ct-fq-rv">{over.metrics.meanLoad}</div><div className="ct-fq-rl">{L.mean}</div></div>
+                    <div className="ct-fq-rmi"><div className="ct-fq-rv">{over.metrics.wave}</div><div className="ct-fq-rl">{L.wave}</div></div>
+                  </div>
+                  <p style={S.overNote}>{L.note}</p>
+                </>
+              )}
               <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                 <button style={S.overBtn} onClick={() => { playSfx('click'); restart(); }}>{isAr ? 'العب مجدداً' : 'Play again'}</button>
                 <button style={{ ...S.overBtn, background: '#cdbfa6' }} onClick={() => { playSfx('click'); onExit?.(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
@@ -451,8 +525,9 @@ const styles = {
   board: { position: 'relative', flex: '0 0 auto', borderRadius: 20, background: 'linear-gradient(160deg, #fffdf8 0%, #f4ecdf 100%)', boxShadow: '0 12px 34px rgba(45, 40, 30, 0.16), inset 0 0 0 1px rgba(58, 51, 40, 0.08)', overflow: 'hidden' },
   msg: { position: 'absolute', top: 8, left: 0, right: 0, zIndex: 2, textAlign: 'center', fontWeight: 700, fontSize: 13, color: '#7a5a1e', pointerEvents: 'none', padding: '0 16px' },
   overWrap: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(45,45,45,0.45)' },
-  overCard: { background: '#fffdf8', borderRadius: 20, padding: '22px 26px', textAlign: 'center', boxShadow: '6px 6px 0 #1a1208', border: '2px solid #cdbfa6' },
+  overCard: { background: '#fffdf8', borderRadius: 20, padding: '20px 22px', textAlign: 'center', boxShadow: '6px 6px 0 #1a1208', border: '2px solid #cdbfa6', width: 'min(92vw, 380px)', maxHeight: '88%', overflowY: 'auto' },
   overTitle: { fontWeight: 900, fontSize: 24, color: '#2d2d2d' },
   overScore: { marginTop: 6, fontWeight: 700, color: '#7a5a1e' },
+  overNote: { marginTop: 10, fontSize: 12.5, lineHeight: 1.45, color: '#8a8078', textAlign: 'center' },
   overBtn: { flex: 1, padding: '15px 16px', fontWeight: 900, fontSize: 16, color: '#fff', background: ATT, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 #1a1208', cursor: 'pointer', whiteSpace: 'nowrap' },
 };

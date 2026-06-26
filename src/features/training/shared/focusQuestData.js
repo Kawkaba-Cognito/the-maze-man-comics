@@ -248,11 +248,22 @@ export function rawLogisticTimeSeconds(level1Based) {
   return ep.L100 + (ep.L1 - ep.L100) * levelSigmoid(level1Based);
 }
 
-/** Target-count curve per tier: endpoints (n0,n1) and gamma>0 (gamma>1 → easier early). */
+/**
+ * Target-count curve per tier: endpoints (n0,n1) and gamma>0 (gamma>1 → easier early).
+ *
+ * Targets must stay a sparse MINORITY of the array — a cancellation / visual-search
+ * task is "find the rare target among many distractors". Classic norms keep the
+ * target:item ratio low (Mesulam ≈ 17%); when targets approach half the board it
+ * stops being a search (you'd tap almost everything) and the set-size/density
+ * confound dominates. So counts are bounded to ≈14%→≈32% of the grid; real
+ * difficulty comes from set size, conjunction strength, colour interference and
+ * the time limit — NOT from flooding the board with targets.
+ *   easy   (5×5=25): 4→8     medium (7×7=49): 7→16     hard (9×9=81): 11→26
+ */
 export const TARGET_CURVE = {
-  easy:  { n0: 4,  n1: 16, gamma: 1.0 },
-  medium:{ n0: 9,  n1: 24, gamma: 1.0 },
-  hard:  { n0: 18, n1: 36, gamma: 1.04 },
+  easy:  { n0: 4,  n1: 8,  gamma: 1.0 },
+  medium:{ n0: 7,  n1: 16, gamma: 1.0 },
+  hard:  { n0: 11, n1: 26, gamma: 1.04 },
 };
 
 /** Minimum non-target cells to keep (visual variety + generator stability). */
@@ -261,7 +272,10 @@ const MIN_NON_TARGET_CELLS = 3;
 function buildMonotonicTargetSeries(diff) {
   const p = TARGET_CURVE[diff];
   const grid = DM[diff].grid;
-  const cap = Math.min(p.n1, grid * grid - MIN_NON_TARGET_CELLS);
+  // Keep targets a clear minority: never exceed ~1/3 of the array (search, not
+  // "tap everything"), and always leave a few distractors for visual variety.
+  const propCap = Math.floor(grid * grid * 0.34);
+  const cap = Math.min(p.n1, propCap, grid * grid - MIN_NON_TARGET_CELLS);
   const arr = [];
   for (let li = 0; li < FQ_LEVELS_PER_TIER; li++) {
     const u = li / (FQ_LEVELS_PER_TIER - 1);

@@ -107,7 +107,7 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
   const rafRef = useRef(0);
   const lastTsRef = useRef(0);
   const motTRef = useRef(0); // elapsed tracking time → deterministic heading drift
-  const fieldRef = useRef({ x0: 0, y0: 0, s: 0 }); // bounded square tracking arena
+  const fieldRef = useRef({ x0: 0, y0: 0, w: 0, h: 0 }); // bounded rectangular tracking arena
   const timerRef = useRef(null);
   // progression
   const freeRoundRef = useRef(0);
@@ -152,12 +152,12 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
     const ph = phaseRef.current;
     // Faint border around the bounded tracking arena (where the dots live).
     const f = fieldRef.current;
-    if (f.s > 0) {
+    if (f.w > 0) {
       ctx.save();
       ctx.strokeStyle = 'rgba(120,90,40,0.16)';
       ctx.lineWidth = 1.5;
-      if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(f.x0, f.y0, f.s, f.s, 14); ctx.stroke(); }
-      else ctx.strokeRect(f.x0, f.y0, f.s, f.s);
+      if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(f.x0, f.y0, f.w, f.h, 14); ctx.stroke(); }
+      else ctx.strokeRect(f.x0, f.y0, f.w, f.h);
       ctx.restore();
     }
     for (const d of dotsRef.current) {
@@ -202,8 +202,8 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
           d.vx = Math.cos(ang) * d.sp; d.vy = Math.sin(ang) * d.sp;
         }
         d.x += d.vx * dt; d.y += d.vy * dt;
-        const minX = f.x0 + d.r; const maxX = f.x0 + f.s - d.r;
-        const minY = f.y0 + d.r; const maxY = f.y0 + f.s - d.r;
+        const minX = f.x0 + d.r; const maxX = f.x0 + f.w - d.r;
+        const minY = f.y0 + d.r; const maxY = f.y0 + f.h - d.r;
         if (d.x < minX) { d.x = minX; d.vx = Math.abs(d.vx); }
         if (d.x > maxX) { d.x = maxX; d.vx = -Math.abs(d.vx); }
         if (d.y < minY) { d.y = minY; d.vy = Math.abs(d.vy); }
@@ -285,20 +285,34 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
     const cfg = nextParams(); cfgRef.current = cfg;
     const { w, h } = sizeRef.current;
     const minDim = Math.min(w, h);
-    // Bounded SQUARE arena (centred). Tracking happens here, not across the whole
-    // tall screen — so packing `total` objects in gives a real, device-independent
-    // density (close encounters), the actual difficulty driver.
-    const F = minDim * 0.98;
-    const x0 = (w - F) / 2;
-    const y0 = (h - F) / 2;
-    fieldRef.current = { x0, y0, s: F };
-    const R = Math.max(13, F * 0.042);
-    const pxSpeed = cfg.speedFrac * F; // speed relative to the arena side
+    // Element size + speed are relative to the SHORT side, so dots look and move
+    // consistently regardless of arena shape / device.
+    const R = Math.max(13, minDim * 0.042);
+    const pxSpeed = cfg.speedFrac * minDim;
+    // Arena. ASSESSMENT uses a fixed standardised square (short side) so the
+    // measure is comparable. TRAINING fills the WHOLE play area as a rectangle
+    // and SCALES the object count to PRESERVE DENSITY (objects per area) — the
+    // real difficulty driver (Franconeri: spacing). So the dots roam the entire
+    // screen with no wasted space, while difficulty stays device-independent.
+    const margin = 6;
+    let arenaW, arenaH, total;
+    if (mode === 'assess') {
+      arenaW = minDim * 0.98; arenaH = minDim * 0.98;
+      total = cfg.total;
+    } else {
+      arenaW = w - 2 * margin; arenaH = h - 2 * margin;
+      const density = cfg.total / (minDim * minDim); // intended objects per px²
+      total = clamp(Math.round(density * arenaW * arenaH), cfg.targets + 2, 44);
+    }
+    cfg.total = total; // keep HUD / per-trial logging in sync with the real count
+    const x0 = (w - arenaW) / 2;
+    const y0 = (h - arenaH) / 2;
+    fieldRef.current = { x0, y0, w: arenaW, h: arenaH };
     const dots = [];
-    for (let i = 0; i < cfg.total; i++) {
+    for (let i = 0; i < total; i++) {
       let x, y, tries = 0;
       // Spawn inside the arena; relaxed min-gap so dense rounds can pack in.
-      do { x = x0 + R + rng() * (F - 2 * R); y = y0 + R + rng() * (F - 2 * R); tries += 1; }
+      do { x = x0 + R + rng() * (arenaW - 2 * R); y = y0 + R + rng() * (arenaH - 2 * R); tries += 1; }
       while (tries < 60 && dots.some((o) => Math.hypot(o.x - x, o.y - y) < R * 2.05));
       const a = rng() * Math.PI * 2;
       dots.push({
@@ -324,6 +338,9 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
     setMsg(isAr ? `راقب ${cfg.targets} أهداف` : `Watch the ${cfg.targets} targets…`);
     setPhaseBoth('cue');
     clearTimeout(timerRef.current);
+    // Encoding time scales with the number of targets to remember (~0.45s each)
+    // so more targets get a fair chance to be encoded before tracking starts.
+    const cueMs = clamp(800 + cfg.targets * 450, CUE_MS, 3000);
     timerRef.current = setTimeout(() => {
       setMsg(isAr ? `تابع ${cfg.targets} أهداف بعينيك…` : `Track ${cfg.targets} targets with your eyes…`);
       setPhaseBoth('track');
@@ -331,7 +348,7 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
         setMsg(isAr ? `اضغط الأهداف (${cfg.targets})` : `Tap the ${cfg.targets} targets`);
         setPhaseBoth('respond');
       }, cfg.trackMs);
-    }, CUE_MS);
+    }, cueMs);
   }, [fit, isAr, nextParams, setPhaseBoth, updateHud, rng]);
 
   const evaluate = useCallback(() => {
