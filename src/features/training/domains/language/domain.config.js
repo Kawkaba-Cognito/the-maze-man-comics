@@ -9,7 +9,6 @@ const language = {
   color: tokens.domain.language,
   desc: 'Develop vocabulary, verbal reasoning, and semantic judgment skills.',
   descAr: 'طوّر المفردات والاستدلال اللفظي ومهارات الحكم الدلالي.',
-  about: 'Language is thought made portable. These mazes weave words and meaning into navigation — spell, decode, and name your way through.',
   subs: [
     {
       id: 'word-search',

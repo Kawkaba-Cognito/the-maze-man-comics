@@ -784,7 +784,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const staircaseRef = useRef(null); // adaptive 2-down/1-up threshold engine
   const [assessResult, setAssessResult] = useState(null);
   const [assessHistory, setAssessHistory] = useState(() => loadAssessHistory());
-  const [sciOpen, setSciOpen] = useState(false);
   const [gridMetrics, setGridMetrics] = useState({
     cellW: 32,
     cellH: 32,
@@ -2316,16 +2315,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                   {t.assessViewHistory}
                 </button>
               )}
-              <button
-                type="button"
-                className="ct-fq-sci-link"
-                onClick={() => {
-                  playSfx('click');
-                  setSciOpen(true);
-                }}
-              >
-                {`ⓘ ${t.sciTitle}`}
-              </button>
+              <HubScienceLink gameId="cancel-task" isAr={isAr} playSfx={playSfx} />
             </div>
           </div>
         </div>
@@ -2572,33 +2562,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               onClick={exitAssess}
             >
               {t.menu}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {sciOpen && (
-        <div
-          className="ct-fq-sci-ov"
-          role="dialog"
-          aria-modal="true"
-          dir={isAr ? 'rtl' : 'ltr'}
-          onClick={() => setSciOpen(false)}
-        >
-          <div className="ct-fq-sci-panel" onClick={(e) => e.stopPropagation()}>
-            <h2 className="ct-fq-sci-title">{t.sciTitle}</h2>
-            {t.sciParas.map((p, i) => (
-              <p key={i} className="ct-fq-sci-para">{p}</p>
-            ))}
-            <button
-              type="button"
-              className="ct-fq-btn ct-fq-btn-pri"
-              onClick={() => {
-                playSfx('click');
-                setSciOpen(false);
-              }}
-            >
-              {t.sciClose}
             </button>
           </div>
         </div>

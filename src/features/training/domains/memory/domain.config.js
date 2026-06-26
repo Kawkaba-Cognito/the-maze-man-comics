@@ -9,7 +9,6 @@ const memory = {
   color: tokens.domain.memory,
   desc: 'Strengthen working memory — hold, update, and recall information on demand.',
   descAr: 'عزّز الذاكرة العاملة: احتفظ بالمعلومات وحدّثها واسترجعها عند الطلب.',
-  about: "Working memory is the mind's workbench. Memo Span uses the Corsi block test (watch a grid light up, reproduce it forward or in reverse). N-Back streams objects one at a time — spot when one repeats from N steps back, the most-studied working-memory trainer.",
   subs: [
     {
       id: 'working',

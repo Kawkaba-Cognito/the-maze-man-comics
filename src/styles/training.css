@@ -3956,6 +3956,40 @@
 .ct-ms-sci-b { font-size: 0.82rem; color: #5c5347; line-height: 1.5; }
 .ct-ms-sci-foot { font-size: 0.82rem; font-style: italic; color: #6a5f52; text-align: center; margin: 0 0 14px; }
 
+/* Close button — scoped solid styling so parent shell theme cannot wash it out. */
+.ct-ms-sci .ct-ms-sci-close {
+    display: block;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 14px 18px;
+    border: 2px solid #1a1208;
+    border-radius: 14px;
+    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-align: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    background: linear-gradient(180deg, #f2c56a 0%, #e8ac4e 100%);
+    color: #1a1208;
+    box-shadow: 4px 5px 0 #1a1208;
+    transition: transform 0.14s ease, box-shadow 0.16s ease;
+}
+.ct-ms-sci .ct-ms-sci-close:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 6px 7px 0 #1a1208;
+}
+.ct-ms-sci .ct-ms-sci-close:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 #1a1208;
+}
+[dir='rtl'] .ct-ms-sci .ct-ms-sci-close {
+    font-family: 'Cairo', 'Outfit', sans-serif;
+    font-weight: 900;
+}
+
 /* ── N-Back ── */
 .ct-nb-stage {
     --nb-acc: #5b8def;
@@ -5366,7 +5400,349 @@
 }
 
 /* ── Domain pick screen (6 domains × 3 games — ComicsScreen) ─────────────
- * Warm paper shell; each domain tints the wash via --domain-accent. */
+ * Shared shell with game hubs; per-domain tinted base + saturated strips. */
+
+.ct-domain-pick {
+    position: relative;
+    min-height: min(100vh, 100dvh);
+    overflow-x: hidden;
+    --domain-accent: var(--color-domain-attention);
+    --domain-base: var(--color-domain-attention-base);
+    --domain-mid: var(--color-domain-attention-mid);
+    --domain-deep: var(--color-domain-attention-deep);
+}
+
+.ct-domain-pick--attention {
+    --domain-accent: var(--color-domain-attention);
+    --domain-base: var(--color-domain-attention-base);
+    --domain-mid: var(--color-domain-attention-mid);
+    --domain-deep: var(--color-domain-attention-deep);
+}
+.ct-domain-pick--speed {
+    --domain-accent: var(--color-domain-speed);
+    --domain-base: var(--color-domain-speed-base);
+    --domain-mid: var(--color-domain-speed-mid);
+    --domain-deep: var(--color-domain-speed-deep);
+}
+.ct-domain-pick--memory {
+    --domain-accent: var(--color-domain-memory);
+    --domain-base: var(--color-domain-memory-base);
+    --domain-mid: var(--color-domain-memory-mid);
+    --domain-deep: var(--color-domain-memory-deep);
+}
+.ct-domain-pick--language {
+    --domain-accent: var(--color-domain-language);
+    --domain-base: var(--color-domain-language-base);
+    --domain-mid: var(--color-domain-language-mid);
+    --domain-deep: var(--color-domain-language-deep);
+}
+.ct-domain-pick--reasoning {
+    --domain-accent: var(--color-domain-reasoning);
+    --domain-base: var(--color-domain-reasoning-base);
+    --domain-mid: var(--color-domain-reasoning-mid);
+    --domain-deep: var(--color-domain-reasoning-deep);
+}
+.ct-domain-pick--flexibility {
+    --domain-accent: var(--color-domain-flexibility);
+    --domain-base: var(--color-domain-flexibility-base);
+    --domain-mid: var(--color-domain-flexibility-mid);
+    --domain-deep: var(--color-domain-flexibility-deep);
+}
+
+.ct-domain-pick.ct-fq-training-shell--hub-light {
+    background: linear-gradient(
+        168deg,
+        var(--domain-base) 0%,
+        color-mix(in srgb, var(--domain-base) 55%, var(--color-training-palette-surface)) 38%,
+        var(--color-training-palette-surface) 100%
+    ) !important;
+    color: #2d2d2d;
+}
+
+.ct-domain-pick::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+        radial-gradient(
+            ellipse 95% 48% at 50% -4%,
+            color-mix(in srgb, var(--domain-mid) 42%, transparent) 0%,
+            transparent 68%
+        ),
+        radial-gradient(
+            ellipse 55% 38% at 100% 12%,
+            color-mix(in srgb, var(--domain-mid) 22%, transparent) 0%,
+            transparent 62%
+        ),
+        radial-gradient(
+            ellipse 50% 32% at 0% 88%,
+            color-mix(in srgb, var(--domain-deep) 16%, transparent) 0%,
+            transparent 58%
+        );
+}
+
+.ct-domain-pick .ct-fq-training-screen {
+    position: relative;
+    z-index: 1;
+    background: transparent !important;
+}
+
+.ct-domain-pick .ct-fq-hub-attn-big {
+    font-family: 'Fredoka One', 'Outfit', system-ui, sans-serif;
+    font-weight: 400;
+    color: var(--domain-deep);
+    letter-spacing: -0.02em;
+    text-shadow: none;
+    -webkit-text-stroke: 0;
+}
+
+.ct-domain-pick .ct-fq-training-screen--hub .ct-fq-hub-attn-sub {
+    color: var(--domain-deep);
+    border-color: color-mix(in srgb, var(--domain-mid) 55%, #1a1208);
+    background: color-mix(in srgb, var(--domain-base) 72%, #fff);
+}
+
+[dir='rtl'] .ct-domain-pick .ct-fq-hub-attn-big {
+    font-family: 'Cairo', 'Outfit', system-ui, sans-serif;
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+[dir='rtl'] .ct-domain-pick .ct-fq-training-screen--hub .ct-fq-hub-attn-sub {
+    font-family: 'Cairo', 'Outfit', sans-serif;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
+.ct-domain-pick-body {
+    width: 100%;
+    max-width: min(100%, 480px);
+    margin: 0 auto;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    gap: clamp(14px, 2.5vh, 22px);
+    padding:
+        0
+        max(12px, env(safe-area-inset-right))
+        max(20px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+}
+
+.ct-domain-pick .ct-fq-training-screen--hub > .ct-domain-pick-body {
+    flex: 1 1 auto;
+    margin-top: clamp(6px, 1.5vh, 14px);
+    margin-bottom: clamp(8px, 2vh, 18px);
+    justify-content: space-evenly;
+}
+
+.ct-domain-pick-desc {
+    margin: 0;
+    padding: 0 clamp(4px, 2vw, 10px);
+    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    font-size: clamp(0.88rem, 3.2vw, 0.98rem);
+    font-weight: 500;
+    color: #4a4f4d;
+    line-height: 1.55;
+    text-align: center;
+    max-width: 36rem;
+    margin-inline: auto;
+}
+
+[dir='rtl'] .ct-domain-pick-desc {
+    font-family: 'Cairo', 'Outfit', sans-serif;
+}
+
+.ct-domain-pick-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 2vh, 14px);
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.ct-domain-pick-section-divider {
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 2.5vw, 14px);
+    width: 100%;
+}
+
+.ct-domain-pick-section-line {
+    flex: 1;
+    height: 2px;
+    border-radius: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--domain-mid) 55%, transparent) 50%,
+        transparent 100%
+    );
+}
+
+[dir='rtl'] .ct-domain-pick-section-line {
+    background: linear-gradient(
+        270deg,
+        transparent 0%,
+        color-mix(in srgb, var(--domain-mid) 55%, transparent) 50%,
+        transparent 100%
+    );
+}
+
+.ct-domain-pick-section-title {
+    margin: 0;
+    flex-shrink: 0;
+    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    font-size: clamp(0.68rem, 2.6vw, 0.78rem);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--domain-deep);
+    white-space: nowrap;
+}
+
+[dir='rtl'] .ct-domain-pick-section-title {
+    font-family: 'Cairo', 'Outfit', sans-serif;
+    letter-spacing: 0.06em;
+    text-transform: none;
+}
+
+.ct-domain-pick-list {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 2vh, 14px);
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    flex: 1 1 auto;
+    justify-content: space-evenly;
+}
+
+.ct-domain-pick .ct-fq-training-screen--hub > .ct-domain-pick-body > .ct-domain-pick-section > .ct-domain-pick-list {
+    gap: clamp(12px, 2.2vh, 18px);
+}
+
+.ct-domain-pick-card.ct-fq-attn-mode {
+    position: relative;
+    overflow: hidden;
+    flex: 1 1 0;
+    min-height: clamp(88px, 12vh, 120px);
+    max-height: none;
+    gap: clamp(10px, 2.5vw, 14px);
+    padding-inline: clamp(14px, 3vw, 18px);
+    border-color: color-mix(in srgb, var(--domain-deep) 28%, #1a1208);
+    box-shadow:
+        4px 5px 0 color-mix(in srgb, var(--domain-deep) 72%, #1a1208),
+        0 1px 0 rgba(255, 255, 255, 0.92) inset;
+}
+
+.ct-domain-pick-card.ct-fq-attn-mode:hover {
+    box-shadow:
+        6px 7px 0 color-mix(in srgb, var(--domain-deep) 72%, #1a1208),
+        0 1px 0 rgba(255, 255, 255, 0.92) inset;
+}
+
+.ct-domain-pick-card--0 {
+    background: linear-gradient(
+        168deg,
+        rgba(255, 255, 255, 0.99) 0%,
+        color-mix(in srgb, var(--domain-mid) 10%, #fff) 100%
+    );
+}
+.ct-domain-pick-card--1 {
+    background: linear-gradient(
+        168deg,
+        rgba(255, 255, 255, 0.99) 0%,
+        color-mix(in srgb, var(--domain-mid) 16%, #fff) 100%
+    );
+}
+.ct-domain-pick-card--2 {
+    background: linear-gradient(
+        168deg,
+        rgba(255, 255, 255, 0.99) 0%,
+        color-mix(in srgb, var(--domain-mid) 22%, #fff) 100%
+    );
+}
+
+.ct-domain-pick-card .ct-fq-attn-mode-body {
+    position: relative;
+    z-index: 1;
+    padding-inline-end: clamp(72px, 22%, 100px);
+    gap: 5px;
+}
+
+.ct-domain-pick-card-hint {
+    font-weight: 500 !important;
+    line-height: 1.45 !important;
+    color: #525856 !important;
+}
+
+.ct-domain-pick-card-chev {
+    position: relative;
+    z-index: 1;
+    color: var(--domain-deep) !important;
+    opacity: 0.72;
+}
+
+.ct-domain-pick-card .ct-domain-pick-banner {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: clamp(72px, 22%, 100px);
+    z-index: 0;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    box-shadow: inset 3px 0 10px rgba(0, 0, 0, 0.14);
+}
+
+.ct-domain-pick-card .ct-domain-pick-banner--right {
+    right: 0;
+    padding-right: 10px;
+    background: linear-gradient(
+        180deg,
+        var(--domain-mid) 0%,
+        var(--domain-deep) 100%
+    );
+}
+
+.ct-domain-pick-card .ct-domain-pick-banner--left {
+    left: 0;
+    padding-left: 10px;
+    background: linear-gradient(
+        180deg,
+        var(--domain-mid) 0%,
+        var(--domain-deep) 100%
+    );
+    box-shadow: inset -3px 0 10px rgba(0, 0, 0, 0.14);
+}
+
+[dir='rtl'] .ct-domain-pick-card .ct-fq-attn-mode-body {
+    padding-inline-end: 0;
+    padding-inline-start: clamp(72px, 22%, 100px);
+}
+
+.ct-domain-pick-about-link {
+    align-self: center;
+    flex: 0 0 auto;
+    border-color: color-mix(in srgb, var(--domain-mid) 45%, #1a1208) !important;
+    color: var(--domain-deep) !important;
+    background: color-mix(in srgb, var(--domain-base) 65%, #fff) !important;
+}
+
+.ct-domain-pick-body > .ct-domain-pick-about-link {
+    margin-top: auto;
+    margin-bottom: clamp(4px, 1vh, 12px);
+}
+
+/* Domain badge (retained for reuse elsewhere) */
 .ct-domain-badge {
     width: var(--badge-size, 64px);
     height: var(--badge-size, 64px);
@@ -5414,360 +5790,53 @@
     right: auto;
     left: 7px;
 }
-
-.ct-domain-pick {
-    position: relative;
-    min-height: min(100vh, 100dvh);
-    overflow-x: hidden;
-    --domain-accent: #e8ac4e;
-}
-.ct-domain-pick::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    background:
-        radial-gradient(
-            ellipse 115% 52% at 50% -10%,
-            color-mix(in srgb, var(--domain-accent) 22%, transparent) 0%,
-            transparent 56%
-        ),
-        radial-gradient(
-            ellipse 68% 40% at 100% 6%,
-            color-mix(in srgb, var(--domain-accent) 12%, transparent) 0%,
-            transparent 62%
-        ),
-        radial-gradient(
-            ellipse 58% 34% at 0% 94%,
-            color-mix(in srgb, var(--domain-accent) 10%, transparent) 0%,
-            transparent 58%
-        );
-}
-.ct-domain-pick .ct-training-menubar {
-    padding-top: max(10px, env(safe-area-inset-top));
-    padding-bottom: 6px;
-}
-.ct-domain-pick-crumb {
-    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
-    font-size: clamp(0.72rem, 2.8vw, 0.82rem);
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #5c605d;
-}
-.ct-domain-pick-screen.ct-fq-screen {
-    position: relative;
-    z-index: 1;
-    background: transparent !important;
-    align-items: stretch;
-    padding:
-        0
-        max(16px, env(safe-area-inset-right))
-        max(28px, env(safe-area-inset-bottom))
-        max(16px, env(safe-area-inset-left));
-}
-.ct-domain-pick-inner {
-    width: 100%;
-    max-width: min(100%, 520px);
-    margin: 0 auto;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    gap: clamp(20px, 3.5vh, 28px);
-}
-.ct-domain-pick-panel {
-    position: relative;
-    border-radius: 20px;
-    border: 2px solid #1a1208;
-    background: linear-gradient(168deg, rgba(255, 255, 255, 0.99) 0%, rgba(252, 250, 246, 0.97) 100%);
-    box-shadow:
-        4px 5px 0 #1a1208,
-        0 1px 0 rgba(255, 255, 255, 0.9) inset;
-    padding: clamp(18px, 3.5vw, 24px);
-    padding-inline-start: clamp(22px, 4vw, 28px);
-    box-sizing: border-box;
-    overflow: hidden;
-}
-.ct-domain-pick-panel-accent {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    inset-inline-start: 0;
-    width: 5px;
-    background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--domain-accent) 88%, #fff) 0%,
-        var(--domain-accent) 48%,
-        color-mix(in srgb, var(--domain-accent) 72%, #1a1208) 100%
-    );
-}
-.ct-domain-pick-panel-top {
-    display: flex;
-    align-items: center;
-    gap: clamp(14px, 3vw, 18px);
-}
-.ct-domain-pick-panel-copy {
-    flex: 1;
-    min-width: 0;
-    text-align: start;
-}
-.ct-domain-pick-kicker {
-    margin: 0 0 6px;
-    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
-    font-size: clamp(0.64rem, 2.4vw, 0.72rem);
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--domain-accent);
-}
-.ct-domain-pick-panel .ct-domain-pick-title.ct-fq-hub-attn-big {
-    margin: 0;
-    text-align: start;
-    font-size: clamp(1.55rem, 5.8vw, 2.15rem);
-    line-height: 1.06;
-}
-.ct-domain-pick-desc {
-    margin: clamp(14px, 2.5vh, 18px) 0 0;
-    padding-top: clamp(14px, 2.5vh, 16px);
-    border-top: 1px solid color-mix(in srgb, var(--domain-accent) 28%, rgba(107, 158, 122, 0.22));
-    max-width: none;
-    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
-    font-size: clamp(0.88rem, 3.2vw, 0.98rem);
-    font-weight: 500;
-    color: #4a4f4d;
-    line-height: 1.55;
-    text-align: start;
-}
-.ct-domain-pick-section {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.ct-domain-pick-section-divider {
-    display: flex;
-    align-items: center;
-    gap: clamp(10px, 2.5vw, 14px);
-    width: 100%;
-}
-.ct-domain-pick-section-line {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        color-mix(in srgb, var(--domain-accent) 32%, rgba(107, 158, 122, 0.28)) 50%,
-        transparent 100%
-    );
-}
-[dir='rtl'] .ct-domain-pick-section-line {
-    background: linear-gradient(
-        270deg,
-        transparent 0%,
-        color-mix(in srgb, var(--domain-accent) 32%, rgba(107, 158, 122, 0.28)) 50%,
-        transparent 100%
-    );
-}
-.ct-domain-pick-section-title {
-    margin: 0;
-    flex-shrink: 0;
-    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
-    font-size: clamp(0.68rem, 2.6vw, 0.78rem);
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #5c605d;
-    white-space: nowrap;
-}
-.ct-domain-pick-section-meta {
-    margin: 0 0 4px;
-    padding-inline: 2px;
-    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
-    font-size: clamp(0.72rem, 2.6vw, 0.82rem);
-    font-weight: 500;
-    color: #6a706d;
-    text-align: center;
-}
-.ct-domain-pick-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-.ct-domain-pick-card.ct-fq-attn-mode {
-    position: relative;
-    overflow: hidden;
-    flex: none;
-    min-height: clamp(96px, 13vh, 116px);
-    max-height: none;
-    gap: clamp(10px, 2.5vw, 14px);
-    padding-inline: clamp(14px, 3vw, 18px);
-}
-.ct-domain-pick-card-idx {
-    flex-shrink: 0;
-    width: 1.65rem;
-    font-family: 'DM Mono', 'Outfit', monospace;
-    font-size: clamp(0.68rem, 2.4vw, 0.76rem);
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    color: color-mix(in srgb, var(--domain-accent) 55%, #6a706d);
-    text-align: center;
-    line-height: 1;
-    position: relative;
-    z-index: 1;
-}
-.ct-domain-pick-card .ct-fq-attn-mode-ic {
-    position: relative;
-    z-index: 1;
-    background: linear-gradient(
-        165deg,
-        color-mix(in srgb, var(--domain-accent) 22%, #fff) 0%,
-        color-mix(in srgb, var(--domain-accent) 12%, #f8f4ef) 100%
-    );
-    border-color: color-mix(in srgb, var(--domain-accent) 42%, #1a1208);
-}
-.ct-domain-pick-card .ct-fq-attn-mode-body {
-    position: relative;
-    z-index: 1;
-    padding-inline-end: clamp(68px, 20%, 96px);
-    gap: 5px;
-}
-.ct-domain-pick-card-hint {
-    font-weight: 500 !important;
-    line-height: 1.45 !important;
-    color: #525856 !important;
-}
-.ct-domain-pick-card-chev {
-    position: relative;
-    z-index: 1;
-    color: color-mix(in srgb, var(--domain-accent) 48%, #1a1208) !important;
-}
-.ct-domain-pick-card .ct-domain-pick-banner {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: clamp(68px, 20%, 96px);
-    z-index: 0;
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    opacity: 0.88;
-}
-.ct-domain-pick-card .ct-domain-pick-banner--right {
-    right: 0;
-    justify-content: flex-end;
-    padding-right: 14px;
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        color-mix(in srgb, var(--domain-accent) 55%, transparent) 52%,
-        color-mix(in srgb, var(--domain-accent) 88%, #fff) 100%
-    );
-}
-.ct-domain-pick-card .ct-domain-pick-banner--left {
-    left: 0;
-    justify-content: flex-start;
-    padding-left: 14px;
-    background: linear-gradient(
-        270deg,
-        transparent 0%,
-        color-mix(in srgb, var(--domain-accent) 55%, transparent) 52%,
-        color-mix(in srgb, var(--domain-accent) 88%, #fff) 100%
-    );
-}
-[dir='rtl'] .ct-domain-pick-panel-top {
-    flex-direction: row-reverse;
-}
-[dir='rtl'] .ct-domain-pick-panel-copy,
-[dir='rtl'] .ct-domain-pick-desc {
-    text-align: right;
-}
-[dir='rtl'] .ct-domain-pick-panel .ct-domain-pick-title.ct-fq-hub-attn-big {
-    text-align: right;
-}
-[dir='rtl'] .ct-domain-pick-kicker {
-    font-family: 'Cairo', 'Outfit', sans-serif;
-    letter-spacing: 0.06em;
-    text-transform: none;
-}
-[dir='rtl'] .ct-domain-pick-desc {
-    font-family: 'Cairo', 'Outfit', sans-serif;
-}
-[dir='rtl'] .ct-domain-pick-section-title,
-[dir='rtl'] .ct-domain-pick-section-meta,
-[dir='rtl'] .ct-domain-pick-crumb {
-    font-family: 'Cairo', 'Outfit', sans-serif;
-    letter-spacing: 0.06em;
-    text-transform: none;
-}
-[dir='rtl'] .ct-domain-pick-card .ct-fq-attn-mode-body {
-    padding-inline-end: 0;
-    padding-inline-start: clamp(68px, 20%, 96px);
-}
 @media (max-width: 380px) {
-    .ct-domain-pick-panel-top {
-        gap: 12px;
-    }
-    .ct-domain-badge {
-        --badge-size: 56px !important;
+    .ct-domain-pick-body {
+        max-width: 100%;
+        padding-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right));
     }
     .ct-domain-pick-card.ct-fq-attn-mode {
-        min-height: 92px;
+        min-height: 84px;
         padding-inline: 12px;
         gap: 8px;
     }
-    .ct-domain-pick-card-idx {
-        width: 1.35rem;
-        font-size: 0.64rem;
+    .ct-domain-pick-card .ct-domain-pick-banner {
+        width: clamp(64px, 20%, 84px);
     }
-    .ct-domain-pick-card .ct-fq-attn-mode-ic {
-        width: 2.75rem;
-        height: 2.75rem;
-        min-width: 2.75rem;
-        border-radius: 14px;
+    .ct-domain-pick-card .ct-fq-attn-mode-body {
+        padding-inline-end: clamp(64px, 20%, 84px);
+    }
+    [dir='rtl'] .ct-domain-pick-card .ct-fq-attn-mode-body {
+        padding-inline-end: 0;
+        padding-inline-start: clamp(64px, 20%, 84px);
     }
     .ct-domain-pick-section-title {
         font-size: 0.64rem;
         letter-spacing: 0.1em;
     }
 }
+
 @media (min-width: 768px) {
-    .ct-domain-pick-inner {
-        max-width: 580px;
-    }
-    .ct-domain-pick-panel-top {
-        align-items: flex-start;
+    .ct-domain-pick-body {
+        max-width: 520px;
     }
     .ct-domain-pick-list {
-        gap: 14px;
+        gap: 16px;
     }
     .ct-domain-pick-card.ct-fq-attn-mode {
-        min-height: 108px;
+        min-height: 104px;
         padding-inline: 20px;
-    }
-    .ct-domain-pick-panel .ct-domain-pick-title.ct-fq-hub-attn-big {
-        font-size: clamp(1.75rem, 3.2vw, 2.25rem);
     }
     .ct-domain-pick-desc {
         font-size: 1rem;
         line-height: 1.6;
     }
 }
+
 @media (min-width: 1024px) {
-    .ct-domain-pick-inner {
-        max-width: 640px;
-        gap: 32px;
-    }
-    .ct-domain-pick-screen.ct-fq-screen {
-        padding-inline: max(28px, env(safe-area-inset-left)) max(28px, env(safe-area-inset-right));
-        padding-bottom: max(36px, env(safe-area-inset-bottom));
-    }
-    .ct-domain-pick-panel {
-        padding: 26px 28px 26px 32px;
+    .ct-domain-pick-body {
+        max-width: 560px;
+        gap: 24px;
     }
     .ct-domain-pick-card .ct-fq-attn-mode-lb {
         font-size: 1.38rem;

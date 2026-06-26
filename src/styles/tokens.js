@@ -67,6 +67,16 @@ export const tokens = {
     flexibility: '#e07aaa',
   },
 
+  /** Per-domain pick-screen gradient stops (mirror tokens.css). */
+  domainPalette: {
+    attention: { base: '#faf3e6', mid: '#ecb856', deep: '#c8892a' },
+    speed: { base: '#edf7f9', mid: '#5aabbb', deep: '#2d8a9a' },
+    memory: { base: '#f2f7e8', mid: '#8fae48', deep: '#6a8528' },
+    language: { base: '#faf0ea', mid: '#d97240', deep: '#b85a30' },
+    reasoning: { base: '#f4eef9', mid: '#a880cc', deep: '#8060a8' },
+    flexibility: { base: '#fdf0f5', mid: '#d86896', deep: '#b84878' },
+  },
+
   /* State */
   danger: '#8b2020',
   runeSage: '#6b9e7a',

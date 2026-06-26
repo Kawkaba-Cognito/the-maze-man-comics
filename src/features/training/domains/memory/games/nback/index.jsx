@@ -7,7 +7,7 @@ import PassPlaySetup from '../../../../shared/PassPlaySetup';
 import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import { createTrialLog } from '../../../../shared/trialLog';
 import MemoObject from '../memo-span/MemoObject';
-import MemoSciencePanel, { memoTip } from '../memo-span/MemoSciencePanel';
+import { memoTip } from '../memo-span/MemoSciencePanel';
 import NBackModes from './NBackModes';
 import {
   NB_LEVELS_PER_TIER, NB_DIFF_KEYS, NB_DM, NB_PASS_ACC,
@@ -83,7 +83,6 @@ export default function NBackGame({ onBack }) {
   const [profile, setProfile] = useState(() => loadNbackProfile());
   const [phase, setPhase] = useState('hub');
   const [diffKey, setDiffKey] = useState('easy');
-  const [sciOpen, setSciOpen] = useState(false);
   const [block, setBlock] = useState(null);
   const [playStep, setPlayStep] = useState('idle'); // 'ready' | 'run'
   const [cur, setCur] = useState(null);
@@ -252,8 +251,7 @@ export default function NBackGame({ onBack }) {
               <NBackModes t={t} isAr={isAr} playSfx={playSfx}
                 onFree={() => setPhase('freeIntro')}
                 onLevels={() => setPhase('diff')}
-                onChallenge={() => setPhase('chal')}
-                onScience={() => setSciOpen(true)} />
+                onChallenge={() => setPhase('chal')} />
             </div>
           </div>
           {tutLayer}
@@ -391,7 +389,6 @@ export default function NBackGame({ onBack }) {
         </div>
       )}
 
-      {sciOpen && <MemoSciencePanel isAr={isAr} onClose={() => setSciOpen(false)} />}
     </div>
   );
 }

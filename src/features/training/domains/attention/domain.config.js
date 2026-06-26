@@ -12,7 +12,6 @@ const attention = {
   color: tokens.domain.attention,
   desc: 'Strengthen visual search, sustained attention, and rapid attention switching.',
   descAr: 'عزّز البحث البصري والتركيز المستمر وتبديل الانتباه السريع.',
-  about: null,
   subs: [
     {
       id: 'cancellation',

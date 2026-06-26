@@ -2,9 +2,9 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useApp } from '../../context/AppContext';
 import { tokens } from '../../styles/tokens';
 import RadialMazeHub from '../training/RadialMazeHub';
-import { DOMAINS, DOMAIN_COLOR } from '../training/trainingData';
-import { TrainingMenuBar } from '../../features/training/shared/TrainingChrome';
-import { DomainBadge } from '../../features/training/shared/DomainIcon';
+import { DOMAINS } from '../training/trainingData';
+import { TrainingScreenShell } from '../../features/training/shared/TrainingScreens';
+import DomainAboutLink from '../../features/training/shared/DomainAboutLink';
 import { getLazyGame, hasGame } from '../../features/training/lazyGames';
 import AssessmentFlow from '../../features/training/assessment/AssessmentFlow';
 
@@ -156,9 +156,9 @@ export default function ComicsScreen() {
   };
 
   const d = DOMAINS.find((x) => x.id === activeDomain);
-  const accent = DOMAIN_COLOR[activeDomain] || '#8a7868';
   const domainName = d && isAr && d.nameAr ? d.nameAr : d?.name;
   const domainDesc = d && isAr && d.descAr ? d.descAr : d?.desc;
+  const domainTag = isAr ? 'مجال تدريبي' : 'Training domain';
 
   return (
     <div
@@ -187,101 +187,72 @@ export default function ComicsScreen() {
         <AssessmentFlow onBack={backToHub} />
       )}
       {screen === 'pick' && d && (
-        <div
-          className={`cancellation-task-game ct-domain-pick ct-domain-pick--${activeDomain} ct-fq-training-shell ct-fq-training-shell--hub-light`}
-          dir={isAr ? 'rtl' : 'ltr'}
-          style={{ '--domain-accent': accent }}
+        <TrainingScreenShell
+          hub
+          isAr={isAr}
+          playSfx={playSfx}
+          onBack={backToHub}
+          title={domainName}
+          tag={domainTag}
+          shellClassName={`ct-domain-pick ct-domain-pick--${activeDomain}`}
         >
-          <div className="ct-fq-screen ct-fq-training-screen ct-domain-pick-screen">
-            <TrainingMenuBar
-              variant="paper"
+          <div className="ct-domain-pick-body">
+            {domainDesc ? (
+              <p className="ct-domain-pick-desc">{domainDesc}</p>
+            ) : null}
+
+            <section
+              className="ct-domain-pick-section"
+              aria-labelledby="domain-pick-heading"
+            >
+              <div className="ct-domain-pick-section-divider">
+                <span className="ct-domain-pick-section-line" aria-hidden="true" />
+                <h2 id="domain-pick-heading" className="ct-domain-pick-section-title">
+                  {isAr ? 'اختر تمريناً' : 'Select an exercise'}
+                </h2>
+                <span className="ct-domain-pick-section-line" aria-hidden="true" />
+              </div>
+
+              <div className="ct-domain-pick-list" role="group" aria-label={isAr ? 'تمارين المجال' : 'Domain exercises'}>
+                {pickList.map((sub, idx) => {
+                  const subName = (isAr && sub.nameAr) ? sub.nameAr : sub.name;
+                  const subBlurb = isAr ? sub.blurbAr : sub.blurb;
+                  const bannerSide = isAr ? 'left' : 'right';
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      className={`ct-fq-attn-mode ct-domain-pick-card ct-domain-pick-card--${idx}`}
+                      onClick={() => {
+                        playSfx?.('click');
+                        setActiveGame(sub.game);
+                        setPickList([]);
+                        setScreen('game');
+                      }}
+                    >
+                      <CardBanner gameKey={sub.game} side={bannerSide} />
+                      <span className="ct-fq-attn-mode-body">
+                        <span className="ct-fq-attn-mode-lb">{subName}</span>
+                        {subBlurb ? (
+                          <span className={`ct-fq-attn-mode-hint ct-domain-pick-card-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>
+                            {subBlurb}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="ct-fq-attn-mode-chev ct-domain-pick-card-chev" aria-hidden="true">›</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <DomainAboutLink
+              domainId={activeDomain}
+              isAr={isAr}
               playSfx={playSfx}
-              onBack={backToHub}
-              center={
-                <span className="ct-domain-pick-crumb">
-                  {isAr ? 'تدريب' : 'Training'}
-                </span>
-              }
             />
-
-            <div className="ct-domain-pick-inner">
-              <header className="ct-domain-pick-panel">
-                <span className="ct-domain-pick-panel-accent" aria-hidden="true" />
-                <div className="ct-domain-pick-panel-top">
-                  <DomainBadge
-                    domainId={activeDomain}
-                    color={accent}
-                    size={64}
-                    short={d.short}
-                  />
-                  <div className="ct-domain-pick-panel-copy">
-                    <p className="ct-domain-pick-kicker">
-                      {isAr ? 'مجال تدريبي' : 'Training domain'}
-                    </p>
-                    <h1 className="ct-domain-pick-title ct-fq-hub-attn-big">{domainName}</h1>
-                  </div>
-                </div>
-                {domainDesc ? (
-                  <p className="ct-domain-pick-desc">{domainDesc}</p>
-                ) : null}
-              </header>
-
-              <section
-                className="ct-domain-pick-section"
-                aria-labelledby="domain-pick-heading"
-              >
-                <div className="ct-domain-pick-section-divider">
-                  <span className="ct-domain-pick-section-line" aria-hidden="true" />
-                  <h2 id="domain-pick-heading" className="ct-domain-pick-section-title">
-                    {isAr ? 'اختر تمريناً' : 'Select an exercise'}
-                  </h2>
-                  <span className="ct-domain-pick-section-line" aria-hidden="true" />
-                </div>
-                <p className="ct-domain-pick-section-meta">
-                  {pickList.length} {isAr ? 'تمارين متاحة' : pickList.length === 1 ? 'exercise available' : 'exercises available'}
-                </p>
-
-                <div className="ct-domain-pick-list" role="group" aria-label={isAr ? 'تمارين المجال' : 'Domain exercises'}>
-                  {pickList.map((sub, idx) => {
-                    const subName = (isAr && sub.nameAr) ? sub.nameAr : sub.name;
-                    const subBlurb = isAr ? sub.blurbAr : sub.blurb;
-                    const bannerSide = isAr ? 'left' : 'right';
-                    return (
-                      <button
-                        key={sub.id}
-                        type="button"
-                        className="ct-fq-attn-mode ct-domain-pick-card"
-                        onClick={() => {
-                          playSfx?.('click');
-                          setActiveGame(sub.game);
-                          setPickList([]);
-                          setScreen('game');
-                        }}
-                      >
-                        <CardBanner gameKey={sub.game} side={bannerSide} />
-                        <span className="ct-domain-pick-card-idx" aria-hidden="true">
-                          {String(idx + 1).padStart(2, '0')}
-                        </span>
-                        <span className="ct-fq-attn-mode-ic" aria-hidden="true">
-                          <GameGlyph k={sub.game} size={26} color={accent} strokeWidth={1.65} />
-                        </span>
-                        <span className="ct-fq-attn-mode-body">
-                          <span className="ct-fq-attn-mode-lb">{subName}</span>
-                          {subBlurb ? (
-                            <span className={`ct-fq-attn-mode-hint ct-domain-pick-card-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>
-                              {subBlurb}
-                            </span>
-                          ) : null}
-                        </span>
-                        <span className="ct-fq-attn-mode-chev ct-domain-pick-card-chev" aria-hidden="true">›</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            </div>
           </div>
-        </div>
+        </TrainingScreenShell>
       )}
       {screen === 'game' && GameView && (
         <Suspense fallback={<GameLoading isAr={isAr} />}>

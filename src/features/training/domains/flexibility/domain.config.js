@@ -9,7 +9,6 @@ const flexibility = {
   color: tokens.domain.flexibility,
   desc: 'Build cognitive flexibility when rules and responses must change.',
   descAr: 'عزّز المرونة المعرفية عندما تتغيّر القواعد والاستجابات المطلوبة.',
-  about: "Flexibility is your ability to adapt when the rules change while suppressing a strong automatic pull. An arrow points one way but sits on a side; you tap left or right by the active rule (where it POINTS or where it SITS). The rule keeps flipping — let go of the old one fast. High interference and perseveration (following the old rule) = low flexibility.",
   subs: [
     {
       id: 'switching',

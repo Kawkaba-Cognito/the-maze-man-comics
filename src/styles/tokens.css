@@ -59,6 +59,26 @@
   --color-domain-reasoning: #b696d4;
   --color-domain-flexibility: #e07aaa;
 
+  /* Domain pick screens — tinted base + saturated mid/deep for gradients */
+  --color-domain-attention-base: #faf3e6;
+  --color-domain-attention-mid: #ecb856;
+  --color-domain-attention-deep: #c8892a;
+  --color-domain-speed-base: #edf7f9;
+  --color-domain-speed-mid: #5aabbb;
+  --color-domain-speed-deep: #2d8a9a;
+  --color-domain-memory-base: #f2f7e8;
+  --color-domain-memory-mid: #8fae48;
+  --color-domain-memory-deep: #6a8528;
+  --color-domain-language-base: #faf0ea;
+  --color-domain-language-mid: #d97240;
+  --color-domain-language-deep: #b85a30;
+  --color-domain-reasoning-base: #f4eef9;
+  --color-domain-reasoning-mid: #a880cc;
+  --color-domain-reasoning-deep: #8060a8;
+  --color-domain-flexibility-base: #fdf0f5;
+  --color-domain-flexibility-mid: #d86896;
+  --color-domain-flexibility-deep: #b84878;
+
   /* ─── Misc state ─── */
   --color-danger: #8b2020;
   --color-rune-sage: #6b9e7a;     /* secondary green for rune rings/ticks */

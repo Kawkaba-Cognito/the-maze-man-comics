@@ -19,6 +19,7 @@ export function TrainingScreenShell({
   hub = false,
   onReplayTutorial,
   replayHint,
+  shellClassName = '',
 }) {
   // The canonical training screen (matches Speed Match). On the game hub a big
   // title + tag head is shown; sub-screens (difficulty/levels) use a small title.
@@ -33,7 +34,10 @@ export function TrainingScreenShell({
       ? <div className="ct-fq-training-title ct-fq-training-title-sm">{title}</div>
       : undefined;
   return (
-    <div className="cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light" dir={isAr ? 'rtl' : 'ltr'}>
+    <div
+      className={`cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light${shellClassName ? ` ${shellClassName}` : ''}`}
+      dir={isAr ? 'rtl' : 'ltr'}
+    >
       <div className={`ct-fq-screen ct-fq-training-screen${hub ? ' ct-fq-training-screen--hub' : ''}`}>
         <TrainingMenuBar
           variant="paper"

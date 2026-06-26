@@ -12,6 +12,7 @@
  */
 
 import { DOMAIN_CONFIGS } from '../../features/training/registry';
+import { DOMAIN_SCIENCE } from '../../features/training/shared/domainScience';
 
 export { PALETTE } from '../../features/training/shared/palette';
 
@@ -39,6 +40,7 @@ export const DOMAINS = DOMAIN_CONFIGS.map((d) => ({
   })),
 }));
 
+/** @deprecated Use DOMAIN_SCIENCE + DomainAboutLink — kept for legacy imports. */
 export const DOMAIN_ABOUT = Object.fromEntries(
-  DOMAIN_CONFIGS.filter((d) => d.about).map((d) => [d.id, d.about])
+  Object.entries(DOMAIN_SCIENCE).map(([id, block]) => [id, block.en.intro])
 );

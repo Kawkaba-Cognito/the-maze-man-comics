@@ -9,7 +9,6 @@ const reasoning = {
   color: tokens.domain.reasoning,
   desc: 'Build logical reasoning, planning, and step-by-step problem solving.',
   descAr: 'بنِّ الاستدلال المنطقي والتخطيط وحل المشكلات خطوة بخطوة.',
-  about: "Reasoning is the art of building bridges from what you know to what you don't. Plan, deduce, and solve your way through mazes that demand logic, not luck.",
   subs: [
     {
       id: 'logical',

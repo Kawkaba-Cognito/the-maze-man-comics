@@ -15,7 +15,7 @@ import { createTrialLog } from '../../../../shared/trialLog';
 import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import MemoObject from './MemoObject';
 import MemoModes from './MemoModes';
-import MemoSciencePanel, { memoTip } from './MemoSciencePanel';
+import { memoTip } from './MemoSciencePanel';
 import {
   MS_LEVELS_PER_TIER,
   MS_DIFF_KEYS,
@@ -224,7 +224,6 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
   const [feedback, setFeedback] = useState(null);
   const [lastResult, setLastResult] = useState(null);
   const [dirLesson, setDirLesson] = useState(null); // shows when recall flips to reverse the first time
-  const [sciOpen, setSciOpen] = useState(false);
   const taughtDirsRef = useRef(loadTaughtDirs());
 
   // Survival mode
@@ -612,13 +611,10 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
               onFree={() => setPhase('freeIntro')}
               onLevels={() => setPhase('diff')}
               onChallenge={() => setPhase('chal')}
-              onScience={() => setSciOpen(true)}
             />
           </div>
         </div>
       )}
-
-      {sciOpen && <MemoSciencePanel isAr={isAr} onClose={() => setSciOpen(false)} />}
 
       {phase === 'freeIntro' && (
         <SurvivalIntro isAr={isAr} playSfx={playSfx} onReady={startFree} onBack={() => setPhase('hub')} />

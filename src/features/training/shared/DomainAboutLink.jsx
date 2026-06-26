@@ -1,23 +1,21 @@
 import React, { useState } from 'react';
-import { GAME_SCIENCE } from './gameScience';
+import { DOMAIN_SCIENCE } from './domainScience';
 import ScienceBrainPanel, { ScienceBrainChip } from './ScienceBrainPanel';
 
-/**
- * Shared "why this trains your brain" link shown under the three modes on every game hub.
- */
-export default function HubScienceLink({ gameId, isAr, playSfx, className = '' }) {
+/** Domain-level science chip on the 6 domain pick screens — same panel as game hubs. */
+export default function DomainAboutLink({ domainId, isAr, playSfx }) {
   const [open, setOpen] = useState(false);
-  const entry = GAME_SCIENCE[gameId];
+  const entry = DOMAIN_SCIENCE[domainId];
   if (!entry) return null;
 
   const c = isAr ? entry.ar : entry.en;
-  const brainLabel = isAr ? 'لماذا يدرّب دماغك' : 'Why this trains your brain';
+  const title = isAr ? `لماذا تدرّب ${c.domainLabel}؟` : `Why train ${c.domainLabel}?`;
 
   return (
     <>
       <ScienceBrainChip
-        className={className}
-        label={`ⓘ ${brainLabel}`}
+        className="ct-domain-pick-about-link"
+        label={`ⓘ ${title}`}
         onClick={() => {
           playSfx?.('click');
           setOpen(true);
@@ -26,7 +24,7 @@ export default function HubScienceLink({ gameId, isAr, playSfx, className = '' }
       <ScienceBrainPanel
         open={open}
         onClose={() => setOpen(false)}
-        title={brainLabel}
+        title={title}
         intro={c.intro}
         sections={c.sections}
         foot={c.foot}

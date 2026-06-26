@@ -1,7 +1,8 @@
 import React from 'react';
 import { TrainingModeList } from '../../../../shared/TrainingScreens';
+import HubScienceLink from '../../../../shared/HubScienceLink';
 
-export default function MemoModes({ t, isAr, onFree, onLevels, onChallenge, onScience, playSfx }) {
+export default function MemoModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
   const items = [
     { k: 'free', ic: '♾️', lb: t.freeMode, hint: t.hubNodeFreeHint, on: onFree },
     { k: 'levels', ic: '🎯', lb: t.levelMode, hint: t.hubNodeLevelsHint, on: onLevels },
@@ -10,11 +11,7 @@ export default function MemoModes({ t, isAr, onFree, onLevels, onChallenge, onSc
   return (
     <>
       <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />
-      {onScience && (
-        <button type="button" className="ct-fq-sci-link" onClick={() => { playSfx('click'); onScience(); }}>
-          {t.scienceLink}
-        </button>
-      )}
+      <HubScienceLink gameId="memo-span" isAr={isAr} playSfx={playSfx} />
     </>
   );
 }
