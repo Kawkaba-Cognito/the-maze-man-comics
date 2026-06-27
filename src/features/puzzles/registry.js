@@ -161,6 +161,22 @@ const tangram = {
 
 export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, bridges, sudoku, kenken, nonogram, kakuro, crowns, blockburst, flow, tangram];
 
+// ── Categories: every puzzle belongs to exactly one, by core mechanic. ──
+const CATEGORY_OF = {
+  sudoku: 'numbers', kenken: 'numbers', kakuro: 'numbers',
+  takuzu: 'logic', hitori: 'logic', crowns: 'logic', bridges: 'logic', nonogram: 'logic',
+  sliding: 'spatial', blockburst: 'spatial', flow: 'spatial', tangram: 'spatial',
+};
+PUZZLE_CONFIGS.forEach((p) => { p.category = CATEGORY_OF[p.id] || 'logic'; });
+
+export const PUZZLE_CATEGORIES = [
+  { id: 'numbers', name: 'Numbers', nameAr: 'الأرقام', icon: '🔢', accent: '#e8ac4e', desc: 'Digits & arithmetic deduction', descAr: 'استنتاج بالأرقام والحساب' },
+  { id: 'logic', name: 'Logic', nameAr: 'المنطق', icon: '🧠', accent: '#5ec6b6', desc: 'Shade, place, connect & reveal', descAr: 'تظليل ووضع وربط وكشف' },
+  { id: 'spatial', name: 'Spatial', nameAr: 'المكاني', icon: '🧩', accent: '#b696d4', desc: 'Move, draw & fit in space', descAr: 'تحريك ورسم وتركيب في الفراغ' },
+];
+
+export const puzzlesInCategory = (cat) => PUZZLE_CONFIGS.filter((p) => p.category === cat);
+
 export const PUZZLES_BY_KEY = Object.fromEntries(
   PUZZLE_CONFIGS.map((p) => [p.gameKey, p])
 );

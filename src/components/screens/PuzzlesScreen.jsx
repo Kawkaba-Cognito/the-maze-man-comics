@@ -1,7 +1,7 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useApp } from '../../context/AppContext';
 import { tokens } from '../../styles/tokens';
-import { PUZZLE_CONFIGS } from '../../features/puzzles/registry';
+import { PUZZLE_CATEGORIES, puzzlesInCategory } from '../../features/puzzles/registry';
 import { getLazyPuzzle } from '../../features/puzzles/lazyGames';
 import { PUZZLE_UI } from '../../features/puzzles/shared/puzzleStrings';
 import { IconBack } from '../../features/training/shared/TrainingIcons';
@@ -30,35 +30,32 @@ const CANVAS_W = 360;
 const COL_L = 100;
 const COL_R = 260;
 const ROW_Y = [122, 302, 482, 662, 842, 1022];
-const CANVAS_H = ROW_Y[ROW_Y.length - 1] + 110;
 const ARCH_HALF = 32; // arch is 64 wide in local coords
 
-/* Place the 8 puzzles row-by-row, left then right. */
-const NODES = PUZZLE_CONFIGS.map((puzzle, i) => ({
-  puzzle,
-  x: i % 2 === 0 ? COL_L : COL_R,
-  y: ROW_Y[Math.floor(i / 2)],
-}));
-
-const NODE_BY_ID = Object.fromEntries(NODES.map((n) => [n.puzzle.id, n]));
-
-/* Corridor lattice: per-row horizontals + an X between each adjacent row. */
-function buildCorridors() {
-  const lines = [];
-  for (let r = 0; r < ROW_Y.length; r++) {
-    const left = NODES[r * 2];
-    const right = NODES[r * 2 + 1];
-    if (left && right) lines.push({ a: left.puzzle.id, b: right.puzzle.id });
-    if (r < ROW_Y.length - 1) {
-      const nl = NODES[(r + 1) * 2];
-      const nr = NODES[(r + 1) * 2 + 1];
-      if (left && nr) lines.push({ a: left.puzzle.id, b: nr.puzzle.id });
-      if (right && nl) lines.push({ a: right.puzzle.id, b: nl.puzzle.id });
+/* Build a 2-column constellation layout for a given puzzle subset (one category). */
+function buildLayout(puzzles) {
+  const nodes = puzzles.map((puzzle, i) => ({
+    puzzle,
+    x: i % 2 === 0 ? COL_L : COL_R,
+    y: ROW_Y[Math.floor(i / 2)],
+  }));
+  const nodeById = Object.fromEntries(nodes.map((n) => [n.puzzle.id, n]));
+  const rows = Math.ceil(puzzles.length / 2);
+  const corridors = [];
+  for (let r = 0; r < rows; r++) {
+    const left = nodes[r * 2];
+    const right = nodes[r * 2 + 1];
+    if (left && right) corridors.push({ a: left.puzzle.id, b: right.puzzle.id });
+    if (r < rows - 1) {
+      const nl = nodes[(r + 1) * 2];
+      const nr = nodes[(r + 1) * 2 + 1];
+      if (left && nr) corridors.push({ a: left.puzzle.id, b: nr.puzzle.id });
+      if (right && nl) corridors.push({ a: right.puzzle.id, b: nl.puzzle.id });
     }
   }
-  return lines;
+  const canvasH = (ROW_Y[Math.max(0, Math.min(rows, ROW_Y.length) - 1)] ?? ROW_Y[0]) + 110;
+  return { nodes, nodeById, corridors, canvasH };
 }
-const CORRIDORS = buildCorridors();
 
 /* SVG clip for the inner "stone opening" (local door coords 0–64). */
 const DOOR_INNER_D = 'M 10 28 Q 10 11 32 9 Q 54 11 54 28 L 54 57 L 10 57 Z';
@@ -136,8 +133,25 @@ export default function PuzzlesScreen() {
   const canContinue = hasEnteredLabyrinth();
 
   const [activeGame, setActiveGame] = useState(null);
+  const [category, setCategory] = useState(null);
   const [hovered, setHovered] = useState(null);
   const [tick, setTick] = useState(0);
+
+  const catPuzzles = useMemo(() => (category ? puzzlesInCategory(category) : []), [category]);
+  const { nodes: NODES, nodeById: NODE_BY_ID, corridors: CORRIDORS, canvasH: CANVAS_H } = useMemo(() => buildLayout(catPuzzles), [catPuzzles]);
+  const activeCat = category ? PUZZLE_CATEGORIES.find((c) => c.id === category) : null;
+
+  const titleStyle = {
+    textAlign: 'center', fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
+    fontSize: isAr ? 28 : 34, fontWeight: isAr ? 900 : 400, letterSpacing: isAr ? 0 : 3,
+    color: '#f0e2c0', textTransform: 'uppercase', lineHeight: 1.05, maxWidth: 220,
+    textShadow: '0 1px 0 rgba(255,220,120,0.45), 0 -1px 0 rgba(0,0,0,0.9), 0 0 18px rgba(232,172,78,0.55)',
+  };
+  const langBtnStyle = {
+    ...chromeBtn(), width: 'auto', padding: '0 12px',
+    fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
+    fontWeight: 700, fontSize: isAr ? 13 : 14, letterSpacing: isAr ? 0 : 2, color: '#e8ac4e',
+  };
 
   useEffect(() => {
     if (activeGame) return undefined;
@@ -161,9 +175,109 @@ export default function PuzzlesScreen() {
     );
   }
 
+  /* ── Category landing — a gate hall: 3D gate on top, 3 category gates below ── */
+  if (!category) {
+    const catX = [70, 180, 290];
+    const GATE_CANVAS_H = 480;
+    const GATES = [
+      { id: '3d', world: true, icon: '🧭', accent: '#e8ac4e', label: isAr ? 'ثلاثي الأبعاد' : '3D', x: 180, y: 132, scale: 1.9 },
+      ...PUZZLE_CATEGORIES.map((c, i) => ({ id: c.id, icon: c.icon, accent: c.accent, label: isAr ? c.nameAr : c.name, x: catX[i], y: 372, scale: 1 })),
+    ];
+    return (
+      <div style={{
+        position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden',
+        background: L.bg, color: L.text, fontFamily: 'Inter, system-ui, sans-serif', isolation: 'isolate',
+      }}>
+        <div style={{ position: 'relative', minHeight: '100%', paddingBottom: 28 }}>
+          <AtmosphericBg />
+          <div className="app-chrome-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '64px 18px 6px', position: 'relative', zIndex: 5 }}>
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+              <button type="button" style={chromeBtn()} onClick={() => { playSfx('click'); switchTab('home'); }} aria-label={isAr ? 'رجوع' : 'Back'}>
+                <IconBack size={18} c={L.text} />
+              </button>
+            </div>
+            <div style={titleStyle}>{t.hubTitle}</div>
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="button" style={langBtnStyle} onClick={() => { playSfx('click'); toggleLang(); }}>{isAr ? 'EN' : 'عر'}</button>
+            </div>
+          </div>
+
+          {/* Gate hall: one big 3D gate on top, the 3 category gates below */}
+          <div style={{ position: 'relative', width: '100%', height: GATE_CANVAS_H, marginTop: 8, zIndex: 4 }}>
+            <div style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', width: CANVAS_W, height: GATE_CANVAS_H }}>
+              <svg width={CANVAS_W} height={GATE_CANVAS_H} viewBox={`0 0 ${CANVAS_W} ${GATE_CANVAS_H}`} style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
+                <defs>
+                  <filter id="gateEmboss" x="-35%" y="-35%" width="170%" height="170%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="b" />
+                    <feOffset dx="0" dy="1.8" in="b" result="o" />
+                    <feFlood floodColor="#1a1208" floodOpacity="0.22" />
+                    <feComposite in2="o" operator="in" result="s" />
+                    <feMerge><feMergeNode in="s" /><feMergeNode in="SourceGraphic" /></feMerge>
+                  </filter>
+                  {GATES.map((g) => (
+                    <linearGradient key={`gg-${g.id}`} id={`gateArch-${g.id}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3a2b18" />
+                      <stop offset="42%" stopColor={g.accent} stopOpacity="0.5" />
+                      <stop offset="100%" stopColor="#0c0805" />
+                    </linearGradient>
+                  ))}
+                  {GATES.map((g) => (
+                    <radialGradient key={`gh-${g.id}`} id={`gateGlow-${g.id}`} cx="0.5" cy="0.5" r="0.5">
+                      <stop offset="0%" stopColor={g.accent} stopOpacity="0.42" />
+                      <stop offset="65%" stopColor={g.accent} stopOpacity="0.1" />
+                      <stop offset="100%" stopColor={g.accent} stopOpacity="0" />
+                    </radialGradient>
+                  ))}
+                </defs>
+
+                {GATES.map((g) => (
+                  <g key={g.id} style={{ pointerEvents: 'none' }}>
+                    <circle cx={g.x} cy={g.y} r={(hovered === g.id ? 54 : 44) * g.scale} fill={`url(#gateGlow-${g.id})`} />
+                    <g transform={`translate(${g.x - 32 * g.scale}, ${g.y - 38 * g.scale}) scale(${g.scale})`}>
+                      <g>
+                        <animateTransform attributeName="transform" type="translate" values="0 0; 0 -1.6; 0 0" keyTimes="0;0.5;1" dur={hovered === g.id ? '1.5s' : '3.4s'} repeatCount="indefinite" />
+                        <ArchShape3D col={g.accent} hovered={hovered === g.id} gradId={`gateArch-${g.id}`} filterId="gateEmboss" />
+                      </g>
+                    </g>
+                  </g>
+                ))}
+              </svg>
+
+              {GATES.map((g) => {
+                const isH = hovered === g.id;
+                const s = g.scale;
+                return (
+                  <button key={g.id} type="button"
+                    onMouseEnter={() => setHovered(g.id)} onMouseLeave={() => setHovered((h) => (h === g.id ? null : h))}
+                    onFocus={() => setHovered(g.id)} onBlur={() => setHovered((h) => (h === g.id ? null : h))}
+                    onClick={() => { playSfx('click'); if (g.world) { requestOuterGate(); } else { setHovered(null); setCategory(g.id); } }}
+                    aria-label={g.label}
+                    style={{ position: 'absolute', left: g.x, top: g.y, width: 116 * s, height: 124 * s, transform: `translate(-50%, ${-38 * s}px)`, background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                  >
+                    <span aria-hidden="true" style={{ marginTop: 14 * s, width: 38 * s, height: 38 * s, borderRadius: 9 * s, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 * s, lineHeight: 1, background: `${g.accent}22`, border: `1px solid ${g.accent}66`, boxShadow: isH ? `0 0 12px ${g.accent}88` : 'none', color: g.accent }}>{g.icon}</span>
+                    <span style={{ marginTop: 24 * s, textAlign: 'center', color: L.text, fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Nunito', sans-serif", fontSize: (g.world ? 17 : 13.5) * Math.min(s, 1.25), fontWeight: isAr ? 800 : 400, letterSpacing: isAr ? 0 : 0.4, lineHeight: 1.1, whiteSpace: 'nowrap', textShadow: '-1.4px 0 rgba(8,4,2,0.95), 1.4px 0 rgba(8,4,2,0.95), 0 -1.4px rgba(8,4,2,0.95), 0 1.4px rgba(8,4,2,0.95), 0 0 16px rgba(232,172,78,0.5)' }}>{g.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {canContinue && (
+            <div style={{ position: 'relative', zIndex: 5, textAlign: 'center', marginTop: 2 }}>
+              <button type="button" onClick={() => { playSfx('click'); requestContinueMaze(); }}
+                style={{ background: 'rgba(40,24,10,0.65)', color: '#e8ac4e', border: '1px solid #7a5420', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive", letterSpacing: isAr ? 0 : 1, fontSize: isAr ? 13 : 14 }}>
+                {isAr ? 'تابع المتاهة' : 'CONTINUE MAZE'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const hoveredPuzzle = hovered ? NODE_BY_ID[hovered]?.puzzle : null;
 
-  /* ── Hub / constellation map ── */
+  /* ── Category constellation map ── */
   return (
     <div style={{
       position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden',
@@ -178,65 +292,14 @@ export default function PuzzlesScreen() {
         padding: '64px 18px 6px', position: 'relative', zIndex: 5,
       }}>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-          <button type="button" style={chromeBtn()} onClick={() => { playSfx('click'); switchTab('home'); }} aria-label={isAr ? 'رجوع' : 'Back'}>
+          <button type="button" style={chromeBtn()} onClick={() => { playSfx('click'); setHovered(null); setCategory(null); }} aria-label={isAr ? 'الفئات' : 'Categories'}>
             <IconBack size={18} c={L.text} />
           </button>
         </div>
-        <div style={{
-          textAlign: 'center',
-          fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
-          fontSize: isAr ? 28 : 34, fontWeight: isAr ? 900 : 400,
-          letterSpacing: isAr ? 0 : 3, color: '#f0e2c0', textTransform: 'uppercase',
-          lineHeight: 1.05, maxWidth: 220,
-          textShadow: '0 1px 0 rgba(255,220,120,0.45), 0 -1px 0 rgba(0,0,0,0.9), 0 0 18px rgba(232,172,78,0.55)',
-        }}>
-          {t.hubTitle}
-        </div>
+        <div style={titleStyle}>{activeCat ? (isAr ? activeCat.nameAr : activeCat.name) : t.hubTitle}</div>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-          <button
-            type="button"
-            style={{
-              ...chromeBtn(), width: 'auto', padding: '0 12px',
-              fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
-              fontWeight: 700, fontSize: isAr ? 13 : 14, letterSpacing: isAr ? 0 : 2, color: '#e8ac4e',
-            }}
-            onClick={() => { playSfx('click'); toggleLang(); }}
-          >
-            {isAr ? 'EN' : 'عر'}
-          </button>
+          <button type="button" style={langBtnStyle} onClick={() => { playSfx('click'); toggleLang(); }}>{isAr ? 'EN' : 'عر'}</button>
         </div>
-      </div>
-
-      {/* Featured: the 3D World (Babylon loads only when entered) */}
-      <div style={{ position: 'relative', zIndex: 5, display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', padding: '6px 18px 0' }}>
-        <button
-          type="button"
-          onClick={() => { playSfx('click'); requestOuterGate(); }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8, padding: '12px 22px', borderRadius: 14,
-            border: '1.5px solid #9a6828', cursor: 'pointer',
-            background: 'linear-gradient(170deg, #3e1a06 0%, #5e2a0c 50%, #3e1a06 100%)',
-            color: '#f0e2c0', fontWeight: 700, fontSize: isAr ? 15 : 16,
-            fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive", letterSpacing: isAr ? 0 : 1.5,
-            boxShadow: 'inset 0 1px 0 rgba(220,170,70,0.35), inset 0 -1px 0 rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.6)',
-          }}
-        >
-          <span style={{ fontSize: 20 }}>🧭</span>
-          {isAr ? 'العالم ثلاثي الأبعاد' : '3D WORLD'}
-        </button>
-        {canContinue && (
-          <button
-            type="button"
-            onClick={() => { playSfx('click'); requestContinueMaze(); }}
-            style={{
-              padding: '12px 18px', borderRadius: 14, border: '1.5px solid #7a5420', cursor: 'pointer',
-              background: 'rgba(40,24,10,0.65)', color: '#e8ac4e', fontWeight: 700, fontSize: isAr ? 13 : 14,
-              fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive", letterSpacing: isAr ? 0 : 1,
-            }}
-          >
-            {isAr ? 'تابع المتاهة' : 'CONTINUE MAZE'}
-          </button>
-        )}
       </div>
 
       {/* Constellation canvas (SVG art + HTML portal overlays) */}

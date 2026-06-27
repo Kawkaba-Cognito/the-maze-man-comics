@@ -73,9 +73,13 @@ export default function TangramGame({ onBack }) {
   };
 
   const placementFor = (offs, cell) => {
-    const N = sizeRef.current; const b = boardRef.current; const base = offs[0];
-    const anchorR = Math.floor(cell / N) - base[0];
-    const anchorC = (cell % N) - base[1];
+    const N = sizeRef.current; const b = boardRef.current;
+    // Anchor the piece's bounding-box CENTER on the pointer cell, so the board
+    // shadow lines up with the floating copy (which is centered on the finger).
+    const maxR = Math.max(...offs.map((o) => o[0]));
+    const maxC = Math.max(...offs.map((o) => o[1]));
+    const anchorR = Math.floor(cell / N) - Math.round(maxR / 2);
+    const anchorC = (cell % N) - Math.round(maxC / 2);
     const cells = []; let valid = true;
     for (const [dr, dc] of offs) {
       const rr = anchorR + dr; const cc = anchorC + dc;
