@@ -125,18 +125,52 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+// Parse each shape's SVG markup into a real React element ONCE (cached), so the
+// shape is rendered as a React-managed SVG child instead of being injected as an
+// HTML string. Injecting markup with `dangerouslySetInnerHTML` on an <svg> node
+// is the source of the intermittent "empty square / empty target" bug: setting
+// `.innerHTML` on an SVG element during React reconciliation can occasionally
+// leave a tile with no rendered shape. Proper React SVG children always render.
+const FALLBACK_SHAPE_EL = <circle cx="50" cy="50" r="38" fill="currentColor" />;
+const shapeElCache = Object.create(null);
+function getShapeEl(shape) {
+  const key = shape in SH ? shape : 'circle';
+  if (key in shapeElCache) return shapeElCache[key];
+  const markup = SH[key] || SH.circle;
+  let el = null;
+  if (typeof DOMParser !== 'undefined') {
+    try {
+      const doc = new DOMParser().parseFromString(
+        `<svg xmlns="http://www.w3.org/2000/svg">${markup}</svg>`,
+        'image/svg+xml',
+      );
+      const node = doc.documentElement && doc.documentElement.firstElementChild;
+      if (node && !doc.querySelector('parsererror')) {
+        const props = {};
+        for (const attr of node.attributes) props[attr.name] = attr.value;
+        el = React.createElement(node.nodeName, props);
+      }
+    } catch {
+      el = null;
+    }
+  }
+  // Guaranteed fallback — a tile is never blank even if parsing failed.
+  if (!el) el = FALLBACK_SHAPE_EL;
+  shapeElCache[key] = el;
+  return el;
+}
+
 const ShapeSvg = React.memo(function ShapeSvg({ shape, color, size = 40 }) {
   // Re-render once filled-area measurement completes (memo only blocks
   // prop-driven updates, not this external-store subscription).
   useSyncExternalStore(subscribeShapeNorm, getShapeNormVersion, getShapeNormVersion);
-  const inner = SH[shape] || SH.circle;
   const scale = getShapeScale(shape);
   // Apply the area-normalization scale through the VIEWBOX, not a CSS transform.
   // A CSS `transform: scale()` with `transform-origin: center` on an SVG that is
   // also CSS-sized (the cell sets svg width/height to 90%) is browser-flaky and
-  // could intermittently push the shape off-canvas → a blank cell (the "no shape"
-  // bug). Widening the viewBox around the centre (50,50) shrinks the drawn shape
-  // with pure coordinates — no transform, no origin, always renders.
+  // could intermittently push the shape off-canvas → a blank cell. Widening the
+  // viewBox around the centre (50,50) shrinks the drawn shape with pure
+  // coordinates — no transform, no origin, always renders.
   let viewBox = '0 0 100 100';
   if (scale > 0 && scale < 1) {
     const span = 100 / scale;
@@ -149,8 +183,9 @@ const ShapeSvg = React.memo(function ShapeSvg({ shape, color, size = 40 }) {
       height={size}
       viewBox={viewBox}
       style={{ color: color || '#2d2d2d', display: 'block' }}
-      dangerouslySetInnerHTML={{ __html: inner }}
-    />
+    >
+      {getShapeEl(shape)}
+    </svg>
   );
 });
 
