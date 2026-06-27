@@ -55,6 +55,8 @@ function GameGlyph({ k, size = 48, color = 'currentColor', strokeWidth = 1.8 }) 
       return (<svg {...c}><path d="M20 11.5 A8 8 0 1 0 18 17" /><polyline points="20 6 20 11.5 14.5 11.5" /></svg>);
     case 'paired-associates':
       return (<svg {...c}><rect x="3" y="7" width="9" height="12" rx="1.5" /><rect x="12" y="5" width="9" height="12" rx="1.5" /></svg>);
+    case 'story-grid': // a 3-panel comic strip with a play arrow (watch → rebuild)
+      return (<svg {...c}><rect x="3" y="6" width="18" height="12" rx="2" /><line x1="9" y1="6" x2="9" y2="18" /><line x1="15" y1="6" x2="15" y2="18" /><path d="M5 9.5 L7.2 12 L5 14.5 Z" fill={color} stroke="none" /></svg>);
     case 'rush-hour':
       return (<svg {...c}><rect x="3" y="3" width="18" height="18" rx="2" /><rect x="6" y="10" width="6" height="4" rx="1" fill={color} stroke="none" /><path d="M15 12 H21" /><path d="M18.5 9.5 L21 12 L18.5 14.5" /></svg>);
     case 'raven-matrices':
@@ -73,6 +75,10 @@ function GameGlyph({ k, size = 48, color = 'currentColor', strokeWidth = 1.8 }) 
       return (<svg {...c}><circle cx="5.5" cy="12" r="1.4" fill={color} stroke="none" /><circle cx="18.5" cy="12" r="1.4" fill={color} stroke="none" /><path d="M8 12 H16" /><path d="M10 9.5 L8 12 L10 14.5" /><path d="M14 9.5 L16 12 L14 14.5" /></svg>);
     case 'odd-one-out':
       return (<svg {...c}><circle cx="6.5" cy="7.5" r="2.3" /><circle cx="15" cy="7.5" r="2.3" /><circle cx="6.5" cy="16" r="2.3" /><rect x="12.4" y="13.4" width="5.2" height="5.2" rx="0.8" fill={color} stroke="none" /></svg>);
+    case 'trivia': // a staircase (climb to answer) with a flag at the top
+      return (<svg {...c}><path d="M3 20 H8 V16 H13 V12 H18 V8" /><line x1="18" y1="8" x2="18" y2="4" /><path d="M18 4 H21 V6 H18" fill={color} stroke="none" /></svg>);
+    case 'detective': // a magnifying glass (deduction)
+      return (<svg {...c}><circle cx="10.5" cy="10.5" r="6.5" /><line x1="15.2" y1="15.2" x2="20.5" y2="20.5" /></svg>);
     default:
       return null;
   }
@@ -82,10 +88,10 @@ function GameGlyph({ k, size = 48, color = 'currentColor', strokeWidth = 1.8 }) 
 const GAME_GLYPH_KEYS = new Set([
   'speed-match', 'math-gates', 'trail-making',
   'cancel-task', 'mot', 'train-switch',
-  'memo-span', 'nback', 'paired-associates',
-  'rush-hour', 'raven-matrices', 'tower-hanoi',
+  'memo-span', 'nback', 'paired-associates', 'story-grid',
+  'rush-hour', 'raven-matrices', 'tower-hanoi', 'detective',
   'spatial-stroop', 'flip', 'piano-tap',
-  'wordle', 'synonyms', 'odd-one-out',
+  'wordle', 'synonyms', 'odd-one-out', 'trivia',
 ]);
 
 /** Side banner with white game glyph — domain accent only on the card edge. */

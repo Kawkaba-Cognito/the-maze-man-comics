@@ -183,8 +183,9 @@ export const GAME_SCIENCE = {
       intro: 'Story Time trains temporal-order memory — holding not just WHAT happened but the SEQUENCE it happened in, then reproducing it (the comic-strip cousin of the Picture-Arrangement task).',
       sections: [
         { h: '🧠 Order memory', b: 'Remembering the order of events is a distinct memory skill, leaning on the hippocampus and prefrontal cortex — the same system that lets you retell your day.' },
+        { h: '🔗 Binding who · what · where', b: 'Rebuilding each panel from its place, character and action trains relational binding — the hippocampus stitching separate details into one event (Eichenbaum, 2004). It is exactly how real episodic memories are stored.' },
         { h: '📖 Chunk it into a story', b: 'Linked events form a single narrative chunk, so memory holds far more than a loose list (Miller, 1956). A good story is easier to recall than random items.' },
-        { h: '🕵️ Filtering decoys', b: 'Ignoring scenes that never happened trains selective gating — keeping working memory clear of irrelevant material, which predicts higher capacity (Vogel et al., 2005).' },
+        { h: '🕵️ Filtering decoys', b: 'Ignoring places, characters and actions that never happened trains selective gating — keeping working memory clear of irrelevant material, which predicts higher capacity (Vogel et al., 2005).' },
       ],
       foot: 'Knit the panels into one little story as you watch — sequences stick better than lists.',
     },
@@ -193,8 +194,9 @@ export const GAME_SCIENCE = {
       intro: '«وقت القصة» يدرّب ذاكرة التسلسل الزمني — لا حفظ ما حدث فقط بل ترتيب حدوثه، ثم إعادة إنتاجه (ابن عمّ مهمة «ترتيب الصور» على هيئة شريط مصوّر).',
       sections: [
         { h: '🧠 ذاكرة الترتيب', b: 'تذكّر ترتيب الأحداث مهارة ذاكرة مستقلّة، تعتمد على الحُصين والقشرة الجبهية — النظام نفسه الذي يتيح لك سرد يومك.' },
+        { h: '🔗 ربط: مَن · ماذا · أين', b: 'إعادة بناء كل لوحة من مكانها وشخصيتها وفعلها يدرّب الربط العلائقي — حيث يجمع الحُصين تفاصيل منفصلة في حدث واحد (آيخنباوم، 2004). هكذا تُخزَّن الذكريات الحدثية فعلاً.' },
         { h: '📖 اجعلها قصة', b: 'الأحداث المترابطة تشكّل «كتلة» سردية واحدة، فتحمل الذاكرة أكثر بكثير من قائمة مبعثرة (ميلر، 1956). القصة الجيدة أسهل استرجاعاً من عناصر عشوائية.' },
-        { h: '🕵️ تصفية الخدع', b: 'تجاهل مشاهد لم تحدث يدرّب البوّابة الانتقائية — إبقاء الذاكرة العاملة نقيّة من غير المهمّ، وهو ما يتنبأ بسعة أعلى (فوغل وآخرون، 2005).' },
+        { h: '🕵️ تصفية الخدع', b: 'تجاهل أماكن وشخصيات وأفعال لم تحدث يدرّب البوّابة الانتقائية — إبقاء الذاكرة العاملة نقيّة من غير المهمّ، وهو ما يتنبأ بسعة أعلى (فوغل وآخرون، 2005).' },
       ],
       foot: 'انسج اللوحات في قصة صغيرة وأنت تشاهد — التسلسل أرسخ من القوائم.',
     },
@@ -408,13 +410,13 @@ export const GAME_SCIENCE = {
   'synonyms': {
     en: {
       title: 'The science',
-      intro: 'Similarities mixes timed IQ-style verbal tasks — shared rules, analogies, and pair matching — under a countdown.',
+      intro: 'Word Links mixes timed verbal-reasoning tasks — shared rules, analogies, pair matching, and odd-one-out — under a countdown. All tap one core skill: judging how words relate.',
       sections: [
         { h: '🧩 Verbal reasoning', b: 'Naming what two things share is the classic Similarities subtest (WAIS, WISC). Analogies add relational reasoning: A is to B as C is to what?' },
+        { h: '🗂 Categorization & gating', b: 'Spotting the odd word out means extracting the category the others share, then rejecting the misfit — the same semantic sorting and selective gating that keep meaning organized.' },
         { h: '⏱ Speed under pressure', b: 'A shrinking timer forces fast rule extraction, not slow guessing. That blend of verbal IQ and processing speed is closer to real test conditions.' },
-        { h: '🔗 Pair binding & abstraction', b: 'Finding the matching pair among four tiles trains associative search. Hard items push you past surface similarity to deeper links — function, category, or analogy.' },
       ],
-      foot: 'On shared-rule items, state the deepest true link — not just “both are things” but what kind, or how they relate.',
+      foot: 'Ask what the words have in common first — the best link (or the odd one) usually follows from the rule.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
@@ -447,6 +449,50 @@ export const GAME_SCIENCE = {
         { h: '🧠 الكبح والمشتّتات الوشيكة', b: 'الجولات الأصعب تستخدم مشتّتات تكاد تناسب المجموعة. عليك كبح الإجابة المغرية الخاطئة والاحتفاظ بالقاعدة الحقيقية.' },
       ],
       foot: 'اسأل أولاً ما الذي تشترك به ثلاث كلمات — الشاذّة عادةً تكسر تلك القاعدة.',
+    },
+  },
+  'detective': {
+    en: {
+      title: 'The science',
+      intro: 'Detective is deductive reasoning in action — combining clues to eliminate possibilities until only one answer can be true. It mirrors how scientists and logicians narrow a hypothesis.',
+      sections: [
+        { h: '🔎 Deduction & elimination', b: 'Each clue is a constraint. Crossing out suspects that violate it is logical elimination — the same process behind formal deduction and everyday problem-solving.' },
+        { h: '🧠 Working memory + logic', b: 'You hold several clues in mind at once and combine them, leaning on the prefrontal cortex networks for reasoning and rule integration.' },
+        { h: '🎯 Hypothesis testing', b: 'Treating each suspect as a hypothesis and checking it against every clue trains careful, evidence-based thinking instead of guessing.' },
+      ],
+      foot: 'Use every clue: the answer is the only suspect that survives all of them — guessing early throws away information.',
+    },
+    ar: {
+      title: 'العلم وراء اللعبة',
+      intro: '«المحقّق» استدلال استنباطي عملي — تجمع الأدلة لتستبعد الاحتمالات حتى يبقى جواب واحد ممكن. يحاكي كيف يضيّق العلماء والمنطقيون الفرضية.',
+      sections: [
+        { h: '🔎 الاستنباط والاستبعاد', b: 'كل دليل قيد. شطب المشتبهين الذين يخالفونه هو استبعاد منطقي — العملية نفسها وراء الاستدلال الصوري وحل المشكلات اليومي.' },
+        { h: '🧠 الذاكرة العاملة والمنطق', b: 'تحتفظ بعدة أدلة في ذهنك معاً وتجمعها، معتمداً على شبكات القشرة الجبهية للاستدلال ودمج القواعد.' },
+        { h: '🎯 اختبار الفرضيات', b: 'معاملة كل مشتبه كفرضية تختبرها أمام كل دليل تدرّب التفكير القائم على الأدلة بدل التخمين.' },
+      ],
+      foot: 'استخدم كل دليل: الجواب هو المشتبه الوحيد الذي ينجو منها جميعاً — التخمين المبكر يهدر المعلومات.',
+    },
+  },
+  'trivia': {
+    en: {
+      title: 'The science',
+      intro: 'Trivia exercises semantic memory — the brain’s organized store of facts and word meanings. Each correct answer climbs the staircase; three slips and the run ends.',
+      sections: [
+        { h: '🗂 Semantic memory', b: 'General-knowledge facts live in a networked store in the temporal lobes. Retrieving them strengthens the links that make recall faster and more reliable (Tulving, 1972).' },
+        { h: '📚 Knowledge builds learning', b: 'What you already know is the hook new learning hangs on — richer background knowledge measurably improves comprehension and memory for new material.' },
+        { h: '🎯 Retrieval practice', b: 'Actively answering (not just re-reading) is one of the most robust ways to cement memory — the “testing effect” (Roediger & Karpicke, 2006).' },
+      ],
+      foot: 'Honest note: trivia trains knowledge & recall (crystallized ability) more than a raw “brain speed” — but learning new things is good for the brain at any age.',
+    },
+    ar: {
+      title: 'العلم وراء اللعبة',
+      intro: 'المعلومات تمرّن الذاكرة الدلالية — مخزن الدماغ المنظّم للحقائق ومعاني الكلمات. كل إجابة صحيحة تصعد درجة في السلّم؛ وثلاثة أخطاء تنهي المحاولة.',
+      sections: [
+        { h: '🗂 الذاكرة الدلالية', b: 'تعيش حقائق المعرفة العامة في شبكة مخزّنة في الفصوص الصدغية. استرجاعها يقوّي الروابط التي تجعل التذكّر أسرع وأوثق (تولفينغ، 1972).' },
+        { h: '📚 المعرفة تبني التعلّم', b: 'ما تعرفه مسبقاً هو الخطّاف الذي يتعلّق به التعلّم الجديد — فالمعرفة الخلفية الأغنى تحسّن الفهم وحفظ المادة الجديدة بوضوح.' },
+        { h: '🎯 تمرين الاسترجاع', b: 'الإجابة الفعّالة (لا مجرّد إعادة القراءة) من أقوى طرق ترسيخ الذاكرة — «أثر الاختبار» (روديغر وكاربيك، 2006).' },
+      ],
+      foot: 'ملاحظة صادقة: المعلومات تدرّب المعرفة والاسترجاع (القدرة المتبلورة) أكثر من «سرعة الدماغ» الخام — لكن تعلّم أشياء جديدة مفيد للدماغ في أي عمر.',
     },
   },
 };
