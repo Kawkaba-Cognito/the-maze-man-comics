@@ -1,9 +1,8 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { assetUrl } from '../../lib/assetUrl';
-import { getCharacter } from '../../features/character/registry';
+import { getCharacter, NO_CHARACTER } from '../../features/character/registry';
 import CosmosCharacter from '../../features/character/CosmosCharacter';
-import { hasEnteredLabyrinth } from '../../features/campaign/campaignProgress';
 
 const DOORS = [
   { tab: 'comics',  enLabel: 'TRAINING', arLabel: 'تدريب', pos: 'left'   },
@@ -12,9 +11,10 @@ const DOORS = [
 ];
 
 export default function HomeScreen() {
-  const { requestOuterGate, requestContinueMaze, playSfx, switchTab, currentLang, points, character, equipped } = useApp();
+  const { playSfx, switchTab, currentLang, points, character, equipped } = useApp();
   const isAr = currentLang === 'ar';
-  const Hero = getCharacter(character).Component;
+  const noChar = character === NO_CHARACTER;
+  const Hero = noChar ? null : getCharacter(character).Component;
 
   function handleDoor(tab) {
     playSfx('click');
@@ -22,7 +22,6 @@ export default function HomeScreen() {
   }
 
   const labelFont = { fontFamily: isAr ? "'Cairo',sans-serif" : "'Bangers',cursive" };
-  const canContinue = hasEnteredLabyrinth();
 
   return (
     <div className="home-screen">
@@ -35,7 +34,17 @@ export default function HomeScreen() {
         onClick={() => handleDoor('character')}
         aria-label={isAr ? 'الشخصية' : 'character'}
       >
-        <Hero size={200} float glow equipped={equipped} />
+        {noChar ? (
+          <div style={{
+            width: 150, height: 150, borderRadius: '50%', border: '2px dashed rgba(255,255,255,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+            color: 'rgba(255,255,255,0.7)', fontWeight: 800, fontSize: 13, padding: 12, ...labelFont,
+          }}>
+            {isAr ? 'بلا شخصية' : 'No character'}
+          </div>
+        ) : (
+          <Hero size={200} float glow equipped={equipped} />
+        )}
       </button>
 
       <div className="home-points" aria-label={isAr ? 'نقاطك' : 'your points'}>
@@ -72,25 +81,16 @@ export default function HomeScreen() {
         {isAr ? 'المتجر' : 'SHOP'}
       </button>
 
+      {/* The outer slot — Relaxation (MBSR). The 3D world now lives in Puzzles. */}
       <div className="home-maze-actions">
         <button
           type="button"
           className="home-maze-btn home-maze-btn--gate"
           style={labelFont}
-          onClick={requestOuterGate}
+          onClick={() => handleDoor('relax')}
         >
-          {isAr ? '★ البوابة الخارجية' : '★ OUTER GATE'}
+          {isAr ? '🌿 الاسترخاء' : '🌿 RELAXATION'}
         </button>
-        {canContinue && (
-          <button
-            type="button"
-            className="home-maze-btn home-maze-btn--continue"
-            style={labelFont}
-            onClick={requestContinueMaze}
-          >
-            {isAr ? 'تابع المتاهة الكبيرة' : 'CONTINUE BIG MAZE'}
-          </button>
-        )}
       </div>
     </div>
   );

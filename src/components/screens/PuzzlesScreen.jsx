@@ -6,6 +6,7 @@ import { getLazyPuzzle } from '../../features/puzzles/lazyGames';
 import { PUZZLE_UI } from '../../features/puzzles/shared/puzzleStrings';
 import { IconBack } from '../../features/training/shared/TrainingIcons';
 import { assetUrl } from '../../lib/assetUrl';
+import { hasEnteredLabyrinth } from '../../features/campaign/campaignProgress';
 
 /* ─────────────────────────────────────────────────────────────
  * PUZZLES HUB — constellation "world map".
@@ -28,7 +29,7 @@ const L = {
 const CANVAS_W = 360;
 const COL_L = 100;
 const COL_R = 260;
-const ROW_Y = [122, 302, 482, 662, 842];
+const ROW_Y = [122, 302, 482, 662, 842, 1022];
 const CANVAS_H = ROW_Y[ROW_Y.length - 1] + 110;
 const ARCH_HALF = 32; // arch is 64 wide in local coords
 
@@ -129,9 +130,10 @@ function GameLoading({ isAr }) {
 }
 
 export default function PuzzlesScreen() {
-  const { switchTab, currentLang, toggleLang, playSfx } = useApp();
+  const { switchTab, currentLang, toggleLang, playSfx, requestOuterGate, requestContinueMaze } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
+  const canContinue = hasEnteredLabyrinth();
 
   const [activeGame, setActiveGame] = useState(null);
   const [hovered, setHovered] = useState(null);
@@ -203,6 +205,38 @@ export default function PuzzlesScreen() {
             {isAr ? 'EN' : 'عر'}
           </button>
         </div>
+      </div>
+
+      {/* Featured: the 3D World (Babylon loads only when entered) */}
+      <div style={{ position: 'relative', zIndex: 5, display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', padding: '6px 18px 0' }}>
+        <button
+          type="button"
+          onClick={() => { playSfx('click'); requestOuterGate(); }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8, padding: '12px 22px', borderRadius: 14,
+            border: '1.5px solid #9a6828', cursor: 'pointer',
+            background: 'linear-gradient(170deg, #3e1a06 0%, #5e2a0c 50%, #3e1a06 100%)',
+            color: '#f0e2c0', fontWeight: 700, fontSize: isAr ? 15 : 16,
+            fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive", letterSpacing: isAr ? 0 : 1.5,
+            boxShadow: 'inset 0 1px 0 rgba(220,170,70,0.35), inset 0 -1px 0 rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.6)',
+          }}
+        >
+          <span style={{ fontSize: 20 }}>🧭</span>
+          {isAr ? 'العالم ثلاثي الأبعاد' : '3D WORLD'}
+        </button>
+        {canContinue && (
+          <button
+            type="button"
+            onClick={() => { playSfx('click'); requestContinueMaze(); }}
+            style={{
+              padding: '12px 18px', borderRadius: 14, border: '1.5px solid #7a5420', cursor: 'pointer',
+              background: 'rgba(40,24,10,0.65)', color: '#e8ac4e', fontWeight: 700, fontSize: isAr ? 13 : 14,
+              fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive", letterSpacing: isAr ? 0 : 1,
+            }}
+          >
+            {isAr ? 'تابع المتاهة' : 'CONTINUE MAZE'}
+          </button>
+        )}
       </div>
 
       {/* Constellation canvas (SVG art + HTML portal overlays) */}

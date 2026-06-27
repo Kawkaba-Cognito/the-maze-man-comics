@@ -43,6 +43,11 @@ export const CHARACTERS = [
 
 export const DEFAULT_CHARACTER = 'cosmos';
 
+/** Sentinel for the "no character" choice. getCharacter() still falls back to a
+ *  default body (so the 3D world always has an avatar); 2D screens check for
+ *  this id to show an empty pedestal instead. */
+export const NO_CHARACTER = 'none';
+
 export function getCharacter(id) {
   return CHARACTERS.find((c) => c.id === id) || CHARACTERS.find((c) => c.id === DEFAULT_CHARACTER);
 }

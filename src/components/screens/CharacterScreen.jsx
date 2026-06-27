@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { CHARACTERS, getCharacter } from '../../features/character/registry';
+import { CHARACTERS, getCharacter, NO_CHARACTER } from '../../features/character/registry';
 import { ITEMS, SHOP_SLOTS, ItemArt } from '../../features/character/items';
 
 const SLOT_LABEL = {
@@ -19,8 +19,8 @@ export default function CharacterScreen() {
   const { points, currentLang, character, setCharacter, owned, equipped, equipItem, switchTab, playSfx } = useApp();
   const isAr = currentLang === 'ar';
 
-  const active = getCharacter(character);
-  const Hero = active.Component;
+  const noChar = character === NO_CHARACTER;
+  const Hero = noChar ? null : getCharacter(character).Component;
   const ownedItems = ITEMS.filter((it) => owned[it.id]);
 
   function pick(id) { playSfx('click'); setCharacter(id); }
@@ -37,7 +37,17 @@ export default function CharacterScreen() {
       {/* Hero stage */}
       <div className="char-stage">
         <div className="char-preview">
-          <Hero size={190} equipped={equipped} float glow />
+          {noChar ? (
+            <div style={{
+              width: 170, height: 170, borderRadius: '50%', border: '2px dashed rgba(120,100,70,0.5)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+              color: '#8a7f6f', fontWeight: 800, fontSize: 14, padding: 16,
+            }}>
+              {isAr ? 'بلا شخصية' : 'No character'}
+            </div>
+          ) : (
+            <Hero size={190} equipped={equipped} float glow />
+          )}
         </div>
       </div>
 
@@ -45,6 +55,14 @@ export default function CharacterScreen() {
       <section className="char-section">
         <h3 className="char-section-title">{isAr ? 'اختر شخصيتك' : 'Choose your character'}</h3>
         <div className="char-pick-grid">
+          <button
+            className={`char-card${noChar ? ' is-on' : ''}`}
+            onClick={() => pick(NO_CHARACTER)}
+          >
+            <span className="char-card-art" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 72, height: 72, fontSize: 30, color: '#a89a82', border: '2px dashed rgba(120,100,70,0.45)', borderRadius: 14 }}>∅</span>
+            <span className="char-card-name">{isAr ? 'بلا' : 'None'}</span>
+            {noChar && <span className="char-card-badge">✓</span>}
+          </button>
           {CHARACTERS.map((c) => {
             const Mini = getCharacter(c.id).Component;
             const on = character === c.id;

@@ -133,7 +133,33 @@ const blockburst = {
   loader: () => import('./games/blockburst'),
 };
 
-export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, bridges, sudoku, kenken, nonogram, kakuro, crowns, blockburst];
+const flow = {
+  id: 'flow',
+  gameKey: 'flow',
+  name: 'Flow',
+  nameAr: 'تدفّق',
+  icon: '🔗',
+  desc: 'Connect each colour pair without crossing — fill every cell.',
+  descAr: 'صِل كل لونين دون تقاطع — واملأ كل الخانات.',
+  accent: '#57bd72',
+  sizes: [5, 6, 7, 8],
+  loader: () => import('./games/flow'),
+};
+
+const tangram = {
+  id: 'tangram',
+  gameKey: 'tangram',
+  name: 'Tangram',
+  nameAr: 'تانغرام',
+  icon: '🧩',
+  desc: 'Rotate and place the pieces to fill the board.',
+  descAr: 'دوّر القطع وضعها لتملأ اللوحة.',
+  accent: '#e07ab0',
+  sizes: [4, 5, 6],
+  loader: () => import('./games/tangram'),
+};
+
+export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, bridges, sudoku, kenken, nonogram, kakuro, crowns, blockburst, flow, tangram];
 
 export const PUZZLES_BY_KEY = Object.fromEntries(
   PUZZLE_CONFIGS.map((p) => [p.gameKey, p])
