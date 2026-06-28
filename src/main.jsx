@@ -48,3 +48,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </React.StrictMode>
 );
+
+/* Prod: once the app is up, quietly pre-fetch every game chunk in the background
+ * so games still open when the user goes offline. Deferred to idle / after load
+ * so it never competes with first paint or the service-worker install. */
+if (import.meta.env.PROD && typeof window !== 'undefined') {
+  import('./lib/warmGameChunks')
+    .then(({ warmGameChunks }) => {
+      if (document.readyState === 'complete') warmGameChunks();
+      else window.addEventListener('load', () => warmGameChunks(), { once: true });
+    })
+    .catch(() => { /* warm-up is best-effort */ });
+}
