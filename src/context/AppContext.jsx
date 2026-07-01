@@ -296,6 +296,11 @@ export function AppProvider({ children }) {
 
   const requestMazeEntry = requestOuterGate;
 
+  /** Escape Room — the standalone 3D escape experience (no boss / no army). */
+  const requestEscapeRoom = useCallback(() => {
+    beginMazeEntry('escape');
+  }, [beginMazeEntry]);
+
   const enterMaze = useCallback(() => {
     // Babylon loads on demand now, so the maze can only mount once it's ready.
     // If the transition finished before the engine arrived (slow network), keep
@@ -364,7 +369,7 @@ export function AppProvider({ children }) {
       mazeStartRoom, setMazeStartRoom, openWorkout, leaveWorkout,
       challenge, openPuzzleChallenge, finishChallenge,
       updateXP, awardPoints, spendPoints, awardTrainingWin, awardFreeRun, toggleLang, switchTab,
-      requestMazeEntry, requestOuterGate, requestContinueMaze, enterMaze, exitMaze,
+      requestMazeEntry, requestOuterGate, requestContinueMaze, requestEscapeRoom, enterMaze, exitMaze,
       playSfx, stopSpeech, saveProfile,
       setProfileData,
       openPaywall: () => { playSfx('click'); setPaywallOpen(true); },

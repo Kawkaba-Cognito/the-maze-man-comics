@@ -3,18 +3,22 @@ import { useApp } from '../../context/AppContext';
 import { buildCampaignMaze } from './rooms/campaignMaze';
 import { buildGateRoom } from './rooms/gateRoom';
 import { buildBossFightScene } from './rooms/bossFightScene';
+import { buildEscapeRoom } from './rooms/escapeRoom';
 import { CAMPAIGN_ROOM_KEYS } from '../../features/campaign/campaignFloors';
 import { GATE_ROOM_KEY } from '../../features/campaign/gateRoomConfig';
 import { DEFAULT_FLOOR, setGateBossBeaten } from '../../features/campaign/campaignProgress';
 import MazeRecruitOverlay from './MazeRecruitOverlay';
+import EscapePuzzleOverlay from './EscapePuzzleOverlay';
 import './roomHost.css';
 
 const BOSS_FIGHT_KEY = 'bossfight';
+export const ESCAPE_ROOM_KEY = 'escape';
 
 /** Each room is its own builder — full dispose on switch keeps FPS stable. */
 const ROOMS = {
   [GATE_ROOM_KEY]: (opts) => buildGateRoom(opts),
   [BOSS_FIGHT_KEY]: (opts) => buildBossFightScene(opts),
+  [ESCAPE_ROOM_KEY]: (opts) => buildEscapeRoom(opts),
   ...Object.fromEntries(
     CAMPAIGN_ROOM_KEYS.map((key) => [
       key,
@@ -41,7 +45,9 @@ export default function RoomHost() {
   const bossFightPayloadRef = useRef(null);
 
   const [recruitChallenge, setRecruitChallenge] = useState(null);
+  const [escapePuzzle, setEscapePuzzle] = useState(null); // { spec, title }
   const [inCinematic, setInCinematic] = useState(false);
+  const escapeSolveRef = useRef(null);
 
   const openRecruitChallenge = useCallback((c) => {
     setRecruitChallenge(c);
@@ -51,6 +57,24 @@ export default function RoomHost() {
 
   const closeRecruitChallenge = useCallback(() => {
     setRecruitChallenge(null);
+  }, []);
+
+  // Escape-room lock: the room hands us a puzzle spec + a callback to run when it
+  // is solved. We stash the callback and render the puzzle overlay.
+  const openEscapePuzzle = useCallback((payload, onSolved) => {
+    escapeSolveRef.current = onSolved || null;
+    setEscapePuzzle(payload);
+    inputRef.current.mx = 0;
+    inputRef.current.my = 0;
+  }, []);
+
+  const closeEscapePuzzle = useCallback(() => {
+    setEscapePuzzle(null);
+    escapeSolveRef.current = null;
+  }, []);
+
+  const onEscapeSolved = useCallback(() => {
+    escapeSolveRef.current?.();
   }, []);
 
   const refreshCurrentFloor = useCallback(() => {
@@ -66,7 +90,7 @@ export default function RoomHost() {
     () => typeof navigator !== 'undefined' && (navigator.maxTouchPoints > 0 || 'ontouchstart' in window),
   );
 
-  const modalOpen = recruitChallenge || inCinematic;
+  const modalOpen = recruitChallenge || escapePuzzle || inCinematic;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -90,6 +114,7 @@ export default function RoomHost() {
     const ctx = {
       exitMaze, updateXP, playSfx, character, equipped, currentLang,
       openRecruitChallenge,
+      openEscapePuzzle,
       startBossFight,
       lowPerf: isTouch,
       goToRoom: (key) => goRef.current?.(key),
@@ -175,7 +200,7 @@ export default function RoomHost() {
       engineRef.current = null;
       if (overlayEl) overlayEl.innerHTML = '';
     };
-  }, [exitMaze, updateXP, playSfx, character, equipped, mazeStartRoom, openRecruitChallenge, startBossFight]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [exitMaze, updateXP, playSfx, character, equipped, mazeStartRoom, openRecruitChallenge, openEscapePuzzle, startBossFight]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const joyRef = useRef(null);
   const thumbRef = useRef(null);
@@ -237,6 +262,15 @@ export default function RoomHost() {
           floorId={recruitChallenge.floorId || currentFloorRef.current}
           onClose={closeRecruitChallenge}
           onRefreshFloor={refreshCurrentFloor}
+        />
+      )}
+
+      {escapePuzzle && (
+        <EscapePuzzleOverlay
+          spec={escapePuzzle.spec}
+          title={escapePuzzle.title}
+          onSolved={onEscapeSolved}
+          onClose={closeEscapePuzzle}
         />
       )}
 

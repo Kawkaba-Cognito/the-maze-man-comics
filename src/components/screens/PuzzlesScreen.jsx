@@ -127,7 +127,7 @@ function GameLoading({ isAr }) {
 }
 
 export default function PuzzlesScreen() {
-  const { switchTab, currentLang, toggleLang, playSfx, requestOuterGate, requestContinueMaze } = useApp();
+  const { switchTab, currentLang, toggleLang, playSfx, requestEscapeRoom, requestContinueMaze } = useApp();
   const isAr = currentLang === 'ar';
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const canContinue = hasEnteredLabyrinth();
@@ -180,7 +180,7 @@ export default function PuzzlesScreen() {
     const catX = [70, 180, 290];
     const GATE_CANVAS_H = 480;
     const GATES = [
-      { id: '3d', world: true, icon: '🧭', accent: '#e8ac4e', label: isAr ? 'ثلاثي الأبعاد' : '3D', x: 180, y: 132, scale: 1.9 },
+      { id: '3d', world: true, icon: '🧭', accent: '#e8ac4e', label: isAr ? 'غرفة الهروب' : 'Escape Room', x: 180, y: 132, scale: 1.9 },
       ...PUZZLE_CATEGORIES.map((c, i) => ({ id: c.id, icon: c.icon, accent: c.accent, label: isAr ? c.nameAr : c.name, x: catX[i], y: 372, scale: 1 })),
     ];
     return (
@@ -250,7 +250,7 @@ export default function PuzzlesScreen() {
                   <button key={g.id} type="button"
                     onMouseEnter={() => setHovered(g.id)} onMouseLeave={() => setHovered((h) => (h === g.id ? null : h))}
                     onFocus={() => setHovered(g.id)} onBlur={() => setHovered((h) => (h === g.id ? null : h))}
-                    onClick={() => { playSfx('click'); if (g.world) { requestOuterGate(); } else { setHovered(null); setCategory(g.id); } }}
+                    onClick={() => { playSfx('click'); if (g.world) { requestEscapeRoom(); } else { setHovered(null); setCategory(g.id); } }}
                     aria-label={g.label}
                     style={{ position: 'absolute', left: g.x, top: g.y, width: 116 * s, height: 124 * s, transform: `translate(-50%, ${-38 * s}px)`, background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                   >
