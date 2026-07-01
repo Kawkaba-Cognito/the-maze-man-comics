@@ -1,0 +1,1 @@
+function e({start:e=0,min:t=0,max:n=60,nDown:r=2}={}){let i=Math.max(t,Math.min(n,e)),a=0,o=0,s=0,c=e=>{s&&e!==s&&(o+=1),s=e};return{get level(){return i},get reversals(){return o},success(){return a+=1,a>=r&&(a=0,i<n&&(i+=1,c(1))),i},failure(){return a=0,i>t&&(--i,c(-1)),i}}}export{e as t};
