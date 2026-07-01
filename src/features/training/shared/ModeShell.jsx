@@ -215,7 +215,7 @@ export default function ModeShell({
   if (phase === 'levels') {
     return (
       <TrainingLevelGrid
-        isAr={isAr} playSfx={playSfx} onBack={() => setPhase('diff')} title={`${dm[diff].label}`}
+        isAr={isAr} playSfx={playSfx} onBack={() => setPhase('diff')} title={`${dm[diff]?.label ?? ''}`}
         blurb={isAr ? `${T} · ١٠٠ مستوى · افتح بالترتيب` : `${T} · 100 levels · unlock in order`}
         count={levelCount} isUnlocked={isUnlocked} isDone={isDone}
         sublabel={(lv) => `L${lv}`}

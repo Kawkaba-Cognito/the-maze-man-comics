@@ -368,10 +368,15 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
 
   const onTimeout = useCallback(() => {
     if (endedRef.current) return;
+    // In SURVIVAL, running out of time on a board ends the survival RUN — show the
+    // "Survival over!" summary. It must NOT go through onResult(): that is the
+    // shared level-result handler, which in free mode has no diff/level and lands
+    // on a level modal whose "Levels" button then crashes (dm[null].label).
+    if (isSurvival) { finishSurvival(); return; }
     playSfx?.('lose'); endedRef.current = true;
     trialLogRef.current?.finish({ won: false, reached: nextRef.current - 1 });
     onResult({ won: false, score: scoreRef.current, summary: isAr ? `وصلت إلى ${nextRef.current - 1}/${cfgRef.current.n}` : `Reached ${nextRef.current - 1}/${cfgRef.current.n}` });
-  }, [isAr, onResult, playSfx]);
+  }, [isAr, onResult, playSfx, isSurvival, finishSurvival]);
 
   const onPointer = useCallback((e) => {
     if (endedRef.current || readyRef.current) return;

@@ -37,12 +37,8 @@ export default function TutorialCarousel({
   const touchRef = useRef({ x: 0, y: 0 });
 
   const total = steps.length;
-  const step = steps[idx];
-  if (!step || total === 0) return null;
-
-  const isLast = idx === total - 1;
-  const rtl = isAr;
-
+  // NOTE: all hooks must run before any early return (Rules of Hooks). `go` is
+  // therefore declared here, above the empty-steps guard below.
   const go = useCallback(
     (next) => {
       playSfx?.('click');
@@ -50,6 +46,12 @@ export default function TutorialCarousel({
     },
     [playSfx, total],
   );
+
+  const step = steps[idx];
+  if (!step || total === 0) return null;
+
+  const isLast = idx === total - 1;
+  const rtl = isAr;
 
   const handleSkip = () => {
     playSfx?.('click');
