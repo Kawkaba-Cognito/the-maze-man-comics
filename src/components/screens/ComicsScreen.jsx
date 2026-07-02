@@ -67,6 +67,10 @@ function GameGlyph({ k, size = 48, color = 'currentColor', strokeWidth = 1.8 }) 
       return (<svg {...c}><path d="M4 12 H17" /><path d="M13 8 L17 12 L13 16" /></svg>);
     case 'flip':
       return (<svg {...c}><path d="M8 8 V15" /><path d="M5 12 L8 15 L11 12" /><path d="M16 16 V9" /><path d="M13 12 L16 9 L19 12" /></svg>);
+    case 'wisconsin': // Card Sort — two cards holding different symbols
+      return (<svg {...c}><rect x="3" y="6" width="8.5" height="12" rx="1.5" /><rect x="12.5" y="6" width="8.5" height="12" rx="1.5" /><polygon points="7.25,9.5 9,13 5.5,13" fill={color} stroke="none" /><circle cx="16.75" cy="12" r="2" fill={color} stroke="none" /></svg>);
+    case 'brixton': // Kawkab Hops — a dot hopping across nodes
+      return (<svg {...c}><circle cx="5" cy="17" r="1.7" /><circle cx="12" cy="17" r="1.7" /><circle cx="19" cy="17" r="1.7" /><path d="M5 15.5 Q8.5 6 12 15.5" /><circle cx="12" cy="17" r="1.7" fill={color} stroke="none" /></svg>);
     case 'math-gates':
       return (<svg {...c}><line x1="4" y1="12" x2="10" y2="12" /><line x1="7" y1="9" x2="7" y2="15" /><line x1="14" y1="9.5" x2="19" y2="14.5" /><line x1="19" y1="9.5" x2="14" y2="14.5" /></svg>);
     case 'wordle':
@@ -90,7 +94,7 @@ const GAME_GLYPH_KEYS = new Set([
   'cancel-task', 'mot', 'train-switch',
   'memo-span', 'nback', 'paired-associates', 'story-grid',
   'rush-hour', 'raven-matrices', 'tower-hanoi', 'detective',
-  'spatial-stroop', 'flip', 'piano-tap',
+  'spatial-stroop', 'wisconsin', 'brixton',
   'wordle', 'synonyms', 'odd-one-out', 'trivia',
 ]);
 

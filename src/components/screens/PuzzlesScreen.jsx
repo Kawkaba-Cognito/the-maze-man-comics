@@ -178,10 +178,13 @@ export default function PuzzlesScreen() {
   /* ── Category landing — a gate hall: 3D gate on top, 3 category gates below ── */
   if (!category) {
     const catX = [70, 180, 290];
-    const GATE_CANVAS_H = 480;
+    const GATE_CANVAS_H = 660;
+    const mainCats = PUZZLE_CATEGORIES.filter((c) => c.id !== 'group');
+    const groupCat = PUZZLE_CATEGORIES.find((c) => c.id === 'group');
     const GATES = [
       { id: '3d', world: true, icon: '🧭', accent: '#e8ac4e', label: isAr ? 'غرفة الهروب' : 'Escape Room', x: 180, y: 132, scale: 1.9 },
-      ...PUZZLE_CATEGORIES.map((c, i) => ({ id: c.id, icon: c.icon, accent: c.accent, label: isAr ? c.nameAr : c.name, x: catX[i], y: 372, scale: 1 })),
+      ...mainCats.map((c, i) => ({ id: c.id, icon: c.icon, accent: c.accent, label: isAr ? c.nameAr : c.name, x: catX[i], y: 372, scale: 1 })),
+      ...(groupCat ? [{ id: groupCat.id, icon: groupCat.icon, accent: groupCat.accent, label: isAr ? groupCat.nameAr : groupCat.name, x: 180, y: 540, scale: 1.3 }] : []),
     ];
     return (
       <div style={{

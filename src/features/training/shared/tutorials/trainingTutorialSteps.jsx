@@ -76,6 +76,30 @@ const STEPS = {
       { title: 'السرعة تبني السلسلة', body: 'أجب بأسرع ما يمكن بلا أخطاء. الإجابات الصحيحة المتتالية ترفع نقاطك.', icon: '⚡', note: READY_NOTE.ar },
     ],
   },
+  wisconsin: {
+    en: [
+      { title: 'Sort the card', body: 'A card appears at the bottom. Tap the reference card it belongs with — match by COLOUR, SHAPE, or NUMBER.', icon: '🃏' },
+      { title: 'Find the hidden rule', body: 'You are not told which rule is right — you only get "right" or "wrong". Use the feedback to work out the rule.', icon: '🔎', pills: ['Colour? Shape? Number?', 'Learn from right / wrong'] },
+      { title: 'The rule changes', body: 'Once you are on a roll the rule SILENTLY switches. When sorts start failing, drop it and hunt for the new one.', icon: '🔄', note: READY_NOTE.en },
+    ],
+    ar: [
+      { title: 'افرز البطاقة', body: 'تظهر بطاقة في الأسفل. اضغط البطاقة المرجعية التي تنتمي إليها — طابق حسب اللون أو الشكل أو العدد.', icon: '🃏' },
+      { title: 'اكتشف القاعدة الخفية', body: 'لا يُقال لك أيّ قاعدة صحيحة — تحصل فقط على «صحيح» أو «خطأ». استخدم التغذية الراجعة لاكتشاف القاعدة.', icon: '🔎', pills: ['لون؟ شكل؟ عدد؟', 'تعلّم من صحيح/خطأ'] },
+      { title: 'القاعدة تتغيّر', body: 'حين تتوالى إجاباتك الصحيحة تتبدّل القاعدة بصمت. عندما يبدأ الفرز بالفشل، أسقطها وابحث عن الجديدة.', icon: '🔄', note: READY_NOTE.ar },
+    ],
+  },
+  brixton: {
+    en: [
+      { title: 'Watch Kawkab', body: 'Kawkab hops between the circles along a hidden pattern. Watch where he lands — a faint trail marks his path.', icon: '👀' },
+      { title: 'Continue the pattern', body: 'Your turn: tap the next few circles to carry the pattern on. Get them all right to crack it.', icon: '🎯', pills: ['Read the rule, not his path', 'Tap in order'] },
+      { title: 'It changes when you win', body: 'Crack a pattern and the rule SILENTLY changes — watch the new demo. Miss, and he repeats the same one.', icon: '🔄', note: READY_NOTE.en },
+    ],
+    ar: [
+      { title: 'راقب كوكب', body: 'يقفز كوكب بين الدوائر وفق نمط خفيّ. راقب أين يهبط — أثرٌ خافت يرسم مساره.', icon: '👀' },
+      { title: 'أكمل النمط', body: 'دورك: اضغط الدوائر التالية لتُكمل النمط. أصِبها كلها لتحلّه.', icon: '🎯', pills: ['اقرأ القاعدة لا مساره', 'اضغط بالترتيب'] },
+      { title: 'يتغيّر حين تفوز', body: 'حين تحلّ نمطاً تتغيّر القاعدة بصمت — راقب العرض الجديد. وإن أخطأت يعيد النمط نفسه.', icon: '🔄', note: READY_NOTE.ar },
+    ],
+  },
   'piano-tap': {
     en: [
       { title: 'Hit the lanes', body: 'Notes fall in four lanes (D · F · J · K). Tap the matching lane when a note reaches the line.', icon: '🎹' },

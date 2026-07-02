@@ -20,6 +20,8 @@ export const TRAINING_META = {
   'tower-hanoi': { name: 'Colour Sort', nameAr: 'فرز الألوان' },
   'spatial-stroop': { name: 'Arrow Rush', nameAr: 'اندفاع الأسهم' },
   flip: { name: 'Flip', nameAr: 'انقلاب' },
+  wisconsin: { name: 'Card Sort', nameAr: 'فرز البطاقات' },
+  brixton: { name: 'Kawkab Hops', nameAr: 'قفزات كوكب' },
   'math-gates': { name: 'Math Gates', nameAr: 'بوابات الحساب' },
 };
 

@@ -66,8 +66,8 @@ const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 
 const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } };
 
-export default function RelaxScreen() {
-  const { switchTab, playSfx } = useApp();
+function MbsrTracker({ onBack }) {
+  const { playSfx } = useApp();
   const today = dateKey(new Date());
 
   const [tab, setTab] = useState('today');
@@ -131,7 +131,7 @@ export default function RelaxScreen() {
       <style>{CSS}</style>
       <div className="rx-app">
         <div className="header">
-          <button className="rx-back" onClick={() => switchTab('home')} aria-label="Back">‹</button>
+          <button className="rx-back" onClick={onBack} aria-label="Back">‹</button>
           <div className="header-row">
             <div>
               <div className="header-sub">Mindfulness Protocol</div>
@@ -473,4 +473,81 @@ const CSS = `
 .rx-root .empty-sub { color:${SUB}; font-size:14px; margin-bottom:24px; line-height:1.6; max-width:320px; margin-left:auto; margin-right:auto; }
 .rx-root .start-btn { background:linear-gradient(135deg,#c89a4a,${GOLD}); color:#fff; border:none; border-radius:12px; padding:14px 32px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; box-shadow:3px 3px 0 #1a1208; }
 .rx-root .go-btn { background:#efe6d6; color:#7a5a1e; border:none; border-radius:10px; padding:12px 24px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+`;
+
+/* ── Relaxation landing menu — pick a practice; MBSR is the first ── */
+const RELAX_OPTIONS = [
+  {
+    id: 'mbsr',
+    icon: '🧘',
+    title: '8-Week MBSR',
+    sub: 'Mindfulness-Based Stress Reduction — a guided daily practice with a timer, an 8-week tracker and a full reference guide.',
+    color: '#c47a3e',
+  },
+];
+
+function RelaxMenu({ onHome, onOpen }) {
+  return (
+    <div className="rx-root" dir="ltr">
+      <style>{MENU_CSS}</style>
+      <div className="rx-app">
+        <div className="header">
+          <button className="rx-back" onClick={onHome} aria-label="Back">‹</button>
+          <div style={{ paddingLeft: 42 }}>
+            <div className="header-sub">Calm pillar</div>
+            <div className="header-title serif">Relaxation</div>
+            <div className="menu-tag">Choose a practice.</div>
+          </div>
+        </div>
+        <div className="content">
+          {RELAX_OPTIONS.map((o) => (
+            <button key={o.id} className="rx-menu-card" style={{ borderColor: `${o.color}55` }} onClick={() => onOpen(o.id)}>
+              <span className="rx-menu-ic" style={{ background: `${o.color}1f` }}>{o.icon}</span>
+              <span className="rx-menu-body">
+                <span className="rx-menu-title">{o.title}</span>
+                <span className="rx-menu-sub">{o.sub}</span>
+              </span>
+              <span className="rx-menu-chev" style={{ color: o.color }}>›</span>
+            </button>
+          ))}
+          <div className="rx-menu-more">More practices coming soon.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function RelaxScreen() {
+  const { switchTab, playSfx } = useApp();
+  const [view, setView] = useState('menu');
+
+  if (view === 'mbsr') {
+    return <MbsrTracker onBack={() => { playSfx?.('click'); setView('menu'); }} />;
+  }
+  return (
+    <RelaxMenu
+      onHome={() => { playSfx?.('click'); switchTab('home'); }}
+      onOpen={(id) => { playSfx?.('click'); setView(id); }}
+    />
+  );
+}
+
+const MENU_CSS = `
+.rx-root { position:absolute; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--color-training-palette-surface,#fff7f2); color:${INK}; font-family:${SANS}; }
+.rx-root *, .rx-root *::before, .rx-root *::after { box-sizing:border-box; }
+.rx-root .rx-app { max-width:480px; margin:0 auto; padding-bottom:80px; position:relative; }
+.rx-root .rx-back { position:absolute; top:14px; left:12px; z-index:20; width:36px; height:36px; border-radius:10px; border:2px solid ${LINE}; background:${CARD}; color:#141210; font-size:22px; line-height:1; cursor:pointer; }
+.rx-root .header { padding:24px 20px 18px; background:linear-gradient(180deg,#fffaf3 0%,var(--color-training-palette-surface,#fff7f2) 100%); }
+.rx-root .header-sub { font-size:11px; letter-spacing:3px; color:${GOLD}; text-transform:uppercase; margin-bottom:4px; font-weight:700; }
+.rx-root .header-title { font-family:${SERIF}; font-size:34px; font-weight:600; line-height:1.04; color:${INK}; }
+.rx-root .menu-tag { font-size:13px; color:${SUB}; margin-top:6px; }
+.rx-root .content { padding:20px; }
+.rx-root .rx-menu-card { display:flex; align-items:center; gap:14px; width:100%; text-align:left; background:${CARD}; border:2px solid ${LINE}; border-radius:16px; padding:16px; margin-bottom:14px; cursor:pointer; font-family:inherit; box-shadow:3px 3px 0 rgba(26,18,8,0.05); transition:transform .1s; }
+.rx-root .rx-menu-card:active { transform:translateY(1px); }
+.rx-root .rx-menu-ic { font-size:30px; flex-shrink:0; width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
+.rx-root .rx-menu-body { display:flex; flex-direction:column; gap:4px; flex:1; }
+.rx-root .rx-menu-title { font-family:${SERIF}; font-weight:600; font-size:21px; color:${INK}; }
+.rx-root .rx-menu-sub { font-size:12.5px; color:${SUB}; line-height:1.5; }
+.rx-root .rx-menu-chev { font-size:28px; font-weight:700; flex-shrink:0; }
+.rx-root .rx-menu-more { text-align:center; font-size:12px; color:${FAINT}; margin-top:6px; }
 `;

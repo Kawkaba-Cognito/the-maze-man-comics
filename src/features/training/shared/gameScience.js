@@ -359,6 +359,54 @@ export const GAME_SCIENCE = {
       foot: 'بعد الانقلاب، تمهّل لحظة واحدة كي تترسّخ القاعدة الجديدة.',
     },
   },
+  'wisconsin': {
+    en: {
+      title: 'The science',
+      intro: 'Sort each card to a reference — but by colour, shape, or number? The rule is hidden and you only get right/wrong, so you must infer it, then notice when it silently changes. This is the Wisconsin Card Sorting Test, the classic measure of set-shifting (Berg, 1948; Grant & Berg, 1948).',
+      sections: [
+        { h: '🔄 Set-shifting', b: 'Once a rule stops working you must drop it and search for the new one — abandoning a just-rewarded strategy is the core of cognitive flexibility.' },
+        { h: '🚫 Perseverative errors', b: 'Sticking with the dead rule after it fails is a perseverative error — the signature deficit of prefrontal (dorsolateral) dysfunction on the WCST.' },
+        { h: '💡 Feedback-driven learning', b: 'You learn the rule only from outcome feedback, driven by dopaminergic prediction-error signals that update which dimension to attend to.' },
+        { h: '📊 What we track', b: 'Accuracy, rules cracked, and how fast you recover right after a silent switch (post-switch accuracy).' },
+      ],
+      foot: 'When a sort suddenly fails, try a different dimension straight away rather than repeating. This trains and tracks flexibility; it is not a medical test.',
+    },
+    ar: {
+      title: 'العلم وراء اللعبة',
+      intro: 'افرز كل بطاقة إلى مرجعٍ — لكن حسب اللون أم الشكل أم العدد؟ القاعدة خفية ولا تحصل إلا على صحيح/خطأ، فتستنتجها ثم تنتبه حين تتغيّر بصمت. هذا اختبار ويسكونسن لفرز البطاقات، المقياس الكلاسيكي لتبديل الطقم (بيرغ، ١٩٤٨).',
+      sections: [
+        { h: '🔄 تبديل الطقم', b: 'حين تتوقف القاعدة عن النجاح عليك إسقاطها والبحث عن الجديدة — التخلّي عن استراتيجية كوفئت للتوّ هو جوهر المرونة المعرفية.' },
+        { h: '🚫 أخطاء التمسّك', b: 'الاستمرار بالقاعدة الميتة بعد فشلها خطأ تمسّكي — العَرَض المميّز لخلل القشرة الجبهية الظهرانية الوحشية في الاختبار.' },
+        { h: '💡 التعلّم بالتغذية الراجعة', b: 'تتعلّم القاعدة من النتيجة فقط، بقيادة إشارات خطأ التنبّؤ الدوبامينية التي تحدّث أيّ بُعد يجب الانتباه إليه.' },
+        { h: '📊 ما نقيسه', b: 'الدقة، والقواعد المكتشفة، وسرعة تعافيك فور التبديل الصامت (الدقة بعد التبديل).' },
+      ],
+      foot: 'حين يفشل الفرز فجأة، جرّب بُعداً مختلفاً فوراً بدل التكرار. هذه اللعبة تدرّب وتتابع المرونة؛ وليست اختباراً طبياً.',
+    },
+  },
+  'brixton': {
+    en: {
+      title: 'The science',
+      intro: 'Kawkab hops between nodes along a hidden rule; you continue the pattern. Crack it and the rule silently changes, so you must drop the old pattern and read the new one. This is the Brixton Spatial Anticipation Test — a rule-detection measure of flexibility (Burgess & Shallice, 1997).',
+      sections: [
+        { h: '🔎 Rule induction', b: 'You infer a spatial rule from a few moves and extend it — abstracting a pattern from examples, a frontal-lobe function.' },
+        { h: '🔄 Detecting silent change', b: 'No cue announces the switch; you notice only when your predictions start failing, then shift — exactly the flexibility demand Brixton was built to test.' },
+        { h: '🚫 Perseveration', b: 'Continuing the old rule after it changes is a perseverative error, sensitive to dysexecutive / prefrontal impairment.' },
+        { h: '📊 What we track', b: 'Patterns cracked, accuracy, and your best streak of clean solves.' },
+      ],
+      foot: 'Watch a full demo before you commit — one hop rarely fixes a new rule. This trains and tracks flexibility; it is not a medical test.',
+    },
+    ar: {
+      title: 'العلم وراء اللعبة',
+      intro: 'يقفز كوكب بين العقد وفق قاعدة خفية، وأنت تُكمل النمط. اكتشفها فتتغيّر القاعدة بصمت، فتضطر لإسقاط النمط القديم وقراءة الجديد. هذا اختبار بِرِكستون للتوقّع المكاني — مقياس كشف القواعد للمرونة (برجس وشاليس، ١٩٩٧).',
+      sections: [
+        { h: '🔎 استقراء القاعدة', b: 'تستنتج قاعدة مكانية من حركات قليلة ثم تمدّها — تجريد نمطٍ من أمثلة، وهي وظيفة فصٍّ جبهي.' },
+        { h: '🔄 كشف التغيّر الصامت', b: 'لا شيء يعلن التبديل؛ تنتبه فقط حين تبدأ توقّعاتك بالفشل ثم تتكيّف — وهو تماماً مطلب المرونة الذي صُمّم له الاختبار.' },
+        { h: '🚫 التمسّك', b: 'الاستمرار بالقاعدة القديمة بعد تغيّرها خطأ تمسّكي، حسّاس لخلل الوظائف التنفيذية الجبهية.' },
+        { h: '📊 ما نقيسه', b: 'الأنماط المكتشفة، والدقة، وأفضل سلسلة حلولٍ نظيفة.' },
+      ],
+      foot: 'شاهد العرض كاملاً قبل أن تجيب — قفزة واحدة نادراً ما تحدّد القاعدة الجديدة. هذه اللعبة تدرّب وتتابع المرونة؛ وليست اختباراً طبياً.',
+    },
+  },
   'math-gates': {
     en: {
       title: 'The science',
