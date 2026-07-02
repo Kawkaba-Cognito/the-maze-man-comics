@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../../../../context/AppContext';
-import { INK, SUB, FAINT, LINE, CARD, GOLD, SERIF, SANS, PACKS, rnd, fmt } from '../_shared/groupTheme';
+import { INK, SUB, FAINT, LINE, CARD, GOLD, SERIF, SANS, PACKS, rnd, fmt, shuffle } from '../_shared/groupTheme';
 
 /*
  * Imposter — pass-and-play social deduction (Group Challenge).  [puzzles]
@@ -19,18 +19,24 @@ export default function ImposterGame({ onBack }) {
 
   const [phase, setPhase] = useState('setup');   // setup | reveal | discuss | result
   const [players, setPlayers] = useState(4);
+  const [imposters, setImposters] = useState(1);
   const [packId, setPackId] = useState('random');
-  const [round, setRound] = useState(null);       // { word, category, imposter }
+  const [round, setRound] = useState(null);       // { word, category, imposterSet }
   const [revealIdx, setRevealIdx] = useState(0);
   const [shown, setShown] = useState(false);
   const [secs, setSecs] = useState(120);
   const [timerOn, setTimerOn] = useState(false);
   const [starter, setStarter] = useState(0);
 
+  // never more imposters than crewmates (keep at least 2 non-imposters)
+  const maxImp = Math.max(1, Math.min(4, players - 2));
+  useEffect(() => { if (imposters > maxImp) setImposters(maxImp); }, [imposters, maxImp]);
+
   const t = useMemo(() => ({
     title: isAr ? 'الدخيل' : 'Imposter',
     tagline: isAr ? 'الجميع يعرف الكلمة… إلا واحد.' : 'Everyone knows the word… except one.',
     playersL: isAr ? 'عدد اللاعبين' : 'Players',
+    impostersL: isAr ? 'عدد الدخلاء' : 'Imposters',
     packL: isAr ? 'الفئة' : 'Category',
     random: isAr ? 'عشوائي' : 'Random',
     start: isAr ? 'ابدأ الجولة' : 'Start round',
@@ -38,7 +44,7 @@ export default function ImposterGame({ onBack }) {
     player: isAr ? 'اللاعب' : 'Player',
     tapReveal: isAr ? 'اضغط لرؤية دورك' : 'Tap to see your role',
     youAreImp: isAr ? 'أنت الدخيل!' : "You're the Imposter!",
-    impHint: isAr ? 'لا تعرف الكلمة. الفئة:' : "You don't know the word. Category:",
+    impNoWord: isAr ? 'لا تعرف الكلمة ولا الفئة.' : "You don't know the word — or the category.",
     impBlend: isAr ? 'اندمج ولا تنكشف.' : "Blend in — don't get caught.",
     yourWord: isAr ? 'كلمتك السرية' : 'Your secret word',
     hidePass: isAr ? 'أخفِ ومرّر' : 'Hide & pass',
@@ -48,26 +54,29 @@ export default function ImposterGame({ onBack }) {
     reveal: isAr ? 'اكشف الدخيل' : 'Reveal the imposter',
     timer: isAr ? 'مؤقّت النقاش' : 'Discussion timer',
     theImp: isAr ? 'الدخيل كان' : 'The imposter was',
+    theImpPl: isAr ? 'الدخلاء كانوا' : 'The imposters were',
+    findLabel: isAr ? 'اعثروا على الدخلاء' : 'Find the imposters',
     theWord: isAr ? 'الكلمة كانت' : 'The word was',
     newRound: isAr ? 'جولة جديدة' : 'New round',
     newGame: isAr ? 'إعدادات جديدة' : 'New setup',
     menu: isAr ? 'القائمة' : 'Menu',
     howTitle: isAr ? 'كيف تلعب' : 'How to play',
     how: isAr
-      ? 'يحصل كل لاعب على نفس الكلمة عدا الدخيل الذي يعرف الفئة فقط. مرّروا الهاتف ليرى كلٌّ بطاقته سراً، ثم صِفوا الكلمة بكلمة واحدة بالتناوب — الدخيل يحاول التخفّي. صوّتوا على المشتبه به ثم اكشفوا.'
-      : 'Each player gets the same word except the imposter, who only sees the category. Pass the phone so everyone reads their card in secret, then take turns describing the word in one word — the imposter tries to blend in. Vote on a suspect, then reveal.',
+      ? 'يحصل كل لاعب على نفس الكلمة السرية عدا الدخيل (أو الدخلاء) الذي لا يعرف الكلمة ولا الفئة. مرّروا الهاتف ليرى كلٌّ بطاقته سراً، ثم قولوا بالتناوب كلمة واحدة عن الكلمة — والدخلاء يخادعون. صوّتوا على المشتبه بهم ثم اكشفوا.'
+      : 'Everyone gets the same secret word except the imposter(s), who know neither the word nor the category. Pass the phone so each player reads their card in secret, then take turns saying one word about it — imposters bluff. Vote out the suspect(s), then reveal.',
   }), [isAr]);
 
   const startRound = useCallback(() => {
     const pack = packId === 'random' ? PACKS[rnd(PACKS.length)] : PACKS.find((p) => p.id === packId);
     const w = pack.words[rnd(pack.words.length)];
-    setRound({ word: isAr ? w.ar : w.en, category: isAr ? pack.ar : pack.en, imposter: rnd(players) });
+    const impSet = shuffle([...Array(players).keys()]).slice(0, Math.min(imposters, maxImp));
+    setRound({ word: isAr ? w.ar : w.en, category: isAr ? pack.ar : pack.en, imposterSet: impSet });
     setRevealIdx(0); setShown(false);
     setStarter(rnd(players));
     setSecs(120); setTimerOn(false);
     setPhase('reveal');
     playSfx?.('click');
-  }, [packId, players, isAr, playSfx]);
+  }, [packId, players, imposters, maxImp, isAr, playSfx]);
 
   const nextReveal = useCallback(() => {
     playSfx?.('click');
@@ -108,6 +117,15 @@ export default function ImposterGame({ onBack }) {
             </div>
 
             <div className="imp-field">
+              <div className="imp-label">{t.impostersL}</div>
+              <div className="imp-stepper">
+                <button className="imp-step-btn" onClick={() => { playSfx?.('click'); setImposters((n) => Math.max(1, n - 1)); }} aria-label="−">−</button>
+                <span className="imp-step-val">{imposters}</span>
+                <button className="imp-step-btn" onClick={() => { playSfx?.('click'); setImposters((n) => Math.min(maxImp, n + 1)); }} aria-label="+">+</button>
+              </div>
+            </div>
+
+            <div className="imp-field">
               <div className="imp-label">{t.packL}</div>
               <div className="imp-packs">
                 <button className={`imp-pack${packId === 'random' ? ' on' : ''}`} onClick={() => { playSfx?.('click'); setPackId('random'); }}>🎲 {t.random}</button>
@@ -140,11 +158,11 @@ export default function ImposterGame({ onBack }) {
                 <div className="imp-card-hint">{t.tapReveal}</div>
               </button>
             ) : (
-              <div className={`imp-card ${revealIdx === round.imposter ? 'imp-card-imp' : 'imp-card-word'}`}>
-                {revealIdx === round.imposter ? (
+              <div className={`imp-card ${round.imposterSet.includes(revealIdx) ? 'imp-card-imp' : 'imp-card-word'}`}>
+                {round.imposterSet.includes(revealIdx) ? (
                   <>
                     <div className="imp-card-role">🕵️ {t.youAreImp}</div>
-                    <div className="imp-card-sub">{t.impHint} <b>{round.category}</b></div>
+                    <div className="imp-card-sub">{t.impNoWord}</div>
                     <div className="imp-card-note">{t.impBlend}</div>
                   </>
                 ) : (
@@ -174,6 +192,7 @@ export default function ImposterGame({ onBack }) {
             <div className="imp-seen">✓ {t.allSeen}</div>
             <div className="imp-discuss-title serif">{t.discuss}</div>
             <div className="imp-starter">👉 {t.startsFirst}: <b>{t.player} {starter + 1}</b></div>
+            <div className="imp-find">🕵️ {t.findLabel}: <b>{round.imposterSet.length}</b></div>
 
             <div className="imp-timer-box">
               <div className="imp-timer">{fmt(secs)}</div>
@@ -194,8 +213,8 @@ export default function ImposterGame({ onBack }) {
         {phase === 'result' && round && (
           <div className="imp-body imp-center">
             <div className="imp-reveal-emoji">🕵️</div>
-            <div className="imp-reveal-line">{t.theImp}</div>
-            <div className="imp-reveal-imp serif">{t.player} {round.imposter + 1}</div>
+            <div className="imp-reveal-line">{round.imposterSet.length > 1 ? t.theImpPl : t.theImp}</div>
+            <div className="imp-reveal-imp serif">{round.imposterSet.map((i) => `${t.player} ${i + 1}`).join(isAr ? '، ' : ', ')}</div>
             <div className="imp-reveal-word-box">
               <span className="imp-reveal-word-l">{t.theWord}</span>
               <span className="imp-reveal-word serif">{round.word}</span>
@@ -259,6 +278,8 @@ const CSS = `
 .imp-discuss-title { font-family:${SERIF}; font-size:30px; color:${INK}; }
 .imp-starter { font-size:15px; color:${SUB}; }
 .imp-starter b { color:${INK}; }
+.imp-find { font-size:14px; color:${SUB}; margin-top:-8px; }
+.imp-find b { color:#b5453f; }
 .imp-timer-box { background:${CARD}; border:2px solid ${LINE}; border-radius:18px; padding:16px 20px; width:100%; max-width:320px; }
 .imp-timer { font-size:48px; font-weight:800; color:${INK}; font-variant-numeric:tabular-nums; }
 .imp-timer-row { display:flex; gap:8px; justify-content:center; margin-top:8px; }

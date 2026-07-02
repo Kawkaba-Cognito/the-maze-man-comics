@@ -47,6 +47,7 @@ export default function RoomHost() {
   const [recruitChallenge, setRecruitChallenge] = useState(null);
   const [escapePuzzle, setEscapePuzzle] = useState(null); // { spec, title }
   const [inCinematic, setInCinematic] = useState(false);
+  const [roomKey, setRoomKey] = useState(null);
   const escapeSolveRef = useRef(null);
 
   const openRecruitChallenge = useCallback((c) => {
@@ -123,6 +124,7 @@ export default function RoomHost() {
     const build = (key) => {
       currentFloorRef.current = key;
       setInCinematic(key === BOSS_FIGHT_KEY);
+      setRoomKey(key);
       const builder = ROOMS[key] || ROOMS[DEFAULT_FLOOR];
       if (key === BOSS_FIGHT_KEY) {
         activeRef.current = builder({
@@ -292,9 +294,14 @@ export default function RoomHost() {
             <div className="rh-joy-thumb" ref={thumbRef} />
           </div>
           <div className="rh-actions">
-            <button type="button" className="rh-act rh-act-jump" onTouchStart={(e) => { e.preventDefault(); fireJump(); }}>
-              <span className="rh-act-icon">⤒</span><span className="rh-act-lbl">JUMP</span>
-            </button>
+            {roomKey !== ESCAPE_ROOM_KEY && (
+              <button type="button" className="rh-act rh-act-jump"
+                onTouchStart={(e) => { e.preventDefault(); fireJump(); if (!modalOpen) activeRef.current?.thrustOn?.(); }}
+                onTouchEnd={(e) => { e.preventDefault(); activeRef.current?.thrustOff?.(); }}
+                onTouchCancel={() => activeRef.current?.thrustOff?.()}>
+                <span className="rh-act-icon">⤒</span><span className="rh-act-lbl">JUMP</span>
+              </button>
+            )}
             <button type="button" className="rh-act rh-act-use" onTouchStart={(e) => { e.preventDefault(); fireInteract(); }}>
               <span className="rh-act-icon">⚡</span><span className="rh-act-lbl">USE</span>
             </button>

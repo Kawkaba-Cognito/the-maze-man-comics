@@ -37,6 +37,22 @@ const SPECTRA = [
   { l: { en: 'Waste of time', ar: 'مضيعة للوقت' }, r: { en: 'Worth it', ar: 'يستحق العناء' } },
   { l: { en: 'Normal', ar: 'عادي' }, r: { en: 'Weird', ar: 'غريب' } },
   { l: { en: 'Comfort', ar: 'راحة' }, r: { en: 'Adventure', ar: 'مغامرة' } },
+  { l: { en: 'Slow', ar: 'بطيء' }, r: { en: 'Fast', ar: 'سريع' } },
+  { l: { en: 'Empty', ar: 'فارغ' }, r: { en: 'Full', ar: 'ممتلئ' } },
+  { l: { en: 'Ancient', ar: 'قديم' }, r: { en: 'Futuristic', ar: 'مستقبلي' } },
+  { l: { en: 'Round', ar: 'مستدير' }, r: { en: 'Pointy', ar: 'مدبّب' } },
+  { l: { en: 'Light', ar: 'خفيف' }, r: { en: 'Heavy', ar: 'ثقيل' } },
+  { l: { en: 'Bad habit', ar: 'عادة سيئة' }, r: { en: 'Good habit', ar: 'عادة جيدة' } },
+  { l: { en: 'Whisper', ar: 'همس' }, r: { en: 'Scream', ar: 'صراخ' } },
+  { l: { en: 'Unlucky', ar: 'منحوس' }, r: { en: 'Lucky', ar: 'محظوظ' } },
+  { l: { en: 'Fragile', ar: 'هشّ' }, r: { en: 'Tough', ar: 'متين' } },
+  { l: { en: 'Sour', ar: 'حامض' }, r: { en: 'Sweet', ar: 'حلو' } },
+  { l: { en: 'Guilty', ar: 'مذنب' }, r: { en: 'Innocent', ar: 'بريء' } },
+  { l: { en: 'Messy', ar: 'فوضوي' }, r: { en: 'Tidy', ar: 'مرتّب' } },
+  { l: { en: 'Kids’ thing', ar: 'للأطفال' }, r: { en: 'Adults’ thing', ar: 'للكبار' } },
+  { l: { en: 'Overpriced', ar: 'مبالغ في سعره' }, r: { en: 'A bargain', ar: 'صفقة رابحة' } },
+  { l: { en: 'Taboo', ar: 'محظور' }, r: { en: 'Acceptable', ar: 'مقبول' } },
+  { l: { en: 'Basic', ar: 'عادي' }, r: { en: 'Luxury', ar: 'فاخر' } },
 ];
 
 export default function WavelengthGame({ onBack }) {

@@ -129,6 +129,7 @@ export function setupControls(scene, canvas, opts = {}) {
   // ── Per-frame movement + animation + camera follow ──
   let speed = 0, walkCycle = 0, prevHeading = startYaw, started = false;
   let vy = 0, jumpQueued = false;
+  let flightEnabled = false, thrustHeld = false; // opt-in jetpack flight (escape room)
   let frozen = false; // when true, movement input is ignored (e.g. seated in a chat)
   let camLocked = false; // when true, the room drives the camera (cinematic close-ups)
   const L = (a, b, t) => a + (b - a) * t;
@@ -169,9 +170,15 @@ export function setupControls(scene, canvas, opts = {}) {
 
     // Vertical: jump + gravity (ground check off the resting collider height).
     const grounded = player.position.y <= GROUND_Y + 0.06;
-    if (jumpQueued && grounded) vy = JUMP_V;
-    jumpQueued = false;
-    vy = (grounded && vy <= 0) ? -0.12 : vy - GRAV;
+    if (flightEnabled) {
+      const thrust = thrustHeld || inputMap[' '];
+      vy = thrust ? Math.min(vy + 0.022, 0.17) : Math.max(vy - GRAV, -0.16);
+      jumpQueued = false;
+    } else {
+      if (jumpQueued && grounded) vy = JUMP_V;
+      jumpQueued = false;
+      vy = (grounded && vy <= 0) ? -0.12 : vy - GRAV;
+    }
 
     // Move along facing, sliding off walls.
     const f = new B.Vector3(Math.sin(heading), 0, Math.cos(heading));
@@ -184,7 +191,8 @@ export function setupControls(scene, canvas, opts = {}) {
       if (sx && !gridCollide(player.position.x + sx, player.position.z)) player.position.x += sx;
       if (sz && !gridCollide(player.position.x, player.position.z + sz)) player.position.z += sz;
       player.position.y += vy;
-      if (player.position.y < GROUND_Y) player.position.y = GROUND_Y;
+      if (player.position.y < GROUND_Y) { player.position.y = GROUND_Y; if (flightEnabled) vy = 0; }
+      else if (player.position.y > GROUND_Y + 6) { player.position.y = GROUND_Y + 6; vy = 0; }
     } else {
       player.moveWithCollisions(new B.Vector3(mv ? f.x * speed : 0, vy, mv ? f.z * speed : 0));
     }
@@ -244,6 +252,9 @@ export function setupControls(scene, canvas, opts = {}) {
     shadowGenerator,
     keyLight: dir,
     jump() { jumpQueued = true; },
+    // Opt-in jetpack flight (escape room). When enabled, hold thrust to rise.
+    setFlightEnabled(v) { flightEnabled = !!v; },
+    setThrust(v) { thrustHeld = !!v; },
     // Lock/unlock movement (used while seated in a conversation).
     setFrozen(v) { frozen = !!v; if (frozen) speed = 0; },
     // Hand the camera to the room (cinematic) / give it back to the chase rig.

@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import BreathePractice from './BreathePractice';
+import GroundingPractice from './GroundingPractice';
+import PmrPractice from './PmrPractice';
+import SoundBathPractice from './SoundBathPractice';
+import NatureSoundsPractice from './NatureSoundsPractice';
 
 /*
  * Relaxation — 8-Week MBSR Tracker (the app's calm pillar).
@@ -380,7 +385,7 @@ const SERIF = "'Cormorant Garamond', Georgia, serif";
 const SANS = "'Outfit', system-ui, sans-serif";
 const INK = '#2d2210'; const SUB = '#8a7f6f'; const FAINT = '#b3a288'; const LINE = '#e3d6c4'; const CARD = '#fffdf8'; const GOLD = '#b9842f';
 const CSS = `
-.rx-root { position:absolute; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--color-training-palette-surface,#fff7f2); color:${INK}; font-family:${SANS}; }
+.rx-root { position:fixed; inset:0; z-index:50; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--color-training-palette-surface,#fff7f2); color:${INK}; font-family:${SANS}; }
 .rx-root *, .rx-root *::before, .rx-root *::after { box-sizing:border-box; }
 .rx-app { max-width:480px; margin:0 auto; padding-bottom:80px; position:relative; }
 .rx-back { position:absolute; top:14px; left:12px; z-index:20; width:36px; height:36px; border-radius:10px; border:2px solid ${LINE}; background:${CARD}; color:#141210; font-size:22px; line-height:1; cursor:pointer; }
@@ -475,28 +480,45 @@ const CSS = `
 .rx-root .go-btn { background:#efe6d6; color:#7a5a1e; border:none; border-radius:10px; padding:12px 24px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
 `;
 
-/* ── Relaxation landing menu — pick a practice; MBSR is the first ── */
+/* ── Relaxation landing menu — pick a practice ── */
 const RELAX_OPTIONS = [
-  {
-    id: 'mbsr',
-    icon: '🧘',
-    title: '8-Week MBSR',
-    sub: 'Mindfulness-Based Stress Reduction — a guided daily practice with a timer, an 8-week tracker and a full reference guide.',
-    color: '#c47a3e',
-  },
+  { id: 'mbsr', icon: '🧘', color: '#c47a3e',
+    title: '8-Week MBSR', titleAr: 'اليقظة الذهنية — ٨ أسابيع',
+    sub: 'Mindfulness-Based Stress Reduction — a guided daily practice with a timer, an 8-week tracker and a full guide.',
+    subAr: 'برنامج اليقظة الذهنية للحدّ من التوتر — ممارسة يومية موجّهة مع مؤقّت ومتابعة ٨ أسابيع ودليل كامل.' },
+  { id: 'breathe', icon: '🫁', color: '#5aa9c8',
+    title: 'Breathe', titleAr: 'تنفّس',
+    sub: 'A guided breathing pacer — box, 4-7-8, coherent & physiological-sigh patterns.',
+    subAr: 'موجّه تنفّس متحرّك — أنماط الصندوق و٤-٧-٨ والمتناغم والتنهيدة.' },
+  { id: 'grounding', icon: '🖐️', color: '#6fae7a',
+    title: '5-4-3-2-1 Grounding', titleAr: 'تأريض ٥-٤-٣-٢-١',
+    sub: 'Break acute anxiety by walking through your five senses in the moment.',
+    subAr: 'اكسر القلق الحاد بالمرور على حواسك الخمس في اللحظة.' },
+  { id: 'pmr', icon: '💪', color: '#b07ac8',
+    title: 'Muscle Relaxation', titleAr: 'استرخاء العضلات',
+    sub: 'Progressive tense-and-release through the body — great for tension and sleep.',
+    subAr: 'شدّ وإرخاء تدريجي للجسم — ممتاز للتوتر والنوم.' },
+  { id: 'soundbath', icon: '🔔', color: '#7b86c8',
+    title: 'Sound Bath', titleAr: 'حمّام صوتي',
+    sub: 'A calming ambient soundscape — soft drone and gentle singing-bowl tones.',
+    subAr: 'أجواء صوتية مهدّئة — رنين ناعم ونغمات أوعية غنائية لطيفة.' },
+  { id: 'nature', icon: '🌿', color: '#5aa07a',
+    title: 'Nature Sounds', titleAr: 'أصوات الطبيعة',
+    sub: 'Mix rain, ocean, wind and fire into your own calming soundscape.',
+    subAr: 'اخلط المطر والمحيط والرياح والنار في أجواء تهدّئك.' },
 ];
 
-function RelaxMenu({ onHome, onOpen }) {
+function RelaxMenu({ isAr, onHome, onOpen }) {
   return (
-    <div className="rx-root" dir="ltr">
+    <div className="rx-root" dir={isAr ? 'rtl' : 'ltr'}>
       <style>{MENU_CSS}</style>
       <div className="rx-app">
         <div className="header">
           <button className="rx-back" onClick={onHome} aria-label="Back">‹</button>
-          <div style={{ paddingLeft: 42 }}>
-            <div className="header-sub">Calm pillar</div>
-            <div className="header-title serif">Relaxation</div>
-            <div className="menu-tag">Choose a practice.</div>
+          <div style={{ paddingInlineStart: 42 }}>
+            <div className="header-sub">{isAr ? 'ركن الهدوء' : 'Calm pillar'}</div>
+            <div className="header-title serif">{isAr ? 'الاسترخاء' : 'Relaxation'}</div>
+            <div className="menu-tag">{isAr ? 'اختر ممارسة.' : 'Choose a practice.'}</div>
           </div>
         </div>
         <div className="content">
@@ -504,13 +526,13 @@ function RelaxMenu({ onHome, onOpen }) {
             <button key={o.id} className="rx-menu-card" style={{ borderColor: `${o.color}55` }} onClick={() => onOpen(o.id)}>
               <span className="rx-menu-ic" style={{ background: `${o.color}1f` }}>{o.icon}</span>
               <span className="rx-menu-body">
-                <span className="rx-menu-title">{o.title}</span>
-                <span className="rx-menu-sub">{o.sub}</span>
+                <span className="rx-menu-title">{isAr ? o.titleAr : o.title}</span>
+                <span className="rx-menu-sub">{isAr ? o.subAr : o.sub}</span>
               </span>
-              <span className="rx-menu-chev" style={{ color: o.color }}>›</span>
+              <span className="rx-menu-chev" style={{ color: o.color }}>{isAr ? '‹' : '›'}</span>
             </button>
           ))}
-          <div className="rx-menu-more">More practices coming soon.</div>
+          <div className="rx-menu-more">{isAr ? 'المزيد من الممارسات قريباً.' : 'More practices coming soon.'}</div>
         </div>
       </div>
     </div>
@@ -518,14 +540,20 @@ function RelaxMenu({ onHome, onOpen }) {
 }
 
 export default function RelaxScreen() {
-  const { switchTab, playSfx } = useApp();
+  const { switchTab, playSfx, currentLang } = useApp();
+  const isAr = currentLang === 'ar';
   const [view, setView] = useState('menu');
+  const back = () => { playSfx?.('click'); setView('menu'); };
 
-  if (view === 'mbsr') {
-    return <MbsrTracker onBack={() => { playSfx?.('click'); setView('menu'); }} />;
-  }
+  if (view === 'mbsr') return <MbsrTracker onBack={back} />;
+  if (view === 'breathe') return <BreathePractice onBack={back} />;
+  if (view === 'grounding') return <GroundingPractice onBack={back} />;
+  if (view === 'pmr') return <PmrPractice onBack={back} />;
+  if (view === 'soundbath') return <SoundBathPractice onBack={back} />;
+  if (view === 'nature') return <NatureSoundsPractice onBack={back} />;
   return (
     <RelaxMenu
+      isAr={isAr}
       onHome={() => { playSfx?.('click'); switchTab('home'); }}
       onOpen={(id) => { playSfx?.('click'); setView(id); }}
     />
@@ -533,7 +561,7 @@ export default function RelaxScreen() {
 }
 
 const MENU_CSS = `
-.rx-root { position:absolute; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--color-training-palette-surface,#fff7f2); color:${INK}; font-family:${SANS}; }
+.rx-root { position:fixed; inset:0; z-index:50; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--color-training-palette-surface,#fff7f2); color:${INK}; font-family:${SANS}; }
 .rx-root *, .rx-root *::before, .rx-root *::after { box-sizing:border-box; }
 .rx-root .rx-app { max-width:480px; margin:0 auto; padding-bottom:80px; position:relative; }
 .rx-root .rx-back { position:absolute; top:14px; left:12px; z-index:20; width:36px; height:36px; border-radius:10px; border:2px solid ${LINE}; background:${CARD}; color:#141210; font-size:22px; line-height:1; cursor:pointer; }
