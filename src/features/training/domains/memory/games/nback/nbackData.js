@@ -15,10 +15,26 @@ export const NB_DIFF_KEYS = ['easy', 'medium', 'hard'];
 export const NB_TARGET_RATE = 0.32;
 export const NB_PASS_ACC = 75;
 
+/* Variants (Jaeggi 2008 dual n-back is the gold standard):
+ *   object   — one item shown centre-stage; MATCH when the item repeats N back
+ *   position — one marker lands in a 3×3 grid; MATCH when the location repeats
+ *   dual     — track BOTH streams at once, one button each                    */
+export const NB_VARIANTS = ['object', 'position', 'dual'];
+export const NB_GRID = 9; // 3×3 spatial grid
+/** Streams that are actively scored for a given variant. */
+export function nbStreams(variant) {
+  if (variant === 'position') return ['pos'];
+  if (variant === 'dual') return ['obj', 'pos'];
+  return ['obj'];
+}
+
+// N climbs in bands across the 100 levels; speed ramps within each band.
+export const NB_BANDS = 3;
+
 export const NB_DM = {
-  easy: { label: 'Easy', pop: '1–2 back · slower', lvc: 'lve', baseN: 1, stim: [2200, 1800], isi: [1000, 800] },
-  medium: { label: 'Medium', pop: '2–3 back', lvc: 'lvm', baseN: 2, stim: [2000, 1500], isi: [900, 650] },
-  hard: { label: 'Hard', pop: '3–4 back · fast', lvc: 'lvh', baseN: 3, stim: [1800, 1300], isi: [800, 550] },
+  easy: { label: 'Easy', pop: '1–3 back · slower', lvc: 'lve', baseN: 1, stim: [2200, 1800], isi: [1000, 800] },
+  medium: { label: 'Medium', pop: '2–4 back', lvc: 'lvm', baseN: 2, stim: [2000, 1500], isi: [900, 650] },
+  hard: { label: 'Hard', pop: '3–5 back · fast', lvc: 'lvh', baseN: 3, stim: [1800, 1300], isi: [800, 550] },
 };
 
 const POOL = MEMO_OBJECTS.map((o) => o.id);
@@ -40,35 +56,62 @@ export function ppf(p) {
   q = Math.sqrt(-2 * Math.log(1 - pp)); return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
 }
 
-/** Sequence of object ids with ~targetRate of trials matching N steps back. */
-export function buildSequence(n, trials, seed, targetRate = NB_TARGET_RATE) {
+/**
+ * Sequence of steps { obj, pos }. Each active stream (per variant) gets ~targetRate
+ * of trials matching N steps back; inactive streams are held constant so they never
+ * distract (object variant → centre cell; position variant → one fixed marker).
+ */
+export function buildSteps(n, trials, seed, variant = 'object', targetRate = NB_TARGET_RATE) {
   const rnd = mulberry32(seed >>> 0);
   const len = n + trials;
-  const seq = [];
+  const streams = nbStreams(variant);
+  const objLive = streams.includes('obj');
+  const posLive = streams.includes('pos');
+  const marker = POOL[Math.floor(rnd() * POOL.length)]; // fixed item for position variant
+  const objSeq = [];
+  const posSeq = [];
   for (let i = 0; i < len; i++) {
-    if (i >= n && rnd() < targetRate) {
-      seq.push(seq[i - n]);
+    if (objLive) {
+      if (i >= n && rnd() < targetRate) objSeq.push(objSeq[i - n]);
+      else { let o; do { o = POOL[Math.floor(rnd() * POOL.length)]; } while (i >= n && o === objSeq[i - n]); objSeq.push(o); }
     } else {
-      let o;
-      do { o = POOL[Math.floor(rnd() * POOL.length)]; } while (i >= n && o === seq[i - n]);
-      seq.push(o);
+      objSeq.push(marker);
+    }
+    if (posLive) {
+      if (i >= n && rnd() < targetRate) posSeq.push(posSeq[i - n]);
+      else { let p; do { p = Math.floor(rnd() * NB_GRID); } while (i >= n && p === posSeq[i - n]); posSeq.push(p); }
+    } else {
+      posSeq.push(4); // centre
     }
   }
-  return seq;
+  return objSeq.map((o, i) => ({ obj: o, pos: posSeq[i] }));
 }
 
+/** N for a level: base for band 0, +1 per band across the tier's 100 levels. */
 export function levelN(diff, lv) {
   const base = NB_DM[diff]?.baseN ?? 2;
-  return base + (lv > 50 ? 1 : 0);
+  const li = clamp(Math.floor(lv) || 1, 1, NB_LEVELS_PER_TIER);
+  const band = Math.min(NB_BANDS - 1, Math.floor((li - 1) / (NB_LEVELS_PER_TIER / NB_BANDS)));
+  return base + band;
 }
 
-export function specForLevel(diff, lv) {
+/** Local 0→1 progress within the current N-band (drives speed ramp per band). */
+function bandLocalT(lv) {
+  const size = NB_LEVELS_PER_TIER / NB_BANDS;
+  const li = clamp(Math.floor(lv) || 1, 1, NB_LEVELS_PER_TIER);
+  const band = Math.min(NB_BANDS - 1, Math.floor((li - 1) / size));
+  const start = band * size + 1;
+  const span = (band === NB_BANDS - 1 ? NB_LEVELS_PER_TIER : start + size - 1) - start;
+  return span > 0 ? clamp((li - start) / span, 0, 1) : 0;
+}
+
+export function specForLevel(diff, lv, variant = 'dual') {
   const key = NB_DIFF_KEYS.includes(diff) ? diff : 'easy';
   const li = clamp(Math.floor(lv) || 1, 1, NB_LEVELS_PER_TIER);
-  const t = (li - 1) / (NB_LEVELS_PER_TIER - 1);
+  const t = bandLocalT(li);
   const dm = NB_DM[key];
   return {
-    diff: key, lv: li, n: levelN(key, li),
+    diff: key, lv: li, n: levelN(key, li), variant,
     stimMs: Math.round(lerp(dm.stim[0], dm.stim[1], t)),
     isiMs: Math.round(lerp(dm.isi[0], dm.isi[1], t)),
     trials: 18,
@@ -76,38 +119,64 @@ export function specForLevel(diff, lv) {
   };
 }
 
-export function specForFree(n) {
+export function specForFree(n, variant = 'dual') {
   const nn = clamp(n, 1, 6);
-  return { diff: 'free', lv: 0, n: nn, stimMs: 2000, isiMs: 900, trials: 20, targetRate: NB_TARGET_RATE };
+  return { diff: 'free', lv: 0, n: nn, variant, stimMs: 2000, isiMs: 900, trials: 20, targetRate: NB_TARGET_RATE };
 }
 
-export function specForChallenge(diff) {
+export function specForChallenge(diff, variant = 'dual') {
   const key = NB_DIFF_KEYS.includes(diff) ? diff : 'medium';
-  return { diff: key, lv: 0, n: NB_DM[key].baseN + 1, stimMs: 1900, isiMs: 800, trials: 18, targetRate: NB_TARGET_RATE };
+  return { diff: key, lv: 0, n: NB_DM[key].baseN + 1, variant, stimMs: 1900, isiMs: 800, trials: 18, targetRate: NB_TARGET_RATE };
 }
 
 function buildBlock(spec, mode, seed) {
-  return { mode, spec, seq: buildSequence(spec.n, spec.trials, seed), seed: seed >>> 0 };
+  return { mode, spec, seq: buildSteps(spec.n, spec.trials, seed, spec.variant), seed: seed >>> 0 };
 }
 
-export function prepareLevelBlock(diff, lv, seed) { return buildBlock(specForLevel(diff, lv), 'level', seed); }
-export function prepareFreeBlock(n, seed) { return buildBlock(specForFree(n), 'free', seed); }
-export function prepareChallengeSeed(diff) {
+export function prepareLevelBlock(diff, lv, seed, variant = 'object') { return buildBlock(specForLevel(diff, lv, variant), 'level', seed); }
+export function prepareFreeBlock(n, seed, variant = 'object') { return buildBlock(specForFree(n, variant), 'free', seed); }
+export function prepareChallengeSeed(diff, variant = 'object') {
   const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-  return { seed, diff, spec: specForChallenge(diff) };
+  return { seed, diff, spec: specForChallenge(diff, variant) };
 }
-export function prepareChallengeBlock(cSeed) { return { mode: 'challenge', spec: cSeed.spec, seq: buildSequence(cSeed.spec.n, cSeed.spec.trials, cSeed.seed), seed: cSeed.seed >>> 0 }; }
+export function prepareChallengeBlock(cSeed) { return { mode: 'challenge', spec: cSeed.spec, seq: buildSteps(cSeed.spec.n, cSeed.spec.trials, cSeed.seed, cSeed.spec.variant), seed: cSeed.seed >>> 0 }; }
 
-/** Tally hits/misses/false-alarms/correct-rejections into accuracy + d′. */
-export function gradeBlock(stats) {
-  const targets = stats.hit + stats.miss;
-  const nonTargets = stats.fa + stats.cr;
+/** Fresh per-stream tally container. */
+export function emptyStreamStats() { return { hit: 0, miss: 0, fa: 0, cr: 0 }; }
+export function emptyNbStats() { return { obj: emptyStreamStats(), pos: emptyStreamStats() }; }
+
+function gradeStream(s) {
+  const targets = s.hit + s.miss;
+  const nonTargets = s.fa + s.cr;
   const scorable = targets + nonTargets;
-  const acc = scorable ? Math.round(((stats.hit + stats.cr) / scorable) * 100) : 0;
-  const hitRate = targets ? stats.hit / targets : 0;
-  const faRate = nonTargets ? stats.fa / nonTargets : 0;
+  const hitRate = targets ? s.hit / targets : 0;
+  const faRate = nonTargets ? s.fa / nonTargets : 0;
   const dPrime = +(ppf(hitRate) - ppf(faRate)).toFixed(2);
-  return { acc, dPrime, ...stats };
+  return { dPrime, scorable, correct: s.hit + s.cr, ...s };
+}
+
+/** Grade the active streams; combines into one accuracy, exposes per-stream d′. */
+export function gradeBlock(stats, variant = 'object') {
+  const streams = nbStreams(variant);
+  const graded = {};
+  let correct = 0, scorable = 0, hit = 0, miss = 0, fa = 0, cr = 0;
+  streams.forEach((k) => {
+    const g = gradeStream(stats[k] || emptyStreamStats());
+    graded[k] = g;
+    correct += g.correct; scorable += g.scorable;
+    hit += g.hit; miss += g.miss; fa += g.fa; cr += g.cr;
+  });
+  const acc = scorable ? Math.round((correct / scorable) * 100) : 0;
+  const primary = graded[streams[0]];
+  const dPrime = streams.length === 1
+    ? primary.dPrime
+    : +(((graded.obj.dPrime + graded.pos.dPrime) / 2)).toFixed(2);
+  return {
+    acc, dPrime, hit, miss, fa, cr,
+    dPrimeObj: graded.obj ? graded.obj.dPrime : null,
+    dPrimePos: graded.pos ? graded.pos.dPrime : null,
+    variant,
+  };
 }
 
 export function starsForNBack(acc) {
@@ -123,9 +192,22 @@ export function adaptiveNextN(n, acc) {
   return n;
 }
 
-export function isNbackLevelUnlocked(diff, lv, doneMap) {
+/** Progress keys are namespaced by variant so each track unlocks independently. */
+export function nbLevelKey(variant, diff, lv) { return `${variant}:${diff}-${lv}`; }
+export function isNbackLevelUnlocked(variant, diff, lv, doneMap) {
   if (lv <= 1) return true;
-  return !!(doneMap[`${diff}-${lv - 1}`] || doneMap[`${diff}-${lv}`]);
+  return !!(doneMap[nbLevelKey(variant, diff, lv - 1)] || doneMap[nbLevelKey(variant, diff, lv)]);
+}
+
+/** Best sustained N per variant (bestN stored as a per-variant map; legacy number tolerated). */
+export function nbBestN(profile, variant) {
+  const b = profile?.bestN;
+  if (b && typeof b === 'object') return b[variant] ?? 2;
+  return typeof b === 'number' ? b : 2;
+}
+export function nbSetBestN(profile, variant, n) {
+  const b = (profile?.bestN && typeof profile.bestN === 'object') ? profile.bestN : {};
+  return { ...b, [variant]: n };
 }
 
 /* progress */

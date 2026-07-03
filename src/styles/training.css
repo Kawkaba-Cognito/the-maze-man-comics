@@ -4002,60 +4002,133 @@
     gap: clamp(16px, 5vh, 36px);
     padding: 16px;
 }
-.ct-nb-card {
-    width: min(62vw, 240px);
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 3px solid #1a1208;
-    border-radius: 24px;
-    background: linear-gradient(180deg, #fbf6ec 0%, #efe4d4 100%);
+.ct-nb-stage--dual { gap: clamp(14px, 4vh, 28px); justify-content: center; }
+.ct-nb-prompt { margin: 0; font-size: 0.95rem; font-weight: 800; color: #6a5f52; letter-spacing: 0.3px; }
+
+/* hub blurb */
+.ct-nb-dual-note {
+    text-align: center; font-size: 0.86rem; font-weight: 700; color: #6a5f52;
+    margin: 2px auto 8px; max-width: 340px; line-height: 1.35;
+}
+
+/* 3×3 board */
+.ct-nb-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(7px, 2.4vw, 11px);
+    width: min(82vw, 330px); aspect-ratio: 1; padding: clamp(9px, 3vw, 13px);
+    background: linear-gradient(180deg, #ece2d0 0%, #dccfb7 100%);
+    border: 3px solid #1a1208; border-radius: 22px;
     box-shadow: 5px 5px 0 #1a1208;
-    transition: transform 0.1s, box-shadow 0.12s, border-color 0.12s;
 }
-.ct-nb-card--on {
-    transform: scale(1.03);
-    box-shadow: 0 0 0 4px var(--nb-acc), 0 0 26px 8px color-mix(in srgb, var(--nb-acc) 45%, transparent), 5px 5px 0 #1a1208;
+.ct-nb-cell {
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 13px;
+    background: #fbf6ec;
+    box-shadow: inset 0 2px 5px rgba(26, 18, 8, 0.12);
+    transition: transform 0.09s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
-.ct-nb-card--good { border-color: #2e9e4f; box-shadow: 0 0 0 5px #36c46a, 5px 5px 0 #1a1208; }
-.ct-nb-card--bad { border-color: #c0392b; box-shadow: 0 0 0 5px #e0584f, 5px 5px 0 #1a1208; }
-.ct-nb-card-dot { font-size: 3rem; color: rgba(26, 18, 8, 0.2); }
-.ct-nb-prompt { margin: 0; font-size: 0.92rem; font-weight: 700; color: #6a5f52; }
+.ct-nb-cell--on {
+    transform: scale(1.05);
+    background: radial-gradient(circle at 50% 38%, #fffdf5 0%, #f2e6cf 100%);
+    box-shadow: 0 0 0 3px var(--nb-acc), 0 0 24px 6px color-mix(in srgb, var(--nb-acc) 55%, transparent);
+}
+.ct-nb-cell .ct-ms-object-emoji { font-size: clamp(1.7rem, 8vw, 2.8rem); }
+
+/* PLACE / OBJECT buttons */
+.ct-nb-btnrow { display: flex; gap: 12px; width: min(92vw, 380px); }
 .ct-nb-match {
-    min-width: 200px;
-    padding: 18px 28px;
-    border: 3px solid #1a1208;
-    border-radius: 16px;
-    background: linear-gradient(180deg, #6fa0f4 0%, #3f6fd8 100%);
+    position: relative; overflow: hidden;
+    flex: 1; min-width: 0;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 19px 12px;
+    border: 3px solid #1a1208; border-radius: 16px;
     color: #fff;
     font-family: 'Fredoka One', 'Bangers', cursive;
-    font-size: 1.3rem;
-    letter-spacing: 1px;
+    font-size: 1.18rem; letter-spacing: 1px;
     box-shadow: 4px 4px 0 #1a1208;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
+    cursor: pointer; user-select: none;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    transition: transform 0.06s ease, box-shadow 0.06s ease, filter 0.1s ease;
 }
-.ct-nb-match:active:not(:disabled) { transform: translateY(2px); box-shadow: 2px 2px 0 #1a1208; }
-.ct-nb-match--done { opacity: 0.5; }
-.ct-nb-intro { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 360px; margin: 8px auto 14px; }
-.ct-nb-opt {
-    display: flex; flex-direction: column; gap: 2px; text-align: start;
-    padding: 14px 16px; border-radius: 14px;
-    border: 2px solid rgba(91, 141, 239, 0.4);
-    background: rgba(91, 141, 239, 0.08); cursor: pointer;
+.ct-nb-match:disabled { cursor: default; }
+.ct-nb-match-ic { font-size: 1.22rem; line-height: 1; opacity: 0.92; }
+/* tap flash — a bright bloom while the finger is down */
+.ct-nb-match::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0) 68%);
+    opacity: 0; transition: opacity 0.2s ease;
 }
-.ct-nb-opt--on { border-color: #3f6fd8; background: rgba(91, 141, 239, 0.18); }
-.ct-nb-opt-lb { font-weight: 800; font-size: 1.05rem; color: #2a2520; }
-.ct-nb-opt-hint { font-size: 0.8rem; color: #6a5f52; }
-.ct-nb-nrow { display: flex; gap: 8px; justify-content: center; }
-.ct-nb-nbtn {
-    flex: 1; padding: 12px 8px; border-radius: 12px;
-    border: 2px solid #1a1208; background: linear-gradient(180deg, #fff, #f0e6da);
-    font-weight: 800; font-size: 0.95rem; color: #2a2520; cursor: pointer;
-    box-shadow: 2px 2px 0 #1a1208;
+/* pressed: sinks into its shadow + brightens */
+.ct-nb-match:active:not(:disabled) {
+    transform: translate(2px, 3px); box-shadow: 1px 1px 0 #1a1208;
+    filter: brightness(1.14) saturate(1.1);
 }
-.ct-nb-nbtn--on { background: linear-gradient(180deg, #6fa0f4, #3f6fd8); color: #fff; }
+.ct-nb-match:active:not(:disabled)::after { opacity: 1; transition: none; }
+.ct-nb-match--pos { background: linear-gradient(180deg, #6fa0f4 0%, #3f6fd8 100%); }
+.ct-nb-match--obj { background: linear-gradient(180deg, #f4b25b 0%, #d8863f 100%); }
+/* answered — stays pressed-in with a ✓ badge (no fading) */
+.ct-nb-match--done { transform: translate(2px, 3px); box-shadow: 1px 1px 0 #1a1208; }
+.ct-nb-match--done::before {
+    content: '✓'; position: absolute; top: 4px; inset-inline-end: 9px;
+    font-size: 0.82rem; font-weight: 900; color: rgba(255, 255, 255, 0.92);
+}
+/* correct → vivid green + a pop; wrong → vivid red + a shake */
+.ct-nb-match--good {
+    background: linear-gradient(180deg, #3ecb72 0%, #2e9e4f 100%) !important;
+    box-shadow: 0 0 0 3px rgba(54, 196, 106, 0.55), 3px 3px 0 #1a1208 !important;
+    animation: ct-nb-tap-pop 0.34s ease;
+}
+.ct-nb-match--bad {
+    background: linear-gradient(180deg, #e6635a 0%, #c0392b 100%) !important;
+    box-shadow: 0 0 0 3px rgba(224, 88, 79, 0.55), 3px 3px 0 #1a1208 !important;
+    animation: ct-nb-tap-shake 0.36s ease;
+}
+@keyframes ct-nb-tap-pop {
+    0% { transform: translate(2px, 3px) scale(1); }
+    45% { transform: translate(2px, 1px) scale(1.06); }
+    100% { transform: translate(2px, 3px) scale(1); }
+}
+@keyframes ct-nb-tap-shake {
+    0%, 100% { transform: translate(2px, 3px); }
+    20% { transform: translate(-3px, 3px); }
+    45% { transform: translate(6px, 3px); }
+    70% { transform: translate(-1px, 3px); }
+    88% { transform: translate(4px, 3px); }
+}
+
+/* survival between-block level popup */
+.ct-nb-popup-backdrop {
+    position: fixed; inset: 0; z-index: 60;
+    display: flex; align-items: center; justify-content: center; padding: 22px;
+    background: rgba(20, 14, 6, 0.5);
+    animation: ct-nb-fade 0.18s ease;
+}
+.ct-nb-popup {
+    width: min(88vw, 340px); text-align: center;
+    background: linear-gradient(180deg, #fffdf8 0%, #f5ebda 100%);
+    border: 3px solid #1a1208; border-radius: 22px;
+    box-shadow: 6px 6px 0 #1a1208;
+    padding: 24px 22px 20px;
+    animation: ct-nb-popin 0.34s cubic-bezier(0.18, 1.4, 0.5, 1);
+}
+.ct-nb-popup-kicker { font-family: 'Fredoka One', 'Bangers', cursive; font-size: 1.05rem; letter-spacing: 0.5px; color: #b9842f; }
+.ct-nb-popup-kicker--up { color: #2e8b57; }
+.ct-nb-popup-kicker--down { color: #3f6fd8; }
+.ct-nb-popup-n { font-family: 'Bangers', 'Fredoka One', cursive; font-size: 3rem; line-height: 1.05; color: #2a2520; margin: 2px 0 0; }
+.ct-nb-popup-sub { font-size: 0.92rem; font-weight: 700; color: #6a5f52; margin: 2px 0 10px; }
+.ct-nb-popup-acc { display: inline-block; font-size: 0.82rem; font-weight: 800; color: #7a6a52; background: #efe4d4; border-radius: 999px; padding: 4px 13px; margin-bottom: 16px; }
+.ct-nb-popup-btn {
+    display: block; width: 100%; padding: 15px;
+    border: 3px solid #1a1208; border-radius: 15px;
+    background: linear-gradient(180deg, #6fa0f4 0%, #3f6fd8 100%); color: #fff;
+    font-family: 'Fredoka One', 'Bangers', cursive; font-size: 1.18rem; letter-spacing: 0.5px;
+    box-shadow: 4px 4px 0 #1a1208; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    transition: transform 0.06s, box-shadow 0.06s;
+}
+.ct-nb-popup-btn:active { transform: translate(2px, 3px); box-shadow: 1px 1px 0 #1a1208; }
+.ct-nb-popup-end { margin-top: 11px; background: none; border: none; color: #8a7a62; font-weight: 800; font-size: 0.9rem; cursor: pointer; }
+@keyframes ct-nb-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ct-nb-popin { 0% { transform: scale(0.7); opacity: 0; } 60% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
 
 /* ── Flexibility: Spatial Stroop (Arrow Rush) ── */
 .ct-stroop-root {

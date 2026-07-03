@@ -10,9 +10,10 @@ import MemoObject from '../memo-span/MemoObject';
 import { memoTip } from '../memo-span/MemoSciencePanel';
 import NBackModes from './NBackModes';
 import {
-  NB_LEVELS_PER_TIER, NB_DIFF_KEYS, NB_DM, NB_PASS_ACC,
+  NB_LEVELS_PER_TIER, NB_DIFF_KEYS, NB_DM, NB_GRID, NB_PASS_ACC,
   specForLevel, prepareLevelBlock, prepareFreeBlock, prepareChallengeSeed, prepareChallengeBlock,
-  gradeBlock, starsForNBack, adaptiveNextN, isNbackLevelUnlocked,
+  gradeBlock, starsForNBack, adaptiveNextN, isNbackLevelUnlocked, nbLevelKey,
+  nbStreams, emptyNbStats, nbBestN, nbSetBestN,
   loadNbackProfile, saveNbackProfile, mergeNbackChallengeRow, compareNbackChallengeRows,
 } from './nbackData';
 
@@ -24,17 +25,24 @@ const UI = {
     hubNodeFreeHint: 'Adaptive — N rises with your accuracy',
     hubNodeLevelsHint: '100 levels · fixed N, faster pace',
     hubNodeChallengeHint: 'Same stream for all · pick a difficulty',
-    pickDiff: 'Choose difficulty', pickDiffSub: 'Tap MATCH when the object repeats from N steps back.',
+    pickDiff: 'Choose difficulty', pickDiffSub: 'Tap PLACE or OBJECT when that stream repeats from N steps back.',
     diffDesc: { easy: '1–2 back · slower pace.', medium: '2–3 back · medium pace.', hard: '3–4 back · fast pace.' },
     levelsSub: (pop) => `${pop} · ${NB_LEVELS_PER_TIER} levels`,
     levelHeader: (diff, lv) => `${NB_DM[diff]?.label ?? diff} · L${lv}`,
-    nBadge: (n) => `${n}-back`, match: 'MATCH', prompt: 'Same as N back?',
+    nBadge: (n) => `${n}-back`,
+    matchObj: 'OBJECT', matchPos: 'PLACE', promptDual: 'Repeat from N back?',
+    dualNote: 'Dual N-Back — track the place AND the object at the same time.',
+    dprimeObj: 'd′ object', dprimePos: 'd′ place',
     getReady: 'Get ready…', trial: (i, tot) => `${i} / ${tot}`,
     resultsPass: 'Level passed!', resultsFail: 'Not quite — try again',
     accuracy: 'Accuracy', dprime: 'd′', hits: 'Hits', misses: 'Misses', false: 'False taps', stars: 'Stars',
     nextLv: 'Next level', retry: 'Retry', menu: 'Menu', again: 'Play again',
-    freeTitle: 'Survival mode', blockDone: 'Block complete', nextN: (n) => `Next: ${n}-back`,
+    freeTitle: 'Survival mode', blockDone: 'Block complete', nextN: (n) => `Continue · ${n}-back ›`,
     best: (n) => `Best: ${n}-back`,
+    readyN: (n) => `${n}-back`,
+    popKick: { up: 'Level up!', down: 'Easing off', hold: 'Next round' },
+    popSub: { up: 'You aced it — one step harder.', down: 'Let’s drop back a step.', hold: 'Keep your streak going.' },
+    popAcc: (a) => `Last round: ${a}%`, popCont: (n) => `Continue · ${n}-back ›`, popEnd: 'End run',
     challengeTitle: 'Pass n Play', challengeSub: 'Same object stream for everyone · pass the device',
     chalPickDiff: 'Difficulty', players: 'Players (2–10)', addPl: '＋ Add player', startCh: '⚔️ Start',
     needTwo: 'Add at least 2 players.', chalRounds: 'Rounds', chalRoundsHint: 'Each player plays once per round',
@@ -50,17 +58,24 @@ const UI = {
     hubNodeFreeHint: 'تكيّفي — يرتفع N مع دقّتك',
     hubNodeLevelsHint: '١٠٠ مستوى · N ثابت وإيقاع أسرع',
     hubNodeChallengeHint: 'نفس التدفّق للجميع · اختر الصعوبة',
-    pickDiff: 'اختر الصعوبة', pickDiffSub: 'اضغط «تطابق» عندما يتكرّر الشيء من قبل N خطوات.',
+    pickDiff: 'اختر الصعوبة', pickDiffSub: 'اضغط «المكان» أو «الشيء» عندما يتكرّر ذلك التدفّق من قبل N خطوات.',
     diffDesc: { easy: '١–٢ عودة · إيقاع أبطأ.', medium: '٢–٣ عودة · إيقاع متوسط.', hard: '٣–٤ عودة · إيقاع سريع.' },
     levelsSub: (pop) => `${pop} · ${NB_LEVELS_PER_TIER} مستوى`,
     levelHeader: (diff, lv) => `${NB_DM[diff]?.label ?? diff} · ${lv}`,
-    nBadge: (n) => `${n}-عودة`, match: 'تطابق', prompt: 'مثل قبل N؟',
+    nBadge: (n) => `${n}-عودة`,
+    matchObj: 'الشيء', matchPos: 'المكان', promptDual: 'تكرّر قبل N؟',
+    dualNote: 'العودة-N المزدوجة — تابع المكان والشيء في آنٍ واحد.',
+    dprimeObj: 'd′ شيء', dprimePos: 'd′ مكان',
     getReady: 'استعد…', trial: (i, tot) => `${i} / ${tot}`,
     resultsPass: 'اجتزت المستوى!', resultsFail: 'ليس بعد — حاول مجدداً',
     accuracy: 'الدقّة', dprime: 'd′', hits: 'إصابات', misses: 'فوات', false: 'ضغطات خاطئة', stars: 'نجوم',
     nextLv: 'المستوى التالي', retry: 'إعادة', menu: 'القائمة', again: 'العب مجدداً',
-    freeTitle: 'وضع البقاء', blockDone: 'انتهت الجولة', nextN: (n) => `التالي: ${n}-عودة`,
+    freeTitle: 'وضع البقاء', blockDone: 'انتهت الجولة', nextN: (n) => `متابعة · ${n}-عودة ›`,
     best: (n) => `الأفضل: ${n}-عودة`,
+    readyN: (n) => `${n}-عودة`,
+    popKick: { up: 'ترقية!', down: 'تخفيف', hold: 'الجولة التالية' },
+    popSub: { up: 'أتقنتها — درجة أصعب.', down: 'لنعُد خطوة إلى الوراء.', hold: 'واصل سلسلتك.' },
+    popAcc: (a) => `الجولة السابقة: ${a}%`, popCont: (n) => `متابعة · ${n}-عودة ›`, popEnd: 'إنهاء',
     challengeTitle: 'مرّر والعب', challengeSub: 'نفس التدفّق للجميع · مرّر الجهاز',
     chalPickDiff: 'الصعوبة', players: 'اللاعبون (2–10)', addPl: '＋ إضافة لاعب', startCh: '⚔️ ابدأ',
     needTwo: 'أضف لاعبين على الأقل.', chalRounds: 'الجولات', chalRoundsHint: 'كل لاعب يلعب مرة في الجولة',
@@ -82,16 +97,17 @@ export default function NBackGame({ onBack }) {
 
   const [profile, setProfile] = useState(() => loadNbackProfile());
   const [phase, setPhase] = useState('hub');
+  const variant = 'dual'; // single professional game: dual n-back (position + object)
   const [diffKey, setDiffKey] = useState('easy');
   const [block, setBlock] = useState(null);
   const [playStep, setPlayStep] = useState('idle'); // 'ready' | 'run'
-  const [cur, setCur] = useState(null);
+  const [cur, setCur] = useState(null); // { obj, pos }
   const [showStim, setShowStim] = useState(false);
   const [idx, setIdx] = useState(-1);
-  const [responded, setResponded] = useState(false);
-  const [feedback, setFeedback] = useState(null);
+  const [resp, setResp] = useState({ obj: false, pos: false });
+  const [feedback, setFeedback] = useState({ obj: null, pos: null });
   const [result, setResult] = useState(null);
-  const [freeN, setFreeN] = useState(2);
+  const [levelInfo, setLevelInfo] = useState(null); // survival between-block popup: { dir, prevN, nextN, acc }
 
   // challenge
   const [chalNames, setChalNames] = useState(['Player 1', 'Player 2']);
@@ -105,8 +121,8 @@ export default function NBackGame({ onBack }) {
 
   const blockRef = useRef(null);
   const idxRef = useRef(-1);
-  const respondedRef = useRef(false);
-  const statsRef = useRef({ hit: 0, miss: 0, fa: 0, cr: 0 });
+  const respRef = useRef({ obj: false, pos: false });
+  const statsRef = useRef(emptyNbStats());
   const timersRef = useRef([]);
   const trialLogRef = useRef(null);
   const chalIdxRef = useRef(0);
@@ -128,18 +144,27 @@ export default function NBackGame({ onBack }) {
     const b = blockRef.current; if (!b) return;
     const n = b.spec.n;
     if (i < n) return;
-    const isTarget = b.seq[i] === b.seq[i - n];
-    const did = respondedRef.current;
+    const streams = nbStreams(b.spec.variant);
     const s = statsRef.current;
-    if (isTarget) (did ? s.hit++ : s.miss++); else (did ? s.fa++ : s.cr++);
-    trialLogRef.current?.trial({ ok: isTarget === did, target: isTarget, resp: did, n });
+    const r = respRef.current;
+    const step = b.seq[i]; const prior = b.seq[i - n];
+    const log = { n, variant: b.spec.variant };
+    streams.forEach((k) => {
+      const isTarget = step[k] === prior[k];
+      const did = r[k];
+      const ss = s[k];
+      if (isTarget) (did ? ss.hit++ : ss.miss++); else (did ? ss.fa++ : ss.cr++);
+      log[k] = { target: isTarget, resp: did, ok: isTarget === did };
+    });
+    trialLogRef.current?.trial(log);
   }, []);
 
   const finishBlock = useCallback(() => {
     clearTimers();
     const b = blockRef.current; if (!b) return;
-    const grade = gradeBlock(statsRef.current);
+    const grade = gradeBlock(statsRef.current, b.spec.variant);
     const n = b.spec.n;
+    const vr = b.spec.variant;
 
     if (b.mode === 'challenge') {
       const i = chalIdxRef.current;
@@ -153,7 +178,7 @@ export default function NBackGame({ onBack }) {
       const cycle = chalCycleRef.current;
       if (cycle + 1 < chalRoundsTotalRef.current) {
         chalCycleRef.current = cycle + 1; setChalRoundIdx(cycle + 1);
-        setChalSeed(prepareChallengeSeed(chalDiffRef.current));
+        setChalSeed(prepareChallengeSeed(chalDiffRef.current, vr));
         setChalIdx(0); chalIdxRef.current = 0; setChalTurnOpen(true); return;
       }
       setResult({ type: 'challenge', rows: [...base].sort(compareNbackChallengeRows) });
@@ -164,9 +189,15 @@ export default function NBackGame({ onBack }) {
       trialLogRef.current?.finish({ score: grade.acc, n }); trialLogRef.current = null;
       awardFreeRun?.('nback', Math.max(0, n - 1));
       const nextN = adaptiveNextN(n, grade.acc);
-      setProfile((prev) => { const best = Math.max(prev.bestN ?? 1, grade.acc >= 70 ? n : 0); if (best === (prev.bestN ?? 1)) return prev; const nx = { ...prev, bestN: best }; saveNbackProfile(nx); return nx; });
-      setResult({ type: 'free', ...grade, n, nextN });
-      setBlock(null); blockRef.current = null; setPlayStep('idle'); setPhase('freeRes'); return;
+      playSfx?.(nextN > n ? 'win' : 'click');
+      if (grade.acc >= 70) setProfile((prev) => {
+        const cur = nbBestN(prev, vr);
+        if (n <= cur) return prev;
+        const nx = { ...prev, bestN: nbSetBestN(prev, vr, n) }; saveNbackProfile(nx); return nx;
+      });
+      setBlock(null); blockRef.current = null; setPlayStep('idle');
+      setLevelInfo({ dir: nextN > n ? 'up' : nextN < n ? 'down' : 'hold', prevN: n, nextN, acc: grade.acc });
+      return;
     }
 
     // level
@@ -175,17 +206,17 @@ export default function NBackGame({ onBack }) {
     trialLogRef.current?.finish({ won, score: grade.acc, n }); trialLogRef.current = null;
     if (won) {
       awardTrainingWin('nback', b.spec.diff, b.spec.lv, NB_LEVELS_PER_TIER);
-      setProfile((prev) => { const nx = { ...prev, done: { ...(prev.done || {}), [`${b.spec.diff}-${b.spec.lv}`]: true } }; saveNbackProfile(nx); return nx; });
+      setProfile((prev) => { const nx = { ...prev, done: { ...(prev.done || {}), [nbLevelKey(vr, b.spec.diff, b.spec.lv)]: true } }; saveNbackProfile(nx); return nx; });
     }
     setResult({ type: 'level', won, stars, ...grade, n, diff: b.spec.diff, lv: b.spec.lv });
     setBlock(null); blockRef.current = null; setPlayStep('idle'); setPhase('res');
-  }, [awardFreeRun, awardTrainingWin, clearTimers]);
+  }, [awardFreeRun, awardTrainingWin, clearTimers, playSfx]);
 
   const runTrial = useCallback((i) => {
     const b = blockRef.current; if (!b) return;
     if (i >= b.seq.length) { finishBlock(); return; }
     idxRef.current = i; setIdx(i);
-    respondedRef.current = false; setResponded(false); setFeedback(null);
+    respRef.current = { obj: false, pos: false }; setResp({ obj: false, pos: false }); setFeedback({ obj: null, pos: null });
     setCur(b.seq[i]); setShowStim(true);
     timersRef.current.push(setTimeout(() => setShowStim(false), b.spec.stimMs));
     timersRef.current.push(setTimeout(() => { scoreTrial(i); runTrial(i + 1); }, b.spec.stimMs + b.spec.isiMs));
@@ -194,40 +225,45 @@ export default function NBackGame({ onBack }) {
   const beginBlock = useCallback((b) => {
     clearTimers();
     blockRef.current = b; setBlock(b);
-    statsRef.current = { hit: 0, miss: 0, fa: 0, cr: 0 };
-    idxRef.current = -1; setIdx(-1); setCur(null); setShowStim(false); setResponded(false); setFeedback(null);
+    statsRef.current = emptyNbStats();
+    idxRef.current = -1; setIdx(-1); setCur(null); setShowStim(false);
+    respRef.current = { obj: false, pos: false }; setResp({ obj: false, pos: false }); setFeedback({ obj: null, pos: null });
     trialLogRef.current?.discard();
-    trialLogRef.current = createTrialLog({ game: 'nback', mode: b.mode, meta: { n: b.spec.n, diff: b.spec.diff, lv: b.spec.lv } });
+    trialLogRef.current = createTrialLog({ game: 'nback', mode: b.mode, meta: { n: b.spec.n, diff: b.spec.diff, lv: b.spec.lv, variant: b.spec.variant } });
     setResult(null); setPhase('play'); setPlayStep('ready');
     timersRef.current.push(setTimeout(() => { setPlayStep('run'); runTrial(0); }, STEP_GET_READY_MS));
   }, [clearTimers, runTrial]);
   useEffect(() => { beginBlockRef.current = beginBlock; }, [beginBlock]);
 
-  const onMatch = useCallback(() => {
-    if (playStep !== 'run' || respondedRef.current || idxRef.current < 0) return;
-    respondedRef.current = true; setResponded(true);
-    const b = blockRef.current; const i = idxRef.current; const n = b.spec.n;
-    const isTarget = i >= n && b.seq[i] === b.seq[i - n];
-    setFeedback(isTarget ? 'good' : 'bad');
+  const onRespond = useCallback((stream) => {
+    if (playStep !== 'run' || idxRef.current < 0) return;
+    const b = blockRef.current; if (!b) return;
+    if (!nbStreams(b.spec.variant).includes(stream)) return;
+    if (respRef.current[stream]) return;
+    respRef.current = { ...respRef.current, [stream]: true };
+    setResp((p) => ({ ...p, [stream]: true }));
+    const i = idxRef.current; const n = b.spec.n;
+    const isTarget = i >= n && b.seq[i][stream] === b.seq[i - n][stream];
+    setFeedback((p) => ({ ...p, [stream]: isTarget ? 'good' : 'bad' }));
     playSfx(isTarget ? 'correct' : 'wrong');
   }, [playStep, playSfx]);
 
   const quitPlay = useCallback(() => {
+    const mode = blockRef.current?.mode; // capture before clearing the ref
     clearTimers(); trialLogRef.current?.discard(); trialLogRef.current = null;
     setBlock(null); blockRef.current = null; setPlayStep('idle');
-    const mode = blockRef.current?.mode;
     if (mode === 'challenge') setPhase('chal'); else if (mode === 'level') setPhase('levels'); else setPhase('hub');
   }, [clearTimers]);
 
-  const startLevel = (diff, lv) => beginBlock(prepareLevelBlock(diff, lv, rngSeed()));
-  const startFree = (n) => beginBlock(prepareFreeBlock(n, rngSeed()));
+  const startLevel = (diff, lv) => beginBlock(prepareLevelBlock(diff, lv, rngSeed(), variant));
+  const startFree = (n) => beginBlock(prepareFreeBlock(n, rngSeed(), variant));
 
   const openChallenge = () => {
     const names = chalNames.map((s, i) => s.trim() || `Player ${i + 1}`);
     if (names.length < 2) { window.alert(t.needTwo); return; }
     setChalNames(names); chalNamesRef.current = names;
     chalRoundsTotalRef.current = chalRoundsTotal; chalDiffRef.current = chalDiff; chalCycleRef.current = 0;
-    setChalRoundIdx(0); setChalSeed(prepareChallengeSeed(chalDiff)); setChalIdx(0); chalIdxRef.current = 0;
+    setChalRoundIdx(0); setChalSeed(prepareChallengeSeed(chalDiff, variant)); setChalIdx(0); chalIdxRef.current = 0;
     chalScoresRef.current = names.map((nm) => ({ nm, rounds: [], avgAcc: 0 })); setChalScores(chalScoresRef.current);
     setChalTurnOpen(true); setPhase('play'); setPlayStep('idle'); setBlock(null);
   };
@@ -259,7 +295,7 @@ export default function NBackGame({ onBack }) {
       )}
 
       {phase === 'freeIntro' && (
-        <SurvivalIntro isAr={isAr} playSfx={playSfx} onReady={() => startFree(Math.max(2, profile.bestN ?? 2))} onBack={() => setPhase('hub')} />
+        <SurvivalIntro isAr={isAr} playSfx={playSfx} onReady={() => startFree(1)} onBack={() => setPhase('hub')} />
       )}
 
       {phase === 'diff' && (
@@ -271,9 +307,9 @@ export default function NBackGame({ onBack }) {
       {phase === 'levels' && (
         <TrainingLevelGrid isAr={isAr} playSfx={playSfx} onBack={() => setPhase('diff')}
           title={NB_DM[diffKey].label} blurb={t.levelsSub(NB_DM[diffKey].pop)} count={NB_LEVELS_PER_TIER} lvc={NB_DM[diffKey].lvc}
-          isUnlocked={(lv) => isNbackLevelUnlocked(diffKey, lv, doneMap)}
-          isDone={(lv) => !!doneMap[`${diffKey}-${lv}`]}
-          sublabel={(lv) => `${specForLevel(diffKey, lv).n}-back`}
+          isUnlocked={(lv) => isNbackLevelUnlocked(variant, diffKey, lv, doneMap)}
+          isDone={(lv) => !!doneMap[nbLevelKey(variant, diffKey, lv)]}
+          sublabel={(lv) => `${specForLevel(diffKey, lv, variant).n}-back`}
           onPick={(lv) => startLevel(diffKey, lv)} />
       )}
 
@@ -318,12 +354,26 @@ export default function NBackGame({ onBack }) {
       {phase === 'play' && block && (
         <div className="ct-ms-play">
           <TrainingPlayHeader isAr={isAr} title={t.hub} subtitle={headerSub()} playSfx={playSfx} onMenu={quitPlay} onPause={null} />
-          <div className="ct-nb-stage">
-            <div className={`ct-nb-card${showStim ? ' ct-nb-card--on' : ''}${feedback ? ` ct-nb-card--${feedback}` : ''}`}>
-              {playStep === 'run' && showStim && cur ? <MemoObject objectId={cur} isAr={isAr} size="lg" /> : <span className="ct-nb-card-dot" aria-hidden="true">{playStep === 'ready' ? '…' : '·'}</span>}
+          <div className="ct-nb-stage ct-nb-stage--dual">
+            <div className="ct-nb-grid" aria-hidden="true">
+              {Array.from({ length: NB_GRID }).map((_, ci) => {
+                const on = playStep === 'run' && showStim && cur && cur.pos === ci;
+                return (
+                  <div key={ci} className={`ct-nb-cell${on ? ' ct-nb-cell--on' : ''}`}>
+                    {on && cur ? <MemoObject objectId={cur.obj} isAr={isAr} size="sm" /> : null}
+                  </div>
+                );
+              })}
             </div>
-            <p className="ct-nb-prompt">{playStep === 'ready' ? t.getReady : t.prompt}</p>
-            <button type="button" className={`ct-nb-match${responded ? ' ct-nb-match--done' : ''}`} onPointerDown={onMatch} disabled={responded || playStep !== 'run'}>{t.match}</button>
+            <p className="ct-nb-prompt">{playStep === 'ready' ? `${t.readyN(block.spec.n)} · ${t.getReady}` : t.promptDual}</p>
+            <div className="ct-nb-btnrow">
+              <button type="button" className={`ct-nb-match ct-nb-match--pos${resp.pos ? ' ct-nb-match--done' : ''}${feedback.pos ? ` ct-nb-match--${feedback.pos}` : ''}`} onPointerDown={() => onRespond('pos')} disabled={resp.pos || playStep !== 'run'}>
+                <span className="ct-nb-match-ic" aria-hidden="true">▦</span>{t.matchPos}
+              </button>
+              <button type="button" className={`ct-nb-match ct-nb-match--obj${resp.obj ? ' ct-nb-match--done' : ''}${feedback.obj ? ` ct-nb-match--${feedback.obj}` : ''}`} onPointerDown={() => onRespond('obj')} disabled={resp.obj || playStep !== 'run'}>
+                <span className="ct-nb-match-ic" aria-hidden="true">◆</span>{t.matchObj}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -336,9 +386,18 @@ export default function NBackGame({ onBack }) {
             <div className="ct-fq-sbig">{result.acc}%</div>
             <div className="ct-fq-ies-lbl">{t.accuracy} · {t.nBadge(result.n)}</div>
             <div className="ct-fq-rm ct-fq-rm-training">
-              <div className="ct-fq-rmi"><div className="ct-fq-rv">{result.dPrime}</div><div className="ct-fq-rl">{t.dprime}</div></div>
+              {result.variant === 'dual' ? (
+                <>
+                  <div className="ct-fq-rmi"><div className="ct-fq-rv">{result.dPrimeObj}</div><div className="ct-fq-rl">{t.dprimeObj}</div></div>
+                  <div className="ct-fq-rmi"><div className="ct-fq-rv">{result.dPrimePos}</div><div className="ct-fq-rl">{t.dprimePos}</div></div>
+                </>
+              ) : (
+                <>
+                  <div className="ct-fq-rmi"><div className="ct-fq-rv">{result.dPrime}</div><div className="ct-fq-rl">{t.dprime}</div></div>
+                  <div className="ct-fq-rmi"><div className="ct-fq-rv">{result.miss}</div><div className="ct-fq-rl">{t.misses}</div></div>
+                </>
+              )}
               <div className="ct-fq-rmi"><div className="ct-fq-rv">{result.hit}</div><div className="ct-fq-rl">{t.hits}</div></div>
-              <div className="ct-fq-rmi"><div className="ct-fq-rv">{result.miss}</div><div className="ct-fq-rl">{t.misses}</div></div>
               <div className="ct-fq-rmi"><div className="ct-fq-rv">{'★'.repeat(result.stars)}{'☆'.repeat(3 - result.stars)}</div><div className="ct-fq-rl">{t.stars}</div></div>
             </div>
             <p className="ct-ms-result-tip">{memoTip(isAr, result.stars + result.acc)}</p>
@@ -347,26 +406,6 @@ export default function NBackGame({ onBack }) {
               {result.won && result.lv < NB_LEVELS_PER_TIER && <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => startLevel(result.diff, result.lv + 1)}>{t.nextLv}</button>}
               <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => setPhase('levels')}>{t.menu}</button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {phase === 'freeRes' && result?.type === 'free' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light ct-ms-shell">
-          <div className="ct-fq-screen ct-fq-training-screen" style={{ textAlign: 'center' }}>
-            <TrainingMenuBar variant="paper" playSfx={playSfx} onBack={() => setPhase('hub')}
-              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.blockDone}</div></div>} />
-            <div className="ct-fq-sbig">{result.acc}%</div>
-            <div className="ct-fq-ies-lbl">{t.accuracy} · {t.nBadge(result.n)}</div>
-            <div className="ct-fq-rm ct-fq-rm-training">
-              <div className="ct-fq-rmi"><div className="ct-fq-rv">{result.dPrime}</div><div className="ct-fq-rl">{t.dprime}</div></div>
-              <div className="ct-fq-rmi"><div className="ct-fq-rv">{result.hit}</div><div className="ct-fq-rl">{t.hits}</div></div>
-              <div className="ct-fq-rmi"><div className="ct-fq-rv">{result.miss}</div><div className="ct-fq-rl">{t.misses}</div></div>
-              <div className="ct-fq-rmi"><div className="ct-fq-rv">{result.fa}</div><div className="ct-fq-rl">{t.false}</div></div>
-            </div>
-            <p className="ct-ms-result-tip">{memoTip(isAr, result.acc)}</p>
-            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => startFree(result.nextN)}>{t.nextN(result.nextN)}</button>
-            <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => setPhase('hub')}>{t.menu}</button>
           </div>
         </div>
       )}
@@ -385,6 +424,19 @@ export default function NBackGame({ onBack }) {
             ))}
             <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { setChalSeed(null); setChalTurnOpen(false); setPhase('chal'); }}>{t.newCh}</button>
             <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => setPhase('hub')}>{t.menu}</button>
+          </div>
+        </div>
+      )}
+
+      {levelInfo && (
+        <div className="ct-nb-popup-backdrop">
+          <div className="ct-nb-popup">
+            <div className={`ct-nb-popup-kicker ct-nb-popup-kicker--${levelInfo.dir}`}>{t.popKick[levelInfo.dir]}</div>
+            <div className="ct-nb-popup-n">{t.nBadge(levelInfo.nextN)}</div>
+            <div className="ct-nb-popup-sub">{t.popSub[levelInfo.dir]}</div>
+            <div className="ct-nb-popup-acc">{t.popAcc(levelInfo.acc)}</div>
+            <button type="button" className="ct-nb-popup-btn" onClick={() => { playSfx?.('click'); const nx = levelInfo.nextN; setLevelInfo(null); startFree(nx); }}>{t.popCont(levelInfo.nextN)}</button>
+            <button type="button" className="ct-nb-popup-end" onClick={() => { playSfx?.('click'); setLevelInfo(null); setPhase('hub'); }}>{t.popEnd}</button>
           </div>
         </div>
       )}

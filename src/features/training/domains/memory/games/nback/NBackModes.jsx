@@ -10,6 +10,7 @@ export default function NBackModes({ t, isAr, onFree, onLevels, onChallenge, pla
   ];
   return (
     <>
+      <p className="ct-nb-dual-note">{t.dualNote}</p>
       <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />
       <HubScienceLink gameId="nback" isAr={isAr} playSfx={playSfx} />
     </>

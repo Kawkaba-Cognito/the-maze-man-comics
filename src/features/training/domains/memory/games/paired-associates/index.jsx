@@ -42,6 +42,14 @@ function rr(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+function drawSym(ctx, sym, x, y, sz, color) {
+  ctx.fillStyle = color;
+  ctx.font = `${Math.round(sz * 0.5)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(sym, x, y + 1);
+}
+
 function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 3) : 0;
@@ -54,7 +62,7 @@ function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
   const cueOrderRef = useRef([]);     // [{ boxIdx, symbol }] shuffled for recall
   const cueIdxRef = useRef(0);
   const openRef = useRef(-1);         // box open during study
-  const flashRef = useRef({ idx: -1, kind: '', until: 0 });
+  const flashRef = useRef({ until: 0, correctIdx: -1, wrongIdx: -1, symbol: '' });
   const subRef = useRef('study');     // study | recall | feedback
   const correctRef = useRef(0);
   const totalRef = useRef(0);
@@ -102,21 +110,39 @@ function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
       const s = boxSize();
       const now = performance.now();
       const fb = flashRef.current;
+      const flashing = now < fb.until;
       const sub = subRef.current;
       boxesRef.current.forEach((b, i) => {
         const x = b.fx * w, y = b.fy * h;
         const open = sub === 'study' && openRef.current === i;
-        rr(ctx, x - s / 2, y - s / 2, s, s, 12);
-        ctx.fillStyle = open ? '#e9f3ff' : '#1b2940';
+        const isCorrect = flashing && fb.correctIdx === i;
+        const isWrong = flashing && fb.wrongIdx === i;
+        const active = open || isCorrect || isWrong;
+        const sz = s * (active ? 1.07 : 1);
+        const half = sz / 2;
+        // chunky drop shadow (matches the app's board look)
+        rr(ctx, x - half + 4, y - half + 5, sz, sz, 13);
+        ctx.fillStyle = 'rgba(26,18,8,0.9)';
         ctx.fill();
-        let border = open ? '#ffce4a' : '#6fa6df';
-        let lw = open ? 5 : 3;
-        if (now < fb.until && fb.idx === i) { border = fb.kind === 'good' ? '#3be086' : '#ff5a5a'; lw = 6; }
+        // face
+        let fill = '#f2e6cf';                 // closed = paper
+        if (open) fill = '#fff6df';           // revealing = warm glow
+        if (isCorrect) fill = '#d7f2e0';
+        if (isWrong) fill = '#f8ddd9';
+        rr(ctx, x - half, y - half, sz, sz, 13);
+        ctx.fillStyle = fill;
+        ctx.fill();
+        // border
+        let border = '#1a1208'; let lw = 3;
+        if (open) { border = '#c8971f'; lw = 4; }
+        if (isCorrect) { border = '#2e8b57'; lw = 5; }
+        if (isWrong) { border = '#d23b3b'; lw = 5; }
         ctx.lineWidth = lw; ctx.strokeStyle = border; ctx.stroke();
         // contents
-        if (open && b.symbol) { ctx.fillStyle = '#1b2940'; ctx.font = `${Math.round(s * 0.5)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(b.symbol, x, y + 1); }
-        else if (now < fb.until && fb.idx === i && fb.symbol) { ctx.fillStyle = fb.kind === 'good' ? '#3be086' : '#ff8a8a'; ctx.font = `${Math.round(s * 0.5)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(fb.symbol, x, y + 1); }
-        else if (sub !== 'study') { ctx.fillStyle = 'rgba(159,198,239,0.5)'; ctx.font = `${Math.round(s * 0.42)}px Outfit, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('?', x, y + 1); }
+        if (open && b.symbol) drawSym(ctx, b.symbol, x, y, sz, '#3a2c18');
+        else if (isCorrect && fb.symbol) drawSym(ctx, fb.symbol, x, y, sz, '#2e8b57');
+        else if (isWrong) drawSym(ctx, '✕', x, y, sz, '#d23b3b');
+        else if (sub !== 'study') { ctx.fillStyle = 'rgba(90,74,50,0.4)'; ctx.font = `${Math.round(sz * 0.42)}px Outfit, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('?', x, y + 1); }
       });
     }
     rafRef.current = requestAnimationFrame(draw);
@@ -223,13 +249,13 @@ function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
     if (hit < 0) return;
     const cur = cueOrderRef.current[cueIdxRef.current];
     const ok = hit === cur.boxIdx;
-    if (ok) { correctRef.current += 1; playSfx?.('click'); flashRef.current = { idx: hit, kind: 'good', symbol: cur.symbol, until: performance.now() + 450 }; }
-    else { playSfx?.('lose'); flashRef.current = { idx: cur.boxIdx, kind: 'good', symbol: cur.symbol, until: performance.now() + 600 }; }
+    if (ok) { correctRef.current += 1; playSfx?.('correct'); flashRef.current = { until: performance.now() + 500, correctIdx: hit, wrongIdx: -1, symbol: cur.symbol }; }
+    else { playSfx?.('wrong'); flashRef.current = { until: performance.now() + 800, correctIdx: cur.boxIdx, wrongIdx: hit, symbol: cur.symbol }; }
     cueIdxRef.current += 1;
     subRef.current = 'feedback';
     setCue('');
     clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(presentCue, ok ? 380 : 650);
+    timerRef.current = setTimeout(presentCue, ok ? 450 : 850);
   }, [boxSize, playSfx, presentCue]);
 
   useEffect(() => {
@@ -248,7 +274,7 @@ function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
       <header className="ct-training-play-header">
         <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title">{isAr ? 'الأزواج المترابطة' : 'Paired Associates'}</div>
+          <div className="ct-training-play-title">{isAr ? 'مطابقة الأزواج' : 'Pair Match'}</div>
           <div className="ct-training-play-sub">{hud}{mode === 'levels' ? ` · ${score}` : ''}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
@@ -271,7 +297,7 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
     <ModeShell
       storageKey="mm_mem_pal"
       scienceId="paired-associates"
-      title={{ en: 'Paired Associates', ar: 'الأزواج المترابطة' }}
+      title={{ en: 'Pair Match', ar: 'مطابقة الأزواج' }}
       hints={{
         free: { en: 'Endless practice — pairs grow', ar: 'تدريب مفتوح — تزداد الأزواج' },
         levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
@@ -292,8 +318,8 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
 
 const styles = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
-  cueRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '10px 0 2px', fontSize: 15, fontWeight: 700, color: '#5a4a32', minHeight: 40 },
-  cueSym: { fontSize: 32, lineHeight: 1, color: '#c8651a' },
-  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: '#fffdf8', overflow: 'hidden', border: '1.5px solid #e3d6c4', boxShadow: 'inset 0 2px 10px rgba(120,90,40,0.06)', touchAction: 'none' },
+  cueRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '12px 0 4px', fontSize: 15, fontWeight: 800, color: '#5a4a32', minHeight: 44 },
+  cueSym: { fontSize: 30, lineHeight: 1, color: '#3a2c18', width: 54, height: 54, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#fff6df', border: '2.5px solid #1a1208', borderRadius: 13, boxShadow: '3px 3px 0 #1a1208' },
+  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 20, background: 'linear-gradient(180deg,#fffdf8,#fbf3e6)', overflow: 'hidden', border: '2px solid #e3d6c4', boxShadow: 'inset 0 2px 12px rgba(120,90,40,0.07)', touchAction: 'none' },
   canvas: { display: 'block', width: '100%', height: '100%' },
 };

@@ -154,26 +154,26 @@ const STEPS = {
   },
   nback: {
     en: [
-      { title: 'N steps back', body: 'Objects stream one at a time. N-Back means: tap MATCH when the current item is the same as the one from N steps ago.', icon: '🔄' },
-      { title: 'When to tap', body: 'If N=2, compare to two items back. Only tap when they match — silence when they don\'t.', icon: '👆', pills: ['Match → tap MATCH', 'No match → wait'] },
-      { title: 'Accuracy matters', body: 'Hits, misses, and false taps all count. Survival raises N as you improve.', icon: '📊', note: READY_NOTE.en },
+      { title: 'Dual N-Back', body: 'An object lights up in one cell of a 3×3 grid, one step at a time. You track two things at once: the place it lands and the object itself.', icon: '🔳' },
+      { title: 'Two buttons', body: 'Tap PLACE when the cell is the same as N steps back. Tap OBJECT when the object is the same as N back. Each stream is judged on its own.', icon: '👆', pills: ['Same place → PLACE', 'Same object → OBJECT'] },
+      { title: 'Accuracy matters', body: 'Hits, misses and false taps count for each stream. Survival raises N as you improve.', icon: '📊', note: READY_NOTE.en },
     ],
     ar: [
-      { title: 'N خطوات للوراء', body: 'العناصر تتتابع واحداً تلو الآخر. N-Back: اضغط مطابقة عندما يطابق العنصر الحالي ما قبل N خطوات.', icon: '🔄' },
-      { title: 'متى تضغط', body: 'إذا N=٢، قارن بعنصرين للوراء. اضغط فقط عند التطابق — انتظر عند عدمه.', icon: '👆', pills: ['تطابق ← اضغط مطابقة', 'لا تطابق ← انتظر'] },
-      { title: 'الدقة مهمة', body: 'الإصابات والإخفاقات والضغط الخاطئ تُحسب. البقاء يرفع N كلما تحسّنت.', icon: '📊', note: READY_NOTE.ar },
+      { title: 'العودة-N المزدوجة', body: 'يضيء شيء في خانة من شبكة ٣×٣، خطوةً خطوة. تتابع أمرين معاً: مكان ظهوره والشيء نفسه.', icon: '🔳' },
+      { title: 'زرّان', body: 'اضغط «المكان» عندما تكون الخانة مثل قبل N خطوات، و«الشيء» عندما يكون الشيء مثل قبل N. يُحسب كل تدفّق على حدة.', icon: '👆', pills: ['نفس المكان ← المكان', 'نفس الشيء ← الشيء'] },
+      { title: 'الدقة مهمة', body: 'الإصابات والإخفاقات والضغط الخاطئ تُحسب لكل تدفّق. البقاء يرفع N كلما تحسّنت.', icon: '📊', note: READY_NOTE.ar },
     ],
   },
   'paired-associates': {
     en: [
-      { title: 'Learn the pairs', body: 'Each round shows pairs (e.g. 🍎 → 🔴). Study them — you\'ll need to recall them.', icon: '📚' },
-      { title: 'Recall the match', body: 'One item appears; pick its partner from the choices. Wrong picks cost points.', icon: '🧩' },
-      { title: 'More pairs, harder recall', body: 'Levels add pairs and shrink study time. Pass n Play uses the same board for everyone.', icon: '🏆', note: READY_NOTE.en },
+      { title: 'Watch the boxes', body: 'The boxes open one at a time to reveal a symbol hidden inside. Remember what was where.', icon: '📦' },
+      { title: 'Find the symbol', body: 'Then a symbol appears — tap the box it was hiding in. Green = right; red marks a miss and shows the real spot.', icon: '👆', pills: ['Right → green', 'Wrong → red'] },
+      { title: 'More pairs, less time', body: 'Get them all right and more symbols are added. Levels add boxes and shorten the study time.', icon: '🏆', note: READY_NOTE.en },
     ],
     ar: [
-      { title: 'احفظ الأزواج', body: 'كل جولة تعرض أزواجاً (مثلاً 🍎 ← 🔴). ادرسها — ستحتاج تذكّرها.', icon: '📚' },
-      { title: 'تذكّر الشريك', body: 'يظهر عنصر واحد؛ اختر شريكه من الخيارات. الخطأ يكلّف نقاطاً.', icon: '🧩' },
-      { title: 'أزواج أكثر', body: 'المستويات تضيف أزواجاً وتقلّل وقت الدراسة. مرّر والعب يستخدم نفس اللوحة للجميع.', icon: '🏆', note: READY_NOTE.ar },
+      { title: 'راقب الصناديق', body: 'تُفتح الصناديق واحداً تلو الآخر لتكشف رمزاً مخبّأً في داخلها. تذكّر ما كان وأين.', icon: '📦' },
+      { title: 'جد الرمز', body: 'ثم يظهر رمز — اضغط الصندوق الذي كان مختبئاً فيه. أخضر = صحيح؛ الأحمر يشير إلى الخطأ ويُظهر مكانه الحقيقي.', icon: '👆', pills: ['صحيح ← أخضر', 'خطأ ← أحمر'] },
+      { title: 'أزواج أكثر ووقت أقل', body: 'إذا أصبتها كلها تُضاف رموز أكثر. المستويات تزيد الصناديق وتقصّر وقت الحفظ.', icon: '🏆', note: READY_NOTE.ar },
     ],
   },
   wordle: {
