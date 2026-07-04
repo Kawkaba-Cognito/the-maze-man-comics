@@ -502,23 +502,25 @@ export const GAME_SCIENCE = {
   'detective': {
     en: {
       title: 'The science',
-      intro: 'Detective is deductive reasoning in action — combining clues to eliminate possibilities until only one answer can be true. It mirrors how scientists and logicians narrow a hypothesis.',
+      intro: 'Detective is deductive reasoning in action — you gather evidence at the scene, cross-check each suspect’s story against what you can SEE, and eliminate possibilities until only one answer can be true.',
       sections: [
-        { h: '🔎 Deduction & elimination', b: 'Each clue is a constraint. Crossing out suspects that violate it is logical elimination — the same process behind formal deduction and everyday problem-solving.' },
-        { h: '🧠 Working memory + logic', b: 'You hold several clues in mind at once and combine them, leaning on the prefrontal cortex networks for reasoning and rule integration.' },
+        { h: '🔎 Deduction & elimination', b: 'Each piece of evidence is a constraint. Crossing out suspects that violate it is logical elimination — the same process behind formal deduction and everyday problem-solving.' },
+        { h: '🎭 Contradiction detection', b: 'On harder cases the culprit lies: their alibi clashes with their own appearance. Spotting a statement that contradicts observable facts is a core critical-thinking skill.' },
+        { h: '🧠 Working memory + logic', b: 'You hold several clues in mind at once and combine them, leaning on prefrontal cortex networks for reasoning and rule integration. The notebook lets you offload and organise, like a real investigator.' },
         { h: '🎯 Hypothesis testing', b: 'Treating each suspect as a hypothesis and checking it against every clue trains careful, evidence-based thinking instead of guessing.' },
       ],
-      foot: 'Use every clue: the answer is the only suspect that survives all of them — guessing early throws away information.',
+      foot: 'Find every clue before accusing: the culprit is the only suspect that survives all of them — and the only one whose story doesn’t add up.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: '«المحقّق» استدلال استنباطي عملي — تجمع الأدلة لتستبعد الاحتمالات حتى يبقى جواب واحد ممكن. يحاكي كيف يضيّق العلماء والمنطقيون الفرضية.',
+      intro: '«المحقّق» استدلال استنباطي عملي — تجمع الأدلة من مكان الجريمة، وتقارن رواية كل مشتبه بما تراه بعينيك، وتستبعد الاحتمالات حتى يبقى جواب واحد ممكن.',
       sections: [
         { h: '🔎 الاستنباط والاستبعاد', b: 'كل دليل قيد. شطب المشتبهين الذين يخالفونه هو استبعاد منطقي — العملية نفسها وراء الاستدلال الصوري وحل المشكلات اليومي.' },
-        { h: '🧠 الذاكرة العاملة والمنطق', b: 'تحتفظ بعدة أدلة في ذهنك معاً وتجمعها، معتمداً على شبكات القشرة الجبهية للاستدلال ودمج القواعد.' },
+        { h: '🎭 كشف التناقض', b: 'في القضايا الأصعب يكذب الفاعل: روايته تناقض مظهره. اكتشاف قولٍ يناقض الوقائع المرئية مهارة أساسية في التفكير النقدي.' },
+        { h: '🧠 الذاكرة العاملة والمنطق', b: 'تحتفظ بعدة أدلة في ذهنك معاً وتجمعها، معتمداً على شبكات القشرة الجبهية للاستدلال ودمج القواعد. والدفتر يساعدك على التنظيم كمحقّق حقيقي.' },
         { h: '🎯 اختبار الفرضيات', b: 'معاملة كل مشتبه كفرضية تختبرها أمام كل دليل تدرّب التفكير القائم على الأدلة بدل التخمين.' },
       ],
-      foot: 'استخدم كل دليل: الجواب هو المشتبه الوحيد الذي ينجو منها جميعاً — التخمين المبكر يهدر المعلومات.',
+      foot: 'اعثر على كل الأدلة قبل الاتهام: الفاعل هو الوحيد الذي تنطبق عليه جميعها — والوحيد الذي لا تستقيم روايته.',
     },
   },
   'trivia': {

@@ -19,7 +19,7 @@ import PersonCharacter from '../../../../../character/PersonCharacter';
  * Shared 3-mode flow (Survival / Levels / Pass n Play). Seeded → deterministic
  * (Pass-n-Play players rebuild the same story).
  *
- * Cast: Kawkab, Star, Noor (fox), Rami (boy), Lola (girl).
+ * Cast: Kawkab, Star, Noor (fox), Ramy (boy), Lola (girl).
  * Self-contained: inline styles, CSS keyframes only, no image assets.
  */
 
@@ -156,7 +156,7 @@ export const CHARS = [
   { id: 'kawkab', en: 'Kawkab', ar: 'كوكب' },
   { id: 'star', en: 'Star', ar: 'ستار' },
   { id: 'noor', en: 'Noor', ar: 'نور' },
-  { id: 'rami', en: 'Rami', ar: 'رامي' },
+  { id: 'rami', en: 'Ramy', ar: 'رامي' },
   { id: 'lola', en: 'Lola', ar: 'لولا' },
 ];
 
@@ -395,7 +395,7 @@ const STORIES = [
     { bg: 'street', who: ['lola', 'rami', 'noor'], action: 'find', narr: { en: 'So they chased the giggling breeze past flapping laundry and spinning weather-vanes, until {L} finally cornered it in a chimney.', ar: 'فطاردوا النسيم الضاحك بين الغسيل المرفرف ودوّارات الرياح، حتى حاصرته {L} أخيراً في مدخنة.' }, say: { en: 'Gotcha, sneaky draft!', ar: 'أمسكتك أيها النسيم المتسلّل!' } },
     { bg: 'garden', who: ['rami', 'noor'], action: 'cheer', item: { e: '🪁', sky: true }, narr: { en: '{N} coaxed the wind back home, and — whoosh! — {R}’s kite leapt up and danced high above the rooftops.', ar: 'أعادت {N} الريح إلى بيتها، و— هووش! — قفزت طائرة {R} عالياً ترقص فوق السطوح.' }, say: { en: 'Best day ever!', ar: 'أفضل يوم على الإطلاق!' } },
   ] },
-  { id: 'runaway-shadow', fixed: true, title: { en: 'Rami’s Runaway Shadow', ar: 'ظلّ رامي الهارب' }, beats: [
+  { id: 'runaway-shadow', fixed: true, title: { en: 'Ramy’s Runaway Shadow', ar: 'ظلّ رامي الهارب' }, beats: [
     { bg: 'park', who: ['lola', 'rami'], action: 'play', narr: { en: 'On a bright afternoon, {R} watched his own shadow yawn, stretch, then peel right off the ground and scamper away!', ar: 'في عصرٍ مشرق، شاهد {R} ظلّه يتثاءب، ويتمطّى، ثم ينسلخ عن الأرض ويهرب راكضاً!' }, say: { en: 'Hey — come back!', ar: 'مهلاً — عُد إلى هنا!' } },
     { bg: 'park', who: ['rami', 'noor'], action: 'greet', narr: { en: '{N} trotted over, quite unsurprised — bored shadows wander off all the time, she said, especially the playful ones.', ar: 'جاءت {N} مهرولةً غير مندهشة — فالظلال المملّة تهيم كثيراً، كما قالت، خاصةً المرحة منها.' }, say: { en: 'Yours is a real trickster!', ar: 'ظلّك مشاغبٌ حقيقي!' } },
     { bg: 'street', who: ['lola', 'rami', 'noor'], action: 'find', narr: { en: 'They chased its dark, dancing shape as it slid up walls and swung from lampposts, having the time of its life.', ar: 'طاردوا شكله الداكن الراقص وهو ينزلق على الجدران ويتأرجح من الأعمدة، مستمتعاً بوقته.' }, say: { en: 'It’s faster than you, {R}!', ar: 'إنه أسرع منك يا {R}!' } },
@@ -522,7 +522,7 @@ const STORIES = [
   ] },
 
   // ── 6 acts (hard) ──
-  // Fixed cast: Lola (girl), her little brother Rami (boy), and Noor (magical fox).
+  // Fixed cast: Lola (girl), her little brother Ramy (boy), and Noor (magical fox).
   { id: 'lost-moon', fixed: true, title: { en: 'The Lost Moon', ar: 'القمر الضائع' }, beats: [
     { bg: 'garden', who: ['lola', 'rami'], action: 'find', item: '🌿', narr: { en: 'In the garden, {L} caught her little brother {R} whispering secrets to a bush — and the bush sneezed!', ar: 'في الحديقة، ضبطت {L} أخاها الصغير {R} يهمس بأسرارٍ لشجيرة — فعطست الشجيرة!' }, say: { en: 'It’s not what it looks like…', ar: 'الأمر ليس كما يبدو…' } },
     { bg: 'garden', who: ['rami', 'noor'], action: 'greet', narr: { en: 'Out stepped {N}, a fox with a paintbrush tail, who had lost the little moon she keeps inside it.', ar: 'فخرجت {N}، ثعلبةٌ بذيلٍ كالفرشاة، وقد أضاعت القمر الصغير الذي تحمله في ذيلها.' }, say: { en: 'Night won’t start without it!', ar: 'لن يبدأ الليل بدونه!' } },
@@ -639,24 +639,33 @@ function survivalCfg(stage) {
 }
 function passCfgFor() { return { len: 5, distract: 2, memo: 36 }; }
 
-// Fewer columns on phones → bigger, clearer panels (5–6 panel stories go 2-wide).
+// Fewer columns on phones → bigger, clearer panels (narrow screens go 2-wide from
+// 3 panels up — a single row of 3 no longer fits once the rebuildCard's own chrome
+// is reserved, see frameSize below).
 const gridCols = (n) => {
   const narrow = typeof window !== 'undefined' && window.innerWidth < 460;
-  if (n <= 3) return Math.min(n, 3);
+  if (n <= 2) return n;
+  if (n === 3) return narrow ? 2 : 3;
   if (n === 4) return 2;
   return narrow ? 2 : 3;
 };
 // Fit rebuild panels to the viewport: bigger cells, fewer columns → larger panels.
+// -28 = S.gameBody's own horizontal padding (14px×2, absorbed into its 100% width);
+// -28 = rebuildCard's padding+border (10px×2 + 2px×2 — NOT absorbed, since the card
+// has no set width, so its chrome adds on top of whatever space gameBody gives it);
+// a few extra px of safety margin round out the reservation.
 function frameSize(cols) {
   const w = typeof window !== 'undefined' ? window.innerWidth : 400;
-  const avail = Math.min(w, 600) - 24;
+  const avail = Math.min(w, 600) - 28 - 28 - 6;
   const cell = (avail - 12 * (cols - 1)) / cols;
   return Math.max(108, Math.min(230, Math.floor(cell)));
 }
 // WATCH panel: as big as the phone allows, reserving room for title/caption/controls.
+// -36 = S.center's own horizontal padding (18px×2); -44 = watchCard's padding+border
+// (20px×2 + 2px×2), same reasoning as frameSize above, plus a few px of safety margin.
 const bigSize = () => {
   if (typeof window === 'undefined') return 320;
-  const byW = window.innerWidth - 26;
+  const byW = window.innerWidth - 36 - 44 - 6;
   const byH = (window.innerHeight - 356) / 0.82;
   return Math.round(Math.max(220, Math.min(380, byW, byH)));
 };
@@ -823,6 +832,7 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
 
   if (!story) return <div style={S.root} dir={isAr ? 'rtl' : 'ltr'} />;
   const fsz = frameSize(gridCols(len));
+  const refSize = Math.round(fsz * 0.74);
   const storyTitle = story.title ? (isAr ? story.title.ar : story.title.en) : '';
   const reveal = phase === 'reveal';
   const selLabel = sel ? (sel.kind === 'erase' ? t.erase : sel.kind === 'bg' ? (isAr ? BACKGROUNDS[sel.id].ar : BACKGROUNDS[sel.id].en) : sel.kind === 'char' ? nameOf(sel.id) : `${actEmoji(sel.id)} ${actWord(sel.id)}`) : '';
@@ -845,19 +855,21 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
         const g = story.target[watchIdx];
         return (
           <div style={S.center}>
-            {storyTitle && <div style={S.storyTitle}>📖 {storyTitle}</div>}
-            <div style={{ ...S.timerChip, ...(timeLeft <= 5 ? S.timerLow : null) }}>⏱ {timeLeft}s · {t.watchTag}</div>
-            <div style={{ position: 'relative' }}>
-              <span style={S.badge}>{watchIdx + 1}</span>
-              <PanelStage panel={g} size={bigSize()} say={resolveSay(g)} />
-            </div>
-            <div key={watchIdx} style={S.watchCap}>{resolveNarr(g) || `${t.seq(watchIdx, len)} ${narrate(g)}`}</div>
-            <div style={S.watchNav}>
-              <button type="button" aria-label={t.prev} style={{ ...S.navArrow, ...(watchIdx === 0 ? S.navOff : null) }} disabled={watchIdx === 0} onClick={() => { playSfx?.('click'); setWatchIdx((w) => Math.max(0, w - 1)); }}>‹</button>
-              <div style={S.dots}>{story.target.map((_, i) => (
-                <button key={i} type="button" aria-label={`${i + 1}`} style={{ ...S.dot, ...(i === watchIdx ? S.dotOn : null) }} onClick={() => { playSfx?.('click'); setWatchIdx(i); }} />
-              ))}</div>
-              <button type="button" aria-label={t.next} style={{ ...S.navArrow, ...(watchIdx >= len - 1 ? S.navOff : null) }} disabled={watchIdx >= len - 1} onClick={() => { playSfx?.('click'); setWatchIdx((w) => Math.min(len - 1, w + 1)); }}>›</button>
+            <div style={S.watchCard}>
+              {storyTitle && <div style={S.storyTitle}>📖 {storyTitle}</div>}
+              <div style={{ ...S.timerChip, ...(timeLeft <= 5 ? S.timerLow : null) }}>⏱ {timeLeft}s · {t.watchTag}</div>
+              <div style={{ position: 'relative' }}>
+                <span style={S.badge}>{watchIdx + 1}</span>
+                <PanelStage panel={g} size={bigSize()} say={resolveSay(g)} />
+              </div>
+              <div key={watchIdx} style={S.watchCap}>{resolveNarr(g) || `${t.seq(watchIdx, len)} ${narrate(g)}`}</div>
+              <div style={S.watchNav}>
+                <button type="button" aria-label={t.prev} style={{ ...S.navArrow, ...(watchIdx === 0 ? S.navOff : null) }} disabled={watchIdx === 0} onClick={() => { playSfx?.('click'); setWatchIdx((w) => Math.max(0, w - 1)); }}>‹</button>
+                <div style={S.dots}>{story.target.map((_, i) => (
+                  <button key={i} type="button" aria-label={`${i + 1}`} style={{ ...S.dot, ...(i === watchIdx ? S.dotOn : null) }} onClick={() => { playSfx?.('click'); setWatchIdx(i); }} />
+                ))}</div>
+                <button type="button" aria-label={t.next} style={{ ...S.navArrow, ...(watchIdx >= len - 1 ? S.navOff : null) }} disabled={watchIdx >= len - 1} onClick={() => { playSfx?.('click'); setWatchIdx((w) => Math.min(len - 1, w + 1)); }}>›</button>
+              </div>
             </div>
             <button type="button" style={S.primary} onClick={() => { playSfx?.('click'); setPhase('rebuild'); }}>{t.doneMemo}</button>
           </div>
@@ -867,27 +879,26 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
       {/* REBUILD / REVEAL */}
       {(phase === 'rebuild' || phase === 'reveal') && (
         <div style={S.gameBody}>
-          <div style={S.instr}>{reveal ? (result.n === result.m ? t.perfect : t.score(result.n, result.m)) : (hint || (sel ? (sel.kind === 'erase' ? t.erasing : t.placing(selLabel)) : t.selectHint))}</div>
-          <div style={{ ...S.grid, gridTemplateColumns: `repeat(${gridCols(len)}, max-content)` }}>
-            {panels.map((p, i) => {
-              const g = story.target[i];
-              const ok = reveal && p.bg === g.bg && p.action === g.action && sameSet(p.chars, g.chars);
-              const bad = reveal && !ok;
-              return (
-                <div key={i} style={{ position: 'relative' }} onClick={() => { if (!reveal) applyToPanel(i); }}>
-                  <span style={{ ...S.badge, ...(reveal ? { background: ok ? '#2e8b57' : '#d23b3b' } : null) }}>{i + 1}</span>
-                  <div style={{ borderRadius: 16, outline: !reveal && sel ? '3px dashed #b9842f' : ok ? '3px solid #2e8b57' : bad ? '3px solid #d23b3b' : 'none', outlineOffset: 2, cursor: !reveal ? 'pointer' : 'default' }}>
-                    <PanelStage panel={p} size={fsz} />
+          <div style={S.rebuildCard}>
+            <div style={S.instr}>{reveal ? (result.n === result.m ? t.perfect : t.score(result.n, result.m)) : (hint || (sel ? (sel.kind === 'erase' ? t.erasing : t.placing(selLabel)) : t.selectHint))}</div>
+            <div style={{ ...S.grid, gridTemplateColumns: `repeat(${gridCols(len)}, max-content)` }}>
+              {panels.map((p, i) => {
+                const g = story.target[i];
+                const ok = reveal && p.bg === g.bg && p.action === g.action && sameSet(p.chars, g.chars);
+                const bad = reveal && !ok;
+                return (
+                  <div key={i} style={{ position: 'relative' }} onClick={() => { if (!reveal) applyToPanel(i); }}>
+                    <span style={{ ...S.badge, ...(reveal ? { background: ok ? '#2e8b57' : '#d23b3b' } : null) }}>{i + 1}</span>
+                    <div style={{ borderRadius: 16, outline: !reveal && sel ? '3px dashed #b9842f' : ok ? '3px solid #2e8b57' : bad ? '3px solid #d23b3b' : 'none', outlineOffset: 2, cursor: !reveal ? 'pointer' : 'default' }}>
+                      <PanelStage panel={p} size={fsz} />
+                    </div>
+                    {!reveal && p.chars.length > 0 && !p.action && <span style={S.tapPlus}>＋</span>}
                   </div>
-                  {!reveal && p.chars.length > 0 && !p.action && <span style={S.tapPlus}>＋</span>}
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          {reveal && (() => {
-            const refSize = Math.round(fsz * 0.74);
-            return (
+            {reveal && (
               <>
                 <div style={S.storyWas}>{t.storyWas}{storyTitle ? ` “${storyTitle}”` : ''}</div>
                 <div style={{ ...S.grid, rowGap: 6, gridTemplateColumns: `repeat(${gridCols(len)}, max-content)` }}>
@@ -901,10 +912,10 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
                     </div>
                   ))}
                 </div>
-                <button type="button" style={S.primary} onClick={advanceRound}>{t.cont}</button>
               </>
-            );
-          })()}
+            )}
+          </div>
+          {reveal && <button type="button" style={S.primary} onClick={advanceRound}>{t.cont}</button>}
         </div>
       )}
 
@@ -912,45 +923,49 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
       {phase === 'rebuild' && (
         <div style={S.dock}>
           <div style={S.dockHandle} aria-hidden="true" />
-          <div style={S.dockRow}>
-            <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true">📍</span>{t.places}</span>
-            <div style={S.dockChips}>
-              {story.paletteBgs.map((id) => (
-                <button key={id} type="button" style={{ ...S.bgChip, ...(isSel('bg', id) ? S.chipSel : null) }} onClick={() => pickSel('bg', id)}>
-                  <BgSwatch bgId={id} size={54} />
-                </button>
-              ))}
+          <div style={S.dockInner}>
+            <div style={S.dockRow}>
+              <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true">📍</span>{t.places}</span>
+              <div style={S.dockChips}>
+                {story.paletteBgs.map((id) => (
+                  <button key={id} type="button" style={{ ...S.bgChip, ...(isSel('bg', id) ? S.chipSel : null) }} onClick={() => pickSel('bg', id)}>
+                    <BgSwatch bgId={id} size={54} />
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          <div style={S.dockRow}>
-            <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true">🙂</span>{t.characters}</span>
-            <div style={S.dockChips}>
-              {story.paletteChars.map((id) => (
-                <button key={id} type="button" style={{ ...S.charChip, ...(isSel('char', id) ? S.chipSel : null) }} onClick={() => pickSel('char', id)}>
-                  <div style={S.charChipArt}><CharacterArt id={id} size={48} /></div>
-                  <span style={S.chipName}>{nameOf(id)}</span>
-                </button>
-              ))}
+            <div style={S.dockDivider} aria-hidden="true" />
+            <div style={S.dockRow}>
+              <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true">🙂</span>{t.characters}</span>
+              <div style={S.dockChips}>
+                {story.paletteChars.map((id) => (
+                  <button key={id} type="button" style={{ ...S.charChip, ...(isSel('char', id) ? S.chipSel : null) }} onClick={() => pickSel('char', id)}>
+                    <div style={S.charChipArt}><CharacterArt id={id} size={48} /></div>
+                    <span style={S.chipName}>{nameOf(id)}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          <div style={S.dockRow}>
-            <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true">⚡</span>{t.actions}</span>
-            <div style={S.dockChips}>
-              {story.paletteActions.map((id) => (
-                <button key={id} type="button" style={{ ...S.actChip, ...(isSel('action', id) ? S.chipSel : null) }} onClick={() => pickSel('action', id)}>
-                  <span style={{ fontSize: 24, lineHeight: 1 }}>{actEmoji(id)}</span>
-                  <span style={S.chipName}>{actWord(id)}</span>
+            <div style={S.dockDivider} aria-hidden="true" />
+            <div style={S.dockRow}>
+              <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true">⚡</span>{t.actions}</span>
+              <div style={S.dockChips}>
+                {story.paletteActions.map((id) => (
+                  <button key={id} type="button" style={{ ...S.actChip, ...(isSel('action', id) ? S.chipSel : null) }} onClick={() => pickSel('action', id)}>
+                    <span style={{ fontSize: 24, lineHeight: 1 }}>{actEmoji(id)}</span>
+                    <span style={S.chipName}>{actWord(id)}</span>
+                  </button>
+                ))}
+                <button type="button" style={{ ...S.eraseChip, ...(isSel('erase', 'x') ? S.chipSel : null) }} onClick={() => pickSel('erase', 'x')}>
+                  <span style={{ fontSize: 22, lineHeight: 1 }}>🧽</span>
+                  <span style={S.chipName}>{t.erase}</span>
                 </button>
-              ))}
-              <button type="button" style={{ ...S.eraseChip, ...(isSel('erase', 'x') ? S.chipSel : null) }} onClick={() => pickSel('erase', 'x')}>
-                <span style={{ fontSize: 22, lineHeight: 1 }}>🧽</span>
-                <span style={S.chipName}>{t.erase}</span>
-              </button>
+              </div>
             </div>
+            <button type="button" style={{ ...S.checkBtn, ...(allFilled ? null : S.primaryOff) }} disabled={!allFilled} onClick={check}>
+              {allFilled ? t.check : `${t.check} · ${filledCount}/${len}`}
+            </button>
           </div>
-          <button type="button" style={{ ...S.checkBtn, ...(allFilled ? null : S.primaryOff) }} disabled={!allFilled} onClick={check}>
-            {allFilled ? t.check : `${t.check} · ${filledCount}/${len}`}
-          </button>
         </div>
       )}
     </div>
@@ -985,7 +1000,8 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
 
 const S = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
-  center: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 12, padding: '14px 18px 28px', overflowY: 'auto' },
+  center: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 14, padding: '10px 18px 24px', overflowY: 'auto' },
+  watchCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, background: '#fffdf8', border: '2px solid #e3d6c4', borderRadius: 22, padding: '18px 20px 20px', maxWidth: '100%', boxShadow: '4px 4px 0 rgba(26,18,8,0.1)' },
   storyTitle: { fontFamily: "'Bangers', 'Outfit', system-ui, sans-serif", fontSize: 24, letterSpacing: 0.5, color: '#3a2c18', textAlign: 'center', lineHeight: 1.1, padding: '0 8px', textShadow: '1px 1px 0 rgba(255,255,255,0.6)' },
   watchCap: { fontWeight: 700, fontSize: 15, color: '#4a3c28', textAlign: 'center', animation: 'sg-bubble 0.4s ease-out', minHeight: 44, width: '100%', maxWidth: 380, lineHeight: 1.42, padding: '0 8px', overflowWrap: 'break-word', flexShrink: 0 },
   timerChip: { fontWeight: 900, fontSize: 14, color: '#7a5a1e', background: '#fff1d8', border: '2px solid #e3c489', borderRadius: 999, padding: '4px 14px' },
@@ -996,16 +1012,18 @@ const S = {
   dots: { display: 'flex', gap: 7, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 220 },
   dot: { width: 11, height: 11, borderRadius: '50%', border: 'none', background: '#d8cab4', cursor: 'pointer', padding: 0, transition: 'transform 0.12s, background 0.12s' },
   dotOn: { background: '#b9842f', transform: 'scale(1.4)' },
-  gameBody: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 10, padding: '10px 14px 16px', overflowY: 'auto' },
-  instr: { fontWeight: 800, fontSize: 13.5, color: '#5a4a32', textAlign: 'center', padding: '7px 16px', background: '#fffdf8', border: '2px solid #ece2d2', borderRadius: 999, boxShadow: '2px 2px 0 rgba(26,18,8,0.07)', maxWidth: '94%' },
+  gameBody: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 12, padding: '10px 14px 16px', overflowY: 'auto' },
+  rebuildCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, background: '#fffdf8', border: '2px solid #e3d6c4', borderRadius: 22, padding: '16px 10px 18px', maxWidth: '100%', boxShadow: '4px 4px 0 rgba(26,18,8,0.1)' },
+  instr: { fontWeight: 800, fontSize: 13.5, color: '#5a4a32', textAlign: 'center', padding: '7px 16px', background: '#fff8ec', border: '2px solid #e3c489', borderRadius: 999, maxWidth: '94%' },
   grid: { display: 'grid', gap: 14, justifyContent: 'center', justifyItems: 'center' },
   refCap: { fontSize: 10.5, fontWeight: 700, color: '#6a5a40', textAlign: 'center', lineHeight: 1.25, marginTop: 3, padding: '0 2px', overflowWrap: 'break-word' },
   badge: { position: 'absolute', top: -8, insetInlineStart: -8, zIndex: 2, width: 22, height: 22, borderRadius: '50%', background: '#b9842f', color: '#fff', fontWeight: 900, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fffdf8' },
   tapPlus: { position: 'absolute', bottom: 4, insetInlineEnd: 4, width: 22, height: 22, borderRadius: '50%', background: '#2e8b57', color: '#fff', fontWeight: 900, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fffdf8', pointerEvents: 'none' },
   storyWas: { fontWeight: 800, fontSize: 13, color: '#2e8b57', marginTop: 6 },
   // press-to-place board (builder tray)
-  dock: { flex: '0 0 auto', background: 'linear-gradient(180deg,#fffdf8 0%,#fff6ea 100%)', borderTop: '2px solid #e3d6c4', borderRadius: '20px 20px 0 0', padding: '6px 14px max(12px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 9, boxShadow: '0 -6px 20px rgba(26,18,8,0.1)' },
+  dock: { flex: '0 0 auto', background: 'linear-gradient(180deg,#fffdf8 0%,#fff6ea 100%)', borderTop: '2px solid #e3d6c4', borderRadius: '20px 20px 0 0', padding: '6px 14px max(12px, env(safe-area-inset-bottom))', boxShadow: '0 -6px 20px rgba(26,18,8,0.1)' },
   dockHandle: { width: 44, height: 5, borderRadius: 999, background: '#e3d6c4', margin: '0 auto 2px' },
+  dockInner: { width: '100%', maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 9 },
   dockRow: { display: 'flex', alignItems: 'center', gap: 10 },
   dockLabel: { flex: '0 0 66px', display: 'flex', alignItems: 'center', gap: 3, fontSize: 10.5, fontWeight: 900, color: '#7a6a52', textTransform: 'uppercase', letterSpacing: 0.4 },
   dockIcon: { fontSize: 14, lineHeight: 1 },
