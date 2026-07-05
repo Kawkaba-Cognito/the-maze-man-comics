@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import BreathePractice from './BreathePractice';
 import GroundingPractice from './GroundingPractice';
@@ -7,7 +7,7 @@ import SoundBathPractice from './SoundBathPractice';
 import NatureSoundsPractice from './NatureSoundsPractice';
 
 /*
- * Relaxation — 8-Week MBSR Tracker (the app's calm pillar).
+ * Wellbeing — 8-Week MBSR Tracker (lives under the Stress & Calm category).
  *
  * A guided, secular Mindfulness-Based Stress Reduction program: a daily practice
  * with a timer, an 8-week calendar, and a reference guide. Restyled to the app's
@@ -480,8 +480,10 @@ const CSS = `
 .rx-root .go-btn { background:#efe6d6; color:#7a5a1e; border:none; border-radius:10px; padding:12px 24px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
 `;
 
-/* ── Relaxation landing menu — pick a practice ── */
-const RELAX_OPTIONS = [
+/* ── Wellbeing landing — practices grouped into categories ── */
+// The practice registry (each opens a full-screen practice). Categories below
+// reference these by id; a practice may appear in more than one category.
+const RELAX_PRACTICES = [
   { id: 'mbsr', icon: '🧘', color: '#c47a3e',
     title: '8-Week MBSR', titleAr: 'اليقظة الذهنية — ٨ أسابيع',
     sub: 'Mindfulness-Based Stress Reduction — a guided daily practice with a timer, an 8-week tracker and a full guide.',
@@ -508,7 +510,283 @@ const RELAX_OPTIONS = [
     subAr: 'اخلط المطر والمحيط والرياح والنار في أجواء تهدّئك.' },
 ];
 
-function RelaxMenu({ isAr, onHome, onOpen }) {
+// Five wellbeing categories. `items` lists practice ids; `soon` marks a category
+// whose practices are still to come (with a teaser of what's planned).
+const CATEGORIES = [
+  { id: 'calm', icon: '🌿', color: '#5aa07a',
+    title: 'Stress & Calm', titleAr: 'التوتر والهدوء',
+    tag: 'Settle your body and mind in the moment.', tagAr: 'هدّئ جسدك وعقلك في اللحظة.',
+    items: ['breathe', 'grounding', 'soundbath', 'nature', 'mbsr'] },
+  { id: 'sleep', icon: '🌙', color: '#7b86c8',
+    title: 'Sleep', titleAr: 'النوم',
+    tag: 'Wind down and drift off.', tagAr: 'استرخِ واغفُ بسلام.',
+    items: ['pmr', 'breathe', 'soundbath', 'nature'],
+    programSoon: 'A guided wind-down sleep program is coming soon.',
+    programSoonAr: 'برنامج نوم موجّه للاسترخاء — قريباً.' },
+  { id: 'meaning', icon: '✨', color: '#c9a24b',
+    title: 'Meaning', titleAr: 'المعنى',
+    tag: 'Values, gratitude and purpose.', tagAr: 'القيم والامتنان والغاية.',
+    soon: 'Values reflection, a gratitude journal and purpose prompts.',
+    soonAr: 'تأمّلٌ في قيمك، ودفتر امتنان، ومحفّزات للغاية والمعنى.' },
+  { id: 'relationships', icon: '❤️', color: '#c86f8f',
+    title: 'Relationships', titleAr: 'العلاقات',
+    tag: 'Kindness and connection.', tagAr: 'اللطف والتواصل.',
+    soon: 'A loving-kindness meditation and appreciation practices.',
+    soonAr: 'تأمّل المحبّة اللطيفة وممارسات التقدير والتواصل.' },
+  { id: 'personality', icon: '🧭', color: '#c47a3e',
+    title: 'Personality', titleAr: 'الشخصية',
+    tag: 'Get to know yourself.', tagAr: 'تعرّف على نفسك.',
+    soon: 'A Big Five personality profile with plain-language insights.',
+    soonAr: 'ملفّ شخصيتك وفق العوامل الخمسة الكبرى مع رؤى مبسّطة.' },
+];
+
+// Which practices are structured, multi-session PROGRAMS (vs quick, single-use).
+const PROGRAM_IDS = new Set(['mbsr']);
+
+// ── favourites + custom order (persisted) ──────────────────────────────────
+const FAV_KEY = 'rx_favorites';   // array of practice ids (also the favourites order)
+const ORDER_KEY = 'rx_order';     // { [listKey]: [ids…] } custom order per list
+const rxLoad = (k, fallback) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch { return fallback; } };
+const rxSave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage blocked */ } };
+// Order a base id-list by a saved order: saved ids first (still present), then any new ones.
+const applyOrder = (baseIds, saved) => {
+  if (!saved || !saved.length) return baseIds;
+  const present = new Set(baseIds);
+  const ordered = saved.filter((id) => present.has(id));
+  const seen = new Set(ordered);
+  return [...ordered, ...baseIds.filter((id) => !seen.has(id))];
+};
+
+/*
+ * ReorderList — press-and-hold to lift a card, drag to move it, release to drop.
+ * A quick tap passes straight through to the card's own click. Slots are measured
+ * at drag start (fixed), so items of slightly different heights still land right.
+ * Touch scrolling is preserved until a hold activates a drag.
+ */
+function ReorderList({ items, disabled, onCommit, children }) {
+  const [drag, setDrag] = useState(null); // { origin, target, dy }
+  const wrapRef = useRef(null);
+  const slots = useRef([]);
+  const holdT = useRef(null);
+  const startY = useRef(0);
+  const pid = useRef(null);
+  const draggedRef = useRef(false); // true from a drag's activation until the next press
+  const n = items.length;
+
+  // While dragging, block native scrolling regardless of touch-action.
+  useEffect(() => {
+    if (!drag) return undefined;
+    const prevent = (e) => e.preventDefault();
+    document.addEventListener('touchmove', prevent, { passive: false });
+    return () => document.removeEventListener('touchmove', prevent);
+  }, [drag]);
+
+  // Where a non-dragged item (at origIdx) sits once the dragged item moves origin→target.
+  const displayIndex = (origIdx, origin, target) => {
+    if (origIdx === origin) return target;
+    if (origin < target) return (origIdx > origin && origIdx <= target) ? origIdx - 1 : origIdx;
+    return (origIdx >= target && origIdx < origin) ? origIdx + 1 : origIdx;
+  };
+
+  const cancelHold = () => { if (holdT.current) { clearTimeout(holdT.current); holdT.current = null; } };
+
+  const onDown = (e, index) => {
+    if (disabled || n < 2) return;
+    if (e.button != null && e.button !== 0) return;
+    draggedRef.current = false;
+    startY.current = e.clientY;
+    pid.current = e.pointerId;
+    cancelHold();
+    holdT.current = setTimeout(() => {
+      const els = [...wrapRef.current.querySelectorAll('[data-ri]')];
+      slots.current = els.map((el) => { const r = el.getBoundingClientRect(); return { top: r.top, center: r.top + r.height / 2 }; });
+      draggedRef.current = true;
+      setDrag({ origin: index, target: index, dy: 0 });
+      try { els[index].setPointerCapture(pid.current); } catch { /* ignore */ }
+    }, 230);
+  };
+  const onMove = (e) => {
+    if (!drag) {
+      if (holdT.current && Math.abs(e.clientY - startY.current) > 8) cancelHold(); // finger is scrolling
+      return;
+    }
+    const y = e.clientY;
+    let cnt = 0;
+    for (const s of slots.current) if (s.center < y) cnt += 1;
+    const target = Math.max(0, Math.min(n - 1, cnt));
+    setDrag((d) => (d ? { ...d, dy: y - startY.current, target } : d));
+  };
+  const onUp = () => {
+    cancelHold();
+    setDrag((d) => {
+      if (d) {
+        const order = items.map((it) => it.id);
+        const [m] = order.splice(d.origin, 1);
+        order.splice(d.target, 0, m);
+        onCommit(order);
+      }
+      return null;
+    });
+    // draggedRef stays true so the click that follows a drop is swallowed; the next press resets it.
+  };
+
+  return (
+    <div ref={wrapRef} className="rx-rl">
+      {items.map((it, i) => {
+        const isDragged = drag && drag.origin === i;
+        let ty = 0;
+        if (drag) ty = isDragged ? drag.dy : (slots.current[displayIndex(i, drag.origin, drag.target)].top - slots.current[i].top);
+        return (
+          <div
+            key={it.id}
+            data-ri=""
+            className={`rx-rl-item${isDragged ? ' rx-rl-item--drag' : ''}`}
+            style={{ transform: isDragged ? `translateY(${ty}px) scale(1.03)` : `translateY(${ty}px)`, transition: isDragged ? 'none' : 'transform .18s ease', zIndex: isDragged ? 6 : 1, position: 'relative', touchAction: 'pan-y' }}
+            onPointerDown={(e) => onDown(e, i)}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerCancel={onUp}
+          >
+            {children(it, () => draggedRef.current)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const FAV_GOLD = '#d9a520';
+
+function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
+  const [openCat, setOpenCat] = useState(null); // category id, or 'favorites'
+  const [group, setGroup] = useState('program'); // 'program' | 'quick'
+  const [favs, setFavs] = useState(() => rxLoad(FAV_KEY, []));
+  const [orders, setOrders] = useState(() => rxLoad(ORDER_KEY, {}));
+  const favSet = useMemo(() => new Set(favs), [favs]);
+  const byId = (id) => RELAX_PRACTICES.find((p) => p.id === id);
+  const cat = openCat && openCat !== 'favorites' ? CATEGORIES.find((c) => c.id === openCat) : null;
+
+  const toggleFav = (id) => {
+    playSfx?.('click');
+    setFavs((f) => { const nx = f.includes(id) ? f.filter((x) => x !== id) : [...f, id]; rxSave(FAV_KEY, nx); return nx; });
+  };
+  const commitOrder = (key, ids) => {
+    playSfx?.('click');
+    if (key === 'favorites') { setFavs(ids); rxSave(FAV_KEY, ids); return; }
+    setOrders((o) => { const nx = { ...o, [key]: ids }; rxSave(ORDER_KEY, nx); return nx; });
+  };
+
+  // opening a category picks the first non-empty group (Programs, then Quick)
+  const openCategory = (c) => {
+    if (c.items) setGroup(c.items.some((id) => PROGRAM_IDS.has(id)) ? 'program' : 'quick');
+    setOpenCat(c.id);
+  };
+
+  // A practice card: tap opens it, tap the star to (un)favourite. `justDragged`
+  // (from ReorderList) swallows the click that lands right after a drag-drop.
+  const renderCard = (o, justDragged) => {
+    const faved = favSet.has(o.id);
+    return (
+      <div
+        className="rx-menu-card" role="button" tabIndex={0} style={{ borderColor: `${o.color}55` }}
+        onClick={() => { if (justDragged && justDragged()) return; onOpen(o.id); }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(o.id); } }}
+      >
+        <span className="rx-menu-ic" style={{ background: `${o.color}1f` }}>{o.icon}</span>
+        <span className="rx-menu-body">
+          <span className="rx-menu-title">{isAr ? o.titleAr : o.title}</span>
+          <span className="rx-menu-sub">{isAr ? o.subAr : o.sub}</span>
+        </span>
+        <span className="rx-menu-tail">
+          <span
+            className={`rx-fav${faved ? ' on' : ''}`} role="button" tabIndex={0}
+            aria-label={faved ? (isAr ? 'إزالة من المفضّلة' : 'Remove favourite') : (isAr ? 'إضافة إلى المفضّلة' : 'Add favourite')}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); toggleFav(o.id); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleFav(o.id); } }}
+          >{faved ? '★' : '☆'}</span>
+          <span className="rx-menu-chev" style={{ color: o.color }}>{isAr ? '‹' : '›'}</span>
+        </span>
+      </div>
+    );
+  };
+  const list = (items, key) => (
+    <ReorderList items={items} onCommit={(ids) => commitOrder(key, ids)}>
+      {(o, jd) => renderCard(o, jd)}
+    </ReorderList>
+  );
+  const soonState = (emoji, bg, title, desc) => (
+    <div className="rx-soon-empty">
+      <div className="rx-soon-emoji" style={{ background: bg }}>{emoji}</div>
+      <div className="rx-soon-title">{title}</div>
+      <div className="rx-soon-desc">{desc}</div>
+    </div>
+  );
+  const detailHeader = (icon, color, title, tag, onBack) => (
+    <div className="header">
+      <button className="rx-back" onClick={onBack} aria-label="Back">‹</button>
+      <div style={{ paddingInlineStart: 42 }}>
+        <div className="header-sub" style={{ color }}>{isAr ? 'العافية' : 'Wellbeing'}</div>
+        <div className="rx-cat-hd">
+          <span className="rx-cat-ic rx-cat-ic--hd" style={{ background: `${color}22`, color }}>{icon}</span>
+          <span className="header-title serif">{title}</span>
+        </div>
+        <div className="menu-tag">{tag}</div>
+      </div>
+    </div>
+  );
+
+  // ── favourites ──
+  if (openCat === 'favorites') {
+    const favItems = favs.map(byId).filter(Boolean);
+    return (
+      <div className="rx-root" dir={isAr ? 'rtl' : 'ltr'}>
+        <style>{MENU_CSS}</style>
+        <div className="rx-app">
+          {detailHeader('⭐', FAV_GOLD, isAr ? 'المفضّلة' : 'Favorites', favItems.length ? (isAr ? 'اضغط مطوّلاً لإعادة الترتيب.' : 'Press and hold to reorder.') : (isAr ? 'ممارساتك المفضّلة.' : 'Your go-to practices.'), () => setOpenCat(null))}
+          <div className="content">
+            {favItems.length
+              ? list(favItems, 'favorites')
+              : soonState('⭐', '#fdeecb', isAr ? 'لا مفضّلة بعد' : 'No favorites yet', isAr ? 'اضغط على النجمة ☆ في أي ممارسة لإضافتها هنا.' : 'Tap the ☆ star on any practice to add it here.')}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── category detail: Programs / Quick toggle over its practices ──
+  if (cat) {
+    const programs = cat.items ? cat.items.filter((id) => PROGRAM_IDS.has(id)) : [];
+    const quick = cat.items ? cat.items.filter((id) => !PROGRAM_IDS.has(id)) : [];
+    const listKey = `${cat.id}:${group}`;
+    const activeItems = applyOrder(group === 'program' ? programs : quick, orders[listKey]).map(byId).filter(Boolean);
+    const emptyDesc = group === 'program'
+      ? (isAr ? (cat.programSoonAr || 'برنامج موجّه لهذا المجال — قريباً.') : (cat.programSoon || 'A guided program for this area is coming soon.'))
+      : (isAr ? (cat.quickSoonAr || 'ممارسات سريعة — قريباً.') : (cat.quickSoon || 'Quick practices are coming soon.'));
+    return (
+      <div className="rx-root" dir={isAr ? 'rtl' : 'ltr'}>
+        <style>{MENU_CSS}</style>
+        <div className="rx-app">
+          {detailHeader(cat.icon, cat.color, isAr ? cat.titleAr : cat.title, isAr ? cat.tagAr : cat.tag, () => setOpenCat(null))}
+          <div className="content">
+            {cat.items ? (
+              <>
+                <div className="rx-seg" style={{ '--seg': cat.color }}>
+                  <button className={`rx-seg-btn${group === 'program' ? ' on' : ''}`} onClick={() => setGroup('program')}>{isAr ? 'برامج' : 'Programs'}</button>
+                  <button className={`rx-seg-btn${group === 'quick' ? ' on' : ''}`} onClick={() => setGroup('quick')}>{isAr ? 'سريعة' : 'Quick'}</button>
+                </div>
+                {activeItems.length
+                  ? list(activeItems, listKey)
+                  : soonState(group === 'program' ? '🗺️' : '⚡', `${cat.color}1f`, isAr ? 'قريباً' : 'Coming soon', emptyDesc)}
+              </>
+            ) : soonState(cat.icon, `${cat.color}1f`, isAr ? 'قريباً' : 'Coming soon', isAr ? cat.soonAr : cat.soon)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── top level: Favorites tile + the five category tiles ──
   return (
     <div className="rx-root" dir={isAr ? 'rtl' : 'ltr'}>
       <style>{MENU_CSS}</style>
@@ -516,23 +794,37 @@ function RelaxMenu({ isAr, onHome, onOpen }) {
         <div className="header">
           <button className="rx-back" onClick={onHome} aria-label="Back">‹</button>
           <div style={{ paddingInlineStart: 42 }}>
-            <div className="header-sub">{isAr ? 'ركن الهدوء' : 'Calm pillar'}</div>
-            <div className="header-title serif">{isAr ? 'الاسترخاء' : 'Relaxation'}</div>
-            <div className="menu-tag">{isAr ? 'اختر ممارسة.' : 'Choose a practice.'}</div>
+            <div className="header-sub">{isAr ? 'ركن العافية' : 'Wellbeing pillar'}</div>
+            <div className="header-title serif">{isAr ? 'العافية' : 'Wellbeing'}</div>
+            <div className="menu-tag">{isAr ? 'اختر مجالاً.' : 'Choose an area.'}</div>
           </div>
         </div>
         <div className="content">
-          {RELAX_OPTIONS.map((o) => (
-            <button key={o.id} className="rx-menu-card" style={{ borderColor: `${o.color}55` }} onClick={() => onOpen(o.id)}>
-              <span className="rx-menu-ic" style={{ background: `${o.color}1f` }}>{o.icon}</span>
-              <span className="rx-menu-body">
-                <span className="rx-menu-title">{isAr ? o.titleAr : o.title}</span>
-                <span className="rx-menu-sub">{isAr ? o.subAr : o.sub}</span>
+          <button className="rx-cat-tile" style={{ borderColor: `${FAV_GOLD}66` }} onClick={() => { playSfx?.('click'); setOpenCat('favorites'); }}>
+            <span className="rx-cat-ic" style={{ background: '#fdeecb', color: FAV_GOLD }}>⭐</span>
+            <span className="rx-cat-body">
+              <span className="rx-cat-title">{isAr ? 'المفضّلة' : 'Favorites'}</span>
+              <span className="rx-cat-tag">{favs.length ? (isAr ? `${favs.length} ممارسة محفوظة` : `${favs.length} saved practice${favs.length > 1 ? 's' : ''}`) : (isAr ? 'احفظ ممارساتك المفضّلة هنا.' : 'Keep your go-to practices here.')}</span>
+            </span>
+            <span className="rx-cat-meta">
+              {favs.length > 0 && <span className="rx-fav-count">{favs.length}</span>}
+              <span className="rx-menu-chev" style={{ color: FAV_GOLD }}>{isAr ? '‹' : '›'}</span>
+            </span>
+          </button>
+          <div className="rx-cat-divider" aria-hidden="true" />
+          {CATEGORIES.map((c) => (
+            <button key={c.id} className="rx-cat-tile" style={{ borderColor: `${c.color}55` }} onClick={() => openCategory(c)}>
+              <span className="rx-cat-ic" style={{ background: `${c.color}1f`, color: c.color }}>{c.icon}</span>
+              <span className="rx-cat-body">
+                <span className="rx-cat-title">{isAr ? c.titleAr : c.title}</span>
+                <span className="rx-cat-tag">{isAr ? c.tagAr : c.tag}</span>
               </span>
-              <span className="rx-menu-chev" style={{ color: o.color }}>{isAr ? '‹' : '›'}</span>
+              <span className="rx-cat-meta">
+                {c.soon && <span className="rx-soon-badge">{isAr ? 'قريباً' : 'Soon'}</span>}
+                <span className="rx-menu-chev" style={{ color: c.color }}>{isAr ? '‹' : '›'}</span>
+              </span>
             </button>
           ))}
-          <div className="rx-menu-more">{isAr ? 'المزيد من الممارسات قريباً.' : 'More practices coming soon.'}</div>
         </div>
       </div>
     </div>
@@ -554,6 +846,7 @@ export default function RelaxScreen() {
   return (
     <RelaxMenu
       isAr={isAr}
+      playSfx={playSfx}
       onHome={() => { playSfx?.('click'); switchTab('home'); }}
       onOpen={(id) => { playSfx?.('click'); setView(id); }}
     />
@@ -578,4 +871,30 @@ const MENU_CSS = `
 .rx-root .rx-menu-sub { font-size:12.5px; color:${SUB}; line-height:1.5; }
 .rx-root .rx-menu-chev { font-size:28px; font-weight:700; flex-shrink:0; }
 .rx-root .rx-menu-more { text-align:center; font-size:12px; color:${FAINT}; margin-top:6px; }
+.rx-root .rx-cat-tile { display:flex; align-items:center; gap:14px; width:100%; text-align:start; background:${CARD}; border:2px solid ${LINE}; border-radius:16px; padding:16px; margin-bottom:14px; cursor:pointer; font-family:inherit; box-shadow:3px 3px 0 rgba(26,18,8,0.05); transition:transform .1s; }
+.rx-root .rx-cat-tile:active { transform:translateY(1px); }
+.rx-root .rx-cat-ic { width:56px; height:56px; border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0; }
+.rx-root .rx-cat-ic--hd { width:40px; height:40px; border-radius:11px; font-size:22px; }
+.rx-root .rx-cat-body { display:flex; flex-direction:column; gap:3px; flex:1; min-width:0; }
+.rx-root .rx-cat-title { font-family:${SERIF}; font-weight:600; font-size:22px; color:${INK}; line-height:1.1; }
+.rx-root .rx-cat-tag { font-size:12.5px; color:${SUB}; line-height:1.4; }
+.rx-root .rx-cat-meta { display:flex; align-items:center; gap:9px; flex-shrink:0; }
+.rx-root .rx-cat-hd { display:flex; align-items:center; gap:11px; }
+.rx-root .rx-seg { display:flex; gap:5px; background:#f3ece0; border:2px solid ${LINE}; border-radius:13px; padding:4px; margin-bottom:18px; }
+.rx-root .rx-seg-btn { flex:1; padding:10px 0; border:none; background:none; border-radius:9px; font-family:inherit; font-size:13.5px; font-weight:800; color:${SUB}; cursor:pointer; transition:all .15s; }
+.rx-root .rx-seg-btn.on { background:${CARD}; color:var(--seg); box-shadow:0 1px 5px rgba(26,18,8,0.12); }
+.rx-root .rx-soon-badge { flex-shrink:0; font-size:10.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:${GOLD}; background:#fff1d8; border:1.5px solid #e3c489; border-radius:999px; padding:4px 11px; }
+.rx-root .rx-soon-empty { text-align:center; padding:40px 16px; }
+.rx-root .rx-soon-emoji { width:88px; height:88px; border-radius:24px; display:flex; align-items:center; justify-content:center; font-size:44px; margin:0 auto 18px; }
+.rx-root .rx-soon-title { font-family:${SERIF}; font-weight:600; font-size:26px; color:${INK}; margin-bottom:10px; }
+.rx-root .rx-soon-desc { font-size:14px; color:${SUB}; line-height:1.6; max-width:320px; margin:0 auto; }
+.rx-root .rx-menu-tail { display:flex; align-items:center; gap:5px; flex-shrink:0; }
+.rx-root .rx-fav { width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:20px; line-height:1; color:#c9bfa8; cursor:pointer; border-radius:9px; user-select:none; -webkit-user-select:none; transition:transform .12s ease, color .12s ease; }
+.rx-root .rx-fav:active { transform:scale(0.82); }
+.rx-root .rx-fav.on { color:${FAV_GOLD}; }
+.rx-root .rx-fav-count { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#fdeecb; color:${FAV_GOLD}; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.rx-root .rx-cat-divider { height:1px; background:${LINE}; margin:2px 2px 18px; }
+.rx-root .rx-rl { position:relative; }
+.rx-root .rx-rl-item { will-change:transform; }
+.rx-root .rx-rl-item--drag .rx-menu-card { box-shadow:0 12px 26px rgba(26,18,8,0.25); border-color:${GOLD}; cursor:grabbing; }
 `;

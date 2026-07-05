@@ -81,7 +81,7 @@ export default function HomeScreen() {
         {isAr ? 'المتجر' : 'SHOP'}
       </button>
 
-      {/* The outer slot — Relaxation (MBSR). The 3D world now lives in Puzzles. */}
+      {/* The outer slot — Wellbeing (calm, sleep, meaning, relationships, personality). */}
       <div className="home-maze-actions">
         <button
           type="button"
@@ -89,7 +89,7 @@ export default function HomeScreen() {
           style={labelFont}
           onClick={() => handleDoor('relax')}
         >
-          {isAr ? '🌿 الاسترخاء' : '🌿 RELAXATION'}
+          {isAr ? '🌿 العافية' : '🌿 WELLBEING'}
         </button>
       </div>
     </div>
