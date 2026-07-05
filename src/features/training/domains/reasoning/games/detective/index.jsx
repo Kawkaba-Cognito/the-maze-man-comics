@@ -2,21 +2,24 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
-import { RIDDLES, TIER_LISTS } from './cases';
+import { TIER_LISTS } from './cases';
+import { CASE_FILES_BY_TIER } from './caseFiles';
 
 /*
- * Detective — authored deduction riddles (bilingual). Every case is a different
- * story with different logic: physical impossibilities, self-betraying details,
- * statement logic, timeline arithmetic, forensic reasoning.
+ * Detective — two flavours of deductive reasoning:
  *
- * Per case: CASE FILE intro → the dossier (story, established facts, testimony
- * cards — tap any card to pencil-check it while you think) → answer the question
- * → step-by-step deduction chain, whether you were right or wrong.
+ *  LEVELS   → CASE FILES: long, multi-act investigations starring Detective
+ *             Kawkab + a rotating assistant. Prologue → 3 acts, each ending in a
+ *             checkpoint deduction that unlocks the next → epilogue. The notebook
+ *             of established facts carries forward act to act. easy/med/hard pick
+ *             the tier; one case per level. (CaseFileEngine)
  *
- * One hint per case highlights the item that cracks it (costs a point in
- * Survival). Levels: easy=tier 1, medium=tier 2, hard=tier 3, cases in a fixed
- * order per tier. Survival: tiers ramp up, 3 lives, a spoiled case never
- * repeats within the run. Pass n Play: same seeded cases for every player.
+ *  SURVIVAL / PASS-N-PLAY → quick one-shot RIDDLES: read a dossier, answer once,
+ *             get the deduction chain. Fast and escalating. 3 misses out in
+ *             survival; same seeded cases for all in pass-n-play. (RiddleEngine)
+ *
+ * A faint thread — the "Grey Fox" who leaves a folded grey paper fox — runs
+ * through the tier-3 case files and pays off in the final one.
  */
 
 const DET_CSS = `
@@ -43,6 +46,19 @@ const T = {
     next: 'Next case ›', cont: 'Continue',
     overTitle: 'Out of chances!', overSub: (n) => `${n} cases cracked`, again: 'Play again', menu: 'Menu',
     summaryWin: 'Cracked ✓', summaryLose: 'Not cracked',
+    // case files
+    withAssistant: (n) => `with ${n}`,
+    theSuspects: 'The suspects',
+    openCase: '🔍 Open the case file',
+    actLabel: (n, m) => `Act ${n} of ${m}`,
+    notebook: '📓 Case notebook', newTag: 'NEW',
+    right: 'Right! ✓', wrong: 'Not quite…',
+    contInvestigation: 'Continue the investigation ›',
+    seeEnding: '⚖️ Make the accusation ›', toEnding: 'See how it ends ›',
+    epilogueHead: 'Epilogue', finish: 'Finish ›',
+    caughtSummary: (k, m) => `Culprit caught ✓ · ${k}/${m} clues`,
+    missedSummary: (k, m) => `Culprit escaped · ${k}/${m} clues`,
+    clueGot: (k, m) => `${k}/${m} deductions correct`,
   },
   ar: {
     title: 'المحقّق', caseNo: (n) => `القضية رقم ${n}`,
@@ -57,22 +73,285 @@ const T = {
     next: 'قضية تالية ›', cont: 'متابعة',
     overTitle: 'انتهت الفرص!', overSub: (n) => `حُلّت ${n} قضايا`, again: 'العب مجدداً', menu: 'القائمة',
     summaryWin: 'حُلّت ✓', summaryLose: 'لم تُحَل',
+    // case files
+    withAssistant: (n) => `مع ${n}`,
+    theSuspects: 'المشتبه بهم',
+    openCase: '🔍 افتح ملف القضية',
+    actLabel: (n, m) => `الفصل ${n} من ${m}`,
+    notebook: '📓 دفتر القضية', newTag: 'جديد',
+    right: 'صحيح! ✓', wrong: 'ليس تماماً…',
+    contInvestigation: 'تابع التحقيق ›',
+    seeEnding: '⚖️ وجّه الاتهام ›', toEnding: 'شاهد النهاية ›',
+    epilogueHead: 'الخاتمة', finish: 'إنهاء ›',
+    caughtSummary: (k, m) => `أُمسك الفاعل ✓ · ${k}/${m} أدلة`,
+    missedSummary: (k, m) => `أفلت الفاعل · ${k}/${m} أدلة`,
+    clueGot: (k, m) => `${k}/${m} استنتاجات صحيحة`,
   },
 };
 
 const shuffleR = (arr, rng) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const tierForDiff = { easy: 0, med: 1, hard: 2 };
 
-// Survival: shuffled tier 1, then tier 2, then tier 3; afterwards endless
-// reshuffles of the full library (a long run may revisit, a case never repeats
-// until everything has been seen).
-function survivalSeq(rng) {
-  const seq = [...shuffleR(TIER_LISTS[0], rng), ...shuffleR(TIER_LISTS[1], rng), ...shuffleR(TIER_LISTS[2], rng)];
-  for (let i = 0; i < 6; i++) seq.push(...shuffleR(RIDDLES, rng));
-  return seq;
+// ══════════════════════════════════════════════════════════════════════════
+// CASE FILE ENGINE — multi-act investigations (LEVELS mode)
+// ══════════════════════════════════════════════════════════════════════════
+function CaseFileEngine({ diff, level, seed, onResult, onExit, isAr, playSfx, awardPoints }) {
+  const t = isAr ? T.ar : T.en;
+  const L = (o) => (o ? (isAr ? o.ar : o.en) : '');
+
+  const cf = useMemo(() => {
+    const list = CASE_FILES_BY_TIER[tierForDiff[diff] ?? 1];
+    return list[((level || 1) - 1) % list.length];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [diff, level, seed]);
+  const acts = cf.acts;
+  const lastIdx = acts.length - 1;
+
+  const resultsRef = useRef([]);
+  const [phase, setPhase] = useState('prologue'); // prologue | act | verdict | epilogue
+  const [actIdx, setActIdx] = useState(0);
+  const [checked, setChecked] = useState(() => new Set());
+  const [hinted, setHinted] = useState(false);
+  const [picked, setPicked] = useState(null);
+  const [lastOk, setLastOk] = useState(false);
+
+  useEffect(() => {
+    resultsRef.current = [];
+    setPhase('prologue'); setActIdx(0); setChecked(new Set()); setHinted(false); setPicked(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed, level, diff]);
+
+  const act = acts[actIdx];
+
+  // notebook: every fact established up to and including the current act
+  const notebook = useMemo(() => {
+    const out = [];
+    for (let a = 0; a <= actIdx; a++) for (let i = 0; i < acts[a].facts.length; i++) out.push({ a, i, fact: acts[a].facts[i], isNew: a === actIdx });
+    return out;
+  }, [acts, actIdx]);
+
+  const toggleCheck = (k) => { playSfx?.('click'); setChecked((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; }); };
+  const useHint = () => { if (hinted) return; playSfx?.('click'); setHinted(true); };
+  const glowFact = (a, i) => hinted && act.key.in === 'facts' && act.key.i === i && a === actIdx;
+  const glowWit = (i) => hinted && act.key.in === 'wits' && act.key.i === i;
+
+  const confirmAct = () => {
+    const ok = picked === act.answer;
+    resultsRef.current[actIdx] = ok;
+    setLastOk(ok);
+    setPhase('verdict');
+    playSfx?.(ok ? 'win' : 'error');
+  };
+
+  const afterVerdict = () => {
+    playSfx?.('click');
+    if (actIdx < lastIdx) {
+      setActIdx((i) => i + 1); setPicked(null); setHinted(false); setPhase('act');
+    } else {
+      setPhase('epilogue');
+    }
+  };
+
+  const finish = () => {
+    playSfx?.('click');
+    const results = resultsRef.current;
+    const correct = results.filter(Boolean).length;
+    const caught = results[lastIdx] === true;
+    if (caught || correct > 0) awardPoints?.(correct * 2 + (caught ? 4 : 0));
+    onResult({ won: caught, score: correct, summary: caught ? t.caughtSummary(correct, acts.length) : t.missedSummary(correct, acts.length) });
+  };
+
+  const answerOpt = act ? act.options.find((o) => o.id === act.answer) : null;
+  const sub = phase === 'act' || phase === 'verdict'
+    ? `${isAr ? `مستوى ${level}` : `Level ${level}`} · ${t.actLabel(actIdx + 1, acts.length)}`
+    : (isAr ? `مستوى ${level}` : `Level ${level}`);
+
+  return (
+    <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+      <style>{DET_CSS}</style>
+      <header className="ct-training-play-header">
+        <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        <div className="ct-training-play-header-body">
+          <div className="ct-training-play-title">{`🕵️ ${t.title}`}</div>
+          <div className="ct-training-play-sub">{sub}</div>
+        </div>
+        <div className="ct-training-chrome-spacer" aria-hidden="true" />
+      </header>
+
+      {/* ── PROLOGUE ── */}
+      {phase === 'prologue' && (
+        <div style={S.body}>
+          <div style={S.fileCard}>
+            <div style={S.stamp}>{t.introStamp}</div>
+            <div style={{ fontSize: 52, textAlign: 'center', marginTop: 6 }}>{cf.e}</div>
+            <h2 style={S.caseTitle}>{L(cf.title)}</h2>
+            <div style={S.assistantChip}>{cf.assistant.e} {t.withAssistant(L(cf.assistant.name))}</div>
+            <p style={S.setup}>{L(cf.prologue)}</p>
+            <div style={S.sectionHead}>{t.theSuspects}</div>
+            <div style={S.suspectGrid}>
+              {cf.suspects.map((s, i) => (
+                <div key={i} style={S.suspectCard}>
+                  <span style={S.suspectEmoji}>{s.e}</span>
+                  <span style={S.suspectName}>{L(s.name)}</span>
+                  <span style={S.suspectDesc}>{L(s.desc)}</span>
+                </div>
+              ))}
+            </div>
+            <button type="button" style={{ ...S.primary, alignSelf: 'center', marginTop: 8 }} onClick={() => { playSfx?.('click'); setPhase('act'); }}>{t.openCase}</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── ACT (investigation + checkpoint) ── */}
+      {phase === 'act' && (
+        <div style={S.body}>
+          <div style={S.actHead}>{t.actLabel(actIdx + 1, acts.length)} · {L(act.title)}</div>
+          <p style={S.intro}>{L(act.story)}</p>
+
+          <div style={S.sectionHead}>{t.notebook}</div>
+          {notebook.map(({ a, i, fact, isNew }) => {
+            const k = `f${a}_${i}`;
+            return (
+              <button key={k} type="button" onClick={() => toggleCheck(k)}
+                style={{ ...S.card, ...(checked.has(k) ? S.cardChecked : null), ...(glowFact(a, i) ? S.cardGlow : null) }}>
+                <span style={S.cardRow}>
+                  <span style={{ fontSize: 18, flexShrink: 0 }}>{fact.e}</span>
+                  <span style={S.factTxt}>{L(fact)}</span>
+                </span>
+                {isNew && <span style={S.newTag}>{t.newTag}</span>}
+                {checked.has(k) && <span style={S.checkMark}>✔</span>}
+              </button>
+            );
+          })}
+
+          {act.wits.length > 0 && <div style={S.sectionHead}>{t.testimony}</div>}
+          {act.wits.map((w, i) => {
+            const k = `w${actIdx}_${i}`;
+            return (
+              <button key={k} type="button" onClick={() => toggleCheck(k)}
+                style={{ ...S.card, ...(checked.has(k) ? S.cardChecked : null), ...(glowWit(i) ? S.cardGlow : null) }}>
+                <span style={S.cardRow}>
+                  <span style={{ fontSize: 24, flexShrink: 0 }}>{w.e}</span>
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, textAlign: 'start' }}>
+                    <span style={S.witName}>{L(w.name)}</span>
+                    <span style={S.witTxt}>{L(w)}</span>
+                  </span>
+                </span>
+                {checked.has(k) && <span style={S.checkMark}>✔</span>}
+              </button>
+            );
+          })}
+
+          <div style={S.tapNote}>{t.tapNote}</div>
+
+          <div style={S.qBox}>
+            <div style={S.qHead}>{t.theQ}</div>
+            <div style={S.qTxt}>{L(act.q)}</div>
+          </div>
+
+          <button type="button" style={{ ...S.hintBtn, opacity: hinted ? 0.55 : 1 }} onClick={useHint} disabled={hinted}>
+            {hinted ? t.hinted : t.hint}
+          </button>
+
+          <div style={S.choices}>
+            {act.options.map((o) => (
+              <button key={o.id} type="button" style={{ ...S.choice, ...(picked === o.id ? S.choiceOn : null) }} onClick={() => { playSfx?.('click'); setPicked(o.id); }}>
+                <span style={{ fontSize: 20 }}>{o.e}</span>
+                <span style={S.choiceTxt}>{L(o)}</span>
+              </button>
+            ))}
+          </div>
+
+          {picked != null && (
+            <div style={S.confirmRow}>
+              <button type="button" style={S.primary} onClick={confirmAct}>{actIdx === lastIdx ? t.seeEnding : `⚖️ ${t.confirm}`}</button>
+              <button type="button" style={S.ghostSm} onClick={() => { playSfx?.('click'); setPicked(null); }}>{t.back}</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── CHECKPOINT VERDICT ── */}
+      {phase === 'verdict' && (
+        <div style={S.body}>
+          <div style={{ ...S.verdictCard, animation: lastOk ? 'dt-slide 0.3s ease-out' : 'dt-shake 0.4s ease-out' }}>
+            <div style={{ ...S.verdictTitle, color: lastOk ? '#2e8b57' : '#d23b3b' }}>{lastOk ? t.right : t.wrong}</div>
+            <div style={S.truth}><span style={{ fontSize: 22 }}>{answerOpt.e}</span><span>{t.theTruth(L(answerOpt))}</span></div>
+            <div style={S.explain}>
+              <div style={S.explainHead}>🔎 {t.chain}</div>
+              {act.sol.map((s, i) => (
+                <div key={i} style={S.solStep}>
+                  <span style={S.solNum}>{i + 1}</span>
+                  <span style={S.solTxt}>{L(s)}</span>
+                </div>
+              ))}
+            </div>
+            {act.reveal && <div style={S.revealBox}>{L(act.reveal)}</div>}
+            <button type="button" style={S.primary} onClick={afterVerdict}>{actIdx < lastIdx ? t.contInvestigation : t.toEnding}</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── EPILOGUE ── */}
+      {phase === 'epilogue' && (() => {
+        const correct = resultsRef.current.filter(Boolean).length;
+        const caught = resultsRef.current[lastIdx] === true;
+        return (
+          <div style={S.body}>
+            <div style={{ ...S.verdictCard, animation: 'dt-slide 0.3s ease-out' }}>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <div style={S.epilogueCard}>
+                  <div style={S.explainHead}>📖 {t.epilogueHead} — {L(cf.title)}</div>
+                  <p style={S.epilogueText}>{L(cf.epilogue)}</p>
+                </div>
+                {caught && <div style={S.closedStamp}>{t.caseClosed}</div>}
+              </div>
+              <div style={{ ...S.verdictTitle, fontSize: 16, color: caught ? '#2e8b57' : '#b06a2a' }}>{t.clueGot(correct, acts.length)}</div>
+              <button type="button" style={S.primary} onClick={finish}>{t.finish}</button>
+            </div>
+          </div>
+        );
+      })()}
+    </div>
+  );
 }
 
-function DetectiveEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+// ══════════════════════════════════════════════════════════════════════════
+// RIDDLE ENGINE — quick one-shot cases (SURVIVAL / PASS-N-PLAY)
+// ══════════════════════════════════════════════════════════════════════════
+// Survival is ADAPTIVE and never plateaus. A difficulty scalar `d` climbs with
+// every solve and eases back on a mistake; it maps to a target tier that ramps
+// easy → medium → hard and then STAYS hard-dominant forever (there is no tier
+// above 3, so the ceiling is "almost all hard" with a little variety). Each
+// tier keeps its own shuffled queue so a riddle never repeats until its tier
+// has cycled.
+function makePools(rng) {
+  return [0, 1, 2].map((tierI) => ({ list: shuffleR(TIER_LISTS[tierI], rng), idx: 0, lastId: null }));
+}
+// d → tier: target rises 0→2 over roughly 28 solves (medium starts appearing
+// ~d7, hard ~d14, near-all-hard ~d28+), with ±0.65 noise for variety so a run
+// mixes an occasional easier/harder case around the current level. Each tier is
+// a "bag": all its cases are dealt before any repeats, and on reshuffle the new
+// first case is swapped away if it would repeat the last one just seen.
+function pickAdaptive(d, pools, rng) {
+  const target = Math.min(2, d * 0.07);
+  let tierI = Math.round(target + (rng() - 0.5) * 1.3);
+  tierI = Math.max(0, Math.min(2, tierI));
+  const pool = pools[tierI];
+  if (pool.idx >= pool.list.length) {
+    pool.list = shuffleR(TIER_LISTS[tierI], rng);
+    if (pool.list.length > 1 && pool.list[0].id === pool.lastId) {
+      const last = pool.list.length - 1;
+      [pool.list[0], pool.list[last]] = [pool.list[last], pool.list[0]];
+    }
+    pool.idx = 0;
+  }
+  const c = pool.list[pool.idx++];
+  pool.lastId = c.id;
+  return c;
+}
+
+function RiddleEngine({ mode, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
   const t = isAr ? T.ar : T.en;
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 3) : 0;
@@ -83,7 +362,9 @@ function DetectiveEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
   const ppDoneRef = useRef(0);
   const ppSolvedRef = useRef(0);
   const caseNoRef = useRef(0);
-  const seqRef = useRef(null);
+  const seqRef = useRef(null); // pass-n-play: fixed shuffled list
+  const dRef = useRef(0); // survival: adaptive difficulty scalar
+  const poolsRef = useRef(null); // survival: per-tier shuffled queues
 
   const [c, setC] = useState(null);
   const [phase, setPhase] = useState('intro'); // intro | play | verdict
@@ -95,17 +376,13 @@ function DetectiveEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
   const [over, setOver] = useState(null);
 
   const caseFor = useCallback(() => {
-    if (mode === 'levels') {
-      const list = TIER_LISTS[tierForDiff[diff] ?? 1];
-      return list[((level || 1) - 1) % list.length];
-    }
     if (mode === 'passplay') {
       if (!seqRef.current) seqRef.current = shuffleR(TIER_LISTS[1], rng);
       return seqRef.current[ppDoneRef.current % seqRef.current.length];
     }
-    if (!seqRef.current) seqRef.current = survivalSeq(rng);
-    return seqRef.current[stageRef.current % seqRef.current.length];
-  }, [mode, diff, level, rng]);
+    if (!poolsRef.current) poolsRef.current = makePools(rng);
+    return pickAdaptive(dRef.current, poolsRef.current, rng);
+  }, [mode, rng]);
 
   const newCase = useCallback(() => {
     setC(caseFor());
@@ -116,13 +393,13 @@ function DetectiveEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
   useEffect(() => {
     livesRef.current = LIVES; solvedRef.current = 0; stageRef.current = 0; setLives(LIVES);
     ppDoneRef.current = 0; ppSolvedRef.current = 0; caseNoRef.current = 0; seqRef.current = null;
+    dRef.current = 0; poolsRef.current = null;
     setOver(null);
     newCase();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed]);
 
   const toggleCheck = (key) => { playSfx?.('click'); setChecked((p) => { const n = new Set(p); if (n.has(key)) n.delete(key); else n.add(key); return n; }); };
-
   const useHint = () => { if (hinted) return; playSfx?.('click'); setHinted(true); };
 
   const confirmAnswer = () => {
@@ -136,7 +413,6 @@ function DetectiveEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
   const verdictNext = () => {
     playSfx?.('click');
     const { ok, pts } = verdict;
-    if (mode === 'levels') { onResult({ won: ok, score: ok ? 1 : 0, summary: ok ? t.summaryWin : t.summaryLose }); return; }
     if (mode === 'passplay') {
       if (ok) ppSolvedRef.current += 1;
       ppDoneRef.current += 1;
@@ -144,13 +420,14 @@ function DetectiveEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       newCase(); return;
     }
     stageRef.current += 1; // solution was revealed either way — never replay this case
-    if (ok) { solvedRef.current += 1; awardPoints?.(pts); newCase(); return; }
+    if (ok) { solvedRef.current += 1; dRef.current += 1; awardPoints?.(pts); newCase(); return; } // climb
     livesRef.current -= 1; setLives(livesRef.current);
     if (livesRef.current <= 0) { playSfx?.('lose'); setOver({ solved: solvedRef.current }); return; }
+    dRef.current = Math.max(0, dRef.current - 4); // a miss eases the next few cases
     newCase();
   };
 
-  const boot = () => { livesRef.current = LIVES; solvedRef.current = 0; stageRef.current = 0; setLives(LIVES); ppDoneRef.current = 0; ppSolvedRef.current = 0; caseNoRef.current = 0; seqRef.current = null; setOver(null); newCase(); };
+  const boot = () => { livesRef.current = LIVES; solvedRef.current = 0; stageRef.current = 0; setLives(LIVES); ppDoneRef.current = 0; ppSolvedRef.current = 0; caseNoRef.current = 0; seqRef.current = null; dRef.current = 0; poolsRef.current = null; setOver(null); newCase(); };
 
   if (over && mode === 'free') {
     return (
@@ -171,9 +448,10 @@ function DetectiveEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
 
   if (!c) return <div style={S.root} dir={isAr ? 'rtl' : 'ltr'} />;
   const L = (o) => (isAr ? o.ar : o.en);
-  const hud = mode === 'levels' ? (isAr ? `مستوى ${level}` : `Level ${level}`)
-    : mode === 'passplay' ? (isAr ? `قضية ${Math.min(ppDoneRef.current + 1, ppTrials)}/${ppTrials}` : `Case ${Math.min(ppDoneRef.current + 1, ppTrials)}/${ppTrials}`)
-      : (isAr ? `محلولة ${solvedRef.current}` : `Cracked ${solvedRef.current}`);
+  const stars = '★'.repeat(c.tier) + '☆'.repeat(3 - c.tier);
+  const hud = mode === 'passplay'
+    ? (isAr ? `قضية ${Math.min(ppDoneRef.current + 1, ppTrials)}/${ppTrials}` : `Case ${Math.min(ppDoneRef.current + 1, ppTrials)}/${ppTrials}`)
+    : `${isAr ? `محلولة ${solvedRef.current}` : `Cracked ${solvedRef.current}`} · ${stars}`;
   const answerOpt = c.options.find((o) => o.id === c.answer);
   const keyGlow = (where, i) => hinted && c.key.in === where && c.key.i === i;
 
@@ -293,7 +571,7 @@ function DetectiveEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
               </div>
             )}
             {mode === 'free' && !verdict.ok && <div style={S.livesLeft}>{'♥'.repeat(Math.max(0, livesRef.current - 1))}{'♡'.repeat(Math.min(LIVES, LIVES - livesRef.current + 1))}</div>}
-            <button type="button" style={S.primary} onClick={verdictNext}>{mode === 'levels' ? t.cont : t.next}</button>
+            <button type="button" style={S.primary} onClick={verdictNext}>{t.next}</button>
           </div>
         </div>
       )}
@@ -310,9 +588,9 @@ export default function DetectiveGame({ onBack, workoutMode = false }) {
       scienceId="detective"
       title={{ en: 'Detective', ar: 'المحقّق' }}
       hints={{
-        free: { en: 'A different riddle every case · 3 misses out', ar: 'لغز مختلف في كل قضية · ٣ أخطاء وتخرج' },
-        levels: { en: 'Real deduction riddles — every case a new story', ar: 'ألغاز استنتاج حقيقية — كل قضية حكاية جديدة' },
-        pass: { en: 'Same cases for all · most cracked wins', ar: 'نفس القضايا للجميع · الأكثر حلّاً يفوز' },
+        free: { en: 'Quick deduction riddles · 3 misses out', ar: 'ألغاز استنتاج سريعة · ٣ أخطاء وتخرج' },
+        levels: { en: 'Long case files — investigate across 3 acts', ar: 'ملفّات قضايا طويلة — حقّق عبر ٣ فصول' },
+        pass: { en: 'Same riddles for all · most cracked wins', ar: 'نفس الألغاز للجميع · الأكثر حلّاً يفوز' },
       }}
       diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
       pass={{ trials: 3, scoreLabel: { en: 'cracked', ar: 'محلولة' }, lowerBetter: false, diff: 'med' }}
@@ -320,8 +598,9 @@ export default function DetectiveGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
-      renderEngine={(p) => (
-        <DetectiveEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+      renderEngine={(p) => (p.mode === 'levels'
+        ? <CaseFileEngine key={`cf-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        : <RiddleEngine key={`rd-${p.mode}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
       )}
     />
   );
@@ -336,8 +615,17 @@ const S = {
   stamp: { position: 'absolute', top: 10, insetInlineStart: 12, transform: 'rotate(-14deg)', border: '3px solid #c0392b', color: '#c0392b', fontFamily: "'Bangers','Cairo',cursive", fontSize: 16, letterSpacing: 1.5, padding: '2px 10px', borderRadius: 6, opacity: 0.9, animation: 'dt-stamp 0.5s ease-out' },
   caseTitle: { margin: 0, fontWeight: 900, fontSize: 'clamp(18px, 5vw, 22px)', color: '#2d2210', textAlign: 'center' },
   setup: { margin: 0, fontWeight: 700, fontSize: 'clamp(14px, 3.9vw, 15.5px)', color: '#3a2c18', lineHeight: 1.5, textAlign: 'center' },
+  assistantChip: { alignSelf: 'center', fontWeight: 800, fontSize: 12.5, color: '#7a5a1e', background: '#fff1d8', border: '1.5px solid #e3c489', borderRadius: 999, padding: '3px 12px' },
 
-  // dossier
+  // suspect lineup (prologue)
+  suspectGrid: { display: 'flex', flexDirection: 'column', gap: 7, width: '100%' },
+  suspectCard: { display: 'flex', flexDirection: 'column', gap: 1, background: '#fffdf8', border: '1.5px solid #e3d6c4', borderRadius: 12, padding: '8px 12px' },
+  suspectEmoji: { fontSize: 22 },
+  suspectName: { fontWeight: 900, fontSize: 13.5, color: '#2d2210' },
+  suspectDesc: { fontWeight: 700, fontSize: 12.5, color: '#6a5a42', lineHeight: 1.4 },
+
+  // act / dossier
+  actHead: { width: '100%', fontWeight: 900, fontSize: 15, color: '#5a3a2f', background: '#fff3ee', border: '1.5px solid #ecc9bd', borderRadius: 12, padding: '8px 12px', textAlign: 'center' },
   dossierHead: { display: 'flex', alignItems: 'center', gap: 8, width: '100%', marginTop: 2 },
   dossierTitle: { fontWeight: 900, fontSize: 16.5, color: '#2d2210' },
   intro: { margin: 0, width: '100%', fontWeight: 700, fontSize: 'clamp(13.5px, 3.7vw, 15px)', color: '#3a2c18', lineHeight: 1.5 },
@@ -350,6 +638,7 @@ const S = {
   witName: { fontWeight: 900, fontSize: 12, color: '#a37b2f' },
   witTxt: { fontWeight: 700, fontSize: 13.5, color: '#2d3a55', lineHeight: 1.45 },
   checkMark: { position: 'absolute', top: 4, insetInlineEnd: 8, fontSize: 13, color: '#7a8a2f', fontWeight: 900 },
+  newTag: { position: 'absolute', top: 6, insetInlineEnd: 8, fontSize: 8.5, fontWeight: 900, color: '#fff', background: '#c0392b', borderRadius: 5, padding: '1px 5px', letterSpacing: 0.5 },
   tapNote: { fontWeight: 700, fontSize: 11, color: '#a49a88' },
   qBox: { width: '100%', background: '#fff3ee', border: '1.5px solid #ecc9bd', borderRadius: 12, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 3 },
   qHead: { fontSize: 11, fontWeight: 900, color: '#a35a48', textTransform: 'uppercase', letterSpacing: 0.6 },
@@ -361,15 +650,18 @@ const S = {
   choiceTxt: { fontWeight: 800, fontSize: 14, color: '#2d2210', lineHeight: 1.35 },
   confirmRow: { display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' },
 
-  // verdict
+  // verdict / epilogue
   verdictCard: { width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 8 },
   verdictTitle: { fontWeight: 900, fontSize: 20 },
-  truth: { display: 'flex', gap: 8, alignItems: 'center', fontWeight: 900, fontSize: 15, color: '#2d2210' },
+  truth: { display: 'flex', gap: 8, alignItems: 'center', fontWeight: 900, fontSize: 15, color: '#2d2210', textAlign: 'center' },
   explain: { width: '100%', background: '#fffdf8', border: '2px solid #e3d6c4', borderRadius: 14, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 },
   explainHead: { fontWeight: 900, fontSize: 12, color: '#7a6a52', textTransform: 'uppercase', letterSpacing: 0.6 },
   solStep: { display: 'flex', gap: 9, alignItems: 'flex-start' },
   solNum: { flexShrink: 0, width: 20, height: 20, borderRadius: 10, background: '#b9842f', color: '#fff', fontWeight: 900, fontSize: 11.5, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   solTxt: { fontWeight: 700, fontSize: 13.5, color: '#3a3a3a', lineHeight: 1.45 },
+  revealBox: { width: '100%', fontWeight: 700, fontStyle: 'italic', fontSize: 13.5, color: '#5a4a32', background: '#fff8ec', border: '1.5px dashed #e3c489', borderRadius: 12, padding: '9px 13px', lineHeight: 1.45 },
+  epilogueCard: { width: '100%', background: '#fbf3e4', border: '2px solid #d9c294', borderRadius: 14, padding: '12px 15px', display: 'flex', flexDirection: 'column', gap: 6 },
+  epilogueText: { margin: 0, fontWeight: 700, fontSize: 'clamp(13.5px, 3.7vw, 15px)', color: '#3a2c18', lineHeight: 1.55 },
   closedStamp: { position: 'absolute', top: -8, insetInlineEnd: 6, transform: 'rotate(-14deg)', border: '3px solid #2e8b57', color: '#2e8b57', fontFamily: "'Bangers','Cairo',cursive", fontSize: 15, letterSpacing: 1.5, padding: '2px 10px', borderRadius: 6, background: 'rgba(255,253,248,0.9)', animation: 'dt-stamp 0.6s ease-out 0.2s both' },
   bonusRow: { display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' },
   ptsChip: { fontWeight: 900, fontSize: 15, color: '#7a5a1f', background: '#fdeecb', border: '2px solid #b9842f', borderRadius: 999, padding: '3px 12px' },
