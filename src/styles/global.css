@@ -149,12 +149,11 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
     transform: translateX(-50%);
     z-index: 1;
     width: var(--char-w, min(46vw, 200px));
-    background: none; border: none; padding: 0; cursor: pointer;
+    pointer-events: none;
     filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.55));
 }
 .home-character > * { width: 100% !important; height: auto !important; }
 .home-character svg { width: 100% !important; height: auto !important; }
-.home-character:active { transform: translateX(-50%) scale(0.97); }
 @media (min-width: 768px) {
     .home-character { bottom: var(--char-bottom-d, 22%); width: var(--char-w-d, 180px); }
 }
@@ -535,11 +534,29 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 0;
     width: min(92vw, 340px);
 }
 @media (min-width: 768px) {
     .home-maze-actions { top: 86%; }
+}
+.home-maze-actions .home-today-panel {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    top: auto;
+    z-index: 2;
+    width: min(10.25rem, calc(100vw - 15rem));
+}
+@media (min-width: 768px) {
+    .home-maze-actions .home-today-panel:not(.open) {
+        width: min(12.5rem, calc(100vw - 22rem));
+    }
+}
+.home-maze-actions .home-today-panel.open {
+    width: min(17rem, 92vw);
+    bottom: calc(100% + 6px);
 }
 .home-maze-btn {
     position: relative;
@@ -1216,20 +1233,27 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
 .home-today-chip:active { transform: translateX(-50%) scale(0.97); }
 
 .home-today-panel {
-    position: absolute; top: 14%; left: 50%; transform: translateX(-50%);
-    z-index: 12; width: min(92vw, 320px);
-    border-radius: 16px; border: 2px solid rgba(111,174,122,0.85);
-    background: rgba(15,26,15,0.88); box-shadow: 0 4px 20px rgba(0,0,0,0.45);
-    overflow: hidden;
+    border-radius: 999px; border: 2px solid rgba(111,174,122,0.92);
+    background: rgba(15,26,15,0.94); box-shadow: 0 4px 18px rgba(0,0,0,0.55), 0 0 0 1px rgba(111,174,122,0.35);
+    overflow: hidden; pointer-events: auto;
+}
+.home-today-panel.open {
+    border-radius: 14px;
 }
 .home-today-head {
-    display: flex; align-items: center; gap: 8px; width: 100%;
-    padding: 10px 14px; border: none; background: transparent;
-    color: #e8f5ea; font-size: 0.95rem; font-weight: 800; letter-spacing: 1px;
-    cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; gap: 6px;
+    width: 100%; min-height: 2rem;
+    padding: 7px 12px 7px 14px; border: none; background: transparent;
+    color: #e8f5ea; font-size: clamp(0.8rem, 2.8vw, 0.92rem); font-weight: 800;
+    letter-spacing: 0.6px; cursor: pointer; font-family: inherit;
 }
-.home-today-count { margin-inline-start: auto; color: #9fd4a3; }
-.home-today-chev { font-size: 0.75rem; color: #7a9a7a; margin-inline-start: 4px; }
+.home-today-summary {
+    display: flex; align-items: center; justify-content: space-between;
+    flex: 1; min-width: 0; gap: 8px;
+}
+.home-today-lbl { color: #e8f5ea; white-space: nowrap; }
+.home-today-count { color: #9fd4a3; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+.home-today-chev { font-size: 0.7rem; color: #7a9a7a; flex-shrink: 0; margin-inline-start: 2px; }
 .home-today-body { padding: 0 10px 10px; border-top: 1px solid rgba(111,174,122,0.25); }
 .home-today-row {
     display: flex; align-items: center; gap: 10px; padding: 8px 4px;

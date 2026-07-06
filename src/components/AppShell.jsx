@@ -59,7 +59,7 @@ export default function AppShell({ onBackToMenu }) {
             </button>
           )}
           {/* Lang toggle hidden on screens that render their own chrome */}
-          {activeTab !== 'comics' && activeTab !== 'puzzles' && activeTab !== 'profile' && activeTab !== 'workout' && activeTab !== 'relax' && (
+          {activeTab !== 'comics' && activeTab !== 'puzzles' && activeTab !== 'profile' && activeTab !== 'workout' && activeTab !== 'relax' && activeTab !== 'pointshop' && (
             <button
               id="lang-btn"
               onClick={toggleLang}
@@ -84,7 +84,7 @@ export default function AppShell({ onBackToMenu }) {
         <div id="screen-profile" className={`ui-screen ${activeTab === 'profile' ? 'active' : ''}`}><ProfileScreen /></div>
         <div id="screen-shop"    className={`ui-screen ${activeTab === 'shop'    ? 'active' : ''}`}><ShopScreen /></div>
         <div id="screen-pointshop" className={`ui-screen ${activeTab === 'pointshop' ? 'active' : ''}`}><RewardsShopScreen /></div>
-        <div id="screen-character" className={`ui-screen ${activeTab === 'character' ? 'active' : ''}`}><CharacterScreen /></div>
+        <div id="screen-character" className={`ui-screen ${activeTab === 'character' ? 'active' : ''}`}>{activeTab === 'character' && <CharacterScreen />}</div>
         <div id="screen-workout"   className={`ui-screen ${activeTab === 'workout'   ? 'active' : ''}`}><WorkoutScreen /></div>
         <div id="screen-relax"     className={`ui-screen ${activeTab === 'relax'     ? 'active' : ''}`}>{activeTab === 'relax' && <RelaxScreen />}</div>
 

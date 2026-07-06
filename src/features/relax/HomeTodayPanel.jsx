@@ -29,7 +29,6 @@ export default function HomeTodayPanel({ isAr, playSfx, switchTab, labelFont }) 
   const t = {
     today: isAr ? 'اليوم' : 'Today',
     seeAll: isAr ? 'عرض الكل' : 'See all',
-    done: isAr ? 'تم!' : 'Done!',
   };
 
   return (
@@ -39,10 +38,13 @@ export default function HomeTodayPanel({ isAr, playSfx, switchTab, labelFont }) 
         className="home-today-head"
         style={labelFont}
         onClick={() => { playSfx('click'); setOpen((v) => !v); refresh(); }}
+        aria-label={isAr ? `عادات اليوم ${progress.done}/${progress.total}` : `Today habits ${progress.done}/${progress.total}`}
       >
-        <span>📋 {t.today}</span>
-        <span className="home-today-count">
-          {progress.allDone ? t.done : `${progress.done}/${progress.total}`}
+        <span className="home-today-summary">
+          <span className="home-today-lbl">📋 {t.today}</span>
+          <span className="home-today-count">
+            {progress.allDone ? '✓' : `${progress.done}/${progress.total}`}
+          </span>
         </span>
         <span className="home-today-chev">{open ? '▴' : '▾'}</span>
       </button>

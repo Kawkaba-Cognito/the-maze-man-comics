@@ -1,16 +1,13 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { getCharacter } from '../../features/character/registry';
+import CosmosCharacter from '../../features/character/CosmosCharacter';
 
 /**
- * Points Shop — currently empty. The cosmetic catalog (ITEMS) is intentionally
- * kept in features/character/items so equipped gear still renders on the home
- * pedestal and in the 3D world; only the buyable storefront is cleared here.
+ * Points Shop — cosmetic storefront. The planet mascot is the only avatar.
  */
 export default function RewardsShopScreen() {
-  const { points, currentLang, character, equipped } = useApp();
+  const { points, currentLang, equipped } = useApp();
   const isAr = currentLang === 'ar';
-  const Hero = getCharacter(character).Component;
 
   return (
     <div className="rewards-screen shop-screen" dir={isAr ? 'rtl' : 'ltr'}>
@@ -20,7 +17,7 @@ export default function RewardsShopScreen() {
       <div className="rewards-title">{isAr ? 'المتجر' : 'Shop'}</div>
 
       <div className="char-preview shop-preview">
-        <Hero size={150} equipped={equipped} glow float />
+        <CosmosCharacter size={150} equipped={equipped} glow float />
       </div>
 
       <div className="shop-empty">

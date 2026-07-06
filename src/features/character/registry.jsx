@@ -1,7 +1,5 @@
 import React from 'react';
 import CosmosCharacter from './CosmosCharacter';
-import FoxCharacter from './FoxCharacter';
-import PersonCharacter from './PersonCharacter';
 
 /**
  * Character roster. Every entry exposes a `Component` with the same prop shape
@@ -17,27 +15,6 @@ export const CHARACTERS = [
     ar: 'الكون',
     supportsHats: true,
     Component: CosmosCharacter,
-  },
-  {
-    id: 'male',
-    en: 'Maze Man',
-    ar: 'رجل المتاهة',
-    supportsHats: false,
-    Component: (props) => <PersonCharacter variant="male" {...props} />,
-  },
-  {
-    id: 'female',
-    en: 'Maze Woman',
-    ar: 'امرأة المتاهة',
-    supportsHats: false,
-    Component: (props) => <PersonCharacter variant="female" {...props} />,
-  },
-  {
-    id: 'fox',
-    en: 'Guide Fox',
-    ar: 'الثعلب الدليل',
-    supportsHats: true,
-    Component: FoxCharacter,
   },
 ];
 

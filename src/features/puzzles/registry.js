@@ -216,8 +216,8 @@ export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, bridges, sudoku, kenken,
 
 // ── Categories: every puzzle belongs to exactly one, by core mechanic. ──
 const CATEGORY_OF = {
-  sudoku: 'numbers', kenken: 'numbers', kakuro: 'numbers',
-  takuzu: 'logic', hitori: 'logic', crowns: 'logic', bridges: 'logic', nonogram: 'logic',
+  sudoku: 'numbers', kenken: 'numbers', kakuro: 'numbers', nonogram: 'numbers',
+  takuzu: 'logic', hitori: 'logic', crowns: 'logic', bridges: 'logic',
   sliding: 'spatial', blockburst: 'spatial', flow: 'spatial', tangram: 'spatial',
   imposter: 'group', charades: 'group', describeit: 'group', wavelength: 'group',
 };

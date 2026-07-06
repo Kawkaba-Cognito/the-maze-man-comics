@@ -32,6 +32,7 @@ export const SLOT_VIEWBOX = { hat: '-26 -42 52 52', face: '-24 -16 48 42', neck:
 
 /** The item's own vector art as an icon — the one icon system everywhere. */
 export function ItemArt({ it, size = 46 }) {
+  if (!it) return null;
   return (
     <span className="shop-card-art" aria-hidden="true">
       <svg viewBox={it.iconBox || SLOT_VIEWBOX[it.slot]} width={size} height={size} style={{ overflow: 'visible' }}>

@@ -29,7 +29,11 @@ const OWNED_KEY = 'mazeman_owned';
 const EQUIP_KEY = 'mazeman_equipped';
 
 function readCharacter() {
-  try { return localStorage.getItem(CHAR_KEY) || 'cosmos'; } catch { return 'cosmos'; }
+  try {
+    const id = localStorage.getItem(CHAR_KEY);
+    if (id && id !== 'cosmos') localStorage.setItem(CHAR_KEY, 'cosmos');
+  } catch { /* ignore */ }
+  return 'cosmos';
 }
 function readJSON(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
@@ -155,9 +159,9 @@ export function AppProvider({ children }) {
     try { localStorage.setItem(POINTS_KEY, String(next)); } catch (e) { /* ignore */ }
   }, []);
 
-  const setCharacter = useCallback((id) => {
-    setCharacterState(id);
-    try { localStorage.setItem(CHAR_KEY, id); } catch (e) { /* ignore */ }
+  const setCharacter = useCallback((_id) => {
+    setCharacterState('cosmos');
+    try { localStorage.setItem(CHAR_KEY, 'cosmos'); } catch (e) { /* ignore */ }
   }, []);
 
   // ----- Shop: own (buy) + equip cosmetic items -----
