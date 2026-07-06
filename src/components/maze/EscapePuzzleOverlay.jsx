@@ -30,10 +30,10 @@ export default function EscapePuzzleOverlay({ spec, title, onSolved, onClose }) 
   };
 
   return (
-    <div className="mz-rec-overlay mz-rec-overlay--fit" role="dialog" aria-modal="true">
+    <div className="mz-rec-overlay mz-rec-overlay--fit mz-rec-overlay--escape" role="dialog" aria-modal="true">
       <div className="mz-rec-backdrop" aria-hidden="true" />
 
-      <div className="mz-rec mz-rec--fit" data-puzzle={spec.puzzleKey}>
+      <div className="mz-rec mz-rec--fit mz-rec--escape" data-puzzle={spec.puzzleKey}>
         <header className="mz-rec-head">
           <div className="mz-rec-head-left">
             <span className="mz-rec-k">{isAr ? '🔒 قفل' : '🔒 LOCK'}</span>

@@ -5,6 +5,10 @@ import GroundingPractice from './GroundingPractice';
 import PmrPractice from './PmrPractice';
 import SoundBathPractice from './SoundBathPractice';
 import NatureSoundsPractice from './NatureSoundsPractice';
+import IkigaiPractice from './IkigaiPractice';
+import DailyHabits from './DailyHabits';
+import { OPEN_DAILY_KEY } from './HabitReminderBanner';
+import { loadHabits, getTodayProgress } from './habitState';
 
 /*
  * Wellbeing — 8-Week MBSR Tracker (lives under the Stress & Calm category).
@@ -508,6 +512,10 @@ const RELAX_PRACTICES = [
     title: 'Nature Sounds', titleAr: 'أصوات الطبيعة',
     sub: 'Mix rain, ocean, wind and fire into your own calming soundscape.',
     subAr: 'اخلط المطر والمحيط والرياح والنار في أجواء تهدّئك.' },
+  { id: 'ikigai', icon: '🎯', color: '#c9a24b',
+    title: 'Ikigai', titleAr: 'إيكيغاي',
+    sub: 'Reflect on what you love, what you\'re good at, what the world needs, and what you can offer — and glimpse your purpose.',
+    subAr: 'تأمّل فيما تحبّ وما تجيد وما يحتاجه العالم وما يمكنك تقديمه — ولمح معنى حياتك.' },
 ];
 
 // Five wellbeing categories. `items` lists practice ids; `soon` marks a category
@@ -526,8 +534,9 @@ const CATEGORIES = [
   { id: 'meaning', icon: '✨', color: '#c9a24b',
     title: 'Meaning', titleAr: 'المعنى',
     tag: 'Values, gratitude and purpose.', tagAr: 'القيم والامتنان والغاية.',
-    soon: 'Values reflection, a gratitude journal and purpose prompts.',
-    soonAr: 'تأمّلٌ في قيمك، ودفتر امتنان، ومحفّزات للغاية والمعنى.' },
+    items: ['ikigai'],
+    programSoon: 'A guided values journal and gratitude program are coming soon.',
+    programSoonAr: 'دفتر قيم موجّه وبرنامج امتنان — قريباً.' },
   { id: 'relationships', icon: '❤️', color: '#c86f8f',
     title: 'Relationships', titleAr: 'العلاقات',
     tag: 'Kindness and connection.', tagAr: 'اللطف والتواصل.',
@@ -811,6 +820,26 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
               <span className="rx-menu-chev" style={{ color: FAV_GOLD }}>{isAr ? '‹' : '›'}</span>
             </span>
           </button>
+          {(() => {
+            const { done, total, allDone } = getTodayProgress(loadHabits());
+            return (
+              <button className="rx-cat-tile" style={{ borderColor: '#6fae7a66' }} onClick={() => { playSfx?.('click'); onOpen('daily'); }}>
+                <span className="rx-cat-ic" style={{ background: '#e8f5ea', color: '#6fae7a' }}>📋</span>
+                <span className="rx-cat-body">
+                  <span className="rx-cat-title">{isAr ? 'يومي' : 'Daily'}</span>
+                  <span className="rx-cat-tag">{isAr ? 'عادات صغيرة — خطوة واحدة في كل مرة.' : 'Small habits — one step at a time.'}</span>
+                </span>
+                <span className="rx-cat-meta">
+                  {total > 0 && (
+                    <span className={`rx-habit-badge${allDone ? ' rx-habit-badge--done' : ''}`}>
+                      {allDone ? '✓' : `${done}/${total}`}
+                    </span>
+                  )}
+                  <span className="rx-menu-chev" style={{ color: '#6fae7a' }}>{isAr ? '‹' : '›'}</span>
+                </span>
+              </button>
+            );
+          })()}
           <div className="rx-cat-divider" aria-hidden="true" />
           {CATEGORIES.map((c) => (
             <button key={c.id} className="rx-cat-tile" style={{ borderColor: `${c.color}55` }} onClick={() => openCategory(c)}>
@@ -820,7 +849,7 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
                 <span className="rx-cat-tag">{isAr ? c.tagAr : c.tag}</span>
               </span>
               <span className="rx-cat-meta">
-                {c.soon && <span className="rx-soon-badge">{isAr ? 'قريباً' : 'Soon'}</span>}
+                {c.soon && !c.items?.length && <span className="rx-soon-badge">{isAr ? 'قريباً' : 'Soon'}</span>}
                 <span className="rx-menu-chev" style={{ color: c.color }}>{isAr ? '‹' : '›'}</span>
               </span>
             </button>
@@ -834,21 +863,46 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
 export default function RelaxScreen() {
   const { switchTab, playSfx, currentLang } = useApp();
   const isAr = currentLang === 'ar';
-  const [view, setView] = useState('menu');
-  const back = () => { playSfx?.('click'); setView('menu'); };
+  const [view, setView] = useState(() => {
+    try {
+      if (sessionStorage.getItem(OPEN_DAILY_KEY) === '1') {
+        sessionStorage.removeItem(OPEN_DAILY_KEY);
+        return 'daily';
+      }
+    } catch { /* ignore */ }
+    return 'menu';
+  });
+  const [returnTo, setReturnTo] = useState('menu');
+  const back = () => { playSfx?.('click'); setView(returnTo); setReturnTo('menu'); };
+  const openPractice = (id, from = 'menu') => {
+    playSfx?.('click');
+    setReturnTo(from);
+    setView(id);
+  };
 
+  if (view === 'daily') {
+    return (
+      <DailyHabits
+        isAr={isAr}
+        playSfx={playSfx}
+        onBack={back}
+        onOpenPractice={(id) => openPractice(id, 'daily')}
+      />
+    );
+  }
   if (view === 'mbsr') return <MbsrTracker onBack={back} />;
   if (view === 'breathe') return <BreathePractice onBack={back} />;
   if (view === 'grounding') return <GroundingPractice onBack={back} />;
   if (view === 'pmr') return <PmrPractice onBack={back} />;
   if (view === 'soundbath') return <SoundBathPractice onBack={back} />;
   if (view === 'nature') return <NatureSoundsPractice onBack={back} />;
+  if (view === 'ikigai') return <IkigaiPractice onBack={back} />;
   return (
     <RelaxMenu
       isAr={isAr}
       playSfx={playSfx}
       onHome={() => { playSfx?.('click'); switchTab('home'); }}
-      onOpen={(id) => { playSfx?.('click'); setView(id); }}
+      onOpen={(id) => openPractice(id, 'menu')}
     />
   );
 }
@@ -893,6 +947,8 @@ const MENU_CSS = `
 .rx-root .rx-fav:active { transform:scale(0.82); }
 .rx-root .rx-fav.on { color:${FAV_GOLD}; }
 .rx-root .rx-fav-count { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#fdeecb; color:${FAV_GOLD}; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.rx-root .rx-habit-badge { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#e8f5ea; color:#3a7a48; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.rx-root .rx-habit-badge--done { background:#6fae7a; color:#fff; }
 .rx-root .rx-cat-divider { height:1px; background:${LINE}; margin:2px 2px 18px; }
 .rx-root .rx-rl { position:relative; }
 .rx-root .rx-rl-item { will-change:transform; }

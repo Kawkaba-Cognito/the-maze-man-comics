@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import PracticeShell, { INK, SUB, SERIF } from './PracticeShell';
+import { markWellbeingPracticeDone } from './habitState';
 
 /*
  * Sound Bath — a calming ambient soundscape synthesized live with the Web Audio
@@ -107,7 +108,12 @@ export default function SoundBathPractice({ onBack }) {
     } catch { stopAll(); }
   }, [stopAll]);
 
-  const finish = useCallback(() => { stopAll(); setPhase('done'); playSfx?.('collect'); }, [stopAll, playSfx]);
+  const finish = useCallback(() => {
+    stopAll();
+    setPhase('done');
+    playSfx?.('collect');
+    markWellbeingPracticeDone('soundbath');
+  }, [stopAll, playSfx]);
 
   const start = useCallback(() => {
     setRemaining(minutes * 60);

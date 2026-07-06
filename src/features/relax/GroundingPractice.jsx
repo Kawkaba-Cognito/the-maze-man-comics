@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import PracticeShell, { INK, SUB, SERIF } from './PracticeShell';
+import { markWellbeingPracticeDone } from './habitState';
 
 /*
  * 5-4-3-2-1 Grounding — a guided senses walk-through to break acute anxiety by
@@ -54,6 +55,10 @@ export default function GroundingPractice({ onBack }) {
       return nf;
     });
   }, [idx, playSfx, startStep]);
+
+  useEffect(() => {
+    if (phase === 'done') markWellbeingPracticeDone('grounding');
+  }, [phase]);
 
   const step = STEPS[idx];
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import PracticeShell, { INK, SUB, SERIF } from './PracticeShell';
+import { markWellbeingPracticeDone } from './habitState';
 
 /*
  * Progressive Muscle Relaxation (Jacobson) — guided tense-and-release through the
@@ -62,6 +63,10 @@ export default function PmrPractice({ onBack }) {
     }, dur * 1000);
     return () => { clearInterval(tick); clearTimeout(id); };
   }, [phase, gIdx, sub, playSfx]);
+
+  useEffect(() => {
+    if (phase === 'done') markWellbeingPracticeDone('pmr');
+  }, [phase]);
 
   const g = GROUPS[gIdx];
   const tensing = sub === 'tense';

@@ -18,12 +18,10 @@
  *                     from hotspots group as EVIDENCE, clues given by dialogue
  *                     group as TESTIMONY. Red herrings are simply clues that
  *                     are not in solution.evidence.
- *   suspects          [{ id, e, name, role, questions }] — accusable
+ *   suspects          [{ id, e, name, role, report?, questions }] — accusable
  *   witnesses         same shape, NOT accusable (optional)
- *     questions       [{ id, q, a, givesClue?, needsClue?, reaction? }]
- *                     needsClue → a CONFRONTATION: hidden until that clue is
- *                     in the notebook. givesClue → the answer logs a clue.
- *                     reaction → extra flavour bubble after the answer.
+ *     report            optional {en,ar} — full written statement (preferred)
+ *     questions         legacy Q&A data; used to build report if `report` is absent
  *   solution          { culprit, evidence:[clueIds], explanation:[{en,ar}],
  *                       epilogue }
  *                     evidence = the proving clue(s): 1 in tier 1 → 2 in tier 3.

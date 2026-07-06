@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { assetUrl } from '../../lib/assetUrl';
 import { getCharacter, NO_CHARACTER } from '../../features/character/registry';
 import CosmosCharacter from '../../features/character/CosmosCharacter';
+import HomeTodayPanel from '../../features/relax/HomeTodayPanel';
 
 const DOORS = [
   { tab: 'comics',  enLabel: 'TRAINING', arLabel: 'تدريب', pos: 'left'   },
@@ -50,6 +51,8 @@ export default function HomeScreen() {
       <div className="home-points" aria-label={isAr ? 'نقاطك' : 'your points'}>
         ⚡ <span className="home-points-num">{points}</span>
       </div>
+
+      <HomeTodayPanel isAr={isAr} playSfx={playSfx} switchTab={switchTab} labelFont={labelFont} />
 
       {DOORS.map((d) => (
         <button

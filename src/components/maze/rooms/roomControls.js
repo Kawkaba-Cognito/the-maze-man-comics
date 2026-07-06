@@ -55,9 +55,10 @@ export function setupControls(scene, canvas, opts = {}) {
     charScale = CHAR_SCALE, // per-room rig scale (small for pixel/top-down rooms)
     shadows = true, // set false for flat/bright rooms → skip the per-frame shadow pass
     glow = true,    // set false → skip the full-screen glow/bloom pass (perf)
+    flatGround = false, // top-down rooms: no jump/gravity — feet stay on the floor
   } = opts;
 
-  scene.collisionsEnabled = true;
+  scene.collisionsEnabled = !flatGround;
 
   // ── Comic kit (glow layer + toon materials) ──
   const kit = createKit(B, scene, lowPerf || !glow);
@@ -168,33 +169,53 @@ export function setupControls(scene, canvas, opts = {}) {
       if (Math.abs(speed) < 0.0005) speed = 0;
     }
 
-    // Vertical: jump + gravity (ground check off the resting collider height).
-    const grounded = player.position.y <= GROUND_Y + 0.06;
-    if (flightEnabled) {
-      const thrust = thrustHeld || inputMap[' '];
-      vy = thrust ? Math.min(vy + 0.022, 0.17) : Math.max(vy - GRAV, -0.16);
+    // Vertical: jump + gravity (skipped on flat-ground rooms).
+    if (flatGround) {
+      vy = 0;
       jumpQueued = false;
     } else {
-      if (jumpQueued && grounded) vy = JUMP_V;
-      jumpQueued = false;
-      vy = (grounded && vy <= 0) ? -0.12 : vy - GRAV;
+      const grounded = player.position.y <= GROUND_Y + 0.06;
+      if (flightEnabled) {
+        const thrust = thrustHeld || inputMap[' '];
+        vy = thrust ? Math.min(vy + 0.022, 0.17) : Math.max(vy - GRAV, -0.16);
+        jumpQueued = false;
+      } else {
+        if (jumpQueued && grounded) vy = JUMP_V;
+        jumpQueued = false;
+        vy = (grounded && vy <= 0) ? -0.12 : vy - GRAV;
+      }
     }
 
     // Move along facing, sliding off walls.
     const f = new B.Vector3(Math.sin(heading), 0, Math.cos(heading));
     const mv = Math.abs(speed) > 0.0005;
     if (gridCollide) {
-      // Cheap grid-based walls: try each axis separately so you slide along
-      // corridors. Gravity/jump applied directly, floor clamped to GROUND_Y.
-      const sx = mv ? f.x * speed : 0;
-      const sz = mv ? f.z * speed : 0;
-      if (sx && !gridCollide(player.position.x + sx, player.position.z)) player.position.x += sx;
-      if (sz && !gridCollide(player.position.x, player.position.z + sz)) player.position.z += sz;
-      player.position.y += vy;
-      if (player.position.y < GROUND_Y) { player.position.y = GROUND_Y; if (flightEnabled) vy = 0; }
-      else if (player.position.y > GROUND_Y + 6) { player.position.y = GROUND_Y + 6; vy = 0; }
+      if (topDown) {
+        // Screen-relative walk: use smoothed speed along the input direction.
+        const mx = jx + ((inputMap['d'] || inputMap['arrowright'] ? 1 : 0) - (inputMap['a'] || inputMap['arrowleft'] ? 1 : 0));
+        const mz = -jy + ((inputMap['w'] || inputMap['arrowup'] ? 1 : 0) - (inputMap['s'] || inputMap['arrowdown'] ? 1 : 0));
+        const mag = Math.min(1, Math.hypot(mx, mz));
+        if (mag > 0.05 && speed > 0.0005) {
+          const dx = (mx / mag) * speed;
+          const dz = (mz / mag) * speed;
+          if (!gridCollide(player.position.x + dx, player.position.z)) player.position.x += dx;
+          if (!gridCollide(player.position.x, player.position.z + dz)) player.position.z += dz;
+        }
+      } else {
+        const sx = mv ? f.x * speed : 0;
+        const sz = mv ? f.z * speed : 0;
+        if (sx && !gridCollide(player.position.x + sx, player.position.z)) player.position.x += sx;
+        if (sz && !gridCollide(player.position.x, player.position.z + sz)) player.position.z += sz;
+      }
+      if (flatGround) player.position.y = GROUND_Y;
+      else {
+        player.position.y += vy;
+        if (player.position.y < GROUND_Y) { player.position.y = GROUND_Y; if (flightEnabled) vy = 0; }
+        else if (player.position.y > GROUND_Y + 6) { player.position.y = GROUND_Y + 6; vy = 0; }
+      }
     } else {
-      player.moveWithCollisions(new B.Vector3(mv ? f.x * speed : 0, vy, mv ? f.z * speed : 0));
+      player.moveWithCollisions(new B.Vector3(mv ? f.x * speed : 0, flatGround ? 0 : vy, mv ? f.z * speed : 0));
+      if (flatGround) player.position.y = GROUND_Y;
     }
 
     // Drive the rig: face heading, animate the walk cycle.

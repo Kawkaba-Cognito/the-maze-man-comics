@@ -18,17 +18,21 @@ export const QUICK1 = [
       { id: 'oven', e: '🔥', name: { en: 'Back oven room', ar: 'غرفة الفرن الخلفية' }, pos: { x: 22, y: 32 }, clueId: 'top-shelf' },
       { id: 'door', e: '🚪', name: { en: 'The shop door', ar: 'باب المحل' }, pos: { x: 62, y: 26 }, clueId: 'no-break' },
       { id: 'counter', e: '🧾', name: { en: 'Front counter', ar: 'منضدة المحل' }, pos: { x: 44, y: 66 }, empty: { en: 'Not a single crumb. A very tidy thief.', ar: 'ولا فتاتة واحدة. لصٌّ مرتّب جداً.' } },
-      { id: 'street', e: '🌙', name: { en: 'The dark street', ar: 'الشارع المظلم' }, pos: { x: 82, y: 60 }, empty: { en: 'A sleeping cat. It refuses to testify.', ar: 'قطة نائمة. ترفض الإدلاء بشهادتها.' } },
+      { id: 'street', e: '🚲', name: { en: 'The bicycle rack', ar: 'موقف الدرّاجات' }, pos: { x: 82, y: 60 }, clueId: 'bike-smell' },
     ],
     clues: [
-      { id: 'top-shelf', e: '📌', name: { en: 'The secret shelf', ar: 'الرفّ السرّي' }, text: { en: 'The tray was kept on the TOP shelf of the back oven room — Detective Kawkab told this detail to no one.', ar: 'كانت الصينية على الرفّ الأعلى في غرفة الفرن الخلفية — ولم يُخبر المحقق كوكب أحداً بهذه التفصيلة.' } },
+      { id: 'top-shelf', e: '📌', name: { en: 'The secret shelf', ar: 'الرفّ السرّي' }, text: { en: 'The tray was kept on the top shelf of the back oven room — a detail Basil shares with almost no one.', ar: 'كانت الصينية على الرفّ الأعلى في غرفة الفرن الخلفية — تفصيلة لا يشاركها باسل إلا مع القليلين.' } },
       { id: 'no-break', e: '🔑', name: { en: 'No break-in', ar: 'لا اقتحام' }, text: { en: 'No lock was broken. Whoever entered used a key or found the door open.', ar: 'لم يُكسر أي قفل. من دخل استعمل مفتاحاً أو وجد الباب مفتوحاً.' } },
-      { id: 'slip', e: '🗣', name: { en: 'Ziad’s slip', ar: 'زلّة زياد' }, text: { en: 'Ziad claims he never stepped inside — yet he pitied “the muffins on the TOP SHELF”. Only someone who was in the oven room could know that.', ar: 'يدّعي زياد أنه لم يدخل — لكنه تحسّر على «كعكات الرفّ الأعلى». لا يعرف ذلك إلا من دخل غرفة الفرن.' } },
+      { id: 'bike-smell', e: '🧁', name: { en: 'Cinnamon at the rack', ar: 'قرفة عند الموقف' }, text: { en: 'Strong cinnamon from a delivery bicycle. The basket is covered with a towel — and crumbs cling to the spokes.', ar: 'رائحة قرفة قوية من درّاجة توصيل. السلّة مغطاة بمنشفة — وفتات ملتصقة بأسوار العجلة.' } },
     ],
     suspects: [
       {
         id: 'basil', e: '👨‍🍳', name: { en: 'Basil the baker', ar: 'الخبّاز باسل' },
         role: { en: 'Owner. Locked up last night — or so he says.', ar: 'صاحب المحل. أقفل الباب ليلة أمس — أو هكذا يقول.' },
+        report: {
+          en: 'I locked up at nine and went home. The missing tray was on the top shelf in the back oven room — I tell almost nobody that. Only Salma and I have keys. Ziad waits outside for deliveries; he never comes in.',
+          ar: 'أقفلتُ في التاسعة وعدتُ إلى البيت. الصينية المفقودة كانت على الرفّ الأعلى في غرفة الفرن الخلفية — لا أخبر بهذا إلا القليلين. أنا وسلمى فقط نملك المفاتيح. زياد ينتظر في الخارج للتوصيل؛ لا يدخل أبداً.',
+        },
         questions: [
           { id: 'alibi', q: { en: 'Where were you last night?', ar: 'أين كنت الليلة الماضية؟' }, a: { en: 'I locked up at nine and went straight home to bed. My own muffins, stolen from my own shop!', ar: 'أقفلتُ المحل في التاسعة وذهبتُ إلى بيتي مباشرة للنوم. كعكاتي أنا، تُسرق من محلي أنا!' } },
           { id: 'keys', q: { en: 'Who has keys to the shop?', ar: 'من يملك مفاتيح المحل؟' }, a: { en: 'Me and Salma the cleaner. Ziad only ever waits at the door for the delivery baskets.', ar: 'أنا والمنظّفة سلمى. أما زياد فلا يتجاوز الباب، ينتظر سلال التوصيل فحسب.' } },
@@ -37,6 +41,10 @@ export const QUICK1 = [
       {
         id: 'salma', e: '🧹', name: { en: 'Salma the cleaner', ar: 'المنظّفة سلمى' },
         role: { en: 'Cleans the front shop every evening.', ar: 'تنظّف صالة المحل كل مساء.' },
+        report: {
+          en: 'I mopped the front shop until ten, then left. I never enter the oven room — flour ruins my mop. I pulled the door shut; Basil locks the back. I do not carry that key.',
+          ar: 'مسحتُ صالة المحل حتى العاشرة ثم غادرت. لا أدخل غرفة الفرن أبداً — الطحين يفسد ممسحتي. سحبتُ الباب خلفي؛ باسل يقفل الخلف. أنا لا أحمل ذلك المفتاح.',
+        },
         questions: [
           { id: 'alibi', q: { en: 'Where were you last night?', ar: 'أين كنتِ الليلة الماضية؟' }, a: { en: 'I mopped the front shop till ten, then left. I never go into the oven room — the flour ruins my mop.', ar: 'مسحتُ صالة المحل حتى العاشرة ثم غادرت. أنا لا أدخل غرفة الفرن أبداً — الطحين يفسد ممسحتي.' } },
           { id: 'door', q: { en: 'Did you lock the door behind you?', ar: 'هل أقفلتِ الباب خلفك؟' }, a: { en: 'I pulled it shut. Basil had already locked the back — I don’t carry the oven-room key at all.', ar: 'سحبتُه خلفي. باسل كان قد أقفل الخلف — أنا لا أحمل مفتاح غرفة الفرن أصلاً.' } },
@@ -45,6 +53,10 @@ export const QUICK1 = [
       {
         id: 'ziad', e: '🚴', name: { en: 'Ziad the delivery boy', ar: 'زياد عامل التوصيل' },
         role: { en: 'Comes at dawn for the delivery baskets.', ar: 'يأتي فجراً من أجل سلال التوصيل.' },
+        report: {
+          en: 'I got here at dawn, as always. I waited outside with my bicycle — I never step inside the shop. When Basil opened up, the tray was already gone. A shame, really.',
+          ar: 'وصلتُ عند الفجر كعادتي. انتظرتُ في الخارج مع درّاجتي — لا أدخل المحل أبداً. حين فتح باسل، كانت الصينية قد اختفت أصلاً. يا خسارة، حقاً.',
+        },
         questions: [
           { id: 'alibi', q: { en: 'When did you get here?', ar: 'متى وصلت إلى هنا؟' }, a: { en: 'Only at dawn — I never even stepped inside! A shame about the muffins on the top shelf, though.', ar: 'عند الفجر فقط — لم أدخل أصلاً! يا خسارة كعكات الرفّ الأعلى.' }, givesClue: 'slip' },
           { id: 'confront', needsClue: 'top-shelf', q: { en: 'Nobody was told WHERE the tray was. How do you know it was the top shelf?', ar: 'لم يُخبَر أحد أين كانت الصينية. كيف عرفت أنها على الرفّ الأعلى؟' }, a: { en: 'I… everyone knows bakers use top shelves! For… air. Warm air. Rises.', ar: 'أنا… الجميع يعرف أن الخبّازين يستعملون الرفوف العليا! بسبب… الهواء. الهواء الدافئ. يصعد.' }, reaction: { en: 'His bicycle basket, on inspection, smells strongly of muffins.', ar: 'سلّة درّاجته، عند الفحص، تفوح منها رائحة الكعك بقوة.' } },
@@ -53,10 +65,10 @@ export const QUICK1 = [
     ],
     solution: {
       culprit: 'ziad',
-      evidence: ['slip'],
+      evidence: ['bike-smell', 'top-shelf'],
       explanation: [
-        { en: 'Nobody was told where the muffins were kept — not even which room, let alone which shelf.', ar: 'لم يُخبَر أحد أين كانت الكعكات — لا الغرفة ولا الرفّ.' },
-        { en: 'Ziad claims he never stepped inside, yet he knows they were on the TOP shelf. Only someone who was in the oven room could know that.', ar: 'يدّعي زياد أنه لم يدخل، لكنه يعرف أنها كانت على الرفّ الأعلى. لا يعرف ذلك إلا من دخل غرفة الفرن.' },
+        { en: 'The tray was hidden on the top shelf in the back oven room — only someone inside could reach it.', ar: 'كانت الصينية على الرفّ الأعلى في غرفة الفرن الخلفية — لا يصل إليها إلا من دخل من الداخل.' },
+        { en: 'Ziad says he never entered — yet his bicycle reeks of cinnamon and crumbs. Basil and Salma have keys; Ziad does not, unless he slipped in while the door was open.', ar: 'يقول زياد إنه لم يدخل — لكن درّاجته تفوح بالقرفة والفتات. باسل وسلمى يملكان مفاتيح؛ زياد لا يملك، إلا إذا تسلّل حين كان الباب مفتوحاً.' },
       ],
       epilogue: { en: 'The empty tray was in his bicycle basket, under a towel. Ziad works Saturdays for free now — quality control, no tasting.', ar: 'كانت الصينية الفارغة في سلّة درّاجته تحت منشفة. يعمل زياد الآن أيام السبت مجاناً — مراقبة جودة، دون تذوّق.' },
     },
@@ -303,13 +315,13 @@ export const QUICK1 = [
       { id: 'camera', e: '🎥', name: { en: 'The camera log', ar: 'سجلّ الكاميرا' }, pos: { x: 20, y: 28 }, clueId: 'timestamp' },
       { id: 'cabinet', e: '🏆', name: { en: 'The trophy cabinet', ar: 'خزانة الكأس' }, pos: { x: 52, y: 58 }, clueId: 'no-force2' },
       { id: 'board', e: '📋', name: { en: 'The noticeboard', ar: 'لوحة الإعلانات' }, pos: { x: 80, y: 30 }, clueId: 'vague' },
-      { id: 'gym', e: '🏀', name: { en: 'The gym', ar: 'القاعة الرياضية' }, pos: { x: 78, y: 68 }, empty: { en: 'Practice schedules, a lost sock, no trophy.', ar: 'جداول تدريب، وجورب ضائع، ولا كأس.' } },
+      { id: 'gym', e: '📖', name: { en: 'The library desk', ar: 'مكتب المكتبة' }, pos: { x: 78, y: 68 }, clueId: 'library-log' },
     ],
     clues: [
-      { id: 'timestamp', e: '🎥', name: { en: 'The secret timestamp', ar: 'التوقيت السرّي' }, text: { en: 'The security log shows the trophy was taken at exactly 2:35 — only Detective Kawkab knows this.', ar: 'سجلّ الكاميرا يُظهر أن الكأس أُخذت في الساعة ٢:٣٥ تماماً — ولا يعرف ذلك سوى المحقق كوكب.' } },
+      { id: 'timestamp', e: '🎥', name: { en: 'The secret timestamp', ar: 'التوقيت السرّي' }, text: { en: 'The security log shows the trophy was taken at exactly 2:35 PM. The school was never told the hour.', ar: 'سجلّ الكاميرا يُظهر أن الكأس أُخذت في الساعة ٢:٣٥ مساءً. لم تُخبَر المدرسة بالساعة.' } },
       { id: 'no-force2', e: '🗄️', name: { en: 'The unforced cabinet', ar: 'الخزانة السليمة' }, text: { en: 'The cabinet was opened with its own small key, kept in the staff room.', ar: 'فُتحت الخزانة بمفتاحها الصغير المحفوظ في غرفة المعلمين.' } },
       { id: 'vague', e: '📋', name: { en: 'The vague announcement', ar: 'الإعلان الغامض' }, text: { en: 'All the school was told: the trophy vanished “sometime during the day”. No hour. No minute.', ar: 'كل ما قيل للمدرسة: الكأس اختفت «في وقتٍ ما خلال اليوم». لا ساعة ولا دقيقة.' } },
-      { id: 'layla-slip', e: '🗣', name: { en: 'Layla’s slip', ar: 'زلّة ليلى' }, text: { en: 'Layla gave an alibi for 2:35 exactly — “when it was taken” — though the time was never announced.', ar: 'قدّمت ليلى حجّة غياب عن الساعة ٢:٣٥ تحديداً — «حين أُخذت الكأس» — مع أن التوقيت لم يُعلَن قط.' } },
+      { id: 'library-log', e: '📖', name: { en: 'Library sign-out sheet', ar: 'سجلّ خروج المكتبة' }, text: { en: 'Layla signed out of the library at 1:50 PM on Tuesday. The trophy was taken at 2:35 — she was not inside.', ar: 'سجّلت ليلى خروجها من المكتبة الساعة ١:٥٠ ظهر الثلاثاء. أُخذت الكأس في ٢:٣٥ — لم تكن داخل المكتبة.' } },
     ],
     suspects: [
       {
@@ -329,6 +341,10 @@ export const QUICK1 = [
       {
         id: 'layla', e: '📚', name: { en: 'Layla', ar: 'ليلى' },
         role: { en: 'Library regular. Very precise about everything.', ar: 'من روّاد المكتبة. دقيقة جداً في كل شيء.' },
+        report: {
+          en: 'Tuesday afternoon I was in the library from lunch until the bell. Quiet, productive, nowhere near the trophy cabinet. I dislike drama.',
+          ar: 'بعد ظهر الثلاثاء كنت في المكتبة من الغداء حتى جرس الخروج. هادئة، منجزة، بعيدة تماماً عن خزانة الكأس. أكره الضجيج.',
+        },
         questions: [
           { id: 'alibi', q: { en: 'Where were you on Tuesday?', ar: 'أين كنتِ يوم الثلاثاء؟' }, a: { en: 'At 2:35, when it was taken, I was in the library. You can note that down.', ar: 'في الساعة ٢:٣٥، حين أُخذت الكأس، كنت في المكتبة. يمكنك تدوين ذلك.' }, givesClue: 'layla-slip' },
           { id: 'confront', needsClue: 'timestamp', q: { en: 'The 2:35 timestamp was a strict secret. How did you know the exact minute?', ar: 'توقيت ٢:٣٥ كان سرّاً تامّاً. كيف عرفتِ الدقيقة بالضبط؟' }, a: { en: 'I… heard it somewhere. People talk! Clocks talk! I mean— people.', ar: 'أنا… سمعته في مكانٍ ما. الناس يتكلمون! الساعات تتكلم! أقصد— الناس.' }, reaction: { en: 'The librarian, consulted, has no record of Layla on Tuesday at all.', ar: 'أمينة المكتبة، عند سؤالها، لا تذكر ليلى يوم الثلاثاء إطلاقاً.' } },
@@ -337,10 +353,10 @@ export const QUICK1 = [
     ],
     solution: {
       culprit: 'layla',
-      evidence: ['timestamp', 'layla-slip'],
+      evidence: ['timestamp', 'library-log'],
       explanation: [
-        { en: 'Nobody was told WHEN the trophy was taken — the 2:35 timestamp was secret.', ar: 'لم يُخبَر أحد بوقت اختفاء الكأس — توقيت ٢:٣٥ كان سرّاً.' },
-        { en: 'Layla gave an alibi for that exact minute. Only the thief knew the minute mattered.', ar: 'قدّمت ليلى حجّة غياب عن تلك الدقيقة بالذات. وحده الفاعل يعرف أن تلك الدقيقة مهمّة.' },
+        { en: 'The trophy was taken at 2:35 PM — but the school was only told “sometime during the day”.', ar: 'أُخذت الكأس في ٢:٣٥ مساءً — لكن المدرسة قيل لها «في وقتٍ ما خلال اليوم» فقط.' },
+        { en: 'Layla claims she was in the library all afternoon — yet she signed out at 1:50, before the theft. Her story does not fit the facts.', ar: 'تدّعي ليلى أنها كانت في المكتبة طوال الظهيرة — لكنها خرجت الساعة ١:٥٠، قبل السرقة. روايتها لا تطابق الوقائع.' },
       ],
       epilogue: { en: 'The trophy was in Layla’s locker, wrapped in a scarf. She only wanted to photograph it for the yearbook “properly, with good lighting.” The headmaster granted her exactly that — as official photographer, under supervision, forever.', ar: 'كانت الكأس في خزانة ليلى ملفوفة بوشاح. أرادت فقط تصويرها للكتاب السنوي «تصويراً لائقاً بإضاءة جيدة». ومنحها المدير ذلك بالضبط — مصوّرةً رسمية، تحت الإشراف، إلى الأبد.' },
     },

@@ -1185,6 +1185,72 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
 .wk-reminder-start:active { transform: scale(0.96); }
 .wk-reminder-x { flex: 0 0 auto; background: none; border: none; color: #9a8d76; font-size: 1rem; cursor: pointer; padding: 4px; }
 
+/* Habit reminder banner — mirrors workout banner, green accent */
+.hb-reminder-banner {
+    position: fixed; left: 12px; right: 12px; bottom: max(72px, calc(14px + env(safe-area-inset-bottom)));
+    z-index: 59; display: flex; align-items: center; gap: 12px;
+    max-width: 460px; margin: 0 auto; padding: 12px 14px;
+    background: linear-gradient(180deg, #1a2e1a, #0f1a0f);
+    border: 1.5px solid #6fae7a; border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    animation: wkReminderIn .35s cubic-bezier(.2,.9,.3,1.2);
+}
+.hb-reminder-ic { font-size: 1.5rem; flex: 0 0 auto; }
+.hb-reminder-body { flex: 1; min-width: 0; }
+.hb-reminder-title { font-weight: 700; font-size: 0.88rem; color: #e8f5ea; }
+.hb-reminder-sub { font-size: 0.74rem; color: #9fd4a3; margin-top: 1px; }
+.hb-reminder-start {
+    flex: 0 0 auto; font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 0.95rem; color: #0f1a0f;
+    background: linear-gradient(180deg, #b8e6bc, #6fae7a); border: none; border-radius: 12px;
+    padding: 8px 14px; cursor: pointer;
+}
+.hb-reminder-x { flex: 0 0 auto; background: none; border: none; color: #7a9a7a; font-size: 1rem; cursor: pointer; padding: 4px; }
+
+.home-today-chip {
+    position: absolute; top: 14%; left: 50%; transform: translateX(-50%);
+    z-index: 12; padding: 8px 16px; border-radius: 999px;
+    border: 2px solid rgba(111,174,122,0.85); background: rgba(15,26,15,0.82);
+    color: #e8f5ea; font-size: 0.95rem; font-weight: 800; letter-spacing: 1px;
+    cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+}
+.home-today-chip:active { transform: translateX(-50%) scale(0.97); }
+
+.home-today-panel {
+    position: absolute; top: 14%; left: 50%; transform: translateX(-50%);
+    z-index: 12; width: min(92vw, 320px);
+    border-radius: 16px; border: 2px solid rgba(111,174,122,0.85);
+    background: rgba(15,26,15,0.88); box-shadow: 0 4px 20px rgba(0,0,0,0.45);
+    overflow: hidden;
+}
+.home-today-head {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 10px 14px; border: none; background: transparent;
+    color: #e8f5ea; font-size: 0.95rem; font-weight: 800; letter-spacing: 1px;
+    cursor: pointer; font-family: inherit;
+}
+.home-today-count { margin-inline-start: auto; color: #9fd4a3; }
+.home-today-chev { font-size: 0.75rem; color: #7a9a7a; margin-inline-start: 4px; }
+.home-today-body { padding: 0 10px 10px; border-top: 1px solid rgba(111,174,122,0.25); }
+.home-today-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.home-today-row.done { opacity: 0.75; }
+.home-today-check {
+    width: 28px; height: 28px; border-radius: 8px; border: 2px solid;
+    background: transparent; color: #fff; font-size: 14px; font-weight: 900;
+    flex-shrink: 0; cursor: pointer; font-family: inherit;
+}
+.home-today-check:disabled { cursor: default; opacity: 0.6; }
+.home-today-label { font-size: 0.85rem; font-weight: 700; color: #e8f5ea; flex: 1; min-width: 0; }
+.home-today-all {
+    display: block; width: 100%; margin-top: 8px; padding: 8px;
+    border: none; border-radius: 10px; background: rgba(111,174,122,0.2);
+    color: #b8e6bc; font-size: 0.85rem; font-weight: 800; cursor: pointer;
+    font-family: inherit; text-align: center;
+}
+.home-today-all:active { transform: scale(0.98); }
+
 /* ═══════════════════════════════════
    WORKOUT — PROGRESS & STATS
 ═══════════════════════════════════ */

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import PracticeShell, { INK, SUB, FAINT, SERIF } from './PracticeShell';
+import { markWellbeingPracticeDone } from './habitState';
 
 /*
  * Nature Sounds — rain, ocean, wind and fire, mixable, synthesized live with the
@@ -157,7 +158,12 @@ export default function NatureSoundsPractice({ onBack }) {
     } catch { stopAll(); }
   }, [stopAll]);
 
-  const finish = useCallback(() => { stopAll(); setPhase('done'); playSfx?.('collect'); }, [stopAll, playSfx]);
+  const finish = useCallback(() => {
+    stopAll();
+    setPhase('done');
+    playSfx?.('collect');
+    markWellbeingPracticeDone('nature');
+  }, [stopAll, playSfx]);
 
   const start = useCallback(() => {
     if (active.size === 0) return;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import PracticeShell, { INK, SUB, SERIF } from './PracticeShell';
+import { markWellbeingPracticeDone } from './habitState';
 
 /*
  * Breathe — a guided breathing pacer. An animated circle expands on the inhale
@@ -52,7 +53,11 @@ export default function BreathePractice({ onBack }) {
     note: isAr ? 'ممارسة للاسترخاء، وليست علاجاً طبياً.' : 'A relaxation practice, not medical treatment.',
   }), [isAr]);
 
-  const finish = useCallback(() => { setPhase('done'); playSfx?.('collect'); }, [playSfx]);
+  const finish = useCallback(() => {
+    setPhase('done');
+    playSfx?.('collect');
+    markWellbeingPracticeDone('breathe');
+  }, [playSfx]);
 
   const start = useCallback(() => {
     lastScaleRef.current = 0.45;

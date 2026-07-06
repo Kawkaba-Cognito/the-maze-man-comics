@@ -12,9 +12,10 @@ import WorkoutScreen from './screens/WorkoutScreen';
 import RelaxScreen from '../features/relax/RelaxScreen';
 import RoomHost from './maze/RoomHost';
 import PaywallModal from './modals/PaywallModal';
-import TipJarModal from './modals/TipJarModal';
-import TipButton from './shared/TipButton';
 import ReminderBanner from '../features/workout/ReminderBanner';
+import HabitReminderBanner from '../features/relax/HabitReminderBanner';
+import { syncHabitReminders } from '../features/relax/habitReminders';
+import { loadHabits } from '../features/relax/habitState';
 import { LANG } from '../data/langStrings';
 
 export default function AppShell({ onBackToMenu }) {
@@ -28,6 +29,10 @@ export default function AppShell({ onBackToMenu }) {
     const timer = setTimeout(() => enterMaze(), 4000);
     return () => clearTimeout(timer);
   }, [mazeEntryPending, enterMaze]);
+
+  useEffect(() => {
+    syncHabitReminders(loadHabits(), currentLang);
+  }, [currentLang]);
 
   return (
     <>
@@ -87,9 +92,8 @@ export default function AppShell({ onBackToMenu }) {
 
       {mazeVisible && <RoomHost />}
       {!mazeVisible && <ReminderBanner />}
+      {!mazeVisible && <HabitReminderBanner />}
       <PaywallModal />
-      <TipJarModal />
-      {isHome && <TipButton />}
     </>
   );
 }

@@ -748,6 +748,96 @@
 .mz-rec-close { width: 100%; padding: 9px; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 7px; background: transparent; color: #9a8a7a; font: 600 12px 'Courier New', monospace; cursor: pointer; }
 .mz-rec-close:hover { color: #fff; border-color: rgba(255,255,255,0.35); }
 
+/* ── Escape room locks: warm paper puzzle theme (high contrast on phone) ── */
+.mz-rec-overlay--escape .mz-rec-backdrop {
+  background: rgba(20, 14, 8, 0.55);
+}
+.mz-rec--escape {
+  background: #fff7f2;
+  border: 2px solid #e3d6c4;
+  box-shadow: 0 8px 32px rgba(26, 18, 8, 0.28);
+  color: #2d2210;
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+.mz-rec--escape .mz-rec-k { color: #b9842f; font-family: inherit; letter-spacing: 0.18em; }
+.mz-rec--escape .mz-rec-name { color: #2d2210; font-weight: 800; }
+.mz-rec--escape .mz-rec-instr { color: #6b5d4a; }
+.mz-rec--escape .mz-rec-foot { background: #fff7f2; border-top-color: #e3d6c4; }
+.mz-rec--escape .mz-rec-close {
+  border-color: #e3d6c4;
+  color: #6b5d4a;
+  background: #fffdf8;
+  font-family: inherit;
+}
+.mz-rec--escape .mz-rec-close:hover { color: #2d2210; border-color: #c9a24b; }
+.mz-rec--escape .mz-rec-body--fit {
+  background: #fffdf8;
+  border: 2px solid #e3d6c4;
+  border-radius: 14px;
+  padding: 8px 6px;
+}
+.mz-rec--escape .ct-puzzle-grid {
+  border-color: #1a1208;
+  background: #f3ebe4;
+}
+.mz-rec--escape .mz-rec-cell,
+.mz-rec--escape .ct-puzzle-cell {
+  background: linear-gradient(180deg, #fff 0%, #f3ebe4 100%) !important;
+  color: #141210 !important;
+  border-color: #1a1208 !important;
+  box-shadow: 2px 2px 0 rgba(26, 18, 8, 0.18) !important;
+}
+.mz-rec--escape .mz-rec-cell.ct-puzzle-cell--fixed,
+.mz-rec--escape .ct-puzzle-cell--fixed {
+  background: linear-gradient(180deg, #fff8ef 0%, #fdeecb 100%) !important;
+  color: #1a1208 !important;
+  font-weight: 800;
+}
+.mz-rec--escape .mz-rec-cell.ct-puzzle-cell--selected,
+.mz-rec--escape .ct-puzzle-cell--selected {
+  background: linear-gradient(180deg, #fff3d6 0%, #f5d88a 100%) !important;
+  box-shadow: inset 0 0 0 2px #b9842f, 2px 2px 0 rgba(26, 18, 8, 0.18) !important;
+}
+.mz-rec--escape .mz-rec-cell.ct-puzzle-cell--t0,
+.mz-rec--escape .ct-puzzle-cell--t0 {
+  background: linear-gradient(180deg, #fff 0%, #ececec 100%) !important;
+  color: #222 !important;
+}
+.mz-rec--escape .mz-rec-cell.ct-puzzle-cell--t1,
+.mz-rec--escape .ct-puzzle-cell--t1 {
+  background: linear-gradient(180deg, #2a2a2a 0%, #141210 100%) !important;
+  color: #fff !important;
+}
+.mz-rec--escape .mz-rec-cell.ct-puzzle-cell--takuzu-fixed,
+.mz-rec--escape .ct-puzzle-cell--takuzu-fixed {
+  box-shadow: inset 0 0 0 3px #b696d4, 2px 2px 0 rgba(26, 18, 8, 0.18) !important;
+}
+.mz-rec--escape .mz-rec-cell.ct-puzzle-cell--shaded,
+.mz-rec--escape .ct-puzzle-cell--shaded {
+  background: linear-gradient(180deg, #3a3a3a 0%, #141210 100%) !important;
+  color: transparent !important;
+}
+.mz-rec--escape .ct-puzzle-cage-label { color: #8a4a18; font-weight: 900; }
+.mz-rec--escape .ct-puzzle-cell--kenken { border-color: #e0915a !important; }
+.mz-rec--escape .ct-number-pad button {
+  background: #fffdf8;
+  border: 2px solid #1a1208;
+  color: #1a1208;
+  font-weight: 800;
+  box-shadow: 2px 2px 0 rgba(26, 18, 8, 0.15);
+}
+.mz-rec--escape .ct-bridges-svg {
+  background: #fffaf5;
+  border: 2px solid #e3d6c4;
+  border-radius: 10px;
+}
+.mz-rec--escape .ct-bridges-isle { fill: #fff8ef; stroke: #1a1208; }
+.mz-rec--escape .ct-bridges-isle.is-done { fill: #bfe3c2; }
+.mz-rec--escape .ct-bridges-isle.is-over { fill: #f0b3ab; }
+.mz-rec--escape .ct-bridges-isle.is-sel { stroke: #b9842f; }
+.mz-rec--escape .ct-bridges-line { stroke: #2d2210; }
+.mz-rec--escape .ct-bridges-num { fill: #1a1208; font-weight: 800; }
+
 /* ── 3D boss fight cinematic (Hollywood letterbox + subtitles) ── */
 .bf-cine-grain {
   position: fixed;
