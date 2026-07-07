@@ -6,8 +6,8 @@ import CosmosCharacter from '../../../../../character/CosmosCharacter';
 import { TRIVIA, TRIVIA_CATEGORIES } from './triviaData';
 
 /*
- * Trivia — general-knowledge quiz with a STAIRCASE. 16 categories × 24 graded
- * questions (★/★★/★★★), bilingual, each with a "did you know" fact.
+ * Trivia — general-knowledge quiz with a STAIRCASE. 20 categories, 25–80+
+ * graded questions each (★/★★/★★★), bilingual, each with a "did you know" fact.
  *
  * Kawkab climbs one step per correct answer; reach the top to clear the
  * staircase. THREE wrong answers and Kawkab is out.
@@ -111,7 +111,7 @@ const T = {
   },
 };
 
-function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
   const t = isAr ? T.ar : T.en;
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const persist = mode !== 'passplay'; // pass n play must stay seed-deterministic
@@ -195,8 +195,9 @@ function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr
       scoreRef.current += stepRef.current * 10;
       playSfx?.('lose');
       setOver({ stairs: stairsRef.current, score: scoreRef.current });
+      awardFreeRun?.('trivia', stairsRef.current);
     }
-  }, [mode, onResult, t, awardPoints, category, rng, playSfx]);
+  }, [mode, onResult, t, awardPoints, awardFreeRun, category, rng, playSfx]);
 
   const answer = (idx) => {
     if (picked != null) return;
@@ -341,7 +342,7 @@ function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr
 }
 
 export default function TriviaGame({ onBack, workoutMode = false }) {
-  const { currentLang, playSfx, awardPoints } = useApp();
+  const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   return (
     <ModeShell
@@ -360,7 +361,7 @@ export default function TriviaGame({ onBack, workoutMode = false }) {
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <TriviaEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <TriviaEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
     />
   );

@@ -1,5 +1,5 @@
 /*
- * Trivia content bank — 20 categories, up to 72 questions each (easy ★ · medium ★★ · hard ★★★),
+ * Trivia content bank — 20 categories, 25–80+ questions each (easy ★ · medium ★★ · hard ★★★),
  * bilingual (EN/AR), each with a "did you know" fact. Authored in ./data/*.js by theme group.
  *
  * Question shape: { d: 1|2|3, en, ar, o: [[en,ar]×4], a: indexOfCorrect, f: {en,ar} }.
@@ -14,6 +14,15 @@ import { MIND } from './data/mind';
 import { ANCIENT } from './data/ancient';
 import { TECH } from './data/tech';
 import { DINO } from './data/dino';
+import { SUPPLEMENT } from './data/supplement';
+
+function mergeSupplement(banks) {
+  const merged = { ...banks };
+  for (const [id, extra] of Object.entries(SUPPLEMENT)) {
+    merged[id] = [...(merged[id] || []), ...extra];
+  }
+  return merged;
+}
 
 export const TRIVIA_CATEGORIES = [
   { id: 'animals', en: 'Animals', ar: 'الحيوانات', emoji: '🦁' },
@@ -38,4 +47,4 @@ export const TRIVIA_CATEGORIES = [
   { id: 'dino', en: 'Dinosaurs & Prehistory', ar: 'الديناصورات وما قبل التاريخ', emoji: '🦕' },
 ];
 
-export const TRIVIA = { ...NATURE, ...SCIENCE, ...WORLD, ...CULTURE, ...MIND, ...ANCIENT, ...TECH, ...DINO };
+export const TRIVIA = mergeSupplement({ ...NATURE, ...SCIENCE, ...WORLD, ...CULTURE, ...MIND, ...ANCIENT, ...TECH, ...DINO });
