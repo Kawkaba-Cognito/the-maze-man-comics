@@ -32,8 +32,10 @@ const STAIR_CSS = `
 const LIVES = 3;
 const STEPS = { easy: 5, med: 6, hard: 7 };
 const survivalSteps = (stage) => Math.min(8, 5 + Math.floor(stage / 2));
-const survivalTiers = (stage) => (stage < 2 ? [1] : stage < 4 ? [1, 2] : stage < 7 ? [2] : stage < 10 ? [2, 3] : [3]);
-const levelTiers = { easy: [1], med: [2], hard: [3] };
+// Survival ramps harder, sooner: pure easy only at the very start, hard by mid-run.
+const survivalTiers = (stage) => (stage < 1 ? [1] : stage < 3 ? [1, 2] : stage < 5 ? [2] : stage < 7 ? [2, 3] : [3]);
+// Levels mix tiers so even "Easy" isn't trivial and "Hard" is genuinely hard.
+const levelTiers = { easy: [1, 2], med: [2, 3], hard: [3] };
 
 const shuffleR = (arr, rng) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
@@ -347,11 +349,11 @@ export default function TriviaGame({ onBack, workoutMode = false }) {
       scienceId="trivia"
       title={{ en: 'Trivia', ar: 'معلومات' }}
       hints={{
-        free: { en: '16 topics · pick your path · 3 mistakes out', ar: '١٦ موضوعاً · اختر طريقك · ٣ أخطاء وتخرج' },
+        free: { en: '20 topics · pick your path · 3 mistakes out', ar: '٢٠ موضوعاً · اختر طريقك · ٣ أخطاء وتخرج' },
         levels: { en: 'A new topic each level · ★ by difficulty', ar: 'موضوع جديد كل مستوى · النجوم بحسب الصعوبة' },
         pass: { en: 'Same questions for all · climb highest', ar: 'نفس الأسئلة للجميع · من يصعد أعلى' },
       }}
-      diffLabels={{ easy: { en: 'Easy ★', ar: 'سهل ★' }, med: { en: 'Medium ★★', ar: 'متوسط ★★' }, hard: { en: 'Hard ★★★', ar: 'صعب ★★★' } }}
+      diffLabels={{ easy: { en: 'Easy ★–★★', ar: 'سهل ★–★★' }, med: { en: 'Medium ★★–★★★', ar: 'متوسط ★★–★★★' }, hard: { en: 'Hard ★★★', ar: 'صعب ★★★' } }}
       pass={{ trials: 1, scoreLabel: { en: 'steps', ar: 'درجات' }, lowerBetter: false, diff: 'med' }}
       isAr={isAr}
       playSfx={playSfx}

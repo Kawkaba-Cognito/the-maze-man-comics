@@ -1,5 +1,5 @@
 /*
- * Trivia content bank — 16 categories × 24 questions (8 easy ★ · 8 medium ★★ · 8 hard ★★★),
+ * Trivia content bank — 20 categories, up to 72 questions each (easy ★ · medium ★★ · hard ★★★),
  * bilingual (EN/AR), each with a "did you know" fact. Authored in ./data/*.js by theme group.
  *
  * Question shape: { d: 1|2|3, en, ar, o: [[en,ar]×4], a: indexOfCorrect, f: {en,ar} }.
@@ -10,6 +10,10 @@ import { NATURE } from './data/nature';
 import { SCIENCE } from './data/science';
 import { WORLD } from './data/world';
 import { CULTURE } from './data/culture';
+import { MIND } from './data/mind';
+import { ANCIENT } from './data/ancient';
+import { TECH } from './data/tech';
+import { DINO } from './data/dino';
 
 export const TRIVIA_CATEGORIES = [
   { id: 'animals', en: 'Animals', ar: 'الحيوانات', emoji: '🦁' },
@@ -28,6 +32,10 @@ export const TRIVIA_CATEGORIES = [
   { id: 'math', en: 'Numbers & Math', ar: 'الأرقام والرياضيات', emoji: '🔢' },
   { id: 'arts', en: 'Art & Music', ar: 'الفنون والموسيقى', emoji: '🎨' },
   { id: 'words', en: 'Words & Stories', ar: 'الكلمات والقصص', emoji: '📚' },
+  { id: 'mind', en: 'Mind & Psychology', ar: 'العقل وعلم النفس', emoji: '🧠' },
+  { id: 'ancient', en: 'Ancient Worlds & Myths', ar: 'العوالم القديمة والأساطير', emoji: '🏺' },
+  { id: 'tech', en: 'Technology & Computers', ar: 'التقنية والحواسيب', emoji: '💻' },
+  { id: 'dino', en: 'Dinosaurs & Prehistory', ar: 'الديناصورات وما قبل التاريخ', emoji: '🦕' },
 ];
 
-export const TRIVIA = { ...NATURE, ...SCIENCE, ...WORLD, ...CULTURE };
+export const TRIVIA = { ...NATURE, ...SCIENCE, ...WORLD, ...CULTURE, ...MIND, ...ANCIENT, ...TECH, ...DINO };
