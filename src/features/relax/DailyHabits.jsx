@@ -69,7 +69,7 @@ function Heatmap({ cells, isAr }) {
               <div
                 key={c.date}
                 className="hb-heat-cell"
-                style={{ background: c.total ? HEAT[c.level] : '#f5efe6' }}
+                style={c.total ? { background: HEAT[c.level] } : undefined}
                 title={`${c.date}: ${c.done}/${c.total}`}
               />
             ))}
@@ -339,7 +339,7 @@ export default function DailyHabits({ isAr, playSfx, onBack, onOpenPractice }) {
         <div className="header">
           <button className="rx-back" onClick={onBack} aria-label="Back">‹</button>
           <div style={{ paddingInlineStart: 42 }}>
-            <div className="header-sub" style={{ color: '#6fae7a' }}>{isAr ? 'العافية' : 'Wellbeing'}</div>
+            <div className="header-sub" style={{ color: '#6fae7a' }}>{isAr ? 'عادات' : 'Habits'}</div>
             <div className="header-title serif">{t.title}</div>
             <div className="menu-tag">{becoming ? `${t.becoming}: ${becoming}` : t.tag}</div>
           </div>
@@ -449,7 +449,7 @@ export default function DailyHabits({ isAr, playSfx, onBack, onOpenPractice }) {
                   <button
                     type="button"
                     className={`hb-check${done ? ' on' : ''}`}
-                    style={{ borderColor: habit.color || dom.color, background: done ? (habit.color || dom.color) : CARD }}
+                    style={{ borderColor: habit.color || dom.color, background: done ? (habit.color || dom.color) : undefined }}
                     onClick={() => onToggle(habit)}
                     disabled={isAuto || isSkip}
                     aria-label={done ? (isAr ? 'مكتمل' : 'Done') : (isAr ? 'تحديد' : 'Mark done')}
@@ -719,7 +719,7 @@ ${INSIGHTS_TAB_CSS}
 .hb-section-title { font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:${SUB}; margin-bottom:10px; }
 .hb-heat-grid { display:flex; gap:3px; overflow-x:auto; padding-bottom:4px; }
 .hb-heat-col { display:flex; flex-direction:column; gap:3px; }
-.hb-heat-cell { width:12px; height:12px; border-radius:3px; flex-shrink:0; }
+.hb-heat-cell { width:12px; height:12px; border-radius:3px; flex-shrink:0; background:#f5efe6; }
 .hb-heat-legend { display:flex; align-items:center; gap:4px; margin-top:8px; font-size:10px; color:${FAINT}; }
 .hb-heat-dot { width:10px; height:10px; border-radius:2px; }
 .hb-add-btn { width:100%; padding:13px; border-radius:12px; border:2px solid #6fae7a; background:#e8f5ea; color:#3a7a48; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; margin-bottom:10px; }
@@ -756,4 +756,61 @@ ${INSIGHTS_TAB_CSS}
 .hb-freq-btns { display:flex; gap:8px; }
 .hb-freq { padding:8px 14px; border-radius:999px; border:2px solid ${LINE}; background:#fffaf5; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; color:${SUB}; }
 .hb-freq.on { border-color:${GOLD}; background:#fff8ef; color:${INK}; }
+
+[data-home-theme='dark'] .rx-root { color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .rx-back { background:#241c10; border-color:rgba(212,168,80,0.3); color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .header { background:linear-gradient(180deg,#1f1810 0%,var(--color-training-palette-surface) 100%); }
+[data-home-theme='dark'] .rx-root .header-title { color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .menu-tag { color:#c9b384; }
+[data-home-theme='dark'] .hb-tab { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .hb-tab.on { border-color:#e8ac4e; background:#332818; color:#f0e2c0; }
+[data-home-theme='dark'] .hb-nudge { background:#332818; border-color:#8a6010; }
+[data-home-theme='dark'] .hb-nudge-title { color:#e8ac4e; }
+[data-home-theme='dark'] .hb-nudge-item { color:#f0e2c0; }
+[data-home-theme='dark'] .hb-hero { background:#211a10; border-color:rgba(212,168,80,0.22); }
+[data-home-theme='dark'] .hb-ring-center { color:#f0e2c0; }
+[data-home-theme='dark'] .hb-ring-center span { color:#c9b384; }
+[data-home-theme='dark'] .hb-hero-label { color:#c9b384; }
+[data-home-theme='dark'] .hb-hero-stat { color:#f0e2c0; }
+[data-home-theme='dark'] .hb-hero-sub { color:#8f7d58; }
+[data-home-theme='dark'] .hb-hero-consistency { color:#c9b384; }
+[data-home-theme='dark'] .hb-empty { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .hb-item { background:#211a10; border-color:rgba(212,168,80,0.22); }
+[data-home-theme='dark'] .hb-item--skip { background:#1a140c; }
+[data-home-theme='dark'] .hb-check { background:#1a140c; border-color:rgba(212,168,80,0.3); }
+[data-home-theme='dark'] .hb-title { color:#f0e2c0; }
+[data-home-theme='dark'] .hb-hint { color:#c9b384; }
+[data-home-theme='dark'] .hb-auto { color:#8f7d58; background:#332818; }
+[data-home-theme='dark'] .hb-skip-tag { color:#e8ac4e; background:#332818; }
+[data-home-theme='dark'] .hb-recipe { background:#1a140c; color:#f0e2c0; }
+[data-home-theme='dark'] .hb-stacks .hb-stack-chain { background:#211a10; border-color:rgba(212,168,80,0.22); }
+[data-home-theme='dark'] .hb-inline-field span { color:#c9b384; }
+[data-home-theme='dark'] .hb-inline-field input, [data-home-theme='dark'] .hb-inline-field select { background:#1a140c; border-color:rgba(212,168,80,0.25); color:#f0e2c0; }
+[data-home-theme='dark'] .hb-remind-toggle { color:#f0e2c0; }
+[data-home-theme='dark'] .hb-backup-btn { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .hb-section-title { color:#c9b384; }
+[data-home-theme='dark'] .hb-add-btn { background:rgba(111,174,122,0.18); border-color:#6fae7a; color:#8fd49a; }
+[data-home-theme='dark'] .hb-edit-toggle { background:#332818; border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .hb-manage { background:#211a10; border-color:rgba(212,168,80,0.22); }
+[data-home-theme='dark'] .hb-manage-label { color:#8f7d58; }
+[data-home-theme='dark'] .hb-manage-row { border-color:rgba(212,168,80,0.14); color:#f0e2c0; }
+[data-home-theme='dark'] .hb-manage-x { background:#332818; color:#c9b384; }
+[data-home-theme='dark'] .hb-manage-add { background:#1a140c; border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .hb-note { color:#8f7d58; }
+[data-home-theme='dark'] .hb-modal-bg { background:rgba(0,0,0,0.6); }
+[data-home-theme='dark'] .hb-modal { background:#211a10; border-color:rgba(212,168,80,0.25); }
+[data-home-theme='dark'] .hb-modal-title { color:#f0e2c0; }
+[data-home-theme='dark'] .hb-modal-sub { color:#f0e2c0; }
+[data-home-theme='dark'] .hb-modal-hint { color:#c9b384; }
+[data-home-theme='dark'] .hb-reason { background:#1a140c; border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .hb-reason.on { border-color:#e8ac4e; background:#332818; color:#f0e2c0; }
+[data-home-theme='dark'] .hb-grace-check { color:#c9b384; }
+[data-home-theme='dark'] .hb-btn-ghost { border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .hb-domain { background:#1a140c; border-color:rgba(212,168,80,0.25); }
+[data-home-theme='dark'] .hb-domain.on { background:#332818; }
+[data-home-theme='dark'] .hb-field span { color:#c9b384; }
+[data-home-theme='dark'] .hb-field input { background:#1a140c; border-color:rgba(212,168,80,0.25); color:#f0e2c0; }
+[data-home-theme='dark'] .hb-freq { background:#1a140c; border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .hb-freq.on { border-color:#e8ac4e; background:#332818; color:#f0e2c0; }
+[data-home-theme='dark'] .hb-heat-cell { background:#2a2114; }
 `;

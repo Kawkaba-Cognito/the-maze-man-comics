@@ -63,7 +63,7 @@ function ProgressRing({ frac, done, total, allDone }) {
 }
 
 export default function WorkoutScreen() {
-  const { currentLang, playSfx, awardPoints, openAssessment, leaveWorkout } = useApp();
+  const { currentLang, playSfx, awardPoints, openAssessment, leaveWorkout, setImmersive } = useApp();
   const isAr = currentLang === 'ar';
   const needsAssessment = !hasAssessProfile();
 
@@ -71,6 +71,14 @@ export default function WorkoutScreen() {
   const [view, setView] = useState(st.prefs ? 'plan' : 'setup');
   const [activeIdx, setActiveIdx] = useState(null);
   const [celebrate, setCelebrate] = useState(false);
+
+  // Hide the bottom tab bar on any view past the plan/setup landing
+  // (pretest, an exercise game, summary, stats).
+  useEffect(() => {
+    const deep = view !== 'plan' && view !== 'setup';
+    setImmersive('workout', deep);
+    return () => setImmersive('workout', false);
+  }, [view, setImmersive]);
 
   // Guided-session state
   const [sessionMode, setSessionMode] = useState(false);

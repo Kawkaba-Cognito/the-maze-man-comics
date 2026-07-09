@@ -49,4 +49,14 @@ const BASE_CSS = `
 .rxp-tip { font-size:12.5px; color:${FAINT}; line-height:1.6; text-align:center; max-width:360px; }
 .rxp-hero { font-size:60px; text-align:center; }
 .rxp-remain { font-size:15px; font-weight:800; color:${SUB}; font-variant-numeric:tabular-nums; }
+
+[data-home-theme='dark'] .rxp-root { color:#f0e2c0; }
+[data-home-theme='dark'] .rxp-back { background:#241c10; border-color:rgba(212,168,80,0.3); color:#f0e2c0; }
+[data-home-theme='dark'] .rxp-label { color:#c9b384; }
+[data-home-theme='dark'] .rxp-chip { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .rxp-chip.on { background:#332818; color:#f0e2c0; }
+[data-home-theme='dark'] .rxp-chip small { color:#8f7d58; }
+[data-home-theme='dark'] .rxp-ghost { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .rxp-tip { color:#8f7d58; }
+[data-home-theme='dark'] .rxp-remain { color:#c9b384; }
 `;

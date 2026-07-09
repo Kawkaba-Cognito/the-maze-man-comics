@@ -398,6 +398,112 @@
     font-family: 'Cairo', 'Cormorant Garamond', serif;
 }
 
+/* ── Dark mode: the shared "hub-light" shell drives every ModeShell game's
+   menu/results/leaderboard screens, so this one block re-themes all of them
+   at once. Backgrounds already react via --color-training-palette-surface;
+   these were the hardcoded-for-light ink/card colors left behind. ── */
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light {
+    color: var(--color-stage-ink);
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-hub-attn-big {
+    color: var(--color-stage-ink);
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-training-screen--hub .ct-fq-hub-attn-sub {
+    color: var(--color-stage-gold);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+    border-color: rgba(212, 168, 80, 0.35);
+    box-shadow: none;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-training-title {
+    color: var(--color-stage-ink);
+    text-shadow: none;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-training-blurb,
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-training-screen .ct-fq-sub {
+    color: var(--color-stage-muted) !important;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light.ct-fq-training-shell .ct-fq-btn-ghost {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.05) 100%);
+    color: var(--color-stage-ink);
+    border-color: rgba(212, 168, 80, 0.3);
+    box-shadow: none;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-db-training {
+    border-color: rgba(212, 168, 80, 0.22) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3) !important;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-card-training {
+    background: var(--color-stage-card) !important;
+    border-color: rgba(212, 168, 80, 0.28) !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3) !important;
+    color: var(--color-stage-ink);
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-card-training h3 {
+    color: var(--color-stage-ink) !important;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-card-training .ct-fq-pr input {
+    background: rgba(0, 0, 0, 0.25) !important;
+    border-color: rgba(212, 168, 80, 0.3) !important;
+    color: var(--color-stage-ink) !important;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-apb-training {
+    border-color: rgba(111, 174, 122, 0.4) !important;
+    color: #8fd49a !important;
+    background: rgba(111, 174, 122, 0.1) !important;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-rrb-training {
+    border-color: rgba(212, 168, 80, 0.28) !important;
+    background: rgba(0, 0, 0, 0.2) !important;
+    color: var(--color-stage-ink) !important;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-rrb-on-training,
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-rrb-on.ct-fq-rrb-on-training {
+    border-color: #6b9e7a !important;
+    background: rgba(107, 158, 122, 0.22) !important;
+    color: #b8e8c0 !important;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-rm-training .ct-fq-rmi {
+    background: var(--color-stage-card);
+    border-color: rgba(212, 168, 80, 0.2);
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-rm-training .ct-fq-rv {
+    color: #5ecb85;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-rm-training .ct-fq-rl {
+    color: var(--color-stage-muted);
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-training-screen .ct-fq-ies-lbl {
+    color: var(--color-stage-muted);
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-lbr-training {
+    background: var(--color-stage-card) !important;
+    border-color: rgba(212, 168, 80, 0.2) !important;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-lbr-training.win {
+    border-color: rgba(212, 175, 55, 0.55) !important;
+    background: rgba(212, 175, 55, 0.14) !important;
+    box-shadow: none;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-lbr-training .ct-fq-lbnm {
+    color: var(--color-stage-ink);
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-lbr-training .ct-fq-lbdt {
+    color: var(--color-stage-muted);
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-lbr-training .ct-fq-lbsc {
+    color: var(--color-stage-gold);
+}
+[data-home-theme='dark'] .ct-survival-intro-title {
+    color: var(--color-stage-ink);
+}
+[data-home-theme='dark'] .ct-survival-intro-text {
+    color: var(--color-stage-muted);
+}
+[data-home-theme='dark'] .ct-fq-sci-link {
+    color: var(--color-stage-muted);
+}
+
 /* Attention hub — light mode list (replaces circular maze) */
 .ct-fq-attn-modes {
     width: 100%;
@@ -2956,6 +3062,12 @@
     color: #5c534c;
     margin-top: 3px;
     line-height: 1.35;
+}
+[data-home-theme='dark'] .ct-training-play-title {
+    color: var(--color-stage-ink);
+}
+[data-home-theme='dark'] .ct-training-play-sub {
+    color: var(--color-stage-muted);
 }
 .ct-training-ov {
     position: fixed;

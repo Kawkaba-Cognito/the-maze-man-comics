@@ -383,7 +383,7 @@ export default function TriviaGame({ onBack, workoutMode = false }) {
 }
 
 const S = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
   stairWrap: { flex: '0 0 auto', padding: '8px 14px 4px', display: 'flex', flexDirection: 'column', gap: 4 },
   livesRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 460, width: '100%', margin: '0 auto' },
   topicChip: { fontWeight: 800, fontSize: 13, color: '#7a5a1e', background: '#fff1d8', border: '2px solid #e3c489', borderRadius: 999, padding: '3px 12px' },

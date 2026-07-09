@@ -50,6 +50,9 @@ export function AppProvider({ children }) {
   const [equipped, setEquipped] = useState(() => readJSON(EQUIP_KEY, {}));
   const [currentLang, setCurrentLang] = useState('en');
   const [activeTab, setActiveTab] = useState('comics');
+  // Screens register here when they drill into a game / practice / session, so
+  // the bottom tab bar hides on any deep view and shows only on tab landings.
+  const [immersiveMap, setImmersiveMap] = useState({});
   const [assessmentRequested, setAssessmentRequested] = useState(false);
   const [mazeVisible, setMazeVisible] = useState(false);
   const [mazeEntryPending, setMazeEntryPending] = useState(false);
@@ -266,6 +269,26 @@ export function AppProvider({ children }) {
     setCurrentLang(prev => prev === 'en' ? 'ar' : 'en');
   }, [playSfx]);
 
+  // A screen flags itself immersive (deep view) or not, keyed by screen. Only
+  // the ACTIVE screen's flag counts — always-mounted screens (e.g. Workout,
+  // which auto-starts a session in the background) must not hide the tab bar
+  // while another tab is showing.
+  const setImmersive = useCallback((key, on) => {
+    setImmersiveMap((m) => {
+      if (!!m[key] === !!on) return m;
+      const next = { ...m };
+      if (on) next[key] = true; else delete next[key];
+      return next;
+    });
+  }, []);
+  const activeImmersiveKey =
+    activeTab === 'comics' || activeTab === 'home' ? 'comics'
+    : activeTab === 'puzzles' ? 'puzzles'
+    : activeTab === 'workout' ? 'workout'
+    : activeTab === 'habits' || activeTab === 'wellbeing' || activeTab === 'relax' ? 'relax'
+    : null;
+  const immersive = activeImmersiveKey ? !!immersiveMap[activeImmersiveKey] : false;
+
   const switchTab = useCallback((tabId) => {
     playSfx('click');
     stopSpeech();
@@ -391,7 +414,7 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      globalXP, points, currentLang, activeTab, mazeVisible, mazeEntryPending,
+      globalXP, points, currentLang, activeTab, immersive, setImmersive, mazeVisible, mazeEntryPending,
       paywallOpen, tipOpen, profileData,
       character, setCharacter,
       owned, equipped, buyItem, equipItem,

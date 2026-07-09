@@ -1,6 +1,8 @@
 /*
  * SETTINGS FEATURE — full-screen settings page + sub-modals (Help, Feedback, Terms, Privacy, Export, Delete).
- * Clean, light, professional UI (iOS-style grouped lists). All `.stg-*` classes.
+ * iOS-style grouped lists, follows the app's light/dark theme via `--stg-*`
+ * custom properties (overridden under [data-home-theme="dark"] below — same
+ * attribute the rest of the app's chrome reacts to). All `.stg-*` classes.
  * Opened from the splash menu and the in-app shell.
  */
 
@@ -14,7 +16,29 @@
     --stg-ink-faint: #9aa1ad;
     --stg-accent: #c0851f;
     --stg-danger: #c2342b;
+    --stg-hover: #f7f8fa;
+    --stg-active: #f0f1f4;
+    --stg-input-bg: #fafbfc;
+    --stg-track: #ebedf0;
+    --stg-topbar-bg: rgba(255, 255, 255, 0.9);
     --stg-font: 'Outfit', 'Source Sans 3', system-ui, -apple-system, sans-serif;
+}
+
+[data-home-theme='dark'] {
+    --stg-bg: #14100a;
+    --stg-card: #211a10;
+    --stg-border: rgba(212, 168, 80, 0.22);
+    --stg-divider: rgba(212, 168, 80, 0.14);
+    --stg-ink: #f0e2c0;
+    --stg-ink-soft: #c9b384;
+    --stg-ink-faint: #8f7d58;
+    --stg-accent: #e8ac4e;
+    --stg-danger: #e2685c;
+    --stg-hover: #2a2114;
+    --stg-active: #332818;
+    --stg-input-bg: #1a140c;
+    --stg-track: #332818;
+    --stg-topbar-bg: rgba(20, 16, 10, 0.85);
 }
 
 /* ── FULL-SCREEN SETTINGS ── */
@@ -36,7 +60,7 @@
     align-items: center;
     gap: 12px;
     padding: max(14px, env(safe-area-inset-top) + 10px) 16px 14px;
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--stg-topbar-bg);
     backdrop-filter: saturate(180%) blur(12px);
     -webkit-backdrop-filter: saturate(180%) blur(12px);
     border-bottom: 1px solid var(--stg-border);
@@ -48,7 +72,7 @@
     height: 36px;
     border-radius: 50%;
     border: 1px solid var(--stg-border);
-    background: #fff;
+    background: var(--stg-card);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -57,7 +81,7 @@
     transition: background 0.12s;
     -webkit-tap-highlight-color: transparent;
 }
-.stg-back:hover { background: #f0f1f4; }
+.stg-back:hover { background: var(--stg-active); }
 .stg-back:active { transform: scale(0.96); }
 
 .stg-topbar-title {
@@ -122,7 +146,7 @@
 }
 .stg-xp-bar {
     height: 6px;
-    background: #ebedf0;
+    background: var(--stg-track);
     border-radius: 3px;
     overflow: hidden;
 }
@@ -172,8 +196,8 @@
     -webkit-tap-highlight-color: transparent;
 }
 .stg-section-body .stg-row:last-child { border-bottom: none; }
-.stg-row:hover { background: #f7f8fa; }
-.stg-row:active { background: #f0f1f4; }
+.stg-row:hover { background: var(--stg-hover); }
+.stg-row:active { background: var(--stg-active); }
 
 .stg-row-label {
     flex: 1;
@@ -262,7 +286,7 @@
     height: 32px;
     border-radius: 50%;
     border: 1px solid var(--stg-border);
-    background: #fff;
+    background: var(--stg-card);
     font-size: 0.85rem;
     cursor: pointer;
     color: var(--stg-ink-soft);
@@ -273,7 +297,7 @@
     transition: background 0.12s;
     -webkit-tap-highlight-color: transparent;
 }
-.stg-modal-close:hover { background: #f0f1f4; }
+.stg-modal-close:hover { background: var(--stg-active); }
 .stg-modal-close:active { transform: scale(0.96); }
 
 .stg-modal-body {
@@ -314,7 +338,7 @@
     font-family: inherit;
     resize: vertical;
     margin-bottom: 14px;
-    background: #fafbfc;
+    background: var(--stg-input-bg);
     transition: border-color 0.12s;
 }
 .stg-textarea:focus {

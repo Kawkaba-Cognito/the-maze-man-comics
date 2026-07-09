@@ -413,14 +413,14 @@ export default function OddOneOutGame({ onBack, workoutMode = false }) {
 const styles = {
   root: {
     position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column',
-    background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d',
+    background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)',
     fontFamily: "'Outfit', system-ui, sans-serif",
   },
   promptWrap: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
     padding: '8px 12px 4px', minHeight: 44, flexWrap: 'wrap',
   },
-  prompt: { fontWeight: 900, fontSize: 'clamp(16px, 4.5vw, 22px)', color: '#2d2d2d', textAlign: 'center' },
+  prompt: { fontWeight: 900, fontSize: 'clamp(16px, 4.5vw, 22px)', color: 'var(--color-training-ink, #2d2d2d)', textAlign: 'center' },
   timer: {
     fontWeight: 900, fontSize: 'clamp(14px, 4vw, 18px)', color: '#fff',
     background: COSMOS_STING_BG, padding: '4px 12px', borderRadius: 999,

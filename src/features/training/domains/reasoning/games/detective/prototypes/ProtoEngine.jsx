@@ -661,7 +661,7 @@ export default function ProtoEngine({
 const S = {
   root: {
     position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column',
-    background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d',
+    background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)',
     fontFamily: "'Outfit', system-ui, sans-serif",
   },
   rootFile: { background: '#e8dcc8' },

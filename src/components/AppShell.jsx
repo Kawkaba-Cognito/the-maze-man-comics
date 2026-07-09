@@ -24,11 +24,13 @@ function isRelaxTab(tab) {
 }
 
 export default function AppShell() {
-  const { activeTab, mazeVisible, mazeEntryPending, enterMaze, switchTab, toggleLang, currentLang } = useApp();
+  const { activeTab, immersive, mazeVisible, mazeEntryPending, enterMaze, switchTab, toggleLang, currentLang } = useApp();
   const t = LANG[currentLang];
   const isAr = currentLang === 'ar';
   const isTrainingHome = activeTab === 'comics' || activeTab === 'home';
-  const showTabBar = !mazeVisible && !mazeEntryPending;
+  // Hide the tab bar on any deep view (game / practice / session) — it shows
+  // only on the tab landing pages.
+  const showTabBar = !mazeVisible && !mazeEntryPending && !immersive;
   const primaryTab = resolveActiveTabId(activeTab);
 
   useEffect(() => {

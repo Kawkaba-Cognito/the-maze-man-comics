@@ -8,6 +8,13 @@ import { IconBack } from '../../features/training/shared/TrainingIcons';
 import AtmosphericBackground from '../shared/AtmosphericBackground';
 import { useThemedChrome } from '../../hooks/useThemedChrome';
 import { hasEnteredLabyrinth } from '../../features/campaign/campaignProgress';
+import { lazyWithRetry } from '../../lib/lazyWithRetry';
+
+// Void Runner isn't a category puzzle (no grid/sizes), so it's kept out of
+// the shared puzzle registry — that registry defaults any entry without a
+// category mapping into "Logic", which this doesn't belong in. It gets its
+// own lazy loader and its own top "planet" tile instead.
+const VoidRunnerLazy = lazyWithRetry(() => import('../../features/puzzles/games/void-runner'), 'void-runner');
 
 /* ─────────────────────────────────────────────────────────────
  * PUZZLES HUB — constellation "world map".
@@ -126,7 +133,7 @@ function GameLoading({ isAr }) {
 }
 
 export default function PuzzlesScreen() {
-  const { switchTab, currentLang, toggleLang, playSfx, requestEscapeRoom, requestContinueMaze } = useApp();
+  const { switchTab, currentLang, toggleLang, playSfx, requestContinueMaze, setImmersive } = useApp();
   const isAr = currentLang === 'ar';
   const chrome = useThemedChrome(isAr);
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
@@ -136,6 +143,14 @@ export default function PuzzlesScreen() {
   const [category, setCategory] = useState(null);
   const [hovered, setHovered] = useState(null);
   const [tick, setTick] = useState(0);
+  const [voidRunnerOpen, setVoidRunnerOpen] = useState(false);
+
+  // Hide the bottom tab bar once inside a category, a puzzle, or Void
+  // Runner — the tab landing (planet hall) is the only "main page".
+  useEffect(() => {
+    setImmersive('puzzles', !!activeGame || !!category || voidRunnerOpen);
+    return () => setImmersive('puzzles', false);
+  }, [activeGame, category, voidRunnerOpen, setImmersive]);
 
   const catPuzzles = useMemo(() => (category ? puzzlesInCategory(category) : []), [category]);
   const { nodes: NODES, nodeById: NODE_BY_ID, corridors: CORRIDORS, canvasH: CANVAS_H } = useMemo(() => buildLayout(catPuzzles), [catPuzzles]);
@@ -151,6 +166,15 @@ export default function PuzzlesScreen() {
   }, [activeGame]);
 
   const GameView = activeGame ? getLazyPuzzle(activeGame) : null;
+
+  /* ── Void Runner — manages its own full-screen fixed layout, no wrapper needed ── */
+  if (voidRunnerOpen) {
+    return (
+      <Suspense fallback={<GameLoading isAr={isAr} />}>
+        <VoidRunnerLazy onBack={() => setVoidRunnerOpen(false)} />
+      </Suspense>
+    );
+  }
 
   /* ── In-game view (unchanged) ── */
   if (activeGame && GameView) {
@@ -173,7 +197,7 @@ export default function PuzzlesScreen() {
     const mainCats = PUZZLE_CATEGORIES.filter((c) => c.id !== 'group');
     const groupCat = PUZZLE_CATEGORIES.find((c) => c.id === 'group');
     const GATES = [
-      { id: '3d', world: true, icon: '🧭', accent: '#e8ac4e', label: isAr ? 'غرفة الهروب' : 'Escape Room', x: 180, y: 132, scale: 1.55 },
+      { id: 'void-runner', world: true, icon: '🚀', accent: '#00f5ff', label: isAr ? 'عدّاء الفراغ' : 'Void Runner', x: 180, y: 132, scale: 1.55 },
       ...mainCats.map((c, i) => ({ id: c.id, icon: c.icon, accent: c.accent, label: isAr ? c.nameAr : c.name, x: catX[i], y: 372, scale: 1 })),
       ...(groupCat ? [{ id: groupCat.id, icon: groupCat.icon, accent: groupCat.accent, label: isAr ? groupCat.nameAr : groupCat.name, x: 180, y: 540, scale: 1.2 }] : []),
     ];
@@ -231,7 +255,7 @@ export default function PuzzlesScreen() {
                   <button key={g.id} type="button"
                     onMouseEnter={() => setHovered(g.id)} onMouseLeave={() => setHovered((h) => (h === g.id ? null : h))}
                     onFocus={() => setHovered(g.id)} onBlur={() => setHovered((h) => (h === g.id ? null : h))}
-                    onClick={() => { playSfx('click'); if (g.world) { requestEscapeRoom(); } else { setHovered(null); setCategory(g.id); } }}
+                    onClick={() => { playSfx('click'); if (g.world) { setVoidRunnerOpen(true); } else { setHovered(null); setCategory(g.id); } }}
                     aria-label={g.label}
                     style={{ position: 'absolute', left: g.x, top: g.y, width: hit, height: hit + 36, transform: 'translate(-50%, -50%)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start' }}
                   >

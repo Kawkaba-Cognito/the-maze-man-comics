@@ -382,7 +382,7 @@ export default function FlipGame({ onBack, workoutMode = false }) {
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
   bannerWrap: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '8px 0 4px', minHeight: 34 },
   tag: { fontWeight: 900, letterSpacing: 1, color: '#5a4a32', fontSize: 14 },
   shapeHint: { fontWeight: 800, fontSize: 12, color: '#6a5020', marginInlineStart: 6 },

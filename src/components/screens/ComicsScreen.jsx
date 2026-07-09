@@ -112,9 +112,15 @@ function CardBanner({ gameKey, side = 'right' }) {
 }
 
 export default function ComicsScreen() {
-  const { currentLang, assessmentRequested, consumeAssessmentRequest, playSfx } = useApp();
+  const { currentLang, assessmentRequested, consumeAssessmentRequest, playSfx, setImmersive } = useApp();
   const isAr = currentLang === 'ar';
   const [screen, setScreen] = useState('hub');
+
+  // Hide the bottom tab bar on any view below the radial hub (picker, game, assessment).
+  useEffect(() => {
+    setImmersive('comics', screen !== 'hub');
+    return () => setImmersive('comics', false);
+  }, [screen, setImmersive]);
 
   // Deep-link from the Daily Workout nudge → open the assessment directly.
   useEffect(() => {

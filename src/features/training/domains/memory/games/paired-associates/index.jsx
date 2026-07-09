@@ -317,7 +317,7 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
   cueRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '12px 0 4px', fontSize: 15, fontWeight: 800, color: '#5a4a32', minHeight: 44 },
   cueSym: { fontSize: 30, lineHeight: 1, color: '#3a2c18', width: 54, height: 54, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#fff6df', border: '2.5px solid #1a1208', borderRadius: 13, boxShadow: '3px 3px 0 #1a1208' },
   play: { position: 'relative', flex: 1, margin: 12, borderRadius: 20, background: 'linear-gradient(180deg,#fffdf8,#fbf3e6)', overflow: 'hidden', border: '2px solid #e3d6c4', boxShadow: 'inset 0 2px 12px rgba(120,90,40,0.07)', touchAction: 'none' },

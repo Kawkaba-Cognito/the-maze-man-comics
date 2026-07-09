@@ -8,7 +8,6 @@ import NatureSoundsPractice from './NatureSoundsPractice';
 import IkigaiPractice from './IkigaiPractice';
 import DailyHabits from './DailyHabits';
 import { OPEN_DAILY_KEY } from './HabitReminderBanner';
-import { loadHabits, getTodayProgress } from './habitState';
 
 /*
  * Wellbeing — 8-Week MBSR Tracker (lives under the Stress & Calm category).
@@ -214,14 +213,14 @@ function MbsrTracker({ onBack }) {
                     ))}
                   </div>
                   <div className="action-btns">
-                    <button className="begin-btn" onClick={toggleTimer} style={{ background: timerActive ? '#efe6d6' : `linear-gradient(135deg,${p.color},${p.color}cc)`, color: timerActive ? '#7a6a52' : '#fff' }}>
+                    <button className={`begin-btn${timerActive ? ' begin-btn--paused' : ''}`} onClick={toggleTimer} style={timerActive ? undefined : { background: `linear-gradient(135deg,${p.color},${p.color}cc)`, color: '#fff' }}>
                       {timerActive ? '⏸ Pause' : timerSeconds > 0 ? '▶ Resume' : '▶ Begin session'}
                     </button>
                     {timerSeconds > 0 && <button className="reset-btn" onClick={resetTimer}>↺</button>}
                   </div>
                 </div>
 
-                <button className="done-btn" onClick={() => toggleDay(today)} style={{ background: completed[today] ? `${p.color}26` : '#f3ece0', borderColor: completed[today] ? p.color : '#e3d6c4', color: completed[today] ? p.color : '#8a7f6f' }}>
+                <button className="done-btn" onClick={() => toggleDay(today)} style={completed[today] ? { background: `${p.color}26`, borderColor: p.color, color: p.color } : undefined}>
                   {completed[today] ? '✓ Session complete' : 'Mark as done'}
                 </button>
               </div>
@@ -263,7 +262,7 @@ function MbsrTracker({ onBack }) {
           {tab === 'calendar' && startDate && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <div className="serif" style={{ fontSize: 22, color: '#2d2210' }}>Your 8 weeks</div>
+                <div className="serif rx-heading-ink" style={{ fontSize: 22 }}>Your 8 weeks</div>
                 <button className="ghost-pill" onClick={() => setShowModal(true)}>Reset date</button>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
@@ -311,7 +310,7 @@ function MbsrTracker({ onBack }) {
 
           {tab === 'guide' && (
             <>
-              <div className="serif" style={{ fontSize: 22, color: '#2d2210', marginBottom: 6 }}>The full protocol</div>
+              <div className="serif rx-heading-ink" style={{ fontSize: 22, marginBottom: 6 }}>The full protocol</div>
               <div style={{ fontSize: 13, color: '#8a7f6f', marginBottom: 20 }}>Reference guide — all phases, dos & don'ts.</div>
 
               <div className="principle-card">
@@ -482,6 +481,59 @@ const CSS = `
 .rx-root .empty-sub { color:${SUB}; font-size:14px; margin-bottom:24px; line-height:1.6; max-width:320px; margin-left:auto; margin-right:auto; }
 .rx-root .start-btn { background:linear-gradient(135deg,#c89a4a,${GOLD}); color:#fff; border:none; border-radius:12px; padding:14px 32px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; box-shadow:3px 3px 0 #1a1208; }
 .rx-root .go-btn { background:#efe6d6; color:#7a5a1e; border:none; border-radius:10px; padding:12px 24px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+.rx-root .rx-heading-ink { color:${INK}; }
+.rx-root .begin-btn--paused { background:#efe6d6; color:#7a6a52; }
+
+[data-home-theme='dark'] .rx-root { color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .rx-heading-ink { color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .begin-btn--paused { background:#332818; color:#c9b384; }
+[data-home-theme='dark'] .rx-root .rx-back { background:#241c10; border-color:rgba(212,168,80,0.3); color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .header { background:linear-gradient(180deg,#1f1810 0%,var(--color-training-palette-surface) 100%); }
+[data-home-theme='dark'] .rx-root .header-title { color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .header-title em { color:#e8ac4e; }
+[data-home-theme='dark'] .rx-root .stat-label { color:#c9b384; }
+[data-home-theme='dark'] .rx-root .phase-info { color:#c9b384; }
+[data-home-theme='dark'] .rx-root .tabs { background:#1f1810; border-color:rgba(212,168,80,0.25); }
+[data-home-theme='dark'] .rx-root .tab-btn { color:#c9b384; }
+[data-home-theme='dark'] .rx-root .tab-btn.active { color:#e8ac4e; border-bottom-color:#e8ac4e; }
+[data-home-theme='dark'] .rx-root .section-label { color:#c9b384; }
+[data-home-theme='dark'] .rx-root .technique-name { color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .technique-duration { color:#c9b384; }
+[data-home-theme='dark'] .rx-root .timer-display { color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .timer-target { color:#8f7d58; }
+[data-home-theme='dark'] .rx-root .min-btn { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .rx-root .min-btn.active-min { background:color-mix(in srgb, var(--phase-color) 22%, #14100a); }
+[data-home-theme='dark'] .rx-root .reset-btn { background:#332818; color:#c9b384; }
+[data-home-theme='dark'] .rx-root .done-btn { background:#332818; border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .rx-root .step-text { color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .insight-text { color:#c9b384; }
+[data-home-theme='dark'] .rx-root .note-area { background:#211a10; border-color:rgba(212,168,80,0.25); color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .save-btn { background:#332818; color:#e8ac4e; }
+[data-home-theme='dark'] .rx-root .week-technique { color:#8f7d58; }
+[data-home-theme='dark'] .rx-root .day-btn { background:#211a10; border-color:rgba(212,168,80,0.25); color:#8f7d58; }
+[data-home-theme='dark'] .rx-root .day-btn.future-day { background:#1a140c; color:#4a3c28; }
+[data-home-theme='dark'] .rx-root .legend-box { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .rx-root .ghost-pill { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
+[data-home-theme='dark'] .rx-root .principle-card { background:#211a10; border-color:rgba(212,168,80,0.22); }
+[data-home-theme='dark'] .rx-root .principle-title { color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .principle-text { color:#c9b384; }
+[data-home-theme='dark'] .rx-root .phase-guide-name { color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .phase-guide-dur { color:#8f7d58; }
+[data-home-theme='dark'] .rx-root .phase-step { color:#c9b384; }
+[data-home-theme='dark'] .rx-root .phase-tip { background:#1a140c; color:#c9b384; }
+[data-home-theme='dark'] .rx-root .do-text { color:#c9b384; }
+[data-home-theme='dark'] .rx-root .checklist-item { color:#c9b384; }
+[data-home-theme='dark'] .rx-root .check-num { border-color:rgba(212,168,80,0.3); }
+[data-home-theme='dark'] .rx-root .disclaimer { color:#8f7d58; }
+[data-home-theme='dark'] .rx-root .modal-overlay { background:rgba(0,0,0,0.6); }
+[data-home-theme='dark'] .rx-root .modal { background:#211a10; border-color:rgba(212,168,80,0.35); }
+[data-home-theme='dark'] .rx-root .modal-title { color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .modal-sub { color:#c9b384; }
+[data-home-theme='dark'] .rx-root .date-input { background:#1a140c; border-color:rgba(212,168,80,0.25); color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .cancel-btn { background:#332818; color:#c9b384; }
+[data-home-theme='dark'] .rx-root .empty-title { color:#f0e2c0; }
+[data-home-theme='dark'] .rx-root .empty-sub { color:#c9b384; }
+[data-home-theme='dark'] .rx-root .go-btn { background:#332818; color:#e8ac4e; }
 `;
 
 /* ── Wellbeing landing — practices grouped into categories ── */
@@ -820,26 +872,6 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
               <span className="rx-menu-chev" style={{ color: FAV_GOLD }}>{isAr ? '‹' : '›'}</span>
             </span>
           </button>
-          {(() => {
-            const { done, total, allDone } = getTodayProgress(loadHabits());
-            return (
-              <button className="rx-cat-tile" style={{ borderColor: '#6fae7a66' }} onClick={() => { playSfx?.('click'); onOpen('daily'); }}>
-                <span className="rx-cat-ic" style={{ background: '#e8f5ea', color: '#6fae7a' }}>📋</span>
-                <span className="rx-cat-body">
-                  <span className="rx-cat-title">{isAr ? 'يومي' : 'Daily'}</span>
-                  <span className="rx-cat-tag">{isAr ? 'عادات صغيرة — خطوة واحدة في كل مرة.' : 'Small habits — one step at a time.'}</span>
-                </span>
-                <span className="rx-cat-meta">
-                  {total > 0 && (
-                    <span className={`rx-habit-badge${allDone ? ' rx-habit-badge--done' : ''}`}>
-                      {allDone ? '✓' : `${done}/${total}`}
-                    </span>
-                  )}
-                  <span className="rx-menu-chev" style={{ color: '#6fae7a' }}>{isAr ? '‹' : '›'}</span>
-                </span>
-              </button>
-            );
-          })()}
           <div className="rx-cat-divider" aria-hidden="true" />
           {CATEGORIES.map((c) => (
             <button key={c.id} className="rx-cat-tile" style={{ borderColor: `${c.color}55` }} onClick={() => openCategory(c)}>
@@ -861,7 +893,7 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
 }
 
 export default function RelaxScreen({ entry = 'menu' } = {}) {
-  const { switchTab, playSfx, currentLang } = useApp();
+  const { switchTab, playSfx, currentLang, setImmersive } = useApp();
   const isAr = currentLang === 'ar';
   const [view, setView] = useState(() => {
     if (entry === 'daily') return 'daily';
@@ -875,6 +907,13 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
   });
   const [returnTo, setReturnTo] = useState(entry === 'daily' ? 'daily' : 'menu');
   const back = () => { playSfx?.('click'); setView(returnTo); setReturnTo(entry === 'daily' ? 'daily' : 'menu'); };
+
+  // Hide the bottom tab bar inside a practice — the menu / daily landing are
+  // the only "main pages".
+  useEffect(() => {
+    setImmersive('relax', view !== 'menu' && view !== 'daily');
+    return () => setImmersive('relax', false);
+  }, [view, setImmersive]);
   const openPractice = (id, from = 'menu') => {
     playSfx?.('click');
     setReturnTo(from);

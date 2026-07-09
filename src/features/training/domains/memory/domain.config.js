@@ -10,18 +10,8 @@ const memory = {
   desc: 'Strengthen working memory — hold, update, and recall information on demand.',
   descAr: 'عزّز الذاكرة العاملة: احتفظ بالمعلومات وحدّثها واسترجعها عند الطلب.',
   subs: [
-    {
-      id: 'memo-span',
-      name: 'Memo Span',
-      nameAr: 'مدى الذاكرة',
-      blurb: 'Corsi-style span — watch the sequence, then tap it back (forward & backward).',
-      blurbAr: 'مدى كورسي — شاهد التسلسل ثم أعده (أماماً وعكساً).',
-      gameCount: 1,
-      progress: 0,
-      gameKey: 'memo-span',
-      tier: 'free',
-      loader: () => import('./games/memo-span'),
-    },
+    // Memo Span retired from the lineup — Story Time covers the span slot.
+    // (Game files kept under games/memo-span for easy re-enable.)
     {
       id: 'working',
       name: 'Story Time',

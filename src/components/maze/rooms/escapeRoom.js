@@ -1,9 +1,16 @@
 /**
- * Escape Room — one small lightweight room.
+ * Star Vault — one small lightweight room (space reskin of the original
+ * Escape Room; same engine, same puzzle mechanics, same RoomHost lifecycle).
  *
- * Each run picks three fresh puzzle specs. Solve the three lock stations, then
- * use the exit door to escape. No tool chain, physics set pieces, debris, chasms,
- * or multi-room camera work — just a clear phone-friendly room and three puzzles.
+ * Each run picks three fresh puzzle specs. Solve the three planet consoles,
+ * then step through the portal to leave. No tool chain, physics set pieces,
+ * debris, chasms, or multi-room camera work — just a clear phone-friendly
+ * room and three puzzles. Reskin notes: floor/wall colours moved from a
+ * warm stone palette to a dark space palette (same cheap speckle-texture
+ * technique from mazeKit, just different hex — zero new draw calls); lock
+ * cores swapped from boxes to spheres so the existing ring reads as a
+ * planet's rings; puzzle icons/copy reflavoured to space imagery. No new
+ * geometry classes, no new textures, no new perf cost versus the original.
  *
  * Contract: returns { scene, interact, jump, dispose }.
  */
@@ -18,18 +25,18 @@ const B = () => window.BABYLON;
 const MAP = 9;
 const START_GZ = 2;
 const EXIT_GZ = MAP - 2;
-const FLOOR_HEX = '#d4c4a8';
-const WALL_HEX = '#8a7ec8';
-const LOCK_HEX = '#e0915a';
-const DONE_HEX = '#3be086';
+const FLOOR_HEX = '#171233';
+const WALL_HEX = '#3a2d68';
+const LOCK_HEX = '#8a6cff';
+const DONE_HEX = '#4be0c8';
 
 const PUZZLE_POOL = [
-  { puzzleKey: 'sudoku', size: 4, icon: '🔢', en: 'Number Lock', ar: 'قفل الأرقام' },
-  { puzzleKey: 'takuzu', size: 4, icon: '⚫', en: 'Binary Lock', ar: 'القفل الثنائي' },
-  { puzzleKey: 'takuzu', size: 6, icon: '⚫', en: 'Pattern Lock', ar: 'قفل النمط' },
-  { puzzleKey: 'kenken', size: 4, icon: '✳️', en: 'Math Lock', ar: 'قفل الحساب' },
-  { puzzleKey: 'hitori', size: 5, icon: '⬛', en: 'Shadow Lock', ar: 'قفل الظلال' },
-  { puzzleKey: 'bridges', size: 7, icon: '🌉', en: 'Bridge Lock', ar: 'قفل الجسور' },
+  { puzzleKey: 'sudoku', size: 4, icon: '🪐', en: 'Planet Console', ar: 'منصّة الكوكب' },
+  { puzzleKey: 'takuzu', size: 4, icon: '🌑', en: 'Eclipse Console', ar: 'منصّة الكسوف' },
+  { puzzleKey: 'takuzu', size: 6, icon: '✨', en: 'Star Console', ar: 'منصّة النجوم' },
+  { puzzleKey: 'kenken', size: 4, icon: '☄️', en: 'Comet Console', ar: 'منصّة المذنّب' },
+  { puzzleKey: 'hitori', size: 5, icon: '🌌', en: 'Nebula Console', ar: 'منصّة السديم' },
+  { puzzleKey: 'bridges', size: 7, icon: '🛰️', en: 'Orbit Console', ar: 'منصّة المدار' },
 ];
 
 function makePuzzleRun() {
@@ -49,9 +56,9 @@ function makePuzzleRun() {
 
 function progressHtml(locks, isAr) {
   const dots = locks.map((l, i) => (
-    `<span style="width:22px;height:22px;border-radius:999px;display:inline-grid;place-items:center;font-weight:900;font-size:12px;background:${l.solved ? '#3be086' : 'rgba(255,255,255,0.16)'};color:${l.solved ? '#0b2418' : '#ffe6b0'};border:1px solid rgba(255,230,176,0.35)">${l.solved ? '✓' : i + 1}</span>`
+    `<span style="width:22px;height:22px;border-radius:999px;display:inline-grid;place-items:center;font-weight:900;font-size:12px;background:${l.solved ? '#4be0c8' : 'rgba(255,255,255,0.16)'};color:${l.solved ? '#0b241f' : '#ffe6b0'};border:1px solid rgba(255,230,176,0.35)">${l.solved ? '✓' : i + 1}</span>`
   )).join('');
-  return `<span style="font-weight:900;font-size:11px;letter-spacing:0.8px;color:#ffe6b0">${isAr ? 'الأقفال' : 'LOCKS'}</span>${dots}`;
+  return `<span style="font-weight:900;font-size:11px;letter-spacing:0.8px;color:#ffe6b0">${isAr ? 'النجوم' : 'STARS'}</span>${dots}`;
 }
 
 export function buildEscapeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
@@ -60,6 +67,10 @@ export function buildEscapeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
   const scene = new Bb.Scene(engine);
   if (Bb.ScenePerformancePriority) scene.performancePriority = Bb.ScenePerformancePriority.Aggressive;
   setupGateSky(Bb, scene);
+  // Deeper space void than the shared gate purple — override locally so
+  // gateRoom.js (which also calls setupGateSky) is untouched.
+  scene.clearColor = new Bb.Color4(0.04, 0.03, 0.09, 1);
+  scene.ambientColor = new Bb.Color3(0.35, 0.32, 0.5);
 
   const mats = createMazeMaterials(Bb, scene, FLOOR_HEX, WALL_HEX);
 
@@ -113,12 +124,12 @@ export function buildEscapeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
     pl.material = m; labels.push({ pl, y }); return pl;
   }
 
-  // ── Puzzle lock consoles ──
+  // ── Puzzle planet consoles (sphere core + torus ring = a small ringed planet) ──
   const lockAt = (cfg, gx, gz) => {
     const x = wc(gx, MAP), z = wc(gz, MAP);
     const base = Bb.MeshBuilder.CreateCylinder(`${cfg.id}-b`, { diameter: 1.7, height: 0.5, tessellation: 6 }, scene);
-    base.position = new Bb.Vector3(x, 0.25, z); base.material = mats.toon(`${cfg.id}-bm`, '#4a3d6a', null, 0.15); base.isPickable = false;
-    const core = Bb.MeshBuilder.CreateBox(`${cfg.id}-c`, { size: 1.0 }, scene);
+    base.position = new Bb.Vector3(x, 0.25, z); base.material = mats.toon(`${cfg.id}-bm`, '#241c42', null, 0.15); base.isPickable = false;
+    const core = Bb.MeshBuilder.CreateSphere(`${cfg.id}-c`, { diameter: 1.05, segments: 10 }, scene);
     core.position = new Bb.Vector3(x, 1.2, z); core.material = mats.toon(`${cfg.id}-cm`, LOCK_HEX, null, 0.72); core.isPickable = false;
     const ring = Bb.MeshBuilder.CreateTorus(`${cfg.id}-r`, { diameter: 1.8, thickness: 0.12, tessellation: 16 }, scene);
     ring.position = new Bb.Vector3(x, 1.2, z); ring.rotation.x = Math.PI / 2; ring.material = mats.toon(`${cfg.id}-rm`, cfg.solved ? DONE_HEX : '#ffce4a', null, 0.45); ring.isPickable = false;
@@ -132,12 +143,12 @@ export function buildEscapeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
     lockAt(puzzleRun[2], 4, 5),
   ];
 
-  // Exit at the far end — walk forward to reach it.
+  // Portal at the far end — walk forward to reach it.
   const exitCell = [cc, EXIT_GZ];
   const { exitPos, exitPad, exitBeacon } = makeExitPortal(Bb, scene, mats.toon, exitCell[0], exitCell[1], MAP, '#9a68c8');
   makeBossGate(Bb, scene, mats.toon, exitCell[0], exitCell[1], MAP);
   exitBeacon.isVisible = false;
-  const exitHint = makeLabel('🚪', exitPos.x, 2.8, exitPos.z); exitHint.setEnabled(false);
+  const exitHint = makeLabel('🌀', exitPos.x, 2.8, exitPos.z); exitHint.setEnabled(false);
 
   // ── State + HUD ──
   let escaped = false;
@@ -145,7 +156,7 @@ export function buildEscapeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
   const allSolved = () => solvedCount() === locks.length;
 
   overlayEl.innerHTML = `
-    <div class="rh-zone"><div class="rh-zone-k">${isAr ? '★ غرفة الهروب' : '★ ESCAPE ROOM'}</div><div class="rh-zone-v">${isAr ? 'حلّ ثلاثة أقفال ثم امشِ للأمام إلى الباب.' : 'Solve three locks, then walk forward to the door.'}</div></div>
+    <div class="rh-zone"><div class="rh-zone-k">${isAr ? '★ خزنة النجوم' : '★ STAR VAULT'}</div><div class="rh-zone-v">${isAr ? 'فعّل ثلاث منصّات كواكب ثم امشِ للأمام إلى البوابة.' : 'Power three planet consoles, then walk forward to the portal.'}</div></div>
     <div class="rh-prompt" id="rhPrompt"></div>
     <div id="rhInv" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:6px 13px;border-radius:999px;background:rgba(20,12,26,0.72);border:1px solid rgba(232,172,78,0.4)">${progressHtml(locks, isAr)}</div>
     <div class="rh-instr" id="rhInstr"></div>`;
@@ -155,8 +166,8 @@ export function buildEscapeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
   const OBJ = () => {
     if (escaped) return '';
     const next = locks.find((l) => !l.solved);
-    if (next) return isAr ? `▶ حلّ ${solvedCount()}/3 أقفال` : `▶ Solve ${solvedCount()}/3 locks`;
-    return isAr ? '▶ الباب أمامك — امشِ للأمام واضغط USE' : '▶ Door ahead — walk forward and USE';
+    if (next) return isAr ? `▶ فعّل ${solvedCount()}/3 منصّات` : `▶ Power ${solvedCount()}/3 consoles`;
+    return isAr ? '▶ البوابة أمامك — امشِ للأمام واضغط USE' : '▶ Portal ahead — walk forward and USE';
   };
   const refreshHud = () => { if (invEl) invEl.innerHTML = progressHtml(locks, isAr); if (instrEl) instrEl.textContent = OBJ(); };
   refreshHud();
@@ -170,7 +181,7 @@ export function buildEscapeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
       label: () => (isAr ? lock.ar : lock.en),
       act: () => openPuzzle(lock, () => { onSolved(lock); refreshHud(); }),
     })),
-    { pos: () => exitPos, r: 3.0, elig: () => allSolved(), label: () => (isAr ? 'اهرب!' : 'Escape!'), act: () => { escaped = true; ctx.playSfx?.('win'); showEscaped(); } },
+    { pos: () => exitPos, r: 3.0, elig: () => allSolved(), label: () => (isAr ? 'انطلق!' : 'Depart!'), act: () => { escaped = true; ctx.playSfx?.('win'); showEscaped(); } },
   ];
 
   function openPuzzle(lock, onDone) { ctx.playSfx?.('click'); ctx.openEscapePuzzle?.({ spec: lock.spec, title: isAr ? lock.ar : lock.en }, onDone); }
@@ -183,13 +194,13 @@ export function buildEscapeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
     if (allSolved()) {
       exitBeacon.isVisible = true;
       exitHint.setEnabled(true);
-      exitPad.material.diffuseColor = Bb.Color3.FromHexString('#16d39a');
-      exitPad.material.emissiveColor = Bb.Color3.FromHexString('#16d39a').scale(0.6);
+      exitPad.material.diffuseColor = Bb.Color3.FromHexString('#4be0c8');
+      exitPad.material.emissiveColor = Bb.Color3.FromHexString('#4be0c8').scale(0.6);
     }
     ctx.playSfx?.('win');
   }
   function showEscaped() {
-    overlayEl.innerHTML = `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;background:rgba(8,6,16,0.55)"><div style="font-size:52px">🗝️</div><div style="font-family:'Fredoka One','Nunito',sans-serif;font-size:30px;font-weight:800;color:#ffe6b0;text-shadow:0 0 18px rgba(232,172,78,0.6)">${isAr ? 'لقد هربت!' : 'You escaped!'}</div><div style="font-size:14px;font-weight:800;color:#fff3d0">${isAr ? 'الغرفة التالية ستكون بألغاز جديدة.' : 'Next run will have new puzzles.'}</div></div>`;
+    overlayEl.innerHTML = `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;background:rgba(8,6,16,0.55)"><div style="font-size:52px">🚀</div><div style="font-family:'Fredoka One','Nunito',sans-serif;font-size:30px;font-weight:800;color:#ffe6b0;text-shadow:0 0 18px rgba(232,172,78,0.6)">${isAr ? 'اكتملت الخزنة!' : 'Vault cleared!'}</div><div style="font-size:14px;font-weight:800;color:#fff3d0">${isAr ? 'الخزنة التالية ستحمل منصّات جديدة.' : 'Next vault will have new consoles.'}</div></div>`;
     setTimeout(() => ctx.exitMaze?.(), 2600);
   }
 

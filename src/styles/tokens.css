@@ -25,6 +25,7 @@
 
   /* Training — attention/reasoning in-app screens: warm menu paper from the palette reference */
   --color-training-palette-surface: #fff7f2;
+  --color-training-ink: #2d2d2d;
 
   /* App stage (follows Home light/dark) */
   --color-stage-ink: #4a3818;
@@ -112,6 +113,7 @@
 /* Home light/dark — shared by hubs, shop, habits, wellbeing */
 html[data-home-theme='dark'] {
   --color-training-palette-surface: #1a1626;
+  --color-training-ink: #f0e2c0;
   --color-stage-ink: #f0e2c0;
   --color-stage-muted: #b9a878;
   --color-stage-card: #221e30;

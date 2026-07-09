@@ -469,7 +469,7 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif" },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
   eqWrap: { display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 12, padding: '8px 0 4px', minHeight: 48 },
   eqNum: { fontWeight: 900, fontSize: 'clamp(30px, 9vw, 48px)', color: '#2d2d2d', letterSpacing: 1 },
   eqQ: { fontWeight: 900, fontSize: 'clamp(20px, 6vw, 30px)', color: ACCENT },
