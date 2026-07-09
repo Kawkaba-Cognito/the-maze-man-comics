@@ -5,11 +5,22 @@ import CosmosCharacter from '../../features/character/CosmosCharacter';
 import HomeTodayPanel from '../../features/relax/HomeTodayPanel';
 import { OPEN_DAILY_KEY } from '../../features/relax/HabitReminderBanner';
 
+const HOME_THEME_KEY = 'mazeman_home_theme';
+
 const DOORS = [
   { tab: 'pointshop', enLabel: 'Shop', arLabel: 'المتجر', pos: 'left' },
   { tab: 'profile', enLabel: 'Profile', arLabel: 'ملفي', pos: 'center' },
   { tab: 'puzzles', enLabel: 'Puzzles', arLabel: 'ألغاز', pos: 'right' },
 ];
+
+function loadHomeTheme() {
+  try {
+    const v = localStorage.getItem(HOME_THEME_KEY);
+    return v === 'dark' ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+}
 
 function useIsDesktop() {
   const [desktop, setDesktop] = useState(() =>
@@ -29,13 +40,32 @@ export default function HomeScreen() {
   const { playSfx, switchTab, currentLang, points } = useApp();
   const isAr = currentLang === 'ar';
   const isDesktop = useIsDesktop();
-  const bgUrl = isDesktop
-    ? assetUrl('Assets/bg-home-desktop.webp')
-    : assetUrl('Assets/bg-home-mobile.webp');
+  const [theme, setTheme] = useState(loadHomeTheme);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(HOME_THEME_KEY, theme);
+    } catch { /* ignore */ }
+    document.documentElement.dataset.homeTheme = theme;
+    return () => {
+      delete document.documentElement.dataset.homeTheme;
+    };
+  }, [theme]);
+
+  const bgUrl = assetUrl(
+    isDesktop
+      ? `Assets/bg-home-${theme}-desktop.webp`
+      : `Assets/bg-home-${theme}-mobile.webp`,
+  );
 
   function handleDoor(tab) {
     playSfx('click');
     switchTab(tab);
+  }
+
+  function toggleTheme() {
+    playSfx('click');
+    setTheme((t) => (t === 'light' ? 'dark' : 'light'));
   }
 
   function openDailyHabits() {
@@ -45,11 +75,28 @@ export default function HomeScreen() {
   }
 
   return (
-    <div className="home-screen" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className={`home-screen home-screen--${theme}`} dir={isAr ? 'rtl' : 'ltr'}>
       <div
         className="home-stage-bg"
         style={{ backgroundImage: `url("${bgUrl}")` }}
       />
+
+      <button
+        type="button"
+        className="home-theme-toggle"
+        onClick={toggleTheme}
+        aria-label={theme === 'light'
+          ? (isAr ? 'التبديل إلى الوضع الداكن' : 'Switch to dark')
+          : (isAr ? 'التبديل إلى الوضع الفاتح' : 'Switch to light')}
+        title={theme === 'light'
+          ? (isAr ? 'داكن' : 'Dark')
+          : (isAr ? 'فاتح' : 'Light')}
+      >
+        <span aria-hidden="true">{theme === 'light' ? '☾' : '☀'}</span>
+        <span className="home-theme-toggle-lbl">
+          {theme === 'light' ? (isAr ? 'داكن' : 'Dark') : (isAr ? 'فاتح' : 'Light')}
+        </span>
+      </button>
 
       <div className="home-points" aria-label={isAr ? 'نقاطك' : 'your points'}>
         <span className="home-points-ic" aria-hidden="true">⚡</span>
@@ -81,7 +128,7 @@ export default function HomeScreen() {
         </button>
 
         <div className="home-character" aria-hidden="true">
-          <CosmosCharacter size={140} glow art="kawkab" />
+          <CosmosCharacter size={isDesktop ? 168 : 162} glow art="kawkab" />
         </div>
 
         <button
