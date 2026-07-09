@@ -69,22 +69,24 @@ export default function HomeScreen() {
         ))}
       </nav>
 
-      <div className="home-character" aria-hidden="true">
-        <CosmosCharacter size={140} float glow art="kawkab" />
-      </div>
-
-      <div className="home-side-actions">
+      {/* Pedestal stage: Kawkab on the circle, Training left · Wellbeing right */}
+      <div className="home-stage">
         <button
           type="button"
-          className="home-chip"
+          className="home-chip home-chip--left"
           onClick={() => handleDoor('comics')}
         >
           <span className="home-chip-ic" aria-hidden="true">🧠</span>
           <span>{isAr ? 'تدريب' : 'Training'}</span>
         </button>
+
+        <div className="home-character" aria-hidden="true">
+          <CosmosCharacter size={140} glow art="kawkab" />
+        </div>
+
         <button
           type="button"
-          className="home-chip"
+          className="home-chip home-chip--right"
           onClick={() => handleDoor('relax')}
         >
           <span className="home-chip-ic" aria-hidden="true">🌿</span>
