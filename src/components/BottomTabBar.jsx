@@ -1,13 +1,12 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 
-/** Primary app destinations. */
+/** Primary app destinations — Training hub is Home. */
 export const APP_TABS = [
-  { id: 'home', screen: 'home', icon: '🏠', en: 'Home', ar: 'الرئيسية' },
-  { id: 'comics', screen: 'comics', icon: '🧠', en: 'Training', ar: 'تدريب' },
+  { id: 'home', screen: 'comics', icon: '🏠', en: 'Home', ar: 'الرئيسية' },
+  { id: 'puzzles', screen: 'puzzles', icon: '🧩', en: 'Puzzles', ar: 'ألغاز' },
   { id: 'wellbeing', screen: 'wellbeing', icon: '🌿', en: 'Wellbeing', ar: 'عافية' },
   { id: 'habits', screen: 'habits', icon: '📋', en: 'Habits', ar: 'عادات' },
-  { id: 'puzzles', screen: 'puzzles', icon: '🧩', en: 'Puzzles', ar: 'ألغاز' },
   { id: 'other', screen: 'other', icon: '⋯', en: 'Other', ar: 'المزيد' },
 ];
 
@@ -15,6 +14,7 @@ const TAB_IDS = new Set(APP_TABS.map((t) => t.id));
 
 /** Normalize nested routes onto a primary tab highlight. */
 export function resolveActiveTabId(activeTab) {
+  if (activeTab === 'comics' || activeTab === 'home' || activeTab === 'workout') return 'home';
   if (activeTab === 'relax') return 'wellbeing';
   if (
     activeTab === 'profile'
@@ -23,7 +23,6 @@ export function resolveActiveTabId(activeTab) {
     || activeTab === 'character'
     || activeTab === 'other'
   ) return 'other';
-  if (activeTab === 'workout') return 'comics';
   if (TAB_IDS.has(activeTab)) return activeTab;
   return null;
 }
@@ -35,6 +34,7 @@ export default function BottomTabBar() {
 
   function onSelect(tab) {
     if (tab.id === current && activeTab === tab.screen) return;
+    if (tab.id === 'home' && (activeTab === 'comics' || activeTab === 'home')) return;
     switchTab(tab.screen);
   }
 

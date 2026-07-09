@@ -112,7 +112,7 @@ function CardBanner({ gameKey, side = 'right' }) {
 }
 
 export default function ComicsScreen() {
-  const { switchTab, currentLang, assessmentRequested, consumeAssessmentRequest, playSfx } = useApp();
+  const { currentLang, assessmentRequested, consumeAssessmentRequest, playSfx } = useApp();
   const isAr = currentLang === 'ar';
   const [screen, setScreen] = useState('hub');
 
@@ -188,7 +188,6 @@ export default function ComicsScreen() {
     >
       {screen === 'hub' && (
         <RadialMazeHub
-          onBack={() => switchTab('home')}
           onOpenDomain={openDomain}
           onOpenAssessment={() => setScreen('assessment')}
         />

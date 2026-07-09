@@ -1533,19 +1533,30 @@ html[data-home-theme='dark'] .rx-root .rx-cat-divider {
 /* ── App bottom tab bar ── */
 .app-tabbar {
     position: fixed;
-    left: 0;
-    right: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
     bottom: 0;
     z-index: 80;
+    width: min(100%, 520px);
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 0;
-    padding: 6px 4px max(8px, env(safe-area-inset-bottom));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: stretch;
+    justify-items: stretch;
+    gap: 2px;
+    padding: 8px 6px max(10px, env(safe-area-inset-bottom));
     background: rgba(255, 252, 246, 0.92);
     border-top: 1px solid rgba(170, 140, 80, 0.28);
     box-shadow: 0 -6px 24px rgba(40, 30, 10, 0.1);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+}
+@media (min-width: 768px) {
+    .app-tabbar {
+        width: min(100%, 600px);
+        gap: 4px;
+        padding: 10px 12px max(12px, env(safe-area-inset-bottom));
+    }
 }
 .app-tab {
     appearance: none;
@@ -1556,20 +1567,22 @@ html[data-home-theme='dark'] .rx-root .rx-cat-divider {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 3px;
     min-width: 0;
-    padding: 6px 2px;
-    border-radius: 12px;
+    width: 100%;
+    height: 100%;
+    padding: 8px 2px;
+    border-radius: 14px;
     color: #8a7348;
     font-family: 'Outfit', system-ui, sans-serif;
     transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
 .app-tab-ic {
-    font-size: clamp(1.05rem, 3.2vw, 1.2rem);
+    font-size: clamp(1.1rem, 3.4vw, 1.28rem);
     line-height: 1;
 }
 .app-tab-lbl {
-    font-size: clamp(0.58rem, 2.1vw, 0.68rem);
+    font-size: clamp(0.62rem, 2.2vw, 0.74rem);
     font-weight: 700;
     letter-spacing: 0.01em;
     line-height: 1.1;
@@ -1577,6 +1590,7 @@ html[data-home-theme='dark'] .rx-root .rx-cat-divider {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    text-align: center;
 }
 .app-tab.is-active {
     color: #5a4018;
@@ -1602,7 +1616,6 @@ html[data-home-theme='dark'] .app-tab.is-active {
 .ui-shell--tabbed .ui-screen {
     padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
 }
-.ui-shell--tabbed #screen-home,
 .ui-shell--tabbed #screen-comics,
 .ui-shell--tabbed #screen-puzzles,
 .ui-shell--tabbed #screen-profile,

@@ -49,7 +49,7 @@ export function AppProvider({ children }) {
   const [owned, setOwned] = useState(() => readJSON(OWNED_KEY, {}));
   const [equipped, setEquipped] = useState(() => readJSON(EQUIP_KEY, {}));
   const [currentLang, setCurrentLang] = useState('en');
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState('comics');
   const [assessmentRequested, setAssessmentRequested] = useState(false);
   const [mazeVisible, setMazeVisible] = useState(false);
   const [mazeEntryPending, setMazeEntryPending] = useState(false);
@@ -269,13 +269,15 @@ export function AppProvider({ children }) {
   const switchTab = useCallback((tabId) => {
     playSfx('click');
     stopSpeech();
+    // Legacy "home" now lands on Training (the Home tab).
+    let next = tabId === 'home' ? 'comics' : tabId;
     // Habits / Wellbeing share RelaxScreen; seed the daily view for Habits.
-    if (tabId === 'habits') {
+    if (next === 'habits') {
       try { sessionStorage.setItem('rx_open_daily', '1'); } catch { /* ignore */ }
-    } else if (tabId === 'wellbeing') {
+    } else if (next === 'wellbeing') {
       try { sessionStorage.removeItem('rx_open_daily'); } catch { /* ignore */ }
     }
-    setActiveTab(tabId);
+    setActiveTab(next);
   }, [playSfx, stopSpeech]);
 
   // Deep-link into the cognitive assessment (e.g. from the Daily Workout nudge).

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { IconBack } from '../../features/training/shared/TrainingIcons';
 import { DomainIconArt } from '../../features/training/shared/DomainIcon';
 import CosmosCharacter from '../../features/character/CosmosCharacter';
 import AtmosphericBackground from '../shared/AtmosphericBackground';
@@ -29,7 +28,7 @@ const DOMAIN_LABEL_AR = {
   flexibility: 'مرونة',
 };
 
-/** Short, friendly door captions (EN). */
+/** Short, friendly planet captions (EN). */
 const DOMAIN_DOOR_LABEL_EN = {
   attention: 'Attention',
   speed: 'Speed',
@@ -44,76 +43,110 @@ function domainDoorLabel(id, isAr) {
   return DOMAIN_DOOR_LABEL_EN[id] ?? DOMAINS.find(d => d.id === id)?.name ?? id;
 }
 
-/** SVG clip for inner “stone opening” (local door coords 0–64). */
-const DOOR_INNER_D =
-  'M 10 28 Q 10 11 32 9 Q 54 11 54 28 L 54 57 L 10 57 Z';
-
-/** Domain-specific iconography inside each portal (centered at 0,0). */
-function DomainDoorArt({ domainId, col, hovered }) {
-  const dur = hovered ? 1.35 : 2.75;
-  return (
-    <g clipPath="url(#doorInnerClip)">
-      <g transform="translate(32, 35)">
-        <g>
-          <animateTransform
-            attributeName="transform"
-            type="scale"
-            values="1;1.085;1"
-            keyTimes="0;0.5;1"
-            dur={`${dur}s`}
-            repeatCount="indefinite"
-          />
-          <DomainIconArt domainId={domainId} color={col} strokeWidth={1.65} />
-        </g>
-      </g>
-      {domainId === 'attention' && (
-        <circle cx={32} cy={35} r="18" fill="none" stroke={col} strokeWidth={0.75} opacity={hovered ? 0.45 : 0.2}>
-          <animate attributeName="r" values="14;19;14" dur={`${dur * 1.3}s`} repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.35;0.08;0.35" dur={`${dur * 1.3}s`} repeatCount="indefinite" />
-        </circle>
-      )}
-    </g>
-  );
+/** Soft surface markings so each domain planet feels distinct. */
+function PlanetMarkings({ domainId, col }) {
+  switch (domainId) {
+    case 'attention':
+      return (
+        <>
+          <ellipse cx="0" cy="-6" rx="14" ry="7" fill="none" stroke={col} strokeWidth="1.1" opacity="0.45" />
+          <ellipse cx="0" cy="8" rx="11" ry="5" fill="none" stroke={col} strokeWidth="0.9" opacity="0.3" />
+        </>
+      );
+    case 'speed':
+      return (
+        <>
+          <path d="M -16 -4 Q -2 -10 14 -2" fill="none" stroke={col} strokeWidth="1.2" opacity="0.4" />
+          <path d="M -14 6 Q 2 0 16 8" fill="none" stroke={col} strokeWidth="1" opacity="0.28" />
+        </>
+      );
+    case 'memory':
+      return (
+        <>
+          <circle cx="-8" cy="-4" r="3.2" fill={col} opacity="0.28" />
+          <circle cx="7" cy="5" r="4.5" fill={col} opacity="0.22" />
+          <circle cx="2" cy="-9" r="2.2" fill={col} opacity="0.2" />
+        </>
+      );
+    case 'language':
+      return (
+        <>
+          <path d="M -15 2 C -6 -8 6 -8 15 2" fill="none" stroke={col} strokeWidth="1.1" opacity="0.35" />
+          <path d="M -12 8 C -4 0 4 0 12 8" fill="none" stroke={col} strokeWidth="0.9" opacity="0.25" />
+        </>
+      );
+    case 'reasoning':
+      return (
+        <>
+          <circle cx="0" cy="0" r="10" fill="none" stroke={col} strokeWidth="1" opacity="0.28" />
+          <circle cx="0" cy="0" r="5" fill="none" stroke={col} strokeWidth="0.85" opacity="0.35" />
+        </>
+      );
+    case 'flexibility':
+      return (
+        <>
+          <ellipse cx="0" cy="0" rx="16" ry="5.5" fill="none" stroke={col} strokeWidth="1.15" opacity="0.4" transform="rotate(-18)" />
+          <ellipse cx="0" cy="0" rx="16" ry="5.5" fill="none" stroke={col} strokeWidth="0.85" opacity="0.22" transform="rotate(22)" />
+        </>
+      );
+    default:
+      return null;
+  }
 }
 
-/** Stone arch: offset shadow, graded façade, deep recess, lintel highlight. */
-function ArchShape3D({ col, hovered, gradId, filterId }) {
-  const sw = hovered ? 2.45 : 1.65;
+/** Domain planet — replaces the old stone gate portals. */
+function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId }) {
+  const r = hovered ? 30 : 26;
+  const dur = hovered ? 1.4 : 3.2;
   return (
-    <g filter={`url(#${filterId})`}>
-      <path
-        d="M 3 30 Q 3 5 34 5 Q 65 5 65 30 L 65 69 L 3 69 Z"
-        fill="rgba(20,18,16,0.16)"
-        transform="translate(3, 4)"
-      />
-      <path
-        d="M 0 28 Q 0 0 32 0 Q 64 0 64 28 L 64 66 L 0 66 Z"
-        fill={`url(#${gradId})`}
+    <g>
+      {/* Soft ground shadow */}
+      <ellipse cx="2" cy={r + 8} rx={r * 0.72} ry={r * 0.22} fill="rgba(10,8,16,0.28)" />
+      {/* Outer aura */}
+      <circle cx="0" cy="0" r={r + (hovered ? 10 : 7)} fill={`url(#${glowGradId})`} opacity={hovered ? 0.95 : 0.7} />
+      {/* Planet body */}
+      <circle
+        cx="0"
+        cy="0"
+        r={r}
+        fill={`url(#${bodyGradId})`}
         stroke={col}
-        strokeWidth={sw}
+        strokeWidth={hovered ? 2.2 : 1.55}
       />
-      <path d="M 5 28 Q 5 6 32 4 Q 59 6 59 28 L 59 61 L 5 61 Z" fill="rgba(12,10,8,0.18)" />
-      <path
-        d="M 10 28 Q 10 11 32 9 Q 54 11 54 28 L 54 57 L 10 57 Z"
-        fill={L.paper}
-        opacity="0.94"
-      />
-      <path
-        d="M 9 28 Q 9 10 32 8 Q 55 10 55 28"
+      {/* Atmosphere rim */}
+      <circle
+        cx="0"
+        cy="0"
+        r={r - 0.8}
         fill="none"
-        stroke="rgba(255,255,255,0.72)"
-        strokeWidth="1.35"
-        strokeLinecap="round"
+        stroke="rgba(255,255,255,0.35)"
+        strokeWidth="1.2"
+        opacity="0.55"
       />
-      <path
-        d="M 1 28 Q 1 2 32 2 Q 63 2 63 28"
-        fill="none"
-        stroke="rgba(0,0,0,0.18)"
-        strokeWidth="1.1"
-        opacity="0.85"
-      />
-      <rect x="29" y="-2" width="6" height="8" rx="1.2" fill={col} opacity="0.88" />
-      <rect x="30.5" y="-0.5" width="3" height="4.5" fill="rgba(255,255,255,0.4)" rx="0.5" />
+      {/* Surface markings */}
+      <g opacity={hovered ? 0.95 : 0.8}>
+        <PlanetMarkings domainId={domainId} col={col} />
+      </g>
+      {/* Specular highlight */}
+      <ellipse cx={-r * 0.28} cy={-r * 0.32} rx={r * 0.38} ry={r * 0.22} fill="rgba(255,255,255,0.28)" />
+      {/* Domain icon */}
+      <g>
+        <animateTransform
+          attributeName="transform"
+          type="scale"
+          values="1;1.08;1"
+          keyTimes="0;0.5;1"
+          dur={`${dur}s`}
+          repeatCount="indefinite"
+        />
+        <DomainIconArt domainId={domainId} color="#fffef8" strokeWidth={1.7} />
+      </g>
+      {domainId === 'attention' && (
+        <circle cx="0" cy="0" r={r + 4} fill="none" stroke={col} strokeWidth="0.8" opacity={hovered ? 0.4 : 0.18}>
+          <animate attributeName="r" values={`${r + 2};${r + 8};${r + 2}`} dur={`${dur * 1.2}s`} repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.35;0.08;0.35" dur={`${dur * 1.2}s`} repeatCount="indefinite" />
+        </circle>
+      )}
     </g>
   );
 }
@@ -134,7 +167,7 @@ const SHRINE_POSITIONS = [
 /**
  * Hub-and-spoke world map (one readable topology — standard for RTS/skill trees):
  *
- *                    Speed      ← spine only (north portal)
+ *                    Speed      ← spine only (north planet)
  *                      │
  *   Attention ────┬────┼────┬─── Memory    ← east/west “collector” highways
  *                 │    │    │
@@ -142,7 +175,7 @@ const SHRINE_POSITIONS = [
  *                 │    │    │
  *   Language  ────┴────┼────┴─── Flex
  *                      │
- *                  Reasoning    ← spine only (south portal)
+ *                  Reasoning    ← spine only (south planet)
  *
  * West lanes mirror east (180±60). Every vertex snaps to GRID so corridors align
  * with the modular backdrop instead of looking like stray scribbles.
@@ -174,8 +207,8 @@ function mazeCorridorD(domainId) {
   return `M ${sx} ${sy} Q ${cpx} ${cpy} ${s.x} ${s.y}`;
 }
 
-export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }) {
-  const { currentLang, toggleLang } = useApp();
+export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
+  const { currentLang, toggleLang, playSfx, appTheme, toggleAppTheme } = useApp();
   const isAr = currentLang === 'ar';
   const chrome = useThemedChrome(isAr);
   const [hovered, setHovered] = useState(null);
@@ -203,12 +236,20 @@ export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }
         padding: '64px 18px 10px', position: 'relative', zIndex: 5,
       }}>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-          <button type="button" style={chrome.chromeBtn} onClick={onBack}>
-            <IconBack size={18} c={chrome.text}/>
+          <button
+            type="button"
+            style={{ ...chrome.langBtn, minWidth: 44 }}
+            onClick={() => { playSfx('click'); toggleAppTheme(); }}
+            aria-label={appTheme === 'light'
+              ? (isAr ? 'التبديل إلى الوضع الداكن' : 'Switch to dark')
+              : (isAr ? 'التبديل إلى الوضع الفاتح' : 'Switch to light')}
+            title={appTheme === 'light' ? (isAr ? 'داكن' : 'Dark') : (isAr ? 'فاتح' : 'Light')}
+          >
+            {appTheme === 'light' ? '☾' : '☀'}
           </button>
         </div>
         <div style={{ ...chrome.title, maxWidth: 200, fontSize: isAr ? 24 : 22 }}>
-          {isAr ? 'تدريب' : 'Training'}
+          {isAr ? 'الرئيسية' : 'Home'}
         </div>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
           <button type="button" style={chrome.langBtn} onClick={toggleLang}>
@@ -223,34 +264,33 @@ export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }
           position: 'absolute', inset: 0, margin: 'auto', left: 0, right: 0, overflow: 'visible',
         }}>
           <defs>
-            <clipPath id="doorInnerClip">
-              <path d={DOOR_INNER_D} />
-            </clipPath>
             <filter id="pathGlow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="1.4" result="blur"/>
               <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
             </filter>
-            <filter id="hubArchEmboss" x="-35%" y="-35%" width="170%" height="170%">
-              <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="b"/>
-              <feOffset dx="0" dy="1.8" in="b" result="o"/>
-              <feFlood floodColor="#1a1208" floodOpacity="0.22"/>
-              <feComposite in2="o" operator="in" result="s"/>
-              <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-            {SHRINE_POSITIONS.map(s => (
-              <linearGradient key={`arch-${s.id}`} id={`archStone-${s.id}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#3a2b18"/>
-                <stop offset="42%" stopColor={DOMAIN_COLOR[s.id]} stopOpacity="0.5"/>
-                <stop offset="100%" stopColor="#0c0805"/>
-              </linearGradient>
-            ))}
-            {SHRINE_POSITIONS.map(s => (
-              <radialGradient key={s.id} id={`sh-${s.id}`} cx="0.5" cy="0.5" r="0.5">
-                <stop offset="0%" stopColor={DOMAIN_COLOR[s.id]} stopOpacity="0.42"/>
-                <stop offset="65%" stopColor={DOMAIN_COLOR[s.id]} stopOpacity="0.1"/>
-                <stop offset="100%" stopColor={DOMAIN_COLOR[s.id]} stopOpacity="0"/>
-              </radialGradient>
-            ))}
+            {SHRINE_POSITIONS.map(s => {
+              const col = DOMAIN_COLOR[s.id];
+              return (
+                <React.Fragment key={`planet-defs-${s.id}`}>
+                  <radialGradient id={`planetBody-${s.id}`} cx="32%" cy="28%" r="72%">
+                    <stop offset="0%" stopColor="#fff8e8" stopOpacity="0.95" />
+                    <stop offset="28%" stopColor={col} stopOpacity="0.95" />
+                    <stop offset="72%" stopColor={col} stopOpacity="0.82" />
+                    <stop offset="100%" stopColor="#1a1010" stopOpacity="0.92" />
+                  </radialGradient>
+                  <radialGradient id={`planetGlow-${s.id}`} cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor={col} stopOpacity="0.38" />
+                    <stop offset="55%" stopColor={col} stopOpacity="0.12" />
+                    <stop offset="100%" stopColor={col} stopOpacity="0" />
+                  </radialGradient>
+                  <radialGradient id={`sh-${s.id}`} cx="0.5" cy="0.5" r="0.5">
+                    <stop offset="0%" stopColor={col} stopOpacity="0.36" />
+                    <stop offset="65%" stopColor={col} stopOpacity="0.1" />
+                    <stop offset="100%" stopColor={col} stopOpacity="0" />
+                  </radialGradient>
+                </React.Fragment>
+              );
+            })}
             <radialGradient id="centerGlow" cx="0.5" cy="0.5" r="0.5">
               <stop offset="0%" stopColor="#ffd85a" stopOpacity="0.6"/>
               <stop offset="40%" stopColor="#f5a623" stopOpacity="0.3"/>
@@ -268,7 +308,7 @@ export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }
             ))}
           </g>
 
-          {/* Radial corridors — smooth spokes from center avatar to each portal */}
+          {/* Radial corridors — smooth spokes from center avatar to each planet */}
           {SHRINE_POSITIONS.map(s => {
             const col = DOMAIN_COLOR[s.id];
             const isHovered = hovered === s.id;
@@ -319,7 +359,7 @@ export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }
           <circle cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1]} r={68} fill="url(#centerGlow)" opacity="0.75"/>
           <circle cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1]} r={46} fill="rgba(30,20,8,0.6)" stroke="rgba(232,172,78,0.55)" strokeWidth={1.8}/>
 
-          {/* Shrine portals */}
+          {/* Domain planets */}
           {SHRINE_POSITIONS.map(s => {
             const col = DOMAIN_COLOR[s.id];
             const isHovered = hovered === s.id;
@@ -328,35 +368,35 @@ export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }
                 onMouseEnter={() => setHovered(s.id)}
                 onMouseLeave={() => setHovered(null)}
                 onClick={() => onOpenDomain(s.id)}>
-                <circle cx={s.x} cy={s.y} r={isHovered ? 56 : 46} fill={`url(#sh-${s.id})`}/>
-                <g transform={`translate(${s.x - 32}, ${s.y - 38})`}>
+                <circle cx={s.x} cy={s.y} r={isHovered ? 58 : 48} fill={`url(#sh-${s.id})`}/>
+                <g transform={`translate(${s.x}, ${s.y})`}>
                   <g>
                     <animateTransform
                       attributeName="transform"
                       type="translate"
-                      values="0 0; 0 -1.6; 0 0"
+                      values="0 0; 0 -2; 0 0"
                       keyTimes="0;0.5;1"
                       dur={isHovered ? '1.5s' : '3.4s'}
                       repeatCount="indefinite"
                     />
-                    <ArchShape3D
+                    <DomainPlanet
+                      domainId={s.id}
                       col={col}
                       hovered={isHovered}
-                      gradId={`archStone-${s.id}`}
-                      filterId="hubArchEmboss"
+                      bodyGradId={`planetBody-${s.id}`}
+                      glowGradId={`planetGlow-${s.id}`}
                     />
-                    <DomainDoorArt domainId={s.id} col={col} hovered={isHovered} />
                   </g>
                 </g>
-                <text x={s.x} y={s.y + 32} textAnchor="middle" fill={L.text}
-                  stroke="rgba(8,4,2,0.95)"
-                  strokeWidth="3.5"
+                <text x={s.x} y={s.y + 44} textAnchor="middle" fill={chrome.text}
+                  stroke={chrome.dark ? 'rgba(8,4,2,0.9)' : 'rgba(255,252,246,0.9)'}
+                  strokeWidth="3.2"
                   paintOrder="stroke fill"
                   style={{
-                    fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Nunito', sans-serif",
-                    fontSize: isAr ? 12.5 : 14,
-                    fontWeight: isAr ? 800 : 400,
-                    letterSpacing: isAr ? 0 : 0.35,
+                    fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
+                    fontSize: isAr ? 12.5 : 13.5,
+                    fontWeight: 800,
+                    letterSpacing: isAr ? 0 : 0.02,
                   }}>
                   {domainDoorLabel(s.id, isAr)}
                 </text>
