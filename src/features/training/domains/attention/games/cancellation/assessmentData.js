@@ -48,10 +48,10 @@ import { ageSpeedFactor } from '../../../../assessment/assessmentProfile';
  * pop-out feature search would.
  */
 export const ASSESSMENT_PROTOCOL = {
-  trials: 3,
+  trials: 4,
   grid: 7, // 49 cells
   targetCount: 14,
-  timeLimitSec: 45,
+  timeLimitSec: 50,
   diff: 'medium',
   interference: 0.3,
   poolIndex: 9,

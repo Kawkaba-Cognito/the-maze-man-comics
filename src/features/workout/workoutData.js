@@ -8,6 +8,7 @@
  */
 import { DOMAIN_CONFIGS, getPlayableSubs } from '../training/registry';
 import { ageBand } from '../training/assessment/assessmentProfile';
+import { ASSESSMENT_GAME_BY_DOMAIN } from '../training/assessment/assessmentConfig';
 import { domainRating, ratingToLevel } from '../training/rating';
 
 /** Goal presets → per-domain weighting. `weights: null` = dynamic (target weak areas). */
@@ -45,6 +46,43 @@ export const GOALS = [
 ];
 
 export const GOALS_BY_ID = Object.fromEntries(GOALS.map((g) => [g.id, g]));
+
+/**
+ * Per-goal game preferences within each domain (paradigm-aligned training).
+ * Weights are relative; assessment battery games get a boost when targeting weak spots.
+ */
+export const GOAL_GAME_WEIGHTS = {
+  overall: {
+    attention: { 'cancel-task': 2, mot: 1.5, 'train-switch': 1.5 },
+    speed: { 'speed-match': 2, 'trail-making': 1.5, 'math-gates': 1.5 },
+    memory: { 'memo-span': 2, 'story-grid': 1.5, nback: 1.5, 'paired-associates': 1.5 },
+    language: { wordle: 2, synonyms: 1.8, trivia: 1.8 },
+    reasoning: { 'rush-hour': 2, 'raven-matrices': 1.8, detective: 1.5 },
+    flexibility: { 'spatial-stroop': 2, wisconsin: 1.8, brixton: 1.8 },
+  },
+  focus: {
+    attention: { 'cancel-task': 3, mot: 2.5, 'train-switch': 2 },
+    speed: { 'speed-match': 1.5, 'trail-making': 1.2 },
+    memory: { nback: 1.2, 'memo-span': 1 },
+    flexibility: { 'spatial-stroop': 1.5, wisconsin: 1.2 },
+  },
+  memory: {
+    memory: { 'memo-span': 3, 'story-grid': 2.5, 'paired-associates': 2, nback: 2 },
+    attention: { mot: 1.5, 'cancel-task': 1.2 },
+    reasoning: { 'raven-matrices': 1.2 },
+  },
+  speed: {
+    speed: { 'speed-match': 3, 'trail-making': 2.5, 'math-gates': 2 },
+    flexibility: { 'spatial-stroop': 2, wisconsin: 1.5 },
+    attention: { 'cancel-task': 1.5, mot: 1.2 },
+  },
+  solver: {
+    reasoning: { 'rush-hour': 3, 'raven-matrices': 2.5, detective: 2 },
+    language: { synonyms: 2.5, trivia: 2, wordle: 1.8 },
+    memory: { 'story-grid': 1.5, 'memo-span': 1.2 },
+  },
+  weak: null, // dynamic — see pickGameForDomain
+};
 
 /** Daily size by time → number of exercises (≈3–4 min each). */
 export const SIZES = [
@@ -116,4 +154,36 @@ export function difficultyFor(domainId, age, scores, domainCompleted) {
   }
   lvl = Math.max(1, Math.min(5, lvl));
   return { level: lvl, en: LEVELS_EN[lvl - 1], ar: LEVELS_AR[lvl - 1] };
+}
+
+/** Pick a game within a domain using goal prefs + assessment weak-spot signal. */
+export function pickGameForDomain(domainId, goalId, games, rng, scores, usedGameKeys = {}) {
+  if (!games?.length) return games?.[0];
+  const assessKey = ASSESSMENT_GAME_BY_DOMAIN[domainId];
+  const goalMap = GOAL_GAME_WEIGHTS[goalId];
+  const domainScores = scores?.[domainId];
+  const isWeakDomain = typeof domainScores === 'number' && domainScores < 55;
+
+  const weighted = games.map((g) => {
+    let w = 1;
+    if (goalId === 'weak') {
+      w = 1.1;
+      if (g.gameKey === assessKey) w *= 2.2;
+    } else if (goalMap?.[domainId]?.[g.gameKey]) {
+      w = goalMap[domainId][g.gameKey];
+    } else if (goalMap?.[domainId]) {
+      w = 0.6;
+    }
+    if (isWeakDomain && g.gameKey === assessKey) w *= 1.6;
+    w /= 1 + (usedGameKeys[g.gameKey] || 0) * 3;
+    return { g, w: Math.max(0.05, w) };
+  });
+
+  const total = weighted.reduce((a, x) => a + x.w, 0);
+  let r = rng() * total;
+  for (const { g, w } of weighted) {
+    r -= w;
+    if (r <= 0) return g;
+  }
+  return games[Math.floor(rng() * games.length)];
 }

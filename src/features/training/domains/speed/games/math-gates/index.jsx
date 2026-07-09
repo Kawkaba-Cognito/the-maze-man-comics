@@ -14,6 +14,8 @@ import { survivalTier } from '../../../../shared/survival';
  */
 
 import { drawCosmosRunner, COSMOS_GOLD, COSMOS_LANE_A, COSMOS_LANE_B, COSMOS_STING_BG } from '../../../../shared/drawCosmosCanvas';
+import { clamp, lerp } from '../../../../../../lib/math';
+import { startCanvasLoop } from '../../../../shared/canvasLoop';
 
 const ACCENT = COSMOS_GOLD;
 const LANES = 3;
@@ -36,8 +38,6 @@ function levelCfg(diff, level) {
 }
 const PP_GATES = 12;
 
-const lerp = (a, b, t) => a + (b - a) * t;
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 /*
  * Equation + distractor generation, grounded in numerical-cognition research:
@@ -153,7 +153,7 @@ function summarizeGates(events, elapsedSec) {
   return { correct, total, accuracy, accuracyPct: Math.round(accuracy * 100), correctPerMin, meanRt, icv, switchCost, perOp };
 }
 
-function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
   const ppGates = mode === 'passplay' ? (attempt?.trials || PP_GATES) : 0;
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
@@ -181,7 +181,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
     const g = stateRef.current;
     const elapsedSec = (performance.now() - g.t0) / 1000;
     const summary = summarizeGates(g.events, elapsedSec);
-    if (mode === 'free') { setOver({ score: g.passed, metrics: summary }); playSfx('error'); return; }
+    if (mode === 'free') { setOver({ score: g.passed, metrics: summary }); awardFreeRun?.('mathGates', g.passed); playSfx('error'); return; }
     if (mode === 'levels') {
       const won = g.passed >= cfg.target;
       const sw = summary.switchCost != null
@@ -277,16 +277,12 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       if (!g.charX) g.charX = (g.lane + 0.5) * (g.W / LANES);
       if (g.gate && g.gate.y < 0) g.gate.y = -g.H * 0.18;
     };
-    resize();
-    const ro = new ResizeObserver(resize); ro.observe(wrapRef.current);
     spawnGate();
 
     const laneX = (i) => (i + 0.5) * (g.W / LANES);
 
     let hudCache = { passed: -1, lives: -1, combo: -1 };
-    let last = performance.now();
-    const frame = (now) => {
-      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const frame = (dt, now) => {
       const bandH = Math.min(g.H * 0.16, 96);
       const charY = g.H - 64;
       const catchY = charY - bandH * 0.3;
@@ -301,7 +297,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
         if (g.gate.y >= catchY) {
           g.gate.y = catchY;
           resolveRef.current(g.lane);
-          if (finishedRef.current) return;
+          if (finishedRef.current) return false;
         }
       } else {
         g.gapTimer -= dt * 1000;
@@ -357,11 +353,8 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
         hudCache = { passed: g.passed, lives: g.lives, combo: g.combo };
         setHud(hudCache);
       }
-      rafRef.current = requestAnimationFrame(frame);
     };
-    rafRef.current = requestAnimationFrame(frame);
-
-    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
+    return startCanvasLoop({ wrap: wrapRef.current, rafRef, resize, frame });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runId, seed]);
 
@@ -450,7 +443,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
 }
 
 export default function MathGatesGame({ onBack, workoutMode = false }) {
-  const { currentLang, playSfx, awardPoints } = useApp();
+  const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   return (
     <ModeShell
@@ -469,7 +462,7 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <MathGatesEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <MathGatesEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
     />
   );

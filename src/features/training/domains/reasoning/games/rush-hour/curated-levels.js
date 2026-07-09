@@ -341,6 +341,18 @@ function decodeEntry(entry) {
   return { grid, exitRow, pieces, par };
 }
 
+/** Four medium boards with spread difficulty; indices rotate per session (anti-memorization). */
+export function getCuratedRushHourAssessBoards(sessionNonce = 0) {
+  const nonce = (sessionNonce >>> 0) || 1;
+  const bank = BANK.medium;
+  if (!bank?.length) return [];
+  const offsets = [3, 19, 37, 58];
+  return offsets.map((base, i) => {
+    const ix = (base + nonce * (i + 7) * 11) % bank.length;
+    return { labelKey: 'assess', assessIndex: i, diff: 'medium', lv: ix + 1, ...decodeEntry(bank[ix]) };
+  });
+}
+
 export function getCuratedRushHourLevel(diffKey, levelIndex) {
   if (!RH_DIFF_KEYS.includes(diffKey)) return null;
   const ix = Math.max(1, Math.min(RH_LEVELS_PER_TIER, levelIndex | 0)) - 1;

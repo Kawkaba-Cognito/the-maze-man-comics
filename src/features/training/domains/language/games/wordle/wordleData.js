@@ -2,9 +2,11 @@
  * Word Maze — connect adjacent letters to spell words (Boggle-style).
  */
 
+import { mulberry32 } from '../../../../../../lib/rng';
 import { LINK_WORDS_EN } from './link-words-en';
 import { LINK_WORDS_AR_COMMON } from './link-words-ar-common';
 import { computeGridWords } from './linkDictionary';
+import { clamp, lerp } from '../../../../../../lib/math';
 
 export const WORDLE_LEVELS_PER_TIER = 100;
 export const WORDLE_DIFF_KEYS = ['easy', 'medium', 'hard'];
@@ -56,24 +58,7 @@ const DIRS = [
   [1, -1],  [1, 0],  [1, 1],
 ];
 
-function lerp(a, b, t) {
-  return a + (b - a) * t;
-}
 
-function clamp(v, lo, hi) {
-  return Math.max(lo, Math.min(hi, v));
-}
-
-function mulberry32(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 function rcToIdx(r, c, size) {
   return r * size + c;
@@ -234,6 +219,14 @@ export function trySubmitWord(round, path) {
 
 /** Verbal Fluency Score from words found vs target (levels) or efficiency (timed). */
 export function computeVFS(round) {
+  if (round.mode === 'assess') {
+    const sec = round.timeSec || 120;
+    const words = round.found.length;
+    const wpm = (words / sec) * 60;
+    const avgLen = words > 0 ? round.found.reduce((s, w) => s + w.length, 0) / words : 0;
+    // Rate-based: ~12 words/min ≈ strong; length bonus rewards longer finds without early ceiling.
+    return Math.min(100, Math.round(wpm * 4.8 + avgLen * 2.2));
+  }
   if (round.mode === 'level') {
     if (!round.complete) return 0;
     const ratio = round.found.length / Math.max(1, round.targetWords);
@@ -297,7 +290,7 @@ export function prepareAssessRound(seed, lang = 'en') {
   const spec = specificationForLevel('medium', 50);
   return createRound(
     seed,
-    { ...spec, timeSec: 90, targetWords: 999 },
+    { ...spec, timeSec: 120, targetWords: 999 },
     { mode: 'assess' },
     lang,
   );

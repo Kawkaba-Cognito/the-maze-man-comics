@@ -107,6 +107,14 @@ export function assessAnchorLine(domainId, isAr, age) {
       }
       return parts.join(' · ') || null;
     }
+    if (domainId === 'attention') {
+      const r = latestTrialSession('cancel-task', 'assess')?.result;
+      if (r?.meanRT == null && r?.composite == null) return null;
+      const det = r.detection != null ? `${Math.round(r.detection * 100)}%` : '—';
+      return isAr
+        ? `كشف ${det} · متوسط ${r.meanRT ?? '—'}مث · CV ${r.rtCV ?? '—'} (مرجعك الذاتي)`
+        : `detection ${det} · mean ${r.meanRT ?? '—'}ms · CV ${r.rtCV ?? '—'} (self-referenced)`;
+    }
     if (domainId === 'reasoning') {
       const s = latestTrialSession('rush-hour', 'assess');
       const tr = s?.trials?.find((x) => typeof x.plan === 'number');
@@ -121,8 +129,8 @@ export function assessAnchorLine(domainId, isAr, age) {
       const r = latestTrialSession('wordle', 'assess')?.result;
       if (r?.words == null) return null;
       return isAr
-        ? `${r.words} كلمة/٩٠ث (مرجعك الذاتي)`
-        : `${r.words} words/90s (self-referenced)`;
+        ? `${r.words} كلمة/١٢٠ث (مرجعك الذاتي)`
+        : `${r.words} words/120s (self-referenced)`;
     }
   } catch {
     /* interpretation must never break the report */

@@ -18,10 +18,7 @@ import CosmosCharacter from '../../../../../character/CosmosCharacter';
  */
 
 // minimalist app palette (matches Word Links / the training surface)
-const INK = '#2d2a26';
 const SUB = '#8a7f6f';
-const LINE = '#e7ddcc';
-const CARD = '#fffefb';
 const ACC = '#b84878';   // flexibility deep pink
 const OK = '#3a9d5d';
 const BAD = '#cf5b50';
@@ -34,6 +31,13 @@ const COLORS = ['#e05a5a', '#3aa564', '#e0a92e', '#4f8fd0']; // red green yellow
 const SHAPES = ['triangle', 'star', 'cross', 'circle'];
 // Reference card i = { color: COLORS[i], shape: SHAPES[i], number: i + 1 }.
 const REFERENCE = [0, 1, 2, 3].map((i) => ({ shape: SHAPES[i], color: COLORS[i], number: i + 1 }));
+
+const RULES = ['color', 'shape', 'number'];
+
+function pickRule(rng, exclude) {
+  const opts = RULES.filter((x) => x !== exclude);
+  return opts[Math.floor(rng() * opts.length)];
+}
 
 function dealCard(rng) {
   const order = [0, 1, 2, 3];
@@ -61,17 +65,19 @@ function Glyph({ shape, color, size = 22 }) {
   return <svg viewBox="0 0 24 24" style={common}><polygon points="12,2 15,9 22,9.3 16.5,14 18.5,21 12,17 5.5,21 7.5,14 2,9.3 9,9" fill={color} /></svg>;
 }
 
-function CardFace({ shape, color, number, glyphSize = 22, style }) {
+function CardFace({ shape, color, number, glyphSize = 22, deal = false }) {
   return (
-    <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 12, padding: '10px 8px', display: 'grid', placeItems: 'center', minHeight: 70, ...style }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', maxWidth: number >= 3 ? 60 : 999 }}>
-        {Array.from({ length: number }).map((_, i) => <Glyph key={i} shape={shape} color={color} size={glyphSize} />)}
+    <div className={`ct-wcst-card-face${deal ? ' ct-wcst-card-face--deal' : ''}`}>
+      <div className={`ct-wcst-glyphs${number >= 3 ? ' ct-wcst-glyphs--tight' : ''}`}>
+        {Array.from({ length: number }).map((_, i) => (
+          <Glyph key={i} shape={shape} color={color} size={glyphSize} />
+        ))}
       </div>
     </div>
   );
 }
 
-function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
   const ppTrials = mode === 'passplay' ? (attempt?.trials || PP_TRIALS) : 0;
   const isSurvival = mode === 'free';
 
@@ -80,7 +86,7 @@ function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
   const totalRef = useRef(0);
   const scoreRef = useRef(0);
   const comboRef = useRef(0);
-  const ruleRef = useRef(['color', 'shape', 'number'][Math.floor(makeRng((seed ?? 1) >>> 0)() * 3)]);
+  const ruleRef = useRef(pickRule(makeRng((seed ?? 1) >>> 0), null));
   const runRef = useRef(0);
   const prevRuleRef = useRef(null);
   const justSwitchedRef = useRef(false);
@@ -93,6 +99,7 @@ function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
   const [runId, setRunId] = useState(0);
   const [card, setCard] = useState(() => dealCard(makeRng(((seed ?? 1) >>> 0) + 7919)));
   const [fly, setFly] = useState(null);   // { choice, ok }
+  const [shiftToast, setShiftToast] = useState(false);
   const [mood, setMood] = useState('focused');
   const [over, setOver] = useState(null);
   const [score, setScore] = useState(0);
@@ -105,8 +112,9 @@ function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
     finishedRef.current = true; lockRef.current = true;
     clearTimeout(timerRef.current);
     setOver({ score: scoreRef.current, correct: correctRef.current, rules: stats.current.rules });
+    awardFreeRun?.('wisconsin', correctRef.current);
     playSfx?.('error');
-  }, [playSfx]);
+  }, [playSfx, awardFreeRun]);
 
   const remaining = useSurvivalCountdown(isSurvival && !over, finishSurvival);
   rampRef.current = isSurvival ? survivalRampFromRemaining(remaining) : 0;
@@ -123,21 +131,29 @@ function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
     think: isAr ? 'حلّل…' : 'Hmm…',
     yes: isAr ? 'وجدتها!' : 'Got it!',
     no: isAr ? 'ليست هذه' : 'Not that one',
+    tryOther: isAr ? 'جرّب مطابقة مختلفة — لون أو شكل أو عدد' : 'Try a different match — colour, shape, or count',
+    shift: isAr ? 'تبدّلت القاعدة — ابحث عن الجديدة' : 'Rule shifted — find the new one',
+    dimColor: isAr ? 'لون' : 'Colour',
+    dimShape: isAr ? 'شكل' : 'Shape',
+    dimNumber: isAr ? 'عدد' : 'Count',
+    oneRule: isAr ? 'قاعدة واحدة نشطة — لون أو شكل أو عدد' : 'One active rule — colour, shape, or count',
     title: isAr ? 'فرز البطاقات' : 'Card Sort',
     over: isAr ? 'انتهى البقاء' : 'Survival over',
     again: isAr ? 'العب مجدداً' : 'Play again',
     menu: isAr ? 'القائمة' : 'Menu',
     rules: isAr ? 'قواعد' : 'rules',
+    refAria: (i) => (isAr ? `البطاقة المرجعية ${i + 1}` : `Reference card ${i + 1}`),
   }), [isAr]);
 
   const choose = useCallback((choice) => {
     if (lockRef.current || finishedRef.current) return;
     lockRef.current = true;
     const rule = ruleRef.current;
+    const postSwitchTrial = justSwitchedRef.current;
     const ok = choice === card.match[rule];
     const s = stats.current;
     totalRef.current += 1; setTotal(totalRef.current);
-    if (justSwitchedRef.current) {
+    if (postSwitchTrial) {
       s.afterN += 1; if (ok) s.afterOk += 1;
       if (!ok && prevRuleRef.current && choice === card.match[prevRuleRef.current]) s.persev += 1;
       justSwitchedRef.current = false;
@@ -151,60 +167,69 @@ function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
       comboRef.current = 0; setCombo(0);
       playSfx?.('lose');
     }
-    setFly({ choice, ok }); setMood(ok ? 'proud' : 'tired');
-
-    // update the hidden rule (silent switch after a run of correct sorts)
+    setFly({ choice, ok, hintTryOther: !ok && (postSwitchTrial || (prevRuleRef.current && choice === card.match[prevRuleRef.current])) });
+    setMood(ok ? 'proud' : 'tired');
     let run = ok ? runRef.current + 1 : 0;
     if (run >= switchAfter(mode, diff, level, rampRef.current)) {
       prevRuleRef.current = rule; s.rules += 1;
-      const opts = ['color', 'shape', 'number'].filter((x) => x !== rule);
-      ruleRef.current = opts[Math.floor(Math.random() * opts.length)];
+      const switchRng = makeRng(((seed ?? 1) >>> 0) + totalRef.current * 104729 + s.rules * 9176);
+      ruleRef.current = pickRule(switchRng, rule);
       run = 0; justSwitchedRef.current = true;
+      setShiftToast(true);
     }
     runRef.current = run;
 
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
+      setShiftToast(false);
       if (mode === 'levels' && totalRef.current >= PER_LEVEL) {
         const acc = correctRef.current / PER_LEVEL;
-        onResult({ won: acc >= WIN_ACC, score: scoreRef.current, summary: `${correctRef.current}/${PER_LEVEL} (${Math.round(acc * 100)}%)` });
+        const postAcc = s.afterN ? Math.round((s.afterOk / s.afterN) * 100) : null;
+        onResult({
+          won: acc >= WIN_ACC,
+          score: scoreRef.current,
+          summary: `${correctRef.current}/${PER_LEVEL} (${Math.round(acc * 100)}%) · ${s.rules} ${t.rules}${postAcc != null ? ` · post-switch ${postAcc}%` : ''}`,
+        });
         return;
       }
       if (mode === 'passplay' && totalRef.current >= ppTrials) { onResult({ score: correctRef.current }); return; }
       if (isSurvival && finishedRef.current) return;
       nextCard();
     }, ok ? 520 : 780);
-  }, [card, mode, diff, level, ppTrials, isSurvival, nextCard, onResult, playSfx, awardPoints]);
+  }, [card, mode, diff, level, ppTrials, isSurvival, nextCard, onResult, playSfx, awardPoints, seed, t.rules]);
 
   const restartSurvival = () => {
     clearTimeout(timerRef.current);
     trialRef.current = 0; correctRef.current = 0; totalRef.current = 0; scoreRef.current = 0; comboRef.current = 0;
     runRef.current = 0; prevRuleRef.current = null; justSwitchedRef.current = false; lockRef.current = false; finishedRef.current = false;
     stats.current = { afterN: 0, afterOk: 0, persev: 0, rules: 0 };
-    ruleRef.current = ['color', 'shape', 'number'][Math.floor(Math.random() * 3)];
+    ruleRef.current = pickRule(makeRng((Date.now() >>> 0) + 7919), null);
     setScore(0); setCorrect(0); setTotal(0); setCombo(0); setOver(null); setMood('focused');
+    setShiftToast(false);
     setCard(dealCard(makeRng((Date.now() >>> 0) + 7919))); setFly(null);
     setRunId((n) => n + 1);
   };
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
-  const hud = mode === 'levels' ? `${total}/${PER_LEVEL} · ✓${correct}`
+  const hud = mode === 'levels' ? `${total}/${PER_LEVEL} · ✓${correct} · ${stats.current.rules} ${t.rules}`
     : mode === 'passplay' ? `${total}/${ppTrials} · ✓${correct}`
-      : `✓${correct} · ${score}${combo > 1 ? ` · 🔥${combo}` : ''}`;
-  const say = fly ? (fly.ok ? t.yes : t.no) : t.think;
+      : `✓${correct} · ${score} · ${stats.current.rules} ${t.rules}${combo > 1 ? ` · 🔥${combo}` : ''}`;
+  const say = fly
+    ? (fly.ok ? t.yes : (fly.hintTryOther ? t.tryOther : t.no))
+    : t.think;
 
   if (over && isSurvival) {
     return (
-      <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
-        <div style={S.overWrap}>
-          <div style={S.overCard}>
-            <CosmosCharacter size={72} faceOnly mood="proud" />
-            <h2 style={S.overTitle}>{t.over}</h2>
-            <p style={S.overSub}>{`✓ ${over.correct} · ${over.score} ${isAr ? 'نقطة' : 'pts'} · ${over.rules} ${t.rules}`}</p>
+      <div className="ct-wcst-root" dir={isAr ? 'rtl' : 'ltr'}>
+        <div className="ct-wcst-over-wrap">
+          <div className="ct-wcst-over-card">
+            <CosmosCharacter size={72} mood="proud" glow pose="cheer" />
+            <h2 className="ct-wcst-over-title">{t.over}</h2>
+            <p className="ct-wcst-over-sub">{`✓ ${over.correct} · ${over.score} ${isAr ? 'نقطة' : 'pts'} · ${over.rules} ${t.rules}`}</p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 16 }}>
-              <button type="button" style={S.btnPri} onClick={() => { playSfx?.('click'); restartSurvival(); }}>{t.again}</button>
-              <button type="button" style={S.btnGhost} onClick={() => { playSfx?.('click'); onExit?.(); }}>{t.menu}</button>
+              <button type="button" className="ct-wcst-btn-pri" onClick={() => { playSfx?.('click'); restartSurvival(); }}>{t.again}</button>
+              <button type="button" className="ct-wcst-btn-ghost" onClick={() => { playSfx?.('click'); onExit?.(); }}>{t.menu}</button>
             </div>
           </div>
         </div>
@@ -212,13 +237,13 @@ function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
     );
   }
 
+  const flyX = fly ? (isAr ? (1.5 - fly.choice) : (fly.choice - 1.5)) * 23 : 0;
   const flyTransform = fly
-    ? `translateX(${(fly.choice - 1.5) * 23}vw) translateY(-38vh) scale(0.42) rotate(${(fly.choice - 1.5) * 6}deg)`
+    ? `translateX(${flyX}vw) translateY(-22vh) scale(0.42) rotate(${flyX * 0.26}deg)`
     : 'none';
 
   return (
-    <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
-      <style>{KEYFRAMES}</style>
+    <div className="ct-wcst-root" dir={isAr ? 'rtl' : 'ltr'}>
       {isSurvival && <SurvivalCountdownBar remaining={remaining} color={ACC} />}
 
       <header className="ct-training-play-header">
@@ -230,37 +255,48 @@ function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
 
-      <div style={S.body}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+      <div className="ct-wcst-body">
+        <div className="ct-wcst-react">
           <CosmosCharacter size={44} faceOnly mood={mood} />
-          <span style={{ ...S.say, color: fly ? (fly.ok ? OK : BAD) : SUB }}>{say}</span>
+          <span className="ct-wcst-say" style={{ color: fly ? (fly.ok ? OK : BAD) : SUB }}>{say}</span>
         </div>
-        <div style={S.prompt}>{t.prompt}</div>
-
-        {/* reference piles */}
-        <div style={S.refRow}>
-          {REFERENCE.map((ref, i) => {
-            const isChoice = fly && fly.choice === i;
-            const ring = isChoice ? (fly.ok ? OK : BAD) : 'transparent';
-            return (
-              <button key={i} type="button" onClick={() => choose(i)} disabled={!!fly}
-                style={{ ...S.refBtn, borderColor: ring, transform: isChoice ? 'translateY(-4px)' : 'none' }}>
-                <CardFace shape={ref.shape} color={ref.color} number={ref.number} glyphSize={15} />
-              </button>
-            );
-          })}
+        <p className="ct-wcst-prompt">{t.prompt}</p>
+        <p className="ct-wcst-dim-strip" style={{ margin: 0, fontSize: '0.72rem', fontWeight: 700, color: SUB, textAlign: 'center' }}>{t.oneRule}</p>
+        <div className="ct-wcst-dim-strip" aria-hidden="true">
+          <span className="ct-wcst-dim-pill">{t.dimColor}</span>
+          <span className="ct-wcst-dim-pill">{t.dimShape}</span>
+          <span className="ct-wcst-dim-pill">{t.dimNumber}</span>
         </div>
+        {shiftToast && <p className="ct-wcst-shift-toast" role="status">{t.shift}</p>}
 
-        <div style={{ flex: 1, minHeight: 12 }} />
+        <div className="ct-wcst-stage">
+          <div className="ct-wcst-ref-row">
+            {REFERENCE.map((ref, i) => {
+              const isChoice = fly && fly.choice === i;
+              const pickCls = isChoice ? (fly.ok ? 'ct-wcst-ref-btn--pick-ok' : 'ct-wcst-ref-btn--pick-bad') : '';
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  className={`ct-wcst-ref-btn ${pickCls}`}
+                  aria-label={t.refAria(i)}
+                  onClick={() => choose(i)}
+                  disabled={!!fly}
+                >
+                  <CardFace shape={ref.shape} color={ref.color} number={ref.number} glyphSize={15} />
+                </button>
+              );
+            })}
+          </div>
 
-        {/* the card to sort */}
-        <div style={S.dealWrap}>
-          <div key={`${runId}-${trialRef.current}`} style={{
-            width: 'min(56%, 190px)', transform: flyTransform, opacity: fly ? 0 : 1,
-            transition: fly ? 'transform 500ms cubic-bezier(.5,0,.75,0), opacity 500ms ease-in' : 'none',
-            animation: fly ? 'none' : 'wc-deal 300ms ease-out',
-          }}>
-            <CardFace shape={card.shape} color={card.color} number={card.number} glyphSize={28} style={{ minHeight: 116, borderRadius: 16 }} />
+          <div className="ct-wcst-deal-wrap">
+            <div
+              key={`${runId}-${trialRef.current}`}
+              className={`ct-wcst-deal-card${fly ? ' ct-wcst-deal-card--fly' : ' ct-wcst-deal-card--enter'}`}
+              style={{ transform: flyTransform }}
+            >
+              <CardFace shape={card.shape} color={card.color} number={card.number} glyphSize={28} deal />
+            </div>
           </div>
         </div>
       </div>
@@ -269,7 +305,7 @@ function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
 }
 
 export default function CardSortGame({ onBack, workoutMode = false }) {
-  const { currentLang, playSfx, awardPoints } = useApp();
+  const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   return (
     <ModeShell
@@ -288,26 +324,8 @@ export default function CardSortGame({ onBack, workoutMode = false }) {
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <WcstEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <WcstEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
     />
   );
 }
-
-const KEYFRAMES = `@keyframes wc-deal { 0%{transform:translateY(46px) scale(0.9); opacity:0} 100%{transform:translateY(0) scale(1); opacity:1} }`;
-
-const S = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: INK, fontFamily: "'Outfit', system-ui, sans-serif" },
-  body: { flex: 1, display: 'flex', flexDirection: 'column', gap: 12, padding: '10px 18px calc(24px + env(safe-area-inset-bottom))', maxWidth: 460, width: '100%', margin: '0 auto' },
-  say: { background: '#fff', border: `1px solid ${LINE}`, borderRadius: 14, padding: '6px 12px', fontWeight: 700, fontSize: 14 },
-  prompt: { fontWeight: 600, fontSize: 'clamp(15px, 4vw, 18px)', textAlign: 'center', color: SUB },
-  refRow: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 },
-  refBtn: { border: '3px solid transparent', borderRadius: 14, padding: 3, background: 'transparent', cursor: 'pointer', transition: 'border-color 0.12s, transform 0.12s' },
-  dealWrap: { display: 'grid', placeItems: 'center', minHeight: 130 },
-  overWrap: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  overCard: { background: CARD, border: `1px solid ${LINE}`, borderRadius: 20, padding: '28px 26px', textAlign: 'center', maxWidth: 340, width: '100%', boxShadow: '0 8px 30px rgba(26,18,8,0.08)' },
-  overTitle: { margin: '10px 0 6px', fontWeight: 800, fontSize: 22, color: INK },
-  overSub: { margin: 0, fontWeight: 600, color: SUB },
-  btnPri: { padding: '12px 22px', borderRadius: 12, border: 'none', background: ACC, color: '#fff', fontWeight: 800, cursor: 'pointer' },
-  btnGhost: { padding: '12px 20px', borderRadius: 12, border: `1px solid ${LINE}`, background: '#fff', fontWeight: 700, color: INK, cursor: 'pointer' },
-};

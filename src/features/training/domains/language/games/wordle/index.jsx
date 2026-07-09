@@ -14,6 +14,7 @@ import PassPlaySetup from '../../../../shared/PassPlaySetup';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { createTrialLog } from '../../../../shared/trialLog';
+import { seedWithDay } from '../../../../shared/dailySeed';
 import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import WordleModes from './WordleModes';
 import LetterLinkBoard from './LetterLinkBoard';
@@ -41,49 +42,32 @@ import {
 import { loadWordleProfile, saveWordleProfile } from './wordleProgress';
 import { prewarmLinkTrie } from './linkDictionary';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
+import { STR_COMMON } from '../../../../shared/trainingStrings';
 
 const UI = {
   en: {
+    ...STR_COMMON.en,
     hubLang: 'Language',
-    hubTag: 'training',
     hubAttentionWord: 'Word Maze',
     hubTrainingTag: 'training',
     title: 'Word Maze',
     subtitle: 'Connect letters to spell words',
-    replayTutorial: 'Replay tutorial',
-    freeMode: 'Survival mode',
-    levelMode: 'Level mode',
-    challengeMode: 'Pass n Play',
-    hubMapAria: 'Modes',
     hubNodeFreeHint: 'Endless · 3 lives · grids ramp up',
     hubNodeLevelsHint: '100 levels · connect letters on the grid',
     hubNodeChallengeHint: 'Same grid for all · pick a difficulty',
-    pickDiff: 'Choose difficulty',
     pickDiffSub: 'Drag across touching letters (including diagonals) to spell words',
     diffDesc: {
       easy: 'Common words · 3+ letters · 4×4 grid.',
       medium: 'Mixed vocabulary · 3+ letters · 5×5 grid.',
       hard: 'Tougher words · 4+ letters · 5×5 grid.',
     },
-    chalPickDiff: 'Difficulty',
     levelsSub: (pop, g) => `${pop} · ${g}×${g} grid · Levels 1–100`,
-    time: 'Time',
     lvl: 'Level',
     resultsLevelRetryTitle: 'Try again',
-    freeIntroTitle: 'Survival mode',
     freeIntroBody:
       'Endless grids that get harder. Each grid asks for a few words before its timer runs out. You have 3 lives — miss the target in time and you lose one. The run ends only when your lives reach zero.',
-    freeIntroReady: 'Ready',
-    challengeTitle: 'Pass n Play',
     challengeSub: 'Same letter grid for everyone · pick a difficulty · pass the device',
-    players: 'Players (2–10)',
-    addPl: '＋ Add player',
-    startCh: '⚔️ Start',
-    needTwo: 'Add at least 2 players.',
-    chalRounds: 'Rounds',
     chalRoundsHint: 'Same grid each round · pass device between players',
-    roundNofM: (n, m) => `Round ${n}/${m}`,
-    chalTurnKicker: 'Your turn',
     chalBulletSame: 'Same letter grid for every player this round',
     chalBulletPass: 'Start only when this player holds the device',
     handTo: (n) => `Hand device to ${n}.`,
@@ -97,85 +81,48 @@ const UI = {
     wordsProgress: (n, target) => `Words ${n}/${target}`,
     timeLeft: (s) => `Time ${s}s`,
     sessionTime: (s) => `Session ${s}s`,
-    score: 'Score',
     foundList: 'Found',
     clearPath: 'Clear',
-    paused: 'Paused',
-    resume: 'Resume',
     restart: 'Restart grid',
-    quitMenu: 'Quit to menu',
-    quitQ: 'Quit?',
-    quitLose: 'This run will be lost.',
-    yesQuit: 'Yes, quit',
-    keep: 'Keep playing',
     freeLvl: (d, lv) => `Survival · ${d} L${lv}`,
     resultsPass: 'Level complete',
     resultsFail: 'Time up — try again',
-    stars: 'Stars',
     vfs: 'VFS (verbal fluency)',
     wordsFound: 'Words found',
     totalScore: 'Score',
-    nextLv: 'Next level',
-    retry: 'Retry',
-    menu: 'Menu',
-    freeGameOver: 'Run ended',
     freeStages: (n) => `Words found: ${n}`,
     freeBest: (n) => `Best words: ${n}`,
-    freePlayAgain: 'Play again',
-    resultsChalTitle: 'Pass n Play results',
     chalRes: (vfs, sc) => `VFS ${vfs} · ${sc} pts`,
-    newCh: 'New game',
     levelHeader: (d, lv) => `${WORDLE_DM[d]?.label ?? d} · L${lv}`,
     levelMeta: (n, min) => `Find ${n} words · ${min}+ letters`,
-    challengeHeader: 'Pass n Play',
-    freeHeader: 'Survival mode',
     minLetters: (n) => `Min ${n} letters`,
     formulaHint: 'Any real word you can connect on the grid counts. Longer words score more.',
   },
   ar: {
+    ...STR_COMMON.ar,
     hubLang: 'لغة',
-    hubTag: 'تدريب',
     hubAttentionWord: 'متاهة الكلمات',
     hubTrainingTag: 'تدريب',
     title: 'متاهة الكلمات',
     subtitle: 'وصّل الحروف لتكوين كلمات',
-    replayTutorial: 'إعادة الشرح',
-    freeMode: 'وضع البقاء',
-    levelMode: 'وضع المستويات',
-    challengeMode: 'مرّر والعب',
-    hubMapAria: 'الأوضاع',
     hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · شبكات تزداد صعوبة',
     hubNodeLevelsHint: '١٠٠ مستوى · وصّل الحروف',
     hubNodeChallengeHint: 'نفس الشبكة للجميع · اختر الصعوبة',
-    pickDiff: 'اختر الصعوبة',
     pickDiffSub: 'اسحب على حروف متجاورة (بما فيها القطر) لتكوين كلمات',
     diffDesc: {
       easy: 'كلمات شائعة · ٣+ أحرف · شبكة ٤×٤.',
       medium: 'مفردات متنوعة · ٣+ أحرف · شبكة ٥×٥.',
       hard: 'كلمات أصعب · ٤+ أحرف · شبكة ٥×٥.',
     },
-    chalPickDiff: 'الصعوبة',
     levelsSub: (pop, g) => `${pop} · شبكة ${g}×${g} · مستويات 1–100`,
-    time: 'الوقت',
     lvl: 'مستوى',
     resultsLevelRetryTitle: 'حاول مجددًا',
-    freeIntroTitle: 'وضع البقاء',
     freeIntroBody:
       'شبكات لا تنتهي وتزداد صعوبة. كل شبكة تطلب بضع كلمات قبل نفاد مؤقتها. لديك ٣ أرواح — إن لم تبلغ الهدف في الوقت تخسر روحاً. تنتهي المحاولة فقط عند نفاد الأرواح.',
-    freeIntroReady: 'جاهز',
-    challengeTitle: 'مرّر والعب',
     challengeSub: 'نفس الشبكة للجميع · اختر الصعوبة · مرّر الجهاز',
-    players: 'اللاعبون (2–10)',
-    addPl: '＋ إضافة لاعب',
-    startCh: '⚔️ ابدأ',
-    needTwo: 'أضف لاعبين على الأقل.',
-    chalRounds: 'الجولات',
     chalRoundsHint: 'نفس الشبكة · مرّر الجهاز',
-    roundNofM: (n, m) => `الجولة ${n}/${m}`,
-    chalTurnKicker: 'دورك',
     chalBulletSame: 'نفس شبكة الحروف للجميع',
     chalBulletPass: 'ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
-    handTo: (n) => `سلّم الجهاز إلى ${n}.`,
     goReady: 'ابدأ الوصل',
     chalMeta: (label) => `${label} · ٩٠ث`,
     connectHint: 'اسحب على حروف متلامسة · ارفع الإصبع للإرسال',
@@ -186,44 +133,26 @@ const UI = {
     wordsProgress: (n, target) => `كلمات ${n}/${target}`,
     timeLeft: (s) => `الوقت ${s}ث`,
     sessionTime: (s) => `الجلسة ${s}ث`,
-    score: 'نقاط',
     foundList: 'وُجدت',
     clearPath: 'مسح',
-    paused: 'متوقف',
-    resume: 'متابعة',
     restart: 'إعادة الشبكة',
-    quitMenu: 'الخروج للقائمة',
-    quitQ: 'خروج؟',
-    quitLose: 'سيُلغى هذا السجل.',
-    yesQuit: 'نعم، خروج',
-    keep: 'متابعة اللعب',
     freeLvl: (d, lv) => `حر · ${d} ${lv}`,
     resultsPass: 'اكتمل المستوى',
     resultsFail: 'انتهى الوقت — حاول مجددًا',
-    stars: 'نجوم',
     vfs: 'VFS',
     wordsFound: 'كلمات',
     totalScore: 'نقاط',
-    nextLv: 'المستوى التالي',
-    retry: 'إعادة',
-    menu: 'القائمة',
-    freeGameOver: 'انتهت المحاولة',
     freeStages: (n) => `كلمات: ${n}`,
     freeBest: (n) => `أفضل: ${n}`,
-    freePlayAgain: 'العب مجددًا',
-    resultsChalTitle: 'نتائج مرّر والعب',
     chalRes: (vfs, sc) => `VFS ${vfs} · ${sc}`,
-    newCh: 'لعبة جديدة',
     levelHeader: (d, lv) => `${WORDLE_DM[d]?.label ?? d} · ${lv}`,
     levelMeta: (n, min) => `${n} كلمات · ${min}+ أحرف`,
-    challengeHeader: 'مرّر والعب',
-    freeHeader: 'وضع البقاء',
     minLetters: (n) => `الحد ${n} أحرف`,
     formulaHint: 'الكلمات الأطول = نقاط أكثر. الحروف متجاورة دون تكرار.',
   },
 };
 
-export default function WordleGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
+export default function WordleGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'language' }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
@@ -629,7 +558,8 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
 
   const startLevelGame = useCallback(
     (diff, lv) => {
-      const seed = ((diff.charCodeAt(0) * 997 + lv * 7919) ^ 0x5eed) >>> 0;
+      const base = ((diff.charCodeAt(0) * 997 + lv * 7919) ^ 0x5eed) >>> 0;
+      const seed = seedWithDay(base);
       trialLogRef.current?.discard();
       trialLogRef.current = createTrialLog({ game: 'wordle', mode: 'level', meta: { diff, lv, lang } });
       beginRound(prepareLevelRound(diff, lv, seed, lang));
@@ -696,6 +626,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
           isAr={isAr}
           label={assessmentLabel}
           step={assessmentStep}
+          domainId={assessmentDomainId}
           onStart={startAssessment}
           onBack={onAssessmentExit || onBack}
           playSfx={playSfx}

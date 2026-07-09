@@ -12,7 +12,12 @@
  * (longest sequence reproduced), which feeds the assessment.
  * ========================================================================== */
 
+import { mulberry32, shuffle } from '../../../../../../lib/rng';
+
+export { mulberry32 };
+
 import { objectIds } from './memoObjects';
+import { clamp, lerp } from '../../../../../../lib/math';
 
 export const MS_LEVELS_PER_TIER = 100;
 export const MS_DIFF_KEYS = ['easy', 'medium', 'hard'];
@@ -38,31 +43,7 @@ const TIER = {
   hard: { span: [4, 8], grid: 12, flash: [720, 480], gap: [280, 160] },
 };
 
-function lerp(a, b, t) {
-  return a + (b - a) * t;
-}
-function clamp(v, lo, hi) {
-  return Math.max(lo, Math.min(hi, v));
-}
 
-export function mulberry32(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-function shuffle(arr, rnd) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 /** Columns for a given cell count (keeps the grid roughly square). */
 export function colsFor(gridCells) {

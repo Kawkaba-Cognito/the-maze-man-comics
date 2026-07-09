@@ -9,6 +9,7 @@
 
 import { MEMO_OBJECTS } from '../memo-span/memoObjects';
 import { mulberry32 } from '../memo-span/memoSpanData';
+import { clamp, lerp } from '../../../../../../lib/math';
 
 export const NB_LEVELS_PER_TIER = 100;
 export const NB_DIFF_KEYS = ['easy', 'medium', 'hard'];
@@ -39,8 +40,6 @@ export const NB_DM = {
 
 const POOL = MEMO_OBJECTS.map((o) => o.id);
 
-function lerp(a, b, t) { return a + (b - a) * t; }
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
 /** Inverse normal CDF (Acklam) — for d′ sensitivity. */
 export function ppf(p) {

@@ -19,17 +19,18 @@ function save(st) {
 }
 
 /** Most recent assessment's per-domain scores (or {}). */
-function latestScores() {
+function latestAssessment() {
   const ss = loadAssessSessions();
   for (let i = ss.length - 1; i >= 0; i--) {
-    if (ss[i]?.scores) return ss[i].scores;
+    if (ss[i]?.scores) return { scores: ss[i].scores, ts: ss[i].ts || 0 };
   }
-  return {};
+  return { scores: {}, ts: 0 };
 }
 
 /** age + scores used by the planner / difficulty. */
 export function getDerived() {
-  return { age: loadAssessProfile().age, scores: latestScores() };
+  const { scores, ts } = latestAssessment();
+  return { age: loadAssessProfile().age, scores, assessTs: ts };
 }
 
 export function savePrefs(goal, size) {
@@ -44,13 +45,20 @@ export function ensureToday(st = loadWorkout()) {
   if (!st.prefs) return st;
   const date = todayKey();
   const t = st.today;
-  if (t && t.date === date && t.goal === st.prefs.goal && t.size === st.prefs.size) return st;
-  const { age, scores } = getDerived();
+  const { age, scores, assessTs } = getDerived();
+  const reactionDue = checkDue(st).due;
+  if (t && t.date === date && t.goal === st.prefs.goal && t.size === st.prefs.size && t.assessTs === assessTs) return st;
+  // Mid-day re-assessment: keep in-progress plan; only refresh scores for tomorrow.
+  if (t && t.date === date && t.goal === st.prefs.goal && t.size === st.prefs.size && t.done?.some(Boolean)) {
+    st.today = { ...t, assessTs };
+    return save(st);
+  }
   const exercises = generatePlan({
     date, goal: st.prefs.goal, size: st.prefs.size, age, scores,
     domainCompleted: st.domainCompleted || {},
+    reactionReserve: reactionDue,
   });
-  st.today = { date, goal: st.prefs.goal, size: st.prefs.size, exercises, done: exercises.map(() => false) };
+  st.today = { date, goal: st.prefs.goal, size: st.prefs.size, assessTs, exercises, done: exercises.map(() => false) };
   return save(st);
 }
 
@@ -74,7 +82,7 @@ export function markDone(idx) {
 
   if (st.today.done.every(Boolean) && st.lastCompleteDate !== st.today.date) {
     const y = new Date(); y.setDate(y.getDate() - 1);
-    const yk = y.toISOString().slice(0, 10);
+    const yk = todayKey(y);
     st.streak = st.lastCompleteDate === yk ? (st.streak || 0) + 1 : 1;
     st.lastCompleteDate = st.today.date;
     st.justCompleted = true; // one-shot flag for the UI celebration + bonus

@@ -19,6 +19,7 @@
  *    Callers guard this; loadTrialSessions never returns mode 'tutorial'.
  */
 import { summarize } from './metrics';
+import { loadJson } from '../../../lib/storage';
 
 const KEY_PREFIX = 'mm_trials_';
 const KEY_VERSION = 'v1';
@@ -31,12 +32,8 @@ const MAX_BYTES_PER_GAME = 200 * 1024;
 const storageKey = (game) => `${KEY_PREFIX}${game}_${KEY_VERSION}`;
 
 function loadStore(game) {
-  try {
-    const st = JSON.parse(localStorage.getItem(storageKey(game)));
-    return Array.isArray(st?.sessions) ? st : { sessions: [] };
-  } catch {
-    return { sessions: [] };
-  }
+  const st = loadJson(storageKey(game));
+  return Array.isArray(st?.sessions) ? st : { sessions: [] };
 }
 
 function saveStore(game, st) {

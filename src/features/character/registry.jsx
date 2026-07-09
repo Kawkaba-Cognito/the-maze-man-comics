@@ -11,8 +11,8 @@ import CosmosCharacter from './CosmosCharacter';
 export const CHARACTERS = [
   {
     id: 'cosmos',
-    en: 'The Cosmos',
-    ar: 'الكون',
+    en: 'Kawkab',
+    ar: 'كوكب',
     supportsHats: true,
     Component: CosmosCharacter,
   },

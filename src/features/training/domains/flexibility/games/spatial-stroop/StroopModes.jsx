@@ -35,12 +35,13 @@ export function StroopArrow({ dir = 'right', state = '', size = 96, color = null
 }
 
 /** The target arrow with optional Eriksen flanker arrows on either side. */
-export function StroopTarget({ probe, state = '', size = 110, useColor = false }) {
+export function StroopTarget({ probe, state = '', size = 92, useColor = false }) {
   const color = useColor && probe.color ? probe.color : null;
   if (!probe.flankerDir) {
     return <StroopArrow dir={probe.dir} state={state} size={size} color={color} />;
   }
-  const fsize = Math.round(size * 0.52);
+  const coreSize = Math.min(size, 64);
+  const fsize = Math.round(coreSize * 0.4);
   const flank = (key) => (
     <StroopArrow key={key} dir={probe.flankerDir} size={fsize} color={null} />
   );
@@ -49,7 +50,7 @@ export function StroopTarget({ probe, state = '', size = 110, useColor = false }
       {flank('fl1')}
       {flank('fl2')}
       <div className="ct-stroop-flank-target">
-        <StroopArrow dir={probe.dir} state={state} size={size} color={color} />
+        <StroopArrow dir={probe.dir} state={state} size={coreSize} color={color} />
       </div>
       {flank('fr1')}
       {flank('fr2')}

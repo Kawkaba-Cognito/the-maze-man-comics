@@ -256,6 +256,7 @@ export const QUICK3 = [
       { id: 'sink', e: '🚿', name: { en: 'The washroom sink', ar: 'مغسلة الحمّام' }, pos: { x: 64, y: 60 }, clueId: 'sink-soap' },
       { id: 'art-room', e: '🎨', name: { en: 'The art corner', ar: 'ركن الرسم' }, pos: { x: 84, y: 28 }, clueId: 'art-check' },
       { id: 'lockers', e: '🔐', name: { en: 'The lockers', ar: 'الخزائن' }, pos: { x: 44, y: 70 }, empty: { en: 'Rows of dented doors. One smells of victory socks. None of money.', ar: 'صفوف من الأبواب المنبعجة. أحدها تفوح منه رائحة جوارب النصر. ولا واحد منها رائحة نقود.' } },
+      { id: 'hands', e: '🙌', name: { en: 'The hand inspection', ar: 'فحص الأيدي' }, pos: { x: 50, y: 42 }, clueId: 'blue-hands' },
     ],
     clues: [
       { id: 'trap', e: '🧪', name: { en: 'The powder trap', ar: 'فخّ المسحوق' }, text: { en: 'The powder is invisible on dry hands. ONLY touching the box and then washing with soap turns the skin bright blue.', ar: 'المسحوق خفيّ على اليد الجافة. لمسُ الصندوق ثم الغسل بالصابون هو وحده ما يصبغ الجلد بالأزرق الزاهي.' } },

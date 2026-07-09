@@ -14,6 +14,8 @@
  * inconsistent, so applying a correction would be unjustified.
  * ========================================================================== */
 
+import { loadJson, saveJson } from '../../../lib/storage';
+
 const PROFILE_KEY = 'mm_assess_profile_v1';
 
 export const GENDER_OPTIONS = ['female', 'male', 'other', 'na'];
@@ -40,17 +42,12 @@ export function ageSpeedFactor(age) {
 }
 
 export function loadAssessProfile() {
-  try {
-    const j = localStorage.getItem(PROFILE_KEY);
-    if (j) {
-      const p = JSON.parse(j);
-      return {
-        age: typeof p.age === 'number' ? p.age : null,
-        gender: GENDER_OPTIONS.includes(p.gender) ? p.gender : null,
-      };
-    }
-  } catch {
-    /* ignore */
+  const p = loadJson(PROFILE_KEY);
+  if (p) {
+    return {
+      age: typeof p.age === 'number' ? p.age : null,
+      gender: GENDER_OPTIONS.includes(p.gender) ? p.gender : null,
+    };
   }
   return { age: null, gender: null };
 }
@@ -60,11 +57,7 @@ export function saveAssessProfile({ age, gender }) {
     age: Number.isFinite(Number(age)) ? Math.max(6, Math.min(120, Math.round(Number(age)))) : null,
     gender: GENDER_OPTIONS.includes(gender) ? gender : null,
   };
-  try {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(clean));
-  } catch {
-    /* ignore */
-  }
+  saveJson(PROFILE_KEY, clean);
   return clean;
 }
 
@@ -83,12 +76,8 @@ const SESSIONS_KEY = 'mm_assess_sessions_v1';
 const SESSIONS_CAP = 60;
 
 export function loadAssessSessions() {
-  try {
-    const arr = JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]');
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
+  const arr = loadJson(SESSIONS_KEY, []);
+  return Array.isArray(arr) ? arr : [];
 }
 
 /** Save a completed session: { scores: {domain: 0-100}, full: bool }. Returns updated list. */
@@ -105,11 +94,7 @@ export function saveAssessSession({ scores, full }) {
     full: !!full,
   };
   const next = [...loadAssessSessions(), entry].slice(-SESSIONS_CAP);
-  try {
-    localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
-  } catch {
-    /* ignore */
-  }
+  saveJson(SESSIONS_KEY, next);
   return next;
 }
 

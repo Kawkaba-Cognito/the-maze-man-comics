@@ -61,6 +61,8 @@ import {
   ASSESSMENT_PROTOCOL,
 } from './assessmentData';
 import { loadAssessProfile } from '../../../../assessment/assessmentProfile';
+import AssessmentReady from '../../../../assessment/AssessmentReady';
+import { STR_COMMON } from '../../../../shared/trainingStrings';
 
 
 /** Merge one challenge pass into running per-player aggregates (avg IES/time/etc., total errors). */
@@ -398,37 +400,28 @@ function AssessMetricTile({ value, label, sub, band, bandLabel }) {
 
 const UI = {
   en: {
+    ...STR_COMMON.en,
     back: '‹ BACK',
     title: 'CANCELLATION',
     subtitle: 'Selective attention & inhibition',
-    freeMode: 'Survival mode',
     freeMenuSub:
       'Endless rounds that ramp up · one life · the run ends if time runs out or you make too many wrong taps · score from taps, clears & streaks',
     freeStrikes: 'Errors',
-    lives: 'Lives',
     freeLvlLabel: (tier, lv) => `Survival · ${tier} ${lv}`,
-    freeGameOver: 'Run ended',
     freeRoundsCleared: (n) => `Rounds cleared: ${n}`,
     freeBest: (n) => `Best clears: ${n}`,
     freeBestScoreLine: (n) => `Best score: ${n}`,
-    freePlayAgain: 'Play again',
-    freeIntroTitle: 'Survival mode',
     freeIntroBody:
       'Endless practice that keeps getting harder. You have one life. Each round has its own timer — clear every target before it runs out. Run out of time, or make too many wrong taps in a round, and the run is over. Score on correct taps and full clears; streaks of clears multiply the bonus.',
-    freeIntroReady: 'Ready',
-    score: 'Score',
     hubChamberKicker: '⟡ FOCUS QUEST ⟡',
     hubAttentionWord: 'Cancellation task',
     hubTrainingTag: 'training',
     resultsLevelPass: 'Level passed',
     resultsLevelRetryTitle: 'Try again',
-    resultsChalTitle: 'Pass n Play results',
     hubMapAria: 'Modes map — choose a path',
     hubNodeFreeHint: 'Endless · 3 lives · ramps up',
     hubNodeLevelsHint: '100 levels per tier · unlock in order',
     hubNodeChallengeHint: 'Same board for all · pick a difficulty',
-    levelMode: 'Level mode',
-    challengeMode: 'Pass n Play',
     thresholdMode: 'Threshold test',
     hubNodeThresholdHint: 'Adaptive · finds your level',
     adaptIntroTitle: 'Adaptive threshold',
@@ -453,41 +446,19 @@ const UI = {
     diffGrid: 'grid',
     levelsSub: (pop, g) => `${pop} · ${g}×${g} grid · Levels 1–100`,
     levelsBack: '← Back',
-    challengeTitle: 'Pass n Play',
     challengeSub: 'Same board for everyone · pick a difficulty · pass the device · best score wins',
-    chalPickDiff: 'Difficulty',
-    players: 'Players (2–10)',
-    addPl: '＋ Add player',
-    startCh: '⚔️ Start',
-    needTwo: 'Add at least 2 players.',
     ready: (n) => `Ready — ${n}`,
-    handTo: (n) => `Hand the device to ${n}.`,
     goReady: 'Start round',
-    chalTurnKicker: 'Your turn',
     chalBulletSame: 'Same grid for every player this round',
-    chalBulletPass: 'Tap Start only when the device is with this player',
     hubMenu: 'Same grid, fair compare.',
-    time: 'Time',
     found: 'Found',
     err: 'Errors',
     lvl: 'Level',
     pause: 'Pause',
     quit: 'Quit',
-    resume: 'Resume',
     restart: 'Restart level',
-    quitMenu: 'Quit to menu',
-    paused: 'Paused',
-    quitQ: 'Quit?',
     quitLose: 'Progress on this round will be lost.',
-    yesQuit: 'Yes, quit',
-    keep: 'Keep playing',
-    nextLv: 'Next level',
-    retry: 'Retry',
-    menu: 'Menu',
-    newCh: 'New game',
-    chalRounds: 'Rounds',
     chalRoundsHint: 'Each player plays once per round · New fair grid each round',
-    roundNofM: (n, m) => `Round ${n}/${m}`,
     chalResDetail: (nr, t, e, a, tp) =>
       nr > 1
         ? `${nr}× · ${t}s avg · ${e} err total · ${a}% · ${tp} t/s`
@@ -502,7 +473,7 @@ const UI = {
     hubNodeAssessHint: 'Standardized test · track your attention',
     assessIntroTitle: 'Attention Assessment',
     assessIntroBody:
-      'A standardized 3-trial test. Each trial shows the same kind of board — find every matching tile before the timer runs out. Work quickly but accurately; wrong taps and missed targets both count.',
+      'A standardized 4-trial Mesulam-style cancellation test (~4 min). Each trial shows a fresh 7×7 board — find every matching tile within 50 seconds. Work quickly but accurately; wrong taps and missed targets both count.',
     assessIntroMeasures: 'It measures selective attention, processing speed, response inhibition, and attentional stability (how consistent your reaction times are).',
     assessIntroNote:
       'Self-referenced: best used to track your own change over time. These are guideline scores, not a clinical diagnosis.',
@@ -561,37 +532,28 @@ const UI = {
     sciClose: 'Close',
   },
   ar: {
+    ...STR_COMMON.ar,
     back: '‹ رجوع',
     title: 'مهمة الإلغاء',
     subtitle: 'انتباه انتقائي وكبح استجابي',
-    freeMode: 'وضع البقاء',
     freeMenuSub:
       'جولات لا تنتهي وتزداد صعوبة · روح واحدة · تنتهي المحاولة إذا نفد الوقت أو أكثرت النقر الخاطئ في الجولة · النقاط للمسات والإكمال والسلسلة',
     freeStrikes: 'أخطاء',
-    lives: 'الأرواح',
     freeLvlLabel: (tier, lv) => `حر · ${tier} ${lv}`,
-    freeGameOver: 'انتهت المحاولة',
     freeRoundsCleared: (n) => `جولات ناجحة: ${n}`,
     freeBest: (n) => `أفضل إكمال: ${n}`,
     freeBestScoreLine: (n) => `أفضل نقاط: ${n}`,
-    freePlayAgain: 'العب مجددًا',
-    freeIntroTitle: 'وضع البقاء',
     freeIntroBody:
       'تدريب لا ينتهي ويزداد صعوبة باستمرار. لديك روح واحدة. لكل جولة مؤقتها الخاص — أكمل كل الأهداف قبل نفاده. إذا نفد الوقت أو أكثرت النقر الخاطئ في الجولة تنتهي المحاولة. اجمع النقاط باللمسات الصحيحة وإكمال الجولات؛ السلاسل تضاعف المكافأة.',
-    freeIntroReady: 'جاهز',
-    score: 'نقاط',
     hubChamberKicker: '⟡ مهمة التركيز ⟡',
     hubAttentionWord: 'مهمة الشطب',
     hubTrainingTag: 'تدريب',
     resultsLevelPass: 'المستوى اجتُاز',
     resultsLevelRetryTitle: 'حاول مجددًا',
-    resultsChalTitle: 'نتائج مرّر والعب',
     hubMapAria: 'خريطة الأوضاع — اختر مسارًا',
     hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · يزداد صعوبة',
     hubNodeLevelsHint: '١٠٠ مستوى لكل صعوبة · بالترتيب',
     hubNodeChallengeHint: 'نفس اللوحة للجميع · اختر الصعوبة',
-    levelMode: 'وضع المستويات',
-    challengeMode: 'مرّر والعب',
     thresholdMode: 'اختبار العتبة',
     hubNodeThresholdHint: 'تكيّفي · يحدّد مستواك',
     adaptIntroTitle: 'العتبة التكيّفية',
@@ -605,7 +567,6 @@ const UI = {
     adaptRoundLabel: (n) => `جولة ${n}`,
     adaptAgain: 'أعد الاختبار',
     menuHint: 'تدريب بحث بصري: ربط السمات، كبح المشتتات، والاستجابة بسرعة—كمهام الانتباه في العلوم المعرفية.',
-    pickDiff: 'اختر الصعوبة',
     pickDiffSub: 'كل صعوبة ١٠٠ مستوى · افتحها بالترتيب.',
     diffDesc: {
       easy: 'أشكال مختلفة — اكتشف المختلف بسرعة.',
@@ -616,41 +577,22 @@ const UI = {
     diffGrid: 'شبكة',
     levelsSub: (pop, g) => `${pop} · شبكة ${g}×${g} · مستويات 1–100`,
     levelsBack: '← رجوع',
-    challengeTitle: 'مرّر والعب',
     challengeSub: 'نفس اللوحة للجميع · اختر الصعوبة · مرّر الجهاز',
-    chalPickDiff: 'الصعوبة',
-    players: 'اللاعبون (2–10)',
-    addPl: '＋ إضافة لاعب',
-    startCh: '⚔️ ابدأ',
-    needTwo: 'أضف لاعبين على الأقل.',
     ready: (n) => `جاهز — ${n}`,
-    handTo: (n) => `سلّم الجهاز إلى ${n}.`,
     goReady: 'ابدأ الجولة',
-    chalTurnKicker: 'دورك',
     chalBulletSame: 'نفس الشبكة لكل اللاعبين في هذه الجولة',
-    chalBulletPass: 'اضغط ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
     hubMenu: 'شبكة واحدة، مقارنة عادلة.',
-    time: 'الوقت',
     found: 'مُوجَد',
     err: 'أخطاء',
     lvl: 'مستوى',
     pause: 'إيقاف',
     quit: 'خروج',
-    resume: 'متابعة',
     restart: 'إعادة المستوى',
     quitMenu: 'خروج للقائمة',
-    paused: 'متوقف',
-    quitQ: 'خروج؟',
     quitLose: 'ستفقد تقدم هذه الجولة.',
     yesQuit: 'نعم',
     keep: 'إكمال',
-    nextLv: 'المستوى التالي',
-    retry: 'إعادة',
-    menu: 'القائمة',
-    newCh: 'لعبة جديدة',
-    chalRounds: 'الجولات',
     chalRoundsHint: 'كل لاعب يلعب مرة في الجولة · شبكة جديدة عادلة كل جولة',
-    roundNofM: (n, m) => `الجولة ${n}/${m}`,
     chalResDetail: (nr, t, e, a, tp) =>
       nr > 1
         ? `${nr}× · ${t}s معدل · ${e} أخطاء المجموع · ${a}% · ${tp} هدف/ث`
@@ -665,7 +607,7 @@ const UI = {
     hubNodeAssessHint: 'اختبار موحّد · تابع انتباهك',
     assessIntroTitle: 'تقييم الانتباه',
     assessIntroBody:
-      'اختبار موحّد من ٣ محاولات. كل محاولة تعرض نفس نوع اللوحة — جِد كل المربعات المطابقة قبل نفاد الوقت. اعمل بسرعة وبدقة؛ النقر الخاطئ والأهداف المفقودة كلاهما يُحتسب.',
+      'اختبار شطب موحّد من ٤ محاولات على نمط ميسولام (~٤ د). كل محاولة لوحة 7×7 جديدة — جِد كل المربعات المطابقة خلال ٥٠ ثانية. اعمل بسرعة وبدقة؛ النقر الخاطئ والأهداف المفقودة يُحتسبان.',
     assessIntroMeasures: 'يقيس الانتباه الانتقائي وسرعة المعالجة وكبح الاستجابة واستقرار الانتباه (مدى ثبات زمن استجابتك).',
     assessIntroNote:
       'مرجعي ذاتي: الأفضل لتتبّع تغيّرك مع الوقت. هذه درجات إرشادية وليست تشخيصاً سريرياً.',
@@ -725,7 +667,7 @@ const UI = {
   },
 };
 
-export default function CancellationTaskGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentExit, onAssessmentComplete, assessmentLabel, assessmentStep }) {
+export default function CancellationTaskGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentExit, onAssessmentComplete, assessmentLabel, assessmentStep, assessmentDomainId = 'attention' }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
@@ -742,7 +684,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const [profile, setProfile] = useState(() => loadProfile());
   // When launched as an assessment (from the training-page fox), skip the game
   // hub and go straight into the standardized assessment intro.
-  const [phase, setPhase] = useState(assessmentMode ? 'assessIntro' : 'hub');
+  const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
   const [diffKey, setDiffKey] = useState('easy');
 
   const [round, setRound] = useState(null);
@@ -1102,6 +1044,17 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     setPhase('assessIntro');
   }, []);
 
+  const beginBatteryAssessment = useCallback(() => {
+    playSfx('click');
+    assessTrialsRef.current = [];
+    assessTapsRef.current = [];
+    assessIdxRef.current = 0;
+    setAssessResult(null);
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'cancel-task', mode: 'assess' });
+    void beginAssessmentTrial(-1);
+  }, [playSfx, beginAssessmentTrial]);
+
   const onAssessIntroReady = useCallback(() => {
     playSfx('click');
     trialLogRef.current?.discard();
@@ -1307,7 +1260,13 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           { age: loadAssessProfile().age },
         );
         setAssessHistory(saveAssessSession(summary));
-        trialLogRef.current?.finish({ composite: summary.composite });
+        trialLogRef.current?.finish({
+          composite: summary.composite,
+          detection: summary.detection,
+          meanRT: summary.meanRT,
+          rtCV: summary.rtCV,
+          speed: summary.speed,
+        });
         trialLogRef.current = null;
         setPlayStep('idle');
         setPauseOpen(false);
@@ -2297,6 +2256,18 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
             </button>
           </div>
         </div>
+      )}
+
+      {phase === 'assessStart' && (
+        <AssessmentReady
+          isAr={isAr}
+          label={assessmentLabel}
+          step={assessmentStep}
+          domainId={assessmentDomainId}
+          onStart={beginBatteryAssessment}
+          onBack={onAssessmentExit || onBack}
+          playSfx={playSfx}
+        />
       )}
 
       {phase === 'assessIntro' && (

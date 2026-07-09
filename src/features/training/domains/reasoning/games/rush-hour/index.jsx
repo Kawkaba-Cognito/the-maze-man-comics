@@ -32,9 +32,13 @@ import {
   rhFreeParPoints,
 } from './data';
 import RhWorker from './rh-worker.js?worker';
+import { getCuratedRushHourAssessBoards } from './curated-levels';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
+import { STR_COMMON } from '../../../../shared/trainingStrings';
 
-const RH_ASSESS_CAP_SEC = 180; // hard cap so the assessment always terminates
+const RH_ASSESS_CAP_SEC = 150; // per scored puzzle — 4 puzzles ≈ 6 min + warm-up
+const RH_ASSESS_WARMUP_SEC = 90;
+const RH_ASSESS_TIMEOUT_SCORE = 12;
 
 const GAP = 4;
 const SAFE_RH_BASE = RUSH_HOUR_BASE_LAYOUTS[0];
@@ -95,16 +99,15 @@ function BlockDecor({ dir }) {
 }
 
 const UI_EN = {
-  title: 'Logical Deduction',
-  subtitle: 'Logic parking puzzle — slide cars to free Maze Man.',
+  ...STR_COMMON.en,
+  title: 'Block Escape',
+  subtitle: 'Slide blocks on their rails — free Maze Man to the exit.',
   levels: 'Level mode',
   free: 'Survival mode',
   challenge: 'Pass n Play',
   level: 'Level',
   optimal: 'Par',
   moves: 'Moves',
-  time: 'Time',
-  score: 'Score',
   back: 'Back',
   reset: 'Reset',
   hub: 'Menu',
@@ -117,8 +120,7 @@ const UI_EN = {
   tryLower: 'Try fewer moves',
   freeHint: 'Endless · 3 lives · a timer on each puzzle',
   locked: 'Locked',
-  training: 'Brain logic',
-  pickDiff: 'Choose difficulty',
+  training: 'Planning puzzle',
   pickDiffSub: '3 difficulties · 100 verified stages each · unlock in order',
   diffDesc: {
     easy: 'Smaller jams, gentle par — learn to plan ahead.',
@@ -128,57 +130,38 @@ const UI_EN = {
   hubNodeFreeHint: 'Endless · 3 lives · solve before the timer',
   hubNodeLevelsHint: '3 tiers · 100 levels each',
   hubNodeChallengeHint: 'Same parking jam for everyone · pass the device',
-  freeIntroTitle: 'Survival mode',
   freeIntroBody:
     'Endless puzzles that get harder. Each puzzle has its own timer — solve it before time runs out. You have 3 lives; run out of time on a puzzle and you lose one. Fewer moves = more points, and streaks multiply your score. The run ends only when your lives reach zero.',
-  freeIntroReady: 'Ready',
   freeResTitle: 'Run complete',
   freeRoundsCleared: (n) => `Puzzles cleared: ${n}`,
   freeBestLine: (n) => `Best clears: ${n}`,
   freeBestScoreLine: (n) => `Best score: ${n}`,
   challengeSub:
-    'Everyone plays the identical larger-grid puzzle. Add players, pick rounds, pass the device — lowest average moves wins.',
-  startCh: '⚔️ Start',
-  needTwo: 'Add at least 2 players.',
-  players: 'Players (2–10)',
-  addPl: '＋ Add player',
-  chalRounds: 'Rounds',
+    'Everyone plays the same 6×6 puzzle. Add players, pick rounds, pass the device — lowest average moves wins.',
   chalRoundsHint: 'Each player plays once per round · New fair board each round',
-  roundNofM: (n, m) => `Round ${n}/${m}`,
   ready: (n) => `Ready — ${n}`,
-  handTo: (n) => `Hand the device to ${n}.`,
   goReady: 'Start round',
-  chalTurnKicker: 'Your turn',
   chalBulletSame: 'Same parking puzzle for every player this round',
-  chalBulletPass: 'Tap Start only when the device is with this player',
-  paused: 'Paused',
-  resume: 'Resume',
   restart: 'Restart puzzle',
-  quitMenu: 'Quit to menu',
   quitQ: 'Leave game?',
   quitLose: 'Progress on this puzzle will be lost.',
   yesQuit: 'Yes, leave',
-  keep: 'Keep playing',
   chalHud: (roundLabel, name, i, n, G) =>
     `${roundLabel}${name} — ${i + 1}/${n} · ${G}×${G}`,
-  chalResTitle: 'Pass n Play results',
   chalResMovesLine: (avgM, avgS) => `${avgM.toFixed(1)} moves avg · ${avgS.toFixed(1)}s avg`,
-  newCh: 'New game',
-  menu: 'Menu',
-  challengeTitle: 'Pass n Play',
-  levelsSub: (pop) => `${pop} · Stages 1–100 · board 6×6→9×9`,
+  levelsSub: (pop) => `${pop} · Stages 1–100 · verified 6×6 boards`,
 };
 
 const UI_AR = {
-  title: 'الاستنتاج المنطقي',
-  subtitle: 'لغز منطقي — حرّك السيارات لإخراج رجل المتاهة.',
+  ...STR_COMMON.ar,
+  title: 'هروب القطع',
+  subtitle: 'حرّك القطع على صفها — أخرج رجل المتاهة من المخرج.',
   levels: 'وضع المراحل',
   free: 'وضع البقاء',
   challenge: 'مرّر والعب',
   level: 'مستوى',
   optimal: 'الهدف',
   moves: 'الحركات',
-  time: 'الوقت',
   score: 'النقاط',
   back: 'رجوع',
   reset: 'إعادة',
@@ -192,8 +175,7 @@ const UI_AR = {
   tryLower: 'حاول بحركات أقل',
   freeHint: 'لا ينتهي · ٣ أرواح · مؤقت لكل لغز',
   locked: 'مقفل',
-  training: 'تدريب منطقي',
-  pickDiff: 'اختر الصعوبة',
+  training: 'لغز تخطيط',
   pickDiffSub: '٣ صعوبات · ١٠٠ مرحلة مؤكدة لكل صعوبة · افتح بالترتيب',
   diffDesc: {
     easy: 'ازدحام أصغر وهدف سهل — تعلّم التخطيط.',
@@ -203,49 +185,31 @@ const UI_AR = {
   hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · حل قبل المؤقت',
   hubNodeLevelsHint: '٣ صعوبات · ١٠٠ مرحلة لكل صعوبة',
   hubNodeChallengeHint: 'نفس ازدحام المواقف للجميع · مرّر الجهاز',
-  freeIntroTitle: 'وضع البقاء',
   freeIntroBody:
     'ألغاز لا تنتهي وتزداد صعوبة. لكل لغز مؤقته الخاص — حلّه قبل نفاد الوقت. لديك ٣ أرواح؛ إذا نفد وقت لغز تخسر روحاً. حركات أقل = نقاط أكثر، والسلسلة تضاعف النقاط. تنتهي المحاولة فقط عند نفاد الأرواح.',
-  freeIntroReady: 'جاهز',
   freeResTitle: 'اكتملت المحاولة',
   freeRoundsCleared: (n) => `ألغاز ناجحة: ${n}`,
   freeBestLine: (n) => `أفضل إكمال: ${n}`,
   freeBestScoreLine: (n) => `أفضل نقاط: ${n}`,
-  challengeTitle: 'مرّر والعب',
   challengeSub:
-    'الجميع يلعبون نفس اللغز على شبكة أكبر. أضف لاعبين، اختر الجولات، مرّر الجهاز — أقل متوسط حركات يفوز.',
-  startCh: '⚔️ ابدأ',
-  needTwo: 'أضف لاعبين على الأقل.',
-  players: 'اللاعبون (2–10)',
-  addPl: '＋ إضافة لاعب',
-  chalRounds: 'الجولات',
+    'الجميع يلعبون نفس لغز 6×6. أضف لاعبين، اختر الجولات، مرّر الجهاز — أقل متوسط حركات يفوز.',
   chalRoundsHint: 'كل لاعب يلعب مرة في الجولة · لوحة جديدة عادلة كل جولة',
-  roundNofM: (n, m) => `الجولة ${n}/${m}`,
   ready: (n) => `جاهز — ${n}`,
-  handTo: (n) => `سلّم الجهاز إلى ${n}.`,
   goReady: 'ابدأ الجولة',
-  chalTurnKicker: 'دورك',
   chalBulletSame: 'نفس لغز المواقف لكل اللاعبين في هذه الجولة',
-  chalBulletPass: 'اضغط ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
-  paused: 'متوقف',
-  resume: 'متابعة',
   restart: 'إعادة اللغز',
-  quitMenu: 'الخروج للقائمة',
   quitQ: 'مغادرة اللعبة؟',
   quitLose: 'سيتم فقدان تقدم هذا اللغز.',
   yesQuit: 'نعم، اخرج',
   keep: 'تابع اللعب',
   chalHud: (roundLabel, name, i, n, G) =>
     `${roundLabel}${name} — ${i + 1}/${n} · ${G}×${G}`,
-  chalResTitle: 'نتائج مرّر والعب',
   chalResMovesLine: (avgM, avgS) =>
     `${avgM.toFixed(1)} حركة معدل · ${avgS.toFixed(1)}ث معدل`,
-  newCh: 'لعبة جديدة',
-  menu: 'القائمة',
-  levelsSub: (pop) => `${pop} · مراحل 1–100 · شبكة 6×6→9×9`,
+  levelsSub: (pop) => `${pop} · مراحل 1–100 · لوحات 6×6 مؤكدة`,
 };
 
-export default function RushHourGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
+export default function RushHourGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'reasoning' }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI_AR : UI_EN;
@@ -301,12 +265,16 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
   const freeLivesRef = useRef(3);
   const [freeLives, setFreeLives] = useState(3);
 
-  // Assessment: an unscored warm-up jam first (first-exposure practice), then
-  // one fixed standardized puzzle scored by efficiency + solve time.
+  // Assessment: warm-up → 4 session-randomized puzzles (composite score = mean).
   const assessStartRef = useRef(0);
   const assessEndedRef = useRef(false);
   const assessWarmupRef = useRef(false);
+  const assessPuzzleIdxRef = useRef(0);
+  const assessScoresRef = useRef([]);
+  const assessBoardsRef = useRef([]);
+  const assessSessionNonceRef = useRef((Date.now() >>> 0));
   const [assessWarmup, setAssessWarmup] = useState(false);
+  const [assessPuzzleNum, setAssessPuzzleNum] = useState(0);
 
   const juice = useJuice();
   const boardRef = useRef(null);
@@ -420,6 +388,8 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
    * while the user is on hub/lobby (and fixes Challenge briefly loading the wrong tier). */
   useEffect(() => {
     if (phase !== 'play') return undefined;
+    // Assessment boards are injected directly (curated bank) — skip the worker.
+    if (playMode === 'assess') return undefined;
     if (playMode === 'challenge') {
       if (chalFrozenDef) {
         setLevelDef(chalFrozenDef);
@@ -543,17 +513,59 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
   piecesRef.current = pieces;
   movesRef.current = moves;
 
-  const startAssessment = useCallback(() => {
-    trialLogRef.current?.discard();
-    trialLogRef.current = createTrialLog({ game: 'rush-hour', mode: 'assess' });
-    assessEndedRef.current = false;
-    assessWarmupRef.current = true;
-    setAssessWarmup(true);
-    setDiffKey('easy');
-    setLevelIndex(3); // trivial warm-up jam, unscored
+  const assessPuzzleTotal = assessBoardsRef.current.length || 4;
+
+  const scoreAssessPuzzle = useCallback((solveSec, moveCount, timedOut = false) => {
+    if (timedOut) return RH_ASSESS_TIMEOUT_SCORE;
+    const eff = Math.max(0, Math.min(1, parMoves / Math.max(1, moveCount)));
+    const ideal = Math.max(20, parMoves * 4);
+    const timeFactor = Math.max(0.1, Math.min(1, 1 - (solveSec - ideal) / (RH_ASSESS_CAP_SEC - ideal)));
+    return Math.round((0.6 * eff + 0.4 * timeFactor) * 100);
+  }, [parMoves]);
+
+  const loadAssessPuzzle = useCallback((idx) => {
+    const board = assessBoardsRef.current[idx];
+    if (!board) return;
+    setLevelDef(board);
+    setGenerating(false);
+    setDiffKey(board.diff || 'medium');
+    setLevelIndex(board.lv || idx + 1);
     setMoves(0);
     setWon(false);
     wonRef.current = false;
+    assessStartRef.current = Date.now();
+    setAssessPuzzleNum(idx + 1);
+  }, []);
+
+  const finishAssessment = useCallback((line) => {
+    const scores = assessScoresRef.current;
+    const score = scores.length
+      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+      : RH_ASSESS_TIMEOUT_SCORE;
+    trialLogRef.current?.finish({ score, puzzles: scores.length });
+    trialLogRef.current = null;
+    onAssessmentComplete?.({ score, line });
+  }, [onAssessmentComplete]);
+
+  const startAssessment = useCallback(() => {
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'rush-hour', mode: 'assess' });
+    assessSessionNonceRef.current = (Date.now() >>> 0);
+    assessBoardsRef.current = getCuratedRushHourAssessBoards(assessSessionNonceRef.current);
+    assessEndedRef.current = false;
+    assessWarmupRef.current = true;
+    assessPuzzleIdxRef.current = 0;
+    assessScoresRef.current = [];
+    setAssessWarmup(true);
+    setAssessPuzzleNum(0);
+    setDiffKey('easy');
+    setLevelIndex(3);
+    setMoves(0);
+    setWon(false);
+    wonRef.current = false;
+    setLevelDef(makeSafeRushHourBoard('warmup', { diff: 'easy', lv: 3 }));
+    setGenerating(false);
+    assessStartRef.current = Date.now();
     setPlayMode('assess');
     setPhase('play');
   }, []);
@@ -565,48 +577,60 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
     assessEndedRef.current = false;
   }, [levelDef, phase, playMode]);
 
-  // Solved → score by move efficiency + solve time, then report back.
+  // Solved → score puzzle(s), then report composite.
   useEffect(() => {
     if (playMode !== 'assess' || !won || assessEndedRef.current) return;
     if (assessWarmupRef.current) {
-      // Warm-up solved — swap in the real standardized puzzle, nothing scored.
       assessWarmupRef.current = false;
       setAssessWarmup(false);
-      setWon(false);
-      wonRef.current = false;
-      setMoves(0);
-      setDiffKey('medium');
-      setLevelIndex(50);
+      loadAssessPuzzle(0);
+      return;
+    }
+    const solveSec = Math.max(1, Math.round((Date.now() - assessStartRef.current) / 1000));
+    const pts = scoreAssessPuzzle(solveSec, moves);
+    assessScoresRef.current.push(pts);
+    const nextIdx = assessPuzzleIdxRef.current + 1;
+    if (nextIdx < assessBoardsRef.current.length) {
+      assessPuzzleIdxRef.current = nextIdx;
+      loadAssessPuzzle(nextIdx);
       return;
     }
     assessEndedRef.current = true;
-    const solveSec = Math.max(1, Math.round((Date.now() - assessStartRef.current) / 1000));
-    const eff = Math.max(0, Math.min(1, parMoves / Math.max(1, moves)));
-    const ideal = Math.max(20, parMoves * 4);
-    const timeFactor = Math.max(0.1, Math.min(1, 1 - (solveSec - ideal) / (RH_ASSESS_CAP_SEC - ideal)));
-    const score = Math.round((0.6 * eff + 0.4 * timeFactor) * 100);
-    trialLogRef.current?.finish({ score });
-    trialLogRef.current = null;
-    onAssessmentComplete?.({ score, line: `${moves} moves · ${solveSec}s` });
-  }, [won, playMode, moves, parMoves, onAssessmentComplete]);
+    const avg = Math.round(assessScoresRef.current.reduce((a, b) => a + b, 0) / assessScoresRef.current.length);
+    const n = assessBoardsRef.current.length;
+    finishAssessment(isAr ? `متوسط ${avg} · ${n} ألغاز` : `avg ${avg} · ${n} puzzles`);
+  }, [won, playMode, moves, loadAssessPuzzle, scoreAssessPuzzle, finishAssessment, isAr]);
 
-  // Hard time cap so the assessment always terminates even if unsolved.
+  // Hard time cap per scored puzzle.
   useEffect(() => {
     if (phase !== 'play' || playMode !== 'assess' || pauseOpen || quitOpen) return undefined;
     const id = setInterval(() => {
       if (wonRef.current || assessEndedRef.current || !assessStartRef.current) return;
-      if (assessWarmupRef.current) return; // warm-up is untimed
+      if (assessWarmupRef.current) {
+        if (Date.now() - assessStartRef.current >= RH_ASSESS_WARMUP_SEC * 1000) {
+          clearInterval(id);
+          assessWarmupRef.current = false;
+          setAssessWarmup(false);
+          loadAssessPuzzle(0);
+        }
+        return;
+      }
       if (Date.now() - assessStartRef.current >= RH_ASSESS_CAP_SEC * 1000) {
-        assessEndedRef.current = true;
         clearInterval(id);
-        trialLogRef.current?.trial({ ok: false, timeout: true, moves: movesRef.current });
-        trialLogRef.current?.finish({ score: 12, timeout: true });
-        trialLogRef.current = null;
-        onAssessmentComplete?.({ score: 12, line: isAr ? 'انتهى الوقت' : 'time out' });
+        assessScoresRef.current.push(RH_ASSESS_TIMEOUT_SCORE);
+        trialLogRef.current?.trial({ ok: false, timeout: true, moves: movesRef.current, puzzle: assessPuzzleIdxRef.current + 1 });
+        const nextIdx = assessPuzzleIdxRef.current + 1;
+        if (nextIdx < assessBoardsRef.current.length) {
+          assessPuzzleIdxRef.current = nextIdx;
+          loadAssessPuzzle(nextIdx);
+          return;
+        }
+        assessEndedRef.current = true;
+        finishAssessment(isAr ? 'انتهى الوقت' : 'time out');
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [phase, playMode, pauseOpen, quitOpen, onAssessmentComplete, isAr]);
+  }, [phase, playMode, pauseOpen, quitOpen, loadAssessPuzzle, finishAssessment, isAr]);
 
   useEffect(() => {
     if (!levelDef) return;
@@ -635,8 +659,14 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
 
   useEffect(() => {
     const measure = () => {
-      const w = Math.max(grid * 8, Math.min(window.innerWidth - 48, 380));
-      setCellSize(Math.floor(w / grid));
+      const pad = 32;
+      const chrome = 196;
+      const availW = Math.max(grid * 8, window.innerWidth - pad);
+      const availH = Math.max(grid * 8, window.innerHeight - chrome);
+      const maxW = Math.min(availW, 440);
+      const fromW = Math.floor(maxW / grid);
+      const fromH = Math.floor(availH / grid);
+      setCellSize(Math.max(40, Math.min(fromW, fromH, 72)));
     };
     measure();
     window.addEventListener('resize', measure);
@@ -1054,6 +1084,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
         const m = Math.floor(freeTimeRef.current / 60);
         const s = freeTimeRef.current % 60;
         freeTimeEl.current.textContent = `${m}:${String(s).padStart(2, '0')}`;
+        freeTimeEl.current.dataset.low = freeTimeRef.current <= 15 ? '1' : '';
       }
       if (freeTimeRef.current <= 0 && !freeTimerEndedRef.current) {
         // Ran out of time on this puzzle → lose a life.
@@ -1089,6 +1120,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
         isAr={isAr}
         label={assessmentLabel}
         step={assessmentStep}
+        domainId={assessmentDomainId}
         onStart={startAssessment}
         onBack={onAssessmentExit || onBack}
         playSfx={playSfx}
@@ -1422,18 +1454,12 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
 
   return (
     <div
-      className="cancellation-task-game"
+      className="ct-rh-play cancellation-task-game"
       dir={isAr ? 'rtl' : 'ltr'}
       style={{
-        minHeight: '100vh',
         color: tokens.textDark,
         fontFamily: "'Outfit', system-ui, sans-serif",
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
         position: 'relative',
-        overflow: 'hidden',
-        overflowX: 'hidden',
       }}
     >
       <style>{`
@@ -1454,7 +1480,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
         isAr={isAr}
         title={
           playMode === 'assess'
-            ? (assessWarmup ? (isAr ? 'إحماء — غير محتسب' : 'Warm-up — not scored') : (assessmentLabel || t.title))
+            ? (assessWarmup ? (isAr ? 'إحماء — غير محتسب' : 'Warm-up — not scored') : (assessPuzzleNum ? (isAr ? `لغز ${assessPuzzleNum}/${assessPuzzleTotal}` : `Puzzle ${assessPuzzleNum}/${assessPuzzleTotal}`) : (assessmentLabel || t.title)))
             : playMode === 'free'
               ? t.free
               : playMode === 'challenge'
@@ -1473,81 +1499,30 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
         onPause={onRhPause}
       />
 
-      {playMode === 'free' && (
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 380,
-            padding: '4px 16px 8px',
-            zIndex: 5,
-            position: 'relative',
-            boxSizing: 'border-box',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: 11,
-              fontWeight: 800,
-              color: '#5c534c',
-            }}
-          >
-            <span className="ct-fq-lives" aria-label={`${freeLives} lives`} style={{ fontSize: 13 }}>
+      <div className="ct-rh-stage">
+        {playMode === 'free' && (
+          <div className="ct-rh-hud" aria-label={isAr ? 'حالة اللعب' : 'Run status'}>
+            <span className="ct-fq-lives" aria-label={`${freeLives} lives`}>
               {'♥'.repeat(Math.max(0, freeLives))}
               <span className="ct-fq-lives-spent">{'♥'.repeat(Math.max(0, 3 - freeLives))}</span>
             </span>
-            <span ref={freeTimeEl} style={{ color: freeTimeRef.current <= 15 ? '#c97a7a' : '#5c534c' }}>
+            <span ref={freeTimeEl} className="ct-rh-hud-time" data-low={freeTimeRef.current <= 15 ? '1' : undefined}>
               {`${Math.floor(freeTimeRef.current / 60)}:${String(freeTimeRef.current % 60).padStart(2, '0')}`}
             </span>
-            <span>
-              {isAr ? 'نجح' : 'Solved'}: {freeRoundsWon}
-            </span>
-            <span>
-              {t.score}: {freeScore}
-            </span>
+            <span>{isAr ? 'نجح' : 'Solved'}: {freeRoundsWon}</span>
+            <span>{t.score}: {freeScore}</span>
           </div>
-        </div>
-      )}
+        )}
 
-      {playMode === 'challenge' && !chalTurnOpen && (
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 380,
-            padding: '2px 16px 6px',
-            zIndex: 5,
-            position: 'relative',
-            boxSizing: 'border-box',
-          }}
-        >
-          <div
-            className="ct-fq-cpb"
-            style={{ marginBottom: 0, textAlign: 'center', fontSize: '0.82rem' }}
-          >
+        {playMode === 'challenge' && !chalTurnOpen && (
+          <div className="ct-rh-hud ct-rh-hud--center">
             {chalRoundsTotal > 1 ? `${t.roundNofM(chalRoundIdx + 1, chalRoundsTotal)} · ` : ''}
             {chalNames[chalIdx] ?? ''} · {chalIdx + 1}/{chalNames.length} · {grid}×{grid}
           </div>
-        </div>
-      )}
+        )}
 
-      <p
-        style={{
-          textAlign: 'center',
-          fontSize: 12,
-          color: '#5c534c',
-          margin: '10px 16px 12px',
-          fontWeight: 600,
-          position: 'relative',
-          zIndex: 2,
-          maxWidth: 340,
-          lineHeight: 1.4,
-        }}
-      >
-        {isAr ? 'اسحب القطع على صفها — هدفك إيصال رجل المتاهة إلى المخرج' : 'Slide cars on their rails — get Maze Man to the exit'}
-      </p>
-
-      <div ref={boardRef} className="ct-juice-host" style={{ position: 'relative', zIndex: 2 }}>
+        <div className="ct-rh-board-wrap">
+          <div ref={boardRef} className="ct-juice-host ct-rh-board">
         <JuiceLayer
           combo={juice.combo}
           particle={juice.particle}
@@ -1701,6 +1676,8 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
             );
           })}
         </div>
+          </div>
+        </div>
       </div>
 
       <div className="ct-training-play-actions">
@@ -1808,7 +1785,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <CosmosCharacter size={108} mood="proud" glow />
+              <CosmosCharacter size={108} mood="proud" glow pose="cheer" />
             </div>
             <div
               style={{

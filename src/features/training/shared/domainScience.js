@@ -209,7 +209,7 @@ export const DOMAIN_SCIENCE = {
       sections: [
         {
           h: '🧩 The science',
-          b: 'Raven-style matrices measure fluid reasoning — completing novel patterns. Rush Hour is a planning and problem-solving task. Colour Sort (Tower of Hanoi) taps sequential planning and inhibition: undoing a tempting wrong move.',
+          b: 'Raven-style matrices measure fluid reasoning — completing novel patterns. Block Escape is a planning and problem-solving task. Colour Sort (Tower of Hanoi) taps sequential planning and inhibition: undoing a tempting wrong move.',
         },
         {
           h: '🔬 What these games train',
@@ -232,7 +232,7 @@ export const DOMAIN_SCIENCE = {
       sections: [
         {
           h: '🧩 العلم',
-          b: 'مصفوفات رافن تقيس الاستدلال السائل — إكمال أنماط جديدة. «ساعة الذروة» مهمة تخطيط وحل مشكلات. «فرز الألوان» (برج هانوي) يستهدف التخطيط التسلسلي والكبح: التراجع عن خطوة مغرية خاطئة.',
+          b: 'مصفوفات رافن تقيس الاستدلال السائل — إكمال أنماط جديدة. «هروب القطع» مهمة تخطيط وحل مشكلات. «فرز الألوان» (برج هانوي) يستهدف التخطيط التسلسلي والكبح: التراجع عن خطوة مغرية خاطئة.',
         },
         {
           h: '🔬 ما الذي تدرّبه الألعاب',

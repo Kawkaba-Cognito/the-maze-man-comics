@@ -7,6 +7,7 @@ import { createNpcKit } from './npc';
 import { CAMPAIGN_FLOORS } from '../../../features/campaign/campaignFloors';
 import { setCampaignFloor } from '../../../features/campaign/campaignProgress';
 import { status, totalPower, BOSS_POWER, attemptsUsed, MAX_ATTEMPTS } from '../../../features/army/armyState';
+import { mulberry32 } from '../../../lib/rng';
 
 const B = () => window.BABYLON;
 const CELL = 4;
@@ -14,15 +15,6 @@ const WALL_H = 3;
 
 function wc(g, mapSize) { return (g - mapSize / 2 + 0.5) * CELL; }
 function gAt(w, mapSize) { return Math.floor(w / CELL + mapSize / 2); }
-
-function mulberry32(a) {
-  return () => {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 function generateMaze(mapSize, openChance, seed) {
   const rng = mulberry32(seed);

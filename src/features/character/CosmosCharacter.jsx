@@ -1,28 +1,40 @@
-import React, { useId } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import { equipped2d } from './items';
 import { metal, lighten, darken, mix } from './shade';
+import { assetUrl } from '../../lib/assetUrl';
 
 /**
- * CosmosCharacter — the genderless main character: a small living planet / a
- * whole universe in one body, now with little legs and hands so it reads as a
- * tidy, composed mascot rather than a floating ball.
+ * CosmosCharacter / Kawkab — living-planet mascot.
  *
- * Tuned to feel clinical & professional: a black world, gold orbital ring,
- * gold glowing eyes, neat limbs in a grounded stance, and a focused expression.
+ * Default full-body & face use the new Kawkab raster art. The legacy SVG path
+ * is kept when the caller needs features the PNGs cannot express yet:
+ *   - equipped gear (hat / face / neck / back anchors)
+ *   - custom `fur` / `accent` (e.g. Story Time pink variant)
  *
- * Same prop contract as every other character so the home pedestal, the
- * Character screen and the 3D world can render it interchangeably:
- *   - `fur`    recolors the planet body (kept the name for API symmetry)
- *   - `accent` recolors the ring, aura and stars
- *   - `mood`   tints the eye-glow
- *   - `equipped`/`glow`/`float`/`size` behave like the other characters
- *   - `faceOnly` — planet head (ring + eyes) without limbs; for compact icons
+ * Prop contract is unchanged so Home, Character, shop, hub and games keep working.
  */
+
+const DEFAULT_FUR = '#0a0a0f';
+const DEFAULT_ACCENT = '#c8943e';
+
+const KAWKAB_ASSETS = {
+  idle: 'Assets/characters/kawkab/kawkab-idle.png',
+  face: 'Assets/characters/kawkab/kawkab-face.png',
+  dance: 'Assets/characters/kawkab/kawkab-dance.png',
+};
+
 const MOOD_EYE = {
   ready: '#ffd85a',
   focused: '#fff1a8',
   proud: '#fffbe0',
   tired: '#e8c060',
+};
+
+const MOOD_GLOW = {
+  ready: '#5ec8e8',
+  focused: '#7ad4f0',
+  proud: '#9be8ff',
+  tired: '#7a9aab',
 };
 
 // Gear attach points (0..200 viewBox). Planet centre (100,102), r=52.
@@ -33,20 +45,144 @@ const ANCHORS = {
   back: { x: 100, y: 102, s: 1.15 },
 };
 
-export default React.memo(function CosmosCharacter({
-  size = 200,
-  fur = '#0a0a0f',
-  accent = '#c8943e',
-  mood = 'ready',
-  equipped = null,
-  glow = true,
-  float = false,
-  faceOnly = false,
+function hasEquippedGear(equipped) {
+  if (!equipped || typeof equipped !== 'object') return false;
+  return Object.values(equipped).some((v) => typeof v === 'string' && v.length > 0);
+}
+
+/** Prefer new art unless gear or custom palette requires the SVG body. */
+function preferRasterArt({ faceOnly, equipped, fur, accent }) {
+  if (hasEquippedGear(equipped)) return false;
+  if (fur && fur !== DEFAULT_FUR) return false;
+  if (accent && accent !== DEFAULT_ACCENT) return false;
+  return true;
+}
+
+function useDanceFrame(active, frames = 25, fps = 12) {
+  const [frame, setFrame] = useState(0);
+  useEffect(() => {
+    if (!active) {
+      setFrame(0);
+      return undefined;
+    }
+    const id = window.setInterval(() => {
+      setFrame((f) => (f + 1) % frames);
+    }, Math.round(1000 / fps));
+    return () => window.clearInterval(id);
+  }, [active, frames, fps]);
+  return frame;
+}
+
+/** New Kawkab raster — same outer box as the SVG so hub/home layout stay stable. */
+function KawkabRaster({ size, faceOnly, mood, glow, float, pose }) {
+  // Dance only when explicitly requested — never on hub/home idle "proud" looks.
+  const cheer = !faceOnly && pose === 'cheer';
+  const frame = useDanceFrame(cheer);
+  const glowColor = MOOD_GLOW[mood] || MOOD_GLOW.ready;
+  const width = size;
+  const height = faceOnly ? size : size * 1.2;
+  const src = assetUrl(faceOnly ? KAWKAB_ASSETS.face : KAWKAB_ASSETS.idle);
+  const danceSrc = assetUrl(KAWKAB_ASSETS.dance);
+
+  const col = frame % 5;
+  const row = Math.floor(frame / 5);
+
+  return (
+    <div
+      className={float ? 'mm-float' : undefined}
+      style={{ width, height, position: 'relative', display: 'inline-block' }}
+      role="img"
+      aria-label="Kawkab"
+    >
+      {glow && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: faceOnly ? '-12%' : '-8% -6% -2%',
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${glowColor}55 0%, ${glowColor}18 42%, transparent 70%)`,
+            pointerEvents: 'none',
+            zIndex: 0,
+          }}
+        />
+      )}
+      {!faceOnly && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            bottom: '2%',
+            transform: 'translateX(-50%)',
+            width: '48%',
+            height: '6%',
+            borderRadius: '50%',
+            background: 'rgba(10, 12, 20, 0.22)',
+            filter: 'blur(3px)',
+            pointerEvents: 'none',
+            zIndex: 0,
+          }}
+        />
+      )}
+      {cheer ? (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            width: '100%',
+            height: '100%',
+            backgroundImage: `url("${danceSrc}")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: '500% 500%',
+            backgroundPosition: `${col * 25}% ${row * 25}%`,
+            filter: glow
+              ? `drop-shadow(0 0 ${size * 0.06}px ${glowColor}aa)`
+              : 'none',
+          }}
+        />
+      ) : (
+        <img
+          src={src}
+          alt=""
+          draggable={false}
+          width={width}
+          height={height}
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            display: 'block',
+            filter: glow
+              ? `drop-shadow(0 0 ${size * 0.05}px ${glowColor}99)`
+              : mood === 'tired'
+                ? 'saturate(0.85) brightness(0.92)'
+                : 'none',
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Legacy SVG body — gear anchors + custom palette. */
+function CosmosSvgBody({
+  size,
+  fur,
+  accent,
+  mood,
+  equipped,
+  glow,
+  float,
+  faceOnly,
 }) {
   const uid = useId().replace(/:/g, '');
   const id = (n) => `${uid}-${n}`;
 
-  const g = metal(accent);       // ring / star metal ramp
+  const g = metal(accent);
   const eye = MOOD_EYE[mood] || MOOD_EYE.ready;
   const edge = '#000000';
   const ink = lighten(fur, 0.18);
@@ -55,7 +191,9 @@ export default React.memo(function CosmosCharacter({
   const cap = lighten(fur, 0.28);
   const nebula = mix(fur, accent, 0.28);
 
-  const cx = 100, cy = 102, R = 52;
+  const cx = 100;
+  const cy = 102;
+  const R = 52;
   const EYE_H_TOP = 11.5;
   const EYE_H_BOT = 4.2;
 
@@ -64,7 +202,6 @@ export default React.memo(function CosmosCharacter({
   const viewBox = faceOnly ? '28 32 144 132' : '0 0 200 240';
   const gearProps = { accent, gold: `url(#${id('gold')})`, fur };
 
-  // A small, restrained 4-point star.
   const Star = ({ x, y, r, fill = accent, o = 1 }) => (
     <path
       d={`M${x},${y - r} L${x + r * 0.24},${y - r * 0.24} L${x + r},${y} L${x + r * 0.24},${y + r * 0.24} L${x},${y + r} L${x - r * 0.24},${y + r * 0.24} L${x - r},${y} L${x - r * 0.24},${y - r * 0.24} Z`}
@@ -73,7 +210,6 @@ export default React.memo(function CosmosCharacter({
     />
   );
 
-  // a limb = rounded capsule + a rounded cap (hand / foot)
   const Limb = ({ x1, y1, x2, y2, w, capX, capY, capR }) => (
     <>
       <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={limb} strokeWidth={w} strokeLinecap="round" />
@@ -82,9 +218,6 @@ export default React.memo(function CosmosCharacter({
     </>
   );
 
-  // Pivot on the almond waist (y); catchlight + glow sit on that line — the visual
-  // centre of a tapered eye — and we skip a second gradient fill that read as a
-  // second off-centre dot.
   const GlowEye = ({ x, y, dir = 1 }) => {
     const w = 10;
     const hTop = EYE_H_TOP;
@@ -129,9 +262,6 @@ export default React.memo(function CosmosCharacter({
           <clipPath id={id('sphere')}>
             <circle cx={cx} cy={cy} r={R} />
           </clipPath>
-          {/* Layered aura — all gradients (cheap; no per-frame blur that caused
-              mobile jank). A wide soft halo for atmosphere + a brighter ring that
-              hugs the planet edge so the black world looks like it radiates gold. */}
           <radialGradient id={id('auraOuter')} cx="0.5" cy="0.5" r="0.5">
             <stop offset="0%" stopColor={accent} stopOpacity="0.26" />
             <stop offset="38%" stopColor={accent} stopOpacity="0.14" />
@@ -153,8 +283,6 @@ export default React.memo(function CosmosCharacter({
           </filter>
         </defs>
 
-        {/* aura (layered, gently pulsing) + ground shadow. Opacity-only SMIL
-            pulse → cheap to composite, gives the black world a living glow. */}
         {glow && (
           <g>
             <animate attributeName="opacity" values="0.8;1;0.8" dur="3.6s" repeatCount="indefinite" />
@@ -164,7 +292,6 @@ export default React.memo(function CosmosCharacter({
         )}
         {!faceOnly && <ellipse cx={cx} cy="214" rx="44" ry="7.5" fill={ink} opacity="0.22" />}
 
-        {/* a few restrained distant stars */}
         {!faceOnly && (
           <>
             <Star x={40} y={54} r={4} o={0.7} />
@@ -174,23 +301,17 @@ export default React.memo(function CosmosCharacter({
           </>
         )}
 
-        {/* equipped gear behind the body */}
         {equipped2d(equipped, ANCHORS, 'back', gearProps)}
 
-        {/* ring — back half (behind the planet): a precise thin double ring */}
         <g transform={`rotate(-15 ${cx} ${cy})`}>
           <ellipse cx={cx} cy={cy} rx="90" ry="23" fill="none" stroke={`url(#${id('gold')})`} strokeWidth="5" opacity="0.92" />
           <ellipse cx={cx} cy={cy} rx="78" ry="19.5" fill="none" stroke={lighten(accent, 0.45)} strokeWidth="2" opacity="0.55" />
         </g>
 
-        {/* planet body — deep black fill, with a luminous gold edge so the black
-            world reads (and glows) against dark backgrounds */}
         <circle cx={cx} cy={cy} r={R + 0.6} fill="none" stroke={edge} strokeWidth="3.2" />
         <circle cx={cx} cy={cy} r={R} fill={`url(#${id('body')})`} stroke={edge} strokeWidth="2.4" />
         <circle cx={cx} cy={cy} r={R - 0.6} fill="none" stroke={`url(#${id('gold')})`} strokeWidth="1.7" opacity="0.72" />
 
-        {/* surface: nebula band + craters (no blur filters — the body's radial
-            gradient supplies the lit/shaded form, so this stays cheap to raster) */}
         <g clipPath={`url(#${id('sphere')})`}>
           <path d={`M${cx - 54},${cy + 12} Q${cx - 4},${cy - 6} ${cx + 40},${cy + 8} Q${cx + 56},${cy + 18} ${cx + 56},${cy + 32} L${cx + 56},${cy + 56} L${cx - 56},${cy + 56} Z`}
             fill={nebula} opacity="0.22" />
@@ -200,13 +321,11 @@ export default React.memo(function CosmosCharacter({
           <circle cx={cx - 10} cy={cy + 28} r="1.3" fill={lighten(accent, 0.15)} opacity="0.28" />
           <circle cx={cx - 36} cy={cy - 8} r="1.2" fill={lighten(accent, 0.15)} opacity="0.24" />
         </g>
-        {/* brighter specular rim light, upper-left */}
         <path d={`M${cx - 38},${cy - 35} A${R},${R} 0 0 1 ${cx + 4},${cy - 51}`}
           fill="none" stroke={lighten(accent, 0.55)} strokeWidth="2.6" strokeLinecap="round" opacity="0.6" />
         <path d={`M${cx - 33},${cy - 33} A${R - 6},${R - 6} 0 0 1 ${cx - 2},${cy - 44}`}
           fill="none" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" opacity="0.35" />
 
-        {/* ring — front half (over the lower planet) */}
         <g transform={`rotate(-15 ${cx} ${cy})`}>
           <path d={`M${cx + 90},${cy} A90,23 0 0 1 ${cx - 90},${cy}`}
             fill="none" stroke={`url(#${id('gold')})`} strokeWidth="5" strokeLinecap="round" opacity="0.95" />
@@ -214,7 +333,6 @@ export default React.memo(function CosmosCharacter({
             fill="none" stroke={lighten(accent, 0.45)} strokeWidth="2" strokeLinecap="round" opacity="0.5" />
         </g>
 
-        {/* ── limbs: small, neat, grounded stance ── */}
         {!faceOnly && (
           <>
             <Limb x1={cx - 36} y1={cy + 18} x2={cx - 58} y2={cy + 34} w={10} capX={cx - 60} capY={cy + 36} capR={6.5} />
@@ -226,22 +344,62 @@ export default React.memo(function CosmosCharacter({
           </>
         )}
 
-        {/* ── face: clean glowing gold eyes + a calm mouth (no harsh brows) ── */}
         <GlowEye x={cx - 18} y={cy - 3} dir={-1} />
         <GlowEye x={cx + 18} y={cy - 3} dir={1} />
-        {/* small, composed mouth — a calm, confident line */}
         <path d={`M${cx - 9},${cy + 18} Q${cx},${cy + 21} ${cx + 9},${cy + 18}`}
           fill="none" stroke={darken(accent, 0.5)} strokeWidth="2.2" strokeLinecap="round" opacity="0.7" />
 
-        {/* a single quiet moon on the near ring */}
         <g transform={`rotate(-15 ${cx} ${cy})`}>
           <circle cx={cx - 60} cy={cy + 18} r="5" fill={lighten(fur, 0.35)} stroke={ink} strokeWidth="1.6" />
           <circle cx={cx - 61} cy={cy + 16} r="1.7" fill={lighten(fur, 0.42)} opacity="0.7" />
         </g>
 
-        {/* equipped gear in front (hat / face / neck) */}
         {equipped2d(equipped, ANCHORS, 'front', gearProps)}
       </svg>
     </div>
+  );
+}
+
+export default React.memo(function CosmosCharacter({
+  size = 200,
+  fur = DEFAULT_FUR,
+  accent = DEFAULT_ACCENT,
+  mood = 'ready',
+  equipped = null,
+  glow = true,
+  float = false,
+  faceOnly = false,
+  /** `cheer` plays the dance sheet (win moments only). */
+  pose = 'idle',
+  /** Force legacy SVG (`legacy`) or new art (`kawkab`). Default: auto. */
+  art = 'auto',
+}) {
+  const useRaster = art === 'kawkab'
+    || (art !== 'legacy' && preferRasterArt({ faceOnly, equipped, fur, accent }));
+
+  if (useRaster) {
+    return (
+      <KawkabRaster
+        size={size}
+        faceOnly={faceOnly}
+        mood={mood}
+        glow={glow}
+        float={float}
+        pose={pose}
+      />
+    );
+  }
+
+  return (
+    <CosmosSvgBody
+      size={size}
+      fur={fur}
+      accent={accent}
+      mood={mood}
+      equipped={equipped}
+      glow={glow}
+      float={float}
+      faceOnly={faceOnly}
+    />
   );
 });

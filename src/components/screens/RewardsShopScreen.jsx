@@ -17,7 +17,13 @@ export default function RewardsShopScreen() {
       <div className="rewards-title">{isAr ? 'المتجر' : 'Shop'}</div>
 
       <div className="char-preview shop-preview">
-        <CosmosCharacter size={150} equipped={equipped} glow float />
+        <CosmosCharacter
+          size={150}
+          equipped={equipped}
+          glow
+          float
+          art={Object.values(equipped || {}).some(Boolean) ? 'legacy' : 'kawkab'}
+        />
       </div>
 
       <div className="shop-empty">

@@ -11,56 +11,61 @@ import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainin
 import { createStaircase } from '../../../../shared/staircase';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { generateMatrix } from './ravenEngine';
-import { RV_DIFF_KEYS, RV_LEVELS_PER_TIER, ravenLevelSpec, ravenChallengeSpec, isRavenLevelUnlocked, gradeRaven } from './ravenData';
+import { RV_DIFF_KEYS, RV_LEVELS_PER_TIER, RV_TRIALS_PER_LEVEL, ravenLevelSpec, ravenChallengeSpec, isRavenLevelUnlocked, gradeRaven } from './ravenData';
+import { STR_COMMON } from '../../../../shared/trainingStrings';
 
 const UI = {
   en: {
-    hub: 'Reasoning', tag: 'training', title: 'Matrix Reasoning', replayTutorial: 'Replay tutorial',
-    freeMode: 'Survival mode', levelMode: 'Level mode', challengeMode: 'Pass n Play',
+    ...STR_COMMON.en,
+    hub: 'Reasoning', title: 'Matrix Reasoning',
     freeHint: 'Endless · 3 lives · adapts to you', levelsHint: '3 tiers · 100 levels each', chalHint: 'Same puzzles · pass the device',
     modesAria: 'Modes — choose a path',
     blurb: 'Find the figure that completes the pattern. Each row and column follows a hidden rule.',
     pickDiff: 'Choose Difficulty', pickDiffSub: 'Each tier has 100 levels · unlock them in order.',
     diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard',
-    popEasy: '1 rule · 4 options', popMedium: '2–3 rules · 6 options', popHard: '3–4 rules · 8 options',
-    diffDesc: { easy: 'One attribute changes — learn to read a row.', medium: 'Two or three change at once.', hard: 'Up to four, with eight choices.' },
+    popEasy: '1–2 rules · 4 options', popMedium: '2–4 rules · 6 options', popHard: '3–5 rules · 8 options',
+    diffDesc: {
+      easy: 'One or two rules — constant rows, steps, and distributions.',
+      medium: 'Mix distribution-of-two with progressions.',
+      hard: 'Up to five rules including figure addition.',
+    },
     levelsSub: (pop) => `${pop} · 100 levels`,
     prompt: 'Which piece completes the grid?',
-    lives: 'Lives', score: 'Score', solved: 'Solved', correct: 'Correct',
-    quitQ: 'Quit?', quitLose: 'This run will be lost.', yesQuit: 'Yes, quit', keep: 'Keep playing',
-    over: 'Run ended', best: (n) => `Best: ${n}`, again: 'Play again', menu: 'Menu',
-    levelPass: 'Level passed', levelRetry: 'Try again', stars: 'Stars',
-    accuracy: 'Accuracy', avgTime: 'Avg time', nextLv: 'Next level', retry: 'Retry',
+    solved: 'Solved', correct: 'Correct',
+    over: 'Run ended', best: (n) => `Best: ${n}`, again: 'Play again',
+    levelPass: 'Level passed', levelRetry: 'Try again',
+    accuracy: 'Accuracy', avgTime: 'Avg time',
     perfect: 'Flawless!', good: 'Well reasoned', tryAgain: 'Keep practicing',
     chalTitle: 'Pass n Play', chalSub: 'Everyone gets the same puzzles · pass the device · highest score wins',
-    chalPickDiff: 'Difficulty', players: 'Players (2–10)', addPl: '＋ Add player', startCh: '⚔️ Start', needTwo: 'Add at least 2 players.',
-    chalTurnKicker: 'Your turn', chalBullet1: 'Same puzzles & order for everyone', chalBullet2: 'Tap Start only when the device is with this player',
-    handTo: (n) => `Hand the device to ${n}.`, goReady: 'Start', chalMeta: (lbl, n) => `${lbl} · ${n} puzzles`,
-    chalResTitle: 'Pass n Play results', chalResDetail: (c, t, ms) => `${c}/${t} correct · ${(ms / 1000).toFixed(0)}s`, newCh: 'New game',
+    chalBullet1: 'Same puzzles & order for everyone', chalBullet2: 'Tap Start only when the device is with this player',
+    chalMeta: (lbl, n) => `${lbl} · ${n} puzzles`,
+    chalResDetail: (c, t, ms) => `${c}/${t} correct · ${(ms / 1000).toFixed(0)}s`,
   },
   ar: {
-    hub: 'تفكير', tag: 'تدريب', title: 'استدلال المصفوفات', replayTutorial: 'إعادة الشرح',
-    freeMode: 'وضع البقاء', levelMode: 'وضع المستويات', challengeMode: 'مرّر والعب',
+    ...STR_COMMON.ar,
+    hub: 'تفكير', title: 'استدلال المصفوفات',
     freeHint: 'لا ينتهي · ٣ أرواح · يتكيّف معك', levelsHint: '٣ مستويات · ١٠٠ مرحلة لكل منها', chalHint: 'نفس الألغاز · مرّر الجهاز',
     modesAria: 'الأوضاع — اختر مسارًا',
     blurb: 'اعثر على الشكل الذي يُكمل النمط. كل صف وعمود يتبع قاعدة خفية.',
-    pickDiff: 'اختر الصعوبة', pickDiffSub: 'كل صعوبة ١٠٠ مستوى · افتحها بالترتيب.',
+    pickDiffSub: 'كل صعوبة ١٠٠ مستوى · افتحها بالترتيب.',
     diffEasy: 'سهل', diffMedium: 'متوسط', diffHard: 'صعب',
-    popEasy: 'قاعدة واحدة · ٤ خيارات', popMedium: '٢-٣ قواعد · ٦ خيارات', popHard: '٣-٤ قواعد · ٨ خيارات',
-    diffDesc: { easy: 'سمة واحدة تتغيّر — تعلّم قراءة الصف.', medium: 'سمتان أو ثلاث معًا.', hard: 'حتى أربع، مع ثمانية خيارات.' },
+    popEasy: '١-٢ قواعد · ٤ خيارات', popMedium: '٢-٤ قواعد · ٦ خيارات', popHard: '٣-٥ قواعد · ٨ خيارات',
+    diffDesc: {
+      easy: 'قاعدة أو قاعدتان — ثبات الصف، التدرّج، والتوزيع.',
+      medium: 'مزج توزيع-اثنين مع التدرّجات.',
+      hard: 'حتى خمس قواعد بما فيها جمع الأشكال.',
+    },
     levelsSub: (pop) => `${pop} · ١٠٠ مستوى`,
     prompt: 'أي قطعة تُكمل الشبكة؟',
-    lives: 'الأرواح', score: 'نقاط', solved: 'محلولة', correct: 'صحيحة',
-    quitQ: 'خروج؟', quitLose: 'سيُلغى هذا السجل.', yesQuit: 'نعم، خروج', keep: 'متابعة اللعب',
-    over: 'انتهت المحاولة', best: (n) => `الأفضل: ${n}`, again: 'العب مجددًا', menu: 'القائمة',
-    levelPass: 'اجتُزت المرحلة', levelRetry: 'حاول مجددًا', stars: 'نجوم',
-    accuracy: 'الدقة', avgTime: 'متوسط الزمن', nextLv: 'المرحلة التالية', retry: 'إعادة',
+    solved: 'محلولة', correct: 'صحيحة',
+    over: 'انتهت المحاولة', best: (n) => `الأفضل: ${n}`, again: 'العب مجددًا',
+    levelPass: 'اجتُزت المرحلة', levelRetry: 'حاول مجددًا',
+    accuracy: 'الدقة', avgTime: 'متوسط الزمن', nextLv: 'المرحلة التالية',
     perfect: 'بلا أخطاء!', good: 'استدلال جيّد', tryAgain: 'واصل التدريب',
     chalTitle: 'مرّر والعب', chalSub: 'الجميع يحصل على نفس الألغاز · مرّر الجهاز · الأعلى نقاطاً يفوز',
-    chalPickDiff: 'الصعوبة', players: 'اللاعبون (2–10)', addPl: '＋ إضافة لاعب', startCh: '⚔️ ابدأ', needTwo: 'أضف لاعبين على الأقل.',
-    chalTurnKicker: 'دورك', chalBullet1: 'نفس الألغاز والترتيب للجميع', chalBullet2: 'اضغط ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
-    handTo: (n) => `سلّم الجهاز إلى ${n}.`, goReady: 'ابدأ', chalMeta: (lbl, n) => `${lbl} · ${n} ألغاز`,
-    chalResTitle: 'نتائج مرّر والعب', chalResDetail: (c, t, ms) => `${c}/${t} صحيحة · ${(ms / 1000).toFixed(0)}ث`, newCh: 'لعبة جديدة',
+    chalBullet1: 'نفس الألغاز والترتيب للجميع', chalBullet2: 'اضغط ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
+    chalMeta: (lbl, n) => `${lbl} · ${n} ألغاز`,
+    chalResDetail: (c, t, ms) => `${c}/${t} صحيحة · ${(ms / 1000).toFixed(0)}ث`,
   },
 };
 
@@ -83,7 +88,13 @@ function Glyph({ shape, cx, cy, r, fill, color }) {
   return poly(Array.from({ length: 6 }, (_, i) => { const a = (Math.PI / 3) * i - Math.PI / 2; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; }));
 }
 function Figure({ fig, size = 72 }) {
-  if (!fig) return null;
+  if (!fig || fig.count === 0) {
+    return (
+      <svg viewBox="0 0 100 100" width={size} height={size} style={{ display: 'block', opacity: 0.35 }}>
+        <rect x="28" y="28" width="44" height="44" rx="6" fill="none" stroke="#b9842f" strokeWidth="2" strokeDasharray="6 4" />
+      </svg>
+    );
+  }
   const pts = POS[fig.count] || POS[1];
   const r = fig.count >= 3 ? 13 : fig.count === 2 ? 15 : 19;
   return (
@@ -368,7 +379,7 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
           title={DM[diffKey].label} blurb={t.levelsSub(DM[diffKey].pop)} count={RV_LEVELS_PER_TIER} lvc={DM[diffKey].lvc}
           isUnlocked={(lv) => isRavenLevelUnlocked(diffKey, lv, profile.done)}
           isDone={(lv) => !!profile.done[`${diffKey}-${lv}`]}
-          sublabel={() => `${ravenLevelSpec(diffKey, 1).trials}◆`}
+          sublabel={() => `${RV_TRIALS_PER_LEVEL}◆`}
           onPick={(lv) => startLevel(diffKey, lv)} />
       </div>
     );

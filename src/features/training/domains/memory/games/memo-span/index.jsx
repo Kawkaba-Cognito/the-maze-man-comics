@@ -36,25 +36,23 @@ import {
 } from './memoSpanData';
 import { loadMemoSpanProfile, saveMemoSpanProfile } from './memoSpanProgress';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
+import { STR_COMMON } from '../../../../shared/trainingStrings';
 
 const UI = {
   en: {
-    hubMemory: 'Memo Span', hubTag: 'training', replayTutorial: 'Replay tutorial',
-    freeMode: 'Survival mode', levelMode: 'Level mode', challengeMode: 'Pass n Play',
+    ...STR_COMMON.en,
+    hubMemory: 'Memo Span',
     nbackMode: 'N-Back', scienceLink: '🔬 Why this trains your brain', tipLabel: 'Strategy',
-    hubMapAria: 'Modes',
     hubNodeFreeHint: 'Endless · 3 lives · sequence grows',
     hubNodeLevelsHint: 'Watch · tap back · 100 levels',
     hubNodeNbackHint: 'Match the object N steps back · working memory',
     hubNodeChallengeHint: 'Same sequence for all · pick a difficulty',
-    pickDiff: 'Choose difficulty',
     pickDiffSub: 'Cells light up in a sequence — tap them back. Reverse order = working memory.',
     diffDesc: {
       easy: 'Small grid, short — forward then reverse.',
       medium: 'Bigger grid, reverse recall, faster.',
       hard: 'Large grid, long reverse sequences.',
     },
-    chalPickDiff: 'Difficulty',
     levelsSub: (pop) => `${pop} · ${MS_LEVELS_PER_TIER} levels`,
     levelHeader: (diff, lv) => `${MS_DM[diff]?.label ?? diff} · L${lv}`,
     levelMeta: (n, dir) => `${n} ${dir}`,
@@ -75,48 +73,33 @@ const UI = {
     watchForward: 'Watch — then tap in ORDER', watchReverse: 'Watch — then tap in REVERSE',
     yourTurn: 'Your turn',
     resultsPass: 'Nice memory!', resultsFail: 'Keep practicing',
-    stars: 'Stars', spanLabel: 'Span', score: 'Score', lives: 'Lives',
-    retry: 'Retry', nextLv: 'Next level', menu: 'Menu',
+    spanLabel: 'Span',
     freeTitle: 'Survival mode',
     freeBest: (n) => `Best span: ${n}`,
     freeScoreLine: (n) => `Score: ${n}`,
-    freePlayAgain: 'Play again',
-    freeGameOver: 'Run ended',
     startRound: 'Start',
-    challengeTitle: 'Pass n Play',
     challengeSub: 'Same sequence for everyone · pick a difficulty · pass the device',
-    players: 'Players (2–10)', addPl: '＋ Add player', startCh: '⚔️ Start',
-    needTwo: 'Add at least 2 players.',
-    chalRounds: 'Rounds', chalRoundsHint: 'Each player plays once per round',
-    roundNofM: (n, m) => `Round ${n}/${m}`,
-    chalTurnKicker: 'Your turn',
+    chalRoundsHint: 'Each player plays once per round',
     chalBulletSame: 'Same sequence this round',
     chalBulletPass: 'Start only when this player has the device',
-    handTo: (n) => `Hand the device to ${n}.`,
     goReady: 'Start round',
     chalMeta: (label, span, rev) => `${label} · span ${span}${rev ? ' · reverse' : ''}`,
-    challengeHeader: 'Pass n Play',
-    resultsChalTitle: 'Pass n Play results',
     chalResDetail: (pct, c, tot) => `${pct}% · ${c}/${tot} in order`,
-    newCh: 'New game',
   },
   ar: {
-    hubMemory: 'مدى الذاكرة', hubTag: 'تدريب', replayTutorial: 'إعادة الشرح',
-    freeMode: 'وضع البقاء', levelMode: 'وضع المستويات', challengeMode: 'مرّر والعب',
+    ...STR_COMMON.ar,
+    hubMemory: 'مدى الذاكرة',
     nbackMode: 'العودة-N', scienceLink: '🔬 لماذا يدرّب دماغك', tipLabel: 'استراتيجية',
-    hubMapAria: 'الأوضاع',
     hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · يطول التسلسل',
     hubNodeLevelsHint: 'شاهد · أعد التسلسل · ١٠٠ مستوى',
     hubNodeNbackHint: 'طابق الشيء قبل N خطوات · ذاكرة عاملة',
     hubNodeChallengeHint: 'نفس التسلسل للجميع · اختر الصعوبة',
-    pickDiff: 'اختر الصعوبة',
     pickDiffSub: 'تضيء الخلايا بتسلسل — أعدها. الترتيب المعكوس = ذاكرة عاملة.',
     diffDesc: {
       easy: 'شبكة صغيرة وقصيرة — مباشر ثم معكوس.',
       medium: 'شبكة أكبر، استدعاء معكوس، أسرع.',
       hard: 'شبكة كبيرة، تسلسلات معكوسة طويلة.',
     },
-    chalPickDiff: 'الصعوبة',
     levelsSub: (pop) => `${pop} · ${MS_LEVELS_PER_TIER} مستوى`,
     levelHeader: (diff, lv) => `${MS_DM[diff]?.label ?? diff} · ${lv}`,
     levelMeta: (n, dir) => `${n} ${dir}`,
@@ -137,30 +120,19 @@ const UI = {
     watchForward: 'راقب — ثم اضغط بالترتيب', watchReverse: 'راقب — ثم اضغط بالعكس',
     yourTurn: 'دورك',
     resultsPass: 'ذاكرة جيدة!', resultsFail: 'واصل التدريب',
-    stars: 'نجوم', spanLabel: 'المدى', score: 'نقاط', lives: 'الأرواح',
-    retry: 'إعادة', nextLv: 'المستوى التالي', menu: 'القائمة',
+    spanLabel: 'المدى',
     freeTitle: 'وضع البقاء',
     freeBest: (n) => `أفضل مدى: ${n}`,
     freeScoreLine: (n) => `نقاط: ${n}`,
     freePlayAgain: 'العب مجدداً',
-    freeGameOver: 'انتهت المحاولة',
     startRound: 'ابدأ',
-    challengeTitle: 'مرّر والعب',
     challengeSub: 'نفس التسلسل للجميع · اختر الصعوبة · مرّر الجهاز',
-    players: 'اللاعبون (2–10)', addPl: '＋ إضافة لاعب', startCh: '⚔️ ابدأ',
-    needTwo: 'أضف لاعبين على الأقل.',
-    chalRounds: 'الجولات', chalRoundsHint: 'كل لاعب يلعب مرة في الجولة',
-    roundNofM: (n, m) => `الجولة ${n}/${m}`,
-    chalTurnKicker: 'دورك',
+    chalRoundsHint: 'كل لاعب يلعب مرة في الجولة',
     chalBulletSame: 'نفس التسلسل في هذه الجولة',
     chalBulletPass: 'ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
-    handTo: (n) => `سلّم الجهاز إلى ${n}.`,
     goReady: 'ابدأ الجولة',
     chalMeta: (label, span, rev) => `${label} · مدى ${span}${rev ? ' · معكوس' : ''}`,
-    challengeHeader: 'مرّر والعب',
-    resultsChalTitle: 'نتائج مرّر والعب',
     chalResDetail: (pct, c, tot) => `${pct}% · ${c}/${tot} بالترتيب`,
-    newCh: 'لعبة جديدة',
   },
 };
 
@@ -200,7 +172,7 @@ function MemoRuleLessonArt({ t }) {
   );
 }
 
-export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
+export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'memory' }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
@@ -592,6 +564,7 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
           isAr={isAr}
           label={assessmentLabel}
           step={assessmentStep}
+          domainId={assessmentDomainId}
           onStart={startAssessment}
           onBack={onAssessmentExit || onBack}
           playSfx={playSfx}

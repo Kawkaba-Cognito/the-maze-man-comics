@@ -1,15 +1,6 @@
-const KEY = 'mm_memo_span_v1';
+import { createProfileStore } from '../../../../../../lib/storage';
 
-export function loadMemoSpanProfile() {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) || '{}') || {};
-  } catch {
-    return {};
-  }
-}
+const store = createProfileStore('mm_memo_span_v1');
 
-export function saveMemoSpanProfile(data) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(data || {}));
-  } catch {}
-}
+export const loadMemoSpanProfile = store.load;
+export const saveMemoSpanProfile = store.save;

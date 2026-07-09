@@ -31,6 +31,7 @@ import {
   RELIABILITY_NOTE,
 } from './assessmentRefs';
 import { assessAnchorLine } from './paradigmAnchors';
+import { batteryDurationLabel } from './assessmentConfig';
 
 /** 5-level normative band → existing 3-tone colour class. */
 function bandColor(b) {
@@ -87,7 +88,7 @@ const STR = {
     ageError: 'Enter an age between 6 and 120.',
     chooseSub: 'Run a full assessment, or test one area.',
     fullTitle: 'Full assessment',
-    fullSub: 'All six areas, back to back',
+    fullSub: (dur) => `All six areas · ${dur}`,
     trackingTitle: '🎯 Tracking speed',
     trackingSub: 'Adaptive object-tracking threshold · self-referenced',
     partsTitle: 'Or test one area',
@@ -137,7 +138,7 @@ const STR = {
     ageError: 'أدخل عمراً بين ٦ و١٢٠.',
     chooseSub: 'شغّل تقييماً كاملاً، أو اختبر مجالاً واحداً.',
     fullTitle: 'تقييم كامل',
-    fullSub: 'المجالات الستة تباعاً',
+    fullSub: (dur) => `المجالات الستة · ${dur}`,
     trackingTitle: '🎯 سرعة التتبّع',
     trackingSub: 'عتبة تتبّع أهداف تكيّفية · مرجعية ذاتية',
     partsTitle: 'أو اختبر مجالاً واحداً',
@@ -276,6 +277,7 @@ export default function AssessmentFlow({ onBack }) {
           <Game
             key={part.id}
             assessmentMode
+            assessmentDomainId={part.id}
             assessmentLabel={t.parts[part.id]}
             assessmentStep={`${runIdx + 1}/${runQueue.length}`}
             onAssessmentComplete={onPartComplete}
@@ -466,7 +468,7 @@ export default function AssessmentFlow({ onBack }) {
           onClick={() => startQueue(PARTS.map((p) => p.id))}>
           <span className="ct-fq-diffcard-main">
             <span className="ct-fq-diffcard-label">📋 {t.fullTitle}</span>
-            <span className="ct-fq-diffcard-desc">{t.fullSub}</span>
+            <span className="ct-fq-diffcard-desc">{t.fullSub(batteryDurationLabel(isAr))}</span>
           </span>
           <span className="ct-fq-diffcard-meta"><span className="ct-fq-diffcard-grid">{PARTS.length}</span></span>
         </button>

@@ -3,6 +3,7 @@ import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import { SURVIVAL_MS, survivalRamp, GRADE, drawSurvivalBar } from '../../../../shared/survival';
+import { startCanvasLoop } from '../../../../shared/canvasLoop';
 
 /*
  * Piano Tap — processing speed + response inhibition (Piano/Magic Tiles style).
@@ -141,20 +142,16 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
       ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
       g.tileH = Math.min(g.H * 0.22, 150);
     };
-    resize();
-    const ro = new ResizeObserver(resize); ro.observe(wrapRef.current);
 
     const laneX = (i) => (i / LANES) * g.W;
     const laneW = () => g.W / LANES;
 
     let hudCache = { hits: -1, lives: -1, combo: -1, score: -1 };
-    let last = performance.now();
-    const frame = (now) => {
-      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const frame = (dt, now) => {
       let timePct = 1;
       if (mode === 'free') {
         const elapsed = now - g.t0;
-        if (elapsed >= SURVIVAL_MS) { finish(); return; }
+        if (elapsed >= SURVIVAL_MS) { finish(); return false; }
         timePct = 1 - elapsed / SURVIVAL_MS;
         g.speed = cfg.speed * (1 + survivalRamp(elapsed) * 1.3);
       }
@@ -175,14 +172,14 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
         if (!tile.hit && tile.y > g.H) {
           // missed a tile
           g.combo = 0; g.lives -= 1; playSfx('error');
-          if ((mode === 'levels' || mode === 'free') && g.lives <= 0) { finish(); return; }
+          if ((mode === 'levels' || mode === 'free') && g.lives <= 0) { finish(); return false; }
           continue;
         }
         if (tile.hit) { tile.fade -= dt * 3; if (tile.fade <= 0) continue; }
         remaining.push(tile);
       }
       g.tiles = remaining;
-      if (g.budget !== Infinity && g.spawned >= g.budget && g.tiles.length === 0) { finish(); return; }
+      if (g.budget !== Infinity && g.spawned >= g.budget && g.tiles.length === 0) { finish(); return false; }
 
       // ── draw ──
       ctx.clearRect(0, 0, g.W, g.H);
@@ -220,11 +217,8 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
       for (let i = 0; i < LANES; i++) {
         ctx.fillText(KEYS[i].toUpperCase(), laneX(i) + laneW() / 2, g.H - 6);
       }
-      rafRef.current = requestAnimationFrame(frame);
     };
-    rafRef.current = requestAnimationFrame(frame);
-
-    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
+    return startCanvasLoop({ wrap: wrapRef.current, rafRef, resize, frame });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runId, seed]);
 

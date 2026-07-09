@@ -50,7 +50,7 @@ function drawSym(ctx, sym, x, y, sz, color) {
   ctx.fillText(sym, x, y + 1);
 }
 
-function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 3) : 0;
   const ppCorrectRef = useRef(0);
@@ -272,7 +272,7 @@ function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
   return (
     <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
       <header className="ct-training-play-header">
-        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); if (mode === 'free') awardFreeRun?.('pairedAssoc', bestRef.current); onExit?.(); }}>‹</button>
         <div className="ct-training-play-header-body">
           <div className="ct-training-play-title">{isAr ? 'مطابقة الأزواج' : 'Pair Match'}</div>
           <div className="ct-training-play-sub">{hud}{mode === 'levels' ? ` · ${score}` : ''}</div>
@@ -291,7 +291,7 @@ function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
 }
 
 export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
-  const { currentLang, playSfx, awardPoints } = useApp();
+  const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   return (
     <ModeShell
@@ -310,7 +310,7 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <PalEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <PalEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
     />
   );

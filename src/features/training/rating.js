@@ -24,13 +24,24 @@ const KEY = 'mm_rating_v1';
 /** free-run reporter key → game identity + calibration (level where R=500). */
 export const RATED_GAMES = {
   cancel: { gameKey: 'cancel-task', domainId: 'attention', lHalf: 8, en: 'Cancellation', ar: 'الشطب' },
-  stroop: { gameKey: 'spatial-stroop', domainId: 'flexibility', lHalf: 7, en: 'Spatial Stroop', ar: 'ستروب المكاني' },
-  wordle: { gameKey: 'wordle', domainId: 'language', lHalf: 5, en: 'Word Builder', ar: 'باني الكلمات' },
-  memo: { gameKey: 'memo-span', domainId: 'memory', lHalf: 5, en: 'Memo Span', ar: 'مدى الذاكرة' },
-  rush: { gameKey: 'rush-hour', domainId: 'reasoning', lHalf: 7, en: 'Rush Hour', ar: 'ساعة الذروة' },
-  raven: { gameKey: 'raven-matrices', domainId: 'reasoning', lHalf: 6, en: 'Matrix Reasoning', ar: 'استدلال المصفوفات' },
-  hanoi: { gameKey: 'tower-hanoi', domainId: 'reasoning', lHalf: 6, en: 'Colour Sort', ar: 'فرز الألوان' },
+  mot: { gameKey: 'mot', domainId: 'attention', lHalf: 6, en: 'Target Tracking', ar: 'تتبّع الأهداف' },
+  trainSwitch: { gameKey: 'train-switch', domainId: 'attention', lHalf: 6, en: 'Car Park', ar: 'موقف السيارات' },
   speed: { gameKey: 'speed-match', domainId: 'speed', lHalf: 9, en: 'Speed Match', ar: 'مطابقة سريعة' },
+  mathGates: { gameKey: 'math-gates', domainId: 'speed', lHalf: 6, en: 'Math Gates', ar: 'بوابات الحساب' },
+  trailMaking: { gameKey: 'trail-making', domainId: 'speed', lHalf: 6, en: 'Trail Making', ar: 'ربط المسار' },
+  memo: { gameKey: 'memo-span', domainId: 'memory', lHalf: 5, en: 'Memo Span', ar: 'مدى الذاكرة' },
+  storyGrid: { gameKey: 'story-grid', domainId: 'memory', lHalf: 6, en: 'Story Time', ar: 'وقت القصة' },
+  nback: { gameKey: 'nback', domainId: 'memory', lHalf: 5, en: 'N-Back', ar: 'إن-باك' },
+  pairedAssoc: { gameKey: 'paired-associates', domainId: 'memory', lHalf: 6, en: 'Pair Match', ar: 'مطابقة الأزواج' },
+  wordle: { gameKey: 'wordle', domainId: 'language', lHalf: 5, en: 'Word Maze', ar: 'متاهة الكلمات' },
+  synonyms: { gameKey: 'synonyms', domainId: 'language', lHalf: 6, en: 'Word Links', ar: 'روابط الكلمات' },
+  trivia: { gameKey: 'trivia', domainId: 'language', lHalf: 6, en: 'Trivia', ar: 'معلومات' },
+  rush: { gameKey: 'rush-hour', domainId: 'reasoning', lHalf: 7, en: 'Block Escape', ar: 'هروب القطع' },
+  raven: { gameKey: 'raven-matrices', domainId: 'reasoning', lHalf: 6, en: 'Matrix IQ', ar: 'مصفوفات الذكاء' },
+  detective: { gameKey: 'detective', domainId: 'reasoning', lHalf: 6, en: 'Detective', ar: 'المحقّق' },
+  stroop: { gameKey: 'spatial-stroop', domainId: 'flexibility', lHalf: 7, en: 'Arrow Rush', ar: 'تبديل الأسهم' },
+  wisconsin: { gameKey: 'wisconsin', domainId: 'flexibility', lHalf: 6, en: 'Card Sort', ar: 'فرز البطاقات' },
+  brixton: { gameKey: 'brixton', domainId: 'flexibility', lHalf: 6, en: 'Kawkab Hops', ar: 'قفزات كوكب' },
 };
 const BY_GAMEKEY = Object.fromEntries(Object.entries(RATED_GAMES).map(([k, v]) => [v.gameKey, k]));
 

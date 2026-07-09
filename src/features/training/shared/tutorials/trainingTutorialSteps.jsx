@@ -228,12 +228,12 @@ const STEPS = {
     en: [
       { title: 'Read the matrix', body: 'Figures sit in a grid. Each row and column follows a hidden rule — look across and down.', icon: '🔲' },
       { title: 'Fill the gap', body: 'One cell is blank (?). Deduce which figure completes the pattern from the options below.', icon: '❓' },
-      { title: 'Rules stack up', body: 'Easy uses one changing trait; hard mixes shape, count, colour, and rotation. Accuracy beats speed.', icon: '🧩', note: READY_NOTE.en },
+      { title: 'Rules stack up', body: 'Five rule types — constant rows, progressions, distributions, and addition. Hard levels mix up to five at once. Accuracy beats speed.', icon: '🧩', note: READY_NOTE.en },
     ],
     ar: [
       { title: 'اقرأ المصفوفة', body: 'أشكال في شبكة. كل صف وعمود يتبع قاعدة خفية — انظر أفقياً وعمودياً.', icon: '🔲' },
       { title: 'املأ الفراغ', body: 'خلية واحدة فارغة (?). استنتج أي شكل يكمل النمط من الخيارات بالأسفل.', icon: '❓' },
-      { title: 'القواعد تتراكم', body: 'السهل يغيّر سمة واحدة؛ الصعب يمزج الشكل والعدد واللون والدوران. الدقة أهم من السرعة.', icon: '🧩', note: READY_NOTE.ar },
+      { title: 'القواعد تتراكم', body: 'خمس أنواع قواعد — ثبات الصف، التدرّج، التوزيع، والجمع. المستويات الصعبة تمزج حتى خمس قواعد. الدقة أهم من السرعة.', icon: '🧩', note: READY_NOTE.ar },
     ],
   },
   'tower-hanoi': {

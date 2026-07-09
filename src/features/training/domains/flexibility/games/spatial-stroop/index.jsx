@@ -50,6 +50,7 @@ import {
 } from './spatialStroopData';
 import { loadStroopProfile, saveStroopProfile } from './spatialStroopProgress';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
+import { STR_COMMON } from '../../../../shared/trainingStrings';
 
 const POWERUP_ICON = { shield: '🛡️', slowmo: '⏱️', x2: '✨', freeze: '❄️' };
 const POWERUP_LABEL = {
@@ -88,7 +89,23 @@ function RuleLessonArt({ rule }) {
     );
   };
   return (
-    <div style={{ display: 'flex', width: 'min(78vw, 300px)' }}>
+    <div style={{ display: 'flex', width: 'min(78vw, 300px)', gap: 0, position: 'relative' }}>
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: 8,
+          bottom: 8,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 4,
+          borderRadius: 2,
+          background: 'linear-gradient(180deg, #9a8870, #5c534c)',
+          boxShadow: '-1px 0 0 rgba(255,255,255,0.45), 1px 0 0 rgba(255,255,255,0.45)',
+          pointerEvents: 'none',
+          zIndex: 2,
+        }}
+      />
       <Zone side="left" arrow={cfg.left} />
       <Zone side="right" arrow={cfg.right} />
     </div>
@@ -97,17 +114,11 @@ function RuleLessonArt({ rule }) {
 
 const UI = {
   en: {
+    ...STR_COMMON.en,
     hubFlex: 'Arrow Rush',
-    hubTag: 'training',
-    replayTutorial: 'Replay tutorial',
-    freeMode: 'Survival mode',
-    levelMode: 'Level mode',
-    challengeMode: 'Pass n Play',
-    hubMapAria: 'Modes',
     hubNodeFreeHint: 'Power-ups · Blitz rounds · it speeds up',
     hubNodeLevelsHint: '100 levels · colour rule, flankers & reverses',
     hubNodeChallengeHint: 'Same arrows for all · highest flexibility wins',
-    pickDiff: 'Choose difficulty',
     pickDiffSub: 'Tap left or right by the rule shown — the rule flips; suppress the pull and adapt fast',
     diffDesc: {
       easy: 'Point/Sit only, slower — ease in.',
@@ -115,24 +126,13 @@ const UI = {
       hard: 'Adds reverse trials, rapid flips, heavy conflict.',
     },
     levelsSub: (pop) => `${pop} · ${STROOP_LEVELS_PER_TIER} levels`,
-    freeIntroTitle: 'Survival mode',
     freeIntroBody:
       'Tap LEFT or RIGHT by the rule on the banner — POINTS, SITS, or COLOUR. The rule keeps flipping. Build combos, grab power-ups, and survive Blitz bursts. Three misses ends the run.',
-    freeIntroReady: 'Ready',
-    challengeTitle: 'Pass n Play',
     challengeSub: 'Same arrow sequence for everyone · highest flexibility wins',
-    players: 'Players (2–10)',
-    addPl: '＋ Add player',
-    startCh: '⚔️ Start',
-    needTwo: 'Add at least 2 players.',
-    chalRounds: 'Rounds',
     chalRoundsHint: 'Fair seed each round · pass device between players',
-    roundNofM: (n, m) => `Round ${n}/${m}`,
-    chalTurnKicker: 'Your turn',
     chalBulletSame: 'Same arrow order for every player this round',
     chalBulletPass: 'Start only when this player holds the device',
     handTo: (n) => `Hand device to ${n}.`,
-    goReady: 'Start',
     chalMeta: 'Hard · L12 · interference block',
     tapByLabel: 'TAP BY',
     ruleLabel: { point: 'WHERE IT POINTS', side: 'WHERE IT SITS', color: 'MATCH THE COLOUR' },
@@ -163,17 +163,9 @@ const UI = {
     trial: (n, max) => `Trial ${n} / ${max}`,
     streak: (s, r) => `Streak ${s}/${r}`,
     categories: (c, t) => `Switches ${c}/${t}`,
-    paused: 'Paused',
-    resume: 'Resume',
     restart: 'Restart block',
-    quitMenu: 'Quit to menu',
-    quitQ: 'Quit?',
-    quitLose: 'This run will be lost.',
-    yesQuit: 'Yes, quit',
-    keep: 'Keep playing',
     resultsPass: 'Level passed',
     resultsFail: 'Try again',
-    stars: 'Stars',
     cfs: 'CFS (flexibility)',
     efficiency: 'Accuracy',
     interf: 'Interference',
@@ -181,34 +173,18 @@ const UI = {
     persev: 'Perseverative %',
     cc: 'Switches done',
     meanRt: 'Mean RT',
-    nextLv: 'Next level',
-    retry: 'Retry',
-    menu: 'Menu',
-    freeGameOver: 'Run ended',
-    score: 'Score',
     freeStages: (n) => `Correct taps: ${n}`,
     freeBest: (n) => `Best taps: ${n}`,
     bestCombo: (n) => `Best combo: x${n}`,
-    freePlayAgain: 'Play again',
-    resultsChalTitle: 'Pass n Play results',
     chalRes: (cfs, pe, cc) => `CFS ${cfs} · PE ${pe}% · ${cc} switches`,
-    newCh: 'New game',
     levelHeader: (d, lv) => `${STROOP_DM[d]?.label ?? d} · L${lv}`,
-    challengeHeader: 'Pass n Play',
-    freeHeader: 'Survival mode',
   },
   ar: {
+    ...STR_COMMON.ar,
     hubFlex: 'اندفاع الأسهم',
-    hubTag: 'تدريب',
-    replayTutorial: 'إعادة الشرح',
-    freeMode: 'وضع البقاء',
-    levelMode: 'وضع المستويات',
-    challengeMode: 'مرّر والعب',
-    hubMapAria: 'الأوضاع',
     hubNodeFreeHint: 'قدرات · جولات خاطفة · يتسارع',
     hubNodeLevelsHint: '١٠٠ مستوى · قاعدة اللون والمشتتات والعكس',
     hubNodeChallengeHint: 'نفس الأسهم للجميع · أعلى مرونة يفوز',
-    pickDiff: 'اختر الصعوبة',
     pickDiffSub: 'اضغط يسار أو يمين حسب القاعدة — وهي تنقلب؛ اكبح الجذب وتكيّف بسرعة',
     diffDesc: {
       easy: 'الإشارة/المكان فقط، أبطأ.',
@@ -216,24 +192,13 @@ const UI = {
       hard: 'يضيف محاولات معكوسة وانقلابات سريعة وتعارض قوي.',
     },
     levelsSub: (pop) => `${pop} · ${STROOP_LEVELS_PER_TIER} مستوى`,
-    freeIntroTitle: 'وضع البقاء',
     freeIntroBody:
       'اضغط يسار أو يمين حسب القاعدة على الشارة — الإشارة أو المكان أو اللون. القاعدة تنقلب باستمرار. اجمع السلاسل، التقط القدرات، وانجُ من الجولات الخاطفة. ثلاثة أخطاء تنهي المحاولة.',
-    freeIntroReady: 'جاهز',
-    challengeTitle: 'مرّر والعب',
     challengeSub: 'نفس تسلسل الأسهم للجميع · أعلى مرونة يفوز',
-    players: 'اللاعبون (2–10)',
     addPl: '＋ إضافة',
-    startCh: '⚔️ ابدأ',
-    needTwo: 'أضف لاعبين على الأقل.',
-    chalRounds: 'الجولات',
     chalRoundsHint: 'بذرة عادلة · تمرير الجهاز',
-    roundNofM: (n, m) => `الجولة ${n}/${m}`,
-    chalTurnKicker: 'دورك',
     chalBulletSame: 'نفس ترتيب الأسهم',
     chalBulletPass: 'ابدأ عندما يكون الجهاز معك',
-    handTo: (n) => `سلّم الجهاز إلى ${n}.`,
-    goReady: 'ابدأ',
     chalMeta: 'صعب · L12 · كتلة تداخل',
     tapByLabel: 'اضغط حسب',
     ruleLabel: { point: 'جهة الإشارة', side: 'مكان الجلوس', color: 'طابق اللون' },
@@ -265,17 +230,12 @@ const UI = {
     trial: (n, max) => `محاولة ${n} / ${max}`,
     streak: (s, r) => `متتالية ${s}/${r}`,
     categories: (c, t) => `تبديلات ${c}/${t}`,
-    paused: 'متوقف',
-    resume: 'متابعة',
     restart: 'إعادة الكتلة',
     quitMenu: 'خروج للقائمة',
-    quitQ: 'خروج؟',
-    quitLose: 'سيُلغى هذا السجل.',
     yesQuit: 'نعم',
     keep: 'متابعة',
     resultsPass: 'اجتزت المستوى',
     resultsFail: 'حاول مجددًا',
-    stars: 'نجوم',
     cfs: 'CFS (مرونة)',
     efficiency: 'الدقة',
     interf: 'التداخل',
@@ -284,20 +244,11 @@ const UI = {
     cc: 'تبديلات',
     meanRt: 'متوسط زمن الاستجابة',
     nextLv: 'التالي',
-    retry: 'إعادة',
-    menu: 'القائمة',
-    freeGameOver: 'انتهت المحاولة',
-    score: 'نقاط',
     freeStages: (n) => `ضغطات صحيحة: ${n}`,
     freeBest: (n) => `أفضل: ${n}`,
     bestCombo: (n) => `أفضل سلسلة: ×${n}`,
-    freePlayAgain: 'العب مجددًا',
-    resultsChalTitle: 'نتائج مرّر والعب',
     chalRes: (cfs, pe, cc) => `CFS ${cfs} · إصرار ${pe}% · ${cc} تبديل`,
-    newCh: 'لعبة جديدة',
     levelHeader: (d, lv) => `${STROOP_DM[d]?.label ?? d} · ${lv}`,
-    challengeHeader: 'مرّر والعب',
-    freeHeader: 'وضع البقاء',
   },
 };
 
@@ -359,7 +310,7 @@ function DeadlineRing({ ms, k }) {
   );
 }
 
-export default function SpatialStroopGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
+export default function SpatialStroopGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'flexibility' }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
@@ -1115,6 +1066,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
           isAr={isAr}
           label={assessmentLabel}
           step={assessmentStep}
+          domainId={assessmentDomainId}
           onStart={startAssessment}
           onBack={onAssessmentExit || onBack}
           playSfx={playSfx}
@@ -1310,7 +1262,10 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
                 </div>
               )}
               <div className="ct-stroop-stage">
-                <div className={`ct-stroop-zone ct-stroop-zone--left${probe.pos === 'left' ? ' is-here' : ''}`}>
+                <div
+                  className={`ct-stroop-zone ct-stroop-zone--left${rule === 'side' && probe.pos === 'left' ? ' is-here' : ''}`}
+                >
+                  <span className="ct-stroop-zone-cap">{t.ansLeft}</span>
                   {probe.pos === 'left' && (
                     <div className="ct-stroop-target-wrap">
                       {awaitingAnswer && <DeadlineRing ms={ringMs} k={trialKey} />}
@@ -1323,7 +1278,10 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
                   )}
                 </div>
                 <div className="ct-stroop-zone-divider" aria-hidden="true" />
-                <div className={`ct-stroop-zone ct-stroop-zone--right${probe.pos === 'right' ? ' is-here' : ''}`}>
+                <div
+                  className={`ct-stroop-zone ct-stroop-zone--right${rule === 'side' && probe.pos === 'right' ? ' is-here' : ''}`}
+                >
+                  <span className="ct-stroop-zone-cap">{t.ansRight}</span>
                   {probe.pos === 'right' && (
                     <div className="ct-stroop-target-wrap">
                       {awaitingAnswer && <DeadlineRing ms={ringMs} k={trialKey} />}

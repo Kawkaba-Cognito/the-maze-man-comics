@@ -1,27 +1,11 @@
-const KEY = 'mm_stroop_profile_v1';
+import { createProfileStore } from '../../../../../../lib/storage';
 
-export function loadStroopProfile() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const p = JSON.parse(raw);
-      return {
-        tel: p.tel || [],
-        done: p.done || {},
-        bestFree: p.bestFree ?? 0,
-        bestStages: p.bestStages ?? 0,
-      };
-    }
-  } catch {
-    /* ignore */
-  }
-  return { tel: [], done: {}, bestFree: 0, bestStages: 0 };
-}
+const store = createProfileStore('mm_stroop_profile_v1', {
+  tel: [],
+  done: {},
+  bestFree: 0,
+  bestStages: 0,
+});
 
-export function saveStroopProfile(profile) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(profile));
-  } catch {
-    /* ignore */
-  }
-}
+export const loadStroopProfile = store.load;
+export const saveStroopProfile = store.save;

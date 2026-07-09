@@ -1,19 +1,13 @@
 /** Shared labyrinth geometry — same look as campaign floors, any map size. */
+import { mulberry32 } from '../../../lib/rng';
+
+export { mulberry32 };
 
 export const CELL = 4;
 export const WALL_H = 3;
 
 export function wc(g, mapSize) { return (g - mapSize / 2 + 0.5) * CELL; }
 export function gAt(w, mapSize) { return Math.floor(w / CELL + mapSize / 2); }
-
-export function mulberry32(a) {
-  return () => {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 export function generateMaze(mapSize, openChance, seed) {
   const rng = mulberry32(seed);

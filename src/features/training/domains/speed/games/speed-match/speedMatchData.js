@@ -14,8 +14,10 @@
  * ========================================================================== */
 
 import { SH } from '../../../../shared/focusQuestData';
+import { mulberry32, shuffle } from '../../../../../../lib/rng';
+import { clamp, lerp } from '../../../../../../lib/math';
 
-export { SH };
+export { SH, mulberry32 };
 
 export const SM_DIFF_KEYS = ['easy', 'medium', 'hard'];
 export const SM_PROGRESS_ORDER = SM_DIFF_KEYS;
@@ -65,32 +67,7 @@ export function bankGainMs(legendSize) {
   return Math.round(lerp(1500, 550, t));
 }
 
-function lerp(a, b, t) {
-  return a + (b - a) * t;
-}
-function clamp(v, lo, hi) {
-  return Math.max(lo, Math.min(hi, v));
-}
 
-export function mulberry32(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function shuffle(arr, rnd) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 /** Block parameters for a tier level (1–100). */
 export function specForLevel(diff, levelIndex) {

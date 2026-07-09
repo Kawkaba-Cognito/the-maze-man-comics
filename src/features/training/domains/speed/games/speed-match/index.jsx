@@ -20,6 +20,7 @@ import { createTrialLog } from '../../../../shared/trialLog';
 import { loadGameSettings } from '../../../../shared/focusQuestData';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
 import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
+import { STR_COMMON } from '../../../../shared/trainingStrings';
 import {
   SH,
   SM_DIFF_KEYS,
@@ -60,69 +61,37 @@ function saveProfile(p) {
 
 const UI = {
   en: {
+    ...STR_COMMON.en,
     hub: 'Speed Match',
-    tag: 'training',
     title: 'Speed Match',
-    replayTutorial: 'Replay tutorial',
-    freeMode: 'Survival mode',
-    levelMode: 'Level mode',
-    challengeMode: 'Pass n Play',
     hubMapAria: 'Modes — choose a path',
     hubNodeFreeHint: 'Endless · time bank · gets faster',
     hubNodeLevelsHint: '100 levels per tier · unlock in order',
     hubNodeChallengeHint: 'Same key for all · pick a difficulty',
-    freeIntroTitle: 'Survival mode',
     freeIntroBody:
       'Match the symbol to its number. You have one time bank that keeps ticking down — every correct match adds time, a wrong tap subtracts it. As you go, the key grows and each correct match returns less time, so you must get faster to stay alive. The run ends when the time bank empties.',
-    freeIntroReady: 'Ready',
-    pickDiff: 'Choose difficulty',
     pickDiffSub: 'Each tier has 100 levels. Unlock them in order.',
     diffDesc: {
       easy: 'Few symbols, gentle pace — learn the matching.',
       medium: 'More symbols, brisker — build speed.',
       hard: 'Up to 9 symbols (the full key), fast and demanding.',
     },
-    chalPickDiff: 'Difficulty',
     levelsSub: (pop) => `${pop} · ${SM_LEVELS_PER_TIER} levels`,
-    challengeTitle: 'Pass n Play',
     challengeSub: 'Same key & symbols for everyone · pick a difficulty · pass the device',
-    players: 'Players (2–10)',
-    addPl: '＋ Add player',
-    startCh: '⚔️ Start',
-    needTwo: 'Add at least 2 players.',
-    chalRounds: 'Rounds',
     chalRoundsHint: 'Each player plays once per round · new fair key each round',
-    roundNofM: (n, m) => `Round ${n}/${m}`,
-    chalTurnKicker: 'Your turn',
     chalBulletSame: 'Same key and symbol order for everyone this round',
-    chalBulletPass: 'Tap Start only when the device is with this player',
-    handTo: (n) => `Hand the device to ${n}.`,
-    goReady: 'Start',
     chalMeta: (label, sec) => `${label} · ${sec}s`,
     key: 'Key',
     tapNumber: 'Tap the number that matches the symbol',
     countdown: 'Get ready…',
     go: 'GO!',
-    time: 'Time',
     correct: 'Correct',
     combo: 'Combo',
-    lives: 'Lives',
-    score: 'Score',
-    paused: 'Paused',
-    resume: 'Resume',
     restart: 'Restart',
-    quitMenu: 'Quit to menu',
-    quitQ: 'Quit?',
-    quitLose: 'This run will be lost.',
-    yesQuit: 'Yes, quit',
-    keep: 'Keep playing',
     levelHeader: (diff, lv) => `${SM_DM[diff]?.label ?? diff} · L${lv}`,
-    freeHeader: 'Survival mode',
-    challengeHeader: 'Pass n Play',
     targetSub: (n) => `Reach ${n} correct`,
     resultsLevelPass: 'Level passed',
     resultsLevelRetry: 'Try again',
-    stars: 'Stars',
     speedScore: 'Speed score',
     ipm: 'Matches / min',
     accuracy: 'Accuracy',
@@ -132,19 +101,12 @@ const UI = {
     iesHint: 'IES · lower is better',
     metricsNote: 'Matches/min is your processing-speed score. RT variability tracks how steady you are; efficiency (IES) blends speed and accuracy.',
     ms: 'ms',
-    nextLv: 'Next level',
-    retry: 'Retry',
-    menu: 'Menu',
-    freeGameOver: 'Run ended',
     freeCorrect: (n) => `Matches: ${n}`,
     freeBest: (n) => `Best score: ${n}`,
-    freePlayAgain: 'Play again',
-    resultsChalTitle: 'Pass n Play results',
     chalResDetail: (nr, c, acc, rt) =>
       nr > 1
         ? `${nr}× · ${c} correct avg · ${acc}% · ${rt ?? '—'}ms`
         : `${c} correct · ${acc}% · ${rt ?? '—'}ms`,
-    newCh: 'New game',
     perfect: 'Lightning fast!',
     good: 'Quick work',
     tryAgain: 'Keep practicing',
@@ -157,69 +119,37 @@ const UI = {
     motor: 'motor',
   },
   ar: {
+    ...STR_COMMON.ar,
     hub: 'مطابقة سريعة',
-    tag: 'تدريب',
     title: 'مطابقة سريعة',
-    replayTutorial: 'إعادة الشرح',
-    freeMode: 'وضع البقاء',
-    levelMode: 'وضع المستويات',
-    challengeMode: 'مرّر والعب',
     hubMapAria: 'الأوضاع — اختر مسارًا',
     hubNodeFreeHint: 'لا ينتهي · بنك وقت · يتسارع',
     hubNodeLevelsHint: '١٠٠ مستوى لكل صعوبة · بالترتيب',
     hubNodeChallengeHint: 'نفس المفتاح للجميع · اختر الصعوبة',
-    freeIntroTitle: 'وضع البقاء',
     freeIntroBody:
       'طابق الرمز مع رقمه. لديك بنك وقت واحد يتناقص باستمرار — كل مطابقة صحيحة تضيف وقتاً والنقر الخاطئ يخصم منه. كلما تقدمت يكبر المفتاح وتعيد كل مطابقة وقتاً أقل، فعليك أن تتسارع لتبقى. تنتهي المحاولة عند نفاد بنك الوقت.',
-    freeIntroReady: 'جاهز',
-    pickDiff: 'اختر الصعوبة',
     pickDiffSub: 'كل صعوبة تحتوي ١٠٠ مستوى. افتحها بالترتيب.',
     diffDesc: {
       easy: 'رموز قليلة وإيقاع هادئ — تعلّم المطابقة.',
       medium: 'رموز أكثر وأسرع — ابنِ سرعتك.',
       hard: 'حتى ٩ رموز (المفتاح الكامل)، سريع ومُجهِد.',
     },
-    chalPickDiff: 'الصعوبة',
     levelsSub: (pop) => `${pop} · ${SM_LEVELS_PER_TIER} مستوى`,
-    challengeTitle: 'مرّر والعب',
     challengeSub: 'نفس المفتاح والرموز للجميع · اختر الصعوبة · مرّر الجهاز',
-    players: 'اللاعبون (2–10)',
-    addPl: '＋ إضافة لاعب',
-    startCh: '⚔️ ابدأ',
-    needTwo: 'أضف لاعبين على الأقل.',
-    chalRounds: 'الجولات',
     chalRoundsHint: 'كل لاعب يلعب مرة في الجولة · مفتاح عادل جديد كل جولة',
-    roundNofM: (n, m) => `الجولة ${n}/${m}`,
-    chalTurnKicker: 'دورك',
     chalBulletSame: 'نفس المفتاح وترتيب الرموز للجميع في هذه الجولة',
-    chalBulletPass: 'اضغط ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
-    handTo: (n) => `سلّم الجهاز إلى ${n}.`,
-    goReady: 'ابدأ',
     chalMeta: (label, sec) => `${label} · ${sec}ث`,
     key: 'المفتاح',
     tapNumber: 'اضغط الرقم المطابق للرمز',
     countdown: 'استعد…',
     go: 'انطلق!',
-    time: 'الوقت',
     correct: 'صحيح',
     combo: 'تتابع',
-    lives: 'الأرواح',
-    score: 'نقاط',
-    paused: 'متوقف',
-    resume: 'متابعة',
     restart: 'إعادة',
-    quitMenu: 'الخروج للقائمة',
-    quitQ: 'خروج؟',
-    quitLose: 'سيُلغى هذا السجل.',
-    yesQuit: 'نعم، خروج',
-    keep: 'متابعة اللعب',
     levelHeader: (diff, lv) => `${SM_DM[diff]?.label ?? diff} · ${lv}`,
-    freeHeader: 'وضع البقاء',
-    challengeHeader: 'مرّر والعب',
     targetSub: (n) => `اجمع ${n} صحيحة`,
     resultsLevelPass: 'المستوى اجتُاز',
     resultsLevelRetry: 'حاول مجددًا',
-    stars: 'نجوم',
     speedScore: 'درجة السرعة',
     ipm: 'مطابقات / دقيقة',
     accuracy: 'الدقة',
@@ -229,19 +159,12 @@ const UI = {
     iesHint: 'IES · الأقل أفضل',
     metricsNote: 'المطابقات/دقيقة هي درجة سرعة معالجتك. تغيّر زمن الاستجابة يقيس ثباتك؛ والكفاءة (IES) تمزج السرعة والدقة.',
     ms: 'ملث',
-    nextLv: 'المستوى التالي',
-    retry: 'إعادة',
-    menu: 'القائمة',
-    freeGameOver: 'انتهت المحاولة',
     freeCorrect: (n) => `مطابقات: ${n}`,
     freeBest: (n) => `أفضل نقاط: ${n}`,
-    freePlayAgain: 'العب مجددًا',
-    resultsChalTitle: 'نتائج مرّر والعب',
     chalResDetail: (nr, c, acc, rt) =>
       nr > 1
         ? `${nr}× · ${c} صحيحة بالمتوسط · ${acc}% · ${rt ?? '—'}ملث`
         : `${c} صحيحة · ${acc}% · ${rt ?? '—'}ملث`,
-    newCh: 'لعبة جديدة',
     perfect: 'سرعة البرق!',
     good: 'عمل سريع',
     tryAgain: 'واصل التدريب',
@@ -293,7 +216,7 @@ function SpeedModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
   return <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />;
 }
 
-export default function SpeedMatchGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep }) {
+export default function SpeedMatchGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'speed' }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
@@ -742,11 +665,9 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     beginBlock(prepareLevelBlock(diff, lv), Math.random);
   }, [beginBlock]);
 
-  /* --- Standardized assessment: practice → motor baseline → 90s SDMT ------
-   * Follows the clinical SDMT protocol: a short unscored practice (first-
-   * exposure noise), a copy-only motor block (tap the digit you SEE — no
-   * symbol lookup) so pure finger speed can be separated out, then the
-   * fixed 90-second substitution block that is actually scored. */
+  /* --- Standardized assessment: practice → motor baseline → 120s SDMT ------
+   * Clinical SDMT uses 90–120 s; we use 120 s for stronger test–retest reliability
+   * in a digital battery (Smith 1982; Jaeger 2018). */
   const beginMotorBlock = useCallback(() => {
     const spec = { diff: 'medium', lv: 0, pairCount: 6, durationSec: 25, targetCorrect: 999, minAcc: 0, remapEvery: 0, itemMs: 0 };
     const legend = Array.from({ length: 6 }, (_, i) => ({ digit: i + 1, symbol: null }));
@@ -755,7 +676,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
   useEffect(() => { beginMotorBlockRef.current = beginMotorBlock; }, [beginMotorBlock]);
 
   const beginMainAssess = useCallback(() => {
-    const spec = { diff: 'medium', lv: 0, pairCount: 6, durationSec: 90, targetCorrect: 999, minAcc: 0.8, remapEvery: 0, itemMs: 0 };
+    const spec = { diff: 'medium', lv: 0, pairCount: 6, durationSec: 120, targetCorrect: 999, minAcc: 0.8, remapEvery: 0, itemMs: 0 };
     beginBlock({ mode: 'level', diff: 'medium', lv: 0, spec, legend: buildLegend(6), assessStage: 'main' }, Math.random);
   }, [beginBlock]);
   useEffect(() => { beginMainAssessRef.current = beginMainAssess; }, [beginMainAssess]);
@@ -858,6 +779,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
           isAr={isAr}
           label={assessmentLabel}
           step={assessmentStep}
+          domainId={assessmentDomainId}
           onStart={startAssessment}
           onBack={onAssessmentExit || onBack}
           playSfx={playSfx}

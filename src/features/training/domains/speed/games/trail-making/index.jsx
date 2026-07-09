@@ -4,6 +4,7 @@ import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { SURVIVAL_MS } from '../../../../shared/survival';
+import { clamp, lerp } from '../../../../../../lib/math';
 
 /*
  * Trail Making A — visuomotor scanning speed.
@@ -16,8 +17,6 @@ import { SURVIVAL_MS } from '../../../../shared/survival';
 
 const LEVEL_WIN = true; // completing the board in time clears the level
 const CHAL_LIVES = 3;
-const lerp = (a, b, t) => a + (b - a) * t;
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 // Difficulty = SET SIZE (number of circles to scan) + the par time (deadline).
 // The Trail Making Test is a visual-search / processing-speed measure, so more
@@ -80,7 +79,7 @@ function boardSpecSurvival(boardIdx) {
   return { variant, decoys: Math.min(2 + Math.floor((phase - SURV_PHASES.length) / 2), 6) };
 }
 
-function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 1) : 0;
   const ppTimeRef = useRef(0);
@@ -152,8 +151,9 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
     const interferenceMs = avgF > 0 && avgC > 0 ? Math.round(avgC - avgF) : null;
     trialLogRef.current?.finish({ boards, score: scoreRef.current, interferenceMs });
     setOver({ score: scoreRef.current, boards, avgMs, ipm, errors: sumErrRef.current, interferenceMs });
+    awardFreeRun?.('trailMaking', boards);
     playSfx?.('error');
-  }, [playSfx]);
+  }, [playSfx, awardFreeRun]);
 
   const restartSurvival = () => {
     finishedRef.current = false;
@@ -544,7 +544,7 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
 }
 
 export default function TrailMakingGame({ onBack, workoutMode = false }) {
-  const { currentLang, playSfx, awardPoints } = useApp();
+  const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   return (
     <ModeShell
@@ -563,7 +563,7 @@ export default function TrailMakingGame({ onBack, workoutMode = false }) {
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <TrailEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <TrailEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
     />
   );

@@ -82,9 +82,9 @@ export const REFERENCES = [
 
 export const METHODOLOGY = {
   en:
-    'Each domain runs a fixed, standardized block whose layout is re-randomized so it cannot be memorized. Raw performance is converted to a 0–100 domain score, then to an age-group percentile and a standard score (mean 100, SD 15) using the age trajectories below. Your Cognitive Index is the mean standard score across the domains you completed.',
+    'The full battery runs six published paradigms (~25–30 min): Mesulam cancellation, SDMT (120 s), Corsi span, timed verbal fluency (120 s), dual planning puzzles, and spatial Stroop (44 trials). Each block uses fixed parameters with re-randomized layouts. Raw performance converts to 0–100 domain scores, then age-group percentiles and standard scores (mean 100, SD 15). Your Cognitive Index is the mean SS across completed domains. Re-test every 4–8 weeks to track reliable change (RCI).',
   ar:
-    'يشغّل كل مجال كتلة قياسية ثابتة يُعاد ترتيب تخطيطها كي لا تُحفظ. يُحوّل الأداء الخام إلى درجة 0–100 ثم إلى مئوية مقارنة بالفئة العمرية ودرجة معيارية (متوسط 100، انحراف 15) وفق منحنيات العمر أدناه. مؤشرك المعرفي هو متوسط الدرجات المعيارية للمجالات التي أكملتها.',
+    'يشغّل التقييم الكامل ستة نماذج منشورة (~٢٥–٣٠ د): شطب ميسولام، SDMT (١٢٠ ث)، مدى كورسي، طلاقة لفظية موقّتة (١٢٠ ث)، لغزا تخطيط، وستروب مكاني (٤٤ تجربة). كل كتلة بمعاملات ثابتة وتخطيط مُعاد عشوائياً. يُحوّل الأداء إلى درجات 0–100 ثم مئويات ودرجات معيارية (متوسط 100). مؤشرك المعرفي متوسط SS للمجالات المكتملة. أعد الاختبار كل 4–8 أسابيع لتتبّع التغيّر الموثوق.',
 };
 
 export const NORM_DISCLAIMER_AR =

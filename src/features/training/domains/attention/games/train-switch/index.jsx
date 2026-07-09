@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
+import { startCanvasLoop } from '../../../../shared/canvasLoop';
 
 /*
  * Car Park — Divided Attention & planning (Train-of-Thought style, re-themed).
@@ -136,7 +137,7 @@ function generate(R, C, desired, rng, colorCount = 6) {
   return { root, all, forks, stations };
 }
 
-function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
   const ppTrains = mode === 'passplay' ? (attempt?.trials || PP_TRAINS) : 0;
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
@@ -166,7 +167,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     const peak = g.peakConc;
     const meanLoad = g.concActiveFrames ? +(g.concSum / g.concActiveFrames).toFixed(1) : 0;
     const metrics = { routed: g.routed, acc, peak, meanLoad, wave: g.wave };
-    if (mode === 'free') { setOver({ score: g.routed, metrics }); playSfx('error'); return; }
+    if (mode === 'free') { setOver({ score: g.routed, metrics }); awardFreeRun?.('trainSwitch', g.peakConc || g.routed); playSfx('error'); return; }
     if (mode === 'levels') {
       const won = g.routed >= cfg.target;
       onResult({
@@ -286,8 +287,6 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
       ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
       layout();
     };
-    resize();
-    const ro = new ResizeObserver(resize); ro.observe(wrapRef.current);
 
     const drawEdge = (a, b, active) => {
       // Road: grey asphalt with a dashed centre lane line (inactive = faint).
@@ -305,9 +304,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     };
 
     let hudCache = { routed: -1, lives: -1, wave: -1 };
-    let last = performance.now();
-    const frame = (now) => {
-      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const frame = (dt, now) => {
       if (g.bannerT > 0) g.bannerT -= dt; // wave banner countdown
       const speed = g.cps * g.cell; // px/s (escalation now comes from waves, not a ramp)
 
@@ -332,8 +329,8 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
             if (at.colorHex === t.target) { g.routed += 1; awardPoints(1); playSfx('collect'); }
             else { g.wrong += 1; g.lives -= 1; playSfx('error'); }
             if (g.isWave) g.waveResolved += 1;
-            if (mode === 'levels' && g.routed >= cfg.target) { finish(); return; }
-            if ((mode === 'levels' || mode === 'free') && g.lives <= 0) { finish(); return; }
+            if (mode === 'levels' && g.routed >= cfg.target) { finish(); return false; }
+            if ((mode === 'levels' || mode === 'free') && g.lives <= 0) { finish(); return false; }
             continue;
           }
           t.from = at; t.to = at.children.length === 2 ? at.children[at.sw] : at.children[0]; t.t = 0;
@@ -356,7 +353,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
         g.banner = isAr ? `الموجة ${g.wave}` : `Wave ${g.wave}`; g.bannerT = 1.6;
         playSfx('win');
       }
-      if (g.budget !== Infinity && g.spawned >= g.budget && g.trains.length === 0) { finish(); return; }
+      if (g.budget !== Infinity && g.spawned >= g.budget && g.trains.length === 0) { finish(); return false; }
 
       // ── draw ──
       ctx.clearRect(0, 0, g.W, g.H);
@@ -444,11 +441,8 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
         hudCache = { routed: g.routed, lives: g.lives, wave: g.wave, waveDone: g.waveResolved, waveTot: g.waveCars };
         setHud(hudCache);
       }
-      rafRef.current = requestAnimationFrame(frame);
     };
-    rafRef.current = requestAnimationFrame(frame);
-
-    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
+    return startCanvasLoop({ wrap: wrapRef.current, rafRef, resize, frame });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runId, seed]);
 
@@ -512,7 +506,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
 }
 
 export default function TrainSwitchGame({ onBack, workoutMode = false }) {
-  const { currentLang, playSfx, awardPoints } = useApp();
+  const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   return (
     <ModeShell
@@ -531,7 +525,7 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <TrainSwitchEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <TrainSwitchEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
     />
   );

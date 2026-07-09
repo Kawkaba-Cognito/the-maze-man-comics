@@ -695,7 +695,7 @@ const T = {
   },
 };
 
-function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
   const t = isAr ? T.ar : T.en;
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 5) : 0;
@@ -842,7 +842,7 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
     <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
       <style>{ANIM_CSS}</style>
       <header className="ct-training-play-header">
-        <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); if (mode === 'free') awardFreeRun?.('storyGrid', bestRef.current); onExit?.(); }}>‹</button>
         <div className="ct-training-play-header-body">
           <div className="ct-training-play-title">{t.title}</div>
           <div className="ct-training-play-sub">{hudSub}</div>
@@ -973,7 +973,7 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
 }
 
 export default function StoryGridGame({ onBack, workoutMode = false }) {
-  const { currentLang, playSfx, awardPoints } = useApp();
+  const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   return (
     <ModeShell
@@ -992,7 +992,7 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <StoryEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <StoryEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
     />
   );

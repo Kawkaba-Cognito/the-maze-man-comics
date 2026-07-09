@@ -213,13 +213,14 @@ const SHRINE_POSITIONS = [
  */
 const HUB_NEXUS = [180, 360];
 const AVATAR_R = 48;
-/** CosmosCharacter viewBox — sphere centre used to align overlay with hub circle. */
+/** CosmosCharacter box — sphere sits slightly above vertical centre. */
 const HUB_PLANET_SIZE = 90;
-const COSMOS_BODY_CY = 102;
-const COSMOS_VIEW_H = 240;
+/** New idle art: body centre ~42% down the 1.2×height box (legs below). */
+const KAWKAB_BODY_FRAC = 0.42;
 
 function hubPlanetOffsetY(size) {
-  return size * 1.2 * (0.5 - COSMOS_BODY_CY / COSMOS_VIEW_H);
+  // Align planet centre with hub nexus for the default (raster) Kawkab.
+  return size * 1.2 * (0.5 - KAWKAB_BODY_FRAC);
 }
 
 function mazeCorridorD(domainId) {
@@ -480,7 +481,7 @@ export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }
               padding: 0,
               cursor: 'pointer',
               display: 'block',
-              filter: 'drop-shadow(0 0 24px rgba(245,166,35,0.7)) drop-shadow(0 0 56px rgba(255,216,90,0.4))',
+              filter: 'drop-shadow(0 0 22px rgba(94,200,232,0.65)) drop-shadow(0 0 48px rgba(155,232,255,0.35))',
             }}
           >
             <CosmosCharacter size={HUB_PLANET_SIZE} mood="proud" glow float />

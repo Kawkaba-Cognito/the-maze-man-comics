@@ -80,8 +80,84 @@ export const CATEGORIES = [
     { en: 'Egypt', ar: 'مصر' }, { en: 'Jordan', ar: 'الأردن' }, { en: 'Morocco', ar: 'المغرب' },
     { en: 'Lebanon', ar: 'لبنان' }, { en: 'Iraq', ar: 'العراق' }, { en: 'Syria', ar: 'سوريا' },
   ] },
-  { id: 'tech', group: 'object', members: [
+  { id: 'tech', group: 'object', linkRule: { en: 'Both are electronic devices', ar: 'كلاهما جهاز إلكتروني' }, members: [
     { en: 'phone', ar: 'هاتف' }, { en: 'computer', ar: 'حاسوب' }, { en: 'tablet', ar: 'جهاز لوحي' },
     { en: 'camera', ar: 'كاميرا' }, { en: 'printer', ar: 'طابعة' }, { en: 'router', ar: 'موجّه' },
+  ] },
+  { id: 'flower', group: 'living', linkRule: { en: 'Both are flowers', ar: 'كلاهما زهرة' }, members: [
+    { en: 'rose', ar: 'وردة' }, { en: 'tulip', ar: 'توليب' }, { en: 'lily', ar: 'زنبق' },
+    { en: 'daisy', ar: 'أقحوان' }, { en: 'sunflower', ar: 'دوّار الشمس' }, { en: 'jasmine', ar: 'ياسمين' },
+  ] },
+  { id: 'tree', group: 'living', linkRule: { en: 'Both are trees', ar: 'كلاهما شجرة' }, members: [
+    { en: 'oak', ar: 'بلوط' }, { en: 'pine', ar: 'صنوبر' }, { en: 'palm', ar: 'نخيل' },
+    { en: 'olive', ar: 'زيتون' }, { en: 'cedar', ar: 'أرز' }, { en: 'willow', ar: 'صفصاف' },
+  ] },
+  { id: 'pet', group: 'living', linkRule: { en: 'Both are common pets', ar: 'كلاهما حيوان أليف شائع' }, members: [
+    { en: 'cat', ar: 'قطة' }, { en: 'dog', ar: 'كلب' }, { en: 'rabbit', ar: 'أرنب' },
+    { en: 'hamster', ar: 'هامستر' }, { en: 'parrot', ar: 'ببغاء' }, { en: 'goldfish', ar: 'سمكة ذهبية' },
+  ] },
+  { id: 'dairy', group: 'living', linkRule: { en: 'Both are dairy foods', ar: 'كلاهما منتج ألبان' }, members: [
+    { en: 'milk', ar: 'حليب' }, { en: 'cheese', ar: 'جبن' }, { en: 'yogurt', ar: 'لبن' },
+    { en: 'butter', ar: 'زبدة' }, { en: 'cream', ar: 'قشطة' }, { en: 'ice cream', ar: 'آيس كريم' },
+  ] },
+  { id: 'grain', group: 'living', linkRule: { en: 'Both are grains or cereals', ar: 'كلاهما حبوب أو حبوب إفطار' }, members: [
+    { en: 'rice', ar: 'أرز' }, { en: 'wheat', ar: 'قمح' }, { en: 'oats', ar: 'شوفان' },
+    { en: 'corn', ar: 'ذرة' }, { en: 'barley', ar: 'شعير' }, { en: 'bread', ar: 'خبز' },
+  ] },
+  { id: 'musical', group: 'object', linkRule: { en: 'Both are musical instruments', ar: 'كلاهما آلة موسيقية' }, members: [
+    { en: 'piano', ar: 'بيانو' }, { en: 'guitar', ar: 'غيتار' }, { en: 'drum', ar: 'طبل' },
+    { en: 'violin', ar: 'كمان' }, { en: 'flute', ar: 'ناي' }, { en: 'trumpet', ar: 'بوق' },
+  ] },
+  { id: 'stationery', group: 'object', linkRule: { en: 'Both are stationery items', ar: 'كلاهما من أدوات المكتب' }, members: [
+    { en: 'pen', ar: 'قلم' }, { en: 'pencil', ar: 'قلم رصاص' }, { en: 'eraser', ar: 'ممحاة' },
+    { en: 'notebook', ar: 'دفتر' }, { en: 'ruler', ar: 'مسطرة' }, { en: 'stapler', ar: 'دبّاسة' },
+  ] },
+  { id: 'building', group: 'place', linkRule: { en: 'Both are types of buildings', ar: 'كلاهما نوع من المباني' }, members: [
+    { en: 'hospital', ar: 'مستشفى' }, { en: 'mosque', ar: 'مسجد' }, { en: 'museum', ar: 'متحف' },
+    { en: 'airport', ar: 'مطار' }, { en: 'stadium', ar: 'ملعب' }, { en: 'factory', ar: 'مصنع' },
+  ] },
+  { id: 'landform', group: 'place', linkRule: { en: 'Both are landforms', ar: 'كلاهما تشكيل أرضي' }, members: [
+    { en: 'mountain', ar: 'جبل' }, { en: 'valley', ar: 'وادي' }, { en: 'desert', ar: 'صحراء' },
+    { en: 'island', ar: 'جزيرة' }, { en: 'river', ar: 'نهر' }, { en: 'lake', ar: 'بحيرة' },
+  ] },
+  { id: 'planet', group: 'concept', linkRule: { en: 'Both are planets in our solar system', ar: 'كلاهما كوكب في نظامنا الشمسي' }, members: [
+    { en: 'Mars', ar: 'المريخ' }, { en: 'Venus', ar: 'الزهرة' }, { en: 'Jupiter', ar: 'المشتري' },
+    { en: 'Saturn', ar: 'زحل' }, { en: 'Mercury', ar: 'عطارد' }, { en: 'Neptune', ar: 'نبتون' },
+  ] },
+  { id: 'shape', group: 'concept', linkRule: { en: 'Both are geometric shapes', ar: 'كلاهما شكل هندسي' }, members: [
+    { en: 'circle', ar: 'دائرة' }, { en: 'square', ar: 'مربّع' }, { en: 'triangle', ar: 'مثلث' },
+    { en: 'rectangle', ar: 'مستطيل' }, { en: 'oval', ar: 'بيضاوي' }, { en: 'star', ar: 'نجمة' },
+  ] },
+  { id: 'language', group: 'concept', linkRule: { en: 'Both are world languages', ar: 'كلاهما لغة عالمية' }, members: [
+    { en: 'Arabic', ar: 'العربية' }, { en: 'English', ar: 'الإنجليزية' }, { en: 'French', ar: 'الفرنسية' },
+    { en: 'Spanish', ar: 'الإسبانية' }, { en: 'Chinese', ar: 'الصينية' }, { en: 'Turkish', ar: 'التركية' },
+  ] },
+  { id: 'gem', group: 'object', linkRule: { en: 'Both are precious stones', ar: 'كلاهما حجر كريم' }, members: [
+    { en: 'diamond', ar: 'ألماس' }, { en: 'ruby', ar: 'ياقوت' }, { en: 'emerald', ar: 'زمرد' },
+    { en: 'sapphire', ar: 'ياقوت أزرق' }, { en: 'pearl', ar: 'لؤلؤ' }, { en: 'amber', ar: 'كهرمان' },
+  ] },
+  { id: 'fabric', group: 'object', linkRule: { en: 'Both are fabrics or textiles', ar: 'كلاهما قماش أو نسيج' }, members: [
+    { en: 'cotton', ar: 'قطن' }, { en: 'wool', ar: 'صوف' }, { en: 'silk', ar: 'حرير' },
+    { en: 'linen', ar: 'كتّان' }, { en: 'leather', ar: 'جلد' }, { en: 'denim', ar: 'دنيم' },
+  ] },
+  { id: 'season', group: 'nature', linkRule: { en: 'Both are seasons', ar: 'كلاهما فصل من فصول السنة' }, members: [
+    { en: 'spring', ar: 'ربيع' }, { en: 'summer', ar: 'صيف' }, { en: 'autumn', ar: 'خريف' },
+    { en: 'winter', ar: 'شتاء' }, { en: 'rainy season', ar: 'موسم الأمطار' }, { en: 'harvest', ar: 'موسم الحصاد' },
+  ] },
+  { id: 'direction', group: 'concept', linkRule: { en: 'Both are compass directions', ar: 'كلاهما اتجاه على البوصلة' }, members: [
+    { en: 'north', ar: 'شمال' }, { en: 'south', ar: 'جنوب' }, { en: 'east', ar: 'شرق' },
+    { en: 'west', ar: 'غرب' }, { en: 'northeast', ar: 'شمال شرق' }, { en: 'southwest', ar: 'جنوب غرب' },
+  ] },
+  { id: 'time-unit', group: 'concept', linkRule: { en: 'Both are units of time', ar: 'كلاهما وحدة زمن' }, members: [
+    { en: 'second', ar: 'ثانية' }, { en: 'minute', ar: 'دقيقة' }, { en: 'hour', ar: 'ساعة' },
+    { en: 'day', ar: 'يوم' }, { en: 'week', ar: 'أسبوع' }, { en: 'month', ar: 'شهر' },
+  ] },
+  { id: 'office', group: 'place', linkRule: { en: 'Both are found in an office', ar: 'كلاهما موجود في المكتب' }, members: [
+    { en: 'desk', ar: 'مكتب' }, { en: 'chair', ar: 'كرسي' }, { en: 'computer', ar: 'حاسوب' },
+    { en: 'printer', ar: 'طابعة' }, { en: 'folder', ar: 'ملف' }, { en: 'calendar', ar: 'تقويم' },
+  ] },
+  { id: 'farm', group: 'living', linkRule: { en: 'Both are farm animals', ar: 'كلاهما حيوان مزرعة' }, members: [
+    { en: 'cow', ar: 'بقرة' }, { en: 'sheep', ar: 'خروف' }, { en: 'goat', ar: 'ماعز' },
+    { en: 'chicken', ar: 'دجاجة' }, { en: 'horse', ar: 'حصان' }, { en: 'donkey', ar: 'حمار' },
   ] },
 ];

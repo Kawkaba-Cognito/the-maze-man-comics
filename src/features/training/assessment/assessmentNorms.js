@@ -18,6 +18,7 @@
  * ========================================================================== */
 
 import { ASSESS_DOMAINS, ageBand } from './assessmentProfile';
+import { clamp } from '../../../lib/math';
 
 /** Age-trajectory multipliers on the reference mean, by age-band id. */
 const CURVES = {
@@ -42,9 +43,6 @@ export const NORM_DISCLAIMER =
   'Comparisons use research-informed reference values, not validated clinical or population norms. ' +
   'Treat the age-group standing as a guideline; the most reliable signal is your own change over time.';
 
-function clamp(v, lo, hi) {
-  return Math.max(lo, Math.min(hi, v));
-}
 function mean(a) {
   return a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0;
 }

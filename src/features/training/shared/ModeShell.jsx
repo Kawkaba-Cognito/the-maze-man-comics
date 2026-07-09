@@ -5,6 +5,7 @@ import PassPlaySetup from './PassPlaySetup';
 import HubScienceLink from './HubScienceLink';
 import SurvivalIntro from './SurvivalIntro';
 import { freshSurvivalSeed } from './survival';
+import { loadJson, saveJson } from '../../../lib/storage';
 import { useTrainingTutorial } from './tutorials/useTrainingTutorial';
 import { getTrainingMeta } from './tutorials/trainingMeta';
 import TrainingOnboardingLayer from './tutorials/TrainingOnboardingLayer';
@@ -31,8 +32,8 @@ import { TUTORIAL_UI } from './tutorials/tutorialContent';
 
 const DIFF_KEYS = ['easy', 'med', 'hard'];
 
-function loadProg(key) { try { return JSON.parse(localStorage.getItem(key)) || {}; } catch { return {}; } }
-function saveProg(key, st) { try { localStorage.setItem(key, JSON.stringify(st)); } catch { /* ignore */ } }
+function loadProg(key) { return loadJson(key, {}) || {}; }
+function saveProg(key, st) { saveJson(key, st); }
 function seedFor(diff, level) { return ((diff.charCodeAt(0) * 7919) ^ (level * 104729)) >>> 0; }
 
 export default function ModeShell({

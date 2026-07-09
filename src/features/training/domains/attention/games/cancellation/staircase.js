@@ -1,16 +1,11 @@
 /*
- * staircase.js — adaptive 2-down/1-up transformed staircase (Levitt 1971).
- *
- * Two consecutive PASSES make the task harder (level up); a single FAIL makes it
- * easier (level down). This rule converges on the difficulty at which the player
- * succeeds ~70.7% of the time — a principled "attention threshold" instead of an
- * ad-hoc score. Threshold = mean of the reversal points (where the staircase
- * changes direction), the standard estimator. Step size shrinks after the first
- * reversals to bracket the threshold more precisely.
- *
- * Pure JS, no React. `level` is an abstract difficulty index the caller maps to
- * an actual board (here: the 0..299 easy→medium→hard curriculum).
+ * staircase.js — Cancellation's adaptive threshold test: a 2-down/1-up
+ * transformed staircase over the 0..299 easy→medium→hard board curriculum.
+ * Threshold = mean of the reversal levels. The algorithm lives in
+ * shared/staircase.js; this file is only the game's configuration.
  */
+import { createAdaptiveStaircase } from '../../../../shared/staircase';
+
 export function createStaircase({
   start = 90,
   step = 22,
@@ -20,70 +15,34 @@ export function createStaircase({
   finalReversals = 4,
   maxTrials = 14,
 } = {}) {
-  let level = start;
-  let consecCorrect = 0;
-  let lastMoveDir = 0; // -1 easier, +1 harder, 0 = no move yet
-  let stepSize = step;
-  const reversals = [];
-  const trials = [];
-
-  const clamp = (v) => Math.min(maxLevel, Math.max(minLevel, v));
-
+  const core = createAdaptiveStaircase({
+    start,
+    min: minLevel,
+    max: maxLevel,
+    stepMode: 'add',
+    step,
+    minStep: 2,
+    shrink: true,
+    targetReversals,
+    finalReversals,
+    maxTrials,
+    round: true,
+  });
   return {
     get level() {
-      return Math.round(level);
+      return core.value;
     },
     get trialCount() {
-      return trials.length;
+      return core.trialCount;
     },
     get reversalCount() {
-      return reversals.length;
+      return core.reversalCount;
     },
     get done() {
-      return reversals.length >= targetReversals || trials.length >= maxTrials;
+      return core.done;
     },
-
-    /** Feed one trial outcome; advances the staircase. */
-    record(pass) {
-      trials.push({ level: Math.round(level), pass });
-      let moveDir = 0;
-      if (pass) {
-        consecCorrect += 1;
-        if (consecCorrect >= 2) {
-          moveDir = +1; // harder
-          consecCorrect = 0;
-        }
-      } else {
-        moveDir = -1; // easier
-        consecCorrect = 0;
-      }
-      if (moveDir !== 0) {
-        if (lastMoveDir !== 0 && moveDir !== lastMoveDir) {
-          reversals.push(Math.round(level));
-          // Tighten the step after the first couple of reversals (coarse→fine).
-          if (reversals.length === 2 || reversals.length === 4) {
-            stepSize = Math.max(2, Math.round(stepSize / 2));
-          }
-        }
-        level = clamp(level + moveDir * stepSize);
-        lastMoveDir = moveDir;
-      }
-    },
-
-    /** Threshold estimate = mean of the last `finalReversals` reversal levels. */
-    threshold() {
-      const rev = reversals.slice(-finalReversals);
-      if (!rev.length) return Math.round(level);
-      return Math.round(rev.reduce((a, b) => a + b, 0) / rev.length);
-    },
-
-    snapshot() {
-      return {
-        level: Math.round(level),
-        reversals: [...reversals],
-        trials: trials.length,
-        threshold: this.threshold(),
-      };
-    },
+    record: (pass) => core.record(pass),
+    threshold: () => core.threshold(),
+    snapshot: () => core.snapshot(),
   };
 }

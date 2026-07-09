@@ -5,6 +5,7 @@ import { makeRng } from '../../../../shared/rng';
 import { SURVIVAL_MS, survivalRamp, survivalTier, drawSurvivalBar } from '../../../../shared/survival';
 import { drawCosmosRunner, COSMOS_GOLD, COSMOS_LANE_A, COSMOS_LANE_B, COSMOS_STING_BG } from '../../../../shared/drawCosmosCanvas';
 import { CATEGORIES } from './data';
+import { startCanvasLoop } from '../../../../shared/canvasLoop';
 
 /*
  * Odd One Out — 3-lane runner (language / semantic categories, bilingual).
@@ -165,18 +166,12 @@ function OddOneOutEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       if (!g.charX) g.charX = (g.lane + 0.5) * (g.W / LANES);
       if (g.gate) g.gate.y = wordY();
     };
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(wrapRef.current);
     spawnGate();
 
     const laneX = (i) => (i + 0.5) * (g.W / LANES);
     let hudCache = { passed: -1, lives: -1, combo: -1, secs: -1 };
-    let last = performance.now();
 
-    const frame = (now) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
+    const frame = (dt, now) => {
       const bh = bandH();
       const baseCharY = g.H - 64;
       let secsLeft = 0;
@@ -200,17 +195,17 @@ function OddOneOutEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
             awardPoints(1);
             playSfx('collect');
             g.flash = { ok: true, until: now + 350 };
-            if (mode === 'levels' && g.passed >= cfg.target) { finish(); return; }
+            if (mode === 'levels' && g.passed >= cfg.target) { finish(); return false; }
           } else {
             g.combo = 0;
             playSfx('error');
             g.flash = { ok: false, until: now + 450, lane: g.gate.trial.correctLane };
             if (mode === 'levels' || mode === 'free') {
               g.lives -= 1;
-              if (g.lives <= 0) { finish(); return; }
+              if (g.lives <= 0) { finish(); return false; }
             }
           }
-          if (mode === 'passplay' && g.gatesPlayed >= ppGates) { g.gate = null; finish(); return; }
+          if (mode === 'passplay' && g.gatesPlayed >= ppGates) { g.gate = null; finish(); return false; }
           g.gate = null;
           g.gapTimer = cfg.gap;
         }
@@ -225,7 +220,7 @@ function OddOneOutEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       let survPct = 1;
       if (mode === 'free') {
         const elapsed = now - g.t0;
-        if (elapsed >= SURVIVAL_MS) { finish(); return; }
+        if (elapsed >= SURVIVAL_MS) { finish(); return false; }
         survPct = 1 - elapsed / SURVIVAL_MS;
       }
 
@@ -315,11 +310,8 @@ function OddOneOutEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
         hudCache = { passed: g.passed, lives: g.lives, combo: g.combo, secs: secsLeft };
         setHud(hudCache);
       }
-      rafRef.current = requestAnimationFrame(frame);
     };
-    rafRef.current = requestAnimationFrame(frame);
-
-    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
+    return startCanvasLoop({ wrap: wrapRef.current, rafRef, resize, frame });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runId, seed, isAr]);
 

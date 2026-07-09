@@ -3,8 +3,9 @@ import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import { SURVIVAL_MS, survivalRamp, survivalTier, survivalShrink } from '../../../../shared/survival';
-import { TRIALS, RELATION } from './data';
+import { RELATION } from './data';
 import { CATEGORIES } from '../odd-one-out/data';
+import { markSeen, pickTrial } from './trialBank';
 
 /*
  * Word Links — verbal-reasoning / semantic judgment (bilingual), minimalist.
@@ -80,7 +81,9 @@ function genOdd(rng, isAr, tier) {
     { label: L(members[1]), correct: false },
     { label: L(odd), correct: true },
   ], rng);
+  const id = `proc:odd:${cat.id}:${L(members[0])}:${L(members[1])}:${L(odd)}`;
   return {
+    id,
     kind: 'odd',
     rel: { en: 'Odd one out', ar: 'الشاذّ' },
     prompt: isAr ? 'أيّها لا ينتمي؟' : "Which one doesn't belong?",
@@ -100,12 +103,14 @@ function buildTrial({ mode, diff, level, trialNum, rng, isAr, ramp = 0 }) {
     timeMs = Math.max(2800, Math.round(timeMs * (1 - f * 0.38)));
   }
 
-  if (kind === 'odd') return { ...genOdd(rng, isAr, tier), tier, timeMs };
+  if (kind === 'odd') {
+    const trial = { ...genOdd(rng, isAr, tier), tier, timeMs };
+    markSeen(trial.id, mode !== 'passplay');
+    return trial;
+  }
 
-  let pool = TRIALS.filter((t) => t.tier === tier && t.kind === kind);
-  if (!pool.length) pool = TRIALS.filter((t) => t.kind === kind);
-  if (!pool.length) pool = TRIALS.filter((t) => t.kind === 'similarity');
-  const raw = pickOne(pool, rng);
+  const persist = mode !== 'passplay';
+  const raw = pickTrial({ kind, tier, rng, persist, preferProcedural: true });
   const rel = RELATION[raw.rel] || RELATION.abstract;
 
   if (raw.kind === 'similarity') {
@@ -113,6 +118,7 @@ function buildTrial({ mode, diff, level, trialNum, rng, isAr, ramp = 0 }) {
       [{ label: L(raw.correct), correct: true }, ...shuffle(raw.wrong, rng).map((w) => ({ label: L(w), correct: false }))],
       rng,
     );
+    markSeen(raw.id, persist);
     return { kind: 'similarity', tier, timeMs, rel, prompt: isAr ? 'ما وجه الشبه؟' : 'What is the best link?', left: L(raw.a), right: L(raw.b), options: opts.map((o, i) => ({ key: i, ...o })) };
   }
   if (raw.kind === 'analogy') {
@@ -121,13 +127,15 @@ function buildTrial({ mode, diff, level, trialNum, rng, isAr, ramp = 0 }) {
       [{ label: L(raw.correct), correct: true }, ...shuffle(raw.wrong, rng).map((w) => ({ label: L(w), correct: false }))],
       rng,
     );
+    markSeen(raw.id, persist);
     return { kind: 'analogy', tier, timeMs, rel, prompt: isAr ? 'أكمل القياس' : 'Complete the analogy', stem: [L(a), L(b), L(c)], options: opts.map((o, i) => ({ key: i, ...o })) };
   }
   const words = raw.words.map((w, i) => ({ key: i, label: L(w) }));
+  markSeen(raw.id, persist);
   return { kind: 'pair', tier, timeMs, rel, prompt: isAr ? 'اختر الزوجين المتطابقين' : 'Tap the matching pair', words: shuffle(words, rng), pair: raw.pair, rule: L(raw.rule) };
 }
 
-function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
   const ppTrials = mode === 'passplay' ? (attempt?.trials || PP_TRIALS) : 0;
   const font = isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif";
   const isSurvival = mode === 'free';
@@ -162,8 +170,9 @@ function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
     lockRef.current = true;
     clearTimeout(timerRef.current);
     setOver({ score: scoreRef.current, correct: correctRef.current });
+    awardFreeRun?.('synonyms', correctRef.current);
     playSfx?.('error');
-  }, [playSfx]);
+  }, [playSfx, awardFreeRun]);
 
   const restartSurvival = () => {
     trialNumRef.current = 0; correctRef.current = 0; totalRef.current = 0; scoreRef.current = 0; comboRef.current = 0;
@@ -370,7 +379,7 @@ function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
 }
 
 export default function WordLinksGame({ onBack, workoutMode = false }) {
-  const { currentLang, playSfx, awardPoints } = useApp();
+  const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   return (
     <ModeShell
@@ -389,7 +398,7 @@ export default function WordLinksGame({ onBack, workoutMode = false }) {
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <WordLinksEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <WordLinksEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
     />
   );

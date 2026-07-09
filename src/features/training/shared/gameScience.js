@@ -272,23 +272,23 @@ export const GAME_SCIENCE = {
   'raven-matrices': {
     en: {
       title: 'The science',
-      intro: 'Matrix Reasoning is modelled on Raven’s Progressive Matrices, the benchmark test of fluid intelligence.',
+      intro: 'Inspired by Raven’s Progressive Matrices (Raven, 1940) — a classic nonverbal measure of fluid reasoning (Gf). This is training practice, not a clinical IQ score.',
       sections: [
-        { h: '🧠 Fluid reasoning', b: 'Inferring the hidden rule that completes the grid taps fluid intelligence — solving novel problems without prior knowledge.' },
-        { h: '🔍 Relational thinking', b: 'Comparing how figures change across rows and columns trains analogical, relational reasoning.' },
-        { h: '📚 Broad transfer', b: 'Matrix-style reasoning is one of the strongest single predictors of learning and problem-solving across domains.' },
+        { h: '🧠 Fluid reasoning', b: 'Completing the missing cell requires inducing abstract rules from the grid — the core of fluid intelligence (Carpenter, Just & Shell, 1990).' },
+        { h: '🔍 Rule types', b: 'Items use five rule families: constant-in-row, progression, distribution-of-three, distribution-of-two, and figure addition — the same taxonomy used in matrix-reasoning research.' },
+        { h: '📚 Working memory', b: 'Hard puzzles stack several rules at once, loading working memory the way real matrix tests do (Engle et al., 2005).' },
       ],
-      foot: 'Find the rule for one dimension (shape, count, rotation) at a time.',
+      foot: 'Training game only — scores here do not replace a standardised assessment.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: '«استدلال المصفوفات» مبني على مصفوفات رافن المتدرّجة، الاختبار المرجعي للذكاء السائل.',
+      intro: 'مستوحى من مصفوفات رافن المتدرّجة (Raven, 1940) — مقياس كلاسيكي للاستدلال السائل (Gf). هذا تدريب وليس درجة ذكاء سريرية.',
       sections: [
-        { h: '🧠 الاستدلال السائل', b: 'استنتاج القاعدة الخفية التي تُكمل الشبكة يستثمر الذكاء السائل — حلّ مشكلات جديدة دون معرفة مسبقة.' },
-        { h: '🔍 التفكير العلائقي', b: 'مقارنة تغيّر الأشكال عبر الصفوف والأعمدة تدرّب التفكير القياسي العلائقي.' },
-        { h: '📚 أثر واسع', b: 'الاستدلال بنمط المصفوفات من أقوى المؤشّرات المنفردة على التعلّم وحلّ المشكلات عبر المجالات.' },
+        { h: '🧠 الاستدلال السائل', b: 'إكمال الخلية الناقصة يتطلّب استنتاج قواعد مجردة — جوهر الذكاء السائل (Carpenter, Just & Shell, 1990).' },
+        { h: '🔍 أنواع القواعد', b: 'الألغاز تستخدم خمس عائلات: ثبات الصف، التدرّج، توزيع-ثلاثة، توزيع-اثنين، وجمع الأشكال — كما في أبحاث المصفوفات.' },
+        { h: '📚 الذاكرة العاملة', b: 'الألغاز الصعبة تتراكم فيها عدة قواعد معاً، مُحمِّلة الذاكرة العاملة كاختبارات المصفوفات الحقيقية (Engle et al., 2005).' },
       ],
-      foot: 'اكتشف قاعدة بُعد واحد (الشكل، العدد، الدوران) في كل مرّة.',
+      foot: 'لعبة تدريب فقط — النقاط هنا لا تُغني عن تقييم معياري.',
     },
   },
   'tower-hanoi': {

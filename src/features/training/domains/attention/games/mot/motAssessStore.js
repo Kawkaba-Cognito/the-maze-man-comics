@@ -10,6 +10,8 @@
  * speeds). This is the honest, defensible way to track an individual.
  */
 
+import { loadJson, saveJson } from '../../../../../../lib/storage';
+
 const KEY = 'mm_mot_assess_v1';
 const CAP = 60;
 
@@ -21,12 +23,8 @@ export function speedIndex(thr) {
 const INDEX_PER_FRAC = 125;
 
 export function loadMotAssess() {
-  try {
-    const arr = JSON.parse(localStorage.getItem(KEY));
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
+  const arr = loadJson(KEY);
+  return Array.isArray(arr) ? arr : [];
 }
 
 /**
@@ -47,11 +45,7 @@ export function saveMotAssess({ stats, trials, reversals }) {
     reversals: reversals ?? null,
   };
   const next = [...loadMotAssess(), entry].slice(-CAP);
-  try {
-    localStorage.setItem(KEY, JSON.stringify(next));
-  } catch {
-    /* ignore quota */
-  }
+  saveJson(KEY, next);
   return next;
 }
 

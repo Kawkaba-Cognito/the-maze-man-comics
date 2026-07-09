@@ -17,6 +17,9 @@
  * bursts on top.
  */
 
+import { mulberry32 } from '../../../../../../lib/rng';
+import { clamp, lerp } from '../../../../../../lib/math';
+
 export const STROOP_RULES = ['point', 'side', 'color'];
 export const STROOP_LEVELS_PER_TIER = 100;
 export const STROOP_DIFF_KEYS = ['easy', 'medium', 'hard'];
@@ -78,26 +81,10 @@ const PARAM = {
   },
 };
 
-function lerp(a, b, t) {
-  return a + (b - a) * t;
-}
-function clamp(v, lo, hi) {
-  return Math.max(lo, Math.min(hi, v));
-}
 function mean(arr) {
   return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
 }
 
-function mulberry32(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 const opposite = (d) => (d === 'left' ? 'right' : 'left');
 
@@ -504,7 +491,7 @@ export function prepareAssessBlock(seed) {
   const spec = {
     ...base,
     streakToSwitch: 4,
-    maxTrials: 32, // 4 practice + 28 measured
+    maxTrials: 48, // 4 practice + 44 measured
     practiceTrials: 4,
     balancedCongruency: true,
     itiJitterMs: 350,

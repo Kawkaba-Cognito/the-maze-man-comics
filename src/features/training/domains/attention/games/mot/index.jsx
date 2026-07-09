@@ -6,6 +6,7 @@ import { createTrialLog } from '../../../../shared/trialLog';
 import { summarizeMot } from './motMetrics';
 import { createSpeedStaircase } from './speedStaircase';
 import { saveMotAssess, motAssessReport, speedIndex } from './motAssessStore';
+import { clamp, lerp } from '../../../../../../lib/math';
 
 /*
  * Multiple Object Tracking (MOT) — dynamic attention.
@@ -41,8 +42,6 @@ const ASSESS_TRACK_MS = 6000;
 //
 // `total` = objects in the arena (the density knob); `targets` = load.
 const MOT_CAP = 5; // max simultaneously trackable targets (capacity ceiling)
-const lerp = (a, b, t) => a + (b - a) * t;
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 // Survival/free + pass-n-play: r = escalation index. Reaches peak by ~r=16.
 function freeConfig(r) {
@@ -97,7 +96,7 @@ function sphereFill(ctx, d, base) {
   return grad;
 }
 
-function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints }) {
+function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 6) : 0;
   const wrapRef = useRef(null);
@@ -423,6 +422,7 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
           const session = finishLog({ rounds: freeRoundRef.current, score: scoreRef.current });
           const capacity = session ? summarizeMot(session.trials).capacity : null;
           setOver({ score: scoreRef.current, rounds: freeRoundRef.current, capacity });
+          awardFreeRun?.('mot', capacity ?? freeRoundRef.current);
           return;
         }
         freeRoundRef.current += 1;
@@ -575,7 +575,7 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
 }
 
 export default function MotGame({ onBack, workoutMode = false, assessmentOnly = false }) {
-  const { currentLang, playSfx, awardPoints } = useApp();
+  const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   // The speed-threshold ASSESSMENT lives in the Assessment flow, not as a play
   // mode. When launched from there, render only the assessment engine.
@@ -612,7 +612,7 @@ export default function MotGame({ onBack, workoutMode = false, assessmentOnly = 
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <MotEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} />
+        <MotEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
     />
   );

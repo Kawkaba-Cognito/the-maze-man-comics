@@ -15,22 +15,10 @@
  * Pure JS, no React. token = { c: colourIndex, s: size }  (s: 1 small … M large)
  */
 
+import { mulberry32, shuffle } from '../../../../../../lib/rng';
+
 export const SORT_COLORS = ['#e0584f', '#5fa9d8', '#8fbf6a', '#e6b13a', '#b07fd0', '#48b6a8', '#e07ab0'];
 
-function mulberry32(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0; a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-function shuffle(arr, rng) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-  return a;
-}
 
 export const topDisk = (peg) => (peg.length ? peg[peg.length - 1] : null);
 

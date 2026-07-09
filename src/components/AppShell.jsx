@@ -40,7 +40,7 @@ export default function AppShell({ onBackToMenu }) {
       <div id="maze-photo-layer" aria-hidden="true"></div>
       <MazeBackground />
 
-      {!mazeVisible && (
+      {!mazeVisible && !isHome && (
         <>
           <div className="bg-poster" />
           <div className="bg-overlay" />

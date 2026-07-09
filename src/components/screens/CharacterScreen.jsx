@@ -24,11 +24,18 @@ export default function CharacterScreen() {
       <div className="rewards-balance">
         ⚡ <span>{points}</span> {isAr ? 'نقطة' : 'points'}
       </div>
-      <div className="rewards-title">{isAr ? 'الكوكب' : 'The Planet'}</div>
+      <div className="rewards-title">{isAr ? 'كوكب' : 'Kawkab'}</div>
 
       <div className="char-stage">
         <div className="char-preview">
-          <CosmosCharacter size={190} equipped={equipped} float glow />
+          {/* New art when bare; SVG only while trying on gear (anchor points). */}
+          <CosmosCharacter
+            size={190}
+            equipped={equipped}
+            float
+            glow
+            art={Object.values(equipped || {}).some(Boolean) ? 'legacy' : 'kawkab'}
+          />
         </div>
       </div>
 

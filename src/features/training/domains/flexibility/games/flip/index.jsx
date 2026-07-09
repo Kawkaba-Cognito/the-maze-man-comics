@@ -16,6 +16,7 @@ import { SURVIVAL_MS, survivalRamp, drawSurvivalBar } from '../../../../shared/s
  */
 
 import { drawCosmosRunner, COSMOS_GOLD, COSMOS_LANE_A, COSMOS_LANE_B, COSMOS_STING_BG } from '../../../../shared/drawCosmosCanvas';
+import { startCanvasLoop } from '../../../../shared/canvasLoop';
 
 const ACCENT = COSMOS_GOLD;
 const COLOR_NAMES = { red: 'red', blue: 'blue', green: 'green', yellow: 'yellow' };
@@ -168,17 +169,12 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
       ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
       if (!g.charX) g.charX = (g.lane + 0.5) * (g.W / g.lanes);
     };
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(wrapRef.current);
 
     const laneX = (i) => (i + 0.5) * (g.W / g.lanes);
     const ballR = () => Math.min(g.W / g.lanes, g.H) * 0.12;
 
     let hudCache = { caught: -1, lives: -1, combo: -1, resolved: -1 };
-    let last = performance.now();
-    const frame = (now) => {
-      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const frame = (dt, now) => {
       const r = ballR();
       const catchY = g.H - r - 18;
 
@@ -208,7 +204,7 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
       let survPct = 1;
       if (mode === 'free') {
         const elapsed = now - g.t0;
-        if (elapsed >= SURVIVAL_MS) { finish(); return; }
+        if (elapsed >= SURVIVAL_MS) { finish(); return false; }
         survPct = 1 - elapsed / SURVIVAL_MS;
         g.fall = cfg.fall * (1 + survivalRamp(elapsed) * 1.1);
       }
@@ -224,7 +220,7 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
             if (inLane) {
               g.combo = 0; g.lives -= 1; playSfx('error');
               setSting({ id: Date.now(), text: isAr ? '💥 فخ!' : '💥 Trap!' });
-              if (g.lives <= 0) { g.balls = []; finish(); return; }
+              if (g.lives <= 0) { g.balls = []; finish(); return false; }
             }
           } else if (b.take) {
             if (inLane) {
@@ -235,12 +231,12 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
             } else {
               g.combo = 0; g.lives -= 1; playSfx('error');
               setSting({ id: Date.now(), text: isAr ? '💔 فاتتك!' : '💔 Missed!' });
-              if (g.lives <= 0) { g.balls = []; finish(); return; }
+              if (g.lives <= 0) { g.balls = []; finish(); return false; }
             }
           } else if (inLane) {
             g.combo = 0; g.lives -= 1; playSfx('error');
             setSting({ id: Date.now(), text: isAr ? '💔 خطأ!' : '💔 Wrong!' });
-            if (g.lives <= 0) { g.balls = []; finish(); return; }
+            if (g.lives <= 0) { g.balls = []; finish(); return false; }
           }
           if (g.invert && g.sinceFlip >= g.flipEvery) { g.sinceFlip = 0; flip(); }
         } else remaining.push(b);
@@ -248,7 +244,7 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
       g.balls = remaining;
 
       // budget exhausted
-      if (g.budget !== Infinity && g.spawned >= g.budget && g.balls.length === 0) { finish(); return; }
+      if (g.budget !== Infinity && g.spawned >= g.budget && g.balls.length === 0) { finish(); return false; }
 
       // hop
       if (g.hopT < 1) g.hopT = Math.min(1, g.hopT + dt * 7);
@@ -289,11 +285,8 @@ function FlipEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
         hudCache = { caught: g.caught, lives: g.lives, combo: g.combo, resolved: g.resolved };
         setHud(hudCache);
       }
-      rafRef.current = requestAnimationFrame(frame);
     };
-    rafRef.current = requestAnimationFrame(frame);
-
-    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
+    return startCanvasLoop({ wrap: wrapRef.current, rafRef, resize, frame });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runId, seed]);
 
