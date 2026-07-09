@@ -3,6 +3,8 @@ import { trainingWinPoints } from '../lib/points';
 import { updateRating } from '../features/training/rating';
 import { recruit as armyRecruit, recordAttempt as armyRecordAttempt, markGone as armyMarkGone, MAX_ATTEMPTS } from '../features/army/armyState';
 import { getCampaignFloor, DEFAULT_FLOOR, hasEnteredLabyrinth, prepareOuterGateEntry, ensureGateProgress } from '../features/campaign/campaignProgress';
+import { readAppTheme, writeAppTheme, applyThemeToDocument } from '../lib/appTheme';
+import { applyThemeAssetCssVars } from '../lib/assetUrl';
 
 const AppContext = createContext(null);
 
@@ -60,9 +62,26 @@ export function AppProvider({ children }) {
   const audioCtxRef = useRef(null);
   const sfxEnabledRef = useRef(readSfxEnabled());
   const [sfxEnabled, setSfxEnabledState] = useState(() => readSfxEnabled());
+  const [appTheme, setAppThemeState] = useState(readAppTheme);
 
   // Load profile on mount
   useEffect(() => { ensureGateProgress(); }, []);
+
+  useEffect(() => {
+    applyThemeToDocument(appTheme);
+    applyThemeAssetCssVars(appTheme);
+  }, [appTheme]);
+
+  const setAppTheme = useCallback((themeOrFn) => {
+    setAppThemeState((prev) => {
+      const nextRaw = typeof themeOrFn === 'function' ? themeOrFn(prev) : themeOrFn;
+      return writeAppTheme(nextRaw);
+    });
+  }, []);
+
+  const toggleAppTheme = useCallback(() => {
+    setAppTheme((t) => (t === 'light' ? 'dark' : 'light'));
+  }, [setAppTheme]);
   useEffect(() => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
@@ -250,6 +269,12 @@ export function AppProvider({ children }) {
   const switchTab = useCallback((tabId) => {
     playSfx('click');
     stopSpeech();
+    // Habits / Wellbeing share RelaxScreen; seed the daily view for Habits.
+    if (tabId === 'habits') {
+      try { sessionStorage.setItem('rx_open_daily', '1'); } catch { /* ignore */ }
+    } else if (tabId === 'wellbeing') {
+      try { sessionStorage.removeItem('rx_open_daily'); } catch { /* ignore */ }
+    }
     setActiveTab(tabId);
   }, [playSfx, stopSpeech]);
 
@@ -369,6 +394,7 @@ export function AppProvider({ children }) {
       character, setCharacter,
       owned, equipped, buyItem, equipItem,
       sfxEnabled, setSfxEnabled,
+      appTheme, setAppTheme, toggleAppTheme,
       assessmentRequested, openAssessment, consumeAssessmentRequest,
       mazeStartRoom, setMazeStartRoom, openWorkout, leaveWorkout,
       challenge, openPuzzleChallenge, finishChallenge,

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { IconBack } from '../../features/training/shared/TrainingIcons';
 import { DomainIconArt } from '../../features/training/shared/DomainIcon';
 import CosmosCharacter from '../../features/character/CosmosCharacter';
+import AtmosphericBackground from '../shared/AtmosphericBackground';
 import { DOMAIN_COLOR, DOMAINS } from './trainingData';
 import { useApp } from '../../context/AppContext';
-import { assetUrl } from '../../lib/assetUrl';
+import { useThemedChrome } from '../../hooks/useThemedChrome';
 import { tokens } from '../../styles/tokens';
 
 /** Local alias kept for in-file readability — values come from the central token set. */
@@ -41,22 +42,6 @@ const DOMAIN_DOOR_LABEL_EN = {
 function domainDoorLabel(id, isAr) {
   if (isAr) return DOMAIN_LABEL_AR[id] ?? DOMAINS.find(d => d.id === id)?.name ?? id;
   return DOMAIN_DOOR_LABEL_EN[id] ?? DOMAINS.find(d => d.id === id)?.name ?? id;
-}
-
-function chromeBtnLight() {
-  return {
-    width: 34,
-    height: 34,
-    borderRadius: 6,
-    border: '1.5px solid #9a6828',
-    background: 'linear-gradient(170deg, #3e1a06 0%, #5e2a0c 50%, #3e1a06 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: L.text,
-    cursor: 'pointer',
-    boxShadow: 'inset 0 1px 0 rgba(220,170,70,0.35), inset 0 -1px 0 rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.6)',
-  };
 }
 
 /** SVG clip for inner “stone opening” (local door coords 0–64). */
@@ -133,55 +118,6 @@ function ArchShape3D({ col, hovered, gradId, filterId }) {
   );
 }
 
-function AtmosphericBgLight() {
-  const isDesktop = typeof window !== 'undefined' && window.matchMedia?.('(min-width: 768px)').matches;
-  const bgUrl = isDesktop
-    ? assetUrl('Assets/bg-training-desktop.webp')
-    : assetUrl('Assets/bg-training-mobile.webp');
-  return (
-    <>
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundColor: L.bg,
-          backgroundImage: `url(${bgUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: isDesktop ? 'center center' : 'center top',
-          zIndex: 0,
-          pointerEvents: 'none',
-        }}
-      />
-      {/* Subtle overlay for contrast with UI elements */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: `linear-gradient(
-            180deg,
-            rgba(5, 5, 15, 0.3) 0%,
-            rgba(10, 4, 30, 0.2) 42%,
-            rgba(5, 5, 15, 0.45) 100%
-          )`,
-          zIndex: 1,
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background:
-            'radial-gradient(ellipse 58% 46% at 50% 39%, rgba(255, 214, 132, 0.16) 0%, rgba(255, 214, 132, 0.04) 44%, transparent 72%)',
-          zIndex: 2,
-          pointerEvents: 'none',
-          mixBlendMode: 'screen',
-        }}
-      />
-    </>
-  );
-}
-
 /** 30px path lattice; every visible guide line is 60px so the map reads cleanly. */
 const GRID = 30;
 const GUIDE_GRID = GRID * 2;
@@ -241,6 +177,7 @@ function mazeCorridorD(domainId) {
 export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }) {
   const { currentLang, toggleLang } = useApp();
   const isAr = currentLang === 'ar';
+  const chrome = useThemedChrome(isAr);
   const [hovered, setHovered] = useState(null);
   const [tick, setTick] = useState(0);
 
@@ -249,19 +186,16 @@ export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    if (import.meta.env.DEV) {
-      console.info('[Maze Man] Training radial hub (light / maze corridors) — if you see the old dark chamber, hard-reload or run scripts/dev-fresh.ps1');
-    }
-  }, []);
-
   return (
-    <div style={{
-      minHeight: '100%', background: L.bg, color: L.text,
-      fontFamily: 'Inter, system-ui, sans-serif', position: 'relative',
-      paddingBottom: 28, overflow: 'hidden',
-    }}>
-      <AtmosphericBgLight/>
+    <div
+      className={`app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}
+      style={{
+        minHeight: '100%', ...chrome.shell,
+        fontFamily: 'Outfit, system-ui, sans-serif', position: 'relative',
+        paddingBottom: 110, overflow: 'hidden',
+      }}
+    >
+      <AtmosphericBackground strength="hub" />
 
       {/* Top bar */}
       <div className="app-chrome-bar" style={{
@@ -269,36 +203,15 @@ export default function RadialMazeHub({ onBack, onOpenDomain, onOpenAssessment }
         padding: '64px 18px 10px', position: 'relative', zIndex: 5,
       }}>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-          <button type="button" style={chromeBtnLight()} onClick={onBack}>
-            <IconBack size={18} c={L.text}/>
+          <button type="button" style={chrome.chromeBtn} onClick={onBack}>
+            <IconBack size={18} c={chrome.text}/>
           </button>
         </div>
-        <div style={{
-          textAlign: 'center',
-          fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
-          fontSize: isAr ? 28 : 34,
-          fontWeight: isAr ? 900 : 400,
-          letterSpacing: isAr ? 0 : 3,
-          color: '#f0e2c0',
-          textTransform: 'uppercase',
-          lineHeight: 1.05,
-          maxWidth: 200,
-          textShadow: '0 1px 0 rgba(255,220,120,0.45), 0 -1px 0 rgba(0,0,0,0.9), 0 0 18px rgba(232,172,78,0.55)',
-        }}>
+        <div style={{ ...chrome.title, maxWidth: 200, fontSize: isAr ? 24 : 22 }}>
           {isAr ? 'تدريب' : 'Training'}
         </div>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-          <button
-            type="button"
-            style={{
-              ...chromeBtnLight(), width: 'auto', padding: '0 12px',
-              fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
-              fontWeight: 700, fontSize: isAr ? 13 : 14,
-              letterSpacing: isAr ? 0 : 2,
-              color: '#e8ac4e',
-            }}
-            onClick={toggleLang}
-          >
+          <button type="button" style={chrome.langBtn} onClick={toggleLang}>
             {isAr ? 'EN' : 'عر'}
           </button>
         </div>

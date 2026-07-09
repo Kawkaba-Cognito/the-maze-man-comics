@@ -860,10 +860,11 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
   );
 }
 
-export default function RelaxScreen() {
+export default function RelaxScreen({ entry = 'menu' } = {}) {
   const { switchTab, playSfx, currentLang } = useApp();
   const isAr = currentLang === 'ar';
   const [view, setView] = useState(() => {
+    if (entry === 'daily') return 'daily';
     try {
       if (sessionStorage.getItem(OPEN_DAILY_KEY) === '1') {
         sessionStorage.removeItem(OPEN_DAILY_KEY);
@@ -872,8 +873,8 @@ export default function RelaxScreen() {
     } catch { /* ignore */ }
     return 'menu';
   });
-  const [returnTo, setReturnTo] = useState('menu');
-  const back = () => { playSfx?.('click'); setView(returnTo); setReturnTo('menu'); };
+  const [returnTo, setReturnTo] = useState(entry === 'daily' ? 'daily' : 'menu');
+  const back = () => { playSfx?.('click'); setView(returnTo); setReturnTo(entry === 'daily' ? 'daily' : 'menu'); };
   const openPractice = (id, from = 'menu') => {
     playSfx?.('click');
     setReturnTo(from);
@@ -885,7 +886,7 @@ export default function RelaxScreen() {
       <DailyHabits
         isAr={isAr}
         playSfx={playSfx}
-        onBack={back}
+        onBack={entry === 'daily' ? () => { playSfx?.('click'); switchTab('home'); } : back}
         onOpenPractice={(id) => openPractice(id, 'daily')}
       />
     );

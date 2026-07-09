@@ -5,7 +5,8 @@ import { PUZZLE_CATEGORIES, puzzlesInCategory } from '../../features/puzzles/reg
 import { getLazyPuzzle } from '../../features/puzzles/lazyGames';
 import { PUZZLE_UI } from '../../features/puzzles/shared/puzzleStrings';
 import { IconBack } from '../../features/training/shared/TrainingIcons';
-import { assetUrl } from '../../lib/assetUrl';
+import AtmosphericBackground from '../shared/AtmosphericBackground';
+import { useThemedChrome } from '../../hooks/useThemedChrome';
 import { hasEnteredLabyrinth } from '../../features/campaign/campaignProgress';
 
 /* ─────────────────────────────────────────────────────────────
@@ -77,43 +78,6 @@ function ArchShape3D({ col, hovered, gradId, filterId }) {
   );
 }
 
-function AtmosphericBg() {
-  const isDesktop = typeof window !== 'undefined' && window.matchMedia?.('(min-width: 768px)').matches;
-  const bgUrl = isDesktop
-    ? assetUrl('Assets/bg-training-desktop.webp')
-    : assetUrl('Assets/bg-training-mobile.webp');
-  return (
-    <>
-      <div style={{
-        position: 'absolute', inset: 0, backgroundColor: L.bg,
-        backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover',
-        backgroundPosition: isDesktop ? 'center center' : 'center top',
-        zIndex: 0, pointerEvents: 'none',
-      }} />
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'linear-gradient(180deg, rgba(5,5,15,0.3) 0%, rgba(10,4,30,0.2) 42%, rgba(5,5,15,0.45) 100%)',
-        zIndex: 1, pointerEvents: 'none',
-      }} />
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'radial-gradient(ellipse 58% 46% at 50% 39%, rgba(255,214,132,0.16) 0%, rgba(255,214,132,0.04) 44%, transparent 72%)',
-        zIndex: 2, pointerEvents: 'none', mixBlendMode: 'screen',
-      }} />
-    </>
-  );
-}
-
-function chromeBtn() {
-  return {
-    width: 34, height: 34, borderRadius: 6, border: '1.5px solid #9a6828',
-    background: 'linear-gradient(170deg, #3e1a06 0%, #5e2a0c 50%, #3e1a06 100%)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: L.text, cursor: 'pointer',
-    boxShadow: 'inset 0 1px 0 rgba(220,170,70,0.35), inset 0 -1px 0 rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.6)',
-  };
-}
-
 function GameLoading({ isAr }) {
   return (
     <div style={{
@@ -129,6 +93,7 @@ function GameLoading({ isAr }) {
 export default function PuzzlesScreen() {
   const { switchTab, currentLang, toggleLang, playSfx, requestEscapeRoom, requestContinueMaze } = useApp();
   const isAr = currentLang === 'ar';
+  const chrome = useThemedChrome(isAr);
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const canContinue = hasEnteredLabyrinth();
 
@@ -141,17 +106,8 @@ export default function PuzzlesScreen() {
   const { nodes: NODES, nodeById: NODE_BY_ID, corridors: CORRIDORS, canvasH: CANVAS_H } = useMemo(() => buildLayout(catPuzzles), [catPuzzles]);
   const activeCat = category ? PUZZLE_CATEGORIES.find((c) => c.id === category) : null;
 
-  const titleStyle = {
-    textAlign: 'center', fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
-    fontSize: isAr ? 28 : 34, fontWeight: isAr ? 900 : 400, letterSpacing: isAr ? 0 : 3,
-    color: '#f0e2c0', textTransform: 'uppercase', lineHeight: 1.05, maxWidth: 220,
-    textShadow: '0 1px 0 rgba(255,220,120,0.45), 0 -1px 0 rgba(0,0,0,0.9), 0 0 18px rgba(232,172,78,0.55)',
-  };
-  const langBtnStyle = {
-    ...chromeBtn(), width: 'auto', padding: '0 12px',
-    fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
-    fontWeight: 700, fontSize: isAr ? 13 : 14, letterSpacing: isAr ? 0 : 2, color: '#e8ac4e',
-  };
+  const titleStyle = { ...chrome.title, maxWidth: 220, fontSize: isAr ? 24 : 22 };
+  const langBtnStyle = chrome.langBtn;
 
   useEffect(() => {
     if (activeGame) return undefined;
@@ -189,14 +145,14 @@ export default function PuzzlesScreen() {
     return (
       <div style={{
         position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden',
-        background: L.bg, color: L.text, fontFamily: 'Inter, system-ui, sans-serif', isolation: 'isolate',
+        ...chrome.shell, fontFamily: 'Outfit, system-ui, sans-serif', isolation: 'isolate',
       }}>
-        <div style={{ position: 'relative', minHeight: '100%', paddingBottom: 28 }}>
-          <AtmosphericBg />
+        <div style={{ position: 'relative', minHeight: '100%', paddingBottom: 110 }}>
+          <AtmosphericBackground strength="hub" />
           <div className="app-chrome-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '64px 18px 6px', position: 'relative', zIndex: 5 }}>
             <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-              <button type="button" style={chromeBtn()} onClick={() => { playSfx('click'); switchTab('home'); }} aria-label={isAr ? 'رجوع' : 'Back'}>
-                <IconBack size={18} c={L.text} />
+              <button type="button" style={chrome.chromeBtn} onClick={() => { playSfx('click'); switchTab('home'); }} aria-label={isAr ? 'رجوع' : 'Back'}>
+                <IconBack size={18} c={chrome.text} />
               </button>
             </div>
             <div style={titleStyle}>{t.hubTitle}</div>
@@ -258,7 +214,7 @@ export default function PuzzlesScreen() {
                     style={{ position: 'absolute', left: g.x, top: g.y, width: 116 * s, height: 124 * s, transform: `translate(-50%, ${-38 * s}px)`, background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                   >
                     <span aria-hidden="true" style={{ marginTop: 14 * s, width: 38 * s, height: 38 * s, borderRadius: 9 * s, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 * s, lineHeight: 1, background: `${g.accent}22`, border: `1px solid ${g.accent}66`, boxShadow: isH ? `0 0 12px ${g.accent}88` : 'none', color: g.accent }}>{g.icon}</span>
-                    <span style={{ marginTop: 24 * s, textAlign: 'center', color: L.text, fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Nunito', sans-serif", fontSize: (g.world ? 17 : 13.5) * Math.min(s, 1.25), fontWeight: isAr ? 800 : 400, letterSpacing: isAr ? 0 : 0.4, lineHeight: 1.1, whiteSpace: 'nowrap', textShadow: '-1.4px 0 rgba(8,4,2,0.95), 1.4px 0 rgba(8,4,2,0.95), 0 -1.4px rgba(8,4,2,0.95), 0 1.4px rgba(8,4,2,0.95), 0 0 16px rgba(232,172,78,0.5)' }}>{g.label}</span>
+                    <span style={{ marginTop: 24 * s, textAlign: 'center', color: chrome.text, fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif", fontSize: (g.world ? 16 : 13) * Math.min(s, 1.25), fontWeight: 800, letterSpacing: isAr ? 0 : 0.02, lineHeight: 1.1, whiteSpace: 'nowrap', textShadow: chrome.dark ? '-1.4px 0 rgba(8,4,2,0.95), 1.4px 0 rgba(8,4,2,0.95), 0 -1.4px rgba(8,4,2,0.95), 0 1.4px rgba(8,4,2,0.95), 0 0 16px rgba(232,172,78,0.5)' : '0 1px 0 rgba(255,252,246,0.85)' }}>{g.label}</span>
                   </button>
                 );
               })}
@@ -284,10 +240,10 @@ export default function PuzzlesScreen() {
   return (
     <div style={{
       position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden',
-      background: L.bg, color: L.text, fontFamily: 'Inter, system-ui, sans-serif', isolation: 'isolate',
+      ...chrome.shell, fontFamily: 'Outfit, system-ui, sans-serif', isolation: 'isolate',
     }}>
-      <div style={{ position: 'relative', minHeight: '100%', paddingBottom: 28 }}>
-      <AtmosphericBg />
+      <div style={{ position: 'relative', minHeight: '100%', paddingBottom: 110 }}>
+      <AtmosphericBackground strength="hub" />
 
       {/* Top bar */}
       <div className="app-chrome-bar" style={{
@@ -295,8 +251,8 @@ export default function PuzzlesScreen() {
         padding: '64px 18px 6px', position: 'relative', zIndex: 5,
       }}>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-          <button type="button" style={chromeBtn()} onClick={() => { playSfx('click'); setHovered(null); setCategory(null); }} aria-label={isAr ? 'الفئات' : 'Categories'}>
-            <IconBack size={18} c={L.text} />
+          <button type="button" style={chrome.chromeBtn} onClick={() => { playSfx('click'); setHovered(null); setCategory(null); }} aria-label={isAr ? 'الفئات' : 'Categories'}>
+            <IconBack size={18} c={chrome.text} />
           </button>
         </div>
         <div style={titleStyle}>{activeCat ? (isAr ? activeCat.nameAr : activeCat.name) : t.hubTitle}</div>

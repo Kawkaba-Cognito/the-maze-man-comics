@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import MazeBackground from './MazeBackground';
+import BottomTabBar, { resolveActiveTabId } from './BottomTabBar';
 import HomeScreen from './screens/HomeScreen';
 import ComicsScreen from './screens/ComicsScreen';
 import PuzzlesScreen from './screens/PuzzlesScreen';
@@ -9,6 +10,7 @@ import ShopScreen from './screens/ShopScreen';
 import RewardsShopScreen from './screens/RewardsShopScreen';
 import CharacterScreen from './screens/CharacterScreen';
 import WorkoutScreen from './screens/WorkoutScreen';
+import OtherScreen from './screens/OtherScreen';
 import RelaxScreen from '../features/relax/RelaxScreen';
 import RoomHost from './maze/RoomHost';
 import PaywallModal from './modals/PaywallModal';
@@ -18,11 +20,17 @@ import { syncHabitReminders } from '../features/relax/habitReminders';
 import { loadHabits } from '../features/relax/habitState';
 import { LANG } from '../data/langStrings';
 
-export default function AppShell({ onBackToMenu }) {
+function isRelaxTab(tab) {
+  return tab === 'habits' || tab === 'wellbeing' || tab === 'relax';
+}
+
+export default function AppShell() {
   const { activeTab, mazeVisible, mazeEntryPending, enterMaze, switchTab, toggleLang, currentLang } = useApp();
   const t = LANG[currentLang];
   const isAr = currentLang === 'ar';
   const isHome = activeTab === 'home';
+  const showTabBar = !mazeVisible && !mazeEntryPending;
+  const primaryTab = resolveActiveTabId(activeTab);
 
   useEffect(() => {
     if (!mazeEntryPending) return;
@@ -49,17 +57,21 @@ export default function AppShell({ onBackToMenu }) {
 
       {mazeEntryPending && <div className="maze-transition-overlay" />}
 
-      <div id="ui-shell" style={{ display: mazeVisible ? 'none' : undefined }}>
+      <div
+        id="ui-shell"
+        className={showTabBar ? 'ui-shell--tabbed' : undefined}
+        style={{ display: mazeVisible ? 'none' : undefined }}
+      >
 
-        {/* Floating HUD — top bar with no background */}
         <div className="floating-hud">
-          {isHome && (
-            <button className="back-to-menu-btn" onClick={onBackToMenu}>
-              {isAr ? '‹ القائمة' : '‹ MENU'}
-            </button>
-          )}
-          {/* Lang toggle hidden on screens that render their own chrome */}
-          {activeTab !== 'comics' && activeTab !== 'puzzles' && activeTab !== 'profile' && activeTab !== 'workout' && activeTab !== 'relax' && activeTab !== 'pointshop' && (
+          {activeTab !== 'comics'
+            && activeTab !== 'puzzles'
+            && activeTab !== 'profile'
+            && activeTab !== 'workout'
+            && activeTab !== 'other'
+            && !isRelaxTab(activeTab)
+            && activeTab !== 'pointshop'
+            && activeTab !== 'home' && (
             <button
               id="lang-btn"
               onClick={toggleLang}
@@ -70,25 +82,35 @@ export default function AppShell({ onBackToMenu }) {
           )}
         </div>
 
-        {/* Back button — visible on non-home screens that don't render their own chrome */}
-        {!isHome && activeTab !== 'comics' && activeTab !== 'puzzles' && activeTab !== 'profile' && activeTab !== 'workout' && activeTab !== 'relax' && (
+        {!isHome && !primaryTab && activeTab !== 'comics' && activeTab !== 'puzzles' && activeTab !== 'profile' && activeTab !== 'workout' && activeTab !== 'other' && !isRelaxTab(activeTab) && (
           <button className="back-btn" onClick={() => switchTab('home')}>
             ‹ {isAr ? 'رجوع' : 'BACK'}
           </button>
         )}
 
-        {/* Screens */}
-        <div id="screen-home"    className={`ui-screen ${activeTab === 'home'    ? 'active' : ''}`}><HomeScreen /></div>
-        <div id="screen-comics"  className={`ui-screen ${activeTab === 'comics'  ? 'active' : ''}`}><ComicsScreen /></div>
+        <div id="screen-home" className={`ui-screen ${activeTab === 'home' ? 'active' : ''}`}><HomeScreen /></div>
+        <div id="screen-comics" className={`ui-screen ${activeTab === 'comics' ? 'active' : ''}`}><ComicsScreen /></div>
         <div id="screen-puzzles" className={`ui-screen ${activeTab === 'puzzles' ? 'active' : ''}`}><PuzzlesScreen /></div>
         <div id="screen-profile" className={`ui-screen ${activeTab === 'profile' ? 'active' : ''}`}><ProfileScreen /></div>
-        <div id="screen-shop"    className={`ui-screen ${activeTab === 'shop'    ? 'active' : ''}`}><ShopScreen /></div>
+        <div id="screen-shop" className={`ui-screen ${activeTab === 'shop' ? 'active' : ''}`}><ShopScreen /></div>
         <div id="screen-pointshop" className={`ui-screen ${activeTab === 'pointshop' ? 'active' : ''}`}><RewardsShopScreen /></div>
         <div id="screen-character" className={`ui-screen ${activeTab === 'character' ? 'active' : ''}`}>{activeTab === 'character' && <CharacterScreen />}</div>
-        <div id="screen-workout"   className={`ui-screen ${activeTab === 'workout'   ? 'active' : ''}`}><WorkoutScreen /></div>
-        <div id="screen-relax"     className={`ui-screen ${activeTab === 'relax'     ? 'active' : ''}`}>{activeTab === 'relax' && <RelaxScreen />}</div>
+        <div id="screen-workout" className={`ui-screen ${activeTab === 'workout' ? 'active' : ''}`}><WorkoutScreen /></div>
+        <div id="screen-other" className={`ui-screen ${activeTab === 'other' ? 'active' : ''}`}>
+          {activeTab === 'other' && <OtherScreen />}
+        </div>
+        <div id="screen-relax" className={`ui-screen ${isRelaxTab(activeTab) ? 'active' : ''}`}>
+          {isRelaxTab(activeTab) && (
+            <RelaxScreen
+              key={activeTab === 'habits' ? 'habits' : 'wellbeing'}
+              entry={activeTab === 'habits' ? 'daily' : 'menu'}
+            />
+          )}
+        </div>
 
       </div>
+
+      {showTabBar && <BottomTabBar />}
 
       {mazeVisible && <RoomHost />}
       {!mazeVisible && <ReminderBanner />}

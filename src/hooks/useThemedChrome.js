@@ -1,0 +1,65 @@
+import { useApp } from '../context/AppContext';
+
+/** Shared top-bar chrome styles that follow app light/dark theme. */
+export function useThemedChrome(isAr = false) {
+  const { appTheme } = useApp();
+  const dark = appTheme === 'dark';
+
+  const chromeBtn = {
+    width: 34,
+    height: 34,
+    borderRadius: 999,
+    border: dark
+      ? '1px solid rgba(212, 168, 80, 0.38)'
+      : '1px solid rgba(170, 140, 80, 0.35)',
+    background: dark
+      ? 'rgba(18, 16, 28, 0.72)'
+      : 'rgba(255, 252, 246, 0.78)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: dark ? '#e8d4a8' : '#5f4824',
+    cursor: 'pointer',
+    boxShadow: dark
+      ? '0 4px 14px rgba(0, 0, 0, 0.35)'
+      : '0 4px 14px rgba(100, 80, 40, 0.12)',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+  };
+
+  const title = {
+    textAlign: 'center',
+    fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
+    fontSize: isAr ? 22 : 20,
+    fontWeight: 800,
+    letterSpacing: isAr ? 0 : 0.04,
+    color: dark ? '#f0e2c0' : '#5a4018',
+    textTransform: 'none',
+    lineHeight: 1.15,
+    maxWidth: 220,
+    textShadow: dark
+      ? '0 1px 0 rgba(255,220,120,0.25), 0 0 14px rgba(232,172,78,0.35)'
+      : 'none',
+  };
+
+  const langBtn = {
+    ...chromeBtn,
+    width: 'auto',
+    padding: '0 12px',
+    fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
+    fontWeight: 700,
+    fontSize: isAr ? 13 : 13,
+    letterSpacing: isAr ? 0 : 0.02,
+    color: dark ? '#e8ac4e' : '#6a4e22',
+  };
+
+  const shell = {
+    background: 'transparent',
+    color: dark ? '#f0e2c0' : '#4a3818',
+  };
+
+  const muted = dark ? '#b9a878' : '#8a7348';
+  const accent = dark ? '#e8ac4e' : '#9a6828';
+
+  return { dark, chromeBtn, title, langBtn, shell, muted, accent, text: shell.color };
+}

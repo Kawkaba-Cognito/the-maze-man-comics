@@ -6,7 +6,7 @@
 .splash-screen {
     position: fixed;
     inset: 0;
-    background-color: #05050f;
+    background-color: #12101c;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -63,10 +63,10 @@
     pointer-events: none;
     background: linear-gradient(
         180deg,
-        rgba(5, 5, 15, 0.08) 0%,
-        rgba(5, 5, 15, 0) 38%,
-        rgba(5, 5, 15, 0.42) 72%,
-        rgba(5, 5, 15, 0.82) 100%
+        rgba(18, 16, 28, 0.12) 0%,
+        rgba(18, 16, 28, 0) 36%,
+        rgba(18, 16, 28, 0.38) 72%,
+        rgba(18, 16, 28, 0.78) 100%
     );
     z-index: 1;
 }
@@ -196,10 +196,10 @@
     .splash-screen::after {
         background: linear-gradient(
             90deg,
-            rgba(5, 5, 15, 0.12) 0%,
-            rgba(5, 5, 15, 0) 42%,
-            rgba(5, 5, 15, 0.55) 78%,
-            rgba(5, 5, 15, 0.88) 100%
+            rgba(18, 16, 28, 0.1) 0%,
+            rgba(18, 16, 28, 0) 42%,
+            rgba(18, 16, 28, 0.48) 78%,
+            rgba(18, 16, 28, 0.82) 100%
         );
     }
 }

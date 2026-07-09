@@ -28,7 +28,7 @@ export default function HabitReminderBanner() {
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('focus', onVis); };
   }, [check]);
 
-  if (!pending.length || activeTab === 'relax') return null;
+  if (!pending.length || activeTab === 'relax' || activeTab === 'habits' || activeTab === 'wellbeing') return null;
 
   const first = pending[0];
   const more = pending.length - 1;
@@ -51,7 +51,7 @@ export default function HabitReminderBanner() {
         onClick={() => {
           playSfx?.('click');
           try { sessionStorage.setItem(OPEN_DAILY_KEY, '1'); } catch { /* ignore */ }
-          switchTab('relax');
+          switchTab('habits');
         }}
       >
         {isAr ? 'اليوم' : 'Today'}

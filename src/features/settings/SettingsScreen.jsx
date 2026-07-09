@@ -180,7 +180,7 @@ export default function SettingsScreen({ onClose }) {
       {subModal === 'help' && (
         <SettingsModal title={isAr ? 'المساعدة' : 'Help'} onClose={() => setSubModal(null)}>
           <div className="stg-modal-label">{isAr ? 'كيفية اللعب' : 'How to play'}</div>
-          <p className="stg-modal-text">{isAr ? 'اضغط على لافتات الأبواب في الشاشة الرئيسية للوصول إلى الأقسام. ادخل المتاهة ثلاثية الأبعاد من الباب المركزي.' : 'Tap the door signs on the home screen to reach the sections. Enter the 3D maze from the centre door.'}</p>
+          <p className="stg-modal-text">{isAr ? 'استخدم شريط التنقّل السفلي للانتقال بين الرئيسية والتدريب والعافية والعادات والألغاز والمزيد.' : 'Use the bottom tab bar to move between Home, Training, Wellbeing, Habits, Puzzles, and Other.'}</p>
           <div className="stg-modal-label">{isAr ? 'التواصل' : 'Contact'}</div>
           <p className="stg-modal-text">support@mazeman.app</p>
         </SettingsModal>

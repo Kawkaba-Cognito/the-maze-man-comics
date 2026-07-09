@@ -1,8 +1,8 @@
 /**
  * Run: node scripts/validate-rush-hour.mjs
- *        node scripts/validate-rush-hour.mjs --full   (includes reference puzzle #40 ⇒ 49 moves, see rushHourEngine.js)
+ *        node scripts/validate-rush-hour.mjs --full   (includes reference puzzle #40 ⇒ 49 moves, see engine.js)
  */
-import { validateRushHourReferenceSolutions } from '../src/components/training/rushHourEngine.js';
+import { validateRushHourReferenceSolutions } from '../src/features/training/domains/reasoning/games/rush-hour/engine.js';
 
 const full = process.argv.includes('--full');
 validateRushHourReferenceSolutions({ full });

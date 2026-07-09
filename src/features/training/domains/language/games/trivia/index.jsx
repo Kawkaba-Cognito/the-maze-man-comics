@@ -6,13 +6,14 @@ import CosmosCharacter from '../../../../../character/CosmosCharacter';
 import { TRIVIA, TRIVIA_CATEGORIES } from './triviaData';
 
 /*
- * Trivia — general-knowledge quiz with a STAIRCASE. 20 categories, 25–80+
- * graded questions each (★/★★/★★★), bilingual, each with a "did you know" fact.
+ * Trivia — general-knowledge quiz with a STAIRCASE. 24 categories of graded
+ * questions (★ easy · ★★ medium · ★★★ hard · ★★★★ expert), bilingual, each
+ * with a "did you know" fact.
  *
  * Kawkab climbs one step per correct answer; reach the top to clear the
  * staircase. THREE wrong answers and Kawkab is out.
  *   Levels    — topic cycles with the level; difficulty setting picks the
- *               question tier (★ easy / ★★ medium / ★★★ hard).
+ *               question tier (Hard pulls the ★★★★ expert pool first).
  *   Survival  — endless staircases; after each clear YOU choose the next topic
  *               from three cards; question difficulty ramps as you go.
  *   Pass n Play — same seeded questions for every player; score = steps.
@@ -32,10 +33,19 @@ const STAIR_CSS = `
 const LIVES = 3;
 const STEPS = { easy: 5, med: 6, hard: 7 };
 const survivalSteps = (stage) => Math.min(8, 5 + Math.floor(stage / 2));
-// Survival ramps harder, sooner: pure easy only at the very start, hard by mid-run.
-const survivalTiers = (stage) => (stage < 1 ? [1] : stage < 3 ? [1, 2] : stage < 5 ? [2] : stage < 7 ? [2, 3] : [3]);
-// Levels mix tiers so even "Easy" isn't trivial and "Hard" is genuinely hard.
-const levelTiers = { easy: [1, 2], med: [2, 3], hard: [3] };
+// Tier sets are tried IN ORDER — the first one with enough questions wins.
+// Survival ramps into the ★★★★ expert tier on long runs.
+const survivalTiers = (stage) =>
+  stage < 1 ? [[1]]
+  : stage < 3 ? [[1, 2]]
+  : stage < 5 ? [[2]]
+  : stage < 7 ? [[2, 3]]
+  : stage < 9 ? [[3]]
+  : stage < 11 ? [[3, 4]]
+  : [[4], [3, 4]];
+// Levels: "Hard" is expert-first (★★★★, falling back to ★★★–★★★★ if a
+// category's expert pool is thin) so hard actually feels hard.
+const levelTiers = { easy: [[1, 2]], med: [[2, 3]], hard: [[4], [3, 4]] };
 
 const shuffleR = (arr, rng) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
@@ -50,12 +60,17 @@ const saveSeen = (m) => {
   } catch { /* storage full/blocked — play continues without memory */ }
 };
 
-// Build a question queue for one staircase: target difficulty tier first,
-// unseen before seen, least-recently-seen first among the seen.
-function buildQueue(catId, tiers, rng, usePersistence) {
+// Build a question queue for one staircase: try each tier set in priority
+// order (first with enough questions wins), unseen before seen,
+// least-recently-seen first among the seen.
+function buildQueue(catId, tierSets, rng, usePersistence) {
   const qs = TRIVIA[catId] || [];
   const tag = qs.map((q, i) => ({ q, id: `${catId}:${i}` }));
-  let pool = tag.filter((x) => tiers.includes(x.q.d));
+  let pool = [];
+  for (const tiers of tierSets) {
+    pool = tag.filter((x) => tiers.includes(x.q.d));
+    if (pool.length >= 8) break;
+  }
   if (pool.length < 8) pool = tag;
   const seen = usePersistence ? loadSeen() : {};
   const unseen = shuffleR(pool.filter((x) => !seen[x.id]), rng);
@@ -135,8 +150,8 @@ function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr
   const [over, setOver] = useState(null);
 
   const tiersFor = useCallback(() => {
-    if (mode === 'levels') return levelTiers[diff] || [2];
-    if (mode === 'passplay') return [2];
+    if (mode === 'levels') return levelTiers[diff] || [[2]];
+    if (mode === 'passplay') return [[2, 3]];
     return survivalTiers(stairsRef.current);
   }, [mode, diff]);
   const stepsForRound = useCallback(() => {
@@ -350,11 +365,11 @@ export default function TriviaGame({ onBack, workoutMode = false }) {
       scienceId="trivia"
       title={{ en: 'Trivia', ar: 'معلومات' }}
       hints={{
-        free: { en: '20 topics · pick your path · 3 mistakes out', ar: '٢٠ موضوعاً · اختر طريقك · ٣ أخطاء وتخرج' },
+        free: { en: '24 topics · pick your path · 3 mistakes out', ar: '٢٤ موضوعاً · اختر طريقك · ٣ أخطاء وتخرج' },
         levels: { en: 'A new topic each level · ★ by difficulty', ar: 'موضوع جديد كل مستوى · النجوم بحسب الصعوبة' },
         pass: { en: 'Same questions for all · climb highest', ar: 'نفس الأسئلة للجميع · من يصعد أعلى' },
       }}
-      diffLabels={{ easy: { en: 'Easy ★–★★', ar: 'سهل ★–★★' }, med: { en: 'Medium ★★–★★★', ar: 'متوسط ★★–★★★' }, hard: { en: 'Hard ★★★', ar: 'صعب ★★★' } }}
+      diffLabels={{ easy: { en: 'Easy ★–★★', ar: 'سهل ★–★★' }, med: { en: 'Medium ★★–★★★', ar: 'متوسط ★★–★★★' }, hard: { en: 'Expert ★★★★', ar: 'خبير ★★★★' } }}
       pass={{ trials: 1, scoreLabel: { en: 'steps', ar: 'درجات' }, lowerBetter: false, diff: 'med' }}
       isAr={isAr}
       playSfx={playSfx}

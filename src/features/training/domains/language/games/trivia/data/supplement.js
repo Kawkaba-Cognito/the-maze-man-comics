@@ -100,6 +100,6 @@ export const SUPPLEMENT = {
   dino: [
     { d: 1, en: 'Dinosaurs lived mainly in the…', ar: 'عاشت الديناصورات أساساً في…', o: [['Mesozoic Era', 'العصر الوسيط'], ['Last century', 'القرن الماضي'], ['Ice Age only', 'العصر الجليدي فقط'], ['Future', 'المستقبل']], a: 0, f: { en: 'It spanned roughly 252 to 66 million years ago.', ar: 'يمتد من نحو ٢٥٢ إلى ٦٦ مليون سنة مضت.' } },
     { d: 2, en: 'Fossils are preserved remains in…', ar: 'الأحافير بقايا محفوظة في…', o: [['Rock', 'صخر'], ['Clouds', 'غيوم'], ['Wind', 'ريح'], ['Rainbows', 'قوس قزح']], a: 0, f: { en: 'Minerals slowly replace bone over millions of years.', ar: 'تستبدل المعادن العظم ببطء على ملايين السنين.' } },
-    { d: 3, en: 'Birds are considered the closest living relatives of…', ar: 'الطيور أقرب أقارب…', o: [['Theropod dinosaurs', 'ديناصورات الثيروبود'], ['Whales', 'الحيتان'], ['Sharks', 'القرش'], ['Beetles', 'الخنافس']], a: 0, f: { en: 'Feathers likely evolved before flight.', ar: 'الريش على الأرجح تطوّر قبل الطيران.' } },
+    { d: 3, en: 'Birds are considered the closest living relatives of…', ar: 'الطيور أقرب أقارب…', o: [['Theropod dinosaurs', 'ديناصورات الثيروبودا'], ['Winged pterosaurs', 'التيروصورات المجنّحة'], ['Ancient crocodiles', 'التماسيح القديمة'], ['Marine plesiosaurs', 'البليزوصورات البحرية']], a: 0, f: { en: 'Feathers likely evolved before flight.', ar: 'الريش على الأرجح تطوّر قبل الطيران.' } },
   ],
 };

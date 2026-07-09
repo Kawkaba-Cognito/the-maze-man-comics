@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { tokens } from '../../styles/tokens';
 import { IconBack } from '../../features/training/shared/TrainingIcons';
-import { assetUrl } from '../../lib/assetUrl';
+import AtmosphericBackground from '../shared/AtmosphericBackground';
+import { useThemedChrome } from '../../hooks/useThemedChrome';
 import { DOMAINS_BY_ID } from '../../features/training/registry';
 import {
   ASSESS_DOMAINS,
@@ -50,41 +51,11 @@ const xpToNext = (xp) => XP_PER_LEVEL - (xp % XP_PER_LEVEL);
 
 /* ── Shared bits ──────────────────────────────────────────── */
 
-function AtmosphericBg() {
-  const isDesktop = typeof window !== 'undefined' && window.matchMedia?.('(min-width: 768px)').matches;
-  const bgUrl = isDesktop ? assetUrl('Assets/bg-training-desktop.webp') : assetUrl('Assets/bg-training-mobile.webp');
-  return (
-    <>
-      <div style={{
-        position: 'absolute', inset: 0, backgroundColor: L.bg,
-        backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover',
-        backgroundPosition: isDesktop ? 'center center' : 'center top',
-        zIndex: 0, pointerEvents: 'none',
-      }} />
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'linear-gradient(180deg, rgba(5,5,15,0.55) 0%, rgba(10,4,30,0.45) 42%, rgba(5,5,15,0.7) 100%)',
-        zIndex: 1, pointerEvents: 'none',
-      }} />
-    </>
-  );
-}
-
-function chromeBtn() {
-  return {
-    width: 34, height: 34, borderRadius: 6, border: '1.5px solid #9a6828',
-    background: 'linear-gradient(170deg, #3e1a06 0%, #5e2a0c 50%, #3e1a06 100%)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: L.text, cursor: 'pointer',
-    boxShadow: 'inset 0 1px 0 rgba(220,170,70,0.35), inset 0 -1px 0 rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.6)',
-  };
-}
-
-function SectionDivider({ label }) {
+function SectionDivider({ label, accent }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px 12px' }}>
       <div style={{ flex: 1, height: 1, background: 'rgba(232,172,78,0.28)' }} />
-      <div style={{ fontSize: 10, letterSpacing: 3, color: L.amber, fontWeight: 800, textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontSize: 10, letterSpacing: 3, color: accent || L.amber, fontWeight: 800, textTransform: 'uppercase' }}>{label}</div>
       <div style={{ flex: 1, height: 1, background: 'rgba(232,172,78,0.28)' }} />
     </div>
   );
@@ -184,6 +155,7 @@ export default function ProfileScreen() {
   const { globalXP, profileData, setProfileData, saveProfile, playSfx, switchTab, toggleLang, currentLang, openPaywall } = useApp();
   const [gateDone, setGateDone] = useState(() => isGateBossBeaten());
   const isAr = currentLang === 'ar';
+  const chrome = useThemedChrome(isAr);
   const [showPicker, setShowPicker] = useState(false);
 
   const lv = getLevel(globalXP);
@@ -227,12 +199,15 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <div style={{
-      position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden',
-      background: L.bg, color: L.text, fontFamily: 'Inter, system-ui, sans-serif', isolation: 'isolate',
-    }}>
-      <div style={{ position: 'relative', minHeight: '100%', paddingBottom: 40 }}>
-        <AtmosphericBg />
+    <div
+      className={`app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}
+      style={{
+        position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden',
+        ...chrome.shell, fontFamily: 'Outfit, system-ui, sans-serif', isolation: 'isolate',
+      }}
+    >
+      <div style={{ position: 'relative', minHeight: '100%', paddingBottom: 110 }}>
+        <AtmosphericBackground strength="panel" />
 
         {/* Top bar */}
         <div className="app-chrome-bar" style={{
@@ -240,25 +215,15 @@ export default function ProfileScreen() {
           padding: '64px 18px 8px', position: 'relative', zIndex: 5,
         }}>
           <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-            <button type="button" style={chromeBtn()} onClick={() => { playSfx('click'); switchTab('home'); }} aria-label={isAr ? 'رجوع' : 'Back'}>
-              <IconBack size={18} c={L.text} />
+            <button type="button" style={chrome.chromeBtn} onClick={() => { playSfx('click'); switchTab('other'); }} aria-label={isAr ? 'رجوع' : 'Back'}>
+              <IconBack size={18} c={chrome.text} />
             </button>
           </div>
-          <div style={{
-            textAlign: 'center',
-            fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
-            fontSize: isAr ? 26 : 32, fontWeight: isAr ? 900 : 400,
-            letterSpacing: isAr ? 0 : 3, color: '#f0e2c0', textTransform: 'uppercase', lineHeight: 1.05,
-            textShadow: '0 1px 0 rgba(255,220,120,0.45), 0 -1px 0 rgba(0,0,0,0.9), 0 0 18px rgba(232,172,78,0.55)',
-          }}>
+          <div style={{ ...chrome.title, fontSize: isAr ? 24 : 22 }}>
             {isAr ? 'الملف' : 'Profile'}
           </div>
           <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-            <button type="button" style={{
-              ...chromeBtn(), width: 'auto', padding: '0 12px',
-              fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive",
-              fontWeight: 700, fontSize: isAr ? 13 : 14, letterSpacing: isAr ? 0 : 2, color: L.amber,
-            }} onClick={() => { playSfx('click'); toggleLang(); }}>
+            <button type="button" style={chrome.langBtn} onClick={() => { playSfx('click'); toggleLang(); }}>
               {isAr ? 'EN' : 'عر'}
             </button>
           </div>
@@ -296,8 +261,8 @@ export default function ProfileScreen() {
             )}
 
             <div style={{
-              marginTop: 18, fontFamily: isAr ? "'Cairo',sans-serif" : "'Fredoka One', cursive",
-              fontSize: 22, fontWeight: isAr ? 900 : 400, color: '#fff',
+              marginTop: 18, fontFamily: isAr ? "'Cairo',sans-serif" : "'Outfit', system-ui, sans-serif",
+              fontSize: 22, fontWeight: 800, color: chrome.text,
             }}>{profileData.username}</div>
             {assessProfile.age != null && (
               <div style={{ fontSize: 11, color: L.textMuted, marginTop: 2 }}>
@@ -338,7 +303,7 @@ export default function ProfileScreen() {
 
           {/* Cognitive profile */}
           <div style={{ marginTop: 28 }}>
-            <SectionDivider label={isAr ? 'الملف الإدراكي' : 'Cognitive Profile'} />
+            <SectionDivider label={isAr ? 'الملف الإدراكي' : 'Cognitive Profile'} accent={chrome.accent} />
             <div style={{ ...stoneCard, padding: '14px 14px 18px' }}>
               <CognitiveRadar scores={scores} index={index} isAr={isAr} />
 
@@ -396,7 +361,7 @@ export default function ProfileScreen() {
 
           {/* Activity */}
           <div style={{ marginTop: 28 }}>
-            <SectionDivider label={isAr ? 'النشاط' : 'Activity'} />
+            <SectionDivider label={isAr ? 'النشاط' : 'Activity'} accent={chrome.accent} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
               {activity.map((a) => (
                 <div key={a.label} style={{ ...stoneCard, padding: '14px 8px', textAlign: 'center' }}>
@@ -409,7 +374,7 @@ export default function ProfileScreen() {
 
           {/* Badges */}
           <div style={{ marginTop: 28 }}>
-            <SectionDivider label={isAr ? 'الأوسمة' : 'Badges'} />
+            <SectionDivider label={isAr ? 'الأوسمة' : 'Badges'} accent={chrome.accent} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
               {badges.map((b) => (
                 <div key={b.id} style={{
@@ -457,7 +422,7 @@ export default function ProfileScreen() {
 
           {/* Membership */}
           <div style={{ marginTop: 28 }}>
-            <SectionDivider label={isAr ? 'العضوية' : 'Membership'} />
+            <SectionDivider label={isAr ? 'العضوية' : 'Membership'} accent={chrome.accent} />
             <div style={{ ...stoneCard, padding: 16 }}>
               <div style={{ fontFamily: isAr ? "'Cairo',sans-serif" : "'Bangers', cursive", fontSize: isAr ? 16 : 18, letterSpacing: isAr ? 0 : 1.5, color: L.amber }}>
                 {isAr ? 'مستكشف مجاني' : 'Free Explorer'}

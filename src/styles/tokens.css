@@ -26,6 +26,14 @@
   /* Training — attention/reasoning in-app screens: warm menu paper from the palette reference */
   --color-training-palette-surface: #fff7f2;
 
+  /* App stage (follows Home light/dark) */
+  --color-stage-ink: #4a3818;
+  --color-stage-muted: #8a7348;
+  --color-stage-card: #fffdf8;
+  --color-stage-line: #e3d6c4;
+  --color-stage-gold: #b9842f;
+  --color-stage-header: #fffaf3;
+
   /* ─── Amber / accent (canon: home plaque + lang button + training accents) ─── */
   --color-amber: #e8ac4e;
   --color-amber-bright: #ffd47e;
@@ -99,4 +107,15 @@
   --z-splash: 9999;
   --z-modal: 10000;
   --z-settings: 10010;
+}
+
+/* Home light/dark — shared by hubs, shop, habits, wellbeing */
+html[data-home-theme='dark'] {
+  --color-training-palette-surface: #1a1626;
+  --color-stage-ink: #f0e2c0;
+  --color-stage-muted: #b9a878;
+  --color-stage-card: #221e30;
+  --color-stage-line: #3a3248;
+  --color-stage-gold: #d4a84a;
+  --color-stage-header: #181422;
 }

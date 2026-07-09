@@ -1,8 +1,9 @@
 /*
- * Trivia content bank — 20 categories, 25–80+ questions each (easy ★ · medium ★★ · hard ★★★),
- * bilingual (EN/AR), each with a "did you know" fact. Authored in ./data/*.js by theme group.
+ * Trivia content bank — 24 categories, graded ★ easy · ★★ medium · ★★★ hard ·
+ * ★★★★ expert, bilingual (EN/AR), each with a "did you know" fact. Authored in
+ * ./data/*.js by theme group.
  *
- * Question shape: { d: 1|2|3, en, ar, o: [[en,ar]×4], a: indexOfCorrect, f: {en,ar} }.
+ * Question shape: { d: 1|2|3|4, en, ar, o: [[en,ar]×4], a: indexOfCorrect, f: {en,ar} }.
  * The engine shuffles option order at runtime, so `a` is just the author key.
  * Rules: accurate, timeless, culturally neutral. No religion, no politics.
  */
@@ -15,11 +16,13 @@ import { ANCIENT } from './data/ancient';
 import { TECH } from './data/tech';
 import { DINO } from './data/dino';
 import { SUPPLEMENT } from './data/supplement';
+import { EXPERT } from './data/expert';
+import { NEWCATS } from './data/newcats';
 
-function mergeSupplement(banks) {
-  const merged = { ...banks };
-  for (const [id, extra] of Object.entries(SUPPLEMENT)) {
-    merged[id] = [...(merged[id] || []), ...extra];
+// Fold one bank of {catId: [...extra questions]} into the merged bank.
+function mergeExtra(merged, extra) {
+  for (const [id, list] of Object.entries(extra)) {
+    merged[id] = [...(merged[id] || []), ...list];
   }
   return merged;
 }
@@ -45,6 +48,18 @@ export const TRIVIA_CATEGORIES = [
   { id: 'ancient', en: 'Ancient Worlds & Myths', ar: 'العوالم القديمة والأساطير', emoji: '🏺' },
   { id: 'tech', en: 'Technology & Computers', ar: 'التقنية والحواسيب', emoji: '💻' },
   { id: 'dino', en: 'Dinosaurs & Prehistory', ar: 'الديناصورات وما قبل التاريخ', emoji: '🦕' },
+  { id: 'chem', en: 'Chemistry & Elements', ar: 'الكيمياء والعناصر', emoji: '⚗️' },
+  { id: 'arch', en: 'Wonders & Architecture', ar: 'العجائب والعمارة', emoji: '🏰' },
+  { id: 'money', en: 'Money & Trade', ar: 'المال والتجارة', emoji: '💰' },
+  { id: 'codes', en: 'Codes & Secrets', ar: 'الشيفرات والأسرار', emoji: '🔐' },
 ];
 
-export const TRIVIA = mergeSupplement({ ...NATURE, ...SCIENCE, ...WORLD, ...CULTURE, ...MIND, ...ANCIENT, ...TECH, ...DINO });
+// Base banks + supplement + expert (d:4) folded into existing categories,
+// then the four brand-new categories.
+export const TRIVIA = (() => {
+  let merged = { ...NATURE, ...SCIENCE, ...WORLD, ...CULTURE, ...MIND, ...ANCIENT, ...TECH, ...DINO };
+  mergeExtra(merged, SUPPLEMENT);
+  mergeExtra(merged, EXPERT);
+  mergeExtra(merged, NEWCATS);
+  return merged;
+})();

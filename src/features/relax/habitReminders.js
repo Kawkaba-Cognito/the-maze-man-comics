@@ -3,7 +3,7 @@
  * Mirrors the workout reminder layer in reminders.js.
  */
 import { Capacitor } from '@capacitor/core';
-import { loadHabits, getTodayProgress, getMorningDigestText, habitTitle } from './habitState';
+import { loadHabits, getTodayProgress, getMorningDigestText, habitTitle, todayKey } from './habitState';
 
 export const HABIT_NOTIF_BASE = 5100;
 export const HABIT_MORNING_ID = 5099;
