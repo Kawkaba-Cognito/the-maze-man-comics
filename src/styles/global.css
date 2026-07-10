@@ -1762,6 +1762,62 @@ html[data-home-theme='dark'] .other-support-link {
     color: #f2e2b8;
     background: rgba(212, 168, 80, 0.2);
 }
+.other-theme-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 16px;
+    border-radius: 16px;
+    border: 2px solid rgba(170, 140, 80, 0.28);
+    background: rgba(255, 252, 246, 0.72);
+    cursor: pointer;
+    font: inherit;
+    text-align: start;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+html[data-home-theme='dark'] .other-theme-card {
+    background: rgba(18, 16, 28, 0.72);
+    border-color: rgba(212, 168, 80, 0.24);
+}
+.other-theme-card.sel {
+    border-color: #c8943e;
+    box-shadow: 0 0 0 1px rgba(200, 148, 62, 0.35);
+}
+.other-theme-swatch {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+.other-theme-swatch--light {
+    background: linear-gradient(160deg, #fdf6ea 0%, #e9d9b8 100%);
+}
+.other-theme-swatch--dark {
+    background: linear-gradient(160deg, #201640 0%, #05040c 100%);
+}
+.other-theme-name {
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 800;
+    color: #5a4018;
+}
+html[data-home-theme='dark'] .other-theme-name { color: #f0e2c0; }
+.other-theme-desc {
+    font-size: 0.82rem;
+    color: #8a7348;
+    margin-top: 2px;
+}
+html[data-home-theme='dark'] .other-theme-desc { color: #b9a878; }
+.other-theme-check {
+    margin-inline-start: auto;
+    font-size: 1.1rem;
+    color: #c8943e;
+    flex-shrink: 0;
+    width: 22px;
+    text-align: center;
+}
 .ui-shell--tabbed .rx-root .rx-app {
     padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
 }

@@ -88,6 +88,14 @@
   --color-domain-flexibility-mid: #d86896;
   --color-domain-flexibility-deep: #b84878;
 
+  /* ─── Cosmos (canonical dark-theme night sky — Home Universe palette) ───
+     Use these for any dark-mode scene background so every tab reads as the
+     same night. The blue glow is Kawkab's signature light. */
+  --color-cosmos-top: #201640;
+  --color-cosmos-mid: #0d0a1c;
+  --color-cosmos-deep: #05040c;
+  --glow-cosmos-blue: rgba(120, 180, 255, 0.1);
+
   /* ─── Misc state ─── */
   --color-danger: #8b2020;
   --color-rune-sage: #6b9e7a;     /* secondary green for rune rings/ticks */

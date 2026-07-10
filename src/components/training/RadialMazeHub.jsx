@@ -208,7 +208,7 @@ function mazeCorridorD(domainId) {
 }
 
 export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
-  const { currentLang, toggleLang, playSfx, appTheme, toggleAppTheme, switchTab } = useApp();
+  const { currentLang, toggleLang, playSfx, switchTab } = useApp();
   const isAr = currentLang === 'ar';
   const chrome = useThemedChrome(isAr);
   const [hovered, setHovered] = useState(null);
@@ -235,19 +235,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '64px 18px 10px', position: 'relative', zIndex: 5,
       }}>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-          <button
-            type="button"
-            style={{ ...chrome.langBtn, minWidth: 44 }}
-            onClick={() => { playSfx('click'); toggleAppTheme(); }}
-            aria-label={appTheme === 'light'
-              ? (isAr ? 'التبديل إلى الوضع الداكن' : 'Switch to dark')
-              : (isAr ? 'التبديل إلى الوضع الفاتح' : 'Switch to light')}
-            title={appTheme === 'light' ? (isAr ? 'داكن' : 'Dark') : (isAr ? 'فاتح' : 'Light')}
-          >
-            {appTheme === 'light' ? '☾' : '☀'}
-          </button>
-        </div>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }} />
         <div style={{ ...chrome.title, maxWidth: 200, fontSize: isAr ? 24 : 22 }}>
           {isAr ? 'الرئيسية' : 'Home'}
         </div>

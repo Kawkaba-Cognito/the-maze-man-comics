@@ -660,7 +660,12 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
   useEffect(() => {
     const measure = () => {
       const pad = 32;
-      const chrome = 196;
+      // Header (~110px incl. its 52px top safe-area padding) + HUD row (~24px,
+      // free mode only) + gap + bottom actions row (~70px incl. safe-area) —
+      // measured from the real rendered layout; the old 196px guess ran short
+      // on wide-but-short desktop browser windows and let the board overlap
+      // the HUD above it and the Reset button below it.
+      const chrome = 240;
       const availW = Math.max(grid * 8, window.innerWidth - pad);
       const availH = Math.max(grid * 8, window.innerHeight - chrome);
       const maxW = Math.min(availW, 440);
@@ -1457,7 +1462,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
       className="ct-rh-play cancellation-task-game"
       dir={isAr ? 'rtl' : 'ltr'}
       style={{
-        color: tokens.textDark,
+        color: 'var(--color-training-ink, #2d2d2d)',
         fontFamily: "'Outfit', system-ui, sans-serif",
         position: 'relative',
       }}
@@ -1760,6 +1765,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
 
       {won && playMode !== 'assess' && (
         <div
+          className="ct-rh-win-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1774,6 +1780,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
           }}
         >
           <div
+            className="ct-rh-win-card"
             style={{
               background: 'linear-gradient(180deg, #fffefb, #f5efe8)',
               borderRadius: 18,
@@ -1788,6 +1795,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
               <CosmosCharacter size={108} mood="proud" glow pose="cheer" />
             </div>
             <div
+              className="ct-rh-win-title"
               style={{
                 fontFamily: "'Fredoka One', 'Bangers', cursive",
                 fontSize: 28,
@@ -1800,11 +1808,11 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
             >
               {t.escaped}
             </div>
-            <div style={{ fontSize: 15, color: '#5c534c', marginTop: 8, fontWeight: 700 }}>
+            <div className="ct-rh-win-meta" style={{ fontSize: 15, color: '#5c534c', marginTop: 8, fontWeight: 700 }}>
               {moves} {isAr ? 'حركة' : 'moves'} · {t.optimal} {parMoves}
             </div>
             {playMode !== 'challenge' && (
-              <div style={{ fontSize: 13, color: '#b696d4', marginTop: 6, fontWeight: 700 }}>
+              <div className="ct-rh-win-stars" style={{ fontSize: 13, color: '#b696d4', marginTop: 6, fontWeight: 700 }}>
                 {'★'.repeat(stars)} {stars === 3 ? t.perfect : stars === 2 ? t.good : t.tryLower}
               </div>
             )}

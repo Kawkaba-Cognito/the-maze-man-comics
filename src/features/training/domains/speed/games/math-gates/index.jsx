@@ -347,7 +347,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       // runner
       const cx = g.charX, cy = charY;
       const rr = Math.min(g.W / LANES, 90) * 0.34;
-      drawCosmosRunner(ctx, cx, cy, rr);
+      drawCosmosRunner(ctx, cx, cy, rr, { ring: false });
 
       if (g.passed !== hudCache.passed || g.lives !== hudCache.lives || g.combo !== hudCache.combo) {
         hudCache = { passed: g.passed, lives: g.lives, combo: g.combo };
@@ -471,7 +471,7 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
 const styles = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
   eqWrap: { display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 12, padding: '8px 0 4px', minHeight: 48 },
-  eqNum: { fontWeight: 900, fontSize: 'clamp(30px, 9vw, 48px)', color: '#2d2d2d', letterSpacing: 1 },
+  eqNum: { fontWeight: 900, fontSize: 'clamp(30px, 9vw, 48px)', color: 'var(--color-training-ink, #2d2d2d)', letterSpacing: 1 },
   eqQ: { fontWeight: 900, fontSize: 'clamp(20px, 6vw, 30px)', color: ACCENT },
   play: { position: 'relative', flex: 1, overflow: 'hidden', margin: '0 8px 8px', borderRadius: 16, border: '1px solid rgba(58,51,40,0.10)', boxShadow: '0 10px 28px rgba(45,40,30,0.12), inset 0 0 0 1px rgba(255,255,255,0.4)' },
   sting: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' },

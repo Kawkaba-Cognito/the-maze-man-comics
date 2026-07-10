@@ -11,10 +11,58 @@ const MENU = [
   { id: 'shop', icon: '🛒', en: 'Shop', ar: 'المتجر', kind: 'tab', tab: 'pointshop' },
   { id: 'stats', icon: '📊', en: 'Stats', ar: 'الإحصاءات', kind: 'view', view: 'stats' },
   { id: 'awards', icon: '🏅', en: 'Awards', ar: 'الجوائز', kind: 'view', view: 'awards' },
+  { id: 'appearance', icon: '🌗', en: 'Appearance', ar: 'المظهر', kind: 'view', view: 'appearance' },
   { id: 'settings', icon: '⚙️', en: 'Settings', ar: 'الإعدادات', kind: 'view', view: 'settings' },
   { id: 'about', icon: 'ℹ️', en: 'About', ar: 'عن التطبيق', kind: 'about' },
   { id: 'support', icon: '💬', en: 'Support', ar: 'الدعم', kind: 'view', view: 'support' },
 ];
+
+function AppearancePanel({ isAr, chrome, appTheme, setAppTheme, playSfx, onBack }) {
+  const options = [
+    {
+      id: 'dark',
+      swatch: 'other-theme-swatch--dark',
+      en: 'Dark', ar: 'داكن',
+      descEn: 'The default look — night sky, easy on the eyes.',
+      descAr: 'المظهر الافتراضي — سماء ليلية مريحة للعين.',
+    },
+    {
+      id: 'light',
+      swatch: 'other-theme-swatch--light',
+      en: 'Light', ar: 'فاتح',
+      descEn: 'Warm parchment tones, bright rooms.',
+      descAr: 'ألوان دافئة تشبه الرَق، مناسبة للغرف المضيئة.',
+    },
+  ];
+  return (
+    <div className="other-sub" dir={isAr ? 'rtl' : 'ltr'}>
+      <div className="app-chrome-bar other-sub-bar">
+        <button type="button" style={chrome.chromeBtn} onClick={onBack} aria-label={isAr ? 'رجوع' : 'Back'}>
+          <IconBack size={18} c={chrome.text} />
+        </button>
+        <div style={chrome.title}>{isAr ? 'المظهر' : 'Appearance'}</div>
+        <div style={{ width: 34 }} />
+      </div>
+      <div className="other-awards">
+        {options.map((o) => (
+          <button
+            key={o.id}
+            type="button"
+            className={`other-theme-card${appTheme === o.id ? ' sel' : ''}`}
+            onClick={() => { playSfx('click'); setAppTheme(o.id); }}
+          >
+            <span className={`other-theme-swatch ${o.swatch}`} aria-hidden="true" />
+            <span>
+              <div className="other-theme-name">{isAr ? o.ar : o.en}</div>
+              <div className="other-theme-desc">{isAr ? o.descAr : o.descEn}</div>
+            </span>
+            <span className="other-theme-check" aria-hidden="true">{appTheme === o.id ? '✓' : ''}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function AwardsPanel({ isAr, chrome, profileData, onBack }) {
   const badges = [
@@ -79,7 +127,7 @@ function SupportPanel({ isAr, chrome, onBack, playSfx }) {
 }
 
 export default function OtherScreen() {
-  const { switchTab, currentLang, playSfx, profileData, toggleLang } = useApp();
+  const { switchTab, currentLang, playSfx, profileData, toggleLang, appTheme, setAppTheme } = useApp();
   const isAr = currentLang === 'ar';
   const chrome = useThemedChrome(isAr);
   const [view, setView] = useState('menu');
@@ -99,6 +147,21 @@ export default function OtherScreen() {
           isAr={isAr}
           chrome={chrome}
           profileData={profileData}
+          onBack={() => { playSfx('click'); setView('menu'); }}
+        />
+      </div>
+    );
+  }
+  if (view === 'appearance') {
+    return (
+      <div className={`other-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}>
+        <AtmosphericBackground strength="panel" photo={false} />
+        <AppearancePanel
+          isAr={isAr}
+          chrome={chrome}
+          appTheme={appTheme}
+          setAppTheme={setAppTheme}
+          playSfx={playSfx}
           onBack={() => { playSfx('click'); setView('menu'); }}
         />
       </div>

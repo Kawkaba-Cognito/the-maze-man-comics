@@ -6512,6 +6512,461 @@
     margin-bottom: clamp(4px, 1vh, 12px);
 }
 
+/* ── Dark mode · domain pick — ALL 6 DOMAINS (pilot approved, extended).
+ * Rules target the base `.ct-domain-pick` class, so they apply uniformly;
+ * each domain's own `--domain-accent/-mid/-deep` vars (set by the
+ * `.ct-domain-pick--<domain>` modifier) carry the per-domain colour through.
+ * Scene = the canonical cosmos (Home Universe palette) full-bleed via a
+ * fixed-position ::before, with the domain's accent kept on titles/cards and
+ * the signature blue glow in the middle of the sky. ── */
+
+[data-home-theme='dark'] .ct-domain-pick.ct-fq-training-shell--hub-light {
+    background: transparent !important;
+    color: var(--color-stage-ink);
+}
+
+/* Outranks the triple-class `--hub … !important` surface rule (line ~671)
+ * so the content column stops painting over the full-bleed cosmos. */
+[data-home-theme='dark'] .ct-domain-pick .ct-fq-training-screen--hub.ct-fq-training-screen.ct-fq-screen {
+    background: transparent !important;
+}
+
+[data-home-theme='dark'] .ct-domain-pick::before {
+    /* fixed → escapes the content column and paints the whole viewport */
+    position: fixed;
+    background:
+        radial-gradient(
+            ellipse 70% 40% at 50% -6%,
+            color-mix(in srgb, var(--domain-mid) 16%, transparent) 0%,
+            transparent 62%
+        ),
+        radial-gradient(
+            ellipse 60% 46% at 50% 44%,
+            var(--glow-cosmos-blue) 0%,
+            rgba(120, 180, 255, 0.03) 46%,
+            transparent 72%
+        ),
+        radial-gradient(
+            ellipse 120% 80% at 50% 12%,
+            var(--color-cosmos-top) 0%,
+            var(--color-cosmos-mid) 52%,
+            var(--color-cosmos-deep) 100%
+        );
+}
+
+[data-home-theme='dark'] .ct-domain-pick .ct-fq-hub-attn-big {
+    color: color-mix(in srgb, var(--domain-accent) 88%, #fff);
+    text-shadow: 0 2px 22px color-mix(in srgb, var(--domain-accent) 30%, transparent);
+}
+
+[data-home-theme='dark'] .ct-domain-pick .ct-fq-training-screen--hub .ct-fq-hub-attn-sub {
+    color: color-mix(in srgb, var(--domain-accent) 78%, #fff);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: color-mix(in srgb, var(--domain-accent) 38%, transparent);
+    box-shadow: none;
+}
+
+[data-home-theme='dark'] .ct-domain-pick .ct-domain-pick-desc {
+    color: rgba(240, 226, 192, 0.78);
+}
+
+[data-home-theme='dark'] .ct-domain-pick .ct-domain-pick-section-title {
+    color: color-mix(in srgb, var(--domain-accent) 82%, #fff);
+}
+
+[data-home-theme='dark'] .ct-domain-pick .ct-domain-pick-section-line {
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--domain-accent) 40%, transparent) 50%,
+        transparent 100%
+    );
+}
+
+/* Cards: deep translucent night surfaces — soft elevation instead of the
+ * light theme's hard offset shadow; domain amber survives on the border,
+ * icon banner and chevron. */
+[data-home-theme='dark'] .ct-domain-pick .ct-domain-pick-card.ct-fq-attn-mode {
+    background:
+        linear-gradient(168deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.03) 100%),
+        var(--color-stage-card);
+    border-color: color-mix(in srgb, var(--domain-mid) 36%, transparent);
+    box-shadow:
+        0 10px 26px rgba(0, 0, 0, 0.45),
+        0 1px 0 rgba(255, 255, 255, 0.07) inset;
+}
+
+[data-home-theme='dark'] .ct-domain-pick .ct-domain-pick-card.ct-fq-attn-mode:hover {
+    border-color: color-mix(in srgb, var(--domain-mid) 58%, transparent);
+    box-shadow:
+        0 14px 32px rgba(0, 0, 0, 0.52),
+        0 0 0 1px color-mix(in srgb, var(--domain-mid) 22%, transparent),
+        0 1px 0 rgba(255, 255, 255, 0.08) inset;
+}
+
+[data-home-theme='dark'] .ct-domain-pick .ct-domain-pick-card.ct-fq-attn-mode:active {
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.45),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset;
+}
+
+[data-home-theme='dark'] .ct-domain-pick .ct-domain-pick-card .ct-fq-attn-mode-lb {
+    color: var(--color-stage-ink);
+}
+
+[data-home-theme='dark'] .ct-domain-pick .ct-domain-pick-card-hint {
+    color: rgba(240, 226, 192, 0.6) !important;
+}
+
+[data-home-theme='dark'] .ct-domain-pick .ct-domain-pick-card-chev {
+    color: var(--domain-accent) !important;
+    opacity: 0.85;
+}
+
+[data-home-theme='dark'] .ct-domain-pick .ct-domain-pick-card .ct-domain-pick-banner--right {
+    box-shadow: inset 3px 0 10px rgba(0, 0, 0, 0.3);
+}
+
+[data-home-theme='dark'] .ct-domain-pick .ct-domain-pick-card .ct-domain-pick-banner--left {
+    box-shadow: inset -3px 0 10px rgba(0, 0, 0, 0.3);
+}
+
+[data-home-theme='dark'] .ct-domain-pick .ct-domain-pick-about-link {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: color-mix(in srgb, var(--domain-accent) 38%, transparent) !important;
+    color: color-mix(in srgb, var(--domain-accent) 80%, #fff) !important;
+}
+
+/* ── Dark mode · TRAINING-WIDE SHARED SHELL (extended from the Cancellation
+ * pilot to every game — approved). Most of the classes below live in shared
+ * components (`TrainingScreens.jsx`, `PassPlaySetup.jsx`, `TrainingChrome.jsx`,
+ * `SurvivalCountdown.jsx`) reused by ALL games, ModeShell or monolith, so one
+ * fix here covers every game's hub cards, Level select, Pass n Play setup,
+ * pause/quit modals and handoff card at once. Scope: `.cancellation-task-game`
+ * — the one class every game's root carries (name is legacy, not literal). ── */
+
+/* Hub mode cards (Survival / Level / Pass n Play — every game): night
+ * surfaces with each mode's tint kept as a whisper; icons/borders carry the
+ * per-game domain accent already set via existing --fq-pri etc. per game. */
+[data-home-theme='dark'] .cancellation-task-game .ct-fq-attn-mode {
+    background:
+        linear-gradient(168deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.03) 100%),
+        var(--color-stage-card);
+    border-color: rgba(232, 172, 78, 0.28);
+    box-shadow:
+        0 10px 26px rgba(0, 0, 0, 0.45),
+        0 1px 0 rgba(255, 255, 255, 0.07) inset;
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-fq-attn-mode:hover {
+    box-shadow:
+        0 14px 32px rgba(0, 0, 0, 0.52),
+        0 0 0 1px rgba(232, 172, 78, 0.22),
+        0 1px 0 rgba(255, 255, 255, 0.08) inset;
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-fq-attn-mode:active {
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.45),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset;
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-fq-attn-mode--free {
+    background:
+        linear-gradient(168deg, rgba(110, 200, 130, 0.12) 0%, rgba(110, 200, 130, 0.04) 100%),
+        var(--color-stage-card);
+    border-color: rgba(110, 200, 130, 0.3);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-fq-attn-mode--levels {
+    background:
+        linear-gradient(168deg, rgba(232, 172, 78, 0.12) 0%, rgba(232, 172, 78, 0.04) 100%),
+        var(--color-stage-card);
+    border-color: rgba(232, 172, 78, 0.32);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-fq-attn-mode--chal {
+    background:
+        linear-gradient(168deg, rgba(216, 104, 100, 0.12) 0%, rgba(216, 104, 100, 0.04) 100%),
+        var(--color-stage-card);
+    border-color: rgba(216, 104, 100, 0.32);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-fq-attn-mode-lb {
+    color: var(--color-stage-ink);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-fq-attn-mode-hint {
+    color: rgba(240, 226, 192, 0.6);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-fq-attn-mode-chev {
+    color: rgba(232, 172, 78, 0.85);
+}
+
+/* Level mode — hero + difficulty select + level grid (every game) */
+[data-home-theme='dark'] .cancellation-task-game .ct-lv-hero-title,
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-hero-title {
+    color: var(--color-stage-ink);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-lv-hero-sub,
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-hero-sub {
+    color: var(--color-stage-muted);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-lv-select-card,
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-card {
+    background: var(--color-stage-card);
+    border-color: rgba(232, 172, 78, 0.3);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-lv-sec,
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-sec {
+    color: var(--color-stage-muted);
+}
+/* Locked level tiles: pale grey slab → dim night tile (cleared/tier tiles
+ * keep their saturated colour coding — readable on dark as-is). */
+[data-home-theme='dark'] .cancellation-task-game .ct-fq-lb.ct-lvk {
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(240, 226, 192, 0.35);
+}
+
+/* Pass n Play — setup form + results (every game) */
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-hint {
+    color: var(--color-stage-muted);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-pill,
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-round {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(232, 172, 78, 0.25);
+    color: var(--color-stage-ink);
+    box-shadow: none;
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-pill.sel,
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-round.sel {
+    background: rgba(232, 172, 78, 0.22);
+    border-color: #e8ac4e;
+    color: #ffd47e;
+    box-shadow: none;
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-input {
+    background: rgba(0, 0, 0, 0.25);
+    border-color: rgba(232, 172, 78, 0.3);
+    color: var(--color-stage-ink);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-input::placeholder {
+    color: rgba(240, 226, 192, 0.4);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-x {
+    background: rgba(244, 67, 54, 0.12);
+    border-color: rgba(244, 67, 54, 0.4);
+    color: #ff9a8a;
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-add {
+    border-color: rgba(232, 172, 78, 0.4);
+    color: #d4a84a;
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-res-row {
+    background: var(--color-stage-card);
+    border-color: rgba(232, 172, 78, 0.22);
+    box-shadow: none;
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-res-row.win {
+    background: rgba(232, 172, 78, 0.16);
+    border-color: #e8ac4e;
+    box-shadow: none;
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-rank {
+    color: var(--color-stage-muted);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-name {
+    color: var(--color-stage-ink);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-pp-score {
+    color: #7ed492;
+}
+
+/* Pause / quit modals + Pass n Play handoff card (every game) */
+[data-home-theme='dark'] .cancellation-task-game .ct-training-modal,
+[data-home-theme='dark'] .cancellation-task-game .ct-training-handoff {
+    background: linear-gradient(180deg, #262138 0%, #1a1626 100%);
+    border-color: rgba(232, 172, 78, 0.35);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-training-modal-title,
+[data-home-theme='dark'] .cancellation-task-game .ct-training-handoff-name,
+[data-home-theme='dark'] .cancellation-task-game .ct-training-handoff-instruction {
+    color: var(--color-stage-ink);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-training-modal-text,
+[data-home-theme='dark'] .cancellation-task-game .ct-training-handoff-meta,
+[data-home-theme='dark'] .cancellation-task-game .ct-training-handoff-round {
+    color: var(--color-stage-muted);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-training-handoff-kicker {
+    color: #d4a84a;
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-training-handoff-bullets {
+    color: rgba(240, 226, 192, 0.8);
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-training-btn--ghost {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--color-stage-ink);
+    border-color: rgba(232, 172, 78, 0.3);
+    box-shadow: none;
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-training-btn--warn {
+    background: rgba(244, 67, 54, 0.12);
+    color: #ff9a8a;
+    border-color: rgba(244, 67, 54, 0.4);
+    box-shadow: none;
+}
+
+/* Results / leaderboard leftovers with hardcoded light fills (every game) */
+[data-home-theme='dark'] .cancellation-task-game .ct-fq-lbr.win {
+    background: rgba(232, 172, 78, 0.16);
+    border-color: #e8ac4e;
+}
+[data-home-theme='dark'] .cancellation-task-game .ct-fq-pr input {
+    background: rgba(0, 0, 0, 0.25);
+    border-color: rgba(232, 172, 78, 0.3);
+    color: var(--fq-txt, #f0e2c0);
+}
+
+/* Survival countdown track (black-on-light in the base rule — every game) */
+[data-home-theme='dark'] .cancellation-task-game .ct-survival-bar {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* "Why train X?" / "Why this trains your brain" science-link chip (every game) */
+[data-home-theme='dark'] .cancellation-task-game .ct-fq-sci-link--chip {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(232, 172, 78, 0.35);
+    color: var(--color-stage-ink);
+}
+
+/* ── Dark mode · Rush Hour "Escaped!" win card. Inline-styled (not a shared
+ * component), so this needs an author `!important` to win over the inline
+ * style — CSS cascade rule: author `!important` outranks a plain inline
+ * style. Ghost buttons inside keep their light cream fill (readable either
+ * way, same "light chip on dark card" pattern as the mode-select cards). ── */
+[data-home-theme='dark'] .ct-rh-win-card {
+    background: linear-gradient(180deg, #262138 0%, #1a1626 100%) !important;
+    border-color: rgba(232, 172, 78, 0.35) !important;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55) !important;
+}
+[data-home-theme='dark'] .ct-rh-win-meta {
+    color: var(--color-stage-muted) !important;
+}
+
+/* Rush Hour free-mode HUD ("Solved: N · Score: N") — same near-black-on-dark
+ * bug as .ct-sm-hud below. */
+[data-home-theme='dark'] .ct-rh-hud {
+    color: var(--color-stage-muted);
+}
+
+/* ── Dark mode · Speed Match play HUD. The legend/card/keypad stay
+ * self-contained light "paper" surfaces (same pattern as N-Back's grid and
+ * Target Tracking's field — deliberate, good contrast on their own light
+ * background). Only `.ct-sm-hud` sits directly on the dark backdrop and was
+ * a near-black grey — effectively invisible. ── */
+[data-home-theme='dark'] .ct-sm-hud {
+    color: var(--color-stage-muted);
+}
+[data-home-theme='dark'] .ct-sm-legend-label {
+    color: var(--color-stage-muted);
+}
+[data-home-theme='dark'] .ct-sm-metrics-note {
+    color: var(--color-stage-muted);
+}
+
+/* ── Dark mode · CANCELLATION TASK (+ Wordle) PLAY-SCREEN SPECIFICS.
+ * Scope: `.ct-fq-root:not(.ct-wordle-root)` — the `ct-fq-*` root with its own
+ * `--fq-*` palette is unique to Cancellation; Wordle shares the root class
+ * but adds `.ct-wordle-root` and keeps its own palette. Flipping `--fq-*`
+ * re-themes the HUD bar, board cells and progress tracks in one shot; the
+ * rest below is Cancellation's own hardcoded-light leftovers. ── */
+
+[data-home-theme='dark'] .ct-fq-root:not(.ct-wordle-root) {
+    --fq-txt: #f0e2c0;
+    --fq-mut: #b9a878;
+    --fq-pdk: #edb75f;                  /* HUD stat numbers — brighten, not darken */
+    --fq-bdr: #3a3248;                  /* borders, progress tracks, mini buttons */
+    --fq-sur: rgba(44, 38, 62, 0.94);   /* board cells — night tiles */
+    --fq-card: rgba(24, 20, 36, 0.92);  /* HUD bar, grid frame, cards */
+    background:
+        radial-gradient(
+            ellipse 70% 40% at 50% -6%,
+            color-mix(in srgb, var(--color-domain-attention-mid) 14%, transparent) 0%,
+            transparent 62%
+        ),
+        radial-gradient(
+            ellipse 60% 46% at 50% 40%,
+            var(--glow-cosmos-blue) 0%,
+            transparent 70%
+        ),
+        radial-gradient(
+            ellipse 120% 80% at 50% 12%,
+            var(--color-cosmos-top) 0%,
+            var(--color-cosmos-mid) 52%,
+            var(--color-cosmos-deep) 100%
+        );
+}
+
+/* Let the cosmos on the root show through every screen (same !important
+ * arms race as the domain-pick pilot — the --hub variant rule at ~line 671
+ * paints the palette surface with !important). */
+[data-home-theme='dark'] .ct-fq-root:not(.ct-wordle-root) .ct-fq-training-screen.ct-fq-screen,
+[data-home-theme='dark'] .ct-fq-root:not(.ct-wordle-root) .ct-fq-training-screen--hub.ct-fq-training-screen.ct-fq-screen {
+    background: transparent !important;
+}
+
+/* Play HUD: chip behind the target shape was solid white */
+[data-home-theme='dark'] .ct-fq-root:not(.ct-wordle-root) .ct-fq-bar-chip {
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Board cell tap feedback: translucent tints instead of pastel fills */
+[data-home-theme='dark'] .ct-fq-root:not(.ct-wordle-root) .ct-fq-sc.ok {
+    background: rgba(76, 175, 80, 0.24);
+    border-color: #4caf50;
+}
+[data-home-theme='dark'] .ct-fq-root:not(.ct-wordle-root) .ct-fq-sc.bad {
+    background: rgba(244, 67, 54, 0.22);
+    border-color: #f44336;
+}
+
+/* ── Dark mode · shared training shell (`.ct-fq-training-shell--hub-light`) —
+ * gives every ModeShell game's hub/menu the same full-bleed cosmos backdrop
+ * as Cancellation and the domain-pick pages, instead of the flat dark panel
+ * from the earlier "readability" pass. Each game keeps its own accent via
+ * --fq-pri (falls back to the attention amber if a game never set it). ── */
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light {
+    position: relative;
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(
+            ellipse 70% 40% at 50% -6%,
+            color-mix(in srgb, var(--fq-pri, var(--color-domain-attention)) 14%, transparent) 0%,
+            transparent 62%
+        ),
+        radial-gradient(
+            ellipse 60% 46% at 50% 40%,
+            var(--glow-cosmos-blue) 0%,
+            transparent 70%
+        ),
+        radial-gradient(
+            ellipse 120% 80% at 50% 12%,
+            var(--color-cosmos-top) 0%,
+            var(--color-cosmos-mid) 52%,
+            var(--color-cosmos-deep) 100%
+        );
+}
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-training-screen.ct-fq-screen,
+[data-home-theme='dark'] .ct-fq-training-shell--hub-light .ct-fq-training-screen--hub.ct-fq-training-screen.ct-fq-screen {
+    position: relative;
+    z-index: 1;
+    background: transparent !important;
+}
+
 /* Domain badge (retained for reuse elsewhere) */
 .ct-domain-badge {
     width: var(--badge-size, 64px);

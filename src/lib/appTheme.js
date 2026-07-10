@@ -4,9 +4,9 @@ export const APP_THEME_KEY = 'mazeman_home_theme';
 
 export function readAppTheme() {
   try {
-    return localStorage.getItem(APP_THEME_KEY) === 'dark' ? 'dark' : 'light';
+    return localStorage.getItem(APP_THEME_KEY) === 'light' ? 'light' : 'dark';
   } catch {
-    return 'light';
+    return 'dark';
   }
 }
 

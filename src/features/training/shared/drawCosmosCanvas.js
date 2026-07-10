@@ -75,7 +75,7 @@ function drawFrontEye(ctx, x, y, R, dir, { look = 'forward' } = {}) {
 }
 
 /** Front-facing Cosmos planet with arms, hands, legs — matches CosmosCharacter stance. */
-export function drawCosmosRunner(ctx, cx, cy, R, { mirror = false, anchor = 'feet', faceOnly = false, eyeLook = 'forward' } = {}) {
+export function drawCosmosRunner(ctx, cx, cy, R, { mirror = false, anchor = 'feet', faceOnly = false, eyeLook = 'forward', ring = true } = {}) {
   const footDrop = faceOnly ? R * 0.92 : R * 1.48;
   ctx.save();
   ctx.translate(cx, anchor === 'feet' ? cy - footDrop : cy);
@@ -93,14 +93,16 @@ export function drawCosmosRunner(ctx, cx, cy, R, { mirror = false, anchor = 'fee
   ctx.fill();
 
   // Ring — back half
-  ctx.save();
-  ctx.rotate(ringTilt);
-  ctx.strokeStyle = COSMOS_GOLD;
-  ctx.lineWidth = ringW;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, ringRx, ringRy, 0, Math.PI, 0);
-  ctx.stroke();
-  ctx.restore();
+  if (ring) {
+    ctx.save();
+    ctx.rotate(ringTilt);
+    ctx.strokeStyle = COSMOS_GOLD;
+    ctx.lineWidth = ringW;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, ringRx, ringRy, 0, Math.PI, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   // Planet body
   const bodyGrad = ctx.createRadialGradient(-R * 0.16, -R * 0.28, R * 0.08, 0, 0, R);
@@ -134,15 +136,17 @@ export function drawCosmosRunner(ctx, cx, cy, R, { mirror = false, anchor = 'fee
   ctx.globalAlpha = 1;
 
   // Ring — front half
-  ctx.save();
-  ctx.rotate(ringTilt);
-  ctx.strokeStyle = COSMOS_GOLD;
-  ctx.lineWidth = ringW;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.ellipse(0, 0, ringRx, ringRy, 0, 0, Math.PI);
-  ctx.stroke();
-  ctx.restore();
+  if (ring) {
+    ctx.save();
+    ctx.rotate(ringTilt);
+    ctx.strokeStyle = COSMOS_GOLD;
+    ctx.lineWidth = ringW;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, ringRx, ringRy, 0, 0, Math.PI);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   // Legs + feet
   if (!faceOnly) {
