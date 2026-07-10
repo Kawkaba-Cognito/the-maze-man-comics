@@ -589,6 +589,7 @@ html[data-home-theme='dark'] .rewards-screen .rewards-title { color: #fff2cf; }
 .rewards-screen .shop-empty-sub { color: #8a7348; }
 html[data-home-theme='dark'] .rewards-screen .shop-empty-title { color: #fff2cf; }
 html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
+.learn-screen .shop-empty-sub { max-width: 320px; }
 .rewards-balance {
     font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 0.02em;
     font-size: 1.05rem; font-weight: 700; color: #5f4824;

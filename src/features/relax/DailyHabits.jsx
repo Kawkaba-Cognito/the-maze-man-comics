@@ -337,8 +337,8 @@ export default function DailyHabits({ isAr, playSfx, onBack, onOpenPractice }) {
       <style>{CSS}</style>
       <div className="rx-app">
         <div className="header">
-          <button className="rx-back" onClick={onBack} aria-label="Back">‹</button>
-          <div style={{ paddingInlineStart: 42 }}>
+          {onBack && <button className="rx-back" onClick={onBack} aria-label="Back">‹</button>}
+          <div style={{ paddingInlineStart: onBack ? 42 : 0 }}>
             <div className="header-sub" style={{ color: '#6fae7a' }}>{isAr ? 'عادات' : 'Habits'}</div>
             <div className="header-title serif">{t.title}</div>
             <div className="menu-tag">{becoming ? `${t.becoming}: ${becoming}` : t.tag}</div>

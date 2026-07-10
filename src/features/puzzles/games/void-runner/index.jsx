@@ -95,6 +95,7 @@ const CSS = `
 .vr-speedbar { position:absolute; top:calc(72px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
   display:flex; flex-direction:column; align-items:center; gap:4px; pointer-events:none; z-index:10; }
 .vr-speedlabel { font-size:9px; letter-spacing:3px; color:rgba(0,245,255,0.4); }
+.vr-levellabel { color:rgba(255,255,255,0.55); margin-inline-start:6px; }
 .vr-speedtrack { width:120px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; }
 .vr-speedfill { height:100%; width:0%; background:linear-gradient(90deg,var(--vr-cyan),var(--vr-pink));
   border-radius:2px; transition:width 0.3s; box-shadow:0 0 8px var(--vr-cyan); }
@@ -104,8 +105,8 @@ const CSS = `
 .vr-combotext { font-family:'Orbitron',sans-serif; font-size:20px; font-weight:900; color:var(--vr-gold);
   text-shadow:0 0 20px var(--vr-gold); letter-spacing:3px; }
 
-.vr-popup { position:absolute; left:50%; top:40%; transform:translateX(-50%); pointer-events:none; z-index:15; text-align:center;
-  font-family:'Orbitron',sans-serif; font-size:26px; font-weight:900; letter-spacing:6px; opacity:0; text-shadow:0 0 30px currentColor; }
+.vr-popup { position:absolute; left:50%; top:calc(148px + env(safe-area-inset-top)); transform:translateX(-50%); pointer-events:none; z-index:15; text-align:center;
+  font-family:'Orbitron',sans-serif; font-size:18px; font-weight:900; letter-spacing:4px; opacity:0; text-shadow:0 0 20px currentColor; }
 
 .vr-pausebtn { position:absolute; top:calc(16px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
   z-index:20; pointer-events:all; background:rgba(0,0,0,0.5); border:1px solid rgba(0,245,255,0.3); border-radius:50%;
@@ -175,12 +176,6 @@ const CSS = `
   text-shadow:0 0 60px var(--vr-cyan); animation:vrCountPulse 1s ease-out; }
 @keyframes vrCountPulse { 0%{ transform:scale(1.5); opacity:0; } 100%{ transform:scale(1); opacity:1; } }
 
-.vr-levelbanner { position:absolute; left:0; right:0; top:35%; pointer-events:none; z-index:15; text-align:center; opacity:0; }
-.vr-levelbannertext { font-family:'Orbitron',sans-serif; font-size:28px; font-weight:900; letter-spacing:8px; color:var(--vr-purple); text-shadow:0 0 30px var(--vr-purple); }
-
-.vr-nearmiss { position:absolute; left:50%; top:30%; transform:translateX(-50%); pointer-events:none; z-index:15;
-  font-family:'Orbitron',sans-serif; font-size:18px; font-weight:700; letter-spacing:5px; color:var(--vr-gold);
-  text-shadow:0 0 20px var(--vr-gold); opacity:0; white-space:nowrap; }
 
 .vr-sub-screen { position:absolute; inset:0; z-index:30; display:none; flex-direction:column; align-items:center; justify-content:flex-start;
   padding:calc(40px + env(safe-area-inset-top)) 24px 40px;
@@ -242,14 +237,12 @@ const HTML = `
   </div>
 
   <div class="vr-speedbar" id="vr-speedbar">
-    <span class="vr-speedlabel">SPEED</span>
+    <span class="vr-speedlabel">SPEED<span class="vr-levellabel" id="vr-levelhud">LV 1</span></span>
     <div class="vr-speedtrack"><div class="vr-speedfill" id="vr-speedfill"></div></div>
   </div>
 
   <div class="vr-combodisplay" id="vr-combodisplay"><span class="vr-combotext" id="vr-combotext">COMBO x2</span></div>
   <div class="vr-popup" id="vr-popup"></div>
-  <div class="vr-nearmiss" id="vr-nearmiss">NEAR MISS!</div>
-  <div class="vr-levelbanner" id="vr-levelbanner"><span class="vr-levelbannertext" id="vr-levelbannertext">LEVEL 2</span></div>
 
   <button class="vr-pausebtn" id="vr-pausebtn" type="button">&#10074;&#10074;</button>
 
@@ -590,6 +583,20 @@ function createVoidRunner(root, THREE, { onBack }) {
   }
   window.addEventListener('resize', onResize);
 
+  // Touch devices get MeshLambertMaterial instead of MeshStandardMaterial —
+  // same color/emissive/emissiveIntensity/transparent/opacity (Lambert
+  // supports all of those), just without the roughness/metalness PBR
+  // specular calculation, which is the single most expensive part of the
+  // fragment shader once 5 dynamic lights are hitting every lit surface
+  // (ship, obstacles, gems, tunnel). This is the cost that scales with how
+  // much is on screen and lit — i.e. exactly the obstacle-dodging moments —
+  // not the draw-call count fixed above. Desktop is untouched.
+  function neonMat(opts) {
+    if (!isTouch) return new THREE.MeshStandardMaterial(opts);
+    const { roughness, metalness, ...rest } = opts;
+    return new THREE.MeshLambertMaterial(rest);
+  }
+
   // ── LIGHTING ──
   const ambient = new THREE.AmbientLight(0x0a0020, 2);
   scene.add(ambient);
@@ -608,7 +615,7 @@ function createVoidRunner(root, THREE, { onBack }) {
 
   // ── STAR FIELD ──
   const starGeo = new THREE.BufferGeometry();
-  const SC = 3000;
+  const SC = isTouch ? 1800 : 3000;
   const sp = new Float32Array(SC * 3);
   const scArr = new Float32Array(SC * 3);
   for (let i = 0; i < SC; i++) {
@@ -627,79 +634,103 @@ function createVoidRunner(root, THREE, { onBack }) {
   scene.add(stars);
 
   // ── NEON GRID TUNNEL ──
-  const TUNNEL_H = 6.5; const SEG_DEPTH = 5; const NUM_SEGS = 30;
-  const tunnelSegs = [];
-  function buildTunnelSeg(z) {
-    const g = new THREE.Group();
-    const floorG = new THREE.PlaneGeometry(TUNNEL_W, SEG_DEPTH, 8, 1);
-    const floorM = new THREE.MeshStandardMaterial({ color: 0x050018, roughness: 1, metalness: 0, emissive: 0x050018 });
-    const floor = new THREE.Mesh(floorG, floorM);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -1.1;
-    floor.receiveShadow = !isTouch;
-    g.add(floor);
-    const lineMat = new THREE.MeshStandardMaterial({ color: 0x4400cc, emissive: 0x4400cc, emissiveIntensity: 2 });
-    for (let i = -4; i <= 4; i++) {
-      const lG = new THREE.BoxGeometry(0.04, 0.02, SEG_DEPTH);
-      const l = new THREE.Mesh(lG, lineMat);
-      l.position.set(i, -1.09, 0);
-      g.add(l);
-    }
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0xff2d9b, emissive: 0xff2d9b, emissiveIntensity: 1.5 });
-    const leftStrip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, SEG_DEPTH), wallMat);
-    leftStrip.position.set(-TUNNEL_W / 2, -1.05, 0);
-    g.add(leftStrip);
-    const rightStrip = leftStrip.clone();
-    rightStrip.position.set(TUNNEL_W / 2, -1.05, 0);
-    rightStrip.material = new THREE.MeshStandardMaterial({ color: 0x00f5ff, emissive: 0x00f5ff, emissiveIntensity: 1.5 });
-    g.add(rightStrip);
-    const archMat = new THREE.MeshStandardMaterial({ color: 0x220066, emissive: 0x220066, emissiveIntensity: 1 });
-    const archGeo = new THREE.BoxGeometry(0.1, TUNNEL_H, 0.1);
-    const leftArch = new THREE.Mesh(archGeo, archMat);
-    leftArch.position.set(-TUNNEL_W / 2, TUNNEL_H / 2 - 1.1, -SEG_DEPTH / 2);
-    g.add(leftArch);
-    const rightArch = leftArch.clone();
-    rightArch.position.set(TUNNEL_W / 2, TUNNEL_H / 2 - 1.1, -SEG_DEPTH / 2);
-    g.add(rightArch);
-    const topArch = new THREE.Mesh(new THREE.BoxGeometry(TUNNEL_W, 0.1, 0.1), archMat);
-    topArch.position.set(0, TUNNEL_H - 1.1, -SEG_DEPTH / 2);
-    g.add(topArch);
-    g.position.z = z;
-    scene.add(g);
-    tunnelSegs.push(g);
-    return g;
+  // Instanced instead of 15 separate meshes x 30 segments (~450 draw calls,
+  // the dominant cost on mobile GPUs where per-draw-call overhead dominates
+  // over geometry complexity). Same geometry/materials/positions as before —
+  // this only changes HOW it's drawn, not how it looks. Segment count is cut
+  // for touch since fog (density 0.028) already hides the tunnel well before
+  // either segment count's draw distance, so the difference is invisible.
+  const TUNNEL_H = 6.5; const SEG_DEPTH = 5; const NUM_SEGS = isTouch ? 20 : 30;
+  const LINES_PER_SEG = 9; // i = -4..4
+  const segZ = new Float32Array(NUM_SEGS);
+  for (let i = 0; i < NUM_SEGS; i++) segZ[i] = -i * SEG_DEPTH;
+
+  const floorGeo = new THREE.PlaneGeometry(TUNNEL_W, SEG_DEPTH, 8, 1);
+  floorGeo.rotateX(-Math.PI / 2);
+  const floorMat = neonMat({ color: 0x050018, roughness: 1, metalness: 0, emissive: 0x050018 });
+  const floorMesh = new THREE.InstancedMesh(floorGeo, floorMat, NUM_SEGS);
+  floorMesh.receiveShadow = !isTouch;
+  scene.add(floorMesh);
+
+  const lineGeo = new THREE.BoxGeometry(0.04, 0.02, SEG_DEPTH);
+  const lineMat = neonMat({ color: 0x4400cc, emissive: 0x4400cc, emissiveIntensity: 2 });
+  const lineMesh = new THREE.InstancedMesh(lineGeo, lineMat, NUM_SEGS * LINES_PER_SEG);
+  scene.add(lineMesh);
+
+  const stripGeo = new THREE.BoxGeometry(0.06, 0.06, SEG_DEPTH);
+  const leftStripMat = neonMat({ color: 0xff2d9b, emissive: 0xff2d9b, emissiveIntensity: 1.5 });
+  const rightStripMat = neonMat({ color: 0x00f5ff, emissive: 0x00f5ff, emissiveIntensity: 1.5 });
+  const leftStripMesh = new THREE.InstancedMesh(stripGeo, leftStripMat, NUM_SEGS);
+  const rightStripMesh = new THREE.InstancedMesh(stripGeo, rightStripMat, NUM_SEGS);
+  scene.add(leftStripMesh); scene.add(rightStripMesh);
+
+  const archMat = neonMat({ color: 0x220066, emissive: 0x220066, emissiveIntensity: 1 });
+  const sideArchGeo = new THREE.BoxGeometry(0.1, TUNNEL_H, 0.1);
+  const sideArchMesh = new THREE.InstancedMesh(sideArchGeo, archMat, NUM_SEGS * 2); // left+right
+  scene.add(sideArchMesh);
+  const topArchGeo = new THREE.BoxGeometry(TUNNEL_W, 0.1, 0.1);
+  const topArchMesh = new THREE.InstancedMesh(topArchGeo, archMat, NUM_SEGS);
+  scene.add(topArchMesh);
+
+  const _tm = new THREE.Matrix4();
+  const _tpos = new THREE.Vector3();
+  const _tquat = new THREE.Quaternion();
+  const _tscale = new THREE.Vector3(1, 1, 1);
+  function setInstance(mesh, idx, x, y, z) {
+    _tpos.set(x, y, z);
+    _tm.compose(_tpos, _tquat, _tscale);
+    mesh.setMatrixAt(idx, _tm);
   }
-  for (let i = 0; i < NUM_SEGS; i++) buildTunnelSeg(-i * SEG_DEPTH);
+  function updateTunnelInstances() {
+    for (let i = 0; i < NUM_SEGS; i++) {
+      const z = segZ[i];
+      setInstance(floorMesh, i, 0, -1.1, z);
+      for (let li = 0; li < LINES_PER_SEG; li++) setInstance(lineMesh, i * LINES_PER_SEG + li, li - 4, -1.09, z);
+      setInstance(leftStripMesh, i, -TUNNEL_W / 2, -1.05, z);
+      setInstance(rightStripMesh, i, TUNNEL_W / 2, -1.05, z);
+      const archZ = z - SEG_DEPTH / 2;
+      setInstance(sideArchMesh, i * 2, -TUNNEL_W / 2, TUNNEL_H / 2 - 1.1, archZ);
+      setInstance(sideArchMesh, i * 2 + 1, TUNNEL_W / 2, TUNNEL_H / 2 - 1.1, archZ);
+      setInstance(topArchMesh, i, 0, TUNNEL_H - 1.1, archZ);
+    }
+    floorMesh.instanceMatrix.needsUpdate = true;
+    lineMesh.instanceMatrix.needsUpdate = true;
+    leftStripMesh.instanceMatrix.needsUpdate = true;
+    rightStripMesh.instanceMatrix.needsUpdate = true;
+    sideArchMesh.instanceMatrix.needsUpdate = true;
+    topArchMesh.instanceMatrix.needsUpdate = true;
+  }
+  updateTunnelInstances();
 
   // ── SHIP ──
   function buildShip() {
     const g = new THREE.Group();
-    const bodyM = new THREE.MeshStandardMaterial({ color: 0xd0eeff, emissive: 0x224466, roughness: 0.2, metalness: 0.9 });
+    const bodyM = neonMat({ color: 0xd0eeff, emissive: 0x224466, roughness: 0.2, metalness: 0.9 });
     const body = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.8, 8), bodyM);
     body.rotation.x = Math.PI / 2;
     body.castShadow = !isTouch;
     g.add(body);
-    const wingM = new THREE.MeshStandardMaterial({ color: 0x3366aa, emissive: 0x112244, roughness: 0.3, metalness: 0.9 });
+    const wingM = neonMat({ color: 0x3366aa, emissive: 0x112244, roughness: 0.3, metalness: 0.9 });
     const wings = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.08, 0.7), wingM);
     wings.position.z = 0.35;
     wings.castShadow = !isTouch;
     g.add(wings);
-    const tipM = new THREE.MeshStandardMaterial({ color: 0xff2d9b, emissive: 0xff2d9b, emissiveIntensity: 3 });
+    const tipM = neonMat({ color: 0xff2d9b, emissive: 0xff2d9b, emissiveIntensity: 3 });
     [-1.1, 1.1].forEach((x) => {
       const tip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.6), tipM);
       tip.position.set(x, 0, 0.35);
       g.add(tip);
     });
-    const cockM = new THREE.MeshStandardMaterial({ color: 0x88ddff, emissive: 0x003355, roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.75 });
+    const cockM = neonMat({ color: 0x88ddff, emissive: 0x003355, roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.75 });
     const cock = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 6), cockM);
     cock.scale.z = 1.6;
     cock.position.z = -0.45;
     g.add(cock);
-    const glowM = new THREE.MeshStandardMaterial({ color: 0x00f5ff, emissive: 0x00f5ff, emissiveIntensity: 4, transparent: true, opacity: 0.85 });
+    const glowM = neonMat({ color: 0x00f5ff, emissive: 0x00f5ff, emissiveIntensity: 4, transparent: true, opacity: 0.85 });
     const glow = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), glowM);
     glow.position.z = 1.0;
     g.add(glow);
-    const trailM = new THREE.MeshStandardMaterial({ color: 0x0088ff, emissive: 0x0044ff, emissiveIntensity: 3, transparent: true, opacity: 0.5 });
+    const trailM = neonMat({ color: 0x0088ff, emissive: 0x0044ff, emissiveIntensity: 3, transparent: true, opacity: 0.5 });
     const trail = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.0, 8), trailM);
     trail.rotation.x = -Math.PI / 2;
     trail.position.z = 1.55;
@@ -718,11 +749,11 @@ function createVoidRunner(root, THREE, { onBack }) {
   const obstaclePool = [];
   const activeObstacles = [];
   const obsMats = [
-    new THREE.MeshStandardMaterial({ color: 0xff2d2d, emissive: 0x660000, roughness: 0.3, metalness: 0.7 }),
-    new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0x552200, roughness: 0.3, metalness: 0.7 }),
-    new THREE.MeshStandardMaterial({ color: 0xcc00ff, emissive: 0x440066, roughness: 0.3, metalness: 0.7 }),
-    new THREE.MeshStandardMaterial({ color: 0xff0066, emissive: 0x550022, roughness: 0.3, metalness: 0.7 }),
-    new THREE.MeshStandardMaterial({ color: 0xff4400, emissive: 0x661100, roughness: 0.3, metalness: 0.7 }),
+    neonMat({ color: 0xff2d2d, emissive: 0x660000, roughness: 0.3, metalness: 0.7 }),
+    neonMat({ color: 0xff6600, emissive: 0x552200, roughness: 0.3, metalness: 0.7 }),
+    neonMat({ color: 0xcc00ff, emissive: 0x440066, roughness: 0.3, metalness: 0.7 }),
+    neonMat({ color: 0xff0066, emissive: 0x550022, roughness: 0.3, metalness: 0.7 }),
+    neonMat({ color: 0xff4400, emissive: 0x661100, roughness: 0.3, metalness: 0.7 }),
   ];
   const obsGeos = [
     new THREE.BoxGeometry(1.3, 1.3, 1.3),
@@ -741,7 +772,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     const matIdx = Math.floor(Math.random() * obsMats.length);
     const mesh = new THREE.Mesh(obsGeos[geoIdx], obsMats[matIdx]);
     mesh.castShadow = !isTouch;
-    const ringM = new THREE.MeshStandardMaterial({ color: obsMats[matIdx].color, emissive: obsMats[matIdx].color, emissiveIntensity: 3, transparent: true, opacity: 0.8 });
+    const ringM = neonMat({ color: obsMats[matIdx].color, emissive: obsMats[matIdx].color, emissiveIntensity: 3, transparent: true, opacity: 0.8 });
     const ring = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.04, 4, 20), ringM);
     ring.name = 'ring';
     const grp = new THREE.Group();
@@ -759,7 +790,7 @@ function createVoidRunner(root, THREE, { onBack }) {
   // ── GEM POOL ──
   const gemPool = [];
   const activeGems = [];
-  const gemMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0xff8800, emissiveIntensity: 2.5, roughness: 0.1, metalness: 0.8 });
+  const gemMat = neonMat({ color: 0xffcc00, emissive: 0xff8800, emissiveIntensity: 2.5, roughness: 0.1, metalness: 0.8 });
   function getGem() {
     if (gemPool.length > 0) { const g = gemPool.pop(); g.visible = true; scene.add(g); return g; }
     const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.38), gemMat);
@@ -775,7 +806,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     for (let i = 0; i < 18; i++) {
       const m = new THREE.Mesh(
         new THREE.SphereGeometry(0.08 + Math.random() * 0.14, 4, 4),
-        new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 3, transparent: true, opacity: 1 }),
+        neonMat({ color: col, emissive: col, emissiveIntensity: 3, transparent: true, opacity: 1 }),
       );
       m.position.set(x, y, z);
       scene.add(m);
@@ -788,7 +819,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     for (let i = 0; i < 10; i++) {
       const m = new THREE.Mesh(
         new THREE.OctahedronGeometry(0.06),
-        new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0xffaa00, emissiveIntensity: 4, transparent: true, opacity: 1 }),
+        neonMat({ color: 0xffcc00, emissive: 0xffaa00, emissiveIntensity: 4, transparent: true, opacity: 1 }),
       );
       m.position.set(x, y, z);
       scene.add(m);
@@ -826,26 +857,12 @@ function createVoidRunner(root, THREE, { onBack }) {
     clearTimeout(popupTimers.popup);
     popupTimers.popup = setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(-50%) scale(0.8)'; }, duration);
   }
-  function showNearMiss() {
-    const el = q('#vr-nearmiss');
-    el.style.opacity = '1';
-    clearTimeout(popupTimers.nearmiss);
-    popupTimers.nearmiss = setTimeout(() => { el.style.opacity = '0'; }, 800);
-  }
   function flashScreen(id, dur = 150) {
     const el = q(`#${id}`);
     el.style.opacity = '1';
     const key = `flash-${id}`;
     clearTimeout(popupTimers[key]);
     popupTimers[key] = setTimeout(() => { el.style.opacity = '0'; }, dur);
-  }
-  function showLevelBanner(lvl) {
-    const banner = q('#vr-levelbanner');
-    q('#vr-levelbannertext').textContent = `LEVEL ${lvl} — FASTER!`;
-    banner.style.opacity = '1';
-    banner.style.transition = 'opacity 0.2s';
-    clearTimeout(popupTimers.levelbanner);
-    popupTimers.levelbanner = setTimeout(() => { banner.style.transition = 'opacity 1s'; banner.style.opacity = '0'; }, 1800);
   }
 
   // ── GAME STATE ──
@@ -1052,10 +1069,11 @@ function createVoidRunner(root, THREE, { onBack }) {
     stars.rotation.y += 0.00008 * rawDt;
 
     if (state === 'playing') {
-      tunnelSegs.forEach((seg) => {
-        seg.position.z += rawSpeed * rawDt;
-        if (seg.position.z > 12) seg.position.z -= NUM_SEGS * SEG_DEPTH;
-      });
+      for (let i = 0; i < NUM_SEGS; i++) {
+        segZ[i] += rawSpeed * rawDt;
+        if (segZ[i] > 12) segZ[i] -= NUM_SEGS * SEG_DEPTH;
+      }
+      updateTunnelInstances();
     }
 
     if (state === 'menu' || state === 'gameover') {
@@ -1122,7 +1140,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     score = Math.floor(time * 15 + gemsCollected * 8);
 
     level = Math.min(10, Math.floor(gameSpeed * 9) + 1);
-    if (level !== prevLevel) { sfxLevelUp(); showLevelBanner(level); prevLevel = level; }
+    if (level !== prevLevel) { sfxLevelUp(); q('#vr-levelhud').textContent = `LV ${level}`; prevLevel = level; }
 
     q('#vr-speedfill').style.width = `${gameSpeed * 100}%`;
     q('#vr-scorehud').textContent = score;
@@ -1184,7 +1202,6 @@ function createVoidRunner(root, THREE, { onBack }) {
         if (dx < 1.8 && dy < 1.8 && !o.warned) {
           o.warned = true;
           sfxDodge();
-          showNearMiss();
           combo++;
           comboTimer = 120;
           if (combo >= 2) {
@@ -1260,6 +1277,7 @@ function createVoidRunner(root, THREE, { onBack }) {
 
     clearGameObjects();
     score = 0; lives = 3; gemsCollected = 0; level = 1; prevLevel = 1;
+    q('#vr-levelhud').textContent = 'LV 1';
     time = 0; totalFrames = 0; rawSpeed = 0.32; gameSpeed = 0;
     shipTargetX = 0; shipCurrentX = 0; shipTiltZ = 0;
     currentLaneIdx = 1; laneLock = false;

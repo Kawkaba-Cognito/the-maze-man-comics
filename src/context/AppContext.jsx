@@ -292,8 +292,8 @@ export function AppProvider({ children }) {
   const switchTab = useCallback((tabId) => {
     playSfx('click');
     stopSpeech();
-    // Legacy "home" now lands on Training (the Home tab).
-    let next = tabId === 'home' ? 'comics' : tabId;
+    // Legacy "home" now lands on Habits (the Home tab).
+    let next = tabId === 'home' ? 'habits' : tabId;
     // Habits / Wellbeing share RelaxScreen; seed the daily view for Habits.
     if (next === 'habits') {
       try { sessionStorage.setItem('rx_open_daily', '1'); } catch { /* ignore */ }

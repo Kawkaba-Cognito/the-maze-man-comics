@@ -925,7 +925,7 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
       <DailyHabits
         isAr={isAr}
         playSfx={playSfx}
-        onBack={entry === 'daily' ? () => { playSfx?.('click'); switchTab('comics'); } : back}
+        onBack={entry === 'daily' ? undefined : back}
         onOpenPractice={(id) => openPractice(id, 'daily')}
       />
     );
@@ -941,7 +941,7 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
     <RelaxMenu
       isAr={isAr}
       playSfx={playSfx}
-      onHome={() => { playSfx?.('click'); switchTab('comics'); }}
+      onHome={() => { playSfx?.('click'); switchTab('habits'); }}
       onOpen={(id) => openPractice(id, 'menu')}
     />
   );

@@ -10,6 +10,8 @@ import RewardsShopScreen from './screens/RewardsShopScreen';
 import CharacterScreen from './screens/CharacterScreen';
 import WorkoutScreen from './screens/WorkoutScreen';
 import OtherScreen from './screens/OtherScreen';
+import LearnScreen from './screens/LearnScreen';
+import HomeScreen from './screens/HomeScreen';
 import RelaxScreen from '../features/relax/RelaxScreen';
 import RoomHost from './maze/RoomHost';
 import PaywallModal from './modals/PaywallModal';
@@ -71,6 +73,7 @@ export default function AppShell() {
             && activeTab !== 'profile'
             && activeTab !== 'workout'
             && activeTab !== 'other'
+            && activeTab !== 'learn'
             && !isRelaxTab(activeTab)
             && activeTab !== 'pointshop' && (
             <button
@@ -83,7 +86,7 @@ export default function AppShell() {
           )}
         </div>
 
-        {!primaryTab && activeTab !== 'comics' && activeTab !== 'home' && activeTab !== 'puzzles' && activeTab !== 'profile' && activeTab !== 'workout' && activeTab !== 'other' && !isRelaxTab(activeTab) && (
+        {!primaryTab && activeTab !== 'comics' && activeTab !== 'home' && activeTab !== 'puzzles' && activeTab !== 'profile' && activeTab !== 'workout' && activeTab !== 'other' && activeTab !== 'learn' && !isRelaxTab(activeTab) && (
           <button className="back-btn" onClick={() => switchTab('comics')}>
             ‹ {isAr ? 'رجوع' : 'BACK'}
           </button>
@@ -99,12 +102,13 @@ export default function AppShell() {
         <div id="screen-other" className={`ui-screen ${activeTab === 'other' ? 'active' : ''}`}>
           {activeTab === 'other' && <OtherScreen />}
         </div>
+        <div id="screen-learn" className={`ui-screen ${activeTab === 'learn' ? 'active' : ''}`}>
+          {activeTab === 'learn' && <LearnScreen />}
+        </div>
         <div id="screen-relax" className={`ui-screen ${isRelaxTab(activeTab) ? 'active' : ''}`}>
-          {isRelaxTab(activeTab) && (
-            <RelaxScreen
-              key={activeTab === 'habits' ? 'habits' : 'wellbeing'}
-              entry={activeTab === 'habits' ? 'daily' : 'menu'}
-            />
+          {activeTab === 'habits' && <HomeScreen />}
+          {(activeTab === 'wellbeing' || activeTab === 'relax') && (
+            <RelaxScreen key="wellbeing" entry="menu" />
           )}
         </div>
 

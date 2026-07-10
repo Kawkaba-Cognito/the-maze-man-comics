@@ -1,12 +1,12 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 
-/** Primary app destinations — Training hub is Home. */
+/** Primary app destinations — the daily habits check-in is Home; Training is its own tab. */
 export const APP_TABS = [
-  { id: 'home', screen: 'comics', icon: '🏠', en: 'Home', ar: 'الرئيسية' },
-  { id: 'puzzles', screen: 'puzzles', icon: '🧩', en: 'Puzzles', ar: 'ألغاز' },
+  { id: 'home', screen: 'habits', icon: '🏠', en: 'Home', ar: 'الرئيسية' },
+  { id: 'training', screen: 'comics', icon: '🎯', en: 'Training', ar: 'تدريب' },
+  { id: 'learn', screen: 'learn', icon: '📚', en: 'Learn', ar: 'تعلّم' },
   { id: 'wellbeing', screen: 'wellbeing', icon: '🌿', en: 'Wellbeing', ar: 'عافية' },
-  { id: 'habits', screen: 'habits', icon: '📋', en: 'Habits', ar: 'عادات' },
   { id: 'other', screen: 'other', icon: '⋯', en: 'Other', ar: 'المزيد' },
 ];
 
@@ -14,7 +14,10 @@ const TAB_IDS = new Set(APP_TABS.map((t) => t.id));
 
 /** Normalize nested routes onto a primary tab highlight. */
 export function resolveActiveTabId(activeTab) {
-  if (activeTab === 'comics' || activeTab === 'home' || activeTab === 'workout') return 'home';
+  if (activeTab === 'habits') return 'home';
+  // Puzzles no longer has its own tab — it's reached from inside Training,
+  // so the tab bar keeps Training highlighted while browsing it.
+  if (activeTab === 'comics' || activeTab === 'home' || activeTab === 'workout' || activeTab === 'puzzles') return 'training';
   if (activeTab === 'relax') return 'wellbeing';
   if (
     activeTab === 'profile'
@@ -34,7 +37,7 @@ export default function BottomTabBar() {
 
   function onSelect(tab) {
     if (tab.id === current && activeTab === tab.screen) return;
-    if (tab.id === 'home' && (activeTab === 'comics' || activeTab === 'home')) return;
+    if (tab.id === 'training' && (activeTab === 'comics' || activeTab === 'workout')) return;
     switchTab(tab.screen);
   }
 

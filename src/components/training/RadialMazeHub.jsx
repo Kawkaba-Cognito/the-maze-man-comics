@@ -208,7 +208,7 @@ function mazeCorridorD(domainId) {
 }
 
 export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
-  const { currentLang, toggleLang, playSfx, appTheme, toggleAppTheme } = useApp();
+  const { currentLang, toggleLang, playSfx, appTheme, toggleAppTheme, switchTab } = useApp();
   const isAr = currentLang === 'ar';
   const chrome = useThemedChrome(isAr);
   const [hovered, setHovered] = useState(null);
@@ -468,6 +468,29 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       </div>
 
       {/* Daily Workout now lives at the end of the Assessment screen. */}
+
+      {/* Puzzles now lives inside Training — a distinct, lower-pressure
+          "break" entry rather than one of the domain planets, since it isn't
+          a tracked/scored exercise the way the 6 domains are. */}
+      <div style={{ position: 'relative', zIndex: 6, display: 'flex', justifyContent: 'center', marginTop: -18 }}>
+        <button
+          type="button"
+          onClick={() => { playSfx('click'); switchTab('puzzles'); }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 20px', borderRadius: 100,
+            background: 'linear-gradient(180deg, #1f160c 0%, #150e08 100%)',
+            border: '1.5px solid rgba(232,172,78,0.55)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.55), inset 0 1px 0 rgba(220,170,70,0.12)',
+            color: L.text, cursor: 'pointer',
+            fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Nunito', sans-serif",
+            fontSize: isAr ? 13 : 14, fontWeight: isAr ? 800 : 400, letterSpacing: isAr ? 0 : 0.3,
+          }}
+        >
+          <span aria-hidden="true">🧩</span>
+          {isAr ? 'ألغاز — استراحة' : 'Puzzles — take a break'}
+        </button>
+      </div>
 
       {/* Domain hover callout */}
       {hovered && (
