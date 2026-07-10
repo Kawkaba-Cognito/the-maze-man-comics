@@ -94,7 +94,7 @@ export default function OtherScreen() {
   if (view === 'awards') {
     return (
       <div className={`other-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}>
-        <AtmosphericBackground strength="panel" />
+        <AtmosphericBackground strength="panel" photo={false} />
         <AwardsPanel
           isAr={isAr}
           chrome={chrome}
@@ -107,7 +107,7 @@ export default function OtherScreen() {
   if (view === 'support') {
     return (
       <div className={`other-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}>
-        <AtmosphericBackground strength="panel" />
+        <AtmosphericBackground strength="panel" photo={false} />
         <SupportPanel
           isAr={isAr}
           chrome={chrome}
@@ -130,7 +130,7 @@ export default function OtherScreen() {
       className={`other-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}
       dir={isAr ? 'rtl' : 'ltr'}
     >
-      <AtmosphericBackground strength="panel" />
+      <AtmosphericBackground strength="panel" photo={false} />
       <div className="other-content">
         <div className="app-chrome-bar other-top">
           <div style={{ width: 34 }} />

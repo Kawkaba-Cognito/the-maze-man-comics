@@ -1,11 +1,15 @@
 import React from 'react';
 
-/** Splits "text with **bold** spans" into plain text + <strong> runs — no markdown lib needed for this one use case. */
+/** Splits "text with **bold** and *italic* spans" into text + <strong>/<em> runs — no markdown lib needed for this one use case. */
 function Inline({ text }) {
-  const parts = text.split(/\*\*(.+?)\*\*/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
   return (
     <>
-      {parts.map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part))}
+      {parts.map((part, i) => {
+        if (/^\*\*[^*]+\*\*$/.test(part)) return <strong key={i}>{part.slice(2, -2)}</strong>;
+        if (/^\*[^*]+\*$/.test(part)) return <em key={i}>{part.slice(1, -1)}</em>;
+        return part;
+      })}
     </>
   );
 }

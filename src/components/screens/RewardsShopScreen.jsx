@@ -18,7 +18,7 @@ export default function RewardsShopScreen() {
       className={`rewards-screen shop-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}
       dir={isAr ? 'rtl' : 'ltr'}
     >
-      <AtmosphericBackground strength="panel" />
+      <AtmosphericBackground strength="panel" photo={false} />
       <div className="shop-stage-content">
         <div className="app-chrome-bar" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',

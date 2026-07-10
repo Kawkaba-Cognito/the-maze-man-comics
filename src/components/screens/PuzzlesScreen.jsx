@@ -207,7 +207,7 @@ export default function PuzzlesScreen() {
         ...chrome.shell, fontFamily: 'Outfit, system-ui, sans-serif', isolation: 'isolate',
       }}>
         <div style={{ position: 'relative', minHeight: '100%', paddingBottom: 110 }}>
-          <AtmosphericBackground strength="hub" />
+          <AtmosphericBackground strength="hub" photo={false} />
           <div className="app-chrome-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '64px 18px 6px', position: 'relative', zIndex: 5 }}>
             <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
               <button type="button" style={chrome.chromeBtn} onClick={() => { playSfx('click'); switchTab('comics'); }} aria-label={isAr ? 'رجوع' : 'Back'}>
@@ -289,7 +289,7 @@ export default function PuzzlesScreen() {
       ...chrome.shell, fontFamily: 'Outfit, system-ui, sans-serif', isolation: 'isolate',
     }}>
       <div style={{ position: 'relative', minHeight: '100%', paddingBottom: 110 }}>
-      <AtmosphericBackground strength="hub" />
+      <AtmosphericBackground strength="hub" photo={false} />
 
       {/* Top bar */}
       <div className="app-chrome-bar" style={{

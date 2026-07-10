@@ -207,7 +207,7 @@ export default function ProfileScreen() {
       }}
     >
       <div style={{ position: 'relative', minHeight: '100%', paddingBottom: 110 }}>
-        <AtmosphericBackground strength="panel" />
+        <AtmosphericBackground strength="panel" photo={false} />
 
         {/* Top bar */}
         <div className="app-chrome-bar" style={{

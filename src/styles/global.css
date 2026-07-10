@@ -1260,6 +1260,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     #screen-home { max-width: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
     #screen-comics { max-width: none; padding: 0; }
     #screen-puzzles { max-width: none; padding: 0; }
+    #screen-relax { max-width: none; padding: 0; }
     .comics-grid { max-width: 700px; }
     .featured-card .comic-card-cover { height: 280px; }
 }

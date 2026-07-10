@@ -604,6 +604,21 @@ const CATEGORIES = [
 // Which practices are structured, multi-session PROGRAMS (vs quick, single-use).
 const PROGRAM_IDS = new Set(['mbsr']);
 
+// Loose, hand-placed scatter for the Wellbeing constellation — deliberately
+// NOT a hub-and-spoke grid (that's Training's signature) and NOT an orbit
+// around a center (that's Home's). Categories here are independent, so
+// nothing connects them; each just drifts on its own slow, gentle timer.
+// Positions assume the FULL screen is the canvas (not a boxed card) — y
+// leaves room for the header above (~0-26%) and the hint text/tab bar
+// below (~86-100%).
+const CAT_LAYOUT = {
+  calm:          { x: 24, y: 32, size: 96, dur: 7.4, delay: 0 },
+  sleep:         { x: 74, y: 40, size: 78, dur: 8.6, delay: 1.6 },
+  meaning:       { x: 45, y: 55, size: 88, dur: 7.9, delay: 3.1 },
+  relationships: { x: 78, y: 68, size: 76, dur: 9.2, delay: 0.8 },
+  personality:   { x: 22, y: 78, size: 80, dur: 8.1, delay: 2.3 },
+};
+
 // ── favourites + custom order (persisted) ──────────────────────────────────
 const FAV_KEY = 'rx_favorites';   // array of practice ids (also the favourites order)
 const ORDER_KEY = 'rx_order';     // { [listKey]: [ids…] } custom order per list
@@ -719,6 +734,8 @@ function ReorderList({ items, disabled, onCommit, children }) {
 const FAV_GOLD = '#d9a520';
 
 function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
+  const { appTheme } = useApp();
+  const dark = appTheme === 'dark';
   const [openCat, setOpenCat] = useState(null); // category id, or 'favorites'
   const [group, setGroup] = useState('program'); // 'program' | 'quick'
   const [favs, setFavs] = useState(() => rxLoad(FAV_KEY, []));
@@ -847,47 +864,290 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
     );
   }
 
-  // ── top level: Favorites tile + the five category tiles ──
+  // ── top level: the whole screen IS the sky — header, favorites and the
+  // planets all float directly on it as overlays (same architecture as
+  // Home's "Your Universe"), instead of the sky being boxed into a card
+  // sitting inside the app's normal light chrome. ──
+  // Same palette family as Training's actual sky photo — sampled off-center
+  // (x=8%/92%) from bg-home-{light,dark}-desktop.webp specifically to avoid
+  // the illustrated door's own glow, which is a foreground light source, not
+  // the ambient sky color (a center sample picks up its bright spike and
+  // reads far more saturated than the sky actually is). True ambient sky:
+  // light = muted blue-grey → soft cream → muted warm taupe; dark = nearly
+  // uniform near-black with only a whisper of warm variation. Wellbeing
+  // stays visually distinct via composition (no photo, floating planets,
+  // gentle motes), not via a different/clashing color palette.
+  const skyText = dark ? '#f4ecd8' : INK;
+  const skyTextShadow = dark ? '0 1px 4px rgba(0,0,0,0.8)' : '0 1px 3px rgba(255,255,255,0.85)';
+  const skyMuted = dark ? 'rgba(244,236,216,0.7)' : 'rgba(45,34,16,0.65)';
   return (
-    <div className="rx-root" dir={isAr ? 'rtl' : 'ltr'}>
+    <div
+      className="rx-root"
+      dir={isAr ? 'rtl' : 'ltr'}
+      style={{
+        overflow: 'hidden',
+        background: dark
+          // Dark theme's canonical palette is Home's Universe cosmos
+          // (#201640 → #0a0716 → #05040c) — Wellbeing shares it exactly so
+          // the two night skies read as one world. (Light mode keeps the
+          // dawn palette sampled from Training's photo.)
+          ? 'radial-gradient(ellipse 120% 80% at 50% 12%, #201640 0%, #0d0a1c 52%, #05040c 100%)'
+          : 'radial-gradient(ellipse 120% 80% at 50% 6%, #b5c0d4 0%, #e6dcd4 48%, #d0bcac 100%)',
+      }}
+    >
       <style>{MENU_CSS}</style>
-      <div className="rx-app">
-        <div className="header">
-          <button className="rx-back" onClick={onHome} aria-label="Back">‹</button>
-          <div style={{ paddingInlineStart: 42 }}>
-            <div className="header-sub">{isAr ? 'ركن العافية' : 'Wellbeing pillar'}</div>
-            <div className="header-title serif">{isAr ? 'العافية' : 'Wellbeing'}</div>
-            <div className="menu-tag">{isAr ? 'اختر مجالاً.' : 'Choose an area.'}</div>
-          </div>
+
+      {/* ── sky, back to front: nebula wash → celestial light → stars →
+          shooting star → ground mist → vignette. All static DOM with
+          compositor-only CSS animation (no rAF), same perf discipline as
+          Home's starfield. ── */}
+      <div aria-hidden="true" className="rx-sky">
+        {(dark
+          ? [
+            { x: '6%', y: '10%', w: 360, h: 260, c: 'rgba(110,165,255,0.14)', dur: 26 },
+            { x: '58%', y: '2%', w: 420, h: 300, c: 'rgba(72,132,120,0.12)', dur: 34 },
+            { x: '44%', y: '52%', w: 460, h: 320, c: 'rgba(196,138,74,0.09)', dur: 40 },
+          ]
+          : [
+            { x: '4%', y: '8%', w: 380, h: 250, c: 'rgba(255,255,255,0.6)', dur: 30 },
+            { x: '56%', y: '0%', w: 430, h: 280, c: 'rgba(196,208,236,0.55)', dur: 36 },
+            { x: '42%', y: '52%', w: 480, h: 320, c: 'rgba(244,214,178,0.5)', dur: 42 },
+          ]
+        ).map((b, i) => (
+          <span key={`b${i}`} className="rx-blob" style={{
+            left: b.x, top: b.y, width: b.w, height: b.h,
+            background: `radial-gradient(circle, ${b.c} 0%, transparent 68%)`,
+            animationDuration: `${b.dur}s`, animationDelay: `-${i * 9}s`,
+          }} />
+        ))}
+
+        {dark ? (
+          <span className="rx-celestial" style={{
+            right: '9%', top: '9%', width: 46, height: 46,
+            background: 'radial-gradient(circle at 38% 34%, #f8f2df 0%, #ddd2b2 62%, #c9bd9d 100%)',
+            boxShadow: '0 0 46px 14px rgba(246,240,214,0.22), 0 0 110px 40px rgba(246,240,214,0.08)',
+          }} />
+        ) : (
+          <span className="rx-celestial" style={{
+            left: '7%', top: '6%', width: 140, height: 140, filter: 'blur(4px)',
+            background: 'radial-gradient(circle, rgba(255,251,238,0.95) 0%, rgba(255,245,216,0.5) 46%, transparent 70%)',
+            boxShadow: '0 0 90px 46px rgba(255,247,222,0.5)',
+          }} />
+        )}
+
+        {Array.from({ length: 34 }).map((_, i) => {
+          const seed = (n) => { const x = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453; return x - Math.floor(x); };
+          const sz = 1.2 + seed(3) * 2.6;
+          return (
+            <span key={`s${i}`} className="rx-star" style={{
+              left: `${seed(1) * 100}%`, top: `${seed(2) * 100}%`, width: sz, height: sz,
+              opacity: dark ? 0.25 + seed(4) * 0.5 : 0.3 + seed(4) * 0.4,
+              boxShadow: sz > 2.7 ? `0 0 6px 1px rgba(255,255,255,${dark ? 0.55 : 0.75})` : 'none',
+              animationDuration: `${2.6 + seed(5) * 4}s`, animationDelay: `-${seed(6) * 5}s`,
+            }} />
+          );
+        })}
+
+        {/* The dark theme's signature blue light — the same glow Kawkab
+            radiates at the center of Home's Universe, echoed here as a
+            soft ambient wash so both night scenes share one light. */}
+        {dark && (
+          <span style={{
+            position: 'absolute', left: '50%', top: '46%', width: '72%', height: '54%',
+            transform: 'translate(-50%,-50%)', borderRadius: '50%',
+            background: 'radial-gradient(ellipse, rgba(120,180,255,0.12) 0%, rgba(120,180,255,0.04) 46%, transparent 72%)',
+          }} />
+        )}
+
+        {dark && <span className="rx-shoot" />}
+
+        <span className="rx-mist" style={{
+          background: dark
+            ? 'linear-gradient(180deg, transparent 0%, rgba(5,4,12,0.6) 100%)'
+            : 'linear-gradient(180deg, transparent 0%, rgba(255,249,240,0.6) 100%)',
+        }} />
+        <span className="rx-veil" style={{
+          background: dark
+            ? 'radial-gradient(ellipse 130% 95% at 50% 38%, transparent 52%, rgba(3,2,10,0.5) 100%)'
+            : 'radial-gradient(ellipse 130% 80% at 50% 0%, rgba(255,255,255,0.45) 0%, transparent 55%)',
+        }} />
+      </div>
+
+      <button
+        type="button"
+        onClick={onHome}
+        aria-label="Back"
+        className="rx-fade"
+        style={{
+          position: 'absolute', top: 'calc(14px + env(safe-area-inset-top))', insetInlineStart: 14, zIndex: 5,
+          width: 38, height: 38, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: `1px solid ${dark ? 'rgba(244,236,216,0.28)' : 'rgba(45,34,16,0.22)'}`,
+          background: dark ? 'rgba(20,18,14,0.4)' : 'rgba(255,253,248,0.5)',
+          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+          boxShadow: dark ? '0 4px 16px rgba(0,0,0,0.35)' : '0 4px 14px rgba(120,90,40,0.14)',
+          color: skyText, fontSize: 20, cursor: 'pointer',
+        }}
+      >
+        ‹
+      </button>
+      <div className="rx-fade" style={{
+        position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: 0, right: 0, zIndex: 3,
+        textAlign: 'center', padding: '0 60px', pointerEvents: 'none',
+      }}>
+        <div style={{
+          fontSize: 10.5, letterSpacing: 4, fontWeight: 800, textTransform: 'uppercase',
+          color: dark ? 'rgba(255,224,150,0.8)' : '#96742e',
+        }}>
+          {isAr ? 'ركن العافية' : 'Wellbeing pillar'}
         </div>
-        <div className="content">
-          <button className="rx-cat-tile" style={{ borderColor: `${FAV_GOLD}66` }} onClick={() => { playSfx?.('click'); setOpenCat('favorites'); }}>
-            <span className="rx-cat-ic" style={{ background: '#fdeecb', color: FAV_GOLD }}>⭐</span>
-            <span className="rx-cat-body">
-              <span className="rx-cat-title">{isAr ? 'المفضّلة' : 'Favorites'}</span>
-              <span className="rx-cat-tag">{favs.length ? (isAr ? `${favs.length} ممارسة محفوظة` : `${favs.length} saved practice${favs.length > 1 ? 's' : ''}`) : (isAr ? 'احفظ ممارساتك المفضّلة هنا.' : 'Keep your go-to practices here.')}</span>
-            </span>
-            <span className="rx-cat-meta">
-              {favs.length > 0 && <span className="rx-fav-count">{favs.length}</span>}
-              <span className="rx-menu-chev" style={{ color: FAV_GOLD }}>{isAr ? '‹' : '›'}</span>
-            </span>
-          </button>
-          <div className="rx-cat-divider" aria-hidden="true" />
-          {CATEGORIES.map((c) => (
-            <button key={c.id} className="rx-cat-tile" style={{ borderColor: `${c.color}55` }} onClick={() => openCategory(c)}>
-              <span className="rx-cat-ic" style={{ background: `${c.color}1f`, color: c.color }}>{c.icon}</span>
-              <span className="rx-cat-body">
-                <span className="rx-cat-title">{isAr ? c.titleAr : c.title}</span>
-                <span className="rx-cat-tag">{isAr ? c.tagAr : c.tag}</span>
-              </span>
-              <span className="rx-cat-meta">
-                {c.soon && !c.items?.length && <span className="rx-soon-badge">{isAr ? 'قريباً' : 'Soon'}</span>}
-                <span className="rx-menu-chev" style={{ color: c.color }}>{isAr ? '‹' : '›'}</span>
-              </span>
-            </button>
-          ))}
+        <div style={{
+          fontFamily: SERIF, fontSize: 32, fontWeight: 600, letterSpacing: 0.4,
+          color: skyText, textShadow: skyTextShadow, lineHeight: 1.12, marginTop: 2,
+        }}>
+          {isAr ? 'العافية' : 'Wellbeing'}
+        </div>
+        <div style={{ fontSize: 12.5, color: skyMuted, marginTop: 3 }}>
+          {isAr ? 'اختر مجالاً.' : 'Choose an area.'}
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => { playSfx?.('click'); setOpenCat('favorites'); }}
+        className="rx-fade"
+        style={{
+          position: 'absolute', top: 'calc(112px + env(safe-area-inset-top))', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 3, display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', maxWidth: 'min(92vw, 420px)',
+          borderRadius: 100, border: `1px solid ${dark ? 'rgba(255,214,138,0.4)' : 'rgba(154,116,46,0.4)'}`,
+          background: dark ? 'rgba(26,22,16,0.42)' : 'rgba(255,252,246,0.55)',
+          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+          boxShadow: dark ? '0 6px 20px rgba(0,0,0,0.35)' : '0 6px 18px rgba(120,90,40,0.16)',
+          color: dark ? '#ffe9ae' : '#7a5c10',
+          cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap',
+        }}
+      >
+        <span aria-hidden="true" style={{ fontSize: 15 }}>⭐</span>
+        {favs.length
+          ? (isAr ? `${favs.length} ممارسة محفوظة` : `${favs.length} saved practice${favs.length > 1 ? 's' : ''}`)
+          : (isAr ? 'المفضّلة' : 'Favorites')}
+        <span aria-hidden="true" style={{ color: FAV_GOLD }}>{isAr ? '‹' : '›'}</span>
+      </button>
+
+      {CATEGORIES.map((c, idx) => {
+        const p = CAT_LAYOUT[c.id];
+        const soon = c.soon && !c.items?.length;
+        return (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => openCategory(c)}
+            className="rx-planet"
+            aria-label={isAr ? c.titleAr : c.title}
+            style={{
+              left: `${p.x}%`, top: `${p.y}%`, zIndex: 2,
+              animationDuration: `${p.dur}s`, animationDelay: `-${p.delay}s`,
+            }}
+          >
+            <span className="rx-planet-in" style={{ '--i': idx }}>
+              <span className="rx-orb-wrap" style={{ width: p.size, height: p.size }}>
+                <span aria-hidden="true" className="rx-orb-aura" style={{
+                  background: `radial-gradient(circle, ${c.color}5e 0%, ${c.color}1f 48%, transparent 72%)`,
+                }} />
+                {c.id === 'sleep' && (
+                  <span aria-hidden="true" className="rx-orb-ring" style={{ borderColor: c.color }} />
+                )}
+                <span className="rx-orb" style={{ background: c.color }}>
+                  <span aria-hidden="true" className="rx-orb-shade" />
+                  <span aria-hidden="true" className="rx-orb-sheen" />
+                  <span className="rx-orb-icon" style={{ fontSize: p.size * 0.34 }}>{c.icon}</span>
+                </span>
+                {c.id === 'meaning' && (
+                  <>
+                    <span aria-hidden="true" className="rx-spark" style={{ top: '-8%', insetInlineEnd: '-4%' }}>✦</span>
+                    <span aria-hidden="true" className="rx-spark rx-spark--b" style={{ bottom: '0%', insetInlineStart: '-12%' }}>✦</span>
+                  </>
+                )}
+              </span>
+              <span className="rx-planet-name" style={{ color: skyText, textShadow: skyTextShadow }}>
+                {isAr ? c.titleAr : c.title}
+              </span>
+              {soon && (
+                <span className="rx-soon-pill" style={{
+                  color: skyText,
+                  background: dark ? 'rgba(255,255,255,0.1)' : 'rgba(45,34,16,0.08)',
+                  borderColor: dark ? 'rgba(255,255,255,0.22)' : 'rgba(45,34,16,0.2)',
+                }}>
+                  {isAr ? 'قريباً' : 'SOON'}
+                </span>
+              )}
+            </span>
+          </button>
+        );
+      })}
+
+      <p className="rx-fade" style={{
+        position: 'absolute', bottom: 'calc(94px + env(safe-area-inset-bottom))', left: 0, right: 0,
+        textAlign: 'center', fontSize: 12, color: skyMuted, margin: 0, padding: '0 20px', zIndex: 2,
+      }}>
+        {isAr ? 'المس أي كوكب لاستكشاف مجاله.' : 'Tap any planet to explore that area.'}
+      </p>
+
+      <style>{`
+        .rx-sky { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+        .rx-blob { position:absolute; border-radius:50%; filter:blur(52px);
+          animation: rxBlobDrift ease-in-out infinite alternate; }
+        @keyframes rxBlobDrift { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(4%,-5%,0) scale(1.09); } }
+        .rx-celestial { position:absolute; border-radius:50%; }
+        .rx-star { position:absolute; border-radius:50%; background:#fff;
+          animation: rxTwinkle ease-in-out infinite; }
+        @keyframes rxTwinkle { 0%,100% { opacity:.2; } 50% { opacity:1; } }
+        .rx-shoot { position:absolute; top:15%; left:-10%; width:130px; height:2px; border-radius:2px;
+          background: linear-gradient(90deg, rgba(255,255,255,.95) 0%, rgba(255,255,255,0) 100%);
+          transform-origin:left center; opacity:0; animation: rxShoot 16s linear infinite; animation-delay:5s; }
+        @keyframes rxShoot {
+          0%, 87% { opacity:0; transform: translate3d(0,0,0) rotate(13deg); }
+          89% { opacity:.9; }
+          97% { opacity:0; transform: translate3d(115vw,32vh,0) rotate(13deg); }
+          100% { opacity:0; }
+        }
+        .rx-mist { position:absolute; left:0; right:0; bottom:0; height:30%; pointer-events:none; }
+        .rx-veil { position:absolute; inset:0; pointer-events:none; }
+        .rx-fade { animation: rxFade .7s ease both; }
+        @keyframes rxFade { from { opacity:0; } to { opacity:1; } }
+        .rx-planet { position:absolute; background:none; border:none; padding:0; cursor:pointer;
+          animation-name: rxFloat; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+        @keyframes rxFloat { 0%,100% { transform: translate(-50%,-50%) translateY(0); } 50% { transform: translate(-50%,-50%) translateY(-9px); } }
+        .rx-planet-in { display:flex; flex-direction:column; align-items:center; gap:7px; width:118px;
+          animation: rxPop .7s cubic-bezier(.22,.9,.32,1.28) both; animation-delay: calc(var(--i,0) * 90ms); }
+        @keyframes rxPop { from { opacity:0; transform: scale(.65) translateY(12px); } to { opacity:1; transform: none; } }
+        .rx-orb-wrap { position:relative; display:flex; align-items:center; justify-content:center; }
+        .rx-orb-aura { position:absolute; inset:-30%; border-radius:50%;
+          animation: rxBreathe 5.5s ease-in-out infinite; }
+        @keyframes rxBreathe { 0%,100% { opacity:.6; transform:scale(1); } 50% { opacity:1; transform:scale(1.1); } }
+        .rx-orb { position:relative; width:100%; height:100%; border-radius:50%; overflow:hidden;
+          display:flex; align-items:center; justify-content:center;
+          box-shadow: 0 12px 30px rgba(8,6,4,.28), inset 0 -8px 18px rgba(0,0,0,.14), inset 0 2px 10px rgba(255,255,255,.28);
+          transition: transform .28s cubic-bezier(.3,.9,.4,1.2); }
+        .rx-planet:hover .rx-orb { transform: scale(1.06); }
+        .rx-planet:active .rx-orb { transform: scale(.95); }
+        .rx-orb-shade { position:absolute; inset:0; border-radius:50%;
+          background: radial-gradient(circle at 71% 78%, rgba(22,14,6,.4) 0%, rgba(22,14,6,.12) 36%, transparent 58%); }
+        .rx-orb-sheen { position:absolute; inset:0; border-radius:50%;
+          background: radial-gradient(ellipse 46% 34% at 30% 20%, rgba(255,255,255,.8) 0%, rgba(255,255,255,.14) 52%, transparent 68%); }
+        .rx-orb-icon { position:relative; filter: drop-shadow(0 2px 5px rgba(0,0,0,.4)); }
+        .rx-orb-ring { position:absolute; width:156%; height:42%; border:1.5px solid; border-radius:50%;
+          transform: rotate(-24deg); opacity:.5; }
+        .rx-spark { position:absolute; font-size:11px; color:#ffd98a; line-height:1;
+          text-shadow: 0 0 8px rgba(255,200,90,.95); animation: rxTwinkle 2.8s ease-in-out infinite; }
+        .rx-spark--b { font-size:8px; animation-delay:1.3s; }
+        .rx-planet-name { font-family:${SERIF}; font-weight:600; font-size:15.5px;
+          letter-spacing:.3px; line-height:1.15; text-align:center; }
+        .rx-soon-pill { font-size:9.5px; font-weight:800; letter-spacing:1.4px; border:1px solid;
+          border-radius:100px; padding:2.5px 9px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+        @media (prefers-reduced-motion: reduce) {
+          .rx-planet, .rx-planet-in, .rx-orb-aura, .rx-star, .rx-blob, .rx-shoot, .rx-spark, .rx-fade { animation:none !important; }
+        }
+      `}</style>
     </div>
   );
 }

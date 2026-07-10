@@ -32,7 +32,7 @@ export default function LearnScreen() {
       dir={isAr ? 'rtl' : 'ltr'}
       style={{ alignItems: 'stretch', justifyContent: 'flex-start', overflowY: 'auto' }}
     >
-      <AtmosphericBackground strength="panel" />
+      <AtmosphericBackground strength="panel" photo={false} />
       <div className="shop-stage-content" style={{ maxWidth: 480, margin: '0 auto', width: '100%', alignItems: 'stretch' }}>
         {activeTopic ? (
           <>

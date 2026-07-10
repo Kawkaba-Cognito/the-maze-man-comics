@@ -5,6 +5,12 @@
  * Content is English-only for now (source material is English; machine
  * translation of scientific text risked accuracy, so it was left out
  * rather than guessed).
+ *
+ * Voice: precise science, zero jargon-padding, a little mischief. Every
+ * claim here is grounded in the NotebookLM source notebook (Sohlberg &
+ * Mateer's hierarchy, Posner & Petersen's networks, the attentional-blink
+ * literature, cognitive-training efficacy reviews) — the jokes are new,
+ * the facts are not.
  */
 import { assetUrl } from '../../../lib/assetUrl';
 
@@ -14,64 +20,64 @@ export const LEARN_TOPICS = [
     icon: '🎯',
     title: 'Attention',
     titleAr: 'الانتباه',
-    subtitle: 'Mastering Your Focus: A Scientific Guide to the Art of Attention',
+    subtitle: "Attention: The Bouncer at the Door of Your Mind",
     blocks: [
-      { type: 'p', text: "Right now, your brain is quietly ignoring almost everything around you — the hum of the fridge, the weight of your clothes, a hundred things in the corner of your eye. That's not a flaw. It's **attention** doing its job: a gatekeeper deciding, moment to moment, what gets in and what gets filtered out. Scientists call this **endogenous** or **executive attention** — a process run internally by the brain's highest command centers, not something you have to white-knuckle into existence." },
-      { type: 'p', text: "It's also the bedrock everything else is built on. Attention is the trigger for memory and learning — without the gatekeeper's approval, information never gets properly encoded, and learning stalls before it starts." },
+      { type: 'p', text: "As you read this sentence, your brain is ghosting a hundred other things — the hum of the fridge, the weight of your left sock, that tab you've kept open since Tuesday. That's not negligence. That's **attention** working: a bouncer at the door of consciousness, deciding moment by moment who gets in and who waits outside. Scientists call it **executive attention**. Everyone else calls it focus." },
+      { type: 'p', text: "And it isn't a nice-to-have. Nothing gets remembered, learned, or even properly *experienced* without getting past the door first. No attention, no memory — the bouncer decides what your life gets to keep." },
 
       { type: 'tldr', label: 'In 30 seconds', items: [
-        'Attention has **6 distinct sub-skills** — knowing which one is failing beats "trying harder."',
-        'Your brain has a real, built-in **200–500ms blind spot** right after noticing something.',
-        'Training works, but **"transfer" is mostly a myth** — a memory game won\'t fix your keys.',
-        '**Two months** of short, regular sessions is the actual threshold for lasting change.',
+        '"Focus" is **six different skills** wearing one name — diagnose before you blame yourself.',
+        'Your brain literally blinks: a built-in **200–500ms blind spot** after it notices anything.',
+        'Training works, narrowly: **a tracking game makes you better at tracking games.**',
+        'Real rewiring takes **~2 months** of short, regular sessions. Slow is the mechanism, not the problem.',
       ] },
 
       { type: 'image', src: assetUrl('Assets/learn/attention-infographic.webp'), alt: 'Infographic summarizing the three attention networks, the six-level attention hierarchy, and the science of attention training', caption: 'The science of attention, at a glance.' },
 
-      { type: 'h2', text: 'The anatomy of focus' },
-      { type: 'p', text: "\"Attention\" isn't one thing — it's a hierarchy of sub-skills (Sohlberg & Mateer's model). Knowing which one is failing lets you target the actual problem instead of just \"trying harder.\"" },
+      { type: 'h2', text: 'One word, six skills' },
+      { type: 'p', text: "Saying \"my attention is bad\" is like saying \"my sport is bad.\" *Which one?* Neuropsychologists (Sohlberg & Mateer) split focus into a six-rung ladder — and knowing which rung wobbles tells you what actually needs work:" },
       { type: 'ul', items: [
-        '**Arousal** — your basic activation level. Alert and online, or sluggish and fatigued?',
-        '**Focused attention** — targeting one specific stimulus, like spotting a notification.',
-        '**Sustained attention** — holding steady focus over time, like following an hour-long lecture.',
-        '**Selective attention** — concentrating on one task while inhibiting distractions, like reading a spreadsheet in a noisy office.',
-        '**Alternating attention** — flexibly switching between tasks and picking back up where you left off.',
-        '**Divided attention** — processing multiple things at once, like monitoring GPS while driving.',
+        '**Arousal** — is the brain switched on at all? Pre-coffee you is intimately familiar with this rung.',
+        '**Focused** — locking onto one thing: a ping, a face, a faint smell of burning.',
+        '**Sustained** — *staying* locked: minute forty of the lecture, not minute two.',
+        '**Selective** — holding one voice in a loud café while the room competes for you.',
+        '**Alternating** — email → colleague\'s question → back to the exact sentence you left.',
+        '**Divided** — GPS + traffic + podcast at once. (Spoiler: nobody truly does this one.)',
       ] },
-      { type: 'p', text: "Selective and divided attention aren't the same thing, and the difference matters: selective attention just filters noise, but divided attention carries a real **\"switching cost\"** — a measurable drain that shows up as more errors and faster fatigue. When you \"multitask,\" your brain isn't doing two things at once — it's rapidly switching between them, burning energy each time." },
+      { type: 'p', text: "That spoiler matters. What feels like multitasking is the brain flipping a switch at speed — and every flip charges a **switching cost**, measurable in extra errors and faster fatigue. You're not doing two things at once. You're doing two things worse, in alternation." },
 
-      { type: 'h2', text: 'Three systems, not one' },
-      { type: 'p', text: "Attention isn't localized to a single \"focus spot\" in the brain. Posner and Petersen (1990) identified three distinct networks working together:" },
-      { type: 'table', headers: ['System', 'Role'], rows: [
-        ['Alert system', 'Maintains arousal, prepares the brain for incoming stimuli.'],
-        ['Orientation system', 'Directs focus toward visual stimuli and spatial locations.'],
-        ['Execution system', 'Resolves conflicts, manages complex tasks, handles divided attention.'],
+      { type: 'h2', text: 'Three networks, one show' },
+      { type: 'p', text: "There's no single \"focus spot\" in the skull. Posner and Petersen traced attention to three cooperating brain networks — think stage crew, spotlight operator, and director:" },
+      { type: 'table', headers: ['Network', 'Its job'], rows: [
+        ['Alerting', '"Wake up — something\'s coming." Keeps the brain primed and ready.'],
+        ['Orienting', '"Look there." Swings the spotlight across space and senses.'],
+        ['Executive', '"Ignore that, resolve this." The director who settles every conflict.'],
       ] },
-      { type: 'p', text: "The execution system sits in the prefrontal cortex — the part of the brain that matures **last**, which is a real, physical reason children and teenagers struggle more with impulse control. After 60, natural declines in brain volume can slow these systems too — though as the next section covers, that's not a one-way street." },
+      { type: 'p', text: "The director — the prefrontal executive network — is the **last** brain region to finish wiring, which is why teenagers combine world-class orienting with questionable impulse control. That's biology, not character. Past 60 the whole crew slows a little too — though the next section carries genuinely good news about that." },
 
-      { type: 'h2', text: 'Why attention lapses — and why that’s not a failure' },
-      { type: 'p', text: "Lapses are a biological reality, not a personal failing. One clean example: the **attentional blink**. In lab studies, there's a window right after noticing one thing where the brain reliably misses a second thing, because its attention resource is still tied up processing the first. That's not weak willpower — that's how the system is built." },
-      { type: 'stat', value: '200–500ms', label: "The attentional blink — a real, measurable blind spot in every human brain, right after it locks onto something." },
+      { type: 'h2', text: 'Your brain blinks (and other honest excuses)' },
+      { type: 'p', text: "Zoning out isn't a moral failure — it's on the spec sheet. The cleanest proof is the **attentional blink**: right after your brain catches one target, there's a window where a second one sails straight past, unseen. Not because you're careless. Because the machinery is still busy with the first." },
+      { type: 'stat', value: '200–500ms', label: "the attentional blink — a blind spot built into every human brain. Yours, your boss's, everyone's." },
       { type: 'ul', items: [
-        '**Biological strain** — heat, fatigue, and poor nutrition all measurably degrade the alert system.',
-        '**Clinical conditions** — in ADHD, structural differences in the prefrontal cortex make the gatekeeper less effective at inhibiting irrelevant input.',
-        '**Aging** — brain volume can decline after 60, but **physical activity** has been shown to increase gray-matter volume even later in life, which is genuinely protective.',
+        '**Heat, fatigue, hunger** — the alerting network runs on biology, and it degrades with it. An unfocused afternoon is often just an unfed one.',
+        "**ADHD** — structural differences in prefrontal circuitry make the bouncer more permissive at the door. A wiring difference, not a willpower one.",
+        '**Aging** — gray matter thins after 60, but **physical exercise measurably rebuilds it**. The door can be maintained for life.',
       ] },
 
-      { type: 'h2', text: 'Training attention: what the evidence actually supports' },
-      { type: 'p', text: "The underlying mechanism is **brain plasticity** — the brain's ability to reorganize and strengthen its own connections through use. That's real. What it does and doesn't mean is where it's worth being precise — including about what this app itself can and can't promise you." },
-      { type: 'callout', tone: 'fact', label: 'Fact —', text: 'targeted training can meaningfully improve specific skills: visual scanning, response time, focused inhibition.' },
-      { type: 'callout', tone: 'fact', label: 'Fact —', text: "consistency beats intensity. Short, regular sessions (roughly 15 minutes, a few times a week) sustained for about two months is the rough threshold for new neural connections to stabilize." },
-      { type: 'callout', tone: 'fiction', label: 'Fiction — the "transfer" myth —', text: "getting better at a tracking game makes you better at that game. It does not automatically make you better at remembering where you put your keys. Real-world benefit needs to be paired with actual lifestyle habits, not assumed." },
-      { type: 'callout', tone: 'fact', label: 'Fact —', text: 'mindfulness practice has separately been shown to improve visuo-spatial processing and executive function, through a different mechanism than drilled cognitive tasks.' },
-      { type: 'stat', value: '2 months', label: 'roughly how long consistent, short sessions take before new neural connections actually stabilize. Progress is real, but it isn\'t instant.' },
+      { type: 'h2', text: 'Can you train it? Yes — with fine print' },
+      { type: 'p', text: "The mechanism is real: **plasticity**, the brain physically rewiring with use. The fine print is where the honesty lives — including about this app:" },
+      { type: 'callout', tone: 'fact', label: 'Fact —', text: 'targeted practice sharpens exactly the skills you drill: visual scanning, reaction speed, distraction-inhibition.' },
+      { type: 'callout', tone: 'fact', label: 'Fact —', text: 'consistency beats heroics. Ten focused minutes a few times a week outperforms one monthly marathon.' },
+      { type: 'callout', tone: 'fiction', label: 'Fiction — "transfer" —', text: "getting brilliant at a memory game makes you brilliant at… that memory game. Your keys are on their own. Broad benefits need broad habits: sleep, movement, real-world practice." },
+      { type: 'callout', tone: 'fact', label: 'Fact —', text: 'mindfulness practice improves executive and visuo-spatial attention through a separate route — so the two approaches stack.' },
+      { type: 'stat', value: '2 months', label: "how long consistent practice needs before new wiring stabilizes. Not instant — which is exactly how you know it's structural." },
 
-      { type: 'h2', text: 'Practical takeaways' },
+      { type: 'h2', text: 'Four moves worth stealing' },
       { type: 'ul', items: [
-        "**Keep sessions short and regular** — a real 10–15 minutes, a few times a week, sustained for about two months, matters more than occasional long grinds.",
-        "**Respect the blink** — when you're taking in complex new information, slow down. Your brain needs a beat to finish processing the first thing before the second one lands.",
-        '**Move your body** — regular physical activity is one of the best-evidenced ways to protect gray matter and attentional control as you age.',
-        "**If noisy rooms derail you, don't fight it with willpower** — some people genuinely have \"lower-span\" selective attention. Physical fixes (earplugs, noise-cancelling, a quieter seat) work better than forcing focus.",
+        '**Short and regular wins.** 10–15 minutes, a few times a week, for two months. Boring on paper; potent in cortex.',
+        '**Respect the blink.** Learning something dense? Slow the intake — give target one time to clear before target two arrives.',
+        '**Move your body to keep your mind.** Exercise is the best-evidenced protector of attention across the lifespan.',
+        "**Stop out-toughing noisy rooms.** Some brains genuinely filter less — earplugs beat willpower. That's engineering, not weakness.",
       ] },
     ],
   },
