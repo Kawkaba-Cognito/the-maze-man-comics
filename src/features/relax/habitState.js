@@ -81,7 +81,7 @@ export const IDENTITY_PRESETS = [
 ];
 
 /** Wellbeing practices that also count toward the Calm moment habit. */
-export const CALM_PRACTICES = new Set(['breathe', 'grounding', 'pmr', 'soundbath', 'nature']);
+export const CALM_PRACTICES = new Set(['breathe', 'grounding', 'pmr']);
 
 /** Curated template library — browse & add beyond presets. */
 export const HABIT_TEMPLATES = [

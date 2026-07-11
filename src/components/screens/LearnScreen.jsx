@@ -50,7 +50,7 @@ export default function LearnScreen() {
             >
               {isAr ? `${isAr ? 'تعلّم' : 'Learn'} ›` : '‹ Learn'}
             </button>
-            <LearnArticle topic={activeTopic} isAr={isAr} chrome={chrome} />
+            <LearnArticle topic={activeTopic} isAr={isAr} chrome={chrome} playSfx={playSfx} />
           </>
         ) : (
           <>

@@ -7,9 +7,33 @@ import {
 
 const DRAG_THRESHOLD = 6; // px of movement before a tap becomes a drag
 
+// Per-type sphere "surface" — layered radial-gradients drawn under the base
+// color so each planet type reads as a distinct little world rather than a
+// flat dot. Order matters: lit highlight + shadow crescent go last (bottom
+// layer = base color), texture spots sit above it.
+const PLANET_SURFACE = {
+  note: (c) => `
+    radial-gradient(circle at 68% 66%, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0) 13%),
+    radial-gradient(circle at 42% 78%, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0) 10%),
+    radial-gradient(circle at 74% 32%, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0) 8%),
+    radial-gradient(circle at 30% 26%, #fff, ${c} 55%, ${c})
+  `,
+  goal: (c) => `
+    repeating-linear-gradient(8deg, rgba(255,255,255,0.14) 0px 2px, rgba(0,0,0,0.1) 2px 5px),
+    radial-gradient(circle at 30% 26%, #fff, ${c} 55%, ${c})
+  `,
+  journal: (c) => `
+    radial-gradient(circle at 62% 70%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 35%),
+    radial-gradient(circle at 25% 70%, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 30%),
+    radial-gradient(circle at 30% 26%, #fff, ${c} 55%, ${c})
+  `,
+};
+
 function Planet({ planet, isAr, onPointerDownPlanet, dragging }) {
   const meta = PLANET_TYPES[planet.type] || PLANET_TYPES.note;
   const label = planet.title || (isAr ? meta.ar : meta.en);
+  const surface = (PLANET_SURFACE[planet.type] || PLANET_SURFACE.note)(meta.color);
+  const hasRing = planet.type === 'goal';
   return (
     <button
       type="button"
@@ -28,19 +52,35 @@ function Planet({ planet, isAr, onPointerDownPlanet, dragging }) {
       aria-label={label}
     >
       <span
-        className="u-planet-bob"
-        style={{
-          animationDelay: `-${(planet.id.charCodeAt(0) % 10) * 0.4}s`,
-          width: 40, height: 40, borderRadius: '50%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-          background: `radial-gradient(circle at 35% 30%, #fff9, ${meta.color})`,
-          boxShadow: dragging
-            ? `0 0 26px ${meta.color}, 0 0 8px #fff8 inset`
-            : `0 0 14px ${meta.color}99, 0 0 3px #fff5 inset`,
-          border: planet.type === 'goal' && planet.done ? '2px solid #8fe0a0' : 'none',
-        }}
+        className="u-planet-orb"
+        style={{ width: 46, height: 46, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        {planet.type === 'journal' && planet.mood ? planet.mood : meta.icon}
+        {hasRing && (
+          <span
+            aria-hidden
+            style={{
+              position: 'absolute', left: '50%', top: '52%', width: 74, height: 22,
+              transform: 'translate(-50%,-50%) rotate(-16deg)', borderRadius: '50%',
+              border: `2px solid ${meta.color}bb`, borderTop: '2px solid rgba(255,244,214,0.85)',
+              boxShadow: `0 0 6px ${meta.color}66`, pointerEvents: 'none',
+            }}
+          />
+        )}
+        <span
+          className="u-planet-bob"
+          style={{
+            animationDelay: `-${(planet.id.charCodeAt(0) % 10) * 0.4}s`,
+            width: 40, height: 40, borderRadius: '50%', position: 'relative', zIndex: 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17,
+            background: surface,
+            boxShadow: dragging
+              ? `0 0 26px ${meta.color}, inset -7px -7px 11px rgba(0,0,0,0.4), inset 3px 3px 7px rgba(255,255,255,0.35)`
+              : `0 0 14px ${meta.color}99, inset -7px -7px 11px rgba(0,0,0,0.4), inset 3px 3px 7px rgba(255,255,255,0.3)`,
+            border: planet.type === 'goal' && planet.done ? '2px solid #8fe0a0' : 'none',
+          }}
+        >
+          {planet.type === 'journal' && planet.mood ? planet.mood : meta.icon}
+        </span>
       </span>
       <span style={{
         fontSize: 9.5, fontWeight: 700, color: '#f3ecd8', textShadow: '0 1px 3px rgba(0,0,0,0.85)',
@@ -118,6 +158,77 @@ function TypePicker({ isAr, onPick, onClose }) {
             </span>
           </button>
         ))}
+      </div>
+    </Sheet>
+  );
+}
+
+function InfoCard({ isAr, planet, onEdit, onClose }) {
+  const meta = PLANET_TYPES[planet.type] || PLANET_TYPES.note;
+  const label = planet.title || (isAr ? meta.ar : meta.en);
+  const date = new Date(planet.createdAt || Date.now()).toLocaleDateString(isAr ? 'ar' : 'en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+  return (
+    <Sheet onClose={onClose}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+        <span style={{
+          width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19,
+          background: `radial-gradient(circle at 30% 26%, #fff, ${meta.color} 55%, ${meta.color})`,
+          boxShadow: `0 0 14px ${meta.color}99, inset -7px -7px 11px rgba(0,0,0,0.4), inset 3px 3px 7px rgba(255,255,255,0.3)`,
+        }}>
+          {planet.type === 'journal' && planet.mood ? planet.mood : meta.icon}
+        </span>
+        <div>
+          <div style={{ fontWeight: 800, color: '#f3ecd8', fontSize: 16.5 }}>{label}</div>
+          <div style={{ fontSize: 11.5, color: '#b9a878', marginTop: 2 }}>
+            {isAr ? meta.ar : meta.en} · {date}
+          </div>
+        </div>
+      </div>
+
+      {planet.type === 'goal' && (
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 999,
+          background: planet.done ? 'rgba(143,224,160,0.16)' : 'rgba(255,255,255,0.06)',
+          border: `1px solid ${planet.done ? 'rgba(143,224,160,0.4)' : 'rgba(232,172,78,0.25)'}`,
+          color: planet.done ? '#8fe0a0' : '#e8dcc0', fontSize: 12.5, fontWeight: 700, marginBottom: 12,
+        }}>
+          {planet.done ? '✓' : '○'} {isAr ? (planet.done ? 'تم تحقيقه' : 'قيد التقدّم') : (planet.done ? 'Achieved' : 'In progress')}
+        </div>
+      )}
+
+      <div style={{
+        color: '#e8dcc0', fontSize: 14.5, fontWeight: 500, lineHeight: 1.55, whiteSpace: 'pre-wrap',
+        background: 'rgba(0,0,0,0.22)', border: '1px solid rgba(232,172,78,0.16)', borderRadius: 12,
+        padding: '12px 14px', minHeight: 48, marginBottom: 16,
+      }}>
+        {planet.body || (isAr ? 'لا يوجد نص بعد.' : 'Nothing written yet.')}
+      </div>
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            flex: 1, padding: '12px 16px', borderRadius: 10, border: '2px solid rgba(232,172,78,0.3)',
+            background: 'rgba(255,255,255,0.06)', color: '#f0e2c0', fontWeight: 800, cursor: 'pointer', fontSize: 14,
+          }}
+        >
+          {isAr ? 'إغلاق' : 'Close'}
+        </button>
+        <button
+          type="button"
+          onClick={onEdit}
+          style={{
+            flex: 1, padding: '12px 16px', borderRadius: 10, border: 'none',
+            background: 'linear-gradient(180deg, #f5c44a, #e8a830)', color: '#1a1208',
+            fontWeight: 800, cursor: 'pointer', fontSize: 14.5,
+          }}
+        >
+          {isAr ? 'تعديل' : 'Edit'}
+        </button>
       </div>
     </Sheet>
   );
@@ -293,7 +404,7 @@ export default function UniversePlanets({ isAr, playSfx }) {
     setDraggingId(null);
     if (d && !d.moved) {
       const planet = planets.find((p) => p.id === d.id);
-      if (planet) { playSfx?.('click'); setSheet({ mode: 'edit', type: planet.type, planet }); }
+      if (planet) { playSfx?.('click'); setSheet({ mode: 'info', type: planet.type, planet }); }
     }
     dragRef.current = null;
   }
@@ -347,6 +458,14 @@ export default function UniversePlanets({ isAr, playSfx }) {
 
       {sheet === 'pick' && (
         <TypePicker isAr={isAr} onPick={handlePickType} onClose={() => setSheet(null)} />
+      )}
+      {sheet && sheet.mode === 'info' && (
+        <InfoCard
+          isAr={isAr}
+          planet={sheet.planet}
+          onEdit={() => { playSfx?.('click'); setSheet({ mode: 'edit', type: sheet.type, planet: sheet.planet }); }}
+          onClose={() => setSheet(null)}
+        />
       )}
       {sheet && sheet.mode === 'add' && (
         <PlanetForm

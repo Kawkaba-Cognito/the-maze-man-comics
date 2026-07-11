@@ -3,9 +3,9 @@ import { useApp } from '../../context/AppContext';
 import BreathePractice from './BreathePractice';
 import GroundingPractice from './GroundingPractice';
 import PmrPractice from './PmrPractice';
-import SoundBathPractice from './SoundBathPractice';
-import NatureSoundsPractice from './NatureSoundsPractice';
 import IkigaiPractice from './IkigaiPractice';
+import PersonalityQuiz from './PersonalityQuiz';
+import RelationshipQuiz from './RelationshipQuiz';
 import DailyHabits from './DailyHabits';
 import { OPEN_DAILY_KEY } from './HabitReminderBanner';
 
@@ -556,18 +556,18 @@ const RELAX_PRACTICES = [
     title: 'Muscle Relaxation', titleAr: 'استرخاء العضلات',
     sub: 'Progressive tense-and-release through the body — great for tension and sleep.',
     subAr: 'شدّ وإرخاء تدريجي للجسم — ممتاز للتوتر والنوم.' },
-  { id: 'soundbath', icon: '🔔', color: '#7b86c8',
-    title: 'Sound Bath', titleAr: 'حمّام صوتي',
-    sub: 'A calming ambient soundscape — soft drone and gentle singing-bowl tones.',
-    subAr: 'أجواء صوتية مهدّئة — رنين ناعم ونغمات أوعية غنائية لطيفة.' },
-  { id: 'nature', icon: '🌿', color: '#5aa07a',
-    title: 'Nature Sounds', titleAr: 'أصوات الطبيعة',
-    sub: 'Mix rain, ocean, wind and fire into your own calming soundscape.',
-    subAr: 'اخلط المطر والمحيط والرياح والنار في أجواء تهدّئك.' },
   { id: 'ikigai', icon: '🎯', color: '#c9a24b',
     title: 'Ikigai', titleAr: 'إيكيغاي',
     sub: 'Reflect on what you love, what you\'re good at, what the world needs, and what you can offer — and glimpse your purpose.',
     subAr: 'تأمّل فيما تحبّ وما تجيد وما يحتاجه العالم وما يمكنك تقديمه — ولمح معنى حياتك.' },
+  { id: 'personality-quiz', icon: '🧭', color: '#c47a3e',
+    title: 'Big Five Personality', titleAr: 'الشخصية — العوامل الخمسة',
+    sub: 'A validated 10-question science quiz (TIPI) mapping your Openness, Conscientiousness, Extraversion, Agreeableness & Neuroticism — with the research behind each trait.',
+    subAr: 'اختبار علمي موثّق من ١٠ أسئلة (TIPI) يقيس انفتاحك وضميرك الحي وانبساطك وتوافقك واستقرارك العاطفي — مع الأبحاث وراء كل سمة.' },
+  { id: 'relationship-quiz', icon: '💞', color: '#c86f8f',
+    title: 'Attachment Style', titleAr: 'نمط التعلّق',
+    sub: 'A validated 12-question quiz (ECR-S) revealing your attachment style in close relationships, grounded in decades of attachment research.',
+    subAr: 'اختبار موثّق من ١٢ سؤالاً (ECR-S) يكشف نمط تعلّقك في العلاقات الحميمة، مبنيّ على عقود من أبحاث نظرية التعلّق.' },
 ];
 
 // Five wellbeing categories. `items` lists practice ids; `soon` marks a category
@@ -576,11 +576,11 @@ const CATEGORIES = [
   { id: 'calm', icon: '🌿', color: '#5aa07a',
     title: 'Stress & Calm', titleAr: 'التوتر والهدوء',
     tag: 'Settle your body and mind in the moment.', tagAr: 'هدّئ جسدك وعقلك في اللحظة.',
-    items: ['breathe', 'grounding', 'soundbath', 'nature', 'mbsr'] },
+    items: ['breathe', 'grounding', 'mbsr'] },
   { id: 'sleep', icon: '🌙', color: '#7b86c8',
     title: 'Sleep', titleAr: 'النوم',
     tag: 'Wind down and drift off.', tagAr: 'استرخِ واغفُ بسلام.',
-    items: ['pmr', 'breathe', 'soundbath', 'nature'],
+    items: ['pmr', 'breathe'],
     programSoon: 'A guided wind-down sleep program is coming soon.',
     programSoonAr: 'برنامج نوم موجّه للاسترخاء — قريباً.' },
   { id: 'meaning', icon: '✨', color: '#c9a24b',
@@ -592,13 +592,15 @@ const CATEGORIES = [
   { id: 'relationships', icon: '❤️', color: '#c86f8f',
     title: 'Relationships', titleAr: 'العلاقات',
     tag: 'Kindness and connection.', tagAr: 'اللطف والتواصل.',
-    soon: 'A loving-kindness meditation and appreciation practices.',
-    soonAr: 'تأمّل المحبّة اللطيفة وممارسات التقدير والتواصل.' },
+    items: ['relationship-quiz'],
+    programSoon: 'A loving-kindness meditation and appreciation program is coming soon.',
+    programSoonAr: 'تأمّل المحبّة اللطيفة وبرنامج ممارسات التقدير — قريباً.' },
   { id: 'personality', icon: '🧭', color: '#c47a3e',
     title: 'Personality', titleAr: 'الشخصية',
     tag: 'Get to know yourself.', tagAr: 'تعرّف على نفسك.',
-    soon: 'A Big Five personality profile with plain-language insights.',
-    soonAr: 'ملفّ شخصيتك وفق العوامل الخمسة الكبرى مع رؤى مبسّطة.' },
+    items: ['personality-quiz'],
+    programSoon: 'A deeper, guided Big Five program is coming soon.',
+    programSoonAr: 'برنامج موجّه أعمق للعوامل الخمسة الكبرى — قريباً.' },
 ];
 
 // Which practices are structured, multi-session PROGRAMS (vs quick, single-use).
@@ -1194,9 +1196,9 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
   if (view === 'breathe') return <BreathePractice onBack={back} />;
   if (view === 'grounding') return <GroundingPractice onBack={back} />;
   if (view === 'pmr') return <PmrPractice onBack={back} />;
-  if (view === 'soundbath') return <SoundBathPractice onBack={back} />;
-  if (view === 'nature') return <NatureSoundsPractice onBack={back} />;
   if (view === 'ikigai') return <IkigaiPractice onBack={back} />;
+  if (view === 'personality-quiz') return <PersonalityQuiz onBack={back} />;
+  if (view === 'relationship-quiz') return <RelationshipQuiz onBack={back} />;
   return (
     <RelaxMenu
       isAr={isAr}

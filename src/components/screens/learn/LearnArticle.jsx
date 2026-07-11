@@ -1,4 +1,5 @@
 import React from 'react';
+import { EXPERIMENTS } from './experiments';
 
 /** Splits "text with **bold** and *italic* spans" into text + <strong>/<em> runs — no markdown lib needed for this one use case. */
 function Inline({ text }) {
@@ -14,8 +15,12 @@ function Inline({ text }) {
   );
 }
 
-function Block({ block, chrome }) {
+function Block({ block, chrome, isAr, playSfx }) {
   switch (block.type) {
+    case 'experiment': {
+      const Experiment = EXPERIMENTS[block.kind];
+      return Experiment ? <Experiment isAr={isAr} chrome={chrome} playSfx={playSfx} /> : null;
+    }
     case 'h2':
       return (
         <h2 style={{ fontFamily: "'Fredoka One', 'Nunito', sans-serif", fontSize: 19, margin: '26px 0 10px', color: chrome.text }}>
@@ -141,7 +146,7 @@ function Block({ block, chrome }) {
   }
 }
 
-export default function LearnArticle({ topic, isAr, chrome }) {
+export default function LearnArticle({ topic, isAr, chrome, playSfx }) {
   return (
     <article style={{ textAlign: isAr ? 'right' : 'left' }}>
       <div style={{ fontSize: 12, letterSpacing: 1.5, color: chrome.muted, textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>
@@ -150,7 +155,7 @@ export default function LearnArticle({ topic, isAr, chrome }) {
       <h1 style={{ fontFamily: "'Fredoka One', 'Nunito', sans-serif", fontSize: 24, lineHeight: 1.25, margin: '0 0 18px', color: chrome.text }}>
         {topic.subtitle || topic.title}
       </h1>
-      {topic.blocks.map((block, i) => <Block key={i} block={block} chrome={chrome} />)}
+      {topic.blocks.map((block, i) => <Block key={i} block={block} chrome={chrome} isAr={isAr} playSfx={playSfx} />)}
     </article>
   );
 }
