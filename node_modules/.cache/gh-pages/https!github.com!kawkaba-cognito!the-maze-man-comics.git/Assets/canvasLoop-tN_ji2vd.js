@@ -1,1 +1,0 @@
-function e({wrap:e,rafRef:t,resize:n,frame:r,maxDt:i=.05}){n();let a=new ResizeObserver(n);a.observe(e);let o=performance.now(),s=e=>{let n=Math.min(i,(e-o)/1e3);o=e,r(n,e)!==!1&&(t.current=requestAnimationFrame(s))};return t.current=requestAnimationFrame(s),()=>{cancelAnimationFrame(t.current),a.disconnect()}}export{e as t};
