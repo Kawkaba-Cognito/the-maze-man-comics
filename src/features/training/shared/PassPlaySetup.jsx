@@ -1,4 +1,5 @@
 import React from 'react';
+import { Sword } from '@phosphor-icons/react';
 
 /**
  * Shared Pass n Play lobby — difficulty, players, rounds.
@@ -31,7 +32,7 @@ export default function PassPlaySetup({
     roundsHint: isAr
       ? 'نفس التحدي لكل اللاعبين في كل جولة · مرّر الجهاز'
       : 'Same challenge for every player each round · pass the device',
-    start: isAr ? '⚔️ ابدأ' : '⚔️ Start',
+    start: <><Sword size="1em" weight="fill" style={{ verticalAlign: '-0.15em', marginInlineEnd: 6 }} />{isAr ? 'ابدأ' : 'Start'}</>,
     ...labels,
   };
 

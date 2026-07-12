@@ -5,6 +5,7 @@ import { makeRng } from '../../../../shared/rng';
 import CosmosCharacter from '../../../../../character/CosmosCharacter';
 import FoxCharacter from '../../../../../character/FoxCharacter';
 import PersonCharacter from '../../../../../character/PersonCharacter';
+import Emoji from '../../../../../../components/shared/Emoji';
 import { STORIES } from './stories';
 
 /*
@@ -274,7 +275,7 @@ function BgSwatch({ bgId, size = 50 }) {
   return (
     <div style={{ position: 'relative', width: size, height: size * 0.82, borderRadius: 9, overflow: 'hidden', background: cfg.bg, border: '2px solid #cdbfa6' }}>
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '24%', background: cfg.ground, opacity: 0.9 }} />
-      <span style={{ position: 'absolute', top: 3, insetInlineStart: 5, fontSize: 16 }}>{cfg.chip}</span>
+      <span style={{ position: 'absolute', top: 3, insetInlineStart: 5, fontSize: 16 }}><Emoji char={cfg.chip} /></span>
     </div>
   );
 }
@@ -308,7 +309,7 @@ export function PanelStage({ panel, size, say }) {
         <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: `${floorPct}%`, background: cfg.ground, boxShadow: `inset 0 ${Math.max(2, 3 * k)}px 0 rgba(255,255,255,0.18), inset 0 -40px 40px -30px rgba(0,0,0,0.25)` }} />
       )}
       {cfg && cfg.amb.map((a, i) => (
-        <span key={i} style={{ position: 'absolute', lineHeight: 1, pointerEvents: 'none', filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.18))', ...scaleStyle({ position: 'absolute', lineHeight: 1, ...a.s }, k) }}>{a.e}</span>
+        <span key={i} style={{ position: 'absolute', lineHeight: 1, pointerEvents: 'none', filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.18))', ...scaleStyle({ position: 'absolute', lineHeight: 1, ...a.s }, k) }}><Emoji char={a.e} /></span>
       ))}
       {panel.item && (() => {
         const it = typeof panel.item === 'string' ? { e: panel.item } : panel.item;
@@ -317,7 +318,7 @@ export function PanelStage({ panel, size, say }) {
           ? { top: '14%', insetInlineEnd: '15%' }
           : { bottom: `${Math.max(2, floorPct * 0.28)}%`, insetInlineStart: '13%' };
         return (
-          <span style={{ position: 'absolute', ...pos, fontSize: fs, lineHeight: 1, pointerEvents: 'none', filter: 'drop-shadow(0 2px 1px rgba(0,0,0,0.22))', animation: it.sky ? 'sg-twinkle 2s ease-in-out infinite' : 'sg-idle 2.6s ease-in-out infinite', transformOrigin: 'center bottom', zIndex: 2 }}>{it.e}</span>
+          <span style={{ position: 'absolute', ...pos, fontSize: fs, lineHeight: 1, pointerEvents: 'none', filter: 'drop-shadow(0 2px 1px rgba(0,0,0,0.22))', animation: it.sky ? 'sg-twinkle 2s ease-in-out infinite' : 'sg-idle 2.6s ease-in-out infinite', transformOrigin: 'center bottom', zIndex: 2 }}><Emoji char={it.e} /></span>
         );
       })()}
       {chars.length > 0 && (
@@ -705,7 +706,7 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
           <div style={S.dockHandle} aria-hidden="true" />
           <div style={S.dockInner}>
             <div style={S.dockRow}>
-              <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true">📍</span>{t.places}</span>
+              <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true"><Emoji char="📍" /></span>{t.places}</span>
               <div style={S.dockChips}>
                 {story.paletteBgs.map((id) => (
                   <button key={id} type="button" style={{ ...S.bgChip, ...(isSel('bg', id) ? S.chipSel : null) }} onClick={() => pickSel('bg', id)}>
@@ -716,7 +717,7 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
             </div>
             <div style={S.dockDivider} aria-hidden="true" />
             <div style={S.dockRow}>
-              <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true">🙂</span>{t.characters}</span>
+              <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true"><Emoji char="🙂" /></span>{t.characters}</span>
               <div style={S.dockChips}>
                 {story.paletteChars.map((id) => (
                   <button key={id} type="button" style={{ ...S.charChip, ...(isSel('char', id) ? S.chipSel : null) }} onClick={() => pickSel('char', id)}>
@@ -728,16 +729,16 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
             </div>
             <div style={S.dockDivider} aria-hidden="true" />
             <div style={S.dockRow}>
-              <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true">⚡</span>{t.actions}</span>
+              <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true"><Emoji char="⚡" /></span>{t.actions}</span>
               <div style={S.dockChips}>
                 {story.paletteActions.map((id) => (
                   <button key={id} type="button" style={{ ...S.actChip, ...(isSel('action', id) ? S.chipSel : null) }} onClick={() => pickSel('action', id)}>
-                    <span style={{ fontSize: 24, lineHeight: 1 }}>{actEmoji(id)}</span>
+                    <span style={{ fontSize: 24, lineHeight: 1 }}><Emoji char={actEmoji(id)} /></span>
                     <span style={S.chipName}>{actWord(id)}</span>
                   </button>
                 ))}
                 <button type="button" style={{ ...S.eraseChip, ...(isSel('erase', 'x') ? S.chipSel : null) }} onClick={() => pickSel('erase', 'x')}>
-                  <span style={{ fontSize: 22, lineHeight: 1 }}>🧽</span>
+                  <span style={{ fontSize: 22, lineHeight: 1 }}><Emoji char="🧽" /></span>
                   <span style={S.chipName}>{t.erase}</span>
                 </button>
               </div>

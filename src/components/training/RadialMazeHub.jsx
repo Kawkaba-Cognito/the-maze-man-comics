@@ -6,6 +6,7 @@ import { DOMAIN_COLOR, DOMAINS } from './trainingData';
 import { useApp } from '../../context/AppContext';
 import { useThemedChrome } from '../../hooks/useThemedChrome';
 import { tokens } from '../../styles/tokens';
+import { PLANET_NOISE_URL } from '../../lib/planetTexture';
 
 /** Local alias kept for in-file readability — values come from the central token set. */
 const L = {
@@ -112,6 +113,20 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId }) {
         fill={`url(#${bodyGradId})`}
         stroke={col}
         strokeWidth={hovered ? 2.2 : 1.55}
+      />
+      {/* Surface texture — subtle procedural noise for depth, blended over the tinted body */}
+      <clipPath id={`planetClip-${domainId}`}>
+        <circle cx="0" cy="0" r={r} />
+      </clipPath>
+      <image
+        href={PLANET_NOISE_URL}
+        x={-r}
+        y={-r}
+        width={r * 2}
+        height={r * 2}
+        clipPath={`url(#planetClip-${domainId})`}
+        preserveAspectRatio="xMidYMid slice"
+        style={{ mixBlendMode: 'overlay', opacity: 0.5, pointerEvents: 'none' }}
       />
       {/* Atmosphere rim */}
       <circle

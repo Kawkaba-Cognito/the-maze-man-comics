@@ -1580,6 +1580,7 @@ html[data-home-theme='dark'] .rx-root .rx-cat-divider {
     transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
 .app-tab-ic {
+    display: inline-flex;
     font-size: clamp(1.1rem, 3.4vw, 1.28rem);
     line-height: 1;
 }
@@ -1685,7 +1686,7 @@ html[data-home-theme='dark'] .other-menu-item {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 .other-menu-item:active { transform: scale(0.98); }
-.other-menu-ic { font-size: 1.25rem; line-height: 1; flex-shrink: 0; }
+.other-menu-ic { display: inline-flex; font-size: 1.25rem; line-height: 1; flex-shrink: 0; }
 .other-menu-lbl { flex: 1; min-width: 0; }
 .other-menu-chev { opacity: 0.55; font-size: 1.2rem; }
 [dir='rtl'] .other-menu-item { font-family: 'Cairo', sans-serif; }
@@ -1720,7 +1721,7 @@ html[data-home-theme='dark'] .other-award {
     background: rgba(18, 16, 28, 0.72);
     border-color: rgba(212, 168, 80, 0.3);
 }
-.other-award-ic { font-size: 1.6rem; }
+.other-award-ic { display: inline-flex; font-size: 1.6rem; }
 .other-award-title {
     font-family: 'Outfit', system-ui, sans-serif;
     font-weight: 800;

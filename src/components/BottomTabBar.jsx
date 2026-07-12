@@ -1,13 +1,14 @@
 import React from 'react';
+import { House, Target, BookOpen, Leaf, DotsThreeOutline } from '@phosphor-icons/react';
 import { useApp } from '../context/AppContext';
 
 /** Primary app destinations — the daily habits check-in is Home; Training is its own tab. */
 export const APP_TABS = [
-  { id: 'home', screen: 'habits', icon: '🏠', en: 'Home', ar: 'الرئيسية' },
-  { id: 'training', screen: 'comics', icon: '🎯', en: 'Training', ar: 'تدريب' },
-  { id: 'learn', screen: 'learn', icon: '📚', en: 'Learn', ar: 'تعلّم' },
-  { id: 'wellbeing', screen: 'wellbeing', icon: '🌿', en: 'Wellbeing', ar: 'عافية' },
-  { id: 'other', screen: 'other', icon: '⋯', en: 'Other', ar: 'المزيد' },
+  { id: 'home', screen: 'habits', Icon: House, en: 'Home', ar: 'الرئيسية' },
+  { id: 'training', screen: 'comics', Icon: Target, en: 'Training', ar: 'تدريب' },
+  { id: 'learn', screen: 'learn', Icon: BookOpen, en: 'Learn', ar: 'تعلّم' },
+  { id: 'wellbeing', screen: 'wellbeing', Icon: Leaf, en: 'Wellbeing', ar: 'عافية' },
+  { id: 'other', screen: 'other', Icon: DotsThreeOutline, en: 'Other', ar: 'المزيد' },
 ];
 
 const TAB_IDS = new Set(APP_TABS.map((t) => t.id));
@@ -53,7 +54,9 @@ export default function BottomTabBar() {
             aria-current={active ? 'page' : undefined}
             onClick={() => onSelect(tab)}
           >
-            <span className="app-tab-ic" aria-hidden="true">{tab.icon}</span>
+            <span className="app-tab-ic" aria-hidden="true">
+              <tab.Icon size="1.28em" weight={active ? 'duotone' : 'regular'} />
+            </span>
             <span className="app-tab-lbl">{isAr ? tab.ar : tab.en}</span>
           </button>
         );

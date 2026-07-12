@@ -8,6 +8,7 @@ import PersonalityQuiz from './PersonalityQuiz';
 import RelationshipQuiz from './RelationshipQuiz';
 import SleepSoundsPractice from './SleepSoundsPractice';
 import DailyHabits from './DailyHabits';
+import { planetTextureLayerStyle } from '../../lib/planetTexture';
 import { OPEN_DAILY_KEY } from './HabitReminderBanner';
 
 /*
@@ -1064,6 +1065,7 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
                   <span aria-hidden="true" className="rx-orb-ring" style={{ borderColor: c.color }} />
                 )}
                 <span className="rx-orb" style={{ background: c.color }}>
+                  <span aria-hidden="true" className="rx-orb-texture" style={planetTextureLayerStyle(0.4)} />
                   <span aria-hidden="true" className="rx-orb-shade" />
                   <span aria-hidden="true" className="rx-orb-sheen" />
                   <span className="rx-orb-icon" style={{ fontSize: p.size * 0.34 }}>{c.icon}</span>
@@ -1141,6 +1143,7 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
           background: radial-gradient(circle at 71% 78%, rgba(22,14,6,.4) 0%, rgba(22,14,6,.12) 36%, transparent 58%); }
         .rx-orb-sheen { position:absolute; inset:0; border-radius:50%;
           background: radial-gradient(ellipse 46% 34% at 30% 20%, rgba(255,255,255,.8) 0%, rgba(255,255,255,.14) 52%, transparent 68%); }
+        .rx-orb-texture { position:absolute; inset:0; border-radius:50%; pointer-events:none; }
         .rx-orb-icon { position:relative; filter: drop-shadow(0 2px 5px rgba(0,0,0,.4)); }
         .rx-orb-ring { position:absolute; width:156%; height:42%; border:1.5px solid; border-radius:50%;
           transform: rotate(-24deg); opacity:.5; }

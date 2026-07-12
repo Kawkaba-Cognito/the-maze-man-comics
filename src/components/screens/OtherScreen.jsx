@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { UserCircle, ShoppingCart, ChartBar, Medal, MoonStars, Gear, Info, ChatCircleDots, Compass, CastleTurret, Crown } from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
 import AtmosphericBackground from '../shared/AtmosphericBackground';
 import { useThemedChrome } from '../../hooks/useThemedChrome';
@@ -7,14 +8,14 @@ import WorkoutStats from './WorkoutStats';
 import { IconBack } from '../../features/training/shared/TrainingIcons';
 
 const MENU = [
-  { id: 'profile', icon: '👤', en: 'Profile', ar: 'الملف', kind: 'tab', tab: 'profile' },
-  { id: 'shop', icon: '🛒', en: 'Shop', ar: 'المتجر', kind: 'tab', tab: 'pointshop' },
-  { id: 'stats', icon: '📊', en: 'Stats', ar: 'الإحصاءات', kind: 'view', view: 'stats' },
-  { id: 'awards', icon: '🏅', en: 'Awards', ar: 'الجوائز', kind: 'view', view: 'awards' },
-  { id: 'appearance', icon: '🌗', en: 'Appearance', ar: 'المظهر', kind: 'view', view: 'appearance' },
-  { id: 'settings', icon: '⚙️', en: 'Settings', ar: 'الإعدادات', kind: 'view', view: 'settings' },
-  { id: 'about', icon: 'ℹ️', en: 'About', ar: 'عن التطبيق', kind: 'about' },
-  { id: 'support', icon: '💬', en: 'Support', ar: 'الدعم', kind: 'view', view: 'support' },
+  { id: 'profile', icon: <UserCircle size="1.4rem" weight="duotone" />, en: 'Profile', ar: 'الملف', kind: 'tab', tab: 'profile' },
+  { id: 'shop', icon: <ShoppingCart size="1.4rem" weight="duotone" />, en: 'Shop', ar: 'المتجر', kind: 'tab', tab: 'pointshop' },
+  { id: 'stats', icon: <ChartBar size="1.4rem" weight="duotone" />, en: 'Stats', ar: 'الإحصاءات', kind: 'view', view: 'stats' },
+  { id: 'awards', icon: <Medal size="1.4rem" weight="duotone" />, en: 'Awards', ar: 'الجوائز', kind: 'view', view: 'awards' },
+  { id: 'appearance', icon: <MoonStars size="1.4rem" weight="duotone" />, en: 'Appearance', ar: 'المظهر', kind: 'view', view: 'appearance' },
+  { id: 'settings', icon: <Gear size="1.4rem" weight="duotone" />, en: 'Settings', ar: 'الإعدادات', kind: 'view', view: 'settings' },
+  { id: 'about', icon: <Info size="1.4rem" weight="duotone" />, en: 'About', ar: 'عن التطبيق', kind: 'about' },
+  { id: 'support', icon: <ChatCircleDots size="1.4rem" weight="duotone" />, en: 'Support', ar: 'الدعم', kind: 'view', view: 'support' },
 ];
 
 function AppearancePanel({ isAr, chrome, appTheme, setAppTheme, playSfx, onBack }) {
@@ -66,9 +67,9 @@ function AppearancePanel({ isAr, chrome, appTheme, setAppTheme, playSfx, onBack 
 
 function AwardsPanel({ isAr, chrome, profileData, onBack }) {
   const badges = [
-    { id: 'explorer', icon: '🧭', en: 'Explorer', ar: 'مستكشف', unlocked: !!profileData.badges?.explorer },
-    { id: 'maze', icon: '🏰', en: 'Maze Walker', ar: 'سائر المتاهة', unlocked: !!profileData.badges?.maze },
-    { id: 'master', icon: '👑', en: 'Master', ar: 'متمرّس', unlocked: !!profileData.badges?.master },
+    { id: 'explorer', icon: <Compass size="1.5rem" weight="duotone" />, en: 'Explorer', ar: 'مستكشف', unlocked: !!profileData.badges?.explorer },
+    { id: 'maze', icon: <CastleTurret size="1.5rem" weight="duotone" />, en: 'Maze Walker', ar: 'سائر المتاهة', unlocked: !!profileData.badges?.maze },
+    { id: 'master', icon: <Crown size="1.5rem" weight="duotone" />, en: 'Master', ar: 'متمرّس', unlocked: !!profileData.badges?.master },
   ];
   return (
     <div className="other-sub" dir={isAr ? 'rtl' : 'ltr'}>

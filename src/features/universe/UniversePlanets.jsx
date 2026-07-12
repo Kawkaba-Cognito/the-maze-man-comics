@@ -4,6 +4,7 @@ import {
   PLANET_TYPES, JOURNAL_MOODS,
   loadPlanets, savePlanets, createPlanet,
 } from './universeStore';
+import { planetTextureLayerStyle } from '../../lib/planetTexture';
 
 const DRAG_THRESHOLD = 6; // px of movement before a tap becomes a drag
 
@@ -79,6 +80,7 @@ function Planet({ planet, isAr, onPointerDownPlanet, dragging }) {
             border: planet.type === 'goal' && planet.done ? '2px solid #8fe0a0' : 'none',
           }}
         >
+          <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: '50%', pointerEvents: 'none', ...planetTextureLayerStyle(0.45) }} />
           {planet.type === 'journal' && planet.mood ? planet.mood : meta.icon}
         </span>
       </span>

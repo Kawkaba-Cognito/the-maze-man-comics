@@ -594,6 +594,7 @@
     background: linear-gradient(165deg, #8a8580 0%, #6c6864 100%);
     border: 2px solid #1a1208;
     box-shadow: 2px 2px 0 #1a1208;
+    color: #fff;
 }
 .ct-fq-attn-mode--free .ct-fq-attn-mode-ic {
     background: linear-gradient(165deg, #62b277 0%, #3c8a54 100%);
@@ -1287,6 +1288,7 @@
 .ct-fq-attn-mode--assess .ct-fq-attn-mode-ic {
     background: linear-gradient(165deg, #f4f5ff 0%, #e6e8fb 100%);
     border-color: rgba(98, 110, 196, 0.28);
+    color: #4a4fb0;
 }
 
 .ct-fq-sci-link {
