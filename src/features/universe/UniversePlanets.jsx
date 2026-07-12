@@ -376,6 +376,11 @@ export default function UniversePlanets({ isAr, playSfx }) {
 
   function onPointerDownPlanet(e, planet) {
     e.stopPropagation();
+    e.preventDefault();
+    // Pointer capture keeps every subsequent move/up/cancel routed to this
+    // element even if the finger drifts off it — without it, mobile touch
+    // sequences can lose the target mid-drag and silently drop the tap.
+    try { e.target.setPointerCapture(e.pointerId); } catch { /* not supported */ }
     dragRef.current = {
       id: planet.id, startX: e.clientX, startY: e.clientY,
       startPctX: planet.x, startPctY: planet.y, moved: false,
@@ -383,6 +388,7 @@ export default function UniversePlanets({ isAr, playSfx }) {
     setDraggingId(planet.id);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerCancel);
   }
 
   function onPointerMove(e) {
@@ -397,15 +403,28 @@ export default function UniversePlanets({ isAr, playSfx }) {
     setPlanets((prev) => prev.map((p) => (p.id === d.id ? { ...p, x: pctX, y: pctY } : p)));
   }
 
-  function onPointerUp() {
-    const d = dragRef.current;
+  function endDrag() {
     window.removeEventListener('pointermove', onPointerMove);
     window.removeEventListener('pointerup', onPointerUp);
+    window.removeEventListener('pointercancel', onPointerCancel);
     setDraggingId(null);
+  }
+
+  function onPointerUp() {
+    const d = dragRef.current;
+    endDrag();
     if (d && !d.moved) {
       const planet = planets.find((p) => p.id === d.id);
       if (planet) { playSfx?.('click'); setSheet({ mode: 'info', type: planet.type, planet }); }
     }
+    dragRef.current = null;
+  }
+
+  // Fires instead of pointerup when the browser hijacks the gesture (e.g. a
+  // touch sequence interpreted as a scroll) — must still tear down the
+  // listeners/drag state, just without treating it as a completed tap.
+  function onPointerCancel() {
+    endDrag();
     dragRef.current = null;
   }
 

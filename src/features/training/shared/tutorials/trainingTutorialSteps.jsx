@@ -178,14 +178,14 @@ const STEPS = {
   },
   wordle: {
     en: [
-      { title: 'Guess the word', body: 'Type a valid word and submit. You have limited tries to find the hidden answer.', icon: '🔤' },
-      { title: 'Read the colours', body: 'Green = correct letter, correct spot. Yellow = right letter, wrong spot. Grey = not in the word.', icon: '🟩', pills: ['🟩 correct spot', '🟨 wrong spot', '⬜ not in word'] },
-      { title: 'Use the clues', body: 'Each guess narrows the answer. Levels and Survival use longer words and fewer guesses.', icon: '💡', note: READY_NOTE.en },
+      { title: 'Connect the letters', body: 'Drag through touching letters on the grid, then lift your finger to submit the word.', icon: '🔤' },
+      { title: 'Any real word counts', body: 'Letters must touch (diagonals count) and the word needs at least 3 letters — any valid word you can trace scores.', icon: '🧩' },
+      { title: 'Longer words score more', body: 'Bigger words are worth more points. Levels and Survival use larger grids.', icon: '🏆', note: READY_NOTE.en },
     ],
     ar: [
-      { title: 'خمّن الكلمة', body: 'اكتب كلمة صحيحة وأرسلها. لديك محاولات محدودة لإيجاد الإجابة المخفية.', icon: '🔤' },
-      { title: 'اقرأ الألوان', body: 'أخضر = حرف صحيح في مكانه. أصفر = حرف صحيح في مكان آخر. رمادي = ليس في الكلمة.', icon: '🟩', pills: ['🟩 مكان صحيح', '🟨 حرف صحيح', '⬜ ليس في الكلمة'] },
-      { title: 'استخدم التلميحات', body: 'كل تخمين يضيّق الإجابة. المستويات والبقاء يستخدمان كلمات أطول ومحاولات أقل.', icon: '💡', note: READY_NOTE.ar },
+      { title: 'صِل الحروف', body: 'اسحب إصبعك عبر الحروف المتلاصقة على الشبكة، ثم ارفعه لإرسال الكلمة.', icon: '🔤' },
+      { title: 'أي كلمة حقيقية تُحتسب', body: 'يجب أن تتلامس الحروف (حتى قطرياً) وأن تتكوّن الكلمة من ٣ أحرف على الأقل — أي كلمة صحيحة يمكنك رسمها تُحتسب.', icon: '🧩' },
+      { title: 'الكلمات الأطول تمنح نقاطاً أكثر', body: 'الكلمات الأكبر تساوي نقاطاً أكثر. المستويات والبقاء يستخدمان شبكات أكبر.', icon: '🏆', note: READY_NOTE.ar },
     ],
   },
   synonyms: {

@@ -6,16 +6,19 @@ import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import PassPlaySetup from '../../../../shared/PassPlaySetup';
 import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import { createTrialLog } from '../../../../shared/trialLog';
+import AssessmentReady from '../../../../assessment/AssessmentReady';
 import MemoObject from '../memo-span/MemoObject';
 import { memoTip } from '../memo-span/MemoSciencePanel';
 import NBackModes from './NBackModes';
 import {
   NB_LEVELS_PER_TIER, NB_DIFF_KEYS, NB_DM, NB_GRID, NB_PASS_ACC,
-  specForLevel, prepareLevelBlock, prepareFreeBlock, prepareChallengeSeed, prepareChallengeBlock,
+  specForLevel, prepareLevelBlock, prepareFreeBlock, prepareAssessBlock, prepareChallengeSeed, prepareChallengeBlock,
   gradeBlock, starsForNBack, adaptiveNextN, isNbackLevelUnlocked, nbLevelKey,
   nbStreams, emptyNbStats, nbBestN, nbSetBestN,
   loadNbackProfile, saveNbackProfile, mergeNbackChallengeRow, compareNbackChallengeRows,
 } from './nbackData';
+
+const ASSESS_MAX_BLOCKS = 5;
 
 const UI = {
   en: {
@@ -89,14 +92,17 @@ const UI = {
 const STEP_GET_READY_MS = 800;
 const rngSeed = () => (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
 
-export default function NBackGame({ onBack }) {
+export default function NBackGame({
+  onBack, assessmentMode = false, onAssessmentComplete, onAssessmentExit,
+  assessmentLabel, assessmentStep, assessmentDomainId = 'memory',
+}) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
   const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('nback', isAr, playSfx);
 
   const [profile, setProfile] = useState(() => loadNbackProfile());
-  const [phase, setPhase] = useState('hub');
+  const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
   const variant = 'dual'; // single professional game: dual n-back (position + object)
   const [diffKey, setDiffKey] = useState('easy');
   const [block, setBlock] = useState(null);
@@ -132,6 +138,9 @@ export default function NBackGame({ onBack }) {
   const chalRoundsTotalRef = useRef(1);
   const chalDiffRef = useRef('medium');
   const beginBlockRef = useRef(null);
+  // Assessment run state: a short, fixed-length series of blocks that adapts N
+  // the same way Survival does, tracking the highest N cleared at NB_PASS_ACC.
+  const assessRef = useRef(null);
 
   const doneMap = profile.done || {};
 
@@ -165,6 +174,27 @@ export default function NBackGame({ onBack }) {
     const grade = gradeBlock(statsRef.current, b.spec.variant);
     const n = b.spec.n;
     const vr = b.spec.variant;
+
+    if (b.mode === 'assess') {
+      const a = assessRef.current;
+      if (!a) return;
+      if (grade.acc >= NB_PASS_ACC) a.bestGoodN = Math.max(a.bestGoodN, n);
+      a.blocksRun += 1;
+      const nextN = adaptiveNextN(n, grade.acc);
+      if (a.blocksRun < ASSESS_MAX_BLOCKS) {
+        setBlock(null); blockRef.current = null; setPlayStep('idle');
+        beginBlockRef.current(prepareAssessBlock(nextN, rngSeed(), variant));
+        return;
+      }
+      const score = Math.round(Math.max(0, Math.min(1, (a.bestGoodN - 1) / 5)) * 100);
+      const line = a.bestGoodN > 0
+        ? (isAr ? `أعلى مستوى موثوق: ${t.nBadge(a.bestGoodN)}` : `sustained ${t.nBadge(a.bestGoodN)} reliably`)
+        : (isAr ? `دون ١-عودة بدقّة موثوقة` : `below 1-back reliably`);
+      trialLogRef.current?.finish({ score, bestN: a.bestGoodN }); trialLogRef.current = null;
+      setBlock(null); blockRef.current = null; setPlayStep('idle');
+      onAssessmentComplete?.({ score, line });
+      return;
+    }
 
     if (b.mode === 'challenge') {
       const i = chalIdxRef.current;
@@ -210,7 +240,7 @@ export default function NBackGame({ onBack }) {
     }
     setResult({ type: 'level', won, stars, ...grade, n, diff: b.spec.diff, lv: b.spec.lv });
     setBlock(null); blockRef.current = null; setPlayStep('idle'); setPhase('res');
-  }, [awardFreeRun, awardTrainingWin, clearTimers, playSfx]);
+  }, [awardFreeRun, awardTrainingWin, clearTimers, playSfx, onAssessmentComplete, isAr, t, variant]);
 
   const runTrial = useCallback((i) => {
     const b = blockRef.current; if (!b) return;
@@ -228,8 +258,13 @@ export default function NBackGame({ onBack }) {
     statsRef.current = emptyNbStats();
     idxRef.current = -1; setIdx(-1); setCur(null); setShowStim(false);
     respRef.current = { obj: false, pos: false }; setResp({ obj: false, pos: false }); setFeedback({ obj: null, pos: null });
-    trialLogRef.current?.discard();
-    trialLogRef.current = createTrialLog({ game: 'nback', mode: b.mode, meta: { n: b.spec.n, diff: b.spec.diff, lv: b.spec.lv, variant: b.spec.variant } });
+    // Assessment blocks share ONE trialLog across the whole adaptive run
+    // (created once in startAssessment) so all blocks' trials are kept, not
+    // just the last one — every other mode logs one block at a time.
+    if (b.mode !== 'assess') {
+      trialLogRef.current?.discard();
+      trialLogRef.current = createTrialLog({ game: 'nback', mode: b.mode, meta: { n: b.spec.n, diff: b.spec.diff, lv: b.spec.lv, variant: b.spec.variant } });
+    }
     setResult(null); setPhase('play'); setPlayStep('ready');
     timersRef.current.push(setTimeout(() => { setPlayStep('run'); runTrial(0); }, STEP_GET_READY_MS));
   }, [clearTimers, runTrial]);
@@ -252,11 +287,18 @@ export default function NBackGame({ onBack }) {
     const mode = blockRef.current?.mode; // capture before clearing the ref
     clearTimers(); trialLogRef.current?.discard(); trialLogRef.current = null;
     setBlock(null); blockRef.current = null; setPlayStep('idle');
+    if (mode === 'assess') { (onAssessmentExit || onBack)?.(); return; }
     if (mode === 'challenge') setPhase('chal'); else if (mode === 'level') setPhase('levels'); else setPhase('hub');
-  }, [clearTimers]);
+  }, [clearTimers, onAssessmentExit, onBack]);
 
   const startLevel = (diff, lv) => beginBlock(prepareLevelBlock(diff, lv, rngSeed(), variant));
   const startFree = (n) => beginBlock(prepareFreeBlock(n, rngSeed(), variant));
+  const startAssessment = () => {
+    assessRef.current = { blocksRun: 0, bestGoodN: 0 };
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'nback', mode: 'assess' });
+    beginBlock(prepareAssessBlock(1, rngSeed(), variant));
+  };
 
   const openChallenge = () => {
     const names = chalNames.map((s, i) => s.trim() || `Player ${i + 1}`);
@@ -277,6 +319,17 @@ export default function NBackGame({ onBack }) {
 
   return (
     <div className="cancellation-task-game ct-ms-root" dir={isAr ? 'rtl' : 'ltr'}>
+      {phase === 'assessStart' && (
+        <AssessmentReady
+          isAr={isAr}
+          label={assessmentLabel}
+          step={assessmentStep}
+          domainId={assessmentDomainId}
+          onStart={startAssessment}
+          onBack={onAssessmentExit || onBack}
+          playSfx={playSfx}
+        />
+      )}
       {phase === 'hub' && (
         <>
           <div className="ct-fq-training-shell ct-fq-training-shell--hub-light ct-ms-shell">

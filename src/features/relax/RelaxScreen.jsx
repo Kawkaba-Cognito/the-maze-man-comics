@@ -6,6 +6,7 @@ import PmrPractice from './PmrPractice';
 import IkigaiPractice from './IkigaiPractice';
 import PersonalityQuiz from './PersonalityQuiz';
 import RelationshipQuiz from './RelationshipQuiz';
+import SleepSoundsPractice from './SleepSoundsPractice';
 import DailyHabits from './DailyHabits';
 import { OPEN_DAILY_KEY } from './HabitReminderBanner';
 
@@ -568,6 +569,10 @@ const RELAX_PRACTICES = [
     title: 'Attachment Style', titleAr: 'نمط التعلّق',
     sub: 'A validated 12-question quiz (ECR-S) revealing your attachment style in close relationships, grounded in decades of attachment research.',
     subAr: 'اختبار موثّق من ١٢ سؤالاً (ECR-S) يكشف نمط تعلّقك في العلاقات الحميمة، مبنيّ على عقود من أبحاث نظرية التعلّق.' },
+  { id: 'sleep-sounds', icon: '🌧️', color: '#7b86c8',
+    title: 'Sleep Sounds', titleAr: 'أصوات النوم',
+    sub: 'A looping ambient sound to play while you wind down or drift off.',
+    subAr: 'صوت محيطي متكرر لتشغيله أثناء الاسترخاء أو النوم.' },
 ];
 
 // Five wellbeing categories. `items` lists practice ids; `soon` marks a category
@@ -580,7 +585,7 @@ const CATEGORIES = [
   { id: 'sleep', icon: '🌙', color: '#7b86c8',
     title: 'Sleep', titleAr: 'النوم',
     tag: 'Wind down and drift off.', tagAr: 'استرخِ واغفُ بسلام.',
-    items: ['pmr', 'breathe'],
+    items: ['pmr', 'breathe', 'sleep-sounds'],
     programSoon: 'A guided wind-down sleep program is coming soon.',
     programSoonAr: 'برنامج نوم موجّه للاسترخاء — قريباً.' },
   { id: 'meaning', icon: '✨', color: '#c9a24b',
@@ -1199,6 +1204,7 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
   if (view === 'ikigai') return <IkigaiPractice onBack={back} />;
   if (view === 'personality-quiz') return <PersonalityQuiz onBack={back} />;
   if (view === 'relationship-quiz') return <RelationshipQuiz onBack={back} />;
+  if (view === 'sleep-sounds') return <SleepSoundsPractice onBack={back} />;
   return (
     <RelaxMenu
       isAr={isAr}

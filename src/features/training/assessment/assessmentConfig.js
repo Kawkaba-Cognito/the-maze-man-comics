@@ -1,6 +1,6 @@
 /*
  * Cognitive battery protocol — aligned with brief digital batteries (MyCQ ~30 min,
- * CAB ~30–40 min) and classic paradigms: Mesulam cancellation, SDMT, Corsi span,
+ * CAB ~30–40 min) and classic paradigms: Mesulam cancellation, SDMT, Dual N-Back,
  * verbal fluency, Tower-of-London planning, spatial Stroop / task-switching.
  *
  * Fixed parameters + re-randomized layouts each session. Absolute scores are for
@@ -33,11 +33,11 @@ export const DOMAIN_PROTOCOL = {
     detailAr: 'تجربة · خط أساس حركي · ١٢٠ ث من الاستبدال المُقيّم',
   },
   memory: {
-    paradigmEn: 'Corsi block span (forward + backward)',
-    paradigmAr: 'مدى كورسي (أمامي + عكسي)',
-    durationMin: 5,
-    detailEn: 'Practice spans · adaptive ladder · visuospatial working memory',
-    detailAr: 'امتدادات تجريبية · سلّم تكيّفي · ذاكرة عاملة بصرية-مكانية',
+    paradigmEn: 'Dual N-Back (place + object)',
+    paradigmAr: 'إن-باك مزدوج (مكان وعنصر)',
+    durationMin: 4,
+    detailEn: 'Up to 5 short blocks · adaptive N · working-memory updating',
+    detailAr: 'حتى ٥ جولات قصيرة · N تكيّفي · تحديث الذاكرة العاملة',
   },
   language: {
     paradigmEn: 'Timed verbal fluency (letter-link grid)',
@@ -75,7 +75,7 @@ export function batteryDurationLabel(isAr, domainIds = BATTERY_DOMAINS) {
 export const ASSESSMENT_GAME_BY_DOMAIN = {
   attention: 'cancel-task',
   speed: 'speed-match',
-  memory: 'memo-span',
+  memory: 'nback',
   language: 'wordle',
   reasoning: 'rush-hour',
   flexibility: 'spatial-stroop',

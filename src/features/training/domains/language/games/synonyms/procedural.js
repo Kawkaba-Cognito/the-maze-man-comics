@@ -58,21 +58,26 @@ export function genSimilarity(rng, tier) {
   };
 }
 
-/** Procedural analogy: member : member :: member : ? within / across categories. */
+/**
+ * Procedural analogy: member : member :: member : ? — the stem's three items
+ * and the correct answer are all drawn from the SAME category (e.g. three
+ * weather words asking for a fourth), so the completion is actually
+ * defensible. Wrong answers are drawn from other categories. (Previously the
+ * correct answer came from a random unrelated category, so it had no real
+ * link to the stem at all.)
+ */
 export function genAnalogy(rng, tier) {
-  const catAB = pickOne(CATEGORIES, rng);
-  const mem = shuffle(catAB.members, rng);
-  const stem = [mem[0], mem[1], mem[2] ?? mem[0]];
-  let catCD = pickOne(CATEGORIES.filter((c) => c.id !== catAB.id), rng);
-  const memCD = shuffle(catCD.members, rng);
-  const correct = memCD[0];
+  const cat = pickOne(CATEGORIES, rng);
+  const mem = shuffle(cat.members, rng);
+  const stem = [mem[0], mem[1], mem[2]];
+  const correct = mem[3];
   const wrong = shuffle(
-    CATEGORIES.flatMap((c) => c.members)
-      .filter((m) => m.en !== correct.en && m.en !== stem[2].en)
-      .slice(0, 12),
+    CATEGORIES.filter((c) => c.id !== cat.id)
+      .flatMap((c) => c.members)
+      .filter((m) => m.en !== correct.en),
     rng,
   ).slice(0, 3);
-  const id = `proc:an:${catAB.id}:${stem[0].en}:${stem[1].en}:${stem[2].en}:${correct.en}`;
+  const id = `proc:an:${cat.id}:${stem[0].en}:${stem[1].en}:${stem[2].en}:${correct.en}`;
   return {
     id,
     kind: 'analogy',

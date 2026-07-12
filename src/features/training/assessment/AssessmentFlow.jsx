@@ -69,7 +69,7 @@ function Spark({ values, w = 280, h = 44 }) {
 const PARTS = [
   { id: 'attention', gameKey: 'cancel-task' },
   { id: 'speed', gameKey: 'speed-match' },
-  { id: 'memory', gameKey: 'memo-span' },
+  { id: 'memory', gameKey: 'nback' },
   { id: 'language', gameKey: 'wordle' },
   { id: 'reasoning', gameKey: 'rush-hour' },
   { id: 'flexibility', gameKey: 'spatial-stroop' },

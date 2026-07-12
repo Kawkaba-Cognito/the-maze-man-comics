@@ -104,7 +104,7 @@ export function domainStats(domain, score, age) {
 export const DOMAIN_RELIABILITY = {
   attention: 0.8,   // cancellation / CPT-type (Uttl & Pilkenton-Taylor 2001)
   speed: 0.85,      // Digit-Symbol Substitution — high test-retest (Wechsler)
-  memory: 0.7,      // Corsi block span (Kessels et al. 2000)
+  memory: 0.7,      // Dual N-Back accuracy — reliability estimates vary across studies (~0.6-0.9); 0.7 kept as a conservative mid-range figure
   language: 0.75,   // verbal fluency (Shao et al. 2014)
   reasoning: 0.65,  // planning/problem-solving (Tower-type; lower r)
   flexibility: 0.7, // Stroop/switching interference scores

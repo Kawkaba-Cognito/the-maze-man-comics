@@ -129,7 +129,7 @@ const UI_EN = {
   },
   hubNodeFreeHint: 'Endless · 3 lives · solve before the timer',
   hubNodeLevelsHint: '3 tiers · 100 levels each',
-  hubNodeChallengeHint: 'Same parking jam for everyone · pass the device',
+  hubNodeChallengeHint: 'Same puzzle for everyone · pass the device',
   freeIntroBody:
     'Endless puzzles that get harder. Each puzzle has its own timer — solve it before time runs out. You have 3 lives; run out of time on a puzzle and you lose one. Fewer moves = more points, and streaks multiply your score. The run ends only when your lives reach zero.',
   freeResTitle: 'Run complete',
@@ -184,7 +184,7 @@ const UI_AR = {
   },
   hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · حل قبل المؤقت',
   hubNodeLevelsHint: '٣ صعوبات · ١٠٠ مرحلة لكل صعوبة',
-  hubNodeChallengeHint: 'نفس ازدحام المواقف للجميع · مرّر الجهاز',
+  hubNodeChallengeHint: 'نفس اللغز للجميع · مرّر الجهاز',
   freeIntroBody:
     'ألغاز لا تنتهي وتزداد صعوبة. لكل لغز مؤقته الخاص — حلّه قبل نفاد الوقت. لديك ٣ أرواح؛ إذا نفد وقت لغز تخسر روحاً. حركات أقل = نقاط أكثر، والسلسلة تضاعف النقاط. تنتهي المحاولة فقط عند نفاد الأرواح.',
   freeResTitle: 'اكتملت المحاولة',

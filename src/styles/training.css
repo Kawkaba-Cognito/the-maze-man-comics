@@ -174,7 +174,7 @@
 }
 .ct-fq-training-shell--hub-light .ct-fq-hub-attn-big {
     font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
-    font-size: clamp(2rem, 8.2vw, 3.6rem);
+    font-size: clamp(1.5rem, 7vw, 3.6rem);
     font-weight: 800;
     color: #141a17;
     letter-spacing: -0.03em;
@@ -2321,7 +2321,7 @@
 
     /* Hub heading: scales up on desktop without cartoon overshoot */
     .cancellation-task-game .ct-fq-training-shell--hub-light .ct-fq-hub-attn-big {
-        font-size: clamp(2.5rem, 4.5vw, 3.85rem);
+        font-size: clamp(1.8rem, 3.4vw, 2.75rem);
     }
 
     /* Mode selector list: wider, centred nicely */

@@ -123,6 +123,13 @@ export function specForFree(n, variant = 'dual') {
   return { diff: 'free', lv: 0, n: nn, variant, stimMs: 2000, isiMs: 900, trials: 20, targetRate: NB_TARGET_RATE };
 }
 
+/** Shorter block for the formal Assessment battery — same pacing, fewer trials
+ *  per step so a multi-block adaptive run stays within the battery's time budget. */
+export function specForAssess(n, variant = 'dual') {
+  const nn = clamp(n, 1, 6);
+  return { diff: 'assess', lv: 0, n: nn, variant, stimMs: 2000, isiMs: 900, trials: 14, targetRate: NB_TARGET_RATE };
+}
+
 export function specForChallenge(diff, variant = 'dual') {
   const key = NB_DIFF_KEYS.includes(diff) ? diff : 'medium';
   return { diff: key, lv: 0, n: NB_DM[key].baseN + 1, variant, stimMs: 1900, isiMs: 800, trials: 18, targetRate: NB_TARGET_RATE };
@@ -134,6 +141,7 @@ function buildBlock(spec, mode, seed) {
 
 export function prepareLevelBlock(diff, lv, seed, variant = 'object') { return buildBlock(specForLevel(diff, lv, variant), 'level', seed); }
 export function prepareFreeBlock(n, seed, variant = 'object') { return buildBlock(specForFree(n, variant), 'free', seed); }
+export function prepareAssessBlock(n, seed, variant = 'object') { return buildBlock(specForAssess(n, variant), 'assess', seed); }
 export function prepareChallengeSeed(diff, variant = 'object') {
   const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
   return { seed, diff, spec: specForChallenge(diff, variant) };

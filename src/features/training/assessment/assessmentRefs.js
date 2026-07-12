@@ -17,8 +17,8 @@ export const DOMAIN_SCIENCE = {
       cites: ['Smith (1982) SDMT', 'Salthouse (1996)', 'Deary et al. (2010)'],
     },
     memory: {
-      measures: 'Visuospatial working memory (storage + manipulation) via Corsi block span, forward and backward.',
-      cites: ['Corsi (1972)', 'Baddeley (2003)', 'Kessels et al. (2000)'],
+      measures: 'Working-memory updating and interference control via a Dual N-Back task (tracking place and object at once), with N adapting to accuracy.',
+      cites: ['Kirchner (1958)', 'Jaeggi et al. (2008)', 'Baddeley (2003)'],
     },
     language: {
       measures: 'Verbal ability / lexical access — a crystallized skill that holds and grows with age.',
@@ -43,8 +43,8 @@ export const DOMAIN_SCIENCE = {
       cites: ['Smith (1982) SDMT', 'Salthouse (1996)', 'Deary et al. (2010)'],
     },
     memory: {
-      measures: 'الذاكرة العاملة البصرية المكانية (تخزين + معالجة) عبر مدى كورسي، أماماً وعكساً.',
-      cites: ['Corsi (1972)', 'Baddeley (2003)', 'Kessels et al. (2000)'],
+      measures: 'تحديث الذاكرة العاملة وضبط التداخل عبر مهمة إن-باك مزدوجة (تتبّع المكان والعنصر معاً)، مع تكيّف N حسب الدقّة.',
+      cites: ['Kirchner (1958)', 'Jaeggi et al. (2008)', 'Baddeley (2003)'],
     },
     language: {
       measures: 'القدرة اللفظية والوصول المعجمي — مهارة متبلورة تثبت وتنمو مع العمر.',
@@ -69,8 +69,8 @@ export const REFERENCES = [
   'Verhaeghen P (2003). Aging and vocabulary scores: a meta-analysis. Psychol Aging.',
   'Miyake A et al. (2000). The unity and diversity of executive functions. Cogn Psychol.',
   'Townsend JT & Ashby FG (1983). Stochastic modeling of elementary psychological processes (IES).',
-  'Kessels RPC et al. (2000). The Corsi Block-Tapping Task: standardization and normative data. Appl Neuropsychol.',
-  'Monaco M et al. (2013). Forward and backward span for verbal and visuo-spatial data. Neurol Sci.',
+  'Kirchner WK (1958). Age differences in short-term retention of rapidly changing information. J Exp Psychol.',
+  'Jaeggi SM et al. (2008). Improving fluid intelligence with training on working memory. PNAS.',
   'Smith A (1982). Symbol Digit Modalities Test (SDMT): Manual. Western Psychological Services.',
   'Jaeger J (2018). Digit Symbol Substitution Test: the case for sensitivity over specificity. J Clin Psychopharmacol.',
   'Lu CH & Proctor RW (1995). The influence of irrelevant location information on performance (Simon effect). Psychon Bull Rev.',
@@ -82,9 +82,9 @@ export const REFERENCES = [
 
 export const METHODOLOGY = {
   en:
-    'The full battery runs six published paradigms (~25–30 min): Mesulam cancellation, SDMT (120 s), Corsi span, timed verbal fluency (120 s), dual planning puzzles, and spatial Stroop (44 trials). Each block uses fixed parameters with re-randomized layouts. Raw performance converts to 0–100 domain scores, then age-group percentiles and standard scores (mean 100, SD 15). Your Cognitive Index is the mean SS across completed domains. Re-test every 4–8 weeks to track reliable change (RCI).',
+    'The full battery runs six published paradigms (~25–30 min): Mesulam cancellation, SDMT (120 s), Dual N-Back (up to 5 short blocks), timed verbal fluency (120 s), dual planning puzzles, and spatial Stroop (44 trials). Each block uses fixed parameters with re-randomized layouts. Raw performance converts to 0–100 domain scores, then age-group percentiles and standard scores (mean 100, SD 15). Your Cognitive Index is the mean SS across completed domains. Re-test every 4–8 weeks to track reliable change (RCI).',
   ar:
-    'يشغّل التقييم الكامل ستة نماذج منشورة (~٢٥–٣٠ د): شطب ميسولام، SDMT (١٢٠ ث)، مدى كورسي، طلاقة لفظية موقّتة (١٢٠ ث)، لغزا تخطيط، وستروب مكاني (٤٤ تجربة). كل كتلة بمعاملات ثابتة وتخطيط مُعاد عشوائياً. يُحوّل الأداء إلى درجات 0–100 ثم مئويات ودرجات معيارية (متوسط 100). مؤشرك المعرفي متوسط SS للمجالات المكتملة. أعد الاختبار كل 4–8 أسابيع لتتبّع التغيّر الموثوق.',
+    'يشغّل التقييم الكامل ستة نماذج منشورة (~٢٥–٣٠ د): شطب ميسولام، SDMT (١٢٠ ث)، إن-باك مزدوجة (حتى ٥ جولات قصيرة)، طلاقة لفظية موقّتة (١٢٠ ث)، لغزا تخطيط، وستروب مكاني (٤٤ تجربة). كل كتلة بمعاملات ثابتة وتخطيط مُعاد عشوائياً. يُحوّل الأداء إلى درجات 0–100 ثم مئويات ودرجات معيارية (متوسط 100). مؤشرك المعرفي متوسط SS للمجالات المكتملة. أعد الاختبار كل 4–8 أسابيع لتتبّع التغيّر الموثوق.',
 };
 
 export const NORM_DISCLAIMER_AR =

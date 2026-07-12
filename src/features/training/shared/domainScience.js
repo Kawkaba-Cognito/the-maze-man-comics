@@ -107,11 +107,11 @@ export const DOMAIN_SCIENCE = {
   memory: {
     en: {
       domainLabel: 'Memory',
-      intro: 'Working memory is your mental workbench — holding and updating information for seconds while you use it. These exercises use Corsi blocks, n-back, and paired-associate learning: among the most studied memory trainers in cognitive science.',
+      intro: 'Working memory is your mental workbench — holding and updating information for seconds while you use it. These exercises use story-sequence recall, n-back, and paired-associate learning: among the most studied memory trainers in cognitive science.',
       sections: [
         {
           h: '🧱 The science',
-          b: 'Memo Span (Corsi) measures visuospatial short-term memory. N-Back forces continuous updating and interference control. Pair Match trains hippocampal binding — linking an item to its partner or location.',
+          b: 'Story Time measures temporal-order / episodic memory — rebuilding a sequence of events. N-Back forces continuous updating and interference control. Pair Match trains hippocampal binding — linking an item to its partner or location.',
         },
         {
           h: '🔬 What these games train',
@@ -130,11 +130,11 @@ export const DOMAIN_SCIENCE = {
     },
     ar: {
       domainLabel: 'الذاكرة',
-      intro: 'الذاكرة العاملة هي «طاولة العمل» الذهنية — حفظ المعلومات وتحديثها لثوانٍ أثناء استخدامها. هذه التمارين تستخدم كتل كورسي، وإن-باك، وتعلّم الأزواج المترابطة — من أكثر مدرّبات الذاكرة دراسةً.',
+      intro: 'الذاكرة العاملة هي «طاولة العمل» الذهنية — حفظ المعلومات وتحديثها لثوانٍ أثناء استخدامها. هذه التمارين تستخدم استرجاع تسلسل القصة، وإن-باك، وتعلّم الأزواج المترابطة — من أكثر مدرّبات الذاكرة دراسةً.',
       sections: [
         {
           h: '🧱 العلم',
-          b: '«مدى الذاكرة» (كورسي) يقيس الذاكرة البصرية-المكانية قصيرة المدى. إن-باك يفرض تحديثاً مستمراً وضبط تداخل. مطابقة الأزواج تدرّب ربط الحُصين — ربط عنصر بشريكه أو مكانه.',
+          b: 'وقت القصة يقيس الذاكرة الحدثية وترتيب التسلسل الزمني — إعادة بناء سلسلة أحداث. إن-باك يفرض تحديثاً مستمراً وضبط تداخل. مطابقة الأزواج تدرّب ربط الحُصين — ربط عنصر بشريكه أو مكانه.',
         },
         {
           h: '🔬 ما الذي تدرّبه الألعاب',
@@ -160,7 +160,7 @@ export const DOMAIN_SCIENCE = {
       sections: [
         {
           h: '📚 The science',
-          b: 'Word puzzles tap orthographic and phonological processing. Synonym tasks strengthen semantic networks. Odd-one-out exercises use category judgement — a core verbal-reasoning skill studied in psycholinguistics.',
+          b: 'Word puzzles tap orthographic and phonological processing. Synonym and analogy tasks strengthen semantic networks and category judgement — core verbal-reasoning skills studied in psycholinguistics. Trivia adds a crystallized-knowledge angle: recalling learned facts under pressure, a different system from the word-level tasks above.',
         },
         {
           h: '🔬 What these games train',
@@ -187,7 +187,7 @@ export const DOMAIN_SCIENCE = {
         },
         {
           h: '🔬 ما الذي تدرّبه الألعاب',
-          b: 'فك ترميز أنماط الحروف، وربط الكلمات بالمعاني، واكتشاف ما يكسر القاعدة — معالجة لغوية سلسة تحت ضغط وقت خفيف.',
+          b: 'فك ترميز أنماط الحروف، وربط الكلمات بالمعاني، واكتشاف ما يكسر القاعدة. «معلومات» تضيف بُعد المعرفة المتبلورة: استرجاع حقائق مكتسبة تحت الضغط، نظام مختلف عن المهام السابقة على مستوى الكلمة.',
         },
         {
           h: '🏠 الحياة اليومية',
@@ -209,7 +209,7 @@ export const DOMAIN_SCIENCE = {
       sections: [
         {
           h: '🧩 The science',
-          b: 'Raven-style matrices measure fluid reasoning — completing novel patterns. Block Escape is a planning and problem-solving task. Colour Sort (Tower of Hanoi) taps sequential planning and inhibition: undoing a tempting wrong move.',
+          b: 'Raven-style matrices measure fluid reasoning — completing novel patterns. Block Escape is a planning and problem-solving task, testing move sequencing and simulating ahead. Detective builds deductive reasoning — weighing evidence, testing hypotheses, and ruling out suspects from what the clues actually support.',
         },
         {
           h: '🔬 What these games train',
@@ -232,7 +232,7 @@ export const DOMAIN_SCIENCE = {
       sections: [
         {
           h: '🧩 العلم',
-          b: 'مصفوفات رافن تقيس الاستدلال السائل — إكمال أنماط جديدة. «هروب القطع» مهمة تخطيط وحل مشكلات. «فرز الألوان» (برج هانوي) يستهدف التخطيط التسلسلي والكبح: التراجع عن خطوة مغرية خاطئة.',
+          b: 'مصفوفات رافن تقيس الاستدلال السائل — إكمال أنماط جديدة. «هروب القطع» مهمة تخطيط وحل مشكلات تختبر تسلسل الحركات والمحاكاة المسبقة. «المحقّق» يبني الاستدلال الاستنتاجي — وزن الأدلة، واختبار الفرضيات، واستبعاد المشتبه بهم بناءً على ما تدعمه القرائن فعلاً.',
         },
         {
           h: '🔬 ما الذي تدرّبه الألعاب',
@@ -262,7 +262,7 @@ export const DOMAIN_SCIENCE = {
         },
         {
           h: '🔬 What these games train',
-          b: 'Spatial Stroop trains rule switching under interference. Piano Tap builds timed motor flexibility. Flip exercises train perspective reversal — letting go of the first interpretation.',
+          b: 'Spatial Stroop trains rule switching under interference. Card Sort has you infer a hidden sorting rule, then re-infer a new one each time it silently changes. Kawkab Hops trains rule detection in a moving pattern — spotting it, then catching the moment it changes.',
         },
         {
           h: '🏠 Daily life',
@@ -285,7 +285,7 @@ export const DOMAIN_SCIENCE = {
         },
         {
           h: '🔬 ما الذي تدرّبه الألعاب',
-          b: 'ستروب المكاني يدرّب تبديل القواعد تحت تداخل. «نقر البيانو» يبني مرونة حركية موقّتة. «القلب» يدرّب عكس المنظور — التخلي عن التفسير الأول.',
+          b: 'ستروب المكاني يدرّب تبديل القواعد تحت تداخل. «فرز البطاقات» يجعلك تستنتج قاعدة فرز خفية، ثم تعيد استنتاج قاعدة جديدة كلما تغيّرت بصمت. «قفزات كوكب» تدرّب اكتشاف القاعدة في نمط متحرك — رصدها، ثم ملاحظة لحظة تغيّرها.',
         },
         {
           h: '🏠 الحياة اليومية',

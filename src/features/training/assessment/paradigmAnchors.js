@@ -6,8 +6,6 @@
  * interference cost of 45 ms, a substitution rate of 31/min… typical?" by
  * anchoring each paradigm's primary raw metric to published healthy-adult
  * values:
- *   • Corsi block span: forward ≈ 6.0 ± 1.2, backward ≈ 5.4 ± 1.2
- *     (Kessels et al. 2000; Monaco et al. 2013)
  *   • DSST/Coding rate: ≈ 35 ± 9 correct/min, age-curved (Wechsler WAIS-IV;
  *     Jaeger 2018)
  *   • Spatial interference (Simon/Stroop) cost: ≈ 20–80 ms
@@ -17,9 +15,9 @@
  *
  * HONESTY: paper/lab values, not touch-screen norms — a phone adds motor and
  * display latency, so these are GUIDELINE ranges (±1 SD shown as "typical"),
- * and within-person change remains the valid signal. Language and Reasoning
- * raw metrics have no clean published analog for our grid/jam variants and
- * are reported self-referenced.
+ * and within-person change remains the valid signal. Memory (Dual N-Back),
+ * Language and Reasoning raw metrics have no clean published analog for our
+ * grid/jam/N-back variants and are reported self-referenced.
  *
  * Raw metrics are read from each game's latest banked assessment session in
  * the Phase-1 trial log, so lines appear once a (post-upgrade) assessment ran.
@@ -29,8 +27,6 @@ import { latestTrialSession } from '../shared/trialLog';
 import { ageSpeedFactor } from './assessmentProfile';
 
 export const ANCHORS = {
-  corsiFwd: { mean: 6.0, sd: 1.2, unit: '', cite: 'Kessels 2000' },
-  corsiBwd: { mean: 5.4, sd: 1.2, unit: '', cite: 'Kessels 2000; Monaco 2013' },
   dsstIpm: { mean: 35, sd: 9, unit: '/min', cite: 'Wechsler; Jaeger 2018', ageCurved: true },
   interferenceMs: { mean: 50, sd: 30, unit: 'ms', cite: 'Lu & Proctor 1995', lowerBetter: true },
   switchCostMs: { mean: 200, sd: 100, unit: 'ms', cite: 'Monsell 2003', lowerBetter: true },
@@ -70,11 +66,11 @@ const fmtRange = (key, age, isAr) => {
 export function assessAnchorLine(domainId, isAr, age) {
   try {
     if (domainId === 'memory') {
-      const r = latestTrialSession('memo-span', 'assess')?.result;
-      if (r?.fwdSpan == null) return null;
-      return isAr
-        ? `المدى أمامي ${r.fwdSpan} ${fmtRange('corsiFwd', age, isAr)} · عكسي ${r.bwdSpan} ${fmtRange('corsiBwd', age, isAr)}`
-        : `span fwd ${r.fwdSpan} ${fmtRange('corsiFwd', age, isAr)} · bwd ${r.bwdSpan} ${fmtRange('corsiBwd', age, isAr)}`;
+      const r = latestTrialSession('nback', 'assess')?.result;
+      if (r?.bestN == null) return null;
+      // No clean published "typical N reached" norm for this variant/pacing —
+      // reported self-referenced, same honesty rule as Language/Reasoning below.
+      return isAr ? `أعلى مستوى موثوق: ${r.bestN}-عودة` : `sustained ${r.bestN}-back reliably`;
     }
     if (domainId === 'speed') {
       const r = latestTrialSession('speed-match', 'assess')?.result;
