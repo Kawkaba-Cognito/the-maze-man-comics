@@ -9,6 +9,7 @@ import RelationshipQuiz from './RelationshipQuiz';
 import SleepSoundsPractice from './SleepSoundsPractice';
 import DailyHabits from './DailyHabits';
 import { planetTextureLayerStyle } from '../../lib/planetTexture';
+import { planetIconUrl } from '../../lib/planetIcons';
 import { OPEN_DAILY_KEY } from './HabitReminderBanner';
 
 /*
@@ -1064,11 +1065,25 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
                 {c.id === 'sleep' && (
                   <span aria-hidden="true" className="rx-orb-ring" style={{ borderColor: c.color }} />
                 )}
-                <span className="rx-orb" style={{ background: c.color }}>
-                  <span aria-hidden="true" className="rx-orb-texture" style={planetTextureLayerStyle(0.4)} />
-                  <span aria-hidden="true" className="rx-orb-shade" />
-                  <span aria-hidden="true" className="rx-orb-sheen" />
-                  <span className="rx-orb-icon" style={{ fontSize: p.size * 0.34 }}>{c.icon}</span>
+                <span className="rx-orb" style={{ background: planetIconUrl(c.id) ? `radial-gradient(circle, ${c.color}42 0%, ${c.color}20 55%, transparent 76%)` : c.color }}>
+                  {planetIconUrl(c.id) ? (
+                    <img
+                      src={planetIconUrl(c.id)}
+                      alt=""
+                      draggable={false}
+                      style={{
+                        width: '80%', height: '80%', objectFit: 'contain', filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.35))',
+                        pointerEvents: 'none', WebkitUserDrag: 'none', WebkitTouchCallout: 'none', userSelect: 'none',
+                      }}
+                    />
+                  ) : (
+                    <>
+                      <span aria-hidden="true" className="rx-orb-texture" style={planetTextureLayerStyle(0.4)} />
+                      <span aria-hidden="true" className="rx-orb-shade" />
+                      <span aria-hidden="true" className="rx-orb-sheen" />
+                      <span className="rx-orb-icon" style={{ fontSize: p.size * 0.34 }}>{c.icon}</span>
+                    </>
+                  )}
                 </span>
                 {c.id === 'meaning' && (
                   <>

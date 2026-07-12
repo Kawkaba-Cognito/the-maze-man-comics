@@ -6,7 +6,7 @@ import { DOMAIN_COLOR, DOMAINS } from './trainingData';
 import { useApp } from '../../context/AppContext';
 import { useThemedChrome } from '../../hooks/useThemedChrome';
 import { tokens } from '../../styles/tokens';
-import { PLANET_NOISE_URL } from '../../lib/planetTexture';
+import { planetIconUrl } from '../../lib/planetIcons';
 
 /** Local alias kept for in-file readability — values come from the central token set. */
 const L = {
@@ -99,52 +99,14 @@ function PlanetMarkings({ domainId, col }) {
 function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId }) {
   const r = hovered ? 30 : 26;
   const dur = hovered ? 1.4 : 3.2;
+  const iconUrl = planetIconUrl(domainId);
   return (
     <g>
       {/* Soft ground shadow */}
       <ellipse cx="2" cy={r + 8} rx={r * 0.72} ry={r * 0.22} fill="rgba(10,8,16,0.28)" />
       {/* Outer aura */}
       <circle cx="0" cy="0" r={r + (hovered ? 10 : 7)} fill={`url(#${glowGradId})`} opacity={hovered ? 0.95 : 0.7} />
-      {/* Planet body */}
-      <circle
-        cx="0"
-        cy="0"
-        r={r}
-        fill={`url(#${bodyGradId})`}
-        stroke={col}
-        strokeWidth={hovered ? 2.2 : 1.55}
-      />
-      {/* Surface texture — subtle procedural noise for depth, blended over the tinted body */}
-      <clipPath id={`planetClip-${domainId}`}>
-        <circle cx="0" cy="0" r={r} />
-      </clipPath>
-      <image
-        href={PLANET_NOISE_URL}
-        x={-r}
-        y={-r}
-        width={r * 2}
-        height={r * 2}
-        clipPath={`url(#planetClip-${domainId})`}
-        preserveAspectRatio="xMidYMid slice"
-        style={{ mixBlendMode: 'overlay', opacity: 0.5, pointerEvents: 'none' }}
-      />
-      {/* Atmosphere rim */}
-      <circle
-        cx="0"
-        cy="0"
-        r={r - 0.8}
-        fill="none"
-        stroke="rgba(255,255,255,0.35)"
-        strokeWidth="1.2"
-        opacity="0.55"
-      />
-      {/* Surface markings */}
-      <g opacity={hovered ? 0.95 : 0.8}>
-        <PlanetMarkings domainId={domainId} col={col} />
-      </g>
-      {/* Specular highlight */}
-      <ellipse cx={-r * 0.28} cy={-r * 0.32} rx={r * 0.38} ry={r * 0.22} fill="rgba(255,255,255,0.28)" />
-      {/* Domain icon */}
+      {/* Real rendered planet icon (Fluent 3D emoji, fixed per domain) */}
       <g>
         <animateTransform
           attributeName="transform"
@@ -154,7 +116,25 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId }) {
           dur={`${dur}s`}
           repeatCount="indefinite"
         />
-        <DomainIconArt domainId={domainId} color="#fffef8" strokeWidth={1.7} />
+        {iconUrl ? (
+          <image
+            href={iconUrl}
+            x={-r * 1.05}
+            y={-r * 1.05}
+            width={r * 2.1}
+            height={r * 2.1}
+            preserveAspectRatio="xMidYMid meet"
+          />
+        ) : (
+          <>
+            <circle cx="0" cy="0" r={r} fill={`url(#${bodyGradId})`} stroke={col} strokeWidth={hovered ? 2.2 : 1.55} />
+            <g opacity={hovered ? 0.95 : 0.8}>
+              <PlanetMarkings domainId={domainId} col={col} />
+            </g>
+            <ellipse cx={-r * 0.28} cy={-r * 0.32} rx={r * 0.38} ry={r * 0.22} fill="rgba(255,255,255,0.28)" />
+            <DomainIconArt domainId={domainId} color="#fffef8" strokeWidth={1.7} />
+          </>
+        )}
       </g>
       {domainId === 'attention' && (
         <circle cx="0" cy="0" r={r + 4} fill="none" stroke={col} strokeWidth="0.8" opacity={hovered ? 0.4 : 0.18}>

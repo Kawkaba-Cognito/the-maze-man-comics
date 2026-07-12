@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import CosmosCharacter from '../../features/character/CosmosCharacter';
 import UniversePlanets from '../../features/universe/UniversePlanets';
+import { assetUrl } from '../../lib/assetUrl';
 
 /*
  * Home — "Your Universe". A living scene, not a dashboard: multi-layer
@@ -77,7 +78,13 @@ export default function HomeScreen() {
   }
 
   return (
-    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: 'radial-gradient(ellipse 90% 70% at 50% 30%, #201640 0%, #0a0716 55%, #05040c 100%)' }}>
+    <div style={{
+      position: 'absolute', inset: 0, overflow: 'hidden',
+      backgroundImage: `radial-gradient(ellipse 90% 70% at 50% 30%, rgba(32,22,64,0.5) 0%, rgba(10,7,22,0.72) 55%, rgba(5,4,12,0.94) 100%), url("${assetUrl('Assets/universe-nebula.webp')}")`,
+      backgroundSize: 'cover, cover',
+      backgroundPosition: 'center, center',
+      backgroundColor: '#05040c',
+    }}>
       <StarLayer stars={far} driftClass="u-drift-slow" opacity={0.5} />
       <StarLayer stars={mid} driftClass="u-drift-mid" opacity={0.75} />
       <StarLayer stars={near} driftClass="u-drift-fast" opacity={0.95} />

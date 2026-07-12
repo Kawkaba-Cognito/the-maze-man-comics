@@ -79,6 +79,12 @@ export function AboutModal({ onClose }) {
       <p className="stg-modal-text">{isAr ? `الإصدار ${APP_VERSION}` : `Version ${APP_VERSION}`}</p>
       <div className="stg-modal-label">{isAr ? 'التطوير' : 'Studio'}</div>
       <p className="stg-modal-text">{isAr ? 'كوكبة كوغنيتو' : 'Kawkaba Cognito'}</p>
+      <div className="stg-modal-label">{isAr ? 'شكر وتقدير' : 'Credits'}</div>
+      <p className="stg-modal-subtext">
+        {isAr
+          ? 'أيقونات Phosphor Icons (رخصة MIT) · رموز Twemoji بواسطة Twitter/jdecked (رخصة CC-BY 4.0) · رموز Fluent Emoji 3D من Microsoft (رخصة MIT) · صورة "الجروف الكونية" (سديم كارينا) من تلسكوب جيمس ويب، وكالة ناسا/الفضاء الأوروبية/الكندية ومعهد علوم تلسكوب الفضاء (ملك عام).'
+          : 'Icons by Phosphor Icons (MIT) · Twemoji by Twitter/jdecked (CC-BY 4.0) · Fluent Emoji 3D by Microsoft (MIT) · "Cosmic Cliffs" (Carina Nebula) image: NASA, ESA, CSA, STScI (public domain).'}
+      </p>
       <p className="stg-modal-subtext">© 2026 Kawkaba Cognito. {isAr ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}</p>
     </SettingsModal>
   );

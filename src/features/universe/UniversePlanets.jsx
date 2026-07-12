@@ -1,12 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { MagnifyingGlass, X as XIcon } from '@phosphor-icons/react';
 import {
   PLANET_TYPES, JOURNAL_MOODS,
   loadPlanets, savePlanets, createPlanet,
 } from './universeStore';
 import { planetTextureLayerStyle } from '../../lib/planetTexture';
+import { planetIconUrl } from '../../lib/planetIcons';
 
-const DRAG_THRESHOLD = 6; // px of movement before a tap becomes a drag
+const DRAG_THRESHOLD = 12; // px of movement before a tap becomes a drag — generous enough for real-finger jitter on touchscreens, not just mouse precision
 
 // Per-type sphere "surface" — layered radial-gradients drawn under the base
 // color so each planet type reads as a distinct little world rather than a
@@ -30,11 +32,41 @@ const PLANET_SURFACE = {
   `,
 };
 
+/** Shared icon badge — real rendered art when available, mood/emoji fallback otherwise. */
+function PlanetIconBadge({ type, mood, meta, size = 40, glow = true }) {
+  const iconUrl = planetIconUrl(type);
+  const showMood = type === 'journal' && mood;
+  return (
+    <span style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0, position: 'relative',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.44,
+      background: showMood || !iconUrl
+        ? `radial-gradient(circle at 35% 30%, #fff9, ${meta.color})`
+        : `radial-gradient(circle, ${meta.color}4a 0%, ${meta.color}1f 55%, transparent 76%)`,
+      boxShadow: glow ? `0 0 14px ${meta.color}99` : 'none',
+    }}>
+      {showMood ? mood : iconUrl ? (
+        <img
+          src={iconUrl}
+          alt=""
+          draggable={false}
+          style={{
+            width: '78%', height: '78%', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))',
+            pointerEvents: 'none', WebkitUserDrag: 'none', WebkitTouchCallout: 'none', userSelect: 'none',
+          }}
+        />
+      ) : meta.icon}
+    </span>
+  );
+}
+
 function Planet({ planet, isAr, onPointerDownPlanet, dragging }) {
   const meta = PLANET_TYPES[planet.type] || PLANET_TYPES.note;
   const label = planet.title || (isAr ? meta.ar : meta.en);
   const surface = (PLANET_SURFACE[planet.type] || PLANET_SURFACE.note)(meta.color);
   const hasRing = planet.type === 'goal';
+  const showMood = planet.type === 'journal' && planet.mood;
+  const iconUrl = planetIconUrl(planet.type);
   return (
     <button
       type="button"
@@ -73,15 +105,29 @@ function Planet({ planet, isAr, onPointerDownPlanet, dragging }) {
             animationDelay: `-${(planet.id.charCodeAt(0) % 10) * 0.4}s`,
             width: 40, height: 40, borderRadius: '50%', position: 'relative', zIndex: 1,
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17,
-            background: surface,
+            background: showMood ? surface : `radial-gradient(circle, ${meta.color}4a 0%, ${meta.color}1f 55%, transparent 76%)`,
             boxShadow: dragging
               ? `0 0 26px ${meta.color}, inset -7px -7px 11px rgba(0,0,0,0.4), inset 3px 3px 7px rgba(255,255,255,0.35)`
               : `0 0 14px ${meta.color}99, inset -7px -7px 11px rgba(0,0,0,0.4), inset 3px 3px 7px rgba(255,255,255,0.3)`,
             border: planet.type === 'goal' && planet.done ? '2px solid #8fe0a0' : 'none',
           }}
         >
-          <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: '50%', pointerEvents: 'none', ...planetTextureLayerStyle(0.45) }} />
-          {planet.type === 'journal' && planet.mood ? planet.mood : meta.icon}
+          {showMood ? (
+            <>
+              <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: '50%', pointerEvents: 'none', ...planetTextureLayerStyle(0.45) }} />
+              {planet.mood}
+            </>
+          ) : iconUrl ? (
+            <img
+              src={iconUrl}
+              alt=""
+              draggable={false}
+              style={{
+                width: '82%', height: '82%', objectFit: 'contain', filter: 'drop-shadow(0 3px 5px rgba(0,0,0,0.35))',
+                pointerEvents: 'none', WebkitUserDrag: 'none', WebkitTouchCallout: 'none', userSelect: 'none',
+              }}
+            />
+          ) : meta.icon}
         </span>
       </span>
       <span style={{
@@ -105,21 +151,27 @@ function Sheet({ children, onClose }) {
     <div
       role="presentation"
       onClick={onClose}
+      className="u-sheet-backdrop"
       style={{
-        position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(8,6,16,0.62)',
-        backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(6,4,12,0.55)',
+        backdropFilter: 'blur(10px) saturate(1.3)', WebkitBackdropFilter: 'blur(10px) saturate(1.3)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         className="u-sheet-pop"
         style={{
-          width: '100%', maxWidth: 460, background: 'linear-gradient(180deg, #241c38 0%, #150f24 100%)',
-          borderRadius: '22px 22px 0 0', border: '1px solid rgba(232,172,78,0.28)', borderBottom: 'none',
-          padding: '18px 20px calc(22px + env(safe-area-inset-bottom))', boxSizing: 'border-box',
-          maxHeight: '82vh', overflowY: 'auto', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+          width: '100%', maxWidth: 460,
+          background: 'linear-gradient(165deg, #2b2140 0%, #1a1329 55%, #140e21 100%)',
+          borderRadius: '26px 26px 0 0',
+          borderWidth: '1px 1px 0 1px', borderStyle: 'solid', borderColor: 'rgba(232,172,78,0.32)',
+          padding: '10px 20px calc(22px + env(safe-area-inset-bottom))', boxSizing: 'border-box',
+          maxHeight: '84vh', overflowY: 'auto',
+          boxShadow: '0 -18px 50px rgba(0,0,0,0.55), 0 -1px 0 rgba(255,255,255,0.06) inset',
         }}
       >
+        <div style={{ width: 40, height: 4, borderRadius: 999, background: 'rgba(232,172,78,0.35)', margin: '0 auto 16px' }} />
         {children}
       </div>
     </div>,
@@ -146,14 +198,7 @@ function TypePicker({ isAr, onPick, onClose }) {
               cursor: 'pointer', textAlign: isAr ? 'right' : 'left',
             }}
           >
-            <span style={{
-              width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-              background: `radial-gradient(circle at 35% 30%, #fff9, ${meta.color})`,
-              boxShadow: `0 0 14px ${meta.color}99`,
-            }}>
-              {meta.icon}
-            </span>
+            <PlanetIconBadge type={type} meta={meta} size={44} />
             <span>
               <div style={{ fontWeight: 800, color: '#f3ecd8', fontSize: 14.5 }}>{isAr ? meta.ar : meta.en}</div>
               <div style={{ fontSize: 12, color: '#b9a878', marginTop: 1 }}>{isAr ? meta.promptAr : meta.promptEn}</div>
@@ -161,6 +206,109 @@ function TypePicker({ isAr, onPick, onClose }) {
           </button>
         ))}
       </div>
+    </Sheet>
+  );
+}
+
+function ListSheet({ isAr, planets, onOpenPlanet, onClose }) {
+  const [query, setQuery] = useState('');
+  const [filterType, setFilterType] = useState('all');
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return planets
+      .filter((p) => filterType === 'all' || p.type === filterType)
+      .filter((p) => !q || (p.title || '').toLowerCase().includes(q) || (p.body || '').toLowerCase().includes(q))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }, [planets, query, filterType]);
+
+  const typeTabs = [
+    { id: 'all', en: 'All', ar: 'الكل' },
+    ...Object.entries(PLANET_TYPES).map(([id, meta]) => ({ id, en: meta.en, ar: meta.ar })),
+  ];
+
+  return (
+    <Sheet onClose={onClose}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ fontWeight: 800, color: '#f3ecd8', fontSize: 16 }}>{isAr ? 'كل الكواكب' : 'All planets'}</div>
+        <button type="button" onClick={onClose} aria-label={isAr ? 'إغلاق' : 'Close'} style={{ background: 'none', border: 'none', color: '#b9a878', cursor: 'pointer', display: 'flex' }}>
+          <XIcon size={20} />
+        </button>
+      </div>
+
+      <div style={{ position: 'relative', marginBottom: 12 }}>
+        <MagnifyingGlass size={16} style={{ position: 'absolute', insetInlineStart: 12, top: '50%', transform: 'translateY(-50%)', color: '#b9a878', pointerEvents: 'none' }} />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={isAr ? 'ابحث في العناوين والنصوص...' : 'Search titles and notes...'}
+          style={{
+            width: '100%', boxSizing: 'border-box', padding: '10px 13px 10px 36px',
+            borderRadius: 10, border: '2px solid rgba(232,172,78,0.28)', background: 'rgba(0,0,0,0.25)',
+            color: '#f0e2c0', font: '600 13.5px Outfit, sans-serif',
+          }}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+        {typeTabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setFilterType(t.id)}
+            style={{
+              padding: '6px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              border: filterType === t.id ? '2px solid #e8ac4e' : '2px solid rgba(232,172,78,0.2)',
+              background: filterType === t.id ? 'rgba(232,172,78,0.22)' : 'rgba(255,255,255,0.05)',
+              color: filterType === t.id ? '#f5c44a' : '#b9a878',
+            }}
+          >
+            {isAr ? t.ar : t.en}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', color: '#8a7f6f', fontSize: 13.5, padding: '24px 0' }}>
+          {isAr ? 'لا توجد نتائج.' : 'Nothing found.'}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {filtered.map((p) => {
+            const meta = PLANET_TYPES[p.type] || PLANET_TYPES.note;
+            const label = p.title || (isAr ? meta.ar : meta.en);
+            const date = new Date(p.createdAt || Date.now()).toLocaleDateString(isAr ? 'ar' : 'en-US', { month: 'short', day: 'numeric' });
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => onOpenPlanet(p)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 12,
+                  border: `1px solid ${meta.color}40`, background: `linear-gradient(160deg, ${meta.color}1a 0%, rgba(255,255,255,0.03) 100%)`,
+                  cursor: 'pointer', textAlign: isAr ? 'right' : 'left', width: '100%', boxSizing: 'border-box',
+                }}
+              >
+                <PlanetIconBadge type={p.type} mood={p.mood} meta={meta} size={34} glow={false} />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontWeight: 800, color: '#f3ecd8', fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    textDecoration: p.type === 'goal' && p.done ? 'line-through' : 'none', opacity: p.type === 'goal' && p.done ? 0.6 : 1,
+                  }}>
+                    {label}
+                  </div>
+                  {p.body && (
+                    <div style={{ fontSize: 11.5, color: '#a89878', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {p.body}
+                    </div>
+                  )}
+                </span>
+                <span style={{ fontSize: 10.5, color: '#8a7f6f', flexShrink: 0 }}>{date}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </Sheet>
   );
 }
@@ -174,14 +322,7 @@ function InfoCard({ isAr, planet, onEdit, onClose }) {
   return (
     <Sheet onClose={onClose}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-        <span style={{
-          width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19,
-          background: `radial-gradient(circle at 30% 26%, #fff, ${meta.color} 55%, ${meta.color})`,
-          boxShadow: `0 0 14px ${meta.color}99, inset -7px -7px 11px rgba(0,0,0,0.4), inset 3px 3px 7px rgba(255,255,255,0.3)`,
-        }}>
-          {planet.type === 'journal' && planet.mood ? planet.mood : meta.icon}
-        </span>
+        <PlanetIconBadge type={planet.type} mood={planet.mood} meta={meta} size={48} />
         <div>
           <div style={{ fontWeight: 800, color: '#f3ecd8', fontSize: 16.5 }}>{label}</div>
           <div style={{ fontSize: 11.5, color: '#b9a878', marginTop: 2 }}>
@@ -254,13 +395,7 @@ function PlanetForm({ isAr, type, initial, onSave, onDelete, onClose, playSfx })
   return (
     <Sheet onClose={onClose}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-        <span style={{
-          width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 16, background: `radial-gradient(circle at 35% 30%, #fff9, ${meta.color})`,
-          boxShadow: `0 0 14px ${meta.color}99`,
-        }}>
-          {type === 'journal' ? mood : meta.icon}
-        </span>
+        <PlanetIconBadge type={type} mood={type === 'journal' ? mood : null} meta={meta} size={40} />
         <div style={{ fontWeight: 800, color: '#f3ecd8', fontSize: 16 }}>{isAr ? meta.ar : meta.en}</div>
       </div>
 
@@ -462,6 +597,22 @@ export default function UniversePlanets({ isAr, playSfx }) {
         />
       ))}
 
+      {planets.length > 0 && (
+        <button
+          type="button"
+          onClick={() => { playSfx?.('click'); setSheet('list'); }}
+          aria-label={isAr ? 'كل الكواكب' : 'All planets'}
+          style={{
+            position: 'absolute', right: 18, bottom: 'calc(166px + env(safe-area-inset-bottom))',
+            width: 42, height: 42, borderRadius: '50%', zIndex: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(36,28,56,0.88)', border: '2px solid rgba(232,172,78,0.4)',
+            color: '#f5c44a', cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+          }}
+        >
+          <MagnifyingGlass size={19} weight="bold" />
+        </button>
+      )}
+
       <button
         type="button"
         onClick={() => { playSfx?.('click'); setSheet('pick'); }}
@@ -479,6 +630,14 @@ export default function UniversePlanets({ isAr, playSfx }) {
 
       {sheet === 'pick' && (
         <TypePicker isAr={isAr} onPick={handlePickType} onClose={() => setSheet(null)} />
+      )}
+      {sheet === 'list' && (
+        <ListSheet
+          isAr={isAr}
+          planets={planets}
+          onOpenPlanet={(planet) => { playSfx?.('click'); setSheet({ mode: 'info', type: planet.type, planet }); }}
+          onClose={() => setSheet(null)}
+        />
       )}
       {sheet && sheet.mode === 'info' && (
         <InfoCard
@@ -516,10 +675,12 @@ export default function UniversePlanets({ isAr, playSfx }) {
         @keyframes uPlanetBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         .u-planet-dragging { cursor: grabbing; }
         .u-planet-dragging .u-planet-bob { animation: none; }
-        .u-sheet-pop { animation: uSheetPop 0.22s ease-out both; }
-        @keyframes uSheetPop { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .u-sheet-pop { animation: uSheetPop 0.32s cubic-bezier(0.2, 1, 0.3, 1) both; }
+        @keyframes uSheetPop { from { transform: translateY(36px) scale(0.97); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+        .u-sheet-backdrop { animation: uSheetFade 0.22s ease-out both; }
+        @keyframes uSheetFade { from { opacity: 0; } to { opacity: 1; } }
         @media (prefers-reduced-motion: reduce) {
-          .u-planet-spawn, .u-planet-bob, .u-sheet-pop { animation: none !important; }
+          .u-planet-spawn, .u-planet-bob, .u-sheet-pop, .u-sheet-backdrop { animation: none !important; }
         }
       `}</style>
     </>
