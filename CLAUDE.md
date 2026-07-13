@@ -16,15 +16,40 @@ npm run dev                      # localhost:5173/the-maze-man-comics/
 npm run build                    # production build + PWA service worker
 ```
 
-**Deploy after every update — no exceptions:**
+**Deploy after every update — no exceptions.**
+
+⚠️ **`npx gh-pages -d dist` is unreliable on this machine** — it has repeatedly hung 5+ minutes or corrupted its internal clone cache (`node_modules/.cache/gh-pages`) mid-deploy across many sessions. Don't reach for it. Use the manual method below.
+
+This checkout's git HEAD lives on the `gh-pages` branch itself — the built site's tracked files (`Assets/`, `index.html`, `sw.js`, …) sit in the same working directory as the React source, which is untracked on top of it. That's normal for this repo, not a broken checkout.
+
+**Reliable manual deploy:**
 
 ```bash
-npm run build && npx gh-pages -d dist
+npm run build
+# Replace only the tracked dist-mirror paths. NEVER `git add -A` here — it
+# would also sweep in the untracked src/, node_modules/, .vite/, package.json
+# etc. sitting in the same working directory.
+rm -rf Assets episode-1-problem-solving.html favicon.ico icons index.html manifest.webmanifest registerSW.js sw.js workbox-*.js
+cp -r dist/. .
+git add Assets episode-1-problem-solving.html favicon.ico icons index.html manifest.webmanifest registerSW.js sw.js workbox-*.js
+git commit -m "Deploy: <summary>"
+git push origin gh-pages       # Kawkaba-Cognito — the live site, this is the one that matters
+git push cognitive gh-pages    # second remote/mirror; retry once if "Repository not found"
+```
+
+**Verify it actually landed** (a successful `git push` message isn't proof — see the 2026-07-11 incident where a broken deploy tool still produced a real, pushed, no-op commit):
+
+```bash
+grep -oE 'Assets/index-[A-Za-z0-9_-]+\.js' index.html                                                          # local entry hash
+curl -s "https://kawkaba-cognito.github.io/the-maze-man-comics/" | grep -oE 'Assets/index-[A-Za-z0-9_-]+\.js'  # live entry hash — must match
 ```
 
 Live: https://kawkaba-cognito.github.io/the-maze-man-comics/
 
-⚠️ `gh-pages -d dist` publishes the **working tree**, not a commit. The live site, the last commit, and your working tree can be three different states. Check `git status` before deploying if you don't intend to ship in-progress work.
+**Known flakiness on this machine** (environment-level, not code bugs — workaround, don't try to "fix"):
+- **Multi-account Git Credential Manager** — two GitHub accounts are configured here; `cognitive` remote reads/writes intermittently fail with "Repository not found" or auth as the wrong account. Retry — it usually resolves in 1–2 tries.
+- **IPv4 routing black holes** — github.com DNS round-robins across several IPs; on this network, some `.4`-ending IPs have timed out for minutes while `.3`-ending ones return instantly. Symptom: git/curl to github.com hangs ~21s despite the rest of the internet being fine. This is routing, not auth — don't re-authenticate, route around it (a local CONNECT proxy pinned to a working IP has fixed this before).
+- **Large-pack connection resets** — pushing the ~20MB+ built asset pack has hit `HTTP 408` / mid-upload disconnects on this network. Fix: `git config http.postBuffer 157286400` and `git config http.version HTTP/1.1` in this repo before pushing, `--unset` after.
 
 ## Things that look wrong but are load-bearing
 
