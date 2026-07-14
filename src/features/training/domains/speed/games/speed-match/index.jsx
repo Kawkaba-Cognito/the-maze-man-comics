@@ -475,7 +475,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     setPhase('res');
     setPlayStep('idle');
     blockRef.current = null;
-  }, [stopLoop, playSfx, persistLevelDone, assessmentMode, onAssessmentComplete, t.motor]);
+  }, [stopLoop, playSfx, persistLevelDone, assessmentMode, onAssessmentComplete, t.motor, awardTrainingWin]);
   useEffect(() => { finishBlockRef.current = finishBlock; }, [finishBlock]);
 
   const finishFreeRun = useCallback(() => {
@@ -504,7 +504,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     setPhase('freeRes');
     setPlayStep('idle');
     blockRef.current = null;
-  }, [stopLoop, playSfx]);
+  }, [stopLoop, playSfx, awardFreeRun]);
 
   const startLoop = useCallback(() => {
     stopLoop();
@@ -654,7 +654,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     setQuitOpen(false);
     setCdVal(3);
     setPlayStep('countdown');
-  }, [stopLoop, assessmentMode]);
+  }, [stopLoop, assessmentMode, juice]);
 
   const startFreeMode = useCallback(() => {
     const block = { mode: 'free', diff: 'free', lv: 0, spec: { durationSec: 0, remapEvery: 0, pairCount: 4 }, legend: buildLegend(4) };
