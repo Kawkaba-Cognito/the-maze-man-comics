@@ -189,7 +189,7 @@ function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       const rt = summary.meanRt != null ? `${summary.meanRt}${isAr ? 'مث' : 'ms'}` : '—';
       onResult({ won, score: g.passed, summary: `${g.passed}/${cfg.target} · ${summary.accuracyPct}% · ${rt}${sw}` });
     } else onResult({ score: g.passed });
-  }, [mode, cfg.target, onResult, isAr, playSfx]);
+  }, [mode, cfg.target, onResult, isAr, playSfx, awardFreeRun]);
 
   // Steer the runner between lanes — the lane you're in when the gate arrives is
   // your answer. `lastMoveAt` records when you last steered (for decision time).
