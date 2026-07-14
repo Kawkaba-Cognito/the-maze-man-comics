@@ -512,7 +512,10 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
     setPhase('watch');
   }, [cfgFor, rng]);
 
-  useEffect(() => { newRound(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => {
+    newRound();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: run once on mount only
+  }, []);
 
   useEffect(() => {
     if (phase !== 'watch') return undefined;
