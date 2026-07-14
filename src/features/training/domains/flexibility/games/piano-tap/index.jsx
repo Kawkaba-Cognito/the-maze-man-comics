@@ -110,7 +110,7 @@ function PianoTapEngine({ mode, diff, level, seed, attempt, onResult, onExit, is
       g.combo = 0; g.lives -= 1; playSfx('error');
       if ((mode === 'levels' || mode === 'free') && g.lives <= 0) finish();
     }
-  }, [mode, cfg.target, awardPoints, playNote, playSfx, finish]);
+  }, [mode, cfg.target, awardPoints, playNote, playSfx, finish, isAr]);
 
   useEffect(() => {
     const onKey = (e) => { const i = KEYS.indexOf(e.key.toLowerCase()); if (i >= 0) { e.preventDefault(); tapLane(i); } };
