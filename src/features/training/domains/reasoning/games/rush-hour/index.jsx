@@ -320,7 +320,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
     wonRef.current = false;
     setWon(false);
     setPhase('freeRes');
-  }, []);
+  }, [awardFreeRun]);
 
   const confirmRhQuit = useCallback(() => {
     setQuitOpen(false);
@@ -1067,7 +1067,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
     };
-  }, [cellSize, playSfx, grid, exitRow, parMoves, syncProgressWin]);
+  }, [cellSize, playSfx, grid, exitRow, parMoves, syncProgressWin, awardTrainingWin]);
 
   // Per-puzzle clock for survival mode: each board gets its own time based on par.
   useEffect(() => {
@@ -1110,7 +1110,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [phase, playMode, pauseOpen, quitOpen]);
+  }, [phase, playMode, pauseOpen, quitOpen, endFreeRun]);
 
   const exitTop = exitRow * cellSize;
   const exitBot = (exitRow + 1) * cellSize;
