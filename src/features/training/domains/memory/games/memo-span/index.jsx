@@ -414,7 +414,7 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
     }
     setLastResult({ type: 'level', won, stars, grade, round: r });
     goNext('res');
-  }, [clearTimers, playSfx, profile.bestStudy, onAssessmentComplete, isAr]);
+  }, [clearTimers, playSfx, profile.bestStudy, onAssessmentComplete, isAr, awardFreeRun, awardTrainingWin]);
 
   function rngSeed() {
     return (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
