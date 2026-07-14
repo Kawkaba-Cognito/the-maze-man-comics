@@ -350,7 +350,7 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
         setPhaseBoth('respond');
       }, cfg.trackMs);
     }, cueMs);
-  }, [fit, isAr, nextParams, setPhaseBoth, updateHud, rng]);
+  }, [fit, isAr, mode, nextParams, setPhaseBoth, updateHud, rng]);
 
   const evaluate = useCallback(() => {
     const cfg = cfgRef.current;
@@ -429,7 +429,7 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
       }
       startRound();
     }, 1300);
-  }, [awardPoints, isAr, mode, onResult, playSfx, ppTrials, setPhaseBoth, startRound, finishLog, level, diff]);
+  }, [awardFreeRun, awardPoints, isAr, mode, onResult, playSfx, ppTrials, setPhaseBoth, startRound, finishLog, level, diff]);
 
   const onPointer = useCallback((e) => {
     if (phaseRef.current !== 'respond') return;
