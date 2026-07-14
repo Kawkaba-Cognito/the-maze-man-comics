@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
   TrainingMenuBar,
@@ -396,7 +396,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
   const chalRoundsTotalRef = useRef(1);
   const chalCycleRef = useRef(0);
 
-  const doneMap = profile.done || {};
+  const doneMap = useMemo(() => profile.done || {}, [profile.done]);
   const bump = () => tick((n) => n + 1);
 
   const block = blockRef.current;
@@ -599,7 +599,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
     setPhase('res');
     blockRef.current = null;
     bump();
-  }, [clearTimers, persistLevel, playSfx, onAssessmentComplete]);
+  }, [clearTimers, persistLevel, playSfx, onAssessmentComplete, awardFreeRun, awardTrainingWin]);
 
   useEffect(() => {
     finishBlockRef.current = finishBlock;
@@ -927,7 +927,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
       inventoryRef.current = inventoryRef.current.filter((_, i) => i !== idx);
       setInventory(inventoryRef.current);
     },
-    [playSfx, clearTimers, flashToast],
+    [playSfx, clearTimers, flashToast, advanceAfterFeedback, loseLifeOrShield, isAr],
   );
 
   const beginBlock = useCallback(
