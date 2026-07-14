@@ -157,6 +157,7 @@ Status: Supabase project exists but is **not integrated**; must be done before p
 - [ ] Input sanitization for any future user-submitted text (before Supabase writes)
 - [ ] Supabase auth rate limiting
 - [ ] `npm audit` clean before each release
+- [ ] **Known limitation, accepted for now**: personal reflection/assessment data (habit tracker, personality/relationship quizzes, Ikigai, cognitive assessment scores) is stored unencrypted in `localStorage` via `src/lib/storage.js`, with no PIN/app-lock gate. Anyone with device access (or a future XSS) can read it in plaintext. Deliberately not fixing with client-side encryption or an app-lock now — revisit only once Supabase Auth (above) actually changes the trust model; don't build throwaway local crypto in the meantime.
 - [ ] Capacitor native: HTTPS-only, no cleartext, separate dev/prod Supabase projects
 
 Priority: Auth + RLS → `.env` secrets → sanitization → audit clean.
