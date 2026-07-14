@@ -178,9 +178,40 @@ const UI = {
   },
 };
 
+// Parse each shape's SVG markup into a real React element ONCE (cached), so the
+// shape is rendered as a React-managed SVG child instead of being injected as an
+// HTML string (same fix already applied in cancellation/index.jsx after it caused
+// an intermittent "empty square" render bug there).
+const FALLBACK_SHAPE_EL = <circle cx="50" cy="50" r="38" fill="currentColor" />;
+const shapeElCache = Object.create(null);
+function getShapeEl(shape) {
+  const key = shape in SH ? shape : 'circle';
+  if (key in shapeElCache) return shapeElCache[key];
+  const markup = SH[key] || SH.circle;
+  let el = null;
+  if (typeof DOMParser !== 'undefined') {
+    try {
+      const doc = new DOMParser().parseFromString(
+        `<svg xmlns="http://www.w3.org/2000/svg">${markup}</svg>`,
+        'image/svg+xml',
+      );
+      const node = doc.documentElement && doc.documentElement.firstElementChild;
+      if (node && !doc.querySelector('parsererror')) {
+        const props = {};
+        for (const attr of node.attributes) props[attr.name] = attr.value;
+        el = React.createElement(node.nodeName, props);
+      }
+    } catch {
+      el = null;
+    }
+  }
+  if (!el) el = FALLBACK_SHAPE_EL;
+  shapeElCache[key] = el;
+  return el;
+}
+
 /** Crisp SVG glyph from the shared SH set. */
 function SmSymbol({ shape, size = 48, color = '#2d2d2d', className }) {
-  const inner = SH[shape] || SH.circle;
   return (
     <svg
       width={size}
@@ -188,8 +219,9 @@ function SmSymbol({ shape, size = 48, color = '#2d2d2d', className }) {
       viewBox="0 0 100 100"
       className={className}
       style={{ color, display: 'block' }}
-      dangerouslySetInnerHTML={{ __html: inner }}
-    />
+    >
+      {getShapeEl(shape)}
+    </svg>
   );
 }
 
