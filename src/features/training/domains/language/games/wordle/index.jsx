@@ -269,7 +269,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
       saveWordleProfile(p);
       setProfile(p);
     },
-    [profile, doneMap],
+    [profile, doneMap, awardTrainingWin],
   );
 
   const finishRound = useCallback(
@@ -415,7 +415,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
 
       setPhase('res');
     },
-    [profile, persistLevel, stopRoundTimer, lang, onAssessmentComplete],
+    [profile, persistLevel, stopRoundTimer, lang, onAssessmentComplete, awardFreeRun],
   );
 
   const commitPath = useCallback(() => {
@@ -472,7 +472,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
       setTimeout(tick, 1000);
     };
     setTimeout(tick, 1000);
-  }, [pauseOpen, finishRound, stopRoundTimer]);
+  }, [finishRound, stopRoundTimer]);
 
   useEffect(() => {
     if (phase !== 'play' || !round) return undefined;
