@@ -178,7 +178,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
           : `Parked ${g.routed}/${cfg.target} · ${acc}% · peak ${peak}`,
       });
     } else onResult({ score: g.routed });
-  }, [mode, cfg.target, onResult, isAr, playSfx]);
+  }, [mode, cfg.target, onResult, isAr, playSfx, awardFreeRun]);
 
   const tapAt = useCallback((clientX, clientY) => {
     const g = gRef.current; if (!g || finishedRef.current) return;
