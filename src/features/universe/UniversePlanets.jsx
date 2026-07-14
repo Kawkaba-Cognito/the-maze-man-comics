@@ -5,32 +5,10 @@ import {
   PLANET_TYPES, JOURNAL_MOODS,
   loadPlanets, savePlanets, createPlanet,
 } from './universeStore';
-import { planetTextureLayerStyle } from '../../lib/planetTexture';
 import { planetIconUrl } from '../../lib/planetIcons';
+import RealPlanetSphere from './planetSphere';
 
 const DRAG_THRESHOLD = 12; // px of movement before a tap becomes a drag — generous enough for real-finger jitter on touchscreens, not just mouse precision
-
-// Per-type sphere "surface" — layered radial-gradients drawn under the base
-// color so each planet type reads as a distinct little world rather than a
-// flat dot. Order matters: lit highlight + shadow crescent go last (bottom
-// layer = base color), texture spots sit above it.
-const PLANET_SURFACE = {
-  note: (c) => `
-    radial-gradient(circle at 68% 66%, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0) 13%),
-    radial-gradient(circle at 42% 78%, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0) 10%),
-    radial-gradient(circle at 74% 32%, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0) 8%),
-    radial-gradient(circle at 30% 26%, #fff, ${c} 55%, ${c})
-  `,
-  goal: (c) => `
-    repeating-linear-gradient(8deg, rgba(255,255,255,0.14) 0px 2px, rgba(0,0,0,0.1) 2px 5px),
-    radial-gradient(circle at 30% 26%, #fff, ${c} 55%, ${c})
-  `,
-  journal: (c) => `
-    radial-gradient(circle at 62% 70%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 35%),
-    radial-gradient(circle at 25% 70%, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 30%),
-    radial-gradient(circle at 30% 26%, #fff, ${c} 55%, ${c})
-  `,
-};
 
 /** Shared icon badge — real rendered art when available, mood/emoji fallback otherwise. */
 function PlanetIconBadge({ type, mood, meta, size = 40, glow = true }) {
@@ -63,10 +41,9 @@ function PlanetIconBadge({ type, mood, meta, size = 40, glow = true }) {
 function Planet({ planet, isAr, onPointerDownPlanet, dragging }) {
   const meta = PLANET_TYPES[planet.type] || PLANET_TYPES.note;
   const label = planet.title || (isAr ? meta.ar : meta.en);
-  const surface = (PLANET_SURFACE[planet.type] || PLANET_SURFACE.note)(meta.color);
-  const hasRing = planet.type === 'goal';
   const showMood = planet.type === 'journal' && planet.mood;
   const iconUrl = planetIconUrl(planet.type);
+  const spinDur = 24 + (planet.id.charCodeAt(0) % 14);
   return (
     <button
       type="button"
@@ -80,7 +57,7 @@ function Planet({ planet, isAr, onPointerDownPlanet, dragging }) {
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
         background: 'none', border: 'none', cursor: 'grab', padding: 4,
         touchAction: 'none', zIndex: dragging ? 20 : 3,
-        transition: dragging ? 'none' : 'left 0.18s ease, top 0.18s ease',
+        transition: 'none',
       }}
       aria-label={label}
     >
@@ -88,46 +65,33 @@ function Planet({ planet, isAr, onPointerDownPlanet, dragging }) {
         className="u-planet-orb"
         style={{ width: 46, height: 46, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        {hasRing && (
-          <span
-            aria-hidden
-            style={{
-              position: 'absolute', left: '50%', top: '52%', width: 74, height: 22,
-              transform: 'translate(-50%,-50%) rotate(-16deg)', borderRadius: '50%',
-              border: `2px solid ${meta.color}bb`, borderTop: '2px solid rgba(255,244,214,0.85)',
-              boxShadow: `0 0 6px ${meta.color}66`, pointerEvents: 'none',
-            }}
-          />
-        )}
         <span
           className="u-planet-bob"
           style={{
             animationDelay: `-${(planet.id.charCodeAt(0) % 10) * 0.4}s`,
-            width: 40, height: 40, borderRadius: '50%', position: 'relative', zIndex: 1,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17,
-            background: showMood ? surface : `radial-gradient(circle, ${meta.color}4a 0%, ${meta.color}1f 55%, transparent 76%)`,
-            boxShadow: dragging
-              ? `0 0 26px ${meta.color}, inset -7px -7px 11px rgba(0,0,0,0.4), inset 3px 3px 7px rgba(255,255,255,0.35)`
-              : `0 0 14px ${meta.color}99, inset -7px -7px 11px rgba(0,0,0,0.4), inset 3px 3px 7px rgba(255,255,255,0.3)`,
-            border: planet.type === 'goal' && planet.done ? '2px solid #8fe0a0' : 'none',
+            width: 40, height: 40, position: 'relative', zIndex: 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            filter: dragging ? `drop-shadow(0 0 13px ${meta.color})` : `drop-shadow(0 0 7px ${meta.color}99)`,
+            transition: 'filter 0.2s ease',
           }}
         >
-          {showMood ? (
-            <>
-              <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: '50%', pointerEvents: 'none', ...planetTextureLayerStyle(0.45) }} />
-              {planet.mood}
-            </>
-          ) : iconUrl ? (
-            <img
-              src={iconUrl}
-              alt=""
-              draggable={false}
-              style={{
-                width: '82%', height: '82%', objectFit: 'contain', filter: 'drop-shadow(0 3px 5px rgba(0,0,0,0.35))',
-                pointerEvents: 'none', WebkitUserDrag: 'none', WebkitTouchCallout: 'none', userSelect: 'none',
-              }}
-            />
-          ) : meta.icon}
+          <RealPlanetSphere type={planet.type} size={40} color={meta.color} spinDur={spinDur} />
+          {planet.type === 'goal' && planet.done && (
+            <span aria-hidden style={{ position: 'absolute', inset: -2, borderRadius: '50%', border: '2px solid #8fe0a0', zIndex: 3, boxShadow: '0 0 8px 1px rgba(143,224,160,0.6)' }} />
+          )}
+          <span aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, pointerEvents: 'none' }}>
+            {showMood ? planet.mood : iconUrl ? (
+              <img
+                src={iconUrl}
+                alt=""
+                draggable={false}
+                style={{
+                  width: '76%', height: '76%', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+                  pointerEvents: 'none', WebkitUserDrag: 'none', WebkitTouchCallout: 'none', userSelect: 'none',
+                }}
+              />
+            ) : null}
+          </span>
         </span>
       </span>
       <span style={{
@@ -503,17 +467,33 @@ function PlanetForm({ isAr, type, initial, onSave, onDelete, onClose, playSfx })
   );
 }
 
-export default function UniversePlanets({ isAr, playSfx }) {
+// Planets within this % distance get a constellation line drawn between them.
+const LINK_DIST = 24;
+// How close (in % units) a dragged planet has to get to Kawkab's spot before he reacts.
+const KAWKAB_X = 50;
+const KAWKAB_Y = 52;
+const KAWKAB_RADIUS = 15;
+
+export default function UniversePlanets({ isAr, playSfx, onDragProximity }) {
   const [planets, setPlanets] = useState(() => loadPlanets());
   const [sheet, setSheet] = useState(null); // null | 'pick' | {mode, type, planet}
-  const dragRef = useRef(null); // { id, startX, startY, moved, startPctX, startPctY }
+  const dragRef = useRef(null); // { id, startX, startY, moved, startPctX, startPctY, samples }
   const [draggingId, setDraggingId] = useState(null);
+  const [vanishing, setVanishing] = useState(null); // { id, x, y, color }
+  const [cometFx, setCometFx] = useState(null); // { key, fromX, fromY, x, y, color }
+  const glideRef = useRef(null); // rAF id of the current inertia glide
 
   useEffect(() => { savePlanets(planets); }, [planets]);
+  useEffect(() => () => { if (glideRef.current) cancelAnimationFrame(glideRef.current); }, []);
+
+  function stopGlide() {
+    if (glideRef.current) { cancelAnimationFrame(glideRef.current); glideRef.current = null; }
+  }
 
   function onPointerDownPlanet(e, planet) {
     e.stopPropagation();
     e.preventDefault();
+    stopGlide();
     // Pointer capture keeps every subsequent move/up/cancel routed to this
     // element even if the finger drifts off it — without it, mobile touch
     // sequences can lose the target mid-drag and silently drop the tap.
@@ -521,6 +501,7 @@ export default function UniversePlanets({ isAr, playSfx }) {
     dragRef.current = {
       id: planet.id, startX: e.clientX, startY: e.clientY,
       startPctX: planet.x, startPctY: planet.y, moved: false,
+      samples: [{ t: performance.now(), x: planet.x, y: planet.y }],
     };
     setDraggingId(planet.id);
     window.addEventListener('pointermove', onPointerMove);
@@ -537,7 +518,10 @@ export default function UniversePlanets({ isAr, playSfx }) {
     if (!d.moved) return;
     const pctX = clamp(d.startPctX + (dx / window.innerWidth) * 100, 6, 94);
     const pctY = clamp(d.startPctY + (dy / window.innerHeight) * 100, 14, 86);
+    d.samples.push({ t: performance.now(), x: pctX, y: pctY });
+    if (d.samples.length > 6) d.samples.shift();
     setPlanets((prev) => prev.map((p) => (p.id === d.id ? { ...p, x: pctX, y: pctY } : p)));
+    onDragProximity?.(Math.hypot(pctX - KAWKAB_X, pctY - KAWKAB_Y) < KAWKAB_RADIUS);
   }
 
   function endDrag() {
@@ -545,6 +529,35 @@ export default function UniversePlanets({ isAr, playSfx }) {
     window.removeEventListener('pointerup', onPointerUp);
     window.removeEventListener('pointercancel', onPointerCancel);
     setDraggingId(null);
+    onDragProximity?.(false);
+  }
+
+  // On release, keep the planet drifting with its last swipe velocity —
+  // friction decays it and it softly bounces off the safe-zone edges —
+  // rather than just stopping dead where the finger lifted.
+  function launchInertia(id, samples) {
+    if (samples.length < 2) return;
+    const a = samples[0];
+    const b = samples[samples.length - 1];
+    const dt = Math.max(1, b.t - a.t);
+    let vx = ((b.x - a.x) / dt) * 16; // %/frame-ish, scaled for a satisfying glide
+    let vy = ((b.y - a.y) / dt) * 16;
+    if (Math.hypot(vx, vy) < 0.06) return; // too slow to bother — treat as a plain drop
+    let x = b.x, y = b.y;
+    const friction = 0.94;
+    const step = () => {
+      vx *= friction; vy *= friction;
+      x += vx; y += vy;
+      if (x < 6) { x = 6; vx *= -0.5; } else if (x > 94) { x = 94; vx *= -0.5; }
+      if (y < 14) { y = 14; vy *= -0.5; } else if (y > 86) { y = 86; vy *= -0.5; }
+      setPlanets((prev) => prev.map((p) => (p.id === id ? { ...p, x, y } : p)));
+      if (Math.hypot(vx, vy) > 0.02) {
+        glideRef.current = requestAnimationFrame(step);
+      } else {
+        glideRef.current = null;
+      }
+    };
+    glideRef.current = requestAnimationFrame(step);
   }
 
   function onPointerUp() {
@@ -553,6 +566,8 @@ export default function UniversePlanets({ isAr, playSfx }) {
     if (d && !d.moved) {
       const planet = planets.find((p) => p.id === d.id);
       if (planet) { playSfx?.('click'); setSheet({ mode: 'info', type: planet.type, planet }); }
+    } else if (d) {
+      launchInertia(d.id, d.samples);
     }
     dragRef.current = null;
   }
@@ -571,7 +586,18 @@ export default function UniversePlanets({ isAr, playSfx }) {
   }
 
   function handleSaveNew(type, fields) {
-    setPlanets((prev) => [...prev, createPlanet(type, fields, prev)]);
+    setPlanets((prev) => {
+      const created = createPlanet(type, fields, prev);
+      // A comet streaks in from a random edge and "becomes" the new planet —
+      // purely decorative, cleared once the streak-in animation finishes.
+      const angle = Math.random() * Math.PI * 2;
+      const fromX = clamp(created.x + Math.cos(angle) * 60, -15, 115);
+      const fromY = clamp(created.y + Math.sin(angle) * 60, -15, 115);
+      const color = (PLANET_TYPES[type] || PLANET_TYPES.note).color;
+      setCometFx({ key: created.id, fromX, fromY, x: created.x, y: created.y, color });
+      setTimeout(() => setCometFx((cur) => (cur?.key === created.id ? null : cur)), 620);
+      return [...prev, created];
+    });
     setSheet(null);
   }
 
@@ -581,12 +607,64 @@ export default function UniversePlanets({ isAr, playSfx }) {
   }
 
   function handleDelete(planet) {
+    // Sucked into a little wormhole instead of just blinking out.
+    const meta = PLANET_TYPES[planet.type] || PLANET_TYPES.note;
     setPlanets((prev) => prev.filter((p) => p.id !== planet.id));
+    setVanishing({ id: planet.id, x: planet.x, y: planet.y, color: meta.color });
+    setTimeout(() => setVanishing((cur) => (cur?.id === planet.id ? null : cur)), 560);
     setSheet(null);
   }
 
+  const links = useMemo(() => {
+    const out = [];
+    for (let i = 0; i < planets.length; i++) {
+      for (let j = i + 1; j < planets.length; j++) {
+        const a = planets[i], b = planets[j];
+        const dist = Math.hypot(a.x - b.x, a.y - b.y);
+        if (dist < LINK_DIST) {
+          const active = draggingId === a.id || draggingId === b.id;
+          out.push({ key: `${a.id}-${b.id}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y, active, strength: 1 - dist / LINK_DIST });
+        }
+      }
+    }
+    return out;
+  }, [planets, draggingId]);
+
   return (
     <>
+      {links.length > 0 && (
+        <svg aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 2, pointerEvents: 'none' }}>
+          {links.map((l) => (
+            <line
+              key={l.key}
+              x1={`${l.x1}%`} y1={`${l.y1}%`} x2={`${l.x2}%`} y2={`${l.y2}%`}
+              stroke={l.active ? 'rgba(245,196,74,0.75)' : `rgba(232,220,192,${0.1 + l.strength * 0.18})`}
+              strokeWidth={l.active ? 1.4 : 1}
+              strokeDasharray="1 6"
+              className={l.active ? 'u-link-active' : 'u-link'}
+            />
+          ))}
+        </svg>
+      )}
+
+      {vanishing && (
+        <span aria-hidden="true" className="u-wormhole" style={{
+          position: 'absolute', left: `${vanishing.x}%`, top: `${vanishing.y}%`, width: 60, height: 60,
+          transform: 'translate(-50%,-50%)', borderRadius: '50%', zIndex: 15, pointerEvents: 'none',
+          background: `conic-gradient(from 0deg, ${vanishing.color}, transparent, ${vanishing.color}, transparent, ${vanishing.color})`,
+        }} />
+      )}
+
+      {cometFx && (
+        <span aria-hidden="true" className="u-comet-birth" style={{
+          position: 'absolute', left: `${cometFx.fromX}%`, top: `${cometFx.fromY}%`, zIndex: 16, pointerEvents: 'none',
+          '--u-from-x': `${cometFx.fromX}%`, '--u-from-y': `${cometFx.fromY}%`,
+          '--u-to-x': `${cometFx.x}%`, '--u-to-y': `${cometFx.y}%`,
+          width: 6, height: 6, borderRadius: '50%', background: '#fff',
+          boxShadow: `0 0 10px 3px #fff, 0 0 22px 8px ${cometFx.color}`,
+        }} />
+      )}
+
       {planets.map((p) => (
         <Planet
           key={p.id}
@@ -679,8 +757,25 @@ export default function UniversePlanets({ isAr, playSfx }) {
         @keyframes uSheetPop { from { transform: translateY(36px) scale(0.97); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
         .u-sheet-backdrop { animation: uSheetFade 0.22s ease-out both; }
         @keyframes uSheetFade { from { opacity: 0; } to { opacity: 1; } }
+        .u-link { animation: uLinkShimmer 3.2s linear infinite; }
+        .u-link-active { animation: uLinkShimmer 1s linear infinite; }
+        @keyframes uLinkShimmer { to { stroke-dashoffset: -28; } }
+        .u-wormhole { animation: uWormhole 0.56s cubic-bezier(0.6, 0, 0.9, 0.3) both; }
+        @keyframes uWormhole {
+          0% { transform: translate(-50%,-50%) scale(0.2) rotate(0deg); opacity: 0; }
+          25% { opacity: 1; }
+          70% { transform: translate(-50%,-50%) scale(1.15) rotate(340deg); opacity: 0.9; }
+          100% { transform: translate(-50%,-50%) scale(0) rotate(680deg); opacity: 0; }
+        }
+        .u-comet-birth { animation: uCometBirth 0.55s cubic-bezier(0.3, 0, 0.6, 1) both; }
+        @keyframes uCometBirth {
+          0% { left: var(--u-from-x); top: var(--u-from-y); opacity: 0; }
+          15% { opacity: 1; }
+          100% { left: var(--u-to-x); top: var(--u-to-y); opacity: 0; }
+        }
         @media (prefers-reduced-motion: reduce) {
-          .u-planet-spawn, .u-planet-bob, .u-sheet-pop, .u-sheet-backdrop { animation: none !important; }
+          .u-planet-spawn, .u-planet-bob, .u-sheet-pop, .u-sheet-backdrop,
+          .u-link, .u-link-active, .u-wormhole, .u-comet-birth { animation: none !important; }
         }
       `}</style>
     </>

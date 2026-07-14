@@ -2,6 +2,10 @@
  * localStorage JSON helpers — the one place that owns the try/catch dance.
  * Reads fail soft (privacy mode, corrupt JSON); writes fail soft (quota).
  * Losing persistence must never break gameplay.
+ *
+ * Note: everything written through here is plaintext, unencrypted, and
+ * ungated (no app-lock). Accepted as a known limitation — see CLAUDE.md's
+ * Security checklist — until Supabase Auth changes the trust model.
  */
 
 export function loadJson(key, fallback = null) {

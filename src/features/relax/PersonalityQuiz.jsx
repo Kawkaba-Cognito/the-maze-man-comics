@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import PracticeShell, { SUB, FAINT } from './PracticeShell';
-import { QUIZ_CSS, LikertRow, TraitBar, KawkabSay, ScenarioChoice } from './quizShared';
+import { QUIZ_CSS, LikertRow, TraitBar, KawkabSay, ScenarioChoice, QuestionExample, DeeperScience } from './quizShared';
 import { markWellbeingPracticeDone } from './habitState';
 
 /*
@@ -20,16 +20,36 @@ const MIDPOINT_AT = 5; // show Kawkab's check-in once this many items are answer
 // id, English + Arabic wording, trait, and whether this item is reverse-scored
 // for its trait — exactly the 10 TIPI items in their original order.
 const ITEMS = [
-  { id: 1, en: 'Extraverted, enthusiastic.', ar: 'منبسط، متحمّس.', trait: 'extraversion', reverse: false },
-  { id: 2, en: 'Critical, quarrelsome.', ar: 'ناقد، كثير الجدال.', trait: 'agreeableness', reverse: true },
-  { id: 3, en: 'Dependable, self-disciplined.', ar: 'يُعتمد عليه، منضبط ذاتياً.', trait: 'conscientiousness', reverse: false },
-  { id: 4, en: 'Anxious, easily upset.', ar: 'قلق، سريع الانزعاج.', trait: 'stability', reverse: true },
-  { id: 5, en: 'Open to new experiences, complex.', ar: 'منفتح على تجارب جديدة، ومعقّد الفكر.', trait: 'openness', reverse: false },
-  { id: 6, en: 'Reserved, quiet.', ar: 'متحفّظ، هادئ.', trait: 'extraversion', reverse: true },
-  { id: 7, en: 'Sympathetic, warm.', ar: 'متعاطف، دافئ المشاعر.', trait: 'agreeableness', reverse: false },
-  { id: 8, en: 'Disorganized, careless.', ar: 'غير منظّم، مهمل.', trait: 'conscientiousness', reverse: true },
-  { id: 9, en: 'Calm, emotionally stable.', ar: 'هادئ، مستقرّ عاطفياً.', trait: 'stability', reverse: false },
-  { id: 10, en: 'Conventional, uncreative.', ar: 'تقليدي، وغير مبدع.', trait: 'openness', reverse: true },
+  { id: 1, en: 'Extraverted, enthusiastic.', ar: 'منبسط، متحمّس.', trait: 'extraversion', reverse: false,
+    example: 'At a party, you\'re the one striking up a conversation with someone you just met.',
+    exampleAr: 'في حفلة، أنت من يبادر بالحديث مع شخص التقيت به للتو.' },
+  { id: 2, en: 'Critical, quarrelsome.', ar: 'ناقد، كثير الجدال.', trait: 'agreeableness', reverse: true,
+    example: "You're quick to point out what's wrong with an idea, even when it ruffles feathers.",
+    exampleAr: 'تسارع إلى الإشارة لما هو خاطئ في فكرة ما، حتى لو أزعج ذلك الآخرين.' },
+  { id: 3, en: 'Dependable, self-disciplined.', ar: 'يُعتمد عليه، منضبط ذاتياً.', trait: 'conscientiousness', reverse: false,
+    example: "You said you'd have it done by Friday — and it's done by Friday, no reminders needed.",
+    exampleAr: 'قلت إنك ستنجزها بحلول الجمعة — وتُنجَز فعلاً دون تذكير من أحد.' },
+  { id: 4, en: 'Anxious, easily upset.', ar: 'قلق، سريع الانزعاج.', trait: 'stability', reverse: true,
+    example: 'A small setback — a delayed reply, a minor mistake — can leave you rattled for a while.',
+    exampleAr: 'نكسة صغيرة — رد متأخر، خطأ بسيط — قد تُبقيك مضطرباً لفترة.' },
+  { id: 5, en: 'Open to new experiences, complex.', ar: 'منفتح على تجارب جديدة، ومعقّد الفكر.', trait: 'openness', reverse: false,
+    example: "You'd rather watch a strange, ambiguous film than a predictable one — the puzzle is half the fun.",
+    exampleAr: 'تفضّل فيلماً غريباً وغامضاً على فيلم متوقّع — فحلّ اللغز جزء من المتعة.' },
+  { id: 6, en: 'Reserved, quiet.', ar: 'متحفّظ، هادئ.', trait: 'extraversion', reverse: true,
+    example: "In a group conversation, you're usually listening more than talking — and that's genuinely comfortable for you.",
+    exampleAr: 'في نقاش جماعي، تستمع أكثر ممّا تتحدّث — وهذا مريح لك فعلاً.' },
+  { id: 7, en: 'Sympathetic, warm.', ar: 'متعاطف، دافئ المشاعر.', trait: 'agreeableness', reverse: false,
+    example: 'A friend vents about a bad day, and your first instinct is to comfort them, not to fix or judge.',
+    exampleAr: 'يشتكي صديق من يوم سيّئ، وأول ما يخطر لك هو مواساته، لا إصلاح الأمر أو الحكم عليه.' },
+  { id: 8, en: 'Disorganized, careless.', ar: 'غير منظّم، مهمل.', trait: 'conscientiousness', reverse: true,
+    example: 'Your desk, your calendar, or your plans tend to come together at the last minute, if at all.',
+    exampleAr: 'مكتبك أو جدولك أو خططك تتجمّع عادة في اللحظة الأخيرة، إن تجمّعت أصلاً.' },
+  { id: 9, en: 'Calm, emotionally stable.', ar: 'هادئ، مستقرّ عاطفياً.', trait: 'stability', reverse: false,
+    example: "Something goes wrong at the last minute, and you're the level-headed one while others panic.",
+    exampleAr: 'يحدث خطأ في اللحظة الأخيرة، وتكون أنت الهادئ بينما يُصاب الآخرون بالذعر.' },
+  { id: 10, en: 'Conventional, uncreative.', ar: 'تقليدي، وغير مبدع.', trait: 'openness', reverse: true,
+    example: 'Given a choice, you pick the tried-and-true option over the untested new one, most of the time.',
+    exampleAr: 'عند الاختيار، تفضّل الخيار المجرَّب على الجديد غير المضمون، في معظم الأحيان.' },
 ];
 
 // Plain-language (no jargon) framing per trait, used to build the dynamic
@@ -50,6 +70,8 @@ const TRAITS = [
     blurbAr: 'الفضول والخيال والانجذاب للأفكار الجديدة. يرتبط بالإنجاز الإبداعي واستكشاف أوسع للفن والأفكار والقيم (McCrae & Costa, 1997).',
     tryEn: 'This week: say yes to one small unfamiliar thing — a new route, food, or song.',
     tryAr: 'هذا الأسبوع: قل نعم لأمر جديد وصغير — طريق مختلف، طعام جديد، أو أغنية لم تسمعها من قبل.',
+    deeperEn: "Low openness isn't close-mindedness — it often means less decision fatigue and steadier follow-through on plans that already work. High openness pulls toward art, ideas, and ambiguity, but can also mean more distraction by new options. Neither end predicts happiness on its own (McCrae & Costa, 1997) — it's a difference in what you find rewarding, not a scorecard.",
+    deeperAr: 'الانفتاح المنخفض ليس تصلّباً فكرياً — بل غالباً يعني إرهاق قرار أقل وثباتاً أكبر على خطط أثبتت نجاحها. أمّا الانفتاح المرتفع فينجذب للفن والأفكار والغموض، لكنه قد يعني أيضاً تشتّتاً أكبر بخيارات جديدة. لا يتنبّأ أي طرف بالسعادة وحده (McCrae & Costa, 1997) — إنه اختلاف فيما تجده مُرضياً، لا معياراً للتفوّق.',
   },
   {
     id: 'conscientiousness', color: '#c9a24b',
@@ -58,6 +80,8 @@ const TRAITS = [
     blurbAr: 'التنظيم والانضباط والمثابرة. أقوى سمة من العوامل الخمسة في التنبّؤ بالأداء الوظيفي عبر مختلف المهن (Barrick & Mount, 1991)، ويرتبط أيضاً بعمر أطول.',
     tryEn: 'This week: pick the task you keep avoiding and give it just 10 focused minutes today.',
     tryAr: 'هذا الأسبوع: اختر المهمة التي تتجنّبها أكثر وامنحها ١٠ دقائق مركّزة اليوم فقط.',
+    deeperEn: "This trait rises naturally through your 20s and 30s for most people — researchers call it \"the maturity principle\" (Roberts, Walton & Viechtbauer, 2006). If your score feels lower than you'd like right now, that's partly just where you are in life, not a fixed ceiling — and it's the single most trainable Big Five trait through habits and structure.",
+    deeperAr: 'ترتفع هذه السمة طبيعياً خلال العشرينيات والثلاثينيات لدى معظم الناس — يسمّي الباحثون هذا "مبدأ النضج" (Roberts, Walton & Viechtbauer, 2006). إن بدت نتيجتك أقل ممّا تتمنّى الآن، فهذا جزئياً انعكاس لمرحلتك العمرية لا سقفاً ثابتاً — وهي أكثر سمات العوامل الخمسة قابلية للتطوّر عبر العادات والتنظيم.',
   },
   {
     id: 'extraversion', color: '#d07a3e',
@@ -66,6 +90,8 @@ const TRAITS = [
     blurbAr: 'الاجتماعية والحزم والطاقة المستمدّة من التفاعل مع الآخرين. يرتبط باستمرار بمزاج يومي أكثر إيجابية ورضا أعلى عن الحياة (DeNeve & Cooper, 1998).',
     tryEn: "This week: notice what actually refills your energy after a long day — and do more of that, even if it's not what others expect of you.",
     tryAr: 'هذا الأسبوع: لاحظ ما الذي يعيد لك طاقتك فعلاً بعد يوم طويل، وافعل المزيد منه — حتى لو لم يكن ما يتوقّعه الآخرون منك.',
+    deeperEn: "Extraversion isn't \"more social\" as a virtue — introverts have equally rich social lives, just calibrated to smaller doses and quieter settings. What differs is where energy comes from: extraverts tend to run at lower baseline nervous-system arousal and seek stimulation to feel their best, while introverts are often already there (Eysenck's arousal theory).",
+    deeperAr: 'الانبساط ليس معناه "أكثر اجتماعية" كفضيلة — فالمنطوون يعيشون حياة اجتماعية غنية بالقدر ذاته، لكن بجرعات أصغر وأجواء أهدأ. الفرق الحقيقي هو مصدر الطاقة: يميل المنبسطون لمستوى يقظة عصبية أساسي أقل فيبحثون عن التحفيز ليشعروا بأفضل حال، بينما يكون المنطوون غالباً في تلك الحالة أصلاً (نظرية الاستثارة لآيزنك).',
   },
   {
     id: 'agreeableness', color: '#6fae7a',
@@ -74,6 +100,8 @@ const TRAITS = [
     blurbAr: 'الدفء والثقة والتعاون. يتنبّأ بالرضا في العلاقات والسلوك الإيجابي تجاه الآخرين، ويميل للارتفاع تدريجياً خلال مراحل البلوغ (Roberts, Walton & Viechtbauer, 2006).',
     tryEn: 'This week: next time you disagree with someone, say so directly but kindly — and notice how it actually lands.',
     tryAr: 'هذا الأسبوع: في المرة القادمة التي تختلف فيها مع أحد، عبّر عن ذلك بوضوح ولطف — ولاحظ كيف يُستقبل ذلك فعلاً.',
+    deeperEn: 'Low agreeableness carries real advantages in negotiation, critical evaluation, and giving unpopular-but-necessary feedback — it predicts effectiveness in some leadership and evaluative roles. High agreeableness protects relationships but can make conflict-avoidance costly if it goes unchecked. Neither is the "nicer" trait — they trade different strengths for different costs.',
+    deeperAr: 'يحمل التوافق المنخفض مزايا حقيقية في التفاوض والتقييم النقدي وتقديم ملاحظات غير مريحة لكنها ضرورية — ويتنبّأ بفعالية أكبر في بعض أدوار القيادة والتقييم. أمّا التوافق المرتفع فيحمي العلاقات، لكنه قد يجعل تجنّب الخلاف مكلفاً إن تُرك دون ضبط. لا يوجد طرف "ألطف" من الآخر — فكل طرف يستبدل مزايا بتكاليف مختلفة.',
   },
   {
     id: 'stability', color: '#5aa9c8',
@@ -82,6 +110,8 @@ const TRAITS = [
     blurbAr: 'الهدوء تحت الضغط مقابل سرعة التأثر بالتوتر (يسمّي علم النفس الطرف المنخفض منها "العصابية"). من أقوى سمات الشخصية المرتبطة بالقلق والمزاج — وأيضاً من أكثرها قابلية للتحسّن بالعلاج والممارسة المستمرّة (Roberts et al., 2017).',
     tryEn: "This week: when you feel stress rising, name it out loud (\"I'm anxious right now\") before reacting — naming an emotion measurably calms its grip (Lieberman et al., 2007).",
     tryAr: 'هذا الأسبوع: عندما تلاحظ ارتفاع توترك، سمِّه بصوت مسموع ("أشعر بالقلق الآن") قبل أن تتصرّف — تسمية المشاعر تُهدّئ تأثيرها فعلياً بحسب الأبحاث (Lieberman et al., 2007).',
+    deeperEn: 'This is the Big Five trait most responsive to intervention — cognitive behavioral therapy, mindfulness training, and even regular exercise measurably shift it over months, not years (Roberts et al., 2017 meta-analysis). A lower score today is a snapshot of where your nervous system is right now, not a fixed diagnosis or a life sentence.',
+    deeperAr: 'هذه أكثر سمات العوامل الخمسة استجابة للتدخّل العلاجي — فالعلاج المعرفي السلوكي، وتدريب اليقظة الذهنية، وحتى الرياضة المنتظمة، تُحدث تغييراً ملموساً خلال أشهر لا سنوات (Roberts et al., 2017). النتيجة المنخفضة اليوم هي لقطة لحالة جهازك العصبي الآن، لا تشخيصاً ثابتاً ولا حكماً مؤبّداً.',
   },
 ];
 
@@ -147,6 +177,7 @@ const TEXT = {
     scenarioContinue: 'Continue',
     scenarioSeeResults: 'See my results',
     resultsTitle: 'Your Big Five profile',
+    moreLabel: 'Go deeper into the research', lessLabel: 'Show less',
     closingTitle: 'What the science says about all five',
     closing: 'Big Five traits are roughly 40–60% heritable in twin studies (Jang, Livesley & Vernon, 1996) and show up in essentially the same structure across 50+ cultures (McCrae & Terracciano, 2005) — this is real, stable wiring, not a mood. But "stable" isn\'t "fixed": traits shift gradually across adulthood with sustained effort and new life experience (Roberts, Walton & Viechtbauer, 2006). None of these are good or bad — every trait trades strengths for costs depending on the situation.',
   },
@@ -170,6 +201,7 @@ const TEXT = {
     scenarioContinue: 'متابعة',
     scenarioSeeResults: 'شاهد نتيجتي',
     resultsTitle: 'ملفّك في العوامل الخمسة',
+    moreLabel: 'تعمّق أكثر في البحث العلمي', lessLabel: 'عرض أقل',
     closingTitle: 'ماذا يقول العلم عن العوامل الخمسة كلّها',
     closing: 'سمات العوامل الخمسة موروثة بنسبة تقارب ٤٠-٦٠٪ بحسب دراسات التوائم (Jang, Livesley & Vernon, 1996)، وتظهر بنفس البنية تقريباً عبر أكثر من ٥٠ ثقافة حول العالم (McCrae & Terracciano, 2005) — أي أنها توصيل حقيقي وثابت في الشخصية، وليست مزاجاً عابراً. لكن "الثبات" لا يعني "الجمود": هذه السمات تتغيّر تدريجياً خلال مراحل البلوغ مع الجهد المستمر والتجارب الجديدة (Roberts, Walton & Viechtbauer, 2006). لا توجد سمة "جيدة" أو "سيئة" — فكل سمة تحمل مزايا وتكاليف بحسب الموقف.',
   },
@@ -304,6 +336,7 @@ export default function PersonalityQuiz({ onBack }) {
           <div className="qz-item-text">
             {t.prompt}<br /><strong>{isAr ? ITEMS[index].ar : ITEMS[index].en}</strong>
           </div>
+          <QuestionExample>{isAr ? ITEMS[index].exampleAr : ITEMS[index].example}</QuestionExample>
           <LikertRow value={answers[ITEMS[index].id] || null} onChange={answerLikert} leftLabel={t.left} rightLabel={t.right} />
           {index > 0 && (
             <button
@@ -381,6 +414,9 @@ export default function PersonalityQuiz({ onBack }) {
               tryThis={isAr ? tr.tryAr : tr.tryEn}
             >
               {isAr ? tr.blurbAr : tr.blurbEn}
+              <DeeperScience moreLabel={t.moreLabel} lessLabel={t.lessLabel}>
+                {isAr ? tr.deeperAr : tr.deeperEn}
+              </DeeperScience>
             </TraitBar>
           ))}
           <div style={{ marginTop: 6, padding: '14px 16px', borderRadius: 14, background: `${ACCENT}14`, border: `1.5px solid ${ACCENT}40` }}>

@@ -21,7 +21,7 @@ export default function ScienceBrainPanel({
 
   return (
     <div
-      className="ct-ms-sci-ov"
+      className="ct-ms-sci-ov ct-domain-sci-ov"
       role="dialog"
       aria-modal="true"
       aria-labelledby="science-brain-title"
@@ -31,23 +31,23 @@ export default function ScienceBrainPanel({
         onClose();
       }}
     >
-      <div className="ct-ms-sci" onClick={(e) => e.stopPropagation()}>
-        <h2 id="science-brain-title" className="ct-ms-sci-title">{title}</h2>
-        {intro ? <p className="ct-ms-sci-intro">{intro}</p> : null}
+      <div className="ct-ms-sci ct-domain-sci-panel" onClick={(e) => e.stopPropagation()}>
+        <h2 id="science-brain-title" className="ct-ms-sci-title ct-domain-sci-title">{title}</h2>
+        {intro ? <p className="ct-ms-sci-intro ct-domain-sci-intro">{intro}</p> : null}
         {sections.length > 0 ? (
           <div className="ct-ms-sci-list">
             {sections.map((s) => (
-              <div key={s.h} className="ct-ms-sci-item">
-                <div className="ct-ms-sci-h">{s.h}</div>
-                <div className="ct-ms-sci-b">{s.b}</div>
+              <div key={s.h} className="ct-ms-sci-item ct-domain-sci-item">
+                <div className="ct-ms-sci-h ct-domain-sci-h">{s.h}</div>
+                <div className="ct-ms-sci-b ct-domain-sci-b">{s.b}</div>
               </div>
             ))}
           </div>
         ) : null}
-        {foot ? <p className="ct-ms-sci-foot">{foot}</p> : null}
+        {foot ? <p className="ct-ms-sci-foot ct-domain-sci-foot">{foot}</p> : null}
         <button
           type="button"
-          className="ct-ms-sci-close"
+          className="ct-ms-sci-close ct-domain-sci-close"
           onClick={() => {
             playSfx?.('click');
             onClose();

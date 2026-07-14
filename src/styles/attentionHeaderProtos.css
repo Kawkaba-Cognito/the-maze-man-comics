@@ -1,0 +1,195 @@
+/*
+ * The chosen domain-pick header redesign (Bevel), now applied to all 6
+ * training domains: the domain name as a thick glass-slab extrusion, with
+ * the description in a refined frosted panel. Scoped entirely under
+ * .ahp/.ahv-* so nothing here can leak into any other screen or the exercise
+ * cards below. Driven by each domain's own --domain-accent/-mid/-deep, set
+ * per `.ct-domain-pick--<domain>` in training.css.
+ */
+
+.ahp {
+    width: 100%;
+    max-width: 34rem;
+    margin: 0 auto;
+    box-sizing: border-box;
+    text-align: center;
+    position: relative;
+}
+
+.ahp--bevel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 4px 2px;
+}
+
+.ahv-tag {
+    display: inline-block;
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--domain-accent) 82%, #fff);
+    margin-bottom: 2px;
+}
+[dir='rtl'] .ahv-tag {
+    font-family: 'Cairo', 'Outfit', sans-serif;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
+.ahv-title {
+    margin: 0;
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 900;
+    font-size: clamp(2.6rem, 14vw, 3.8rem);
+    line-height: 0.96;
+    letter-spacing: -0.03em;
+    color: rgba(255, 255, 255, 0.94);
+    text-shadow:
+        0 1px 0 color-mix(in srgb, var(--domain-accent) 65%, #fff),
+        0 2px 0 color-mix(in srgb, var(--domain-accent) 78%, #fff 10%),
+        0 3px 0 var(--domain-accent),
+        0 4px 0 color-mix(in srgb, var(--domain-accent) 82%, #000 14%),
+        0 5px 1px color-mix(in srgb, var(--domain-deep) 90%, #000 10%),
+        0 8px 16px rgba(0, 0, 0, 0.38),
+        0 0 30px color-mix(in srgb, var(--domain-accent) 45%, transparent);
+}
+[dir='rtl'] .ahv-title { font-family: 'Cairo', 'Outfit', sans-serif; font-weight: 900; letter-spacing: 0; }
+
+.ahv-rule {
+    display: block;
+    width: 52px;
+    height: 3px;
+    border-radius: 2px;
+    margin-top: 2px;
+    background: linear-gradient(90deg, transparent, var(--domain-accent), transparent);
+    opacity: 0.85;
+}
+
+.ahv-desc {
+    margin: 8px auto 0;
+    max-width: 24rem;
+    font-family: 'Cormorant Garamond', 'Cinzel', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(0.8rem, 2.6vw, 0.9rem);
+    letter-spacing: 0.008em;
+    line-height: 1.5;
+    color: color-mix(in srgb, var(--color-stage-muted) 82%, transparent);
+    opacity: 0.9;
+}
+[dir='rtl'] .ahv-desc { font-family: 'Cairo', 'Outfit', sans-serif; font-style: normal; letter-spacing: 0; }
+
+/*
+ * "Why train X?" chip + modal — restyled to match the glass header, now for
+ * all 6 domain-pick screens. The base .ct-fq-sci-link--chip / .ct-ms-sci*
+ * classes are untouched, so every game hub that reuses this same shared
+ * component elsewhere (outside the domain-pick screens) is unaffected.
+ */
+
+.ct-domain-pick .ct-domain-pick-about-link.ct-fq-sci-link--chip {
+    margin: 6px auto 4px;
+    padding: 9px 20px;
+    border: 1px solid color-mix(in srgb, var(--domain-accent) 34%, transparent);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: color-mix(in srgb, var(--domain-accent) 85%, #fff);
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    letter-spacing: 0.01em;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+    transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+[dir='rtl'] .ct-domain-pick .ct-domain-pick-about-link.ct-fq-sci-link--chip {
+    font-family: 'Cairo', 'Outfit', sans-serif;
+    font-weight: 800;
+}
+.ct-domain-pick .ct-domain-pick-about-link.ct-fq-sci-link--chip:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--domain-accent) 55%, transparent);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.1) inset;
+}
+.ct-domain-pick .ct-domain-pick-about-link.ct-fq-sci-link--chip:active {
+    transform: scale(0.98);
+}
+
+.ct-domain-pick .ct-domain-sci-ov {
+    background: rgba(6, 4, 12, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.ct-domain-pick .ct-domain-sci-panel {
+    background:
+        radial-gradient(ellipse 120% 70% at 50% -8%, color-mix(in srgb, var(--domain-accent) 22%, transparent) 0%, transparent 60%),
+        linear-gradient(165deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)),
+        var(--color-cosmos-mid);
+    border: 1px solid color-mix(in srgb, var(--domain-accent) 30%, transparent);
+    border-radius: 22px;
+    box-shadow: 0 26px 60px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+}
+.ct-domain-pick .ct-domain-sci-title {
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 1.55rem;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+    color: color-mix(in srgb, var(--domain-accent) 88%, #fff);
+    text-shadow: 0 2px 22px color-mix(in srgb, var(--domain-accent) 32%, transparent);
+}
+[dir='rtl'] .ct-domain-pick .ct-domain-sci-title { font-family: 'Cairo', 'Outfit', sans-serif; font-weight: 900; letter-spacing: 0; }
+.ct-domain-pick .ct-domain-sci-intro {
+    font-family: 'Cormorant Garamond', 'Cinzel', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: rgba(240, 226, 192, 0.82);
+}
+[dir='rtl'] .ct-domain-pick .ct-domain-sci-intro { font-family: 'Cairo', 'Outfit', sans-serif; font-style: normal; }
+.ct-domain-pick .ct-domain-sci-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+}
+.ct-domain-pick .ct-domain-sci-h {
+    display: block;
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 0.72rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--domain-accent) 90%, #fff);
+    margin-bottom: 5px;
+}
+[dir='rtl'] .ct-domain-pick .ct-domain-sci-h { font-family: 'Cairo', 'Outfit', sans-serif; letter-spacing: 0.01em; text-transform: none; }
+.ct-domain-pick .ct-domain-sci-b {
+    font-family: 'Source Sans 3', 'Outfit', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 0.87rem;
+    line-height: 1.58;
+    color: rgba(240, 226, 192, 0.74);
+}
+[dir='rtl'] .ct-domain-pick .ct-domain-sci-b { font-family: 'Cairo', 'Outfit', sans-serif; }
+.ct-domain-pick .ct-domain-sci-foot {
+    font-family: 'Cormorant Garamond', 'Cinzel', serif;
+    font-style: italic;
+    color: rgba(240, 226, 192, 0.6);
+}
+[dir='rtl'] .ct-domain-pick .ct-domain-sci-foot { font-family: 'Cairo', 'Outfit', sans-serif; font-style: normal; }
+.ct-domain-pick .ct-domain-sci-close {
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 800;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--domain-accent) 90%, #fff) 0%, var(--domain-accent) 100%);
+    border: none;
+    color: #1a1208;
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--domain-accent) 45%, transparent);
+}
+[dir='rtl'] .ct-domain-pick .ct-domain-sci-close { font-family: 'Cairo', 'Outfit', sans-serif; font-weight: 900; }
+.ct-domain-pick .ct-domain-sci-close:hover {
+    box-shadow: 0 16px 34px color-mix(in srgb, var(--domain-accent) 55%, transparent);
+}

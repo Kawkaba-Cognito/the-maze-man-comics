@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import PracticeShell, { SUB, FAINT } from './PracticeShell';
-import { QUIZ_CSS, LikertRow, KawkabSay, ScenarioChoice } from './quizShared';
+import { QUIZ_CSS, LikertRow, KawkabSay, ScenarioChoice, QuestionExample, DeeperScience } from './quizShared';
 import { markWellbeingPracticeDone } from './habitState';
 
 /*
@@ -22,20 +22,44 @@ const STORAGE_KEY = 'rx_relationship_v1';
 const MIDPOINT_AT = 6;
 
 const ANXIETY_ITEMS = [
-  { id: 'a1', en: "I worry that my partner won't care about me as much as I care about them.", ar: 'أقلق من ألّا يهتم شريكي بي بقدر اهتمامي به.' },
-  { id: 'a2', en: 'I need a lot of reassurance that I am loved.', ar: 'أحتاج إلى الكثير من الطمأنة بأنني محبوب.' },
-  { id: 'a3', en: "I worry about being abandoned by people I'm close to.", ar: 'أقلق من أن يتخلّى عنّي من أنا مقرّب منهم.' },
-  { id: 'a4', en: 'I get frustrated when my partner is not available when I need them.', ar: 'أشعر بالإحباط عندما لا يكون شريكي متاحاً عندما أحتاجه.' },
-  { id: 'a5', en: "I find myself thinking about my relationship a lot — sometimes more than I'd like to.", ar: 'أجد نفسي أفكّر في علاقتي كثيراً — أحياناً أكثر ممّا أريد.' },
-  { id: 'a6', en: "I worry that romantic partners won't want to stay with me.", ar: 'أقلق من ألّا يرغب شركاء العلاقة في البقاء معي.' },
+  { id: 'a1', en: "I worry that my partner won't care about me as much as I care about them.", ar: 'أقلق من ألّا يهتم شريكي بي بقدر اهتمامي به.',
+    example: "You notice you're the one who initiates texts more often, and it makes you wonder if they feel the same way.",
+    exampleAr: 'تلاحظ أنك من يبادر بالرسائل غالباً، فتتساءل إن كان يشعر بالمثل.' },
+  { id: 'a2', en: 'I need a lot of reassurance that I am loved.', ar: 'أحتاج إلى الكثير من الطمأنة بأنني محبوب.',
+    example: "Hearing \"I love you\" once doesn't quite settle it — part of you wants to hear it again, or looks for other signs.",
+    exampleAr: 'سماع "أحبّك" مرة واحدة لا يكفي لتشعر بالطمأنينة — جزء منك يريد سماعها مجدداً، أو يبحث عن علامات أخرى.' },
+  { id: 'a3', en: "I worry about being abandoned by people I'm close to.", ar: 'أقلق من أن يتخلّى عنّي من أنا مقرّب منهم.',
+    example: "Even in a relationship that's going fine, part of you quietly braces for it to end.",
+    exampleAr: 'حتى في علاقة تسير بشكل جيد، جزء منك يتحصّن بصمت لاحتمال انتهائها.' },
+  { id: 'a4', en: 'I get frustrated when my partner is not available when I need them.', ar: 'أشعر بالإحباط عندما لا يكون شريكي متاحاً عندما أحتاجه.',
+    example: "They don't pick up right away, and irritation shows up before any explanation does.",
+    exampleAr: 'لا يردّ على الفور، فيظهر الانزعاج قبل أن تصلك أي تفسير.' },
+  { id: 'a5', en: "I find myself thinking about my relationship a lot — sometimes more than I'd like to.", ar: 'أجد نفسي أفكّر في علاقتي كثيراً — أحياناً أكثر ممّا أريد.',
+    example: "You're at work, and a conversation from last night replays in your head instead of the task in front of you.",
+    exampleAr: 'أنت في العمل، وتُعاد محادثة الليلة الماضية في ذهنك بدلاً من التركيز على مهمتك.' },
+  { id: 'a6', en: "I worry that romantic partners won't want to stay with me.", ar: 'أقلق من ألّا يرغب شركاء العلاقة في البقاء معي.',
+    example: 'Things are going well, and a quiet thought still surfaces: "how long until this changes?"',
+    exampleAr: 'الأمور تسير جيداً، ومع ذلك تخطر لك فكرة هادئة: "إلى متى سيستمر هذا؟"' },
 ];
 const AVOIDANCE_ITEMS = [
-  { id: 'v1', en: 'I prefer not to show a partner how I really feel deep down.', ar: 'أفضّل ألّا أُظهر لشريكي ما أشعر به فعلاً في أعماقي.' },
-  { id: 'v2', en: 'I find it difficult to get close to others.', ar: 'أجد صعوبة في الاقتراب عاطفياً من الآخرين.' },
-  { id: 'v3', en: 'I get nervous when a partner wants to be very close emotionally.', ar: 'أشعر بالتوتّر عندما يريد شريكي قرباً عاطفياً كبيراً.' },
-  { id: 'v4', en: 'I prefer not to depend on romantic partners.', ar: 'أفضّل ألّا أعتمد على شريكي العاطفي.' },
-  { id: 'v5', en: 'I try to avoid getting too emotionally close to a partner.', ar: 'أحاول تجنّب الاقتراب العاطفي الشديد من شريكي.' },
-  { id: 'v6', en: 'I am uncomfortable opening up to romantic partners.', ar: 'أشعر بعدم الارتياح عند البوح لشريكي بمشاعري.' },
+  { id: 'v1', en: 'I prefer not to show a partner how I really feel deep down.', ar: 'أفضّل ألّا أُظهر لشريكي ما أشعر به فعلاً في أعماقي.',
+    example: "Something upset you, but you'd rather work through it alone than explain the whole thing out loud.",
+    exampleAr: 'أزعجك أمر ما، لكنك تفضّل معالجته بمفردك بدلاً من شرحه بصوت مسموع.' },
+  { id: 'v2', en: 'I find it difficult to get close to others.', ar: 'أجد صعوبة في الاقتراب عاطفياً من الآخرين.',
+    example: "Even with people you like, there's a point where you pull back rather than let them in further.",
+    exampleAr: 'حتى مع من تحبّهم، هناك نقطة تتراجع عندها بدلاً من السماح لهم بالاقتراب أكثر.' },
+  { id: 'v3', en: 'I get nervous when a partner wants to be very close emotionally.', ar: 'أشعر بالتوتّر عندما يريد شريكي قرباً عاطفياً كبيراً.',
+    example: 'A partner says "I feel like we can tell each other anything" — and something in you tightens instead of warms.',
+    exampleAr: 'يقول شريكك "أشعر أننا نستطيع إخبار بعضنا بأي شيء" — فيتوتّر شيء بداخلك بدلاً من أن يدفأ.' },
+  { id: 'v4', en: 'I prefer not to depend on romantic partners.', ar: 'أفضّل ألّا أعتمد على شريكي العاطفي.',
+    example: "You'd rather struggle with a hard problem alone than ask your partner to help you with it.",
+    exampleAr: 'تفضّل المكافحة بمفردك في مشكلة صعبة على أن تطلب من شريكك المساعدة فيها.' },
+  { id: 'v5', en: 'I try to avoid getting too emotionally close to a partner.', ar: 'أحاول تجنّب الاقتراب العاطفي الشديد من شريكي.',
+    example: 'When a relationship starts feeling serious, you notice yourself quietly creating a little distance.',
+    exampleAr: 'عندما تبدأ العلاقة تصبح جدّية، تلاحظ نفسك تخلق مسافة صغيرة بهدوء.' },
+  { id: 'v6', en: 'I am uncomfortable opening up to romantic partners.', ar: 'أشعر بعدم الارتياح عند البوح لشريكي بمشاعري.',
+    example: "You'll talk about your day, but the harder stuff — fears, insecurities — tends to stay unspoken.",
+    exampleAr: 'تتحدّث عن يومك، لكن الأمور الأصعب — مخاوفك وشكوكك — تبقى عادة دون أن تُقال.' },
 ];
 // Interleaved anxiety/avoidance so the two dimensions aren't obvious from item order.
 const ITEMS = ANXIETY_ITEMS.flatMap((a, i) => [
@@ -52,6 +76,8 @@ const STYLES = {
     tipAr: 'ثباتك مورد حقيقي لشريكك في أوقات الضغط. استمر في التعبير عن احتياجاتك بوضوح — فذلك لا يكلّفك كثيراً ويساعد من حولك على فهمك بدقة.',
     takeawayEn: "In plain terms: closeness feels safe to you, and so does being alone — you don't need constant proof that people are still there.",
     takeawayAr: 'بعبارة بسيطة: القرب يشعرك بالأمان، وكذلك الاستقلالية — لا تحتاج إلى دليل مستمر على أن الآخرين لا يزالون موجودين.',
+    deeperEn: "\"Secure\" isn't a bonus you're born with for good — most secure adults report at least one earlier relationship or period of insecurity that resolved over time (Mickelson, Kessler & Shaver, 1997). Consistency with a caregiver, partner, or therapist is what builds and maintains it, not luck.",
+    deeperAr: '"الآمن" ليس ميزة تُولد بها إلى الأبد — يذكر معظم البالغين الآمنين علاقة سابقة واحدة على الأقل أو فترة من عدم الأمان تحسّنت مع الوقت (Mickelson, Kessler & Shaver, 1997). الثبات مع مقدّم رعاية أو شريك أو معالج هو ما يبنيه ويحافظ عليه، لا الحظ.',
   },
   anxious: {
     color: '#c9a24b', en: 'Anxious-Preoccupied', ar: 'قلق-منشغل',
@@ -61,6 +87,8 @@ const STYLES = {
     tipAr: 'حاول أن تمنح نفسك وقفة قصيرة قبل طلب الطمأنة — دقائق قليلة من تهدئة الذات (كالمشي أو ممارسة التنفّس) غالباً ما تكشف أن القلق كان أعلى صوتاً من الدليل عليه.',
     takeawayEn: "In plain terms: you feel connection deeply, and small silences can feel loud — that's not neediness, it's a very tuned-in nervous system.",
     takeawayAr: 'بعبارة بسيطة: تشعر بالارتباط بعمق، وقد تبدو السكتات الصغيرة صاخبة بالنسبة لك — هذا ليس تعلّقاً مفرطاً، بل جهاز عصبي شديد الحساسية.',
+    deeperEn: 'This pattern often forms in childhood environments where caregiving was loving but inconsistent — sometimes warmly available, sometimes not, in a way that was hard to predict. That taught a young nervous system that closeness needs vigilance to keep. It made sense once, in that context — it just costs more than it used to now.',
+    deeperAr: 'غالباً ما يتشكّل هذا النمط في بيئة طفولة كانت الرعاية فيها محبّة لكن غير منتظمة — متاحة بدفء أحياناً، وغائبة أحياناً أخرى، بطريقة يصعب توقّعها. علّم ذلك الجهاز العصبي الصغير أن القرب يحتاج يقظة دائمة للحفاظ عليه. كان ذلك منطقياً حينها، ضمن ذلك السياق — لكنه يكلّف الآن أكثر ممّا كان يكلّف سابقاً.',
   },
   dismissive: {
     color: '#5aa9c8', en: 'Dismissive-Avoidant', ar: 'رافض-متجنّب',
@@ -70,6 +98,8 @@ const STYLES = {
     tipAr: 'الاستقلالية ميزة حقيقية؛ المهارة التي تستحق الإضافة هي التعبير عن شعورك بصوت مسموع قبل معالجته كاملاً بمفردك — فالشريك لا يستطيع فهم باب مغلق دائماً.',
     takeawayEn: 'In plain terms: you value your independence and keep your inner world to yourself — closeness is welcome, just on your own terms.',
     takeawayAr: 'بعبارة بسيطة: تقدّر استقلاليتك وتحتفظ بعالمك الداخلي لنفسك — القرب مرحّب به، لكن بشروطك أنت.',
+    deeperEn: "This pattern often forms when a child's bids for comfort went consistently unanswered, so self-reliance became the safer strategy. Adults with this style commonly report feeling fine on self-report tests while their body still shows a measurable stress response underneath — so \"I'm fine\" can be genuinely felt and physiologically incomplete at the same time (Fraley & Shaver, 1997).",
+    deeperAr: 'غالباً ما يتشكّل هذا النمط عندما لا تُلبَّى محاولات الطفل المتكررة لطلب العزاء، فيصبح الاعتماد على الذات هو الاستراتيجية الأكثر أماناً. غالباً ما يشعر البالغون بهذا النمط بأنهم "بخير" في اختبارات التقرير الذاتي، بينما يُظهر الجسد استجابة توتّر قابلة للقياس تحت السطح — أي أن "أنا بخير" قد تكون شعوراً صادقاً وغير مكتمل فسيولوجياً في آن واحد (Fraley & Shaver, 1997).',
   },
   fearful: {
     color: '#a06fae', en: 'Fearful-Avoidant', ar: 'خائف-متجنّب',
@@ -79,6 +109,8 @@ const STYLES = {
     tipAr: 'هذا النمط يستجيب بشكل خاص لشريك صبور وثابت، وغالباً للعلاج النفسي المرَكَّز على العلاقات — كلاهما يمنح الجهاز العصبي أدلّة متكرّرة على أن القرب يمكن أن يكون آمناً.',
     takeawayEn: 'In plain terms: part of you wants closeness, and part of you braces for it to hurt — both parts make sense together.',
     takeawayAr: 'بعبارة بسيطة: جزء منك يريد القرب، وجزء آخر يتحصّن من أن يؤلمه — وكلا الجزأين منطقي معاً.',
+    deeperEn: 'This is the least common and most researched of the four styles, often linked to relationships where the same person who gave comfort was also, at times, a source of fear or unpredictability. It tends to respond especially well to attachment-focused therapy — specifically because both fears (of closeness, and of being alone) get addressed together, rather than one being treated as "the real problem."',
+    deeperAr: 'هذا هو الأنمط الأربعة الأقل شيوعاً والأكثر دراسة، ويرتبط غالباً بعلاقات كان فيها الشخص نفسه الذي يمنح العزاء مصدراً للخوف أو عدم القدرة على التنبؤ في أحيان أخرى. يستجيب هذا النمط بشكل خاص للعلاج النفسي المرَكَّز على التعلّق — تحديداً لأن كلا الخوفين (من القرب، ومن الوحدة) يُعالَجان معاً، بدلاً من اعتبار أحدهما "المشكلة الحقيقية".',
   },
 };
 
@@ -154,6 +186,7 @@ const TEXT = {
     scenarioContinue: 'Continue',
     scenarioSeeResults: 'See my results',
     resultsTitle: 'Your attachment style',
+    moreLabel: 'Go deeper into the research', lessLabel: 'Show less',
     axisAnxiety: 'Anxiety', axisAvoidance: 'Avoidance',
     recapTitle: 'Your gut-check, across those 3 moments',
     recapMatch: (styleLabel) => `Your instinctive reactions leaned ${styleLabel} — consistent with your scale result. That's a strong, repeated signal.`,
@@ -182,6 +215,7 @@ const TEXT = {
     scenarioContinue: 'متابعة',
     scenarioSeeResults: 'شاهد نتيجتي',
     resultsTitle: 'نمط تعلّقك',
+    moreLabel: 'تعمّق أكثر في البحث العلمي', lessLabel: 'عرض أقل',
     axisAnxiety: 'القلق', axisAvoidance: 'التجنّب',
     recapTitle: 'حدسك عبر هذه اللحظات الثلاث',
     recapMatch: (styleLabel) => `مالت ردود أفعالك الغريزية نحو "${styleLabel}" — متّسقة مع نتيجة المقياس. هذه إشارة قوية ومتكرّرة.`,
@@ -341,6 +375,7 @@ export default function RelationshipQuiz({ onBack }) {
         <div className="rxp-body" style={{ '--acc': ACCENT }}>
           <div className="qz-progress" dir="ltr">{index + 1} / {ITEMS.length}</div>
           <div className="qz-item-text">{isAr ? ITEMS[index].ar : ITEMS[index].en}</div>
+          <QuestionExample>{isAr ? ITEMS[index].exampleAr : ITEMS[index].example}</QuestionExample>
           <LikertRow value={answers[ITEMS[index].id] || null} onChange={answer} leftLabel={t.left} rightLabel={t.right} />
           {index > 0 && (
             <button
@@ -415,6 +450,9 @@ export default function RelationshipQuiz({ onBack }) {
           <p style={{ fontSize: 14, lineHeight: 1.6, color: SUB, textAlign: 'center' }}>{isAr ? styleInfo.descAr : styleInfo.descEn}</p>
           <div style={{ padding: '13px 15px', borderRadius: 12, background: `${styleInfo.color}14`, borderInlineStart: `4px solid ${styleInfo.color}` }}>
             <div style={{ fontSize: 13, lineHeight: 1.6, color: SUB }}>{isAr ? styleInfo.tipAr : styleInfo.tipEn}</div>
+            <DeeperScience moreLabel={t.moreLabel} lessLabel={t.lessLabel}>
+              {isAr ? styleInfo.deeperAr : styleInfo.deeperEn}
+            </DeeperScience>
           </div>
 
           {tally && (

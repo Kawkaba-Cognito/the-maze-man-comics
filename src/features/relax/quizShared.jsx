@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { INK, SUB, FAINT, LINE, CARD, SERIF } from './PracticeShell';
 import CosmosCharacter from '../character/CosmosCharacter';
 import SpeechBubble from '../training/shared/scene/SpeechBubble';
@@ -36,6 +36,10 @@ export const QUIZ_CSS = `
 .qz-choice-list { display:flex; flex-direction:column; gap:10px; }
 .qz-choice { text-align:start; padding:14px 16px; border-radius:14px; border:2px solid ${LINE}; background:${CARD}; color:${INK}; font-size:14px; font-weight:600; line-height:1.5; cursor:pointer; font-family:inherit; transition:all .15s; }
 .qz-choice.on { border-color:var(--acc); background:#fff6ec; }
+.qz-example { font-size:12.5px; color:${SUB}; font-style:italic; text-align:center; line-height:1.55; padding:0 10px; max-width:420px; margin:0 auto; }
+.qz-deeper { margin-top:8px; }
+.qz-deeper-toggle { display:flex; align-items:center; gap:5px; background:none; border:none; color:var(--acc); font-weight:800; font-size:12px; cursor:pointer; font-family:inherit; padding:2px 0; }
+.qz-deeper-body { font-size:12.5px; color:${SUB}; line-height:1.6; margin-top:8px; padding-top:8px; border-top:1px dashed ${LINE}; }
 
 [data-home-theme='dark'] .qz-progress { color:#c9b384; }
 [data-home-theme='dark'] .qz-item-text { color:#f0e2c0; }
@@ -50,6 +54,8 @@ export const QUIZ_CSS = `
 [data-home-theme='dark'] .qz-trait-try { color:#f0e2c0; border-top-color:rgba(212,168,80,0.25); }
 [data-home-theme='dark'] .qz-choice { background:#211a10; border-color:rgba(212,168,80,0.25); color:#f0e2c0; }
 [data-home-theme='dark'] .qz-choice.on { background:#332818; }
+[data-home-theme='dark'] .qz-example { color:#c9b384; }
+[data-home-theme='dark'] .qz-deeper-body { color:#c9b384; border-top-color:rgba(212,168,80,0.25); }
 `;
 
 /*
@@ -97,6 +103,30 @@ export function TraitBar({ label, value, color, valueLabel, children, tryThis })
       </div>
       {children && <div className="qz-trait-blurb">{children}</div>}
       {tryThis && <div className="qz-trait-try">{tryThis}</div>}
+    </div>
+  );
+}
+
+/** A short concrete illustration of what agreeing with a question looks like in real life — shown under every question so people can calibrate their answer instead of guessing at the abstract wording. */
+export function QuestionExample({ children }) {
+  if (!children) return null;
+  return <p className="qz-example">💡 {children}</p>;
+}
+
+/**
+ * An opt-in "go deeper" disclosure under a result — a second, more detailed
+ * layer of the research (mechanism, origin, nuance) kept collapsed by
+ * default so the main result stays plain-language and non-clinical, while
+ * anyone who wants the fuller picture can open it without leaving the page.
+ */
+export function DeeperScience({ moreLabel, lessLabel, children }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="qz-deeper">
+      <button type="button" className="qz-deeper-toggle" onClick={() => setOpen((o) => !o)}>
+        {open ? lessLabel : moreLabel} {open ? '▴' : '▾'}
+      </button>
+      {open && <div className="qz-deeper-body">{children}</div>}
     </div>
   );
 }
