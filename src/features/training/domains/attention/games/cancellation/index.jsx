@@ -2,6 +2,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   useRef,
   useLayoutEffect,
   useSyncExternalStore,
@@ -800,7 +801,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     gridOnsetRef.current = 0;
   }, [round]);
 
-  const doneMap = profile.done || {};
+  const doneMap = useMemo(() => profile.done || {}, [profile.done]);
 
   const persistLevel = useCallback(
     (r, stats, f, e) => {
@@ -1322,7 +1323,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       setLastResult({ type: 'level', stats, r, won, found: f, errors: e });
       setPhase('res');
     },
-    [stopTimer, persistLevel, playSfx, beginFreeRoundAtStage, beginAssessmentTrial, beginAdaptiveTrial, onAssessmentComplete],
+    [stopTimer, persistLevel, playSfx, beginFreeRoundAtStage, beginAssessmentTrial, beginAdaptiveTrial, onAssessmentComplete, awardFreeRun, awardTrainingWin],
   );
 
   useEffect(() => {
@@ -1615,7 +1616,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         shakeTimerRef.current = 0;
       }, 350);
     }
-  }, [playStep, pauseOpen, cdShow, playSfx]);
+  }, [playStep, pauseOpen, cdShow, playSfx, juice]);
 
   const onHudPause = useCallback(() => {
     if (playStep !== 'running') return;
