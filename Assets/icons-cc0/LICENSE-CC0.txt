@@ -1,0 +1,7 @@
+Icons in this folder are CC0 1.0 Universal (public domain) — no attribution required.
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Source: Kenney Vleugels (www.kenney.nl)
+- scan-reticle.png    <- Crosshair Pack (crosshair078), https://kenney.nl/assets/crosshair-pack
+- target-ring.png     <- Game Icons (target.png), https://kenney.nl/assets/game-icons
+- duo-players.png     <- Game Icons (multiplayer.png), https://kenney.nl/assets/game-icons
