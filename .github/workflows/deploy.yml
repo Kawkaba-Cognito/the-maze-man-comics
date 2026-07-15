@@ -1,24 +1,26 @@
 name: Deploy to GitHub Pages
 
-# Manual deploy only — avoids publishing a public Pages site on every push to a private repo.
+# Primary deploy path: every push to main builds on a clean runner and
+# publishes dist/ to the gh-pages branch (the branch GitHub Pages serves —
+# repo Pages config is "Deploy from a branch", build_type "legacy"; this
+# workflow deliberately keeps that config instead of the Actions-artifact
+# flow, so the manual worktree deploy in CLAUDE.md still works as a fallback).
+# Plain git only — no third-party actions in the publish step.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write # push the built site to the gh-pages branch
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: pages-deploy
+  cancel-in-progress: false # never kill a deploy mid-push; queue the next one
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -33,14 +35,27 @@ jobs:
       - name: Audit FocusQuest level math & generation
         run: npm run audit:fq
 
+      - name: Validate rush-hour reference solutions
+        run: npm run validate:rh
+
       - name: Build
         run: npm run build
 
-      - uses: actions/configure-pages@v4
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-      - uses: actions/deploy-pages@v4
-        id: deployment
+      - name: Publish dist/ to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          git worktree add /tmp/site origin/gh-pages
+          # gh-pages holds ONLY the built site, so wiping everything except
+          # .git and copying dist/. in is an exact mirror of the build.
+          find /tmp/site -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          cp -r dist/. /tmp/site/
+          cd /tmp/site
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Build is identical to the live site — nothing to deploy."
+          else
+            git commit -m "Deploy: built from ${GITHUB_SHA}"
+            git push origin HEAD:gh-pages
+          fi

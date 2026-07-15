@@ -16,37 +16,35 @@ npm run dev                      # localhost:5173/the-maze-man-comics/
 npm run build                    # production build + PWA service worker
 ```
 
-**Deploy after every update — no exceptions.**
+**Deploying is automatic (2026-07-16)**: every push to `main` on `origin` (Kawkaba-Cognito) triggers `.github/workflows/deploy.yml`, which installs, runs `audit:fq` + `validate:rh`, builds, and publishes `dist/` to the `gh-pages` branch — the branch GitHub Pages serves. It can also be run by hand from the repo's Actions tab (workflow_dispatch). The `cognitive` mirror does **not** auto-deploy; push `gh-pages` there manually if the mirror should stay current.
 
-⚠️ **`npx gh-pages -d dist` is unreliable on this machine** — it has repeatedly hung 5+ minutes or corrupted its internal clone cache (`node_modules/.cache/gh-pages`) mid-deploy across many sessions. Don't reach for it. Use the manual method below.
+⚠️ **This checkout's HEAD is on `main`, which is source-only — NEVER commit built files here.** (A 2026-07-15 deploy accidentally committed the dist mirror to `main` and had to be reverted.) `main` still *tracks* a stale snapshot of some built files at the repo root (old `index.html`, `Assets/*.glb`, `icons/`, …) left over from when this checkout lived on `gh-pages` — leave them alone; don't "refresh" or delete them as part of a deploy.
 
-This checkout's git HEAD lives on the `gh-pages` branch itself — the built site's tracked files (`Assets/`, `index.html`, `sw.js`, …) sit in the same working directory as the React source, which is untracked on top of it. That's normal for this repo, not a broken checkout.
-
-**Reliable manual deploy:**
+**Manual fallback** (only if Actions is unavailable) — deploy through a `gh-pages` worktree, never on `main`:
 
 ```bash
 npm run build
-# Replace only the tracked dist-mirror paths. NEVER `git add -A` here — it
-# would also sweep in the untracked src/, node_modules/, .vite/, package.json
-# etc. sitting in the same working directory.
-rm -rf Assets episode-1-problem-solving.html favicon.ico icons index.html manifest.webmanifest registerSW.js sw.js workbox-*.js
-cp -r dist/. .
-git add Assets episode-1-problem-solving.html favicon.ico icons index.html manifest.webmanifest registerSW.js sw.js workbox-*.js
-git commit -m "Deploy: <summary>"
-git push origin gh-pages       # Kawkaba-Cognito — the live site, this is the one that matters
-git push cognitive gh-pages    # second remote/mirror; retry once if "Repository not found"
+git worktree add "$TEMP/gh-pages-deploy" gh-pages
+# in the worktree: delete everything except .git, then copy dist/. in
+git -C "$TEMP/gh-pages-deploy" add -A        # safe THERE — gh-pages holds only the site
+git -C "$TEMP/gh-pages-deploy" commit -m "Deploy: <summary>"
+git -C "$TEMP/gh-pages-deploy" push origin gh-pages       # the live site
+git -C "$TEMP/gh-pages-deploy" push cognitive gh-pages    # mirror; retry on "Repository not found"
+git worktree remove "$TEMP/gh-pages-deploy" --force
 ```
 
-**Verify it actually landed** (a successful `git push` message isn't proof — see the 2026-07-11 incident where a broken deploy tool still produced a real, pushed, no-op commit):
+(⚠️ `npx gh-pages -d dist` is unreliable on this machine — repeated hangs and corrupted clone cache. Don't reach for it.)
+
+**Verify it actually landed** (a successful push isn't proof — see the 2026-07-11 incident where a broken deploy tool still produced a real, pushed, no-op commit):
 
 ```bash
-grep -oE 'Assets/index-[A-Za-z0-9_-]+\.js' index.html                                                          # local entry hash
+grep -oE 'Assets/index-[A-Za-z0-9_-]+\.js' dist/index.html                                                     # local entry hash
 curl -s "https://kawkaba-cognito.github.io/the-maze-man-comics/" | grep -oE 'Assets/index-[A-Za-z0-9_-]+\.js'  # live entry hash — must match
 ```
 
 Live: https://kawkaba-cognito.github.io/the-maze-man-comics/
 
-**Known flakiness on this machine** (environment-level, not code bugs — workaround, don't try to "fix"):
+**Known flakiness on this machine** (environment-level, not code bugs — affects manual pushes only, CI runners are unaffected; workaround, don't try to "fix"):
 - **Multi-account Git Credential Manager** — two GitHub accounts are configured here; `cognitive` remote reads/writes intermittently fail with "Repository not found" or auth as the wrong account. Retry — it usually resolves in 1–2 tries.
 - **IPv4 routing black holes** — github.com DNS round-robins across several IPs; on this network, some `.4`-ending IPs have timed out for minutes while `.3`-ending ones return instantly. Symptom: git/curl to github.com hangs ~21s despite the rest of the internet being fine. This is routing, not auth — don't re-authenticate, route around it (a local CONNECT proxy pinned to a working IP has fixed this before).
 - **Large-pack connection resets** — pushing the ~20MB+ built asset pack has hit `HTTP 408` / mid-upload disconnects on this network. Fix: `git config http.postBuffer 157286400` and `git config http.version HTTP/1.1` in this repo before pushing, `--unset` after.
@@ -117,7 +115,7 @@ src/
 
 ### Benched games (complete but unreachable — see BENCHED.md in each)
 
-`flexibility/games/flip`, `flexibility/games/piano-tap`, `language/games/odd-one-out` (its data feeds the pending Word Links merge), `reasoning/games/tower-hanoi` (Colour Sort). Not registered in any domain config; no code path reaches them. Revive via domain config, or delete the folder to retire.
+`language/games/odd-one-out` — its game component is unreachable, but **its `data.js` is a live dependency** of Word Links (`synonyms` imports `CATEGORIES` from it), so don't delete the folder. `memory/games/memo-span` is also unregistered but deliberately kept for possible re-enable. Flip, Piano Tap, and Colour Sort (tower-hanoi) were retired and deleted 2026-07-16 (recoverable from git history).
 
 ## Bilingual (EN/AR)
 
@@ -129,13 +127,12 @@ Everything is localStorage, keys prefixed `mm_*` and versioned (`mm_wordle_profi
 
 ## Comics / episodes (the original product)
 
-- `components/video/VideoPlayer.jsx` — Canvas 2D episode player + Web Speech API narration. **Currently orphaned**: its only importer (`VideosScreen`) is not routed from anywhere.
-- `public/episode-1-problem-solving.html` — a complete standalone Canvas game (3-floor Monument-Valley-style book layout, gate guardians, mini-games). It bypasses React and the build entirely — it is served as-is and has its own inline JS/CSS conventions.
+- `public/episode-1-problem-solving.html` — a complete standalone Canvas game (3-floor Monument-Valley-style book layout, gate guardians, mini-games). It bypasses React and the build entirely — it is served as-is and has its own inline JS/CSS conventions. (The old React episode player, `VideoPlayer.jsx`/`VideosScreen`, has been deleted.)
 - Audio app-wide is synthesized via Web Audio API — there are no audio files.
 
 ## Validation scripts
 
-`npm run validate:puzzles` · `npm run audit:fq` (cancellation level curriculum) · `npm run lint`. Run the relevant one after touching generators or level data. ⚠️ `npm run validate:rh` is currently **broken** — it imports `src/components/training/rushHourEngine.js`, which no longer exists (the engine lives at `src/features/training/domains/reasoning/games/rush-hour/engine.js`).
+`npm run validate:puzzles` · `npm run validate:rh` (rush-hour reference solutions; `--full` for the hard ref puzzle) · `npm run audit:fq` (cancellation level curriculum) · `npm run lint`. Run the relevant one after touching generators or level data.
 
 ---
 

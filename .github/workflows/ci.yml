@@ -1,8 +1,8 @@
 name: CI
 
+# Build-verify pull requests. Pushes to main are covered by deploy.yml,
+# which runs the same install → audit → build before publishing.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
 
