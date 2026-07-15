@@ -1,1 +1,0 @@
-var e=6e4;function t(t,n=e){return Math.max(0,Math.min(1,t/n))**.55}function n(n,r=e){return t(r-n,r)}function r(e){return e<.32?`easy`:e<.65?`med`:`hard`}function i(){return(Date.now()^Math.floor(Math.random()*2147483647))>>>0}function a(e,t,n=.55){return Math.max(e*n,e*(1-t*(1-n)))}export{a,n as i,i as n,r as o,t as r,e as t};

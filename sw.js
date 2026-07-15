@@ -1,1 +1,91 @@
-if(!self.define){let s,i={};const e=(e,l)=>(e=new URL(e+".js",l).href,i[e]||new Promise(i=>{if("document"in self){const s=document.createElement("script");s.src=e,s.onload=i,document.head.appendChild(s)}else s=e,importScripts(e),i()}).then(()=>{let s=i[e];if(!s)throw new Error(`Module ${e} didn’t register its module`);return s}));self.define=(l,n)=>{const r=s||("document"in self?document.currentScript.src:"")||location.href;if(i[r])return;let o={};const u=s=>e(s,r),v={module:{uri:r},exports:o,require:u};i[r]=Promise.all(l.map(s=>v[s]||u(s))).then(s=>(n(...s),o))}}define(["./workbox-a3c94b52"],function(s){"use strict";self.skipWaiting(),s.clientsClaim(),s.precacheAndRoute([{url:"index.html",revision:"2a30ca74758b06353156e2251b636010"},{url:"favicon.ico",revision:"e07e22071bc190485f85277458d1d9b4"},{url:"episode-1-problem-solving.html",revision:"7d63b759994cceddd173821fb18dbc69"},{url:"Assets/index-DqVo1-9e.css",revision:null},{url:"Assets/game-illustrations/wordle.svg",revision:null},{url:"Assets/game-illustrations/wisconsin.svg",revision:null},{url:"Assets/game-illustrations/trivia.svg",revision:null},{url:"Assets/game-illustrations/train-switch.svg",revision:null},{url:"Assets/game-illustrations/trail-making.svg",revision:null},{url:"Assets/game-illustrations/synonyms.svg",revision:null},{url:"Assets/game-illustrations/story-grid.svg",revision:null},{url:"Assets/game-illustrations/speed-match.svg",revision:null},{url:"Assets/game-illustrations/spatial-stroop.svg",revision:null},{url:"Assets/game-illustrations/rush-hour.svg",revision:null},{url:"Assets/game-illustrations/raven-matrices.svg",revision:null},{url:"Assets/game-illustrations/paired-associates.svg",revision:null},{url:"Assets/game-illustrations/nback.svg",revision:null},{url:"Assets/game-illustrations/mot.svg",revision:null},{url:"Assets/game-illustrations/math-gates.svg",revision:null},{url:"Assets/game-illustrations/detective.svg",revision:null},{url:"Assets/game-illustrations/cancel-task.svg",revision:null},{url:"Assets/game-illustrations/brixton.svg",revision:null},{url:"Assets/emoji/2b50.svg",revision:null},{url:"Assets/emoji/2757.svg",revision:null},{url:"Assets/emoji/2728.svg",revision:null},{url:"Assets/emoji/26fa.svg",revision:null},{url:"Assets/emoji/26f1.svg",revision:null},{url:"Assets/emoji/26c4.svg",revision:null},{url:"Assets/emoji/26bd.svg",revision:null},{url:"Assets/emoji/26a1.svg",revision:null},{url:"Assets/emoji/2668.svg",revision:null},{url:"Assets/emoji/2604.svg",revision:null},{url:"Assets/emoji/2602.svg",revision:null},{url:"Assets/emoji/2601.svg",revision:null},{url:"Assets/emoji/2600.svg",revision:null},{url:"Assets/emoji/23f1.svg",revision:null},{url:"Assets/emoji/1fad9.svg",revision:null},{url:"Assets/emoji/1fab5.svg",revision:null},{url:"Assets/emoji/1fab4.svg",revision:null},{url:"Assets/emoji/1faa9.svg",revision:null},{url:"Assets/emoji/1fa9f.svg",revision:null},{url:"Assets/emoji/1fa9c.svg",revision:null},{url:"Assets/emoji/1fa94.svg",revision:null},{url:"Assets/emoji/1fa91.svg",revision:null},{url:"Assets/emoji/1fa90.svg",revision:null},{url:"Assets/emoji/1fa81.svg",revision:null},{url:"Assets/emoji/1f9fd.svg",revision:null},{url:"Assets/emoji/1f9fa.svg",revision:null},{url:"Assets/emoji/1f9f8.svg",revision:null},{url:"Assets/emoji/1f9f1.svg",revision:null},{url:"Assets/emoji/1f98b.svg",revision:null},{url:"Assets/emoji/1f981.svg",revision:null},{url:"Assets/emoji/1f91d.svg",revision:null},{url:"Assets/emoji/1f917.svg",revision:null},{url:"Assets/emoji/1f916.svg",revision:null},{url:"Assets/emoji/1f7e9.svg",revision:null},{url:"Assets/emoji/1f6df.svg",revision:null},{url:"Assets/emoji/1f6cf.svg",revision:null},{url:"Assets/emoji/1f6cb.svg",revision:null},{url:"Assets/emoji/1f6b8.svg",revision:null},{url:"Assets/emoji/1f6b6.svg",revision:null},{url:"Assets/emoji/1f6a9.svg",revision:null},{url:"Assets/emoji/1f6a6.svg",revision:null},{url:"Assets/emoji/1f680.svg",revision:null},{url:"Assets/emoji/1f642.svg",revision:null},{url:"Assets/emoji/1f634.svg",revision:null},{url:"Assets/emoji/1f5ff.svg",revision:null},{url:"Assets/emoji/1f5fa.svg",revision:null},{url:"Assets/emoji/1f5bc.svg",revision:null},{url:"Assets/emoji/1f550.svg",revision:null},{url:"Assets/emoji/1f528.svg",revision:null},{url:"Assets/emoji/1f526.svg",revision:null},{url:"Assets/emoji/1f525.svg",revision:null},{url:"Assets/emoji/1f50d.svg",revision:null},{url:"Assets/emoji/1f4e6.svg",revision:null},{url:"Assets/emoji/1f4da.svg",revision:null},{url:"Assets/emoji/1f4d6.svg",revision:null},{url:"Assets/emoji/1f4d5.svg",revision:null},{url:"Assets/emoji/1f4cd.svg",revision:null},{url:"Assets/emoji/1f4af.svg",revision:null},{url:"Assets/emoji/1f4ac.svg",revision:null},{url:"Assets/emoji/1f4a8.svg",revision:null},{url:"Assets/emoji/1f4a6.svg",revision:null},{url:"Assets/emoji/1f4a4.svg",revision:null},{url:"Assets/emoji/1f4a1.svg",revision:null},{url:"Assets/emoji/1f495.svg",revision:null},{url:"Assets/emoji/1f490.svg",revision:null},{url:"Assets/emoji/1f48c.svg",revision:null},{url:"Assets/emoji/1f44b.svg",revision:null},{url:"Assets/emoji/1f436.svg",revision:null},{url:"Assets/emoji/1f431.svg",revision:null},{url:"Assets/emoji/1f426.svg",revision:null},{url:"Assets/emoji/1f41a.svg",revision:null},{url:"Assets/emoji/1f3fa.svg",revision:null},{url:"Assets/emoji/1f3ee.svg",revision:null},{url:"Assets/emoji/1f3eb.svg",revision:null},{url:"Assets/emoji/1f3e0.svg",revision:null},{url:"Assets/emoji/1f3d8.svg",revision:null},{url:"Assets/emoji/1f3d6.svg",revision:null},{url:"Assets/emoji/1f3ca.svg",revision:null},{url:"Assets/emoji/1f3c6.svg",revision:null},{url:"Assets/emoji/1f3b6.svg",revision:null},{url:"Assets/emoji/1f3b5.svg",revision:null},{url:"Assets/emoji/1f3ad.svg",revision:null},{url:"Assets/emoji/1f3a8.svg",revision:null},{url:"Assets/emoji/1f3a4.svg",revision:null},{url:"Assets/emoji/1f392.svg",revision:null},{url:"Assets/emoji/1f38a.svg",revision:null},{url:"Assets/emoji/1f389.svg",revision:null},{url:"Assets/emoji/1f388.svg",revision:null},{url:"Assets/emoji/1f382.svg",revision:null},{url:"Assets/emoji/1f381.svg",revision:null},{url:"Assets/emoji/1f373.svg",revision:null},{url:"Assets/emoji/1f354.svg",revision:null},{url:"Assets/emoji/1f34e.svg",revision:null},{url:"Assets/emoji/1f34b.svg",revision:null},{url:"Assets/emoji/1f345.svg",revision:null},{url:"Assets/emoji/1f33f.svg",revision:null},{url:"Assets/emoji/1f33b.svg",revision:null},{url:"Assets/emoji/1f337.svg",revision:null},{url:"Assets/emoji/1f334.svg",revision:null},{url:"Assets/emoji/1f333.svg",revision:null},{url:"Assets/emoji/1f331.svg",revision:null},{url:"Assets/emoji/1f330.svg",revision:null},{url:"Assets/emoji/1f327.svg",revision:null},{url:"Assets/emoji/1f31f.svg",revision:null},{url:"Assets/emoji/1f319.svg",revision:null},{url:"Assets/emoji/1f315.svg",revision:null},{url:"Assets/emoji/1f30c.svg",revision:null},{url:"Assets/emoji/1f30b.svg",revision:null},{url:"Assets/emoji/1f30a.svg",revision:null},{url:"Assets/emoji/1f308.svg",revision:null},{url:"manifest.webmanifest",revision:"86445444d8d48563e2e2c6db9dd554dc"},{url:"icons/icon-96.png",revision:"a36b0a7763938420f1c1c0b50534fb16"},{url:"icons/icon-72.png",revision:"3b96ab272cf8b87591d72cb85e3da5ba"},{url:"icons/icon-512.png",revision:"793c88ff69c90f470edbe85991185fd2"},{url:"icons/icon-384.png",revision:"3fadb314f00e96f1cb43890fe6b63e3b"},{url:"icons/icon-192.png",revision:"b88ad0fed9a0e89dd2e973a2f296b702"},{url:"icons/icon-180.png",revision:"3b707c8932782415cd1054d5c32f59c2"},{url:"icons/icon-152.png",revision:"5478cd3b697758b604c15b90d0e248bd"},{url:"icons/icon-144.png",revision:"e6c7018526e00df2bb7649c0b4e9ca92"},{url:"icons/icon-128.png",revision:"ab7b45bcba24d4b5cb55b68750fa5b30"},{url:"icons/icon-128.png",revision:"ab7b45bcba24d4b5cb55b68750fa5b30"},{url:"icons/icon-144.png",revision:"e6c7018526e00df2bb7649c0b4e9ca92"},{url:"icons/icon-152.png",revision:"5478cd3b697758b604c15b90d0e248bd"},{url:"icons/icon-180.png",revision:"3b707c8932782415cd1054d5c32f59c2"},{url:"icons/icon-192.png",revision:"b88ad0fed9a0e89dd2e973a2f296b702"},{url:"icons/icon-384.png",revision:"3fadb314f00e96f1cb43890fe6b63e3b"},{url:"icons/icon-512.png",revision:"793c88ff69c90f470edbe85991185fd2"},{url:"icons/icon-72.png",revision:"3b96ab272cf8b87591d72cb85e3da5ba"},{url:"icons/icon-96.png",revision:"a36b0a7763938420f1c1c0b50534fb16"},{url:"manifest.webmanifest",revision:"86445444d8d48563e2e2c6db9dd554dc"}],{}),s.cleanupOutdatedCaches(),s.registerRoute(new s.NavigationRoute(s.createHandlerBoundToURL("index.html"))),s.registerRoute(({request:s})=>"script"===s.destination||"worker"===s.destination,new s.StaleWhileRevalidate({cacheName:"app-scripts",plugins:[new s.ExpirationPlugin({maxEntries:100})]}),"GET"),s.registerRoute(/^https:\/\/fonts\.(googleapis|gstatic)\.com/,new s.StaleWhileRevalidate({cacheName:"google-fonts",plugins:[new s.ExpirationPlugin({maxEntries:20})]}),"GET"),s.registerRoute(/\.(png|jpg|jpeg|webp|ico|svg|glb)$/,new s.StaleWhileRevalidate({cacheName:"assets",plugins:[new s.ExpirationPlugin({maxEntries:60})]}),"GET")});
+// ═══════════════════════════════════════════════════
+//  The Maze Man Comics — Service Worker
+//  Strategy: Cache-first for assets, Network-first for HTML
+// ═══════════════════════════════════════════════════
+
+const CACHE_NAME  = 'mazeman-v1';
+const CACHE_PAGES = 'mazeman-pages-v1';
+
+// Files cached immediately on install (app shell)
+const PRECACHE = [
+  './',
+  './index.html',
+  './episode-1-problem-solving.html',
+  './manifest.json',
+  './Assets/mazeman-sprites.png',
+  './Assets/mazeman-portrait.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  // Google Fonts — cached on first fetch
+];
+
+// ── Install: pre-cache shell ──
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(PRECACHE))
+      .then(() => self.skipWaiting())
+  );
+});
+
+// ── Activate: delete old caches ──
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(key => key !== CACHE_NAME && key !== CACHE_PAGES)
+          .map(key => caches.delete(key))
+      )
+    ).then(() => self.clients.claim())
+  );
+});
+
+// ── Fetch: cache strategy ──
+self.addEventListener('fetch', event => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Skip non-GET and cross-origin (except Google Fonts)
+  if (request.method !== 'GET') return;
+
+  const isFont       = url.hostname.includes('fonts.googleapis.com') ||
+                       url.hostname.includes('fonts.gstatic.com');
+  const isAsset      = url.pathname.match(/\.(png|jpg|jpeg|webp|ico|svg|woff2?)$/i);
+  const isHTMLPage   = url.pathname.match(/\.html$/) || url.pathname === '/';
+
+  if (isFont || isAsset) {
+    // Cache-first: serve from cache, fall back to network and cache result
+    event.respondWith(
+      caches.match(request).then(cached => {
+        if (cached) return cached;
+        return fetch(request).then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+          }
+          return response;
+        }).catch(() => cached);
+      })
+    );
+  } else if (isHTMLPage) {
+    // Network-first for HTML: always try latest, fall back to cache
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_PAGES).then(cache => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+  }
+  // All other requests: browser handles normally
+});
+
+// ── Background sync: notify clients of new version ──
+self.addEventListener('message', event => {
+  if (event.data === 'skipWaiting') self.skipWaiting();
+});
