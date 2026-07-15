@@ -69,7 +69,9 @@ export function TrainingModeList({ items, isAr, playSfx }) {
           className={`ct-fq-attn-mode ${MOD[m.k] || ''}`}
           onClick={() => { playSfx?.('click'); m.on(); }}
         >
-          <span className="ct-fq-attn-mode-ic" aria-hidden="true">{m.ic}</span>
+          <span className="ct-fq-attn-mode-ic" aria-hidden="true">
+            {m.icoImg ? <img src={m.icoImg} alt="" className="ct-fq-attn-mode-ic-img" /> : m.ic}
+          </span>
           <span className="ct-fq-attn-mode-body">
             <span className="ct-fq-attn-mode-lb">{m.lb}</span>
             {m.hint ? <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>{m.hint}</span> : null}

@@ -14,6 +14,7 @@ import {
 } from '../../../../shared/shapeNorm';
 import { createStaircase } from './staircase';
 import { useApp } from '../../../../../../context/AppContext';
+import { assetUrl } from '../../../../../../lib/assetUrl';
 import {
   SH,
   DM,
@@ -197,7 +198,7 @@ function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx
   const items = [
     {
       k: 'free',
-      ic: '♾️',
+      icoImg: assetUrl('Assets/icons-cc0/scan-reticle.png'),
       lb: t.freeMode,
       hint: t.hubNodeFreeHint,
       on: onFree,
@@ -205,7 +206,7 @@ function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx
     },
     {
       k: 'levels',
-      ic: '🎯',
+      icoImg: assetUrl('Assets/icons-cc0/target-ring.png'),
       lb: t.levelMode,
       hint: t.hubNodeLevelsHint,
       on: onLevels,
@@ -213,7 +214,7 @@ function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx
     },
     {
       k: 'chal',
-      ic: '⚔️',
+      icoImg: assetUrl('Assets/icons-cc0/duo-players.png'),
       lb: t.challengeMode,
       hint: t.hubNodeChallengeHint,
       on: onChallenge,
@@ -1754,6 +1755,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           playSfx={playSfx}
           title={t.freeIntroTitle}
           body={t.freeIntroBody}
+          badge={assetUrl('Assets/icons-cc0/scan-reticle.png')}
           onReady={onFreeIntroReady}
           onBack={() => {
             clearPlayRoundState();

@@ -605,6 +605,12 @@
 .ct-fq-attn-mode--chal .ct-fq-attn-mode-ic {
     background: linear-gradient(165deg, #dd7f7a 0%, #bc544e 100%);
 }
+.ct-fq-attn-mode-ic-img {
+    width: 62%;
+    height: 62%;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
 .ct-fq-attn-mode-body {
     flex: 1;
     min-width: 0;
@@ -1339,6 +1345,12 @@
     box-shadow: 4px 5px 0 #1a1208;
     font-size: clamp(46px, 13vw, 62px);
     line-height: 1;
+}
+.ct-survival-intro-badge-img {
+    width: 58%;
+    height: 58%;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
 }
 .ct-survival-intro-title {
     margin: 0;
@@ -6219,6 +6231,13 @@
     --domain-base: var(--color-domain-flexibility-base);
     --domain-mid: var(--color-domain-flexibility-mid);
     --domain-deep: var(--color-domain-flexibility-deep);
+}
+
+/* Domain-pick back button bar has no title (empty center), so the shared
+ * .ct-training-menubar 52px+ top-padding floor reads as dead empty space
+ * above the "Training domain / <Domain>" header below it. Tighten just here. */
+.ct-domain-pick .ct-training-menubar {
+    padding-top: max(14px, env(safe-area-inset-top));
 }
 
 .ct-domain-pick.ct-fq-training-shell--hub-light {
