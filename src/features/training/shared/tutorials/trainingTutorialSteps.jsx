@@ -100,18 +100,6 @@ const STEPS = {
       { title: 'يتغيّر حين تفوز', body: 'حين تحلّ نمطاً تتغيّر القاعدة بصمت — راقب العرض الجديد. وإن أخطأت يعيد النمط نفسه.', icon: '🔄', note: READY_NOTE.ar },
     ],
   },
-  'piano-tap': {
-    en: [
-      { title: 'Hit the lanes', body: 'Notes fall in four lanes (D · F · J · K). Tap the matching lane when a note reaches the line.', icon: '🎹' },
-      { title: 'Stay in rhythm', body: 'Early or late taps count as misses. Perfect timing earns the best score.', icon: '🎵', pills: ['Tap on the beat', 'Don\'t tap empty lanes'] },
-      { title: 'Survive and level up', body: 'Miss too many and the run ends. Levels ramp speed and pattern complexity.', icon: '🏆', note: READY_NOTE.en },
-    ],
-    ar: [
-      { title: 'اضرب المسارات', body: 'النوتات تنزل في أربعة مسارات. اضغط المسار المطابق عندما تصل النوتة للخط.', icon: '🎹' },
-      { title: 'ابقَ على الإيقاع', body: 'الضغط المبكر أو المتأخر يُعدّ خطأ. التوقيت المثالي يمنح أفضل نتيجة.', icon: '🎵', pills: ['اضغط على الإيقاع', 'لا تضغط مسارات فارغة'] },
-      { title: 'ابقَ وارتقِ', body: 'أخطاء كثيرة تنهي المحاولة. المستويات تزيد السرعة وتعقّد الأنماط.', icon: '🏆', note: READY_NOTE.ar },
-    ],
-  },
   'trail-making': {
     en: [
       { title: 'Connect in order', body: 'Tap the circles in number order: 1 → 2 → 3 … A green line traces your path. Finish the whole trail before the timer hits zero.', icon: '🔗', pills: ['Always start at 1', 'Beat the clock ⏱'] },
@@ -236,18 +224,6 @@ const STEPS = {
       { title: 'القواعد تتراكم', body: 'خمس أنواع قواعد — ثبات الصف، التدرّج، التوزيع، والجمع. المستويات الصعبة تمزج حتى خمس قواعد. الدقة أهم من السرعة.', icon: '🧩', note: READY_NOTE.ar },
     ],
   },
-  'tower-hanoi': {
-    en: [
-      { title: 'Sort the colours', body: 'Coloured tokens sit in tubes. Move them so each tube holds one colour only (or the goal pattern for that level).', icon: '🧪' },
-      { title: 'Stack rules', body: 'Move one token at a time. You can only place a token on an empty tube or on a matching colour.', icon: '📏', pills: ['One token per move', 'Match colour on top'] },
-      { title: 'Plan your pours', body: 'Fewer moves earn more stars. Undo is available — think before you pour.', icon: '⭐', note: READY_NOTE.en },
-    ],
-    ar: [
-      { title: 'فرز الألوان', body: 'رموز ملونة في أنابيب. انقلها حتى يحمل كل أنبوب لوناً واحداً (أو هدف المرحلة).', icon: '🧪' },
-      { title: 'قواعد التكديس', body: 'انقل رمزاً واحداً في كل مرة. يمكنك وضعه في أنبوب فارغ أو على لون مطابق.', icon: '📏', pills: ['رمز واحد لكل حركة', 'طابق اللون في الأعلى'] },
-      { title: 'خطّط للصب', body: 'حركات أقل = نجوم أكثر. التراجع متاح — فكّر قبل الصب.', icon: '⭐', note: READY_NOTE.ar },
-    ],
-  },
   'spatial-stroop': {
     en: [
       { title: 'Follow the rule', body: 'An arrow appears with a rule badge: tap the side it POINTS to, or the side it SITS on — read the badge every trial.', icon: '➡️' },
@@ -258,18 +234,6 @@ const STEPS = {
       { title: 'اتبع القاعدة', body: 'يظهر سهم مع شارة قاعدة: اضغط الجانب الذي يشير إليه، أو الجانب الذي يجلس عليه — اقرأ الشارة كل محاولة.', icon: '➡️' },
       { title: 'القواعد تتبدّل', body: 'القاعدة النشطة قد تتغيّر دون إنذار. تجاهل عادتك السابقة واقرأ القاعدة الجديدة بسرعة.', icon: '🔀', pills: ['اتجاه = حيث يشير السهم', 'موضع = جانب الشاشة'] },
       { title: 'وضع عكسي', body: 'المستويات الصعبة تضيف محاولات عكسية — الجانب الصحيح عكس ما تقوله القاعدة. راقب شارة العكس.', icon: '↩️', note: READY_NOTE.ar },
-    ],
-  },
-  flip: {
-    en: [
-      { title: 'Catch the gems', body: 'Move your paddle to catch falling gems. Drag or tap sides of the canvas to move.', icon: '💎' },
-      { title: 'Controls invert', body: 'After a cue, left/right swap — or up/down on square stages. Watch the mirror badge and rule toasts.', icon: '🔄', pills: ['Circle = left/right flip', 'Square = up/down flip'] },
-      { title: 'Ignore decoys', body: 'Some balls are traps — only catch gems. Flexibility means adapting the moment rules change.', icon: '🎯', note: READY_NOTE.en },
-    ],
-    ar: [
-      { title: 'أمسك الجواهر', body: 'حرّك المجداف لالتقاط الجواهر الساقطة. اسحب أو اضغط جانبي اللوحة للتحريك.', icon: '💎' },
-      { title: 'ينقلب التحكم', body: 'بعد إشارة، يسار/يمين يتبادلان — أو أعلى/أسفل في المراحل المربعة. راقب شارة المرآة.', icon: '🔄', pills: ['دائرة = انقلاب يسار/يمين', 'مربع = انقلاب أعلى/أسفل'] },
-      { title: 'تجاهل الفخاخ', body: 'بعض الكرات فخ — التقط الجواهر فقط. المرونة تعني التكيّف فور تغيّر القواعد.', icon: '🎯', note: READY_NOTE.ar },
     ],
   },
   'math-gates': {

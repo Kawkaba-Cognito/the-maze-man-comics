@@ -37,28 +37,6 @@ export const GAME_SCIENCE = {
       foot: 'الجلسات القصيرة المتكرّرة هي الأفضل. التمرين يحسّن هذه المهمة والاختبارات الشبيهة (انتقال قريب)، أما الانتقال الواسع للحياة اليومية فغير مدعوم جيداً. هذا يدرّب ويتابع هذه المهارة تحديداً، وليس اختباراً طبياً.',
     },
   },
-  'piano-tap': {
-    en: {
-      title: 'The science',
-      intro: 'Tapping the falling tiles in time trains the speed and accuracy of the hand–eye loop.',
-      sections: [
-        { h: '⚡ Reaction time', b: 'Hitting each tile as it lands trains choice reaction time — detecting a signal and firing the right response with minimal delay.' },
-        { h: '🖐 Sensorimotor timing', b: 'Keeping to the rhythm engages the cerebellum and motor cortex, sharpening hand–eye coordination and timing precision.' },
-        { h: '🎯 Speed–accuracy control', b: 'Going fast without wrong taps trains the brain to balance speed against accuracy — a core executive skill.' },
-      ],
-      foot: 'Stay loose: smooth, relaxed taps beat tense, jerky ones for both speed and accuracy.',
-    },
-    ar: {
-      title: 'العلم وراء اللعبة',
-      intro: 'النقر على البلاطات الساقطة في وقتها يدرّب سرعة ودقّة حلقة اليد–العين.',
-      sections: [
-        { h: '⚡ زمن ردّ الفعل', b: 'ضرب كل بلاطة عند هبوطها يدرّب زمن ردّ الفعل الاختياري — كشف الإشارة وإطلاق الاستجابة الصحيحة بأقل تأخير.' },
-        { h: '🖐 التوقيت الحسّي-الحركي', b: 'الالتزام بالإيقاع يُشغّل المخيخ والقشرة الحركية، فيصقل تناسق اليد–العين ودقّة التوقيت.' },
-        { h: '🎯 ضبط السرعة مقابل الدقّة', b: 'السرعة دون أخطاء تدرّب الدماغ على موازنة السرعة بالدقّة — مهارة تنفيذية أساسية.' },
-      ],
-      foot: 'ابقَ مسترخياً: النقرات الناعمة الهادئة تتفوّق على المتوتّرة في السرعة والدقّة معاً.',
-    },
-  },
   'trail-making': {
     en: {
       title: 'The science',
@@ -291,28 +269,6 @@ export const GAME_SCIENCE = {
       foot: 'لعبة تدريب فقط — النقاط هنا لا تُغني عن تقييم معياري.',
     },
   },
-  'tower-hanoi': {
-    en: {
-      title: 'The science',
-      intro: 'Sorting puzzles like this measure planning and goal management, in the family of the Tower of London/Hanoi tests.',
-      sections: [
-        { h: '🧠 Multi-step planning', b: 'Gathering each colour without burying a token you’ll need next requires looking several moves ahead.' },
-        { h: '🗂 Goal management', b: 'Holding subgoals — “empty this tube first” — engages the prefrontal cortex that organises complex tasks.' },
-        { h: '🚫 Inhibition', b: 'Avoiding moves that feel like progress but trap you later trains impulse control and foresight.' },
-      ],
-      foot: 'Keep at least one tube flexible — don’t commit your last free space too early.',
-    },
-    ar: {
-      title: 'العلم وراء اللعبة',
-      intro: 'ألغاز الفرز كهذه تقيس التخطيط وإدارة الأهداف، ضمن عائلة اختبارات برج لندن/هانوي.',
-      sections: [
-        { h: '🧠 التخطيط متعدّد الخطوات', b: 'جمع كل لون دون دفن رمز ستحتاجه لاحقاً يتطلّب النظر عدّة حركات مسبقاً.' },
-        { h: '🗂 إدارة الأهداف', b: 'الاحتفاظ بأهداف فرعية — «أفرغ هذا الأنبوب أولاً» — يُشغّل القشرة الجبهية التي تنظّم المهام المعقّدة.' },
-        { h: '🚫 الكبح', b: 'تجنّب الحركات التي تبدو تقدّماً لكنها تحبسك لاحقاً يدرّب ضبط الاندفاع وبُعد النظر.' },
-      ],
-      foot: 'أبقِ أنبوباً واحداً مرناً على الأقل — لا تستهلك مساحتك الحرّة الأخيرة مبكّراً.',
-    },
-  },
 
   /* ── Flexibility ── */
   'spatial-stroop': {
@@ -335,28 +291,6 @@ export const GAME_SCIENCE = {
         { h: '🧠 مراقبة التعارض', b: 'القشرة الحزامية الأمامية تكشف الصدام بين القواعد وتُشير للقشرة الجبهية كي تتكيّف.' },
       ],
       foot: 'أعد قراءة القاعدة الفعّالة لحظة تغيّرها — لا تعمل بالطيّار الآلي.',
-    },
-  },
-  'flip': {
-    en: {
-      title: 'The science',
-      intro: 'Catch the gems, then the controls invert — a reversal task that trains flexibility and habit-breaking.',
-      sections: [
-        { h: '🔄 Cognitive flexibility', b: 'When the controls flip you must abandon a freshly learned habit on the spot and adopt the opposite mapping.' },
-        { h: '🚫 Response inhibition', b: 'Suppressing the old, now-wrong action is inhibitory control — the brake on automatic behaviour.' },
-        { h: '🧠 Learning from feedback', b: 'Recovering quickly after a reversal trains feedback-based learning, driven by dopamine prediction signals.' },
-      ],
-      foot: 'After a flip, slow down for one beat to let the new rule take hold.',
-    },
-    ar: {
-      title: 'العلم وراء اللعبة',
-      intro: 'أمسك الجواهر ثم ينقلب التحكّم — مهمة عكسٍ تدرّب المرونة وكسر العادة.',
-      sections: [
-        { h: '🔄 المرونة المعرفية', b: 'حين ينقلب التحكّم عليك التخلّي عن عادة تعلّمتها للتوّ وتبنّي الربط المعاكس فوراً.' },
-        { h: '🚫 كبح الاستجابة', b: 'كبح الفعل القديم الخاطئ الآن هو التحكّم الكابح — فرملة السلوك التلقائي.' },
-        { h: '🧠 التعلّم من التغذية الراجعة', b: 'التعافي السريع بعد الانقلاب يدرّب التعلّم القائم على التغذية الراجعة، الذي تقوده إشارات الدوبامين التنبّؤية.' },
-      ],
-      foot: 'بعد الانقلاب، تمهّل لحظة واحدة كي تترسّخ القاعدة الجديدة.',
     },
   },
   'wisconsin': {
