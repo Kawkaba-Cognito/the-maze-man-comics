@@ -6,7 +6,7 @@ import {
   loadPlanets, savePlanets, createPlanet,
 } from './universeStore';
 import { planetIconUrl } from '../../lib/planetIcons';
-import RealPlanetSphere from './planetSphere';
+import ArtisticReveal from './ArtisticReveal';
 
 const DRAG_THRESHOLD = 12; // px of movement before a tap becomes a drag — generous enough for real-finger jitter on touchscreens, not just mouse precision
 
@@ -38,67 +38,38 @@ function PlanetIconBadge({ type, mood, meta, size = 40, glow = true }) {
   );
 }
 
+/*
+ * The planet's VISUAL lives in the ZenUniverse 3D layer (a colored particle
+ * sphere at the same % position). This DOM button is just the invisible hit
+ * area for drag/tap plus the floating label under it.
+ */
 function Planet({ planet, isAr, onPointerDownPlanet, dragging }) {
   const meta = PLANET_TYPES[planet.type] || PLANET_TYPES.note;
   const label = planet.title || (isAr ? meta.ar : meta.en);
-  const showMood = planet.type === 'journal' && planet.mood;
-  const iconUrl = planetIconUrl(planet.type);
-  const spinDur = 24 + (planet.id.charCodeAt(0) % 14);
   return (
     <button
       type="button"
-      className={`u-planet-spawn${dragging ? ' u-planet-dragging' : ''}`}
+      className={dragging ? 'u-planet-dragging' : ''}
       onPointerDown={(e) => onPointerDownPlanet(e, planet)}
       style={{
         position: 'absolute',
         left: `${planet.x}%`,
         top: `${planet.y}%`,
         transform: 'translate(-50%,-50%)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-        background: 'none', border: 'none', cursor: 'grab', padding: 4,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end',
+        width: 84, height: 108, paddingBottom: 2,
+        background: 'none', border: 'none', cursor: 'grab',
         touchAction: 'none', zIndex: dragging ? 20 : 3,
         transition: 'none',
       }}
       aria-label={label}
     >
-      <span
-        className="u-planet-orb"
-        style={{ width: 46, height: 46, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      >
-        <span
-          className="u-planet-bob"
-          style={{
-            animationDelay: `-${(planet.id.charCodeAt(0) % 10) * 0.4}s`,
-            width: 40, height: 40, position: 'relative', zIndex: 1,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            filter: dragging ? `drop-shadow(0 0 13px ${meta.color})` : `drop-shadow(0 0 7px ${meta.color}99)`,
-            transition: 'filter 0.2s ease',
-          }}
-        >
-          <RealPlanetSphere type={planet.type} size={40} color={meta.color} spinDur={spinDur} />
-          {planet.type === 'goal' && planet.done && (
-            <span aria-hidden style={{ position: 'absolute', inset: -2, borderRadius: '50%', border: '2px solid #8fe0a0', zIndex: 3, boxShadow: '0 0 8px 1px rgba(143,224,160,0.6)' }} />
-          )}
-          <span aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, pointerEvents: 'none' }}>
-            {showMood ? planet.mood : iconUrl ? (
-              <img
-                src={iconUrl}
-                alt=""
-                draggable={false}
-                style={{
-                  width: '76%', height: '76%', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
-                  pointerEvents: 'none', WebkitUserDrag: 'none', WebkitTouchCallout: 'none', userSelect: 'none',
-                }}
-              />
-            ) : null}
-          </span>
-        </span>
-      </span>
       <span style={{
-        fontSize: 9.5, fontWeight: 700, color: '#f3ecd8', textShadow: '0 1px 3px rgba(0,0,0,0.85)',
-        maxWidth: 74, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        fontSize: 10, fontWeight: 700, color: '#f3ecd8', textShadow: '0 1px 4px rgba(0,0,0,0.9)',
+        maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         opacity: planet.type === 'goal' && planet.done ? 0.6 : 1,
         textDecoration: planet.type === 'goal' && planet.done ? 'line-through' : 'none',
+        filter: dragging ? `drop-shadow(0 0 8px ${meta.color})` : 'none',
       }}>
         {label}
       </span>
@@ -277,70 +248,6 @@ function ListSheet({ isAr, planets, onOpenPlanet, onClose }) {
   );
 }
 
-function InfoCard({ isAr, planet, onEdit, onClose }) {
-  const meta = PLANET_TYPES[planet.type] || PLANET_TYPES.note;
-  const label = planet.title || (isAr ? meta.ar : meta.en);
-  const date = new Date(planet.createdAt || Date.now()).toLocaleDateString(isAr ? 'ar' : 'en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-  });
-  return (
-    <Sheet onClose={onClose}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-        <PlanetIconBadge type={planet.type} mood={planet.mood} meta={meta} size={48} />
-        <div>
-          <div style={{ fontWeight: 800, color: '#f3ecd8', fontSize: 16.5 }}>{label}</div>
-          <div style={{ fontSize: 11.5, color: '#b9a878', marginTop: 2 }}>
-            {isAr ? meta.ar : meta.en} · {date}
-          </div>
-        </div>
-      </div>
-
-      {planet.type === 'goal' && (
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 999,
-          background: planet.done ? 'rgba(143,224,160,0.16)' : 'rgba(255,255,255,0.06)',
-          border: `1px solid ${planet.done ? 'rgba(143,224,160,0.4)' : 'rgba(232,172,78,0.25)'}`,
-          color: planet.done ? '#8fe0a0' : '#e8dcc0', fontSize: 12.5, fontWeight: 700, marginBottom: 12,
-        }}>
-          {planet.done ? '✓' : '○'} {isAr ? (planet.done ? 'تم تحقيقه' : 'قيد التقدّم') : (planet.done ? 'Achieved' : 'In progress')}
-        </div>
-      )}
-
-      <div style={{
-        color: '#e8dcc0', fontSize: 14.5, fontWeight: 500, lineHeight: 1.55, whiteSpace: 'pre-wrap',
-        background: 'rgba(0,0,0,0.22)', border: '1px solid rgba(232,172,78,0.16)', borderRadius: 12,
-        padding: '12px 14px', minHeight: 48, marginBottom: 16,
-      }}>
-        {planet.body || (isAr ? 'لا يوجد نص بعد.' : 'Nothing written yet.')}
-      </div>
-
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button
-          type="button"
-          onClick={onClose}
-          style={{
-            flex: 1, padding: '12px 16px', borderRadius: 10, border: '2px solid rgba(232,172,78,0.3)',
-            background: 'rgba(255,255,255,0.06)', color: '#f0e2c0', fontWeight: 800, cursor: 'pointer', fontSize: 14,
-          }}
-        >
-          {isAr ? 'إغلاق' : 'Close'}
-        </button>
-        <button
-          type="button"
-          onClick={onEdit}
-          style={{
-            flex: 1, padding: '12px 16px', borderRadius: 10, border: 'none',
-            background: 'linear-gradient(180deg, #f5c44a, #e8a830)', color: '#1a1208',
-            fontWeight: 800, cursor: 'pointer', fontSize: 14.5,
-          }}
-        >
-          {isAr ? 'تعديل' : 'Edit'}
-        </button>
-      </div>
-    </Sheet>
-  );
-}
-
 function PlanetForm({ isAr, type, initial, onSave, onDelete, onClose, playSfx }) {
   const meta = PLANET_TYPES[type];
   const [title, setTitle] = useState(initial?.title || '');
@@ -474,17 +381,26 @@ const KAWKAB_X = 50;
 const KAWKAB_Y = 52;
 const KAWKAB_RADIUS = 15;
 
-export default function UniversePlanets({ isAr, playSfx, onDragProximity }) {
+export default function UniversePlanets({ isAr, playSfx, onDragProximity, onPlanetsChange, onDissolve, onReform }) {
   const [planets, setPlanets] = useState(() => loadPlanets());
-  const [sheet, setSheet] = useState(null); // null | 'pick' | {mode, type, planet}
+  const [sheet, setSheet] = useState(null); // null | 'pick' | 'list' | {mode, type, planet}
   const dragRef = useRef(null); // { id, startX, startY, moved, startPctX, startPctY, samples }
   const [draggingId, setDraggingId] = useState(null);
-  const [vanishing, setVanishing] = useState(null); // { id, x, y, color }
-  const [cometFx, setCometFx] = useState(null); // { key, fromX, fromY, x, y, color }
   const glideRef = useRef(null); // rAF id of the current inertia glide
+  const revealTimerRef = useRef(null); // tap -> dissolve -> reveal delay
 
   useEffect(() => { savePlanets(planets); }, [planets]);
-  useEffect(() => () => { if (glideRef.current) cancelAnimationFrame(glideRef.current); }, []);
+  // Mirror positions/colors into the ZenUniverse 3D layer, which draws the orbs.
+  useEffect(() => {
+    onPlanetsChange?.(planets.map((p) => ({
+      id: p.id, x: p.x, y: p.y,
+      color: (PLANET_TYPES[p.type] || PLANET_TYPES.note).color,
+    })));
+  }, [planets, onPlanetsChange]);
+  useEffect(() => () => {
+    if (glideRef.current) cancelAnimationFrame(glideRef.current);
+    clearTimeout(revealTimerRef.current);
+  }, []);
 
   function stopGlide() {
     if (glideRef.current) { cancelAnimationFrame(glideRef.current); glideRef.current = null; }
@@ -565,7 +481,17 @@ export default function UniversePlanets({ isAr, playSfx, onDragProximity }) {
     endDrag();
     if (d && !d.moved) {
       const planet = planets.find((p) => p.id === d.id);
-      if (planet) { playSfx?.('click'); setSheet({ mode: 'info', type: planet.type, planet }); }
+      if (planet) {
+        // Tap: the particle orb dissolves first, then the content materializes.
+        playSfx?.('click');
+        onDissolve?.(planet.id);
+        clearTimeout(revealTimerRef.current);
+        // The overlay mounts once the particles have mostly assembled into
+        // the paper (morph runs ~1s in the 3D layer).
+        revealTimerRef.current = setTimeout(() => {
+          setSheet({ mode: 'reveal', type: planet.type, planet });
+        }, 850);
+      }
     } else if (d) {
       launchInertia(d.id, d.samples);
     }
@@ -586,18 +512,9 @@ export default function UniversePlanets({ isAr, playSfx, onDragProximity }) {
   }
 
   function handleSaveNew(type, fields) {
-    setPlanets((prev) => {
-      const created = createPlanet(type, fields, prev);
-      // A comet streaks in from a random edge and "becomes" the new planet —
-      // purely decorative, cleared once the streak-in animation finishes.
-      const angle = Math.random() * Math.PI * 2;
-      const fromX = clamp(created.x + Math.cos(angle) * 60, -15, 115);
-      const fromY = clamp(created.y + Math.sin(angle) * 60, -15, 115);
-      const color = (PLANET_TYPES[type] || PLANET_TYPES.note).color;
-      setCometFx({ key: created.id, fromX, fromY, x: created.x, y: created.y, color });
-      setTimeout(() => setCometFx((cur) => (cur?.key === created.id ? null : cur)), 620);
-      return [...prev, created];
-    });
+    // The 3D layer spawns new planets by condensing them from stardust, so
+    // no DOM birth effect is needed here anymore.
+    setPlanets((prev) => [...prev, createPlanet(type, fields, prev)]);
     setSheet(null);
   }
 
@@ -607,11 +524,8 @@ export default function UniversePlanets({ isAr, playSfx, onDragProximity }) {
   }
 
   function handleDelete(planet) {
-    // Sucked into a little wormhole instead of just blinking out.
-    const meta = PLANET_TYPES[planet.type] || PLANET_TYPES.note;
+    // The 3D layer scatters the removed planet back to stardust.
     setPlanets((prev) => prev.filter((p) => p.id !== planet.id));
-    setVanishing({ id: planet.id, x: planet.x, y: planet.y, color: meta.color });
-    setTimeout(() => setVanishing((cur) => (cur?.id === planet.id ? null : cur)), 560);
     setSheet(null);
   }
 
@@ -645,24 +559,6 @@ export default function UniversePlanets({ isAr, playSfx, onDragProximity }) {
             />
           ))}
         </svg>
-      )}
-
-      {vanishing && (
-        <span aria-hidden="true" className="u-wormhole" style={{
-          position: 'absolute', left: `${vanishing.x}%`, top: `${vanishing.y}%`, width: 60, height: 60,
-          transform: 'translate(-50%,-50%)', borderRadius: '50%', zIndex: 15, pointerEvents: 'none',
-          background: `conic-gradient(from 0deg, ${vanishing.color}, transparent, ${vanishing.color}, transparent, ${vanishing.color})`,
-        }} />
-      )}
-
-      {cometFx && (
-        <span aria-hidden="true" className="u-comet-birth" style={{
-          position: 'absolute', left: `${cometFx.fromX}%`, top: `${cometFx.fromY}%`, zIndex: 16, pointerEvents: 'none',
-          '--u-from-x': `${cometFx.fromX}%`, '--u-from-y': `${cometFx.fromY}%`,
-          '--u-to-x': `${cometFx.x}%`, '--u-to-y': `${cometFx.y}%`,
-          width: 6, height: 6, borderRadius: '50%', background: '#fff',
-          boxShadow: `0 0 10px 3px #fff, 0 0 22px 8px ${cometFx.color}`,
-        }} />
       )}
 
       {planets.map((p) => (
@@ -713,16 +609,27 @@ export default function UniversePlanets({ isAr, playSfx, onDragProximity }) {
         <ListSheet
           isAr={isAr}
           planets={planets}
-          onOpenPlanet={(planet) => { playSfx?.('click'); setSheet({ mode: 'info', type: planet.type, planet }); }}
+          onOpenPlanet={(planet) => {
+            playSfx?.('click');
+            onDissolve?.(planet.id);
+            setSheet({ mode: 'reveal', type: planet.type, planet });
+          }}
           onClose={() => setSheet(null)}
         />
       )}
-      {sheet && sheet.mode === 'info' && (
-        <InfoCard
+      {sheet && sheet.mode === 'reveal' && (
+        <ArtisticReveal
           isAr={isAr}
           planet={sheet.planet}
-          onEdit={() => { playSfx?.('click'); setSheet({ mode: 'edit', type: sheet.type, planet: sheet.planet }); }}
-          onClose={() => setSheet(null)}
+          onEdit={() => {
+            playSfx?.('click');
+            onReform?.(sheet.planet.id);
+            setSheet({ mode: 'edit', type: sheet.type, planet: sheet.planet });
+          }}
+          onClose={() => {
+            onReform?.(sheet.planet.id);
+            setSheet(null);
+          }}
         />
       )}
       {sheet && sheet.mode === 'add' && (
@@ -747,12 +654,7 @@ export default function UniversePlanets({ isAr, playSfx, onDragProximity }) {
       )}
 
       <style>{`
-        .u-planet-spawn { animation: uPlanetSpawn 0.42s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
-        @keyframes uPlanetSpawn { 0% { transform: translate(-50%,-50%) scale(0.2); opacity: 0; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 1; } }
-        .u-planet-bob { animation: uPlanetBob 4.5s ease-in-out infinite; }
-        @keyframes uPlanetBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         .u-planet-dragging { cursor: grabbing; }
-        .u-planet-dragging .u-planet-bob { animation: none; }
         .u-sheet-pop { animation: uSheetPop 0.32s cubic-bezier(0.2, 1, 0.3, 1) both; }
         @keyframes uSheetPop { from { transform: translateY(36px) scale(0.97); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
         .u-sheet-backdrop { animation: uSheetFade 0.22s ease-out both; }
@@ -760,22 +662,8 @@ export default function UniversePlanets({ isAr, playSfx, onDragProximity }) {
         .u-link { animation: uLinkShimmer 3.2s linear infinite; }
         .u-link-active { animation: uLinkShimmer 1s linear infinite; }
         @keyframes uLinkShimmer { to { stroke-dashoffset: -28; } }
-        .u-wormhole { animation: uWormhole 0.56s cubic-bezier(0.6, 0, 0.9, 0.3) both; }
-        @keyframes uWormhole {
-          0% { transform: translate(-50%,-50%) scale(0.2) rotate(0deg); opacity: 0; }
-          25% { opacity: 1; }
-          70% { transform: translate(-50%,-50%) scale(1.15) rotate(340deg); opacity: 0.9; }
-          100% { transform: translate(-50%,-50%) scale(0) rotate(680deg); opacity: 0; }
-        }
-        .u-comet-birth { animation: uCometBirth 0.55s cubic-bezier(0.3, 0, 0.6, 1) both; }
-        @keyframes uCometBirth {
-          0% { left: var(--u-from-x); top: var(--u-from-y); opacity: 0; }
-          15% { opacity: 1; }
-          100% { left: var(--u-to-x); top: var(--u-to-y); opacity: 0; }
-        }
         @media (prefers-reduced-motion: reduce) {
-          .u-planet-spawn, .u-planet-bob, .u-sheet-pop, .u-sheet-backdrop,
-          .u-link, .u-link-active, .u-wormhole, .u-comet-birth { animation: none !important; }
+          .u-sheet-pop, .u-sheet-backdrop, .u-link, .u-link-active { animation: none !important; }
         }
       `}</style>
     </>

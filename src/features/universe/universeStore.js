@@ -4,22 +4,24 @@ import { loadJson, saveJson } from '../../lib/storage';
 
 const KEY = 'mm_universe_planets_v1';
 
+// Space-metal palette (2026-07-16 zen-universe redesign): warm colors only —
+// gold / ember red / copper. Deliberately no blues or violets.
 export const PLANET_TYPES = {
   note: {
     icon: '📝',
-    color: '#6fb7e8',
+    color: '#e8b84b',
     en: 'Note', ar: 'ملاحظة',
     promptEn: 'What do you want to remember?', promptAr: 'ما الذي تريد تذكّره؟',
   },
   goal: {
     icon: '🎯',
-    color: '#e8ac4e',
+    color: '#d96a4f',
     en: 'Goal', ar: 'هدف',
     promptEn: 'What are you working toward?', promptAr: 'ما الذي تسعى إليه؟',
   },
   journal: {
     icon: '💭',
-    color: '#d87ab0',
+    color: '#b08150',
     en: 'Journal', ar: 'يوميات',
     promptEn: "What's on your mind?", promptAr: 'بم تفكّر الآن؟',
   },
