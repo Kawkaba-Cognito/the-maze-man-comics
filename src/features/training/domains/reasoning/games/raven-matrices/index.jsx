@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import { TrainingMenuBar, TrainingPlayHeader, TrainingQuitModal, TrainingChallengeHandoff } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
@@ -13,6 +13,13 @@ import { createTrialLog } from '../../../../shared/trialLog';
 import { generateMatrix } from './ravenEngine';
 import { RV_DIFF_KEYS, RV_LEVELS_PER_TIER, RV_TRIALS_PER_LEVEL, ravenLevelSpec, ravenChallengeSpec, isRavenLevelUnlocked, gradeRaven } from './ravenData';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
+import { planetIconUrl } from '../../../../../../lib/planetIcons';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+
+const Raven3DProto = lazyWithRetry(() => import('./Raven3DProto'), 'raven-3d');
+const C3D_FALLBACK = (
+  <div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>
+);
 
 const UI = {
   en: {
@@ -106,21 +113,32 @@ function Figure({ fig, size = 72 }) {
   );
 }
 
-function ReasoningModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
+function ReasoningModes({ t, isAr, onFree, onLevels, onChallenge, onProto3d, playSfx }) {
   const items = [
     { k: 'free', ic: '♾️', lb: t.freeMode, hint: t.freeHint, on: onFree, mod: 'ct-fq-attn-mode--free' },
     { k: 'levels', ic: '🎯', lb: t.levelMode, hint: t.levelsHint, on: onLevels, mod: 'ct-fq-attn-mode--levels' },
     { k: 'chal', ic: '⚔️', lb: t.challengeMode, hint: t.chalHint, on: onChallenge, mod: 'ct-fq-attn-mode--chal' },
+    {
+      k: 'proto3d',
+      lb: isAr ? 'ثلاثي الأبعاد' : '3D',
+      hint: isAr ? 'نفس اللعبة · مسرح كوني ثلاثي الأبعاد' : 'Same game · cosmos 3D stage',
+      on: onProto3d,
+      icoImg: planetIconUrl('reasoning'),
+      mod: 'ct-fq-attn-mode--proto3d',
+    },
   ];
   return <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />;
 }
 
-export default function RavenMatricesGame({ onBack, workoutMode = false }) {
+export default function RavenMatricesGame({ onBack, workoutMode = false, cosmosAutoPlay = false }) {
   const { playSfx, currentLang, awardFreeRun, awardTrainingWin } = useApp();
   const isAr = currentLang === 'ar';
+  const [cosmosEmbed, setCosmosEmbed] = useState(false);
+  const isCosmos = cosmosAutoPlay || cosmosEmbed;
   const t = isAr ? UI.ar : UI.en;
   const juice = useJuice();
   const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('raven-matrices', isAr, playSfx);
+  const workoutLaunched = useRef(false);
 
   const DM = useMemo(() => ({
     easy: { label: t.diffEasy, pop: t.popEasy, lvc: 'fq-lve' },
@@ -129,6 +147,29 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
   }), [t]);
 
   const [phase, setPhase] = useState('hub');
+
+  const exitCosmos = useCallback(() => {
+    workoutLaunched.current = false;
+    setCosmosEmbed(false);
+    setPhase('hub');
+  }, []);
+
+  const withCosmos = useCallback((node) => (
+    isCosmos ? (
+      <Suspense fallback={C3D_FALLBACK}>
+        <Raven3DProto
+          isAr={isAr}
+          playSfx={playSfx}
+          onBack={() => {
+            if (cosmosAutoPlay) onBack?.();
+            else exitCosmos();
+          }}
+        >
+          {node}
+        </Raven3DProto>
+      </Suspense>
+    ) : node
+  ), [isCosmos, isAr, playSfx, cosmosAutoPlay, onBack, exitCosmos]);
   const [puzzle, setPuzzle] = useState(null);
   const [picked, setPicked] = useState(null);
   const [diffKey, setDiffKey] = useState('easy');
@@ -167,7 +208,6 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
   const chalNamesRef = useRef(chalNames);
   const chalScoresRef = useRef([]);
   const chalSeedRef = useRef(0);
-  const workoutLaunched = useRef(false);
 
   const clearTimers = () => { if (advanceRef.current) clearTimeout(advanceRef.current); advanceRef.current = 0; };
   useEffect(() => () => { clearTimers(); trialLogRef.current?.discard(); }, []);
@@ -317,23 +357,35 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
   }, [chalNames, t.needTwo]);
 
   useEffect(() => {
-    if (workoutMode && !workoutLaunched.current) { workoutLaunched.current = true; startFree(); }
+    if ((workoutMode || isCosmos) && !workoutLaunched.current) {
+      workoutLaunched.current = true;
+      startFree();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutMode]);
+  }, [workoutMode, isCosmos]);
 
   const quitToMenu = useCallback(() => {
     setQuitOpen(false); clearTimers(); trialLogRef.current?.discard(); trialLogRef.current = null;
     const mode = blockRef.current?.mode; blockRef.current = null;
+    if (cosmosEmbed) { setCosmosEmbed(false); setPhase('hub'); return; }
+    if (cosmosAutoPlay) { onBack?.(); return; }
     if (mode === 'level') setPhase('levels');
     else if (mode === 'challenge') setPhase('chal');
     else setPhase('hub');
-  }, []);
+  }, [cosmosAutoPlay, cosmosEmbed, onBack]);
+
+  const exitToHub = useCallback(() => {
+    setLastResult(null);
+    if (cosmosEmbed) { setCosmosEmbed(false); setPhase('hub'); }
+    else if (cosmosAutoPlay) onBack?.();
+    else setPhase('hub');
+  }, [cosmosAutoPlay, cosmosEmbed, onBack]);
 
   const block = blockRef.current;
   const starLabel = lastResult?.grade?.stars === 3 ? t.perfect : lastResult?.grade?.stars === 2 ? t.good : t.tryAgain;
 
   /* ── Hub ── */
-  if (phase === 'hub') {
+  if (phase === 'hub' && !isCosmos) {
     return (
       <>
         <div className="cancellation-task-game ct-rv-root" dir={isAr ? 'rtl' : 'ltr'}>
@@ -348,7 +400,8 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
               <ReasoningModes t={t} isAr={isAr} playSfx={playSfx}
                 onFree={() => setPhase('freeIntro')}
                 onLevels={() => setPhase('diff')}
-                onChallenge={() => setPhase('chal')} />
+                onChallenge={() => setPhase('chal')}
+                onProto3d={() => { workoutLaunched.current = false; setCosmosEmbed(true); }} />
               <HubScienceLink gameId="raven-matrices" isAr={isAr} playSfx={playSfx} />
             </div>
           </div>
@@ -356,6 +409,10 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
         {tutLayer}
       </>
     );
+  }
+
+  if (phase === 'hub' && isCosmos) {
+    return null;
   }
 
   if (phase === 'freeIntro') {
@@ -420,18 +477,22 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
 
   /* ── Results: free ── */
   if (phase === 'freeRes' && lastResult?.type === 'free') {
-    return (
-      <div className="cancellation-task-game ct-rv-root" dir={isAr ? 'rtl' : 'ltr'}>
+    return withCosmos(
+      <div
+        className={`cancellation-task-game ct-rv-root${isCosmos ? ' c3d-embed-root' : ''}`}
+        data-c3d-embed={isCosmos || undefined}
+        dir={isAr ? 'rtl' : 'ltr'}
+      >
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar onBack={() => { setLastResult(null); setPhase('hub'); }} playSfx={playSfx} variant="paper"
+            <TrainingMenuBar onBack={exitToHub} playSfx={playSfx} variant="paper"
               center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.over}</div></div>} />
             <div className="ct-fq-sbig">{lastResult.score}</div>
             <div className="ct-fq-ies-lbl">{t.score}</div>
             <div className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 10, fontWeight: 700 }}>{t.solved}: {lastResult.solved}</div>
             <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 6 }}>{t.best(profile.best)}</p>
             <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); setLastResult(null); startFree(); }}>{t.again}</button>
-            <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { setLastResult(null); setPhase('hub'); }}>{t.menu}</button>
+            <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={exitToHub}>{t.menu}</button>
           </div>
         </div>
       </div>
@@ -502,10 +563,14 @@ export default function RavenMatricesGame({ onBack, workoutMode = false }) {
 
   /* ── Play ── */
   const total = block?.spec?.trials ?? 0;
-  return (
-    <div className="cancellation-task-game ct-rv-root" dir={isAr ? 'rtl' : 'ltr'}>
+  return withCosmos(
+    <div
+      className={`cancellation-task-game ct-rv-root${isCosmos ? ' c3d-embed-root' : ''}`}
+      data-c3d-embed={isCosmos || undefined}
+      dir={isAr ? 'rtl' : 'ltr'}
+    >
       <TrainingPlayHeader isAr={isAr} title={t.title} subtitle="" playSfx={playSfx}
-        onMenu={() => setQuitOpen(true)} />
+        onMenu={isCosmos ? undefined : () => setQuitOpen(true)} />
       <div className="ct-rv-play ct-juice-host">
         <JuiceLayer toast={juice.toast} burst={juice.burst} />
         <div className="ct-rv-hud">

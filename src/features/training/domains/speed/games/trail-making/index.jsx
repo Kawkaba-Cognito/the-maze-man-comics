@@ -1,10 +1,14 @@
-import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { SURVIVAL_MS } from '../../../../shared/survival';
 import { clamp, lerp } from '../../../../../../lib/math';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+import { planetIconUrl } from '../../../../../../lib/planetIcons';
+
+const TrailMaking3DProto = lazyWithRetry(() => import('./TrailMaking3DProto'), 'trail-making-3d');
 
 /*
  * Trail Making A — visuomotor scanning speed.
@@ -79,7 +83,7 @@ function boardSpecSurvival(boardIdx) {
   return { variant, decoys: Math.min(2 + Math.floor((phase - SURV_PHASES.length) / 2), 6) };
 }
 
-function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
+export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 1) : 0;
   const ppTimeRef = useRef(0);
@@ -455,10 +459,12 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
   const total = cfgRef.current.n;
   const cfgNow = cfgRef.current;
   const expColor = ((cfgNow.startColor || 0) + prog) % 2; // expected colour for the next number
+  const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
+  const embedCls = cosmos ? 'c3d-embed-root' : undefined;
 
   if (over && isSurvival) {
     return (
-      <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+      <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
         <div style={S.overWrap}>
           <h2 style={S.overTitle}>{isAr ? 'انتهى البقاء!' : 'Survival over!'}</h2>
           <p style={S.overSub}>{isAr ? `${over.boards} لوحات · ${over.score} نقطة` : `${over.boards} boards · ${over.score} pts`}</p>
@@ -480,17 +486,20 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
   }
 
   return (
-    <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+    <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
       {isSurvival && (
         <div style={S.survTrack}>
           <div style={{ ...S.survFill, width: `${survPct * 100}%`, background: survPct < 0.2 ? '#d23b3b' : '#b9842f' }} />
         </div>
       )}
-      <header className="ct-training-play-header">
-        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+      <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
+        {!cosmos && (
+          <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        )}
+        {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title">{isAr ? 'صل الأرقام' : 'Trail Making'}</div>
-          <div className="ct-training-play-sub">
+          <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>{isAr ? 'صل الأرقام' : 'Trail Making'}</div>
+          <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>
             {mode === 'passplay' ? `${isAr ? 'لوحة' : 'Board'} ${ppBoard}/${ppTrials}` : mode === 'free' ? `${isAr ? 'لوحات' : 'Boards'} ${boards}` : `${isAr ? 'مستوى' : 'Lvl'} ${level}`}
           </div>
         </div>
@@ -546,6 +555,19 @@ function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
 export default function TrailMakingGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
+  const [view, setView] = useState('shell');
+  if (view === 'play3d') {
+    return (
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <TrailMaking3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
+          <TrailEngine mode="free" diff="med" level={1} seed={null} cosmos isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} onResult={() => {}} onExit={() => {
+            awardFreeRun?.('trailMaking', 0);
+            setView('shell');
+          }} />
+        </TrailMaking3DProto>
+      </Suspense>
+    );
+  }
   return (
     <ModeShell
       storageKey="mm_speed_trail"
@@ -562,6 +584,13 @@ export default function TrailMakingGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
+      extraItems={[{
+        k: 'proto3d',
+        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
+        hint: isAr ? 'نفس اللعبة · بيئة كونية ثلاثية الأبعاد' : 'Same game · cosmos 3D stage',
+        on: () => setView('play3d'),
+        icoImg: planetIconUrl('speed'),
+      }]}
       renderEngine={(p) => (
         <TrailEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
@@ -571,6 +600,7 @@ export default function TrailMakingGame({ onBack, workoutMode = false }) {
 
 const styles = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
+  cosmosRoot: { background: 'transparent', color: '#f0e2c0', zIndex: 81 },
   sub: { display: 'flex', justifyContent: 'space-between', padding: '6px 16px 0', fontSize: 14, fontWeight: 700, color: '#5a4a32' },
   play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: '#fffdf8', overflow: 'hidden', border: '1.5px solid #e3d6c4', boxShadow: 'inset 0 2px 10px rgba(120,90,40,0.06)', touchAction: 'none' },
   canvas: { display: 'block', width: '100%', height: '100%' },

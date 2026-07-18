@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
@@ -6,6 +6,10 @@ import { SURVIVAL_MS, survivalRamp, survivalTier, survivalShrink } from '../../.
 import { RELATION } from './data';
 import { CATEGORIES } from '../odd-one-out/data';
 import { markSeen, pickTrial } from './trialBank';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+import { planetIconUrl } from '../../../../../../lib/planetIcons';
+
+const Synonyms3DProto = lazyWithRetry(() => import('./Synonyms3DProto'), 'synonyms-3d');
 
 /*
  * Word Links — verbal-reasoning / semantic judgment (bilingual), minimalist.
@@ -135,7 +139,7 @@ function buildTrial({ mode, diff, level, trialNum, rng, isAr, ramp = 0 }) {
   return { kind: 'pair', tier, timeMs, rel, prompt: isAr ? 'اختر الزوجين المتطابقين' : 'Tap the matching pair', words: shuffle(words, rng), pair: raw.pair, rule: L(raw.rule) };
 }
 
-function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
+export function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
   const ppTrials = mode === 'passplay' ? (attempt?.trials || PP_TRIALS) : 0;
   const font = isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif";
   const isSurvival = mode === 'free';
@@ -284,9 +288,12 @@ function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
   const relLabel = trial ? (isAr ? trial.rel.ar : trial.rel.en) : '';
   const title = isAr ? 'روابط الكلمات' : 'Word Links';
 
+  const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
+  const embedCls = cosmos ? 'c3d-embed-root' : undefined;
+
   if (over && isSurvival) {
     return (
-      <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+      <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
         <div style={S.overWrap}>
           <div style={S.overCard}>
             <h2 style={S.overTitle}>{isAr ? 'انتهى البقاء' : 'Survival over'}</h2>
@@ -308,15 +315,18 @@ function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
   };
 
   return (
-    <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+    <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
       {isSurvival && (
         <div style={S.survTrack}><div style={{ ...S.survFill, width: `${survPct * 100}%`, background: survPct < 0.2 ? BAD : ACC }} /></div>
       )}
-      <header className="ct-training-play-header">
-        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+      <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
+        {!cosmos && (
+          <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        )}
+        {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title">{title}</div>
-          <div className="ct-training-play-sub">{hud}</div>
+          <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>{title}</div>
+          <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>{hud}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
@@ -381,6 +391,19 @@ function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
 export default function WordLinksGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
+  const [view, setView] = useState('shell');
+  if (view === 'play3d') {
+    return (
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <Synonyms3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
+          <WordLinksEngine mode="free" diff="med" level={1} seed={null} cosmos isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} onResult={() => {}} onExit={() => {
+            awardFreeRun?.('synonyms', 0);
+            setView('shell');
+          }} />
+        </Synonyms3DProto>
+      </Suspense>
+    );
+  }
   return (
     <ModeShell
       storageKey="mm_lang_syn"
@@ -397,6 +420,13 @@ export default function WordLinksGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
+      extraItems={[{
+        k: 'proto3d',
+        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
+        hint: isAr ? 'نفس اللعبة · بيئة كونية ثلاثية الأبعاد' : 'Same game · cosmos 3D stage',
+        on: () => setView('play3d'),
+        icoImg: planetIconUrl('language'),
+      }]}
       renderEngine={(p) => (
         <WordLinksEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
@@ -406,6 +436,7 @@ export default function WordLinksGame({ onBack, workoutMode = false }) {
 
 const S = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: INK, fontFamily: "'Outfit', system-ui, sans-serif" },
+  cosmosRoot: { background: 'transparent', color: '#f0e2c0', zIndex: 81 },
   body: { flex: 1, display: 'flex', flexDirection: 'column', gap: 20, padding: '16px 18px calc(24px + env(safe-area-inset-bottom))', maxWidth: 440, width: '100%', margin: '0 auto', overflowY: 'auto' },
   timerTrack: { height: 3, borderRadius: 999, background: '#efe8db', overflow: 'hidden' },
   timerFill: { height: '100%', borderRadius: 999, transition: 'width 0.08s linear' },

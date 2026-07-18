@@ -1,69 +1,26 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useApp } from '../../../../context/AppContext';
-import { INK, SUB, FAINT, LINE, CARD, GOLD, SERIF, SANS, rnd } from '../_shared/groupTheme';
-
-/*
- * On a Scale (Wavelength-style) — a perspective-taking party game.  [puzzles]
- *
- * A hidden TARGET sits on a spectrum between two opposites. The Psychic sees it
- * and gives a one-word clue; the group turns a dial to where they think it is.
- * Reveal scores by how close they got. Pure theory-of-mind fun — one device.
- */
+import { rnd } from '../_shared/groupTheme';
+import { SPECTRA } from './spectra';
+import GroupShell, { GroupHow } from '../_shared/GroupShell';
+import GroupHandoff from '../_shared/GroupHandoff';
+import GroupPlayerSetup, { useGroupPlayers } from '../_shared/GroupPlayerSetup';
+import { createDrawer } from '../_shared/drawWithoutRepeat';
 
 const ACCENT = '#5a9fd4';
-
-const SPECTRA = [
-  { l: { en: 'Cold', ar: 'بارد' }, r: { en: 'Hot', ar: 'حار' } },
-  { l: { en: 'Useless', ar: 'عديم الفائدة' }, r: { en: 'Essential', ar: 'ضروري' } },
-  { l: { en: 'Weakness', ar: 'ضعف' }, r: { en: 'Strength', ar: 'قوة' } },
-  { l: { en: 'Underrated', ar: 'مبخوس حقه' }, r: { en: 'Overrated', ar: 'مبالغ فيه' } },
-  { l: { en: 'Scary', ar: 'مخيف' }, r: { en: 'Safe', ar: 'آمن' } },
-  { l: { en: 'Cheap', ar: 'رخيص' }, r: { en: 'Expensive', ar: 'غالٍ' } },
-  { l: { en: 'Quiet', ar: 'هادئ' }, r: { en: 'Loud', ar: 'صاخب' } },
-  { l: { en: 'Old-fashioned', ar: 'قديم الطراز' }, r: { en: 'Modern', ar: 'عصري' } },
-  { l: { en: 'Boring', ar: 'ممل' }, r: { en: 'Exciting', ar: 'مثير' } },
-  { l: { en: 'Unhealthy', ar: 'غير صحي' }, r: { en: 'Healthy', ar: 'صحي' } },
-  { l: { en: 'Ugly', ar: 'قبيح' }, r: { en: 'Beautiful', ar: 'جميل' } },
-  { l: { en: 'Fantasy', ar: 'خيال' }, r: { en: 'Reality', ar: 'واقع' } },
-  { l: { en: 'Simple', ar: 'بسيط' }, r: { en: 'Complicated', ar: 'معقّد' } },
-  { l: { en: 'Common', ar: 'شائع' }, r: { en: 'Rare', ar: 'نادر' } },
-  { l: { en: 'Villain', ar: 'شرير' }, r: { en: 'Hero', ar: 'بطل' } },
-  { l: { en: 'Temporary', ar: 'مؤقّت' }, r: { en: 'Permanent', ar: 'دائم' } },
-  { l: { en: 'Casual', ar: 'عفوي' }, r: { en: 'Formal', ar: 'رسمي' } },
-  { l: { en: 'Dangerous', ar: 'خطير' }, r: { en: 'Harmless', ar: 'غير مؤذٍ' } },
-  { l: { en: 'Forgettable', ar: 'يُنسى' }, r: { en: 'Memorable', ar: 'لا يُنسى' } },
-  { l: { en: 'Introvert', ar: 'انطوائي' }, r: { en: 'Extrovert', ar: 'اجتماعي' } },
-  { l: { en: 'Logical', ar: 'منطقي' }, r: { en: 'Emotional', ar: 'عاطفي' } },
-  { l: { en: 'Waste of time', ar: 'مضيعة للوقت' }, r: { en: 'Worth it', ar: 'يستحق العناء' } },
-  { l: { en: 'Normal', ar: 'عادي' }, r: { en: 'Weird', ar: 'غريب' } },
-  { l: { en: 'Comfort', ar: 'راحة' }, r: { en: 'Adventure', ar: 'مغامرة' } },
-  { l: { en: 'Slow', ar: 'بطيء' }, r: { en: 'Fast', ar: 'سريع' } },
-  { l: { en: 'Empty', ar: 'فارغ' }, r: { en: 'Full', ar: 'ممتلئ' } },
-  { l: { en: 'Ancient', ar: 'قديم' }, r: { en: 'Futuristic', ar: 'مستقبلي' } },
-  { l: { en: 'Round', ar: 'مستدير' }, r: { en: 'Pointy', ar: 'مدبّب' } },
-  { l: { en: 'Light', ar: 'خفيف' }, r: { en: 'Heavy', ar: 'ثقيل' } },
-  { l: { en: 'Bad habit', ar: 'عادة سيئة' }, r: { en: 'Good habit', ar: 'عادة جيدة' } },
-  { l: { en: 'Whisper', ar: 'همس' }, r: { en: 'Scream', ar: 'صراخ' } },
-  { l: { en: 'Unlucky', ar: 'منحوس' }, r: { en: 'Lucky', ar: 'محظوظ' } },
-  { l: { en: 'Fragile', ar: 'هشّ' }, r: { en: 'Tough', ar: 'متين' } },
-  { l: { en: 'Sour', ar: 'حامض' }, r: { en: 'Sweet', ar: 'حلو' } },
-  { l: { en: 'Guilty', ar: 'مذنب' }, r: { en: 'Innocent', ar: 'بريء' } },
-  { l: { en: 'Messy', ar: 'فوضوي' }, r: { en: 'Tidy', ar: 'مرتّب' } },
-  { l: { en: 'Kids’ thing', ar: 'للأطفال' }, r: { en: 'Adults’ thing', ar: 'للكبار' } },
-  { l: { en: 'Overpriced', ar: 'مبالغ في سعره' }, r: { en: 'A bargain', ar: 'صفقة رابحة' } },
-  { l: { en: 'Taboo', ar: 'محظور' }, r: { en: 'Acceptable', ar: 'مقبول' } },
-  { l: { en: 'Basic', ar: 'عادي' }, r: { en: 'Luxury', ar: 'فاخر' } },
-];
+const spectrumDrawer = createDrawer('mm_group_wavelength_spectra_v1', { maxRecent: 180 });
 
 export default function WavelengthGame({ onBack }) {
   const { currentLang, playSfx } = useApp();
   const isAr = currentLang === 'ar';
 
-  const [phase, setPhase] = useState('intro'); // intro | clue | guess | reveal
+  const [phase, setPhase] = useState('setup'); // setup | handoff | clue | guess | reveal
+  const [players, setPlayers, commitPlayers] = useGroupPlayers(2, 10);
+  const [names, setNames] = useState(players);
   const [spectrum, setSpectrum] = useState(SPECTRA[0]);
   const [target, setTarget] = useState(50);
   const [guess, setGuess] = useState(50);
-  const [psychic, setPsychic] = useState(1);
+  const [psychicIdx, setPsychicIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [lastPts, setLastPts] = useState(0);
 
@@ -90,14 +47,18 @@ export default function WavelengthGame({ onBack }) {
     reset: isAr ? 'صفّر النقاط' : 'Reset score',
     menu: isAr ? 'القائمة' : 'Menu',
     howTitle: isAr ? 'كيف تلعب' : 'How to play',
+    ready: isAr ? 'انظر الهدف سراً' : 'See the target in secret',
   }), [isAr]);
 
-  const newRound = useCallback(() => {
-    playSfx?.('click');
-    setSpectrum(SPECTRA[rnd(SPECTRA.length)]);
-    setTarget(12 + rnd(77)); // 12..88
+  const psychicName = names[psychicIdx % names.length] || `Player ${(psychicIdx % Math.max(names.length, 1)) + 1}`;
+
+  const beginClue = useCallback(() => {
+    const picked = spectrumDrawer.draw(SPECTRA, (s) => s.id || `${s.l.en}|${s.r.en}`);
+    setSpectrum(picked || SPECTRA[rnd(SPECTRA.length)]);
+    setTarget(12 + rnd(77));
     setGuess(50);
     setPhase('clue');
+    playSfx?.('click');
   }, [playSfx]);
 
   const lockIn = useCallback(() => {
@@ -114,118 +75,143 @@ export default function WavelengthGame({ onBack }) {
   const R = isAr ? spectrum.r.ar : spectrum.r.en;
 
   const Bar = ({ showTarget, showGuess }) => (
-    <div className="wv-bar-wrap">
-      <div className="wv-bar">
+    <div style={{ width: '100%', maxWidth: 360 }}>
+      <div style={{
+        position: 'relative', height: 46, borderRadius: 12, overflow: 'hidden', border: '2px solid #e3d6c4',
+        background: 'linear-gradient(90deg, #dce6ee 0%, #eef2f0 50%, #f4e6d6 100%)',
+      }}>
         {showTarget && (
           <>
-            <div className="wv-zone wv-z2" style={{ left: `${target - 18}%`, width: '36%' }} />
-            <div className="wv-zone wv-z3" style={{ left: `${target - 11}%`, width: '22%' }} />
-            <div className="wv-zone wv-z4" style={{ left: `${target - 5}%`, width: '10%' }} />
-            <div className="wv-target" style={{ left: `${target}%` }} />
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${target - 18}%`, width: '36%', background: 'rgba(90,159,212,0.20)' }} />
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${target - 11}%`, width: '22%', background: 'rgba(90,159,212,0.38)' }} />
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${target - 5}%`, width: '10%', background: 'rgba(232,172,78,0.75)' }} />
+            <div style={{ position: 'absolute', top: -3, bottom: -3, left: `${target}%`, width: 3, background: '#b9842f', transform: 'translateX(-50%)' }} />
           </>
         )}
-        {showGuess && <div className="wv-guess" style={{ left: `${guess}%` }} />}
+        {showGuess && (
+          <div style={{ position: 'absolute', top: -6, bottom: -6, left: `${guess}%`, width: 4, background: '#c0433d', transform: 'translateX(-50%)' }} />
+        )}
       </div>
-      <div className="wv-poles"><span>◄ {L}</span><span>{R} ►</span></div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 13, fontWeight: 800, color: '#8a7f6f' }}>
+        <span>◄ {L}</span><span>{R} ►</span>
+      </div>
     </div>
   );
 
   return (
-    <div className="wv-root" dir={isAr ? 'rtl' : 'ltr'}>
-      <style>{CSS}</style>
-      <div className="wv-app">
-        <div className="wv-head">
-          <button className="wv-back" onClick={() => { playSfx?.('click'); onBack?.(); }} aria-label={t.menu}>‹</button>
-          <div className="wv-title serif">{t.title}</div>
-          <div className="wv-score-chip">{t.scoreL}: {score}</div>
-        </div>
+    <GroupShell
+      isAr={isAr}
+      title={t.title}
+      accent={ACCENT}
+      onBack={() => { playSfx?.('click'); onBack?.(); }}
+      menuLabel={t.menu}
+      center={phase !== 'setup'}
+      chip={`${t.scoreL}: ${score}`}
+    >
+      {phase === 'setup' && (
+        <>
+          <div className="gc-hero">🎯</div>
+          <div className="gc-tagline">{t.tagline}</div>
+          <GroupPlayerSetup
+            isAr={isAr}
+            playSfx={playSfx}
+            players={players}
+            onPlayersChange={setPlayers}
+            min={2}
+            max={10}
+          />
+          <button
+            type="button"
+            className="gc-btn"
+            onClick={() => {
+              const list = commitPlayers(players);
+              setNames(list);
+              setPsychicIdx(0);
+              setScore(0);
+              setPhase('handoff');
+              playSfx?.('click');
+            }}
+          >
+            {t.start}
+          </button>
+          <GroupHow title={t.howTitle} text={t.how} />
+        </>
+      )}
 
-        {phase === 'intro' && (
-          <div className="wv-body">
-            <div className="wv-hero">🎯</div>
-            <div className="wv-tagline">{t.tagline}</div>
-            <button className="wv-primary" onClick={newRound}>{t.start}</button>
-            <div className="wv-how">
-              <div className="wv-how-title">{t.howTitle}</div>
-              <div className="wv-how-text">{t.how}</div>
-            </div>
-          </div>
-        )}
+      {phase === 'handoff' && (
+        <GroupHandoff
+          isAr={isAr}
+          name={psychicName}
+          kicker={t.psychicL}
+          emoji="🔒"
+          body={t.ready}
+          sub={t.onlyYou}
+          cta={`${t.start} ›`}
+          onReady={beginClue}
+          playSfx={playSfx}
+        />
+      )}
 
-        {phase === 'clue' && (
-          <div className="wv-body wv-center">
-            <div className="wv-round-tag">{t.psychicL} {psychic}</div>
-            <div className="wv-only">🔒 {t.onlyYou}</div>
-            <Bar showTarget showGuess={false} />
-            <div className="wv-clue-instr">{t.clueInstr}</div>
-            <button className="wv-primary" onClick={() => { playSfx?.('click'); setPhase('guess'); }}>{t.hidePass} ›</button>
-          </div>
-        )}
+      {phase === 'clue' && (
+        <>
+          <div className="gc-handoff-kicker">{t.psychicL}: {psychicName}</div>
+          <div style={{ color: '#b5453f', fontWeight: 800 }}>🔒 {t.onlyYou}</div>
+          <Bar showTarget showGuess={false} />
+          <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{t.clueInstr}</div>
+          <button type="button" className="gc-btn" onClick={() => { playSfx?.('click'); setPhase('guess'); }}>{t.hidePass} ›</button>
+        </>
+      )}
 
-        {phase === 'guess' && (
-          <div className="wv-body wv-center">
-            <div className="wv-dial-instr">{t.dialInstr}</div>
-            <Bar showTarget={false} showGuess />
-            <input
-              className="wv-slider" type="range" min="0" max="100" value={guess}
-              onChange={(e) => setGuess(Number(e.target.value))}
-              style={{ accentColor: ACCENT }}
-            />
-            <button className="wv-primary" onClick={lockIn}>{t.lockIn}</button>
-          </div>
-        )}
+      {phase === 'guess' && (
+        <>
+          <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{t.dialInstr}</div>
+          <Bar showTarget={false} showGuess />
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={guess}
+            onChange={(e) => setGuess(Number(e.target.value))}
+            style={{ width: '100%', maxWidth: 360, height: 34, accentColor: ACCENT }}
+          />
+          <button type="button" className="gc-btn" onClick={lockIn}>{t.lockIn}</button>
+        </>
+      )}
 
-        {phase === 'reveal' && (
-          <div className="wv-body wv-center">
-            <div className={`wv-band-label${lastPts >= 3 ? ' good' : lastPts === 0 ? ' bad' : ''}`}>{bandLabel}</div>
-            <div className="wv-pts">+{lastPts} {t.pts}</div>
-            <Bar showTarget showGuess />
-            <div className="wv-result-btns">
-              <button className="wv-primary" onClick={() => { setPsychic((n) => n + 1); newRound(); }}>{t.nextRound}</button>
-              <button className="wv-ghost" onClick={() => { playSfx?.('click'); setScore(0); setPsychic(1); setPhase('intro'); }}>{t.reset}</button>
-            </div>
+      {phase === 'reveal' && (
+        <>
+          <div className="gc-handoff-name" style={{
+            fontSize: '2.1rem',
+            color: lastPts >= 3 ? '#2e8b57' : lastPts === 0 ? '#c0433d' : '#8a7f6f',
+          }}>{bandLabel}</div>
+          <div style={{ fontWeight: 800 }}>+{lastPts} {t.pts}</div>
+          <Bar showTarget showGuess />
+          <div className="gc-btn-col">
+            <button
+              type="button"
+              className="gc-btn"
+              onClick={() => {
+                setPsychicIdx((i) => i + 1);
+                setPhase('handoff');
+              }}
+            >
+              {t.nextRound}
+            </button>
+            <button
+              type="button"
+              className="gc-btn gc-btn--ghost"
+              onClick={() => {
+                playSfx?.('click');
+                setScore(0);
+                setPsychicIdx(0);
+                setPhase('setup');
+              }}
+            >
+              {t.reset}
+            </button>
           </div>
-        )}
-      </div>
-    </div>
+        </>
+      )}
+    </GroupShell>
   );
 }
-
-const CSS = `
-.wv-root { position:absolute; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--color-training-palette-surface,#fff7f2); color:${INK}; font-family:${SANS}; }
-.wv-root *, .wv-root *::before, .wv-root *::after { box-sizing:border-box; }
-.wv-app { max-width:480px; margin:0 auto; min-height:100%; display:flex; flex-direction:column; padding-bottom:40px; }
-.wv-head { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:calc(14px + env(safe-area-inset-top)) 14px 10px; }
-.wv-back { width:36px; height:36px; border-radius:10px; border:2px solid ${LINE}; background:${CARD}; color:#141210; font-size:22px; line-height:1; cursor:pointer; flex-shrink:0; }
-.wv-title { font-family:${SERIF}; font-size:26px; font-weight:600; color:${INK}; flex:1; text-align:center; }
-.serif { font-family:${SERIF}; font-weight:600; }
-.wv-score-chip { font-size:12px; font-weight:800; color:${ACCENT}; background:#eef5fb; border:2px solid #cfe2f2; border-radius:999px; padding:6px 10px; white-space:nowrap; }
-.wv-body { flex:1; padding:12px 22px; display:flex; flex-direction:column; gap:20px; }
-.wv-center { align-items:center; text-align:center; justify-content:center; }
-.wv-hero { font-size:64px; text-align:center; }
-.wv-tagline { text-align:center; color:${SUB}; font-size:15px; margin-top:-6px; }
-.wv-primary { width:100%; max-width:340px; padding:15px; border-radius:14px; border:none; background:${ACCENT}; color:#fff; font-size:16px; font-weight:800; cursor:pointer; font-family:inherit; box-shadow:3px 3px 0 rgba(26,18,8,0.14); }
-.wv-ghost { width:100%; max-width:340px; padding:13px; border-radius:14px; border:2px solid ${LINE}; background:${CARD}; color:${SUB}; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
-.wv-how { margin-top:4px; background:${CARD}; border:2px solid ${LINE}; border-radius:14px; padding:14px 16px; }
-.wv-how-title { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:${GOLD}; font-weight:800; margin-bottom:6px; }
-.wv-how-text { font-size:13px; color:#6a5a40; line-height:1.6; }
-.wv-round-tag { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:${SUB}; font-weight:800; }
-.wv-only { font-size:14px; color:#b5453f; font-weight:800; }
-.wv-clue-instr, .wv-dial-instr { font-size:16px; font-weight:700; color:${INK}; }
-.wv-bar-wrap { width:100%; max-width:360px; }
-.wv-bar { position:relative; height:46px; border-radius:12px; overflow:hidden; border:2px solid ${LINE};
-  background:linear-gradient(90deg, #dce6ee 0%, #eef2f0 50%, #f4e6d6 100%); }
-.wv-zone { position:absolute; top:0; bottom:0; }
-.wv-z2 { background:rgba(90,159,212,0.20); }
-.wv-z3 { background:rgba(90,159,212,0.38); }
-.wv-z4 { background:rgba(232,172,78,0.75); }
-.wv-target { position:absolute; top:-3px; bottom:-3px; width:3px; background:${GOLD}; transform:translateX(-50%); box-shadow:0 0 6px rgba(185,132,47,0.8); }
-.wv-guess { position:absolute; top:-6px; bottom:-6px; width:4px; background:#c0433d; transform:translateX(-50%); box-shadow:0 0 6px rgba(192,67,61,0.7); }
-.wv-poles { display:flex; justify-content:space-between; margin-top:8px; font-size:13px; font-weight:800; color:${SUB}; }
-.wv-slider { width:100%; max-width:360px; height:34px; }
-.wv-band-label { font-family:${SERIF}; font-size:34px; font-weight:700; color:${SUB}; }
-.wv-band-label.good { color:#2e8b57; }
-.wv-band-label.bad { color:#c0433d; }
-.wv-pts { font-size:16px; font-weight:800; color:${INK}; margin-top:-8px; }
-.wv-result-btns { display:flex; flex-direction:column; gap:10px; width:100%; max-width:340px; margin-top:10px; align-items:center; }
-`;

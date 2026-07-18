@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import { tokens } from '../../../../../../styles/tokens';
 import { IconBack } from '../../../../shared/TrainingIcons';
@@ -19,6 +19,7 @@ import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainin
 import { createTrialLog } from '../../../../shared/trialLog';
 import CosmosCharacter from '../../../../../character/CosmosCharacter';
 import { getRange, isWon, clonePieces, RUSH_HOUR_BASE_LAYOUTS } from './engine';
+import { planetIconUrl } from '../../../../../../lib/planetIcons';
 import {
   DM,
 } from '../../../../shared/focusQuestData';
@@ -35,6 +36,12 @@ import RhWorker from './rh-worker.js?worker';
 import { getCuratedRushHourAssessBoards } from './curated-levels';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+
+const RushHour3DProto = lazyWithRetry(() => import('./RushHour3DProto'), 'rush-hour-3d');
+const C3D_FALLBACK = (
+  <div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>
+);
 
 const RH_ASSESS_CAP_SEC = 150; // per scored puzzle — 4 puzzles ≈ 6 min + warm-up
 const RH_ASSESS_WARMUP_SEC = 90;
@@ -209,21 +216,48 @@ const UI_AR = {
   levelsSub: (pop) => `${pop} · مراحل 1–100 · لوحات 6×6 مؤكدة`,
 };
 
-export default function RushHourGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'reasoning' }) {
+export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPlay = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'reasoning' }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI_AR : UI_EN;
+  const [cosmosEmbed, setCosmosEmbed] = useState(false);
+  const isCosmos = cosmosAutoPlay || cosmosEmbed;
   const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('rush-hour', isAr, playSfx);
 
-  // WORKOUT MODE: launched from the Daily Workout — skip the hub and jump
-  // straight into free play; the workout shell owns timing and exit.
+  // WORKOUT / cosmos 3D: skip the hub and jump straight into Survival/free.
   const workoutLaunched = useRef(false);
-  useEffect(() => {
-    if (workoutMode && !workoutLaunched.current) { workoutLaunched.current = true; startFreeRun(); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutMode]);
-
   const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
+
+  const exitCosmos = useCallback(() => {
+    workoutLaunched.current = false;
+    setCosmosEmbed(false);
+    setPhase('hub');
+  }, []);
+
+  const withCosmos = useCallback((node) => (
+    isCosmos ? (
+      <Suspense fallback={C3D_FALLBACK}>
+        <RushHour3DProto
+          isAr={isAr}
+          playSfx={playSfx}
+          onBack={() => {
+            if (cosmosAutoPlay) onBack?.();
+            else exitCosmos();
+          }}
+        >
+          {node}
+        </RushHour3DProto>
+      </Suspense>
+    ) : node
+  ), [isCosmos, isAr, playSfx, cosmosAutoPlay, onBack, exitCosmos]);
+
+  useEffect(() => {
+    if ((workoutMode || isCosmos) && !workoutLaunched.current) {
+      workoutLaunched.current = true;
+      startFreeRun();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workoutMode, isCosmos]);
   const [progress, setProgress] = useState(() => loadRhProgress());
   const [diffKey, setDiffKey] = useState('easy');
   const [levelIndex, setLevelIndex] = useState(1);
@@ -1134,7 +1168,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
   }
 
   /* ─── Hub ─── */
-  if (phase === 'hub') {
+  if (phase === 'hub' && !isCosmos) {
     return (
       <>
         <TrainingScreenShell
@@ -1155,6 +1189,14 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
               { k: 'free', ic: '♾️', lb: t.free, hint: t.hubNodeFreeHint, on: () => setPhase('freeIntro') },
               { k: 'levels', ic: '🎯', lb: t.levels, hint: t.hubNodeLevelsHint, on: () => { setPlayMode('levels'); setPhase('pickDiff'); } },
               { k: 'chal', ic: '⚔️', lb: t.challenge, hint: t.hubNodeChallengeHint, on: () => setPhase('chal') },
+              {
+                k: 'proto3d',
+                lb: isAr ? 'ثلاثي الأبعاد' : '3D',
+                hint: isAr ? 'نفس اللعبة · مسرح كوني ثلاثي الأبعاد' : 'Same game · cosmos 3D stage',
+                on: () => { workoutLaunched.current = false; setCosmosEmbed(true); },
+                icoImg: planetIconUrl('reasoning'),
+                mod: 'ct-fq-attn-mode--proto3d',
+              },
             ]}
           />
           <HubScienceLink gameId="rush-hour" isAr={isAr} playSfx={playSfx} />
@@ -1162,6 +1204,10 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
         {tutLayer}
       </>
     );
+  }
+
+  if (phase === 'hub' && isCosmos) {
+    return withCosmos(C3D_FALLBACK);
   }
 
   if (phase === 'pickDiff') {
@@ -1252,9 +1298,10 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
 
   if (phase === 'freeRes') {
     const pad = `max(48px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left))`;
-    return (
+    return withCosmos(
       <div
-        className="cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light"
+        className={`cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light${isCosmos ? ' c3d-embed-root' : ''}`}
+        data-c3d-embed={isCosmos || undefined}
         dir={isAr ? 'rtl' : 'ltr'}
         style={{
           minHeight: '100%',
@@ -1286,7 +1333,8 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
               className="ct-fq-btn ct-fq-btn-pri"
               onClick={() => {
                 playSfx('click');
-                setPhase('freeIntro');
+                if (isCosmos) startFreeRun();
+                else setPhase('freeIntro');
               }}
             >
               {t.playAgain}
@@ -1296,7 +1344,9 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
               className="ct-fq-btn ct-fq-btn-ghost"
               onClick={() => {
                 playSfx('click');
-                setPhase('hub');
+                if (cosmosEmbed) exitCosmos();
+                else if (cosmosAutoPlay) onBack?.();
+                else setPhase('hub');
               }}
             >
               {t.hub}
@@ -1428,9 +1478,10 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
 
   /* ─── Play + win overlay ─── */
   if ((generating || !levelDef) && !(playMode === 'challenge' && chalTurnOpen)) {
-    return (
+    return withCosmos(
       <div
-        className="cancellation-task-game"
+        className={`cancellation-task-game${isCosmos ? ' c3d-embed-root' : ''}`}
+        data-c3d-embed={isCosmos || undefined}
         dir={isAr ? 'rtl' : 'ltr'}
         style={{
           minHeight: '100vh',
@@ -1449,7 +1500,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
             margin: '0 auto 14px',
           }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          <div style={{ fontSize: 14, color: '#5c534c', fontWeight: 600 }}>
+          <div style={{ fontSize: 14, color: isCosmos ? '#f0e2c0' : '#5c534c', fontWeight: 600 }}>
             {isAr ? 'جارٍ إنشاء اللغز…' : 'Generating puzzle…'}
           </div>
         </div>
@@ -1457,9 +1508,10 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
     );
   }
 
-  return (
+  return withCosmos(
     <div
-      className="ct-rh-play cancellation-task-game"
+      className={`ct-rh-play cancellation-task-game${isCosmos ? ' c3d-embed-root' : ''}`}
+      data-c3d-embed={isCosmos || undefined}
       dir={isAr ? 'rtl' : 'ltr'}
       style={{
         color: 'var(--color-training-ink, #2d2d2d)',
@@ -1500,7 +1552,7 @@ export default function RushHourGame({ onBack, workoutMode = false, assessmentMo
         playSfx={playSfx}
         menuAriaLabel={t.menu}
         pauseAriaLabel={t.paused}
-        onMenu={onRhMenu}
+        onMenu={isCosmos ? undefined : onRhMenu}
         onPause={onRhPause}
       />
 

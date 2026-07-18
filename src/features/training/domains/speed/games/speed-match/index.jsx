@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
   TrainingMenuBar,
@@ -21,6 +21,8 @@ import { loadGameSettings } from '../../../../shared/focusQuestData';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
 import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+import { planetIconUrl } from '../../../../../../lib/planetIcons';
 import {
   SH,
   SM_DIFF_KEYS,
@@ -41,6 +43,8 @@ import {
   TIME_BANK,
   bankGainMs,
 } from './speedMatchData';
+
+const SpeedMatch3DProto = lazyWithRetry(() => import('./SpeedMatch3DProto'), 'speed-match-3d');
 
 const PROFILE_KEY = 'mm_speedmatch_v1';
 function loadProfile() {
@@ -239,27 +243,39 @@ function LegendBar({ legend, t }) {
 }
 
 /** Light hub mode list (shared visual with the other games). */
-function SpeedModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
+function SpeedModes({ t, isAr, onFree, onLevels, onChallenge, onProto3d, playSfx }) {
   const items = [
     { k: 'free', ic: '♾️', lb: t.freeMode, hint: t.hubNodeFreeHint, on: onFree, mod: 'ct-fq-attn-mode--free' },
     { k: 'levels', ic: '🎯', lb: t.levelMode, hint: t.hubNodeLevelsHint, on: onLevels, mod: 'ct-fq-attn-mode--levels' },
     { k: 'chal', ic: '⚔️', lb: t.challengeMode, hint: t.hubNodeChallengeHint, on: onChallenge, mod: 'ct-fq-attn-mode--chal' },
+    {
+      k: 'proto3d',
+      lb: isAr ? 'ثلاثي الأبعاد' : '3D',
+      hint: isAr ? 'نفس اللعبة · مسرح كوني ثلاثي الأبعاد' : 'Same game · cosmos 3D stage',
+      on: onProto3d,
+      icoImg: planetIconUrl('speed'),
+      mod: 'ct-fq-attn-mode--proto3d',
+    },
   ];
   return <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />;
 }
 
-export default function SpeedMatchGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'speed' }) {
+export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAutoPlay = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'speed' }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
+  const [cosmosEmbed, setCosmosEmbed] = useState(false);
+  const isCosmos = cosmosAutoPlay || cosmosEmbed;
 
-  // WORKOUT MODE: launched from the Daily Workout — skip the hub and jump
-  // straight into free play; the workout shell owns timing and exit.
+  // WORKOUT / cosmos 3D: skip the hub and jump straight into Survival/free.
   const workoutLaunched = useRef(false);
   useEffect(() => {
-    if (workoutMode && !workoutLaunched.current) { workoutLaunched.current = true; startFreeMode(); }
+    if ((workoutMode || isCosmos) && !workoutLaunched.current) {
+      workoutLaunched.current = true;
+      startFreeMode();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutMode]);
+  }, [workoutMode, isCosmos]);
   const settings = loadGameSettings();
 
   const juice = useJuice();
@@ -772,8 +788,18 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
     trialLogRef.current = null;
     clearPlay();
     if (assessmentMode) { (onAssessmentExit || onBack)?.(); return; }
+    if (cosmosEmbed) { setCosmosEmbed(false); setPhase('hub'); return; }
+    if (cosmosAutoPlay) { onBack?.(); return; }
     if (mode === 'challenge') setPhase('chal');
     else if (mode === 'level') setPhase('levels');
+    else setPhase('hub');
+  };
+
+  const exitToHub = () => {
+    setLastResult(null);
+    clearPlay();
+    if (cosmosEmbed) { setCosmosEmbed(false); setPhase('hub'); }
+    else if (cosmosAutoPlay) onBack?.();
     else setPhase('hub');
   };
 
@@ -804,8 +830,18 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
 
   const starLabel = lastResult?.grade?.stars === 3 ? t.perfect : lastResult?.grade?.stars === 2 ? t.good : t.tryAgain;
 
-  return (
-    <div className="cancellation-task-game ct-sm-root" dir={isAr ? 'rtl' : 'ltr'}>
+  const wrapCosmos = (content) => isCosmos ? (
+    <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+      <SpeedMatch3DProto isAr={isAr} playSfx={playSfx} onBack={() => { workoutLaunched.current = false; setCosmosEmbed(false); clearPlay(); setPhase('hub'); }}>{content}</SpeedMatch3DProto>
+    </Suspense>
+  ) : content;
+
+  return wrapCosmos(
+    <div
+      className={`cancellation-task-game ct-sm-root${isCosmos ? ' c3d-embed-root' : ''}`}
+      data-c3d-embed={isCosmos || undefined}
+      dir={isAr ? 'rtl' : 'ltr'}
+    >
       {phase === 'assessStart' && (
         <AssessmentReady
           isAr={isAr}
@@ -817,7 +853,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
           playSfx={playSfx}
         />
       )}
-      {phase === 'hub' && (
+      {phase === 'hub' && !isCosmos && (
         <>
           <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
             <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
@@ -842,6 +878,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
                 onFree={() => setPhase('freeIntro')}
                 onLevels={() => setPhase('diff')}
                 onChallenge={() => setPhase('chal')}
+                onProto3d={() => { workoutLaunched.current = false; setCosmosEmbed(true); }}
               />
               <HubScienceLink gameId="speed-match" isAr={isAr} playSfx={playSfx} />
             </div>
@@ -953,7 +990,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
             title={header.title}
             subtitle={header.subtitle}
             playSfx={playSfx}
-            onMenu={() => setQuitOpen(true)}
+            onMenu={isCosmos ? undefined : () => setQuitOpen(true)}
             onPause={onPause}
             pauseAriaLabel={t.paused}
           />
@@ -1085,7 +1122,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen">
             <TrainingMenuBar
-              onBack={() => { setLastResult(null); clearPlay(); setPhase('hub'); }}
+              onBack={exitToHub}
               playSfx={playSfx}
               variant="paper"
               center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.freeGameOver}</div></div>}
@@ -1103,7 +1140,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, assessment
             )}
             <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 10 }}>{t.freeBest(profile.bestFree ?? 0)}</p>
             <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); setLastResult(null); startFreeMode(); }}>{t.freePlayAgain}</button>
-            <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { setLastResult(null); clearPlay(); setPhase('hub'); }}>{t.menu}</button>
+            <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={exitToHub}>{t.menu}</button>
           </div>
         </div>
       )}

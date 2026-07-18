@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
@@ -7,6 +7,10 @@ import FoxCharacter from '../../../../../character/FoxCharacter';
 import PersonCharacter from '../../../../../character/PersonCharacter';
 import Emoji from '../../../../../../components/shared/Emoji';
 import { STORIES } from './stories';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+import { planetIconUrl } from '../../../../../../lib/planetIcons';
+
+const StoryGrid3DProto = lazyWithRetry(() => import('./StoryGrid3DProto'), 'story-grid-3d');
 
 /*
  * Story Time — temporal-order / episodic memory.
@@ -466,7 +470,7 @@ const T = {
   },
 };
 
-function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
+export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
   const t = isAr ? T.ar : T.en;
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 5) : 0;
@@ -607,22 +611,31 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
       ? (isAr ? `قصة ${Math.min(ppDoneRef.current + 1, ppTrials)}/${ppTrials} · ✓${ppCorrectRef.current}` : `Story ${Math.min(ppDoneRef.current + 1, ppTrials)}/${ppTrials} · ✓${ppCorrectRef.current}`)
       : (isAr ? `قصة ${roundsRef.current + 1} · أفضل ${bestRef.current}` : `Story ${roundsRef.current + 1} · best ${bestRef.current}`);
 
-  if (!story) return <div style={S.root} dir={isAr ? 'rtl' : 'ltr'} />;
+  if (!story) return <div style={cosmos ? { ...S.root, ...S.cosmosRoot } : S.root} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} />;
   const fsz = frameSize(gridCols(len));
   const refSize = Math.round(fsz * 0.74);
   const storyTitle = story.title ? (isAr ? story.title.ar : story.title.en) : '';
   const reveal = phase === 'reveal';
   const selLabel = sel ? (sel.kind === 'erase' ? t.erase : sel.kind === 'bg' ? (isAr ? BACKGROUNDS[sel.id].ar : BACKGROUNDS[sel.id].en) : sel.kind === 'char' ? nameOf(sel.id) : `${actEmoji(sel.id)} ${actWord(sel.id)}`) : '';
   const isSel = (kind, id) => sel && sel.kind === kind && sel.id === id;
+  const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
+  const cardStyle = cosmos ? { ...S.watchCard, ...S.cosmosCard } : S.watchCard;
+  const rebuildStyle = cosmos ? { ...S.rebuildCard, ...S.cosmosCard } : S.rebuildCard;
+  const dockStyle = cosmos ? { ...S.dock, ...S.cosmosDock } : S.dock;
+  const titleStyle = cosmos ? { ...S.storyTitle, color: '#f0e2c0', textShadow: '0 0 18px rgba(232,172,78,0.45)' } : S.storyTitle;
+  const capStyle = cosmos ? { ...S.watchCap, color: 'rgba(240,226,192,0.9)' } : S.watchCap;
 
   return (
-    <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+    <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
       <style>{ANIM_CSS}</style>
-      <header className="ct-training-play-header">
-        <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); if (mode === 'free') awardFreeRun?.('storyGrid', bestRef.current); onExit?.(); }}>‹</button>
+      <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
+        {!cosmos && (
+          <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); if (mode === 'free') awardFreeRun?.('storyGrid', bestRef.current); onExit?.(); }}>‹</button>
+        )}
+        {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title">{t.title}</div>
-          <div className="ct-training-play-sub">{hudSub}</div>
+          <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>{t.title}</div>
+          <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>{hudSub}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
@@ -632,14 +645,14 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
         const g = story.target[watchIdx];
         return (
           <div style={S.center}>
-            <div style={S.watchCard}>
-              {storyTitle && <div style={S.storyTitle}>📖 {storyTitle}</div>}
+            <div style={{ ...cardStyle, ...(cosmos ? { transform: 'perspective(900px) rotateX(3deg)', transformOrigin: 'center top' } : null) }}>
+              {storyTitle && <div style={titleStyle}>📖 {storyTitle}</div>}
               <div style={{ ...S.timerChip, ...(timeLeft <= 5 ? S.timerLow : null) }}>⏱ {timeLeft}s · {t.watchTag}</div>
               <div style={{ position: 'relative' }}>
                 <span style={S.badge}>{watchIdx + 1}</span>
                 <PanelStage panel={g} size={bigSize()} say={resolveSay(g)} />
               </div>
-              <div key={watchIdx} style={S.watchCap}>{resolveNarr(g) || `${t.seq(watchIdx, len)} ${narrate(g)}`}</div>
+              <div key={watchIdx} style={capStyle}>{resolveNarr(g) || `${t.seq(watchIdx, len)} ${narrate(g)}`}</div>
               <div style={S.watchNav}>
                 <button type="button" aria-label={t.prev} style={{ ...S.navArrow, ...(watchIdx === 0 ? S.navOff : null) }} disabled={watchIdx === 0} onClick={() => { playSfx?.('click'); setWatchIdx((w) => Math.max(0, w - 1)); }}>‹</button>
                 <div style={S.dots}>{story.target.map((_, i) => (
@@ -656,7 +669,7 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
       {/* REBUILD / REVEAL */}
       {(phase === 'rebuild' || phase === 'reveal') && (
         <div style={S.gameBody}>
-          <div style={S.rebuildCard}>
+          <div style={rebuildStyle}>
             <div style={S.instr}>{reveal ? (result.n === result.m ? t.perfect : t.score(result.n, result.m)) : (hint || (sel ? (sel.kind === 'erase' ? t.erasing : t.placing(selLabel)) : t.selectHint))}</div>
             <div style={{ ...S.grid, gridTemplateColumns: `repeat(${gridCols(len)}, max-content)` }}>
               {panels.map((p, i) => {
@@ -705,7 +718,7 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
 
       {/* press-to-place board (rebuild only) */}
       {phase === 'rebuild' && (
-        <div style={S.dock}>
+        <div style={dockStyle}>
           <div style={S.dockHandle} aria-hidden="true" />
           <div style={S.dockInner}>
             <div style={S.dockRow}>
@@ -759,6 +772,31 @@ function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr,
 export default function StoryGridGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
+  const [view, setView] = useState('shell');
+  if (view === 'play3d') {
+    return (
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <StoryGrid3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
+          <StoryEngine
+            mode="free"
+            diff="med"
+            level={1}
+            seed={null}
+            cosmos
+            isAr={isAr}
+            playSfx={playSfx}
+            awardPoints={awardPoints}
+            awardFreeRun={awardFreeRun}
+            onResult={() => {}}
+            onExit={() => {
+              awardFreeRun?.('storyGrid', 0);
+              setView('shell');
+            }}
+          />
+        </StoryGrid3DProto>
+      </Suspense>
+    );
+  }
   return (
     <ModeShell
       storageKey="mm_memory_storytime"
@@ -775,6 +813,13 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
+      extraItems={[{
+        k: 'proto3d',
+        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
+        hint: isAr ? 'نفس القصة · بيئة كونية ثلاثية الأبعاد' : 'Same story · cosmos 3D stage',
+        on: () => setView('play3d'),
+        icoImg: planetIconUrl('memory'),
+      }]}
       renderEngine={(p) => (
         <StoryEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
@@ -784,6 +829,19 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
 
 const S = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
+  cosmosRoot: { background: 'transparent', color: '#f0e2c0', zIndex: 81 },
+  cosmosCard: {
+    background: 'rgba(12,10,8,0.72)',
+    border: '1px solid rgba(232,172,78,0.4)',
+    boxShadow: '0 0 28px rgba(232,172,78,0.18), 0 12px 32px rgba(0,0,0,0.45)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+  },
+  cosmosDock: {
+    background: 'linear-gradient(180deg, rgba(18,14,10,0.92), rgba(8,6,4,0.96))',
+    borderTop: '1px solid rgba(232,172,78,0.35)',
+    boxShadow: '0 -8px 28px rgba(0,0,0,0.45)',
+  },
   center: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 14, padding: '10px 18px 24px', overflowY: 'auto' },
   watchCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, background: '#fffdf8', border: '2px solid #e3d6c4', borderRadius: 22, padding: '18px 20px 20px', maxWidth: '100%', boxShadow: '4px 4px 0 rgba(26,18,8,0.1)' },
   storyTitle: { fontFamily: "'Bangers', 'Outfit', system-ui, sans-serif", fontSize: 24, letterSpacing: 0.5, color: '#3a2c18', textAlign: 'center', lineHeight: 1.1, padding: '0 8px', textShadow: '1px 1px 0 rgba(255,255,255,0.6)' },

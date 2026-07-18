@@ -1,0 +1,415 @@
+/* Group Challenge — shared party-game chrome */
+
+.gc-root {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Opaque warm paper — don't inherit the dark puzzle-universe stage */
+  background: #fff7f2;
+  color: #2d2210;
+  font-family: 'Outfit', system-ui, sans-serif;
+  touch-action: manipulation;
+}
+
+.gc-root *,
+.gc-root *::before,
+.gc-root *::after {
+  box-sizing: border-box;
+}
+
+.gc-app {
+  --gc-accent: #d46a6a;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: max(40px, env(safe-area-inset-bottom, 0px));
+}
+
+.gc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, #fff7f2 70%, transparent);
+}
+
+.gc-back {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 2px solid #e3d6c4;
+  background: #fffdf8;
+  color: #141210;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.gc-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.35rem, 5vw, 1.7rem);
+  font-weight: 600;
+  color: #2d2210;
+  text-align: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.gc-head-slot {
+  min-width: 40px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.gc-chip {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--gc-accent);
+  background: color-mix(in srgb, var(--gc-accent) 12%, #fff);
+  border: 2px solid color-mix(in srgb, var(--gc-accent) 35%, #e3d6c4);
+  border-radius: 999px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.gc-body {
+  flex: 1;
+  padding: 8px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gc-body--center {
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+}
+
+.gc-hero {
+  font-size: clamp(3rem, 12vw, 4rem);
+  line-height: 1;
+  text-align: center;
+  filter: drop-shadow(0 6px 0 rgba(26, 18, 8, 0.06));
+}
+
+.gc-tagline {
+  text-align: center;
+  color: #8a7f6f;
+  font-size: 0.98rem;
+  font-weight: 600;
+  margin-top: -4px;
+  line-height: 1.45;
+}
+
+.gc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gc-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a7f6f;
+  font-weight: 800;
+}
+
+.gc-card {
+  background: #fffdf8;
+  border: 2px solid #e3d6c4;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 3px 3px 0 rgba(26, 18, 8, 0.08);
+}
+
+.gc-how {
+  background: #fffdf8;
+  border: 2px solid #e3d6c4;
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+
+.gc-how-title {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b9842f;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.gc-how-text {
+  font-size: 0.86rem;
+  color: #6a5a40;
+  line-height: 1.6;
+}
+
+.gc-packs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gc-pack {
+  --pack-accent: #b9842f;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 2px solid #e3d6c4;
+  background: #fffdf8;
+  color: #8a7f6f;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.12s;
+}
+
+.gc-pack:active {
+  transform: scale(0.97);
+}
+
+.gc-pack.on {
+  border-color: var(--pack-accent);
+  background: color-mix(in srgb, var(--pack-accent) 14%, #fff);
+  color: color-mix(in srgb, var(--pack-accent) 55%, #2d2210);
+}
+
+.gc-times,
+.gc-stepper-row {
+  display: flex;
+  gap: 8px;
+}
+
+.gc-time,
+.gc-pill {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: 2px solid #e3d6c4;
+  background: #fffdf8;
+  color: #8a7f6f;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.gc-time.on,
+.gc-pill.on {
+  border-color: var(--gc-accent);
+  background: color-mix(in srgb, var(--gc-accent) 12%, #fff);
+  color: #2d2210;
+}
+
+.gc-stepper {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  justify-content: center;
+  background: #fffdf8;
+  border: 2px solid #e3d6c4;
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.gc-step-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: #f1e7d6;
+  color: #b9842f;
+  font-size: 1.6rem;
+  font-weight: 800;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.gc-step-val {
+  font-size: 1.85rem;
+  font-weight: 800;
+  min-width: 40px;
+  color: #2d2210;
+}
+
+.gc-btn {
+  width: 100%;
+  max-width: 360px;
+  padding: 15px 18px;
+  border-radius: 14px;
+  border: none;
+  background: var(--gc-accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 3px 3px 0 rgba(26, 18, 8, 0.14);
+}
+
+.gc-btn--danger {
+  background: linear-gradient(135deg, #e07070, #c0433d);
+}
+
+.gc-btn--ghost {
+  background: #fffdf8;
+  color: #8a7f6f;
+  border: 2px solid #e3d6c4;
+  box-shadow: none;
+}
+
+.gc-btn--ok {
+  background: #3a9d5d;
+}
+
+.gc-btn-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 360px;
+  align-items: stretch;
+}
+
+/* Player name list */
+.gc-players {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gc-player-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.gc-player-input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid #e3d6c4;
+  background: #fffdf8;
+  color: #2d2210;
+  font: inherit;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.gc-player-input:focus {
+  outline: none;
+  border-color: var(--gc-accent);
+}
+
+.gc-player-x {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 2px solid #e3d6c4;
+  background: #fffdf8;
+  color: #8a7f6f;
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.gc-add-player {
+  padding: 11px;
+  border-radius: 12px;
+  border: 2px dashed #e3d6c4;
+  background: transparent;
+  color: #b9842f;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* Handoff */
+.gc-handoff-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a7f6f;
+  font-weight: 800;
+}
+
+.gc-handoff-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(2rem, 9vw, 2.6rem);
+  font-weight: 700;
+  color: #2d2210;
+  line-height: 1.1;
+  margin-top: -4px;
+}
+
+.gc-handoff-card {
+  width: 100%;
+  max-width: 340px;
+  background: #fffdf8;
+  border: 2px solid #e3d6c4;
+  border-radius: 22px;
+  padding: 28px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 4px 4px 0 rgba(26, 18, 8, 0.1);
+}
+
+.gc-word {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(2.4rem, 12vw, 3.8rem);
+  font-weight: 700;
+  color: #2d2210;
+  line-height: 1.1;
+  padding: 12px 0;
+}
+
+.gc-question {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.55rem, 6.5vw, 2.1rem);
+  font-weight: 600;
+  color: #2d2210;
+  line-height: 1.35;
+  text-align: center;
+  padding: 8px 4px;
+}
+
+.gc-deck-bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gc-accent);
+  opacity: 0.85;
+}
+
+.gc-progress {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #8a7f6f;
+}
+
+.gc-tip {
+  text-align: center;
+  font-size: 0.78rem;
+  color: #b3a288;
+  font-weight: 600;
+}
+
+@media (max-width: 380px) {
+  .gc-body { padding-inline: 14px; }
+  .gc-pack { font-size: 0.78rem; padding: 8px 11px; }
+}

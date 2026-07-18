@@ -212,14 +212,40 @@ const wavelength = {
   loader: () => import('./games/wavelength'),
 };
 
-export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, bridges, sudoku, kenken, nonogram, kakuro, crowns, blockburst, flow, tangram, imposter, charades, describeit, wavelength];
+const gettoknow = {
+  id: 'gettoknow',
+  gameKey: 'gettoknow',
+  name: 'Get to Know',
+  nameAr: 'تعارف',
+  icon: '💬',
+  desc: 'Conversation prompts for couples, friends, family, and groups.',
+  descAr: 'أسئلة تعارف للأزواج والأصدقاء والعائلة والمجموعات.',
+  accent: '#d46a8a',
+  sizes: [],
+  loader: () => import('./games/gettoknow'),
+};
+
+const groupwar = {
+  id: 'groupwar',
+  gameKey: 'groupwar',
+  name: 'Group War',
+  nameAr: 'حرب المجموعات',
+  icon: '⚔️',
+  desc: 'Teams duel on training games — same challenge, highest points win.',
+  descAr: 'فرق تتنافس على ألعاب التدريب — نفس التحدي، أعلى نقاط تفوز.',
+  accent: '#c45c26',
+  sizes: [],
+  loader: () => import('./games/groupwar'),
+};
+
+export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, bridges, sudoku, kenken, nonogram, kakuro, crowns, blockburst, flow, tangram, imposter, charades, describeit, wavelength, gettoknow, groupwar];
 
 // ── Categories: every puzzle belongs to exactly one, by core mechanic. ──
 const CATEGORY_OF = {
   sudoku: 'numbers', kenken: 'numbers', kakuro: 'numbers', nonogram: 'numbers',
   takuzu: 'logic', hitori: 'logic', crowns: 'logic', bridges: 'logic',
   sliding: 'spatial', blockburst: 'spatial', flow: 'spatial', tangram: 'spatial',
-  imposter: 'group', charades: 'group', describeit: 'group', wavelength: 'group',
+  imposter: 'group', charades: 'group', describeit: 'group', wavelength: 'group', gettoknow: 'group', groupwar: 'group',
 };
 PUZZLE_CONFIGS.forEach((p) => { p.category = CATEGORY_OF[p.id] || 'logic'; });
 
@@ -227,7 +253,7 @@ export const PUZZLE_CATEGORIES = [
   { id: 'numbers', name: 'Numbers', nameAr: 'الأرقام', icon: '🔢', accent: '#e8ac4e', desc: 'Digits & arithmetic deduction', descAr: 'استنتاج بالأرقام والحساب' },
   { id: 'logic', name: 'Logic', nameAr: 'المنطق', icon: '🧠', accent: '#5ec6b6', desc: 'Shade, place, connect & reveal', descAr: 'تظليل ووضع وربط وكشف' },
   { id: 'spatial', name: 'Spatial', nameAr: 'المكاني', icon: '🧩', accent: '#b696d4', desc: 'Move, draw & fit in space', descAr: 'تحريك ورسم وتركيب في الفراغ' },
-  { id: 'group', name: 'Group Challenge', nameAr: 'تحدٍّ جماعي', icon: '👥', accent: '#d46a6a', desc: 'Party games — pass the phone', descAr: 'ألعاب جماعية — مرّروا الهاتف' },
+  { id: 'group', name: 'Group Challenge', nameAr: 'تحدٍّ جماعي', icon: '👥', accent: '#d46a6a', desc: 'Party games with names — pass the phone', descAr: 'ألعاب جماعية بالأسماء — مرّروا الهاتف' },
 ];
 
 export const puzzlesInCategory = (cat) => PUZZLE_CONFIGS.filter((p) => p.category === cat);

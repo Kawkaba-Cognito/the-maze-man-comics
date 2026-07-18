@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
   TrainingMenuBar,
@@ -16,8 +16,11 @@ import { survivalRampFromRemaining } from '../../../../shared/survival';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import { createStaircase } from '../../../../shared/staircase';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
 import StroopModes, { StroopTarget } from './StroopModes';
+
+const SpatialStroop3DProto = lazyWithRetry(() => import('./SpatialStroop3DProto'), 'spatial-stroop-3d');
 import {
   STROOP_LEVELS_PER_TIER,
   STROOP_DIFF_KEYS,
@@ -310,19 +313,16 @@ function DeadlineRing({ ms, k }) {
   );
 }
 
-export default function SpatialStroopGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'flexibility' }) {
+export default function SpatialStroopGame({ onBack, workoutMode = false, cosmosAutoPlay = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'flexibility' }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
+  const [cosmosEmbed, setCosmosEmbed] = useState(false);
+  const isCosmos = cosmosAutoPlay || cosmosEmbed;
   const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('spatial-stroop', isAr, playSfx);
 
-  // WORKOUT MODE: launched from the Daily Workout — skip the hub and jump
-  // straight into free play; the workout shell owns timing and exit.
+  // WORKOUT / cosmos 3D: skip the hub (and SurvivalIntro for cosmos) into free play.
   const workoutLaunched = useRef(false);
-  useEffect(() => {
-    if (workoutMode && !workoutLaunched.current) { workoutLaunched.current = true; startFreeMode(); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutMode]);
 
   const [profile, setProfile] = useState(() => loadStroopProfile());
   const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
@@ -986,6 +986,26 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
     beginBlock(prepareFreeRunBlock(seed));
   }, [playSfx, beginBlock, resetJuice]);
 
+  const startCosmosFree = useCallback(() => {
+    freeBlocksRef.current = 0;
+    freeScoreRef.current = 0;
+    freeLivesRef.current = STROOP_FREE_LIVES;
+    setFreeLives(STROOP_FREE_LIVES);
+    setFreeScore(0);
+    resetJuice();
+    const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+    beginBlock(prepareFreeRunBlock(seed));
+  }, [beginBlock, resetJuice]);
+
+  useEffect(() => {
+    if ((workoutMode || isCosmos) && !workoutLaunched.current) {
+      workoutLaunched.current = true;
+      if (isCosmos) startCosmosFree();
+      else startFreeMode();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workoutMode, isCosmos]);
+
   const startLevelGame = useCallback(
     (diff, lv) => {
       const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
@@ -1040,8 +1060,18 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
       (onAssessmentExit || onBack)?.();
       return;
     }
+    if (cosmosEmbed) { setCosmosEmbed(false); setPhase('hub'); return; }
+    if (cosmosAutoPlay) { onBack?.(); return; }
     if (mode === 'challenge') setPhase('chal');
     else if (mode === 'level') setPhase('levels');
+    else setPhase('hub');
+  };
+
+  const exitToHub = () => {
+    setLastResult(null);
+    clearPlayState();
+    if (cosmosEmbed) { setCosmosEmbed(false); setPhase('hub'); }
+    else if (cosmosAutoPlay) onBack?.();
     else setPhase('hub');
   };
 
@@ -1059,8 +1089,18 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
   };
   const colorCueFor = (sd) => (rule === 'color' ? (sd === COLOR_SIDE.red ? 'red' : 'green') : null);
 
-  return (
-    <div className="ct-stroop-root cancellation-task-game" dir={isAr ? 'rtl' : 'ltr'}>
+  const wrapCosmos = (content) => isCosmos ? (
+    <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+      <SpatialStroop3DProto isAr={isAr} playSfx={playSfx} onBack={() => { workoutLaunched.current = false; setCosmosEmbed(false); clearPlayState(); setPhase('hub'); }}>{content}</SpatialStroop3DProto>
+    </Suspense>
+  ) : content;
+
+  return wrapCosmos(
+    <div
+      className={`ct-stroop-root cancellation-task-game${isCosmos ? ' c3d-embed-root' : ''}`}
+      data-c3d-embed={isCosmos || undefined}
+      dir={isAr ? 'rtl' : 'ltr'}
+    >
       {phase === 'assessStart' && (
         <AssessmentReady
           isAr={isAr}
@@ -1072,7 +1112,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
           playSfx={playSfx}
         />
       )}
-      {phase === 'hub' && (
+      {phase === 'hub' && !isCosmos && (
         <>
           <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
             <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
@@ -1097,6 +1137,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
                 onFree={startFreeMode}
                 onLevels={() => setPhase('diff')}
                 onChallenge={() => setPhase('chal')}
+                onProto3d={() => { workoutLaunched.current = false; setCosmosEmbed(true); }}
               />
               <HubScienceLink gameId="spatial-stroop" isAr={isAr} playSfx={playSfx} />
             </div>
@@ -1226,7 +1267,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
                   : `${t.trial(session.trialNumber, session.maxTrials)} · ${t.streak(streakDisplay, session.streakToSwitch)} · ${t.categories(catsDisplay, session.categoriesToComplete)}`
             }
             playSfx={playSfx}
-            onMenu={() => setQuitOpen(true)}
+            onMenu={isCosmos ? undefined : () => setQuitOpen(true)}
             onPause={() => setPauseOpen(true)}
             pauseAriaLabel={t.paused}
           />
@@ -1508,11 +1549,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen">
             <TrainingMenuBar
-              onBack={() => {
-                setLastResult(null);
-                clearPlayState();
-                setPhase('hub');
-              }}
+              onBack={exitToHub}
               playSfx={playSfx}
               variant="paper"
               center={<div className="ct-fq-training-title ct-fq-training-title-sm">{t.freeGameOver}</div>}
@@ -1527,7 +1564,8 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
               className="ct-fq-btn ct-fq-btn-pri"
               onClick={() => {
                 setLastResult(null);
-                startFreeMode();
+                if (isCosmos) startCosmosFree();
+                else startFreeMode();
               }}
             >
               {t.freePlayAgain}
@@ -1535,11 +1573,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, assessm
             <button
               type="button"
               className="ct-fq-btn ct-fq-btn-ghost"
-              onClick={() => {
-                setLastResult(null);
-                clearPlayState();
-                setPhase('hub');
-              }}
+              onClick={exitToHub}
             >
               {t.menu}
             </button>

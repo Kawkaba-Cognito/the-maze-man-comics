@@ -12,6 +12,7 @@ import { PT, PROTO_CSS } from './prototypes/protoUtils';
  */
 export default function CaseFileEngine({
   mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun,
+  cosmos = false,
 }) {
   const t = isAr ? PT.ar : PT.en;
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
@@ -99,9 +100,12 @@ export default function CaseFileEngine({
     loadCase();
   };
 
+  const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
+  const embedCls = cosmos ? 'c3d-embed-root' : undefined;
+
   if (phase === 'over') {
     return (
-      <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+      <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
         <style>{PROTO_CSS}</style>
         <div style={S.overWrap}>
           <div style={S.detectiveIcon}>🕵️</div>
@@ -117,7 +121,7 @@ export default function CaseFileEngine({
   }
 
   if (!caseData) {
-    return <div style={S.root} dir={isAr ? 'rtl' : 'ltr'} />;
+    return <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} />;
   }
 
   const verdictLabels = {
@@ -139,6 +143,7 @@ export default function CaseFileEngine({
       playSfx={playSfx}
       onCaseDone={handleCaseDone}
       onExit={onExit}
+      cosmos={cosmos}
     />
   );
 }
@@ -148,6 +153,7 @@ const S = {
     position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column',
     background: '#e8dcc8', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif",
   },
+  cosmosRoot: { background: 'transparent', color: '#f0e2c0', zIndex: 81 },
   overWrap: {
     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     padding: 24, gap: 8, textAlign: 'center',

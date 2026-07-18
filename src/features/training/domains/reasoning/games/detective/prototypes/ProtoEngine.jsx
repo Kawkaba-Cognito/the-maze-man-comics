@@ -20,7 +20,7 @@ import { tierLabel } from '../caseUtils';
  */
 export default function ProtoEngine({
   variant, caseData, caseIndex, caseTotal, isAr, playSfx, onCaseDone, onExit,
-  hudSub, caseStamp, verdictLabels,
+  hudSub, caseStamp, verdictLabels, cosmos = false,
 }) {
   const cfg = CASE_FILE_CONFIG[variant] || CASE_FILE_CONFIG.b3;
   const t = verdictLabels || (isAr ? PT.ar : PT.en);
@@ -246,14 +246,23 @@ export default function ProtoEngine({
     </div>
   );
 
+  const rootStyle = {
+    ...S.root,
+    ...(fileChrome && !cosmos ? S.rootFile : null),
+    ...(cosmos ? S.cosmosRoot : null),
+  };
+
   return (
-    <div style={{ ...S.root, ...(fileChrome ? S.rootFile : null) }} dir={isAr ? 'rtl' : 'ltr'}>
+    <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
       <style>{PROTO_CSS}</style>
-      <header className="ct-training-play-header">
-        <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+      <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
+        {!cosmos && (
+          <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        )}
+        {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title">🕵️ {L(caseData.title, isAr)}</div>
-          <div className="ct-training-play-sub">{hudSub ?? `${caseIndex + 1}/${caseTotal} · ${cfg.label[isAr ? 'ar' : 'en']}`}</div>
+          <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>🕵️ {L(caseData.title, isAr)}</div>
+          <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>{hudSub ?? `${caseIndex + 1}/${caseTotal} · ${cfg.label[isAr ? 'ar' : 'en']}`}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
@@ -665,6 +674,7 @@ const S = {
     fontFamily: "'Outfit', system-ui, sans-serif",
   },
   rootFile: { background: '#e8dcc8' },
+  cosmosRoot: { background: 'transparent', color: '#f0e2c0', zIndex: 81 },
   body: {
     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
     padding: '8px 16px calc(16px + env(safe-area-inset-bottom))', maxWidth: 480, width: '100%',

@@ -1,7 +1,11 @@
-import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+import { planetIconUrl } from '../../../../../../lib/planetIcons';
+
+const PairedAssociates3DProto = lazyWithRetry(() => import('./PairedAssociates3DProto'), 'pal-3d');
 
 /*
  * Paired Associates (CANTAB PAL-style) — associative / episodic memory.
@@ -50,7 +54,7 @@ function drawSym(ctx, sym, x, y, sz, color) {
   ctx.fillText(sym, x, y + 1);
 }
 
-function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
+export function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 3) : 0;
   const ppCorrectRef = useRef(0);
@@ -269,13 +273,17 @@ function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
   }, []);
 
   const S = styles;
+  const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
   return (
-    <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
-      <header className="ct-training-play-header">
-        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); if (mode === 'free') awardFreeRun?.('pairedAssoc', bestRef.current); onExit?.(); }}>‹</button>
+    <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
+      <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
+        {!cosmos && (
+          <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); if (mode === 'free') awardFreeRun?.('pairedAssoc', bestRef.current); onExit?.(); }}>‹</button>
+        )}
+        {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title">{isAr ? 'مطابقة الأزواج' : 'Pair Match'}</div>
-          <div className="ct-training-play-sub">{hud}{mode === 'levels' ? ` · ${score}` : ''}</div>
+          <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>{isAr ? 'مطابقة الأزواج' : 'Pair Match'}</div>
+          <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>{hud}{mode === 'levels' ? ` · ${score}` : ''}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
@@ -293,6 +301,19 @@ function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
 export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
+  const [view, setView] = useState('shell');
+  if (view === 'play3d') {
+    return (
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <PairedAssociates3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
+          <PalEngine mode="free" diff="med" level={1} seed={null} cosmos isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} onResult={() => {}} onExit={() => {
+            awardFreeRun?.('pairedAssoc', 0);
+            setView('shell');
+          }} />
+        </PairedAssociates3DProto>
+      </Suspense>
+    );
+  }
   return (
     <ModeShell
       storageKey="mm_mem_pal"
@@ -309,6 +330,13 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
+      extraItems={[{
+        k: 'proto3d',
+        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
+        hint: isAr ? 'نفس اللعبة · بيئة كونية ثلاثية الأبعاد' : 'Same game · cosmos 3D stage',
+        on: () => setView('play3d'),
+        icoImg: planetIconUrl('memory'),
+      }]}
       renderEngine={(p) => (
         <PalEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
@@ -318,6 +346,7 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
 
 const styles = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
+  cosmosRoot: { background: 'transparent', color: '#f0e2c0', zIndex: 81 },
   cueRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '12px 0 4px', fontSize: 15, fontWeight: 800, color: '#5a4a32', minHeight: 44 },
   cueSym: { fontSize: 30, lineHeight: 1, color: '#3a2c18', width: 54, height: 54, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#fff6df', border: '2.5px solid #1a1208', borderRadius: 13, boxShadow: '3px 3px 0 #1a1208' },
   play: { position: 'relative', flex: 1, margin: 12, borderRadius: 20, background: 'linear-gradient(180deg,#fffdf8,#fbf3e6)', overflow: 'hidden', border: '2px solid #e3d6c4', boxShadow: 'inset 0 2px 12px rgba(120,90,40,0.07)', touchAction: 'none' },

@@ -8,7 +8,13 @@ import {
   freeRoundErrorCap,
   SH,
 } from '../../../../shared/focusQuestData';
-import './Cancel3DProto.css';
+import {
+  perspectiveFitDistance,
+  hudCenterNudge,
+  isCoarsePointer,
+  isDesktopLayout,
+} from '../../../../shared/c3dViewport';
+import '../../../../shared/c3dProto.css';
 
 /*
  * Cancellation · 3D prototype (v2)
@@ -322,15 +328,17 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const fine = window.matchMedia('(pointer: fine)').matches;
+    const coarse = isCoarsePointer();
 
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x000000, 0.028);
 
-    const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 80);
+    // Slightly wider FOV on phones so the lattice fills the tall viewport
+    const camera = new THREE.PerspectiveCamera(coarse ? 54 : 48, 1, 0.1, 80);
     camera.position.set(0, 0, 11.2);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, fine ? 1.6 : 1.25));
+    const renderer = new THREE.WebGLRenderer({ antialias: !coarse, alpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.35 : fine ? 1.6 : 1.25));
     renderer.setClearColor(0x000000, 1);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
@@ -456,6 +464,7 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
     /** @type {{ mesh: THREE.Mesh, cell: object, home: THREE.Vector3, phase: number, state: string, t: number }[]} */
     let pieces = [];
     let interactive = false;
+    let boardHalf = 4.2; // updated in loadBoard — used to frame portrait phones
 
     const disposeBoard = () => {
       for (const p of pieces) {
@@ -465,16 +474,36 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
       pieces = [];
     };
 
+    const frameBoard = () => {
+      const w = wrap.clientWidth || 1;
+      const h = wrap.clientHeight || 1;
+      const aspect = w / Math.max(1, h);
+      const desk = isDesktopLayout(w, h);
+      camera.aspect = aspect;
+      camera.fov = coarse ? 54 : desk ? 46 : 48;
+      const pad = coarse ? 1.2 : desk ? 1.1 : 1.14;
+      const dist = perspectiveFitDistance(camera, boardHalf, aspect, pad);
+      // Sit the lattice under the HUD, centered in the remaining viewport
+      const nudge = hudCenterNudge(h, boardHalf, { strength: desk ? 0.95 : 1.1 });
+      boardGroup.position.set(0, -nudge, 0);
+      camera.position.set(0, -nudge * 0.12, dist);
+      camera.lookAt(0, -nudge, 0);
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, false);
+      composer?.setSize(w, h);
+      bloom?.resolution.set(w, h);
+    };
+
     const loadBoard = (round) => {
       disposeBoard();
       const grid = round.grid;
-      // Face-on lattice: wide gaps + larger icons so motifs stay obvious
-      const gap = grid <= 5 ? 1.7 : grid <= 7 ? 1.28 : 1.02;
-      const scale = grid <= 5 ? 1.05 : grid <= 7 ? 0.86 : 0.7;
+      // Face-on lattice — slightly tighter on coarse/touch so it fits phones
+      const gapMul = coarse ? 0.92 : 1;
+      const gap = (grid <= 5 ? 1.7 : grid <= 7 ? 1.28 : 1.02) * gapMul;
+      const scale = (grid <= 5 ? 1.05 : grid <= 7 ? 0.86 : 0.7) * (coarse ? 1.08 : 1);
       const origin = -((grid - 1) * gap) / 2;
+      boardHalf = Math.abs(origin) + gap * 0.55;
       boardGroup.rotation.set(0, 0, 0);
-      // Pull board slightly down so HUD doesn’t crowd the top row
-      boardGroup.position.set(0, -0.35, 0);
 
       round.cells.forEach((cell, idx) => {
         const col = idx % grid;
@@ -498,6 +527,7 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
           scale,
         });
       });
+      frameBoard();
     };
 
     const setInteractive = (v) => { interactive = v; };
@@ -525,23 +555,39 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
       playSfxRef.current?.('collect');
     };
 
-    const onPointer = (clientX, clientY) => {
-      if (!interactive || bannerRef.current) return;
-      // Ignore clicks in the first moments after ENGAGE (avoids ghost taps from UI)
-      if (performance.now() < engageAtRef.current) return;
+    const tmpProj = new THREE.Vector3();
+    const resolvePiece = (clientX, clientY) => {
       const rect = renderer.domElement.getBoundingClientRect();
       pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObjects(
-        pieces.map((p) => p.mesh).filter((m) => m.visible),
-        true,
-      );
-      if (!hits.length) return;
-      // Walk up to the group that owns pieceIndex (children are the clickable meshes)
-      let hitObj = hits[0].object;
-      while (hitObj && hitObj.userData.pieceIndex == null && hitObj.parent) hitObj = hitObj.parent;
-      const piece = pieces[hitObj?.userData.pieceIndex];
+      const live = pieces.filter((p) => p.mesh.visible && p.state !== 'gone' && p.state !== 'bad' && !p.cell.tapped);
+      const hits = raycaster.intersectObjects(live.map((p) => p.mesh), true);
+      if (hits.length) {
+        let hitObj = hits[0].object;
+        while (hitObj && hitObj.userData.pieceIndex == null && hitObj.parent) hitObj = hitObj.parent;
+        return pieces[hitObj?.userData.pieceIndex] || null;
+      }
+      if (!coarse) return null;
+      // Soft pick for thumbs — nearest cell center in screen space
+      let best = null;
+      let bestD = 0.16;
+      for (const p of live) {
+        tmpProj.copy(p.home).add(boardGroup.position).project(camera);
+        const dist = Math.hypot(tmpProj.x - pointer.x, tmpProj.y - pointer.y);
+        if (dist < bestD) {
+          bestD = dist;
+          best = p;
+        }
+      }
+      return best;
+    };
+
+    const onPointer = (clientX, clientY) => {
+      if (!interactive || bannerRef.current) return;
+      // Ignore clicks in the first moments after ENGAGE (avoids ghost taps from UI)
+      if (performance.now() < engageAtRef.current) return;
+      const piece = resolvePiece(clientX, clientY);
       if (!piece || piece.state === 'gone' || piece.state === 'bad' || piece.cell.tapped) return;
       const mesh = piece.mesh;
 
@@ -572,18 +618,11 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
     };
     renderer.domElement.addEventListener('pointerup', onPointerUp);
 
-    const resize = () => {
-      const w = wrap.clientWidth || 1;
-      const h = wrap.clientHeight || 1;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h, false);
-      composer?.setSize(w, h);
-      bloom?.resolution.set(w, h);
-    };
+    const resize = () => frameBoard();
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
+    window.visualViewport?.addEventListener('resize', resize);
 
     let raf = 0;
     let last = performance.now();
@@ -596,9 +635,7 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
       const tsec = now * 0.001;
 
       if (!reduced) {
-        // Keep camera + board fixed so the lattice stays readable
-        camera.position.set(0, 0, 11.2);
-        camera.lookAt(0, -0.35, 0);
+        // Camera framing is owned by frameBoard() — never reset Z here
         boardGroup.rotation.set(0, 0, 0);
 
         meteorCd -= dt;
@@ -716,6 +753,7 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      window.visualViewport?.removeEventListener('resize', resize);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       disposeBoard();
       starGeo.dispose();

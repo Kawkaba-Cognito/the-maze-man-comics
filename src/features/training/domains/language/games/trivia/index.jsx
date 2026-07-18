@@ -1,9 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import CosmosCharacter from '../../../../../character/CosmosCharacter';
 import { TRIVIA, TRIVIA_CATEGORIES } from './triviaData';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+import { planetIconUrl } from '../../../../../../lib/planetIcons';
+
+const Trivia3DProto = lazyWithRetry(() => import('./Trivia3DProto'), 'trivia-3d');
 
 /*
  * Trivia — general-knowledge quiz with a STAIRCASE. 24 categories of graded
@@ -126,7 +130,7 @@ const T = {
   },
 };
 
-function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
+export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
   const t = isAr ? T.ar : T.en;
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const persist = mode !== 'passplay'; // pass n play must stay seed-deterministic
@@ -245,9 +249,12 @@ function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr
       ? (isAr ? 'مرّر والعب' : 'Pass n Play')
       : (isAr ? `سلالم ${stairsRef.current} · ${scoreRef.current}` : `Stairs ${stairsRef.current} · ${scoreRef.current}`);
 
+  const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
+  const embedCls = cosmos ? 'c3d-embed-root' : undefined;
+
   if (over && mode === 'free') {
     return (
-      <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+      <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
         <style>{STAIR_CSS}</style>
         <div style={S.overWrap}>
           <div style={{ fontSize: 46 }}>🪐</div>
@@ -265,7 +272,7 @@ function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr
   // ── survival: pick the next topic ──
   if (pickCats) {
     return (
-      <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+      <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
         <style>{STAIR_CSS}</style>
         <div style={S.overWrap}>
           <div style={{ fontSize: 42 }}>🏁</div>
@@ -291,13 +298,16 @@ function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr
   const outOfLives = mistakesRef.current >= LIVES;
 
   return (
-    <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
+    <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
       <style>{STAIR_CSS}</style>
-      <header className="ct-training-play-header">
-        <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+      <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
+        {!cosmos && (
+          <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        )}
+        {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title">{t.title}</div>
-          <div className="ct-training-play-sub">{hudSub}</div>
+          <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>{t.title}</div>
+          <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>{hudSub}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
@@ -359,6 +369,19 @@ function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr
 export default function TriviaGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
+  const [view, setView] = useState('shell');
+  if (view === 'play3d') {
+    return (
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <Trivia3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
+          <TriviaEngine mode="free" diff="med" level={1} seed={null} cosmos isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} onResult={() => {}} onExit={() => {
+            awardFreeRun?.('trivia', 0);
+            setView('shell');
+          }} />
+        </Trivia3DProto>
+      </Suspense>
+    );
+  }
   return (
     <ModeShell
       storageKey="mm_language_trivia"
@@ -375,6 +398,13 @@ export default function TriviaGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
+      extraItems={[{
+        k: 'proto3d',
+        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
+        hint: isAr ? 'نفس اللعبة · بيئة كونية ثلاثية الأبعاد' : 'Same game · cosmos 3D stage',
+        on: () => setView('play3d'),
+        icoImg: planetIconUrl('language'),
+      }]}
       renderEngine={(p) => (
         <TriviaEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
@@ -384,6 +414,7 @@ export default function TriviaGame({ onBack, workoutMode = false }) {
 
 const S = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
+  cosmosRoot: { background: 'transparent', color: '#f0e2c0', zIndex: 81 },
   stairWrap: { flex: '0 0 auto', padding: '8px 14px 4px', display: 'flex', flexDirection: 'column', gap: 4 },
   livesRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 460, width: '100%', margin: '0 auto' },
   topicChip: { fontWeight: 800, fontSize: 13, color: '#7a5a1e', background: '#fff1d8', border: '2px solid #e3c489', borderRadius: 999, padding: '3px 12px' },

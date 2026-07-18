@@ -89,15 +89,19 @@ export function TrainingPlayHeader({
 }) {
   return (
     <header className="ct-training-play-header">
-      <TrainingChromeBtn
-        ariaLabel={menuAriaLabel}
-        onClick={() => {
-          playSfx('click');
-          onMenu();
-        }}
-      >
-        <IconBack size={18} c="#141210" />
-      </TrainingChromeBtn>
+      {onMenu ? (
+        <TrainingChromeBtn
+          ariaLabel={menuAriaLabel}
+          onClick={() => {
+            playSfx('click');
+            onMenu();
+          }}
+        >
+          <IconBack size={18} c="#141210" />
+        </TrainingChromeBtn>
+      ) : (
+        <div className="ct-training-chrome-spacer" aria-hidden="true" />
+      )}
       <div className="ct-training-play-header-body">
         <div
           className="ct-training-play-title"

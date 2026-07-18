@@ -1,10 +1,14 @@
-import React, { useRef, useState, useEffect, useCallback, useMemo, useLayoutEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo, useLayoutEffect, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import { survivalRampFromRemaining } from '../../../../shared/survival';
 import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
 import CosmosCharacter from '../../../../../character/CosmosCharacter';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+import { planetIconUrl } from '../../../../../../lib/planetIcons';
+
+const Brixton3DProto = lazyWithRetry(() => import('./Brixton3DProto'), 'brixton-3d');
 
 /*
  * Kawkab Hops — the Brixton Spatial Anticipation Test as a training game.  [flexibility]
@@ -86,7 +90,7 @@ function DemoTrail({ centers, path, revealCount }) {
   );
 }
 
-function BrixtonEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
+export function BrixtonEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
   const ppTrials = mode === 'passplay' ? (attempt?.trials || PP_TRIALS) : 0;
   const isSurvival = mode === 'free';
 
@@ -359,9 +363,11 @@ function BrixtonEngine({ mode, diff, level, seed, attempt, onResult, onExit, isA
         ? 'ct-bx-phase-banner--your'
         : 'ct-bx-phase-banner--watch';
 
+  const rootCls = `ct-bx-root${cosmos ? ' c3d-embed-root' : ''}`;
+
   if (over && isSurvival) {
     return (
-      <div className="ct-bx-root" dir={isAr ? 'rtl' : 'ltr'}>
+      <div className={rootCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
         <div className="ct-bx-over-wrap">
           <div className="ct-bx-over-card">
             <CosmosCharacter size={72} mood="proud" glow pose="cheer" />
@@ -386,14 +392,17 @@ function BrixtonEngine({ mode, diff, level, seed, attempt, onResult, onExit, isA
   const animMs = cfgRef.current.animMs;
 
   return (
-    <div className="ct-bx-root" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className={rootCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
       {isSurvival && <SurvivalCountdownBar remaining={remaining} color={ACC} />}
 
-      <header className="ct-training-play-header">
-        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+      <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
+        {!cosmos && (
+          <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        )}
+        {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title">{t.title}</div>
-          <div className="ct-training-play-sub">{hud}</div>
+          <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>{t.title}</div>
+          <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>{hud}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
@@ -492,6 +501,19 @@ function BrixtonEngine({ mode, diff, level, seed, attempt, onResult, onExit, isA
 export default function KawkabHopsGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
+  const [view, setView] = useState('shell');
+  if (view === 'play3d') {
+    return (
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <Brixton3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
+          <BrixtonEngine mode="free" diff="med" level={1} seed={null} cosmos isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} onResult={() => {}} onExit={() => {
+            awardFreeRun?.('brixton', 0);
+            setView('shell');
+          }} />
+        </Brixton3DProto>
+      </Suspense>
+    );
+  }
   return (
     <ModeShell
       storageKey="mm_flx_brixton"
@@ -508,6 +530,13 @@ export default function KawkabHopsGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
+      extraItems={[{
+        k: 'proto3d',
+        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
+        hint: isAr ? 'نفس اللعبة · بيئة كونية ثلاثية الأبعاد' : 'Same game · cosmos 3D stage',
+        on: () => setView('play3d'),
+        icoImg: planetIconUrl('flexibility'),
+      }]}
       renderEngine={(p) => (
         <BrixtonEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}

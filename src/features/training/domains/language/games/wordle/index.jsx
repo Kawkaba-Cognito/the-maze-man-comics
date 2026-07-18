@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
   TrainingMenuBar,
@@ -16,7 +16,10 @@ import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { seedWithDay } from '../../../../shared/dailySeed';
 import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import WordleModes from './WordleModes';
+
+const Wordle3DProto = lazyWithRetry(() => import('./Wordle3DProto'), 'wordle-3d');
 import LetterLinkBoard from './LetterLinkBoard';
 import WordleLiveHud from './WordleLiveHud';
 import {
@@ -152,18 +155,22 @@ const UI = {
   },
 };
 
-export default function WordleGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'language' }) {
+export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'language' }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
+  const [cosmosEmbed, setCosmosEmbed] = useState(false);
+  const isCosmos = cosmosAutoPlay || cosmosEmbed;
 
-  // WORKOUT MODE: launched from the Daily Workout — skip the hub and jump
-  // straight into free play; the workout shell owns timing and exit.
+  // WORKOUT / cosmos 3D: skip the hub and jump straight into Survival/free.
   const workoutLaunched = useRef(false);
   useEffect(() => {
-    if (workoutMode && !workoutLaunched.current) { workoutLaunched.current = true; startFree(); }
+    if ((workoutMode || isCosmos) && !workoutLaunched.current) {
+      workoutLaunched.current = true;
+      startFree();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutMode]);
+  }, [workoutMode, isCosmos]);
   const lang = isAr ? 'ar' : 'en';
 
   const [profile, setProfile] = useState(() => loadWordleProfile());
@@ -504,10 +511,19 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
     trialLogRef.current = null;
     clearPlay();
     if (mode === 'assess') { (onAssessmentExit || onBack)?.(); return; }
+    if (cosmosEmbed) { setCosmosEmbed(false); setPhase('hub'); return; }
+    if (cosmosAutoPlay) { onBack?.(); return; }
     if (mode === 'challenge') setPhase('chal');
     else if (mode === 'level') setPhase('levels');
     else setPhase('hub');
-  }, [clearPlay, onAssessmentExit, onBack]);
+  }, [clearPlay, onAssessmentExit, onBack, cosmosAutoPlay]);
+
+  const exitToHub = useCallback(() => {
+    clearPlay();
+    if (cosmosEmbed) { setCosmosEmbed(false); setPhase('hub'); }
+    else if (cosmosAutoPlay) onBack?.();
+    else setPhase('hub');
+  }, [clearPlay, cosmosAutoPlay, onBack]);
 
   const handlePauseOpen = useCallback(() => {
     stopRoundTimer();
@@ -619,8 +635,18 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
     };
   };
 
-  return (
-    <div className="cancellation-task-game ct-fq-root ct-wordle-root" dir={isAr ? 'rtl' : 'ltr'}>
+  const wrapCosmos = (content) => isCosmos ? (
+    <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+      <Wordle3DProto isAr={isAr} playSfx={playSfx} onBack={() => { workoutLaunched.current = false; setCosmosEmbed(false); clearPlay(); setPhase('hub'); }}>{content}</Wordle3DProto>
+    </Suspense>
+  ) : content;
+
+  return wrapCosmos(
+    <div
+      className={`cancellation-task-game ct-fq-root ct-wordle-root${isCosmos ? ' c3d-embed-root' : ''}`}
+      data-c3d-embed={isCosmos || undefined}
+      dir={isAr ? 'rtl' : 'ltr'}
+    >
       {phase === 'assessStart' && (
         <AssessmentReady
           isAr={isAr}
@@ -633,7 +659,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
         />
       )}
 
-      {phase === 'hub' && (
+      {phase === 'hub' && !isCosmos && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
           <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
             <TrainingMenuBar
@@ -658,6 +684,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
               onFree={() => setPhase('freeIntro')}
               onLevels={() => setPhase('diff')}
               onChallenge={() => setPhase('chal')}
+              onProto3d={() => { workoutLaunched.current = false; setCosmosEmbed(true); }}
             />
             <HubScienceLink gameId="wordle" isAr={isAr} playSfx={playSfx} />
           </div>
@@ -782,7 +809,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
             playSfx={playSfx}
             menuAriaLabel={t.menu}
             pauseAriaLabel={t.paused}
-            onMenu={() => {
+            onMenu={isCosmos ? undefined : () => {
               if (pauseOpen) setPauseOpen(false);
               setQuitOpen(true);
             }}
@@ -867,7 +894,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
                 : playHeaderForRound(round).subtitle
             }
             playSfx={playSfx}
-            onMenu={() => {
+            onMenu={isCosmos ? undefined : () => {
               if (pauseOpen) setPauseOpen(false);
               setQuitOpen(true);
             }}
@@ -1056,7 +1083,8 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
               onClick={() => {
                 playSfx('click');
                 clearPlay();
-                setPhase('freeIntro');
+                if (isCosmos) startFree();
+                else setPhase('freeIntro');
               }}
             >
               {t.freePlayAgain}
@@ -1064,10 +1092,7 @@ export default function WordleGame({ onBack, workoutMode = false, assessmentMode
             <button
               type="button"
               className="ct-fq-btn ct-fq-btn-sec"
-              onClick={() => {
-                clearPlay();
-                setPhase('hub');
-              }}
+              onClick={exitToHub}
             >
               {t.menu}
             </button>

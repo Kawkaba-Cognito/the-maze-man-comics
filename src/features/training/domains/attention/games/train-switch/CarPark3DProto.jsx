@@ -3,7 +3,12 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import '../cancellation/Cancel3DProto.css';
+import {
+  fitOrthographic,
+  isCoarsePointer,
+  isDesktopLayout,
+} from '../../../../shared/c3dViewport';
+import '../../../../shared/c3dProto.css';
 
 /*
  * Car Park · 3D prototype — space-dock remix of the divided-attention fork.
@@ -148,7 +153,7 @@ function makeSpaceship(colorHex) {
   root.userData.plume = plume;
   root.userData.hullMat = hull;
 
-  root.scale.setScalar(1.05);
+  root.scale.setScalar(isCoarsePointer() ? 1.22 : 1.05);
   return root;
 }
 
@@ -312,9 +317,9 @@ function makeRouteControl() {
   beam.position.set(1.15, 0.16, -0.55);
   g.add(beam);
 
-  // Wide invisible hit target for mobile taps
+  // Wide invisible hit target — oversized for thumbs on phones
   const hit = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.45, 1.45, 0.45, 20),
+    new THREE.CylinderGeometry(1.85, 1.85, 0.55, 20),
     new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
   );
   hit.position.y = 0.2;
@@ -373,10 +378,15 @@ export default function CarPark3DProto({ isAr, playSfx, onBack }) {
     if (!wrap) return undefined;
     const fine = window.matchMedia('(pointer: fine)').matches;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const coarse = isCoarsePointer();
 
     let renderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+      renderer = new THREE.WebGLRenderer({
+        antialias: !coarse,
+        alpha: false,
+        powerPreference: coarse ? 'default' : 'high-performance',
+      });
     } catch (err) {
       console.error('[CarPark3D] WebGL init failed', err);
       setBootError(isAr ? 'تعذّر تشغيل الرسم ثلاثي الأبعاد' : 'Could not start 3D graphics');
@@ -395,7 +405,7 @@ export default function CarPark3DProto({ isAr, playSfx, onBack }) {
     camera.up.set(0, 0, -1);
     camera.lookAt(0, 0, 0);
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, fine ? 1.5 : 1.2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.3 : fine ? 1.5 : 1.2));
     renderer.setClearColor(0x000000, 1);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
@@ -653,6 +663,13 @@ export default function CarPark3DProto({ isAr, playSfx, onBack }) {
       }
     };
 
+    const toggleRoute = () => {
+      swRef.current = swRef.current === 0 ? 1 : 0;
+      setSw(swRef.current);
+      updateRouteVisual();
+      playSfxRef.current?.('click');
+    };
+
     const onPointer = (e) => {
       if (!running || performance.now() < engageAt) return;
       const rect = renderer.domElement.getBoundingClientRect();
@@ -663,24 +680,38 @@ export default function CarPark3DProto({ isAr, playSfx, onBack }) {
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(pointer, camera);
       const hits = raycaster.intersectObject(control, true);
-      if (!hits.length) return;
-      swRef.current = swRef.current === 0 ? 1 : 0;
-      setSw(swRef.current);
-      updateRouteVisual();
-      playSfxRef.current?.('click');
+      if (hits.length) {
+        toggleRoute();
+        return;
+      }
+      // Phone fallback: tap the middle band of the screen to flip the route
+      if (coarse) {
+        const ny = (e.clientY - rect.top) / rect.height;
+        if (ny > 0.28 && ny < 0.72) toggleRoute();
+      }
     };
     renderer.domElement.addEventListener('pointerup', onPointer);
 
     const resize = () => {
       const w = wrap.clientWidth || 1;
       const h = wrap.clientHeight || 1;
-      const aspect = w / h;
-      // Fit the dock layout; slightly taller frustums on portrait phones
-      const base = aspect < 1 ? 6.4 : 5.4;
-      camera.left = -base * aspect;
-      camera.right = base * aspect;
-      camera.top = base;
-      camera.bottom = -base;
+      const aspect = w / Math.max(1, h);
+      const desk = isDesktopLayout(w, h);
+      // World playfield: docks ±2.65 x, hangar/docks ≈ z −4.2…+4.2
+      const halfW = coarse ? 3.55 : desk ? 3.45 : 3.7;
+      const halfH = coarse ? 4.85 : desk ? 4.55 : 4.7;
+      const { h: viewH } = fitOrthographic(
+        camera,
+        halfW,
+        halfH,
+        aspect,
+        coarse ? 1.14 : desk ? 1.08 : 1.1,
+        { maxAspect: desk ? 1.35 : 1.55 },
+      );
+      // Bias frustum toward hangar (+Z / screen bottom) so the lot sits under the HUD
+      const bias = viewH * (desk ? 0.07 : 0.05);
+      camera.top = viewH - bias;
+      camera.bottom = -viewH - bias;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h, false);
       composer?.setSize(w, h);
@@ -688,6 +719,7 @@ export default function CarPark3DProto({ isAr, playSfx, onBack }) {
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
+    window.visualViewport?.addEventListener('resize', resize);
 
     let raf = 0;
     let last = performance.now();
@@ -781,6 +813,7 @@ export default function CarPark3DProto({ isAr, playSfx, onBack }) {
       if (bootTimer) window.clearTimeout(bootTimer);
       cancelAnimationFrame(raf);
       ro.disconnect();
+      window.visualViewport?.removeEventListener('resize', resize);
       renderer.domElement.removeEventListener('pointerup', onPointer);
       clearShips();
       disposeObject(hangar);

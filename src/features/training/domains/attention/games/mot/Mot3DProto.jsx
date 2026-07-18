@@ -4,7 +4,13 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { clamp, lerp } from '../../../../../../lib/math';
-import '../cancellation/Cancel3DProto.css';
+import {
+  perspectiveFitDistance,
+  hudCenterNudge,
+  isCoarsePointer,
+  isDesktopLayout,
+} from '../../../../shared/c3dViewport';
+import '../../../../shared/c3dProto.css';
 
 /*
  * Target Tracking · 3D prototype — same MOT loop (cue → track → respond)
@@ -89,12 +95,13 @@ export default function Mot3DProto({ isAr, playSfx, onBack }) {
     if (!wrap) return undefined;
 
     const fine = window.matchMedia('(pointer: fine)').matches;
+    const coarse = isCoarsePointer();
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 80);
+    const camera = new THREE.PerspectiveCamera(coarse ? 56 : 50, 1, 0.1, 80);
     camera.position.set(0, 0, 12);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, fine ? 1.5 : 1.25));
+    const renderer = new THREE.WebGLRenderer({ antialias: !coarse });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.35 : fine ? 1.5 : 1.25));
     renderer.setClearColor(0x000000, 1);
     renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
     wrap.appendChild(renderer.domElement);
@@ -129,12 +136,13 @@ export default function Mot3DProto({ isAr, playSfx, onBack }) {
       composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), 0.35, 0.5, 0.8));
     }
 
-    const arena = 4.6;
+    // Smaller playfield on phones so dots stay on-screen in portrait
+    const arena = coarse ? 3.55 : 4.6;
     const dots = [];
     const group = new THREE.Group();
     scene.add(group);
 
-    const geo = new THREE.SphereGeometry(0.28, 22, 16);
+    const geo = new THREE.SphereGeometry(coarse ? 0.34 : 0.28, coarse ? 16 : 22, coarse ? 12 : 16);
     let cfg = freeConfig(0);
     let targetIds = new Set();
     let pickedIds = new Set();
@@ -247,18 +255,38 @@ export default function Mot3DProto({ isAr, playSfx, onBack }) {
       setPhase(perfect ? 'clear' : 'miss');
     };
 
-    const onPointer = (e) => {
-      if (phaseRef.current !== 'respond') return;
+    const tmpProj = new THREE.Vector3();
+    const pickDot = (clientX, clientY) => {
       const rect = renderer.domElement.getBoundingClientRect();
       const pointer = new THREE.Vector2(
-        ((e.clientX - rect.left) / rect.width) * 2 - 1,
-        -((e.clientY - rect.top) / rect.height) * 2 + 1,
+        ((clientX - rect.left) / rect.width) * 2 - 1,
+        -((clientY - rect.top) / rect.height) * 2 + 1,
       );
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(pointer, camera);
       const hits = raycaster.intersectObjects(dots, false);
-      if (!hits.length) return;
-      const mesh = hits[0].object;
+      if (hits.length) return hits[0].object;
+      // Soft pick for thumbs — nearest projected sphere within a generous radius
+      if (!coarse) return null;
+      let best = null;
+      let bestD = 0.22; // NDC units
+      for (const d of dots) {
+        d.getWorldPosition(tmpProj).project(camera);
+        const dx = tmpProj.x - pointer.x;
+        const dy = tmpProj.y - pointer.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < bestD) {
+          bestD = dist;
+          best = d;
+        }
+      }
+      return best;
+    };
+
+    const onPointer = (e) => {
+      if (phaseRef.current !== 'respond') return;
+      const mesh = pickDot(e.clientX, e.clientY);
+      if (!mesh) return;
       const id = mesh.userData.dotIndex;
       if (pickedIds.has(id)) return;
       pickedIds.add(id);
@@ -284,7 +312,16 @@ export default function Mot3DProto({ isAr, playSfx, onBack }) {
     const resize = () => {
       const w = wrap.clientWidth || 1;
       const h = wrap.clientHeight || 1;
-      camera.aspect = w / h;
+      const aspect = w / Math.max(1, h);
+      const desk = isDesktopLayout(w, h);
+      camera.aspect = aspect;
+      camera.fov = coarse ? 56 : desk ? 48 : 50;
+      const pad = coarse ? 1.22 : desk ? 1.12 : 1.16;
+      const dist = perspectiveFitDistance(camera, arena, aspect, pad);
+      const nudge = hudCenterNudge(h, arena, { strength: desk ? 0.9 : 1.05 });
+      group.position.set(0, -nudge, 0);
+      camera.position.set(0, -nudge * 0.1, dist);
+      camera.lookAt(0, -nudge, 0);
       camera.updateProjectionMatrix();
       renderer.setSize(w, h, false);
       composer?.setSize(w, h);
@@ -292,6 +329,7 @@ export default function Mot3DProto({ isAr, playSfx, onBack }) {
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
+    window.visualViewport?.addEventListener('resize', resize);
 
     let raf = 0;
     let last = performance.now();
@@ -344,6 +382,7 @@ export default function Mot3DProto({ isAr, playSfx, onBack }) {
       cancelAnimationFrame(raf);
       clearTimers();
       ro.disconnect();
+      window.visualViewport?.removeEventListener('resize', resize);
       renderer.domElement.removeEventListener('pointerup', onPointer);
       geo.dispose();
       starGeo.dispose();

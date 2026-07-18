@@ -1,10 +1,14 @@
-import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import { survivalRampFromRemaining } from '../../../../shared/survival';
 import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
 import CosmosCharacter from '../../../../../character/CosmosCharacter';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+import { planetIconUrl } from '../../../../../../lib/planetIcons';
+
+const Wisconsin3DProto = lazyWithRetry(() => import('./Wisconsin3DProto'), 'wisconsin-3d');
 
 /*
  * Card Sort — the Wisconsin Card Sorting Test (WCST) as a training game.  [flexibility]
@@ -77,7 +81,7 @@ function CardFace({ shape, color, number, glyphSize = 22, deal = false }) {
   );
 }
 
-function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
+export function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
   const ppTrials = mode === 'passplay' ? (attempt?.trials || PP_TRIALS) : 0;
   const isSurvival = mode === 'free';
 
@@ -219,9 +223,11 @@ function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
     ? (fly.ok ? t.yes : (fly.hintTryOther ? t.tryOther : t.no))
     : t.think;
 
+  const rootCls = `ct-wcst-root${cosmos ? ' c3d-embed-root' : ''}`;
+
   if (over && isSurvival) {
     return (
-      <div className="ct-wcst-root" dir={isAr ? 'rtl' : 'ltr'}>
+      <div className={rootCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
         <div className="ct-wcst-over-wrap">
           <div className="ct-wcst-over-card">
             <CosmosCharacter size={72} mood="proud" glow pose="cheer" />
@@ -243,14 +249,17 @@ function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
     : 'none';
 
   return (
-    <div className="ct-wcst-root" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className={rootCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
       {isSurvival && <SurvivalCountdownBar remaining={remaining} color={ACC} />}
 
-      <header className="ct-training-play-header">
-        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+      <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
+        {!cosmos && (
+          <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        )}
+        {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title">{t.title}</div>
-          <div className="ct-training-play-sub">{hud}</div>
+          <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>{t.title}</div>
+          <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>{hud}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
@@ -307,6 +316,19 @@ function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, 
 export default function CardSortGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
+  const [view, setView] = useState('shell');
+  if (view === 'play3d') {
+    return (
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <Wisconsin3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
+          <WcstEngine mode="free" diff="med" level={1} seed={null} cosmos isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} onResult={() => {}} onExit={() => {
+            awardFreeRun?.('wisconsin', 0);
+            setView('shell');
+          }} />
+        </Wisconsin3DProto>
+      </Suspense>
+    );
+  }
   return (
     <ModeShell
       storageKey="mm_flx_wcst"
@@ -323,6 +345,13 @@ export default function CardSortGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
+      extraItems={[{
+        k: 'proto3d',
+        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
+        hint: isAr ? 'نفس اللعبة · بيئة كونية ثلاثية الأبعاد' : 'Same game · cosmos 3D stage',
+        on: () => setView('play3d'),
+        icoImg: planetIconUrl('flexibility'),
+      }]}
       renderEngine={(p) => (
         <WcstEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
