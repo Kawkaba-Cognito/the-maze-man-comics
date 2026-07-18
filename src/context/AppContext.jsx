@@ -4,15 +4,26 @@ import { updateRating } from '../features/training/rating';
 import { recruit as armyRecruit, recordAttempt as armyRecordAttempt, markGone as armyMarkGone, MAX_ATTEMPTS } from '../features/army/armyState';
 import { getCampaignFloor, DEFAULT_FLOOR, hasEnteredLabyrinth, prepareOuterGateEntry, ensureGateProgress } from '../features/campaign/campaignProgress';
 import { readAppTheme, writeAppTheme, applyThemeToDocument } from '../lib/appTheme';
-import { applyThemeAssetCssVars } from '../lib/assetUrl';
+import { applyThemeAssetCssVars, assetUrl } from '../lib/assetUrl';
 
 const AppContext = createContext(null);
 
 const SFX_KEY = 'mazeman_sfx_enabled';
+const MUSIC_KEY = 'mazeman_music_enabled';
+const MUSIC_SRC = 'Assets/sounds/heavenly-loop.ogg';
+const MUSIC_VOLUME = 0.35;
 
 function readSfxEnabled() {
   try {
     return localStorage.getItem(SFX_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+
+function readMusicEnabled() {
+  try {
+    return localStorage.getItem(MUSIC_KEY) !== '0';
   } catch {
     return true;
   }
@@ -65,6 +76,9 @@ export function AppProvider({ children }) {
   const audioCtxRef = useRef(null);
   const sfxEnabledRef = useRef(readSfxEnabled());
   const [sfxEnabled, setSfxEnabledState] = useState(() => readSfxEnabled());
+  const musicRef = useRef(null);
+  const musicEnabledRef = useRef(readMusicEnabled());
+  const [musicEnabled, setMusicEnabledState] = useState(() => readMusicEnabled());
   const [appTheme, setAppThemeState] = useState(readAppTheme);
 
   // Load profile on mount
@@ -145,6 +159,53 @@ export function AppProvider({ children }) {
     try {
       localStorage.setItem(SFX_KEY, on ? '1' : '0');
     } catch (e) {}
+  }, []);
+
+  // ----- Background soundtrack (CC0 loop, kept out of the SW precache shell) -----
+  const startMusic = useCallback(() => {
+    if (!musicEnabledRef.current) return;
+    try {
+      if (!musicRef.current) {
+        const audio = new Audio(assetUrl(MUSIC_SRC));
+        audio.loop = true;
+        audio.volume = MUSIC_VOLUME;
+        audio.preload = 'auto';
+        musicRef.current = audio;
+      }
+      musicRef.current.play().catch(() => {});
+    } catch (e) {}
+  }, []);
+
+  const setMusicEnabled = useCallback((on) => {
+    musicEnabledRef.current = on;
+    setMusicEnabledState(on);
+    try {
+      localStorage.setItem(MUSIC_KEY, on ? '1' : '0');
+    } catch (e) {}
+    if (on) startMusic();
+    else if (musicRef.current) musicRef.current.pause();
+  }, [startMusic]);
+
+  // Browsers block audio before a user gesture — arm a one-time listener that
+  // starts the soundtrack on the first tap/click anywhere.
+  useEffect(() => {
+    const onFirstGesture = () => {
+      startMusic();
+      window.removeEventListener('pointerdown', onFirstGesture);
+    };
+    window.addEventListener('pointerdown', onFirstGesture);
+    return () => window.removeEventListener('pointerdown', onFirstGesture);
+  }, [startMusic]);
+
+  // Soundtrack belongs to the foreground app — silence it when tabbed away.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (!musicRef.current) return;
+      if (document.hidden) musicRef.current.pause();
+      else if (musicEnabledRef.current) musicRef.current.play().catch(() => {});
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
   const playSfx = useCallback((name) => {
@@ -419,6 +480,7 @@ export function AppProvider({ children }) {
       character, setCharacter,
       owned, equipped, buyItem, equipItem,
       sfxEnabled, setSfxEnabled,
+      musicEnabled, setMusicEnabled,
       appTheme, setAppTheme, toggleAppTheme,
       assessmentRequested, openAssessment, consumeAssessmentRequest,
       mazeStartRoom, setMazeStartRoom, openWorkout, leaveWorkout,

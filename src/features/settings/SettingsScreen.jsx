@@ -101,6 +101,8 @@ export default function SettingsScreen({ onClose }) {
     playSfx,
     sfxEnabled,
     setSfxEnabled,
+    musicEnabled,
+    setMusicEnabled,
   } = useApp();
   const isAr = currentLang === 'ar';
   const [subModal, setSubModal] = useState(null);
@@ -153,6 +155,14 @@ export default function SettingsScreen({ onClose }) {
                 const next = !sfxEnabled;
                 setSfxEnabled(next);
                 if (next) playSfx('click');
+              }}
+            />
+            <SettingsRow
+              label={isAr ? 'الموسيقى' : 'Music'}
+              value={musicEnabled ? (isAr ? 'تشغيل' : 'On') : (isAr ? 'إيقاف' : 'Off')}
+              onClick={() => {
+                playSfx('click');
+                setMusicEnabled(!musicEnabled);
               }}
             />
           </SettingsSection>
