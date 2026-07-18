@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
@@ -7,6 +7,18 @@ import { summarizeMot } from './motMetrics';
 import { createSpeedStaircase } from './speedStaircase';
 import { saveMotAssess, motAssessReport, speedIndex } from './motAssessStore';
 import { clamp, lerp } from '../../../../../../lib/math';
+import { assetUrl } from '../../../../../../lib/assetUrl';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+import { planetIconUrl } from '../../../../../../lib/planetIcons';
+
+const Mot3DProto = lazyWithRetry(() => import('./Mot3DProto'), 'mot-3d');
+
+const MOT_ARENA_URL = assetUrl('Assets/attention/mot-arena-plate.svg');
+const motArenaImg = typeof Image !== 'undefined' ? new Image() : null;
+if (motArenaImg) {
+  motArenaImg.decoding = 'async';
+  motArenaImg.src = MOT_ARENA_URL;
+}
 
 /*
  * Multiple Object Tracking (MOT) — dynamic attention.
@@ -79,19 +91,21 @@ function drawGlyph(ctx, d, ch, color) {
 const hexToRgb = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
 const mixCh = (c, t, tgt) => Math.round(c + (tgt - c) * t);
 /**
- * Solid-sphere fill: a single radial gradient with a fixed top-left highlight and
- * a shaded lower edge. Same recipe for every dot, so objects stay IDENTICAL (no
- * distinguishing feature to track by) while reading as 3-D balls — the depth/
- * figure-ground cue aids object individuation (cf. 3D-MOT, Faubert) and looks
- * crisper than a flat disc.
+ * Soft glass-bubble fill: fixed top-left specular + rim shade. Same recipe for
+ * every dot so objects stay IDENTICAL while reading as polished 3-D orbs.
  */
 function sphereFill(ctx, d, base) {
   const [r, g, b] = hexToRgb(base);
-  const hi = `rgb(${mixCh(r, 0.55, 255)},${mixCh(g, 0.55, 255)},${mixCh(b, 0.55, 255)})`;
-  const lo = `rgb(${mixCh(r, 0.26, 0)},${mixCh(g, 0.26, 0)},${mixCh(b, 0.26, 0)})`;
-  const grad = ctx.createRadialGradient(d.x - d.r * 0.34, d.y - d.r * 0.34, d.r * 0.1, d.x, d.y, d.r * 1.08);
+  const hi = `rgb(${mixCh(r, 0.72, 255)},${mixCh(g, 0.72, 255)},${mixCh(b, 0.72, 255)})`;
+  const mid = `rgb(${mixCh(r, 0.12, 255)},${mixCh(g, 0.12, 255)},${mixCh(b, 0.12, 255)})`;
+  const lo = `rgb(${mixCh(r, 0.38, 0)},${mixCh(g, 0.38, 0)},${mixCh(b, 0.38, 0)})`;
+  const grad = ctx.createRadialGradient(
+    d.x - d.r * 0.38, d.y - d.r * 0.42, d.r * 0.06,
+    d.x + d.r * 0.1, d.y + d.r * 0.15, d.r * 1.05,
+  );
   grad.addColorStop(0, hi);
-  grad.addColorStop(0.5, base);
+  grad.addColorStop(0.35, mid);
+  grad.addColorStop(0.78, base);
   grad.addColorStop(1, lo);
   return grad;
 }
@@ -151,16 +165,41 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
     const { w, h } = sizeRef.current;
     ctx.clearRect(0, 0, w, h);
     const ph = phaseRef.current;
-    // Faint border around the bounded tracking arena (where the dots live).
     const f = fieldRef.current;
+    const now = performance.now();
+
+    // Soft parchment surround
+    {
+      const wash = ctx.createRadialGradient(w * 0.5, h * 0.42, Math.min(w, h) * 0.15, w * 0.5, h * 0.5, Math.max(w, h) * 0.72);
+      wash.addColorStop(0, '#f3ebe0');
+      wash.addColorStop(0.55, '#ebe1d2');
+      wash.addColorStop(1, '#ddd2c0');
+      ctx.fillStyle = wash;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    // Premium arena plate asset (or flat fallback)
     if (f.w > 0) {
       ctx.save();
-      ctx.strokeStyle = 'rgba(120,90,40,0.16)';
-      ctx.lineWidth = 1.5;
-      if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(f.x0, f.y0, f.w, f.h, 14); ctx.stroke(); }
-      else ctx.strokeRect(f.x0, f.y0, f.w, f.h);
+      if (motArenaImg?.complete && motArenaImg.naturalWidth > 0) {
+        ctx.drawImage(motArenaImg, f.x0 - 4, f.y0 - 4, f.w + 8, f.h + 8);
+      } else {
+        ctx.fillStyle = '#fffdf9';
+        ctx.strokeStyle = 'rgba(232,172,78,0.55)';
+        ctx.lineWidth = 2.25;
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(f.x0, f.y0, f.w, f.h, 16);
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          ctx.fillRect(f.x0, f.y0, f.w, f.h);
+          ctx.strokeRect(f.x0, f.y0, f.w, f.h);
+        }
+      }
       ctx.restore();
     }
+
     for (const d of dotsRef.current) {
       // During tracking all dots are identical blue (identity must be held by
       // attention, not read off a feature). Cue + result use CVD-safe hues
@@ -169,12 +208,43 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
       let fill = '#4f9fe0';
       if (ph === 'cue' && d.target) fill = '#E69F00';                       // amber cue
       if (ph === 'result') fill = d.target ? '#009E73' : (d.selected ? '#D55E00' : '#33415a');
+
+      // soft contact shadow (same for every sphere)
+      ctx.beginPath();
+      ctx.ellipse(d.x, d.y + d.r * 0.72, d.r * 0.72, d.r * 0.22, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(40, 28, 14, 0.14)';
+      ctx.fill();
+
       ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
       ctx.fillStyle = sphereFill(ctx, d, fill); ctx.fill();
-      ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.stroke(); // faint contact edge
+      // glass rim
+      ctx.lineWidth = Math.max(1.25, d.r * 0.08);
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(0,0,0,0.10)';
+      ctx.stroke();
+
       const ring = Math.max(4, d.r * 0.34);
-      if (ph === 'cue' && d.target) { ctx.lineWidth = ring; ctx.strokeStyle = '#fff'; ctx.stroke(); }
-      if (ph === 'respond' && d.selected) { ctx.lineWidth = ring; ctx.strokeStyle = '#1a1208'; ctx.stroke(); }
+      if (ph === 'cue' && d.target) {
+        // pulsing white ring — BrainHQ-style “remember these”
+        const pulse = 0.55 + 0.45 * Math.sin(now / 180);
+        ctx.lineWidth = ring * pulse;
+        ctx.strokeStyle = `rgba(255,255,255,${0.55 + 0.4 * pulse})`;
+        ctx.stroke();
+      }
+      if (ph === 'respond' && d.selected) {
+        ctx.lineWidth = ring;
+        ctx.strokeStyle = '#1a1208';
+        ctx.stroke();
+        // soft amber halo for selected pick
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.r + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(232,172,78,0.55)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
       if (ph === 'result') {
         if (d.target && d.selected) drawGlyph(ctx, d, '✓', '#fff');
         else if (d.target) { ctx.setLineDash([5, 4]); ctx.lineWidth = Math.max(3, d.r * 0.28); ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.setLineDash([]); }
@@ -577,6 +647,7 @@ function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, p
 export default function MotGame({ onBack, workoutMode = false, assessmentOnly = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
+  const [view, setView] = useState('shell');
   // The speed-threshold ASSESSMENT lives in the Assessment flow, not as a play
   // mode. When launched from there, render only the assessment engine.
   if (assessmentOnly) {
@@ -595,6 +666,13 @@ export default function MotGame({ onBack, workoutMode = false, assessmentOnly = 
       />
     );
   }
+  if (view === 'play3d') {
+    return (
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <Mot3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
+      </Suspense>
+    );
+  }
   return (
     <ModeShell
       storageKey="mm_attn_mot"
@@ -611,6 +689,13 @@ export default function MotGame({ onBack, workoutMode = false, assessmentOnly = 
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
+      extraItems={[{
+        k: 'proto3d',
+        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
+        hint: isAr ? 'نموذج · تتبّع كرات في ساحة كونية' : 'Prototype · track spheres in a cosmos arena',
+        on: () => setView('play3d'),
+        icoImg: planetIconUrl('flexibility'),
+      }]}
       renderEngine={(p) => (
         <MotEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
@@ -620,9 +705,9 @@ export default function MotGame({ onBack, workoutMode = false, assessmentOnly = 
 
 const styles = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
-  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: '#fffdf8', overflow: 'hidden', border: '1.5px solid #e3d6c4', boxShadow: 'inset 0 2px 10px rgba(120,90,40,0.06)', touchAction: 'none' },
+  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 20, background: 'linear-gradient(165deg, #f4ebe0 0%, #e8dccb 100%)', overflow: 'hidden', border: '1.5px solid rgba(200,170,120,0.45)', boxShadow: '0 10px 28px rgba(60,40,20,0.10), inset 0 1px 0 rgba(255,255,255,0.7)', touchAction: 'none' },
   canvas: { display: 'block', width: '100%', height: '100%' },
-  instr: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, minHeight: 38, margin: '0 12px', padding: '7px 16px', background: '#fffdf8', border: '1.5px solid #e3d6c4', color: '#3a2c12', borderRadius: 12, fontWeight: 700, fontSize: 14, textAlign: 'center' },
+  instr: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, minHeight: 40, margin: '0 12px', padding: '8px 16px', background: 'linear-gradient(180deg, #fffdf9 0%, #f7efe4 100%)', border: '1.5px solid rgba(232,172,78,0.35)', color: '#3a2c12', borderRadius: 14, fontWeight: 700, fontSize: 14, textAlign: 'center', boxShadow: '0 4px 12px rgba(60,40,20,0.06)' },
   dot: { width: 11, height: 11, borderRadius: '50%', display: 'inline-block', flexShrink: 0 },
   overWrap: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, textAlign: 'center' },
   overTitle: { margin: 0, fontWeight: 900, fontSize: 24 },

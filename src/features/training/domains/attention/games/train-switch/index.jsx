@@ -1,8 +1,20 @@
-import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import { startCanvasLoop } from '../../../../shared/canvasLoop';
+import { assetUrl } from '../../../../../../lib/assetUrl';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+import { planetIconUrl } from '../../../../../../lib/planetIcons';
+
+const CarPark3DProto = lazyWithRetry(() => import('./CarPark3DProto'), 'carpark-3d');
+
+const LOT_URL = assetUrl('Assets/attention/carpark-lot.svg');
+const GARAGE_URL = assetUrl('Assets/attention/carpark-garage.svg');
+const lotImg = typeof Image !== 'undefined' ? new Image() : null;
+const garageImg = typeof Image !== 'undefined' ? new Image() : null;
+if (lotImg) { lotImg.decoding = 'async'; lotImg.src = LOT_URL; }
+if (garageImg) { garageImg.decoding = 'async'; garageImg.src = GARAGE_URL; }
 
 /*
  * Car Park — Divided Attention & planning (Train-of-Thought style, re-themed).
@@ -186,7 +198,11 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     const x = clientX - rect.left, y = clientY - rect.top;
     let best = null, bestD = 1e9;
     for (const j of g.forks) { const d = Math.hypot(x - j.x, y - j.y); if (d < bestD) { bestD = d; best = j; } }
-    if (best && bestD < g.cell * 0.6) { best.sw = best.sw ? 0 : 1; playSfx('click'); }
+    if (best && bestD < g.cell * 0.6) {
+      best.sw = best.sw ? 0 : 1;
+      best.pulse = 0.35; // soft junction feedback
+      playSfx('click');
+    }
   }, [playSfx]);
 
   useEffect(() => {
@@ -203,6 +219,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
       // capacity proxy vs the ~4-object limit) and routing accuracy under that load.
       peakConc: 0, concSum: 0, concActiveFrames: 0,
       banner: null, bannerT: 0, queue: [],
+      fx: [], // short-lived park/miss flashes
       W: 0, H: 0, dpr: Math.min(window.devicePixelRatio || 1, 2),
     };
 
@@ -289,13 +306,18 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     };
 
     const drawEdge = (a, b, active) => {
-      // Road: grey asphalt with a dashed centre lane line (inactive = faint).
+      // Road: warm asphalt with dashed centre line (inactive = faint).
       ctx.lineCap = 'round';
-      ctx.strokeStyle = active ? '#5b5650' : 'rgba(0,0,0,0.10)';
+      if (active) {
+        ctx.strokeStyle = 'rgba(20, 14, 8, 0.28)';
+        ctx.lineWidth = Math.max(11, g.cell * 0.42);
+        ctx.beginPath(); ctx.moveTo(a.x, a.y + 2); ctx.lineTo(b.x, b.y + 2); ctx.stroke();
+      }
+      ctx.strokeStyle = active ? '#6a6560' : 'rgba(255,255,255,0.10)';
       ctx.lineWidth = active ? Math.max(9, g.cell * 0.36) : 5;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
       if (active) {
-        ctx.strokeStyle = 'rgba(255,236,150,0.92)';
+        ctx.strokeStyle = 'rgba(255,236,150,0.95)';
         ctx.lineWidth = Math.max(1.6, g.cell * 0.04);
         ctx.setLineDash([g.cell * 0.16, g.cell * 0.16]);
         ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
@@ -326,8 +348,13 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
         if (t.t >= 1) {
           const at = t.to;
           if (at.kind === 'station' || at.children.length === 0) {
-            if (at.colorHex === t.target) { g.routed += 1; awardPoints(1); playSfx('collect'); }
-            else { g.wrong += 1; g.lives -= 1; playSfx('error'); }
+            if (at.colorHex === t.target) {
+              g.routed += 1; awardPoints(1); playSfx('collect');
+              g.fx.push({ x: at.x, y: at.y, t: 0.45, ok: true, color: t.target });
+            } else {
+              g.wrong += 1; g.lives -= 1; playSfx('error');
+              g.fx.push({ x: at.x, y: at.y, t: 0.45, ok: false, color: t.target });
+            }
             if (g.isWave) g.waveResolved += 1;
             if (mode === 'levels' && g.routed >= cfg.target) { finish(); return false; }
             if ((mode === 'levels' || mode === 'free') && g.lives <= 0) { finish(); return false; }
@@ -357,26 +384,50 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
 
       // ── draw ──
       ctx.clearRect(0, 0, g.W, g.H);
+      // Premium lot asset (warm asphalt)
+      if (lotImg?.complete && lotImg.naturalWidth > 0) {
+        ctx.drawImage(lotImg, 0, 0, g.W, g.H);
+      } else {
+        const plate = ctx.createLinearGradient(0, 0, 0, g.H);
+        plate.addColorStop(0, '#3a342c');
+        plate.addColorStop(1, '#221c16');
+        ctx.fillStyle = plate;
+        ctx.fillRect(0, 0, g.W, g.H);
+      }
       // roads: inactive first, then active on top
       for (const n of g.all) n.children.forEach((c, i) => { const active = n.children.length < 2 || i === n.sw; if (!active) drawEdge(n, c, false); });
       for (const n of g.all) n.children.forEach((c, i) => { const active = n.children.length < 2 || i === n.sw; if (active) drawEdge(n, c, true); });
 
-      // parking bays (colour-matched spots, white "P")
+      // parking bays (colour-matched spots, white "P" + soft plate)
       const sw = g.cell * 0.66;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       for (const s of g.stations) {
+        ctx.fillStyle = 'rgba(20,14,8,0.35)';
+        ctx.beginPath(); ctx.roundRect(s.x - sw / 2 - 2, s.y - sw / 2 + 2, sw + 4, sw + 4, 8); ctx.fill();
         ctx.fillStyle = s.colorHex;
-        ctx.beginPath(); ctx.roundRect(s.x - sw / 2, s.y - sw / 2, sw, sw, 6); ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.92)'; ctx.lineWidth = Math.max(2, sw * 0.09);
-        ctx.beginPath(); ctx.roundRect(s.x - sw / 2, s.y - sw / 2, sw, sw, 6); ctx.stroke();
+        ctx.beginPath(); ctx.roundRect(s.x - sw / 2, s.y - sw / 2, sw, sw, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = Math.max(2, sw * 0.09);
+        ctx.beginPath(); ctx.roundRect(s.x - sw / 2, s.y - sw / 2, sw, sw, 7); ctx.stroke();
         ctx.fillStyle = '#fff';
         ctx.font = `900 ${Math.round(sw * 0.58)}px system-ui, sans-serif`;
         ctx.fillText('P', s.x, s.y + sw * 0.03);
       }
 
-      // garage / exit + a small QUEUE of the next cars' colours (planning aid)
-      ctx.fillStyle = '#3a3328';
-      ctx.beginPath(); ctx.roundRect(g.root.x - g.cell * 0.40, g.root.y - g.cell * 0.30, g.cell * 0.80, g.cell * 0.60, 6); ctx.fill();
+      // garage portal asset + colour queue
+      {
+        const gw = g.cell * 0.95;
+        const gh = g.cell * 0.72;
+        const gx = g.root.x - gw / 2;
+        const gy = g.root.y - gh / 2;
+        if (garageImg?.complete && garageImg.naturalWidth > 0) {
+          ctx.drawImage(garageImg, gx, gy, gw, gh);
+        } else {
+          ctx.fillStyle = '#1a1510';
+          ctx.strokeStyle = ATT;
+          ctx.lineWidth = Math.max(2.5, g.cell * 0.055);
+          ctx.beginPath(); ctx.roundRect(gx, gy, gw, gh, 9); ctx.fill(); ctx.stroke();
+        }
+      }
       const qn = Math.min(3, g.queue.length);
       const qd = g.cell * 0.20, qgap = g.cell * 0.06;
       const qTotal = qn * qd + (qn - 1) * qgap;
@@ -388,15 +439,21 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
         ctx.globalAlpha = 1;
       }
 
-      // junction controls (tappable circle with a direction arrow toward the
-      // active road) — bigger for a reliable touch target.
-      const kr = g.cell * 0.26;
+      // junction controls — soft glow + pulse on tap
+      const kr = g.cell * 0.28;
       for (const j of g.forks) {
+        if (j.pulse > 0) j.pulse = Math.max(0, j.pulse - dt);
         const c = j.children[j.sw];
         const ang = Math.atan2(c.y - j.y, c.x - j.x);
-        ctx.fillStyle = '#fffdf8'; ctx.strokeStyle = ATT; ctx.lineWidth = 4;
+        const pulse = j.pulse || 0;
+        ctx.beginPath();
+        ctx.arc(j.x, j.y, kr + 5 + pulse * 10, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(232,172,78,${0.12 + pulse * 0.35})`;
+        ctx.fill();
+        ctx.fillStyle = '#fffdf8';
+        ctx.strokeStyle = ATT;
+        ctx.lineWidth = 4;
         ctx.beginPath(); ctx.arc(j.x, j.y, kr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        // arrow toward the currently-selected road
         const ax = j.x + Math.cos(ang) * kr * 0.55, ay = j.y + Math.sin(ang) * kr * 0.55;
         ctx.fillStyle = ATT;
         ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang);
@@ -404,27 +461,48 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
         ctx.restore();
       }
 
-      // cars (body in the target colour, windshield + wheels + headlights;
-      // front points along the direction of travel)
+      // cars with soft ground shadow
       const cw = g.cell * 0.34, cl = g.cell * 0.56;
       for (const t of g.trains) {
         const x = t.from.x + (t.to.x - t.from.x) * t.t, y = t.from.y + (t.to.y - t.from.y) * t.t;
         const ang = Math.atan2(t.to.y - t.from.y, t.to.x - t.from.x);
         ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
-        ctx.fillStyle = '#1a1a1a'; // wheels
+        ctx.fillStyle = 'rgba(20,14,8,0.28)';
+        ctx.beginPath(); ctx.ellipse(0, cw * 0.55, cl * 0.42, cw * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#1a1a1a';
         ctx.beginPath(); ctx.roundRect(-cl * 0.30, -cw * 0.64, cl * 0.24, cw * 0.20, 2); ctx.fill();
         ctx.beginPath(); ctx.roundRect(-cl * 0.30, cw * 0.44, cl * 0.24, cw * 0.20, 2); ctx.fill();
         ctx.beginPath(); ctx.roundRect(cl * 0.12, -cw * 0.64, cl * 0.24, cw * 0.20, 2); ctx.fill();
         ctx.beginPath(); ctx.roundRect(cl * 0.12, cw * 0.44, cl * 0.24, cw * 0.20, 2); ctx.fill();
-        ctx.fillStyle = t.target; // body
+        ctx.fillStyle = t.target;
         ctx.beginPath(); ctx.roundRect(-cl / 2, -cw / 2, cl, cw, 6); ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.5; ctx.stroke();
-        ctx.fillStyle = 'rgba(212,236,255,0.92)'; // windshield (toward front)
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = 'rgba(212,236,255,0.92)';
         ctx.beginPath(); ctx.roundRect(cl * 0.05, -cw * 0.32, cl * 0.26, cw * 0.64, 2); ctx.fill();
-        ctx.fillStyle = 'rgba(255,246,205,0.95)'; // headlights
+        ctx.fillStyle = 'rgba(255,246,205,0.95)';
         ctx.beginPath(); ctx.arc(cl * 0.44, -cw * 0.28, cw * 0.08, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.arc(cl * 0.44, cw * 0.28, cw * 0.08, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
+      }
+
+      // park / miss flashes
+      if (g.fx.length) {
+        const next = [];
+        for (const fx of g.fx) {
+          fx.t -= dt;
+          if (fx.t <= 0) continue;
+          const u = fx.t / 0.45;
+          ctx.save();
+          ctx.globalAlpha = u;
+          ctx.strokeStyle = fx.ok ? '#009E73' : '#D55E00';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(fx.x, fx.y, g.cell * 0.45 * (1.15 - u * 0.4), 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+          next.push(fx);
+        }
+        g.fx = next;
       }
 
       // wave banner (brief, on wave change)
@@ -508,6 +586,14 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
 export default function TrainSwitchGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
+  const [view, setView] = useState('shell');
+  if (view === 'play3d') {
+    return (
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <CarPark3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
+      </Suspense>
+    );
+  }
   return (
     <ModeShell
       storageKey="mm_att_trainswitch"
@@ -524,6 +610,13 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
+      extraItems={[{
+        k: 'proto3d',
+        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
+        hint: isAr ? 'نموذج · بدّل المسار وأركن السفن الفضائية' : 'Prototype · flip the route & dock spaceships',
+        on: () => setView('play3d'),
+        icoImg: planetIconUrl('flexibility'),
+      }]}
       renderEngine={(p) => (
         <TrainSwitchEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
@@ -534,8 +627,8 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
 const styles = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
   play: { position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 6, boxSizing: 'border-box' },
-  board: { position: 'relative', flex: '0 0 auto', borderRadius: 20, background: 'linear-gradient(160deg, #fffdf8 0%, #f4ecdf 100%)', boxShadow: '0 12px 34px rgba(45, 40, 30, 0.16), inset 0 0 0 1px rgba(58, 51, 40, 0.08)', overflow: 'hidden' },
-  msg: { position: 'absolute', top: 8, left: 0, right: 0, zIndex: 2, textAlign: 'center', fontWeight: 700, fontSize: 13, color: '#7a5a1e', pointerEvents: 'none', padding: '0 16px' },
+  board: { position: 'relative', flex: '0 0 auto', borderRadius: 20, background: 'linear-gradient(160deg, #3a342c 0%, #231e18 100%)', boxShadow: '0 14px 36px rgba(45, 32, 18, 0.28), inset 0 0 0 1.5px rgba(232, 172, 78, 0.32)', overflow: 'hidden' },
+  msg: { position: 'absolute', top: 8, left: 0, right: 0, zIndex: 2, textAlign: 'center', fontWeight: 700, fontSize: 13, color: '#f0e2c0', textShadow: '0 1px 3px rgba(0,0,0,0.45)', pointerEvents: 'none', padding: '0 16px' },
   overWrap: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(45,45,45,0.45)' },
   overCard: { background: '#fffdf8', borderRadius: 20, padding: '20px 22px', textAlign: 'center', boxShadow: '6px 6px 0 #1a1208', border: '2px solid #cdbfa6', width: 'min(92vw, 380px)', maxHeight: '88%', overflowY: 'auto' },
   overTitle: { fontWeight: 900, fontSize: 24, color: '#2d2d2d' },

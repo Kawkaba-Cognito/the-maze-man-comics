@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DomainIconArt } from '../../features/training/shared/DomainIcon';
 import CosmosCharacter from '../../features/character/CosmosCharacter';
-import AtmosphericBackground from '../shared/AtmosphericBackground';
+import UniverseStage from '../shared/UniverseStage';
 import { DOMAIN_COLOR, DOMAINS } from './trainingData';
 import { useApp } from '../../context/AppContext';
 import { useThemedChrome } from '../../hooks/useThemedChrome';
@@ -220,19 +220,25 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       style={{
         minHeight: '100%', ...chrome.shell,
         fontFamily: 'Outfit, system-ui, sans-serif', position: 'relative',
-        paddingBottom: 110, overflow: 'hidden',
+        paddingBottom: 110, overflowX: 'hidden', overflowY: 'visible',
       }}
     >
-      <AtmosphericBackground strength="hub" />
+      <UniverseStage accent="training" dark={chrome.dark} />
 
-      {/* Top bar */}
+      {/* Top bar — sticky so “Training” stays visible while the hub scrolls */}
       <div className="app-chrome-bar" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '64px 18px 10px', position: 'relative', zIndex: 5,
+        padding: 'max(14px, env(safe-area-inset-top)) 18px 12px',
+        position: 'sticky', top: 0, zIndex: 20,
+        background: chrome.dark
+          ? 'linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 65%, rgba(0,0,0,0) 100%)'
+          : 'linear-gradient(180deg, rgba(255,252,246,0.94) 0%, rgba(255,252,246,0.78) 65%, transparent 100%)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
       }}>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }} />
         <div style={{ ...chrome.title, maxWidth: 200, fontSize: isAr ? 24 : 22 }}>
-          {isAr ? 'الرئيسية' : 'Home'}
+          {isAr ? 'تدريب' : 'Training'}
         </div>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
           <button type="button" style={chrome.langBtn} onClick={toggleLang}>
@@ -348,9 +354,18 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             const isHovered = hovered === s.id;
             return (
               <g key={s.id} style={{ cursor: 'pointer' }}
+                role="button"
+                tabIndex={0}
+                aria-label={domainDoorLabel(s.id, isAr)}
                 onMouseEnter={() => setHovered(s.id)}
                 onMouseLeave={() => setHovered(null)}
-                onClick={() => onOpenDomain(s.id)}>
+                onClick={() => onOpenDomain(s.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onOpenDomain(s.id);
+                  }
+                }}>
                 <circle cx={s.x} cy={s.y} r={isHovered ? 58 : 48} fill={`url(#sh-${s.id})`}/>
                 <g transform={`translate(${s.x}, ${s.y})`}>
                   <g>

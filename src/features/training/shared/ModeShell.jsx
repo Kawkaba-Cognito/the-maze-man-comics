@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Infinity as InfinityIcon, Stairs, Sword } from '@phosphor-icons/react';
+import { Sword } from '@phosphor-icons/react';
 import { TrainingScreenShell, TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from './TrainingScreens';
 import { TrainingChallengeHandoff } from './TrainingChrome';
 import PassPlaySetup from './PassPlaySetup';
@@ -181,9 +181,10 @@ export default function ModeShell({
   if (phase === 'menu') {
     const hintTxt = (h) => (h ? (isAr ? h.ar : h.en) : null);
     const items = [
-      { k: 'free', ic: <InfinityIcon size="1.6rem" weight="duotone" />, lb: isAr ? 'البقاء' : 'Survival mode', hint: hintTxt(hints?.free), on: () => startMode('free') },
-      { k: 'levels', ic: <Stairs size="1.6rem" weight="duotone" />, lb: isAr ? 'المستويات' : 'Level mode', hint: hintTxt(hints?.levels), on: () => startMode('levels') },
-      { k: 'chal', ic: <Sword size="1.6rem" weight="duotone" />, lb: isAr ? 'مرّر والعب' : 'Pass n Play', hint: hintTxt(hints?.pass), on: () => startMode('pass') },
+      // Icons come from TrainingModeList defaults (Fluent Emoji 3D).
+      { k: 'free', lb: isAr ? 'البقاء' : 'Survival mode', hint: hintTxt(hints?.free), on: () => startMode('free') },
+      { k: 'levels', lb: isAr ? 'المستويات' : 'Level mode', hint: hintTxt(hints?.levels), on: () => startMode('levels') },
+      { k: 'chal', lb: isAr ? 'مرّر والعب' : 'Pass n Play', hint: hintTxt(hints?.pass), on: () => startMode('pass') },
       // Optional game-supplied entries (e.g. an assessment) appended after the
       // standard three. Each: { k, ic, lb, hint, on }.
       ...extraItems,

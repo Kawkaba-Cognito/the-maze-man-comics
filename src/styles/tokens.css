@@ -91,9 +91,10 @@
   /* ─── Cosmos (canonical dark-theme night sky — Home Universe palette) ───
      Use these for any dark-mode scene background so every tab reads as the
      same night. The blue glow is Kawkab's signature light. */
-  --color-cosmos-top: #201640;
-  --color-cosmos-mid: #0d0a1c;
-  --color-cosmos-deep: #05040c;
+  /* Match Home ZenUniverse clearColor — pure black void */
+  --color-cosmos-top: #000000;
+  --color-cosmos-mid: #000000;
+  --color-cosmos-deep: #000000;
   --glow-cosmos-blue: rgba(120, 180, 255, 0.1);
 
   /* ─── Misc state ─── */

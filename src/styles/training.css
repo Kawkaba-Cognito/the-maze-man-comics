@@ -581,35 +581,56 @@
     background: linear-gradient(168deg, #ffffff 0%, #fde9e7 100%);
 }
 .ct-fq-attn-mode-ic {
-    width: 3.1rem;
-    height: 3.1rem;
-    min-width: 3.1rem;
+    width: 3.55rem;
+    height: 3.55rem;
+    min-width: 3.55rem;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.6rem;
     line-height: 1;
     flex-shrink: 0;
-    border-radius: 16px;
-    background: linear-gradient(165deg, #8a8580 0%, #6c6864 100%);
-    border: 2px solid #1a1208;
-    box-shadow: 2px 2px 0 #1a1208;
+    border-radius: 18px;
+    /* Quiet glass plate so Fluent 3D mode icons read as premium art, not tiny emoji on a loud badge */
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
+    border: 1px solid rgba(232, 172, 78, 0.28);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
     color: #fff;
 }
 .ct-fq-attn-mode--free .ct-fq-attn-mode-ic {
-    background: linear-gradient(165deg, #62b277 0%, #3c8a54 100%);
+    background: linear-gradient(165deg, rgba(98, 178, 119, 0.28) 0%, rgba(60, 138, 84, 0.14) 100%);
+    border-color: rgba(98, 178, 119, 0.45);
 }
 .ct-fq-attn-mode--levels .ct-fq-attn-mode-ic {
-    background: linear-gradient(165deg, #ecbb5e 0%, #cf9433 100%);
+    background: linear-gradient(165deg, rgba(236, 187, 94, 0.28) 0%, rgba(207, 148, 51, 0.14) 100%);
+    border-color: rgba(236, 187, 94, 0.5);
 }
 .ct-fq-attn-mode--chal .ct-fq-attn-mode-ic {
-    background: linear-gradient(165deg, #dd7f7a 0%, #bc544e 100%);
+    background: linear-gradient(165deg, rgba(221, 127, 122, 0.28) 0%, rgba(188, 84, 78, 0.14) 100%);
+    border-color: rgba(221, 127, 122, 0.45);
+}
+.ct-fq-attn-mode--proto3d {
+    background: linear-gradient(168deg, rgba(20, 16, 36, 0.92) 0%, rgba(10, 12, 22, 0.96) 100%);
+    border-color: rgba(232, 172, 78, 0.35);
+}
+.ct-fq-attn-mode--proto3d .ct-fq-attn-mode-lb {
+    color: #f0e2c0;
+}
+.ct-fq-attn-mode--proto3d .ct-fq-attn-mode-hint {
+    color: rgba(240, 226, 192, 0.65);
+}
+.ct-fq-attn-mode--proto3d .ct-fq-attn-mode-ic {
+    background: linear-gradient(165deg, rgba(120, 90, 200, 0.35) 0%, rgba(40, 30, 80, 0.4) 100%);
+    border-color: rgba(232, 172, 78, 0.45);
+}
+.ct-fq-attn-mode--proto3d .ct-fq-attn-mode-chev {
+    color: #e8ac4e;
 }
 .ct-fq-attn-mode-ic-img {
-    width: 62%;
-    height: 62%;
+    width: 86%;
+    height: 86%;
     object-fit: contain;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
 }
 .ct-fq-attn-mode-body {
     flex: 1;
@@ -2087,22 +2108,57 @@
     align-items: center;
     justify-content: center;
     min-height: 0;
-    padding: 4px;
+    padding: 10px;
     box-sizing: border-box;
+    /* Premium parchment playfield asset */
+    background-color: #ebe1d4;
+    background-image: var(--asset-attn-cancel-playfield);
+    background-size: cover;
+    background-position: center;
+    border-radius: calc(var(--fq-r, 14px) + 8px);
 }
 .ct-fq-grid-inner {
-    background: var(--fq-card);
-    border-radius: var(--fq-r);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    background: linear-gradient(180deg, #fffdfb 0%, #faf4ec 100%);
+    border-radius: calc(var(--fq-r) + 2px);
+    border: 1.5px solid rgba(200, 170, 120, 0.40);
+    box-shadow:
+      0 10px 28px rgba(60, 40, 20, 0.10),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px;
+    padding: 10px;
     box-sizing: border-box;
+    position: relative;
+}
+/* Soft corner accents (subtle, not HUD brackets) */
+.ct-fq-grid-inner::before,
+.ct-fq-grid-inner::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: rgba(232, 172, 78, 0.55);
+    border-style: solid;
+    pointer-events: none;
+    opacity: 0.7;
+}
+.ct-fq-grid-inner::before {
+    top: 6px;
+    left: 6px;
+    border-width: 2px 0 0 2px;
+    border-radius: 3px 0 0 0;
+}
+.ct-fq-grid-inner::after {
+    bottom: 6px;
+    right: 6px;
+    border-width: 0 2px 2px 0;
+    border-radius: 0 0 3px 0;
 }
 .ct-fq-sg {
     contain: layout style;
     display: grid;
+    gap: 5px;
 }
 .ct-fq-sg.shake {
     animation: ct-fq-shake 0.32s ease;
@@ -2117,16 +2173,15 @@
     align-items: center;
     justify-content: center;
     aspect-ratio: 1;
-    border-radius: 5px;
-    border: 1.5px solid var(--fq-bdr);
-    background: var(--fq-sur);
+    border-radius: 10px;
+    border: 1.5px solid rgba(200, 170, 120, 0.35);
+    background: linear-gradient(165deg, #ffffff 0%, #f7f0e6 100%);
+    box-shadow: 0 2px 6px rgba(60, 40, 20, 0.06);
     cursor: pointer;
-    transition: transform 0.1s, background 0.12s;
+    transition: transform 0.12s ease, background 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
     padding: 0;
     position: relative;
     overflow: hidden;
-    /* manipulation removes the ~300ms double-tap-zoom delay so tap RT is clean;
-       transparent tap highlight avoids a flash that reads as feedback. */
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
@@ -2139,19 +2194,50 @@
     min-height: 0;
 }
 .ct-fq-sc:disabled { cursor: default; }
-.ct-fq-sc:active:not(:disabled) { transform: scale(0.88); }
-.ct-fq-sc.ok { background: #d4edda; border-color: #4caf50; }
-.ct-fq-sc.bad { background: #fde8e8; border-color: #f44336; }
+.ct-fq-sc:active:not(:disabled) {
+    transform: scale(0.92);
+    box-shadow: 0 1px 2px rgba(60, 40, 20, 0.08);
+}
+.ct-fq-sc.ok {
+    background: linear-gradient(165deg, #e8f7ee 0%, #d4edda 100%);
+    border-color: #5cb87a;
+    box-shadow: 0 0 0 2px rgba(92, 184, 122, 0.22);
+}
+.ct-fq-sc.bad {
+    background: linear-gradient(165deg, #fff0ec 0%, #fde0d8 100%);
+    border-color: #e07a5f;
+    box-shadow: 0 0 0 2px rgba(224, 122, 95, 0.20);
+    animation: ct-fq-bad-nudge 0.28s ease;
+}
+@keyframes ct-fq-bad-nudge {
+    0%, 100% { transform: translateX(0); }
+    30% { transform: translateX(-3px); }
+    60% { transform: translateX(3px); }
+}
 /* Feedback-free assessment: a neutral "marked" state — shows the tile was
    tapped (so the user keeps their place) without revealing correct vs wrong. */
-.ct-fq-sc.mark { opacity: 0.3; }
-.ct-fq-sc svg { width: 90%; height: 90%; pointer-events: none; }
-.ct-fq-ck { position: absolute; font-size: 0.75rem; pointer-events: none; animation: ct-fq-pop 0.35s ease; }
-.ct-fq-pi { position: absolute; font-size: 0.6rem; font-weight: 800; color: #f44336; pointer-events: none; animation: ct-fq-float 0.65s ease forwards; }
+.ct-fq-sc.mark { opacity: 0.35; filter: saturate(0.7); }
+.ct-fq-sc svg { width: 86%; height: 86%; pointer-events: none; filter: drop-shadow(0 1px 0 rgba(255,255,255,0.35)); }
+.ct-fq-ck {
+    position: absolute;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #2f7a4a;
+    pointer-events: none;
+    animation: ct-fq-pop 0.38s ease;
+}
+.ct-fq-pi {
+    position: absolute;
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: #c45a3a;
+    pointer-events: none;
+    animation: ct-fq-float 0.65s ease forwards;
+}
 @keyframes ct-fq-pop {
     0% { opacity: 0; transform: scale(0.4); }
-    50% { opacity: 1; transform: scale(1.05); }
-    100% { opacity: 0.35; transform: scale(1); }
+    55% { opacity: 1; transform: scale(1.12); }
+    100% { opacity: 0.9; transform: scale(1); }
 }
 @keyframes ct-fq-float {
     0% { opacity: 1; transform: translateY(0); }
@@ -2352,9 +2438,9 @@
         gap: 18px;
     }
     .cancellation-task-game .ct-fq-attn-mode-ic {
-        width: 3.2rem;
-        height: 3.2rem;
-        min-width: 3.2rem;
+        width: 3.8rem;
+        height: 3.8rem;
+        min-width: 3.8rem;
         font-size: 1.48rem;
     }
     .cancellation-task-game .ct-fq-attn-mode-lb {
@@ -2502,9 +2588,9 @@
         gap: 11px;
     }
     .cancellation-task-game .ct-fq-attn-mode-ic {
-        width: 2.55rem;
-        height: 2.55rem;
-        min-width: 2.55rem;
+        width: 3.4rem;
+        height: 3.4rem;
+        min-width: 3.4rem;
         font-size: 1.18rem;
     }
     .cancellation-task-game .ct-fq-attn-mode-lb {
@@ -6240,14 +6326,10 @@
     padding-top: max(14px, env(safe-area-inset-top));
 }
 
+/* Domain pick — Home-black void; domain accent lives in ::before glow only */
 .ct-domain-pick.ct-fq-training-shell--hub-light {
-    background: linear-gradient(
-        168deg,
-        var(--domain-base) 0%,
-        color-mix(in srgb, var(--domain-base) 55%, var(--color-training-palette-surface)) 38%,
-        var(--color-training-palette-surface) 100%
-    ) !important;
-    color: #2d2d2d;
+    background: #000 !important;
+    color: #f0e2c0;
 }
 
 .ct-domain-pick::before {
@@ -6259,12 +6341,12 @@
     background:
         radial-gradient(
             ellipse 95% 48% at 50% -4%,
-            color-mix(in srgb, var(--domain-mid) 42%, transparent) 0%,
+            color-mix(in srgb, var(--domain-mid) 28%, transparent) 0%,
             transparent 68%
         ),
         radial-gradient(
             ellipse 55% 38% at 100% 12%,
-            color-mix(in srgb, var(--domain-mid) 22%, transparent) 0%,
+            color-mix(in srgb, var(--domain-mid) 14%, transparent) 0%,
             transparent 62%
         ),
         radial-gradient(
@@ -6281,18 +6363,19 @@
 }
 
 .ct-domain-pick .ct-fq-hub-attn-big {
-    font-family: 'Fredoka One', 'Outfit', system-ui, sans-serif;
-    font-weight: 400;
-    color: var(--domain-deep);
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 800;
+    color: #f0e2c0;
     letter-spacing: -0.02em;
-    text-shadow: none;
+    text-shadow: 0 1px 0 rgba(255, 220, 120, 0.2), 0 0 18px rgba(232, 172, 78, 0.28);
     -webkit-text-stroke: 0;
 }
 
 .ct-domain-pick .ct-fq-training-screen--hub .ct-fq-hub-attn-sub {
-    color: var(--domain-deep);
-    border-color: color-mix(in srgb, var(--domain-mid) 55%, #1a1208);
-    background: color-mix(in srgb, var(--domain-base) 72%, #fff);
+    color: #e8d4a8;
+    border-color: rgba(232, 172, 78, 0.4);
+    background: rgba(14, 12, 24, 0.72);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 [dir='rtl'] .ct-domain-pick .ct-fq-hub-attn-big {
@@ -6337,7 +6420,7 @@
     font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
     font-size: clamp(0.88rem, 3.2vw, 0.98rem);
     font-weight: 500;
-    color: #4a4f4d;
+    color: #b9a878;
     line-height: 1.55;
     text-align: center;
     max-width: 36rem;
@@ -6393,7 +6476,7 @@
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--domain-deep);
+    color: #e8ac4e;
     white-space: nowrap;
 }
 
@@ -6426,37 +6509,25 @@
     max-height: none;
     gap: clamp(10px, 2.5vw, 14px);
     padding-inline: clamp(14px, 3vw, 18px);
-    border-color: color-mix(in srgb, var(--domain-deep) 28%, #1a1208);
-    box-shadow:
-        4px 5px 0 color-mix(in srgb, var(--domain-deep) 72%, #1a1208),
-        0 1px 0 rgba(255, 255, 255, 0.92) inset;
+    border: 1px solid rgba(232, 172, 78, 0.34);
+    color: #e8d4a8;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 .ct-domain-pick-card.ct-fq-attn-mode:hover {
-    box-shadow:
-        6px 7px 0 color-mix(in srgb, var(--domain-deep) 72%, #1a1208),
-        0 1px 0 rgba(255, 255, 255, 0.92) inset;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.42);
+    border-color: rgba(232, 172, 78, 0.5);
 }
 
-.ct-domain-pick-card--0 {
-    background: linear-gradient(
-        168deg,
-        rgba(255, 255, 255, 0.99) 0%,
-        color-mix(in srgb, var(--domain-mid) 10%, #fff) 100%
-    );
-}
-.ct-domain-pick-card--1 {
-    background: linear-gradient(
-        168deg,
-        rgba(255, 255, 255, 0.99) 0%,
-        color-mix(in srgb, var(--domain-mid) 16%, #fff) 100%
-    );
-}
+.ct-domain-pick-card--0,
+.ct-domain-pick-card--1,
 .ct-domain-pick-card--2 {
     background: linear-gradient(
-        168deg,
-        rgba(255, 255, 255, 0.99) 0%,
-        color-mix(in srgb, var(--domain-mid) 22%, #fff) 100%
+        165deg,
+        color-mix(in srgb, var(--domain-mid) 18%, rgba(14, 12, 24, 0.88)) 0%,
+        rgba(14, 12, 24, 0.78) 100%
     );
 }
 
@@ -6467,17 +6538,30 @@
     gap: 5px;
 }
 
+.ct-domain-pick-card .ct-fq-attn-mode-lb {
+    color: #f0e2c0 !important;
+    text-shadow: none;
+}
 .ct-domain-pick-card-hint {
     font-weight: 500 !important;
     line-height: 1.45 !important;
-    color: #525856 !important;
+    color: #b9a878 !important;
 }
 
 .ct-domain-pick-card-chev {
     position: relative;
     z-index: 1;
-    color: var(--domain-deep) !important;
-    opacity: 0.72;
+    color: #e8ac4e !important;
+    opacity: 0.85;
+}
+
+/* Domain-pick menubar — glass cosmos (overrides cream paper chrome) */
+.ct-domain-pick .ct-training-menubar--paper .ct-training-chrome-btn--paper,
+.ct-domain-pick .ct-training-chrome-btn--paper {
+    background: rgba(14, 12, 24, 0.78) !important;
+    border: 1px solid rgba(232, 172, 78, 0.38) !important;
+    color: #e8d4a8 !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
 }
 
 .ct-domain-pick-card .ct-domain-pick-banner {
@@ -6523,9 +6607,10 @@
 .ct-domain-pick-about-link {
     align-self: center;
     flex: 0 0 auto;
-    border-color: color-mix(in srgb, var(--domain-mid) 45%, #1a1208) !important;
-    color: var(--domain-deep) !important;
-    background: color-mix(in srgb, var(--domain-base) 65%, #fff) !important;
+    border-color: rgba(232, 172, 78, 0.4) !important;
+    color: #e8d4a8 !important;
+    background: rgba(14, 12, 24, 0.72) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
 }
 
 .ct-domain-pick-body > .ct-domain-pick-about-link {
@@ -6542,7 +6627,7 @@
  * the signature blue glow in the middle of the sky. ── */
 
 [data-home-theme='dark'] .ct-domain-pick.ct-fq-training-shell--hub-light {
-    background: transparent !important;
+    background: #000 !important;
     color: var(--color-stage-ink);
 }
 
@@ -6553,26 +6638,21 @@
 }
 
 [data-home-theme='dark'] .ct-domain-pick::before {
-    /* fixed → escapes the content column and paints the whole viewport */
+    /* fixed → full viewport; black void + whisper of domain / blue glow (Home black) */
     position: fixed;
     background:
         radial-gradient(
             ellipse 70% 40% at 50% -6%,
-            color-mix(in srgb, var(--domain-mid) 16%, transparent) 0%,
+            color-mix(in srgb, var(--domain-mid) 12%, transparent) 0%,
             transparent 62%
         ),
         radial-gradient(
             ellipse 60% 46% at 50% 44%,
-            var(--glow-cosmos-blue) 0%,
-            rgba(120, 180, 255, 0.03) 46%,
+            rgba(120, 180, 255, 0.06) 0%,
+            rgba(120, 180, 255, 0.02) 46%,
             transparent 72%
         ),
-        radial-gradient(
-            ellipse 120% 80% at 50% 12%,
-            var(--color-cosmos-top) 0%,
-            var(--color-cosmos-mid) 52%,
-            var(--color-cosmos-deep) 100%
-        );
+        #000;
 }
 
 [data-home-theme='dark'] .ct-domain-pick .ct-fq-hub-attn-big {

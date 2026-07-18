@@ -1,0 +1,108 @@
+/* Shared cosmos stage — match Home's pure-black void (ZenUniverse clearColor #000) */
+
+.uv-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Home language: extremely black space. Accents live in nebula blobs / glow only. */
+.uv-stage--dark,
+.uv-stage--training.uv-stage--dark,
+.uv-stage--learn.uv-stage--dark,
+.uv-stage--wellbeing.uv-stage--dark,
+.uv-stage--other.uv-stage--dark {
+  background: #000;
+}
+
+.uv-stage--light {
+  background: radial-gradient(ellipse 120% 80% at 50% 6%, #b5c0d4 0%, #e6dcd4 48%, #d0bcac 100%);
+}
+
+.uv-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(64px);
+  animation: uvBlobDrift ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes uvBlobDrift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(3%, -4%, 0) scale(1.06); }
+}
+
+.uv-celestial {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.uv-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  animation: uvTwinkle ease-in-out infinite;
+}
+
+@keyframes uvTwinkle {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 1; }
+}
+
+/* Soft blue center wash — whisper of Home's Kawkab / particle glow, not a purple sky */
+.uv-kawkab-glow {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 70%;
+  height: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(120, 180, 255, 0.07) 0%, rgba(120, 180, 255, 0.02) 42%, transparent 70%);
+}
+
+.uv-shoot {
+  position: absolute;
+  top: 15%;
+  left: -10%;
+  width: 130px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 100%);
+  transform-origin: left center;
+  opacity: 0;
+  animation: uvShoot 16s linear infinite;
+  animation-delay: 5s;
+}
+
+@keyframes uvShoot {
+  0%, 87% { opacity: 0; transform: translate3d(0, 0, 0) rotate(13deg); }
+  89% { opacity: 0.9; }
+  97% { opacity: 0; transform: translate3d(115vw, 32vh, 0) rotate(13deg); }
+  100% { opacity: 0; }
+}
+
+.uv-mist {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 28%;
+  pointer-events: none;
+}
+
+.uv-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uv-blob,
+  .uv-star,
+  .uv-shoot {
+    animation: none !important;
+  }
+}

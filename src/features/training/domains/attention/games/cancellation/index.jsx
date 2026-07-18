@@ -6,6 +6,7 @@ import React, {
   useRef,
   useLayoutEffect,
   useSyncExternalStore,
+  Suspense,
 } from 'react';
 import {
   getShapeScale,
@@ -15,6 +16,8 @@ import {
 import { createStaircase } from './staircase';
 import { useApp } from '../../../../../../context/AppContext';
 import { assetUrl } from '../../../../../../lib/assetUrl';
+import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+import { planetIconUrl } from '../../../../../../lib/planetIcons';
 import {
   SH,
   DM,
@@ -66,6 +69,8 @@ import { loadAssessProfile } from '../../../../assessment/assessmentProfile';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
 
+// Three.js cosmos prototype — kept out of the cancel-task chunk until opened.
+const Cancel3DProto = lazyWithRetry(() => import('./Cancel3DProto'), 'cancel-3d');
 
 /** Merge one challenge pass into running per-player aggregates (avg IES/time/etc., total errors). */
 function mergeChallengePlayerStats(prev, stats, errCount, nm) {
@@ -194,31 +199,18 @@ const ShapeSvg = React.memo(function ShapeSvg({ shape, color, size = 40 }) {
 });
 
 /** Light attention hub — mode rows (no circular maze). */
-function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
+function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, onProto3d, playSfx }) {
   const items = [
+    { k: 'free', lb: t.freeMode, hint: t.hubNodeFreeHint, on: onFree },
+    { k: 'levels', lb: t.levelMode, hint: t.hubNodeLevelsHint, on: onLevels },
+    { k: 'chal', lb: t.challengeMode, hint: t.hubNodeChallengeHint, on: onChallenge },
     {
-      k: 'free',
-      icoImg: assetUrl('Assets/icons-cc0/scan-reticle.png'),
-      lb: t.freeMode,
-      hint: t.hubNodeFreeHint,
-      on: onFree,
-      mod: 'ct-fq-attn-mode--free',
-    },
-    {
-      k: 'levels',
-      icoImg: assetUrl('Assets/icons-cc0/target-ring.png'),
-      lb: t.levelMode,
-      hint: t.hubNodeLevelsHint,
-      on: onLevels,
-      mod: 'ct-fq-attn-mode--levels',
-    },
-    {
-      k: 'chal',
-      icoImg: assetUrl('Assets/icons-cc0/duo-players.png'),
-      lb: t.challengeMode,
-      hint: t.hubNodeChallengeHint,
-      on: onChallenge,
-      mod: 'ct-fq-attn-mode--chal',
+      k: 'proto3d',
+      lb: t.mode3d,
+      hint: t.hubNode3dHint,
+      on: onProto3d,
+      icoImg: planetIconUrl('flexibility'),
+      mod: 'ct-fq-attn-mode--proto3d',
     },
   ];
   return <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />;
@@ -424,6 +416,8 @@ const UI = {
     hubNodeFreeHint: 'Endless · one life · ramps up',
     hubNodeLevelsHint: '100 levels per tier · unlock in order',
     hubNodeChallengeHint: 'Same board for all · pick a difficulty',
+    mode3d: '3D',
+    hubNode3dHint: 'Prototype · same task in a 3D arena',
     thresholdMode: 'Threshold test',
     hubNodeThresholdHint: 'Adaptive · finds your level',
     adaptIntroTitle: 'Adaptive threshold',
@@ -556,6 +550,8 @@ const UI = {
     hubNodeFreeHint: 'لا ينتهي · حياة واحدة · يزداد صعوبة',
     hubNodeLevelsHint: '١٠٠ مستوى لكل صعوبة · بالترتيب',
     hubNodeChallengeHint: 'نفس اللوحة للجميع · اختر الصعوبة',
+    mode3d: 'ثلاثي الأبعاد',
+    hubNode3dHint: 'نموذج · نفس المهمة في ساحة ثلاثية الأبعاد',
     thresholdMode: 'اختبار العتبة',
     hubNodeThresholdHint: 'تكيّفي · يحدّد مستواك',
     adaptIntroTitle: 'العتبة التكيّفية',
@@ -1741,12 +1737,26 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                 onFree={startFreeMode}
                 onLevels={() => setPhase('diff')}
                 onChallenge={() => setPhase('chal')}
+                onProto3d={() => setPhase('play3d')}
               />
               <HubScienceLink gameId="cancel-task" isAr={isAr} playSfx={playSfx} />
             </div>
           </div>
           {tutLayer}
         </>
+      )}
+
+      {phase === 'play3d' && (
+        <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0' }}>…</div>}>
+          <Cancel3DProto
+            isAr={isAr}
+            playSfx={playSfx}
+            onBack={() => {
+              clearPlayRoundState();
+              setPhase('hub');
+            }}
+          />
+        </Suspense>
       )}
 
       {phase === 'freeIntro' && (

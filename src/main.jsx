@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { applyAssetCssVars } from './lib/assetUrl';
 import './styles/tokens.css';
 import './styles/global.css';
+import './styles/universe-stage.css';
 import './styles/settings.css';
 import './styles/training.css';
 import './styles/puzzles.css';

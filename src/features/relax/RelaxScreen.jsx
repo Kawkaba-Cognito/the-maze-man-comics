@@ -11,6 +11,7 @@ import DailyHabits from './DailyHabits';
 import { planetTextureLayerStyle } from '../../lib/planetTexture';
 import { planetIconUrl } from '../../lib/planetIcons';
 import { OPEN_DAILY_KEY } from './HabitReminderBanner';
+import UniverseStage from '../../components/shared/UniverseStage';
 
 /*
  * Wellbeing — 8-Week MBSR Tracker (lives under the Stress & Calm category).
@@ -744,7 +745,7 @@ const FAV_GOLD = '#d9a520';
 
 function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
   const { appTheme } = useApp();
-  const dark = appTheme === 'dark';
+  const dark = appTheme !== 'light';
   const [openCat, setOpenCat] = useState(null); // category id, or 'favorites'
   const [group, setGroup] = useState('program'); // 'program' | 'quick'
   const [favs, setFavs] = useState(() => rxLoad(FAV_KEY, []));
@@ -829,6 +830,7 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
     return (
       <div className="rx-root" dir={isAr ? 'rtl' : 'ltr'}>
         <style>{MENU_CSS}</style>
+        <UniverseStage accent="wellbeing" dark={dark} />
         <div className="rx-app">
           {detailHeader('⭐', FAV_GOLD, isAr ? 'المفضّلة' : 'Favorites', favItems.length ? (isAr ? 'اضغط مطوّلاً لإعادة الترتيب.' : 'Press and hold to reorder.') : (isAr ? 'ممارساتك المفضّلة.' : 'Your go-to practices.'), () => setOpenCat(null))}
           <div className="content">
@@ -853,6 +855,7 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
     return (
       <div className="rx-root" dir={isAr ? 'rtl' : 'ltr'}>
         <style>{MENU_CSS}</style>
+        <UniverseStage accent="wellbeing" dark={dark} />
         <div className="rx-app">
           {detailHeader(cat.icon, cat.color, isAr ? cat.titleAr : cat.title, isAr ? cat.tagAr : cat.tag, () => setOpenCat(null))}
           <div className="content">
@@ -893,94 +896,10 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
     <div
       className="rx-root"
       dir={isAr ? 'rtl' : 'ltr'}
-      style={{
-        overflow: 'hidden',
-        background: dark
-          // Dark theme's canonical palette is Home's Universe cosmos
-          // (#201640 → #0a0716 → #05040c) — Wellbeing shares it exactly so
-          // the two night skies read as one world. (Light mode keeps the
-          // dawn palette sampled from Training's photo.)
-          ? 'radial-gradient(ellipse 120% 80% at 50% 12%, #201640 0%, #0d0a1c 52%, #05040c 100%)'
-          : 'radial-gradient(ellipse 120% 80% at 50% 6%, #b5c0d4 0%, #e6dcd4 48%, #d0bcac 100%)',
-      }}
+      style={{ overflow: 'hidden', background: 'transparent' }}
     >
       <style>{MENU_CSS}</style>
-
-      {/* ── sky, back to front: nebula wash → celestial light → stars →
-          shooting star → ground mist → vignette. All static DOM with
-          compositor-only CSS animation (no rAF), same perf discipline as
-          Home's starfield. ── */}
-      <div aria-hidden="true" className="rx-sky">
-        {(dark
-          ? [
-            { x: '6%', y: '10%', w: 360, h: 260, c: 'rgba(110,165,255,0.14)', dur: 26 },
-            { x: '58%', y: '2%', w: 420, h: 300, c: 'rgba(72,132,120,0.12)', dur: 34 },
-            { x: '44%', y: '52%', w: 460, h: 320, c: 'rgba(196,138,74,0.09)', dur: 40 },
-          ]
-          : [
-            { x: '4%', y: '8%', w: 380, h: 250, c: 'rgba(255,255,255,0.6)', dur: 30 },
-            { x: '56%', y: '0%', w: 430, h: 280, c: 'rgba(196,208,236,0.55)', dur: 36 },
-            { x: '42%', y: '52%', w: 480, h: 320, c: 'rgba(244,214,178,0.5)', dur: 42 },
-          ]
-        ).map((b, i) => (
-          <span key={`b${i}`} className="rx-blob" style={{
-            left: b.x, top: b.y, width: b.w, height: b.h,
-            background: `radial-gradient(circle, ${b.c} 0%, transparent 68%)`,
-            animationDuration: `${b.dur}s`, animationDelay: `-${i * 9}s`,
-          }} />
-        ))}
-
-        {dark ? (
-          <span className="rx-celestial" style={{
-            right: '9%', top: '9%', width: 46, height: 46,
-            background: 'radial-gradient(circle at 38% 34%, #f8f2df 0%, #ddd2b2 62%, #c9bd9d 100%)',
-            boxShadow: '0 0 46px 14px rgba(246,240,214,0.22), 0 0 110px 40px rgba(246,240,214,0.08)',
-          }} />
-        ) : (
-          <span className="rx-celestial" style={{
-            left: '7%', top: '6%', width: 140, height: 140, filter: 'blur(4px)',
-            background: 'radial-gradient(circle, rgba(255,251,238,0.95) 0%, rgba(255,245,216,0.5) 46%, transparent 70%)',
-            boxShadow: '0 0 90px 46px rgba(255,247,222,0.5)',
-          }} />
-        )}
-
-        {Array.from({ length: 34 }).map((_, i) => {
-          const seed = (n) => { const x = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453; return x - Math.floor(x); };
-          const sz = 1.2 + seed(3) * 2.6;
-          return (
-            <span key={`s${i}`} className="rx-star" style={{
-              left: `${seed(1) * 100}%`, top: `${seed(2) * 100}%`, width: sz, height: sz,
-              opacity: dark ? 0.25 + seed(4) * 0.5 : 0.3 + seed(4) * 0.4,
-              boxShadow: sz > 2.7 ? `0 0 6px 1px rgba(255,255,255,${dark ? 0.55 : 0.75})` : 'none',
-              animationDuration: `${2.6 + seed(5) * 4}s`, animationDelay: `-${seed(6) * 5}s`,
-            }} />
-          );
-        })}
-
-        {/* The dark theme's signature blue light — the same glow Kawkab
-            radiates at the center of Home's Universe, echoed here as a
-            soft ambient wash so both night scenes share one light. */}
-        {dark && (
-          <span style={{
-            position: 'absolute', left: '50%', top: '46%', width: '72%', height: '54%',
-            transform: 'translate(-50%,-50%)', borderRadius: '50%',
-            background: 'radial-gradient(ellipse, rgba(120,180,255,0.12) 0%, rgba(120,180,255,0.04) 46%, transparent 72%)',
-          }} />
-        )}
-
-        {dark && <span className="rx-shoot" />}
-
-        <span className="rx-mist" style={{
-          background: dark
-            ? 'linear-gradient(180deg, transparent 0%, rgba(5,4,12,0.6) 100%)'
-            : 'linear-gradient(180deg, transparent 0%, rgba(255,249,240,0.6) 100%)',
-        }} />
-        <span className="rx-veil" style={{
-          background: dark
-            ? 'radial-gradient(ellipse 130% 95% at 50% 38%, transparent 52%, rgba(3,2,10,0.5) 100%)'
-            : 'radial-gradient(ellipse 130% 80% at 50% 0%, rgba(255,255,255,0.45) 0%, transparent 55%)',
-        }} />
-      </div>
+      <UniverseStage accent="wellbeing" dark={dark} />
 
       <button
         type="button"
@@ -1010,7 +929,8 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
           {isAr ? 'ركن العافية' : 'Wellbeing pillar'}
         </div>
         <div style={{
-          fontFamily: SERIF, fontSize: 32, fontWeight: 600, letterSpacing: 0.4,
+          fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
+          fontSize: isAr ? 28 : 26, fontWeight: 800, letterSpacing: isAr ? 0 : 0.04,
           color: skyText, textShadow: skyTextShadow, lineHeight: 1.12, marginTop: 2,
         }}>
           {isAr ? 'العافية' : 'Wellbeing'}
@@ -1117,25 +1037,6 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
       </p>
 
       <style>{`
-        .rx-sky { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
-        .rx-blob { position:absolute; border-radius:50%; filter:blur(52px);
-          animation: rxBlobDrift ease-in-out infinite alternate; }
-        @keyframes rxBlobDrift { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(4%,-5%,0) scale(1.09); } }
-        .rx-celestial { position:absolute; border-radius:50%; }
-        .rx-star { position:absolute; border-radius:50%; background:#fff;
-          animation: rxTwinkle ease-in-out infinite; }
-        @keyframes rxTwinkle { 0%,100% { opacity:.2; } 50% { opacity:1; } }
-        .rx-shoot { position:absolute; top:15%; left:-10%; width:130px; height:2px; border-radius:2px;
-          background: linear-gradient(90deg, rgba(255,255,255,.95) 0%, rgba(255,255,255,0) 100%);
-          transform-origin:left center; opacity:0; animation: rxShoot 16s linear infinite; animation-delay:5s; }
-        @keyframes rxShoot {
-          0%, 87% { opacity:0; transform: translate3d(0,0,0) rotate(13deg); }
-          89% { opacity:.9; }
-          97% { opacity:0; transform: translate3d(115vw,32vh,0) rotate(13deg); }
-          100% { opacity:0; }
-        }
-        .rx-mist { position:absolute; left:0; right:0; bottom:0; height:30%; pointer-events:none; }
-        .rx-veil { position:absolute; inset:0; pointer-events:none; }
         .rx-fade { animation: rxFade .7s ease both; }
         @keyframes rxFade { from { opacity:0; } to { opacity:1; } }
         .rx-planet { position:absolute; background:none; border:none; padding:0; cursor:pointer;
@@ -1165,8 +1066,8 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
         .rx-spark { position:absolute; font-size:11px; color:#ffd98a; line-height:1;
           text-shadow: 0 0 8px rgba(255,200,90,.95); animation: rxTwinkle 2.8s ease-in-out infinite; }
         .rx-spark--b { font-size:8px; animation-delay:1.3s; }
-        .rx-planet-name { font-family:${SERIF}; font-weight:600; font-size:15.5px;
-          letter-spacing:.3px; line-height:1.15; text-align:center; }
+        .rx-planet-name { font-family:Outfit,${SANS}; font-weight:800; font-size:15px;
+          letter-spacing:.02em; line-height:1.15; text-align:center; }
         .rx-soon-pill { font-size:9.5px; font-weight:800; letter-spacing:1.4px; border:1px solid;
           border-radius:100px; padding:2.5px 9px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
         @media (prefers-reduced-motion: reduce) {
@@ -1234,49 +1135,62 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
 }
 
 const MENU_CSS = `
-.rx-root { position:fixed; inset:0; z-index:50; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--color-training-palette-surface,#fff7f2); color:${INK}; font-family:${SANS}; }
+/* Wellbeing category/detail landings — Home universe cosmos glass */
+.rx-root { position:fixed; inset:0; z-index:50; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  background:transparent; color:#f0e2c0; font-family:${SANS}; }
 .rx-root *, .rx-root *::before, .rx-root *::after { box-sizing:border-box; }
-.rx-root .rx-app { max-width:480px; margin:0 auto; padding-bottom:80px; position:relative; }
-.rx-root .rx-back { position:absolute; top:14px; left:12px; z-index:20; width:36px; height:36px; border-radius:10px; border:2px solid ${LINE}; background:${CARD}; color:#141210; font-size:22px; line-height:1; cursor:pointer; }
-.rx-root .header { padding:24px 20px 18px; background:linear-gradient(180deg,#fffaf3 0%,var(--color-training-palette-surface,#fff7f2) 100%); }
-.rx-root .header-sub { font-size:11px; letter-spacing:3px; color:${GOLD}; text-transform:uppercase; margin-bottom:4px; font-weight:700; }
-.rx-root .header-title { font-family:${SERIF}; font-size:34px; font-weight:600; line-height:1.04; color:${INK}; }
-.rx-root .menu-tag { font-size:13px; color:${SUB}; margin-top:6px; }
+.rx-root .rx-app { max-width:480px; margin:0 auto; padding-bottom:110px; position:relative; z-index:3; }
+.rx-root .rx-back { position:absolute; top:max(14px, env(safe-area-inset-top)); left:12px; z-index:20; width:36px; height:36px; border-radius:999px;
+  border:1px solid rgba(232,172,78,0.38); background:rgba(14,12,24,0.78); color:#e8d4a8; font-size:22px; line-height:1; cursor:pointer;
+  box-shadow:0 4px 14px rgba(0,0,0,0.35); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+.rx-root .header { padding:max(24px, calc(12px + env(safe-area-inset-top))) 20px 18px; background:transparent; }
+.rx-root .header-sub { font-size:11px; letter-spacing:3px; color:#e8ac4e; text-transform:uppercase; margin-bottom:4px; font-weight:700; }
+.rx-root .header-title { font-family:Outfit,${SANS}; font-size:28px; font-weight:800; line-height:1.1; color:#f0e2c0;
+  text-shadow:0 1px 0 rgba(255,220,120,0.2), 0 0 14px rgba(232,172,78,0.3); }
+.rx-root .menu-tag { font-size:13px; color:#b9a878; margin-top:6px; }
 .rx-root .content { padding:20px; }
-.rx-root .rx-menu-card { display:flex; align-items:center; gap:14px; width:100%; text-align:left; background:${CARD}; border:2px solid ${LINE}; border-radius:16px; padding:16px; margin-bottom:14px; cursor:pointer; font-family:inherit; box-shadow:3px 3px 0 rgba(26,18,8,0.05); transition:transform .1s; }
+.rx-root .rx-menu-card { display:flex; align-items:center; gap:14px; width:100%; text-align:left;
+  background:rgba(14,12,24,0.72); border:1px solid rgba(232,172,78,0.34); border-radius:16px; padding:16px; margin-bottom:14px;
+  cursor:pointer; font-family:inherit; box-shadow:0 4px 18px rgba(0,0,0,0.35);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); transition:transform .1s, border-color .15s; }
 .rx-root .rx-menu-card:active { transform:translateY(1px); }
 .rx-root .rx-menu-ic { font-size:30px; flex-shrink:0; width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
 .rx-root .rx-menu-body { display:flex; flex-direction:column; gap:4px; flex:1; }
-.rx-root .rx-menu-title { font-family:${SERIF}; font-weight:600; font-size:21px; color:${INK}; }
-.rx-root .rx-menu-sub { font-size:12.5px; color:${SUB}; line-height:1.5; }
-.rx-root .rx-menu-chev { font-size:28px; font-weight:700; flex-shrink:0; }
-.rx-root .rx-menu-more { text-align:center; font-size:12px; color:${FAINT}; margin-top:6px; }
-.rx-root .rx-cat-tile { display:flex; align-items:center; gap:14px; width:100%; text-align:start; background:${CARD}; border:2px solid ${LINE}; border-radius:16px; padding:16px; margin-bottom:14px; cursor:pointer; font-family:inherit; box-shadow:3px 3px 0 rgba(26,18,8,0.05); transition:transform .1s; }
+.rx-root .rx-menu-title { font-family:Outfit,${SANS}; font-weight:800; font-size:18px; color:#f0e2c0; }
+.rx-root .rx-menu-sub { font-size:12.5px; color:#b9a878; line-height:1.5; }
+.rx-root .rx-menu-chev { font-size:28px; font-weight:700; flex-shrink:0; color:#e8ac4e; }
+.rx-root .rx-menu-more { text-align:center; font-size:12px; color:#8a7a58; margin-top:6px; }
+.rx-root .rx-cat-tile { display:flex; align-items:center; gap:14px; width:100%; text-align:start;
+  background:rgba(14,12,24,0.72); border:1px solid rgba(232,172,78,0.34); border-radius:16px; padding:16px; margin-bottom:14px;
+  cursor:pointer; font-family:inherit; box-shadow:0 4px 18px rgba(0,0,0,0.35); transition:transform .1s; }
 .rx-root .rx-cat-tile:active { transform:translateY(1px); }
 .rx-root .rx-cat-ic { width:56px; height:56px; border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0; }
 .rx-root .rx-cat-ic--hd { width:40px; height:40px; border-radius:11px; font-size:22px; }
 .rx-root .rx-cat-body { display:flex; flex-direction:column; gap:3px; flex:1; min-width:0; }
-.rx-root .rx-cat-title { font-family:${SERIF}; font-weight:600; font-size:22px; color:${INK}; line-height:1.1; }
-.rx-root .rx-cat-tag { font-size:12.5px; color:${SUB}; line-height:1.4; }
+.rx-root .rx-cat-title { font-family:Outfit,${SANS}; font-weight:800; font-size:20px; color:#f0e2c0; line-height:1.1; }
+.rx-root .rx-cat-tag { font-size:12.5px; color:#b9a878; line-height:1.4; }
 .rx-root .rx-cat-meta { display:flex; align-items:center; gap:9px; flex-shrink:0; }
 .rx-root .rx-cat-hd { display:flex; align-items:center; gap:11px; }
-.rx-root .rx-seg { display:flex; gap:5px; background:#f3ece0; border:2px solid ${LINE}; border-radius:13px; padding:4px; margin-bottom:18px; }
-.rx-root .rx-seg-btn { flex:1; padding:10px 0; border:none; background:none; border-radius:9px; font-family:inherit; font-size:13.5px; font-weight:800; color:${SUB}; cursor:pointer; transition:all .15s; }
-.rx-root .rx-seg-btn.on { background:${CARD}; color:var(--seg); box-shadow:0 1px 5px rgba(26,18,8,0.12); }
-.rx-root .rx-soon-badge { flex-shrink:0; font-size:10.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:${GOLD}; background:#fff1d8; border:1.5px solid #e3c489; border-radius:999px; padding:4px 11px; }
+.rx-root .rx-seg { display:flex; gap:5px; background:rgba(14,12,24,0.55); border:1px solid rgba(232,172,78,0.28); border-radius:13px; padding:4px; margin-bottom:18px; }
+.rx-root .rx-seg-btn { flex:1; padding:10px 0; border:none; background:none; border-radius:9px; font-family:inherit; font-size:13.5px; font-weight:800; color:#b9a878; cursor:pointer; transition:all .15s; }
+.rx-root .rx-seg-btn.on { background:rgba(232,172,78,0.18); color:#f0e2c0; box-shadow:0 2px 8px rgba(0,0,0,0.25); }
+.rx-root .rx-soon-badge { flex-shrink:0; font-size:10.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#e8ac4e; background:rgba(232,172,78,0.14); border:1px solid rgba(232,172,78,0.4); border-radius:999px; padding:4px 11px; }
 .rx-root .rx-soon-empty { text-align:center; padding:40px 16px; }
 .rx-root .rx-soon-emoji { width:88px; height:88px; border-radius:24px; display:flex; align-items:center; justify-content:center; font-size:44px; margin:0 auto 18px; }
-.rx-root .rx-soon-title { font-family:${SERIF}; font-weight:600; font-size:26px; color:${INK}; margin-bottom:10px; }
-.rx-root .rx-soon-desc { font-size:14px; color:${SUB}; line-height:1.6; max-width:320px; margin:0 auto; }
+.rx-root .rx-soon-title { font-family:Outfit,${SANS}; font-weight:800; font-size:24px; color:#f0e2c0; margin-bottom:10px; }
+.rx-root .rx-soon-desc { font-size:14px; color:#b9a878; line-height:1.6; max-width:320px; margin:0 auto; }
 .rx-root .rx-menu-tail { display:flex; align-items:center; gap:5px; flex-shrink:0; }
-.rx-root .rx-fav { width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:20px; line-height:1; color:#c9bfa8; cursor:pointer; border-radius:9px; user-select:none; -webkit-user-select:none; transition:transform .12s ease, color .12s ease; }
+.rx-root .rx-fav { width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:20px; line-height:1; color:#8a7a58; cursor:pointer; border-radius:9px; user-select:none; -webkit-user-select:none; transition:transform .12s ease, color .12s ease; }
 .rx-root .rx-fav:active { transform:scale(0.82); }
 .rx-root .rx-fav.on { color:${FAV_GOLD}; }
-.rx-root .rx-fav-count { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#fdeecb; color:${FAV_GOLD}; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
-.rx-root .rx-habit-badge { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:#e8f5ea; color:#3a7a48; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
-.rx-root .rx-habit-badge--done { background:#6fae7a; color:#fff; }
-.rx-root .rx-cat-divider { height:1px; background:${LINE}; margin:2px 2px 18px; }
+.rx-root .rx-fav-count { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:rgba(232,172,78,0.2); color:${FAV_GOLD}; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.rx-root .rx-habit-badge { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:rgba(90,160,122,0.25); color:#9ed4b0; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.rx-root .rx-habit-badge--done { background:#5aa07a; color:#fff; }
+.rx-root .rx-cat-divider { height:1px; background:rgba(232,172,78,0.22); margin:2px 2px 18px; }
 .rx-root .rx-rl { position:relative; }
 .rx-root .rx-rl-item { will-change:transform; }
-.rx-root .rx-rl-item--drag .rx-menu-card { box-shadow:0 12px 26px rgba(26,18,8,0.25); border-color:${GOLD}; cursor:grabbing; }
+.rx-root .rx-rl-item--drag .rx-menu-card { box-shadow:0 12px 26px rgba(0,0,0,0.45); border-color:#e8ac4e; cursor:grabbing; }
+[dir='rtl'] .rx-root .header-title,
+[dir='rtl'] .rx-root .rx-menu-title,
+[dir='rtl'] .rx-root .rx-cat-title { font-family:Cairo,${SANS}; }
 `;

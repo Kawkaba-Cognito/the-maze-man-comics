@@ -30,6 +30,12 @@ export default function AppShell() {
   const t = LANG[currentLang];
   const isAr = currentLang === 'ar';
   const isTrainingHome = activeTab === 'comics' || activeTab === 'home';
+  // Universe-stage landings paint their own cosmos — skip the global door photo.
+  const universeLanding = isTrainingHome
+    || activeTab === 'habits'
+    || activeTab === 'learn'
+    || activeTab === 'other'
+    || isRelaxTab(activeTab);
   // Hide the tab bar on any deep view (game / practice / session) — it shows
   // only on the tab landing pages.
   const showTabBar = !mazeVisible && !mazeEntryPending && !immersive;
@@ -51,7 +57,7 @@ export default function AppShell() {
       <div id="maze-photo-layer" aria-hidden="true"></div>
       <MazeBackground />
 
-      {!mazeVisible && !isTrainingHome && (
+      {!mazeVisible && !universeLanding && (
         <>
           <div className="bg-poster" />
           <div className="bg-overlay" />

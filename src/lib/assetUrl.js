@@ -24,4 +24,9 @@ export function applyAssetCssVars() {
   set('--asset-splash-desktop', 'Assets/splash-menu-desktop-en.webp');
   set('--asset-settings-mobile', 'Assets/cancel-task-bg-mobile.png');
   set('--asset-settings-desktop', 'Assets/cancel-task-bg-desktop.png');
+  // Attention in-play premium surfaces (not hub/picker cards)
+  set('--asset-attn-cancel-playfield', 'Assets/attention/cancel-playfield.svg');
+  set('--asset-attn-mot-arena', 'Assets/attention/mot-arena-plate.svg');
+  set('--asset-attn-carpark-lot', 'Assets/attention/carpark-lot.svg');
+  set('--asset-attn-carpark-garage', 'Assets/attention/carpark-garage.svg');
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { UserCircle, ShoppingCart, ChartBar, Medal, MoonStars, Gear, Info, ChatCircleDots, Compass, CastleTurret, Crown } from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
-import AtmosphericBackground from '../shared/AtmosphericBackground';
+import UniverseStage from '../shared/UniverseStage';
 import { useThemedChrome } from '../../hooks/useThemedChrome';
 import SettingsScreen, { AboutModal } from '../../features/settings/SettingsScreen';
 import WorkoutStats from './WorkoutStats';
@@ -143,7 +143,7 @@ export default function OtherScreen() {
   if (view === 'awards') {
     return (
       <div className={`other-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}>
-        <AtmosphericBackground strength="panel" photo={false} />
+        <UniverseStage accent="other" dark={chrome.dark} />
         <AwardsPanel
           isAr={isAr}
           chrome={chrome}
@@ -156,7 +156,7 @@ export default function OtherScreen() {
   if (view === 'appearance') {
     return (
       <div className={`other-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}>
-        <AtmosphericBackground strength="panel" photo={false} />
+        <UniverseStage accent="other" dark={chrome.dark} />
         <AppearancePanel
           isAr={isAr}
           chrome={chrome}
@@ -171,7 +171,7 @@ export default function OtherScreen() {
   if (view === 'support') {
     return (
       <div className={`other-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}>
-        <AtmosphericBackground strength="panel" photo={false} />
+        <UniverseStage accent="other" dark={chrome.dark} />
         <SupportPanel
           isAr={isAr}
           chrome={chrome}
@@ -194,7 +194,7 @@ export default function OtherScreen() {
       className={`other-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}
       dir={isAr ? 'rtl' : 'ltr'}
     >
-      <AtmosphericBackground strength="panel" photo={false} />
+      <UniverseStage accent="other" dark={chrome.dark} />
       <div className="other-content">
         <div className="app-chrome-bar other-top">
           <div style={{ width: 34 }} />
