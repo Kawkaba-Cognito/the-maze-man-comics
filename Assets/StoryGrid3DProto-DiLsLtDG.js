@@ -1,1 +1,0 @@
-import{n as e,t}from"./jsx-runtime-DIAExeAg.js";import{t as n}from"./C3dEngineShell-B_CgsSiw.js";e();var r=t();function i({isAr:e,playSfx:t,onBack:i,children:a}){return(0,r.jsx)(n,{isAr:e,playSfx:t,onBack:i,title:e?`وقت القصة · ثلاثي الأبعاد`:`Story Time · 3D`,tag:e?`نفس القصة · بيئة كونية ثلاثية الأبعاد`:`Same story · cosmos 3D stage`,children:a})}export{i as default};
