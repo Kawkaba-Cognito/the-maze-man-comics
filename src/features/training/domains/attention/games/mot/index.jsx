@@ -53,10 +53,10 @@ const ASSESS_TRACK_MS = 6000;
 // a big sparse field is why this used to be trivially easy.
 //
 // `total` = objects in the arena (the density knob); `targets` = load.
-const MOT_CAP = 5; // max simultaneously trackable targets (capacity ceiling)
+export const MOT_CAP = 5; // max simultaneously trackable targets (capacity ceiling)
 
 // Survival/free + pass-n-play: r = escalation index. Reaches peak by ~r=16.
-function freeConfig(r) {
+export function freeConfig(r) {
   const u = clamp(r / 16, 0, 1);
   const targets = clamp(Math.round(lerp(2, MOT_CAP, u)), 2, MOT_CAP);
   return { targets, total: Math.round(lerp(8, 26, u)), speedFrac: lerp(0.10, 0.30, u), trackMs: Math.round(lerp(3500, 9000, u)) };

@@ -30,7 +30,9 @@ const PER_LEVEL = 8;
 const WIN_ACC = 0.625;
 const PP_TRIALS = 8;
 
-const RULES = [
+// The 10-node Brixton anticipation rules (2 rows of 5). Shared with the 3D proto
+// so it plays the EXACT same hidden-rule game.
+export const RULES = [
   (i) => (i + 1) % 10,   // 0: +1
   (i) => (i + 9) % 10,   // 1: -1
   (i) => (i + 2) % 10,   // 2: +2
@@ -38,7 +40,7 @@ const RULES = [
   (i) => (i + 5) % 10,   // 4: other row
 ];
 
-const RULE_META = [
+export const RULE_META = [
   { en: '+1 step', ar: '+١ خطوة' },
   { en: '−1 step', ar: '−١ خطوة' },
   { en: '+2 skip', ar: '+٢ تخطّي' },
@@ -46,7 +48,7 @@ const RULE_META = [
   { en: 'Flip row', ar: 'صفّ معاكس' },
 ];
 
-function cfgFor(mode, diff, level, ramp) {
+export function cfgFor(mode, diff, level, ramp) {
   if (mode === 'free') {
     const r = ramp ?? 0;
     const rules = r < 0.28 ? [0, 1] : r < 0.55 ? [0, 1, 2] : r < 0.78 ? [0, 1, 2, 3] : [0, 1, 2, 3, 4];
@@ -505,12 +507,7 @@ export default function KawkabHopsGame({ onBack, workoutMode = false }) {
   if (view === 'play3d') {
     return (
       <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <Brixton3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
-          <BrixtonEngine mode="free" diff="med" level={1} seed={null} cosmos isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} onResult={() => {}} onExit={() => {
-            awardFreeRun?.('brixton', 0);
-            setView('shell');
-          }} />
-        </Brixton3DProto>
+        <Brixton3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
       </Suspense>
     );
   }
@@ -533,7 +530,7 @@ export default function KawkabHopsGame({ onBack, workoutMode = false }) {
       extraItems={[{
         k: 'proto3d',
         lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نفس اللعبة · بيئة كونية ثلاثية الأبعاد' : 'Same game · cosmos 3D stage',
+        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
         on: () => setView('play3d'),
         icoImg: planetIconUrl('flexibility'),
       }]}

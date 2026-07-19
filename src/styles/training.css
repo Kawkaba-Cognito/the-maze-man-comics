@@ -6555,13 +6555,14 @@
     opacity: 0.85;
 }
 
-/* Domain-pick menubar — glass cosmos (overrides cream paper chrome) */
+/* Domain-pick menubar — white paper button (same as the in-game back button)
+ * so it stays clearly visible on the black domain-void background. */
 .ct-domain-pick .ct-training-menubar--paper .ct-training-chrome-btn--paper,
 .ct-domain-pick .ct-training-chrome-btn--paper {
-    background: rgba(14, 12, 24, 0.78) !important;
-    border: 1px solid rgba(232, 172, 78, 0.38) !important;
-    color: #e8d4a8 !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+    background: linear-gradient(180deg, #fff 0%, #f3ebe4 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.7) !important;
+    color: #141210 !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;
 }
 
 .ct-domain-pick-card .ct-domain-pick-banner {

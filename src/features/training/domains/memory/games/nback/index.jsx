@@ -108,7 +108,6 @@ export default function NBackGame({
   const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
   const [cosmosEmbed, setCosmosEmbed] = useState(false);
   const isCosmos = cosmosAutoPlay || cosmosEmbed;
-  const cosmosLaunched = useRef(false);
   const variant = 'dual'; // single professional game: dual n-back (position + object)
   const [diffKey, setDiffKey] = useState('easy');
   const [block, setBlock] = useState(null);
@@ -302,12 +301,6 @@ export default function NBackGame({
   const startLevel = (diff, lv) => beginBlock(prepareLevelBlock(diff, lv, rngSeed(), variant));
   const startFree = (n) => beginBlock(prepareFreeBlock(n, rngSeed(), variant));
 
-  useEffect(() => {
-    if (isCosmos && !cosmosLaunched.current) {
-      cosmosLaunched.current = true;
-      startFree(1);
-    }
-  }, [isCosmos]);
   const startAssessment = () => {
     assessRef.current = { blocksRun: 0, bestGoodN: 0 };
     trialLogRef.current?.discard();
@@ -334,9 +327,17 @@ export default function NBackGame({
 
   const wrapCosmos = (content) => isCosmos ? (
     <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-      <NBack3DProto isAr={isAr} playSfx={playSfx} onBack={() => { cosmosLaunched.current = false; setCosmosEmbed(false); clearTimers(); setPhase('hub'); }}>{content}</NBack3DProto>
+      <NBack3DProto isAr={isAr} playSfx={playSfx} onBack={() => { clearTimers(); if (cosmosAutoPlay) { onBack?.(); return; } setCosmosEmbed(false); setPhase('hub'); }} />
     </Suspense>
   ) : content;
+
+  if (phase === 'play3d') {
+    return (
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <NBack3DProto isAr={isAr} playSfx={playSfx} onBack={() => setPhase('hub')} />
+      </Suspense>
+    );
+  }
 
   return wrapCosmos(
     <div
@@ -366,7 +367,7 @@ export default function NBackGame({
                 onFree={() => setPhase('freeIntro')}
                 onLevels={() => setPhase('diff')}
                 onChallenge={() => setPhase('chal')}
-                onProto3d={() => { cosmosLaunched.current = false; setCosmosEmbed(true); }} />
+                onProto3d={() => setPhase('play3d')} />
             </div>
           </div>
           {tutLayer}

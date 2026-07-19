@@ -998,13 +998,12 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, cosmosA
   }, [beginBlock, resetJuice]);
 
   useEffect(() => {
-    if ((workoutMode || isCosmos) && !workoutLaunched.current) {
+    if (workoutMode && !workoutLaunched.current) {
       workoutLaunched.current = true;
-      if (isCosmos) startCosmosFree();
-      else startFreeMode();
+      startFreeMode();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutMode, isCosmos]);
+  }, [workoutMode]);
 
   const startLevelGame = useCallback(
     (diff, lv) => {
@@ -1091,9 +1090,17 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, cosmosA
 
   const wrapCosmos = (content) => isCosmos ? (
     <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-      <SpatialStroop3DProto isAr={isAr} playSfx={playSfx} onBack={() => { workoutLaunched.current = false; setCosmosEmbed(false); clearPlayState(); setPhase('hub'); }}>{content}</SpatialStroop3DProto>
+      <SpatialStroop3DProto isAr={isAr} playSfx={playSfx} onBack={() => { workoutLaunched.current = false; clearPlayState(); if (cosmosAutoPlay) { onBack?.(); return; } setCosmosEmbed(false); setPhase('hub'); }} />
     </Suspense>
   ) : content;
+
+  if (phase === 'play3d') {
+    return (
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <SpatialStroop3DProto isAr={isAr} playSfx={playSfx} onBack={() => setPhase('hub')} />
+      </Suspense>
+    );
+  }
 
   return wrapCosmos(
     <div
@@ -1137,7 +1144,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, cosmosA
                 onFree={startFreeMode}
                 onLevels={() => setPhase('diff')}
                 onChallenge={() => setPhase('chal')}
-                onProto3d={() => { workoutLaunched.current = false; setCosmosEmbed(true); }}
+                onProto3d={() => setPhase('play3d')}
               />
               <HubScienceLink gameId="spatial-stroop" isAr={isAr} playSfx={playSfx} />
             </div>

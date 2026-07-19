@@ -60,7 +60,8 @@ export function AppProvider({ children }) {
   const [owned, setOwned] = useState(() => readJSON(OWNED_KEY, {}));
   const [equipped, setEquipped] = useState(() => readJSON(EQUIP_KEY, {}));
   const [currentLang, setCurrentLang] = useState('en');
-  const [activeTab, setActiveTab] = useState('comics');
+  // App opens on the Home universe ('habits' tab hosts HomeScreen), not Training.
+  const [activeTab, setActiveTab] = useState('habits');
   // Screens register here when they drill into a game / practice / session, so
   // the bottom tab bar hides on any deep view and shows only on tab landings.
   const [immersiveMap, setImmersiveMap] = useState({});

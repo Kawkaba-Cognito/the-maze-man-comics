@@ -36,10 +36,10 @@ const STAIR_CSS = `
 
 const LIVES = 3;
 const STEPS = { easy: 5, med: 6, hard: 7 };
-const survivalSteps = (stage) => Math.min(8, 5 + Math.floor(stage / 2));
+export const survivalSteps = (stage) => Math.min(8, 5 + Math.floor(stage / 2));
 // Tier sets are tried IN ORDER — the first one with enough questions wins.
 // Survival ramps into the ★★★★ expert tier on long runs.
-const survivalTiers = (stage) =>
+export const survivalTiers = (stage) =>
   stage < 1 ? [[1]]
   : stage < 3 ? [[1, 2]]
   : stage < 5 ? [[2]]
@@ -67,7 +67,13 @@ const saveSeen = (m) => {
 // Build a question queue for one staircase: try each tier set in priority
 // order (first with enough questions wins), unseen before seen,
 // least-recently-seen first among the seen.
-function buildQueue(catId, tierSets, rng, usePersistence) {
+export function markQuestionSeen(id) {
+  const seen = loadSeen();
+  seen[id] = Date.now();
+  saveSeen(seen);
+}
+
+export function buildQueue(catId, tierSets, rng, usePersistence) {
   const qs = TRIVIA[catId] || [];
   const tag = qs.map((q, i) => ({ q, id: `${catId}:${i}` }));
   let pool = [];
@@ -373,12 +379,7 @@ export default function TriviaGame({ onBack, workoutMode = false }) {
   if (view === 'play3d') {
     return (
       <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <Trivia3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
-          <TriviaEngine mode="free" diff="med" level={1} seed={null} cosmos isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} onResult={() => {}} onExit={() => {
-            awardFreeRun?.('trivia', 0);
-            setView('shell');
-          }} />
-        </Trivia3DProto>
+        <Trivia3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
       </Suspense>
     );
   }
@@ -401,7 +402,7 @@ export default function TriviaGame({ onBack, workoutMode = false }) {
       extraItems={[{
         k: 'proto3d',
         lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نفس اللعبة · بيئة كونية ثلاثية الأبعاد' : 'Same game · cosmos 3D stage',
+        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
         on: () => setView('play3d'),
         icoImg: planetIconUrl('language'),
       }]}

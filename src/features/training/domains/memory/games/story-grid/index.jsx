@@ -358,7 +358,7 @@ const EMPTY = { bg: null, chars: [], action: null };
 const sameSet = (a, b) => a.length === b.length && a.every((x) => b.includes(x));
 const shuffleR = (arr, rng) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
-function makeStory(n, rng, distract, exclude = []) {
+export function makeStory(n, rng, distract, exclude = []) {
   const byLen = STORIES.filter((s) => s.beats.length === n);
   const pool0 = byLen.length ? byLen : STORIES;
   // Anti-repeat: skip recently played stories when the pool allows it, so a
@@ -409,7 +409,7 @@ function levelCfg(diff, level) {
   const f = (((level || 1) - 1) / 99);
   return { len: b.len, distract: Math.round(b.d0 + (b.d1 - b.d0) * f), memo: Math.round(b.m0 + (b.m1 - b.m0) * f) };
 }
-function survivalCfg(stage) {
+export function survivalCfg(stage) {
   return { len: Math.min(6, 3 + Math.floor(stage / 2)), distract: Math.min(5, Math.floor(stage / 1.5)), memo: Math.max(30, Math.round(52 - stage * 1.1)) };
 }
 function passCfgFor() { return { len: 5, distract: 2, memo: 48 }; }
@@ -776,24 +776,7 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
   if (view === 'play3d') {
     return (
       <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <StoryGrid3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
-          <StoryEngine
-            mode="free"
-            diff="med"
-            level={1}
-            seed={null}
-            cosmos
-            isAr={isAr}
-            playSfx={playSfx}
-            awardPoints={awardPoints}
-            awardFreeRun={awardFreeRun}
-            onResult={() => {}}
-            onExit={() => {
-              awardFreeRun?.('storyGrid', 0);
-              setView('shell');
-            }}
-          />
-        </StoryGrid3DProto>
+        <StoryGrid3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
       </Suspense>
     );
   }
@@ -816,7 +799,7 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
       extraItems={[{
         k: 'proto3d',
         lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نفس القصة · بيئة كونية ثلاثية الأبعاد' : 'Same story · cosmos 3D stage',
+        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
         on: () => setView('play3d'),
         icoImg: planetIconUrl('memory'),
       }]}

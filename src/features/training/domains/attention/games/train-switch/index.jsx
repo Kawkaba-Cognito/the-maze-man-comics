@@ -33,7 +33,7 @@ const ATT = '#e8ac4e';
 // rounds use the four that stay clearly separable even under deuteranopia /
 // protanopia (worst-case CIELAB ΔE ≈ 18); the two blues only co-appear at the
 // hardest 6-colour level.
-const PAL = ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9'];
+export const PAL = ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9'];
 const DIRV = { N: [-1, 0], S: [1, 0], W: [0, -1], E: [0, 1] };
 const OPP = { N: 'S', S: 'N', E: 'W', W: 'E' };
 
@@ -85,7 +85,7 @@ function levelCfg(diff, level) {
 // — the divided-attention lever — steps up every 2 waves toward and past the
 // ~4-object capacity limit. Speed/complexity ramp alongside; speed is capped so
 // it stays reactable.
-function waveCfg(wave) {
+export function waveCfg(wave) {
   const w = wave - 1;
   return {
     R: clampN(5 + Math.floor(w / 3), 5, 9),
@@ -103,7 +103,7 @@ function waveCfg(wave) {
 const PP_TRAINS = 16;
 
 // build a grid-embedded routing tree (garage → junctions → scattered parking bays)
-function generate(R, C, desired, rng, colorCount = 6) {
+export function generate(R, C, desired, rng, colorCount = 6) {
   const visited = Array.from({ length: R }, () => Array(C).fill(false));
   const mk = (r, c) => ({ r, c, children: [], kind: 'track', sw: 0, parent: null });
   const borders = [];

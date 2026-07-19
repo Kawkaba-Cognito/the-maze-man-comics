@@ -244,20 +244,18 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
             if (cosmosAutoPlay) onBack?.();
             else exitCosmos();
           }}
-        >
-          {node}
-        </RushHour3DProto>
+        />
       </Suspense>
     ) : node
   ), [isCosmos, isAr, playSfx, cosmosAutoPlay, onBack, exitCosmos]);
 
   useEffect(() => {
-    if ((workoutMode || isCosmos) && !workoutLaunched.current) {
+    if (workoutMode && !workoutLaunched.current) {
       workoutLaunched.current = true;
       startFreeRun();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutMode, isCosmos]);
+  }, [workoutMode]);
   const [progress, setProgress] = useState(() => loadRhProgress());
   const [diffKey, setDiffKey] = useState('easy');
   const [levelIndex, setLevelIndex] = useState(1);
@@ -1167,6 +1165,15 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
     );
   }
 
+  /* ─── Standalone 3D prototype ─── */
+  if (phase === 'play3d') {
+    return (
+      <Suspense fallback={C3D_FALLBACK}>
+        <RushHour3DProto isAr={isAr} playSfx={playSfx} onBack={() => setPhase('hub')} />
+      </Suspense>
+    );
+  }
+
   /* ─── Hub ─── */
   if (phase === 'hub' && !isCosmos) {
     return (
@@ -1192,8 +1199,8 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
               {
                 k: 'proto3d',
                 lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-                hint: isAr ? 'نفس اللعبة · مسرح كوني ثلاثي الأبعاد' : 'Same game · cosmos 3D stage',
-                on: () => { workoutLaunched.current = false; setCosmosEmbed(true); },
+                hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
+                on: () => setPhase('play3d'),
                 icoImg: planetIconUrl('reasoning'),
                 mod: 'ct-fq-attn-mode--proto3d',
               },

@@ -251,7 +251,7 @@ function SpeedModes({ t, isAr, onFree, onLevels, onChallenge, onProto3d, playSfx
     {
       k: 'proto3d',
       lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-      hint: isAr ? 'نفس اللعبة · مسرح كوني ثلاثي الأبعاد' : 'Same game · cosmos 3D stage',
+      hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
       on: onProto3d,
       icoImg: planetIconUrl('speed'),
       mod: 'ct-fq-attn-mode--proto3d',
@@ -270,12 +270,12 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
   // WORKOUT / cosmos 3D: skip the hub and jump straight into Survival/free.
   const workoutLaunched = useRef(false);
   useEffect(() => {
-    if ((workoutMode || isCosmos) && !workoutLaunched.current) {
+    if (workoutMode && !workoutLaunched.current) {
       workoutLaunched.current = true;
       startFreeMode();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutMode, isCosmos]);
+  }, [workoutMode]);
   const settings = loadGameSettings();
 
   const juice = useJuice();
@@ -832,9 +832,17 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
 
   const wrapCosmos = (content) => isCosmos ? (
     <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-      <SpeedMatch3DProto isAr={isAr} playSfx={playSfx} onBack={() => { workoutLaunched.current = false; setCosmosEmbed(false); clearPlay(); setPhase('hub'); }}>{content}</SpeedMatch3DProto>
+      <SpeedMatch3DProto isAr={isAr} playSfx={playSfx} onBack={() => { workoutLaunched.current = false; clearPlay(); if (cosmosAutoPlay) { onBack?.(); return; } setCosmosEmbed(false); setPhase('hub'); }} />
     </Suspense>
   ) : content;
+
+  if (phase === 'play3d') {
+    return (
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <SpeedMatch3DProto isAr={isAr} playSfx={playSfx} onBack={() => setPhase('hub')} />
+      </Suspense>
+    );
+  }
 
   return wrapCosmos(
     <div
@@ -878,7 +886,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
                 onFree={() => setPhase('freeIntro')}
                 onLevels={() => setPhase('diff')}
                 onChallenge={() => setPhase('chal')}
-                onProto3d={() => { workoutLaunched.current = false; setCosmosEmbed(true); }}
+                onProto3d={() => setPhase('play3d')}
               />
               <HubScienceLink gameId="speed-match" isAr={isAr} playSfx={playSfx} />
             </div>

@@ -165,12 +165,12 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
   // WORKOUT / cosmos 3D: skip the hub and jump straight into Survival/free.
   const workoutLaunched = useRef(false);
   useEffect(() => {
-    if ((workoutMode || isCosmos) && !workoutLaunched.current) {
+    if (workoutMode && !workoutLaunched.current) {
       workoutLaunched.current = true;
       startFree();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutMode, isCosmos]);
+  }, [workoutMode]);
   const lang = isAr ? 'ar' : 'en';
 
   const [profile, setProfile] = useState(() => loadWordleProfile());
@@ -637,9 +637,17 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
 
   const wrapCosmos = (content) => isCosmos ? (
     <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-      <Wordle3DProto isAr={isAr} playSfx={playSfx} onBack={() => { workoutLaunched.current = false; setCosmosEmbed(false); clearPlay(); setPhase('hub'); }}>{content}</Wordle3DProto>
+      <Wordle3DProto isAr={isAr} playSfx={playSfx} onBack={() => { workoutLaunched.current = false; clearPlay(); if (cosmosAutoPlay) { onBack?.(); return; } setCosmosEmbed(false); setPhase('hub'); }} />
     </Suspense>
   ) : content;
+
+  if (phase === 'play3d') {
+    return (
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <Wordle3DProto isAr={isAr} playSfx={playSfx} onBack={() => setPhase('hub')} />
+      </Suspense>
+    );
+  }
 
   return wrapCosmos(
     <div
@@ -684,7 +692,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
               onFree={() => setPhase('freeIntro')}
               onLevels={() => setPhase('diff')}
               onChallenge={() => setPhase('chal')}
-              onProto3d={() => { workoutLaunched.current = false; setCosmosEmbed(true); }}
+              onProto3d={() => setPhase('play3d')}
             />
             <HubScienceLink gameId="wordle" isAr={isAr} playSfx={playSfx} />
           </div>

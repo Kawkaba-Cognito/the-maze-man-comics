@@ -10,7 +10,7 @@ export default function WordleModes({ t, isAr, onFree, onLevels, onChallenge, on
     {
       k: 'proto3d',
       lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-      hint: isAr ? 'نفس اللعبة · مسرح كوني ثلاثي الأبعاد' : 'Same game · cosmos 3D stage',
+      hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
       on: onProto3d,
       icoImg: planetIconUrl('language'),
       mod: 'ct-fq-attn-mode--proto3d',

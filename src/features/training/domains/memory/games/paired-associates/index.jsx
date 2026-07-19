@@ -18,22 +18,44 @@ const PairedAssociates3DProto = lazyWithRetry(() => import('./PairedAssociates3D
  * Procedural Canvas, zero assets. Shared 3-mode flow (Free / Levels / Challenge).
  */
 
-const SYMBOLS = ['★', '▲', '●', '■', '◆', '✚', '✦', '❤', '☀', '☾', '♣', '♠'];
+// Exported so the 3D proto studies + recalls the SAME pairs with the same counts,
+// timings and adaptive progression as 2D free mode.
+export const SYMBOLS = ['★', '▲', '●', '■', '◆', '✚', '✦', '❤', '☀', '☾', '♣', '♠'];
+export const STUDY_GAP = 240;
 const ROUNDS_PER_LEVEL = 3;
 const LEVEL_WIN = 2;   // perfect trials needed
 const CHAL_LIVES = 3;
-const STUDY_GAP = 240;
 
-const BASE = {
+export const BASE = {
   easy: { boxes: 4, pairs: 2, study: 1100 },
   med: { boxes: 6, pairs: 3, study: 950 },
   hard: { boxes: 8, pairs: 4, study: 820 },
 };
-function levelCfg(diff, level) {
+export function levelCfg(diff, level) {
   const b = BASE[diff] || BASE.med;
   const f = ((level || 1) - 1) / 99;
   const boxes = Math.min(b.boxes + Math.round(f * 4), 12);
   return { boxes, pairs: Math.min(b.pairs + Math.round(f * 4), boxes), study: Math.max(520, Math.round(b.study - f * 500)) };
+}
+
+/** Free/Survival config — 6 boxes, pairs grow adaptively, study time shrinks. */
+export function palFreeCfg(pairs) {
+  return { boxes: 6, pairs: Math.min(pairs, 6), study: Math.max(620, 1050 - pairs * 40) };
+}
+
+/**
+ * Pure PAL trial generator (same draw order as the 2D engine's newTrial): choose
+ * K symbols, K box slots, build the study reveal order + shuffled recall cues.
+ */
+export function buildPalTrial(cfg, rng) {
+  const { boxes: N, pairs: K } = cfg;
+  const syms = [...SYMBOLS].sort(() => rng() - 0.5).slice(0, K);
+  const boxIdxs = [...Array(N).keys()].sort(() => rng() - 0.5).slice(0, K);
+  const boxes = Array.from({ length: N }, () => ({ symbol: null }));
+  boxIdxs.forEach((bi, j) => { boxes[bi].symbol = syms[j]; });
+  const cueOrder = boxIdxs.map((bi) => ({ boxIdx: bi, symbol: boxes[bi].symbol })).sort(() => rng() - 0.5);
+  const studyOrder = [...boxIdxs].sort(() => rng() - 0.5);
+  return { boxes, boxIdxs, cueOrder, studyOrder, total: K };
 }
 
 function rr(ctx, x, y, w, h, r) {
@@ -155,7 +177,7 @@ export function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
   const cfg = useCallback(() => {
     if (mode === 'levels') return levelCfg(diff, level);
     if (mode === 'passplay') return { boxes: 8, pairs: 4, study: 900 };
-    return { boxes: 6, pairs: Math.min(pairsRef.current, 6), study: Math.max(620, 1050 - pairsRef.current * 40) };
+    return palFreeCfg(pairsRef.current);
   }, [mode, diff, level]);
 
   const updateHud = useCallback(() => {
@@ -218,18 +240,17 @@ export function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
       const [cc, rr2] = cells[i];
       boxes.push({ fx: (cc + 0.5 + (rng() - 0.5) * 0.4) / cols, fy: (rr2 + 0.5 + (rng() - 0.5) * 0.4) / rows, symbol: null });
     }
-    const syms = [...SYMBOLS].sort(() => rng() - 0.5).slice(0, K);
-    const boxIdxs = [...boxes.keys()].sort(() => rng() - 0.5).slice(0, K);
-    boxIdxs.forEach((bi, j) => { boxes[bi].symbol = syms[j]; });
+    const trial = buildPalTrial({ boxes: N, pairs: K }, rng);
+    trial.boxIdxs.forEach((bi) => { boxes[bi].symbol = trial.boxes[bi].symbol; });
     boxesRef.current = boxes;
-    cueOrderRef.current = boxIdxs.map((bi) => ({ boxIdx: bi, symbol: boxes[bi].symbol })).sort(() => rng() - 0.5);
+    cueOrderRef.current = trial.cueOrder;
     cueIdxRef.current = 0; correctRef.current = 0; totalRef.current = K;
     updateHud();
     setCue('');
     setMsg(isAr ? 'احفظ المواقع…' : 'Memorize the locations…');
     subRef.current = 'study';
     // reveal item-boxes one at a time
-    const studyOrder = [...boxIdxs].sort(() => rng() - 0.5);
+    const studyOrder = trial.studyOrder;
     const step = (k) => {
       if (k >= studyOrder.length) { openRef.current = -1; presentCue(); return; }
       openRef.current = studyOrder[k];
@@ -305,12 +326,7 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
   if (view === 'play3d') {
     return (
       <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <PairedAssociates3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
-          <PalEngine mode="free" diff="med" level={1} seed={null} cosmos isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} onResult={() => {}} onExit={() => {
-            awardFreeRun?.('pairedAssoc', 0);
-            setView('shell');
-          }} />
-        </PairedAssociates3DProto>
+        <PairedAssociates3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
       </Suspense>
     );
   }
@@ -333,7 +349,7 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
       extraItems={[{
         k: 'proto3d',
         lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نفس اللعبة · بيئة كونية ثلاثية الأبعاد' : 'Same game · cosmos 3D stage',
+        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
         on: () => setView('play3d'),
         icoImg: planetIconUrl('memory'),
       }]}

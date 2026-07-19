@@ -95,7 +95,7 @@ function genOdd(rng, isAr, tier) {
   };
 }
 
-function buildTrial({ mode, diff, level, trialNum, rng, isAr, ramp = 0 }) {
+export function buildTrial({ mode, diff, level, trialNum, rng, isAr, ramp = 0 }) {
   const tier = tierFor(mode, diff, trialNum, level, ramp);
   const kinds = allowedKinds(tier);
   const kind = pickOne(kinds, rng);
@@ -395,12 +395,7 @@ export default function WordLinksGame({ onBack, workoutMode = false }) {
   if (view === 'play3d') {
     return (
       <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <Synonyms3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
-          <WordLinksEngine mode="free" diff="med" level={1} seed={null} cosmos isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} onResult={() => {}} onExit={() => {
-            awardFreeRun?.('synonyms', 0);
-            setView('shell');
-          }} />
-        </Synonyms3DProto>
+        <Synonyms3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
       </Suspense>
     );
   }
@@ -423,7 +418,7 @@ export default function WordLinksGame({ onBack, workoutMode = false }) {
       extraItems={[{
         k: 'proto3d',
         lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نفس اللعبة · بيئة كونية ثلاثية الأبعاد' : 'Same game · cosmos 3D stage',
+        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
         on: () => setView('play3d'),
         icoImg: planetIconUrl('language'),
       }]}

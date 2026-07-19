@@ -28,7 +28,7 @@ const LANES = 3;
 // timer; the only way to lose is steering into the wrong answer.
 const DESCEND_SEC = 3.8;
 
-const BASE = {
+export const BASE = {
   easy: { ops: ['+', '-'], gap: 700, lives: 5, target: 8 },
   med: { ops: ['+', '-', '×'], gap: 650, lives: 4, target: 10 },
   hard: { ops: ['+', '-', '×', '÷'], gap: 600, lives: 3, target: 12 },
@@ -57,7 +57,7 @@ const PP_GATES = 12;
  *    comparison is forced. For × we also seed a table-confusion operand error
  *    (ans ± a) when it is parity-safe.
  */
-function genGate(diff, f, rng) {
+export function genGate(diff, f, rng) {
   const ops = (BASE[diff] || BASE.med).ops;
   const op = ops[Math.floor(rng() * ops.length)];
   const ri = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
@@ -458,12 +458,7 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
   if (view === 'play3d') {
     return (
       <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <MathGates3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
-          <MathGatesEngine mode="free" diff="med" level={1} seed={null} cosmos isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} onResult={() => {}} onExit={() => {
-            awardFreeRun?.('mathGates', 0);
-            setView('shell');
-          }} />
-        </MathGates3DProto>
+        <MathGates3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
       </Suspense>
     );
   }
@@ -486,7 +481,7 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
       extraItems={[{
         k: 'proto3d',
         lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نفس اللعبة · بيئة كونية ثلاثية الأبعاد' : 'Same game · cosmos 3D stage',
+        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
         on: () => setView('play3d'),
         icoImg: planetIconUrl('speed'),
       }]}

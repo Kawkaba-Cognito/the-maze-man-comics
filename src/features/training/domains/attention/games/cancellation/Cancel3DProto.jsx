@@ -3,14 +3,16 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { shapeGeometry } from '../../../../shared/c3dShapes';
 import {
   prepareFreeRound,
   freeRoundErrorCap,
+  freeTapPoints,
+  freeRoundClearPoints,
+  freeWrongTapPenalty,
   SH,
 } from '../../../../shared/focusQuestData';
 import {
-  perspectiveFitDistance,
-  hudCenterNudge,
   isCoarsePointer,
   isDesktopLayout,
 } from '../../../../shared/c3dViewport';
@@ -62,68 +64,6 @@ function hexToInt(hex) {
   return Number.isFinite(n) ? n : 0xe8ac4e;
 }
 
-/** Build ExtrudeGeometry from a THREE.Shape, centered. */
-function extrudeShape(shape2d, depth = 0.38) {
-  const geo = new THREE.ExtrudeGeometry(shape2d, {
-    depth,
-    bevelEnabled: true,
-    bevelThickness: 0.07,
-    bevelSize: 0.055,
-    bevelSegments: 3,
-    curveSegments: 14,
-  });
-  geo.center();
-  return geo;
-}
-
-function starShape(spikes = 5, outer = 0.55, inner = 0.24) {
-  const s = new THREE.Shape();
-  for (let i = 0; i < spikes * 2; i++) {
-    const r = i % 2 === 0 ? outer : inner;
-    const a = (i / (spikes * 2)) * Math.PI * 2 - Math.PI / 2;
-    const x = Math.cos(a) * r;
-    const y = Math.sin(a) * r;
-    if (i === 0) s.moveTo(x, y);
-    else s.lineTo(x, y);
-  }
-  s.closePath();
-  return s;
-}
-
-function polygonShape(n, r = 0.5, rot = -Math.PI / 2) {
-  const s = new THREE.Shape();
-  for (let i = 0; i < n; i++) {
-    const a = rot + (i / n) * Math.PI * 2;
-    const x = Math.cos(a) * r;
-    const y = Math.sin(a) * r;
-    if (i === 0) s.moveTo(x, y);
-    else s.lineTo(x, y);
-  }
-  s.closePath();
-  return s;
-}
-
-function moonShape() {
-  const s = new THREE.Shape();
-  s.absarc(0, 0, 0.5, 0, Math.PI * 2, false);
-  const hole = new THREE.Path();
-  hole.absarc(0.22, 0.08, 0.38, 0, Math.PI * 2, true);
-  s.holes.push(hole);
-  return s;
-}
-
-function shieldShape() {
-  const s = new THREE.Shape();
-  s.moveTo(0, 0.55);
-  s.lineTo(0.42, 0.32);
-  s.lineTo(0.42, -0.05);
-  s.quadraticCurveTo(0.42, -0.35, 0, -0.55);
-  s.quadraticCurveTo(-0.42, -0.35, -0.42, -0.05);
-  s.lineTo(-0.42, 0.32);
-  s.closePath();
-  return s;
-}
-
 function makeMat(colorHex, opts = {}) {
   const color = new THREE.Color(hexToInt(colorHex));
   return new THREE.MeshStandardMaterial({
@@ -134,113 +74,21 @@ function makeMat(colorHex, opts = {}) {
   });
 }
 
-function addMesh(group, geo, mat, pos, rot, scale) {
-  const m = new THREE.Mesh(geo, mat);
-  if (pos) m.position.set(pos[0], pos[1], pos[2]);
-  if (rot) m.rotation.set(rot[0], rot[1], rot[2]);
-  if (scale) m.scale.set(scale[0], scale[1], scale[2]);
-  group.add(m);
-  return m;
-}
-
-/** Normal Focus Quest shapes as clear 3D meshes (face-on). */
+/** Focus Quest shape as a clear, face-on 3D piece: contour + coloured extrude + plate. */
 function makeShapeObject(name, colorHex) {
   const g = new THREE.Group();
-  const mat = makeMat(colorHex);
-  const matHi = makeMat(colorHex, { emissive: 0.4 });
+  const geo = shapeGeometry(name);
 
-  switch (name) {
-    case 'circle':
-    case 'almostCircle':
-      addMesh(g, new THREE.SphereGeometry(0.48, 28, 20), mat);
-      break;
-    case 'square':
-      addMesh(g, new THREE.BoxGeometry(0.85, 0.85, 0.38), mat);
-      break;
-    case 'wideRect':
-      addMesh(g, new THREE.BoxGeometry(1.05, 0.55, 0.34), mat);
-      break;
-    case 'tallRect':
-      addMesh(g, new THREE.BoxGeometry(0.55, 1.05, 0.34), mat);
-      break;
-    case 'roundsq':
-    case 'ovalSq':
-      addMesh(g, new THREE.CylinderGeometry(0.48, 0.48, 0.34, 28), mat, null, [Math.PI / 2, 0, 0]);
-      break;
-    case 'triangle':
-    case 'triFlat':
-      addMesh(g, new THREE.ConeGeometry(0.55, 0.85, 3), mat);
-      break;
-    case 'triR':
-      addMesh(g, new THREE.ConeGeometry(0.55, 0.85, 3), mat, null, [0, 0, -Math.PI / 2]);
-      break;
-    case 'diamond':
-    case 'rhombus':
-    case 'fatDiamond':
-      addMesh(g, new THREE.OctahedronGeometry(0.55, 0), matHi);
-      break;
-    case 'pentagon':
-      addMesh(g, extrudeShape(polygonShape(5, 0.52), 0.34), mat);
-      break;
-    case 'hexagon':
-    case 'hexTall':
-      addMesh(g, extrudeShape(polygonShape(6, 0.5), 0.34), mat);
-      break;
-    case 'star':
-      addMesh(g, extrudeShape(starShape(5, 0.55, 0.22), 0.3), matHi);
-      break;
-    case 'cross': {
-      addMesh(g, new THREE.BoxGeometry(0.85, 0.28, 0.28), mat);
-      addMesh(g, new THREE.BoxGeometry(0.28, 0.85, 0.28), mat);
-      break;
-    }
-    case 'heart':
-      addMesh(g, new THREE.SphereGeometry(0.28, 16, 12), matHi, [-0.18, 0.12, 0]);
-      addMesh(g, new THREE.SphereGeometry(0.28, 16, 12), matHi, [0.18, 0.12, 0]);
-      addMesh(g, new THREE.ConeGeometry(0.42, 0.55, 4), mat, [0, -0.22, 0], [0, Math.PI / 4, Math.PI]);
-      break;
-    case 'lightning':
-      addMesh(g, extrudeShape(starShape(3, 0.5, 0.18), 0.26), matHi);
-      break;
-    case 'moon':
-    case 'tinyMoon':
-    case 'semicircle':
-    case 'bigSemi':
-      addMesh(g, extrudeShape(moonShape(), 0.3), matHi);
-      break;
-    case 'arrowR':
-    case 'arrowL': {
-      const dir = name === 'arrowL' ? -1 : 1;
-      addMesh(g, new THREE.BoxGeometry(0.55, 0.22, 0.22), mat, [-0.08 * dir, 0, 0]);
-      addMesh(g, new THREE.ConeGeometry(0.28, 0.4, 3), matHi, [0.32 * dir, 0, 0], [0, 0, -dir * Math.PI / 2]);
-      break;
-    }
-    case 'ovalH':
-    case 'fatOval':
-      addMesh(g, new THREE.SphereGeometry(0.42, 24, 16), mat, null, null, [1.45, 0.7, 1]);
-      break;
-    case 'ovalV':
-    case 'thinOval':
-      addMesh(g, new THREE.SphereGeometry(0.42, 24, 16), mat, null, null, [0.7, 1.45, 1]);
-      break;
-    case 'trapezoid':
-    case 'parallelR': {
-      const s = new THREE.Shape();
-      s.moveTo(-0.5, -0.35);
-      s.lineTo(0.5, -0.35);
-      s.lineTo(0.32, 0.35);
-      s.lineTo(-0.32, 0.35);
-      s.closePath();
-      addMesh(g, extrudeShape(s, 0.3), mat);
-      break;
-    }
-    case 'shield':
-      addMesh(g, extrudeShape(shieldShape(), 0.3), mat);
-      break;
-    default:
-      addMesh(g, new THREE.SphereGeometry(0.45, 22, 16), mat);
-  }
+  // Dark contour behind the shape — keeps the silhouette crisp under bloom.
+  const outline = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x120d07 }));
+  outline.scale.setScalar(1.12);
+  outline.position.z = -0.05;
+  g.add(outline);
 
+  const mesh = new THREE.Mesh(geo, makeMat(colorHex, { emissive: 0.32, metalness: 0.28, roughness: 0.42 }));
+  g.add(mesh);
+
+  // Soft backing plate for figure/ground contrast.
   const plate = new THREE.Mesh(
     new THREE.CircleGeometry(0.72, 28),
     new THREE.MeshBasicMaterial({
@@ -254,6 +102,7 @@ function makeShapeObject(name, colorHex) {
   g.add(plate);
   return g;
 }
+
 
 function disposeObject3D(root) {
   root.traverse((obj) => {
@@ -303,6 +152,7 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
   const [timeLeft, setTimeLeft] = useState(boot.tlim);
   const [banner, setBanner] = useState(null);
   const [cleared, setCleared] = useState(0);
+  const [score, setScore] = useState(0);
   const [running, setRunning] = useState(false);
 
   const stageRef = useRef(0);
@@ -314,6 +164,9 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
   const bannerRef = useRef(null);
   const goTimerRef = useRef(0);
   const clearedRef = useRef(0);
+  const scoreRef = useRef(0);
+  const streakRef = useRef(0);
+  const startRoundRef = useRef(() => {});
   const playSfxRef = useRef(playSfx);
   playSfxRef.current = playSfx;
   const engageAtRef = useRef(0);
@@ -464,7 +317,44 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
     /** @type {{ mesh: THREE.Mesh, cell: object, home: THREE.Vector3, phase: number, state: string, t: number }[]} */
     let pieces = [];
     let interactive = false;
-    let boardHalf = 4.2; // updated in loadBoard — used to frame portrait phones
+    // Aspect-aware lattice: per-axis spacing so the board FILLS the viewport
+    // (wide on desktop, tall on phones) exactly like the 2D play area.
+    let layout = { grid: 5, gapX: 1.7, gapY: 1.7, scale: 1.1, halfX: 4.6, halfY: 4.6 };
+
+    const computeLayout = (grid) => {
+      const w = wrap.clientWidth || 1;
+      const h = wrap.clientHeight || 1;
+      const aspect = Math.max(0.55, Math.min(2.1, w / Math.max(1, h)));
+      const spanY = coarse ? 8.4 : 8.8;
+      const spanX = spanY * Math.max(0.62, Math.min(1.55, aspect));
+      const gapX = spanX / grid;
+      const gapY = spanY / grid;
+      const scale = Math.min(gapX, gapY) * 0.68;
+      return {
+        grid,
+        gapX,
+        gapY,
+        scale,
+        halfX: spanX / 2 + gapX * 0.15,
+        halfY: spanY / 2 + gapY * 0.15,
+      };
+    };
+
+    const applyLayout = () => {
+      const { grid, gapX, gapY, scale } = layout;
+      const ox = -((grid - 1) * gapX) / 2;
+      const oy = ((grid - 1) * gapY) / 2;
+      pieces.forEach((p, idx) => {
+        const col = idx % grid;
+        const row = Math.floor(idx / grid);
+        p.home.set(ox + col * gapX, oy - row * gapY, 0);
+        p.scale = scale;
+        if (p.state === 'idle') {
+          p.mesh.position.set(p.home.x, p.home.y, p.home.z);
+          p.mesh.scale.setScalar(scale);
+        }
+      });
+    };
 
     const disposeBoard = () => {
       for (const p of pieces) {
@@ -481,13 +371,23 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
       const desk = isDesktopLayout(w, h);
       camera.aspect = aspect;
       camera.fov = coarse ? 54 : desk ? 46 : 48;
-      const pad = coarse ? 1.2 : desk ? 1.1 : 1.14;
-      const dist = perspectiveFitDistance(camera, boardHalf, aspect, pad);
-      // Sit the lattice under the HUD, centered in the remaining viewport
-      const nudge = hudCenterNudge(h, boardHalf, { strength: desk ? 0.95 : 1.1 });
+      const pad = coarse ? 1.16 : desk ? 1.08 : 1.12;
+      // Fit the lattice into the viewport area BELOW the top HUD (title + hint
+      // + stats + timebar), so no shape can ever sit behind the chrome. The
+      // board is fitted per axis (it is wider than tall on desktop) and then
+      // centred within the sub-HUD band.
+      const vFov = (camera.fov * Math.PI) / 180;
+      const tan = Math.tan(vFov / 2);
+      const hudPx = Math.max(120, Math.min(210, h * 0.17));
+      const hudFrac = Math.min(0.42, hudPx / Math.max(1, h));
+      const dist = Math.max(
+        (layout.halfY * pad) / (tan * (1 - hudFrac)),
+        (layout.halfX * pad) / (tan * Math.max(0.2, aspect)),
+      );
+      const nudge = hudFrac * dist * tan; // centre of the area under the HUD
       boardGroup.position.set(0, -nudge, 0);
-      camera.position.set(0, -nudge * 0.12, dist);
-      camera.lookAt(0, -nudge, 0);
+      camera.position.set(0, 0, dist);
+      camera.lookAt(0, 0, 0);
       camera.updateProjectionMatrix();
       renderer.setSize(w, h, false);
       composer?.setSize(w, h);
@@ -497,22 +397,12 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
     const loadBoard = (round) => {
       disposeBoard();
       const grid = round.grid;
-      // Face-on lattice — slightly tighter on coarse/touch so it fits phones
-      const gapMul = coarse ? 0.92 : 1;
-      const gap = (grid <= 5 ? 1.7 : grid <= 7 ? 1.28 : 1.02) * gapMul;
-      const scale = (grid <= 5 ? 1.05 : grid <= 7 ? 0.86 : 0.7) * (coarse ? 1.08 : 1);
-      const origin = -((grid - 1) * gap) / 2;
-      boardHalf = Math.abs(origin) + gap * 0.55;
+      layout = computeLayout(grid);
       boardGroup.rotation.set(0, 0, 0);
 
-      round.cells.forEach((cell, idx) => {
-        const col = idx % grid;
-        const row = Math.floor(idx / grid);
+      round.cells.forEach((cell) => {
         const mesh = makeShapeObject(cell.shape, cell.fill);
-        const x = origin + col * gap;
-        const y = -origin - row * gap;
-        const z = 0;
-        mesh.position.set(x, y, z - 4);
+        mesh.position.set(0, 0, -4);
         mesh.scale.setScalar(0.01);
         mesh.rotation.set(0, 0, 0);
         mesh.userData.pieceIndex = pieces.length;
@@ -520,13 +410,14 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
         pieces.push({
           mesh,
           cell,
-          home: new THREE.Vector3(x, y, z),
-          phase: 0,
+          home: new THREE.Vector3(0, 0, 0),
+          phase: Math.random() * Math.PI * 2,
           state: 'enter',
           t: 0,
-          scale,
+          scale: layout.scale,
         });
       });
+      applyLayout();
       frameBoard();
     };
 
@@ -536,6 +427,8 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
     const pointer = new THREE.Vector2();
 
     const finishWrong = () => {
+      // 2D free: FREE_LIVES = 1 — a failed round (timeout / error cap) ends the run.
+      streakRef.current = 0;
       runningRef.current = false;
       interactive = false;
       bannerRef.current = 'over';
@@ -548,11 +441,18 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
       interactive = false;
       clearedRef.current += 1;
       setCleared(clearedRef.current);
+      // 2D free: clear streak → clear bonus, then AUTO-ramp to the next stage.
+      streakRef.current += 1;
+      scoreRef.current += freeRoundClearPoints(roundRef.current?.tlim, streakRef.current);
+      setScore(scoreRef.current);
       bannerRef.current = 'clear';
       setBanner('clear');
       setRunning(false);
       spawnBurst(new THREE.Vector3(0, 0, 2), 'clear');
-      playSfxRef.current?.('collect');
+      playSfxRef.current?.('win');
+      window.setTimeout(() => {
+        if (bannerRef.current === 'clear') startRoundRef.current(stageRef.current + 1);
+      }, 900);
     };
 
     const tmpProj = new THREE.Vector3();
@@ -597,6 +497,9 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
         piece.t = 0;
         foundRef.current += 1;
         setFound(foundRef.current);
+        // 2D free scoring: every correct tap earns depth-weighted points.
+        scoreRef.current += freeTapPoints(roundRef.current.diff, roundRef.current.freeStage ?? stageRef.current);
+        setScore(scoreRef.current);
         spawnBurst(mesh.getWorldPosition(new THREE.Vector3()), 'ok');
         playSfxRef.current?.('collect');
         if (foundRef.current >= roundRef.current.tc) finishClear();
@@ -605,6 +508,10 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
         piece.t = 0;
         errorsRef.current += 1;
         setErrors(errorsRef.current);
+        // 2D free: a wrong tap costs points AND 3s of the round clock.
+        scoreRef.current = Math.max(0, scoreRef.current - freeWrongTapPenalty(roundRef.current.diff));
+        setScore(scoreRef.current);
+        timeLeftRef.current -= 3;
         spawnBurst(mesh.getWorldPosition(new THREE.Vector3()), 'bad');
         playSfxRef.current?.('error');
         const cap = freeRoundErrorCap(roundRef.current.tc);
@@ -618,7 +525,14 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
     };
     renderer.domElement.addEventListener('pointerup', onPointerUp);
 
-    const resize = () => frameBoard();
+    // Re-layout on resize/rotation so the lattice keeps filling the viewport.
+    const resize = () => {
+      if (roundRef.current && pieces.length) {
+        layout = computeLayout(roundRef.current.grid);
+        applyLayout();
+      }
+      frameBoard();
+    };
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
@@ -683,7 +597,8 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
           mesh.scale.setScalar(p.scale * e);
           if (k >= 1) p.state = 'idle';
         } else if (p.state === 'idle') {
-          mesh.position.copy(p.home);
+          // Gentle float only — orientation stays face-on so silhouettes always read.
+          mesh.position.set(p.home.x, p.home.y + Math.sin(tsec * 1.3 + p.phase) * 0.045, p.home.z);
           mesh.rotation.set(0, 0, 0);
           mesh.scale.setScalar(p.scale);
         } else if (p.state === 'pop') {
@@ -830,6 +745,7 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
       playSfxRef.current?.('collect');
     }, 900);
   };
+  startRoundRef.current = startRound;
 
   useEffect(() => {
     // Wait a frame so the Three scene api is ready
@@ -869,6 +785,7 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
           <span>{t.stage} {stage + 1}</span>
           <span>{t.found} {found}/{round.tc}</span>
           <span>{t.err} {errors}/{errCap}</span>
+          <span>{score} {isAr ? 'نقطة' : 'pts'}</span>
           <span>{Math.ceil(timeLeft)}s</span>
         </div>
         <div className="c3d-timebar" aria-hidden="true">
@@ -879,29 +796,18 @@ export default function Cancel3DProto({ isAr, playSfx, onBack }) {
       {banner && (
         <div className={`c3d-banner c3d-banner--${banner}`}>
           {banner === 'go' && <span>{t.go}</span>}
-          {banner === 'clear' && (
-            <>
-              <span>{t.clear}</span>
-              <button
-                type="button"
-                className="c3d-cta"
-                onClick={() => { playSfx?.('click'); startRound(stage + 1); }}
-              >
-                {t.next}
-              </button>
-            </>
-          )}
+          {banner === 'clear' && <span>{t.clear}</span>}
           {banner === 'over' && (
             <>
               <span>{t.over}</span>
               <div className="c3d-banner-meta">
-                {t.stage} {stage + 1} · {cleared} {isAr ? 'قطاعات' : 'sectors'}
+                {t.stage} {stage + 1} · {cleared} {isAr ? 'قطاعات' : 'sectors'} · {score} {isAr ? 'نقطة' : 'pts'}
               </div>
               <div className="c3d-banner-actions">
                 <button
                   type="button"
                   className="c3d-cta"
-                  onClick={() => { playSfx?.('click'); clearedRef.current = 0; setCleared(0); startRound(0); }}
+                  onClick={() => { playSfx?.('click'); clearedRef.current = 0; setCleared(0); scoreRef.current = 0; setScore(0); streakRef.current = 0; startRound(0); }}
                 >
                   {t.retry}
                 </button>

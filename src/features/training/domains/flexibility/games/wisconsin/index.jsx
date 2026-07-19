@@ -31,19 +31,21 @@ const PER_LEVEL = 16;
 const WIN_ACC = 0.72;
 const PP_TRIALS = 16;
 
-const COLORS = ['#e05a5a', '#3aa564', '#e0a92e', '#4f8fd0']; // red green yellow blue
-const SHAPES = ['triangle', 'star', 'cross', 'circle'];
+// Card feature banks + the hidden-rule state machine helpers. Exported so the 3D
+// proto plays the EXACT same WCST (same cards, same silent rule switches).
+export const COLORS = ['#e05a5a', '#3aa564', '#e0a92e', '#4f8fd0']; // red green yellow blue
+export const SHAPES = ['triangle', 'star', 'cross', 'circle'];
 // Reference card i = { color: COLORS[i], shape: SHAPES[i], number: i + 1 }.
-const REFERENCE = [0, 1, 2, 3].map((i) => ({ shape: SHAPES[i], color: COLORS[i], number: i + 1 }));
+export const REFERENCE = [0, 1, 2, 3].map((i) => ({ shape: SHAPES[i], color: COLORS[i], number: i + 1 }));
 
-const RULES = ['color', 'shape', 'number'];
+export const RULES = ['color', 'shape', 'number'];
 
-function pickRule(rng, exclude) {
+export function pickRule(rng, exclude) {
   const opts = RULES.filter((x) => x !== exclude);
   return opts[Math.floor(rng() * opts.length)];
 }
 
-function dealCard(rng) {
+export function dealCard(rng) {
   const order = [0, 1, 2, 3];
   for (let i = order.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
@@ -53,7 +55,7 @@ function dealCard(rng) {
   return { color: COLORS[ci], shape: SHAPES[si], number: ni + 1, match: { color: ci, shape: si, number: ni } };
 }
 
-function switchAfter(mode, diff, level, ramp) {
+export function switchAfter(mode, diff, level, ramp) {
   if (mode === 'free') return Math.max(3, Math.round(6 - (ramp ?? 0) * 3)); // 6 → 3 as it ramps
   if (mode === 'passplay') return 4;
   const base = diff === 'easy' ? 6 : diff === 'hard' ? 4 : 5;
@@ -320,12 +322,7 @@ export default function CardSortGame({ onBack, workoutMode = false }) {
   if (view === 'play3d') {
     return (
       <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <Wisconsin3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
-          <WcstEngine mode="free" diff="med" level={1} seed={null} cosmos isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} onResult={() => {}} onExit={() => {
-            awardFreeRun?.('wisconsin', 0);
-            setView('shell');
-          }} />
-        </Wisconsin3DProto>
+        <Wisconsin3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
       </Suspense>
     );
   }
@@ -348,7 +345,7 @@ export default function CardSortGame({ onBack, workoutMode = false }) {
       extraItems={[{
         k: 'proto3d',
         lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نفس اللعبة · بيئة كونية ثلاثية الأبعاد' : 'Same game · cosmos 3D stage',
+        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
         on: () => setView('play3d'),
         icoImg: planetIconUrl('flexibility'),
       }]}

@@ -83,6 +83,28 @@ function boardSpecSurvival(boardIdx) {
   return { variant, decoys: Math.min(2 + Math.floor((phase - SURV_PHASES.length) / 2), 6) };
 }
 
+/**
+ * Pure, render-free ordered node sequence for one Survival board — the same
+ * n / variant / colour-alternation `newBoard()` builds, minus canvas layout.
+ * Numbers 1..n in ascending order (TMT-A forward rule); the Color-Trails
+ * variant alternates the EXPECTED colour each step (CTT-2). Used by the 3D
+ * prototype so its sequence order + colour rule match the 2D game exactly.
+ */
+export function prepareTrailRound(stage, seed) {
+  const rng = makeRng((seed ?? 1) >>> 0);
+  const boardIdx = Math.max(0, stage | 0);
+  const base = rampCfg(boardIdx);
+  const spec = boardSpecSurvival(boardIdx);
+  const n = base.n;
+  const startColor = rng() < 0.5 ? 0 : 1;
+  const nodes = [];
+  for (let k = 1; k <= n; k++) {
+    const colorIndex = spec.variant === 'color' ? (startColor + (k - 1)) % 2 : 0;
+    nodes.push({ label: String(k), colorIndex });
+  }
+  return { n, variant: spec.variant, decoys: spec.decoys || 0, startColor, timeMs: base.time, nodes, colors: CTT_COLORS };
+}
+
 export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 1) : 0;
@@ -559,12 +581,7 @@ export default function TrailMakingGame({ onBack, workoutMode = false }) {
   if (view === 'play3d') {
     return (
       <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <TrailMaking3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')}>
-          <TrailEngine mode="free" diff="med" level={1} seed={null} cosmos isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} onResult={() => {}} onExit={() => {
-            awardFreeRun?.('trailMaking', 0);
-            setView('shell');
-          }} />
-        </TrailMaking3DProto>
+        <TrailMaking3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
       </Suspense>
     );
   }
@@ -587,7 +604,7 @@ export default function TrailMakingGame({ onBack, workoutMode = false }) {
       extraItems={[{
         k: 'proto3d',
         lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نفس اللعبة · بيئة كونية ثلاثية الأبعاد' : 'Same game · cosmos 3D stage',
+        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
         on: () => setView('play3d'),
         icoImg: planetIconUrl('speed'),
       }]}

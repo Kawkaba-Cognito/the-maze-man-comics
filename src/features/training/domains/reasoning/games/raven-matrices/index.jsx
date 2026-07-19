@@ -121,7 +121,7 @@ function ReasoningModes({ t, isAr, onFree, onLevels, onChallenge, onProto3d, pla
     {
       k: 'proto3d',
       lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-      hint: isAr ? 'نفس اللعبة · مسرح كوني ثلاثي الأبعاد' : 'Same game · cosmos 3D stage',
+      hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
       on: onProto3d,
       icoImg: planetIconUrl('reasoning'),
       mod: 'ct-fq-attn-mode--proto3d',
@@ -164,9 +164,7 @@ export default function RavenMatricesGame({ onBack, workoutMode = false, cosmosA
             if (cosmosAutoPlay) onBack?.();
             else exitCosmos();
           }}
-        >
-          {node}
-        </Raven3DProto>
+        />
       </Suspense>
     ) : node
   ), [isCosmos, isAr, playSfx, cosmosAutoPlay, onBack, exitCosmos]);
@@ -357,12 +355,12 @@ export default function RavenMatricesGame({ onBack, workoutMode = false, cosmosA
   }, [chalNames, t.needTwo]);
 
   useEffect(() => {
-    if ((workoutMode || isCosmos) && !workoutLaunched.current) {
+    if (workoutMode && !workoutLaunched.current) {
       workoutLaunched.current = true;
       startFree();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutMode, isCosmos]);
+  }, [workoutMode]);
 
   const quitToMenu = useCallback(() => {
     setQuitOpen(false); clearTimers(); trialLogRef.current?.discard(); trialLogRef.current = null;
@@ -384,6 +382,15 @@ export default function RavenMatricesGame({ onBack, workoutMode = false, cosmosA
   const block = blockRef.current;
   const starLabel = lastResult?.grade?.stars === 3 ? t.perfect : lastResult?.grade?.stars === 2 ? t.good : t.tryAgain;
 
+  /* ── Standalone 3D prototype ── */
+  if (phase === 'play3d') {
+    return (
+      <Suspense fallback={C3D_FALLBACK}>
+        <Raven3DProto isAr={isAr} playSfx={playSfx} onBack={() => setPhase('hub')} />
+      </Suspense>
+    );
+  }
+
   /* ── Hub ── */
   if (phase === 'hub' && !isCosmos) {
     return (
@@ -401,7 +408,7 @@ export default function RavenMatricesGame({ onBack, workoutMode = false, cosmosA
                 onFree={() => setPhase('freeIntro')}
                 onLevels={() => setPhase('diff')}
                 onChallenge={() => setPhase('chal')}
-                onProto3d={() => { workoutLaunched.current = false; setCosmosEmbed(true); }} />
+                onProto3d={() => setPhase('play3d')} />
               <HubScienceLink gameId="raven-matrices" isAr={isAr} playSfx={playSfx} />
             </div>
           </div>
