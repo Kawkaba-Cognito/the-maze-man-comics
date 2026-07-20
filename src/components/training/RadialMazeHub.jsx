@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { DomainIconArt } from '../../features/training/shared/DomainIcon';
 import UniverseStage from '../shared/UniverseStage';
 import { DOMAIN_COLOR, DOMAINS } from './trainingData';
@@ -6,6 +6,10 @@ import { useApp } from '../../context/AppContext';
 import { useThemedChrome } from '../../hooks/useThemedChrome';
 import { tokens } from '../../styles/tokens';
 import { domainPlanetUrl } from '../../lib/planetIcons';
+
+/** The 3D Kawkab mascot that stands at the hub centre (lazy — pulls in three.js
+ *  + GLTFLoader only for users who reach the Training hub). */
+const AssessmentMascot3D = lazy(() => import('./AssessmentMascot3D'));
 
 /** Stagger so the six worlds don't breathe in lockstep. */
 const PLANET_PHASE = {
@@ -506,45 +510,26 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               <animate attributeName="r" values="34;48;34" dur="3.2s" repeatCount="indefinite" />
               <animate attributeName="opacity" values="0.55;0.08;0.55" dur="3.2s" repeatCount="indefinite" />
             </circle>
-            <g>
+            {/* The solid "planet" body is gone — the 3D Kawkab mascot (overlaid
+                canvas below) stands here. We keep the orbit ring as a ground
+                halo the mascot floats above. */}
+            <ellipse
+              cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1] + 20}
+              rx="40" ry="12"
+              fill="none"
+              stroke="rgba(232,172,78,0.5)"
+              strokeWidth="1.1"
+              opacity="0.5"
+            >
               <animateTransform
                 attributeName="transform"
-                type="translate"
-                values={`0 0; 0 -2; 0 0`}
-                keyTimes="0;0.5;1"
-                dur="3.8s"
+                type="rotate"
+                from={`-12 ${HUB_NEXUS[0]} ${HUB_NEXUS[1] + 20}`}
+                to={`348 ${HUB_NEXUS[0]} ${HUB_NEXUS[1] + 20}`}
+                dur="14s"
                 repeatCount="indefinite"
               />
-              <circle
-                cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1]} r={30}
-                fill="url(#rh-assess-body)"
-                stroke="rgba(255,220,140,0.85)"
-                strokeWidth="1.8"
-                filter="url(#pathGlow)"
-              />
-              <ellipse
-                cx={HUB_NEXUS[0] - 8} cy={HUB_NEXUS[1] - 10}
-                rx="11" ry="7"
-                fill="rgba(255,248,220,0.35)"
-              />
-              <ellipse
-                cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1] + 2}
-                rx="42" ry="13"
-                fill="none"
-                stroke="rgba(232,172,78,0.5)"
-                strokeWidth="1.1"
-                opacity="0.55"
-              >
-                <animateTransform
-                  attributeName="transform"
-                  type="rotate"
-                  from={`-12 ${HUB_NEXUS[0]} ${HUB_NEXUS[1]}`}
-                  to={`348 ${HUB_NEXUS[0]} ${HUB_NEXUS[1]}`}
-                  dur="14s"
-                  repeatCount="indefinite"
-                />
-              </ellipse>
-            </g>
+            </ellipse>
             <text
               x={HUB_NEXUS[0]}
               y={HUB_NEXUS[1] + 52}
@@ -632,6 +617,32 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               r={0.8 + (i % 3) * 0.4} fill="#e8ac4e" opacity={op * 0.42}/>;
           })}
         </svg>
+
+        {/* 3D Kawkab mascot — overlaid exactly on the SVG hub nexus
+            (HUB_NEXUS = [180, 360] in a 360×660 viewBox, so left:50% of the
+            stage, 360px down from its top). Tapping opens the assessment; if
+            WebGL/model load fails it renders nothing and the SVG glow + label
+            underneath stay as the clickable fallback. */}
+        <div
+          className="rh-assess-mascot"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: 360,
+            transform: 'translate(-50%, -58%)',
+            zIndex: 5,
+            filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.5))',
+          }}
+        >
+          <Suspense fallback={null}>
+            <AssessmentMascot3D
+              size={150}
+              isAr={isAr}
+              label={isAr ? 'ابدأ التقييم' : 'Start assessment'}
+              onActivate={onOpenAssessment}
+            />
+          </Suspense>
+        </div>
       </div>
 
       {/* Daily Workout now lives at the end of the Assessment screen. */}
