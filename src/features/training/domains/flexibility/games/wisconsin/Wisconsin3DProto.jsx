@@ -124,7 +124,7 @@ function cardMesh(feature) {
     roughness: 0.7,
   });
   const mats = [side, side, side, side, face, side];
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.35, 1.8, 0.12), mats);
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.35, 1.8, 0.22), mats);
   mesh.userData.faceTex = faceTex;
   mesh.userData.faceMat = face;
   return mesh;
@@ -157,20 +157,29 @@ export default function Wisconsin3DProto({ isAr, playSfx, onBack }) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');
       return () => boot.dispose();
     }
-    const { camera, playRoot, coarse, setTick, setFitHalf, renderer, dispose } = boot;
+    const { camera, playRoot, coarse, setTick, setFitBox, renderer, dispose } = boot;
 
-    // Reference cards row (fixed)
-    const refGap = coarse ? 1.55 : 1.7;
+    // Reference cards row (fixed) — each on a glowing landing slot so it reads
+    // as a physical sorting bay you drop the dealt card onto.
+    const refGap = coarse ? 1.62 : 1.78;
+    const refScale = 0.78;
     const refs = REFERENCE.map((feature, i) => {
+      const x = (i - 1.5) * refGap;
+      const slot = new THREE.Mesh(
+        new THREE.BoxGeometry(1.35 * refScale + 0.16, 1.8 * refScale + 0.16, 0.06),
+        matStd(0x1a140c, { emissive: 0xe8ac4e, emissiveIntensity: 0.08, metalness: 0.3, roughness: 0.6 }),
+      );
+      slot.position.set(x, 1.55, -0.16);
+      playRoot.add(slot);
       const mesh = cardMesh(feature);
-      mesh.scale.setScalar(0.72);
-      mesh.position.set((i - 1.5) * refGap, 1.55, 0);
+      mesh.scale.setScalar(refScale);
+      mesh.position.set(x, 1.55, 0);
       mesh.userData.refIdx = i;
       mesh.userData.flash = 0;
       playRoot.add(mesh);
       return mesh;
     });
-    setFitHalf(Math.max(4.2, 1.5 * refGap + 1.1));
+    setFitBox(Math.max(3.0, 1.5 * refGap + 0.9), 3.7);
 
     // Dealt card (below)
     let dealt = null;

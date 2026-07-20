@@ -203,7 +203,8 @@ export function hintReveal(state) {
     if (!fixed[r][c] && player[r][c] !== solution[r][c]) pool.push([r, c]);
   }
   if (!pool.length) return { next: state, revealed: false };
-  const [r, c] = pool[Math.floor(Math.random() * pool.length)];
+  const rng = createRng(((state.seed || 1) ^ (pool.length * 2654435761)) >>> 0);
+  const [r, c] = pool[Math.floor(rng() * pool.length)];
   const np = player.map((row) => row.slice());
   const nf = fixed.map((row) => row.slice());
   np[r][c] = solution[r][c]; nf[r][c] = true;

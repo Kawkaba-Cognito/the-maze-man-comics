@@ -177,6 +177,28 @@ body:has(#screen-comics.active .cancellation-task-game) #maze-bg-canvas,
 body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
     display: none !important;
 }
+/* Cosmos mode hubs — force the same deep black void as Cancellation
+ * (beats ComicsScreen cream/purple surface AND light-theme body #e8eef5 grey). */
+html:has(.ct-fq-training-shell--mode-cosmos),
+body:has(.ct-fq-training-shell--mode-cosmos),
+#screen-comics:has(.ct-fq-training-shell--mode-cosmos),
+#ui-shell:has(#screen-comics.active .ct-fq-training-shell--mode-cosmos),
+#screen-comics:has(.ct-fq-training-shell--mode-cosmos) > div {
+    background: #07060b !important;
+    background-color: #07060b !important;
+}
+/* Universe landings paint their own black void — hide light maze textures
+ * that otherwise soft-light over the scene (reads as white haze on desktop). */
+body:has(#screen-home.active) #maze-bg-canvas,
+body:has(#screen-home.active) #maze-photo-layer,
+body:has(#screen-learn.active) #maze-bg-canvas,
+body:has(#screen-learn.active) #maze-photo-layer,
+body:has(#screen-other.active) #maze-bg-canvas,
+body:has(#screen-other.active) #maze-photo-layer,
+body:has(#screen-relax.active) #maze-bg-canvas,
+body:has(#screen-relax.active) #maze-photo-layer {
+    display: none !important;
+}
 /* ── HOME SCREEN ── */
 /* ═══════════════════════════════════
    HOME — dawn-mind stage (full bleed)

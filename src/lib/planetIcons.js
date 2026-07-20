@@ -8,7 +8,7 @@ import { assetUrl } from './assetUrl';
  * fixed set of categories (domains / wellbeing pillars / planet types).
  */
 const FILES = {
-  // Training domains
+  // Training domains (legacy Fluent — prefer domainPlanetUrl on the hub)
   attention: 'ringed_planet.webp',
   speed: 'comet.webp',
   memory: 'full_moon.webp',
@@ -27,7 +27,18 @@ const FILES = {
   journal: 'notebook_with_decorative_cover.webp',
 };
 
+/** Hand-painted cosmos planets for the Training radial hub (per-domain art). */
+const DOMAIN_PLANET_IDS = [
+  'attention', 'speed', 'memory', 'language', 'reasoning', 'flexibility',
+];
+
 export function planetIconUrl(categoryId) {
   const file = FILES[categoryId];
   return file ? assetUrl(`Assets/planets/${file}`) : null;
+}
+
+/** Painted domain planet for RadialMazeHub — falls back to Fluent emoji. */
+export function domainPlanetUrl(domainId) {
+  if (!DOMAIN_PLANET_IDS.includes(domainId)) return planetIconUrl(domainId);
+  return assetUrl(`Assets/domain-planets/${domainId}.webp`);
 }

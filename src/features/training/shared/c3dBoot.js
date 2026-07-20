@@ -7,8 +7,6 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {
-  perspectiveFitDistance,
-  hudCenterNudge,
   isCoarsePointer,
   isDesktopLayout,
 } from './c3dViewport';
@@ -94,7 +92,10 @@ export function bootC3dScene(wrap, opts = {}) {
   const playRoot = new THREE.Group();
   scene.add(playRoot);
 
-  let fitHalf = opts.fitHalf ?? 4.2;
+  // Content extent (half-width × half-height in world units). Square by default;
+  // games with non-square content call setFitBox for a tighter, bigger fit.
+  let fitHalfX = opts.fitHalf ?? 4.2;
+  let fitHalfY = opts.fitHalf ?? 4.2;
 
   const frame = () => {
     const w = wrap.clientWidth || 1;
@@ -102,13 +103,27 @@ export function bootC3dScene(wrap, opts = {}) {
     const aspect = w / Math.max(1, h);
     const desk = isDesktopLayout(w, h);
     camera.aspect = aspect;
-    camera.fov = opts.fov ?? (coarse ? 54 : desk ? 46 : 48);
-    const pad = coarse ? 1.2 : desk ? 1.1 : 1.14;
-    const dist = perspectiveFitDistance(camera, fitHalf, aspect, pad);
-    const nudge = hudCenterNudge(h, fitHalf, { strength: desk ? 0.9 : 1.08 });
+    camera.fov = opts.fov ?? (coarse ? 56 : desk ? 46 : 50);
+    const vFov = (camera.fov * Math.PI) / 180;
+    const tan = Math.tan(vFov / 2);
+    // Reserve a top band for the floating HUD (title + hint + stats) so the
+    // playfield is fitted into the region BELOW it and can never overlap the
+    // chrome. Phones get a taller reserve (bigger HUD text share).
+    const hudPx = Math.max(92, Math.min(196, h * (coarse ? 0.19 : 0.13)));
+    const hudFrac = Math.min(0.4, hudPx / Math.max(1, h));
+    // Tight padding → the playfield genuinely fills the screen (the old 1.2
+    // pad + fit-largest-axis made everything look small, esp. on portrait).
+    const pad = coarse ? 1.05 : desk ? 1.06 : 1.08;
+    // Fit each axis independently: vertical against the usable (below-HUD)
+    // height, horizontal against the full width.
+    const distV = (fitHalfY * pad) / (tan * Math.max(0.05, 1 - hudFrac));
+    const distH = (fitHalfX * pad) / (tan * Math.max(0.2, aspect));
+    const dist = Math.max(distV, distH);
+    // Shift content down so it is centred in the region under the HUD.
+    const nudge = hudFrac * dist * tan;
     playRoot.position.set(0, -nudge, 0);
-    camera.position.set(0, -nudge * 0.1, dist);
-    camera.lookAt(0, -nudge, 0);
+    camera.position.set(0, 0, dist);
+    camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
     renderer.setSize(w, h, false);
     composer?.setSize(w, h);
@@ -154,7 +169,9 @@ export function bootC3dScene(wrap, opts = {}) {
     coarse,
     fine,
     reduced,
-    setFitHalf: (h) => { fitHalf = h; frame(); },
+    setFitHalf: (hh) => { fitHalfX = hh; fitHalfY = hh; frame(); },
+    // Non-square content: fit width and height separately (bigger on phones).
+    setFitBox: (hx, hy) => { fitHalfX = hx; fitHalfY = hy ?? hx; frame(); },
     frame,
     setTick: (fn) => { onTick = fn; },
     dispose,

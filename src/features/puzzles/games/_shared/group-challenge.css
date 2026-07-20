@@ -413,3 +413,52 @@
   .gc-body { padding-inline: 14px; }
   .gc-pack { font-size: 0.78rem; padding: 8px 11px; }
 }
+
+@media (min-width: 768px) {
+  .gc-app {
+    max-width: 520px;
+  }
+  .gc-body {
+    padding-inline: 28px;
+  }
+  .gc-btn,
+  .gc-btn-col {
+    max-width: 400px;
+  }
+}
+
+/* Arabic — Cairo for readable UI; keep serif for EN display words only */
+.gc-root[dir='rtl'] {
+  font-family: 'Cairo', 'Outfit', system-ui, sans-serif;
+}
+.gc-root[dir='rtl'] .gc-title,
+.gc-root[dir='rtl'] .gc-handoff-name,
+.gc-root[dir='rtl'] .gc-word,
+.gc-root[dir='rtl'] .gc-question {
+  font-family: 'Cairo', sans-serif;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.gc-root[dir='rtl'] .gc-back {
+  transform: scaleX(-1);
+}
+
+/* Stronger selected-chip contrast on warm paper */
+.gc-pack.on {
+  color: #2d2210;
+  font-weight: 800;
+}
+.gc-time.on,
+.gc-pill.on {
+  color: #2d2210;
+  font-weight: 800;
+}
+.gc-how-text,
+.gc-tagline {
+  color: #5c534c;
+}
+.gc-label,
+.gc-progress,
+.gc-tip {
+  color: #6a5a48;
+}

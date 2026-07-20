@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { DomainIconArt } from '../../features/training/shared/DomainIcon';
-import CosmosCharacter from '../../features/character/CosmosCharacter';
 import UniverseStage from '../shared/UniverseStage';
 import { DOMAIN_COLOR, DOMAINS } from './trainingData';
 import { useApp } from '../../context/AppContext';
 import { useThemedChrome } from '../../hooks/useThemedChrome';
 import { tokens } from '../../styles/tokens';
-import { planetIconUrl } from '../../lib/planetIcons';
+import { domainPlanetUrl } from '../../lib/planetIcons';
+
+/** Stagger so the six worlds don't breathe in lockstep. */
+const PLANET_PHASE = {
+  attention: 0,
+  speed: 0.55,
+  memory: 1.1,
+  language: 1.65,
+  reasoning: 2.2,
+  flexibility: 2.75,
+};
 
 /** Local alias kept for in-file readability — values come from the central token set. */
 const L = {
@@ -95,36 +104,119 @@ function PlanetMarkings({ domainId, col }) {
   }
 }
 
-/** Domain planet — replaces the old stone gate portals. */
+/** Domain planet — painted cosmos world with orbit / pulse / spark FX. */
 function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId }) {
-  const r = hovered ? 30 : 26;
-  const dur = hovered ? 1.4 : 3.2;
-  const iconUrl = planetIconUrl(domainId);
+  const r = hovered ? 34 : 29;
+  const dur = hovered ? 1.35 : 3.8;
+  const phase = PLANET_PHASE[domainId] ?? 0;
+  const artUrl = domainPlanetUrl(domainId);
+  const clipId = `rh-planet-clip-${domainId}`;
+  const sparks = hovered
+    ? [
+        { x: -r * 1.05, y: -r * 0.55, s: 1.6 },
+        { x: r * 0.95, y: -r * 0.35, s: 1.2 },
+        { x: r * 0.7, y: r * 0.85, s: 1.4 },
+        { x: -r * 0.55, y: r * 0.95, s: 1.1 },
+        { x: 0, y: -r * 1.15, s: 1.3 },
+      ]
+    : [
+        { x: -r * 0.95, y: -r * 0.7, s: 1.1 },
+        { x: r * 0.9, y: r * 0.55, s: 0.9 },
+      ];
+
   return (
-    <g>
-      {/* Soft ground shadow */}
-      <ellipse cx="2" cy={r + 8} rx={r * 0.72} ry={r * 0.22} fill="rgba(10,8,16,0.28)" />
-      {/* Outer aura */}
-      <circle cx="0" cy="0" r={r + (hovered ? 10 : 7)} fill={`url(#${glowGradId})`} opacity={hovered ? 0.95 : 0.7} />
-      {/* Real rendered planet icon (Fluent 3D emoji, fixed per domain) */}
+    <g className={`rh-domain-planet${hovered ? ' is-hot' : ''}`}>
+      <defs>
+        <clipPath id={clipId}>
+          <circle cx="0" cy="0" r={r} />
+        </clipPath>
+      </defs>
+
+      {/* Ground shadow */}
+      <ellipse cx="2" cy={r + 10} rx={r * 0.82} ry={r * 0.26} fill="rgba(0,0,0,0.4)" />
+
+      {/* Soft atmosphere bloom */}
+      <circle
+        cx="0" cy="0"
+        r={r + (hovered ? 18 : 12)}
+        fill={`url(#${glowGradId})`}
+        opacity={hovered ? 1 : 0.78}
+      >
+        <animate
+          attributeName="opacity"
+          values={hovered ? '0.85;1;0.85' : '0.62;0.82;0.62'}
+          dur={`${dur}s`}
+          begin={`${phase}s`}
+          repeatCount="indefinite"
+        />
+      </circle>
+
+      {/* Dual orbital rings */}
+      <g opacity={hovered ? 0.7 : 0.38}>
+        <ellipse
+          cx="0" cy="1" rx={r + 10} ry={(r + 10) * 0.32}
+          fill="none" stroke={col} strokeWidth={hovered ? 1.45 : 0.95}
+        >
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from="-22 0 0"
+            to="338 0 0"
+            dur={`${hovered ? 7 : 16}s`}
+            begin={`${phase}s`}
+            repeatCount="indefinite"
+          />
+        </ellipse>
+        <ellipse
+          cx="0" cy="0" rx={r + 7} ry={(r + 7) * 0.28}
+          fill="none" stroke={col} strokeWidth={hovered ? 1.05 : 0.7}
+          opacity="0.65"
+        >
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from="28 0 0"
+            to="-332 0 0"
+            dur={`${hovered ? 10 : 22}s`}
+            begin={`${phase * 0.7}s`}
+            repeatCount="indefinite"
+          />
+        </ellipse>
+      </g>
+
+      {/* Breathing body */}
       <g>
         <animateTransform
           attributeName="transform"
           type="scale"
-          values="1;1.08;1"
+          values="1;1.07;1"
           keyTimes="0;0.5;1"
           dur={`${dur}s`}
+          begin={`${phase}s`}
           repeatCount="indefinite"
         />
-        {iconUrl ? (
-          <image
-            href={iconUrl}
-            x={-r * 1.05}
-            y={-r * 1.05}
-            width={r * 2.1}
-            height={r * 2.1}
-            preserveAspectRatio="xMidYMid meet"
-          />
+
+        {artUrl ? (
+          <g clipPath={`url(#${clipId})`}>
+            <image
+              href={artUrl}
+              x={-r * 1.08}
+              y={-r * 1.08}
+              width={r * 2.16}
+              height={r * 2.16}
+              preserveAspectRatio="xMidYMid slice"
+            />
+            {/* Specular + limb darkening so flat art reads as a sphere */}
+            <ellipse
+              cx={-r * 0.28} cy={-r * 0.34}
+              rx={r * 0.42} ry={r * 0.28}
+              fill="rgba(255,252,240,0.22)"
+            />
+            <circle
+              cx="0" cy="0" r={r}
+              fill="url(#rh-planet-shade)"
+            />
+          </g>
         ) : (
           <>
             <circle cx="0" cy="0" r={r} fill={`url(#${bodyGradId})`} stroke={col} strokeWidth={hovered ? 2.2 : 1.55} />
@@ -135,13 +227,46 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId }) {
             <DomainIconArt domainId={domainId} color="#fffef8" strokeWidth={1.7} />
           </>
         )}
+
+        {/* Bright rim */}
+        <circle
+          cx="0" cy="0" r={r}
+          fill="none"
+          stroke={col}
+          strokeWidth={hovered ? 2.1 : 1.35}
+          opacity={hovered ? 0.95 : 0.55}
+        />
       </g>
-      {domainId === 'attention' && (
-        <circle cx="0" cy="0" r={r + 4} fill="none" stroke={col} strokeWidth="0.8" opacity={hovered ? 0.4 : 0.18}>
-          <animate attributeName="r" values={`${r + 2};${r + 8};${r + 2}`} dur={`${dur * 1.2}s`} repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.35;0.08;0.35" dur={`${dur * 1.2}s`} repeatCount="indefinite" />
+
+      {/* Expanding energy pulses */}
+      <circle cx="0" cy="0" r={r + 4} fill="none" stroke={col} strokeWidth="1" opacity="0.35">
+        <animate attributeName="r" values={`${r + 2};${r + 14};${r + 2}`} dur={`${dur * 1.2}s`} begin={`${phase}s`} repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.45;0.04;0.45" dur={`${dur * 1.2}s`} begin={`${phase}s`} repeatCount="indefinite" />
+      </circle>
+      <circle cx="0" cy="0" r={r + 6} fill="none" stroke={col} strokeWidth="0.7" opacity="0.2">
+        <animate attributeName="r" values={`${r + 5};${r + 18};${r + 5}`} dur={`${dur * 1.55}s`} begin={`${phase + 0.4}s`} repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.32;0.02;0.32" dur={`${dur * 1.55}s`} begin={`${phase + 0.4}s`} repeatCount="indefinite" />
+      </circle>
+
+      {/* Twinkling sparkles */}
+      {sparks.map((sp, i) => (
+        <circle key={i} cx={sp.x} cy={sp.y} r={sp.s} fill="#fff8e8" opacity="0.55">
+          <animate
+            attributeName="opacity"
+            values="0.15;0.9;0.15"
+            dur={`${1.4 + i * 0.35}s`}
+            begin={`${phase + i * 0.2}s`}
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="r"
+            values={`${sp.s * 0.6};${sp.s * 1.35};${sp.s * 0.6}`}
+            dur={`${1.6 + i * 0.3}s`}
+            begin={`${phase + i * 0.15}s`}
+            repeatCount="indefinite"
+          />
         </circle>
-      )}
+      ))}
     </g>
   );
 }
@@ -176,16 +301,7 @@ const SHRINE_POSITIONS = [
  * with the modular backdrop instead of looking like stray scribbles.
  */
 const HUB_NEXUS = [180, 360];
-const AVATAR_R = 48;
-/** CosmosCharacter box — sphere sits slightly above vertical centre. */
-const HUB_PLANET_SIZE = 90;
-/** New idle art: body centre ~42% down the 1.2×height box (legs below). */
-const KAWKAB_BODY_FRAC = 0.42;
-
-function hubPlanetOffsetY(size) {
-  // Align planet centre with hub nexus for the default (raster) Kawkab.
-  return size * 1.2 * (0.5 - KAWKAB_BODY_FRAC);
-}
+const AVATAR_R = 42;
 
 function mazeCorridorD(domainId) {
   const s = SHRINE_POSITIONS.find(p => p.id === domainId);
@@ -248,9 +364,22 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       </div>
 
       {/* Radial maze canvas */}
-      <div style={{ position: 'relative', width: '100%', height: 660, marginTop: 10, zIndex: 4 }}>
+      <div className="rh-hub-stage" style={{ position: 'relative', width: '100%', height: 660, marginTop: 10, zIndex: 4 }}>
+        {/* Local cosmos FX — mirrors mode-planet hub atmosphere */}
+        <div className="rh-hub-sky" aria-hidden="true">
+          <div className="rh-hub-nebula rh-hub-nebula--a" />
+          <div className="rh-hub-nebula rh-hub-nebula--b" />
+          <div className="rh-hub-nebula rh-hub-nebula--c" />
+          <div className="rh-hub-stars rh-hub-stars--a" />
+          <div className="rh-hub-stars rh-hub-stars--b" />
+          <div className="rh-hub-shoot rh-hub-shoot--1" />
+          <div className="rh-hub-shoot rh-hub-shoot--2" />
+          <div className="rh-hub-shoot rh-hub-shoot--3" />
+          <div className="rh-hub-dust" />
+        </div>
+
         <svg width="360" height="660" viewBox="0 0 360 660" style={{
-          position: 'absolute', inset: 0, margin: 'auto', left: 0, right: 0, overflow: 'visible',
+          position: 'absolute', inset: 0, margin: 'auto', left: 0, right: 0, overflow: 'visible', zIndex: 2,
         }}>
           <defs>
             <filter id="pathGlow" x="-50%" y="-50%" width="200%" height="200%">
@@ -268,13 +397,13 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                     <stop offset="100%" stopColor="#1a1010" stopOpacity="0.92" />
                   </radialGradient>
                   <radialGradient id={`planetGlow-${s.id}`} cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor={col} stopOpacity="0.38" />
-                    <stop offset="55%" stopColor={col} stopOpacity="0.12" />
+                    <stop offset="0%" stopColor={col} stopOpacity="0.55" />
+                    <stop offset="45%" stopColor={col} stopOpacity="0.2" />
                     <stop offset="100%" stopColor={col} stopOpacity="0" />
                   </radialGradient>
                   <radialGradient id={`sh-${s.id}`} cx="0.5" cy="0.5" r="0.5">
-                    <stop offset="0%" stopColor={col} stopOpacity="0.36" />
-                    <stop offset="65%" stopColor={col} stopOpacity="0.1" />
+                    <stop offset="0%" stopColor={col} stopOpacity="0.48" />
+                    <stop offset="55%" stopColor={col} stopOpacity="0.14" />
                     <stop offset="100%" stopColor={col} stopOpacity="0" />
                   </radialGradient>
                 </React.Fragment>
@@ -284,6 +413,17 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               <stop offset="0%" stopColor="#ffd85a" stopOpacity="0.6"/>
               <stop offset="40%" stopColor="#f5a623" stopOpacity="0.3"/>
               <stop offset="100%" stopColor="#f5a623" stopOpacity="0"/>
+            </radialGradient>
+            <radialGradient id="rh-planet-shade" cx="32%" cy="28%" r="78%">
+              <stop offset="0%" stopColor="#fff8e8" stopOpacity="0" />
+              <stop offset="55%" stopColor="#0a0812" stopOpacity="0" />
+              <stop offset="100%" stopColor="#05040a" stopOpacity="0.42" />
+            </radialGradient>
+            <radialGradient id="rh-assess-body" cx="34%" cy="30%" r="70%">
+              <stop offset="0%" stopColor="#fff3c4" stopOpacity="0.98" />
+              <stop offset="35%" stopColor="#e8ac4e" stopOpacity="0.95" />
+              <stop offset="75%" stopColor="#8a5a18" stopOpacity="0.96" />
+              <stop offset="100%" stopColor="#1a1008" stopOpacity="0.98" />
             </radialGradient>
           </defs>
 
@@ -344,14 +484,92 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             );
           })}
 
-          {/* Center Maze Man avatar glow */}
-          <circle cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1]} r={68} fill="url(#centerGlow)" opacity="0.75"/>
-          <circle cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1]} r={46} fill="rgba(30,20,8,0.6)" stroke="rgba(232,172,78,0.55)" strokeWidth={1.8}/>
+          {/* Center Assessment nexus (placeholder until 3D mascot) */}
+          <g
+            className="rh-assess-nexus"
+            style={{ cursor: 'pointer' }}
+            role="button"
+            tabIndex={0}
+            aria-label={isAr ? 'ابدأ التقييم' : 'Start assessment'}
+            onClick={onOpenAssessment}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onOpenAssessment();
+              }
+            }}
+          >
+            <circle cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1]} r={72} fill="url(#centerGlow)" opacity="0.8">
+              <animate attributeName="opacity" values="0.55;0.85;0.55" dur="3.6s" repeatCount="indefinite" />
+            </circle>
+            <circle cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1]} r={38} fill="none" stroke="rgba(232,172,78,0.45)" strokeWidth="1.2">
+              <animate attributeName="r" values="34;48;34" dur="3.2s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.55;0.08;0.55" dur="3.2s" repeatCount="indefinite" />
+            </circle>
+            <g>
+              <animateTransform
+                attributeName="transform"
+                type="translate"
+                values={`0 0; 0 -2; 0 0`}
+                keyTimes="0;0.5;1"
+                dur="3.8s"
+                repeatCount="indefinite"
+              />
+              <circle
+                cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1]} r={30}
+                fill="url(#rh-assess-body)"
+                stroke="rgba(255,220,140,0.85)"
+                strokeWidth="1.8"
+                filter="url(#pathGlow)"
+              />
+              <ellipse
+                cx={HUB_NEXUS[0] - 8} cy={HUB_NEXUS[1] - 10}
+                rx="11" ry="7"
+                fill="rgba(255,248,220,0.35)"
+              />
+              <ellipse
+                cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1] + 2}
+                rx="42" ry="13"
+                fill="none"
+                stroke="rgba(232,172,78,0.5)"
+                strokeWidth="1.1"
+                opacity="0.55"
+              >
+                <animateTransform
+                  attributeName="transform"
+                  type="rotate"
+                  from={`-12 ${HUB_NEXUS[0]} ${HUB_NEXUS[1]}`}
+                  to={`348 ${HUB_NEXUS[0]} ${HUB_NEXUS[1]}`}
+                  dur="14s"
+                  repeatCount="indefinite"
+                />
+              </ellipse>
+            </g>
+            <text
+              x={HUB_NEXUS[0]}
+              y={HUB_NEXUS[1] + 52}
+              textAnchor="middle"
+              fill={chrome.text}
+              stroke={chrome.dark ? 'rgba(8,4,2,0.9)' : 'rgba(255,252,246,0.9)'}
+              strokeWidth="3.2"
+              paintOrder="stroke fill"
+              style={{
+                fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
+                fontSize: isAr ? 12.5 : 13.5,
+                fontWeight: 800,
+                letterSpacing: isAr ? 0 : 0.02,
+                pointerEvents: 'none',
+              }}
+            >
+              {isAr ? 'التقييم' : 'Assessment'}
+            </text>
+          </g>
 
           {/* Domain planets */}
           {SHRINE_POSITIONS.map(s => {
             const col = DOMAIN_COLOR[s.id];
             const isHovered = hovered === s.id;
+            const phase = PLANET_PHASE[s.id] ?? 0;
             return (
               <g key={s.id} style={{ cursor: 'pointer' }}
                 role="button"
@@ -366,15 +584,16 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                     onOpenDomain(s.id);
                   }
                 }}>
-                <circle cx={s.x} cy={s.y} r={isHovered ? 58 : 48} fill={`url(#sh-${s.id})`}/>
+                <circle cx={s.x} cy={s.y} r={isHovered ? 64 : 52} fill={`url(#sh-${s.id})`}/>
                 <g transform={`translate(${s.x}, ${s.y})`}>
                   <g>
                     <animateTransform
                       attributeName="transform"
                       type="translate"
-                      values="0 0; 0 -2; 0 0"
+                      values="0 0; 0 -3; 0 0"
                       keyTimes="0;0.5;1"
-                      dur={isHovered ? '1.5s' : '3.4s'}
+                      dur={isHovered ? '1.4s' : '3.6s'}
+                      begin={`${phase}s`}
                       repeatCount="indefinite"
                     />
                     <DomainPlanet
@@ -386,7 +605,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                     />
                   </g>
                 </g>
-                <text x={s.x} y={s.y + 44} textAnchor="middle" fill={chrome.text}
+                <text x={s.x} y={s.y + 48} textAnchor="middle" fill={chrome.text}
                   stroke={chrome.dark ? 'rgba(8,4,2,0.9)' : 'rgba(255,252,246,0.9)'}
                   strokeWidth="3.2"
                   paintOrder="stroke fill"
@@ -402,8 +621,8 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             );
           })}
 
-          {/* Embers */}
-          {Array.from({ length: 14 }).map((_, i) => {
+          {/* Rising embers / dust */}
+          {Array.from({ length: 18 }).map((_, i) => {
             const seed = i * 137;
             const x = (seed % 300) + 30;
             const y = 600 - ((tick * (3 + (i % 4)) + seed) % 560);
@@ -413,56 +632,6 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               r={0.8 + (i % 3) * 0.4} fill="#e8ac4e" opacity={op * 0.42}/>;
           })}
         </svg>
-
-        {/* Center planet — tappable "Assessment" entry, aligned to hub nexus circle */}
-        <div style={{
-          position: 'absolute',
-          top: `${(HUB_NEXUS[1] / 660) * 100}%`,
-          left: `${(HUB_NEXUS[0] / 360) * 100}%`,
-          transform: `translate(-50%, calc(-50% + ${hubPlanetOffsetY(HUB_PLANET_SIZE)}px))`,
-          zIndex: 8,
-        }}>
-          <button
-            type="button"
-            onClick={onOpenAssessment}
-            aria-label={isAr ? 'ابدأ التقييم' : 'Start assessment'}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              display: 'block',
-              filter: 'drop-shadow(0 0 22px rgba(94,200,232,0.65)) drop-shadow(0 0 48px rgba(155,232,255,0.35))',
-            }}
-          >
-            <CosmosCharacter size={HUB_PLANET_SIZE} mood="proud" glow float />
-          </button>
-          <button
-            type="button"
-            onClick={onOpenAssessment}
-            aria-label={isAr ? 'التقييم' : 'Assessment'}
-            style={{
-              position: 'absolute',
-              top: '100%',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              marginTop: 6,
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              color: L.text,
-              fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Nunito', sans-serif",
-              fontSize: isAr ? 12.5 : 14,
-              fontWeight: isAr ? 800 : 400,
-              letterSpacing: isAr ? 0 : 0.35,
-              whiteSpace: 'nowrap',
-              textShadow: '-1.4px 0 rgba(8,4,2,0.95), 1.4px 0 rgba(8,4,2,0.95), 0 -1.4px rgba(8,4,2,0.95), 0 1.4px rgba(8,4,2,0.95), 0 0 18px rgba(232,172,78,0.55)',
-            }}
-          >
-            {isAr ? 'التقييم' : 'Assessment'}
-          </button>
-        </div>
       </div>
 
       {/* Daily Workout now lives at the end of the Assessment screen. */}

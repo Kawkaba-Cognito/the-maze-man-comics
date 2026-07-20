@@ -285,7 +285,7 @@ export default function RecruitPuzzle({ spec, onSolved, frozen }) {
 
   return (
     <div className="mz-rec-puzzle" data-puzzle={spec.puzzleKey}>
-      <div className="mz-rec-puzzle-tag">{cfg?.icon} {spec.size}×{spec.size === spec.size ? spec.size : ''}</div>
+      <div className="mz-rec-puzzle-tag">{cfg?.icon} {spec.size}×{spec.size}</div>
       <GridRecruit spec={spec} onSolved={onSolved} frozen={frozen} />
     </div>
   );

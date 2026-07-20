@@ -76,7 +76,7 @@ export default function Trivia3DProto({ isAr, playSfx, onBack }) {
       mode: 'choice',
       prompt: isAr ? q.ar : q.en,
       chip: `${st.category.emoji} ${isAr ? st.category.ar : st.category.en} · ${st.step + 1}/${st.steps} · ⛰${st.stairs}`,
-      layout: 'grid',
+      layout: 'cards',
       pts: 5 + (clears ? st.steps * 10 + 25 : 0),
       ptsOver: st.step * 10,
       feedbackText: fact ? `💡 ${fact}` : null,

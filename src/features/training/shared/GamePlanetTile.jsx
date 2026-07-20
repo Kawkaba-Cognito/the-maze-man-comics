@@ -2,45 +2,23 @@ import React from 'react';
 import { assetUrl } from '../../../lib/assetUrl';
 
 /*
- * Game picker cards for all 6 training domains — a staggered frosted-glass
- * card (matches the app's existing --domain-mid/--domain-deep tokens, no
- * invented colours) with a real scene illustration that depicts what the
- * game actually asks you to do, instead of an abstract icon.
- *
- * Illustrations: unDraw (free, no-attribution licence — https://undraw.co/license),
- * recoloured per domain to that domain's own accent (tokens.domainPalette mid).
- * This replaced two earlier directions: a real-photographic-planet-sphere
- * card (too generic — "a nice planet" isn't "this specific game"), and the
- * app's native comic-panel card shell (matched the rest of the app better
- * structurally, but the glass card language + big illustration read as more
- * obviously "this game" and was the one that stuck after user review).
+ * Game picker cards for all 6 training domains — staggered frosted-glass
+ * cards using the app's --domain-mid/--domain-deep tokens, with cosmos
+ * game-art illustrations that depict each exercise.
  */
-const ILLUSTRATION = {
-  // Attention
-  'cancel-task': assetUrl('Assets/game-illustrations/cancel-task.svg'),
-  mot: assetUrl('Assets/game-illustrations/mot.svg'),
-  'train-switch': assetUrl('Assets/game-illustrations/train-switch.svg'),
-  // Speed
-  'speed-match': assetUrl('Assets/game-illustrations/speed-match.svg'),
-  'math-gates': assetUrl('Assets/game-illustrations/math-gates.svg'),
-  'trail-making': assetUrl('Assets/game-illustrations/trail-making.svg'),
-  // Memory
-  'story-grid': assetUrl('Assets/game-illustrations/story-grid.svg'),
-  nback: assetUrl('Assets/game-illustrations/nback.svg'),
-  'paired-associates': assetUrl('Assets/game-illustrations/paired-associates.svg'),
-  // Language
-  wordle: assetUrl('Assets/game-illustrations/wordle.svg'),
-  synonyms: assetUrl('Assets/game-illustrations/synonyms.svg'),
-  trivia: assetUrl('Assets/game-illustrations/trivia.svg'),
-  // Reasoning
-  'rush-hour': assetUrl('Assets/game-illustrations/rush-hour.svg'),
-  'raven-matrices': assetUrl('Assets/game-illustrations/raven-matrices.svg'),
-  detective: assetUrl('Assets/game-illustrations/detective.svg'),
-  // Flexibility
-  'spatial-stroop': assetUrl('Assets/game-illustrations/spatial-stroop.svg'),
-  wisconsin: assetUrl('Assets/game-illustrations/wisconsin.svg'),
-  brixton: assetUrl('Assets/game-illustrations/brixton.svg'),
-};
+/** Full-bleed painted cards (cover) for every live training game. */
+const COVER_KEYS = new Set([
+  'cancel-task', 'mot', 'train-switch',
+  'speed-match', 'math-gates', 'trail-making',
+  'story-grid', 'nback', 'paired-associates',
+  'wordle', 'synonyms', 'trivia',
+  'rush-hour', 'raven-matrices', 'detective',
+  'spatial-stroop', 'wisconsin', 'brixton',
+]);
+
+const ILLUSTRATION = Object.fromEntries(
+  [...COVER_KEYS].map((key) => [key, assetUrl(`Assets/game-illustrations/${key}.webp`)]),
+);
 
 let injected = false;
 function ensureCss() {
@@ -78,6 +56,7 @@ function glassShell(L) {
 function IllustrationCard({ sub, idx, onOpen, name, blurb }) {
   const L = GLASS_LAYOUT[idx] || GLASS_LAYOUT[0];
   const illo = ILLUSTRATION[sub.game];
+  const cover = COVER_KEYS.has(sub.game);
   const shell = glassShell(L);
   return (
     <button type="button" onClick={() => onOpen(sub)} style={{ ...shell, animation: `gpt-in 0.55s ease ${idx * 0.12}s both, ${shell.animation}` }}>
@@ -87,10 +66,22 @@ function IllustrationCard({ sub, idx, onOpen, name, blurb }) {
         boxShadow: '0 14px 34px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
       }}>
         <span style={{
-          position: 'relative', height: 108, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative', height: 118, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--domain-mid) 38%, transparent), transparent 70%)',
+          overflow: 'hidden',
         }}>
-          {illo && <img src={illo} alt="" style={{ width: '90%', height: '90%', objectFit: 'contain' }} />}
+          {illo && (
+            <img
+              src={illo}
+              alt=""
+              style={{
+                width: cover ? '100%' : '90%',
+                height: cover ? '100%' : '90%',
+                objectFit: cover ? 'cover' : 'contain',
+                objectPosition: 'center',
+              }}
+            />
+          )}
         </span>
         <span style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 800, fontSize: 16, color: '#fff' }}>{name}</span>

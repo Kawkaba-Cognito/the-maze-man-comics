@@ -1,6 +1,6 @@
 import React from 'react';
-import { modeIconUrl } from '../../../lib/modeIcons';
 import { TrainingMenuBar } from './TrainingChrome';
+import ModePlanetHub from './ModePlanetHub';
 
 /**
  * Shared training screens — one source of truth for the menu / difficulty /
@@ -36,7 +36,7 @@ export function TrainingScreenShell({
       : undefined;
   return (
     <div
-      className={`cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light${shellClassName ? ` ${shellClassName}` : ''}`}
+      className={`cancellation-task-game ct-fq-training-shell ${hub ? 'ct-fq-training-shell--mode-cosmos' : 'ct-fq-training-shell--hub-light'}${shellClassName ? ` ${shellClassName}` : ''}`}
       dir={isAr ? 'rtl' : 'ltr'}
     >
       <div className={`ct-fq-screen ct-fq-training-screen${hub ? ' ct-fq-training-screen--hub' : ''}`}>
@@ -56,42 +56,12 @@ export function TrainingScreenShell({
 }
 
 /**
- * Canonical mode list (Survival / Levels / Pass n Play) — the one component every
- * game's hub uses, so the menu can never drift. `items`: [{ k, ic, lb, hint, on }].
+ * Canonical mode constellation (Survival / Levels / Pass n Play [+ 3D]).
+ * Every game's hub uses this so the menu can never drift.
+ * `items`: [{ k, lb, hint, on }] — keys free | levels | chal | proto3d.
  */
 export function TrainingModeList({ items, isAr, playSfx }) {
-  const MOD = {
-    free: 'ct-fq-attn-mode--free',
-    levels: 'ct-fq-attn-mode--levels',
-    chal: 'ct-fq-attn-mode--chal',
-    proto3d: 'ct-fq-attn-mode--proto3d',
-  };
-  return (
-    <div className="ct-fq-attn-modes" role="group">
-      {items.map((m) => {
-        // Prefer explicit icoImg; else Fluent 3D defaults for the three modes;
-        // else fall back to whatever the game passed (Phosphor node / emoji).
-        const img = m.icoImg || modeIconUrl(m.k);
-        return (
-          <button
-            key={m.k}
-            type="button"
-            className={`ct-fq-attn-mode ${MOD[m.k] || ''}`}
-            onClick={() => { playSfx?.('click'); m.on(); }}
-          >
-            <span className="ct-fq-attn-mode-ic" aria-hidden="true">
-              {img ? <img src={img} alt="" className="ct-fq-attn-mode-ic-img" /> : m.ic}
-            </span>
-            <span className="ct-fq-attn-mode-body">
-              <span className="ct-fq-attn-mode-lb">{m.lb}</span>
-              {m.hint ? <span className={`ct-fq-attn-mode-hint${isAr ? ' ct-fq-attn-mode-hint-ar' : ''}`}>{m.hint}</span> : null}
-            </span>
-            <span className="ct-fq-attn-mode-chev" aria-hidden="true">›</span>
-          </button>
-        );
-      })}
-    </div>
-  );
+  return <ModePlanetHub items={items} isAr={isAr} playSfx={playSfx} />;
 }
 
 export function TrainingDifficultySelect({ isAr, playSfx, onBack, title, blurb, diffKeys, dm, descs, onPick }) {

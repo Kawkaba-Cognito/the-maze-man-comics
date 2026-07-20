@@ -358,7 +358,7 @@ export default function NBackGame({
       )}
       {phase === 'hub' && !isCosmos && (
         <>
-          <div className="ct-fq-training-shell ct-fq-training-shell--hub-light ct-ms-shell">
+          <div className="ct-fq-training-shell ct-fq-training-shell--mode-cosmos ct-ms-shell">
             <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
               <TrainingMenuBar onBack={onBack} playSfx={playSfx} hubSpaced variant="paper"
                 onReplayTutorial={openTutorial} replayHint={tutReplayHint}

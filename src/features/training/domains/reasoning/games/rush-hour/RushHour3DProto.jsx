@@ -111,14 +111,25 @@ export default function RushHour3DProto({ isAr, playSfx, onBack }) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');
       return () => boot.dispose();
     }
-    const { camera, playRoot, setTick, setFitHalf, dispose, frame } = boot;
+    const { camera, playRoot, setTick, setFitBox, dispose, frame } = boot;
 
+    // Tilt the board toward a 3/4 top-down view so cars read as raised blocks
+    // on a lit deck — the pointer maths convert hits back to board-local coords.
     const boardGroup = new THREE.Group();
+    boardGroup.rotation.x = -0.62;
     playRoot.add(boardGroup);
+
+    // Soft ground glow disc behind the board for depth.
+    const deck = new THREE.Mesh(
+      new THREE.PlaneGeometry(BOARD * CELL + 1.4, BOARD * CELL + 1.4),
+      matStd(0x0d0a06, { emissiveIntensity: 0.02, metalness: 0.1, roughness: 0.95 }),
+    );
+    deck.position.z = -0.28;
+    boardGroup.add(deck);
 
     const boardPlane = new THREE.Mesh(
       new THREE.PlaneGeometry(BOARD * CELL + 0.25, BOARD * CELL + 0.25),
-      matStd(0x14110c, { emissiveIntensity: 0.05, metalness: 0.2, roughness: 0.9 }),
+      matStd(0x18140d, { emissive: 0xe8ac4e, emissiveIntensity: 0.03, metalness: 0.2, roughness: 0.9 }),
     );
     boardPlane.position.z = -0.15;
     boardGroup.add(boardPlane);
@@ -167,10 +178,24 @@ export default function RushHour3DProto({ isAr, playSfx, onBack }) {
     const carMesh = (car) => {
       const w = car.horizontal ? car.len * CELL - 0.16 : CELL - 0.16;
       const h = car.horizontal ? CELL - 0.16 : car.len * CELL - 0.16;
-      const geo = new THREE.BoxGeometry(w, h, 0.42);
-      const mesh = new THREE.Mesh(geo, matStd(car.color, { emissiveIntensity: 0.3, metalness: 0.25, roughness: 0.45 }));
-      mesh.userData.carId = car.id;
-      return mesh;
+      const grp = new THREE.Group();
+      const tall = car.isHero ? 0.66 : 0.54;
+      const body = new THREE.Mesh(
+        new THREE.BoxGeometry(w, h, tall),
+        matStd(car.color, { emissive: car.color, emissiveIntensity: car.isHero ? 0.42 : 0.28, metalness: 0.4, roughness: 0.38 }),
+      );
+      body.position.z = tall / 2;
+      grp.add(body);
+      // Glass cabin strip along the car's long axis.
+      const cabin = new THREE.Mesh(
+        new THREE.BoxGeometry(car.horizontal ? w * 0.5 : w * 0.7, car.horizontal ? h * 0.7 : h * 0.5, tall * 0.5),
+        matStd(0x0e1a22, { emissive: 0x6bb3c8, emissiveIntensity: 0.3, metalness: 0.6, roughness: 0.2 }),
+      );
+      cabin.position.z = tall + 0.02;
+      grp.add(cabin);
+      grp.userData.carId = car.id;
+      grp.userData.body = body;
+      return grp;
     };
 
     const carCenter = (car) => ({
@@ -263,7 +288,8 @@ export default function RushHour3DProto({ isAr, playSfx, onBack }) {
 
     const setHighlight = (id, on) => {
       const mesh = carMeshes.get(id);
-      if (mesh?.material) mesh.material.emissiveIntensity = on ? 0.8 : 0.3;
+      const body = mesh?.userData.body;
+      if (body?.material) body.material.emissiveIntensity = on ? 0.85 : (id === 'hero' ? 0.42 : 0.28);
     };
 
     // Slide a car to the tapped cell, clamped to its legal rail (real engine getRange).
@@ -334,9 +360,12 @@ export default function RushHour3DProto({ isAr, playSfx, onBack }) {
       ptr.y = -((y - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(ptr, camera);
 
-      const carHits = raycaster.intersectObjects(Array.from(carMeshes.values()), false);
+      const carHits = raycaster.intersectObjects(Array.from(carMeshes.values()), true);
       if (carHits.length) {
-        const id = carHits[0].object.userData.carId;
+        let o = carHits[0].object;
+        while (o && o.userData.carId === undefined && o.parent) o = o.parent;
+        const id = o?.userData.carId;
+        if (id === undefined) return;
         if (selectedId === id) {
           setHighlight(id, false);
           selectedId = null;
@@ -363,7 +392,8 @@ export default function RushHour3DProto({ isAr, playSfx, onBack }) {
 
       const groundHits = raycaster.intersectObject(boardPlane, false);
       if (!groundHits.length) return;
-      const p = groundHits[0].point;
+      // Convert the world-space hit back into the (tilted) board's local plane.
+      const p = boardGroup.worldToLocal(groundHits[0].point.clone());
       const targetCol = Math.max(0, Math.min(BOARD - 1, Math.round(p.x / CELL + (BOARD - 1) / 2)));
       const targetRow = Math.max(0, Math.min(BOARD - 1, Math.round((BOARD - 1) / 2 - p.y / CELL)));
       const res = tryMove(car, targetRow, targetCol);
@@ -401,7 +431,8 @@ export default function RushHour3DProto({ isAr, playSfx, onBack }) {
       resetBoard,
     };
 
-    setFitHalf(BOARD * CELL * 0.62);
+    // Tilt compresses the board vertically → fit width fully, height a touch less.
+    setFitBox(BOARD * CELL * 0.6, BOARD * CELL * 0.52);
     setPhase('boot');
     setBanner('go');
 

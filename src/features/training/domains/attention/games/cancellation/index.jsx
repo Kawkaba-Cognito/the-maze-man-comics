@@ -17,7 +17,6 @@ import { createStaircase } from './staircase';
 import { useApp } from '../../../../../../context/AppContext';
 import { assetUrl } from '../../../../../../lib/assetUrl';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
-import { planetIconUrl } from '../../../../../../lib/planetIcons';
 import {
   SH,
   DM,
@@ -48,7 +47,8 @@ import {
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
 import { IconBack, IconPause } from '../../../../shared/TrainingIcons';
-import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
+import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import ModePlanetHub from '../../../../shared/ModePlanetHub';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import PassPlaySetup from '../../../../shared/PassPlaySetup';
@@ -198,22 +198,15 @@ const ShapeSvg = React.memo(function ShapeSvg({ shape, color, size = 40 }) {
   );
 });
 
-/** Light attention hub — mode rows (no circular maze). */
+/** Universe constellation — 3 main mode planets + small 3D satellite. */
 function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, onProto3d, playSfx }) {
   const items = [
     { k: 'free', lb: t.freeMode, hint: t.hubNodeFreeHint, on: onFree },
     { k: 'levels', lb: t.levelMode, hint: t.hubNodeLevelsHint, on: onLevels },
     { k: 'chal', lb: t.challengeMode, hint: t.hubNodeChallengeHint, on: onChallenge },
-    {
-      k: 'proto3d',
-      lb: t.mode3d,
-      hint: t.hubNode3dHint,
-      on: onProto3d,
-      icoImg: planetIconUrl('flexibility'),
-      mod: 'ct-fq-attn-mode--proto3d',
-    },
+    { k: 'proto3d', lb: t.mode3d, hint: t.hubNode3dHint, on: onProto3d },
   ];
-  return <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />;
+  return <ModePlanetHub items={items} isAr={isAr} playSfx={playSfx} />;
 }
 
 const FqGridCell = React.memo(function FqGridCell({ cell, idx, size, running, onTap }) {
@@ -1714,7 +1707,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     >
       {phase === 'hub' && (
         <>
-          <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-training-shell ct-fq-training-shell--mode-cosmos">
             <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
               <TrainingMenuBar
                 onBack={onBack}

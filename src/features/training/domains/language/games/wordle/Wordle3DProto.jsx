@@ -64,21 +64,40 @@ function randSeed() {
 }
 
 /** Draw a single letter on a rounded parchment tile → CanvasTexture. */
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
 function letterTexture(ch) {
-  const S = 128;
+  const S = 200;
   const c = document.createElement('canvas');
   c.width = S;
   c.height = S;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#241d13';
-  ctx.fillRect(0, 0, S, S);
-  ctx.strokeStyle = 'rgba(232,172,78,0.5)';
-  ctx.lineWidth = 6;
-  ctx.strokeRect(8, 8, S - 16, S - 16);
-  ctx.fillStyle = CREAM;
-  ctx.font = '800 74px "Outfit", system-ui, -apple-system, sans-serif';
+  // Parchment tile with a soft radial glow so letters pop.
+  const grad = ctx.createRadialGradient(S / 2, S / 2, 10, S / 2, S / 2, S * 0.7);
+  grad.addColorStop(0, '#33291a');
+  grad.addColorStop(1, '#1c150d');
+  ctx.fillStyle = grad;
+  rrect(ctx, 6, 6, S - 12, S - 12, 26);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(232,172,78,0.85)';
+  ctx.lineWidth = 8;
+  rrect(ctx, 6, 6, S - 12, S - 12, 26);
+  ctx.stroke();
+  // big, crisp letter with a subtle shadow
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  ctx.font = '800 128px "Outfit", system-ui, -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillText((ch || '').toUpperCase(), S / 2 + 3, S / 2 + 7);
+  ctx.fillStyle = CREAM;
   ctx.fillText((ch || '').toUpperCase(), S / 2, S / 2 + 4);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;

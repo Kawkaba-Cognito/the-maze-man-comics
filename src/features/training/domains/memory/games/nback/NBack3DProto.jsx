@@ -76,21 +76,21 @@ function roundRectPath(ctx, x, y, w, h, r) {
 }
 
 function emojiTexture(emoji) {
-  const S = 140;
+  const S = 220;
   const c = document.createElement('canvas');
   c.width = S;
   c.height = S;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#f4ecdd';
-  roundRectPath(ctx, 5, 5, S - 10, S - 10, 20);
+  ctx.fillStyle = '#fbf3e2';
+  roundRectPath(ctx, 6, 6, S - 12, S - 12, 30);
   ctx.fill();
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = 'rgba(90,70,40,0.3)';
+  ctx.lineWidth = 7;
+  ctx.strokeStyle = 'rgba(232,172,78,0.7)';
   ctx.stroke();
-  ctx.font = '84px serif';
+  ctx.font = '150px serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(emoji || '❓', S / 2, S / 2 + 6);
+  ctx.fillText(emoji || '❓', S / 2, S / 2 + 10);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;
@@ -152,12 +152,21 @@ export default function NBack3DProto({ isAr, playSfx, onBack }) {
     const showStim = (step) => {
       hideStim();
       const cell = cells[step.pos] || cells[4];
-      cell.material.emissiveIntensity = 0.45;
+      cell.material.emissiveIntensity = 0.6;
       stimTex = emojiTexture(OBJ_EMOJI[step.obj]);
-      const face = new THREE.MeshStandardMaterial({ map: stimTex, metalness: 0.1, roughness: 0.6 });
-      const side = matStd(0x1d1811, { metalness: 0.15, roughness: 0.7 });
-      stimMesh = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.05, 0.14), [side, side, side, side, face, side]);
-      stimMesh.position.set(cell.position.x, cell.position.y, 0.25);
+      const face = new THREE.MeshStandardMaterial({ map: stimTex, emissive: new THREE.Color(0xe8ac4e), emissiveIntensity: 0.18, metalness: 0.1, roughness: 0.55 });
+      const side = matStd(0x241d13, { emissive: 0xe8ac4e, emissiveIntensity: 0.1, metalness: 0.2, roughness: 0.6 });
+      stimMesh = new THREE.Group();
+      const tile = new THREE.Mesh(new THREE.BoxGeometry(1.32, 1.32, 0.2), [side, side, side, side, face, side]);
+      stimMesh.add(tile);
+      // Glow disc behind the tile → the current item pops off the grid.
+      const glow = new THREE.Mesh(
+        new THREE.CircleGeometry(0.95, 26),
+        new THREE.MeshBasicMaterial({ color: 0xe8ac4e, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false }),
+      );
+      glow.position.z = -0.12;
+      stimMesh.add(glow);
+      stimMesh.position.set(cell.position.x, cell.position.y, 0.5);
       playRoot.add(stimMesh);
     };
 

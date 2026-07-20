@@ -158,6 +158,7 @@ export function generateCrowns(n, seed) {
         region,
         solution: cols.slice(),
         player: Array.from({ length: n }, () => new Array(n).fill(0)),
+        seed: seed + attempt,
       };
     }
   }
@@ -165,7 +166,7 @@ export function generateCrowns(n, seed) {
   const cols = randomPlacement(n, rng) || [...Array(n).keys()];
   const region = growRegions(n, cols.map((c, r) => ({ r, c })), rng)
     || Array.from({ length: n }, (_, r) => new Array(n).fill(r));
-  return { n, region, solution: cols.slice(), player: Array.from({ length: n }, () => new Array(n).fill(0)) };
+  return { n, region, solution: cols.slice(), player: Array.from({ length: n }, () => new Array(n).fill(0)), seed };
 }
 
 export function cycleCrownCell(state, r, c) {
@@ -222,11 +223,12 @@ export function isCrownsSolved(state) {
 
 /** Place one correct crown (paid hint). Returns { next, revealed }. */
 export function hintReveal(state) {
-  const { n, solution, player } = state;
+  const { n, solution, player, seed = 1 } = state;
   const pool = [];
   for (let r = 0; r < n; r++) { if (player[r][solution[r]] !== 2) pool.push(r); }
   if (!pool.length) return { next: state, revealed: false };
-  const r = pool[Math.floor(Math.random() * pool.length)];
+  const rng = createRng((seed ^ (pool.length * 2654435761)) >>> 0);
+  const r = pool[Math.floor(rng() * pool.length)];
   const np = player.map((row) => row.slice());
   np[r][solution[r]] = 2;
   return { next: { ...state, player: np }, revealed: true };

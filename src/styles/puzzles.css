@@ -10,6 +10,23 @@
   box-sizing: border-box;
 }
 
+/* Hub constellation — keep 360 design canvas readable on narrow phones */
+.pz-hub-canvas {
+  overflow: visible;
+}
+@media (max-width: 380px) {
+  .pz-hub-canvas > div {
+    transform: translateX(-50%) scale(0.92);
+    transform-origin: top center;
+  }
+}
+@media (min-width: 900px) {
+  .pz-hub-canvas > div {
+    transform: translateX(-50%) scale(1.08);
+    transform-origin: top center;
+  }
+}
+
 .ct-puzzle-screen--play {
   display: flex;
   flex-direction: column;
@@ -1134,6 +1151,42 @@
   }
   .ct-puzzle-hitori-row-clues {
     width: min(360px, 92vw);
+  }
+}
+
+/* Tablet / desktop — roomier play surface, still centered paper look */
+@media (min-width: 768px) {
+  .ct-puzzle-hub-body {
+    max-width: 560px;
+    padding-inline: 28px;
+  }
+  .ct-puzzle-play-body {
+    max-width: 520px;
+    padding-inline: 24px;
+  }
+  .ct-puzzle-grid {
+    width: min(420px, 88vw);
+  }
+  .ct-puzzle-hitori-row-clues {
+    width: min(420px, 88vw);
+  }
+  .ct-slide-board {
+    width: min(420px, 88vw);
+  }
+  .ct-crowns-grid {
+    width: min(460px, 88vw);
+  }
+  .bb-board {
+    width: min(460px, 88vw);
+  }
+}
+
+@media (min-width: 1100px) {
+  .ct-puzzle-play-body {
+    max-width: 560px;
+  }
+  .ct-puzzle-grid {
+    width: min(460px, 70vw);
   }
 }
 

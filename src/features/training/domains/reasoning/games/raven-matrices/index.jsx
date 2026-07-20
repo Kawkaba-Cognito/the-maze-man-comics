@@ -396,7 +396,7 @@ export default function RavenMatricesGame({ onBack, workoutMode = false, cosmosA
     return (
       <>
         <div className="cancellation-task-game ct-rv-root" dir={isAr ? 'rtl' : 'ltr'}>
-          <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-training-shell ct-fq-training-shell--mode-cosmos">
             <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
               <TrainingMenuBar onBack={onBack} playSfx={playSfx} hubSpaced variant="paper"
                 onReplayTutorial={openTutorial} replayHint={tutReplayHint}

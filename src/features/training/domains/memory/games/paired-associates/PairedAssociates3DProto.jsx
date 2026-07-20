@@ -100,7 +100,7 @@ export default function PairedAssociates3DProto({ isAr, playSfx, onBack }) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');
       return () => boot.dispose();
     }
-    const { camera, playRoot, coarse, setTick, setFitHalf, renderer, dispose } = boot;
+    const { camera, playRoot, coarse, setTick, setFitBox, renderer, dispose } = boot;
 
     // Texture cache
     const texCache = new Map();
@@ -108,39 +108,60 @@ export default function PairedAssociates3DProto({ isAr, playSfx, onBack }) {
       if (!texCache.has(key)) texCache.set(key, glyphTexture(txt, fg, bg));
       return texCache.get(key);
     };
-    const qTex = getTex('q', '?', 'rgba(90,74,50,0.5)', '#f2e6cf');
+    const qTex = getTex('q', '?', '#e8ac4e', '#241d13');
 
-    // 6 boxes on a 3×2 grid (free mode is always 6 boxes)
+    // 6 boxes on a 3×2 grid (free mode is always 6 boxes) — chunky treasure
+    // chests you memorise. The number badge on each helps recall spatially.
     const N = 6;
     const cols = 3;
     const rows = 2;
-    const gap = coarse ? 1.55 : 1.7;
+    const BOX = coarse ? 1.28 : 1.34;
+    const gapX = BOX + (coarse ? 0.42 : 0.5);
+    const gapY = BOX + (coarse ? 0.5 : 0.58);
     const boxes = [];
     for (let i = 0; i < N; i++) {
       const col = i % cols;
       const row = Math.floor(i / cols);
-      const side = matStd(0xdccbb0, { metalness: 0.1, roughness: 0.8 });
+      const g = new THREE.Group();
+      const side = matStd(0x3a2f1e, { emissive: 0x241a0c, emissiveIntensity: 0.25, metalness: 0.35, roughness: 0.55 });
       const face = new THREE.MeshStandardMaterial({
-        map: qTex, emissive: new THREE.Color(0xc8971f), emissiveIntensity: 0, metalness: 0.1, roughness: 0.7,
+        map: qTex, emissive: new THREE.Color(0xe8ac4e), emissiveIntensity: 0.2, metalness: 0.2, roughness: 0.55,
       });
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.15, 0.3), [side, side, side, side, face, side]);
-      mesh.position.set((col - (cols - 1) / 2) * gap, (rows - 1) / 2 * gap - row * gap - 0.6, 0);
-      mesh.userData.idx = i;
-      mesh.userData.faceMat = face;
-      mesh.userData.flash = 0;
-      mesh.userData.symbol = null;
-      playRoot.add(mesh);
-      boxes.push(mesh);
+      const box = new THREE.Mesh(new THREE.BoxGeometry(BOX, BOX, 0.42), [side, side, side, side, face, side]);
+      g.add(box);
+      // Glow pad behind each box → reads as a placed slot on the deck.
+      const pad = new THREE.Mesh(
+        new THREE.CircleGeometry(BOX * 0.78, 28),
+        new THREE.MeshBasicMaterial({ color: 0xe8ac4e, transparent: true, opacity: 0.1, depthWrite: false, blending: THREE.AdditiveBlending }),
+      );
+      pad.position.z = -0.24;
+      g.add(pad);
+      const homeY = ((rows - 1) / 2 - row) * gapY - 0.2;
+      g.position.set((col - (cols - 1) / 2) * gapX, homeY, 0);
+      g.userData.idx = i;
+      g.userData.faceMat = face;
+      g.userData.box = box;
+      g.userData.flash = 0;
+      g.userData.reveal = 0; // 0 = closed, →1 = lifted/open
+      g.userData.homeY = homeY;
+      g.userData.symbol = null;
+      playRoot.add(g);
+      boxes.push(g);
     }
-    setFitHalf(Math.max(4.0, (cols - 1) / 2 * gap + 1.6));
 
-    // Floating cue card (recall phase)
+    // Floating cue card (recall phase) above the grid.
     const cueSide = matStd(0x1d1811, { metalness: 0.2, roughness: 0.6 });
-    const cueFace = new THREE.MeshStandardMaterial({ map: qTex, emissive: new THREE.Color(0xe8ac4e), emissiveIntensity: 0.25, metalness: 0.15, roughness: 0.6 });
-    const cueCard = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 0.24), [cueSide, cueSide, cueSide, cueSide, cueFace, cueSide]);
-    cueCard.position.set(0, (rows - 1) / 2 * gap + 1.15, 0.4);
+    const cueFace = new THREE.MeshStandardMaterial({ map: qTex, emissive: new THREE.Color(0xe8ac4e), emissiveIntensity: 0.4, metalness: 0.15, roughness: 0.5 });
+    const cueCard = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 0.26), [cueSide, cueSide, cueSide, cueSide, cueFace, cueSide]);
+    const cueY = (rows / 2) * gapY + 0.5;
+    cueCard.position.set(0, cueY, 0.4);
     cueCard.visible = false;
     playRoot.add(cueCard);
+
+    // Fit width to the 3-wide grid, height to include the recall cue on top.
+    const halfX = (cols - 1) / 2 * gapX + BOX * 0.7 + 0.3;
+    const halfY = cueY + 0.9;
+    setFitBox(halfX, halfY);
 
     const symTex = (sym) => getTex(`s${sym}`, sym, '#3a2c18', '#fff6df');
 
@@ -159,7 +180,7 @@ export default function PairedAssociates3DProto({ isAr, playSfx, onBack }) {
     const later = (fn, ms) => { const id = window.setTimeout(fn, ms); timers.push(id); return id; };
 
     const setFace = (mesh, tex) => { mesh.userData.faceMat.map = tex; mesh.userData.faceMat.needsUpdate = true; };
-    const resetFaces = () => boxes.forEach((m) => setFace(m, qTex));
+    const resetFaces = () => boxes.forEach((m) => { setFace(m, qTex); m.userData.revealing = false; });
 
     const finishTrial = () => {
       const perfect = correctT === totalT;
@@ -207,11 +228,14 @@ export default function PairedAssociates3DProto({ isAr, playSfx, onBack }) {
         if (k >= studyOrder.length) { later(presentCue, 320); return; }
         const bi = studyOrder[k];
         const m = boxes[bi];
+        // Open: reveal the symbol, lift the lid toward you, glow gold.
         setFace(m, symTex(m.userData.symbol));
-        m.userData.flash = 0.5;
-        m.userData.flashHex = 0xc8971f;
+        m.userData.revealing = true;
+        m.userData.flash = 0.6;
+        m.userData.flashHex = 0xe8ac4e;
         later(() => {
           setFace(m, qTex);
+          m.userData.revealing = false;
           later(() => step(k + 1), STUDY_GAP);
         }, cfg.study);
       };
@@ -226,12 +250,15 @@ export default function PairedAssociates3DProto({ isAr, playSfx, onBack }) {
       if (ok) {
         correctT += 1;
         setFace(m, symTex(cur.symbol));
+        m.userData.revealing = true;
         m.userData.flash = 0.6; m.userData.flashHex = 0x62b277;
         playSfxRef.current?.('correct');
       } else {
         const correctMesh = boxes[cur.boxIdx];
         setFace(correctMesh, symTex(cur.symbol));
+        correctMesh.userData.revealing = true;
         correctMesh.userData.flash = 0.6; correctMesh.userData.flashHex = 0x62b277;
+        m.userData.revealing = true;
         m.userData.flash = 0.6; m.userData.flashHex = 0xd23b3b;
         playSfxRef.current?.('wrong');
       }
@@ -252,8 +279,12 @@ export default function PairedAssociates3DProto({ isAr, playSfx, onBack }) {
       ptr.x = ((cx - rect.left) / rect.width) * 2 - 1;
       ptr.y = -((cy - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(ptr, camera);
-      const hits = raycaster.intersectObjects(boxes, false);
-      if (hits.length) return hits[0].object.userData.idx;
+      const hits = raycaster.intersectObjects(boxes, true);
+      if (hits.length) {
+        let o = hits[0].object;
+        while (o && o.userData.idx === undefined && o.parent) o = o.parent;
+        if (o && o.userData.idx !== undefined) return o.userData.idx;
+      }
       let best2 = -1;
       let bestD = coarse ? 0.16 : 0.1;
       for (const m of boxes) {
@@ -272,14 +303,20 @@ export default function PairedAssociates3DProto({ isAr, playSfx, onBack }) {
 
     setTick((dt, now) => {
       cueCard.rotation.y = Math.sin(now * 0.0018) * 0.18;
+      cueCard.position.y = cueY + Math.sin(now * 0.0022) * 0.06;
       for (const m of boxes) {
         const ud = m.userData;
+        // Lift/scale the box when open (study reveal / recall feedback).
+        const target = ud.revealing ? 1 : 0;
+        ud.reveal += (target - ud.reveal) * Math.min(1, dt * 11);
+        ud.box.position.z = ud.reveal * 0.6;
+        ud.box.scale.setScalar(1 + ud.reveal * 0.14);
         if (ud.flash > 0) {
           ud.flash = Math.max(0, ud.flash - dt);
-          ud.faceMat.emissive.setHex(ud.flashHex || 0xc8971f);
-          ud.faceMat.emissiveIntensity = ud.flash;
+          ud.faceMat.emissive.setHex(ud.flashHex || 0xe8ac4e);
+          ud.faceMat.emissiveIntensity = 0.2 + ud.flash;
         } else {
-          ud.faceMat.emissiveIntensity = 0;
+          ud.faceMat.emissiveIntensity = ud.reveal > 0.02 ? 0.15 : 0.2;
         }
       }
     });

@@ -45,6 +45,18 @@ function countBridgesSolutions(st) {
   return count;
 }
 
+/** Nonogram solutions are boolean[][]; player cells use 0/1/2. */
+function nonogramPlayerFromSolution(solution) {
+  return solution.map((row) => row.map((v) => (v ? 1 : 0)));
+}
+
+/** Crowns: solution[r] = column of the crown in row r. */
+function crownsPlayerFromSolution(n, solution) {
+  const player = Array.from({ length: n }, () => Array(n).fill(0));
+  for (let r = 0; r < n; r++) player[r][solution[r]] = 2;
+  return player;
+}
+
 const server = await createServer({
   appType: 'custom',
   server: { middlewareMode: true },
@@ -60,20 +72,22 @@ try {
   const kenken = await server.ssrLoadModule('/src/features/puzzles/games/kenken/kenkenEngine.js');
   const nonogram = await server.ssrLoadModule('/src/features/puzzles/games/nonogram/nonogramEngine.js');
   const kakuro = await server.ssrLoadModule('/src/features/puzzles/games/kakuro/kakuroEngine.js');
+  const crowns = await server.ssrLoadModule('/src/features/puzzles/games/crowns/crownsEngine.js');
 
+  // Sizes match src/features/puzzles/registry.js
   for (const size of [3, 4, 5, 6]) {
     const s = sliding.createSlidingPuzzle(size, 100 + size);
     assert(new Set(s.tiles).size === size * size, `Sliding ${size}: duplicate tiles`);
     assert(s.tiles.every((v) => v >= 0 && v < size * size), `Sliding ${size}: invalid tile`);
   }
 
-  for (const size of [4, 6]) {
+  for (const size of [4, 6, 8, 10]) {
     const p = takuzu.generateTakuzu(size, 200 + size);
     assert(takuzu.isTakuzuComplete(p.solution, size), `Takuzu ${size}: generated solution invalid`);
     assert(takuzu.isTakuzuSolved({ ...p, player: cloneGrid(p.solution) }), `Takuzu ${size}: solved solution rejected`);
   }
 
-  for (const size of [3, 4, 5, 6]) {
+  for (const size of [5, 6, 7, 8]) {
     const p = hitori.generateHitori(size, 300 + size);
     assert(hitori.isHitoriSolved({ ...p, player: cloneGrid(p.solution) }), `Hitori ${size}: solution rejected`);
     assert(!hitori.isHitoriSolved({ ...p, player: Array.from({ length: size }, () => Array(size).fill(false)) }), `Hitori ${size}: empty board marked solved`);
@@ -82,14 +96,11 @@ try {
   for (const tier of [7, 9, 11, 13]) {
     const p = bridges.generateBridges(tier, 400 + tier);
     assert(p.islands.length >= bridges.TIERS[tier].minIslands, `Bridges ${tier}: too few islands`);
-    // Clue numbers must equal the solution's incident bridge sums.
     const sums = p.islands.map(() => 0);
     p.edges.forEach((e, i) => { sums[e.a] += p.solution[i]; sums[e.b] += p.solution[i]; });
     assert(sums.every((v, k) => v === p.islands[k].need), `Bridges ${tier}: clue/solution mismatch`);
-    // Applying the solution must register as solved; an empty board must not.
     assert(bridges.isBridgesSolved({ ...p, player: p.solution.slice() }), `Bridges ${tier}: solution rejected`);
     assert(!bridges.isBridgesSolved(p), `Bridges ${tier}: empty board marked solved`);
-    // Solution must be unique (independent backtracking count, stop at 2).
     assert(countBridgesSolutions(p) === 1, `Bridges ${tier}: solution not unique`);
   }
 
@@ -105,16 +116,31 @@ try {
     assert(!kenken.kenKenHasConflict({ ...p, player: Array.from({ length: size }, () => Array(size).fill(0)) }), `KenKen ${size}: empty board marked conflict`);
   }
 
-  for (const size of [5, 10, 15]) {
+  for (const size of [5, 8, 10]) {
     const p = nonogram.generateNonogram(size, 700 + size);
-    assert(nonogram.nonogramLineCluesMatch({ ...p, player: cloneGrid(p.solution) }), `Nonogram ${size}: solution rejected`);
+    assert(
+      nonogram.nonogramLineCluesMatch({ ...p, player: nonogramPlayerFromSolution(p.solution) }),
+      `Nonogram ${size}: solution rejected`,
+    );
   }
 
-  for (const size of [7, 9]) {
+  for (const size of [6, 7]) {
     const p = kakuro.generateKakuro(size, 800 + size);
     const solutionPlayer = p.board.map((row) => row.map((cell) => (cell.block ? null : cell.value)));
     assert(kakuro.isKakuroSolved({ ...p, player: solutionPlayer }), `Kakuro ${size}: solution rejected`);
-    assert(!kakuro.kakuroHasConflict(p), `Kakuro ${size}: empty board marked conflict`);
+    assert(!kakuro.isKakuroSolved(p), `Kakuro ${size}: empty board marked solved`);
+  }
+
+  for (const size of [5, 6, 7, 8]) {
+    const p = crowns.generateCrowns(size, 900 + size);
+    assert(
+      crowns.isCrownsSolved({ ...p, player: crownsPlayerFromSolution(size, p.solution) }),
+      `Crowns ${size}: solution rejected`,
+    );
+    assert(
+      !crowns.isCrownsSolved({ ...p, player: Array.from({ length: size }, () => Array(size).fill(0)) }),
+      `Crowns ${size}: empty board marked solved`,
+    );
   }
 
   console.log('All puzzle engine validations passed.');

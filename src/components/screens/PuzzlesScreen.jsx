@@ -221,8 +221,8 @@ export default function PuzzlesScreen() {
           </div>
 
           {/* Planet hall: big escape planet on top, category planets below */}
-          <div style={{ position: 'relative', width: '100%', height: GATE_CANVAS_H, marginTop: 8, zIndex: 4 }}>
-            <div style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', width: CANVAS_W, height: GATE_CANVAS_H }}>
+          <div className="pz-hub-canvas" style={{ position: 'relative', width: '100%', height: GATE_CANVAS_H, marginTop: 8, zIndex: 4 }}>
+            <div style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', width: CANVAS_W, height: GATE_CANVAS_H, maxWidth: '100%' }}>
               <svg width={CANVAS_W} height={GATE_CANVAS_H} viewBox={`0 0 ${CANVAS_W} ${GATE_CANVAS_H}`} style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
                 <defs>
                   {planetDefs(GATES, 'gate')}
@@ -308,8 +308,8 @@ export default function PuzzlesScreen() {
       </div>
 
       {/* Constellation canvas (SVG art + HTML portal overlays) */}
-      <div style={{ position: 'relative', width: '100%', height: CANVAS_H, marginTop: 12, zIndex: 4 }}>
-        <div style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', width: CANVAS_W, height: CANVAS_H }}>
+      <div className="pz-hub-canvas" style={{ position: 'relative', width: '100%', height: CANVAS_H, marginTop: 12, zIndex: 4, minHeight: CANVAS_H }}>
+        <div style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', width: CANVAS_W, height: CANVAS_H, maxWidth: '100%' }}>
 
           <svg width={CANVAS_W} height={CANVAS_H} viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`} style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
             <defs>
@@ -420,11 +420,13 @@ export default function PuzzlesScreen() {
                   {puzzle.icon}
                 </span>
                 <span style={{
-                  marginTop: 22, textAlign: 'center', color: L.text,
+                  marginTop: 22, textAlign: 'center', color: chrome.text,
                   fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Nunito', sans-serif",
                   fontSize: isAr ? 12.5 : 13.5, fontWeight: isAr ? 800 : 400, letterSpacing: isAr ? 0 : 0.35,
                   lineHeight: 1.1, whiteSpace: 'nowrap',
-                  textShadow: '-1.4px 0 rgba(8,4,2,0.95), 1.4px 0 rgba(8,4,2,0.95), 0 -1.4px rgba(8,4,2,0.95), 0 1.4px rgba(8,4,2,0.95), 0 0 16px rgba(232,172,78,0.5)',
+                  textShadow: chrome.dark
+                    ? '-1.4px 0 rgba(8,4,2,0.95), 1.4px 0 rgba(8,4,2,0.95), 0 -1.4px rgba(8,4,2,0.95), 0 1.4px rgba(8,4,2,0.95), 0 0 16px rgba(232,172,78,0.5)'
+                    : '0 1px 0 rgba(255,252,246,0.9), 0 0 12px rgba(255,252,246,0.55)',
                 }}>
                   {isAr ? puzzle.nameAr : puzzle.name}
                 </span>

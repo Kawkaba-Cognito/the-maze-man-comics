@@ -34,7 +34,7 @@ export default function Synonyms3DProto({ isAr, playSfx, onBack }) {
         mode: 'pick2',
         prompt: t.prompt,
         chip,
-        layout: 'grid',
+        layout: 'cards',
         timeMs: t.timeMs,
         options: t.words.map((w, i) => ({ id: `w${w.key}`, label: w.label, ...deco(i) })),
         pairIds: (t.pair || []).map((k) => `w${k}`),
@@ -54,14 +54,14 @@ export default function Synonyms3DProto({ isAr, playSfx, onBack }) {
         mode: 'choice',
         prompt: `${a} → ${b}  ·  ${c} → ?`,
         chip,
-        layout: 'grid',
+        layout: 'cards',
         timeMs: t.timeMs,
         options,
       };
     }
 
     if (t.kind === 'odd') {
-      return { mode: 'choice', prompt: t.prompt, chip, layout: 'grid', timeMs: t.timeMs, options };
+      return { mode: 'choice', prompt: t.prompt, chip, layout: 'cards', timeMs: t.timeMs, options };
     }
 
     // similarity
@@ -69,7 +69,7 @@ export default function Synonyms3DProto({ isAr, playSfx, onBack }) {
       mode: 'choice',
       prompt: `${t.left} · ${t.right} — ${t.prompt}`,
       chip,
-      layout: 'grid',
+      layout: 'cards',
       timeMs: t.timeMs,
       options,
     };

@@ -181,7 +181,7 @@ export default function ModeShell({
   if (phase === 'menu') {
     const hintTxt = (h) => (h ? (isAr ? h.ar : h.en) : null);
     const items = [
-      // Icons come from TrainingModeList defaults (Fluent Emoji 3D).
+      // Icons come from TrainingModeList defaults (Cosmos planet design).
       { k: 'free', lb: isAr ? 'البقاء' : 'Survival mode', hint: hintTxt(hints?.free), on: () => startMode('free') },
       { k: 'levels', lb: isAr ? 'المستويات' : 'Level mode', hint: hintTxt(hints?.levels), on: () => startMode('levels') },
       { k: 'chal', lb: isAr ? 'مرّر والعب' : 'Pass n Play', hint: hintTxt(hints?.pass), on: () => startMode('pass') },

@@ -863,7 +863,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
       )}
       {phase === 'hub' && !isCosmos && (
         <>
-          <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-training-shell ct-fq-training-shell--mode-cosmos">
             <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
               <TrainingMenuBar
                 onBack={onBack}

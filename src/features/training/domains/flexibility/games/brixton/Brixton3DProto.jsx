@@ -75,36 +75,51 @@ export default function Brixton3DProto({ isAr, playSfx, onBack }) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');
       return () => boot.dispose();
     }
-    const { camera, playRoot, coarse, setTick, setFitHalf, renderer, dispose } = boot;
+    const { camera, playRoot, coarse, setTick, setFitBox, renderer, dispose } = boot;
 
     // ── Build 10 nodes: 2 rows × 5 cols (matches the 2D board layout) ──
-    const gap = coarse ? 1.42 : 1.55;
-    const rowGap = coarse ? 1.7 : 1.85;
+    // Nodes are little planets sitting on faint landing rings.
+    const gap = coarse ? 1.5 : 1.65;
+    const rowGap = coarse ? 1.75 : 1.95;
     const nodes = [];
     for (let i = 0; i < 10; i++) {
       const col = i % 5;
       const row = Math.floor(i / 5);
+      const x = (col - 2) * gap;
+      const y = (0.5 - row) * rowGap;
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.5, 0.05, 10, 26),
+        matStd(NODE_LIT, { emissive: NODE_LIT, emissiveIntensity: 0.18, metalness: 0.35, roughness: 0.4 }),
+      );
+      ring.position.set(x, y, -0.16);
+      playRoot.add(ring);
       const mesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.46, 0.46, 0.22, 30),
+        new THREE.SphereGeometry(0.44, 26, 20),
         matStd(NODE_BASE, { emissive: NODE_LIT, emissiveIntensity: 0.06, metalness: 0.3, roughness: 0.5 }),
       );
-      mesh.rotation.x = Math.PI / 2;
-      mesh.position.set((col - 2) * gap, (0.5 - row) * rowGap, 0);
+      mesh.position.set(x, y, 0);
       mesh.userData.idx = i;
       mesh.userData.flash = 0;
       mesh.userData.flashHex = NODE_OK;
       playRoot.add(mesh);
       nodes.push(mesh);
     }
-    const boardHalf = Math.max(2 * gap + 0.6, rowGap + 0.8);
-    setFitHalf(boardHalf + 0.4);
+    setFitBox(2 * gap + 0.9, rowGap + 1.0);
 
-    // Kawkab marker
-    const marker = new THREE.Mesh(
-      new THREE.SphereGeometry(0.34, 24, 18),
-      matStd(0xf0c860, { emissive: 0xf0c860, emissiveIntensity: 0.7, metalness: 0.3, roughness: 0.3 }),
+    // Kawkab marker — glowing comet with a soft halo.
+    const marker = new THREE.Group();
+    const markerCore = new THREE.Mesh(
+      new THREE.SphereGeometry(0.36, 24, 18),
+      matStd(0xf0c860, { emissive: 0xf0c860, emissiveIntensity: 0.75, metalness: 0.3, roughness: 0.3 }),
     );
-    marker.position.set(nodes[0].position.x, nodes[0].position.y, 0.5);
+    marker.add(markerCore);
+    const markerHalo = new THREE.Mesh(
+      new THREE.CircleGeometry(0.66, 22),
+      new THREE.MeshBasicMaterial({ color: 0xf0c860, transparent: true, opacity: 0.26, blending: THREE.AdditiveBlending, depthWrite: false }),
+    );
+    markerHalo.position.z = -0.05;
+    marker.add(markerHalo);
+    marker.position.set(nodes[0].position.x, nodes[0].position.y, 0.55);
     playRoot.add(marker);
     const markerTarget = marker.position.clone();
 
@@ -275,7 +290,8 @@ export default function Brixton3DProto({ isAr, playSfx, onBack }) {
     // ── Animate ──
     setTick((dt, now) => {
       marker.position.lerp(markerTarget, Math.min(1, dt * 9));
-      marker.material.emissiveIntensity = 0.55 + Math.sin(now * 0.006) * 0.2;
+      markerCore.material.emissiveIntensity = 0.6 + Math.sin(now * 0.006) * 0.2;
+      markerHalo.material.opacity = 0.2 + Math.sin(now * 0.006) * 0.08;
       for (const m of nodes) {
         if (m.userData.flash > 0) {
           m.userData.flash = Math.max(0, m.userData.flash - dt);

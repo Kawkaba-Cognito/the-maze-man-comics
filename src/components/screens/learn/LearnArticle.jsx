@@ -3,7 +3,8 @@ import { EXPERIMENTS } from './experiments';
 
 /** Splits "text with **bold** and *italic* spans" into text + <strong>/<em> runs — no markdown lib needed for this one use case. */
 function Inline({ text }) {
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  if (!text) return null;
+  const parts = String(text).split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
   return (
     <>
       {parts.map((part, i) => {
@@ -15,6 +16,11 @@ function Inline({ text }) {
   );
 }
 
+function pick(isAr, en, ar) {
+  if (isAr && ar != null && ar !== '') return ar;
+  return en;
+}
+
 function Block({ block, chrome, isAr, playSfx }) {
   switch (block.type) {
     case 'experiment': {
@@ -24,19 +30,20 @@ function Block({ block, chrome, isAr, playSfx }) {
     case 'h2':
       return (
         <h2 style={{ fontFamily: "'Fredoka One', 'Nunito', sans-serif", fontSize: 19, margin: '26px 0 10px', color: chrome.text }}>
-          {block.text}
+          {pick(isAr, block.text, block.textAr)}
         </h2>
       );
     case 'p':
       return (
         <p style={{ fontSize: 15, lineHeight: 1.65, color: chrome.text, margin: '0 0 12px' }}>
-          <Inline text={block.text} />
+          <Inline text={pick(isAr, block.text, block.textAr)} />
         </p>
       );
-    case 'ul':
+    case 'ul': {
+      const items = pick(isAr, block.items, block.itemsAr) || block.items || [];
       return (
         <ul style={{ margin: '0 0 14px', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {block.items.map((item, i) => (
+          {items.map((item, i) => (
             <li key={i} style={{ display: 'flex', gap: 8, fontSize: 14.5, lineHeight: 1.6, color: chrome.text }}>
               <span aria-hidden="true" style={{ color: chrome.accent, flexShrink: 0 }}>•</span>
               <span><Inline text={item} /></span>
@@ -44,7 +51,9 @@ function Block({ block, chrome, isAr, playSfx }) {
           ))}
         </ul>
       );
-    case 'tldr':
+    }
+    case 'tldr': {
+      const items = pick(isAr, block.items, block.itemsAr) || block.items || [];
       return (
         <div style={{
           margin: '0 0 22px', padding: '16px 18px', borderRadius: 18,
@@ -52,10 +61,10 @@ function Block({ block, chrome, isAr, playSfx }) {
           border: `1.5px solid ${chrome.accent}66`,
         }}>
           <div style={{ fontSize: 11, letterSpacing: 1.5, fontWeight: 800, textTransform: 'uppercase', color: chrome.accent, marginBottom: 8 }}>
-            ⚡ {block.label}
+            ⚡ {pick(isAr, block.label, block.labelAr)}
           </div>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {block.items.map((item, i) => (
+            {items.map((item, i) => (
               <li key={i} style={{ display: 'flex', gap: 8, fontSize: 14.5, lineHeight: 1.55, color: chrome.text, fontWeight: 600 }}>
                 <span aria-hidden="true" style={{ color: chrome.accent, flexShrink: 0 }}>{i + 1}.</span>
                 <span><Inline text={item} /></span>
@@ -64,6 +73,7 @@ function Block({ block, chrome, isAr, playSfx }) {
           </ul>
         </div>
       );
+    }
     case 'stat':
       return (
         <div style={{
@@ -75,10 +85,10 @@ function Block({ block, chrome, isAr, playSfx }) {
             fontFamily: "'Fredoka One', 'Nunito', sans-serif", fontSize: 30, fontWeight: 800,
             color: chrome.accent, flexShrink: 0, lineHeight: 1, whiteSpace: 'nowrap',
           }}>
-            {block.value}
+            {pick(isAr, block.value, block.valueAr)}
           </div>
           <div style={{ fontSize: 13.5, lineHeight: 1.5, color: chrome.text }}>
-            <Inline text={block.label} />
+            <Inline text={pick(isAr, block.label, block.labelAr)} />
           </div>
         </div>
       );
@@ -93,7 +103,8 @@ function Block({ block, chrome, isAr, playSfx }) {
         }}>
           <span aria-hidden="true" style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>{isFact ? '✅' : '❌'}</span>
           <span style={{ fontSize: 14, lineHeight: 1.55, color: chrome.text }}>
-            <strong style={{ color: col }}>{block.label}</strong> <Inline text={block.text} />
+            <strong style={{ color: col }}>{pick(isAr, block.label, block.labelAr)}</strong>{' '}
+            <Inline text={pick(isAr, block.text, block.textAr)} />
           </span>
         </div>
       );
@@ -103,31 +114,35 @@ function Block({ block, chrome, isAr, playSfx }) {
         <figure style={{ margin: '4px 0 22px' }}>
           <img
             src={block.src}
-            alt={block.alt || ''}
+            alt={pick(isAr, block.alt, block.altAr) || ''}
             loading="lazy"
             style={{ width: '100%', borderRadius: 18, display: 'block', border: chrome.dark ? '1px solid rgba(212,168,80,0.25)' : '1px solid rgba(170,140,80,0.2)' }}
           />
-          {block.caption ? (
-            <figcaption style={{ fontSize: 12, color: chrome.muted, marginTop: 8, textAlign: 'center' }}>{block.caption}</figcaption>
+          {(block.caption || block.captionAr) ? (
+            <figcaption style={{ fontSize: 12, color: chrome.muted, marginTop: 8, textAlign: 'center' }}>
+              {pick(isAr, block.caption, block.captionAr)}
+            </figcaption>
           ) : null}
         </figure>
       );
-    case 'table':
+    case 'table': {
+      const headers = pick(isAr, block.headers, block.headersAr) || block.headers || [];
+      const rows = pick(isAr, block.rows, block.rowsAr) || block.rows || [];
       return (
         <div style={{ overflowX: 'auto', margin: '0 0 16px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
             <thead>
               <tr>
-                {block.headers.map((h, i) => (
+                {headers.map((h, i) => (
                   <th key={i} style={{
-                    textAlign: 'left', padding: '8px 10px', color: chrome.muted, fontWeight: 700,
+                    textAlign: isAr ? 'right' : 'left', padding: '8px 10px', color: chrome.muted, fontWeight: 700,
                     borderBottom: chrome.dark ? '1px solid rgba(212,168,80,0.3)' : '1px solid rgba(170,140,80,0.28)',
                   }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {block.rows.map((row, ri) => (
+              {rows.map((row, ri) => (
                 <tr key={ri}>
                   {row.map((cell, ci) => (
                     <td key={ci} style={{
@@ -141,19 +156,21 @@ function Block({ block, chrome, isAr, playSfx }) {
           </table>
         </div>
       );
+    }
     default:
       return null;
   }
 }
 
 export default function LearnArticle({ topic, isAr, chrome, playSfx }) {
+  const title = pick(isAr, topic.subtitle || topic.title, topic.subtitleAr || topic.titleAr);
   return (
     <article style={{ textAlign: isAr ? 'right' : 'left' }}>
       <div style={{ fontSize: 12, letterSpacing: 1.5, color: chrome.muted, textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>
         {isAr ? 'تعلّم' : 'Learn'}
       </div>
       <h1 style={{ fontFamily: "'Fredoka One', 'Nunito', sans-serif", fontSize: 24, lineHeight: 1.25, margin: '0 0 18px', color: chrome.text }}>
-        {topic.subtitle || topic.title}
+        {title}
       </h1>
       {topic.blocks.map((block, i) => <Block key={i} block={block} chrome={chrome} isAr={isAr} playSfx={playSfx} />)}
     </article>

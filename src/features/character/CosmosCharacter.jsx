@@ -31,10 +31,10 @@ const MOOD_EYE = {
 };
 
 const MOOD_GLOW = {
-  ready: '#5ec8e8',
-  focused: '#7ad4f0',
-  proud: '#9be8ff',
-  tired: '#7a9aab',
+  ready: '#e8ac4e',
+  focused: '#f0c878',
+  proud: '#e8c878',
+  tired: '#a89870',
 };
 
 // Gear attach points (0..200 viewBox). Planet centre (100,102), r=52.

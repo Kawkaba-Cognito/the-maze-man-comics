@@ -69,8 +69,44 @@ const UI = {
 const POWERUP_ICON = { shield: '🛡️', slowmo: '⏱️', x2: '✨', freeze: '❄️' };
 const COLOR_HEX = { red: 0xd9534f, green: 0x7cbc7a };
 const CREAM_HEX = 0xead9bd;
-const SIDE_X = { left: -1.35, right: 1.35 };
+const SIDE_X = { left: -1.45, right: 1.45 };
 const ROT_Z = { left: Math.PI / 2, right: -Math.PI / 2 };
+
+/** A proper arrow (shaft + head) pointing +Y by default; one shared material. */
+function makeArrow(mat, scale = 1) {
+  const g = new THREE.Group();
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.1 * scale, 0.1 * scale, 0.72 * scale, 14), mat);
+  shaft.position.y = -0.12 * scale;
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.3 * scale, 0.56 * scale, 22), mat);
+  head.position.y = 0.42 * scale;
+  g.add(shaft, head);
+  g.userData.mat = mat;
+  return g;
+}
+
+/** Rounded pad face with a big ← / → glyph → CanvasTexture. */
+function padTexture(dir) {
+  const W = 256;
+  const H = 160;
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d0a06';
+  ctx.globalAlpha = 0.0;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#f0e2c0';
+  ctx.font = '800 108px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(dir === 'left' ? '←' : '→', W / 2, H / 2 + 6);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
 
 export default function SpatialStroop3DProto({ isAr, playSfx, onBack }) {
   const t = UI[isAr ? 'ar' : 'en'];
@@ -104,36 +140,51 @@ export default function SpatialStroop3DProto({ isAr, playSfx, onBack }) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');
       return () => boot.dispose();
     }
-    const { camera, playRoot, coarse, setTick, setFitHalf, renderer, dispose } = boot;
+    const { camera, playRoot, coarse, setTick, setFitBox, renderer, dispose } = boot;
 
-    // ── Answer pads ──
-    const padGeo = new THREE.BoxGeometry(1.7, 1.05, 0.22);
-    const pads = ['left', 'right'].map((side) => {
-      const mesh = new THREE.Mesh(padGeo.clone(), matStd(side === 'left' ? 0x6bb3c8 : 0xe8ac4e, {
-        emissiveIntensity: 0.22, metalness: 0.25, roughness: 0.55,
-      }));
-      mesh.position.set(side === 'left' ? -1.5 : 1.5, -1.9, 0);
-      mesh.userData.side = side;
-      mesh.userData.flash = 0;
-      playRoot.add(mesh);
-      return mesh;
+    // ── Seat platforms (show which SIDE the arrow sits on) ──
+    const seats = ['left', 'right'].map((side) => {
+      const seat = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.62, 0.7, 0.1, 28),
+        matStd(0x1a140c, { emissive: 0xe8ac4e, emissiveIntensity: 0.06, metalness: 0.25, roughness: 0.7 }),
+      );
+      seat.rotation.x = Math.PI / 2;
+      seat.position.set(SIDE_X[side], 0.35, -0.15);
+      playRoot.add(seat);
+      return seat;
     });
-    setFitHalf(3.7);
 
-    // ── Stimulus: main arrow + flankers ──
+    // ── Answer pads (big, labelled ← / →) ──
+    const padTexL = padTexture('left');
+    const padTexR = padTexture('right');
+    const pads = ['left', 'right'].map((side) => {
+      const base = matStd(side === 'left' ? 0x6bb3c8 : 0xe8ac4e, { emissiveIntensity: 0.28, metalness: 0.3, roughness: 0.5 });
+      const face = new THREE.MeshStandardMaterial({ map: side === 'left' ? padTexL : padTexR, transparent: true, emissive: new THREE.Color(0xf0e2c0), emissiveIntensity: 0.2, metalness: 0.2, roughness: 0.5 });
+      const g = new THREE.Group();
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.2, 0.24), base);
+      g.add(slab);
+      const label = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.05), face);
+      label.position.z = 0.13;
+      g.add(label);
+      g.position.set(side === 'left' ? -1.6 : 1.6, -2.15, 0);
+      g.userData.side = side;
+      g.userData.flash = 0;
+      g.userData.mat = base;
+      playRoot.add(g);
+      return g;
+    });
+    setFitBox(2.9, 3.4);
+
+    // ── Stimulus: main arrow + flankers (real arrows, shaft + head) ──
     const arrowGroup = new THREE.Group();
     playRoot.add(arrowGroup);
-    const mainArrow = new THREE.Mesh(
-      new THREE.ConeGeometry(0.4, 0.85, 20),
-      matStd(CREAM_HEX, { emissiveIntensity: 0.35, metalness: 0.2, roughness: 0.45 }),
-    );
+    const mainMat = matStd(CREAM_HEX, { emissiveIntensity: 0.4, metalness: 0.25, roughness: 0.4 });
+    const mainArrow = makeArrow(mainMat, 1.4);
     arrowGroup.add(mainArrow);
     const flankers = [-1, 1].map((k) => {
-      const m = new THREE.Mesh(
-        new THREE.ConeGeometry(0.22, 0.5, 16),
-        matStd(CREAM_HEX, { emissiveIntensity: 0.22, metalness: 0.2, roughness: 0.5 }),
-      );
-      m.position.x = k * 0.72;
+      const fm = matStd(CREAM_HEX, { emissiveIntensity: 0.28, metalness: 0.2, roughness: 0.5 });
+      const m = makeArrow(fm, 0.82);
+      m.position.x = k * 0.92;
       m.visible = false;
       arrowGroup.add(m);
       return m;
@@ -142,22 +193,24 @@ export default function SpatialStroop3DProto({ isAr, playSfx, onBack }) {
 
     const showProbe = (probe) => {
       const hex = probe.color ? COLOR_HEX[probe.color] : CREAM_HEX;
-      mainArrow.material.color.setHex(hex);
-      mainArrow.material.emissive.setHex(hex);
+      mainMat.color.setHex(hex);
+      mainMat.emissive.setHex(hex);
       mainArrow.rotation.z = ROT_Z[probe.dir] ?? 0;
-      arrowGroup.position.set(SIDE_X[probe.pos] ?? 0, 0.45, 0);
+      arrowGroup.position.set(SIDE_X[probe.pos] ?? 0, 0.35, 0.1);
+      // Highlight the seat the arrow sits on.
+      seats.forEach((s, i) => { s.material.emissiveIntensity = (SIDE_X[probe.pos] === SIDE_X[i === 0 ? 'left' : 'right']) ? 0.32 : 0.06; });
       const fd = probe.flankerDir;
       flankers.forEach((m) => {
         m.visible = !!fd;
         if (fd) {
           m.rotation.z = ROT_Z[fd] ?? 0;
-          m.material.color.setHex(hex);
-          m.material.emissive.setHex(hex);
+          m.userData.mat.color.setHex(hex);
+          m.userData.mat.emissive.setHex(hex);
         }
       });
       arrowGroup.visible = true;
     };
-    const hideProbe = () => { arrowGroup.visible = false; };
+    const hideProbe = () => { arrowGroup.visible = false; seats.forEach((s) => { s.material.emissiveIntensity = 0.06; }); };
 
     // ── Session state (all engine-driven) ──
     let block = null;
@@ -351,8 +404,12 @@ export default function SpatialStroop3DProto({ isAr, playSfx, onBack }) {
       ptr.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       ptr.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(ptr, camera);
-      const hits = raycaster.intersectObjects(pads, false);
-      if (hits.length) { answer(hits[0].object.userData.side); return; }
+      const hits = raycaster.intersectObjects(pads, true);
+      if (hits.length) {
+        let o = hits[0].object;
+        while (o && o.userData.side === undefined && o.parent) o = o.parent;
+        if (o?.userData.side) { answer(o.userData.side); return; }
+      }
       // Soft pick / half-screen fallback (thumb-friendly, like the 2D buttons)
       let best = null;
       let bestD = coarse ? 0.3 : 0.18;
@@ -367,15 +424,16 @@ export default function SpatialStroop3DProto({ isAr, playSfx, onBack }) {
 
     let hudAcc = 0;
     setTick((dt, now) => {
-      arrowGroup.position.y = 0.45 + Math.sin(now * 0.003) * 0.06;
+      arrowGroup.position.y = 0.35 + Math.sin(now * 0.003) * 0.06;
       for (const p of pads) {
+        const mat = p.userData.mat;
         if (p.userData.flash > 0) {
           p.userData.flash = Math.max(0, p.userData.flash - dt);
-          p.material.emissive.setHex(p.userData.flashHex || 0x62b277);
-          p.material.emissiveIntensity = 0.22 + p.userData.flash;
+          mat.emissive.setHex(p.userData.flashHex || 0x62b277);
+          mat.emissiveIntensity = 0.28 + p.userData.flash;
         } else {
-          p.material.emissive.setHex(p.userData.side === 'left' ? 0x6bb3c8 : 0xe8ac4e);
-          p.material.emissiveIntensity = 0.22;
+          mat.emissive.setHex(p.userData.side === 'left' ? 0x6bb3c8 : 0xe8ac4e);
+          mat.emissiveIntensity = 0.28;
         }
       }
       if (!finished) {
@@ -420,6 +478,9 @@ export default function SpatialStroop3DProto({ isAr, playSfx, onBack }) {
       clearTimers();
       el.removeEventListener('pointerup', onUp);
       pads.forEach((p) => { disposeObject(p); playRoot.remove(p); });
+      seats.forEach((s) => { disposeObject(s); playRoot.remove(s); });
+      padTexL.dispose();
+      padTexR.dispose();
       disposeObject(arrowGroup);
       playRoot.remove(arrowGroup);
       dispose();

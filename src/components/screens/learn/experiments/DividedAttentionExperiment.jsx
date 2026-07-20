@@ -1,16 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ExpCard, ExpButton, ExpResult } from './expShared';
+import { ExpCard, ExpButton, ExpResult, ExpSteps, ExpCountdown } from './expShared';
 
 /*
- * Divided-attention counting task — the experiential half of the "nobody
- * truly divides attention" myth-bust. Run 1: count only the red dots in a
- * stream. Run 2: a fresh stream, count red AND blue at once. Ground truth is
- * known (we generated the stream), so counting error is an honest accuracy
- * measure — and it usually climbs the moment a second colour is added.
+ * Divided-attention counting — practice stream, then single vs dual scored streams.
  */
 
-const DOT_MS = 380;
-const DOT_COUNT = 20;
+const DOT_MS = 360;
+const PRACTICE_COUNT = 8;
+const SCORED_COUNT = 24;
 const COLORS = {
   red: { hex: '#d55e00', en: 'red', ar: 'أحمر' },
   blue: { hex: '#0072b2', en: 'blue', ar: 'أزرق' },
@@ -18,8 +15,8 @@ const COLORS = {
 };
 const KEYS = Object.keys(COLORS);
 
-function buildStream() {
-  const seq = Array.from({ length: DOT_COUNT }, () => KEYS[Math.floor(Math.random() * KEYS.length)]);
+function buildStream(n) {
+  const seq = Array.from({ length: n }, () => KEYS[Math.floor(Math.random() * KEYS.length)]);
   const counts = { red: 0, blue: 0, green: 0 };
   seq.forEach((c) => { counts[c] += 1; });
   return { seq, counts };
@@ -28,61 +25,98 @@ function buildStream() {
 const TEXT = {
   en: {
     introTitle: 'Can you really divide your attention?',
-    introBody: "Round 1: watch the dots and count only the RED ones. Round 2: a new stream — count RED and BLUE at the same time. We know the real counts, so this measures how accurate you actually are.",
-    start: 'Start round 1',
+    introBody: 'First a short practice counting red dots. Then Round 1: count red only. Round 2: count red and blue at once. We know the true counts, so error is honest.',
+    steps: [
+      'Practice: short stream — count red only (not scored).',
+      'Round 1: longer stream — count red only.',
+      'Round 2: new stream — count red AND blue together.',
+    ],
+    start: 'Start practice',
+    ready: 'Get ready',
+    practiceWatch: 'Practice — count RED only',
     watchOnly: (c) => `Count the ${c} dots`,
     watchBoth: 'Count the RED and BLUE dots',
     redGuess: 'How many red dots?',
     redGuessLabel: 'Red count',
     blueGuessLabel: 'Blue count',
     submit: 'Submit',
-    transitionBody: "Round 2 — new stream, two colours to track this time.",
+    practiceDone: 'Nice. Now the scored rounds.',
+    continueBtn: 'Start round 1',
+    transitionBody: 'Round 2 — new stream. Track two colours this time.',
     transitionBtn: 'Start round 2',
     again: 'Run it again',
-    single: 'Single-task error', divided: 'Divided-task error',
+    single: 'Single-task error',
+    divided: 'Divided-task error',
+    trueWas: 'True count was',
   },
   ar: {
     introTitle: 'هل يمكنك فعلاً تقسيم انتباهك؟',
-    introBody: 'الجولة الأولى: شاهد النقاط وعُدّ الحمراء فقط. الجولة الثانية: سلسلة جديدة — عُدّ الأحمر والأزرق معاً. نحن نعرف الأعداد الحقيقية، فهذا يقيس دقتك الفعلية.',
-    start: 'ابدأ الجولة الأولى',
+    introBody: 'أولاً تمرين قصير بعدّ الأحمر. ثم الجولة ١: الأحمر فقط. الجولة ٢: الأحمر والأزرق معاً. نحن نعرف الأعداد الحقيقية، فالخطأ صادق.',
+    steps: [
+      'تمرين: سلسلة قصيرة — عُدّ الأحمر فقط (غير مسجّل).',
+      'الجولة ١: سلسلة أطول — الأحمر فقط.',
+      'الجولة ٢: سلسلة جديدة — الأحمر والأزرق معاً.',
+    ],
+    start: 'ابدأ التمرين',
+    ready: 'استعد',
+    practiceWatch: 'تمرين — عُدّ الأحمر فقط',
     watchOnly: (c) => `عُدّ النقاط ${c}`,
     watchBoth: 'عُدّ النقاط الحمراء والزرقاء',
     redGuess: 'كم عدد النقاط الحمراء؟',
     redGuessLabel: 'عدد الأحمر',
     blueGuessLabel: 'عدد الأزرق',
     submit: 'إرسال',
-    transitionBody: 'الجولة الثانية — سلسلة جديدة، لونان لتتبّعهما هذه المرة.',
-    transitionBtn: 'ابدأ الجولة الثانية',
+    practiceDone: 'ممتاز. الآن الجولات المسجّلة.',
+    continueBtn: 'ابدأ الجولة ١',
+    transitionBody: 'الجولة ٢ — سلسلة جديدة. تتبّع لونين هذه المرة.',
+    transitionBtn: 'ابدأ الجولة ٢',
     again: 'أعد المحاولة',
-    single: 'خطأ المهمة الفردية', divided: 'خطأ المهمة المزدوجة',
+    single: 'خطأ المهمة الفردية',
+    divided: 'خطأ المهمة المزدوجة',
+    trueWas: 'العدد الحقيقي كان',
   },
 };
 
 export default function DividedAttentionExperiment({ isAr, chrome, playSfx }) {
   const t = isAr ? TEXT.ar : TEXT.en;
-  const [phase, setPhase] = useState('intro'); // intro | stream1 | ask1 | transition | stream2 | ask2 | result
+  // intro | countdown | practiceStream | practiceAsk | practiceDone | stream1 | ask1 | transition | stream2 | ask2 | result
+  const [phase, setPhase] = useState('intro');
   const [pos, setPos] = useState(-1);
+  const afterCd = useRef('practiceStream');
+  const practiceRef = useRef(null);
   const stream1Ref = useRef(null);
   const stream2Ref = useRef(null);
+  const [redGuessP, setRedGuessP] = useState('');
   const [redGuess1, setRedGuess1] = useState('');
   const [redGuess2, setRedGuess2] = useState('');
   const [blueGuess2, setBlueGuess2] = useState('');
 
-  function launch(which) {
-    if (which === 1) stream1Ref.current = buildStream();
-    else stream2Ref.current = buildStream();
+  function beginCountdown(next) {
+    afterCd.current = next;
+    setPhase('countdown');
+  }
+
+  function finishCountdown() {
+    const next = afterCd.current;
+    if (next === 'practiceStream') practiceRef.current = buildStream(PRACTICE_COUNT);
+    else if (next === 'stream1') stream1Ref.current = buildStream(SCORED_COUNT);
+    else stream2Ref.current = buildStream(SCORED_COUNT);
     setPos(-1);
-    setPhase(which === 1 ? 'stream1' : 'stream2');
+    setPhase(next);
   }
 
   useEffect(() => {
-    if (phase !== 'stream1' && phase !== 'stream2') return undefined;
-    const seq = (phase === 'stream1' ? stream1Ref.current : stream2Ref.current).seq;
+    if (phase !== 'practiceStream' && phase !== 'stream1' && phase !== 'stream2') return undefined;
+    const seq = (phase === 'practiceStream' ? practiceRef.current
+      : phase === 'stream1' ? stream1Ref.current : stream2Ref.current).seq;
     let i = -1;
     let timer;
     const step = () => {
       i += 1;
-      if (i >= seq.length) { setPhase(phase === 'stream1' ? 'ask1' : 'ask2'); return; }
+      if (i >= seq.length) {
+        setPhase(phase === 'practiceStream' ? 'practiceAsk' : phase === 'stream1' ? 'ask1' : 'ask2');
+        return;
+      }
       setPos(i);
       timer = setTimeout(step, DOT_MS);
     };
@@ -90,18 +124,8 @@ export default function DividedAttentionExperiment({ isAr, chrome, playSfx }) {
     return () => clearTimeout(timer);
   }, [phase]);
 
-  function submitAsk1() {
-    playSfx?.('click');
-    setPhase('transition');
-  }
-
-  function submitAsk2() {
-    playSfx?.('click');
-    setPhase('result');
-  }
-
   function reset() {
-    setRedGuess1(''); setRedGuess2(''); setBlueGuess2('');
+    setRedGuessP(''); setRedGuess1(''); setRedGuess2(''); setBlueGuess2('');
     setPhase('intro');
   }
 
@@ -116,27 +140,57 @@ export default function DividedAttentionExperiment({ isAr, chrome, playSfx }) {
     border: `2px solid ${chrome.accent}66`, background: chrome.dark ? 'rgba(0,0,0,0.25)' : '#fff', color: chrome.text,
   };
 
-  const activeSeq = phase === 'stream1' ? stream1Ref.current?.seq : phase === 'stream2' ? stream2Ref.current?.seq : null;
+  const activeSeq = phase === 'practiceStream' ? practiceRef.current?.seq
+    : phase === 'stream1' ? stream1Ref.current?.seq
+      : phase === 'stream2' ? stream2Ref.current?.seq : null;
   const activeColor = activeSeq && pos >= 0 && pos < activeSeq.length ? COLORS[activeSeq[pos]] : null;
+
+  const watchLabel = phase === 'practiceStream' ? t.practiceWatch
+    : phase === 'stream1' ? t.watchOnly(isAr ? COLORS.red.ar : COLORS.red.en)
+      : t.watchBoth;
 
   return (
     <ExpCard isAr={isAr} chrome={chrome}>
       {phase === 'intro' && (
         <>
           <div style={{ fontWeight: 800, fontSize: 15.5, color: chrome.text, marginBottom: 6 }}>{t.introTitle}</div>
-          <p style={{ fontSize: 14, lineHeight: 1.55, color: chrome.text, margin: '0 0 14px' }}>{t.introBody}</p>
-          <ExpButton onClick={() => { playSfx?.('click'); launch(1); }}>{t.start}</ExpButton>
+          <p style={{ fontSize: 14, lineHeight: 1.55, color: chrome.text, margin: '0 0 10px' }}>{t.introBody}</p>
+          <ExpSteps chrome={chrome} steps={t.steps} />
+          <ExpButton onClick={() => { playSfx?.('click'); beginCountdown('practiceStream'); }}>{t.start}</ExpButton>
         </>
       )}
 
-      {(phase === 'stream1' || phase === 'stream2') && (
+      {phase === 'countdown' && (
+        <ExpCountdown key={afterCd.current} chrome={chrome} label={t.ready} onDone={finishCountdown} />
+      )}
+
+      {(phase === 'practiceStream' || phase === 'stream1' || phase === 'stream2') && (
         <>
-          <div style={{ fontSize: 13, fontWeight: 700, color: chrome.accent, marginBottom: 4 }}>
-            {phase === 'stream1' ? t.watchOnly(isAr ? COLORS.red.ar : COLORS.red.en) : t.watchBoth}
-          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: chrome.accent, marginBottom: 4 }}>{watchLabel}</div>
           <div style={dotStyle}>
             {activeColor && <span style={{ width: 46, height: 46, borderRadius: '50%', background: activeColor.hex, display: 'block' }} />}
           </div>
+        </>
+      )}
+
+      {phase === 'practiceAsk' && (
+        <>
+          <div style={{ fontWeight: 800, fontSize: 15, color: chrome.text, marginBottom: 12 }}>{t.redGuess}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+            <input type="number" min="0" inputMode="numeric" style={numInputStyle} value={redGuessP} onChange={(e) => setRedGuessP(e.target.value)} />
+            <ExpButton onClick={() => { playSfx?.('click'); setPhase('practiceDone'); }}>{t.submit}</ExpButton>
+          </div>
+        </>
+      )}
+
+      {phase === 'practiceDone' && (
+        <>
+          <p style={{ fontSize: 14, lineHeight: 1.55, color: chrome.text, margin: '0 0 8px' }}>{t.practiceDone}</p>
+          <p style={{ fontSize: 13, color: chrome.muted, margin: '0 0 14px' }}>
+            {t.trueWas}: {practiceRef.current?.counts.red}
+            {redGuessP !== '' ? ` · ${isAr ? 'تخمينك' : 'Your guess'}: ${redGuessP}` : ''}
+          </p>
+          <ExpButton onClick={() => { playSfx?.('click'); beginCountdown('stream1'); }}>{t.continueBtn}</ExpButton>
         </>
       )}
 
@@ -144,11 +198,8 @@ export default function DividedAttentionExperiment({ isAr, chrome, playSfx }) {
         <>
           <div style={{ fontWeight: 800, fontSize: 15, color: chrome.text, marginBottom: 12 }}>{t.redGuess}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-            <input
-              type="number" min="0" inputMode="numeric" style={numInputStyle}
-              value={redGuess1} onChange={(e) => setRedGuess1(e.target.value)}
-            />
-            <ExpButton onClick={submitAsk1}>{t.submit}</ExpButton>
+            <input type="number" min="0" inputMode="numeric" style={numInputStyle} value={redGuess1} onChange={(e) => setRedGuess1(e.target.value)} />
+            <ExpButton onClick={() => { playSfx?.('click'); setPhase('transition'); }}>{t.submit}</ExpButton>
           </div>
         </>
       )}
@@ -156,7 +207,7 @@ export default function DividedAttentionExperiment({ isAr, chrome, playSfx }) {
       {phase === 'transition' && (
         <>
           <p style={{ fontSize: 14, lineHeight: 1.55, color: chrome.text, margin: '0 0 14px' }}>{t.transitionBody}</p>
-          <ExpButton onClick={() => { playSfx?.('click'); launch(2); }}>{t.transitionBtn}</ExpButton>
+          <ExpButton onClick={() => { playSfx?.('click'); beginCountdown('stream2'); }}>{t.transitionBtn}</ExpButton>
         </>
       )}
 
@@ -172,7 +223,7 @@ export default function DividedAttentionExperiment({ isAr, chrome, playSfx }) {
               <input type="number" min="0" inputMode="numeric" style={numInputStyle} value={blueGuess2} onChange={(e) => setBlueGuess2(e.target.value)} />
             </label>
           </div>
-          <ExpButton onClick={submitAsk2}>{t.submit}</ExpButton>
+          <ExpButton onClick={() => { playSfx?.('click'); setPhase('result'); }}>{t.submit}</ExpButton>
         </>
       )}
 
@@ -181,8 +232,10 @@ export default function DividedAttentionExperiment({ isAr, chrome, playSfx }) {
         const trueDivRed = stream2Ref.current.counts.red;
         const trueDivBlue = stream2Ref.current.counts.blue;
         const error1 = Math.abs((Number(redGuess1) || 0) - trueSingle);
-        const error2 = (Math.abs((Number(redGuess2) || 0) - trueDivRed) + Math.abs((Number(blueGuess2) || 0) - trueDivBlue)) / 2;
-        const worse = error2 > error1;
+        const errRed2 = Math.abs((Number(redGuess2) || 0) - trueDivRed);
+        const errBlue2 = Math.abs((Number(blueGuess2) || 0) - trueDivBlue);
+        const error2 = (errRed2 + errBlue2) / 2;
+        const worse = error2 > error1 + 0.25;
         return (
           <>
             <div style={{ display: 'flex', gap: 24, marginBottom: 4 }}>
@@ -198,11 +251,11 @@ export default function DividedAttentionExperiment({ isAr, chrome, playSfx }) {
             <ExpResult chrome={chrome}>
               {worse
                 ? (isAr
-                  ? 'خطؤك تضاعف تقريباً بمجرد إضافة لون ثانٍ لتتبّعه — هذا هو ثمن "الانتباه المُقسَّم" الحقيقي. دماغك لم يراقب لونين بالتوازي حقاً؛ كان يتنقّل بينهما ويُفلت بعض النقاط في الطريق. هذا بالضبط ما يحدث مع القيادة والرسائل النصية معاً، أو GPS + طريق + بودكاست — وهو أيضاً سبب أن التفوّق في لعبة تدريب واحدة لا "ينتقل" تلقائياً لمهارات أخرى: مهارة واحدة تتحسّن، والانتباه لا يتعلّم سرّاً كيف ينقسم إلى اثنين.'
-                  : <>Your error grew the moment a second colour entered the picture — that's the real cost of <strong>divided attention</strong>. Your brain wasn't truly tracking two colours in parallel; it was hopping between them, and some dots slipped through in the gaps. That's exactly what's happening when you text while driving, or run GPS + traffic + a podcast at once — and it's also why acing one training game doesn't magically "transfer" to other skills: one skill sharpens, attention doesn't secretly learn to split in two.</>)
+                  ? <>خطؤك ارتفع حين أُضيف لون ثانٍ — هذا ثمن <strong>الانتباه المقسّم</strong>. دماغك لم يراقب لونين بالتوازي حقاً؛ كان يتنقّل ويفلت نقاطاً. الانتباه يُشارك لا يُستنسخ — نفس الآلية خلف القيادة مع الرسائل.</>
+                  : <>Your error rose when a second colour was added — that is the cost of <strong>divided attention</strong>. Your brain was not truly tracking two colours in parallel; it hopped, and dots slipped through. Attention is shared, not cloned — the same mechanism behind texting while driving.</>)
                 : (isAr
-                  ? 'نتيجتان متقاربتان هذه المرة — التباين الفردي وارد. لكن في المتوسط عبر آلاف المشاركين، إضافة مهمة ثانية ترفع الخطأ بشكل ثابت — تماماً كما في القيادة أثناء الرسائل النصية. جرّب مرة أخرى.'
-                  : "Close result this time — individual variation happens. But averaged across people, adding a second thing to track reliably raises error. Try again and see if the gap shows up.")}
+                  ? 'نتيجتان متقاربتان هذه المرة — التباين وارد. في المتوسط، إضافة مهمة ثانية ترفع الخطأ. أعد التجربة وراقب إن اتّسع الفارق.'
+                  : 'Close result this time — variation happens. On average, adding a second track raises error. Try again and see if the gap widens.')}
             </ExpResult>
             <div style={{ marginTop: 12 }}>
               <ExpButton variant="ghost" onClick={() => { playSfx?.('click'); reset(); }}>{t.again}</ExpButton>

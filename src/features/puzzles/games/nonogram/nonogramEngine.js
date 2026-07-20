@@ -150,12 +150,13 @@ export function setNonogramCell(state, r, c, mode) {
 /** Win when the FILLED cells reproduce every row and column clue. */
 export function nonogramLineCluesMatch(state) {
   const { size, player, rowClues, colClues } = state;
+  const filled = (v) => v === FILLED || v === true;
   for (let r = 0; r < size; r++) {
-    const line = player[r].map((v) => v === FILLED);
+    const line = player[r].map(filled);
     if (cluesForLine(line).join(',') !== rowClues[r].join(',')) return false;
   }
   for (let c = 0; c < size; c++) {
-    const line = player.map((row) => row[c] === FILLED);
+    const line = player.map((row) => filled(row[c]));
     if (cluesForLine(line).join(',') !== colClues[c].join(',')) return false;
   }
   return true;
@@ -163,16 +164,17 @@ export function nonogramLineCluesMatch(state) {
 
 /** Reveal one correct cell (paid hint). Returns { next, revealed }. */
 export function hintReveal(state) {
-  const { size, solution, player } = state;
+  const { size, solution, player, seed = 1 } = state;
   const pool = [];
   for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
     const wantFilled = !!solution[r][c];
-    const isFilled = player[r][c] === 1;
+    const isFilled = player[r][c] === FILLED;
     if (wantFilled !== isFilled) pool.push([r, c]);
   }
   if (!pool.length) return { next: state, revealed: false };
-  const [r, c] = pool[Math.floor(Math.random() * pool.length)];
+  const rng = createRng((seed ^ (pool.length * 2654435761)) >>> 0);
+  const [r, c] = pool[Math.floor(rng() * pool.length)];
   const np = player.map((row) => row.slice());
-  np[r][c] = solution[r][c] ? 1 : 0;
+  np[r][c] = solution[r][c] ? FILLED : EMPTY;
   return { next: { ...state, player: np }, revealed: true };
 }

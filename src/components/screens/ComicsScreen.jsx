@@ -100,7 +100,9 @@ export default function ComicsScreen() {
         minHeight: 'min(100vh, 100dvh)',
         ...(screen === 'game'
           ? {
-              backgroundColor: tokens.trainingPaletteSurface,
+              // Mode hubs paint their own cosmos void (#07060b); keep the
+              // wrapper transparent so domain cream/purple never bleeds through.
+              backgroundColor: 'transparent',
               isolation: 'isolate',
             }
           : {}),

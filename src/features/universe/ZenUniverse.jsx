@@ -1,8 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
 /*
  * ZenUniverse — the Home screen's living 3D backdrop.
@@ -12,8 +9,9 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
  * particle spheres (positions mirrored from UniversePlanets DOM hit areas).
  *
  * Polish motion: center breathe + halo, small-planet float/pulse, richer
- * meteors. Bloom stays desktop-only; phones use additive glow + uBoost.
- * prefers-reduced-motion freezes motion (and hides the orbiting wisps).
+ * meteors. Desktop skips bloom + dust haze so the void stays clean black;
+ * phones use additive glow + uBoost. prefers-reduced-motion freezes motion
+ * (and hides the orbiting wisps).
  *
  * Premium center-planet stack: iridescent light tint + Fresnel rim, flowing
  * aurora bands, atmosphere/core billboard glow, three orbiting comet wisps,
@@ -190,9 +188,9 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
           col += vec3(0.55, 0.75, 1.0) * rim * 0.28;
           col = mix(col, vec3(1.0, 0.86, 0.55), vSpark * 0.85);
           float disc = smoothstep(0.5, 0.06, d);
-          float alpha = disc * 0.22 * uBoost * uBreath * (0.80 + 0.30 * vBand)
+          float alpha = disc * 0.16 * uBoost * uBreath * (0.80 + 0.30 * vBand)
             * (1.0 - vFade * 0.55) * (1.0 - uDim * 0.96);
-          alpha += disc * (rim * 0.04 + vSpark * 0.4) * (1.0 - uDim * 0.96);
+          alpha += disc * (rim * 0.03 + vSpark * 0.32) * (1.0 - uDim * 0.96);
           gl_FragColor = vec4(col, clamp(alpha, 0.0, 1.0));
         }
       `,
@@ -200,8 +198,8 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     const centerPlanet = new THREE.Points(centerGeo, centerMat);
     scene.add(centerPlanet);
 
-    // Soft additive halo — readable glow on phones without bloom
-    const HALO_COUNT = finePointer ? 720 : 480;
+    // Soft additive halo — readable glow on phones; keep desktop sparse
+    const HALO_COUNT = finePointer ? 220 : 480;
     const haloGeo = makeHaloRingAttributes(HALO_COUNT, CENTER_RADIUS * 1.38);
     const haloMat = new THREE.ShaderMaterial({
       transparent: true,
@@ -238,8 +236,8 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         varying float vAlpha;
         void main() {
           float d = length(gl_PointCoord - 0.5);
-          float alpha = smoothstep(0.5, 0.05, d) * vAlpha * 0.22 * uBoost * (1.0 - uDim * 0.9);
-          gl_FragColor = vec4(0.92, 0.96, 1.0, clamp(alpha, 0.0, 1.0));
+          float alpha = smoothstep(0.5, 0.05, d) * vAlpha * 0.08 * uBoost * (1.0 - uDim * 0.9);
+          gl_FragColor = vec4(0.7, 0.8, 0.95, clamp(alpha, 0.0, 1.0));
         }
       `,
     });
@@ -247,7 +245,10 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     scene.add(halo);
 
     // ---------- Atmosphere shell + breathing core (single billboard, phone-safe glow) ----------
-    const glowGeo = new THREE.PlaneGeometry(CENTER_RADIUS * 5.2, CENTER_RADIUS * 5.2);
+    const glowGeo = new THREE.PlaneGeometry(
+      CENTER_RADIUS * (finePointer ? 3.6 : 5.2),
+      CENTER_RADIUS * (finePointer ? 3.6 : 5.2),
+    );
     const glowMat = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
@@ -280,7 +281,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
           vec3 atm = mix(vec3(0.55, 0.75, 1.0), vec3(0.72, 0.62, 1.0),
             0.5 + 0.5 * sin(uNow * 0.15));
           vec3 col = mix(atm, vec3(1.0, 0.97, 0.9), clamp(core, 0.0, 1.0));
-          float a = (rimGlow * 0.055 + outer * 0.02 + core * 0.06)
+          float a = (rimGlow * 0.028 + outer * 0.006 + core * 0.03)
             * uBoost * (1.0 - uDim * 0.95);
           gl_FragColor = vec4(col, clamp(a, 0.0, 1.0));
         }
@@ -295,7 +296,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       { r: CENTER_RADIUS * 1.85, speed: -0.36, tiltX: -0.72, tiltZ: 0.18, col: [0.62, 0.85, 1.0] },
       { r: CENTER_RADIUS * 2.15, speed: 0.27, tiltX: 0.24, tiltZ: -0.6, col: [0.85, 0.7, 1.0] },
     ];
-    const WISP_TRAIL = finePointer ? 90 : 60;
+    const WISP_TRAIL = finePointer ? 48 : 60;
     const WISP_COUNT = WISP_ORBITS.length * WISP_TRAIL;
     const wPos = new Float32Array(WISP_COUNT * 3); // unused by shader, three.js requires it
     const wT = new Float32Array(WISP_COUNT);
@@ -363,8 +364,8 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         varying vec3 vCol;
         void main() {
           float d = length(gl_PointCoord - 0.5);
-          float alpha = smoothstep(0.5, 0.06, d) * vA * 0.75 * (1.0 - uDim * 0.92);
-          gl_FragColor = vec4(mix(vCol, vec3(1.0), vA * 0.55), clamp(alpha, 0.0, 1.0));
+          float alpha = smoothstep(0.5, 0.06, d) * vA * 0.42 * (1.0 - uDim * 0.92);
+          gl_FragColor = vec4(mix(vCol, vec3(0.95, 0.92, 0.85), vA * 0.35), clamp(alpha, 0.0, 1.0));
         }
       `,
     });
@@ -380,7 +381,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     scene.add(hitSphere);
 
     // ---------- Distant stars ----------
-    const S_COUNT = finePointer ? 1300 : 900;
+    const S_COUNT = finePointer ? 700 : 900;
     const sPos = new Float32Array(S_COUNT * 3);
     const sPhase = new Float32Array(S_COUNT);
     const sSpeed = new Float32Array(S_COUNT);
@@ -422,7 +423,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
           tw = tw * tw;
           vAlpha = (1.0 - aDepth) + aDepth * tw;
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
-          gl_PointSize = aSize * 120.0 / -mv.z;
+          gl_PointSize = aSize * 85.0 / -mv.z;
           gl_Position = projectionMatrix * mv;
         }
       `,
@@ -431,15 +432,16 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         varying float vAlpha;
         void main() {
           float d = length(gl_PointCoord - 0.5);
-          float alpha = smoothstep(0.5, 0.05, d) * vAlpha * 0.9 * (1.0 - uDim * 0.85);
-          gl_FragColor = vec4(vec3(1.0), alpha);
+          float alpha = smoothstep(0.5, 0.1, d) * vAlpha * 0.45 * (1.0 - uDim * 0.85);
+          gl_FragColor = vec4(0.85, 0.82, 0.72, alpha);
         }
       `,
     });
     scene.add(new THREE.Points(starGeo, starMat));
 
     // ---------- Soft cosmic dust (fills the void, very cheap) ----------
-    const DUST_COUNT = finePointer ? 600 : 350;
+    // Desktop: skip dust — additive haze was the main "white stuff" on wide screens.
+    const DUST_COUNT = finePointer ? 0 : 350;
     const dPos = new Float32Array(DUST_COUNT * 3);
     const dRand = new Float32Array(DUST_COUNT);
     const dSize = new Float32Array(DUST_COUNT);
@@ -470,7 +472,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
           p.y += cos(uNow * 0.09 + aRand * 9.0) * 0.28;
           vAlpha = 0.25 + 0.35 * (0.5 + 0.5 * sin(uNow * 0.4 + aRand * 8.0));
           vec4 mv = modelViewMatrix * vec4(p, 1.0);
-          gl_PointSize = aSize * 90.0 / -mv.z;
+          gl_PointSize = aSize * 55.0 / -mv.z;
           gl_Position = projectionMatrix * mv;
         }
       `,
@@ -479,13 +481,13 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         varying float vAlpha;
         void main() {
           float d = length(gl_PointCoord - 0.5);
-          float alpha = smoothstep(0.5, 0.0, d) * vAlpha * 0.08 * (1.0 - uDim * 0.9);
-          gl_FragColor = vec4(0.75, 0.85, 1.0, clamp(alpha, 0.0, 1.0));
+          float alpha = smoothstep(0.5, 0.0, d) * vAlpha * 0.035 * (1.0 - uDim * 0.9);
+          gl_FragColor = vec4(0.55, 0.65, 0.9, clamp(alpha, 0.0, 1.0));
         }
       `,
     });
-    const dust = new THREE.Points(dustGeo, dustMat);
-    scene.add(dust);
+    const dust = DUST_COUNT > 0 ? new THREE.Points(dustGeo, dustMat) : null;
+    if (dust) scene.add(dust);
 
     // ---------- Shooting stars (richer trails, up to 2 active) ----------
     const METEOR_POOL = 6;
@@ -751,15 +753,10 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     }
     renderer.domElement.addEventListener('pointerdown', onPointerDown);
 
-    // Bloom — desktop only (plan: no UnrealBloom on phones)
+    // Bloom off for now — even a soft UnrealBloomPass milks the void white
+    // on wide desktop monitors when stacked with additive particles.
     let composer = null;
     let bloomPass = null;
-    if (finePointer && !reducedMotion) {
-      composer = new EffectComposer(renderer);
-      composer.addPass(new RenderPass(scene, camera));
-      bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.45, 0.6, 0.55);
-      composer.addPass(bloomPass);
-    }
 
     function resize() {
       const w = wrap.clientWidth || 1;
@@ -795,7 +792,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       haloMat.uniforms.uNow.value = tAnim;
       haloMat.uniforms.uBreath.value = breath;
       starMat.uniforms.uNow.value = tAnim;
-      dustMat.uniforms.uNow.value = tAnim;
+      if (dust) dustMat.uniforms.uNow.value = tAnim;
       glowMat.uniforms.uNow.value = tAnim;
       glowMat.uniforms.uBreath.value = breath;
       wispMat.uniforms.uNow.value = tAnim;
@@ -829,7 +826,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       centerMat.uniforms.uDim.value = sceneDim;
       haloMat.uniforms.uDim.value = sceneDim;
       starMat.uniforms.uDim.value = sceneDim;
-      dustMat.uniforms.uDim.value = sceneDim;
+      if (dust) dustMat.uniforms.uDim.value = sceneDim;
       glowMat.uniforms.uDim.value = sceneDim;
       wispMat.uniforms.uDim.value = sceneDim;
       for (const m of meteors) {
@@ -901,7 +898,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       glowGeo.dispose(); glowMat.dispose();
       wispGeo.dispose(); wispMat.dispose();
       starGeo.dispose(); starMat.dispose();
-      dustGeo.dispose(); dustMat.dispose();
+      if (dust) { dustGeo.dispose(); dustMat.dispose(); }
       smallGeo.dispose();
       for (const m of meteors) { m.line.geometry.dispose(); m.line.material.dispose(); }
       hitSphere.geometry.dispose(); hitSphere.material.dispose();

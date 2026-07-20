@@ -46,10 +46,10 @@ const UI = {
 
 const LANES = 3;
 const DESCEND_SEC = 3.8; // same constant pace as 2D
-const LANE_X = [-1.85, 0, 1.85];
-const GATE_TOP_Y = 3.55; // gates spawn below the equation panel
-const RUNNER_Y = -2.1;
-const EQ_Y = 4.3; // big equation panel sits above the play field
+const LANE_X = [-1.9, 0, 1.9];
+const GATE_TOP_Y = 2.7; // gate portals spawn below the equation panel
+const RUNNER_Y = -2.5;
+const EQ_Y = 3.35; // big equation panel sits above the play field
 const LANE_COLORS = [0x6bb3c8, 0xe8ac4e, 0xc47bb0];
 
 /** Big glowing equation banner → CanvasTexture (readable on any screen). */
@@ -101,7 +101,7 @@ function numberTexture(value) {
   ctx.lineWidth = 5;
   ctx.stroke();
   ctx.fillStyle = '#f0e2c0';
-  ctx.font = `800 ${value.length > 3 ? 52 : 66}px system-ui, sans-serif`;
+  ctx.font = `800 ${value.length > 3 ? 74 : value.length > 2 ? 92 : 104}px system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(value, S / 2, S / 2 + 3);
@@ -135,13 +135,14 @@ export default function MathGates3DProto({ isAr, playSfx, onBack }) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');
       return () => boot.dispose();
     }
-    const { playRoot, setTick, setFitHalf, renderer, dispose } = boot;
-    setFitHalf(4.9);
+    const { playRoot, setTick, setFitBox, renderer, dispose } = boot;
+    // Fit width to the 3 lanes, height to include the equation banner up top.
+    setFitBox(3.05, 4.15);
 
     // ── Big equation banner (the 2D equation header, made unmissable) ──
     let eqTex = null;
     const eqPanel = new THREE.Mesh(
-      new THREE.PlaneGeometry(3.9, 1.14),
+      new THREE.PlaneGeometry(4.4, 1.28),
       new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false }),
     );
     eqPanel.position.set(0, EQ_Y, -0.2);
@@ -166,11 +167,19 @@ export default function MathGates3DProto({ isAr, playSfx, onBack }) {
       return strip;
     });
 
-    // ── Runner (glowing comet) ──
-    const runner = new THREE.Mesh(
-      new THREE.SphereGeometry(0.34, 24, 18),
-      matStd(0xf0c860, { emissive: 0xf0c860, emissiveIntensity: 0.75, metalness: 0.3, roughness: 0.3 }),
+    // ── Runner (glowing comet with a soft halo) ──
+    const runner = new THREE.Group();
+    const runnerCore = new THREE.Mesh(
+      new THREE.SphereGeometry(0.4, 24, 18),
+      matStd(0xf0c860, { emissive: 0xf0c860, emissiveIntensity: 0.85, metalness: 0.3, roughness: 0.3 }),
     );
+    runner.add(runnerCore);
+    const runnerHalo = new THREE.Mesh(
+      new THREE.CircleGeometry(0.72, 24),
+      new THREE.MeshBasicMaterial({ color: 0xf0c860, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false }),
+    );
+    runnerHalo.position.z = -0.05;
+    runner.add(runnerHalo);
     runner.position.set(LANE_X[1], RUNNER_Y, 0.2);
     playRoot.add(runner);
     let runnerTargetX = LANE_X[1];
@@ -187,15 +196,32 @@ export default function MathGates3DProto({ isAr, playSfx, onBack }) {
     const buildGate = (eq) => {
       clearGate();
       eq.options.forEach((val, i) => {
+        // Each answer is a glowing star-gate portal: a lit disc with the number,
+        // ringed by a torus in the lane colour.
+        const grp = new THREE.Group();
         const tex = numberTexture(String(val));
-        const side = matStd(0x1d1811, { metalness: 0.2, roughness: 0.6 });
-        const face = new THREE.MeshStandardMaterial({ map: tex, emissive: new THREE.Color(0x62b277), emissiveIntensity: 0, metalness: 0.15, roughness: 0.55 });
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.15, 0.2), [side, side, side, side, face, side]);
-        mesh.position.set(LANE_X[i], 0, 0);
-        mesh.userData.faceMat = face;
-        mesh.userData.flash = 0;
-        gateGroup.add(mesh);
-        gateTiles.push({ mesh, tex });
+        const disc = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.7, 0.7, 0.14, 32),
+          matStd(0x120d07, { emissive: LANE_COLORS[i], emissiveIntensity: 0.12, metalness: 0.3, roughness: 0.5 }),
+        );
+        disc.rotation.x = Math.PI / 2;
+        grp.add(disc);
+        const face = new THREE.MeshStandardMaterial({ map: tex, transparent: true, emissive: new THREE.Color(0xf0e2c0), emissiveIntensity: 0.25, metalness: 0.1, roughness: 0.5 });
+        const label = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), face);
+        label.position.z = 0.09;
+        grp.add(label);
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(0.74, 0.08, 12, 30),
+          matStd(LANE_COLORS[i], { emissive: LANE_COLORS[i], emissiveIntensity: 0.6, metalness: 0.4, roughness: 0.3 }),
+        );
+        ring.position.z = 0.04;
+        grp.add(ring);
+        grp.position.set(LANE_X[i], 0, 0);
+        grp.userData.faceMat = ring.material; // flash the ring on resolve
+        grp.userData.ring = ring;
+        grp.userData.flash = 0;
+        gateGroup.add(grp);
+        gateTiles.push({ mesh: grp, tex });
       });
       gateGroup.position.y = GATE_TOP_Y;
       gateGroup.visible = true;
@@ -304,7 +330,8 @@ export default function MathGates3DProto({ isAr, playSfx, onBack }) {
         }
       }
       runner.position.x += (runnerTargetX - runner.position.x) * Math.min(1, dt * 12);
-      runner.material.emissiveIntensity = 0.6 + Math.sin(now * 0.006) * 0.2;
+      runnerCore.material.emissiveIntensity = 0.7 + Math.sin(now * 0.006) * 0.2;
+      runnerHalo.material.opacity = 0.22 + Math.sin(now * 0.006) * 0.08;
       laneStrips.forEach((s, i) => {
         s.material.emissiveIntensity = i === lane ? 0.14 : 0.05;
       });

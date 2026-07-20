@@ -243,7 +243,7 @@ export default function Raven3DProto({ isAr, playSfx, onBack }) {
         playRoot.add(mesh);
         optionMeshes.push(mesh);
       });
-      setFitHalf(Math.max(4.6, (Math.max(3 * cell, perRow * gap)) / 2 + 1.9));
+      setFitHalf(Math.max(3.8, (Math.max(3 * cell, perRow * gap)) / 2 + 1.5));
     };
 
     const nextTrial = () => {

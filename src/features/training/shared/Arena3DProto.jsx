@@ -118,6 +118,92 @@ function planetMesh(label, colorHex, scale = 1) {
   return g;
 }
 
+function crd(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function wrapLines(ctx, text, maxW, maxLines) {
+  const words = String(text || '').split(' ');
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const test = cur ? `${cur} ${w}` : w;
+    if (ctx.measureText(test).width > maxW && cur) {
+      lines.push(cur);
+      cur = w;
+      if (lines.length >= maxLines) return lines;
+    } else {
+      cur = test;
+    }
+  }
+  if (cur && lines.length < maxLines) lines.push(cur);
+  return lines;
+}
+
+/** Word/answer CARD: rounded parchment-dark card, accent edge, wrapped label. */
+function textCardTexture(label, accentHex) {
+  const W = 340;
+  const H = 150;
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const ctx = c.getContext('2d');
+  const acc = `#${(accentHex ?? 0xe8ac4e).toString(16).padStart(6, '0')}`;
+  ctx.fillStyle = '#241d13';
+  crd(ctx, 7, 7, W - 14, H - 14, 26);
+  ctx.fill();
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = acc;
+  crd(ctx, 7, 7, W - 14, H - 14, 26);
+  ctx.stroke();
+  // accent bar on the leading edge
+  ctx.fillStyle = acc;
+  crd(ctx, 20, H / 2 - 34, 11, 68, 5);
+  ctx.fill();
+  // wrapped, auto-shrinking label
+  ctx.fillStyle = '#f4ecdd';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  let fs = 50;
+  let lines = [];
+  do {
+    ctx.font = `800 ${fs}px system-ui, -apple-system, sans-serif`;
+    lines = wrapLines(ctx, label, W - 84, 2);
+    fs -= 3;
+  } while (lines.length >= 2 && ctx.measureText(lines[0]).width > W - 84 && fs > 22);
+  const lh = fs * 1.22;
+  lines.forEach((ln, i) => ctx.fillText(ln, W / 2 + 10, H / 2 - ((lines.length - 1) * lh) / 2 + i * lh));
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+function textCardMesh(label, accentHex, scale = 1) {
+  const tex = textCardTexture(label, accentHex ?? 0xe8ac4e);
+  const side = matStd(0x1a140c, { metalness: 0.2, roughness: 0.62 });
+  const face = new THREE.MeshStandardMaterial({
+    map: tex,
+    emissive: new THREE.Color(accentHex ?? 0xe8ac4e),
+    emissiveIntensity: 0.12,
+    metalness: 0.15,
+    roughness: 0.55,
+  });
+  const w = 2.02 * scale;
+  const h = 0.9 * scale;
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.16 * scale), [side, side, side, side, face, side]);
+  mesh.userData.faceMat = face;
+  mesh.userData.faceTex = tex;
+  mesh.userData.baseEmissive = 0.12;
+  return mesh;
+}
+
 /** Flat tile mesh with a text label drawn on the face (opt.showLabel). */
 function labeledMesh(label, colorHex, scale = 1) {
   const tex = tileTexture(label, colorHex);
@@ -199,6 +285,7 @@ export default function Arena3DProto({ isAr, playSfx, onBack, spec }) {
   const [prompt, setPrompt] = useState('');
   const [chip, setChip] = useState('3D');
   const [options, setOptions] = useState([]);
+  const [cardMode, setCardMode] = useState(false);
   const [banner, setBanner] = useState('go');
   const [bannerOver, setBannerOver] = useState(false);
   const [bootError, setBootError] = useState(null);
@@ -329,7 +416,7 @@ export default function Arena3DProto({ isAr, playSfx, onBack, spec }) {
       return () => boot.dispose();
     }
 
-    const { scene, camera, playRoot, coarse, setTick, setFitHalf, dispose, frame } = boot;
+    const { scene, camera, playRoot, coarse, setTick, setFitHalf, setFitBox, dispose, frame } = boot;
     const pickables = [];
     let pulseT = 0;
     let pick2First = null;
@@ -371,6 +458,31 @@ export default function Arena3DProto({ isAr, playSfx, onBack, spec }) {
     const placeOptions = (opts, layout = 'row') => {
       clearPlay();
       const n = opts.length;
+
+      // Word/answer CARD layout (Word Links, Trivia): readable text cards you
+      // tap directly — matches the 2D games, only the cosmic styling differs.
+      if (layout === 'cards') {
+        const cols = n <= 3 ? 1 : 2;
+        const rowsN = Math.ceil(n / cols);
+        const cardScale = coarse ? 1.02 : 1.1;
+        const cw = 2.02 * cardScale + 0.28;
+        const ch = 0.9 * cardScale + 0.34;
+        opts.forEach((opt, i) => {
+          const mesh = textCardMesh(opt.label, opt.color ?? PALETTE[i % PALETTE.length], cardScale);
+          const r = Math.floor(i / cols);
+          const c = i % cols;
+          const inRow = r === rowsN - 1 ? n - cols * (rowsN - 1) : cols;
+          mesh.position.set((c - (inRow - 1) / 2) * cw, ((rowsN - 1) / 2 - r) * ch, 0);
+          mesh.userData.optId = opt.id;
+          mesh.userData.correct = !!opt.correct;
+          playRoot.add(mesh);
+          pickables.push(mesh);
+        });
+        setFitBox(Math.max(2.4, (cols * cw) / 2 + 0.3), Math.max(2.6, (rowsN * ch) / 2 + 0.5));
+        frame();
+        return;
+      }
+
       const span = Math.min(3.6, 0.95 * n);
       const big = n > 12; // large boards (Trail) shrink tiles + tighten cells
       const cell = big ? 0.92 : 1.15;
@@ -593,6 +705,8 @@ export default function Arena3DProto({ isAr, playSfx, onBack, spec }) {
       trialRef.current = trial;
       setPrompt(labelOf(trial.prompt, isAr));
       setChip(labelOf(trial.chip, isAr) || '3D');
+      // Card trials are tapped directly on their 3D word cards → no overlay row.
+      setCardMode(trial.layout === 'cards');
 
       // Per-trial clock (the 2D per-item deadlines): timing out = a wrong answer.
       clearTrialTimer();
@@ -898,6 +1012,7 @@ export default function Arena3DProto({ isAr, playSfx, onBack, spec }) {
   const activeMode = (phase === 'play' && trialRef.current?.mode) || spec.mode;
   const showOverlayChoices = (activeMode === 'choice' || activeMode === 'gates' || activeMode === 'sameDiff' || activeMode === 'nback' || activeMode === 'sequence' || activeMode === 'pick2')
     && phase === 'play'
+    && !cardMode
     && options.some((o) => typeof o.label === 'string' && o.label.length > 0);
 
   return (
