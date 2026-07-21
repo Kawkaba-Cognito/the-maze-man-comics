@@ -357,7 +357,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
         WebkitBackdropFilter: 'blur(12px)',
       }}>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }} />
-        <div style={{ ...chrome.title, maxWidth: 200, fontSize: isAr ? 24 : 22 }}>
+        <div style={{ ...chrome.title, maxWidth: 300, fontSize: isAr ? 30 : 30 }}>
           {isAr ? 'تدريب' : 'Training'}
         </div>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>

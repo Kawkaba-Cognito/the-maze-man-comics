@@ -46,7 +46,12 @@ export default function HomeScreen() {
         position: 'absolute', top: 'calc(58px + env(safe-area-inset-top))', left: 0, right: 0,
         textAlign: 'center', color: '#e8dcc0', padding: '0 20px', pointerEvents: 'none', zIndex: 4,
       }}>
-        <div style={{ fontSize: 12, letterSpacing: 2, opacity: 0.7, textTransform: 'uppercase', fontWeight: 700 }}>
+        <div style={{
+          fontFamily: isAr ? "'Cairo', sans-serif" : "'Cinzel', 'Cormorant Garamond', serif",
+          fontSize: isAr ? 22 : 24, letterSpacing: isAr ? 1 : 4, opacity: 0.95,
+          textTransform: 'uppercase', fontWeight: 700,
+          textShadow: '0 1px 2px rgba(0,0,0,0.5), 0 0 22px rgba(232,172,78,0.5)',
+        }}>
           {isAr ? 'كونك' : 'Your universe'}
         </div>
         <div style={{ fontFamily: "'Fredoka One', 'Nunito', sans-serif", fontSize: 15, opacity: 0.8, marginTop: 2 }}>

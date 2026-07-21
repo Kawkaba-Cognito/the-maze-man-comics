@@ -30,18 +30,20 @@ export function useThemedChrome(isAr = false) {
     WebkitBackdropFilter: 'blur(12px)',
   };
 
+  // Premium display titles: Cinzel (engraved cosmic serif) in caps for EN,
+  // Cairo for AR. Bigger + more letter-spacing than the old Outfit header.
   const title = {
     textAlign: 'center',
-    fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-    fontSize: isAr ? 22 : 20,
-    fontWeight: 800,
-    letterSpacing: isAr ? 0 : 0.04,
-    color: dark ? '#f0e2c0' : '#5a4018',
-    textTransform: 'none',
-    lineHeight: 1.15,
-    maxWidth: 220,
+    fontFamily: isAr ? "'Cairo', sans-serif" : "'Cinzel', 'Cormorant Garamond', serif",
+    fontSize: isAr ? 24 : 23,
+    fontWeight: 700,
+    letterSpacing: isAr ? 0 : 1.6,
+    color: dark ? '#f4e8c8' : '#584015',
+    textTransform: isAr ? 'none' : 'uppercase',
+    lineHeight: 1.18,
+    maxWidth: 280,
     textShadow: dark
-      ? '0 1px 0 rgba(255,220,120,0.25), 0 0 14px rgba(232,172,78,0.35)'
+      ? '0 1px 2px rgba(0,0,0,0.45), 0 0 22px rgba(232,172,78,0.42)'
       : 'none',
   };
 

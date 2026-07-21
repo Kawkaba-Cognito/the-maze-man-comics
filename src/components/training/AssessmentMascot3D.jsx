@@ -4,9 +4,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { assetUrl } from '../../lib/assetUrl';
 
 /*
- * AssessmentMascot3D — the rigged planet-astronaut (Kawkab) that stands at the
- * centre of the Training hub, in the spot the SVG "Assessment" nexus used to
- * fill on its own. Tap it → open the assessment (onActivate).
+ * AssessmentMascot3D — the rigged hooded figure that stands at the centre of
+ * the Training hub, in the spot the SVG "Assessment" nexus used to fill on its
+ * own. Tap it → open the assessment (onActivate).
  *
  * Deliberately self-contained and lightweight (this is a ~150px badge, not a
  * game): one transparent WebGL canvas, two lights, no bloom/stars, DPR clamped,
@@ -14,19 +14,31 @@ import { assetUrl } from '../../lib/assetUrl';
  * npm module (same as the training 3D protos), so this whole file lands in a
  * lazy chunk — users who never open Training never pay for it.
  *
- * The mascot GLB was Meshy-generated at an odd unit scale (~0.018u tall) with
- * two 4096² PNGs; it was recompressed to WebP@1024 (41 MB → ~0.94 MB) and its
- * clips kept. We reframe/rescale from the runtime bounding box so the export
- * scale never has to be trusted.
+ * The GLB was Meshy-generated ("hooded figure" biped) with a single 4096² PNG;
+ * we resized the texture to 1024² PNG (21.7 MB → ~2.1 MB) and kept the idle
+ * clip. (Resize→PNG, NOT WebP: three.js only decodes WebP GLB textures with the
+ * EXT_texture_webp path, and the resized PNG is already tiny.) The Meshy export
+ * only ships locomotion clips (idle / walk / run) — no wave — so this is
+ * idle-only; there is no greet gesture. We reframe/rescale from the runtime
+ * bounding box so the export scale never has to be trusted.
  *
  * If WebGL is unavailable or the model fails to load, this renders nothing and
  * the SVG nexus underneath (glow + ring + label) stays as the clickable
  * fallback — so the hub centre is never empty or dead.
  */
 
-const MODEL_URL = assetUrl('Assets/kawkab-mascot-v1.glb');
-const IDLE_CLIP = 'air_squat';        // slowed → gentle breathing/bob at rest
-const GREET_CLIP = 'Big_Wave_Hello';  // played once on hover / tap-in
+const MODEL_URL = assetUrl('Assets/hooded-figure-v1.glb');
+const IDLE_CLIP = 'Armature|Idle_02|baselayer';  // slowed → gentle breathing/bob at rest
+const GREET_CLIP = null;                          // Meshy export has no wave/greet clip
+
+// Target on-screen height in world units. The model is rescaled from its
+// runtime bounding box to this height, so framing is independent of the export
+// scale. Lower = smaller figure in the badge (more empty margin around it).
+const FRAME_HEIGHT = 1.5;
+
+// Resting yaw. 0 = model's forward (+Z) points straight at the camera, so he
+// looks right at the viewer. If he renders back-to-us instead, set Math.PI.
+const BASE_YAW = 0;
 
 export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label }) {
   const wrapRef = useRef(null);
@@ -97,7 +109,7 @@ export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label
         const box = new THREE.Box3().setFromObject(model);
         const sz = box.getSize(new THREE.Vector3());
         const ctr = box.getCenter(new THREE.Vector3());
-        const k = 2 / Math.max(1e-4, sz.y);
+        const k = FRAME_HEIGHT / Math.max(1e-4, sz.y);
         model.scale.setScalar(k);
         model.position.set(-ctr.x * k, -ctr.y * k, -ctr.z * k);
 
@@ -131,7 +143,7 @@ export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label
         // FACING: the camera sits at +Z looking toward -Z. This assumes the
         // model's forward is +Z (faces the camera); +0.35 gives a friendly
         // three-quarter read. If it renders back-to-us, flip to `Math.PI + 0.35`.
-        holder.rotation.y = 0.35;
+        holder.rotation.y = BASE_YAW;
         scene.add(holder);
         model.userData.holder = holder;
 
@@ -186,8 +198,8 @@ export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label
         if (mixer && !reduced) mixer.update(dt);
         const holder = model?.userData?.holder;
         if (holder && !reduced) {
-          holder.position.y = Math.sin(now / 1100) * 0.05;       // gentle float
-          holder.rotation.y = 0.35 + Math.sin(now / 2600) * 0.12; // idle sway
+          holder.position.y = Math.sin(now / 1100) * 0.05;            // gentle float
+          holder.rotation.y = BASE_YAW + Math.sin(now / 2600) * 0.06; // subtle sway, stays facing you
         }
         renderer.render(scene, camera);
       }

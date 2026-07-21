@@ -198,7 +198,7 @@ export default function OtherScreen() {
       <div className="other-content">
         <div className="app-chrome-bar other-top">
           <div style={{ width: 34 }} />
-          <div style={{ ...chrome.title, fontSize: isAr ? 24 : 22 }}>
+          <div style={{ ...chrome.title, fontSize: isAr ? 30 : 30, maxWidth: 300 }}>
             {isAr ? 'المزيد' : 'Other'}
           </div>
           <button type="button" style={chrome.langBtn} onClick={toggleLang}>

@@ -56,7 +56,7 @@ export default function LearnScreen() {
               padding: 'max(16px, env(safe-area-inset-top)) 2px 14px', position: 'relative', zIndex: 5,
             }}>
               <div style={{ width: 34 }} />
-              <div style={{ ...chrome.title, fontSize: isAr ? 24 : 22 }}>
+              <div style={{ ...chrome.title, fontSize: isAr ? 30 : 30, maxWidth: 300 }}>
                 {isAr ? 'تعلّم' : 'Learn'}
               </div>
               <button type="button" style={chrome.langBtn} onClick={toggleLang}>

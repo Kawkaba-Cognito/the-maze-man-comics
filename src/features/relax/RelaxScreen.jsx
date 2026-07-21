@@ -929,9 +929,10 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
           {isAr ? 'ركن العافية' : 'Wellbeing pillar'}
         </div>
         <div style={{
-          fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-          fontSize: isAr ? 28 : 26, fontWeight: 800, letterSpacing: isAr ? 0 : 0.04,
-          color: skyText, textShadow: skyTextShadow, lineHeight: 1.12, marginTop: 2,
+          fontFamily: isAr ? "'Cairo', sans-serif" : "'Cinzel', 'Cormorant Garamond', serif",
+          fontSize: isAr ? 30 : 30, fontWeight: 700, letterSpacing: isAr ? 0 : 1.6,
+          textTransform: isAr ? 'none' : 'uppercase',
+          color: skyText, textShadow: skyTextShadow, lineHeight: 1.15, marginTop: 3,
         }}>
           {isAr ? 'العافية' : 'Wellbeing'}
         </div>
