@@ -75,22 +75,60 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+// Object tile shown at the active cell — warm parchment card, gold rim, a big
+// crisp emoji that reads clearly at speed.
 function emojiTexture(emoji) {
-  const S = 220;
+  const S = 256;
   const c = document.createElement('canvas');
   c.width = S;
   c.height = S;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#fbf3e2';
-  roundRectPath(ctx, 6, 6, S - 12, S - 12, 30);
+  const g = ctx.createLinearGradient(0, 0, 0, S);
+  g.addColorStop(0, '#fff8ea');
+  g.addColorStop(1, '#f2e0bd');
+  ctx.fillStyle = g;
+  roundRectPath(ctx, 8, 8, S - 16, S - 16, 34);
   ctx.fill();
-  ctx.lineWidth = 7;
-  ctx.strokeStyle = 'rgba(232,172,78,0.7)';
+  // soft top highlight for a little depth
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  roundRectPath(ctx, 18, 16, S - 36, (S - 32) * 0.4, 26);
+  ctx.fill();
+  ctx.lineWidth = 9;
+  ctx.strokeStyle = 'rgba(232,172,78,0.9)';
+  roundRectPath(ctx, 8, 8, S - 16, S - 16, 34);
   ctx.stroke();
-  ctx.font = '150px serif';
+  ctx.font = '185px "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(emoji || '❓', S / 2, S / 2 + 10);
+  ctx.fillText(emoji || '❓', S / 2, S / 2 + 14);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+// Empty grid slot — deep panel with an inset gold frame so the 3×3 board reads
+// as nine defined places rather than flat dark squares.
+function slotTexture() {
+  const S = 128;
+  const c = document.createElement('canvas');
+  c.width = S;
+  c.height = S;
+  const ctx = c.getContext('2d');
+  const g = ctx.createLinearGradient(0, 0, 0, S);
+  g.addColorStop(0, '#2a2318');
+  g.addColorStop(1, '#191308');
+  ctx.fillStyle = g;
+  roundRectPath(ctx, 4, 4, S - 8, S - 8, 22);
+  ctx.fill();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(232,172,78,0.32)';
+  roundRectPath(ctx, 11, 11, S - 22, S - 22, 15);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(232,172,78,0.12)';
+  ctx.beginPath();
+  ctx.arc(S / 2, S / 2, 6, 0, Math.PI * 2);
+  ctx.fill();
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;
@@ -126,20 +164,28 @@ export default function NBack3DProto({ isAr, playSfx, onBack }) {
     const { playRoot, coarse, setTick, setFitHalf, dispose } = boot;
 
     // ── 3×3 place grid ──
-    const gap = coarse ? 1.5 : 1.62;
+    const gap = coarse ? 1.62 : 1.72;
+    const CELL = 1.36;
+    const slotTex = slotTexture();
     const cells = [];
     for (let i = 0; i < NB_GRID; i++) {
       const col = i % 3;
       const row = Math.floor(i / 3);
+      const faceMat = new THREE.MeshStandardMaterial({
+        map: slotTex, emissive: new THREE.Color(0xe8ac4e), emissiveIntensity: 0.05, metalness: 0.2, roughness: 0.72,
+      });
+      const sideMat = matStd(0x181309, { metalness: 0.25, roughness: 0.7 });
       const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(1.28, 1.28, 0.14),
-        matStd(0x24211a, { emissive: 0xe8ac4e, emissiveIntensity: 0.04, metalness: 0.2, roughness: 0.8 }),
+        new THREE.BoxGeometry(CELL, CELL, 0.16),
+        [sideMat, sideMat, sideMat, sideMat, faceMat, sideMat],
       );
+      mesh.userData.faceMat = faceMat;
       mesh.position.set((col - 1) * gap, (1 - row) * gap, 0);
       playRoot.add(mesh);
       cells.push(mesh);
     }
-    setFitHalf(gap * 1.5 + 0.7);
+    // Fit tight to the grid (was gap*1.5+0.7 — a lot of dead black around it).
+    setFitHalf(gap + 1.0);
 
     // Stimulus card (object emoji shown at the active cell)
     let stimMesh = null;
@@ -147,22 +193,22 @@ export default function NBack3DProto({ isAr, playSfx, onBack }) {
     const hideStim = () => {
       if (stimMesh) { playRoot.remove(stimMesh); disposeObject(stimMesh); stimMesh = null; }
       if (stimTex) { stimTex.dispose(); stimTex = null; }
-      cells.forEach((m) => { m.material.emissiveIntensity = 0.04; });
+      cells.forEach((m) => { m.userData.faceMat.emissiveIntensity = 0.05; });
     };
     const showStim = (step) => {
       hideStim();
       const cell = cells[step.pos] || cells[4];
-      cell.material.emissiveIntensity = 0.6;
+      cell.userData.faceMat.emissiveIntensity = 0.65;
       stimTex = emojiTexture(OBJ_EMOJI[step.obj]);
       const face = new THREE.MeshStandardMaterial({ map: stimTex, emissive: new THREE.Color(0xe8ac4e), emissiveIntensity: 0.18, metalness: 0.1, roughness: 0.55 });
       const side = matStd(0x241d13, { emissive: 0xe8ac4e, emissiveIntensity: 0.1, metalness: 0.2, roughness: 0.6 });
       stimMesh = new THREE.Group();
-      const tile = new THREE.Mesh(new THREE.BoxGeometry(1.32, 1.32, 0.2), [side, side, side, side, face, side]);
+      const tile = new THREE.Mesh(new THREE.BoxGeometry(CELL + 0.06, CELL + 0.06, 0.2), [side, side, side, side, face, side]);
       stimMesh.add(tile);
       // Glow disc behind the tile → the current item pops off the grid.
       const glow = new THREE.Mesh(
-        new THREE.CircleGeometry(0.95, 26),
-        new THREE.MeshBasicMaterial({ color: 0xe8ac4e, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false }),
+        new THREE.CircleGeometry(CELL * 0.72, 26),
+        new THREE.MeshBasicMaterial({ color: 0xe8ac4e, transparent: true, opacity: 0.26, blending: THREE.AdditiveBlending, depthWrite: false }),
       );
       glow.position.z = -0.12;
       stimMesh.add(glow);
@@ -262,6 +308,7 @@ export default function NBack3DProto({ isAr, playSfx, onBack }) {
       clearTimers();
       hideStim();
       cells.forEach((m) => { disposeObject(m); playRoot.remove(m); });
+      slotTex.dispose();
       dispose();
       apiRef.current = {};
     };

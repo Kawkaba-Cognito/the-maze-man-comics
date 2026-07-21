@@ -272,6 +272,7 @@ export default function Arena3DProto({ isAr, playSfx, onBack, spec }) {
   const noLives = livesMax <= 0; // e.g. Word Links Survival: wrongs reset combo, never end the run
   const survival = !!spec.survival;
   const endless = !!spec.endless; // e.g. Trivia Survival: no clock, run ends on lives only
+  const bigPrompt = !!spec.bigPrompt; // Word Links / Trivia: headline question up top
   const goal = (survival || endless) ? Number.POSITIVE_INFINITY : (spec.goal ?? 8);
   const runMs = spec.survivalMs ?? SURVIVAL_MS;
 
@@ -410,7 +411,13 @@ export default function Arena3DProto({ isAr, playSfx, onBack, spec }) {
     const wrap = wrapRef.current;
     if (!wrap) return undefined;
 
-    const boot = bootC3dScene(wrap, { fov: 52, fitHalf: 4.2, bloom: true });
+    const boot = bootC3dScene(wrap, {
+      fov: 52,
+      fitHalf: 4.2,
+      bloom: true,
+      // Reserve a tall top band for the headline question (Word Links / Trivia).
+      hudReserveFrac: bigPrompt ? 0.34 : undefined,
+    });
     if (boot.error) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');
       return () => boot.dispose();
@@ -462,13 +469,20 @@ export default function Arena3DProto({ isAr, playSfx, onBack, spec }) {
       // Word/answer CARD layout (Word Links, Trivia): readable text cards you
       // tap directly — matches the 2D games, only the cosmic styling differs.
       if (layout === 'cards') {
-        const cols = n <= 3 ? 1 : 2;
+        // Portrait phones stack into ONE column (fills the tall screen + matches
+        // the 2D vertical list); landscape/desktop keeps 2 columns for 4 cards.
+        const portrait = wrap.clientHeight > wrap.clientWidth * 1.15;
+        const cols = n <= 3 ? 1 : (portrait ? 1 : 2);
         const rowsN = Math.ceil(n / cols);
-        const cardScale = coarse ? 1.02 : 1.1;
+        // Bigger cards — a single column especially was floating narrow in the
+        // middle. Scale them up and fit tight so the answers fill the width.
+        const cardScale = cols === 1 ? (coarse ? 1.34 : 1.42) : (coarse ? 1.04 : 1.12);
         const cw = 2.02 * cardScale + 0.28;
         const ch = 0.9 * cardScale + 0.34;
         opts.forEach((opt, i) => {
-          const mesh = textCardMesh(opt.label, opt.color ?? PALETTE[i % PALETTE.length], cardScale);
+          // Resolve bilingual {en,ar} labels — Trivia's answers are objects and
+          // were rendering as "[object Object]" on the 3D cards.
+          const mesh = textCardMesh(labelOf(opt.label, isAr), opt.color ?? PALETTE[i % PALETTE.length], cardScale);
           const r = Math.floor(i / cols);
           const c = i % cols;
           const inRow = r === rowsN - 1 ? n - cols * (rowsN - 1) : cols;
@@ -478,7 +492,7 @@ export default function Arena3DProto({ isAr, playSfx, onBack, spec }) {
           playRoot.add(mesh);
           pickables.push(mesh);
         });
-        setFitBox(Math.max(2.4, (cols * cw) / 2 + 0.3), Math.max(2.6, (rowsN * ch) / 2 + 0.5));
+        setFitBox((cols * cw) / 2 + 0.15, (rowsN * ch) / 2 + 0.2);
         frame();
         return;
       }
@@ -517,7 +531,11 @@ export default function Arena3DProto({ isAr, playSfx, onBack, spec }) {
         playRoot.add(mesh);
         pickables.push(mesh);
       });
-      setFitHalf(layout === 'row' ? 3.2 : Math.max(3.6, (cols * cell) / 2 + 1.3));
+      // Grid/scatter fit: games may tighten it (spec.gridFitPad / gridFitFloor)
+      // so small boards fill the screen instead of floating in black margins.
+      const gridPad = spec.gridFitPad ?? 1.3;
+      const gridFloor = spec.gridFitFloor ?? 3.6;
+      setFitHalf(layout === 'row' ? 3.2 : Math.max(gridFloor, (cols * cell) / 2 + gridPad));
       frame();
     };
 
@@ -1020,7 +1038,8 @@ export default function Arena3DProto({ isAr, playSfx, onBack, spec }) {
       isAr={isAr}
       title={title}
       tag={isAr ? 'نموذج' : 'prototype'}
-      hint={phase === 'play' ? (prompt || hint) : hint}
+      hint={bigPrompt ? (phase === 'play' ? '' : hint) : (phase === 'play' ? (prompt || hint) : hint)}
+      question={bigPrompt && phase === 'play' ? prompt : null}
       chip={chip}
       stats={phase === 'boot' ? [] : stats}
       banner={banner === 'go' ? (isAr ? 'جاهز؟' : 'Ready?') : banner}

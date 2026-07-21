@@ -109,8 +109,12 @@ export function bootC3dScene(wrap, opts = {}) {
     // Reserve a top band for the floating HUD (title + hint + stats) so the
     // playfield is fitted into the region BELOW it and can never overlap the
     // chrome. Phones get a taller reserve (bigger HUD text share).
-    const hudPx = Math.max(92, Math.min(196, h * (coarse ? 0.19 : 0.13)));
-    const hudFrac = Math.min(0.4, hudPx / Math.max(1, h));
+    // Games with a big question banner (opts.hudReserveFrac) reserve a taller
+    // top band so the 3D playfield is fitted BELOW the headline, never under it.
+    const hudPx = opts.hudReserveFrac
+      ? h * opts.hudReserveFrac
+      : Math.max(92, Math.min(196, h * (coarse ? 0.19 : 0.13)));
+    const hudFrac = Math.min(0.45, hudPx / Math.max(1, h));
     // Tight padding → the playfield genuinely fills the screen (the old 1.2
     // pad + fit-largest-axis made everything look small, esp. on portrait).
     const pad = coarse ? 1.05 : desk ? 1.06 : 1.08;

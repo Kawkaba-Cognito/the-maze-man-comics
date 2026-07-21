@@ -114,6 +114,7 @@ export default function Trivia3DProto({ isAr, playSfx, onBack }) {
         mode: 'choice',
         lives: 3,
         endless: true,
+        bigPrompt: true,
         points: (_combo, trial) => trial?.pts ?? 0,
         onStart: () => { stRef.current = { stairs: 0, step: 0, steps: 0, category: null, queue: [], qIdx: 0, pickTopic: false, pendingCats: [] }; },
         makeTrial,

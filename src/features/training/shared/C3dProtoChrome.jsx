@@ -22,6 +22,7 @@ export default function C3dProtoChrome({
   title,
   tag,
   hint,
+  question,
   chip,
   chipStyle,
   stats = [],
@@ -38,6 +39,7 @@ export default function C3dProtoChrome({
   const titleText = textOf(title, isAr);
   const tagText = textOf(tag, isAr);
   const hintText = textOf(hint, isAr);
+  const questionText = textOf(question, isAr);
   const chipText = textOf(chip, isAr) || '3D';
   const bannerText = textOf(banner, isAr);
   const metaText = textOf(bannerMeta, isAr);
@@ -68,7 +70,9 @@ export default function C3dProtoChrome({
             {chipText}
           </div>
         </header>
-        {hintText ? <p className="c3d-hint">{hintText}</p> : null}
+        {questionText
+          ? <div className="c3d-question">{questionText}</div>
+          : hintText ? <p className="c3d-hint">{hintText}</p> : null}
         {safeStats.length > 0 && (
           <div className="c3d-stats">
             {safeStats.map((s, i) => <span key={i}>{s}</span>)}

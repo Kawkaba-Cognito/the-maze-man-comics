@@ -132,6 +132,30 @@
   padding: 0 4px;
 }
 
+/* Big headline question (Word Links / Trivia) — reads at a glance, glassy
+   cosmic panel; replaces the small hint line during play. */
+.c3d-question {
+  width: min(100%, 500px);
+  margin: 2px 0 0;
+  text-align: center;
+  font-weight: 800;
+  font-size: clamp(1.15rem, 5vw, 1.75rem);
+  line-height: 1.25;
+  color: #fdf4dc;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9), 0 0 20px rgba(232, 172, 78, 0.4);
+  padding: 9px 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(34, 27, 17, 0.66), rgba(20, 16, 10, 0.42));
+  border: 1px solid rgba(232, 172, 78, 0.34);
+  box-shadow: 0 0 26px rgba(232, 172, 78, 0.16);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .c3d-stats {
   width: min(100%, 440px);
   display: flex;
@@ -302,6 +326,12 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  .c3d-question {
+    font-size: clamp(1.02rem, 5.6vw, 1.42rem);
+    -webkit-line-clamp: 5;
+    padding: 8px 12px;
   }
 
   .c3d-stats {

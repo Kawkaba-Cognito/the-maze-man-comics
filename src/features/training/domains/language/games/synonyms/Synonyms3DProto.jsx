@@ -86,6 +86,7 @@ export default function Synonyms3DProto({ isAr, playSfx, onBack }) {
         mode: 'choice',
         lives: 0,
         survival: true,
+        bigPrompt: true,
         points: (combo) => 10 + Math.min(combo, 8) * 2,
         makeTrial,
       }}

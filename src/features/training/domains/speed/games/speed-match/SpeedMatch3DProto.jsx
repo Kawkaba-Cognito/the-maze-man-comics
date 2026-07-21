@@ -125,7 +125,7 @@ export default function SpeedMatch3DProto({ isAr, playSfx, onBack }) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');
       return () => boot.dispose();
     }
-    const { camera, playRoot, coarse, setTick, setFitHalf, renderer, dispose } = boot;
+    const { camera, playRoot, coarse, setTick, setFitBox, renderer, dispose } = boot;
 
     let keyMeshes = [];
     let digitMeshes = [];
@@ -183,7 +183,21 @@ export default function SpeedMatch3DProto({ isAr, playSfx, onBack }) {
         playRoot.add(grp);
         keyMeshes.push(grp);
       });
-      setFitHalf(Math.max(4.2, (Math.min(n, perRow) * gapX) / 2 + 1.2));
+      // Fit the camera tight to the real content box (key on top, digits below)
+      // instead of a fixed 4.2 square — the vertical layout then fills the whole
+      // phone screen instead of floating small in a sea of black.
+      const digGapX = coarse ? 1.05 : 1.12;
+      const digPerRow = n <= 6 ? n : Math.ceil(n / 2);
+      const digRows = n <= 6 ? 1 : 2;
+      // Vertical: top key symbol (row 0) → bottom digit row.
+      const topY = 2.45 + 0.36 + 0.28;                 // key symbol upper edge
+      const botY = -1.75 - (digRows - 1) * 1.15 - 0.48; // lowest digit tile edge
+      const halfY = Math.max(topY, -botY) + 0.22;
+      // Horizontal: widest of the key row and the digit row.
+      const keyHalfX = ((Math.min(n, perRow) - 1) * gapX) / 2 + 0.34;
+      const digHalfX = ((Math.min(n, digPerRow) - 1) * digGapX) / 2 + 0.55;
+      const halfX = Math.max(keyHalfX, digHalfX) + 0.15;
+      setFitBox(halfX, halfY);
     };
 
     const layoutDigits = () => {

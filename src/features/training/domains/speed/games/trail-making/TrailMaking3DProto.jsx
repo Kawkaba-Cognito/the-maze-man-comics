@@ -74,6 +74,12 @@ export default function TrailMaking3DProto({ isAr, playSfx, onBack }) {
         mode: 'sequence',
         lives: 0,
         survival: true,
+        // Fill the phone screen: pull the camera in tight to the board. The
+        // small early boards (8 nodes, ~1.6-unit content half) were still
+        // floating in black — the shared (cols*cell)/2 term over-pads for few
+        // nodes, so keep the pad small and the floor near the real minimum.
+        gridFitPad: 0.35,
+        gridFitFloor: 1.95,
         points: (_combo, _trial, extra) => 20 + Math.max(0, Math.round((extra?.trialMsLeft ?? 0) / 1000)),
         makeTrial,
       }}

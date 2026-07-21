@@ -153,14 +153,20 @@ export default function PairedAssociates3DProto({ isAr, playSfx, onBack }) {
     const cueSide = matStd(0x1d1811, { metalness: 0.2, roughness: 0.6 });
     const cueFace = new THREE.MeshStandardMaterial({ map: qTex, emissive: new THREE.Color(0xe8ac4e), emissiveIntensity: 0.4, metalness: 0.15, roughness: 0.5 });
     const cueCard = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 0.26), [cueSide, cueSide, cueSide, cueSide, cueFace, cueSide]);
+    // faceMat MUST be set: presentCue()/setFace swaps this map to show the cue
+    // symbol. Without it setFace(cueCard,…) throws and the recall question — the
+    // whole "where was this object?" prompt — silently never appears.
+    cueCard.userData.faceMat = cueFace;
     const cueY = (rows / 2) * gapY + 0.5;
     cueCard.position.set(0, cueY, 0.4);
     cueCard.visible = false;
     playRoot.add(cueCard);
 
-    // Fit width to the 3-wide grid, height to include the recall cue on top.
-    const halfX = (cols - 1) / 2 * gapX + BOX * 0.7 + 0.3;
-    const halfY = cueY + 0.9;
+    // Fit tight to the content: width to the 3-wide grid, height to include the
+    // floating recall cue on top (its half-height 0.6 + a little bob room). The
+    // old +0.3/+0.9 pad left the board small in a lot of black.
+    const halfX = (cols - 1) / 2 * gapX + BOX * 0.56 + 0.12;
+    const halfY = cueY + 0.72;
     setFitBox(halfX, halfY);
 
     const symTex = (sym) => getTex(`s${sym}`, sym, '#3a2c18', '#fff6df');

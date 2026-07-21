@@ -120,7 +120,7 @@ export default function CarPark3DProto({ isAr, playSfx, onBack }) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');
       return () => boot.dispose();
     }
-    const { camera, playRoot, coarse, setTick, setFitHalf, renderer, dispose } = boot;
+    const { camera, playRoot, coarse, setTick, setFitBox, renderer, dispose } = boot;
 
     const rng = makeRng((Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0);
     const waveFlashOn = { current: false };
@@ -512,7 +512,11 @@ export default function CarPark3DProto({ isAr, playSfx, onBack }) {
       }
       syncEdges();
       syncQueue();
-      setFitHalf(BOARD_HALF + 0.8);
+      // Fit tight to the board so it genuinely fills the screen. The tilt
+      // compresses the vertical extent, so fit each axis independently (bigger
+      // on portrait phones — the old square +0.8 pad left big black margins).
+      const vShrink = Math.cos(0.26); // worldGroup.rotation.x
+      setFitBox(BOARD_HALF + 0.2, BOARD_HALF * vShrink + 0.2);
     };
 
     // Build / rebuild the road network (2D installNet, same rules verbatim).
