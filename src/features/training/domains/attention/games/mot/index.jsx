@@ -11,7 +11,7 @@ import { assetUrl } from '../../../../../../lib/assetUrl';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import { planetIconUrl } from '../../../../../../lib/planetIcons';
 
-const Mot3DProto = lazyWithRetry(() => import('./Mot3DProto'), 'mot-3d');
+import MotScene3D from './Mot3DProto';
 
 const MOT_ARENA_URL = assetUrl('Assets/attention/mot-arena-plate.svg');
 const motArenaImg = typeof Image !== 'undefined' ? new Image() : null;
@@ -318,18 +318,17 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
         }
       }
     }
-    draw();
+    // Rendering is the 3D scene's job now (it reads dotsRef every frame); the
+    // engine loop only advances the physics.
     rafRef.current = requestAnimationFrame(frame);
-  }, [draw]);
+  }, []);
 
   const fit = useCallback(() => {
-    const c = canvasRef.current, wrap = wrapRef.current;
-    if (!c || !wrap) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = wrap.clientWidth, h = wrap.clientHeight;
-    sizeRef.current = { w, h };
-    c.width = w * dpr; c.height = h * dpr; c.style.width = `${w}px`; c.style.height = `${h}px`;
-    c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    // The 3D scene fills wrapRef now; the engine only needs the play-area size so
+    // its (renderer-agnostic) dot physics has a field to run in.
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    sizeRef.current = { w: wrap.clientWidth, h: wrap.clientHeight };
   }, []);
 
   const nextParams = useCallback(() => {
@@ -373,7 +372,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
     } else {
       arenaW = w - 2 * margin; arenaH = h - 2 * margin;
       const density = cfg.total / (minDim * minDim); // intended objects per px²
-      total = clamp(Math.round(density * arenaW * arenaH), cfg.targets + 2, 44);
+      total = clamp(Math.round(density * arenaW * arenaH), cfg.targets + 2, 26);
     }
     cfg.total = total; // keep HUD / per-trial logging in sync with the real count
     const x0 = (w - arenaW) / 2;
@@ -501,14 +500,11 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
     }, 1300);
   }, [awardFreeRun, awardPoints, isAr, mode, onResult, playSfx, ppTrials, setPhaseBoth, startRound, finishLog, level, diff]);
 
-  const onPointer = useCallback((e) => {
+  // The 3D scene raycasts the tap and hands us the dot index; selection logic is
+  // unchanged (toggle, cap at cfg.targets, auto-evaluate when the last pick lands).
+  const pickDot = useCallback((idx) => {
     if (phaseRef.current !== 'respond') return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left, y = e.clientY - rect.top;
-    // Generous touch slop (≥24px or 2× radius) so taps are reliable on dense
-    // boards — small hit targets would otherwise inflate the false-alarm rate.
-    let hit = null, best = Infinity;
-    for (const d of dotsRef.current) { const dist = Math.hypot(d.x - x, d.y - y); const slop = Math.max(d.r * 2.0, 24); if (dist < slop && dist < best) { best = dist; hit = d; } }
+    const hit = dotsRef.current[idx];
     if (!hit) return;
     if (hit.selected) { hit.selected = false; setPicksLeft((p) => p + 1); playSfx?.('click'); return; }
     const sel = dotsRef.current.filter((d) => d.selected).length;
@@ -638,7 +634,14 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
         {phase === 'respond' ? <b style={{ marginInlineStart: 4 }}>· {picksLeft}</b> : null}
       </div>
       <div ref={wrapRef} style={S.play}>
-        <canvas ref={canvasRef} style={S.canvas} onPointerDown={onPointer} />
+        <MotScene3D
+          dotsRef={dotsRef}
+          fieldRef={fieldRef}
+          phaseRef={phaseRef}
+          interactive={phase === 'respond'}
+          onPickDot={pickDot}
+          isAr={isAr}
+        />
       </div>
     </div>
   );
@@ -666,13 +669,6 @@ export default function MotGame({ onBack, workoutMode = false, assessmentOnly = 
       />
     );
   }
-  if (view === 'play3d') {
-    return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <Mot3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
-      </Suspense>
-    );
-  }
   return (
     <ModeShell
       storageKey="mm_attn_mot"
@@ -689,13 +685,6 @@ export default function MotGame({ onBack, workoutMode = false, assessmentOnly = 
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
-      extraItems={[{
-        k: 'proto3d',
-        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نموذج · تتبّع كرات في ساحة كونية' : 'Prototype · track spheres in a cosmos arena',
-        on: () => setView('play3d'),
-        icoImg: planetIconUrl('flexibility'),
-      }]}
       renderEngine={(p) => (
         <MotEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}

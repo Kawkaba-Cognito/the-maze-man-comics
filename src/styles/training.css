@@ -2101,6 +2101,39 @@
 .ct-fq-tb-tag { font-size: 0.6rem; font-weight: 900; letter-spacing: 0.6px; text-transform: uppercase; opacity: 0.9; }
 .ct-fq-tb-name { font-size: 0.68rem; font-weight: 800; }
 
+/* 3D scene takes over the play area: a full-bleed dark canvas with the existing
+   HUD floated on top. Board taps pass through the overlay to the canvas; only the
+   HUD's buttons capture. (Replaces the 2D .ct-fq-grid-outer parchment grid.) */
+.ct-fq-g-wrap--scene3d {
+    position: relative;
+    padding: 0;
+}
+.ct-fq-scene3d {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    background: #05040a;
+}
+.ct-fq-scene3d .c3d-scene-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+.ct-fq-scene3d-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.ct-fq-scene3d-overlay button {
+    pointer-events: auto;
+}
+
 .ct-fq-grid-outer {
     flex: 1;
     width: 100%;

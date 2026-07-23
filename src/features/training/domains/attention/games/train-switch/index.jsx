@@ -61,7 +61,7 @@ const LV = {
   med:  { grid: [6, 8], maxC: [2, 4], colors: [4, 5], forks: [3, 6], cps: [0.80, 1.15], spawn: [1900, 1150], target: [8, 20], lives: 4 },
   hard: { grid: [7, 9], maxC: [3, 5], colors: [5, 6], forks: [4, 8], cps: [0.95, 1.40], spawn: [1700, 950],  target: [10, 24], lives: 3 },
 };
-function levelCfg(diff, level) {
+export function levelCfg(diff, level) {
   const b = LV[diff] || LV.med;
   // Front-loaded curve (f^0.85): the climb is felt earlier so adjacent levels
   // feel more distinct; level 1 and 100 are unchanged (no cap/balance change).
@@ -544,7 +544,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
       <header className="ct-training-play-header">
         <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx('click'); onExit?.(); }}>‹</button>
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title">{isAr ? 'موقف السيارات' : 'Car Park'}</div>
+          <div className="ct-training-play-title">{isAr ? 'سفينة فضائية' : 'Spaceship'}</div>
           <div className="ct-training-play-sub">{head}{showLives ? ` · ${'♥'.repeat(Math.max(0, hud.lives))}` : ''}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
@@ -586,19 +586,11 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
 export default function TrainSwitchGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
-  const [view, setView] = useState('shell');
-  if (view === 'play3d') {
-    return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <CarPark3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
-      </Suspense>
-    );
-  }
   return (
     <ModeShell
       storageKey="mm_att_trainswitch"
       scienceId="train-switch"
-      title={{ en: 'Car Park', ar: 'موقف السيارات' }}
+      title={{ en: 'Spaceship', ar: 'سفينة فضائية' }}
       hints={{
         free: { en: 'Park cars by colour — escalating waves, lives', ar: 'اركن السيارات حسب اللون — موجات متصاعدة، أرواح' },
         levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
@@ -610,15 +602,26 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
-      extraItems={[{
-        k: 'proto3d',
-        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نموذج · بدّل المسار وأركن السفن الفضائية' : 'Prototype · flip the route & dock spaceships',
-        on: () => setView('play3d'),
-        icoImg: planetIconUrl('flexibility'),
-      }]}
       renderEngine={(p) => (
-        <TrainSwitchEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
+        // Every mode is now the beautiful 3D spaceport (the old proto), mode-aware:
+        // Survival escalates + banks XP, Levels play to target, Pass-n-Play runs a
+        // fixed ship count — all reporting back through ModeShell like the 2D did.
+        <Suspense
+          key={`carpark-3d-${p.mode}-${p.diff}-${p.level}`}
+          fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}
+        >
+          <CarPark3DProto
+            isAr={isAr}
+            playSfx={playSfx}
+            awardFreeRun={awardFreeRun}
+            mode={p.mode}
+            diff={p.diff}
+            level={p.level}
+            attempt={p.attempt}
+            onResult={p.onResult}
+            onBack={p.onExit}
+          />
+        </Suspense>
       )}
     />
   );

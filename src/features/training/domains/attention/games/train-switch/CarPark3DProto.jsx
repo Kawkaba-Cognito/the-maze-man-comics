@@ -3,7 +3,7 @@ import { bootC3dScene, matStd, disposeObject, THREE } from '../../../../shared/c
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import { makeRng } from '../../../../shared/rng';
 // SAME engine as the 2D game: real road-tree generator, wave escalation, palette.
-import { generate, waveCfg, PAL } from './index';
+import { generate, waveCfg, levelCfg, PAL } from './index';
 import '../../../../shared/c3dProto.css';
 
 /*
@@ -23,8 +23,8 @@ import '../../../../shared/c3dProto.css';
 
 const UI = {
   en: {
-    title: 'Car Park · 3D',
-    tag: 'prototype',
+    title: 'Spaceship',
+    tag: 'Attention',
     hint: 'Tap ◯ junctions before ships arrive · dock each colour at its pad',
     wave: 'Wave',
     parked: 'Docked',
@@ -36,8 +36,8 @@ const UI = {
     waveBanner: (w) => `Wave ${w}`,
   },
   ar: {
-    title: 'موقف السيارات · ثلاثي الأبعاد',
-    tag: 'نموذج',
+    title: 'سفينة فضائية',
+    tag: 'انتباه',
     hint: 'المس المفترقات ◯ قبل وصول السفن · أرسِ كل لون في منصته',
     wave: 'موجة',
     parked: 'رست',
@@ -96,12 +96,22 @@ function hullGeometry() {
   return shipHullGeo;
 }
 
-export default function CarPark3DProto({ isAr, playSfx, onBack }) {
+export default function CarPark3DProto({
+  isAr, playSfx, onBack, awardFreeRun,
+  mode = 'free', diff = 'med', level = 1, attempt = null, onResult,
+}) {
   const t = UI[isAr ? 'ar' : 'en'];
   const wrapRef = useRef(null);
   const apiRef = useRef({});
   const playSfxRef = useRef(playSfx);
   playSfxRef.current = playSfx;
+  const awardRef = useRef(awardFreeRun);
+  awardRef.current = awardFreeRun;
+  const onResultRef = useRef(onResult);
+  onResultRef.current = onResult;
+  // mode/diff/level/attempt are captured per mount (ModeShell remounts on change).
+  const modeCfgRef = useRef({ mode, diff, level, attempt });
+  modeCfgRef.current = { mode, diff, level, attempt };
 
   const [phase, setPhase] = useState('boot'); // boot | run | over
   const [wave, setWave] = useState(1);
@@ -541,11 +551,17 @@ export default function CarPark3DProto({ isAr, playSfx, onBack }) {
       buildNetMeshes();
     };
 
-    const finishRun = () => {
+    const finishRun = (won = false) => {
+      if (g.finished) return;
       g.finished = true;
+      // Levels / Pass-n-Play hand their result back to ModeShell (unlock / next
+      // player); Survival owns its game-over screen and banks XP.
+      if (g.mode === 'levels') { onResultRef.current?.({ won, score: g.routed }); return; }
+      if (g.mode === 'passplay') { onResultRef.current?.({ score: g.routed }); return; }
       setPhase('over');
       setBanner('over');
       playSfxRef.current?.('error');
+      awardRef.current?.('trainSwitch', g.routed || 0);
     };
 
     const flashBay = (node, ok) => {
@@ -631,10 +647,13 @@ export default function CarPark3DProto({ isAr, playSfx, onBack }) {
       // spawn (same gates: banner pause, wave budget, concurrency cap, lead busy)
       g.spawnAcc += dt * 1000;
       const leadBusy = g.trains.some((tr) => tr.from === g.root && tr.t < 0.5);
-      const waveBudgetOk = g.waveSpawned < g.waveCars;
+      // Survival gates per wave; Levels stream freely (ends on target); Pass-n-Play
+      // is capped at a fixed number of ships.
+      const waveBudgetOk = g.escalate ? (g.waveSpawned < g.waveCars) : (g.spawned < g.budget);
       if (g.bannerT <= 0 && g.spawnAcc >= g.spawnEvery && waveBudgetOk && g.trains.length < g.maxC && !leadBusy) {
         g.spawnAcc = 0;
         g.waveSpawned += 1;
+        g.spawned = (g.spawned || 0) + 1;
         const target = g.queue.shift();
         g.queue.push(drawColor());
         syncQueue();
@@ -663,7 +682,8 @@ export default function CarPark3DProto({ isAr, playSfx, onBack }) {
             g.waveResolved += 1;
             carGroup.remove(tr.mesh);
             disposeObject(tr.mesh);
-            if (g.lives <= 0) { finishRun(); return; }
+            if (g.lives <= 0) { finishRun(false); return; }
+            if (g.mode === 'levels' && g.routed >= g.target) { finishRun(true); return; }
             continue;
           }
           tr.from = at;
@@ -679,19 +699,25 @@ export default function CarPark3DProto({ isAr, playSfx, onBack }) {
       }
       g.trains = remaining;
 
-      // Wave complete → escalate with a FRESH, strictly harder board (2D rule).
-      if (g.waveResolved >= g.waveCars && g.trains.length === 0 && g.bannerT <= 0) {
-        g.wave += 1;
-        const wc = waveCfg(g.wave);
-        g.waveCars = wc.cars;
-        g.waveSpawned = 0;
-        g.waveResolved = 0;
-        installNet(wc);
-        g.bannerT = 1.6;
-        waveFlashOn.current = true;
-        setWave(g.wave);
-        setWaveFlash(t.waveBanner(g.wave));
-        playSfxRef.current?.('win');
+      // Survival only: wave complete → escalate with a FRESH, harder board.
+      if (g.escalate) {
+        if (g.waveResolved >= g.waveCars && g.trains.length === 0 && g.bannerT <= 0) {
+          g.wave += 1;
+          const wc = waveCfg(g.wave);
+          g.waveCars = wc.cars;
+          g.waveSpawned = 0;
+          g.waveResolved = 0;
+          installNet(wc);
+          g.bannerT = 1.6;
+          waveFlashOn.current = true;
+          setWave(g.wave);
+          setWaveFlash(t.waveBanner(g.wave));
+          playSfxRef.current?.('win');
+        }
+      } else if (g.mode === 'passplay' && g.spawned >= g.budget && g.trains.length === 0) {
+        // Pass-n-Play: all ships flown → hand the score back to ModeShell.
+        finishRun();
+        return;
       }
     });
 
@@ -729,23 +755,31 @@ export default function CarPark3DProto({ isAr, playSfx, onBack }) {
 
     apiRef.current = {
       start: () => {
+        const { mode: m, diff: df, level: lv, attempt: at } = modeCfgRef.current;
         g.finished = false;
+        g.mode = m;
+        g.escalate = m === 'free';
+        const cfg = m === 'levels' ? levelCfg(df, lv)
+          : m === 'passplay' ? levelCfg('med', 30)
+            : waveCfg(1);
+        g.target = m === 'levels' ? cfg.target : 0;
+        g.budget = m === 'passplay' ? (at?.trials || 16) : Infinity;
+        g.spawned = 0;
         g.wave = 1;
-        const wc = waveCfg(1);
-        g.lives = wc.lives;
+        g.lives = cfg.lives;
         g.routed = 0;
         g.wrong = 0;
-        g.waveCars = wc.cars;
+        g.waveCars = g.escalate ? cfg.cars : Infinity;
         g.waveSpawned = 0;
         g.waveResolved = 0;
         g.bannerT = 0;
         setWave(1);
         setRouted(0);
-        setLives(wc.lives);
+        setLives(cfg.lives);
         setPhase('run');
         setBanner(null);
         setWaveFlash(null);
-        installNet(wc);
+        installNet(cfg);
       },
       stop: () => { g.finished = true; },
     };

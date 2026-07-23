@@ -70,7 +70,7 @@ import AssessmentReady from '../../../../assessment/AssessmentReady';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
 
 // Three.js cosmos prototype — kept out of the cancel-task chunk until opened.
-const Cancel3DProto = lazyWithRetry(() => import('./Cancel3DProto'), 'cancel-3d');
+const CancelScene3D = lazyWithRetry(() => import('./Cancel3DProto'), 'cancel-3d');
 
 /** Merge one challenge pass into running per-player aggregates (avg IES/time/etc., total errors). */
 function mergeChallengePlayerStats(prev, stats, errCount, nm) {
@@ -199,12 +199,12 @@ const ShapeSvg = React.memo(function ShapeSvg({ shape, color, size = 40 }) {
 });
 
 /** Universe constellation — 3 main mode planets + small 3D satellite. */
-function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, onProto3d, playSfx }) {
+function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
+  // The game is now 3D everywhere — no separate "3D" tile; each mode is 3D.
   const items = [
     { k: 'free', lb: t.freeMode, hint: t.hubNodeFreeHint, on: onFree },
     { k: 'levels', lb: t.levelMode, hint: t.hubNodeLevelsHint, on: onLevels },
     { k: 'chal', lb: t.challengeMode, hint: t.hubNodeChallengeHint, on: onChallenge },
-    { k: 'proto3d', lb: t.mode3d, hint: t.hubNode3dHint, on: onProto3d },
   ];
   return <ModePlanetHub items={items} isAr={isAr} playSfx={playSfx} />;
 }
@@ -1730,26 +1730,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                 onFree={startFreeMode}
                 onLevels={() => setPhase('diff')}
                 onChallenge={() => setPhase('chal')}
-                onProto3d={() => setPhase('play3d')}
               />
               <HubScienceLink gameId="cancel-task" isAr={isAr} playSfx={playSfx} />
             </div>
           </div>
           {tutLayer}
         </>
-      )}
-
-      {phase === 'play3d' && (
-        <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0' }}>…</div>}>
-          <Cancel3DProto
-            isAr={isAr}
-            playSfx={playSfx}
-            onBack={() => {
-              clearPlayRoundState();
-              setPhase('hub');
-            }}
-          />
-        </Suspense>
       )}
 
       {phase === 'freeIntro' && (
@@ -1877,7 +1863,19 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       {phase === 'play' && round && (
         <>
           <div className="ct-fq-play">
-          <div className={`ct-fq-g-wrap ct-juice-host${juice.shake ? ' ct-juice-shake' : ''}`} ref={gridWrapRef}>
+          <div className={`ct-fq-g-wrap ct-fq-g-wrap--scene3d ct-juice-host${juice.shake ? ' ct-juice-shake' : ''}`} ref={gridWrapRef}>
+            <div className="ct-fq-scene3d">
+              <Suspense fallback={null}>
+                <CancelScene3D
+                  cells={cells}
+                  round={round}
+                  interactive={playStep === 'running' && !pauseOpen && !cdShow}
+                  onTapCell={onCellTap}
+                  isAr={isAr}
+                />
+              </Suspense>
+            </div>
+            <div className="ct-fq-scene3d-overlay">
             <JuiceLayer
               combo={juice.combo}
               particle={juice.particle}
@@ -1928,49 +1926,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               pauseAriaLabel={t.pause}
               playSfx={playSfx}
             />
-            <div className="ct-fq-grid-outer">
-              <div
-                className="ct-fq-grid-inner"
-                style={{
-                  width:
-                    round.grid * gridMetrics.cellW +
-                    (round.grid - 1) * gridMetrics.gap +
-                    gridMetrics.pad * 2,
-                  height:
-                    round.grid * gridMetrics.cellH +
-                    (round.grid - 1) * gridMetrics.gap +
-                    gridMetrics.pad * 2,
-                }}
-              >
-                <div
-                  className={`ct-fq-sg ${shake ? 'shake' : ''}`}
-                  style={{
-                    gridTemplateColumns: `repeat(${round.grid}, ${gridMetrics.cellW}px)`,
-                    gridTemplateRows: `repeat(${round.grid}, ${gridMetrics.cellH}px)`,
-                    gap: gridMetrics.gap,
-                    width:
-                      round.grid * gridMetrics.cellW +
-                      (round.grid - 1) * gridMetrics.gap,
-                    height:
-                      round.grid * gridMetrics.cellH +
-                      (round.grid - 1) * gridMetrics.gap,
-                  }}
-                >
-                  {cells.map((c, idx) => (
-                    <FqGridCell
-                      key={c.id}
-                      cell={c}
-                      idx={idx}
-                      size={Math.max(
-                        16,
-                        Math.min(gridMetrics.cellW, gridMetrics.cellH) - 6,
-                      )}
-                      running={playStep === 'running' && !pauseOpen}
-                      onTap={onCellTap}
-                    />
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
           </div>

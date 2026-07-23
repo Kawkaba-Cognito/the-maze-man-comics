@@ -42,22 +42,25 @@
 
 .ahv-title {
     margin: 0;
-    font-family: 'Outfit', system-ui, sans-serif;
-    font-weight: 900;
-    font-size: clamp(2.6rem, 14vw, 3.8rem);
-    line-height: 0.96;
-    letter-spacing: -0.03em;
-    color: rgba(255, 255, 255, 0.94);
+    /* Match the hub's "TRAINING" title: Cinzel engraved caps + a soft accent
+       glow — not the old heavy Outfit-900 glass slab. */
+    font-family: 'Cinzel', 'Cormorant Garamond', serif;
+    font-weight: 700;
+    font-size: clamp(2rem, 9vw, 3rem);
+    line-height: 1.12;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #f4e8c8;
     text-shadow:
-        0 1px 0 color-mix(in srgb, var(--domain-accent) 65%, #fff),
-        0 2px 0 color-mix(in srgb, var(--domain-accent) 78%, #fff 10%),
-        0 3px 0 var(--domain-accent),
-        0 4px 0 color-mix(in srgb, var(--domain-accent) 82%, #000 14%),
-        0 5px 1px color-mix(in srgb, var(--domain-deep) 90%, #000 10%),
-        0 8px 16px rgba(0, 0, 0, 0.38),
-        0 0 30px color-mix(in srgb, var(--domain-accent) 45%, transparent);
+        0 1px 2px rgba(0, 0, 0, 0.45),
+        0 0 26px color-mix(in srgb, var(--domain-accent) 45%, transparent);
 }
-[dir='rtl'] .ahv-title { font-family: 'Cairo', 'Outfit', sans-serif; font-weight: 900; letter-spacing: 0; }
+[dir='rtl'] .ahv-title {
+    font-family: 'Cairo', sans-serif;
+    font-weight: 900;
+    letter-spacing: 0;
+    text-transform: none;
+}
 
 .ahv-rule {
     display: block;
