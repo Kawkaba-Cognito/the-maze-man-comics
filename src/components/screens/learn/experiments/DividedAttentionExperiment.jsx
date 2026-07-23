@@ -241,11 +241,11 @@ export default function DividedAttentionExperiment({ isAr, chrome, playSfx }) {
             <div style={{ display: 'flex', gap: 24, marginBottom: 4 }}>
               <div>
                 <div style={{ fontSize: 11, color: chrome.muted, fontWeight: 700 }}>{t.single}</div>
-                <div style={{ fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 24, color: chrome.text }}>{error1.toFixed(1)}</div>
+                <div style={{ fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 24, color: chrome.text }}>{error1.toFixed(1)}</div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: chrome.muted, fontWeight: 700 }}>{t.divided}</div>
-                <div style={{ fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 24, color: chrome.text }}>{error2.toFixed(1)}</div>
+                <div style={{ fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 24, color: chrome.text }}>{error2.toFixed(1)}</div>
               </div>
             </div>
             <ExpResult chrome={chrome}>

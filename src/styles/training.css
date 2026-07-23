@@ -33,7 +33,7 @@
     --fq-sur: rgba(255, 247, 242, 0.94);
     --fq-card: rgba(255, 255, 255, 0.92);
     --fq-r: 16px;
-    font-family: 'Source Sans 3', 'Outfit', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
     color: var(--fq-txt);
     -webkit-tap-highlight-color: transparent;
 }
@@ -161,7 +161,7 @@
     box-sizing: border-box;
     background: #12090a;
     color: #f0e2c0;
-    font-family: 'Source Sans 3', 'Outfit', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
     overflow-x: hidden;
     overflow-y: auto;
 }
@@ -173,7 +173,7 @@
     color: #2d2d2d;
 }
 .ct-fq-training-shell--hub-light .ct-fq-hub-attn-big {
-    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: clamp(1.5rem, 7vw, 3.6rem);
     font-weight: 800;
     color: #141a17;
@@ -199,7 +199,7 @@
     margin-right: auto;
     margin-top: 10px;
     padding: 7px 14px;
-    font-family: 'Outfit', 'Source Sans 3', sans-serif;
+    font-family: 'Outfit', sans-serif;
     font-size: clamp(0.7rem, 2.6vw, 0.875rem);
     font-weight: 600;
     letter-spacing: 0.04em;
@@ -325,7 +325,7 @@
 
 .ct-fq-training-shell--hub-light .ct-fq-training-screen .ct-fq-sbig {
     color: #b87220;
-    font-family: 'Fredoka One', 'Nunito', cursive;
+    font-family: 'Fredoka One', 'Outfit', cursive;
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 .ct-fq-training-shell--hub-light .ct-fq-training-screen .ct-fq-ies-lbl {
@@ -640,7 +640,7 @@
     gap: 4px;
 }
 .ct-fq-attn-mode-lb {
-    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-weight: 800;
     font-size: clamp(1.16rem, 4.4vw, 1.42rem);
     letter-spacing: -0.02em;
@@ -651,7 +651,7 @@
     word-break: break-word;
 }
 .ct-fq-attn-mode-hint {
-    font-family: 'Outfit', 'Source Sans 3', sans-serif;
+    font-family: 'Outfit', sans-serif;
     font-size: clamp(0.78rem, 2.85vw, 0.92rem);
     font-weight: 600;
     color: #4f5451;
@@ -682,7 +682,7 @@
     letter-spacing: 0;
 }
 [dir='rtl'] .ct-fq-attn-mode-hint:not(.ct-fq-attn-mode-hint-ar) {
-    font-family: 'Cairo', 'Nunito', sans-serif;
+    font-family: 'Cairo', 'Outfit', sans-serif;
 }
 [dir='rtl'] .ct-fq-attn-mode-chev {
     transform: scaleX(-1);
@@ -710,7 +710,7 @@
     font-size: 9.5px;
     letter-spacing: 4px;
     color: #e8ac4e;
-    font-family: 'Source Sans 3', 'Outfit', sans-serif;
+    font-family: 'Outfit', sans-serif;
     font-weight: 600;
     opacity: 0.9;
     margin-bottom: 4px;
@@ -771,7 +771,7 @@
 }
 
 .ct-fq-hub-attn-sub {
-    font-family: 'Source Sans 3', 'Outfit', sans-serif;
+    font-family: 'Outfit', sans-serif;
     font-size: clamp(0.78rem, 3vw, 0.95rem);
     font-weight: 500;
     letter-spacing: 0.42em;
@@ -807,7 +807,7 @@
 [dir='rtl'] .ct-fq-hub-attn-sub {
     letter-spacing: 0.08em;
     text-transform: none;
-    font-family: 'Cairo', 'Source Sans 3', sans-serif;
+    font-family: 'Cairo', 'Outfit', sans-serif;
 }
 
 [dir='rtl'] .ct-fq-training-screen--hub .ct-fq-hub-attn-sub {
@@ -821,7 +821,7 @@
     font-size: 0.82rem;
     letter-spacing: 0.02em;
     line-height: 1.55;
-    font-family: 'Source Sans 3', 'Outfit', sans-serif;
+    font-family: 'Outfit', sans-serif;
     font-weight: 400;
 }
 .ct-fq-training-foot {
@@ -1076,12 +1076,12 @@
 .ct-fq-hub-maze-training .ct-fq-hub-node-hint {
     color: #9c8a70;
     font-weight: 500;
-    font-family: 'Source Sans 3', 'Outfit', sans-serif;
+    font-family: 'Outfit', sans-serif;
     font-size: 0.58rem;
     letter-spacing: 0.02em;
 }
 .ct-fq-hub-maze-training .ct-fq-hub-node-hint.ct-fq-hub-node-hint-ar {
-    font-family: 'Cairo', 'Source Sans 3', sans-serif;
+    font-family: 'Cairo', 'Outfit', sans-serif;
     font-weight: 700;
     font-size: 0.58rem;
 }
@@ -2680,7 +2680,7 @@
     flex-direction: column;
     align-items: center;
     color: #f0e2c0;
-    font-family: 'Source Sans 3', 'Outfit', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
     pointer-events: auto;
     overflow-y: auto;
     overflow-x: hidden;
@@ -2901,7 +2901,7 @@
     border-top: 1.5px solid rgba(232, 172, 78, 0.5);
 }
 .ct-fq-tut-bubble-progress {
-    font-family: 'Nunito', 'Source Sans 3', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 0.62rem;
     font-weight: 800;
     color: #e8ac4e;
@@ -2911,7 +2911,7 @@
     text-transform: uppercase;
 }
 .ct-fq-tut-bubble-title {
-    font-family: 'Fredoka One', 'Nunito', system-ui, sans-serif;
+    font-family: 'Fredoka One', 'Outfit', system-ui, sans-serif;
     font-size: 1.05rem;
     font-weight: 400;
     line-height: 1.2;
@@ -2930,7 +2930,7 @@
     color: #e8dfd0;
 }
 [dir='rtl'] .ct-fq-tut-bubble-text {
-    font-family: 'Cairo', 'Source Sans 3', sans-serif;
+    font-family: 'Cairo', 'Outfit', sans-serif;
 }
 .ct-fq-tut-bubble-actions {
     display: flex;
@@ -2999,7 +2999,7 @@
     color: #f0e2c0;
 }
 [dir='rtl'] .ct-fq-tut-tip-text {
-    font-family: 'Cairo', 'Source Sans 3', sans-serif;
+    font-family: 'Cairo', 'Outfit', sans-serif;
 }
 .ct-fq-tut-tip .ct-fq-tut-btn-pri {
     width: 100%;
@@ -4155,7 +4155,7 @@
     font-size: clamp(1.6rem, 8vw, 2.2rem);
 }
 .ct-ms-object-name {
-    font-family: var(--font-comic, 'Comic Neue', sans-serif);
+    font-family: var(--font-comic, 'Fredoka One', sans-serif);
     font-size: clamp(0.95rem, 4vw, 1.15rem);
     font-weight: 700;
     color: var(--ms-ink, #2a2520);
@@ -4243,7 +4243,7 @@
     padding: 14px 18px;
     border: 2px solid #1a1208;
     border-radius: 14px;
-    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1rem;
     font-weight: 800;
     letter-spacing: 0.02em;
@@ -5964,7 +5964,7 @@
 .ct-rv-root, .ct-th-root {
     --r-txt: #2d2d2d; --r-mut: #6b6b6b; --r-bdr: #e3d8cf; --r-card: #fffaf5;
     color: var(--r-txt);
-    font-family: 'Source Sans 3', 'Outfit', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -6423,7 +6423,7 @@
 .ct-domain-pick-desc {
     margin: 0;
     padding: 0 clamp(4px, 2vw, 10px);
-    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: clamp(0.88rem, 3.2vw, 0.98rem);
     font-weight: 500;
     color: #b9a878;
@@ -6477,7 +6477,7 @@
 .ct-domain-pick-section-title {
     margin: 0;
     flex-shrink: 0;
-    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: clamp(0.68rem, 2.6vw, 0.78rem);
     font-weight: 700;
     letter-spacing: 0.14em;
@@ -7600,7 +7600,7 @@
 .ct-ms-shell.ct-fq-training-shell--mode-cosmos .ct-fq-hub-attn-big,
 .ct-ms-shell.ct-fq-training-shell--mode-cosmos .ct-fq-hub-attn-big.ct-ms-hub-title,
 .ct-wordle-shell.ct-fq-training-shell--mode-cosmos .ct-fq-hub-attn-big {
-    font-family: 'Outfit', 'Source Sans 3', system-ui, sans-serif !important;
+    font-family: 'Outfit', system-ui, sans-serif !important;
     font-size: clamp(1.35rem, 5.2vw, 2.1rem) !important;
     font-weight: 800 !important;
     line-height: 1.12 !important;
@@ -7619,7 +7619,7 @@
     max-width: 100%;
     margin: 8px auto 0 !important;
     padding: 5px 14px !important;
-    font-family: 'Outfit', 'Source Sans 3', sans-serif !important;
+    font-family: 'Outfit', sans-serif !important;
     font-size: 0.72rem !important;
     font-weight: 700 !important;
     letter-spacing: 0.14em !important;

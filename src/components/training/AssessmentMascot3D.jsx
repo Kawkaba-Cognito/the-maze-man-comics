@@ -14,22 +14,26 @@ import { assetUrl } from '../../lib/assetUrl';
  * npm module (same as the training 3D protos), so this whole file lands in a
  * lazy chunk — users who never open Training never pay for it.
  *
- * The GLB was Meshy-generated ("hooded figure" biped) with a single 4096² PNG;
- * we resized the texture to 1024² PNG (21.7 MB → ~2.1 MB) and kept the idle
- * clip. (Resize→PNG, NOT WebP: three.js only decodes WebP GLB textures with the
- * EXT_texture_webp path, and the resized PNG is already tiny.) The Meshy export
- * only ships locomotion clips (idle / walk / run) — no wave — so this is
- * idle-only; there is no greet gesture. We reframe/rescale from the runtime
- * bounding box so the export scale never has to be trusted.
+ * The GLB is a Meshy-generated biped whose "merged animations" export bundles
+ * the rigged mesh with 13 clips (three idles, locomotion, and gestures) behind a
+ * single 4096² PNG; we resized the texture to 1024² PNG (48.9 MB → ~3.4 MB) and
+ * kept every clip. (Resize→PNG, NOT WebP: three.js only decodes WebP GLB textures
+ * with the EXT_texture_webp path, and the resized PNG is already tiny.) Unlike the
+ * earlier idle-only hooded-figure export, this one ships real gestures, so we play
+ * an idle at rest and a greet gesture on hover/tap-in. We reframe/rescale from the
+ * runtime bounding box so the export scale never has to be trusted.
  *
  * If WebGL is unavailable or the model fails to load, this renders nothing and
  * the SVG nexus underneath (glow + ring + label) stays as the clickable
  * fallback — so the hub centre is never empty or dead.
  */
 
-const MODEL_URL = assetUrl('Assets/hooded-figure-v1.glb');
-const IDLE_CLIP = 'Armature|Idle_02|baselayer';  // slowed → gentle breathing/bob at rest
-const GREET_CLIP = null;                          // Meshy export has no wave/greet clip
+const MODEL_URL = assetUrl('Assets/biped-v1.glb');
+const IDLE_CLIP = 'Idle_02';    // slowed → gentle breathing/bob at rest
+const GREET_CLIP = 'victory';   // played once on hover/tap-in, then fades back to idle
+// This export's other clips (for reference / easy swaps): Idle_3, Idle_4,
+// Agree_Gesture, happy_jump_m, All_Night_Dance, 360_Power_Spin_Jump,
+// Look_Around_Dumbfounded, Angry_Stomp, victory, Walking, Running, RunFast.
 
 // Target on-screen height in world units. The model is rescaled from its
 // runtime bounding box to this height, so framing is independent of the export

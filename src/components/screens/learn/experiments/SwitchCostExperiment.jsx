@@ -203,12 +203,12 @@ export default function SwitchCostExperiment({ isAr, chrome, playSfx }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, marginBottom: 4 }}>
               <div>
                 <div style={{ fontSize: 11, color: chrome.muted, fontWeight: 700 }}>{t.sameRule}</div>
-                <div style={{ fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 24, color: chrome.text }}>{Math.round(singleRT)}ms</div>
+                <div style={{ fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 24, color: chrome.text }}>{Math.round(singleRT)}ms</div>
                 <div style={{ fontSize: 11, color: chrome.muted }}>{t.accuracy}: {acc1}%</div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: chrome.muted, fontWeight: 700 }}>{t.switching}</div>
-                <div style={{ fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 24, color: chrome.text }}>{Math.round(switchRT)}ms</div>
+                <div style={{ fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 24, color: chrome.text }}>{Math.round(switchRT)}ms</div>
                 <div style={{ fontSize: 11, color: chrome.muted }}>{t.accuracy}: {acc2}%</div>
               </div>
             </div>

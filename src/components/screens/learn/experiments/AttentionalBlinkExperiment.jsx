@@ -186,7 +186,7 @@ export default function AttentionalBlinkExperiment({ isAr, chrome, playSfx }) {
           border: chrome.dark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(170,140,80,0.18)',
         }}>
           <span style={{
-            fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 48, fontWeight: 800,
+            fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 48, fontWeight: 800,
             color: letterShown?.isT1 ? chrome.accent : chrome.text,
           }}>
             {letterShown ? letterShown.letter : ''}
@@ -226,13 +226,13 @@ export default function AttentionalBlinkExperiment({ isAr, chrome, playSfx }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, marginBottom: 4 }}>
               <div>
                 <div style={{ fontSize: 11, color: chrome.muted, fontWeight: 700 }}>{t.near}</div>
-                <div style={{ fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 22, color: chrome.text }}>
+                <div style={{ fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 22, color: chrome.text }}>
                   {t.detected} {nearRate}%
                 </div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: chrome.muted, fontWeight: 700 }}>{t.far}</div>
-                <div style={{ fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 22, color: chrome.text }}>
+                <div style={{ fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 22, color: chrome.text }}>
                   {t.detected} {farRate}%
                 </div>
               </div>

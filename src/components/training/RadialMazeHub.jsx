@@ -11,6 +11,12 @@ import { domainPlanetUrl } from '../../lib/planetIcons';
  *  + GLTFLoader only for users who reach the Training hub). */
 const AssessmentMascot3D = lazy(() => import('./AssessmentMascot3D'));
 
+/** OS "reduce motion" preference — decorative loops honour this. */
+function prefersReducedMotion() {
+  try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+  catch { return false; }
+}
+
 /** Stagger so the six worlds don't breathe in lockstep. */
 const PLANET_PHASE = {
   attention: 0,
@@ -328,11 +334,15 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
   const chrome = useThemedChrome(isAr);
   const [hovered, setHovered] = useState(null);
   const [tick, setTick] = useState(0);
+  const [reducedMotion] = useState(prefersReducedMotion);
 
   useEffect(() => {
+    // The rising embers are pure atmosphere; when the user asks for reduced
+    // motion we simply stop pumping the tick (also spares a re-render/120ms).
+    if (reducedMotion) return undefined;
     const t = setInterval(() => setTick(x => x + 1), 120);
     return () => clearInterval(t);
-  }, []);
+  }, [reducedMotion]);
 
   return (
     <div
@@ -367,8 +377,23 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
         </div>
       </div>
 
+      {/* Orienting caption — mirrors the Home / Wellbeing intro line so a
+          first-time user knows the map is interactive and what the glowing
+          figure at its centre is for. */}
+      <p style={{
+        position: 'relative', zIndex: 4,
+        margin: '4px auto 0', maxWidth: 330, padding: '0 22px',
+        textAlign: 'center', color: chrome.muted,
+        fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
+        fontSize: 13, lineHeight: 1.5, fontWeight: 500,
+      }}>
+        {isAr
+          ? 'اختر عالمًا لتتدرّب — أو المس المركز لتقييم شامل'
+          : 'Tap a world to train — or the center for a full check-in'}
+      </p>
+
       {/* Radial maze canvas */}
-      <div className="rh-hub-stage" style={{ position: 'relative', width: '100%', height: 660, marginTop: 10, zIndex: 4 }}>
+      <div className="rh-hub-stage" style={{ position: 'relative', width: '100%', height: 660, marginTop: 4, zIndex: 4 }}>
         {/* Local cosmos FX — mirrors mode-planet hub atmosphere */}
         <div className="rh-hub-sky" aria-hidden="true">
           <div className="rh-hub-nebula rh-hub-nebula--a" />
@@ -562,6 +587,8 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                 aria-label={domainDoorLabel(s.id, isAr)}
                 onMouseEnter={() => setHovered(s.id)}
                 onMouseLeave={() => setHovered(null)}
+                onFocus={() => setHovered(s.id)}
+                onBlur={() => setHovered(null)}
                 onClick={() => onOpenDomain(s.id)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -661,11 +688,16 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             border: '1.5px solid rgba(232,172,78,0.55)',
             boxShadow: '0 4px 16px rgba(0,0,0,0.55), inset 0 1px 0 rgba(220,170,70,0.12)',
             color: L.text, cursor: 'pointer',
-            fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Nunito', sans-serif",
+            fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Outfit', sans-serif",
             fontSize: isAr ? 13 : 14, fontWeight: isAr ? 800 : 400, letterSpacing: isAr ? 0 : 0.3,
           }}
         >
-          <span aria-hidden="true">🧩</span>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+            style={{ flexShrink: 0, color: '#e8ac4e' }}>
+            <path
+              d="M19.44 7.85c-.05.32.06.65.29.88l1.56 1.57c.47.47.71 1.08.71 1.7s-.24 1.23-.71 1.7l-1.61 1.61a.98.98 0 0 1-.84.28c-.47-.07-.8-.48-.97-.93a2.5 2.5 0 1 0-3.21 3.22c.45.16.86.5.93.97a.98.98 0 0 1-.28.84l-1.61 1.61c-.47.47-1.08.7-1.7.7s-1.23-.23-1.7-.7l-1.57-1.57a1.03 1.03 0 0 0-.88-.29c-.49.07-.84.5-1.02.97a2.5 2.5 0 1 1-3.24-3.24c.46-.18.9-.53.97-1.02a1.03 1.03 0 0 0-.29-.88L2.7 13.7A2.4 2.4 0 0 1 2 12c0-.62.24-1.23.71-1.7L4.23 8.77c.24-.24.58-.35.92-.3.51.07.88.53 1.07 1a2.5 2.5 0 1 0 3.26-3.25c-.48-.2-.93-.56-1.01-1.07-.05-.34.06-.68.3-.92l1.53-1.52C10.77 1.74 11.38 1.5 12 1.5s1.23.24 1.7.71l1.57 1.57c.23.23.56.34.88.29.49-.08.84-.5 1.02-.97a2.5 2.5 0 1 1 3.24 3.24c-.47.18-.9.53-.97 1.02Z"
+              stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
+          </svg>
           {isAr ? 'ألغاز — استراحة' : 'Puzzles — take a break'}
         </button>
       </div>

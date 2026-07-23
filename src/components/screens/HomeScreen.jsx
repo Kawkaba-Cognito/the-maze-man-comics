@@ -54,7 +54,7 @@ export default function HomeScreen() {
         }}>
           {isAr ? 'كونك' : 'Your universe'}
         </div>
-        <div style={{ fontFamily: "'Fredoka One', 'Nunito', sans-serif", fontSize: 15, opacity: 0.8, marginTop: 2 }}>
+        <div style={{ fontFamily: "'Fredoka One', 'Outfit', sans-serif", fontSize: 15, opacity: 0.8, marginTop: 2 }}>
           {isAr ? 'المس الكوكب ليتنفّس، أو المس كوكباً صغيراً لقراءته' : 'Touch the planet to see it breathe, or a small one to read it'}
         </div>
       </div>

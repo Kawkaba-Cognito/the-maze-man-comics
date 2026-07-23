@@ -168,7 +168,7 @@
 }
 [dir='rtl'] .ct-domain-pick .ct-domain-sci-h { font-family: 'Cairo', 'Outfit', sans-serif; letter-spacing: 0.01em; text-transform: none; }
 .ct-domain-pick .ct-domain-sci-b {
-    font-family: 'Source Sans 3', 'Outfit', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-weight: 400;
     font-size: 0.87rem;
     line-height: 1.58;

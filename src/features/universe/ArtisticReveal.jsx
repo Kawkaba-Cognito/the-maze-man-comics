@@ -96,7 +96,7 @@ export default function ArtisticReveal({ isAr, planet, onEdit, onClose }) {
 
         <h2 style={{
           margin: '0 0 8px', color: '#f6efdd', fontSize: 27, lineHeight: 1.3,
-          fontFamily: "'Fredoka One', 'Nunito', sans-serif", fontWeight: 600,
+          fontFamily: "'Fredoka One', 'Outfit', sans-serif", fontWeight: 600,
           textShadow: `0 0 34px ${meta.color}66`,
           textDecoration: planet.type === 'goal' && planet.done ? 'line-through' : 'none',
           opacity: planet.type === 'goal' && planet.done ? 0.75 : 1,

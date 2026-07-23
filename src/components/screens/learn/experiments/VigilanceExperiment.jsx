@@ -185,25 +185,25 @@ export default function VigilanceExperiment({ isAr, chrome, playSfx }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, marginBottom: 4 }}>
               <div>
                 <div style={{ fontSize: 11, color: chrome.muted, fontWeight: 700 }}>{t.hits}</div>
-                <div style={{ fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 22, color: '#4a9d6f' }}>{hits} ({hitRate}%)</div>
+                <div style={{ fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 22, color: '#4a9d6f' }}>{hits} ({hitRate}%)</div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: chrome.muted, fontWeight: 700 }}>{t.misses}</div>
-                <div style={{ fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 22, color: '#c96b4e' }}>{misses}</div>
+                <div style={{ fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 22, color: '#c96b4e' }}>{misses}</div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: chrome.muted, fontWeight: 700 }}>{t.falseAlarms}</div>
-                <div style={{ fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 22, color: chrome.text }}>{fa}</div>
+                <div style={{ fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 22, color: chrome.text }}>{fa}</div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 18, marginBottom: 4, marginTop: 8 }}>
               <div>
                 <div style={{ fontSize: 11, color: chrome.muted, fontWeight: 700 }}>{t.early}</div>
-                <div style={{ fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 18, color: chrome.text }}>{earlyPct}%</div>
+                <div style={{ fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 18, color: chrome.text }}>{earlyPct}%</div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: chrome.muted, fontWeight: 700 }}>{t.late}</div>
-                <div style={{ fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 18, color: chrome.text }}>{latePct}%</div>
+                <div style={{ fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 18, color: chrome.text }}>{latePct}%</div>
               </div>
             </div>
             <ExpResult chrome={chrome}>

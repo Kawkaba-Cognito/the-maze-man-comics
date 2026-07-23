@@ -29,7 +29,7 @@ function Block({ block, chrome, isAr, playSfx }) {
     }
     case 'h2':
       return (
-        <h2 style={{ fontFamily: "'Fredoka One', 'Nunito', sans-serif", fontSize: 19, margin: '26px 0 10px', color: chrome.text }}>
+        <h2 style={{ fontFamily: "'Fredoka One', 'Outfit', sans-serif", fontSize: 19, margin: '26px 0 10px', color: chrome.text }}>
           {pick(isAr, block.text, block.textAr)}
         </h2>
       );
@@ -82,7 +82,7 @@ function Block({ block, chrome, isAr, playSfx }) {
           borderBottom: chrome.dark ? '1px solid rgba(212,168,80,0.25)' : '1px solid rgba(170,140,80,0.22)',
         }}>
           <div style={{
-            fontFamily: "'Fredoka One', 'Nunito', sans-serif", fontSize: 30, fontWeight: 800,
+            fontFamily: "'Fredoka One', 'Outfit', sans-serif", fontSize: 30, fontWeight: 800,
             color: chrome.accent, flexShrink: 0, lineHeight: 1, whiteSpace: 'nowrap',
           }}>
             {pick(isAr, block.value, block.valueAr)}
@@ -169,7 +169,7 @@ export default function LearnArticle({ topic, isAr, chrome, playSfx }) {
       <div style={{ fontSize: 12, letterSpacing: 1.5, color: chrome.muted, textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>
         {isAr ? 'تعلّم' : 'Learn'}
       </div>
-      <h1 style={{ fontFamily: "'Fredoka One', 'Nunito', sans-serif", fontSize: 24, lineHeight: 1.25, margin: '0 0 18px', color: chrome.text }}>
+      <h1 style={{ fontFamily: "'Fredoka One', 'Outfit', sans-serif", fontSize: 24, lineHeight: 1.25, margin: '0 0 18px', color: chrome.text }}>
         {title}
       </h1>
       {topic.blocks.map((block, i) => <Block key={i} block={block} chrome={chrome} isAr={isAr} playSfx={playSfx} />)}

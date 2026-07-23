@@ -87,7 +87,6 @@ export default function ComicsScreen() {
 
   const d = DOMAINS.find((x) => x.id === activeDomain);
   const domainName = d && isAr && d.nameAr ? d.nameAr : d?.name;
-  const domainDesc = d && isAr && d.descAr ? d.descAr : d?.desc;
   const domainTag = isAr ? 'مجال تدريبي' : 'Training domain';
 
   return (
@@ -126,7 +125,7 @@ export default function ComicsScreen() {
           shellClassName={`ct-domain-pick ct-domain-pick--${activeDomain}`}
         >
           <div className="ct-domain-pick-body">
-            <GlassBevel domainName={domainName} domainTag={domainTag} domainDesc={domainDesc} />
+            <GlassBevel domainName={domainName} domainTag={domainTag} />
 
             <section
               className="ct-domain-pick-section"

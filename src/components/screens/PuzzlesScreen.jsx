@@ -421,7 +421,7 @@ export default function PuzzlesScreen() {
                 </span>
                 <span style={{
                   marginTop: 22, textAlign: 'center', color: chrome.text,
-                  fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Nunito', sans-serif",
+                  fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Outfit', sans-serif",
                   fontSize: isAr ? 12.5 : 13.5, fontWeight: isAr ? 800 : 400, letterSpacing: isAr ? 0 : 0.35,
                   lineHeight: 1.1, whiteSpace: 'nowrap',
                   textShadow: chrome.dark

@@ -48,7 +48,7 @@ html[data-home-theme='dark'] body {
 /* ═══════════════════════ 2D UI (COMIC INTERFACE) ═══════════════════════ */
 #ui-shell {
     position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh;
-    font-family: 'Comic Neue', cursive; color: #333;
+    font-family: 'Fredoka One', cursive; color: #333;
     overflow-y: auto; overflow-x: hidden;
     z-index: var(--z-ui-shell);
     background: transparent;
@@ -704,7 +704,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     background: linear-gradient(180deg, #3a2008, #4a280c);
 }
 .char-card-art { width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; }
-.char-card-name { font-family: 'Comic Neue', cursive; font-weight: 700; font-size: 0.85rem; color: #f3ead9; }
+.char-card-name { font-family: 'Fredoka One', cursive; font-weight: 700; font-size: 0.85rem; color: #f3ead9; }
 .char-card.is-on .char-card-name { color: #fff2cf; }
 .char-card-badge {
     position: absolute; top: 6px; inset-inline-end: 6px;
@@ -737,7 +737,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
     font-size: 22px; color: #8a7a5a;
 }
-.char-item-name { font-family: 'Comic Neue', cursive; font-weight: 700; font-size: 0.72rem; color: #d8c9ad; line-height: 1.1; text-align: center; }
+.char-item-name { font-family: 'Fredoka One', cursive; font-weight: 700; font-size: 0.72rem; color: #d8c9ad; line-height: 1.1; text-align: center; }
 .char-item.is-on .char-item-name { color: #fff2cf; }
 .char-item--none .char-item-art { font-size: 20px; color: #6a5a42; }
 .char-shop-link {
@@ -786,7 +786,19 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     to { transform: rotate(0deg) scaleX(1); }
 }
 @media (prefers-reduced-motion: reduce) {
-    .mmv-blink, .mmv-tail, .mmv-ear-l, .mmv-ear-r, .mmv-breathe, .mmv-spin { animation: none; }
+    /* App-wide safety net for the ~90 looping CSS animations: finish instantly
+       instead of repeating, WITHOUT `none` (so one-shot animations still fire
+       their animationend listeners and don't leave elements stuck mid-fade).
+       JS-driven scenes (universe canvases, hub ember tick) detect reduced-motion
+       themselves; SMIL <animate> can't be reached from CSS and is gated in JS. */
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    /* Mascot decorative loops: stop outright. */
+    .mmv-blink, .mmv-tail, .mmv-ear-l, .mmv-ear-r, .mmv-breathe, .mmv-spin { animation: none !important; }
 }
 
 /* ── Shop grid ── */
@@ -823,7 +835,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     color: #ffd98a; text-align: start; margin: 14px 2px 8px;
     border-bottom: 1.5px solid #6e4420; padding-bottom: 4px;
 }
-.shop-card-name { font-family: 'Comic Neue', cursive; font-weight: 700; font-size: 0.74rem; color: #f3ead9; text-align: center; }
+.shop-card-name { font-family: 'Fredoka One', cursive; font-weight: 700; font-size: 0.74rem; color: #f3ead9; text-align: center; }
 .shop-card-cost { font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 0.82rem; color: #ffd98a; }
 .shop-card.is-on .shop-card-cost { color: #9be85a; }
 .char-row {
@@ -836,7 +848,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
 }
 .char-chips, .char-swatches { display: flex; gap: 8px; flex-wrap: wrap; }
 .char-chip {
-    font-family: 'Comic Neue', cursive; font-size: 0.85rem; font-weight: 700;
+    font-family: 'Fredoka One', cursive; font-size: 0.85rem; font-weight: 700;
     color: #f3ead9; cursor: pointer;
     background: linear-gradient(180deg, #2a1606, #3a1e08);
     border: 1.5px solid #7a4a20; border-radius: 999px;

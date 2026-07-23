@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Star, CaretRight, CaretLeft } from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
 import BreathePractice from './BreathePractice';
 import GroundingPractice from './GroundingPractice';
@@ -743,8 +744,8 @@ function ReorderList({ items, disabled, onCommit, children }) {
 
 const FAV_GOLD = '#d9a520';
 
-function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
-  const { appTheme } = useApp();
+function RelaxMenu({ isAr, onOpen, playSfx }) {
+  const { appTheme, toggleLang } = useApp();
   const dark = appTheme !== 'light';
   const [openCat, setOpenCat] = useState(null); // category id, or 'favorites'
   const [group, setGroup] = useState('program'); // 'program' | 'quick'
@@ -901,22 +902,25 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
       <style>{MENU_CSS}</style>
       <UniverseStage accent="wellbeing" dark={dark} />
 
+      {/* Landing is a top-level tab (nav bar visible) — no back button, matching
+          Learn / Other / Training. A lang toggle sits top-right like the others. */}
       <button
         type="button"
-        onClick={onHome}
-        aria-label="Back"
+        onClick={() => { playSfx?.('click'); toggleLang(); }}
+        aria-label={isAr ? 'English' : 'العربية'}
         className="rx-fade"
         style={{
-          position: 'absolute', top: 'calc(14px + env(safe-area-inset-top))', insetInlineStart: 14, zIndex: 5,
-          width: 38, height: 38, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'absolute', top: 'calc(14px + env(safe-area-inset-top))', insetInlineEnd: 14, zIndex: 5,
+          minWidth: 38, height: 38, padding: '0 12px', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
           border: `1px solid ${dark ? 'rgba(244,236,216,0.28)' : 'rgba(45,34,16,0.22)'}`,
           background: dark ? 'rgba(20,18,14,0.4)' : 'rgba(255,253,248,0.5)',
           backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
           boxShadow: dark ? '0 4px 16px rgba(0,0,0,0.35)' : '0 4px 14px rgba(120,90,40,0.14)',
-          color: skyText, fontSize: 20, cursor: 'pointer',
+          color: dark ? '#e8ac4e' : '#6a4e22', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
         }}
       >
-        ‹
+        {isAr ? 'EN' : 'عر'}
       </button>
       <div className="rx-fade" style={{
         position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: 0, right: 0, zIndex: 3,
@@ -956,11 +960,13 @@ function RelaxMenu({ isAr, onHome, onOpen, playSfx }) {
           cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap',
         }}
       >
-        <span aria-hidden="true" style={{ fontSize: 15 }}>⭐</span>
+        <Star size={16} weight="fill" color={FAV_GOLD} aria-hidden="true" />
         {favs.length
           ? (isAr ? `${favs.length} ممارسة محفوظة` : `${favs.length} saved practice${favs.length > 1 ? 's' : ''}`)
           : (isAr ? 'المفضّلة' : 'Favorites')}
-        <span aria-hidden="true" style={{ color: FAV_GOLD }}>{isAr ? '‹' : '›'}</span>
+        {isAr
+          ? <CaretLeft size={13} weight="bold" color={FAV_GOLD} aria-hidden="true" />
+          : <CaretRight size={13} weight="bold" color={FAV_GOLD} aria-hidden="true" />}
       </button>
 
       {CATEGORIES.map((c, idx) => {

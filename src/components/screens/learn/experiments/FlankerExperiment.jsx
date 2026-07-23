@@ -182,12 +182,12 @@ export default function FlankerExperiment({ isAr, chrome, playSfx }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, marginBottom: 4 }}>
               <div>
                 <div style={{ fontSize: 11, color: chrome.muted, fontWeight: 700 }}>{t.congruent}</div>
-                <div style={{ fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 24, color: chrome.text }}>{Math.round(rtC)}ms</div>
+                <div style={{ fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 24, color: chrome.text }}>{Math.round(rtC)}ms</div>
                 <div style={{ fontSize: 11, color: chrome.muted }}>{t.accuracy}: {accC}%</div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: chrome.muted, fontWeight: 700 }}>{t.incongruent}</div>
-                <div style={{ fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 24, color: chrome.text }}>{Math.round(rtI)}ms</div>
+                <div style={{ fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 24, color: chrome.text }}>{Math.round(rtI)}ms</div>
                 <div style={{ fontSize: 11, color: chrome.muted }}>{t.accuracy}: {accI}%</div>
               </div>
             </div>

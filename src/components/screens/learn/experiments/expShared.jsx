@@ -107,7 +107,7 @@ export function ExpCountdown({ chrome, seconds = 3, onDone, label }) {
     }}>
       {label ? <div style={{ fontSize: 12, fontWeight: 700, color: chrome.muted }}>{label}</div> : null}
       <div style={{
-        fontFamily: "'Fredoka One','Nunito',sans-serif", fontSize: 48, fontWeight: 800, color: chrome.accent,
+        fontFamily: "'Fredoka One','Outfit',sans-serif", fontSize: 48, fontWeight: 800, color: chrome.accent,
       }}>
         {n > 0 ? n : '·'}
       </div>
@@ -120,7 +120,7 @@ export function expStimStyle(chrome) {
     width: '100%', minHeight: 96, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: chrome.dark ? 'rgba(0,0,0,0.28)' : 'rgba(255,255,255,0.55)',
     border: chrome.dark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(170,140,80,0.18)',
-    fontFamily: "'Fredoka One', 'Nunito', sans-serif", fontWeight: 800, margin: '10px 0 14px',
+    fontFamily: "'Fredoka One', 'Outfit', sans-serif", fontWeight: 800, margin: '10px 0 14px',
   };
 }
 

@@ -129,7 +129,7 @@ function CognitiveRadar({ scores, index, isAr }) {
             y={ly + 3}
             textAnchor={anchor}
             fill={col}
-            style={{ fontSize: 11, fontWeight: 700, fontFamily: isAr ? "'Cairo',sans-serif" : "'Nunito',sans-serif" }}
+            style={{ fontSize: 11, fontWeight: 700, fontFamily: isAr ? "'Cairo',sans-serif" : "'Outfit',sans-serif" }}
           >
             {isAr ? DOMAIN_DISPLAY[d].ar : DOMAIN_DISPLAY[d].en}
           </text>
@@ -142,7 +142,7 @@ function CognitiveRadar({ scores, index, isAr }) {
         {hasData ? index : '—'}
       </text>
       <text x={CX} y={CY + 14} textAnchor="middle" fill={L.textMuted}
-        style={{ fontSize: 8.5, letterSpacing: 2, fontWeight: 800, fontFamily: "'Nunito',sans-serif" }}>
+        style={{ fontSize: 8.5, letterSpacing: 2, fontWeight: 800, fontFamily: "'Outfit',sans-serif" }}>
         {isAr ? 'المؤشر' : 'INDEX'}
       </text>
     </svg>
