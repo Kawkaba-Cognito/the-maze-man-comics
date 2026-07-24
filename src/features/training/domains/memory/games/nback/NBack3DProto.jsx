@@ -1,384 +1,218 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { bootC3dScene, matStd, disposeObject, THREE } from '../../../../shared/c3dBoot';
+import { bootC3dScene, disposeObject, matStd, THREE } from '../../../../shared/c3dBoot';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
-import {
-  prepareFreeBlock,
-  nbStreams,
-  emptyNbStats,
-  gradeBlock,
-  adaptiveNextN,
-  NB_GRID,
-} from './nbackData';
 import { MEMO_OBJECTS } from '../memo-span/memoObjects';
+import {
+  createCardMaterial,
+  createGridSlotTexture,
+  createObjectCardTexture,
+} from '../memoryStimulusTexture';
 import '../../../../shared/c3dProto.css';
 
-/*
- * N-Back · 3D — the REAL 2D free mode: DUAL n-back (place + object) on a
- * timed, auto-advancing stream. Blocks come from prepareFreeBlock(n, seed,
- * 'dual') — same 20-trial blocks, 2000ms stim / 900ms ISI pacing, same
- * hit/miss/FA/CR scoring per stream, gradeBlock accuracy and adaptiveNextN
- * (≥85% up, <60% down) level flow starting at 1-back. You press ▦ PLACE and/or
- * ◆ OBJECT only when the stimulus repeats from N back — exactly the 2D game.
- */
+const OBJECT_BY_ID = Object.fromEntries(MEMO_OBJECTS.map((object) => [object.id, object]));
 
-const UI = {
-  en: {
-    title: 'N-Back · 3D',
-    tag: 'prototype',
-    getReady: (n) => `${n}-back — get ready…`,
-    prompt: 'Repeat from N back? ▦ place · ◆ object',
-    pos: 'PLACE',
-    obj: 'OBJECT',
-    popUp: 'Level up!',
-    popDown: 'Stepping down',
-    popHold: 'Holding steady',
-    popAcc: (a) => `Last round: ${a}%`,
-    popCont: (n) => `Continue · ${n}-back ›`,
-    popEnd: 'End run',
-    over: 'Run ended',
-    hub: 'Back to modes',
-    go: 'ENGAGE',
-    nBadge: (n) => `${n}-back`,
-    trial: (i, n) => `${i}/${n}`,
-  },
-  ar: {
-    title: 'إن-باك · ثلاثي الأبعاد',
-    tag: 'نموذج',
-    getReady: (n) => `${n}-عودة — استعد…`,
-    prompt: 'هل تكرّر قبل N؟ ▦ المكان · ◆ الشيء',
-    pos: 'المكان',
-    obj: 'الشيء',
-    popUp: 'مستوى أعلى!',
-    popDown: 'نزول مستوى',
-    popHold: 'ثبات',
-    popAcc: (a) => `الجولة السابقة: ${a}٪`,
-    popCont: (n) => `متابعة · ${n}-عودة ›`,
-    popEnd: 'إنهاء',
-    over: 'انتهت المحاولة',
-    hub: 'العودة للأوضاع',
-    go: 'انطلق',
-    nBadge: (n) => `${n}-عودة`,
-    trial: (i, n) => `${i}/${n}`,
-  },
-};
-
-const STEP_GET_READY_MS = 800; // same as 2D
-const OBJ_EMOJI = Object.fromEntries(MEMO_OBJECTS.map((o) => [o.id, o.emoji]));
-
-function roundRectPath(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-// Object tile shown at the active cell — warm parchment card, gold rim, a big
-// crisp emoji that reads clearly at speed.
-function emojiTexture(emoji) {
-  const S = 256;
-  const c = document.createElement('canvas');
-  c.width = S;
-  c.height = S;
-  const ctx = c.getContext('2d');
-  const g = ctx.createLinearGradient(0, 0, 0, S);
-  g.addColorStop(0, '#fff8ea');
-  g.addColorStop(1, '#f2e0bd');
-  ctx.fillStyle = g;
-  roundRectPath(ctx, 8, 8, S - 16, S - 16, 34);
-  ctx.fill();
-  // soft top highlight for a little depth
-  ctx.fillStyle = 'rgba(255,255,255,0.35)';
-  roundRectPath(ctx, 18, 16, S - 36, (S - 32) * 0.4, 26);
-  ctx.fill();
-  ctx.lineWidth = 9;
-  ctx.strokeStyle = 'rgba(232,172,78,0.9)';
-  roundRectPath(ctx, 8, 8, S - 16, S - 16, 34);
-  ctx.stroke();
-  ctx.font = '185px "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(emoji || '❓', S / 2, S / 2 + 14);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  return tex;
-}
-
-// Empty grid slot — deep panel with an inset gold frame so the 3×3 board reads
-// as nine defined places rather than flat dark squares.
-function slotTexture() {
-  const S = 128;
-  const c = document.createElement('canvas');
-  c.width = S;
-  c.height = S;
-  const ctx = c.getContext('2d');
-  const g = ctx.createLinearGradient(0, 0, 0, S);
-  g.addColorStop(0, '#2a2318');
-  g.addColorStop(1, '#191308');
-  ctx.fillStyle = g;
-  roundRectPath(ctx, 4, 4, S - 8, S - 8, 22);
-  ctx.fill();
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = 'rgba(232,172,78,0.32)';
-  roundRectPath(ctx, 11, 11, S - 22, S - 22, 15);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(232,172,78,0.12)';
-  ctx.beginPath();
-  ctx.arc(S / 2, S / 2, 6, 0, Math.PI * 2);
-  ctx.fill();
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  return tex;
-}
-
-export default function NBack3DProto({ isAr, playSfx, onBack }) {
-  const t = UI[isAr ? 'ar' : 'en'];
+export default function NBack3DProto({
+  isAr,
+  playSfx,
+  onBack,
+  n = 1,
+  trialIx = 0,
+  trialCount = 0,
+  cur = null,
+  showStim = false,
+  playStep = 'ready',
+  resp = { pos: false, obj: false },
+  feedback = { pos: null, obj: null },
+  onRespond,
+  subtitle = '',
+}) {
   const wrapRef = useRef(null);
   const apiRef = useRef({});
-  const playSfxRef = useRef(playSfx);
-  playSfxRef.current = playSfx;
-
-  const [phase, setPhase] = useState('boot'); // boot | ready | run | pop | over
-  const [n, setN] = useState(1);
-  const [trialIx, setTrialIx] = useState(0);
-  const [trialCount, setTrialCount] = useState(0);
-  const [resp, setResp] = useState({ obj: false, pos: false });
-  const [feedback, setFeedback] = useState({ obj: null, pos: null });
-  const [pop, setPop] = useState(null); // { dir, prevN, nextN, acc }
-  const [banner, setBanner] = useState('go');
   const [bootError, setBootError] = useState(null);
 
   useEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return undefined;
 
-    const boot = bootC3dScene(wrap, { fov: 52, fitHalf: 3.9, bloom: true });
+    const boot = bootC3dScene(wrap, { fov: 48, fitHalf: 4.1, bloom: false });
     if (boot.error) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');
       return () => boot.dispose();
     }
-    const { playRoot, coarse, setTick, setFitHalf, dispose } = boot;
 
-    // ── 3×3 place grid ──
+    const {
+      playRoot,
+      coarse,
+      renderer,
+      setFitHalf,
+      setTick,
+      dispose,
+    } = boot;
     const gap = coarse ? 1.62 : 1.72;
-    const CELL = 1.36;
-    const slotTex = slotTexture();
+    const cellSize = 1.36;
+    const slotTexture = createGridSlotTexture(renderer);
+    const objectTextures = new Map();
     const cells = [];
-    for (let i = 0; i < NB_GRID; i++) {
-      const col = i % 3;
-      const row = Math.floor(i / 3);
-      const faceMat = new THREE.MeshStandardMaterial({
-        map: slotTex, emissive: new THREE.Color(0xe8ac4e), emissiveIntensity: 0.05, metalness: 0.2, roughness: 0.72,
+
+    for (let index = 0; index < 9; index += 1) {
+      const column = index % 3;
+      const row = Math.floor(index / 3);
+      const cell = new THREE.Group();
+      const frameMaterial = matStd(0x15283a, {
+        emissive: 0x173b56,
+        emissiveIntensity: 0.18,
+        metalness: 0.28,
+        roughness: 0.58,
       });
-      const sideMat = matStd(0x181309, { metalness: 0.25, roughness: 0.7 });
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(CELL, CELL, 0.16),
-        [sideMat, sideMat, sideMat, sideMat, faceMat, sideMat],
+      const frame = new THREE.Mesh(
+        new THREE.BoxGeometry(cellSize, cellSize, 0.16),
+        frameMaterial,
       );
-      mesh.userData.faceMat = faceMat;
-      mesh.position.set((col - 1) * gap, (1 - row) * gap, 0);
-      playRoot.add(mesh);
-      cells.push(mesh);
+      const face = new THREE.Mesh(
+        new THREE.PlaneGeometry(cellSize * 0.88, cellSize * 0.88),
+        createCardMaterial(slotTexture),
+      );
+      face.position.z = 0.086;
+      cell.add(frame, face);
+      cell.userData.frameMaterial = frameMaterial;
+      cell.position.set((column - 1) * gap, (1 - row) * gap, 0);
+      playRoot.add(cell);
+      cells.push(cell);
     }
-    // Fit tight to the grid (was gap*1.5+0.7 — a lot of dead black around it).
-    setFitHalf(gap + 1.0);
 
-    // Stimulus card (object emoji shown at the active cell)
-    let stimMesh = null;
-    let stimTex = null;
-    const hideStim = () => {
-      if (stimMesh) { playRoot.remove(stimMesh); disposeObject(stimMesh); stimMesh = null; }
-      if (stimTex) { stimTex.dispose(); stimTex = null; }
-      cells.forEach((m) => { m.userData.faceMat.emissiveIntensity = 0.05; });
-    };
-    const showStim = (step) => {
-      hideStim();
-      const cell = cells[step.pos] || cells[4];
-      cell.userData.faceMat.emissiveIntensity = 0.65;
-      stimTex = emojiTexture(OBJ_EMOJI[step.obj]);
-      const face = new THREE.MeshStandardMaterial({ map: stimTex, emissive: new THREE.Color(0xe8ac4e), emissiveIntensity: 0.18, metalness: 0.1, roughness: 0.55 });
-      const side = matStd(0x241d13, { emissive: 0xe8ac4e, emissiveIntensity: 0.1, metalness: 0.2, roughness: 0.6 });
-      stimMesh = new THREE.Group();
-      const tile = new THREE.Mesh(new THREE.BoxGeometry(CELL + 0.06, CELL + 0.06, 0.2), [side, side, side, side, face, side]);
-      stimMesh.add(tile);
-      // Glow disc behind the tile → the current item pops off the grid.
-      const glow = new THREE.Mesh(
-        new THREE.CircleGeometry(CELL * 0.72, 26),
-        new THREE.MeshBasicMaterial({ color: 0xe8ac4e, transparent: true, opacity: 0.26, blending: THREE.AdditiveBlending, depthWrite: false }),
-      );
-      glow.position.z = -0.12;
-      stimMesh.add(glow);
-      stimMesh.position.set(cell.position.x, cell.position.y, 0.5);
-      playRoot.add(stimMesh);
-    };
+    setFitHalf(gap + (coarse ? 1.0 : 1.55));
 
-    // ── Block state (mirrors the 2D loop) ──
-    let block = null;
-    let stats = emptyNbStats();
-    let idx = -1;
-    let respState = { obj: false, pos: false };
-    let finished = false;
-    const timers = [];
-    const later = (fn, ms) => { const id = window.setTimeout(fn, ms); timers.push(id); return id; };
-    const clearTimers = () => { timers.forEach((id) => window.clearTimeout(id)); timers.length = 0; };
-
-    const scoreTrial = (i) => {
-      const bN = block.spec.n;
-      if (i < bN) return;
-      const streams = nbStreams(block.spec.variant);
-      const step = block.seq[i];
-      const prior = block.seq[i - bN];
-      streams.forEach((k) => {
-        const isTarget = step[k] === prior[k];
-        const did = respState[k];
-        const ss = stats[k];
-        if (isTarget) { if (did) ss.hit++; else ss.miss++; } else { if (did) ss.fa++; else ss.cr++; }
+    let stimulus = null;
+    const resetCells = () => {
+      cells.forEach((cell) => {
+        cell.userData.frameMaterial.emissive.setHex(0x173b56);
+        cell.userData.frameMaterial.emissiveIntensity = 0.18;
       });
     };
+    const hide = () => {
+      if (stimulus) {
+        playRoot.remove(stimulus);
+        disposeObject(stimulus);
+        stimulus = null;
+      }
+      resetCells();
+    };
+    const textureFor = (objectId) => {
+      if (!objectTextures.has(objectId)) {
+        objectTextures.set(
+          objectId,
+          createObjectCardTexture(OBJECT_BY_ID[objectId] || MEMO_OBJECTS[0], renderer),
+        );
+      }
+      return objectTextures.get(objectId);
+    };
+    const show = (step) => {
+      hide();
+      if (!step) return;
+      const cell = cells[step.pos] || cells[4];
+      cell.userData.frameMaterial.emissive.setHex(0x4c92cf);
+      cell.userData.frameMaterial.emissiveIntensity = 0.78;
 
-    const finishBlock = () => {
-      clearTimers();
-      hideStim();
-      const grade = gradeBlock(stats, block.spec.variant);
-      const bN = block.spec.n;
-      const nextN = adaptiveNextN(bN, grade.acc);
-      playSfxRef.current?.(nextN > bN ? 'win' : 'click');
-      setPop({ dir: nextN > bN ? 'up' : nextN < bN ? 'down' : 'hold', prevN: bN, nextN, acc: grade.acc });
-      setPhase('pop');
+      stimulus = new THREE.Group();
+      const tileFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(cellSize + 0.1, cellSize + 0.1, 0.2),
+        matStd(0x1d3d58, {
+          emissive: 0x4c92cf,
+          emissiveIntensity: 0.5,
+          metalness: 0.22,
+          roughness: 0.5,
+        }),
+      );
+      const tileFace = new THREE.Mesh(
+        new THREE.PlaneGeometry(cellSize * 0.94, cellSize * 0.94),
+        createCardMaterial(textureFor(step.obj)),
+      );
+      tileFace.position.z = 0.106;
+      stimulus.add(tileFrame, tileFace);
+      stimulus.userData.birth = performance.now();
+      stimulus.position.set(cell.position.x, cell.position.y, 0.34);
+      playRoot.add(stimulus);
     };
 
-    const runTrial = (i) => {
-      if (finished || !block) return;
-      if (i >= block.seq.length) { finishBlock(); return; }
-      idx = i;
-      setTrialIx(i + 1);
-      respState = { obj: false, pos: false };
-      setResp({ obj: false, pos: false });
-      setFeedback({ obj: null, pos: null });
-      showStim(block.seq[i]);
-      later(() => hideStim(), block.spec.stimMs);
-      later(() => { scoreTrial(i); runTrial(i + 1); }, block.spec.stimMs + block.spec.isiMs);
-    };
-
-    const beginBlock = (startN) => {
-      clearTimers();
-      hideStim();
-      finished = false;
-      const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-      block = prepareFreeBlock(startN, seed, 'dual');
-      stats = emptyNbStats();
-      idx = -1;
-      setN(block.spec.n);
-      setTrialCount(block.seq.length);
-      setTrialIx(0);
-      setPop(null);
-      setBanner(null);
-      setPhase('ready');
-      later(() => { if (!finished) { setPhase('run'); runTrial(0); } }, STEP_GET_READY_MS);
-    };
-
-    const respond = (stream) => {
-      if (finished || !block || idx < 0) return;
-      if (!nbStreams(block.spec.variant).includes(stream)) return;
-      if (respState[stream]) return;
-      respState = { ...respState, [stream]: true };
-      setResp((p) => ({ ...p, [stream]: true }));
-      const bN = block.spec.n;
-      const isTarget = idx >= bN && block.seq[idx][stream] === block.seq[idx - bN][stream];
-      setFeedback((p) => ({ ...p, [stream]: isTarget ? 'good' : 'bad' }));
-      playSfxRef.current?.(isTarget ? 'correct' : 'wrong');
+    apiRef.current.sync = ({ nextCur, visible }) => {
+      if (visible && nextCur) show(nextCur);
+      else hide();
     };
 
     setTick((_dt, now) => {
-      if (stimMesh) stimMesh.rotation.y = Math.sin(now * 0.002) * 0.08;
+      if (!stimulus) return;
+      const appear = Math.min(1, Math.max(0, (now - stimulus.userData.birth) / 180));
+      const eased = 1 - ((1 - appear) ** 3);
+      stimulus.scale.setScalar(0.88 + eased * 0.12);
     });
 
-    apiRef.current = {
-      start: (startN = 1) => beginBlock(startN),
-      respond,
-      stop: () => { finished = true; clearTimers(); hideStim(); },
-    };
+    apiRef.current.sync({ nextCur: cur, visible: showStim });
 
     return () => {
-      finished = true;
-      clearTimers();
-      hideStim();
-      cells.forEach((m) => { disposeObject(m); playRoot.remove(m); });
-      slotTex.dispose();
-      dispose();
+      hide();
+      cells.forEach((cell) => {
+        disposeObject(cell);
+        playRoot.remove(cell);
+      });
+      slotTexture.dispose();
+      objectTextures.forEach((texture) => texture.dispose());
+      objectTextures.clear();
       apiRef.current = {};
+      dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAr]);
 
   useEffect(() => {
-    const id = requestAnimationFrame(() => { playSfx?.('click'); apiRef.current.start?.(1); });
-    return () => cancelAnimationFrame(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    apiRef.current.sync?.({ nextCur: cur, visible: showStim });
+  }, [cur, showStim]);
 
-  const stats = phase === 'boot' ? [] : [
-    t.nBadge(n),
-    phase === 'run' || phase === 'ready' ? t.trial(trialIx, trialCount) : '',
-  ].filter(Boolean);
-
-  const popTitle = pop ? (pop.dir === 'up' ? t.popUp : pop.dir === 'down' ? t.popDown : t.popHold) : null;
+  const readyText = isAr ? `${n}-عودة — استعد` : `${n}-back — get ready`;
+  const prompt = isAr
+    ? 'هل تكرّر قبل N؟ المكان أو الشيء'
+    : 'Repeat from N back? Place or object';
+  const positionLabel = isAr ? 'المكان' : 'PLACE';
+  const objectLabel = isAr ? 'الشيء' : 'OBJECT';
+  const trialLabel = `${Math.max(0, trialIx)}/${trialCount}`;
 
   return (
     <C3dProtoChrome
       isAr={isAr}
-      title={t.title}
-      tag={t.tag}
-      hint={phase === 'ready' ? t.getReady(n) : t.prompt}
-      chip={t.nBadge(n)}
-      chipStyle={{ fontSize: '0.75rem', fontWeight: 800, color: '#e8ac4e' }}
-      stats={stats}
-      banner={banner === 'go' ? t.go : (phase === 'pop' && pop ? popTitle : null)}
-      bannerOver={phase === 'pop' && pop?.dir === 'down'}
-      bannerMeta={phase === 'pop' && pop ? `${t.popAcc(pop.acc)} · ${t.nBadge(pop.nextN)}` : null}
+      title={isAr ? 'إن-باك' : 'N-Back'}
+      question={playStep === 'ready' ? readyText : prompt}
+      chip={<span className="ct-nback3d-badge">{isAr ? `${n}-عودة` : `${n}-back`}</span>}
+      stats={[subtitle, trialLabel].filter(Boolean)}
       bootError={bootError}
       onBack={onBack}
       playSfx={playSfx}
       canvasRef={wrapRef}
-      bannerActions={
-        phase === 'pop' && pop ? (
-          <div className="c3d-banner-actions">
-            <button type="button" className="c3d-cta" onClick={() => { playSfx?.('click'); apiRef.current.start?.(pop.nextN); }}>
-              {t.popCont(pop.nextN)}
-            </button>
-            <button type="button" className="c3d-cta c3d-cta--ghost" onClick={() => { playSfx?.('click'); onBack(); }}>
-              {t.popEnd}
-            </button>
-          </div>
-        ) : null
-      }
     >
-      {(phase === 'run' || phase === 'ready') && (
-        <div className="c3d-overlay-actions">
-          <button
-            type="button"
-            className="c3d-choice-btn"
-            disabled={resp.pos || phase !== 'run'}
-            style={feedback.pos ? { borderColor: feedback.pos === 'good' ? '#62b277' : '#dd7f7a', color: feedback.pos === 'good' ? '#62b277' : '#dd7f7a' } : undefined}
-            onClick={() => apiRef.current.respond?.('pos')}
-          >
-            ▦ {t.pos}
-          </button>
-          <button
-            type="button"
-            className="c3d-choice-btn"
-            disabled={resp.obj || phase !== 'run'}
-            style={feedback.obj ? { borderColor: feedback.obj === 'good' ? '#62b277' : '#dd7f7a', color: feedback.obj === 'good' ? '#62b277' : '#dd7f7a' } : undefined}
-            onClick={() => apiRef.current.respond?.('obj')}
-          >
-            ◆ {t.obj}
-          </button>
-        </div>
-      )}
+      <div className="c3d-overlay-actions">
+        <button
+          type="button"
+          className="c3d-choice-btn"
+          disabled={resp.pos || playStep !== 'run'}
+          style={feedback.pos ? {
+            borderColor: feedback.pos === 'good' ? '#62b277' : '#dd7f7a',
+            color: feedback.pos === 'good' ? '#62b277' : '#dd7f7a',
+          } : undefined}
+          onPointerDown={() => onRespond?.('pos')}
+        >
+          ▦ {positionLabel}
+        </button>
+        <button
+          type="button"
+          className="c3d-choice-btn"
+          disabled={resp.obj || playStep !== 'run'}
+          style={feedback.obj ? {
+            borderColor: feedback.obj === 'good' ? '#62b277' : '#dd7f7a',
+            color: feedback.obj === 'good' ? '#62b277' : '#dd7f7a',
+          } : undefined}
+          onPointerDown={() => onRespond?.('obj')}
+        >
+          ◆ {objectLabel}
+        </button>
+      </div>
     </C3dProtoChrome>
   );
 }

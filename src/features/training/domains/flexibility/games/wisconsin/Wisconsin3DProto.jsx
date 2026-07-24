@@ -4,7 +4,15 @@ import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import { makeRng } from '../../../../shared/rng';
 import { survivalRamp, SURVIVAL_MS, freshSurvivalSeed } from '../../../../shared/survival';
 // SAME game as 2D Survival: identical cards, hidden rule + silent switch logic.
-import { REFERENCE, dealCard, pickRule, switchAfter } from './index';
+import {
+  REFERENCE,
+  dealCard,
+  pickRule,
+  switchAfter,
+  WCST_PER_LEVEL,
+  WCST_WIN_ACC,
+  WCST_PP_TRIALS,
+} from './index';
 import '../../../../shared/c3dProto.css';
 
 /*
@@ -17,8 +25,8 @@ import '../../../../shared/c3dProto.css';
 
 const UI = {
   en: {
-    title: 'Card Sort · 3D',
-    tag: 'prototype',
+    title: 'Card Sort',
+    tag: 'Hidden rule',
     prompt: 'Where does this card go?',
     hidden: 'One hidden rule — colour, shape, or count',
     yes: 'Got it!',
@@ -28,10 +36,11 @@ const UI = {
     retry: 'Play again',
     hub: 'Back to modes',
     go: 'ENGAGE',
+    rules: 'rules',
   },
   ar: {
-    title: 'فرز البطاقات · ثلاثي الأبعاد',
-    tag: 'نموذج',
+    title: 'فرز البطاقات',
+    tag: 'قاعدة خفية',
     prompt: 'أين تضع هذه البطاقة؟',
     hidden: 'قاعدة خفية واحدة — لون أو شكل أو عدد',
     yes: 'وجدتها!',
@@ -41,6 +50,7 @@ const UI = {
     retry: 'العب مجددًا',
     hub: 'العودة للأوضاع',
     go: 'انطلق',
+    rules: 'قواعد',
   },
 };
 
@@ -89,57 +99,72 @@ function drawGlyph(ctx, shape, color, cx, cy, r) {
 
 /** Draw a card face (color + shape × number) on a light card → CanvasTexture. */
 function cardTexture({ shape, color, number }) {
-  const W = 210;
-  const H = 280;
+  const W = 630;
+  const H = 840;
   const c = document.createElement('canvas');
   c.width = W;
   c.height = H;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#f7f1e6';
-  roundRectPath(ctx, 8, 8, W - 16, H - 16, 22);
+  ctx.fillStyle = '#fffdf8';
+  roundRectPath(ctx, 18, 18, W - 36, H - 36, 54);
   ctx.fill();
-  ctx.lineWidth = 5;
-  ctx.strokeStyle = 'rgba(90,70,40,0.28)';
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = '#17324d';
   ctx.stroke();
-  const r = 30;
-  const gapY = 66;
+  const r = 92;
+  const gapY = 194;
   const startY = H / 2 - ((number - 1) * gapY) / 2;
   for (let i = 0; i < number; i++) {
     drawGlyph(ctx, shape, color, W / 2, startY + i * gapY, r);
   }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
   return tex;
 }
 
 function cardMesh(feature) {
   const faceTex = cardTexture(feature);
-  const side = matStd(0xece3d2, { emissive: 0x000000, metalness: 0.1, roughness: 0.8 });
-  const face = new THREE.MeshStandardMaterial({
+  const side = matStd(0xdde8ef, { emissive: 0x17324d, emissiveIntensity: 0.04, metalness: 0, roughness: 0.9 });
+  const face = new THREE.MeshBasicMaterial({
     map: faceTex,
-    emissive: new THREE.Color(0x62b277),
-    emissiveIntensity: 0,
-    metalness: 0.1,
-    roughness: 0.7,
+    toneMapped: false,
   });
   const mats = [side, side, side, side, face, side];
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.35, 1.8, 0.22), mats);
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.45, 1.94, 0.18), mats);
   mesh.userData.faceTex = faceTex;
-  mesh.userData.faceMat = face;
   return mesh;
 }
 
-export default function Wisconsin3DProto({ isAr, playSfx, onBack }) {
+export default function Wisconsin3DProto({
+  mode = 'free',
+  diff = 'med',
+  level = 1,
+  seed,
+  attempt,
+  onResult,
+  onExit,
+  isAr,
+  playSfx,
+  awardPoints,
+  awardFreeRun,
+  onBack,
+}) {
   const t = UI[isAr ? 'ar' : 'en'];
+  const isSurvival = mode === 'free';
+  const ppTrials = mode === 'passplay' ? (attempt?.trials || WCST_PP_TRIALS) : 0;
+  const exit = onExit || onBack;
   const wrapRef = useRef(null);
   const apiRef = useRef({});
+  const correctAwardRef = useRef(0);
   const playSfxRef = useRef(playSfx);
   playSfxRef.current = playSfx;
 
   const [phase, setPhase] = useState('boot');
   const [say, setSay] = useState('');
   const [correct, setCorrect] = useState(0);
+  const [total, setTotal] = useState(0);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [rules, setRules] = useState(0);
@@ -152,34 +177,39 @@ export default function Wisconsin3DProto({ isAr, playSfx, onBack }) {
     const wrap = wrapRef.current;
     if (!wrap) return undefined;
 
-    const boot = bootC3dScene(wrap, { fov: 52, fitHalf: 4.4, bloom: true });
+    const boot = bootC3dScene(wrap, {
+      fov: 52,
+      fitHalf: 4.4,
+      bloom: false,
+      hudReserveFrac: 0.22,
+    });
     if (boot.error) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');
       return () => boot.dispose();
     }
     const { camera, playRoot, coarse, setTick, setFitBox, renderer, dispose } = boot;
 
-    // Reference cards row (fixed) — each on a glowing landing slot so it reads
-    // as a physical sorting bay you drop the dealt card onto.
-    const refGap = coarse ? 1.62 : 1.78;
-    const refScale = 0.78;
+    // Reference cards sit in four bright, neutral sorting bays.
+    const refGap = coarse ? 1.58 : 1.72;
+    const refScale = coarse ? 0.78 : 0.84;
     const refs = REFERENCE.map((feature, i) => {
       const x = (i - 1.5) * refGap;
       const slot = new THREE.Mesh(
-        new THREE.BoxGeometry(1.35 * refScale + 0.16, 1.8 * refScale + 0.16, 0.06),
-        matStd(0x1a140c, { emissive: 0xe8ac4e, emissiveIntensity: 0.08, metalness: 0.3, roughness: 0.6 }),
+        new THREE.BoxGeometry(1.45 * refScale + 0.22, 1.94 * refScale + 0.22, 0.08),
+        matStd(0x102a43, { emissive: 0x55d6e8, emissiveIntensity: 0.18, metalness: 0.02, roughness: 0.88 }),
       );
-      slot.position.set(x, 1.55, -0.16);
+      slot.position.set(x, 1.35, -0.14);
       playRoot.add(slot);
       const mesh = cardMesh(feature);
       mesh.scale.setScalar(refScale);
-      mesh.position.set(x, 1.55, 0);
+      mesh.position.set(x, 1.35, 0);
       mesh.userData.refIdx = i;
       mesh.userData.flash = 0;
+      mesh.userData.feedbackMat = slot.material;
       playRoot.add(mesh);
       return mesh;
     });
-    setFitBox(Math.max(3.0, 1.5 * refGap + 0.9), 3.7);
+    setFitBox(Math.max(3.0, 1.5 * refGap + 0.95), 3.45);
 
     // Dealt card (below)
     let dealt = null;
@@ -187,22 +217,25 @@ export default function Wisconsin3DProto({ isAr, playSfx, onBack }) {
     const setDealt = (card) => {
       if (dealt) { disposeObject(dealt); dealt.userData.faceTex?.dispose(); playRoot.remove(dealt); }
       dealt = cardMesh(card);
-      dealt.position.set(0, -1.45, 0.2);
+      dealt.position.set(0, -1.42, 0.2);
       dealt.scale.setScalar(0.01);
       dealtEnter = 0;
       playRoot.add(dealt);
     };
 
     // ── Game state (mirrors 2D free/survival) ──
-    const seed = freshSurvivalSeed();
-    let rule = pickRule(makeRng(seed), null);
+    const gameSeed = (seed ?? freshSurvivalSeed()) >>> 0;
+    let rule = pickRule(makeRng(gameSeed), null);
     let prevRule = null;
+    let justSwitched = false;
     let run = 0;
     let trial = 0;
     let rulesN = 0;
     let correctN = 0;
     let scoreN = 0;
     let comboN = 0;
+    let totalN = 0;
+    const postSwitch = { n: 0, ok: 0, persev: 0 };
     let card = null;
     let lock = false;
     let finished = false;
@@ -210,11 +243,11 @@ export default function Wisconsin3DProto({ isAr, playSfx, onBack }) {
     const timers = [];
     const clearTimers = () => { timers.forEach((id) => window.clearTimeout(id)); timers.length = 0; };
     const later = (fn, ms) => { const id = window.setTimeout(fn, ms); timers.push(id); return id; };
-    const rampNow = () => survivalRamp(performance.now() - runStart);
+    const rampNow = () => (isSurvival ? survivalRamp(performance.now() - runStart) : 0);
 
     const nextCard = () => {
       trial += 1;
-      card = dealCard(makeRng((seed + trial * 7919) >>> 0));
+      card = dealCard(makeRng((gameSeed + trial * 7919) >>> 0));
       setDealt(card);
       lock = false;
     };
@@ -223,16 +256,27 @@ export default function Wisconsin3DProto({ isAr, playSfx, onBack }) {
       if (lock || finished || !card) return;
       lock = true;
       const ok = refIdx === card.match[rule];
+      const wasPostSwitch = justSwitched;
+      totalN += 1;
+      setTotal(totalN);
+      if (wasPostSwitch) {
+        postSwitch.n += 1;
+        if (ok) postSwitch.ok += 1;
+        if (!ok && prevRule != null && refIdx === card.match[prevRule]) postSwitch.persev += 1;
+        justSwitched = false;
+      }
       const refMesh = refs[refIdx];
       refMesh.userData.flash = 0.7;
       refMesh.userData.flashHex = ok ? 0x62b277 : 0xdd7f7a;
       if (ok) {
         scoreN += 10 + Math.min(comboN, 8) * 2;
         correctN += 1;
+        correctAwardRef.current = correctN;
         comboN += 1;
         setScore(scoreN); setCorrect(correctN); setCombo(comboN);
         setSay(t.yes);
         playSfxRef.current?.('win');
+        awardPoints?.(1);
       } else {
         comboN = 0;
         setCombo(0);
@@ -241,18 +285,38 @@ export default function Wisconsin3DProto({ isAr, playSfx, onBack }) {
       }
       let nrun = ok ? run + 1 : 0;
       let switched = false;
-      if (nrun >= switchAfter('free', 'med', 1, rampNow())) {
+      if (nrun >= switchAfter(mode, diff, level, rampNow())) {
         prevRule = rule;
         rulesN += 1;
         setRules(rulesN);
-        const srng = makeRng((seed + trial * 104729 + rulesN * 9176) >>> 0);
+        const srng = makeRng((gameSeed + trial * 104729 + rulesN * 9176) >>> 0);
         rule = pickRule(srng, prevRule);
         nrun = 0;
         switched = true;
+        justSwitched = true;
         setSay(t.shift);
       }
       run = nrun;
-      later(() => { if (!finished) nextCard(); }, ok ? 560 : 820);
+      later(() => {
+        if (finished) return;
+        if (mode === 'levels' && totalN >= WCST_PER_LEVEL) {
+          finished = true;
+          const acc = correctN / WCST_PER_LEVEL;
+          const postAcc = postSwitch.n ? Math.round((postSwitch.ok / postSwitch.n) * 100) : null;
+          onResult?.({
+            won: acc >= WCST_WIN_ACC,
+            score: scoreN,
+            summary: `${correctN}/${WCST_PER_LEVEL} (${Math.round(acc * 100)}%) · ${rulesN} ${t.rules}${postAcc != null ? ` · post-switch ${postAcc}%` : ''}`,
+          });
+          return;
+        }
+        if (mode === 'passplay' && totalN >= ppTrials) {
+          finished = true;
+          onResult?.({ score: correctN });
+          return;
+        }
+        nextCard();
+      }, ok ? 560 : 820);
       void switched;
     };
 
@@ -289,17 +353,20 @@ export default function Wisconsin3DProto({ isAr, playSfx, onBack }) {
       if (dealt && dealtEnter < 1) {
         dealtEnter = Math.min(1, dealtEnter + dt * 3);
         const e = 1 - (1 - dealtEnter) ** 3;
-        dealt.scale.setScalar(Math.max(0.01, 0.78 * e));
+        dealt.scale.setScalar(Math.max(0.01, (coarse ? 0.9 : 1.02) * e));
       }
       if (dealt) dealt.rotation.y = Math.sin(now * 0.0015) * 0.12;
       for (const m of refs) {
         const ud = m.userData;
         if (ud.flash > 0) {
           ud.flash = Math.max(0, ud.flash - dt);
-          ud.faceMat.emissive.setHex(ud.flashHex);
-          ud.faceMat.emissiveIntensity = ud.flash;
+          ud.feedbackMat.color.setHex(ud.flashHex);
+          ud.feedbackMat.emissive.setHex(ud.flashHex);
+          ud.feedbackMat.emissiveIntensity = 0.35 + ud.flash;
         } else {
-          ud.faceMat.emissiveIntensity = 0;
+          ud.feedbackMat.color.setHex(0x102a43);
+          ud.feedbackMat.emissive.setHex(0x55d6e8);
+          ud.feedbackMat.emissiveIntensity = 0.18;
         }
       }
     });
@@ -307,10 +374,12 @@ export default function Wisconsin3DProto({ isAr, playSfx, onBack }) {
     apiRef.current = {
       start: () => {
         finished = false;
-        run = 0; trial = 0; rulesN = 0; correctN = 0; scoreN = 0; comboN = 0;
-        rule = pickRule(makeRng((freshSurvivalSeed()) >>> 0), null);
-        prevRule = null;
-        setCorrect(0); setScore(0); setCombo(0); setRules(0);
+        run = 0; trial = 0; rulesN = 0; correctN = 0; scoreN = 0; comboN = 0; totalN = 0;
+        rule = pickRule(makeRng(gameSeed), null);
+        prevRule = null; justSwitched = false;
+        postSwitch.n = 0; postSwitch.ok = 0; postSwitch.persev = 0;
+        correctAwardRef.current = 0;
+        setCorrect(0); setTotal(0); setScore(0); setCombo(0); setRules(0);
         setSay(t.prompt);
         runStart = performance.now();
         setRunning(true);
@@ -329,10 +398,10 @@ export default function Wisconsin3DProto({ isAr, playSfx, onBack }) {
       apiRef.current = {};
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAr]);
+  }, [isAr, mode, diff, level, seed, ppTrials, onResult, awardPoints, isSurvival, t.no, t.prompt, t.rules, t.shift, t.yes]);
 
   useEffect(() => {
-    if (!running) return undefined;
+    if (!running || !isSurvival) return undefined;
     const start = performance.now();
     const id = window.setInterval(() => {
       const left = Math.max(0, Math.ceil((SURVIVAL_MS - (performance.now() - start)) / 1000));
@@ -343,11 +412,12 @@ export default function Wisconsin3DProto({ isAr, playSfx, onBack }) {
         setRunning(false);
         setPhase('over');
         setBanner('over');
+        awardFreeRun?.('wisconsin', correctAwardRef.current);
         playSfxRef.current?.('error');
       }
     }, 250);
     return () => window.clearInterval(id);
-  }, [running]);
+  }, [running, isSurvival, awardFreeRun]);
 
   const startRun = () => {
     playSfx?.('click');
@@ -363,7 +433,16 @@ export default function Wisconsin3DProto({ isAr, playSfx, onBack }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const stats = phase === 'boot' ? [] : [
+  const stats = phase === 'boot' ? [] : mode === 'levels' ? [
+    `${total}/${WCST_PER_LEVEL}`,
+    `✓ ${correct}`,
+    `${score} ${isAr ? 'نقطة' : 'pts'}`,
+    `${rules} ${isAr ? 'قواعد' : 'rules'}`,
+  ] : mode === 'passplay' ? [
+    `${total}/${ppTrials}`,
+    `✓ ${correct}`,
+    `${score} ${isAr ? 'نقطة' : 'pts'}`,
+  ] : [
     `✓ ${correct}`,
     `${score} ${isAr ? 'نقطة' : 'pts'}`,
     `${rules} ${isAr ? 'قواعد' : 'rules'}${combo > 1 ? ` · 🔥${combo}` : ''}`,
@@ -377,22 +456,22 @@ export default function Wisconsin3DProto({ isAr, playSfx, onBack }) {
       isAr={isAr}
       title={t.title}
       tag={t.tag}
-      hint={running ? `${t.prompt} · ${say}` : t.hidden}
+      question={running && say && say !== t.prompt ? `${t.prompt} · ${say}` : t.prompt}
       chip={t.hidden}
-      chipStyle={{ fontSize: '0.6rem', fontWeight: 800, color: '#e8ac4e', maxWidth: 120, whiteSpace: 'normal', lineHeight: 1.1 }}
+      chipStyle={{ fontSize: '0.6rem', fontWeight: 800, color: '#55d6e8', maxWidth: 150, whiteSpace: 'normal', lineHeight: 1.1 }}
       stats={stats}
       banner={bannerText}
-      bannerOver={banner === 'over'}
+      bannerOver={isSurvival && banner === 'over'}
       bannerMeta={banner === 'over' ? `✓ ${correct} · ${score} ${isAr ? 'نقطة' : 'pts'} · ${rules} ${isAr ? 'قواعد' : 'rules'}` : null}
       bootError={bootError}
-      onBack={onBack}
+      onBack={exit}
       playSfx={playSfx}
       canvasRef={wrapRef}
       bannerActions={
-        banner === 'over' ? (
+        isSurvival && banner === 'over' ? (
           <div className="c3d-banner-actions">
             <button type="button" className="c3d-cta" onClick={startRun}>{t.retry}</button>
-            <button type="button" className="c3d-cta c3d-cta--ghost" onClick={() => { playSfx?.('click'); onBack(); }}>{t.hub}</button>
+            <button type="button" className="c3d-cta c3d-cta--ghost" onClick={() => { playSfx?.('click'); exit?.(); }}>{t.hub}</button>
           </div>
         ) : null
       }

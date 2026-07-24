@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { assetUrl } from '../../lib/assetUrl';
+import { createDrKawkabInstance, disposeDrKawkabInstance } from '../../features/training/shared/drKawkabModel';
 
 /*
  * AssessmentMascot3D — the rigged hooded figure that stands at the centre of
@@ -28,7 +27,6 @@ import { assetUrl } from '../../lib/assetUrl';
  * fallback — so the hub centre is never empty or dead.
  */
 
-const MODEL_URL = assetUrl('Assets/biped-v1.glb');
 const IDLE_CLIP = 'Idle_02';    // slowed → gentle breathing/bob at rest
 const GREET_CLIP = 'victory';   // played once on hover/tap-in, then fades back to idle
 // This export's other clips (for reference / easy swaps): Idle_3, Idle_4,
@@ -101,11 +99,12 @@ export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
 
-    const loader = new GLTFLoader();
-    loader.load(
-      MODEL_URL,
-      (gltf) => {
-        if (!alive) { return; }
+    createDrKawkabInstance()
+      .then((gltf) => {
+        if (!alive) {
+          disposeDrKawkabInstance(gltf.scene);
+          return;
+        }
         model = gltf.scene;
 
         // Normalise: centre on origin, scale so height ≈ 2 world units, so the
@@ -168,12 +167,11 @@ export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label
             greetAction.clampWhenFinished = true;
           }
           if (reduced) { mixer.update(0.3); mixer.timeScale = 0; }
+          mixer.addEventListener('finished', onFinished);
         }
         resize();
-      },
-      undefined,
-      () => { /* load failed → SVG fallback stays */ },
-    );
+      })
+      .catch(() => { /* load failed: SVG fallback stays */ });
 
     // Wave hello on hover / tap-in, then fade back to idle.
     const greet = () => {
@@ -208,7 +206,6 @@ export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label
         renderer.render(scene, camera);
       }
     };
-    if (mixer) mixer.addEventListener('finished', onFinished);
     raf = requestAnimationFrame(loop);
 
     const onVis = () => { paused = document.hidden; if (!paused) last = performance.now(); };
@@ -222,20 +219,7 @@ export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label
       wrap.removeEventListener('pointerenter', greet);
       mixer?.removeEventListener('finished', onFinished);
       mixer?.stopAllAction();
-      scene.traverse((n) => {
-        if (n.isMesh) {
-          n.geometry?.dispose?.();
-          const mats = Array.isArray(n.material) ? n.material : [n.material];
-          mats.forEach((m) => {
-            if (!m) return;
-            for (const key of Object.keys(m)) {
-              const v = m[key];
-              if (v && v.isTexture) v.dispose();
-            }
-            m.dispose?.();
-          });
-        }
-      });
+      if (model) disposeDrKawkabInstance(model);
       renderer.dispose();
       if (renderer.domElement.parentNode === wrap) wrap.removeChild(renderer.domElement);
     };

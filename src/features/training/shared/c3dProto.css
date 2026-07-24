@@ -156,6 +156,22 @@
   overflow: hidden;
 }
 
+.ct-pal3d-question {
+  font-size: 1.18em;
+}
+
+.ct-nback3d-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  font-size: 1.12rem;
+  line-height: 1;
+  font-weight: 900;
+  color: #f8d487;
+  white-space: nowrap;
+}
+
 .c3d-stats {
   width: min(100%, 440px);
   display: flex;
@@ -285,6 +301,11 @@
 
 /* —— Phone / short viewports —— */
 @media (max-width: 480px), (max-height: 720px) {
+  .ct-nback3d-badge {
+    min-width: 60px;
+    font-size: 0.96rem;
+  }
+
   .c3d-ui--overlay {
     gap: 4px;
     padding-top: max(8px, env(safe-area-inset-top, 0px));
@@ -351,6 +372,23 @@
   .c3d-cta {
     width: 100%;
     min-width: 0;
+  }
+}
+
+.ct-stroop-3d-board {
+  width: min(100%, 920px);
+  height: min(56dvh, 560px);
+  min-height: 360px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (max-width: 600px) {
+  .ct-stroop-3d-board {
+    width: 100%;
+    height: 52dvh;
+    min-height: 350px;
   }
 }
 

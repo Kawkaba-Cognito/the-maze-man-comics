@@ -27,8 +27,32 @@ const COVER_KEYS = new Set([
   'spatial-stroop', 'wisconsin', 'brixton',
 ]);
 
+const COVER_FILE_OVERRIDES = {
+  'cancel-task': 'attention-cancellation-v2.webp',
+  mot: 'attention-target-tracking-v2.webp',
+  'train-switch': 'attention-spaceship-v2.webp',
+  'speed-match': 'speed-speed-match-v2.webp',
+  'math-gates': 'speed-math-gates-v2.webp',
+  'trail-making': 'speed-trail-making-v2.webp',
+  'story-grid': 'memory-story-time-v2.webp',
+  nback: 'memory-nback-v2.webp',
+  'paired-associates': 'memory-pair-match-v2.webp',
+  wordle: 'language-word-maze-v2.webp',
+  synonyms: 'language-word-links-v2.webp',
+  trivia: 'language-trivia-v2.webp',
+  'rush-hour': 'reasoning-block-escape-v2.webp',
+  'raven-matrices': 'reasoning-matrix-iq-v2.webp',
+  detective: 'reasoning-detective-v2.webp',
+  'spatial-stroop': 'flexibility-arrow-rush-v2.webp',
+  wisconsin: 'flexibility-card-sort-v2.webp',
+  brixton: 'flexibility-kawkab-hops-v2.webp',
+};
+
 const ILLUSTRATION = Object.fromEntries(
-  [...COVER_KEYS].map((key) => [key, assetUrl(`Assets/game-illustrations/${key}.webp`)]),
+  [...COVER_KEYS].map((key) => [
+    key,
+    assetUrl(`Assets/game-illustrations/${COVER_FILE_OVERRIDES[key] || `${key}.webp`}`),
+  ]),
 );
 
 /** Glossy-sphere + shine overlays injected once. Kept here (not training.css)
@@ -75,6 +99,7 @@ function GamePlanet({ sub, onOpen, name, blurb, hovered, setHovered, floatDelay 
     <button
       type="button"
       className={`ct-mph-planet ct-mph-planet--md${isH ? ' is-hot' : ''}`}
+      data-game={sub.game}
       style={{
         '--mph-accent': 'var(--domain-accent)',
         '--mph-float-delay': `${floatDelay}s`,
@@ -92,6 +117,7 @@ function GamePlanet({ sub, onOpen, name, blurb, hovered, setHovered, floatDelay 
         <span className="ct-mph-planet-ring" />
         {illo && <img src={illo} alt="" className="ct-mph-planet-img" draggable={false} />}
         <span className="gpt-sphere" />
+        <span className="gpt-atmosphere" />
         <span className="gpt-shine" />
       </span>
       <span className="ct-mph-planet-copy ct-mph-planet-copy--name-only">
@@ -122,6 +148,7 @@ export default function GamePlanetScene({ subs, onOpen }) {
 
   return (
     <div className="ct-mph-constellation gpt-constellation" role="group" aria-label="Choose an exercise">
+      <span className="gpt-orbit-map" aria-hidden="true" />
       {top && (
         <div className="ct-mph-slot ct-mph-slot--survival">{planet(top, 0)}</div>
       )}

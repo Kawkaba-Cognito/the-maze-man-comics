@@ -1,17 +1,16 @@
 import React, { useState, useRef, useCallback, useEffect, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
-import { TrainingMenuBar, TrainingPlayHeader, TrainingChallengeHandoff } from '../../../../shared/TrainingChrome';
+import { TrainingMenuBar, TrainingChallengeHandoff } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import PassPlaySetup from '../../../../shared/PassPlaySetup';
 import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import { createTrialLog } from '../../../../shared/trialLog';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
-import MemoObject from '../memo-span/MemoObject';
 import { memoTip } from '../memo-span/MemoSciencePanel';
 import NBackModes from './NBackModes';
 import {
-  NB_LEVELS_PER_TIER, NB_DIFF_KEYS, NB_DM, NB_GRID, NB_PASS_ACC,
+  NB_LEVELS_PER_TIER, NB_DIFF_KEYS, NB_DM, NB_PASS_ACC,
   specForLevel, prepareLevelBlock, prepareFreeBlock, prepareAssessBlock, prepareChallengeSeed, prepareChallengeBlock,
   gradeBlock, starsForNBack, adaptiveNextN, isNbackLevelUnlocked, nbLevelKey,
   nbStreams, emptyNbStats, nbBestN, nbSetBestN,
@@ -106,8 +105,7 @@ export default function NBackGame({
 
   const [profile, setProfile] = useState(() => loadNbackProfile());
   const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
-  const [cosmosEmbed, setCosmosEmbed] = useState(false);
-  const isCosmos = cosmosAutoPlay || cosmosEmbed;
+  const isCosmos = cosmosAutoPlay;
   const variant = 'dual'; // single professional game: dual n-back (position + object)
   const [diffKey, setDiffKey] = useState('easy');
   const [block, setBlock] = useState(null);
@@ -293,13 +291,19 @@ export default function NBackGame({
     clearTimers(); trialLogRef.current?.discard(); trialLogRef.current = null;
     setBlock(null); blockRef.current = null; setPlayStep('idle');
     if (mode === 'assess') { (onAssessmentExit || onBack)?.(); return; }
-    if (cosmosEmbed) { setCosmosEmbed(false); setPhase('hub'); return; }
     if (cosmosAutoPlay) { onBack?.(); return; }
     if (mode === 'challenge') setPhase('chal'); else if (mode === 'level') setPhase('levels'); else setPhase('hub');
-  }, [clearTimers, onAssessmentExit, onBack, cosmosAutoPlay, cosmosEmbed]);
+  }, [clearTimers, onAssessmentExit, onBack, cosmosAutoPlay]);
 
   const startLevel = (diff, lv) => beginBlock(prepareLevelBlock(diff, lv, rngSeed(), variant));
   const startFree = (n) => beginBlock(prepareFreeBlock(n, rngSeed(), variant));
+  const autoPlayStartedRef = useRef(false);
+  useEffect(() => {
+    if (!cosmosAutoPlay || autoPlayStartedRef.current) return;
+    autoPlayStartedRef.current = true;
+    startFree(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cosmosAutoPlay]);
 
   const startAssessment = () => {
     assessRef.current = { blocksRun: 0, bestGoodN: 0 };
@@ -319,27 +323,14 @@ export default function NBackGame({
   };
   const startChallengeBlock = () => { if (!chalSeed) return; setChalTurnOpen(false); beginBlock(prepareChallengeBlock(chalSeed)); };
 
-  const headerSub = () => {
+  const gameplaySubtitle = () => {
     if (!block) return '';
-    if (block.mode === 'challenge') return `${t.nBadge(block.spec.n)} · ${chalNames[chalIdx] ?? ''}`;
-    return `${t.nBadge(block.spec.n)} · ${t.trial(Math.max(0, idx + 1), block.seq.length)}`;
+    if (block.mode === 'challenge') return chalNames[chalIdx] ?? '';
+    if (block.mode === 'level') return t.levelHeader(block.spec.diff, block.spec.lv);
+    return '';
   };
 
-  const wrapCosmos = (content) => isCosmos ? (
-    <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-      <NBack3DProto isAr={isAr} playSfx={playSfx} onBack={() => { clearTimers(); if (cosmosAutoPlay) { onBack?.(); return; } setCosmosEmbed(false); setPhase('hub'); }} />
-    </Suspense>
-  ) : content;
-
-  if (phase === 'play3d') {
-    return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <NBack3DProto isAr={isAr} playSfx={playSfx} onBack={() => setPhase('hub')} />
-      </Suspense>
-    );
-  }
-
-  return wrapCosmos(
+  return (
     <div
       className={`cancellation-task-game ct-ms-root${isCosmos ? ' c3d-embed-root' : ''}`}
       data-c3d-embed={isCosmos || undefined}
@@ -366,8 +357,7 @@ export default function NBackGame({
               <NBackModes t={t} isAr={isAr} playSfx={playSfx}
                 onFree={() => setPhase('freeIntro')}
                 onLevels={() => setPhase('diff')}
-                onChallenge={() => setPhase('chal')}
-                onProto3d={() => setPhase('play3d')} />
+                onChallenge={() => setPhase('chal')} />
             </div>
           </div>
           {tutLayer}
@@ -432,30 +422,23 @@ export default function NBackGame({
       )}
 
       {phase === 'play' && block && (
-        <div className="ct-ms-play">
-          <TrainingPlayHeader isAr={isAr} title={t.hub} subtitle={headerSub()} playSfx={playSfx} onMenu={isCosmos ? undefined : quitPlay} onPause={null} />
-          <div className="ct-nb-stage ct-nb-stage--dual">
-            <div className="ct-nb-grid" aria-hidden="true">
-              {Array.from({ length: NB_GRID }).map((_, ci) => {
-                const on = playStep === 'run' && showStim && cur && cur.pos === ci;
-                return (
-                  <div key={ci} className={`ct-nb-cell${on ? ' ct-nb-cell--on' : ''}`}>
-                    {on && cur ? <MemoObject objectId={cur.obj} isAr={isAr} size="sm" /> : null}
-                  </div>
-                );
-              })}
-            </div>
-            <p className="ct-nb-prompt">{playStep === 'ready' ? `${t.readyN(block.spec.n)} · ${t.getReady}` : t.promptDual}</p>
-            <div className="ct-nb-btnrow">
-              <button type="button" className={`ct-nb-match ct-nb-match--pos${resp.pos ? ' ct-nb-match--done' : ''}${feedback.pos ? ` ct-nb-match--${feedback.pos}` : ''}`} onPointerDown={() => onRespond('pos')} disabled={resp.pos || playStep !== 'run'}>
-                <span className="ct-nb-match-ic" aria-hidden="true">▦</span>{t.matchPos}
-              </button>
-              <button type="button" className={`ct-nb-match ct-nb-match--obj${resp.obj ? ' ct-nb-match--done' : ''}${feedback.obj ? ` ct-nb-match--${feedback.obj}` : ''}`} onPointerDown={() => onRespond('obj')} disabled={resp.obj || playStep !== 'run'}>
-                <span className="ct-nb-match-ic" aria-hidden="true">◆</span>{t.matchObj}
-              </button>
-            </div>
-          </div>
-        </div>
+        <Suspense fallback={<div className="c3d-root" />}>
+          <NBack3DProto
+            isAr={isAr}
+            playSfx={playSfx}
+            onBack={quitPlay}
+            n={block.spec.n}
+            trialIx={Math.max(0, idx + 1)}
+            trialCount={block.seq.length}
+            cur={cur}
+            showStim={playStep === 'run' && showStim}
+            playStep={playStep}
+            resp={resp}
+            feedback={feedback}
+            onRespond={onRespond}
+            subtitle={gameplaySubtitle()}
+          />
+        </Suspense>
       )}
 
       {phase === 'res' && result?.type === 'level' && (
@@ -516,7 +499,7 @@ export default function NBackGame({
             <div className="ct-nb-popup-sub">{t.popSub[levelInfo.dir]}</div>
             <div className="ct-nb-popup-acc">{t.popAcc(levelInfo.acc)}</div>
             <button type="button" className="ct-nb-popup-btn" onClick={() => { playSfx?.('click'); const nx = levelInfo.nextN; setLevelInfo(null); startFree(nx); }}>{t.popCont(levelInfo.nextN)}</button>
-            <button type="button" className="ct-nb-popup-end" onClick={() => { playSfx?.('click'); setLevelInfo(null); if (cosmosEmbed) { setCosmosEmbed(false); setPhase('hub'); } else if (cosmosAutoPlay) onBack?.(); else setPhase('hub'); }}>{t.popEnd}</button>
+            <button type="button" className="ct-nb-popup-end" onClick={() => { playSfx?.('click'); setLevelInfo(null); if (cosmosAutoPlay) onBack?.(); else setPhase('hub'); }}>{t.popEnd}</button>
           </div>
         </div>
       )}

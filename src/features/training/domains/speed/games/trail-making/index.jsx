@@ -6,7 +6,6 @@ import { createTrialLog } from '../../../../shared/trialLog';
 import { SURVIVAL_MS } from '../../../../shared/survival';
 import { clamp, lerp } from '../../../../../../lib/math';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
-import { planetIconUrl } from '../../../../../../lib/planetIcons';
 
 const TrailMaking3DProto = lazyWithRetry(() => import('./TrailMaking3DProto'), 'trail-making-3d');
 
@@ -105,7 +104,7 @@ export function prepareTrailRound(stage, seed) {
   return { n, variant: spec.variant, decoys: spec.decoys || 0, startColor, timeMs: base.time, nodes, colors: CTT_COLORS };
 }
 
-export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
+export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 1) : 0;
   const ppTimeRef = useRef(0);
@@ -115,7 +114,7 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
   const canvasRef = useRef(null);
   const sizeRef = useRef({ w: 0, h: 0 });
   const itemsRef = useRef([]);      // { n, fx, fy }
-  const mapRef = useRef([]);        // number -> item
+  const mapRef = useRef([]);
   const nextRef = useRef(1);
   const errRef = useRef(0);
   const flashRef = useRef({ x: 0, y: 0, until: 0 });
@@ -160,6 +159,7 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
   const [timeLeft, setTimeLeft] = useState(0);
   const [prog, setProg] = useState(0);
   const [boards, setBoards] = useState(0);
+  const [sceneItems, setSceneItems] = useState([]);
 
   const timed = mode === 'levels' || isSurvival;
 
@@ -266,7 +266,6 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
         ctx.lineWidth = 5; ctx.strokeStyle = '#ff5a5a'; ctx.stroke();
       }
     }
-    rafRef.current = requestAnimationFrame(draw);
   }, [itemR]);
 
   const newBoard = useCallback(() => {
@@ -315,8 +314,10 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
       list[i].fx = clamp((cc + 0.5 + (rng() - 0.5) * 0.44) / cols, mx, 1 - mx);
       list[i].fy = clamp((rr + 0.5 + (rng() - 0.5) * 0.44) / rows, my, 1 - my);
     }
+    list.forEach((item, index) => { item.id = `${boardIdxRef.current}-${index}`; });
     cfgRef.current = { n, time: base.time, variant, decoys, startColor, totalCircles: total };
     itemsRef.current = list; mapRef.current = map;
+    setSceneItems(list.map((item) => ({ ...item })));
     nextRef.current = 1; errRef.current = 0;
     tapTimesRef.current = [];
     setProg(0);
@@ -404,22 +405,10 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
     onResult({ won: false, score: scoreRef.current, summary: isAr ? `وصلت إلى ${nextRef.current - 1}/${cfgRef.current.n}` : `Reached ${nextRef.current - 1}/${cfgRef.current.n}` });
   }, [isAr, onResult, playSfx, isSurvival, finishSurvival]);
 
-  const onPointer = useCallback((e) => {
+  const handlePickedItem = useCallback((hit) => {
     if (endedRef.current || readyRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left, y = e.clientY - rect.top;
-    const { w, h } = sizeRef.current;
-    const r = itemR();
     const cfg = cfgRef.current;
     const next = nextRef.current;
-    let hit = null, best = Infinity;
-    for (const it of itemsRef.current) {
-      // Completed numbers (both colour copies) are inert; decoys stay tappable
-      // (so tapping one registers as an inhibition error).
-      if (!it.isDecoy && it.n != null && it.n < next) continue;
-      const d = Math.hypot(it.fx * w - x, it.fy * h - y);
-      if (d < r * 1.25 && d < best) { best = d; hit = it; }
-    }
     if (!hit) return;
     const expColor = (cfg.startColor + (next - 1)) % 2;
     const correct = !hit.isDecoy && hit.n === next && (cfg.variant !== 'color' || hit.color === expColor);
@@ -430,10 +419,15 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
     } else {
       errRef.current += 1;
       if (timed && deadlineRef.current !== Infinity) deadlineRef.current -= 2000;
+      const { w, h } = sizeRef.current;
       flashRef.current = { x: hit.fx * w, y: hit.fy * h, until: performance.now() + 350 };
       playSfx?.('lose');
     }
-  }, [itemR, onComplete, playSfx, timed]);
+  }, [onComplete, playSfx, timed]);
+
+  const onScenePick = useCallback((itemId) => {
+    handlePickedItem(itemsRef.current.find((item) => item.id === itemId));
+  }, [handlePickedItem]);
 
   useEffect(() => {
     fit();
@@ -481,12 +475,16 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
   const total = cfgRef.current.n;
   const cfgNow = cfgRef.current;
   const expColor = ((cfgNow.startColor || 0) + prog) % 2; // expected colour for the next number
-  const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
-  const embedCls = cosmos ? 'c3d-embed-root' : undefined;
-
   if (over && isSurvival) {
     return (
-      <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
+      <div style={S.root} className="ct-trail-3d-root" dir={isAr ? 'rtl' : 'ltr'}>
+        <header className="ct-training-play-header ct-trail-3d-header">
+          <button className="ct-training-chrome-btn" aria-label={isAr ? 'رجوع' : 'Back'} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+          <div className="ct-training-play-header-body">
+            <div className="ct-training-play-title">{isAr ? 'صل الأرقام' : 'Trail Making'}</div>
+          </div>
+          <div className="ct-training-chrome-spacer" aria-hidden="true" />
+        </header>
         <div style={S.overWrap}>
           <h2 style={S.overTitle}>{isAr ? 'انتهى البقاء!' : 'Survival over!'}</h2>
           <p style={S.overSub}>{isAr ? `${over.boards} لوحات · ${over.score} نقطة` : `${over.boards} boards · ${over.score} pts`}</p>
@@ -508,26 +506,23 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
   }
 
   return (
-    <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
+    <div style={S.root} className="ct-trail-3d-root" dir={isAr ? 'rtl' : 'ltr'}>
       {isSurvival && (
         <div style={S.survTrack}>
           <div style={{ ...S.survFill, width: `${survPct * 100}%`, background: survPct < 0.2 ? '#d23b3b' : '#b9842f' }} />
         </div>
       )}
-      <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
-        {!cosmos && (
-          <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
-        )}
-        {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
+      <header className="ct-training-play-header ct-trail-3d-header">
+        <button className="ct-training-chrome-btn" aria-label={isAr ? 'رجوع' : 'Back'} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>{isAr ? 'صل الأرقام' : 'Trail Making'}</div>
-          <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>
+          <div className="ct-training-play-title">{isAr ? 'صل الأرقام' : 'Trail Making'}</div>
+          <div className="ct-training-play-sub">
             {mode === 'passplay' ? `${isAr ? 'لوحة' : 'Board'} ${ppBoard}/${ppTrials}` : mode === 'free' ? `${isAr ? 'لوحات' : 'Boards'} ${boards}` : `${isAr ? 'مستوى' : 'Lvl'} ${level}`}
           </div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
-      <div style={S.sub}>
+      <div style={S.sub} className="ct-trail-3d-hud">
         <span>{isAr ? 'التالي' : 'Next'}: <b style={{ color: '#2e8b57' }}>{Math.min(prog + 1, total)}</b> / {total}</span>
         {cfgNow.variant === 'color' ? (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
@@ -539,8 +534,18 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
         {timed ? <span style={{ color: timeLeft < 6000 ? '#d23b3b' : '#b9842f' }}>⏱ {fmt(timeLeft)}</span> : null}
         {isSurvival ? <span style={{ color: survLeft < 10000 ? '#d23b3b' : '#5a4a32' }}>{isAr ? 'بقاء' : 'Survival'} {fmt(survLeft)}</span> : null}
       </div>
-      <div ref={wrapRef} style={S.play}>
-        <canvas ref={canvasRef} style={S.canvas} onPointerDown={onPointer} />
+      <div ref={wrapRef} style={S.play} className="ct-trail-3d-stage">
+        <canvas ref={canvasRef} style={{ display: 'none' }} aria-hidden="true" />
+        <Suspense fallback={null}>
+          <TrailMaking3DProto
+            items={sceneItems}
+            variant={cfgNow.variant}
+            startColor={cfgNow.startColor}
+            progress={prog}
+            interactive={!readyInfo && !endedRef.current}
+            onPick={onScenePick}
+          />
+        </Suspense>
         {readyInfo && (
           <div style={S.ready}>
             <div style={S.readyCard}>
@@ -577,14 +582,6 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
 export default function TrailMakingGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
-  const [view, setView] = useState('shell');
-  if (view === 'play3d') {
-    return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <TrailMaking3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
-      </Suspense>
-    );
-  }
   return (
     <ModeShell
       storageKey="mm_speed_trail"
@@ -601,13 +598,6 @@ export default function TrailMakingGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
-      extraItems={[{
-        k: 'proto3d',
-        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
-        on: () => setView('play3d'),
-        icoImg: planetIconUrl('speed'),
-      }]}
       renderEngine={(p) => (
         <TrailEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
@@ -616,22 +606,21 @@ export default function TrailMakingGame({ onBack, workoutMode = false }) {
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
-  cosmosRoot: { background: 'transparent', color: '#f0e2c0', zIndex: 81 },
-  sub: { display: 'flex', justifyContent: 'space-between', padding: '6px 16px 0', fontSize: 14, fontWeight: 700, color: '#5a4a32' },
-  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 18, background: '#fffdf8', overflow: 'hidden', border: '1.5px solid #e3d6c4', boxShadow: 'inset 0 2px 10px rgba(120,90,40,0.06)', touchAction: 'none' },
+  root: { position: 'fixed', inset: 0, zIndex: 81, display: 'flex', flexDirection: 'column', background: '#000', color: '#f0e2c0', fontFamily: "'Outfit', system-ui, sans-serif" },
+  sub: { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '7px 16px', fontSize: 14, fontWeight: 700, color: '#f0e2c0', background: '#080705', overflowX: 'auto' },
+  play: { position: 'relative', flex: 1, minHeight: 0, background: '#000', overflow: 'hidden', touchAction: 'none' },
   canvas: { display: 'block', width: '100%', height: '100%' },
   survTrack: { height: 6, background: 'rgba(0,0,0,0.08)' },
   survFill: { height: '100%' },
-  ready: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,253,248,0.78)', zIndex: 3, pointerEvents: 'none' },
-  readyCard: { background: '#fffdf8', border: '2px solid #cdbfa6', borderRadius: 16, padding: '16px 22px', textAlign: 'center', boxShadow: '4px 4px 0 #1a1208', maxWidth: '82%' },
+  ready: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.62)', zIndex: 3, pointerEvents: 'none' },
+  readyCard: { background: 'rgba(18,14,9,0.94)', border: '1px solid rgba(232,172,78,0.65)', borderRadius: 8, padding: '16px 22px', textAlign: 'center', boxShadow: '0 14px 38px rgba(0,0,0,0.5)', maxWidth: '82%' },
   readyKicker: { display: 'inline-block', marginBottom: 6, padding: '2px 12px', borderRadius: 999, background: '#7a5a1e', color: '#fff7e6', fontWeight: 900, fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
-  readyTitle: { fontWeight: 900, fontSize: 18, color: '#2d2d2d' },
+  readyTitle: { fontWeight: 900, fontSize: 18, color: '#f0e2c0' },
   readyDot: { width: 26, height: 26, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 13, border: '2px solid rgba(0,0,0,0.25)' },
-  readySub: { marginTop: 8, fontWeight: 800, fontSize: 13, color: '#7a5a1e' },
+  readySub: { marginTop: 8, fontWeight: 800, fontSize: 13, color: '#d7c9aa' },
   overWrap: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' },
   overTitle: { margin: '0 0 8px', fontWeight: 900, fontSize: 24 },
-  overSub: { margin: '0 0 20px', fontWeight: 700, color: '#5a4a32' },
+  overSub: { margin: '0 0 20px', fontWeight: 700, color: '#d7c9aa' },
   overBtn: { padding: '12px 20px', borderRadius: 12, border: '2px solid #1a1208', background: '#b9842f', color: '#fff', fontWeight: 900, cursor: 'pointer' },
   overBtnGhost: { padding: '12px 20px', borderRadius: 12, border: '2px solid #cdbfa6', background: '#fff', fontWeight: 800, cursor: 'pointer' },
 };

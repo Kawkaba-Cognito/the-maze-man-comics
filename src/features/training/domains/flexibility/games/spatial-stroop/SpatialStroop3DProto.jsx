@@ -31,8 +31,8 @@ import '../../../../shared/c3dProto.css';
 
 const UI = {
   en: {
-    title: 'Spatial Stroop · 3D',
-    tag: 'prototype',
+    title: 'Arrow Rush',
+    tag: '3D preview',
     rulePoint: 'Rule: where it POINTS',
     ruleSide: 'Rule: which SIDE it sits on',
     ruleColor: 'Rule: by COLOUR (red→left, green→right)',
@@ -48,8 +48,8 @@ const UI = {
     shieldSaved: '🛡️ Shield saved you',
   },
   ar: {
-    title: 'ستروب مكاني · ثلاثي الأبعاد',
-    tag: 'نموذج',
+    title: 'اندفاع الأسهم',
+    tag: 'معاينة ثلاثية الأبعاد',
     rulePoint: 'القاعدة: إلى أين يشير',
     ruleSide: 'القاعدة: في أي جهة يجلس',
     ruleColor: 'القاعدة: حسب اللون (أحمر←يسار، أخضر←يمين)',
@@ -67,27 +67,82 @@ const UI = {
 };
 
 const POWERUP_ICON = { shield: '🛡️', slowmo: '⏱️', x2: '✨', freeze: '❄️' };
-const COLOR_HEX = { red: 0xd9534f, green: 0x7cbc7a };
-const CREAM_HEX = 0xead9bd;
-const SIDE_X = { left: -1.45, right: 1.45 };
+const COLOR_HEX = { red: 0xf05d67, green: 0x65d18b };
+const CREAM_HEX = 0xf5fbff;
+const SIDE_HEX = { left: 0x35b7d4, right: 0xf27d65 };
+const SIDE_X = { left: -1.55, right: 1.55 };
 const ROT_Z = { left: Math.PI / 2, right: -Math.PI / 2 };
 
-/** A proper arrow (shaft + head) pointing +Y by default; one shared material. */
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/** A flat, high-contrast arrow pointing +Y by default. */
 function makeArrow(mat, scale = 1) {
+  const shape = new THREE.Shape();
+  shape.moveTo(-0.13, -0.62);
+  shape.lineTo(0.13, -0.62);
+  shape.lineTo(0.13, 0.16);
+  shape.lineTo(0.42, 0.16);
+  shape.lineTo(0, 0.72);
+  shape.lineTo(-0.42, 0.16);
+  shape.lineTo(-0.13, 0.16);
+  shape.closePath();
   const g = new THREE.Group();
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.1 * scale, 0.1 * scale, 0.72 * scale, 14), mat);
-  shaft.position.y = -0.12 * scale;
-  const head = new THREE.Mesh(new THREE.ConeGeometry(0.3 * scale, 0.56 * scale, 22), mat);
-  head.position.y = 0.42 * scale;
-  g.add(shaft, head);
+  const geometry = new THREE.ShapeGeometry(shape);
+  const outline = new THREE.Mesh(
+    geometry.clone(),
+    new THREE.MeshBasicMaterial({ color: 0x06111d, transparent: true, opacity: 0.92, toneMapped: false }),
+  );
+  outline.scale.setScalar(scale * 1.13);
+  outline.position.z = -0.03;
+  const arrow = new THREE.Mesh(geometry, mat);
+  arrow.scale.setScalar(scale);
+  g.add(outline, arrow);
   g.userData.mat = mat;
   return g;
 }
 
-/** Rounded pad face with a big ← / → glyph → CanvasTexture. */
-function padTexture(dir) {
-  const W = 256;
-  const H = 160;
+function laneTexture(side, isAr) {
+  const S = 640;
+  const c = document.createElement('canvas');
+  c.width = S;
+  c.height = S;
+  const ctx = c.getContext('2d');
+  const accent = side === 'left' ? '#35b7d4' : '#f27d65';
+  roundRectPath(ctx, 18, 18, S - 36, S - 36, 54);
+  ctx.fillStyle = 'rgba(7, 18, 31, 0.96)';
+  ctx.fill();
+  ctx.lineWidth = 16;
+  ctx.strokeStyle = accent;
+  ctx.stroke();
+  ctx.fillStyle = accent;
+  ctx.font = '800 54px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const label = isAr ? (side === 'left' ? 'جهة اليسار' : 'جهة اليمين') : (side === 'left' ? 'LEFT SIDE' : 'RIGHT SIDE');
+  ctx.fillText(label, S / 2, 72);
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = accent;
+  ctx.font = '800 230px system-ui, sans-serif';
+  ctx.fillText(side === 'left' ? 'L' : 'R', S / 2, S / 2 + 60);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  return tex;
+}
+
+/** High-resolution response label with both direction and word. */
+function padTexture(dir, isAr) {
+  const W = 768;
+  const H = 480;
   const c = document.createElement('canvas');
   c.width = W;
   c.height = H;
@@ -97,14 +152,18 @@ function padTexture(dir) {
   ctx.globalAlpha = 0.0;
   ctx.fillRect(0, 0, W, H);
   ctx.globalAlpha = 1;
-  ctx.fillStyle = '#f0e2c0';
-  ctx.font = '800 108px system-ui, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '800 210px system-ui, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(dir === 'left' ? '←' : '→', W / 2, H / 2 + 6);
+  ctx.fillText(dir === 'left' ? '←' : '→', W / 2, H / 2 - 58);
+  ctx.font = '800 64px system-ui, sans-serif';
+  const label = isAr ? (dir === 'left' ? 'يسار' : 'يمين') : (dir === 'left' ? 'LEFT' : 'RIGHT');
+  ctx.fillText(label, W / 2, H / 2 + 142);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
   return tex;
 }
 
@@ -135,56 +194,75 @@ export default function SpatialStroop3DProto({ isAr, playSfx, onBack }) {
     const wrap = wrapRef.current;
     if (!wrap) return undefined;
 
-    const boot = bootC3dScene(wrap, { fov: 52, fitHalf: 3.8, bloom: true });
+    const boot = bootC3dScene(wrap, {
+      fov: 52,
+      fitHalf: 3.8,
+      bloom: false,
+      hudReserveFrac: 0.23,
+    });
     if (boot.error) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');
       return () => boot.dispose();
     }
     const { camera, playRoot, coarse, setTick, setFitBox, renderer, dispose } = boot;
 
-    // ── Seat platforms (show which SIDE the arrow sits on) ──
+    // Two clear side lanes make arrow position readable at a glance.
     const seats = ['left', 'right'].map((side) => {
+      const texture = laneTexture(side, isAr);
       const seat = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.62, 0.7, 0.1, 28),
-        matStd(0x1a140c, { emissive: 0xe8ac4e, emissiveIntensity: 0.06, metalness: 0.25, roughness: 0.7 }),
+        new THREE.PlaneGeometry(1.82, 1.82),
+        new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.58, toneMapped: false }),
       );
-      seat.rotation.x = Math.PI / 2;
       seat.position.set(SIDE_X[side], 0.35, -0.15);
+      seat.userData.texture = texture;
       playRoot.add(seat);
       return seat;
     });
+    const divider = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.035, 1.8),
+      new THREE.MeshBasicMaterial({ color: 0xd9f6ff, transparent: true, opacity: 0.24, toneMapped: false }),
+    );
+    divider.position.set(0, 0.35, -0.12);
+    playRoot.add(divider);
 
     // ── Answer pads (big, labelled ← / →) ──
-    const padTexL = padTexture('left');
-    const padTexR = padTexture('right');
+    const padTexL = padTexture('left', isAr);
+    const padTexR = padTexture('right', isAr);
     const pads = ['left', 'right'].map((side) => {
-      const base = matStd(side === 'left' ? 0x6bb3c8 : 0xe8ac4e, { emissiveIntensity: 0.28, metalness: 0.3, roughness: 0.5 });
-      const face = new THREE.MeshStandardMaterial({ map: side === 'left' ? padTexL : padTexR, transparent: true, emissive: new THREE.Color(0xf0e2c0), emissiveIntensity: 0.2, metalness: 0.2, roughness: 0.5 });
+      const base = new THREE.MeshBasicMaterial({ color: SIDE_HEX[side], toneMapped: false });
+      const face = new THREE.MeshBasicMaterial({ map: side === 'left' ? padTexL : padTexR, transparent: true, toneMapped: false });
       const g = new THREE.Group();
-      const slab = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.2, 0.24), base);
+      const border = new THREE.Mesh(
+        new THREE.BoxGeometry(2.28, 1.22, 0.1),
+        new THREE.MeshBasicMaterial({ color: 0xeafaff, transparent: true, opacity: 0.82, toneMapped: false }),
+      );
+      border.position.z = -0.04;
+      g.add(border);
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(2.15, 1.1, 0.16), base);
       g.add(slab);
-      const label = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.05), face);
-      label.position.z = 0.13;
+      const label = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.98), face);
+      label.position.z = 0.09;
       g.add(label);
-      g.position.set(side === 'left' ? -1.6 : 1.6, -2.15, 0);
+      g.position.set(side === 'left' ? -1.65 : 1.65, -2.05, 0);
       g.userData.side = side;
       g.userData.flash = 0;
       g.userData.mat = base;
+      g.userData.defaultHex = SIDE_HEX[side];
       playRoot.add(g);
       return g;
     });
-    setFitBox(2.9, 3.4);
+    setFitBox(3.0, 3.25);
 
     // ── Stimulus: main arrow + flankers (real arrows, shaft + head) ──
     const arrowGroup = new THREE.Group();
     playRoot.add(arrowGroup);
-    const mainMat = matStd(CREAM_HEX, { emissiveIntensity: 0.4, metalness: 0.25, roughness: 0.4 });
-    const mainArrow = makeArrow(mainMat, 1.4);
+    const mainMat = new THREE.MeshBasicMaterial({ color: CREAM_HEX, toneMapped: false });
+    const mainArrow = makeArrow(mainMat, 1.3);
     arrowGroup.add(mainArrow);
     const flankers = [-1, 1].map((k) => {
-      const fm = matStd(CREAM_HEX, { emissiveIntensity: 0.28, metalness: 0.2, roughness: 0.5 });
-      const m = makeArrow(fm, 0.82);
-      m.position.x = k * 0.92;
+      const fm = new THREE.MeshBasicMaterial({ color: CREAM_HEX, transparent: true, opacity: 0.72, toneMapped: false });
+      const m = makeArrow(fm, 0.55);
+      m.position.x = k * 0.78;
       m.visible = false;
       arrowGroup.add(m);
       return m;
@@ -194,23 +272,22 @@ export default function SpatialStroop3DProto({ isAr, playSfx, onBack }) {
     const showProbe = (probe) => {
       const hex = probe.color ? COLOR_HEX[probe.color] : CREAM_HEX;
       mainMat.color.setHex(hex);
-      mainMat.emissive.setHex(hex);
       mainArrow.rotation.z = ROT_Z[probe.dir] ?? 0;
       arrowGroup.position.set(SIDE_X[probe.pos] ?? 0, 0.35, 0.1);
+      arrowGroup.scale.setScalar(0.82);
       // Highlight the seat the arrow sits on.
-      seats.forEach((s, i) => { s.material.emissiveIntensity = (SIDE_X[probe.pos] === SIDE_X[i === 0 ? 'left' : 'right']) ? 0.32 : 0.06; });
+      seats.forEach((s, i) => { s.material.opacity = (SIDE_X[probe.pos] === SIDE_X[i === 0 ? 'left' : 'right']) ? 1 : 0.42; });
       const fd = probe.flankerDir;
       flankers.forEach((m) => {
         m.visible = !!fd;
         if (fd) {
           m.rotation.z = ROT_Z[fd] ?? 0;
           m.userData.mat.color.setHex(hex);
-          m.userData.mat.emissive.setHex(hex);
         }
       });
       arrowGroup.visible = true;
     };
-    const hideProbe = () => { arrowGroup.visible = false; seats.forEach((s) => { s.material.emissiveIntensity = 0.06; }); };
+    const hideProbe = () => { arrowGroup.visible = false; seats.forEach((s) => { s.material.opacity = 0.58; }); };
 
     // ── Session state (all engine-driven) ──
     let block = null;
@@ -423,17 +500,19 @@ export default function SpatialStroop3DProto({ isAr, playSfx, onBack }) {
     el.addEventListener('pointerup', onUp);
 
     let hudAcc = 0;
+    const unitScale = new THREE.Vector3(1, 1, 1);
     setTick((dt, now) => {
       arrowGroup.position.y = 0.35 + Math.sin(now * 0.003) * 0.06;
+      arrowGroup.scale.lerp(unitScale, Math.min(1, dt * 11));
       for (const p of pads) {
         const mat = p.userData.mat;
         if (p.userData.flash > 0) {
           p.userData.flash = Math.max(0, p.userData.flash - dt);
-          mat.emissive.setHex(p.userData.flashHex || 0x62b277);
-          mat.emissiveIntensity = 0.28 + p.userData.flash;
+          mat.color.setHex(p.userData.flashHex || 0x62b277);
+          p.scale.setScalar(1 + Math.sin(p.userData.flash * Math.PI * 4) * 0.025);
         } else {
-          mat.emissive.setHex(p.userData.side === 'left' ? 0x6bb3c8 : 0xe8ac4e);
-          mat.emissiveIntensity = 0.28;
+          mat.color.setHex(p.userData.defaultHex);
+          p.scale.lerp(unitScale, Math.min(1, dt * 12));
         }
       }
       if (!finished) {
@@ -478,7 +557,13 @@ export default function SpatialStroop3DProto({ isAr, playSfx, onBack }) {
       clearTimers();
       el.removeEventListener('pointerup', onUp);
       pads.forEach((p) => { disposeObject(p); playRoot.remove(p); });
-      seats.forEach((s) => { disposeObject(s); playRoot.remove(s); });
+      seats.forEach((s) => {
+        s.userData.texture?.dispose();
+        disposeObject(s);
+        playRoot.remove(s);
+      });
+      disposeObject(divider);
+      playRoot.remove(divider);
       padTexL.dispose();
       padTexR.dispose();
       disposeObject(arrowGroup);
@@ -501,7 +586,7 @@ export default function SpatialStroop3DProto({ isAr, playSfx, onBack }) {
   }, []);
 
   const ruleText = ruleKey === 'side' ? t.ruleSide : ruleKey === 'color' ? t.ruleColor : t.rulePoint;
-  const hintText = toast || (reverseOn ? `${ruleText} · ${t.reverse}` : ruleText);
+  const hintText = reverseOn ? `${ruleText} · ${t.reverse}` : ruleText;
 
   const stats = phase === 'boot' ? [] : [
     `${'♥'.repeat(Math.max(0, lives))}${'♡'.repeat(Math.max(0, STROOP_FREE_LIVES - lives))}`,
@@ -522,9 +607,9 @@ export default function SpatialStroop3DProto({ isAr, playSfx, onBack }) {
       isAr={isAr}
       title={t.title}
       tag={t.tag}
-      hint={hintText}
-      chip={blitzOn ? '⚡ BLITZ' : (reverseOn ? '⇄' : ruleKey.toUpperCase())}
-      chipStyle={{ fontSize: '0.72rem', fontWeight: 800, color: blitzOn ? '#e07a5f' : '#e8ac4e' }}
+      question={hintText}
+      chip={toast || (blitzOn ? '⚡ BLITZ' : (reverseOn ? '⇄' : ruleKey.toUpperCase()))}
+      chipStyle={{ fontSize: '0.72rem', fontWeight: 800, color: blitzOn ? '#f27d65' : '#55d6e8' }}
       stats={stats}
       banner={bannerText}
       bannerOver={banner === 'over'}

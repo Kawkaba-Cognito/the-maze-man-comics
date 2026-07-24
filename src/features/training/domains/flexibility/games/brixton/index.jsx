@@ -6,7 +6,7 @@ import { survivalRampFromRemaining } from '../../../../shared/survival';
 import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
 import CosmosCharacter from '../../../../../character/CosmosCharacter';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
-import { planetIconUrl } from '../../../../../../lib/planetIcons';
+import { preloadDrKawkab } from '../../../../shared/drKawkabModel';
 
 const Brixton3DProto = lazyWithRetry(() => import('./Brixton3DProto'), 'brixton-3d');
 
@@ -26,9 +26,12 @@ const OK = '#3a9d5d';
 const BAD = '#cf5b50';
 
 const COLS = 5;
-const PER_LEVEL = 8;
-const WIN_ACC = 0.625;
-const PP_TRIALS = 8;
+export const BRIXTON_PER_LEVEL = 8;
+export const BRIXTON_WIN_ACC = 0.625;
+export const BRIXTON_PP_TRIALS = 8;
+const PER_LEVEL = BRIXTON_PER_LEVEL;
+const WIN_ACC = BRIXTON_WIN_ACC;
+const PP_TRIALS = BRIXTON_PP_TRIALS;
 
 // The 10-node Brixton anticipation rules (2 rows of 5). Shared with the 3D proto
 // so it plays the EXACT same hidden-rule game.
@@ -503,14 +506,10 @@ export function BrixtonEngine({ mode, diff, level, seed, attempt, onResult, onEx
 export default function KawkabHopsGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
-  const [view, setView] = useState('shell');
-  if (view === 'play3d') {
-    return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <Brixton3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
-      </Suspense>
-    );
-  }
+  useEffect(() => {
+    preloadDrKawkab().catch(() => {});
+    import('./Brixton3DProto');
+  }, []);
   return (
     <ModeShell
       storageKey="mm_flx_brixton"
@@ -527,15 +526,18 @@ export default function KawkabHopsGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
-      extraItems={[{
-        k: 'proto3d',
-        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
-        on: () => setView('play3d'),
-        icoImg: planetIconUrl('flexibility'),
-      }]}
       renderEngine={(p) => (
-        <BrixtonEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
+        <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+          <Brixton3DProto
+            key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+            {...p}
+            isAr={isAr}
+            playSfx={playSfx}
+            awardPoints={awardPoints}
+            awardFreeRun={awardFreeRun}
+            onBack={p.onExit}
+          />
+        </Suspense>
       )}
     />
   );

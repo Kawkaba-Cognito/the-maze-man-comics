@@ -16,7 +16,7 @@ const CREAM = 0xf0e2c0;
 
 /**
  * @param {HTMLElement} wrap
- * @param {{ fov?: number, fitHalf?: number, bloom?: boolean }} [opts]
+ * @param {{ fov?: number, fitHalf?: number, bloom?: boolean, alpha?: boolean }} [opts]
  */
 export function bootC3dScene(wrap, opts = {}) {
   const coarse = isCoarsePointer();
@@ -31,7 +31,7 @@ export function bootC3dScene(wrap, opts = {}) {
   try {
     renderer = new THREE.WebGLRenderer({
       antialias: !coarse,
-      alpha: false,
+      alpha: opts.alpha === true,
       powerPreference: coarse ? 'default' : 'high-performance',
     });
   } catch (err) {
@@ -46,7 +46,7 @@ export function bootC3dScene(wrap, opts = {}) {
   camera.position.set(0, 0, 12);
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.3 : fine ? 1.5 : 1.25));
-  renderer.setClearColor(0x000000, 1);
+  renderer.setClearColor(0x000000, opts.alpha === true ? 0 : 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
   wrap.appendChild(renderer.domElement);
@@ -111,7 +111,7 @@ export function bootC3dScene(wrap, opts = {}) {
     // chrome. Phones get a taller reserve (bigger HUD text share).
     // Games with a big question banner (opts.hudReserveFrac) reserve a taller
     // top band so the 3D playfield is fitted BELOW the headline, never under it.
-    const hudPx = opts.hudReserveFrac
+    const hudPx = opts.hudReserveFrac != null
       ? h * opts.hudReserveFrac
       : Math.max(92, Math.min(196, h * (coarse ? 0.19 : 0.13)));
     const hudFrac = Math.min(0.45, hudPx / Math.max(1, h));

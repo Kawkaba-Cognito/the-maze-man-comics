@@ -6,7 +6,6 @@ import { survivalRampFromRemaining } from '../../../../shared/survival';
 import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
 import CosmosCharacter from '../../../../../character/CosmosCharacter';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
-import { planetIconUrl } from '../../../../../../lib/planetIcons';
 
 const Wisconsin3DProto = lazyWithRetry(() => import('./Wisconsin3DProto'), 'wisconsin-3d');
 
@@ -27,9 +26,12 @@ const ACC = '#b84878';   // flexibility deep pink
 const OK = '#3a9d5d';
 const BAD = '#cf5b50';
 
-const PER_LEVEL = 16;
-const WIN_ACC = 0.72;
-const PP_TRIALS = 16;
+export const WCST_PER_LEVEL = 16;
+export const WCST_WIN_ACC = 0.72;
+export const WCST_PP_TRIALS = 16;
+const PER_LEVEL = WCST_PER_LEVEL;
+const WIN_ACC = WCST_WIN_ACC;
+const PP_TRIALS = WCST_PP_TRIALS;
 
 // Card feature banks + the hidden-rule state machine helpers. Exported so the 3D
 // proto plays the EXACT same WCST (same cards, same silent rule switches).
@@ -318,14 +320,6 @@ export function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit,
 export default function CardSortGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
-  const [view, setView] = useState('shell');
-  if (view === 'play3d') {
-    return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <Wisconsin3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
-      </Suspense>
-    );
-  }
   return (
     <ModeShell
       storageKey="mm_flx_wcst"
@@ -342,15 +336,18 @@ export default function CardSortGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
-      extraItems={[{
-        k: 'proto3d',
-        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
-        on: () => setView('play3d'),
-        icoImg: planetIconUrl('flexibility'),
-      }]}
       renderEngine={(p) => (
-        <WcstEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
+        <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+          <Wisconsin3DProto
+            key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+            {...p}
+            isAr={isAr}
+            playSfx={playSfx}
+            awardPoints={awardPoints}
+            awardFreeRun={awardFreeRun}
+            onBack={p.onExit}
+          />
+        </Suspense>
       )}
     />
   );

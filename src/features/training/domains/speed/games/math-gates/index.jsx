@@ -4,7 +4,6 @@ import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import { survivalTier } from '../../../../shared/survival';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
-import { planetIconUrl } from '../../../../../../lib/planetIcons';
 
 const MathGates3DProto = lazyWithRetry(() => import('./MathGates3DProto'), 'math-gates-3d');
 
@@ -33,7 +32,7 @@ export const BASE = {
   med: { ops: ['+', '-', '×'], gap: 650, lives: 4, target: 10 },
   hard: { ops: ['+', '-', '×', '÷'], gap: 600, lives: 3, target: 12 },
 };
-function levelCfg(diff, level) {
+export function levelCfg(diff, level) {
   const b = BASE[diff] || BASE.med;
   // Front-loaded curve (^0.85): the climb is felt earlier so levels feel more
   // distinct; level 1 and 100 unchanged.
@@ -454,14 +453,6 @@ export function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, on
 export default function MathGatesGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
-  const [view, setView] = useState('shell');
-  if (view === 'play3d') {
-    return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <MathGates3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
-      </Suspense>
-    );
-  }
   return (
     <ModeShell
       storageKey="mm_flx_mathgates"
@@ -478,15 +469,19 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
-      extraItems={[{
-        k: 'proto3d',
-        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
-        on: () => setView('play3d'),
-        icoImg: planetIconUrl('speed'),
-      }]}
       renderEngine={(p) => (
-        <MathGatesEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
+        <Suspense
+          key={`math-gates-3d-${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+          fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}
+        >
+          <MathGates3DProto
+            {...p}
+            isAr={isAr}
+            playSfx={playSfx}
+            awardFreeRun={awardFreeRun}
+            onBack={p.onExit}
+          />
+        </Suspense>
       )}
     />
   );

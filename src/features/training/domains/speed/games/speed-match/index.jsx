@@ -22,7 +22,6 @@ import AssessmentReady from '../../../../assessment/AssessmentReady';
 import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
-import { planetIconUrl } from '../../../../../../lib/planetIcons';
 import {
   SH,
   SM_DIFF_KEYS,
@@ -243,19 +242,11 @@ function LegendBar({ legend, t }) {
 }
 
 /** Light hub mode list (shared visual with the other games). */
-function SpeedModes({ t, isAr, onFree, onLevels, onChallenge, onProto3d, playSfx }) {
+function SpeedModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
   const items = [
     { k: 'free', ic: '♾️', lb: t.freeMode, hint: t.hubNodeFreeHint, on: onFree, mod: 'ct-fq-attn-mode--free' },
     { k: 'levels', ic: '🎯', lb: t.levelMode, hint: t.hubNodeLevelsHint, on: onLevels, mod: 'ct-fq-attn-mode--levels' },
     { k: 'chal', ic: '⚔️', lb: t.challengeMode, hint: t.hubNodeChallengeHint, on: onChallenge, mod: 'ct-fq-attn-mode--chal' },
-    {
-      k: 'proto3d',
-      lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-      hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
-      on: onProto3d,
-      icoImg: planetIconUrl('speed'),
-      mod: 'ct-fq-attn-mode--proto3d',
-    },
   ];
   return <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />;
 }
@@ -264,18 +255,15 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
-  const [cosmosEmbed, setCosmosEmbed] = useState(false);
-  const isCosmos = cosmosAutoPlay || cosmosEmbed;
-
-  // WORKOUT / cosmos 3D: skip the hub and jump straight into Survival/free.
+  // Workout and direct-play entries skip the hub and start Survival.
   const workoutLaunched = useRef(false);
   useEffect(() => {
-    if (workoutMode && !workoutLaunched.current) {
+    if ((workoutMode || cosmosAutoPlay) && !workoutLaunched.current) {
       workoutLaunched.current = true;
       startFreeMode();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutMode]);
+  }, [workoutMode, cosmosAutoPlay]);
   const settings = loadGameSettings();
 
   const juice = useJuice();
@@ -788,7 +776,6 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
     trialLogRef.current = null;
     clearPlay();
     if (assessmentMode) { (onAssessmentExit || onBack)?.(); return; }
-    if (cosmosEmbed) { setCosmosEmbed(false); setPhase('hub'); return; }
     if (cosmosAutoPlay) { onBack?.(); return; }
     if (mode === 'challenge') setPhase('chal');
     else if (mode === 'level') setPhase('levels');
@@ -798,8 +785,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
   const exitToHub = () => {
     setLastResult(null);
     clearPlay();
-    if (cosmosEmbed) { setCosmosEmbed(false); setPhase('hub'); }
-    else if (cosmosAutoPlay) onBack?.();
+    if (cosmosAutoPlay) onBack?.();
     else setPhase('hub');
   };
 
@@ -830,26 +816,8 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
 
   const starLabel = lastResult?.grade?.stars === 3 ? t.perfect : lastResult?.grade?.stars === 2 ? t.good : t.tryAgain;
 
-  const wrapCosmos = (content) => isCosmos ? (
-    <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-      <SpeedMatch3DProto isAr={isAr} playSfx={playSfx} onBack={() => { workoutLaunched.current = false; clearPlay(); if (cosmosAutoPlay) { onBack?.(); return; } setCosmosEmbed(false); setPhase('hub'); }} />
-    </Suspense>
-  ) : content;
-
-  if (phase === 'play3d') {
-    return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <SpeedMatch3DProto isAr={isAr} playSfx={playSfx} onBack={() => setPhase('hub')} />
-      </Suspense>
-    );
-  }
-
-  return wrapCosmos(
-    <div
-      className={`cancellation-task-game ct-sm-root${isCosmos ? ' c3d-embed-root' : ''}`}
-      data-c3d-embed={isCosmos || undefined}
-      dir={isAr ? 'rtl' : 'ltr'}
-    >
+  return (
+    <div className="cancellation-task-game ct-sm-root" dir={isAr ? 'rtl' : 'ltr'}>
       {phase === 'assessStart' && (
         <AssessmentReady
           isAr={isAr}
@@ -861,7 +829,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
           playSfx={playSfx}
         />
       )}
-      {phase === 'hub' && !isCosmos && (
+      {phase === 'hub' && (
         <>
           <div className="ct-fq-training-shell ct-fq-training-shell--mode-cosmos">
             <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
@@ -886,7 +854,6 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
                 onFree={() => setPhase('freeIntro')}
                 onLevels={() => setPhase('diff')}
                 onChallenge={() => setPhase('chal')}
-                onProto3d={() => setPhase('play3d')}
               />
               <HubScienceLink gameId="speed-match" isAr={isAr} playSfx={playSfx} />
             </div>
@@ -992,17 +959,29 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
       )}
 
       {phase === 'play' && block && (
-        <div className="ct-sm-play">
+        <div className="ct-sm-play ct-sm-play--3d">
           <TrainingPlayHeader
             isAr={isAr}
             title={header.title}
             subtitle={header.subtitle}
             playSfx={playSfx}
-            onMenu={isCosmos ? undefined : () => setQuitOpen(true)}
+            onMenu={() => setQuitOpen(true)}
             onPause={onPause}
             pauseAriaLabel={t.paused}
           />
-          <div className={`ct-sm-stage ct-juice-host${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}${juice.shake ? ' ct-juice-shake' : ''}`}>
+          <div className={`ct-sm-stage ct-sm-stage--3d ct-juice-host${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}${juice.shake ? ' ct-juice-shake' : ''}`}>
+            <Suspense fallback={null}>
+              <SpeedMatch3DProto
+                legend={legend}
+                item={item}
+                interactive={playStep === 'running' && !pauseOpen}
+                onAnswer={answer}
+                pressedKey={pressedKey}
+              />
+            </Suspense>
+            {playStep === 'countdown' && (
+              <div className="ct-sm-countdown3d">{cdVal > 0 ? cdVal : t.go}</div>
+            )}
             <JuiceLayer
               combo={juice.combo}
               particle={juice.particle}

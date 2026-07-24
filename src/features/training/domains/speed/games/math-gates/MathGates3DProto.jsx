@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { bootC3dScene, matStd, disposeObject, THREE } from '../../../../shared/c3dBoot';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import { makeRng } from '../../../../shared/rng';
 import { survivalTier } from '../../../../shared/survival';
 import { clamp } from '../../../../../../lib/math';
-import { genGate, BASE } from './index';
+import { assetUrl } from '../../../../../../lib/assetUrl';
+import { genGate, levelCfg } from './index';
 import '../../../../shared/c3dProto.css';
 
 /*
@@ -51,6 +53,7 @@ const GATE_TOP_Y = 2.7; // gate portals spawn below the equation panel
 const RUNNER_Y = -2.5;
 const EQ_Y = 3.35; // big equation panel sits above the play field
 const LANE_COLORS = [0x6bb3c8, 0xe8ac4e, 0xc47bb0];
+const ROBOT_URL = assetUrl('Assets/biped-v1.glb');
 
 /** Big glowing equation banner → CanvasTexture (readable on any screen). */
 function equationTexture(text) {
@@ -111,16 +114,36 @@ function numberTexture(value) {
   return tex;
 }
 
-export default function MathGates3DProto({ isAr, playSfx, onBack }) {
+export default function MathGates3DProto({
+  isAr,
+  playSfx,
+  onBack,
+  awardFreeRun,
+  mode = 'free',
+  diff = 'med',
+  level = 1,
+  seed,
+  attempt,
+  onResult,
+}) {
   const t = UI[isAr ? 'ar' : 'en'];
+  const modeConfig = mode === 'levels'
+    ? levelCfg(diff, level)
+    : mode === 'passplay'
+      ? levelCfg(diff || 'med', 1)
+      : levelCfg('easy', 1);
   const wrapRef = useRef(null);
   const apiRef = useRef({});
   const playSfxRef = useRef(playSfx);
+  const resultRef = useRef(onResult);
+  const awardRef = useRef(awardFreeRun);
   playSfxRef.current = playSfx;
+  resultRef.current = onResult;
+  awardRef.current = awardFreeRun;
 
   const [phase, setPhase] = useState('boot'); // boot | run | over
   const [passed, setPassed] = useState(0);
-  const [lives, setLives] = useState(BASE.easy.lives);
+  const [lives, setLives] = useState(modeConfig.lives);
   const [combo, setCombo] = useState(0);
   const [eqText, setEqText] = useState('');
   const [banner, setBanner] = useState('go');
@@ -184,6 +207,52 @@ export default function MathGates3DProto({ isAr, playSfx, onBack }) {
     playRoot.add(runner);
     let runnerTargetX = LANE_X[1];
 
+    let robotHolder = null;
+    let robotMixer = null;
+    let robotAlive = true;
+    new GLTFLoader().load(ROBOT_URL, (gltf) => {
+      if (!robotAlive) return;
+      const model = gltf.scene;
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const scale = 1.45 / Math.max(0.0001, size.y);
+      model.scale.setScalar(scale);
+      model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+      model.traverse((node) => {
+        if (!node.isMesh) return;
+        node.frustumCulled = false;
+        const materials = Array.isArray(node.material) ? node.material : [node.material];
+        materials.forEach((material) => {
+          if (!material) return;
+          material.metalness = 0;
+          material.roughness = 0.72;
+          if ('emissiveIntensity' in material) material.emissiveIntensity = 0.22;
+          material.transparent = false;
+          material.depthWrite = true;
+          material.side = THREE.FrontSide;
+          material.needsUpdate = true;
+        });
+      });
+      robotHolder = new THREE.Group();
+      robotHolder.add(model);
+      robotHolder.position.set(LANE_X[1], RUNNER_Y + 0.68, 0.35);
+      playRoot.add(robotHolder);
+      runnerCore.visible = false;
+      runnerHalo.material.opacity = 0.12;
+      const clips = gltf.animations || [];
+      const clip = clips.find((entry) => entry.name === 'Running')
+        || clips.find((entry) => entry.name === 'Walking')
+        || clips.find((entry) => entry.name === 'Idle_02')
+        || clips[0];
+      if (clip) {
+        robotMixer = new THREE.AnimationMixer(model);
+        const action = robotMixer.clipAction(clip);
+        action.timeScale = clip.name === 'Running' ? 0.8 : 1;
+        action.play();
+      }
+    });
+
     // ── Gate (three answer tiles on a bar) ──
     const gateGroup = new THREE.Group();
     playRoot.add(gateGroup);
@@ -227,9 +296,9 @@ export default function MathGates3DProto({ isAr, playSfx, onBack }) {
       gateGroup.visible = true;
     };
 
-    // ── Game state (mirrors the 2D free loop) ──
-    const cfg = { ...BASE.easy }; // free mode = levelCfg('easy', 1): +/- ops, gap 700, 5 lives
-    const rng = makeRng((Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0);
+    const cfg = { ...modeConfig };
+    const rng = makeRng((seed ?? (Date.now() ^ Math.floor(Math.random() * 0x7fffffff))) >>> 0);
+    const gateBudget = mode === 'passplay' ? (attempt?.trials || 12) : Infinity;
     let lane = 1;
     let gate = null; // { eq }
     let gapTimer = cfg.gap;
@@ -240,14 +309,33 @@ export default function MathGates3DProto({ isAr, playSfx, onBack }) {
     let finished = true;
 
     const spawnGate = () => {
-      // Same skill ramp as 2D: gates played / 36 → survivalTier picks the ops tier.
       const f = clamp(gatesPlayed / 36, 0, 1);
-      const dk = survivalTier(f);
-      const eq = genGate(dk, f, rng);
+      const gateDiff = mode === 'free' ? survivalTier(f) : (diff || 'med');
+      const eq = genGate(gateDiff, mode === 'free' ? f : (cfg.f || 0), rng);
       gate = { eq };
       buildGate(eq);
       setEqText(`${eq.text} = ?`);
       setEquation(`${eq.text} = ?`);
+    };
+
+    const finishRun = (won = false) => {
+      if (finished) return;
+      finished = true;
+      if (mode === 'levels') {
+        resultRef.current?.({
+          won,
+          score: passedN,
+          summary: `${passedN}/${cfg.target}`,
+        });
+        return;
+      }
+      if (mode === 'passplay') {
+        resultRef.current?.({ score: passedN });
+        return;
+      }
+      awardRef.current?.('mathGates', passedN);
+      setPhase('over');
+      setBanner('over');
     };
 
     const resolveGate = () => {
@@ -271,15 +359,14 @@ export default function MathGates3DProto({ isAr, playSfx, onBack }) {
         const picked = gateTiles[lane];
         if (right) { right.mesh.userData.flash = 0.8; right.mesh.userData.flashHex = 0x62b277; }
         if (picked) { picked.mesh.userData.flash = 0.8; picked.mesh.userData.flashHex = 0xdd7f7a; }
-        livesN -= 1;
-        setLives(livesN);
-        if (livesN <= 0) {
-          finished = true;
-          setPhase('over');
-          setBanner('over');
-          return;
+        if (mode !== 'passplay') {
+          livesN -= 1;
+          setLives(livesN);
+          if (livesN <= 0) { finishRun(false); return; }
         }
       }
+      if (mode === 'levels' && passedN >= cfg.target) { finishRun(true); return; }
+      if (mode === 'passplay' && gatesPlayed >= gateBudget) { finishRun(); return; }
       gate = null;
       gapTimer = cfg.gap;
       window.setTimeout(() => { if (!finished) clearGate(); }, 380);
@@ -330,6 +417,11 @@ export default function MathGates3DProto({ isAr, playSfx, onBack }) {
         }
       }
       runner.position.x += (runnerTargetX - runner.position.x) * Math.min(1, dt * 12);
+      if (robotHolder) {
+        robotHolder.position.x += (runnerTargetX - robotHolder.position.x) * Math.min(1, dt * 12);
+        robotHolder.rotation.z = (runnerTargetX - robotHolder.position.x) * -0.08;
+      }
+      robotMixer?.update(dt);
       runnerCore.material.emissiveIntensity = 0.7 + Math.sin(now * 0.006) * 0.2;
       runnerHalo.material.opacity = 0.22 + Math.sin(now * 0.006) * 0.08;
       laneStrips.forEach((s, i) => {
@@ -367,12 +459,18 @@ export default function MathGates3DProto({ isAr, playSfx, onBack }) {
 
     return () => {
       finished = true;
+      robotAlive = false;
+      robotMixer?.stopAllAction();
       el.removeEventListener('pointerdown', onDown);
       window.removeEventListener('keydown', onKey);
       clearGate();
       laneStrips.forEach((s) => { disposeObject(s); playRoot.remove(s); });
       disposeObject(runner);
       playRoot.remove(runner);
+      if (robotHolder) {
+        disposeObject(robotHolder);
+        playRoot.remove(robotHolder);
+      }
       eqTex?.dispose();
       disposeObject(eqPanel);
       playRoot.remove(eqPanel);
@@ -402,8 +500,8 @@ export default function MathGates3DProto({ isAr, playSfx, onBack }) {
   return (
     <C3dProtoChrome
       isAr={isAr}
-      title={t.title}
-      tag={t.tag}
+      title={isAr ? 'بوابات الحساب' : 'Math Gates'}
+      tag={isAr ? 'تدريب' : 'training'}
       hint={phase === 'run' ? (eqText || t.hint) : t.hint}
       chip={eqText || '∑'}
       chipStyle={{ fontSize: '0.85rem', fontWeight: 800, color: '#e8ac4e' }}

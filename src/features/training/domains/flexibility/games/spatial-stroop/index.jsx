@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
   TrainingMenuBar,
@@ -16,11 +16,8 @@ import { survivalRampFromRemaining } from '../../../../shared/survival';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import { createStaircase } from '../../../../shared/staircase';
-import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
-
-import StroopModes, { StroopTarget } from './StroopModes';
-
-const SpatialStroop3DProto = lazyWithRetry(() => import('./SpatialStroop3DProto'), 'spatial-stroop-3d');
+import StroopModes from './StroopModes';
+import SpatialStroop3DBoard from './SpatialStroop3DBoard';
 import {
   STROOP_LEVELS_PER_TIER,
   STROOP_DIFF_KEYS,
@@ -28,7 +25,6 @@ import {
   STROOP_FREE_LIVES,
   STROOP_POWERUP_KEYS,
   BLITZ_EVERY_SWITCHES,
-  COLOR_SIDE,
   specificationForLevel,
   prepareFreeRunBlock,
   freePoints,
@@ -263,56 +259,6 @@ function ruleHintFor(t, rule, probe) {
   return t.cuedHint;
 }
 
-function AnswerButton({ side, label, glyph, colorCue, highlight, pressed, innerRef, onPointerDown, onPointerUp }) {
-  const hi =
-    highlight === 'correct'
-      ? ' ct-stroop-ans--correct'
-      : highlight === 'wrong'
-        ? ' ct-stroop-ans--wrong'
-        : highlight === 'timeout'
-          ? ' ct-stroop-ans--timeout'
-          : '';
-  const pr = pressed ? ' ct-stroop-ans--pressed' : '';
-  const cc = colorCue ? ` ct-stroop-ans--cue-${colorCue}` : '';
-  return (
-    <button
-      ref={innerRef}
-      type="button"
-      className={`ct-stroop-ans ct-stroop-ans--${side}${hi}${pr}${cc}`}
-      aria-label={label}
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-    >
-      <span className="ct-stroop-ans-glyph" aria-hidden="true">
-        {glyph}
-      </span>
-    </button>
-  );
-}
-
-function DeadlineRing({ ms, k }) {
-  const R = 80;
-  const C = 2 * Math.PI * R;
-  return (
-    <svg key={k} className="ct-stroop-ring" width="184" height="184" viewBox="0 0 184 184" aria-hidden="true">
-      <circle className="ct-stroop-ring-track" cx="92" cy="92" r={R} />
-      <circle
-        className="ct-stroop-ring-fill"
-        cx="92"
-        cy="92"
-        r={R}
-        style={{
-          strokeDasharray: C,
-          strokeDashoffset: 0,
-          ['--ring-c']: C,
-          animation: `stroopRing ${ms}ms linear forwards`,
-        }}
-      />
-    </svg>
-  );
-}
-
 export default function SpatialStroopGame({ onBack, workoutMode = false, cosmosAutoPlay = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'flexibility' }) {
   const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
@@ -338,7 +284,6 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, cosmosA
   const [shiftOldRule, setShiftOldRule] = useState(null);
   const [streakDisplay, setStreakDisplay] = useState(0);
   const [catsDisplay, setCatsDisplay] = useState(0);
-  const [pressedSide, setPressedSide] = useState(null);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
   const [lastResult, setLastResult] = useState(null);
@@ -779,7 +724,6 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, cosmosA
       } catch {
         /* ignore */
       }
-      setPressedSide(null);
       if (playStepRef.current !== 'running' || pauseRef.current) return;
       const b = blockRef.current;
       const s = b?.session;
@@ -998,12 +942,13 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, cosmosA
   }, [beginBlock, resetJuice]);
 
   useEffect(() => {
-    if (workoutMode && !workoutLaunched.current) {
+    if ((workoutMode || cosmosAutoPlay) && !workoutLaunched.current) {
       workoutLaunched.current = true;
-      startFreeMode();
+      if (cosmosAutoPlay) startCosmosFree();
+      else startFreeMode();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutMode]);
+  }, [workoutMode, cosmosAutoPlay]);
 
   const startLevelGame = useCallback(
     (diff, lv) => {
@@ -1086,21 +1031,7 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, cosmosA
     if (sd === pickedSide) return feedback === 'timeout' ? 'timeout' : 'wrong';
     return null;
   };
-  const colorCueFor = (sd) => (rule === 'color' ? (sd === COLOR_SIDE.red ? 'red' : 'green') : null);
-
-  const wrapCosmos = (content) => isCosmos ? (
-    <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-      <SpatialStroop3DProto isAr={isAr} playSfx={playSfx} onBack={() => { workoutLaunched.current = false; clearPlayState(); if (cosmosAutoPlay) { onBack?.(); return; } setCosmosEmbed(false); setPhase('hub'); }} />
-    </Suspense>
-  ) : content;
-
-  if (phase === 'play3d') {
-    return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <SpatialStroop3DProto isAr={isAr} playSfx={playSfx} onBack={() => setPhase('hub')} />
-      </Suspense>
-    );
-  }
+  const wrapCosmos = (content) => content;
 
   return wrapCosmos(
     <div
@@ -1144,7 +1075,6 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, cosmosA
                 onFree={startFreeMode}
                 onLevels={() => setPhase('diff')}
                 onChallenge={() => setPhase('chal')}
-                onProto3d={() => setPhase('play3d')}
               />
               <HubScienceLink gameId="spatial-stroop" isAr={isAr} playSfx={playSfx} />
             </div>
@@ -1309,39 +1239,18 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, cosmosA
                   ))}
                 </div>
               )}
-              <div className="ct-stroop-stage">
-                <div
-                  className={`ct-stroop-zone ct-stroop-zone--left${rule === 'side' && probe.pos === 'left' ? ' is-here' : ''}`}
-                >
-                  <span className="ct-stroop-zone-cap">{t.ansLeft}</span>
-                  {probe.pos === 'left' && (
-                    <div className="ct-stroop-target-wrap">
-                      {awaitingAnswer && <DeadlineRing ms={ringMs} k={trialKey} />}
-                      <StroopTarget
-                        probe={probe}
-                        useColor={!!session.useColor}
-                        state={feedback === 'correct' ? 'ok' : feedback === 'wrong' || feedback === 'timeout' ? 'bad' : ''}
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="ct-stroop-zone-divider" aria-hidden="true" />
-                <div
-                  className={`ct-stroop-zone ct-stroop-zone--right${rule === 'side' && probe.pos === 'right' ? ' is-here' : ''}`}
-                >
-                  <span className="ct-stroop-zone-cap">{t.ansRight}</span>
-                  {probe.pos === 'right' && (
-                    <div className="ct-stroop-target-wrap">
-                      {awaitingAnswer && <DeadlineRing ms={ringMs} k={trialKey} />}
-                      <StroopTarget
-                        probe={probe}
-                        useColor={!!session.useColor}
-                        state={feedback === 'correct' ? 'ok' : feedback === 'wrong' || feedback === 'timeout' ? 'bad' : ''}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
+              <SpatialStroop3DBoard
+                probe={probe}
+                useColor={!!session.useColor}
+                isAr={isAr}
+                awaitingAnswer={awaitingAnswer}
+                leftState={sideHighlight('left')}
+                rightState={sideHighlight('right')}
+                ringMs={ringMs}
+                trialKey={trialKey}
+                frozen={frozenActive}
+                onAnswer={onPickAnswer}
+              />
               {feedback && playStep === 'running' && (
                 <div className="ct-stroop-feedback-wrap" role="status">
                   <p className={`ct-stroop-feedback ct-stroop-feedback--${feedback}`}>
@@ -1349,34 +1258,6 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, cosmosA
                   </p>
                 </div>
               )}
-              <div className="ct-stroop-answers">
-                <AnswerButton
-                  side="left"
-                  label={t.ansLeft}
-                  glyph="◀"
-                  colorCue={colorCueFor('left')}
-                  highlight={sideHighlight('left')}
-                  pressed={pressedSide === 'left'}
-                  onPointerDown={(e) => {
-                    setPressedSide('left');
-                    onPickAnswer('left', e);
-                  }}
-                  onPointerUp={() => setPressedSide(null)}
-                />
-                <AnswerButton
-                  side="right"
-                  label={t.ansRight}
-                  glyph="▶"
-                  colorCue={colorCueFor('right')}
-                  highlight={sideHighlight('right')}
-                  pressed={pressedSide === 'right'}
-                  onPointerDown={(e) => {
-                    setPressedSide('right');
-                    onPickAnswer('right', e);
-                  }}
-                  onPointerUp={() => setPressedSide(null)}
-                />
-              </div>
               {block.mode === 'free' && (
                 <div className="ct-stroop-powerbar">
                   <div className="ct-stroop-powerslots">
