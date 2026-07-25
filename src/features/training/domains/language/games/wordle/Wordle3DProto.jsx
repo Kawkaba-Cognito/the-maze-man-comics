@@ -23,8 +23,7 @@ import '../../../../shared/c3dProto.css';
 
 const UI = {
   en: {
-    title: 'Letter Link · 3D',
-    tag: 'prototype',
+    title: 'Word Maze',
     hint: 'Trace adjacent letters to spell words. Submit to lock a word.',
     stage: 'Stage',
     words: 'Words',
@@ -38,8 +37,7 @@ const UI = {
     go: 'ENGAGE',
   },
   ar: {
-    title: 'ربط الحروف · ثلاثي الأبعاد',
-    tag: 'نموذج',
+    title: 'متاهة الكلمات',
     hint: 'صِل الحروف المتجاورة لتكوين كلمات. اضغط تأكيد لتثبيت الكلمة.',
     stage: 'مرحلة',
     words: 'كلمات',
@@ -54,10 +52,12 @@ const UI = {
   },
 };
 
-const TILE_BG = 0x1d1811;
-const TILE_ACTIVE = 0xe8ac4e;
+// Language-domain palette (terracotta/coral, tokens.domain.language) instead
+// of the generic app-wide gold — gives Word Maze its own on-brand glow.
+const TILE_BG = 0x241209;
+const TILE_ACTIVE = 0xd97240;
 const TILE_OK = 0x62b277;
-const CREAM = '#f0e2c0';
+const CREAM = '#faf0ea';
 
 function randSeed() {
   return (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
@@ -82,12 +82,12 @@ function letterTexture(ch) {
   const ctx = c.getContext('2d');
   // Parchment tile with a soft radial glow so letters pop.
   const grad = ctx.createRadialGradient(S / 2, S / 2, 10, S / 2, S / 2, S * 0.7);
-  grad.addColorStop(0, '#33291a');
-  grad.addColorStop(1, '#1c150d');
+  grad.addColorStop(0, '#3a2015');
+  grad.addColorStop(1, '#1f100a');
   ctx.fillStyle = grad;
   rrect(ctx, 6, 6, S - 12, S - 12, 26);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(232,172,78,0.85)';
+  ctx.strokeStyle = 'rgba(217,114,64,0.85)';
   ctx.lineWidth = 8;
   rrect(ctx, 6, 6, S - 12, S - 12, 26);
   ctx.stroke();
@@ -481,7 +481,7 @@ export default function Wordle3DProto({ isAr, playSfx, onBack }) {
       tag={t.tag}
       hint={t.hint}
       chip={draft || '—'}
-      chipStyle={{ fontSize: '0.85rem', fontWeight: 800, color: '#e8ac4e', letterSpacing: '0.08em' }}
+      chipStyle={{ fontSize: '0.85rem', fontWeight: 800, color: '#d97240', letterSpacing: '0.08em' }}
       stats={banner === 'go' ? [] : stats}
       banner={bannerText}
       bannerOver={banner === 'over'}

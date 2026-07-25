@@ -1,13 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
-import CosmosCharacter from '../../../../../character/CosmosCharacter';
+import UniverseStage from '../../../../../../components/shared/UniverseStage';
 import { TRIVIA, TRIVIA_CATEGORIES } from './triviaData';
-import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
-import { planetIconUrl } from '../../../../../../lib/planetIcons';
 
-const Trivia3DProto = lazyWithRetry(() => import('./Trivia3DProto'), 'trivia-3d');
+// Lazy — pulls in three.js + GLTFLoader only once a Trivia round actually
+// mounts, same reasoning as the hub's own Dr Kawkab (see AssessmentMascot3D.jsx).
+const AssessmentMascot3D = lazy(() => import('../../../../../../components/training/AssessmentMascot3D'));
 
 /*
  * Trivia — general-knowledge quiz with a STAIRCASE. 24 categories of graded
@@ -32,6 +32,7 @@ const STAIR_CSS = `
 @keyframes tv-pop {0%{transform:scale(0.6);opacity:0}55%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}
 @keyframes tv-shake {0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 @keyframes tv-fact {0%{transform:translateY(8px);opacity:0}100%{transform:translateY(0);opacity:1}}
+.tv-hop-play {animation: tv-hop 0.45s ease-out;}
 `;
 
 const LIVES = 3;
@@ -89,7 +90,11 @@ export function buildQueue(catId, tierSets, rng, usePersistence) {
 }
 
 // ── the staircase visual ──
-function Staircase({ total, step }) {
+// Dr Kawkab (the 3D robot) climbs the stairs. The 3D component stays mounted
+// across steps — only its wrapper's position moves (CSS transition) and a
+// class-toggle reflow retriggers the hop bounce — remounting on every step
+// would reload the WebGL scene + GLB model on every single answer.
+function Staircase({ total, step, isAr }) {
   const W = total >= 8 ? 34 : 38;
   const unit = total > 1 ? Math.min(15, 86 / (total - 1)) : 14;
   const h = (i) => 18 + i * unit;
@@ -98,6 +103,16 @@ function Staircase({ total, step }) {
   const kCol = Math.min(step, total - 1);
   const kLeft = reached ? total * W - 6 : kCol * W + 1;
   const kBottom = reached ? h(total - 1) + 4 : h(kCol) + 2;
+
+  const hopRef = useRef(null);
+  useEffect(() => {
+    const el = hopRef.current;
+    if (!el) return;
+    el.classList.remove('tv-hop-play');
+    void el.offsetWidth; // force reflow so the animation restarts
+    el.classList.add('tv-hop-play');
+  }, [step]);
+
   return (
     <div style={{ position: 'relative', width: cw, height: h(total - 1) + 60, margin: '0 auto' }}>
       <div style={{ position: 'absolute', left: 0, bottom: 0, display: 'flex', alignItems: 'flex-end', gap: 2 }}>
@@ -106,9 +121,11 @@ function Staircase({ total, step }) {
         ))}
       </div>
       <span style={{ position: 'absolute', left: total * W - 2, bottom: h(total - 1) + 4, fontSize: 24, animation: reached ? 'tv-pop 0.4s ease-out' : 'none' }}>🏁</span>
-      <div style={{ position: 'absolute', left: kLeft, bottom: kBottom, transition: 'left 0.45s cubic-bezier(.34,1.4,.5,1), bottom 0.45s cubic-bezier(.34,1.4,.5,1)' }}>
-        <div style={{ animation: 'tv-hop 0.45s ease-out' }} key={step}>
-          <CosmosCharacter faceOnly size={38} glow mood={reached ? 'proud' : 'ready'} />
+      <div style={{ position: 'absolute', left: kLeft, bottom: kBottom, width: 46, height: 53, transition: 'left 0.45s cubic-bezier(.34,1.4,.5,1), bottom 0.45s cubic-bezier(.34,1.4,.5,1)' }}>
+        <div ref={hopRef} className="tv-hop-play">
+          <Suspense fallback={null}>
+            <AssessmentMascot3D size={46} isAr={isAr} label={isAr ? 'د. كوكب' : 'Dr Kawkab'} onActivate={() => {}} />
+          </Suspense>
         </div>
       </div>
     </div>
@@ -262,6 +279,7 @@ export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExi
     return (
       <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
         <style>{STAIR_CSS}</style>
+        {!cosmos && <UniverseStage accent="training" />}
         <div style={S.overWrap}>
           <div style={{ fontSize: 46 }}>🪐</div>
           <h2 style={S.overTitle}>{t.overTitle}</h2>
@@ -280,6 +298,7 @@ export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExi
     return (
       <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
         <style>{STAIR_CSS}</style>
+        {!cosmos && <UniverseStage accent="training" />}
         <div style={S.overWrap}>
           <div style={{ fontSize: 42 }}>🏁</div>
           <h2 style={S.overTitle}>{t.pickTopic}</h2>
@@ -306,14 +325,15 @@ export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExi
   return (
     <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
       <style>{STAIR_CSS}</style>
-      <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
+      {!cosmos && <UniverseStage accent="training" />}
+      <header className="ct-training-play-header" style={{ background: 'transparent', ...(cosmos ? { paddingTop: 52 } : null) }}>
         {!cosmos && (
           <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
         )}
         {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>{t.title}</div>
-          <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>{hudSub}</div>
+          <div className="ct-training-play-title" style={{ color: '#f0e2c0' }}>{t.title}</div>
+          <div className="ct-training-play-sub" style={{ color: 'rgba(240,226,192,0.75)' }}>{hudSub}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
@@ -326,7 +346,7 @@ export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExi
             {'♥'.repeat(Math.max(0, LIVES - mistakes))}<span style={{ opacity: 0.25 }}>{'♥'.repeat(Math.max(0, mistakes))}</span>
           </span>
         </div>
-        <Staircase total={steps} step={step} />
+        <Staircase total={steps} step={step} isAr={isAr} />
       </div>
 
       {/* question */}
@@ -375,14 +395,6 @@ export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExi
 export default function TriviaGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
-  const [view, setView] = useState('shell');
-  if (view === 'play3d') {
-    return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <Trivia3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
-      </Suspense>
-    );
-  }
   return (
     <ModeShell
       storageKey="mm_language_trivia"
@@ -399,13 +411,6 @@ export default function TriviaGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
-      extraItems={[{
-        k: 'proto3d',
-        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
-        on: () => setView('play3d'),
-        icoImg: planetIconUrl('language'),
-      }]}
       renderEngine={(p) => (
         <TriviaEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
@@ -414,13 +419,13 @@ export default function TriviaGame({ onBack, workoutMode = false }) {
 }
 
 const S = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
-  cosmosRoot: { background: 'transparent', color: '#f0e2c0', zIndex: 81 },
-  stairWrap: { flex: '0 0 auto', padding: '8px 14px 4px', display: 'flex', flexDirection: 'column', gap: 4 },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'transparent', color: '#f0e2c0', fontFamily: "'Outfit', system-ui, sans-serif" },
+  cosmosRoot: { zIndex: 81 },
+  stairWrap: { position: 'relative', zIndex: 1, flex: '0 0 auto', padding: '8px 14px 4px', display: 'flex', flexDirection: 'column', gap: 4 },
   livesRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 460, width: '100%', margin: '0 auto' },
   topicChip: { fontWeight: 800, fontSize: 13, color: '#7a5a1e', background: '#fff1d8', border: '2px solid #e3c489', borderRadius: 999, padding: '3px 12px' },
   hearts: { fontSize: 16, color: '#d23b3b', letterSpacing: 1 },
-  qWrap: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 10, padding: '6px 16px calc(20px + env(safe-area-inset-bottom))', overflowY: 'auto' },
+  qWrap: { position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 10, padding: '6px 16px calc(20px + env(safe-area-inset-bottom))', overflowY: 'auto' },
   feedback: { fontWeight: 900, fontSize: 15, minHeight: 20 },
   qCard: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: '#fffdf8', border: '2px solid #e3d6c4', borderRadius: 18, padding: '14px 18px', maxWidth: 430, width: '100%', boxShadow: '3px 3px 0 rgba(26,18,8,0.12)' },
   qStars: { fontSize: 11, fontWeight: 900, color: '#c9a24b', letterSpacing: 2 },
@@ -436,9 +441,9 @@ const S = {
   pickRow: { display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 12 },
   pickCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 16px', minWidth: 104, borderRadius: 16, border: '2px solid #1a1208', background: '#fffdf8', cursor: 'pointer', boxShadow: '3px 3px 0 #1a1208', animation: 'tv-pop 0.3s ease-out' },
   pickName: { fontWeight: 800, fontSize: 12.5, color: '#2d2210', textAlign: 'center' },
-  overWrap: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 24, textAlign: 'center' },
-  overTitle: { margin: '4px 0 0', fontWeight: 900, fontSize: 24, color: '#2d2210' },
-  overSub: { margin: 0, fontWeight: 700, color: '#5a4a32' },
+  overWrap: { position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 24, textAlign: 'center' },
+  overTitle: { margin: '4px 0 0', fontWeight: 900, fontSize: 24, color: '#f0e2c0' },
+  overSub: { margin: 0, fontWeight: 700, color: 'rgba(240,226,192,0.8)' },
   btnRow: { display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 14 },
   primary: { padding: '12px 26px', borderRadius: 14, border: '2px solid #1a1208', background: '#2e8b57', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '3px 3px 0 #1a1208' },
   ghost: { padding: '12px 18px', borderRadius: 14, border: '2px solid #cdbfa6', background: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer', color: '#4a3c28' },

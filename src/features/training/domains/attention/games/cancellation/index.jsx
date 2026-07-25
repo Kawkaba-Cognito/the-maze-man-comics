@@ -56,7 +56,10 @@ import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
 import { createTrialLog } from '../../../../shared/trialLog';
-import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
+import { useTrainingTutorial } from '../../../../shared/tutorials/useTrainingTutorial';
+import { TUTORIAL_UI } from '../../../../shared/tutorials/tutorialContent';
+import ReadyPanel from '../../../../../shared/tutorials/ReadyPanel';
+import CancelTaskGuidedTutorial from './CancelTaskGuidedTutorial';
 import {
   prepareAssessmentTrial,
   computeAssessmentSummary,
@@ -762,7 +765,30 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
 
   const juice = useJuice();
   const rLabels = ratingLabels(isAr);
-  const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('cancel-task', isAr, playSfx);
+  // Cancel-task gets a bespoke Dr Kawkab + hand guided walkthrough instead of
+  // the shared static carousel (every other game still uses that as-is via
+  // useTrainingTutorialHost). Same onboarding phase machine underneath.
+  const tutorial = useTrainingTutorial('cancel-task', isAr);
+  const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
+  const openTutorial = tutorial.openTutorial;
+  const tutReplayHint = tutLabels.replayTutorial;
+  const tutLayer = tutorial.onboarding.phase === 'carousel' ? (
+    <CancelTaskGuidedTutorial
+      isAr={isAr}
+      playSfx={playSfx}
+      onFinish={tutorial.onboarding.finishCarousel}
+      onSkip={tutorial.onboarding.skipAll}
+    />
+  ) : tutorial.onboarding.phase === 'ready' ? (
+    <ReadyPanel
+      isAr={isAr}
+      playSfx={playSfx}
+      onContinue={tutorial.onboarding.finishReady}
+      heading={tutLabels.readyHeading}
+      sub={tutLabels.readySub}
+      cta={tutLabels.readyCta}
+    />
+  ) : null;
 
   useEffect(() => () => {
     if (shakeTimerRef.current) {

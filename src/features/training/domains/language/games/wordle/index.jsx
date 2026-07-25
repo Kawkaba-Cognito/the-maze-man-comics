@@ -692,7 +692,6 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
               onFree={() => setPhase('freeIntro')}
               onLevels={() => setPhase('diff')}
               onChallenge={() => setPhase('chal')}
-              onProto3d={() => setPhase('play3d')}
             />
             <HubScienceLink gameId="wordle" isAr={isAr} playSfx={playSfx} />
           </div>
@@ -705,7 +704,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
           playSfx={playSfx}
           title={t.freeIntroTitle}
           body={t.freeIntroBody}
-          onReady={() => { clearPlay(); startFree(); }}
+          onReady={() => { clearPlay(); setPhase('play3d'); }}
           onBack={() => setPhase('hub')}
         />
       )}
