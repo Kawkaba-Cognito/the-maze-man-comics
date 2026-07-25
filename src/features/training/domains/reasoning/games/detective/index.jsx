@@ -6,15 +6,19 @@ import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import { planetIconUrl } from '../../../../../../lib/planetIcons';
 
 const Detective3DProto = lazyWithRetry(() => import('./Detective3DProto'), 'detective-3d');
+// Survival's noir rebuild — lazy, so three.js and the cast models only load
+// for players who actually start a Survival run.
+const NoirSurvival = lazyWithRetry(() => import('./noir/NoirSurvival'), 'detective-noir');
 
 /*
- * Detective Kawkab — Investigator File (production).
+ * Detective Kawkab.
  *
- *   1. Read the case file briefing
- *   2. Examine scene locations (polaroid cards)
- *   3. Read statements · confront suspects with evidence
- *   4. Accuse with proof clues (evidence + testimony)
- *   5. Verdict closing report
+ * Survival runs the noir engine: search the scene, break each suspect's stated
+ * lie with the one piece of evidence that contradicts it, then pin down who,
+ * how, why and the proof. Suspects are the 3D cast, standing in a line-up.
+ *
+ * Levels and Pass n Play still run the older Case File engine over the
+ * original investigation bank, pending the same treatment.
  */
 
 export default function DetectiveGame({ onBack, workoutMode = false }) {
@@ -36,8 +40,8 @@ export default function DetectiveGame({ onBack, workoutMode = false }) {
       title={{ en: 'Detective', ar: 'المحقّق' }}
       hints={{
         free: {
-          en: 'Examine the scene · read statements · confront with evidence · accuse with proof · 3 misses out',
-          ar: 'افحص المسرح · اقرأ الإفادات · واجه بالأدلة · اتّهم بالإثبات · ٣ أخطاء وتخرج',
+          en: 'Search the scene · break every lie with the right evidence · pin down who, how, why and the proof',
+          ar: 'فتّش المسرح · اكشف كلّ كذبة بالدليل الصحيح · ثبّت من وكيف ولماذا والإثبات',
         },
         levels: {
           en: 'Collect evidence · confront suspects · accuse with the right proof',
@@ -61,7 +65,19 @@ export default function DetectiveGame({ onBack, workoutMode = false }) {
         on: () => setView('play3d'),
         icoImg: planetIconUrl('reasoning'),
       }]}
-      renderEngine={(p) => (
+      renderEngine={(p) => (p.mode === 'free' ? (
+        <Suspense fallback={<div style={FALLBACK} />}>
+          <NoirSurvival
+            key={`noir-${p.seed}`}
+            seed={p.seed}
+            isAr={isAr}
+            playSfx={playSfx}
+            awardPoints={awardPoints}
+            awardFreeRun={awardFreeRun}
+            onExit={p.onExit}
+          />
+        </Suspense>
+      ) : (
         <CaseFileEngine
           key={`cf-${p.mode}-${p.diff}-${p.level}-${p.seed}`}
           {...p}
@@ -70,7 +86,9 @@ export default function DetectiveGame({ onBack, workoutMode = false }) {
           awardPoints={awardPoints}
           awardFreeRun={awardFreeRun}
         />
-      )}
+      ))}
     />
   );
 }
+
+const FALLBACK = { position: 'fixed', inset: 0, zIndex: 50, background: '#0a0a0f' };

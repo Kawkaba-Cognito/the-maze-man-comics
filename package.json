@@ -25,7 +25,8 @@
     "cap:run:ios": "npx cap run ios",
     "push:both": "git push origin main && git push cognitive main",
     "deploy:live": "npm run build && npx gh-pages -d dist -r https://github.com/kawkaba-cognito/the-maze-man-comics.git",
-    "ship:live": "npm run push:both && npm run deploy:live"
+    "ship:live": "npm run push:both && npm run deploy:live",
+    "validate:noir": "node scripts/validate-noir.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^6.2.0",
@@ -48,7 +49,9 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "gh-pages": "^6.3.0",
     "globals": "^17.6.0",
+    "meshoptimizer": "^1.2.0",
     "prettier": "^3.8.4",
+    "sharp": "^0.35.3",
     "vite": "^8.0.2",
     "vite-plugin-pwa": "^1.2.0"
   },
