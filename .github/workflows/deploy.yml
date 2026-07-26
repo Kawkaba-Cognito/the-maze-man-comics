@@ -43,14 +43,59 @@ jobs:
 
       - name: Publish dist/ to gh-pages
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin gh-pages
           git worktree add /tmp/site origin/gh-pages
-          # gh-pages holds ONLY the built site, so wiping everything except
-          # .git and copying dist/. in is an exact mirror of the build.
-          find /tmp/site -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+
+          # gh-pages is deliberately NOT wiped on each deploy.
+          #
+          # Vite content-hashes every JS/CSS chunk, so a deploy that deleted the
+          # previous build's files left every already-open tab — and every
+          # installed PWA still holding the old index.html — requesting chunks
+          # that now 404. When the missing one is the ENTRY chunk the page cannot
+          # boot at all: React and the ErrorBoundary live inside it, so there is
+          # no in-app recovery, just a dead screen until the service worker
+          # happens to update. (Confirmed live 2026-07-26: the precached shell
+          # pointed at Assets/index-BHkJm4nN.js, already 404 on the server.)
+          #
+          # So: keep the last two builds' files alive and prune only what has
+          # been absent for that long. .deploy-manifest{,.prev} are the ledger —
+          # dot-prefixed, so GitHub Pages never serves them.
+          ( cd dist && find . -type f | sed 's|^\./||' | LC_ALL=C sort ) > /tmp/build-now.txt
+
+          if [ -f /tmp/site/.deploy-manifest ]; then
+            LC_ALL=C sort /tmp/site/.deploy-manifest > /tmp/build-prev1.txt
+          else
+            # First deploy under this scheme: there is no ledger yet, so treat
+            # everything currently published as the previous build. Without this
+            # the changeover deploy would still delete the chunks live clients
+            # are holding — the exact failure this step exists to prevent.
+            ( cd /tmp/site && find . -type f -not -path './.git/*' | sed 's|^\./||' \
+              | LC_ALL=C sort ) > /tmp/build-prev1.txt
+          fi
+          if [ -f /tmp/site/.deploy-manifest.prev ]; then
+            LC_ALL=C sort /tmp/site/.deploy-manifest.prev > /tmp/build-prev2.txt
+          else
+            : > /tmp/build-prev2.txt
+          fi
+
+          { cat /tmp/build-now.txt /tmp/build-prev1.txt /tmp/build-prev2.txt
+            printf '.deploy-manifest\n.deploy-manifest.prev\n'
+          } | LC_ALL=C sort -u > /tmp/keep.txt
+          ( cd /tmp/site && find . -type f -not -path './.git/*' | sed 's|^\./||' \
+            | LC_ALL=C sort ) > /tmp/published.txt
+          comm -23 /tmp/published.txt /tmp/keep.txt > /tmp/prune.txt
+          echo "Publishing $(wc -l < /tmp/build-now.txt) file(s); pruning $(wc -l < /tmp/prune.txt) stale for two builds."
+          while IFS= read -r stale; do
+            [ -n "$stale" ] && rm -f "/tmp/site/$stale"
+          done < /tmp/prune.txt
+
           cp -r dist/. /tmp/site/
+          cp /tmp/build-prev1.txt /tmp/site/.deploy-manifest.prev
+          cp /tmp/build-now.txt /tmp/site/.deploy-manifest
+
           cd /tmp/site
           git add -A
           if git diff --cached --quiet; then

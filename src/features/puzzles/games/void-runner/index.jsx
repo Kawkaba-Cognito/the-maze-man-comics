@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { releaseGlContext } from '../../../training/shared/c3dViewport';
 
 /*
  * VOID RUNNER — a 3-lane endless space runner (Three.js), ported from a
@@ -1439,6 +1440,7 @@ function createVoidRunner(root, THREE, { onBack }) {
         }
       });
       renderer.dispose();
+      releaseGlContext(renderer);
     },
   };
 }

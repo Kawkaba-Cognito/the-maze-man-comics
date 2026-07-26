@@ -4,7 +4,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { shapeGeometry } from '../../../../shared/c3dShapes';
-import { isCoarsePointer, isDesktopLayout } from '../../../../shared/c3dViewport';
+import { isCoarsePointer, isDesktopLayout, releaseGlContext } from '../../../../shared/c3dViewport';
 import '../../../../shared/c3dProto.css';
 
 /*
@@ -492,6 +492,7 @@ export default function CancelScene3D({ cells, round, interactive, onTapCell, is
       for (const m of meteors) { m.line.geometry.dispose(); m.line.material.dispose(); }
       composer?.dispose();
       renderer.dispose();
+      releaseGlContext(renderer);
       if (renderer.domElement.parentNode === wrap) wrap.removeChild(renderer.domElement);
       apiRef.current = { loadBoard() {}, setInteractive() {}, applyCells() {}, ready: false };
     };

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { createDrKawkabInstance, disposeDrKawkabInstance } from '../../features/training/shared/drKawkabModel';
+import { isCoarsePointer, releaseGlContext } from '../../features/training/shared/c3dViewport';
 
 /*
  * AssessmentMascot3D — the rigged hooded figure that stands at the centre of
@@ -54,9 +55,19 @@ export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label
       catch { return false; }
     })();
 
+    // Match the shared c3dBoot budget on touch devices. This badge mounts on the
+    // Training hub AND inside the cancel-task tutorial, so on a phone two of them
+    // can be alive at once alongside a game's own scene; asking for MSAA at DPR 2
+    // and a discrete GPU for a ~150px badge is what makes that stack expensive.
+    const coarse = isCoarsePointer();
+
     let renderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      renderer = new THREE.WebGLRenderer({
+        antialias: !coarse,
+        alpha: true,
+        powerPreference: coarse ? 'default' : 'high-performance',
+      });
     } catch {
       return undefined; // no WebGL → SVG fallback remains visible
     }
@@ -65,7 +76,7 @@ export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label
     const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
     camera.position.set(0, 0, 4);
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.3 : 2));
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
@@ -221,6 +232,10 @@ export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label
       mixer?.stopAllAction();
       if (model) disposeDrKawkabInstance(model);
       renderer.dispose();
+      // dispose() frees GPU objects but NOT the WebGL context itself — that waits
+      // on GC, and phones cap live contexts far lower than desktop. Release it now
+      // so navigating hub → game → hub can't stack contexts until the tab is killed.
+      releaseGlContext(renderer);
       if (renderer.domElement.parentNode === wrap) wrap.removeChild(renderer.domElement);
     };
   }, [size]);

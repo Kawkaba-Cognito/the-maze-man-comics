@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { createTutorialHandInstance } from '../../shared/tutorialHandModel';
+import { isCoarsePointer, releaseGlContext } from '../c3dViewport';
 
 /*
  * TutorialHand3D — a floating pointing-hand overlay for guided tutorials,
@@ -38,9 +39,19 @@ export default function TutorialHand3D({ target, tapSignal = 0 }) {
       catch { return false; }
     })();
 
+    // This canvas fills its parent, so on a phone it is a FULL-SCREEN surface —
+    // the most expensive renderer in the tutorial despite drawing one small hand.
+    // Match the shared c3dBoot budget on touch rather than asking for MSAA at
+    // DPR 2 on a discrete GPU.
+    const coarse = isCoarsePointer();
+
     let renderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      renderer = new THREE.WebGLRenderer({
+        antialias: !coarse,
+        alpha: true,
+        powerPreference: coarse ? 'default' : 'high-performance',
+      });
     } catch {
       return undefined; // no WebGL — hand just never appears, tutorial text still works
     }
@@ -49,7 +60,7 @@ export default function TutorialHand3D({ target, tapSignal = 0 }) {
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 20);
     camera.position.set(0, 0, 8);
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.3 : 2));
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
@@ -122,17 +133,28 @@ export default function TutorialHand3D({ target, tapSignal = 0 }) {
     let raf = 0;
     let last = performance.now();
     let paused = false;
+    // `target={null}` means Kawkab is just talking and there is no hand to show.
+    // That is most of the tutorial, so idle instead of compositing a full-screen
+    // transparent frame every tick: draw once to clear the hand, then stop until
+    // there is a target again.
+    let clearedFrameDrawn = false;
     const loop = (now) => {
       raf = requestAnimationFrame(loop);
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      if (paused) { renderer.render(scene, camera); return; }
+      if (paused) return; // tab hidden — nothing on screen to keep up to date
+      const target = targetRef.current;
+      if (!target) {
+        if (clearedFrameDrawn) return;
+        clearedFrameDrawn = true;
+      } else {
+        clearedFrameDrawn = false;
+      }
       const holder = model?.userData?.holder;
       if (holder) {
-        const t = targetRef.current;
-        holder.visible = !!t;
-        if (t) {
-          const dest = worldFor(t.x, t.y);
+        holder.visible = !!target;
+        if (target) {
+          const dest = worldFor(target.x, target.y);
           holder.position.lerp(dest, reduced ? 1 : Math.min(1, dt * 6));
           const bob = reduced ? 0 : Math.sin(now / 480) * 0.02;
           const tap = tapRef.current;
@@ -165,6 +187,7 @@ export default function TutorialHand3D({ target, tapSignal = 0 }) {
       document.removeEventListener('visibilitychange', onVis);
       model?.removeFromParent?.();
       renderer.dispose();
+      releaseGlContext(renderer);
       if (renderer.domElement.parentNode === wrap) wrap.removeChild(renderer.domElement);
     };
   }, []);

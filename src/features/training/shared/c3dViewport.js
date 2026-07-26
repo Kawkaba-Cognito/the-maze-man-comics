@@ -65,3 +65,20 @@ export function isCoarsePointer() {
 export function isDesktopLayout(width, height) {
   return width >= 900 || (width / Math.max(1, height) >= 1.2 && width >= 700);
 }
+
+/**
+ * Hand a WebGL context back to the browser immediately.
+ *
+ * `renderer.dispose()` frees the textures/buffers three.js allocated, but the
+ * CONTEXT itself lives until the canvas is garbage-collected — which can be far
+ * later, or never while anything still references it. Desktop tolerates that
+ * (measured 76 create/destroy cycles with zero forced losses); phones do not:
+ * they cap live contexts and GPU memory much lower, and the browser's recourse
+ * is to kill the oldest context or the whole tab.
+ *
+ * Every renderer teardown in the app should call this straight after dispose().
+ * Safe to call twice, and safe if the extension is unavailable.
+ */
+export function releaseGlContext(renderer) {
+  try { renderer?.forceContextLoss?.(); } catch { /* already lost or unsupported */ }
+}

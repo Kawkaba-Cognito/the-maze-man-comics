@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { isCoarsePointer } from '../../../../shared/c3dViewport';
+import { isCoarsePointer, releaseGlContext } from '../../../../shared/c3dViewport';
 import '../../../../shared/c3dProto.css';
 
 /*
@@ -277,6 +277,7 @@ export default function MotScene3D({ dotsRef, fieldRef, phaseRef, interactive, o
       starMat.dispose();
       composer?.dispose();
       renderer.dispose();
+      releaseGlContext(renderer);
       if (renderer.domElement.parentNode === wrap) wrap.removeChild(renderer.domElement);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

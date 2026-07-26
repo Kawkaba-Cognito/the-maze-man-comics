@@ -9,6 +9,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import {
   isCoarsePointer,
   isDesktopLayout,
+  releaseGlContext,
 } from './c3dViewport';
 
 const ATT = 0xe8ac4e;
@@ -168,6 +169,7 @@ export function bootC3dScene(wrap, opts = {}) {
     stars?.material.dispose();
     composer?.dispose();
     renderer.dispose();
+    releaseGlContext(renderer);
     if (renderer.domElement.parentNode === wrap) wrap.removeChild(renderer.domElement);
   };
 

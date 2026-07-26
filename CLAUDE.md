@@ -18,6 +18,10 @@ npm run build                    # production build + PWA service worker
 
 **Deploying is automatic (2026-07-16)**: every push to `main` on `origin` (Kawkaba-Cognito) triggers `.github/workflows/deploy.yml`, which installs, runs `audit:fq` + `validate:rh`, builds, and publishes `dist/` to the `gh-pages` branch — the branch GitHub Pages serves. It can also be run by hand from the repo's Actions tab (workflow_dispatch). The `cognitive` mirror does **not** auto-deploy; push `gh-pages` there manually if the mirror should stay current.
 
+⚠️ **A deploy must NEVER delete the previous build's files (2026-07-26).** It used to wipe `gh-pages` and copy `dist/` in, which deleted every old content-hashed chunk. Any client still holding the previous `index.html` — an open tab, or an installed PWA — then 404'd on chunks; when the missing one was the **entry** chunk the page could not boot at all, because React and the ErrorBoundary live inside it. That is the "app errored and crashed, fine the next day" report: no in-app recovery, just a dead screen until the service worker happened to update. Caught live: the precached shell named `Assets/index-BHkJm4nN.js`, already 404 on the server.
+
+The publish step now keeps the **last two builds** alive and prunes only what has been absent that long. `.deploy-manifest` (this build's file list) and `.deploy-manifest.prev` are the ledger — dot-prefixed, so Pages never serves them; deleting them silently disables the grace period. Paired with the network-first shell in `vite.config.js` (below) — **both halves are needed**, since the retention only helps clients whose service worker is still serving a stale shell.
+
 ⚠️ **This checkout's HEAD is on `main`, which is source-only — NEVER commit built files here.** (A 2026-07-15 deploy accidentally committed the dist mirror to `main` and had to be reverted.) `main` still *tracks* a stale snapshot of some built files at the repo root (old `index.html`, `Assets/*.glb`, `icons/`, …) left over from when this checkout lived on `gh-pages` — leave them alone; don't "refresh" or delete them as part of a deploy.
 
 **Manual fallback** (only if Actions is unavailable) — deploy through a `gh-pages` worktree, never on `main`:
@@ -25,7 +29,10 @@ npm run build                    # production build + PWA service worker
 ```bash
 npm run build
 git worktree add "$TEMP/gh-pages-deploy" gh-pages
-# in the worktree: delete everything except .git, then copy dist/. in
+# Copy dist/. in ON TOP of what is there — do NOT delete the existing files first.
+# The old "wipe everything except .git" step is what caused the 2026-07-26 crash
+# (see above); wiping by hand here reintroduces it and strands live clients.
+# Leave .deploy-manifest{,.prev} alone — CI owns the pruning.
 git -C "$TEMP/gh-pages-deploy" add -A        # safe THERE — gh-pages holds only the site
 git -C "$TEMP/gh-pages-deploy" commit -m "Deploy: <summary>"
 git -C "$TEMP/gh-pages-deploy" push origin gh-pages       # the live site
@@ -53,9 +60,11 @@ Live: https://kawkaba-cognito.github.io/the-maze-man-comics/
 
 - **`assetsDir: 'Assets'` (capital A)** in vite.config.js — Windows is case-insensitive, GitHub Pages (Linux) is not; must match `public/Assets/`.
 - **Service worker precaches only the shell** (css/html/svg/icons — no JS chunks). Deliberate: precaching all chunks stalled SW install on GitHub Pages and froze every training game in production. Do not "fix" this by widening `globPatterns`.
+- **`index.html` is deliberately NOT precached, and `navigateFallback` is deliberately `undefined`** (2026-07-26). vite-plugin-pwa defaults `navigateFallback` to `'index.html'`, which registers a NavigationRoute serving the *cached* shell for every navigation — a shell that outlives the deploy and keeps naming entry chunks that no longer exist. Navigations go through the `app-shell` NetworkFirst rule instead: online you always boot from HTML that matches the server, offline you fall back to the last shell that loaded. It has **no `networkTimeoutSeconds` on purpose** — a timeout would serve the stale shell again on a slow connection, and the document is ~2 KB. Restoring either default re-breaks the app after a deploy.
+- **Runtime cache `maxEntries` must stay well above one build's file count.** Workbox's ExpirationPlugin refuses to *serve* entries past the cap, not just evict them, so a too-small cap silently breaks offline. At `app-scripts: 100` (== this build's 100 chunks) the app's own entry chunk was unreachable with the network down. Now 400 (scripts) and 600 (`assets`; 459 art/GLB files). Re-check these when the build grows.
 - **Babylon.js is pinned** to v9.11.0 with an SRI hash in `src/context/AppContext.jsx` (`beginMazeEntry`). Bumping the version without recomputing the `integrity` hash silently breaks the entire 3D maze.
 - **`npm install` needs `--legacy-peer-deps`.**
-- **Lazy chunks self-heal**: `src/lib/lazyWithRetry.js` retries a failed dynamic import once, then drops caches and reloads — covers stale-manifest 404s right after a deploy.
+- **Lazy chunks self-heal**: `src/lib/lazyWithRetry.js` retries a failed dynamic import once, then drops caches and reloads — covers stale-manifest 404s right after a deploy. It cannot cover a missing **entry** chunk: it lives inside that chunk, so if the entry 404s nothing runs at all. That case is prevented upstream, by the two fixes above.
 - Base path is `/the-maze-man-comics/` — deep asset URLs go through `src/lib/assetUrl.js`.
 
 ## Names that lie (read this before searching)

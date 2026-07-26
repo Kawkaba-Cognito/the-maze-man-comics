@@ -1,5 +1,6 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import * as THREE from 'three';
+import { releaseGlContext } from '../training/shared/c3dViewport';
 
 /*
  * ZenUniverse — the Home screen's living 3D backdrop.
@@ -904,6 +905,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       hitSphere.geometry.dispose(); hitSphere.material.dispose();
       composer?.dispose();
       renderer.dispose();
+      releaseGlContext(renderer);
       wrap.removeChild(renderer.domElement);
     };
   }, []);
