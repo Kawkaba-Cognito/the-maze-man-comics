@@ -69,7 +69,9 @@ function pwaPlugin() {
       // training game frozen on the "Loading…" Suspense fallback. JS/worker
       // chunks are now fetched on demand and cached at runtime instead, so the
       // install stays tiny and can't wedge first interaction.
-      globPatterns: ['**/*.{css,html,svg,ico,woff2}', 'manifest.webmanifest', 'icons/**/*.png'],
+      // No 'manifest.webmanifest' here on purpose — vite-plugin-pwa injects the
+      // manifest into the precache itself, so listing it again precached it twice.
+      globPatterns: ['**/*.{css,html,svg,ico,woff2}', 'icons/**/*.png'],
       // index.html is the ONE file that must never be served from a cache the
       // deploy can outlive — see the navigation rule below. Every other HTML
       // (the standalone episode page) still precaches normally.

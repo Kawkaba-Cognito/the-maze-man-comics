@@ -18,7 +18,10 @@
   " />
   <title>Episode 1: Problem Solving — The Maze Man Comics</title>
   <!-- Google Fonts: free, requires internet. Bangers = comic title, Cairo = Arabic -->
-  <link rel="manifest" href="manifest.json">
+  <!-- The generated PWA manifest, not the old hand-written manifest.json: that
+       file lived at the repo ROOT, never got copied into the build, and so this
+       link 404'd in every deploy until it was corrected (2026-07-26). -->
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
   <link rel="shortcut icon" href="favicon.ico">
   <meta name="theme-color" content="#05050f">
