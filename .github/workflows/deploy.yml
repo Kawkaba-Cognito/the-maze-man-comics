@@ -84,12 +84,20 @@ jobs:
           { cat /tmp/build-now.txt /tmp/build-prev1.txt /tmp/build-prev2.txt
             printf '.deploy-manifest\n.deploy-manifest.prev\n'
           } | LC_ALL=C sort -u > /tmp/keep.txt
-          ( cd /tmp/site && find . -type f -not -path './.git/*' | sed 's|^\./||' \
-            | LC_ALL=C sort ) > /tmp/published.txt
+          # `-not -path './.git'` is load-bearing, NOT redundant with the glob
+          # below it. In a worktree /tmp/site/.git is a FILE, not a directory,
+          # so './.git/*' does not match it — .git landed in the published list,
+          # was absent from keep, and the prune loop deleted the worktree's link
+          # to the repo. It stayed invisible for two deploys because both pruned
+          # nothing; the first real prune killed the job (2026-07-26).
+          ( cd /tmp/site && find . -type f -not -path './.git' -not -path './.git/*' \
+            | sed 's|^\./||' | LC_ALL=C sort ) > /tmp/published.txt
           comm -23 /tmp/published.txt /tmp/keep.txt > /tmp/prune.txt
           echo "Publishing $(wc -l < /tmp/build-now.txt) file(s); pruning $(wc -l < /tmp/prune.txt) stale for two builds."
           while IFS= read -r stale; do
-            [ -n "$stale" ] && rm -f "/tmp/site/$stale"
+            # Belt and braces: never let a bad list take out the git plumbing.
+            case "$stale" in '' | .git | .git/* | ../* | /*) continue ;; esac
+            rm -f "/tmp/site/$stale"
           done < /tmp/prune.txt
 
           cp -r dist/. /tmp/site/
