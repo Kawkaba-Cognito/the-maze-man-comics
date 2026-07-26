@@ -290,6 +290,7 @@ export default function NoirCase({
                 activeId={phase === 'talk' ? activeId : null}
                 reaction={reaction}
                 cleared={clearedIds}
+                isAr={isAr}
                 onSelect={(sid) => {
                   if (script || overlay) return;
                   playSfx?.('click');

@@ -1,30 +1,81 @@
 import React, { useEffect, useRef } from 'react';
 import { bootC3dScene, THREE } from '../../../../../../shared/c3dBoot';
 import { createCharacter, preloadCast } from '../../../../../../shared/castModels';
-import { STAGE_HEIGHT, RIG_HEIGHT } from '../../../../../../shared/castRoster';
+import { RIG_HEIGHT } from '../../../../../../shared/castRoster';
 
 /*
- * The interrogation stage.
+ * Survival's interrogation room.
  *
- * Suspects stand in a shallow arc under a single hard light; Dr Kawkab stands
- * downstage with his back to us, so the player is looking over his shoulder.
- * Selecting a suspect brings them forward and turns the rest away.
- *
- * Everything here is best-effort: if WebGL or the models fail, onError fires
- * and the case falls back to the 2D line-up rather than dead-ending the run.
+ * The cast assets are intentionally never scaled: their shared skinned rig
+ * breaks when a parent scale is introduced (see castModels.js). Perceived size
+ * is controlled by the camera and by a separate portrait layout instead.
  */
-/** Roughly how wide a character is on stage — used for spacing and framing. */
 const CHAR_WIDTH = 1.05;
+const FLOOR_Y = 0.065;
+
+const damp = (value, target, dt, speed = 5) => value + (target - value) * Math.min(1, dt * speed);
+
+function localName(suspect, isAr) {
+  if (typeof suspect.name === 'string') return suspect.name;
+  return suspect.name?.[isAr ? 'ar' : 'en'] || suspect.name?.en || suspect.id;
+}
+
+/** A crisp camera-facing brass nameplate, owned and disposed by the stage. */
+function makeNameplate(text, accent, renderer) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 112;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'rgba(5, 6, 10, 0.94)';
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(10, 12, 492, 88, 12);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#f3e6c8';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '700 34px Outfit, Cairo, sans-serif';
+  ctx.fillText(text, 256, 57, 450);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(0.92, 0.2, 1);
+  sprite.renderOrder = 20;
+  return { sprite, texture, material };
+}
 
 export default function Interrogation3D({
-  suspects, activeId, reaction, cleared, onSelect, onReady, onError,
+  suspects,
+  activeId,
+  reaction,
+  cleared,
+  isAr,
+  onSelect,
+  onReady,
+  onError,
 }) {
   const wrapRef = useRef(null);
   const apiRef = useRef(null);
   const handlers = useRef({});
+  const activeRef = useRef(activeId);
+  const clearedRef = useRef(cleared || []);
   handlers.current = { onSelect, onReady, onError };
+  activeRef.current = activeId;
+  clearedRef.current = cleared || [];
 
-  // Rebuild only when the cast itself changes — not on every selection.
+  // Rebuild for a genuinely different cast or language, not on selection.
   const castKey = suspects.map((s) => s.id).join(',');
 
   useEffect(() => {
@@ -32,221 +83,528 @@ export default function Interrogation3D({
     if (!wrap) return undefined;
 
     let disposed = false;
-    // bloom off: the cast is pale and glossy, and the bloom pass turns every
-    // highlight into a blown-out white smear.
     const boot = bootC3dScene(wrap, {
-      fov: 50, fitHalf: 4.4, alpha: true, bloom: false,
+      fov: 44,
+      fitHalf: 4.2,
+      alpha: true,
+      bloom: false,
+      lights: false,
+      stars: false,
     });
     if (boot.error) {
       handlers.current.onError?.(boot.error);
       return () => boot.dispose();
     }
-    const {
-      camera, playRoot, scene, renderer, setTick, dispose,
-    } = boot;
 
-    // Characters stand ON the floor, so their mass sits entirely above y=0
-    // while c3dBoot frames content centred on the origin. frameCast() below
-    // corrects for that once everyone has actually loaded.
+    const { camera, coarse, playRoot, scene, renderer, setTick, dispose } = boot;
+
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.86;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.domElement.setAttribute(
+      'aria-label',
+      isAr ? 'صف المشتبه بهم التفاعلي' : 'Interactive suspect line-up',
+    );
+    scene.fog = new THREE.FogExp2(0x06070b, 0.055);
+
     const stage = new THREE.Group();
     playRoot.add(stage);
 
-    // A small, dark floor. Kept tight: a wide disc catches the key light and
-    // reads as a bright empty plain rather than the corner of a room.
-    const floor = new THREE.Mesh(
-      new THREE.CircleGeometry(3.8, 48),
-      new THREE.MeshStandardMaterial({ color: 0x0d0b12, roughness: 1, metalness: 0 }),
-    );
+    // Only set geometry is disposed here. Cast geometry/materials are cached and
+    // shared across cases, so they must never enter these ownership sets.
+    const ownedGeometry = new Set();
+    const ownedMaterial = new Set();
+    const ownedTexture = new Set();
+    const own = (mesh, parent = stage) => {
+      if (mesh.geometry) ownedGeometry.add(mesh.geometry);
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      mats.filter(Boolean).forEach((m) => ownedMaterial.add(m));
+      parent.add(mesh);
+      return mesh;
+    };
+    const box = (parent, size, material, position) => {
+      const mesh = own(new THREE.Mesh(new THREE.BoxGeometry(...size), material), parent);
+      mesh.position.set(...position);
+      mesh.receiveShadow = true;
+      return mesh;
+    };
+
+    // ── room shell ────────────────────────────────────────────────────────
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x090a0e,
+      roughness: 0.68,
+      metalness: 0.18,
+    });
+    const floor = own(new THREE.Mesh(new THREE.PlaneGeometry(10.5, 5.8), floorMat));
     floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -0.02;
-    stage.add(floor);
+    floor.position.set(0.55, 0, 0.75);
+    floor.receiveShadow = true;
 
-    // c3dBoot already supplies ambient + key + rim, so this only adds shape: a
-    // broad soft pool from above-front and a cold edge from behind to lift them
-    // off the black. Deliberately gentle — these models are pale and glossy and
-    // go to pure white the moment a light gets punchy.
-    const spot = new THREE.SpotLight(0xffe0b0, 7, 16, Math.PI / 2.2, 0.95, 0.9);
-    spot.position.set(0.3, 3.6, 3.2);
-    spot.target.position.set(0, 0.8, 0);
-    stage.add(spot);
-    stage.add(spot.target);
+    const wallMat = new THREE.MeshStandardMaterial({
+      color: 0x0a0c12,
+      roughness: 0.92,
+      metalness: 0.08,
+    });
+    const wall = own(new THREE.Mesh(new THREE.PlaneGeometry(10.5, 4.3), wallMat));
+    wall.position.set(0.55, 1.74, -1.48);
+    wall.receiveShadow = true;
 
-    const back = new THREE.PointLight(0x5f7fb8, 3.5, 12, 1.0);
-    back.position.set(0, 2.2, -2.8);
-    stage.add(back);
+    const railMat = new THREE.MeshStandardMaterial({
+      color: 0x24201a,
+      roughness: 0.5,
+      metalness: 0.62,
+    });
+    box(stage, [9.7, 0.08, 0.12], railMat, [0.55, 3.27, -1.35]);
+    box(stage, [9.7, 0.1, 0.16], railMat, [0.55, 0.18, -1.35]);
+    box(stage, [0.08, 3.15, 0.12], railMat, [-4.28, 1.72, -1.35]);
+    box(stage, [0.08, 3.15, 0.12], railMat, [5.38, 1.72, -1.35]);
 
-    const fill = new THREE.HemisphereLight(0x9fb2d6, 0x140f0a, 0.5);
-    stage.add(fill);
+    // Repeated wall seams give the room scale without competing with faces.
+    const seamMat = new THREE.MeshBasicMaterial({
+      color: 0x252a36,
+      transparent: true,
+      opacity: 0.42,
+      toneMapped: false,
+    });
+    [-3.55, -2.55, -1.55, 2.55, 3.55, 4.55].forEach((x) => {
+      box(stage, [0.025, 2.85, 0.02], seamMat, [x, 1.7, -1.445]);
+    });
 
+    // A single shadow caster gives every actor contact with the floor without
+    // paying for three animated shadow maps on phones.
+    const ambient = new THREE.HemisphereLight(0x7183a6, 0x160e09, 0.62);
+    stage.add(ambient);
+    const key = new THREE.DirectionalLight(0xffdbac, 1.8);
+    key.position.set(2.8, 5.4, 4.2);
+    key.target.position.set(0, 0.78, 0);
+    key.castShadow = true;
+    key.shadow.mapSize.set(coarse ? 512 : 1024, coarse ? 512 : 1024);
+    key.shadow.camera.left = -5;
+    key.shadow.camera.right = 5;
+    key.shadow.camera.top = 4.5;
+    key.shadow.camera.bottom = -1.5;
+    key.shadow.camera.near = 0.5;
+    key.shadow.camera.far = 14;
+    key.shadow.bias = -0.00035;
+    key.shadow.normalBias = 0.025;
+    stage.add(key, key.target);
+
+    const coldRim = new THREE.PointLight(0x4e73ad, 5.2, 7.5, 1.7);
+    coldRim.position.set(-3.5, 2.25, -0.25);
+    stage.add(coldRim);
+    const amberRim = new THREE.PointLight(0xc17838, 4.4, 7, 1.8);
+    amberRim.position.set(3.75, 1.5, 0.9);
+    stage.add(amberRim);
+
+    const entries = [];
     const characters = new Map();
     let kawkab = null;
     let hitMeshes = [];
-    // Framing is computed from the layout below, not measured off the models:
-    // Box3 cannot be trusted on these skinned characters (see castModels.js).
-    let fit = null;
+    let hoveredId = null;
 
-    const arcFor = (n, i) => {
-      // Shallow arc so nobody occludes anybody, widening with cast size.
-      const spread = CHAR_WIDTH + 0.28;
-      const x = (i - (n - 1) / 2) * spread;
-      const z = -Math.abs(x) * 0.16;
-      return { x, z };
+    const panelMat = new THREE.MeshStandardMaterial({
+      color: 0x0d111a,
+      roughness: 0.82,
+      metalness: 0.14,
+    });
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: 0x30281d,
+      roughness: 0.42,
+      metalness: 0.68,
+    });
+    const riserMat = new THREE.MeshStandardMaterial({
+      color: 0x101118,
+      emissive: 0x20170c,
+      emissiveIntensity: 0.22,
+      roughness: 0.48,
+      metalness: 0.55,
+    });
+
+    const makeBay = (suspect, index) => {
+      const bay = new THREE.Group();
+      stage.add(bay);
+
+      const panel = own(new THREE.Mesh(new THREE.PlaneGeometry(1.16, 2.65), panelMat), bay);
+      panel.position.set(0, 1.58, -1.44);
+      panel.receiveShadow = true;
+      box(bay, [1.27, 0.055, 0.055], frameMat, [0, 2.91, -1.39]);
+      box(bay, [1.27, 0.055, 0.055], frameMat, [0, 0.25, -1.39]);
+      box(bay, [0.055, 2.72, 0.055], frameMat, [-0.635, 1.58, -1.39]);
+      box(bay, [0.055, 2.72, 0.055], frameMat, [0.635, 1.58, -1.39]);
+
+      const accent = new THREE.Color(suspect.accent || 0xd9a441);
+      const haloMat = new THREE.MeshBasicMaterial({
+        color: accent,
+        transparent: true,
+        opacity: 0.2,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        toneMapped: false,
+      });
+      const halo = own(new THREE.Mesh(new THREE.RingGeometry(0.42, 0.445, 64), haloMat), bay);
+      halo.position.set(0, 1.58, -1.37);
+
+      const slitMat = new THREE.MeshBasicMaterial({
+        color: accent,
+        transparent: true,
+        opacity: 0.17,
+        toneMapped: false,
+      });
+      box(bay, [0.045, 1.65, 0.025], slitMat, [0, 1.62, -1.365]);
+
+      const lampMat = new THREE.MeshStandardMaterial({
+        color: 0x2d281f,
+        emissive: 0x8c5728,
+        emissiveIntensity: 0.32,
+        roughness: 0.38,
+        metalness: 0.72,
+      });
+      const lamp = own(
+        new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.27, 0.16, 32), lampMat),
+        bay,
+      );
+      lamp.position.set(0, 3.08, -0.05);
+
+      const beamMat = new THREE.MeshBasicMaterial({
+        color: 0xffd89a,
+        transparent: true,
+        opacity: 0.045,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        toneMapped: false,
+      });
+      const beam = own(
+        new THREE.Mesh(new THREE.ConeGeometry(0.73, 3.05, 32, 1, true), beamMat),
+        bay,
+      );
+      beam.position.set(0, 1.57, -0.02);
+      beam.renderOrder = 1;
+
+      const riser = own(
+        new THREE.Mesh(new THREE.CylinderGeometry(0.64, 0.7, 0.1, 48), riserMat),
+        bay,
+      );
+      riser.position.set(0, 0.05, 0.02);
+      riser.receiveShadow = true;
+
+      const poolMat = new THREE.MeshBasicMaterial({
+        color: accent,
+        transparent: true,
+        opacity: 0.13,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        toneMapped: false,
+      });
+      const pool = own(new THREE.Mesh(new THREE.CircleGeometry(0.58, 48), poolMat), bay);
+      pool.rotation.x = -Math.PI / 2;
+      pool.position.set(0, 0.106, 0.02);
+      pool.renderOrder = 2;
+
+      const spot = new THREE.SpotLight(0xffd8a3, 13.5, 7, Math.PI / 7.2, 0.82, 1.45);
+      const spotTarget = new THREE.Object3D();
+      stage.add(spot, spotTarget);
+      spot.target = spotTarget;
+
+      const nameplate = makeNameplate(
+        localName(suspect, isAr),
+        suspect.accent || '#d9a441',
+        renderer,
+      );
+      ownedTexture.add(nameplate.texture);
+      ownedMaterial.add(nameplate.material);
+      stage.add(nameplate.sprite);
+
+      const entry = {
+        id: suspect.id,
+        index,
+        bay,
+        beam,
+        beamMat,
+        haloMat,
+        nameplate: nameplate.sprite,
+        poolMat,
+        riserMat,
+        spot,
+        spotTarget,
+        home: { x: 0, z: 0 },
+        ch: null,
+      };
+      entries.push(entry);
+      return entry;
     };
+
+    suspects.forEach(makeBay);
+
+    // The detective has his own downstage station. On portrait screens the
+    // station leaves the shot completely so the three suspects can stay large.
+    const detectiveStation = new THREE.Group();
+    stage.add(detectiveStation);
+    const detectiveRiserMat = new THREE.MeshStandardMaterial({
+      color: 0x141116,
+      emissive: 0x5d3817,
+      emissiveIntensity: 0.28,
+      roughness: 0.46,
+      metalness: 0.58,
+    });
+    const detectiveRiser = own(
+      new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.09, 48), detectiveRiserMat),
+      detectiveStation,
+    );
+    detectiveRiser.position.y = 0.045;
+    detectiveRiser.receiveShadow = true;
+    const detectiveRingMat = new THREE.MeshBasicMaterial({
+      color: 0xe8ac4e,
+      transparent: true,
+      opacity: 0.16,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+    });
+    const detectiveRing = own(
+      new THREE.Mesh(new THREE.RingGeometry(0.43, 0.49, 48), detectiveRingMat),
+      detectiveStation,
+    );
+    detectiveRing.rotation.x = -Math.PI / 2;
+    detectiveRing.position.y = 0.1;
+    const detectiveSpot = new THREE.SpotLight(0xe8ac4e, 8.5, 6, Math.PI / 6, 0.85, 1.5);
+    const detectiveTarget = new THREE.Object3D();
+    stage.add(detectiveSpot, detectiveTarget);
+    detectiveSpot.target = detectiveTarget;
 
     (async () => {
       try {
         await preloadCast([...suspects.map((s) => s.id), 'kawkab']);
         if (disposed) return;
 
-        const n = suspects.length;
-        for (let i = 0; i < n; i++) {
-          const def = suspects[i];
-          const ch = await createCharacter(def.id, { seedIndex: i });
-          if (disposed) { ch.dispose(); return; }
-          const { x, z } = arcFor(n, i);
-          ch.root.position.set(x, 0, z);
-          ch.home = { x, z };
-          ch.lookAt(-x * 0.14);
+        for (let i = 0; i < suspects.length; i++) {
+          const suspect = suspects[i];
+          const ch = await createCharacter(suspect.id, { seedIndex: i });
+          if (disposed) {
+            ch.dispose();
+            return;
+          }
+          ch.root.position.y = FLOOR_Y;
+          ch.model.traverse((node) => {
+            if (node.isMesh) node.castShadow = true;
+          });
           stage.add(ch.root);
-          characters.set(def.id, ch);
+          characters.set(suspect.id, ch);
+          entries[i].ch = ch;
 
-          // Click target. Raycasting the SkinnedMesh itself does not work:
-          // three tests against the geometry's bounding volume, which for these
-          // rigs is the (100x too small) bind-pose box — the hit area collapses
-          // to a speck. An invisible box we control is both reliable and
-          // cheaper than per-triangle picking on a 20k-vert character.
           const hit = new THREE.Mesh(
-            new THREE.BoxGeometry(CHAR_WIDTH * 0.9, RIG_HEIGHT, CHAR_WIDTH * 0.7),
+            new THREE.BoxGeometry(CHAR_WIDTH * 0.9, RIG_HEIGHT * 1.04, CHAR_WIDTH * 0.74),
             new THREE.MeshBasicMaterial({ visible: false }),
           );
           hit.position.y = RIG_HEIGHT / 2;
-          hit.userData.suspectId = def.id;
+          hit.userData.suspectId = suspect.id;
           ch.root.add(hit);
           hitMeshes.push(hit);
         }
 
-        // Dr Kawkab stands at the end of the line, turned in to face it. He was
-        // originally downstage for an over-the-shoulder shot, but that put him
-        // between the camera and the suspects — at this focal length two units
-        // of depth doubled his size and he swallowed the frame. He now shares
-        // the suspects' depth so everyone reads at the same scale.
-        kawkab = await createCharacter('kawkab');
-        if (disposed) { kawkab.dispose(); return; }
-        const edge = arcFor(n, n - 1).x + CHAR_WIDTH + 0.35;
-        kawkab.root.position.set(edge, 0, 0.1);
-        kawkab.lookAt(-Math.PI / 2.4);
+        kawkab = await createCharacter('kawkab', { seedIndex: suspects.length + 1 });
+        if (disposed) {
+          kawkab.dispose();
+          return;
+        }
+        kawkab.root.position.y = FLOOR_Y;
+        kawkab.model.traverse((node) => {
+          if (node.isMesh) node.castShadow = true;
+        });
         stage.add(kawkab.root);
 
-        // Frame the shot from the layout we just built. Everyone stands on
-        // y=0, so the group's vertical centre is simply half the tallest.
-        const left = arcFor(n, 0).x - CHAR_WIDTH / 2;
-        const right = edge + CHAR_WIDTH / 2;
-        // Half-extents of the cast itself; the breathing room around them is
-        // added per-frame, because how much you can afford depends on the shape
-        // of the viewport.
-        fit = {
-          local: new THREE.Vector3((left + right) / 2, STAGE_HEIGHT / 2, -0.2),
-          halfW: (right - left) / 2,
-          halfH: STAGE_HEIGHT / 2,
-        };
-
-        apiRef.current = { characters, kawkab };
+        apiRef.current = { characters, entries, kawkab };
         handlers.current.onReady?.();
       } catch (err) {
         if (!disposed) handlers.current.onError?.(err);
       }
     })();
 
-    // ── selection ────────────────────────────────────────────────────────
+    // ── picking ───────────────────────────────────────────────────────────
     const raycaster = new THREE.Raycaster();
-    const ptr = new THREE.Vector2();
-    const el = renderer.domElement;
+    const pointer = new THREE.Vector2();
+    const canvas = renderer.domElement;
+    const hitAt = (e) => {
+      if (!hitMeshes.length) return null;
+      const rect = canvas.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      return raycaster.intersectObjects(hitMeshes, false)[0]?.object?.userData?.suspectId || null;
+    };
+    const onMove = (e) => {
+      if (e.pointerType === 'touch') return;
+      hoveredId = hitAt(e);
+      canvas.style.cursor = hoveredId ? 'pointer' : 'default';
+    };
+    const onLeave = () => {
+      hoveredId = null;
+      canvas.style.cursor = 'default';
+    };
     const onUp = (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      if (!hitMeshes.length) return;
-      const rect = el.getBoundingClientRect();
-      ptr.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      ptr.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(ptr, camera);
-      const hit = raycaster.intersectObjects(hitMeshes, false)[0];
-      if (hit) handlers.current.onSelect?.(hit.object.userData.suspectId);
+      const id = hitAt(e);
+      if (id) handlers.current.onSelect?.(id);
     };
-    el.addEventListener('pointerup', onUp);
+    canvas.addEventListener('pointermove', onMove);
+    canvas.addEventListener('pointerleave', onLeave);
+    canvas.addEventListener('pointerup', onUp);
 
-    const camAt = new THREE.Vector3();
+    // ── responsive composition and animation ─────────────────────────────
+    const world = new THREE.Vector3();
+    const target = new THREE.Vector3();
+    const clearedSet = new Set();
     setTick((dt, now) => {
-      // Own the camera outright. c3dBoot's automatic fit is tuned for the
-      // abstract playfields the other 3D prototypes use; a line-up of
-      // floor-standing characters has to be framed on its own centre, and
-      // doing it here (after boot's resize handler) keeps it authoritative.
-      // Re-measured periodically so a resize — which moves playRoot — and the
-      // suspects stepping forward both stay in shot.
-      if (fit) {
-        // The stage carries no rotation or scale, so its world position plus
-        // the local target is the world target. Recomputed every frame because
-        // c3dBoot moves playRoot whenever the canvas resizes.
-        stage.getWorldPosition(camAt).add(fit.local);
-        // A wide screen can afford generous margins — the line-up sits in its
-        // room rather than filling the lens. A narrow one cannot: the same
-        // margins push the camera back until the cast is a row of specks, so
-        // portrait frames tight and lets the room fall away instead.
-        const wide = camera.aspect > 1.3;
-        const halfW = fit.halfW + (wide ? 1.15 : 0.3);
-        const halfH = fit.halfH + (wide ? 0.95 : 0.45);
-        const halfFov = (camera.fov * Math.PI) / 360;
-        const distV = halfH / Math.tan(halfFov);
-        const distH = halfW / (Math.tan(halfFov) * Math.max(0.2, camera.aspect));
-        const dist = Math.max(distV, distH) * (wide ? 1.25 : 1.05);
-        camera.position.set(camAt.x, camAt.y + halfH * 0.1, camAt.z + dist);
-        camera.lookAt(camAt);
+      const aspect = Math.max(0.25, camera.aspect || 1);
+      // Use the physical screen width as well as the canvas aspect. During a
+      // conversation the text panel shortens the canvas, but a phone is still
+      // a phone: bringing the detective back then would shrink the suspect at
+      // exactly the moment the player chose them.
+      const phone = wrap.clientWidth <= 620;
+      const portrait = phone || aspect < 0.78;
+      const compact = phone || aspect < 1.15;
+      const spread = portrait ? 1.06 : compact ? 1.1 : 1.46;
+      const active = activeRef.current;
+      const inactiveEntries = active ? entries.filter((entry) => entry.id !== active) : [];
+      clearedSet.clear();
+      clearedRef.current.forEach((id) => clearedSet.add(id));
+
+      entries.forEach((entry, index) => {
+        const x = (index - (entries.length - 1) / 2) * spread;
+        const z = portrait ? 0 : -Math.abs(x) * 0.055;
+        entry.home = { x, z };
+        entry.bay.position.x = x;
+
+        let tx = x;
+        let tz = z;
+        const focused = active === entry.id;
+        if (active) {
+          if (focused) {
+            tx = portrait ? 0 : -0.25;
+            tz = 0.72;
+          } else {
+            const slot = inactiveEntries.findIndex((candidate) => candidate.id === entry.id);
+            const slotSpread = portrait ? 2 : 3;
+            tx = (slot - (inactiveEntries.length - 1) / 2) * slotSpread;
+            tz = z - 0.68;
+          }
+        }
+
+        const ch = entry.ch;
+        if (ch) {
+          ch.root.position.x = damp(ch.root.position.x, tx, dt, 4.2);
+          ch.root.position.z = damp(ch.root.position.z, tz, dt, 4.2);
+          ch.root.position.y = FLOOR_Y;
+          ch.lookAt(!active ? -x * 0.13 : focused ? 0 : tx > 0 ? 0.62 : -0.62);
+          ch.update(dt, now);
+
+          entry.nameplate.position.set(ch.root.position.x, 0.16, ch.root.position.z + 0.54);
+        } else {
+          entry.nameplate.position.set(x, 0.16, z + 0.54);
+        }
+
+        const highlighted = focused || (!active && hoveredId === entry.id);
+        const clearedActor = clearedSet.has(entry.id);
+        const lightTarget = active ? (focused ? 17 : 3.2) : highlighted ? 17 : 11.5;
+        entry.spot.intensity = damp(entry.spot.intensity, lightTarget, dt, 5.5);
+        entry.spot.position.set(x + 0.18, 3.22, 1.55);
+        entry.spotTarget.position.set(tx, 0.82, tz);
+        entry.beamMat.opacity = damp(
+          entry.beamMat.opacity,
+          active ? (focused ? 0.075 : 0.018) : highlighted ? 0.068 : 0.043,
+          dt,
+          5,
+        );
+        entry.haloMat.opacity = damp(
+          entry.haloMat.opacity,
+          clearedActor ? 0.3 : active ? (focused ? 0.38 : 0.07) : highlighted ? 0.34 : 0.19,
+          dt,
+          5,
+        );
+        entry.poolMat.opacity = damp(
+          entry.poolMat.opacity,
+          clearedActor ? 0.23 : active ? (focused ? 0.24 : 0.045) : highlighted ? 0.22 : 0.12,
+          dt,
+          5,
+        );
+        entry.nameplate.material.opacity = damp(
+          entry.nameplate.material.opacity,
+          active ? (focused ? 0 : 0.24) : 1,
+          dt,
+          6,
+        );
+      });
+
+      const outerX = ((entries.length - 1) / 2) * spread;
+      const showDetective = !portrait;
+      const detectiveX = outerX + (compact ? 1.28 : 1.48);
+      detectiveStation.visible = showDetective;
+      detectiveSpot.visible = showDetective;
+      detectiveTarget.visible = showDetective;
+      detectiveStation.position.set(detectiveX, 0, 0.42);
+      detectiveSpot.position.set(detectiveX + 0.3, 3.05, 1.55);
+      detectiveTarget.position.set(detectiveX, 0.8, 0.42);
+      detectiveRingMat.opacity = damp(detectiveRingMat.opacity, active ? 0.26 : 0.14, dt, 4);
+      detectiveSpot.intensity = damp(detectiveSpot.intensity, active ? 11.5 : 7.5, dt, 4);
+      if (kawkab) {
+        kawkab.root.visible = showDetective;
+        kawkab.root.position.x = damp(kawkab.root.position.x, detectiveX, dt, 4.2);
+        kawkab.root.position.z = damp(kawkab.root.position.z, 0.42, dt, 4.2);
+        kawkab.root.position.y = FLOOR_Y;
+        kawkab.lookAt(active ? -1.15 : -0.92);
+        kawkab.update(dt, now);
       }
 
-      characters.forEach((ch) => {
-        ch.update(dt, now);
-        // Ease toward whatever position the selection state asked for.
-        const target = ch.stageTarget || ch.home;
-        if (target) {
-          ch.root.position.x += (target.x - ch.root.position.x) * Math.min(1, dt * 3.4);
-          ch.root.position.z += (target.z - ch.root.position.z) * Math.min(1, dt * 3.4);
-        }
-      });
-      kawkab?.update(dt, now);
+      // Fit suspects tightly on portrait. Wide screens include the detective's
+      // side station but keep him off the suspect axis and slightly downstage.
+      const suspectLeft = -outerX - CHAR_WIDTH / 2;
+      const suspectRight = outerX + CHAR_WIDTH / 2;
+      const left = suspectLeft;
+      const right = showDetective ? detectiveX + CHAR_WIDTH / 2 : suspectRight;
+      const centreX = (left + right) / 2;
+      const halfW = (right - left) / 2 + (portrait ? 0.22 : compact ? 0.42 : 0.72);
+      const halfH = RIG_HEIGHT / 2 + (portrait ? 0.48 : 0.42);
+      const halfFov = (camera.fov * Math.PI) / 360;
+      const distV = halfH / Math.tan(halfFov);
+      const distH = halfW / (Math.tan(halfFov) * aspect);
+      const distance = Math.max(distV, distH) * (portrait ? 1.035 : compact ? 1.07 : 1.12);
+
+      stage.getWorldPosition(world);
+      target.set(
+        world.x + centreX,
+        world.y + RIG_HEIGHT / 2 + (active ? 0.08 : 0.27),
+        world.z - 0.12,
+      );
+      camera.position.set(target.x, target.y + (portrait ? 0.1 : 0.16), target.z + distance);
+      camera.lookAt(target);
     });
 
     return () => {
       disposed = true;
-      el.removeEventListener('pointerup', onUp);
-      hitMeshes.forEach((m) => { m.geometry.dispose(); m.material.dispose(); });
+      canvas.removeEventListener('pointermove', onMove);
+      canvas.removeEventListener('pointerleave', onLeave);
+      canvas.removeEventListener('pointerup', onUp);
+      hitMeshes.forEach((mesh) => {
+        mesh.geometry.dispose();
+        mesh.material.dispose();
+      });
       hitMeshes = [];
       characters.forEach((ch) => ch.dispose());
       kawkab?.dispose();
-      floor.geometry.dispose();
-      floor.material.dispose();
+      ownedTexture.forEach((texture) => texture.dispose());
+      ownedGeometry.forEach((geometry) => geometry.dispose());
+      ownedMaterial.forEach((material) => material.dispose());
       stage.removeFromParent();
       scene.remove(playRoot);
       dispose();
       apiRef.current = null;
     };
+    // `castKey` is the stable identity of the suspect array; selection changes
+    // must not tear down the WebGL scene and reload every model.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [castKey]);
+  }, [castKey, isAr]);
 
-  // ── focus: bring the questioned suspect forward, turn the rest aside ────
-  useEffect(() => {
-    const api = apiRef.current;
-    if (!api) return;
-    api.characters.forEach((ch, id) => {
-      const focused = activeId === id;
-      const home = ch.home || { x: 0, z: 0 };
-      ch.stageTarget = activeId == null
-        ? home
-        : focused
-          ? { x: home.x * 0.35, z: 0.85 }
-          : { x: home.x * 1.25, z: home.z - 0.85 };
-      ch.lookAt(activeId == null ? -home.x * 0.14 : focused ? 0 : home.x > 0 ? 0.7 : -0.7);
-    });
-  }, [activeId]);
-
-  // ── reactions: one-shot beats fired by the case engine ─────────────────
   useEffect(() => {
     const api = apiRef.current;
     if (!api || !reaction?.sid) return;
@@ -260,5 +618,14 @@ export default function Interrogation3D({
     cleared.forEach((id) => api.characters.get(id)?.play('idle', { loop: true }));
   }, [cleared]);
 
-  return <div ref={wrapRef} className="nr-stage" />;
+  return (
+    <div ref={wrapRef} className={'nr-stage'}>
+      <div className={'nr-stage-frame'} aria-hidden={true}>
+        <i />
+        <i />
+        <i />
+        <i />
+      </div>
+    </div>
+  );
 }

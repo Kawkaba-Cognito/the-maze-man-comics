@@ -495,9 +495,75 @@
   width: 100%;
   flex: 1;
   min-height: 0;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 48% 42%, rgba(54, 63, 84, 0.2), transparent 54%),
+    linear-gradient(180deg, #080910 0%, #05060a 62%, #0c0908 100%);
+  border-block: 1px solid rgba(107, 90, 51, 0.22);
 }
 
-.nr-stage canvas { display: block; width: 100%; height: 100%; }
+.nr-stage canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Optical finish stays in CSS so it costs nothing in the WebGL render pass. */
+.nr-stage::before,
+.nr-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.nr-stage::before {
+  background:
+    radial-gradient(ellipse at 50% 48%, transparent 44%, rgba(0, 0, 0, 0.48) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.36), transparent 16%, transparent 82%, rgba(0, 0, 0, 0.48));
+}
+
+.nr-stage::after {
+  opacity: 0.13;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0,
+    transparent 3px,
+    rgba(226, 210, 174, 0.06) 4px
+  );
+}
+
+.nr-stage-frame {
+  position: absolute;
+  inset: 11px;
+  z-index: 3;
+  pointer-events: none;
+  border: 1px solid rgba(217, 164, 65, 0.08);
+  box-shadow: inset 0 0 44px rgba(0, 0, 0, 0.28);
+}
+
+.nr-stage-frame i {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-color: rgba(217, 164, 65, 0.48);
+  border-style: solid;
+}
+
+.nr-stage-frame i:nth-child(1) { inset: -1px auto auto -1px; border-width: 1px 0 0 1px; }
+.nr-stage-frame i:nth-child(2) { inset: -1px -1px auto auto; border-width: 1px 1px 0 0; }
+.nr-stage-frame i:nth-child(3) { inset: auto auto -1px -1px; border-width: 0 0 1px 1px; }
+.nr-stage-frame i:nth-child(4) { inset: auto -1px -1px auto; border-width: 0 1px 1px 0; }
+
+@media (max-width: 620px) {
+  .nr-stage-frame { inset: 6px; }
+  .nr-stage::after { opacity: 0.09; }
+}
 
 .nr-stage-hint {
   position: absolute;

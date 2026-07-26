@@ -16,7 +16,7 @@ const CREAM = 0xf0e2c0;
 
 /**
  * @param {HTMLElement} wrap
- * @param {{ fov?: number, fitHalf?: number, bloom?: boolean, alpha?: boolean }} [opts]
+ * @param {{ fov?: number, fitHalf?: number, bloom?: boolean, alpha?: boolean, lights?: boolean, stars?: boolean }} [opts]
  */
 export function bootC3dScene(wrap, opts = {}) {
   const coarse = isCoarsePointer();
@@ -51,32 +51,38 @@ export function bootC3dScene(wrap, opts = {}) {
   renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
   wrap.appendChild(renderer.domElement);
 
-  scene.add(new THREE.AmbientLight(0xb8a88a, 0.62));
-  const key = new THREE.DirectionalLight(0xfff0d8, 1.1);
-  key.position.set(3, 5, 6);
-  scene.add(key);
-  const rim = new THREE.PointLight(ATT, 1.2, 30);
-  rim.position.set(-3, 2, 4);
-  scene.add(rim);
-
-  const starN = fine ? 1200 : 700;
-  const starPos = new Float32Array(starN * 3);
-  for (let i = 0; i < starN; i++) {
-    starPos[i * 3] = (Math.random() - 0.5) * 55;
-    starPos[i * 3 + 1] = (Math.random() - 0.5) * 36;
-    starPos[i * 3 + 2] = -6 - Math.random() * 32;
+  if (opts.lights !== false) {
+    scene.add(new THREE.AmbientLight(0xb8a88a, 0.62));
+    const key = new THREE.DirectionalLight(0xfff0d8, 1.1);
+    key.position.set(3, 5, 6);
+    scene.add(key);
+    const rim = new THREE.PointLight(ATT, 1.2, 30);
+    rim.position.set(-3, 2, 4);
+    scene.add(rim);
   }
-  const starGeo = new THREE.BufferGeometry();
-  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-  const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({
-    color: CREAM,
-    size: fine ? 0.04 : 0.05,
-    transparent: true,
-    opacity: 0.8,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  }));
-  scene.add(stars);
+
+  let starGeo = null;
+  let stars = null;
+  if (opts.stars !== false) {
+    const starN = fine ? 1200 : 700;
+    const starPos = new Float32Array(starN * 3);
+    for (let i = 0; i < starN; i++) {
+      starPos[i * 3] = (Math.random() - 0.5) * 55;
+      starPos[i * 3 + 1] = (Math.random() - 0.5) * 36;
+      starPos[i * 3 + 2] = -6 - Math.random() * 32;
+    }
+    starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    stars = new THREE.Points(starGeo, new THREE.PointsMaterial({
+      color: CREAM,
+      size: fine ? 0.04 : 0.05,
+      transparent: true,
+      opacity: 0.8,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }));
+    scene.add(stars);
+  }
 
   let composer = null;
   if (opts.bloom !== false && fine && !reduced) {
@@ -147,7 +153,7 @@ export function bootC3dScene(wrap, opts = {}) {
     raf = requestAnimationFrame(loop);
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    if (!reduced) stars.rotation.y += dt * 0.01;
+    if (!reduced && stars) stars.rotation.y += dt * 0.01;
     try { onTick?.(dt, now); } catch (err) { console.warn('[c3d] tick', err); }
     if (composer) composer.render();
     else renderer.render(scene, camera);
@@ -158,8 +164,8 @@ export function bootC3dScene(wrap, opts = {}) {
     cancelAnimationFrame(raf);
     ro.disconnect();
     window.visualViewport?.removeEventListener('resize', onVv);
-    starGeo.dispose();
-    stars.material.dispose();
+    starGeo?.dispose();
+    stars?.material.dispose();
     composer?.dispose();
     renderer.dispose();
     if (renderer.domElement.parentNode === wrap) wrap.removeChild(renderer.domElement);
