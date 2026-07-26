@@ -4,15 +4,20 @@
   <meta charset="UTF-8" />
   <!-- Content-Security-Policy (defence-in-depth). GitHub Pages can't set HTTP
        headers, so it ships as a meta tag. Scope is exactly what the app loads:
-       self + Google Fonts (styles/fonts) + the Babylon CDN (3D maze, SRI-pinned)
-       + cdnjs (Three.js for Void Runner, also SRI-pinned, loaded on demand).
-       'unsafe-inline' style is required by Google Fonts + React inline styles;
-       'unsafe-eval' is required by Babylon.js (shader / node-material code paths
-       use Function()); it is scoped to script-src and the app takes no untrusted
-       input, so the residual risk is low. object-src/base-uri stay locked down. -->
+       self + Google Fonts (styles/fonts) + cdnjs (Three.js for Void Runner,
+       SRI-pinned, loaded on demand).
+       'unsafe-inline' style is required by Google Fonts + React inline styles.
+       cdn.babylonjs.com was dropped 2026-07-26: Babylon is only fetched by
+       AppContext's beginMazeEntry, and nothing calls that any more — the 3D maze
+       has no entry point (see docs/MAZE-DEAD-CODE.md). Reviving the maze means
+       restoring this origin to script-src AND connect-src.
+       'unsafe-eval' was justified by Babylon's shader paths and is now a
+       candidate for removal too, but it is left in place until something can
+       actually exercise the app and confirm nothing else needs it.
+       object-src/base-uri stay locked down. -->
   <meta
     http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.babylonjs.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: https://cdn.babylonjs.com https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; object-src 'none'"
+    content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; object-src 'none'"
   />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
   <title>The Maze Man | Psychological Comics</title>
