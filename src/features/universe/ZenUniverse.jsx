@@ -78,12 +78,16 @@ function hashPhase(str) {
 
 const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
   const wrapRef = useRef(null);
-  const apiRef = useRef({ syncPlanets: () => {}, dissolvePlanet: () => {}, reformPlanet: () => {}, pulseCenter: () => {} });
+  const apiRef = useRef({
+    syncPlanets: () => {}, dissolvePlanet: () => {}, reformPlanet: () => {},
+    pulseCenter: () => {}, setRunning: () => {},
+  });
 
   useImperativeHandle(ref, () => ({
     dissolvePlanet: (id) => apiRef.current.dissolvePlanet(id),
     reformPlanet: (id) => apiRef.current.reformPlanet(id),
     pulseCenter: () => apiRef.current.pulseCenter(),
+    setRunning: (on) => apiRef.current.setRunning(on),
   }), []);
 
   useEffect(() => {
@@ -879,10 +883,27 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     }
     frame();
 
+    // Two independent reasons to stop drawing — the tab being hidden, and the
+    // scene being scrolled off-screen. They must COMPOSE: tabbing away and back
+    // while Kawnera covers the universe should not restart it.
+    let pageVisible = document.visibilityState === 'visible';
+    let wantAwake = true;
+    function applyRunning() {
+      const next = pageVisible && wantAwake;
+      if (next === running) return;
+      if (next) { running = true; clock.getElapsedTime(); frame(); }
+      else { running = false; cancelAnimationFrame(raf); }
+    }
+
+    // Exposed so a caller can idle the scene while it is scrolled off-screen.
+    // Idling is ALWAYS preferable to unmounting: a remount rebuilds thousands
+    // of particles, recompiles shaders and takes a fresh WebGL context, which
+    // is what phones run out of.
+    apiRef.current.setRunning = (on) => { wantAwake = !!on; applyRunning(); };
+
     function onVisibility() {
-      const visible = document.visibilityState === 'visible';
-      if (visible && !running) { running = true; clock.getElapsedTime(); frame(); }
-      else if (!visible) { running = false; cancelAnimationFrame(raf); }
+      pageVisible = document.visibilityState === 'visible';
+      applyRunning();
     }
     document.addEventListener('visibilitychange', onVisibility);
 
