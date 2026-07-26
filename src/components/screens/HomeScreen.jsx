@@ -1,4 +1,4 @@
-import React, { Suspense, useCallback, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { lazyWithRetry } from '../../lib/lazyWithRetry';
 
@@ -19,7 +19,8 @@ export default function HomeScreen() {
   const scrollRef = useRef(null);
   const [showKawnera, setShowKawnera] = useState(false);
   const [kawneraActive, setKawneraActive] = useState(false);
-  const [showUniverse, setShowUniverse] = useState(true);
+  const [universeAwake, setUniverseAwake] = useState(true);
+  const zenRef = useRef(null);
 
   const handleScroll = useCallback((event) => {
     const scroller = event.currentTarget;
@@ -31,11 +32,25 @@ export default function HomeScreen() {
       const next = progress > 0.72;
       return current === next ? current : next;
     });
-    setShowUniverse((current) => {
-      const next = progress < 0.99;
-      return current === next ? current : next;
+    // Idle the universe once Kawnera fills the screen — but NEVER unmount it.
+    //
+    // This used to be `showUniverse = progress < 0.99`, which unmounted the
+    // whole 3D scene. With no hysteresis, momentum scrolling oscillates across
+    // that single threshold and each crossing tore down and rebuilt thousands
+    // of particles, recompiled the shaders and took a new WebGL context. On a
+    // phone that exhausts the GPU and the universe dies. Now the scene stays
+    // mounted and simply stops rendering, and the two thresholds are far apart
+    // so a wobble at the boundary cannot flip it repeatedly.
+    setUniverseAwake((current) => {
+      if (current && progress > 0.98) return false; // fully covered → idle
+      if (!current && progress < 0.88) return true; // coming back into view
+      return current;
     });
   }, []);
+
+  // Drive the scene's render loop from the scroll state. The ref is only
+  // populated once the lazy chunk has mounted, hence the optional call.
+  useEffect(() => { zenRef.current?.setRunning?.(universeAwake); }, [universeAwake]);
 
   const navigateKawneraTop = useCallback((behavior = 'auto') => {
     const scroller = scrollRef.current;
@@ -55,14 +70,12 @@ export default function HomeScreen() {
       onScroll={handleScroll}
       style={{ '--kawnera-progress': 0 }}
     >
-      <div className="home-universe-stage" aria-hidden={!showUniverse}>
-        {showUniverse && (
-          <Suspense
-            fallback={<div style={{ position: 'absolute', inset: 0, background: '#000' }} />}
-          >
-            <ZenUniverse planets={[]} />
-          </Suspense>
-        )}
+      <div className="home-universe-stage" aria-hidden={!universeAwake}>
+        <Suspense
+          fallback={<div style={{ position: 'absolute', inset: 0, background: '#000' }} />}
+        >
+          <ZenUniverse ref={zenRef} planets={[]} />
+        </Suspense>
       </div>
 
       <section
