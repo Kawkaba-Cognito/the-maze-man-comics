@@ -1,0 +1,430 @@
+/*
+ * Story Time · Stage — the universe look.
+ *
+ * Deliberately the app's cosmic language, not the detective's noir: black void,
+ * gold accent, cream type, soft nebula washes. The 3D stage owns the sky, so
+ * every panel here floats OVER it on translucent glass rather than boxing it in
+ * — the story's world stays visible while you try to recall it.
+ */
+.sgs {
+    --sgs-gold: #e8ac4e;
+    --sgs-cream: #f3e6c8;
+    --sgs-dim: #9c8f78;
+    --sgs-glass: rgba(10, 10, 18, 0.72);
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    background: #05050b;
+    color: var(--sgs-cream);
+    font-family: 'Outfit', system-ui, sans-serif;
+    overflow: hidden;
+}
+
+.sgs-mono {
+    font-family: 'DM Mono', ui-monospace, monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    color: var(--sgs-dim);
+}
+
+/* ── chrome ─────────────────────────────────────────────────────────── */
+.sgs-top {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    background: linear-gradient(180deg, rgba(5, 5, 11, 0.92), rgba(5, 5, 11, 0));
+}
+
+.sgs-top-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sgs-chip {
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--sgs-cream);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(232, 172, 78, 0.34);
+    border-radius: 999px;
+    padding: 5px 12px;
+    cursor: pointer;
+}
+
+/* ── the 3D stage sits behind everything ────────────────────────────── */
+.sgs-stage-host {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+.sgs-stage {
+    position: absolute;
+    inset: 0;
+}
+
+/* While recalling, push the scene back so the panels read — but never hide it:
+   the point of staging in 3D is that the context is still there at retrieval. */
+.sgs-stage-host.recalling {
+    filter: saturate(0.6) brightness(0.42);
+    transition: filter 420ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sgs-stage-host.recalling {
+        transition: none;
+    }
+}
+
+/* ── watch ──────────────────────────────────────────────────────────── */
+.sgs-watch {
+    position: relative;
+    z-index: 2;
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px calc(18px + env(safe-area-inset-bottom));
+    background: linear-gradient(0deg, rgba(5, 5, 11, 0.94) 62%, rgba(5, 5, 11, 0));
+}
+
+.sgs-beatline {
+    font-family: 'DM Mono', ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sgs-gold);
+}
+
+.sgs-narr {
+    margin: 0;
+    max-width: 62ch;
+    text-align: center;
+    font-size: 1rem;
+    line-height: 1.62;
+    color: var(--sgs-cream);
+}
+
+.sgs-say {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 52ch;
+    padding: 8px 14px;
+    border-inline-start: 3px solid var(--sgs-gold);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    font-style: italic;
+}
+
+.sgs-say b {
+    font-style: normal;
+    font-size: 0.76rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* ── retrieval panels ───────────────────────────────────────────────── */
+.sgs-panel {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    padding: 8px 14px calc(20px + env(safe-area-inset-bottom));
+}
+
+.sgs-panel > * {
+    width: min(620px, 100%);
+}
+
+.sgs-order h2,
+.sgs-probe h2,
+.sgs-reveal h2 {
+    margin: 6px 0 4px;
+    font-family: 'Cinzel', 'Cairo', serif;
+    font-size: 1.32rem;
+    text-align: center;
+    color: var(--sgs-cream);
+}
+
+.sgs-sub {
+    margin: 0 0 12px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--sgs-dim);
+}
+
+.sgs-slots {
+    list-style: none;
+    margin: 0 0 14px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.sgs-slot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 4px 8px;
+    background: var(--sgs-glass);
+    border: 1px dashed rgba(232, 172, 78, 0.3);
+    border-radius: 12px;
+}
+
+.sgs-slot.filled {
+    border-style: solid;
+    border-color: rgba(232, 172, 78, 0.5);
+}
+
+.sgs-slot-n {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(232, 172, 78, 0.16);
+    color: var(--sgs-gold);
+    font-family: 'DM Mono', ui-monospace, monospace;
+    font-size: 0.8rem;
+}
+
+.sgs-slot-empty {
+    color: var(--sgs-dim);
+}
+
+.sgs-pool {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.sgs-card {
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-align: start;
+    color: var(--sgs-cream);
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 11px;
+    padding: 9px 13px;
+    cursor: pointer;
+}
+
+.sgs-card:hover {
+    border-color: rgba(232, 172, 78, 0.55);
+}
+
+.sgs-card--placed {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 6px 2px;
+}
+
+/* ── probes ─────────────────────────────────────────────────────────── */
+.sgs-probe-count {
+    text-align: center;
+    font-family: 'DM Mono', ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sgs-gold);
+    margin-top: 8px;
+}
+
+.sgs-probe-opts {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-top: 14px;
+}
+
+.sgs-opt {
+    font: inherit;
+    font-size: 0.98rem;
+    color: var(--sgs-cream);
+    background: var(--sgs-glass);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 13px;
+    padding: 13px 15px;
+    text-align: start;
+    cursor: pointer;
+}
+
+.sgs-opt:hover:not(:disabled) {
+    border-color: rgba(232, 172, 78, 0.6);
+}
+
+.sgs-opt.picked {
+    border-color: var(--sgs-gold);
+    background: rgba(232, 172, 78, 0.16);
+}
+
+.sgs-opt:disabled {
+    cursor: default;
+    opacity: 0.72;
+}
+
+/* ── reveal ─────────────────────────────────────────────────────────── */
+.sgs-reveal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+}
+
+.sgs-stamp {
+    align-self: center;
+    font-family: 'DM Mono', ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--sgs-gold);
+    border: 1px solid rgba(232, 172, 78, 0.45);
+    border-radius: 999px;
+    padding: 4px 14px;
+    margin-top: 6px;
+}
+
+.sgs-scores {
+    list-style: none;
+    margin: 4px 0 10px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-family: 'DM Mono', ui-monospace, monospace;
+    font-size: 0.84rem;
+    color: var(--sgs-dim);
+}
+
+.sgs-truth {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    text-align: start;
+}
+
+.sgs-truth li {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 11px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    background: rgba(255, 255, 255, 0.045);
+    border-inline-start: 3px solid transparent;
+}
+
+.sgs-truth li.ok {
+    border-inline-start-color: #4f9d69;
+}
+
+.sgs-truth li.bad {
+    border-inline-start-color: #c34a44;
+}
+
+.sgs-truth li span {
+    flex: none;
+    width: 22px;
+    font-family: 'DM Mono', ui-monospace, monospace;
+    color: var(--sgs-dim);
+}
+
+.sgs-moral {
+    max-width: 54ch;
+    padding: 11px 14px;
+    background: rgba(232, 172, 78, 0.08);
+    border: 1px solid rgba(232, 172, 78, 0.28);
+    border-radius: 13px;
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.sgs-moral-tag {
+    display: block;
+    font-family: 'DM Mono', ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--sgs-gold);
+    margin-bottom: 4px;
+}
+
+/* ── shared bits ────────────────────────────────────────────────────── */
+.sgs-bar {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.sgs-btn {
+    font: inherit;
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--sgs-cream);
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    padding: 11px 22px;
+    cursor: pointer;
+}
+
+.sgs-btn--go {
+    background: linear-gradient(180deg, #e8ac4e, #c9923a);
+    border-color: rgba(90, 60, 15, 0.5);
+    color: #1a1208;
+}
+
+.sgs-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.sgs-centre {
+    position: relative;
+    z-index: 2;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+    padding: 24px;
+}
+
+@media (max-width: 520px) {
+    .sgs-narr {
+        font-size: 0.94rem;
+    }
+
+    .sgs-order h2,
+    .sgs-probe h2,
+    .sgs-reveal h2 {
+        font-size: 1.14rem;
+    }
+}

@@ -79,4 +79,20 @@ export const ACTIONS = {
   fidget: ['air_squat'],
   cleared: ['victory'],
   walk: ['Walking'],
+
+  // Story Time beat verbs. Deliberately aliases onto the same twelve clips in
+  // cast-clips-v1.glb rather than new names, so authoring a story never asks
+  // for animation that does not exist — validate:stage rejects anything else.
+  arrive: ['Walking'],
+  search: ['Look_Around_Dumbfounded'],
+  agree: ['Agree_Gesture'],
+  cheer: ['victory'],
+  upset: ['Angry_Stomp', 'Angry_Ground_Stomp'],
+  work: ['air_squat'],
+  wait: ['Happy_Sway_Standing'],
 };
+
+/** Beat verbs a story may ask an actor to perform (see validate-stage). */
+export const STORY_ACTS = [
+  'idle', 'arrive', 'greet', 'search', 'agree', 'cheer', 'upset', 'work', 'wait',
+];

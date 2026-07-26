@@ -8242,3 +8242,93 @@
         animation: none !important;
     }
 }
+
+/* ── Cancel-task in-game coach (Dr Kawkab teaches on the live board) ──────
+   Sits over the 3D board, not over a mock grid. The bubble rides above the
+   pointing hand (Clash-Royale style), so the instruction and the shape to tap
+   land in one glance; when nothing is being pointed at it drops to a low,
+   centred rest position that keeps the grid readable. */
+.ct-coach-bubble {
+    pointer-events: auto;
+    width: min(300px, 74vw);
+    background: #fffdf8;
+    border: 2px solid #e3d6c4;
+    border-radius: 16px;
+    padding: 11px 13px 9px;
+    box-shadow: 3px 3px 0 rgba(26, 18, 8, 0.22);
+    z-index: 2;
+}
+
+.ct-coach-bubble p {
+    margin: 0;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #2d2210;
+}
+
+.ct-coach-btns {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-top: 9px;
+}
+
+.ct-coach-bubble button {
+    pointer-events: auto;
+    font: inherit;
+    font-weight: 800;
+    font-size: 13px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.ct-coach-skip {
+    background: none;
+    border: none;
+    color: #8a7a61;
+    padding: 6px 8px;
+    text-decoration: underline;
+}
+
+.ct-coach-next {
+    background: linear-gradient(180deg, #e8ac4e, #c9923a);
+    border: 1px solid rgba(90, 60, 15, 0.45);
+    color: #2d2210;
+    padding: 7px 16px;
+}
+
+/* Kawkab watches from the corner. Deliberately inline-end so he never covers
+   the hand, which favours the board's left/top where scanning tends to start. */
+.ct-coach-kawkab {
+    position: absolute;
+    inset-inline-end: 10px;
+    bottom: 8px;
+    width: 78px;
+    height: 88px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+@media (max-width: 480px) {
+    .ct-coach-kawkab {
+        width: 62px;
+        height: 70px;
+    }
+
+    .ct-coach-bubble {
+        width: min(260px, 80vw);
+        padding: 9px 11px 8px;
+    }
+
+    .ct-coach-bubble p {
+        font-size: 13px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ct-coach-bubble {
+        transition: none;
+    }
+}

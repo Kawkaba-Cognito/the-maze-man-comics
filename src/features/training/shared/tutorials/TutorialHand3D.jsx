@@ -18,6 +18,10 @@ import { isCoarsePointer, releaseGlContext } from '../c3dViewport';
  * `tapSignal` change plays a quick procedural dip + scale-punch "tap" pulse.
  * `target={null}` hides the hand (e.g. while Kawkab is just talking).
  */
+// On-screen height of the pointer, in CSS pixels — a hand, not a billboard.
+const HAND_PX = 96;
+const HAND_PX_SMALL = 74;
+
 export default function TutorialHand3D({ target, tapSignal = 0 }) {
   const wrapRef = useRef(null);
   const targetRef = useRef(target);
@@ -79,6 +83,30 @@ export default function TutorialHand3D({ target, tapSignal = 0 }) {
     let halfW = 1;
     let halfH = 1;
 
+    // Measured from tutorial-hand-v1.glb: the narrow pointing tip is +Y (its
+    // extreme vertices span 21% of the model's girth, against 42-87% for every
+    // other face), so the fingertip is the TOP of the bounding box.
+    let fit = null; // { sizeY, ctrX, ctrZ, maxY } in model units
+
+    /**
+     * Size the hand in SCREEN pixels and hang it off its fingertip.
+     *
+     * Both matter. The camera only shows 2 world units vertically, so the old
+     * fixed "1.15 units tall" made the hand 57% of the container height — a
+     * giant. And centring the bounding box put the hand's MIDDLE on the target,
+     * leaving the fingertip pointing half a hand-height above whatever it meant
+     * to indicate. Anchoring maxY at the origin puts the tip exactly on target,
+     * with the hand hanging below it the way a real finger reaches in.
+     */
+    const fitModel = () => {
+      if (!model || !fit) return;
+      const h = wrap.clientHeight || 1;
+      const px = (wrap.clientWidth || 1) <= 480 ? HAND_PX_SMALL : HAND_PX;
+      const k = ((px * 2) / h) / Math.max(1e-4, fit.sizeY);
+      model.scale.setScalar(k);
+      model.position.set(-fit.ctrX * k, -fit.maxY * k, -fit.ctrZ * k);
+    };
+
     const resize = () => {
       const w = wrap.clientWidth || 1;
       const h = wrap.clientHeight || 1;
@@ -91,6 +119,7 @@ export default function TutorialHand3D({ target, tapSignal = 0 }) {
       camera.bottom = -halfH;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h, false);
+      fitModel(); // world-units-per-pixel just changed
     };
     resize();
     const ro = new ResizeObserver(resize);
@@ -109,10 +138,10 @@ export default function TutorialHand3D({ target, tapSignal = 0 }) {
         const box = new THREE.Box3().setFromObject(model);
         const sz = box.getSize(new THREE.Vector3());
         const ctr = box.getCenter(new THREE.Vector3());
-        // Frame independent of Meshy's export scale — target ~1 world unit tall.
-        const k = 1.15 / Math.max(1e-4, sz.y);
-        model.scale.setScalar(k);
-        model.position.set(-ctr.x * k, -ctr.y * k, -ctr.z * k);
+        // Kept in model units so fitModel() can rescale on every resize without
+        // re-measuring (the box would be wrong once we have scaled the model).
+        fit = { sizeY: sz.y, ctrX: ctr.x, ctrZ: ctr.z, maxY: box.max.y };
+        fitModel();
 
         model.traverse((n) => {
           if (!n.isMesh) return;
@@ -154,9 +183,12 @@ export default function TutorialHand3D({ target, tapSignal = 0 }) {
       if (holder) {
         holder.visible = !!target;
         if (target) {
+          // Work in pixels: the camera spans 2 world units vertically, so this
+          // keeps the bob and the tap the same size whatever the board's height.
+          const pxToWorld = 2 / (wrap.clientHeight || 1);
           const dest = worldFor(target.x, target.y);
           holder.position.lerp(dest, reduced ? 1 : Math.min(1, dt * 6));
-          const bob = reduced ? 0 : Math.sin(now / 480) * 0.02;
+          const bob = reduced ? 0 : Math.sin(now / 480) * 3 * pxToWorld;
           const tap = tapRef.current;
           let dip = 0;
           let punch = 1;
@@ -164,12 +196,16 @@ export default function TutorialHand3D({ target, tapSignal = 0 }) {
             tap.t += dt;
             const dur = 0.32;
             const p = Math.min(1, tap.t / dur);
-            dip = Math.sin(p * Math.PI) * 0.12;
-            punch = 1 - Math.sin(p * Math.PI) * 0.08;
+            // A z-dip reads as nothing under an orthographic camera, so the tap
+            // is a short jab along the pointing axis plus a scale punch.
+            dip = Math.sin(p * Math.PI) * 6 * pxToWorld;
+            punch = 1 - Math.sin(p * Math.PI) * 0.12;
             if (p >= 1) tap.t = 0;
           }
-          holder.position.y = dest.y + bob;
-          holder.position.z = -dip;
+          // Scale is about the fingertip (the holder origin), so the tip stays
+          // planted on the target through the whole punch.
+          holder.position.y = dest.y + bob - dip;
+          holder.position.z = 0;
           holder.scale.setScalar(punch);
         }
       }

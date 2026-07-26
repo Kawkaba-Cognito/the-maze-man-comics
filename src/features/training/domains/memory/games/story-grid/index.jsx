@@ -11,6 +11,10 @@ import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import { planetIconUrl } from '../../../../../../lib/planetIcons';
 
 const StoryGrid3DProto = lazyWithRetry(() => import('./StoryGrid3DProto'), 'story-grid-3d');
+// Survival's staged rebuild — lazy, so three.js and the cast models only load
+// for players who actually start a Survival run.
+const StageSurvival = lazyWithRetry(() => import('./stage/StageSurvival'), 'story-stage');
+const STAGE_FALLBACK = { position: 'fixed', inset: 0, zIndex: 40, background: '#05050b' };
 
 /*
  * Story Time — temporal-order / episodic memory.
@@ -803,9 +807,21 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
         on: () => setView('play3d'),
         icoImg: planetIconUrl('memory'),
       }]}
-      renderEngine={(p) => (
+      renderEngine={(p) => (p.mode === 'free' ? (
+        <Suspense fallback={<div style={STAGE_FALLBACK} />}>
+          <StageSurvival
+            key={`stage-${p.seed}`}
+            seed={p.seed}
+            isAr={isAr}
+            playSfx={playSfx}
+            awardPoints={awardPoints}
+            awardFreeRun={awardFreeRun}
+            onExit={p.onExit}
+          />
+        </Suspense>
+      ) : (
         <StoryEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
-      )}
+      ))}
     />
   );
 }

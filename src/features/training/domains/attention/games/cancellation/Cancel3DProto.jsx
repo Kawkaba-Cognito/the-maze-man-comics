@@ -70,9 +70,13 @@ function disposeObject3D(root) {
   });
 }
 
-export default function CancelScene3D({ cells, round, interactive, onTapCell, isAr }) {
+export default function CancelScene3D({
+  cells, round, interactive, onTapCell, isAr, boardApiRef,
+}) {
   const wrapRef = useRef(null);
-  const apiRef = useRef({ loadBoard() {}, setInteractive() {}, applyCells() {}, ready: false });
+  const apiRef = useRef({
+    loadBoard() {}, setInteractive() {}, applyCells() {}, cellScreenPos: () => null, ready: false,
+  });
   const onTapRef = useRef(onTapCell);
   onTapRef.current = onTapCell;
   const roundRef = useRef(round);
@@ -199,6 +203,9 @@ export default function CancelScene3D({ cells, round, interactive, onTapCell, is
 
     const boardGroup = new THREE.Group();
     scene.add(boardGroup);
+
+    // Scratch vector for cellScreenPos, so projecting every frame allocates nothing.
+    const projectVec = new THREE.Vector3();
 
     /** @type {{ mesh: THREE.Mesh, cell: object, home: THREE.Vector3, phase: number, state: string, t: number, scale: number }[]} */
     let pieces = [];
@@ -473,7 +480,30 @@ export default function CancelScene3D({ cells, round, interactive, onTapCell, is
     };
     raf = requestAnimationFrame(tick);
 
-    apiRef.current = { loadBoard, setInteractive, applyCells, ready: true };
+    /**
+     * Where cell `index` currently sits on screen, as {x, y} fractions of the
+     * canvas (0,0 = top-left) — the coordinate space TutorialHand3D points in.
+     *
+     * Projected live rather than precomputed: the board reflows on resize and
+     * the pieces bob, so a cached position would drift off the shape. Returns
+     * null for a cell that has been cleared or is off-camera, so the coach can
+     * pick another one instead of pointing at nothing.
+     */
+    const cellScreenPos = (index) => {
+      const p = pieces[index];
+      if (!p || p.state === 'gone') return null;
+      p.mesh.getWorldPosition(projectVec);
+      projectVec.project(camera);
+      if (projectVec.z > 1) return null; // behind the camera
+      return { x: (projectVec.x + 1) / 2, y: (1 - projectVec.y) / 2 };
+    };
+
+    apiRef.current = {
+      loadBoard, setInteractive, applyCells, cellScreenPos, ready: true,
+    };
+    // Publish to the parent: the guided coach asks where a real cell is on
+    // screen so its pointing hand can sit on the actual shape.
+    if (boardApiRef) boardApiRef.current = apiRef.current;
     // Load whatever round React already committed before the scene finished booting.
     if (roundRef.current) {
       loadBoard(roundRef.current);
@@ -494,7 +524,10 @@ export default function CancelScene3D({ cells, round, interactive, onTapCell, is
       renderer.dispose();
       releaseGlContext(renderer);
       if (renderer.domElement.parentNode === wrap) wrap.removeChild(renderer.domElement);
-      apiRef.current = { loadBoard() {}, setInteractive() {}, applyCells() {}, ready: false };
+      apiRef.current = {
+        loadBoard() {}, setInteractive() {}, applyCells() {}, cellScreenPos: () => null, ready: false,
+      };
+      if (boardApiRef) boardApiRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

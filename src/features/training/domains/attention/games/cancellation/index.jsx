@@ -58,8 +58,7 @@ import { ratingLabels } from '../../../../shared/juice/juiceUtils';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { useTrainingTutorial } from '../../../../shared/tutorials/useTrainingTutorial';
 import { TUTORIAL_UI } from '../../../../shared/tutorials/tutorialContent';
-import ReadyPanel from '../../../../../shared/tutorials/ReadyPanel';
-import CancelTaskGuidedTutorial from './CancelTaskGuidedTutorial';
+import CancelTaskCoach from './CancelTaskCoach';
 import {
   prepareAssessmentTrial,
   computeAssessmentSummary,
@@ -765,30 +764,33 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
 
   const juice = useJuice();
   const rLabels = ratingLabels(isAr);
-  // Cancel-task gets a bespoke Dr Kawkab + hand guided walkthrough instead of
-  // the shared static carousel (every other game still uses that as-is via
-  // useTrainingTutorialHost). Same onboarding phase machine underneath.
+  // Cancel-task teaches INSIDE the live Survival round (CancelTaskCoach) rather
+  // than in a modal over a mock grid: Dr Kawkab and the pointing hand sit on the
+  // real board and the player clears a real target. `coachOpen` holds the round
+  // clock while that happens — see the timer effect — so reading costs no time.
   const tutorial = useTrainingTutorial('cancel-task', isAr);
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
-  const openTutorial = tutorial.openTutorial;
   const tutReplayHint = tutLabels.replayTutorial;
-  const tutLayer = tutorial.onboarding.phase === 'carousel' ? (
-    <CancelTaskGuidedTutorial
-      isAr={isAr}
-      playSfx={playSfx}
-      onFinish={tutorial.onboarding.finishCarousel}
-      onSkip={tutorial.onboarding.skipAll}
-    />
-  ) : tutorial.onboarding.phase === 'ready' ? (
-    <ReadyPanel
-      isAr={isAr}
-      playSfx={playSfx}
-      onContinue={tutorial.onboarding.finishReady}
-      heading={tutLabels.readyHeading}
-      sub={tutLabels.readySub}
-      cta={tutLabels.readyCta}
-    />
-  ) : null;
+  // `armed` = a coach run is owed (first ever visit, or the player asked to
+  // replay). It becomes `open` once a Survival round is actually on screen.
+  const [coachOpen, setCoachOpen] = useState(false);
+  const [coachArmed, setCoachArmed] = useState(() => tutorial.onboarding.shouldRun);
+  const boardApiRef = useRef(null);
+  const startFreeModeRef = useRef(null);
+  const markTutorialDone = tutorial.onboarding.skipAll;
+
+  const openTutorial = useCallback(() => {
+    // The hub's "?" replays the lesson — but the lesson now lives on a live
+    // board, so arm it and drop straight into Survival.
+    setCoachArmed(true);
+    startFreeModeRef.current?.();
+  }, []);
+
+  const endCoach = useCallback(() => {
+    setCoachOpen(false);
+    setCoachArmed(false);
+    markTutorialDone?.();
+  }, [markTutorialDone]);
 
   useEffect(() => () => {
     if (shakeTimerRef.current) {
@@ -942,6 +944,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     setFreeScore(0);
     setPhase('freeIntro');
   }, []);
+  startFreeModeRef.current = startFreeMode;
 
   const onFreeIntroReady = useCallback(() => {
     playSfx('click');
@@ -1349,7 +1352,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   useEffect(() => () => trialLogRef.current?.discard(), []);
 
   useEffect(() => {
-    if (playStep !== 'running' || pauseOpen) return;
+    // The coach holds the clock exactly like the pause menu does — a first-time
+    // player must never lose Survival time to reading Dr Kawkab.
+    if (playStep !== 'running' || pauseOpen || coachOpen) return;
     let id;
     let last = performance.now();
     const runId = timerRunIdRef.current + 1;
@@ -1357,7 +1362,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     warned10Ref.current = false;
     runRef.current = true;
     const loop = (ts) => {
-      if (!runRef.current || pauseOpen || timerRunIdRef.current !== runId) return;
+      if (!runRef.current || pauseOpen || coachOpen || timerRunIdRef.current !== runId) return;
       const dt = (ts - last) / 1000;
       last = ts;
       tlRef.current = Math.max(
@@ -1384,7 +1389,25 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       cancelAnimationFrame(id);
       if (timerRunIdRef.current === runId) runRef.current = false;
     };
-  }, [playStep, pauseOpen, playSfx]);
+  }, [playStep, pauseOpen, coachOpen, playSfx]);
+
+  // Open the coach once a Survival round is actually on screen, so Dr Kawkab
+  // can point at real shapes. Survival only — Levels and Pass n Play are
+  // untouched for now.
+  useEffect(() => {
+    if (!coachArmed || coachOpen) return;
+    if (round?.mode !== 'free' || playStep !== 'running' || cdShow || pauseOpen) return;
+    setCoachOpen(true);
+  }, [coachArmed, coachOpen, round, playStep, cdShow, pauseOpen]);
+
+  // Never strand the coach on a screen that has no board (round ended, quit,
+  // paused out) — it would hold the clock forever. Closing this way also ends
+  // onboarding: a player who cleared the whole board mid-lesson has plainly got
+  // it, and re-opening the coach every round would nag them.
+  useEffect(() => {
+    if (!coachOpen) return;
+    if (phase !== 'play' || playStep !== 'running') endCoach();
+  }, [coachOpen, phase, playStep, endCoach]);
 
   useLayoutEffect(() => {
     if (phase !== 'play' || !round) return;
@@ -1760,7 +1783,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               <HubScienceLink gameId="cancel-task" isAr={isAr} playSfx={playSfx} />
             </div>
           </div>
-          {tutLayer}
         </>
       )}
 
@@ -1898,9 +1920,23 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                   interactive={playStep === 'running' && !pauseOpen && !cdShow}
                   onTapCell={onCellTap}
                   isAr={isAr}
+                  boardApiRef={boardApiRef}
                 />
               </Suspense>
             </div>
+
+            {/* Dr Kawkab teaches on this exact board. Sibling of the canvas and
+                also inset:0, so the hand's screen fractions line up with it. */}
+            {coachOpen && (
+              <CancelTaskCoach
+                isAr={isAr}
+                playSfx={playSfx}
+                cells={cells}
+                boardApiRef={boardApiRef}
+                onFinish={endCoach}
+                onSkip={endCoach}
+              />
+            )}
             <div className="ct-fq-scene3d-overlay">
             <JuiceLayer
               combo={juice.combo}
