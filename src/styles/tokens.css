@@ -36,10 +36,25 @@
   --line: #e4d8cf;
   --danger: #c34a44;
 
-  /* Training — aliased to the field tokens above, so every existing rule that
-     reads --color-training-* keeps working and now follows the system. */
-  --color-training-palette-surface: var(--surface);
-  --color-training-ink: var(--ink);
+  /* ─── The play surface — FIXED LIGHT, deliberately not theme-following ───
+     The games are already designed light: 37 cream/white panel fills against 8
+     dark ones, MOT's play field is a cream gradient, instruction panels are
+     #fffdf9 with #3a2c12 text. Letting the root flip dark produced a #1a1626
+     shell wrapped around cream cards — a hybrid neither palette intended, and a
+     large part of why training read as unfinished next to the rest of the app.
+
+     It is also a measurement parameter rather than a preference. These are
+     timed psychophysical tasks — cancellation is a visual SEARCH task scored
+     with d' and centre-of-cancellation — and background luminance changes pupil
+     size, which changes acuity and search efficiency. Positive polarity (dark
+     targets on light) measurably helps small-target and reading tasks. A
+     background the user can toggle is a variable you cannot control for, so the
+     play surface does not follow the theme. Hubs, shop, habits and wellbeing
+     still do; they carry no trials. */
+  --play-surface: #fff7f2;
+  --play-ink: #2d2d2d;
+  --color-training-palette-surface: var(--play-surface);
+  --color-training-ink: var(--play-ink);
 
   /* App stage (follows Home light/dark) */
   --color-stage-ink: #4a3818;
@@ -148,8 +163,10 @@ html[data-home-theme='dark'] {
   --line: #3a3248;
   --danger: #c34a44;
 
-  --color-training-palette-surface: var(--surface);
-  --color-training-ink: var(--ink);
+  /* --color-training-* is intentionally NOT overridden here. The play surface
+     is fixed light in both themes (see the note in :root). Everything else in
+     this block still flips, so hubs, shop, habits and wellbeing go dark as
+     before — only the surfaces that carry a timed trial stay put. */
   --color-stage-ink: #f0e2c0;
   --color-stage-muted: #b9a878;
   --color-stage-card: #221e30;
