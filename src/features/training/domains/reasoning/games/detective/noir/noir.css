@@ -8,17 +8,20 @@
  */
 
 .nr {
-  --nr-bg: #0a0a0f;
-  --nr-panel: #12121a;
+  /* Aliased to the shared void-mode tokens (styles/tokens.css). Every rule
+     below still reads --nr-*, so nothing here had to be rewritten — but the
+     room now shifts with the rest of the app instead of on its own. */
+  --nr-bg: var(--surface);
+  --nr-panel: var(--surface-raised);
   --nr-panel2: #1a1a26;
-  --nr-paper: #e9dcc3;
-  --nr-amber: #d9a441;
-  --nr-amber2: #f0c674;
-  --nr-red: #c34a44;
+  --nr-paper: var(--ink);
+  --nr-amber: var(--accent);
+  --nr-amber2: var(--accent-bright);
+  --nr-red: var(--danger);
   --nr-red2: #e05b52;
-  --nr-text: #d6cdb8;
-  --nr-dim: #8a8371;
-  --nr-line: #3a3527;
+  --nr-text: var(--ink);
+  --nr-dim: var(--ink-dim);
+  --nr-line: var(--line);
 
   position: fixed;
   inset: 0;
