@@ -295,12 +295,30 @@
   line-height: 1.5;
   color: #52605d;
 }
+/* Grid children default to `min-width: auto`, so ONE wide item (a nowrap
+   button, a long unbroken word out of the source PDF) can force the whole
+   track wider than the page and get sliced by the root's `overflow: clip`.
+   These two rules make the reading columns shrink-to-fit instead. */
+.kawnera-app .bookHero > *,
+.kawnera-app .toc > *,
+.kawnera-app .chapterBody > * {
+  min-width: 0;
+}
+.kawnera-app .chapterTop h1,
+.kawnera-app .bookHero h1,
+.kawnera-app .lessonSection h2,
+.kawnera-app .lead,
+.kawnera-app .claims p,
+.kawnera-app .coverage p,
+.kawnera-app .evidence p {
+  overflow-wrap: break-word;
+}
 .kawnera-app .bookHero {
   min-height: 560px;
   background: var(--accent);
   padding: 45px 7vw 65px;
   display: grid;
-  grid-template-columns: 1fr 260px;
+  grid-template-columns: minmax(0, 1fr) 260px;
   gap: 70px;
   position: relative;
 }
@@ -357,7 +375,7 @@
 }
 .kawnera-app .toc {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 280px minmax(0, 1fr);
   gap: 60px;
   max-width: 1350px;
   margin: auto;
@@ -456,7 +474,7 @@
 }
 .kawnera-app .chapterBody {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 240px minmax(0, 1fr);
   gap: 70px;
   max-width: 1250px;
   margin: auto;
@@ -596,14 +614,14 @@
     grid-template-columns: 1fr;
   }
   .kawnera-app .bookHero {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .kawnera-app .bigCover {
     display: none;
   }
   .kawnera-app .toc,
   .kawnera-app .chapterBody {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .kawnera-app .toc > aside,
   .kawnera-app .chapterBody > aside {
@@ -851,7 +869,7 @@
 }
 @media (max-width: 900px) {
   .kawnera-app .deepBody {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .kawnera-app .chapterNav {
     display: none !important;
@@ -1641,15 +1659,26 @@
   background: var(--ink);
   color: white;
 }
+/* The mission banner lives in .kawnera-app, NOT in the lab modal. Its stacking
+   rule used to be written as `.kawneraLabBackdrop .kawkabLesson`, so it never
+   matched: the banner stayed a flex ROW with a `white-space: nowrap` button on
+   phones. Its min-content width (380px) then became the min width of the whole
+   `1fr` chapter column, pushing every section 13px past the viewport where
+   `overflow: clip` sliced it off — the "book pages are cut off at the side"
+   report. Keep this selector on .kawnera-app. */
 @media (max-width: 720px) {
-  .kawneraLabBackdrop .kawkabLesson {
+  .kawnera-app .kawkabLesson {
     align-items: flex-start;
     flex-direction: column;
     gap: 18px;
     padding: 23px;
   }
-  .kawneraLabBackdrop .kawkabLesson > button {
+  .kawnera-app .kawkabLesson > button {
     width: 100%;
+    white-space: normal;
+  }
+  .kawnera-app .kawkabLesson h2 {
+    font-size: 23px !important;
   }
   .kawneraLabBackdrop {
     padding: 0;
