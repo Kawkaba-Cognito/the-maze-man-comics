@@ -1,7 +1,9 @@
 .kawnera-app {
-  --ink: #17211f;
-  --paper: #f5f2e9;
-  --line: #d5d0c3;
+  /* --ink and --line now come from the paper-mode tokens in styles/tokens.css,
+     which set them on this same root — declaring them again here would shadow
+     the system with a copy. Only --paper needs a bridge, because the shared
+     name for it is --surface. */
+  --paper: var(--surface);
   position: relative;
   min-height: 100dvh;
   padding-bottom: calc(100px + env(safe-area-inset-bottom));
@@ -25,9 +27,11 @@
   bottom: calc(100px + env(safe-area-inset-bottom));
 }
 .kawneraLabBackdrop {
-  --ink: #17211f;
-  --paper: #f5f2e9;
-  --line: #d5d0c3;
+  /* --ink and --line now come from the paper-mode tokens in styles/tokens.css,
+     which set them on this same root — declaring them again here would shadow
+     the system with a copy. Only --paper needs a bridge, because the shared
+     name for it is --surface. */
+  --paper: var(--surface);
   color: var(--ink);
   font-family: 'Outfit', system-ui, sans-serif;
 }
@@ -47,9 +51,11 @@
 }
 
 .kawnera-app {
-  --ink: #17211f;
-  --paper: #f5f2e9;
-  --line: #d5d0c3;
+  /* --ink and --line now come from the paper-mode tokens in styles/tokens.css,
+     which set them on this same root — declaring them again here would shadow
+     the system with a copy. Only --paper needs a bridge, because the shared
+     name for it is --surface. */
+  --paper: var(--surface);
 }
 .kawnera-app * {
   box-sizing: border-box;

@@ -130,3 +130,104 @@ html[data-home-theme='dark'] {
   --color-stage-gold: #d4a84a;
   --color-stage-header: #181422;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * SEMANTIC SURFACE MODES
+ *
+ * The palette above is a flat list of named colours, and features ignored it —
+ * Kawnera invented --ink/--paper, Detective invented --nr-*, Story Time
+ * invented --sgs-*, Training invented --color-training-*. Four namespaces, four
+ * palettes, nothing forcing them to agree. That is why the app reads as several
+ * apps: 1,402 hardcoded hexes with no shared vocabulary.
+ *
+ * The fix is NOT one uniform look. A noir interrogation room should not look
+ * like a cream reading page, and flattening that would make the product duller
+ * rather than more coherent. The fix is that divergence becomes DELIBERATE:
+ * every surface uses the SAME FIVE NAMES, with different values per mode.
+ *
+ *     --surface          the page itself
+ *     --surface-raised   cards, panels, anything sitting on the page
+ *     --ink              primary text
+ *     --ink-dim          secondary text, captions, labels
+ *     --accent           the one warm highlight
+ *     --accent-bright    its emphatic step
+ *     --line             borders and rules
+ *     --danger           wrong / destructive
+ *
+ * A component written against these works in any mode, and moving a feature
+ * between modes is one class instead of a rewrite.
+ *
+ * THE THREE MODES
+ *   paper  reading — Kawnera, Learn. Cream, dark ink, serif prose.
+ *   void   immersive — the universe, Story Time's stage, Detective's room.
+ *   field  playing — training games, puzzles. Light and high-contrast.
+ *
+ * Values are DERIVED from what the features already used, reconciled rather
+ * than invented: void's ink sits between Detective's #e9dcc3 and Story Time's
+ * #f3e6c8; its accent is Story Time's gold, which is Detective's #d9a441
+ * warmed. So nothing shifts far — the point is that they now shift together.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+.mode-paper {
+  --surface: #f5f2e9;
+  --surface-raised: #faf8f1;
+  --ink: #17211f;
+  --ink-dim: #53615e;
+  --accent: #a8792b;
+  --accent-bright: #c8952f;
+  --line: #d5d0c3;
+  --danger: #a24b45;
+}
+
+.mode-void {
+  --surface: #08080f;
+  --surface-raised: #12121a;
+  --ink: #efe3c6;
+  --ink-dim: #948972;
+  --accent: #e8ac4e;
+  --accent-bright: #f0c674;
+  --line: #3a3527;
+  --danger: #c34a44;
+}
+
+.mode-field {
+  --surface: #fff7f2;
+  --surface-raised: #ffffff;
+  --ink: #2d2d2d;
+  --ink-dim: #6b6b6b;
+  --accent: #b8752a;
+  --accent-bright: #d98f33;
+  --line: #e4d8cf;
+  --danger: #c34a44;
+}
+
+/*
+ * Feature roots, mapped to a mode.
+ *
+ * Listed here rather than as a class in each component's JSX so the mapping is
+ * readable in ONE place — you can see the whole app's surface layout at a
+ * glance, and moving a feature is a one-line edit here.
+ */
+.kawnera-app,
+.kawneraLabBackdrop {
+  --surface: #f5f2e9;
+  --surface-raised: #faf8f1;
+  --ink: #17211f;
+  --ink-dim: #53615e;
+  --accent: #a8792b;
+  --accent-bright: #c8952f;
+  --line: #d5d0c3;
+  --danger: #a24b45;
+}
+
+.nr,
+.sgs {
+  --surface: #08080f;
+  --surface-raised: #12121a;
+  --ink: #efe3c6;
+  --ink-dim: #948972;
+  --accent: #e8ac4e;
+  --accent-bright: #f0c674;
+  --line: #3a3527;
+  --danger: #c34a44;
+}

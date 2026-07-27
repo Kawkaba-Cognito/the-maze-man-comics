@@ -7,9 +7,10 @@
  * — the story's world stays visible while you try to recall it.
  */
 .sgs {
-    --sgs-gold: #e8ac4e;
-    --sgs-cream: #f3e6c8;
-    --sgs-dim: #9c8f78;
+    /* Aliased to the shared void-mode tokens (styles/tokens.css). */
+    --sgs-gold: var(--accent);
+    --sgs-cream: var(--ink);
+    --sgs-dim: var(--ink-dim);
     --sgs-glass: rgba(10, 10, 18, 0.72);
     position: fixed;
     inset: 0;
