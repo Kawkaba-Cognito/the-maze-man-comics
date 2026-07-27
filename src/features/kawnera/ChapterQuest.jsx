@@ -3,6 +3,7 @@ import Kawkab3D from './Kawkab3D';
 import PredictGate from './PredictGate';
 import { refsFor, sourceSection } from './kawkabRefs';
 import ChapterFigure from './ChapterFigures';
+import { recordLearned } from '../universe/learningStore';
 
 /*
  * A chapter, run as a guided expedition with Dr. Kawkab.
@@ -76,7 +77,7 @@ const REACTIONS = {
 };
 
 export default function ChapterQuest({
-  chapter, chapters, book, chapterTitle, chapterNo, onExit, onOpenLab, awardPoints,
+  chapter, chapters, book, chapterTitle, chapterNo, onExit, onOpenLab, awardPoints, onDone,
 }) {
   const stages = useMemo(() => buildStages(chapter), [chapter]);
   const [at, setAt] = useState(0);
@@ -113,6 +114,10 @@ export default function ChapterQuest({
       const all = stages.filter((x) => x.kind === 'check').length;
       const got = Object.values(answers).filter((a) => a.right).length;
       react(got === all ? 'triumph' : got > all / 2 ? 'celebrate' : 'agree');
+      // Reaching the verdict is what puts this chapter in your sky — and a
+      // repeat visit counts as a review, which lengthens its half-life.
+      recordLearned(book.id, chapterNo - 1, all ? got / all : null);
+      onDone?.();
     } else if (s?.kind === 'trap') {
       react('think');
     }
