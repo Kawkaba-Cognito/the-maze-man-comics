@@ -17,9 +17,76 @@
   background: #000;
 }
 
+/*
+ * The light ground is PARCHMENT, not sky — taken from Kawnera's .mode-paper
+ * tokens in tokens.css (--surface #f5f2e9, --surface-raised #faf8f1,
+ * --accent #a8792b, --line #d5d0c3).
+ *
+ * Two earlier attempts both missed. The first (#b5c0d4 → #e6dcd4 → #d0bcac) was
+ * a muddy grey-mauve wash. The second copied bg-home-light-mobile.webp's painted
+ * blue-to-cream SKY — better as a picture, but it made Training a different
+ * place from the library, which is exactly the "looks like multiple apps"
+ * problem. The app's light identity is paper: Kawnera is paper, and the training
+ * games are 37 cream panels.
+ *
+ * So no blue anywhere. A near-flat warm parchment, barely lighter at the top,
+ * settling a shade deeper at the base so the screen has a floor. Nothing drawn
+ * on it: a third pass added gold constellation linework here on the theory it
+ * would read as an antique star chart, and it read as lines with dots. This is
+ * a BACKGROUND — it carries planets, cards and text, so it earns its keep by
+ * having no figure of its own.
+ *
+ * Values are literal rather than var(--surface): this element is outside
+ * .kawnera-app, so --surface here resolves to :root's Field cream (#fff7f2),
+ * not paper. .mode-paper above is the source of truth if these are ever retuned.
+ */
 .uv-stage--light {
-  background: radial-gradient(ellipse 120% 80% at 50% 6%, #b5c0d4 0%, #e6dcd4 48%, #d0bcac 100%);
+  background: linear-gradient(
+    180deg,
+    #faf8f1 0%,
+    #f7f4ec 28%,
+    #f5f2e9 55%,
+    #f0ebdd 82%,
+    #e9e3d2 100%
+  );
 }
+
+/*
+ * Parchment mottling — the uneven tone of handmade paper, not clouds. These were
+ * cloud banks when this was a sky; on paper the same technique reads as the
+ * pooling you get in a heavy sheet. Kept very low-alpha and warm: anything
+ * stronger looks like a stain rather than a fibre.
+ */
+.uv-stage--light::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 62% 30% at 22% 24%, rgba(255, 253, 246, 0.55) 0%, transparent 66%),
+    radial-gradient(ellipse 50% 26% at 78% 16%, rgba(255, 253, 246, 0.45) 0%, transparent 68%),
+    radial-gradient(ellipse 72% 34% at 58% 46%, rgba(213, 202, 174, 0.16) 0%, transparent 70%),
+    radial-gradient(ellipse 56% 28% at 12% 66%, rgba(213, 202, 174, 0.13) 0%, transparent 72%);
+}
+
+/*
+ * Paper tooth. Doubles as the anti-banding fix — a smooth gradient across a full
+ * phone panel steps visibly on an 8-bit display, and noise is the standard cure
+ * — but on parchment it is also just what the surface IS. Slightly stronger than
+ * it was as sky grain (0.035 → 0.05) because paper has more texture than air.
+ * One 140px turbulence tile is generated once and repeated, so the filter cost
+ * is paid on a tiny square rather than the whole screen.
+ */
+.uv-stage--light::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-repeat: repeat;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
 
 .uv-blob {
   position: absolute;

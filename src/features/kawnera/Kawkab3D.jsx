@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef } from 'react';
-import { assetUrl } from '../../lib/assetUrl';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createDrKawkabInstance } from '../training/shared/drKawkabModel';
 import { isCoarsePointer, releaseGlContext } from '../training/shared/c3dViewport';
 
 // three is loaded lazily inside the effect, so the loop constants are inlined
@@ -8,27 +8,23 @@ const THREE_LOOP_ONCE = 2200;
 const THREE_LOOP_REPEAT = 2201;
 
 /*
- * One parse of the 3.2 MB rig, reused by every mount.
+ * Framing, copied from AssessmentMascot3D because that one demonstrably works.
  *
- * This component used to run `new GLTFLoader().load(...)` on every mount, so
- * opening a chapter, closing it and opening another re-fetched, re-parsed and
- * re-uploaded 3.2 MB of geometry and textures to the GPU each time. On a phone
- * that is a visible stall — the lag reported from the installed PWA.
+ * This component used to own a SECOND loader and a SECOND framing formula for
+ * the very same biped-v1.glb, and the two disagreed: it sized the character by
+ * `1.72 / max(size.x, size.y, size.z)` off a Box3 of the loaded scene. On a
+ * SKINNED mesh that box describes the un-posed bind geometry — measured here at
+ * 0.0164 units tall — so the divide produced a scale of ~105x and Dr. Kawkab
+ * rendered so large that only a corner of him fell inside a 156px canvas. He
+ * looked absent; the renderer was in fact drawing 10,132 triangles a frame.
  *
- * castModels.js already solved this for the training cast; this is the same
- * pattern. The clone MUST go through SkeletonUtils: a plain .clone() on a
- * skinned mesh copies the bones but not their binding, so the character
- * collapses. (Same family of problem as never scaling these rigs.)
+ * Rather than keep a second implementation correct, this now shares
+ * drKawkabModel.js with the Training hub — one parse of the 3.2 MB rig for the
+ * whole app instead of two caches of the same bytes, and one framing rule.
  */
-let gltfPromise = null;
-function loadKawkab(GLTFLoader, url) {
-  if (!gltfPromise) {
-    gltfPromise = new Promise((resolve, reject) => {
-      new GLTFLoader().load(url, resolve, undefined, reject);
-    }).catch((err) => { gltfPromise = null; throw err; });
-  }
-  return gltfPromise;
-}
+const FRAME_HEIGHT = 1.5;   // target on-screen height, in world units
+const CAM_FOV = 32;
+const CAM_Z = 4;
 
 /*
  * Dr. Kawkab's performable vocabulary.
@@ -57,6 +53,19 @@ const IDLES = ['Idle_02', 'Idle_3', 'Idle_4'];
 
 export default function Kawkab3D({ active, mentor, act }) {
   const mountRef = useRef(null);
+  /*
+   * Rebuild counter for WebGL context loss.
+   *
+   * A dropped context is PERMANENT unless something rebuilds: the canvas keeps
+   * its size and the component keeps its state (data-ready stays "true", no
+   * error fires), so the only symptom is that Dr. Kawkab silently vanishes and
+   * never returns. Caught in the console as an unpaired
+   * "THREE.WebGLRenderer: Context Lost." — the browser reclaims a context under
+   * memory pressure or when too many are alive at once, which is easy to hit
+   * here because the shell keeps every tab mounted and each 3D surface holds
+   * one. Bumping this re-runs the boot effect and builds a fresh renderer.
+   */
+  const [glEpoch, setGlEpoch] = useState(0);
   const actionsRef = useRef(new Map());
   const currentRef = useRef(null);
   const stateRef = useRef({ active, mentor });
@@ -129,16 +138,18 @@ export default function Kawkab3D({ active, mentor, act }) {
     let renderer;
     let scene;
     let observer;
+    let canvasEl;
+    let onContextLost;
+    let onContextRestored;
 
     void (async () => {
       const THREE = await import('three');
-      const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
       if (stopped) return;
 
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
       scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(28, 1, 0.01, 100);
-      camera.position.set(0, 0.05, 3.9);
+      const camera = new THREE.PerspectiveCamera(CAM_FOV, 1, 0.01, 100);
+      camera.position.set(0, 0, CAM_Z);
 
       // Match the shared c3dBoot budget on touch devices. Asking for MSAA at
       // DPR 2 on a discrete GPU is what made the cancel-task tutorial kill the
@@ -163,6 +174,21 @@ export default function Kawkab3D({ active, mentor, act }) {
       renderer.toneMappingExposure = 1.1;
       host.appendChild(renderer.domElement);
 
+      /*
+       * Survive a lost context. preventDefault() on the loss event is what makes
+       * the browser promise a 'webglcontextrestored' at all — without it the
+       * canvas is dead for good, which is exactly what stranded Dr. Kawkab.
+       * On restore, every GPU-side object from the old context is invalid, so we
+       * do not patch: we bump the epoch and let the effect tear down and rebuild
+       * from scratch. The glTF is cached in drKawkabModel, so the rebuild
+       * costs no refetch and no reparse.
+       */
+      canvasEl = renderer.domElement;
+      onContextLost = (event) => { event.preventDefault(); };
+      onContextRestored = () => { setGlEpoch((n) => n + 1); };
+      canvasEl.addEventListener('webglcontextlost', onContextLost);
+      canvasEl.addEventListener('webglcontextrestored', onContextRestored);
+
       scene.add(new THREE.HemisphereLight(0xf5f2e9, 0x17211f, 2.6));
       const keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
       keyLight.position.set(2, 3, 4);
@@ -185,33 +211,52 @@ export default function Kawkab3D({ active, mentor, act }) {
       observer = new ResizeObserver(resize);
       observer.observe(host);
 
-      // The app's existing Dr Kawkab, NOT a Kawnera-local copy: the file that
-      // shipped here was byte-identical to this one (md5 d7283f26…), so it cost
-      // 3.3 MB twice and missed the cache a reader had already filled on the
-      // Training hub. Parsed once per session now (see loadKawkab above).
-      loadKawkab(GLTFLoader, assetUrl('Assets/biped-v1.glb'))
-        .then(async (gltf) => {
+      // The app's shared Dr Kawkab instance — same loader, same framing rule as
+      // the Training hub. Parsed once per session for the whole app.
+      createDrKawkabInstance()
+        .then((gltf) => {
           if (stopped) return;
-          const { clone: cloneSkeleton } = await import('three/addons/utils/SkeletonUtils.js');
-          if (stopped) return;
-          // Clone per instance so two mounts never share a scene graph, and so
-          // disposing one cannot tear down the cached original.
-          const model = cloneSkeleton(gltf.scene);
-          model.traverse((object) => {
-            if (object instanceof THREE.Mesh) {
-              object.castShadow = true;
-              object.frustumCulled = false;
-            }
-          });
+          const model = gltf.scene;
+
+          /*
+           * Frame from the runtime bounding box HEIGHT, with a floor, so the
+           * export scale never has to be trusted. Deliberately sz.y and not
+           * max(x, y, z): a rig with arms out has a width that says nothing
+           * about how tall it reads on screen.
+           */
           const box = new THREE.Box3().setFromObject(model);
-          const center = box.getCenter(new THREE.Vector3());
-          const size = box.getSize(new THREE.Vector3());
-          const scale = 1.72 / Math.max(size.x, size.y, size.z);
-          model.position.sub(center);
-          const normalized = new THREE.Group();
-          normalized.scale.setScalar(scale);
-          normalized.add(model);
-          character.add(normalized);
+          const sz = box.getSize(new THREE.Vector3());
+          const ctr = box.getCenter(new THREE.Vector3());
+          const k = FRAME_HEIGHT / Math.max(1e-4, sz.y);
+          model.scale.setScalar(k);
+          model.position.set(-ctr.x * k, -ctr.y * k, -ctr.z * k);
+
+          model.traverse((object) => {
+            if (!object.isMesh) return;
+            object.castShadow = true;
+            object.frustumCulled = false;
+            /*
+             * Normalise the Meshy material. The export ships no metallicFactor,
+             * so glTF defaults it to 1.0 and the surface is pure metal — with no
+             * environment map it has nothing to reflect. It also carries a
+             * spurious alphaMode BLEND. Same treatment as AssessmentMascot3D.
+             */
+            const mats = Array.isArray(object.material) ? object.material : [object.material];
+            mats.forEach((m) => {
+              if (!m) return;
+              m.metalness = 0;
+              m.roughness = 0.72;
+              if ('emissiveIntensity' in m) m.emissiveIntensity = 0.22;
+              if (m.specularColor) m.specularColor.setRGB(1, 1, 1);
+              if ('specularIntensity' in m) m.specularIntensity = 1;
+              m.transparent = false;
+              m.depthWrite = true;
+              m.side = THREE.FrontSide;
+              m.needsUpdate = true;
+            });
+          });
+
+          character.add(model);
 
           mixer = new THREE.AnimationMixer(model);
           mixerRef.current = mixer;
@@ -243,6 +288,10 @@ export default function Kawkab3D({ active, mentor, act }) {
       stopped = true;
       cancelAnimationFrame(frame);
       observer?.disconnect();
+      if (canvasEl) {
+        canvasEl.removeEventListener('webglcontextlost', onContextLost);
+        canvasEl.removeEventListener('webglcontextrestored', onContextRestored);
+      }
       mixer?.stopAllAction();
       /*
        * Deliberately NOT disposing geometry or materials.
@@ -268,7 +317,7 @@ export default function Kawkab3D({ active, mentor, act }) {
       actions.clear();
       currentRef.current = null;
     };
-  }, [playAnimation]);
+  }, [playAnimation, glEpoch]);
 
   return <span ref={mountRef} className="kawkab3d" aria-hidden="true" />;
 }

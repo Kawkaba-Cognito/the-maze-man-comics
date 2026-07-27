@@ -196,3 +196,26 @@
 .ct-domain-pick .ct-domain-sci-close:hover {
     box-shadow: 0 16px 34px color-mix(in srgb, var(--domain-accent) 55%, transparent);
 }
+
+/* ══ Light appearance ═════════════════════════════════════════════════════
+ *
+ * This header was built for the black domain page: #f4e8c8 caps lifted off the
+ * void by a dark drop shadow and an accent glow. On parchment the fill is
+ * barely darker than the paper and the glow adds nothing to push against, so
+ * the domain name ("MEMORY", "ATTENTION", …) reads as a ghost.
+ *
+ * The engraving is inverted rather than removed: dark ink, and the shadow
+ * becomes a pale highlight below the glyphs, which is what carving into a light
+ * surface actually looks like. The per-domain accent stays on the kicker and
+ * the rule, so each domain still announces itself by colour.
+ */
+html[data-home-theme='light'] .ahv-title {
+    color: #1d2724;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* The kicker mixes its accent toward WHITE (82% accent + #fff), which on paper
+   lands nearly invisible. Mixed toward ink instead, same hue. */
+html[data-home-theme='light'] .ahv-tag {
+    color: color-mix(in srgb, var(--domain-accent) 62%, #241a10);
+}
