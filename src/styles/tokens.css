@@ -23,9 +23,23 @@
   --color-text-dark: #14121a;     /* on light surfaces (splash, cream UI) */
   --color-text-soft: #2a1a16;     /* warm charcoal for splash subbrand */
 
-  /* Training — attention/reasoning in-app screens: warm menu paper from the palette reference */
-  --color-training-palette-surface: #fff7f2;
-  --color-training-ink: #2d2d2d;
+  /* ─── Field mode — the app's DEFAULT surface (training, puzzles) ───
+     Field lives on :root rather than in a .mode-field class, because it is what
+     the app is when nothing says otherwise. paper (.kawnera-app) and void
+     (.nr/.sgs) override these eight names on their own roots. */
+  --surface: #fff7f2;
+  --surface-raised: #ffffff;
+  --ink: #2d2d2d;
+  --ink-dim: #6b6b6b;
+  --accent: #b8752a;
+  --accent-bright: #d98f33;
+  --line: #e4d8cf;
+  --danger: #c34a44;
+
+  /* Training — aliased to the field tokens above, so every existing rule that
+     reads --color-training-* keeps working and now follows the system. */
+  --color-training-palette-surface: var(--surface);
+  --color-training-ink: var(--ink);
 
   /* App stage (follows Home light/dark) */
   --color-stage-ink: #4a3818;
@@ -121,8 +135,21 @@
 
 /* Home light/dark — shared by hubs, shop, habits, wellbeing */
 html[data-home-theme='dark'] {
-  --color-training-palette-surface: #1a1626;
-  --color-training-ink: #f0e2c0;
+  /* Field mode, dark. The values are the stage palette that was already here
+     under other names — card becomes the raised surface, muted becomes dimmed
+     ink, gold becomes the accent — so dark mode is unchanged visually and now
+     speaks the same eight names as everything else. */
+  --surface: #1a1626;
+  --surface-raised: #221e30;
+  --ink: #f0e2c0;
+  --ink-dim: #b9a878;
+  --accent: #d4a84a;
+  --accent-bright: #e8c76a;
+  --line: #3a3248;
+  --danger: #c34a44;
+
+  --color-training-palette-surface: var(--surface);
+  --color-training-ink: var(--ink);
   --color-stage-ink: #f0e2c0;
   --color-stage-muted: #b9a878;
   --color-stage-card: #221e30;
@@ -190,16 +217,13 @@ html[data-home-theme='dark'] {
   --danger: #c34a44;
 }
 
-.mode-field {
-  --surface: #fff7f2;
-  --surface-raised: #ffffff;
-  --ink: #2d2d2d;
-  --ink-dim: #6b6b6b;
-  --accent: #b8752a;
-  --accent-bright: #d98f33;
-  --line: #e4d8cf;
-  --danger: #c34a44;
-}
+/*
+ * There is deliberately no `.mode-field` class. Field is what :root already is
+ * — the app's default surface — and it is theme-aware up there, following
+ * html[data-home-theme]. A class here would have to hardcode one theme's
+ * values, so applying it in dark mode would silently paint a light panel.
+ * To put something in field mode, apply no mode class.
+ */
 
 /*
  * Feature roots, mapped to a mode.
