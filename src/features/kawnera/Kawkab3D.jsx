@@ -8,6 +8,29 @@ const THREE_LOOP_ONCE = 2200;
 const THREE_LOOP_REPEAT = 2201;
 
 /*
+ * One parse of the 3.2 MB rig, reused by every mount.
+ *
+ * This component used to run `new GLTFLoader().load(...)` on every mount, so
+ * opening a chapter, closing it and opening another re-fetched, re-parsed and
+ * re-uploaded 3.2 MB of geometry and textures to the GPU each time. On a phone
+ * that is a visible stall — the lag reported from the installed PWA.
+ *
+ * castModels.js already solved this for the training cast; this is the same
+ * pattern. The clone MUST go through SkeletonUtils: a plain .clone() on a
+ * skinned mesh copies the bones but not their binding, so the character
+ * collapses. (Same family of problem as never scaling these rigs.)
+ */
+let gltfPromise = null;
+function loadKawkab(GLTFLoader, url) {
+  if (!gltfPromise) {
+    gltfPromise = new Promise((resolve, reject) => {
+      new GLTFLoader().load(url, resolve, undefined, reject);
+    }).catch((err) => { gltfPromise = null; throw err; });
+  }
+  return gltfPromise;
+}
+
+/*
  * Dr. Kawkab's performable vocabulary.
  *
  * The clip names are the thirteen actually inside biped-v1.glb — verified, not
@@ -165,12 +188,15 @@ export default function Kawkab3D({ active, mentor, act }) {
       // The app's existing Dr Kawkab, NOT a Kawnera-local copy: the file that
       // shipped here was byte-identical to this one (md5 d7283f26…), so it cost
       // 3.3 MB twice and missed the cache a reader had already filled on the
-      // Training hub.
-      new GLTFLoader().load(
-        assetUrl('Assets/biped-v1.glb'),
-        (gltf) => {
+      // Training hub. Parsed once per session now (see loadKawkab above).
+      loadKawkab(GLTFLoader, assetUrl('Assets/biped-v1.glb'))
+        .then(async (gltf) => {
           if (stopped) return;
-          const model = gltf.scene;
+          const { clone: cloneSkeleton } = await import('three/addons/utils/SkeletonUtils.js');
+          if (stopped) return;
+          // Clone per instance so two mounts never share a scene graph, and so
+          // disposing one cannot tear down the cached original.
+          const model = cloneSkeleton(gltf.scene);
           model.traverse((object) => {
             if (object instanceof THREE.Mesh) {
               object.castShadow = true;
@@ -194,12 +220,10 @@ export default function Kawkab3D({ active, mentor, act }) {
           }
           host.dataset.ready = 'true';
           playAnimation(stateRef.current.active, stateRef.current.mentor);
-        },
-        undefined,
-        () => {
+        })
+        .catch(() => {
           if (!stopped) host.dataset.error = 'true';
-        },
-      );
+        });
 
       const clock = new THREE.Clock();
       const render = () => {
@@ -220,12 +244,18 @@ export default function Kawkab3D({ active, mentor, act }) {
       cancelAnimationFrame(frame);
       observer?.disconnect();
       mixer?.stopAllAction();
-      scene?.traverse((object) => {
-        if (!object.isMesh) return;
-        object.geometry?.dispose();
-        const materials = Array.isArray(object.material) ? object.material : [object.material];
-        materials.forEach((material) => material?.dispose());
-      });
+      /*
+       * Deliberately NOT disposing geometry or materials.
+       *
+       * The model is a SkeletonUtils clone of a cached glTF, and that clone
+       * SHARES its geometries and materials with the cached original by
+       * reference. Disposing them here would free resources the next mount
+       * still expects to exist — Dr. Kawkab would render once and then be
+       * invisible for the rest of the session.
+       *
+       * renderer.dispose() below releases this context's GPU-side copies,
+       * which is the part that actually belongs to this instance.
+       */
       // Order matters: dispose() frees three's GPU objects, THEN the context is
       // handed back. Losing the context first leaves dispose() working against
       // a dead context.
