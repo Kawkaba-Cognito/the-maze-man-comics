@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { releaseGlContext } from '../training/shared/c3dViewport';
 
@@ -78,6 +78,8 @@ function hashPhase(str) {
 
 const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
   const wrapRef = useRef(null);
+  // Bumped by webglcontextrestored; rebuilds the scene from scratch.
+  const [glEpoch, setGlEpoch] = useState(0);
   const apiRef = useRef({
     syncPlanets: () => {}, dissolvePlanet: () => {}, reformPlanet: () => {},
     pulseCenter: () => {}, setRunning: () => {},
@@ -104,6 +106,34 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     camera.position.set(0, 0, 7);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+    /*
+     * Survive a lost context.
+     *
+     * This scene is deliberately NEVER unmounted (see HomeScreen — unmounting
+     * it on scroll was what killed the universe), so it holds a context for the
+     * whole session while Kawnera, Dr. Kawkab and the training games each take
+     * their own. Browsers cap concurrent contexts and evict the oldest, and the
+     * oldest is usually this one. Without a handler the canvas then stays blank
+     * for good: the reported "universe is light with no planets", fixed only by
+     * a reload.
+     *
+     * preventDefault() on the loss event is what makes restoration possible at
+     * all; without it the browser will not fire webglcontextrestored.
+     */
+    const onContextLost = (e) => {
+      e.preventDefault();
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
+    const onContextRestored = () => {
+      // Remount by signalling React, rather than trying to rebuild every
+      // buffer, shader and texture by hand — the scene graph is large and a
+      // partial restore is worse than a clean one.
+      setGlEpoch((n) => n + 1);
+    };
+    renderer.domElement.addEventListener('webglcontextlost', onContextLost, false);
+    renderer.domElement.addEventListener('webglcontextrestored', onContextRestored, false);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, finePointer ? 1.5 : 1.35));
     renderer.setClearColor(0x000000, 1);
     renderer.domElement.style.display = 'block';
@@ -925,11 +955,13 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       for (const m of meteors) { m.line.geometry.dispose(); m.line.material.dispose(); }
       hitSphere.geometry.dispose(); hitSphere.material.dispose();
       composer?.dispose();
+      renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
+      renderer.domElement.removeEventListener('webglcontextrestored', onContextRestored);
       renderer.dispose();
       releaseGlContext(renderer);
       wrap.removeChild(renderer.domElement);
     };
-  }, []);
+  }, [glEpoch]);
 
   useEffect(() => {
     apiRef.current.syncPlanets(planets || []);
