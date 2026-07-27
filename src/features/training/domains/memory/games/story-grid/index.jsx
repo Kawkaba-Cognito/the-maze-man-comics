@@ -835,7 +835,7 @@ const S = {
   },
   center: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 14, padding: '10px 18px 24px', overflowY: 'auto' },
   watchCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, background: '#fffdf8', border: '2px solid #e3d6c4', borderRadius: 22, padding: '18px 20px 20px', maxWidth: '100%', boxShadow: '4px 4px 0 rgba(26,18,8,0.1)' },
-  storyTitle: { fontFamily: "'Bangers', 'Outfit', system-ui, sans-serif", fontSize: 24, letterSpacing: 0.5, color: '#3a2c18', textAlign: 'center', lineHeight: 1.1, padding: '0 8px', textShadow: '1px 1px 0 rgba(255,255,255,0.6)' },
+  storyTitle: { fontFamily: "'Outfit', system-ui, sans-serif", fontSize: 24, letterSpacing: 0.5, color: '#3a2c18', textAlign: 'center', lineHeight: 1.1, padding: '0 8px', textShadow: '1px 1px 0 rgba(255,255,255,0.6)' },
   watchCap: { fontWeight: 600, fontSize: 15, color: '#4a3c28', textAlign: 'center', animation: 'sg-bubble 0.4s ease-out', minHeight: 66, width: '100%', maxWidth: 440, lineHeight: 1.5, padding: '0 8px', overflowWrap: 'break-word', flexShrink: 0 },
   timerChip: { fontWeight: 900, fontSize: 14, color: '#7a5a1e', background: '#fff1d8', borderWidth: 2, borderStyle: 'solid', borderColor: '#e3c489', borderRadius: 999, padding: '4px 14px' },
   timerLow: { color: '#b53b2f', background: '#ffe2dc', borderColor: '#e8a89c' },

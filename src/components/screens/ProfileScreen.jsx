@@ -138,7 +138,7 @@ function CognitiveRadar({ scores, index, isAr }) {
 
       {/* centre index */}
       <text x={CX} y={CY - 4} textAnchor="middle" fill={hasData ? '#fff' : L.textMuted}
-        style={{ fontSize: 34, fontWeight: 400, fontFamily: "'Fredoka One', cursive" }}>
+        style={{ fontSize: 34, fontWeight: 400, fontFamily: "'Outfit', system-ui, sans-serif" }}>
         {hasData ? index : '—'}
       </text>
       <text x={CX} y={CY + 14} textAnchor="middle" fill={L.textMuted}
@@ -243,7 +243,7 @@ export default function ProfileScreen() {
               <span style={{
                 position: 'absolute', bottom: -8, left: '50%', transform: 'translateX(-50%)',
                 background: 'linear-gradient(170deg, #5e2a0c, #3e1a06)', border: '1.5px solid #9a6828',
-                color: L.amber, fontFamily: "'Bangers', cursive", fontSize: 12, letterSpacing: 1,
+                color: L.amber, fontFamily: "'Outfit', system-ui, sans-serif", fontSize: 12, letterSpacing: 1,
                 padding: '2px 10px', borderRadius: 20, whiteSpace: 'nowrap',
               }}>{isAr ? `مستوى ${lv}` : `LVL ${lv}`}</span>
             </button>
@@ -292,7 +292,7 @@ export default function ProfileScreen() {
               <React.Fragment key={s.label}>
                 {i > 0 && <div style={{ width: 2, background: 'rgba(220,170,70,0.28)', borderRadius: 1 }} />}
                 <div style={{ flex: 1, textAlign: 'center' }}>
-                  <div style={{ fontFamily: "'Fredoka One', sans-serif", fontSize: 16, color: s.accent ? L.amber : L.text, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, lineHeight: 1 }}>
+                  <div style={{ fontFamily: "'Outfit', system-ui, sans-serif", fontSize: 16, color: s.accent ? L.amber : L.text, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, lineHeight: 1 }}>
                     <span style={{ fontSize: 12, opacity: 0.85 }}>{s.glyph}</span>{s.val}
                   </div>
                   <div style={{ fontSize: 8, color: L.textMuted, letterSpacing: 1.3, marginTop: 4, textTransform: 'uppercase', fontWeight: 800 }}>{s.label}</div>
@@ -365,7 +365,7 @@ export default function ProfileScreen() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
               {activity.map((a) => (
                 <div key={a.label} style={{ ...stoneCard, padding: '14px 8px', textAlign: 'center' }}>
-                  <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: 24, color: L.amber, lineHeight: 1 }}>{a.val}</div>
+                  <div style={{ fontFamily: "'Outfit', system-ui, sans-serif", fontSize: 24, color: L.amber, lineHeight: 1 }}>{a.val}</div>
                   <div style={{ fontSize: 9, color: L.textMuted, letterSpacing: 1.3, marginTop: 6, textTransform: 'uppercase', fontWeight: 800 }}>{a.label}</div>
                 </div>
               ))}
@@ -411,7 +411,7 @@ export default function ProfileScreen() {
                 style={{
                   width: '100%', padding: '11px', borderRadius: 10, cursor: 'pointer',
                   border: '1.5px solid rgba(232,172,78,0.35)', background: 'rgba(0,0,0,0.25)',
-                  color: L.amber, fontFamily: isAr ? "'Cairo',sans-serif" : "'Bangers', cursive",
+                  color: L.amber, fontFamily: isAr ? "'Cairo',sans-serif" : "'Outfit', system-ui, sans-serif",
                   fontSize: isAr ? 13 : 15, letterSpacing: isAr ? 0 : 1,
                 }}
               >
@@ -424,7 +424,7 @@ export default function ProfileScreen() {
           <div style={{ marginTop: 28 }}>
             <SectionDivider label={isAr ? 'العضوية' : 'Membership'} accent={chrome.accent} />
             <div style={{ ...stoneCard, padding: 16 }}>
-              <div style={{ fontFamily: isAr ? "'Cairo',sans-serif" : "'Bangers', cursive", fontSize: isAr ? 16 : 18, letterSpacing: isAr ? 0 : 1.5, color: L.amber }}>
+              <div style={{ fontFamily: isAr ? "'Cairo',sans-serif" : "'Outfit', system-ui, sans-serif", fontSize: isAr ? 16 : 18, letterSpacing: isAr ? 0 : 1.5, color: L.amber }}>
                 {isAr ? 'مستكشف مجاني' : 'Free Explorer'}
               </div>
               <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 16px', fontSize: 12.5, color: L.text, lineHeight: 2 }}>
@@ -437,7 +437,7 @@ export default function ProfileScreen() {
               <button type="button" onClick={openPaywall} style={{
                 width: '100%', padding: '12px', borderRadius: 10, cursor: 'pointer',
                 border: '1.5px solid #9a6828', background: `linear-gradient(170deg, ${L.amber}, #c98a2e)`,
-                color: '#2a1a06', fontFamily: isAr ? "'Cairo',sans-serif" : "'Bangers', cursive",
+                color: '#2a1a06', fontFamily: isAr ? "'Cairo',sans-serif" : "'Outfit', system-ui, sans-serif",
                 fontSize: isAr ? 14 : 16, letterSpacing: isAr ? 0 : 1.5, fontWeight: isAr ? 800 : 400,
                 boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
               }}>

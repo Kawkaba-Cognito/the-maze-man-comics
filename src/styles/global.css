@@ -48,7 +48,7 @@ html[data-home-theme='dark'] body {
 /* ═══════════════════════ 2D UI (COMIC INTERFACE) ═══════════════════════ */
 #ui-shell {
     position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh;
-    font-family: 'Fredoka One', cursive; color: #333;
+    font-family: 'Outfit', system-ui, sans-serif; color: #333;
     overflow-y: auto; overflow-x: hidden;
     z-index: var(--z-ui-shell);
     background: transparent;
@@ -70,7 +70,7 @@ html[data-home-theme='dark'] body {
     border: 1px solid rgba(255, 180, 60, 0.4);
     box-shadow: 0 0 12px rgba(255, 150, 30, 0.25);
     padding: 5px 14px; border-radius: 3px;
-    font-family: 'Bangers', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-weight: bold;
     color: rgba(255, 210, 100, 0.9);
     font-size: 0.9em;
@@ -116,7 +116,7 @@ html[data-home-theme='dark'] body:has(#screen-home.active) #lang-btn:hover {
     border: 1px solid rgba(255, 180, 60, 0.4);
     box-shadow: 0 0 10px rgba(255, 150, 30, 0.2), inset 0 0 8px rgba(255, 150, 30, 0.06);
     padding: 5px 14px; border-radius: 3px;
-    font-family: 'Bangers', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1em; letter-spacing: 2px;
     color: rgba(255, 210, 100, 0.9);
     cursor: pointer;
@@ -137,7 +137,7 @@ html[data-home-theme='dark'] body:has(#screen-home.active) #lang-btn:hover {
     border: 1px solid rgba(255, 180, 60, 0.5);
     border-radius: 3px;
     color: rgba(255, 210, 100, 0.9);
-    font-family: 'Bangers', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1em; letter-spacing: 2px;
     padding: 5px 14px;
     cursor: pointer;
@@ -664,7 +664,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
   position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
   z-index: 1600; pointer-events: none;
   background: rgba(20, 8, 8, 0.85); color: #ffe9a8;
-  font: 700 12px 'Bangers', cursive; letter-spacing: 1px;
+  font: 700 12px 'Outfit', system-ui, sans-serif; letter-spacing: 1px;
   padding: 5px 14px; border-radius: 999px; white-space: nowrap;
 }
 .challenge-banner b { color: #fff; }
@@ -685,7 +685,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
 .char-section { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 10px; }
 .char-section-title {
     margin: 0; text-align: start;
-    font-family: 'Bangers', cursive; letter-spacing: 1px;
+    font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px;
     font-size: 1.05rem; color: #ffd98a;
 }
 
@@ -704,7 +704,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     background: linear-gradient(180deg, #3a2008, #4a280c);
 }
 .char-card-art { width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; }
-.char-card-name { font-family: 'Fredoka One', cursive; font-weight: 700; font-size: 0.85rem; color: #f3ead9; }
+.char-card-name { font-family: 'Outfit', system-ui, sans-serif; font-weight: 700; font-size: 0.85rem; color: #f3ead9; }
 .char-card.is-on .char-card-name { color: #fff2cf; }
 .char-card-badge {
     position: absolute; top: 6px; inset-inline-end: 6px;
@@ -717,7 +717,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
 .char-equip { display: flex; flex-direction: column; gap: 14px; width: 100%; }
 .char-slot { display: flex; flex-direction: column; gap: 7px; }
 .char-slot-label {
-    text-align: start; font-family: 'Bangers', cursive; letter-spacing: 1px;
+    text-align: start; font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px;
     font-size: 0.78rem; color: #c79a5a; text-transform: uppercase;
 }
 .char-item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 8px; }
@@ -737,12 +737,12 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
     font-size: 22px; color: #8a7a5a;
 }
-.char-item-name { font-family: 'Fredoka One', cursive; font-weight: 700; font-size: 0.72rem; color: #d8c9ad; line-height: 1.1; text-align: center; }
+.char-item-name { font-family: 'Outfit', system-ui, sans-serif; font-weight: 700; font-size: 0.72rem; color: #d8c9ad; line-height: 1.1; text-align: center; }
 .char-item.is-on .char-item-name { color: #fff2cf; }
 .char-item--none .char-item-art { font-size: 20px; color: #6a5a42; }
 .char-shop-link {
     margin-top: 6px;
-    font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 1rem; color: #1a1206;
+    font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px; font-size: 1rem; color: #1a1206;
     background: linear-gradient(180deg, #ffd066, #e0a020);
     border: none; border-radius: 999px; padding: 9px 22px; cursor: pointer;
     box-shadow: 0 4px 12px rgba(255, 170, 50, 0.4);
@@ -831,24 +831,24 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
 .shop-card:hover .shop-card-art { transform: scale(1.12) rotate(-3deg); transition: transform .15s; }
 .shop-section { width: 100%; max-width: 380px; }
 .shop-section-title {
-    font-family: 'Bangers', cursive; letter-spacing: 1.5px; font-size: 1.05rem;
+    font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1.5px; font-size: 1.05rem;
     color: #ffd98a; text-align: start; margin: 14px 2px 8px;
     border-bottom: 1.5px solid #6e4420; padding-bottom: 4px;
 }
-.shop-card-name { font-family: 'Fredoka One', cursive; font-weight: 700; font-size: 0.74rem; color: #f3ead9; text-align: center; }
-.shop-card-cost { font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 0.82rem; color: #ffd98a; }
+.shop-card-name { font-family: 'Outfit', system-ui, sans-serif; font-weight: 700; font-size: 0.74rem; color: #f3ead9; text-align: center; }
+.shop-card-cost { font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px; font-size: 0.82rem; color: #ffd98a; }
 .shop-card.is-on .shop-card-cost { color: #9be85a; }
 .char-row {
     display: flex; align-items: center; gap: 10px;
     width: 100%; max-width: 360px; justify-content: center;
 }
 .char-row-label {
-    font-family: 'Bangers', cursive; letter-spacing: 1px;
+    font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px;
     font-size: 0.95rem; color: #ffd98a; min-width: 56px; text-align: end;
 }
 .char-chips, .char-swatches { display: flex; gap: 8px; flex-wrap: wrap; }
 .char-chip {
-    font-family: 'Fredoka One', cursive; font-size: 0.85rem; font-weight: 700;
+    font-family: 'Outfit', system-ui, sans-serif; font-size: 0.85rem; font-weight: 700;
     color: #f3ead9; cursor: pointer;
     background: linear-gradient(180deg, #2a1606, #3a1e08);
     border: 1.5px solid #7a4a20; border-radius: 999px;
@@ -940,7 +940,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
         0 6px 14px rgba(0,0,0,0.85),
         0 2px 4px rgba(0,0,0,0.6);
     color: rgba(255, 220, 140, 0.95);
-    font-family: 'Bangers', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     letter-spacing: 6px;
     text-transform: uppercase;
     text-shadow:
@@ -1017,7 +1017,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
 }
 .maze-transition-overlay::after {
   content: 'LOADING THE MAZE...';
-  font-family: 'Bangers', cursive;
+  font-family: 'Outfit', system-ui, sans-serif;
   font-size: clamp(0.8em, 2vw, 1em);
   letter-spacing: 5px;
   color: rgba(255, 200, 80, 0.7);
@@ -1033,9 +1033,9 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
 .coded-video-player { position: relative; width: 100%; max-width: 400px; height: 250px; background: #000; border: 6px solid #000; border-radius: 12px; margin: 0 auto; overflow: hidden; box-shadow: 6px 6px 0px #000; }
 #video-canvas { width: 100%; height: 100%; display: block; }
 .video-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 10; }
-.play-video-btn { background: #ffe66d; border: 4px solid #000; font-family: 'Bangers', cursive; font-size: 2em; padding: 10px 25px; border-radius: 12px; cursor: pointer; box-shadow: 4px 4px 0 #000; transition: transform 0.1s; }
+.play-video-btn { background: #ffe66d; border: 4px solid #000; font-family: 'Outfit', system-ui, sans-serif; font-size: 2em; padding: 10px 25px; border-radius: 12px; cursor: pointer; box-shadow: 4px 4px 0 #000; transition: transform 0.1s; }
 .play-video-btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #000; }
-.video-title-text { color: #fff; font-family: 'Bangers'; font-size: 1.5em; margin-bottom: 15px; letter-spacing: 1px; }
+.video-title-text { color: #fff; font-family: 'Outfit'; font-size: 1.5em; margin-bottom: 15px; letter-spacing: 1px; }
 
 /* ═══════════════════════ 3D ENGINE (MARTIAN SYSTEM) ═══════════════════════ */
 #maze-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 5000; background: #000; display: none; font-family: 'Outfit', sans-serif; color: #ffffff; }
@@ -1063,7 +1063,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
 .btn-cta { width:100%; padding:18px; background:rgba(255, 90, 0, 0.1); color:var(--amber); border:1px solid var(--amber); border-radius:5px; font-family:'Outfit',sans-serif; font-size:16px; font-weight:700; cursor:pointer; transition:all .2s; text-transform: uppercase; letter-spacing: 2px; }
 .btn-cta:hover { background:var(--amber); color:#000; box-shadow: 0 0 20px rgba(255, 90, 0, 0.4); }
 
-.btn-hub { background: #ff6b6b; border: 3px solid #000; padding: 8px 16px; font-family: 'Bangers', cursive; font-size: 1.2em; border-radius: 12px; cursor: pointer; color: #fff; box-shadow: 4px 4px 0px #000; transition: transform 0.1s; pointer-events: auto;}
+.btn-hub { background: #ff6b6b; border: 3px solid #000; padding: 8px 16px; font-family: 'Outfit', system-ui, sans-serif; font-size: 1.2em; border-radius: 12px; cursor: pointer; color: #fff; box-shadow: 4px 4px 0px #000; transition: transform 0.1s; pointer-events: auto;}
 .btn-hub:active { transform: translate(4px, 4px); box-shadow: 0px 0px 0px #000; }
 
 .puzzle-input { background: #000; border: 1px solid var(--amber); color: #fff; padding: 15px; font-size: 1.2em; border-radius: 8px; text-align: center; margin-bottom: 15px; width: 100%; font-family: 'DM Mono', monospace; text-transform: uppercase;}
@@ -1094,7 +1094,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     border: 1px solid rgba(0,245,255,0.4);
     box-shadow: 0 0 10px rgba(0,245,255,0.15);
     padding: 5px 14px; border-radius: 4px;
-    font-family: 'Bangers', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1em; letter-spacing: 1px;
     color: #00f5ff; cursor: pointer; transition: .15s;
     text-shadow: 0 0 8px #00f5ff;
@@ -1163,7 +1163,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     z-index: 10;
 }
-.vid-overlay-title { color: #fff; font-family: 'Bangers',cursive; font-size: 1.3em; letter-spacing: 1px; text-shadow: 2px 2px 0 #000; margin-bottom: 14px; }
+.vid-overlay-title { color: #fff; font-family: 'Outfit', system-ui, sans-serif; font-size: 1.3em; letter-spacing: 1px; text-shadow: 2px 2px 0 #000; margin-bottom: 14px; }
 .vid-big-play {
     width: 62px; height: 62px; border-radius: 50%;
     background: radial-gradient(circle at 38% 38%,#555,#111);
@@ -1188,7 +1188,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
 .vid-fs-bar .vid-bar-outer { flex: 1; }
 .vid-fs-close {
     background: #ff6b6b; border: 3px solid #000; border-radius: 50%;
-    width: 36px; height: 36px; font-family: 'Bangers',cursive;
+    width: 36px; height: 36px; font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.1em; cursor: pointer; color: #fff;
     box-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
@@ -1196,15 +1196,15 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
 
 /* ── FACT OF THE DAY ── */
 .fact-card { background: #fff; border: 5px solid #000; border-radius: 16px; padding: 22px 18px 18px; margin: 0 0 20px; position: relative; box-shadow: 8px 8px 0 #000; max-width: 400px; width: 100%; z-index: 10; }
-.fact-badge { position: absolute; top: -14px; left: 18px; background: #ff6b6b; border: 3px solid #000; border-radius: 20px; padding: 3px 12px; font-family: 'Bangers', cursive; font-size: 1em; color: #fff; letter-spacing: 1px; box-shadow: 2px 2px 0 #000; }
+.fact-badge { position: absolute; top: -14px; left: 18px; background: #ff6b6b; border: 3px solid #000; border-radius: 20px; padding: 3px 12px; font-family: 'Outfit', system-ui, sans-serif; font-size: 1em; color: #fff; letter-spacing: 1px; box-shadow: 2px 2px 0 #000; }
 .fact-text { font-size: 1.05em; font-weight: bold; color: #000; line-height: 1.5; margin-top: 6px; }
 .fact-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
-.fact-cat { display: inline-block; background: #4ecdc4; border: 2px solid #000; border-radius: 10px; padding: 3px 10px; font-family: 'Bangers', cursive; font-size: 0.9em; }
-.fact-next { background: none; border: 2px solid #000; border-radius: 8px; padding: 3px 8px; font-family: 'Bangers', cursive; font-size: 0.9em; cursor: pointer; }
+.fact-cat { display: inline-block; background: #4ecdc4; border: 2px solid #000; border-radius: 10px; padding: 3px 10px; font-family: 'Outfit', system-ui, sans-serif; font-size: 0.9em; }
+.fact-next { background: none; border: 2px solid #000; border-radius: 8px; padding: 3px 8px; font-family: 'Outfit', system-ui, sans-serif; font-size: 0.9em; cursor: pointer; }
 
 /* ── COMICS GRID ── */
 .comics-filter { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-.filter-btn { background: #fff; border: 3px solid #000; border-radius: 20px; padding: 5px 14px; font-family: 'Bangers', cursive; font-size: 1em; cursor: pointer; box-shadow: 3px 3px 0 #000; letter-spacing: 1px; transition: all 0.1s; }
+.filter-btn { background: #fff; border: 3px solid #000; border-radius: 20px; padding: 5px 14px; font-family: 'Outfit', system-ui, sans-serif; font-size: 1em; cursor: pointer; box-shadow: 3px 3px 0 #000; letter-spacing: 1px; transition: all 0.1s; }
 .filter-btn.active, .filter-btn:active { background: #ffe66d; transform: translate(3px,3px); box-shadow: 0 0 0 #000; }
 .comics-grid { display: grid; grid-template-columns: 1fr; gap: 14px; width: 100%; max-width: 500px; margin: 0 auto; }
 .comic-card { background: #fff; border: 4px solid #4455cc; border-radius: 12px; overflow: hidden; box-shadow: 5px 5px 0 #4455cc; cursor: pointer; transition: transform 0.1s; }
@@ -1215,9 +1215,9 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
 .comic-lock { position: absolute; top: 6px; right: 6px; background: #ffe66d; border: 2px solid #000; border-radius: 8px; padding: 2px 6px; font-size: 0.85em; box-shadow: 2px 2px 0 #000; }
 .comic-big-icon { font-size: 3.2em; }
 .comic-card-info { padding: 10px 12px 12px; }
-.comic-card-title { font-family: 'Bangers', cursive; font-size: 1.25em; letter-spacing: 1px; color: #000; margin-bottom: 4px; line-height: 1.1; }
+.comic-card-title { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.25em; letter-spacing: 1px; color: #000; margin-bottom: 4px; line-height: 1.1; }
 .comic-card-cat { display: inline-block; padding: 2px 7px; border: 2px solid #000; border-radius: 10px; font-size: 0.7em; font-family: 'DM Mono', monospace; font-weight: bold; }
-.comic-card-btn { display: block; width: 100%; margin-top: 10px; padding: 8px; background: #ffe66d; border: 3px solid #000; border-radius: 8px; font-family: 'Bangers', cursive; font-size: 1.15em; cursor: pointer; box-shadow: 3px 3px 0 #000; text-align: center; transition: all 0.1s; }
+.comic-card-btn { display: block; width: 100%; margin-top: 10px; padding: 8px; background: #ffe66d; border: 3px solid #000; border-radius: 8px; font-family: 'Outfit', system-ui, sans-serif; font-size: 1.15em; cursor: pointer; box-shadow: 3px 3px 0 #000; text-align: center; transition: all 0.1s; }
 .comic-card-btn.locked { background: #ddd; color: #888; }
 .comic-card-btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 #000; }
 
@@ -1229,12 +1229,12 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
 #paywall-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; }
 #paywall-modal.show { display: flex; }
 .paywall-card { background: #fff; border: 6px solid #000; border-radius: 20px; padding: 30px 20px; max-width: 360px; width: 100%; text-align: center; box-shadow: 10px 10px 0 #ffe66d; position: relative; }
-.paywall-close { position: absolute; top: -15px; right: -15px; background: #ff6b6b; border: 4px solid #000; width: 40px; height: 40px; border-radius: 50%; font-family: 'Bangers', cursive; font-size: 1.4em; cursor: pointer; color: #fff; box-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center; }
+.paywall-close { position: absolute; top: -15px; right: -15px; background: #ff6b6b; border: 4px solid #000; width: 40px; height: 40px; border-radius: 50%; font-family: 'Outfit', system-ui, sans-serif; font-size: 1.4em; cursor: pointer; color: #fff; box-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center; }
 .paywall-icon { font-size: 3em; margin-bottom: 10px; }
-.paywall-title { font-family: 'Bangers', cursive; font-size: 2em; letter-spacing: 2px; margin-bottom: 8px; }
+.paywall-title { font-family: 'Outfit', system-ui, sans-serif; font-size: 2em; letter-spacing: 2px; margin-bottom: 8px; }
 .paywall-perks { text-align: left; list-style: none; margin: 12px 0; padding: 0; }
 .paywall-perks li { padding: 7px 0; border-bottom: 1px dashed #ccc; font-weight: bold; font-size: 0.95em; }
-.paywall-btn { display: block; width: 100%; padding: 15px; background: #ffe66d; border: 4px solid #000; border-radius: 12px; font-family: 'Bangers', cursive; font-size: 1.8em; cursor: pointer; box-shadow: 5px 5px 0 #000; margin-top: 15px; color: #000; transition: all 0.1s; }
+.paywall-btn { display: block; width: 100%; padding: 15px; background: #ffe66d; border: 4px solid #000; border-radius: 12px; font-family: 'Outfit', system-ui, sans-serif; font-size: 1.8em; cursor: pointer; box-shadow: 5px 5px 0 #000; margin-top: 15px; color: #000; transition: all 0.1s; }
 .paywall-btn:active { transform: translate(5px, 5px); box-shadow: 0 0 0 #000; }
 .paywall-sub { font-size: 0.8em; color: #888; margin-top: 10px; }
 
@@ -1245,61 +1245,61 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
 #tip-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3001; display: none; align-items: center; justify-content: center; padding: 20px; }
 #tip-modal.show { display: flex; }
 .tip-card { background: #fff; border: 6px solid #000; border-radius: 20px; padding: 28px 20px; max-width: 340px; width: 100%; text-align: center; box-shadow: 10px 10px 0 #4ecdc4; position: relative; }
-.tip-card-close { position: absolute; top: -15px; right: -15px; background: #ff6b6b; border: 4px solid #000; width: 40px; height: 40px; border-radius: 50%; font-family: 'Bangers'; font-size: 1.4em; cursor: pointer; color: #fff; box-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center; }
+.tip-card-close { position: absolute; top: -15px; right: -15px; background: #ff6b6b; border: 4px solid #000; width: 40px; height: 40px; border-radius: 50%; font-family: 'Outfit'; font-size: 1.4em; cursor: pointer; color: #fff; box-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center; }
 .tip-amounts { display: flex; gap: 10px; justify-content: center; margin: 18px 0; flex-wrap: wrap; }
-.tip-amount { background: #4ecdc4; border: 4px solid #000; border-radius: 12px; padding: 10px 14px; font-family: 'Bangers', cursive; font-size: 1.4em; cursor: pointer; box-shadow: 4px 4px 0 #000; transition: all 0.1s; }
+.tip-amount { background: #4ecdc4; border: 4px solid #000; border-radius: 12px; padding: 10px 14px; font-family: 'Outfit', system-ui, sans-serif; font-size: 1.4em; cursor: pointer; box-shadow: 4px 4px 0 #000; transition: all 0.1s; }
 .tip-amount:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #000; }
 .tip-platforms { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
-.tip-platform-btn { display: block; width: 100%; padding: 12px; border: 3px solid #000; border-radius: 10px; font-family: 'Bangers', cursive; font-size: 1.15em; cursor: pointer; box-shadow: 3px 3px 0 #000; transition: all 0.1s; color: #000; }
+.tip-platform-btn { display: block; width: 100%; padding: 12px; border: 3px solid #000; border-radius: 10px; font-family: 'Outfit', system-ui, sans-serif; font-size: 1.15em; cursor: pointer; box-shadow: 3px 3px 0 #000; transition: all 0.1s; color: #000; }
 .tip-platform-btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 #000; }
 
 /* ── PROFILE PAGE ── */
 .profile-top { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
 .profile-avatar-ring { width: 88px; height: 88px; border: 6px solid #000; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 2.8em; box-shadow: 6px 6px 0 #000; margin-bottom: 12px; position: relative; cursor: pointer; }
-.profile-level-badge { position: absolute; bottom: -8px; right: -8px; background: #ffe66d; border: 3px solid #000; border-radius: 20px; font-family: 'Bangers', cursive; font-size: 0.85em; padding: 2px 8px; box-shadow: 2px 2px 0 #000; white-space: nowrap; }
-.profile-username { font-family: 'Bangers', cursive; font-size: 2em; letter-spacing: 2px; color: #fff; text-shadow: 3px 3px 0 #000; }
+.profile-level-badge { position: absolute; bottom: -8px; right: -8px; background: #ffe66d; border: 3px solid #000; border-radius: 20px; font-family: 'Outfit', system-ui, sans-serif; font-size: 0.85em; padding: 2px 8px; box-shadow: 2px 2px 0 #000; white-space: nowrap; }
+.profile-username { font-family: 'Outfit', system-ui, sans-serif; font-size: 2em; letter-spacing: 2px; color: #fff; text-shadow: 3px 3px 0 #000; }
 .xp-bar-wrap { width: 100%; background: rgba(255,255,255,0.15); border: 3px solid #000; border-radius: 20px; height: 26px; margin: 8px 0 4px; overflow: hidden; position: relative; box-shadow: 3px 3px 0 #000; }
 .xp-bar-fill { height: 100%; background: linear-gradient(90deg, #ff6b6b, #ffe66d); border-radius: 20px; transition: width 0.6s ease; min-width: 10%; }
 .xp-bar-label { font-family: 'DM Mono', monospace; font-size: 0.75em; font-weight: bold; color: #000; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
 .xp-subtext { font-size: 0.85em; color: rgba(255,255,255,0.7); font-family: 'DM Mono', monospace; }
 .streak-card { display: flex; align-items: center; gap: 15px; background: #ffe66d; border: 4px solid #000; border-radius: 16px; padding: 14px 18px; box-shadow: 6px 6px 0 #000; margin-bottom: 20px; }
-.streak-num { font-family: 'Bangers', cursive; font-size: 2.5em; line-height: 1; color: #000; }
+.streak-num { font-family: 'Outfit', system-ui, sans-serif; font-size: 2.5em; line-height: 1; color: #000; }
 .streak-info { flex: 1; text-align: left; }
-.streak-title { font-family: 'Bangers', cursive; font-size: 1.3em; letter-spacing: 1px; color: #000; }
+.streak-title { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.3em; letter-spacing: 1px; color: #000; }
 .streak-sub { font-size: 0.8em; font-weight: bold; color: #555; }
 .profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
 .stat-box { background: #fff; border: 4px solid #000; border-radius: 12px; padding: 12px 8px; text-align: center; box-shadow: 4px 4px 0 #000; }
-.stat-num { font-family: 'Bangers', cursive; font-size: 2em; line-height: 1; color: #000; }
+.stat-num { font-family: 'Outfit', system-ui, sans-serif; font-size: 2em; line-height: 1; color: #000; }
 .stat-label { font-size: 0.72em; font-weight: bold; color: #555; margin-top: 3px; letter-spacing: 0.5px; }
-.section-heading { font-family: 'Bangers', cursive; font-size: 1.6em; letter-spacing: 2px; color: #fff; text-shadow: 3px 3px 0 #000; margin-bottom: 12px; text-align: left; }
+.section-heading { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.6em; letter-spacing: 2px; color: #fff; text-shadow: 3px 3px 0 #000; margin-bottom: 12px; text-align: left; }
 .badges-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
 .badge-item { background: #fff; border: 4px solid #000; border-radius: 12px; padding: 12px 6px; text-align: center; box-shadow: 4px 4px 0 #000; }
 .badge-item.locked { opacity: 0.35; filter: grayscale(1); }
 .badge-icon { font-size: 2em; margin-bottom: 4px; display: block; }
-.badge-name { font-family: 'Bangers', cursive; font-size: 0.85em; letter-spacing: 1px; color: #000; }
+.badge-name { font-family: 'Outfit', system-ui, sans-serif; font-size: 0.85em; letter-spacing: 1px; color: #000; }
 .sub-card { background: linear-gradient(135deg, #1a0b2e, #2d1b4e); border: 4px solid #ffe66d; border-radius: 16px; padding: 20px 18px; box-shadow: 6px 6px 0 #000; }
-.sub-title { font-family: 'Bangers', cursive; font-size: 1.8em; color: #ffe66d; letter-spacing: 2px; margin-bottom: 6px; text-shadow: 2px 2px 0 #000; }
+.sub-title { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.8em; color: #ffe66d; letter-spacing: 2px; margin-bottom: 6px; text-shadow: 2px 2px 0 #000; }
 .sub-perks { list-style: none; padding: 0; margin-bottom: 15px; }
 .sub-perks li { color: rgba(255,255,255,0.85); padding: 5px 0; border-bottom: 1px dashed rgba(255,255,255,0.15); font-size: 0.9em; font-weight: bold; }
-.sub-upgrade-btn { display: block; width: 100%; padding: 14px; background: #ffe66d; border: 4px solid #000; border-radius: 12px; font-family: 'Bangers', cursive; font-size: 1.6em; cursor: pointer; box-shadow: 5px 5px 0 #000; color: #000; transition: all 0.1s; text-align: center; }
+.sub-upgrade-btn { display: block; width: 100%; padding: 14px; background: #ffe66d; border: 4px solid #000; border-radius: 12px; font-family: 'Outfit', system-ui, sans-serif; font-size: 1.6em; cursor: pointer; box-shadow: 5px 5px 0 #000; color: #000; transition: all 0.1s; text-align: center; }
 .sub-upgrade-btn:active { transform: translate(5px,5px); box-shadow: 0 0 0 #000; }
 .avatar-picker { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; }
 .avatar-opt { font-size: 2em; cursor: pointer; padding: 6px; border-radius: 8px; transition: transform 0.1s; border: 2px solid transparent; }
 .avatar-opt.selected, .avatar-opt:active { border-color: #ffe66d; transform: scale(1.2); }
 
 /* ── SHOP PAGE ── */
-.shop-section-title { font-family: 'Bangers', cursive; font-size: 1.7em; letter-spacing: 2px; color: #fff; text-shadow: 3px 3px 0 #000; margin: 20px 0 12px; text-align: left; }
+.shop-section-title { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.7em; letter-spacing: 2px; color: #fff; text-shadow: 3px 3px 0 #000; margin: 20px 0 12px; text-align: left; }
 .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 10px; }
 .shop-item { background: #fff; border: 4px solid #000; border-radius: 12px; overflow: hidden; box-shadow: 5px 5px 0 #000; }
 .shop-item-img { height: 110px; display: flex; align-items: center; justify-content: center; font-size: 3.5em; border-bottom: 3px solid #000; }
 .shop-item-info { padding: 10px 12px 12px; }
-.shop-item-name { font-family: 'Bangers', cursive; font-size: 1.15em; letter-spacing: 1px; color: #000; margin-bottom: 3px; }
+.shop-item-name { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.15em; letter-spacing: 1px; color: #000; margin-bottom: 3px; }
 .shop-item-price { font-family: 'DM Mono', monospace; font-size: 0.95em; font-weight: bold; color: #ff6b6b; margin-bottom: 8px; }
-.shop-btn { display: block; width: 100%; padding: 8px; background: #ff6b6b; border: 3px solid #000; border-radius: 8px; font-family: 'Bangers', cursive; font-size: 1.05em; cursor: pointer; box-shadow: 3px 3px 0 #000; text-align: center; color: #fff; transition: all 0.1s; }
+.shop-btn { display: block; width: 100%; padding: 8px; background: #ff6b6b; border: 3px solid #000; border-radius: 8px; font-family: 'Outfit', system-ui, sans-serif; font-size: 1.05em; cursor: pointer; box-shadow: 3px 3px 0 #000; text-align: center; color: #fff; transition: all 0.1s; }
 .shop-btn.coming-soon { background: #ddd; color: #888; }
 .shop-btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 #000; }
 .shop-banner { background: linear-gradient(135deg, #ffe66d, #ff6b6b); border: 4px solid #000; border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 20px; box-shadow: 6px 6px 0 #000; }
-.shop-banner-title { font-family: 'Bangers', cursive; font-size: 2em; letter-spacing: 2px; color: #000; }
+.shop-banner-title { font-family: 'Outfit', system-ui, sans-serif; font-size: 2em; letter-spacing: 2px; color: #000; }
 .shop-banner-sub { font-size: 0.9em; font-weight: bold; color: #000; margin-top: 4px; }
 
 /* ── 5-item NAV override ── */
@@ -1345,7 +1345,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     box-shadow: 0 8px 32px rgba(0,0,0,0.7);
 }
 .maze-settings-title {
-    font-family: 'Bangers', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1em; letter-spacing: 2.5px;
     color: rgba(200, 230, 255, 0.9);
     text-align: center;
@@ -1368,11 +1368,11 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     background: rgba(100, 181, 194, 0.2);
     padding: 2px 8px; border-radius: 4px;
     font-size: 11px; color: rgba(200, 230, 255, 0.9);
-    font-family: 'Bangers', cursive; letter-spacing: 1px;
+    font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px;
 }
 .maze-settings-close {
     width: 100%;
-    font-family: 'Bangers', cursive; font-size: 0.9em; letter-spacing: 2px;
+    font-family: 'Outfit', system-ui, sans-serif; font-size: 0.9em; letter-spacing: 2px;
     color: rgba(200, 230, 255, 0.5);
     background: transparent;
     border: 1px solid rgba(100, 181, 194, 0.2);
@@ -1398,18 +1398,18 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     background: #120b04; color: #b9ad99; letter-spacing: 1.5px;
 }
 .workout-back {
-    background: none; border: none; color: #ffd98a; font-family: 'Bangers', cursive;
+    background: none; border: none; color: #ffd98a; font-family: 'Outfit', system-ui, sans-serif;
     letter-spacing: 1px; font-size: 1rem; cursor: pointer; padding: 4px 0; margin-bottom: 6px;
 }
 .workout-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.workout-title { font-family: 'Fredoka One', 'Bangers', cursive; font-size: 1.7rem; color: #fff2cf; }
+.workout-title { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.7rem; color: #fff2cf; }
 .workout-streak {
-    font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 1.1rem; color: #ffb84a;
+    font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px; font-size: 1.1rem; color: #ffb84a;
     background: #2a1606; border: 1.5px solid #c08040; border-radius: 999px; padding: 4px 14px;
 }
 .workout-sub { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; color: #c9bca6; margin: 6px 0 18px; }
 .workout-edit { margin-inline-start: auto; background: none; border: none; color: #c9bca6; font-size: 1.1rem; cursor: pointer; }
-.workout-section-label { font-family: 'Bangers', cursive; letter-spacing: 1.5px; font-size: 1rem; color: #ffd98a; margin: 12px 0 8px; }
+.workout-section-label { font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1.5px; font-size: 1rem; color: #ffd98a; margin: 12px 0 8px; }
 
 .workout-goals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .workout-goal {
@@ -1430,13 +1430,13 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     border-radius: 14px; background: linear-gradient(180deg, #241405, #341c08); border: 1.5px solid #6e4420;
 }
 .workout-size.is-on { border-color: #ffd066; box-shadow: 0 0 14px rgba(255,180,60,0.45); }
-.workout-size-name { font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 1.05rem; color: #fff2cf; }
+.workout-size-name { font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px; font-size: 1.05rem; color: #fff2cf; }
 .workout-size-min { font-size: 0.82rem; color: #ffd98a; }
 .workout-size-sub { font-size: 0.72rem; color: #b9ad99; }
 
 .workout-cta {
     display: block; width: 100%; margin-top: 22px; padding: 14px;
-    font-family: 'Bangers', cursive; letter-spacing: 1.5px; font-size: 1.2rem; color: #1a1206;
+    font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1.5px; font-size: 1.2rem; color: #1a1206;
     background: linear-gradient(180deg, #ffd574, #e8a52a); border: none; border-radius: 14px; cursor: pointer;
     box-shadow: 0 6px 16px rgba(255,170,50,0.4);
 }
@@ -1485,7 +1485,7 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; pointer-events: none;
 }
-.wk-ring-frac { font-family: 'Fredoka One', cursive; font-size: 2rem; color: #fff2cf; line-height: 1; }
+.wk-ring-frac { font-family: 'Outfit', system-ui, sans-serif; font-size: 2rem; color: #fff2cf; line-height: 1; }
 .wk-ring-frac span { font-size: 1rem; color: #b9ad99; }
 .wk-ring-check { font-size: 3rem; color: #9be85a; line-height: 1; }
 
@@ -1934,7 +1934,7 @@ html[data-home-theme='light'] .other-theme-desc { color: #8a7348; }
 .wk-reminder-title { font-weight: 700; font-size: 0.92rem; color: #fff2cf; }
 .wk-reminder-sub { font-size: 0.76rem; color: #c9bca6; margin-top: 1px; }
 .wk-reminder-start {
-    flex: 0 0 auto; font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 1rem; color: #1a1206;
+    flex: 0 0 auto; font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px; font-size: 1rem; color: #1a1206;
     background: linear-gradient(180deg, #ffd574, #e8a52a); border: none; border-radius: 12px;
     padding: 8px 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(255,170,50,0.4);
 }
@@ -1957,7 +1957,7 @@ html[data-home-theme='light'] .other-theme-desc { color: #8a7348; }
 .hb-reminder-title { font-weight: 700; font-size: 0.88rem; color: #e8f5ea; }
 .hb-reminder-sub { font-size: 0.74rem; color: #9fd4a3; margin-top: 1px; }
 .hb-reminder-start {
-    flex: 0 0 auto; font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 0.95rem; color: #0f1a0f;
+    flex: 0 0 auto; font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px; font-size: 0.95rem; color: #0f1a0f;
     background: linear-gradient(180deg, #b8e6bc, #6fae7a); border: none; border-radius: 12px;
     padding: 8px 14px; cursor: pointer;
 }
@@ -2035,14 +2035,14 @@ html[data-home-theme='light'] .other-theme-desc { color: #8a7348; }
     border: 1.5px solid #5a3a18; border-radius: 16px; padding: 16px;
     box-sizing: border-box; text-align: start;
 }
-.ws-card-title { font-family: 'Fredoka One', 'Bangers', cursive; font-size: 1.15rem; color: #fff2cf; margin-bottom: 10px; }
-.ws-card-subtitle { font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 0.95rem; color: #ffd98a; margin: 14px 0 4px; }
+.ws-card-title { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.15rem; color: #fff2cf; margin-bottom: 10px; }
+.ws-card-subtitle { font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px; font-size: 0.95rem; color: #ffd98a; margin: 14px 0 4px; }
 .ws-note { font-size: 0.78rem; line-height: 1.5; color: #b9ad99; margin: 8px 0 0; }
 .ws-honest { background: rgba(255,210,120,0.06); border-inline-start: 3px solid #e8ac4e; padding: 8px 10px; border-radius: 6px; color: #d8c9ad; }
 
 /* calendar */
 .ws-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.ws-cal-title { font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 1.05rem; color: #fff2cf; }
+.ws-cal-title { font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px; font-size: 1.05rem; color: #fff2cf; }
 .ws-cal-nav { background: #2a1606; border: 1.5px solid #6e4420; color: #ffd98a; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; }
 .ws-cal-dow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 4px; }
 .ws-cal-dow span { text-align: center; font-size: 0.7rem; color: #8a7c64; }
@@ -2058,12 +2058,12 @@ html[data-home-theme='light'] .other-theme-desc { color: #8a7348; }
 
 .ws-stat-row { display: flex; gap: 8px; margin-top: 12px; }
 .ws-stat { flex: 1; text-align: center; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 8px 4px; }
-.ws-stat-n { font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 1.05rem; color: #ffd066; }
+.ws-stat-n { font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px; font-size: 1.05rem; color: #ffd066; }
 .ws-stat-l { font-size: 0.66rem; color: #9a8d76; }
 
 /* cognitive index */
 .ws-idx-row { display: flex; align-items: center; gap: 12px; }
-.ws-idx-big { font-family: 'Fredoka One', cursive; font-size: 2.6rem; line-height: 1; }
+.ws-idx-big { font-family: 'Outfit', system-ui, sans-serif; font-size: 2.6rem; line-height: 1; }
 .ws-idx-meta { flex: 1; font-size: 0.74rem; color: #c9bca6; line-height: 1.5; }
 .ws-cta { text-align: center; }
 .ws-cta .workout-cta { margin-top: 10px; }
@@ -2107,7 +2107,7 @@ html[data-home-theme='light'] .other-theme-desc { color: #8a7348; }
     width: 22px; height: 22px; flex: 0 0 22px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     background: rgba(255, 208, 102, 0.16); color: #ffd066;
-    font-family: 'Bangers', cursive; font-size: 0.85rem;
+    font-family: 'Outfit', system-ui, sans-serif; font-size: 0.85rem;
 }
 
 .wk-trans { display: flex; align-items: center; justify-content: center; }
@@ -2119,11 +2119,11 @@ html[data-home-theme='light'] .other-theme-desc { color: #8a7348; }
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
 }
 .wk-trans-step {
-    font-family: 'Bangers', cursive; letter-spacing: 1.5px; font-size: 0.95rem; color: #ffd98a;
+    font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1.5px; font-size: 0.95rem; color: #ffd98a;
     background: #2a1606; border: 1px solid #6e4420; border-radius: 999px; padding: 4px 16px;
 }
 .wk-trans-glyph { font-size: 3.4rem; line-height: 1; margin-top: 6px; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.5)); }
-.wk-trans-name { font-family: 'Fredoka One', 'Bangers', cursive; font-size: 1.5rem; color: #fff2cf; }
+.wk-trans-name { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.5rem; color: #fff2cf; }
 .wk-trans-meta { font-size: 0.9rem; color: #c9bca6; }
 .wk-trans-count { font-size: 0.85rem; color: #9a8d76; margin: 6px 0; }
 .wk-trans-card .workout-cta { width: 100%; margin-top: 4px; }
@@ -2150,7 +2150,7 @@ html[data-home-theme='light'] .other-theme-desc { color: #8a7348; }
     gap: 22px; padding: 24px; background: radial-gradient(circle at 50% 30%, #241405, #120a04);
 }
 .wk-test-card { max-width: 340px; text-align: center; display: flex; flex-direction: column; gap: 12px; }
-.wk-test-title { font-family: 'Bangers', cursive; letter-spacing: 1.5px; font-size: 1.5rem; color: #ffd98a; }
+.wk-test-title { font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1.5px; font-size: 1.5rem; color: #ffd98a; }
 .wk-test-body { color: #d8cbb4; font-size: 0.92rem; line-height: 1.45; }
 .wk-test-how { color: #b9ad99; font-size: 0.82rem; }
 .wk-test-skip { background: none; border: none; color: #9a8d76; font-size: 0.82rem; cursor: pointer; padding: 6px; }
@@ -2158,7 +2158,7 @@ html[data-home-theme='light'] .other-theme-desc { color: #8a7348; }
 .wk-stim {
     width: 180px; height: 180px; border-radius: 50%; cursor: pointer;
     border: 3px solid #4a3a28; background: #221a26;
-    color: #9a8d76; font-family: 'Bangers', cursive; font-size: 1.1rem; letter-spacing: 1px;
+    color: #9a8d76; font-family: 'Outfit', system-ui, sans-serif; font-size: 1.1rem; letter-spacing: 1px;
     transition: transform 0.08s; touch-action: manipulation; user-select: none;
 }
 .wk-stim:active { transform: scale(0.96); }
@@ -2177,7 +2177,7 @@ html[data-home-theme='light'] .other-theme-desc { color: #8a7348; }
     background: linear-gradient(180deg, #241405, #341c08);
     border: 1.5px solid #6e4420; border-radius: 18px; padding: 22px 18px; text-align: center;
 }
-.wk-summary-title { font-family: 'Bangers', cursive; letter-spacing: 1.5px; font-size: 1.5rem; color: #ffd98a; }
+.wk-summary-title { font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1.5px; font-size: 1.5rem; color: #ffd98a; }
 .wk-summary-rows { display: flex; flex-direction: column; gap: 8px; }
 .wk-summary-row {
     display: flex; justify-content: space-between; gap: 10px; align-items: center;
@@ -2208,7 +2208,7 @@ html[data-home-theme='light'] .other-theme-desc { color: #8a7348; }
 .workout-nudge-sub { font-size: 0.72rem; color: #9bb4c9; line-height: 1.4; margin-top: 2px; }
 .workout-nudge-btn {
     flex: 0 0 auto; cursor: pointer; white-space: nowrap;
-    font-family: 'Bangers', cursive; letter-spacing: 1px; font-size: 0.95rem; color: #0a1622;
+    font-family: 'Outfit', system-ui, sans-serif; letter-spacing: 1px; font-size: 0.95rem; color: #0a1622;
     background: linear-gradient(180deg, #7fc8f0, #3a9ad8);
     border: none; border-radius: 999px; padding: 8px 16px;
     box-shadow: 0 3px 10px rgba(58, 154, 216, 0.4);

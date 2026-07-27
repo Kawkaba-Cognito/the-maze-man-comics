@@ -270,7 +270,7 @@ export default function PuzzlesScreen() {
           {canContinue && (
             <div style={{ position: 'relative', zIndex: 5, textAlign: 'center', marginTop: 2 }}>
               <button type="button" onClick={() => { playSfx('click'); requestContinueMaze(); }}
-                style={{ background: 'rgba(40,24,10,0.65)', color: '#e8ac4e', border: '1px solid #7a5420', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontFamily: isAr ? "'Cairo', sans-serif" : "'Bangers', cursive", letterSpacing: isAr ? 0 : 1, fontSize: isAr ? 13 : 14 }}>
+                style={{ background: 'rgba(40,24,10,0.65)', color: '#e8ac4e', border: '1px solid #7a5420', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif", letterSpacing: isAr ? 0 : 1, fontSize: isAr ? 13 : 14 }}>
                 {isAr ? 'تابع المتاهة' : 'CONTINUE MAZE'}
               </button>
             </div>
@@ -421,7 +421,7 @@ export default function PuzzlesScreen() {
                 </span>
                 <span style={{
                   marginTop: 22, textAlign: 'center', color: chrome.text,
-                  fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Outfit', sans-serif",
+                  fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', sans-serif",
                   fontSize: isAr ? 12.5 : 13.5, fontWeight: isAr ? 800 : 400, letterSpacing: isAr ? 0 : 0.35,
                   lineHeight: 1.1, whiteSpace: 'nowrap',
                   textShadow: chrome.dark
@@ -451,7 +451,7 @@ export default function PuzzlesScreen() {
           }}>
             <span style={{
               color: hoveredPuzzle.accent, fontWeight: 900,
-              fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', sans-serif", letterSpacing: isAr ? 0 : 0.5,
+              fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif", letterSpacing: isAr ? 0 : 0.5,
             }}>
               {isAr ? hoveredPuzzle.nameAr : hoveredPuzzle.name}
             </span>

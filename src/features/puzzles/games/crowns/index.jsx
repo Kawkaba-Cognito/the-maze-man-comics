@@ -83,7 +83,7 @@ export default function CrownsPuzzle({ onBack }) {
   const hubCenter = (
     <>
       <div className="ct-puzzle-hub-kicker">{t.hubTag}</div>
-      <div className="ct-puzzle-hub-title" style={{ fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', cursive" }}>
+      <div className="ct-puzzle-hub-title" style={{ fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif" }}>
         {isAr ? CONFIG.nameAr : CONFIG.name}
       </div>
     </>

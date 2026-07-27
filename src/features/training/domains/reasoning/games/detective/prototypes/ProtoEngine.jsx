@@ -754,7 +754,7 @@ const S = {
   stampRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   stamp: {
     display: 'inline-block', transform: 'rotate(-8deg)', border: '3px solid #c0392b', color: '#c0392b',
-    fontFamily: "'Bangers','Cairo',cursive", fontSize: 15, letterSpacing: 1.5, padding: '2px 10px', borderRadius: 6,
+    fontFamily: "'Outfit','Cairo',cursive", fontSize: 15, letterSpacing: 1.5, padding: '2px 10px', borderRadius: 6,
   },
   tierBadge: { fontWeight: 900, fontSize: 11, color: '#7a5a1e', background: '#fff1d8', border: '1.5px solid #e3c489', borderRadius: 999, padding: '3px 10px' },
   caseTitle: { margin: 0, fontWeight: 900, fontSize: 'clamp(18px, 5vw, 22px)', color: '#2d2210', textAlign: 'center' },
@@ -802,7 +802,7 @@ const S = {
   },
   proofChipOn: { borderColor: '#2e8b57', background: '#eef8f0' },
   verdictCard: { width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 8 },
-  closedStamp: { transform: 'rotate(-8deg)', border: '3px solid #2e8b57', color: '#2e8b57', fontFamily: "'Bangers','Cairo',cursive", fontSize: 16, padding: '2px 12px', borderRadius: 6 },
+  closedStamp: { transform: 'rotate(-8deg)', border: '3px solid #2e8b57', color: '#2e8b57', fontFamily: "'Outfit','Cairo',cursive", fontSize: 16, padding: '2px 12px', borderRadius: 6 },
   verdictTitle: { fontWeight: 900, fontSize: 22, textAlign: 'center' },
   partialSub: { margin: 0, fontWeight: 700, fontSize: 14, color: '#6a5a42', textAlign: 'center' },
   truth: { display: 'flex', gap: 10, alignItems: 'center', fontWeight: 900, fontSize: 15, color: '#2d2210' },

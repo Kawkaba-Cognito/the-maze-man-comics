@@ -23,7 +23,7 @@ export default function VerdictFilePage({
           {verdict.win && (
             <span style={{
               transform: 'rotate(-8deg)', border: '3px solid #2e8b57', color: '#2e8b57',
-              fontFamily: "'Bangers','Cairo',cursive", fontSize: 14, padding: '2px 10px',
+              fontFamily: "'Outfit','Cairo',cursive", fontSize: 14, padding: '2px 10px',
             }}>{labels.caseClosed}</span>
           )}
         </div>

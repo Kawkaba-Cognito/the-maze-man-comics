@@ -125,7 +125,7 @@
     line-height: 1;
 }
 .ct-fq-hub-node-lb {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 0.72rem;
     color: var(--fq-pdk);
     line-height: 1.15;
@@ -325,7 +325,7 @@
 
 .ct-fq-training-shell--hub-light .ct-fq-training-screen .ct-fq-sbig {
     color: #b87220;
-    font-family: 'Fredoka One', 'Outfit', cursive;
+    font-family: 'Outfit', cursive;
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 .ct-fq-training-shell--hub-light .ct-fq-training-screen .ct-fq-ies-lbl {
@@ -1169,7 +1169,7 @@
     color: rgba(90, 70, 58, 0.75);
 }
 .ct-fq-title {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: clamp(1.1rem, 4vw, 1.6rem);
     color: var(--fq-pdk);
 }
@@ -1182,7 +1182,7 @@
     line-height: 1.45;
 }
 .ct-fq-logo {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: clamp(1rem, 3.5vw, 1.45rem);
     color: var(--fq-pdk);
     text-align: center;
@@ -1275,7 +1275,7 @@
     min-width: 0;
 }
 .ct-fq-diffcard-label {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-weight: 400;
     font-size: clamp(1.25rem, 5vw, 1.45rem);
     letter-spacing: 0.3px;
@@ -1375,7 +1375,7 @@
 }
 .ct-survival-intro-title {
     margin: 0;
-    font-family: 'Fredoka One', 'Bangers', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-weight: 400;
     font-size: clamp(2rem, 8vw, 2.8rem);
     letter-spacing: 0.5px;
@@ -1545,7 +1545,7 @@
     box-sizing: border-box;
 }
 .ct-fq-sci-title {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-weight: 400;
     font-size: clamp(1.2rem, 5vw, 1.5rem);
     color: #1a1208;
@@ -1684,7 +1684,7 @@
 .ct-assess-domain-score {
     flex: 0 0 2.2rem;
     text-align: end;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1rem;
 }
 .ct-fq-assess-part-soon {
@@ -1859,7 +1859,7 @@
     gap: 2px;
 }
 .ct-fq-lb:disabled { cursor: not-allowed; }
-.ct-ln { font-family: 'Fredoka One', cursive; font-size: 1.05rem; }
+.ct-ln { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.05rem; }
 .ct-ls { font-size: 0.55rem; opacity: 0.78; }
 .ct-fq-lb.ct-lve { background: linear-gradient(135deg, #c8e8c8, #9acc9a); color: #1a4a1a; }
 .ct-fq-lb.ct-lvi { background: linear-gradient(135deg, #c8e8f0, #9accd8); color: #0a3040; }
@@ -1878,7 +1878,7 @@
     margin-bottom: 12px;
     box-sizing: border-box;
 }
-.ct-fq-card h3 { font-family: 'Fredoka One', cursive; font-size: 1rem; color: var(--fq-pdk); margin-bottom: 8px; }
+.ct-fq-card h3 { font-family: 'Outfit', system-ui, sans-serif; font-size: 1rem; color: var(--fq-pdk); margin-bottom: 8px; }
 .ct-fq-pr { display: flex; gap: 6px; margin-bottom: 7px; align-items: center; }
 .ct-fq-pr input {
     flex: 1;
@@ -2027,7 +2027,7 @@
     gap: 6px;
 }
 .ct-fq-gs { text-align: center; min-width: 40px; }
-.ct-fq-gv { font-family: 'Fredoka One', cursive; font-size: clamp(0.75rem, 3.2vw, 1.05rem); color: var(--fq-pdk); }
+.ct-fq-gv { font-family: 'Outfit', system-ui, sans-serif; font-size: clamp(0.75rem, 3.2vw, 1.05rem); color: var(--fq-pdk); }
 .ct-fq-gv.tv { color: var(--fq-ac2) !important; }
 .ct-fq-gv.sm { font-size: 0.85rem; }
 .ct-fq-gv.ac2 { color: var(--fq-ac2); }
@@ -2315,7 +2315,7 @@
     justify-content: center;
 }
 .ct-fq-cd-num {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: clamp(4rem, 18vw, 6.5rem);
     color: #fff;
     animation: ct-fq-cdpop 0.85s ease;
@@ -2395,10 +2395,10 @@
     width: 100%;
     max-width: none;
 }
-.ct-fq-box h2 { font-family: 'Fredoka One', cursive; font-size: 1.4rem; color: var(--fq-pdk); margin-bottom: 8px; }
+.ct-fq-box h2 { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.4rem; color: var(--fq-pdk); margin-bottom: 8px; }
 .ct-fq-box p { color: var(--fq-mut); font-size: 0.82rem; margin-bottom: 12px; line-height: 1.45; }
 
-.ct-fq-sbig { font-family: 'Fredoka One', cursive; font-size: 2.6rem; color: var(--fq-pdk); }
+.ct-fq-sbig { font-family: 'Outfit', system-ui, sans-serif; font-size: 2.6rem; color: var(--fq-pdk); }
 .ct-fq-ies-lbl { font-size: 0.68rem; color: var(--fq-mut); margin-bottom: 8px; }
 .ct-fq-rm {
     display: grid;
@@ -2409,7 +2409,7 @@
     margin: 10px 0;
 }
 .ct-fq-rmi { text-align: center; background: var(--fq-sur); border-radius: 9px; padding: 9px 4px; }
-.ct-fq-rv { font-family: 'Fredoka One', cursive; font-size: 1.05rem; color: var(--fq-pdk); }
+.ct-fq-rv { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.05rem; color: var(--fq-pdk); }
 .ct-fq-rl { font-size: 0.55rem; color: var(--fq-mut); text-transform: uppercase; }
 .ct-fq-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; width: 100%; max-width: 380px; }
 
@@ -2427,10 +2427,10 @@
     box-sizing: border-box;
 }
 .ct-fq-lbr.win { background: linear-gradient(135deg, #fff8e0, #ffe97a); border: 2px solid #ffd700; }
-.ct-fq-lbrk { font-family: 'Fredoka One', cursive; font-size: 1.1rem; width: 28px; text-align: center; }
+.ct-fq-lbrk { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.1rem; width: 28px; text-align: center; }
 .ct-fq-lbnm { font-weight: 800; font-size: 0.84rem; }
 .ct-fq-lbdt { font-size: 0.62rem; color: var(--fq-mut); }
-.ct-fq-lbsc { font-family: 'Fredoka One', cursive; font-size: 0.95rem; color: var(--fq-pdk); margin-inline-start: auto; }
+.ct-fq-lbsc { font-family: 'Outfit', system-ui, sans-serif; font-size: 0.95rem; color: var(--fq-pdk); margin-inline-start: auto; }
 
 /* ============================================================================
  * Cancellation task — desktop layout (≥768px).
@@ -2944,7 +2944,7 @@
     text-transform: uppercase;
 }
 .ct-fq-tut-bubble-title {
-    font-family: 'Fredoka One', 'Outfit', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.05rem;
     font-weight: 400;
     line-height: 1.2;
@@ -2953,7 +2953,7 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 [dir='rtl'] .ct-fq-tut-bubble-title {
-    font-family: 'Cairo', 'Fredoka One', system-ui, sans-serif;
+    font-family: 'Cairo', 'Outfit', system-ui, sans-serif;
     font-weight: 900;
 }
 .ct-fq-tut-bubble-text {
@@ -3228,7 +3228,7 @@
     box-sizing: border-box;
 }
 .ct-training-modal-title {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.55rem;
     color: #141210;
     margin: 0 0 14px;
@@ -3278,7 +3278,7 @@
 }
 .ct-training-btn--start {
     margin-top: 16px;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.15rem;
     font-weight: 400;
     letter-spacing: 0.04em;
@@ -3507,7 +3507,7 @@
     place-items: center;
     color: #f0e2c0;
     background: rgba(0, 0, 0, 0.42);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 4rem;
 }
 .ct-trail-scene3d {
@@ -3597,7 +3597,7 @@
     gap: 1px;
 }
 .ct-sm-legend-digit {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 0.92rem;
     color: #1a6b3a;
     line-height: 1;
@@ -3615,7 +3615,7 @@
 }
 .ct-sm-hud-stat { white-space: nowrap; }
 .ct-sm-hud-time {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     color: #b87220;
     font-size: clamp(1rem, 4.4vw, 1.25rem);
 }
@@ -3649,7 +3649,7 @@
     height: auto !important;
 }
 .ct-sm-countdown {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: clamp(2.6rem, 14vw, 4rem);
     color: #b87220;
 }
@@ -3673,7 +3673,7 @@
     border: 2px solid #1a1208;
     background: linear-gradient(180deg, #ffffff 0%, #f3ebe4 100%);
     box-shadow: 0 4px 0 #1a1208;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: clamp(1.3rem, 6vw, 1.7rem);
     color: #1a1208;
     cursor: pointer;
@@ -3824,7 +3824,7 @@
     border-radius: 9px;
     background: #2d6b2d;
     color: #fff;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 0.72rem;
     line-height: 18px;
     text-align: center;
@@ -3877,7 +3877,7 @@
     padding: 8px 18px;
     border-radius: 14px;
     border: 2px solid;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-weight: 400;
     font-size: clamp(0.9rem, 3.7vw, 1.12rem);
     letter-spacing: 0.4px;
@@ -3948,7 +3948,7 @@
 }
 .ct-ms-briefing-title {
     margin: 0 0 14px;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 22px;
     color: #141210;
 }
@@ -4113,7 +4113,7 @@
     width: 100%;
 }
 .ct-ms-recall h3 {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.1rem;
     color: #141210;
     margin: 0 0 8px;
@@ -4167,7 +4167,7 @@
     border-radius: 50%;
     background: #1a4d38;
     color: #fff;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 16px;
     display: flex;
     align-items: center;
@@ -4264,7 +4264,7 @@
     border-radius: 50%;
     background: #1a4d38;
     color: #fff;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 13px;
     display: flex;
     align-items: center;
@@ -4298,7 +4298,7 @@
     font-size: clamp(1.6rem, 8vw, 2.2rem);
 }
 .ct-ms-object-name {
-    font-family: var(--font-comic, 'Fredoka One', sans-serif);
+    font-family: var(--font-comic, 'Outfit', system-ui, sans-serif);
     font-size: clamp(0.95rem, 4vw, 1.15rem);
     font-weight: 700;
     color: var(--ms-ink, #2a2520);
@@ -4354,7 +4354,7 @@
 }
 .ct-ms-sci-title {
     margin: 0 0 6px;
-    font-family: 'Fredoka One', 'Bangers', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.4rem;
     color: #2a2520;
     text-align: center;
@@ -4463,7 +4463,7 @@
     padding: 19px 12px;
     border: 3px solid #1a1208; border-radius: 16px;
     color: #fff;
-    font-family: 'Fredoka One', 'Bangers', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.18rem; letter-spacing: 1px;
     box-shadow: 4px 4px 0 #1a1208;
     cursor: pointer; user-select: none;
@@ -4531,17 +4531,17 @@
     padding: 24px 22px 20px;
     animation: ct-nb-popin 0.34s cubic-bezier(0.18, 1.4, 0.5, 1);
 }
-.ct-nb-popup-kicker { font-family: 'Fredoka One', 'Bangers', cursive; font-size: 1.05rem; letter-spacing: 0.5px; color: #b9842f; }
+.ct-nb-popup-kicker { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.05rem; letter-spacing: 0.5px; color: #b9842f; }
 .ct-nb-popup-kicker--up { color: #2e8b57; }
 .ct-nb-popup-kicker--down { color: #3f6fd8; }
-.ct-nb-popup-n { font-family: 'Bangers', 'Fredoka One', cursive; font-size: 3rem; line-height: 1.05; color: #2a2520; margin: 2px 0 0; }
+.ct-nb-popup-n { font-family: 'Outfit', system-ui, sans-serif; font-size: 3rem; line-height: 1.05; color: #2a2520; margin: 2px 0 0; }
 .ct-nb-popup-sub { font-size: 0.92rem; font-weight: 700; color: #6a5f52; margin: 2px 0 10px; }
 .ct-nb-popup-acc { display: inline-block; font-size: 0.82rem; font-weight: 800; color: #7a6a52; background: #efe4d4; border-radius: 999px; padding: 4px 13px; margin-bottom: 16px; }
 .ct-nb-popup-btn {
     display: block; width: 100%; padding: 15px;
     border: 3px solid #1a1208; border-radius: 15px;
     background: linear-gradient(180deg, #6fa0f4 0%, #3f6fd8 100%); color: #fff;
-    font-family: 'Fredoka One', 'Bangers', cursive; font-size: 1.18rem; letter-spacing: 0.5px;
+    font-family: 'Outfit', system-ui, sans-serif; font-size: 1.18rem; letter-spacing: 0.5px;
     box-shadow: 4px 4px 0 #1a1208; cursor: pointer;
     -webkit-tap-highlight-color: transparent; touch-action: manipulation;
     transition: transform 0.06s, box-shadow 0.06s;
@@ -5087,7 +5087,7 @@
     opacity: 0.72;
 }
 .ct-stroop-rule-rule {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.18rem;
     letter-spacing: 0.04em;
 }
@@ -5287,7 +5287,7 @@
 }
 .ct-stroop-shift-title {
     margin: 0;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.5rem;
     color: #1a1208;
 }
@@ -5303,7 +5303,7 @@
     padding: 8px 18px;
     border-radius: 12px;
     border: 2px solid #1a1208;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.15rem;
 }
 
@@ -5328,7 +5328,7 @@
     grid-column: 1 / -1;
 }
 .ct-stroop-stat-n {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.75rem;
     line-height: 1.1;
 }
@@ -5618,7 +5618,7 @@
 }
 .ct-stroop-blitz-title {
     margin: 0;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.5rem;
     color: #ffce4f;
 }
@@ -5788,7 +5788,7 @@
 }
 .ct-wordle-title {
     margin: 8px 0 4px;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.65rem;
     text-align: center;
     color: #2a2438;
@@ -5832,7 +5832,7 @@
 .ct-wordle-link-draft {
     margin: 0 0 10px;
     min-height: 1.6rem;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.35rem;
     letter-spacing: 0.2em;
     text-align: center;
@@ -5871,7 +5871,7 @@
     box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.55);
 }
 .ct-wordle-link-letter {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: clamp(1.1rem, 5vw, 1.45rem);
     color: #2a2438;
     pointer-events: none;
@@ -5919,7 +5919,7 @@
     border-radius: 6px;
     background: #5c4d9e;
     color: #fff;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 0.75rem;
 }
 .ct-wordle-msg--ok {
@@ -5982,7 +5982,7 @@
     align-items: center;
     justify-content: center;
     border: 2px solid var(--wordle-border);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.5rem;
     text-transform: uppercase;
     background: #fff;
@@ -6036,7 +6036,7 @@
     border: none;
     border-radius: 4px;
     background: #d3d6da;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 0.75rem;
     color: #1a1a1b;
     cursor: pointer;
@@ -6094,7 +6094,7 @@
     min-height: 80px;
 }
 .ct-wordle-tut-logo {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', system-ui, sans-serif;
     font-size: 1.8rem;
     letter-spacing: 0.35em;
     color: #5c4d9e;
@@ -6160,7 +6160,7 @@
     display: flex; align-items: center; justify-content: center;
     background: var(--r-card); border-radius: 9px; box-shadow: inset 0 0 0 1px rgba(31,26,20,0.08);
 }
-.ct-rv-cell--q { font-family: 'Fredoka One', cursive; font-size: 2rem; color: #c98a3a; background: #fff4dd; box-shadow: inset 0 0 0 2px #e8ac4e; }
+.ct-rv-cell--q { font-family: 'Outfit', system-ui, sans-serif; font-size: 2rem; color: #c98a3a; background: #fff4dd; box-shadow: inset 0 0 0 2px #e8ac4e; }
 .ct-rv-grid--mini .ct-rv-cell--q { font-size: 1.2rem; }
 
 .ct-rv-options {

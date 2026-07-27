@@ -106,7 +106,7 @@ export function TrainingPlayHeader({
         <div
           className="ct-training-play-title"
           style={{
-            fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', cursive",
+            fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
             fontWeight: isAr ? 900 : 400,
             letterSpacing: isAr ? 0 : 1,
           }}
@@ -225,7 +225,7 @@ export function TrainingChallengeHandoff({
         <h2
           className="ct-training-handoff-name"
           style={{
-            fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', cursive",
+            fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
             fontWeight: isAr ? 900 : 400,
           }}
         >
