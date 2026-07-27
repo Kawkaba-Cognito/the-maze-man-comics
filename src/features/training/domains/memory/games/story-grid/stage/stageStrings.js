@@ -8,6 +8,13 @@ const EN = {
   next: 'Next ›',
   toOrder: 'Done — rebuild it',
 
+  // Playback: the story runs as a short film rather than a slideshow.
+  play: 'Play',
+  pause: 'Pause',
+  replay: 'Watch again',
+  skip: 'Skip to the questions',
+  watchingOf: (i, n) => `${i} / ${n}`,
+
   orderTitle: 'Put it back in order',
   orderSub: 'Tap the moments in the order they happened.',
   slotEmpty: '—',
@@ -36,6 +43,12 @@ const AR = {
   beatOf: (i, n) => `المشهد ${i} من ${n}`,
   next: 'التالي ›',
   toOrder: 'انتهيت — أعد بناءها',
+
+  play: 'تشغيل',
+  pause: 'إيقاف مؤقّت',
+  replay: 'شاهدها مجدّدًا',
+  skip: 'انتقل إلى الأسئلة',
+  watchingOf: (i, n) => `${i} / ${n}`,
 
   orderTitle: 'أعد ترتيبها',
   orderSub: 'اضغط اللحظات بالترتيب الذي حدثت فيه.',

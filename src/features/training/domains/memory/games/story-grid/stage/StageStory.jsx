@@ -1,7 +1,9 @@
-import React, { Suspense, lazy, useCallback, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import OrderBoard from './components/OrderBoard';
 import ProbeQuiz from './components/ProbeQuiz';
-import { L, castOf, scoreOrder, scoreProbes } from './schema';
+import {
+  L, beatHold, castOf, focusActor, pickShot, scoreOrder, scoreProbes,
+} from './schema';
 import { pickStrings } from './stageStrings';
 import { CAST } from '../../../../../shared/castRoster';
 import './stage.css';
@@ -9,10 +11,29 @@ import './stage.css';
 // three.js only loads once a story actually opens.
 const StoryStage3D = lazy(() => import('./components/StoryStage3D'));
 
+// How long the cut between beats dips. Short enough to read as an edit rather
+// than a loading screen.
+const DIP_MS = 200;
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined'
+  && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
 /*
  * One staged story, start to finish.
  *
  *   watch → order → probes → reveal
+ *
+ * WATCH plays as a short film: beats advance on their own clock (see beatHold
+ * in schema.js), the camera cuts between shots, dialogue arrives as a subtitle
+ * and each cut dips briefly. It is not a slideshow with a Next button, because
+ * a continuous scene is a truer thing to encode episodically — and because a
+ * static tableau can be sat on and drilled, which makes the ordering task
+ * measure patience instead of memory.
+ *
+ * The learner keeps control where it matters: pause, replay from the top, or
+ * skip ahead. Self-paced study beats fixed-pace for recall, so taking the
+ * pacing away entirely would trade real learning for atmosphere.
  *
  * The stage stays mounted across watch AND the retrieval phases (dimmed and
  * non-interactive behind the panels) so the cast loads once and the room the
@@ -28,6 +49,8 @@ export default function StageStory({
 
   const [phase, setPhase] = useState('watch');
   const [beatIdx, setBeatIdx] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  const [dip, setDip] = useState(false);
   const [placed, setPlaced] = useState([]);
   const [probeIdx, setProbeIdx] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -35,11 +58,66 @@ export default function StageStory({
 
   const beat = story.beats[Math.min(beatIdx, story.beats.length - 1)];
   const isLastBeat = beatIdx >= story.beats.length - 1;
+  const hold = useMemo(() => beatHold(beat, isAr), [beat, isAr]);
 
-  const nextBeat = () => {
+  // Framing for this beat: the authored shot or the house grammar, aimed at
+  // whoever is speaking.
+  const shot = useMemo(
+    () => pickShot(beat, beatIdx, story.beats.length),
+    [beat, beatIdx, story.beats.length],
+  );
+  const focusX = useMemo(() => focusActor(beat)?.x ?? 0, [beat]);
+
+  // ── the clock ───────────────────────────────────────────────────────────
+  // Pausing must FREEZE the current beat, not restart it, so the remaining
+  // time is banked on pause and spent on resume.
+  const remainRef = useRef(null);
+  const deadlineRef = useRef(0);
+
+  // Declared before the timer effect so it runs first: a new beat always gets
+  // its full hold, never the leftovers of the one before.
+  useEffect(() => { remainRef.current = null; }, [beatIdx]);
+
+  useEffect(() => {
+    if (phase !== 'watch') return undefined;
+    if (!playing) {
+      if (deadlineRef.current) {
+        remainRef.current = Math.max(0, deadlineRef.current - Date.now());
+      }
+      return undefined;
+    }
+    const ms = remainRef.current ?? hold;
+    deadlineRef.current = Date.now() + ms;
+    const id = window.setTimeout(() => {
+      deadlineRef.current = 0;
+      if (isLastBeat) setPhase('order');
+      else setBeatIdx((i) => i + 1);
+    }, ms);
+    return () => window.clearTimeout(id);
+  }, [phase, playing, beatIdx, hold, isLastBeat]);
+
+  // The cut. Skipped under reduced-motion, where a flashing overlay is exactly
+  // the thing the setting exists to prevent.
+  useEffect(() => {
+    if (beatIdx === 0 || prefersReducedMotion()) return undefined;
+    setDip(true);
+    const id = window.setTimeout(() => setDip(false), DIP_MS);
+    return () => window.clearTimeout(id);
+  }, [beatIdx]);
+
+  const replay = () => {
     playSfx?.('click');
-    if (isLastBeat) { setPhase('order'); return; }
-    setBeatIdx((i) => i + 1);
+    remainRef.current = null;
+    setBeatIdx(0);
+    setPlaying(true);
+  };
+  const togglePlay = () => {
+    playSfx?.('click');
+    setPlaying((p) => !p);
+  };
+  const skipToOrder = () => {
+    playSfx?.('click');
+    setPhase('order');
   };
 
   const place = useCallback((id) => setPlaced((p) => (p.includes(id) ? p : [...p, id])), []);
@@ -92,28 +170,95 @@ export default function StageStory({
               beat={stageBeat}
               cast={cast}
               isAr={isAr}
+              shot={phase === 'watch' ? shot : 'wide'}
+              focusX={phase === 'watch' ? focusX : 0}
               onError={() => setStageFailed(true)}
             />
           </Suspense>
         )}
+
+        {/* Dialogue rides IN the frame, like a film subtitle — the narration
+            below is the storyteller's voice, which is a different register. */}
+        {phase === 'watch' && beat.say && (
+          <div
+            key={`say-${beatIdx}`}
+            className="sgs-subtitle"
+            style={{ '--who': CAST[beat.say.who]?.accent }}
+          >
+            <b>{L(CAST[beat.say.who]?.name, isAr)}</b>
+            <span>“{L(beat.say.t, isAr)}”</span>
+          </div>
+        )}
+
+        {/* Tap the picture to pause, as any video player would. */}
+        {phase === 'watch' && (
+          <button
+            type="button"
+            className="sgs-stage-tap"
+            onClick={togglePlay}
+            aria-label={playing ? t.pause : t.play}
+          />
+        )}
+
+        <div className={dip ? 'sgs-dip on' : 'sgs-dip'} aria-hidden="true" />
       </div>
 
       {phase === 'watch' && (
         <div className="sgs-watch">
-          <div className="sgs-beatline">{t.beatOf(beatIdx + 1, story.beats.length)}</div>
-          {beat.say && (
-            <div className="sgs-say" style={{ borderColor: CAST[beat.say.who]?.accent }}>
-              <b style={{ color: CAST[beat.say.who]?.accent }}>
-                {L(CAST[beat.say.who]?.name, isAr)}
-              </b>
-              <span>“{L(beat.say.t, isAr)}”</span>
+          <p key={`narr-${beatIdx}`} className="sgs-narr">{L(beat.narr, isAr)}</p>
+
+          <div className="sgs-transport">
+            {/* One segment per beat: filled behind you, draining on the one
+                playing now. Doubles as the "how much is left" cue. */}
+            <ol className="sgs-track" aria-label={t.watchingOf(beatIdx + 1, story.beats.length)}>
+              {story.beats.map((b, i) => (
+                <li
+                  key={b.id}
+                  className={i < beatIdx ? 'done' : i === beatIdx ? 'now' : ''}
+                >
+                  {i === beatIdx && (
+                    <i
+                      key={`fill-${beatIdx}`}
+                      style={{
+                        animationDuration: `${hold}ms`,
+                        animationPlayState: playing ? 'running' : 'paused',
+                      }}
+                    />
+                  )}
+                </li>
+              ))}
+            </ol>
+
+            <div className="sgs-controls">
+              <button
+                type="button"
+                className="sgs-ctl"
+                onClick={replay}
+                disabled={beatIdx === 0 && playing}
+                aria-label={t.replay}
+                title={t.replay}
+              >
+                ⟲
+              </button>
+              <button
+                type="button"
+                className="sgs-ctl sgs-ctl--main"
+                onClick={togglePlay}
+                aria-label={playing ? t.pause : t.play}
+                title={playing ? t.pause : t.play}
+              >
+                {playing ? '❙❙' : '▶'}
+              </button>
+              <button
+                type="button"
+                className="sgs-ctl"
+                onClick={skipToOrder}
+                aria-label={t.skip}
+                title={t.skip}
+              >
+                ⏭
+              </button>
             </div>
-          )}
-          <p className="sgs-narr">{L(beat.narr, isAr)}</p>
-          <div className="sgs-bar">
-            <button type="button" className="sgs-btn sgs-btn--go" onClick={nextBeat}>
-              {isLastBeat ? t.toOrder : t.next}
-            </button>
           </div>
         </div>
       )}
