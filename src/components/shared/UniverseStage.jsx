@@ -45,11 +45,26 @@ const BLOBS_DARK = {
   ],
 };
 
+/* Parchment, per Kawnera's .mode-paper. The middle blob used to be
+   rgba(196,208,236) — a cool blue, the one hue that cannot appear on paper and
+   the thing that made this screen read as a different app from the library. */
 const BLOBS_LIGHT = [
-  { x: '4%', y: '8%', w: 380, h: 250, c: 'rgba(255,255,255,0.6)', dur: 30 },
-  { x: '56%', y: '0%', w: 430, h: 280, c: 'rgba(196,208,236,0.55)', dur: 36 },
-  { x: '42%', y: '52%', w: 480, h: 320, c: 'rgba(244,214,178,0.5)', dur: 42 },
+  { x: '4%', y: '8%', w: 380, h: 250, c: 'rgba(255,253,246,0.62)', dur: 30 },
+  { x: '56%', y: '0%', w: 430, h: 280, c: 'rgba(238,231,213,0.5)', dur: 36 },
+  { x: '42%', y: '52%', w: 480, h: 320, c: 'rgba(226,214,186,0.42)', dur: 42 },
 ];
+
+/*
+ * Kawnera's --accent (#a8792b), used for the few loose flecks light mode keeps.
+ *
+ * There were drawn constellations here — three asterisms joined by gold
+ * linework. The idea was that on parchment they would read as an antique star
+ * chart; in practice they read as lines with dots on them, and they were
+ * removed. Nothing on this ground should ask to be looked at: it sits behind
+ * planets, cards and text, and the moment it has a figure of its own it becomes
+ * one more thing competing with the content.
+ */
+const GOLD_STAR = 'rgba(168, 121, 43, 0.5)';
 
 export default function UniverseStage({
   accent = 'default',
@@ -63,16 +78,22 @@ export default function UniverseStage({
   const showShoot = shootingStar ?? dark;
 
   const stars = useMemo(
-    () => Array.from({ length: STAR_COUNT }, (_, i) => {
+    () => Array.from({ length: dark ? STAR_COUNT : Math.round(STAR_COUNT * 0.5) }, (_, i) => {
       const sz = 1.2 + seed(i, 3) * 2.6;
       return {
         left: `${seed(i, 1) * 100}%`,
-        top: `${seed(i, 2) * 100}%`,
+        // Light: keep the scatter in the upper band, where the sky is still blue
+        // enough to hold a point. Lower down it is warm cream and a star there is
+        // just a mark on paper.
+        top: dark ? `${seed(i, 2) * 100}%` : `${8 + seed(i, 2) * 30}%`,
         width: sz,
         height: sz,
-        opacity: dark ? 0.25 + seed(i, 4) * 0.5 : 0.3 + seed(i, 4) * 0.4,
+        opacity: dark ? 0.25 + seed(i, 4) * 0.5 : 0.28 + seed(i, 4) * 0.34,
+        background: dark ? undefined : GOLD_STAR,
         boxShadow: sz > 2.7
-          ? `0 0 6px 1px rgba(255,255,255,${dark ? 0.55 : 0.75})`
+          ? (dark
+            ? '0 0 6px 1px rgba(255,255,255,0.55)'
+            : '0 0 5px 1px rgba(214,168,74,0.35)')
           : 'none',
         animationDuration: `${2.6 + seed(i, 5) * 4}s`,
         animationDelay: `-${seed(i, 6) * 5}s`,
@@ -116,16 +137,21 @@ export default function UniverseStage({
           }}
         />
       ) : (
+        /* Not a sun — a warm pool of lamplight on the page. A sun is a thing in
+           a sky, and this ground is paper; the old near-white disc with its wide
+           bloom read as a smudge wiped across the sheet. Softened to the barest
+           warm lift, so it gives the corner some light without becoming an
+           object the eye has to explain. */
         <span
           className="uv-celestial"
           style={{
             left: '7%',
             top: '6%',
-            width: 140,
-            height: 140,
-            filter: 'blur(4px)',
-            background: 'radial-gradient(circle, rgba(255,251,238,0.95) 0%, rgba(255,245,216,0.5) 46%, transparent 70%)',
-            boxShadow: '0 0 90px 46px rgba(255,247,222,0.5)',
+            width: 190,
+            height: 190,
+            filter: 'blur(14px)',
+            background: 'radial-gradient(circle, rgba(255,252,242,0.5) 0%, rgba(248,240,220,0.2) 52%, transparent 74%)',
+            boxShadow: '0 0 110px 60px rgba(252,246,231,0.18)',
           }}
         />
       )}
@@ -142,7 +168,7 @@ export default function UniverseStage({
         style={{
           background: dark
             ? 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 100%)'
-            : 'linear-gradient(180deg, transparent 0%, rgba(255,249,240,0.6) 100%)',
+            : 'linear-gradient(180deg, transparent 0%, rgba(233,227,210,0.55) 100%)',
         }}
       />
       <span
@@ -150,7 +176,10 @@ export default function UniverseStage({
         style={{
           background: dark
             ? 'radial-gradient(ellipse 130% 95% at 50% 38%, transparent 58%, rgba(0,0,0,0.45) 100%)'
-            : 'radial-gradient(ellipse 130% 80% at 50% 0%, rgba(255,255,255,0.45) 0%, transparent 55%)',
+            /* Paper gets a vignette rather than a top-lit wash: a sheet darkens
+               slightly at its edges where it curls, which is the opposite of the
+               sky's brighter-toward-the-light reading. */
+            : 'radial-gradient(ellipse 128% 92% at 50% 42%, transparent 62%, rgba(196,183,152,0.2) 100%)',
         }}
       />
     </div>

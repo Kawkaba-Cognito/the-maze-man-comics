@@ -8394,3 +8394,177 @@ html[data-home-theme='light'] .rh-puzzles-cta {
     color: #4a3a1e !important;
     box-shadow: 0 2px 10px rgba(90, 70, 40, 0.08) !important;
 }
+
+/* ══ Training DOMAIN page (ModePlanetHub) — light mode ════════════════════
+ *
+ * This screen was authored black-only: .ct-mph-sky paints #12101a→#030208, and
+ * the stars, dust, shooting stars and nebulae on top of it all assume that void.
+ * With light as the app default the hub in front of it went parchment while this
+ * one stayed a black room, so opening a domain dropped you into a different app
+ * — the same break the tab landings had before they moved onto Kawnera's paper.
+ *
+ * Treated exactly as the hub was: drop the night-sky effects rather than
+ * re-tint them (a star on paper is a speck, not a dim star), and let the same
+ * parchment through. Colours are Kawnera's .mode-paper tokens so all three
+ * surfaces — library, hub, domain — are one material.
+ */
+html[data-home-theme='light'] .ct-mph-sky {
+    background: linear-gradient(180deg, #faf8f1 0%, #f5f2e9 55%, #ece6d6 100%);
+}
+
+html[data-home-theme='light'] .ct-mph-stars--a,
+html[data-home-theme='light'] .ct-mph-stars--b,
+html[data-home-theme='light'] .ct-mph-dust,
+html[data-home-theme='light'] .ct-mph-shoot,
+html[data-home-theme='light'] .ct-mph-nebula--a,
+html[data-home-theme='light'] .ct-mph-nebula--b,
+html[data-home-theme='light'] .ct-mph-nebula--c {
+    display: none;
+}
+
+/* NOTE: do NOT put an opacity on .ct-mph-constellation. Despite the name it is
+   not the corridor linework — it is the flex CONTAINER holding the mode planets
+   and their labels (see its rule near the top of this file: position/z-index/
+   width/display only). A pass here set it to 0.28 to tone down "lines", which
+   instead faded every planet and caption on the page to 28% — the reported
+   semi-transparent planets and grey mode names. */
+
+/* Cream-on-black text inverts to invisible. --ink / --ink-dim from .mode-paper,
+   and the black text-shadow becomes a smudge, so it goes. */
+html[data-home-theme='light'] .ct-mph-planet-name {
+    color: #17211f;
+    text-shadow: none;
+}
+
+html[data-home-theme='light'] .ct-mph-planet-hint {
+    color: #53615e;
+}
+
+/* ══ Training DOMAIN pick (ComicsScreen .ct-domain-pick) — light mode ══════
+ *
+ * The exercise picker — "Training domain / ATTENTION / Select an exercise" —
+ * hard-sets `background: #000 !important` on a class confusingly named
+ * `--hub-light` (the "light" there means the light *variant of the shell*, not
+ * a light theme). With the app defaulting to light, tapping a planet on a
+ * parchment hub dropped you into a black room.
+ *
+ * The per-domain accent (--domain-accent/-mid/-deep) is kept: it is the one
+ * thing that tells you WHICH domain you are in. Only the void behind it becomes
+ * paper, and the ::before accent glow is pulled right down — at 28% mix those
+ * hues were tuned to bloom out of black and would stain a cream page.
+ */
+html[data-home-theme='light'] .ct-domain-pick.ct-fq-training-shell--hub-light {
+    background: linear-gradient(180deg, #faf8f1 0%, #f5f2e9 55%, #ece6d6 100%) !important;
+    color: #17211f;
+}
+
+html[data-home-theme='light'] .ct-domain-pick::before {
+    opacity: 0.16;
+}
+
+/* Parchment-on-black text has to invert, or the page reads as blank. */
+html[data-home-theme='light'] .ct-domain-pick .ct-fq-hub-attn-big {
+    color: #17211f;
+}
+
+html[data-home-theme='light'] .ct-domain-pick .ct-fq-training-screen--hub .ct-fq-hub-attn-sub {
+    color: #53615e;
+    background: rgba(255, 253, 246, 0.72);
+}
+
+html[data-home-theme='light'] .ct-domain-pick-desc {
+    color: #53615e;
+}
+
+/* ══ Cosmos MODE pages (Survival / Levels / Pass n Play) — light mode ══════
+ *
+ * `--mode-cosmos` forces #07060b onto html, body, #ui-shell, #screen-comics and
+ * every game-root wrapper, each with !important and several through :has().
+ * That was deliberate — it beat ComicsScreen's cream and the old light-theme
+ * grey so the void reached the screen edges. In light appearance it inverted
+ * the intent: the inner panel went parchment while the whole page around it
+ * stayed black, which is the black frame around these pages.
+ *
+ * Each selector below mirrors one of those, prefixed with the theme attribute
+ * so it outranks the original (same selector + one attribute) and carries
+ * !important to match. Flat surface rather than a gradient: these nest inside
+ * one another, and a gradient on each would restart the ramp at every level.
+ * The ramp lives on .ct-mph-sky, which already has it.
+ */
+html[data-home-theme='light']:has(.ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='light'] body:has(.ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='light'] #screen-comics:has(.ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='light'] #ui-shell:has(#screen-comics.active .ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='light'] #screen-comics:has(.ct-fq-training-shell--mode-cosmos) > div,
+html[data-home-theme='light'] .ct-fq-training-shell--mode-cosmos,
+html[data-home-theme='light'] .ct-stroop-root .ct-fq-training-shell--mode-cosmos,
+html[data-home-theme='light'] .cancellation-task-game:has(.ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='light'] .cancellation-task-game:has(> .ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='light'] .ct-rv-root:has(.ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='light'] .ct-stroop-root:has(.ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='light'] .ct-wordle-root:has(.ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='light'] .ct-ms-root:has(.ct-fq-training-shell--mode-cosmos) {
+    background: #f5f2e9 !important;
+    background-color: #f5f2e9 !important;
+    background-image: none !important;
+    color: #17211f !important;
+}
+
+/* The mode title ("Target Tracking") is #ffe8b0 — cream, for the void. */
+html[data-home-theme='light'] .ct-fq-training-shell--mode-cosmos .ct-fq-hub-attn-big,
+html[data-home-theme='light'] .ct-domain-pick .ct-fq-hub-attn-big,
+html[data-home-theme='light'] .ct-fq-hub-attn-big {
+    color: #17211f !important;
+    -webkit-text-stroke: 0 !important;
+    text-shadow: none !important;
+}
+
+/* Planet glow is a 55%-accent bloom at 0.75 — designed to bleed into black.
+ * On parchment that halo washes the planet out and reads as "semi-transparent".
+ * Pulled well back so the art itself is what you see. */
+html[data-home-theme='light'] .ct-mph-planet-glow {
+    opacity: 0.28;
+}
+
+/* Same story for the specular sheen: a white 18% wash over light art flattens
+ * it. The dark limb at the far corner stays — that is what makes it a sphere. */
+html[data-home-theme='light'] .ct-mph-planet-shade {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, transparent 40%, transparent 60%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+/* The "Why this trains your brain" pill is #e8d4a8 on a near-black fill with
+   !important on every declaration — pale gold, correct on the void. In light
+   appearance that fill turned pale and the text stayed pale gold on it, so the
+   label read as a ghost. Needs !important to answer the original. */
+html[data-home-theme='light'] .ct-domain-pick-about-link {
+    border-color: rgba(168, 121, 43, 0.42) !important;
+    color: #4a3a1e !important;
+    background: rgba(255, 253, 246, 0.94) !important;
+    box-shadow: 0 2px 10px rgba(90, 70, 40, 0.1) !important;
+}
+
+/* The "ⓘ Why this trains your brain" chip under the three modes, on EVERY game.
+ *
+ * The chip's own base style is already dark ink on white (.ct-fq-sci-link--chip,
+ * #2a2520). What lightens it is the cosmos-mode override, which repaints every
+ * .ct-fq-sci-link in cream at 70% with !important so the link would read against
+ * the black void. In light appearance that fires on a parchment page and turns
+ * the chip's label into cream-on-white.
+ *
+ * Restoring the chip's own ink rather than picking a new colour, so it matches
+ * the same control everywhere else in the app. Matches the original's
+ * !important; --chip is listed separately because the cosmos rule targets the
+ * base class and would otherwise still win on the plain (non-chip) variant.
+ */
+html[data-home-theme='light'] .ct-fq-training-shell--mode-cosmos .ct-fq-sci-link,
+html[data-home-theme='light'] .ct-fq-training-shell--mode-cosmos .ct-fq-sci-link--chip {
+    color: #2a2520 !important;
+}
+
+/* Same treatment for the taglines/blurbs beside it — cream at 55% on paper. */
+html[data-home-theme='light'] .ct-fq-training-shell--mode-cosmos .ct-fq-training-blurb,
+html[data-home-theme='light'] .ct-fq-training-shell--mode-cosmos .ct-fq-sub,
+html[data-home-theme='light'] .ct-fq-training-shell--mode-cosmos .ct-ms-tagline,
+html[data-home-theme='light'] .ct-fq-training-shell--mode-cosmos .ct-rv-intro .ct-fq-sub {
+    color: #53615e !important;
+}

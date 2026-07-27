@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { DomainIconArt } from '../../features/training/shared/DomainIcon';
 import UniverseStage from '../shared/UniverseStage';
 import { DOMAIN_COLOR, DOMAINS } from './trainingData';
@@ -285,14 +285,50 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId }) {
 const GRID = 30;
 const GUIDE_GRID = GRID * 2;
 
-const SHRINE_POSITIONS = [
-  { ...DOMAINS[0], x: 60,  y: 180 },
-  { ...DOMAINS[1], x: 180, y: 120 },
-  { ...DOMAINS[2], x: 300, y: 180 },
-  { ...DOMAINS[3], x: 60,  y: 480 },
-  { ...DOMAINS[4], x: 180, y: 540 },
-  { ...DOMAINS[5], x: 300, y: 480 },
-];
+/*
+ * Two arrangements of the same topology, one per screen shape.
+ *
+ * The map used to exist only as `portrait` — 360x660, an aspect of 0.55 — and
+ * was scaled to whatever height was free. On a phone that is right. On a laptop
+ * it is not: a 1366x577 window leaves about 350px of free height, so the fit
+ * lands at 350/660 = 0.53 and draws the whole map 190px wide inside a 1366px
+ * screen. Fourteen percent of the width, with the planets at half size.
+ *
+ * Widening the scale cap cannot fix that, because HEIGHT is the binding
+ * constraint — a portrait composition in a landscape window is always going to
+ * be pillarboxed. The fix is a composition whose aspect matches the screen, so
+ * `landscape` is the same six-planet hub-and-spoke re-laid at 760x430: the
+ * planets spread out along the axis that actually has room. Same topology, same
+ * ring order, same corridors — only the coordinates differ.
+ */
+const HUB_LAYOUTS = {
+  portrait: {
+    w: 360,
+    h: 660,
+    nexus: [180, 360],
+    // Never grows past its authored size: on a tall phone a ballooned map looks
+    // clumsy, and the planets are already comfortably tappable at 1.
+    maxScale: 1,
+    pos: [[60, 180], [180, 120], [300, 180], [60, 480], [180, 540], [300, 480]],
+  },
+  landscape: {
+    w: 760,
+    // 470, not the 430 this started at. A planet is not just its centre: it has
+    // a 52px body (64 hovered) and a caption at y+48. At 430 the south planet
+    // sat at y 372, so its label ran to ~434 — past the bottom of the box — and
+    // collided with the "Puzzles" button underneath. The box has to contain the
+    // whole planet, label included.
+    h: 470,
+    nexus: [380, 227],
+    // Free to grow here — on a large desktop the constraint is taste, not room.
+    maxScale: 1.6,
+    pos: [[140, 124], [380, 70], [620, 124], [140, 330], [380, 384], [620, 330]],
+  },
+};
+
+function shrinesFor(layout) {
+  return DOMAINS.map((d, i) => ({ ...d, x: layout.pos[i][0], y: layout.pos[i][1] }));
+}
 
 /**
  * Hub-and-spoke world map (one readable topology — standard for RTS/skill trees):
@@ -310,21 +346,20 @@ const SHRINE_POSITIONS = [
  * West lanes mirror east (180±60). Every vertex snaps to GRID so corridors align
  * with the modular backdrop instead of looking like stray scribbles.
  */
-const HUB_NEXUS = [180, 360];
 const AVATAR_R = 42;
 
-function mazeCorridorD(domainId) {
-  const s = SHRINE_POSITIONS.find(p => p.id === domainId);
+function mazeCorridorD(domainId, shrines, nexus) {
+  const s = shrines.find(p => p.id === domainId);
   if (!s) return '';
-  const dx = s.x - HUB_NEXUS[0];
-  const dy = s.y - HUB_NEXUS[1];
+  const dx = s.x - nexus[0];
+  const dy = s.y - nexus[1];
   const dist = Math.sqrt(dx * dx + dy * dy);
   const nx = dx / dist;
   const ny = dy / dist;
-  const sx = HUB_NEXUS[0] + nx * AVATAR_R;
-  const sy = HUB_NEXUS[1] + ny * AVATAR_R;
-  const cpx = HUB_NEXUS[0] + dx * 0.5;
-  const cpy = HUB_NEXUS[1] + dy * 0.5;
+  const sx = nexus[0] + nx * AVATAR_R;
+  const sy = nexus[1] + ny * AVATAR_R;
+  const cpx = nexus[0] + dx * 0.5;
+  const cpy = nexus[1] + dy * 0.5;
   return `M ${sx} ${sy} Q ${cpx} ${cpy} ${s.x} ${s.y}`;
 }
 
@@ -343,6 +378,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
    */
   const stageRef = useRef(null);
   const [stageScale, setStageScale] = useState(1);
+  const [wide, setWide] = useState(false);
   useEffect(() => {
     const fit = () => {
       const el = stageRef.current;
@@ -355,8 +391,38 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       // behind. Falling back to the viewport keeps this safe if it is absent.
       const bar = document.querySelector('.app-tabbar');
       const floor = bar ? bar.getBoundingClientRect().top : window.innerHeight;
-      const free = floor - top - 12;
-      setStageScale(Math.max(0.5, Math.min(1, free / 660)));
+      /*
+       * Reserve the Puzzles button's own row.
+       *
+       * The fit used to hand the stage every pixel between its top and the tab
+       * bar, but the "Puzzles — take a break" button lives BELOW the stage in
+       * normal flow. So the map grew into the space the button needed and pushed
+       * it behind the fixed tab bar, where it could not be tapped at all. It is
+       * measured rather than assumed, because its height changes with language
+       * (the Arabic label wraps differently) and with the user's font settings.
+       */
+      const cta = document.querySelector('.rh-puzzles-cta');
+      const ctaReserve = cta ? cta.getBoundingClientRect().height + 26 : 58;
+
+      const free = floor - top - 12 - ctaReserve;
+      const freeW = el.clientWidth || window.innerWidth;
+
+      /*
+       * Pick the composition that matches the hole we have to fill, then fit it.
+       * The 780px floor keeps tablets in portrait on the portrait map — the
+       * landscape one needs real width before its planets beat the portrait
+       * map's, and a 1.15 aspect is where that crossover sits.
+       */
+      const nextWide = freeW >= 780 && freeW / Math.max(1, free) > 1.15;
+      setWide(nextWide);
+
+      // Derived from nextWide rather than the `wide` state so the scale and the
+      // layout can never disagree for a frame — a mismatch here would size the
+      // container for one map and draw the other.
+      const L = nextWide ? HUB_LAYOUTS.landscape : HUB_LAYOUTS.portrait;
+      const byHeight = free / L.h;
+      const byWidth = freeW / L.w;
+      setStageScale(Math.max(0.5, Math.min(L.maxScale, byHeight, byWidth)));
     };
     fit();
     window.addEventListener('resize', fit);
@@ -380,6 +446,9 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       window.clearInterval(id);
     };
   }, []);
+
+  const LY = wide ? HUB_LAYOUTS.landscape : HUB_LAYOUTS.portrait;
+  const shrines = useMemo(() => shrinesFor(LY), [LY]);
 
   useEffect(() => {
     // The rising embers are pure atmosphere; when the user asks for reduced
@@ -459,7 +528,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
         style={{
           position: 'relative',
           width: '100%',
-          height: 660 * stageScale,
+          height: LY.h * stageScale,
           marginTop: 4,
           zIndex: 4,
         }}
@@ -468,7 +537,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           style={{
             position: 'absolute',
             inset: 0,
-            height: 660,
+            height: LY.h,
             transform: `scale(${stageScale})`,
             transformOrigin: 'top center',
           }}
@@ -486,7 +555,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           <div className="rh-hub-dust" />
         </div>
 
-        <svg width="360" height="660" viewBox="0 0 360 660" style={{
+        <svg width={LY.w} height={LY.h} viewBox={`0 0 ${LY.w} ${LY.h}`} style={{
           position: 'absolute', inset: 0, margin: 'auto', left: 0, right: 0, overflow: 'visible', zIndex: 2,
         }}>
           <defs>
@@ -494,7 +563,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               <feGaussianBlur stdDeviation="1.4" result="blur"/>
               <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
             </filter>
-            {SHRINE_POSITIONS.map(s => {
+            {shrines.map(s => {
               const col = DOMAIN_COLOR[s.id];
               return (
                 <React.Fragment key={`planet-defs-${s.id}`}>
@@ -537,19 +606,19 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
 
           {/* Sparse guide grid — enough structure to feel designed, not noisy */}
           <g opacity="1">
-            {Array.from({ length: 660 / GUIDE_GRID + 1 }, (_, i) => (
-              <line key={`h${i}`} x1="0" x2="360" y1={i * GUIDE_GRID} y2={i * GUIDE_GRID} stroke={L.grid} strokeWidth="0.55"/>
+            {Array.from({ length: Math.floor(LY.h / GUIDE_GRID) + 1 }, (_, i) => (
+              <line key={`h${i}`} x1="0" x2={LY.w} y1={i * GUIDE_GRID} y2={i * GUIDE_GRID} stroke={L.grid} strokeWidth="0.55"/>
             ))}
-            {Array.from({ length: 360 / GUIDE_GRID + 1 }, (_, i) => (
-              <line key={`v${i}`} x1={i * GUIDE_GRID} x2={i * GUIDE_GRID} y1="0" y2="660" stroke={L.grid} strokeWidth="0.55"/>
+            {Array.from({ length: Math.floor(LY.w / GUIDE_GRID) + 1 }, (_, i) => (
+              <line key={`v${i}`} x1={i * GUIDE_GRID} x2={i * GUIDE_GRID} y1="0" y2={LY.h} stroke={L.grid} strokeWidth="0.55"/>
             ))}
           </g>
 
           {/* Radial corridors — smooth spokes from center avatar to each planet */}
-          {SHRINE_POSITIONS.map(s => {
+          {shrines.map(s => {
             const col = DOMAIN_COLOR[s.id];
             const isHovered = hovered === s.id;
-            const d = mazeCorridorD(s.id);
+            const d = mazeCorridorD(s.id, shrines, LY.nexus);
             const wCorridor = isHovered ? 2.6 : 1.8;
             const corridorStroke = isHovered ? col : 'rgba(232,172,78,0.6)';
             const runnerStroke = isHovered ? col : '#e8ac4e';
@@ -607,10 +676,10 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               }
             }}
           >
-            <circle cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1]} r={72} fill="url(#centerGlow)" opacity="0.8">
+            <circle cx={LY.nexus[0]} cy={LY.nexus[1]} r={72} fill="url(#centerGlow)" opacity="0.8">
               <animate attributeName="opacity" values="0.55;0.85;0.55" dur="3.6s" repeatCount="indefinite" />
             </circle>
-            <circle cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1]} r={38} fill="none" stroke="rgba(232,172,78,0.45)" strokeWidth="1.2">
+            <circle cx={LY.nexus[0]} cy={LY.nexus[1]} r={38} fill="none" stroke="rgba(232,172,78,0.45)" strokeWidth="1.2">
               <animate attributeName="r" values="34;48;34" dur="3.2s" repeatCount="indefinite" />
               <animate attributeName="opacity" values="0.55;0.08;0.55" dur="3.2s" repeatCount="indefinite" />
             </circle>
@@ -618,7 +687,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                 canvas below) stands here. We keep the orbit ring as a ground
                 halo the mascot floats above. */}
             <ellipse
-              cx={HUB_NEXUS[0]} cy={HUB_NEXUS[1] + 20}
+              cx={LY.nexus[0]} cy={LY.nexus[1] + 20}
               rx="40" ry="12"
               fill="none"
               stroke="rgba(232,172,78,0.5)"
@@ -628,15 +697,15 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               <animateTransform
                 attributeName="transform"
                 type="rotate"
-                from={`-12 ${HUB_NEXUS[0]} ${HUB_NEXUS[1] + 20}`}
-                to={`348 ${HUB_NEXUS[0]} ${HUB_NEXUS[1] + 20}`}
+                from={`-12 ${LY.nexus[0]} ${LY.nexus[1] + 20}`}
+                to={`348 ${LY.nexus[0]} ${LY.nexus[1] + 20}`}
                 dur="14s"
                 repeatCount="indefinite"
               />
             </ellipse>
             <text
-              x={HUB_NEXUS[0]}
-              y={HUB_NEXUS[1] + 52}
+              x={LY.nexus[0]}
+              y={LY.nexus[1] + 52}
               textAnchor="middle"
               fill={chrome.text}
               stroke={chrome.dark ? 'rgba(8,4,2,0.9)' : 'rgba(255,252,246,0.9)'}
@@ -655,7 +724,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           </g>
 
           {/* Domain planets */}
-          {SHRINE_POSITIONS.map(s => {
+          {shrines.map(s => {
             const col = DOMAIN_COLOR[s.id];
             const isHovered = hovered === s.id;
             const phase = PLANET_PHASE[s.id] ?? 0;
@@ -715,26 +784,33 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           {/* Rising embers / dust */}
           {Array.from({ length: 18 }).map((_, i) => {
             const seed = i * 137;
-            const x = (seed % 300) + 30;
-            const y = 600 - ((tick * (3 + (i % 4)) + seed) % 560);
-            const op = Math.max(0, 0.6 - ((tick * (3 + (i % 4)) + seed) % 560) / 560);
+            // Spread across whichever map is mounted — hardcoded to the portrait
+            // 360x660 box, these all bunched into the top-left corner of the
+            // wider landscape stage.
+            const span = LY.w - 60;
+            const rise = LY.h - 100;
+            const t = (tick * (3 + (i % 4)) + seed) % rise;
+            const x = (seed % span) + 30;
+            const y = (LY.h - 60) - t;
+            const op = Math.max(0, 0.6 - t / rise);
             return <circle key={i}
               cx={x + Math.sin(tick / 20 + i) * 6} cy={y}
               r={0.8 + (i % 3) * 0.4} fill="#e8ac4e" opacity={op * 0.42}/>;
           })}
         </svg>
 
-        {/* 3D Kawkab mascot — overlaid exactly on the SVG hub nexus
-            (HUB_NEXUS = [180, 360] in a 360×660 viewBox, so left:50% of the
-            stage, 360px down from its top). Tapping opens the assessment; if
-            WebGL/model load fails it renders nothing and the SVG glow + label
-            underneath stay as the clickable fallback. */}
+        {/* 3D Kawkab mascot — overlaid exactly on the SVG hub nexus. Both
+            layouts put the nexus on the horizontal centre, so left:50% holds for
+            either; the vertical offset has to follow the active map (360 in the
+            portrait 360x660 box, 215 in the landscape 760x430 one). Tapping
+            opens the assessment; if WebGL/model load fails it renders nothing
+            and the SVG glow + label underneath stay as the clickable fallback. */}
         <div
           className="rh-assess-mascot"
           style={{
             position: 'absolute',
             left: '50%',
-            top: 360,
+            top: LY.nexus[1],
             transform: 'translate(-50%, -58%)',
             zIndex: 5,
             filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.5))',
@@ -757,7 +833,11 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       {/* Puzzles now lives inside Training — a distinct, lower-pressure
           "break" entry rather than one of the domain planets, since it isn't
           a tracked/scored exercise the way the 6 domains are. */}
-      <div style={{ position: 'relative', zIndex: 6, display: 'flex', justifyContent: 'center', marginTop: -18 }}>
+      {/* The -18 pull-up is a portrait tuning: that map ends with 120px of empty
+          box below its south planet, so the button has to climb into it or it
+          floats. The landscape box has no such slack — its planets fill it — so
+          pulling up there lands the button ON the south planet instead. */}
+      <div style={{ position: 'relative', zIndex: 6, display: 'flex', justifyContent: 'center', marginTop: wide ? 10 : -18 }}>
         <button
           type="button"
           className="rh-puzzles-cta"

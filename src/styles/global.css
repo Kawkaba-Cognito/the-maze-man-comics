@@ -2661,3 +2661,19 @@ html[data-home-theme='light'] .other-theme-desc { color: #8a7348; }
         transition: none;
     }
 }
+
+/* ══ Home hero — light (sunset) appearance ════════════════════════════════
+ *
+ * The "Slide down" hint is cream at 0.42 opacity, which is right over black.
+ * It sits at the BOTTOM of the hero, and that is exactly where the sunset sky
+ * is brightest — pale gold on pale gold, invisible. The title and subtitle
+ * need no override: they live at the top, against the indigo zenith.
+ *
+ * The `- var(--kawnera-progress)` fade is preserved; only the base level and
+ * the ink change, so the hint still dissolves as the library slides up.
+ */
+html[data-home-theme='light'] .home-slide-hint {
+    color: #5a2a18;
+    opacity: calc(0.66 - var(--kawnera-progress));
+    text-shadow: 0 1px 2px rgba(255, 236, 208, 0.5);
+}

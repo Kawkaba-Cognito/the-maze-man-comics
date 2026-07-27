@@ -80,6 +80,35 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
   const wrapRef = useRef(null);
   // Bumped by webglcontextrestored; rebuilds the scene from scratch.
   const [glEpoch, setGlEpoch] = useState(0);
+
+  /*
+   * Sunset sky when the app is in light appearance.
+   *
+   * This scene was black-only and ignored the theme, so a light-mode app had one
+   * screen that stayed a night sky. It is a DUSK sunset rather than a bright
+   * one for a concrete reason: every particle layer here uses AdditiveBlending,
+   * and additive light on an already-bright field adds to nothing — the planet
+   * and stars would wash out completely against a pale sky. A real sunset is
+   * dark at the zenith and on fire at the horizon, which is exactly the ramp
+   * that keeps the particles readable.
+   *
+   * The ref feeds the render loop (which cannot read React state), the state
+   * drives the wrapper's background, and the observer keeps both live so
+   * flipping the setting re-skies the universe without a reload.
+   */
+  const lightSkyRef = useRef(false);
+  const [lightSky, setLightSky] = useState(false);
+  useEffect(() => {
+    const read = () => {
+      const on = document.documentElement.dataset.homeTheme === 'light';
+      lightSkyRef.current = on;
+      setLightSky(on);
+    };
+    read();
+    const obs = new MutationObserver(read);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-home-theme'] });
+    return () => obs.disconnect();
+  }, []);
   const apiRef = useRef({
     syncPlanets: () => {}, dissolvePlanet: () => {}, reformPlanet: () => {},
     pulseCenter: () => {}, setRunning: () => {},
@@ -105,7 +134,10 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 200);
     camera.position.set(0, 0, 7);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    // alpha:true so the CSS sky underneath shows through. The scene paints only
+    // its particles; the sky itself is a gradient on the wrapper, because a
+    // WebGL clear colour is a single flat colour and a sunset is a ramp.
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 
     /*
      * Survive a lost context.
@@ -135,7 +167,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     renderer.domElement.addEventListener('webglcontextlost', onContextLost, false);
     renderer.domElement.addEventListener('webglcontextrestored', onContextRestored, false);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, finePointer ? 1.5 : 1.35));
-    renderer.setClearColor(0x000000, 1);
+    renderer.setClearColor(0x000000, 0);
     renderer.domElement.style.display = 'block';
     wrap.appendChild(renderer.domElement);
 
@@ -858,12 +890,20 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       for (const [, entry] of smallPlanets) if (entry.morphTarget > 0.5) anyMorph = true;
       const dimStep = 2.0 * dt;
       sceneDim += Math.max(-dimStep, Math.min(dimStep, (anyMorph ? 1 : 0) - sceneDim));
+      /*
+       * At dusk the faint background layers have to step back. Stars near the
+       * horizon of a lit sky are not dim stars, they are grain — so they are
+       * pushed well down, while the centre planet and its halo keep their full
+       * presence as the subject. uDim is "how hidden", so higher = fainter.
+       */
+      const skyDim = lightSkyRef.current ? 0.62 : 0;
+      const faint = (v) => Math.max(v, skyDim);
       centerMat.uniforms.uDim.value = sceneDim;
       haloMat.uniforms.uDim.value = sceneDim;
-      starMat.uniforms.uDim.value = sceneDim;
-      if (dust) dustMat.uniforms.uDim.value = sceneDim;
+      starMat.uniforms.uDim.value = faint(sceneDim);
+      if (dust) dustMat.uniforms.uDim.value = faint(sceneDim);
       glowMat.uniforms.uDim.value = sceneDim;
-      wispMat.uniforms.uDim.value = sceneDim;
+      wispMat.uniforms.uDim.value = faint(sceneDim);
       for (const m of meteors) {
         if (m.active) m.line.material.opacity *= (1 - sceneDim * 0.85);
       }
@@ -971,7 +1011,18 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     <div
       ref={wrapRef}
       aria-hidden="true"
-      style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: '#000' }}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        overflow: 'hidden',
+        background: lightSky
+          /* Dusk: indigo zenith → rose → fire → warm haze at the horizon. */
+          ? `linear-gradient(180deg,
+              #1b1033 0%, #33163f 18%, #5c2449 36%,
+              #96384b 54%, #cb5c3f 70%, #e8894a 83%,
+              #f4b16b 93%, #f8cf9c 100%)`
+          : '#000',
+      }}
     />
   );
 });
