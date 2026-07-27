@@ -350,9 +350,10 @@ function Detour({ detour, chapterNo, onBack }) {
     <div className="questDetour" role="dialog" aria-modal="true">
       <div className="questDetourCard">
         <header>
-          <div className="questDetourFace">
-            <Kawkab3D active mentor act={{ name: 'lead', at: 0 }} />
-          </div>
+          {/* Deliberately no Kawkab3D here. Each instance is its own WebGL
+              context loading the same 3.3MB rig, and browsers cap concurrent
+              contexts — a decorative second copy was enough to push the Home
+              universe over the limit and blank it. One Kawkab at a time. */}
           <div>
             <small>DR. KAWKAB IS TAKING YOU BACK</small>
             <h2>Chapter {detour.from}</h2>

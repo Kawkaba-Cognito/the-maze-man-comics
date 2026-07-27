@@ -139,6 +139,9 @@ export default function KawneraExperience({
     setLabOpen(false);
   }, [jumpTo]);
   const key = book && ci !== null ? `${book.id}-${ci}` : '';
+  // True while ChapterQuest owns the screen — it renders its own Dr. Kawkab.
+  const questRunning = !!book && ci !== null && !readStraight
+    && isAuthored(authoredChapter(book.id, ci));
   const save = () => {
     const n = done.includes(key) ? done.filter((x) => x !== key) : [...done, key];
     setDone(n);
@@ -757,7 +760,12 @@ export default function KawneraExperience({
           {B.reduce((n, b) => n + b.chapters.length, 0)} {t.mapped}
         </small>
       </footer>
-      {isActive && (
+      {/* The floating guide hides while a guided chapter is running, because
+          ChapterQuest renders its own Dr. Kawkab. Two instances means two WebGL
+          contexts for the same 3.3MB rig, and with the Home universe holding a
+          third the browser starts evicting the oldest — which is what blanked
+          the universe and emptied the training characters. One at a time. */}
+      {isActive && !questRunning && (
         <aside
           className={book ? 'kawkabGuide mentor' : 'kawkabGuide'}
           aria-label="Dr. Kawkab study companion"
