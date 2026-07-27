@@ -830,7 +830,7 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
           style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(8,6,2,0.82)' }}
         >
           <div style={{ background: 'linear-gradient(180deg,#241405,#341c08)', border: '1.5px solid #c08040', borderRadius: 16, padding: '22px', maxWidth: 340, width: '86%', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-            <p style={{ margin: 0, fontFamily: "'Bangers', cursive", letterSpacing: 1, fontSize: '1.3rem', color: '#ffb84a' }}>{t.ruleChangedTitle}</p>
+            <p style={{ margin: 0, fontFamily: "'Outfit', system-ui, sans-serif", letterSpacing: 1, fontSize: '1.3rem', color: '#ffb84a' }}>{t.ruleChangedTitle}</p>
             <p style={{ margin: 0, fontWeight: 800, color: '#fff2cf', fontSize: '1.05rem' }}>{t.ruleReverseTitle}</p>
             <MemoRuleLessonArt t={t} />
             <p style={{ margin: 0, fontSize: '0.9rem', color: '#e8dcc6', lineHeight: 1.45 }}>{t.ruleReverseBody}</p>

@@ -85,7 +85,7 @@ export default function AppShell() {
             <button
               id="lang-btn"
               onClick={toggleLang}
-              style={{ fontFamily: isAr ? "'Cairo',sans-serif" : "'Bangers',cursive" }}
+              style={{ fontFamily: isAr ? "'Cairo',sans-serif" : "'Outfit', system-ui, sans-serif" }}
             >
               {t.btn}
             </button>

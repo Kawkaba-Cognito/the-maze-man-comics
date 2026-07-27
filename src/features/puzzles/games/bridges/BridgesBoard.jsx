@@ -75,7 +75,7 @@ export default function BridgesBoard({ state, selected, solved, onIslandTap }) {
                 textAnchor="middle"
                 dominantBaseline="central"
                 fontSize={0.46}
-                style={{ fontFamily: "'Fredoka One', cursive", fontWeight: 400 }}
+                style={{ fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 400 }}
               >
                 {p.need}
               </text>

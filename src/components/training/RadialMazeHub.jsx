@@ -688,7 +688,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             border: '1.5px solid rgba(232,172,78,0.55)',
             boxShadow: '0 4px 16px rgba(0,0,0,0.55), inset 0 1px 0 rgba(220,170,70,0.12)',
             color: L.text, cursor: 'pointer',
-            fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', 'Outfit', sans-serif",
+            fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', sans-serif",
             fontSize: isAr ? 13 : 14, fontWeight: isAr ? 800 : 400, letterSpacing: isAr ? 0 : 0.3,
           }}
         >
@@ -719,7 +719,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             <span style={{
               color: DOMAIN_COLOR[hovered],
               fontWeight: 900,
-              fontFamily: isAr ? "'Cairo', sans-serif" : "'Fredoka One', sans-serif",
+              fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
               letterSpacing: isAr ? 0 : 0.5,
             }}>
               {domainDoorLabel(hovered, isAr)}

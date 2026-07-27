@@ -200,7 +200,7 @@ export function buildEscapeRoom({ engine, canvas, overlayEl, ctx, inputRef }) {
     ctx.playSfx?.('win');
   }
   function showEscaped() {
-    overlayEl.innerHTML = `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;background:rgba(8,6,16,0.55)"><div style="font-size:52px">🚀</div><div style="font-family:'Fredoka One','Nunito',sans-serif;font-size:30px;font-weight:800;color:#ffe6b0;text-shadow:0 0 18px rgba(232,172,78,0.6)">${isAr ? 'اكتملت الخزنة!' : 'Vault cleared!'}</div><div style="font-size:14px;font-weight:800;color:#fff3d0">${isAr ? 'الخزنة التالية ستحمل منصّات جديدة.' : 'Next vault will have new consoles.'}</div></div>`;
+    overlayEl.innerHTML = `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;background:rgba(8,6,16,0.55)"><div style="font-size:52px">🚀</div><div style="font-family:'Outfit','Nunito',sans-serif;font-size:30px;font-weight:800;color:#ffe6b0;text-shadow:0 0 18px rgba(232,172,78,0.6)">${isAr ? 'اكتملت الخزنة!' : 'Vault cleared!'}</div><div style="font-size:14px;font-weight:800;color:#fff3d0">${isAr ? 'الخزنة التالية ستحمل منصّات جديدة.' : 'Next vault will have new consoles.'}</div></div>`;
     setTimeout(() => ctx.exitMaze?.(), 2600);
   }
 
