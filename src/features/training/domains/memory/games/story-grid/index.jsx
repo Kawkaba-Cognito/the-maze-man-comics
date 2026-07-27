@@ -8,9 +8,16 @@ import PersonCharacter from '../../../../../character/PersonCharacter';
 import Emoji from '../../../../../../components/shared/Emoji';
 import { STORIES } from './stories';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
-import { planetIconUrl } from '../../../../../../lib/planetIcons';
 
-const StoryGrid3DProto = lazyWithRetry(() => import('./StoryGrid3DProto'), 'story-grid-3d');
+/*
+ * The separate "3D" prototype was retired 2026-07-27. It rendered flat comic
+ * panels with emoji characters and still implemented the OLD panel-rebuild
+ * task, so it had stopped being "the 2D Survival in 3D" the moment Survival
+ * was rebuilt as the staged story. Survival IS the 3D experience now — a
+ * rigged cast on a lit stage, played as a short film — so a second, worse 3D
+ * entry point was just a fork in the road with a dead end on it.
+ * (StoryGrid3DProto.jsx is recoverable from git history.)
+ */
 // Survival's staged rebuild — lazy, so three.js and the cast models only load
 // for players who actually start a Survival run.
 const StageSurvival = lazyWithRetry(() => import('./stage/StageSurvival'), 'story-stage');
@@ -776,14 +783,6 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
 export default function StoryGridGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
-  const [view, setView] = useState('shell');
-  if (view === 'play3d') {
-    return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <StoryGrid3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
-      </Suspense>
-    );
-  }
   return (
     <ModeShell
       storageKey="mm_memory_storytime"
@@ -800,13 +799,6 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
-      extraItems={[{
-        k: 'proto3d',
-        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
-        on: () => setView('play3d'),
-        icoImg: planetIconUrl('memory'),
-      }]}
       renderEngine={(p) => (p.mode === 'free' ? (
         <Suspense fallback={<div style={STAGE_FALLBACK} />}>
           <StageSurvival

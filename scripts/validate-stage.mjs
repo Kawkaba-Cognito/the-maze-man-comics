@@ -17,7 +17,9 @@ const server = await createServer({
 });
 const base = '/src/features/training/domains/memory/games/story-grid/stage';
 const { STAGE_STORIES } = await server.ssrLoadModule(`${base}/stories/index.js`);
-const { SKY_IDS } = await server.ssrLoadModule(`${base}/schema.js`);
+const {
+  SKY_IDS, SHOT_IDS, HOLD_MIN, HOLD_MAX, beatHold, storyRuntime,
+} = await server.ssrLoadModule(`${base}/schema.js`);
 const { CAST, STORY_ACTS, ACTIONS } = await server.ssrLoadModule(
   '/src/features/training/shared/castRoster.js',
 );
@@ -76,6 +78,34 @@ for (const s of STAGE_STORIES) {
       }
     }
 
+    // ── the film layer ──────────────────────────────────────────────────
+    // Both optional; a story with neither still plays on the house grammar.
+    // But a typo'd shot would silently fall back to a mid, and a hold outside
+    // the sane band would either flash past or strand the viewer.
+    if (b.shot != null && !SHOT_IDS.includes(b.shot)) {
+      fail(s.id, `beat "${b.id}" shot "${b.shot}" is not one of ${SHOT_IDS.join(', ')}`);
+    }
+    if (b.hold != null) {
+      if (typeof b.hold !== 'number' || !Number.isFinite(b.hold)) {
+        fail(s.id, `beat "${b.id}" hold must be a number of ms`);
+      } else if (b.hold < HOLD_MIN || b.hold > HOLD_MAX) {
+        fail(s.id, `beat "${b.id}" hold ${b.hold}ms is outside ${HOLD_MIN}–${HOLD_MAX}ms`);
+      }
+    }
+
+    // A beat nobody can read in time is a beat nobody can order later. The
+    // derived hold already scales with word count; this catches an authored
+    // `hold` that undercuts its own text.
+    for (const lang of [false, true]) {
+      const ms = beatHold(b, lang);
+      const words = [b.narr, b.say?.t]
+        .filter(Boolean)
+        .reduce((n, v) => n + String(lang ? v.ar : v.en).trim().split(/\s+/).length, 0);
+      if (words / (ms / 1000) > 4.2) {
+        fail(s.id, `beat "${b.id}" holds ${ms}ms for ${words} ${lang ? 'ar' : 'en'} words — too fast to read`);
+      }
+    }
+
     // The ordering cards show labels only. Two beats with the same label are
     // indistinguishable, so the task would be unfair rather than hard.
     const dupe = (s.beats || []).findIndex(
@@ -118,6 +148,23 @@ for (const s of STAGE_STORIES) {
 
 const beats = STAGE_STORIES.reduce((n, s) => n + s.beats.length, 0);
 const probes = STAGE_STORIES.reduce((n, s) => n + s.probes.length, 0);
+
+/*
+ * A runaway guard, not a taste judgement.
+ *
+ * This first went in at 70s and immediately flagged two of the three authored
+ * stories, which is the wrong way round: the stories were written on purpose
+ * and a 60–80s short film is exactly what was asked for. The number is here to
+ * catch a real runaway — someone authoring twenty beats, or a `hold` typo'd
+ * with an extra zero — so it sits well above anything deliberate.
+ *
+ * Playback is skippable and pausable, so length is a pacing question for the
+ * author rather than a correctness one.
+ */
+for (const s of STAGE_STORIES) {
+  const ms = Math.max(storyRuntime(s, false), storyRuntime(s, true));
+  if (ms > 120_000) fail(s.id, `runs ${Math.round(ms / 1000)}s — runaway, check beat holds`);
+}
 if (problems.length) {
   console.error(`validate:stage — ${problems.length} problem(s)\n`);
   problems.forEach((p) => console.error(`  ✗ ${p}`));
@@ -125,5 +172,6 @@ if (problems.length) {
 }
 console.log(`validate:stage — ${STAGE_STORIES.length} stories, ${beats} beats, ${probes} probes, all wiring resolves.`);
 STAGE_STORIES.forEach((s) => {
-  console.log(`  · tier ${s.tier}  ${s.id.padEnd(16)} ${s.beats.length} beats · ${s.cast.length} cast · ${s.probes.length} probes`);
+  const secs = Math.round(storyRuntime(s, false) / 1000);
+  console.log(`  · tier ${s.tier}  ${s.id.padEnd(16)} ${s.beats.length} beats · ${s.cast.length} cast · ${s.probes.length} probes · ~${secs}s runtime`);
 });
