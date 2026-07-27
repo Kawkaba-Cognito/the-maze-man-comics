@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { createDrKawkabInstance, disposeDrKawkabInstance } from '../../features/training/shared/drKawkabModel';
 import { isCoarsePointer, releaseGlContext } from '../../features/training/shared/c3dViewport';
@@ -45,10 +45,39 @@ const BASE_YAW = 0;
 
 export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label }) {
   const wrapRef = useRef(null);
+  /*
+   * Only hold a WebGL context while actually on screen.
+   *
+   * AppShell renders EVERY tab at once and hides the inactive ones with CSS, so
+   * this component stays mounted for the whole session even if Training is
+   * never opened — and it was holding a live context the entire time, at 0x0.
+   * Combined with the Home universe (never unmounted by design), Dr. Kawkab in
+   * Kawnera and a training game, that put an installed PWA on a phone at four
+   * or five concurrent contexts against a cap that is often 4–8. The browser
+   * then evicts the oldest, which is what blanked the universe and emptied the
+   * training characters.
+   *
+   * Measuring visibility here rather than passing a prop keeps it correct no
+   * matter who mounts it: offsetParent is null whenever any ancestor is
+   * display:none, which is exactly how AppShell hides a tab.
+   */
+  const [onScreen, setOnScreen] = useState(false);
 
   useEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return undefined;
+    const check = () => setOnScreen(!!wrap.offsetParent && wrap.clientWidth > 0);
+    check();
+    // Cheap poll: a tab switch is a CSS class change on an ancestor, which
+    // fires no event this element can observe. 500ms is far below the cost of
+    // a wasted GPU context and invisible to the user.
+    const id = window.setInterval(check, 500);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap || !onScreen) return undefined;
 
     const reduced = (() => {
       try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
@@ -238,7 +267,7 @@ export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label
       releaseGlContext(renderer);
       if (renderer.domElement.parentNode === wrap) wrap.removeChild(renderer.domElement);
     };
-  }, [size]);
+  }, [size, onScreen]);
 
   return (
     <div
