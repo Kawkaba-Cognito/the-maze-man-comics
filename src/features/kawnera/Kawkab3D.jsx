@@ -2,11 +2,43 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { assetUrl } from '../../lib/assetUrl';
 import { isCoarsePointer, releaseGlContext } from '../training/shared/c3dViewport';
 
-export default function Kawkab3D({ active, mentor }) {
+// three is loaded lazily inside the effect, so the loop constants are inlined
+// rather than imported — they are part of the glTF/three spec and stable.
+const THREE_LOOP_ONCE = 2200;
+const THREE_LOOP_REPEAT = 2201;
+
+/*
+ * Dr. Kawkab's performable vocabulary.
+ *
+ * The clip names are the thirteen actually inside biped-v1.glb — verified, not
+ * guessed, because a wrong name fails silently and he simply stands there.
+ *
+ * One deliberate omission: `Angry_Stomp` is never mapped to a wrong answer. A
+ * mentor who gets angry at you for being wrong teaches you to stop guessing,
+ * which is the opposite of what the prediction gate is for. Wrong answers get
+ * `Look_Around_Dumbfounded` — puzzled, on your side, looking again with you.
+ */
+export const KAWKAB_ACTS = {
+  greet: ['Agree_Gesture'],
+  agree: ['Agree_Gesture'],
+  think: ['Look_Around_Dumbfounded'],
+  puzzled: ['Look_Around_Dumbfounded'],
+  cheer: ['happy_jump_m', 'victory'],
+  celebrate: ['victory', 'All_Night_Dance'],
+  triumph: ['360_Power_Spin_Jump', 'victory'],
+  lead: ['Walking'],
+  hurry: ['RunFast', 'Running'],
+};
+
+const IDLES = ['Idle_02', 'Idle_3', 'Idle_4'];
+
+export default function Kawkab3D({ active, mentor, act }) {
   const mountRef = useRef(null);
   const actionsRef = useRef(new Map());
   const currentRef = useRef(null);
   const stateRef = useRef({ active, mentor });
+  const mixerRef = useRef(null);
+  const oneShotRef = useRef(null);
 
   const playAnimation = useCallback((engaged, mentorMode) => {
     const actions = actionsRef.current;
@@ -23,10 +55,45 @@ export default function Kawkab3D({ active, mentor }) {
     currentRef.current = next;
   }, []);
 
+  /* Fire a named reaction once, then settle back to idling. */
+  const perform = useCallback((name) => {
+    const actions = actionsRef.current;
+    const mixer = mixerRef.current;
+    if (!actions.size || !mixer || !name) return;
+    const clip = (KAWKAB_ACTS[name] || []).map((c) => actions.get(c)).find(Boolean);
+    if (!clip) return;
+
+    clip.reset();
+    clip.setLoop(THREE_LOOP_ONCE, 1);
+    clip.clampWhenFinished = true;
+    clip.setEffectiveTimeScale(1).setEffectiveWeight(1).fadeIn(0.18).play();
+    currentRef.current?.fadeOut(0.18);
+    currentRef.current = clip;
+
+    // Settle: back to an idle when the one-shot finishes, so he never freezes
+    // mid-gesture waiting for the next thing to happen.
+    if (oneShotRef.current) mixer.removeEventListener('finished', oneShotRef.current);
+    const settle = () => {
+      const idle = IDLES.map((c) => actions.get(c)).find(Boolean);
+      if (!idle) return;
+      idle.reset().setLoop(THREE_LOOP_REPEAT, Infinity).fadeIn(0.3).play();
+      clip.fadeOut(0.3);
+      currentRef.current = idle;
+    };
+    oneShotRef.current = settle;
+    mixer.addEventListener('finished', settle);
+  }, []);
+
   useEffect(() => {
     stateRef.current = { active, mentor };
     playAnimation(active, mentor);
   }, [active, mentor, playAnimation]);
+
+  // `act` is a { name, at } pair so the SAME reaction can fire twice running —
+  // two correct answers in a row should both get a cheer.
+  useEffect(() => {
+    if (act?.name) perform(act.name);
+  }, [act, perform]);
 
   useEffect(() => {
     const host = mountRef.current;
@@ -121,6 +188,7 @@ export default function Kawkab3D({ active, mentor }) {
           character.add(normalized);
 
           mixer = new THREE.AnimationMixer(model);
+          mixerRef.current = mixer;
           for (const clip of gltf.animations) {
             actions.set(clip.name, mixer.clipAction(clip));
           }
@@ -161,6 +229,9 @@ export default function Kawkab3D({ active, mentor }) {
       // Order matters: dispose() frees three's GPU objects, THEN the context is
       // handed back. Losing the context first leaves dispose() working against
       // a dead context.
+      if (oneShotRef.current) mixer?.removeEventListener('finished', oneShotRef.current);
+      oneShotRef.current = null;
+      mixerRef.current = null;
       renderer?.dispose();
       releaseGlContext(renderer);
       renderer?.domElement.remove();

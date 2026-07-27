@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { EvidenceGame, PairsGame, SequenceGame } from './ChapterGames';
 const tidy = (value) =>
   value
     .replace(/\b([A-Z])\s+([a-z]{2,})\b/g, '$1$2')
@@ -28,6 +29,30 @@ function optionsFor(correct, wrongPool, seed, fallbacks) {
     .slice(0, 2);
   const options = rotate([cleanCorrect, ...wrongs], seed);
   return { options, correct: options.indexOf(cleanCorrect) };
+}
+
+/*
+ * Authored checks → the quiz shape this lab already renders.
+ *
+ * Preferred over buildQuestions whenever the chapter has been written up.
+ * The difference is not cosmetic: buildQuestions below asks "which sentence
+ * belongs to this chapter?" using distractors lifted from OTHER chapters, so it
+ * can be passed by recognising prose you just scrolled past. Authored checks
+ * ask whether you followed the argument, and every wrong option carries its own
+ * explanation — so a wrong answer teaches instead of just scoring zero.
+ */
+function authoredQuestions(checks) {
+  return checks.map((c) => {
+    const options = c.options.map((o) => o.t);
+    return {
+      prompt: c.q,
+      options,
+      correct: c.options.findIndex((o) => o.ok),
+      // Shown when right; `whys` supplies the per-option correction otherwise.
+      explanation: c.options.find((o) => o.ok)?.why || '',
+      whys: c.options.map((o) => o.why || ''),
+    };
+  });
 }
 
 function buildQuestions(data, bank, seed) {
@@ -88,6 +113,10 @@ export default function KawkabLab({
   color,
   data,
   bank,
+  checks,
+  authored,
+  otherFindings,
+  bookTerms,
   onClose,
   isAr = false,
 }) {
@@ -104,8 +133,8 @@ export default function KawkabLab({
   const [draft, setDraft] = useState('');
   const storageKey = `atlas-lab-${bookId}-${chapterIndex}`;
   const questions = useMemo(
-    () => buildQuestions(data, bank, chapterIndex),
-    [data, bank, chapterIndex],
+    () => (checks?.length ? authoredQuestions(checks) : buildQuestions(data, bank, chapterIndex)),
+    [checks, data, bank, chapterIndex],
   );
   const cards = useMemo(() => {
     const material = unique([...data.core, ...data.evidence, ...data.conclusion]);
@@ -220,6 +249,22 @@ export default function KawkabLab({
           <button className={mode === 'teach' ? 'on' : ''} onClick={() => changeMode('teach')}>
             Teach it back
           </button>
+          {/* Training-platform mechanics, available only where the chapter has
+              been authored — they read `sections`, `evidence` and `terms`,
+              which extracted text does not have. */}
+          {authored && (
+            <>
+              <button className={mode === 'seq' ? 'on' : ''} onClick={() => changeMode('seq')}>
+                Rebuild the argument
+              </button>
+              <button className={mode === 'evid' ? 'on' : ''} onClick={() => changeMode('evid')}>
+                Match the evidence
+              </button>
+              <button className={mode === 'pairs' ? 'on' : ''} onClick={() => changeMode('pairs')}>
+                Term pairs
+              </button>
+            </>
+          )}
         </nav>
         <div className="labStage">
           {mode === 'menu' && (
@@ -295,7 +340,21 @@ export default function KawkabLab({
                           ? 'CORRECT — SIGNAL LOCKED'
                           : 'NOT QUITE — MODEL RECALIBRATED'}
                       </b>
-                      <p>{questions[questionIndex].explanation}</p>
+                      {/* On a wrong answer, show why THAT option is wrong —
+                          the correction is the teaching. Falls back to the
+                          general explanation for generated questions, which
+                          have no per-option reasons. */}
+                      <p>
+                        {questions[questionIndex].whys?.[selected]
+                          || questions[questionIndex].explanation}
+                      </p>
+                      {questions[questionIndex].whys
+                        && selected !== questions[questionIndex].correct && (
+                        <p className="quizAlso">
+                          <b>The answer: </b>
+                          {questions[questionIndex].options[questions[questionIndex].correct]}
+                        </p>
+                      )}
                       <button onClick={advanceQuiz}>
                         {questionIndex === questions.length - 1 ? 'SEE RESULT' : 'NEXT QUESTION →'}
                       </button>
@@ -374,6 +433,20 @@ export default function KawkabLab({
                 </div>
               )}
             </div>
+          )}
+
+          {mode === 'seq' && authored && (
+            <SequenceGame chapter={authored} seed={chapterIndex + 1} />
+          )}
+          {mode === 'evid' && authored && (
+            <EvidenceGame
+              chapter={authored}
+              otherFindings={otherFindings}
+              seed={chapterIndex + 1}
+            />
+          )}
+          {mode === 'pairs' && authored && (
+            <PairsGame chapter={authored} bookTerms={bookTerms} seed={chapterIndex + 1} />
           )}
 
           {mode === 'teach' && (

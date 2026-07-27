@@ -854,6 +854,274 @@
   font: 700 10px monospace;
   text-transform: uppercase;
 }
+/* ── authored lessons ──────────────────────────────────────────────────
+   Chapters written from the book (see authored/schema.js) get real teaching
+   furniture: named ideas with a "why it matters", studies split into what was
+   done and what was found, and an explicit misconception. */
+.kawnera-app .depthNotice.authored {
+  border-color: #8ca872;
+  background: #e3eccd;
+}
+
+.kawnera-app .depthNotice.pending {
+  border-color: #c2a15c;
+  background: #f2e8d2;
+}
+
+.kawnera-app .depthNotice.pending span {
+  color: #5a4a2c;
+}
+
+/* ── the prediction gate ────────────────────────────────────────────────
+   Deliberately the loudest thing on the page: it is the first move, and it
+   only works if you actually commit before scrolling past it. */
+.kawnera-app .predictGate {
+  padding: 30px 32px;
+  margin: 0 0 52px;
+  border: 1px solid var(--ink);
+  border-top: 7px solid var(--accent, var(--ink));
+  background: #17211f;
+  color: var(--paper);
+  box-shadow: 9px 9px 0 #17211f14;
+}
+
+.kawnera-app .predictGate > small {
+  font: 800 9px monospace;
+  letter-spacing: 0.14em;
+  color: var(--accent, #e8ac4e);
+}
+
+.kawnera-app .predictGate .setup {
+  margin: 16px 0 0;
+  font-size: 15px;
+  line-height: 1.62;
+  color: #c6d1ce;
+}
+
+.kawnera-app .predictGate h2 {
+  margin: 14px 0 22px !important;
+  font:
+    italic 27px/1.3 Georgia,
+    serif;
+  color: var(--paper);
+  max-width: 620px;
+}
+
+.kawnera-app .predictOpts {
+  display: grid;
+  gap: 9px;
+}
+
+.kawnera-app .predictOpt {
+  font: inherit;
+  font-size: 15px;
+  text-align: start;
+  padding: 14px 17px;
+  border: 1px solid #48565250;
+  background: #ffffff0a;
+  color: var(--paper);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.kawnera-app .predictOpt:hover:not(:disabled) {
+  border-color: var(--accent, #e8ac4e);
+  transform: translateX(3px);
+}
+
+.kawnera-app .predictOpt:disabled {
+  cursor: default;
+}
+
+.kawnera-app .predictOpt.correct {
+  border-color: #7fae62;
+  background: #7fae6222;
+  font-weight: 700;
+}
+
+.kawnera-app .predictOpt.wrong {
+  border-color: #c3625c;
+  background: #c3625c1f;
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+.kawnera-app .predictOpt.faded {
+  opacity: 0.35;
+}
+
+.kawnera-app .predictReveal {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid #ffffff1f;
+}
+
+.kawnera-app .predictReveal b {
+  font: 800 9px monospace;
+  letter-spacing: 0.13em;
+  color: var(--accent, #e8ac4e);
+}
+
+.kawnera-app .predictReveal p {
+  margin: 11px 0 0;
+  font-size: 15px;
+  line-height: 1.68;
+  color: #dfe7e4;
+}
+
+.kawnera-app .predictReveal small {
+  display: block;
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #93a29e;
+  font-style: italic;
+}
+
+@media (max-width: 720px) {
+  .kawnera-app .predictGate {
+    padding: 22px 20px;
+  }
+
+  .kawnera-app .predictGate h2 {
+    font-size: 22px;
+  }
+}
+
+/* The section-by-section walk. Numbered to match the book so a reader can move
+   between the app and the page without losing their place. */
+.kawnera-app .walkthrough {
+  display: grid;
+  gap: 30px;
+}
+
+.kawnera-app .walkthrough > article {
+  padding-left: 20px;
+  border-left: 2px solid var(--line);
+}
+
+.kawnera-app .walkthrough header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.kawnera-app .walkthrough header span {
+  flex: none;
+  padding: 3px 8px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 10px monospace;
+  letter-spacing: 0.04em;
+}
+
+.kawnera-app .walkthrough h3 {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.kawnera-app .walkthrough > article > p {
+  margin: 0;
+  font:
+    17px/1.68 Georgia,
+    serif;
+  color: #2e3b38;
+}
+
+.kawnera-app .walkthrough ul {
+  margin: 14px 0 0;
+  padding-left: 19px;
+}
+
+.kawnera-app .walkthrough li {
+  margin-bottom: 8px;
+  font-size: 15px;
+  line-height: 1.58;
+  color: #40514d;
+}
+
+.kawnera-app .glossary {
+  padding: 26px 28px;
+  margin: 0 0 65px;
+  background: #ede8db;
+  border: 1px solid var(--line);
+}
+
+.kawnera-app .glossary > small {
+  font: 700 9px monospace;
+  letter-spacing: 0.13em;
+}
+
+.kawnera-app .glossary dl {
+  margin: 18px 0 0;
+}
+
+.kawnera-app .glossary dt {
+  margin-top: 14px;
+  font: 700 13px monospace;
+  letter-spacing: 0.02em;
+}
+
+.kawnera-app .glossary dt:first-of-type {
+  margin-top: 0;
+}
+
+.kawnera-app .glossary dd {
+  margin: 5px 0 0;
+  font-size: 14px;
+  line-height: 1.58;
+  color: #4a5754;
+}
+
+.kawnera-app .evidence p b {
+  font: 700 9px monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.kawnera-app .evidence p + p {
+  margin-top: 10px;
+}
+
+.kawnera-app .misconception {
+  padding: 26px 28px;
+  margin: 0 0 65px;
+  border: 1px solid #17211f;
+  border-left: 6px solid #c34a44;
+  background: #faf8f1;
+}
+
+.kawnera-app .misconception > small {
+  font: 700 9px monospace;
+  letter-spacing: 0.13em;
+  color: #a2413c;
+}
+
+.kawnera-app .misconception .believed {
+  margin: 14px 0 0;
+  font: italic 20px/1.45 Georgia, serif;
+  color: #6b4340;
+}
+
+.kawnera-app .misconception .actually {
+  margin: 14px 0 0;
+  font-size: 16px;
+  line-height: 1.62;
+}
+
+.kawnera-app .takeaway {
+  margin: 0;
+  font:
+    500 24px/1.45 Georgia,
+    serif;
+  letter-spacing: -0.01em;
+  max-width: 720px;
+}
+
 .kawnera-app .deepRecall {
   margin-top: 0;
 }
@@ -1773,5 +2041,1125 @@
 @media (max-width: 560px) {
   .kawnera-app .kawkabGuide {
     right: 10px !important;
+  }
+}
+
+/* Wrong-answer correction in the lab quiz: name the right answer after
+   explaining why the chosen one failed, so the pair is learnable together. */
+.kawneraLabBackdrop .quizAlso {
+  margin: 0 0 13px !important;
+  padding-top: 10px;
+  border-top: 1px solid #ffffff24;
+  font-size: 13px;
+  color: #e6efec !important;
+}
+
+.kawneraLabBackdrop .quizAlso b {
+  font: 800 8px monospace;
+  letter-spacing: 0.1em;
+  color: var(--lab, #ffcf55);
+}
+
+/* ══ Dr. Kawkab's chapter run ═══════════════════════════════════════════
+   The chapter as stages you move through rather than a page you scroll.
+   See ChapterQuest.jsx for why the checkpoints sit between sections. */
+.kawnera-app .quest {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 5vw 90px;
+}
+
+.kawnera-app .questTop {
+  position: sticky;
+  top: 74px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0 12px;
+  background: var(--paper);
+}
+
+.kawnera-app .questBack {
+  border: 0;
+  background: none;
+  font: 700 9px monospace;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  flex: none;
+}
+
+.kawnera-app .questWhere {
+  min-width: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.kawnera-app .questWhere small {
+  display: block;
+  font: 700 8px monospace;
+  letter-spacing: 0.12em;
+  opacity: 0.6;
+}
+
+.kawnera-app .questWhere strong {
+  display: block;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kawnera-app .questScore {
+  flex: none;
+  font: 700 11px monospace;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.kawnera-app .questBar {
+  height: 3px;
+  background: #ded8ca;
+  margin-bottom: 30px;
+}
+
+.kawnera-app .questBar i {
+  display: block;
+  height: 100%;
+  background: var(--accent, var(--ink));
+  transition: width 260ms ease;
+}
+
+/* Dr. Kawkab speaks only at the beats that matter — see the mentor lines. */
+.kawnera-app .questMentor {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  padding: 18px 20px;
+  margin-bottom: 28px;
+  background: #17211f;
+  color: var(--paper);
+  border-left: 5px solid var(--accent, #e8ac4e);
+}
+
+.kawnera-app .questMentorFace .kawkab3d {
+  width: 84px;
+  height: 84px;
+}
+
+.kawnera-app .questMentorSay b {
+  font: 800 9px monospace;
+  letter-spacing: 0.13em;
+  color: var(--accent, #e8ac4e);
+}
+
+.kawnera-app .questMentorSay p {
+  margin: 9px 0 0;
+  font:
+    italic 16px/1.55 Georgia,
+    serif;
+  color: #e2eae7;
+}
+
+.kawnera-app .questStage > section > small {
+  font: 700 9px monospace;
+  letter-spacing: 0.14em;
+  color: #6d7a76;
+}
+
+.kawnera-app .questBrief h2 {
+  margin: 14px 0 18px;
+  font-size: 30px;
+  line-height: 1.18;
+  letter-spacing: -0.04em;
+}
+
+.kawnera-app .questBrief > p {
+  font:
+    17px/1.68 Georgia,
+    serif;
+  color: #2e3b38;
+}
+
+.kawnera-app .questTerms {
+  margin-top: 26px;
+  padding: 16px 18px;
+  background: #ede8db;
+  border: 1px solid var(--line);
+}
+
+.kawnera-app .questTerms p {
+  margin: 8px 0 0;
+  font: 700 12px monospace;
+  line-height: 1.75;
+  color: #4a5754;
+}
+
+.kawnera-app .questLeg {
+  font: 700 9px monospace;
+  letter-spacing: 0.14em;
+  color: var(--accent, var(--ink));
+  margin-bottom: 22px;
+}
+
+.kawnera-app .questRead article + article {
+  margin-top: 30px;
+}
+
+.kawnera-app .questRead header {
+  display: flex;
+  align-items: baseline;
+  gap: 11px;
+  margin-bottom: 11px;
+}
+
+.kawnera-app .questRead header span {
+  flex: none;
+  padding: 3px 8px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 10px monospace;
+}
+
+.kawnera-app .questRead h3 {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.kawnera-app .questRead p {
+  margin: 0;
+  font:
+    17px/1.68 Georgia,
+    serif;
+  color: #2e3b38;
+}
+
+.kawnera-app .questRead ul {
+  margin: 13px 0 0;
+  padding-left: 19px;
+}
+
+.kawnera-app .questRead li {
+  margin-bottom: 8px;
+  font-size: 15px;
+  line-height: 1.58;
+  color: #40514d;
+}
+
+/* ── checkpoint ── */
+.kawnera-app .questCheck h2 {
+  margin: 13px 0 22px;
+  font-size: 25px;
+  line-height: 1.28;
+  letter-spacing: -0.03em;
+}
+
+.kawnera-app .questOpts {
+  display: grid;
+  gap: 9px;
+}
+
+.kawnera-app .questOpt {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 15px 17px;
+  border: 1px solid var(--line);
+  background: #faf8f1;
+  text-align: start;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.kawnera-app .questOpt:hover:not(:disabled) {
+  border-color: var(--ink);
+  transform: translateX(3px);
+}
+
+.kawnera-app .questOpt span {
+  font: 700 11px monospace;
+  opacity: 0.5;
+  padding-top: 2px;
+}
+
+.kawnera-app .questOpt p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.kawnera-app .questOpt.correct {
+  border-color: #4f7c46;
+  background: #e5efd7;
+}
+
+.kawnera-app .questOpt.wrong {
+  border-color: #a24b45;
+  background: #f4dfdc;
+}
+
+.kawnera-app .questOpt.faded {
+  opacity: 0.42;
+}
+
+.kawnera-app .questWhy {
+  margin-top: 16px;
+  padding: 18px 20px;
+  background: #17211f;
+  color: #dfe7e4;
+  border-left: 5px solid #a24b45;
+}
+
+.kawnera-app .questWhy.right {
+  border-left-color: #7fae62;
+}
+
+.kawnera-app .questWhy b {
+  font: 800 9px monospace;
+  letter-spacing: 0.12em;
+  color: var(--accent, #e8ac4e);
+}
+
+.kawnera-app .questWhy p {
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.62;
+}
+
+.kawnera-app .questAnswer {
+  padding-top: 12px;
+  border-top: 1px solid #ffffff24;
+}
+
+/* ── the trap ── */
+.kawnera-app .questTrap h2 {
+  margin: 13px 0 0;
+  font-size: 23px;
+  letter-spacing: -0.03em;
+}
+
+.kawnera-app .questTrap blockquote {
+  margin: 18px 0 22px;
+  padding: 20px 24px;
+  background: #f4dfdc;
+  border-left: 5px solid #a24b45;
+  font:
+    italic 20px/1.5 Georgia,
+    serif;
+  color: #6b4340;
+}
+
+.kawnera-app .questTrapWhy {
+  font:
+    17px/1.68 Georgia,
+    serif;
+  color: #2e3b38;
+}
+
+/* ── verdict ── */
+.kawnera-app .questVerdict strong {
+  display: block;
+  margin: 16px 0 22px;
+  font-size: 76px;
+  line-height: 0.85;
+  letter-spacing: -0.07em;
+}
+
+.kawnera-app .questVerdict strong i {
+  font: normal 22px monospace;
+  opacity: 0.55;
+}
+
+.kawnera-app .questTakeaway {
+  font:
+    500 22px/1.45 Georgia,
+    serif;
+  max-width: 640px;
+}
+
+.kawnera-app .questNote {
+  padding: 14px 17px;
+  background: #ede8db;
+  border: 1px solid var(--line);
+  font-size: 14px;
+  line-height: 1.6;
+  color: #4a5754;
+}
+
+.kawnera-app .questRecall {
+  margin-top: 34px;
+  padding: 24px 26px;
+  background: #193d36;
+  color: #d7e0dc;
+}
+
+.kawnera-app .questRecall small {
+  font: 700 9px monospace;
+  letter-spacing: 0.12em;
+  color: #f2b867;
+}
+
+.kawnera-app .questRecall ol {
+  margin: 16px 0 0;
+  padding-left: 21px;
+}
+
+.kawnera-app .questRecall li {
+  padding: 7px 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.kawnera-app .questGlossary {
+  margin-top: 20px;
+  padding: 22px 24px;
+  background: #ede8db;
+  border: 1px solid var(--line);
+}
+
+.kawnera-app .questGlossary small {
+  font: 700 9px monospace;
+  letter-spacing: 0.13em;
+}
+
+.kawnera-app .questGlossary dl {
+  margin: 16px 0 0;
+}
+
+.kawnera-app .questGlossary dt {
+  margin-top: 13px;
+  font: 700 13px monospace;
+}
+
+.kawnera-app .questGlossary dt:first-of-type {
+  margin-top: 0;
+}
+
+.kawnera-app .questGlossary dd {
+  margin: 5px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #4a5754;
+}
+
+/* ── navigation ── */
+.kawnera-app .questNav,
+.kawnera-app .questEnd {
+  display: flex;
+  gap: 10px;
+  margin-top: 34px;
+}
+
+.kawnera-app .questNav button,
+.kawnera-app .questAlt {
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 14px 22px;
+  border: 1px solid var(--ink);
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.kawnera-app .questNav button:first-child {
+  flex: none;
+}
+
+.kawnera-app .questGo {
+  font: inherit;
+  font-weight: 800;
+  font-size: 14px;
+  flex: 1;
+  padding: 14px 22px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.kawnera-app .questNav button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (max-width: 720px) {
+  .kawnera-app .questTop {
+    top: 0;
+  }
+
+  .kawnera-app .questMentor {
+    grid-template-columns: 62px minmax(0, 1fr);
+    padding: 15px 16px;
+  }
+
+  .kawnera-app .questMentorFace .kawkab3d {
+    width: 62px;
+    height: 62px;
+  }
+
+  .kawnera-app .questMentorSay p {
+    font-size: 15px;
+  }
+
+  .kawnera-app .questBrief h2 {
+    font-size: 24px;
+  }
+
+  .kawnera-app .questCheck h2 {
+    font-size: 21px;
+  }
+
+  .kawnera-app .questVerdict strong {
+    font-size: 58px;
+  }
+}
+
+/* ══ chapter games ══════════════════════════════════════════════════════
+   Training-platform mechanics inside Dr. Kawkab's lab. See ChapterGames.jsx
+   for which game came from which training game, and why each transfers. */
+.kawneraLabBackdrop .cgame {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.kawneraLabBackdrop .cgameHint {
+  margin: 0 0 20px;
+  font: 700 9px monospace;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: #68736f;
+}
+
+/* ── sequence (from Story Time) ── */
+.kawneraLabBackdrop .cgameSlots {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.kawneraLabBackdrop .cgameSlots li {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 46px;
+  padding: 4px 10px;
+  border: 1px dashed var(--line);
+  background: #faf8f1;
+}
+
+.kawneraLabBackdrop .cgameSlots li.filled {
+  border-style: solid;
+  border-color: var(--ink);
+}
+
+.kawneraLabBackdrop .cgameSlots li.ok {
+  border-style: solid;
+  border-color: #4f7c46;
+  background: #e5efd7;
+}
+
+.kawneraLabBackdrop .cgameSlots li.bad {
+  border-style: solid;
+  border-color: #a24b45;
+  background: #f4dfdc;
+}
+
+.kawneraLabBackdrop .cgameSlots li > span {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e5e0d4;
+  font: 700 10px monospace;
+}
+
+.kawneraLabBackdrop .cgameSlots li button {
+  flex: 1;
+  border: 0;
+  background: none;
+  text-align: start;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 0;
+}
+
+.kawneraLabBackdrop .cgameSlots li em {
+  color: #9aa3a0;
+  font-style: normal;
+}
+
+.kawneraLabBackdrop .cgamePool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.kawneraLabBackdrop .cgamePool button {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 13px;
+  border: 1px solid var(--line);
+  background: #ffffffb0;
+  cursor: pointer;
+}
+
+.kawneraLabBackdrop .cgamePool button:hover {
+  border-color: var(--ink);
+}
+
+.kawneraLabBackdrop .cgameTruth {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.kawneraLabBackdrop .cgameTruth li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 10px;
+  border-inline-start: 3px solid transparent;
+  font-size: 13px;
+}
+
+.kawneraLabBackdrop .cgameTruth li.ok {
+  border-inline-start-color: #4f7c46;
+}
+
+.kawneraLabBackdrop .cgameTruth li.bad {
+  border-inline-start-color: #a24b45;
+}
+
+.kawneraLabBackdrop .cgameTruth span {
+  font: 700 10px monospace;
+  opacity: 0.6;
+  flex: none;
+}
+
+/* ── evidence (from Detective) ── */
+.kawneraLabBackdrop .cgameStudy {
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  background: #ebe6da;
+  border-inline-start: 5px solid #d9a650;
+}
+
+.kawneraLabBackdrop .cgameStudy small {
+  font: 700 9px monospace;
+  letter-spacing: 0.11em;
+}
+
+.kawneraLabBackdrop .cgameStudy p {
+  margin: 10px 0 0;
+  font:
+    15px/1.6 Georgia,
+    serif;
+}
+
+/* ── pairs (from Pair Match) ── */
+.kawneraLabBackdrop .cgameMeaning {
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  background: var(--ink);
+  color: #f3e6c8;
+  font:
+    italic 17px/1.5 Georgia,
+    serif;
+}
+
+/* ── shared options + result ── */
+.kawneraLabBackdrop .cgameOpts {
+  display: grid;
+  gap: 9px;
+}
+
+.kawneraLabBackdrop .cgameOpts--tight {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.kawneraLabBackdrop .cgameOpt {
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: start;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  background: #faf8f1;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.kawneraLabBackdrop .cgameOpt:hover:not(:disabled) {
+  border-color: var(--ink);
+  transform: translateX(3px);
+}
+
+.kawneraLabBackdrop .cgameOpt.ok {
+  border-color: #4f7c46;
+  background: #e5efd7;
+  font-weight: 700;
+}
+
+.kawneraLabBackdrop .cgameOpt.bad {
+  border-color: #a24b45;
+  background: #f4dfdc;
+}
+
+.kawneraLabBackdrop .cgameOpt.faded {
+  opacity: 0.42;
+}
+
+.kawneraLabBackdrop .cgameGo {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: #f5f2e9;
+  font: inherit;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.kawneraLabBackdrop .cgameGo:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.kawneraLabBackdrop .cgameResult {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.kawneraLabBackdrop .cgameResult b {
+  display: block;
+  font-size: 34px;
+  letter-spacing: -0.04em;
+}
+
+.kawneraLabBackdrop .cgameResult p {
+  margin: 12px auto 0;
+  max-width: 46ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #53615e;
+}
+
+@media (max-width: 720px) {
+  .kawneraLabBackdrop .cgameOpts--tight {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .kawneraLabBackdrop .cgameMeaning {
+    padding: 17px 18px;
+    font-size: 15px;
+  }
+}
+
+/* ── Dr. Kawkab reacting ────────────────────────────────────────────────
+   He is present for the whole chapter now, not just the four scripted beats.
+   `.reacting` marks an immediate response to something you just did. */
+.kawnera-app .questMentor.reacting {
+  border-left-color: #7fae62;
+  animation: kawkab-react 320ms ease-out;
+}
+
+@keyframes kawkab-react {
+  from { transform: translateX(-4px); opacity: 0.75; }
+  to { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kawnera-app .questMentor.reacting {
+    animation: none;
+  }
+}
+
+/* "We built that earlier — show me" */
+.kawnera-app .questRefs {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.kawnera-app .questRefs button {
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: start;
+  padding: 10px 13px;
+  border: 1px solid #ffffff33;
+  background: #ffffff0d;
+  color: #dfe7e4;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.kawnera-app .questRefs button:hover {
+  border-color: var(--accent, #e8ac4e);
+  transform: translateX(3px);
+}
+
+.kawnera-app .questRefs b {
+  font: 700 11px monospace;
+  color: var(--accent, #e8ac4e);
+}
+
+/* ── the detour ── */
+.kawnera-app .questDetour {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #0c1211e0;
+  backdrop-filter: blur(6px);
+}
+
+.kawnera-app .questDetourCard {
+  width: min(640px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: 26px 28px 28px;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  box-shadow: 14px 16px 0 #0005;
+}
+
+.kawnera-app .questDetourCard > header {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.kawnera-app .questDetourFace .kawkab3d {
+  width: 74px;
+  height: 74px;
+}
+
+.kawnera-app .questDetourCard header small {
+  font: 700 9px monospace;
+  letter-spacing: 0.12em;
+  color: #7d8a86;
+}
+
+.kawnera-app .questDetourCard header h2 {
+  margin: 6px 0 4px;
+  font-size: 24px;
+  letter-spacing: -0.03em;
+}
+
+.kawnera-app .questDetourCard header p {
+  margin: 0;
+  font-size: 13px;
+  color: #5b6764;
+}
+
+.kawnera-app .questDetourTerm {
+  margin-top: 20px;
+  padding: 18px 20px;
+  background: #17211f;
+  color: #dfe7e4;
+}
+
+.kawnera-app .questDetourTerm b {
+  font: 700 13px monospace;
+  color: var(--accent, #e8ac4e);
+}
+
+.kawnera-app .questDetourTerm p {
+  margin: 9px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.kawnera-app .questDetourSection {
+  margin-top: 16px;
+  padding: 18px 20px;
+  background: #ede8db;
+  border: 1px solid var(--line);
+}
+
+.kawnera-app .questDetourSection span {
+  display: inline-block;
+  padding: 3px 8px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 10px monospace;
+}
+
+.kawnera-app .questDetourSection h3 {
+  margin: 10px 0 9px;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.kawnera-app .questDetourSection p {
+  margin: 0;
+  font:
+    15px/1.62 Georgia,
+    serif;
+  color: #2e3b38;
+}
+
+.kawnera-app .questDetourCard .questGo {
+  margin-top: 20px;
+}
+
+@media (max-width: 720px) {
+  .kawnera-app .questDetourCard {
+    padding: 20px 18px 22px;
+  }
+
+  .kawnera-app .questDetourCard > header {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .kawnera-app .questDetourFace .kawkab3d {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/* ── figures ────────────────────────────────────────────────────────────
+   Inline SVG/DOM, no chart library. Marks are thin, ends are rounded and
+   anchored to the baseline, and EVERY mark carries a direct label — that last
+   part is not decoration, it is what discharges the contrast warning on the
+   muted fill (see the note in ChapterFigures.jsx). */
+.kawnera-app .cfig,
+.kawneraLabBackdrop .cfig {
+  margin: 22px 0 0;
+  padding: 20px 22px;
+  background: #faf8f1;
+  border: 1px solid var(--line);
+}
+
+.kawnera-app .cfigTitle {
+  margin: 0 0 16px;
+  font: 700 12px/1.4 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.02em;
+  color: #40514d;
+}
+
+.kawnera-app .cfig figcaption {
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+
+.kawnera-app .cfig figcaption p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4a5754;
+}
+
+.kawnera-app .cfig figcaption small {
+  display: block;
+  margin-top: 8px;
+  font: 700 9px monospace;
+  letter-spacing: 0.08em;
+  color: #8b958f;
+}
+
+/* ── emphasis bars ── */
+.kawnera-app .cfigBars {
+  display: grid;
+  gap: 14px;
+}
+
+.kawnera-app .cfigBarLabel {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #2e3b38;
+}
+
+.kawnera-app .cfigBarTrack {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kawnera-app .cfigBarFill {
+  display: block;
+  height: 14px;
+  /* rounded data-end, anchored square to the baseline */
+  border-radius: 0 4px 4px 0;
+  min-width: 3px;
+}
+
+.kawnera-app .cfigBarValue {
+  flex: none;
+  font: 700 13px 'DM Mono', ui-monospace, monospace;
+  color: #2e3b38;
+}
+
+.kawnera-app .cfigBarNote {
+  margin-top: 5px;
+  font-size: 12px;
+  color: #7d8a86;
+}
+
+/* ── steps ── */
+.kawnera-app .cfigSteps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.kawnera-app .cfigSteps li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 12px;
+  padding: 11px 12px;
+  background: #ffffff9c;
+  border-left: 3px solid var(--line);
+}
+
+.kawnera-app .cfigSteps li.key {
+  border-left-color: #1d6fb8;
+  background: #eef4fa;
+}
+
+.kawnera-app .cfigSteps li > span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e5e0d4;
+  font: 700 10px monospace;
+}
+
+.kawnera-app .cfigSteps b {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.kawnera-app .cfigSteps p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #5b6764;
+}
+
+/* ── gap timeline ── */
+.kawnera-app .cfigGap {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.kawnera-app .cfigTick {
+  font: 700 13px 'DM Mono', ui-monospace, monospace;
+  fill: #2e3b38;
+}
+
+.kawnera-app .cfigFoot {
+  font: 600 9px sans-serif;
+  fill: #7d8a86;
+}
+
+/* ── contrast ── */
+.kawnera-app .cfigContrast {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.kawnera-app .cfigContrast > div {
+  padding: 14px 16px;
+  background: #ffffff9c;
+  border-top: 3px solid #1d6fb8;
+}
+
+.kawnera-app .cfigContrast > div.cannot {
+  border-top-color: #9aa5a1;
+}
+
+.kawnera-app .cfigContrast small {
+  font: 700 9px monospace;
+  letter-spacing: 0.1em;
+  color: #5b6764;
+}
+
+.kawnera-app .cfigContrast ul {
+  margin: 11px 0 0;
+  padding-left: 17px;
+}
+
+.kawnera-app .cfigContrast li {
+  margin-bottom: 7px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #2e3b38;
+}
+
+/* Figure inside the dark prediction panel needs its own surface. */
+.kawnera-app .predictFigure {
+  margin: 16px 0 0;
+}
+
+.kawnera-app .predictFigure .cfig {
+  margin: 0;
+  background: #ffffff0f;
+  border-color: #ffffff26;
+}
+
+.kawnera-app .predictFigure .cfigTitle,
+.kawnera-app .predictFigure .cfigBarLabel,
+.kawnera-app .predictFigure .cfigBarValue,
+.kawnera-app .predictFigure figcaption p {
+  color: #dfe7e4;
+}
+
+.kawnera-app .predictFigure .cfigBarNote,
+.kawnera-app .predictFigure figcaption small {
+  color: #93a29e;
+}
+
+.kawnera-app .predictFigure figcaption {
+  border-top-color: #ffffff26;
+}
+
+.kawnera-app .predictFigure .cfigTick {
+  fill: #dfe7e4;
+}
+
+.kawnera-app .predictFigure .cfigFoot {
+  fill: #93a29e;
+}
+
+@media (max-width: 720px) {
+  .kawnera-app .cfig {
+    padding: 16px 15px;
+  }
+
+  .kawnera-app .cfigContrast {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

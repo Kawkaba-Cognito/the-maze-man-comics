@@ -4,6 +4,10 @@ import { assetUrl } from '../../lib/assetUrl';
 import './kawnera.css';
 import Kawkab3D from './Kawkab3D';
 import KawkabLab from './KawkabLab';
+import { authoredChapter, authoredFor } from './authored';
+import { isAuthored } from './authored/schema';
+import PredictGate from './PredictGate';
+import ChapterQuest from './ChapterQuest';
 const B = [
   {
     id: 'enigma',
@@ -289,7 +293,9 @@ export default function KawneraExperience({ isAr = false, isActive = false, onNa
     [tab, setTab] = useState('library'),
     [query, setQuery] = useState(''),
     [kawkabOpen, setKawkabOpen] = useState(false),
-    [labOpen, setLabOpen] = useState(false);
+    [labOpen, setLabOpen] = useState(false),
+    // Guided run by default; this opts out to the plain scrollable chapter.
+    [readStraight, setReadStraight] = useState(false);
   const t = isAr
     ? {
         library: 'المكتبة',
@@ -607,6 +613,7 @@ export default function KawneraExperience({ isAr = false, isActive = false, onNa
                   onClick={() => {
                     setCi(j);
                     setLabOpen(false);
+                    setReadStraight(false);
                     showMentor();
                     onNavigateTop?.('auto');
                   }}
@@ -631,8 +638,184 @@ export default function KawneraExperience({ isAr = false, isActive = false, onNa
           </section>
         </>
       )}
+      {/* Authored chapters open as a guided run with Dr. Kawkab by default.
+          `readStraight` swaps to the plain scrollable version for anyone who
+          would rather just read — the content is identical either way. */}
+      {book && ci !== null && !readStraight && isAuthored(authoredChapter(book.id, ci)) && (
+        <ChapterQuest
+          key={`${book.id}-${ci}`}
+          chapter={authoredChapter(book.id, ci)}
+          chapters={authoredFor(book.id)}
+          book={book}
+          chapterTitle={book.chapters[ci]}
+          chapterNo={ci + 1}
+          onExit={() => setCi(null)}
+          onOpenLab={openLab}
+        />
+      )}
+
+      {book && ci !== null && readStraight && isAuthored(authoredChapter(book.id, ci)) && (() => {
+        const c = book.chapters[ci];
+        const a = authoredChapter(book.id, ci);
+        return (
+          <>
+            <section className="chapterTop" style={{ '--accent': book.color }}>
+              <button className="back" onClick={() => setCi(null)}>
+                ← {book.code} {t.contents}
+              </button>
+              <small>
+                CHAPTER {String(ci + 1).padStart(2, '0')} OF {book.chapters.length} • PAGES{' '}
+                {a.pages[0]}–{a.pages[1]}
+              </small>
+              <h1>{c}</h1>
+              <p>{a.question}</p>
+            </section>
+
+            <section className="chapterBody deepBody">
+              <aside>
+                <span style={{ background: book.color }}>{String(ci + 1).padStart(2, '0')}</span>
+                <small>{book.title}</small>
+                <div>
+                  <button
+                    disabled={ci === 0}
+                    onClick={() => { setCi(ci - 1); onNavigateTop?.('auto'); }}
+                  >
+                    ← {t.previous}
+                  </button>
+                  <button
+                    disabled={ci === book.chapters.length - 1}
+                    onClick={() => { setCi(ci + 1); onNavigateTop?.('auto'); }}
+                  >
+                    {t.next} →
+                  </button>
+                </div>
+                <nav className="chapterNav">
+                  <a href="#summary">In short</a>
+                  <a href="#ideas">Key ideas</a>
+                  <a href="#evidence">Evidence</a>
+                  <a href="#recall">Recall</a>
+                </nav>
+              </aside>
+
+              <article>
+                <section className="depthNotice authored">
+                  <b>WRITTEN FROM THE BOOK</b>
+                  <span>
+                    This lesson was written from {book.title}, pages {a.pages[0]}–{a.pages[1]} —
+                    explained rather than extracted, so you can check any claim against the source.
+                  </span>
+                </section>
+
+                {/* Guess first, then read. See PredictGate for why this is a
+                    gate rather than a paragraph. */}
+                <PredictGate
+                  key={`${book.id}-${ci}`}
+                  predict={a.predict}
+                  accent={book.color}
+                />
+
+                <section className="kawkabLesson" style={{ '--lab': book.color }}>
+                  <div>
+                    <small>{t.mission}</small>
+                    <h2>{t.missionTitle}</h2>
+                    <p>{t.missionCopy}</p>
+                  </div>
+                  <button onClick={openLab}>{t.openLab}</button>
+                </section>
+
+                <section id="summary" className="lessonSection">
+                  <div className="label">01 • IN SHORT</div>
+                  <h2>{a.question}</h2>
+                  <p className="lead">{a.summary}</p>
+                </section>
+
+                {/* The chapter itself, walked in the book's own order and
+                    numbering — this is the part that has to leave you knowing
+                    the real chapter rather than the gist of it. */}
+                <section id="ideas" className="lessonSection">
+                  <div className="label">02 • THE CHAPTER, SECTION BY SECTION</div>
+                  <h2>What each part of the chapter says</h2>
+                  <div className="walkthrough">
+                    {a.sections.map((s, i) => (
+                      <article key={i}>
+                        <header>
+                          <span>{s.n}</span>
+                          <h3>{s.title}</h3>
+                        </header>
+                        <p>{s.body}</p>
+                        {s.points && (
+                          <ul>
+                            {s.points.map((p, j) => <li key={j}>{p}</li>)}
+                          </ul>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="glossary">
+                  <small>EVERY TERM THIS CHAPTER USES</small>
+                  <dl>
+                    {a.terms.map((x, i) => (
+                      <React.Fragment key={i}>
+                        <dt>{x.term}</dt>
+                        <dd>{x.meaning}</dd>
+                      </React.Fragment>
+                    ))}
+                  </dl>
+                </section>
+
+                <section id="evidence" className="lessonSection">
+                  <div className="label">03 • {t.evidence}</div>
+                  <h2>{t.evidenceTitle}</h2>
+                  <div className="evidence">
+                    {a.evidence.map((x, i) => (
+                      <article key={i}>
+                        <small>{x.study}</small>
+                        <p><b>What was done — </b>{x.did}</p>
+                        <p><b>What was found — </b>{x.found}</p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+
+                {/* The correction is the teaching. Naming the belief you probably
+                    hold, then breaking it, is what makes the idea stick. */}
+                <section className="misconception">
+                  <small>WHAT MOST PEOPLE GET WRONG</small>
+                  <p className="believed">“{a.misconception.believed}”</p>
+                  <p className="actually">{a.misconception.actually}</p>
+                </section>
+
+                <section className="lessonSection">
+                  <div className="label">04 • THE ONE THING</div>
+                  <p className="takeaway">{a.takeaway}</p>
+                </section>
+
+                <section id="recall" className="recall deepRecall">
+                  <small>{t.recall}</small>
+                  <h2>{t.recallTitle}</h2>
+                  <ol>
+                    {a.recall.map((x, i) => <li key={i}>{x}</li>)}
+                  </ol>
+                </section>
+
+                <button className={done.includes(key) ? 'complete done' : 'complete'} onClick={save}>
+                  {done.includes(key) ? `✓ ${t.chapterComplete}` : t.markComplete}
+                </button>
+
+                <div className="source">
+                  {book.title} · {book.author} · Chapter {ci + 1} · pages {a.pages[0]}–{a.pages[1]}
+                </div>
+              </article>
+            </section>
+          </>
+        );
+      })()}
+
       {book &&
         ci !== null &&
+        !isAuthored(authoredChapter(book.id, ci)) &&
         (() => {
           const c = book.chapters[ci],
             d = DEEP[book.id][ci];
@@ -694,10 +877,15 @@ export default function KawneraExperience({ isAr = false, isActive = false, onNa
                   </nav>
                 </aside>
                 <article>
-                  <section className="depthNotice">
-                    <b>{t.grounded}</b>
+                  {/* Honest label. This path shows passages lifted from the
+                      source, not a written lesson — saying so is better than
+                      captioning raw extracts "Central claims". */}
+                  <section className="depthNotice pending">
+                    <b>SOURCE EXTRACTS</b>
                     <span>
-                      {t.groundedCopy} {d.pages[0]}–{d.pages[1]}.
+                      Passages taken straight from {book.title}, pages {d.pages[0]}–{d.pages[1]}.
+                      This chapter has not been written up yet, so read it as raw material rather
+                      than as an explanation.
                     </span>
                   </section>
                   <section className="kawkabLesson" style={{ '--lab': book.color }}>
@@ -863,6 +1051,17 @@ export default function KawneraExperience({ isAr = false, isActive = false, onNa
           color={book.color}
           data={DEEP[book.id][ci]}
           bank={DEEP[book.id]}
+          checks={authoredChapter(book.id, ci)?.checks}
+          authored={
+            isAuthored(authoredChapter(book.id, ci)) ? authoredChapter(book.id, ci) : null
+          }
+          // Findings from the rest of the book, used as plausible same-domain
+          // distractors in the evidence game.
+          otherFindings={(authoredFor(book.id) || [])
+            .flatMap((c, j) => (j === ci ? [] : c.evidence.map((e) => e.found)))}
+          // Whole-book glossary, so a short chapter's pair game becomes
+          // cumulative review rather than a dead activity.
+          bookTerms={(authoredFor(book.id) || []).flatMap((c) => c.terms)}
           onClose={() => setLabOpen(false)}
           isAr={isAr}
         />
