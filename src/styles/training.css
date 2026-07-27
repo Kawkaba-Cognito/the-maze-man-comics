@@ -8332,3 +8332,65 @@
         transition: none;
     }
 }
+
+/* ══ Training hub — light mode ═══════════════════════════════════════════
+ *
+ * The hub's atmosphere was authored entirely for a black sky: warm nebula
+ * blobs at 0.35 alpha, two star layers, drifting dust and shooting stars. On
+ * cream every one of those inverts its meaning — the nebulae become beige
+ * smudges, the stars become dirt, and the whole stage reads as an unfinished
+ * wash rather than a designed surface. There were ZERO light variants.
+ *
+ * Night-sky effects are dropped rather than re-tinted, because the metaphor
+ * itself does not survive the flip: stars on white are not dim stars, they are
+ * specks. What stays is a calm warm gradient and the planets themselves, which
+ * carry the "worlds" idea on their own.
+ */
+html[data-home-theme='light'] .rh-hub-stars--a,
+html[data-home-theme='light'] .rh-hub-stars--b,
+html[data-home-theme='light'] .rh-hub-dust,
+html[data-home-theme='light'] .rh-hub-shoot--1,
+html[data-home-theme='light'] .rh-hub-shoot--2,
+html[data-home-theme='light'] .rh-hub-shoot--3 {
+    display: none;
+}
+
+/* One soft, cool wash instead of three warm blobs — enough to give the stage
+   depth without reading as a stain. */
+html[data-home-theme='light'] .rh-hub-nebula--a {
+    background: radial-gradient(circle, rgba(150, 170, 210, 0.16) 0%, transparent 70%);
+}
+
+html[data-home-theme='light'] .rh-hub-nebula--b,
+html[data-home-theme='light'] .rh-hub-nebula--c {
+    display: none;
+}
+
+/* No panel of its own. An earlier attempt gave the sky a light gradient and it
+   painted a hard-edged white rectangle floating on the page's warm wash — the
+   stage is inset and scaled, so any background it owns has visible borders.
+   The page gradient underneath is already right; the hub just gets out of its
+   way. */
+html[data-home-theme='light'] .rh-hub-sky {
+    background: none;
+}
+
+/* Likewise the last nebula: on cream it is a smudge, not depth. */
+html[data-home-theme='light'] .rh-hub-nebula--a {
+    display: none;
+}
+
+/* The orbit spokes were drawn to glow against black; on cream they need to be
+   a drawn line rather than a light source. */
+html[data-home-theme='light'] .rh-hub-stage svg [stroke='rgba(255, 255, 255, 0.55)'] {
+    stroke: rgba(120, 100, 70, 0.22);
+}
+
+/* "Puzzles — take a break" was a dark pill, which is correct on the cosmos and
+   wrong on paper: it was the single darkest object on a light screen. */
+html[data-home-theme='light'] .rh-puzzles-cta {
+    background: rgba(255, 253, 248, 0.92) !important;
+    border-color: rgba(170, 140, 80, 0.34) !important;
+    color: #4a3a1e !important;
+    box-shadow: 0 2px 10px rgba(90, 70, 40, 0.08) !important;
+}

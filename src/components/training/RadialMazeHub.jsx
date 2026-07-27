@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { DomainIconArt } from '../../features/training/shared/DomainIcon';
 import UniverseStage from '../shared/UniverseStage';
 import { DOMAIN_COLOR, DOMAINS } from './trainingData';
@@ -336,6 +336,51 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
   const [tick, setTick] = useState(0);
   const [reducedMotion] = useState(prefersReducedMotion);
 
+  /*
+   * Shrink the 660px-tall map to whatever height is actually free, so the
+   * lower three domains stay on screen and tappable. Never scales UP — on a
+   * tall phone the map keeps its authored size rather than ballooning.
+   */
+  const stageRef = useRef(null);
+  const [stageScale, setStageScale] = useState(1);
+  useEffect(() => {
+    const fit = () => {
+      const el = stageRef.current;
+      if (!el) return;
+      // The stage's own top is stable: scaling changes its HEIGHT, not where it
+      // starts, so this does not need a second pass.
+      const top = el.getBoundingClientRect().top;
+      // Measure against the real tab bar rather than guessing a reserve — it is
+      // fixed, 81px tall, and is exactly what the lower domains were hiding
+      // behind. Falling back to the viewport keeps this safe if it is absent.
+      const bar = document.querySelector('.app-tabbar');
+      const floor = bar ? bar.getBoundingClientRect().top : window.innerHeight;
+      const free = floor - top - 12;
+      setStageScale(Math.max(0.5, Math.min(1, free / 660)));
+    };
+    fit();
+    window.addEventListener('resize', fit);
+
+    /*
+     * AppShell mounts every tab up front and hides the inactive ones, so this
+     * hub is laid out at 0x0 long before it is ever shown. Measuring then gives
+     * top = 0 and a uselessly generous scale — which is exactly what left the
+     * lower domains clipped: 490/660 = 0.74 instead of the correct 0.58.
+     *
+     * A ResizeObserver on the parent was tried first and never fired once,
+     * including across a full tab round-trip, so the display:none → visible
+     * transition is not observable here. A poll is unglamorous but it is what
+     * works in this shell (AssessmentMascot3D uses the same trick for the same
+     * reason). React bails out when the value is unchanged, so the steady state
+     * costs one getBoundingClientRect every 500ms.
+     */
+    const id = window.setInterval(fit, 500);
+    return () => {
+      window.removeEventListener('resize', fit);
+      window.clearInterval(id);
+    };
+  }, []);
+
   useEffect(() => {
     // The rising embers are pure atmosphere; when the user asks for reduced
     // motion we simply stop pumping the tick (also spares a re-render/120ms).
@@ -392,8 +437,42 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           : 'Tap a world to train — or the center for a full check-in'}
       </p>
 
-      {/* Radial maze canvas */}
-      <div className="rh-hub-stage" style={{ position: 'relative', width: '100%', height: 660, marginTop: 4, zIndex: 4 }}>
+      {/*
+        Radial maze canvas.
+
+        The stage is authored at a fixed 360x660 — the SVG viewBox and every
+        absolutely-positioned overlay agree on those numbers — and it used to be
+        rendered at that size unconditionally, in a screen that does not scroll.
+        On any viewport shorter than about 770px the bottom of the map fell
+        past the tab bar, which left Language, Reasoning and Flexibility drawn
+        but UNTAPPABLE. Half the domains were unreachable on a laptop or a
+        phone in landscape.
+
+        Scaling the whole stage keeps the hybrid SVG + DOM model in sync: one
+        transform moves the paths, the planets and the mascot together, so
+        nothing has to be re-measured. Height collapses to the scaled height so
+        the layout does not reserve space that is no longer drawn.
+      */}
+      <div
+        ref={stageRef}
+        className="rh-hub-stage"
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: 660 * stageScale,
+          marginTop: 4,
+          zIndex: 4,
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            height: 660,
+            transform: `scale(${stageScale})`,
+            transformOrigin: 'top center',
+          }}
+        >
         {/* Local cosmos FX — mirrors mode-planet hub atmosphere */}
         <div className="rh-hub-sky" aria-hidden="true">
           <div className="rh-hub-nebula rh-hub-nebula--a" />
@@ -670,6 +749,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             />
           </Suspense>
         </div>
+        </div>
       </div>
 
       {/* Daily Workout now lives at the end of the Assessment screen. */}
@@ -680,6 +760,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       <div style={{ position: 'relative', zIndex: 6, display: 'flex', justifyContent: 'center', marginTop: -18 }}>
         <button
           type="button"
+          className="rh-puzzles-cta"
           onClick={() => { playSfx('click'); switchTab('puzzles'); }}
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
