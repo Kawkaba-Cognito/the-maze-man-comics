@@ -2,11 +2,23 @@
 
 export const APP_THEME_KEY = 'mazeman_home_theme';
 
+/*
+ * Light is the default (2026-07-27, was dark).
+ *
+ * The training games are drawn light — 37 cream/white panel fills against 8
+ * dark — and their play surface is now pinned light regardless of theme,
+ * because background luminance is a measurement parameter for timed tasks
+ * rather than a preference. A dark default meant the chrome around those games
+ * fought them. Kawnera is cream paper too. Only the Home universe is properly
+ * dark, and it ignores this setting entirely.
+ *
+ * An explicit choice still wins: anyone who picked dark keeps dark.
+ */
 export function readAppTheme() {
   try {
-    return localStorage.getItem(APP_THEME_KEY) === 'light' ? 'light' : 'dark';
+    return localStorage.getItem(APP_THEME_KEY) === 'dark' ? 'dark' : 'light';
   } catch {
-    return 'dark';
+    return 'light';
   }
 }
 
