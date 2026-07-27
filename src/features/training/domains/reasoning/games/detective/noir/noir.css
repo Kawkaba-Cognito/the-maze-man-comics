@@ -512,6 +512,19 @@
   height: 100%;
 }
 
+/* On a phone the line-up used to take 638px of a 780px screen — 82% of it —
+   so three suspects stood in an enormous empty room, each about a quarter of
+   the frame with the rest dead air. Capping the frame is half the fix for
+   that; the other half is FILL_* in Interrogation3D.jsx, which the camera
+   distance is solved from. Together they give a composed row rather than
+   figures adrift in a void. */
+@media (max-width: 620px) {
+  .nr-stage {
+    flex: none;
+    height: min(58vh, 470px);
+  }
+}
+
 /* Optical finish stays in CSS so it costs nothing in the WebGL render pass. */
 .nr-stage::before,
 .nr-stage::after {

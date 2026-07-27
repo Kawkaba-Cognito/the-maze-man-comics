@@ -302,8 +302,11 @@ export default function NoirCase({
               />
             )}
 
+            {/* The panel grows now rather than hugging its content: the stage
+                is a fixed band on phones (noir.css), so something has to take
+                up the slack or it floats with a gap beneath it. */}
             {phase === 'lineup' && (
-              <div className="nr-scroll" style={{ flex: 'none', paddingTop: 8 }}>
+              <div className="nr-scroll" style={{ paddingTop: 8 }}>
                 {stage3d === 'failed' && (
                   <div className="nr-lineup">
                     {caseData.suspects.map((s) => {
