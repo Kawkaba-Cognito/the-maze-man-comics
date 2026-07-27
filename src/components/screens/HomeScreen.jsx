@@ -1,4 +1,6 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import LearningUniverse, { useLearnedBodies } from '../../features/universe/LearningUniverse';
+import { KAWNERA_BOOKS } from '../../features/kawnera/books';
 import { useApp } from '../../context/AppContext';
 import { lazyWithRetry } from '../../lib/lazyWithRetry';
 
@@ -17,6 +19,19 @@ export default function HomeScreen() {
   const { currentLang } = useApp();
   const isAr = currentLang === 'ar';
   const scrollRef = useRef(null);
+  // Bumped when a chapter is finished, to recompute the sky without a reload.
+  const [skyTick, setSkyTick] = useState(0);
+  const [jumpTo, setJumpTo] = useState(null);
+  const bodies = useLearnedBodies(KAWNERA_BOOKS, skyTick);
+  const cooling = bodies.filter((b) => b.warmth < 0.5).length;
+
+  // Tapping a cooled body scrolls down into Kawnera and opens that chapter.
+  const openChapter = useCallback((bookId, chapterIndex) => {
+    setJumpTo({ bookId, chapterIndex, at: Date.now() });
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+    scroller.scrollTo({ top: scroller.clientHeight, behavior: 'smooth' });
+  }, []);
   const [showKawnera, setShowKawnera] = useState(false);
   const [kawneraActive, setKawneraActive] = useState(false);
   const [universeAwake, setUniverseAwake] = useState(true);
@@ -74,7 +89,7 @@ export default function HomeScreen() {
         <Suspense
           fallback={<div style={{ position: 'absolute', inset: 0, background: '#000' }} />}
         >
-          <ZenUniverse ref={zenRef} planets={[]} />
+          <ZenUniverse ref={zenRef} planets={bodies} />
         </Suspense>
       </div>
 
@@ -84,6 +99,19 @@ export default function HomeScreen() {
       >
         <div className="home-universe-heading">
           <div className="home-universe-title">{isAr ? 'كونك' : 'Your universe'}</div>
+          {bodies.length > 0 && (
+            <div className="home-universe-sub">
+              {bodies.length} {bodies.length === 1 ? 'chapter' : 'chapters'} learned
+              {cooling > 0 && ` · ${cooling} cooling`}
+            </div>
+          )}
+        </div>
+
+        {/* The sky's contents: one body per chapter worked through, dimming as
+            it cools. See learningStore.js for why the schedule is drawn rather
+            than queued. */}
+        <div className="home-universe-bodies">
+          <LearningUniverse bodies={bodies} onOpen={openChapter} />
         </div>
 
         <div className="home-slide-hint" aria-hidden="true">
@@ -135,6 +163,8 @@ export default function HomeScreen() {
                 isAr={isAr}
                 isActive={kawneraActive}
                 onNavigateTop={navigateKawneraTop}
+                jumpTo={jumpTo}
+                onChapterDone={() => setSkyTick((t) => t + 1)}
               />
             </Suspense>
           ) : (

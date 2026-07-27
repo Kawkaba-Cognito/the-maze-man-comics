@@ -2487,3 +2487,177 @@ html[data-home-theme='light'] .other-theme-desc { color: #8a7348; }
         animation: none;
     }
 }
+
+/* ── Your Universe: the bodies you have learned ──────────────────────────
+   Hit areas are DOM (reliable on a phone); the glowing body itself is drawn
+   by ZenUniverse at the same percentage position. See learningStore.js for
+   why the review schedule is drawn in the sky rather than queued in a list. */
+.home-universe-sub {
+    margin-top: 8px;
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(232, 220, 192, 0.55);
+}
+
+.home-universe-bodies {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.home-universe-bodies > * {
+    pointer-events: auto;
+}
+
+.lu-hit {
+    position: absolute;
+    width: 58px;
+    height: 58px;
+    margin: -29px 0 0 -29px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.lu-hit:focus-visible {
+    outline: 2px solid #e8ac4e;
+    outline-offset: 2px;
+}
+
+.lu-empty {
+    position: absolute;
+    left: 50%;
+    bottom: calc(150px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: calc(100vw - 48px);
+    text-align: center;
+    color: rgba(232, 220, 192, 0.5);
+    font-family: 'Outfit', system-ui, sans-serif;
+    pointer-events: none;
+}
+
+.lu-empty p {
+    margin: 0;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+}
+
+.lu-empty small {
+    display: block;
+    margin-top: 5px;
+    font-size: 11px;
+    opacity: 0.72;
+}
+
+/* ── the readout ── */
+.lu-card {
+    position: absolute;
+    left: 50%;
+    bottom: calc(120px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: min(340px, calc(100vw - 32px));
+    padding: 20px 22px 22px;
+    background: rgba(9, 10, 16, 0.94);
+    border: 1px solid rgba(232, 172, 78, 0.34);
+    border-radius: 14px;
+    backdrop-filter: blur(10px);
+    color: #f3e6c8;
+    font-family: 'Outfit', system-ui, sans-serif;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+}
+
+.lu-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    background: none;
+    color: rgba(243, 230, 200, 0.6);
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.lu-card > small {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: rgba(232, 172, 78, 0.85);
+}
+
+.lu-card h3 {
+    margin: 7px 0 16px;
+    padding-right: 20px;
+    font-size: 19px;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+}
+
+.lu-warm {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.lu-warmTrack {
+    flex: 1;
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(243, 230, 200, 0.14);
+    overflow: hidden;
+}
+
+.lu-warmTrack i {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    transition: width 320ms ease;
+}
+
+.lu-warm b {
+    flex: none;
+    font-family: 'DM Mono', ui-monospace, monospace;
+    font-size: 12px;
+}
+
+.lu-state {
+    margin: 13px 0 0;
+    font-size: 13px;
+    line-height: 1.55;
+    color: rgba(243, 230, 200, 0.74);
+}
+
+.lu-go {
+    display: block;
+    width: 100%;
+    margin-top: 17px;
+    padding: 12px;
+    border: 1px solid rgba(232, 172, 78, 0.5);
+    border-radius: 10px;
+    background: rgba(232, 172, 78, 0.16);
+    color: #f3e6c8;
+    font: inherit;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.lu-go:hover {
+    background: rgba(232, 172, 78, 0.26);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lu-warmTrack i {
+        transition: none;
+    }
+}
