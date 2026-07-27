@@ -13,6 +13,40 @@ import { RIG_HEIGHT } from '../../../../../../shared/castRoster';
 const CHAR_WIDTH = 1.05;
 const FLOOR_Y = 0.065;
 
+/*
+ * How much of the frame height ONE suspect fills.
+ *
+ * This is the only control over apparent size, because the rigs are never
+ * scaled (see the note above). It is also what keeps the room ORGANISED: the
+ * camera distance is solved from this number and nothing else, so a suspect is
+ * the same size in a two-hander as in a five-hander.
+ *
+ * The old code solved the opposite way round — it pushed the camera back until
+ * the widest line fitted — which meant apparent size was a side effect of how
+ * many people the case happened to have. A two-suspect case rendered them at
+ * ~61% of the frame and a four-suspect case at ~33%, so the room looked like a
+ * different room in every case.
+ */
+const FILL_PORTRAIT = 0.28;
+const FILL_WIDE = 0.26;
+
+// Bodies are CHAR_WIDTH wide, so a spread below that overlaps them. The old
+// portrait value was 1.06 against a 1.05-wide body: they touched.
+const MIN_SPREAD = CHAR_WIDTH * 1.2;
+const MAX_SPREAD = 1.55;
+// Breathing room between the outermost body and the edge of frame.
+const EDGE_MARGIN = 0.3;
+/*
+ * Questioning somebody is a close-up, not a line-up.
+ *
+ * The point of shrinking everyone is that the ROW should read as a row — but
+ * once you pick a face, that face is the thing you are reading for a tell, so
+ * the camera earns the size back by coming in. This is the contrast the whole
+ * change is for: small and orderly when you are surveying, close when you are
+ * working. (At 0.8 the close-up was too timid — 78px on a desktop.)
+ */
+const TALK_DISTANCE = 0.62;
+
 const damp = (value, target, dt, speed = 5) => value + (target - value) * Math.min(1, dt * speed);
 
 function localName(suspect, isAr) {
@@ -454,6 +488,9 @@ export default function Interrogation3D({
     // ── responsive composition and animation ─────────────────────────────
     const world = new THREE.Vector3();
     const target = new THREE.Vector3();
+    const camAim = new THREE.Vector3();
+    const camLook = new THREE.Vector3();
+    let camReady = false; // first frame places the camera; later ones ease it
     const clearedSet = new Set();
     setTick((dt, now) => {
       const aspect = Math.max(0.25, camera.aspect || 1);
@@ -464,9 +501,36 @@ export default function Interrogation3D({
       const phone = wrap.clientWidth <= 620;
       const portrait = phone || aspect < 0.78;
       const compact = phone || aspect < 1.15;
-      const spread = portrait ? 1.06 : compact ? 1.1 : 1.46;
       const active = activeRef.current;
       const inactiveEntries = active ? entries.filter((entry) => entry.id !== active) : [];
+
+      // ── framing: size first, staging second ──────────────────────────
+      // Solve the distance from FILL_* alone, then pick the widest spread the
+      // line can have at that distance. Suspects therefore stay one size and
+      // the ROW tightens for a crowded case, rather than everyone shrinking.
+      const halfFovRad = (camera.fov * Math.PI) / 360;
+      const tanHalf = Math.tan(halfFovRad);
+      const fill = portrait ? FILL_PORTRAIT : FILL_WIDE;
+      const showDetective = !portrait;
+      const detectiveGap = compact ? 1.28 : 1.48;
+
+      let baseDistance = RIG_HEIGHT / (2 * fill * tanHalf);
+      const gaps = Math.max(1, entries.length - 1);
+
+      // Half-width the frame holds, less the body and the detective's station.
+      const spreadFor = (d) => {
+        const halfW = d * tanHalf * aspect - EDGE_MARGIN - CHAR_WIDTH / 2
+          - (showDetective ? detectiveGap / 2 : 0);
+        return (halfW * 2) / gaps;
+      };
+      let spread = Math.min(MAX_SPREAD, spreadFor(baseDistance));
+      if (spread < MIN_SPREAD) {
+        // Too tight to stand them apart at that size — give ground on size
+        // rather than let them overlap.
+        spread = MIN_SPREAD;
+        baseDistance = ((MIN_SPREAD * gaps) / 2 + CHAR_WIDTH / 2 + EDGE_MARGIN
+          + (showDetective ? detectiveGap / 2 : 0)) / (tanHalf * aspect);
+      }
       clearedSet.clear();
       clearedRef.current.forEach((id) => clearedSet.add(id));
 
@@ -484,8 +548,11 @@ export default function Interrogation3D({
             tx = portrait ? 0 : -0.25;
             tz = 0.72;
           } else {
+            // Stand the others back and to the sides. Proportional to the line
+            // spread, not a fixed 2–3 units: with the distance now pinned, an
+            // absolute scatter threw them clean out of frame on a phone.
             const slot = inactiveEntries.findIndex((candidate) => candidate.id === entry.id);
-            const slotSpread = portrait ? 2 : 3;
+            const slotSpread = spread * (portrait ? 1.55 : 1.9);
             tx = (slot - (inactiveEntries.length - 1) / 2) * slotSpread;
             tz = z - 0.68;
           }
@@ -537,8 +604,7 @@ export default function Interrogation3D({
       });
 
       const outerX = ((entries.length - 1) / 2) * spread;
-      const showDetective = !portrait;
-      const detectiveX = outerX + (compact ? 1.28 : 1.48);
+      const detectiveX = outerX + detectiveGap;
       detectiveStation.visible = showDetective;
       detectiveSpot.visible = showDetective;
       detectiveTarget.visible = showDetective;
@@ -556,28 +622,35 @@ export default function Interrogation3D({
         kawkab.update(dt, now);
       }
 
-      // Fit suspects tightly on portrait. Wide screens include the detective's
-      // side station but keep him off the suspect axis and slightly downstage.
-      const suspectLeft = -outerX - CHAR_WIDTH / 2;
-      const suspectRight = outerX + CHAR_WIDTH / 2;
-      const left = suspectLeft;
-      const right = showDetective ? detectiveX + CHAR_WIDTH / 2 : suspectRight;
-      const centreX = (left + right) / 2;
-      const halfW = (right - left) / 2 + (portrait ? 0.22 : compact ? 0.42 : 0.72);
-      const halfH = RIG_HEIGHT / 2 + (portrait ? 0.48 : 0.42);
-      const halfFov = (camera.fov * Math.PI) / 360;
-      const distV = halfH / Math.tan(halfFov);
-      const distH = halfW / (Math.tan(halfFov) * aspect);
-      const distance = Math.max(distV, distH) * (portrait ? 1.035 : compact ? 1.07 : 1.12);
+      // Where the camera looks. Idle it holds the whole room (centred between
+      // the line and, on wide screens, the detective's station). Once you are
+      // questioning somebody it becomes their shot: closer, and on them.
+      const roomCentre = showDetective ? detectiveGap / 2 : 0;
+      const focusedEntry = active ? entries.find((e) => e.id === active) : null;
+      const aimX = focusedEntry && focusedEntry.ch
+        ? focusedEntry.ch.root.position.x
+        : roomCentre;
+      const distance = baseDistance * (active ? TALK_DISTANCE : 1);
 
       stage.getWorldPosition(world);
       target.set(
-        world.x + centreX,
+        world.x + aimX,
         world.y + RIG_HEIGHT / 2 + (active ? 0.08 : 0.27),
         world.z - 0.12,
       );
-      camera.position.set(target.x, target.y + (portrait ? 0.1 : 0.16), target.z + distance);
-      camera.lookAt(target);
+
+      // Damped, not set — walking into an interrogation should read as the
+      // camera moving in, not as a cut to a different room.
+      camAim.set(target.x, target.y + (portrait ? 0.1 : 0.16), target.z + distance);
+      if (camReady) {
+        camera.position.lerp(camAim, Math.min(1, dt * 3.2));
+        camLook.lerp(target, Math.min(1, dt * 3.2));
+      } else {
+        camera.position.copy(camAim);
+        camLook.copy(target);
+        camReady = true;
+      }
+      camera.lookAt(camLook);
     });
 
     return () => {

@@ -1,11 +1,19 @@
-import React, { Suspense, useState } from 'react';
+import React, { Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import CaseFileEngine from './CaseFileEngine';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
-import { planetIconUrl } from '../../../../../../lib/planetIcons';
 
-const Detective3DProto = lazyWithRetry(() => import('./Detective3DProto'), 'detective-3d');
+/*
+ * The separate "3D" prototype planet was retired 2026-07-27, alongside Story
+ * Time's. It drew suspects as emoji on canvas textures rather than the rigged
+ * cast, and still ran the older "read the briefing, then accuse" flow — so its
+ * claim to mirror the free-mode session stopped being true the moment Survival
+ * became the noir engine. Survival IS the 3D detective now: a lit interrogation
+ * room, a real line-up, and a camera that comes in when you question someone.
+ * (Detective3DProto.jsx is recoverable from git history.)
+ */
+
 // Survival's noir rebuild — lazy, so three.js and the cast models only load
 // for players who actually start a Survival run.
 const NoirSurvival = lazyWithRetry(() => import('./noir/NoirSurvival'), 'detective-noir');
@@ -24,15 +32,6 @@ const NoirSurvival = lazyWithRetry(() => import('./noir/NoirSurvival'), 'detecti
 export default function DetectiveGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
-  const [view, setView] = useState('shell');
-  if (view === 'play3d') {
-    return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
-        <Detective3DProto isAr={isAr} playSfx={playSfx} onBack={() => setView('shell')} />
-      </Suspense>
-    );
-  }
-
   return (
     <ModeShell
       storageKey="mm_reason_detective"
@@ -58,13 +57,6 @@ export default function DetectiveGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
-      extraItems={[{
-        k: 'proto3d',
-        lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-        hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
-        on: () => setView('play3d'),
-        icoImg: planetIconUrl('reasoning'),
-      }]}
       renderEngine={(p) => (p.mode === 'free' ? (
         <Suspense fallback={<div style={FALLBACK} />}>
           <NoirSurvival
