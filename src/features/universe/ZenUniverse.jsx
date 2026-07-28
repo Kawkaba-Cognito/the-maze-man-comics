@@ -5,7 +5,8 @@ import { releaseGlContext } from '../training/shared/c3dViewport';
 /*
  * ZenUniverse — the Home screen's living 3D backdrop.
  * Pure black space, twinkling stars, soft dust, occasional shooting stars,
- * a white particle planet at the center that dissolves locally where touched
+ * a particle planet at the center (white on the night sky, ink on the lit one)
+ * that dissolves locally where touched
  * and heals itself, and the user's small note/goal/journal planets as colored
  * particle spheres (positions mirrored from UniversePlanets DOM hit areas).
  *
@@ -185,6 +186,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         uDim: { value: 0 },
         uBoost: { value: mobileBoost },
         uBreath: { value: 1 },
+        uLight: { value: 0 },
         uTouches: { value: touchPoints },
         uStarts: { value: touchStarts },
       },
@@ -194,6 +196,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         uniform float uNow;
         uniform float uBoost;
         uniform float uBreath;
+        uniform float uLight;
         uniform vec3 uTouches[${MAX_TOUCHES}];
         uniform float uStarts[${MAX_TOUCHES}];
         varying float vFade;
@@ -220,11 +223,15 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
               fract(sin(aRand * 74.7)  * 43758.5) - 0.5);
             p += (dir * 1.0 + rnd * 1.3) * infl * (0.85 + aRand * 0.55);
             fade += infl;
-            /* golden shockwave ring expanding along the surface from the touch */
+            /* Golden shockwave rings expanding along the surface from the
+               touch. Two of them, at different speeds: one fast crest that
+               races away and a slower inner one chasing it, so an impact reads
+               as an event with depth rather than a single expanding circle. */
             float wave = age * 1.45;
             float ring = exp(-pow((d - wave) * 5.5, 2.0)) * life * life;
-            p += dir * ring * 0.07;
-            spark += ring;
+            float ring2 = exp(-pow((d - wave * 0.58) * 8.5, 2.0)) * life;
+            p += dir * (ring * 0.07 + ring2 * 0.04);
+            spark += ring + ring2 * 0.55;
           }
           vFade = clamp(fade, 0.0, 1.0);
           vSpark = clamp(spark, 0.0, 1.0);
@@ -233,7 +240,11 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
           vBand = 0.5 + 0.5 * sin(dir.y * 6.0 + uNow * 0.45
             + sin(dir.x * 3.5 + uNow * 0.26) * 1.3 + aRand * 0.35);
           vec4 mv = modelViewMatrix * vec4(p, 1.0);
-          gl_PointSize = aSize * (19.0 * uBoost * uBreath) / -mv.z
+          /* Light appearance: fatter sprites. Black is only as black as its
+             coverage — at the night-sky point size the gaps between particles
+             let the sunset through and the body reads as speckle rather than
+             a planet. Roughly doubling the disc closes them. */
+          gl_PointSize = aSize * (19.0 * uBoost * uBreath) * (1.0 + uLight * 1.0) / -mv.z
             * (1.0 + vFade * 1.15 + vSpark * 0.8);
           gl_Position = projectionMatrix * mv;
         }
@@ -242,6 +253,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         uniform float uDim;
         uniform float uBoost;
         uniform float uBreath;
+        uniform float uLight;
         varying float vFade;
         varying float vSpark;
         varying float vBand;
@@ -258,12 +270,63 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
           float alpha = disc * 0.16 * uBoost * uBreath * (0.80 + 0.30 * vBand)
             * (1.0 - vFade * 0.55) * (1.0 - uDim * 0.96);
           alpha += disc * (rim * 0.03 + vSpark * 0.32) * (1.0 - uDim * 0.96);
+
+          /* Light appearance: the planet is an INK body, not a white one.
+             A white planet on a lit sky reads as a hole; the eye wants the
+             subject dark against the sunset. Additive light can only ever add,
+             so it cannot darken anything — the material is flipped to normal
+             blending from JS (see the frame loop) and this branch supplies the
+             dark body, a warm sunset rim, and enough per-point alpha for the
+             overlapping particles to build one solid silhouette. */
+          vec3 ink = mix(vec3(0.0), vec3(0.02, 0.02, 0.03), lightK);
+          ink += vec3(0.40, 0.22, 0.12) * rim * 0.14;
+
+          /* Touch: the shell tears open into EMBERS.
+             On the night sky a touch works by subtraction — bright particles
+             scatter and fade, and the hole they leave is the effect. That is
+             exactly backwards here: a black particle thrown off a black planet
+             onto a dark sunset simply vanishes, so the same gesture produced
+             almost nothing. So the displaced points heat up instead — the
+             further they are thrown the brighter they burn, from orange at the
+             surface to near-white at the crest of the shockwave, and they keep
+             their alpha on the way out so the spray stays a real object. */
+          vec3 ember = mix(vec3(1.0, 0.48, 0.12), vec3(1.0, 0.85, 0.52), vSpark);
+          ink = mix(ink, ember, clamp(vFade * 1.25, 0.0, 1.0));
+          ink = mix(ink, vec3(1.0, 0.94, 0.72), vSpark * 0.95);
+          float inkAlpha = disc * (0.90 + 0.04 * vBand) * uBreath
+            * (1.0 - vFade * 0.12) + disc * vSpark * 0.6;
+          col = mix(col, ink, uLight);
+          alpha = mix(alpha, clamp(inkAlpha, 0.0, 1.0), uLight);
+
           gl_FragColor = vec4(col, clamp(alpha, 0.0, 1.0));
         }
       `,
     });
     const centerPlanet = new THREE.Points(centerGeo, centerMat);
     scene.add(centerPlanet);
+
+    /*
+     * Solid black body — light appearance only.
+     *
+     * A shell of surface points is at its SPARSEST where you look straight
+     * through it: the limb stacks particle over particle, the middle does not.
+     * So however black the particles are and however fat their sprites, the
+     * centre of the planet keeps showing sunset — it reads as a dark ring with
+     * a bright core. The only way to a genuinely black planet is to put a body
+     * behind the shell.
+     *
+     * Deliberately OPAQUE rather than a transparent black: an opaque mesh
+     * renders in the opaque pass, before every transparent layer, and writes
+     * depth — so it also correctly hides the back-hemisphere particles, the
+     * halo and any wisp passing behind. Left invisible on the night sky, where
+     * the planet is meant to be luminous.
+     */
+    const bodyMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(CENTER_RADIUS * 0.98, 48, 32),
+      new THREE.MeshBasicMaterial({ color: 0x000000 }),
+    );
+    bodyMesh.visible = false;
+    scene.add(bodyMesh);
 
     // Soft additive halo — readable glow on phones; keep desktop sparse
     const HALO_COUNT = finePointer ? 220 : 480;
@@ -896,13 +959,30 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
        * pushed well down, while the centre planet and its halo keep their full
        * presence as the subject. uDim is "how hidden", so higher = fainter.
        */
-      const skyDim = lightSkyRef.current ? 0.62 : 0;
+      const lit = lightSkyRef.current;
+      const skyDim = lit ? 0.62 : 0;
       const faint = (v) => Math.max(v, skyDim);
+      /*
+       * The ink planet needs normal blending to exist at all (additive light
+       * cannot subtract). Only `.blending` changes — it is fixed-function GL
+       * state, so it is NOT part of the program cache key and flipping it never
+       * recompiles the shader. Guarded anyway so we only touch it on a change.
+       */
+      centerMat.uniforms.uLight.value = lit ? 1 : 0;
+      const wantBlend = lit ? THREE.NormalBlending : THREE.AdditiveBlending;
+      if (centerMat.blending !== wantBlend) centerMat.blending = wantBlend;
+      bodyMesh.visible = lit;
+      bodyMesh.rotation.copy(centerPlanet.rotation);
+      bodyMesh.scale.copy(centerPlanet.scale);
+
       centerMat.uniforms.uDim.value = sceneDim;
-      haloMat.uniforms.uDim.value = sceneDim;
+      // Halo and the core glow are white additive light sitting ON the body.
+      // Over an ink planet they would eat the silhouette back out, so at dusk
+      // the halo steps back and the glow's core is all but switched off.
+      haloMat.uniforms.uDim.value = faint(sceneDim);
       starMat.uniforms.uDim.value = faint(sceneDim);
       if (dust) dustMat.uniforms.uDim.value = faint(sceneDim);
-      glowMat.uniforms.uDim.value = sceneDim;
+      glowMat.uniforms.uDim.value = lit ? Math.max(sceneDim, 0.94) : sceneDim;
       wispMat.uniforms.uDim.value = faint(sceneDim);
       for (const m of meteors) {
         if (m.active) m.line.material.opacity *= (1 - sceneDim * 0.85);
@@ -986,6 +1066,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       for (const [, entry] of smallPlanets) { scene.remove(entry.points); entry.mat.dispose(); }
       smallPlanets.clear();
       centerGeo.dispose(); centerMat.dispose();
+      bodyMesh.geometry.dispose(); bodyMesh.material.dispose();
       haloGeo.dispose(); haloMat.dispose();
       glowGeo.dispose(); glowMat.dispose();
       wispGeo.dispose(); wispMat.dispose();

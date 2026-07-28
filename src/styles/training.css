@@ -7896,6 +7896,36 @@
     text-shadow: 0 2px 14px rgba(0, 0, 0, 0.88), 0 0 16px rgba(232, 172, 78, 0.12);
 }
 
+/* ── Light appearance · domain page: an ink contour on the game planets ───
+ * What separates these orbs from the background on the black cosmos is their
+ * amber rim — and a rim is a GLOW. On paper it has nothing to glow against,
+ * so the circular crop of the art just fades out and the planets read as
+ * smudges. A hairline outline hugging the orb gives each one a drawn edge.
+ *
+ * Scoped to `.ct-domain-pick` on purpose: the mode constellation (Survival /
+ * Levels / Pass n Play) shares these same `.ct-mph-planet-*` parts but always
+ * sits on the forced black void of `--mode-cosmos`, where ink on ink would
+ * only remove the edge it is meant to draw. */
+[data-home-theme='light'] .ct-domain-pick .ct-mph-planet-img {
+    box-shadow:
+        0 16px 30px rgba(38, 26, 10, 0.3),
+        0 0 0 1.8px rgba(19, 14, 8, 0.9),
+        inset 0 -18px 30px rgba(0, 0, 0, 0.34);
+}
+
+/* The atmosphere hairline sits one pixel outside the orb — left warm it would
+   sit right beside the ink and double the contour. */
+[data-home-theme='light'] .ct-domain-pick .gpt-atmosphere {
+    border-color: rgba(19, 14, 8, 0.2);
+    box-shadow: inset 0 0 16px rgba(60, 40, 14, 0.1);
+}
+
+/* The wider orbit ring stays a ring; it only needs enough ink to exist. */
+[data-home-theme='light'] .ct-domain-pick .ct-mph-planet-ring {
+    border-color: rgba(19, 14, 8, 0.3);
+    opacity: 0.45;
+}
+
 @media (max-width: 480px) {
     .ct-domain-pick .gpt-constellation {
         gap: clamp(18px, 2.8vh, 25px);
