@@ -893,6 +893,28 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
   const skyText = dark ? '#f4ecd8' : INK;
   const skyTextShadow = dark ? '0 1px 4px rgba(0,0,0,0.8)' : '0 1px 3px rgba(255,255,255,0.85)';
   const skyMuted = dark ? 'rgba(244,236,216,0.7)' : 'rgba(45,34,16,0.65)';
+
+  /*
+   * Light appearance: every planet gets a drawn contour.
+   *
+   * On the dark sky the planets are separated by their own glow. On the pale
+   * one that glow has nothing to sit against, and the art dissolves into the
+   * background — pale herb on pale sky. The fix is an outline, but it has to
+   * follow the ARTWORK, not the orb: these icons are herbs, comets and hearts,
+   * so a ring drawn on the circle would float around a shape it does not
+   * touch. Four 1-pixel drop-shadows trace the actual alpha silhouette (the
+   * sticker outline trick) — four passes and no extra DOM. The plain colour
+   * discs, which really are circles, take a crisp ring instead.
+   */
+  const ORB_INK = '#000';
+  const orbArtFilter = dark
+    ? 'drop-shadow(0 3px 6px rgba(0,0,0,0.35))'
+    : `drop-shadow(1.3px 0 0 ${ORB_INK}) drop-shadow(-1.3px 0 0 ${ORB_INK})`
+      + ` drop-shadow(0 1.3px 0 ${ORB_INK}) drop-shadow(0 -1.3px 0 ${ORB_INK})`
+      + ' drop-shadow(0 4px 7px rgba(38,26,10,0.30))';
+  const orbDiscShadow = `0 0 0 1.6px ${ORB_INK}, 0 12px 26px rgba(38,26,10,0.24),`
+    + ' inset 0 -8px 18px rgba(0,0,0,0.16), inset 0 2px 10px rgba(255,255,255,0.30)';
+
   return (
     <div
       className="rx-root"
@@ -992,14 +1014,19 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
                 {c.id === 'sleep' && (
                   <span aria-hidden="true" className="rx-orb-ring" style={{ borderColor: c.color }} />
                 )}
-                <span className="rx-orb" style={{ background: planetIconUrl(c.id) ? `radial-gradient(circle, ${c.color}42 0%, ${c.color}20 55%, transparent 76%)` : c.color }}>
+                <span className="rx-orb" style={{
+                  background: planetIconUrl(c.id) ? `radial-gradient(circle, ${c.color}42 0%, ${c.color}20 55%, transparent 76%)` : c.color,
+                  // Only the flat colour discs are outlined here; the art
+                  // planets are outlined around their own silhouette below.
+                  ...(dark || planetIconUrl(c.id) ? null : { boxShadow: orbDiscShadow }),
+                }}>
                   {planetIconUrl(c.id) ? (
                     <img
                       src={planetIconUrl(c.id)}
                       alt=""
                       draggable={false}
                       style={{
-                        width: '80%', height: '80%', objectFit: 'contain', filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.35))',
+                        width: '80%', height: '80%', objectFit: 'contain', filter: orbArtFilter,
                         pointerEvents: 'none', WebkitUserDrag: 'none', WebkitTouchCallout: 'none', userSelect: 'none',
                       }}
                     />

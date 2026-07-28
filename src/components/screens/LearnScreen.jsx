@@ -1,99 +1,55 @@
-import React, { useState } from 'react';
+import React, { Suspense, useCallback, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import UniverseStage from '../shared/UniverseStage';
-import { useThemedChrome } from '../../hooks/useThemedChrome';
-import { LEARN_TOPICS } from './learn/topics';
-import LearnArticle from './learn/LearnArticle';
+import { lazyWithRetry } from '../../lib/lazyWithRetry';
+import { takePendingChapter } from '../../features/kawnera/pendingChapter';
 
 /**
- * Learn — evidence-based reads about cognition and the brain. Hub (topic
- * cards) → article. Starts with one topic (Attention); more get added the
- * same way rather than needing a redesign.
- * Full-bleed universe stage (same shell as Home / Other).
+ * Learn IS Kawnera — the psychology & cognition library, with Dr. Kawkab as
+ * the study companion. It used to be a hub of standalone articles and Kawnera
+ * lived under Home's universe; the library is the real Learn content, so it
+ * moved here and Home went back to being the sky alone.
+ *
+ * The tab router only mounts this screen while Learn is active, which is what
+ * keeps Dr. Kawkab's WebGL context from stacking on top of the universe's.
  */
+const KawneraExperience = lazyWithRetry(
+  () => import('../../features/kawnera/KawneraExperience'),
+  'kawnera-experience',
+);
+
 export default function LearnScreen() {
-  const { currentLang, playSfx, toggleLang } = useApp();
+  const { currentLang } = useApp();
   const isAr = currentLang === 'ar';
-  const chrome = useThemedChrome(isAr);
-  const [activeTopicId, setActiveTopicId] = useState(null);
-  const activeTopic = LEARN_TOPICS.find((t) => t.id === activeTopicId) || null;
+
+  // A body tapped in Home's sky parks its chapter here; claim it once, on the
+  // mount that the tab switch caused. Read during render (not in an effect) so
+  // the library opens straight onto the chapter rather than flashing the shelf.
+  const jumpTo = useMemo(() => takePendingChapter(), []);
+
+  // Kawnera's own "back to top" — #ui-shell is the scroller for every tab.
+  const navigateTop = useCallback((behavior = 'auto') => {
+    const shell = document.getElementById('ui-shell');
+    if (!shell) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    shell.scrollTo({ top: 0, behavior: reduced ? 'auto' : behavior });
+  }, []);
 
   return (
-    <div
-      className={`learn-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}
-      dir={isAr ? 'rtl' : 'ltr'}
+    <Suspense
+      fallback={
+        <div className="home-kawnera-loading" role="status">
+          <span />
+          <b>KAWNERA</b>
+          <small>{isAr ? 'يتم تحضير مكتبتك…' : 'Preparing your library…'}</small>
+        </div>
+      }
     >
-      <UniverseStage accent="learn" dark={chrome.dark} />
-      <div className="shop-stage-content">
-        {activeTopic ? (
-          <>
-            <button
-              type="button"
-              onClick={() => { playSfx?.('click'); setActiveTopicId(null); }}
-              style={{
-                ...chrome.chromeBtn,
-                width: 'auto',
-                alignSelf: isAr ? 'flex-end' : 'flex-start',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '8px 14px',
-                marginTop: 'max(16px, env(safe-area-inset-top))',
-                marginBottom: 16,
-                fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
-              {isAr ? 'تعلّم ›' : '‹ Learn'}
-            </button>
-            <LearnArticle topic={activeTopic} isAr={isAr} chrome={chrome} playSfx={playSfx} />
-          </>
-        ) : (
-          <>
-            <div className="app-chrome-bar" style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: 'max(16px, env(safe-area-inset-top)) 2px 14px', position: 'relative', zIndex: 5,
-            }}>
-              <div style={{ width: 34 }} />
-              <div style={{ ...chrome.title, fontSize: isAr ? 30 : 30, maxWidth: 300 }}>
-                {isAr ? 'تعلّم' : 'Learn'}
-              </div>
-              <button type="button" style={chrome.langBtn} onClick={toggleLang}>
-                {isAr ? 'EN' : 'عر'}
-              </button>
-            </div>
-            <p style={{ textAlign: 'center', fontSize: 13, color: chrome.muted, margin: '0 0 20px' }}>
-              {isAr ? 'مقالات مبنية على علم النفس عن الذاكرة والانتباه والدماغ.' : 'Evidence-based reads about memory, attention, and the brain.'}
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
-              {LEARN_TOPICS.map((topic) => (
-                <button
-                  key={topic.id}
-                  type="button"
-                  onClick={() => { playSfx?.('click'); setActiveTopicId(topic.id); }}
-                  style={chrome.glassCard}
-                >
-                  <span style={{ fontSize: 26, flexShrink: 0 }}>{topic.icon}</span>
-                  <span style={{ flex: 1 }}>
-                    <span style={{ display: 'block', fontWeight: 800, fontSize: 15 }}>
-                      {isAr && topic.titleAr ? topic.titleAr : topic.title}
-                    </span>
-                  </span>
-                  <span style={{ color: chrome.accent, fontSize: 18, flexShrink: 0 }}>{isAr ? '‹' : '›'}</span>
-                </button>
-              ))}
-
-              <div style={{ ...chrome.glassCard, cursor: 'default', opacity: 0.55, justifyContent: 'center', textAlign: 'center' }}>
-                <span style={{ fontSize: 13, fontWeight: 700 }}>
-                  {isAr ? 'المزيد من المواضيع قريباً' : 'More topics coming soon'}
-                </span>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+      <KawneraExperience
+        isAr={isAr}
+        isActive
+        onNavigateTop={navigateTop}
+        jumpTo={jumpTo}
+      />
+    </Suspense>
   );
 }

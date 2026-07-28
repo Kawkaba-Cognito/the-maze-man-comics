@@ -115,7 +115,7 @@ function PlanetMarkings({ domainId, col }) {
 }
 
 /** Domain planet — painted cosmos world with orbit / pulse / spark FX. */
-function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId }) {
+function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId, ink }) {
   const r = hovered ? 34 : 29;
   const dur = hovered ? 1.35 : 3.8;
   const phase = PLANET_PHASE[domainId] ?? 0;
@@ -246,6 +246,28 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId }) {
           strokeWidth={hovered ? 2.1 : 1.35}
           opacity={hovered ? 0.95 : 0.55}
         />
+
+        {/* Light appearance: an ink contour on top of the rim.
+            The accent rim is a GLOW — it works against the black map and
+            disappears against the paper one, leaving the painted worlds with
+            soft edges that read as smudges. A drawn outline gives them their
+            silhouette back. Two strokes, not one: a wide, very soft ring for
+            weight, then a crisp hairline for the actual edge, which is what
+            keeps it looking drawn rather than stuck on. */}
+        {ink && (
+          <>
+            <circle
+              cx="0" cy="0" r={r + 0.6}
+              fill="none" stroke="rgba(19,14,8,0.20)"
+              strokeWidth={hovered ? 4 : 3}
+            />
+            <circle
+              cx="0" cy="0" r={r}
+              fill="none" stroke="rgba(19,14,8,0.92)"
+              strokeWidth={hovered ? 1.9 : 1.45}
+            />
+          </>
+        )}
       </g>
 
       {/* Expanding energy pulses */}
@@ -762,6 +784,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                       hovered={isHovered}
                       bodyGradId={`planetBody-${s.id}`}
                       glowGradId={`planetGlow-${s.id}`}
+                      ink={!chrome.dark}
                     />
                   </g>
                 </g>
