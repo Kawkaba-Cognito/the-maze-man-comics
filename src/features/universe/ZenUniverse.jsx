@@ -1,9 +1,9 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+﻿import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { releaseGlContext } from '../training/shared/c3dViewport';
 
 /*
- * ZenUniverse — the Home screen's living 3D backdrop.
+ * ZenUniverse â€” the Home screen's living 3D backdrop.
  * Pure black space, twinkling stars, soft dust, occasional shooting stars,
  * a particle planet at the center (white on the night sky, ink on the lit one)
  * that dissolves locally where touched
@@ -19,6 +19,37 @@ import { releaseGlContext } from '../training/shared/c3dViewport';
  * aurora bands, atmosphere/core billboard glow, three orbiting comet wisps,
  * golden touch shockwave rings, slow axial precession.
  */
+
+/*
+ * â”€â”€ The light-appearance sky â”€â”€
+ *
+ * Chosen by the user from three directions built and compared side by side
+ * (the other two: Kawnera paper with the cosmos drawn in ink, and a near-flat
+ * warm cream "editorial" sky â€” both lost because a pale sky gives the planet's
+ * ember limb nothing to be an ember against).
+ *
+ * This is a DUSK, and deliberately a desaturated one. The version before it ran
+ * indigo â†’ rose â†’ fire â†’ gold across eight stops, and that much saturation over
+ * a full screen height reads as phone wallpaper rather than sky â€” it was the
+ * single thing the user kept calling fake. A real dusk is desaturated and cool
+ * at the zenith and compresses all of its warmth into a narrow band at the
+ * horizon, which is both more honest and what gives the planet's warm lower
+ * limb a cool field to sit against.
+ *
+ * Still a dusk rather than a bright sky for the original reason: every particle
+ * layer here is additive, and additive light on a bright field adds to nothing.
+ */
+const SKY = {
+  css: `linear-gradient(180deg,
+    #262c3c 0%, #343544 20%, #47404c 38%, #63504f 55%,
+    #8a6553 72%, #b8845d 86%, #ddaf80 100%)`,
+  bodyTop: [0.048, 0.052, 0.078],
+  bodyBot: [0.108, 0.072, 0.066],
+  rim: [1.0, 0.60, 0.30],
+  halo: [1.0, 0.70, 0.42],
+  star: [0.96, 0.94, 0.88],
+  bgDim: 0.5,
+};
 
 const CENTER_RADIUS = 1.35;
 const SMALL_RADIUS = 0.36;
@@ -88,7 +119,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
    * This scene was black-only and ignored the theme, so a light-mode app had one
    * screen that stayed a night sky. It is a DUSK sunset rather than a bright
    * one for a concrete reason: every particle layer here uses AdditiveBlending,
-   * and additive light on an already-bright field adds to nothing — the planet
+   * and additive light on an already-bright field adds to nothing â€” the planet
    * and stars would wash out completely against a pale sky. A real sunset is
    * dark at the zenith and on fire at the horizon, which is exactly the ramp
    * that keeps the particles readable.
@@ -128,7 +159,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const finePointer = window.matchMedia('(pointer: fine)').matches;
-    // Phones skip bloom — raise particle alpha / size so planets stay readable outdoors.
+    // Phones skip bloom â€” raise particle alpha / size so planets stay readable outdoors.
     const mobileBoost = finePointer ? 1 : 1.45;
 
     const scene = new THREE.Scene();
@@ -143,7 +174,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     /*
      * Survive a lost context.
      *
-     * This scene is deliberately NEVER unmounted (see HomeScreen — unmounting
+     * This scene is deliberately NEVER unmounted (see HomeScreen â€” unmounting
      * it on scroll was what killed the universe), so it holds a context for the
      * whole session while Kawnera, Dr. Kawkab and the training games each take
      * their own. Browsers cap concurrent contexts and evict the oldest, and the
@@ -161,7 +192,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     };
     const onContextRestored = () => {
       // Remount by signalling React, rather than trying to rebuild every
-      // buffer, shader and texture by hand — the scene graph is large and a
+      // buffer, shader and texture by hand â€” the scene graph is large and a
       // partial restore is worse than a clean one.
       setGlEpoch((n) => n + 1);
     };
@@ -187,6 +218,9 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         uBoost: { value: mobileBoost },
         uBreath: { value: 1 },
         uLight: { value: 0 },
+        uBodyTop: { value: new THREE.Vector3(...SKY.bodyTop) },
+        uBodyBot: { value: new THREE.Vector3(...SKY.bodyBot) },
+        uRim: { value: new THREE.Vector3(...SKY.rim) },
         uTouches: { value: touchPoints },
         uStarts: { value: touchStarts },
       },
@@ -206,7 +240,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         void main() {
           vec3 p = position;
           vec3 dir = normalize(position);
-          /* idle surface shimmer — a bit livelier */
+          /* idle surface shimmer â€” a bit livelier */
           p += dir * sin(uNow * 1.25 + aRand * 40.0) * (0.028 + uBreath * 0.008);
           float fade = 0.0;
           float spark = 0.0;
@@ -243,7 +277,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
           /* Light appearance: FINER sprites, not fatter. Coverage is the solid
              body's job now; fat sprites here only turned the limb into a
              pom-pom of chunky dots. Small ones make it atmospheric haze. */
-          gl_PointSize = aSize * (19.0 * uBoost * uBreath) * (1.0 - uLight * 0.42) / -mv.z
+          gl_PointSize = aSize * (19.0 * uBoost * uBreath) * (1.0 - uLight * 0.28) / -mv.z
             * (1.0 + vFade * 1.15 + vSpark * 0.8);
           gl_Position = projectionMatrix * mv;
         }
@@ -253,6 +287,9 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         uniform float uBoost;
         uniform float uBreath;
         uniform float uLight;
+        uniform vec3 uBodyTop;
+        uniform vec3 uBodyBot;
+        uniform vec3 uRim;
         varying float vFade;
         varying float vSpark;
         varying float vBand;
@@ -273,7 +310,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
           /* Light appearance: the planet is an INK body, not a white one.
              A white planet on a lit sky reads as a hole; the eye wants the
              subject dark against the sunset. Additive light can only ever add,
-             so it cannot darken anything — the material is flipped to normal
+             so it cannot darken anything â€” the material is flipped to normal
              blending from JS (see the frame loop) and this branch supplies the
              dark body, a warm sunset rim, and enough per-point alpha for the
              overlapping particles to build one solid silhouette. */
@@ -281,27 +318,26 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
              dusk silhouette is graded sky-plum to ember rather than black),
              one notch darker so the fuzzy edge reads as atmosphere over the
              limb instead of soot stuck to it. */
-          vec3 ink = mix(vec3(0.118, 0.044, 0.048), vec3(0.054, 0.030, 0.088),
-            clamp(vN.y * 0.5 + 0.5, 0.0, 1.0));
+          vec3 ink = mix(uBodyBot, uBodyTop, clamp(vN.y * 0.5 + 0.5, 0.0, 1.0));
           /* Directional, not a ring. An even warm rim all the way round is the
-             giveaway that nothing is actually lighting this — the sun is below
+             giveaway that nothing is actually lighting this â€” the sun is below
              the horizon, so it can only graze the lower limb. */
           float sunLit = pow(clamp(dot(vN, normalize(vec3(-0.20, -0.90, -0.38))), 0.0, 1.0), 2.2);
-          ink += vec3(1.0, 0.46, 0.18) * rim * (0.05 + 0.62 * sunLit);
+          ink += uRim * rim * (0.05 + 0.62 * sunLit);
 
           /* Touch: the shell tears open into EMBERS.
-             On the night sky a touch works by subtraction — bright particles
+             On the night sky a touch works by subtraction â€” bright particles
              scatter and fade, and the hole they leave is the effect. That is
              exactly backwards here: a black particle thrown off a black planet
              onto a dark sunset simply vanishes, so the same gesture produced
-             almost nothing. So the displaced points heat up instead — the
+             almost nothing. So the displaced points heat up instead â€” the
              further they are thrown the brighter they burn, from orange at the
              surface to near-white at the crest of the shockwave, and they keep
              their alpha on the way out so the spray stays a real object. */
           vec3 ember = mix(vec3(0.82, 0.34, 0.13), vec3(0.97, 0.74, 0.46), vSpark);
           ink = mix(ink, ember, clamp(vFade * 1.1, 0.0, 1.0) * 0.88);
           ink = mix(ink, vec3(0.99, 0.86, 0.62), vSpark * 0.8);
-          float inkAlpha = disc * (0.58 + 0.10 * vBand) * uBreath
+          float inkAlpha = disc * (0.68 + 0.10 * vBand) * uBreath
             * (1.0 - vFade * 0.3) + disc * vSpark * 0.45;
           col = mix(col, ink, uLight);
           alpha = mix(alpha, clamp(inkAlpha, 0.0, 1.0), uLight);
@@ -314,23 +350,28 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     scene.add(centerPlanet);
 
     /*
-     * Solid black body — light appearance only.
+     * Solid black body â€” light appearance only.
      *
      * A shell of surface points is at its SPARSEST where you look straight
      * through it: the limb stacks particle over particle, the middle does not.
      * So however black the particles are and however fat their sprites, the
-     * centre of the planet keeps showing sunset — it reads as a dark ring with
+     * centre of the planet keeps showing sunset â€” it reads as a dark ring with
      * a bright core. The only way to a genuinely black planet is to put a body
      * behind the shell.
      *
      * Deliberately OPAQUE rather than a transparent black: an opaque mesh
      * renders in the opaque pass, before every transparent layer, and writes
-     * depth — so it also correctly hides the back-hemisphere particles, the
+     * depth â€” so it also correctly hides the back-hemisphere particles, the
      * halo and any wisp passing behind. Left invisible on the night sky, where
      * the planet is meant to be luminous.
      */
     const bodyMat = new THREE.ShaderMaterial({
-      uniforms: { uNow: { value: 0 } },
+      uniforms: {
+        uNow: { value: 0 },
+        uTop: { value: new THREE.Vector3(...SKY.bodyTop) },
+        uBot: { value: new THREE.Vector3(...SKY.bodyBot) },
+        uRim: { value: new THREE.Vector3(...SKY.rim) },
+      },
       vertexShader: `
         varying vec3 vNv;
         varying vec3 vObj;
@@ -349,7 +390,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
        * Three things make a backlit planet read as real, and flat black has
        * none of them:
        *
-       * 1. AIRLIGHT. Nothing silhouetted against a lit sky is ever pure black —
+       * 1. AIRLIGHT. Nothing silhouetted against a lit sky is ever pure black â€”
        *    the haze between you and it scatters skylight into the line of
        *    sight, so a shadow takes on the colour of the sky around it. That is
        *    why the body is graded from the same plum the zenith uses down to
@@ -359,9 +400,12 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
        *    limb. A Fresnel term restricted to the normals facing the sun puts a
        *    warm crescent there and nowhere else.
        * 3. FORM. A disc of one colour has no volume. Slow banding across the
-       *    body — rotating with it, at low contrast — makes it a world.
+       *    body â€” rotating with it, at low contrast â€” makes it a world.
        */
       fragmentShader: `
+        uniform vec3 uTop;
+        uniform vec3 uBot;
+        uniform vec3 uRim;
         varying vec3 vNv;
         varying vec3 vObj;
         varying vec3 vView;
@@ -370,36 +414,65 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
 
           /* Vertical grade, read off the sky: plum above, ember below. */
           float h = clamp(vNv.y * 0.5 + 0.5, 0.0, 1.0);
-          vec3 body = mix(vec3(0.152, 0.055, 0.058), vec3(0.068, 0.036, 0.116), h);
+          vec3 body = mix(uBot, uTop, h);
 
           /* Low-contrast belts so it has volume; they turn with the planet. */
           float band = 0.5 + 0.5 * sin(vObj.y * 6.5 + sin(vObj.x * 3.4) * 1.15);
           float fleck = 0.5 + 0.5 * sin(vObj.x * 17.0 + vObj.z * 13.0);
           body *= 0.88 + 0.21 * band + 0.03 * fleck;
 
-          /* The sun, below the horizon and slightly behind — a warm graze that
+          /*
+           * VOIDS â€” the porosity the night-sky planet has.
+           *
+           * That one is nothing but particles, so you see through it and it
+           * breathes. Filling the light-mode version with an opaque body was
+           * what made the middle solid, and solid is what made it a disc. So
+           * the body keeps its job of stopping the sunset flooding through the
+           * particle gaps, but only where it is actually wanted: low-frequency
+           * noise opens real holes across the face, and the shell, the halo and
+           * the sky show through them.
+           *
+           * The LIMB is deliberately excluded (the fres term below): voids that
+           * eat the outline would dissolve the silhouette and take the
+           * atmosphere ring with it. Holes in the face read as a world you can
+           * see into; holes in the edge just read as a broken render.
+           */
+          float n = sin(vObj.x * 2.3 + 1.7) * sin(vObj.y * 2.9 - 0.6) * sin(vObj.z * 2.1 + 2.4);
+          n = n * 0.5 + 0.5;
+          /* Even the closed regions stay slightly open (0.82), so the sky reads
+             faintly through the whole body and the planet breathes the way the
+             night one does â€” the voids are the loud version of a porosity that
+             is everywhere. */
+          float solid = smoothstep(0.34, 0.66, n) * 0.82;
+          float alpha = clamp(mix(solid, 0.95, fres * 0.75), 0.0, 1.0);
+
+          /* The sun, below the horizon and slightly behind â€” a warm graze that
              can only land on the lower limb. */
           vec3 sunDir = normalize(vec3(-0.20, -0.90, -0.38));
           float sunK = clamp(dot(vNv, sunDir), 0.0, 1.0);
-          body += vec3(1.0, 0.46, 0.17) * pow(sunK, 2.2) * fres * 1.9;
+          body += uRim * pow(sunK, 2.2) * fres * 1.9;
 
           /* Residual skyglow on the rest of the limb, so the edge never goes
-             hard against the sky — and so the top of the planet, which sits
-             plum-on-plum, still separates from it. */
-          body += vec3(0.46, 0.22, 0.30) * fres * 0.46;
+             hard against the sky â€” and so the top of the planet, which can sit
+             tone-on-tone with the zenith, still separates from it. */
+          body += uRim * fres * 0.20;
 
-          gl_FragColor = vec4(body, 1.0);
+          gl_FragColor = vec4(body, alpha);
         }
       `,
+      transparent: true,
+      depthWrite: false,
     });
     const bodyMesh = new THREE.Mesh(
       new THREE.SphereGeometry(CENTER_RADIUS * 0.98, 64, 48),
       bodyMat,
     );
     bodyMesh.visible = false;
+    // Behind the particle shell: the shell is the subject, this only backs it.
+    bodyMesh.renderOrder = -1;
     scene.add(bodyMesh);
 
-    // Soft additive halo — readable glow on phones; keep desktop sparse
+    // Soft additive halo â€” readable glow on phones; keep desktop sparse
     const HALO_COUNT = finePointer ? 220 : 480;
     const haloGeo = makeHaloRingAttributes(HALO_COUNT, CENTER_RADIUS * 1.38);
     const haloMat = new THREE.ShaderMaterial({
@@ -412,6 +485,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         uBoost: { value: mobileBoost },
         uBreath: { value: 1 },
         uLight: { value: 0 },
+        uWarm: { value: new THREE.Vector3(...SKY.halo) },
       },
       vertexShader: `
         attribute float aRand;
@@ -436,16 +510,17 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         uniform float uDim;
         uniform float uBoost;
         uniform float uLight;
+        uniform vec3 uWarm;
         varying float vAlpha;
         void main() {
           float d = length(gl_PointCoord - 0.5);
           float alpha = smoothstep(0.5, 0.05, d) * vAlpha * 0.08 * uBoost * (1.0 - uDim * 0.9);
           /* At dusk this stops being a cold corona and becomes the planet's
-             atmosphere lit from behind — the single strongest cue that a dark
+             atmosphere lit from behind â€” the single strongest cue that a dark
              body is a world with air around it rather than a hole in the sky.
              Warm, and stronger, because it now has to survive a lit sky. */
           alpha *= mix(1.0, 2.4, uLight);
-          vec3 col = mix(vec3(0.70, 0.80, 0.95), vec3(1.0, 0.60, 0.30), uLight);
+          vec3 col = mix(vec3(0.70, 0.80, 0.95), uWarm, uLight);
           gl_FragColor = vec4(col, clamp(alpha, 0.0, 1.0));
         }
       `,
@@ -490,7 +565,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
           float outer = exp(-d * 2.6);
           /* The core is the glow INSIDE the disc. On the night sky it is the
              planet's own light; over a solid dusk body it would just be a
-             white smear on the surface, so it switches off — and the opaque
+             white smear on the surface, so it switches off â€” and the opaque
              body clips this plane anyway, leaving only the outer halo. */
           float core = exp(-d * d * 26.0) * (1.0 + (uBreath - 1.0) * 6.0)
             * (1.0 - uLight);
@@ -507,7 +582,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     const glow = new THREE.Mesh(glowGeo, glowMat);
     scene.add(glow);
 
-    // ---------- Orbiting light wisps — three comet trails circling the planet ----------
+    // ---------- Orbiting light wisps â€” three comet trails circling the planet ----------
     const WISP_ORBITS = [
       { r: CENTER_RADIUS * 1.55, speed: 0.5, tiltX: 0.55, tiltZ: 0.3, col: [1.0, 0.85, 0.58] },
       { r: CENTER_RADIUS * 1.85, speed: -0.36, tiltX: -0.72, tiltZ: 0.18, col: [0.62, 0.85, 1.0] },
@@ -627,7 +702,11 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: { uNow: { value: 0 }, uDim: { value: 0 } },
+      uniforms: {
+        uNow: { value: 0 },
+        uDim: { value: 0 },
+        uCol: { value: new THREE.Vector3(0.85, 0.82, 0.72) },
+      },
       vertexShader: `
         attribute float aPhase;
         attribute float aSpeed;
@@ -646,18 +725,19 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       `,
       fragmentShader: `
         uniform float uDim;
+        uniform vec3 uCol;
         varying float vAlpha;
         void main() {
           float d = length(gl_PointCoord - 0.5);
           float alpha = smoothstep(0.5, 0.1, d) * vAlpha * 0.45 * (1.0 - uDim * 0.85);
-          gl_FragColor = vec4(0.85, 0.82, 0.72, alpha);
+          gl_FragColor = vec4(uCol, alpha);
         }
       `,
     });
     scene.add(new THREE.Points(starGeo, starMat));
 
     // ---------- Soft cosmic dust (fills the void, very cheap) ----------
-    // Desktop: skip dust — additive haze was the main "white stuff" on wide screens.
+    // Desktop: skip dust â€” additive haze was the main "white stuff" on wide screens.
     const DUST_COUNT = finePointer ? 0 : 350;
     const dPos = new Float32Array(DUST_COUNT * 3);
     const dRand = new Float32Array(DUST_COUNT);
@@ -970,7 +1050,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     }
     renderer.domElement.addEventListener('pointerdown', onPointerDown);
 
-    // Bloom off for now — even a soft UnrealBloomPass milks the void white
+    // Bloom off for now â€” even a soft UnrealBloomPass milks the void white
     // on wide desktop monitors when stacked with additive particles.
     let composer = null;
     let bloomPass = null;
@@ -1042,16 +1122,18 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       sceneDim += Math.max(-dimStep, Math.min(dimStep, (anyMorph ? 1 : 0) - sceneDim));
       /*
        * At dusk the faint background layers have to step back. Stars near the
-       * horizon of a lit sky are not dim stars, they are grain — so they are
+       * horizon of a lit sky are not dim stars, they are grain â€” so they are
        * pushed well down, while the centre planet and its halo keep their full
        * presence as the subject. uDim is "how hidden", so higher = fainter.
        */
       const lit = lightSkyRef.current;
-      const skyDim = lit ? 0.62 : 0;
+      const skyDim = lit ? SKY.bgDim : 0;
+      // Stars warm very slightly against the dusk, cool back over black.
+      starMat.uniforms.uCol.value.set(...(lit ? SKY.star : [0.85, 0.82, 0.72]));
       const faint = (v) => Math.max(v, skyDim);
       /*
        * The ink planet needs normal blending to exist at all (additive light
-       * cannot subtract). Only `.blending` changes — it is fixed-function GL
+       * cannot subtract). Only `.blending` changes â€” it is fixed-function GL
        * state, so it is NOT part of the program cache key and flipping it never
        * recompiles the shader. Guarded anyway so we only touch it on a change.
        */
@@ -1066,7 +1148,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       glowMat.uniforms.uLight.value = lit ? 1 : 0;
 
       centerMat.uniforms.uDim.value = sceneDim;
-      // Halo and glow keep their full presence at dusk — recoloured warm, they
+      // Halo and glow keep their full presence at dusk â€” recoloured warm, they
       // ARE the backlit atmosphere around the body rather than a corona over
       // it. Only the background layers step back (see skyDim).
       haloMat.uniforms.uDim.value = sceneDim;
@@ -1123,7 +1205,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     }
     frame();
 
-    // Two independent reasons to stop drawing — the tab being hidden, and the
+    // Two independent reasons to stop drawing â€” the tab being hidden, and the
     // scene being scrolled off-screen. They must COMPOSE: tabbing away and back
     // while Kawnera covers the universe should not restart it.
     let pageVisible = document.visibilityState === 'visible';
@@ -1186,13 +1268,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         position: 'absolute',
         inset: 0,
         overflow: 'hidden',
-        background: lightSky
-          /* Dusk: indigo zenith → rose → fire → warm haze at the horizon. */
-          ? `linear-gradient(180deg,
-              #1b1033 0%, #33163f 18%, #5c2449 36%,
-              #96384b 54%, #cb5c3f 70%, #e8894a 83%,
-              #f4b16b 93%, #f8cf9c 100%)`
-          : '#000',
+        background: lightSky ? SKY.css : '#000',
       }}
     />
   );
