@@ -272,6 +272,7 @@ export default function AssessmentMascot3D({ size = 150, onActivate, isAr, label
   return (
     <div
       ref={wrapRef}
+      className="kawkab-stage"
       role="button"
       tabIndex={0}
       aria-label={label || (isAr ? 'ابدأ التقييم' : 'Start assessment')}

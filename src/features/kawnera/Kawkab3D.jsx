@@ -189,12 +189,21 @@ export default function Kawkab3D({ active, mentor, act }) {
       canvasEl.addEventListener('webglcontextlost', onContextLost);
       canvasEl.addEventListener('webglcontextrestored', onContextRestored);
 
-      scene.add(new THREE.HemisphereLight(0xf5f2e9, 0x17211f, 2.6));
-      const keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
+      /*
+       * Lit for the medallion he stands on (see .kawkab-stage in global.css),
+       * not for paper. The old rig was a flat 2.6 hemisphere plus a white 3.2
+       * key — on a white suit that is clipping: every surface arrived at the
+       * same paper white, so the figure had no modelling and nothing to
+       * separate him from a pale page. A dimmer, cooler ambient gives the
+       * shadow side somewhere to go, the key stays warm, and an amber rim from
+       * behind draws his edge against the disc.
+       */
+      scene.add(new THREE.HemisphereLight(0xe9deff, 0x241436, 1.9));
+      const keyLight = new THREE.DirectionalLight(0xfff0dc, 2.5);
       keyLight.position.set(2, 3, 4);
       scene.add(keyLight);
-      const rimLight = new THREE.DirectionalLight(0x8edbd1, 2);
-      rimLight.position.set(-3, 1, -2);
+      const rimLight = new THREE.DirectionalLight(0xffb066, 2.4);
+      rimLight.position.set(-3, 1.4, -2.6);
       scene.add(rimLight);
 
       const character = new THREE.Group();
@@ -319,5 +328,5 @@ export default function Kawkab3D({ active, mentor, act }) {
     };
   }, [playAnimation, glEpoch]);
 
-  return <span ref={mountRef} className="kawkab3d" aria-hidden="true" />;
+  return <span ref={mountRef} className="kawkab3d kawkab-stage" aria-hidden="true" />;
 }
