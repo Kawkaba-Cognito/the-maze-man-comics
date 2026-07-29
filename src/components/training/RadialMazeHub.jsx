@@ -40,12 +40,12 @@ const L = {
 };
 
 const DOMAIN_LABEL_AR = {
-  attention: 'انتباه',
-  speed: 'سرعة',
-  memory: 'ذاكرة',
-  language: 'لغة',
-  reasoning: 'تفكير',
-  flexibility: 'مرونة',
+  attention: 'الانتباه',
+  speed: 'السرعة',
+  memory: 'الذاكرة',
+  language: 'اللغة',
+  reasoning: 'الاستدلال',
+  flexibility: 'المرونة',
 };
 
 /** Short, friendly planet captions (EN). */
@@ -120,7 +120,6 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId, ink }) {
   const dur = hovered ? 1.35 : 3.8;
   const phase = PLANET_PHASE[domainId] ?? 0;
   const artUrl = domainPlanetUrl(domainId);
-  const clipId = `rh-planet-clip-${domainId}`;
   const sparks = hovered
     ? [
         { x: -r * 1.05, y: -r * 0.55, s: 1.6 },
@@ -136,12 +135,6 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId, ink }) {
 
   return (
     <g className={`rh-domain-planet${hovered ? ' is-hot' : ''}`}>
-      <defs>
-        <clipPath id={clipId}>
-          <circle cx="0" cy="0" r={r} />
-        </clipPath>
-      </defs>
-
       {/* Ground shadow */}
       <ellipse cx="2" cy={r + 10} rx={r * 0.82} ry={r * 0.26} fill="rgba(0,0,0,0.4)" />
 
@@ -207,26 +200,37 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId, ink }) {
         />
 
         {artUrl ? (
-          <g clipPath={`url(#${clipId})`}>
-            <image
-              href={artUrl}
-              x={-r * 1.08}
-              y={-r * 1.08}
-              width={r * 2.16}
-              height={r * 2.16}
-              preserveAspectRatio="xMidYMid slice"
-            />
-            {/* Specular + limb darkening so flat art reads as a sphere */}
-            <ellipse
-              cx={-r * 0.28} cy={-r * 0.34}
-              rx={r * 0.42} ry={r * 0.28}
-              fill="rgba(255,252,240,0.22)"
-            />
-            <circle
-              cx="0" cy="0" r={r}
-              fill="url(#rh-planet-shade)"
-            />
-          </g>
+          <foreignObject
+            x={-r - 5}
+            y={-r - 5}
+            width={(r + 5) * 2}
+            height={(r + 5) * 2}
+            overflow="visible"
+            style={{ pointerEvents: 'none' }}
+          >
+            <div
+              xmlns="http://www.w3.org/1999/xhtml"
+              className={`rh-planet3d rh-planet3d--${domainId}`}
+              style={{ '--rh-planet-color': col }}
+            >
+              <span className="rh-planet3d__atmosphere" />
+              <span className="rh-planet3d__sphere">
+                <span
+                  className="rh-planet3d__surface"
+                  style={{
+                    backgroundImage: `url("${artUrl}")`,
+                    animationDelay: `-${phase}s`,
+                  }}
+                />
+                <span
+                  className="rh-planet3d__weather"
+                  style={{ animationDelay: `-${phase * 1.4}s` }}
+                />
+                <span className="rh-planet3d__terminator" />
+                <span className="rh-planet3d__glint" />
+              </span>
+            </div>
+          </foreignObject>
         ) : (
           <>
             <circle cx="0" cy="0" r={r} fill={`url(#${bodyGradId})`} stroke={col} strokeWidth={hovered ? 2.2 : 1.55} />
@@ -388,7 +392,7 @@ function mazeCorridorD(domainId, shrines, nexus) {
 export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
   const { currentLang, toggleLang, playSfx, switchTab } = useApp();
   const isAr = currentLang === 'ar';
-  const chrome = useThemedChrome(isAr);
+  const chrome = useThemedChrome(isAr, { universe: true });
   const [hovered, setHovered] = useState(null);
   const [tick, setTick] = useState(0);
   const [reducedMotion] = useState(prefersReducedMotion);
@@ -482,14 +486,14 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
 
   return (
     <div
-      className={`app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}
+      className={`app-stage app-stage--universe app-stage--${chrome.dark ? 'dark' : 'light'}`}
       style={{
         minHeight: '100%', ...chrome.shell,
         fontFamily: 'Outfit, system-ui, sans-serif', position: 'relative',
         paddingBottom: 110, overflowX: 'hidden', overflowY: 'visible',
       }}
     >
-      <UniverseStage accent="training" dark={chrome.dark} />
+      <UniverseStage accent="training" dark={chrome.dark} homeDusk />
 
       {/* Top bar — sticky so “Training” stays visible while the hub scrolls */}
       <div className="app-chrome-bar" style={{
@@ -498,12 +502,20 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
         position: 'sticky', top: 0, zIndex: 20,
         background: chrome.dark
           ? 'linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 65%, rgba(0,0,0,0) 100%)'
-          : 'linear-gradient(180deg, rgba(255,252,246,0.94) 0%, rgba(255,252,246,0.78) 65%, transparent 100%)',
+          : 'linear-gradient(180deg, rgba(38,44,60,0.94) 0%, rgba(52,53,68,0.76) 65%, transparent 100%)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
       }}>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }} />
-        <div style={{ ...chrome.title, maxWidth: 300, fontSize: isAr ? 30 : 30 }}>
+        <div style={{
+          ...chrome.title,
+          maxWidth: 300,
+          fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
+          fontSize: isAr ? 30 : 31,
+          fontWeight: 800,
+          letterSpacing: isAr ? 0 : 0.35,
+          textTransform: 'none',
+        }}>
           {isAr ? 'تدريب' : 'Training'}
         </div>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
@@ -521,11 +533,11 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
         margin: '4px auto 0', maxWidth: 330, padding: '0 22px',
         textAlign: 'center', color: chrome.muted,
         fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-        fontSize: 13, lineHeight: 1.5, fontWeight: 500,
+        fontSize: 14, lineHeight: 1.55, fontWeight: 500,
       }}>
         {isAr
-          ? 'اختر عالمًا لتتدرّب — أو المس المركز لتقييم شامل'
-          : 'Tap a world to train — or the center for a full check-in'}
+          ? 'اختر مجالًا لبدء التدريب، أو اضغط على المركز لإجراء تقييم شامل.'
+          : 'Choose a world to begin training, or tap the center for a full assessment.'}
       </p>
 
       {/*
@@ -730,14 +742,18 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               y={LY.nexus[1] + 52}
               textAnchor="middle"
               fill={chrome.text}
-              stroke={chrome.dark ? 'rgba(8,4,2,0.9)' : 'rgba(255,252,246,0.9)'}
-              strokeWidth="3.2"
+              stroke="rgba(24,16,30,0.9)"
+              strokeWidth="2.2"
+              strokeLinejoin="round"
               paintOrder="stroke fill"
+              direction={isAr ? 'rtl' : 'ltr'}
+              lang={isAr ? 'ar' : 'en'}
               style={{
                 fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-                fontSize: isAr ? 12.5 : 13.5,
-                fontWeight: 800,
-                letterSpacing: isAr ? 0 : 0.02,
+                fontSize: isAr ? 18 : 18.5,
+                fontWeight: 700,
+                letterSpacing: isAr ? 0 : 0.2,
+                textRendering: 'geometricPrecision',
                 pointerEvents: 'none',
               }}
             >
@@ -784,19 +800,23 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                       hovered={isHovered}
                       bodyGradId={`planetBody-${s.id}`}
                       glowGradId={`planetGlow-${s.id}`}
-                      ink={!chrome.dark}
+                      ink={false}
                     />
                   </g>
                 </g>
-                <text x={s.x} y={s.y + 48} textAnchor="middle" fill={chrome.text}
-                  stroke={chrome.dark ? 'rgba(8,4,2,0.9)' : 'rgba(255,252,246,0.9)'}
-                  strokeWidth="3.2"
+                <text x={s.x} y={s.y + 51} textAnchor="middle" fill={chrome.text}
+                  stroke="rgba(24,16,30,0.9)"
+                  strokeWidth="2.2"
+                  strokeLinejoin="round"
                   paintOrder="stroke fill"
+                  direction={isAr ? 'rtl' : 'ltr'}
+                  lang={isAr ? 'ar' : 'en'}
                   style={{
                     fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-                    fontSize: isAr ? 12.5 : 13.5,
-                    fontWeight: 800,
-                    letterSpacing: isAr ? 0 : 0.02,
+                    fontSize: isAr ? 18 : 18.5,
+                    fontWeight: 700,
+                    letterSpacing: isAr ? 0 : 0.2,
+                    textRendering: 'geometricPrecision',
                   }}>
                   {domainDoorLabel(s.id, isAr)}
                 </text>

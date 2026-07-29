@@ -54,6 +54,14 @@ const BLOBS_LIGHT = [
   { x: '42%', y: '52%', w: 480, h: 320, c: 'rgba(226,214,186,0.42)', dur: 42 },
 ];
 
+/* The seven-stop Home dusk already carries the broad colour movement, so its
+   extra nebulae stay restrained and atmospheric. */
+const BLOBS_DUSK = [
+  { x: '4%', y: '8%', w: 380, h: 250, c: 'rgba(132,148,194,0.16)', dur: 30 },
+  { x: '56%', y: '18%', w: 430, h: 280, c: 'rgba(184,118,103,0.18)', dur: 36 },
+  { x: '36%', y: '60%', w: 480, h: 320, c: 'rgba(244,169,101,0.14)', dur: 42 },
+];
+
 /*
  * Kawnera's --accent (#a8792b), used for the few loose flecks light mode keeps.
  *
@@ -65,16 +73,18 @@ const BLOBS_LIGHT = [
  * one more thing competing with the content.
  */
 const GOLD_STAR = 'rgba(168, 121, 43, 0.5)';
+const DUSK_STAR = 'rgba(255, 239, 211, 0.78)';
 
 export default function UniverseStage({
   accent = 'default',
   shootingStar,
   dark: darkProp,
+  homeDusk = false,
 }) {
   const { appTheme } = useApp();
   const dark = darkProp ?? appTheme !== 'light';
   const key = BLOBS_DARK[accent] ? accent : 'default';
-  const blobs = dark ? BLOBS_DARK[key] : BLOBS_LIGHT;
+  const blobs = dark ? BLOBS_DARK[key] : (homeDusk ? BLOBS_DUSK : BLOBS_LIGHT);
   const showShoot = shootingStar ?? dark;
 
   const stars = useMemo(
@@ -85,27 +95,31 @@ export default function UniverseStage({
         // Light: keep the scatter in the upper band, where the sky is still blue
         // enough to hold a point. Lower down it is warm cream and a star there is
         // just a mark on paper.
-        top: dark ? `${seed(i, 2) * 100}%` : `${8 + seed(i, 2) * 30}%`,
+        top: dark
+          ? `${seed(i, 2) * 100}%`
+          : `${8 + seed(i, 2) * (homeDusk ? 64 : 30)}%`,
         width: sz,
         height: sz,
         opacity: dark ? 0.25 + seed(i, 4) * 0.5 : 0.28 + seed(i, 4) * 0.34,
-        background: dark ? undefined : GOLD_STAR,
+        background: dark ? undefined : (homeDusk ? DUSK_STAR : GOLD_STAR),
         boxShadow: sz > 2.7
           ? (dark
             ? '0 0 6px 1px rgba(255,255,255,0.55)'
-            : '0 0 5px 1px rgba(214,168,74,0.35)')
+            : (homeDusk
+              ? '0 0 6px 1px rgba(255,224,184,0.36)'
+              : '0 0 5px 1px rgba(214,168,74,0.35)'))
           : 'none',
         animationDuration: `${2.6 + seed(i, 5) * 4}s`,
         animationDelay: `-${seed(i, 6) * 5}s`,
       };
     }),
-    [dark],
+    [dark, homeDusk],
   );
 
   return (
     <div
       aria-hidden="true"
-      className={`uv-stage uv-stage--${dark ? 'dark' : 'light'} uv-stage--${key}`}
+      className={`uv-stage uv-stage--${dark ? 'dark' : 'light'} uv-stage--${key}${homeDusk ? ' uv-stage--home' : ''}`}
     >
       {blobs.map((b, i) => (
         <span
@@ -136,6 +150,18 @@ export default function UniverseStage({
             boxShadow: '0 0 28px 8px rgba(246,240,214,0.1)',
           }}
         />
+      ) : homeDusk ? (
+        <span
+          className="uv-celestial"
+          style={{
+            right: '9%',
+            top: '11%',
+            width: 34,
+            height: 34,
+            background: 'radial-gradient(circle at 38% 34%, rgba(255,246,221,0.9) 0%, rgba(236,202,154,0.46) 56%, transparent 74%)',
+            boxShadow: '0 0 38px 12px rgba(255,214,158,0.16)',
+          }}
+        />
       ) : (
         /* Not a sun — a warm pool of lamplight on the page. A sun is a thing in
            a sky, and this ground is paper; the old near-white disc with its wide
@@ -160,7 +186,7 @@ export default function UniverseStage({
         <span key={`s${i}`} className="uv-star" style={s} />
       ))}
 
-      {dark && <span className="uv-kawkab-glow" />}
+      {(dark || homeDusk) && <span className="uv-kawkab-glow" />}
       {showShoot && <span className="uv-shoot" />}
 
       <span
@@ -168,7 +194,9 @@ export default function UniverseStage({
         style={{
           background: dark
             ? 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 100%)'
-            : 'linear-gradient(180deg, transparent 0%, rgba(233,227,210,0.55) 100%)',
+            : homeDusk
+              ? 'linear-gradient(180deg, transparent 0%, rgba(42,28,39,0.24) 100%)'
+              : 'linear-gradient(180deg, transparent 0%, rgba(233,227,210,0.55) 100%)',
         }}
       />
       <span
@@ -179,7 +207,9 @@ export default function UniverseStage({
             /* Paper gets a vignette rather than a top-lit wash: a sheet darkens
                slightly at its edges where it curls, which is the opposite of the
                sky's brighter-toward-the-light reading. */
-            : 'radial-gradient(ellipse 128% 92% at 50% 42%, transparent 62%, rgba(196,183,152,0.2) 100%)',
+            : homeDusk
+              ? 'radial-gradient(ellipse 128% 92% at 50% 42%, transparent 58%, rgba(20,14,28,0.34) 100%)'
+              : 'radial-gradient(ellipse 128% 92% at 50% 42%, transparent 62%, rgba(196,183,152,0.2) 100%)',
         }}
       />
     </div>

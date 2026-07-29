@@ -130,7 +130,7 @@ function SupportPanel({ isAr, chrome, onBack, playSfx }) {
 export default function OtherScreen() {
   const { switchTab, currentLang, playSfx, profileData, toggleLang, appTheme, setAppTheme } = useApp();
   const isAr = currentLang === 'ar';
-  const chrome = useThemedChrome(isAr);
+  const chrome = useThemedChrome(isAr, { universe: true });
   const [view, setView] = useState('menu');
   const [showAbout, setShowAbout] = useState(false);
 
@@ -143,7 +143,7 @@ export default function OtherScreen() {
   if (view === 'awards') {
     return (
       <div className={`other-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}>
-        <UniverseStage accent="other" dark={chrome.dark} />
+        <UniverseStage accent="other" dark={chrome.dark} homeDusk />
         <AwardsPanel
           isAr={isAr}
           chrome={chrome}
@@ -156,7 +156,7 @@ export default function OtherScreen() {
   if (view === 'appearance') {
     return (
       <div className={`other-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}>
-        <UniverseStage accent="other" dark={chrome.dark} />
+        <UniverseStage accent="other" dark={chrome.dark} homeDusk />
         <AppearancePanel
           isAr={isAr}
           chrome={chrome}
@@ -171,7 +171,7 @@ export default function OtherScreen() {
   if (view === 'support') {
     return (
       <div className={`other-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}>
-        <UniverseStage accent="other" dark={chrome.dark} />
+        <UniverseStage accent="other" dark={chrome.dark} homeDusk />
         <SupportPanel
           isAr={isAr}
           chrome={chrome}
@@ -194,7 +194,7 @@ export default function OtherScreen() {
       className={`other-screen app-stage app-stage--${chrome.dark ? 'dark' : 'light'}`}
       dir={isAr ? 'rtl' : 'ltr'}
     >
-      <UniverseStage accent="other" dark={chrome.dark} />
+      <UniverseStage accent="other" dark={chrome.dark} homeDusk />
       <div className="other-content">
         <div className="app-chrome-bar other-top">
           <div style={{ width: 34 }} />

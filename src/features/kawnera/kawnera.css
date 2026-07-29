@@ -992,6 +992,120 @@
   }
 }
 
+/* Learn landing: Home's sky outside, paper only after a book is opened. */
+.kawnera-app.kawnera-app--universe {
+  --paper: transparent;
+  min-height: 100dvh;
+  background: var(--universe-dusk);
+  color: var(--universe-ink);
+}
+
+html[data-home-theme='dark'] .kawnera-app.kawnera-app--universe {
+  background: #000;
+}
+
+.kawnera-app--universe header {
+  color: var(--universe-ink);
+  background: rgba(38, 44, 60, 0.84);
+  border-bottom-color: var(--universe-line);
+  box-shadow: 0 8px 26px rgba(21, 15, 29, 0.22);
+}
+
+html[data-home-theme='dark'] .kawnera-app--universe header {
+  background: rgba(5, 5, 10, 0.86);
+}
+
+.kawnera-app--universe .brandName small,
+.kawnera-app--universe .count {
+  color: var(--universe-accent);
+}
+
+.kawnera-app--universe nav button {
+  color: var(--universe-muted);
+}
+
+.kawnera-app--universe nav .on {
+  color: var(--universe-ink);
+  background: rgba(240, 182, 106, 0.2);
+  box-shadow: inset 0 0 0 1px var(--universe-line);
+}
+
+.kawnera-app--universe .shelfHero {
+  color: var(--universe-ink);
+  background:
+    radial-gradient(ellipse 52% 42% at 82% 24%, rgba(240, 182, 106, 0.15), transparent 72%),
+    radial-gradient(ellipse 56% 48% at 12% 20%, rgba(126, 143, 191, 0.15), transparent 72%);
+}
+
+.kawnera-app--universe .shelfHero::after {
+  opacity: 0.28;
+  background-image: radial-gradient(rgba(255, 239, 216, 0.62) 0.8px, transparent 0.9px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(90deg, transparent, black 48%, transparent);
+}
+
+.kawnera-app--universe .shelfHero > small,
+.kawnera-app--universe .shelfHero h1 i {
+  color: var(--universe-accent);
+}
+
+.kawnera-app--universe .shelfHero > p {
+  color: var(--universe-muted);
+}
+
+.kawnera-app--universe .shelfHero label {
+  color: var(--universe-ink);
+  background: var(--universe-glass-strong);
+  border-color: var(--universe-line);
+  box-shadow: 0 8px 24px rgba(22, 15, 30, 0.28);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.kawnera-app--universe .shelfHero input::placeholder {
+  color: rgba(255, 239, 216, 0.56);
+}
+
+.kawnera-app--universe .shelf {
+  color: var(--universe-ink);
+  background: linear-gradient(180deg, rgba(33, 25, 40, 0.12), rgba(25, 19, 34, 0.38));
+}
+
+.kawnera-app--universe .shelfHead {
+  color: var(--universe-muted);
+  border-bottom-color: var(--universe-line);
+}
+
+.kawnera-app--universe .bookCard {
+  color: var(--universe-ink);
+  background: var(--universe-glass);
+  border-color: var(--universe-line);
+  box-shadow: 0 8px 24px rgba(22, 15, 30, 0.24);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.kawnera-app--universe .bookCard:hover {
+  box-shadow: 0 14px 30px rgba(22, 15, 30, 0.36);
+}
+
+.kawnera-app--universe .bookCard p,
+.kawnera-app--universe .bookCard section > small {
+  color: var(--universe-muted);
+}
+
+.kawnera-app--universe .bar {
+  background: rgba(255, 239, 216, 0.16);
+}
+
+.kawnera-app--universe .bar i {
+  background: var(--universe-accent);
+}
+
+.kawnera-app--universe .bookCard em {
+  color: var(--universe-accent);
+}
+
 /* The section-by-section walk. Numbered to match the book so a reader can move
    between the app and the page without losing their place. */
 .kawnera-app .walkthrough {

@@ -890,9 +890,9 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
   // uniform near-black with only a whisper of warm variation. Wellbeing
   // stays visually distinct via composition (no photo, floating planets,
   // gentle motes), not via a different/clashing color palette.
-  const skyText = dark ? '#f4ecd8' : INK;
-  const skyTextShadow = dark ? '0 1px 4px rgba(0,0,0,0.8)' : '0 1px 3px rgba(255,255,255,0.85)';
-  const skyMuted = dark ? 'rgba(244,236,216,0.7)' : 'rgba(45,34,16,0.65)';
+  const skyText = '#fff4df';
+  const skyTextShadow = '0 1px 4px rgba(0,0,0,0.8), 0 0 18px rgba(240,182,106,0.2)';
+  const skyMuted = 'rgba(255,239,216,0.72)';
 
   /*
    * Light appearance: every planet gets a drawn contour.
@@ -906,14 +906,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
    * sticker outline trick) — four passes and no extra DOM. The plain colour
    * discs, which really are circles, take a crisp ring instead.
    */
-  const ORB_INK = '#000';
-  const orbArtFilter = dark
-    ? 'drop-shadow(0 3px 6px rgba(0,0,0,0.35))'
-    : `drop-shadow(1.3px 0 0 ${ORB_INK}) drop-shadow(-1.3px 0 0 ${ORB_INK})`
-      + ` drop-shadow(0 1.3px 0 ${ORB_INK}) drop-shadow(0 -1.3px 0 ${ORB_INK})`
-      + ' drop-shadow(0 4px 7px rgba(38,26,10,0.30))';
-  const orbDiscShadow = `0 0 0 1.6px ${ORB_INK}, 0 12px 26px rgba(38,26,10,0.24),`
-    + ' inset 0 -8px 18px rgba(0,0,0,0.16), inset 0 2px 10px rgba(255,255,255,0.30)';
+  const orbArtFilter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.42))';
 
   return (
     <div
@@ -922,7 +915,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
       style={{ overflow: 'hidden', background: 'transparent' }}
     >
       <style>{MENU_CSS}</style>
-      <UniverseStage accent="wellbeing" dark={dark} />
+      <UniverseStage accent="wellbeing" dark={dark} homeDusk />
 
       {/* Landing is a top-level tab (nav bar visible) — no back button, matching
           Learn / Other / Training. A lang toggle sits top-right like the others. */}
@@ -934,11 +927,11 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
         style={{
           position: 'absolute', top: 'calc(14px + env(safe-area-inset-top))', insetInlineEnd: 14, zIndex: 5,
           minWidth: 38, height: 38, padding: '0 12px', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: `1px solid ${dark ? 'rgba(244,236,216,0.28)' : 'rgba(45,34,16,0.22)'}`,
-          background: dark ? 'rgba(20,18,14,0.4)' : 'rgba(255,253,248,0.5)',
+          border: '1px solid rgba(240,182,106,0.34)',
+          background: 'rgba(24,20,34,0.66)',
           backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-          boxShadow: dark ? '0 4px 16px rgba(0,0,0,0.35)' : '0 4px 14px rgba(120,90,40,0.14)',
-          color: dark ? '#e8ac4e' : '#6a4e22', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+          color: '#f0b66a', fontSize: 13, fontWeight: 700, cursor: 'pointer',
           fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
         }}
       >
@@ -950,7 +943,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
       }}>
         <div style={{
           fontSize: 10.5, letterSpacing: 4, fontWeight: 800, textTransform: 'uppercase',
-          color: dark ? 'rgba(255,224,150,0.8)' : '#96742e',
+          color: 'rgba(255,224,170,0.82)',
         }}>
           {isAr ? 'ركن العافية' : 'Wellbeing pillar'}
         </div>
@@ -974,11 +967,11 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
         style={{
           position: 'absolute', top: 'calc(112px + env(safe-area-inset-top))', left: '50%', transform: 'translateX(-50%)',
           zIndex: 3, display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', maxWidth: 'min(92vw, 420px)',
-          borderRadius: 100, border: `1px solid ${dark ? 'rgba(255,214,138,0.4)' : 'rgba(154,116,46,0.4)'}`,
-          background: dark ? 'rgba(26,22,16,0.42)' : 'rgba(255,252,246,0.55)',
+          borderRadius: 100, border: '1px solid rgba(240,182,106,0.4)',
+          background: 'rgba(24,20,34,0.58)',
           backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-          boxShadow: dark ? '0 6px 20px rgba(0,0,0,0.35)' : '0 6px 18px rgba(120,90,40,0.16)',
-          color: dark ? '#ffe9ae' : '#7a5c10',
+          boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
+          color: '#ffe9ae',
           cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap',
         }}
       >
@@ -1016,9 +1009,6 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
                 )}
                 <span className="rx-orb" style={{
                   background: planetIconUrl(c.id) ? `radial-gradient(circle, ${c.color}42 0%, ${c.color}20 55%, transparent 76%)` : c.color,
-                  // Only the flat colour discs are outlined here; the art
-                  // planets are outlined around their own silhouette below.
-                  ...(dark || planetIconUrl(c.id) ? null : { boxShadow: orbDiscShadow }),
                 }}>
                   {planetIconUrl(c.id) ? (
                     <img
@@ -1052,8 +1042,8 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
               {soon && (
                 <span className="rx-soon-pill" style={{
                   color: skyText,
-                  background: dark ? 'rgba(255,255,255,0.1)' : 'rgba(45,34,16,0.08)',
-                  borderColor: dark ? 'rgba(255,255,255,0.22)' : 'rgba(45,34,16,0.2)',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderColor: 'rgba(255,255,255,0.22)',
                 }}>
                   {isAr ? 'قريباً' : 'SOON'}
                 </span>
