@@ -1,0 +1,529 @@
+.martian-maze-root {
+  --amber: #ff5a00;
+  --amber-ring: rgba(255, 90, 0, 0.3);
+  --border: rgba(255, 90, 0, 0.3);
+  --border-strong: rgba(255, 90, 0, 0.5);
+  --ink-muted: #ccc;
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  overflow: hidden;
+  color: #fff;
+  background: #000;
+  font-family: 'Outfit', sans-serif;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  isolation: isolate;
+  contain: strict;
+  animation: martian-maze-enter 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.martian-maze-root::before,
+.martian-maze-root::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+}
+
+.martian-maze-root::before {
+  z-index: 3;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 75, 13, 0.2), transparent 22%),
+    radial-gradient(circle at 50% 50%, #1b0502 0, #070102 48%, #000 82%);
+}
+
+.martian-maze-root::after {
+  z-index: 4;
+  opacity: 0.18;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 3px,
+    rgba(255, 126, 61, 0.06) 4px
+  );
+  mix-blend-mode: screen;
+}
+
+.martian-maze-root.phase-ready::before {
+  animation: martian-maze-veil-open 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.martian-maze-root.phase-ready::after,
+.martian-maze-root.phase-victory::after {
+  animation: martian-maze-scan-fade 1.1s ease forwards;
+}
+
+.martian-maze-root.phase-victory::before {
+  opacity: 0.34;
+  background: #000;
+}
+
+.martian-maze-root.phase-exiting {
+  pointer-events: none;
+  animation: martian-maze-exit-scene 520ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.martian-maze-root.phase-exiting::before {
+  animation: martian-maze-veil-close 520ms ease forwards;
+}
+
+.martian-maze-root *,
+.martian-maze-root *::before,
+.martian-maze-root *::after {
+  box-sizing: border-box;
+}
+
+.martian-maze-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100vw;
+  height: 100vh;
+  outline: none;
+  touch-action: none;
+  opacity: 0;
+  transform: scale(1.055);
+  filter: brightness(0.42) saturate(0.65);
+  will-change: opacity, transform, filter;
+}
+
+.martian-maze-root.phase-ready .martian-maze-canvas {
+  animation: martian-maze-canvas-reveal 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.martian-maze-root.phase-victory .martian-maze-canvas,
+.martian-maze-root.phase-exiting .martian-maze-canvas {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+.martian-maze-content {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  padding: 20px 16px;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.martian-maze-exit {
+  position: absolute;
+  top: calc(20px + env(safe-area-inset-top));
+  left: 50%;
+  z-index: 50;
+  display: block;
+  padding: 12px 24px;
+  transform: translateX(-50%);
+  border: 1px solid var(--border-strong);
+  border-radius: 30px;
+  color: var(--amber);
+  background: rgba(0, 0, 0, 0.7);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.3s;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.martian-maze-exit:hover,
+.martian-maze-exit:focus-visible {
+  color: #000;
+  background: var(--amber);
+  box-shadow: 0 0 20px var(--amber-ring);
+  outline: none;
+}
+
+.martian-maze-instruction {
+  position: absolute;
+  bottom: 10%;
+  width: 100%;
+  color: var(--amber);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-align: center;
+  text-shadow:
+    0 0 15px var(--amber-ring),
+    0 0 30px #000;
+  text-transform: uppercase;
+  pointer-events: none;
+  animation: martian-maze-hud-in 480ms 620ms ease both;
+}
+
+.martian-maze-joystick {
+  position: absolute;
+  right: 40px;
+  bottom: 40px;
+  z-index: 50;
+  display: none;
+  width: 150px;
+  height: 150px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.martian-maze-joystick.is-active {
+  display: block;
+  animation: martian-maze-hud-in 480ms 620ms ease both;
+}
+
+.martian-maze-joystick-canvas {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.martian-maze-victory {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 540px;
+  margin-top: 15px;
+  padding: 32px 24px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: linear-gradient(135deg, rgba(20, 10, 10, 0.8), rgba(15, 5, 5, 0.6));
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+  flex-direction: column;
+  pointer-events: auto;
+  animation: martian-maze-rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.martian-maze-hero-title {
+  margin-bottom: 5px;
+  color: var(--amber);
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-align: center;
+  text-shadow: 0 0 15px var(--amber-ring);
+  text-transform: uppercase;
+}
+
+.martian-maze-hero-sub {
+  max-width: 400px;
+  margin-bottom: 25px;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.martian-maze-cta,
+.martian-maze-system-panel button {
+  width: 100%;
+  padding: 18px;
+  border: 1px solid var(--amber);
+  border-radius: 5px;
+  color: var(--amber);
+  background: rgba(255, 90, 0, 0.1);
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.martian-maze-cta:hover,
+.martian-maze-cta:focus-visible,
+.martian-maze-system-panel button:hover,
+.martian-maze-system-panel button:focus-visible {
+  color: #000;
+  background: var(--amber);
+  box-shadow: 0 0 20px rgba(255, 90, 0, 0.4);
+  outline: none;
+}
+
+.martian-maze-system-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  width: min(calc(100% - 32px), 440px);
+  min-height: 170px;
+  padding: 26px;
+  gap: 16px;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  color: var(--amber);
+  background: linear-gradient(135deg, rgba(20, 10, 10, 0.92), rgba(15, 5, 5, 0.88));
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  pointer-events: auto;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.martian-maze-system-panel button {
+  max-width: 260px;
+  padding: 13px;
+  font-size: 13px;
+}
+
+.martian-maze-transit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  width: min(calc(100% - 40px), 420px);
+  transform: translate(-50%, -50%);
+  color: #ffe7d7;
+  flex-direction: column;
+  text-align: center;
+  pointer-events: none;
+}
+
+.martian-maze-aperture {
+  position: relative;
+  width: 148px;
+  aspect-ratio: 1;
+  margin-bottom: 25px;
+  border: 1px solid rgba(255, 105, 39, 0.52);
+  border-radius: 50%;
+  box-shadow:
+    0 0 70px rgba(255, 66, 8, 0.28),
+    inset 0 0 34px rgba(255, 80, 16, 0.17);
+  animation: martian-maze-aperture-spin 2.4s linear infinite;
+}
+
+.martian-maze-aperture::before,
+.martian-maze-aperture::after,
+.martian-maze-aperture i {
+  position: absolute;
+  border-radius: 50%;
+  content: '';
+}
+
+.martian-maze-aperture::before {
+  inset: 17px;
+  border: 1px dashed rgba(255, 151, 92, 0.68);
+}
+
+.martian-maze-aperture::after {
+  inset: 46px;
+  background: #ff5a00;
+  box-shadow: 0 0 34px rgba(255, 75, 11, 0.82);
+  animation: martian-maze-core-pulse 1.15s ease-in-out infinite alternate;
+}
+
+.martian-maze-aperture i:first-child {
+  inset: -7px 64px;
+  border-top: 22px solid rgba(255, 116, 49, 0.86);
+  border-bottom: 22px solid rgba(255, 116, 49, 0.86);
+}
+
+.martian-maze-aperture i:last-child {
+  inset: 64px -7px;
+  border-right: 22px solid rgba(255, 116, 49, 0.86);
+  border-left: 22px solid rgba(255, 116, 49, 0.86);
+}
+
+.martian-maze-transit small {
+  margin-bottom: 9px;
+  color: #ff7738;
+  font:
+    700 10px/1 'DM Mono',
+    monospace;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.martian-maze-transit strong {
+  font-size: clamp(22px, 6vw, 34px);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 24px rgba(255, 82, 16, 0.36);
+  text-transform: uppercase;
+}
+
+.martian-maze-transit span {
+  margin-top: 12px;
+  color: rgba(255, 226, 207, 0.5);
+  font:
+    500 10px/1 'DM Mono',
+    monospace;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  animation: martian-maze-status-pulse 1.25s ease-in-out infinite alternate;
+}
+
+@keyframes martian-maze-rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes martian-maze-enter {
+  from {
+    opacity: 0;
+    transform: scale(1.035);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes martian-maze-canvas-reveal {
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1) saturate(1);
+  }
+}
+
+@keyframes martian-maze-veil-open {
+  0% {
+    opacity: 1;
+  }
+
+  65% {
+    opacity: 0.72;
+  }
+
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes martian-maze-veil-close {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes martian-maze-scan-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes martian-maze-exit-scene {
+  to {
+    opacity: 0;
+    transform: scale(1.035);
+  }
+}
+
+@keyframes martian-maze-hud-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes martian-maze-aperture-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes martian-maze-core-pulse {
+  to {
+    transform: scale(0.76);
+    opacity: 0.62;
+  }
+}
+
+@keyframes martian-maze-status-pulse {
+  to {
+    opacity: 0.35;
+  }
+}
+
+@media (max-width: 680px) {
+  .martian-maze-joystick {
+    right: max(18px, env(safe-area-inset-right));
+    bottom: calc(22px + env(safe-area-inset-bottom));
+  }
+
+  .martian-maze-instruction {
+    right: 175px;
+    bottom: calc(70px + env(safe-area-inset-bottom));
+    width: auto;
+    left: 14px;
+    font-size: 12px;
+    line-height: 1.45;
+    text-align: left;
+  }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+  .martian-maze-joystick {
+    right: 20px;
+    bottom: 12px;
+    width: 125px;
+    height: 125px;
+  }
+
+  .martian-maze-instruction {
+    right: 160px;
+    bottom: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .martian-maze-root,
+  .martian-maze-root::before,
+  .martian-maze-root::after,
+  .martian-maze-canvas,
+  .martian-maze-instruction,
+  .martian-maze-joystick,
+  .martian-maze-aperture,
+  .martian-maze-aperture::after,
+  .martian-maze-transit span {
+    animation: none !important;
+  }
+
+  .martian-maze-root.phase-ready::before {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .martian-maze-root.phase-ready .martian-maze-canvas {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .martian-maze-victory {
+    animation: none;
+  }
+}

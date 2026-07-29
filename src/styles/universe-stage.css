@@ -51,6 +51,12 @@
   );
 }
 
+/* Main tabs use the exact seven-stop dusk from Home. The plain light variant
+   remains parchment for deep game and reader surfaces. */
+.uv-stage--light.uv-stage--home {
+  background: var(--universe-dusk);
+}
+
 /*
  * Parchment mottling — the uneven tone of handmade paper, not clouds. These were
  * cloud banks when this was a sky; on paper the same technique reads as the
@@ -69,6 +75,13 @@
     radial-gradient(ellipse 56% 28% at 12% 66%, rgba(213, 202, 174, 0.13) 0%, transparent 72%);
 }
 
+.uv-stage--light.uv-stage--home::before {
+  background:
+    radial-gradient(ellipse 70% 35% at 16% 18%, rgba(133, 147, 189, 0.18) 0%, transparent 68%),
+    radial-gradient(ellipse 62% 34% at 82% 30%, rgba(187, 126, 105, 0.2) 0%, transparent 70%),
+    radial-gradient(ellipse 84% 38% at 50% 86%, rgba(255, 196, 125, 0.16) 0%, transparent 72%);
+}
+
 /*
  * Paper tooth. Doubles as the anti-banding fix — a smooth gradient across a full
  * phone panel steps visibly on an 8-bit display, and noise is the standard cure
@@ -85,6 +98,11 @@
   opacity: 0.05;
   background-repeat: repeat;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.uv-stage--light.uv-stage--home::after {
+  opacity: 0.025;
+  mix-blend-mode: soft-light;
 }
 
 

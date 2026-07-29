@@ -184,7 +184,10 @@ export default function KawneraExperience({
         ? `Welcome to ${book.title}. I am your mentor for this book. Follow the chapters in order, or choose the question you most want to understand.`
         : 'Pick one book and build its model. I will keep you company along the way.';
   return (
-    <main className="kawnera-app" dir={isAr ? 'rtl' : 'ltr'}>
+    <main
+      className={`kawnera-app${!book && tab === 'library' ? ' kawnera-app--universe' : ''}`}
+      dir={isAr ? 'rtl' : 'ltr'}
+    >
       <header>
         <button className="brand" onClick={home} aria-label="Kawnera home">
           <span className="brandMark" aria-hidden="true">

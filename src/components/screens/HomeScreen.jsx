@@ -1,4 +1,4 @@
-import React, { Suspense, useCallback, useRef } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import LearningUniverse, { useLearnedBodies } from '../../features/universe/LearningUniverse';
 import { KAWNERA_BOOKS } from '../../features/kawnera/books';
 import { setPendingChapter } from '../../features/kawnera/pendingChapter';
@@ -10,33 +10,94 @@ const ZenUniverse = lazyWithRetry(
   () => import('../../features/universe/ZenUniverse'),
   'zen-universe',
 );
+const MartianMaze = lazyWithRetry(
+  () => import('../../features/universe/MartianMaze'),
+  'martian-maze',
+);
 
 /*
- * Home is the universe, and only the universe.
- *
- * Kawnera used to be a second page of this same scroll. It now lives in the
- * Learn tab, so this screen is a single sky again: no scroll gateway, no second
- * WebGL world stacked behind it. Tapping a body still opens its chapter — the
- * request is parked in pendingChapter and Learn picks it up when it mounts.
+ * Home opens in the user's living universe. Swiping upward crosses an invisible
+ * threshold and immediately launches the standalone Martian labyrinth.
  */
 export default function HomeScreen() {
-  const { currentLang, switchTab } = useApp();
+  const { currentLang, setImmersive, switchTab } = useApp();
   const isAr = currentLang === 'ar';
   const bodies = useLearnedBodies(KAWNERA_BOOKS);
   const cooling = bodies.filter((b) => b.warmth < 0.5).length;
   const zenRef = useRef(null);
+  const scrollRef = useRef(null);
+  const entryTriggeredRef = useRef(false);
+  const [mazeOpen, setMazeOpen] = useState(false);
 
-  const openChapter = useCallback((bookId, chapterIndex) => {
-    setPendingChapter({ bookId, chapterIndex });
-    switchTab('learn');
-  }, [switchTab]);
+  const openChapter = useCallback(
+    (bookId, chapterIndex) => {
+      setPendingChapter({ bookId, chapterIndex });
+      switchTab('learn');
+    },
+    [switchTab],
+  );
+
+  const exitMartianMaze = useCallback(() => {
+    setMazeOpen(false);
+    requestAnimationFrame(() => {
+      const scroller = scrollRef.current;
+      if (!scroller) return;
+      scroller.scrollTo({ top: 0, behavior: 'auto' });
+      scroller.style.setProperty('--kawnera-progress', '0');
+      requestAnimationFrame(() => {
+        entryTriggeredRef.current = false;
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (!scroller) return undefined;
+
+    let frame = 0;
+    const updateDepth = () => {
+      frame = 0;
+      const distance = Math.max(1, scroller.clientHeight * 0.9);
+      const progress = Math.min(1, Math.max(0, scroller.scrollTop / distance));
+      scroller.style.setProperty('--kawnera-progress', progress.toFixed(3));
+
+      if (progress > 0.18 && !entryTriggeredRef.current && !mazeOpen) {
+        entryTriggeredRef.current = true;
+        setMazeOpen(true);
+      } else if (progress < 0.04 && !mazeOpen) {
+        entryTriggeredRef.current = false;
+      }
+    };
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(updateDepth);
+    };
+
+    updateDepth();
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      scroller.removeEventListener('scroll', onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [mazeOpen]);
+
+  useEffect(() => {
+    setImmersive('relax', mazeOpen);
+    return () => setImmersive('relax', false);
+  }, [mazeOpen, setImmersive]);
+
+  useEffect(() => {
+    zenRef.current?.setRunning(!mazeOpen);
+  }, [mazeOpen]);
 
   return (
-    <div className="home-universe-scroll" dir={isAr ? 'rtl' : 'ltr'}>
+    <div
+      ref={scrollRef}
+      className={`home-universe-scroll${mazeOpen ? ' maze-is-open' : ''}`}
+      dir={isAr ? 'rtl' : 'ltr'}
+    >
       <div className="home-universe-stage">
-        <Suspense
-          fallback={<div style={{ position: 'absolute', inset: 0, background: '#000' }} />}
-        >
+        <Suspense fallback={<div style={{ position: 'absolute', inset: 0, background: '#000' }} />}>
           <ZenUniverse ref={zenRef} planets={bodies} />
         </Suspense>
       </div>
@@ -61,7 +122,31 @@ export default function HomeScreen() {
         <div className="home-universe-bodies">
           <LearningUniverse bodies={bodies} onOpen={openChapter} />
         </div>
+
+        <div className="home-slide-hint" aria-hidden="true">
+          <span>{isAr ? 'اسحب للأعلى وادخل المتاهة' : 'Swipe up to enter the maze'}</span>
+          <span>⌄</span>
+        </div>
       </section>
+
+      <div className="home-maze-swipe-zone" aria-hidden="true" />
+
+      {mazeOpen && (
+        <Suspense
+          fallback={
+            <div className="home-maze-transition" role="status">
+              <div className="home-maze-transition-aperture" aria-hidden="true">
+                <i />
+                <i />
+              </div>
+              <small>{isAr ? 'عبور القطاع' : 'Sector transfer'}</small>
+              <strong>{isAr ? 'الهبوط إلى المتاهة' : 'Descending into the labyrinth'}</strong>
+            </div>
+          }
+        >
+          <MartianMaze isAr={isAr} onExit={exitMartianMaze} />
+        </Suspense>
+      )}
     </div>
   );
 }
