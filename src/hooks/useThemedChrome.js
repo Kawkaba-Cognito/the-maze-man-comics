@@ -22,7 +22,7 @@ export function useThemedChrome(isAr = false, { universe = false } = {}) {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: cosmic ? '#f3dfbd' : '#5f4824',
+    color: cosmic ? '#f3dfbd' : 'var(--color-stage-ink)',
     cursor: 'pointer',
     boxShadow: cosmic
       ? '0 4px 16px rgba(0, 0, 0, 0.4)'
@@ -39,7 +39,7 @@ export function useThemedChrome(isAr = false, { universe = false } = {}) {
     fontSize: isAr ? 24 : 23,
     fontWeight: 700,
     letterSpacing: isAr ? 0 : 1.6,
-    color: cosmic ? '#fff4df' : '#584015',
+    color: cosmic ? '#fff4df' : 'var(--color-stage-ink)',
     textTransform: isAr ? 'none' : 'uppercase',
     lineHeight: 1.18,
     maxWidth: 280,
@@ -56,12 +56,12 @@ export function useThemedChrome(isAr = false, { universe = false } = {}) {
     fontWeight: 700,
     fontSize: 13,
     letterSpacing: isAr ? 0 : 0.02,
-    color: cosmic ? '#f0b66a' : '#6a4e22',
+    color: cosmic ? '#f0b66a' : 'var(--color-stage-gold)',
   };
 
   const shell = {
     background: 'transparent',
-    color: cosmic ? '#fff4df' : '#4a3818',
+    color: cosmic ? '#fff4df' : 'var(--color-stage-ink)',
   };
 
   /** Shared glass card for Learn / Other / landing menus — matches Home cosmos. */
@@ -85,12 +85,12 @@ export function useThemedChrome(isAr = false, { universe = false } = {}) {
       : '0 6px 18px rgba(100, 80, 40, 0.1)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
-    color: cosmic ? '#f3dfbd' : '#5f4824',
+    color: cosmic ? '#f3dfbd' : 'var(--color-stage-ink)',
     fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
   };
 
-  const muted = cosmic ? 'rgba(255, 239, 216, 0.72)' : '#8a7348';
-  const accent = cosmic ? '#f0b66a' : '#9a6828';
+  const muted = cosmic ? 'rgba(255, 239, 216, 0.72)' : 'var(--color-stage-muted)';
+  const accent = cosmic ? '#f0b66a' : 'var(--color-amber-edge)';
 
   return { dark, chromeBtn, title, langBtn, shell, glassCard, muted, accent, text: shell.color };
 }

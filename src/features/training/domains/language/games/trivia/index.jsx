@@ -332,8 +332,8 @@ export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExi
         )}
         {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title" style={{ color: '#f0e2c0' }}>{t.title}</div>
-          <div className="ct-training-play-sub" style={{ color: 'rgba(240,226,192,0.75)' }}>{hudSub}</div>
+          <div className="ct-training-play-title" style={{ color: 'var(--color-header-text)' }}>{t.title}</div>
+          <div className="ct-training-play-sub" style={{ color: 'var(--color-header-text-dim)' }}>{hudSub}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
@@ -352,7 +352,7 @@ export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExi
       {/* question */}
       {q && (
         <div style={S.qWrap}>
-          <div style={{ ...S.feedback, color: wasCorrect ? '#2e8b57' : '#d23b3b' }}>{feedback || t.step(Math.min(step + 1, steps), steps)}</div>
+          <div style={{ ...S.feedback, color: wasCorrect ? 'var(--success)' : 'var(--danger)' }}>{feedback || t.step(Math.min(step + 1, steps), steps)}</div>
           <div style={S.qCard}>
             <span style={S.qStars}>{'★'.repeat(q.q.d)}</span>
             <span style={S.qText}>{isAr ? q.q.ar : q.q.en}</span>
@@ -419,32 +419,32 @@ export default function TriviaGame({ onBack, workoutMode = false }) {
 }
 
 const S = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'transparent', color: '#f0e2c0', fontFamily: "'Outfit', system-ui, sans-serif" },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'transparent', color: 'var(--color-header-text)', fontFamily: "'Outfit', system-ui, sans-serif" },
   cosmosRoot: { zIndex: 81 },
   stairWrap: { position: 'relative', zIndex: 1, flex: '0 0 auto', padding: '8px 14px 4px', display: 'flex', flexDirection: 'column', gap: 4 },
   livesRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 460, width: '100%', margin: '0 auto' },
-  topicChip: { fontWeight: 800, fontSize: 13, color: '#7a5a1e', background: '#fff1d8', border: '2px solid #e3c489', borderRadius: 999, padding: '3px 12px' },
-  hearts: { fontSize: 16, color: '#d23b3b', letterSpacing: 1 },
+  topicChip: { fontWeight: 800, fontSize: 13, color: 'var(--ink-dim)', background: '#fff1d8', border: '2px solid #e3c489', borderRadius: 999, padding: '3px 12px' },
+  hearts: { fontSize: 16, color: 'var(--danger)', letterSpacing: 1 },
   qWrap: { position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 10, padding: '6px 16px calc(20px + env(safe-area-inset-bottom))', overflowY: 'auto' },
   feedback: { fontWeight: 900, fontSize: 15, minHeight: 20 },
-  qCard: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: '#fffdf8', border: '2px solid #e3d6c4', borderRadius: 18, padding: '14px 18px', maxWidth: 430, width: '100%', boxShadow: '3px 3px 0 rgba(26,18,8,0.12)' },
+  qCard: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'var(--surface-raised)', border: '2px solid var(--line)', borderRadius: 18, padding: '14px 18px', maxWidth: 430, width: '100%', boxShadow: '3px 3px 0 rgba(26,18,8,0.12)' },
   qStars: { fontSize: 11, fontWeight: 900, color: '#c9a24b', letterSpacing: 2 },
-  qText: { fontWeight: 800, fontSize: 'clamp(15.5px, 4.4vw, 19px)', color: '#2d2210', textAlign: 'center', lineHeight: 1.35 },
+  qText: { fontWeight: 800, fontSize: 'clamp(15.5px, 4.4vw, 19px)', color: 'var(--ink)', textAlign: 'center', lineHeight: 1.35 },
   opts: { display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 430 },
-  opt: { padding: '12px 16px', borderRadius: 13, border: '2px solid #1a1208', background: '#fffdf8', fontWeight: 800, fontSize: 15, cursor: 'pointer', color: '#2d2210', boxShadow: '2px 2px 0 #1a1208', textAlign: 'center', lineHeight: 1.3 },
-  optOk: { background: '#d4edda', borderColor: '#2e8b57', boxShadow: '2px 2px 0 #2e8b57' },
-  optBad: { background: '#fde8e8', borderColor: '#d23b3b', boxShadow: '2px 2px 0 #d23b3b' },
+  opt: { padding: '12px 16px', borderRadius: 13, border: '2px solid var(--ink-outline)', background: 'var(--surface-raised)', fontWeight: 800, fontSize: 15, cursor: 'pointer', color: 'var(--ink)', boxShadow: '2px 2px 0 var(--ink-outline)', textAlign: 'center', lineHeight: 1.3 },
+  optOk: { background: 'var(--success-bg)', borderColor: 'var(--success)', boxShadow: '2px 2px 0 var(--success)' },
+  optBad: { background: '#fde8e8', borderColor: 'var(--danger)', boxShadow: '2px 2px 0 var(--danger)' },
   afterWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, width: '100%', maxWidth: 430, animation: 'tv-fact 0.3s ease-out' },
-  factBox: { width: '100%', background: '#fff8ec', border: '1.5px solid #e3c489', borderRadius: 13, padding: '9px 13px', display: 'flex', flexDirection: 'column', gap: 3 },
-  factHead: { fontSize: 11, fontWeight: 900, color: '#a37b2f', textTransform: 'uppercase', letterSpacing: 0.6 },
-  factTxt: { fontWeight: 700, fontSize: 13.5, color: '#5a4a32', lineHeight: 1.45 },
+  factBox: { width: '100%', background: 'var(--surface-raised)', border: '1.5px solid #e3c489', borderRadius: 13, padding: '9px 13px', display: 'flex', flexDirection: 'column', gap: 3 },
+  factHead: { fontSize: 11, fontWeight: 900, color: 'var(--ink-dim)', textTransform: 'uppercase', letterSpacing: 0.6 },
+  factTxt: { fontWeight: 700, fontSize: 13.5, color: 'var(--ink-dim)', lineHeight: 1.45 },
   pickRow: { display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 12 },
-  pickCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 16px', minWidth: 104, borderRadius: 16, border: '2px solid #1a1208', background: '#fffdf8', cursor: 'pointer', boxShadow: '3px 3px 0 #1a1208', animation: 'tv-pop 0.3s ease-out' },
-  pickName: { fontWeight: 800, fontSize: 12.5, color: '#2d2210', textAlign: 'center' },
+  pickCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 16px', minWidth: 104, borderRadius: 16, border: '2px solid var(--ink-outline)', background: 'var(--surface-raised)', cursor: 'pointer', boxShadow: '3px 3px 0 var(--ink-outline)', animation: 'tv-pop 0.3s ease-out' },
+  pickName: { fontWeight: 800, fontSize: 12.5, color: 'var(--ink)', textAlign: 'center' },
   overWrap: { position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 24, textAlign: 'center' },
-  overTitle: { margin: '4px 0 0', fontWeight: 900, fontSize: 24, color: '#f0e2c0' },
-  overSub: { margin: 0, fontWeight: 700, color: 'rgba(240,226,192,0.8)' },
+  overTitle: { margin: '4px 0 0', fontWeight: 900, fontSize: 24, color: 'var(--color-header-text)' },
+  overSub: { margin: 0, fontWeight: 700, color: 'var(--color-header-text-dim)' },
   btnRow: { display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 14 },
-  primary: { padding: '12px 26px', borderRadius: 14, border: '2px solid #1a1208', background: '#2e8b57', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '3px 3px 0 #1a1208' },
-  ghost: { padding: '12px 18px', borderRadius: 14, border: '2px solid #cdbfa6', background: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer', color: '#4a3c28' },
+  primary: { padding: '12px 26px', borderRadius: 14, border: '2px solid var(--ink-outline)', background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '3px 3px 0 var(--ink-outline)' },
+  ghost: { padding: '12px 18px', borderRadius: 14, border: '2px solid var(--line)', background: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer', color: 'var(--ink-dim)' },
 };

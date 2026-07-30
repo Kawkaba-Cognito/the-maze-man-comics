@@ -13,7 +13,6 @@ import { createTrialLog } from '../../../../shared/trialLog';
 import { generateMatrix } from './ravenEngine';
 import { RV_DIFF_KEYS, RV_LEVELS_PER_TIER, RV_TRIALS_PER_LEVEL, ravenLevelSpec, ravenChallengeSpec, isRavenLevelUnlocked, gradeRaven } from './ravenData';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
-import { planetIconUrl } from '../../../../../../lib/planetIcons';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
 const Raven3DProto = lazyWithRetry(() => import('./Raven3DProto'), 'raven-3d');
@@ -98,7 +97,7 @@ function Figure({ fig, size = 72 }) {
   if (!fig || fig.count === 0) {
     return (
       <svg viewBox="0 0 100 100" width={size} height={size} style={{ display: 'block', opacity: 0.35 }}>
-        <rect x="28" y="28" width="44" height="44" rx="6" fill="none" stroke="#b9842f" strokeWidth="2" strokeDasharray="6 4" />
+        <rect x="28" y="28" width="44" height="44" rx="6" fill="none" stroke="var(--accent)" strokeWidth="2" strokeDasharray="6 4" />
       </svg>
     );
   }
@@ -113,19 +112,11 @@ function Figure({ fig, size = 72 }) {
   );
 }
 
-function ReasoningModes({ t, isAr, onFree, onLevels, onChallenge, onProto3d, playSfx }) {
+function ReasoningModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
   const items = [
     { k: 'free', ic: '♾️', lb: t.freeMode, hint: t.freeHint, on: onFree, mod: 'ct-fq-attn-mode--free' },
     { k: 'levels', ic: '🎯', lb: t.levelMode, hint: t.levelsHint, on: onLevels, mod: 'ct-fq-attn-mode--levels' },
     { k: 'chal', ic: '⚔️', lb: t.challengeMode, hint: t.chalHint, on: onChallenge, mod: 'ct-fq-attn-mode--chal' },
-    {
-      k: 'proto3d',
-      lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-      hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
-      on: onProto3d,
-      icoImg: planetIconUrl('reasoning'),
-      mod: 'ct-fq-attn-mode--proto3d',
-    },
   ];
   return <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />;
 }
@@ -382,15 +373,6 @@ export default function RavenMatricesGame({ onBack, workoutMode = false, cosmosA
   const block = blockRef.current;
   const starLabel = lastResult?.grade?.stars === 3 ? t.perfect : lastResult?.grade?.stars === 2 ? t.good : t.tryAgain;
 
-  /* ── Standalone 3D prototype ── */
-  if (phase === 'play3d') {
-    return (
-      <Suspense fallback={C3D_FALLBACK}>
-        <Raven3DProto isAr={isAr} playSfx={playSfx} onBack={() => setPhase('hub')} />
-      </Suspense>
-    );
-  }
-
   /* ── Hub ── */
   if (phase === 'hub' && !isCosmos) {
     return (
@@ -407,8 +389,7 @@ export default function RavenMatricesGame({ onBack, workoutMode = false, cosmosA
               <ReasoningModes t={t} isAr={isAr} playSfx={playSfx}
                 onFree={() => setPhase('freeIntro')}
                 onLevels={() => setPhase('diff')}
-                onChallenge={() => setPhase('chal')}
-                onProto3d={() => setPhase('play3d')} />
+                onChallenge={() => setPhase('chal')} />
               <HubScienceLink gameId="raven-matrices" isAr={isAr} playSfx={playSfx} />
             </div>
           </div>
@@ -515,7 +496,7 @@ export default function RavenMatricesGame({ onBack, workoutMode = false, cosmosA
           <div className="ct-fq-screen ct-fq-training-screen">
             <TrainingMenuBar onBack={() => { setLastResult(null); setPhase('levels'); }} playSfx={playSfx} variant="paper"
               center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{grade.won ? t.levelPass : t.levelRetry}</div></div>} />
-            {grade.won && <div style={{ textAlign: 'center', fontSize: '1.5rem', color: '#e8ac4e', marginTop: 8, fontWeight: 700 }}>{'★'.repeat(grade.stars)} <span style={{ fontSize: '0.85rem', color: '#5c534c' }}>{starLabel}</span></div>}
+            {grade.won && <div style={{ textAlign: 'center', fontSize: '1.5rem', color: 'var(--color-amber)', marginTop: 8, fontWeight: 700 }}>{'★'.repeat(grade.stars)} <span style={{ fontSize: '0.85rem', color: '#5c534c' }}>{starLabel}</span></div>}
             <div className={`ct-fq-sbig ct-fq-band-text-${grade.score >= 75 ? 'high' : grade.score >= 50 ? 'mid' : 'low'}`}>{grade.score}</div>
             <div className="ct-fq-ies-lbl">{t.accuracy}</div>
             <div className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 8, fontWeight: 700 }}>

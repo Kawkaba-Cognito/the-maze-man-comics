@@ -636,14 +636,14 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
   };
 
   const wrapCosmos = (content) => isCosmos ? (
-    <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+    <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: 'var(--color-header-text)', background: '#000', minHeight: '100dvh' }}>…</div>}>
       <Wordle3DProto isAr={isAr} playSfx={playSfx} onBack={() => { workoutLaunched.current = false; clearPlay(); if (cosmosAutoPlay) { onBack?.(); return; } setCosmosEmbed(false); setPhase('hub'); }} />
     </Suspense>
   ) : content;
 
   if (phase === 'play3d') {
     return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: 'var(--color-header-text)', background: '#000', minHeight: '100dvh' }}>…</div>}>
         <Wordle3DProto isAr={isAr} playSfx={playSfx} onBack={() => setPhase('hub')} />
       </Suspense>
     );

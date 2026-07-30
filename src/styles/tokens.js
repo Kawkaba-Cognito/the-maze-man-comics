@@ -36,6 +36,22 @@ export const tokens = {
   amberGlow: 'rgba(255, 150, 30, 0.35)',
   amberGlowStrong: 'rgba(255, 150, 30, 0.55)',
 
+  /* Field-mode accent — Tide Dusk's bronze (mirrors tokens.css --accent/--accent-bright) */
+  accent: '#7d5233',
+  accentBright: '#a06c45',
+
+  /* Comic/brutalist near-black stroke for borders & box-shadows (mirrors tokens.css --ink-outline) */
+  inkOutline: '#1a1208',
+
+  /* Header-band text — cream text on a colored/illustrated game header,
+     not page ink (mirrors tokens.css --color-header-text/-dim) */
+  headerText: '#f0e2c0',
+  headerTextDim: 'rgba(240, 226, 192, 0.75)',
+
+  /* Semantic feedback */
+  success: '#47705a',
+  successBg: '#dde9e1',
+
   /* Wood plaque */
   wood: {
     light: '#6a3212',

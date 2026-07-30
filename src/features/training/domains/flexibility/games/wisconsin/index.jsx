@@ -21,8 +21,8 @@ const Wisconsin3DProto = lazyWithRetry(() => import('./Wisconsin3DProto'), 'wisc
  */
 
 // minimalist app palette (matches Word Links / the training surface)
-const SUB = '#8a7f6f';
-const ACC = '#b84878';   // flexibility deep pink
+const SUB = 'var(--ink-dim)';
+const ACC = 'var(--color-domain-flexibility-deep)';   // flexibility deep pink
 const OK = '#3a9d5d';
 const BAD = '#cf5b50';
 

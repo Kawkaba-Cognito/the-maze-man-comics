@@ -14,7 +14,7 @@ const ART = {
 };
 
 const ACCENT = {
-  free: '#e8ac4e',
+  free: 'var(--color-amber)',
   levels: '#5aabbb',
   chal: '#d97240',
   proto3d: '#a880cc',

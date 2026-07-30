@@ -17,7 +17,9 @@
     z-index: 40;
     display: flex;
     flex-direction: column;
-    background: #05050b;
+    /* Tide deep — was #05050b, a near-black of its own. The per-beat SKIES in
+       schema.js paint the stage itself; this is the frame around it. */
+    background: var(--play-surface-deep-flat);
     color: var(--sgs-cream);
     font-family: 'Outfit', system-ui, sans-serif;
     overflow: hidden;
@@ -74,7 +76,12 @@
 .sgs-stage-host {
     position: relative;
     z-index: 0;
-    flex: 1 1 auto;
+    /* Capped rather than flex:1 — an open-ended stage used to claim nearly the
+       whole desktop viewport for two distant, small figures on an empty disc,
+       crowding out the narration/transport controls that are the actually
+       functional part of watch. A fixed band keeps the scene readable as
+       context without it swallowing the screen. */
+    flex: 0 1 clamp(220px, 42vh, 380px);
     min-height: 0;
     border-bottom: 1px solid rgba(232, 172, 78, 0.16);
 }
@@ -87,7 +94,7 @@
 /* While recalling, shrink the scene so the panels read — but never hide it:
    the point of staging in 3D is that the context is still there at retrieval. */
 .sgs-stage-host.recalling {
-    flex: 0 0 clamp(180px, 30vh, 330px);
+    flex: 0 0 clamp(150px, 24vh, 240px);
     filter: saturate(0.6) brightness(0.42);
     transition: filter 420ms ease;
 }
@@ -199,11 +206,18 @@
 .sgs-watch {
     position: relative;
     z-index: 2;
-    flex: none;
+    /* flex:1 + centered content, not flex:none — on any viewport taller than
+       stage+narration+controls combined (most desktop windows), a fixed-size
+       watch panel left the leftover height as dead black space below the
+       transport row instead of using it. Centering what's left balances it
+       instead of dumping it all at the bottom. */
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 12px;
+    overflow-y: auto;
     padding: 15px 16px calc(18px + env(safe-area-inset-bottom));
 }
 
@@ -652,19 +666,13 @@
        cast small: the camera frames them inside THIS strip (see FILL_* in
        StoryStage3D.jsx), not against the whole screen. */
     .sgs-stage-host {
-        flex: 0 0 clamp(190px, 40vh, 340px);
+        flex: 0 0 clamp(170px, 34vh, 280px);
     }
 
     /* Retrieval needs the room more than the scene does. */
     .sgs-stage-host.recalling {
-        flex: 0 0 clamp(150px, 26vh, 210px);
+        flex: 0 0 clamp(140px, 22vh, 190px);
         transition: filter 420ms ease, flex-basis 420ms ease;
-    }
-
-    .sgs-watch {
-        flex: 1;
-        justify-content: center;
-        overflow-y: auto;
     }
 
     .sgs-subtitle {

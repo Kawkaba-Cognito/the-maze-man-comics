@@ -111,11 +111,25 @@ export const storyRuntime = (story, isAr) =>
   (story.beats || []).reduce((ms, b) => ms + beatHold(b, isAr), 0);
 
 /** Sky palettes a beat may set. Drives the stage gradient + light colour. */
+/*
+ * The four skies are FUNCTIONAL, not decorative: the stage recolours per beat
+ * (dawn → noon → dusk → night) so a change of time reads instantly, which is a
+ * non-verbal cue the player can encode and use when reordering the story. They
+ * must stay clearly distinguishable from one another — that separation is doing
+ * task work, the same way the Okabe-Ito palettes do in the attention games.
+ *
+ * They have been moved INTO the Tide family rather than flattened to one
+ * colour: every stop is now Tide's cool slate → warm brown, with the four times
+ * of day separated by depth and warmth instead of by hue (the old set ran
+ * purple/teal/magenta, four hues from outside the palette). Noon stays the
+ * lightest and coolest, night the deepest — so the cue survives while the stage
+ * stops being a sixth colour scheme.
+ */
 export const SKIES = {
-  dawn: { top: 0x2a2140, bot: 0x8a5a4e, key: 0xffd2a1, rim: 0x6f7fd0, ground: 0x2b2333 },
-  noon: { top: 0x1d3358, bot: 0x4a7fa8, key: 0xfff3d8, rim: 0x7fb0e0, ground: 0x24354a },
-  dusk: { top: 0x241a38, bot: 0x6d3a55, key: 0xffb277, rim: 0x8a6fd0, ground: 0x281f33 },
-  night: { top: 0x090a18, bot: 0x1b2244, key: 0xbfd2ff, rim: 0x5a6fc0, ground: 0x131628 },
+  dawn: { top: 0x2a3040, bot: 0x8a6553, key: 0xffd2a1, rim: 0x6f7fa0, ground: 0x2f2b33 },
+  noon: { top: 0x3d4f66, bot: 0xa88a6a, key: 0xfff3d8, rim: 0x8fb0c8, ground: 0x3a3b40 },
+  dusk: { top: 0x232b3a, bot: 0x6d5648, key: 0xffb277, rim: 0x8a7fa0, ground: 0x2a2730 },
+  night: { top: 0x121826, bot: 0x332c33, key: 0xbfd2ff, rim: 0x5a6fa0, ground: 0x161a26 },
 };
 
 export const SKY_IDS = Object.keys(SKIES);

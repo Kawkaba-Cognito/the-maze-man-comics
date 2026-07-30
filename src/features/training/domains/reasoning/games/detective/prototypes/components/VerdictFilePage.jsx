@@ -9,25 +9,25 @@ export default function VerdictFilePage({
   (caseData.clues || []).forEach((cl) => { clueById[cl.id] = cl; });
 
   return (
-    <div style={{ ...S.body, background: '#e8dcc8' }}>
+    <div style={{ ...S.body, background: 'var(--surface)' }}>
       <div style={{
-        width: '100%', maxWidth: 420, background: '#fffdf8', border: '2px solid #1a1208',
+        width: '100%', maxWidth: 420, background: 'var(--surface-raised)', border: '2px solid var(--ink-outline)',
         boxShadow: '6px 6px 0 rgba(26,18,8,0.25)', padding: '18px 16px 20px',
         animation: verdict.win ? 'dt-slide 0.35s ease-out' : 'dt-shake 0.4s ease-out',
       }}>
         <div style={{
-          borderBottom: '3px double #d9c294', paddingBottom: 10, marginBottom: 12,
+          borderBottom: '3px double var(--line)', paddingBottom: 10, marginBottom: 12,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
-          <span style={{ fontWeight: 900, fontSize: 11, color: '#7a6a52', letterSpacing: 1 }}>{labels.fileClosing}</span>
+          <span style={{ fontWeight: 900, fontSize: 11, color: 'var(--ink-dim)', letterSpacing: 1 }}>{labels.fileClosing}</span>
           {verdict.win && (
             <span style={{
-              transform: 'rotate(-8deg)', border: '3px solid #2e8b57', color: '#2e8b57',
+              transform: 'rotate(-8deg)', border: '3px solid var(--success)', color: 'var(--success)',
               fontFamily: "'Outfit','Cairo',cursive", fontSize: 14, padding: '2px 10px',
             }}>{labels.caseClosed}</span>
           )}
         </div>
-        <div style={{ ...S.verdictTitle, color: verdict.win ? '#2e8b57' : '#d23b3b', marginBottom: 8 }}>
+        <div style={{ ...S.verdictTitle, color: verdict.win ? 'var(--success)' : 'var(--danger)', marginBottom: 8 }}>
           {verdict.win ? labels.fullWin : verdict.partial ? labels.partial : labels.lost}
         </div>
         {verdict.partial && <p style={S.partialSub}>{labels.partialSub}</p>}
@@ -37,7 +37,7 @@ export default function VerdictFilePage({
         </div>
         {proofHighlight.length > 0 && (
           <div style={{ marginTop: 10, padding: '8px 10px', background: '#eef8f0', borderRadius: 10, border: '1.5px solid #9ecfb2' }}>
-            <div style={{ fontWeight: 900, fontSize: 11, color: '#2e8b57', marginBottom: 4 }}>{labels.yourProof}</div>
+            <div style={{ fontWeight: 900, fontSize: 11, color: 'var(--success)', marginBottom: 4 }}>{labels.yourProof}</div>
             {proofHighlight.map((id) => {
               const cl = clueById[id];
               if (!cl) return null;

@@ -88,7 +88,11 @@ export default function StoryStage3D({
       fov: 40,
       fitHalf: 3.4,
       alpha: false,
-      bloom: true,
+      // Kept simple on purpose: this stage now renders at a fraction of its old
+      // footprint (see stage.css), and bloom + real-time shadows were the two
+      // priciest, least-necessary passes for a scene that small — cut for a
+      // lighter, more responsive watch phase rather than tuned down.
+      bloom: false,
       lights: false,
       stars: true, // the universe backdrop, not a noir room
       // c3dBoot normally reserves a top band for a floating HUD and slides the
@@ -102,7 +106,7 @@ export default function StoryStage3D({
       return () => boot.dispose();
     }
 
-    const { camera, coarse, playRoot, scene, renderer, setTick, dispose } = boot;
+    const { camera, playRoot, scene, renderer, setTick, dispose } = boot;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
     renderer.domElement.setAttribute(
@@ -143,7 +147,6 @@ export default function StoryStage3D({
     });
     const disc = own(new THREE.Mesh(new THREE.CylinderGeometry(4.6, 4.8, 0.14, 64), discMat));
     disc.position.y = -0.07;
-    disc.receiveShadow = true;
 
     const ringMat = new THREE.MeshBasicMaterial({
       color: 0xe8ac4e, transparent: true, opacity: 0.22,
@@ -154,17 +157,13 @@ export default function StoryStage3D({
     ring.position.y = 0.015;
 
     // ── lights (recoloured per beat) ──────────────────────────────────────
+    // No real-time shadows — a scene this small read fine without them, and
+    // dropping the shadow map (was 512-1024px, recomputed every frame against
+    // a skinned/rigged mesh) is most of the win from "simpler".
     const hemi = new THREE.HemisphereLight(0x8fa6d8, 0x1a1220, 0.75);
     stage.add(hemi);
     const key = new THREE.DirectionalLight(0xffe6c0, 1.9);
     key.position.set(2.4, 5, 4.4);
-    key.castShadow = true;
-    key.shadow.mapSize.set(coarse ? 512 : 1024, coarse ? 512 : 1024);
-    key.shadow.camera.left = -5; key.shadow.camera.right = 5;
-    key.shadow.camera.top = 4.5; key.shadow.camera.bottom = -1.5;
-    key.shadow.camera.near = 0.5; key.shadow.camera.far = 14;
-    key.shadow.bias = -0.00035;
-    key.shadow.normalBias = 0.025;
     stage.add(key, key.target);
     const rim = new THREE.PointLight(0x6f8ad0, 4.2, 14, 1.7);
     rim.position.set(-3.4, 2.4, 1.2);
@@ -195,9 +194,14 @@ export default function StoryStage3D({
         for (let i = 0; i < cast.length; i++) {
           const ch = await createCharacter(cast[i], { seedIndex: i });
           if (disposed) { ch.dispose(); return; }
-          ch.root.position.set(0, FLOOR_Y, 0);
-          ch.root.visible = false;
-          ch.model.traverse((n) => { if (n.isMesh) n.castShadow = true; });
+          // Spawn already at the tick's own off-stage height (-2.4) for anyone
+          // not in the first beat. The tick derives visibility from position,
+          // not from a flag, so starting these at FLOOR_Y made them flash into
+          // view at floor level for a frame before damping pulled them back
+          // down out of sight — the "character appears then disappears" bug.
+          const onFirstBeat = !!beatRef.current?.actors?.some((a) => a.id === cast[i]);
+          ch.root.position.set(0, onFirstBeat ? FLOOR_Y : -2.4, 0);
+          ch.root.visible = onFirstBeat;
           stage.add(ch.root);
           characters.set(cast[i], ch);
         }

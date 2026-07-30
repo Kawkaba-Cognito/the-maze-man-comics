@@ -40,7 +40,7 @@ export default function OpeningSequence({ panels, isAr, onDone, onSkip, labels }
 }
 
 const btnPri = {
-  padding: '12px 24px', borderRadius: 14, border: '2px solid #1a1208',
+  padding: '12px 24px', borderRadius: 14, border: '2px solid var(--ink-outline)',
   background: '#2e8b57', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer',
 };
 const btnGhost = {

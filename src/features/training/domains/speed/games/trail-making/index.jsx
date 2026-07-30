@@ -606,9 +606,9 @@ export default function TrailMakingGame({ onBack, workoutMode = false }) {
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 81, display: 'flex', flexDirection: 'column', background: '#000', color: '#f0e2c0', fontFamily: "'Outfit', system-ui, sans-serif" },
-  sub: { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '7px 16px', fontSize: 14, fontWeight: 700, color: '#f0e2c0', background: '#080705', overflowX: 'auto' },
-  play: { position: 'relative', flex: 1, minHeight: 0, background: '#000', overflow: 'hidden', touchAction: 'none' },
+  root: { position: 'fixed', inset: 0, zIndex: 81, display: 'flex', flexDirection: 'column', background: 'var(--play-surface-deep-flat)', color: 'var(--play-ink-deep)', fontFamily: "'Outfit', system-ui, sans-serif" },
+  sub: { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '7px 16px', fontSize: 14, fontWeight: 700, color: 'var(--play-ink-deep)', background: 'var(--play-surface-deep-flat)', overflowX: 'auto' },
+  play: { position: 'relative', flex: 1, minHeight: 0, background: 'var(--play-surface-deep-flat)', overflow: 'hidden', touchAction: 'none' },
   canvas: { display: 'block', width: '100%', height: '100%' },
   survTrack: { height: 6, background: 'rgba(0,0,0,0.08)' },
   survFill: { height: '100%' },
