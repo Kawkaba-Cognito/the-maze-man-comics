@@ -168,12 +168,15 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
     const f = fieldRef.current;
     const now = performance.now();
 
-    // Soft parchment surround
+    // Tide Dusk surround. Canvas paint, so --play-surface cannot reach it —
+    // these stops are the same three, kept in step with tokens.css by hand.
+    // Vertical rather than radial: Tide is a top-to-bottom ramp, cool zenith
+    // to warm horizon, and a radial wash flattens that into a vignette.
     {
-      const wash = ctx.createRadialGradient(w * 0.5, h * 0.42, Math.min(w, h) * 0.15, w * 0.5, h * 0.5, Math.max(w, h) * 0.72);
-      wash.addColorStop(0, '#f3ebe0');
-      wash.addColorStop(0.55, '#ebe1d2');
-      wash.addColorStop(1, '#ddd2c0');
+      const wash = ctx.createLinearGradient(0, 0, 0, h);
+      wash.addColorStop(0, '#ccdae6');
+      wash.addColorStop(0.58, '#d2c5b5');
+      wash.addColorStop(1, '#c6b199');
       ctx.fillStyle = wash;
       ctx.fillRect(0, 0, w, h);
     }
@@ -612,7 +615,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
     );
   }
 
-  const phaseDot = phase === 'respond' ? '#1a1208' : phase === 'result' ? null : '#E69F00';
+  const phaseDot = phase === 'respond' ? 'var(--ink-outline)' : phase === 'result' ? null : '#E69F00';
   return (
     <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
       <header className="ct-training-play-header">
@@ -704,6 +707,6 @@ const styles = {
   capWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, margin: '4px 0 6px' },
   capNum: { fontWeight: 900, fontSize: 42, lineHeight: 1, color: '#4f9fe0' },
   capLbl: { fontWeight: 700, fontSize: 13, color: '#7a6a52' },
-  overBtn: { padding: '12px 20px', borderRadius: 12, border: '2px solid #1a1208', background: '#4f9fe0', color: '#fff', fontWeight: 900, cursor: 'pointer' },
+  overBtn: { padding: '12px 20px', borderRadius: 12, border: '2px solid var(--ink-outline)', background: '#4f9fe0', color: '#fff', fontWeight: 900, cursor: 'pointer' },
   overBtnGhost: { padding: '12px 20px', borderRadius: 12, border: '2px solid #cdbfa6', background: '#fff', fontWeight: 800, cursor: 'pointer' },
 };

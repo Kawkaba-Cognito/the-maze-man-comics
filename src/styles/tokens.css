@@ -27,14 +27,91 @@
      Field lives on :root rather than in a .mode-field class, because it is what
      the app is when nothing says otherwise. paper (.kawnera-app) and void
      (.nr/.sgs) override these eight names on their own roots. */
-  --surface: #fff7f2;
-  --surface-raised: #ffffff;
-  --ink: #2d2d2d;
-  --ink-dim: #6b6b6b;
-  --accent: #b8752a;
-  --accent-bright: #d98f33;
-  --line: #e4d8cf;
-  --danger: #c34a44;
+  /* Tide Dusk (chosen 2026-07-30). --surface is the page behind a card;
+     --surface-raised is the card/board itself and stays LIGHT — that contrast
+     is what makes the board read as a lit surface on the dusk, and it is what
+     keeps the trial content dark-on-light (see the play-surface note below). */
+  --surface: #e8e0d4;
+  --surface-raised: #f2ece4;
+  --ink: #241f1a;
+  --ink-dim: #5f584e;
+  /* Bronze, deepened from the previous #b8845d. That value came off Home's own
+     sky (ZenUniverse.jsx SKY.css — its 86% stop), but on Tide Dusk's darker,
+     more saturated ground it no longer had the contrast to act as an accent.
+     This holds the same hue family and buys back the separation. */
+  --accent: #7d5233;
+  --accent-bright: #a06c45;
+  --line: #ddd3c6;
+  --danger: #944b3b;
+
+  /* ─── Home's sky, in a light key ───────────────────────────────────────
+     Home ("Your Universe") is a DUSK: cool slate at the zenith ramping down
+     through mauve and rose-brown to a warm ember horizon — see SKY.css in
+     ZenUniverse.jsx (#262c3c → #343544 → #47404c → #63504f → #8a6553 →
+     #b8845d → #ddaf80). That cool-to-warm journey IS the app's identity, so
+     a surface that borrows only the warm horizon stops reads as generic
+     cream, not as Home.
+
+     This is the same seven-stop journey lifted into a light key: every stop
+     keeps its source hue and just gains luminance. Use it for any light
+     surface that should read as "the same sky, seen in daylight". */
+  --home-sky-light: linear-gradient(
+    180deg,
+    #e9e7f0 0%,
+    #eeeaee 24%,
+    #f3e9e3 48%,
+    #f7e4d2 74%,
+    #efd6b0 100%
+  );
+  --home-sky-zenith: #e9e7f0;   /* pale cool slate — the #262c3c end */
+  --home-sky-mid: #f3e9e3;      /* soft mauve/rose — the #63504f end */
+  --home-sky-horizon: #efd6b0;  /* warm ember sand — the #ddaf80 end */
+
+  /* Home's sky at FULL strength — the same stops ZenUniverse.jsx paints,
+     stopping short of its brightest horizon stop (#ddaf80) so cream body text
+     stays legible at the bottom of a scrolling page; Home can go that bright
+     because its lower band is planet and particles, not paragraphs.
+     For surfaces that should BE Home's dusk rather than echo it: the domain
+     pages and the mode hub, both of which were authored dark to begin with. */
+  --home-sky-dusk: linear-gradient(
+    180deg,
+    #262c3c 0%,
+    #343544 20%,
+    #47404c 40%,
+    #5b4a4e 58%,
+    #7d5f54 78%,
+    #a2795d 100%
+  );
+  --home-sky-dusk-deep: #262c3c;  /* its zenith — for flat frames around it */
+
+  /* Paint --home-sky-light so the ramp always completes within ONE viewport
+     and the horizon tone carries any scroll past it. Without this a tall page
+     (a 100-level grid) stretches the ramp over the full scroll height, so the
+     viewport only ever shows its cool top and the dusk never reads. The
+     obvious fix — background-attachment: fixed — is a repaint-on-scroll cost
+     on mobile and is unreliable on iOS Safari, so size the layer instead. */
+  --home-sky-size: 100% 100dvh;
+
+  /* ─── Header-band text — cream text set on a colored/illustrated title
+     strip inside a game header (not page ink; this sits on art, not paper).
+     Was independently retyped as #f0e2c0 in wordle, synonyms, trivia,
+     rush-hour, raven-matrices, wisconsin and brixton. ─── */
+  --color-header-text: #f0e2c0;
+  --color-header-text-dim: rgba(240, 226, 192, 0.75);
+
+  /* ─── Ink-outline — the comic/brutalist near-black used for card borders,
+     box-shadows and thick strokes on field-mode surfaces (buttons, panels,
+     result cards). Distinct from --ink: darker and warmer, a stroke color
+     not a text color. Was retyped as #1a1208 100+ times across shared chrome
+     and nearly every game rather than named once. ─── */
+  --ink-outline: #1a1208;
+
+  /* ─── Semantic feedback (shared across training games) ───
+     "Correct" was #2e8b57 in most games but drifted as far as #1a4d38 in one
+     spot; "wrong" already had --danger above but games kept typing their own
+     red anyway. Reuse --danger for wrong; use --success/-bg for correct. */
+  --success: #47705a;
+  --success-bg: #dde9e1;
 
   /* ─── The play surface — FIXED LIGHT, deliberately not theme-following ───
      The games are already designed light: 37 cream/white panel fills against 8
@@ -50,13 +127,39 @@
      targets on light) measurably helps small-target and reading tasks. A
      background the user can toggle is a variable you cannot control for, so the
      play surface does not follow the theme. Hubs, shop, habits and wellbeing
-     still do; they carry no trials. */
-  --play-surface: #fff7f2;
-  --play-ink: #2d2d2d;
+     still do; they carry no trials.
+
+     ─── "Tide Dusk" (chosen 2026-07-30) ───
+     The flat #fff7f2 is now Home's own gesture: its cool blue zenith at the top
+     of the screen ramping to its warm brown horizon at the bottom, taken deep
+     enough to feel like the same sky rather than a pale echo of it.
+
+     It stays POSITIVE POLARITY — dark ink on a light field — so everything in
+     the note above still holds. Luminance drops somewhat from flat white, but
+     the stimulus/board card (--surface-raised) stays light, so the figure-ground
+     relationship the tasks are actually scored on is unchanged. A fully dark
+     board was mocked up and deliberately not chosen for exactly that reason. */
+  --play-surface: linear-gradient(180deg, #ccdae6 0%, #d2c5b5 58%, #c6b199 100%);
+  --play-ink: #241f1a;
   --color-training-palette-surface: var(--play-surface);
   --color-training-ink: var(--play-ink);
 
-  /* App stage (follows Home light/dark) */
+  /* ─── Tide DEEP — the same sky, dark end ───────────────────────────────
+     ONE palette, two depths. Which depth a surface gets is a RENDERING
+     constraint, not taste: a scene built from additive blending and emissive
+     glow is drawing light into darkness, and additive blending on a light
+     ground resolves to nothing (the layer vanishes, and bloom starts blooming
+     the background). Those surfaces take this; everything else takes
+     --play-surface above.
+
+     Mirrors TIDE_DEEP_STOPS / TIDE_DEEP_FOG in c3dBoot.js — keep in step.
+     Used by: Cancellation, Block Escape, Cognitive Flexibility, Story Time's
+     stage, Detective's room. */
+  --play-surface-deep: linear-gradient(180deg, #121826 0%, #1e2130 45%, #332c33 75%, #463830 100%);
+  --play-surface-deep-flat: #121826;
+  --play-ink-deep: #ece0c8;
+  --play-ink-deep-dim: #9b917f;
+
   --color-stage-ink: #4a3818;
   --color-stage-muted: #8a7348;
   --color-stage-card: #fffdf8;
@@ -223,15 +326,17 @@ html[data-home-theme='dark'] {
   --danger: #a24b45;
 }
 
+/* Void = Tide's deep end. Kept in step with the .nr/.sgs block below, which is
+   what actually wears it. */
 .mode-void {
-  --surface: #08080f;
-  --surface-raised: #12121a;
-  --ink: #efe3c6;
-  --ink-dim: #948972;
-  --accent: #e8ac4e;
-  --accent-bright: #f0c674;
-  --line: #3a3527;
-  --danger: #c34a44;
+  --surface: var(--play-surface-deep-flat);
+  --surface-raised: #1e2130;
+  --ink: var(--play-ink-deep);
+  --ink-dim: var(--play-ink-deep-dim);
+  --accent: #c99a5b;
+  --accent-bright: #e3c48f;
+  --line: #3a3b40;
+  --danger: #cd7f6e;
 }
 
 /*
@@ -261,14 +366,21 @@ html[data-home-theme='dark'] {
   --danger: #a24b45;
 }
 
+/* Void mode — Detective's room and Story Time's stage.
+ *
+ * Now Tide's deep end rather than its own near-black (#08080f/#12121a) and its
+ * own gold (#e8ac4e). Both surfaces are immersive 3D scenes built on glow, so
+ * they take the dark depth of Tide — same palette as every other play surface,
+ * different end of the ramp. See --play-surface-deep above for why depth is a
+ * rendering constraint here and not a style preference. */
 .nr,
 .sgs {
-  --surface: #08080f;
-  --surface-raised: #12121a;
-  --ink: #efe3c6;
-  --ink-dim: #948972;
-  --accent: #e8ac4e;
-  --accent-bright: #f0c674;
-  --line: #3a3527;
-  --danger: #c34a44;
+  --surface: var(--play-surface-deep-flat);
+  --surface-raised: #1e2130;
+  --ink: var(--play-ink-deep);
+  --ink-dim: var(--play-ink-deep-dim);
+  --accent: #c99a5b;
+  --accent-bright: #e3c48f;
+  --line: #3a3b40;
+  --danger: #cd7f6e;
 }

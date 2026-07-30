@@ -46,7 +46,7 @@ export function TrainingMenuBar({
           onBack();
         }}
       >
-        <IconBack size={18} c={isPaper ? '#3a3228' : '#141210'} />
+        <IconBack size={18} c="currentColor" />
       </TrainingChromeBtn>
       <div className="ct-training-menubar-center" role="presentation">
         {center}
@@ -97,7 +97,7 @@ export function TrainingPlayHeader({
             onMenu();
           }}
         >
-          <IconBack size={18} c="#141210" />
+          <IconBack size={18} c="currentColor" />
         </TrainingChromeBtn>
       ) : (
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
@@ -135,7 +135,7 @@ export function TrainingPlayHeader({
             onPause();
           }}
         >
-          <IconPause size={17} c="#141210" />
+          <IconPause size={17} c="currentColor" />
         </TrainingChromeBtn>
       ) : (
         <div className="ct-training-chrome-spacer" aria-hidden="true" />

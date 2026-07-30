@@ -4,6 +4,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { isCoarsePointer, releaseGlContext } from '../../../../shared/c3dViewport';
+import { TIDE_FOG, makeTideSky } from '../../../../shared/c3dBoot';
 import '../../../../shared/c3dProto.css';
 
 /*
@@ -47,12 +48,15 @@ export default function MotScene3D({ dotsRef, fieldRef, phaseRef, interactive, o
     const coarse = isCoarsePointer();
 
     const scene = new THREE.Scene();
+    // Tide Dusk — the shared gameplay sky. This scene builds its own renderer
+    // rather than calling bootC3dScene, so it has to opt in explicitly.
+    scene.background = makeTideSky();
     const camera = new THREE.PerspectiveCamera(coarse ? 56 : 50, 1, 0.1, 80);
     camera.position.set(0, 0, 12);
 
     const renderer = new THREE.WebGLRenderer({ antialias: !coarse });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.35 : fine ? 1.5 : 1.25));
-    renderer.setClearColor(0x05040a, 1);
+    renderer.setClearColor(TIDE_FOG, 1);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
     wrap.appendChild(renderer.domElement);

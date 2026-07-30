@@ -236,7 +236,7 @@ export default function PairedAssociates3DProto({
       title={isAr ? 'مطابقة الأزواج' : 'Pair Match'}
       question={question ? <span className="ct-pal3d-question">{question}</span> : ''}
       chip={phaseLabel}
-      chipStyle={{ fontSize: '0.76rem', fontWeight: 900, color: '#f5c768' }}
+      chipStyle={{ fontSize: '0.76rem', fontWeight: 900, color: 'var(--accent-bright)' }}
       stats={hud ? [hud] : []}
       bootError={bootError}
       onBack={onBack}

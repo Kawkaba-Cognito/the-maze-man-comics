@@ -24,7 +24,7 @@ export function useSurvivalCountdown(active, onTimeout) {
 }
 
 /** Thin countdown bar — drop into a game's play header during Survival. */
-export function SurvivalCountdownBar({ remaining, color = '#e8ac4e' }) {
+export function SurvivalCountdownBar({ remaining, color = 'var(--color-amber)' }) {
   const pct = Math.max(0, Math.min(1, remaining / SURVIVAL_MS));
   return (
     <div className="ct-survival-bar" aria-hidden="true">

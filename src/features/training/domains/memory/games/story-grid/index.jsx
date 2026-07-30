@@ -355,9 +355,9 @@ export function PanelStage({ panel, size, say }) {
       )}
       {say && big && (
         <div style={{ position: 'absolute', top: 10, insetInlineStart: '50%', transform: 'translateX(-50%)', maxWidth: '90%', animation: 'sg-bubble 0.45s ease-out', zIndex: 3 }}>
-          <div style={{ position: 'relative', background: '#fffdf8', border: '2px solid #1a1208', borderRadius: 13, padding: '5px 12px', fontWeight: 800, fontSize: 14, color: '#3a2c18', textAlign: 'center', lineHeight: 1.25, boxShadow: '2px 2px 0 rgba(26,18,8,0.18)' }}>
+          <div style={{ position: 'relative', background: 'var(--surface-raised)', border: '2px solid var(--ink-outline)', borderRadius: 13, padding: '5px 12px', fontWeight: 800, fontSize: 14, color: 'var(--ink)', textAlign: 'center', lineHeight: 1.25, boxShadow: '2px 2px 0 rgba(26,18,8,0.18)' }}>
             {say}
-            <span style={{ position: 'absolute', bottom: -7, insetInlineStart: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '8px solid #1a1208' }} />
+            <span style={{ position: 'absolute', bottom: -7, insetInlineStart: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '8px solid var(--ink-outline)' }} />
           </div>
         </div>
       )}
@@ -689,8 +689,8 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
                 const bad = reveal && !ok;
                 return (
                   <div key={i} style={{ position: 'relative' }} onClick={() => { if (!reveal) applyToPanel(i); }}>
-                    <span style={{ ...S.badge, ...(reveal ? { background: ok ? '#2e8b57' : '#d23b3b' } : null) }}>{i + 1}</span>
-                    <div style={{ borderRadius: 16, outline: !reveal && sel ? '3px dashed #b9842f' : ok ? '3px solid #2e8b57' : bad ? '3px solid #d23b3b' : 'none', outlineOffset: 2, cursor: !reveal ? 'pointer' : 'default' }}>
+                    <span style={{ ...S.badge, ...(reveal ? { background: ok ? 'var(--success)' : '#d23b3b' } : null) }}>{i + 1}</span>
+                    <div style={{ borderRadius: 16, outline: !reveal && sel ? '3px dashed var(--accent)' : ok ? '3px solid var(--success)' : bad ? '3px solid #d23b3b' : 'none', outlineOffset: 2, cursor: !reveal ? 'pointer' : 'default' }}>
                       <PanelStage panel={p} size={fsz} />
                     </div>
                     {!reveal && p.chars.length > 0 && !p.action && <span style={S.tapPlus}>＋</span>}
@@ -705,7 +705,7 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
                 <div style={{ ...S.grid, rowGap: 6, gridTemplateColumns: `repeat(${gridCols(len)}, max-content)` }}>
                   {story.target.map((g, i) => (
                     <div key={i} style={{ position: 'relative' }}>
-                      <span style={{ ...S.badge, background: '#2e8b57' }}>{i + 1}</span>
+                      <span style={{ ...S.badge, background: 'var(--success)' }}>{i + 1}</span>
                       <PanelStage panel={g} size={refSize} />
                     </div>
                   ))}
@@ -834,46 +834,46 @@ const S = {
     boxShadow: '0 -8px 28px rgba(0,0,0,0.45)',
   },
   center: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 14, padding: '10px 18px 24px', overflowY: 'auto' },
-  watchCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, background: '#fffdf8', border: '2px solid #e3d6c4', borderRadius: 22, padding: '18px 20px 20px', maxWidth: '100%', boxShadow: '4px 4px 0 rgba(26,18,8,0.1)' },
-  storyTitle: { fontFamily: "'Outfit', system-ui, sans-serif", fontSize: 24, letterSpacing: 0.5, color: '#3a2c18', textAlign: 'center', lineHeight: 1.1, padding: '0 8px', textShadow: '1px 1px 0 rgba(255,255,255,0.6)' },
+  watchCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, background: 'var(--surface-raised)', border: '2px solid var(--line)', borderRadius: 22, padding: '18px 20px 20px', maxWidth: '100%', boxShadow: '4px 4px 0 rgba(26,18,8,0.1)' },
+  storyTitle: { fontFamily: "'Outfit', system-ui, sans-serif", fontSize: 24, letterSpacing: 0.5, color: 'var(--ink)', textAlign: 'center', lineHeight: 1.1, padding: '0 8px', textShadow: '1px 1px 0 rgba(255,255,255,0.6)' },
   watchCap: { fontWeight: 600, fontSize: 15, color: '#4a3c28', textAlign: 'center', animation: 'sg-bubble 0.4s ease-out', minHeight: 66, width: '100%', maxWidth: 440, lineHeight: 1.5, padding: '0 8px', overflowWrap: 'break-word', flexShrink: 0 },
-  timerChip: { fontWeight: 900, fontSize: 14, color: '#7a5a1e', background: '#fff1d8', borderWidth: 2, borderStyle: 'solid', borderColor: '#e3c489', borderRadius: 999, padding: '4px 14px' },
+  timerChip: { fontWeight: 900, fontSize: 14, color: 'var(--ink-dim)', background: '#fff1d8', borderWidth: 2, borderStyle: 'solid', borderColor: '#e3c489', borderRadius: 999, padding: '4px 14px' },
   timerLow: { color: '#b53b2f', background: '#ffe2dc', borderColor: '#e8a89c' },
   watchNav: { display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center', flexWrap: 'wrap' },
-  navArrow: { width: 44, height: 44, borderRadius: '50%', border: '2px solid #1a1208', background: '#fffdf8', fontWeight: 900, fontSize: 24, lineHeight: 1, cursor: 'pointer', color: '#2d2210', boxShadow: '2px 2px 0 #1a1208', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  navArrow: { width: 44, height: 44, borderRadius: '50%', border: '2px solid var(--ink-outline)', background: 'var(--surface-raised)', fontWeight: 900, fontSize: 24, lineHeight: 1, cursor: 'pointer', color: 'var(--ink)', boxShadow: '2px 2px 0 var(--ink-outline)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   navOff: { opacity: 0.32, boxShadow: 'none', cursor: 'default' },
   dots: { display: 'flex', gap: 7, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 220 },
   dot: { width: 11, height: 11, borderRadius: '50%', border: 'none', background: '#d8cab4', cursor: 'pointer', padding: 0, transition: 'transform 0.12s, background 0.12s' },
-  dotOn: { background: '#b9842f', transform: 'scale(1.4)' },
+  dotOn: { background: 'var(--accent)', transform: 'scale(1.4)' },
   gameBody: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 12, padding: '10px 14px 16px', overflowY: 'auto' },
-  rebuildCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, background: '#fffdf8', border: '2px solid #e3d6c4', borderRadius: 22, padding: '16px 10px 18px', maxWidth: '100%', boxShadow: '4px 4px 0 rgba(26,18,8,0.1)' },
-  instr: { fontWeight: 800, fontSize: 13.5, color: '#5a4a32', textAlign: 'center', padding: '7px 16px', background: '#fff8ec', border: '2px solid #e3c489', borderRadius: 999, maxWidth: '94%' },
+  rebuildCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, background: 'var(--surface-raised)', border: '2px solid var(--line)', borderRadius: 22, padding: '16px 10px 18px', maxWidth: '100%', boxShadow: '4px 4px 0 rgba(26,18,8,0.1)' },
+  instr: { fontWeight: 800, fontSize: 13.5, color: 'var(--ink-dim)', textAlign: 'center', padding: '7px 16px', background: 'var(--surface-raised)', border: '2px solid #e3c489', borderRadius: 999, maxWidth: '94%' },
   grid: { display: 'grid', gap: 14, justifyContent: 'center', justifyItems: 'center' },
   recap: { display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 480, textAlign: 'start', padding: '0 6px' },
   recapLine: { display: 'flex', gap: 9, alignItems: 'flex-start' },
-  recapNum: { flex: '0 0 auto', width: 20, height: 20, borderRadius: '50%', background: '#2e8b57', color: '#fff', fontWeight: 900, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  recapNum: { flex: '0 0 auto', width: 20, height: 20, borderRadius: '50%', background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   recapText: { fontSize: 12.5, fontWeight: 600, color: '#4a3c28', lineHeight: 1.55, overflowWrap: 'break-word', minWidth: 0 },
-  moral: { fontWeight: 800, fontSize: 13.5, color: '#7a5a1e', background: '#fff8ec', border: '2px solid #e3c489', borderRadius: 14, padding: '9px 16px', textAlign: 'center', maxWidth: '96%', lineHeight: 1.55, marginTop: 2 },
-  badge: { position: 'absolute', top: -8, insetInlineStart: -8, zIndex: 2, width: 22, height: 22, borderRadius: '50%', background: '#b9842f', color: '#fff', fontWeight: 900, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fffdf8' },
-  tapPlus: { position: 'absolute', bottom: 4, insetInlineEnd: 4, width: 22, height: 22, borderRadius: '50%', background: '#2e8b57', color: '#fff', fontWeight: 900, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fffdf8', pointerEvents: 'none' },
-  storyWas: { fontWeight: 800, fontSize: 13, color: '#2e8b57', marginTop: 6 },
+  moral: { fontWeight: 800, fontSize: 13.5, color: 'var(--ink-dim)', background: 'var(--surface-raised)', border: '2px solid #e3c489', borderRadius: 14, padding: '9px 16px', textAlign: 'center', maxWidth: '96%', lineHeight: 1.55, marginTop: 2 },
+  badge: { position: 'absolute', top: -8, insetInlineStart: -8, zIndex: 2, width: 22, height: 22, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontWeight: 900, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--surface-raised)' },
+  tapPlus: { position: 'absolute', bottom: 4, insetInlineEnd: 4, width: 22, height: 22, borderRadius: '50%', background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--surface-raised)', pointerEvents: 'none' },
+  storyWas: { fontWeight: 800, fontSize: 13, color: 'var(--success)', marginTop: 6 },
   // press-to-place board (builder tray)
-  dock: { flex: '0 0 auto', background: 'linear-gradient(180deg,#fffdf8 0%,#fff6ea 100%)', borderTop: '2px solid #e3d6c4', borderRadius: '20px 20px 0 0', padding: '6px 14px max(12px, env(safe-area-inset-bottom))', boxShadow: '0 -6px 20px rgba(26,18,8,0.1)' },
-  dockHandle: { width: 44, height: 5, borderRadius: 999, background: '#e3d6c4', margin: '0 auto 2px' },
+  dock: { flex: '0 0 auto', background: 'linear-gradient(180deg,var(--surface-raised) 0%,#fff6ea 100%)', borderTop: '2px solid var(--line)', borderRadius: '20px 20px 0 0', padding: '6px 14px max(12px, env(safe-area-inset-bottom))', boxShadow: '0 -6px 20px rgba(26,18,8,0.1)' },
+  dockHandle: { width: 44, height: 5, borderRadius: 999, background: 'var(--line)', margin: '0 auto 2px' },
   dockInner: { width: '100%', maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 9 },
   dockRow: { display: 'flex', alignItems: 'center', gap: 10 },
   dockLabel: { flex: '0 0 66px', display: 'flex', alignItems: 'center', gap: 3, fontSize: 10.5, fontWeight: 900, color: '#7a6a52', textTransform: 'uppercase', letterSpacing: 0.4 },
   dockIcon: { fontSize: 14, lineHeight: 1 },
   dockChips: { display: 'flex', gap: 7, flexWrap: 'nowrap', overflowX: 'auto', flex: 1, paddingBottom: 3, scrollbarWidth: 'none' },
   dockDivider: { height: 1, background: '#ece2d2' },
-  bgChip: { flex: '0 0 auto', padding: 4, borderRadius: 13, borderWidth: 2, borderStyle: 'solid', borderColor: '#e3d6c4', background: '#fff', cursor: 'pointer', lineHeight: 0 },
-  charChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, padding: '3px 7px 4px', borderRadius: 13, borderWidth: 2, borderStyle: 'solid', borderColor: '#e3d6c4', background: '#fff', cursor: 'pointer' },
+  bgChip: { flex: '0 0 auto', padding: 4, borderRadius: 13, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--line)', background: '#fff', cursor: 'pointer', lineHeight: 0 },
+  charChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, padding: '3px 7px 4px', borderRadius: 13, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--line)', background: '#fff', cursor: 'pointer' },
   charChipArt: { width: 50, height: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' },
-  actChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '7px 10px', borderRadius: 13, borderWidth: 2, borderStyle: 'solid', borderColor: '#e3d6c4', background: '#fff', cursor: 'pointer', minWidth: 58 },
+  actChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '7px 10px', borderRadius: 13, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--line)', background: '#fff', cursor: 'pointer', minWidth: 58 },
   eraseChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '7px 10px', borderRadius: 13, borderWidth: 2, borderStyle: 'solid', borderColor: '#d8c4c0', background: '#fff6f4', cursor: 'pointer', minWidth: 58 },
-  chipName: { fontSize: 10.5, fontWeight: 800, color: '#5a4a32', whiteSpace: 'nowrap' },
-  chipSel: { borderColor: '#b9842f', background: '#fff1d8', boxShadow: '0 0 0 3px rgba(185,132,47,0.32)', transform: 'translateY(-2px)' },
-  checkBtn: { alignSelf: 'stretch', marginTop: 3, padding: '13px 20px', borderRadius: 15, borderWidth: 3, borderStyle: 'solid', borderColor: '#1a1208', background: 'linear-gradient(180deg,#38a866,#2e8b57)', color: '#fff', fontWeight: 900, fontSize: 16, letterSpacing: 0.5, cursor: 'pointer', boxShadow: '4px 4px 0 #1a1208' },
-  primary: { padding: '11px 22px', borderRadius: 14, borderWidth: 2, borderStyle: 'solid', borderColor: '#1a1208', background: '#2e8b57', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '3px 3px 0 #1a1208' },
+  chipName: { fontSize: 10.5, fontWeight: 800, color: 'var(--ink-dim)', whiteSpace: 'nowrap' },
+  chipSel: { borderColor: 'var(--accent)', background: '#fff1d8', boxShadow: '0 0 0 3px rgba(185,132,47,0.32)', transform: 'translateY(-2px)' },
+  checkBtn: { alignSelf: 'stretch', marginTop: 3, padding: '13px 20px', borderRadius: 15, borderWidth: 3, borderStyle: 'solid', borderColor: 'var(--ink-outline)', background: 'linear-gradient(180deg,#38a866,var(--success))', color: '#fff', fontWeight: 900, fontSize: 16, letterSpacing: 0.5, cursor: 'pointer', boxShadow: '4px 4px 0 var(--ink-outline)' },
+  primary: { padding: '11px 22px', borderRadius: 14, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--ink-outline)', background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '3px 3px 0 var(--ink-outline)' },
   primaryOff: { background: '#c9bfae', borderColor: '#a89a82', boxShadow: 'none', cursor: 'default' },
 };

@@ -151,7 +151,7 @@ export default function CaseFileEngine({
 const S = {
   root: {
     position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column',
-    background: '#e8dcc8', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif",
+    background: 'var(--surface)', color: '#2d2d2d', fontFamily: "'Outfit', system-ui, sans-serif",
   },
   cosmosRoot: { background: 'transparent', color: '#f0e2c0', zIndex: 81 },
   overWrap: {
@@ -159,15 +159,15 @@ const S = {
     padding: 24, gap: 8, textAlign: 'center',
   },
   detectiveIcon: { fontSize: 48 },
-  overTitle: { margin: '8px 0', fontWeight: 900, fontSize: 22, color: '#2d2210' },
+  overTitle: { margin: '8px 0', fontWeight: 900, fontSize: 22, color: 'var(--ink)' },
   overSub: { margin: 0, fontWeight: 700, color: '#5a4a32', lineHeight: 1.5 },
   btnRow: { display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap', justifyContent: 'center' },
   primary: {
-    padding: '12px 24px', borderRadius: 14, border: '2px solid #1a1208',
-    background: '#2e8b57', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer',
+    padding: '12px 24px', borderRadius: 14, border: '2px solid var(--ink-outline)',
+    background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer',
   },
   ghost: {
-    padding: '10px 18px', borderRadius: 12, border: '2px solid #cdbfa6', background: '#fff',
+    padding: '10px 18px', borderRadius: 12, border: '2px solid var(--line)', background: '#fff',
     fontWeight: 800, fontSize: 14, cursor: 'pointer', color: '#4a3c28',
   },
 };

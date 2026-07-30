@@ -21,7 +21,7 @@ const Brixton3DProto = lazyWithRetry(() => import('./Brixton3DProto'), 'brixton-
  * Modes (shared ModeShell): Survival (60s) · Levels (100 each × 3 diff) · Pass n Play.
  */
 
-const ACC = '#b84878';
+const ACC = 'var(--color-domain-flexibility-deep)';
 const OK = '#3a9d5d';
 const BAD = '#cf5b50';
 

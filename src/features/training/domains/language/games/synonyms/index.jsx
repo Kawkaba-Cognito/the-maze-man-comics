@@ -27,13 +27,13 @@ import UniverseStage from '../../../../../../components/shared/UniverseStage';
  */
 
 // minimalist palette
-const INK = '#2d2a26';
-const SUB = '#8a7f6f';
-const SUB_ON_DARK = 'rgba(240,226,192,0.68)';
-const PROMPT_ON_DARK = '#f0e2c0';
-const LINE = '#e7ddcc';
-const CARD = '#fffefb';
-const ACC = '#b9842f';
+const INK = 'var(--ink)';
+const SUB = 'var(--ink-dim)';
+const SUB_ON_DARK = 'var(--color-header-text-dim)';
+const PROMPT_ON_DARK = 'var(--color-header-text)';
+const LINE = 'var(--line)';
+const CARD = 'var(--surface-raised)';
+const ACC = 'var(--accent)';
 const OK = '#3a9d5d';
 const BAD = '#cf5b50';
 
@@ -312,8 +312,8 @@ export function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, on
         )}
         {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title" style={{ color: '#f0e2c0' }}>{title}</div>
-          <div className="ct-training-play-sub" style={{ color: 'rgba(240,226,192,0.75)' }}>{hud}</div>
+          <div className="ct-training-play-title" style={{ color: 'var(--color-header-text)' }}>{title}</div>
+          <div className="ct-training-play-sub" style={{ color: 'var(--color-header-text-dim)' }}>{hud}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>

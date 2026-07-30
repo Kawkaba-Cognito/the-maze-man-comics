@@ -15,6 +15,85 @@ import {
 const ATT = 0xe8ac4e;
 const CREAM = 0xf0e2c0;
 
+/*
+ * TIDE DUSK — the gameplay palette, applied to the 3D scenes.
+ *
+ * This is the ACTUAL background of most gameplay: the play screens for the
+ * 3D-scene games are a WebGL canvas, so their colour comes from Three.js here,
+ * NOT from --play-surface or any CSS token. Changing the CSS play surface and
+ * expecting these to follow is the trap — they will not, because the canvas is
+ * opaque (alpha defaults to false) and paints over whatever CSS is beneath.
+ *
+ * These stops are the SAME three as --play-surface in tokens.css. Keep them in
+ * step: cool blue zenith → warm taupe horizon, Home's own gesture.
+ */
+const TIDE_LIGHT_STOPS = ['#ccdae6', '#d2c5b5', '#c6b199'];
+export const TIDE_FOG = 0xd2c5b5;
+
+/*
+ * ─── TIDE DEEP — the same sky, dark end ───
+ *
+ * Tide is ONE palette at two depths, not two palettes. Which depth a scene
+ * gets is a rendering constraint, not a style preference:
+ *
+ *   A scene built from ADDITIVE BLENDING and EMISSIVE glow is drawing light
+ *   INTO darkness. Additive blending on a light ground mathematically
+ *   resolves to nothing — the layer disappears — and bloom starts blooming
+ *   the background itself. Cancellation is six such layers deep (stars, dust,
+ *   trails, tap rings, emissive shapes, a dark cell plate), so on the light
+ *   sky it washed out completely.
+ *
+ * Those scenes take TIDE_DEEP. Scenes made of ordinary lit geometry take the
+ * light one. Same hues, same cool-zenith-to-warm-horizon gesture, same family
+ * as --play-surface — just the end of the ramp their rendering can survive.
+ * Home does exactly this too: near-black at the zenith, warm sand at the
+ * horizon, one sky.
+ */
+const TIDE_DEEP_STOPS = ['#121826', '#1e2130', '#332c33', '#463830'];
+
+/* Fog must be the DARKEST stop, never the mid.
+ *
+ * FogExp2 fades distant geometry toward this colour. Black fog reads as depth
+ * — things recede into dark. A mid-tone fog reads as HAZE: everything washes
+ * toward grey, the value range collapses, and the scene looks dim and flat
+ * even though nothing got darker. First pass here used the mid stop and that
+ * is exactly what happened. */
+export const TIDE_DEEP_FOG = 0x121826;
+
+/* The sky as a 2×256 gradient strip; three.js stretches it to fill. A single
+ * clear colour cannot express the ramp, and the ramp is the whole point.
+ *
+ * EXPORTED because several games (Cancellation, Target Tracking) build their
+ * own renderer instead of calling bootC3dScene, and each used to hardcode its
+ * own black. They import this now, so the gameplay palette has exactly one
+ * definition — if you add another standalone scene, import it here too.
+ *
+ * @param {{ deep?: boolean }} [opts] deep = the dark end, for glow-based scenes
+ */
+export function makeTideSky(opts = {}) {
+  const stops = opts.deep ? TIDE_DEEP_STOPS : TIDE_LIGHT_STOPS;
+  const c = document.createElement('canvas');
+  c.width = 2;
+  c.height = 256;
+  const ctx = c.getContext('2d');
+  const g = ctx.createLinearGradient(0, 0, 0, 256);
+  if (opts.deep) {
+    g.addColorStop(0, stops[0]);
+    g.addColorStop(0.45, stops[1]);
+    g.addColorStop(0.75, stops[2]);
+    g.addColorStop(1, stops[3]);
+  } else {
+    g.addColorStop(0, stops[0]);
+    g.addColorStop(0.58, stops[1]);
+    g.addColorStop(1, stops[2]);
+  }
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 2, 256);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 /**
  * @param {HTMLElement} wrap
  * @param {{ fov?: number, fitHalf?: number, bloom?: boolean, alpha?: boolean, lights?: boolean, stars?: boolean }} [opts]
@@ -40,14 +119,18 @@ export function bootC3dScene(wrap, opts = {}) {
   }
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x000000, 0.02);
+  scene.fog = new THREE.FogExp2(TIDE_FOG, 0.02);
+  // Only paint the sky when the canvas is opaque — an alpha:true scene is meant
+  // to composite over whatever DOM sits behind it.
+  const skyTex = opts.alpha === true ? null : makeTideSky();
+  if (skyTex) scene.background = skyTex;
 
   const fov = opts.fov ?? (coarse ? 54 : 48);
   const camera = new THREE.PerspectiveCamera(fov, 1, 0.1, 80);
   camera.position.set(0, 0, 12);
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.3 : fine ? 1.5 : 1.25));
-  renderer.setClearColor(0x000000, opts.alpha === true ? 0 : 1);
+  renderer.setClearColor(TIDE_FOG, opts.alpha === true ? 0 : 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
   wrap.appendChild(renderer.domElement);
@@ -74,13 +157,18 @@ export function bootC3dScene(wrap, opts = {}) {
     }
     starGeo = new THREE.BufferGeometry();
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    /* On the old black void these were CREAM on AdditiveBlending — light added
+     * to darkness. Tide Dusk is a LIGHT sky, where additive blending resolves
+     * to nothing and cream specks are invisible. Inverted to dark motes on
+     * normal blending, so the same field now reads as fine atmospheric dust
+     * rather than disappearing. */
     stars = new THREE.Points(starGeo, new THREE.PointsMaterial({
-      color: CREAM,
+      color: opts.alpha === true ? CREAM : 0x6d6355,
       size: fine ? 0.04 : 0.05,
       transparent: true,
-      opacity: 0.8,
+      opacity: opts.alpha === true ? 0.8 : 0.42,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      blending: opts.alpha === true ? THREE.AdditiveBlending : THREE.NormalBlending,
     }));
     scene.add(stars);
   }

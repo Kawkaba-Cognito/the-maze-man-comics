@@ -43,7 +43,7 @@ export default function C3dEngineShell({
             {title ? <div className="c3d-title">{title}</div> : null}
             {tag ? <div className="c3d-tag">{tag}</div> : null}
           </div>
-          <div className="c3d-target-chip" style={{ fontSize: '0.65rem', fontWeight: 800, color: '#e8ac4e' }}>
+          <div className="c3d-target-chip" style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--color-amber)' }}>
             3D
           </div>
         </header>

@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
-import { tokens } from '../../../../../../styles/tokens';
 import { IconBack } from '../../../../shared/TrainingIcons';
 import {
   TrainingMenuBar,
@@ -17,9 +16,7 @@ import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
 import { createTrialLog } from '../../../../shared/trialLog';
-import CosmosCharacter from '../../../../../character/CosmosCharacter';
 import { getRange, isWon, clonePieces, RUSH_HOUR_BASE_LAYOUTS } from './engine';
-import { planetIconUrl } from '../../../../../../lib/planetIcons';
 import {
   DM,
 } from '../../../../shared/focusQuestData';
@@ -39,6 +36,7 @@ import { STR_COMMON } from '../../../../shared/trainingStrings';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
 const RushHour3DProto = lazyWithRetry(() => import('./RushHour3DProto'), 'rush-hour-3d');
+const AssessmentMascot3D = lazyWithRetry(() => import('../../../../../../components/training/AssessmentMascot3D'), 'rush-hour-mascot');
 const C3D_FALLBACK = (
   <div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>
 );
@@ -1165,15 +1163,6 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
     );
   }
 
-  /* ─── Standalone 3D prototype ─── */
-  if (phase === 'play3d') {
-    return (
-      <Suspense fallback={C3D_FALLBACK}>
-        <RushHour3DProto isAr={isAr} playSfx={playSfx} onBack={() => setPhase('hub')} />
-      </Suspense>
-    );
-  }
-
   /* ─── Hub ─── */
   if (phase === 'hub' && !isCosmos) {
     return (
@@ -1196,14 +1185,6 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
               { k: 'free', ic: '♾️', lb: t.free, hint: t.hubNodeFreeHint, on: () => setPhase('freeIntro') },
               { k: 'levels', ic: '🎯', lb: t.levels, hint: t.hubNodeLevelsHint, on: () => { setPlayMode('levels'); setPhase('pickDiff'); } },
               { k: 'chal', ic: '⚔️', lb: t.challenge, hint: t.hubNodeChallengeHint, on: () => setPhase('chal') },
-              {
-                k: 'proto3d',
-                lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-                hint: isAr ? 'نموذج ثلاثي الأبعاد قابل للّعب' : 'Playable 3D prototype',
-                on: () => setPhase('play3d'),
-                icoImg: planetIconUrl('reasoning'),
-                mod: 'ct-fq-attn-mode--proto3d',
-              },
             ]}
           />
           <HubScienceLink gameId="rush-hour" isAr={isAr} playSfx={playSfx} />
@@ -1395,13 +1376,13 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                 width: 34,
                 height: 34,
                 borderRadius: 12,
-                border: '2px solid #1a1208',
+                border: '2px solid var(--ink-outline)',
                 background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                boxShadow: '3px 3px 0 #1a1208',
+                boxShadow: '3px 3px 0 var(--ink-outline)',
               }}
             >
               <IconBack size={18} c="#141210" />
@@ -1492,22 +1473,23 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         dir={isAr ? 'rtl' : 'ltr'}
         style={{
           minHeight: '100vh',
-          color: tokens.textDark,
+          color: '#f0e2c0',
           fontFamily: "'Outfit', system-ui, sans-serif",
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          background: isCosmos ? undefined : '#0a0816',
         }}
       >
         <div style={{ textAlign: 'center' }}>
           <div style={{
-            width: 36, height: 36, border: '3px solid #e8dfd0',
-            borderTopColor: '#e8ac4e', borderRadius: '50%',
+            width: 36, height: 36, border: '3px solid rgba(240,226,192,0.3)',
+            borderTopColor: 'var(--color-amber)', borderRadius: '50%',
             animation: 'spin 0.8s linear infinite',
             margin: '0 auto 14px',
           }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          <div style={{ fontSize: 14, color: isCosmos ? '#f0e2c0' : '#5c534c', fontWeight: 600 }}>
+          <div style={{ fontSize: 14, color: '#f0e2c0', fontWeight: 600 }}>
             {isAr ? 'جارٍ إنشاء اللغز…' : 'Generating puzzle…'}
           </div>
         </div>
@@ -1521,7 +1503,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
       data-c3d-embed={isCosmos || undefined}
       dir={isAr ? 'rtl' : 'ltr'}
       style={{
-        color: 'var(--color-training-ink, #2d2d2d)',
+        color: '#f0e2c0',
         fontFamily: "'Outfit', system-ui, sans-serif",
         position: 'relative',
       }}
@@ -1530,15 +1512,10 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         .rh-piece { will-change: transform; }
         .rh-piece:active { cursor: grabbing !important; }
       `}</style>
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 0,
-          pointerEvents: 'none',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 38%)',
-        }}
-      />
+      <div className="ct-rh-sky" aria-hidden="true">
+        <div className="ct-rh-sky-nebula" />
+        <div className="ct-rh-sky-stars" />
+      </div>
 
       <TrainingPlayHeader
         isAr={isAr}
@@ -1609,15 +1586,15 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         >
           <defs>
             <pattern id="rh-grid-cell" width={cellSize} height={cellSize} patternUnits="userSpaceOnUse">
-              <rect x={2} y={2} width={cellSize - 4} height={cellSize - 4} rx={4} fill="rgba(255,252,245,0.5)" />
+              <rect x={2} y={2} width={cellSize - 4} height={cellSize - 4} rx={4} fill="rgba(255,255,255,0.05)" />
             </pattern>
           </defs>
-          <rect x={0} y={0} width={boardPx} height={boardPx} rx={8} fill="#e8dfd0" />
+          <rect x={0} y={0} width={boardPx} height={boardPx} rx={8} fill="#161029" />
           <rect x={0} y={0} width={boardPx} height={boardPx} fill="url(#rh-grid-cell)" />
           <path
             d={`M 8 0 L ${boardPx - 8} 0 Q ${boardPx} 0 ${boardPx} 8 L ${boardPx} ${exitTop - 1} M ${boardPx} ${exitBot + 1} L ${boardPx} ${boardPx - 8} Q ${boardPx} ${boardPx} ${boardPx - 8} ${boardPx} L 8 ${boardPx} Q 0 ${boardPx} 0 ${boardPx - 8} L 0 8 Q 0 0 8 0`}
             fill="none"
-            stroke="#b0a490"
+            stroke="rgba(232,172,78,0.4)"
             strokeWidth={3}
           />
           <rect
@@ -1626,15 +1603,15 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
             width={20}
             height={cellSize - 6}
             rx={4}
-            fill="#f5eee0"
-            stroke="#c8b898"
+            fill="rgba(10,8,22,0.65)"
+            stroke="rgba(232,172,78,0.55)"
             strokeWidth={1.5}
             strokeDasharray="4 3"
           />
           <g transform={`translate(${boardPx + 10}, ${exitTop + cellSize / 2})`}>
             <path
               d="M -3 -7 L 7 0 L -3 7"
-              fill="#e8ac4e"
+              fill="var(--color-amber)"
               stroke="#c8881e"
               strokeWidth={1}
               strokeLinejoin="round"
@@ -1711,11 +1688,14 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                       position: 'relative',
                     }}
                   >
-                    <CosmosCharacter
-                      size={Math.max(36, Math.round(Math.min(w, h) * 1.02))}
-                      mood="focused"
-                      glow={false}
-                    />
+                    <Suspense fallback={null}>
+                      <AssessmentMascot3D
+                        size={Math.max(36, Math.round(Math.min(w, h) * 1.02))}
+                        isAr={isAr}
+                        label={isAr ? 'د. كوكب' : 'Dr Kawkab'}
+                        onActivate={() => {}}
+                      />
+                    </Suspense>
                     <div
                       style={{
                         position: 'absolute',
@@ -1843,15 +1823,22 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
             style={{
               background: 'linear-gradient(180deg, #fffefb, #f5efe8)',
               borderRadius: 18,
-              border: '2.5px solid #1a1208',
-              boxShadow: '6px 6px 0 #1a1208',
+              border: '2.5px solid var(--ink-outline)',
+              boxShadow: '6px 6px 0 var(--ink-outline)',
               padding: '26px 28px',
               textAlign: 'center',
               maxWidth: 320,
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <CosmosCharacter size={108} mood="proud" glow pose="cheer" />
+              <Suspense fallback={null}>
+                <AssessmentMascot3D
+                  size={108}
+                  isAr={isAr}
+                  label={isAr ? 'د. كوكب' : 'Dr Kawkab'}
+                  onActivate={() => {}}
+                />
+              </Suspense>
             </div>
             <div
               className="ct-rh-win-title"
@@ -1859,7 +1846,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                 fontFamily: "'Outfit', system-ui, sans-serif",
                 fontSize: 28,
                 fontWeight: 400,
-                color: '#e8ac4e',
+                color: 'var(--color-amber)',
                 marginTop: 12,
                 letterSpacing: 1,
                 textTransform: 'uppercase',
@@ -1887,13 +1874,13 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                     style={{
                       padding: '10px 18px',
                       borderRadius: 10,
-                      border: '2px solid #1a1208',
+                      border: '2px solid var(--ink-outline)',
                       background: 'linear-gradient(180deg, #6b9e7a, #5a8a68)',
                       fontFamily: "'Outfit', system-ui, sans-serif",
                       fontSize: 15,
                       letterSpacing: 1.2,
                       cursor: 'pointer',
-                      boxShadow: '3px 3px 0 #1a1208',
+                      boxShadow: '3px 3px 0 var(--ink-outline)',
                       color: '#fffefb',
                     }}
                   >
@@ -1910,14 +1897,14 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                     style={{
                       padding: '10px 18px',
                       borderRadius: 10,
-                      border: '2px solid #1a1208',
+                      border: '2px solid var(--ink-outline)',
                       background: 'linear-gradient(180deg, #f5c44a, #e8a830)',
                       fontFamily: "'Outfit', system-ui, sans-serif",
                       fontSize: 15,
                       letterSpacing: 1.2,
                       cursor: 'pointer',
-                      boxShadow: '3px 3px 0 #1a1208',
-                      color: '#1a1208',
+                      boxShadow: '3px 3px 0 var(--ink-outline)',
+                      color: 'var(--ink-outline)',
                     }}
                   >
                     {t.playAgain}
@@ -1935,13 +1922,13 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                     style={{
                       padding: '10px 18px',
                       borderRadius: 10,
-                      border: '2px solid #1a1208',
+                      border: '2px solid var(--ink-outline)',
                       background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
                       fontFamily: "'Outfit', system-ui, sans-serif",
                       fontSize: 15,
                       letterSpacing: 1.2,
                       cursor: 'pointer',
-                      boxShadow: '3px 3px 0 #1a1208',
+                      boxShadow: '3px 3px 0 var(--ink-outline)',
                       color: '#141210',
                     }}
                   >
@@ -1959,14 +1946,14 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                     style={{
                       padding: '10px 18px',
                       borderRadius: 10,
-                      border: '2px solid #1a1208',
+                      border: '2px solid var(--ink-outline)',
                       background: 'linear-gradient(180deg, #f5c44a, #e8a830)',
                       fontFamily: "'Outfit', system-ui, sans-serif",
                       fontSize: 15,
                       letterSpacing: 1.2,
                       cursor: 'pointer',
-                      boxShadow: '3px 3px 0 #1a1208',
-                      color: '#1a1208',
+                      boxShadow: '3px 3px 0 var(--ink-outline)',
+                      color: 'var(--ink-outline)',
                     }}
                   >
                     {t.playAgain}
@@ -1984,13 +1971,13 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                       style={{
                         padding: '10px 18px',
                         borderRadius: 10,
-                        border: '2px solid #1a1208',
+                        border: '2px solid var(--ink-outline)',
                         background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
                         fontFamily: "'Outfit', system-ui, sans-serif",
                         fontSize: 15,
                         letterSpacing: 1.2,
                         cursor: 'pointer',
-                        boxShadow: '3px 3px 0 #1a1208',
+                        boxShadow: '3px 3px 0 var(--ink-outline)',
                         color: '#141210',
                       }}
                     >
@@ -2009,13 +1996,13 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                       style={{
                         padding: '10px 18px',
                         borderRadius: 10,
-                        border: '2px solid #1a1208',
+                        border: '2px solid var(--ink-outline)',
                         background: 'linear-gradient(180deg, #6b9e7a, #5a8a68)',
                         fontFamily: "'Outfit', system-ui, sans-serif",
                         fontSize: 15,
                         letterSpacing: 1.2,
                         cursor: 'pointer',
-                        boxShadow: '3px 3px 0 #1a1208',
+                        boxShadow: '3px 3px 0 var(--ink-outline)',
                         color: '#fffefb',
                       }}
                     >
@@ -2037,13 +2024,13 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                     style={{
                       padding: '10px 18px',
                       borderRadius: 10,
-                      border: '2px solid #1a1208',
+                      border: '2px solid var(--ink-outline)',
                       background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
                       fontFamily: "'Outfit', system-ui, sans-serif",
                       fontSize: 15,
                       letterSpacing: 1.2,
                       cursor: 'pointer',
-                      boxShadow: '3px 3px 0 #1a1208',
+                      boxShadow: '3px 3px 0 var(--ink-outline)',
                       color: '#141210',
                     }}
                   >

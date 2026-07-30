@@ -140,7 +140,10 @@ export default function Interrogation3D({
       'aria-label',
       isAr ? 'صف المشتبه بهم التفاعلي' : 'Interactive suspect line-up',
     );
-    scene.fog = new THREE.FogExp2(0x06070b, 0.055);
+    // Tide deep's darkest stop — was #06070b, a noir black of its own. Fog must
+    // be the DARKEST stop, never a mid tone: FogExp2 fades distance toward this
+    // colour, so a mid grey hazes the room instead of letting it recede.
+    scene.fog = new THREE.FogExp2(0x121826, 0.055);
 
     const stage = new THREE.Group();
     playRoot.add(stage);

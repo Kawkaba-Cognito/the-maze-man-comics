@@ -5,6 +5,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { shapeGeometry } from '../../../../shared/c3dShapes';
 import { isCoarsePointer, isDesktopLayout, releaseGlContext } from '../../../../shared/c3dViewport';
+import { TIDE_DEEP_FOG, makeTideSky } from '../../../../shared/c3dBoot';
 import '../../../../shared/c3dProto.css';
 
 /*
@@ -94,14 +95,22 @@ export default function CancelScene3D({
     let acceptTaps = false;
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x000000, 0.028);
+    /* Tide at its DEEP end — see the TIDE_DEEP note in c3dBoot.js. Not a style
+     * choice: this scene is six additive/emissive layers (stars, dust, trails,
+     * tap rings, emissive shapes, a dark cell plate) and additive blending on a
+     * light ground resolves to nothing. Same palette as the light play surface,
+     * the end of the ramp this rendering can actually survive.
+     * This scene builds its own renderer rather than calling bootC3dScene, so
+     * it has to opt in explicitly. */
+    scene.fog = new THREE.FogExp2(TIDE_DEEP_FOG, 0.028);
+    scene.background = makeTideSky({ deep: true });
 
     const camera = new THREE.PerspectiveCamera(coarse ? 54 : 48, 1, 0.1, 80);
     camera.position.set(0, 0, 11.2);
 
     const renderer = new THREE.WebGLRenderer({ antialias: !coarse, alpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.35 : fine ? 1.6 : 1.25));
-    renderer.setClearColor(0x000000, 1);
+    renderer.setClearColor(TIDE_DEEP_FOG, 1);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
     wrap.appendChild(renderer.domElement);
