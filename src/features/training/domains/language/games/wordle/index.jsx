@@ -19,7 +19,6 @@ import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainin
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import WordleModes from './WordleModes';
 
-const Wordle3DProto = lazyWithRetry(() => import('./Wordle3DProto'), 'wordle-3d');
 import LetterLinkBoard from './LetterLinkBoard';
 import WordleLiveHud from './WordleLiveHud';
 import {
@@ -635,19 +634,8 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
     };
   };
 
-  const wrapCosmos = (content) => isCosmos ? (
-    <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}>…</div>}>
-      <Wordle3DProto isAr={isAr} playSfx={playSfx} onBack={() => { workoutLaunched.current = false; clearPlay(); if (cosmosAutoPlay) { onBack?.(); return; } setCosmosEmbed(false); setPhase('hub'); }} />
-    </Suspense>
-  ) : content;
+  const wrapCosmos = (content) => content;
 
-  if (phase === 'play3d') {
-    return (
-      <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}>…</div>}>
-        <Wordle3DProto isAr={isAr} playSfx={playSfx} onBack={() => setPhase('hub')} />
-      </Suspense>
-    );
-  }
 
   return wrapCosmos(
     <div
@@ -704,7 +692,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
           playSfx={playSfx}
           title={t.freeIntroTitle}
           body={t.freeIntroBody}
-          onReady={() => { clearPlay(); setPhase('play3d'); }}
+          onReady={() => { clearPlay(); startFree(); }}
           onBack={() => setPhase('hub')}
         />
       )}

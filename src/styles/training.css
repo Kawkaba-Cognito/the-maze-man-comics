@@ -25,7 +25,7 @@
 .cancellation-task-game.ct-fq-root {
     --fq-pri: var(--color-amber);
     --fq-pdk: #c98a2e;
-    --fq-acc: #e8a87c;
+    --fq-acc: var(--game-accent);
     --fq-ac2: #c9847a;
     --fq-txt: #2d2d2d;
     --fq-mut: #6b6b6b;
@@ -1267,7 +1267,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 .ct-fq-btn-pri { background: var(--fq-pri); color: #fff; box-shadow: 4px 5px 0 var(--ink-outline); }
 .ct-fq-btn-pri:hover { transform: translate(-1px, -1px); box-shadow: 6px 7px 0 var(--ink-outline); }
 .ct-fq-btn-pri:active { box-shadow: 1px 1px 0 var(--ink-outline); }
-.ct-fq-btn-sec { background: var(--fq-acc); color: #fff; box-shadow: 4px 5px 0 var(--ink-outline); }
+.ct-fq-btn-sec { background: var(--fq-acc); color: var(--game-selected); box-shadow: 4px 5px 0 var(--ink-outline); }
 .ct-fq-btn-ghost { background: var(--fq-sur); color: var(--fq-mut); border: 2px solid var(--ink-outline); box-shadow: 3px 3px 0 var(--ink-outline); max-width: 200px; padding: 11px; font-size: 0.86rem; }
 .ct-fq-btn-ghost:active { box-shadow: 1px 1px 0 var(--ink-outline); }
 
@@ -3709,7 +3709,6 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 }
 .ct-trail-3d-hud > span {
     flex: 0 0 auto;
-    color: #f0e2c0 !important;
     white-space: nowrap;
 }
 .ct-trail-3d-stage {
@@ -5966,7 +5965,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     flex-direction: column;
     min-height: 100dvh;
     padding: 0 8px 12px;
-    background: linear-gradient(180deg, #f8f6fc 0%, #ebe6f4 100%);
+    background: transparent;
     touch-action: manipulation;
 }
 .ct-wordle-connect-hint {

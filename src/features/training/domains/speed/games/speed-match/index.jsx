@@ -43,9 +43,9 @@ import {
   bankGainMs,
 } from './speedMatchData';
 
-// The board. 2D since the 3D scene was retired — this task measures how fast
-// you can READ a digit, so the digits are text rather than canvas textures.
-import SpeedMatchBoard2D from './SpeedMatchBoard2D';
+// No board import: this game renders its own 2D board below (LegendBar, the
+// probe card and the number pad). Retiring the 3D scene needed no replacement
+// component — the DOM board was always there, just hidden by the --3d shell.
 
 const PROFILE_KEY = 'mm_speedmatch_v1';
 function loadProfile() {
@@ -961,7 +961,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
       )}
 
       {phase === 'play' && block && (
-        <div className="ct-sm-play ct-sm-play--3d">
+        <div className="ct-sm-play">
           <TrainingPlayHeader
             isAr={isAr}
             title={header.title}
@@ -971,16 +971,9 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
             onPause={onPause}
             pauseAriaLabel={t.paused}
           />
-          <div className={`ct-sm-stage ct-sm-stage--3d ct-juice-host${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}${juice.shake ? ' ct-juice-shake' : ''}`}>
-            <SpeedMatchBoard2D
-              legend={legend}
-              item={item}
-              interactive={playStep === 'running' && !pauseOpen}
-              onAnswer={answer}
-              pressedKey={pressedKey}
-            />
+          <div className={`ct-sm-stage ct-juice-host${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}${juice.shake ? ' ct-juice-shake' : ''}`}>
             {playStep === 'countdown' && (
-              <div className="ct-sm-countdown3d">{cdVal > 0 ? cdVal : t.go}</div>
+              <div className="ct-sm-countdown">{cdVal > 0 ? cdVal : t.go}</div>
             )}
             <JuiceLayer
               combo={juice.combo}
