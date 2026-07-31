@@ -1,4 +1,6 @@
 // Auto-extracted from FocusQuest — shapes, pools, level config, scoring
+import { GAME_STIMULUS } from './gamePalette';
+
 export const SH={
   // DISTINCT (easy)
   circle:    `<circle cx="50" cy="50" r="38" fill="currentColor"/>`,
@@ -175,7 +177,11 @@ export const SP={
 // "medium" palette was four near-identical blues — colour was almost useless as
 // a feature there. Same set across tiers; difficulty comes from shape similarity
 // + interference, not from how confusable the base colours are.
-export const CVD_SAFE_PALETTE = ['#0072B2', '#E69F00', '#009E73', '#CC79A7'];
+//
+// Now re-exported from gamePalette (as GAME_STIMULUS) so the platform has one
+// colour source of truth. It lives there with the measurements showing why this
+// set is NOT toned into the game palette's key like everything else.
+export const CVD_SAFE_PALETTE = GAME_STIMULUS;
 export const PAL = {
   easy: CVD_SAFE_PALETTE,
   medium: CVD_SAFE_PALETTE,

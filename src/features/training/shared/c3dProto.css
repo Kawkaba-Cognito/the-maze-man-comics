@@ -84,8 +84,7 @@
   font-weight: 800;
   font-size: clamp(0.95rem, 3.8vw, 1.3rem);
   letter-spacing: -0.02em;
-  color: #f0e2c0;
-  text-shadow: 0 0 18px rgba(232, 172, 78, 0.45), 0 2px 8px rgba(0, 0, 0, 0.8);
+  color: var(--game-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -283,9 +282,9 @@
 }
 
 .c3d-cta--ghost {
-  color: #f0e2c0;
+  color: var(--game-ink);
   background: transparent;
-  border: 1px solid rgba(232, 172, 78, 0.5);
+  border: 2px solid var(--game-ink);
   box-shadow: none;
 }
 
@@ -401,7 +400,7 @@
 }
 
 .c3d-ui--overlay .c3d-overlay-actions { pointer-events: auto; }
-.c3d-prompt { position: absolute; left: 50%; top: 26%; transform: translate(-50%,-50%); z-index: 1; max-width: min(92vw,420px); text-align: center; font-weight: 800; font-size: clamp(1.2rem,5.5vw,2rem); color: #f0e2c0; text-shadow: 0 2px 14px rgba(0,0,0,0.9); pointer-events: none; padding: 0 12px; }
+.c3d-prompt { position: absolute; left: 50%; top: 26%; transform: translate(-50%,-50%); z-index: 1; max-width: min(92vw,420px); text-align: center; font-weight: 800; font-size: clamp(1.2rem,5.5vw,2rem); color: var(--game-ink); pointer-events: none; padding: 0 12px; }
 .c3d-overlay-actions { position: absolute; left: 50%; bottom: max(18px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 1; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: min(96vw, 420px); padding: 0 10px; box-sizing: border-box; }
 .c3d-choice-btn { flex: 1 1 40%; min-height: 52px; border: 1px solid rgba(232,172,78,0.55); border-radius: 16px; background: rgba(0,0,0,0.55); color: #f0e2c0; font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer; backdrop-filter: blur(10px); }
 

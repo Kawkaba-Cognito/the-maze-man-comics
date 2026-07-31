@@ -6,7 +6,6 @@ import React, {
   useRef,
   useLayoutEffect,
   useSyncExternalStore,
-  Suspense,
 } from 'react';
 import {
   getShapeScale,
@@ -16,7 +15,6 @@ import {
 import { createStaircase } from './staircase';
 import { useApp } from '../../../../../../context/AppContext';
 import { assetUrl } from '../../../../../../lib/assetUrl';
-import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import {
   SH,
   DM,
@@ -71,8 +69,10 @@ import { loadAssessProfile } from '../../../../assessment/assessmentProfile';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
 
-// Three.js cosmos prototype — kept out of the cancel-task chunk until opened.
-const CancelScene3D = lazyWithRetry(() => import('./Cancel3DProto'), 'cancel-3d');
+// The board. 2D since the 3D scene was retired — it drew a flat, face-on board
+// through WebGL because this task cannot take perspective without invalidating
+// its own metrics. See the header of CancelBoard2D.jsx.
+import CancelBoard2D from './CancelBoard2D';
 
 /** Merge one challenge pass into running per-player aggregates (avg IES/time/etc., total errors). */
 function mergeChallengePlayerStats(prev, stats, errCount, nm) {
@@ -210,21 +210,6 @@ function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx
   ];
   return <ModePlanetHub items={items} isAr={isAr} playSfx={playSfx} />;
 }
-
-const FqGridCell = React.memo(function FqGridCell({ cell, idx, size, running, onTap }) {
-  return (
-    <button
-      type="button"
-      className={`ct-fq-sc ${cell.feedback === 'ok' ? 'ok' : ''} ${cell.feedback === 'bad' ? 'bad' : ''} ${cell.feedback === 'mark' ? 'mark' : ''}`}
-      disabled={cell.tapped || !running}
-      onClick={() => onTap(idx)}
-    >
-      <ShapeSvg shape={cell.shape} color={cell.fill} size={size} />
-      {cell.feedback === 'ok' && <span className="ct-fq-ck">✓</span>}
-      {cell.feedback === 'bad' && <span className="ct-fq-pi">-3s</span>}
-    </button>
-  );
-});
 
 /**
  * Single consolidated play bar: back · target chip · live stats · pause, then
@@ -1911,21 +1896,17 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       {phase === 'play' && round && (
         <>
           <div className="ct-fq-play">
-          <div className={`ct-fq-g-wrap ct-fq-g-wrap--scene3d ct-juice-host${juice.shake ? ' ct-juice-shake' : ''}`} ref={gridWrapRef}>
-            <div className="ct-fq-scene3d">
-              <Suspense fallback={null}>
-                <CancelScene3D
-                  cells={cells}
-                  round={round}
-                  interactive={playStep === 'running' && !pauseOpen && !cdShow}
-                  onTapCell={onCellTap}
-                  isAr={isAr}
-                  boardApiRef={boardApiRef}
-                />
-              </Suspense>
-            </div>
+          <div className={`ct-fq-g-wrap ct-fq-g-wrap--scene2d ct-juice-host${juice.shake ? ' ct-juice-shake' : ''}`} ref={gridWrapRef}>
+            <CancelBoard2D
+              cells={cells}
+              round={round}
+              interactive={playStep === 'running' && !pauseOpen && !cdShow}
+              onTapCell={onCellTap}
+              isAr={isAr}
+              boardApiRef={boardApiRef}
+            />
 
-            {/* Dr Kawkab teaches on this exact board. Sibling of the canvas and
+            {/* Dr Kawkab teaches on this exact board. Sibling of the board and
                 also inset:0, so the hand's screen fractions line up with it. */}
             {coachOpen && (
               <CancelTaskCoach
@@ -1937,7 +1918,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                 onSkip={endCoach}
               />
             )}
-            <div className="ct-fq-scene3d-overlay">
+            <div className="ct-fq-scene2d-overlay">
             <JuiceLayer
               combo={juice.combo}
               particle={juice.particle}

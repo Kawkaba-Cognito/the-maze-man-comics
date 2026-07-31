@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { GAME_COLORS } from '../../../../shared/gamePalette';
 import { bootC3dScene, disposeObject, matStd, THREE } from '../../../../shared/c3dBoot';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import { MEMO_OBJECTS } from '../memo-span/memoObjects';
@@ -193,8 +194,8 @@ export default function NBack3DProto({
           className="c3d-choice-btn"
           disabled={resp.pos || playStep !== 'run'}
           style={feedback.pos ? {
-            borderColor: feedback.pos === 'good' ? '#62b277' : '#dd7f7a',
-            color: feedback.pos === 'good' ? '#62b277' : '#dd7f7a',
+            borderColor: feedback.pos === 'good' ? GAME_COLORS.ok.fill : GAME_COLORS.bad.fill,
+            color: feedback.pos === 'good' ? GAME_COLORS.ok.fill : GAME_COLORS.bad.fill,
           } : undefined}
           onPointerDown={() => onRespond?.('pos')}
         >
@@ -205,8 +206,8 @@ export default function NBack3DProto({
           className="c3d-choice-btn"
           disabled={resp.obj || playStep !== 'run'}
           style={feedback.obj ? {
-            borderColor: feedback.obj === 'good' ? '#62b277' : '#dd7f7a',
-            color: feedback.obj === 'good' ? '#62b277' : '#dd7f7a',
+            borderColor: feedback.obj === 'good' ? GAME_COLORS.ok.fill : GAME_COLORS.bad.fill,
+            color: feedback.obj === 'good' ? GAME_COLORS.ok.fill : GAME_COLORS.bad.fill,
           } : undefined}
           onPointerDown={() => onRespond?.('obj')}
         >

@@ -11,7 +11,9 @@ import { assetUrl } from '../../../../../../lib/assetUrl';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import { planetIconUrl } from '../../../../../../lib/planetIcons';
 
-import MotScene3D from './Mot3DProto';
+// The arena. 2D since the 3D scene was retired — this game's look is the
+// platform palette's reference, so the 2D board reproduces it directly.
+import MotBoard2D from './MotBoard2D';
 
 const MOT_ARENA_URL = assetUrl('Assets/attention/mot-arena-plate.svg');
 const motArenaImg = typeof Image !== 'undefined' ? new Image() : null;
@@ -637,7 +639,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
         {phase === 'respond' ? <b style={{ marginInlineStart: 4 }}>· {picksLeft}</b> : null}
       </div>
       <div ref={wrapRef} style={S.play}>
-        <MotScene3D
+        <MotBoard2D
           dotsRef={dotsRef}
           fieldRef={fieldRef}
           phaseRef={phaseRef}

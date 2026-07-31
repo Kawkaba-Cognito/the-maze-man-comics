@@ -43,7 +43,9 @@ import {
   bankGainMs,
 } from './speedMatchData';
 
-const SpeedMatch3DProto = lazyWithRetry(() => import('./SpeedMatch3DProto'), 'speed-match-3d');
+// The board. 2D since the 3D scene was retired — this task measures how fast
+// you can READ a digit, so the digits are text rather than canvas textures.
+import SpeedMatchBoard2D from './SpeedMatchBoard2D';
 
 const PROFILE_KEY = 'mm_speedmatch_v1';
 function loadProfile() {
@@ -970,15 +972,13 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
             pauseAriaLabel={t.paused}
           />
           <div className={`ct-sm-stage ct-sm-stage--3d ct-juice-host${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}${juice.shake ? ' ct-juice-shake' : ''}`}>
-            <Suspense fallback={null}>
-              <SpeedMatch3DProto
-                legend={legend}
-                item={item}
-                interactive={playStep === 'running' && !pauseOpen}
-                onAnswer={answer}
-                pressedKey={pressedKey}
-              />
-            </Suspense>
+            <SpeedMatchBoard2D
+              legend={legend}
+              item={item}
+              interactive={playStep === 'running' && !pauseOpen}
+              onAnswer={answer}
+              pressedKey={pressedKey}
+            />
             {playStep === 'countdown' && (
               <div className="ct-sm-countdown3d">{cdVal > 0 ? cdVal : t.go}</div>
             )}

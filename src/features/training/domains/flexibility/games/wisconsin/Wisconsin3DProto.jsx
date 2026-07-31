@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { GAME_INTS } from '../../../../shared/gamePalette';
 import { bootC3dScene, matStd, disposeObject, THREE } from '../../../../shared/c3dBoot';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import { makeRng } from '../../../../shared/rng';
@@ -267,7 +268,7 @@ export default function Wisconsin3DProto({
       }
       const refMesh = refs[refIdx];
       refMesh.userData.flash = 0.7;
-      refMesh.userData.flashHex = ok ? 0x62b277 : 0xdd7f7a;
+      refMesh.userData.flashHex = ok ? GAME_INTS.ok.fill : GAME_INTS.bad.fill;
       if (ok) {
         scoreN += 10 + Math.min(comboN, 8) * 2;
         correctN += 1;

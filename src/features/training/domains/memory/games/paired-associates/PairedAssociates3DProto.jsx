@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { GAME_INTS } from '../../../../shared/gamePalette';
 import { bootC3dScene, disposeObject, matStd, THREE } from '../../../../shared/c3dBoot';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import {
@@ -95,7 +96,7 @@ export default function PairedAssociates3DProto({
       const ring = new THREE.Mesh(
         new THREE.RingGeometry(cardSize * 0.57, cardSize * 0.68, 32),
         new THREE.MeshBasicMaterial({
-          color: 0x4c92cf,
+          color: GAME_INTS.item.fill,
           transparent: true,
           opacity: 0.14,
           depthWrite: false,
@@ -155,13 +156,13 @@ export default function PairedAssociates3DProto({
 
         const frameMaterial = station.userData.frameMaterial;
         if (isWrong) {
-          frameMaterial.emissive.setHex(0xd23b3b);
+          frameMaterial.emissive.setHex(GAME_INTS.bad.fill);
           frameMaterial.emissiveIntensity = 0.8;
         } else if (isCorrect) {
-          frameMaterial.emissive.setHex(0x2e9b62);
+          frameMaterial.emissive.setHex(GAME_INTS.ok.fill);
           frameMaterial.emissiveIntensity = 0.82;
         } else if (isOpen) {
-          frameMaterial.emissive.setHex(0x4c92cf);
+          frameMaterial.emissive.setHex(GAME_INTS.item.fill);
           frameMaterial.emissiveIntensity = 0.7;
         } else {
           frameMaterial.emissive.setHex(0x102b42);

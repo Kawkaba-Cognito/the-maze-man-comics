@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { GAME_INTS } from '../../../../shared/gamePalette';
 import { bootC3dScene, matStd, disposeObject, THREE } from '../../../../shared/c3dBoot';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 // SAME game as 2D Survival: real grid generator, dictionary + path rules.
@@ -56,7 +57,7 @@ const UI = {
 // of the generic app-wide gold — gives Word Maze its own on-brand glow.
 const TILE_BG = 0x241209;
 const TILE_ACTIVE = 0xd97240;
-const TILE_OK = 0x62b277;
+const TILE_OK = GAME_INTS.ok.fill;
 const CREAM = '#faf0ea';
 
 function randSeed() {

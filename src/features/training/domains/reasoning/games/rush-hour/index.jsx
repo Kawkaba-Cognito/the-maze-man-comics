@@ -38,7 +38,7 @@ import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 const RushHour3DProto = lazyWithRetry(() => import('./RushHour3DProto'), 'rush-hour-3d');
 const AssessmentMascot3D = lazyWithRetry(() => import('../../../../../../components/training/AssessmentMascot3D'), 'rush-hour-mascot');
 const C3D_FALLBACK = (
-  <div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>
+  <div className="c3d-root" style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}>…</div>
 );
 
 const RH_ASSESS_CAP_SEC = 150; // per scored puzzle — 4 puzzles ≈ 6 min + warm-up

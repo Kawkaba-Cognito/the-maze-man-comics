@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { GAME_INTS, GAME_COLORS } from '../../../../shared/gamePalette';
 import { bootC3dScene, matStd, disposeObject, THREE } from '../../../../shared/c3dBoot';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import { getRange, isWon, clonePieces } from './engine';
@@ -18,7 +19,7 @@ import { rhFreeParPoints } from './data';
 
 const BOARD = 6; // curated boards are all 6×6
 const CELL = 0.92;
-const EXIT_COLOR = 0xe8ac4e;
+const EXIT_COLOR = GAME_INTS.accent.fill;
 const LIVES0 = 3;
 const CAR_COLORS = [0x6bb3c8, 0xc47bb0, 0x7cbc7a, 0xd4a574, 0x8b9dc3, 0xd98f5a, 0x9b8fd6, 0x69a89a, 0xcf6f6f, 0x8aa1c0, 0xb3a06b, 0x7a8bd0];
 
@@ -129,7 +130,7 @@ export default function RushHour3DProto({ isAr, playSfx, onBack }) {
 
     const boardPlane = new THREE.Mesh(
       new THREE.PlaneGeometry(BOARD * CELL + 0.25, BOARD * CELL + 0.25),
-      matStd(0x18140d, { emissive: 0xe8ac4e, emissiveIntensity: 0.03, metalness: 0.2, roughness: 0.9 }),
+      matStd(0x18140d, { emissive: GAME_INTS.accent.fill, emissiveIntensity: 0.03, metalness: 0.2, roughness: 0.9 }),
     );
     boardPlane.position.z = -0.15;
     boardGroup.add(boardPlane);
@@ -477,7 +478,7 @@ export default function RushHour3DProto({ isAr, playSfx, onBack }) {
       tag={t.tag}
       hint={t.hint}
       chip={`${diffKey} · ${t.round} ${stage + 1}`}
-      chipStyle={{ fontSize: '0.7rem', fontWeight: 800, color: '#e8ac4e', textTransform: 'capitalize' }}
+      chipStyle={{ fontSize: '0.7rem', fontWeight: 800, color: GAME_COLORS.accent.fill, textTransform: 'capitalize' }}
       stats={stats}
       banner={bannerText}
       bannerOver={banner === 'over' || banner === 'timeout'}

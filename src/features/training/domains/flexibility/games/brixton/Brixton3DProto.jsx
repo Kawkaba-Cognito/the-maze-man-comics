@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { GAME_INTS } from '../../../../shared/gamePalette';
 import { bootC3dScene, matStd, disposeObject, THREE } from '../../../../shared/c3dBoot';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import { makeRng } from '../../../../shared/rng';
@@ -57,8 +58,8 @@ const UI = {
 
 const NODE_BASE = 0x173653;
 const NODE_LIT = 0x55d6e8;
-const NODE_OK = 0x62b277;
-const NODE_BAD = 0xdd7f7a;
+const NODE_OK = GAME_INTS.ok.fill;
+const NODE_BAD = GAME_INTS.bad.fill;
 
 function nodeNumberTexture(value) {
   const c = document.createElement('canvas');

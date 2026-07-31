@@ -1,0 +1,63 @@
+/*
+ * Cancellation's 2D board. Layout only — every colour comes from tokens.css
+ * (--game-*) via the shared kit.
+ */
+
+.cb2d-wrap {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--play-surface);
+  overflow: hidden;
+  /* The HUD floats over the top of the play area; nudge the grid down out from
+     under it so the top row is never half-covered. */
+  padding-top: clamp(56px, 12vh, 104px);
+  padding-bottom: clamp(8px, 3vh, 28px);
+  touch-action: manipulation;
+}
+
+/* The measured box: what is actually left for the grid once the HUD padding is
+   taken off. CancelBoard2D sizes the pieces from THIS, not from .cb2d-wrap,
+   whose clientHeight includes that padding. */
+.cb2d-fit {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+
+.cb2d-grid {
+  display: grid;
+  gap: clamp(4px, 1.2vmin, 14px);
+  justify-content: center;
+  align-content: center;
+}
+
+.cb2d-cell {
+  display: grid;
+  place-items: center;
+  /* Fixed track size: a cleared piece must not let its neighbours reflow, or
+     the player's search path is disturbed mid-round and the position metrics
+     (Center of Cancellation, search organisation) stop meaning anything. */
+  aspect-ratio: 1;
+}
+
+/* A cleared target fades out but keeps its slot. */
+.cb2d-cell--cleared {
+  animation: cb2dClear 320ms ease-out forwards;
+}
+
+@keyframes cb2dClear {
+  0% { transform: scale(1); opacity: 1; }
+  40% { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1.05); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb2d-cell--cleared {
+    animation: none;
+    opacity: 0;
+  }
+}

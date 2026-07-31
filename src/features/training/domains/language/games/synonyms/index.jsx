@@ -34,8 +34,8 @@ const PROMPT_ON_DARK = 'var(--color-header-text)';
 const LINE = 'var(--line)';
 const CARD = 'var(--surface-raised)';
 const ACC = 'var(--accent)';
-const OK = '#3a9d5d';
-const BAD = '#cf5b50';
+const OK = 'var(--game-ok)';
+const BAD = 'var(--game-bad)';
 
 const PER_LEVEL = 10;
 const WIN_ACC = 0.72;
@@ -296,7 +296,7 @@ export function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, on
 
   const optState = (o) => {
     if (!fb) return {};
-    if (o.correct) return { borderColor: OK, background: '#eef7f0', color: INK };
+    if (o.correct) return { borderColor: OK, background: 'color-mix(in srgb, var(--game-ok) 14%, var(--surface-raised))', color: INK };
     return { opacity: 0.55 };
   };
 
@@ -415,11 +415,11 @@ const S = {
   anQ: { fontWeight: 800, fontSize: 26, color: ACC, padding: '0 4px' },
   pairGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 },
   pairTile: { padding: '20px 10px', fontWeight: 700, fontSize: 'clamp(15px, 4vw, 18px)', color: INK, background: CARD, borderWidth: 1, borderStyle: 'solid', borderColor: LINE, borderRadius: 14, cursor: 'pointer', transition: 'border-color 0.1s, background 0.1s' },
-  pairTileOn: { borderColor: ACC, background: '#fdf6ea' },
+  pairTileOn: { borderColor: ACC, background: 'color-mix(in srgb, var(--game-accent) 16%, var(--surface-raised))' },
   options: { display: 'flex', flexDirection: 'column', gap: 10 },
   opt: { padding: '15px 16px', borderRadius: 13, borderWidth: 1, borderStyle: 'solid', borderColor: LINE, background: CARD, fontWeight: 600, fontSize: 'clamp(15px, 4vw, 17px)', color: INK, textAlign: 'start', cursor: 'pointer', lineHeight: 1.35, transition: 'border-color 0.1s, background 0.1s, opacity 0.1s' },
   feedback: { textAlign: 'center', fontWeight: 700, fontSize: 14, minHeight: 20 },
-  survTrack: { position: 'relative', zIndex: 1, height: 3, background: '#efe8db', flexShrink: 0 },
+  survTrack: { position: 'relative', zIndex: 1, height: 3, background: 'var(--line)', flexShrink: 0 },
   survFill: { height: '100%', transition: 'width 0.08s linear' },
   overWrap: { position: 'relative', zIndex: 1, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 },
   overCard: { background: CARD, border: `1px solid ${LINE}`, borderRadius: 20, padding: '32px 28px', textAlign: 'center', maxWidth: 340, width: '100%', boxShadow: '0 8px 30px rgba(26,18,8,0.08)' },

@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { GAME_STIMULUS_6 } from '../../../../shared/gamePalette';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
@@ -33,7 +34,10 @@ const ATT = '#e8ac4e';
 // rounds use the four that stay clearly separable even under deuteranopia /
 // protanopia (worst-case CIELAB ΔE ≈ 18); the two blues only co-appear at the
 // hardest 6-colour level.
-export const PAL = ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9'];
+// Colour IS the task here (match each ship to its bay), so these come from the
+// shared stimulus set rather than the six semantic roles — same reason
+// Cancellation does. Re-exported so existing importers keep working.
+export const PAL = GAME_STIMULUS_6;
 const DIRV = { N: [-1, 0], S: [1, 0], W: [0, -1], E: [0, 1] };
 const OPP = { N: 'S', S: 'N', E: 'W', W: 'E' };
 
@@ -608,7 +612,7 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
         // fixed ship count — all reporting back through ModeShell like the 2D did.
         <Suspense
           key={`carpark-3d-${p.mode}-${p.diff}-${p.level}`}
-          fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}
+          fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}>…</div>}
         >
           <CarPark3DProto
             isAr={isAr}

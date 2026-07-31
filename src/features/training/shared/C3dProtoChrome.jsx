@@ -34,6 +34,9 @@ export default function C3dProtoChrome({
   onBack,
   playSfx,
   canvasRef,
+  /* Rendered INSIDE the canvas box. The 3D scenes appended their WebGL canvas
+     to this div imperatively; the 2D boards pass their <canvas> here instead. */
+  canvasChildren,
   children,
 }) {
   const titleText = textOf(title, isAr);
@@ -48,7 +51,7 @@ export default function C3dProtoChrome({
 
   return (
     <div className="c3d-root" dir={isAr ? 'rtl' : 'ltr'}>
-      <div className="c3d-canvas" ref={canvasRef} aria-hidden="true" />
+      <div className="c3d-canvas" ref={canvasRef} aria-hidden="true">{canvasChildren}</div>
       {errText ? (
         <div className="c3d-banner c3d-banner--over">
           <span>{errText}</span>

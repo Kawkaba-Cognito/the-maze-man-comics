@@ -28,6 +28,11 @@ export const tokens = {
   /** Attention + reasoning training — warm menu paper from the palette reference */
   trainingPaletteSurface: '#fff7f2',
 
+  /* NOTE: the colours of the PIECES inside a training game (item/accent/ok/bad/
+     selected/muted, plus the sky they sit on) do not live here. They live in
+     features/training/shared/gamePalette.js, which is their JS source of truth
+     and mirrors the --game-* block in tokens.css. Don't add a second copy here. */
+
   /* Amber / accent */
   amber: '#e8ac4e',
   amberBright: '#ffd47e',

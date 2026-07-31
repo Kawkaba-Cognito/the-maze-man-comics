@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { GAME_INTS } from '../../../../shared/gamePalette';
 import { bootC3dScene, matStd, disposeObject, THREE } from '../../../../shared/c3dBoot';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import { makeRng } from '../../../../shared/rng';
@@ -236,7 +237,7 @@ export default function CarPark3DProto({
       for (const e of edgeMeshes) {
         const on = edgeActive(e.parent, e.childIdx);
         e.mesh.material.color.setHex(on ? LANE_LIT : LANE_IDLE);
-        e.mesh.material.emissive.setHex(on ? 0xe8ac4e : 0x000000);
+        e.mesh.material.emissive.setHex(on ? GAME_INTS.accent.fill : 0x000000);
         e.mesh.material.emissiveIntensity = on ? 0.16 : 0;
         e.on = on;
         for (const d of e.dashes) d.visible = on;
@@ -268,7 +269,7 @@ export default function CarPark3DProto({
       // Cream dorsal stripe down the spine.
       const stripe = new THREE.Mesh(
         new THREE.BoxGeometry(S * 0.66, S * 0.05, 0.012),
-        matStd(0xf0e2c0, { emissive: 0xf0e2c0, emissiveIntensity: 0.4, metalness: 0.3, roughness: 0.4 }),
+        matStd(GAME_INTS.selected.fill, { emissive: GAME_INTS.selected.fill, emissiveIntensity: 0.4, metalness: 0.3, roughness: 0.4 }),
       );
       stripe.position.set(S * 0.02, 0, S * 0.14 + 0.05);
       grp.add(stripe);
@@ -287,7 +288,7 @@ export default function CarPark3DProto({
       for (const side of [-1, 1]) {
         const nac = new THREE.Mesh(
           new THREE.CylinderGeometry(S * 0.055, S * 0.075, S * 0.3, 10),
-          matStd(0x2a241a, { emissive: 0xe8ac4e, emissiveIntensity: 0.15, metalness: 0.6, roughness: 0.35 }),
+          matStd(0x2a241a, { emissive: GAME_INTS.accent.fill, emissiveIntensity: 0.15, metalness: 0.6, roughness: 0.35 }),
         );
         nac.rotation.z = Math.PI / 2;
         nac.position.set(-S * 0.28, side * S * 0.19, S * 0.08 + 0.05);
@@ -405,21 +406,21 @@ export default function CarPark3DProto({
       const hw = g.cell * 0.5;
       const hexPad = new THREE.Mesh(
         new THREE.CylinderGeometry(hw * 1.15, hw * 1.25, 0.1, 6),
-        matStd(0x241b10, { emissive: 0xe8ac4e, emissiveIntensity: 0.06, metalness: 0.35, roughness: 0.6 }),
+        matStd(0x241b10, { emissive: GAME_INTS.accent.fill, emissiveIntensity: 0.06, metalness: 0.35, roughness: 0.6 }),
       );
       hexPad.rotation.x = Math.PI / 2;
       hexPad.position.z = 0.03;
       hangar.add(hexPad);
       const dome = new THREE.Mesh(
         new THREE.SphereGeometry(hw * 0.85, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2),
-        matStd(0x39281a, { emissive: 0xe8ac4e, emissiveIntensity: 0.1, metalness: 0.4, roughness: 0.4 }),
+        matStd(0x39281a, { emissive: GAME_INTS.accent.fill, emissiveIntensity: 0.1, metalness: 0.4, roughness: 0.4 }),
       );
       dome.rotation.x = Math.PI / 2;
       dome.position.z = 0.08;
       hangar.add(dome);
       const trim = new THREE.Mesh(
         new THREE.TorusGeometry(hw * 0.86, hw * 0.05, 8, 24),
-        matStd(0xe8ac4e, { emissive: 0xe8ac4e, emissiveIntensity: 0.6, metalness: 0.4, roughness: 0.3 }),
+        matStd(GAME_INTS.accent.fill, { emissive: GAME_INTS.accent.fill, emissiveIntensity: 0.6, metalness: 0.4, roughness: 0.3 }),
       );
       trim.position.z = 0.1;
       hangar.add(trim);
@@ -497,14 +498,14 @@ export default function CarPark3DProto({
       for (const f of g.forks) {
         const jpad = new THREE.Mesh(
           new THREE.CylinderGeometry(g.cell * 0.3, g.cell * 0.34, 0.05, 22),
-          matStd(0x1c150c, { emissive: 0xe8ac4e, emissiveIntensity: 0.08, metalness: 0.25, roughness: 0.7 }),
+          matStd(0x1c150c, { emissive: GAME_INTS.accent.fill, emissiveIntensity: 0.08, metalness: 0.25, roughness: 0.7 }),
         );
         jpad.rotation.x = Math.PI / 2;
         jpad.position.set(f.x, f.y, -0.04);
         netGroup.add(jpad);
         const ring = new THREE.Mesh(
           new THREE.TorusGeometry(g.cell * 0.24, g.cell * 0.055, 10, 24),
-          matStd(0xe8ac4e, { emissive: 0xe8ac4e, emissiveIntensity: 0.55, metalness: 0.35, roughness: 0.35 }),
+          matStd(GAME_INTS.accent.fill, { emissive: GAME_INTS.accent.fill, emissiveIntensity: 0.55, metalness: 0.35, roughness: 0.35 }),
         );
         ring.position.set(f.x, f.y, 0.05);
         const chevron = new THREE.Mesh(
@@ -566,7 +567,7 @@ export default function CarPark3DProto({
 
     const flashBay = (node, ok) => {
       const bay = bayMeshes.find((b) => b.userData.node === node);
-      if (bay) { bay.userData.flash = 0.8; bay.userData.flashHex = ok ? 0x62b277 : 0xdd7f7a; }
+      if (bay) { bay.userData.flash = 0.8; bay.userData.flashHex = ok ? GAME_INTS.ok.fill : GAME_INTS.bad.fill; }
     };
 
     /* ── Frame loop: the 2D frame() rules translated to world units ── */
@@ -596,7 +597,7 @@ export default function CarPark3DProto({
       for (const bay of bayMeshes) {
         if (bay.userData.flash > 0) {
           bay.userData.flash = Math.max(0, bay.userData.flash - dt);
-          bay.material.emissive.setHex(bay.userData.flashHex || 0x62b277);
+          bay.material.emissive.setHex(bay.userData.flashHex || GAME_INTS.ok.fill);
           bay.material.emissiveIntensity = 0.55 + bay.userData.flash;
         } else {
           bay.material.emissive.setHex(bay.userData.baseColor);

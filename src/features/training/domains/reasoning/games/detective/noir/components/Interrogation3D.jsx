@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { GAME_INTS } from '../../../../../../shared/gamePalette';
 import { bootC3dScene, THREE } from '../../../../../../shared/c3dBoot';
 import { createCharacter, preloadCast } from '../../../../../../shared/castModels';
 import { RIG_HEIGHT } from '../../../../../../shared/castRoster';
@@ -392,7 +393,7 @@ export default function Interrogation3D({
     detectiveRiser.position.y = 0.045;
     detectiveRiser.receiveShadow = true;
     const detectiveRingMat = new THREE.MeshBasicMaterial({
-      color: 0xe8ac4e,
+      color: GAME_INTS.accent.fill,
       transparent: true,
       opacity: 0.16,
       depthWrite: false,
@@ -405,7 +406,7 @@ export default function Interrogation3D({
     );
     detectiveRing.rotation.x = -Math.PI / 2;
     detectiveRing.position.y = 0.1;
-    const detectiveSpot = new THREE.SpotLight(0xe8ac4e, 8.5, 6, Math.PI / 6, 0.85, 1.5);
+    const detectiveSpot = new THREE.SpotLight(GAME_INTS.accent.fill, 8.5, 6, Math.PI / 6, 0.85, 1.5);
     const detectiveTarget = new THREE.Object3D();
     stage.add(detectiveSpot, detectiveTarget);
     detectiveSpot.target = detectiveTarget;
