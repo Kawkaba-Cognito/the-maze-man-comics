@@ -216,7 +216,7 @@ function getShapeEl(shape) {
 }
 
 /** Crisp SVG glyph from the shared SH set. */
-function SmSymbol({ shape, size = 48, color = '#2d2d2d', className }) {
+function SmSymbol({ shape, size = 48, color = 'var(--game-ink)', className }) {
   return (
     <svg
       width={size}
@@ -1080,8 +1080,8 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
               center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{lastResult.grade.won ? t.resultsLevelPass : t.resultsLevelRetry}</div></div>}
             />
             {lastResult.grade.won && (
-              <div style={{ textAlign: 'center', fontSize: '1.5rem', color: '#e8ac4e', marginTop: 8, fontWeight: 700 }}>
-                {'★'.repeat(lastResult.grade.stars)} <span style={{ fontSize: '0.85rem', color: '#5c534c' }}>{starLabel}</span>
+              <div style={{ textAlign: 'center', fontSize: '1.5rem', color: 'var(--game-accent)', marginTop: 8, fontWeight: 700 }}>
+                {'★'.repeat(lastResult.grade.stars)} <span style={{ fontSize: '0.85rem', color: 'var(--ink-dim)' }}>{starLabel}</span>
               </div>
             )}
             <div className={`ct-fq-sbig ct-fq-band-text-${lastResult.grade.score >= 75 ? 'high' : lastResult.grade.score >= 50 ? 'mid' : 'low'}`}>{lastResult.grade.score}</div>

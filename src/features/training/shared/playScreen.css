@@ -1,0 +1,195 @@
+/*
+ * playScreen.css — the one play-screen frame.
+ *
+ * Colour comes from tokens.css. Sizing lives here so no game re-derives it;
+ * every number below replaced a per-game constant that had already gone stale
+ * at least once.
+ */
+
+.play-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  color: var(--game-ink);
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The ONE background. A game cannot set this; that is deliberate. */
+.play-screen--light {
+  background: var(--play-surface);
+}
+
+/* Only for boards built on additive blending + bloom (Story Time, Detective).
+   Additive on a light ground resolves to nothing, so those scenes need the dark
+   end of the same palette — not a different palette. */
+.play-screen--deep {
+  background: var(--play-surface-deep);
+  background-color: var(--play-surface-deep-flat);
+  color: var(--play-ink-deep);
+}
+
+/* ── Header ── */
+.play-screen-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+           6px max(12px, env(safe-area-inset-left));
+}
+
+.play-screen-titles {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+}
+
+.play-screen-title {
+  font-weight: 800;
+  font-size: clamp(1rem, 4vw, 1.35rem);
+  line-height: 1.2;
+}
+
+.play-screen-sub {
+  font-size: clamp(0.72rem, 3vw, 0.85rem);
+  font-weight: 700;
+  color: var(--ink-dim);
+}
+
+.play-screen--deep .play-screen-sub {
+  color: var(--play-ink-deep-dim);
+}
+
+.play-screen-chrome-btn,
+.play-screen-chrome-spacer {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;   /* 44px minimum touch target */
+}
+
+.play-screen-chrome-btn {
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: inherit;
+  background: var(--surface-raised);
+  border: 2px solid var(--game-ink);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.play-screen--deep .play-screen-chrome-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--play-ink-deep-dim);
+}
+
+.play-screen-chrome-btn:focus-visible {
+  outline: 3px solid var(--game-ink);
+  outline-offset: 2px;
+}
+
+/* ── HUD ── */
+.play-screen-hud {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  padding: 0 max(12px, env(safe-area-inset-left)) 4px;
+}
+
+/* ── The board's slot ──
+   This element's size IS what PlayScreen measures and hands to the board. It
+   must be able to shrink (min-height:0) or a tall board escapes it and lands on
+   top of whatever is below — which is exactly how a board ended up under a
+   Reset button. */
+.play-screen-slot {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+/* ── Actions ──
+   Wide enough that two buttons never wrap. The previous version was 420px with
+   12px padding each side, leaving 396px of content for two 200px buttons plus a
+   10px gap — 14px short, so it wrapped, doubled in height, and pushed itself
+   over the board. */
+.play-screen-actions {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
+  padding: 8px max(12px, env(safe-area-inset-right))
+           max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+}
+
+.play-screen-btn {
+  flex: 0 1 auto;
+  min-width: 132px;
+  max-width: 200px;
+  min-height: 44px;
+  padding: 12px 20px;
+  font: inherit;
+  font-weight: 800;
+  border-radius: 14px;
+  border: 2px solid var(--game-ink);
+  cursor: pointer;
+  transition: transform 90ms ease;
+}
+
+.play-screen-btn:active {
+  transform: translateY(2px);
+}
+
+.play-screen-btn--primary {
+  background: var(--game-accent);
+  color: var(--game-selected);
+}
+
+.play-screen-btn--ghost {
+  background: var(--surface-raised);
+  color: var(--game-ink);
+}
+
+.play-screen-btn:focus-visible {
+  outline: 3px solid var(--game-ink);
+  outline-offset: 3px;
+}
+
+/* ── Overlay (countdown, cue veil) ──
+   A veil over the LIGHT surface, never a black scrim. A black overlay between
+   rounds slams the whole screen to near-black and back, which is the worst
+   thing to do to someone mid-way through a timed task. */
+.play-screen-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: rgba(210, 197, 181, 0.92);
+}
+
+.play-screen--deep .play-screen-overlay {
+  background: rgba(18, 24, 38, 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-screen-btn {
+    transition: none;
+  }
+}

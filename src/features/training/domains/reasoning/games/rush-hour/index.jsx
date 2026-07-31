@@ -57,9 +57,9 @@ function makeSafeRushHourBoard(labelKey, extra = {}) {
 }
 
 const HERO_STYLE = {
-  fill: ['var(--game-accent)', 'var(--game-accent)'],
+  fill: ['var(--game-accent)', 'var(--game-accent-edge)'],
   border: 'var(--game-accent-edge)',
-  shadow: 'rgba(200,140,30,0.35)',
+  shadow: 'rgba(36, 29, 19, 0.3)',
 };
 
 /*
@@ -75,8 +75,8 @@ const HERO_STYLE = {
  * leaving seven bespoke ramps behind.
  */
 const CAR_STYLES = [...GAME_STIMULUS_6, GAME_COLORS.muted.fill].map((hue) => ({
-  fill: [hue, shadeOf(hue, 0.82)],
-  border: shadeOf(hue, 0.62),
+  fill: [shadeOf(hue, 0.66), shadeOf(hue, 0.54)],
+  border: shadeOf(hue, 0.42),
   shadow: 'rgba(36, 29, 19, 0.25)',
 }));
 
@@ -87,7 +87,7 @@ function pieceStyle(pid) {
 }
 
 function BlockDecor({ dir }) {
-  const light = 'rgba(255,255,255,0.35)';
+  const light = 'color-mix(in srgb, var(--game-selected) 45%, transparent)';
   if (dir === 'h') {
     return (
       <svg viewBox="0 0 40 20" style={{ width: '60%', height: '50%', opacity: 0.6 }}>
@@ -688,23 +688,38 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
 
   useEffect(() => {
     const measure = () => {
+      // MEASURE the slot, do not estimate it. This was a hardcoded 'chrome = 240'
+      // guess for header + HUD + the bottom actions row, and it was short: two
+      // stacked buttons put the real figure nearer 270, so the board ran under
+      // the Reset button. Any such constant goes stale the moment the chrome
+      // changes — and it had already been revised once for the same reason.
+      // .ct-rh-board-wrap is the flex child that owns exactly the space the
+      // board may use, so ask it.
       const pad = 32;
-      // Header (~110px incl. its 52px top safe-area padding) + HUD row (~24px,
-      // free mode only) + gap + bottom actions row (~70px incl. safe-area) —
-      // measured from the real rendered layout; the old 196px guess ran short
-      // on wide-but-short desktop browser windows and let the board overlap
-      // the HUD above it and the Reset button below it.
-      const chrome = 240;
-      const availW = Math.max(grid * 8, window.innerWidth - pad);
-      const availH = Math.max(grid * 8, window.innerHeight - chrome);
+      const slot = boardRef.current?.parentElement;
+      const availW = slot?.clientWidth
+        ? slot.clientWidth - 8
+        : Math.max(grid * 8, window.innerWidth - pad);
+      const availH = slot?.clientHeight
+        ? slot.clientHeight - 8
+        : Math.max(grid * 8, window.innerHeight - 270);
       const maxW = Math.min(availW, 440);
       const fromW = Math.floor(maxW / grid);
       const fromH = Math.floor(availH / grid);
       setCellSize(Math.max(40, Math.min(fromW, fromH, 72)));
     };
     measure();
+    // The slot has no height until after first paint, so the initial measure
+    // uses the fallback. Observe it so the real number lands as soon as layout
+    // settles, and again on every reflow.
     window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
+    const slotEl = boardRef.current?.parentElement;
+    const ro = slotEl ? new ResizeObserver(measure) : null;
+    if (slotEl && ro) ro.observe(slotEl);
+    return () => {
+      window.removeEventListener('resize', measure);
+      ro?.disconnect();
+    };
   }, [grid]);
 
   const boardPx = cellSize * grid;
@@ -954,7 +969,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
       const el = pieceEls.current[pid];
       if (el) {
         el.style.zIndex = '10';
-        el.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3)';
+        el.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 color-mix(in srgb, var(--game-selected) 30%, transparent)';
         el.style.transition = 'none';
         try {
           el.setPointerCapture(e.pointerId);
@@ -1469,23 +1484,23 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         dir={isAr ? 'rtl' : 'ltr'}
         style={{
           minHeight: '100vh',
-          color: 'var(--game-selected)',
+          color: 'var(--game-ink)',
           fontFamily: "'Outfit', system-ui, sans-serif",
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: isCosmos ? undefined : 'var(--play-surface)',
+          background: 'var(--play-surface)',
         }}
       >
         <div style={{ textAlign: 'center' }}>
           <div style={{
-            width: 36, height: 36, border: '3px solid rgba(240,226,192,0.3)',
+            width: 36, height: 36, border: '3px solid color-mix(in srgb, var(--game-selected) 30%, transparent)',
             borderTopColor: 'var(--color-amber)', borderRadius: '50%',
             animation: 'spin 0.8s linear infinite',
             margin: '0 auto 14px',
           }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          <div style={{ fontSize: 14, color: 'var(--game-selected)', fontWeight: 600 }}>
+          <div style={{ fontSize: 14, color: 'var(--game-ink)', fontWeight: 600 }}>
             {isAr ? 'جارٍ إنشاء اللغز…' : 'Generating puzzle…'}
           </div>
         </div>
@@ -1499,7 +1514,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
       data-c3d-embed={isCosmos || undefined}
       dir={isAr ? 'rtl' : 'ltr'}
       style={{
-        color: 'var(--game-selected)',
+        color: 'var(--game-ink)',
         fontFamily: "'Outfit', system-ui, sans-serif",
         position: 'relative',
       }}
@@ -1582,7 +1597,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         >
           <defs>
             <pattern id="rh-grid-cell" width={cellSize} height={cellSize} patternUnits="userSpaceOnUse">
-              <rect x={2} y={2} width={cellSize - 4} height={cellSize - 4} rx={4} fill="rgba(255,255,255,0.05)" />
+              <rect x={2} y={2} width={cellSize - 4} height={cellSize - 4} rx={4} fill="color-mix(in srgb, var(--game-ink) 6%, transparent)" />
             </pattern>
           </defs>
           <rect x={0} y={0} width={boardPx} height={boardPx} rx={8} fill="var(--surface-raised)" />
@@ -1590,7 +1605,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
           <path
             d={`M 8 0 L ${boardPx - 8} 0 Q ${boardPx} 0 ${boardPx} 8 L ${boardPx} ${exitTop - 1} M ${boardPx} ${exitBot + 1} L ${boardPx} ${boardPx - 8} Q ${boardPx} ${boardPx} ${boardPx - 8} ${boardPx} L 8 ${boardPx} Q 0 ${boardPx} 0 ${boardPx - 8} L 0 8 Q 0 0 8 0`}
             fill="none"
-            stroke="rgba(232,172,78,0.4)"
+            stroke="color-mix(in srgb, var(--game-accent) 40%, transparent)"
             strokeWidth={3}
           />
           <rect
@@ -1600,7 +1615,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
             height={cellSize - 6}
             rx={4}
             fill="rgba(10,8,22,0.65)"
-            stroke="rgba(232,172,78,0.55)"
+            stroke="color-mix(in srgb, var(--game-accent) 55%, transparent)"
             strokeWidth={1.5}
             strokeDasharray="4 3"
           />
@@ -1660,7 +1675,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                   borderRadius: 10,
                   background: `linear-gradient(160deg, ${st.fill[0]}, ${st.fill[1]})`,
                   border: `2.5px solid ${st.border}`,
-                  boxShadow: `0 3px 8px ${st.shadow}, inset 0 1px 0 rgba(255,255,255,0.3)`,
+                  boxShadow: `0 3px 8px ${st.shadow}, inset 0 1px 0 color-mix(in srgb, var(--game-selected) 30%, transparent)`,
                   cursor: won ? 'default' : 'grab',
                   touchAction: 'none',
                   userSelect: 'none',
@@ -1731,21 +1746,6 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         >
           {t.reset}
         </button>
-        {playMode === 'free' && (
-          <button
-            type="button"
-            className="ct-training-btn ct-training-btn--pri"
-            style={{ maxWidth: 200 }}
-            onClick={() => {
-              playSfx('click');
-              freeStreakRef.current = 0;
-              setFreeStreak(0);
-              setFreeSessionNonce((Math.imul(Date.now(), 1103515245) + 12345) >>> 0);
-            }}
-          >
-            {isAr ? 'لغز آخر' : 'Skip puzzle'}
-          </button>
-        )}
         {playMode === 'free' && (
           <button
             type="button"

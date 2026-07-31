@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { getShapeScale, subscribeShapeNorm, getShapeNormVersion } from './shapeNorm';
 import { SH } from './focusQuestData';
+import { TrainingChromeBtn } from './TrainingChrome';
+import { IconBack, IconPause } from './TrainingIcons';
 import './playHud.css';
 
 /*
