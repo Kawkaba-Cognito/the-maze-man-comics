@@ -17,7 +17,7 @@ import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
 const Raven3DProto = lazyWithRetry(() => import('./Raven3DProto'), 'raven-3d');
 const C3D_FALLBACK = (
-  <div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>
+  <div className="c3d-root" style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}>…</div>
 );
 
 const UI = {

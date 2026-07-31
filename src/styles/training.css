@@ -318,15 +318,16 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     letter-spacing: 0.01em;
 }
 .ct-fq-training-shell--hub-light.ct-fq-training-shell .ct-fq-btn-pri {
-    background: linear-gradient(180deg, #f2c56a 0%, var(--color-amber) 100%);
-    color: var(--ink-outline);
-    border: 1.5px solid rgba(26, 18, 8, 0.2);
+    /* The palette's accent, the 'act on me' role. Was #f2c56a -> --color-amber. */
+    background: linear-gradient(180deg, var(--game-accent) 0%, var(--game-accent-edge) 100%);
+    color: var(--game-selected);
+    border: 1.5px solid var(--game-ink);
     box-shadow: 0 4px 0 rgba(26, 18, 8, 0.12), 0 8px 20px rgba(45, 60, 48, 0.12);
 }
 .ct-fq-training-shell--hub-light.ct-fq-training-shell .ct-fq-btn-ghost {
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(250, 246, 240, 0.98) 100%);
-    color: #3d4542;
-    border: 1px solid rgba(107, 158, 122, 0.38);
+    color: var(--game-ink);
+    border: 1px solid var(--line);
     box-shadow:
         0 2px 0 rgba(255, 255, 255, 0.85) inset,
         0 4px 14px rgba(45, 60, 48, 0.06);
@@ -378,11 +379,11 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     color: #1a6b3a;
 }
 .ct-fq-training-shell--hub-light .ct-fq-rm-training .ct-fq-rl {
-    color: #5c605d;
+    color: var(--ink-dim);
 }
 
 .ct-fq-training-shell--hub-light .ct-fq-training-screen .ct-fq-sbig {
-    color: #b87220;
+    color: var(--game-accent-edge);
     font-family: 'Outfit', cursive;
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
@@ -392,7 +393,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 
 .ct-fq-training-shell--hub-light .ct-fq-lbr-training {
     background: linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 246, 240, 0.99) 100%) !important;
-    border: 1px solid rgba(107, 158, 122, 0.28) !important;
+    border: 1px solid var(--line) !important;
 }
 .ct-fq-training-shell--hub-light .ct-fq-lbr-training.win {
     border-color: rgba(212, 175, 55, 0.65) !important;
@@ -1419,9 +1420,11 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     align-items: center;
     justify-content: center;
     border-radius: 28px;
-    background: linear-gradient(165deg, #62b277 0%, #3c8a54 100%);
-    border: 2px solid var(--ink-outline);
-    box-shadow: 4px 5px 0 var(--ink-outline);
+    /* Was #62b277 → #3c8a54, the pre-palette green. Same role, palette values:
+       the fill with its own edge tone underneath it as the gradient's far end. */
+    background: linear-gradient(165deg, var(--game-ok) 0%, var(--game-ok-edge) 100%);
+    border: 2px solid var(--game-ink);
+    box-shadow: 4px 5px 0 var(--game-ink);
     font-size: clamp(46px, 13vw, 62px);
     line-height: 1;
 }
@@ -1452,19 +1455,21 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     max-width: 360px;
     margin: 16px auto 0;
     padding: 16px 24px;
-    border: 2px solid var(--ink-outline);
+    border: 2px solid var(--game-ink);
     border-radius: 16px;
-    background: linear-gradient(180deg, #ffd66b 0%, #f0b94a 100%);
-    color: var(--ink-outline);
+    /* Was #ffd66b → #f0b94a. The accent is the palette's "hot / act on me"
+       role, which is exactly what a Start button is. */
+    background: linear-gradient(180deg, var(--game-accent) 0%, var(--game-accent-edge) 100%);
+    color: var(--game-selected);
     font-family: 'Outfit', 'Cairo', sans-serif;
     font-weight: 800;
     font-size: 1.16rem;
     cursor: pointer;
-    box-shadow: 4px 5px 0 var(--ink-outline);
+    box-shadow: 4px 5px 0 var(--game-ink);
     transition: transform 0.14s ease, box-shadow 0.16s ease;
 }
-.ct-survival-intro-go:hover { transform: translate(-1px, -1px); box-shadow: 6px 7px 0 var(--ink-outline); }
-.ct-survival-intro-go:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink-outline); }
+.ct-survival-intro-go:hover { transform: translate(-1px, -1px); box-shadow: 6px 7px 0 var(--game-ink); }
+.ct-survival-intro-go:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--game-ink); }
 
 /* Result screens (any non-hub training screen showing a big score) center their
    content vertically so there's no dead band under the buttons. The menubar
@@ -2065,16 +2070,21 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     gap: 6px;
     box-sizing: border-box;
 }
+/* The live target reminder. This is the one thing on screen the player must be
+   able to re-check at a glance mid-search, so it gets a hard ink border and
+   real size — it was a 40px chip with a 1px 8%-black hairline, which on a busy
+   board read as one more tile rather than as the question. */
 .ct-fq-bar-chip {
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 52px;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.1);
+    background: var(--surface-raised);
+    border: 2px solid var(--game-ink);
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(36, 29, 19, 0.18);
 }
 .ct-fq-bar-stats {
     flex: 1 1 auto;
@@ -2162,28 +2172,17 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 /* 3D scene takes over the play area: a full-bleed dark canvas with the existing
    HUD floated on top. Board taps pass through the overlay to the canvas; only the
    HUD's buttons capture. (Replaces the 2D .ct-fq-grid-outer parchment grid.) */
-.ct-fq-g-wrap--scene3d {
+.ct-fq-g-wrap--scene2d {
     position: relative;
     padding: 0;
+    /* The board paints its own --play-surface; this only covers the moment
+       before it mounts, and the letterbox on very wide screens. It is the LIGHT
+       Tide surface now: the board used to be the deep variant because its 3D
+       scene was built from additive blending and emissive glow, which needs a
+       dark ground. The 2D board is flat fills and needs the opposite. */
+    background: var(--play-surface);
 }
-.ct-fq-scene3d {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    overflow: hidden;
-    /* Tide DEEP's zenith — matches TIDE_DEEP_FOG in c3dBoot.js. This shell is
-       Cancellation's, whose scene takes the dark end of Tide (see the note in
-       Cancel3DProto.jsx). Only shows before the scene boots and at letterbox;
-       a lighter stop here would flash bright then snap dark. */
-    background: #121826;
-}
-.ct-fq-scene3d .c3d-scene-canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-}
-.ct-fq-scene3d-overlay {
+.ct-fq-scene2d-overlay {
     position: absolute;
     inset: 0;
     z-index: 2;
@@ -2192,7 +2191,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     flex-direction: column;
     align-items: center;
 }
-.ct-fq-scene3d-overlay button {
+.ct-fq-scene2d-overlay button {
     pointer-events: auto;
 }
 
@@ -2366,11 +2365,18 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 }
 .ct-fq-prim-tag { margin-top: 12px; font-size: 0.65rem; font-weight: 800; color: #9bdfaa; text-transform: uppercase; }
 
+/* Pre-round veil (countdown, fixation cross, target cue).
+   A LIGHT veil, not a black one: this used to be rgba(0,0,0,0.78), which was
+   consistent while the board underneath was the dark 3D scene. On the light
+   play surface a black scrim slams the whole screen to near-black and then
+   snaps back on the first frame of the round — the worst possible thing to do
+   to a player right before a timed visual search. Tide's mid stop at 92% keeps
+   the surface continuous, so only the cue arrives and leaves. */
 .ct-fq-cd {
     position: fixed;
     inset: 0;
     z-index: 400;
-    background: rgba(0, 0, 0, 0.78);
+    background: rgba(210, 197, 181, 0.92);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2379,10 +2385,10 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 .ct-fq-cd-num {
     font-family: 'Outfit', system-ui, sans-serif;
     font-size: clamp(4rem, 18vw, 6.5rem);
-    color: #fff;
+    color: var(--game-ink);
     animation: ct-fq-cdpop 0.85s ease;
 }
-.ct-fq-cd-lbl { font-size: 0.95rem; color: rgba(255, 255, 255, 0.72); margin-top: 6px; }
+.ct-fq-cd-lbl { font-size: 0.95rem; color: var(--ink-dim); margin-top: 6px; }
 /* Pre-round target cue: chip + instruction sentence, shown over the countdown /
  * fixation / quick-flash so the cue no longer needs a permanent on-screen band. */
 .ct-fq-cue-card {
@@ -2393,31 +2399,34 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     margin-top: 14px;
     animation: ct-fq-fixpop 0.28s ease;
 }
+/* The target chip is the single most important thing on this screen — it is
+   what the player is about to search for. Bigger than the board's own pieces,
+   with a real edge, so it reads as an instruction rather than another tile. */
 .ct-fq-cue-chip {
-    width: 76px;
-    height: 76px;
+    width: 96px;
+    height: 96px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    background: var(--surface-raised);
+    border: 2px solid var(--game-ink);
+    border-radius: 20px;
+    box-shadow: 0 6px 18px rgba(36, 29, 19, 0.22);
 }
 .ct-fq-cue-text {
     max-width: 18rem;
     text-align: center;
-    color: #fff;
+    color: var(--game-ink);
     font-weight: 800;
-    font-size: 1rem;
+    font-size: 1.05rem;
     line-height: 1.4;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 .ct-fq-fix-cross {
     font-family: 'Outfit', system-ui, sans-serif;
     font-weight: 300;
     font-size: clamp(3.5rem, 14vw, 5.5rem);
     line-height: 1;
-    color: #fff;
+    color: var(--game-ink);
     animation: ct-fq-fixpop 0.28s ease;
 }
 @keyframes ct-fq-fixpop {
@@ -2639,8 +2648,8 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
         gap: 4px;
     }
     .cancellation-task-game .ct-fq-bar-chip {
-        width: 34px;
-        height: 34px;
+        width: 44px;
+        height: 44px;
     }
     .cancellation-task-game .ct-fq-bar-stats {
         gap: 3px;
@@ -3653,25 +3662,27 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     height: 100dvh;
     overflow: hidden;
 }
+/* Trail Making is 2D on the light play surface now; this header was near-black
+   for the retired 3D scene and left a hard dark band over a light board. */
 .ct-trail-3d-header {
     flex: 0 0 auto;
     max-width: none;
     margin: 0;
     min-height: 58px;
     padding-top: env(safe-area-inset-top, 0px);
-    color: #f0e2c0;
-    background: #080705;
-    border-bottom: 1px solid rgba(232, 172, 78, 0.24);
+    color: var(--game-ink);
+    background: var(--surface-raised);
+    border-bottom: 1px solid var(--line);
 }
 .ct-trail-3d-header .ct-training-play-title {
-    color: #f0e2c0;
+    color: var(--game-ink);
 }
 .ct-trail-3d-header .ct-training-play-sub {
-    color: rgba(240, 226, 192, 0.72);
+    color: var(--ink-dim);
 }
 .ct-trail-3d-header .ct-training-chrome-btn {
-    color: #f0e2c0;
-    background: rgba(240, 226, 192, 0.08);
+    color: var(--game-ink);
+    background: rgba(36, 29, 19, 0.06);
     border-color: rgba(232, 172, 78, 0.38);
 }
 .ct-trail-3d-hud {

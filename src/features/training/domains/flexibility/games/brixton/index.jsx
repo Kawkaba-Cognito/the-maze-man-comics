@@ -527,7 +527,7 @@ export default function KawkabHopsGame({ onBack, workoutMode = false }) {
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}>
+        <Suspense fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}>…</div>}>
           <Brixton3DProto
             key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`}
             {...p}

@@ -7,7 +7,9 @@ import { SURVIVAL_MS } from '../../../../shared/survival';
 import { clamp, lerp } from '../../../../../../lib/math';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
-const TrailMaking3DProto = lazyWithRetry(() => import('./TrailMaking3DProto'), 'trail-making-3d');
+// The board. 2D since the 3D scene was retired — this is a scanning-speed task
+// where numeral legibility is the measure, so it draws real text, not textures.
+import TrailBoard2D from './TrailBoard2D';
 
 /*
  * Trail Making A — visuomotor scanning speed.
@@ -509,7 +511,7 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
     <div style={S.root} className="ct-trail-3d-root" dir={isAr ? 'rtl' : 'ltr'}>
       {isSurvival && (
         <div style={S.survTrack}>
-          <div style={{ ...S.survFill, width: `${survPct * 100}%`, background: survPct < 0.2 ? '#d23b3b' : '#b9842f' }} />
+          <div style={{ ...S.survFill, width: `${survPct * 100}%`, background: survPct < 0.2 ? 'var(--game-bad)' : 'var(--game-ink)' }} />
         </div>
       )}
       <header className="ct-training-play-header ct-trail-3d-header">
@@ -523,29 +525,27 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
       <div style={S.sub} className="ct-trail-3d-hud">
-        <span>{isAr ? 'التالي' : 'Next'}: <b style={{ color: '#2e8b57' }}>{Math.min(prog + 1, total)}</b> / {total}</span>
+        <span>{isAr ? 'التالي' : 'Next'}: <b style={{ color: 'var(--game-ok)' }}>{Math.min(prog + 1, total)}</b> / {total}</span>
         {cfgNow.variant === 'color' ? (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
             {isAr ? 'اللون' : 'Colour'}
             <span style={{ width: 13, height: 13, borderRadius: '50%', background: CTT_COLORS[expColor], display: 'inline-block', border: '1px solid rgba(0,0,0,0.25)' }} />
           </span>
         ) : null}
-        {cfgNow.decoys > 0 ? <span style={{ color: '#8a96a0' }}>{isAr ? 'تجاهل ✕' : 'Ignore ✕'}</span> : null}
-        {timed ? <span style={{ color: timeLeft < 6000 ? '#d23b3b' : '#b9842f' }}>⏱ {fmt(timeLeft)}</span> : null}
-        {isSurvival ? <span style={{ color: survLeft < 10000 ? '#d23b3b' : '#5a4a32' }}>{isAr ? 'بقاء' : 'Survival'} {fmt(survLeft)}</span> : null}
+        {cfgNow.decoys > 0 ? <span style={{ color: 'var(--ink-dim)' }}>{isAr ? 'تجاهل ✕' : 'Ignore ✕'}</span> : null}
+        {timed ? <span style={{ color: timeLeft < 6000 ? 'var(--game-bad)' : 'var(--game-ink)' }}>⏱ {fmt(timeLeft)}</span> : null}
+        {isSurvival ? <span style={{ color: survLeft < 10000 ? 'var(--game-bad)' : 'var(--game-ink)' }}>{isAr ? 'بقاء' : 'Survival'} {fmt(survLeft)}</span> : null}
       </div>
       <div ref={wrapRef} style={S.play} className="ct-trail-3d-stage">
         <canvas ref={canvasRef} style={{ display: 'none' }} aria-hidden="true" />
-        <Suspense fallback={null}>
-          <TrailMaking3DProto
+          <TrailBoard2D
             items={sceneItems}
             variant={cfgNow.variant}
             startColor={cfgNow.startColor}
             progress={prog}
             interactive={!readyInfo && !endedRef.current}
             onPick={onScenePick}
-          />
-        </Suspense>
+        />
         {readyInfo && (
           <div style={S.ready}>
             <div style={S.readyCard}>
@@ -562,9 +562,9 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
               {readyInfo.variant === 'color' && (
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', margin: '10px 0 2px' }}>
                   <span style={{ ...S.readyDot, background: CTT_COLORS[readyInfo.startColor] }}>1</span>
-                  <b style={{ color: '#5a4a32' }}>→</b>
+                  <b style={{ color: 'var(--ink-dim)' }}>→</b>
                   <span style={{ ...S.readyDot, background: CTT_COLORS[(readyInfo.startColor + 1) % 2] }}>2</span>
-                  <b style={{ color: '#5a4a32' }}>→</b>
+                  <b style={{ color: 'var(--ink-dim)' }}>→</b>
                   <span style={{ ...S.readyDot, background: CTT_COLORS[readyInfo.startColor], opacity: 0.85 }}>3</span>
                 </div>
               )}
@@ -606,21 +606,21 @@ export default function TrailMakingGame({ onBack, workoutMode = false }) {
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 81, display: 'flex', flexDirection: 'column', background: 'var(--play-surface-deep-flat)', color: 'var(--play-ink-deep)', fontFamily: "'Outfit', system-ui, sans-serif" },
-  sub: { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '7px 16px', fontSize: 14, fontWeight: 700, color: 'var(--play-ink-deep)', background: 'var(--play-surface-deep-flat)', overflowX: 'auto' },
-  play: { position: 'relative', flex: 1, minHeight: 0, background: 'var(--play-surface-deep-flat)', overflow: 'hidden', touchAction: 'none' },
+  root: { position: 'fixed', inset: 0, zIndex: 81, display: 'flex', flexDirection: 'column', background: 'var(--play-surface)', color: 'var(--game-ink)', fontFamily: "'Outfit', system-ui, sans-serif" },
+  sub: { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '7px 16px', fontSize: 14, fontWeight: 700, color: 'var(--game-ink)', background: 'var(--surface-raised)', overflowX: 'auto' },
+  play: { position: 'relative', flex: 1, minHeight: 0, background: 'transparent', overflow: 'hidden', touchAction: 'none' },
   canvas: { display: 'block', width: '100%', height: '100%' },
   survTrack: { height: 6, background: 'rgba(0,0,0,0.08)' },
   survFill: { height: '100%' },
-  ready: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.62)', zIndex: 3, pointerEvents: 'none' },
-  readyCard: { background: 'rgba(18,14,9,0.94)', border: '1px solid rgba(232,172,78,0.65)', borderRadius: 8, padding: '16px 22px', textAlign: 'center', boxShadow: '0 14px 38px rgba(0,0,0,0.5)', maxWidth: '82%' },
+  ready: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(210,197,181,0.88)', zIndex: 3, pointerEvents: 'none' },
+  readyCard: { background: 'var(--surface-raised)', border: '2px solid var(--game-ink)', borderRadius: 8, padding: '16px 22px', textAlign: 'center', boxShadow: '0 14px 38px rgba(0,0,0,0.5)', maxWidth: '82%' },
   readyKicker: { display: 'inline-block', marginBottom: 6, padding: '2px 12px', borderRadius: 999, background: '#7a5a1e', color: '#fff7e6', fontWeight: 900, fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
-  readyTitle: { fontWeight: 900, fontSize: 18, color: '#f0e2c0' },
+  readyTitle: { fontWeight: 900, fontSize: 18, color: 'var(--game-ink)' },
   readyDot: { width: 26, height: 26, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 13, border: '2px solid rgba(0,0,0,0.25)' },
-  readySub: { marginTop: 8, fontWeight: 800, fontSize: 13, color: '#d7c9aa' },
+  readySub: { marginTop: 8, fontWeight: 800, fontSize: 13, color: 'var(--ink-dim)' },
   overWrap: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' },
   overTitle: { margin: '0 0 8px', fontWeight: 900, fontSize: 24 },
-  overSub: { margin: '0 0 20px', fontWeight: 700, color: '#d7c9aa' },
-  overBtn: { padding: '12px 20px', borderRadius: 12, border: '2px solid #1a1208', background: '#b9842f', color: '#fff', fontWeight: 900, cursor: 'pointer' },
+  overSub: { margin: '0 0 20px', fontWeight: 700, color: 'var(--ink-dim)' },
+  overBtn: { padding: '12px 20px', borderRadius: 12, border: '2px solid #1a1208', background: 'var(--game-ink)', color: '#fff', fontWeight: 900, cursor: 'pointer' },
   overBtnGhost: { padding: '12px 20px', borderRadius: 12, border: '2px solid #cdbfa6', background: '#fff', fontWeight: 800, cursor: 'pointer' },
 };

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { GAME_INTS } from '../../../../../../shared/gamePalette';
 import { bootC3dScene, THREE } from '../../../../../../shared/c3dBoot';
 import { createCharacter, preloadCast } from '../../../../../../shared/castModels';
 import { RIG_HEIGHT } from '../../../../../../shared/castRoster';
@@ -149,7 +150,7 @@ export default function StoryStage3D({
     disc.position.y = -0.07;
 
     const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xe8ac4e, transparent: true, opacity: 0.22,
+      color: GAME_INTS.accent.fill, transparent: true, opacity: 0.22,
       blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
     });
     const ring = own(new THREE.Mesh(new THREE.RingGeometry(4.5, 4.72, 96), ringMat));

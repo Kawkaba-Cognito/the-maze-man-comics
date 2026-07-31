@@ -144,6 +144,35 @@
   --color-training-palette-surface: var(--play-surface);
   --color-training-ink: var(--play-ink);
 
+  /* ─── The pieces that sit ON the play surface ──────────────────────────
+     Six roles, one set, every training game. Mirrors gamePalette.js — that
+     file is the source of truth and carries the full derivation; keep these
+     in step with it.
+
+     Each role has a fill and an `edge` (fill x 0.72) that shades its lower
+     side, which is what gives a flat 2D shape form without faking 3D.
+
+     ⚠ These hues are near-ISOLUMINANT (worst pair 1.01:1). They are told
+     apart by hue, not brightness, so state must NEVER be carried by fill
+     alone — always move a ring, size, icon or stroke as well, or the game
+     becomes unplayable with colour-vision deficiency. */
+  --game-item: #2f5f86;           /* default piece            3.27:1 on sky */
+  --game-item-edge: #224460;
+  --game-accent: #d4952f;         /* cued / hot — a LIGHT token, see below */
+  --game-accent-edge: #996b22;
+  --game-ok: #386544;             /* correct                  3.26:1 on sky */
+  --game-ok-edge: #284931;
+  --game-bad: #854c49;            /* wrong                    3.25:1 on sky */
+  --game-bad-edge: #603735;
+  --game-selected: #fff4d6;       /* player's pick — LIGHT token */
+  --game-selected-edge: #b8b09a;
+  --game-muted: #545c66;          /* spent / out of play      3.27:1 on sky */
+  --game-muted-edge: #3c4249;
+  /* accent and selected are brighter than the sky rather than darker (hot
+     should glow, not recede), so they cannot earn 3:1 by luminance. They
+     outline with this instead — 8.05:1 on the worst sky stop. */
+  --game-ink: #241d13;
+
   /* ─── Tide DEEP — the same sky, dark end ───────────────────────────────
      ONE palette, two depths. Which depth a surface gets is a RENDERING
      constraint, not taste: a scene built from additive blending and emissive

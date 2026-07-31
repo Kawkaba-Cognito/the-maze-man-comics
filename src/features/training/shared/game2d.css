@@ -1,0 +1,96 @@
+/*
+ * game2d.css — the 2D playfield's shell and piece behaviour.
+ *
+ * Colour lives in tokens.css (--game-*) and gamePalette.js; this file owns
+ * layout, hit area and motion only. The DOM counterpart of paintSky()/drawPiece()
+ * in board2d.js — a canvas game and a DOM game must sit on the same background
+ * and react to a tap the same way.
+ */
+
+.game2d-sky {
+  position: absolute;
+  inset: 0;
+  background: var(--play-surface);
+  overflow: hidden;
+}
+
+.game2d-board {
+  position: relative;
+  display: grid;
+  place-content: center;
+  gap: clamp(6px, 1.6vmin, 16px);
+  width: 100%;
+  height: 100%;
+  padding: clamp(8px, 2vmin, 20px);
+  touch-action: manipulation;
+}
+
+/* ── A piece ──────────────────────────────────────────────────────────────
+   The SVG already includes the ring and the scale-up inside its viewBox, so
+   the element's own box never changes size — pieces don't shove each other
+   around when a state changes. */
+.game2d-piece {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: 0;
+  transition: opacity 180ms ease;
+}
+
+.game2d-piece svg {
+  display: block;
+  overflow: visible;
+}
+
+/* Every piece drawn by the SVG path animates its state change here; the canvas
+   path does the equivalent by interpolating scale in its own frame loop. */
+.game2d-piece g,
+.game2d-piece circle,
+.game2d-piece path,
+.game2d-piece text {
+  transition: fill 160ms ease, stroke 160ms ease, transform 200ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.game2d-piece--tappable {
+  cursor: pointer;
+  /* 44x44 minimum hit area regardless of how small the art is drawn. */
+  min-width: 44px;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.game2d-piece--tappable:disabled {
+  cursor: default;
+}
+
+.game2d-piece--tappable:not(:disabled):active svg {
+  transform: scale(0.94);
+}
+
+.game2d-piece--tappable:focus-visible {
+  outline: 3px solid var(--game-ink);
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+
+/* Reduced motion, and the per-piece opt-out games pass for stimuli that must
+   not move at all (assessment trials, timed probes). */
+.game2d-piece--still svg,
+.game2d-piece--still g,
+.game2d-piece--still circle,
+.game2d-piece--still path {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game2d-piece,
+  .game2d-piece g,
+  .game2d-piece circle,
+  .game2d-piece path,
+  .game2d-piece text,
+  .game2d-piece--tappable:not(:disabled):active svg {
+    transition: none;
+    transform: none;
+  }
+}

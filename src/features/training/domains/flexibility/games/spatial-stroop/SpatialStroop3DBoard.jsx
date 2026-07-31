@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { GAME_INTS } from '../../../../shared/gamePalette';
 import { bootC3dScene, disposeObject, THREE } from '../../../../shared/c3dBoot';
 import '../../../../shared/c3dProto.css';
 
@@ -222,7 +223,7 @@ export default function SpatialStroop3DBoard({
     const setPadStates = (left, right) => {
       pads.forEach((pad) => {
         const value = pad.userData.side === 'left' ? left : right;
-        pad.userData.targetHex = value === 'correct' ? 0x62b277 : value === 'wrong' || value === 'timeout' ? 0xdd7f7a : SIDE_HEX[pad.userData.side];
+        pad.userData.targetHex = value === 'correct' ? GAME_INTS.ok.fill : value === 'wrong' || value === 'timeout' ? GAME_INTS.bad.fill : SIDE_HEX[pad.userData.side];
       });
     };
 
@@ -256,7 +257,7 @@ export default function SpatialStroop3DBoard({
       if (deadline.visible) {
         const fraction = Math.max(0, 1 - (now - state.ringStart) / Math.max(1, state.ringMs));
         deadline.scale.setScalar(0.82 + fraction * 0.18);
-        deadline.material.color.setHex(state.frozen ? 0x55d6e8 : fraction < 0.3 ? 0xdd7f7a : 0xf3c65f);
+        deadline.material.color.setHex(state.frozen ? 0x55d6e8 : fraction < 0.3 ? GAME_INTS.bad.fill : 0xf3c65f);
         deadline.material.opacity = 0.25 + fraction * 0.55;
       }
     });

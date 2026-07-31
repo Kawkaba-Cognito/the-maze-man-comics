@@ -117,7 +117,7 @@ function Staircase({ total, step, isAr }) {
     <div style={{ position: 'relative', width: cw, height: h(total - 1) + 60, margin: '0 auto' }}>
       <div style={{ position: 'absolute', left: 0, bottom: 0, display: 'flex', alignItems: 'flex-end', gap: 2 }}>
         {Array.from({ length: total }).map((_, i) => (
-          <div key={i} style={{ width: W - 2, height: h(i), background: i < step ? 'linear-gradient(180deg,#a6e0a4,#7ab87a)' : '#ead9bd', borderRadius: '6px 6px 0 0', border: '1.5px solid #b9a079', borderBottom: 'none' }} />
+          <div key={i} style={{ width: W - 2, height: h(i), background: i < step ? 'linear-gradient(180deg, var(--game-ok), var(--game-ok-edge))' : 'var(--line)', borderRadius: '6px 6px 0 0', border: '1.5px solid var(--game-ink)', borderBottom: 'none' }} />
         ))}
       </div>
       <span style={{ position: 'absolute', left: total * W - 2, bottom: h(total - 1) + 4, fontSize: 24, animation: reached ? 'tv-pop 0.4s ease-out' : 'none' }}>🏁</span>

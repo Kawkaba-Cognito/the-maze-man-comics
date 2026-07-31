@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { GAME_INTS, GAME_COLORS } from '../../../../shared/gamePalette';
 import { bootC3dScene, matStd, disposeObject, THREE } from '../../../../shared/c3dBoot';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import { createStaircase } from '../../../../shared/staircase';
@@ -116,7 +117,7 @@ function figureTexture(fig, missing = false) {
   ctx.stroke();
   ctx.setLineDash([]);
   if (missing) {
-    ctx.fillStyle = '#e8ac4e';
+    ctx.fillStyle = GAME_COLORS.accent.fill;
     ctx.font = '800 64px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -152,7 +153,7 @@ function cardMesh(fig, { missing = false, size = 1.0 } = {}) {
   const side = matStd(0x1d1811, { metalness: 0.15, roughness: 0.7 });
   const face = new THREE.MeshStandardMaterial({
     map: tex,
-    emissive: new THREE.Color(0x62b277),
+    emissive: new THREE.Color(GAME_INTS.ok.fill),
     emissiveIntensity: 0,
     metalness: 0.1,
     roughness: 0.65,
@@ -269,7 +270,7 @@ export default function Raven3DProto({ isAr, playSfx, onBack }) {
       const chosen = optionMeshes.find((m) => m.userData.optIndex === idx);
       const right = optionMeshes.find((m) => m.userData.optIndex === puzzle.correctIndex);
       if (ok) {
-        if (chosen) { chosen.userData.flash = 0.8; chosen.userData.flashHex = 0x62b277; }
+        if (chosen) { chosen.userData.flash = 0.8; chosen.userData.flashHex = GAME_INTS.ok.fill; }
         playSfxRef.current?.('collect');
         const lvl = staircase.level ?? 0;
         scoreN += 6 + lvl * 2;
@@ -279,8 +280,8 @@ export default function Raven3DProto({ isAr, playSfx, onBack }) {
         staircase.success();
         later(nextTrial, 420);
       } else {
-        if (chosen) { chosen.userData.flash = 0.8; chosen.userData.flashHex = 0xdd7f7a; }
-        if (right) { right.userData.flash = 0.8; right.userData.flashHex = 0x62b277; }
+        if (chosen) { chosen.userData.flash = 0.8; chosen.userData.flashHex = GAME_INTS.bad.fill; }
+        if (right) { right.userData.flash = 0.8; right.userData.flashHex = GAME_INTS.ok.fill; }
         playSfxRef.current?.('error');
         staircase.failure();
         livesN -= 1;
@@ -323,7 +324,7 @@ export default function Raven3DProto({ isAr, playSfx, onBack }) {
         const ud = m.userData;
         if (ud.flash > 0) {
           ud.flash = Math.max(0, ud.flash - dt);
-          ud.faceMat.emissive.setHex(ud.flashHex || 0x62b277);
+          ud.faceMat.emissive.setHex(ud.flashHex || GAME_INTS.ok.fill);
           ud.faceMat.emissiveIntensity = ud.flash;
         } else if (ud.faceMat) {
           ud.faceMat.emissiveIntensity = 0;
@@ -384,7 +385,7 @@ export default function Raven3DProto({ isAr, playSfx, onBack }) {
       tag={t.tag}
       hint={t.hint}
       chip={`${t.lvl} ${level}`}
-      chipStyle={{ fontSize: '0.72rem', fontWeight: 800, color: '#e8ac4e' }}
+      chipStyle={{ fontSize: '0.72rem', fontWeight: 800, color: GAME_COLORS.accent.fill }}
       stats={stats}
       banner={banner === 'go' ? t.go : banner === 'over' ? t.over : null}
       bannerOver={banner === 'over'}

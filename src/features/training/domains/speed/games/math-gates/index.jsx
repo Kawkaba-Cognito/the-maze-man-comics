@@ -5,7 +5,7 @@ import { makeRng } from '../../../../shared/rng';
 import { survivalTier } from '../../../../shared/survival';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
-const MathGates3DProto = lazyWithRetry(() => import('./MathGates3DProto'), 'math-gates-3d');
+const MathGatesBoard2D = lazyWithRetry(() => import('./MathGatesBoard2D'), 'math-gates-2d');
 
 /*
  * Math Gates — endless runner with rule-switching arithmetic (cognitive flexibility).
@@ -471,10 +471,10 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
       workoutMode={workoutMode}
       renderEngine={(p) => (
         <Suspense
-          key={`math-gates-3d-${p.mode}-${p.diff}-${p.level}-${p.seed}`}
-          fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', color: '#f0e2c0', background: '#000', minHeight: '100dvh' }}>…</div>}
+          key={`math-gates-2d-${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+          fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center' }}>…</div>}
         >
-          <MathGates3DProto
+          <MathGatesBoard2D
             {...p}
             isAr={isAr}
             playSfx={playSfx}

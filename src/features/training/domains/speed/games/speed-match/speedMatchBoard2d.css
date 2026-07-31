@@ -1,0 +1,106 @@
+/* Symbol–digit coding board. Layout only; colour from tokens.css --game-*. */
+
+.sm2d-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(8px, 2vh, 24px);
+  padding: clamp(10px, 3vh, 32px) clamp(8px, 3vw, 28px);
+  background: var(--play-surface);
+  overflow: hidden;
+}
+
+/* ── The key ── */
+.sm2d-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(6px, 1.6vw, 18px);
+}
+
+.sm2d-pair {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  background: var(--surface-raised);
+  border: 2px solid var(--game-ink);
+  border-radius: 12px;
+  min-width: 52px;
+}
+
+.sm2d-pair-digit {
+  font: 800 1.15rem/1 'Outfit', system-ui, sans-serif;
+  color: var(--game-ink);
+}
+
+/* ── The probe ── */
+.sm2d-probe {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-height: 0;
+  animation: sm2dEnter 220ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.sm2d-probe-digit {
+  font: 800 clamp(4rem, 18vh, 8rem)/1 'Outfit', system-ui, sans-serif;
+  color: var(--game-ink);
+}
+
+@keyframes sm2dEnter {
+  0% { transform: scale(0.72); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ── Answer keys ── */
+.sm2d-keys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(6px, 1.6vw, 14px);
+}
+
+.sm2d-key {
+  min-width: 64px;
+  min-height: 64px;
+  padding: 0 14px;
+  font: 800 1.7rem/1 'Outfit', system-ui, sans-serif;
+  color: var(--game-ink);
+  background: var(--surface-raised);
+  border: 2px solid var(--game-ink);
+  border-radius: 14px;
+  box-shadow: 0 3px 0 var(--game-item-edge);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 90ms ease, background-color 140ms ease;
+}
+
+.sm2d-key:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+
+.sm2d-key:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.sm2d-key--flash {
+  background: var(--game-ok);
+  color: var(--game-selected);
+}
+
+.sm2d-key:focus-visible {
+  outline: 3px solid var(--game-ink);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm2d-probe { animation: none; }
+  .sm2d-key { transition: none; }
+}

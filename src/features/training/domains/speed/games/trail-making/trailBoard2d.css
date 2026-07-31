@@ -1,0 +1,74 @@
+/* Trail Making board. Layout and motion only — colour comes from gamePalette. */
+
+.tb2d-wrap {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--play-surface);
+  overflow: hidden;
+  padding: clamp(8px, 2.5vmin, 24px);
+}
+
+.tb2d-svg {
+  /* Square: the node positions are normalised 0..1, so a non-square box would
+     stretch the layout and change how far the eye has to travel between
+     numbers — which is the thing this task measures.
+
+     The side is set in JS, not CSS. `width: min(100%, 100vh)` measured the
+     whole window and ignored the header, so the bottom nodes fell off screen.
+     `aspect-ratio` + `max-height` does not fix it either: with a definite
+     width, max-height clamps the height without feeding back to the width, so
+     the square silently becomes a clipped rectangle. TrailBoard2D measures the
+     container and sets the side directly. */
+  overflow: visible;
+  touch-action: manipulation;
+}
+
+.tb2d-node {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tb2d-node circle,
+.tb2d-node text {
+  transition: fill 140ms ease, r 180ms ease;
+}
+
+.tb2d-node--done {
+  cursor: default;
+}
+
+.tb2d-node:focus-visible {
+  outline: none;
+}
+
+.tb2d-node:focus-visible circle:nth-of-type(2) {
+  stroke: var(--game-ink);
+  stroke-width: 1.6;
+}
+
+.tb2d-node--flash circle:nth-of-type(3) {
+  animation: tb2dPop 380ms ease-out;
+}
+
+@keyframes tb2dPop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
+/* transform-box so the scale pivots on the node, not the SVG origin. */
+.tb2d-node--flash circle {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb2d-node circle,
+  .tb2d-node text,
+  .tb2d-node--flash circle:nth-of-type(3) {
+    transition: none;
+    animation: none;
+  }
+}
