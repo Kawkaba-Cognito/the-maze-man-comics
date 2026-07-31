@@ -36,11 +36,7 @@ import AssessmentReady from '../../../../assessment/AssessmentReady';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
-const RushHour3DProto = lazyWithRetry(() => import('./RushHour3DProto'), 'rush-hour-3d');
 const AssessmentMascot3D = lazyWithRetry(() => import('../../../../../../components/training/AssessmentMascot3D'), 'rush-hour-mascot');
-const C3D_FALLBACK = (
-  <div className="c3d-root" style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}>…</div>
-);
 
 const RH_ASSESS_CAP_SEC = 150; // per scored puzzle — 4 puzzles ≈ 6 min + warm-up
 const RH_ASSESS_WARMUP_SEC = 90;
@@ -241,20 +237,14 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
     setPhase('hub');
   }, []);
 
-  const withCosmos = useCallback((node) => (
-    isCosmos ? (
-      <Suspense fallback={C3D_FALLBACK}>
-        <RushHour3DProto
-          isAr={isAr}
-          playSfx={playSfx}
-          onBack={() => {
-            if (cosmosAutoPlay) onBack?.();
-            else exitCosmos();
-          }}
-        />
-      </Suspense>
-    ) : node
-  ), [isCosmos, isAr, playSfx, cosmosAutoPlay, onBack, exitCosmos]);
+  /* Block Escape plays in 2D everywhere now.
+   *
+   * This used to swap in RushHour3DProto whenever the game was entered from a
+   * mode planet (isCosmos), so the board you actually played was the 3D scene
+   * while the SVG board below was only a fallback — which is why palette fixes
+   * applied to this file kept having no visible effect. Spatial Stroop already
+   * neutralised the same wrapper. */
+  const withCosmos = useCallback((node) => node, []);
 
   useEffect(() => {
     if (workoutMode && !workoutLaunched.current) {
@@ -1173,7 +1163,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   }
 
   /* ─── Hub ─── */
-  if (phase === 'hub' && !isCosmos) {
+  if (phase === 'hub') {
     return (
       <>
         <TrainingScreenShell
@@ -1203,9 +1193,6 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
     );
   }
 
-  if (phase === 'hub' && isCosmos) {
-    return withCosmos(C3D_FALLBACK);
-  }
 
   if (phase === 'pickDiff') {
     return (
