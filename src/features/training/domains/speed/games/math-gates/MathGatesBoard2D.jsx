@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import { paintSky } from '../../../../shared/board2d';
+import DrKawkabLayer from '../../../../shared/DrKawkabLayer';
 import { GAME_COLORS, GAME_INK, GAME_STIMULUS, shadeOf } from '../../../../shared/gamePalette';
 import { makeRng } from '../../../../shared/rng';
 import { survivalTier } from '../../../../shared/survival';
@@ -17,9 +18,15 @@ import '../../../../shared/c3dProto.css';
  * lives/gap config from levelCfg, and the same "the lane you occupy on ARRIVAL
  * is your answer". Only the drawing changed.
  *
- * The 3D version also loaded a ~1MB rigged GLB robot for the runner. That is
- * gone: it was a lane marker that had to be legible at a glance while numbers
- * fell toward it, and a shape reads faster than a character does.
+ * The runner is Dr Kawkab — the SAME model the Training hub puts at its centre,
+ * Assets/biped-v1.glb, rendered by DrKawkabLayer over this canvas. He exists
+ * only as that GLB; there is no 2D artwork of him, and both a hand-drawn
+ * stand-in and drawCosmosRunner() (which is Cosmos, the planet mascot) read as
+ * the wrong character.
+ *
+ * The equation is drawn ON the board, large. It briefly lived only in the
+ * chrome's hint line, which made the question the round is actually asking the
+ * least legible thing on screen.
  */
 
 const UI = {
@@ -65,6 +72,8 @@ export default function MathGatesBoard2D({
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const apiRef = useRef({});
+  // Where Dr Kawkab should stand this frame; DrKawkabLayer reads it.
+  const kawkabRef = useRef({ x: 0, y: 0, h: 80, lean: 0 });
   const playSfxRef = useRef(playSfx);
   const resultRef = useRef(onResult);
   const awardRef = useRef(awardFreeRun);
@@ -135,7 +144,7 @@ export default function MathGatesBoard2D({
 
     const s = runRef.current;   // the live run — survives effect re-runs
 
-    const laneCentre = (i) => (i + 0.5) / LANES;
+    const laneCentre = (i) => (i + 0.5) / LANES;   // 0..1 within the play column
 
     const spawnGate = () => {
       const f = clamp(s.gatesPlayed / 36, 0, 1);
@@ -204,7 +213,7 @@ export default function MathGatesBoard2D({
     const onDown = (e) => {
       if (s.finished) return;
       const rect = canvas.getBoundingClientRect();
-      const third = (e.clientX - rect.left) / rect.width;
+      const third = (e.clientX - rect.left) / rect.width;   // column-relative below
       setLane(third < 1 / 3 ? 0 : third < 2 / 3 ? 1 : 2);
     };
     canvas.addEventListener('pointerdown', onDown);
@@ -240,8 +249,48 @@ export default function MathGatesBoard2D({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       paintSky(ctx, W, H);
 
-      const laneW = W / LANES;
+      /* The play column.
+       *
+       * Lanes used to span the full canvas. On a 1366px desktop that made each
+       * lane ~455px wide, so the runner had to travel half a screen to switch
+       * and the three gate answers sat too far apart to compare at a glance —
+       * on a task scored in hundreds of milliseconds. The column is capped and
+       * centred, so the game reads the same on a phone and a monitor. */
+      const colW = Math.min(W, Math.max(320, H * 0.78));
+      const colX = (W - colW) / 2;
+      const laneW = colW / LANES;
+      const laneX = (i) => colX + i * laneW;
       const runnerY = H * RUNNER_LINE;
+
+      /* The equation, on the board and large.
+       *
+       * It used to live only in the chrome's hint line — small text in the
+       * header. That is the question the whole round asks, and it was the least
+       * legible thing on screen. The 3D version had it as a full-width banner
+       * for exactly this reason; this is that banner, drawn directly. */
+      if (s.gate) {
+        const eqTxt = `${s.gate.eq.text} = ?`;
+        const eqSize = Math.round(Math.min(W * 0.085, H * 0.11, 60));
+        ctx.save();
+        ctx.font = `800 ${eqSize}px Outfit, system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const tw = ctx.measureText(eqTxt).width;
+        const padX = eqSize * 0.55;
+        const bx = W / 2 - tw / 2 - padX;
+        const by = H * 0.055;
+        const bh = eqSize * 1.5;
+        ctx.fillStyle = 'rgba(242, 236, 228, 0.92)';
+        ctx.beginPath();
+        ctx.roundRect(bx, by, tw + padX * 2, bh, 16);
+        ctx.fill();
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = GAME_INK;
+        ctx.stroke();
+        ctx.fillStyle = GAME_INK;
+        ctx.fillText(eqTxt, W / 2, by + bh / 2);
+        ctx.restore();
+      }
 
       // Lane strips — the occupied one is brighter, so "which lane am I in"
       // never depends on finding a small runner.
@@ -249,39 +298,27 @@ export default function MathGatesBoard2D({
         ctx.save();
         ctx.globalAlpha = i === s.lane ? 0.26 : 0.13;
         ctx.fillStyle = LANE_COLORS[i];
-        ctx.fillRect(i * laneW + 4, H * RUN_TOP, laneW - 8, runnerY - H * RUN_TOP + 10);
+        ctx.fillRect(laneX(i) + 4, H * RUN_TOP, laneW - 8, runnerY - H * RUN_TOP + 10);
         ctx.restore();
       }
 
-      // The runner: a wedge pointing at the incoming gate.
-      const rx = s.runnerX * W;
-      const rr = Math.min(laneW * 0.22, 34);
-      ctx.save();
-      ctx.fillStyle = shadeOf(GAME_COLORS.accent.fill);
-      ctx.beginPath();
-      ctx.moveTo(rx, runnerY - rr);
-      ctx.lineTo(rx + rr * 0.9, runnerY + rr * 0.7);
-      ctx.lineTo(rx - rr * 0.9, runnerY + rr * 0.7);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = GAME_COLORS.accent.fill;
-      ctx.beginPath();
-      ctx.moveTo(rx, runnerY - rr * 0.86);
-      ctx.lineTo(rx + rr * 0.78, runnerY + rr * 0.6);
-      ctx.lineTo(rx - rr * 0.78, runnerY + rr * 0.6);
-      ctx.closePath();
-      ctx.fill();
-      ctx.lineWidth = 2.5;
-      ctx.strokeStyle = GAME_INK;
-      ctx.stroke();
-      ctx.restore();
+      // Dr Kawkab is drawn by DrKawkabLayer, not here — we just publish where
+      // he should stand, in the same CSS pixels this canvas uses.
+      const rx = colX + s.runnerX * colW;
+      const rr = Math.min(laneW * 0.2, 30);
+      kawkabRef.current = {
+        x: rx,
+        y: runnerY + rr * 0.7,
+        h: rr * 3.4,
+        lean: (laneCentre(s.lane) - s.runnerX) * 6,
+      };
 
       // The gate: three answers, one per lane.
       if (s.gate) {
         const gy = H * RUN_TOP + (runnerY - H * RUN_TOP) * s.gate.y;
         const tileR = Math.min(laneW * 0.36, 62);
         s.gate.eq.options.forEach((val, i) => {
-          const cx = laneCentre(i) * W;
+          const cx = colX + laneCentre(i) * colW;
           let fill = LANE_COLORS[i];
           if (s.flash && s.flash.t > 0) {
             if (s.flash.kind === 'ok' && i === s.flash.lane) fill = GAME_COLORS.ok.fill;
@@ -388,7 +425,7 @@ export default function MathGatesBoard2D({
       isAr={isAr}
       title={isAr ? 'بوابات الحساب' : 'Math Gates'}
       tag={isAr ? 'تدريب' : 'training'}
-      hint={phase === 'run' ? (eqText || t.hint) : t.hint}
+      hint={t.hint}
       chip={eqText || '∑'}
       chipStyle={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--game-ink)' }}
       stats={stats}
@@ -398,7 +435,12 @@ export default function MathGatesBoard2D({
       onBack={onBack}
       playSfx={playSfx}
       canvasRef={wrapRef}
-      canvasChildren={<canvas ref={canvasRef} style={{ display: 'block', touchAction: 'none' }} />}
+      canvasChildren={(
+        <>
+          <canvas ref={canvasRef} style={{ display: 'block', touchAction: 'none' }} />
+          <DrKawkabLayer posRef={kawkabRef} />
+        </>
+      )}
       bannerActions={
         banner === 'over' ? (
           <div className="c3d-banner-actions">
