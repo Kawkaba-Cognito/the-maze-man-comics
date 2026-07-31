@@ -66,10 +66,10 @@ export default function WordleLiveHud({
             width: `${pctTime * 100}%`,
             background:
               pctTime > 0.5
-                ? 'linear-gradient(90deg,#6b9e7a,#7ab87a)'
+                ? 'linear-gradient(90deg, var(--game-ok-edge), var(--game-ok))'
                 : pctTime > 0.2
-                  ? 'linear-gradient(90deg,#e8c47a,#e8a07a)'
-                  : 'linear-gradient(90deg,#e8a07a,#c97a7a)',
+                  ? 'linear-gradient(90deg, var(--game-accent-edge), var(--game-accent))'
+                  : 'linear-gradient(90deg, var(--game-accent-edge), var(--game-bad))',
           }}
         />
       </div>
