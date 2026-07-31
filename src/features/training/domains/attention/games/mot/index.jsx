@@ -1,4 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { GAME_COLORS } from '../../../../shared/gamePalette';
+import { paintSky } from '../../../../shared/board2d';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
@@ -175,12 +177,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
     // Vertical rather than radial: Tide is a top-to-bottom ramp, cool zenith
     // to warm horizon, and a radial wash flattens that into a vignette.
     {
-      const wash = ctx.createLinearGradient(0, 0, 0, h);
-      wash.addColorStop(0, '#ccdae6');
-      wash.addColorStop(0.58, '#d2c5b5');
-      wash.addColorStop(1, '#c6b199');
-      ctx.fillStyle = wash;
-      ctx.fillRect(0, 0, w, h);
+      paintSky(ctx, w, h);
     }
 
     // Premium arena plate asset (or flat fallback)
@@ -189,7 +186,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
       if (motArenaImg?.complete && motArenaImg.naturalWidth > 0) {
         ctx.drawImage(motArenaImg, f.x0 - 4, f.y0 - 4, f.w + 8, f.h + 8);
       } else {
-        ctx.fillStyle = '#fffdf9';
+        ctx.fillStyle = 'var(--surface-raised)';
         ctx.strokeStyle = 'rgba(232,172,78,0.55)';
         ctx.lineWidth = 2.25;
         if (ctx.roundRect) {
@@ -210,9 +207,9 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
       // attention, not read off a feature). Cue + result use CVD-safe hues
       // (Okabe-Ito) reinforced with symbols so the feedback never relies on
       // red/green alone.
-      let fill = '#4f9fe0';
-      if (ph === 'cue' && d.target) fill = '#E69F00';                       // amber cue
-      if (ph === 'result') fill = d.target ? '#009E73' : (d.selected ? '#D55E00' : '#33415a');
+      let fill = GAME_COLORS.item.fill;
+      if (ph === 'cue' && d.target) fill = GAME_COLORS.accent.fill;                       // amber cue
+      if (ph === 'result') fill = d.target ? GAME_COLORS.ok.fill : (d.selected ? GAME_COLORS.bad.fill : GAME_COLORS.muted.fill);
 
       // soft contact shadow (same for every sphere)
       ctx.beginPath();
@@ -585,7 +582,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
           )}
           {sparkPts && (
             <svg viewBox="0 0 200 40" width="200" height="40" preserveAspectRatio="none" aria-hidden="true" style={{ margin: '2px 0' }}>
-              <polyline points={sparkPts} fill="none" stroke="#4f9fe0" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+              <polyline points={sparkPts} fill="none" stroke={GAME_COLORS.item.fill} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
             </svg>
           )}
           <p style={{ ...S.overSub, fontSize: 12, color: '#8a7a62', maxWidth: 300 }}>
@@ -705,10 +702,10 @@ const styles = {
   dot: { width: 11, height: 11, borderRadius: '50%', display: 'inline-block', flexShrink: 0 },
   overWrap: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, textAlign: 'center' },
   overTitle: { margin: 0, fontWeight: 900, fontSize: 24 },
-  overSub: { margin: 0, fontWeight: 700, color: '#5a4a32' },
+  overSub: { margin: 0, fontWeight: 700, color: 'var(--ink-dim)' },
   capWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, margin: '4px 0 6px' },
-  capNum: { fontWeight: 900, fontSize: 42, lineHeight: 1, color: '#4f9fe0' },
+  capNum: { fontWeight: 900, fontSize: 42, lineHeight: 1, color: GAME_COLORS.item.fill },
   capLbl: { fontWeight: 700, fontSize: 13, color: '#7a6a52' },
-  overBtn: { padding: '12px 20px', borderRadius: 12, border: '2px solid var(--ink-outline)', background: '#4f9fe0', color: '#fff', fontWeight: 900, cursor: 'pointer' },
+  overBtn: { padding: '12px 20px', borderRadius: 12, border: '2px solid var(--ink-outline)', background: GAME_COLORS.item.fill, color: '#fff', fontWeight: 900, cursor: 'pointer' },
   overBtnGhost: { padding: '12px 20px', borderRadius: 12, border: '2px solid #cdbfa6', background: '#fff', fontWeight: 800, cursor: 'pointer' },
 };

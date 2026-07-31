@@ -1765,7 +1765,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                   : cells.find((c) => c.isT)?.shape || 'circle'
               }
               targetColor={
-                round.targetCol || cells.find((c) => c.isT)?.fill || '#2d2d2d'
+                round.targetCol || cells.find((c) => c.isT)?.fill || 'var(--game-ink)'
               }
               onMenu={onHudQuit}
               onPause={onHudPause}
@@ -2397,7 +2397,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                     : cells.find((c) => c.isT)?.shape || 'circle'
                 }
                 color={
-                  round.targetCol || cells.find((c) => c.isT)?.fill || '#2d2d2d'
+                  round.targetCol || cells.find((c) => c.isT)?.fill || 'var(--game-ink)'
                 }
                 size={52}
               />

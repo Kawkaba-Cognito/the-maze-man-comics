@@ -326,10 +326,10 @@ export function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, on
         const y = g.gate.y;
         for (let i = 0; i < LANES; i++) {
           const x = (i / LANES) * g.W;
-          ctx.fillStyle = '#fffdf8';
+          ctx.fillStyle = 'var(--surface-raised)';
           ctx.strokeStyle = ACCENT; ctx.lineWidth = 3;
           ctx.beginPath(); ctx.roundRect(x + 6, y - bandH / 2, g.W / LANES - 12, bandH, 12); ctx.fill(); ctx.stroke();
-          ctx.fillStyle = '#2d2d2d';
+          ctx.fillStyle = 'var(--game-ink)';
           ctx.font = `900 ${Math.round(bandH * 0.42)}px Outfit, system-ui, sans-serif`;
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillText(String(g.gate.eq.options[i]), x + (g.W / LANES) / 2, y);
@@ -395,7 +395,7 @@ export function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, on
         )}
         {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>{isAr ? 'بوابات الحساب' : 'Math Gates'}</div>
+          <div className="ct-training-play-title" style={cosmos ? { color: 'var(--game-selected)' } : undefined}>{isAr ? 'بوابات الحساب' : 'Math Gates'}</div>
           <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>{head}{showLives ? ` · ${'♥'.repeat(Math.max(0, hud.lives))}` : ''}{hud.combo > 1 ? ` · 🔥${hud.combo}` : ''}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
@@ -435,7 +435,7 @@ export function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, on
               )}
               <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                 <button style={S.overBtn} onClick={() => { playSfx('click'); restart(); }}>{isAr ? 'العب مجدداً' : 'Play again'}</button>
-                <button style={{ ...S.overBtn, background: '#cdbfa6' }} onClick={() => { playSfx('click'); onExit?.(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
+                <button style={{ ...S.overBtn, background: 'var(--line)' }} onClick={() => { playSfx('click'); onExit?.(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
               </div>
             </div>
           </div>
@@ -489,7 +489,7 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
 
 const styles = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
-  cosmosRoot: { background: 'transparent', color: '#f0e2c0', zIndex: 81 },
+  cosmosRoot: { background: 'transparent', color: 'var(--game-selected)', zIndex: 81 },
   eqWrap: { display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 12, padding: '8px 0 4px', minHeight: 48 },
   eqNum: { fontWeight: 900, fontSize: 'clamp(30px, 9vw, 48px)', color: 'var(--color-training-ink, #2d2d2d)', letterSpacing: 1 },
   eqQ: { fontWeight: 900, fontSize: 'clamp(20px, 6vw, 30px)', color: ACCENT },
@@ -497,10 +497,10 @@ const styles = {
   sting: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' },
   stingInner: { fontSize: 'clamp(26px, 8vw, 56px)', fontWeight: 900, color: '#fff', background: COSMOS_STING_BG, padding: '10px 24px', borderRadius: 16, boxShadow: '4px 4px 0 var(--ink-outline)', animation: 'flipStingPop .8s ease-out' },
   overWrap: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(45,45,45,0.45)' },
-  overCard: { background: '#fffdf8', borderRadius: 20, padding: '20px 22px', textAlign: 'center', boxShadow: '6px 6px 0 var(--ink-outline)', border: '2px solid #cdbfa6', width: 'min(92vw, 380px)', maxHeight: '88%', overflowY: 'auto' },
-  overTitle: { fontWeight: 900, fontSize: 24, color: '#2d2d2d' },
-  overScore: { marginTop: 6, fontWeight: 700, color: '#5a4a32' },
-  overNote: { marginTop: 10, fontSize: 12.5, lineHeight: 1.45, color: '#8a8078', textAlign: 'center' },
+  overCard: { background: 'var(--surface-raised)', borderRadius: 20, padding: '20px 22px', textAlign: 'center', boxShadow: '6px 6px 0 var(--ink-outline)', border: '2px solid #cdbfa6', width: 'min(92vw, 380px)', maxHeight: '88%', overflowY: 'auto' },
+  overTitle: { fontWeight: 900, fontSize: 24, color: 'var(--game-ink)' },
+  overScore: { marginTop: 6, fontWeight: 700, color: 'var(--ink-dim)' },
+  overNote: { marginTop: 10, fontSize: 12.5, lineHeight: 1.45, color: 'var(--ink-dim)', textAlign: 'center' },
   overBtn: { flex: 1, padding: '15px 16px', fontWeight: 900, fontSize: 16, color: '#fff', background: ACCENT, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 var(--ink-outline)', cursor: 'pointer', whiteSpace: 'nowrap' },
   controls: { display: 'flex', gap: 14, padding: '14px 18px calc(14px + env(safe-area-inset-bottom))' },
   ctrlBtn: { flex: 1, height: 84, fontSize: 38, fontWeight: 900, color: '#fff', background: ACCENT, border: 'none', borderRadius: 20, boxShadow: '4px 4px 0 var(--ink-outline)', cursor: 'pointer', touchAction: 'none', userSelect: 'none' },

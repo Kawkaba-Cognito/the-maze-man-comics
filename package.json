@@ -28,7 +28,8 @@
     "ship:live": "npm run push:both && npm run deploy:live",
     "validate:noir": "node scripts/validate-noir.mjs",
     "validate:stage": "node scripts/validate-stage.mjs",
-    "validate:kawnera": "node scripts/validate-kawnera.mjs"
+    "validate:kawnera": "node scripts/validate-kawnera.mjs",
+    "audit:design": "node scripts/audit-design.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^6.2.0",

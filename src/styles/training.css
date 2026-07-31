@@ -3456,22 +3456,22 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     overflow: hidden;
     touch-action: manipulation;
 }
-/* Tide deep. Was its own purple-black radial (#1c1533 → #060410) from when this
- * screen was reskinned before the Tide palette existed — a sixth background in
- * an app that should have one. Same family as every other play surface now. */
+/* Block Escape is 2D on the LIGHT play surface.
+ *
+ * This rule used to force Tide Deep with !important, which beat the root
+ * background, the isCosmos branch and the sky overlay all at once — it is why
+ * four separate "the background is fixed now" changes were invisible. The 3D
+ * scene it was written for is gone; the 2D board needs the light surface like
+ * every other converted game. */
 .cancellation-task-game.ct-rh-play {
-    background-color: var(--play-surface-deep-flat) !important;
-    background-image: var(--play-surface-deep) !important;
-    background-size: var(--home-sky-size) !important;
-    background-repeat: no-repeat !important;
-    background-position: top center !important;
+    background: var(--play-surface);
 }
+/* Block Escape's starfield backdrop. It is the reason the game still looked
+   dark after the root background was switched to --play-surface: this sits
+   INSIDE the play screen at inset:0 and paints over it. The game is 2D on the
+   light surface now, so the sky is off and the surface shows through. */
 .ct-rh-sky {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    overflow: hidden;
+    display: none;
 }
 .ct-rh-sky-nebula {
     position: absolute;
@@ -3499,17 +3499,15 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
         radial-gradient(1.3px 1.3px at 50% 90%, rgba(240, 226, 192, 0.5), transparent);
 }
 .ct-rh-play .ct-training-play-title {
-    color: #f0e2c0 !important;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+    color: var(--game-ink) !important;
 }
 .ct-rh-play .ct-training-play-sub {
-    color: rgba(240, 226, 192, 0.78) !important;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+    color: var(--ink-dim) !important;
 }
 .ct-rh-play .ct-training-chrome-btn {
-    color: #f0e2c0;
-    background: rgba(240, 226, 192, 0.08);
-    border-color: rgba(232, 172, 78, 0.4);
+    color: var(--game-ink);
+    background: rgba(36, 29, 19, 0.06);
+    border-color: var(--line);
 }
 .ct-rh-stage {
     flex: 1 1 auto;
@@ -3532,7 +3530,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     flex-shrink: 0;
     font-size: clamp(0.78rem, 3.2vw, 0.88rem);
     font-weight: 800;
-    color: #f0e2c0;
+    color: var(--game-ink);
 }
 .ct-rh-hud--center {
     justify-content: center;
@@ -3542,7 +3540,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     font-size: 0.92rem;
 }
 .ct-rh-hud-time[data-low="1"] {
-    color: #ff9a8a;
+    color: var(--game-bad);
 }
 .ct-rh-board-wrap {
     flex: 1 1 auto;
@@ -3554,17 +3552,34 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 }
 .ct-rh-board {
     position: relative;
-    flex-shrink: 0;
+    flex-shrink: 1;
+    min-height: 0;
+    max-height: 100%;
 }
+/* The action row spanned the whole viewport and its buttons stretched with it,
+   so Reset became a full-width bar sitting over the board's bottom row. Cap it
+   to the board's own width and let the buttons size to their content. */
 .ct-rh-play .ct-training-play-actions {
     flex-shrink: 0;
     margin-top: 0;
+    width: 100%;
+    /* 480, not 420: the base rule adds 12px of horizontal padding each side, so
+       420 left only 396 of content — 14px short of two 200px buttons plus the
+       10px gap. They wrapped to a second row, which made this bar 136px tall and
+       pushed it up over the board. */
+    max-width: 480px;
+    margin-inline: auto;
     padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
+.ct-rh-play .ct-training-play-actions > * {
+    flex: 0 1 auto;
+    min-width: 132px;
+    max-width: 200px;
+}
 .ct-rh-play .ct-training-btn--ghost {
-    background: rgba(255, 255, 255, 0.07);
-    color: #f0e2c0;
-    border-color: rgba(232, 172, 78, 0.35);
+    background: var(--surface-raised);
+    color: var(--game-ink);
+    border-color: var(--game-ink);
     box-shadow: none;
 }
 @media (prefers-reduced-motion: reduce) {

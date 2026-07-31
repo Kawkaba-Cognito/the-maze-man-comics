@@ -240,22 +240,22 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
         if (it.isDecoy) {
           // Distractor to IGNORE — muted hollow circle with an ✕.
           ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-          ctx.fillStyle = '#eef1f4'; ctx.fill();
-          ctx.lineWidth = 2.5; ctx.strokeStyle = '#9aa6b2'; ctx.stroke();
-          const q = r * 0.34; ctx.lineWidth = Math.max(2, r * 0.16); ctx.strokeStyle = '#9aa6b2';
+          ctx.fillStyle = 'var(--line)'; ctx.fill();
+          ctx.lineWidth = 2.5; ctx.strokeStyle = 'var(--ink-dim)'; ctx.stroke();
+          const q = r * 0.34; ctx.lineWidth = Math.max(2, r * 0.16); ctx.strokeStyle = 'var(--ink-dim)';
           ctx.beginPath(); ctx.moveTo(x - q, y - q); ctx.lineTo(x + q, y + q); ctx.moveTo(x + q, y - q); ctx.lineTo(x - q, y + q); ctx.stroke();
           continue;
         }
         const done = it.n < nextRef.current;
         let fill; let edge; let txt;
         if (isColor) {
-          fill = done ? '#cfd8e0' : CTT_COLORS[it.color];
+          fill = done ? 'var(--line)' : CTT_COLORS[it.color];
           edge = done ? '#aab4bd' : 'rgba(0,0,0,0.20)';
           txt = done ? '#8a96a0' : '#fff';
         } else {
           fill = done ? '#1f5e44' : '#1b2940';
           edge = done ? '#3be086' : '#6fa6df';
-          txt = done ? '#bdf5d8' : '#eaf3ff';
+          txt = done ? '#bdf5d8' : 'var(--line)';
         }
         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fillStyle = fill; ctx.fill();
@@ -265,7 +265,7 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
       }
       if (performance.now() < flashRef.current.until) {
         ctx.beginPath(); ctx.arc(flashRef.current.x, flashRef.current.y, r * 1.3, 0, Math.PI * 2);
-        ctx.lineWidth = 5; ctx.strokeStyle = '#ff5a5a'; ctx.stroke();
+        ctx.lineWidth = 5; ctx.strokeStyle = 'var(--game-bad)'; ctx.stroke();
       }
     }
   }, [itemR]);
@@ -614,7 +614,7 @@ const styles = {
   survFill: { height: '100%' },
   ready: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(210,197,181,0.88)', zIndex: 3, pointerEvents: 'none' },
   readyCard: { background: 'var(--surface-raised)', border: '2px solid var(--game-ink)', borderRadius: 8, padding: '16px 22px', textAlign: 'center', boxShadow: '0 14px 38px rgba(0,0,0,0.5)', maxWidth: '82%' },
-  readyKicker: { display: 'inline-block', marginBottom: 6, padding: '2px 12px', borderRadius: 999, background: '#7a5a1e', color: '#fff7e6', fontWeight: 900, fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
+  readyKicker: { display: 'inline-block', marginBottom: 6, padding: '2px 12px', borderRadius: 999, background: '#7a5a1e', color: 'var(--surface-raised)', fontWeight: 900, fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
   readyTitle: { fontWeight: 900, fontSize: 18, color: 'var(--game-ink)' },
   readyDot: { width: 26, height: 26, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 13, border: '2px solid rgba(0,0,0,0.25)' },
   readySub: { marginTop: 8, fontWeight: 800, fontSize: 13, color: 'var(--ink-dim)' },
