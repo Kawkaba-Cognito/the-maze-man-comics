@@ -6,7 +6,6 @@ import { SURVIVAL_MS, survivalRamp, survivalTier } from '../../../../shared/surv
 import { RELATION } from './data';
 import { CATEGORIES } from '../odd-one-out/data';
 import { markSeen, pickTrial } from './trialBank';
-import UniverseStage from '../../../../../../components/shared/UniverseStage';
 
 /*
  * Word Links — verbal-reasoning / semantic judgment (bilingual), minimalist.
@@ -29,8 +28,8 @@ import UniverseStage from '../../../../../../components/shared/UniverseStage';
 // minimalist palette
 const INK = 'var(--ink)';
 const SUB = 'var(--ink-dim)';
-const SUB_ON_DARK = 'var(--color-header-text-dim)';
-const PROMPT_ON_DARK = 'var(--color-header-text)';
+const SUB_ON_DARK = 'var(--ink-dim)';
+const PROMPT_ON_DARK = 'var(--game-ink)';
 const LINE = 'var(--line)';
 const CARD = 'var(--surface-raised)';
 const ACC = 'var(--accent)';
@@ -279,7 +278,7 @@ export function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, on
   if (over && isSurvival) {
     return (
       <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
-        {!cosmos && <UniverseStage accent="training" />}
+        
         <div style={S.overWrap}>
           <div style={S.overCard}>
             <h2 style={S.overTitle}>{isAr ? 'انتهى البقاء' : 'Survival over'}</h2>
@@ -302,7 +301,7 @@ export function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, on
 
   return (
     <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
-      {!cosmos && <UniverseStage accent="training" />}
+      
       {isSurvival && (
         <div style={S.survTrack}><div style={{ ...S.survFill, width: `${survPct * 100}%`, background: survPct < 0.2 ? BAD : ACC }} /></div>
       )}
@@ -312,8 +311,8 @@ export function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, on
         )}
         {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title" style={{ color: 'var(--color-header-text)' }}>{title}</div>
-          <div className="ct-training-play-sub" style={{ color: 'var(--color-header-text-dim)' }}>{hud}</div>
+          <div className="ct-training-play-title" style={{ color: 'var(--game-ink)' }}>{title}</div>
+          <div className="ct-training-play-sub" style={{ color: 'var(--ink-dim)' }}>{hud}</div>
         </div>
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
@@ -400,7 +399,7 @@ export default function WordLinksGame({ onBack, workoutMode = false }) {
 }
 
 const S = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'transparent', color: PROMPT_ON_DARK, fontFamily: "'Outfit', system-ui, sans-serif" },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--play-surface)', color: PROMPT_ON_DARK, fontFamily: "'Outfit', system-ui, sans-serif" },
   cosmosRoot: { zIndex: 81 },
   body: { position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', gap: 20, padding: '16px 18px calc(24px + env(safe-area-inset-bottom))', maxWidth: 440, width: '100%', margin: '0 auto', overflowY: 'auto' },
   metaRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: -8 },

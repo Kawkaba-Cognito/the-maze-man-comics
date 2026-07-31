@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense } from 'react';
+import { GAME_COLORS, GAME_STIMULUS_6, shadeOf } from '../../../../shared/gamePalette';
 import { useApp } from '../../../../../../context/AppContext';
 import { IconBack } from '../../../../shared/TrainingIcons';
 import {
@@ -60,20 +61,28 @@ function makeSafeRushHourBoard(labelKey, extra = {}) {
 }
 
 const HERO_STYLE = {
-  fill: ['#f5c44a', '#e8a830'],
-  border: '#c8881e',
+  fill: ['var(--game-accent)', 'var(--game-accent)'],
+  border: 'var(--game-accent-edge)',
   shadow: 'rgba(200,140,30,0.35)',
 };
 
-const CAR_STYLES = [
-  { fill: ['#a08868', '#8a7050'], border: '#6e5a3e', shadow: 'rgba(110,90,62,0.25)' },
-  { fill: ['#7ab090', '#5e9878'], border: '#4a7a5e', shadow: 'rgba(74,122,94,0.25)' },
-  { fill: ['#c08060', '#a86848'], border: '#884830', shadow: 'rgba(136,72,48,0.25)' },
-  { fill: ['#8888a8', '#707090'], border: '#585878', shadow: 'rgba(88,88,120,0.25)' },
-  { fill: ['#a89880', '#907860'], border: '#706048', shadow: 'rgba(112,96,72,0.25)' },
-  { fill: ['#8fb8c8', '#6a9aac'], border: '#407090', shadow: 'rgba(64,112,144,0.25)' },
-  { fill: ['#c8a0b8', '#a88098'], border: '#805870', shadow: 'rgba(128,88,112,0.25)' },
-];
+/*
+ * Block colours, built from the shared stimulus set rather than hand-picked.
+ *
+ * Colour is not the task here — you free the hero block by sliding the others —
+ * but seven blocks still have to be told apart at a glance while you plan a
+ * route, so this needs a categorical ramp, not the six semantic roles.
+ *
+ * Each entry is derived: the stimulus hue as the lit face, shadeOf() at two
+ * depths for the shaded face and the border. That keeps the blocks in the
+ * palette's family and means a palette change moves them too, instead of
+ * leaving seven bespoke ramps behind.
+ */
+const CAR_STYLES = [...GAME_STIMULUS_6, GAME_COLORS.muted.fill].map((hue) => ({
+  fill: [hue, shadeOf(hue, 0.82)],
+  border: shadeOf(hue, 0.62),
+  shadow: 'rgba(36, 29, 19, 0.25)',
+}));
 
 function pieceStyle(pid) {
   if (pid === 'hero') return HERO_STYLE;
@@ -1239,7 +1248,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         style={{
           minHeight: '100%',
           position: 'relative',
-          color: '#141210',
+          color: 'var(--game-ink)',
           fontFamily: "'Outfit', system-ui, sans-serif",
           overflowX: 'hidden',
           padding: pad,
@@ -1294,7 +1303,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         style={{
           minHeight: '100%',
           position: 'relative',
-          color: '#141210',
+          color: 'var(--game-ink)',
           fontFamily: "'Outfit', system-ui, sans-serif",
           overflowX: 'hidden',
           padding: pad,
@@ -1304,17 +1313,17 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
           <div className="ct-fq-training-title ct-fq-training-title-sm" style={{ marginBottom: 12 }}>
             {t.freeResTitle}
           </div>
-          <p style={{ color: '#5c534c', fontWeight: 700 }}>{t.freeRoundsCleared(freeResSnapshot.rounds)}</p>
-          <p style={{ color: '#5c534c', fontWeight: 600, marginTop: 6 }}>
+          <p style={{ color: 'var(--ink-dim)', fontWeight: 700 }}>{t.freeRoundsCleared(freeResSnapshot.rounds)}</p>
+          <p style={{ color: 'var(--ink-dim)', fontWeight: 600, marginTop: 6 }}>
             {isAr ? 'النقاط' : 'Score'}: {freeResSnapshot.score}
           </p>
-          <p style={{ color: '#5c534c', fontWeight: 600, marginTop: 4 }}>
+          <p style={{ color: 'var(--ink-dim)', fontWeight: 600, marginTop: 4 }}>
             {isAr ? 'أفضل سلسلة' : 'Best streak'}: {freeResSnapshot.bestStreak}
           </p>
-          <p style={{ fontSize: 12, color: '#8a7868', marginTop: 12 }}>
+          <p style={{ fontSize: 12, color: 'var(--ink-dim)', marginTop: 12 }}>
             {t.freeBestLine(progress.freeBest)}
           </p>
-          <p style={{ fontSize: 12, color: '#8a7868' }}>{t.freeBestScoreLine(progress.freeBestScore)}</p>
+          <p style={{ fontSize: 12, color: 'var(--ink-dim)' }}>{t.freeBestScoreLine(progress.freeBestScore)}</p>
           <div style={{ display: 'flex', gap: 10, marginTop: 22, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
@@ -1355,7 +1364,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         style={{
           minHeight: '100%',
           position: 'relative',
-          color: '#141210',
+          color: 'var(--game-ink)',
           fontFamily: "'Outfit', system-ui, sans-serif",
           overflowX: 'hidden',
           padding: pad,
@@ -1377,7 +1386,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                 height: 34,
                 borderRadius: 12,
                 border: '2px solid var(--ink-outline)',
-                background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
+                background: 'linear-gradient(180deg, #fff 0%, var(--surface-raised) 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1385,7 +1394,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                 boxShadow: '3px 3px 0 var(--ink-outline)',
               }}
             >
-              <IconBack size={18} c="#141210" />
+              <IconBack size={18} c="var(--game-ink)" />
             </button>
             <div className="ct-fq-training-title ct-fq-training-title-sm">{t.chalResTitle}</div>
           </div>
@@ -1473,12 +1482,12 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         dir={isAr ? 'rtl' : 'ltr'}
         style={{
           minHeight: '100vh',
-          color: '#f0e2c0',
+          color: 'var(--game-selected)',
           fontFamily: "'Outfit', system-ui, sans-serif",
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: isCosmos ? undefined : '#0a0816',
+          background: isCosmos ? undefined : 'var(--play-surface)',
         }}
       >
         <div style={{ textAlign: 'center' }}>
@@ -1489,7 +1498,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
             margin: '0 auto 14px',
           }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          <div style={{ fontSize: 14, color: '#f0e2c0', fontWeight: 600 }}>
+          <div style={{ fontSize: 14, color: 'var(--game-selected)', fontWeight: 600 }}>
             {isAr ? 'جارٍ إنشاء اللغز…' : 'Generating puzzle…'}
           </div>
         </div>
@@ -1503,7 +1512,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
       data-c3d-embed={isCosmos || undefined}
       dir={isAr ? 'rtl' : 'ltr'}
       style={{
-        color: '#f0e2c0',
+        color: 'var(--game-selected)',
         fontFamily: "'Outfit', system-ui, sans-serif",
         position: 'relative',
       }}
@@ -1589,7 +1598,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
               <rect x={2} y={2} width={cellSize - 4} height={cellSize - 4} rx={4} fill="rgba(255,255,255,0.05)" />
             </pattern>
           </defs>
-          <rect x={0} y={0} width={boardPx} height={boardPx} rx={8} fill="#161029" />
+          <rect x={0} y={0} width={boardPx} height={boardPx} rx={8} fill="var(--surface-raised)" />
           <rect x={0} y={0} width={boardPx} height={boardPx} fill="url(#rh-grid-cell)" />
           <path
             d={`M 8 0 L ${boardPx - 8} 0 Q ${boardPx} 0 ${boardPx} 8 L ${boardPx} ${exitTop - 1} M ${boardPx} ${exitBot + 1} L ${boardPx} ${boardPx - 8} Q ${boardPx} ${boardPx} ${boardPx - 8} ${boardPx} L 8 ${boardPx} Q 0 ${boardPx} 0 ${boardPx - 8} L 0 8 Q 0 0 8 0`}
@@ -1612,7 +1621,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
             <path
               d="M -3 -7 L 7 0 L -3 7"
               fill="var(--color-amber)"
-              stroke="#c8881e"
+              stroke="var(--game-accent-edge)"
               strokeWidth={1}
               strokeLinejoin="round"
             />
@@ -1620,7 +1629,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
           <text
             x={boardPx + 10}
             y={exitTop - 5}
-            fill="#b696d4"
+            fill="var(--game-accent)"
             fontSize={8}
             fontWeight={800}
             letterSpacing={2}
@@ -1821,7 +1830,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
           <div
             className="ct-rh-win-card"
             style={{
-              background: 'linear-gradient(180deg, #fffefb, #f5efe8)',
+              background: 'linear-gradient(180deg, var(--surface-raised), var(--surface-raised))',
               borderRadius: 18,
               border: '2.5px solid var(--ink-outline)',
               boxShadow: '6px 6px 0 var(--ink-outline)',
@@ -1854,11 +1863,11 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
             >
               {t.escaped}
             </div>
-            <div className="ct-rh-win-meta" style={{ fontSize: 15, color: '#5c534c', marginTop: 8, fontWeight: 700 }}>
+            <div className="ct-rh-win-meta" style={{ fontSize: 15, color: 'var(--ink-dim)', marginTop: 8, fontWeight: 700 }}>
               {moves} {isAr ? 'حركة' : 'moves'} · {t.optimal} {parMoves}
             </div>
             {playMode !== 'challenge' && (
-              <div className="ct-rh-win-stars" style={{ fontSize: 13, color: '#b696d4', marginTop: 6, fontWeight: 700 }}>
+              <div className="ct-rh-win-stars" style={{ fontSize: 13, color: 'var(--game-accent)', marginTop: 6, fontWeight: 700 }}>
                 {'★'.repeat(stars)} {stars === 3 ? t.perfect : stars === 2 ? t.good : t.tryLower}
               </div>
             )}
@@ -1875,13 +1884,13 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                       padding: '10px 18px',
                       borderRadius: 10,
                       border: '2px solid var(--ink-outline)',
-                      background: 'linear-gradient(180deg, #6b9e7a, #5a8a68)',
+                      background: 'linear-gradient(180deg, var(--game-ok), var(--game-ok-edge))',
                       fontFamily: "'Outfit', system-ui, sans-serif",
                       fontSize: 15,
                       letterSpacing: 1.2,
                       cursor: 'pointer',
                       boxShadow: '3px 3px 0 var(--ink-outline)',
-                      color: '#fffefb',
+                      color: 'var(--surface-raised)',
                     }}
                   >
                     {t.nextRound}
@@ -1898,7 +1907,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                       padding: '10px 18px',
                       borderRadius: 10,
                       border: '2px solid var(--ink-outline)',
-                      background: 'linear-gradient(180deg, #f5c44a, #e8a830)',
+                      background: 'linear-gradient(180deg, var(--game-accent), var(--game-accent))',
                       fontFamily: "'Outfit', system-ui, sans-serif",
                       fontSize: 15,
                       letterSpacing: 1.2,
@@ -1923,13 +1932,13 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                       padding: '10px 18px',
                       borderRadius: 10,
                       border: '2px solid var(--ink-outline)',
-                      background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
+                      background: 'linear-gradient(180deg, #fff 0%, var(--surface-raised) 100%)',
                       fontFamily: "'Outfit', system-ui, sans-serif",
                       fontSize: 15,
                       letterSpacing: 1.2,
                       cursor: 'pointer',
                       boxShadow: '3px 3px 0 var(--ink-outline)',
-                      color: '#141210',
+                      color: 'var(--game-ink)',
                     }}
                   >
                     {t.hub}
@@ -1947,7 +1956,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                       padding: '10px 18px',
                       borderRadius: 10,
                       border: '2px solid var(--ink-outline)',
-                      background: 'linear-gradient(180deg, #f5c44a, #e8a830)',
+                      background: 'linear-gradient(180deg, var(--game-accent), var(--game-accent))',
                       fontFamily: "'Outfit', system-ui, sans-serif",
                       fontSize: 15,
                       letterSpacing: 1.2,
@@ -1972,13 +1981,13 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                         padding: '10px 18px',
                         borderRadius: 10,
                         border: '2px solid var(--ink-outline)',
-                        background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
+                        background: 'linear-gradient(180deg, #fff 0%, var(--surface-raised) 100%)',
                         fontFamily: "'Outfit', system-ui, sans-serif",
                         fontSize: 15,
                         letterSpacing: 1.2,
                         cursor: 'pointer',
                         boxShadow: '3px 3px 0 var(--ink-outline)',
-                        color: '#141210',
+                        color: 'var(--game-ink)',
                       }}
                     >
                       {t.next}
@@ -1997,13 +2006,13 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                         padding: '10px 18px',
                         borderRadius: 10,
                         border: '2px solid var(--ink-outline)',
-                        background: 'linear-gradient(180deg, #6b9e7a, #5a8a68)',
+                        background: 'linear-gradient(180deg, var(--game-ok), var(--game-ok-edge))',
                         fontFamily: "'Outfit', system-ui, sans-serif",
                         fontSize: 15,
                         letterSpacing: 1.2,
                         cursor: 'pointer',
                         boxShadow: '3px 3px 0 var(--ink-outline)',
-                        color: '#fffefb',
+                        color: 'var(--surface-raised)',
                       }}
                     >
                       {t.nextRound}
@@ -2025,13 +2034,13 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                       padding: '10px 18px',
                       borderRadius: 10,
                       border: '2px solid var(--ink-outline)',
-                      background: 'linear-gradient(180deg, #fff 0%, #f3ebe4 100%)',
+                      background: 'linear-gradient(180deg, #fff 0%, var(--surface-raised) 100%)',
                       fontFamily: "'Outfit', system-ui, sans-serif",
                       fontSize: 15,
                       letterSpacing: 1.2,
                       cursor: 'pointer',
                       boxShadow: '3px 3px 0 var(--ink-outline)',
-                      color: '#141210',
+                      color: 'var(--game-ink)',
                     }}
                   >
                     {playMode === 'free' ? (isAr ? 'إنهاء المحاولة' : 'End run') : t.hub}

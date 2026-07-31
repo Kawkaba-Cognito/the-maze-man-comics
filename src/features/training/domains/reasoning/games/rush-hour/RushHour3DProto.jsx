@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GAME_INTS, GAME_COLORS } from '../../../../shared/gamePalette';
+import { GAME_COLORS, GAME_INTS, GAME_STIMULUS_6, intOf } from '../../../../shared/gamePalette';
 import { bootC3dScene, matStd, disposeObject, THREE } from '../../../../shared/c3dBoot';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import { getRange, isWon, clonePieces } from './engine';
@@ -21,7 +21,10 @@ const BOARD = 6; // curated boards are all 6×6
 const CELL = 0.92;
 const EXIT_COLOR = GAME_INTS.accent.fill;
 const LIVES0 = 3;
-const CAR_COLORS = [0x6bb3c8, 0xc47bb0, 0x7cbc7a, 0xd4a574, 0x8b9dc3, 0xd98f5a, 0x9b8fd6, 0x69a89a, 0xcf6f6f, 0x8aa1c0, 0xb3a06b, 0x7a8bd0];
+/* Blocks come from the shared stimulus set rather than twelve bespoke pastels.
+   Seven hues cycle; the hero block is EXIT_COLOR (the accent) so it never
+   collides with one of them. */
+const CAR_COLORS = [...GAME_STIMULUS_6, GAME_COLORS.muted.fill].map(intOf);
 
 const UI = {
   en: {
@@ -123,19 +126,19 @@ export default function RushHour3DProto({ isAr, playSfx, onBack }) {
     // Soft ground glow disc behind the board for depth.
     const deck = new THREE.Mesh(
       new THREE.PlaneGeometry(BOARD * CELL + 1.4, BOARD * CELL + 1.4),
-      matStd(0x0d0a06, { emissiveIntensity: 0.02, metalness: 0.1, roughness: 0.95 }),
+      matStd(GAME_INTS.muted.edge, { emissiveIntensity: 0.02, metalness: 0.1, roughness: 0.95 }),
     );
     deck.position.z = -0.28;
     boardGroup.add(deck);
 
     const boardPlane = new THREE.Mesh(
       new THREE.PlaneGeometry(BOARD * CELL + 0.25, BOARD * CELL + 0.25),
-      matStd(0x18140d, { emissive: GAME_INTS.accent.fill, emissiveIntensity: 0.03, metalness: 0.2, roughness: 0.9 }),
+      matStd(GAME_INTS.muted.edge, { emissive: GAME_INTS.accent.fill, emissiveIntensity: 0.03, metalness: 0.2, roughness: 0.9 }),
     );
     boardPlane.position.z = -0.15;
     boardGroup.add(boardPlane);
 
-    const lineMat = matStd(0x3a342c, { emissiveIntensity: 0.1, metalness: 0.2, roughness: 0.7 });
+    const lineMat = matStd(GAME_INTS.muted.fill, { emissiveIntensity: 0.1, metalness: 0.2, roughness: 0.7 });
     for (let i = 0; i <= BOARD; i++) {
       const v = new THREE.Mesh(new THREE.BoxGeometry(0.02, BOARD * CELL, 0.04), lineMat);
       v.position.set(worldX(i) - CELL / 2, 0, -0.06);
@@ -190,7 +193,7 @@ export default function RushHour3DProto({ isAr, playSfx, onBack }) {
       // Glass cabin strip along the car's long axis.
       const cabin = new THREE.Mesh(
         new THREE.BoxGeometry(car.horizontal ? w * 0.5 : w * 0.7, car.horizontal ? h * 0.7 : h * 0.5, tall * 0.5),
-        matStd(0x0e1a22, { emissive: 0x6bb3c8, emissiveIntensity: 0.3, metalness: 0.6, roughness: 0.2 }),
+        matStd(GAME_INTS.item.edge, { emissive: GAME_INTS.item.fill, emissiveIntensity: 0.3, metalness: 0.6, roughness: 0.2 }),
       );
       cabin.position.z = tall + 0.02;
       grp.add(cabin);
