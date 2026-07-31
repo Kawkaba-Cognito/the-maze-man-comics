@@ -1,5 +1,5 @@
 // Auto-extracted from FocusQuest — shapes, pools, level config, scoring
-import { GAME_STIMULUS } from './gamePalette';
+import { GAME_STIMULUS } from './gamePalette.js';
 
 export const SH={
   // DISTINCT (easy)
