@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getCastPortrait } from './castPortraitBake';
-import { SUSPECT_IDS, CAST } from './castRoster';
+import { SUSPECT_IDS } from './castRoster';
 
 /*
  * <CastPortrait> — one cast member's face, for DOM lists.
@@ -39,18 +38,33 @@ export function castIdFor(personId, casePeopleIds) {
 export default function CastPortrait({
   castId, size = 56, turn = 0, fallback = '', alt = '', style,
 }) {
-  const [url, setUrl] = useState(null);
+  const [url] = useState(null);
   const [failed, setFailed] = useState(false);
   const aliveRef = useRef(true);
 
+  /*
+   * ⚠ RUNTIME BAKING IS OFF (2026-08-02) — portraits fall back to the caller's
+   * emoji until the pre-baked images are properly framed.
+   *
+   * Baking here loaded FIVE rigged GLBs plus the shared clip library — 10.3 MB —
+   * before a Detective case file could draw, to produce six small stills. That
+   * was the bulk of the "games are slow to start" report, and it was a
+   * regression: the screen used to be emoji, at zero bytes.
+   *
+   * scripts/bake-cast-portraits.mjs produces the static replacements
+   * (public/Assets/portraits/*.png, ~90 KB for the set) and works, but the
+   * automatic crop does not yet frame these stylised heads reliably — the cast
+   * is authored with heads taller than the body is wide, and every square crop
+   * cut through the face. Rather than ship badly-cropped faces OR keep the
+   * 10.3 MB, this renders the emoji fallback: the performance regression is
+   * gone today and the portraits can return once the crop is right.
+   *
+   * To re-enable: point this at `Assets/portraits/${castId}.png` via assetUrl.
+   * Do NOT restore getCastPortrait here — that is the 10.3 MB.
+   */
   useEffect(() => {
     aliveRef.current = true;
-    if (!castId || !CAST[castId]) { setFailed(true); return undefined; }
-    // Bake at 2x so the portrait stays crisp on a retina panel, then let CSS
-    // size it down.
-    getCastPortrait(castId, { size: Math.round(size * 2), turn })
-      .then((u) => { if (aliveRef.current) { if (u) setUrl(u); else setFailed(true); } })
-      .catch(() => { if (aliveRef.current) setFailed(true); });
+    setFailed(true);
     return () => { aliveRef.current = false; };
   }, [castId, size, turn]);
 

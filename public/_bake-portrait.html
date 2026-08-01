@@ -1,0 +1,41 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>bake portrait</title>
+<!--
+  Build-time helper for scripts/bake-cast-portraits.mjs — NOT part of the app.
+
+  Renders ONE cast portrait full-bleed so headless Chrome can screenshot it to a
+  PNG. It lives in public/ and imports straight out of /src, which works because
+  the dev server transforms modules on request; that is why the bake script
+  requires `npm run dev` to be running.
+
+  ?id=lola  — which cast member
+-->
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; }
+  #out { display: block; width: 100vw; height: 100vh; object-fit: contain; }
+  #err { font: 14px system-ui; color: #900; padding: 8px; }
+</style>
+<img id="out" alt="">
+<div id="err" hidden></div>
+<script type="module">
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  const size = Number(params.get('size') || 256);
+  const base = location.pathname.replace(/_bake-portrait\.html$/, '');
+  try {
+    const bake = await import(`${base}src/features/training/shared/castPortraitBake.js`);
+    const url = await bake.getCastPortrait(id, { size, turn: 0 });
+    if (!url) throw new Error('bake returned null');
+    const img = document.getElementById('out');
+    img.src = url;
+    await img.decode();
+    // The bake script polls for this before screenshotting.
+    document.title = 'ready';
+  } catch (e) {
+    const err = document.getElementById('err');
+    err.hidden = false;
+    err.textContent = String(e && e.message ? e.message : e);
+    document.title = 'error';
+  }
+</script>
