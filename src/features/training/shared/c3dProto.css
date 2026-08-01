@@ -9,7 +9,7 @@
   height: 100dvh;
   max-height: -webkit-fill-available;
   overflow: hidden;
-  background: #d2c5b5;
+  background: #b3cadd; /* Tide mid — matches TIDE_LIGHT_STOPS in c3dBoot.js */
   color: #f0e2c0;
   font-family: 'Outfit', system-ui, sans-serif;
   touch-action: none;

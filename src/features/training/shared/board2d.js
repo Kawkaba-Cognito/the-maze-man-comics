@@ -19,7 +19,7 @@
  * a state, give it a non-colour cue too.
  */
 
-import { GAME_COLORS, GAME_INK, shadeOf } from './gamePalette';
+import { GAME_COLORS, GAME_INK, GAME_SKY, shadeOf } from './gamePalette';
 
 /**
  * @typedef {'idle'|'cued'|'selected'|'correct'|'wrong'|'spent'} PieceState
@@ -187,9 +187,9 @@ function drawGlyph(ctx, glyph, r) {
  */
 export function paintSky(ctx, w, h) {
   const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, '#ccdae6');
-  g.addColorStop(0.58, '#d2c5b5');
-  g.addColorStop(1, '#c6b199');
+  g.addColorStop(0, GAME_SKY.top);
+  g.addColorStop(0.58, GAME_SKY.mid);
+  g.addColorStop(1, GAME_SKY.low);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, w, h);
 }

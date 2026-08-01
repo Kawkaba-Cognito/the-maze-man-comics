@@ -29,9 +29,13 @@
     --fq-ac2: #c9847a;
     --fq-txt: #2d2d2d;
     --fq-mut: #6b6b6b;
-    --fq-bdr: #eadfd8;
-    --fq-sur: rgba(255, 247, 242, 0.94);
-    --fq-card: rgba(255, 255, 255, 0.92);
+    /* Progress tracks, borders and card surfaces. These were warm (#eadfd8 /
+       255,247,242) from when the play surface ramped into taupe. On the
+       de-browned blue sky (2026-08-01) a warm track read as a stain across the
+       top of the board, so they are now the same neutrals pulled cool. */
+    --fq-bdr: #d8e3ec;
+    --fq-sur: rgba(246, 250, 255, 0.94);
+    --fq-card: rgba(252, 254, 255, 0.92);
     --fq-r: 16px;
     font-family: 'Outfit', system-ui, sans-serif;
     color: var(--fq-txt);
@@ -3199,13 +3203,24 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     color: var(--ink);
     transition: transform 0.1s ease, filter 0.12s ease;
 }
+/* On a PLAY header this button sits on the blue play surface, but --surface /
+   --surface-raised are the app THEME's warm paper — so it rendered as a cream
+   chip on blue. The theme tokens are deliberately left warm (hubs, shop and
+   wellbeing still follow the theme); only the trial-bearing surface is
+   theme-independent, so the correction is scoped here rather than global. */
+.ct-training-play-header .ct-training-chrome-btn {
+    background: linear-gradient(180deg, #f8fbfd 0%, #e4ebf2 100%);
+}
 .ct-training-chrome-btn:active { transform: scale(0.96); }
 .ct-training-chrome-btn--paper {
     width: 34px;
     height: 34px;
     border-radius: 11px;
-    border: 1px solid rgba(107, 90, 72, 0.38);
-    background: linear-gradient(180deg, #fdf8f4 0%, #f3e7df 100%);
+    /* Cool, because the BASE of this button sits on the blue play surface. The
+       two hub overrides below (.ct-domain-pick / --mode-cosmos) keep the warm
+       paper version, since those screens sit on the warm app theme. */
+    border: 1px solid rgba(72, 90, 107, 0.38);
+    background: linear-gradient(180deg, #f8fbfd 0%, #e4ebf2 100%);
     box-shadow: 0 2px 10px rgba(45, 45, 40, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.65) inset;
 }
 .ct-training-chrome-btn--tutorial {
@@ -3288,7 +3303,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 }
 .ct-training-ov--handoff { z-index: 550; }
 .ct-training-modal {
-    background: linear-gradient(180deg, #fffaf5 0%, #f3ebe4 100%);
+    background: linear-gradient(180deg, #fafcfe 0%, #e7edf3 100%);
     border: 2px solid var(--ink-outline);
     border-radius: 16px;
     box-shadow: 4px 4px 0 var(--ink-outline);
@@ -3337,7 +3352,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     box-shadow: 3px 3px 0 var(--ink-outline);
 }
 .ct-training-btn--ghost {
-    background: linear-gradient(180deg, #fff 0%, #f3ebe4 100%);
+    background: linear-gradient(180deg, #fff 0%, #e7edf3 100%);
     color: var(--ink);
     box-shadow: 2px 2px 0 var(--ink-outline);
 }
@@ -3360,7 +3375,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     box-shadow: 0 4px 0 rgba(26, 18, 8, 0.38), 0 0 20px rgba(255, 150, 30, 0.22);
 }
 .ct-training-handoff {
-    background: linear-gradient(180deg, #fffaf5 0%, #f3ebe4 100%);
+    background: linear-gradient(180deg, #fafcfe 0%, #e7edf3 100%);
     border: 2px solid var(--ink-outline);
     border-radius: 18px;
     box-shadow: 5px 5px 0 var(--ink-outline);
@@ -3745,7 +3760,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     justify-content: center;
     gap: 8px 14px;
     background: rgba(255, 255, 255, 0.9);
-    border: 1px solid #eadfd8;
+    border: 1px solid #d8e3ec;
     border-radius: 12px;
     padding: 8px 10px;
 }
@@ -3783,7 +3798,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     max-width: 460px;
     height: 7px;
     border-radius: 20px;
-    background: var(--fq-bdr, #eadfd8);
+    background: var(--fq-bdr, #d8e3ec);
     overflow: hidden;
 }
 .ct-sm-itembar-fill { height: 100%; border-radius: 20px; transition: width 0.05s linear; }
@@ -3830,7 +3845,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     justify-content: center;
     border-radius: 14px;
     border: 2px solid var(--ink-outline);
-    background: linear-gradient(180deg, #ffffff 0%, #f3ebe4 100%);
+    background: linear-gradient(180deg, #ffffff 0%, #e7edf3 100%);
     box-shadow: 0 4px 0 var(--ink-outline);
     font-family: 'Outfit', system-ui, sans-serif;
     font-size: clamp(1.3rem, 6vw, 1.7rem);
@@ -3843,7 +3858,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 .ct-sm-key--press {
     transform: translateY(3px);
     box-shadow: 0 1px 0 var(--ink-outline);
-    background: linear-gradient(180deg, #f3ebe4 0%, #e6dccf 100%);
+    background: linear-gradient(180deg, #e7edf3 0%, #d5dde6 100%);
 }
 .ct-sm-key:disabled { opacity: 0.55; cursor: default; }
 
@@ -4100,7 +4115,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     max-width: 360px;
     padding: 20px 18px;
     text-align: center;
-    background: linear-gradient(180deg, #fff 0%, #f3ebe4 100%);
+    background: linear-gradient(180deg, #fff 0%, #e7edf3 100%);
     border: 2px solid var(--ink-outline);
     border-radius: 14px;
     box-shadow: 4px 4px 0 var(--ink-outline);
@@ -4296,7 +4311,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     aspect-ratio: 1;
     border-radius: 12px;
     border: 3px solid var(--ink-outline);
-    background: linear-gradient(180deg, #fff 0%, #f3ebe4 100%);
+    background: linear-gradient(180deg, #fff 0%, #e7edf3 100%);
     box-shadow: 0 4px 0 var(--ink-outline);
     display: flex;
     align-items: center;
@@ -4403,7 +4418,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     aspect-ratio: 1;
     border-radius: 10px;
     border: 2px solid var(--ink-outline);
-    background: linear-gradient(180deg, #fff 0%, #f3ebe4 100%);
+    background: linear-gradient(180deg, #fff 0%, #e7edf3 100%);
     display: flex;
     align-items: center;
     justify-content: center;
