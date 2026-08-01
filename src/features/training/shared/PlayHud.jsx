@@ -112,6 +112,11 @@ export default function PlayHud({
   pauseAriaLabel,
   playSfx,
 }) {
+  /* playSfx is OPTIONAL. It used to be called bare — playSfx('click') — so in
+   * any game that did not pass one, the click handler threw a TypeError BEFORE
+   * reaching onMenu/onPause and the button silently did nothing. The header this
+   * replaced used playSfx?.(), which is why the dead buttons only appeared after
+   * the switch. A shared control must never be armed by an optional prop. */
   const [, setTick] = useState(0);
   useEffect(() => {
     if (playStep !== 'running' || pauseOpen) return undefined;
@@ -147,7 +152,7 @@ export default function PlayHud({
         <TrainingChromeBtn
           ariaLabel={menuAriaLabel}
           onClick={() => {
-            playSfx('click');
+            playSfx?.('click');
             onMenu();
           }}
         >
@@ -238,7 +243,7 @@ export default function PlayHud({
           <TrainingChromeBtn
             ariaLabel={pauseAriaLabel}
             onClick={() => {
-              playSfx('click');
+              playSfx?.('click');
               onPause();
             }}
           >

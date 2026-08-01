@@ -1,4 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import PlayHud from '../../../../shared/PlayHud';
+import { useGamePause } from '../../../../shared/useGamePause';
+import { getTrainingPaused } from '../../../../shared/pauseStore';
 import { GAME_COLORS } from '../../../../shared/gamePalette';
 import { paintSky } from '../../../../shared/board2d';
 import { useApp } from '../../../../../../context/AppContext';
@@ -158,6 +161,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
   const [lives, setLives] = useState(CHAL_LIVES);
   const [picksLeft, setPicksLeft] = useState(0);
   const [hud, setHud] = useState('');
+  const pause = useGamePause({ isAr, playSfx, onQuit: onExit });
   const [msg, setMsg] = useState('');
 
   const setPhaseBoth = useCallback((p) => { phaseRef.current = p; setPhase(p); }, []);
@@ -256,6 +260,16 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
   }, []);
 
   const frame = useCallback((ts) => {
+    /* Paused: keep the loop alive so the field stays drawn behind the menu, but
+     * advance nothing. Resetting lastTs is the important half — without it the
+     * first frame after resume would see a dt of however long the menu was open
+     * and teleport every dot across the field. dt is clamped to 0.05 anyway,
+     * but a 50ms jump is still a visible skip in a tracking task. */
+    if (getTrainingPaused()) {
+      lastTsRef.current = ts;
+      rafRef.current = requestAnimationFrame(frame);
+      return;
+    }
     const dt = lastTsRef.current ? Math.min((ts - lastTsRef.current) / 1000, 0.05) : 0;
     lastTsRef.current = ts;
     if (phaseRef.current === 'track') {
@@ -617,14 +631,26 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
   const phaseDot = phase === 'respond' ? 'var(--ink-outline)' : phase === 'result' ? null : '#E69F00';
   return (
     <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
-      <header className="ct-training-play-header">
-        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
-        <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title">{isAr ? 'تتبّع الأهداف' : 'Target Tracking'}</div>
-          <div className="ct-training-play-sub">{hud} · {score}</div>
-        </div>
-        <div className="ct-training-chrome-spacer" aria-hidden="true" />
-      </header>
+      {/* Standard header + pause. `hud` is a short free-text round/lives string
+          the engine writes, so it gets a slot of its own rather than being
+          split — the score is the number worth column-aligning. */}
+      <PlayHud
+        t={{}}
+        playStep="running"
+        showTimer={false}
+        showTimeBar={false}
+        stats={[
+          hud ? { value: hud, label: '', small: true } : null,
+          { value: score, label: isAr ? 'نقاط' : 'score' },
+        ]}
+        pauseOpen={pause.open}
+        onMenu={() => onExit?.()}
+        onPause={pause.start}
+        menuAriaLabel={isAr ? 'القائمة' : 'Menu'}
+        pauseAriaLabel={pause.labels.paused}
+        playSfx={playSfx}
+      />
+      {pause.modal}
       {/* Instruction lives in its OWN strip above the field, so it never covers
           a dot (the in-canvas banner used to overlap targets near the top). */}
       <div style={S.instr}>
