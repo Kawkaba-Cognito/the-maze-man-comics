@@ -535,7 +535,7 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
               : { value: level, label: isAr ? 'مستوى' : 'level' },
         ]}
         pauseOpen={pause.open}
-        onMenu={() => onExit?.()}
+        onMenu={pause.requestQuit}
         onPause={pause.start}
         menuAriaLabel={isAr ? 'رجوع' : 'Back'}
         pauseAriaLabel={pause.labels.paused}

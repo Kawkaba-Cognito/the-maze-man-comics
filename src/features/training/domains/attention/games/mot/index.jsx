@@ -644,7 +644,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
           { value: score, label: isAr ? 'نقاط' : 'score' },
         ]}
         pauseOpen={pause.open}
-        onMenu={() => onExit?.()}
+        onMenu={pause.requestQuit}
         onPause={pause.start}
         menuAriaLabel={isAr ? 'القائمة' : 'Menu'}
         pauseAriaLabel={pause.labels.paused}

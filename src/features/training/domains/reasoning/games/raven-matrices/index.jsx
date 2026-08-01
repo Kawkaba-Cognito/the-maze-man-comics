@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import { TrainingMenuBar, TrainingPlayHeader, TrainingQuitModal, TrainingChallengeHandoff } from '../../../../shared/TrainingChrome';
+import { useGamePause } from '../../../../shared/useGamePause';
 import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
@@ -171,6 +172,8 @@ export default function RavenMatricesGame({ onBack, workoutMode = false, cosmosA
   const [trialIdx, setTrialIdx] = useState(0);
   const [lastResult, setLastResult] = useState(null);
   const [quitOpen, setQuitOpen] = useState(false);
+  // Matrix IQ had no pause at all — the header simply never got an onPause.
+  const pause = useGamePause({ isAr, playSfx, onQuit: onBack });
 
   // Pass n Play
   const [chalNames, setChalNames] = useState(['Player 1', 'Player 2']);
@@ -558,7 +561,9 @@ export default function RavenMatricesGame({ onBack, workoutMode = false, cosmosA
       dir={isAr ? 'rtl' : 'ltr'}
     >
       <TrainingPlayHeader isAr={isAr} title={t.title} subtitle="" playSfx={playSfx}
-        onMenu={isCosmos ? undefined : () => setQuitOpen(true)} />
+        onMenu={isCosmos ? undefined : () => setQuitOpen(true)}
+        onPause={pause.start} pauseAriaLabel={pause.labels.paused} />
+      {pause.modal}
       <div className="ct-rv-play ct-juice-host">
         <JuiceLayer toast={juice.toast} burst={juice.burst} />
         <div className="ct-rv-hud">

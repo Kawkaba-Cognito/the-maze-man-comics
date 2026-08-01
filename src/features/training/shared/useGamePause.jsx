@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { TrainingPauseModal } from './TrainingChrome';
+import { TrainingPauseModal, TrainingQuitModal } from './TrainingChrome';
 import { STR_COMMON } from './trainingStrings';
 import { setTrainingPaused } from './pauseStore';
 import { setScenePaused } from './c3dBoot';
@@ -33,6 +33,7 @@ import { setScenePaused } from './c3dBoot';
  */
 export function useGamePause({ isAr, playSfx, onQuit, sceneRef, onResume, onPause } = {}) {
   const [open, setOpen] = useState(false);
+  const [quitOpen, setQuitOpen] = useState(false);
   const L = isAr ? STR_COMMON.ar : STR_COMMON.en;
 
   const apply = useCallback((paused) => {
@@ -59,21 +60,54 @@ export function useGamePause({ isAr, playSfx, onQuit, sceneRef, onResume, onPaus
     // Always clear the global flag before leaving — see note 4 above.
     apply(false);
     setOpen(false);
+    setQuitOpen(false);
     onQuit?.();
   }, [apply, playSfx, onQuit]);
 
+  /*
+   * Leaving ALWAYS asks first (user's call, 2026-08-01).
+   *
+   * Exit used to differ per game — some dropped you straight out, others showed
+   * "Quit? This run will be lost". Same button, same icon, two outcomes
+   * depending on which game you were in, which reads as the button being broken
+   * when it is actually being careful. One behaviour now: confirm, everywhere.
+   *
+   * The game stays PAUSED behind the confirmation, so thinking about it does not
+   * cost you the run you are deciding whether to abandon.
+   */
+  const requestQuit = useCallback(() => {
+    playSfx?.('click');
+    apply(true);
+    setQuitOpen(true);
+  }, [apply, playSfx]);
+
+  const cancelQuit = useCallback(() => {
+    playSfx?.('click');
+    setQuitOpen(false);
+    // Only resume if the pause menu is not the thing underneath.
+    if (!open) apply(false);
+  }, [apply, playSfx, open]);
+
   const modal = (
-    <TrainingPauseModal
-      open={open}
-      labels={L}
-      showRestart={false}
-      onResume={stop}
-      onQuitMenu={quit}
-    />
+    <>
+      <TrainingPauseModal
+        open={open}
+        labels={L}
+        showRestart={false}
+        onResume={stop}
+        onQuitMenu={requestQuit}
+      />
+      <TrainingQuitModal
+        open={quitOpen}
+        labels={L}
+        onConfirmQuit={quit}
+        onKeepPlaying={cancelQuit}
+      />
+    </>
   );
 
   return {
-    open, start, stop, quit, modal, labels: L,
+    open, quitOpen, start, stop, quit, requestQuit, cancelQuit, modal, labels: L,
   };
 }
 

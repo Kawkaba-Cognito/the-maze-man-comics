@@ -47,8 +47,24 @@
   pointer-events: none;
 }
 
+/*
+ * The overlay is pointer-events:none so taps fall through to the canvas, and
+ * only the CONTROLS take input back. That list is by CLASS, which makes it a
+ * trap: swap the chrome for a different component and its buttons silently stop
+ * being tappable — they still render, still have handlers, and nothing errors.
+ *
+ * That is exactly what happened when this chrome moved to PlayHud (2026-08-01):
+ * its buttons are .ct-fq-bar's, not .c3d-icon-btn, so back and pause went dead
+ * in all seven proto games. It survived testing because synthetic
+ * dispatchEvent() fires a handler directly and BYPASSES hit-testing — only a
+ * real tap, or elementFromPoint(), can catch it.
+ *
+ * If you add chrome here, add its root to this list.
+ */
 .c3d-ui--overlay .c3d-icon-btn,
-.c3d-ui--overlay .c3d-target-chip {
+.c3d-ui--overlay .c3d-target-chip,
+.c3d-ui--overlay .ct-fq-bar,
+.c3d-ui--overlay .ct-fq-cbw {
   pointer-events: auto;
 }
 

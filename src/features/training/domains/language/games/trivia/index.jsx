@@ -343,7 +343,7 @@ export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExi
         showTimeBar={false}
         stats={hudStats}
         pauseOpen={pause.open}
-        onMenu={() => onExit?.()}
+        onMenu={pause.requestQuit}
         onPause={pause.start}
         menuAriaLabel={t.menu}
         pauseAriaLabel={pause.labels.paused}
