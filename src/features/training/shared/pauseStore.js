@@ -11,10 +11,10 @@ import { useSyncExternalStore } from 'react';
  * pause into all seven games by hand — exactly the per-game work this whole
  * effort exists to remove.
  *
- * Exactly one training game is on screen at a time, so a single global flag is
- * the honest model here, not a shortcut. If that ever stops being true (two
- * games side by side), this needs a key per game and every consumer needs to
- * pass it.
+ * Exactly one training game is on screen at a time, but MORE THAN ONE component
+ * can hold the pause at once (a game plus its chrome), so the store tracks
+ * OWNERS rather than a single boolean — see the holders note below. If two
+ * games ever run side by side, this needs a key per game as well.
  *
  * The scene clock in c3dBoot is keyed per-element and stays that way — it is
  * about a specific renderer. This is about the SESSION.
@@ -25,13 +25,46 @@ let pausedAt = 0;
 let pausedTotal = 0;
 const subscribers = new Set();
 
-export function setTrainingPaused(value) {
-  const next = !!value;
+/*
+ * WHO is holding the pause, not merely whether someone is.
+ *
+ * A plain boolean broke as soon as two components could pause: Matrix IQ has
+ * its own useGamePause AND renders C3dProtoChrome, which has another. With a
+ * boolean, whichever unmounted first cleared the flag for BOTH — so the game
+ * could resume while its pause menu was still on screen.
+ *
+ * Paused is now "at least one owner is holding it". Each useGamePause holds a
+ * unique token and releases only its own, so owners cannot clobber each other
+ * and the clock resumes exactly when the last one lets go.
+ */
+const holders = new Set();
+const GLOBAL_TOKEN = { global: true };
+
+function recompute() {
+  const next = holders.size > 0;
   if (next === paused) return;
   paused = next;
   if (paused) pausedAt = performance.now();
   else pausedTotal += performance.now() - pausedAt;
   subscribers.forEach((fn) => fn());
+}
+
+/**
+ * @param {boolean} value
+ * @param {object} [token] the owner. Omit only from non-component callers —
+ *   a shared token then behaves like the old boolean.
+ */
+export function setTrainingPaused(value, token = GLOBAL_TOKEN) {
+  if (value) holders.add(token);
+  else holders.delete(token);
+  recompute();
+}
+
+
+/** Release everything. For a hard reset (leaving Training entirely). */
+export function clearTrainingPause() {
+  holders.clear();
+  recompute();
 }
 
 /**
