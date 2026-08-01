@@ -1,3 +1,9 @@
+/*
+ * @palette-exempt: hand-drawn SVG scene art — these colours ARE the
+ * illustration (dome, brickwork, lamp filament), not chrome. Tokenising them
+ * would flatten a drawing into six semantic roles. Chrome in this game still
+ * follows the palette; see scripts/audit-design.mjs.
+ */
 import React from 'react';
 import {
   SCENE_W, SCENE_H, SceneDefs, RainThrough, Motes,

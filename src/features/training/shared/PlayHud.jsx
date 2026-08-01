@@ -80,6 +80,14 @@ export const ShapeSvg = React.memo(function ShapeSvg({ shape, color, size = 40 }
 
 export default function PlayHud({
   t,
+  /** Generic stat slots: [{ value, label, tone?, small? }]. Overrides the
+   *  named cancellation-shaped stats below when provided. */
+  stats,
+  /** Some games have no per-round clock; hide the timer slot rather than
+   *  showing a frozen 0.0s. */
+  showTimer = true,
+  /** Hide the time progress bar for the same reason. */
+  showTimeBar = true,
   playStep,
   pauseOpen,
   tlRef,
@@ -116,21 +124,22 @@ export default function PlayHud({
     return () => cancelAnimationFrame(id);
   }, [playStep, pauseOpen]);
 
+  /* The timer refs are OPTIONAL. A game with no clock (every C3dProtoChrome
+   * caller) renders this with showTimer/showTimeBar off and passes no refs at
+   * all — dereferencing them unconditionally threw and took the whole game to
+   * the error boundary. A shared component must not crash on a prop its own
+   * flags say it will not use. */
+  const timeLeft = tlRef?.current ?? 0;
+  const timeLimit = tlimRef?.current ?? 0;
+
   const liveAnim = playStep === 'running' && !pauseOpen;
-  const denom = (() => {
-    if (useSessionTimer) return tlimRef.current || 1;
-    return tlimRef.current || roundTlim || 1;
-  })();
-  const displaySeconds = useSessionTimer
-    ? tlRef.current
-    : playStep === 'running'
-      ? tlRef.current
-      : roundTlim;
-  const pctTime = useSessionTimer
-    ? Math.max(0, Math.min(1, tlRef.current / denom))
-    : playStep !== 'running'
-      ? 1
-      : Math.max(0, Math.min(1, tlRef.current / denom));
+  const denom = (useSessionTimer ? timeLimit : timeLimit || roundTlim) || 1;
+  const displaySeconds = useSessionTimer || playStep === 'running'
+    ? timeLeft
+    : roundTlim;
+  const pctTime = !useSessionTimer && playStep !== 'running'
+    ? 1
+    : Math.max(0, Math.min(1, timeLeft / denom));
 
   return (
     <>
@@ -144,23 +153,56 @@ export default function PlayHud({
         >
           <IconBack size={18} c="#141210" />
         </TrainingChromeBtn>
-        <div className="ct-fq-bar-chip" aria-hidden="true">
-          <ShapeSvg shape={targetShape} color={targetColor} size={30} />
-        </div>
-        <div className="ct-fq-bar-stats">
-          <div className="ct-fq-gs">
-            <div className={`ct-fq-gv ${liveAnim && tlRef.current <= 10 ? 'tv' : ''}`}>
-              {`${Number(displaySeconds).toFixed(1)}s`}
-            </div>
-            <div className="ct-fq-gl">{t.time}</div>
+        {/* Only games with a "find this" target carry the chip. Without this
+            gate every other game showed ShapeSvg's fallback circle — a target
+            reminder for a target that does not exist. */}
+        {targetShape && (
+          <div className="ct-fq-bar-chip" aria-hidden="true">
+            <ShapeSvg shape={targetShape} color={targetColor} size={30} />
           </div>
+        )}
+        <div className="ct-fq-bar-stats">
+          {/*
+            `stats` is the generic escape hatch, and the reason this component
+            can now be the header for every game rather than only Cancellation.
+            The named props below (found/tc, errors, lives…) describe a
+            cancellation-shaped run; a game that counts something else — Card
+            Sort's rules found, Speed Match's combo — passes stats instead and
+            gets the same chrome, spacing and type without inventing a header.
+
+              stats={[{ value: `${total}/${max}`, label: t.trials },
+                      { value: `✓${correct}`,     label: t.correct, tone: 'ac2' }]}
+
+            Named props still render when `stats` is absent, so Cancellation and
+            every existing caller are untouched.
+          */}
+          {stats
+            ? stats.filter(Boolean).map((s, i) => (
+              <div className="ct-fq-gs" key={s.label ?? i}>
+                <div className={`ct-fq-gv${s.tone ? ` ${s.tone}` : ''}${s.small ? ' sm' : ''}`}>
+                  {s.value}
+                </div>
+                <div className="ct-fq-gl">{s.label}</div>
+              </div>
+            ))
+            : null}
+          {!stats && showTimer && (
+            <div className="ct-fq-gs">
+              <div className={`ct-fq-gv ${liveAnim && timeLeft <= 10 ? 'tv' : ''}`}>
+                {`${Number(displaySeconds).toFixed(1)}s`}
+              </div>
+              <div className="ct-fq-gl">{t.time}</div>
+            </div>
+          )}
+          {!stats && (
           <div className="ct-fq-gs">
             <div className="ct-fq-gv">
               {found}/{tc}
             </div>
             <div className="ct-fq-gl">{t.found}</div>
           </div>
-          {!hideErrors && (
+          )}
+          {!stats && !hideErrors && (
             <div className="ct-fq-gs">
               <div className="ct-fq-gv ac2">
                 {errorsMax != null ? `${errors}/${errorsMax}` : errors}
@@ -168,13 +210,13 @@ export default function PlayHud({
               <div className="ct-fq-gl">{errorsLabel ?? t.err}</div>
             </div>
           )}
-          {lvlLabel != null && (
+          {!stats && lvlLabel != null && (
             <div className="ct-fq-gs">
               <div className="ct-fq-gv sm">{lvlLabel}</div>
               <div className="ct-fq-gl">{t.lvl}</div>
             </div>
           )}
-          {freeLives != null && (
+          {!stats && freeLives != null && (
             <div className="ct-fq-gs">
               <div className="ct-fq-gv ct-fq-lives" aria-label={`${freeLives} lives`}>
                 {'♥'.repeat(Math.max(0, freeLives))}
@@ -185,7 +227,7 @@ export default function PlayHud({
               <div className="ct-fq-gl">{t.lives}</div>
             </div>
           )}
-          {freeScore != null && (
+          {!stats && freeScore != null && (
             <div className="ct-fq-gs">
               <div className="ct-fq-gv">{freeScore}</div>
               <div className="ct-fq-gl">{t.score}</div>
@@ -204,6 +246,7 @@ export default function PlayHud({
           </TrainingChromeBtn>
         )}
       </div>
+      {showTimeBar && (
       <div className="ct-fq-cbw" data-fq-chrome>
         <div
           className="ct-fq-cb"
@@ -218,6 +261,7 @@ export default function PlayHud({
           }}
         />
       </div>
+      )}
     </>
   );
 }

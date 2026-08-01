@@ -16,6 +16,26 @@ const ATT = 0xe8ac4e;
 const CREAM = 0xf0e2c0;
 
 /*
+ * wrap element -> that scene's setPaused.
+ *
+ * A WeakMap so a disposed scene's entry disappears with its DOM node — no
+ * unmount bookkeeping, no leak. C3dProtoChrome owns the element the renderer
+ * mounts into, so it can pause the scene it is drawing chrome for without every
+ * game having to thread a handle back up through props.
+ */
+const PAUSABLE = new WeakMap();
+
+/**
+ * Pause/resume the scene mounted in `wrapEl`. A no-op when nothing is mounted
+ * there, so chrome can call it unconditionally.
+ * @param {Element|null} wrapEl @param {boolean} value
+ */
+export function setScenePaused(wrapEl, value) {
+  if (!wrapEl) return;
+  PAUSABLE.get(wrapEl)?.(value);
+}
+
+/*
  * TIDE DUSK — the gameplay palette, applied to the 3D scenes.
  *
  * This is the ACTUAL background of most gameplay: the play screens for the
@@ -124,11 +144,23 @@ export function bootC3dScene(wrap, opts = {}) {
     return { error: err, dispose: () => {} };
   }
 
+  /*
+   * Which end of Tide this scene sits on.
+   *
+   * This used to be hardcoded to the LIGHT end, with no way to ask for the
+   * dark one — even though Tide has always had two depths and makeTideSky()
+   * already took a `deep` flag. Scenes that needed the dark end (Story Time's
+   * stage, Detective's room) therefore booted on the light sky and then drew
+   * their own dark backdrop over the middle of it. Where their backdrop did
+   * not reach — outside a finite sky plane, or in a letterboxed band — the
+   * light sky showed through as a bright fringe around a dark picture.
+   */
+  const deep = opts.deep === true;
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(TIDE_FOG, 0.02);
+  scene.fog = new THREE.FogExp2(deep ? TIDE_DEEP_FOG : TIDE_FOG, 0.02);
   // Only paint the sky when the canvas is opaque — an alpha:true scene is meant
   // to composite over whatever DOM sits behind it.
-  const skyTex = opts.alpha === true ? null : makeTideSky();
+  const skyTex = opts.alpha === true ? null : makeTideSky({ deep });
   if (skyTex) scene.background = skyTex;
 
   const fov = opts.fov ?? (coarse ? 54 : 48);
@@ -136,7 +168,7 @@ export function bootC3dScene(wrap, opts = {}) {
   camera.position.set(0, 0, 12);
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.3 : fine ? 1.5 : 1.25));
-  renderer.setClearColor(TIDE_FOG, opts.alpha === true ? 0 : 1);
+  renderer.setClearColor(deep ? TIDE_DEEP_FOG : TIDE_FOG, opts.alpha === true ? 0 : 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
   wrap.appendChild(renderer.domElement);
@@ -168,13 +200,15 @@ export function bootC3dScene(wrap, opts = {}) {
      * to nothing and cream specks are invisible. Inverted to dark motes on
      * normal blending, so the same field now reads as fine atmospheric dust
      * rather than disappearing. */
+    // On a DEEP sky the original rule applies again — light added to darkness.
+    const litStars = opts.alpha === true || deep;
     stars = new THREE.Points(starGeo, new THREE.PointsMaterial({
-      color: opts.alpha === true ? CREAM : 0x6d6355,
+      color: litStars ? CREAM : 0x6d6355,
       size: fine ? 0.04 : 0.05,
       transparent: true,
-      opacity: opts.alpha === true ? 0.8 : 0.42,
+      opacity: litStars ? 0.8 : 0.42,
       depthWrite: false,
-      blending: opts.alpha === true ? THREE.AdditiveBlending : THREE.NormalBlending,
+      blending: litStars ? THREE.AdditiveBlending : THREE.NormalBlending,
     }));
     scene.add(stars);
   }
@@ -244,16 +278,54 @@ export function bootC3dScene(wrap, opts = {}) {
   let last = performance.now();
   let onTick = null;
 
-  const loop = (now) => {
+  /*
+   * ── Pause, as a CLOCK rather than a flag ──────────────────────────────
+   *
+   * Games compute deadlines from the `now` this loop hands them
+   * (`deadline = now + 5000`). If pause merely stopped the loop, raw
+   * performance.now() would keep running underneath and every stored deadline
+   * would silently expire while the player was looking at the pause menu —
+   * resume, and the round is already over.
+   *
+   * Speed Match solved that per-game by saving and restoring `__blockRem`.
+   * Doing that in each game is how pause bugs get written, so the clock lives
+   * here instead: `now` is raw time MINUS all time spent paused, so it simply
+   * does not advance while paused and every deadline built from it stays
+   * correct with no game-side code at all.
+   *
+   * Rendering continues while paused (dt = 0) so the scene stays on screen
+   * behind the menu rather than freezing to a black canvas.
+   */
+  let paused = false;
+  let pausedAt = 0;
+  let pausedTotal = 0;
+
+  const loop = (raw) => {
     raf = requestAnimationFrame(loop);
-    const dt = Math.min(0.05, (now - last) / 1000);
-    last = now;
-    if (!reduced && stars) stars.rotation.y += dt * 0.01;
+    const now = raw - pausedTotal;
+    const dt = paused ? 0 : Math.min(0.05, (now - last) / 1000);
+    if (!paused) last = now;
+    if (!reduced && stars && !paused) stars.rotation.y += dt * 0.01;
     try { onTick?.(dt, now); } catch (err) { console.warn('[c3d] tick', err); }
     if (composer) composer.render();
     else renderer.render(scene, camera);
   };
   raf = requestAnimationFrame(loop);
+
+  const setPaused = (value) => {
+    const next = !!value;
+    if (next === paused) return;
+    paused = next;
+    if (paused) {
+      pausedAt = performance.now();
+    } else {
+      pausedTotal += performance.now() - pausedAt;
+      last = performance.now() - pausedTotal;
+    }
+  };
+  // Keyed by the element the caller mounted into, so the chrome around a scene
+  // can pause it without the game having to thread a handle through props.
+  PAUSABLE.set(wrap, setPaused);
 
   const dispose = () => {
     cancelAnimationFrame(raf);
@@ -280,6 +352,7 @@ export function bootC3dScene(wrap, opts = {}) {
     setFitBox: (hx, hy) => { fitHalfX = hx; fitHalfY = hy ?? hx; frame(); },
     frame,
     setTick: (fn) => { onTick = fn; },
+    setPaused,
     dispose,
     error: null,
   };

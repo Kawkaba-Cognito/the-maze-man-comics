@@ -1,12 +1,49 @@
 import React, { useEffect, useRef } from 'react';
-import { GAME_INTS } from '../../../../shared/gamePalette';
+import {
+  GAME_INTS, GAME_INK, GAME_STIMULUS, GAME_COLORS, intOf,
+} from '../../../../shared/gamePalette';
 import { bootC3dScene, disposeObject, THREE } from '../../../../shared/c3dBoot';
 import '../../../../shared/c3dProto.css';
 
-const SIDE_HEX = { left: 0x35b7d4, right: 0xf27d65 };
+/*
+ * Arrow Rush's board, on the Tide LIGHT surface (2026-08-01).
+ *
+ * It used to draw a near-black plate (rgba(7,18,31,.96)) with neon cyan/coral
+ * lanes, and the stylesheet forced the whole game onto Tide DEEP with a comment
+ * claiming the board "carries glow". It does not: every material here is
+ * MeshBasicMaterial, bloom is off, and nothing uses additive blending. There
+ * was no rendering constraint — just a leftover from before the palette
+ * existed, which left this the one game playing on a black screen.
+ *
+ * ── Colour is the TASK here ───────────────────────────────────────────────
+ * One of the three rules is "match the COLOUR", and the player is SCORED on it,
+ * so the two stimulus hues come from GAME_STIMULUS (Okabe-Ito) and nowhere
+ * else. They were red/green, which is the one pair red-green deficiency
+ * collapses — see the note on STROOP_COLORS in spatialStroopData.js.
+ *
+ * The response pads are painted the SAME two hues, so the colour->side mapping
+ * the rule asks for is visible on the buttons instead of only in a hint line.
+ */
+const STIMULUS_HEX = { blue: intOf(GAME_STIMULUS[0]), amber: intOf(GAME_STIMULUS[1]) };
+const STIMULUS_CSS = { blue: GAME_STIMULUS[0], amber: GAME_STIMULUS[1] };
+/** Left/right response pads. Same hues as the colour rule, deliberately. */
+const SIDE_HEX = { left: STIMULUS_HEX.blue, right: STIMULUS_HEX.amber };
+const SIDE_CSS = { left: STIMULUS_CSS.blue, right: STIMULUS_CSS.amber };
+/** White reads on the blue pad; the amber one needs ink. */
+const SIDE_TEXT_CSS = { left: '#ffffff', right: GAME_INK };
+/** The arrow when colour carries NO information — deliberately hueless. */
+const NEUTRAL_ARROW_HEX = intOf(GAME_INK);
 const SIDE_X = { left: -1.55, right: 1.55 };
 const ROT_Z = { left: Math.PI / 2, right: -Math.PI / 2 };
-const COLOR_HEX = { red: 0xf05d67, green: 0x65d18b };
+
+/* Lane box. Tall enough that the flankers clear the side caption: the caption
+ * sits at y=+1.113 and the top flanker reaches 0.72 + 0.72*0.46 + 0.045 of bob
+ * = 1.096. At the old 1.82 square the lane half-height was 0.91, so both
+ * flankers and the caption spilled over the border — the overlap you could see
+ * on screen. Changing these three numbers together is the only safe way. */
+const LANE_W = 1.9;
+const LANE_H = 2.5;
+const LANE_CAPTION_Y = 46;
 
 function roundRectPath(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -18,27 +55,38 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+/*
+ * One lane: a pale plate with a coloured edge and a small side caption.
+ *
+ * The giant 230px ghost "L"/"R" behind the arrow is gone. It sat at 0.24 alpha
+ * directly under the stimulus, so it competed with the thing the player is
+ * being timed on — and in a task scored on visual search and interference,
+ * decoration behind the target is not neutral. The lane's position and its
+ * coloured edge already say which side this is.
+ */
 function laneTexture(side, isAr) {
-  const S = 640;
+  const W = 640;
+  const H = Math.round(W * (LANE_H / LANE_W));
   const canvas = document.createElement('canvas');
-  canvas.width = S;
-  canvas.height = S;
+  canvas.width = W;
+  canvas.height = H;
   const ctx = canvas.getContext('2d');
-  const accent = side === 'left' ? '#35b7d4' : '#f27d65';
-  roundRectPath(ctx, 18, 18, S - 36, S - 36, 54);
-  ctx.fillStyle = 'rgba(7, 18, 31, 0.96)';
+  const accent = SIDE_CSS[side];
+  roundRectPath(ctx, 18, 18, W - 36, H - 36, 54);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.42)';
   ctx.fill();
-  ctx.lineWidth = 16;
+  ctx.lineWidth = 14;
   ctx.strokeStyle = accent;
   ctx.stroke();
   ctx.fillStyle = accent;
-  ctx.font = '800 54px system-ui, sans-serif';
+  ctx.font = '800 46px system-ui, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(isAr ? (side === 'left' ? 'جهة اليسار' : 'جهة اليمين') : (side === 'left' ? 'LEFT SIDE' : 'RIGHT SIDE'), S / 2, 72);
-  ctx.globalAlpha = 0.24;
-  ctx.font = '800 230px system-ui, sans-serif';
-  ctx.fillText(side === 'left' ? 'L' : 'R', S / 2, S / 2 + 60);
+  ctx.fillText(
+    isAr ? (side === 'left' ? 'جهة اليسار' : 'جهة اليمين') : (side === 'left' ? 'LEFT SIDE' : 'RIGHT SIDE'),
+    W / 2,
+    LANE_CAPTION_Y + 20,
+  );
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
@@ -51,7 +99,9 @@ function responseTexture(side, isAr) {
   canvas.width = 768;
   canvas.height = 480;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#fff';
+  // Per-side text colour: the pads are the two Okabe-Ito hues, and white on
+  // amber is about 2:1. Ink there, white on the blue.
+  ctx.fillStyle = SIDE_TEXT_CSS[side];
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = '800 210px system-ui, sans-serif';
@@ -85,7 +135,7 @@ function makeArrow(material, scale) {
   fill.scale.setScalar(scale);
   const outline = new THREE.LineSegments(
     new THREE.EdgesGeometry(geometry),
-    new THREE.LineBasicMaterial({ color: 0x06111d, transparent: true, opacity: 0.95 }),
+    new THREE.LineBasicMaterial({ color: intOf(GAME_INK), transparent: true, opacity: 0.95 }),
   );
   outline.scale.setScalar(scale);
   outline.position.z = 0.025;
@@ -132,7 +182,7 @@ export default function SpatialStroop3DBoard({
       const texture = laneTexture(side, isAr);
       laneTextures[side] = texture;
       const mesh = new THREE.Mesh(
-        new THREE.PlaneGeometry(1.82, 1.82),
+        new THREE.PlaneGeometry(LANE_W, LANE_H),
         new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.48, toneMapped: false }),
       );
       mesh.position.set(SIDE_X[side], 0.48, -0.16);
@@ -142,8 +192,8 @@ export default function SpatialStroop3DBoard({
     });
 
     const divider = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.035, 1.85),
-      new THREE.MeshBasicMaterial({ color: 0xd9f6ff, transparent: true, opacity: 0.22, toneMapped: false }),
+      new THREE.PlaneGeometry(0.035, LANE_H),
+      new THREE.MeshBasicMaterial({ color: intOf(GAME_INK), transparent: true, opacity: 0.18, toneMapped: false }),
     );
     divider.position.set(0, 0.48, -0.12);
     playRoot.add(divider);
@@ -153,7 +203,7 @@ export default function SpatialStroop3DBoard({
       const group = new THREE.Group();
       const border = new THREE.Mesh(
         new THREE.BoxGeometry(2.28, 1.12, 0.1),
-        new THREE.MeshBasicMaterial({ color: 0xeafaff, transparent: true, opacity: 0.84, toneMapped: false }),
+        new THREE.MeshBasicMaterial({ color: intOf(GAME_INK), transparent: true, opacity: 0.9, toneMapped: false }),
       );
       border.position.z = -0.04;
       group.add(border);
@@ -176,12 +226,14 @@ export default function SpatialStroop3DBoard({
       return group;
     });
 
-    const mainMaterial = new THREE.MeshBasicMaterial({ color: 0xf5fbff, toneMapped: false });
+    const mainMaterial = new THREE.MeshBasicMaterial({ color: NEUTRAL_ARROW_HEX, toneMapped: false });
     const mainArrow = makeArrow(mainMaterial, 1.2);
     const stimulus = new THREE.Group();
     stimulus.add(mainArrow);
     const flankers = [-1, 1].map((direction) => {
-      const material = new THREE.MeshBasicMaterial({ color: 0xdde8ef, transparent: true, opacity: 0.72, toneMapped: false });
+      // Distractors, so `muted` — present, and visibly not the thing being asked
+      // about. They must never be mistaken for the target under the colour rule.
+      const material = new THREE.MeshBasicMaterial({ color: GAME_INTS.muted.fill, transparent: true, opacity: 0.55, toneMapped: false });
       const arrow = makeArrow(material, 0.46);
       arrow.position.y = direction * 0.72;
       arrow.visible = false;
@@ -193,7 +245,7 @@ export default function SpatialStroop3DBoard({
 
     const deadline = new THREE.Mesh(
       new THREE.RingGeometry(0.82, 0.88, 48),
-      new THREE.MeshBasicMaterial({ color: 0xf3c65f, transparent: true, opacity: 0.7, side: THREE.DoubleSide, toneMapped: false }),
+      new THREE.MeshBasicMaterial({ color: intOf(GAME_COLORS.item.fill), transparent: true, opacity: 0.7, side: THREE.DoubleSide, toneMapped: false }),
     );
     deadline.visible = false;
     playRoot.add(deadline);
@@ -205,7 +257,7 @@ export default function SpatialStroop3DBoard({
         deadline.visible = false;
         return;
       }
-      const hex = colorOn && nextProbe.color ? COLOR_HEX[nextProbe.color] : 0xf5fbff;
+      const hex = colorOn && nextProbe.color ? STIMULUS_HEX[nextProbe.color] : NEUTRAL_ARROW_HEX;
       mainMaterial.color.setHex(hex);
       mainArrow.rotation.z = ROT_Z[nextProbe.dir] ?? 0;
       stimulus.position.set(SIDE_X[nextProbe.pos] ?? 0, 0.48, 0.12);
@@ -257,7 +309,11 @@ export default function SpatialStroop3DBoard({
       if (deadline.visible) {
         const fraction = Math.max(0, 1 - (now - state.ringStart) / Math.max(1, state.ringMs));
         deadline.scale.setScalar(0.82 + fraction * 0.18);
-        deadline.material.color.setHex(state.frozen ? 0x55d6e8 : fraction < 0.3 ? GAME_INTS.bad.fill : 0xf3c65f);
+        deadline.material.color.setHex(
+          state.frozen ? GAME_INTS.accent.fill
+            : fraction < 0.3 ? GAME_INTS.bad.fill
+              : GAME_INTS.item.fill,
+        );
         deadline.material.opacity = 0.25 + fraction * 0.55;
       }
     });

@@ -183,6 +183,20 @@
      outline with this instead — 8.27:1 on the worst sky stop. */
   --game-ink: #131e28;
 
+  /* ─── Effects ──────────────────────────────────────────────────────────
+     Mirrors GAME_FX in gamePalette.js — that file is the source of truth and
+     carries the derivation; keep these in step.
+
+     Neutral-COOL, not black: a pure-black shadow on the Tide blue desaturates
+     what is under it and reads as a grey smudge. These existed nowhere before,
+     which is why ~60 hand-rolled rgba() shadows accumulated across the games,
+     each at a slightly different alpha. */
+  --fx-scrim: rgba(19, 30, 40, 0.46);
+  --fx-shadow-soft: rgba(19, 30, 40, 0.14);
+  --fx-shadow-drop: rgba(19, 30, 40, 0.28);
+  --fx-hairline: rgba(19, 30, 40, 0.12);
+  --fx-glint: rgba(255, 255, 255, 0.55);
+
   /* ─── Tide DEEP — the same sky, dark end ───────────────────────────────
      ONE palette, two depths. Which depth a surface gets is a RENDERING
      constraint, not taste: a scene built from additive blending and emissive
@@ -405,15 +419,15 @@ html[data-home-theme='dark'] {
   --danger: #a24b45;
 }
 
-/* Void mode — Detective's room and Story Time's stage.
+/* Void mode — Detective's noir room.
  *
- * Now Tide's deep end rather than its own near-black (#08080f/#12121a) and its
- * own gold (#e8ac4e). Both surfaces are immersive 3D scenes built on glow, so
- * they take the dark depth of Tide — same palette as every other play surface,
- * different end of the ramp. See --play-surface-deep above for why depth is a
- * rendering constraint here and not a style preference. */
-.nr,
-.sgs {
+ * Tide's deep end rather than its own near-black (#08080f/#12121a) and its own
+ * gold (#e8ac4e). The noir room is an immersive scene built on glow and a
+ * single hard key light, so it takes the dark depth of Tide — same palette as
+ * every other play surface, different end of the ramp. See --play-surface-deep
+ * above for why depth is a rendering constraint here and not a style
+ * preference. */
+.nr {
   --surface: var(--play-surface-deep-flat);
   --surface-raised: #1e2130;
   --ink: var(--play-ink-deep);
@@ -422,4 +436,23 @@ html[data-home-theme='dark'] {
   --accent-bright: #e3c48f;
   --line: #3a3b40;
   --danger: #cd7f6e;
+}
+
+/* Story Time's stage — Tide's LIGHT end, the same surface Cancellation plays on.
+ *
+ * It used to share the void block with .nr above. That was wrong for this
+ * screen: Story Time is a picture-book you WATCH and then recall, not a noir
+ * interrogation, and its scene is ordinary lit geometry rather than additive
+ * glow — so nothing about its rendering required darkness. Sitting it in the
+ * void made the one narrative game in the app read as a black screen with a
+ * small figure on it, while every other game had moved to the blue. */
+.sgs {
+  --surface: #dbe6f0;
+  --surface-raised: #f2f7fb;
+  --ink: var(--play-ink);
+  --ink-dim: #5a6774;
+  --accent: #996b22;
+  --accent-bright: #d4952f;
+  --line: #c3d3e0;
+  --danger: #854c49;
 }

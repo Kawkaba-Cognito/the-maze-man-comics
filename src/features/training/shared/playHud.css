@@ -1,0 +1,50 @@
+/*
+ * playHud.css — the tokens PlayHud needs to stand up on its own.
+ *
+ * ── Why this file was empty, and why that mattered ────────────────────────
+ * PlayHud renders .ct-fq-bar / .ct-fq-cbw, whose rules read --fq-card,
+ * --fq-bdr, --fq-pdk and friends. Those variables were declared ONLY on
+ * `.cancellation-task-game.ct-fq-root`. So the shared header worked in exactly
+ * one game, and dropping it into any other produced an unstyled bar —
+ * `background: var(--fq-card)` with no --fq-card is invalid at computed-value
+ * time, i.e. transparent.
+ *
+ * That, not the component's API, is why sixteen games hand-rolled their own
+ * header instead of importing this one. A shared component must not depend on
+ * variables its HOST happens to define; it has to carry its own.
+ *
+ * The variables inherit, so declaring them on the two elements PlayHud actually
+ * renders covers everything inside them. Cancellation still declares the same
+ * names on its root — that block also styles its menus and results screens —
+ * and identical values mean the two cannot disagree.
+ *
+ * The .ct-fq-* RULES still live in styles/training.css. Only the tokens moved,
+ * because that is the part that made the component unusable elsewhere.
+ */
+.ct-fq-bar,
+.ct-fq-cbw,
+.ct-fq-pbw {
+  --fq-pri: var(--color-amber);
+  --fq-pdk: #c98a2e;
+  --fq-acc: var(--game-accent);
+  --fq-ac2: #c9847a;
+  --fq-txt: var(--play-ink);
+  --fq-mut: #6b6b6b;
+  --fq-bdr: #d8e3ec;
+  --fq-sur: rgba(246, 250, 255, 0.94);
+  --fq-card: rgba(252, 254, 255, 0.92);
+  --fq-r: 16px;
+}
+
+/* Games that float the HUD over their board wrap it in .ct-playhud-host. That
+ * is the whole positioning contract — no game needs to know the HUD's
+ * internals. Cancellation does not use it: it reserves space in its own layout. */
+.ct-playhud-host {
+  position: relative;
+}
+
+.ct-playhud-host > .ct-fq-bar,
+.ct-playhud-host > .ct-fq-cbw {
+  position: relative;
+  z-index: 5;
+}

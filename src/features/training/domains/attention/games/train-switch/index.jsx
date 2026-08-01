@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
-import { GAME_STIMULUS_6 } from '../../../../shared/gamePalette';
+import { GAME_STIMULUS_6, GAME_FX, GAME_COLORS } from '../../../../shared/gamePalette';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
@@ -317,7 +317,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
         ctx.lineWidth = Math.max(11, g.cell * 0.42);
         ctx.beginPath(); ctx.moveTo(a.x, a.y + 2); ctx.lineTo(b.x, b.y + 2); ctx.stroke();
       }
-      ctx.strokeStyle = active ? '#6a6560' : 'rgba(255,255,255,0.10)';
+      ctx.strokeStyle = active ? GAME_COLORS.muted.fill : GAME_FX.hairline;
       ctx.lineWidth = active ? Math.max(9, g.cell * 0.36) : 5;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
       if (active) {
@@ -480,7 +480,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
         ctx.beginPath(); ctx.roundRect(cl * 0.12, cw * 0.44, cl * 0.24, cw * 0.20, 2); ctx.fill();
         ctx.fillStyle = t.target;
         ctx.beginPath(); ctx.roundRect(-cl / 2, -cw / 2, cl, cw, 6); ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.strokeStyle = GAME_FX.shadowDrop; ctx.lineWidth = 1.5; ctx.stroke();
         ctx.fillStyle = 'rgba(212,236,255,0.92)';
         ctx.beginPath(); ctx.roundRect(cl * 0.05, -cw * 0.32, cl * 0.26, cw * 0.64, 2); ctx.fill();
         ctx.fillStyle = 'rgba(255,246,205,0.95)';
@@ -512,7 +512,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
       // wave banner (brief, on wave change)
       if (g.bannerT > 0 && g.banner) {
         ctx.globalAlpha = Math.min(1, g.bannerT / 0.4);
-        ctx.fillStyle = 'rgba(45,45,45,0.82)';
+        ctx.fillStyle = GAME_FX.scrim;
         ctx.font = `900 ${Math.round(Math.min(g.W, g.H) * 0.10)}px system-ui, sans-serif`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(g.banner, g.W / 2, g.H * 0.42);
@@ -635,8 +635,8 @@ const styles = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
   play: { position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 6, boxSizing: 'border-box' },
   board: { position: 'relative', flex: '0 0 auto', borderRadius: 20, background: 'linear-gradient(160deg, #3a342c 0%, #231e18 100%)', boxShadow: '0 14px 36px rgba(45, 32, 18, 0.28), inset 0 0 0 1.5px rgba(232, 172, 78, 0.32)', overflow: 'hidden' },
-  msg: { position: 'absolute', top: 8, left: 0, right: 0, zIndex: 2, textAlign: 'center', fontWeight: 700, fontSize: 13, color: '#f0e2c0', textShadow: '0 1px 3px rgba(0,0,0,0.45)', pointerEvents: 'none', padding: '0 16px' },
-  overWrap: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(45,45,45,0.45)' },
+  msg: { position: 'absolute', top: 8, left: 0, right: 0, zIndex: 2, textAlign: 'center', fontWeight: 700, fontSize: 13, color: '#f0e2c0', textShadow: `0 1px 3px ${GAME_FX.shadowDrop}`, pointerEvents: 'none', padding: '0 16px' },
+  overWrap: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: GAME_FX.scrim },
   overCard: { background: '#fffdf8', borderRadius: 20, padding: '20px 22px', textAlign: 'center', boxShadow: '6px 6px 0 var(--ink-outline)', border: '2px solid #cdbfa6', width: 'min(92vw, 380px)', maxHeight: '88%', overflowY: 'auto' },
   overTitle: { fontWeight: 900, fontSize: 24, color: '#2d2d2d' },
   overScore: { marginTop: 6, fontWeight: 700, color: '#7a5a1e' },

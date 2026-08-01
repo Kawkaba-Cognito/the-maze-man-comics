@@ -139,6 +139,36 @@ export const GAME_STIMULUS_6 = [
   '#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9',
 ];
 
+/*
+ * ── The effects nobody had a token for ────────────────────────────────────
+ *
+ * A survey of the games found ~60 hand-written `rgba(0,0,0,0.35)` /
+ * `rgba(255,255,255,0.1)` values doing the same five jobs. They were reinvented
+ * per game for one reason: there was no shared name for them, so every author
+ * picked their own alpha. That is how a "shadow" ends up at 0.28 in one game
+ * and 0.45 in the next.
+ *
+ * These are deliberately NEUTRAL-COOL rather than pure black: on the Tide blue
+ * surface a pure-black shadow reads as a grey smudge, because it desaturates
+ * everything under it. #131e28 at low alpha keeps the hue.
+ *
+ * ⚠ JS constants as well as CSS variables (--fx-* in tokens.css), because a
+ * canvas game sets `ctx.fillStyle` and CANNOT read a CSS custom property. That
+ * asymmetry is exactly why the canvas games drifted furthest.
+ */
+export const GAME_FX = {
+  /** Behind a modal / pause overlay. */
+  scrim: 'rgba(19, 30, 40, 0.46)',
+  /** Contact shadow under a raised piece or card. */
+  shadowSoft: 'rgba(19, 30, 40, 0.14)',
+  /** A card lifted off the surface. */
+  shadowDrop: 'rgba(19, 30, 40, 0.28)',
+  /** A 1px separating line that must not read as a border. */
+  hairline: 'rgba(19, 30, 40, 0.12)',
+  /** The lit top edge of a raised surface. */
+  glint: 'rgba(255, 255, 255, 0.55)',
+};
+
 /** '#2f5f86' → 0x2f5f86, for Three.js colour arguments. */
 export const intOf = (hex) => parseInt(String(hex).replace('#', ''), 16);
 

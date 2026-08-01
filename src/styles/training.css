@@ -5201,10 +5201,17 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 /* ── Flexibility: Spatial Stroop (Arrow Rush) ── */
 .ct-stroop-root {
     --stroop-accent: var(--color-domain-flexibility, #e07aaa);
-    --stroop-point: #2f6dd0;
-    --stroop-point-bg: linear-gradient(180deg, #eef4ff 0%, #cfe0fb 100%);
-    --stroop-side: #c4761a;
-    --stroop-side-bg: linear-gradient(180deg, #fff6ea 0%, #fbe2c2 100%);
+    /* The rule banner is colour-coded so a rule SWITCH registers instantly —
+       that cue is the point of a task-switching game, so it stays. But it is
+       deliberately NOT the two stimulus hues (blue/amber): those already mean
+       "left" and "right" under the colour rule, and reusing them here would
+       make the banner look like an answer. Slate vs plum instead — two cool
+       neutrals that differ in hue and lightness without entering the response
+       vocabulary. */
+    --stroop-point: #2f5f86;
+    --stroop-point-bg: linear-gradient(180deg, #eef4fa 0%, #cfe0ee 100%);
+    --stroop-side: #6b4a72;
+    --stroop-side-bg: linear-gradient(180deg, #f6eefa 0%, #e2d2ea 100%);
 }
 .ct-stroop-play-wrap {
     min-height: min(100vh, 100dvh);
@@ -5214,23 +5221,27 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     touch-action: none;
     overscroll-behavior: none;
 }
-/* Tide deep. Was flat #000 — this board's arrows/flankers carry glow, so it
- * needs the dark end, but it does not need a colour of its own. */
+/* Tide LIGHT, like every other game (2026-08-01).
+ *
+ * This was pinned to Tide deep with a comment saying the board "carries glow"
+ * and therefore needs the dark end. It does not — SpatialStroop3DBoard.jsx is
+ * all MeshBasicMaterial with bloom off and no additive blending, so there was
+ * never a rendering constraint, only a leftover from before the palette. It
+ * left Arrow Rush as the one game played on a black screen. */
 .cancellation-task-game.ct-stroop-root:has(.ct-stroop-play-wrap) {
-    background-color: var(--play-surface-deep-flat) !important;
-    background-image: var(--play-surface-deep) !important;
+    background-color: var(--play-surface) !important;
+    background-image: var(--play-surface) !important;
     background-position: top center !important;
     background-repeat: no-repeat !important;
-    background-size: var(--home-sky-size) !important;
-    color: var(--play-ink-deep);
+    background-size: auto !important;
+    color: var(--play-ink);
 }
 .ct-stroop-play-wrap .ct-training-play-title {
-    color: #fdf4dc !important;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95), 0 0 16px rgba(232, 172, 78, 0.32);
+    color: var(--play-ink) !important;
 }
 .ct-stroop-play-wrap .ct-training-play-sub {
-    color: rgba(253, 244, 220, 0.88) !important;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
+    color: var(--play-ink) !important;
+    opacity: 0.75;
 }
 .ct-stroop-board {
     flex: 1;
@@ -5254,7 +5265,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     border-radius: 14px;
     border: 2px solid var(--ink-outline);
     text-align: center;
-    box-shadow: 0 3px 0 rgba(26, 18, 8, 0.18);
+    box-shadow: 0 3px 0 rgba(19, 30, 40, 0.18);
 }
 .ct-stroop-rule-label {
     font-size: 0.66rem;
@@ -5273,7 +5284,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 }
 .ct-stroop-rule--side {
     background: var(--stroop-side-bg);
-    color: #6e3d0e;
+    color: #472f4d;
 }
 .ct-stroop-hint {
     margin: 0;
@@ -5287,13 +5298,13 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 .ct-stroop-streak-bar {
     height: 8px;
     border-radius: 6px;
-    background: rgba(26, 18, 8, 0.1);
+    background: rgba(19, 30, 40, 0.1);
     overflow: hidden;
 }
 .ct-stroop-streak-fill {
     height: 100%;
     border-radius: 6px;
-    background: linear-gradient(90deg, #5aa15a, #3f8f3f);
+    background: linear-gradient(90deg, #4f7f5c, #386544);
     transition: width 0.18s ease;
 }
 .ct-stroop-hud-cats {
@@ -5305,8 +5316,8 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: rgba(26, 18, 8, 0.16);
-    border: 1.5px solid rgba(26, 18, 8, 0.25);
+    background: rgba(19, 30, 40, 0.16);
+    border: 1.5px solid rgba(19, 30, 40, 0.25);
 }
 .ct-stroop-cat-dot--done {
     background: var(--stroop-accent);
@@ -5323,8 +5334,13 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     flex: 1;
     border-radius: 18px;
     border: 2.5px solid var(--ink-outline);
-    background: linear-gradient(180deg, var(--surface-raised) 0%, #f3ead9 100%);
-    box-shadow: inset 0 2px 10px rgba(26, 18, 8, 0.08);
+    /* The WebGL board draws INTO this element with alpha, so whatever fills it
+       is the board's background. It was the app theme's warm paper
+       (--surface-raised -> #f3ead9), which showed through the transparent
+       canvas as a big cream slab on the blue sky. A translucent white lets the
+       Tide sky through while still reading as a panel. */
+    background: rgba(255, 255, 255, 0.26);
+    box-shadow: inset 0 2px 10px rgba(19, 30, 40, 0.06);
     overflow: hidden;
 }
 .ct-stroop-zone {
@@ -5350,13 +5366,13 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     font-weight: 900;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: rgba(26, 18, 8, 0.34);
+    color: rgba(19, 30, 40, 0.34);
     pointer-events: none;
     z-index: 1;
 }
 .ct-stroop-zone.is-here {
-    background: rgba(198, 118, 26, 0.07);
-    box-shadow: inset 0 0 0 2px rgba(198, 118, 26, 0.42);
+    background: rgba(212, 149, 47, 0.07);
+    box-shadow: inset 0 0 0 2px rgba(212, 149, 47, 0.42);
 }
 .ct-stroop-zone-divider {
     grid-column: 2;
@@ -5364,7 +5380,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     width: 100%;
     min-width: 5px;
     align-self: stretch;
-    background: linear-gradient(180deg, #9a8870 0%, var(--ink-dim) 50%, #9a8870 100%);
+    background: linear-gradient(180deg, #8f9aa6 0%, var(--ink-dim) 50%, #8f9aa6 100%);
     box-shadow:
         -1px 0 0 rgba(255, 255, 255, 0.55),
         1px 0 0 rgba(255, 255, 255, 0.55);
@@ -5372,8 +5388,8 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     z-index: 4;
 }
 .ct-stroop-arrow {
-    color: #2c2418;
-    filter: drop-shadow(0 3px 2px rgba(26, 18, 8, 0.22));
+    color: #131e28;
+    filter: drop-shadow(0 3px 2px rgba(19, 30, 40, 0.22));
     animation: stroopPop 0.16s ease;
 }
 @keyframes stroopPop {
@@ -5381,8 +5397,8 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     to { transform: scale(1); opacity: 1; }
 }
 .ct-stroop-arrow--left { /* flip handled inline via scaleX */ }
-.ct-stroop-arrow--ok { color: #2f8f3f; }
-.ct-stroop-arrow--bad { color: #c0392b; }
+.ct-stroop-arrow--ok { color: #386544; }
+.ct-stroop-arrow--bad { color: #854c49; }
 
 /* Feedback line */
 .ct-stroop-feedback-wrap {
@@ -5395,9 +5411,9 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     font-size: 0.95rem;
     letter-spacing: 0.02em;
 }
-.ct-stroop-feedback--correct { color: #2f8f3f; }
-.ct-stroop-feedback--wrong { color: #c0392b; }
-.ct-stroop-feedback--timeout { color: #b5791b; }
+.ct-stroop-feedback--correct { color: #386544; }
+.ct-stroop-feedback--wrong { color: #854c49; }
+.ct-stroop-feedback--timeout { color: #996b22; }
 
 /* Answer buttons */
 .ct-stroop-answers {
@@ -5412,8 +5428,8 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     min-height: 86px;
     border-radius: 18px;
     border: 3px solid var(--ink-outline);
-    background: linear-gradient(180deg, #ffffff 0%, #f0e7d7 100%);
-    box-shadow: 0 4px 0 rgba(26, 18, 8, 0.28);
+    background: linear-gradient(180deg, #ffffff 0%, #e7edf3 100%);
+    box-shadow: 0 4px 0 rgba(19, 30, 40, 0.28);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
@@ -5422,25 +5438,25 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 .ct-stroop-ans-glyph {
     font-size: 2.6rem;
     line-height: 1;
-    color: #2c2418;
+    color: #131e28;
 }
 .ct-stroop-ans--pressed {
     transform: translateY(3px);
-    box-shadow: 0 1px 0 rgba(26, 18, 8, 0.28);
+    box-shadow: 0 1px 0 rgba(19, 30, 40, 0.28);
 }
 .ct-stroop-ans--correct {
-    background: linear-gradient(180deg, #d8f3d8 0%, #aee0ae 100%);
-    border-color: #2f8f3f;
+    background: linear-gradient(180deg, #dbe7de 0%, #b6ccbd 100%);
+    border-color: #386544;
 }
-.ct-stroop-ans--correct .ct-stroop-ans-glyph { color: #1f6b2c; }
+.ct-stroop-ans--correct .ct-stroop-ans-glyph { color: #284931; }
 .ct-stroop-ans--wrong {
-    background: linear-gradient(180deg, #f9d6d2 0%, #f1a89f 100%);
-    border-color: #c0392b;
+    background: linear-gradient(180deg, #eddcda 0%, #d9b8b5 100%);
+    border-color: #854c49;
 }
-.ct-stroop-ans--wrong .ct-stroop-ans-glyph { color: #8c241a; }
+.ct-stroop-ans--wrong .ct-stroop-ans-glyph { color: #603735; }
 .ct-stroop-ans--timeout {
-    background: linear-gradient(180deg, #f8e6c4 0%, #eecb8d 100%);
-    border-color: #b5791b;
+    background: linear-gradient(180deg, #f0e3cb 0%, #dfc79b 100%);
+    border-color: #996b22;
 }
 
 /* Shift overlay */
@@ -5452,7 +5468,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    background: rgba(246, 239, 227, 0.92);
+    background: rgba(246, 250, 255, 0.92);
     backdrop-filter: blur(2px);
     z-index: 6;
     animation: stroopFade 0.2s ease;
@@ -5533,7 +5549,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     letter-spacing: 0.06em;
 }
 .ct-stroop-tut-banner.ct-stroop-rule--point { background: var(--stroop-point-bg, #cfe0fb); color: #16386e; }
-.ct-stroop-tut-banner.ct-stroop-rule--side { background: var(--stroop-side-bg, #fbe2c2); color: #6e3d0e; }
+.ct-stroop-tut-banner.ct-stroop-rule--side { background: var(--stroop-side-bg, #fbe2c2); color: #472f4d; }
 .ct-stroop-tut-stage {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 4px minmax(0, 1fr);
@@ -5542,7 +5558,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     min-height: 96px;
     border-radius: 14px;
     border: 2px solid var(--ink-outline);
-    background: linear-gradient(180deg, var(--surface-raised) 0%, #f3ead9 100%);
+    background: linear-gradient(180deg, var(--surface-raised) 0%, #e7edf3 100%);
     overflow: hidden;
 }
 .ct-stroop-tut-half {
@@ -5557,7 +5573,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 }
 .ct-stroop-tut-rail {
     grid-column: 2;
-    background: linear-gradient(180deg, #9a8870, var(--ink-dim));
+    background: linear-gradient(180deg, #8f9aa6, var(--ink-dim));
     box-shadow: -1px 0 0 rgba(255, 255, 255, 0.45), 1px 0 0 rgba(255, 255, 255, 0.45);
 }
 .ct-stroop-tut-half:last-child {
@@ -5567,7 +5583,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     margin: 0;
     font-size: 12px;
     font-weight: 800;
-    color: var(--stroop-accent, #c0392b);
+    color: var(--stroop-accent, #854c49);
 }
 
 /* ── Spatial Stroop: feature layer (combo/juice, new rules, power-ups, blitz) ── */
@@ -5590,12 +5606,14 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     font-size: 0.95rem;
     line-height: 1;
 }
-.ct-stroop-ckey--red { color: #d83b3b; }
-.ct-stroop-ckey--green { color: #2f9e44; }
+/* The two stimulus colours, Okabe-Ito. Must match STROOP_COLORS and the board's
+   STIMULUS_HEX — this key is the player's legend for the colour rule. */
+.ct-stroop-ckey--blue { color: #0072B2; }
+.ct-stroop-ckey--amber { color: #E69F00; }
 
 /* Reverse trial framing */
 .ct-stroop-rule--reverse {
-    box-shadow: 0 0 0 3px #c0392b, 0 3px 0 rgba(26, 18, 8, 0.18);
+    box-shadow: 0 0 0 3px #854c49, 0 3px 0 rgba(19, 30, 40, 0.18);
 }
 .ct-stroop-reverse-badge {
     margin-top: 4px;
@@ -5603,22 +5621,23 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     font-weight: 900;
     letter-spacing: 0.06em;
     color: #fff;
-    background: #c0392b;
+    background: #854c49;
     padding: 4px 10px;
     border-radius: 8px;
     border: 2px solid var(--ink-outline);
-    box-shadow: 2px 2px 0 rgba(26, 18, 8, 0.25);
+    box-shadow: 2px 2px 0 rgba(19, 30, 40, 0.25);
     animation: stroopRevPulse 0.8s ease-in-out infinite;
 }
 .ct-stroop-hint--rule {
     font-weight: 800;
-    color: #fff8e8;
+    /* Was cream with a heavy black glow, for the old black board. On the light
+       surface that was white-on-white with a smudge behind it. */
+    color: var(--play-ink);
     font-size: clamp(0.78rem, 2.9vw, 0.92rem);
     line-height: 1.4;
     max-width: 340px;
     margin-left: auto;
     margin-right: auto;
-    text-shadow: 0 2px 8px #000, 0 0 14px rgba(0, 0, 0, 0.95);
 }
 .ct-stroop-frozen-banner {
     text-align: center;

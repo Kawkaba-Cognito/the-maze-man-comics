@@ -20,8 +20,28 @@
  * would not have caught full-strength stimulus colours reading as "candy" next
  * to muted ones — that needs a screenshot. Treat a green run as "no known
  * structural drift", never as "looks right".
+ *
+ * ── The ratchet (2026-08-01) ──────────────────────────────────────────────
+ * This script used to exit 1 on ANY finding. With ~690 pre-existing findings
+ * that meant it could never go into CI, so it only ran when someone remembered
+ * — and the thing it guards against went on drifting. A gate nobody can turn on
+ * is not a gate.
+ *
+ * It now compares against `design-baseline.json`, a per-rule count of the debt
+ * that already existed, and fails only when a number goes UP or a NEW rule
+ * appears. That makes it safe to run on every push TODAY, while the backlog is
+ * paid down separately.
+ *
+ * The baseline is a DEBT CEILING, not a target. It ratchets down on its own:
+ * any run that comes in under baseline rewrites the file lower, so once you fix
+ * something it can never silently come back. Only `--update` can raise it, and
+ * raising it should be a deliberate, reviewed act.
+ *
+ *   node scripts/audit-design.mjs            # gate (CI)
+ *   node scripts/audit-design.mjs --update   # accept current counts as the ceiling
+ *   node scripts/audit-design.mjs --list     # show every finding, ignore baseline
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -50,12 +70,37 @@ function walk(dir, out = []) {
 
 const files = walk(GAMES_DIR);
 
+/*
+ * Palette exemptions.
+ *
+ * "No raw colour" is the right rule for CHROME — panels, cards, text, states —
+ * because that is what has to change as one when the palette changes. It is the
+ * WRONG rule for hand-drawn scene art: Detective's noir rooms are SVG
+ * illustrations (a telescope dome, brickwork, a lamp filament), and flattening
+ * a drawing into six semantic tokens would destroy it, not unify it. Counting
+ * those 200-odd colours as debt would also push whoever next reads this report
+ * toward exactly that mistake.
+ *
+ * So a file may opt out by declaring, in its first 40 lines:
+ *
+ *     @palette-exempt: hand-drawn scene art, not chrome
+ *
+ * The reason is required and the count of exempt files is printed on every run,
+ * so exemptions stay visible and reviewable instead of becoming a silent
+ * escape hatch. Exempt files are still checked by every OTHER rule.
+ */
+const EXEMPT_RE = /@palette-exempt:\s*(\S.*)/;
+const exempt = [];
+
 for (const abs of files) {
   const rel = relative(ROOT, abs).split(sep).join('/');
   if (rel === PALETTE) continue;
   const src = readFileSync(abs, 'utf8');
   const game = rel.match(/games\/([^/]+)\//)?.[1] ?? '(shared)';
   const lines = src.split('\n');
+  const exemptMatch = lines.slice(0, 40).join('\n').match(EXEMPT_RE);
+  const paletteExempt = Boolean(exemptMatch);
+  if (paletteExempt) exempt.push({ file: rel, reason: exemptMatch[1].trim() });
 
   lines.forEach((line, i) => {
     const at = `${rel}:${i + 1}`;
@@ -63,7 +108,11 @@ for (const abs of files) {
 
     // 1. Raw colour in ANY syntax, not just hex.
     const colour = line.match(/#[0-9a-fA-F]{3,8}\b|0x[0-9a-fA-F]{6}\b|rgba?\([^)]*\)|hsla?\([^)]*\)/);
-    if (colour && !/--game-|--play-|--surface|--ink|--line|--accent/.test(line)) {
+    // A line that USES a token is fine even though the token's own definition
+    // contains a colour — that is the one place a literal belongs. GAME_FX /
+    // --fx-* are the shared effect tokens (scrim, shadow, hairline, glint).
+    const usesToken = /--game-|--play-|--surface|--ink|--line|--accent|--fx-|GAME_FX\./.test(line);
+    if (colour && !paletteExempt && !usesToken) {
       add(at, 'raw-colour', colour[0]);
     }
 
@@ -113,17 +162,138 @@ for (const f of findings) {
   groups.get(f.rule).push(f);
 }
 
-if (!findings.length) {
-  console.log('audit-design: OK — no structural drift found.');
-  console.log('(Source-level only. It cannot tell you whether the game LOOKS right.)');
+const reportExemptions = () => {
+  if (!exempt.length) return;
+  console.log(`palette-exempt files (${exempt.length}) — raw-colour rule skipped:`);
+  for (const e of exempt) console.log(`   ${e.file} — ${e.reason}`);
+  console.log('');
+};
+
+const show = (limit) => {
+  for (const [rule, list] of [...groups].sort((a, b) => b[1].length - a[1].length)) {
+    console.log(`── ${rule} (${list.length})`);
+    for (const f of list.slice(0, limit)) console.log(`   ${f.file}  ${f.detail}`);
+    if (list.length > limit) console.log(`   … and ${list.length - limit} more`);
+    console.log('');
+  }
+};
+
+/* ── ratchet ─────────────────────────────────────────────────────────────── */
+
+const BASELINE = join(ROOT, 'scripts/design-baseline.json');
+const args = new Set(process.argv.slice(2));
+const counts = Object.fromEntries([...groups].map(([rule, list]) => [rule, list.length]));
+
+/* Per-FILE counts as well as per-rule.
+ *
+ * A rule total alone tells you "raw-colour went 689 → 690" and then prints the
+ * twelve oldest offenders, which are not the ones you just added — useless at
+ * the moment you need it. Keeping counts per file lets the gate point at the
+ * file that actually got worse, which is the only thing the person who broke it
+ * needs to know. */
+const perFile = {};
+for (const f of findings) {
+  const file = String(f.file).split(':')[0];
+  perFile[file] ??= {};
+  perFile[file][f.rule] = (perFile[file][f.rule] ?? 0) + 1;
+}
+const snapshot = () => ({ rules: counts, files: perFile });
+
+if (args.has('--list')) {
+  reportExemptions();
+  console.log(`audit-design: ${findings.length} finding(s) — full list, baseline ignored\n`);
+  show(Number.MAX_SAFE_INTEGER);
   process.exit(0);
 }
 
-console.log(`audit-design: ${findings.length} finding(s)\n`);
-for (const [rule, list] of [...groups].sort((a, b) => b[1].length - a[1].length)) {
-  console.log(`── ${rule} (${list.length})`);
-  for (const f of list.slice(0, 12)) console.log(`   ${f.file}  ${f.detail}`);
-  if (list.length > 12) console.log(`   … and ${list.length - 12} more`);
-  console.log('');
+if (args.has('--update')) {
+  writeFileSync(BASELINE, `${JSON.stringify(snapshot(), null, 2)}\n`);
+  console.log('audit-design: baseline updated to current counts.');
+  for (const [rule, n] of Object.entries(counts)) console.log(`   ${rule}: ${n}`);
+  console.log('\nA raised ceiling is new debt — say so in the commit message.');
+  process.exit(0);
 }
-process.exit(1);
+
+const baseline = existsSync(BASELINE)
+  ? JSON.parse(readFileSync(BASELINE, 'utf8'))
+  : null;
+
+if (!baseline?.rules) {
+  console.log('audit-design: no baseline yet. Run with --update to record one.');
+  show(12);
+  process.exit(1);
+}
+
+const baseRules = baseline.rules;
+const baseFiles = baseline.files ?? {};
+
+const regressions = [];
+for (const [rule, n] of Object.entries(counts)) {
+  const allowed = baseRules[rule] ?? 0;
+  if (n > allowed) regressions.push({ rule, n, allowed });
+}
+
+if (regressions.length) {
+  console.log(`audit-design: ${regressions.length} rule(s) got WORSE\n`);
+  for (const r of regressions) {
+    console.log(`── ${r.rule}: ${r.n} (baseline ${r.allowed}, +${r.n - r.allowed})`);
+    // Name the FILES that grew, and show only their findings — the ones the
+    // person who just broke this actually needs.
+    const grew = Object.keys(perFile)
+      .filter((file) => (perFile[file][r.rule] ?? 0) > (baseFiles[file]?.[r.rule] ?? 0))
+      .sort();
+    if (grew.length) {
+      for (const file of grew) {
+        const was = baseFiles[file]?.[r.rule] ?? 0;
+        console.log(`   ${file}  ${was} → ${perFile[file][r.rule]}`);
+        for (const f of (groups.get(r.rule) || [])) {
+          if (String(f.file).split(':')[0] === file) console.log(`      ${f.file}  ${f.detail}`);
+        }
+      }
+    } else {
+      // Only reachable if a file was renamed; fall back to the whole list.
+      console.log('   (no single file grew — a file may have been renamed)');
+      for (const f of (groups.get(r.rule) || []).slice(0, 12)) {
+        console.log(`      ${f.file}  ${f.detail}`);
+      }
+    }
+    console.log('');
+  }
+  console.log('Fix the new ones, or run --update if the increase is genuinely intended.');
+  process.exit(1);
+}
+
+// Came in at or under the ceiling: lower it, so fixed drift cannot creep back.
+const improved = Object.keys(baseRules).filter((rule) => (counts[rule] ?? 0) < baseRules[rule]);
+if (improved.length) {
+  const lines = improved.map((rule) => `   ${rule}: ${baseRules[rule]} → ${counts[rule] ?? 0}`);
+  // CI is read-only. A runner rewriting a tracked file cannot commit it, so the
+  // "improvement" would silently evaporate and, worse, make the working tree
+  // dirty for the publish step. Report there; write only on a developer machine.
+  if (process.env.CI) {
+    console.log('audit-design: OK — better than baseline:');
+    console.log(lines.join('\n'));
+    console.log('\nRun `npm run audit:design` locally to lower scripts/design-baseline.json.');
+    process.exit(0);
+  }
+  const nextRules = { ...baseRules };
+  for (const rule of improved) {
+    if ((counts[rule] ?? 0) === 0) delete nextRules[rule];
+    else nextRules[rule] = counts[rule];
+  }
+  writeFileSync(BASELINE, `${JSON.stringify({ rules: nextRules, files: perFile }, null, 2)}\n`);
+  console.log('audit-design: OK — and the baseline ratcheted DOWN:');
+  console.log(lines.join('\n'));
+  console.log('\nCommit scripts/design-baseline.json with your change.');
+  process.exit(0);
+}
+
+const total = findings.length;
+reportExemptions();
+console.log(
+  total
+    ? `audit-design: OK — ${total} known finding(s), none worse than baseline.`
+    : 'audit-design: OK — no structural drift found.',
+);
+console.log('(Source-level only. It cannot tell you whether the game LOOKS right.)');
+process.exit(0);
