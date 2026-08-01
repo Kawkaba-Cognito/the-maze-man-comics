@@ -1,6 +1,12 @@
 import React from 'react';
 import { TrainingMenuBar } from './TrainingChrome';
 import { STR_COMMON } from './trainingStrings';
+/* Its own styles AND its own --fq-* tokens live here. Imported explicitly even
+ * though PlayHud imports the same file: today this only renders in games that
+ * also mount the HUD, so the CSS arrives by luck. A game that used results
+ * WITHOUT the HUD would get the unstyled screen PlayHud already shipped once —
+ * a shared component must carry its own styles. */
+import './playHud.css';
 
 /*
  * PlayResults — the screen every game shows when a run ends.
