@@ -1,9 +1,7 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import PlayHud from './PlayHud';
-import { TrainingPauseModal } from './TrainingChrome';
 import { STR_COMMON } from './trainingStrings';
-import { setScenePaused } from './c3dBoot';
-import { setTrainingPaused } from './pauseStore';
+import { useGamePause } from './useGamePause';
 import './c3dProto.css';
 
 /*
@@ -96,44 +94,15 @@ export default function C3dProtoChrome({
   const hudStats = toHudStats(stats, isAr, textOf);
 
   /*
-   * Pause, for all seven games that render this chrome.
-   *
-   * The state lives here rather than in each game because the only thing a
-   * pause actually has to DO is stop the scene's clock, and c3dBoot now owns
-   * that (setScenePaused freezes the `now` it hands the tick, so deadlines do
-   * not expire behind the menu). So the chrome can offer a correct pause with
-   * no cooperation from the game at all.
-   *
-   * `canvasRef` may be the caller's own ref — fall back to ours so the lookup
-   * always has an element. Games that pass their own still work: it is the same
-   * node either way.
+   * Pause for all seven games that render this chrome, via the shared hook —
+   * the same one the DOM games use, so there is exactly one implementation.
+   * `canvasRef` may be the caller's own ref; fall back to ours so the scene
+   * lookup always has an element. It is the same node either way.
    */
   const ownCanvasRef = useRef(null);
   const canvasEl = canvasRef ?? ownCanvasRef;
-  const [pauseOpen, setPauseOpen] = useState(false);
   const L = isAr ? STR_COMMON.ar : STR_COMMON.en;
-
-  const openPause = useCallback(() => {
-    setScenePaused(canvasEl.current, true);
-    setTrainingPaused(true);
-    setPauseOpen(true);
-  }, [canvasEl]);
-
-  const closePause = useCallback(() => {
-    setScenePaused(canvasEl.current, false);
-    setTrainingPaused(false);
-    setPauseOpen(false);
-  }, [canvasEl]);
-
-  const quitFromPause = useCallback(() => {
-    // Unpause before leaving: the scene is about to be disposed, but if the
-    // player returns to the same game the WeakMap entry would otherwise still
-    // read "paused" for a freshly mounted scene.
-    setScenePaused(canvasEl.current, false);
-    setTrainingPaused(false);
-    setPauseOpen(false);
-    onBack();
-  }, [canvasEl, onBack]);
+  const pause = useGamePause({ isAr, playSfx, onQuit: onBack, sceneRef: canvasEl });
 
   return (
     <div className="c3d-root" dir={isAr ? 'rtl' : 'ltr'}>
@@ -155,9 +124,9 @@ export default function C3dProtoChrome({
           showTimer={false}
           showTimeBar={false}
           stats={hudStats}
-          pauseOpen={pauseOpen}
+          pauseOpen={pause.open}
           onMenu={() => onBack()}
-          onPause={openPause}
+          onPause={pause.start}
           menuAriaLabel={isAr ? 'القائمة' : 'Menu'}
           pauseAriaLabel={L.paused}
           playSfx={playSfx}
@@ -167,16 +136,7 @@ export default function C3dProtoChrome({
           : hintText ? <p className="c3d-hint">{hintText}</p> : null}
       </div>
       {children}
-      {/* The same pause menu Cancellation shows. No Restart: these seven games
-          reach a fresh run through the mode menu, and a half-implemented
-          restart is worse than none. */}
-      <TrainingPauseModal
-        open={pauseOpen}
-        labels={L}
-        showRestart={false}
-        onResume={() => { playSfx?.('click'); closePause(); }}
-        onQuitMenu={() => { playSfx?.('click'); quitFromPause(); }}
-      />
+      {pause.modal}
       {bannerText && !errText ? (
         <div className={`c3d-banner${bannerOver ? ' c3d-banner--over' : ''}`}>
           <span>{bannerText}</span>

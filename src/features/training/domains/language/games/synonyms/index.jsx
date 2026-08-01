@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
+import PlayHud from '../../../../shared/PlayHud';
+import { useGamePause } from '../../../../shared/useGamePause';
 import { makeRng } from '../../../../shared/rng';
 import { SURVIVAL_MS, survivalRamp, survivalTier } from '../../../../shared/survival';
 import { RELATION } from './data';
@@ -263,11 +265,27 @@ export function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, on
     });
   };
 
-  const hud = mode === 'levels'
-    ? `${totalRef.current}/${PER_LEVEL} · ✓${correct}`
+  const pause = useGamePause({ isAr, playSfx, onQuit: onExit });
+
+  /* Discrete HUD slots, matching every other game, instead of one run-together
+     text line. */
+  const trialsLbl = isAr ? 'محاولات' : 'trials';
+  const correctLbl = isAr ? 'صحيحة' : 'correct';
+  const hudStats = mode === 'levels'
+    ? [
+      { value: `${totalRef.current}/${PER_LEVEL}`, label: trialsLbl },
+      { value: `✓${correct}`, label: correctLbl, tone: 'ac2' },
+    ]
     : mode === 'passplay'
-      ? `${totalRef.current}/${ppTrials} · ✓${correct}`
-      : `✓${correct} · ${score}${combo > 1 ? ` · 🔥${combo}` : ''}`;
+      ? [
+        { value: `${totalRef.current}/${ppTrials}`, label: trialsLbl },
+        { value: `✓${correct}`, label: correctLbl, tone: 'ac2' },
+      ]
+      : [
+        { value: `✓${correct}`, label: correctLbl, tone: 'ac2' },
+        { value: score, label: isAr ? 'نقاط' : 'score' },
+        combo > 1 ? { value: `🔥${combo}`, label: isAr ? 'تتابع' : 'combo' } : null,
+      ];
 
   const relLabel = trial ? (isAr ? trial.rel.ar : trial.rel.en) : '';
   const title = isAr ? 'روابط الكلمات' : 'Word Links';
@@ -305,17 +323,22 @@ export function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, on
       {isSurvival && (
         <div style={S.survTrack}><div style={{ ...S.survFill, width: `${survPct * 100}%`, background: survPct < 0.2 ? BAD : ACC }} /></div>
       )}
-      <header className="ct-training-play-header" style={{ background: 'transparent', ...(cosmos ? { paddingTop: 52 } : null) }}>
-        {!cosmos && (
-          <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
-        )}
-        {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
-        <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title" style={{ color: 'var(--game-ink)' }}>{title}</div>
-          <div className="ct-training-play-sub" style={{ color: 'var(--ink-dim)' }}>{hud}</div>
-        </div>
-        <div className="ct-training-chrome-spacer" aria-hidden="true" />
-      </header>
+      {/* Standard header + pause. Untimed, so no clock slot or time bar —
+          Survival's own countdown track sits above this. */}
+      <PlayHud
+        t={{}}
+        playStep="running"
+        showTimer={false}
+        showTimeBar={false}
+        stats={hudStats}
+        pauseOpen={pause.open}
+        onMenu={() => onExit?.()}
+        onPause={pause.start}
+        menuAriaLabel={isAr ? 'القائمة' : 'Menu'}
+        pauseAriaLabel={pause.labels.paused}
+        playSfx={playSfx}
+      />
+      {pause.modal}
 
       {trial && (
         <div style={S.body}>

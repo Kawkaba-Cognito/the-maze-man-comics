@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
+import PlayHud from '../../../../shared/PlayHud';
+import { useGamePause } from '../../../../shared/useGamePause';
 import { makeRng } from '../../../../shared/rng';
 import { TRIVIA, TRIVIA_CATEGORIES } from './triviaData';
 
@@ -263,13 +265,20 @@ export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExi
     present();
   };
 
+  const pause = useGamePause({ isAr, playSfx, onQuit: onExit });
+
   const boot = () => { stairsRef.current = 0; scoreRef.current = 0; mistakesRef.current = 0; setMistakes(0); setOver(null); newStaircase(); };
 
-  const hudSub = mode === 'levels'
-    ? (isAr ? `مستوى ${level}` : `Level ${level}`)
+  /* The same numbers the old free-text sub-line ran together, as discrete HUD
+     slots so they line up with every other game. */
+  const hudStats = mode === 'levels'
+    ? [{ value: level, label: isAr ? 'مستوى' : 'level' }]
     : mode === 'passplay'
-      ? (isAr ? 'مرّر والعب' : 'Pass n Play')
-      : (isAr ? `سلالم ${stairsRef.current} · ${scoreRef.current}` : `Stairs ${stairsRef.current} · ${scoreRef.current}`);
+      ? [{ value: isAr ? 'مرّر والعب' : 'Pass n Play', label: '', small: true }]
+      : [
+        { value: stairsRef.current, label: isAr ? 'سلالم' : 'stairs' },
+        { value: scoreRef.current, label: isAr ? 'نقاط' : 'score' },
+      ];
 
   const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
   const embedCls = cosmos ? 'c3d-embed-root' : undefined;
@@ -325,17 +334,22 @@ export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExi
     <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
       <style>{STAIR_CSS}</style>
       
-      <header className="ct-training-play-header" style={{ background: 'transparent', ...(cosmos ? { paddingTop: 52 } : null) }}>
-        {!cosmos && (
-          <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
-        )}
-        {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
-        <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title" style={{ color: 'var(--game-ink)' }}>{t.title}</div>
-          <div className="ct-training-play-sub" style={{ color: 'var(--ink-dim)' }}>{hudSub}</div>
-        </div>
-        <div className="ct-training-chrome-spacer" aria-hidden="true" />
-      </header>
+      {/* The standard header + pause. No clock: Trivia is untimed, so a frozen
+          0.0s slot would be worse than none. */}
+      <PlayHud
+        t={{}}
+        playStep="running"
+        showTimer={false}
+        showTimeBar={false}
+        stats={hudStats}
+        pauseOpen={pause.open}
+        onMenu={() => onExit?.()}
+        onPause={pause.start}
+        menuAriaLabel={t.menu}
+        pauseAriaLabel={pause.labels.paused}
+        playSfx={playSfx}
+      />
+      {pause.modal}
 
       {/* staircase + lives + topic */}
       <div style={S.stairWrap}>
