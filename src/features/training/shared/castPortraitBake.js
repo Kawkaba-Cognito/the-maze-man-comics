@@ -99,14 +99,51 @@ async function bake(id, size, turn) {
    * 0.70, not the 0.82 you would compute for a realistic figure: this cast is
    * stylised with oversized heads, so the FACE sits well below the crown. At
    * 0.82 every portrait was a study of the top of someone's hair. */
-  const faceY = RIG_HEIGHT * 0.70;
-  const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 20);
-  camera.position.set(0, faceY, RIG_HEIGHT * 1.45);
-  camera.lookAt(0, faceY, 0);
-
-  // Settle the rig into its idle before the single frame we keep, or riggeds
-  // bake mid-blend between the bind pose and the clip.
+  /*
+   * Aim from the SKELETON, not from a bounding box.
+   *
+   * The rigs are not centred on x=0 — Lola's head sat right of centre and a
+   * tight crop cut it in half — and Box3 cannot find the offset because a
+   * skinned mesh reports its BIND pose, not where the character actually is.
+   * Bones, however, ARE posed. Averaging bone world positions gives the real
+   * horizontal centre, and the highest bone gives the real head height, so this
+   * frames every character correctly regardless of how its export was authored.
+   *
+   * Falls back to the RIG_HEIGHT estimate if a model has no skeleton.
+   */
+  /* Settle the rig into its idle BEFORE measuring. Bones only tell the truth
+   * once a clip has been applied — measuring first reads the bind pose, which
+   * is the very thing this approach exists to avoid. */
   for (let i = 0; i < 30; i++) character.update(1 / 60, i * 16.7);
+
+  const bones = [];
+  character.root.updateWorldMatrix(true, true);
+  character.root.traverse((o) => {
+    if (o.isBone) bones.push(o);
+  });
+
+  let centreX = 0;
+  let headY = RIG_HEIGHT * 0.82;
+  if (bones.length) {
+    const p = new THREE.Vector3();
+    let sumX = 0;
+    let maxY = -Infinity;
+    for (const b of bones) {
+      b.getWorldPosition(p);
+      sumX += p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+    centreX = sumX / bones.length;
+    headY = maxY;
+  }
+  // Just below the crown, so the frame holds head and shoulders rather than
+  // hair and sky.
+  const faceY = headY * 0.86;
+
+  const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 20);
+  camera.position.set(centreX, faceY, RIG_HEIGHT * 1.7);
+  camera.lookAt(centreX, faceY, 0);
+
 
   gl.render(scene, camera);
   const url = gl.domElement.toDataURL('image/png');
