@@ -59,7 +59,7 @@ function makeSafeRushHourBoard(labelKey, extra = {}) {
 const HERO_STYLE = {
   fill: ['var(--game-accent)', 'var(--game-accent-edge)'],
   border: 'var(--game-accent-edge)',
-  shadow: 'rgba(36, 29, 19, 0.3)',
+  shadow: 'rgba(19, 30, 40, 0.3)',
 };
 
 /*
@@ -77,7 +77,7 @@ const HERO_STYLE = {
 const CAR_STYLES = [...GAME_STIMULUS_6, GAME_COLORS.muted.fill].map((hue) => ({
   fill: [shadeOf(hue, 0.66), shadeOf(hue, 0.54)],
   border: shadeOf(hue, 0.42),
-  shadow: 'rgba(36, 29, 19, 0.25)',
+  shadow: 'rgba(19, 30, 40, 0.25)',
 }));
 
 function pieceStyle(pid) {
