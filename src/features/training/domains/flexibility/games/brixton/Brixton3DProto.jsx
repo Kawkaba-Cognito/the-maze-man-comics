@@ -14,6 +14,9 @@ import {
   BRIXTON_PP_TRIALS,
 } from './index';
 import '../../../../shared/c3dProto.css';
+// nowMs() = performance.now() minus paused time, so the pause menu really
+// stops this game's clock. See shared/pauseStore.js.
+import { nowMs } from '../../../../shared/pauseStore';
 
 /*
  * Kawkab Hops (Brixton) · 3D prototype
@@ -254,12 +257,12 @@ export default function Brixton3DProto({
     let attemptsN = 0;
     let bestN = 0;
     let finished = false;
-    let runStart = performance.now();
+    let runStart = nowMs();
     const timers = [];
     const clearTimers = () => { timers.forEach((id) => window.clearTimeout(id)); timers.length = 0; };
     const later = (fn, ms) => { const id = window.setTimeout(fn, ms); timers.push(id); return id; };
 
-    const rampNow = () => (isSurvival ? survivalRamp(performance.now() - runStart) : 0);
+    const rampNow = () => (isSurvival ? survivalRamp(nowMs() - runStart) : 0);
 
     const setNode = (mesh, hex, emissive) => {
       mesh.material.color.setHex(hex);
@@ -473,7 +476,7 @@ export default function Brixton3DProto({
         solvedN = 0; streakN = 0; scoreN = 0; attemptsN = 0; bestN = 0;
         awardMetricRef.current = 0;
         setSolved(0); setAttempts(0); setStreak(0); setScore(0);
-        runStart = performance.now();
+        runStart = nowMs();
         setRunning(true);
         buildPattern();
         moveMarker(demoPath[0]);
@@ -505,9 +508,9 @@ export default function Brixton3DProto({
   // Survival 60s countdown → over
   useEffect(() => {
     if (!running || !isSurvival) return undefined;
-    const start = performance.now();
+    const start = nowMs();
     const id = window.setInterval(() => {
-      const left = Math.max(0, Math.ceil((SURVIVAL_MS - (performance.now() - start)) / 1000));
+      const left = Math.max(0, Math.ceil((SURVIVAL_MS - (nowMs() - start)) / 1000));
       setTimeLeft(left);
       if (left <= 0) {
         window.clearInterval(id);

@@ -8,6 +8,9 @@ import { survivalTier } from '../../../../shared/survival';
 import { clamp } from '../../../../../../lib/math';
 import { genGate, levelCfg } from './index';
 import '../../../../shared/c3dProto.css';
+// nowMs() = performance.now() minus paused time, so the pause menu really
+// stops this game's clock. See shared/pauseStore.js.
+import { nowMs } from '../../../../shared/pauseStore';
 
 /*
  * MathGatesBoard2D — the lane runner.
@@ -365,7 +368,7 @@ export default function MathGatesBoard2D({
      * The id is a local here, so a cleanup can only ever cancel its own frame.
      */
     let rafId = 0;
-    let last = performance.now();
+    let last = nowMs();
     const tick = (now) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;

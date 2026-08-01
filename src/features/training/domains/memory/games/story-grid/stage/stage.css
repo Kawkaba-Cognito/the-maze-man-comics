@@ -1,25 +1,25 @@
 /*
  * Story Time · Stage — the universe look.
  *
- * Deliberately the app's cosmic language, not the detective's noir: black void,
- * gold accent, cream type, soft nebula washes. The 3D stage owns the sky, so
- * every panel here floats OVER it on translucent glass rather than boxing it in
- * — the story's world stays visible while you try to recall it.
+ * The app's light "Tide" surface — the same one Cancellation plays on. The 3D
+ * stage owns the picture, so every panel here floats OVER it on translucent
+ * glass rather than boxing it in — the story's world stays visible while you
+ * try to recall it.
  */
 .sgs {
-    /* Aliased to the shared void-mode tokens (styles/tokens.css). */
+    /* Aliased to the .sgs light-surface tokens (styles/tokens.css). */
     --sgs-gold: var(--accent);
     --sgs-cream: var(--ink);
     --sgs-dim: var(--ink-dim);
-    --sgs-glass: rgba(10, 10, 18, 0.72);
+    --sgs-glass: rgba(255, 255, 255, 0.78);
     position: fixed;
     inset: 0;
     z-index: 40;
     display: flex;
     flex-direction: column;
-    /* Tide deep — was #05050b, a near-black of its own. The per-beat SKIES in
-       schema.js paint the stage itself; this is the frame around it. */
-    background: var(--play-surface-deep-flat);
+    /* Tide LIGHT — the same surface Cancellation plays on. The per-beat SKIES
+       in schema.js paint the stage itself; this is the frame around it. */
+    background: var(--play-surface);
     color: var(--sgs-cream);
     font-family: 'Outfit', system-ui, sans-serif;
     overflow: hidden;
@@ -41,7 +41,7 @@
     justify-content: space-between;
     gap: 10px;
     padding: 10px 12px;
-    background: linear-gradient(180deg, rgba(5, 5, 11, 0.92), rgba(5, 5, 11, 0));
+    background: linear-gradient(180deg, rgba(219, 230, 240, 0.95), rgba(219, 230, 240, 0));
 }
 
 .sgs-top-right {
@@ -55,8 +55,8 @@
     font-size: 0.78rem;
     font-weight: 700;
     color: var(--sgs-cream);
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(232, 172, 78, 0.34);
+    background: rgba(19, 30, 40, 0.06);
+    border: 1px solid rgba(19, 30, 40, 0.18);
     border-radius: 999px;
     padding: 5px 12px;
     cursor: pointer;
@@ -76,14 +76,17 @@
 .sgs-stage-host {
     position: relative;
     z-index: 0;
-    /* Capped rather than flex:1 — an open-ended stage used to claim nearly the
-       whole desktop viewport for two distant, small figures on an empty disc,
-       crowding out the narration/transport controls that are the actually
-       functional part of watch. A fixed band keeps the scene readable as
-       context without it swallowing the screen. */
-    flex: 0 1 clamp(220px, 42vh, 380px);
-    min-height: 0;
-    border-bottom: 1px solid rgba(232, 172, 78, 0.16);
+    /* The scene absorbs the leftover height, up to a cap.
+       It was `flex: 0 1 clamp(220px, 42vh, 380px)` — a fixed band — while
+       .sgs-watch below took flex:1 and CENTRED its content. On a desktop that
+       put ~85px of dead space above the narration and another ~85px below the
+       transport row, with the picture squeezed into a strip between them. The
+       cap stays (an unbounded stage really did swallow the screen), but the
+       spare height now goes to the picture instead of becoming padding. */
+    flex: 1 1 auto;
+    min-height: clamp(200px, 34vh, 300px);
+    max-height: 60vh;
+    border-bottom: 1px solid rgba(19, 30, 40, 0.12);
 }
 
 .sgs-stage {
@@ -95,7 +98,7 @@
    the point of staging in 3D is that the context is still there at retrieval. */
 .sgs-stage-host.recalling {
     flex: 0 0 clamp(150px, 24vh, 240px);
-    filter: saturate(0.6) brightness(0.42);
+    filter: saturate(0.55) brightness(1.06) contrast(0.86);
     transition: filter 420ms ease;
 }
 
@@ -155,7 +158,7 @@
     padding: 9px 15px;
     text-align: center;
     pointer-events: none;
-    background: rgba(5, 5, 11, 0.72);
+    background: rgba(255, 255, 255, 0.82);
     border-inline-start: 3px solid var(--who, var(--sgs-gold));
     border-radius: 11px;
     backdrop-filter: blur(3px);
@@ -175,7 +178,7 @@
     line-height: 1.4;
     font-style: italic;
     color: var(--sgs-cream);
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.7);
 }
 
 @keyframes sgs-sub-in {
@@ -191,7 +194,7 @@
     inset: 0;
     z-index: 3;
     pointer-events: none;
-    background: #05050b;
+    background: var(--play-surface-flat, #b3cadd);
     opacity: 0;
     transition: opacity 200ms ease;
 }
@@ -206,16 +209,14 @@
 .sgs-watch {
     position: relative;
     z-index: 2;
-    /* flex:1 + centered content, not flex:none — on any viewport taller than
-       stage+narration+controls combined (most desktop windows), a fixed-size
-       watch panel left the leftover height as dead black space below the
-       transport row instead of using it. Centering what's left balances it
-       instead of dumping it all at the bottom. */
-    flex: 1;
+    /* Natural height, sitting directly under the picture. The stage above now
+       takes the leftover space (see .sgs-stage-host), so this no longer needs
+       to absorb it by centring in an oversized box. */
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 12px;
     overflow-y: auto;
     padding: 15px 16px calc(18px + env(safe-area-inset-bottom));
@@ -261,7 +262,7 @@
     max-width: 52ch;
     padding: 8px 14px;
     border-inline-start: 3px solid var(--sgs-gold);
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(19, 30, 40, 0.05);
     border-radius: 10px;
     font-style: italic;
 }
@@ -339,7 +340,7 @@
     height: 40px;
     border-radius: 50%;
     color: var(--sgs-cream);
-    background: rgba(255, 255, 255, 0.07);
+    background: rgba(19, 30, 40, 0.07);
     border: 1px solid rgba(255, 255, 255, 0.18);
     cursor: pointer;
 }
@@ -359,7 +360,7 @@
     font-size: 1.05rem;
     background: linear-gradient(180deg, #e8ac4e, #c9923a);
     border-color: rgba(90, 60, 15, 0.5);
-    color: #1a1208;
+    color: #131e28;
 }
 
 /* ── retrieval panels ───────────────────────────────────────────────── */
@@ -450,7 +451,7 @@
     font-weight: 600;
     text-align: start;
     color: var(--sgs-cream);
-    background: rgba(255, 255, 255, 0.07);
+    background: rgba(19, 30, 40, 0.07);
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 11px;
     padding: 9px 13px;
@@ -564,7 +565,7 @@
     padding: 7px 11px;
     border-radius: 10px;
     font-size: 0.92rem;
-    background: rgba(255, 255, 255, 0.045);
+    background: rgba(19, 30, 40, 0.045);
     border-inline-start: 3px solid transparent;
 }
 
@@ -616,7 +617,7 @@
     font-weight: 800;
     font-size: 0.95rem;
     color: var(--sgs-cream);
-    background: rgba(255, 255, 255, 0.07);
+    background: rgba(19, 30, 40, 0.07);
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 12px;
     padding: 11px 22px;
@@ -626,7 +627,7 @@
 .sgs-btn--go {
     background: linear-gradient(180deg, #e8ac4e, #c9923a);
     border-color: rgba(90, 60, 15, 0.5);
-    color: #1a1208;
+    color: #131e28;
 }
 
 .sgs-btn:disabled {

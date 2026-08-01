@@ -38,6 +38,13 @@ jobs:
       - name: Validate rush-hour reference solutions
         run: npm run validate:rh
 
+      # Ratchet, not a clean-room check: fails only when design drift gets WORSE
+      # than scripts/design-baseline.json. See the header of audit-design.mjs.
+      # If this fails, a game gained a hardcoded colour (or similar) — fix it or
+      # deliberately raise the ceiling with `npm run audit:design -- --update`.
+      - name: Audit design drift (ratchet)
+        run: npm run audit:design
+
       - name: Build
         run: npm run build
 

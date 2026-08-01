@@ -125,11 +125,27 @@ export const storyRuntime = (story, isAr) =>
  * lightest and coolest, night the deepest — so the cue survives while the stage
  * stops being a sixth colour scheme.
  */
+/*
+ * Rewritten onto Tide's LIGHT end 2026-08-01, with .sgs (see tokens.css).
+ *
+ * These were four DARK skies for a black stage. The time-of-day cue is still
+ * here and still non-verbal — it is what the ordering task leans on — but it is
+ * now carried by LIGHTNESS within one blue rather than by four different dark
+ * hues: noon is the brightest and most open, night the deepest. Nothing runs
+ * into brown.
+ *
+ * `ground` is the disc the cast stands on: kept a step darker than `bot` at
+ * every hour so the figures always have a surface under them to read against.
+ */
+/* These are WYSIWYG: the sky shader now reads them in linear space (see the
+ * uniform note in StoryStage3D.jsx), so what is written here is what renders.
+ * They sit on Tide light — noon at the top stop, night a shade under the low
+ * stop — so the picture and the page around it are the same sky. */
 export const SKIES = {
-  dawn: { top: 0x2a3040, bot: 0x8a6553, key: 0xffd2a1, rim: 0x6f7fa0, ground: 0x2f2b33 },
-  noon: { top: 0x3d4f66, bot: 0xa88a6a, key: 0xfff3d8, rim: 0x8fb0c8, ground: 0x3a3b40 },
-  dusk: { top: 0x232b3a, bot: 0x6d5648, key: 0xffb277, rim: 0x8a7fa0, ground: 0x2a2730 },
-  night: { top: 0x121826, bot: 0x332c33, key: 0xbfd2ff, rim: 0x5a6fa0, ground: 0x161a26 },
+  dawn: { top: 0xd7e3ef, bot: 0xc2d5e5, key: 0xfff0dc, rim: 0xc2d3e5, ground: 0xccdae6 },
+  noon: { top: 0xe6f0f8, bot: 0xccdae6, key: 0xfffaf0, rim: 0xd0e0ee, ground: 0xdbe7f1 },
+  dusk: { top: 0xc4d5e5, bot: 0xadc3d8, key: 0xffe2c4, rim: 0xb0c4d9, ground: 0xb9cbdd },
+  night: { top: 0xafc3d6, bot: 0x9cb9d2, key: 0xdfeaff, rim: 0x93aac4, ground: 0xa6bcd0 },
 };
 
 export const SKY_IDS = Object.keys(SKIES);

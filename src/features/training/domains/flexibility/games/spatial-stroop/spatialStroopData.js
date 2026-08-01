@@ -8,7 +8,7 @@
  *
  *   • point — answer the direction the arrow POINTS
  *   • side  — answer the side the arrow SITS on
- *   • color — answer by COLOUR (red → left, green → right)
+ *   • color — answer by COLOUR (blue → left, amber → right)
  *
  * Twists that scale with difficulty: incongruent trials (irrelevant attribute
  * pulls the wrong way), flanker arrows (Eriksen distractors), and REVERSE
@@ -25,8 +25,24 @@ export const STROOP_LEVELS_PER_TIER = 100;
 export const STROOP_DIFF_KEYS = ['easy', 'medium', 'hard'];
 export const STROOP_FREE_LIVES = 3;
 
-export const STROOP_COLORS = ['red', 'green'];
-export const COLOR_SIDE = { red: 'left', green: 'right' };
+/*
+ * The two stimulus colours.
+ *
+ * These were 'red' and 'green' until 2026-08-01. Colour here is the TASK — the
+ * player is SCORED on mapping colour to a side — and red/green is precisely the
+ * pair that red-green colour deficiency (~8% of men) collapses into one hue. A
+ * deuteranope was not playing a harder version of this game; they were guessing
+ * on every colour-rule trial, and the score said "poor cognitive flexibility".
+ *
+ * They are now the first two Okabe-Ito entries (see GAME_STIMULUS in
+ * gamePalette.js, which already named Spatial Stroop as a game that must use
+ * that set). Blue vs amber stays separable under every common CVD type.
+ *
+ * The keys are colour NAMES because the UI says them out loud ("blue → LEFT").
+ * If you re-hue, rename the key too, or the hint text starts lying.
+ */
+export const STROOP_COLORS = ['blue', 'amber'];
+export const COLOR_SIDE = { blue: 'left', amber: 'right' };
 
 export const STROOP_POWERUP_KEYS = ['shield', 'slowmo', 'x2', 'freeze'];
 export const BLITZ_TRIALS = 10;
@@ -113,10 +129,10 @@ export function makeProbe(rng, opts = {}) {
   if (useColor) {
     // bias colour to be congruent on congruent trials, conflicting on incongruent
     probe.color = incong
-      ? COLOR_SIDE.red === dir ? 'green' : 'red'
-      : COLOR_SIDE.red === dir ? 'red' : 'green';
+      ? COLOR_SIDE.blue === dir ? 'amber' : 'blue'
+      : COLOR_SIDE.blue === dir ? 'blue' : 'amber';
     // small extra randomisation so colour isn't perfectly predictable
-    if (rng() < 0.25) probe.color = rng() < 0.5 ? 'red' : 'green';
+    if (rng() < 0.25) probe.color = rng() < 0.5 ? 'blue' : 'amber';
   }
   probe.reverse = reverseRate > 0 && rng() < reverseRate;
   probe.flankerDir = flankerRate > 0 && rng() < flankerRate ? (rng() < 0.5 ? dir : opposite(dir)) : null;

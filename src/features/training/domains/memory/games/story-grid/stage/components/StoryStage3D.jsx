@@ -33,8 +33,15 @@ const ARC = 0.35;
  * longer a full-bleed backdrop but a ~40vh strip, so 0.30 of THAT is roughly a
  * third of what the same actor used to occupy on screen.
  */
-const FILL_LANDSCAPE = 0.3;
-const FILL_PORTRAIT = 0.24;
+/* 0.52 / 0.42, up from 0.30 / 0.24 (2026-08-01).
+ *
+ * At 0.30 a rig occupied under a third of the stage's height — about 110px of a
+ * 380px band — so the cast read as distant specks on an empty disc, which is
+ * most of why this screen looked unfinished. These are the characters the whole
+ * game is about; they should own the frame. The comment above still holds: this
+ * is the ONLY knob, because the rigs are never scaled. */
+const FILL_LANDSCAPE = 0.52;
+const FILL_PORTRAIT = 0.42;
 
 // Below this, actors visibly collide and the line stops reading as a group;
 // past it we step the camera back rather than squash the staging further.
@@ -86,9 +93,16 @@ export default function StoryStage3D({
 
     let disposed = false;
     const boot = bootC3dScene(wrap, {
+      // fitHalf is inert here — this stage drives camera.position itself in the
+      // tick below, solving distance from FILL_LANDSCAPE. That constant, not
+      // this one, is what sizes the cast.
       fov: 40,
       fitHalf: 3.4,
       alpha: false,
+      // Tide's LIGHT end, matching .sgs in tokens.css. The stage's own sky is a
+      // finite plane, so wherever the camera sees past it the renderer's clear
+      // colour shows — it has to be the same end of the ramp as the sky, or
+      // that gap becomes a fringe of the wrong depth around the picture.
       // Kept simple on purpose: this stage now renders at a fraction of its old
       // footprint (see stage.css), and bloom + real-time shadows were the two
       // priciest, least-necessary passes for a scene that small — cut for a
@@ -130,15 +144,30 @@ export default function StoryStage3D({
     // ── sky: a big backdrop plane we recolour per beat ────────────────────
     const skyMat = new THREE.ShaderMaterial({
       uniforms: {
-        top: { value: new THREE.Color(SKIES.night.top) },
-        bot: { value: new THREE.Color(SKIES.night.bot) },
+        /* setHex(..., LinearSRGBColorSpace), NOT new THREE.Color(hex).
+         *
+         * This is a RAW ShaderMaterial: it writes gl_FragColor itself and so
+         * never gets three's <colorspace_fragment> chunk, which is what would
+         * normally convert linear back to sRGB on the way out. The default
+         * `new THREE.Color(hex)` converts the hex sRGB -> LINEAR on the way in,
+         * and that linear number was then written to the framebuffer verbatim
+         * and displayed as if it were sRGB — every sky came out roughly a fifth
+         * darker than authored. Reading the hex as already-linear cancels the
+         * conversion, so the SKIES values in schema.js are what you see. */
+        top: { value: new THREE.Color().setHex(SKIES.night.top, THREE.LinearSRGBColorSpace) },
+        bot: { value: new THREE.Color().setHex(SKIES.night.bot, THREE.LinearSRGBColorSpace) },
       },
       vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
       fragmentShader: 'uniform vec3 top; uniform vec3 bot; varying vec2 vUv; void main(){ gl_FragColor=vec4(mix(bot,top,pow(vUv.y,0.85)),1.0); }',
       depthWrite: false,
       side: THREE.DoubleSide,
     });
-    const sky = own(new THREE.Mesh(new THREE.PlaneGeometry(46, 26), skyMat));
+    /* Big enough to always outrun the frustum. At 46x26 it did not: the stage
+     * is a wide letterbox, and at this aspect the visible width 24 units out is
+     * ~90, so the plane's own edges were on screen as a slanted trapezoid with
+     * the clear colour around it. One extra quad is free; guessing the exact
+     * cover size is not. */
+    const sky = own(new THREE.Mesh(new THREE.PlaneGeometry(200, 60), skyMat));
     sky.position.set(0, 3.2, -12);
     sky.renderOrder = -10;
 
@@ -231,7 +260,9 @@ export default function StoryStage3D({
 
       // Cross-fade the whole palette so a change of time of day reads as a
       // mood shift rather than a cut.
-      skyTop.set(pal.top); skyBot.set(pal.bot);
+      // Linear-space read, matching the uniform init above — see the note there.
+      skyTop.setHex(pal.top, THREE.LinearSRGBColorSpace);
+      skyBot.setHex(pal.bot, THREE.LinearSRGBColorSpace);
       skyMat.uniforms.top.value.lerp(skyTop, Math.min(1, dt * 2.2));
       skyMat.uniforms.bot.value.lerp(skyBot, Math.min(1, dt * 2.2));
       keyCol.set(pal.key); key.color.lerp(keyCol, Math.min(1, dt * 2.2));

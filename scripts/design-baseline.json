@@ -1,0 +1,175 @@
+{
+  "rules": {
+    "raw-colour": 488,
+    "conditional-background": 1,
+    "stacked-backdrops": 3
+  },
+  "files": {
+    "src/features/training/domains/attention/games/cancellation/index.jsx": {
+      "raw-colour": 1
+    },
+    "src/features/training/domains/attention/games/mot/index.jsx": {
+      "raw-colour": 19
+    },
+    "src/features/training/domains/attention/games/mot/MotBoard2D.jsx": {
+      "raw-colour": 1
+    },
+    "src/features/training/domains/attention/games/train-switch/CarPark3DProto.jsx": {
+      "raw-colour": 20
+    },
+    "src/features/training/domains/attention/games/train-switch/index.jsx": {
+      "raw-colour": 22
+    },
+    "src/features/training/domains/flexibility/games/brixton/Brixton3DProto.jsx": {
+      "raw-colour": 6
+    },
+    "src/features/training/domains/flexibility/games/brixton/index.jsx": {
+      "raw-colour": 4
+    },
+    "src/features/training/domains/flexibility/games/spatial-stroop/index.jsx": {
+      "raw-colour": 11
+    },
+    "src/features/training/domains/flexibility/games/spatial-stroop/SpatialStroop3DBoard.jsx": {
+      "raw-colour": 2
+    },
+    "src/features/training/domains/flexibility/games/spatial-stroop/StroopModes.jsx": {
+      "raw-colour": 1
+    },
+    "src/features/training/domains/flexibility/games/wisconsin/index.jsx": {
+      "raw-colour": 5
+    },
+    "src/features/training/domains/flexibility/games/wisconsin/Wisconsin3DProto.jsx": {
+      "raw-colour": 7
+    },
+    "src/features/training/domains/language/games/odd-one-out/index.jsx": {
+      "raw-colour": 16
+    },
+    "src/features/training/domains/language/games/synonyms/index.jsx": {
+      "raw-colour": 3
+    },
+    "src/features/training/domains/memory/games/memo-span/index.jsx": {
+      "raw-colour": 11
+    },
+    "src/features/training/domains/memory/games/memoryStimulusTexture.js": {
+      "raw-colour": 30
+    },
+    "src/features/training/domains/memory/games/nback/NBack3DProto.jsx": {
+      "raw-colour": 6
+    },
+    "src/features/training/domains/memory/games/paired-associates/PairedAssociates3DProto.jsx": {
+      "raw-colour": 5
+    },
+    "src/features/training/domains/memory/games/story-grid/index.jsx": {
+      "raw-colour": 46,
+      "conditional-background": 1
+    },
+    "src/features/training/domains/memory/games/story-grid/stage/components/StoryStage3D.jsx": {
+      "raw-colour": 3
+    },
+    "src/features/training/domains/memory/games/story-grid/stage/schema.js": {
+      "raw-colour": 4
+    },
+    "src/features/training/domains/memory/games/story-grid/stage/stage.css": {
+      "raw-colour": 36,
+      "stacked-backdrops": 1
+    },
+    "src/features/training/domains/reasoning/games/detective/CaseFileEngine.jsx": {
+      "raw-colour": 4
+    },
+    "src/features/training/domains/reasoning/games/detective/index.jsx": {
+      "raw-colour": 1
+    },
+    "src/features/training/domains/reasoning/games/detective/investigations/quick1.js": {
+      "raw-colour": 6
+    },
+    "src/features/training/domains/reasoning/games/detective/investigations/quick2.js": {
+      "raw-colour": 6
+    },
+    "src/features/training/domains/reasoning/games/detective/investigations/quick3.js": {
+      "raw-colour": 6
+    },
+    "src/features/training/domains/reasoning/games/detective/investigations/tier1.js": {
+      "raw-colour": 3
+    },
+    "src/features/training/domains/reasoning/games/detective/investigations/tier2.js": {
+      "raw-colour": 3
+    },
+    "src/features/training/domains/reasoning/games/detective/investigations/tier3.js": {
+      "raw-colour": 3
+    },
+    "src/features/training/domains/reasoning/games/detective/noir/cases/encore.js": {
+      "raw-colour": 4
+    },
+    "src/features/training/domains/reasoning/games/detective/noir/cases/longRain.js": {
+      "raw-colour": 5
+    },
+    "src/features/training/domains/reasoning/games/detective/noir/cases/observatory.js": {
+      "raw-colour": 3
+    },
+    "src/features/training/domains/reasoning/games/detective/noir/components/AccusationBoard.jsx": {
+      "raw-colour": 1
+    },
+    "src/features/training/domains/reasoning/games/detective/noir/components/Cutscene.jsx": {
+      "raw-colour": 1
+    },
+    "src/features/training/domains/reasoning/games/detective/noir/components/Interrogation3D.jsx": {
+      "raw-colour": 23
+    },
+    "src/features/training/domains/reasoning/games/detective/noir/components/Weather.jsx": {
+      "raw-colour": 1
+    },
+    "src/features/training/domains/reasoning/games/detective/noir/noir.css": {
+      "raw-colour": 74,
+      "stacked-backdrops": 1
+    },
+    "src/features/training/domains/reasoning/games/detective/prototypes/components/AssistantNudge.jsx": {
+      "raw-colour": 2
+    },
+    "src/features/training/domains/reasoning/games/detective/prototypes/components/DeductionBoard.jsx": {
+      "raw-colour": 8
+    },
+    "src/features/training/domains/reasoning/games/detective/prototypes/components/LocationPolaroid.jsx": {
+      "raw-colour": 4
+    },
+    "src/features/training/domains/reasoning/games/detective/prototypes/components/ProofChainPreview.jsx": {
+      "raw-colour": 4
+    },
+    "src/features/training/domains/reasoning/games/detective/prototypes/components/VerdictFilePage.jsx": {
+      "raw-colour": 2
+    },
+    "src/features/training/domains/reasoning/games/detective/prototypes/ProtoEngine.jsx": {
+      "raw-colour": 27
+    },
+    "src/features/training/domains/reasoning/games/detective/prototypes/protoUtils.js": {
+      "raw-colour": 1
+    },
+    "src/features/training/domains/reasoning/games/raven-matrices/index.jsx": {
+      "raw-colour": 1
+    },
+    "src/features/training/domains/reasoning/games/raven-matrices/Raven3DProto.jsx": {
+      "raw-colour": 4
+    },
+    "src/features/training/domains/reasoning/games/raven-matrices/ravenEngine.js": {
+      "raw-colour": 1
+    },
+    "src/features/training/domains/reasoning/games/rush-hour/index.jsx": {
+      "raw-colour": 6,
+      "stacked-backdrops": 1
+    },
+    "src/features/training/domains/speed/games/math-gates/index.jsx": {
+      "raw-colour": 10
+    },
+    "src/features/training/domains/speed/games/math-gates/MathGatesBoard2D.jsx": {
+      "raw-colour": 2
+    },
+    "src/features/training/domains/speed/games/speed-match/index.jsx": {
+      "raw-colour": 1
+    },
+    "src/features/training/domains/speed/games/trail-making/index.jsx": {
+      "raw-colour": 11
+    },
+    "src/features/training/domains/speed/games/trail-making/TrailBoard2D.jsx": {
+      "raw-colour": 1
+    }
+  }
+}

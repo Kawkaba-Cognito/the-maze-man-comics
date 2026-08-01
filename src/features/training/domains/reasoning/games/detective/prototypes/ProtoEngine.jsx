@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import OpeningSequence from '../../../../../shared/scene/OpeningSequence';
 import SceneBoard from '../../../../../shared/scene/SceneBoard';
 import SpeechBubble from '../../../../../shared/scene/SpeechBubble';
+import CastPortrait, { castIdFor } from '../../../../../shared/CastPortrait';
 import { CASE_FILE_CONFIG } from './caseFileConfig';
 import DeductionBoard from './components/DeductionBoard';
 import ProofChainPreview from './components/ProofChainPreview';
@@ -58,6 +59,15 @@ export default function ProtoEngine({
 
   const locations = useMemo(() => sceneLocations(caseData), [caseData]);
   const people = useMemo(() => [...caseData.suspects, ...(caseData.witnesses || [])], [caseData]);
+  /* Which 3D rig stands in for each authored person. Computed once per case and
+   * from the FULL cast list, so a suspect keeps the same face in the line-up,
+   * the interview list and the accusation board — and so two people in one case
+   * never share a face. See castIdFor in CastPortrait.jsx. */
+  const peopleIds = useMemo(() => people.map((p) => p.id), [people]);
+  const castOf = useCallback(
+    (personId) => castIdFor(personId, peopleIds),
+    [peopleIds],
+  );
   const suspectIds = useMemo(() => new Set(caseData.suspects.map((s) => s.id)), [caseData]);
   const foundSet = useMemo(() => new Set(found), [found]);
   const doneSet = useMemo(() => doneConfronts, [doneConfronts]);
@@ -230,7 +240,14 @@ export default function ProtoEngine({
       <div style={S.suspectGrid}>
         {caseData.suspects.map((s) => (
           <div key={s.id} style={S.suspectCard}>
-            <div style={S.portrait}>{s.e}</div>
+            {/* A slight yaw per person so a line-up is not identical front-on stares. */}
+            <CastPortrait
+              castId={castOf(s.id)}
+              size={44}
+              turn={((peopleIds.indexOf(s.id) % 3) - 1) * 0.28}
+              fallback={s.e}
+              style={S.portrait}
+            />
             <div style={S.suspectMeta}>
               <span style={S.suspectName}>{L(s.name, isAr)}</span>
               <span style={S.suspectDesc}>{L(s.role, isAr)}</span>
@@ -386,7 +403,13 @@ export default function ProtoEngine({
                     return (
                       <div key={p.id} style={{ ...S.personBlock, ...(cfg.transcriptUI ? S.transcriptBlock : null) }}>
                         <button type="button" style={{ ...S.reportCard, ...(done ? S.reportCardDone : null) }} onClick={() => openReport(p)}>
-                          <span style={S.portraitSm}>{p.e}</span>
+                          <CastPortrait
+                            castId={castOf(p.id)}
+                            size={36}
+                            turn={((peopleIds.indexOf(p.id) % 3) - 1) * 0.28}
+                            fallback={p.e}
+                            style={S.portraitSm}
+                          />
                           <span style={S.locText}>
                             <span style={S.locName}>{L(p.name, isAr)}</span>
                             <span style={S.suspectDesc}>{L(p.role, isAr)}</span>
@@ -475,7 +498,7 @@ export default function ProtoEngine({
             </div>
             {verdict.partial && <p style={S.partialSub}>{t.partialSub}</p>}
             <div style={S.truth}>
-              <span style={S.portraitSm}>{culpritOpt.e}</span>
+              <CastPortrait castId={castOf(culpritOpt.id)} size={36} turn={((peopleIds.indexOf(culpritOpt.id) % 3) - 1) * 0.28} fallback={culpritOpt.e} style={S.portraitSm} />
               <span>{verdict.win ? t.culpritWas(L(culpritOpt.name, isAr)) : t.itWas(L(culpritOpt.name, isAr))}</span>
             </div>
             <div style={S.explain}>
@@ -527,7 +550,7 @@ export default function ProtoEngine({
         <div style={S.dim} onClick={() => setOverlay(null)}>
           <div style={S.sheetCard} onClick={(e) => e.stopPropagation()}>
             <div style={S.reportHead}>
-              <span style={S.portrait}>{overlay.person.e}</span>
+              <CastPortrait castId={castOf(overlay.person.id)} size={44} turn={((peopleIds.indexOf(overlay.person.id) % 3) - 1) * 0.28} fallback={overlay.person.e} style={S.portrait} />
               <div>
                 <h3 style={S.sheetTitle}>{L(overlay.person.name, isAr)}</h3>
                 <p style={S.reportRole}>{L(overlay.person.role, isAr)}</p>
@@ -547,7 +570,7 @@ export default function ProtoEngine({
         <div style={S.dim} onClick={() => setOverlay(null)}>
           <div style={S.sheetCard} onClick={(e) => e.stopPropagation()}>
             <div style={S.reportHead}>
-              <span style={S.portrait}>{overlay.person.e}</span>
+              <CastPortrait castId={castOf(overlay.person.id)} size={44} turn={((peopleIds.indexOf(overlay.person.id) % 3) - 1) * 0.28} fallback={overlay.person.e} style={S.portrait} />
               <h3 style={S.sheetTitle}>{L(overlay.person.name, isAr)}</h3>
             </div>
             {showSpeech ? (
@@ -580,7 +603,7 @@ export default function ProtoEngine({
                   {caseData.suspects.map((s) => (
                     <button key={s.id} type="button" style={{ ...S.accuseCard, ...(accuseSid === s.id ? S.accuseCardOn : null) }}
                       onClick={() => { playSfx?.('click'); setAccuseSid(s.id); }}>
-                      <span style={S.portraitSm}>{s.e}</span>
+                      <CastPortrait castId={castOf(s.id)} size={36} turn={((peopleIds.indexOf(s.id) % 3) - 1) * 0.28} fallback={s.e} style={S.portraitSm} />
                       <span style={S.suspectName}>{L(s.name, isAr)}</span>
                     </button>
                   ))}
@@ -654,7 +677,7 @@ export default function ProtoEngine({
                   style={S.accuseCard}
                   onClick={() => { setOverlay(null); startConfront(person, question); }}
                 >
-                  <span style={S.portraitSm}>{person.e}</span>
+                  <CastPortrait castId={castOf(person.id)} size={36} turn={((peopleIds.indexOf(person.id) % 3) - 1) * 0.28} fallback={person.e} style={S.portraitSm} />
                   <span style={S.suspectName}>{L(person.name, isAr)}</span>
                 </button>
               ))}
@@ -688,7 +711,7 @@ const S = {
     cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
   },
   tabOn: { background: 'var(--surface-raised)', color: 'var(--ink)', borderColor: 'var(--line)' },
-  tabCount: { fontSize: 9, fontWeight: 700, color: '#b9842f' },
+  tabCount: { fontSize: 9, fontWeight: 700, color: '#996b22' },
   tabBody: { flex: 1, overflowY: 'auto', padding: '12px 14px', background: 'var(--surface-raised)', border: '1.5px solid var(--line)', margin: '0 10px', borderRadius: '0 0 14px 14px' },
   tabBodyFile: { background: 'var(--surface-raised)', borderColor: 'var(--ink-outline)', boxShadow: 'inset 0 0 0 1px rgba(26,18,8,0.06)' },
   viewToggle: { display: 'flex', gap: 6, marginBottom: 10 },
@@ -696,7 +719,7 @@ const S = {
     flex: 1, padding: '8px 10px', borderRadius: 10, border: '1.5px solid var(--line)',
     background: 'var(--surface-raised)', fontWeight: 800, fontSize: 12, color: 'var(--ink-dim)', cursor: 'pointer',
   },
-  viewBtnOn: { background: '#fff1d8', borderColor: '#b9842f', color: 'var(--ink)' },
+  viewBtnOn: { background: '#e7edf3', borderColor: '#996b22', color: 'var(--ink)' },
   polaroidGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 },
   transcriptHead: {
     fontWeight: 900, fontSize: 11, color: 'var(--ink-dim)', letterSpacing: 1, textTransform: 'uppercase',
@@ -706,40 +729,40 @@ const S = {
   noteRowWrap: { display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 },
   sourceChip: {
     alignSelf: 'flex-start', fontWeight: 800, fontSize: 9, color: 'var(--ink-dim)',
-    background: '#fff1d8', border: '1px solid #e3c489', borderRadius: 999, padding: '2px 8px',
+    background: '#e7edf3', border: '1px solid #c3d3e0', borderRadius: 999, padding: '2px 8px',
     textTransform: 'uppercase', letterSpacing: 0.4,
   },
   useClueBtn: {
-    marginInlineStart: 12, padding: '8px 12px', borderRadius: 10, border: '1.5px solid #b9842f',
-    background: '#fff1d8', color: 'var(--ink-dim)', fontWeight: 800, fontSize: 12, cursor: 'pointer', textAlign: 'start',
+    marginInlineStart: 12, padding: '8px 12px', borderRadius: 10, border: '1.5px solid #996b22',
+    background: '#e7edf3', color: 'var(--ink-dim)', fontWeight: 800, fontSize: 12, cursor: 'pointer', textAlign: 'start',
   },
-  accuseBtnLocked: { background: '#a49a88', borderColor: 'var(--ink-dim)', boxShadow: 'none', cursor: 'not-allowed', opacity: 0.85 },
+  accuseBtnLocked: { background: '#8794a2', borderColor: 'var(--ink-dim)', boxShadow: 'none', cursor: 'not-allowed', opacity: 0.85 },
   gateHint: { margin: '6px 0 0', fontWeight: 700, fontSize: 11.5, color: 'var(--ink-dim)', textAlign: 'center' },
   tabIntro: { margin: '0 0 6px', fontWeight: 600, fontSize: 13, color: 'var(--ink-dim)', lineHeight: 1.45 },
-  progressLine: { margin: '0 0 10px', fontWeight: 800, fontSize: 11, color: '#a49a88', textTransform: 'uppercase', letterSpacing: 0.6 },
+  progressLine: { margin: '0 0 10px', fontWeight: 800, fontSize: 11, color: '#8794a2', textTransform: 'uppercase', letterSpacing: 0.6 },
   cardList: { display: 'flex', flexDirection: 'column', gap: 8 },
   personBlock: { display: 'flex', flexDirection: 'column', gap: 4 },
   locCard: {
     display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '12px 14px',
     borderRadius: 12, border: '1.5px solid var(--line)', background: 'var(--surface-raised)', cursor: 'pointer', textAlign: 'start', color: 'inherit', font: 'inherit',
   },
-  locCardDone: { opacity: 0.85, borderColor: '#9ecfb2' },
-  locNum: { flexShrink: 0, width: 22, height: 22, borderRadius: 11, background: '#b9842f', color: '#fff', fontWeight: 900, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  locCardDone: { opacity: 0.85, borderColor: '#b6ccbd' },
+  locNum: { flexShrink: 0, width: 22, height: 22, borderRadius: 11, background: '#996b22', color: '#fff', fontWeight: 900, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   locIcon: { fontSize: 22, flexShrink: 0 },
   locText: { display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1 },
   locName: { fontWeight: 900, fontSize: 14, color: 'var(--ink)' },
-  locAction: { fontWeight: 700, fontSize: 11.5, color: '#b9842f' },
+  locAction: { fontWeight: 700, fontSize: 11.5, color: '#996b22' },
   reportCard: {
     display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '12px 14px',
     borderRadius: 12, border: '1.5px solid var(--line)', background: 'var(--surface-raised)', cursor: 'pointer', textAlign: 'start', color: 'inherit', font: 'inherit',
   },
-  reportCardDone: { borderColor: '#9ecfb2' },
+  reportCardDone: { borderColor: '#b6ccbd' },
   confrontBtn: {
     marginInlineStart: 12, padding: '8px 12px', borderRadius: 10, border: '1.5px solid var(--danger)',
-    background: '#fdf0ee', color: 'var(--danger)', fontWeight: 800, fontSize: 12, cursor: 'pointer', textAlign: 'start',
+    background: '#eddcda', color: 'var(--danger)', fontWeight: 800, fontSize: 12, cursor: 'pointer', textAlign: 'start',
   },
   confrontDone: { marginInlineStart: 12, fontWeight: 700, fontSize: 11, color: 'var(--success)' },
-  readMark: { flexShrink: 0, fontWeight: 800, fontSize: 10.5, color: '#b9842f' },
+  readMark: { flexShrink: 0, fontWeight: 800, fontSize: 10.5, color: '#996b22' },
   tagChip: { alignSelf: 'flex-start', fontWeight: 800, fontSize: 9, color: 'var(--ink-dim)', textTransform: 'uppercase' },
   bottomBar: { padding: '10px 14px calc(12px + env(safe-area-inset-bottom))', flexShrink: 0 },
   accuseBtn: {
@@ -756,12 +779,12 @@ const S = {
     display: 'inline-block', transform: 'rotate(-8deg)', border: '3px solid var(--danger)', color: 'var(--danger)',
     fontFamily: "'Outfit','Cairo',cursive", fontSize: 15, letterSpacing: 1.5, padding: '2px 10px', borderRadius: 6,
   },
-  tierBadge: { fontWeight: 900, fontSize: 11, color: 'var(--ink-dim)', background: '#fff1d8', border: '1.5px solid #e3c489', borderRadius: 999, padding: '3px 10px' },
+  tierBadge: { fontWeight: 900, fontSize: 11, color: 'var(--ink-dim)', background: '#e7edf3', border: '1.5px solid #c3d3e0', borderRadius: 999, padding: '3px 10px' },
   caseTitle: { margin: 0, fontWeight: 900, fontSize: 'clamp(18px, 5vw, 22px)', color: 'var(--ink)', textAlign: 'center' },
   chipRow: { display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' },
-  metaChip: { fontWeight: 800, fontSize: 12, color: 'var(--ink-dim)', background: '#fff1d8', border: '1.5px solid #e3c489', borderRadius: 999, padding: '3px 12px' },
-  setup: { margin: 0, fontWeight: 700, fontSize: 14.5, color: '#3a2c18', lineHeight: 1.55 },
-  sectionHead: { width: '100%', fontSize: 11, fontWeight: 900, color: '#a35a48', textTransform: 'uppercase', letterSpacing: 0.7, marginTop: 4 },
+  metaChip: { fontWeight: 800, fontSize: 12, color: 'var(--ink-dim)', background: '#e7edf3', border: '1.5px solid #c3d3e0', borderRadius: 999, padding: '3px 12px' },
+  setup: { margin: 0, fontWeight: 700, fontSize: 14.5, color: '#131e28', lineHeight: 1.55 },
+  sectionHead: { width: '100%', fontSize: 11, fontWeight: 900, color: '#854c49', textTransform: 'uppercase', letterSpacing: 0.7, marginTop: 4 },
   suspectGrid: { display: 'flex', flexDirection: 'column', gap: 7, width: '100%' },
   suspectCard: { display: 'flex', gap: 10, alignItems: 'center', background: 'var(--surface-raised)', border: '1.5px solid var(--line)', borderRadius: 12, padding: '10px 12px' },
   portrait: { width: 44, height: 44, borderRadius: 999, background: 'var(--surface-raised)', border: '2.5px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 },
@@ -776,8 +799,8 @@ const S = {
   noteIcon: { fontSize: 20, flexShrink: 0 },
   noteBody: { display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 },
   clueName: { fontWeight: 900, fontSize: 13, color: 'var(--ink)' },
-  clueTxt: { fontWeight: 700, fontSize: 12, color: '#5a4a32', lineHeight: 1.45 },
-  emptyNote: { fontWeight: 700, fontSize: 13.5, color: '#a49a88', textAlign: 'center', marginTop: 24 },
+  clueTxt: { fontWeight: 700, fontSize: 12, color: '#3c4249', lineHeight: 1.45 },
+  emptyNote: { fontWeight: 700, fontSize: 13.5, color: '#8794a2', textAlign: 'center', marginTop: 24 },
   dim: { position: 'absolute', inset: 0, background: 'rgba(26,18,8,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 9 },
   sheetCard: {
     width: '100%', maxWidth: 380, background: 'var(--surface-raised)', border: '2.5px solid var(--ink-outline)', borderRadius: 18,
@@ -786,21 +809,21 @@ const S = {
   },
   sheetIcon: { fontSize: 36, textAlign: 'center' },
   sheetTitle: { margin: 0, fontWeight: 900, fontSize: 17, textAlign: 'center', color: 'var(--ink)' },
-  sheetText: { margin: 0, fontWeight: 700, fontSize: 14.5, lineHeight: 1.55, color: '#3a2c18' },
+  sheetText: { margin: 0, fontWeight: 700, fontSize: 14.5, lineHeight: 1.55, color: '#131e28' },
   reportHead: { display: 'flex', gap: 12, alignItems: 'center' },
   reportRole: { margin: '2px 0 0', fontWeight: 700, fontSize: 12, color: 'var(--ink-dim)' },
-  reportBody: { fontWeight: 700, fontSize: 14.5, lineHeight: 1.6, color: '#3a2c18', whiteSpace: 'pre-wrap' },
+  reportBody: { fontWeight: 700, fontSize: 14.5, lineHeight: 1.6, color: '#131e28', whiteSpace: 'pre-wrap' },
   reaction: { margin: 0, fontWeight: 700, fontSize: 13, color: 'var(--ink-dim)', fontStyle: 'italic' },
   accuseSub: { margin: 0, fontWeight: 700, fontSize: 13, color: 'var(--ink-dim)', textAlign: 'center' },
   accuseGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 8, width: '100%' },
   accuseCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '12px 8px', borderRadius: 13, border: '2px solid var(--line)', background: 'var(--surface-raised)', cursor: 'pointer', font: 'inherit' },
-  accuseCardOn: { borderColor: 'var(--danger)', background: '#fdf0ee' },
+  accuseCardOn: { borderColor: 'var(--danger)', background: '#eddcda' },
   proofList: { display: 'flex', flexDirection: 'column', gap: 6 },
   proofChip: {
     padding: '10px 12px', borderRadius: 10, border: '1.5px solid var(--line)', background: 'var(--surface-raised)',
     fontWeight: 700, fontSize: 13, cursor: 'pointer', textAlign: 'start',
   },
-  proofChipOn: { borderColor: 'var(--success)', background: '#eef8f0' },
+  proofChipOn: { borderColor: 'var(--success)', background: '#dbe7de' },
   verdictCard: { width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 8 },
   closedStamp: { transform: 'rotate(-8deg)', border: '3px solid var(--success)', color: 'var(--success)', fontFamily: "'Outfit','Cairo',cursive", fontSize: 16, padding: '2px 12px', borderRadius: 6 },
   verdictTitle: { fontWeight: 900, fontSize: 22, textAlign: 'center' },
@@ -809,10 +832,10 @@ const S = {
   explain: { width: '100%', background: 'var(--surface-raised)', border: '2px solid var(--line)', borderRadius: 14, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 },
   explainHead: { fontWeight: 900, fontSize: 12, color: 'var(--ink-dim)', textTransform: 'uppercase' },
   solStep: { display: 'flex', gap: 9, alignItems: 'flex-start' },
-  solNum: { flexShrink: 0, width: 20, height: 20, borderRadius: 10, background: '#b9842f', color: '#fff', fontWeight: 900, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  solTxt: { fontWeight: 700, fontSize: 13.5, color: '#3a3a3a', lineHeight: 1.45 },
+  solNum: { flexShrink: 0, width: 20, height: 20, borderRadius: 10, background: '#996b22', color: '#fff', fontWeight: 900, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  solTxt: { fontWeight: 700, fontSize: 13.5, color: '#131e28', lineHeight: 1.45 },
   epilogueCard: { width: '100%', background: 'var(--surface-raised)', border: '2px solid var(--line)', borderRadius: 14, padding: '12px 15px' },
-  epilogueText: { margin: 0, fontWeight: 700, fontSize: 14.5, color: '#3a2c18', lineHeight: 1.55 },
+  epilogueText: { margin: 0, fontWeight: 700, fontSize: 14.5, color: '#131e28', lineHeight: 1.55 },
   primary: { padding: '12px 26px', borderRadius: 14, border: '2px solid var(--ink-outline)', background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '3px 3px 0 var(--ink-outline)' },
-  ghostSm: { padding: '9px 14px', borderRadius: 12, border: '2px solid var(--line)', background: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer', color: '#4a3c28' },
+  ghostSm: { padding: '9px 14px', borderRadius: 12, border: '2px solid var(--line)', background: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer', color: '#131e28' },
 };

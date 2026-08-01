@@ -139,7 +139,7 @@ const UI = {
     cuedHint: 'Tap the side the rule asks for — ignore the other attributes.',
     hintPoint: 'Follow the arrow HEAD — tap where it points, not where it sits.',
     hintSide: 'Follow the arrow POSITION — tap the side it sits on, not where it points.',
-    hintColor: 'Match COLOUR only: red → LEFT · green → RIGHT.',
+    hintColor: 'Match COLOUR only: blue → LEFT · amber → RIGHT.',
     reverseHint: 'REVERSE trial — tap the OPPOSITE side of what the rule says.',
     reverseBadge: '⟳ REVERSE — tap the OPPOSITE',
     ansLeft: 'Left',
@@ -157,7 +157,7 @@ const UI = {
     ruleLessons: {
       point: { title: 'New rule: WHERE IT POINTS', body: 'Tap the side the arrow POINTS to. Ignore where it sits and its colour.' },
       side: { title: 'New rule: WHERE IT SITS', body: 'Tap the side the arrow is ON — its position. Ignore the way it points.' },
-      color: { title: 'New rule: MATCH THE COLOUR', body: 'Tap by colour: red → LEFT, green → RIGHT. Ignore where it points or sits.' },
+      color: { title: 'New rule: MATCH THE COLOUR', body: 'Tap by colour: blue → LEFT, amber → RIGHT. Ignore where it points or sits.' },
     },
     trial: (n, max) => `Trial ${n} / ${max}`,
     streak: (s, r) => `Streak ${s}/${r}`,
@@ -205,7 +205,7 @@ const UI = {
     cuedHint: 'اضغط الجانب الذي تطلبه القاعدة — وتجاهل بقية الخصائص.',
     hintPoint: 'اتبع رأس السهم — اضغط جهة الإشارة، لا مكان السهم.',
     hintSide: 'اتبع موضع السهم — اضغط الجانب الذي يجلس فيه، لا اتجاه الإشارة.',
-    hintColor: 'طابق اللون فقط: أحمر → يسار · أخضر → يمين.',
+    hintColor: 'طابق اللون فقط: أزرق → يسار · كهرماني → يمين.',
     reverseHint: 'محاولة عكس — اضغط الجانب المعاكس لما تقوله القاعدة.',
     reverseBadge: '⟳ عكس — اضغط العكس',
     frozenBanner: '❄️ متجمّد — خذ وقتك ثم أجب',
@@ -224,7 +224,7 @@ const UI = {
     ruleLessons: {
       point: { title: 'قاعدة جديدة: جهة الإشارة', body: 'اضغط الجانب الذي يشير إليه السهم. تجاهل مكانه ولونه.' },
       side: { title: 'قاعدة جديدة: مكان الجلوس', body: 'اضغط الجانب الذي يوجد فيه السهم — موضعه. تجاهل اتجاه إشارته.' },
-      color: { title: 'قاعدة جديدة: طابق اللون', body: 'اضغط حسب اللون: أحمر → يسار، أخضر → يمين. تجاهل اتجاهه وموضعه.' },
+      color: { title: 'قاعدة جديدة: طابق اللون', body: 'اضغط حسب اللون: أزرق → يسار، كهرماني → يمين. تجاهل اتجاهه وموضعه.' },
     },
     trial: (n, max) => `محاولة ${n} / ${max}`,
     streak: (s, r) => `متتالية ${s}/${r}`,
@@ -1217,8 +1217,8 @@ export default function SpatialStroopGame({ onBack, workoutMode = false, cosmosA
                   {t.ruleLabel[rule]}
                   {rule === 'color' && (
                     <span className="ct-stroop-rule-colorkey">
-                      <span className="ct-stroop-ckey ct-stroop-ckey--red">◀</span>
-                      <span className="ct-stroop-ckey ct-stroop-ckey--green">▶</span>
+                      <span className="ct-stroop-ckey ct-stroop-ckey--blue">◀</span>
+                      <span className="ct-stroop-ckey ct-stroop-ckey--amber">▶</span>
                     </span>
                   )}
                 </span>

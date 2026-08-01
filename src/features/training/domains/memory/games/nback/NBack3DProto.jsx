@@ -9,6 +9,9 @@ import {
   createObjectCardTexture,
 } from '../memoryStimulusTexture';
 import '../../../../shared/c3dProto.css';
+// nowMs() = performance.now() minus paused time, so the pause menu really
+// stops this game's clock. See shared/pauseStore.js.
+import { nowMs } from '../../../../shared/pauseStore';
 
 const OBJECT_BY_ID = Object.fromEntries(MEMO_OBJECTS.map((object) => [object.id, object]));
 
@@ -130,7 +133,7 @@ export default function NBack3DProto({
       );
       tileFace.position.z = 0.106;
       stimulus.add(tileFrame, tileFace);
-      stimulus.userData.birth = performance.now();
+      stimulus.userData.birth = nowMs();
       stimulus.position.set(cell.position.x, cell.position.y, 0.34);
       playRoot.add(stimulus);
     };

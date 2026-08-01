@@ -4,6 +4,9 @@ import { bootC3dScene, matStd, disposeObject, THREE } from '../../../../shared/c
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import { makeRng } from '../../../../shared/rng';
 import { survivalRamp, SURVIVAL_MS, freshSurvivalSeed } from '../../../../shared/survival';
+// nowMs() is performance.now() minus time spent paused — see pauseStore.js.
+// Using it here is what makes the pause menu actually stop the clock.
+import { nowMs } from '../../../../shared/pauseStore';
 // SAME game as 2D Survival: identical cards, hidden rule + silent switch logic.
 import {
   REFERENCE,
@@ -240,11 +243,11 @@ export default function Wisconsin3DProto({
     let card = null;
     let lock = false;
     let finished = false;
-    let runStart = performance.now();
+    let runStart = nowMs();
     const timers = [];
     const clearTimers = () => { timers.forEach((id) => window.clearTimeout(id)); timers.length = 0; };
     const later = (fn, ms) => { const id = window.setTimeout(fn, ms); timers.push(id); return id; };
-    const rampNow = () => (isSurvival ? survivalRamp(performance.now() - runStart) : 0);
+    const rampNow = () => (isSurvival ? survivalRamp(nowMs() - runStart) : 0);
 
     const nextCard = () => {
       trial += 1;
@@ -382,7 +385,7 @@ export default function Wisconsin3DProto({
         correctAwardRef.current = 0;
         setCorrect(0); setTotal(0); setScore(0); setCombo(0); setRules(0);
         setSay(t.prompt);
-        runStart = performance.now();
+        runStart = nowMs();
         setRunning(true);
         nextCard();
       },
@@ -403,9 +406,9 @@ export default function Wisconsin3DProto({
 
   useEffect(() => {
     if (!running || !isSurvival) return undefined;
-    const start = performance.now();
+    const start = nowMs();
     const id = window.setInterval(() => {
-      const left = Math.max(0, Math.ceil((SURVIVAL_MS - (performance.now() - start)) / 1000));
+      const left = Math.max(0, Math.ceil((SURVIVAL_MS - (nowMs() - start)) / 1000));
       setTimeLeft(left);
       if (left <= 0) {
         window.clearInterval(id);
