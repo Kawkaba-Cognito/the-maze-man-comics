@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { TrainingPauseModal, TrainingQuitModal } from './TrainingChrome';
 import { STR_COMMON } from './trainingStrings';
 import { setTrainingPaused } from './pauseStore';
@@ -32,12 +32,15 @@ import { setScenePaused } from './c3dBoot';
  * render clock freezes too. DOM-only games leave it out.
  */
 export function useGamePause({ isAr, playSfx, onQuit, sceneRef, onResume, onPause } = {}) {
+  // This hook instance's identity in the pause store — see the holders note there.
+  const tokenRef = useRef(null);
+  if (!tokenRef.current) tokenRef.current = { owner: true };
   const [open, setOpen] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
   const L = isAr ? STR_COMMON.ar : STR_COMMON.en;
 
   const apply = useCallback((paused) => {
-    setTrainingPaused(paused);
+    setTrainingPaused(paused, tokenRef.current);
     if (sceneRef?.current) setScenePaused(sceneRef.current, paused);
   }, [sceneRef]);
 
@@ -57,7 +60,7 @@ export function useGamePause({ isAr, playSfx, onQuit, sceneRef, onResume, onPaus
    * -> leave by any route that is not the modal's own buttons -> every
    * subsequent game is dead until a full reload.
    */
-  useEffect(() => () => setTrainingPaused(false), []);
+  useEffect(() => () => setTrainingPaused(false, tokenRef.current), []);
 
   const start = useCallback(() => {
     playSfx?.('click');
