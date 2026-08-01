@@ -612,7 +612,7 @@ const styles = {
   canvas: { display: 'block', width: '100%', height: '100%' },
   survTrack: { height: 6, background: 'rgba(0,0,0,0.08)' },
   survFill: { height: '100%' },
-  ready: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(210,197,181,0.88)', zIndex: 3, pointerEvents: 'none' },
+  ready: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(179, 202, 221,0.88)', zIndex: 3, pointerEvents: 'none' },
   readyCard: { background: 'var(--surface-raised)', border: '2px solid var(--game-ink)', borderRadius: 8, padding: '16px 22px', textAlign: 'center', boxShadow: '0 14px 38px rgba(0,0,0,0.5)', maxWidth: '82%' },
   readyKicker: { display: 'inline-block', marginBottom: 6, padding: '2px 12px', borderRadius: 999, background: '#7a5a1e', color: 'var(--surface-raised)', fontWeight: 900, fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
   readyTitle: { fontWeight: 900, fontSize: 18, color: 'var(--game-ink)' },
