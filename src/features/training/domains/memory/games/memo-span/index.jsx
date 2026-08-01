@@ -7,6 +7,7 @@ import {
 } from '../../../../shared/TrainingChrome';
 import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
+import { useGamePause } from '../../../../shared/useGamePause';
 import PassPlaySetup from '../../../../shared/PassPlaySetup';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
@@ -187,6 +188,7 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
 
   const [profile, setProfile] = useState(() => loadMemoSpanProfile());
   const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
+  const pause = useGamePause({ isAr, playSfx, onQuit: onBack });
   const [diffKey, setDiffKey] = useState('easy');
   const [round, setRound] = useState(null);
   const [playStep, setPlayStep] = useState('idle');
@@ -678,8 +680,10 @@ export default function MemoSpanGame({ onBack, workoutMode = false, assessmentMo
             subtitle={headerSub()}
             playSfx={playSfx}
             onMenu={() => { trialLogRef.current?.discard(); trialLogRef.current = null; clearTimers(); setRound(null); resetPlayState(); if (round.mode === 'assess') { (onAssessmentExit || onBack)?.(); return; } setPhase(round.mode === 'free' ? 'hub' : round.mode === 'challenge' ? 'chal' : 'levels'); }}
-            onPause={null}
+            onPause={pause.start}
+            pauseAriaLabel={pause.labels.paused}
           />
+          {pause.modal}
           <div className={`ct-ms-stage ct-juice-host${juice.shake ? ' ct-juice-shake' : ''}`}>
             <JuiceLayer
               combo={juice.combo}

@@ -1,6 +1,12 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
+import PlayHud from '../../../../shared/PlayHud';
+import { useGamePause } from '../../../../shared/useGamePause';
+// nowMs() = performance.now() minus paused time. Every deadline in this game is
+// built from it, so the pause menu cannot eat a board's clock or the survival
+// timer. See shared/pauseStore.js.
+import { nowMs } from '../../../../shared/pauseStore';
 import { makeRng } from '../../../../shared/rng';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { SURVIVAL_MS } from '../../../../shared/survival';
@@ -129,7 +135,7 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
   const cfgRef = useRef({ n: 8, time: 30000, variant: 'forward', decoys: 0, startColor: 0, totalCircles: 8 });
   const rafRef = useRef(0);
   const clockRef = useRef(null);
-  const survT0Ref = useRef(performance.now());
+  const survT0Ref = useRef(nowMs());
   const finishedRef = useRef(false);
   // Metric capture (assess + train): per-board completion-time / errors via the
   // shared trial log, plus running survival totals for the scanning-rate readout.
@@ -161,6 +167,7 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
   const [timeLeft, setTimeLeft] = useState(0);
   const [prog, setProg] = useState(0);
   const [boards, setBoards] = useState(0);
+  const pause = useGamePause({ isAr, playSfx, onQuit: onExit });
   const [sceneItems, setSceneItems] = useState([]);
 
   const timed = mode === 'levels' || isSurvival;
@@ -188,7 +195,7 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
     endedRef.current = false;
     boardIdxRef.current = 0;
     scoreRef.current = 0;
-    survT0Ref.current = performance.now();
+    survT0Ref.current = nowMs();
     setScore(0);
     setBoards(0);
     setOver(null);
@@ -263,7 +270,7 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
         ctx.fillStyle = txt;
         ctx.fillText(String(it.n), x, y + 1);
       }
-      if (performance.now() < flashRef.current.until) {
+      if (nowMs() < flashRef.current.until) {
         ctx.beginPath(); ctx.arc(flashRef.current.x, flashRef.current.y, r * 1.3, 0, Math.PI * 2);
         ctx.lineWidth = 5; ctx.strokeStyle = 'var(--game-bad)'; ctx.stroke();
       }
@@ -330,8 +337,8 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
     const ruleKey = `${variant}|${decoys > 0}`;
     const begin = () => {
       readyRef.current = false;
-      startRef.current = performance.now();
-      deadlineRef.current = timed ? performance.now() + base.time : Infinity;
+      startRef.current = nowMs();
+      deadlineRef.current = timed ? nowMs() + base.time : Infinity;
     };
     clearTimeout(readyTimerRef.current);
     if (ruleKey !== prevRuleRef.current) {
@@ -339,10 +346,10 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
       readyRef.current = true;
       deadlineRef.current = Infinity; // clock paused during the banner
       setReadyInfo({ variant, decoys, startColor, first: boardIdxRef.current === 0 });
-      const t0 = performance.now();
+      const t0 = nowMs();
       readyTimerRef.current = setTimeout(() => {
         setReadyInfo(null);
-        survT0Ref.current += performance.now() - t0; // don't let the banner eat the survival clock
+        survT0Ref.current += nowMs() - t0; // don't let the banner eat the survival clock
         begin();
       }, 1900);
     } else {
@@ -353,7 +360,7 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
 
   const onComplete = useCallback(() => {
     if (endedRef.current) return;
-    const used = performance.now() - startRef.current;
+    const used = nowMs() - startRef.current;
     const cfg = cfgRef.current;
     const n = cfg.n;
     const errs = errRef.current;
@@ -382,13 +389,13 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
       newBoard(); return;
     }
     awardPoints?.(3);
-    const bonus = timed ? Math.max(0, Math.round((deadlineRef.current - performance.now()) / 1000)) : 0;
+    const bonus = timed ? Math.max(0, Math.round((deadlineRef.current - nowMs()) / 1000)) : 0;
     scoreRef.current += 20 + bonus; setScore(scoreRef.current);
     boardIdxRef.current += 1; setBoards(boardIdxRef.current);
     sumUsedRef.current += used; sumErrRef.current += errs; sumItemsRef.current += n;
     if (cfg.variant === 'color') { sumColorRef.current += used; cntColorRef.current += 1; }
     else { sumFwdRef.current += used; cntFwdRef.current += 1; }
-    if (isSurvival && performance.now() - survT0Ref.current >= SURVIVAL_MS) {
+    if (isSurvival && nowMs() - survT0Ref.current >= SURVIVAL_MS) {
       finishSurvival();
       return;
     }
@@ -416,13 +423,13 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
     const correct = !hit.isDecoy && hit.n === next && (cfg.variant !== 'color' || hit.color === expColor);
     if (correct) {
       nextRef.current += 1; setProg(nextRef.current - 1); playSfx?.('click');
-      tapTimesRef.current.push(performance.now());
+      tapTimesRef.current.push(nowMs());
       if (nextRef.current > cfg.n) onComplete();
     } else {
       errRef.current += 1;
       if (timed && deadlineRef.current !== Infinity) deadlineRef.current -= 2000;
       const { w, h } = sizeRef.current;
-      flashRef.current = { x: hit.fx * w, y: hit.fy * h, until: performance.now() + 350 };
+      flashRef.current = { x: hit.fx * w, y: hit.fy * h, until: nowMs() + 350 };
       playSfx?.('lose');
     }
   }, [onComplete, playSfx, timed]);
@@ -437,7 +444,7 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
     window.addEventListener('resize', onResize);
     rafRef.current = requestAnimationFrame(draw);
     if (isSurvival) {
-      survT0Ref.current = performance.now();
+      survT0Ref.current = nowMs();
       finishedRef.current = false;
       endedRef.current = false;
       boardIdxRef.current = 0;
@@ -453,12 +460,12 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
       clockRef.current = setInterval(() => {
         if (readyRef.current) return; // clock paused while the rule banner shows
         if (isSurvival) {
-          const sLeft = SURVIVAL_MS - (performance.now() - survT0Ref.current);
+          const sLeft = SURVIVAL_MS - (nowMs() - survT0Ref.current);
           setSurvPct(Math.max(0, sLeft / SURVIVAL_MS));
           setSurvLeft(Math.max(0, sLeft));
           if (sLeft <= 0) { finishSurvival(); return; }
         }
-        const left = deadlineRef.current - performance.now();
+        const left = deadlineRef.current - nowMs();
         setTimeLeft(left);
         if (left <= 0) onTimeout();
       }, 100);
@@ -514,16 +521,27 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
           <div style={{ ...S.survFill, width: `${survPct * 100}%`, background: survPct < 0.2 ? 'var(--game-bad)' : 'var(--game-ink)' }} />
         </div>
       )}
-      <header className="ct-training-play-header ct-trail-3d-header">
-        <button className="ct-training-chrome-btn" aria-label={isAr ? 'رجوع' : 'Back'} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
-        <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title">{isAr ? 'صل الأرقام' : 'Trail Making'}</div>
-          <div className="ct-training-play-sub">
-            {mode === 'passplay' ? `${isAr ? 'لوحة' : 'Board'} ${ppBoard}/${ppTrials}` : mode === 'free' ? `${isAr ? 'لوحات' : 'Boards'} ${boards}` : `${isAr ? 'مستوى' : 'Lvl'} ${level}`}
-          </div>
-        </div>
-        <div className="ct-training-chrome-spacer" aria-hidden="true" />
-      </header>
+      {/* Standard header + pause. Untimed per board, so no clock slot. */}
+      <PlayHud
+        t={{}}
+        playStep="running"
+        showTimer={false}
+        showTimeBar={false}
+        stats={[
+          mode === 'passplay'
+            ? { value: `${ppBoard}/${ppTrials}`, label: isAr ? 'لوحة' : 'board' }
+            : mode === 'free'
+              ? { value: boards, label: isAr ? 'لوحات' : 'boards' }
+              : { value: level, label: isAr ? 'مستوى' : 'level' },
+        ]}
+        pauseOpen={pause.open}
+        onMenu={() => onExit?.()}
+        onPause={pause.start}
+        menuAriaLabel={isAr ? 'رجوع' : 'Back'}
+        pauseAriaLabel={pause.labels.paused}
+        playSfx={playSfx}
+      />
+      {pause.modal}
       <div style={S.sub} className="ct-trail-3d-hud">
         <span>{isAr ? 'التالي' : 'Next'}: <b style={{ color: 'var(--game-ok)' }}>{Math.min(prog + 1, total)}</b> / {total}</span>
         {cfgNow.variant === 'color' ? (
