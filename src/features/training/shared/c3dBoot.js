@@ -25,10 +25,13 @@ const CREAM = 0xf0e2c0;
  * opaque (alpha defaults to false) and paints over whatever CSS is beneath.
  *
  * These stops are the SAME three as --play-surface in tokens.css. Keep them in
- * step: cool blue zenith → warm taupe horizon, Home's own gesture.
+ * step: one blue (~207° hue) deepening downward. It used to run into a warm
+ * taupe horizon, copying Home's dusk; on a face-on playfield with no horizon
+ * and no sun that warmth read as dirt, so it was taken out 2026-08-01. The
+ * stops' LUMINANCES are unchanged — the piece colours are tuned to them.
  */
-const TIDE_LIGHT_STOPS = ['#ccdae6', '#d2c5b5', '#c6b199'];
-export const TIDE_FOG = 0xd2c5b5;
+const TIDE_LIGHT_STOPS = ['#ccdae6', '#b3cadd', '#9cb9d2'];
+export const TIDE_FOG = 0xb3cadd;
 
 /*
  * ─── TIDE DEEP — the same sky, dark end ───
@@ -44,12 +47,15 @@ export const TIDE_FOG = 0xd2c5b5;
  *   sky it washed out completely.
  *
  * Those scenes take TIDE_DEEP. Scenes made of ordinary lit geometry take the
- * light one. Same hues, same cool-zenith-to-warm-horizon gesture, same family
- * as --play-surface — just the end of the ramp their rendering can survive.
- * Home does exactly this too: near-black at the zenith, warm sand at the
- * horizon, one sky.
+ * light one. Same hue family as --play-surface — just the end of the ramp
+ * their rendering can survive.
+ *
+ * De-browned 2026-08-01 alongside the light ramp: the bottom two stops were
+ * #332c33 / #463830, a warm taupe floor under the scene. Replaced with blues
+ * at the SAME luminances (0.029 / 0.043), so nothing rendered on top of them
+ * changes contrast — only hue.
  */
-const TIDE_DEEP_STOPS = ['#121826', '#1e2130', '#332c33', '#463830'];
+const TIDE_DEEP_STOPS = ['#121826', '#1e2130', '#28303f', '#2f3b4e'];
 
 /* Fog must be the DARKEST stop, never the mid.
  *

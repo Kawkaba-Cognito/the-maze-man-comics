@@ -34,13 +34,16 @@
  * board kit enforces it. This is a correctness rule, not a style preference.
  *
  * ── Contrast, measured ────────────────────────────────────────────────────
+ * Dark tokens are measured against the sky's DARKEST stop, light tokens against
+ * its brightest — each against the stop that is hardest for it.
+ *
  *   fill        vs sky   vs ink    role
- *   item        3.27     2.46      the neutral piece — most things, most times
- *   ok          3.26     2.47      correct / success
- *   bad         3.25     2.48      wrong / error
- *   muted       3.27     2.46      dead, spent, out of play
- *   accent      1.25     6.46      the cued/hot piece — LIGHT token, see below
- *   selected    1.30    15.21      player's active pick — LIGHT token
+ *   item        3.32     2.49      the neutral piece — most things, most times
+ *   ok          3.30     2.50      correct / success
+ *   bad         3.29     2.51      wrong / error
+ *   muted       3.32     2.49      dead, spent, out of play
+ *   accent      1.26     6.55      the cued/hot piece — LIGHT token, see below
+ *   selected    1.28    15.18      player's active pick — LIGHT token
  *
  * accent and selected are deliberately BRIGHTER than the sky rather than
  * darker: "hot" should glow, not recede. They therefore cannot earn 3:1 by
@@ -48,19 +51,35 @@
  * to delimit the shape. Dark tokens stroke with their own `edge` instead.
  */
 
-/** The play surface. Mirrors --play-surface in tokens.css — keep the two in step. */
+/*
+ * The play surface. Mirrors --play-surface in tokens.css — keep the two in step.
+ *
+ * ── One hue, not two (2026-08-01) ─────────────────────────────────────────
+ * This ramp used to run cool blue at the zenith into warm taupe at the horizon
+ * (#d2c5b5 → #c6b199), echoing Home's dusk. On Home that reads as a sunset,
+ * because there is a horizon and a light source to justify it. On a playfield
+ * there is neither — the board is face-on and lit from nowhere — so the taupe
+ * had nothing to be, and read as dirt behind the pieces.
+ *
+ * It is now a single blue at ~207° hue throughout, going deeper toward the
+ * bottom. The LUMINANCES are unchanged (0.686 / 0.570 / 0.464 vs the old
+ * 0.686 / 0.576 / 0.461), which is the load-bearing part: every contrast figure
+ * in the table below was measured against this ramp, and the pieces are tuned
+ * to clear 3:1 against its darkest stop. Re-hue freely, but hold the
+ * luminances or re-measure the whole table.
+ */
 export const GAME_SKY = {
   top: '#ccdae6',
-  mid: '#d2c5b5',
-  low: '#c6b199',
+  mid: '#b3cadd',
+  low: '#9cb9d2',
   /** For a DOM background. */
-  gradient: 'linear-gradient(180deg, #ccdae6 0%, #d2c5b5 58%, #c6b199 100%)',
+  gradient: 'linear-gradient(180deg, #ccdae6 0%, #b3cadd 58%, #9cb9d2 100%)',
   /** Single-colour fallback (canvas clear, Three.js clear colour). */
-  flat: '#d2c5b5',
+  flat: '#b3cadd',
 };
 
-/** Body text and the outline for light pieces. 8.05:1 on the worst sky stop. */
-export const GAME_INK = '#241d13';
+/** Body text and the outline for light pieces. 8.27:1 on the worst sky stop. */
+export const GAME_INK = '#131e28';
 
 /**
  * The six playfield roles.
@@ -78,7 +97,7 @@ export const GAME_COLORS = {
   /** Wrong, missed, lost. */
   bad: { fill: '#854c49', edge: '#603735', stroke: '#603735' },
   /** The player's current pick, mid-decision. */
-  selected: { fill: '#fff4d6', edge: '#b8b09a', stroke: GAME_INK },
+  selected: { fill: '#eaf4ff', edge: '#a9b0b8', stroke: GAME_INK },
   /** Spent, disabled, out of play — present but not competing for attention. */
   muted: { fill: '#545c66', edge: '#3c4249', stroke: '#3c4249' },
 };

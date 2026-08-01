@@ -129,18 +129,28 @@
      play surface does not follow the theme. Hubs, shop, habits and wellbeing
      still do; they carry no trials.
 
-     ─── "Tide Dusk" (chosen 2026-07-30) ───
-     The flat #fff7f2 is now Home's own gesture: its cool blue zenith at the top
-     of the screen ramping to its warm brown horizon at the bottom, taken deep
-     enough to feel like the same sky rather than a pale echo of it.
+     ─── "Tide" (chosen 2026-07-30, de-browned 2026-08-01) ───
+     The flat #fff7f2 became a ramp: a gradient sky rather than a pale echo of
+     Home's.
+
+     It first ran Home's full dusk gesture — cool blue zenith into warm taupe
+     horizon. That was wrong HERE. Home earns its warm horizon because it has a
+     horizon and a sun; a playfield is face-on and lit from nowhere, so the
+     taupe read as dirt behind the pieces rather than as light. The ramp is now
+     one blue (~207° hue) all the way down, deepening toward the bottom.
+
+     The LUMINANCES are what matter and they did not change (0.686 / 0.570 /
+     0.464, was 0.686 / 0.576 / 0.461): the six piece roles below are tuned to
+     clear 3:1 against the darkest stop. Re-hue freely, hold the luminances, or
+     re-measure the table in gamePalette.js.
 
      It stays POSITIVE POLARITY — dark ink on a light field — so everything in
      the note above still holds. Luminance drops somewhat from flat white, but
      the stimulus/board card (--surface-raised) stays light, so the figure-ground
      relationship the tasks are actually scored on is unchanged. A fully dark
      board was mocked up and deliberately not chosen for exactly that reason. */
-  --play-surface: linear-gradient(180deg, #ccdae6 0%, #d2c5b5 58%, #c6b199 100%);
-  --play-ink: #241f1a;
+  --play-surface: linear-gradient(180deg, #ccdae6 0%, #b3cadd 58%, #9cb9d2 100%);
+  --play-ink: #151f29;
   --color-training-palette-surface: var(--play-surface);
   --color-training-ink: var(--play-ink);
 
@@ -156,22 +166,22 @@
      apart by hue, not brightness, so state must NEVER be carried by fill
      alone — always move a ring, size, icon or stroke as well, or the game
      becomes unplayable with colour-vision deficiency. */
-  --game-item: #2f5f86;           /* default piece            3.27:1 on sky */
+  --game-item: #2f5f86;           /* default piece            3.32:1 on sky */
   --game-item-edge: #224460;
   --game-accent: #d4952f;         /* cued / hot — a LIGHT token, see below */
   --game-accent-edge: #996b22;
-  --game-ok: #386544;             /* correct                  3.26:1 on sky */
+  --game-ok: #386544;             /* correct                  3.30:1 on sky */
   --game-ok-edge: #284931;
-  --game-bad: #854c49;            /* wrong                    3.25:1 on sky */
+  --game-bad: #854c49;            /* wrong                    3.29:1 on sky */
   --game-bad-edge: #603735;
-  --game-selected: #fff4d6;       /* player's pick — LIGHT token */
-  --game-selected-edge: #b8b09a;
-  --game-muted: #545c66;          /* spent / out of play      3.27:1 on sky */
+  --game-selected: #eaf4ff;       /* player's pick — LIGHT token */
+  --game-selected-edge: #a9b0b8;
+  --game-muted: #545c66;          /* spent / out of play      3.32:1 on sky */
   --game-muted-edge: #3c4249;
   /* accent and selected are brighter than the sky rather than darker (hot
      should glow, not recede), so they cannot earn 3:1 by luminance. They
-     outline with this instead — 8.05:1 on the worst sky stop. */
-  --game-ink: #241d13;
+     outline with this instead — 8.27:1 on the worst sky stop. */
+  --game-ink: #131e28;
 
   /* ─── Tide DEEP — the same sky, dark end ───────────────────────────────
      ONE palette, two depths. Which depth a surface gets is a RENDERING
@@ -184,7 +194,7 @@
      Mirrors TIDE_DEEP_STOPS / TIDE_DEEP_FOG in c3dBoot.js — keep in step.
      Used by: Cancellation, Block Escape, Cognitive Flexibility, Story Time's
      stage, Detective's room. */
-  --play-surface-deep: linear-gradient(180deg, #121826 0%, #1e2130 45%, #332c33 75%, #463830 100%);
+  --play-surface-deep: linear-gradient(180deg, #121826 0%, #1e2130 45%, #28303f 75%, #2f3b4e 100%);
   --play-surface-deep-flat: #121826;
   --play-ink-deep: #ece0c8;
   --play-ink-deep-dim: #9b917f;
