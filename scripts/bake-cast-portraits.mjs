@@ -18,7 +18,7 @@
  * ── How ───────────────────────────────────────────────────────────────────
  * There is no headless GL in this repo and adding one for a build step is a bad
  * trade, so this drives the Chrome that is already installed. It screenshots
- * public/_bake-portrait.html, which renders one portrait full-bleed using the
+ * bake-portrait.html (project root — NOT public/, so it never ships), which renders one portrait full-bleed using the
  * app's own castPortraitBake — so the baked image is exactly what the runtime
  * produced, framing and lighting included.
  *
@@ -66,7 +66,7 @@ mkdirSync(OUT_DIR, { recursive: true });
 let failed = 0;
 for (const id of IDS) {
   const out = join(OUT_DIR, `${id}.png`);
-  const url = `${BASE}/_bake-portrait.html?id=${id}&size=${SIZE}`;
+  const url = `${BASE}/bake-portrait.html?id=${id}&size=${SIZE}`;
   try {
     execFileSync(chrome, [
       '--headless=new',
