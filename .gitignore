@@ -1,5 +1,22 @@
 node_modules/
 dist/
+
+# Build output that lands at the REPO ROOT, not in dist/.
+# `npm run dev` makes vite-plugin-pwa write these next to package.json, and the
+# Vite dep cache goes in .vite/. They were untracked but NOT ignored, which is
+# one `git add -A` away from repeating the 2026-07-15 accident: main is
+# SOURCE-ONLY (see CLAUDE.md) and a dist mirror got committed to it once already.
+#
+# Root Assets/ is listed too. CLAUDE.md warns that main still tracks a stale
+# snapshot of built files there — that is now OUT OF DATE: `git ls-files Assets/`
+# returns nothing, and the only tracked file left at the root is index.html,
+# which is the live Vite entry, not a leftover. So root Assets/ is purely build
+# output today and safe to ignore outright. Real assets belong in public/Assets/.
+.vite/
+/Assets/
+/registerSW.js
+/workbox-*.js
+/manifest.webmanifest
 scripts/words_alpha.txt
 scripts/words_ar.txt
 scripts/ar_freq.txt
