@@ -2,6 +2,17 @@ import React from 'react';
 import { IconBack, IconPause } from './TrainingIcons';
 
 /** Comic training chrome — back / pause icon buttons (Rush Hour play style). */
+/*
+ * ⚠ Every handler in this file calls playSfx OPTIONALLY.
+ *
+ * These were bare `playSfx('click')`. playSfx is an optional prop, and Rush
+ * Hour and Arrow Rush never passed one — so the handler threw a TypeError
+ * BEFORE running onMenu/onPause and their back and pause buttons were simply
+ * dead. No error surfaced to the player; the button just did nothing.
+ *
+ * A shared control must never be armed by an optional prop. If you add a
+ * handler here, use ?. — the sound is a garnish, the navigation is not.
+ */
 export function TrainingChromeBtn({
   type = 'button',
   className = '',
@@ -42,7 +53,7 @@ export function TrainingMenuBar({
         ariaLabel="Back"
         className={isPaper ? 'ct-training-chrome-btn--paper' : ''}
         onClick={() => {
-          playSfx('click');
+          playSfx?.('click');
           onBack();
         }}
       >
@@ -61,7 +72,7 @@ export function TrainingMenuBar({
               : 'ct-training-chrome-btn--tutorial'
           }
           onClick={() => {
-            playSfx('click');
+            playSfx?.('click');
             onReplayTutorial();
           }}
         >
@@ -93,7 +104,7 @@ export function TrainingPlayHeader({
         <TrainingChromeBtn
           ariaLabel={menuAriaLabel}
           onClick={() => {
-            playSfx('click');
+            playSfx?.('click');
             onMenu();
           }}
         >
@@ -121,7 +132,7 @@ export function TrainingPlayHeader({
           title={tutorialAriaLabel}
           className="ct-training-chrome-btn--tutorial"
           onClick={() => {
-            playSfx('click');
+            playSfx?.('click');
             onTutorial();
           }}
         >
@@ -131,7 +142,7 @@ export function TrainingPlayHeader({
         <TrainingChromeBtn
           ariaLabel={pauseAriaLabel}
           onClick={() => {
-            playSfx('click');
+            playSfx?.('click');
             onPause();
           }}
         >
@@ -244,7 +255,7 @@ export function TrainingChallengeHandoff({
           type="button"
           className="ct-training-btn ct-training-btn--start"
           onClick={() => {
-            playSfx('click');
+            playSfx?.('click');
             onStart();
           }}
         >

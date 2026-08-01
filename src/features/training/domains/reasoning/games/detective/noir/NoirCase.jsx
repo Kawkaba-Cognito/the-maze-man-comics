@@ -1,6 +1,7 @@
 import React, {
   useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
+import { useGamePause } from '../../../../../shared/useGamePause';
 import Weather from './components/Weather';
 import Cutscene from './components/Cutscene';
 import CrimeScene from './components/CrimeScene';
@@ -216,6 +217,8 @@ export default function NoirCase({
   const showStage = phase === 'lineup' || phase === 'talk';
 
   // ── render ─────────────────────────────────────────────────────────────
+  const pause = useGamePause({ isAr, playSfx, onQuit: onExit });
+
   return (
     <div className="nr" dir={isAr ? 'rtl' : 'ltr'}>
       <Weather onThunder={() => playSfx?.('tick')} />
@@ -233,6 +236,15 @@ export default function NoirCase({
           <button type="button" className="nr-chip" onClick={() => { playSfx?.('click'); setNotebook((v) => !v); }}>
             {t.notebook}
           </button>
+          {/* The platform pause, same menu as every other game. */}
+          <button
+            type="button"
+            className="nr-chip"
+            aria-label={pause.labels.paused}
+            onClick={pause.start}
+          >
+            ⏸
+          </button>
           <button
             type="button"
             className="nr-chip"
@@ -244,6 +256,7 @@ export default function NoirCase({
           </button>
         </span>
       </header>
+      {pause.modal}
 
       <div className="nr-body">
         {phase === 'intro' && (

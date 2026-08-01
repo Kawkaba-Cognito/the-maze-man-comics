@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useGamePause } from '../../../../../shared/useGamePause';
 import OrderBoard from './components/OrderBoard';
 import ProbeQuiz from './components/ProbeQuiz';
 import {
@@ -145,6 +146,8 @@ export default function StageStory({
   // panels is the story's ending rather than a blank room.
   const stageBeat = phase === 'watch' ? beat : story.beats[story.beats.length - 1];
 
+  const pause = useGamePause({ isAr, playSfx, onQuit: onExit });
+
   return (
     <div className="sgs" dir={isAr ? 'rtl' : 'ltr'}>
       <header className="sgs-top">
@@ -153,6 +156,17 @@ export default function StageStory({
         </span>
         <span className="sgs-top-right">
           {hudRight}
+          {/* The platform pause. Distinct from the transport's ⏸ below, which
+              pauses the STORY playback — this one stops the run and offers the
+              same Resume / Quit menu every other game shows. */}
+          <button
+            type="button"
+            className="sgs-chip"
+            aria-label={pause.labels.paused}
+            onClick={pause.start}
+          >
+            ⏸
+          </button>
           <button
             type="button"
             className="sgs-chip"
@@ -162,6 +176,7 @@ export default function StageStory({
           </button>
         </span>
       </header>
+      {pause.modal}
 
       <div className={`sgs-stage-host${phase === 'watch' ? '' : ' recalling'}`}>
         {!stageFailed && (
