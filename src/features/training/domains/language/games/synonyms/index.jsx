@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import PlayHud from '../../../../shared/PlayHud';
+import PlayResults from '../../../../shared/PlayResults';
 import { useGamePause } from '../../../../shared/useGamePause';
 import { makeRng } from '../../../../shared/rng';
 import { SURVIVAL_MS, survivalRamp, survivalTier } from '../../../../shared/survival';
@@ -297,16 +298,17 @@ export function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, on
     return (
       <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
         
-        <div style={S.overWrap}>
-          <div style={S.overCard}>
-            <h2 style={S.overTitle}>{isAr ? 'انتهى البقاء' : 'Survival over'}</h2>
-            <p style={S.overSub}>{isAr ? `✓ ${over.correct} · ${over.score} نقطة` : `✓ ${over.correct} · ${over.score} pts`}</p>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 16 }}>
-              <button type="button" style={S.btnPri} onClick={() => { playSfx?.('click'); restartSurvival(); }}>{isAr ? 'العب مجدداً' : 'Play again'}</button>
-              <button type="button" style={S.btnGhost} onClick={() => { playSfx?.('click'); onExit?.(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
-            </div>
-          </div>
-        </div>
+        {/* The shared results frame. The score is the headline; correct answers
+            become a labelled column rather than half of a "✓ 8 · 120 pts"
+            sentence that every game punctuated differently. */}
+        <PlayResults
+          isAr={isAr}
+          headline={{ value: over.score, label: isAr ? 'نقاط' : 'score' }}
+          stats={[{ value: `✓${over.correct}`, label: isAr ? 'صحيحة' : 'correct' }]}
+          onAgain={restartSurvival}
+          onMenu={() => onExit?.()}
+          playSfx={playSfx}
+        />
       </div>
     );
   }

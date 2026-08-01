@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { TrainingPauseModal, TrainingQuitModal } from './TrainingChrome';
 import { STR_COMMON } from './trainingStrings';
 import { setTrainingPaused } from './pauseStore';
@@ -40,6 +40,24 @@ export function useGamePause({ isAr, playSfx, onQuit, sceneRef, onResume, onPaus
     setTrainingPaused(paused);
     if (sceneRef?.current) setScenePaused(sceneRef.current, paused);
   }, [sceneRef]);
+
+  /*
+   * ⚠ ALWAYS release the flag on unmount. This is not defensive tidying — it is
+   * the difference between the app working and not.
+   *
+   * The paused flag is GLOBAL (one game on screen at a time — see pauseStore).
+   * Every consumer honours it: useSurvivalCountdown stops counting, nowMs()
+   * stops advancing, and c3d scenes stop stepping. So a game that unmounts
+   * while paused leaves the flag set, and the NEXT game mounts already frozen —
+   * it renders its background and then nothing happens at all. Reported live as
+   * "N-Back gave a blue screen and stopped", and as general lag: that is a
+   * scene drawing at dt=0 forever.
+   *
+   * Easy to hit, because the back button pauses before asking to confirm: pause
+   * -> leave by any route that is not the modal's own buttons -> every
+   * subsequent game is dead until a full reload.
+   */
+  useEffect(() => () => setTrainingPaused(false), []);
 
   const start = useCallback(() => {
     playSfx?.('click');
