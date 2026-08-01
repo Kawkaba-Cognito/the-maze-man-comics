@@ -332,7 +332,7 @@ export function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, on
         showTimeBar={false}
         stats={hudStats}
         pauseOpen={pause.open}
-        onMenu={() => onExit?.()}
+        onMenu={pause.requestQuit}
         onPause={pause.start}
         menuAriaLabel={isAr ? 'القائمة' : 'Menu'}
         pauseAriaLabel={pause.labels.paused}

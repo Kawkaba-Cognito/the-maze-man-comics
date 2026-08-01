@@ -125,7 +125,7 @@ export default function C3dProtoChrome({
           showTimeBar={false}
           stats={hudStats}
           pauseOpen={pause.open}
-          onMenu={() => onBack()}
+          onMenu={pause.requestQuit}
           onPause={pause.start}
           menuAriaLabel={isAr ? 'القائمة' : 'Menu'}
           pauseAriaLabel={L.paused}
