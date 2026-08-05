@@ -7,9 +7,10 @@ import { useThemedChrome } from '../../hooks/useThemedChrome';
 import { tokens } from '../../styles/tokens';
 import { domainPlanetUrl } from '../../lib/planetIcons';
 
-/** The 3D Kawkab mascot that stands at the hub centre (lazy — pulls in three.js
+/** The blue 3D robot that stands at the hub centre (lazy — pulls in three.js
  *  + GLTFLoader only for users who reach the Training hub). */
-const AssessmentMascot3D = lazy(() => import('./AssessmentMascot3D'));
+const TrainingBlueRobot3D = lazy(() => import('./TrainingBlueRobot3D'));
+const TrainingPlanetField3D = lazy(() => import('./TrainingPlanetField3D'));
 
 /** OS "reduce motion" preference — decorative loops honour this. */
 function prefersReducedMotion() {
@@ -116,22 +117,16 @@ function PlanetMarkings({ domainId, col }) {
 
 /** Domain planet — painted cosmos world with orbit / pulse / spark FX. */
 function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId, ink }) {
-  const r = hovered ? 34 : 29;
-  const dur = hovered ? 1.35 : 3.8;
+  const r = hovered ? 35 : 31;
+  const dur = hovered ? 2.4 : 6.2;
   const phase = PLANET_PHASE[domainId] ?? 0;
   const artUrl = domainPlanetUrl(domainId);
   const sparks = hovered
     ? [
-        { x: -r * 1.05, y: -r * 0.55, s: 1.6 },
-        { x: r * 0.95, y: -r * 0.35, s: 1.2 },
-        { x: r * 0.7, y: r * 0.85, s: 1.4 },
-        { x: -r * 0.55, y: r * 0.95, s: 1.1 },
-        { x: 0, y: -r * 1.15, s: 1.3 },
+        { x: -r * 1.02, y: -r * 0.62, s: 1.15 },
+        { x: r * 0.94, y: r * 0.48, s: 0.9 },
       ]
-    : [
-        { x: -r * 0.95, y: -r * 0.7, s: 1.1 },
-        { x: r * 0.9, y: r * 0.55, s: 0.9 },
-      ];
+    : [];
 
   return (
     <g className={`rh-domain-planet${hovered ? ' is-hot' : ''}`}>
@@ -192,7 +187,7 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId, ink }) {
         <animateTransform
           attributeName="transform"
           type="scale"
-          values="1;1.07;1"
+          values="1;1.025;1"
           keyTimes="0;0.5;1"
           dur={`${dur}s`}
           begin={`${phase}s`}
@@ -338,17 +333,17 @@ const HUB_LAYOUTS = {
     pos: [[60, 180], [180, 120], [300, 180], [60, 480], [180, 540], [300, 480]],
   },
   landscape: {
-    w: 760,
+    w: 860,
     // 470, not the 430 this started at. A planet is not just its centre: it has
     // a 52px body (64 hovered) and a caption at y+48. At 430 the south planet
     // sat at y 372, so its label ran to ~434 — past the bottom of the box — and
     // collided with the "Puzzles" button underneath. The box has to contain the
     // whole planet, label included.
     h: 470,
-    nexus: [380, 227],
+    nexus: [430, 235],
     // Free to grow here — on a large desktop the constraint is taste, not room.
-    maxScale: 1.6,
-    pos: [[140, 124], [380, 70], [620, 124], [140, 330], [380, 384], [620, 330]],
+    maxScale: 1.4,
+    pos: [[150, 95], [710, 95], [150, 235], [710, 235], [150, 375], [710, 375]],
   },
 };
 
@@ -462,7 +457,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
      * A ResizeObserver on the parent was tried first and never fired once,
      * including across a full tab round-trip, so the display:none → visible
      * transition is not observable here. A poll is unglamorous but it is what
-     * works in this shell (AssessmentMascot3D uses the same trick for the same
+     * works in this shell (TrainingBlueRobot3D uses the same trick for the same
      * reason). React bails out when the value is unchanged, so the steady state
      * costs one getBoundingClientRect every 500ms.
      */
@@ -486,7 +481,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
 
   return (
     <div
-      className={`app-stage app-stage--universe app-stage--${chrome.dark ? 'dark' : 'light'}`}
+      className={`app-stage app-stage--universe app-stage--${chrome.dark ? 'dark' : 'light'} rh-training-hub rh-training-hub--${wide ? 'desktop' : 'phone'}`}
       style={{
         minHeight: '100%', ...chrome.shell,
         fontFamily: 'Outfit, system-ui, sans-serif', position: 'relative',
@@ -496,7 +491,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       <UniverseStage accent="training" dark={chrome.dark} homeDusk />
 
       {/* Top bar — sticky so “Training” stays visible while the hub scrolls */}
-      <div className="app-chrome-bar" style={{
+      <div className="app-chrome-bar rh-training-header" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: 'max(14px, env(safe-area-inset-top)) 18px 12px',
         position: 'sticky', top: 0, zIndex: 20,
@@ -507,7 +502,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
         WebkitBackdropFilter: 'blur(12px)',
       }}>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }} />
-        <div style={{
+        <div className="rh-training-title" style={{
           ...chrome.title,
           maxWidth: 300,
           fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
@@ -516,7 +511,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           letterSpacing: isAr ? 0 : 0.35,
           textTransform: 'none',
         }}>
-          {isAr ? 'تدريب' : 'Training'}
+          {isAr ? 'التدريب المعرفي' : 'Cognitive Training'}
         </div>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
           <button type="button" style={chrome.langBtn} onClick={toggleLang}>
@@ -528,7 +523,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       {/* Orienting caption — mirrors the Home / Wellbeing intro line so a
           first-time user knows the map is interactive and what the glowing
           figure at its centre is for. */}
-      <p style={{
+      <p className="rh-training-intro" style={{
         position: 'relative', zIndex: 4,
         margin: '4px auto 0', maxWidth: 330, padding: '0 22px',
         textAlign: 'center', color: chrome.muted,
@@ -536,8 +531,8 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
         fontSize: 14, lineHeight: 1.55, fontWeight: 500,
       }}>
         {isAr
-          ? 'اختر مجالًا لبدء التدريب، أو اضغط على المركز لإجراء تقييم شامل.'
-          : 'Choose a world to begin training, or tap the center for a full assessment.'}
+          ? 'اختر مجالًا معرفيًا، أو افتح التقييم للحصول على خط أساس شامل.'
+          : 'Select a cognitive domain, or open Assessment for a complete baseline.'}
       </p>
 
       {/*
@@ -558,7 +553,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       */}
       <div
         ref={stageRef}
-        className="rh-hub-stage"
+        className={`rh-hub-stage rh-hub-stage--${wide ? 'desktop' : 'phone'}`}
         style={{
           position: 'relative',
           width: '100%',
@@ -653,9 +648,9 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             const col = DOMAIN_COLOR[s.id];
             const isHovered = hovered === s.id;
             const d = mazeCorridorD(s.id, shrines, LY.nexus);
-            const wCorridor = isHovered ? 2.6 : 1.8;
-            const corridorStroke = isHovered ? col : 'rgba(232,172,78,0.6)';
-            const runnerStroke = isHovered ? col : '#e8ac4e';
+            const wCorridor = isHovered ? 2 : 1.15;
+            const corridorStroke = isHovered ? col : 'rgba(158,177,216,0.38)';
+            const runnerStroke = isHovered ? col : '#d7c28f';
             return (
               <g key={`path-${s.id}`}>
                 <path
@@ -672,7 +667,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                   stroke={corridorStroke}
                   strokeWidth={wCorridor}
                   strokeLinecap="round"
-                  opacity={isHovered ? 0.9 : 0.45}
+                  opacity={isHovered ? 0.72 : 0.3}
                   strokeDasharray={isHovered ? '8 5' : '4 6'}
                 >
                   {isHovered && (
@@ -737,28 +732,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                 repeatCount="indefinite"
               />
             </ellipse>
-            <text
-              x={LY.nexus[0]}
-              y={LY.nexus[1] + 52}
-              textAnchor="middle"
-              fill={chrome.text}
-              stroke="rgba(24,16,30,0.9)"
-              strokeWidth="2.2"
-              strokeLinejoin="round"
-              paintOrder="stroke fill"
-              direction={isAr ? 'rtl' : 'ltr'}
-              lang={isAr ? 'ar' : 'en'}
-              style={{
-                fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-                fontSize: isAr ? 18 : 18.5,
-                fontWeight: 700,
-                letterSpacing: isAr ? 0 : 0.2,
-                textRendering: 'geometricPrecision',
-                pointerEvents: 'none',
-              }}
-            >
-              {isAr ? 'التقييم' : 'Assessment'}
-            </text>
+            {/* Assessment label is rendered as a premium DOM badge above the robot. */}
           </g>
 
           {/* Domain planets */}
@@ -788,7 +762,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                     <animateTransform
                       attributeName="transform"
                       type="translate"
-                      values="0 0; 0 -3; 0 0"
+                      values="0 0; 0 -1.5; 0 0"
                       keyTimes="0;0.5;1"
                       dur={isHovered ? '1.4s' : '3.6s'}
                       begin={`${phase}s`}
@@ -804,28 +778,29 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                     />
                   </g>
                 </g>
-                <text x={s.x} y={s.y + 51} textAnchor="middle" fill={chrome.text}
-                  stroke="rgba(24,16,30,0.9)"
-                  strokeWidth="2.2"
-                  strokeLinejoin="round"
-                  paintOrder="stroke fill"
-                  direction={isAr ? 'rtl' : 'ltr'}
-                  lang={isAr ? 'ar' : 'en'}
-                  style={{
-                    fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-                    fontSize: isAr ? 18 : 18.5,
-                    fontWeight: 700,
-                    letterSpacing: isAr ? 0 : 0.2,
-                    textRendering: 'geometricPrecision',
-                  }}>
-                  {domainDoorLabel(s.id, isAr)}
-                </text>
+                <foreignObject
+                  x={s.x - 64}
+                  y={s.y + 43}
+                  width="128"
+                  height="38"
+                  overflow="visible"
+                  style={{ pointerEvents: 'none' }}
+                >
+                  <div
+                    xmlns="http://www.w3.org/1999/xhtml"
+                    className={`rh-domain-label${isHovered ? ' is-active' : ''}`}
+                    lang={isAr ? 'ar' : 'en'}
+                    dir={isAr ? 'rtl' : 'ltr'}
+                  >
+                    {domainDoorLabel(s.id, isAr)}
+                  </div>
+                </foreignObject>
               </g>
             );
           })}
 
           {/* Rising embers / dust */}
-          {Array.from({ length: 18 }).map((_, i) => {
+          {Array.from({ length: 8 }).map((_, i) => {
             const seed = i * 137;
             // Spread across whichever map is mounted — hardcoded to the portrait
             // 360x660 box, these all bunched into the top-left corner of the
@@ -838,11 +813,24 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             const op = Math.max(0, 0.6 - t / rise);
             return <circle key={i}
               cx={x + Math.sin(tick / 20 + i) * 6} cy={y}
-              r={0.8 + (i % 3) * 0.4} fill="#e8ac4e" opacity={op * 0.42}/>;
+              r={0.8 + (i % 3) * 0.4} fill="#e8ac4e" opacity={op * 0.22}/>;
           })}
         </svg>
 
-        {/* 3D Kawkab mascot — overlaid exactly on the SVG hub nexus. Both
+        {/* One real WebGL scene supplies all six lit sphere meshes. The painted
+            DOM planets beneath remain available as a no-WebGL fallback. */}
+        <Suspense fallback={null}>
+          <TrainingPlanetField3D
+            width={LY.w}
+            height={LY.h}
+            planets={shrines}
+            hovered={hovered}
+            reducedMotion={reducedMotion}
+            radius={wide ? 38 : 31}
+          />
+        </Suspense>
+
+        {/* Blue 3D training robot — overlaid exactly on the SVG hub nexus. Both
             layouts put the nexus on the horizontal centre, so left:50% holds for
             either; the vertical offset has to follow the active map (360 in the
             portrait 360x660 box, 215 in the landscape 760x430 one). Tapping
@@ -854,13 +842,13 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             position: 'absolute',
             left: '50%',
             top: LY.nexus[1],
-            transform: 'translate(-50%, -58%)',
+            transform: 'translate(-50%, -70%)',
             zIndex: 5,
             filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.5))',
           }}
         >
           <Suspense fallback={null}>
-            <AssessmentMascot3D
+            <TrainingBlueRobot3D
               size={150}
               isAr={isAr}
               label={isAr ? 'ابدأ التقييم' : 'Start assessment'}
@@ -902,17 +890,17 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               d="M19.44 7.85c-.05.32.06.65.29.88l1.56 1.57c.47.47.71 1.08.71 1.7s-.24 1.23-.71 1.7l-1.61 1.61a.98.98 0 0 1-.84.28c-.47-.07-.8-.48-.97-.93a2.5 2.5 0 1 0-3.21 3.22c.45.16.86.5.93.97a.98.98 0 0 1-.28.84l-1.61 1.61c-.47.47-1.08.7-1.7.7s-1.23-.23-1.7-.7l-1.57-1.57a1.03 1.03 0 0 0-.88-.29c-.49.07-.84.5-1.02.97a2.5 2.5 0 1 1-3.24-3.24c.46-.18.9-.53.97-1.02a1.03 1.03 0 0 0-.29-.88L2.7 13.7A2.4 2.4 0 0 1 2 12c0-.62.24-1.23.71-1.7L4.23 8.77c.24-.24.58-.35.92-.3.51.07.88.53 1.07 1a2.5 2.5 0 1 0 3.26-3.25c-.48-.2-.93-.56-1.01-1.07-.05-.34.06-.68.3-.92l1.53-1.52C10.77 1.74 11.38 1.5 12 1.5s1.23.24 1.7.71l1.57 1.57c.23.23.56.34.88.29.49-.08.84-.5 1.02-.97a2.5 2.5 0 1 1 3.24 3.24c-.47.18-.9.53-.97 1.02Z"
               stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
           </svg>
-          {isAr ? 'ألغاز — استراحة' : 'Puzzles — take a break'}
+          {isAr ? 'مختبر الألغاز' : 'Puzzle Studio'}
         </button>
       </div>
 
       {/* Domain hover callout */}
       {hovered && (
-        <div style={{
+        <div className="rh-domain-detail" style={{
           position: 'absolute', bottom: 88, left: 0, right: 0, textAlign: 'center', zIndex: 6,
           pointerEvents: 'none',
         }}>
-          <div style={{
+          <div className="rh-domain-detail__pill" style={{
             display: 'inline-block', padding: '8px 16px', borderRadius: 100,
             background: 'linear-gradient(180deg, #1f160c 0%, #150e08 100%)',
             border: `1.5px solid ${DOMAIN_COLOR[hovered]}`,

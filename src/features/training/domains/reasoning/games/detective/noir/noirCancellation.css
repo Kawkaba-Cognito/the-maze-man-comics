@@ -1,0 +1,462 @@
+/* Detective aligned to Cancellation Task — light Tide, compact chrome and
+ * raised training cards. Case identity comes from content, not a second UI. */
+
+.nr {
+  --nr-bg: #b3cadd;
+  --nr-panel: rgba(252, 254, 255, 0.94);
+  --nr-panel2: #f2f7fb;
+  --nr-paper: #fffdf8;
+  --nr-amber: var(--game-accent-edge);
+  --nr-amber2: #7d5233;
+  --nr-red: var(--danger);
+  --nr-red2: #854c49;
+  --nr-text: var(--play-ink);
+  --nr-dim: #5a6774;
+  --nr-line: #d8e3ec;
+  color-scheme: light;
+  background: var(--play-surface);
+  color: var(--play-ink);
+}
+
+.nr-rain,
+.nr-vignette {
+  display: none;
+}
+
+.nr-top {
+  width: min(940px, calc(100% - 16px));
+  min-height: 52px;
+  margin: 8px auto 0;
+  padding: 5px 7px;
+  gap: 7px;
+  background: rgba(252, 254, 255, 0.94);
+  border: 1px solid #d8e3ec;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(19,30,40,0.08);
+}
+
+.nr-top-case,
+.nr-top-mid {
+  color: var(--play-ink);
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.nr-top-mid {
+  color: #5a6774;
+}
+
+.nr-chip {
+  min-height: 40px;
+  padding: 7px 10px;
+  color: var(--play-ink);
+  background: linear-gradient(180deg, #f8fbfd 0%, #e4ebf2 100%);
+  border: 2px solid var(--ink-outline);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink-outline), inset 0 1px 0 rgba(255,255,255,0.85);
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+}
+
+.nr-chip:hover:not(:disabled),
+.nr-chip:focus-visible {
+  color: var(--play-ink);
+  background: linear-gradient(180deg, #ffffff, #edf3f7);
+  border-color: var(--ink-outline);
+}
+
+.nr-chip:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink-outline);
+}
+
+.nr-body,
+.nr-body:has(> .nr-stage) {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  background: transparent;
+}
+
+.nr-scroll,
+.nr-body:has(> .nr-stage) > .nr-scroll {
+  flex: 1 1 auto !important;
+  width: min(760px, 100%);
+  height: auto;
+  min-height: 0;
+  max-height: none !important;
+  padding: 12px 14px calc(20px + env(safe-area-inset-bottom));
+  background: transparent;
+}
+
+/* Any remaining 3D line-up is a small play module, like Cancellation's board. */
+.nr-stage,
+.nr-body:has(> .nr-stage) > .nr-stage {
+  flex: 0 0 clamp(220px, 31vh, 300px);
+  grid-column: auto;
+  grid-row: auto;
+  width: min(720px, calc(100% - 24px));
+  height: auto;
+  min-height: 0;
+  max-height: 300px;
+  margin: 10px auto 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(74, 91, 123, 0.22), transparent 58%),
+    var(--play-surface-deep);
+  border: 1.5px solid rgba(72, 90, 107, 0.38);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(19,30,40,0.16), inset 0 1px 0 rgba(255,255,255,0.35);
+}
+
+.nr-stage canvas {
+  filter: saturate(0.76) contrast(1.02) brightness(1.02);
+}
+
+.nr-stage::before {
+  background: linear-gradient(180deg, transparent 72%, rgba(8,12,18,0.24));
+}
+
+.nr-stage::after,
+.nr-stage-frame {
+  display: none;
+}
+
+.nr-stage-hint {
+  color: var(--play-ink);
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.nr-btn {
+  min-height: 44px;
+  padding: 10px 18px;
+  color: var(--play-ink);
+  background: linear-gradient(180deg, #f8fbfd, #e4ebf2);
+  border: 2px solid var(--ink-outline);
+  border-radius: 11px;
+  box-shadow: 4px 5px 0 var(--ink-outline);
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.nr-btn:hover:not(:disabled),
+.nr-btn:focus-visible:not(:disabled) {
+  color: var(--play-ink);
+  background: #ffffff;
+  border-color: var(--ink-outline);
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 7px 0 var(--ink-outline);
+}
+
+.nr-btn--red {
+  color: #ffffff;
+  background: linear-gradient(180deg, #a85b55, var(--game-bad));
+  border-color: var(--ink-outline);
+}
+
+.nr-btn--big {
+  min-height: 48px;
+  padding-inline: 24px;
+}
+
+.nr-talk {
+  width: 100%;
+  padding: clamp(14px, 2.2vw, 22px);
+  background: rgba(252, 254, 255, 0.94);
+  border: 1px solid #d8e3ec;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(19,30,40,0.1);
+}
+
+.nr-sus-name {
+  color: var(--play-ink) !important;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-weight: 800;
+}
+
+.nr-sus-role,
+.nr-desc {
+  color: #5a6774;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-style: normal;
+}
+
+.nr-desc {
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.nr-q,
+.nr-lie {
+  color: var(--play-ink);
+  background: linear-gradient(165deg, #ffffff, #f2f7fb);
+  border: 1.5px solid #c6d4df;
+  border-inline-start: 3px solid var(--game-accent-edge);
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(19,30,40,0.05);
+}
+
+.nr-q {
+  min-height: 44px;
+}
+
+.nr-q:hover,
+.nr-q:focus-visible {
+  color: var(--play-ink);
+  background: #ffffff;
+  border-color: var(--game-accent-edge);
+}
+
+.nr-q.asked {
+  opacity: 0.58;
+}
+
+.nr-liebox h4,
+.nr-lie-done {
+  color: var(--game-bad);
+}
+
+.nr-lie.done {
+  color: var(--play-ink);
+  background: var(--success-bg);
+  border-color: var(--success);
+}
+
+/* Crime scene follows the same raised playfield frame. */
+.nr-scene-wrap {
+  width: 100%;
+  gap: 10px;
+  padding: 10px 12px calc(16px + env(safe-area-inset-bottom));
+}
+
+.nr-scene {
+  width: min(920px, 100%);
+  max-height: calc(100svh - 190px);
+  background: rgba(252,254,255,0.94);
+  border: 1.5px solid rgba(72,90,107,0.34);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(19,30,40,0.13);
+}
+
+.nr-scene-cap {
+  color: #5a6774;
+}
+
+.nr-hs {
+  width: 48px;
+  height: 48px;
+}
+
+.nr-dialog {
+  color: var(--play-ink);
+  background: rgba(252,254,255,0.97);
+  border-top: 1px solid #d8e3ec;
+  box-shadow: 0 -8px 24px rgba(19,30,40,0.12);
+}
+
+.nr-speaker {
+  color: var(--game-accent-edge);
+}
+
+.nr-dtext,
+.nr-dtext.nar {
+  color: var(--play-ink);
+}
+
+.nr-modal {
+  background: rgba(19,30,40,0.46);
+}
+
+.nr-card,
+.nr-info,
+.nr-pick,
+.nr-nb,
+.nr-panel,
+.nr-file,
+.nr-verdict {
+  color: var(--play-ink);
+  background: rgba(252,254,255,0.98);
+  border: 1px solid #d8e3ec;
+  border-radius: 16px;
+  box-shadow: 0 10px 34px rgba(19,30,40,0.18);
+}
+
+.nr-card h3,
+.nr-info h3,
+.nr-pick h3,
+.nr-nb header h3,
+.nr-panel h3 {
+  color: var(--game-accent-edge);
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.nr-info p,
+.nr-pick-card span,
+.nr-nb-card span,
+.nr-nb-foot {
+  color: #5a6774;
+}
+
+.nr-pick-card,
+.nr-nb-card,
+.nr-sus,
+.nr-opt {
+  color: var(--play-ink);
+  background: linear-gradient(165deg, #ffffff, #f2f7fb);
+  border: 1.5px solid #c6d4df;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(19,30,40,0.05);
+}
+
+.nr-pick-card:hover,
+.nr-pick-card:focus-visible,
+.nr-sus:hover,
+.nr-sus:focus-visible,
+.nr-opt:hover,
+.nr-opt:focus-visible {
+  color: var(--play-ink);
+  background: #ffffff;
+  border-color: var(--game-accent-edge);
+  transform: none;
+}
+
+.nr-opt.sel {
+  color: var(--play-ink);
+  background: #fff4da;
+  border-color: var(--game-accent-edge);
+}
+
+.nr-nb-tabs button {
+  color: #5a6774;
+  background: #eef4f8;
+}
+
+.nr-nb-tabs button.on {
+  color: var(--play-ink);
+  background: #ffffff;
+  border-color: var(--game-accent-edge);
+}
+
+.nr-board {
+  width: min(900px, 100%);
+}
+
+.nr-victim,
+.nr-file,
+.nr-verdict {
+  color: var(--play-ink);
+  transform: none;
+  border-color: rgba(200,170,120,0.42);
+}
+
+.nr-victim span,
+.nr-file p,
+.nr-rank-d,
+.nr-statline {
+  color: #5f584e;
+}
+
+.nr-grid {
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.nr-panel {
+  padding: 13px;
+  box-shadow: 0 3px 10px rgba(19,30,40,0.08);
+}
+
+.nr-verdict-stamp {
+  color: var(--game-bad);
+  background: #fffdf8;
+  border-color: var(--game-bad);
+  transform: translateX(-50%);
+}
+
+.nr-rank {
+  color: var(--play-ink);
+}
+
+.nr-bigtext {
+  color: var(--game-bad);
+  text-shadow: 0 2px 0 #ffffff;
+}
+
+.nr-centre,
+.nr-center {
+  color: var(--play-ink);
+}
+
+@media (max-width: 899px) {
+  .nr-body:has(> .nr-stage) {
+    display: flex !important;
+  }
+
+  .nr-stage,
+  .nr-body:has(> .nr-stage) > .nr-stage {
+    flex: 0 0 clamp(175px, 27svh, 215px);
+    width: calc(100% - 18px);
+    max-height: 215px;
+    margin-top: 7px;
+    border-radius: 14px;
+  }
+
+  .nr-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .nr-top {
+    width: calc(100% - 12px);
+    min-height: 48px;
+    margin-top: 6px;
+    padding: 4px 5px;
+  }
+
+  .nr-top .nr-chip,
+  .nr-top .nr-mono {
+    min-height: 38px;
+    padding: 6px 7px;
+    font-size: 0.65rem;
+  }
+
+  .nr-scroll,
+  .nr-body:has(> .nr-stage) > .nr-scroll {
+    padding: 8px 9px calc(14px + env(safe-area-inset-bottom));
+  }
+
+  .nr-talk {
+    padding: 12px;
+    border-radius: 13px;
+  }
+
+  .nr-scene-wrap {
+    padding: 7px 8px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .nr-scene {
+    aspect-ratio: 4 / 3;
+    border-radius: 14px;
+  }
+
+  .nr-pick-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 680px) and (max-width: 899px) {
+  .nr-stage,
+  .nr-body:has(> .nr-stage) > .nr-stage {
+    flex-basis: 150px;
+    max-height: 150px;
+  }
+}

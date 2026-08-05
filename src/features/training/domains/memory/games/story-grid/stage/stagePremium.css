@@ -1,0 +1,516 @@
+/* Story Time — premium cinematic pass.
+ * The legacy file keeps the proven interaction mechanics; this layer owns the
+ * visual hierarchy and the deliberate desktop / phone compositions. */
+
+.sgs {
+    --sgs-gold: #d9b977;
+    --sgs-gold-strong: #f0cf8c;
+    --sgs-cream: #f3eee4;
+    --sgs-dim: #9da8ba;
+    --sgs-line: #273149;
+    --sgs-panel: #101827;
+    --sgs-panel-raised: #151f31;
+    --sgs-glass: #101827;
+    color-scheme: dark;
+    background:
+        radial-gradient(ellipse 72% 52% at 50% 18%, rgba(63, 86, 131, 0.18), transparent 72%),
+        linear-gradient(180deg, #080c15 0%, #0a101c 48%, #070a11 100%);
+    color: var(--sgs-cream);
+}
+
+.sgs::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size: clamp(72px, 8vw, 120px) 100%;
+    mask-image: linear-gradient(180deg, rgba(0,0,0,0.42), transparent 72%);
+    opacity: 0.32;
+}
+
+.sgs-top {
+    min-height: 54px;
+    flex: 0 0 auto;
+    padding: max(9px, env(safe-area-inset-top)) clamp(14px, 2.4vw, 28px) 9px;
+    background: #090e18;
+    border-bottom: 1px solid rgba(217, 185, 119, 0.18);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+
+.sgs-top > .sgs-mono {
+    color: var(--sgs-gold-strong);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.sgs-top-right {
+    gap: 7px;
+}
+
+.sgs-chip {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 12px;
+    color: #dce3ef;
+    background: #121a29;
+    border: 1px solid #29354a;
+    border-radius: 9px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.035);
+}
+
+button.sgs-chip:hover,
+button.sgs-chip:focus-visible {
+    color: #fff7e6;
+    border-color: rgba(217, 185, 119, 0.56);
+    background: #182235;
+}
+
+.sgs-stage-host {
+    min-height: clamp(300px, 48vh, 620px);
+    max-height: none;
+    background: #070b12;
+    border-bottom: 1px solid var(--sgs-line);
+    overflow: hidden;
+}
+
+.sgs-stage-host::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+        linear-gradient(180deg, rgba(5,8,14,0.10), transparent 30%, transparent 76%, rgba(5,8,14,0.36)),
+        linear-gradient(90deg, rgba(5,8,14,0.24), transparent 18%, transparent 82%, rgba(5,8,14,0.24));
+}
+
+.sgs-stage canvas {
+    filter: saturate(0.82) contrast(1.05) brightness(0.93);
+}
+
+.sgs-stage-host.recalling {
+    filter: saturate(0.48) brightness(0.56) contrast(0.98);
+}
+
+.sgs-subtitle {
+    bottom: 18px;
+    z-index: 3;
+    gap: 4px;
+    padding: 10px 16px 11px;
+    color: var(--sgs-cream);
+    background: #0b111d;
+    border: 1px solid rgba(217, 185, 119, 0.24);
+    border-inline-start: 3px solid var(--who, var(--sgs-gold));
+    border-radius: 8px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.42);
+    backdrop-filter: none;
+}
+
+.sgs-subtitle b {
+    font-size: 0.64rem;
+    color: var(--who, var(--sgs-gold-strong));
+}
+
+.sgs-subtitle span {
+    color: #f7f2e9;
+    font-size: clamp(0.88rem, 1.4vw, 1rem);
+    font-style: normal;
+    text-shadow: none;
+}
+
+.sgs-dip {
+    background: #090e18;
+}
+
+.sgs-watch {
+    gap: 10px;
+    padding: 14px clamp(16px, 4vw, 44px) calc(16px + env(safe-area-inset-bottom));
+    background: #0a101b;
+    border-top: 1px solid rgba(255,255,255,0.025);
+}
+
+.sgs-narr {
+    max-width: 70ch;
+    color: #d8deea;
+    font-size: clamp(0.94rem, 1.35vw, 1.05rem);
+    line-height: 1.55;
+}
+
+.sgs-transport {
+    width: min(520px, 100%);
+    gap: 10px;
+}
+
+.sgs-track {
+    gap: 6px;
+}
+
+.sgs-track li {
+    height: 4px;
+    background: #263148;
+}
+
+.sgs-track li.done {
+    background: rgba(217, 185, 119, 0.62);
+}
+
+.sgs-controls {
+    gap: 9px;
+}
+
+.sgs-ctl {
+    width: 44px;
+    height: 44px;
+    color: #e8edf5;
+    background: #131c2c;
+    border: 1px solid #2b3850;
+    border-radius: 11px;
+}
+
+.sgs-ctl--main {
+    width: 50px;
+    height: 50px;
+    color: #111722;
+    background: linear-gradient(180deg, #edcf91, #c99f58);
+    border-color: #e7c77f;
+    border-radius: 13px;
+}
+
+.sgs-panel {
+    z-index: 2;
+    padding: clamp(18px, 3vh, 34px) clamp(16px, 3vw, 32px) calc(24px + env(safe-area-inset-bottom));
+    background: #0b111c;
+    scrollbar-color: #39465e transparent;
+}
+
+.sgs-panel > * {
+    width: min(680px, 100%);
+    margin: auto;
+}
+
+.sgs-order h2,
+.sgs-probe h2,
+.sgs-reveal h2 {
+    margin: 2px 0 7px;
+    color: #fff7e8;
+    font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+    font-size: clamp(1.25rem, 2.2vw, 1.7rem);
+    font-weight: 680;
+    letter-spacing: -0.02em;
+}
+
+.sgs-sub {
+    margin-bottom: 18px;
+    color: var(--sgs-dim);
+    font-size: 0.9rem;
+}
+
+.sgs-slots {
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.sgs-slot {
+    min-height: 52px;
+    padding: 6px 10px;
+    background: var(--sgs-panel);
+    border: 1px solid #303b51;
+    border-radius: 10px;
+}
+
+.sgs-slot.filled {
+    background: var(--sgs-panel-raised);
+    border-color: rgba(217, 185, 119, 0.46);
+}
+
+.sgs-slot-n {
+    width: 28px;
+    height: 28px;
+    color: var(--sgs-gold-strong);
+    background: #202a3d;
+    border: 1px solid #34425b;
+}
+
+.sgs-slot-empty {
+    color: #77849a;
+}
+
+.sgs-pool {
+    gap: 9px;
+    margin-bottom: 12px;
+}
+
+.sgs-card {
+    min-height: 44px;
+    padding: 10px 14px;
+    color: #edf1f7;
+    background: #172132;
+    border: 1px solid #344159;
+    border-radius: 9px;
+    box-shadow: none;
+}
+
+.sgs-card:hover,
+.sgs-card:focus-visible {
+    background: #1c283b;
+    border-color: rgba(217, 185, 119, 0.62);
+}
+
+.sgs-card--placed {
+    background: transparent;
+    border: 0;
+}
+
+.sgs-probe-count {
+    margin: 2px 0 12px;
+    color: var(--sgs-gold-strong);
+}
+
+.sgs-probe-opts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.sgs-opt {
+    min-height: 56px;
+    padding: 13px 15px;
+    color: #edf1f7;
+    background: var(--sgs-panel);
+    border: 1px solid #303d53;
+    border-radius: 10px;
+}
+
+.sgs-opt:hover:not(:disabled),
+.sgs-opt:focus-visible:not(:disabled) {
+    background: var(--sgs-panel-raised);
+    border-color: rgba(217, 185, 119, 0.6);
+}
+
+.sgs-opt.picked {
+    color: #fff6df;
+    background: #292719;
+    border-color: var(--sgs-gold);
+}
+
+.sgs-stamp {
+    color: var(--sgs-gold-strong);
+    background: #171b20;
+    border-color: rgba(217, 185, 119, 0.5);
+    border-radius: 7px;
+}
+
+.sgs-scores {
+    color: #aeb7c6;
+}
+
+.sgs-truth {
+    gap: 7px;
+}
+
+.sgs-truth li {
+    min-height: 44px;
+    background: var(--sgs-panel);
+    border: 1px solid #29354a;
+    border-inline-start-width: 3px;
+    border-radius: 9px;
+}
+
+.sgs-moral {
+    color: #e4e7ed;
+    background: #171a1f;
+    border-color: rgba(217, 185, 119, 0.34);
+    border-radius: 10px;
+}
+
+.sgs-btn {
+    min-height: 46px;
+    padding: 11px 22px;
+    color: #ecf0f6;
+    background: #172132;
+    border: 1px solid #354159;
+    border-radius: 9px;
+}
+
+.sgs-btn--go {
+    color: #111722;
+    background: linear-gradient(180deg, #edcf91, #c99f58);
+    border-color: #e4c27b;
+}
+
+.sgs-btn:hover:not(:disabled),
+.sgs-btn:focus-visible:not(:disabled) {
+    border-color: rgba(217,185,119,0.7);
+    transform: translateY(-1px);
+}
+
+/* Retrieval becomes an editorial split layout on larger screens: the dimmed
+ * scene remains visible as context, while the task gets a dedicated column. */
+@media (min-width: 900px) and (min-height: 650px) {
+    .sgs:has(.sgs-stage-host.recalling) {
+        display: grid;
+        grid-template-columns: minmax(460px, 1.18fr) minmax(380px, 0.82fr);
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .sgs:has(.sgs-stage-host.recalling) > .sgs-top {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+
+    .sgs:has(.sgs-stage-host.recalling) > .sgs-stage-host {
+        grid-column: 1;
+        grid-row: 2;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        max-height: none;
+        border-bottom: 0;
+        border-inline-end: 1px solid var(--sgs-line);
+    }
+
+    .sgs:has(.sgs-stage-host.recalling) > .sgs-panel {
+        grid-column: 2;
+        grid-row: 2;
+        min-height: 0;
+        padding: clamp(24px, 4vh, 50px) clamp(24px, 3vw, 46px);
+    }
+
+    .sgs[dir='rtl']:has(.sgs-stage-host.recalling) > .sgs-stage-host {
+        grid-column: 2;
+        border-inline-end: 0;
+        border-inline-start: 1px solid var(--sgs-line);
+    }
+
+    .sgs[dir='rtl']:has(.sgs-stage-host.recalling) > .sgs-panel {
+        grid-column: 1;
+    }
+}
+
+@media (max-width: 760px) {
+    .sgs-top {
+        min-height: 50px;
+        gap: 6px;
+        padding-inline: 10px;
+    }
+
+    .sgs-top > .sgs-mono {
+        min-width: 0;
+        max-width: 34vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.62rem;
+    }
+
+    .sgs-top-right {
+        gap: 4px;
+    }
+
+    .sgs-chip {
+        min-height: 36px;
+        padding: 6px 9px;
+        font-size: 0.72rem;
+    }
+
+    .sgs-stage-host {
+        flex: 0 0 clamp(220px, 42svh, 350px);
+        min-height: 0;
+        max-height: none;
+    }
+
+    .sgs-stage-host.recalling {
+        flex: 0 0 clamp(150px, 25svh, 220px);
+    }
+
+    .sgs-subtitle {
+        bottom: 10px;
+        max-width: calc(100% - 20px);
+        padding: 8px 11px;
+    }
+
+    .sgs-subtitle b {
+        font-size: 0.58rem;
+    }
+
+    .sgs-subtitle span {
+        font-size: 0.84rem;
+        line-height: 1.32;
+    }
+
+    .sgs-watch {
+        flex: 1 1 auto;
+        min-height: 0;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+    }
+
+    .sgs-narr {
+        font-size: 0.9rem;
+        line-height: 1.45;
+    }
+
+    .sgs-panel {
+        min-height: 0;
+        padding: 16px 12px calc(20px + env(safe-area-inset-bottom));
+    }
+
+    .sgs-probe-opts {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .sgs-opt {
+        min-height: 50px;
+    }
+
+    .sgs-slot {
+        min-height: 48px;
+    }
+
+    .sgs-pool {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sgs-card {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-height: 700px) and (max-width: 760px) {
+    .sgs-stage-host {
+        flex-basis: 35svh;
+    }
+
+    .sgs-stage-host.recalling {
+        flex-basis: 21svh;
+    }
+
+    .sgs-watch {
+        padding-block: 9px calc(9px + env(safe-area-inset-bottom));
+    }
+
+    .sgs-narr {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sgs-btn,
+    .sgs-stage-host.recalling {
+        transition: none;
+    }
+}

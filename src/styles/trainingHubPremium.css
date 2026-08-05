@@ -1,0 +1,593 @@
+/* Premium Training hub polish. Kept separate from the legacy training bundle so
+ * the visual system loads only with the lazy central robot / hub experience. */
+
+.app-stage--universe:has(.rh-hub-stage) {
+  --rh-premium-gold: #f7cb72;
+  --rh-premium-ink: #060914;
+}
+
+.app-stage--universe:has(.rh-hub-stage) .app-chrome-bar {
+  border-bottom: 1px solid rgba(248, 206, 120, 0.14);
+  box-shadow: 0 12px 34px rgba(2, 4, 12, 0.26);
+}
+
+.app-stage--universe:has(.rh-hub-stage) .app-chrome-bar > div:nth-child(2) {
+  color: #ffe5a8 !important;
+  background: linear-gradient(180deg, #fff7dc 0%, #ffd88c 44%, #dfa958 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 5px 22px rgba(232, 172, 78, 0.22);
+}
+
+.app-stage--universe:has(.rh-hub-stage) > .app-chrome-bar + p {
+  width: fit-content;
+  max-width: min(420px, calc(100vw - 36px)) !important;
+  margin-top: 7px !important;
+  padding: 7px 17px !important;
+  color: rgba(246, 239, 222, 0.78) !important;
+  background: linear-gradient(180deg, rgba(21, 27, 48, 0.62), rgba(9, 13, 29, 0.48));
+  border: 1px solid rgba(183, 202, 242, 0.12);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 9px 26px rgba(2, 4, 12, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.rh-hub-stage {
+  perspective: 900px;
+}
+
+.rh-hub-stage::before {
+  content: '';
+  position: absolute;
+  inset: 2% max(0px, calc((100% - 820px) / 2)) 1%;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 48% 48% 18% 18% / 20% 20% 12% 12%;
+  background:
+    radial-gradient(circle at 50% 47%, rgba(105, 151, 228, 0.1), transparent 30%),
+    radial-gradient(circle at 14% 28%, rgba(240, 173, 84, 0.1), transparent 26%),
+    radial-gradient(circle at 87% 71%, rgba(159, 119, 232, 0.1), transparent 25%);
+  border-top: 1px solid rgba(199, 216, 255, 0.08);
+  border-bottom: 1px solid rgba(232, 172, 78, 0.08);
+  box-shadow:
+    inset 0 25px 75px rgba(62, 88, 150, 0.05),
+    0 35px 90px rgba(0, 0, 0, 0.16);
+}
+
+.rh-hub-sky::before {
+  content: '';
+  position: absolute;
+  inset: 5% 4%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 195deg at 50% 50%,
+    transparent,
+    rgba(111, 149, 230, 0.07),
+    transparent 22%,
+    rgba(232, 172, 78, 0.06),
+    transparent 55%
+  );
+  filter: blur(18px);
+  animation: rhPremiumSkyTurn 60s linear infinite;
+}
+
+.rh-hub-sky::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 50% 49%,
+    transparent 42%,
+    rgba(2, 4, 13, 0.22) 82%,
+    rgba(2, 4, 13, 0.42) 100%
+  );
+}
+
+@keyframes rhPremiumSkyTurn {
+  to {
+    transform: rotate(360deg) scale(1.04);
+  }
+}
+
+/* The generated artwork supplies high-frequency surface detail; these layers
+ * add responsive depth, atmospheric volume and a parallax orbit at runtime. */
+.rh-planet3d {
+  filter: drop-shadow(0 9px 10px rgba(0, 0, 0, 0.48));
+}
+
+.rh-planet3d::before,
+.rh-planet3d::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+  border-radius: 50%;
+  transform-style: preserve-3d;
+}
+
+.rh-planet3d::before {
+  width: 118%;
+  height: 38%;
+  border: 1px solid color-mix(in srgb, var(--rh-planet-color) 65%, white 18%);
+  border-inline-color: color-mix(in srgb, var(--rh-planet-color) 90%, white 10%);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--rh-planet-color) 42%, transparent);
+  opacity: 0.62;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  animation: rhPremiumOrbitTilt 18s ease-in-out infinite alternate;
+}
+
+.rh-planet3d::after {
+  width: 4px;
+  height: 4px;
+  background: #fff7dc;
+  box-shadow:
+    -37px 2px 0 -1px color-mix(in srgb, var(--rh-planet-color) 80%, white 20%),
+    34px -4px 0 -1px color-mix(in srgb, var(--rh-planet-color) 72%, white 28%);
+  filter: drop-shadow(0 0 4px var(--rh-planet-color));
+  transform-origin: 0 0;
+  animation: rhPremiumOrbitParticle 14s linear infinite;
+}
+
+.rh-planet3d__atmosphere {
+  inset: 3%;
+  background: radial-gradient(
+    circle,
+    transparent 52%,
+    color-mix(in srgb, var(--rh-planet-color) 54%, transparent) 68%,
+    transparent 74%
+  );
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--rh-planet-color) 76%, transparent),
+    0 0 24px color-mix(in srgb, var(--rh-planet-color) 46%, transparent),
+    0 0 42px color-mix(in srgb, var(--rh-planet-color) 22%, transparent);
+}
+
+.rh-planet3d__sphere {
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  border: 1.5px solid color-mix(in srgb, var(--rh-planet-color) 66%, #ffffff 34%);
+  box-shadow:
+    inset 8px 7px 12px rgba(255, 255, 255, 0.18),
+    inset -15px -12px 20px rgba(3, 4, 13, 0.68),
+    0 10px 17px rgba(1, 2, 8, 0.58),
+    0 0 13px color-mix(in srgb, var(--rh-planet-color) 54%, transparent),
+    0 0 0 3px rgba(255, 255, 255, 0.025);
+  transform: rotateX(-8deg) rotateY(-10deg) translateZ(8px);
+}
+
+.rh-planet3d__surface {
+  inset: -7%;
+  background-position: 50% 50%;
+  background-size: 119% 119%;
+  filter: saturate(1.12) contrast(1.08) brightness(1.02);
+  animation: rhPremiumSurfaceFloat 16s ease-in-out infinite alternate;
+}
+
+.rh-planet3d__weather {
+  opacity: 0.24;
+  background:
+    radial-gradient(ellipse 28% 10% at 22% 34%, rgba(255, 255, 255, 0.42), transparent 74%),
+    radial-gradient(ellipse 32% 10% at 72% 63%, rgba(166, 216, 255, 0.28), transparent 76%);
+}
+
+.rh-planet3d__terminator {
+  background:
+    radial-gradient(
+      circle at 27% 22%,
+      transparent 0 32%,
+      rgba(8, 9, 22, 0.06) 48%,
+      rgba(4, 6, 18, 0.35) 69%,
+      rgba(2, 3, 11, 0.77) 100%
+    ),
+    linear-gradient(112deg, rgba(255, 246, 218, 0.17), transparent 39%);
+}
+
+.rh-planet3d__glint {
+  opacity: 0.78;
+  filter: blur(0.35px) drop-shadow(0 0 4px rgba(255, 255, 255, 0.42));
+}
+
+.rh-domain-planet {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1.02);
+  transition:
+    transform 280ms cubic-bezier(0.2, 0.9, 0.2, 1),
+    filter 280ms ease;
+}
+
+.rh-domain-planet.is-hot {
+  transform: scale(1.08) translateY(-1px);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--rh-planet-color, #fff) 44%, transparent));
+}
+
+.rh-domain-planet.is-hot .rh-planet3d__sphere {
+  transform: rotateX(-3deg) rotateY(8deg) translateZ(12px) scale(1.03);
+}
+
+.rh-hub-stage svg g[role='button'] > text {
+  fill: #fffaf0 !important;
+  stroke: rgba(5, 8, 20, 0.96) !important;
+  stroke-width: 3.3px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.35px;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.72)) drop-shadow(0 0 7px rgba(218, 231, 255, 0.16));
+}
+
+.rh-assess-mascot {
+  isolation: isolate;
+}
+
+.rh-assess-mascot::before {
+  content: '';
+  position: absolute;
+  inset: 7% 8% 9%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 44%,
+    rgba(110, 182, 255, 0.3),
+    rgba(88, 128, 239, 0.1) 48%,
+    transparent 70%
+  );
+  box-shadow: 0 0 32px rgba(86, 145, 255, 0.2);
+  animation: rhPremiumRobotHalo 6s ease-in-out infinite;
+}
+
+.training-blue-robot__badge {
+  position: absolute;
+  left: 50%;
+  top: calc(100% - 38px);
+  z-index: 4;
+  min-width: 118px;
+  padding: 5px 13px 6px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  pointer-events: none;
+  border: 1px solid rgba(255, 220, 143, 0.72);
+  border-radius: 999px;
+  color: #fff8e6;
+  background: linear-gradient(180deg, rgba(35, 27, 31, 0.96), rgba(10, 12, 24, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    0 7px 18px rgba(2, 3, 10, 0.62),
+    0 0 18px rgba(232, 172, 78, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  white-space: nowrap;
+}
+
+.training-blue-robot__badge-kicker {
+  color: #e8ac4e;
+  font:
+    800 7px/1.1 'Outfit',
+    system-ui,
+    sans-serif;
+  letter-spacing: 1.35px;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.training-blue-robot__badge-label {
+  font:
+    800 15px/1.1 'Outfit',
+    system-ui,
+    sans-serif;
+  letter-spacing: 0.18px;
+  text-shadow: 0 1px 8px rgba(255, 222, 158, 0.18);
+}
+
+[dir='rtl'] .training-blue-robot__badge-kicker,
+[lang='ar'] .training-blue-robot__badge-kicker,
+[dir='rtl'] .training-blue-robot__badge-label,
+[lang='ar'] .training-blue-robot__badge-label {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+.rh-puzzles-cta {
+  padding: 11px 22px !important;
+  background: linear-gradient(135deg, rgba(30, 37, 65, 0.96), rgba(13, 17, 34, 0.98)) !important;
+  border: 1px solid rgba(247, 203, 114, 0.48) !important;
+  color: #fff5df !important;
+  font-weight: 750 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 8px 25px rgba(2, 4, 12, 0.48),
+    0 0 20px rgba(232, 172, 78, 0.08) !important;
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.rh-puzzles-cta:hover,
+.rh-puzzles-cta:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(247, 203, 114, 0.82) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 30px rgba(2, 4, 12, 0.54),
+    0 0 24px rgba(232, 172, 78, 0.16) !important;
+}
+
+@keyframes rhPremiumOrbitTilt {
+  from {
+    transform: translate(-50%, -50%) rotate(-18deg) scaleX(0.96);
+    opacity: 0.46;
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(-10deg) scaleX(1.05);
+    opacity: 0.78;
+  }
+}
+
+@keyframes rhPremiumOrbitParticle {
+  from {
+    transform: rotate(0deg) translateX(38px) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(38px) rotate(-360deg);
+  }
+}
+
+@keyframes rhPremiumSurfaceFloat {
+  from {
+    transform: translate3d(-1.2%, 0, 3px) scale(1.05) rotate(-1.1deg);
+  }
+  to {
+    transform: translate3d(1.2%, -0.7%, 4px) scale(1.09) rotate(1.1deg);
+  }
+}
+
+@keyframes rhPremiumRobotHalo {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.62;
+  }
+  50% {
+    transform: scale(1.07);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-stage--universe:has(.rh-hub-stage) > .app-chrome-bar + p {
+    font-size: 12.5px !important;
+    line-height: 1.4 !important;
+  }
+
+  .training-blue-robot__badge {
+    min-width: 112px;
+    padding-inline: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rh-hub-sky::before,
+  .rh-planet3d::before,
+  .rh-planet3d::after,
+  .rh-planet3d__surface,
+  .rh-assess-mascot::before {
+    animation: none !important;
+  }
+
+  .rh-domain-planet,
+  .rh-puzzles-cta {
+    transition: none;
+  }
+}
+
+/* ── Deliberate desktop / phone compositions ─────────────────────────────
+ * The JSX chooses the actual constellation coordinates. These rules establish
+ * hierarchy and density appropriate to each viewport rather than scaling one
+ * decorative treatment everywhere. */
+.rh-training-hub .rh-hub-shoot,
+.rh-training-hub .rh-hub-dust {
+  display: none !important;
+}
+
+.rh-training-hub .rh-hub-stars {
+  opacity: 0.38;
+  animation: none !important;
+}
+
+.rh-training-hub .rh-hub-nebula {
+  opacity: 0.32;
+  filter: blur(38px);
+}
+
+.rh-training-title {
+  font-size: 26px !important;
+  font-weight: 720 !important;
+  letter-spacing: -0.35px !important;
+}
+
+.rh-training-intro {
+  border-radius: 16px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.05px;
+}
+
+.rh-hub-stage--desktop {
+  margin-top: 9px !important;
+}
+
+.rh-hub-stage--desktop::before {
+  inset-inline: max(18px, calc((100% - 940px) / 2));
+  border-radius: 42px;
+  background:
+    radial-gradient(ellipse at 50% 48%, rgba(99, 132, 199, 0.105), transparent 37%),
+    linear-gradient(180deg, rgba(17, 23, 43, 0.14), rgba(5, 8, 20, 0.04));
+}
+
+.rh-training-hub--desktop .rh-training-title {
+  font-size: 29px !important;
+}
+
+.rh-training-hub--desktop .rh-training-intro {
+  max-width: 520px !important;
+  padding-inline: 20px !important;
+}
+
+.rh-hub-stage--phone {
+  margin-top: 2px !important;
+}
+
+.rh-hub-stage--phone::before {
+  inset: 1% 7px 1%;
+  border-radius: 28px;
+  opacity: 0.76;
+}
+
+.rh-domain-label {
+  box-sizing: border-box;
+  width: fit-content;
+  min-width: 88px;
+  max-width: 124px;
+  height: 30px;
+  margin: 0 auto;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(190, 207, 240, 0.18);
+  border-radius: 10px;
+  color: rgba(255, 250, 239, 0.95);
+  background: linear-gradient(180deg, rgba(24, 31, 54, 0.88), rgba(8, 12, 27, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    0 6px 14px rgba(1, 3, 10, 0.42);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font:
+    690 15px/1 'Outfit',
+    system-ui,
+    sans-serif;
+  letter-spacing: 0.05px;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transform: translateY(0);
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.rh-domain-label[lang='ar'] {
+  font-family: 'Cairo', sans-serif;
+  font-size: 15px;
+  font-weight: 760;
+  letter-spacing: 0;
+}
+
+.rh-domain-label.is-active {
+  border-color: rgba(247, 210, 137, 0.62);
+  color: #fff8e8;
+  background: linear-gradient(180deg, rgba(40, 39, 55, 0.94), rgba(12, 15, 30, 0.96));
+  transform: translateY(-1px);
+}
+
+.rh-training-hub--phone .rh-domain-label {
+  min-width: 92px;
+  height: 31px;
+  font-size: 15.5px;
+}
+
+.rh-training-hub--desktop .rh-domain-label {
+  min-width: 94px;
+  height: 29px;
+  font-size: 14.5px;
+}
+
+.rh-training-hub .training-blue-robot__badge {
+  top: calc(100% - 39px);
+  min-width: 132px;
+  padding: 6px 14px 7px;
+  border-radius: 13px;
+  border-color: rgba(218, 190, 133, 0.48);
+  background: linear-gradient(180deg, rgba(25, 29, 43, 0.97), rgba(8, 11, 24, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 22px rgba(1, 3, 10, 0.54);
+}
+
+.rh-training-hub .training-blue-robot__badge-kicker {
+  color: rgba(230, 198, 135, 0.78);
+  font-size: 6.7px;
+  letter-spacing: 1.15px;
+}
+
+.rh-training-hub .training-blue-robot__badge-label {
+  color: #fff9eb;
+  font-size: 15px;
+  font-weight: 720;
+}
+
+.rh-training-hub .rh-puzzles-cta {
+  min-width: 150px;
+  justify-content: center;
+  border-radius: 13px !important;
+  text-transform: none;
+  letter-spacing: 0.15px !important;
+}
+
+.rh-domain-detail {
+  padding-inline: 18px;
+}
+
+.rh-domain-detail__pill {
+  border-radius: 12px !important;
+  background: linear-gradient(180deg, rgba(25, 31, 51, 0.96), rgba(9, 12, 25, 0.97)) !important;
+  border-color: rgba(183, 199, 232, 0.24) !important;
+  box-shadow: 0 9px 28px rgba(1, 3, 10, 0.52) !important;
+}
+
+.rh-training-hub--phone .rh-domain-detail {
+  display: none;
+}
+
+.rh-training-hub--phone .rh-planet3d::after {
+  display: none;
+}
+
+@media (min-width: 780px) {
+  .rh-training-header {
+    padding-inline: clamp(28px, 5vw, 72px) !important;
+  }
+
+  .rh-training-hub .rh-puzzles-cta {
+    min-width: 168px;
+  }
+}
+
+@media (max-width: 520px) {
+  .rh-training-header {
+    padding-inline: 14px !important;
+  }
+
+  .rh-training-title {
+    max-width: 220px !important;
+    font-size: 23px !important;
+    letter-spacing: -0.25px !important;
+  }
+
+  .rh-training-intro {
+    max-width: calc(100vw - 30px) !important;
+    padding: 7px 13px !important;
+    font-size: 12px !important;
+    line-height: 1.38 !important;
+  }
+}

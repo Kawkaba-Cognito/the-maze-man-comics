@@ -27,7 +27,7 @@ const FILES = {
   journal: 'notebook_with_decorative_cover.webp',
 };
 
-/** Hand-painted cosmos planets for the Training radial hub (per-domain art). */
+/** Premium generated planet paintings for the Training radial hub. */
 const DOMAIN_PLANET_IDS = [
   'attention', 'speed', 'memory', 'language', 'reasoning', 'flexibility',
 ];
@@ -37,8 +37,8 @@ export function planetIconUrl(categoryId) {
   return file ? assetUrl(`Assets/planets/${file}`) : null;
 }
 
-/** Painted domain planet for RadialMazeHub — falls back to Fluent emoji. */
+/** Premium domain planet for RadialMazeHub — falls back to Fluent emoji. */
 export function domainPlanetUrl(domainId) {
   if (!DOMAIN_PLANET_IDS.includes(domainId)) return planetIconUrl(domainId);
-  return assetUrl(`Assets/domain-planets/${domainId}.webp`);
+  return assetUrl(`Assets/domain-planets/premium-2026/${domainId}-v2.webp`);
 }

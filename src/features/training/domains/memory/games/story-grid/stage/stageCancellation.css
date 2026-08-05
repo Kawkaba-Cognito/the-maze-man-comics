@@ -1,0 +1,424 @@
+/* Story Time aligned to Cancellation Task — the training visual standard. */
+
+.sgs,
+.sgs:has(.sgs-stage-host.recalling) {
+  --sgs-gold: var(--game-accent-edge);
+  --sgs-cream: var(--play-ink);
+  --sgs-dim: #5a6774;
+  --sgs-line: #d8e3ec;
+  --sgs-panel: rgba(252, 254, 255, 0.94);
+  --sgs-panel-raised: #ffffff;
+  --sgs-glass: rgba(252, 254, 255, 0.94);
+  color-scheme: light;
+  display: flex !important;
+  flex-direction: column;
+  background: var(--play-surface);
+  color: var(--play-ink);
+}
+
+.sgs::before {
+  content: none;
+  display: none;
+}
+
+/* Cancellation-style compact HUD. */
+.sgs-top {
+  width: min(920px, calc(100% - 16px));
+  min-height: 52px;
+  margin: 8px auto 0;
+  padding: 5px 7px;
+  gap: 7px;
+  background: rgba(252, 254, 255, 0.94);
+  border: 1px solid #d8e3ec;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(19, 30, 40, 0.08);
+}
+
+.sgs-top > .sgs-mono {
+  color: var(--game-accent-edge);
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.sgs-top-right {
+  gap: 6px;
+}
+
+.sgs-chip {
+  min-height: 40px;
+  padding: 7px 11px;
+  color: var(--play-ink);
+  background: linear-gradient(180deg, #f8fbfd 0%, #e4ebf2 100%);
+  border: 2px solid var(--ink-outline);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink-outline), inset 0 1px 0 rgba(255,255,255,0.85);
+}
+
+button.sgs-chip:hover,
+button.sgs-chip:focus-visible {
+  color: var(--play-ink);
+  background: linear-gradient(180deg, #ffffff 0%, #edf3f7 100%);
+  border-color: var(--ink-outline);
+}
+
+button.sgs-chip:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink-outline);
+}
+
+/* The cast is a small, orderly play object — never the whole page. */
+.sgs-stage-host,
+.sgs-stage-host.recalling {
+  flex: 0 0 clamp(220px, 31vh, 300px);
+  width: min(720px, calc(100% - 24px));
+  min-height: 0;
+  max-height: 300px;
+  margin: 10px auto 0;
+  overflow: hidden;
+  filter: none;
+  background: #f7fbff;
+  border: 1.5px solid rgba(72, 90, 107, 0.32);
+  border-radius: 18px;
+  box-shadow:
+    0 10px 28px rgba(19, 30, 40, 0.13),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+.sgs-stage-host.recalling {
+  flex-basis: clamp(150px, 20vh, 190px);
+  max-height: 190px;
+}
+
+.sgs-stage-host::after {
+  z-index: 1;
+  background: linear-gradient(180deg, transparent 70%, rgba(19,30,40,0.12));
+}
+
+.sgs-stage canvas {
+  filter: saturate(0.84) contrast(1.02) brightness(1.03);
+}
+
+.sgs-subtitle {
+  bottom: 8px;
+  max-width: min(48ch, calc(100% - 18px));
+  padding: 7px 11px;
+  gap: 2px;
+  color: var(--play-ink);
+  background: rgba(252, 254, 255, 0.96);
+  border: 1px solid #d8e3ec;
+  border-inline-start: 3px solid var(--who, var(--game-accent-edge));
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(19,30,40,0.14);
+}
+
+.sgs-subtitle b {
+  color: var(--who, var(--game-accent-edge));
+  font-size: 0.61rem;
+}
+
+.sgs-subtitle span {
+  color: var(--play-ink);
+  font-size: 0.86rem;
+  line-height: 1.3;
+}
+
+.sgs-dip {
+  background: #b3cadd;
+}
+
+.sgs-watch {
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 10px;
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+  background: transparent;
+  border: 0;
+}
+
+.sgs-narr {
+  max-width: 66ch;
+  color: var(--play-ink);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.sgs-transport {
+  width: min(480px, 100%);
+  gap: 9px;
+}
+
+.sgs-track li {
+  height: 5px;
+  background: #d8e3ec;
+}
+
+.sgs-track li.done {
+  background: var(--game-accent);
+}
+
+.sgs-track li.now i {
+  background: var(--game-accent-edge);
+}
+
+.sgs-ctl {
+  width: 42px;
+  height: 42px;
+  color: var(--play-ink);
+  background: linear-gradient(180deg, #f8fbfd, #e4ebf2);
+  border: 2px solid var(--ink-outline);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink-outline);
+}
+
+.sgs-ctl--main {
+  width: 48px;
+  height: 48px;
+  color: var(--play-ink);
+  background: linear-gradient(180deg, #f2c36f, var(--game-accent));
+  border-color: var(--ink-outline);
+  border-radius: 13px;
+}
+
+.sgs-ctl:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink-outline);
+}
+
+/* Retrieval uses the same centered raised-card system as Cancellation. */
+.sgs-panel,
+.sgs:has(.sgs-stage-host.recalling) > .sgs-panel {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  padding: 12px 14px calc(20px + env(safe-area-inset-bottom));
+  background: transparent;
+}
+
+.sgs-panel > * {
+  width: min(680px, 100%);
+  margin: 0 auto;
+  padding: clamp(14px, 2.2vw, 22px);
+  background: rgba(252, 254, 255, 0.94);
+  border: 1px solid #d8e3ec;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(19,30,40,0.1);
+}
+
+.sgs-order h2,
+.sgs-probe h2,
+.sgs-reveal h2 {
+  margin: 0 0 5px;
+  color: var(--play-ink);
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.sgs-sub {
+  margin-bottom: 14px;
+  color: #5a6774;
+}
+
+.sgs-slots {
+  gap: 7px;
+  margin-bottom: 13px;
+}
+
+.sgs-slot {
+  min-height: 48px;
+  padding: 5px 8px;
+  background: #f7fafc;
+  border: 1.5px dashed #c5d4df;
+  border-radius: 11px;
+}
+
+.sgs-slot.filled {
+  background: #ffffff;
+  border-style: solid;
+  border-color: rgba(153, 107, 34, 0.48);
+}
+
+.sgs-slot-n {
+  width: 28px;
+  height: 28px;
+  color: var(--game-accent-edge);
+  background: #e7eef4;
+}
+
+.sgs-slot-empty {
+  color: #71808e;
+}
+
+.sgs-pool {
+  gap: 8px;
+}
+
+.sgs-card,
+.sgs-opt {
+  min-height: 44px;
+  color: var(--play-ink);
+  background: linear-gradient(165deg, #ffffff 0%, #f1f6fa 100%);
+  border: 1.5px solid #c6d4df;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(19,30,40,0.06);
+}
+
+.sgs-card:hover,
+.sgs-card:focus-visible,
+.sgs-opt:hover:not(:disabled),
+.sgs-opt:focus-visible:not(:disabled) {
+  color: var(--play-ink);
+  background: #ffffff;
+  border-color: var(--game-accent-edge);
+}
+
+.sgs-card--placed {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.sgs-probe-count {
+  color: var(--game-accent-edge);
+}
+
+.sgs-probe-opts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.sgs-opt {
+  padding: 11px 13px;
+}
+
+.sgs-opt.picked {
+  color: var(--play-ink);
+  background: #fff4da;
+  border-color: var(--game-accent-edge);
+}
+
+.sgs-stamp {
+  color: var(--game-accent-edge);
+  background: #fff7e8;
+  border-color: rgba(153, 107, 34, 0.42);
+}
+
+.sgs-scores {
+  color: #5a6774;
+}
+
+.sgs-truth li {
+  color: var(--play-ink);
+  background: #f7fafc;
+  border: 1px solid #d8e3ec;
+}
+
+.sgs-moral {
+  color: var(--play-ink);
+  background: #fff8e9;
+  border-color: rgba(153, 107, 34, 0.3);
+}
+
+.sgs-btn {
+  min-height: 44px;
+  color: var(--play-ink);
+  background: linear-gradient(180deg, #f8fbfd, #e4ebf2);
+  border: 2px solid var(--ink-outline);
+  border-radius: 11px;
+  box-shadow: 4px 5px 0 var(--ink-outline);
+}
+
+.sgs-btn--go {
+  color: var(--play-ink);
+  background: linear-gradient(180deg, #f2c36f, var(--game-accent));
+  border-color: var(--ink-outline);
+}
+
+.sgs-btn:hover:not(:disabled),
+.sgs-btn:focus-visible:not(:disabled) {
+  border-color: var(--ink-outline);
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 7px 0 var(--ink-outline);
+}
+
+.sgs-centre {
+  color: var(--play-ink);
+}
+
+@media (max-width: 760px) {
+  .sgs-top {
+    width: calc(100% - 12px);
+    min-height: 48px;
+    margin-top: 6px;
+    padding: 4px 5px;
+  }
+
+  .sgs-top > .sgs-mono {
+    max-width: 30vw;
+    font-size: 0.69rem;
+  }
+
+  .sgs-chip {
+    min-height: 38px;
+    padding: 6px 8px;
+    font-size: 0.68rem;
+  }
+
+  .sgs-stage-host,
+  .sgs-stage-host.recalling {
+    flex: 0 0 clamp(175px, 27svh, 215px);
+    width: calc(100% - 18px);
+    max-height: 215px;
+    margin-top: 7px;
+    border-radius: 14px;
+  }
+
+  .sgs-stage-host.recalling {
+    flex-basis: clamp(125px, 18svh, 155px);
+    max-height: 155px;
+  }
+
+  .sgs-watch {
+    justify-content: space-between;
+    padding: 9px 11px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .sgs-narr {
+    font-size: 0.86rem;
+    line-height: 1.4;
+  }
+
+  .sgs-panel {
+    padding: 8px 9px calc(14px + env(safe-area-inset-bottom));
+  }
+
+  .sgs-panel > * {
+    padding: 12px;
+    border-radius: 13px;
+  }
+
+  .sgs-probe-opts {
+    grid-template-columns: 1fr;
+  }
+
+  .sgs-pool {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-height: 680px) and (max-width: 760px) {
+  .sgs-stage-host,
+  .sgs-stage-host.recalling {
+    flex-basis: 150px;
+    max-height: 150px;
+  }
+
+  .sgs-narr {
+    -webkit-line-clamp: 2;
+  }
+}

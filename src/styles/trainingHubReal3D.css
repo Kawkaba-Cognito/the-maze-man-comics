@@ -1,0 +1,105 @@
+/* Final spatial corrections for the real WebGL planet field. */
+
+/* Remove the broad translucent panel behind the constellation. The universe
+ * background is strong enough to carry the layout without a glass rectangle. */
+.rh-hub-stage::before {
+    display: none !important;
+}
+
+.rh-training-intro {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* When WebGL succeeds, suppress only the painted sphere itself. SVG paths,
+ * hit targets, domain labels and restrained orbit glows stay interactive. */
+.rh-planets-webgl-ready .rh-planet3d {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.rh-planet-field3d {
+    filter: drop-shadow(0 11px 14px rgba(0, 0, 0, 0.46));
+}
+
+/* The badge used to cover the robot's lower legs. Place it after the model and
+ * lift the complete robot/badge composition into the clear central lane. */
+.rh-training-hub .training-blue-robot__badge {
+    top: calc(100% + 2px);
+}
+
+.rh-training-hub--phone .rh-assess-mascot {
+    transform: translate(-50%, -70%) !important;
+}
+
+.rh-training-hub--desktop .rh-assess-mascot {
+    transform: translate(-50%, -76%) !important;
+}
+
+/* Nameplates remain compact but read as solid controls, not floating glass. */
+.rh-training-hub .rh-domain-label {
+    background: linear-gradient(180deg, #181f36 0%, #080c1b 100%);
+    border-color: rgba(190, 207, 240, 0.22);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.rh-training-hub .rh-domain-label.is-active {
+    background: linear-gradient(180deg, #292a3b 0%, #0d1021 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rh-planet-field3d {
+        filter: drop-shadow(0 9px 12px rgba(0, 0, 0, 0.42));
+    }
+}
+
+/* Desktop cleanup: no wide glass bands or transient description cards. */
+.rh-training-hub .rh-training-header {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.rh-training-hub .rh-domain-detail {
+    display: none !important;
+}
+
+.rh-training-hub--desktop .rh-hub-stage,
+.rh-training-hub--desktop .rh-hub-sky,
+.rh-training-hub--desktop .rh-hub-stage svg {
+    background: transparent !important;
+}
+
+.rh-training-hub--desktop .rh-domain-label {
+    min-width: 112px;
+    height: 31px;
+    border-radius: 9px;
+    font-size: 15px;
+    font-weight: 680;
+    letter-spacing: 0.02px;
+}
+
+.rh-training-hub--desktop .rh-domain-label[lang='ar'] {
+    font-size: 15px;
+    font-weight: 760;
+}
+
+/* Keep the preview on the same continuous universe surface as the page.
+ * The stage-local vignette was clipped to the stage bounds, which made its
+ * transparent edges read as a large rectangle on both desktop and phone. */
+.rh-training-hub .rh-hub-sky {
+    overflow: visible !important;
+    background: none !important;
+}
+
+.rh-training-hub .rh-hub-sky::before,
+.rh-training-hub .rh-hub-sky::after {
+    content: none !important;
+    display: none !important;
+}
