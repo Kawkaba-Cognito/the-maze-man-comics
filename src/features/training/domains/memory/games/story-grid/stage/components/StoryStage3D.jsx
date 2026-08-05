@@ -1,90 +1,68 @@
 import React, { useEffect, useRef } from 'react';
-import { GAME_INTS } from '../../../../../../shared/gamePalette';
 import { bootC3dScene, THREE } from '../../../../../../shared/c3dBoot';
 import { createCharacter, preloadCast } from '../../../../../../shared/castModels';
 import { RIG_HEIGHT } from '../../../../../../shared/castRoster';
 import { SKIES } from '../schema';
 
 /*
- * The story stage — the cast performing one beat at a time.
- *
- * Same hard-won rules as the detective line-up (see castModels.js): the rigged
- * models are NEVER scaled, because scaling a skinned GLTF desynchronises the
- * bone matrices from their inverse bind matrices. Size is a camera decision.
- *
- * Visually this is the app's universe language rather than the detective's
- * noir: an open starfield, a lit disc the cast stands on, and a sky gradient
- * that changes per beat (dawn → noon → dusk → night), so a change of time
- * reads instantly and gives the ordering task a non-verbal cue to encode.
+ * Story Time presents the existing cast as a collection of small, premium
+ * memory figurines. The models are intentionally never enlarged into hero
+ * close-ups: their silhouettes and animation read best as a composed group.
+ * Physical plinths, contact shadows, three-quarter staging and soft studio
+ * light do the depth work that the old flat, front-facing tableau was missing.
  */
 const CHAR_WIDTH = 1.05;
-const FLOOR_Y = 0.02;
-const SPREAD = 1.35;
-const ARC = 0.35;
+const FLOOR_Y = 0.068;
+const SPREAD = 1.1;
+const MIN_SPREAD = 0.62;
+const OFF_STAGE_Y = -2.4;
+const FILL_LANDSCAPE = 0.34;
+const FILL_PORTRAIT = 0.31;
 
-/*
- * How much of the frame height ONE actor should fill.
- *
- * This is the only knob for apparent character size. The rigs are never scaled
- * (see the note above), so size is purely camera distance — and this number is
- * what the distance is solved from. Turn it down to make the cast smaller.
- *
- * Paired with the mobile stage band in stage.css: on a phone the stage is no
- * longer a full-bleed backdrop but a ~40vh strip, so 0.30 of THAT is roughly a
- * third of what the same actor used to occupy on screen.
- */
-/* 0.52 / 0.42, up from 0.30 / 0.24 (2026-08-01).
- *
- * At 0.30 a rig occupied under a third of the stage's height — about 110px of a
- * 380px band — so the cast read as distant specks on an empty disc, which is
- * most of why this screen looked unfinished. These are the characters the whole
- * game is about; they should own the frame. The comment above still holds: this
- * is the ONLY knob, because the rigs are never scaled. */
-const FILL_LANDSCAPE = 0.52;
-const FILL_PORTRAIT = 0.42;
-
-// Below this, actors visibly collide and the line stops reading as a group;
-// past it we step the camera back rather than squash the staging further.
-const MIN_SPREAD = 0.55;
-
-/*
- * The shot table — the numbers behind the names in schema.js.
- *
- *   dist   multiplier on the solved group distance (smaller = closer in)
- *   eye    camera height, in rig heights
- *   aim    what height it looks at, in rig heights
- *   favour how far the camera slides toward the focal actor (0 = stays centred)
- *
- * A close-up is allowed to push the outer cast out of frame — that is what a
- * close-up IS. Only the focal actor is guaranteed in shot.
- */
 const SHOTS = {
-  wide: { dist: 1.34, eye: 0.78, aim: 0.5, favour: 0 },
-  mid: { dist: 1.0, eye: 0.62, aim: 0.5, favour: 0.25 },
-  close: { dist: 0.62, eye: 0.74, aim: 0.66, favour: 0.85 },
+  wide: { dist: 1.2, eye: 0.68, aim: 0.48, favour: 0 },
+  mid: { dist: 1.04, eye: 0.64, aim: 0.5, favour: 0.18 },
+  close: { dist: 0.9, eye: 0.66, aim: 0.54, favour: 0.55 },
 };
 
-// Every shot drifts slowly forward while it holds. Tiny — you should feel it
-// rather than see it — but it is the difference between a film and a slideshow.
-const PUSH_FROM = 1.035;
-const PUSH_TO = 0.975;
-const PUSH_SECONDS = 6;
+const damp = (value, target, dt, speed = 4) =>
+  value + (target - value) * Math.min(1, dt * speed);
 
-const damp = (v, target, dt, speed = 4) => v + (target - v) * Math.min(1, dt * speed);
+function tuneCharacterMaterials(root, ownedMaterials) {
+  root.traverse((node) => {
+    if (!node.isMesh) return;
+
+    const tune = (source) => {
+      const material = source.clone();
+      ownedMaterials.add(material);
+
+      if ('metalness' in material) material.metalness = Math.min(material.metalness ?? 0, 0.08);
+      if ('roughness' in material) material.roughness = Math.max(material.roughness ?? 0.5, 0.68);
+      if ('envMapIntensity' in material) material.envMapIntensity = 0.35;
+      material.toneMapped = true;
+      if (!material.transparent || material.opacity >= 0.99) material.depthWrite = true;
+      material.needsUpdate = true;
+      return material;
+    };
+
+    node.material = Array.isArray(node.material)
+      ? node.material.map(tune)
+      : tune(node.material);
+    node.frustumCulled = false;
+  });
+}
 
 export default function StoryStage3D({
   beat, cast, isAr, shot = 'mid', focusX = 0, onReady, onError,
 }) {
   const wrapRef = useRef(null);
-  const applyRef = useRef(null); // set by the scene: play a beat's clips
+  const applyRef = useRef(null);
   const beatRef = useRef(beat);
   beatRef.current = beat;
-  // The camera reads these every frame; they must never re-boot the scene.
-  const shotRef = useRef({ shot, focusX, since: 0 });
+  const shotRef = useRef({ shot, focusX });
   const handlers = useRef({ onReady, onError });
   handlers.current = { onReady, onError };
 
-  // Rebuild only for a genuinely different company of actors.
   const castKey = (cast || []).join(',');
 
   useEffect(() => {
@@ -93,126 +71,160 @@ export default function StoryStage3D({
 
     let disposed = false;
     const boot = bootC3dScene(wrap, {
-      // fitHalf is inert here — this stage drives camera.position itself in the
-      // tick below, solving distance from FILL_LANDSCAPE. That constant, not
-      // this one, is what sizes the cast.
-      fov: 40,
-      fitHalf: 3.4,
+      fov: 38,
       alpha: false,
-      // Tide's LIGHT end, matching .sgs in tokens.css. The stage's own sky is a
-      // finite plane, so wherever the camera sees past it the renderer's clear
-      // colour shows — it has to be the same end of the ramp as the sky, or
-      // that gap becomes a fringe of the wrong depth around the picture.
-      // Kept simple on purpose: this stage now renders at a fraction of its old
-      // footprint (see stage.css), and bloom + real-time shadows were the two
-      // priciest, least-necessary passes for a scene that small — cut for a
-      // lighter, more responsive watch phase rather than tuned down.
       bloom: false,
       lights: false,
-      stars: true, // the universe backdrop, not a noir room
-      // c3dBoot normally reserves a top band for a floating HUD and slides the
-      // content down to clear it. This stage has no in-canvas HUD — the chrome
-      // is DOM above and below it — and we drive the camera ourselves in the
-      // tick, so that shift only pushed the cast low in frame. Opt out.
+      stars: false,
       hudReserveFrac: 0,
     });
+
     if (boot.error) {
       handlers.current.onError?.(boot.error);
       return () => boot.dispose();
     }
 
-    const { camera, playRoot, scene, renderer, setTick, dispose } = boot;
+    const {
+      camera, coarse, playRoot, renderer, setTick, dispose,
+    } = boot;
+
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 1.06;
+    renderer.shadowMap.enabled = !coarse;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.domElement.setAttribute(
       'aria-label',
-      isAr ? 'مسرح القصة ثلاثي الأبعاد' : 'Story stage',
+      isAr ? 'مشهد القصة ثلاثي الأبعاد' : 'Three-dimensional story scene',
     );
 
     const stage = new THREE.Group();
     playRoot.add(stage);
 
-    const owned = { geo: new Set(), mat: new Set() };
+    const ownedGeometry = new Set();
+    const ownedMaterials = new Set();
     const own = (mesh, parent = stage) => {
-      if (mesh.geometry) owned.geo.add(mesh.geometry);
-      (Array.isArray(mesh.material) ? mesh.material : [mesh.material])
-        .filter(Boolean).forEach((m) => owned.mat.add(m));
+      if (mesh.geometry) ownedGeometry.add(mesh.geometry);
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      materials.filter(Boolean).forEach((material) => ownedMaterials.add(material));
       parent.add(mesh);
       return mesh;
     };
 
-    // ── sky: a big backdrop plane we recolour per beat ────────────────────
+    // A clean studio cyclorama replaces the star field and oversized planet.
+    // It keeps the time-of-day memory cue while removing visual noise.
     const skyMat = new THREE.ShaderMaterial({
       uniforms: {
-        /* setHex(..., LinearSRGBColorSpace), NOT new THREE.Color(hex).
-         *
-         * This is a RAW ShaderMaterial: it writes gl_FragColor itself and so
-         * never gets three's <colorspace_fragment> chunk, which is what would
-         * normally convert linear back to sRGB on the way out. The default
-         * `new THREE.Color(hex)` converts the hex sRGB -> LINEAR on the way in,
-         * and that linear number was then written to the framebuffer verbatim
-         * and displayed as if it were sRGB — every sky came out roughly a fifth
-         * darker than authored. Reading the hex as already-linear cancels the
-         * conversion, so the SKIES values in schema.js are what you see. */
         top: { value: new THREE.Color().setHex(SKIES.night.top, THREE.LinearSRGBColorSpace) },
         bot: { value: new THREE.Color().setHex(SKIES.night.bot, THREE.LinearSRGBColorSpace) },
       },
-      vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
-      fragmentShader: 'uniform vec3 top; uniform vec3 bot; varying vec2 vUv; void main(){ gl_FragColor=vec4(mix(bot,top,pow(vUv.y,0.85)),1.0); }',
+      vertexShader: [
+        'varying vec2 vUv;',
+        'void main() {',
+        '  vUv = uv;',
+        '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+        '}',
+      ].join('\n'),
+      fragmentShader: [
+        'uniform vec3 top;',
+        'uniform vec3 bot;',
+        'varying vec2 vUv;',
+        'void main() {',
+        '  float blend = smoothstep(0.0, 1.0, pow(vUv.y, 0.82));',
+        '  gl_FragColor = vec4(mix(bot, top, blend), 1.0);',
+        '}',
+      ].join('\n'),
       depthWrite: false,
       side: THREE.DoubleSide,
     });
-    /* Big enough to always outrun the frustum. At 46x26 it did not: the stage
-     * is a wide letterbox, and at this aspect the visible width 24 units out is
-     * ~90, so the plane's own edges were on screen as a slanted trapezoid with
-     * the clear colour around it. One extra quad is free; guessing the exact
-     * cover size is not. */
-    const sky = own(new THREE.Mesh(new THREE.PlaneGeometry(200, 60), skyMat));
-    sky.position.set(0, 3.2, -12);
-    sky.renderOrder = -10;
+    const backdrop = own(new THREE.Mesh(new THREE.PlaneGeometry(160, 48), skyMat));
+    backdrop.position.set(0, 6, -14);
+    backdrop.renderOrder = -10;
 
-    // ── the disc the cast stands on ───────────────────────────────────────
-    const discMat = new THREE.MeshStandardMaterial({
-      color: SKIES.night.ground, roughness: 0.72, metalness: 0.2,
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: SKIES.night.ground,
+      roughness: 0.92,
+      metalness: 0,
     });
-    const disc = own(new THREE.Mesh(new THREE.CylinderGeometry(4.6, 4.8, 0.14, 64), discMat));
-    disc.position.y = -0.07;
+    const floor = own(new THREE.Mesh(new THREE.PlaneGeometry(22, 12), floorMat));
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(0, -0.002, -1.5);
+    floor.receiveShadow = !coarse;
 
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: GAME_INTS.accent.fill, transparent: true, opacity: 0.22,
-      blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
-    });
-    const ring = own(new THREE.Mesh(new THREE.RingGeometry(4.5, 4.72, 96), ringMat));
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = 0.015;
-
-    // ── lights (recoloured per beat) ──────────────────────────────────────
-    // No real-time shadows — a scene this small read fine without them, and
-    // dropping the shadow map (was 512-1024px, recomputed every frame against
-    // a skinned/rigged mesh) is most of the win from "simpler".
-    const hemi = new THREE.HemisphereLight(0x8fa6d8, 0x1a1220, 0.75);
+    // Soft studio lighting reveals volume without turning the small stage into
+    // a glossy toy showroom. Desktop receives real shadows; phones use the
+    // cheaper authored contact shadows below.
+    const hemi = new THREE.HemisphereLight(0xdcecff, 0x52647a, 1.35);
     stage.add(hemi);
-    const key = new THREE.DirectionalLight(0xffe6c0, 1.9);
-    key.position.set(2.4, 5, 4.4);
+
+    const key = new THREE.DirectionalLight(0xfff4e7, 2.25);
+    key.position.set(3.8, 6.5, 5.4);
+    key.target.position.set(0, RIG_HEIGHT * 0.45, 0);
+    key.castShadow = !coarse;
+    if (!coarse) {
+      key.shadow.mapSize.set(512, 512);
+      key.shadow.camera.left = -5;
+      key.shadow.camera.right = 5;
+      key.shadow.camera.top = 5;
+      key.shadow.camera.bottom = -2;
+      key.shadow.camera.near = 1;
+      key.shadow.camera.far = 14;
+      key.shadow.bias = -0.0008;
+      key.shadow.normalBias = 0.025;
+    }
     stage.add(key, key.target);
-    const rim = new THREE.PointLight(0x6f8ad0, 4.2, 14, 1.7);
-    rim.position.set(-3.4, 2.4, 1.2);
+
+    const rim = new THREE.PointLight(0xb9d2ee, 1.55, 13, 2);
+    rim.position.set(-3.5, 2.8, 1.2);
     stage.add(rim);
 
     const characters = new Map();
 
-    /**
-     * Fire each actor's clip for a beat. Separate from the tick, which only
-     * moves people: a clip must start once on the beat change, not restart
-     * every frame. Idle loops, everything else plays through then settles.
-     */
-    const playBeat = (b) => {
-      if (!b) return;
-      characters.forEach((ch, id) => {
-        const a = b.actors.find((x) => x.id === id);
-        if (!a) return;
-        if (a.act === 'idle') ch.play('idle', { loop: true });
-        else ch.react(a.act);
+    const makePresentation = (id, index, onFirstBeat) => {
+      const root = new THREE.Group();
+      stage.add(root);
+
+      const padMat = new THREE.MeshStandardMaterial({
+        color: index % 2 ? 0xdbe6ef : 0xe7eef4,
+        roughness: 0.82,
+        metalness: 0.02,
+      });
+      const pad = own(
+        new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.49, 0.06, 40), padMat),
+        root,
+      );
+      pad.position.y = 0.03;
+      pad.receiveShadow = !coarse;
+      pad.castShadow = !coarse;
+
+      const contactMat = new THREE.MeshBasicMaterial({
+        color: 0x24384b,
+        transparent: true,
+        opacity: 0.17,
+        depthWrite: false,
+        toneMapped: false,
+      });
+      const contact = own(
+        new THREE.Mesh(new THREE.CircleGeometry(0.34, 32), contactMat),
+        root,
+      );
+      contact.rotation.x = -Math.PI / 2;
+      contact.scale.set(1, 0.48, 1);
+      contact.position.y = 0.061;
+      contact.renderOrder = 2;
+
+      root.position.y = onFirstBeat ? 0 : OFF_STAGE_Y;
+      root.visible = onFirstBeat;
+      root.userData.castId = id;
+      return { root, pad, contact };
+    };
+
+    const playBeat = (nextBeat) => {
+      if (!nextBeat) return;
+      characters.forEach(({ character }, id) => {
+        const actor = nextBeat.actors.find((entry) => entry.id === id);
+        if (!actor) return;
+        if (actor.act === 'idle') character.play('idle', { loop: true });
+        else character.react(actor.act);
       });
     };
     applyRef.current = playBeat;
@@ -221,152 +233,138 @@ export default function StoryStage3D({
       try {
         await preloadCast(cast);
         if (disposed) return;
-        for (let i = 0; i < cast.length; i++) {
-          const ch = await createCharacter(cast[i], { seedIndex: i });
-          if (disposed) { ch.dispose(); return; }
-          // Spawn already at the tick's own off-stage height (-2.4) for anyone
-          // not in the first beat. The tick derives visibility from position,
-          // not from a flag, so starting these at FLOOR_Y made them flash into
-          // view at floor level for a frame before damping pulled them back
-          // down out of sight — the "character appears then disappears" bug.
-          const onFirstBeat = !!beatRef.current?.actors?.some((a) => a.id === cast[i]);
-          ch.root.position.set(0, onFirstBeat ? FLOOR_Y : -2.4, 0);
-          ch.root.visible = onFirstBeat;
-          stage.add(ch.root);
-          characters.set(cast[i], ch);
+
+        for (let index = 0; index < cast.length; index += 1) {
+          const id = cast[index];
+          const character = await createCharacter(id, { seedIndex: index });
+          if (disposed) {
+            character.dispose();
+            return;
+          }
+
+          tuneCharacterMaterials(character.root, ownedMaterials);
+          character.root.traverse((node) => {
+            if (!node.isMesh) return;
+            node.castShadow = !coarse;
+            node.receiveShadow = !coarse;
+          });
+
+          const onFirstBeat = !!beatRef.current?.actors?.some((actor) => actor.id === id);
+          const presentation = makePresentation(id, index, onFirstBeat);
+          character.root.position.y = FLOOR_Y;
+          presentation.root.add(character.root);
+          characters.set(id, { character, ...presentation });
         }
-        // The first beat was set before anyone had loaded — perform it now.
+
         playBeat(beatRef.current);
         handlers.current.onReady?.();
-      } catch (err) {
-        if (!disposed) handlers.current.onError?.(err);
+      } catch (error) {
+        if (!disposed) handlers.current.onError?.(error);
       }
     })();
 
-    // ── per-frame: apply whatever beat React last handed us ───────────────
     const skyTop = new THREE.Color();
     const skyBot = new THREE.Color();
-    const keyCol = new THREE.Color();
-    const rimCol = new THREE.Color();
-    const discCol = new THREE.Color();
-    // Scratch vectors — allocating these per frame would churn the GC.
-    const camPos = new THREE.Vector3();
-    const camAim = new THREE.Vector3();
-    const camLook = new THREE.Vector3(0, RIG_HEIGHT * 0.5, 0);
+    const keyColor = new THREE.Color();
+    const rimColor = new THREE.Color();
+    const floorColor = new THREE.Color();
+    const cameraTarget = new THREE.Vector3();
+    const lookTarget = new THREE.Vector3(0, RIG_HEIGHT * 0.5, 0);
 
     setTick((dt, now) => {
-      const b = beatRef.current;
-      const pal = SKIES[b?.sky] || SKIES.night;
+      const currentBeat = beatRef.current;
+      const palette = SKIES[currentBeat?.sky] || SKIES.night;
+      const paletteEase = Math.min(1, dt * 2.2);
 
-      // Cross-fade the whole palette so a change of time of day reads as a
-      // mood shift rather than a cut.
-      // Linear-space read, matching the uniform init above — see the note there.
-      skyTop.setHex(pal.top, THREE.LinearSRGBColorSpace);
-      skyBot.setHex(pal.bot, THREE.LinearSRGBColorSpace);
-      skyMat.uniforms.top.value.lerp(skyTop, Math.min(1, dt * 2.2));
-      skyMat.uniforms.bot.value.lerp(skyBot, Math.min(1, dt * 2.2));
-      keyCol.set(pal.key); key.color.lerp(keyCol, Math.min(1, dt * 2.2));
-      rimCol.set(pal.rim); rim.color.lerp(rimCol, Math.min(1, dt * 2.2));
-      discCol.set(pal.ground); discMat.color.lerp(discCol, Math.min(1, dt * 2.2));
+      skyTop.setHex(palette.top, THREE.LinearSRGBColorSpace);
+      skyBot.setHex(palette.bot, THREE.LinearSRGBColorSpace);
+      skyMat.uniforms.top.value.lerp(skyTop, paletteEase);
+      skyMat.uniforms.bot.value.lerp(skyBot, paletteEase);
+      keyColor.set(palette.key);
+      key.color.lerp(keyColor, paletteEase);
+      rimColor.set(palette.rim);
+      rim.color.lerp(rimColor, paletteEase);
+      floorColor.set(palette.ground);
+      floorMat.color.lerp(floorColor, paletteEase);
 
-      const actors = b?.actors || [];
+      const actors = currentBeat?.actors || [];
       const aspect = Math.max(0.35, camera.aspect || 1);
-      const portrait = aspect < 0.9;
-
-      // Framing, in one direction: SIZE first, then staging.
-      //
-      // This used to run the other way — the camera was pushed back until the
-      // widest actor fitted, so a beat that spread out rendered everyone
-      // smaller than a beat that huddled, and a phone got a whole cast at ~7%
-      // of the stage. Now the distance is pinned to the vertical fit (i.e. to
-      // FILL_*), which makes an actor the SAME size in every beat and on every
-      // screen, and the line-up compresses horizontally to fit whatever width
-      // that leaves. Only when the squeeze would collide bodies do we give
-      // ground and step back.
+      const fill = aspect < 0.9 ? FILL_PORTRAIT : FILL_LANDSCAPE;
       const halfFov = (camera.fov * Math.PI) / 360;
-      const tan = Math.tan(halfFov);
-      const fill = portrait ? FILL_PORTRAIT : FILL_LANDSCAPE;
+      const tangent = Math.tan(halfFov);
 
       let maxX = 0;
-      for (const a of actors) maxX = Math.max(maxX, Math.abs(a.x ?? 0));
+      actors.forEach((actor) => { maxX = Math.max(maxX, Math.abs(actor.x ?? 0)); });
 
-      let dist = Math.max(RIG_HEIGHT / (2 * fill * tan), 2.6);
-      let spreadX = SPREAD;
+      let distance = Math.max(RIG_HEIGHT / (2 * fill * tangent), 3.2);
+      let spread = SPREAD;
       if (maxX > 0.001) {
-        // Half-width available at that distance, less room for a body.
-        const halfW = dist * tan * aspect - CHAR_WIDTH * 0.6;
-        spreadX = halfW / (2 * maxX);
-        if (spreadX < MIN_SPREAD) {
-          spreadX = MIN_SPREAD;
-          dist = (2 * MIN_SPREAD * maxX + CHAR_WIDTH * 0.6) / (tan * aspect);
+        const availableHalfWidth = distance * tangent * aspect - CHAR_WIDTH * 0.58;
+        spread = availableHalfWidth / (2 * maxX);
+        if (spread < MIN_SPREAD) {
+          spread = MIN_SPREAD;
+          distance = (2 * MIN_SPREAD * maxX + CHAR_WIDTH * 0.58) / (tangent * aspect);
         }
-        spreadX = Math.min(spreadX, SPREAD);
+        spread = Math.min(spread, SPREAD);
       }
-      const arcZ = ARC;
 
-      characters.forEach((ch, id) => {
-        const a = actors.find((x) => x.id === id);
-        const onStage = !!a;
-        // Anyone not in this beat sinks away rather than vanishing mid-frame.
-        const targetY = onStage ? FLOOR_Y : -2.4;
-        ch.root.position.y = damp(ch.root.position.y, targetY, dt, 3.4);
-        ch.root.visible = ch.root.position.y > -2.2;
-        if (!onStage) { ch.update(dt, now); return; }
-        const tx = (a.x ?? 0) * spreadX * 2;
-        const tz = -Math.abs(a.x ?? 0) * arcZ;
-        ch.root.position.x = damp(ch.root.position.x, tx, dt, 3.6);
-        ch.root.position.z = damp(ch.root.position.z, tz, dt, 3.6);
-        // Everyone angles slightly inward, which sells the arc as a group.
-        ch.lookAt(-tx * 0.12);
-        ch.update(dt, now);
+      characters.forEach(({ character, root }, id) => {
+        const actor = actors.find((entry) => entry.id === id);
+        const onStage = !!actor;
+        root.position.y = damp(root.position.y, onStage ? 0 : OFF_STAGE_Y, dt, 3.8);
+        root.visible = root.position.y > -2.2;
+
+        if (!onStage) {
+          character.update(dt, now);
+          return;
+        }
+
+        const targetX = (actor.x ?? 0) * spread * 2;
+        const targetZ = -0.1 - Math.abs(actor.x ?? 0) * 0.16;
+        root.position.x = damp(root.position.x, targetX, dt, 3.8);
+        root.position.z = damp(root.position.z, targetZ, dt, 3.8);
+
+        // A subtle inward three-quarter turn exposes the models' depth while
+        // keeping faces legible and the group visually connected.
+        character.lookAt(Math.max(-0.24, Math.min(0.24, -targetX * 0.11)));
+        character.update(dt, now);
       });
 
-      // ── the camera ────────────────────────────────────────────────────
-      // `dist` above is the distance that frames the GROUP correctly. The shot
-      // modulates it: a wide pulls off it, a close-up dives past it toward
-      // whoever is speaking. Everything is damped, never set, so a cut reads
-      // as a move — which is what stops this looking like a slideshow.
-      const st = shotRef.current;
-      const s = SHOTS[st.shot] || SHOTS.mid;
+      const shotConfig = SHOTS[shotRef.current.shot] || SHOTS.mid;
+      const targetDistance = distance * shotConfig.dist;
+      const targetX = shotRef.current.focusX * spread * 2 * shotConfig.favour;
+      const targetEye = RIG_HEIGHT * shotConfig.eye;
+      const targetAim = RIG_HEIGHT * shotConfig.aim;
 
-      // Slow drift forward for as long as the shot holds.
-      const held = Math.min(1, Math.max(0, (now - st.since) / (PUSH_SECONDS * 1000)));
-      const push = PUSH_FROM + (PUSH_TO - PUSH_FROM) * held;
-
-      const targetDist = dist * s.dist * push;
-      const targetX = st.focusX * spreadX * 2 * s.favour;
-      const targetEye = RIG_HEIGHT * s.eye;
-      const targetAim = RIG_HEIGHT * s.aim;
-
-      camPos.set(targetX, targetEye, targetDist);
-      camAim.set(targetX * 0.82, targetAim, 0);
-      // Slightly slower than the actors, so the frame settles after they do.
-      camera.position.lerp(camPos, Math.min(1, dt * 2.6));
-      camLook.lerp(camAim, Math.min(1, dt * 2.6));
-      camera.lookAt(camLook);
+      cameraTarget.set(targetX, targetEye, targetDistance);
+      camera.position.lerp(cameraTarget, Math.min(1, dt * 2.8));
+      lookTarget.lerp(
+        new THREE.Vector3(targetX * 0.76, targetAim, -0.08),
+        Math.min(1, dt * 2.8),
+      );
+      camera.lookAt(lookTarget);
     });
 
     return () => {
       disposed = true;
       applyRef.current = null;
-      characters.forEach((ch) => ch.dispose());
-      owned.geo.forEach((g) => g.dispose());
-      owned.mat.forEach((m) => m.dispose());
+      characters.forEach(({ character, root }) => {
+        character.dispose();
+        root.removeFromParent();
+      });
+      ownedGeometry.forEach((geometry) => geometry.dispose());
+      ownedMaterials.forEach((material) => material.dispose());
       stage.removeFromParent();
-      scene.remove(playRoot);
       dispose();
     };
-    // Selection of a beat must not tear down the scene — only a new company does.
+    // Beat changes animate inside the existing scene; only cast/language rebuild it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [castKey, isAr]);
 
-  // Fire each actor's beat clip once per beat change (the tick only moves them).
   useEffect(() => { applyRef.current?.(beat); }, [beat]);
 
-  // A new shot restarts the push-in. Timed off the same clock the tick reads
-  // (performance.now via rAF), so a paused film holds its framing.
   useEffect(() => {
-    shotRef.current = { shot, focusX, since: performance.now() };
+    shotRef.current = { shot, focusX };
   }, [shot, focusX, beat]);
 
   return <div ref={wrapRef} className="sgs-stage" />;

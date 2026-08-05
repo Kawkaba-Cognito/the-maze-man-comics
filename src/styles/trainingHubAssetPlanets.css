@@ -1,0 +1,103 @@
+/* Asset-first domain planets: preserve the generated 3D paintings and use
+ * restrained compositing for depth. The artwork supplies the surface detail;
+ * CSS supplies only curvature, atmosphere and interaction feedback. */
+
+.rh-training-hub .rh-hub-stage.rh-planets-webgl-ready .rh-planet3d {
+    opacity: 1;
+    visibility: visible;
+}
+
+.rh-training-hub .rh-planet-field3d {
+    display: none !important;
+}
+
+.rh-training-hub .rh-planet3d {
+    filter:
+        drop-shadow(0 9px 12px rgba(1, 5, 16, 0.34))
+        drop-shadow(0 0 8px color-mix(in srgb, var(--rh-planet-color) 28%, transparent));
+}
+
+.rh-training-hub .rh-planet3d__atmosphere {
+    inset: 1%;
+    opacity: 0.86;
+    background:
+        radial-gradient(
+            circle,
+            transparent 55%,
+            color-mix(in srgb, var(--rh-planet-color) 44%, white 14%) 68%,
+            transparent 75%
+        );
+    box-shadow:
+        0 0 9px color-mix(in srgb, var(--rh-planet-color) 56%, transparent),
+        0 0 23px color-mix(in srgb, var(--rh-planet-color) 30%, transparent);
+}
+
+.rh-training-hub .rh-planet3d__sphere {
+    width: calc(100% - 3px);
+    height: calc(100% - 3px);
+    border: 1px solid color-mix(in srgb, var(--rh-planet-color) 44%, white 40%);
+    background: #07101d;
+    box-shadow:
+        inset 4px 3px 8px rgba(255, 255, 255, 0.12),
+        inset -7px -5px 12px rgba(3, 7, 18, 0.22),
+        0 8px 14px rgba(1, 4, 13, 0.4),
+        0 0 11px color-mix(in srgb, var(--rh-planet-color) 42%, transparent);
+    transform: rotateX(-5deg) rotateY(-6deg) translateZ(7px);
+}
+
+.rh-training-hub .rh-planet3d__surface {
+    inset: -5%;
+    background-position: 50% 50%;
+    background-size: 112% 112%;
+    filter: saturate(1.08) contrast(1.02) brightness(1.16);
+    transform: translateZ(4px) scale(1.025);
+}
+
+.rh-training-hub .rh-planet3d__weather {
+    opacity: 0.12;
+}
+
+.rh-training-hub .rh-planet3d__terminator {
+    background:
+        radial-gradient(
+            circle at 28% 23%,
+            transparent 0 40%,
+            rgba(4, 9, 22, 0.04) 57%,
+            rgba(2, 6, 17, 0.27) 82%,
+            rgba(1, 4, 13, 0.42) 100%
+        ),
+        linear-gradient(116deg, rgba(255, 248, 226, 0.16), transparent 42%);
+}
+
+.rh-training-hub .rh-planet3d__glint {
+    opacity: 0.48;
+    filter: blur(0.45px) drop-shadow(0 0 3px rgba(255, 255, 255, 0.28));
+}
+
+.rh-training-hub .rh-domain-planet.is-hot .rh-planet3d {
+    filter:
+        drop-shadow(0 11px 15px rgba(1, 5, 16, 0.4))
+        drop-shadow(0 0 12px color-mix(in srgb, var(--rh-planet-color) 48%, transparent));
+}
+
+.rh-training-hub .rh-domain-planet.is-hot .rh-planet3d__sphere {
+    transform: rotateX(-3deg) rotateY(7deg) translateZ(11px) scale(1.035);
+}
+
+.rh-training-hub .rh-domain-planet.is-hot .rh-planet3d__surface {
+    filter: saturate(1.12) contrast(1.03) brightness(1.2);
+}
+
+@media (max-width: 779px) {
+    .rh-training-hub .rh-planet3d {
+        filter:
+            drop-shadow(0 7px 9px rgba(1, 5, 16, 0.3))
+            drop-shadow(0 0 6px color-mix(in srgb, var(--rh-planet-color) 25%, transparent));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rh-training-hub .rh-planet3d__surface {
+        transform: translateZ(4px) scale(1.025);
+    }
+}
