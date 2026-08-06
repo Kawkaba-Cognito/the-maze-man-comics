@@ -10,16 +10,10 @@ import { STORIES } from './stories';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
 /*
- * The separate "3D" prototype was retired 2026-07-27. It rendered flat comic
- * panels with emoji characters and still implemented the OLD panel-rebuild
- * task, so it had stopped being "the 2D Survival in 3D" the moment Survival
- * was rebuilt as the staged story. Survival IS the 3D experience now — a
- * rigged cast on a lit stage, played as a short film — so a second, worse 3D
- * entry point was just a fork in the road with a dead end on it.
- * (StoryGrid3DProto.jsx is recoverable from git history.)
+ * Survival plays the story as a sequence of clean illustrated 2D scenes. The
+ * retired 3D prototype remains recoverable from git history.
  */
-// Survival's staged rebuild — lazy, so three.js and the cast models only load
-// for players who actually start a Survival run.
+// Survival's staged rebuild stays lazy so it only loads when a run begins.
 const StageSurvival = lazyWithRetry(() => import('./stage/StageSurvival'), 'story-stage');
 const STAGE_FALLBACK = { position: 'fixed', inset: 0, zIndex: 40, background: '#05050b' };
 

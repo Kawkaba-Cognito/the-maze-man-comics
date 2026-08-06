@@ -71,7 +71,7 @@ export default function FlowGame({ onBack }) {
   const startDraw = (cell) => {
     if (solved || cell < 0) return;
     const o = owner.slice();
-    let color = -1;
+    let color;
     if (dotMap[cell] >= 0) {
       color = dotMap[cell];
       pathsRef.current[color].forEach((cc) => { if (!isDot(cc)) o[cc] = -1; });
@@ -135,7 +135,7 @@ export default function FlowGame({ onBack }) {
       <div className="ct-puzzle-play-body" style={{ justifyContent: 'flex-start', gap: 10, paddingTop: 12, overflowY: 'auto' }}>
         <PuzzleHint>{isAr ? 'اسحب من نقطة لتصل بين كل لونين دون تقاطع، واملأ كل الخانات.' : 'Drag from a dot to connect each colour pair without crossing — fill every cell.'}</PuzzleHint>
         <div className="ct-puzzle-grid-wrap">
-          <div ref={gridRef}
+          <div ref={gridRef} className="ct-flow-board"
             style={{ display: 'grid', gridTemplateColumns: `repeat(${N}, 1fr)`, width: 'min(90vw, 440px)', background: '#fffdf8', border: '2px solid #cdbfa6', borderRadius: 12, overflow: 'hidden', boxShadow: '3px 3px 0 rgba(26,18,8,0.12)', touchAction: 'none', userSelect: 'none', margin: '0 auto' }}
             onPointerDown={(e) => { e.preventDefault(); startDraw(cellAt(e)); }}
             onPointerMove={(e) => { if (drawRef.current) stepTo(cellAt(e)); }}
@@ -146,9 +146,9 @@ export default function FlowGame({ onBack }) {
               const col = own >= 0 ? FLOW_COLORS[own] : null;
               const dot = isDot(i);
               return (
-                <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRight: c < N - 1 ? '1px solid #eadfca' : 'none', borderBottom: r < N - 1 ? '1px solid #eadfca' : 'none' }}>
-                  {col && <div style={{ position: 'absolute', inset: '14%', borderRadius: 5, background: col, opacity: dot ? 1 : 0.85 }} />}
-                  {dot && <div style={{ position: 'absolute', inset: '20%', borderRadius: '50%', background: FLOW_COLORS[dotMap[i]], boxShadow: '0 1px 2px rgba(0,0,0,0.3)', border: '2px solid rgba(255,255,255,0.85)' }} />}
+                <div key={i} className="ct-flow-cell" style={{ position: 'relative', aspectRatio: '1', borderRight: c < N - 1 ? '1px solid #eadfca' : 'none', borderBottom: r < N - 1 ? '1px solid #eadfca' : 'none' }}>
+                  {col && <div className="ct-flow-path" style={{ position: 'absolute', inset: '14%', borderRadius: 5, background: col, opacity: dot ? 1 : 0.85 }} />}
+                  {dot && <div className="ct-flow-dot" style={{ position: 'absolute', inset: '20%', borderRadius: '50%', background: FLOW_COLORS[dotMap[i]], boxShadow: '0 1px 2px rgba(0,0,0,0.3)', border: '2px solid rgba(255,255,255,0.85)' }} />}
                 </div>
               );
             })}

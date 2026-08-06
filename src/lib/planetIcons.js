@@ -37,8 +37,8 @@ export function planetIconUrl(categoryId) {
   return file ? assetUrl(`Assets/planets/${file}`) : null;
 }
 
-/** Premium domain planet for RadialMazeHub — falls back to Fluent emoji. */
+/** Approved category artwork for RadialMazeHub; falls back to Fluent emoji. */
 export function domainPlanetUrl(domainId) {
   if (!DOMAIN_PLANET_IDS.includes(domainId)) return planetIconUrl(domainId);
-  return assetUrl(`Assets/domain-planets/premium-2026/${domainId}-v2.webp`);
+  return assetUrl(`Assets/domain-art/category-drawings-2026/${domainId}.webp`);
 }

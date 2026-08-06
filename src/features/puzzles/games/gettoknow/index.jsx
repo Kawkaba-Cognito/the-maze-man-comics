@@ -196,7 +196,7 @@ export default function GetToKnowGame({ onBack }) {
           <div className="gc-handoff-name" style={{ fontSize: '2rem' }}>{t.summary}</div>
           <div className="gc-card" style={{ width: '100%', maxWidth: 320, textAlign: 'center' }}>
             <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{t.askedL}: {asked}</div>
-            <div style={{ fontWeight: 700, color: '#8a7f6f', marginTop: 6 }}>{t.answeredL}: {answered}</div>
+            <div style={{ fontWeight: 700, color: 'var(--pz-muted, #5b687d)', marginTop: 6 }}>{t.answeredL}: {answered}</div>
           </div>
           <div className="gc-btn-col">
             <button type="button" className="gc-btn" onClick={() => { playSfx?.('click'); setPhase('setup'); }}>{t.again}</button>

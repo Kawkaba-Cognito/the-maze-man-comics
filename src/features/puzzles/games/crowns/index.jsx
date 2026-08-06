@@ -137,7 +137,7 @@ export default function CrownsPuzzle({ onBack }) {
                   const reg = displayState.region[r][c];
                   const diff = (rr, cc) => rr < 0 || rr >= n || cc < 0 || cc >= n || displayState.region[rr][cc] !== reg;
                   const bw = (cond) => (cond ? '2.5px' : '1px');
-                  const bc = (cond) => (cond ? '#1a1208' : 'rgba(26,18,8,0.18)');
+                  const bc = (cond) => (cond ? 'var(--pz-ink, #17243d)' : 'rgba(23,36,61,0.18)');
                   const isBad = conflicts.has(`${r},${c}`);
                   return (
                     <button

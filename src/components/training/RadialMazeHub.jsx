@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { DomainIconArt } from '../../features/training/shared/DomainIcon';
 import UniverseStage from '../shared/UniverseStage';
-import { DOMAIN_COLOR, DOMAINS } from './trainingData';
+import { DOMAINS } from './trainingData';
 import { useApp } from '../../context/AppContext';
 import { useThemedChrome } from '../../hooks/useThemedChrome';
 import { tokens } from '../../styles/tokens';
@@ -26,6 +26,20 @@ const PLANET_PHASE = {
   language: 1.65,
   reasoning: 2.2,
   flexibility: 2.75,
+};
+
+/**
+ * Hub-only Graphite Mist palette. Domain colours elsewhere remain untouched;
+ * these six related cool hues let surface pattern, rather than candy colour,
+ * carry each world's identity beside the blue Kawkab mascot.
+ */
+const HUB_PLANET_COLOR = {
+  attention: '#a9b9cb',
+  speed: '#8da3bd',
+  memory: '#849bad',
+  language: '#9aa9bd',
+  reasoning: '#8f9db3',
+  flexibility: '#91a7b9',
 };
 
 /** Local alias kept for in-file readability — values come from the central token set. */
@@ -115,7 +129,7 @@ function PlanetMarkings({ domainId, col }) {
   }
 }
 
-/** Domain planet — painted cosmos world with orbit / pulse / spark FX. */
+/** Free-standing category artwork with a legacy planet fallback. */
 function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId, ink }) {
   const r = hovered ? 35 : 31;
   const dur = hovered ? 2.4 : 6.2;
@@ -130,57 +144,45 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId, ink }) {
 
   return (
     <g className={`rh-domain-planet${hovered ? ' is-hot' : ''}`}>
-      {/* Ground shadow */}
-      <ellipse cx="2" cy={r + 10} rx={r * 0.82} ry={r * 0.26} fill="rgba(0,0,0,0.4)" />
-
-      {/* Soft atmosphere bloom */}
-      <circle
-        cx="0" cy="0"
-        r={r + (hovered ? 18 : 12)}
-        fill={`url(#${glowGradId})`}
-        opacity={hovered ? 1 : 0.78}
-      >
-        <animate
-          attributeName="opacity"
-          values={hovered ? '0.85;1;0.85' : '0.62;0.82;0.62'}
-          dur={`${dur}s`}
-          begin={`${phase}s`}
-          repeatCount="indefinite"
-        />
-      </circle>
-
-      {/* Dual orbital rings */}
-      <g opacity={hovered ? 0.7 : 0.38}>
-        <ellipse
-          cx="0" cy="1" rx={r + 10} ry={(r + 10) * 0.32}
-          fill="none" stroke={col} strokeWidth={hovered ? 1.45 : 0.95}
+      {/* The approved drawings stay free-standing. Circular atmosphere is
+          reserved for the legacy fallback so they never become badges. */}
+      {!artUrl && (
+        <circle
+          cx="0" cy="0"
+          r={r + (hovered ? 18 : 12)}
+          fill={`url(#${glowGradId})`}
+          opacity={hovered ? 1 : 0.78}
         >
-          <animateTransform
-            attributeName="transform"
-            type="rotate"
-            from="-22 0 0"
-            to="338 0 0"
-            dur={`${hovered ? 7 : 16}s`}
+          <animate
+            attributeName="opacity"
+            values={hovered ? '0.85;1;0.85' : '0.62;0.82;0.62'}
+            dur={`${dur}s`}
             begin={`${phase}s`}
             repeatCount="indefinite"
           />
-        </ellipse>
-        <ellipse
-          cx="0" cy="0" rx={r + 7} ry={(r + 7) * 0.28}
-          fill="none" stroke={col} strokeWidth={hovered ? 1.05 : 0.7}
-          opacity="0.65"
-        >
-          <animateTransform
-            attributeName="transform"
-            type="rotate"
-            from="28 0 0"
-            to="-332 0 0"
-            dur={`${hovered ? 10 : 22}s`}
-            begin={`${phase * 0.7}s`}
-            repeatCount="indefinite"
-          />
-        </ellipse>
-      </g>
+        </circle>
+      )}
+
+      {/* One restrained interaction halo. Persistent rings made six otherwise
+          distinct worlds read like identical products on a shelf. */}
+      {!artUrl && hovered && (
+        <g opacity="0.46">
+          <ellipse
+            cx="0" cy="1" rx={r + 10} ry={(r + 10) * 0.31}
+            fill="none" stroke={col} strokeWidth="1.1"
+          >
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from="-22 0 0"
+              to="338 0 0"
+              dur="10s"
+              begin={`${phase}s`}
+              repeatCount="indefinite"
+            />
+          </ellipse>
+        </g>
+      )}
 
       {/* Breathing body */}
       <g>
@@ -196,34 +198,19 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId, ink }) {
 
         {artUrl ? (
           <foreignObject
-            x={-r - 5}
-            y={-r - 5}
-            width={(r + 5) * 2}
-            height={(r + 5) * 2}
-            overflow="visible"
+            x={-r - 10}
+            y={-r - 10}
+            width={(r + 10) * 2}
+            height={(r + 10) * 2}
+            overflow='visible'
             style={{ pointerEvents: 'none' }}
           >
             <div
               xmlns="http://www.w3.org/1999/xhtml"
-              className={`rh-planet3d rh-planet3d--${domainId}`}
+              className={`rh-category-art-shell rh-category-art-shell--${domainId}`}
               style={{ '--rh-planet-color': col }}
             >
-              <span className="rh-planet3d__atmosphere" />
-              <span className="rh-planet3d__sphere">
-                <span
-                  className="rh-planet3d__surface"
-                  style={{
-                    backgroundImage: `url("${artUrl}")`,
-                    animationDelay: `-${phase}s`,
-                  }}
-                />
-                <span
-                  className="rh-planet3d__weather"
-                  style={{ animationDelay: `-${phase * 1.4}s` }}
-                />
-                <span className="rh-planet3d__terminator" />
-                <span className="rh-planet3d__glint" />
-              </span>
+              <img className='rh-category-art' src={artUrl} alt='' aria-hidden='true' draggable='false' />
             </div>
           </foreignObject>
         ) : (
@@ -237,14 +224,16 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId, ink }) {
           </>
         )}
 
-        {/* Bright rim */}
-        <circle
-          cx="0" cy="0" r={r}
-          fill="none"
-          stroke={col}
-          strokeWidth={hovered ? 2.1 : 1.35}
-          opacity={hovered ? 0.95 : 0.55}
-        />
+        {/* The fallback planet keeps its painted rim; category art does not. */}
+        {!artUrl && (
+          <circle
+            cx="0" cy="0" r={r}
+            fill="none"
+            stroke={col}
+            strokeWidth={hovered ? 2.1 : 1.35}
+            opacity={hovered ? 0.95 : 0.55}
+          />
+        )}
 
         {/* Light appearance: an ink contour on top of the rim.
             The accent rim is a GLOW — it works against the black map and
@@ -253,7 +242,7 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId, ink }) {
             silhouette back. Two strokes, not one: a wide, very soft ring for
             weight, then a crisp hairline for the actual edge, which is what
             keeps it looking drawn rather than stuck on. */}
-        {ink && (
+        {!artUrl && ink && (
           <>
             <circle
               cx="0" cy="0" r={r + 0.6}
@@ -269,15 +258,14 @@ function DomainPlanet({ domainId, col, hovered, bodyGradId, glowGradId, ink }) {
         )}
       </g>
 
-      {/* Expanding energy pulses */}
-      <circle cx="0" cy="0" r={r + 4} fill="none" stroke={col} strokeWidth="1" opacity="0.35">
-        <animate attributeName="r" values={`${r + 2};${r + 14};${r + 2}`} dur={`${dur * 1.2}s`} begin={`${phase}s`} repeatCount="indefinite" />
-        <animate attributeName="opacity" values="0.45;0.04;0.45" dur={`${dur * 1.2}s`} begin={`${phase}s`} repeatCount="indefinite" />
-      </circle>
-      <circle cx="0" cy="0" r={r + 6} fill="none" stroke={col} strokeWidth="0.7" opacity="0.2">
-        <animate attributeName="r" values={`${r + 5};${r + 18};${r + 5}`} dur={`${dur * 1.55}s`} begin={`${phase + 0.4}s`} repeatCount="indefinite" />
-        <animate attributeName="opacity" values="0.32;0.02;0.32" dur={`${dur * 1.55}s`} begin={`${phase + 0.4}s`} repeatCount="indefinite" />
-      </circle>
+      {/* A single hover pulse keeps tap feedback without surrounding every
+          resting planet with the same donut-like rings. */}
+      {!artUrl && hovered && (
+        <circle cx="0" cy="0" r={r + 4} fill="none" stroke={col} strokeWidth="0.85" opacity="0.3">
+          <animate attributeName="r" values={`${r + 2};${r + 13};${r + 2}`} dur={`${dur * 1.4}s`} begin={`${phase}s`} repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.36;0.03;0.36" dur={`${dur * 1.4}s`} begin={`${phase}s`} repeatCount="indefinite" />
+        </circle>
+      )}
 
       {/* Twinkling sparkles */}
       {sparks.map((sp, i) => (
@@ -593,7 +581,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
             </filter>
             {shrines.map(s => {
-              const col = DOMAIN_COLOR[s.id];
+              const col = HUB_PLANET_COLOR[s.id];
               return (
                 <React.Fragment key={`planet-defs-${s.id}`}>
                   <radialGradient id={`planetBody-${s.id}`} cx="32%" cy="28%" r="72%">
@@ -645,7 +633,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
 
           {/* Radial corridors — smooth spokes from center avatar to each planet */}
           {shrines.map(s => {
-            const col = DOMAIN_COLOR[s.id];
+            const col = HUB_PLANET_COLOR[s.id];
             const isHovered = hovered === s.id;
             const d = mazeCorridorD(s.id, shrines, LY.nexus);
             const wCorridor = isHovered ? 2 : 1.15;
@@ -737,7 +725,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
 
           {/* Domain planets */}
           {shrines.map(s => {
-            const col = DOMAIN_COLOR[s.id];
+            const col = HUB_PLANET_COLOR[s.id];
             const isHovered = hovered === s.id;
             const phase = PLANET_PHASE[s.id] ?? 0;
             return (
@@ -902,13 +890,13 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           <div className="rh-domain-detail__pill" style={{
             display: 'inline-block', padding: '8px 16px', borderRadius: 100,
             background: 'linear-gradient(180deg, #1f160c 0%, #150e08 100%)',
-            border: `1.5px solid ${DOMAIN_COLOR[hovered]}`,
-            boxShadow: `0 4px 16px rgba(0,0,0,0.7), 0 0 18px ${DOMAIN_COLOR[hovered]}55, inset 0 1px 0 rgba(220,170,70,0.12)`,
+            border: `1.5px solid ${HUB_PLANET_COLOR[hovered]}`,
+            boxShadow: `0 4px 16px rgba(0,0,0,0.7), 0 0 18px ${HUB_PLANET_COLOR[hovered]}55, inset 0 1px 0 rgba(220,170,70,0.12)`,
             fontSize: 12, color: L.text, letterSpacing: 0.2,
             maxWidth: 'min(92vw, 340px)',
           }}>
             <span style={{
-              color: DOMAIN_COLOR[hovered],
+              color: HUB_PLANET_COLOR[hovered],
               fontWeight: 900,
               fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
               letterSpacing: isAr ? 0 : 0.5,

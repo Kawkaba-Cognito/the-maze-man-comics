@@ -87,7 +87,7 @@ export const NS = {
     caseNo: (n) => `CASE ${n}`,
     cracked: (n) => `${n} closed`,
     loading: 'Opening the file…',
-    modelsFailed: 'Could not start the 3D line-up — the case continues in 2D.',
+    modelsFailed: 'Could not load the illustrated line-up — the case continues without it.',
   },
 
   ar: {
@@ -162,7 +162,7 @@ export const NS = {
     caseNo: (n) => `القضيّة ${arNum(n)}`,
     cracked: (n) => `${arNum(n)} مغلقة`,
     loading: 'يُفتح الملفّ…',
-    modelsFailed: 'تعذّر تشغيل الصفّ ثلاثيّ الأبعاد — تستمرّ القضيّة بالعرض ثنائيّ الأبعاد.',
+    modelsFailed: 'تعذّر تحميل صفّ الشخصيات المرسوم — تستمرّ القضيّة من دونه.',
   },
 };
 

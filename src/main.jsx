@@ -7,6 +7,7 @@ import './styles/universe-stage.css';
 import './styles/settings.css';
 import './styles/training.css';
 import './styles/puzzles.css';
+import './styles/puzzleStudioTheme.css';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 

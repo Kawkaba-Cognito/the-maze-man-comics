@@ -5,7 +5,7 @@ import { useGamePause } from '../../../../../shared/useGamePause';
 import Weather from './components/Weather';
 import Cutscene from './components/Cutscene';
 import CrimeScene from './components/CrimeScene';
-import Interrogation3D from './components/Interrogation3D';
+import Interrogation2D from './components/Interrogation2D';
 import EvidencePicker from './components/EvidencePicker';
 import AccusationBoard from './components/AccusationBoard';
 import Notebook from './components/Notebook';
@@ -19,8 +19,8 @@ import './noir.css';
  * intro → scene (search) → line-up → interrogation → board → verdict
  *
  * The interrogation stage stays mounted across the line-up and the one-to-one
- * questioning so the models load once and the characters can physically step
- * forward when picked, rather than the view cutting between two scenes.
+ * questioning so the illustrated cast loads once and the selected suspect can
+ * step forward without the view cutting between two scenes.
  */
 export default function NoirCase({
   caseData, isAr, playSfx, caseNo, hudRight, onCaseDone, onExit,
@@ -44,7 +44,7 @@ export default function NoirCase({
   const [bigText, setBigText] = useState(null);
   const [hinted, setHinted] = useState(false);
   const [reaction, setReaction] = useState(null);
-  const [stage3d, setStage3d] = useState('loading'); // loading | ready | failed
+  const [stageArt, setStageArt] = useState('loading'); // loading | ready | failed
 
   const startedAt = useRef(Date.now());
   const timers = useRef([]);
@@ -297,8 +297,8 @@ export default function NoirCase({
 
         {showStage && (
           <>
-            {stage3d !== 'failed' && (
-              <Interrogation3D
+            {stageArt !== 'failed' && (
+              <Interrogation2D
                 suspects={caseData.suspects}
                 activeId={phase === 'talk' ? activeId : null}
                 reaction={reaction}
@@ -310,8 +310,8 @@ export default function NoirCase({
                   setActiveId(sid);
                   setPhase('talk');
                 }}
-                onReady={() => setStage3d('ready')}
-                onError={() => setStage3d('failed')}
+                onReady={() => setStageArt('ready')}
+                onError={() => setStageArt('failed')}
               />
             )}
 
@@ -320,7 +320,7 @@ export default function NoirCase({
                 up the slack or it floats with a gap beneath it. */}
             {phase === 'lineup' && (
               <div className="nr-scroll" style={{ paddingTop: 8 }}>
-                {stage3d === 'failed' && (
+                {stageArt === 'failed' && (
                   <div className="nr-lineup">
                     {caseData.suspects.map((s) => {
                       const done = clearedIds.includes(s.id);
@@ -344,7 +344,7 @@ export default function NoirCase({
                   </div>
                 )}
                 <div className="nr-stage-hint nr-mono" style={{ position: 'static', transform: 'none', marginBottom: 10 }}>
-                  {stage3d === 'loading' ? t.loading : t.suspectsSub}
+                  {stageArt === 'loading' ? t.loading : t.suspectsSub}
                 </div>
                 <div className="nr-bar">
                   <button

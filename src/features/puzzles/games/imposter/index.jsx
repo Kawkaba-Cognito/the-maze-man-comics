@@ -64,7 +64,7 @@ export default function ImposterGame({ onBack }) {
   const startRound = useCallback(() => {
     const names = commitPlayers(players);
     const pack = packId === 'random' ? randomPack() : packById(packId) || randomPack();
-    const items = pack.words.map((word, i) => ({ id: `${pack.id}:${word.en}`, word, pack }));
+    const items = pack.words.map((word) => ({ id: `${pack.id}:${word.en}`, word, pack }));
     const picked = wordDrawer.draw(items);
     const w = picked.word;
     const impSet = shuffle([...Array(names.length).keys()]).slice(0, Math.min(imposters, Math.max(1, names.length - 2)));
@@ -158,7 +158,7 @@ export default function ImposterGame({ onBack }) {
           {!shown ? (
             <button
               type="button"
-              className="gc-handoff-card"
+              className="gc-handoff-card gc-handoff-card--secret"
               style={{ cursor: 'pointer', border: 'none', background: 'linear-gradient(150deg,#2c2418,#443624)', color: '#f0e2c0', minHeight: 220 }}
               onClick={() => { playSfx?.('click'); setShown(true); }}
             >
@@ -180,13 +180,13 @@ export default function ImposterGame({ onBack }) {
                 <>
                   <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#c0433d' }}>🕵️ {t.youAreImp}</div>
                   <div style={{ color: '#8a5a52', fontWeight: 600 }}>{t.impNoWord}</div>
-                  <div style={{ fontSize: '0.85rem', color: '#8a7f6f' }}>{t.impBlend}</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--pz-muted, #5b687d)' }}>{t.impBlend}</div>
                 </>
               ) : (
                 <>
                   <div style={{ fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 800, color: round.accent }}>{round.category}</div>
                   <div className="gc-word" style={{ padding: 0 }}>{round.word}</div>
-                  <div style={{ fontSize: '0.85rem', color: '#8a7f6f' }}>{t.yourWord}</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--pz-muted, #5b687d)' }}>{t.yourWord}</div>
                 </>
               )}
             </div>
@@ -214,8 +214,8 @@ export default function ImposterGame({ onBack }) {
         <>
           <div style={{ color: '#2e8b57', fontWeight: 800 }}>✓ {t.allSeen}</div>
           <div className="gc-handoff-name" style={{ fontSize: '2rem' }}>{t.discuss}</div>
-          <div style={{ color: '#8a7f6f' }}>👉 {t.startsFirst}: <b style={{ color: '#2d2210' }}>{nameOf(starter)}</b></div>
-          <div style={{ color: '#8a7f6f' }}>🕵️ {t.findLabel}: <b style={{ color: '#b5453f' }}>{round.imposterSet.length}</b></div>
+          <div style={{ color: 'var(--pz-muted, #5b687d)' }}>👉 {t.startsFirst}: <b style={{ color: 'var(--pz-ink, #17243d)' }}>{nameOf(starter)}</b></div>
+          <div style={{ color: 'var(--pz-muted, #5b687d)' }}>🕵️ {t.findLabel}: <b style={{ color: '#a94f4b' }}>{round.imposterSet.length}</b></div>
 
           <div className="gc-card" style={{ width: '100%', maxWidth: 320, textAlign: 'center' }}>
             <div style={{ fontSize: '2.8rem', fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{fmt(secs)}</div>
