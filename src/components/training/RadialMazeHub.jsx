@@ -7,9 +7,9 @@ import { useThemedChrome } from '../../hooks/useThemedChrome';
 import { tokens } from '../../styles/tokens';
 import { domainPlanetUrl } from '../../lib/planetIcons';
 
-/** The blue 3D robot that stands at the hub centre (lazy — pulls in three.js
- *  + GLTFLoader only for users who reach the Training hub). */
-const TrainingBlueRobot3D = lazy(() => import('./TrainingBlueRobot3D'));
+/** Kawkab at the hub centre. Imported directly, not lazily: it is a 108 KB
+ *  image now, so there is no 3D stack left worth deferring. */
+import TrainingHubMascot from './TrainingHubMascot';
 const TrainingPlanetField3D = lazy(() => import('./TrainingPlanetField3D'));
 
 /** OS "reduce motion" preference — decorative loops honour this. */
@@ -830,12 +830,14 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           />
         </Suspense>
 
-        {/* Blue 3D training robot — overlaid exactly on the SVG hub nexus. Both
-            layouts put the nexus on the horizontal centre, so left:50% holds for
-            either; the vertical offset has to follow the active map (360 in the
-            portrait 360x660 box, 215 in the landscape 760x430 one). Tapping
-            opens the assessment; if WebGL/model load fails it renders nothing
-            and the SVG glow + label underneath stay as the clickable fallback. */}
+        {/* Kawkab — overlaid exactly on the SVG hub nexus. Both layouts put the
+            nexus on the horizontal centre, so left:50% holds for either; the
+            vertical offset has to follow the active map (360 in the portrait
+            360x660 box, 215 in the landscape 760x430 one). Tapping opens the
+            assessment.
+
+            No drop-shadow here any more: the character carries its own halo,
+            and a cast shadow on a glowing translucent body reads as grime. */}
         <div
           className="rh-assess-mascot"
           style={{
@@ -844,17 +846,14 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             top: LY.nexus[1],
             transform: 'translate(-50%, -70%)',
             zIndex: 5,
-            filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.5))',
           }}
         >
-          <Suspense fallback={null}>
-            <TrainingBlueRobot3D
-              size={150}
-              isAr={isAr}
-              label={isAr ? 'ابدأ التقييم' : 'Start assessment'}
-              onActivate={onOpenAssessment}
-            />
-          </Suspense>
+          <TrainingHubMascot
+            size={150}
+            isAr={isAr}
+            label={isAr ? 'ابدأ التقييم' : 'Start assessment'}
+            onActivate={onOpenAssessment}
+          />
         </div>
         </div>
       </div>
