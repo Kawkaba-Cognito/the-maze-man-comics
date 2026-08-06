@@ -7,8 +7,8 @@
  * (quirk hotspots, chained testimony, the four-axis accusation) exists to make
  * that moment land.
  *
- * Every suspect id is a cast id from castModels.js, because each suspect is a
- * real 3D character standing on the interrogation stage.
+ * Every suspect id maps to one of the shared illustrated cast characters on
+ * the interrogation stage.
  *
  *   {
  *     id, e, title, setting, stamp,      // stamp = case-file header line

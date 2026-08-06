@@ -51,7 +51,7 @@ function KenKenGrid({
               );
               const isLeader = leader?.[0] === r && leader?.[1] === c;
               const diff = (rr, cc) => rr < 0 || rr >= gridSize || cc < 0 || cc >= gridSize || active.cageMap[rr][cc] !== cageId;
-              const edge = (cond) => (cond ? '2.5px solid #1a1208' : '1px solid rgba(26,18,8,0.16)');
+              const edge = (cond) => (cond ? '2.5px solid var(--pz-ink, #17243d)' : '1px solid rgba(23,36,61,0.16)');
               return (
                 <button
                   key={`${r}-${c}`}

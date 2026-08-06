@@ -55,7 +55,7 @@ export function GroupPackChips({ packs, packId, onPick, isAr, randomLabel, playS
         <button
           type="button"
           className={`gc-pack${packId === 'random' ? ' on' : ''}`}
-          style={{ '--pack-accent': '#b9842f' }}
+          style={{ '--pack-accent': 'var(--gc-accent)' }}
           onClick={() => { playSfx?.('click'); onPick('random'); }}
         >
           🎲 {randomLabel}

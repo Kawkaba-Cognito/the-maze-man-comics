@@ -181,15 +181,15 @@ export default function WordRaceGame({ onBack, accent, emoji, title, rule, ready
 
       {phase === 'play' && (
         <>
-          <div style={{ width: '100%', maxWidth: 340, height: 8, borderRadius: 999, background: '#ece0cc', overflow: 'hidden' }}>
+          <div style={{ width: '100%', maxWidth: 340, height: 8, borderRadius: 999, background: 'var(--pz-card-soft, #edf1f5)', overflow: 'hidden' }}>
             <div style={{ width: `${pct * 100}%`, height: '100%', background: pct < 0.2 ? '#cf5b50' : accent, transition: 'width 1s linear' }} />
           </div>
-          <div style={{ width: '100%', maxWidth: 340, display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: '#8a7f6f' }}>
+          <div style={{ width: '100%', maxWidth: 340, display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: 'var(--pz-muted, #5b687d)' }}>
             <span>⏱ {fmt(timeLeft)}</span>
             <span style={{ color: wordAccent }}>{categoryLabel}</span>
             <span>✓ {correct}</span>
           </div>
-          <div className="gc-word" style={{ color: '#2d2210' }}>{word}</div>
+          <div className="gc-word" style={{ color: 'var(--pz-ink, #17243d)' }}>{word}</div>
           <div style={{ display: 'flex', gap: 12, width: '100%', maxWidth: 340 }}>
             <button type="button" className="gc-btn gc-btn--ghost" style={{ flex: 1 }} onClick={skip}>↷ {T.skip}</button>
             <button type="button" className="gc-btn gc-btn--ok" style={{ flex: 2 }} onClick={got}>✓ {T.got}</button>
@@ -201,7 +201,7 @@ export default function WordRaceGame({ onBack, accent, emoji, title, rule, ready
         <>
           <div className="gc-handoff-kicker" style={{ color: '#cf5b50' }}>{T.timeUp}</div>
           <div style={{ fontSize: '4rem', fontWeight: 800, lineHeight: 1 }}>{correct}</div>
-          <div style={{ color: '#8a7f6f', fontWeight: 600 }}>{T.scored} {correct} {T.thisRound}</div>
+          <div style={{ color: 'var(--pz-muted, #5b687d)', fontWeight: 600 }}>{T.scored} {correct} {T.thisRound}</div>
           <div className="gc-tip">{T.totalL}: {total}</div>
           <div className="gc-btn-col">
             <button

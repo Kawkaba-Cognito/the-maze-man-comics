@@ -42,8 +42,8 @@ export const L = (v, isAr) => (typeof v === 'string' ? v : (v?.[isAr ? 'ar' : 'e
  */
 
 /**
- * Shot vocabulary. The NUMBERS live in StoryStage3D (they are a camera
- * concern); these are the names an author may write and the validator checks.
+ * Shot vocabulary. Visual emphasis lives in StoryStage2D; these are the names
+ * an author may write and the validator checks.
  *
  *   wide   establishing — the whole stage, cast small
  *   mid    the group at working size, the default
@@ -137,10 +137,8 @@ export const storyRuntime = (story, isAr) =>
  * `ground` is the disc the cast stands on: kept a step darker than `bot` at
  * every hour so the figures always have a surface under them to read against.
  */
-/* These are WYSIWYG: the sky shader now reads them in linear space (see the
- * uniform note in StoryStage3D.jsx), so what is written here is what renders.
- * They sit on Tide light — noon at the top stop, night a shade under the low
- * stop — so the picture and the page around it are the same sky. */
+/* Semantic sky tokens shared with validation. StoryStage2D expresses the same
+ * four time-of-day cues through its matte CSS palette. */
 export const SKIES = {
   dawn: { top: 0xd7e3ef, bot: 0xc2d5e5, key: 0xfff0dc, rim: 0xc2d3e5, ground: 0xccdae6 },
   noon: { top: 0xe6f0f8, bot: 0xccdae6, key: 0xfffaf0, rim: 0xd0e0ee, ground: 0xdbe7f1 },

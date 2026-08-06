@@ -9,8 +9,8 @@ import { pickStrings } from './stageStrings';
 import { CAST } from '../../../../../shared/castRoster';
 import './stage.css';
 
-// three.js only loads once a story actually opens.
-const StoryStage3D = lazy(() => import('./components/StoryStage3D'));
+// The illustrated stage only loads once a story actually opens.
+const StoryStage2D = lazy(() => import('./components/StoryStage2D'));
 
 // How long the cut between beats dips. Short enough to read as an edit rather
 // than a loading screen.
@@ -39,8 +39,7 @@ const prefersReducedMotion = () =>
  * The stage stays mounted across watch AND the retrieval phases (dimmed and
  * non-interactive behind the panels) so the cast loads once and the room the
  * story happened in is still there while you try to recall it — context at
- * retrieval, which is the whole reason to stage it in 3D rather than draw
- * panels.
+ * retrieval, preserving the visual context without returning to static panels.
  */
 export default function StageStory({
   story, storyNo, isAr, playSfx, hudRight, onStoryDone, onExit,
@@ -181,7 +180,7 @@ export default function StageStory({
       <div className={`sgs-stage-host${phase === 'watch' ? '' : ' recalling'}`}>
         {!stageFailed && (
           <Suspense fallback={null}>
-            <StoryStage3D
+            <StoryStage2D
               beat={stageBeat}
               cast={cast}
               isAr={isAr}

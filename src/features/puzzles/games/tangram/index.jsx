@@ -166,7 +166,7 @@ export default function TangramGame({ onBack }) {
       <div className="ct-puzzle-play-body" style={{ justifyContent: 'flex-start', gap: 10, paddingTop: 12, overflowY: 'auto' }}>
         <PuzzleHint>{isAr ? 'اسحب قطعة إلى اللوحة لوضعها · اضغط قطعة لتدويرها' : 'Drag a piece onto the board · tap a piece to rotate'}</PuzzleHint>
         <div className="ct-puzzle-grid-wrap">
-          <div ref={gridRef}
+          <div ref={gridRef} className="ct-tangram-board"
             style={{ display: 'grid', gridTemplateColumns: `repeat(${size}, 1fr)`, gap: 3, width: `min(72vw, ${size * 50}px)`, background: '#f3ece0', border: '2px solid #cdbfa6', borderRadius: 12, padding: 6, boxShadow: '3px 3px 0 rgba(26,18,8,0.12)', userSelect: 'none', margin: '0 auto' }}
           >
             {board.map((own, i) => {
@@ -174,7 +174,7 @@ export default function TangramGame({ onBack }) {
               const inPv = previewSet && previewSet.has(i);
               const bg = filled ? (pieces.find((p) => p.id === own)?.color || '#ccc') : '#fffdf8';
               return (
-                <div key={i} onPointerDown={() => removeAt(i)} style={{ position: 'relative', aspectRatio: '1', background: bg, border: '1px solid #e3d6c4', borderRadius: 4, cursor: filled ? 'pointer' : 'default' }}>
+                <div key={i} className="ct-tangram-cell" onPointerDown={() => removeAt(i)} style={{ position: 'relative', aspectRatio: '1', background: bg, border: '1px solid #e3d6c4', borderRadius: 4, cursor: filled ? 'pointer' : 'default' }}>
                   {inPv && <div style={{ position: 'absolute', inset: 0, borderRadius: 4, background: preview.valid ? (drag?.color || '#2e8b57') : '#d23b3b', opacity: preview.valid ? 0.6 : 0.4, border: `2px solid ${preview.valid ? (drag?.color || '#2e8b57') : '#d23b3b'}` }} />}
                 </div>
               );
@@ -182,10 +182,10 @@ export default function TangramGame({ onBack }) {
           </div>
         </div>
 
-        <div style={{ fontWeight: 800, fontSize: 12.5, color: '#7a6a52', textTransform: 'uppercase', letterSpacing: 1 }}>{isAr ? `القطع · ${tray.length}` : `Pieces · ${tray.length}`}</div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', padding: '0 12px' }}>
+        <div className="ct-tangram-tray-label" style={{ fontWeight: 800, fontSize: 12.5, color: '#7a6a52', textTransform: 'uppercase', letterSpacing: 1 }}>{isAr ? `القطع · ${tray.length}` : `Pieces · ${tray.length}`}</div>
+        <div className="ct-tangram-tray" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', padding: '0 12px' }}>
           {tray.map((p) => (
-            <div key={p.id}
+            <div key={p.id} className="ct-tangram-piece"
               onPointerDown={(e) => startDrag(e, p)}
               style={{ padding: 7, borderRadius: 12, border: '2px solid #e3d6c4', background: '#fffdf8', cursor: 'grab', touchAction: 'none', opacity: drag?.id === p.id ? 0.35 : 1, boxShadow: '2px 2px 0 rgba(26,18,8,0.1)' }}
             >

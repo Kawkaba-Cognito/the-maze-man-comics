@@ -57,11 +57,11 @@ function loadThree() {
 
 const CSS = `
 .vr-root {
-  --vr-pink:   #ff2d9b;
-  --vr-cyan:   #00f5ff;
-  --vr-purple: #b44fff;
-  --vr-gold:   #ffcc00;
-  --vr-dark-bg: #04000f;
+  --vr-pink:   #c96f63;
+  --vr-cyan:   #65b7b0;
+  --vr-purple: #9a80c8;
+  --vr-gold:   #d8a541;
+  --vr-dark-bg: #090d19;
   position: fixed; inset: 0; z-index: 60;
   background: var(--vr-dark-bg);
   overflow: hidden;
@@ -214,6 +214,134 @@ const CSS = `
 .vr-how-text { font-size:12px; line-height:1.7; color:rgba(255,255,255,0.55); letter-spacing:1px; }
 .vr-how-key { display:inline-block; background:rgba(0,245,255,0.15); border:1px solid rgba(0,245,255,0.3); border-radius:3px;
   padding:1px 7px; color:var(--vr-cyan); font-size:11px; letter-spacing:2px; }
+
+/* Puzzle Studio edition: dark cosmic play, restrained Training Hub surfaces. */
+.vr-root {
+  font-family:'Outfit','DM Mono',sans-serif;
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(154,128,200,0.16), transparent 42%),
+    radial-gradient(ellipse at 86% 72%, rgba(101,183,176,0.12), transparent 44%),
+    var(--vr-dark-bg);
+}
+.vr-scanlines { opacity:0.2; }
+.vr-speedlines {
+  background:radial-gradient(ellipse at center, transparent 34%, rgba(101,183,176,0.035) 62%, rgba(154,128,200,0.075) 100%);
+}
+#vr-menuscreen,
+#vr-pausescreen,
+#vr-gameoverscreen,
+.vr-sub-screen {
+  background:
+    radial-gradient(ellipse at 50% 22%, rgba(154,128,200,0.17), transparent 46%),
+    linear-gradient(180deg, rgba(17,24,42,0.96), rgba(9,13,25,0.985));
+}
+.vr-game-logo {
+  font-family:'Outfit','DM Mono',sans-serif;
+  font-size:clamp(40px,9vw,68px);
+  letter-spacing:0.08em;
+  background:linear-gradient(115deg,#f0dfad 0%,var(--vr-cyan) 48%,#c7b4e5 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 5px 0 rgba(3,7,16,0.9));
+}
+.vr-tagline,
+.vr-hud-label,
+.vr-speedlabel,
+.vr-sub-title {
+  color:#b9bfd0;
+  text-shadow:none;
+}
+.vr-hud-val,
+.vr-stat-card .vr-sv,
+.vr-hs-score,
+.vr-setting-val {
+  color:#f7f1e8;
+  text-shadow:none;
+}
+.vr-neon-btn {
+  min-width:250px;
+  padding:14px 34px;
+  border:2px solid #f2e8d6;
+  border-radius:13px;
+  letter-spacing:0.15em;
+  box-shadow:3px 3px 0 #030710;
+}
+.vr-neon-btn-primary {
+  color:#fff;
+  background:#69549b;
+  border-color:#f2e8d6;
+  box-shadow:3px 3px 0 #030710;
+}
+.vr-neon-btn-primary:hover {
+  transform:translateY(-1px);
+  background:#7560a7;
+  box-shadow:4px 5px 0 #030710;
+}
+.vr-neon-btn-secondary {
+  color:#e8edf5;
+  background:rgba(247,249,252,0.06);
+  border-color:rgba(242,232,214,0.56);
+  box-shadow:2px 2px 0 #030710;
+}
+.vr-neon-btn-secondary:hover {
+  color:#fff;
+  background:rgba(101,183,176,0.16);
+  border-color:#f2e8d6;
+  box-shadow:3px 3px 0 #030710;
+}
+.vr-stat-card,
+.vr-setting-row,
+.vr-how-row,
+.vr-hs-row {
+  border-color:rgba(242,232,214,0.22);
+}
+.vr-stat-card {
+  background:rgba(247,249,252,0.07);
+  border-width:2px;
+  border-radius:14px;
+  box-shadow:2px 2px 0 rgba(3,7,16,0.9);
+}
+.vr-root input[type=text],
+.vr-toggle-btn {
+  color:#f7f1e8;
+  background:rgba(247,249,252,0.07);
+  border:2px solid rgba(242,232,214,0.45);
+  border-radius:10px;
+}
+.vr-root input[type=range] {
+  background:rgba(101,183,176,0.25);
+}
+.vr-root input[type=range]::-webkit-slider-thumb {
+  background:var(--vr-cyan);
+  box-shadow:0 0 0 2px #f2e8d6;
+}
+.vr-pausebtn {
+  color:#f7f1e8;
+  background:rgba(9,13,25,0.72);
+  border:2px solid rgba(242,232,214,0.55);
+  box-shadow:2px 2px 0 #030710;
+}
+.vr-go-title,
+#vr-pausescreen h2,
+.vr-countdownnum {
+  color:#f7f1e8;
+  text-shadow:0 4px 0 #030710;
+}
+.vr-hint-row,
+.vr-how-text,
+.vr-setting-label,
+.vr-hs-name {
+  color:#b9bfd0;
+}
+.vr-hint-row span,
+.vr-how-key {
+  color:#b8ded9;
+}
+.vr-how-key {
+  background:rgba(101,183,176,0.13);
+  border:1px solid rgba(101,183,176,0.46);
+  border-radius:6px;
+}
 `;
 
 const HTML = `

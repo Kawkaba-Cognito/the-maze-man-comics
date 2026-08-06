@@ -322,13 +322,13 @@ export default function GroupWarGame({ onBack }) {
   // ── PLAY (engine fullscreen; thin bar above) ──
   if (phase === 'play' && match && gameMeta && launch) {
     return (
-      <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: '#0a0a0c' }}>
+      <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'var(--pz-ink, #17243d)' }}>
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, zIndex: 60,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
           padding: 'calc(8px + env(safe-area-inset-top, 0px)) 12px 8px',
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.75), transparent)',
-          color: '#f0e2c0', fontFamily: "'Outfit', system-ui, sans-serif", pointerEvents: 'none',
+          background: 'linear-gradient(180deg, rgba(9,13,25,0.88), transparent)',
+          color: '#f7f1e8', fontFamily: "'Outfit', system-ui, sans-serif", pointerEvents: 'none',
         }}>
           <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>
             <span style={{
@@ -342,7 +342,7 @@ export default function GroupWarGame({ onBack }) {
           </span>
           <span style={{ fontWeight: 700, fontSize: '0.75rem', opacity: 0.75 }}>{t.matchOf(matchIdx + 1, playlist.length)}</span>
         </div>
-        <Suspense fallback={<div style={{ color: '#f0e2c0', display: 'grid', placeItems: 'center', height: '100%' }}>…</div>}>
+        <Suspense fallback={<div style={{ color: '#f7f1e8', display: 'grid', placeItems: 'center', height: '100%' }}>…</div>}>
           <EngineHost
             key={`${match.key}-${teamIdx}`}
             gameId={match.gameId}
@@ -381,9 +381,9 @@ export default function GroupWarGame({ onBack }) {
                 }} />
                 {name}
               </span>
-              <span style={{ color: '#8a7f6f', fontSize: '0.9rem' }}>
+              <span style={{ color: 'var(--pz-muted, #5b687d)', fontSize: '0.9rem' }}>
                 {t.raw} {lastPlacement.raw[i] ?? 0}
-                <b style={{ color: '#2d2210', marginInlineStart: 10 }}>+{lastPlacement.pts[i]}</b>
+                <b style={{ color: 'var(--pz-ink, #17243d)', marginInlineStart: 10 }}>+{lastPlacement.pts[i]}</b>
               </span>
             </div>
           ))}

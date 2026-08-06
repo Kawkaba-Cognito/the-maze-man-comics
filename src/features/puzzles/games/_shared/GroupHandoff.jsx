@@ -22,7 +22,7 @@ export default function GroupHandoff({
       <div className="gc-handoff-name">{name}</div>
       <div className="gc-handoff-card">
         {emoji ? <div style={{ fontSize: '2.6rem', lineHeight: 1 }}>{emoji}</div> : null}
-        {body ? <div style={{ fontSize: '1rem', fontWeight: 700, color: '#6a5a40', lineHeight: 1.5 }}>{body}</div> : null}
+        {body ? <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--pz-muted, #5b687d)', lineHeight: 1.5 }}>{body}</div> : null}
         {sub ? <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--gc-accent)' }}>{sub}</div> : null}
       </div>
       <button

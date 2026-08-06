@@ -5,17 +5,11 @@ import CaseFileEngine from './CaseFileEngine';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
 /*
- * The separate "3D" prototype planet was retired 2026-07-27, alongside Story
- * Time's. It drew suspects as emoji on canvas textures rather than the rigged
- * cast, and still ran the older "read the briefing, then accuse" flow — so its
- * claim to mirror the free-mode session stopped being true the moment Survival
- * became the noir engine. Survival IS the 3D detective now: a lit interrogation
- * room, a real line-up, and a camera that comes in when you question someone.
- * (Detective3DProto.jsx is recoverable from git history.)
+ * Survival uses the noir case engine and a clean illustrated suspect line-up.
+ * The retired 3D prototype remains recoverable from git history.
  */
 
-// Survival's noir rebuild — lazy, so three.js and the cast models only load
-// for players who actually start a Survival run.
+// Survival's noir rebuild stays lazy so the full case engine only loads on use.
 const NoirSurvival = lazyWithRetry(() => import('./noir/NoirSurvival'), 'detective-noir');
 
 /*
@@ -23,7 +17,7 @@ const NoirSurvival = lazyWithRetry(() => import('./noir/NoirSurvival'), 'detecti
  *
  * Survival runs the noir engine: search the scene, break each suspect's stated
  * lie with the one piece of evidence that contradicts it, then pin down who,
- * how, why and the proof. Suspects are the 3D cast, standing in a line-up.
+ * how, why and the proof. Suspects appear as the shared minimalist 2D cast.
  *
  * Levels and Pass n Play still run the older Case File engine over the
  * original investigation bank, pending the same treatment.

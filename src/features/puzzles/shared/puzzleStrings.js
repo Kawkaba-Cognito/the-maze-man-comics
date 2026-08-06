@@ -6,7 +6,7 @@ export function toArabicDigits(value) {
 
 export const PUZZLE_UI = {
   en: {
-    hubTitle: 'Puzzles',
+    hubTitle: 'Puzzle Studio',
     hubTag: 'logic games',
     hubSub: 'Pick a puzzle, choose your grid size, and play.',
     pickGrid: 'Choose grid size',
@@ -35,7 +35,7 @@ export const PUZZLE_UI = {
     bridgesHint: 'Tap an island, then a neighbour, to add a bridge. Match every number; no crossings.',
   },
   ar: {
-    hubTitle: 'ألغاز',
+    hubTitle: 'استوديو الألغاز',
     hubTag: 'ألعاب منطق',
     hubSub: 'اختر لغزاً، حدّد حجم الشبكة، والعب.',
     pickGrid: 'اختر حجم الشبكة',

@@ -75,8 +75,8 @@ export default function WavelengthGame({ onBack }) {
   const R = isAr ? spectrum.r.ar : spectrum.r.en;
 
   const Bar = ({ showTarget, showGuess }) => (
-    <div style={{ width: '100%', maxWidth: 360 }}>
-      <div style={{
+    <div className="gc-scale" style={{ width: '100%', maxWidth: 360 }}>
+      <div className="gc-scale-track" style={{
         position: 'relative', height: 46, borderRadius: 12, overflow: 'hidden', border: '2px solid #e3d6c4',
         background: 'linear-gradient(90deg, #dce6ee 0%, #eef2f0 50%, #f4e6d6 100%)',
       }}>
@@ -89,10 +89,10 @@ export default function WavelengthGame({ onBack }) {
           </>
         )}
         {showGuess && (
-          <div style={{ position: 'absolute', top: -6, bottom: -6, left: `${guess}%`, width: 4, background: '#c0433d', transform: 'translateX(-50%)' }} />
+          <div className="gc-scale-guess" style={{ position: 'absolute', top: -6, bottom: -6, left: `${guess}%`, width: 4, background: '#c0433d', transform: 'translateX(-50%)' }} />
         )}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 13, fontWeight: 800, color: '#8a7f6f' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 13, fontWeight: 800, color: 'var(--pz-muted, #5b687d)' }}>
         <span>◄ {L}</span><span>{R} ►</span>
       </div>
     </div>
@@ -167,6 +167,7 @@ export default function WavelengthGame({ onBack }) {
           <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{t.dialInstr}</div>
           <Bar showTarget={false} showGuess />
           <input
+            className="gc-scale-input"
             type="range"
             min="0"
             max="100"

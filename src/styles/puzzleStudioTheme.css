@@ -1,0 +1,1112 @@
+/* Puzzle Studio — Training Hub category-art visual system. */
+
+.pz-theme-numbers {
+  --pz-accent: #d8a541;
+  --pz-accent-deep: #9d6e22;
+  --pz-surface: #fff8e8;
+  --pz-surface-strong: #f5dfaa;
+}
+
+.pz-theme-logic {
+  --pz-accent: #55a99f;
+  --pz-accent-deep: #327a76;
+  --pz-surface: #edf8f6;
+  --pz-surface-strong: #ccebe5;
+}
+
+.pz-theme-spatial {
+  --pz-accent: #9a80c8;
+  --pz-accent-deep: #69549b;
+  --pz-surface: #f5f0fb;
+  --pz-surface-strong: #ded1f0;
+}
+
+.pz-theme-group {
+  --pz-accent: #c96f63;
+  --pz-accent-deep: #914b46;
+  --pz-surface: #fff1ef;
+  --pz-surface-strong: #f3d1cc;
+}
+
+.pz-studio {
+  --pz-cosmos: #090d19;
+  --pz-cosmos-mid: #11182a;
+  --pz-on-cosmos: #f5ecdc;
+  --pz-on-cosmos-muted: #b9bfd0;
+  --pz-ink: #17243d;
+  --pz-card: #f7f9fc;
+  --pz-card-soft: #e9eef4;
+  position: absolute;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  isolation: isolate;
+  color: var(--pz-on-cosmos);
+  background:
+    radial-gradient(ellipse 72% 46% at 18% 12%, rgba(123, 106, 164, 0.19), transparent 72%),
+    radial-gradient(ellipse 66% 42% at 88% 42%, rgba(74, 150, 151, 0.14), transparent 74%),
+    linear-gradient(180deg, var(--pz-cosmos-mid), var(--pz-cosmos));
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+}
+
+.pz-studio *,
+.pz-studio *::before,
+.pz-studio *::after,
+.pz-studio-game *,
+.pz-studio-game *::before,
+.pz-studio-game *::after {
+  box-sizing: border-box;
+}
+
+.pz-studio-nebula,
+.pz-studio-stars {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.pz-studio-nebula {
+  border-radius: 50%;
+  filter: blur(24px);
+  opacity: 0.64;
+}
+
+.pz-studio-nebula--one {
+  inset: 8% auto auto -16%;
+  width: 52vw;
+  height: 38vw;
+  min-width: 260px;
+  min-height: 190px;
+  background: radial-gradient(circle, rgba(216, 165, 65, 0.2), transparent 70%);
+}
+
+.pz-studio-nebula--two {
+  inset: auto -14% 6% auto;
+  width: 48vw;
+  height: 42vw;
+  min-width: 250px;
+  min-height: 210px;
+  background: radial-gradient(circle, rgba(154, 128, 200, 0.2), transparent 72%);
+}
+
+.pz-studio-stars {
+  opacity: 0.78;
+  background:
+    radial-gradient(1.2px 1.2px at 8% 14%, rgba(255,248,230,0.9), transparent),
+    radial-gradient(1px 1px at 19% 42%, rgba(190,220,255,0.66), transparent),
+    radial-gradient(1.4px 1.4px at 32% 19%, rgba(255,248,230,0.82), transparent),
+    radial-gradient(1px 1px at 48% 61%, rgba(255,215,160,0.6), transparent),
+    radial-gradient(1.2px 1.2px at 61% 12%, rgba(216,205,255,0.72), transparent),
+    radial-gradient(1px 1px at 76% 38%, rgba(255,248,230,0.72), transparent),
+    radial-gradient(1.3px 1.3px at 91% 18%, rgba(190,220,255,0.7), transparent),
+    radial-gradient(1px 1px at 14% 78%, rgba(255,248,230,0.54), transparent),
+    radial-gradient(1.2px 1.2px at 56% 86%, rgba(255,220,180,0.62), transparent),
+    radial-gradient(1px 1px at 88% 72%, rgba(210,200,255,0.5), transparent);
+}
+
+.pz-studio-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 1fr minmax(0, auto) 1fr;
+  align-items: center;
+  min-height: calc(58px + env(safe-area-inset-top, 0px));
+  padding: calc(12px + env(safe-area-inset-top, 0px)) clamp(14px, 4vw, 30px) 10px;
+  color: var(--pz-on-cosmos);
+  background: linear-gradient(180deg, rgba(9,13,25,0.96) 58%, rgba(9,13,25,0));
+  backdrop-filter: blur(8px);
+}
+
+.pz-studio-header-slot {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.pz-studio-header-slot--end { justify-content: flex-end; }
+
+.pz-studio-header-title {
+  overflow: hidden;
+  color: inherit;
+  font-size: clamp(1rem, 3.8vw, 1.28rem);
+  font-weight: 820;
+  letter-spacing: 0.03em;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pz-studio-chrome-btn,
+.pz-studio-lang {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  place-items: center;
+  color: inherit;
+  background: rgba(245,249,252,0.08);
+  border: 1.5px solid rgba(233,238,245,0.2);
+  border-radius: 13px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  cursor: pointer;
+}
+
+.pz-studio-lang {
+  font-family: 'Cairo', 'Outfit', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.pz-studio-chrome-btn:focus-visible,
+.pz-studio-lang:focus-visible,
+.pz-category-card:focus-visible,
+.pz-game-card:focus-visible,
+.pz-studio-feature:focus-visible,
+.pz-studio-continue:focus-visible {
+  outline: 3px solid #f0bc64;
+  outline-offset: 3px;
+}
+
+.pz-studio-main {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 980px);
+  margin: 0 auto;
+  padding: 18px clamp(16px, 4vw, 34px) calc(104px + env(safe-area-inset-bottom, 0px));
+}
+
+.pz-studio-intro {
+  max-width: 660px;
+  margin: 8px auto 24px;
+  text-align: center;
+}
+
+.pz-studio-kicker {
+  display: block;
+  margin-bottom: 7px;
+  color: #e2b867;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.pz-studio-intro h1,
+.pz-category-hero h1 {
+  margin: 0;
+  color: var(--pz-on-cosmos);
+  font-size: clamp(2rem, 8vw, 3.6rem);
+  font-weight: 880;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+}
+
+.pz-studio-intro p,
+.pz-category-hero p {
+  margin: 12px auto 0;
+  color: var(--pz-on-cosmos-muted);
+  font-size: clamp(0.88rem, 2.2vw, 1.02rem);
+  font-weight: 560;
+  line-height: 1.5;
+}
+
+.pz-studio-feature {
+  position: relative;
+  display: grid;
+  width: min(100%, 720px);
+  min-height: 104px;
+  margin: 0 auto 18px;
+  padding: 14px 48px 14px 18px;
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  color: #eef4f8;
+  text-align: start;
+  background:
+    radial-gradient(circle at 16% 30%, rgba(94,198,182,0.18), transparent 34%),
+    linear-gradient(135deg, #18243b, #101827);
+  border: 1.5px solid rgba(121,171,190,0.34);
+  border-radius: 22px;
+  box-shadow: 0 13px 28px rgba(2,5,12,0.26), inset 0 1px 0 rgba(255,255,255,0.07);
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+[dir='rtl'] .pz-studio-feature { padding: 14px 18px 14px 48px; }
+
+.pz-studio-feature:hover { transform: translateY(-3px); border-color: rgba(112,207,198,0.68); }
+
+.pz-studio-feature-rocket {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  font-size: 2.45rem;
+  background: rgba(224,239,242,0.09);
+  border: 1.5px solid rgba(119,203,200,0.35);
+  border-radius: 20px;
+}
+
+.pz-studio-feature-copy,
+.pz-category-copy,
+.pz-game-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.pz-studio-feature-copy b { font-size: 1.08rem; font-weight: 840; }
+.pz-studio-feature-copy small { margin-top: 5px; color: #aebccd; font-size: 0.76rem; line-height: 1.35; }
+
+.pz-studio-feature-arrow,
+.pz-category-arrow,
+.pz-game-arrow {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  color: currentColor;
+  font-size: 1.7rem;
+  transform: translateY(-50%);
+}
+
+[dir='rtl'] .pz-studio-feature-arrow,
+[dir='rtl'] .pz-category-arrow,
+[dir='rtl'] .pz-game-arrow {
+  right: auto;
+  left: 18px;
+  transform: translateY(-50%) scaleX(-1);
+}
+
+.pz-category-grid {
+  display: grid;
+  width: min(100%, 720px);
+  margin: 0 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(12px, 2vw, 18px);
+}
+
+.pz-category-card {
+  --pz-card-accent: var(--pz-accent);
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 250px;
+  padding: 12px 14px 18px;
+  align-items: center;
+  flex-direction: column;
+  color: var(--pz-ink);
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 28%, color-mix(in srgb, var(--pz-card-accent) 14%, transparent), transparent 46%),
+    linear-gradient(180deg, #fbfcfe, var(--pz-surface));
+  border: 2px solid #17243d;
+  border-radius: 24px;
+  box-shadow: 5px 5px 0 #17243d;
+  cursor: pointer;
+  transition: transform 220ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms ease;
+}
+
+.pz-category-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 7px 9px 0 #17243d;
+}
+
+.pz-category-art-shell {
+  display: grid;
+  width: min(100%, 180px);
+  height: 154px;
+  place-items: center;
+}
+
+.pz-category-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 8px 8px rgba(19,32,53,0.2))
+    drop-shadow(0 0 5px color-mix(in srgb, var(--pz-card-accent) 22%, transparent));
+  transition: transform 220ms cubic-bezier(.2,.8,.2,1);
+  user-select: none;
+}
+
+.pz-category-card:hover .pz-category-art { transform: translateY(-3px) scale(1.06); }
+
+.pz-category-copy { align-items: center; padding-inline: 5px; }
+.pz-category-copy b { color: #17243d; font-size: clamp(1rem, 3vw, 1.22rem); font-weight: 860; }
+.pz-category-copy small {
+  display: -webkit-box;
+  margin-top: 6px;
+  overflow: hidden;
+  color: #57647a;
+  font-size: clamp(0.68rem, 2.2vw, 0.78rem);
+  font-weight: 620;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.pz-category-arrow { top: auto; right: 15px; bottom: 10px; color: var(--pz-card-accent); transform: none; }
+[dir='rtl'] .pz-category-arrow { top: auto; bottom: 10px; left: 15px; transform: scaleX(-1); }
+
+.pz-studio-continue {
+  display: block;
+  margin: 24px auto 0;
+  padding: 11px 20px;
+  color: #e7bd70;
+  background: rgba(21,29,46,0.82);
+  border: 1.5px solid rgba(231,189,112,0.5);
+  border-radius: 13px;
+  font: 780 0.82rem/1 'Outfit', 'Cairo', sans-serif;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.pz-studio-main--category { width: min(100%, 860px); }
+
+.pz-category-hero {
+  display: grid;
+  min-height: 180px;
+  margin: 0 0 18px;
+  padding: 10px 18px 18px;
+  grid-template-columns: minmax(110px, 190px) minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+}
+
+.pz-category-hero img {
+  display: block;
+  width: 100%;
+  height: 170px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 12px rgba(2,5,12,0.34));
+}
+
+.pz-category-hero h1 { font-size: clamp(1.8rem, 6vw, 3rem); }
+.pz-category-hero p { margin-inline: 0; max-width: 44ch; }
+
+.pz-game-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.pz-game-card {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 112px;
+  padding: 13px 42px 13px 13px;
+  grid-template-columns: 62px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  color: #17243d;
+  text-align: start;
+  background:
+    linear-gradient(145deg, #fbfcfe, color-mix(in srgb, var(--pz-puzzle-accent) 10%, var(--pz-surface)));
+  border: 2px solid #17243d;
+  border-radius: 18px;
+  box-shadow: 4px 4px 0 #17243d;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+[dir='rtl'] .pz-game-card { padding: 13px 13px 13px 42px; }
+.pz-game-card:hover { transform: translateY(-3px); box-shadow: 5px 7px 0 #17243d; }
+
+.pz-game-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  font-size: 1.65rem;
+  background: color-mix(in srgb, var(--pz-puzzle-accent) 18%, #f9fbfd);
+  border: 2px solid #17243d;
+  border-radius: 16px;
+  box-shadow: 2px 2px 0 #17243d;
+}
+
+.pz-game-copy b { font-size: 0.98rem; font-weight: 850; line-height: 1.15; }
+.pz-game-copy small {
+  display: -webkit-box;
+  margin-top: 5px;
+  overflow: hidden;
+  color: #5a677d;
+  font-size: 0.7rem;
+  font-weight: 610;
+  line-height: 1.32;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.pz-game-arrow { right: 14px; color: var(--pz-puzzle-accent); }
+[dir='rtl'] .pz-game-arrow { left: 14px; }
+
+.pz-studio-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #536176;
+  background: #eef3f7;
+  font: 760 0.86rem/1 'Outfit', 'Cairo', sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.pz-studio-loading-mark { color: #d8a541; animation: pz-studio-spin 1.4s linear infinite; }
+@keyframes pz-studio-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 620px) {
+  .pz-studio-main { padding-top: 8px; }
+  .pz-studio-intro { margin-top: 0; }
+  .pz-category-card { min-height: 222px; padding-inline: 9px; border-radius: 20px; }
+  .pz-category-art-shell { height: 132px; }
+  .pz-category-hero { min-height: 142px; grid-template-columns: 112px minmax(0, 1fr); padding-inline: 4px; gap: 12px; }
+  .pz-category-hero img { height: 126px; }
+  .pz-game-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 380px) {
+  .pz-category-grid { gap: 10px; }
+  .pz-category-card { min-height: 206px; }
+  .pz-category-art-shell { height: 116px; }
+  .pz-category-copy small { font-size: 0.64rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pz-category-card,
+  .pz-category-art,
+  .pz-game-card,
+  .pz-studio-feature { transition: none; }
+  .pz-studio-loading-mark { animation: none; }
+}
+
+html[data-home-theme='light'] .pz-studio {
+  --pz-cosmos: #dfe8f0;
+  --pz-cosmos-mid: #eef3f7;
+  --pz-on-cosmos: #17243d;
+  --pz-on-cosmos-muted: #526078;
+  background:
+    radial-gradient(ellipse 72% 46% at 18% 12%, rgba(154,128,200,0.14), transparent 72%),
+    radial-gradient(ellipse 66% 42% at 88% 42%, rgba(85,169,159,0.13), transparent 74%),
+    linear-gradient(180deg, #f3f6f9, #dfe8f0);
+}
+
+html[data-home-theme='light'] .pz-studio-header {
+  background: linear-gradient(180deg, rgba(239,244,248,0.96) 58%, rgba(239,244,248,0));
+}
+
+html[data-home-theme='light'] .pz-studio-stars { opacity: 0.2; }
+html[data-home-theme='light'] .pz-studio-chrome-btn,
+html[data-home-theme='light'] .pz-studio-lang {
+  background: rgba(255,255,255,0.62);
+  border-color: rgba(23,36,61,0.18);
+}
+
+/* ==========================================================================
+ * Inside every puzzle: one calm, category-tinted visual language
+ * ========================================================================== */
+
+.pz-studio-game {
+  --pz-ink: #17243d;
+  --pz-muted: #5b687d;
+  --pz-card: #fbfcfe;
+  --pz-card-soft: #edf1f5;
+  --pz-line: rgba(23, 36, 61, 0.23);
+  --pz-shadow: rgba(23, 36, 61, 0.9);
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--pz-ink);
+  background: var(--pz-surface, #edf8f6);
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+}
+
+.pz-studio-game > .ct-puzzle-screen,
+.pz-studio-game .ct-puzzle-screen {
+  min-height: 100%;
+  color: var(--pz-ink) !important;
+  background:
+    radial-gradient(circle at 12% 6%, color-mix(in srgb, var(--pz-accent) 16%, transparent), transparent 32%),
+    radial-gradient(circle at 92% 90%, color-mix(in srgb, var(--pz-accent) 10%, transparent), transparent 30%),
+    linear-gradient(180deg, #f8fafc 0%, var(--pz-surface) 100%) !important;
+}
+
+.pz-studio-game .ct-training-menubar,
+.pz-studio-game .ct-training-play-header {
+  min-height: calc(58px + env(safe-area-inset-top, 0px));
+  color: var(--pz-ink);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--pz-surface) 92%, white) 72%,
+    color-mix(in srgb, var(--pz-surface) 58%, transparent)
+  ) !important;
+  border-bottom: 1px solid var(--pz-line);
+  backdrop-filter: blur(10px);
+}
+
+.pz-studio-game .ct-training-menubar-center,
+.pz-studio-game .ct-training-play-header-body,
+.pz-studio-game .ct-training-play-title,
+.pz-studio-game .ct-puzzle-hub-title {
+  color: var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-training-play-title,
+.pz-studio-game .ct-puzzle-hub-title {
+  font-weight: 820 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.pz-studio-game .ct-training-play-sub,
+.pz-studio-game .ct-puzzle-hub-sub,
+.pz-studio-game .ct-puzzle-hint,
+.pz-studio-game .ct-puzzle-stats {
+  color: var(--pz-muted) !important;
+}
+
+.pz-studio-game .ct-puzzle-hub-kicker {
+  color: var(--pz-accent-deep) !important;
+  letter-spacing: 0.18em;
+}
+
+.pz-studio-game .ct-training-chrome-btn,
+.pz-studio-game .ct-training-chrome-btn--paper {
+  width: 42px;
+  height: 42px;
+  color: var(--pz-ink) !important;
+  background: color-mix(in srgb, var(--pz-card) 86%, var(--pz-surface)) !important;
+  border: 2px solid var(--pz-ink) !important;
+  border-radius: 13px !important;
+  box-shadow: 2px 2px 0 var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-training-chrome-btn--tutorial {
+  color: var(--pz-accent-deep) !important;
+  background: var(--pz-surface-strong) !important;
+}
+
+.pz-studio-game .ct-puzzle-hub-body {
+  max-width: 540px;
+  padding-inline: 18px;
+}
+
+.pz-studio-game .ct-puzzle-list,
+.pz-studio-game .ct-puzzle-grid-picks {
+  gap: 12px;
+}
+
+.pz-studio-game .ct-puzzle-list-item,
+.pz-studio-game .ct-puzzle-grid-pick {
+  color: var(--pz-ink);
+  background: linear-gradient(
+    145deg,
+    var(--pz-card) 0%,
+    color-mix(in srgb, var(--pz-surface) 74%, white) 100%
+  ) !important;
+  border: 2px solid var(--pz-ink) !important;
+  border-inline-start: 5px solid var(--pz-puzzle-accent, var(--pz-accent)) !important;
+  border-radius: 17px !important;
+  box-shadow: 4px 4px 0 var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-puzzle-list-ic,
+.pz-studio-game .ct-puzzle-grid-pick-ic {
+  color: var(--pz-ink) !important;
+  background: var(--pz-surface-strong) !important;
+  border: 2px solid var(--pz-ink) !important;
+  box-shadow: 2px 2px 0 var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-puzzle-list-lb,
+.pz-studio-game .ct-puzzle-grid-pick-lb {
+  color: var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-puzzle-list-hint,
+.pz-studio-game .ct-puzzle-grid-pick-hint,
+.pz-studio-game .ct-puzzle-list-chev,
+.pz-studio-game .ct-puzzle-grid-pick-chev {
+  color: var(--pz-muted) !important;
+}
+
+.pz-studio-game .ct-puzzle-list-item:focus-visible,
+.pz-studio-game .ct-puzzle-grid-pick:focus-visible {
+  outline: 3px solid var(--pz-puzzle-accent, var(--pz-accent));
+  outline-offset: 3px;
+}
+
+.pz-studio-game .ct-puzzle-play-body {
+  max-width: 560px;
+  color: var(--pz-ink);
+}
+
+.pz-studio-game .ct-puzzle-hint {
+  max-width: 470px;
+  margin-inline: auto;
+  padding: 9px 13px;
+  background: color-mix(in srgb, var(--pz-surface-strong) 42%, white);
+  border: 1.5px solid color-mix(in srgb, var(--pz-accent) 30%, var(--pz-ink));
+  border-radius: 12px;
+}
+
+/* Number, logic and spatial boards */
+.pz-studio-game .ct-puzzle-grid,
+.pz-studio-game .ct-slide-board,
+.pz-studio-game .ct-bridges-svg,
+.pz-studio-game .ct-crowns-grid,
+.pz-studio-game .bb-board,
+.pz-studio-game .ct-flow-board,
+.pz-studio-game .ct-tangram-board {
+  background: color-mix(in srgb, var(--pz-surface) 62%, white) !important;
+  border: 2px solid var(--pz-ink) !important;
+  border-radius: 16px !important;
+  box-shadow: 4px 4px 0 var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-puzzle-cell,
+.pz-studio-game .ct-slide-tile,
+.pz-studio-game .ct-puzzle-numkey,
+.pz-studio-game .ct-tangram-piece {
+  color: var(--pz-ink) !important;
+  background: linear-gradient(180deg, #fff 0%, var(--pz-card-soft) 100%) !important;
+  border-color: var(--pz-ink) !important;
+  box-shadow: 2px 2px 0 color-mix(in srgb, var(--pz-ink) 78%, transparent) !important;
+}
+
+.pz-studio-game .ct-puzzle-cell--fixed,
+.pz-studio-game .ct-puzzle-cell--takuzu-fixed,
+.pz-studio-game .ct-puzzle-cell--kakuro-given {
+  color: var(--pz-accent-deep) !important;
+  background: var(--pz-surface-strong) !important;
+}
+
+.pz-studio-game .ct-puzzle-cell--selected,
+.pz-studio-game .ct-puzzle-cell--kenken.ct-puzzle-cell--selected,
+.pz-studio-game .ct-nonogram-tool--active {
+  color: var(--pz-ink) !important;
+  background: color-mix(in srgb, var(--pz-puzzle-accent, var(--pz-accent)) 28%, white) !important;
+  outline: 2px solid var(--pz-puzzle-accent, var(--pz-accent));
+  outline-offset: -2px;
+}
+
+.pz-studio-game .ct-puzzle-cell--t0 {
+  color: var(--pz-accent-deep) !important;
+  background: color-mix(in srgb, var(--pz-surface-strong) 70%, white) !important;
+}
+
+.pz-studio-game .ct-puzzle-cell--t1 {
+  color: #fff !important;
+  background: var(--pz-accent-deep) !important;
+}
+
+.pz-studio-game .ct-puzzle-cell--shaded,
+.pz-studio-game .ct-puzzle-cell--kakuro-block,
+.pz-studio-game .ct-puzzle-grid--nonogram .ct-puzzle-cell--filled {
+  color: #fff !important;
+  background: var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-puzzle-cell--kakuro-block::after {
+  border-color: color-mix(in srgb, var(--pz-surface-strong) 70%, white) !important;
+}
+
+.pz-studio-game .ct-kakuro-clue,
+.pz-studio-game .ct-puzzle-cage-label {
+  color: var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-puzzle-grid--nonogram {
+  border-color: var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-nonogram-clue,
+.pz-studio-game .ct-nonogram-clue-n,
+.pz-studio-game .ct-kenken-legend,
+.pz-studio-game .ct-kenken-legend__note {
+  color: var(--pz-muted) !important;
+}
+
+.pz-studio-game .ct-kenken-legend {
+  background: color-mix(in srgb, var(--pz-surface) 68%, white) !important;
+  border-color: var(--pz-line) !important;
+}
+
+.pz-studio-game .ct-nonogram-tool-ic--fill {
+  background: var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-bridges-line {
+  stroke: var(--pz-accent-deep) !important;
+}
+
+.pz-studio-game .ct-bridges-isle {
+  fill: #fff !important;
+  stroke: var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-bridges-isle.is-done {
+  fill: color-mix(in srgb, #63a875 25%, white) !important;
+}
+
+.pz-studio-game .ct-bridges-isle.is-sel {
+  fill: var(--pz-surface-strong) !important;
+  stroke: var(--pz-accent-deep) !important;
+}
+
+.pz-studio-game .ct-bridges-num,
+.pz-studio-game .ct-crowns-x {
+  fill: var(--pz-ink) !important;
+  color: var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-crowns-grid {
+  overflow: hidden;
+  gap: 1px;
+}
+
+.pz-studio-game .ct-crowns-cell {
+  outline: 1px solid rgba(23, 36, 61, 0.24);
+  outline-offset: -1px;
+}
+
+.pz-studio-game .ct-flow-cell {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(23, 36, 61, 0.15) !important;
+}
+
+.pz-studio-game .ct-flow-dot {
+  border-color: #fff !important;
+  box-shadow: 0 0 0 2px var(--pz-ink), 0 3px 0 rgba(23, 36, 61, 0.2) !important;
+}
+
+.pz-studio-game .ct-tangram-cell {
+  border-color: rgba(23, 36, 61, 0.18) !important;
+}
+
+.pz-studio-game .ct-tangram-tray-label {
+  color: var(--pz-muted) !important;
+}
+
+.pz-studio-game .ct-tangram-piece {
+  border-radius: 13px !important;
+}
+
+.pz-studio-game .bb-score {
+  color: var(--pz-accent-deep);
+}
+
+.pz-studio-game .bb-board {
+  padding: 7px;
+}
+
+.pz-studio-game .bb-cell {
+  background: color-mix(in srgb, var(--pz-accent) 10%, white);
+  outline: 1px solid rgba(23, 36, 61, 0.12);
+}
+
+.pz-studio-game .bb-cell.is-ghost {
+  background: color-mix(in srgb, var(--pz-accent) 38%, white);
+}
+
+.pz-studio-game .bb-over {
+  color: #fff;
+  background: rgba(23, 36, 61, 0.9);
+}
+
+.pz-studio-game .bb-over-title,
+.pz-studio-game .bb-over-score {
+  color: #fff;
+}
+
+/* Controls and end states */
+.pz-studio-game .ct-puzzle-tool-btn,
+.pz-studio-game .ct-training-btn {
+  color: var(--pz-ink) !important;
+  background: var(--pz-card) !important;
+  border: 2px solid var(--pz-ink) !important;
+  border-radius: 13px !important;
+  box-shadow: 2px 2px 0 var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-puzzle-tool-btn--pri,
+.pz-studio-game .ct-training-btn--pri,
+.pz-studio-game .ct-training-btn--start {
+  color: #fff !important;
+  background: var(--pz-accent-deep) !important;
+}
+
+.pz-studio-game .ct-puzzle-tool-btn--hint {
+  color: var(--pz-ink) !important;
+  background: var(--pz-surface-strong) !important;
+  border-color: var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-training-btn--warn {
+  color: #fff !important;
+  background: #a94f4b !important;
+}
+
+.pz-studio-game .ct-puzzle-win {
+  color: var(--pz-ink);
+  background: linear-gradient(145deg, #fff, var(--pz-surface)) !important;
+  border: 2px solid var(--pz-ink) !important;
+  border-radius: 18px;
+  box-shadow: 4px 4px 0 var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-puzzle-win-badge {
+  color: var(--pz-accent-deep);
+}
+
+.pz-studio-game .ct-puzzle-win-title {
+  color: var(--pz-ink) !important;
+}
+
+.pz-studio-game .ct-puzzle-win-meta {
+  color: var(--pz-muted) !important;
+}
+
+/* Tutorials, pause dialogs and ready screens */
+.pz-studio-game .mm-tut-root,
+.pz-studio-game .ct-training-ov {
+  background: rgba(15, 25, 45, 0.76) !important;
+  backdrop-filter: blur(5px);
+}
+
+.pz-studio-game .mm-tut-card,
+.pz-studio-game .ct-training-modal,
+.pz-studio-game .ct-training-handoff {
+  color: var(--pz-ink) !important;
+  background: linear-gradient(155deg, #fff, var(--pz-surface)) !important;
+  border: 2px solid var(--pz-ink) !important;
+  border-radius: 20px !important;
+  box-shadow: 6px 6px 0 var(--pz-ink), 0 24px 52px rgba(12, 20, 36, 0.3) !important;
+}
+
+.pz-studio-game .mm-tut-title-pill,
+.pz-studio-game .mm-tut-intro-num,
+.pz-studio-game .mm-tut-practice-badge,
+.pz-studio-game .mm-tut-dot--on,
+.pz-studio-game .mm-tut-practice-progress-fill {
+  background: var(--pz-accent-deep) !important;
+}
+
+.pz-studio-game .mm-tut-step-title,
+.pz-studio-game .mm-tut-intro-heading,
+.pz-studio-game .mm-tut-ready-heading,
+.pz-studio-game .ct-training-modal-title,
+.pz-studio-game .ct-training-handoff-name,
+.pz-studio-game .ct-training-handoff-instruction {
+  color: var(--pz-ink) !important;
+}
+
+.pz-studio-game .mm-tut-body,
+.pz-studio-game .mm-tut-intro-sub,
+.pz-studio-game .mm-tut-intro-steps p,
+.pz-studio-game .mm-tut-note,
+.pz-studio-game .mm-tut-ready-sub,
+.pz-studio-game .ct-training-modal-text,
+.pz-studio-game .ct-training-handoff-meta,
+.pz-studio-game .ct-training-handoff-round,
+.pz-studio-game .ct-training-handoff-bullets {
+  color: var(--pz-muted) !important;
+}
+
+.pz-studio-game .mm-tut-note,
+.pz-studio-game .mm-tut-diagram,
+.pz-studio-game .mm-tut-pills li,
+.pz-studio-game .mm-tut-intro-steps li,
+.pz-studio-game .mm-tut-practice-bar-inner {
+  background: color-mix(in srgb, var(--pz-surface) 58%, white) !important;
+  border-color: var(--pz-line) !important;
+}
+
+.pz-studio-game .ct-puzzle-tut-demo,
+.pz-studio-game .ct-tut-board,
+.pz-studio-game .ct-tut-cell {
+  color: var(--pz-ink);
+  border-color: rgba(23, 36, 61, 0.24) !important;
+}
+
+.pz-studio-game .ct-puzzle-tut-demo,
+.pz-studio-game .ct-tut-board {
+  background: color-mix(in srgb, var(--pz-surface) 58%, white) !important;
+  border: 2px solid var(--pz-ink) !important;
+  box-shadow: 3px 3px 0 var(--pz-ink);
+}
+
+.pz-studio-game .ct-tut-arrow,
+.pz-studio-game .mm-tut-prob-ans-arrow,
+.pz-studio-game .mm-tut-practice-note {
+  color: var(--pz-accent-deep) !important;
+}
+
+.pz-studio-game .mm-tut-practice-scrim {
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--pz-accent) 66%, transparent);
+}
+
+.pz-studio-game .mm-tut-practice-bar-inner {
+  border: 2px solid var(--pz-accent-deep) !important;
+  box-shadow: 3px 3px 0 var(--pz-ink) !important;
+}
+
+.pz-studio-game .mm-tut-btn--pri {
+  color: #fff;
+  background: var(--pz-accent-deep) !important;
+  box-shadow: 2px 2px 0 var(--pz-ink) !important;
+}
+
+.pz-studio-game .mm-tut-btn--ghost {
+  color: var(--pz-ink);
+  background: #fff !important;
+  border: 2px solid var(--pz-ink) !important;
+}
+
+.pz-studio-game .mm-tut-check input {
+  accent-color: var(--pz-accent-deep);
+}
+
+/* Group games: same system, with room for pass-and-play content */
+.pz-studio-game.pz-theme-group .gc-root {
+  color: var(--pz-ink) !important;
+  background:
+    radial-gradient(circle at 10% 4%, rgba(201, 111, 99, 0.14), transparent 30%),
+    radial-gradient(circle at 96% 78%, rgba(85, 169, 159, 0.12), transparent 32%),
+    linear-gradient(180deg, #f8fafc, var(--pz-surface)) !important;
+}
+
+.pz-studio-game.pz-theme-group .gc-app {
+  --gc-accent: var(--pz-puzzle-accent, var(--pz-accent)) !important;
+  max-width: 620px;
+}
+
+.pz-studio-game.pz-theme-group .gc-head {
+  background: linear-gradient(180deg, rgba(255, 241, 239, 0.98) 72%, rgba(255, 241, 239, 0)) !important;
+  border-bottom: 1px solid var(--pz-line);
+  backdrop-filter: blur(10px);
+}
+
+.pz-studio-game.pz-theme-group .gc-back {
+  color: var(--pz-ink) !important;
+  background: #fff !important;
+  border: 2px solid var(--pz-ink) !important;
+  box-shadow: 2px 2px 0 var(--pz-ink);
+}
+
+.pz-studio-game.pz-theme-group .gc-title,
+.pz-studio-game.pz-theme-group .gc-handoff-name,
+.pz-studio-game.pz-theme-group .gc-word,
+.pz-studio-game.pz-theme-group .gc-question,
+.pz-studio-game.pz-theme-group .gc-step-val {
+  color: var(--pz-ink) !important;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif !important;
+  font-weight: 820;
+}
+
+.pz-studio-game.pz-theme-group .gc-card,
+.pz-studio-game.pz-theme-group .gc-how,
+.pz-studio-game.pz-theme-group .gc-handoff-card,
+.pz-studio-game.pz-theme-group .gc-stepper {
+  color: var(--pz-ink) !important;
+  background: linear-gradient(145deg, #fff, var(--pz-surface)) !important;
+  border: 2px solid var(--pz-ink) !important;
+  box-shadow: 4px 4px 0 var(--pz-ink) !important;
+}
+
+.pz-studio-game.pz-theme-group .gc-handoff-card--secret {
+  color: #f7f1e8 !important;
+  background:
+    radial-gradient(circle at 26% 20%, rgba(154, 128, 200, 0.2), transparent 42%),
+    linear-gradient(145deg, #17243d, #0d1628) !important;
+  border: 2px solid var(--pz-ink) !important;
+}
+
+.pz-studio-game.pz-theme-group .gc-pack,
+.pz-studio-game.pz-theme-group .gc-time,
+.pz-studio-game.pz-theme-group .gc-pill,
+.pz-studio-game.pz-theme-group .gc-player-input,
+.pz-studio-game.pz-theme-group .gc-player-x {
+  color: var(--pz-muted) !important;
+  background: #fff !important;
+  border: 2px solid var(--pz-ink) !important;
+}
+
+.pz-studio-game.pz-theme-group .gc-pack.on,
+.pz-studio-game.pz-theme-group .gc-time.on,
+.pz-studio-game.pz-theme-group .gc-pill.on {
+  color: var(--pz-ink) !important;
+  background: color-mix(in srgb, var(--pack-accent, var(--gc-accent)) 20%, white) !important;
+  box-shadow: 2px 2px 0 var(--pz-ink);
+}
+
+.pz-studio-game.pz-theme-group .gc-step-btn {
+  color: var(--pz-ink);
+  background: var(--pz-surface-strong);
+  border: 2px solid var(--pz-ink);
+  box-shadow: 2px 2px 0 var(--pz-ink);
+}
+
+.pz-studio-game.pz-theme-group .gc-btn {
+  color: #fff;
+  background: var(--gc-accent) !important;
+  border: 2px solid var(--pz-ink);
+  box-shadow: 3px 3px 0 var(--pz-ink);
+}
+
+.pz-studio-game.pz-theme-group .gc-btn--ghost {
+  color: var(--pz-ink) !important;
+  background: #fff !important;
+}
+
+.pz-studio-game.pz-theme-group .gc-btn--ok {
+  background: #438b62 !important;
+}
+
+.pz-studio-game.pz-theme-group .gc-tagline,
+.pz-studio-game.pz-theme-group .gc-how-text,
+.pz-studio-game.pz-theme-group .gc-label,
+.pz-studio-game.pz-theme-group .gc-progress,
+.pz-studio-game.pz-theme-group .gc-tip,
+.pz-studio-game.pz-theme-group .gc-handoff-kicker {
+  color: var(--pz-muted) !important;
+}
+
+.pz-studio-game.pz-theme-group .gc-how-title,
+.pz-studio-game.pz-theme-group .gc-add-player,
+.pz-studio-game.pz-theme-group .gc-chip {
+  color: var(--pz-accent-deep) !important;
+}
+
+.pz-studio-game.pz-theme-group .gc-scale-track {
+  background: linear-gradient(90deg, #dbe9ed, #f4f6f4 50%, #f1dcd7) !important;
+  border: 2px solid var(--pz-ink) !important;
+  box-shadow: 3px 3px 0 var(--pz-ink);
+}
+
+.pz-studio-game.pz-theme-group .gc-scale-input {
+  accent-color: var(--gc-accent) !important;
+}
+
+@media (min-width: 768px) {
+  .pz-studio-game .ct-puzzle-play-body {
+    max-width: 620px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pz-studio-game *,
+  .pz-studio-game *::before,
+  .pz-studio-game *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
