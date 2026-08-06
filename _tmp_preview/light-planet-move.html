@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Light Planet — dissolve move (temp)</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #050510;
+      font-family: system-ui, sans-serif;
+      touch-action: none;
+      user-select: none;
+    }
+    canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+    #status {
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      color: #9be8ff;
+      font-size: 0.85rem;
+      pointer-events: none;
+      text-shadow: 0 0 12px #000;
+    }
+    #hint {
+      position: fixed;
+      left: 50%;
+      bottom: 1.25rem;
+      transform: translateX(-50%);
+      z-index: 2;
+      padding: 0.55rem 1rem;
+      border-radius: 999px;
+      background: rgba(8, 10, 28, 0.78);
+      border: 1px solid rgba(232, 172, 78, 0.4);
+      color: #f0e2c0;
+      font-size: 0.85rem;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+      white-space: nowrap;
+    }
+    #hint strong { color: #e8ac4e; }
+    #err {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background: #050510;
+      color: #ffb4b4;
+      text-align: center;
+      white-space: pre-wrap;
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="status">loading character image…</div>
+  <div id="hint">Click / tap the ground → <strong>dissolve → travel → reunite</strong> (or use arrow keys)</div>
+  <div id="err"></div>
+
+  <script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+const statusEl = document.getElementById('status');
+const errEl = document.getElementById('err');
+const IMG_URL = new URL('./light-planet-character-concept.png', import.meta.url).href;
+
+const PARTICLE_COUNT = 2200;
+const DISSOLVE_MS = 700;
+const REFORM_MS = 750;
+const MOVE_SPEED = 3.2; // world units / second
+
+const STATE = { IDLE: 'idle', DISSOLVE: 'dissolve', TRAVEL: 'travel', REFORM: 'reform' };
+
+function showError(msg) {
+  errEl.style.display = 'flex';
+  errEl.textContent = msg;
+  statusEl.textContent = 'error';
+}
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050510);
+scene.fog = new THREE.FogExp2(0x050510, 0.035);
+
+const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 5.8, 9.5);
+camera.lookAt(0, 1.6, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+document.body.appendChild(renderer.domElement);
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.95, 0.4, 0.25);
+composer.addPass(bloom);
+
+// stars
+{
+  const n = 800;
+  const pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    pos[i * 3] = (Math.random() - 0.5) * 70;
+    pos[i * 3 + 1] = Math.random() * 30 + 1;
+    pos[i * 3 + 2] = (Math.random() - 0.5) * 70;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({
+    color: 0xa8b8ff, size: 0.045, transparent: true, opacity: 0.7,
+  })));
+}
+
+const ground = new THREE.Mesh(
+  new THREE.CircleGeometry(20, 72),
+  new THREE.MeshStandardMaterial({
+    color: 0x14182c,
+    metalness: 0.1,
+    roughness: 0.9,
+    emissive: 0x1a2040,
+    emissiveIntensity: 0.5,
+  }),
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+const grid = new THREE.GridHelper(20, 20, 0x3a4568, 0x1c2238);
+grid.position.y = 0.015;
+grid.material.transparent = true;
+grid.material.opacity = 0.5;
+scene.add(grid);
+
+const targetRing = new THREE.Mesh(
+  new THREE.RingGeometry(0.3, 0.5, 48),
+  new THREE.MeshBasicMaterial({
+    color: 0xe8ac4e,
+    transparent: true,
+    opacity: 0,
+    side: THREE.DoubleSide,
+  }),
+);
+targetRing.rotation.x = -Math.PI / 2;
+targetRing.position.y = 0.03;
+scene.add(targetRing);
+
+scene.add(new THREE.AmbientLight(0x556688, 0.75));
+scene.add(new THREE.PointLight(0xffe0a8, 2.2, 28).translateX(3).translateY(7).translateZ(5));
+scene.add(new THREE.PointLight(0x66ddff, 1.1, 22).translateX(-5).translateY(4).translateZ(-2));
+
+/** Load generated concept art: punch dark bg → alpha, sample bright pixels for particles */
+async function loadCharacterImage() {
+  const img = await new Promise((resolve, reject) => {
+    const el = new Image();
+    el.crossOrigin = 'anonymous';
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error(`Could not load:\n${IMG_URL}\n\nMake sure light-planet-character-concept.png is next to this HTML.`));
+    el.src = IMG_URL;
+  });
+
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+
+  // Keep face/body; only punch near-black void to transparent
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    if (lum < 22) data[i + 3] = 0;
+    else if (lum < 48) data[i + 3] = Math.round(((lum - 22) / 26) * data[i + 3]);
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+  // Sample character silhouette (incl. eyes / mouth glow)
+  const S = 128;
+  const sc = document.createElement('canvas');
+  sc.width = S;
+  sc.height = S;
+  const sctx = sc.getContext('2d', { willReadFrequently: true });
+  sctx.drawImage(canvas, 0, 0, S, S);
+  const sd = sctx.getImageData(0, 0, S, S).data;
+
+  const samples = [];
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const i = (y * S + x) * 4;
+      const a = sd[i + 3];
+      if (a < 40) continue;
+      const r = sd[i] / 255;
+      const g = sd[i + 1] / 255;
+      const b = sd[i + 2] / 255;
+      const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      if (lum < 0.12) continue;
+      // local space: x centered, y = height from ground (feet near 0)
+      const lx = ((x / (S - 1)) - 0.5) * 2.4;
+      const ly = (1 - y / (S - 1)) * 3.2;
+      samples.push({ lx, ly, lz: (Math.random() - 0.5) * 0.15, r, g, b, w: lum });
+    }
+  }
+  if (!samples.length) throw new Error('No pixels sampled from concept image');
+  return { texture, samples, aspect: w / h };
+}
+
+let texture;
+let samples;
+let aspect;
+try {
+  ({ texture, samples, aspect } = await loadCharacterImage());
+} catch (e) {
+  showError(String(e.message || e));
+  throw e;
+}
+
+// --- character = YOUR generated image (eyes, mouth, ring, limbs visible) ---
+const CHAR_H = 3.4;
+const CHAR_W = CHAR_H * aspect;
+
+const charMat = new THREE.MeshBasicMaterial({
+  map: texture,
+  transparent: true,
+  alphaTest: 0.05,
+  side: THREE.DoubleSide,
+  depthWrite: false,
+  toneMapped: false,
+});
+const characterMesh = new THREE.Mesh(new THREE.PlaneGeometry(CHAR_W, CHAR_H), charMat);
+characterMesh.position.set(0, CHAR_H * 0.5, 0);
+
+const character = new THREE.Group();
+character.add(characterMesh);
+const footLight = new THREE.PointLight(0xffd060, 1.8, 5.5);
+footLight.position.set(0, 0.4, 0.25);
+character.add(footLight);
+scene.add(character);
+
+// --- particles (world-space) sampled from the image colors ---
+const restLocal = new Float32Array(PARTICLE_COUNT * 3);
+const colors = new Float32Array(PARTICLE_COUNT * 3);
+const burst = new Float32Array(PARTICLE_COUNT * 3);
+const startWorld = new Float32Array(PARTICLE_COUNT * 3);
+const endWorld = new Float32Array(PARTICLE_COUNT * 3);
+const pPos = new Float32Array(PARTICLE_COUNT * 3);
+
+function pickSample() {
+  for (let t = 0; t < 8; t++) {
+    const s = samples[Math.floor(Math.random() * samples.length)];
+    if (Math.random() < s.w + 0.2) return s;
+  }
+  return samples[Math.floor(Math.random() * samples.length)];
+}
+
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  const s = pickSample();
+  restLocal[i * 3] = s.lx + (Math.random() - 0.5) * 0.03;
+  restLocal[i * 3 + 1] = s.ly + (Math.random() - 0.5) * 0.03;
+  restLocal[i * 3 + 2] = s.lz;
+  colors[i * 3] = s.r;
+  colors[i * 3 + 1] = s.g;
+  colors[i * 3 + 2] = s.b;
+  burst[i * 3] = (Math.random() - 0.5) * 3.6;
+  burst[i * 3 + 1] = Math.random() * 3.0 + 0.4;
+  burst[i * 3 + 2] = (Math.random() - 0.5) * 3.6;
+}
+
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+pGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({
+  size: 0.14,
+  vertexColors: true,
+  transparent: true,
+  opacity: 0,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+}));
+particles.visible = false;
+scene.add(particles);
+
+let state = STATE.IDLE;
+let stateT0 = 0;
+let fromX = 0;
+let fromZ = 0;
+let toX = 0;
+let toZ = 0;
+let travelMs = 800;
+const camTarget = new THREE.Vector3();
+
+function setStatus(t) { statusEl.textContent = t; }
+
+function writeRestWorld(charX, charZ, out, i) {
+  const i3 = i * 3;
+  out[i3] = charX + restLocal[i3];
+  out[i3 + 1] = restLocal[i3 + 1];
+  out[i3 + 2] = charZ + restLocal[i3 + 2];
+}
+
+function beginMove(tx, tz) {
+  if (state !== STATE.IDLE) {
+    setStatus('wait — reuniting…');
+    return;
+  }
+
+  let cx = character.position.x;
+  let cz = character.position.z;
+  let dx = tx - cx;
+  let dz = tz - cz;
+  let dist = Math.hypot(dx, dz);
+
+  // always travel a visible distance
+  if (dist < 1.5) {
+    const ang = Math.atan2(dz || 0.001, dx || 1);
+    tx = cx + Math.cos(ang) * 3.2;
+    tz = cz + Math.sin(ang) * 3.2;
+    dx = tx - cx;
+    dz = tz - cz;
+    dist = Math.hypot(dx, dz);
+  }
+
+  // clamp walk radius
+  const r = Math.hypot(tx, tz);
+  if (r > 9) {
+    tx *= 9 / r;
+    tz *= 9 / r;
+  }
+
+  fromX = cx;
+  fromZ = cz;
+  toX = tx;
+  toZ = tz;
+  travelMs = Math.max(600, (dist / MOVE_SPEED) * 1000);
+
+  targetRing.position.set(tx, 0.03, tz);
+  targetRing.material.opacity = 1;
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    writeRestWorld(cx, cz, startWorld, i);
+    const i3 = i * 3;
+    pPos[i3] = startWorld[i3];
+    pPos[i3 + 1] = startWorld[i3 + 1];
+    pPos[i3 + 2] = startWorld[i3 + 2];
+  }
+  pGeo.attributes.position.needsUpdate = true;
+
+  characterMesh.visible = false;
+  footLight.visible = false;
+  particles.visible = true;
+  particles.material.opacity = 1;
+  particles.material.size = 0.16;
+
+  state = STATE.DISSOLVE;
+  stateT0 = performance.now();
+  setStatus('1/3 dissolving into light…');
+}
+
+function easeInOut(t) {
+  return t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2;
+}
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const hitPoint = new THREE.Vector3();
+
+function pickFloor(clientX, clientY) {
+  pointer.x = (clientX / innerWidth) * 2 - 1;
+  pointer.y = -(clientY / innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObject(ground);
+  if (hits.length) return hits[0].point.clone();
+  if (raycaster.ray.intersectPlane(floorPlane, hitPoint)) return hitPoint.clone();
+  return null;
+}
+
+function onPointer(e) {
+  e.preventDefault();
+  const pt = pickFloor(e.clientX, e.clientY);
+  if (!pt) {
+    setStatus('missed ground — click the floor grid');
+    return;
+  }
+  beginMove(pt.x, pt.z);
+}
+
+renderer.domElement.addEventListener('pointerdown', onPointer, { passive: false });
+
+addEventListener('keydown', (e) => {
+  if (state !== STATE.IDLE) return;
+  const step = 3.5;
+  let dx = 0;
+  let dz = 0;
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') dx = step;
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') dx = -step;
+  if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') dz = -step;
+  if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') dz = step;
+  if (!dx && !dz) return;
+  e.preventDefault();
+  beginMove(character.position.x + dx, character.position.z + dz);
+});
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+  bloom.setSize(innerWidth, innerHeight);
+});
+
+const clock = new THREE.Clock();
+setStatus('ready — click the ground to move');
+
+// Auto-demo once so you immediately see dissolve → travel → reunite
+setTimeout(() => {
+  if (state === STATE.IDLE) beginMove(3.8, -1.2);
+}, 900);
+
+function animate() {
+  requestAnimationFrame(animate);
+  const now = performance.now();
+  const dt = clock.getDelta();
+  const t = now * 0.001;
+
+  // billboard always faces camera — keeps face (eyes/mouth) readable
+  characterMesh.quaternion.copy(camera.quaternion);
+
+  if (state === STATE.IDLE) {
+    characterMesh.position.y = CHAR_H * 0.5 + Math.sin(t * 2.2) * 0.06;
+  }
+
+  if (state === STATE.DISSOLVE) {
+    const u = Math.min(1, (now - stateT0) / DISSOLVE_MS);
+    const e = easeInOut(u);
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const i3 = i * 3;
+      pPos[i3] = startWorld[i3] + burst[i3] * e;
+      pPos[i3 + 1] = startWorld[i3 + 1] + burst[i3 + 1] * e;
+      pPos[i3 + 2] = startWorld[i3 + 2] + burst[i3 + 2] * e;
+    }
+    pGeo.attributes.position.needsUpdate = true;
+    particles.material.size = 0.14 + e * 0.1;
+
+    if (u >= 1) {
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const i3 = i * 3;
+        startWorld[i3] = pPos[i3];
+        startWorld[i3 + 1] = pPos[i3 + 1];
+        startWorld[i3 + 2] = pPos[i3 + 2];
+        writeRestWorld(toX, toZ, endWorld, i);
+      }
+      state = STATE.TRAVEL;
+      stateT0 = now;
+      setStatus('2/3 traveling as light…');
+    }
+  } else if (state === STATE.TRAVEL) {
+    const u = Math.min(1, (now - stateT0) / travelMs);
+    const e = easeInOut(u);
+
+    // root follows so camera tracks the trip
+    character.position.x = THREE.MathUtils.lerp(fromX, toX, e);
+    character.position.z = THREE.MathUtils.lerp(fromZ, toZ, e);
+
+    // cloud flies toward destination shape (still a bit loose)
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const i3 = i * 3;
+      const looseX = endWorld[i3] + burst[i3] * 0.22 * (1 - e);
+      const looseY = endWorld[i3 + 1] + burst[i3 + 1] * 0.18 * (1 - e);
+      const looseZ = endWorld[i3 + 2] + burst[i3 + 2] * 0.22 * (1 - e);
+      pPos[i3] = THREE.MathUtils.lerp(startWorld[i3], looseX, e);
+      pPos[i3 + 1] = THREE.MathUtils.lerp(startWorld[i3 + 1], looseY, e) + Math.sin(t * 12 + i * 0.02) * 0.04 * (1 - e);
+      pPos[i3 + 2] = THREE.MathUtils.lerp(startWorld[i3 + 2], looseZ, e);
+    }
+    pGeo.attributes.position.needsUpdate = true;
+
+    if (u >= 1) {
+      character.position.x = toX;
+      character.position.z = toZ;
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const i3 = i * 3;
+        startWorld[i3] = pPos[i3];
+        startWorld[i3 + 1] = pPos[i3 + 1];
+        startWorld[i3 + 2] = pPos[i3 + 2];
+      }
+      state = STATE.REFORM;
+      stateT0 = now;
+      setStatus('3/3 reuniting…');
+    }
+  } else if (state === STATE.REFORM) {
+    const u = Math.min(1, (now - stateT0) / REFORM_MS);
+    const e = easeInOut(u);
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const i3 = i * 3;
+      pPos[i3] = THREE.MathUtils.lerp(startWorld[i3], endWorld[i3], e);
+      pPos[i3 + 1] = THREE.MathUtils.lerp(startWorld[i3 + 1], endWorld[i3 + 1], e);
+      pPos[i3 + 2] = THREE.MathUtils.lerp(startWorld[i3 + 2], endWorld[i3 + 2], e);
+    }
+    pGeo.attributes.position.needsUpdate = true;
+    particles.material.opacity = 1 - e;
+    particles.material.size = 0.2 - e * 0.1;
+    targetRing.material.opacity = 1 - e;
+
+    if (u >= 1) {
+      particles.visible = false;
+      particles.material.opacity = 0;
+      characterMesh.visible = true;
+      footLight.visible = true;
+      characterMesh.scale.setScalar(1.08);
+      targetRing.material.opacity = 0;
+      state = STATE.IDLE;
+      setStatus('ready — click the ground to move');
+    }
+  }
+
+  if (state === STATE.IDLE && characterMesh.scale.x > 1.001) {
+    characterMesh.scale.setScalar(
+      THREE.MathUtils.lerp(characterMesh.scale.x, 1, 1 - Math.exp(-dt * 10)),
+    );
+  }
+
+  camTarget.set(character.position.x, 5.8, character.position.z + 9.5);
+  camera.position.lerp(camTarget, 1 - Math.exp(-dt * 2.2));
+  camera.lookAt(character.position.x, 1.6, character.position.z);
+  targetRing.rotation.z += dt * 1.5;
+
+  composer.render();
+}
+
+animate();
+  </script>
+</body>
+</html>
