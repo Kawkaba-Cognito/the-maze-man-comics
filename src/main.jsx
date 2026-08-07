@@ -8,6 +8,10 @@ import './styles/settings.css';
 import './styles/training.css';
 import './styles/puzzles.css';
 import './styles/puzzleStudioTheme.css';
+// After the theme on purpose: it re-skins the studio HUB onto the app's dusk
+// universe, and needs to win over the editorial rules the theme still carries
+// for the category and game screens behind it.
+import './styles/puzzleStudioHub.css';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 

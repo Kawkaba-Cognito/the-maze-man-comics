@@ -17,6 +17,9 @@ const VoidRunnerLazy = lazyWithRetry(
   'void-runner',
 );
 
+/** Per-world vertical scatter, so four categories read as a sky not a row. */
+const PZ_DRIFT = [-0.14, 0.12, -0.05, 0.15];
+
 const CATEGORY_ART = {
   numbers: 'Assets/puzzle-studio/category-art-2026/numbers.webp',
   logic: 'Assets/puzzle-studio/category-art-2026/logic.webp',
@@ -140,7 +143,17 @@ export default function PuzzlesScreen() {
           iconColor={chrome.text}
         />
 
-        <main className="pz-studio-main">
+        {/*
+          The hub is a constellation, not a card stack.
+
+          It used to be a white editorial page: a 3.6rem navy grotesque, four
+          bordered cards with drop shadows and a 🚀 emoji in a rounded square —
+          a different product from the dusk universe every other landing sits
+          on. The categories are worlds now, drawn with the same orb treatment
+          as Kawnera's library and the Training hub's domains, and Void Runner
+          is the largest of them because it is the featured one.
+        */}
+        <main className="pz-studio-main pz-hub">
           <section className="pz-studio-intro">
             <span className="pz-studio-kicker">{isAr ? 'اختر طريقتك في التفكير' : 'Choose how you want to think'}</span>
             <h1>{t.hubTitle}</h1>
@@ -149,39 +162,45 @@ export default function PuzzlesScreen() {
 
           <button
             type="button"
-            className="pz-studio-feature"
+            className="pz-feature-world"
             onClick={() => { playSfx('click'); setVoidRunnerOpen(true); }}
           >
-            <span className="pz-studio-feature-rocket" aria-hidden="true">🚀</span>
-            <span className="pz-studio-feature-copy">
-              <b>{isAr ? 'عدّاء الفراغ' : 'Void Runner'}</b>
-              <small>{isAr ? 'ردّ فعل مكاني في رحلة سريعة' : 'Fast spatial reactions in an endless flight'}</small>
+            {/* Void Runner has no cover art, so its world is drawn: a dark
+                body with its own horizon glow, which is also what the game
+                looks like. No emoji — the app does not use them as artwork. */}
+            <span className="pz-orb pz-orb--void" aria-hidden="true">
+              <i className="pz-orb-void-glow" />
+              <i className="pz-orb-shade" />
+              <i className="pz-orb-rim" />
             </span>
-            <span className="pz-studio-feature-arrow" aria-hidden="true">›</span>
+            <span className="pz-feature-copy">
+              <small>{isAr ? 'العالم المميّز' : 'FEATURED WORLD'}</small>
+              <b>{isAr ? 'عدّاء الفراغ' : 'Void Runner'}</b>
+              <i>{isAr ? 'ردّ فعل مكاني في رحلة سريعة' : 'Fast spatial reactions in an endless flight'}</i>
+            </span>
           </button>
 
-          <section className="pz-category-grid" aria-label={isAr ? 'فئات الألغاز' : 'Puzzle categories'}>
-            {PUZZLE_CATEGORIES.map((item) => (
+          <section className="pz-constellation" aria-label={isAr ? 'فئات الألغاز' : 'Puzzle categories'}>
+            {PUZZLE_CATEGORIES.map((item, i) => (
               <button
                 type="button"
                 key={item.id}
-                className={`pz-category-card pz-theme-${item.id}`}
-                style={{ '--pz-card-accent': item.accent }}
+                className={`pz-world pz-theme-${item.id}`}
+                style={{ '--world': item.accent, '--drift': PZ_DRIFT[i % PZ_DRIFT.length] }}
                 onClick={() => { playSfx('click'); setCategory(item.id); }}
               >
-                <span className="pz-category-art-shell" aria-hidden="true">
+                <span className="pz-orb" aria-hidden="true">
                   <img
-                    className="pz-category-art"
                     src={assetUrl(CATEGORY_ART[item.id])}
                     alt=""
+                    decoding="async"
                     draggable="false"
                   />
+                  <i className="pz-orb-shade" />
+                  <i className="pz-orb-rim" />
                 </span>
-                <span className="pz-category-copy">
-                  <b>{isAr ? item.nameAr : item.name}</b>
-                  <small>{isAr ? item.descAr : item.desc}</small>
-                </span>
-                <span className="pz-category-arrow" aria-hidden="true">›</span>
+                <span className="pz-world-name">{isAr ? item.nameAr : item.name}</span>
+                <span className="pz-world-desc">{isAr ? item.descAr : item.desc}</span>
               </button>
             ))}
           </section>
@@ -216,31 +235,45 @@ export default function PuzzlesScreen() {
         iconColor={chrome.text}
       />
 
-      <main className="pz-studio-main pz-studio-main--category">
-        <section className="pz-category-hero">
-          <img src={assetUrl(CATEGORY_ART[category])} alt="" draggable="false" />
-          <div>
+      {/*
+        The category screen is the hub one level down: the category itself is
+        the big world, and each puzzle inside it is a small moon of that world.
+        `pz-hub` carries the orb and constellation styling so both screens are
+        drawn by one set of rules rather than two that drift apart.
+      */}
+      <main className="pz-studio-main pz-hub pz-cat">
+        <section className="pz-cat-hero" style={{ '--world': activeCategory?.accent }}>
+          <span className="pz-orb pz-orb--lg" aria-hidden="true">
+            <img src={assetUrl(CATEGORY_ART[category])} alt="" decoding="async" draggable="false" />
+            <i className="pz-orb-shade" />
+            <i className="pz-orb-rim" />
+          </span>
+          <div className="pz-cat-id">
             <span className="pz-studio-kicker">{isAr ? 'فئة الألغاز' : 'Puzzle category'}</span>
             <h1>{isAr ? activeCategory?.nameAr : activeCategory?.name}</h1>
             <p>{isAr ? activeCategory?.descAr : activeCategory?.desc}</p>
           </div>
         </section>
 
-        <section className="pz-game-grid" aria-label={isAr ? 'الألعاب' : 'Games'}>
-          {categoryPuzzles.map((puzzle) => (
+        <section className="pz-constellation pz-constellation--moons" aria-label={isAr ? 'الألعاب' : 'Games'}>
+          {categoryPuzzles.map((puzzle, i) => (
             <button
               type="button"
               key={puzzle.id}
-              className="pz-game-card"
-              style={{ '--pz-puzzle-accent': puzzle.accent }}
+              className="pz-world pz-world--moon"
+              style={{ '--world': puzzle.accent, '--drift': PZ_DRIFT[i % PZ_DRIFT.length] }}
               onClick={() => { playSfx('click'); setActiveGame(puzzle.gameKey); }}
             >
-              <span className="pz-game-icon" aria-hidden="true">{puzzle.icon}</span>
-              <span className="pz-game-copy">
-                <b>{isAr ? puzzle.nameAr : puzzle.name}</b>
-                <small>{isAr ? puzzle.descAr : puzzle.desc}</small>
+              {/* No art exists per puzzle, so the moon is drawn: the game's own
+                  glyph on a body tinted by its accent. Same orb shading as the
+                  category worlds above, one size down. */}
+              <span className="pz-orb pz-orb--moon" aria-hidden="true">
+                <i className="pz-orb-glyph">{puzzle.icon}</i>
+                <i className="pz-orb-shade" />
+                <i className="pz-orb-rim" />
               </span>
-              <span className="pz-game-arrow" aria-hidden="true">›</span>
+              <span className="pz-world-name">{isAr ? puzzle.nameAr : puzzle.name}</span>
+              <span className="pz-world-desc">{isAr ? puzzle.descAr : puzzle.desc}</span>
             </button>
           ))}
         </section>

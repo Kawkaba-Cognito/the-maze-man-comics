@@ -985,9 +985,21 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     let touchSlot = 0;
     const clock = new THREE.Clock();
 
+    /*
+     * Animation time is ACCUMULATED from clamped deltas, not read off the
+     * clock. The scene idles whenever Home is not the visible tab, and a
+     * THREE.Clock has no idea it was idle: the first call after a five-minute
+     * absence hands back a five-minute jump. Everything downstream reads that
+     * as elapsed animation — every meteor in the pool fires at once, the
+     * breathe and aurora phases snap, and ripples started before the pause are
+     * instantly older than their lifetime. Accumulating clamped deltas means an
+     * idle period simply does not happen, which is what "idle" should mean.
+     */
+    let animTime = 0;
+
     function ripple(localPoint) {
       touchPoints[touchSlot].copy(localPoint);
-      touchStarts[touchSlot] = clock.getElapsedTime();
+      touchStarts[touchSlot] = animTime;
       touchSlot = (touchSlot + 1) % MAX_TOUCHES;
     }
 
@@ -1031,7 +1043,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         if (entry) entry.morphTarget = 0;
       },
       pulseCenter() {
-        const t = clock.getElapsedTime();
+        const t = animTime;
         if (t - lastCenterPulse < 1.4) return;
         lastCenterPulse = t;
         const p = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, 0.6 + Math.random())
@@ -1056,8 +1068,14 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     let bloomPass = null;
 
     function resize() {
-      const w = wrap.clientWidth || 1;
-      const h = wrap.clientHeight || 1;
+      const w = wrap.clientWidth;
+      const h = wrap.clientHeight;
+      // A tab hidden with display:none measures 0x0, and the ResizeObserver
+      // fires on the way out AND the way back. Resizing to 1x1 and back
+      // reallocates the drawing buffer twice per tab switch for nothing, and
+      // leaves the camera on a 1:1 aspect if the scene is ever read while
+      // hidden. Keep the last good size instead.
+      if (w === 0 || h === 0) return;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
@@ -1070,14 +1088,13 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
 
     let raf = 0;
     let running = true;
-    let lastNow = 0;
     let sceneDim = 0;
     function frame() {
       if (!running) return;
       raf = requestAnimationFrame(frame);
-      now = clock.getElapsedTime();
-      const dt = Math.min(now - lastNow, 0.05);
-      lastNow = now;
+      const dt = Math.min(clock.getDelta(), 0.05);
+      animTime += dt;
+      now = animTime;
 
       const tAnim = reducedMotion ? 0 : now;
       const breath = reducedMotion
@@ -1213,7 +1230,9 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     function applyRunning() {
       const next = pageVisible && wantAwake;
       if (next === running) return;
-      if (next) { running = true; clock.getElapsedTime(); frame(); }
+      // Waking: drop the delta that accrued while idle before drawing, so the
+      // first resumed frame advances by ~0 rather than by the whole absence.
+      if (next) { running = true; clock.getDelta(); frame(); }
       else { running = false; cancelAnimationFrame(raf); }
     }
 

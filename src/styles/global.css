@@ -1712,6 +1712,7 @@ html[data-home-theme='light'] .app-tab.is-active {
 .ui-shell--tabbed .ui-screen {
     padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
 }
+.ui-shell--tabbed #screen-home,
 .ui-shell--tabbed #screen-comics,
 .ui-shell--tabbed #screen-puzzles,
 .ui-shell--tabbed #screen-profile,
@@ -1935,6 +1936,25 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
 }
 .ui-shell--tabbed .home-screen {
     padding-bottom: calc(64px + env(safe-area-inset-bottom));
+}
+
+/*
+ * A dusk base under the whole Wellbeing tab.
+ *
+ * Not the primary fix — the real cause of Wellbeing's detail pages rendering as
+ * cream was that RelaxScreen passed `homeDusk` to the LANDING's UniverseStage
+ * but not to the two detail views, so in light appearance they drew the light
+ * stage variant (a `pointer-events: none` overlay, which is why it stayed
+ * invisible to hit-testing while covering everything). That is fixed at the
+ * call sites.
+ *
+ * This stays as the floor beneath it: every colour in those views is tuned for
+ * a dark sky, so if a view ever renders without a stage the text should still
+ * land on dusk rather than on paper — which is what made "Stress & Calm"
+ * cream-on-cream and its cards dark slabs on white.
+ */
+#screen-relax {
+    background: var(--universe-dusk);
 }
 
 /* ── Global in-app reminder banner ── */

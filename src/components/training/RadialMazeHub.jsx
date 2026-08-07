@@ -306,11 +306,65 @@ const GUIDE_GRID = GRID * 2;
  * Widening the scale cap cannot fix that, because HEIGHT is the binding
  * constraint — a portrait composition in a landscape window is always going to
  * be pillarboxed. The fix is a composition whose aspect matches the screen, so
- * `landscape` is the same six-planet hub-and-spoke re-laid at 760x430: the
- * planets spread out along the axis that actually has room. Same topology, same
- * ring order, same corridors — only the coordinates differ.
+ * `landscape` re-lays the same six-planet hub-and-spoke along the axis that
+ * actually has room. Same topology, same ring order, same corridors — only the
+ * coordinates differ.
+ *
+ * ── Both maps are now DERIVED, not typed ──
+ *
+ * Every position comes out of one ellipse: six planets, 60° apart, around the
+ * nexus. Hand-written coordinates are what made the hub look unaligned, and the
+ * numbers say so — the portrait map's upper three planets sat 216, 240 and 216
+ * from the centre while its lower three sat 170, 180 and 170, so the whole ring
+ * was pulled upward and no two facing planets mirrored each other. The
+ * landscape map was not a ring at all: two columns 560 apart with the mascot
+ * stranded in the gap, which on a 1366px screen drew a 490px-wide composition
+ * and left two thirds of the screen empty.
+ *
+ * Deriving from (rx, ry, angle) makes the symmetry structural — it cannot drift
+ * again, and a tuning change is one radius rather than six coordinate pairs.
  */
+
+/** Six ring slots, named by compass point, in the order angles are generated. */
+function ellipseRing(cx, cy, rx, ry, startDeg) {
+  const slots = {};
+  const names = startDeg === -90
+    ? ['n', 'ne', 'se', 's', 'sw', 'nw']
+    : ['e', 'se', 'sw', 'w', 'nw', 'ne'];
+  for (let i = 0; i < 6; i++) {
+    const a = ((startDeg + i * 60) * Math.PI) / 180;
+    slots[names[i]] = [
+      Math.round(cx + rx * Math.cos(a)),
+      Math.round(cy + ry * Math.sin(a)),
+    ];
+  }
+  return slots;
+}
+
+/*
+ * Which domain sits in which slot. Keyed by id rather than by array index —
+ * the old `pos[i]` silently depended on the order `DOMAIN_CONFIGS` happens to
+ * come out of the registry, so re-ordering a config file would have shuffled
+ * the map with nothing to catch it.
+ *
+ * Both orientations keep today's reading order: attention/memory/reasoning down
+ * the left, speed/language/flexibility down the right.
+ */
+const PORTRAIT_SLOTS = {
+  attention: 'nw', speed: 'n', memory: 'ne',
+  language: 'sw', reasoning: 's', flexibility: 'se',
+};
+const LANDSCAPE_SLOTS = {
+  attention: 'nw', speed: 'ne', memory: 'w',
+  language: 'e', reasoning: 'sw', flexibility: 'se',
+};
+
 const HUB_LAYOUTS = {
+  /*
+   * POINTY-TOP ring: a planet due north and due south. A tall box has room
+   * above and below the mascot and almost none beside it, so the two poles are
+   * where the space is.
+   */
   portrait: {
     w: 360,
     h: 660,
@@ -318,25 +372,54 @@ const HUB_LAYOUTS = {
     // Never grows past its authored size: on a tall phone a ballooned map looks
     // clumsy, and the planets are already comfortably tappable at 1.
     maxScale: 1,
-    pos: [[60, 180], [180, 120], [300, 180], [60, 480], [180, 540], [300, 480]],
+    /*
+     * rx is bounded by the CAPTION, not by the planet body. Nothing can move
+     * the four side planets out of the mascot's vertical band on a box this
+     * narrow — the character is 138 tall and centred in it — so horizontal
+     * clearance is the whole game. The side slots sit at 0.866·rx (they are 30°
+     * off the horizontal, not on it), so rx 125 puts them at x 72 and their
+     * ~96px caption at 24–120 — exactly clear of the mascot box starting at
+     * 120. Measured, after rx 100 and 112 both left the pills overlapping it.
+     *
+     * ry 198, not the 206 also tried: the south planet's caption runs to y+73,
+     * and at 206 that landed at 641 in a 660 box with the Puzzle Studio button
+     * immediately below it.
+     */
+    slots: ellipseRing(180, 360, 125, 198, -90),
+    map: PORTRAIT_SLOTS,
   },
+  /*
+   * FLAT-TOP ring: planets due east and due west, and NONE directly above or
+   * below the nexus. In a wide box the vertical radius is the short one, so a
+   * planet at the north pole would land its caption on Kawkab's head — the
+   * orientation is rotated 30° to keep the centre column clear.
+   */
   landscape: {
-    w: 860,
-    // 470, not the 430 this started at. A planet is not just its centre: it has
-    // a 52px body (64 hovered) and a caption at y+48. At 430 the south planet
-    // sat at y 372, so its label ran to ~434 — past the bottom of the box — and
-    // collided with the "Puzzles" button underneath. The box has to contain the
-    // whole planet, label included.
-    h: 470,
-    nexus: [430, 235],
+    // Sized to the ring rather than to the screen: rx 390 plus a planet body
+    // and a margin. A box wider than its contents only pushes the backdrop
+    // panel out, since HEIGHT is what binds the scale on every laptop.
+    w: 980,
+    // The box has to contain the whole planet, caption included: a body is 38
+    // and its pill sits at y+43 running 30 tall, so the south ring at y 337
+    // needs 410 before the button below it. 430 leaves that plus a margin.
+    h: 430,
+    nexus: [490, 205],
     // Free to grow here — on a large desktop the constraint is taste, not room.
     maxScale: 1.4,
-    pos: [[150, 95], [710, 95], [150, 235], [710, 235], [150, 375], [710, 375]],
+    // rx 390 / ry 152. Wider than this (428 was tried) and the two planets on
+    // the east–west axis detach from the group: an ellipse this flat puts them
+    // 428 from the centre while the four diagonals sit at 250, so they read as
+    // strays rather than as part of one ring.
+    slots: ellipseRing(490, 205, 390, 152, 0),
+    map: LANDSCAPE_SLOTS,
   },
 };
 
 function shrinesFor(layout) {
-  return DOMAINS.map((d, i) => ({ ...d, x: layout.pos[i][0], y: layout.pos[i][1] }));
+  return DOMAINS.map((d) => {
+    const [x, y] = layout.slots[layout.map[d.id]] ?? layout.slots.n ?? [0, 0];
+    return { ...d, x, y };
+  });
 }
 
 /**
@@ -355,7 +438,26 @@ function shrinesFor(layout) {
  * West lanes mirror east (180±60). Every vertex snaps to GRID so corridors align
  * with the modular backdrop instead of looking like stray scribbles.
  */
-const AVATAR_R = 42;
+/*
+ * Where each corridor stops short of the centre, and how big the centre's
+ * ornaments are. All four numbers are tied to MASCOT_SIZE — they exist to frame
+ * Kawkab, so shrinking the character without shrinking them leaves a halo and a
+ * glow sized for a figure that is no longer there.
+ */
+const MASCOT_SIZE = 120;
+const AVATAR_R = 35;
+const NEXUS_GLOW_R = 60;
+const NEXUS_HALO_RX = 33;
+const NEXUS_HALO_RY = 10;
+/*
+ * How far below the nexus the orbit ring — and therefore Kawkab's feet — sit.
+ * ONE number for both, so the character always stands on its own ring: they
+ * used to be set independently (the ellipse at +20, the mascot by a percentage
+ * of its own height) and drifted 30px apart. 40 puts the character's mass on
+ * the ring's horizontal axis, which is what keeps the centre from reading as
+ * top-heavy against the six planets around it.
+ */
+const NEXUS_HALO_DY = 40;
 
 function mazeCorridorD(domainId, shrines, nexus) {
   const s = shrines.find(p => p.id === domainId);
@@ -685,7 +787,11 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                   stroke={corridorStroke}
                   strokeWidth={wCorridor}
                   strokeLinecap="round"
-                  opacity={isHovered ? 0.72 : 0.3}
+                  /* 0.42 idle, up from 0.3. Now that the six planets sit on one
+                     ring, the spokes are what say it IS a ring rather than six
+                     scattered icons — at 0.3 over a dusk sky they were not
+                     visible at all on a laptop panel. */
+                  opacity={isHovered ? 0.72 : 0.42}
                   strokeDasharray={isHovered ? '8 5' : '4 6'}
                 >
                   {isHovered && (
@@ -723,19 +829,19 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               }
             }}
           >
-            <circle cx={LY.nexus[0]} cy={LY.nexus[1]} r={72} fill="url(#centerGlow)" opacity="0.8">
+            <circle cx={LY.nexus[0]} cy={LY.nexus[1]} r={NEXUS_GLOW_R} fill="url(#centerGlow)" opacity="0.8">
               <animate attributeName="opacity" values="0.55;0.85;0.55" dur="3.6s" repeatCount="indefinite" />
             </circle>
-            <circle cx={LY.nexus[0]} cy={LY.nexus[1]} r={38} fill="none" stroke="rgba(232,172,78,0.45)" strokeWidth="1.2">
-              <animate attributeName="r" values="34;48;34" dur="3.2s" repeatCount="indefinite" />
+            <circle cx={LY.nexus[0]} cy={LY.nexus[1]} r={32} fill="none" stroke="rgba(232,172,78,0.45)" strokeWidth="1.2">
+              <animate attributeName="r" values="28;40;28" dur="3.2s" repeatCount="indefinite" />
               <animate attributeName="opacity" values="0.55;0.08;0.55" dur="3.2s" repeatCount="indefinite" />
             </circle>
             {/* The solid "planet" body is gone — the 3D Kawkab mascot (overlaid
                 canvas below) stands here. We keep the orbit ring as a ground
                 halo the mascot floats above. */}
             <ellipse
-              cx={LY.nexus[0]} cy={LY.nexus[1] + 20}
-              rx="40" ry="12"
+              cx={LY.nexus[0]} cy={LY.nexus[1] + NEXUS_HALO_DY}
+              rx={NEXUS_HALO_RX} ry={NEXUS_HALO_RY}
               fill="none"
               stroke="rgba(232,172,78,0.5)"
               strokeWidth="1.1"
@@ -744,8 +850,8 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               <animateTransform
                 attributeName="transform"
                 type="rotate"
-                from={`-12 ${LY.nexus[0]} ${LY.nexus[1] + 20}`}
-                to={`348 ${LY.nexus[0]} ${LY.nexus[1] + 20}`}
+                from={`-12 ${LY.nexus[0]} ${LY.nexus[1] + NEXUS_HALO_DY}`}
+                to={`348 ${LY.nexus[0]} ${LY.nexus[1] + NEXUS_HALO_DY}`}
                 dur="14s"
                 repeatCount="indefinite"
               />
@@ -861,13 +967,23 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           style={{
             position: 'absolute',
             left: '50%',
-            top: LY.nexus[1],
-            transform: 'translate(-50%, -70%)',
+            /*
+             * Anchored by the FEET, on the orbit ring drawn at nexus + 20.
+             * This used to be `top: nexus` with `translateY(-70%)`, which put
+             * 70% of the character above the centre line and 30% below — so
+             * Kawkab floated a good 30px above the ring it is meant to stand
+             * on, and read as raised relative to the planets either side of it.
+             * Translating a full -100% from the ring's own y pins the contact
+             * point exactly, and does it without this file needing to know the
+             * artwork's aspect ratio.
+             */
+            top: LY.nexus[1] + NEXUS_HALO_DY,
+            transform: 'translate(-50%, -100%)',
             zIndex: 5,
           }}
         >
           <TrainingHubMascot
-            size={150}
+            size={MASCOT_SIZE}
             isAr={isAr}
             label={isAr ? 'ابدأ التقييم' : 'Start assessment'}
             onActivate={onOpenAssessment}
@@ -881,11 +997,13 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       {/* Puzzles now lives inside Training — a distinct, lower-pressure
           "break" entry rather than one of the domain planets, since it isn't
           a tracked/scored exercise the way the 6 domains are. */}
-      {/* The -18 pull-up is a portrait tuning: that map ends with 120px of empty
-          box below its south planet, so the button has to climb into it or it
-          floats. The landscape box has no such slack — its planets fill it — so
-          pulling up there lands the button ON the south planet instead. */}
-      <div style={{ position: 'relative', zIndex: 6, display: 'flex', justifyContent: 'center', marginTop: wide ? 10 : -18 }}>
+      {/* No pull-up any more. Portrait used to end with 120px of empty box
+          below its south planet, so the button climbed -18 into it; now that
+          the ring is derived, the south planet sits at 558 and its caption runs
+          to 631 in a 660 box, and the same -18 covered that caption entirely —
+          "Reasoning" was a label hidden behind a button. Both layouts now clear
+          their own contents. */}
+      <div style={{ position: 'relative', zIndex: 6, display: 'flex', justifyContent: 'center', marginTop: 10 }}>
         <button
           type="button"
           className="rh-puzzles-cta"

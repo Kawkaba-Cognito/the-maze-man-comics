@@ -11,13 +11,28 @@
   box-shadow: 0 12px 34px rgba(2, 4, 12, 0.26);
 }
 
+/*
+ * The hub title speaks with Home's voice: flat parchment cream lit by an amber
+ * glow, exactly `.home-universe-title` in global.css. These are the app's two
+ * landing titles.
+ *
+ * What was here was a metallic gold GRADIENT clipped to the glyphs
+ * (`background-clip: text` + a transparent text fill). Two problems: it read as
+ * a different, more ornate brand than "Your Universe" three taps away, and a
+ * transparent text fill means `text-shadow` paints behind nothing — the amber
+ * glow the rest of the app hangs on its titles could not show at all.
+ * Overriding the fill back to a colour is what actually restores it.
+ */
 .app-stage--universe:has(.rh-hub-stage) .app-chrome-bar > div:nth-child(2) {
-  color: #ffe5a8 !important;
-  background: linear-gradient(180deg, #fff7dc 0%, #ffd88c 44%, #dfa958 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 5px 22px rgba(232, 172, 78, 0.22);
+  color: #e8dcc0 !important;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  /* !important for the same reason the rest of this title's type is: the
+     component still sets a text-shadow inline, and without this the stylesheet
+     would be describing a treatment it does not actually control. */
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 0 22px rgba(232, 172, 78, 0.5) !important;
 }
 
 .app-stage--universe:has(.rh-hub-stage) > .app-chrome-bar + p {
@@ -242,6 +257,9 @@
 .training-blue-robot__badge {
   position: absolute;
   left: 50%;
+  /* Overridden to `calc(100% + 2px)` by trainingHubReal3D.css, which is what
+     actually runs — the badge sits just BELOW the mascot, not across its legs.
+     Left here as the fallback for anywhere that file is not loaded. */
   top: calc(100% - 38px);
   z-index: 4;
   min-width: 118px;
@@ -453,7 +471,10 @@
 }
 
 .rh-hub-stage--desktop::before {
-  inset-inline: max(18px, calc((100% - 940px) / 2));
+  /* Inert: trainingHubReal3D.css switches `.rh-hub-stage::before` off entirely
+     (the universe background carries the layout without a glass panel). Kept in
+     step with the map's box so it is correct if that panel is ever restored. */
+  inset-inline: max(18px, calc((100% - 1020px) / 2));
   border-radius: 42px;
   background:
     radial-gradient(ellipse at 50% 48%, rgba(99, 132, 199, 0.105), transparent 37%),

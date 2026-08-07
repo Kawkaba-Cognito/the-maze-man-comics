@@ -92,17 +92,24 @@ export default function HomeScreen() {
    * AppShell keeps every tab mounted and hides the inactive ones with
    * `display: none`, and ZenUniverse's own guard is `visibilitychange` — which
    * fires for the BROWSER tab, not for an app screen being hidden. So without
-   * this the scene kept drawing thousands of particles at full rate the whole
-   * time the user was on Training, Puzzles, Learn, Wellbeing or Other: the
-   * cause of tab switches feeling laggy, and of the Training hub dropping its
-   * first frames on entry.
+   * this the scene would keep drawing thousands of particles at full rate the
+   * whole time the user is on Training, Puzzles, Learn, Wellbeing or Other.
+   *
+   * ⚠️ The tab value to compare against is `'habits'`, NOT `'home'`. 'home' is
+   * the tab bar's BUTTON id; the screen it switches to is called 'habits' (see
+   * APP_TABS in BottomTabBar, and #screen-home in AppShell). Comparing against
+   * 'home' can never be true while this screen is mounted, so the universe was
+   * idled the instant it mounted and never woke — the reported freeze. It only
+   * looked alive on a cold load because ZenUniverse is lazy: the chunk had not
+   * resolved yet, so zenRef was still null when this ran and the call no-opped.
+   * Every later return to Home mounted it synchronously and killed it.
    *
    * setRunning idles rather than unmounts, which is what ZenUniverse asks for —
    * a remount rebuilds every particle, recompiles shaders and takes a fresh
    * WebGL context.
    */
   useEffect(() => {
-    zenRef.current?.setRunning(activeTab === 'home' && !mazeOpen);
+    zenRef.current?.setRunning(activeTab === 'habits' && !mazeOpen);
   }, [activeTab, mazeOpen]);
 
   return (
