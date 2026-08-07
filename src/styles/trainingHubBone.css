@@ -1,0 +1,241 @@
+/*
+ * ══════════════════════════════════════════════════════════════════════════
+ * BONE — a light ground for the Training hub. TRIAL, 2026-08-07.
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * Scoped to the hub only, and written as a pure overlay: it adds no markup and
+ * changes no component, so backing it out is deleting one import. That is
+ * deliberate — this is a direction being tried, not a decision.
+ *
+ * WHY BONE AND NOT A COOL WHITE
+ * Kawkab is a cool cyan (#3b9fd8) with warm tan legs. Cyan sits opposite warm
+ * neutrals on the colour wheel, so a WARM off-white pushes the character
+ * forward, while a cool blue-white puts him in the same hue family as his own
+ * background and flattens him. #f6f4f1 is the warm end of "off-white" without
+ * tipping into cream — cream is what read as brown and was rejected twice.
+ *
+ * WHAT THIS COSTS, STATED HONESTLY
+ * The hub's atmosphere — nebulae, starfield, shooting stars, the conic sky
+ * sweep — is all additive glow authored for a dark ground. On Bone it either
+ * disappears or turns to grey smudge, so it is switched OFF rather than left
+ * to muddy the page. The domain planets keep their painted highlights but stop
+ * reading as LIT; they become illustrations on paper. That is the real trade of
+ * a light hub, and it is visible immediately.
+ *
+ * The !important density matches what it has to beat: trainingHubPremium.css
+ * and trainingHubReal3D.css both use !important on this screen's chrome.
+ */
+
+/*
+ * Declared on :root, not on .rh-training-hub.
+ *
+ * Scoping them to the hub looked tidier but broke: a declaration whose var()
+ * does not resolve is invalid at computed-value time and is thrown away, so
+ * `background: var(--bone-raised) !important` silently became `background:
+ * none` on the Puzzle Studio button while its inline colour survived — a
+ * half-styled control. The `--bone-` prefix keeps them out of everyone's way
+ * without depending on where in the tree they are read from.
+ */
+/*
+ * Beige, stepped down from the first pass (#f6f4f1 read as almost-white).
+ * Warmer and darker, which suits Kawkab even better — the further the ground
+ * moves toward warm, the further his cyan is pushed forward.
+ *
+ * Careful about how far this can go: beige neighbours the cream that was
+ * rejected twice as reading brown, so it holds saturation low and keeps the
+ * ink genuinely dark rather than sliding to a warm charcoal.
+ *
+ * Measured on the beige ground: body ink 12.9:1, secondary 4.7:1, accent 5.9:1.
+ * The accent had to deepen from #2f6fb5 — at 4.0:1 it failed for the small
+ * uppercase kicker it is used on.
+ */
+:root {
+  /*
+   * Third pass. #f6f4f1 → #e9e3d7 → #dcd3c2: a true beige now, not an
+   * off-white with a hint of warmth.
+   *
+   * The whole set moves together rather than just the ground. As the page
+   * darkens, a card that stays near-white stops reading as "raised" and starts
+   * reading as "cut out", so --raised steps down with it and keeps a constant
+   * ~1.2x luminance ratio to the ground. Lines and shadows follow for the same
+   * reason: a hairline tuned for near-white is a scratch on beige.
+   */
+  /*
+   * PHASE 0: these are now ALIASES, not values.
+   *
+   * The beige tuned here was promoted into the app's --universe-* tokens in
+   * global.css, where it is theme-aware. Pointing back at them means the hub
+   * follows the appearance setting like every other screen, instead of being
+   * permanently beige — and it means the palette has one home rather than two
+   * copies that drift.
+   *
+   * (The measured values that came out of the tuning, for the record: body ink
+   * 9.7:1, secondary 5.0:1, accent 4.8:1. Secondary had to be deepened twice
+   * as the ground darkened — it breaks before body text does.)
+   */
+  --bone-bg: var(--universe-dusk);
+  --bone-raised: var(--universe-glass);
+  --bone-line: var(--universe-line);
+  --bone-line-strong: var(--universe-line);
+  --bone-ink: var(--universe-ink);
+  --bone-ink-dim: var(--universe-muted);
+  --bone-accent: var(--universe-accent);
+  /* Shadows soften as the ground darkens — the same alpha that read as a lift
+     on near-white reads as grime here. */
+  --bone-shadow: rgba(32, 29, 24, 0.09);
+  --bone-shadow-lift: rgba(32, 29, 24, 0.13);
+}
+
+/* ── Ground ─────────────────────────────────────────────────────────────── */
+
+.rh-training-hub.app-stage--universe {
+  background: var(--bone-bg) !important;
+  color: var(--bone-ink) !important;
+}
+
+/* UniverseStage paints the dusk and its blobs behind everything. Flat ground
+   means flat: no gradient, no wash. */
+.rh-training-hub .uv-stage,
+.rh-training-hub .uv-veil,
+.rh-training-hub .uv-blob,
+.rh-training-hub .uv-star {
+  display: none !important;
+}
+
+/* The hub's own cosmos FX. All additive; all meaningless on paper. */
+.rh-training-hub .rh-hub-sky,
+.rh-training-hub .rh-hub-nebula,
+.rh-training-hub .rh-hub-stars,
+.rh-training-hub .rh-hub-shoot,
+.rh-training-hub .rh-hub-dust,
+.rh-training-hub .rh-hub-sky::before,
+.rh-training-hub .rh-hub-sky::after,
+.rh-training-hub .rh-hub-stage::before {
+  display: none !important;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.rh-training-hub .rh-training-header {
+  background: linear-gradient(180deg, var(--bone-bg) 62%, transparent) !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}
+
+.app-stage--universe:has(.rh-hub-stage).rh-training-hub .app-chrome-bar > div:nth-child(2) {
+  color: var(--bone-ink) !important;
+  /* No amber glow: a glow is light emitted, and nothing emits light on paper. */
+  text-shadow: none !important;
+}
+
+.rh-training-hub .rh-training-intro,
+.app-stage--universe:has(.rh-hub-stage).rh-training-hub > .app-chrome-bar + p {
+  color: var(--bone-ink-dim) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Language button in the top bar. */
+.rh-training-hub .app-chrome-bar button {
+  background: var(--bone-raised) !important;
+  border: 1px solid var(--bone-line-strong) !important;
+  color: var(--bone-accent) !important;
+  box-shadow: none !important;
+}
+
+/* ── Domain captions ────────────────────────────────────────────────────── */
+
+.rh-training-hub .rh-domain-label {
+  background: var(--bone-raised) !important;
+  border: 1px solid var(--bone-line-strong) !important;
+  color: var(--bone-ink) !important;
+  box-shadow: 0 1px 2px var(--bone-shadow) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.rh-training-hub .rh-domain-label.is-active {
+  border-color: var(--bone-accent) !important;
+  color: var(--bone-accent) !important;
+}
+
+/* ── Corridors and grid ─────────────────────────────────────────────────── */
+
+/*
+ * The spokes are drawn with a `stroke` PRESENTATION ATTRIBUTE from JS
+ * (rgba(158,177,216,.38) — a pale blue tuned for a dark sky, invisible here).
+ * A CSS `stroke` property outranks a presentation attribute, so this recolours
+ * them without touching the component. Scoped to the corridor groups so the
+ * planet artwork and the nexus ornaments are left alone.
+ */
+.rh-training-hub .rh-hub-stage svg > g > path[stroke] {
+  stroke: rgba(32, 29, 24, 0.20) !important;
+}
+
+/*
+ * The guide grid goes entirely. On the dusk it was a barely-there amber lattice
+ * that implied depth; on paper any visible version of it draws a hard rectangle
+ * around the constellation — the map suddenly has a box round it, which reads
+ * as a container nobody asked for. Faint grey was tried first and was worse:
+ * still a rectangle, just a dirty one.
+ */
+.rh-training-hub .rh-hub-stage svg > g > line[stroke] {
+  display: none !important;
+}
+
+/* The travelling dots along each corridor were near-white. */
+.rh-training-hub .rh-hub-stage svg > g > circle[fill='#fffefb'] {
+  fill: var(--bone-accent) !important;
+  stroke: var(--bone-accent) !important;
+}
+
+/* ── Kawkab's plinth ────────────────────────────────────────────────────── */
+
+/* The blue halo behind the mascot is additive glow; on paper it is a grey
+   bloom. The character carries its own colour and does not need it. */
+.rh-training-hub .rh-assess-mascot::before {
+  display: none !important;
+}
+
+.rh-training-hub .training-blue-robot__badge {
+  background: var(--bone-raised) !important;
+  border: 1px solid var(--bone-line-strong) !important;
+  color: var(--bone-ink) !important;
+  box-shadow: 0 2px 6px var(--bone-shadow-lift) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.rh-training-hub .training-blue-robot__badge-kicker {
+  color: var(--bone-accent) !important;
+}
+
+/* ── Puzzle Studio button ───────────────────────────────────────────────── */
+
+/*
+ * The `html[data-home-theme]` prefix is load-bearing: training.css styles this
+ * button through `html[data-home-theme='light'] .rh-puzzles-cta`, which at
+ * (0,2,1) outranks a plain two-class selector no matter how many !importants
+ * it carries. Matching the attribute puts this at (0,3,1) and it lands.
+ */
+html[data-home-theme] .rh-training-hub .rh-puzzles-cta {
+  background: var(--bone-raised) !important;
+  border: 1px solid var(--bone-line-strong) !important;
+  color: var(--bone-ink) !important;
+  box-shadow: 0 1px 3px var(--bone-shadow-lift) !important;
+}
+
+html[data-home-theme] .rh-training-hub .rh-puzzles-cta svg {
+  color: var(--bone-accent) !important;
+}
+
+/* ── Hover callout ──────────────────────────────────────────────────────── */
+
+.rh-training-hub .rh-domain-detail__pill {
+  background: var(--bone-raised) !important;
+  color: var(--bone-ink) !important;
+  box-shadow: 0 6px 18px var(--bone-shadow-lift) !important;
+}

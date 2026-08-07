@@ -61,11 +61,18 @@ function SectionDivider({ label, accent }) {
   );
 }
 
+/*
+ * Token-driven so Profile follows the appearance setting.
+ *
+ * This was a fixed dark-brown gradient. On the Beige theme the chrome around
+ * it flipped but the content did not, leaving the page's main panels as
+ * near-black slabs sitting on paper.
+ */
 const stoneCard = {
-  background: 'linear-gradient(180deg, rgba(31,22,12,0.92) 0%, rgba(21,14,8,0.92) 100%)',
-  border: '1px solid rgba(232,172,78,0.22)',
+  background: 'var(--universe-glass)',
+  border: '1px solid var(--universe-line)',
   borderRadius: 14,
-  boxShadow: '0 8px 30px rgba(0,0,0,0.45)',
+  boxShadow: '0 2px 12px rgba(0,0,0,0.14)',
 };
 
 /* ── Cognitive radar ──────────────────────────────────────── */
@@ -155,7 +162,7 @@ export default function ProfileScreen() {
   const { globalXP, profileData, setProfileData, saveProfile, playSfx, switchTab, toggleLang, currentLang, openPaywall } = useApp();
   const [gateDone, setGateDone] = useState(() => isGateBossBeaten());
   const isAr = currentLang === 'ar';
-  const chrome = useThemedChrome(isAr);
+  const chrome = useThemedChrome(isAr, { universe: true });
   const [showPicker, setShowPicker] = useState(false);
 
   const lv = getLevel(globalXP);
@@ -242,8 +249,8 @@ export default function ProfileScreen() {
               {profileData.avatar}
               <span style={{
                 position: 'absolute', bottom: -8, left: '50%', transform: 'translateX(-50%)',
-                background: 'linear-gradient(170deg, #5e2a0c, #3e1a06)', border: '1.5px solid #9a6828',
-                color: L.amber, fontFamily: "'Outfit', system-ui, sans-serif", fontSize: 12, letterSpacing: 1,
+                background: 'var(--universe-glass-strong)', border: '1px solid var(--universe-line)',
+                color: 'var(--universe-accent)', fontFamily: "'Outfit', system-ui, sans-serif", fontSize: 12, letterSpacing: 1,
                 padding: '2px 10px', borderRadius: 20, whiteSpace: 'nowrap',
               }}>{isAr ? `مستوى ${lv}` : `LVL ${lv}`}</span>
             </button>
@@ -284,15 +291,18 @@ export default function ProfileScreen() {
           {/* Stat scroll */}
           <div style={{
             display: 'flex', alignItems: 'stretch', gap: 8, padding: '12px 10px', borderRadius: 8, marginTop: 22,
-            background: 'linear-gradient(170deg, #3e1a06 0%, #5e2a0c 50%, #3e1a06 100%)',
-            border: '1.5px solid #9a6828',
-            boxShadow: 'inset 0 1px 0 rgba(220,170,70,0.35), inset 0 -1px 0 rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.6)',
+            background: 'var(--universe-glass)',
+            border: '1px solid var(--universe-line)',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
           }}>
             {statCells.map((s, i) => (
               <React.Fragment key={s.label}>
-                {i > 0 && <div style={{ width: 2, background: 'rgba(220,170,70,0.28)', borderRadius: 1 }} />}
+                {i > 0 && <div style={{ width: 1, background: 'var(--universe-line)', borderRadius: 1 }} />}
                 <div style={{ flex: 1, textAlign: 'center' }}>
-                  <div style={{ fontFamily: "'Outfit', system-ui, sans-serif", fontSize: 16, color: s.accent ? L.amber : L.text, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, lineHeight: 1 }}>
+                  {/* `L.text` is the cosmos cream (#f0e2c0) — on the Beige theme
+                      the XP and Shards figures rendered in it and vanished, so
+                      half the row read as blank. Tokens follow the theme. */}
+                  <div style={{ fontFamily: "'Outfit', system-ui, sans-serif", fontSize: 16, color: s.accent ? 'var(--universe-accent)' : 'var(--universe-ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, lineHeight: 1 }}>
                     <span style={{ fontSize: 12, opacity: 0.85 }}>{s.glyph}</span>{s.val}
                   </div>
                   <div style={{ fontSize: 8, color: L.textMuted, letterSpacing: 1.3, marginTop: 4, textTransform: 'uppercase', fontWeight: 800 }}>{s.label}</div>

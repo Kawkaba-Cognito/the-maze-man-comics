@@ -737,3 +737,44 @@
   font: 600 11px 'Cairo', sans-serif;
   letter-spacing: 0;
 }
+
+/*
+ * ── Light theme: orbs stop glowing and start sitting ──────────────────────
+ *
+ * The orb treatment was authored for a dark sky, where a coloured bloom around
+ * each world reads as atmosphere. On the beige ground the same bloom is a
+ * coloured smudge on paper — light does not spill onto a lit surface. The
+ * volume's hue moves into a rim and a grounded shadow instead, so a world still
+ * has its colour without pretending to emit.
+ */
+html[data-home-theme='light'] .kw .kw-orb {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--world, var(--universe-accent)) 45%, transparent),
+    0 6px 14px rgba(32, 29, 24, 0.16);
+}
+
+html[data-home-theme='light'] .kw .kw-orb-rim {
+  box-shadow: inset 0 0 14px -6px rgba(32, 29, 24, 0.5);
+}
+
+/* The terminator was a dark-sky lighting model: a bright specular top-left and
+   a heavy shadow bottom-right. On paper that reads as grime, so it softens to
+   a gentle form shade. */
+html[data-home-theme='light'] .kw .kw-orb-shade {
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.22), transparent 50%),
+    radial-gradient(circle at 66% 76%, rgba(32, 29, 24, 0.22), transparent 62%);
+}
+
+/* Kawkab's floating guide: the drop-shadow glow goes, the character stays. */
+html[data-home-theme='light'] .kw .kawkabButton {
+  filter: drop-shadow(0 8px 12px rgba(32, 29, 24, 0.22));
+}
+
+/* Titles: the amber glow and the black drop-shadow are both dark-sky devices.
+   On beige the glow does nothing and the shadow reads as dirt. */
+html[data-home-theme='light'] .kw .kw-sky-head h1,
+html[data-home-theme='light'] .kw .kw-volume-id h1,
+html[data-home-theme='light'] .kw .kw-soon-card h1 {
+  text-shadow: none;
+}

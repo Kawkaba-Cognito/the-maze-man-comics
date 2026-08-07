@@ -6,39 +6,40 @@
  * Opened from the splash menu and the in-app shell.
  */
 
+/*
+ * ONE palette, not a light pair and a dark pair.
+ *
+ * This was an iOS grouped list — #f4f5f7 page, white cards, near-black ink —
+ * with a warm cosmic set swapped in only under [data-home-theme='dark']. In
+ * light appearance that made Settings the one screen in the app that looked
+ * like a system preferences pane: white rows and black text reached from a
+ * cosmos menu.
+ *
+ * The --universe-* tokens are appearance-independent (Home, Training and
+ * Wellbeing all show the dusk in light appearance too), so mapping onto them
+ * gives one correct result in both and makes the old dark-only override
+ * redundant — it is gone rather than left to drift.
+ */
 :root {
-    --stg-bg: #f4f5f7;
-    --stg-card: #ffffff;
-    --stg-border: #e4e7ec;
-    --stg-divider: #eef0f3;
-    --stg-ink: #1d2026;
-    --stg-ink-soft: #5b626e;
-    --stg-ink-faint: #9aa1ad;
-    --stg-accent: #c0851f;
-    --stg-danger: #c2342b;
-    --stg-hover: #f7f8fa;
-    --stg-active: #f0f1f4;
-    --stg-input-bg: #fafbfc;
-    --stg-track: #ebedf0;
-    --stg-topbar-bg: rgba(255, 255, 255, 0.9);
-    --stg-font: 'Outfit', system-ui, -apple-system, sans-serif;
-}
-
-[data-home-theme='dark'] {
-    --stg-bg: #14100a;
-    --stg-card: #211a10;
-    --stg-border: rgba(212, 168, 80, 0.22);
-    --stg-divider: rgba(212, 168, 80, 0.14);
-    --stg-ink: #f0e2c0;
-    --stg-ink-soft: #c9b384;
-    --stg-ink-faint: #8f7d58;
-    --stg-accent: #e8ac4e;
+    --stg-bg: var(--universe-dusk);
+    --stg-card: var(--universe-glass);
+    --stg-border: var(--universe-line);
+    --stg-divider: rgba(240, 182, 106, 0.14);
+    --stg-ink: var(--universe-ink);
+    --stg-ink-soft: var(--universe-muted);
+    /* Was rgba(255,239,216,.5) — a half-transparent cream, which is invisible
+       on the Beige ground. It carries the section headers (PREFERENCES,
+       SUPPORT, LEGAL), so the page lost its structure entirely. Derived from
+       the muted token instead, so it follows the theme and stays legible. */
+    --stg-ink-faint: color-mix(in srgb, var(--universe-muted) 78%, transparent);
+    --stg-accent: var(--universe-accent);
     --stg-danger: #e2685c;
-    --stg-hover: #2a2114;
-    --stg-active: #332818;
-    --stg-input-bg: #1a140c;
-    --stg-track: #332818;
-    --stg-topbar-bg: rgba(20, 16, 10, 0.85);
+    --stg-hover: rgba(240, 182, 106, 0.08);
+    --stg-active: rgba(240, 182, 106, 0.14);
+    --stg-input-bg: rgba(10, 8, 18, 0.55);
+    --stg-track: rgba(255, 244, 223, 0.14);
+    --stg-topbar-bg: var(--universe-glass-strong);
+    --stg-font: 'Outfit', system-ui, -apple-system, sans-serif;
 }
 
 /* ── FULL-SCREEN SETTINGS ── */
@@ -83,6 +84,20 @@
 }
 .stg-back:hover { background: var(--stg-active); }
 .stg-back:active { transform: scale(0.96); }
+
+/* The app's landing-title treatment, so Settings is announced the same way
+   every other screen is. */
+.stg-topbar-title {
+    font-family: 'Cinzel', 'Cormorant Garamond', serif;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.stg-screen[dir='rtl'] .stg-topbar-title {
+    font-family: 'Cairo', sans-serif;
+    letter-spacing: 0;
+    text-transform: none;
+}
 
 .stg-topbar-title {
     flex: 1;

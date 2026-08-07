@@ -701,3 +701,74 @@ html[data-home-theme] .pz-studio-game:has(.ct-puzzle-screen--hub) .ct-training-c
 .pz-hub .pz-studio-continue:hover {
   border-color: var(--universe-accent);
 }
+
+/* ── Light theme: the same flattening as Kawnera's shelf ──────────────────
+   Glow is emitted light; a paper ground does not emit. The category hue moves
+   from a bloom into a rim so a world keeps its identity without pretending. */
+html[data-home-theme='light'] .pz-hub .pz-orb {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--world, var(--universe-accent)) 45%, transparent),
+    0 6px 14px rgba(32, 29, 24, 0.16);
+}
+
+html[data-home-theme='light'] .pz-hub .pz-orb-rim {
+  box-shadow: inset 0 0 14px -6px rgba(32, 29, 24, 0.5);
+}
+
+html[data-home-theme='light'] .pz-hub .pz-orb-shade {
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.22), transparent 50%),
+    radial-gradient(circle at 66% 76%, rgba(32, 29, 24, 0.22), transparent 62%);
+}
+
+html[data-home-theme='light'] .pz-hub .pz-studio-intro h1,
+html[data-home-theme='light'] .pz-cat .pz-cat-id h1,
+html[data-home-theme='light'] .pz-studio--hub .pz-studio-header-title,
+html[data-home-theme='light'] .pz-studio--category .pz-studio-header-title,
+html[data-home-theme='light'] .ct-puzzle-screen--hub .ct-puzzle-hub-title,
+html[data-home-theme='light'] .pz-studio-game:has(.ct-puzzle-screen--hub) .ct-puzzle-hub-title {
+  text-shadow: none !important;
+}
+
+/* The studio's nebulae and starfield are additive space; on paper they are
+   coloured haze. */
+html[data-home-theme='light'] .pz-studio--hub .pz-studio-nebula,
+html[data-home-theme='light'] .pz-studio--hub .pz-studio-stars,
+html[data-home-theme='light'] .pz-studio--category .pz-studio-nebula,
+html[data-home-theme='light'] .pz-studio--category .pz-studio-stars {
+  display: none !important;
+}
+
+/* ── Void Runner's world on a light ground ────────────────────────────────
+ *
+ * Its orb is drawn rather than painted: a near-black body with a warm horizon,
+ * which is what the game looks like and reads correctly against a dark sky. On
+ * Beige it is a black hole punched in the page — the one element that still
+ * announced "this was designed for the dark".
+ *
+ * Lightened into a dusk-at-distance instead: a cool body with the same warm
+ * band low on it, so the game is still recognisable without the page having a
+ * hole in it.
+ */
+html[data-home-theme='light'] .pz-hub .pz-orb--void {
+  background: radial-gradient(circle at 50% 34%, #b9bccb, #8f92a6 72%);
+}
+
+html[data-home-theme='light'] .pz-hub .pz-orb-void-glow {
+  background:
+    radial-gradient(ellipse 120% 44% at 50% 92%, rgba(214, 150, 74, 0.72), transparent 62%),
+    radial-gradient(ellipse 90% 34% at 50% 78%, rgba(110, 126, 170, 0.42), transparent 66%);
+}
+
+/*
+ * "Group Challenge" is 15 characters and was wrapping inside its pill, which
+ * then collided with the description beneath it. Every other category is one
+ * short word, so the type was set for them and the longest name broke it.
+ * Tightened just enough that the longest label fits a single line in the
+ * narrowest column the grid produces.
+ */
+.pz-hub .pz-world-name {
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+  padding-inline: 11px;
+}

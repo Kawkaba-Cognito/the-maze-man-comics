@@ -27,21 +27,44 @@
      Field lives on :root rather than in a .mode-field class, because it is what
      the app is when nothing says otherwise. paper (.kawnera-app) and void
      (.nr/.sgs) override these eight names on their own roots. */
-  /* Tide Dusk (chosen 2026-07-30). --surface is the page behind a card;
-     --surface-raised is the card/board itself and stays LIGHT — that contrast
-     is what makes the board read as a lit surface on the dusk, and it is what
-     keeps the trial content dark-on-light (see the play-surface note below). */
-  --surface: #e8e0d4;
-  --surface-raised: #f2ece4;
-  --ink: #241f1a;
-  --ink-dim: #5f584e;
+  /* ─── Cool Silver (chosen 2026-08-07) ───────────────────────────────
+     Field's surfaces are Home's own sky, LIFTED and COOLED — not a separate
+     cream palette. The board is meant to read as the same world seen in
+     daylight, so a player never crosses into a different product when they
+     start a game.
+
+     Derived from the "Your Universe" ramp taken up five steps with the warm
+     end removed: the ochre/tan stops that carry the sunset are what made the
+     previous Tide Dusk values (#e8e0d4 / #f2ece4) read as brown, and brown
+     was rejected twice — once as "dirt feeling" on the 2026-08-01 de-browning,
+     and again here.
+
+     ⚠️ FLATTENED ON PURPOSE. The sky is a gradient; a board must not be. On a
+     gradient board the same digit has different contrast depending on where in
+     the grid it lands, which is the exact class of bug this palette exists to
+     end. These are fixed stops pulled out of that ramp, never the ramp itself.
+
+     --surface is the page behind a card; --surface-raised is the card/board
+     itself and stays LIGHTER — that contrast is what makes the board read as a
+     lit surface, and it keeps trial content dark-on-light.
+
+     WARMED to the Beige family 2026-08-07 — Cool Silver was a cool blue-grey and
+     fought the warm chrome beside it. Measured against --ink: surface 9.1:1,
+     surface-raised 11.5:1. */
+  --surface: #c6bda9;
+  --surface-raised: #ded5c4;
+  --ink: #201d18;
+  --ink-dim: #524b3f;
   /* Bronze, deepened from the previous #b8845d. That value came off Home's own
      sky (ZenUniverse.jsx SKY.css — its 86% stop), but on Tide Dusk's darker,
      more saturated ground it no longer had the contrast to act as an accent.
      This holds the same hue family and buys back the separation. */
   --accent: #7d5233;
   --accent-bright: #a06c45;
-  --line: #ddd3c6;
+  /* Stepped down with the surfaces so a rule still separates from the board it
+     sits on — the old #ddd3c6 was a warm hairline tuned for a cream ground and
+     would all but vanish on Cool Silver. */
+  --line: #b0a48d;
   --danger: #944b3b;
 
   /* ─── Home's sky, in a light key ───────────────────────────────────────
@@ -149,8 +172,31 @@
      the stimulus/board card (--surface-raised) stays light, so the figure-ground
      relationship the tasks are actually scored on is unchanged. A fully dark
      board was mocked up and deliberately not chosen for exactly that reason. */
-  --play-surface: linear-gradient(180deg, #ccdae6 0%, #b3cadd 58%, #9cb9d2 100%);
-  --play-ink: #151f29;
+  /* ─── Re-hued to Beige, 2026-08-07 ───────────────────────────────────
+     Was one blue (~207°): #ccdae6 → #b3cadd → #9cb9d2. That ramp is what the
+     user was seeing as "the light blue inside the activities", and with the
+     app's chrome now warm beige a cool blue board read as a second, arguing
+     system.
+
+     Re-hued to the beige family (~42°) and NOT re-luminanced. The note above
+     is explicit that the luminances are the contract — the six piece roles
+     below clear 3:1 against the darkest stop — so hue may move freely as long
+     as those hold:
+
+         stop      was     now     target
+         top       0.686   0.682   0.686
+         mid       0.570   0.572   0.570
+         bottom    0.464   0.467   0.464
+
+     Within 0.005 at every stop, so the piece table in gamePalette.js stays
+     valid and did not need re-measuring.
+
+     Deliberately still a GRADIENT, unlike the flat boards elsewhere. Flattening
+     it would collapse the luminance range the roles are tuned against, which is
+     a measurement change dressed up as a style change. */
+  --play-surface: linear-gradient(180deg, #dfd7c7 0%, #d0c7b4 58%, #bfb5a0 100%);
+  /* Warm dark to match; luminance essentially unchanged (0.0125 vs 0.0136). */
+  --play-ink: #201d18;
   --color-training-palette-surface: var(--play-surface);
   --color-training-ink: var(--play-ink);
 
@@ -306,17 +352,31 @@
 
 /* Home light/dark — shared by hubs, shop, habits, wellbeing */
 html[data-home-theme='dark'] {
-  /* Field mode, dark. The values are the stage palette that was already here
-     under other names — card becomes the raised surface, muted becomes dimmed
-     ink, gold becomes the accent — so dark mode is unchanged visually and now
-     speaks the same eight names as everything else. */
-  --surface: #1a1626;
-  --surface-raised: #221e30;
-  --ink: #f0e2c0;
-  --ink-dim: #b9a878;
+  /*
+   * Field mode, dark — DELIBERATELY NOT DARK.
+   *
+   * A board is Cool Silver in both appearances, full stop. It is the surface
+   * you perform on, and its contrast is a legibility guarantee rather than a
+   * mood: flipping it with the theme means a digit's readability depends on a
+   * setting, which is exactly what the palette exists to prevent. This is the
+   * same reasoning that already keeps --color-training-* fixed across themes
+   * (see the note below).
+   *
+   * These were #1a1626 / #221e30 / #f0e2c0 / #b9a878. Leaving them dark is what
+   * made the new palette invisible in dark appearance — the board simply never
+   * received it, which is not a caching problem but a missing branch.
+   *
+   * Chrome does NOT come through here: landings, headers and menus read the
+   * --universe-* tokens, so they still go dark with the theme as before.
+   */
+  --surface: #c6bda9;
+  --surface-raised: #ded5c4;
+  --ink: #201d18;
+  --ink-dim: #524b3f;
   --accent: #d4a84a;
   --accent-bright: #e8c76a;
-  --line: #3a3248;
+  /* Stepped with the surfaces above — a dark hairline is invisible on silver. */
+  --line: #b0a48d;
   --danger: #c34a44;
 
   /* --color-training-* is intentionally NOT overridden here. The play surface
