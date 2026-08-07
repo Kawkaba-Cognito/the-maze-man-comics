@@ -16,7 +16,7 @@ npm run dev                      # localhost:5173/the-maze-man-comics/
 npm run build                    # production build + PWA service worker
 ```
 
-**Deploying is automatic (2026-07-16)**: every push to `main` on `origin` (Kawkaba-Cognito) triggers `.github/workflows/deploy.yml`, which installs, runs `audit:fq` + `validate:rh`, builds, and publishes `dist/` to the `gh-pages` branch — the branch GitHub Pages serves. It can also be run by hand from the repo's Actions tab (workflow_dispatch). The `cognitive` mirror does **not** auto-deploy; push `gh-pages` there manually if the mirror should stay current.
+**Deploying is automatic (2026-07-16)**: every push to `main` on `origin` (Kawkaba-Cognito) triggers `.github/workflows/deploy.yml`, which installs, runs **`audit:fq` → `validate:rh` → `audit:design`** (all three block the deploy), builds, and publishes `dist/` to the `gh-pages` branch — the branch GitHub Pages serves. It can also be run by hand from the repo's Actions tab (workflow_dispatch). The `cognitive` mirror does **not** auto-deploy; push `gh-pages` there manually if the mirror should stay current.
 
 ⚠️ **A deploy must NEVER delete the previous build's files (2026-07-26).** It used to wipe `gh-pages` and copy `dist/` in, which deleted every old content-hashed chunk. Any client still holding the previous `index.html` — an open tab, or an installed PWA — then 404'd on chunks; when the missing one was the **entry** chunk the page could not boot at all, because React and the ErrorBoundary live inside it. That is the "app errored and crashed, fine the next day" report: no in-app recovery, just a dead screen until the service worker happened to update. Caught live: the precached shell named `Assets/index-BHkJm4nN.js`, already 404 on the server.
 
@@ -24,21 +24,52 @@ The publish step now keeps the **last two builds** alive and prunes only what ha
 
 ⚠️ **This checkout's HEAD is on `main`, which is source-only — NEVER commit built files here.** (A 2026-07-15 deploy accidentally committed the dist mirror to `main` and had to be reverted.) `main` still *tracks* a stale snapshot of some built files at the repo root (old `index.html`, `Assets/*.glb`, `icons/`, …) left over from when this checkout lived on `gh-pages` — leave them alone; don't "refresh" or delete them as part of a deploy.
 
+**Before assuming the repo is at fault, check whether GitHub is** (2026-08-06). "CI normally deploys instantly, why not now?" had nothing to do with this codebase: a critical Actions+Pages incident was **dropping push events outright** — no workflow run was ever created for two pushes, and an `--allow-empty` re-trigger was swallowed too. Diagnose before debugging:
+
+```bash
+curl -s https://www.githubstatus.com/api/v2/components.json      # filter Actions / Pages
+curl -s https://www.githubstatus.com/api/v2/incidents/unresolved.json
+```
+
+A green local `build` + `audit:fq` + `validate:rh` with **no run appearing in `gh run list`** is an outage signature, not a repo problem.
+
+⚠️ **A stuck legacy Pages build blocks the queue, and it is invisible from `gh run list`.** Pages here is `build_type: legacy` (serves the `gh-pages` branch, source `/`), so after our workflow publishes, *GitHub's own* `pages build and deployment` must run. On 2026-08-06 that build sat at `status: building` for ~19 hours; nothing behind it could publish, so even a correct push went nowhere. Check it directly — this is the single most useful deploy diagnostic:
+
+```bash
+gh api repos/Kawkaba-Cognito/the-maze-man-comics/pages                # build_type, source, status
+gh api repos/Kawkaba-Cognito/the-maze-man-comics/pages/builds/latest  # status / error / commit
+```
+
+`status: built` + a matching `commit` is the real proof a deploy landed. Pushing a fresh commit to `gh-pages` superseded the stuck build and it completed.
+
+⚠️ **The `gh` CLI here is authenticated as `thecognitivedolphin-commits`, not Kawkaba-Cognito** (scopes `gist, read:org, repo`). It can read and push to origin but has **no admin**, so both escape hatches are closed: `gh workflow run deploy.yml` returns `403 Must have admin rights`, and `POST /pages/builds` returns `404`. Only the user can dispatch a deploy by hand (Actions tab → Deploy to GitHub Pages → Run workflow → main). Agents: don't burn time retrying these.
+
 **Manual fallback** (only if Actions is unavailable) — deploy through a `gh-pages` worktree, never on `main`:
+
+⚠️ **The manual fallback ships things CI never would.** CI builds from a clean checkout of *tracked* files; a local `npm run build` copies **all of `public/`** into `dist/`, including untracked scratch. On 2026-08-06 this put 211 files / 2.6 MB of `public/_tmp_preview/` on the live site (and into the SW precache) in the space of one push. As of that date **~13.9 MB of untracked files sit in `public/`**. Check before building, and remove from the worktree anything that was in no previous deploy (safe to delete outright — no client can hold a shell referencing it):
+
+```bash
+git status --short public/          # anything here ships on a MANUAL deploy
+```
 
 ```bash
 npm run build
-git worktree add "$TEMP/gh-pages-deploy" gh-pages
+# A full fetch of gh-pages dies with "fetch-pack: invalid index-pack output"
+# (the branch's history is large). Shallow-fetch and build the worktree detached:
+git fetch --depth=1 origin gh-pages
+git worktree add --detach "$TEMP/gh-pages-deploy" FETCH_HEAD
 # Copy dist/. in ON TOP of what is there — do NOT delete the existing files first.
 # The old "wipe everything except .git" step is what caused the 2026-07-26 crash
 # (see above); wiping by hand here reintroduces it and strands live clients.
 # Leave .deploy-manifest{,.prev} alone — CI owns the pruning.
 git -C "$TEMP/gh-pages-deploy" add -A        # safe THERE — gh-pages holds only the site
 git -C "$TEMP/gh-pages-deploy" commit -m "Deploy: <summary>"
-git -C "$TEMP/gh-pages-deploy" push origin gh-pages       # the live site
-git -C "$TEMP/gh-pages-deploy" push cognitive gh-pages    # mirror; retry on "Repository not found"
+git -C "$TEMP/gh-pages-deploy" push origin HEAD:gh-pages   # the live site (detached worktree)
+git -C "$TEMP/gh-pages-deploy" push cognitive HEAD:gh-pages # mirror; retry on "Repository not found"
 git worktree remove "$TEMP/gh-pages-deploy" --force
 ```
+
+(A manual deploy does **not** update `main`'s CI state — the next healthy push simply rebuilds from source and produces the same output. Nothing needs undoing.)
 
 (⚠️ `npx gh-pages -d dist` is unreliable on this machine — repeated hangs and corrupted clone cache. Don't reach for it.)
 
@@ -47,6 +78,23 @@ git worktree remove "$TEMP/gh-pages-deploy" --force
 ```bash
 grep -oE 'Assets/index-[A-Za-z0-9_-]+\.js' dist/index.html                                                     # local entry hash
 curl -s "https://kawkaba-cognito.github.io/the-maze-man-comics/" | grep -oE 'Assets/index-[A-Za-z0-9_-]+\.js'  # live entry hash — must match
+```
+
+Also spot-check any **new asset paths** the release introduced — a matching entry hash only proves the JS shipped, not the art:
+
+```bash
+B=https://kawkaba-cognito.github.io/the-maze-man-comics
+for p in Assets/characters/kawkab/kawkab-planet.webp Assets/domain-art/category-drawings-2026/attention.webp; do
+  printf '%-58s ' "$p"; curl -s -o /dev/null -w '%{http_code}\n' "$B/$p"
+done
+```
+
+⚠️ **Art referenced from `src/` but never `git add`ed builds green locally and 404s in production** — `public/` is served from the repo, and dev reads the working tree so untracked files resolve fine. Nothing in build/lint/CI catches it. Caught on 2026-08-06: `shared/cast2d.js` and all six hub planets were referenced by committed code while their `.webp` files were untracked (Detective and Story Time would have shipped with broken characters). Before committing an art-carrying change, cross-check referenced paths against tracked ones:
+
+```bash
+git grep -h -oE "Assets/[A-Za-z0-9._/-]+" -- src   # referenced (normalise '//', skip ${…} templates)
+git ls-files public                                # tracked
+git diff --cached --name-only                      # staged
 ```
 
 Live: https://kawkaba-cognito.github.io/the-maze-man-comics/
@@ -142,6 +190,10 @@ Everything is localStorage, keys prefixed `mm_*` and versioned (`mm_wordle_profi
 ## Validation scripts
 
 `npm run validate:puzzles` · `npm run validate:rh` (rush-hour reference solutions; `--full` for the hard ref puzzle) · `npm run audit:fq` (cancellation level curriculum) · `npm run lint`. Run the relevant one after touching generators or level data.
+
+**`npm run audit:design` is a CI-blocking ratchet** — not a style suggestion. It compares hard-coded colours (and similar drift) against the ceiling in `scripts/design-baseline.json` and fails only when a number goes **up**. When it fails, the fix is either to tokenise the new values or to raise the ceiling deliberately with `npm run audit:design -- --update`, committing the changed baseline so the decision is visible in history. It never rewrites the baseline under `CI`.
+
+⚠️ **A manual gh-pages deploy skips every one of these gates**, because they live in the workflow rather than in a pre-push hook. Code shipped that way reaches users unchecked and the gate fires later, against whoever pushes next — which is exactly what happened after the 2026-08-06 outage deploy: `1105d3a` went live unchecked and its +37 raw colours blocked the following day's push. After any manual deploy, run the gates locally against `main` and fix what they find, rather than leaving it for the next person.
 
 ---
 

@@ -392,9 +392,28 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
     const fit = () => {
       const el = stageRef.current;
       if (!el) return;
+
+      /*
+       * Never measure while the tab is hidden.
+       *
+       * AppShell keeps every tab mounted and hides the inactive ones, and the
+       * poll below runs regardless. Measured hidden, `top` is 0 and clientWidth
+       * is 0 — so freeW fell back to window.innerWidth and the whole map was
+       * sized for a viewport it was not in, storing a far too generous scale
+       * (and sometimes flipping to the landscape layout as well).
+       *
+       * The result was visible on EVERY entry to Training, not just the first:
+       * leaving the tab let the poll overwrite a correct scale with a bogus one,
+       * so the hub drew large on arrival and snapped back up to 500ms later.
+       * That "zoom in then zoom out" was this, not an animation.
+       */
+      if (!el.offsetParent) return false;
+      const rect = el.getBoundingClientRect();
+      if (rect.width < 1 || rect.height < 1) return false;
+
       // The stage's own top is stable: scaling changes its HEIGHT, not where it
       // starts, so this does not need a second pass.
-      const top = el.getBoundingClientRect().top;
+      const top = rect.top;
       // Measure against the real tab bar rather than guessing a reserve — it is
       // fixed, 81px tall, and is exactly what the lower domains were hiding
       // behind. Falling back to the viewport keeps this safe if it is absent.
@@ -432,9 +451,23 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       const byHeight = free / L.h;
       const byWidth = freeW / L.w;
       setStageScale(Math.max(0.5, Math.min(L.maxScale, byHeight, byWidth)));
+      return true;
     };
     fit();
     window.addEventListener('resize', fit);
+
+    /*
+     * First entry has no valid measurement yet, and waiting for the 500ms poll
+     * would show one wrong frame — the same flash, just once. Watch per-frame
+     * until the first real measurement lands, then stop; `offsetParent` is a
+     * cheap check and this ends as soon as the tab is opened.
+     */
+    let raf = 0;
+    const untilVisible = () => {
+      if (fit()) return;
+      raf = window.requestAnimationFrame(untilVisible);
+    };
+    raf = window.requestAnimationFrame(untilVisible);
 
     /*
      * AppShell mounts every tab up front and hides the inactive ones, so this
@@ -453,6 +486,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
     return () => {
       window.removeEventListener('resize', fit);
       window.clearInterval(id);
+      window.cancelAnimationFrame(raf);
     };
   }, []);
 
@@ -490,15 +524,11 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
         WebkitBackdropFilter: 'blur(12px)',
       }}>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }} />
-        <div className="rh-training-title" style={{
-          ...chrome.title,
-          maxWidth: 300,
-          fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-          fontSize: isAr ? 30 : 31,
-          fontWeight: 800,
-          letterSpacing: isAr ? 0 : 0.35,
-          textTransform: 'none',
-        }}>
+        {/* Type treatment lives entirely in trainingHubPremium.css
+            (`.rh-training-title`), which already carried !important rules that
+            silently beat anything set here. Setting font properties inline
+            again would just recreate a half-dead override. */}
+        <div className="rh-training-title" style={chrome.title}>
           {isAr ? 'التدريب المعرفي' : 'Cognitive Training'}
         </div>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>

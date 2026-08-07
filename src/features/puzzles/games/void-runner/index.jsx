@@ -57,11 +57,14 @@ function loadThree() {
 
 const CSS = `
 .vr-root {
-  --vr-pink:   #c96f63;
-  --vr-cyan:   #65b7b0;
-  --vr-purple: #9a80c8;
-  --vr-gold:   #d8a541;
-  --vr-dark-bg: #090d19;
+  /* App palette: Kawkab blue + app amber over dusk indigo. These now match the
+     3D scene's VR.* constants, and the raw neon literals that used to bypass
+     them (rgba(0,245,255…) / rgba(255,45,155…)) have been folded in. */
+  --vr-pink:   #d9924f;
+  --vr-cyan:   #8fb8e8;
+  --vr-purple: #6f6a9c;
+  --vr-gold:   #e8ac4e;
+  --vr-dark-bg: #1a1f38;
   position: fixed; inset: 0; z-index: 60;
   background: var(--vr-dark-bg);
   overflow: hidden;
@@ -81,12 +84,12 @@ const CSS = `
 .vr-vignette { position:absolute; inset:0; pointer-events:none; z-index:4;
   background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.7) 100%); transition:opacity 0.3s; }
 .vr-speedlines { position:absolute; inset:0; pointer-events:none; z-index:3; opacity:0; transition:opacity 0.3s;
-  background: radial-gradient(ellipse at center, transparent 30%, rgba(0,245,255,0.04) 60%, rgba(255,45,155,0.08) 100%); }
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(143,184,232,0.04) 60%, rgba(217,146,79,0.08) 100%); }
 
 .vr-hud { position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:flex-start;
   padding:calc(16px + env(safe-area-inset-top)) 20px 16px; pointer-events:none; z-index:10; }
 .vr-hud-block { display:flex; flex-direction:column; align-items:center; gap:2px; }
-.vr-hud-label { font-size:9px; letter-spacing:4px; color:rgba(0,245,255,0.5); text-transform:uppercase; }
+.vr-hud-label { font-size:9px; letter-spacing:4px; color:rgba(143,184,232,0.5); text-transform:uppercase; }
 .vr-hud-val { font-family:'DM Mono',sans-serif; font-size:22px; font-weight:700; color:#fff; text-shadow:0 0 12px var(--vr-cyan); }
 .vr-liveshud { display:flex; gap:6px; align-items:center; padding-top:4px; }
 .vr-heart { font-size:18px; transition:transform 0.2s, opacity 0.2s; }
@@ -94,7 +97,7 @@ const CSS = `
 
 .vr-speedbar { position:absolute; top:calc(72px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
   display:flex; flex-direction:column; align-items:center; gap:4px; pointer-events:none; z-index:10; }
-.vr-speedlabel { font-size:9px; letter-spacing:3px; color:rgba(0,245,255,0.4); }
+.vr-speedlabel { font-size:9px; letter-spacing:3px; color:rgba(143,184,232,0.4); }
 .vr-levellabel { color:rgba(255,255,255,0.55); margin-inline-start:6px; }
 .vr-speedtrack { width:120px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; }
 .vr-speedfill { height:100%; width:0%; background:linear-gradient(90deg,var(--vr-cyan),var(--vr-pink));
@@ -109,19 +112,19 @@ const CSS = `
   font-family:'DM Mono',sans-serif; font-size:18px; font-weight:900; letter-spacing:4px; opacity:0; text-shadow:0 0 20px currentColor; }
 
 .vr-pausebtn { position:absolute; top:calc(16px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
-  z-index:20; pointer-events:all; background:rgba(0,0,0,0.5); border:1px solid rgba(0,245,255,0.3); border-radius:50%;
-  width:38px; height:38px; color:rgba(0,245,255,0.7); font-size:14px; cursor:pointer; display:none;
+  z-index:20; pointer-events:all; background:rgba(0,0,0,0.5); border:1px solid rgba(143,184,232,0.3); border-radius:50%;
+  width:38px; height:38px; color:rgba(143,184,232,0.7); font-size:14px; cursor:pointer; display:none;
   align-items:center; justify-content:center; transition:border-color 0.2s, color 0.2s; }
 .vr-pausebtn:hover { border-color:var(--vr-cyan); color:var(--vr-cyan); }
 
 .vr-thumbcontrols { position:absolute; bottom:0; left:0; right:0; display:none; z-index:20; pointer-events:none;
   padding-bottom:max(20px, env(safe-area-inset-bottom)); }
 .vr-thumb-btn { position:absolute; bottom:24px; width:90px; height:90px; border-radius:50%;
-  border:2px solid rgba(0,245,255,0.4); background:rgba(0,20,40,0.6); display:flex; align-items:center; justify-content:center;
+  border:2px solid rgba(143,184,232,0.4); background:rgba(0,20,40,0.6); display:flex; align-items:center; justify-content:center;
   font-size:30px; pointer-events:none; backdrop-filter:blur(4px);
-  box-shadow:0 0 20px rgba(0,245,255,0.2), inset 0 0 20px rgba(0,0,0,0.5); transition:background 0.1s, border-color 0.1s, transform 0.1s; }
-.vr-thumb-btn.vr-pressed { background:rgba(0,245,255,0.2); border-color:var(--vr-cyan); transform:scale(0.92);
-  box-shadow:0 0 30px rgba(0,245,255,0.5); }
+  box-shadow:0 0 20px rgba(143,184,232,0.2), inset 0 0 20px rgba(0,0,0,0.5); transition:background 0.1s, border-color 0.1s, transform 0.1s; }
+.vr-thumb-btn.vr-pressed { background:rgba(143,184,232,0.2); border-color:var(--vr-cyan); transform:scale(0.92);
+  box-shadow:0 0 30px rgba(143,184,232,0.5); }
 #vr-btnleft { left:24px; } #vr-btnright { right:24px; }
 
 .vr-warningflash { position:absolute; inset:0; pointer-events:none; z-index:6; opacity:0; background:rgba(255,45,0,0.15); transition:opacity 0.1s; }
@@ -130,37 +133,37 @@ const CSS = `
 
 .vr-screen { position:absolute; inset:0; z-index:30; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 
-#vr-menuscreen { background: radial-gradient(ellipse at 50% 30%, rgba(180,79,255,0.15) 0%, rgba(0,0,10,0.92) 70%);
+#vr-menuscreen { background: radial-gradient(ellipse at 50% 30%, rgba(111,106,156,0.15) 0%, rgba(26,31,56,0.92) 70%);
   padding-top: env(safe-area-inset-top); }
 .vr-game-logo { font-family:'DM Mono',sans-serif; font-size:clamp(42px,10vw,72px); font-weight:900; letter-spacing:8px; line-height:1;
   background:linear-gradient(135deg,var(--vr-cyan) 0%,var(--vr-pink) 50%,var(--vr-purple) 100%);
   -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 20px rgba(0,245,255,0.5)); animation:vrLogoPulse 3s ease-in-out infinite; margin-bottom:4px; text-align: center; }
-.vr-tagline { font-size:12px; letter-spacing:6px; color:rgba(0,245,255,0.5); margin-bottom:40px; text-transform:uppercase; }
-@keyframes vrLogoPulse { 0%,100%{ filter:drop-shadow(0 0 15px rgba(0,245,255,0.4)); } 50%{ filter:drop-shadow(0 0 35px rgba(255,45,155,0.6)); } }
+  filter:drop-shadow(0 0 20px rgba(143,184,232,0.5)); animation:vrLogoPulse 3s ease-in-out infinite; margin-bottom:4px; text-align: center; }
+.vr-tagline { font-size:12px; letter-spacing:6px; color:rgba(143,184,232,0.5); margin-bottom:40px; text-transform:uppercase; }
+@keyframes vrLogoPulse { 0%,100%{ filter:drop-shadow(0 0 15px rgba(143,184,232,0.4)); } 50%{ filter:drop-shadow(0 0 35px rgba(217,146,79,0.6)); } }
 
 .vr-best-badge { font-size:11px; letter-spacing:3px; color:var(--vr-gold); margin-bottom:32px; text-shadow:0 0 10px var(--vr-gold); opacity:0; transition:opacity 0.5s; }
 .vr-controls-hint { margin-bottom:32px; text-align:center; display:flex; flex-direction:column; gap:8px; }
 .vr-hint-row { font-size:11px; letter-spacing:2px; color:rgba(255,255,255,0.35); }
-.vr-hint-row span { color:rgba(0,245,255,0.6); }
+.vr-hint-row span { color:rgba(143,184,232,0.6); }
 
 .vr-neon-btn { font-family:'DM Mono',sans-serif; font-size:15px; font-weight:700; letter-spacing:5px; padding:16px 48px;
   border-radius:4px; border:none; cursor:pointer; position:relative; overflow:hidden; transition:transform 0.1s, box-shadow 0.2s; text-transform:uppercase; }
 .vr-neon-btn-primary { background:linear-gradient(135deg, #1a006b, #3d00c8); color:#fff;
-  box-shadow:0 0 30px rgba(61,0,200,0.6), inset 0 0 30px rgba(0,245,255,0.1); border:1px solid rgba(0,245,255,0.4); }
-.vr-neon-btn-primary:hover { transform:scale(1.04); box-shadow:0 0 50px rgba(0,245,255,0.5), inset 0 0 30px rgba(0,245,255,0.2); }
-.vr-neon-btn-secondary { background:transparent; color:rgba(0,245,255,0.6); border:1px solid rgba(0,245,255,0.3); font-size:12px; padding:10px 32px; letter-spacing:4px; }
-.vr-neon-btn-secondary:hover { border-color:var(--vr-cyan); color:var(--vr-cyan); box-shadow:0 0 20px rgba(0,245,255,0.3); }
+  box-shadow:0 0 30px rgba(61,0,200,0.6), inset 0 0 30px rgba(143,184,232,0.1); border:1px solid rgba(143,184,232,0.4); }
+.vr-neon-btn-primary:hover { transform:scale(1.04); box-shadow:0 0 50px rgba(143,184,232,0.5), inset 0 0 30px rgba(143,184,232,0.2); }
+.vr-neon-btn-secondary { background:transparent; color:rgba(143,184,232,0.6); border:1px solid rgba(143,184,232,0.3); font-size:12px; padding:10px 32px; letter-spacing:4px; }
+.vr-neon-btn-secondary:hover { border-color:var(--vr-cyan); color:var(--vr-cyan); box-shadow:0 0 20px rgba(143,184,232,0.3); }
 
-#vr-pausescreen { background:rgba(0,0,10,0.88); backdrop-filter:blur(6px); }
+#vr-pausescreen { background:rgba(26,31,56,0.88); backdrop-filter:blur(6px); }
 #vr-pausescreen h2 { font-family:'DM Mono',sans-serif; font-size:36px; letter-spacing:10px; color:var(--vr-cyan);
   text-shadow:0 0 30px var(--vr-cyan); margin-bottom:40px; }
 .vr-pause-btns { display:flex; flex-direction:column; gap:16px; align-items:center; }
 
-#vr-gameoverscreen { background: radial-gradient(ellipse at 50% 40%, rgba(255,45,0,0.12) 0%, rgba(0,0,10,0.92) 70%); }
+#vr-gameoverscreen { background: radial-gradient(ellipse at 50% 40%, rgba(255,45,0,0.12) 0%, rgba(26,31,56,0.92) 70%); }
 .vr-go-title { font-family:'DM Mono',sans-serif; font-size:clamp(28px,8vw,52px); font-weight:900; letter-spacing:6px; color:#fff;
   text-shadow:0 0 30px var(--vr-pink); margin-bottom:8px; margin-top:0; }
-.vr-go-sub { font-size:11px; letter-spacing:4px; color:rgba(255,45,155,0.5); margin-bottom:32px; }
+.vr-go-sub { font-size:11px; letter-spacing:4px; color:rgba(217,146,79,0.5); margin-bottom:32px; }
 .vr-stats-row { display:flex; gap:12px; margin-bottom:32px; flex-wrap:wrap; justify-content:center; }
 .vr-stat-card { display:flex; flex-direction:column; align-items:center; gap:6px; background:rgba(255,255,255,0.05);
   border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:16px 20px; min-width:90px; }
@@ -171,7 +174,7 @@ const CSS = `
 @keyframes vrBadgePop { from{ opacity:0; transform:scale(0.7); } to{ opacity:1; transform:scale(1); } }
 .vr-go-btns { display:flex; flex-direction:column; gap:12px; align-items:center; }
 
-#vr-countdownscreen { background:rgba(0,0,10,0.6); }
+#vr-countdownscreen { background:rgba(26,31,56,0.6); }
 .vr-countdownnum { font-family:'DM Mono',sans-serif; font-size:clamp(80px,25vw,140px); font-weight:900; color:var(--vr-cyan);
   text-shadow:0 0 60px var(--vr-cyan); animation:vrCountPulse 1s ease-out; }
 @keyframes vrCountPulse { 0%{ transform:scale(1.5); opacity:0; } 100%{ transform:scale(1); opacity:1; } }
@@ -179,24 +182,24 @@ const CSS = `
 
 .vr-sub-screen { position:absolute; inset:0; z-index:30; display:none; flex-direction:column; align-items:center; justify-content:flex-start;
   padding:calc(40px + env(safe-area-inset-top)) 24px 40px;
-  background: radial-gradient(ellipse at 50% 20%, rgba(0,80,120,0.18) 0%, rgba(0,0,10,0.95) 70%); overflow-y:auto; }
+  background: radial-gradient(ellipse at 50% 20%, rgba(0,80,120,0.18) 0%, rgba(26,31,56,0.95) 70%); overflow-y:auto; }
 .vr-sub-title { font-family:'DM Mono',sans-serif; font-size:24px; font-weight:900; letter-spacing:8px; color:var(--vr-cyan);
   text-shadow:0 0 20px var(--vr-cyan); margin-bottom:32px; margin-top:8px; }
 .vr-setting-row { width:100%; max-width:360px; display:flex; align-items:center; justify-content:space-between;
-  border-bottom:1px solid rgba(0,245,255,0.1); padding:14px 0; gap:16px; }
+  border-bottom:1px solid rgba(143,184,232,0.1); padding:14px 0; gap:16px; }
 .vr-setting-label { font-size:12px; letter-spacing:3px; color:rgba(255,255,255,0.6); }
 .vr-setting-val { font-family:'DM Mono',sans-serif; font-size:14px; color:var(--vr-cyan); }
-.vr-root input[type=range] { -webkit-appearance:none; width:130px; height:4px; background:rgba(0,245,255,0.2); border-radius:2px; outline:none; }
+.vr-root input[type=range] { -webkit-appearance:none; width:130px; height:4px; background:rgba(143,184,232,0.2); border-radius:2px; outline:none; }
 .vr-root input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
   background:var(--vr-cyan); box-shadow:0 0 8px var(--vr-cyan); cursor:pointer; }
-.vr-root input[type=text] { background:rgba(0,245,255,0.07); border:1px solid rgba(0,245,255,0.3); border-radius:4px;
+.vr-root input[type=text] { background:rgba(143,184,232,0.07); border:1px solid rgba(143,184,232,0.3); border-radius:4px;
   color:var(--vr-cyan); padding:8px 12px; font-family:'DM Mono',monospace; font-size:14px; width:160px; outline:none; letter-spacing:2px; }
 .vr-root input[type=text]:focus { border-color:var(--vr-cyan); }
 
 .vr-toggle-btn { font-family:'DM Mono',sans-serif; font-size:11px; letter-spacing:3px; padding:8px 18px; border-radius:4px; cursor:pointer;
-  border:1px solid rgba(0,245,255,0.4); background:rgba(0,245,255,0.1); color:var(--vr-cyan); transition:background 0.2s; }
-.vr-toggle-btn.vr-on { background:rgba(0,245,255,0.25); color:#fff; }
-.vr-toggle-btn.vr-off { background:transparent; color:rgba(0,245,255,0.4); }
+  border:1px solid rgba(143,184,232,0.4); background:rgba(143,184,232,0.1); color:var(--vr-cyan); transition:background 0.2s; }
+.vr-toggle-btn.vr-on { background:rgba(143,184,232,0.25); color:#fff; }
+.vr-toggle-btn.vr-off { background:transparent; color:rgba(143,184,232,0.4); }
 
 .vr-hs-table { width:100%; max-width:380px; margin-bottom:24px; }
 .vr-hs-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.07); }
@@ -212,7 +215,7 @@ const CSS = `
 .vr-how-row { width:100%; max-width:360px; display:flex; gap:16px; align-items:flex-start; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
 .vr-how-icon { font-size:24px; min-width:36px; text-align:center; }
 .vr-how-text { font-size:12px; line-height:1.7; color:rgba(255,255,255,0.55); letter-spacing:1px; }
-.vr-how-key { display:inline-block; background:rgba(0,245,255,0.15); border:1px solid rgba(0,245,255,0.3); border-radius:3px;
+.vr-how-key { display:inline-block; background:rgba(143,184,232,0.15); border:1px solid rgba(143,184,232,0.3); border-radius:3px;
   padding:1px 7px; color:var(--vr-cyan); font-size:11px; letter-spacing:2px; }
 
 /* Puzzle Studio edition: dark cosmic play, restrained Training Hub surfaces. */
@@ -671,16 +674,75 @@ function createVoidRunner(root, THREE, { onBack }) {
     setTimeout(() => { try { engineNodes.osc1.stop(); } catch { /* already stopped */ } engineNodes = null; }, 400);
   }
 
+  /*
+   * ── PALETTE ──
+   *
+   * A WebGL scene cannot read the app's CSS tokens, so the app's dusk palette
+   * is mirrored here by hand. Keep these named — the scene used to be a scatter
+   * of neon literals (0xff2d9b / 0x00f5ff on a near-black 0x04000f void) which
+   * belonged to a synthwave arcade, not to this app.
+   *
+   * Values track the dusk gradient the rest of the app sits on: deep indigo
+   * overhead, mauve at mid-height, warm sand at the horizon, with Kawkab's blue
+   * and the app amber as the two accents.
+   */
+  const VR = {
+    skyTop: '#252a46',      // dusk zenith
+    skyMid: '#5d4a5c',      // mauve band
+    skyLow: '#9c7156',      // warm horizon
+    fog: 0x6a5560,          // sits between mid and horizon so distance recedes
+    ambient: 0x2b2f4d,
+    keyLight: 0xffd9a8,     // warm sun, replaces the violet key
+    warmAccent: 0xd9924f,   // app amber, replaces the hot pink
+    coolAccent: 0x8fb8e8,   // Kawkab blue, replaces the electric cyan
+    floor: 0x1b2140,
+    laneLine: 0x4a4f7d,
+    arch: 0x39406b,
+    gem: 0xe8ac4e,
+  };
+
   // ── THREE.JS SETUP ──
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isTouch });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isTouch ? 1.5 : 2));
   renderer.shadowMap.enabled = !isTouch;
   if (!isTouch) renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setClearColor(0x04000f);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x080010, 0.028);
+
+  /*
+   * The sky was a flat near-black clear colour, which is what made the game
+   * read as a void rather than as a place. A three-stop vertical gradient on a
+   * 2x256 canvas costs one texture and no geometry, and gives the runner the
+   * same dusk horizon the rest of the app sits under.
+   */
+  function makeSky() {
+    const c = document.createElement('canvas');
+    c.width = 2; c.height = 256;
+    const g = c.getContext('2d');
+    const grad = g.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, VR.skyTop);
+    grad.addColorStop(0.58, VR.skyMid);
+    grad.addColorStop(1, VR.skyLow);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 2, 256);
+    /*
+     * Deliberately no colour-space/encoding set. This game pins three.js r128
+     * from CDN, which predates the `colorSpace` API entirely, and the scene
+     * sets no `outputEncoding` — every other colour here is raw unmanaged hex.
+     * Tagging just this texture would make the sky the only colour-managed
+     * surface and put it out of step with the palette it has to match.
+     */
+    return new THREE.CanvasTexture(c);
+  }
+  scene.background = makeSky();
+
+  /*
+   * Fog now sits between the mid and horizon stops rather than at near-black:
+   * distance recedes INTO the sky instead of into a hole. Density is down from
+   * 0.028 because a lighter fog colour at the old density hazed the near lanes.
+   */
+  scene.fog = new THREE.FogExp2(VR.fog, 0.019);
 
   const BASE_VFOV = 70;
   const camera = new THREE.PerspectiveCamera(BASE_VFOV, window.innerWidth / window.innerHeight, 0.1, 300);
@@ -726,19 +788,24 @@ function createVoidRunner(root, THREE, { onBack }) {
   }
 
   // ── LIGHTING ──
-  const ambient = new THREE.AmbientLight(0x0a0020, 2);
+  /*
+   * Lit like dusk, not like a nightclub. The ambient is raised well above the
+   * old 0x0a0020 so surfaces read without needing emissive neon to carry them —
+   * this is most of what makes the scene "lighter".
+   */
+  const ambient = new THREE.AmbientLight(VR.ambient, 2.6);
   scene.add(ambient);
-  const dirLight = new THREE.DirectionalLight(0x9933ff, 2.5);
+  const dirLight = new THREE.DirectionalLight(VR.keyLight, 2.2);
   dirLight.position.set(5, 12, 8);
   dirLight.castShadow = !isTouch;
   scene.add(dirLight);
-  const pinkLight = new THREE.PointLight(0xff2d9b, 4, 25);
+  const pinkLight = new THREE.PointLight(VR.warmAccent, 2.6, 25);
   pinkLight.position.set(-6, 3, 2);
   scene.add(pinkLight);
-  const cyanLight = new THREE.PointLight(0x00f5ff, 4, 25);
+  const cyanLight = new THREE.PointLight(VR.coolAccent, 2.6, 25);
   cyanLight.position.set(6, 3, 2);
   scene.add(cyanLight);
-  const shipLight = new THREE.PointLight(0x00f5ff, 3, 10);
+  const shipLight = new THREE.PointLight(VR.coolAccent, 2.4, 10);
   scene.add(shipLight);
 
   // ── STAR FIELD ──
@@ -775,24 +842,24 @@ function createVoidRunner(root, THREE, { onBack }) {
 
   const floorGeo = new THREE.PlaneGeometry(TUNNEL_W, SEG_DEPTH, 8, 1);
   floorGeo.rotateX(-Math.PI / 2);
-  const floorMat = neonMat({ color: 0x050018, roughness: 1, metalness: 0, emissive: 0x050018 });
+  const floorMat = neonMat({ color: VR.floor, roughness: 1, metalness: 0, emissive: 0x0d1128 });
   const floorMesh = new THREE.InstancedMesh(floorGeo, floorMat, NUM_SEGS);
   floorMesh.receiveShadow = !isTouch;
   scene.add(floorMesh);
 
   const lineGeo = new THREE.BoxGeometry(0.04, 0.02, SEG_DEPTH);
-  const lineMat = neonMat({ color: 0x4400cc, emissive: 0x4400cc, emissiveIntensity: 2 });
+  const lineMat = neonMat({ color: VR.laneLine, emissive: VR.laneLine, emissiveIntensity: 1.15 });
   const lineMesh = new THREE.InstancedMesh(lineGeo, lineMat, NUM_SEGS * LINES_PER_SEG);
   scene.add(lineMesh);
 
   const stripGeo = new THREE.BoxGeometry(0.06, 0.06, SEG_DEPTH);
-  const leftStripMat = neonMat({ color: 0xff2d9b, emissive: 0xff2d9b, emissiveIntensity: 1.5 });
-  const rightStripMat = neonMat({ color: 0x00f5ff, emissive: 0x00f5ff, emissiveIntensity: 1.5 });
+  const leftStripMat = neonMat({ color: VR.warmAccent, emissive: VR.warmAccent, emissiveIntensity: 1.1 });
+  const rightStripMat = neonMat({ color: VR.coolAccent, emissive: VR.coolAccent, emissiveIntensity: 1.1 });
   const leftStripMesh = new THREE.InstancedMesh(stripGeo, leftStripMat, NUM_SEGS);
   const rightStripMesh = new THREE.InstancedMesh(stripGeo, rightStripMat, NUM_SEGS);
   scene.add(leftStripMesh); scene.add(rightStripMesh);
 
-  const archMat = neonMat({ color: 0x220066, emissive: 0x220066, emissiveIntensity: 1 });
+  const archMat = neonMat({ color: VR.arch, emissive: VR.arch, emissiveIntensity: 0.8 });
   const sideArchGeo = new THREE.BoxGeometry(0.1, TUNNEL_H, 0.1);
   const sideArchMesh = new THREE.InstancedMesh(sideArchGeo, archMat, NUM_SEGS * 2); // left+right
   scene.add(sideArchMesh);
@@ -843,7 +910,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     wings.position.z = 0.35;
     wings.castShadow = !isTouch;
     g.add(wings);
-    const tipM = neonMat({ color: 0xff2d9b, emissive: 0xff2d9b, emissiveIntensity: 3 });
+    const tipM = neonMat({ color: VR.warmAccent, emissive: VR.warmAccent, emissiveIntensity: 2.2 });
     [-1.1, 1.1].forEach((x) => {
       const tip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.6), tipM);
       tip.position.set(x, 0, 0.35);
@@ -854,7 +921,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     cock.scale.z = 1.6;
     cock.position.z = -0.45;
     g.add(cock);
-    const glowM = neonMat({ color: 0x00f5ff, emissive: 0x00f5ff, emissiveIntensity: 4, transparent: true, opacity: 0.85 });
+    const glowM = neonMat({ color: VR.coolAccent, emissive: VR.coolAccent, emissiveIntensity: 2.8, transparent: true, opacity: 0.85 });
     const glow = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), glowM);
     glow.position.z = 1.0;
     g.add(glow);
@@ -918,7 +985,7 @@ function createVoidRunner(root, THREE, { onBack }) {
   // ── GEM POOL ──
   const gemPool = [];
   const activeGems = [];
-  const gemMat = neonMat({ color: 0xffcc00, emissive: 0xff8800, emissiveIntensity: 2.5, roughness: 0.1, metalness: 0.8 });
+  const gemMat = neonMat({ color: VR.gem, emissive: 0xc98a30, emissiveIntensity: 1.8, roughness: 0.1, metalness: 0.8 });
   function getGem() {
     if (gemPool.length > 0) { const g = gemPool.pop(); g.visible = true; scene.add(g); return g; }
     const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.38), gemMat);
@@ -1256,9 +1323,9 @@ function createVoidRunner(root, THREE, { onBack }) {
         invincible = false;
         ship.children[4].material.emissive.setHex(0x003355);
         ship.children[4].material.emissiveIntensity = 1;
-        ship.children[5].material.emissive.setHex(0x00f5ff);
+        ship.children[5].material.emissive.setHex(VR.coolAccent);
         ship.children[5].material.emissiveIntensity = 4;
-        shipLight.color.setHex(0x00f5ff);
+        shipLight.color.setHex(VR.coolAccent);
         shipLight.intensity = 3;
       }
     }
@@ -1451,7 +1518,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     stopEngine();
     stopMusic();
     spawnExplosion(ship.position.x, ship.position.y, ship.position.z, 0xff4400);
-    spawnExplosion(ship.position.x, ship.position.y, ship.position.z, 0xff2d9b);
+    spawnExplosion(ship.position.x, ship.position.y, ship.position.z, VR.warmAccent);
     ship.visible = false;
     camShake = 35;
 

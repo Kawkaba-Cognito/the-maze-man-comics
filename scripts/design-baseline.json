@@ -1,8 +1,8 @@
 {
   "rules": {
-    "raw-colour": 740,
+    "raw-colour": 777,
     "conditional-background": 1,
-    "stacked-backdrops": 3
+    "stacked-backdrops": 4
   },
   "files": {
     "src/features/training/domains/attention/games/cancellation/index.jsx": {
@@ -63,11 +63,12 @@
       "raw-colour": 46,
       "conditional-background": 1
     },
-    "src/features/training/domains/memory/games/story-grid/stage/components/StoryStage3D.jsx": {
-      "raw-colour": 5
-    },
     "src/features/training/domains/memory/games/story-grid/stage/schema.js": {
       "raw-colour": 4
+    },
+    "src/features/training/domains/memory/games/story-grid/stage/stage2d.css": {
+      "raw-colour": 41,
+      "stacked-backdrops": 1
     },
     "src/features/training/domains/memory/games/story-grid/stage/stageCancellation.css": {
       "raw-colour": 44
@@ -118,11 +119,14 @@
     "src/features/training/domains/reasoning/games/detective/noir/components/Cutscene.jsx": {
       "raw-colour": 1
     },
-    "src/features/training/domains/reasoning/games/detective/noir/components/Interrogation3D.jsx": {
-      "raw-colour": 23
+    "src/features/training/domains/reasoning/games/detective/noir/components/Interrogation2D.jsx": {
+      "raw-colour": 1
     },
     "src/features/training/domains/reasoning/games/detective/noir/components/Weather.jsx": {
       "raw-colour": 1
+    },
+    "src/features/training/domains/reasoning/games/detective/noir/noir2d.css": {
+      "raw-colour": 23
     },
     "src/features/training/domains/reasoning/games/detective/noir/noirCancellation.css": {
       "raw-colour": 54

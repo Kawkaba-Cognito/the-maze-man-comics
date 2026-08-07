@@ -20,7 +20,7 @@ const MartianMaze = lazyWithRetry(
  * threshold and immediately launches the standalone Martian labyrinth.
  */
 export default function HomeScreen() {
-  const { currentLang, setImmersive, switchTab } = useApp();
+  const { currentLang, setImmersive, switchTab, activeTab } = useApp();
   const isAr = currentLang === 'ar';
   const bodies = useLearnedBodies(KAWNERA_BOOKS);
   const cooling = bodies.filter((b) => b.warmth < 0.5).length;
@@ -86,9 +86,24 @@ export default function HomeScreen() {
     return () => setImmersive('relax', false);
   }, [mazeOpen, setImmersive]);
 
+  /*
+   * Idle the particle universe whenever Home is not the visible tab.
+   *
+   * AppShell keeps every tab mounted and hides the inactive ones with
+   * `display: none`, and ZenUniverse's own guard is `visibilitychange` — which
+   * fires for the BROWSER tab, not for an app screen being hidden. So without
+   * this the scene kept drawing thousands of particles at full rate the whole
+   * time the user was on Training, Puzzles, Learn, Wellbeing or Other: the
+   * cause of tab switches feeling laggy, and of the Training hub dropping its
+   * first frames on entry.
+   *
+   * setRunning idles rather than unmounts, which is what ZenUniverse asks for —
+   * a remount rebuilds every particle, recompiles shaders and takes a fresh
+   * WebGL context.
+   */
   useEffect(() => {
-    zenRef.current?.setRunning(!mazeOpen);
-  }, [mazeOpen]);
+    zenRef.current?.setRunning(activeTab === 'home' && !mazeOpen);
+  }, [activeTab, mazeOpen]);
 
   return (
     <div

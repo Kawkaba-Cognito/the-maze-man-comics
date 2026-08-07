@@ -334,7 +334,25 @@
 .pz-category-card:hover .pz-category-art { transform: translateY(-3px) scale(1.06); }
 
 .pz-category-copy { align-items: center; padding-inline: 5px; }
-.pz-category-copy b { color: #17243d; font-size: clamp(1rem, 3vw, 1.22rem); font-weight: 860; }
+
+/*
+ * Reserve two lines for every category title.
+ *
+ * "Group Challenge" wraps at phone width and the others do not, which pushed
+ * that card's description 23px lower than its row-mate's and made row 2 23px
+ * taller than row 1 — measured 224px vs 247px. Reserving the taller of the two
+ * cases for all four titles means every description starts on the same line and
+ * every card is the same height, without touching the copy or the layout.
+ */
+.pz-category-copy b {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.9em;      /* two lines at this element's own line-height */
+  color: #17243d;
+  font-size: clamp(1rem, 3vw, 1.22rem);
+  font-weight: 860;
+}
 .pz-category-copy small {
   display: -webkit-box;
   margin-top: 6px;
