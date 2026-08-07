@@ -17,13 +17,46 @@
     overflow: visible;
 }
 
+/*
+ * OPTICAL normalisation, not geometric.
+ *
+ * The six drawings sit on a clean grid (left/centre/right, boxes all 80px) —
+ * measured, the containers are exact. What made the hub read as "unorganised"
+ * is that the ARTWORK inside those boxes carries wildly different visual
+ * weight. Measured ink coverage of each drawing at 128px:
+ *
+ *     memory      37.3%   <- heaviest
+ *     language    28.7%
+ *     flexibility 28.0%
+ *     reasoning   27.8%
+ *     attention   20.7%
+ *     speed       16.7%   <- lightest, 2.2x lighter than memory
+ *
+ * ...and bounding-box fill ranged 74% (attention) to 94% (flexibility). So the
+ * eye sees six different sizes on a correct grid.
+ *
+ * Each factor is the MEAN of two normalisations, because neither alone works:
+ *   - equal ink area   sqrt(meanInk / ownInk) — equalises visual weight, but
+ *     blows up the comet (a long thin diagonal) until it overruns its cell
+ *   - equal bounding box  target / ownFill    — equalises footprint, but leaves
+ *     the comet looking faint next to the solid book
+ * Averaging them lands the rendered box fill in a tight 81–92% band (it was
+ * 74–95% before), then speed is capped so nothing overflows its cell.
+ */
+.rh-training-hub .rh-category-art-shell--attention   { --rh-art-norm: 1.14; }
+.rh-training-hub .rh-category-art-shell--speed       { --rh-art-norm: 1.08; }
+.rh-training-hub .rh-category-art-shell--memory      { --rh-art-norm: 0.93; }
+.rh-training-hub .rh-category-art-shell--language    { --rh-art-norm: 1.02; }
+.rh-training-hub .rh-category-art-shell--reasoning   { --rh-art-norm: 1.00; }
+.rh-training-hub .rh-category-art-shell--flexibility { --rh-art-norm: 0.94; }
+
 .rh-training-hub .rh-category-art {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
     user-select: none;
-    transform: scale(1.04);
+    transform: scale(calc(1.04 * var(--rh-art-norm, 1)));
     transform-origin: 50% 50%;
     filter:
         drop-shadow(0 7px 10px rgba(1, 5, 16, 0.38))
@@ -34,7 +67,7 @@
 }
 
 .rh-training-hub .rh-domain-planet.is-hot .rh-category-art {
-    transform: translateY(-2px) scale(1.12);
+    transform: translateY(-2px) scale(calc(1.12 * var(--rh-art-norm, 1)));
     filter:
         drop-shadow(0 11px 14px rgba(1, 5, 16, 0.48))
         drop-shadow(0 0 10px color-mix(in srgb, var(--rh-planet-color) 42%, transparent));
@@ -42,14 +75,14 @@
 
 @media (max-width: 779px) {
     .rh-training-hub .rh-category-art {
-        transform: scale(1.08);
+        transform: scale(calc(1.08 * var(--rh-art-norm, 1)));
         filter:
             drop-shadow(0 6px 8px rgba(1, 5, 16, 0.4))
             drop-shadow(0 0 4px color-mix(in srgb, var(--rh-planet-color) 24%, transparent));
     }
 
     .rh-training-hub .rh-domain-planet.is-hot .rh-category-art {
-        transform: translateY(-1px) scale(1.14);
+        transform: translateY(-1px) scale(calc(1.14 * var(--rh-art-norm, 1)));
     }
 }
 
