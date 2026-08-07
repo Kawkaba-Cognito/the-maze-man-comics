@@ -11,7 +11,7 @@ import { IconBack } from '../../features/training/shared/TrainingIcons';
 export default function RewardsShopScreen() {
   const { points, currentLang, equipped, switchTab, playSfx } = useApp();
   const isAr = currentLang === 'ar';
-  const chrome = useThemedChrome(isAr);
+  const chrome = useThemedChrome(isAr, { universe: true });
 
   return (
     <div

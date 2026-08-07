@@ -50,8 +50,12 @@ export function setScenePaused(wrapEl, value) {
  * and no sun that warmth read as dirt, so it was taken out 2026-08-01. The
  * stops' LUMINANCES are unchanged — the piece colours are tuned to them.
  */
-const TIDE_LIGHT_STOPS = ['#ccdae6', '#b3cadd', '#9cb9d2'];
-export const TIDE_FOG = 0xb3cadd;
+/* Re-hued to Beige 2026-08-07, luminances held (see gamePalette.js GAME_SKY —
+   these three MUST stay in step with it and with --play-surface, or the 3D
+   rooms render a different sky from the 2D boards). The fog stop is the mid
+   stop, and must remain the darkest thing in the scene or distance hazes. */
+const TIDE_LIGHT_STOPS = ['#dfd7c7', '#d0c7b4', '#bfb5a0'];
+export const TIDE_FOG = 0xd0c7b4;
 
 /*
  * ─── TIDE DEEP — the same sky, dark end ───

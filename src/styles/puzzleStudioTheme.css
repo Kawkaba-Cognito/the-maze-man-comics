@@ -1,31 +1,49 @@
 /* Puzzle Studio — Training Hub category-art visual system. */
 
+/*
+ * ── Category colour is an ACCENT, not a surface ──────────────────────────
+ *
+ * Each of these four used to carry its own tinted page AND its own tinted cell
+ * fill: numbers was cream-amber, logic mint, spatial lilac, group pink. Moving
+ * between two puzzles therefore repainted the entire screen — which is what
+ * reads as the colours switching, and it was reported exactly that way.
+ *
+ * The surfaces are now shared and neutral (Cool Silver, from the field tokens),
+ * and the hue survives where it actually identifies something: the accent
+ * itself, and the ink on a given cell. A category is recognisable by its
+ * highlight, not by repainting the room.
+ *
+ * --pz-surface        the page behind the board  → shared
+ * --pz-surface-strong a given/fixed cell's fill  → shared, one step down
+ * --pz-accent         the category hue           → per category
+ * --pz-accent-deep    that hue as ink            → per category
+ */
+.pz-theme-numbers,
+.pz-theme-logic,
+.pz-theme-spatial,
+.pz-theme-group {
+  --pz-surface: var(--surface);
+  --pz-surface-strong: #adb5c4;
+}
+
 .pz-theme-numbers {
   --pz-accent: #d8a541;
-  --pz-accent-deep: #9d6e22;
-  --pz-surface: #fff8e8;
-  --pz-surface-strong: #f5dfaa;
+  --pz-accent-deep: #63410f;
 }
 
 .pz-theme-logic {
   --pz-accent: #55a99f;
-  --pz-accent-deep: #327a76;
-  --pz-surface: #edf8f6;
-  --pz-surface-strong: #ccebe5;
+  --pz-accent-deep: #194240;
 }
 
 .pz-theme-spatial {
   --pz-accent: #9a80c8;
-  --pz-accent-deep: #69549b;
-  --pz-surface: #f5f0fb;
-  --pz-surface-strong: #ded1f0;
+  --pz-accent-deep: #3a2c5c;
 }
 
 .pz-theme-group {
   --pz-accent: #c96f63;
-  --pz-accent-deep: #914b46;
-  --pz-surface: #fff1ef;
-  --pz-surface-strong: #f3d1cc;
+  --pz-accent-deep: #5e2c28;
 }
 
 .pz-studio {
@@ -529,13 +547,24 @@ html[data-home-theme='light'] .pz-studio-lang {
  * Inside every puzzle: one calm, category-tinted visual language
  * ========================================================================== */
 
+/*
+ * Board colours come from the app's field tokens now — Cool Silver, which is
+ * Home's own sky lifted and cooled (see tokens.css). These six names are the
+ * choke point for every puzzle, so aliasing them here moves all twelve at once
+ * rather than editing 219 hard-coded hexes in puzzles.css.
+ *
+ * The values they replaced (#fbfcfe / #edf1f5 / #17243d) were already cool, but
+ * they were a DIFFERENT cool from every other surface in the app — near-white
+ * blue against the training games' warm cream. That mismatch is what reads as
+ * colours switching when you move between activities.
+ */
 .pz-studio-game {
-  --pz-ink: #17243d;
-  --pz-muted: #5b687d;
-  --pz-card: #fbfcfe;
-  --pz-card-soft: #edf1f5;
-  --pz-line: rgba(23, 36, 61, 0.23);
-  --pz-shadow: rgba(23, 36, 61, 0.9);
+  --pz-ink: var(--ink);
+  --pz-muted: var(--ink-dim);
+  --pz-card: var(--surface-raised);
+  --pz-card-soft: #cfd4de;
+  --pz-line: rgba(20, 26, 40, 0.24);
+  --pz-shadow: rgba(20, 26, 40, 0.9);
   position: absolute;
   inset: 0;
   z-index: 45;
@@ -688,12 +717,22 @@ html[data-home-theme='light'] .pz-studio-lang {
   box-shadow: 4px 4px 0 var(--pz-ink) !important;
 }
 
+/*
+ * An EMPTY cell is the lightest thing on the board.
+ *
+ * It used to run #fff → soft, which on Cool Silver made the empty squares
+ * brighter than the given ones and inverted the hierarchy: the givens are
+ * settled and should sit quiet, while the cells you are filling in are the
+ * live surface and should be the ones that read as open. Anchoring the top of
+ * the gradient to --pz-card (the raised token) instead of pure white puts the
+ * two back in the right order — empty above given, both below the sky.
+ */
 .pz-studio-game .ct-puzzle-cell,
 .pz-studio-game .ct-slide-tile,
 .pz-studio-game .ct-puzzle-numkey,
 .pz-studio-game .ct-tangram-piece {
   color: var(--pz-ink) !important;
-  background: linear-gradient(180deg, #fff 0%, var(--pz-card-soft) 100%) !important;
+  background: linear-gradient(180deg, #d6dae3 0%, var(--pz-card) 100%) !important;
   border-color: var(--pz-ink) !important;
   box-shadow: 2px 2px 0 color-mix(in srgb, var(--pz-ink) 78%, transparent) !important;
 }

@@ -1,4 +1,34 @@
+/*
+ * ══════════════════════════════════════════════════════════════════════════
+ * APP CHROME TOKENS — theme-aware as of 2026-08-07 (Phase 0)
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * These eight names style every landing, header, menu and card in the app.
+ * They used to be declared ONCE, unconditionally — which is why the dusk
+ * sunset appeared identically in both appearances and why "light mode" never
+ * actually looked light. Making them follow `html[data-home-theme]` is the
+ * single change that lets the whole app switch.
+ *
+ * THE TWO THEMES
+ *   light  BEIGE     warm ground, dark ink, Kawkab's blue as the accent.
+ *                    The new DEFAULT.
+ *   dark   OBSIDIAN  flat near-black, cream ink, Kawkab's blue lifted.
+ *
+ * ── The sunset is retired ──
+ * The seven-stop dusk (#262c3c → #ddaf80) is gone from both. It was rejected
+ * as reading like a consumer sunset app, and it was also the direct cause of a
+ * long-running defect: a gradient ground means text luminance depends on where
+ * on the page it lands, so captions over the warm band measured 1.8:1 and were
+ * effectively invisible. A flat ground gives every caption on every screen the
+ * same contrast by construction. The look and the bug retire together.
+ *
+ * `--universe-dusk` keeps its name — it is referenced in a dozen files — but
+ * now resolves to a flat colour rather than a gradient. Renaming it is a
+ * follow-up, not a blocker.
+ */
 :root {
+    /* Legacy stop names, kept so anything still referencing them resolves.
+       Nothing new should use these — they describe a sky that no longer exists. */
     --universe-zenith: #262c3c;
     --universe-high: #343544;
     --universe-mid: #47404c;
@@ -6,26 +36,41 @@
     --universe-ember: #8a6553;
     --universe-gold: #b8845d;
     --universe-horizon: #ddaf80;
-    --universe-ink: #fff4df;
-    --universe-muted: rgba(255, 239, 216, 0.72);
-    --universe-accent: #f0b66a;
-    --universe-glass: rgba(24, 20, 34, 0.62);
-    --universe-glass-strong: rgba(24, 20, 34, 0.78);
-    --universe-line: rgba(240, 182, 106, 0.32);
-    --universe-dusk: linear-gradient(
-        180deg,
-        var(--universe-zenith) 0%,
-        var(--universe-high) 20%,
-        var(--universe-mid) 38%,
-        var(--universe-violet) 55%,
-        var(--universe-ember) 72%,
-        var(--universe-gold) 86%,
-        var(--universe-horizon) 100%
-    );
+
+    /* ── LIGHT / BEIGE — the default ──
+       Values promoted from the Training hub trial, where they were tuned
+       against Kawkab and measured: body ink 9.7:1, secondary 5.0:1,
+       accent 4.8:1. Secondary and accent are near their floor; darkening the
+       ground further breaks the accent first. */
+    --universe-ink: #201d18;
+    --universe-muted: #524b3f;
+    --universe-accent: #1f4f85;
+    --universe-glass: #e2dbcc;
+    --universe-glass-strong: #eae4d8;
+    --universe-line: #a3957c;
+    --universe-dusk: #cfc4b0;
+}
+
+/* ── DARK / OBSIDIAN ──
+   Flat near-black rather than true #000: pure black smears on OLED during
+   scroll, and a hair of lift keeps panel edges readable. The accent is
+   Kawkab's own blue lifted for a dark ground, so the character and the UI
+   agree in both themes instead of the UI running amber against a blue
+   mascot. */
+html[data-home-theme='dark'] {
+    --universe-ink: #ededee;
+    --universe-muted: #8d8d92;
+    --universe-accent: #5bb8e8;
+    --universe-glass: #151517;
+    --universe-glass-strong: #1b1b1e;
+    --universe-line: #2b2b30;
+    --universe-dusk: #0a0a0b;
 }
 
 * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; }
-body { overflow: hidden; min-height: 100dvh; background-color: #05050f; }
+/* Follows the theme now — it used to be pinned to the old cosmos navy, which
+   showed through as a dark rim around every light screen. */
+body { overflow: hidden; min-height: 100dvh; background-color: var(--universe-dusk); }
 
 /* ── STATIC BACKGROUND POSTER (responsive) ── */
 /* Mobile default: 9:16 portrait image — WebP for speed, CSS handles fallback */
@@ -222,7 +267,21 @@ body:has(#screen-learn.active) #maze-photo-layer,
 body:has(#screen-other.active) #maze-bg-canvas,
 body:has(#screen-other.active) #maze-photo-layer,
 body:has(#screen-relax.active) #maze-bg-canvas,
-body:has(#screen-relax.active) #maze-photo-layer {
+body:has(#screen-relax.active) #maze-photo-layer,
+/* The Other tab's destinations. `.bg-poster` / `.bg-overlay` are React-gated by
+ * `universeLanding` in AppShell, but these two are only ever hidden here — so
+ * without these rows Profile and Shop kept the maze canvas and the (externally
+ * hotlinked) photo layer under an otherwise cosmic page. */
+body:has(#screen-profile.active) #maze-bg-canvas,
+body:has(#screen-profile.active) #maze-photo-layer,
+body:has(#screen-pointshop.active) #maze-bg-canvas,
+body:has(#screen-pointshop.active) #maze-photo-layer,
+body:has(#screen-shop.active) #maze-bg-canvas,
+body:has(#screen-shop.active) #maze-photo-layer,
+body:has(#screen-character.active) #maze-bg-canvas,
+body:has(#screen-character.active) #maze-photo-layer,
+body:has(#screen-workout.active) #maze-bg-canvas,
+body:has(#screen-workout.active) #maze-photo-layer {
     display: none !important;
 }
 /* ── HOME SCREEN ── */
@@ -621,24 +680,27 @@ body:has(#screen-relax.active) #maze-photo-layer {
     width: 100%;
 }
 html[data-home-theme='dark'] .rewards-screen { color: #f3ead9; }
+/*
+ * One set of colours, not a light pair and a dark pair.
+ *
+ * The Shop sits on the dusk in BOTH appearances now (see #screen-pointshop
+ * above), so the light-appearance branch was painting for a surface that no
+ * longer exists: #5a4018 on a warm horizon left "The shop is empty" almost
+ * unreadable, and the points pill was a white lozenge on a night sky. The
+ * --universe-* tokens are appearance-independent, so one rule covers both and
+ * the `[data-home-theme='dark']` overrides that used to follow are redundant.
+ */
 .rewards-screen .rewards-balance {
-    background: rgba(255, 252, 246, 0.78);
-    border: 1px solid rgba(170, 140, 80, 0.35);
-    color: #5f4824;
-    box-shadow: 0 4px 14px rgba(100, 80, 40, 0.12);
-}
-html[data-home-theme='dark'] .rewards-screen .rewards-balance {
-    background: rgba(18, 16, 28, 0.72);
-    border-color: rgba(212, 168, 80, 0.38);
-    color: #e8d4a8;
+    background: var(--universe-glass);
+    border: 1px solid var(--universe-line);
+    color: var(--universe-ink);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
-.rewards-screen .rewards-title { color: #5a4018; }
-html[data-home-theme='dark'] .rewards-screen .rewards-title { color: #fff2cf; }
-.rewards-screen .shop-empty-title { color: #5a4018; }
-.rewards-screen .shop-empty-sub { color: #8a7348; }
-html[data-home-theme='dark'] .rewards-screen .shop-empty-title { color: #fff2cf; }
-html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
+.rewards-screen .rewards-title { color: var(--universe-ink); }
+.rewards-screen .shop-empty-title { color: var(--universe-ink); }
+.rewards-screen .shop-empty-sub { color: var(--universe-muted); }
 .learn-screen .shop-empty-sub { max-width: 320px; }
 
 /* Learn — full-bleed universe stage (same shell as Other / Training) */
@@ -1354,6 +1416,15 @@ html[data-home-theme='dark'] .rewards-screen .shop-empty-sub { color: #b9ad99; }
     #screen-puzzles { max-width: none; padding: 0; }
     #screen-learn { max-width: none !important; padding: 0 !important; }
     #screen-relax { max-width: none; padding: 0; }
+    /* Full-bleed for the same reason as the rest: these paint a sky now, and an
+       800px column left the dusk as a stripe with the shell's pale grey either
+       side. Their contents centre themselves, so widening the screen widens the
+       sky, not the layout. */
+    #screen-profile,
+    #screen-pointshop,
+    #screen-shop,
+    #screen-character,
+    #screen-workout { max-width: none; padding: 0; }
     .comics-grid { max-width: 700px; }
     .featured-card .comic-card-cover { height: 280px; }
 }
@@ -1697,15 +1768,36 @@ html[dir='rtl'] .app-tab-lbl,
 [dir='rtl'] .app-tab-lbl { font-family: 'Cairo', sans-serif; letter-spacing: 0; }
 
 /* Light dawn variant when Appearance = light */
+/*
+ * The tab bar is on EVERY screen, so it was the loudest thing still speaking
+ * the old palette: a dark slab pinned across the bottom of a beige app. It was
+ * dark in "light" mode too — a leftover from when light meant the dusk sunset,
+ * where a dark bar was correct.
+ *
+ * Driven by the tokens now, so it follows the theme with everything else.
+ */
 html[data-home-theme='light'] .app-tabbar {
-    background: rgba(38, 36, 50, 0.82);
+    background: var(--universe-glass-strong);
     border-top-color: var(--universe-line);
-    box-shadow: 0 -8px 28px rgba(25, 18, 32, 0.28);
+    box-shadow: 0 -6px 22px rgba(32, 29, 24, 0.10);
 }
-html[data-home-theme='light'] .app-tab { color: rgba(255, 239, 216, 0.68); }
+html[data-home-theme='light'] .app-tab { color: var(--universe-muted); }
 html[data-home-theme='light'] .app-tab.is-active {
-    color: var(--universe-ink);
-    background: rgba(240, 182, 106, 0.2);
+    color: var(--universe-accent);
+    /* A tint of the accent rather than the old amber wash — on beige that wash
+       was invisible, so the active tab had no state at all. */
+    background: rgba(31, 79, 133, 0.12);
+}
+
+html[data-home-theme='dark'] .app-tabbar {
+    background: var(--universe-glass-strong);
+    border-top-color: var(--universe-line);
+    box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.55);
+}
+html[data-home-theme='dark'] .app-tab { color: var(--universe-muted); }
+html[data-home-theme='dark'] .app-tab.is-active {
+    color: var(--universe-accent);
+    background: rgba(91, 184, 232, 0.16);
 }
 
 /* Leave room above the tab bar for tabbed screens */
@@ -1955,6 +2047,38 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
  */
 #screen-relax {
     background: var(--universe-dusk);
+}
+
+/*
+ * The Other tab's destinations get the same sky.
+ *
+ * They are reached from a cosmic menu and their chrome is cosmic
+ * (`useThemedChrome(isAr, { universe: true })`), but none of them draws a stage
+ * of its own — so with the maze poster correctly removed they were left on the
+ * bare shell, which reads as a blank near-white page. This is the floor they
+ * stand on; the veil below stops AtmosphericBackground washing it out.
+ */
+#screen-profile,
+#screen-pointshop,
+#screen-shop,
+#screen-character,
+#screen-workout {
+    background: var(--universe-dusk);
+}
+
+/* Tuned for paper surfaces; over the dusk it is a white haze on the whole page.
+   The stars and blobs in that component are fine and stay. */
+#screen-profile .atm-bg-veil,
+#screen-profile .atm-bg-glow,
+#screen-pointshop .atm-bg-veil,
+#screen-pointshop .atm-bg-glow,
+#screen-shop .atm-bg-veil,
+#screen-shop .atm-bg-glow,
+#screen-character .atm-bg-veil,
+#screen-character .atm-bg-glow,
+#screen-workout .atm-bg-veil,
+#screen-workout .atm-bg-glow {
+    display: none;
 }
 
 /* ── Global in-app reminder banner ── */
@@ -2276,7 +2400,9 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
     overscroll-behavior-y: auto;
     scroll-snap-type: y proximity;
     scrollbar-width: none;
-    background: #000;
+    /* Follows the theme. Pinned #000 before, which framed the beige canvas in a
+       black border on the light appearance. */
+    background: var(--universe-dusk);
     -webkit-overflow-scrolling: touch;
 }
 .home-universe-scroll::-webkit-scrollbar { display: none; }
@@ -2289,7 +2415,7 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
     margin-bottom: -100dvh;
     z-index: 0;
     overflow: hidden;
-    background: #000;
+    background: var(--universe-dusk);
     opacity: calc(1 - var(--kawnera-progress));
     transform: scale(calc(1 - var(--kawnera-progress) * 0.08));
     transform-origin: 50% 55%;
@@ -2426,7 +2552,7 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
     z-index: 4;
     padding: 0 20px;
     text-align: center;
-    color: #e8dcc0;
+    color: var(--universe-ink);
     pointer-events: none;
     opacity: calc(1 - var(--kawnera-progress) * 1.8);
     transform: translateY(calc(var(--kawnera-progress) * -28px));
@@ -2457,7 +2583,7 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
     align-items: center;
     gap: 2px;
     pointer-events: none;
-    color: #e8dcc0;
+    color: var(--universe-ink);
     opacity: calc(0.42 - var(--kawnera-progress));
     font-family: 'Outfit', system-ui, sans-serif;
     font-size: 11px;
@@ -2893,4 +3019,25 @@ html[data-home-theme='light'] .kawkab-stage::before {
 .rh-assess-mascot .kawkab-stage::before {
     width: 72%;
     top: 45%;
+}
+
+/*
+ * UniverseStage's veil is a soft wash designed to sit over a dark sky. On the
+ * Beige theme it hazes the whole page — Wellbeing looked fogged rather than
+ * lit. The stage's stars and blobs stay; only the wash goes.
+ */
+html[data-home-theme='light'] #screen-relax .uv-veil,
+html[data-home-theme='light'] #screen-other .uv-veil,
+html[data-home-theme='light'] #screen-profile .uv-veil,
+html[data-home-theme='light'] #screen-pointshop .uv-veil {
+    display: none;
+}
+
+/*
+ * Home's title glow is a dark-sky device: cream type lit by an amber bloom.
+ * On the Beige theme the type is dark ink and the bloom becomes a smudge
+ * behind it, so both the glow and the black drop-shadow go.
+ */
+html[data-home-theme='light'] .home-universe-title {
+    text-shadow: none;
 }

@@ -68,14 +68,30 @@
  * to clear 3:1 against its darkest stop. Re-hue freely, but hold the
  * luminances or re-measure the whole table.
  */
+/*
+ * ── Re-hued to Beige, 2026-08-07 ──
+ * Was one blue at ~207°. The app's chrome is now warm beige, and a cool blue
+ * board beside it read as a second, arguing system — it is also what the user
+ * kept describing as "the light blue in the activities".
+ *
+ * Re-hued to ~42°, luminances HELD as the note above requires:
+ *   top 0.686 → 0.682 · mid 0.570 → 0.572 · low 0.464 → 0.467
+ * Within 0.005 at every stop, so the contrast table below is still valid and
+ * the pieces still clear 3:1 against the darkest stop. Nothing was re-measured
+ * because nothing needed to be.
+ *
+ * ⚠️ Mirrors --play-surface in tokens.css. Canvas and Three.js games cannot
+ * read CSS custom properties, so these two MUST move together — if they drift,
+ * DOM games and canvas games render different boards.
+ */
 export const GAME_SKY = {
-  top: '#ccdae6',
-  mid: '#b3cadd',
-  low: '#9cb9d2',
+  top: '#dfd7c7',
+  mid: '#d0c7b4',
+  low: '#bfb5a0',
   /** For a DOM background. */
-  gradient: 'linear-gradient(180deg, #ccdae6 0%, #b3cadd 58%, #9cb9d2 100%)',
+  gradient: 'linear-gradient(180deg, #dfd7c7 0%, #d0c7b4 58%, #bfb5a0 100%)',
   /** Single-colour fallback (canvas clear, Three.js clear colour). */
-  flat: '#b3cadd',
+  flat: '#d0c7b4',
 };
 
 /** Body text and the outline for light pieces. 8.27:1 on the worst sky stop. */

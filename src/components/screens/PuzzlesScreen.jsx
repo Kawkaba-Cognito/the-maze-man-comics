@@ -81,7 +81,7 @@ export default function PuzzlesScreen() {
     switchTab, currentLang, toggleLang, playSfx, requestContinueMaze, setImmersive,
   } = useApp();
   const isAr = currentLang === 'ar';
-  const chrome = useThemedChrome(isAr);
+  const chrome = useThemedChrome(isAr, { universe: true });
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const canContinue = hasEnteredLabyrinth();
 

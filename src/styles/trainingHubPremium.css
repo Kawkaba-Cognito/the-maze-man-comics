@@ -551,10 +551,14 @@
   transform: translateY(-1px);
 }
 
+/* Trimmed for air: on a phone this map renders at ~1:1, so a 92px pill with
+   15.5px type sat right up against Kawkab. 84/28/14.5 gives the four side
+   captions room to breathe without dropping below a comfortable tap target
+   (the whole planet group is the button, not the pill). */
 .rh-training-hub--phone .rh-domain-label {
-  min-width: 92px;
-  height: 31px;
-  font-size: 15.5px;
+  min-width: 84px;
+  height: 28px;
+  font-size: 14.5px;
 }
 
 .rh-training-hub--desktop .rh-domain-label {

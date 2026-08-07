@@ -30,11 +30,28 @@ export default function AppShell() {
   const t = LANG[currentLang];
   const isAr = currentLang === 'ar';
   const isTrainingHome = activeTab === 'comics' || activeTab === 'home';
-  // Universe-stage landings paint their own cosmos — skip the global door photo.
+  /*
+   * Universe-stage screens paint their own cosmos — skip the global door photo.
+   *
+   * This list is the whole reason the Other tab's sub-pages looked like a
+   * different app. `other` was here, but the screens it hands off to were not:
+   * tapping Profile or Shop switches tab, leaves this list, and the shell
+   * unhides `.bg-poster` + `.bg-overlay` + `#maze-photo-layer` behind them — a
+   * cream photo backdrop under pages whose cards are tuned for a dark sky. It
+   * was never a per-page styling problem; it was this condition.
+   *
+   * `workout` and `character` are included for the same reason: both are
+   * reached from Other/Training and both draw their own stage.
+   */
   const universeLanding = isTrainingHome
     || activeTab === 'habits'
     || activeTab === 'learn'
     || activeTab === 'other'
+    || activeTab === 'profile'
+    || activeTab === 'shop'
+    || activeTab === 'pointshop'
+    || activeTab === 'character'
+    || activeTab === 'workout'
     || isRelaxTab(activeTab);
   // Hide the tab bar on any deep view (game / practice / session) — it shows
   // only on the tab landing pages.

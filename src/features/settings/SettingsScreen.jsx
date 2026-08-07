@@ -123,7 +123,9 @@ export default function SettingsScreen({ onClose }) {
               onClose();
             }}
           >
-            <IconBack size={18} c="#1d2026" />
+            {/* Was hard-coded #1d2026 — near-black on what is now a dark glass
+                button, i.e. an empty circle. The token follows the palette. */}
+            <IconBack size={18} c="var(--stg-ink)" />
           </button>
           <span className="stg-topbar-title">{isAr ? 'الإعدادات' : 'Settings'}</span>
         </div>

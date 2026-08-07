@@ -4,29 +4,39 @@ import { useApp } from '../context/AppContext';
  * Shared top-bar chrome for tab landings — universe / Home language.
  * Dark cosmos is the default brand look; light is a softer dawn variant.
  */
+/*
+ * ⚠️ `cosmic` no longer means "paint it cream".
+ *
+ * This hook used to hardcode #fff4df ink, amber accents and a near-black glass
+ * whenever `universe: true` was passed — which is every landing in the app. So
+ * when the app gained a real light theme, every landing title stayed cream and
+ * became invisible on the beige ground: "WELLBEING" and "OTHER" were there,
+ * just unreadable.
+ *
+ * All eight surfaces now read the --universe-* tokens, which follow
+ * html[data-home-theme]. `cosmic` survives only to decide SHAPE — whether a
+ * surface gets glass and blur at all — not colour.
+ */
 export function useThemedChrome(isAr = false, { universe = false } = {}) {
   const { appTheme } = useApp();
   const dark = appTheme !== 'light';
-  const cosmic = dark || universe;
+  /* Every surface below now reads tokens, so nothing branches on this any more.
+     Kept as a no-op read so the `universe` option stays part of the signature
+     for the eleven call sites that pass it — removing it is a separate tidy. */
+  void (dark || universe);
 
   const chromeBtn = {
     width: 34,
     height: 34,
     borderRadius: 999,
-    border: cosmic
-      ? '1px solid rgba(232, 172, 78, 0.38)'
-      : '1px solid rgba(170, 140, 80, 0.35)',
-    background: cosmic
-      ? 'rgba(14, 12, 24, 0.78)'
-      : 'rgba(255, 252, 246, 0.78)',
+    border: '1px solid var(--universe-line)',
+    background: 'var(--universe-glass)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: cosmic ? '#f3dfbd' : 'var(--color-stage-ink)',
+    color: 'var(--universe-ink)',
     cursor: 'pointer',
-    boxShadow: cosmic
-      ? '0 4px 16px rgba(0, 0, 0, 0.4)'
-      : '0 4px 14px rgba(100, 80, 40, 0.12)',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.14)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
   };
@@ -39,13 +49,13 @@ export function useThemedChrome(isAr = false, { universe = false } = {}) {
     fontSize: isAr ? 24 : 23,
     fontWeight: 700,
     letterSpacing: isAr ? 0 : 1.6,
-    color: cosmic ? '#fff4df' : 'var(--color-stage-ink)',
+    color: 'var(--universe-ink)',
     textTransform: isAr ? 'none' : 'uppercase',
     lineHeight: 1.18,
     maxWidth: 280,
-    textShadow: cosmic
-      ? '0 1px 2px rgba(0,0,0,0.45), 0 0 22px rgba(232,172,78,0.42)'
-      : 'none',
+    /* No glow. A glow is emitted light — it only reads on a dark ground, and on
+       the beige theme it painted a dirty halo behind every landing title. */
+    textShadow: 'none',
   };
 
   const langBtn = {
@@ -56,12 +66,12 @@ export function useThemedChrome(isAr = false, { universe = false } = {}) {
     fontWeight: 700,
     fontSize: 13,
     letterSpacing: isAr ? 0 : 0.02,
-    color: cosmic ? '#f0b66a' : 'var(--color-stage-gold)',
+    color: 'var(--universe-accent)',
   };
 
   const shell = {
     background: 'transparent',
-    color: cosmic ? '#fff4df' : 'var(--color-stage-ink)',
+    color: 'var(--universe-ink)',
   };
 
   /** Shared glass card for Learn / Other / landing menus — matches Home cosmos. */
@@ -74,23 +84,17 @@ export function useThemedChrome(isAr = false, { universe = false } = {}) {
     width: '100%',
     textAlign: isAr ? 'right' : 'left',
     cursor: 'pointer',
-    border: cosmic
-      ? '1px solid rgba(232, 172, 78, 0.34)'
-      : '1px solid rgba(170, 140, 80, 0.28)',
-    background: cosmic
-      ? 'rgba(14, 12, 24, 0.72)'
-      : 'rgba(255, 252, 246, 0.72)',
-    boxShadow: cosmic
-      ? '0 4px 18px rgba(0, 0, 0, 0.35)'
-      : '0 6px 18px rgba(100, 80, 40, 0.1)',
+    border: '1px solid var(--universe-line)',
+    background: 'var(--universe-glass)',
+    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.14)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
-    color: cosmic ? '#f3dfbd' : 'var(--color-stage-ink)',
+    color: 'var(--universe-ink)',
     fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
   };
 
-  const muted = cosmic ? 'rgba(255, 239, 216, 0.72)' : 'var(--color-stage-muted)';
-  const accent = cosmic ? '#f0b66a' : 'var(--color-amber-edge)';
+  const muted = 'var(--universe-muted)';
+  const accent = 'var(--universe-accent)';
 
   return { dark, chromeBtn, title, langBtn, shell, glassCard, muted, accent, text: shell.color };
 }

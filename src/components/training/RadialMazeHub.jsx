@@ -10,6 +10,10 @@ import { domainPlanetUrl } from '../../lib/planetIcons';
 /** Kawkab at the hub centre. Imported directly, not lazily: it is a 108 KB
  *  image now, so there is no 3D stack left worth deferring. */
 import TrainingHubMascot from './TrainingHubMascot';
+/* TRIAL: the Bone light ground for this hub. Imported last on purpose — it is a
+ * pure overlay over trainingHubPremium/Real3D, so removing this one line
+ * restores the dusk hub exactly. See the file header for the trade-offs. */
+import '../../styles/trainingHubBone.css';
 const TrainingPlanetField3D = lazy(() => import('./TrainingPlanetField3D'));
 
 /** OS "reduce motion" preference — decorative loops honour this. */
@@ -375,17 +379,17 @@ const HUB_LAYOUTS = {
     /*
      * rx is bounded by the CAPTION, not by the planet body. Nothing can move
      * the four side planets out of the mascot's vertical band on a box this
-     * narrow — the character is 138 tall and centred in it — so horizontal
-     * clearance is the whole game. The side slots sit at 0.866·rx (they are 30°
-     * off the horizontal, not on it), so rx 125 puts them at x 72 and their
-     * ~96px caption at 24–120 — exactly clear of the mascot box starting at
-     * 120. Measured, after rx 100 and 112 both left the pills overlapping it.
+     * narrow — the character is centred in it — so horizontal clearance is the
+     * whole game. The side slots sit at 0.866·rx (they are 30° off the
+     * horizontal, not on it), so rx 134 puts them at x 64, and an 84px caption
+     * runs 22–106 against a 104-wide mascot box starting at 128: 22px of air
+     * where there used to be 12, which is the difference between "spaced" and
+     * "strangled" at the ~1:1 scale a phone renders this at.
      *
-     * ry 198, not the 206 also tried: the south planet's caption runs to y+73,
-     * and at 206 that landed at 641 in a 660 box with the Puzzle Studio button
-     * immediately below it.
+     * ry 206 is the most the box allows: the south planet's caption runs to
+     * y+73, so 566+73 = 639 inside 660, clear of the Puzzle Studio button.
      */
-    slots: ellipseRing(180, 360, 125, 198, -90),
+    slots: ellipseRing(180, 360, 134, 206, -90),
     map: PORTRAIT_SLOTS,
   },
   /*
@@ -444,7 +448,17 @@ function shrinesFor(layout) {
  * Kawkab, so shrinking the character without shrinking them leaves a halo and a
  * glow sized for a figure that is no longer there.
  */
-const MASCOT_SIZE = 120;
+/*
+ * Kawkab is SMALLER on a phone than on a desktop, which it was not before.
+ *
+ * The portrait map is scaled to roughly 1:1 on a real handset (a 390x844
+ * screen fits the 660-tall box at ~0.96), so every authored unit is a real
+ * pixel there — while the same numbers on a laptop are shrunk to ~0.66 and read
+ * as roomy. One size therefore cannot serve both: at 120 the character ate the
+ * horizontal room the four side captions need, leaving ~12px between a caption
+ * and Kawkab's arm. Reported from a device as the planets feeling "strangled".
+ */
+const MASCOT_SIZE = { portrait: 104, landscape: 124 };
 const AVATAR_R = 35;
 const NEXUS_GLOW_R = 60;
 const NEXUS_HALO_RX = 33;
@@ -950,7 +964,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             planets={shrines}
             hovered={hovered}
             reducedMotion={reducedMotion}
-            radius={wide ? 38 : 31}
+            radius={wide ? 38 : 28}
           />
         </Suspense>
 
@@ -983,7 +997,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           }}
         >
           <TrainingHubMascot
-            size={MASCOT_SIZE}
+            size={wide ? MASCOT_SIZE.landscape : MASCOT_SIZE.portrait}
             isAr={isAr}
             label={isAr ? 'ابدأ التقييم' : 'Start assessment'}
             onActivate={onOpenAssessment}

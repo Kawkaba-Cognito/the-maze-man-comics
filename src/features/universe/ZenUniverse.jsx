@@ -39,16 +39,45 @@ import { releaseGlContext } from '../training/shared/c3dViewport';
  * Still a dusk rather than a bright sky for the original reason: every particle
  * layer here is additive, and additive light on a bright field adds to nothing.
  */
+/*
+ * ── 2026-08-07: the light sky is BEIGE, not a dusk ──
+ *
+ * This block used to hold the seven-stop sunset. That gradient is retired app
+ * wide (see --universe-* in global.css): it read as a consumer sunset app, and
+ * a gradient ground meant text luminance depended on where on the page it
+ * landed. The light appearance is now one flat beige.
+ *
+ * WHAT THAT MEANS FOR THIS SCENE, WHICH IS THE HARD PART
+ * Every layer here is ADDITIVE — stars, dust, halo, wisps. Additive light on a
+ * bright field adds to nothing, so on beige they do not dim, they simply stop
+ * existing. There is no value of "star colour" that makes an additive star
+ * visible on #cfc4b0.
+ *
+ * So the light scene keeps only what can survive: the planet itself, which
+ * already had a non-additive path (the `uLight` branch flips the shell to
+ * normal blending and draws a solid body behind it). On beige it reads as an
+ * ink planet on paper — an engraving rather than a night sky. The atmospheric
+ * layers are pushed to near-zero rather than left to smear grey over the page.
+ *
+ * The dark appearance is untouched and still gets the full glowing scene.
+ */
 const SKY = {
-  css: `linear-gradient(180deg,
-    #262c3c 0%, #343544 20%, #47404c 38%, #63504f 55%,
-    #8a6553 72%, #b8845d 86%, #ddaf80 100%)`,
-  bodyTop: [0.048, 0.052, 0.078],
-  bodyBot: [0.108, 0.072, 0.066],
-  rim: [1.0, 0.60, 0.30],
-  halo: [1.0, 0.70, 0.42],
-  star: [0.96, 0.94, 0.88],
-  bgDim: 0.5,
+  /* Follows the theme token so the canvas and the DOM behind it can never
+     disagree — they were separately hard-coded before. */
+  css: 'var(--universe-dusk)',
+  /* The body, graded from the beige's own shadow into a warmer base — the same
+     airlight logic as before, just sampled from paper instead of from a dusk. */
+  bodyTop: [0.128, 0.120, 0.104],
+  bodyBot: [0.196, 0.170, 0.134],
+  /* A warm limb, much weaker: on a light ground a strong rim reads as a halo
+     artefact rather than as light grazing a body. */
+  rim: [0.62, 0.44, 0.24],
+  halo: [0.58, 0.46, 0.32],
+  /* Stars cannot win on beige (additive). Kept near the ground colour so the
+     few that do register read as faint texture, not as dirt. */
+  star: [0.72, 0.68, 0.60],
+  /* Was 0.5. Near-total suppression of the background layers — see above. */
+  bgDim: 0.92,
 };
 
 const CENTER_RADIUS = 1.35;
@@ -1287,7 +1316,9 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         position: 'absolute',
         inset: 0,
         overflow: 'hidden',
-        background: lightSky ? SKY.css : '#000',
+        /* Both branches are the theme token now — the canvas and the DOM behind
+           it were separately hard-coded and could disagree. */
+        background: lightSky ? SKY.css : 'var(--universe-dusk)',
       }}
     />
   );
