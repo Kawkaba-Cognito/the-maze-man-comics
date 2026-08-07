@@ -1,826 +1,345 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import chapterContent from './chapter-content.json';
-import { KAWNERA_BOOKS as B } from './books';
+import React, { useEffect, useState } from 'react';
+import { KAWNERA_BOOKS as B, bookTitle, chapterTitle, toArabicDigits } from './books';
 import { assetUrl } from '../../lib/assetUrl';
 import './kawnera.css';
-import Kawkab3D from './Kawkab3D';
-import KawkabLab from './KawkabLab';
-import { authoredChapter, authoredFor } from './authored';
-import { isAuthored } from './authored/schema';
-import PredictGate from './PredictGate';
-import ChapterQuest from './ChapterQuest';
-const DEEP = chapterContent;
-const clean = (s) =>
-  s
-    .replace(/\b([A-Z])\s+([a-z]{2,})\b/g, '$1$2')
-    .replace(/([A-Za-z])-\s+([A-Za-z])/g, '$1$2')
-    .replace(/\s+/g, ' ')
-    .trim();
+import './kawneraShelf.css';
+
+/*
+ * Kawnera — the library.
+ *
+ * ── What changed on 2026-08-07 ──
+ *
+ * This was a nine-textbook reader: real titles and authors, a 600 KB
+ * `chapter-content.json` of text extracted from the source PDFs, and one book
+ * rewritten by hand under `authored/`. None of that material was ours to
+ * publish, so it is all gone. What survives is what we made: nine cover
+ * paintings, Dr. Kawkab, and the shape of the thing.
+ *
+ * So the library is now a SHELF WITHOUT BOOKS, and it says so rather than
+ * pretending otherwise. Nine numbered volumes, each a world you can look at and
+ * open, each chapter an honest "still being written". When real lessons are
+ * authored they slot into the same three screens.
+ *
+ * ── What is parked, not deleted ──
+ *
+ * ChapterQuest, ChapterGames, ChapterFigures, PredictGate and KawkabLab are the
+ * ENGINE — predict-gate, scored recall, evidence games. They are ours, they
+ * work, and they are the expensive part to rebuild, so they stay on disk
+ * unreferenced rather than being deleted with the content they happened to be
+ * reading. `authored/index.js` is the seam they come back through.
+ */
+
+const pad = (n) => String(n).padStart(2, '0');
+/** Ordinals — a volume or chapter NUMBER, zero-padded so they align in a list. */
+const ord = (n, isAr) => (isAr ? toArabicDigits(n) : pad(n));
+/** Counts — "7 chapters", never "07 chapters". */
+const count = (n, isAr) => (isAr ? toArabicDigits(n) : String(n));
+
+/*
+ * A hand-set scatter, so nine worlds read as a constellation rather than a
+ * product grid — the same language Home and Wellbeing use. Each value is a
+ * fraction of one cell's height, applied as a transform, which means the layout
+ * itself stays an ordinary responsive grid: it reflows from three columns to
+ * two to one without any of these numbers needing to change.
+ */
+const DRIFT = [-0.16, 0.1, -0.06, 0.14, -0.18, 0.04, -0.02, 0.16, -0.1];
+
+const STR = {
+  en: {
+    brandSub: 'PSYCHOLOGY & COGNITION',
+    eyebrow: 'KAWNERA · YOUR LIBRARY',
+    volumes: 'VOLUMES',
+    title: 'Your Library',
+    lede: 'Nine worlds are mapped and waiting. Their lessons are being written — open one to see how far it has come.',
+    chapters: 'chapters',
+    complete: 'complete',
+    open: 'Open',
+    back: 'Library',
+    volume: 'VOLUME',
+    chapter: 'CHAPTER',
+    contents: 'Contents',
+    progress: 'Progress',
+    soonKicker: 'BEING WRITTEN',
+    soonTitle: 'This chapter has no lesson yet',
+    soonCopy:
+      'The volume is mapped, but its writing has not started. When it does, this is where the chapter opens — a question to predict, the argument to rebuild, and a recall check at the end.',
+    soonBack: 'Back to contents',
+    footer: 'Explore the universe within.',
+    mapped: 'chapters mapped',
+    guide: 'DR. KAWKAB',
+    guideTap: 'DR. KAWKAB / TAP ME',
+    guideMentor: 'DR. KAWKAB / MENTOR',
+    guideFoot: 'YOUR COSMIC STUDY COMPANION',
+  },
+  ar: {
+    brandSub: 'علم النفس والإدراك',
+    eyebrow: 'كاونيرا · مكتبتك',
+    volumes: 'مجلدات',
+    title: 'مكتبتك',
+    lede: 'تسعة عوالم مرسومة وبانتظارك. دروسها قيد الكتابة — افتح واحدًا لترى إلى أين وصل.',
+    chapters: 'فصول',
+    complete: 'مكتمل',
+    open: 'افتح',
+    back: 'المكتبة',
+    volume: 'المجلد',
+    chapter: 'الفصل',
+    contents: 'المحتويات',
+    progress: 'التقدّم',
+    soonKicker: 'قيد الكتابة',
+    soonTitle: 'لا يوجد درس لهذا الفصل بعد',
+    soonCopy:
+      'المجلد مرسوم، لكن كتابته لم تبدأ. حين تبدأ، سيُفتح الفصل هنا — سؤال تتوقّعه، وحجة تعيد بناءها، واختبار استرجاع في النهاية.',
+    soonBack: 'العودة إلى المحتويات',
+    footer: 'استكشف الكون في داخلك.',
+    mapped: 'فصلًا منظّمًا',
+    guide: 'د. كوكب',
+    guideTap: 'د. كوكب / اضغط',
+    guideMentor: 'د. كوكب / المرشد',
+    guideFoot: 'رفيقك الكوني في الدراسة',
+  },
+};
+
+/** The cover painting, cropped into a world. Shared by the shelf and the volume page. */
+function VolumeOrb({ book, size }) {
+  return (
+    <span className={`kw-orb${size === 'lg' ? ' kw-orb--lg' : ''}`} aria-hidden="true">
+      {/*
+        Deliberately NOT `loading="lazy"`. The whole shelf is one screen of nine
+        orbs, so lazy-loading defers the very images the page exists to show —
+        every world painted as a black circle and popped in afterwards. At ~60KB
+        each (they were 300KB until they were resized to the size they actually
+        render at) the entire shelf is lighter than one of the old covers.
+      */}
+      <img src={book.image} alt="" decoding="async" draggable={false} />
+      <i className="kw-orb-shade" />
+      <i className="kw-orb-rim" />
+    </span>
+  );
+}
+
 export default function KawneraExperience({
-  isAr = false, isActive = false, onNavigateTop, jumpTo, onChapterDone,
+  isAr = false, isActive = false, onNavigateTop, jumpTo,
 }) {
-  const [book, setBook] = useState(null),
-    [ci, setCi] = useState(null),
-    [done, setDone] = useState([]),
-    [tab, setTab] = useState('library'),
-    [query, setQuery] = useState(''),
-    [kawkabOpen, setKawkabOpen] = useState(false),
-    [labOpen, setLabOpen] = useState(false),
-    // Guided run by default; this opts out to the plain scrollable chapter.
-    [readStraight, setReadStraight] = useState(false);
-  const t = isAr
-    ? {
-        library: 'المكتبة',
-        connected: 'أفكار مترابطة',
-        chaptersComplete: 'فصلًا مكتملًا',
-        heroEye: 'كاونيرا · مكتبتك المعرفية · ٩ كتب',
-        choose: 'اختر كتابًا.',
-        build: 'وابنِ النموذج.',
-        heroCopy:
-          'لكل كتاب مسار تعلّم كامل. افتح الغلاف، وانتقل فصلًا بعد فصل، ودع الاسترجاع النشط يثبّت المعرفة.',
-        search: 'ابحث في مكتبتك',
-        collection: 'المجموعة',
-        titles: 'عناوين',
-        chapters: 'فصول',
-        pages: 'صفحة',
-        complete: 'مكتمل',
-        enter: 'ادخل',
-        allBooks: 'كل الكتب',
-        course: 'فصلًا في المسار',
-        progress: 'تقدّم المسار',
-        map: 'خريطة الفصول الكاملة',
-        select: 'اختر فصلًا للبدء',
-        chapter: 'الفصل',
-        contents: 'المحتويات',
-        previous: 'السابق',
-        next: 'التالي',
-        grounded: 'درس مبني على الكتاب',
-        groundedCopy: 'بُني هذا الدرس من المادة الفعلية في ملف الكتاب.',
-        mission: 'مهمة د. كوكب التفاعلية',
-        missionTitle: 'حوّل هذا الفصل إلى معرفة يمكنك استخدامها.',
-        missionCopy:
-          'اختبر نفسك، واسترجع المفاهيم ببطاقات الذاكرة، أو اشرح الحجة في مهمة مدتها ٦٠ ثانية.',
-        openLab: 'افتح مختبر التعلّم',
-        scope: 'نطاق الفصل',
-        scopeTitle: 'ما الذي يحاول هذا الفصل تفسيره؟',
-        claims: 'الأفكار المركزية',
-        claimsTitle: 'الأفكار التي تحتاج إلى تذكّرها',
-        evidence: 'الأدلة والأمثلة',
-        evidenceTitle: 'كيف يدعم الفصل حجته؟',
-        recall: 'استرجاع نشط · أغلق الملاحظات أولًا',
-        recallTitle: 'هل تستطيع إعادة بناء الفصل؟',
-        markComplete: 'ضع علامة مكتمل',
-        chapterComplete: 'الفصل مكتمل',
-        footer: 'استكشف الكون في داخلك.',
-        mapped: 'فصلًا منظّمًا',
-      }
-    : {
-        library: 'Library',
-        connected: 'Connected Ideas',
-        chaptersComplete: 'chapters complete',
-        heroEye: 'KAWNERA · YOUR COGNITIVE LIBRARY · 9 BOOKS',
-        choose: 'Choose a book.',
-        build: 'Build the model.',
-        heroCopy:
-          'Every book has its own complete learning path. Open a cover, move chapter by chapter, and let active recall do the remembering.',
-        search: 'Search your library',
-        collection: 'The collection',
-        titles: 'titles',
-        chapters: 'chapters',
-        pages: 'pages',
-        complete: 'complete',
-        enter: 'Enter',
-        allBooks: 'All books',
-        course: 'chapter course',
-        progress: 'Course progress',
-        map: 'Complete chapter map',
-        select: 'Select a chapter to begin',
-        chapter: 'Chapter',
-        contents: 'contents',
-        previous: 'Previous',
-        next: 'Next',
-        grounded: 'Book-grounded lesson',
-        groundedCopy: 'Built from the actual material in the source PDF.',
-        mission: 'Dr. Kawkab interactive mission',
-        missionTitle: 'Turn this chapter into something you can use.',
-        missionCopy:
-          'Play a scored quiz, retrieve key concepts with memory cards, or explain the argument against a 60-second mission clock.',
-        openLab: 'Open learning lab',
-        scope: 'Chapter scope',
-        scopeTitle: 'What this chapter is trying to explain',
-        claims: 'Central claims',
-        claimsTitle: 'The ideas you need to retain',
-        evidence: 'Evidence & examples',
-        evidenceTitle: 'How the chapter supports its case',
-        recall: 'Active recall · close the notes first',
-        recallTitle: 'Can you reconstruct the chapter?',
-        markComplete: 'Mark chapter complete',
-        chapterComplete: 'Chapter complete',
-        footer: 'Explore the universe within.',
-        mapped: 'mapped chapters',
-      };
+  const [book, setBook] = useState(null);
+  const [ci, setCi] = useState(null);
+  const [done, setDone] = useState([]);
+  const [kawkabOpen, setKawkabOpen] = useState(false);
+  const t = isAr ? STR.ar : STR.en;
+
   useEffect(() => {
     const id = requestAnimationFrame(() => {
-      const x = localStorage.getItem('atlas-book-progress');
-      if (x) setDone(JSON.parse(x));
+      try {
+        const x = localStorage.getItem('atlas-book-progress');
+        if (x) setDone(JSON.parse(x));
+      } catch { /* corrupt or unavailable storage is not worth a crash */ }
     });
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // A body tapped in the sky opens its chapter directly. `jumpTo.at` is a
-  // timestamp so tapping the SAME chapter twice still re-opens it.
+  // A body tapped in Home's sky parks its chapter here. It still lands on the
+  // right volume; with no lesson written it opens the placeholder instead of a
+  // chapter, which is the honest outcome rather than a dead end.
   useEffect(() => {
     if (!jumpTo) return;
     const target = B.find((x) => x.id === jumpTo.bookId);
     if (!target) return;
     setBook(target);
     setCi(jumpTo.chapterIndex);
-    setReadStraight(false);
-    setLabOpen(false);
   }, [jumpTo]);
-  const key = book && ci !== null ? `${book.id}-${ci}` : '';
-  // True while ChapterQuest owns the screen — it renders its own Dr. Kawkab.
-  const questRunning = !!book && ci !== null && !readStraight
-    && isAuthored(authoredChapter(book.id, ci));
-  const save = () => {
-    const n = done.includes(key) ? done.filter((x) => x !== key) : [...done, key];
-    setDone(n);
-    localStorage.setItem('atlas-book-progress', JSON.stringify(n));
-  };
-  const visible = useMemo(
-    () => B.filter((b) => (b.title + b.author).toLowerCase().includes(query.toLowerCase())),
-    [query],
-  );
-  function showMentor() {
-    setKawkabOpen(!window.matchMedia('(max-width:560px)').matches);
-  }
+
+  const doneIn = (b) => b.chapters.filter((_, j) => done.includes(`${b.id}-${j}`)).length;
+
   function openBook(b) {
     setBook(b);
     setCi(null);
-    setLabOpen(false);
-    showMentor();
+    setKawkabOpen(!window.matchMedia('(max-width:560px)').matches);
     onNavigateTop?.('smooth');
   }
   function home() {
     setBook(null);
     setCi(null);
-    setTab('library');
     setKawkabOpen(false);
-    setLabOpen(false);
+    onNavigateTop?.('smooth');
   }
-  const openLab = () => {
-    setLabOpen(true);
-    setKawkabOpen(false);
-  };
-  const kawkabMessage = isAr
-    ? book && ci !== null
-      ? `الفصل ${ci + 1}: ${book.chapters[ci]}. ابدأ بالسؤال المركزي، ثم أعد بناء الحجة من الأدلة قبل اختبار تذكّرك.`
-      : book
-        ? `مرحبًا بك في ${book.title}. أنا مرشدك في هذا الكتاب. اتبع الفصول بالترتيب أو اختر السؤال الذي تريد فهمه أكثر.`
-        : 'اختر كتابًا وابنِ نموذجه. سأرافقك في الطريق.'
-    : book && ci !== null
-      ? `Chapter ${ci + 1}: ${book.chapters[ci]}. Begin with the central question, then rebuild the argument from the evidence before checking your recall.`
-      : book
-        ? `Welcome to ${book.title}. I am your mentor for this book. Follow the chapters in order, or choose the question you most want to understand.`
-        : 'Pick one book and build its model. I will keep you company along the way.';
+
+  const guideMessage = book && ci !== null
+    ? (isAr
+      ? `${t.volume} ${ord(book.no, true)} · ${t.chapter} ${ord(ci + 1, true)}. لم يُكتب هذا الدرس بعد — سأكون هنا حين يُكتب.`
+      : `Volume ${book.no}, chapter ${pad(ci + 1)} has not been written yet. I will be here when it is.`)
+    : book
+      ? (isAr
+        ? `${bookTitle(book, true)}: ${count(book.chapterCount, true)} فصلًا مرسومًا وبلا محتوى بعد.`
+        : `${bookTitle(book, false)} is mapped to ${book.chapterCount} chapters, none written yet.`)
+      : (isAr
+        ? 'تسعة عوالم بانتظار دروسها. تجوّل بينها الآن.'
+        : 'Nine worlds are waiting for their lessons. Wander them for now.');
+
   return (
-    <main
-      className={`kawnera-app${!book && tab === 'library' ? ' kawnera-app--universe' : ''}`}
-      dir={isAr ? 'rtl' : 'ltr'}
-    >
-      <header>
-        <button className="brand" onClick={home} aria-label="Kawnera home">
-          <span className="brandMark" aria-hidden="true">
+    <main className="kawnera-app kawnera-app--universe kw" dir={isAr ? 'rtl' : 'ltr'}>
+      <header className="kw-bar">
+        <button className="kw-brand" onClick={home} aria-label="Kawnera home">
+          <span className="kw-brand-mark" aria-hidden="true">
             <img src={assetUrl('Assets/kawnera/logo.png')} alt="" />
           </span>
-          <span className="brandName">
-            KAWNERA<small>PSYCHOLOGY &amp; COGNITION</small>
+          <span className="kw-brand-name">
+            KAWNERA<small>{t.brandSub}</small>
           </span>
         </button>
-        <nav>
-          <button
-            className={tab === 'library' ? 'on' : ''}
-            onClick={() => {
-              setTab('library');
-              home();
-            }}
-          >
-            {t.library}
-          </button>
-          <button
-            className={tab === 'connected' ? 'on' : ''}
-            onClick={() => {
-              setTab('connected');
-              setBook(null);
-              setKawkabOpen(false);
-              setLabOpen(false);
-            }}
-          >
-            {t.connected}
-          </button>
-        </nav>
-        <div className="count">
-          {done.length} {t.chaptersComplete}
+        <div className="kw-bar-count">
+          {count(done.length, isAr)} {t.complete}
         </div>
       </header>
-      {!book && tab === 'library' && (
-        <>
-          <section className="shelfHero">
-            <small>{t.heroEye}</small>
-            <h1>
-              {t.choose}
-              <br />
-              <i>{t.build}</i>
-            </h1>
-            <p>{t.heroCopy}</p>
-            <label>
-              ⌕{' '}
-              <input
-                placeholder={t.search}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </label>
-          </section>
-          <section className="shelf">
-            <div className="shelfHead">
-              <span>{t.collection}</span>
-              <b>
-                {visible.length} {t.titles} · {B.reduce((n, b) => n + b.chapters.length, 0)}{' '}
-                {t.chapters}
-              </b>
-            </div>
-            <div className="bookGrid">
-              {visible.map((b, i) => {
-                const d = b.chapters.filter((_, j) => done.includes(`${b.id}-${j}`)).length;
-                return (
-                  <button key={b.id} className="bookCard" onClick={() => openBook(b)}>
-                    <div className="cover" style={{ background: b.color }}>
-                      <img src={b.image} alt="" loading="lazy" />
-                      <div className="coverInk">
-                        <small>KAWNERA</small>
-                        <strong>{b.code}</strong>
-                        <span>0{i + 1}</span>
-                      </div>
-                    </div>
-                    <section>
-                      <small>
-                        {b.pages} {t.pages} · {b.chapters.length} {t.chapters}
-                      </small>
-                      <h2>{b.title}</h2>
-                      <p>{b.author}</p>
-                      <div className="bar">
-                        <i style={{ width: `${(d / b.chapters.length) * 100}%` }} />
-                      </div>
-                      <b>
-                        {d}/{b.chapters.length} {t.complete} <em>{t.enter} →</em>
-                      </b>
-                    </section>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        </>
-      )}
-      {!book && tab === 'connected' && (
-        <section className="connected">
-          <small>CROSS-BOOK SYNTHESIS</small>
-          <h1>Connected Ideas</h1>
-          <p>
-            The original thematic route remains here: use it after individual books to compare how
-            the authors treat reasoning, social cognition, mindreading, emotion, assessment, and
-            cognitive change.
-          </p>
-          <div>
-            {[
-              'Reason as a social tool',
-              'Automatic and deliberate thought',
-              'How we understand other minds',
-              'Memory and the self',
-              'Emotion as appraisal',
-              'From cognitive skill to daily function',
-            ].map((x, i) => (
-              <article key={x}>
-                <span>0{i + 1}</span>
-                <h2>{x}</h2>
-                <p>
-                  Trace this idea across the library and look for agreements, tensions, and
-                  different levels of explanation.
-                </p>
-              </article>
-            ))}
+
+      {/* ── The shelf: nine worlds ── */}
+      {!book && (
+        <section className="kw-sky">
+          <div className="kw-sky-head">
+            <small>
+              {t.eyebrow} · {count(B.length, isAr)} {t.volumes}
+            </small>
+            <h1>{t.title}</h1>
+            <p>{t.lede}</p>
+          </div>
+
+          <div className="kw-constellation">
+            {B.map((b, i) => {
+              const d = doneIn(b);
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  className="kw-world"
+                  style={{ '--world': b.color, '--drift': DRIFT[i % DRIFT.length] }}
+                  onClick={() => openBook(b)}
+                  aria-label={`${bookTitle(b, isAr)} — ${b.chapterCount} ${t.chapters}`}
+                >
+                  <VolumeOrb book={b} />
+                  <span className="kw-world-no">{ord(b.no, isAr)}</span>
+                  <span className="kw-world-meta">
+                    {count(b.chapterCount, isAr)} {t.chapters}
+                    {d > 0 && ` · ${count(d, isAr)} ${t.complete}`}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </section>
       )}
+
+      {/* ── One volume: its number, its progress, its numbered chapters ── */}
       {book && ci === null && (
-        <>
-          <section className="bookHero" style={{ '--accent': book.color }}>
-            <button className="back" onClick={home}>
-              ← {t.allBooks}
-            </button>
-            <div>
+        <section className="kw-volume" style={{ '--world': book.color }}>
+          <button type="button" className="kw-back" onClick={home}>
+            ← {t.back}
+          </button>
+
+          <div className="kw-volume-head">
+            <VolumeOrb book={book} size="lg" />
+            <div className="kw-volume-id">
               <small>
-                {book.chapters.length} {t.course}
+                {t.volume} {ord(book.no, isAr)}
               </small>
-              <h1>{book.title}</h1>
-              <p>{book.desc}</p>
-              <b>{book.author}</b>
+              <h1>{bookTitle(book, isAr)}</h1>
+              <div className="kw-meter" role="img"
+                aria-label={`${doneIn(book)} / ${book.chapterCount} ${t.complete}`}>
+                <i style={{ width: `${(doneIn(book) / book.chapterCount) * 100}%` }} />
+              </div>
+              <b>
+                {t.progress} · {count(doneIn(book), isAr)} / {count(book.chapterCount, isAr)}
+              </b>
             </div>
-            <div className="bigCover" style={{ background: book.color }}>
-              <img src={book.image} alt={book.title + ' original course artwork'} />
-              <div className="bigCoverInk">
-                <small>KAWNERA</small>
-                <strong>{book.code}</strong>
-                <span>{book.pages} PAGES</span>
-              </div>
+          </div>
+
+          <div className="kw-contents">
+            <div className="kw-contents-head">
+              <span>{t.contents}</span>
+              <b>
+                {count(book.chapterCount, isAr)} {t.chapters}
+              </b>
             </div>
-          </section>
-          <section className="toc">
-            <aside>
-              <small>{t.progress}</small>
-              <strong>
-                {book.chapters.filter((_, j) => done.includes(`${book.id}-${j}`)).length}
-                <i> / {book.chapters.length}</i>
-              </strong>
-              <div>
-                <b
-                  style={{
-                    width: `${(book.chapters.filter((_, j) => done.includes(`${book.id}-${j}`)).length / book.chapters.length) * 100}%`,
-                  }}
-                />
-              </div>
-              <p>{book.desc}</p>
-            </aside>
-            <article>
-              <div className="tocHead">
-                <span>{t.map}</span>
-                <b>{t.select}</b>
-              </div>
-              {book.chapters.map((c, j) => (
-                <button
-                  key={c}
-                  onClick={() => {
-                    setCi(j);
-                    setLabOpen(false);
-                    setReadStraight(false);
-                    showMentor();
-                    onNavigateTop?.('auto');
-                  }}
-                >
-                  <span
-                    style={{
-                      background: done.includes(`${book.id}-${j}`) ? book.color : 'transparent',
+            <ol className="kw-chapter-list">
+              {book.chapters.map((_, j) => (
+                <li key={j}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCi(j);
+                      onNavigateTop?.('auto');
                     }}
                   >
-                    {done.includes(`${book.id}-${j}`) ? '✓' : String(j + 1).padStart(2, '0')}
-                  </span>
-                  <div>
-                    <small>
-                      {t.chapter} {String(j + 1).padStart(2, '0')}
-                    </small>
-                    <h2>{c}</h2>
-                  </div>
-                  <b>→</b>
-                </button>
+                    <span className="kw-chapter-no">{ord(j + 1, isAr)}</span>
+                    <span className="kw-chapter-name">{chapterTitle(book, j, isAr)}</span>
+                    <b aria-hidden="true">→</b>
+                  </button>
+                </li>
               ))}
-            </article>
-          </section>
-        </>
-      )}
-      {/* Authored chapters open as a guided run with Dr. Kawkab by default.
-          `readStraight` swaps to the plain scrollable version for anyone who
-          would rather just read — the content is identical either way. */}
-      {book && ci !== null && !readStraight && isAuthored(authoredChapter(book.id, ci)) && (
-        <ChapterQuest
-          key={`${book.id}-${ci}`}
-          chapter={authoredChapter(book.id, ci)}
-          chapters={authoredFor(book.id)}
-          book={book}
-          chapterTitle={book.chapters[ci]}
-          chapterNo={ci + 1}
-          onExit={() => setCi(null)}
-          onDone={onChapterDone}
-          onOpenLab={openLab}
-        />
+            </ol>
+          </div>
+        </section>
       )}
 
-      {book && ci !== null && readStraight && isAuthored(authoredChapter(book.id, ci)) && (() => {
-        const c = book.chapters[ci];
-        const a = authoredChapter(book.id, ci);
-        return (
-          <>
-            <section className="chapterTop" style={{ '--accent': book.color }}>
-              <button className="back" onClick={() => setCi(null)}>
-                ← {book.code} {t.contents}
-              </button>
-              <small>
-                CHAPTER {String(ci + 1).padStart(2, '0')} OF {book.chapters.length} • PAGES{' '}
-                {a.pages[0]}–{a.pages[1]}
-              </small>
-              <h1>{c}</h1>
-              <p>{a.question}</p>
-            </section>
+      {/* ── A chapter with nothing in it, said plainly ── */}
+      {book && ci !== null && (
+        <section className="kw-soon" style={{ '--world': book.color }}>
+          <button type="button" className="kw-back" onClick={() => setCi(null)}>
+            ← {t.soonBack}
+          </button>
+          <div className="kw-soon-card">
+            <VolumeOrb book={book} />
+            <small>
+              {t.volume} {ord(book.no, isAr)} · {t.chapter} {ord(ci + 1, isAr)}
+            </small>
+            <h1>{t.soonTitle}</h1>
+            <p>{t.soonCopy}</p>
+            <span className="kw-soon-flag">{t.soonKicker}</span>
+          </div>
+        </section>
+      )}
 
-            <section className="chapterBody deepBody">
-              <aside>
-                <span style={{ background: book.color }}>{String(ci + 1).padStart(2, '0')}</span>
-                <small>{book.title}</small>
-                <div>
-                  <button
-                    disabled={ci === 0}
-                    onClick={() => { setCi(ci - 1); onNavigateTop?.('auto'); }}
-                  >
-                    ← {t.previous}
-                  </button>
-                  <button
-                    disabled={ci === book.chapters.length - 1}
-                    onClick={() => { setCi(ci + 1); onNavigateTop?.('auto'); }}
-                  >
-                    {t.next} →
-                  </button>
-                </div>
-                <nav className="chapterNav">
-                  <a href="#summary">In short</a>
-                  <a href="#ideas">Key ideas</a>
-                  <a href="#evidence">Evidence</a>
-                  <a href="#recall">Recall</a>
-                </nav>
-              </aside>
-
-              <article>
-                <section className="depthNotice authored">
-                  <b>WRITTEN FROM THE BOOK</b>
-                  <span>
-                    This lesson was written from {book.title}, pages {a.pages[0]}–{a.pages[1]} —
-                    explained rather than extracted, so you can check any claim against the source.
-                  </span>
-                </section>
-
-                {/* Guess first, then read. See PredictGate for why this is a
-                    gate rather than a paragraph. */}
-                <PredictGate
-                  key={`${book.id}-${ci}`}
-                  predict={a.predict}
-                  accent={book.color}
-                />
-
-                <section className="kawkabLesson" style={{ '--lab': book.color }}>
-                  <div>
-                    <small>{t.mission}</small>
-                    <h2>{t.missionTitle}</h2>
-                    <p>{t.missionCopy}</p>
-                  </div>
-                  <button onClick={openLab}>{t.openLab}</button>
-                </section>
-
-                <section id="summary" className="lessonSection">
-                  <div className="label">01 • IN SHORT</div>
-                  <h2>{a.question}</h2>
-                  <p className="lead">{a.summary}</p>
-                </section>
-
-                {/* The chapter itself, walked in the book's own order and
-                    numbering — this is the part that has to leave you knowing
-                    the real chapter rather than the gist of it. */}
-                <section id="ideas" className="lessonSection">
-                  <div className="label">02 • THE CHAPTER, SECTION BY SECTION</div>
-                  <h2>What each part of the chapter says</h2>
-                  <div className="walkthrough">
-                    {a.sections.map((s, i) => (
-                      <article key={i}>
-                        <header>
-                          <span>{s.n}</span>
-                          <h3>{s.title}</h3>
-                        </header>
-                        <p>{s.body}</p>
-                        {s.points && (
-                          <ul>
-                            {s.points.map((p, j) => <li key={j}>{p}</li>)}
-                          </ul>
-                        )}
-                      </article>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="glossary">
-                  <small>EVERY TERM THIS CHAPTER USES</small>
-                  <dl>
-                    {a.terms.map((x, i) => (
-                      <React.Fragment key={i}>
-                        <dt>{x.term}</dt>
-                        <dd>{x.meaning}</dd>
-                      </React.Fragment>
-                    ))}
-                  </dl>
-                </section>
-
-                <section id="evidence" className="lessonSection">
-                  <div className="label">03 • {t.evidence}</div>
-                  <h2>{t.evidenceTitle}</h2>
-                  <div className="evidence">
-                    {a.evidence.map((x, i) => (
-                      <article key={i}>
-                        <small>{x.study}</small>
-                        <p><b>What was done — </b>{x.did}</p>
-                        <p><b>What was found — </b>{x.found}</p>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-
-                {/* The correction is the teaching. Naming the belief you probably
-                    hold, then breaking it, is what makes the idea stick. */}
-                <section className="misconception">
-                  <small>WHAT MOST PEOPLE GET WRONG</small>
-                  <p className="believed">“{a.misconception.believed}”</p>
-                  <p className="actually">{a.misconception.actually}</p>
-                </section>
-
-                <section className="lessonSection">
-                  <div className="label">04 • THE ONE THING</div>
-                  <p className="takeaway">{a.takeaway}</p>
-                </section>
-
-                <section id="recall" className="recall deepRecall">
-                  <small>{t.recall}</small>
-                  <h2>{t.recallTitle}</h2>
-                  <ol>
-                    {a.recall.map((x, i) => <li key={i}>{x}</li>)}
-                  </ol>
-                </section>
-
-                <button className={done.includes(key) ? 'complete done' : 'complete'} onClick={save}>
-                  {done.includes(key) ? `✓ ${t.chapterComplete}` : t.markComplete}
-                </button>
-
-                <div className="source">
-                  {book.title} · {book.author} · Chapter {ci + 1} · pages {a.pages[0]}–{a.pages[1]}
-                </div>
-              </article>
-            </section>
-          </>
-        );
-      })()}
-
-      {book &&
-        ci !== null &&
-        !isAuthored(authoredChapter(book.id, ci)) &&
-        (() => {
-          const c = book.chapters[ci],
-            d = DEEP[book.id][ci];
-          const claims = [...new Set([...d.intro, ...d.core].map(clean))]
-            .filter((x) => x.length > 45)
-            .slice(0, 9);
-          const evidence = [...new Set(d.evidence.map(clean))]
-            .filter((x) => x.length > 45)
-            .slice(0, 3);
-          const conclusions = [...new Set(d.conclusion.map(clean))]
-            .filter((x) => x.length > 45)
-            .slice(0, 3);
-          const sections = d.sections.filter((x) => !/^(summary|references)$/i.test(x));
-          const terms = d.terms
-            .filter((x) => /^[a-z][a-z'-]{4,}$/i.test(x) && !x.endsWith('-'))
-            .slice(0, 8);
-          return (
-            <>
-              <section className="chapterTop" style={{ '--accent': book.color }}>
-                <button className="back" onClick={() => setCi(null)}>
-                  ← {book.code} {t.contents}
-                </button>
-                <small>
-                  CHAPTER {String(ci + 1).padStart(2, '0')} OF {book.chapters.length} • SOURCE PDF
-                  PAGES {d.pages[0]}–{d.pages[1]}
-                </small>
-                <h1>{c}</h1>
-                <p>{clean(d.intro[0] || claims[0])}</p>
-              </section>
-              <section className="chapterBody deepBody">
-                <aside>
-                  <span style={{ background: book.color }}>{String(ci + 1).padStart(2, '0')}</span>
-                  <small>{book.title}</small>
-                  <div>
-                    <button
-                      disabled={ci === 0}
-                      onClick={() => {
-                        setCi(ci - 1);
-                        onNavigateTop?.('auto');
-                      }}
-                    >
-                      ← {t.previous}
-                    </button>
-                    <button
-                      disabled={ci === book.chapters.length - 1}
-                      onClick={() => {
-                        setCi(ci + 1);
-                        onNavigateTop?.('auto');
-                      }}
-                    >
-                      {t.next} →
-                    </button>
-                  </div>
-                  <nav className="chapterNav">
-                    <a href="#scope">Scope</a>
-                    <a href="#claims">Core claims</a>
-                    <a href="#evidence">Evidence</a>
-                    <a href="#recall">Recall</a>
-                  </nav>
-                </aside>
-                <article>
-                  {/* Honest label. This path shows passages lifted from the
-                      source, not a written lesson — saying so is better than
-                      captioning raw extracts "Central claims". */}
-                  <section className="depthNotice pending">
-                    <b>SOURCE EXTRACTS</b>
-                    <span>
-                      Passages taken straight from {book.title}, pages {d.pages[0]}–{d.pages[1]}.
-                      This chapter has not been written up yet, so read it as raw material rather
-                      than as an explanation.
-                    </span>
-                  </section>
-                  <section className="kawkabLesson" style={{ '--lab': book.color }}>
-                    <div>
-                      <small>{t.mission}</small>
-                      <h2>{t.missionTitle}</h2>
-                      <p>{t.missionCopy}</p>
-                    </div>
-                    <button onClick={openLab}>{t.openLab}</button>
-                  </section>
-                  <section id="scope" className="lessonSection">
-                    <div className="label">01 • {t.scope}</div>
-                    <h2>{t.scopeTitle}</h2>
-                    {d.intro.slice(0, 2).map((x, i) => (
-                      <p className="lead" key={i}>
-                        {clean(x)}
-                      </p>
-                    ))}
-                    {sections.length > 0 && (
-                      <>
-                        <h3>Argument map</h3>
-                        <div className="coverage">
-                          {sections.map((x, i) => (
-                            <div key={i}>
-                              <span>{String(i + 1).padStart(2, '0')}</span>
-                              <p>{clean(x)}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </section>
-                  <section id="claims" className="lessonSection">
-                    <div className="label">02 • {t.claims}</div>
-                    <h2>{t.claimsTitle}</h2>
-                    <div className="claims">
-                      {claims.map((x, i) => (
-                        <div key={i}>
-                          <span>{String(i + 1).padStart(2, '0')}</span>
-                          <p>{x}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                  <section id="evidence" className="lessonSection">
-                    <div className="label">03 • {t.evidence}</div>
-                    <h2>{t.evidenceTitle}</h2>
-                    {evidence.length ? (
-                      <div className="evidence">
-                        {evidence.map((x, i) => (
-                          <article key={i}>
-                            <small>EVIDENCE {i + 1}</small>
-                            <p>{x}</p>
-                          </article>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="lead">
-                        This chapter develops its case primarily through conceptual analysis and
-                        comparison. Focus on how each distinction changes the conclusion.
-                      </p>
-                    )}
-                  </section>
-                  {conclusions.length > 0 && (
-                    <section className="lessonSection">
-                      <div className="label">04 • WHERE THE ARGUMENT LANDS</div>
-                      <h2>Conclusions and implications</h2>
-                      {conclusions.map((x, i) => (
-                        <p className="lead" key={i}>
-                          {x}
-                        </p>
-                      ))}
-                    </section>
-                  )}
-                  {terms.length > 0 && (
-                    <section className="termBand">
-                      <small>HIGH-FREQUENCY CHAPTER LANGUAGE</small>
-                      <div>
-                        {terms.map((x) => (
-                          <span key={x}>{x}</span>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-                  <section id="recall" className="recall deepRecall">
-                    <small>{t.recall}</small>
-                    <h2>{t.recallTitle}</h2>
-                    <ol>
-                      <li>State the chapter’s central problem and answer in your own words.</li>
-                      {sections.length > 1 && (
-                        <li>
-                          Explain how “{clean(sections[0])}” connects to “{clean(sections[1])}”.
-                        </li>
-                      )}
-                      <li>
-                        Name one piece of evidence, example, or distinction that supports the
-                        argument.
-                      </li>
-                      <li>Identify one limit, boundary condition, or competing explanation.</li>
-                      <li>
-                        Apply the chapter’s model to a new situation from your own life or work.
-                      </li>
-                    </ol>
-                  </section>
-                  <button
-                    className={done.includes(key) ? 'complete done' : 'complete'}
-                    onClick={save}
-                  >
-                    {done.includes(key) ? `✓ ${t.chapterComplete}` : t.markComplete}
-                  </button>
-                  <div className="source">
-                    SOURCE MAP • {book.title} • Chapter {ci + 1} • PDF pages {d.pages[0]}–
-                    {d.pages[1]}
-                  </div>
-                </article>
-              </section>
-            </>
-          );
-        })()}
-      <footer>
+      <footer className="kw-foot">
         <b>KAWNERA</b>
         <i>{t.footer}</i>
         <small>
-          {B.reduce((n, b) => n + b.chapters.length, 0)} {t.mapped}
+          {count(B.reduce((n, b) => n + b.chapterCount, 0), isAr)} {t.mapped}
         </small>
       </footer>
-      {/* The floating guide hides while a guided chapter is running, because
-          ChapterQuest renders its own Dr. Kawkab. Two instances means two WebGL
-          contexts for the same 3.3MB rig, and with the Home universe holding a
-          third the browser starts evicting the oldest — which is what blanked
-          the universe and emptied the training characters. One at a time. */}
-      {isActive && !questRunning && (
+
+      {/* One Dr. Kawkab at a time: this rig is a WebGL context, and the Home
+          universe already holds one. A second pair used to make the browser
+          evict the oldest, which is what blanked the universe. */}
+      {isActive && (
         <aside
           className={book ? 'kawkabGuide mentor' : 'kawkabGuide'}
           aria-label="Dr. Kawkab study companion"
         >
           {kawkabOpen && (
             <div className="kawkabBubble" role="status">
-              <b>{book ? 'DR. KAWKAB / MENTOR' : 'DR. KAWKAB'}</b>
-              <p>{kawkabMessage}</p>
-              {book && ci !== null && (
-                <button className="kawkabGameLaunch" onClick={openLab}>
-                  PLAY THIS CHAPTER
-                </button>
-              )}
-              <small>{book ? 'MENTORING YOUR CURRENT BOOK' : 'YOUR COSMIC STUDY COMPANION'}</small>
+              <b>{book ? t.guideMentor : t.guide}</b>
+              <p>{guideMessage}</p>
+              <small>{t.guideFoot}</small>
             </div>
           )}
           <button
+            type="button"
             className={kawkabOpen ? 'kawkabButton open' : 'kawkabButton'}
             onClick={() => setKawkabOpen((x) => !x)}
             aria-expanded={kawkabOpen}
             aria-label={kawkabOpen ? 'Close Dr. Kawkab tip' : 'Ask Dr. Kawkab for a study tip'}
           >
-            <Kawkab3D active={kawkabOpen} mentor={!!book} />
-            <span className="kawkabTag">
-              {book ? 'DR. KAWKAB / MENTOR' : 'DR. KAWKAB / TAP ME'}
-            </span>
+            {/* The same Kawkab the Training hub uses — one character across the
+                app, and one fewer WebGL context on this tab (the 3D rig that
+                was here competed with Home's universe for a scarce resource;
+                see Kawkab3D, which stays on disk for the parked chapter run). */}
+            <img
+              className="kw-guide-art"
+              src={assetUrl('Assets/characters/kawkab/kawkab-planet.webp')}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+            />
+            <span className="kawkabTag">{book ? t.guideMentor : t.guideTap}</span>
           </button>
         </aside>
-      )}
-      {book && ci !== null && labOpen && (
-        <KawkabLab
-          bookId={book.id}
-          bookTitle={book.title}
-          chapterIndex={ci}
-          chapterTitle={book.chapters[ci]}
-          color={book.color}
-          data={DEEP[book.id][ci]}
-          bank={DEEP[book.id]}
-          checks={authoredChapter(book.id, ci)?.checks}
-          authored={
-            isAuthored(authoredChapter(book.id, ci)) ? authoredChapter(book.id, ci) : null
-          }
-          // Findings from the rest of the book, used as plausible same-domain
-          // distractors in the evidence game.
-          otherFindings={(authoredFor(book.id) || [])
-            .flatMap((c, j) => (j === ci ? [] : c.evidence.map((e) => e.found)))}
-          // Whole-book glossary, so a short chapter's pair game becomes
-          // cumulative review rather than a dead activity.
-          bookTerms={(authoredFor(book.id) || []).flatMap((c) => c.terms)}
-          onClose={() => setLabOpen(false)}
-          isAr={isAr}
-        />
       )}
     </main>
   );

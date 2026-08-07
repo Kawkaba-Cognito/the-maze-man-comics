@@ -18,10 +18,19 @@ const server = await createServer({
 const base = '/src/features/kawnera';
 const { AUTHORED } = await server.ssrLoadModule(`${base}/authored/index.js`);
 const { isAuthored, AUTHORED_FIELDS } = await server.ssrLoadModule(`${base}/authored/schema.js`);
-const extracted = (await server.ssrLoadModule(`${base}/chapter-content.json?raw`)).default;
+/*
+ * Chapter counts come from the SHELF now, not from `chapter-content.json`.
+ * That file held text extracted from the source books and was deleted on
+ * 2026-08-07 along with the rest of the unlicensed content; loading it here
+ * crashed this script outright. books.js is the right authority anyway — it is
+ * what the UI renders from.
+ */
+const { KAWNERA_BOOKS } = await server.ssrLoadModule(`${base}/books.js`);
 await server.close();
 
-const bank = typeof extracted === 'string' ? JSON.parse(extracted) : extracted;
+const bank = Object.fromEntries(
+  KAWNERA_BOOKS.map((b) => [b.id, { length: b.chapterCount }]),
+);
 
 const problems = [];
 const fail = (id, msg) => problems.push(`${id}: ${msg}`);
@@ -199,4 +208,8 @@ for (const [bookId, chapters] of Object.entries(AUTHORED)) {
   });
 }
 const pending = Object.keys(bank).filter((b) => !AUTHORED[b]);
-console.log(`  · still on source extracts: ${pending.join(', ')} (${totalCount - authoredCount} chapters)`);
+console.log(
+  pending.length === Object.keys(bank).length
+    ? `  · nothing authored yet — all ${pending.length} volumes (${totalCount} chapters) are empty`
+    : `  · not written yet: ${pending.join(', ')} (${totalCount - authoredCount} chapters)`,
+);

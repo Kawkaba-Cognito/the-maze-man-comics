@@ -831,7 +831,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
     return (
       <div className="rx-root" dir={isAr ? 'rtl' : 'ltr'}>
         <style>{MENU_CSS}</style>
-        <UniverseStage accent="wellbeing" dark={dark} />
+        <UniverseStage accent="wellbeing" dark={dark} homeDusk />
         <div className="rx-app">
           {detailHeader('⭐', FAV_GOLD, isAr ? 'المفضّلة' : 'Favorites', favItems.length ? (isAr ? 'اضغط مطوّلاً لإعادة الترتيب.' : 'Press and hold to reorder.') : (isAr ? 'ممارساتك المفضّلة.' : 'Your go-to practices.'), () => setOpenCat(null))}
           <div className="content">
@@ -856,7 +856,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
     return (
       <div className="rx-root" dir={isAr ? 'rtl' : 'ltr'}>
         <style>{MENU_CSS}</style>
-        <UniverseStage accent="wellbeing" dark={dark} />
+        <UniverseStage accent="wellbeing" dark={dark} homeDusk />
         <div className="rx-app">
           {detailHeader(cat.icon, cat.color, isAr ? cat.titleAr : cat.title, isAr ? cat.tagAr : cat.tag, () => setOpenCat(null))}
           <div className="content">
@@ -1160,49 +1160,66 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
 
 const MENU_CSS = `
 /* Wellbeing category/detail landings — Home universe cosmos glass */
+/*
+ * ⚠️ This used to be \`background: transparent\`, on the assumption that the
+ * Wellbeing LANDING's cosmos would show through. It does not: a category or
+ * detail view replaces the landing, so there is nothing behind this but the app
+ * shell — which in light appearance is cream paper. Every colour below is tuned
+ * for a dark sky, so the result was var(--universe-ink) text on #f5f2e9 paper: the "Stress
+ * & Calm" heading was very nearly invisible, and its cards were dark slabs on
+ * white. Painting the dusk here is what makes the whole section legible, and it
+ * matches Home, Training, Kawnera and Puzzle Studio.
+ *
+ * No \`background-attachment: fixed\` here, unlike Kawnera and Puzzle Studio.
+ * This element is ALREADY \`position: fixed; inset: 0\` and scrolls its own
+ * content, so the gradient maps to the viewport without help — and asking for
+ * fixed attachment as well made Chrome drop the paint entirely (the computed
+ * style still reported the gradient; the pixels stayed the page's cream).
+ */
 .rx-root { position:fixed; inset:0; z-index:50; overflow-y:auto; -webkit-overflow-scrolling:touch;
-  background:transparent; color:#f0e2c0; font-family:${SANS}; }
+  background:var(--universe-dusk);
+  color:var(--universe-ink); font-family:${SANS}; }
 .rx-root *, .rx-root *::before, .rx-root *::after { box-sizing:border-box; }
 .rx-root .rx-app { max-width:480px; margin:0 auto; padding-bottom:110px; position:relative; z-index:3; }
 .rx-root .rx-back { position:absolute; top:max(14px, env(safe-area-inset-top)); left:12px; z-index:20; width:36px; height:36px; border-radius:999px;
-  border:1px solid rgba(232,172,78,0.38); background:rgba(14,12,24,0.78); color:#e8d4a8; font-size:22px; line-height:1; cursor:pointer;
+  border:1px solid var(--universe-line); background:var(--universe-glass-strong); color:#e8d4a8; font-size:22px; line-height:1; cursor:pointer;
   box-shadow:0 4px 14px rgba(0,0,0,0.35); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
 .rx-root .header { padding:max(24px, calc(12px + env(safe-area-inset-top))) 20px 18px; background:transparent; }
-.rx-root .header-sub { font-size:11px; letter-spacing:3px; color:#e8ac4e; text-transform:uppercase; margin-bottom:4px; font-weight:700; }
-.rx-root .header-title { font-family:Outfit,${SANS}; font-size:28px; font-weight:800; line-height:1.1; color:#f0e2c0;
+.rx-root .header-sub { font-size:11px; letter-spacing:3px; color:var(--universe-accent); text-transform:uppercase; margin-bottom:4px; font-weight:700; }
+.rx-root .header-title { font-family:Outfit,${SANS}; font-size:28px; font-weight:800; line-height:1.1; color:var(--universe-ink);
   text-shadow:0 1px 0 rgba(255,220,120,0.2), 0 0 14px rgba(232,172,78,0.3); }
-.rx-root .menu-tag { font-size:13px; color:#b9a878; margin-top:6px; }
+.rx-root .menu-tag { font-size:13px; color:var(--universe-muted); margin-top:6px; }
 .rx-root .content { padding:20px; }
 .rx-root .rx-menu-card { display:flex; align-items:center; gap:14px; width:100%; text-align:left;
-  background:rgba(14,12,24,0.72); border:1px solid rgba(232,172,78,0.34); border-radius:16px; padding:16px; margin-bottom:14px;
+  background:var(--universe-glass); border:1px solid var(--universe-line); border-radius:16px; padding:16px; margin-bottom:14px;
   cursor:pointer; font-family:inherit; box-shadow:0 4px 18px rgba(0,0,0,0.35);
   backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); transition:transform .1s, border-color .15s; }
 .rx-root .rx-menu-card:active { transform:translateY(1px); }
 .rx-root .rx-menu-ic { font-size:30px; flex-shrink:0; width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
 .rx-root .rx-menu-body { display:flex; flex-direction:column; gap:4px; flex:1; }
-.rx-root .rx-menu-title { font-family:Outfit,${SANS}; font-weight:800; font-size:18px; color:#f0e2c0; }
-.rx-root .rx-menu-sub { font-size:12.5px; color:#b9a878; line-height:1.5; }
-.rx-root .rx-menu-chev { font-size:28px; font-weight:700; flex-shrink:0; color:#e8ac4e; }
+.rx-root .rx-menu-title { font-family:Outfit,${SANS}; font-weight:800; font-size:18px; color:var(--universe-ink); }
+.rx-root .rx-menu-sub { font-size:12.5px; color:var(--universe-muted); line-height:1.5; }
+.rx-root .rx-menu-chev { font-size:28px; font-weight:700; flex-shrink:0; color:var(--universe-accent); }
 .rx-root .rx-menu-more { text-align:center; font-size:12px; color:#8a7a58; margin-top:6px; }
 .rx-root .rx-cat-tile { display:flex; align-items:center; gap:14px; width:100%; text-align:start;
-  background:rgba(14,12,24,0.72); border:1px solid rgba(232,172,78,0.34); border-radius:16px; padding:16px; margin-bottom:14px;
+  background:var(--universe-glass); border:1px solid var(--universe-line); border-radius:16px; padding:16px; margin-bottom:14px;
   cursor:pointer; font-family:inherit; box-shadow:0 4px 18px rgba(0,0,0,0.35); transition:transform .1s; }
 .rx-root .rx-cat-tile:active { transform:translateY(1px); }
 .rx-root .rx-cat-ic { width:56px; height:56px; border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0; }
 .rx-root .rx-cat-ic--hd { width:40px; height:40px; border-radius:11px; font-size:22px; }
 .rx-root .rx-cat-body { display:flex; flex-direction:column; gap:3px; flex:1; min-width:0; }
-.rx-root .rx-cat-title { font-family:Outfit,${SANS}; font-weight:800; font-size:20px; color:#f0e2c0; line-height:1.1; }
-.rx-root .rx-cat-tag { font-size:12.5px; color:#b9a878; line-height:1.4; }
+.rx-root .rx-cat-title { font-family:Outfit,${SANS}; font-weight:800; font-size:20px; color:var(--universe-ink); line-height:1.1; }
+.rx-root .rx-cat-tag { font-size:12.5px; color:var(--universe-muted); line-height:1.4; }
 .rx-root .rx-cat-meta { display:flex; align-items:center; gap:9px; flex-shrink:0; }
 .rx-root .rx-cat-hd { display:flex; align-items:center; gap:11px; }
-.rx-root .rx-seg { display:flex; gap:5px; background:rgba(14,12,24,0.55); border:1px solid rgba(232,172,78,0.28); border-radius:13px; padding:4px; margin-bottom:18px; }
-.rx-root .rx-seg-btn { flex:1; padding:10px 0; border:none; background:none; border-radius:9px; font-family:inherit; font-size:13.5px; font-weight:800; color:#b9a878; cursor:pointer; transition:all .15s; }
-.rx-root .rx-seg-btn.on { background:rgba(232,172,78,0.18); color:#f0e2c0; box-shadow:0 2px 8px rgba(0,0,0,0.25); }
-.rx-root .rx-soon-badge { flex-shrink:0; font-size:10.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#e8ac4e; background:rgba(232,172,78,0.14); border:1px solid rgba(232,172,78,0.4); border-radius:999px; padding:4px 11px; }
+.rx-root .rx-seg { display:flex; gap:5px; background:rgba(14,12,24,0.55); border:1px solid var(--universe-line); border-radius:13px; padding:4px; margin-bottom:18px; }
+.rx-root .rx-seg-btn { flex:1; padding:10px 0; border:none; background:none; border-radius:9px; font-family:inherit; font-size:13.5px; font-weight:800; color:var(--universe-muted); cursor:pointer; transition:all .15s; }
+.rx-root .rx-seg-btn.on { background:rgba(232,172,78,0.18); color:var(--universe-ink); box-shadow:0 2px 8px rgba(0,0,0,0.25); }
+.rx-root .rx-soon-badge { flex-shrink:0; font-size:10.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--universe-accent); background:rgba(232,172,78,0.14); border:1px solid var(--universe-line); border-radius:999px; padding:4px 11px; }
 .rx-root .rx-soon-empty { text-align:center; padding:40px 16px; }
 .rx-root .rx-soon-emoji { width:88px; height:88px; border-radius:24px; display:flex; align-items:center; justify-content:center; font-size:44px; margin:0 auto 18px; }
-.rx-root .rx-soon-title { font-family:Outfit,${SANS}; font-weight:800; font-size:24px; color:#f0e2c0; margin-bottom:10px; }
-.rx-root .rx-soon-desc { font-size:14px; color:#b9a878; line-height:1.6; max-width:320px; margin:0 auto; }
+.rx-root .rx-soon-title { font-family:Outfit,${SANS}; font-weight:800; font-size:24px; color:var(--universe-ink); margin-bottom:10px; }
+.rx-root .rx-soon-desc { font-size:14px; color:var(--universe-muted); line-height:1.6; max-width:320px; margin:0 auto; }
 .rx-root .rx-menu-tail { display:flex; align-items:center; gap:5px; flex-shrink:0; }
 .rx-root .rx-fav { width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:20px; line-height:1; color:#8a7a58; cursor:pointer; border-radius:9px; user-select:none; -webkit-user-select:none; transition:transform .12s ease, color .12s ease; }
 .rx-root .rx-fav:active { transform:scale(0.82); }
@@ -1213,7 +1230,7 @@ const MENU_CSS = `
 .rx-root .rx-cat-divider { height:1px; background:rgba(232,172,78,0.22); margin:2px 2px 18px; }
 .rx-root .rx-rl { position:relative; }
 .rx-root .rx-rl-item { will-change:transform; }
-.rx-root .rx-rl-item--drag .rx-menu-card { box-shadow:0 12px 26px rgba(0,0,0,0.45); border-color:#e8ac4e; cursor:grabbing; }
+.rx-root .rx-rl-item--drag .rx-menu-card { box-shadow:0 12px 26px rgba(0,0,0,0.45); border-color:var(--universe-accent); cursor:grabbing; }
 [dir='rtl'] .rx-root .header-title,
 [dir='rtl'] .rx-root .rx-menu-title,
 [dir='rtl'] .rx-root .rx-cat-title { font-family:Cairo,${SANS}; }

@@ -31,13 +31,14 @@
     top: calc(100% + 2px);
 }
 
-.rh-training-hub--phone .rh-assess-mascot {
-    transform: translate(-50%, -70%) !important;
-}
-
-.rh-training-hub--desktop .rh-assess-mascot {
-    transform: translate(-50%, -76%) !important;
-}
+/* The two per-breakpoint `transform: translate(-50%, -7x%) !important` rules
+ * that used to live here are gone. They anchored the mascot by a FRACTION of
+ * its own height, which is only ever right for one character size — shrinking
+ * Kawkab from 150 to 120 moved its feet 41px off the orbit ring it stands on,
+ * and because they were !important they silently beat the component that was
+ * trying to place it. RadialMazeHub now anchors the feet to the ring's own y
+ * with a plain -100%, which needs no percentage tuning and no second value for
+ * the other breakpoint. */
 
 /* Nameplates remain compact but read as solid controls, not floating glass. */
 .rh-training-hub .rh-domain-label {

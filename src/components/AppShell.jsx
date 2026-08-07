@@ -111,8 +111,19 @@ export default function AppShell() {
         <div id="screen-learn" className={`ui-screen ${activeTab === 'learn' ? 'active' : ''}`}>
           {activeTab === 'learn' && <LearnScreen />}
         </div>
-        <div id="screen-relax" className={`ui-screen ${isRelaxTab(activeTab) ? 'active' : ''}`}>
-          {activeTab === 'habits' && <HomeScreen />}
+        {/*
+          Home keeps its own screen div and stays MOUNTED, hidden with
+          display:none like the other tabs. It used to share #screen-relax with
+          Wellbeing, which forced it to be conditional (the two cannot show at
+          once) — so every visit to Home tore down the particle universe and
+          rebuilt it: 22k particles, seven shader programs and a fresh WebGL
+          context. That rebuild was the lag on returning to Home. ZenUniverse
+          idles instead (HomeScreen drives it via setRunning).
+        */}
+        <div id="screen-home" className={`ui-screen ${activeTab === 'habits' ? 'active' : ''}`}>
+          <HomeScreen />
+        </div>
+        <div id="screen-relax" className={`ui-screen ${activeTab === 'wellbeing' || activeTab === 'relax' ? 'active' : ''}`}>
           {(activeTab === 'wellbeing' || activeTab === 'relax') && (
             <RelaxScreen key="wellbeing" entry="menu" />
           )}

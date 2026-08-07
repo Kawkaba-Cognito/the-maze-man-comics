@@ -1,0 +1,703 @@
+/*
+ * Puzzle Studio hub — brought onto the app's own language.
+ *
+ * The hub was the last landing still speaking editorial: a near-white page, a
+ * 3.6rem navy grotesque wordmark, four white cards with 1.5px borders and drop
+ * shadows, and an emoji in a rounded square for the featured game. Every other
+ * landing — Home, Training, Wellbeing, Kawnera — is a dusk sky with worlds on
+ * it, so this file makes the studio one too.
+ *
+ *   type      Cinzel caps + amber glow for the title (the app's landing
+ *             treatment), DM Mono for kickers, Outfit for body, Cairo for AR.
+ *   colour    --universe-* tokens only; each category's own accent survives as
+ *             its planet's atmosphere, which is the one place colour identifies
+ *             a world rather than decorating a card.
+ *   shape     an orb constellation, matching Kawnera's library exactly — same
+ *             crop, same terminator, same rim.
+ *
+ * Loaded after puzzleStudioTheme.css, which still owns the category and game
+ * screens behind this hub.
+ */
+
+/* ── Sky ───────────────────────────────────────────────────────────────── */
+
+/*
+ * The `html[data-home-theme]` prefix is not decoration — puzzleStudioTheme.css
+ * paints this screen through `html[data-home-theme='light'] .pz-studio-*`
+ * rules, which outweigh a bare class. Matching that weight (and loading after)
+ * is what actually lets the dusk through; without it the hub stayed a white
+ * page with cream text on it, which is what it looked like on the first pass.
+ */
+html[data-home-theme] .pz-studio--hub,
+html[data-home-theme] .pz-studio--category {
+  background: var(--universe-dusk);
+  background-attachment: fixed;
+  color: var(--universe-ink);
+}
+
+/*
+ * AtmosphericBackground's veil and glow are tuned for the paper surfaces this
+ * screen used to have; over the dusk they are a white wash across the whole
+ * sky. The nebulae and stars stay — they are the parts that read as space.
+ */
+html[data-home-theme] .pz-studio--hub > .atm-bg-veil,
+html[data-home-theme] .pz-studio--hub > .atm-bg-glow,
+html[data-home-theme] .pz-studio--category > .atm-bg-veil,
+html[data-home-theme] .pz-studio--category > .atm-bg-glow {
+  display: none;
+}
+
+html[data-home-theme] .pz-studio--hub .pz-studio-stars,
+html[data-home-theme] .pz-studio--category .pz-studio-stars {
+  opacity: 0.5;
+}
+
+html[data-home-theme] .pz-studio--hub .pz-studio-header,
+html[data-home-theme] .pz-studio--category .pz-studio-header {
+  background: linear-gradient(180deg, var(--universe-glass-strong) 58%, transparent);
+  color: var(--universe-ink);
+}
+
+html[data-home-theme] .pz-studio--hub .pz-studio-chrome-btn,
+html[data-home-theme] .pz-studio--hub .pz-studio-lang,
+html[data-home-theme] .pz-studio--category .pz-studio-chrome-btn,
+html[data-home-theme] .pz-studio--category .pz-studio-lang {
+  background: var(--universe-glass);
+  border-color: var(--universe-line);
+  color: var(--universe-ink);
+}
+
+.pz-studio--hub .pz-studio-header-title,
+.pz-studio--category .pz-studio-header-title {
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--universe-ink);
+}
+
+[dir='rtl'] .pz-studio--hub .pz-studio-header-title,
+[dir='rtl'] .pz-studio--category .pz-studio-header-title {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ── Intro ─────────────────────────────────────────────────────────────── */
+
+.pz-hub .pz-studio-kicker {
+  font: 700 10px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--universe-accent);
+}
+
+[dir='rtl'] .pz-hub .pz-studio-kicker {
+  font: 700 12px 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+/* The app's landing title, identical to "Your Universe" and "Cognitive
+   Training" — not a 3.6rem grotesque with negative tracking. */
+.pz-hub .pz-studio-intro h1 {
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: clamp(24px, 4.6vw, 38px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  color: var(--universe-ink);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 0 22px rgba(232, 172, 78, 0.5);
+}
+
+[dir='rtl'] .pz-hub .pz-studio-intro h1 {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.pz-hub .pz-studio-intro p {
+  color: var(--universe-muted);
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+[dir='rtl'] .pz-hub .pz-studio-intro p {
+  font-family: 'Cairo', sans-serif;
+}
+
+/* ── The orb, shared by every world here ───────────────────────────────── */
+
+.pz-hub .pz-orb {
+  position: relative;
+  display: block;
+  width: clamp(92px, 21vw, 124px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow:
+    0 0 0 1px rgba(255, 244, 223, 0.14),
+    0 0 26px -4px var(--world, var(--universe-accent)),
+    0 14px 30px rgba(2, 4, 12, 0.5);
+}
+
+.pz-hub .pz-orb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pz-hub .pz-orb-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 248, 232, 0.3), transparent 46%),
+    radial-gradient(circle at 68% 78%, rgba(5, 4, 10, 0.58), transparent 58%);
+  pointer-events: none;
+}
+
+.pz-hub .pz-orb-rim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: 50%;
+  box-shadow: inset 0 0 18px -4px var(--world, var(--universe-accent));
+  pointer-events: none;
+}
+
+/* ── Featured world: Void Runner ───────────────────────────────────────── */
+
+.pz-hub .pz-feature-world {
+  --world: var(--universe-accent);
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 3vw, 26px);
+  width: min(100%, 560px);
+  margin: 4px auto 30px;
+  padding: 14px 18px;
+  border: 1px solid var(--universe-line);
+  border-radius: 26px;
+  background: var(--universe-glass);
+  color: var(--universe-ink);
+  text-align: start;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.pz-hub .pz-feature-world:hover,
+.pz-hub .pz-feature-world:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--universe-accent);
+}
+
+.pz-hub .pz-orb--void {
+  flex: 0 0 auto;
+  width: clamp(76px, 18vw, 96px);
+  background: radial-gradient(circle at 50% 34%, #2b2438, #0a0812 72%);
+}
+
+/* The game's own horizon, borrowed: a warm band low on a dark body. */
+.pz-hub .pz-orb-void-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 120% 44% at 50% 92%, rgba(240, 182, 106, 0.85), transparent 62%),
+    radial-gradient(ellipse 90% 34% at 50% 78%, rgba(126, 143, 191, 0.5), transparent 66%);
+  pointer-events: none;
+}
+
+.pz-hub .pz-feature-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pz-hub .pz-feature-copy small {
+  font: 700 9px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--universe-accent);
+}
+
+[dir='rtl'] .pz-hub .pz-feature-copy small {
+  font: 700 11px 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+.pz-hub .pz-feature-copy b {
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+[dir='rtl'] .pz-hub .pz-feature-copy b {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.pz-hub .pz-feature-copy i {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 13px;
+  font-style: normal;
+  line-height: 1.4;
+  color: var(--universe-muted);
+}
+
+[dir='rtl'] .pz-hub .pz-feature-copy i {
+  font-family: 'Cairo', sans-serif;
+}
+
+/* ── The four category worlds ──────────────────────────────────────────── */
+
+.pz-hub .pz-constellation {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(144px, 1fr));
+  gap: clamp(24px, 5vw, 44px) clamp(12px, 3vw, 26px);
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(10px, 3vw, 24px) 0 clamp(20px, 5vw, 40px);
+}
+
+@media (max-width: 420px) {
+  .pz-hub .pz-constellation {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.pz-hub .pz-world {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--universe-ink);
+  cursor: pointer;
+  transform: translateY(calc(var(--drift, 0) * 42px));
+  transition: transform 0.35s ease;
+}
+
+.pz-hub .pz-world:hover,
+.pz-hub .pz-world:focus-visible {
+  transform: translateY(calc(var(--drift, 0) * 42px - 6px));
+}
+
+.pz-hub .pz-world:focus-visible {
+  outline: 2px solid var(--universe-accent);
+  outline-offset: 8px;
+  border-radius: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pz-hub .pz-world,
+  .pz-hub .pz-world:hover,
+  .pz-hub .pz-world:focus-visible,
+  .pz-hub .pz-feature-world:hover,
+  .pz-hub .pz-feature-world:focus-visible {
+    transform: none;
+    transition: none;
+  }
+}
+
+/*
+ * The pill has to hold "Group Challenge" as well as "Logic", so it is a
+ * rounded rect that wraps rather than a nowrap capsule — at 144px of column,
+ * nowrap either overflowed the grid or forced the type down to unreadable.
+ * Balanced wrapping keeps the two lines even instead of leaving one orphan.
+ */
+.pz-hub .pz-world-name {
+  max-width: 100%;
+  padding: 4px 13px 5px;
+  border-radius: 16px;
+  border: 1px solid var(--universe-line);
+  background: var(--universe-glass-strong);
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  text-align: center;
+  text-wrap: balance;
+  text-transform: uppercase;
+}
+
+[dir='rtl'] .pz-hub .pz-world-name {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.pz-hub .pz-world-desc {
+  max-width: 20ch;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--universe-muted);
+}
+
+[dir='rtl'] .pz-hub .pz-world-desc {
+  font-family: 'Cairo', sans-serif;
+}
+
+/* ── Category screen: one world, and its moons ─────────────────────────── */
+
+.pz-cat .pz-cat-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 4vw, 34px);
+  flex-wrap: wrap;
+  padding: clamp(12px, 3vw, 28px) 0 clamp(18px, 4vw, 32px);
+  text-align: start;
+}
+
+.pz-cat .pz-orb--lg {
+  width: clamp(112px, 26vw, 168px);
+}
+
+.pz-cat .pz-cat-id {
+  min-width: min(100%, 230px);
+  max-width: 380px;
+}
+
+.pz-cat .pz-cat-id h1 {
+  margin: 8px 0 0;
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: clamp(24px, 4.6vw, 36px);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  color: var(--universe-ink);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 0 22px rgba(232, 172, 78, 0.5);
+}
+
+[dir='rtl'] .pz-cat .pz-cat-id h1 {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.pz-cat .pz-cat-id p {
+  margin: 10px 0 0;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--universe-muted);
+}
+
+[dir='rtl'] .pz-cat .pz-cat-id p {
+  font-family: 'Cairo', sans-serif;
+}
+
+/*
+ * Moons: one size down from a category world, and DRAWN rather than
+ * photographed — there is no artwork per puzzle, so each body is tinted by the
+ * game's own accent with its glyph sitting on it. Same shading and rim as the
+ * worlds above, which is what keeps the two levels reading as one system.
+ */
+.pz-cat .pz-constellation--moons {
+  max-width: 780px;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+}
+
+.pz-cat .pz-orb--moon {
+  width: clamp(74px, 17vw, 98px);
+  background:
+    radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--world) 62%, #fff8e8), transparent 58%),
+    radial-gradient(circle at 62% 74%, color-mix(in srgb, var(--world) 55%, #05040a), var(--world));
+}
+
+.pz-cat .pz-orb-glyph {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  font-size: clamp(28px, 7vw, 38px);
+  font-style: normal;
+  line-height: 1;
+  /* The glyph is part of the body, so it takes the body's own light rather
+     than sitting on top as a sticker. */
+  filter: drop-shadow(0 2px 3px rgba(2, 4, 12, 0.55));
+}
+
+/* ── Inside a game: the size picker ────────────────────────────────────── */
+
+/*
+ * The third level down — "Sudoku · pick a grid" — was the last editorial screen
+ * left: cream page, navy grotesque title, and three white cards with 2px navy
+ * borders and a 4px hard offset shadow. It is one shared component
+ * (GridSizePicker), so this is the whole set of puzzles in one place.
+ *
+ * ⚠️ Scoped to `--hub` ONLY, never `--play`. The play boards are gameplay
+ * surfaces on the Tide palette, and their contrast is tuned as a rendering
+ * constraint rather than as taste — re-skinning them from here would undo that.
+ */
+html[data-home-theme] .ct-puzzle-screen--hub {
+  background: var(--universe-dusk);
+  color: var(--universe-ink);
+}
+
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-hub-kicker {
+  font: 700 10px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.2em;
+  color: var(--universe-accent);
+}
+
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-hub-title {
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--universe-ink);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 0 22px rgba(232, 172, 78, 0.5);
+}
+
+[dir='rtl'] html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-hub-title {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-hint {
+  color: var(--universe-muted);
+}
+
+/* Each grid size becomes a small world, laid out across rather than stacked. */
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-picks {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(18px, 4vw, 34px);
+}
+
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick {
+  flex-direction: column;
+  width: auto;
+  min-width: 116px;
+  min-height: 0;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  text-align: center;
+  color: var(--universe-ink);
+}
+
+/* The coloured left/right edge stripes belong to a card, and there is no card
+   any more — the size's colour lives in its orb instead (below). */
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s3,
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s4,
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s5,
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s6 {
+  border: 0;
+}
+
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick-ic {
+  width: clamp(74px, 17vw, 96px);
+  height: clamp(74px, 17vw, 96px);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-weight: 700;
+  color: var(--universe-ink);
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 248, 232, 0.34), transparent 52%),
+    radial-gradient(circle at 64% 76%, rgba(5, 4, 10, 0.55), transparent 60%),
+    var(--pz-size, var(--universe-accent));
+  box-shadow:
+    0 0 0 1px rgba(255, 244, 223, 0.14),
+    0 0 24px -6px var(--pz-size, var(--universe-accent)),
+    0 12px 26px rgba(2, 4, 12, 0.5);
+}
+
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s3 { --pz-size: #9cb752; }
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s4 { --pz-size: #64b5c2; }
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s5 { --pz-size: #e8ac4e; }
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s6 { --pz-size: #b696d4; }
+
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick-lb {
+  padding: 3px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--universe-line);
+  background: var(--universe-glass-strong);
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--universe-ink);
+}
+
+[dir='rtl'] html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick-lb {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick-hint {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--universe-muted);
+}
+
+/* The chevron pointed along a row; these are worlds in a sky now. */
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick-chev {
+  display: none;
+}
+
+/*
+ * ── The !important tier ──
+ *
+ * puzzleStudioTheme.css paints the in-game shell through
+ * `.pz-studio-game .ct-puzzle-*` rules that carry !important, so everything
+ * above that touches the same properties loses despite being more specific.
+ * These are the declarations that were silently dropped on the first pass: the
+ * screen still rendered cream, and the size cards kept their white card, navy
+ * border and 4px hard shadow while their inner orb and label had already
+ * changed — a half-converted screen, which is worse than either state.
+ *
+ * Deliberately narrow: background, border, shadow and colour on the HUB screen
+ * only. Nothing here reaches a play board.
+ */
+html[data-home-theme] .pz-studio-game:has(.ct-puzzle-screen--hub),
+html[data-home-theme] .pz-studio-game > .ct-puzzle-screen--hub {
+  background: var(--universe-dusk) !important;
+  color: var(--universe-ink) !important;
+}
+
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick {
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  color: var(--universe-ink) !important;
+}
+
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick-ic {
+  border: 0 !important;
+  border-radius: 50% !important;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 248, 232, 0.34), transparent 52%),
+    radial-gradient(circle at 64% 76%, rgba(5, 4, 10, 0.55), transparent 60%),
+    var(--pz-size, var(--universe-accent)) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 244, 223, 0.14),
+    0 0 24px -6px var(--pz-size, var(--universe-accent)),
+    0 12px 26px rgba(2, 4, 12, 0.5) !important;
+  color: var(--universe-ink) !important;
+}
+
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-hint {
+  color: var(--universe-muted) !important;
+}
+
+/*
+ * The size now reads off the planet itself, so the pill below it repeated
+ * "4×4" directly under a "4×4". Hidden VISUALLY ONLY — the orb that replaced it
+ * is `aria-hidden` in GridSizePicker, so removing this outright would leave the
+ * button with "Warm-up" as its entire accessible name and no size at all.
+ */
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick-lb {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
+html[data-home-theme] .ct-puzzle-screen--hub .ct-puzzle-grid-pick-hint {
+  color: var(--universe-muted) !important;
+}
+
+/*
+ * The game's own top bar lives OUTSIDE `.ct-puzzle-screen--hub`, so it kept its
+ * cream slab and navy wordmark while the sky behind it had already turned —
+ * the single most visible seam left on this screen. `:has()` scopes it to the
+ * size picker so a play board's bar is untouched.
+ */
+html[data-home-theme] .pz-studio-game:has(.ct-puzzle-screen--hub) .ct-training-menubar,
+html[data-home-theme] .pz-studio-game:has(.ct-puzzle-screen--hub) .ct-training-play-header {
+  background: linear-gradient(180deg, var(--universe-glass-strong) 58%, transparent) !important;
+  border-color: var(--universe-line) !important;
+  color: var(--universe-ink) !important;
+}
+
+html[data-home-theme] .pz-studio-game:has(.ct-puzzle-screen--hub) .ct-puzzle-hub-title {
+  font-family: 'Cinzel', 'Cormorant Garamond', serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  color: var(--universe-ink) !important;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 0 22px rgba(232, 172, 78, 0.5) !important;
+}
+
+html[data-home-theme] .pz-studio-game:has(.ct-puzzle-screen--hub) .ct-puzzle-hub-kicker {
+  color: var(--universe-accent) !important;
+}
+
+html[data-home-theme] .pz-studio-game:has(.ct-puzzle-screen--hub) .ct-training-chrome-btn {
+  background: var(--universe-glass) !important;
+  border-color: var(--universe-line) !important;
+  color: var(--universe-ink) !important;
+}
+
+/* ── Continue-maze button ──────────────────────────────────────────────── */
+
+.pz-hub .pz-studio-continue {
+  display: block;
+  margin: 6px auto 0;
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: 1px solid var(--universe-line);
+  background: var(--universe-glass);
+  color: var(--universe-ink);
+  cursor: pointer;
+  font: 700 10px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+[dir='rtl'] .pz-hub .pz-studio-continue {
+  font: 700 12px 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+.pz-hub .pz-studio-continue:hover {
+  border-color: var(--universe-accent);
+}

@@ -1,0 +1,739 @@
+/*
+ * Kawnera, rebuilt to the app's own language.
+ *
+ * The library used to be a separate brand: a 118px grotesque display face, an
+ * orange Georgia italic, a cream editorial background and a dot grid — a
+ * handsome magazine that happened to live inside a cosmic app. Everything here
+ * speaks the app's dialect instead:
+ *
+ *   type      Cinzel caps for display (EN) / Cairo (AR), Outfit for body,
+ *             DM Mono for the small uppercase kickers. All four are on the
+ *             seven-font roster; nothing new is loaded.
+ *   colour    the --universe-* tokens only — the same dusk Home, Training and
+ *             Wellbeing sit on. No hex literals except inside the orb's own
+ *             lighting, which is art rather than chrome.
+ *   shape     a scattered constellation, matching Wellbeing's category sky and
+ *             Home's orbit, so all four landings feel like one place.
+ *
+ * Loaded AFTER kawnera.css so it wins on the shared chrome. kawnera.css is
+ * still needed: it styles Dr. Kawkab's floating guide and the parked chapter
+ * engine.
+ */
+
+/* ── Shell ─────────────────────────────────────────────────────────────── */
+
+.kw {
+  --kw-gap: clamp(18px, 4vw, 46px);
+  font-family: 'Outfit', system-ui, sans-serif;
+  /*
+   * Pin the dusk to the VIEWPORT, not to the document. `--universe-dusk` runs
+   * zenith → warm horizon over the element's full height, and this page scrolls
+   * for several screens — so the horizon ended up somewhere below the footer
+   * and every visible pixel was the cold top of the ramp. Home and Training
+   * both show the whole ramp because they are one screen tall; this makes the
+   * library match them instead of looking like a different, colder sky.
+   */
+  background-attachment: fixed;
+}
+
+.kw[dir='rtl'] {
+  font-family: 'Cairo', 'Outfit', sans-serif;
+}
+
+/* ── Top bar ───────────────────────────────────────────────────────────── */
+
+.kw .kw-bar {
+  height: 66px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 var(--kw-gap);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  color: var(--universe-ink);
+  background: var(--universe-glass-strong);
+  border-bottom: 1px solid var(--universe-line);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.kw .kw-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.kw .kw-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--universe-line);
+  background: var(--universe-glass);
+}
+
+.kw .kw-brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.kw .kw-brand-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: start;
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1;
+}
+
+.kw[dir='rtl'] .kw-brand-name {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+.kw .kw-brand-name small {
+  font: 700 8px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.14em;
+  color: var(--universe-accent);
+}
+
+.kw[dir='rtl'] .kw-brand-name small {
+  font-family: 'Cairo', sans-serif;
+  font-size: 9px;
+  letter-spacing: 0;
+}
+
+.kw .kw-bar-count {
+  margin-inline-start: auto;
+  font: 700 9px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--universe-accent);
+}
+
+.kw[dir='rtl'] .kw-bar-count {
+  font: 700 11px 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+/* ── Shelf hero ────────────────────────────────────────────────────────── */
+
+.kw .kw-sky-head {
+  padding: clamp(34px, 7vw, 70px) var(--kw-gap) clamp(20px, 4vw, 34px);
+  text-align: center;
+  color: var(--universe-ink);
+}
+
+.kw .kw-sky-head > small {
+  display: block;
+  font: 700 10px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.2em;
+  color: var(--universe-accent);
+}
+
+.kw[dir='rtl'] .kw-sky-head > small {
+  font: 700 12px 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+/*
+ * The one display line, set exactly like "Your Universe" and "Cognitive
+ * Training": Cinzel caps with the amber glow. It replaces a 118px grotesque
+ * that was the single loudest reason this screen read as a different product.
+ */
+.kw .kw-sky-head h1 {
+  margin: 12px 0 0;
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: clamp(24px, 4.6vw, 38px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 0 22px rgba(232, 172, 78, 0.5);
+}
+
+.kw[dir='rtl'] .kw-sky-head h1 {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.kw .kw-sky-head > p {
+  max-width: 46ch;
+  margin: 14px auto 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--universe-muted);
+}
+
+/* ── The constellation ─────────────────────────────────────────────────── */
+
+/*
+ * An ordinary responsive grid carrying a per-item vertical drift. The drift is
+ * what makes nine worlds read as a sky instead of a catalogue; keeping it in a
+ * transform rather than in the layout is what lets the grid reflow 3 → 2 → 1
+ * without any of the scatter values needing to change.
+ */
+.kw .kw-constellation {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: clamp(26px, 5vw, 54px) clamp(14px, 3vw, 30px);
+  max-width: 940px;
+  margin: 0 auto;
+  padding: clamp(16px, 4vw, 40px) var(--kw-gap) clamp(40px, 8vw, 90px);
+}
+
+@media (max-width: 420px) {
+  .kw .kw-constellation {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.kw .kw-world {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--universe-ink);
+  cursor: pointer;
+  transform: translateY(calc(var(--drift, 0) * 46px));
+  transition: transform 0.35s ease;
+}
+
+.kw .kw-world:hover,
+.kw .kw-world:focus-visible {
+  transform: translateY(calc(var(--drift, 0) * 46px - 6px));
+}
+
+.kw .kw-world:focus-visible {
+  outline: 2px solid var(--universe-accent);
+  outline-offset: 8px;
+  border-radius: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kw .kw-world,
+  .kw .kw-world:hover,
+  .kw .kw-world:focus-visible {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ── The orb: a cover painting cropped into a world ────────────────────── */
+
+.kw .kw-orb {
+  position: relative;
+  display: block;
+  width: clamp(96px, 22vw, 132px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  isolation: isolate;
+  /* The volume's own colour is the atmosphere around it — the only place each
+     world's hue appears, so nine planets stay distinguishable without nine
+     differently-coloured UI treatments. */
+  box-shadow:
+    0 0 0 1px rgba(255, 244, 223, 0.14),
+    0 0 26px -4px var(--world, var(--universe-accent)),
+    0 14px 30px rgba(2, 4, 12, 0.5);
+}
+
+.kw .kw-orb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* The paintings are portrait and their subject sits high, so a centred crop
+     cut the heads off. */
+  object-position: 50% 34%;
+  display: block;
+}
+
+/* Terminator: the same lower-left-lit sphere the app's other planets use, so a
+   flat crop reads as a body rather than a circular photo. */
+.kw .kw-orb-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 248, 232, 0.34), transparent 46%),
+    radial-gradient(circle at 68% 78%, rgba(5, 4, 10, 0.62), transparent 58%);
+  pointer-events: none;
+}
+
+.kw .kw-orb-rim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: 50%;
+  box-shadow: inset 0 0 18px -4px var(--world, var(--universe-accent));
+  pointer-events: none;
+}
+
+.kw .kw-orb--lg {
+  width: clamp(120px, 30vw, 190px);
+}
+
+/* ── World caption ─────────────────────────────────────────────────────── */
+
+.kw .kw-world-no {
+  min-width: 46px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--universe-line);
+  background: var(--universe-glass-strong);
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.5;
+  color: var(--universe-ink);
+}
+
+.kw[dir='rtl'] .kw-world-no {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+.kw .kw-world-meta {
+  font: 700 9px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--universe-muted);
+}
+
+.kw[dir='rtl'] .kw-world-meta {
+  font: 600 11px 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+/* ── Back control, shared by the volume and chapter screens ────────────── */
+
+.kw .kw-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: clamp(18px, 4vw, 30px) var(--kw-gap) 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--universe-line);
+  background: var(--universe-glass);
+  color: var(--universe-ink);
+  cursor: pointer;
+  font: 700 10px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.kw[dir='rtl'] .kw-back {
+  font: 700 12px 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+.kw .kw-back:hover {
+  border-color: var(--universe-accent);
+}
+
+/* ── One volume ────────────────────────────────────────────────────────── */
+
+.kw .kw-volume-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 4vw, 40px);
+  flex-wrap: wrap;
+  padding: clamp(22px, 5vw, 44px) var(--kw-gap);
+  color: var(--universe-ink);
+}
+
+.kw .kw-volume-id {
+  min-width: min(100%, 240px);
+  max-width: 380px;
+}
+
+.kw .kw-volume-id > small {
+  display: block;
+  font: 700 10px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.2em;
+  color: var(--universe-accent);
+}
+
+.kw[dir='rtl'] .kw-volume-id > small {
+  font: 700 12px 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+.kw .kw-volume-id h1 {
+  margin: 8px 0 16px;
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: clamp(26px, 5vw, 40px);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 0 22px rgba(232, 172, 78, 0.5);
+}
+
+.kw[dir='rtl'] .kw-volume-id h1 {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.kw .kw-meter {
+  height: 5px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 244, 223, 0.14);
+}
+
+.kw .kw-meter i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--world, var(--universe-accent));
+}
+
+.kw .kw-volume-id > b {
+  display: block;
+  margin-top: 9px;
+  font: 700 9px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--universe-muted);
+}
+
+.kw[dir='rtl'] .kw-volume-id > b {
+  font: 600 12px 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+/* ── Contents ──────────────────────────────────────────────────────────── */
+
+.kw .kw-contents {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 var(--kw-gap) clamp(40px, 8vw, 90px);
+}
+
+.kw .kw-contents-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--universe-line);
+  color: var(--universe-ink);
+}
+
+.kw .kw-contents-head span {
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.kw[dir='rtl'] .kw-contents-head span {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.kw .kw-contents-head b {
+  font: 700 9px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--universe-muted);
+}
+
+.kw[dir='rtl'] .kw-contents-head b {
+  font: 600 12px 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+.kw .kw-chapter-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kw .kw-chapter-list button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 14px;
+  border: 0;
+  border-bottom: 1px solid rgba(240, 182, 106, 0.14);
+  border-radius: 12px;
+  background: none;
+  color: var(--universe-ink);
+  text-align: start;
+  cursor: pointer;
+}
+
+.kw .kw-chapter-list button:hover,
+.kw .kw-chapter-list button:focus-visible {
+  background: var(--universe-glass);
+}
+
+.kw .kw-chapter-no {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 1px solid var(--universe-line);
+  font: 700 12px 'DM Mono', ui-monospace, monospace;
+  color: var(--universe-accent);
+}
+
+.kw[dir='rtl'] .kw-chapter-no {
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+}
+
+.kw .kw-chapter-name {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.kw .kw-chapter-list b {
+  color: var(--universe-muted);
+}
+
+.kw[dir='rtl'] .kw-chapter-list b {
+  transform: scaleX(-1);
+  display: inline-block;
+}
+
+/* ── A chapter that has not been written ───────────────────────────────── */
+
+.kw .kw-soon-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 520px;
+  margin: clamp(24px, 6vw, 56px) auto clamp(50px, 10vw, 110px);
+  padding: clamp(26px, 5vw, 44px) clamp(20px, 4vw, 38px);
+  border: 1px solid var(--universe-line);
+  border-radius: 26px;
+  background: var(--universe-glass);
+  box-shadow: 0 18px 44px rgba(2, 4, 12, 0.38);
+  text-align: center;
+  color: var(--universe-ink);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.kw .kw-soon-card > small {
+  font: 700 10px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.18em;
+  color: var(--universe-accent);
+}
+
+.kw[dir='rtl'] .kw-soon-card > small {
+  font: 700 12px 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+.kw .kw-soon-card h1 {
+  margin: 0;
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: clamp(20px, 3.4vw, 27px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+}
+
+.kw[dir='rtl'] .kw-soon-card h1 {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+.kw .kw-soon-card p {
+  margin: 0;
+  max-width: 44ch;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--universe-muted);
+}
+
+.kw .kw-soon-flag {
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--universe-line);
+  background: var(--universe-glass-strong);
+  font: 700 9px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--universe-accent);
+}
+
+.kw[dir='rtl'] .kw-soon-flag {
+  font: 700 11px 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+/* ── Dr. Kawkab, the floating guide ────────────────────────────────────── */
+
+/*
+ * The character is now the Training hub's Kawkab — the same raster, so the app
+ * has one mascot rather than a planet-person in Training and an astronaut robot
+ * in Learn. The button's frame still comes from kawnera.css; this only fits the
+ * artwork into it and drops the dark disc that used to back the 3D rig, which
+ * behind a translucent glowing body reads as a slab.
+ */
+.kw .kawkabButton {
+  filter: drop-shadow(0 14px 18px rgba(2, 4, 12, 0.5));
+}
+
+.kw .kw-guide-art {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.kw .kawkabButton.open .kw-guide-art {
+  animation: kwGuideBob 3.4s ease-in-out infinite;
+}
+
+@keyframes kwGuideBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kw .kawkabButton.open .kw-guide-art {
+    animation: none;
+  }
+}
+
+/*
+ * Tag and bubble, off the old sticker palette.
+ *
+ * They were hard-coded #17211f on #f5f2e9 with a 8px offset hard shadow and a
+ * Georgia italic body — the editorial identity the rest of this screen has just
+ * left. Same tokens as every other glass surface in the app now.
+ */
+.kw .kawkabTag {
+  border: 1px solid var(--universe-line);
+  background: var(--universe-glass-strong);
+  color: var(--universe-accent);
+  border-radius: 999px;
+  box-shadow: 0 6px 16px rgba(2, 4, 12, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.kw .kawkabGuide.mentor .kawkabTag {
+  border-color: var(--universe-accent);
+  background: var(--universe-glass-strong);
+  color: var(--universe-ink);
+}
+
+.kw .kawkabBubble {
+  border: 1px solid var(--universe-line);
+  border-radius: 20px;
+  background: var(--universe-glass-strong);
+  color: var(--universe-ink);
+  box-shadow: 0 18px 40px rgba(2, 4, 12, 0.46);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.kw .kawkabGuide.mentor .kawkabBubble {
+  border-top: 1px solid var(--universe-accent);
+}
+
+.kw .kawkabBubble b {
+  color: var(--universe-accent);
+}
+
+.kw .kawkabBubble p {
+  font: 500 14.5px/1.6 'Outfit', system-ui, sans-serif;
+  color: var(--universe-ink);
+}
+
+.kw[dir='rtl'] .kawkabBubble p {
+  font-family: 'Cairo', sans-serif;
+}
+
+.kw .kawkabBubble small {
+  color: var(--universe-muted);
+}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+
+.kw .kw-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: clamp(26px, 5vw, 44px) var(--kw-gap) clamp(90px, 12vw, 130px);
+  border-top: 1px solid var(--universe-line);
+  text-align: center;
+  color: var(--universe-muted);
+}
+
+.kw .kw-foot b {
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--universe-ink);
+}
+
+.kw[dir='rtl'] .kw-foot b {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
+.kw .kw-foot i {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 16px;
+}
+
+.kw[dir='rtl'] .kw-foot i {
+  font-family: 'Cairo', sans-serif;
+  font-style: normal;
+}
+
+.kw .kw-foot small {
+  font: 700 9px 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--universe-accent);
+}
+
+.kw[dir='rtl'] .kw-foot small {
+  font: 600 11px 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
