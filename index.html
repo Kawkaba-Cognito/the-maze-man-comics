@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Content-Security-Policy (defence-in-depth). GitHub Pages can't set HTTP
+       headers, so it ships as a meta tag. Scope is exactly what the app loads:
+       self + Google Fonts (styles/fonts) + cdnjs (Three.js for Void Runner,
+       SRI-pinned, loaded on demand).
+       'unsafe-inline' style is required by Google Fonts + React inline styles.
+       Babylon is fetched only after the user swipes into the standalone Home labyrinth.
+       Keep cdn.babylonjs.com in both script-src and connect-src so the pinned,
+       SRI-checked engine in MartianMaze can load on demand. The original maze
+       textures come from playground.babylonjs.com.
+       'unsafe-eval' was justified by Babylon's shader paths and is now a
+       candidate for removal too, but it is left in place until something can
+       actually exercise the app and confirm nothing else needs it.
+       object-src/base-uri stay locked down. -->
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.babylonjs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.babylonjs.com https://playground.babylonjs.com; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; object-src 'none'"
+  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <title>The Maze Man | Psychological Comics</title>
+  <meta name="description" content="Psychological comics — social & cognitive psychology, gamified." />
+  <meta name="theme-color" content="#1a100a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Maze Man" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/the-maze-man-comics/icons/icon-96.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/the-maze-man-comics/icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/the-maze-man-comics/icons/icon-180.png" />
+  <link rel="shortcut icon" href="/the-maze-man-comics/favicon.ico" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet" />
+  <!-- Babylon.js (the 3D maze engine, several MB) is NOT loaded here. A blocking
+       <script> made it parse + execute on every launch — ~2.5s of frozen boot
+       even on screens that never use 3D. MartianMaze now loads it on demand
+       (pinned version + SRI) after the Home swipe. Preconnect so that fetch
+       starts fast. -->
+  <link rel="preconnect" href="https://cdn.babylonjs.com" crossorigin />
+  <link rel="preconnect" href="https://playground.babylonjs.com" crossorigin />
+  <script type="module" crossorigin src="/the-maze-man-comics/Assets/index-DZ_v4gjT.js"></script>
+  <link rel="modulepreload" crossorigin href="/the-maze-man-comics/Assets/jsx-runtime-DIAExeAg.js">
+  <link rel="modulepreload" crossorigin href="/the-maze-man-comics/Assets/preload-helper-_RY3ROIL.js">
+  <link rel="modulepreload" crossorigin href="/the-maze-man-comics/Assets/puzzleStrings-Bn5oOEwm.js">
+  <link rel="modulepreload" crossorigin href="/the-maze-man-comics/Assets/assetUrl-B4uwb7Oh.js">
+  <link rel="modulepreload" crossorigin href="/the-maze-man-comics/Assets/rng-GmNAqRUD.js">
+  <link rel="stylesheet" crossorigin href="/the-maze-man-comics/Assets/index-D0yZKQYC.css">
+<link rel="manifest" href="/the-maze-man-comics/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/the-maze-man-comics/registerSW.js"></script></head>
+<body>
+  <div id="root"></div>
+</body>
+</html>

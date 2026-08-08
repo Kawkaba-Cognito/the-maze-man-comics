@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200">
+  <defs>
+    <linearGradient id="lot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a342c"/>
+      <stop offset="55%" stop-color="#2c281f"/>
+      <stop offset="100%" stop-color="#221c16"/>
+    </linearGradient>
+    <radialGradient id="amb" cx="25%" cy="18%" r="55%">
+      <stop offset="0%" stop-color="#e8ac4e" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#e8ac4e" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="asp" width="8" height="8" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="3" r="0.7" fill="#000" opacity="0.12"/>
+      <circle cx="6" cy="6" r="0.5" fill="#fff" opacity="0.04"/>
+    </pattern>
+  </defs>
+  <rect width="900" height="1200" fill="url(#lot)"/>
+  <rect width="900" height="1200" fill="url(#asp)"/>
+  <rect width="900" height="1200" fill="url(#amb)"/>
+</svg>

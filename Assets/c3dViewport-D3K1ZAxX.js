@@ -1,0 +1,1 @@
+function e(){try{return window.matchMedia(`(pointer: coarse)`).matches||window.matchMedia(`(hover: none)`).matches}catch{return!1}}function t(e,t){return e>=900||e/Math.max(1,t)>=1.2&&e>=700}function n(e){try{e?.forceContextLoss?.()}catch{}}export{t as n,n as r,e as t};
