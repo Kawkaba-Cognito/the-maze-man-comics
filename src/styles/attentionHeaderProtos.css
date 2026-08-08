@@ -200,13 +200,81 @@
 /* ══ Light appearance ═════════════════════════════════════════════════════
  *
  * This header was built for the black domain page: #f4e8c8 caps lifted off the
- * void by a dark drop shadow and an accent glow. A previous pass inverted it to
- * dark ink here, because that page had been forced to parchment in light theme
- * and cream-on-cream read as a ghost.
+ * void by a dark drop shadow and an accent glow, with the kicker, chip and
+ * modal all mixing their domain accent TOWARD WHITE so it would glow.
  *
- * The domain page is Home's dusk again (see .ct-domain-pick in training.css),
- * so the authored engraving is correct and the inversion is gone — it would now
- * be dark ink on a dark sky, the exact failure it was added to prevent. The
- * per-domain accent still rides on the kicker and the rule, so each domain
- * announces itself by colour.
+ * The domain page is beige (see .ct-domain-pick in training.css), where every
+ * one of those moves fails the same way: mixing toward white on a light ground
+ * makes a colour vanish. So each accent is mixed toward INK instead — the same
+ * hue, the opposite direction — and the glows become nothing rather than grey
+ * halos. The per-domain accent still tells you which domain you are in; it just
+ * does it by hue at a legible lightness.
  */
+html[data-home-theme='light'] .ahv-title {
+    color: var(--universe-ink);
+    text-shadow: none;
+}
+html[data-home-theme='light'] .ahv-tag {
+    color: color-mix(in srgb, var(--domain-accent) 46%, var(--universe-ink));
+}
+html[data-home-theme='light'] .ahv-desc {
+    color: var(--universe-muted);
+    opacity: 1;
+}
+html[data-home-theme='light'] .ahv-rule {
+    background: linear-gradient(
+        90deg,
+        transparent,
+        color-mix(in srgb, var(--domain-accent) 55%, var(--universe-ink)),
+        transparent
+    );
+    opacity: 0.7;
+}
+
+/* "Why train X?" chip. `.ct-domain-pick-about-link` in training.css paints it
+ * a near-black pill with pale gold type, at !important — so this needs
+ * !important too, not just a higher score. Selector specificity does not
+ * matter against an !important declaration in the same origin. */
+html[data-home-theme='light'] .ct-domain-pick .ct-domain-pick-about-link.ct-fq-sci-link--chip {
+    background: var(--universe-glass-strong) !important;
+    border-color: color-mix(in srgb, var(--domain-accent) 38%, var(--universe-line)) !important;
+    color: color-mix(in srgb, var(--domain-accent) 42%, var(--universe-ink)) !important;
+    box-shadow: none !important;
+}
+html[data-home-theme='light'] .ct-domain-pick .ct-domain-pick-about-link.ct-fq-sci-link--chip:hover {
+    border-color: color-mix(in srgb, var(--domain-accent) 62%, var(--universe-ink)) !important;
+    box-shadow: none !important;
+}
+
+/* The science modal. Panel, scrim and every line of copy inside it. */
+html[data-home-theme='light'] .ct-domain-pick .ct-domain-sci-ov {
+    background: rgba(32, 29, 24, 0.42);
+}
+html[data-home-theme='light'] .ct-domain-pick .ct-domain-sci-panel {
+    background:
+        radial-gradient(ellipse 120% 70% at 50% -8%, color-mix(in srgb, var(--domain-accent) 14%, transparent) 0%, transparent 60%),
+        var(--universe-glass-strong);
+    border-color: var(--universe-line);
+    box-shadow: 0 20px 44px rgba(32, 29, 24, 0.2);
+}
+html[data-home-theme='light'] .ct-domain-pick .ct-domain-sci-title,
+html[data-home-theme='light'] .ct-domain-pick .ct-domain-sci-h {
+    color: color-mix(in srgb, var(--domain-accent) 40%, var(--universe-ink));
+    text-shadow: none;
+}
+html[data-home-theme='light'] .ct-domain-pick .ct-domain-sci-intro,
+html[data-home-theme='light'] .ct-domain-pick .ct-domain-sci-b {
+    color: var(--universe-ink);
+}
+html[data-home-theme='light'] .ct-domain-pick .ct-domain-sci-foot {
+    color: var(--universe-muted);
+}
+html[data-home-theme='light'] .ct-domain-pick .ct-domain-sci-item {
+    background: var(--universe-glass);
+    border-color: var(--universe-line);
+}
+/* The close button keeps its accent fill — a solid button is the one place on
+ * this page where the accent has enough area to carry ink at full strength. */
+html[data-home-theme='light'] .ct-domain-pick .ct-domain-sci-close {
+    box-shadow: none;
+}

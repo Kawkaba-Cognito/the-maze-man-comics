@@ -58,10 +58,21 @@
   -webkit-backdrop-filter: blur(14px);
 }
 
-.kw .kw-brand {
+/* Two equal flanks with the title between them, so the name is centred on the
+ * BAR rather than on whatever happens to sit beside it — the same three-slot
+ * arrangement as .rh-training-header. */
+.kw .kw-bar-slot {
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 10px;
+  justify-content: flex-start;
+}
+
+.kw .kw-bar-slot--end {
+  justify-content: flex-end;
+}
+
+.kw .kw-brand {
   padding: 0;
   border: 0;
   background: none;
@@ -69,59 +80,33 @@
   cursor: pointer;
 }
 
-.kw .kw-brand-mark {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 1px solid var(--universe-line);
-  background: var(--universe-glass);
-}
-
-.kw .kw-brand-mark img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
+/* Matches .rh-training-title in trainingHubPremium.css — Cinzel caps, 2.5px
+ * tracking — one step down in size because this bar is 66px, not the hub's
+ * taller safe-area header. */
 .kw .kw-brand-name {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  text-align: start;
+  display: block;
   font-family: 'Cinzel', 'Cormorant Garamond', serif;
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: 0.16em;
-  line-height: 1;
+  letter-spacing: 2.2px;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .kw[dir='rtl'] .kw-brand-name {
   font-family: 'Cairo', sans-serif;
+  font-size: 19px;
   letter-spacing: 0;
-}
-
-.kw .kw-brand-name small {
-  font: 700 8px 'DM Mono', ui-monospace, monospace;
-  letter-spacing: 0.14em;
-  color: var(--universe-accent);
-}
-
-.kw[dir='rtl'] .kw-brand-name small {
-  font-family: 'Cairo', sans-serif;
-  font-size: 9px;
-  letter-spacing: 0;
+  text-transform: none;
 }
 
 .kw .kw-bar-count {
-  margin-inline-start: auto;
   font: 700 9px 'DM Mono', ui-monospace, monospace;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--universe-accent);
+  text-align: end;
 }
 
 .kw[dir='rtl'] .kw-bar-count {
@@ -610,6 +595,13 @@
  */
 .kw .kawkabButton {
   filter: drop-shadow(0 14px 18px rgba(2, 4, 12, 0.5));
+}
+
+/* On beige that near-black shadow at 50% is a smudge under the character
+ * rather than a contact shadow — and the keyed art already carries its own
+ * soft ground shadow from the render. Warm and lighten it so the two agree. */
+html[data-home-theme='light'] .kw .kawkabButton {
+  filter: drop-shadow(0 8px 12px rgba(32, 29, 24, 0.18));
 }
 
 .kw .kw-guide-art {

@@ -185,17 +185,19 @@
  * inheriting it by accident of sharing a class — which is why every hub/pick/
  * results screen across every game read as the same flat white page.
  *
- * Now wears --home-sky-light: Home's own dusk ramp (cool zenith → warm
- * horizon) lifted into a light key. A first pass here used only Home's warm
- * horizon stops, which flattened into generic cream — the cool-to-warm
- * journey is the part that actually reads as Home. */
+ * A middle pass wore --home-sky-light, a cool-zenith → warm-horizon ramp
+ * lifted from Home's dusk. That is retired. It is now the app's flat ground.
+ *
+ * FLAT, not a ramp, and that is the load-bearing part: on a vertical gradient
+ * a line of text has a different contrast at the top of the page than at the
+ * bottom (measured 1.8:1 at the warm band), so "the text disappears when I
+ * scroll" was structural rather than a colour choice. A flat ground makes
+ * every caption on every menu, level grid and results screen legible by
+ * construction. */
 html[data-home-theme='light'] .ct-fq-training-shell--hub-light {
-    background-color: var(--home-sky-horizon) !important;
-    background-image: var(--home-sky-light) !important;
-    background-size: var(--home-sky-size) !important;
-    background-repeat: no-repeat !important;
-    background-position: top center !important;
-    color: #2d2d2d;
+    background-color: var(--universe-dusk) !important;
+    background-image: none !important;
+    color: var(--universe-ink) !important;
 }
 
 /* The content column (.ct-fq-training-screen, ~580px centred) paints a flat
@@ -215,24 +217,14 @@ html[data-home-theme='light'] .ct-fq-training-shell--hub-light .ct-fq-training-s
 html[data-home-theme='light']:has(.ct-fq-training-shell--hub-light:not(.ct-domain-pick)),
 html[data-home-theme='light'] body:has(.ct-fq-training-shell--hub-light:not(.ct-domain-pick)),
 html[data-home-theme='light'] #ui-shell:has(.ct-fq-training-shell--hub-light:not(.ct-domain-pick)),
-html[data-home-theme='light'] #screen-comics:has(.ct-fq-training-shell--hub-light:not(.ct-domain-pick)) {
-    background-color: var(--home-sky-horizon) !important;
-    background-image: var(--home-sky-light) !important;
-    background-size: var(--home-sky-size) !important;
-    background-repeat: no-repeat !important;
-    background-position: top center !important;
-}
-
-/* Same for the domain page, which is the dark dusk rather than the light one. */
+html[data-home-theme='light'] #screen-comics:has(.ct-fq-training-shell--hub-light:not(.ct-domain-pick)),
+/* Same for the domain page — one ground now, so it shares the rule. */
 html[data-home-theme='light']:has(.ct-domain-pick),
 html[data-home-theme='light'] body:has(.ct-domain-pick),
 html[data-home-theme='light'] #ui-shell:has(.ct-domain-pick),
 html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
-    background-color: var(--home-sky-dusk-deep) !important;
-    background-image: var(--home-sky-dusk) !important;
-    background-size: var(--home-sky-size) !important;
-    background-repeat: no-repeat !important;
-    background-position: top center !important;
+    background-color: var(--universe-dusk) !important;
+    background-image: none !important;
 }
 .ct-fq-training-shell--hub-light .ct-fq-hub-attn-big {
     font-family: 'Outfit', system-ui, sans-serif;
@@ -337,8 +329,13 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
         0 4px 14px rgba(45, 60, 48, 0.06);
 }
 
+/* The hairline round the difficulty tiles. `border-inline-start` is left OUT
+ * on purpose: the ladder's severity bar lives on that edge (see .ct-fq-db-*
+ * below), and a blanket `border: …` here reset it to a 1px hairline —
+ * shorthand beats longhand regardless of which is more specific. */
 .ct-fq-training-shell--hub-light .ct-fq-db-training {
-    border: 1px solid rgba(45, 45, 40, 0.12) !important;
+    border-block: 1px solid rgba(45, 45, 40, 0.12) !important;
+    border-inline-end: 1px solid rgba(45, 45, 40, 0.12) !important;
     box-shadow: 0 6px 18px rgba(45, 60, 48, 0.08), 0 1px 0 rgba(255, 255, 255, 0.5) inset !important;
 }
 
@@ -1291,12 +1288,38 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     margin-bottom: 8px;
 }
 .ct-fq-dbg { font-size: 0.67rem; opacity: 0.85; text-align: right; line-height: 1.35; font-weight: 600; max-width: 52%; }
-.ct-fq-db-easy { background: linear-gradient(135deg, #a8d8a8, #7ab87a); color: #1a4a1a; }
-.ct-fq-db-medium { background: linear-gradient(135deg, #a8d8e8, #7ab8c4); color: #0a3040; }
-.ct-fq-db-inter { background: linear-gradient(135deg, #a8d8e8, #7ab8c4); color: #0a3040; }
-.ct-fq-db-hard { background: linear-gradient(135deg, #f5e09a, #e8c47a); color: #4a3a00; }
-.ct-fq-db-xhard { background: linear-gradient(135deg, #f5c09a, #e8a07a); color: #4a2a00; }
-.ct-fq-db-deadly { background: linear-gradient(135deg, #f0a0a0, #c97a7a); color: #3a0a0a; }
+
+/*
+ * The difficulty ladder, on every game.
+ *
+ * These were six saturated pastels — mint, sky, butter, peach, rose — each
+ * with its own hand-picked dark ink. Six unrelated hues at full chroma is the
+ * loudest thing on any Training screen and it belongs to no palette; next to
+ * the beige ground it is the single clearest "this is a different app" signal
+ * left inside Training.
+ *
+ * Rebuilt on the playfield roles from gamePalette.js, which are already tuned
+ * to be told apart on this ground: ok → item → accent → a deeper accent → bad.
+ * Each tile is a TINT of its role over the raised surface rather than the role
+ * itself, so one ink (--ink) is legible on all six — no per-tile text colour
+ * to keep in sync.
+ *
+ * Severity also reads WITHOUT colour: the inline-start bar steps 3px → 8px
+ * down the ladder. A player with colour-vision deficiency sees the ramp in the
+ * bar width, which is the same rule the games follow (never encode state in
+ * fill alone).
+ */
+.ct-fq-db {
+    color: var(--ink);
+    border-inline-start: 3px solid var(--fq-db-role, var(--line)) !important;
+    background: color-mix(in srgb, var(--fq-db-role, var(--line)) 16%, var(--surface-raised));
+}
+.ct-fq-db-easy   { --fq-db-role: #386544; }
+.ct-fq-db-medium { --fq-db-role: #2f5f86; }
+.ct-fq-db-inter  { --fq-db-role: #2f5f86; }
+.ct-fq-db-hard   { --fq-db-role: #b07d28; border-inline-start-width: 5px !important; }
+.ct-fq-db-xhard  { --fq-db-role: #a05a2c; border-inline-start-width: 7px !important; }
+.ct-fq-db-deadly { --fq-db-role: #854c49; border-inline-start-width: 9px !important; }
 
 /* Choose-difficulty screen — centre the cards so they fill the screen, and make
  * each card a richer, taller tile (label + what it trains + grid/targets/percentile). */
@@ -1928,12 +1951,22 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 .ct-fq-lb:disabled { cursor: not-allowed; }
 .ct-ln { font-family: 'Outfit', system-ui, sans-serif; font-size: 1.05rem; }
 .ct-ls { font-size: 0.55rem; opacity: 0.78; }
-.ct-fq-lb.ct-lve { background: linear-gradient(135deg, #c8e8c8, #9acc9a); color: #1a4a1a; }
-.ct-fq-lb.ct-lvi { background: linear-gradient(135deg, #c8e8f0, #9accd8); color: #0a3040; }
-.ct-fq-lb.ct-lvh { background: linear-gradient(135deg, #f8eab0, #e8d080); color: #4a3a00; }
-.ct-fq-lb.ct-lvx { background: linear-gradient(135deg, #f8d0b0, #e8b080); color: #4a2a00; }
-.ct-fq-lb.ct-lvd { background: linear-gradient(135deg, #f8b0b0, #d88080); color: #3a0a0a; }
-.ct-fq-lb.ct-lvk { background: #e0dbd4; color: #aaa; }
+/* Level tiles. Same five roles as the difficulty ladder above and derived the
+ * same way — a tint of the role over the raised surface, one ink for all of
+ * them — so a 100-tile grid reads as one board rather than five pastel families
+ * fighting for attention. Kept slightly stronger (22%) than the difficulty
+ * cards because a 40px tile has far less area to carry its colour. */
+.ct-fq-lb.ct-lve { background: color-mix(in srgb, #386544 22%, var(--surface-raised)); color: var(--ink); }
+.ct-fq-lb.ct-lvi { background: color-mix(in srgb, #2f5f86 22%, var(--surface-raised)); color: var(--ink); }
+.ct-fq-lb.ct-lvh { background: color-mix(in srgb, #b07d28 22%, var(--surface-raised)); color: var(--ink); }
+.ct-fq-lb.ct-lvx { background: color-mix(in srgb, #a05a2c 22%, var(--surface-raised)); color: var(--ink); }
+.ct-fq-lb.ct-lvd { background: color-mix(in srgb, #854c49 22%, var(--surface-raised)); color: var(--ink); }
+/* Locked. --ink-dim, not #aaa: a fixed grey lands at a different contrast on
+ * every ground and was 1.6:1 on beige — the level numbers were barely there.
+ * Once the played tiles became tints rather than pastels, "locked" and "done"
+ * sat too close in value, so locked also recedes as a whole: opacity separates
+ * the two states without spending another colour on it. */
+.ct-fq-lb.ct-lvk { background: var(--surface); color: var(--ink-dim); opacity: 0.62; }
 
 .ct-fq-card {
     background: var(--fq-card);
@@ -6687,18 +6720,16 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     padding-top: max(14px, env(safe-area-inset-top));
 }
 
-/* Domain pick — Home's dusk; domain accent lives in ::before glow only.
- * Was flat #000. Home is not black, it is a dusk that ramps cool-slate zenith
- * → warm ember horizon, so the domain pages now wear that same sky and read
- * as the screen you just came from. Sized to one viewport (see
- * --home-sky-size) so the ramp completes on screen instead of stretching
- * over a long scroll. */
+/* Domain pick — the app's own ground; the domain accent lives in the ::before
+ * glow only. Was flat #000, then the dusk-sunset ramp. Now --universe-dusk,
+ * the same token the Training hub one tap back is painted with, so walking
+ * hub → domain → mode never changes what app you are in. Theme-aware, so this
+ * one rule serves both appearances and the light-theme override that used to
+ * fight it is gone. */
 .ct-domain-pick.ct-fq-training-shell--hub-light {
-    background-color: var(--home-sky-dusk-deep) !important;
-    background-image: var(--home-sky-dusk) !important;
-    background-size: var(--home-sky-size) !important;
-    background-repeat: no-repeat !important;
-    color: var(--color-header-text);
+    background-color: var(--universe-dusk) !important;
+    background-image: none !important;
+    color: var(--universe-ink) !important;
 }
 
 .ct-domain-pick::before {
@@ -6845,7 +6876,10 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--color-amber);
+    /* Was flat --color-amber, which is 2:1 on the beige ground. Mixed toward
+     * ink instead of toward white: same domain hue, legible lightness. The
+     * dark-theme block further down mixes the other way, for the void. */
+    color: color-mix(in srgb, var(--domain-accent, var(--color-amber)) 46%, var(--universe-ink));
     white-space: nowrap;
 }
 
@@ -7557,11 +7591,19 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     box-sizing: border-box;
     overflow: hidden;
 }
+/* The mode hub's sky. Transparent by default — the shell already paints
+ * --universe-dusk, and two painted surfaces in near-register showed as a
+ * visible rectangle around the planets (the sky starts below the game header,
+ * so its ramp began ~150px lower than the wrapper's). Dark appearance adds a
+ * radial back for depth, because there a void CAN have depth. */
 .ct-mph-sky {
     position: absolute;
     inset: 0;
     pointer-events: none;
     overflow: hidden;
+    background: transparent;
+}
+html[data-home-theme='dark'] .ct-mph-sky {
     background:
         radial-gradient(ellipse 88% 68% at 50% 38%, #12101a 0%, #07060b 68%, #030208 100%);
 }
@@ -7740,7 +7782,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     margin: 0;
     cursor: pointer;
     font: inherit;
-    color: var(--ink);
+    color: var(--universe-ink);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -7861,10 +7903,13 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     font-weight: 600;
     font-size: clamp(1.12rem, 4vw, 1.35rem);
     line-height: 1.15;
-    color: #fff6e4;
+    color: var(--universe-ink);
     letter-spacing: 0.02em;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
     width: 100%;
+}
+/* The lift-off-the-void glow belongs to the void only. */
+html[data-home-theme='dark'] .ct-mph-planet-name {
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
 }
 .ct-mph-planet--sm .ct-mph-planet-name {
     font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
@@ -7879,7 +7924,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     font-size: 0.7rem;
     font-weight: 600;
     line-height: 1.35;
-    color: rgba(240, 226, 192, 0.62);
+    color: var(--universe-muted);
     width: 100%;
     max-width: 11.5em;
 }
@@ -8099,15 +8144,38 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     text-shadow: 0 2px 14px rgba(0, 0, 0, 0.88), 0 0 16px rgba(232, 172, 78, 0.12);
 }
 
-/* NOTE — there was an "ink contour" treatment here (a hairline dark outline on
- * .ct-mph-planet-img / .gpt-atmosphere / .ct-mph-planet-ring, scoped to
- * [data-home-theme='light'] .ct-domain-pick). It existed only because this page
- * had been forced to parchment: an orb whose edge is an amber GLOW has nothing
- * to glow against on paper, so each planet needed a drawn edge instead.
+/* ── The domain page's night dressing, in light appearance ─────────────────
  *
- * The page is Home's dusk again, so the glow works as authored and the ink
- * contour would now double the rim it was standing in for. Removed rather than
- * re-tinted. */
+ * Same three moves as the mode hub above. The starfield, the orbit map and its
+ * amber marker are all additive light: on beige they are dirt, not stars.
+ *
+ * The ink contour comes BACK with them (an earlier pass had it, then removed
+ * it when this page went to dusk). It is the reason it existed in the first
+ * place: an orb whose edge is an amber GLOW has nothing to glow against on a
+ * light ground, so each planet needs a drawn edge or it dissolves into the
+ * page. Glow off → contour on; they are the same job done two ways. */
+html[data-home-theme='light'] .ct-domain-pick .gpt-constellation::before,
+html[data-home-theme='light'] .ct-domain-pick .gpt-orbit-map {
+    display: none !important;
+}
+html[data-home-theme='light'] .ct-domain-pick .gpt-atmosphere {
+    border-color: rgba(32, 29, 24, 0.22);
+    box-shadow: none;
+}
+html[data-home-theme='light'] .ct-domain-pick .gpt-sphere {
+    /* The specular pin-light and the 68%-black terminator were both modelled
+     * for a black backdrop. Halved, so the orb still reads as a sphere. */
+    background:
+        radial-gradient(circle at 31% 24%, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.06) 19%, transparent 39%),
+        radial-gradient(circle at 48% 46%, transparent 52%, rgba(32, 29, 24, 0.1) 76%, rgba(32, 29, 24, 0.3) 100%);
+    box-shadow:
+        inset -14px -18px 24px rgba(32, 29, 24, 0.16),
+        0 6px 16px rgba(32, 29, 24, 0.16);
+}
+html[data-home-theme='light'] .ct-domain-pick .ct-mph-planet-name {
+    color: var(--universe-ink);
+    text-shadow: none;
+}
 
 @media (max-width: 480px) {
     .ct-domain-pick .gpt-constellation {
@@ -8171,8 +8239,19 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 }
 
 /* Cosmos mode hub — planet constellation (all training games).
- * Locked to Cancellation's palette so domain shells (memory green, language
- * purple, cream ComicsScreen surface, etc.) cannot retint the void. */
+ * Locked to one ground so domain shells (memory green, language purple, cream
+ * ComicsScreen surface, etc.) cannot retint it.
+ *
+ * ⚠ Was `background: #07060b` + `color: var(--ink)`, both hardcoded. Two things
+ * broke that, 2026-08-07/08:
+ *   1. --ink was made APPEARANCE-INDEPENDENT when the boards were fixed light,
+ *      so it is #201d18 in dark theme too — near-black type on a near-black
+ *      void. Every mode-hub title was 1.2:1 in BOTH themes.
+ *   2. Beige became the app default, so a black void here is a different app
+ *      from the hub two taps back.
+ * Both are fixed by the same move: --universe-dusk / --universe-ink are
+ * theme-aware and are what the Training hub, Kawnera and Puzzle Studio already
+ * wear. Ground and type now flip together, by construction. */
 .ct-fq-training-shell--mode-cosmos,
 .cancellation-task-game.ct-fq-training-shell--mode-cosmos,
 .ct-ms-shell.ct-fq-training-shell--mode-cosmos,
@@ -8185,9 +8264,9 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     min-height: min(100vh, 100dvh);
     height: 100%;
     box-sizing: border-box;
-    background: #07060b !important;
+    background: var(--universe-dusk) !important;
     background-image: none !important;
-    color: var(--ink) !important;
+    color: var(--universe-ink) !important;
     overflow: hidden;
 }
 /* Parent wrappers that otherwise paint cream / domain purple behind the hub */
@@ -8197,9 +8276,9 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 .ct-stroop-root:has(.ct-fq-training-shell--mode-cosmos),
 .ct-wordle-root:has(.ct-fq-training-shell--mode-cosmos),
 .ct-ms-root:has(.ct-fq-training-shell--mode-cosmos) {
-    background: #07060b !important;
+    background: var(--universe-dusk) !important;
     background-image: none !important;
-    color: var(--ink) !important;
+    color: var(--universe-ink) !important;
 }
 /* Beat .ct-fq-training-screen--hub.ct-fq-training-screen.ct-fq-screen
  * (3-class !important palette surface = the grey ring around the page). */
@@ -8240,9 +8319,11 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     font-weight: 800 !important;
     line-height: 1.12 !important;
     letter-spacing: -0.02em !important;
-    color: var(--ink) !important;
+    color: var(--universe-ink) !important;
     -webkit-text-stroke: 0 !important;
-    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.55) !important;
+    /* No glow. The old `0 2px 16px rgba(0,0,0,.55)` existed to lift cream off a
+     * black void; on the beige ground it is a grey smear behind dark type. */
+    text-shadow: none !important;
     text-align: center;
     width: 100%;
     overflow-wrap: anywhere;
@@ -8260,11 +8341,11 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     letter-spacing: 0.14em !important;
     text-transform: uppercase !important;
     line-height: 1.25 !important;
-    color: rgba(232, 172, 78, 0.95) !important;
-    background: rgba(14, 12, 24, 0.72) !important;
-    border: 1px solid rgba(232, 172, 78, 0.38) !important;
+    color: var(--universe-accent) !important;
+    background: var(--universe-glass-strong) !important;
+    border: 1px solid var(--universe-line) !important;
     border-radius: 999px !important;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35) !important;
+    box-shadow: none !important;
     text-shadow: none !important;
     text-align: center;
 }
@@ -8279,25 +8360,27 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     letter-spacing: 0.04em !important;
     text-transform: none !important;
 }
-/* White back / ? buttons — same as domain-pick on dark void */
+/* Back / ? buttons. Were a hard white pill with a heavy drop shadow, which is
+ * what a control needs on a void and reads as a sticker on beige. Glass +
+ * hairline is the same control the Training hub and Puzzle Studio use. */
 .ct-fq-training-shell--mode-cosmos .ct-training-menubar--paper .ct-training-chrome-btn--paper,
 .ct-fq-training-shell--mode-cosmos .ct-training-chrome-btn--paper {
-    background: linear-gradient(180deg, #fff 0%, #f3ebe4 100%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.7) !important;
-    color: var(--ink) !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;
+    background: var(--universe-glass-strong) !important;
+    border: 1px solid var(--universe-line) !important;
+    color: var(--universe-ink) !important;
+    box-shadow: none !important;
 }
 .ct-fq-training-shell--mode-cosmos .ct-training-chrome-btn--tutorial {
-    color: #8a5a18 !important;
+    color: var(--universe-accent) !important;
 }
 .ct-fq-training-shell--mode-cosmos .ct-fq-sci-link {
-    color: rgba(240, 226, 192, 0.7) !important;
+    color: var(--universe-muted) !important;
 }
 .ct-fq-training-shell--mode-cosmos .ct-fq-training-blurb,
 .ct-fq-training-shell--mode-cosmos .ct-fq-sub,
 .ct-fq-training-shell--mode-cosmos .ct-ms-tagline,
 .ct-fq-training-shell--mode-cosmos .ct-rv-intro .ct-fq-sub {
-    color: rgba(240, 226, 192, 0.55) !important;
+    color: var(--universe-muted) !important;
     text-align: center;
 }
 
@@ -8773,18 +8856,25 @@ html[data-home-theme='light'] .rh-puzzles-cta {
     box-shadow: 0 6px 18px rgba(22, 15, 30, 0.28) !important;
 }
 
-/* ══ Mode hub (ModePlanetHub) — Home's dusk ═══════════════════════════════
+/* ══ Mode hub (ModePlanetHub) — light appearance ══════════════════════════
  *
- * This screen was authored black-only: .ct-mph-sky paints #12101a→#030208,
- * with stars, dust, shooting stars and nebulae layered on that void.
+ * This screen was authored black-only: stars, dust, shooting stars, nebulae
+ * and an additive planet bloom, all layered on a #07060b void.
  *
- * An earlier pass forced it to parchment in light theme and switched all
- * those effects off (a star on paper is a speck, not a dim star). That has
- * been undone: Home is a DUSK in light appearance, not paper, so the sky and
- * its whole night-effect stack are correct as authored — they just needed the
- * right sky underneath. .ct-mph-sky's base gradient now carries Home's ramp
- * (see the base rule earlier in this file), so no light-theme override is
- * needed here at all, and the cream planet names/hints work as written.
+ * A middle pass put it on the dusk-sunset ramp so those effects could survive.
+ * The sunset is retired (it read as "a sunset app", not a training platform),
+ * so this screen now flattens exactly the way the Training hub, Kawnera and
+ * Puzzle Studio already did — the fourth application of the same three moves:
+ *
+ *   1. NIGHT EFFECTS OFF. Additive light on a bright ground adds to nothing.
+ *      A star on beige is a speck; a blurred nebula is a smudge. There is no
+ *      opacity that rescues them, so they go.
+ *   2. HUE OUT OF THE BLOOM, INTO THE RIM. The accent glow was how you knew
+ *      which planet was hot. On beige that job moves to a crisp ring plus a
+ *      grounded contact shadow — the planet sits ON the page instead of
+ *      glowing out of it.
+ *   3. SHADOWS SOFTENED. Shadows tuned to disappear into black read as soot
+ *      on beige.
  *
  * NOTE: do NOT put an opacity on .ct-mph-constellation. Despite the name it is
  * not the corridor linework — it is the flex CONTAINER holding the mode
@@ -8792,48 +8882,78 @@ html[data-home-theme='light'] .rh-puzzles-cta {
  * which instead faded every planet and caption to 28% — the reported
  * semi-transparent planets and grey mode names.
  */
+html[data-home-theme='light'] .ct-mph-nebula,
+html[data-home-theme='light'] .ct-mph-stars,
+html[data-home-theme='light'] .ct-mph-dust,
+html[data-home-theme='light'] .ct-mph-shoot,
+html[data-home-theme='light'] .ct-mph-tether {
+    display: none !important;
+}
 
-/* .ct-mph-sky keeps its authored near-black radial for dark theme, but goes
- * TRANSPARENT here so the page wrapper's dusk shows straight through.
- *
- * Painting the ramp on this element too looked seamless in theory and was not:
- * .ct-mph-sky starts below the game header, so its 100dvh ramp begins ~150px
- * lower than the wrapper's and the offset showed up as a visible rectangle
- * around the mode planets. One painted surface, not two in near-register. */
-html[data-home-theme='light'] .ct-mph-sky {
-    background: transparent;
+/* The bloom becomes a rim. Kept as an element (not `display: none`) because
+ * `.is-hot` animates its opacity — hiding it would kill the hover cue. */
+html[data-home-theme='light'] .ct-mph-planet-glow {
+    inset: -6%;
+    background: none;
+    border: 1px solid color-mix(in srgb, var(--mph-accent) 42%, transparent);
+    opacity: 0.55;
+    filter: none;
+    animation: none;
+}
+html[data-home-theme='light'] .ct-mph-planet.is-hot .ct-mph-planet-glow {
+    opacity: 1;
+    border-color: color-mix(in srgb, var(--mph-accent) 78%, transparent);
+}
+html[data-home-theme='light'] .ct-mph-planet-ring {
+    opacity: 0.28;
+    border-color: color-mix(in srgb, var(--mph-accent) 34%, transparent);
+}
+
+/* A contact shadow, not a halo: the planet is an object on a page here. */
+html[data-home-theme='light'] .ct-mph-planet-img {
+    box-shadow:
+        0 6px 16px rgba(32, 29, 24, 0.18),
+        0 0 0 1px color-mix(in srgb, var(--mph-accent) 30%, transparent);
+}
+
+/* The terminator was a dark-sky shading gradient. On beige it only needs to
+ * give the sphere form, so both ends come down hard. */
+html[data-home-theme='light'] .ct-mph-planet-shade {
+    background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.22) 0%,
+        transparent 42%,
+        transparent 66%,
+        rgba(32, 29, 24, 0.12) 100%
+    );
 }
 
 /* ══ Training DOMAIN pick (ComicsScreen .ct-domain-pick) ═══════════════════
  *
  * The exercise picker — "Training domain / ATTENTION / Select an exercise" —
- * was authored as a black void with cream type, and an earlier pass forced it
- * to parchment in light theme on the reasoning that a black room next to a
- * cream hub read as a different app.
- *
- * That override is GONE, deliberately. Home is itself a dusk in light
- * appearance — dark cool zenith, warm ember horizon — so the page that made
- * this screen feel foreign was never this one; it was the parchment. The base
- * rule now paints --home-sky-dusk (see the .ct-domain-pick block above), which
- * puts this screen on literally Home's sky and lets its original cream-on-dark
- * type, its ::before accent bloom (tuned at 28% mix to glow out of darkness)
- * and its gold "Why train X?" pill all work as authored, with no inversion
- * layer fighting them.
+ * was authored as a black void with cream type. It now wears --universe-dusk
+ * from its base rule, which is theme-aware, so this override only has to
+ * exist for SPECIFICITY: the generic `html[data-home-theme='light']
+ * .ct-fq-training-shell--hub-light` above scores attribute+class and would
+ * otherwise outrank the base `.ct-domain-pick.ct-fq-training-shell--hub-light`
+ * (two classes). Same values, higher score.
  *
  * The per-domain accent (--domain-accent/-mid/-deep) still rides on top: it is
- * the one thing that tells you WHICH domain you are in.
- *
- * This rule has to repeat the base one under the theme attribute: the generic
- * `html[data-home-theme='light'] .ct-fq-training-shell--hub-light` above scores
- * attribute+class and would otherwise outrank the base `.ct-domain-pick.ct-fq-
- * training-shell--hub-light` (two classes) and paint this page light again.
- */
+ * the one thing that tells you WHICH domain you are in. Its ::before bloom is
+ * knocked down below — 28% mix was tuned to glow out of darkness. */
 html[data-home-theme='light'] .ct-domain-pick.ct-fq-training-shell--hub-light {
-    background-color: var(--home-sky-dusk-deep) !important;
-    background-image: var(--home-sky-dusk) !important;
-    background-size: var(--home-sky-size) !important;
-    background-repeat: no-repeat !important;
-    color: var(--color-header-text) !important;
+    background-color: var(--universe-dusk) !important;
+    background-image: none !important;
+    color: var(--universe-ink) !important;
+}
+
+/* The domain accent bloom. On black it was the whole atmosphere of the page;
+ * on beige an additive radial adds to nothing above ~40% and reads as a dirty
+ * cloud below it. Kept, faint, as a tint at the top of the page so each domain
+ * still announces itself — the hue survives, the glow does not. */
+html[data-home-theme='light'] .ct-domain-pick::before {
+    opacity: 0.34;
+    mix-blend-mode: multiply;
 }
 
 /* ══ Cosmos MODE pages (Survival / Levels / Pass n Play) — light mode ══════
@@ -8849,15 +8969,13 @@ html[data-home-theme='light'] .ct-domain-pick.ct-fq-training-shell--hub-light {
  * so it outranks the original (same selector + one attribute) and carries
  * !important to match.
  *
- * These carry the SAME dusk ramp as .ct-mph-sky rather than a flat tone. The
- * earlier worry — "these nest, so a gradient on each restarts the ramp" — is
- * answered by --home-sky-size (100% 100dvh) plus `top center`: every layer
- * anchors its ramp to the top of the viewport at the same height, so nested
- * copies land in register instead of stacking offset ramps.
- *
- * A flat tone here was visibly wrong on desktop: .ct-mph-sky only spans the
- * centre column, so the flat slate frame showed as blue bands down both sides
- * of the mode pages. Painting the same ramp makes the sky reach the edges. */
+ * A middle pass painted a dusk RAMP on every one of these, because a flat
+ * slate frame showed as bands down both sides of the desktop mode pages while
+ * .ct-mph-sky only spanned the centre column. That is no longer a problem in
+ * either direction: the ramp is retired and .ct-mph-sky is transparent, so
+ * there is exactly one painted ground and it reaches the edges by default.
+ * The nesting worry ("a gradient on each restarts the ramp") disappears with
+ * the gradient. */
 html[data-home-theme='light']:has(.ct-fq-training-shell--mode-cosmos),
 html[data-home-theme='light'] body:has(.ct-fq-training-shell--mode-cosmos),
 html[data-home-theme='light'] #screen-comics:has(.ct-fq-training-shell--mode-cosmos),
@@ -8871,33 +8989,27 @@ html[data-home-theme='light'] .ct-rv-root:has(.ct-fq-training-shell--mode-cosmos
 html[data-home-theme='light'] .ct-stroop-root:has(.ct-fq-training-shell--mode-cosmos),
 html[data-home-theme='light'] .ct-wordle-root:has(.ct-fq-training-shell--mode-cosmos),
 html[data-home-theme='light'] .ct-ms-root:has(.ct-fq-training-shell--mode-cosmos) {
-    background-color: var(--home-sky-dusk-deep) !important;
-    background-image: var(--home-sky-dusk) !important;
-    background-size: var(--home-sky-size) !important;
-    background-repeat: no-repeat !important;
-    background-position: top center !important;
-    color: var(--color-header-text) !important;
+    background-color: var(--universe-dusk) !important;
+    background-image: none !important;
+    color: var(--universe-ink) !important;
 }
 
-/* Dark-ink title, for the screens that really are light: the difficulty pick,
- * level grid, pass-n-play setup and results. Deliberately NOT applied to
- * .ct-domain-pick or the --mode-cosmos shell — both now wear Home's dusk, so
- * their authored cream title is correct and forcing ink would blank them. */
-html[data-home-theme='light'] .ct-fq-training-shell--hub-light:not(.ct-domain-pick) .ct-fq-hub-attn-big {
-    color: #17211f !important;
+/* Every Training title is now dark ink on the light ground — the difficulty
+ * pick, level grid, pass-n-play setup, results, the domain page AND the mode
+ * hub. The :not(.ct-domain-pick) carve-out is gone with the dusk it protected:
+ * one ground means one ink, which is the whole point of the pass. */
+html[data-home-theme='light'] .ct-fq-training-shell--hub-light .ct-fq-hub-attn-big {
+    color: var(--universe-ink) !important;
     -webkit-text-stroke: 0 !important;
     text-shadow: none !important;
 }
-
-/* NOTE — the planet glow (.ct-mph-planet-glow opacity) and specular sheen
- * (.ct-mph-planet-shade) both had light-theme knock-downs here, because a
- * bloom tuned to bleed into black washes the art out on parchment. Both
- * surfaces that show these planets — the domain page and the mode hub — are
- * dusk again, so the authored values are correct and the knock-downs are
- * gone. Same reasoning as the ink-contour removal further up this file.
- *
- * The "Why this trains your brain" pill's light-theme override went with
- * them: its authored pale-gold-on-near-black reads correctly on the dusk. */
+/* The kicker above it ("TRAINING DOMAIN", "SELECT A MODE") and the domain page's
+ * body copy were cream, for the void. */
+html[data-home-theme='light'] .ct-fq-training-shell--hub-light .ct-fq-hub-attn-head,
+html[data-home-theme='light'] .ct-domain-pick .ct-fq-hub-attn-sub {
+    color: var(--universe-muted) !important;
+    text-shadow: none !important;
+}
 
 /* The "ⓘ Why this trains your brain" chip under the three modes, on EVERY game.
  *
@@ -8910,9 +9022,5 @@ html[data-home-theme='light'] .ct-fq-training-shell--hub-light:not(.ct-domain-pi
  * (non-chip) variant. */
 html[data-home-theme='light'] .ct-fq-training-shell--mode-cosmos .ct-fq-sci-link,
 html[data-home-theme='light'] .ct-fq-training-shell--mode-cosmos .ct-fq-sci-link--chip {
-    color: var(--ink) !important;
+    color: var(--universe-ink) !important;
 }
-
-/* NOTE — the mode taglines/blurbs also had a light-theme knock-down here
- * (grey-green #53615e, for when this page was parchment). Gone: the mode hub
- * is Home's dusk again, so cosmos-mode's authored cream is correct. */
