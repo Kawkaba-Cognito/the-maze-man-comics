@@ -1,9 +1,9 @@
-import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { useGamePause } from '../../../../../shared/useGamePause';
 import OrderBoard from './components/OrderBoard';
 import ProbeQuiz from './components/ProbeQuiz';
 import {
-  L, beatHold, castOf, focusActor, pickShot, scoreOrder, scoreProbes,
+  L, castOf, focusActor, pickShot, scoreOrder, scoreProbes,
 } from './schema';
 import { pickStrings } from './stageStrings';
 import { CAST } from '../../../../../shared/castRoster';
@@ -25,16 +25,25 @@ const prefersReducedMotion = () =>
  *
  *   watch → order → probes → reveal
  *
- * WATCH plays as a short film: beats advance on their own clock (see beatHold
- * in schema.js), the camera cuts between shots, dialogue arrives as a subtitle
- * and each cut dips briefly. It is not a slideshow with a Next button, because
- * a continuous scene is a truer thing to encode episodically — and because a
- * static tableau can be sat on and drilled, which makes the ordering task
- * measure patience instead of memory.
+ * WATCH is BROWSED, not played. The learner steps between moments with back and
+ * forward, jumps straight to any of them from the track, and moves on when they
+ * choose; the camera still cuts between shots, dialogue still arrives as a
+ * subtitle, and each cut still dips.
  *
- * The learner keeps control where it matters: pause, replay from the top, or
- * skip ahead. Self-paced study beats fixed-pace for recall, so taking the
- * pacing away entirely would trade real learning for atmosphere.
+ * It used to auto-advance on a per-beat timer (beatHold in schema.js) with
+ * transport controls, on the argument that a continuous scene is truer to encode
+ * episodically than a slideshow, and that a static tableau invites drilling —
+ * making the ordering task measure patience rather than memory.
+ *
+ * That reasoning lost to a simpler one: this is the ENCODING phase of a test the
+ * player is about to sit, and a fixed hold either snatches away the moment they
+ * are still studying or idles on one they already have. Self-paced study beats
+ * fixed-pace for recall, and the old design conceded that already by shipping
+ * pause and replay — it just made the learner fight the clock to get them. The
+ * timer also jumped out of the story by itself on the last beat.
+ *
+ * If drilling ever shows up in the data, the lever is a cap on total study time,
+ * not taking the controls away again.
  *
  * The stage stays mounted across watch AND the retrieval phases (dimmed and
  * non-interactive behind the panels) so the cast loads once and the room the
@@ -49,7 +58,6 @@ export default function StageStory({
 
   const [phase, setPhase] = useState('watch');
   const [beatIdx, setBeatIdx] = useState(0);
-  const [playing, setPlaying] = useState(true);
   const [dip, setDip] = useState(false);
   const [placed, setPlaced] = useState([]);
   const [probeIdx, setProbeIdx] = useState(0);
@@ -58,7 +66,6 @@ export default function StageStory({
 
   const beat = story.beats[Math.min(beatIdx, story.beats.length - 1)];
   const isLastBeat = beatIdx >= story.beats.length - 1;
-  const hold = useMemo(() => beatHold(beat, isAr), [beat, isAr]);
 
   // Framing for this beat: the authored shot or the house grammar, aimed at
   // whoever is speaking.
@@ -68,33 +75,9 @@ export default function StageStory({
   );
   const focusX = useMemo(() => focusActor(beat)?.x ?? 0, [beat]);
 
-  // ── the clock ───────────────────────────────────────────────────────────
-  // Pausing must FREEZE the current beat, not restart it, so the remaining
-  // time is banked on pause and spent on resume.
-  const remainRef = useRef(null);
-  const deadlineRef = useRef(0);
-
-  // Declared before the timer effect so it runs first: a new beat always gets
-  // its full hold, never the leftovers of the one before.
-  useEffect(() => { remainRef.current = null; }, [beatIdx]);
-
-  useEffect(() => {
-    if (phase !== 'watch') return undefined;
-    if (!playing) {
-      if (deadlineRef.current) {
-        remainRef.current = Math.max(0, deadlineRef.current - Date.now());
-      }
-      return undefined;
-    }
-    const ms = remainRef.current ?? hold;
-    deadlineRef.current = Date.now() + ms;
-    const id = window.setTimeout(() => {
-      deadlineRef.current = 0;
-      if (isLastBeat) setPhase('order');
-      else setBeatIdx((i) => i + 1);
-    }, ms);
-    return () => window.clearTimeout(id);
-  }, [phase, playing, beatIdx, hold, isLastBeat]);
+  /* No clock. The beat hold, the pause/resume time-banking and the advance
+   * timeout are all gone with the auto-advance (see the header) — `beatIdx` only
+   * ever changes because the learner moved it. */
 
   // The cut. Skipped under reduced-motion, where a flashing overlay is exactly
   // the thing the setting exists to prevent.
@@ -105,15 +88,13 @@ export default function StageStory({
     return () => window.clearTimeout(id);
   }, [beatIdx]);
 
-  const replay = () => {
+  const goPrev = () => {
     playSfx?.('click');
-    remainRef.current = null;
-    setBeatIdx(0);
-    setPlaying(true);
+    setBeatIdx((i) => Math.max(0, i - 1));
   };
-  const togglePlay = () => {
+  const goNext = () => {
     playSfx?.('click');
-    setPlaying((p) => !p);
+    setBeatIdx((i) => Math.min(story.beats.length - 1, i + 1));
   };
   const skipToOrder = () => {
     playSfx?.('click');
@@ -155,9 +136,10 @@ export default function StageStory({
         </span>
         <span className="sgs-top-right">
           {hudRight}
-          {/* The platform pause. Distinct from the transport's ⏸ below, which
-              pauses the STORY playback — this one stops the run and offers the
-              same Resume / Quit menu every other game shows. */}
+          {/* The platform pause — stops the run and offers the same Resume /
+              Quit menu every other game shows. It used to need distinguishing
+              from a transport ⏸ that paused playback; with the story browsed
+              rather than played, this is the only pause on screen. */}
           <button
             type="button"
             className="sgs-chip"
@@ -204,13 +186,17 @@ export default function StageStory({
           </div>
         )}
 
-        {/* Tap the picture to pause, as any video player would. */}
-        {phase === 'watch' && (
+        {/* Tap the picture to move on, as you would turn a page. It used to
+            pause playback; with the story browsed rather than played, advancing
+            is the gesture that has a meaning. On the last moment it does
+            nothing — leaving the stage tap to trigger `proceed` would make it
+            far too easy to leave the story by accident. */}
+        {phase === 'watch' && !isLastBeat && (
           <button
             type="button"
             className="sgs-stage-tap"
-            onClick={togglePlay}
-            aria-label={playing ? t.pause : t.play}
+            onClick={goNext}
+            aria-label={t.nextBeat}
           />
         )}
 
@@ -222,56 +208,73 @@ export default function StageStory({
           <p key={`narr-${beatIdx}`} className="sgs-narr">{L(beat.narr, isAr)}</p>
 
           <div className="sgs-transport">
-            {/* One segment per beat: filled behind you, draining on the one
-                playing now. Doubles as the "how much is left" cue. */}
+            {/* One segment per moment: filled behind you, current one marked.
+                The draining fill is gone with the timer — a bar counting down
+                against a self-paced reader is just false urgency. Each segment
+                is now also a jump target, so a player who wants to re-check the
+                third moment does not have to arrow back through the second. */}
             <ol className="sgs-track" aria-label={t.watchingOf(beatIdx + 1, story.beats.length)}>
               {story.beats.map((b, i) => (
                 <li
                   key={b.id}
                   className={i < beatIdx ? 'done' : i === beatIdx ? 'now' : ''}
                 >
-                  {i === beatIdx && (
-                    <i
-                      key={`fill-${beatIdx}`}
-                      style={{
-                        animationDuration: `${hold}ms`,
-                        animationPlayState: playing ? 'running' : 'paused',
-                      }}
-                    />
-                  )}
+                  <button
+                    type="button"
+                    className="sgs-track-jump"
+                    aria-label={`${i + 1}`}
+                    aria-current={i === beatIdx ? 'true' : undefined}
+                    onClick={() => { playSfx?.('click'); setBeatIdx(i); }}
+                  />
                 </li>
               ))}
             </ol>
 
+            {/*
+              Browse, don't play.
+              Back / forward through the moments, and on the LAST one the forward
+              control becomes the proceed action — so "I have seen everything"
+              and "I am ready to rebuild" are the same gesture, in the same
+              place, instead of a separate skip button that read as giving up.
+              RTL flips the glyphs: in Arabic "back" points right.
+            */}
             <div className="sgs-controls">
               <button
                 type="button"
                 className="sgs-ctl"
-                onClick={replay}
-                disabled={beatIdx === 0 && playing}
-                aria-label={t.replay}
-                title={t.replay}
+                onClick={goPrev}
+                disabled={beatIdx === 0}
+                aria-label={t.prevBeat}
+                title={t.prevBeat}
               >
-                ⟲
+                {isAr ? '›' : '‹'}
               </button>
-              <button
-                type="button"
-                className="sgs-ctl sgs-ctl--main"
-                onClick={togglePlay}
-                aria-label={playing ? t.pause : t.play}
-                title={playing ? t.pause : t.play}
-              >
-                {playing ? '❙❙' : '▶'}
-              </button>
-              <button
-                type="button"
-                className="sgs-ctl"
-                onClick={skipToOrder}
-                aria-label={t.skip}
-                title={t.skip}
-              >
-                ⏭
-              </button>
+
+              <span className="sgs-ctl-count" aria-hidden="true">
+                {t.watchingOf(beatIdx + 1, story.beats.length)}
+              </span>
+
+              {isLastBeat ? (
+                <button
+                  type="button"
+                  className="sgs-ctl sgs-ctl--proceed"
+                  onClick={skipToOrder}
+                  aria-label={t.proceed}
+                  title={t.proceed}
+                >
+                  {t.proceed}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="sgs-ctl sgs-ctl--main"
+                  onClick={goNext}
+                  aria-label={t.nextBeat}
+                  title={t.nextBeat}
+                >
+                  {isAr ? '‹' : '›'}
+                </button>
+              )}
             </div>
           </div>
         </div>

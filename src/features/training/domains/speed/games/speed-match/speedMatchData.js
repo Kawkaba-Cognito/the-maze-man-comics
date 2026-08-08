@@ -96,6 +96,42 @@ export function buildLegend(pairCount, rnd = Math.random) {
   return picked.map((symbol, i) => ({ digit: i + 1, symbol }));
 }
 
+/**
+ * Extend an existing legend to `pairCount` symbols, KEEPING every mapping the
+ * player has already learned and appending the new symbols after them.
+ *
+ * ── Why this exists ──
+ * Survival grows the key as you progress, and it used to do that by calling
+ * buildLegend() again. That does not add a symbol — it reshuffles the whole
+ * pool and reassigns every digit from scratch, so a player who had learned
+ * star=1, circle=2, triangle=3, square=4 was silently handed a completely
+ * different key. Everything they had memorised became wrong, and since this is
+ * a speeded task answered from memory, they pressed what they knew and the game
+ * scored it WRONG. It fired every 8 correct answers, and because a wrong answer
+ * also drains the time bank, a remap could end an otherwise clean run.
+ *
+ * That it was unintended is not a guess: `remapEvery` is 0 on every difficulty
+ * and in every mode, i.e. the design says never remap. Only the growth path did,
+ * and only because it reused the constructor.
+ *
+ * Growth stays a real difficulty increase — more symbols to scan — without ever
+ * invalidating learning, which is the point of a symbol-digit substitution task.
+ */
+export function growLegend(legend, pairCount, rnd = Math.random) {
+  const n = clamp(pairCount, 2, SM_SYMBOLS.length);
+  const current = Array.isArray(legend) ? legend : [];
+  if (current.length >= n) return current;
+  const used = new Set(current.map((e) => e.symbol));
+  const fresh = shuffle(SM_SYMBOLS.filter((s) => !used.has(s)), rnd);
+  const added = fresh.slice(0, n - current.length).map((symbol, i) => ({
+    // Digits continue from where the existing key stops, so no existing symbol
+    // ever changes number.
+    digit: current.length + i + 1,
+    symbol,
+  }));
+  return [...current, ...added];
+}
+
 /** Pick the next prompt symbol; avoids repeating the immediately previous one. */
 export function pickItem(legend, rnd = Math.random, lastDigit = 0) {
   if (legend.length === 0) return null;

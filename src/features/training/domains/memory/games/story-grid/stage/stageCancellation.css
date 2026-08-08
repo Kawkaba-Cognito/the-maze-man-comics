@@ -69,14 +69,29 @@ button.sgs-chip:active {
   box-shadow: 1px 1px 0 var(--ink-outline);
 }
 
-/* The cast is a small, orderly play object — never the whole page. */
+/*
+ * The picture takes the screen. This REVERSES the earlier intent here ("a small,
+ * orderly play object — never the whole page"), on the product call that the
+ * story you are asked to memorise should be the biggest thing in front of you.
+ *
+ * Measured before: the stage was pinned at 220px (38% of a 577px viewport) by
+ * `flex: 0 0 clamp(220px, 31vh, 300px)` plus a hard 300px cap, while .sgs-watch
+ * below it carried `flex: 1 1 auto` and absorbed 287px — a text strip LARGER
+ * than the illustration, 179px of which was padding. stageLegacy.css had already
+ * fixed exactly this once, with a comment about the picture being "squeezed into
+ * a strip"; this file is imported last and quietly undid it.
+ *
+ * So the grow/fixed roles are swapped back, deliberately and in the layer that
+ * actually wins: the stage absorbs the slack, .sgs-watch takes only what its
+ * content needs.
+ */
 .sgs-stage-host,
 .sgs-stage-host.recalling {
-  flex: 0 0 clamp(220px, 31vh, 300px);
-  width: min(720px, calc(100% - 24px));
-  min-height: 0;
-  max-height: 300px;
-  margin: 10px auto 0;
+  flex: 1 1 auto;
+  width: min(1180px, calc(100% - 20px));
+  min-height: clamp(240px, 42vh, 460px);
+  max-height: none;
+  margin: 8px auto 0;
   overflow: hidden;
   filter: none;
   background: #f7fbff;
@@ -87,9 +102,13 @@ button.sgs-chip:active {
     inset 0 1px 0 rgba(255,255,255,0.9);
 }
 
+/* During retrieval the scene steps back so the panels lead — it is context, not
+   the task. Still larger than before (190px), because a scene shrunk to a
+   letterbox stopped functioning as the context it is kept around to provide. */
 .sgs-stage-host.recalling {
-  flex-basis: clamp(150px, 20vh, 190px);
-  max-height: 190px;
+  flex: 0 0 clamp(170px, 24vh, 250px);
+  min-height: 0;
+  max-height: 250px;
 }
 
 .sgs-stage-host::after {
@@ -129,11 +148,14 @@ button.sgs-chip:active {
   background: #b3cadd;
 }
 
+/* Takes only what it needs — the leftover height belongs to the picture now
+   (see .sgs-stage-host). It used to be `flex: 1 1 auto`, which is what turned a
+   108px of real content into a 287px strip. */
 .sgs-watch {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
-  gap: 10px;
-  padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+  gap: 8px;
+  padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
   background: transparent;
   border: 0;
 }
@@ -187,6 +209,82 @@ button.sgs-chip:active {
   box-shadow: 1px 1px 0 var(--ink-outline);
 }
 
+.sgs-ctl:disabled {
+  opacity: 0.38;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* "1 / 5" between the arrows. Tabular figures so the row does not jitter as the
+   index changes — a control strip that shifts under the thumb is worse than one
+   that is a pixel wider. */
+.sgs-ctl-count {
+  min-width: 4.5ch;
+  color: var(--play-ink);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  opacity: 0.7;
+}
+
+/*
+ * The proceed action, which replaces the forward arrow on the last moment.
+ *
+ * Deliberately a LABELLED button rather than another glyph: it is the only
+ * control here that leaves the story, so it should not be a 42px square the
+ * thumb can hit on the way to "next". It also stays in the forward arrow's
+ * position, so the gesture a player has already repeated four times is the one
+ * that carries them onward.
+ */
+.sgs-ctl--proceed {
+  width: auto;
+  height: 42px;
+  padding: 0 16px;
+  color: var(--play-ink);
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #f2c36f, var(--game-accent));
+  border: 2px solid var(--ink-outline);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink-outline);
+}
+
+/* Each track segment is a jump target. The hit area is the whole segment, which
+   is short — so it is padded out vertically past the 5px bar without moving the
+   bar itself. */
+.sgs-track-jump {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 5px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.sgs-track li {
+  position: relative;
+  overflow: visible;
+}
+
+/* Vertical breathing room for the tap target only — the visible bar stays 5px. */
+.sgs-track-jump::after {
+  content: '';
+  position: absolute;
+  inset: -9px 0;
+}
+
+.sgs-track-jump:focus-visible {
+  outline: 2px solid var(--game-accent-edge);
+  outline-offset: 3px;
+}
+
 /* Retrieval uses the same centered raised-card system as Cancellation. */
 .sgs-panel,
 .sgs:has(.sgs-stage-host.recalling) > .sgs-panel {
@@ -219,21 +317,75 @@ button.sgs-chip:active {
 }
 
 .sgs-sub {
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   color: #5a6774;
 }
 
+/*
+ * ── Rebuild screen: both halves of the task visible at once ──
+ *
+ * Measured before: five 48px slots plus headings filled a 633px viewport on
+ * their own, so the moment-cards you actually tap sat below the fold. The player
+ * scrolled down to find a card, scrolled back up to see where it landed, and
+ * never saw the whole task together — which is also a memory cost, since holding
+ * "what I have already placed" in your head is not the thing being measured.
+ *
+ * Three changes: name the two regions, shorten the slots, and let them share a
+ * row when there is width for it.
+ */
+.sgs-section {
+  margin: 0 0 6px;
+  /* Derived from the play ink rather than a new grey: audit:design is a
+     CI-blocking ratchet on raw colour literals, and a muted label does not need
+     a colour of its own when it can be the ink at lower weight. */
+  color: var(--play-ink);
+  opacity: 0.6;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
 .sgs-slots {
-  gap: 7px;
-  margin-bottom: 13px;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+/* Wide screens lay the sequence out horizontally — left-to-right IS the thing
+   being reconstructed, so it reads as an order rather than a to-do list. Falls
+   back to the stacked list on a phone, where five columns would be unreadable. */
+@media (min-width: 760px) {
+  .sgs-slots {
+    display: grid;
+    /* 112px, not 150px. The panel is capped at 680px wide, so 150px yielded four
+       columns and wrapped the fifth slot onto a row of its own — 72px spent on
+       one slot, which pushed the moment-cards back off screen. 680/5 = 136, so
+       112 fits all five in a single row for a 5-beat story and still wraps
+       sensibly for longer ones. */
+    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    align-items: stretch;
+  }
+
+  .sgs-slot {
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+  }
 }
 
 .sgs-slot {
-  min-height: 48px;
+  min-height: 40px;
   padding: 5px 8px;
   background: #f7fafc;
   border: 1.5px dashed #c5d4df;
   border-radius: 11px;
+}
+
+/* Reserve the pool's height so confirming does not yank the layout upward at the
+   moment the thumb is travelling to Confirm. */
+.sgs-pool.is-empty {
+  min-height: 8px;
 }
 
 .sgs-slot.filled {

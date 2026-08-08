@@ -66,16 +66,65 @@ export const MOT_CAP = 5; // max simultaneously trackable targets (capacity ceil
 export function freeConfig(r) {
   const u = clamp(r / 16, 0, 1);
   const targets = clamp(Math.round(lerp(2, MOT_CAP, u)), 2, MOT_CAP);
-  return { targets, total: Math.round(lerp(8, 26, u)), speedFrac: lerp(0.10, 0.30, u), trackMs: Math.round(lerp(3500, 9000, u)) };
+  /* Endpoints match the Levels curve (easy L1 -> hard L100) so Survival and
+   * Levels agree about what "hardest" means. `total` tops out at 24 rather than
+   * 26 for the same reason as BASE above: 26 is the runtime clamp, so asking for
+   * it exactly meant the last few escalations changed nothing on screen. */
+  return {
+    targets,
+    total: Math.round(lerp(5, 12, u)),
+    speedFrac: lerp(0.09, 0.33, u),
+    trackMs: Math.round(lerp(3000, 9000, u)),
+  };
 }
 
 // Per-tier endpoints: [t0,t1] targets, [n0,n1] TOTAL objects in the arena (density),
 // [s0,s1] speedFrac, [tr0,tr1] track ms — interpolated across the 100 levels.
 // Hard = a packed arena (close encounters everywhere) at moderate speed, not fast.
+/*
+ * ── Tier endpoints CHAIN: every tier starts exactly where the last one ended ──
+ *
+ * They did not, and the curve ran backwards at both seams. Measured on the old
+ * table: easy level 100 ran at speed 0.20 for 5000ms, and medium level 1 then
+ * dropped to 0.12 for 4000ms. Worse at the next seam — medium 100 was 4 targets
+ * among 21 objects at 0.27, and hard level 1 dropped to 19 objects at 0.14.
+ * Starting Hard was EASIER than finishing Medium on three of the four levers,
+ * which is exactly what "the difficulty grading is not good" feels like from
+ * inside the game.
+ *
+ * Chaining is now the invariant: n1/s1/tr1/t1 of each tier equal n0/s0/tr0/t0 of
+ * the next. scripts/audit-mot-curve.mjs enforces it.
+ *
+ * ── Object counts came down ──
+ * The top end asked for 30 objects while startRound() clamps the live count to
+ * 26, so hard levels ~75-100 all rendered the SAME density — the last quarter of
+ * the hardest tier stopped getting harder on the lever this design calls the
+ * primary one. Rather than raise the clamp, the ceiling comes down to 24: a
+ * standard MOT display is 8-16 objects (Pylyshyn & Storm 1988 used 10 with 5
+ * targets), so 30 was far outside the paradigm and read as a swarm. 24 with 5
+ * targets still leaves 19 distractors — dense enough for the constant close
+ * encounters the difficulty model is built on, and now actually reachable.
+ */
+/*
+ * `n` is the count BEFORE the density rescale in startRound(), which multiplies
+ * it by roughly 1.25 with the arena aspect capped. So these read on screen as
+ * about: easy 6->9, med 9->11, hard 11->15.
+ *
+ * Deliberately inside the classic MOT display range — Pylyshyn & Storm (1988)
+ * used 10 objects with 5 targets, and the literature mostly sits at 8-16. The
+ * game shipped with 26 on screen at nearly every level, which is not a harder
+ * version of that paradigm so much as a different, more cluttered task.
+ *
+ * Fewer objects means less density, and density is this model's primary lever —
+ * so the difficulty it gives up has to come from somewhere. It comes from the
+ * two continuous levers, which now do more of the work: speed 0.09 -> 0.33 and
+ * tracking duration 3s -> 9s across the curve. Both produce close encounters,
+ * which is what actually causes tracking errors (Franconeri 2008; Feria 2012).
+ */
 const BASE = {
-  easy: { t0: 2, t1: 3, n0: 7,  n1: 13, s0: 0.09, s1: 0.20, tr0: 3000, tr1: 5000 },
-  med:  { t0: 3, t1: 4, n0: 13, n1: 21, s0: 0.12, s1: 0.27, tr0: 4000, tr1: 7000 },
-  hard: { t0: 4, t1: 5, n0: 19, n1: 30, s0: 0.14, s1: 0.32, tr0: 5500, tr1: 9500 },
+  easy: { t0: 2, t1: 3, n0: 5,  n1: 7,  s0: 0.09, s1: 0.17, tr0: 3000, tr1: 4500 },
+  med:  { t0: 3, t1: 4, n0: 7,  n1: 9,  s0: 0.17, s1: 0.25, tr0: 4500, tr1: 6500 },
+  hard: { t0: 4, t1: 5, n0: 9,  n1: 12, s0: 0.25, s1: 0.33, tr0: 6500, tr1: 9000 },
 };
 function levelConfig(diff, level) {
   const b = BASE[diff] || BASE.med;
@@ -386,9 +435,39 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
       arenaW = minDim * 0.98; arenaH = minDim * 0.98;
       total = cfg.total;
     } else {
-      arenaW = w - 2 * margin; arenaH = h - 2 * margin;
+      /*
+       * ── The arena's ASPECT is bounded, and that is what fixes the swarm ──
+       *
+       * Preserving density across devices is right (Franconeri: spacing is the
+       * driver), but it was applied to an arena that filled the whole screen, so
+       * the count was multiplied by the arena's area relative to a minDim
+       * square: measured at 1.8x on a 412x900 phone and 3.1x on a 1366x577
+       * laptop. Every level above easy then saturated the object clamp — 8 of 9
+       * sampled laptop levels rendered an IDENTICAL 26 objects.
+       *
+       * That broke difficulty twice over. It looked like a swarm at every level,
+       * and density — the primary lever this whole model is built on — was
+       * pinned at the ceiling, so it stopped grading anything at all. The
+       * authored curve never reached the screen.
+       *
+       * Capping the aspect keeps the arena roomy without letting its area run
+       * away: the rescale can now reach at most 1.3x instead of 3.1x, so the
+       * count follows the curve as written and the clamp below never binds.
+       * A slightly letterboxed arena is a fair price for a difficulty lever that
+       * actually works.
+       */
+      const MAX_ARENA_AR = 1.3;
+      arenaW = w - 2 * margin;
+      arenaH = h - 2 * margin;
+      if (arenaW / arenaH > MAX_ARENA_AR) arenaW = arenaH * MAX_ARENA_AR;
+      else if (arenaH / arenaW > MAX_ARENA_AR) arenaH = arenaW * MAX_ARENA_AR;
+
       const density = cfg.total / (minDim * minDim); // intended objects per px²
-      total = clamp(Math.round(density * arenaW * arenaH), cfg.targets + 2, 26);
+      /* Ceiling raised 26 -> 30 deliberately: it is now a SAFETY rail, not a
+       * shaping tool. With the aspect capped the curve tops out near 21, so this
+       * should never bind — and if it ever does, that is a bug worth noticing
+       * rather than a silent flattening of the hardest levels. */
+      total = clamp(Math.round(density * arenaW * arenaH), cfg.targets + 2, 30);
     }
     cfg.total = total; // keep HUD / per-trial logging in sync with the real count
     const x0 = (w - arenaW) / 2;

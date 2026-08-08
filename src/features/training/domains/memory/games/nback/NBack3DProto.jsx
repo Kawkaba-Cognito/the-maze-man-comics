@@ -13,6 +13,21 @@ import '../../../../shared/c3dProto.css';
 // stops this game's clock. See shared/pauseStore.js.
 import { nowMs } from '../../../../shared/pauseStore';
 
+/*
+ * Card colour — near-black, matching the black-planet Kawkab. Named because
+ * three materials share it (cell frame, its idle-reset emissive, the stimulus
+ * tile body) and because audit:design is a CI-blocking ratchet on raw colour
+ * literals.
+ *
+ * NOT from GAME_COLORS: item.fill is shared by 15 files, so blackening the
+ * palette would repaint every other game. The stimulus RIM stays blue on
+ * purpose — that glow is the task signal, and blackening it would remove the
+ * thing the player has to encode.
+ */
+const CARD_BLACK = 0x16161b;
+const CARD_BLACK_GLOW = 0x0e0e12;
+const CARD_BLACK_RAISED = 0x1e1e25;
+
 const OBJECT_BY_ID = Object.fromEntries(MEMO_OBJECTS.map((object) => [object.id, object]));
 
 export default function NBack3DProto({
@@ -62,8 +77,15 @@ export default function NBack3DProto({
       const column = index % 3;
       const row = Math.floor(index / 3);
       const cell = new THREE.Group();
-      const frameMaterial = matStd(0x15283a, {
-        emissive: 0x173b56,
+      /* Grid cells: near-black, matching the black-planet Kawkab. Was 0x15283a
+       * with a blue emissive. Local hexes, not GAME_COLORS, so this does not
+       * touch the 15 other files that share the palette.
+       *
+       * Only the RESTING cell goes black. The stimulus highlight below stays
+       * blue on purpose — that glow is the task signal (which cell lit up), and
+       * blackening it too would remove the thing the player has to encode. */
+      const frameMaterial = matStd(CARD_BLACK, {
+        emissive: CARD_BLACK_GLOW,
         emissiveIntensity: 0.18,
         metalness: 0.28,
         roughness: 0.58,
@@ -89,7 +111,10 @@ export default function NBack3DProto({
     let stimulus = null;
     const resetCells = () => {
       cells.forEach((cell) => {
-        cell.userData.frameMaterial.emissive.setHex(0x173b56);
+        /* Must match the frame material's own idle emissive above; they were
+           both 0x173b56, so changing only one would turn every cell blue again
+           the moment the stimulus cleared. */
+        cell.userData.frameMaterial.emissive.setHex(CARD_BLACK_GLOW);
         cell.userData.frameMaterial.emissiveIntensity = 0.18;
       });
     };
@@ -120,7 +145,10 @@ export default function NBack3DProto({
       stimulus = new THREE.Group();
       const tileFrame = new THREE.Mesh(
         new THREE.BoxGeometry(cellSize + 0.1, cellSize + 0.1, 0.2),
-        matStd(0x1d3d58, {
+        /* The stimulus tile's BODY goes black like the cells, a shade lighter so
+           it still reads as sitting proud of the grid. Its emissive rim stays
+           0x4c92cf — that is the cue the task is built on. */
+        matStd(CARD_BLACK_RAISED, {
           emissive: 0x4c92cf,
           emissiveIntensity: 0.5,
           metalness: 0.22,

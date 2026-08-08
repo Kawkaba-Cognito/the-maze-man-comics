@@ -24,6 +24,12 @@ export default function OrderBoard({
       <h2>{t.orderTitle}</h2>
       <p className="sgs-sub">{t.orderSub}</p>
 
+      {/* Both halves of the task are named and adjacent. Before, this was a
+          stack of tall empty rows with the tappable moments pushed below the
+          fold — so the player scrolled to find a card, scrolled back to see
+          where it had gone, and never saw the whole task at once. */}
+      <p className="sgs-section">{t.orderSlotsLabel}</p>
+
       <ol className="sgs-slots">
         {story.beats.map((_, i) => {
           const id = placed[i];
@@ -47,20 +53,25 @@ export default function OrderBoard({
         })}
       </ol>
 
-      {pool.length > 0 && (
-        <div className="sgs-pool">
-          {pool.map((b) => (
-            <button
-              type="button"
-              key={b.id}
-              className="sgs-card"
-              onClick={() => { playSfx?.('click'); onPlace(b.id); }}
-            >
-              {L(b.label, isAr)}
-            </button>
-          ))}
-        </div>
-      )}
+      <p className="sgs-section">
+        {pool.length > 0 ? t.orderPoolLabel : t.orderPoolDone}
+      </p>
+
+      {/* The pool keeps its box even when empty, so confirming does not make the
+          layout jump upward under the thumb at the exact moment the player is
+          reaching for Confirm. */}
+      <div className={`sgs-pool${pool.length === 0 ? ' is-empty' : ''}`}>
+        {pool.map((b) => (
+          <button
+            type="button"
+            key={b.id}
+            className="sgs-card"
+            onClick={() => { playSfx?.('click'); onPlace(b.id); }}
+          >
+            {L(b.label, isAr)}
+          </button>
+        ))}
+      </div>
 
       <div className="sgs-bar">
         <button

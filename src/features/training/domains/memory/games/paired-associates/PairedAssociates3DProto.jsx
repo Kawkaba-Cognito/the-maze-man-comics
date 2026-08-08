@@ -9,6 +9,24 @@ import {
 } from '../memoryStimulusTexture';
 import '../../../../shared/c3dProto.css';
 
+/*
+ * Card body colour — near-black, matching the black-planet Kawkab.
+ *
+ * Named rather than inlined for two reasons. It is used by three separate
+ * materials (grid frame, its idle-reset emissive, and the cue card), and the
+ * first pass at this missed one of them and left the most looked-at card on the
+ * board the only blue one. And `audit:design` is a CI-blocking ratchet on raw
+ * colour literals, so four loose hexes here would fail the build for whoever
+ * pushed next.
+ *
+ * NOT from GAME_COLORS: item.fill (#2f5f86) is shared by 15 files, so blackening
+ * the palette would have repainted every other game's pieces too. Not pure
+ * black either — a slight cool lift keeps the bevel and the emissive feedback
+ * states readable, the same reason --universe-glass is #151517 and not #000.
+ */
+const CARD_BLACK = 0x16161b;
+const CARD_BLACK_GLOW = 0x0e0e12;
+
 const PHASE_LABEL = {
   en: { study: 'Study', recall: 'Recall', feedback: 'Check' },
   ar: { study: 'حفظ', recall: 'استرجاع', feedback: 'تحقق' },
@@ -73,8 +91,18 @@ export default function PairedAssociates3DProto({
     const cardSize = count <= 6 ? 1.28 : count <= 8 ? 1.06 : 0.86;
     const stations = boxes.map((_, index) => {
       const station = new THREE.Group();
-      const frameMaterial = matStd(0x183047, {
-        emissive: 0x102b42,
+      /* Card body: near-black, matching the black-planet Kawkab.
+       *
+       * Was 0x183047 — a dark blue — which is a LOCAL hex here, not
+       * GAME_COLORS.item. That matters: item.fill (#2f5f86) is shared by 15
+       * files, so recolouring the palette to blacken these cards would have
+       * repainted every other game's pieces too.
+       *
+       * Not pure #000: a slight cool lift keeps the bevel and the emissive
+       * feedback states readable, exactly as the app's own dark tokens do
+       * (--universe-glass #151517 rather than black). */
+      const frameMaterial = matStd(CARD_BLACK, {
+        emissive: CARD_BLACK_GLOW,
         emissiveIntensity: 0.22,
         metalness: 0.3,
         roughness: 0.5,
@@ -116,8 +144,11 @@ export default function PairedAssociates3DProto({
     const cueCard = new THREE.Group();
     const cueFrame = new THREE.Mesh(
       new THREE.BoxGeometry(1.4, 1.4, 0.22),
-      matStd(0x183047, {
-        emissive: 0x214f73,
+      /* The CUE card — the one showing what to match — is a card too, so it goes
+         black with the rest. Missed on the first pass, which would have left the
+         single most looked-at card the only blue one on the board. */
+      matStd(CARD_BLACK, {
+        emissive: CARD_BLACK_GLOW,
         emissiveIntensity: 0.3,
         metalness: 0.25,
         roughness: 0.48,
@@ -165,7 +196,10 @@ export default function PairedAssociates3DProto({
           frameMaterial.emissive.setHex(GAME_INTS.item.fill);
           frameMaterial.emissiveIntensity = 0.7;
         } else {
-          frameMaterial.emissive.setHex(0x102b42);
+          /* Back to the idle near-black. Must match the frame material's own
+             emissive above — they were both 0x102b42, and changing only one
+             would leave a card blue-tinted the moment it closed again. */
+          frameMaterial.emissive.setHex(CARD_BLACK_GLOW);
           frameMaterial.emissiveIntensity = 0.22;
         }
       });

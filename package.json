@@ -29,7 +29,8 @@
     "validate:noir": "node scripts/validate-noir.mjs",
     "validate:stage": "node scripts/validate-stage.mjs",
     "validate:kawnera": "node scripts/validate-kawnera.mjs",
-    "audit:design": "node scripts/audit-design.mjs"
+    "audit:design": "node scripts/audit-design.mjs",
+    "audit:mot": "node scripts/audit-mot-curve.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^7.6.8",

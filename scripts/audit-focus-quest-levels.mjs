@@ -185,6 +185,47 @@ assert(
 );
 
 /*
+ * ── No pool may contain two shapes from the same motif family ──
+ *
+ * Every training board is drawn with the Cosmic Atlas illustrations, so two
+ * shapes whose art shares a motif (several planets, several rockets) produce a
+ * board the player cannot read: an illustration's difference lives in interior
+ * detail, and peripheral vision resolves outlines, not detail. The result is not
+ * a harder search, it is a tile-by-tile inspection of all 81 cells.
+ *
+ * This is the invariant that lets the art be used in EVERY mode and every tier.
+ * Difficulty is carried by the other four levers getLvCfg composes — grid, time,
+ * hue interference and conjunction strength — plus pool size, so nothing needs
+ * shape confusability to grade the curriculum. Pools are generated to satisfy
+ * this by scripts/rebuild-shape-pools.mjs; this check makes a hand edit that
+ * breaks it fail loudly rather than quietly shipping an unreadable level.
+ */
+{
+  const artSource = fs.readFileSync(
+    path.join(ROOT, 'src/features/training/shared/shapeArt.js'), 'utf8',
+  );
+  const motifOf = {};
+  for (const m of artSource.matchAll(/^\s*(\w+):\s*\{\s*file:\s*'[^']+',\s*motif:\s*'([^']+)'/gm)) {
+    motifOf[m[1]] = m[2];
+  }
+  for (const [tier, pools] of Object.entries(SP)) {
+    pools.forEach((pool, i) => {
+      const seen = new Map();
+      for (const shape of pool) {
+        const motif = motifOf[shape];
+        assert(motif, `SP.${tier}[${i}]: "${shape}" has no art motif`);
+        assert(
+          !seen.has(motif),
+          `SP.${tier}[${i}]: "${shape}" and "${seen.get(motif)}" are both `
+          + `${motif} — same object family on one board is unreadable`,
+        );
+        seen.set(motif, shape);
+      }
+    });
+  }
+}
+
+/*
  * ── Every silhouette in SH must actually DRAW something ──
  *
  * This exists because two of them did not, for months. `moon` and `tinyMoon`

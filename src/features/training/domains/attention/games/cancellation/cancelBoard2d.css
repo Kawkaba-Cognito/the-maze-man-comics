@@ -28,9 +28,13 @@
   min-height: 0;
 }
 
+/* No `gap` here on purpose. CancelBoard2D sets column-gap and row-gap inline,
+   per axis, from the box it actually measured — a viewport-unit gap in this file
+   cannot see that box's slack, and would also disagree with the value the fit
+   used to derive the cell size, so the board would not land where it was
+   measured. Re-adding a `gap` shorthand here would override both longhands. */
 .cb2d-grid {
   display: grid;
-  gap: clamp(4px, 1.2vmin, 14px);
   justify-content: center;
   align-content: center;
 }
@@ -59,6 +63,67 @@
   .cb2d-cell--cleared {
     animation: none;
     opacity: 0;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * TALL PHONES — HUD to the bottom, and stop reserving space nothing uses.
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * Measured on 412x900: board 400x400 using 97% of the WIDTH but only 44% of the
+ * height, leaving 500px of dead vertical space — 289px above it and 212px below.
+ *
+ * ── This is not the desktop problem, and it has a different fix ──
+ * On a laptop the board was height-bound, so reclaiming the HUD's 69px grew it.
+ * Here width is the binding axis and it is already 97% consumed: the board
+ * CANNOT get bigger. A square board on a 412x900 screen has ~500px of slack by
+ * arithmetic. So the only question is how that slack is spent, and the answer is
+ * "on something useful, in the thumb zone" rather than "as two big voids".
+ *
+ * ── Two concrete faults ──
+ * 1. `padding-top: clamp(56px, 12vh, 104px)` maxes out at 104px on a tall
+ *    phone, for a HUD that measures 50px. Half of it was reserved for nothing —
+ *    and unlike on desktop, 12vh grows precisely on the screens with the most
+ *    slack already.
+ * 2. The HUD sat at the very top of a 900px screen. The target cue is the one
+ *    element a player re-checks mid-search, and it was the furthest thing on
+ *    screen from the thumb.
+ *
+ * Moving the bar to the bottom puts the cue and both controls in reach and turns
+ * the lower void into a panel. The board keeps its size and stays centred in
+ * what remains; total dead space drops from ~500px to ~300px, with ~120px of
+ * that former void now carrying the HUD.
+ */
+@media (max-width: 899px) and (max-aspect-ratio: 3/4) {
+  .cancellation-task-game .ct-fq-bar {
+    position: absolute;
+    top: auto;
+    left: 10px;
+    right: 10px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    width: auto;
+    margin-bottom: 0;
+    padding: 10px 12px;
+    border-radius: 18px;
+    /* Shadow points UP: the panel now sits below the content it separates. */
+    box-shadow: 0 -4px 18px var(--fx-shadow-soft);
+  }
+
+  /* The round clock stays at the top. It is glanced at, not operated, so it does
+     not belong in the thumb zone — and keeping it off the panel lets the panel
+     stay short. */
+  .cancellation-task-game .ct-fq-cbw {
+    position: absolute;
+    inset: 10px 10px auto 10px;
+    width: auto;
+    margin-bottom: 0;
+  }
+
+  /* Top reserve now matches the progress bar rather than a HUD that moved away;
+     the bottom clears the panel plus the home indicator. */
+  .cancellation-task-game .cb2d-wrap {
+    padding-top: 34px;
+    padding-bottom: calc(126px + env(safe-area-inset-bottom));
   }
 }
 

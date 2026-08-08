@@ -38,6 +38,13 @@ jobs:
       - name: Validate rush-hour reference solutions
         run: npm run validate:rh
 
+      # Target Tracking's tiers must chain, so difficulty never falls at a seam,
+      # and no tier may ask for more objects than startRound() will actually
+      # render. Both were broken and shipped: starting Hard used to be EASIER
+      # than finishing Medium on three of four levers.
+      - name: Audit Target Tracking difficulty curve
+        run: npm run audit:mot
+
       # Ratchet, not a clean-room check: fails only when design drift gets WORSE
       # than scripts/design-baseline.json. See the header of audit-design.mjs.
       # If this fails, a game gained a hardcoded colour (or similar) — fix it or
