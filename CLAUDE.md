@@ -16,7 +16,7 @@ npm run dev                      # localhost:5173/the-maze-man-comics/
 npm run build                    # production build + PWA service worker
 ```
 
-**Deploying is automatic (2026-07-16)**: every push to `main` on `origin` (Kawkaba-Cognito) triggers `.github/workflows/deploy.yml`, which installs, runs **`audit:fq` → `validate:rh` → `audit:design`** (all three block the deploy), builds, and publishes `dist/` to the `gh-pages` branch — the branch GitHub Pages serves. It can also be run by hand from the repo's Actions tab (workflow_dispatch). The `cognitive` mirror does **not** auto-deploy; push `gh-pages` there manually if the mirror should stay current.
+**Deploying is automatic (2026-07-16)**: every push to `main` on `origin` (Kawkaba-Cognito) triggers `.github/workflows/deploy.yml`, which installs, runs **`audit:fq` → `validate:rh` → `audit:mot` → `audit:design`** (all four block the deploy), builds, and publishes `dist/` to the `gh-pages` branch — the branch GitHub Pages serves. It can also be run by hand from the repo's Actions tab (workflow_dispatch). The `cognitive` mirror does **not** auto-deploy; push `gh-pages` there manually if the mirror should stay current.
 
 ⚠️ **A deploy must NEVER delete the previous build's files (2026-07-26).** It used to wipe `gh-pages` and copy `dist/` in, which deleted every old content-hashed chunk. Any client still holding the previous `index.html` — an open tab, or an installed PWA — then 404'd on chunks; when the missing one was the **entry** chunk the page could not boot at all, because React and the ErrorBoundary live inside it. That is the "app errored and crashed, fine the next day" report: no in-app recovery, just a dead screen until the service worker happened to update. Caught live: the precached shell named `Assets/index-BHkJm4nN.js`, already 404 on the server.
 
@@ -189,7 +189,9 @@ Everything is localStorage, keys prefixed `mm_*` and versioned (`mm_wordle_profi
 
 ## Validation scripts
 
-`npm run validate:puzzles` · `npm run validate:rh` (rush-hour reference solutions; `--full` for the hard ref puzzle) · `npm run audit:fq` (cancellation level curriculum) · `npm run lint`. Run the relevant one after touching generators or level data.
+`npm run validate:puzzles` · `npm run validate:rh` (rush-hour reference solutions; `--full` for the hard ref puzzle) · `npm run audit:fq` (cancellation level curriculum **and** a zero-ink guard on every `SH` silhouette) · `npm run audit:mot` (Target Tracking difficulty curve) · `npm run lint`. Run the relevant one after touching generators or level data.
+
+**`npm run audit:mot` checks the RENDER, not just the config, and that distinction is the whole point** (2026-08-08). Target Tracking's tiers were authored independently, so starting Hard was easier than finishing Medium on three of four levers. Worse, `startRound()` rescales the object count to preserve density across devices, and on a wide screen that multiplied it by 3.1× straight into the clamp — so nearly every level rendered an identical swarm and density, the model's primary lever, had stopped grading at all. The first version of this audit **passed while the game was broken**, because it validated the authored numbers. It now simulates the density rescale on four device shapes. If you add a gate to any game, make it assert what reaches the screen.
 
 **`npm run audit:design` is a CI-blocking ratchet** — not a style suggestion. It compares hard-coded colours (and similar drift) against the ceiling in `scripts/design-baseline.json` and fails only when a number goes **up**. When it fails, the fix is either to tokenise the new values or to raise the ceiling deliberately with `npm run audit:design -- --update`, committing the changed baseline so the decision is visible in history. It never rewrites the baseline under `CI`.
 
