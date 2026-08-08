@@ -4,9 +4,8 @@ import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import { survivalRampFromRemaining } from '../../../../shared/survival';
 import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
-import CosmosCharacter from '../../../../../character/CosmosCharacter';
+import KawkabSprite from '../../../../shared/KawkabSprite';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
-import { preloadDrKawkab } from '../../../../shared/drKawkabModel';
 
 const Brixton3DProto = lazyWithRetry(() => import('./Brixton3DProto'), 'brixton-3d');
 
@@ -375,7 +374,7 @@ export function BrixtonEngine({ mode, diff, level, seed, attempt, onResult, onEx
       <div className={rootCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
         <div className="ct-bx-over-wrap">
           <div className="ct-bx-over-card">
-            <CosmosCharacter size={72} mood="proud" glow pose="cheer" />
+            <KawkabSprite size={72} />
             <h2 className="ct-bx-over-title">{t.over}</h2>
             <p className="ct-bx-over-sub">
               {`✓ ${over.solved} ${t.cracked} · ${over.score} ${isAr ? 'نقطة' : 'pts'} · ${t.best} ${over.best}`}
@@ -487,11 +486,7 @@ export function BrixtonEngine({ mode, diff, level, seed, attempt, onResult, onEx
               >
                 <div className="ct-bx-kw-inner">
                   <div key={hopKey} style={{ animation: `bx-hop ${animMs}ms ease-out` }}>
-                    <CosmosCharacter
-                      size={52}
-                      faceOnly
-                      mood={outcome === 'solved' ? 'proud' : outcome === 'failed' ? 'tired' : 'focused'}
-                    />
+                    <KawkabSprite size={52} />
                   </div>
                 </div>
               </div>
@@ -507,7 +502,8 @@ export default function KawkabHopsGame({ onBack, workoutMode = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   useEffect(() => {
-    preloadDrKawkab().catch(() => {});
+    // The GLB preload is gone with the model — the sprite is a 86 KB image the
+    // browser caches like any other asset.
     import('./Brixton3DProto');
   }, []);
   return (

@@ -410,12 +410,7 @@ html[data-home-theme] .pz-studio--category .pz-studio-lang {
   font-family: 'Cairo', sans-serif;
 }
 
-/*
- * Moons: one size down from a category world, and DRAWN rather than
- * photographed — there is no artwork per puzzle, so each body is tinted by the
- * game's own accent with its glyph sitting on it. Same shading and rim as the
- * worlds above, which is what keeps the two levels reading as one system.
- */
+/* Puzzle moons use the same illustrated language as their parent worlds. */
 .pz-cat .pz-constellation--moons {
   max-width: 780px;
   grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
@@ -428,18 +423,9 @@ html[data-home-theme] .pz-studio--category .pz-studio-lang {
     radial-gradient(circle at 62% 74%, color-mix(in srgb, var(--world) 55%, #05040a), var(--world));
 }
 
-.pz-cat .pz-orb-glyph {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  font-size: clamp(28px, 7vw, 38px);
-  font-style: normal;
-  line-height: 1;
-  /* The glyph is part of the body, so it takes the body's own light rather
-     than sitting on top as a sticker. */
-  filter: drop-shadow(0 2px 3px rgba(2, 4, 12, 0.55));
+.pz-cat .pz-orb--moon .pz-orb-game-art {
+  object-fit: contain;
+  filter: drop-shadow(0 3px 4px rgba(2, 4, 12, 0.42));
 }
 
 /* ── Inside a game: the size picker ────────────────────────────────────── */

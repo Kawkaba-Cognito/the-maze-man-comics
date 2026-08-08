@@ -426,7 +426,22 @@ export default function WordLinksGame({ onBack, workoutMode = false }) {
 const S = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--play-surface)', color: PROMPT_ON_DARK, fontFamily: "'Outfit', system-ui, sans-serif" },
   cosmosRoot: { zIndex: 81 },
-  body: { position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', gap: 20, padding: '16px 18px calc(24px + env(safe-area-inset-bottom))', maxWidth: 440, width: '100%', margin: '0 auto', overflowY: 'auto' },
+  /*
+   * The question sits in the MIDDLE of the screen, not pinned to the top.
+   *
+   * Measured on a 1366x633 laptop: the whole task — prompt plus three options —
+   * came to 278px inside a 578px column, top-aligned, leaving 300px of dead
+   * space underneath and a 440px column in a 1366px window. A three-option
+   * multiple choice is a small thing; stranded at the top of a tall empty page
+   * it reads as a page that failed to load rather than a question.
+   *
+   * `justifyContent: center` spends the vertical slack as balanced margin, and
+   * the width cap lifts on wider screens so the options are comfortable to read
+   * and to hit rather than a narrow ribbon. `minHeight: 0` keeps the flex child
+   * scrollable if a long analogy row ever outgrows the viewport — without it,
+   * centring a too-tall column clips its top beyond reach.
+   */
+  body: { position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 20, padding: '16px 18px calc(24px + env(safe-area-inset-bottom))', maxWidth: 'min(680px, 100%)', width: '100%', margin: '0 auto', minHeight: 0, overflowY: 'auto' },
   metaRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: -8 },
   badge: { fontSize: 10.5, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: SUB_ON_DARK },
   prompt: { fontWeight: 600, fontSize: 'clamp(16px, 4.4vw, 20px)', textAlign: 'center', color: PROMPT_ON_DARK, margin: '4px 0 2px' },

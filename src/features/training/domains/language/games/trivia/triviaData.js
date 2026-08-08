@@ -1,7 +1,11 @@
 /*
- * Trivia content bank — 24 categories, graded ★ easy · ★★ medium · ★★★ hard ·
+ * Trivia content bank — 31 categories, graded ★ easy · ★★ medium · ★★★ hard ·
  * ★★★★ expert, bilingual (EN/AR), each with a "did you know" fact. Authored in
  * ./data/*.js by theme group.
+ *
+ * The authored bank is the floor, not the ceiling: categories listed in
+ * TABLE_FOR below are also fed by procedural.js, which builds questions
+ * combinatorially from structured tables and does not run out.
  *
  * Question shape: { d: 1|2|3|4, en, ar, o: [[en,ar]×4], a: indexOfCorrect, f: {en,ar} }.
  * The engine shuffles option order at runtime, so `a` is just the author key.
@@ -18,6 +22,9 @@ import { DINO } from './data/dino';
 import { SUPPLEMENT } from './data/supplement';
 import { EXPERT } from './data/expert';
 import { NEWCATS } from './data/newcats';
+import { THOUGHT } from './data/thought';
+import { COUNTRIES } from './data/tables/countries';
+import { ELEMENTS } from './data/tables/elements';
 
 // Fold one bank of {catId: [...extra questions]} into the merged bank.
 function mergeExtra(merged, extra) {
@@ -52,7 +59,34 @@ export const TRIVIA_CATEGORIES = [
   { id: 'arch', en: 'Wonders & Architecture', ar: 'العجائب والعمارة', emoji: '🏰' },
   { id: 'money', en: 'Money & Trade', ar: 'المال والتجارة', emoji: '💰' },
   { id: 'codes', en: 'Codes & Secrets', ar: 'الشيفرات والأسرار', emoji: '🔐' },
+  /* 2026-08: added as distinct disciplines.
+   *
+   * "psychology" is separate from "mind" on purpose. Mind & Psychology is
+   * mostly perception and cognition; this one is the FIELD — its experiments,
+   * figures and findings. The split adds rather than renames because category
+   * ids are keys in the saved seen-map and positions in the Levels rotation, so
+   * renaming "mind" would strand every existing player's history. */
+  { id: 'philosophy', en: 'Philosophy', ar: 'الفلسفة', emoji: '🤔' },
+  { id: 'psychology', en: 'Psychology', ar: 'علم النفس', emoji: '🧩' },
+  { id: 'medicine', en: 'Medicine & Health', ar: 'الطب والصحة', emoji: '🩺' },
+  { id: 'literature', en: 'Literature', ar: 'الأدب', emoji: '📖' },
+  { id: 'cinema', en: 'Cinema & Animation', ar: 'السينما والرسوم', emoji: '🎬' },
+  { id: 'economics', en: 'Economics', ar: 'الاقتصاد', emoji: '📈' },
+  { id: 'languages', en: 'Languages & Writing', ar: 'اللغات والكتابة', emoji: '🗣️' },
 ];
+
+/*
+ * Structured tables the procedural generator draws from, by category.
+ *
+ * A category with a table here never runs out: see procedural.js. A category
+ * without one falls back to its authored bank alone, which is the correct
+ * behaviour — "Words & Stories" has no table of comparable entities and forcing
+ * one would produce nonsense questions.
+ */
+export const TABLE_FOR = {
+  geography: COUNTRIES,
+  chem: ELEMENTS,
+};
 
 // Base banks + supplement + expert (d:4) folded into existing categories,
 // then the four brand-new categories.
@@ -61,5 +95,6 @@ export const TRIVIA = (() => {
   mergeExtra(merged, SUPPLEMENT);
   mergeExtra(merged, EXPERT);
   mergeExtra(merged, NEWCATS);
+  mergeExtra(merged, THOUGHT);
   return merged;
 })();

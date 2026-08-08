@@ -1,14 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import PlayHud from '../../../../shared/PlayHud';
 import { useGamePause } from '../../../../shared/useGamePause';
 import { makeRng } from '../../../../shared/rng';
-import { TRIVIA, TRIVIA_CATEGORIES } from './triviaData';
+import { TRIVIA, TRIVIA_CATEGORIES, TABLE_FOR } from './triviaData';
+import { generateFor } from './procedural';
 
-// Lazy — pulls in three.js + GLTFLoader only once a Trivia round actually
-// mounts, same reasoning as the hub's own Dr Kawkab (see AssessmentMascot3D.jsx).
-const AssessmentMascot3D = lazy(() => import('../../../../../../components/training/AssessmentMascot3D'));
+import KawkabSprite from '../../../../shared/KawkabSprite';
 
 /*
  * Trivia — general-knowledge quiz with a STAIRCASE. 24 categories of graded
@@ -75,6 +74,17 @@ export function markQuestionSeen(id) {
   saveSeen(seen);
 }
 
+/*
+ * How many generated questions to mix in behind the authored ones.
+ *
+ * The authored bank is the good stuff — written, translated, fact-checked, with
+ * flavour. It is also finite: 1,288 questions is about four hours of play. So
+ * authored items are always served FIRST and generated ones fill in behind them,
+ * which means a new player meets the hand-written bank and only a very heavy one
+ * reaches the generator.
+ */
+const GEN_TOPUP = 40;
+
 export function buildQueue(catId, tierSets, rng, usePersistence) {
   const qs = TRIVIA[catId] || [];
   const tag = qs.map((q, i) => ({ q, id: `${catId}:${i}` }));
@@ -87,7 +97,29 @@ export function buildQueue(catId, tierSets, rng, usePersistence) {
   const seen = usePersistence ? loadSeen() : {};
   const unseen = shuffleR(pool.filter((x) => !seen[x.id]), rng);
   const old = shuffleR(pool.filter((x) => seen[x.id]), rng).sort((a, b) => (seen[a.id] || 0) - (seen[b.id] || 0));
-  return [...unseen, ...old];
+
+  /*
+   * Generated tail. Its `gen` signature goes through the SAME seen-map as the
+   * authored ids, so a combinatorial question is no more likely to repeat than a
+   * written one — and because the signature is the sorted entity set, the engine
+   * cannot serve "which of A,B,C,D is largest" twice merely because the options
+   * came out in a different order.
+   */
+  const table = TABLE_FOR[catId];
+  let generated = [];
+  if (table) {
+    /* The generator is asked for signatures the player has NOT met. Its `gen`
+     * key is stored under a `gen:` prefix so it shares the seen-map with
+     * authored ids without being able to collide with one. */
+    const seenGen = new Set(
+      Object.keys(seen).filter((k) => k.startsWith('gen:')).map((k) => k.slice(4)),
+    );
+    generated = generateFor(table, GEN_TOPUP, rng, seenGen)
+      .map((q) => ({ q, id: `gen:${q.gen}` }))
+      .filter((x) => !seen[x.id]);
+  }
+
+  return [...unseen, ...old, ...generated];
 }
 
 // ── the staircase visual ──
@@ -123,10 +155,11 @@ function Staircase({ total, step, isAr }) {
       </div>
       <span style={{ position: 'absolute', left: total * W - 2, bottom: h(total - 1) + 4, fontSize: 24, animation: reached ? 'tv-pop 0.4s ease-out' : 'none' }}>🏁</span>
       <div style={{ position: 'absolute', left: kLeft, bottom: kBottom, width: 46, height: 53, transition: 'left 0.45s cubic-bezier(.34,1.4,.5,1), bottom 0.45s cubic-bezier(.34,1.4,.5,1)' }}>
+        {/* The climber is the black planet — the same Kawkab as the hub. It was
+            AssessmentMascot3D: a WebGL canvas plus a 3.4 MB GLB, mounted to draw
+            a 46px figure hopping up a staircase in a word game. */}
         <div ref={hopRef} className="tv-hop-play">
-          <Suspense fallback={null}>
-            <AssessmentMascot3D size={46} isAr={isAr} label={isAr ? 'د. كوكب' : 'Dr Kawkab'} onActivate={() => {}} />
-          </Suspense>
+          <KawkabSprite size={46} alt={isAr ? 'د. كوكب' : 'Dr Kawkab'} ariaHidden={false} />
         </div>
       </div>
     </div>
@@ -139,6 +172,7 @@ const T = {
     correct: 'Correct! ✓', wrong: 'Not quite…', didYouKnow: 'Did you know?',
     next: 'Next ›', finish: 'Finish ›',
     pickTopic: 'Staircase cleared! 🏁', pickSub: 'Choose your next topic',
+    allTopics: 'OR PICK ANY TOPIC',
     cont: 'Continue ›', again: 'Play again', menu: 'Menu',
     overTitle: 'Run over!', overSub: (s, p) => `${s} staircases · ${p} pts`,
     summaryWin: (m) => `Climbed all ${m} steps 🏁`, summaryLose: (n, m) => `${n}/${m} steps`,
@@ -148,6 +182,7 @@ const T = {
     correct: 'صحيح! ✓', wrong: 'ليس تماماً…', didYouKnow: 'هل تعلم؟',
     next: 'التالي ›', finish: 'إنهاء ›',
     pickTopic: 'أكملت السلّم! 🏁', pickSub: 'اختر موضوعك التالي',
+    allTopics: 'أو اختر أي موضوع',
     cont: 'متابعة ›', again: 'العب مجدداً', menu: 'القائمة',
     overTitle: 'انتهت المحاولة!', overSub: (s, p) => `${s} سلالم · ${p} نقطة`,
     summaryWin: (m) => `صعد كل الدرجات ${m} 🏁`, summaryLose: (n, m) => `${n}/${m} درجات`,
@@ -311,11 +346,37 @@ export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExi
           <div style={{ fontSize: 42 }}>🏁</div>
           <h2 style={S.overTitle}>{t.pickTopic}</h2>
           <p style={S.overSub}>+25 · {t.pickSub}</p>
+          {/* Three suggested topics, then EVERY topic.
+              It used to be the three alone, which is a nudge, not a choice — a
+              player who wanted Space had to clear staircases until the shuffle
+              offered it. The suggestions stay because picking from 24 every
+              single time is its own friction; they are just no longer the only
+              way through. */}
           <div style={S.pickRow}>
             {pickCats.map((c) => (
               <button key={c.id} type="button" style={S.pickCard} onClick={() => { playSfx?.('click'); newStaircase(c); }}>
                 <span style={{ fontSize: 34 }}>{c.emoji}</span>
                 <span style={S.pickName}>{isAr ? c.ar : c.en}</span>
+              </button>
+            ))}
+          </div>
+
+          <p style={S.pickAllLabel}>{t.allTopics}</p>
+          <div style={S.pickGrid}>
+            {TRIVIA_CATEGORIES.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                style={S.pickChip}
+                onClick={() => { playSfx?.('click'); newStaircase(c); }}
+                title={isAr ? c.ar : c.en}
+              >
+                <span style={{ fontSize: 18 }}>{c.emoji}</span>
+                <span style={S.pickChipName}>{isAr ? c.ar : c.en}</span>
+                {/* Categories backed by a generated table never run out. Worth
+                    saying, since it is the difference between a topic you can
+                    exhaust and one you cannot. */}
+                {TABLE_FOR[c.id] ? <span style={S.pickInf} aria-hidden="true">∞</span> : null}
               </button>
             ))}
           </div>
@@ -454,6 +515,14 @@ const S = {
   pickRow: { display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 12 },
   pickCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 16px', minWidth: 104, borderRadius: 16, border: '2px solid var(--ink-outline)', background: 'var(--surface-raised)', cursor: 'pointer', boxShadow: '3px 3px 0 var(--ink-outline)', animation: 'tv-pop 0.3s ease-out' },
   pickName: { fontWeight: 800, fontSize: 12.5, color: 'var(--ink)', textAlign: 'center' },
+  /* The full topic grid. Chips rather than cards: 24 of the picker's big
+     cards would not fit a phone, and the three suggestions above already carry
+     the visual weight — this row is for the player who knows what they want. */
+  pickAllLabel: { marginTop: 16, marginBottom: 2, fontSize: 10.5, fontWeight: 800, letterSpacing: '0.14em', color: 'var(--ink-dim)' },
+  pickGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(124px, 1fr))', gap: 7, width: 'min(720px, 100%)', maxHeight: '34vh', overflowY: 'auto', padding: 2 },
+  pickChip: { position: 'relative', display: 'flex', alignItems: 'center', gap: 7, padding: '9px 10px', borderRadius: 11, border: '1.5px solid var(--ink-outline)', background: 'var(--surface-raised)', cursor: 'pointer', textAlign: 'start' },
+  pickChipName: { fontWeight: 700, fontSize: 11.5, color: 'var(--ink)', lineHeight: 1.2 },
+  pickInf: { marginInlineStart: 'auto', fontSize: 12, fontWeight: 800, color: 'var(--accent)' },
   overWrap: { position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 24, textAlign: 'center' },
   overTitle: { margin: '4px 0 0', fontWeight: 900, fontSize: 24, color: 'var(--game-ink)' },
   overSub: { margin: 0, fontWeight: 700, color: 'var(--ink-dim)' },

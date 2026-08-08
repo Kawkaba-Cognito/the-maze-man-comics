@@ -27,6 +27,28 @@ const CATEGORY_ART = {
   group: 'Assets/puzzle-studio/category-art-2026/group.webp',
 };
 
+/** Purpose-built art for every puzzle moon, grouped by the registry IDs. */
+const GAME_ART = {
+  sudoku: 'Assets/puzzle-studio/game-art-2026/sudoku.webp',
+  kenken: 'Assets/puzzle-studio/game-art-2026/kenken.webp',
+  kakuro: 'Assets/puzzle-studio/game-art-2026/kakuro.webp',
+  nonogram: 'Assets/puzzle-studio/game-art-2026/nonogram.webp',
+  takuzu: 'Assets/puzzle-studio/game-art-2026/takuzu.webp',
+  hitori: 'Assets/puzzle-studio/game-art-2026/hitori.webp',
+  crowns: 'Assets/puzzle-studio/game-art-2026/crowns.webp',
+  bridges: 'Assets/puzzle-studio/game-art-2026/bridges.webp',
+  sliding: 'Assets/puzzle-studio/game-art-2026/sliding.webp',
+  blockburst: 'Assets/puzzle-studio/game-art-2026/blockburst.webp',
+  flow: 'Assets/puzzle-studio/game-art-2026/flow.webp',
+  tangram: 'Assets/puzzle-studio/game-art-2026/tangram.webp',
+  imposter: 'Assets/puzzle-studio/game-art-2026/imposter.webp',
+  charades: 'Assets/puzzle-studio/game-art-2026/charades.webp',
+  describeit: 'Assets/puzzle-studio/game-art-2026/describeit.webp',
+  wavelength: 'Assets/puzzle-studio/game-art-2026/wavelength.webp',
+  gettoknow: 'Assets/puzzle-studio/game-art-2026/gettoknow.webp',
+  groupwar: 'Assets/puzzle-studio/game-art-2026/groupwar.webp',
+};
+
 function StudioAtmosphere() {
   return (
     <>
@@ -264,11 +286,14 @@ export default function PuzzlesScreen() {
               style={{ '--world': puzzle.accent, '--drift': PZ_DRIFT[i % PZ_DRIFT.length] }}
               onClick={() => { playSfx('click'); setActiveGame(puzzle.gameKey); }}
             >
-              {/* No art exists per puzzle, so the moon is drawn: the game's own
-                  glyph on a body tinted by its accent. Same orb shading as the
-                  category worlds above, one size down. */}
               <span className="pz-orb pz-orb--moon" aria-hidden="true">
-                <i className="pz-orb-glyph">{puzzle.icon}</i>
+                <img
+                  className="pz-orb-game-art"
+                  src={assetUrl(GAME_ART[puzzle.id])}
+                  alt=""
+                  decoding="async"
+                  draggable="false"
+                />
                 <i className="pz-orb-shade" />
                 <i className="pz-orb-rim" />
               </span>

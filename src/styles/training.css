@@ -5298,15 +5298,25 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 /* ── Flexibility: Spatial Stroop (Arrow Rush) ── */
 .ct-stroop-root {
     --stroop-accent: var(--color-domain-flexibility, #e07aaa);
-    /* The rule banner is colour-coded so a rule SWITCH registers instantly —
-       that cue is the point of a task-switching game, so it stays. But it is
-       deliberately NOT the two stimulus hues (blue/amber): those already mean
-       "left" and "right" under the colour rule, and reusing them here would
-       make the banner look like an answer. Slate vs plum instead — two cool
-       neutrals that differ in hue and lightness without entering the response
-       vocabulary. */
-    --stroop-point: #2f5f86;
-    --stroop-point-bg: linear-gradient(180deg, #eef4fa 0%, #cfe0ee 100%);
+    /*
+     * The rule banner is colour-coded so a rule SWITCH registers instantly —
+     * that cue is the whole point of a task-switching game, so it stays.
+     *
+     * It must not borrow the RESPONSE vocabulary though: blue means "left" and
+     * amber means "right" under the colour rule, so a banner in either hue reads
+     * as an answer. The previous comment here claimed exactly that principle and
+     * then broke it — `--stroop-point` was #2f5f86, hue 207, against the blue
+     * stimulus #0072B2 at hue 202. Five degrees apart. The banner announcing
+     * "TAP BY WHERE IT POINTS" was painted the colour that means LEFT.
+     *
+     * `point` is now NEUTRAL — warm ink on the app's own off-white. A neutral
+     * cannot imply a side at all, which is the safest thing the most-used rule
+     * can be, and it removes the pale-blue panel that made this game look like
+     * a different app. `side` keeps plum (hue 290) and `color` keeps violet;
+     * both are clear of blue, amber, and the green/red used for feedback.
+     */
+    --stroop-point: #2f2a24;
+    --stroop-point-bg: linear-gradient(180deg, #fbf7ef 0%, #ece3d3 100%);
     --stroop-side: #6b4a72;
     --stroop-side-bg: linear-gradient(180deg, #f6eefa 0%, #e2d2ea 100%);
 }
@@ -5377,7 +5387,8 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 }
 .ct-stroop-rule--point {
     background: var(--stroop-point-bg);
-    color: #16386e;
+    /* Warm ink, not #16386e (navy) — see the note on --stroop-point. */
+    color: var(--stroop-point);
 }
 .ct-stroop-rule--side {
     background: var(--stroop-side-bg);
@@ -5422,6 +5433,27 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 }
 
 /* Stage — two halves separated by a fixed center rail (never collapses) */
+/*
+ * On a laptop the board was a 560px column in a 1366px window with a band of
+ * dead space above the cards: .ct-stroop-board carries flex:1 and a 560px cap,
+ * so the surplus width had nowhere to go and the stage's own flex:1 only
+ * stretched a container the cards did not fill.
+ *
+ * Widening the column and raising the stage's floor spends that space on the
+ * ARROWS, which is the one thing in this game worth making bigger — it is a
+ * discrimination task, and the arrowhead is what has to be read at speed.
+ * Phones are untouched: the cap only lifts once there is width to spend.
+ */
+@media (min-width: 900px) {
+    .ct-stroop-board {
+        max-width: 820px;
+    }
+
+    .ct-stroop-stage {
+        min-height: 300px;
+    }
+}
+
 .ct-stroop-stage {
     position: relative;
     display: grid;
@@ -5645,7 +5677,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     font-size: 0.82rem;
     letter-spacing: 0.06em;
 }
-.ct-stroop-tut-banner.ct-stroop-rule--point { background: var(--stroop-point-bg, #cfe0fb); color: #16386e; }
+.ct-stroop-tut-banner.ct-stroop-rule--point { background: var(--stroop-point-bg); color: var(--stroop-point); }
 .ct-stroop-tut-banner.ct-stroop-rule--side { background: var(--stroop-side-bg, #fbe2c2); color: #472f4d; }
 .ct-stroop-tut-stage {
     display: grid;

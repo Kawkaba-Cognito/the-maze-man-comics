@@ -4,7 +4,7 @@ import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import { survivalRampFromRemaining } from '../../../../shared/survival';
 import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
-import CosmosCharacter from '../../../../../character/CosmosCharacter';
+import KawkabSprite from '../../../../shared/KawkabSprite';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
 const Wisconsin3DProto = lazyWithRetry(() => import('./Wisconsin3DProto'), 'wisconsin-3d');
@@ -107,9 +107,7 @@ export function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit,
   const [runId, setRunId] = useState(0);
   const [card, setCard] = useState(() => dealCard(makeRng(((seed ?? 1) >>> 0) + 7919)));
   const [fly, setFly] = useState(null);   // { choice, ok }
-  const [shiftToast, setShiftToast] = useState(false);
-  const [mood, setMood] = useState('focused');
-  const [over, setOver] = useState(null);
+  const [shiftToast, setShiftToast] = useState(false);  const [over, setOver] = useState(null);
   const [score, setScore] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [total, setTotal] = useState(0);
@@ -131,7 +129,7 @@ export function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     trialRef.current += 1;
     const rng = makeRng(((seed ?? 1) >>> 0) + trialRef.current * 7919 + runId * 104729);
     setCard(dealCard(rng));
-    setFly(null); setMood('focused'); lockRef.current = false;
+    setFly(null); lockRef.current = false;
   }, [seed, runId]);
 
   const t = useMemo(() => ({
@@ -176,7 +174,6 @@ export function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit,
       playSfx?.('lose');
     }
     setFly({ choice, ok, hintTryOther: !ok && (postSwitchTrial || (prevRuleRef.current && choice === card.match[prevRuleRef.current])) });
-    setMood(ok ? 'proud' : 'tired');
     let run = ok ? runRef.current + 1 : 0;
     if (run >= switchAfter(mode, diff, level, rampRef.current)) {
       prevRuleRef.current = rule; s.rules += 1;
@@ -212,7 +209,7 @@ export function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit,
     runRef.current = 0; prevRuleRef.current = null; justSwitchedRef.current = false; lockRef.current = false; finishedRef.current = false;
     stats.current = { afterN: 0, afterOk: 0, persev: 0, rules: 0 };
     ruleRef.current = pickRule(makeRng((Date.now() >>> 0) + 7919), null);
-    setScore(0); setCorrect(0); setTotal(0); setCombo(0); setOver(null); setMood('focused');
+    setScore(0); setCorrect(0); setTotal(0); setCombo(0); setOver(null);
     setShiftToast(false);
     setCard(dealCard(makeRng((Date.now() >>> 0) + 7919))); setFly(null);
     setRunId((n) => n + 1);
@@ -234,7 +231,7 @@ export function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit,
       <div className={rootCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
         <div className="ct-wcst-over-wrap">
           <div className="ct-wcst-over-card">
-            <CosmosCharacter size={72} mood="proud" glow pose="cheer" />
+            <KawkabSprite size={72} />
             <h2 className="ct-wcst-over-title">{t.over}</h2>
             <p className="ct-wcst-over-sub">{`✓ ${over.correct} · ${over.score} ${isAr ? 'نقطة' : 'pts'} · ${over.rules} ${t.rules}`}</p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 16 }}>
@@ -270,7 +267,7 @@ export function WcstEngine({ mode, diff, level, seed, attempt, onResult, onExit,
 
       <div className="ct-wcst-body">
         <div className="ct-wcst-react">
-          <CosmosCharacter size={44} faceOnly mood={mood} />
+          <KawkabSprite size={44} />
           <span className="ct-wcst-say" style={{ color: fly ? (fly.ok ? OK : BAD) : SUB }}>{say}</span>
         </div>
         <p className="ct-wcst-prompt">{t.prompt}</p>

@@ -36,7 +36,7 @@ import AssessmentReady from '../../../../assessment/AssessmentReady';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
-const AssessmentMascot3D = lazyWithRetry(() => import('../../../../../../components/training/AssessmentMascot3D'), 'rush-hour-mascot');
+import KawkabSprite from '../../../../shared/KawkabSprite';
 
 const RH_ASSESS_CAP_SEC = 150; // per scored puzzle — 4 puzzles ≈ 6 min + warm-up
 const RH_ASSESS_WARMUP_SEC = 90;
@@ -1699,14 +1699,14 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                       position: 'relative',
                     }}
                   >
-                    <Suspense fallback={null}>
-                      <AssessmentMascot3D
-                        size={Math.max(36, Math.round(Math.min(w, h) * 1.02))}
-                        isAr={isAr}
-                        label={isAr ? 'د. كوكب' : 'Dr Kawkab'}
-                        onActivate={() => {}}
-                      />
-                    </Suspense>
+                    {/* The black planet, same Kawkab as the hub. Was
+                        AssessmentMascot3D — a WebGL canvas and a 3.4 MB GLB for
+                        a figure sized off the board's own cell. */}
+                    <KawkabSprite
+                      size={Math.max(36, Math.round(Math.min(w, h) * 1.02))}
+                      alt={isAr ? 'د. كوكب' : 'Dr Kawkab'}
+                      ariaHidden={false}
+                    />
                     <div
                       style={{
                         position: 'absolute',
@@ -1826,15 +1826,9 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
               maxWidth: 320,
             }}
           >
+            {/* The win card's Kawkab — same black planet as the board's. */}
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <Suspense fallback={null}>
-                <AssessmentMascot3D
-                  size={108}
-                  isAr={isAr}
-                  label={isAr ? 'د. كوكب' : 'Dr Kawkab'}
-                  onActivate={() => {}}
-                />
-              </Suspense>
+              <KawkabSprite size={108} alt={isAr ? 'د. كوكب' : 'Dr Kawkab'} ariaHidden={false} />
             </div>
             <div
               className="ct-rh-win-title"

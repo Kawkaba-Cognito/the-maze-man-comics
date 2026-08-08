@@ -139,8 +139,26 @@ export function makeProbe(rng, opts = {}) {
   return probe;
 }
 
-const baseAnswer = (probe, rule) =>
-  rule === 'point' ? probe.dir : rule === 'side' ? probe.pos : COLOR_SIDE[probe.color] ?? probe.dir;
+/*
+ * `?? probe.dir` on the colour branch is a silent trap, and this file has been
+ * bitten by its cousin before (see the note above about the colour rule scoring
+ * every trial wrong). If a level ever puts 'color' in ruleSequence without
+ * useColor, the probe carries no colour and EVERY colour trial becomes
+ * answerable by direction — the game would look fine and quietly stop measuring
+ * the thing the colour rule exists to measure.
+ *
+ * It cannot happen with today's configs (ruleSequence only gains 'color' when
+ * plan.color is set), so the fallback stays rather than throwing at a player
+ * mid-run. But it says so out loud in dev, where the wiring gets changed.
+ */
+const baseAnswer = (probe, rule) => {
+  if (rule === 'point') return probe.dir;
+  if (rule === 'side') return probe.pos;
+  if (!probe.color && import.meta.env?.DEV) {
+    console.warn('[spatial-stroop] colour rule on a probe with no colour — answering by direction; check the level plan.');
+  }
+  return COLOR_SIDE[probe.color] ?? probe.dir;
+};
 
 /** The correct answer side for a probe under a rule (respecting reverse trials). */
 export function answerFor(probe, rule) {

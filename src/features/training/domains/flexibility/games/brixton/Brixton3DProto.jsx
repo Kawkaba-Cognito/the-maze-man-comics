@@ -4,7 +4,7 @@ import { bootC3dScene, matStd, disposeObject, THREE } from '../../../../shared/c
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import { makeRng } from '../../../../shared/rng';
 import { survivalRamp, SURVIVAL_MS, freshSurvivalSeed } from '../../../../shared/survival';
-import { createDrKawkabInstance, disposeDrKawkabInstance } from '../../../../shared/drKawkabModel';
+import { assetUrl } from '../../../../../../lib/assetUrl';
 // SAME hidden-rule game as 2D Survival: identical rules + free-mode config ramp.
 import {
   RULES,
@@ -188,59 +188,48 @@ export default function Brixton3DProto({
     const markerFrom = marker.position.clone();
     let hopProgress = 1;
     let robotHolder = null;
-    let robotMixer = null;
-    let robotAction = null;
     let robotAlive = true;
     let robotModel = null;
-    createDrKawkabInstance().then((gltf) => {
-      if (!robotAlive) {
-        disposeDrKawkabInstance(gltf.scene);
-        return;
-      }
-      const model = gltf.scene;
-      robotModel = model;
-      model.scale.set(1, 1, 1);
-      model.position.set(0, 0, 0);
-      const { size, center, min } = gltf.bounds;
-      const robotHeight = wrap.clientWidth < 600 ? 2 : 1.5;
-      const scale = robotHeight / Math.max(0.0001, size.y);
-      model.scale.setScalar(scale);
-      model.position.set(-center.x * scale, -min.y * scale, -center.z * scale);
-      model.traverse((node) => {
-        if (!node.isMesh) return;
-        node.frustumCulled = false;
-        const materials = Array.isArray(node.material) ? node.material : [node.material];
-        materials.forEach((material) => {
-          if (!material) return;
-          material.metalness = 0;
-          material.roughness = 0.7;
-          if ('emissiveIntensity' in material) material.emissiveIntensity = 0.18;
-          material.transparent = false;
-          material.depthWrite = true;
-          material.needsUpdate = true;
-        });
-      });
-      robotHolder = new THREE.Group();
-      robotHolder.add(model);
-      robotHolder.position.set(0, 0.04, 0.42);
-      marker.add(robotHolder);
-      markerCore.visible = false;
-      markerHalo.material.opacity = 0.1;
-      setRobotStatus('ready');
-      const clips = gltf.animations || [];
-      const clip = clips.find((entry) => entry.name === 'Walking')
-        || clips.find((entry) => entry.name === 'Running')
-        || clips.find((entry) => entry.name === 'Idle_02')
-        || clips[0];
-      if (clip) {
-        robotMixer = new THREE.AnimationMixer(model);
-        robotAction = robotMixer.clipAction(clip);
-        robotAction.timeScale = clip.name === 'Running' ? 0.65 : 0.9;
-        robotAction.play();
-      }
-    }).catch(() => {
-      if (robotAlive) setRobotStatus('error');
-    });
+    /*
+     * Kawkab, as a billboarded picture rather than a rigged GLB.
+     *
+     * Was createDrKawkabInstance() — Assets/biped-v1.glb, 3.4 MB, plus an
+     * AnimationMixer running a walk clip. That was the right call while the
+     * character only existed as a model; it stopped being right when the hub
+     * moved to the 2D black planet, and this scene was left showing a different
+     * mascot from every other screen.
+     *
+     * A plane with the sprite on it keeps the character IN the 3D scene, so it
+     * still rides the hop arc and the lean below, and it needs no mixer, no
+     * clips, and no bounds maths — the Box3-on-a-skinned-mesh trap that has
+     * produced 100x scale errors here before simply does not apply.
+     */
+    new THREE.TextureLoader().load(
+      assetUrl('Assets/characters/kawkab/kawkab-planet.webp'),
+      (tex) => {
+        if (!robotAlive) { tex.dispose(); return; }
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 8;
+        const h = wrap.clientWidth < 600 ? 2 : 1.5;
+        const w = h * (tex.image.width / tex.image.height);
+        const mesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(w, h),
+          new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false }),
+        );
+        // Feet on the pad: the plane is centred, so lift it half its height.
+        mesh.position.y = h / 2;
+        robotModel = mesh;
+        robotHolder = new THREE.Group();
+        robotHolder.add(mesh);
+        robotHolder.position.set(0, 0.04, 0.42);
+        marker.add(robotHolder);
+        markerCore.visible = false;
+        markerHalo.material.opacity = 0.1;
+        setRobotStatus('ready');
+      },
+      undefined,
+      () => { if (robotAlive) setRobotStatus('error'); },
+    );
 
     // ── Game state ──
     const gameSeed = (seed ?? freshSurvivalSeed()) >>> 0;
@@ -454,8 +443,6 @@ export default function Brixton3DProto({
         marker.position.lerpVectors(markerFrom, markerTarget, eased);
         marker.position.y += Math.sin(hopProgress * Math.PI) * 0.36;
       }
-      robotMixer?.update(dt);
-      if (robotAction) robotAction.timeScale = hopProgress < 1 ? 1.2 : 0.55;
       markerCore.material.emissiveIntensity = 0.6 + Math.sin(now * 0.006) * 0.2;
       markerHalo.material.opacity = 0.2 + Math.sin(now * 0.006) * 0.08;
       for (const m of nodes) {
@@ -496,7 +483,6 @@ export default function Brixton3DProto({
         playRoot.remove(m);
       });
       if (robotHolder) marker.remove(robotHolder);
-      if (robotModel) disposeDrKawkabInstance(robotModel);
       disposeObject(marker);
       playRoot.remove(marker);
       dispose();

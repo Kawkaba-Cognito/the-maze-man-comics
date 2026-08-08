@@ -102,6 +102,29 @@ function drawGlyph(ctx, shape, color, cx, cy, r) {
 }
 
 /** Draw a card face (color + shape × number) on a light card → CanvasTexture. */
+/*
+ * Card colours — black, matching the black-planet Kawkab.
+ *
+ * The glyphs stay exactly as they are: colour, shape and number ARE the task,
+ * so nothing here may touch them. Measured WCAG contrast for the four stimulus
+ * colours (#e05a5a #3aa564 #e0a92e #4f8fd0):
+ *
+ *            on the old cream #fffdf8      on black #16161b
+ *   weakest  2.09:1  (yellow)              4.96:1  (red)
+ *
+ * So this is not a cosmetic swap that the task tolerates — it repairs one. On
+ * cream, yellow sat at 2.09:1, under the 3:1 floor for graphical objects, and
+ * yellow-vs-cream is exactly the discrimination a colour-sorting task asks for.
+ * Every colour clears 3:1 on black.
+ *
+ * The border inverts with it: a navy rule was the card's edge against cream and
+ * would vanish against black, leaving cards with no silhouette on a dark board.
+ */
+const CARD_BLACK = '#16161b';
+const CARD_EDGE = '#4a4a57';
+const CARD_BLACK_INT = 0x16161b;
+const CARD_GLOW_INT = 0x0e0e12;
+
 function cardTexture({ shape, color, number }) {
   const W = 630;
   const H = 840;
@@ -109,11 +132,11 @@ function cardTexture({ shape, color, number }) {
   c.width = W;
   c.height = H;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#fffdf8';
+  ctx.fillStyle = CARD_BLACK;
   roundRectPath(ctx, 18, 18, W - 36, H - 36, 54);
   ctx.fill();
   ctx.lineWidth = 14;
-  ctx.strokeStyle = '#17324d';
+  ctx.strokeStyle = CARD_EDGE;
   ctx.stroke();
   const r = 92;
   const gapY = 194;
@@ -130,7 +153,8 @@ function cardTexture({ shape, color, number }) {
 
 function cardMesh(feature) {
   const faceTex = cardTexture(feature);
-  const side = matStd(0xdde8ef, { emissive: 0x17324d, emissiveIntensity: 0.04, metalness: 0, roughness: 0.9 });
+  // Card edges follow the face. Was 0xdde8ef, a pale blue-white rim.
+  const side = matStd(CARD_BLACK_INT, { emissive: CARD_GLOW_INT, emissiveIntensity: 0.04, metalness: 0, roughness: 0.9 });
   const face = new THREE.MeshBasicMaterial({
     map: faceTex,
     toneMapped: false,
@@ -200,7 +224,8 @@ export default function Wisconsin3DProto({
       const x = (i - 1.5) * refGap;
       const slot = new THREE.Mesh(
         new THREE.BoxGeometry(1.45 * refScale + 0.22, 1.94 * refScale + 0.22, 0.08),
-        matStd(0x102a43, { emissive: 0x55d6e8, emissiveIntensity: 0.18, metalness: 0.02, roughness: 0.88 }),
+        // Reference slot backing. Emissive stays cyan — it is the selection cue.
+        matStd(CARD_BLACK_INT, { emissive: 0x55d6e8, emissiveIntensity: 0.18, metalness: 0.02, roughness: 0.88 }),
       );
       slot.position.set(x, 1.35, -0.14);
       playRoot.add(slot);
@@ -368,7 +393,7 @@ export default function Wisconsin3DProto({
           ud.feedbackMat.emissive.setHex(ud.flashHex);
           ud.feedbackMat.emissiveIntensity = 0.35 + ud.flash;
         } else {
-          ud.feedbackMat.color.setHex(0x102a43);
+          ud.feedbackMat.color.setHex(CARD_BLACK_INT);
           ud.feedbackMat.emissive.setHex(0x55d6e8);
           ud.feedbackMat.emissiveIntensity = 0.18;
         }
