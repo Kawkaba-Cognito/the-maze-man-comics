@@ -29,6 +29,7 @@ import {
   SM_LEVELS_PER_TIER,
   specForLevel,
   buildLegend,
+  growLegend,
   pickItem,
   summarize,
   gradeBlock,
@@ -384,8 +385,12 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
     // adaptive time bank supplies the speed pressure. No per-item deadline.
     if (block.mode === 'free') {
       const size = freeLegendSize(correctRef.current);
-      if (block.legend.length !== size) {
-        block.legend = buildLegend(size);
+      /* growLegend, NOT buildLegend. buildLegend reshuffles the entire pool and
+         reassigns every digit, so growing the key silently invalidated every
+         mapping the player had memorised and scored their learned answers as
+         wrong. Grow appends the new symbols and leaves the rest alone. */
+      if (block.legend.length < size) {
+        block.legend = growLegend(block.legend, size, rngRef.current);
         setLegend(block.legend);
       }
     }

@@ -260,9 +260,15 @@ const UI = {
     pickDiff: 'Choose Difficulty',
     pickDiffSub: 'Each tier has 100 levels — unlock them in order.',
     diffDesc: {
-      easy: 'Distinct shapes — spot the odd one out fast.',
-      medium: 'Similar shapes & colours — look more carefully.',
-      hard: 'Near-identical shapes — match shape and colour.',
+      /* Rewritten with the pool rebuild. These used to promise "similar" and
+         "near-identical" shapes, which is how the curriculum graded difficulty
+         before every board became motif-distinct. Leaving them would have the
+         game describe a mechanic it no longer has. The levers named here are the
+         ones that actually escalate: object variety, grid density, hue
+         interference and colour binding. */
+      easy: 'A few clearly different objects — find the target fast.',
+      medium: 'More object types, and some share the target colour.',
+      hard: 'A crowded grid — match the object and its colour.',
     },
     diffTargets: 'targets',
     diffGrid: 'grid',
@@ -398,9 +404,9 @@ const UI = {
     menuHint: 'تدريب بحث بصري: ربط السمات، كبح المشتتات، والاستجابة بسرعة—كمهام الانتباه في العلوم المعرفية.',
     pickDiffSub: 'كل صعوبة ١٠٠ مستوى · افتحها بالترتيب.',
     diffDesc: {
-      easy: 'أشكال مختلفة — اكتشف المختلف بسرعة.',
-      medium: 'أشكال وألوان متشابهة — دقّق أكثر.',
-      hard: 'أشكال شبه متطابقة — طابق الشكل واللون.',
+      easy: 'أجسام قليلة ومختلفة بوضوح — اعثر على الهدف بسرعة.',
+      medium: 'أنواع أكثر، وبعضها يشارك الهدف لونه.',
+      hard: 'شبكة مزدحمة — طابق الجسم ولونه.',
     },
     diffTargets: 'أهداف',
     diffGrid: 'شبكة',

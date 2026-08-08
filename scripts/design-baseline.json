@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 777,
+    "raw-colour": 776,
     "conditional-background": 1,
     "stacked-backdrops": 4
   },
@@ -54,10 +54,10 @@
       "raw-colour": 30
     },
     "src/features/training/domains/memory/games/nback/NBack3DProto.jsx": {
-      "raw-colour": 6
+      "raw-colour": 7
     },
     "src/features/training/domains/memory/games/paired-associates/PairedAssociates3DProto.jsx": {
-      "raw-colour": 5
+      "raw-colour": 3
     },
     "src/features/training/domains/memory/games/story-grid/index.jsx": {
       "raw-colour": 46,
