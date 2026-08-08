@@ -1,0 +1,31 @@
+Copyright (c) 2026 Elie El Meouchi (Kawkaba Cognito). All rights reserved.
+
+This repository is source-available, not open source.
+
+The source code, assets, artwork, characters, written content, game designs,
+and all other material in this repository are the exclusive property of the
+copyright holder and are protected by copyright law.
+
+Permission is NOT granted to any person to use, copy, modify, merge, publish,
+distribute, sublicense, sell, or create derivative works from any part of this
+repository, in whole or in part, by any means, for any purpose, whether
+commercial or non-commercial.
+
+Viewing this repository, or cloning it as an unavoidable consequence of its
+public visibility on a code hosting platform, does not grant any licence,
+express or implied, to the material it contains. No right is waived by the
+absence of enforcement.
+
+The following are expressly prohibited without prior written permission:
+
+  - redistributing this code or any derivative of it, publicly or privately;
+  - deploying, hosting, or publishing this application or any version of it;
+  - reusing the artwork, characters, mascots, names, or written content in any
+    other project, product, dataset, or model;
+  - incorporating any part of this repository into a training corpus for
+    machine learning systems.
+
+Third-party dependencies listed in package.json remain governed by their own
+respective licences, which are unaffected by this notice.
+
+For permission enquiries, contact the copyright holder.
