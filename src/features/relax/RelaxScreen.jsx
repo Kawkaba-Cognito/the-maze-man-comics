@@ -890,9 +890,28 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
   // uniform near-black with only a whisper of warm variation. Wellbeing
   // stays visually distinct via composition (no photo, floating planets,
   // gentle motes), not via a different/clashing color palette.
-  const skyText = '#fff4df';
-  const skyTextShadow = '0 1px 4px rgba(0,0,0,0.8), 0 0 18px rgba(240,182,106,0.2)';
-  const skyMuted = 'rgba(255,239,216,0.72)';
+  /*
+   * These three were pinned warm-white, from when this landing only ever had a
+   * night sky under it. Beige is the default ground now, so every one of them
+   * was near-invisible cream-on-cream — the title, the six planet names, the
+   * "Choose an area." line and the bottom hint.
+   *
+   * Deliberately NOT flipped to black: that just moves the bug to the other
+   * theme. They follow --universe-ink / --universe-muted, the same tokens
+   * Home's "Your universe" heading reads, so one appearance switch drives both
+   * screens and neither can drift from the other again.
+   *
+   * The shadow has to go with them. It is a hard black drop plus an amber glow
+   * — legibility scaffolding for light text on a dark sky. Left on dark ink
+   * over beige it reads as a smudge, not a glow. Home solves the same problem
+   * the same way (`html[data-home-theme='light'] .home-universe-title
+   * { text-shadow: none }`).
+   */
+  const skyText = dark ? '#fff4df' : 'var(--universe-ink)';
+  const skyTextShadow = dark
+    ? '0 1px 4px rgba(0,0,0,0.8), 0 0 18px rgba(240,182,106,0.2)'
+    : 'none';
+  const skyMuted = dark ? 'rgba(255,239,216,0.72)' : 'var(--universe-muted)';
 
   /*
    * Light appearance: every planet gets a drawn contour.
@@ -943,16 +962,27 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
       }}>
         <div style={{
           fontSize: 10.5, letterSpacing: 4, fontWeight: 800, textTransform: 'uppercase',
-          color: 'rgba(255,224,170,0.82)',
+          color: dark ? 'rgba(255,224,170,0.82)' : 'var(--universe-muted)',
         }}>
           {isAr ? 'ركن العافية' : 'Wellbeing pillar'}
         </div>
-        <div style={{
-          fontFamily: isAr ? "'Cairo', sans-serif" : "'Cinzel', 'Cormorant Garamond', serif",
-          fontSize: isAr ? 30 : 30, fontWeight: 700, letterSpacing: isAr ? 0 : 1.6,
-          textTransform: isAr ? 'none' : 'uppercase',
-          color: skyText, textShadow: skyTextShadow, lineHeight: 1.15, marginTop: 3,
-        }}>
+        {/*
+         * Set by the SAME rule as Home's "Your universe" — `.home-universe-title`
+         * in global.css — rather than by a local copy of its numbers. The two
+         * were hand-typed apart (30px / 1.6 letter-spacing here vs 24px / 4px
+         * there), which is exactly how they drifted.
+         *
+         * Nothing about the type may be set inline here. An element's own
+         * declaration beats an inherited one at any specificity, so a leftover
+         * `fontSize` would silently win over the class and the sizes would
+         * stay different while looking wired up. Colour is the one exception:
+         * the class deliberately carries none, inheriting it on Home from
+         * `.home-universe-heading`, so this overlay supplies its own.
+         */}
+        <div
+          className="home-universe-title"
+          style={{ color: skyText, textShadow: skyTextShadow, marginTop: 3 }}
+        >
           {isAr ? 'العافية' : 'Wellbeing'}
         </div>
         <div style={{ fontSize: 12.5, color: skyMuted, marginTop: 3 }}>

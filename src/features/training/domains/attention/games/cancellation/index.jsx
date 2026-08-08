@@ -8,6 +8,8 @@ import React, {
   useSyncExternalStore,
 } from 'react';
 import PlayHud, { ShapeSvg } from '../../../../shared/PlayHud';
+import GamePiece from '../../../../shared/GamePiece';
+import { shapeArtLabel, shapeArtUrl, shapesAreArtSafe } from '../../../../shared/shapeArt';
 import {
   getShapeScale,
   subscribeShapeNorm,
@@ -137,6 +139,47 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+const PREMIUM_TRAINING_MODES = new Set(['free', 'level', 'challenge']);
+
+/*
+ * Two independent conditions, both required.
+ *
+ * 1. MODE — assessment and adaptive keep the controlled abstract stimuli so
+ *    their longitudinal scores stay comparable.
+ * 2. READABILITY — the objects actually on this board must be tellable apart.
+ *    Derived from the live cells rather than from the pool's tier name, so it
+ *    cannot drift when the level data is edited: whatever the curriculum does
+ *    next, a board whose shapes collide as illustrations falls back to geometry
+ *    automatically. This is what keeps the hard tiers playable, where six of the
+ *    near-identical silhouettes all became planets.
+ */
+function usesPremiumTrainingArt(round, cells) {
+  if (!PREMIUM_TRAINING_MODES.has(round?.mode)) return false;
+  if (!Array.isArray(cells) || !cells.length) return false;
+  return shapesAreArtSafe(new Set(cells.map((cell) => cell.shape)));
+}
+
+function CancellationTarget({ round, cells, size, isAr }) {
+  const shape = round.target in SH
+    ? round.target
+    : cells.find((cell) => cell.isT)?.shape || 'circle';
+  const color = round.targetCol || cells.find((cell) => cell.isT)?.fill || 'var(--game-ink)';
+  const artUrl = usesPremiumTrainingArt(round, cells) ? shapeArtUrl(shape) : null;
+  if (artUrl) {
+    return (
+      <GamePiece
+        shape={shape}
+        color={color}
+        size={size}
+        artUrl={artUrl}
+        reduced
+        ariaLabel={shapeArtLabel(shape, isAr)}
+      />
+    );
+  }
+  return <ShapeSvg shape={shape} color={color} size={size} />;
+}
+
 // Parse each shape's SVG markup into a real React element ONCE (cached), so the
 // shape is rendered as a React-managed SVG child instead of being injected as an
 // HTML string. Injecting markup with `dangerouslySetInnerHTML` on an <svg> node
@@ -245,6 +288,10 @@ const UI = {
     ies: 'IES score',
     rt: 'Avg RT',
     countdownHint: 'Get ready…',
+    survivalCueTitle: 'Your target',
+    survivalCueTask: 'Find every tile showing this object.',
+    survivalCueReady: 'READY · START',
+    survivalCueHint: 'Take a good look. The timer starts only when you tap.',
     fixHint: 'Focus on the centre…',
     cueExact: 'Tap every tile that looks exactly like this.',
     cueShape: 'Tap every tile that shows this shape.',
@@ -252,11 +299,12 @@ const UI = {
     hubNodeAssessHint: 'Standardized test · track your attention',
     assessIntroTitle: 'Attention Assessment',
     assessIntroBody:
-      'A standardized 4-trial Mesulam-style cancellation test (~4 min). Each trial shows a fresh 7×7 board — find every matching tile within 50 seconds. Work quickly but accurately; wrong taps and missed targets both count.',
+      'A standardized 4-trial Mesulam-style cancellation test (~4 min). A short unscored practice board comes first. Then each trial shows a fresh 7×7 board — find every matching tile within 50 seconds. Work quickly but accurately; wrong taps and missed targets both count.',
     assessIntroMeasures: 'It measures selective attention, processing speed, response inhibition, and attentional stability (how consistent your reaction times are).',
     assessIntroNote:
-      'Self-referenced: best used to track your own change over time. These are guideline scores, not a clinical diagnosis.',
+      'Self-referenced, not diagnostic. For a fair comparison, avoid immediate repeats and use the same device, posture, lighting, and similar time of day.',
     assessStart: 'Start assessment',
+    assessPracticeLabel: 'Practice',
     assessThreshold: '🎚️ Adaptive threshold test',
     assessTrialLabel: (n, m) => `Trial ${n} / ${m}`,
     assessResTitle: 'Your results',
@@ -381,6 +429,10 @@ const UI = {
     ies: 'درجة IES',
     rt: 'متوسط زمن الاستجابة',
     countdownHint: 'استعد…',
+    survivalCueTitle: 'هدفك',
+    survivalCueTask: 'اعثر على كل بطاقة تعرض هذا العنصر.',
+    survivalCueReady: 'جاهز · ابدأ',
+    survivalCueHint: 'انظر جيدًا. يبدأ المؤقت فقط عند الضغط.',
     fixHint: 'ركّز على المركز…',
     cueExact: 'المس كل مربع يطابق هذا الرمز تمامًا.',
     cueShape: 'المس كل مربع يحتوي على هذا الشكل.',
@@ -388,11 +440,12 @@ const UI = {
     hubNodeAssessHint: 'اختبار موحّد · تابع انتباهك',
     assessIntroTitle: 'تقييم الانتباه',
     assessIntroBody:
-      'اختبار شطب موحّد من ٤ محاولات على نمط ميسولام (~٤ د). كل محاولة لوحة 7×7 جديدة — جِد كل المربعات المطابقة خلال ٥٠ ثانية. اعمل بسرعة وبدقة؛ النقر الخاطئ والأهداف المفقودة يُحتسبان.',
+      'اختبار شطب موحّد من ٤ محاولات على نمط ميسولام (~٤ د). تبدأ بلوحة تدريب قصيرة غير محسوبة. ثم تعرض كل محاولة لوحة 7×7 جديدة — جِد كل المربعات المطابقة خلال ٥٠ ثانية. اعمل بسرعة وبدقة؛ النقر الخاطئ والأهداف المفقودة يُحتسبان.',
     assessIntroMeasures: 'يقيس الانتباه الانتقائي وسرعة المعالجة وكبح الاستجابة واستقرار الانتباه (مدى ثبات زمن استجابتك).',
     assessIntroNote:
-      'مرجعي ذاتي: الأفضل لتتبّع تغيّرك مع الوقت. هذه درجات إرشادية وليست تشخيصاً سريرياً.',
+      'مرجعي ذاتي وليس تشخيصاً. للمقارنة العادلة، تجنّب الإعادة الفورية واستخدم الجهاز والوضعية والإضاءة نفسها وفي وقت متقارب من اليوم.',
     assessStart: 'ابدأ التقييم',
+    assessPracticeLabel: 'تدريب',
     assessThreshold: '🎚️ اختبار العتبة التكيّفي',
     assessTrialLabel: (n, m) => `محاولة ${n} / ${m}`,
     assessResTitle: 'نتائجك',
@@ -476,9 +529,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   // Central fixation cue shown before each assessment grid — controls the start
   // gaze so Center-of-Cancellation, scan laterality and RT have a clean origin.
   const [fixShow, setFixShow] = useState(false);
-  // Brief "here's your target" cue card shown before a round starts (replaces the
-  // old always-on cue band). For countdown-off level/free rounds it's the only
-  // pre-round beat; countdown / fixation overlays carry the same cue otherwise.
+  // "Here's your target" cue. Levels use it as a brief automatic flash when
+  // countdown is disabled; Survival keeps it open until the player explicitly
+  // taps Ready, so studying the object never consumes round time.
   const [cueShow, setCueShow] = useState(false);
   const [found, setFound] = useState(0);
   const [errors, setErrors] = useState(0);
@@ -539,6 +592,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const assessTrialsRef = useRef([]);
   const assessTapsRef = useRef([]);
   const assessIdxRef = useRef(0);
+  const assessPracticeAttemptsRef = useRef(0);
   const staircaseRef = useRef(null); // adaptive 2-down/1-up threshold engine
   const [assessResult, setAssessResult] = useState(null);
   const [assessHistory, setAssessHistory] = useState(() => loadAssessHistory());
@@ -690,37 +744,25 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         tlimRef.current = r.tlim;
         tapsRef.current = [];
         pendingPenaltyRef.current = 0;
-        const s = loadGameSettings();
-        if (!s.countdown) {
-          // No 3-2-1: show a brief target cue card instead. The await also keeps
-          // idle and running in separate turns — React would otherwise batch
-          // idle→running to a no-op (frozen clock on round 2+).
-          setPlayStep('idle');
-          await flashCue();
-          setPlayStep('running');
-          return;
-        }
+        // Survival is player-paced at the boundary between rounds. Show the
+        // exact illustrated target and keep the clock stopped until Ready is
+        // tapped; countdown preferences continue to apply to Levels only.
         setPlayStep('idle');
-        setCdShow(true);
-        try {
-          for (let i = 3; i > 0; i--) {
-            setCdVal(i);
-            playSfx('click');
-            await sleep(380);
-          }
-          setCdVal('GO');
-          playSfx('collect');
-          await sleep(320);
-        } finally {
-          setCdShow(false);
-        }
-        setPlayStep('running');
+        setCueShow(true);
+        playSfx('click');
       } finally {
         roundEndedRef.current = false;
       }
     },
-    [playSfx, clearPlayRoundState, flashCue],
+    [playSfx, clearPlayRoundState],
   );
+
+  const confirmSurvivalTarget = useCallback(() => {
+    if (roundRef.current?.mode !== 'free' || !cueShow) return;
+    playSfx('collect');
+    setCueShow(false);
+    setPlayStep('running');
+  }, [cueShow, playSfx]);
 
   const startFreeMode = useCallback(() => {
     freeStageRef.current = 0;
@@ -748,12 +790,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         setCdShow(false);
         let r;
         try {
-          // idx -1 = unscored practice grid: same protocol, shorter clock.
-          r = prepareAssessmentTrial(Math.max(0, idx));
-          if (idx < 0) {
-            r.assessPractice = true;
-            r.tlim = 20;
-          }
+          // idx -1 = unscored instructional practice using the protocol's
+          // smaller practice board and explicit readiness criterion.
+          r = prepareAssessmentTrial(Math.max(0, idx), { practice: idx < 0 });
         } catch (err) {
           console.error('[Assessment] prepareAssessmentTrial failed', idx, err);
           clearPlayRoundState();
@@ -848,6 +887,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     assessTrialsRef.current = [];
     assessTapsRef.current = [];
     assessIdxRef.current = 0;
+    assessPracticeAttemptsRef.current = 0;
     setAssessResult(null);
     setPhase('assessIntro');
   }, []);
@@ -857,6 +897,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     assessTrialsRef.current = [];
     assessTapsRef.current = [];
     assessIdxRef.current = 0;
+    assessPracticeAttemptsRef.current = 0;
     setAssessResult(null);
     trialLogRef.current?.discard();
     trialLogRef.current = createTrialLog({ game: 'cancel-task', mode: 'assess' });
@@ -865,6 +906,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
 
   const onAssessIntroReady = useCallback(() => {
     playSfx('click');
+    assessPracticeAttemptsRef.current = 0;
     trialLogRef.current?.discard();
     trialLogRef.current = createTrialLog({ game: 'cancel-task', mode: 'assess' });
     void beginAssessmentTrial(-1); // practice grid first, unscored
@@ -1026,10 +1068,20 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       }
       if (r.mode === 'assess') {
         if (r.assessPractice) {
-          // Practice grid done — start the measured battery, nothing recorded.
-          playSfx('win');
+          // Practice is instructional and unscored. Require a clean-enough
+          // completion before measurement; repeat twice at most so a player is
+          // never trapped by the gate. No practice data enters the battery.
+          const attempt = assessPracticeAttemptsRef.current + 1;
+          assessPracticeAttemptsRef.current = attempt;
+          const practiceReady = !!won && e <= (r.practiceMaxFalseAlarms ?? 1);
+          const maxAttempts = r.practiceMaxAttempts ?? 3;
+          playSfx(practiceReady ? 'win' : 'error');
           setPauseOpen(false);
-          void beginAssessmentTrial(0);
+          if (practiceReady || attempt >= maxAttempts) {
+            void beginAssessmentTrial(0);
+          } else {
+            void beginAssessmentTrial(-1);
+          }
           return;
         }
         // Record this trial (hits, false taps, time, efficiency) + its taps.
@@ -1380,11 +1432,10 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       ...(tOn != null ? { tOn } : {}),
     };
 
-    // Assessment is feedback-free (clinical cancellation gives no correctness
-    // cue): same neutral tap sound for hits/false-alarms, a neutral 'mark' (no
-    // green/red, no ✓/−3s, no shake), and no time penalty — so the player can't
-    // infer correctness and adjust strategy mid-test.
-    const isAssess = r.mode === 'assess' || r.mode === 'adaptive';
+    // Scored assessment is feedback-free: same neutral tap sound for hits and
+    // false alarms, a neutral mark, and no time penalty. The short unscored
+    // practice remains instructional so the player can learn the rule first.
+    const isAssess = (r.mode === 'assess' || r.mode === 'adaptive') && !r.assessPractice;
     if (c.isT) {
       if (!r.assessPractice) {
         trialLogRef.current?.trial({ ...(itt != null ? { rt: Math.round(itt) } : {}), ok: true, ...posFields });
@@ -1707,6 +1758,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               onTapCell={onCellTap}
               isAr={isAr}
               boardApiRef={boardApiRef}
+              /* Premium flat object art for all training play. Assessment and
+                 Adaptive keep the controlled abstract stimulus set. */
+              useArt={usesPremiumTrainingArt(round, cells)}
             />
 
             {/* Dr Kawkab teaches on this exact board. Sibling of the board and
@@ -1744,12 +1798,14 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               errors={errors}
               errorsLabel={round.mode === 'free' ? t.freeStrikes : undefined}
               errorsMax={round.mode === 'free' ? freeRoundErrorCap(round.tc) : undefined}
-              hideErrors={round.mode === 'assess' || round.mode === 'adaptive'}
+              hideErrors={(round.mode === 'assess' && !round.assessPractice) || round.mode === 'adaptive'}
               lvlLabel={
                 round.mode === 'free'
                   ? null
                   : round.mode === 'assess'
-                    ? `${(round.assessTrial ?? 0) + 1}/${round.assessTrialsTotal ?? ASSESSMENT_PROTOCOL.trials}`
+                    ? round.assessPractice
+                      ? t.assessPracticeLabel
+                      : `${(round.assessTrial ?? 0) + 1}/${round.assessTrialsTotal ?? ASSESSMENT_PROTOCOL.trials}`
                     : round.mode === 'adaptive'
                       ? `R${(staircaseRef.current?.trialCount ?? 0) + 1}`
                       : round.lv === 'CH'
@@ -1767,6 +1823,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               targetColor={
                 round.targetCol || cells.find((c) => c.isT)?.fill || 'var(--game-ink)'
               }
+              targetVisual={usesPremiumTrainingArt(round, cells)
+                ? <CancellationTarget round={round} cells={cells} size={38} isAr={isAr} />
+                : undefined}
               onMenu={onHudQuit}
               onPause={onHudPause}
               menuAriaLabel={t.menu}
@@ -2386,26 +2445,45 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           the gaze origin stays clean for Center-of-Cancellation; their target
           chip lives in the top bar and the rule is given in the intro. */}
       {phase === 'play' && (cdShow || cueShow) && round && (
-        <div className="ct-fq-cd">
+        <div
+          className={`ct-fq-cd${round.mode === 'free' && cueShow ? ' ct-fq-cd--ready' : ''}`}
+          role={round.mode === 'free' && cueShow ? 'dialog' : undefined}
+          aria-modal={round.mode === 'free' && cueShow ? 'true' : undefined}
+          aria-label={round.mode === 'free' && cueShow ? t.survivalCueTitle : undefined}
+        >
           {cdShow && <div className="ct-fq-cd-num">{cdVal}</div>}
-          <div className="ct-fq-cue-card">
+          {round.mode === 'free' && cueShow && (
+            <div className="ct-fq-cue-kicker">{t.survivalCueTitle}</div>
+          )}
+          <button
+            type="button"
+            className={`ct-fq-cue-card${round.mode === 'free' && cueShow ? ' ct-fq-cue-card--ready' : ''}`}
+            onClick={round.mode === 'free' && cueShow ? confirmSurvivalTarget : undefined}
+            disabled={!(round.mode === 'free' && cueShow)}
+            aria-label={round.mode === 'free' && cueShow ? t.survivalCueReady : undefined}
+          >
             <div className="ct-fq-cue-chip">
-              <ShapeSvg
-                shape={
-                  round.target in SH
-                    ? round.target
-                    : cells.find((c) => c.isT)?.shape || 'circle'
-                }
-                color={
-                  round.targetCol || cells.find((c) => c.isT)?.fill || 'var(--game-ink)'
-                }
-                size={52}
+              <CancellationTarget
+                round={round}
+                cells={cells}
+                size={round.mode === 'free' ? 78 : 52}
+                isAr={isAr}
               />
             </div>
             <div className="ct-fq-cue-text">
-              {round.searchMode === 'identity' ? t.cueExact : t.cueShape}
+              {round.searchMode === 'identity'
+                ? t.cueExact
+                : round.mode === 'free'
+                  ? t.survivalCueTask
+                  : t.cueShape}
             </div>
-          </div>
+            {round.mode === 'free' && cueShow && (
+              <span className="ct-fq-cue-ready-label">{t.survivalCueReady}</span>
+            )}
+          </button>
+          {round.mode === 'free' && cueShow && (
+            <div className="ct-fq-cue-ready-hint">{t.survivalCueHint}</div>
+          )}
           {cdShow && <div className="ct-fq-cd-lbl">{t.countdownHint}</div>}
         </div>
       )}

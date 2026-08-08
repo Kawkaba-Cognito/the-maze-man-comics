@@ -20,9 +20,17 @@ import './game2d.css';
 /**
  * @param {{ shape?: string, state?: import('./board2d').PieceState, size?: number,
  *           color?: string, label?: string, onTap?: () => void, disabled?: boolean,
- *           ariaLabel?: string, reduced?: boolean }} props
- *   color — the piece's own stimulus colour, for games where colour is the task.
- *           Applies to the idle state only; see visualFor().
+ *           ariaLabel?: string, reduced?: boolean, artUrl?: string|null }} props
+ *   color  — the piece's own stimulus colour, for games where colour is the task.
+ *            Applies to the idle state only; see visualFor().
+ *   artUrl — OPT-IN flat illustration for this piece (see shared/shapeArt.js).
+ *            Defaults to null, so every existing caller renders exactly as
+ *            before; Cancellation's training modes pass it today. When set,
+ *            it replaces the abstract silhouette but NOT the state chrome —
+ *            ring, glyph and label still draw on top, because those carry the
+ *            hit/miss feedback and the CVD redundancy that visualFor() exists to
+ *            guarantee. Losing them to a prettier body would be a real
+ *            accessibility regression, not a cosmetic one.
  */
 export default function GamePiece({
   shape = 'circle',
@@ -34,6 +42,7 @@ export default function GamePiece({
   disabled = false,
   ariaLabel,
   reduced = false,
+  artUrl = null,
 }) {
   const v = visualFor(state, color);
   const markup = SH[shape] || SH.circle;
@@ -59,7 +68,7 @@ export default function GamePiece({
 
   return (
     <Tag
-      className={`game2d-piece${isButton ? ' game2d-piece--tappable' : ''}${reduced ? ' game2d-piece--still' : ''}`}
+      className={`game2d-piece${isButton ? ' game2d-piece--tappable' : ''}${reduced ? ' game2d-piece--still' : ''}${artUrl ? ' game2d-piece--art' : ''}`}
       style={{ width: size, height: size, opacity: v.opacity }}
       onClick={isButton && !disabled ? onTap : undefined}
       disabled={isButton ? disabled : undefined}
@@ -67,19 +76,41 @@ export default function GamePiece({
       aria-label={ariaLabel}
       aria-pressed={isButton && state === 'selected' ? true : undefined}
     >
+      {/* Premium 2D object, when this piece has one. Its flat colour frame keeps
+          the task's colour channel explicit while the illustration carries the
+          recognizable object. The SVG stays mounted above it for hit/miss
+          rings and glyphs. */}
+      {artUrl && (
+        <span
+          className="game2d-piece__art"
+          aria-hidden="true"
+          style={{
+            '--game2d-piece-accent': v.fill,
+            transform: `translate(-50%, -50%) scale(${s})`,
+          }}
+        >
+          <img className="game2d-piece__art-image" src={artUrl} alt="" draggable={false} />
+        </span>
+      )}
+
       <svg viewBox={`0 0 ${box} ${box}`} width="100%" height="100%" aria-hidden="true" focusable="false">
         <g transform={`translate(${mid} ${mid}) scale(${s}) translate(${-mid} ${-mid})`}>
           {/* Shaded lower side — what gives a flat shape form.
               SH markup paints with fill="currentColor", so the colour has to be
               set via `color`; a `fill` attribute here would be overridden by the
-              child's own fill and every piece would come out black. */}
+              child's own fill and every piece would come out black.
+              Skipped when art is present: the illustrated object replaces it. */}
+          {!artUrl && (
           <g transform={`translate(${mid} ${mid + box * 0.035}) scale(${SHAPE_SCALE}) translate(-50 -50)`}
              style={{ color: v.edge }}
              dangerouslySetInnerHTML={{ __html: markup }} />
+          )}
+          {!artUrl && (
           <g transform={`translate(${mid} ${mid}) scale(${SHAPE_SCALE}) translate(-50 -50)`}
              style={{ color: v.fill }}
              stroke={v.stroke} strokeWidth={v.strokeWidth}
              dangerouslySetInnerHTML={{ __html: markup }} />
+          )}
           {v.ring !== 'none' && (
             <circle
               cx={mid} cy={mid} r={box * 0.46}

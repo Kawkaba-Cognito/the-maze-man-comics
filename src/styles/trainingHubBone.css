@@ -16,9 +16,23 @@
  *
  * (This reasoning was written when the mascot was a pale cyan, and it is what
  * eventually condemned that version: pale cyan on warm beige separates by HUE
- * but barely by VALUE, so it read as a ghost. The 2026-08-08 art is the same
- * character in a far deeper blue, which keeps the hue contrast and adds the
- * value contrast it was missing.)
+ * but barely by VALUE, so it read as a ghost. A deeper blue followed, which
+ * kept the hue contrast and added the value contrast it was missing.)
+ *
+ * THE MASCOT IS NOW BLACK (2026-08-08), which retires the hue argument above
+ * rather than satisfying it. Black has no hue to push forward; it separates on
+ * VALUE alone, and on beige that is as far as value can go. So the ground no
+ * longer has to be warm to serve the character — but it should stay warm
+ * anyway, because a black character on a COOL grey-white reads as a printed
+ * sticker, and because the six domain planets and the amber chrome were tuned
+ * against this beige, not against the mascot.
+ *
+ * The practical consequence is a constraint, not a freedom: this hub must not
+ * be allowed to go dark. Every other surface the planet art appears on is
+ * light too (Kawnera is cream paper, play surfaces are pinned light in
+ * tokens.css), so backing this trial out and restoring the dusk sky would now
+ * leave a black character on a near-black ground — invisible, not merely
+ * worse. Deleting the one import is no longer a safe revert on its own.
  *
  * WHAT THIS COSTS, STATED HONESTLY
  * The hub's atmosphere — nebulae, starfield, shooting stars, the conic sky

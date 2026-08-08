@@ -25,9 +25,12 @@ const KAWKAB_URL = assetUrl('Assets/characters/kawkab/kawkab-planet.webp');
  * a mismatch by letterboxing inside the box, so the character silently shrinks
  * and stops sitting on the hub's orbit ring — with nothing on screen to say
  * why. Re-run scripts/key-kawkab-planet.py and copy the size it prints.
- * Currently 480x575 (deep-blue mascot, 2026-08-08).
+ * Currently 480x546 (BLACK mascot, 2026-08-08 — replaced the deep-blue one,
+ * which was 480x575; the black art is a slightly shorter crop, so leaving 575
+ * here would have letterboxed the character ~7px and lifted its feet off the
+ * orbit ring).
  */
-const ASPECT = 480 / 575;
+const ASPECT = 480 / 546;
 
 export default function TrainingHubMascot({ size = 150, onActivate, isAr, label }) {
   return (
