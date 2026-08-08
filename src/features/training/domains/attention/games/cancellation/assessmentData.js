@@ -47,7 +47,8 @@ import { ageSpeedFactor } from '../../../../assessment/assessmentProfile';
  * interference, which loads selective attention and inhibition more than a
  * pop-out feature search would.
  */
-export const ASSESSMENT_PROTOCOL = {
+export const ASSESSMENT_PROTOCOL = Object.freeze({
+  version: 'cancel-standard-v2',
   trials: 4,
   grid: 7, // 49 cells
   targetCount: 14,
@@ -55,7 +56,16 @@ export const ASSESSMENT_PROTOCOL = {
   diff: 'medium',
   interference: 0.3,
   poolIndex: 9,
-};
+  stimulusSet: 'controlled-abstract',
+  scoredFeedback: 'neutral-mark',
+  practice: Object.freeze({
+    grid: 5,
+    targetCount: 6,
+    timeLimitSec: 25,
+    maxFalseAlarms: 1,
+    maxAttempts: 3,
+  }),
+});
 
 /** Reference anchors for guideline bands (see honesty note above). */
 export const ASSESS_REF = {
@@ -65,8 +75,9 @@ export const ASSESS_REF = {
   speedRef: 1.4,
 };
 
-export function prepareAssessmentTrial(trialIndex) {
+export function prepareAssessmentTrial(trialIndex, { practice = false } = {}) {
   const P = ASSESSMENT_PROTOCOL;
+  const run = practice ? P.practice : P;
   const diff = P.diff;
   const poolList = SP[diff] || SP.medium;
   const pool = poolList[Math.min(P.poolIndex, poolList.length - 1)];
@@ -74,9 +85,9 @@ export function prepareAssessmentTrial(trialIndex) {
   const lockedTarget = pool[Math.floor(Math.random() * pool.length)];
   const lockedCol = pal[Math.floor(Math.random() * pal.length)];
   const built = buildCellsFromParams(
-    P.grid,
+    run.grid,
     pool,
-    P.targetCount,
+    run.targetCount,
     diff,
     { tgt: lockedTarget, tgtCol: lockedCol },
     P.interference,
@@ -88,10 +99,10 @@ export function prepareAssessmentTrial(trialIndex) {
     mode: 'assess',
     diff,
     lv: trialIndex + 1,
-    grid: P.grid,
+    grid: run.grid,
     pool,
     tc: targetCount,
-    tlim: P.timeLimitSec,
+    tlim: run.timeLimitSec,
     target: built.tgt,
     targetCol: built.tgtCol,
     searchMode: 'categorical',
@@ -99,6 +110,16 @@ export function prepareAssessmentTrial(trialIndex) {
     cells,
     assessTrial: trialIndex,
     assessTrialsTotal: P.trials,
+    assessPractice: practice,
+    protocolVersion: P.version,
+    stimulusSet: P.stimulusSet,
+    feedbackProtocol: practice ? 'instructional' : P.scoredFeedback,
+    ...(practice
+      ? {
+          practiceMaxFalseAlarms: P.practice.maxFalseAlarms,
+          practiceMaxAttempts: P.practice.maxAttempts,
+        }
+      : {}),
   };
 }
 

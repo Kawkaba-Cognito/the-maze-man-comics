@@ -345,6 +345,30 @@ function ellipseRing(cx, cy, rx, ry, startDeg) {
   return slots;
 }
 
+/**
+ * Deliberate per-slot offsets applied on top of a derived ring.
+ *
+ * Kept separate from `ellipseRing` on purpose: the ring stays the thing that
+ * guarantees symmetry, and anything that departs from it has to be written down
+ * here as an explicit exception rather than smuggled into a coordinate.
+ */
+function nudgeRing(slots, nudges) {
+  const out = { ...slots };
+  for (const [name, [dx, dy]] of Object.entries(nudges)) {
+    const p = out[name];
+    if (p) out[name] = [p[0] + dx, p[1] + dy];
+  }
+  return out;
+}
+
+/*
+ * Portrait only. Speed is the lone north planet, so raising it is the one move
+ * that cannot break left–right symmetry — it sits on the centre axis, where
+ * `dx` must stay 0. The left/right spread the user asked for is NOT here: it is
+ * the ring's own `rx`, so the two sides can only ever move together.
+ */
+const PORTRAIT_NUDGE = { n: [0, -14] };
+
 /*
  * Which domain sits in which slot. Keyed by id rather than by array index —
  * the old `pos[i]` silently depended on the order `DOMAIN_CONFIGS` happens to
@@ -385,6 +409,10 @@ const HUB_LAYOUTS = {
      * composition runs 50…627, and trimming the box to 640 leaves 50 above and
      * 13 below. Attention and Memory rise 35px, Speed 40px, and the Puzzle
      * Studio button comes up with the shorter box.
+     *
+     * Speed then took a further -14 (see PORTRAIT_NUDGE), spending 14 of that
+     * 50px of headroom and leaving 36 — still air above the north halo, not a
+     * crop.
      */
     h: 640,
     nexus: [180, 330],
@@ -396,15 +424,20 @@ const HUB_LAYOUTS = {
      * the four side planets out of the mascot's vertical band on a box this
      * narrow — the character is centred in it — so horizontal clearance is the
      * whole game. The side slots sit at 0.866·rx (they are 30° off the
-     * horizontal, not on it), so rx 134 puts them at x 64, and an 84px caption
-     * runs 22–106 against a 104-wide mascot box starting at 128: 22px of air
-     * where there used to be 12, which is the difference between "spaced" and
-     * "strangled" at the ~1:1 scale a phone renders this at.
+     * horizontal, not on it).
+     *
+     * 134 → 146 (2026-08-08): asked for on a phone as "attention and language a
+     * bit to the left, memory and flexibility a bit to the right". Those are the
+     * four side slots and nothing else, so it is one radius — pushing them out
+     * by 0.866·12 ≈ 10px each and staying mirror-exact by construction. The left
+     * pair lands at x 54, so its art (r + 10 of bleed) starts at 13 and its
+     * ~84px caption runs 12–96, still inside the 360 box; clearance to the
+     * 104-wide mascot band starting at 128 grows from 22px to 32px.
      *
      * ry 216 is the most the box allows: the south planet's caption runs to
      * y+81, so 546+81 = 627 inside 640, clear of the Puzzle Studio button.
      */
-    slots: ellipseRing(180, 330, 134, 216, -90),
+    slots: nudgeRing(ellipseRing(180, 330, 146, 216, -90), PORTRAIT_NUDGE),
     map: PORTRAIT_SLOTS,
   },
   /*

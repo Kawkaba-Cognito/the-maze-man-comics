@@ -106,6 +106,7 @@ export default function PlayHud({
   freeLivesMax,   // total lives, so the HUD can draw the spent ones
   targetShape,
   targetColor,
+  targetVisual,
   onMenu,
   onPause,
   menuAriaLabel,
@@ -163,7 +164,7 @@ export default function PlayHud({
             reminder for a target that does not exist. */}
         {targetShape && (
           <div className="ct-fq-bar-chip" aria-hidden="true">
-            <ShapeSvg shape={targetShape} color={targetColor} size={30} />
+            {targetVisual ?? <ShapeSvg shape={targetShape} color={targetColor} size={30} />}
           </div>
         )}
         <div className="ct-fq-bar-stats">
@@ -270,4 +271,3 @@ export default function PlayHud({
     </>
   );
 }
-

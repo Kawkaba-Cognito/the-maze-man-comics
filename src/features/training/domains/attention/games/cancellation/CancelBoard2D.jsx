@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import GamePiece from '../../../../shared/GamePiece';
+import { shapeArtLabel, shapeArtUrl } from '../../../../shared/shapeArt';
 import '../../../../shared/game2d.css';
 import './cancelBoard2d.css';
 
@@ -43,8 +44,12 @@ function stateOf(cell) {
   }
 }
 
+/**
+ * `useArt` replaces abstract silhouettes with the premium flat Cosmic Atlas
+ * objects in training modes. Assessment keeps its controlled abstract symbols.
+ */
 export default function CancelBoard2D({
-  cells, round, interactive, onTapCell, isAr, boardApiRef,
+  cells, round, interactive, onTapCell, isAr, boardApiRef, useArt = false,
 }) {
   const wrapRef = useRef(null);
   const fitRef = useRef(null);
@@ -137,9 +142,12 @@ export default function CancelBoard2D({
                 color={cell.fill}
                 state={state}
                 size={pieceSize}
+                artUrl={useArt ? shapeArtUrl(cell.shape) : null}
                 onTap={() => handleTap(idx)}
                 disabled={!interactive || !!cell.tapped}
-                ariaLabel={`${cell.shape} ${isAr ? 'شكل' : 'shape'}`}
+                ariaLabel={useArt
+                  ? shapeArtLabel(cell.shape, isAr)
+                  : `${cell.shape} ${isAr ? 'شكل' : 'shape'}`}
               />
             </div>
           );

@@ -52,6 +52,54 @@
   transition: fill 160ms ease, stroke 160ms ease, transform 200ms cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
+/* ── Premium flat object art (opt-in; see shared/shapeArt.js) ───────────────
+   The illustration is intentionally graphic 2D. A quiet flat frame carries the
+   task's dynamic colour while the authored object replaces abstract geometry. */
+.game2d-piece--art {
+  position: relative;
+}
+
+.game2d-piece__art {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 88%;
+  height: 88%;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: clamp(1.5px, 0.55vmin, 3px) solid var(--game2d-piece-accent);
+  border-radius: 24%;
+  background: #fffaf0;
+  background: color-mix(in srgb, var(--game2d-piece-accent) 16%, #fffaf0);
+  pointer-events: none;
+  z-index: 0;
+  transition:
+    transform 180ms cubic-bezier(0.34, 1.4, 0.64, 1),
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.game2d-piece--art > svg {
+  position: relative;
+  z-index: 1;
+}
+
+.game2d-piece__art-image {
+  width: 92%;
+  height: 92%;
+  display: block;
+  object-fit: contain;
+}
+
+.game2d-piece--still .game2d-piece__art {
+  transition: none;
+}
+
+.game2d-piece--art.game2d-piece--tappable:not(:disabled):active .game2d-piece__art {
+  transform: translate(-50%, -50%) scale(0.92) !important;
+}
+
 .game2d-piece--tappable {
   cursor: pointer;
   /* 44x44 minimum hit area regardless of how small the art is drawn. */
@@ -92,5 +140,9 @@
   .game2d-piece--tappable:not(:disabled):active svg {
     transition: none;
     transform: none;
+  }
+
+  .game2d-piece__art {
+    transition: none;
   }
 }

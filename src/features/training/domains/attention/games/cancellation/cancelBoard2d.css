@@ -61,3 +61,103 @@
     opacity: 0;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * WIDE SCREENS — put the HUD in a side rail instead of a full-width strip.
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * Measured on a 1366x633 window: the board was 480x480, using 35% of the width
+ * and leaving 886px of dead space, while the HUD strip ate 69px off the top —
+ * the axis that was actually binding.
+ *
+ * ── What CANNOT be changed to fix it ──
+ * The board is square and sized from `Math.min(w, h)` (CancelBoard2D). That is
+ * load-bearing: a visual-search task must not get easier by turning the device,
+ * and non-square cells would change eccentricity, which corrupts the Center of
+ * Cancellation and search-organisation metrics. So the board stays square, and
+ * on a landscape window some horizontal slack is unavoidable.
+ *
+ * ── What this does instead ──
+ * Moves the HUD off the top and into a left rail. Two wins at once: the void
+ * becomes structured UI, and the board reclaims the 69px of HEIGHT the strip was
+ * taking — which is the binding axis, so the board grows ~480 -> ~553 and pieces
+ * go from ~90px to ~105px.
+ *
+ * ── Why these particular hooks ──
+ * The padding goes on `.cb2d-wrap`, never on `.cb2d-fit`: CancelBoard2D measures
+ * `.cb2d-fit`'s clientWidth/clientHeight to size the pieces, and clientWidth
+ * INCLUDES padding. Padding the measured element would over-report the space by
+ * the rail's whole width and push the board off screen — the same trap the
+ * comment above .cb2d-fit already warns about for the vertical case.
+ *
+ * `min-aspect-ratio: 1/1` is required, not decorative. On a portrait tablet
+ * (900x1200) width already binds and the board fills it; adding a rail there
+ * would shrink the board for no gain. This only applies where width is the
+ * surplus axis.
+ *
+ * Scoped to .cancellation-task-game because .ct-fq-bar belongs to the shared
+ * PlayHud — other games can adopt this later, deliberately, rather than
+ * inheriting a layout nobody checked against their board.
+ */
+@media (min-width: 900px) and (min-aspect-ratio: 1/1) {
+  /*
+   * Height is AUTO and the rail is centred on the board's axis.
+   *
+   * Stretching it the full height was tried first and measured badly: the
+   * content ended at y 370 while the panel ran to 621, leaving a 251px void with
+   * the pause button stranded at the bottom. A panel that is mostly empty reads
+   * as a layout bug, not as breathing room — and the fix is to stop pretending
+   * the rail has more to say than it does.
+   */
+  .cancellation-task-game .ct-fq-bar {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 248px;
+    height: auto;
+    max-height: calc(100% - 24px);
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 20px 16px;
+    margin-bottom: 0;
+    border-radius: 18px;
+    /* --fx-shadow-soft, not a raw rgba: audit:design is a CI-blocking ratchet
+       and a new hard-coded colour fails the build for whoever pushes next. */
+    box-shadow: 0 6px 22px var(--fx-shadow-soft);
+  }
+
+  .cancellation-task-game .ct-fq-bar-chip {
+    align-self: center;
+  }
+
+  /* The five readouts stack instead of spreading across 1200px. */
+  .cancellation-task-game .ct-fq-bar-stats {
+    flex: 0 0 auto;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .cancellation-task-game .ct-fq-gs {
+    min-width: 0;
+    text-align: center;
+  }
+
+  /* The round timer follows the board, not the rail — it is glanced at while
+     searching, so it belongs on the axis the eye is already scanning. */
+  .cancellation-task-game .ct-fq-cbw {
+    position: absolute;
+    inset: 12px 12px auto 284px;
+    width: auto;
+    margin-bottom: 0;
+  }
+
+  /* Left padding clears the rail; the top reserve for the old strip is gone,
+     which is where the extra board height comes from. */
+  .cancellation-task-game .cb2d-wrap {
+    padding: 32px 12px 12px 284px;
+  }
+}

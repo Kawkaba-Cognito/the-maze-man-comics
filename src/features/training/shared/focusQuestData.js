@@ -22,7 +22,19 @@ export const SH={
   hexTall:   `<polygon points="50,5 76,20 76,80 50,95 24,80 24,20" fill="currentColor"/>`,
   arrowR:    `<polygon points="10,32 60,32 60,12 90,50 60,88 60,68 10,68" fill="currentColor"/>`,
   arrowL:    `<polygon points="90,32 40,32 40,12 10,50 40,88 40,68 90,68" fill="currentColor"/>`,
-  moon:      `<path d="M62,12 A38,38 0 1,0 62,88 A28,28 0 1,1 62,12Z" fill="currentColor"/>`,
+  /* Inner radius 28 -> 46. The old value drew NOTHING, in every renderer.
+   *
+   * The chord from (62,12) to (62,88) is 76 units. The outer arc's r=38 makes it
+   * exactly a semicircle, and the inner arc asked for r=28 — but 2r=56 < 76, so
+   * the SVG spec (F.6.6, correction of out-of-range radii) requires scaling it up
+   * until it fits, i.e. to 38. Both arcs then become the same semicircle on the
+   * same chord with opposite sweep flags, so the path traces out and back along
+   * one curve: zero enclosed area. `moon` was an invisible tile in 19 level pools
+   * and any level targeting it was unsolvable.
+   *
+   * The inner radius must therefore exceed 38; 46 restores the intended crescent.
+   * Guarded now by the ink-area check in scripts/audit-focus-quest-levels.mjs. */
+  moon:      `<path d="M62,12 A38,38 0 1,0 62,88 A46,46 0 1,1 62,12Z" fill="currentColor"/>`,
   // NEAR-IDENTICAL (xhard/deadly)
   semicircle:`<path d="M10,55 A40,40 0 0,1 90,55 Z" fill="currentColor"/>`,
   rhombus:   `<polygon points="50,8 85,50 50,92 15,50" fill="currentColor"/>`,
@@ -37,7 +49,13 @@ export const SH={
   wideRect:  `<rect x="6" y="24" width="88" height="52" rx="4" fill="currentColor"/>`,
   tallRect:  `<rect x="24" y="6" width="52" height="88" rx="4" fill="currentColor"/>`,
   bigSemi:   `<path d="M8,52 A42,42 0 0,1 92,52 Z" fill="currentColor"/>`,
-  tinyMoon:  `<path d="M60,14 A36,36 0 1,0 60,86 A26,26 0 1,1 60,14Z" fill="currentColor"/>`,
+  /* Same defect as `moon` (chord 72, inner r=26 scaled up to 36, zero area) and
+   * the same fix. 44 rather than 46 keeps the ORIGINAL relationship between the
+   * two: this shape lives in the deadly-only band, where it is supposed to look
+   * almost identical to `moon` at small size. Measured, they now fill 28.5% and
+   * 30.2% — still a near-twin, which is the point. Making it obviously thinner
+   * would have quietly made the deadly tier easier. */
+  tinyMoon:  `<path d="M60,14 A36,36 0 1,0 60,86 A44,44 0 1,1 60,14Z" fill="currentColor"/>`,
   fatDiamond:`<polygon points="50,14 88,50 50,86 12,50" fill="currentColor"/>`,
 };
 
@@ -134,7 +152,7 @@ export const SP={
     ['square','roundsq','hexagon','hexTall','rhombus'],
     ['circle','ovalH','ovalV','semicircle','moon','heart'],
     ['triangle','triR','triFlat','arrowR','arrowL','lightning'],
-    ['hexagon','hexTall','rhombus','parallelR','trapezoid','diamond'],
+    ['hexagon','hexTall','rhombus','parallelR','trapezoid','diamond','fatDiamond'],
     ['circle','ovalH','ovalV','semicircle','moon','heart','shield'],
     ['triangle','triR','triFlat','arrowR','arrowL','lightning','cross'],
     ['circle','ovalH','ovalV','semicircle','ovalSq'],
@@ -824,14 +842,22 @@ export function freeStageToDiffLv(stageIndex) {
  * Plan (each entry = a tier the player passes through, in order):
  *   easy  5×5 — rounds 0–3   (warm-up, density rising)
  *   medium 7×7 — rounds 4–8  (bigger board, mild interference)
- *   hard  9×9 — rounds 9+    (conjunction search, climbs to max density, then holds)
+ *   hard  9×9 — rounds 9+    (conjunction search, enters above the medium
+ *                              ceiling and climbs to max density, then holds)
  * Within a tier the position is mapped onto the curriculum level index
  * (`liStart..liEnd`) so it reuses the tuned time/target/interference curves.
  */
 export const SURVIVAL_TIER_PLAN = [
   { diff: 'easy',   rounds: 4, liStart: 2,  liEnd: 78 },
-  { diff: 'medium', rounds: 5, liStart: 6,  liEnd: 82 },
-  { diff: 'hard',   rounds: 6, liStart: 8,  liEnd: 99 },
+  // Enter medium at L34 and leave at L65. The former L7 entry was objectively
+  // lighter than the final easy round after its larger time allowance was
+  // considered, so Survival briefly became easier when the board grew.
+  { diff: 'medium', rounds: 5, liStart: 33, liEnd: 64 },
+  // Start hard at L20. Entering hard at L9 used to add a larger grid but also
+  // gave 18 extra seconds and fewer targets than the preceding medium round,
+  // producing a real difficulty dip. L20 is the first point whose combined
+  // set-size + conjunction load clears the medium ceiling without a harsh jump.
+  { diff: 'hard',   rounds: 6, liStart: 19, liEnd: 99 },
 ];
 
 export function survivalStageToDiffLv(stageIndex) {
@@ -850,8 +876,45 @@ export function survivalStageToDiffLv(stageIndex) {
   return { diff: 'hard', lv: FQ_LEVELS_PER_TIER };
 }
 
+/* QA-only ordinal weights for search type. These are not norms or user scores;
+ * they let the finite audit catch a tier transition that accidentally becomes
+ * easier after accounting for set size, time, similarity, interference and the
+ * extra serial cost of feature conjunction. */
+const SURVIVAL_SEARCH_LOAD_WEIGHT = Object.freeze({
+  easy: 1,
+  medium: 1.35,
+  hard: 2.5,
+});
+
+export function getSurvivalDifficultyModel(stageIndex) {
+  const { diff, lv } = survivalStageToDiffLv(stageIndex);
+  const cfg = getLvCfg(diff, lv - 1);
+  const area = cfg.grid * cfg.grid;
+  const searchWeight = SURVIVAL_SEARCH_LOAD_WEIGHT[diff] ?? 1;
+  const featureLoad = 1 + cfg.interference + cfg.conjunction * 1.5;
+  const ordinalLoad =
+    (area * cfg.tc * cfg.pool.length * featureLoad * searchWeight) /
+    Math.max(1, cfg.time);
+  return {
+    stageIndex: Math.max(0, stageIndex | 0),
+    diff,
+    lv,
+    grid: cfg.grid,
+    targetCount: cfg.tc,
+    timeLimitSec: cfg.time,
+    poolSize: cfg.pool.length,
+    interference: cfg.interference,
+    conjunction: cfg.conjunction,
+    ordinalLoad: +ordinalLoad.toFixed(2),
+  };
+}
+
 export function prepareFreeRound(stageIndex) {
   const { diff, lv } = survivalStageToDiffLv(stageIndex);
+  // Reuse the exact curated curriculum pool for this stage. The full 33-asset
+  // atlas now covers every key, so Survival can preserve the intended ramp from
+  // distinct objects to within-family variants instead of flattening every
+  // stage into the same first-ten object pool.
   const base = prepareLevelRound(diff, lv);
   return { ...base, mode: 'free', freeStage: stageIndex };
 }

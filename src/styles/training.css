@@ -2434,7 +2434,42 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     align-items: center;
     gap: 12px;
     margin-top: 14px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
     animation: ct-fq-fixpop 0.28s ease;
+}
+.ct-fq-cue-card:disabled { opacity: 1; }
+.ct-fq-cue-kicker {
+    color: var(--game-ink);
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+.ct-fq-cue-card--ready {
+    width: min(88vw, 340px);
+    margin-top: 12px;
+    padding: 22px 24px 20px;
+    border: 2px solid rgba(20, 37, 57, 0.2);
+    border-radius: 30px;
+    background: rgba(255, 250, 240, 0.78);
+    box-shadow: 0 12px 32px rgba(19, 30, 40, 0.16);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 140ms ease, border-color 140ms ease, background-color 140ms ease;
+}
+.ct-fq-cue-card--ready:hover {
+    border-color: rgba(20, 37, 57, 0.42);
+    background: rgba(255, 250, 240, 0.94);
+}
+.ct-fq-cue-card--ready:active { transform: scale(0.975); }
+.ct-fq-cue-card--ready:focus-visible {
+    outline: 4px solid rgba(255, 255, 255, 0.96);
+    outline-offset: 4px;
 }
 /* The target chip is the single most important thing on this screen — it is
    what the player is about to search for. Bigger than the board's own pieces,
@@ -2450,6 +2485,14 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     border-radius: 20px;
     box-shadow: 0 6px 18px rgba(19, 30, 40, 0.22);
 }
+.ct-fq-cue-card--ready .ct-fq-cue-chip {
+    width: 132px;
+    height: 132px;
+    border-width: 3px;
+    border-radius: 30px;
+    background: #fffaf0;
+    box-shadow: none;
+}
 .ct-fq-cue-text {
     max-width: 18rem;
     text-align: center;
@@ -2457,6 +2500,27 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     font-weight: 800;
     font-size: 1.05rem;
     line-height: 1.4;
+}
+.ct-fq-cue-ready-label {
+    min-width: 190px;
+    margin-top: 3px;
+    padding: 12px 22px;
+    border-radius: 999px;
+    background: var(--game-ink);
+    color: #fffaf0;
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-size: 0.92rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+}
+.ct-fq-cue-ready-hint {
+    max-width: min(82vw, 320px);
+    margin-top: 14px;
+    color: var(--ink-dim);
+    font-size: 0.82rem;
+    font-weight: 650;
+    line-height: 1.45;
+    text-align: center;
 }
 .ct-fq-fix-cross {
     font-family: 'Outfit', system-ui, sans-serif;
