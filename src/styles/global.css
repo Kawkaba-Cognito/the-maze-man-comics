@@ -2820,7 +2820,10 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
     width: max-content;
     max-width: calc(100vw - 48px);
     text-align: center;
-    color: rgba(232, 220, 192, 0.5);
+    /* Was cream at 50%, for the black sky. --universe-muted flips with the
+     * appearance; on beige the old value was 1.1:1 and the whole empty state
+     * simply was not there. */
+    color: var(--universe-muted);
     font-family: 'Outfit', system-ui, sans-serif;
     pointer-events: none;
 }

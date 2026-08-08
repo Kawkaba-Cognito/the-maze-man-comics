@@ -46,7 +46,6 @@ const DRIFT = [-0.16, 0.1, -0.06, 0.14, -0.18, 0.04, -0.02, 0.16, -0.1];
 
 const STR = {
   en: {
-    brandSub: 'PSYCHOLOGY & COGNITION',
     eyebrow: 'KAWNERA · YOUR LIBRARY',
     volumes: 'VOLUMES',
     title: 'Your Library',
@@ -72,7 +71,6 @@ const STR = {
     guideFoot: 'YOUR COSMIC STUDY COMPANION',
   },
   ar: {
-    brandSub: 'علم النفس والإدراك',
     eyebrow: 'كاونيرا · مكتبتك',
     volumes: 'مجلدات',
     title: 'مكتبتك',
@@ -176,17 +174,22 @@ export default function KawneraExperience({
 
   return (
     <main className="kawnera-app kawnera-app--universe kw" dir={isAr ? 'rtl' : 'ltr'}>
+      {/*
+        Header, written the way Training's is: an empty left slot, the name
+        centred in Cinzel caps, and one piece of status on the right. The
+        logo mark and the "brandSub" strapline are gone — a lockup in the bar
+        made this the only screen in the app that leads with a badge, and it
+        pushed the name off-centre against every other header.
+      */}
       <header className="kw-bar">
-        <button className="kw-brand" onClick={home} aria-label="Kawnera home">
-          <span className="kw-brand-mark" aria-hidden="true">
-            <img src={assetUrl('Assets/kawnera/logo.png')} alt="" />
-          </span>
-          <span className="kw-brand-name">
-            KAWNERA<small>{t.brandSub}</small>
-          </span>
+        <div className="kw-bar-slot" />
+        <button className="kw-brand" onClick={home} aria-label={isAr ? 'الصفحة الرئيسية لكونيرا' : 'Kawnera home'}>
+          <span className="kw-brand-name">{isAr ? 'كونيرا' : 'Kawnera'}</span>
         </button>
-        <div className="kw-bar-count">
-          {count(done.length, isAr)} {t.complete}
+        <div className="kw-bar-slot kw-bar-slot--end">
+          <div className="kw-bar-count">
+            {count(done.length, isAr)} {t.complete}
+          </div>
         </div>
       </header>
 

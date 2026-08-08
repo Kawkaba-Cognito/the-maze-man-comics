@@ -8,11 +8,17 @@
  * deliberate — this is a direction being tried, not a decision.
  *
  * WHY BONE AND NOT A COOL WHITE
- * Kawkab is a cool cyan (#3b9fd8) with warm tan legs. Cyan sits opposite warm
- * neutrals on the colour wheel, so a WARM off-white pushes the character
- * forward, while a cool blue-white puts him in the same hue family as his own
- * background and flattens him. #f6f4f1 is the warm end of "off-white" without
- * tipping into cream — cream is what read as brown and was rejected twice.
+ * Kawkab is a deep blue. Blue sits opposite warm neutrals on the colour wheel,
+ * so a WARM off-white pushes the character forward, while a cool blue-white
+ * puts it in the same hue family as its own background and flattens it.
+ * #f6f4f1 is the warm end of "off-white" without tipping into cream — cream is
+ * what read as brown and was rejected twice.
+ *
+ * (This reasoning was written when the mascot was a pale cyan, and it is what
+ * eventually condemned that version: pale cyan on warm beige separates by HUE
+ * but barely by VALUE, so it read as a ghost. The 2026-08-08 art is the same
+ * character in a far deeper blue, which keeps the hue contrast and adds the
+ * value contrast it was missing.)
  *
  * WHAT THIS COSTS, STATED HONESTLY
  * The hub's atmosphere — nebulae, starfield, shooting stars, the conic sky
@@ -211,6 +217,17 @@
 
 .rh-training-hub .training-blue-robot__badge-kicker {
   color: var(--bone-accent) !important;
+}
+
+/* The LABEL needs its own rule. Setting `color` on the badge above does not
+ * reach it: trainingHubPremium.css gives `.training-blue-robot__badge-label`
+ * a colour of its own, and an element's own declaration always beats an
+ * inherited one — specificity never enters into it. That is why "Assessment"
+ * stayed near-white (#fff9eb) on the bone pill and vanished, while the kicker
+ * above it was fine. */
+.rh-training-hub .training-blue-robot__badge-label {
+  color: var(--bone-ink) !important;
+  text-shadow: none !important;
 }
 
 /* ── Puzzle Studio button ───────────────────────────────────────────────── */

@@ -17,11 +17,17 @@ const KAWKAB_URL = assetUrl('Assets/characters/kawkab/kawkab-planet.webp');
  * would be a cosmetic change that silently drops the styling.
  */
 /**
- * Neutral stance: arms down, legs vertical. The cut art is 755x869, so the
- * character is TALLER than it is wide — the opposite of the earlier arms-out
- * pose, and the reason the stage box is derived rather than hard-coded.
+ * Neutral stance: arms down, legs vertical. The character is TALLER than it is
+ * wide — the opposite of the earlier arms-out pose, and the reason the stage
+ * box is derived rather than hard-coded.
+ *
+ * ⚠ This MUST match the keyed art's real dimensions. `objectFit: contain` hides
+ * a mismatch by letterboxing inside the box, so the character silently shrinks
+ * and stops sitting on the hub's orbit ring — with nothing on screen to say
+ * why. Re-run scripts/key-kawkab-planet.py and copy the size it prints.
+ * Currently 480x575 (deep-blue mascot, 2026-08-08).
  */
-const ASPECT = 755 / 869;
+const ASPECT = 480 / 575;
 
 export default function TrainingHubMascot({ size = 150, onActivate, isAr, label }) {
   return (

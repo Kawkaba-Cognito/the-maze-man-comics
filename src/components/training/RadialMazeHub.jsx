@@ -371,8 +371,23 @@ const HUB_LAYOUTS = {
    */
   portrait: {
     w: 360,
-    h: 660,
-    nexus: [180, 360],
+    /*
+     * 660 → 640, and the ring centre 360 → 330 (2026-08-08).
+     *
+     * Reported from a phone: "up there is empty space for no reason". It was
+     * real and it was measurable. The composition runs from the north planet's
+     * halo (y − 64) to the south planet's caption baseline (y + 81), so at
+     * cy 360 / ry 206 it occupied 90…647 in a 660 box — 90px of dead air above
+     * it and 13px below. The ring was not centred in its own box; it was
+     * sitting 77px low, which on a phone is most of a tap target.
+     *
+     * Centring it means moving up, not growing: at cy 330 / ry 216 the same
+     * composition runs 50…627, and trimming the box to 640 leaves 50 above and
+     * 13 below. Attention and Memory rise 35px, Speed 40px, and the Puzzle
+     * Studio button comes up with the shorter box.
+     */
+    h: 640,
+    nexus: [180, 330],
     // Never grows past its authored size: on a tall phone a ballooned map looks
     // clumsy, and the planets are already comfortably tappable at 1.
     maxScale: 1,
@@ -386,10 +401,10 @@ const HUB_LAYOUTS = {
      * where there used to be 12, which is the difference between "spaced" and
      * "strangled" at the ~1:1 scale a phone renders this at.
      *
-     * ry 206 is the most the box allows: the south planet's caption runs to
-     * y+73, so 566+73 = 639 inside 660, clear of the Puzzle Studio button.
+     * ry 216 is the most the box allows: the south planet's caption runs to
+     * y+81, so 546+81 = 627 inside 640, clear of the Puzzle Studio button.
      */
-    slots: ellipseRing(180, 360, 134, 206, -90),
+    slots: ellipseRing(180, 330, 134, 216, -90),
     map: PORTRAIT_SLOTS,
   },
   /*
@@ -633,9 +648,12 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: 'max(14px, env(safe-area-inset-top)) 18px 12px',
         position: 'sticky', top: 0, zIndex: 20,
+        /* Fades the page out from under the sticky title rather than drawing a
+         * bar. The light branch used to be a dark slate — a leftover from the
+         * retired dusk — which read as a black strip pinned over beige. */
         background: chrome.dark
           ? 'linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 65%, rgba(0,0,0,0) 100%)'
-          : 'linear-gradient(180deg, rgba(38,44,60,0.94) 0%, rgba(52,53,68,0.76) 65%, transparent 100%)',
+          : 'linear-gradient(180deg, var(--universe-dusk) 0%, color-mix(in srgb, var(--universe-dusk) 76%, transparent) 65%, transparent 100%)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
       }}>
@@ -1013,10 +1031,10 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           a tracked/scored exercise the way the 6 domains are. */}
       {/* No pull-up any more. Portrait used to end with 120px of empty box
           below its south planet, so the button climbed -18 into it; now that
-          the ring is derived, the south planet sits at 558 and its caption runs
-          to 631 in a 660 box, and the same -18 covered that caption entirely —
-          "Reasoning" was a label hidden behind a button. Both layouts now clear
-          their own contents. */}
+          the ring is derived, the south planet sits at 546 and its caption runs
+          to 627 in a 640 box, and the same -18 would cover that caption
+          entirely — "Reasoning" was a label hidden behind a button. Both
+          layouts now clear their own contents. */}
       <div style={{ position: 'relative', zIndex: 6, display: 'flex', justifyContent: 'center', marginTop: 10 }}>
         <button
           type="button"
