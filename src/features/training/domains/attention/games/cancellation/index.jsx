@@ -9,7 +9,12 @@ import React, {
 } from 'react';
 import PlayHud, { ShapeSvg } from '../../../../shared/PlayHud';
 import GamePiece from '../../../../shared/GamePiece';
-import { shapeArtLabel, shapeArtUrl, shapesAreArtSafe } from '../../../../shared/shapeArt';
+import {
+  shapeArtLabel,
+  shapeArtSetForRound,
+  shapeArtUrl,
+  shapesAreArtSafe,
+} from '../../../../shared/shapeArt';
 import {
   getShapeScale,
   subscribeShapeNorm,
@@ -164,7 +169,8 @@ function CancellationTarget({ round, cells, size, isAr }) {
     ? round.target
     : cells.find((cell) => cell.isT)?.shape || 'circle';
   const color = round.targetCol || cells.find((cell) => cell.isT)?.fill || 'var(--game-ink)';
-  const artUrl = usesPremiumTrainingArt(round, cells) ? shapeArtUrl(shape) : null;
+  const artSet = shapeArtSetForRound(round);
+  const artUrl = usesPremiumTrainingArt(round, cells) ? shapeArtUrl(shape, artSet) : null;
   if (artUrl) {
     return (
       <GamePiece
@@ -173,7 +179,7 @@ function CancellationTarget({ round, cells, size, isAr }) {
         size={size}
         artUrl={artUrl}
         reduced
-        ariaLabel={shapeArtLabel(shape, isAr)}
+        ariaLabel={shapeArtLabel(shape, isAr, artSet)}
       />
     );
   }
@@ -260,15 +266,14 @@ const UI = {
     pickDiff: 'Choose Difficulty',
     pickDiffSub: 'Each tier has 100 levels — unlock them in order.',
     diffDesc: {
-      /* Rewritten with the pool rebuild. These used to promise "similar" and
-         "near-identical" shapes, which is how the curriculum graded difficulty
-         before every board became motif-distinct. Leaving them would have the
-         game describe a mechanic it no longer has. The levers named here are the
-         ones that actually escalate: object variety, grid density, hue
-         interference and colour binding. */
+      /* These describe the levers that actually escalate, and nothing else.
+         They have been wrong twice: they promised "near-identical shapes" after
+         the pools were rebuilt motif-distinct, then "match the object and its
+         colour" after the colour conjunction was retired (2026-08-09). Colour
+         is now interference, never the answer — the target is always an object. */
       easy: 'A few clearly different objects — find the target fast.',
       medium: 'More object types, and some share the target colour.',
-      hard: 'A crowded grid — match the object and its colour.',
+      hard: 'A big, crowded grid — more objects and more of them to find.',
     },
     diffTargets: 'targets',
     diffGrid: 'grid',
@@ -299,8 +304,7 @@ const UI = {
     survivalCueReady: 'READY · START',
     survivalCueHint: 'Take a good look. The timer starts only when you tap.',
     fixHint: 'Focus on the centre…',
-    cueExact: 'Tap every tile that looks exactly like this.',
-    cueShape: 'Tap every tile that shows this shape.',
+    cueShape: 'Tap every tile that shows this object.',
     assessMode: '📊 Assessment',
     hubNodeAssessHint: 'Standardized test · track your attention',
     assessIntroTitle: 'Attention Assessment',
@@ -406,7 +410,7 @@ const UI = {
     diffDesc: {
       easy: 'أجسام قليلة ومختلفة بوضوح — اعثر على الهدف بسرعة.',
       medium: 'أنواع أكثر، وبعضها يشارك الهدف لونه.',
-      hard: 'شبكة مزدحمة — طابق الجسم ولونه.',
+      hard: 'شبكة كبيرة ومزدحمة — أجسام أكثر وأهداف أكثر.',
     },
     diffTargets: 'أهداف',
     diffGrid: 'شبكة',
@@ -440,8 +444,7 @@ const UI = {
     survivalCueReady: 'جاهز · ابدأ',
     survivalCueHint: 'انظر جيدًا. يبدأ المؤقت فقط عند الضغط.',
     fixHint: 'ركّز على المركز…',
-    cueExact: 'المس كل مربع يطابق هذا الرمز تمامًا.',
-    cueShape: 'المس كل مربع يحتوي على هذا الشكل.',
+    cueShape: 'المس كل مربع يحتوي على هذا الجسم.',
     assessMode: '📊 تقييم',
     hubNodeAssessHint: 'اختبار موحّد · تابع انتباهك',
     assessIntroTitle: 'تقييم الانتباه',
@@ -602,12 +605,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const staircaseRef = useRef(null); // adaptive 2-down/1-up threshold engine
   const [assessResult, setAssessResult] = useState(null);
   const [assessHistory, setAssessHistory] = useState(() => loadAssessHistory());
-  const [gridMetrics, setGridMetrics] = useState({
-    cellW: 32,
-    cellH: 32,
-    gap: 3,
-    pad: 6,
-  });
   const shakeTimerRef = useRef(0);
 
   const juice = useJuice();
@@ -1255,100 +1252,65 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     if (phase !== 'play' || playStep !== 'running') endCoach();
   }, [coachOpen, phase, playStep, endCoach]);
 
+  /*
+   * The board's top reserve is the HUD's MEASURED height, published as a CSS
+   * variable the stylesheet reads.
+   *
+   * ── Why this exists, and what it replaces ──
+   * .cb2d-wrap used to reserve clamp(56px, 12vh, 104px) for a HUD that actually
+   * stacks to ~83px (bar 60 + 4 + clock 11 + progress 8). 12vh only reaches 83px
+   * on a viewport taller than ~692px, so on anything shorter — a phone in
+   * landscape, a small window, any aspect ratio that missed the tall-phone media
+   * query — the bar's near-opaque card sat ON TOP of the first row of tiles. And
+   * because .ct-fq-scene2d-overlay is pointer-events:none, those tiles stayed
+   * live underneath it: invisible, tappable, and never tapped. A target hiding
+   * there cannot be found, so the round cannot be cleared — the reported
+   * "I cancel all the shapes and still I do not win".
+   *
+   * This is the same measurement the old layout pass did — visualViewport,
+   * [data-fq-chrome], the lot — but that pass wrote to a `gridMetrics` state
+   * that NOTHING read. It was orphaned when the board went 2D and CancelBoard2D
+   * brought its own clientWidth/clientHeight fit, which knows nothing about the
+   * HUD: ninety lines of correct measurement, disconnected from the layout.
+   *
+   * Only IN-FLOW chrome counts. In the wide-screen layout the bar is absolutely
+   * positioned into a side rail and the clock is pinned beside the board;
+   * neither sits above the grid, and both would otherwise report a huge bottom
+   * edge and shove the board off screen.
+   */
   useLayoutEffect(() => {
-    if (phase !== 'play' || !round) return;
+    if (phase !== 'play' || !round) return undefined;
     const wrap = gridWrapRef.current;
-    if (!wrap) return;
-    const gridN = round.grid;
-    const isDenseHard = round.diff === 'hard' && gridN >= 9;
+    if (!wrap) return undefined;
     let raf = 0;
     const measure = () => {
-      const vv = window.visualViewport;
-      const vpH = vv?.height ?? window.innerHeight;
-      const vpW = vv?.width ?? window.innerWidth;
-      let fixed = 0;
+      const top = wrap.getBoundingClientRect().top;
+      let bottom = 0;
       wrap.querySelectorAll('[data-fq-chrome]').forEach((el) => {
-        fixed += el.getBoundingClientRect().height;
+        if (window.getComputedStyle(el).position === 'absolute') return;
+        const r = el.getBoundingClientRect();
+        if (r.height > 0) bottom = Math.max(bottom, r.bottom - top);
       });
-      // Cushion for grid wrapper padding / rounding — keep small so cells use real space.
-      fixed += 6;
-      const cs = window.getComputedStyle(wrap);
-      const wrapPadX =
-        (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-      const wrapBoundW = wrap.getBoundingClientRect().width || vpW;
-      const GRID_OUTER_INNER_OVERHEAD = 8;
-      const availFromWrap = Math.max(
-        120,
-        Math.floor(wrapBoundW - wrapPadX - GRID_OUTER_INNER_OVERHEAD),
-      );
-      const availW = Math.min(availFromWrap, Math.floor(vpW * 0.995));
-      // Use almost all space below measured HUD (visualViewport already omits mobile browser chrome).
-      const verticalReserve = 3;
-      let availHCalc = Math.max(
-        isDenseHard ? 72 : 64,
-        Math.min(
-          Math.floor(vpH - fixed - verticalReserve),
-          Math.floor(vpH * 0.99),
-        ),
-      );
-      const outerEl = wrap.querySelector('.ct-fq-grid-outer');
-      const outerRectH =
-        outerEl &&
-        typeof outerEl.getBoundingClientRect === 'function'
-          ? Math.floor(outerEl.getBoundingClientRect().height)
-          : 0;
-      // Prefer the real flex slot height so the grid matches the phone layout below the HUD.
-      const availH =
-        outerRectH > 80
-          ? Math.max(isDenseHard ? 72 : 64, outerRectH - 10)
-          : availHCalc;
-      const gap = gridN >= 7 ? 2 : 3;
-      const INNER_PAD = 3;
-      const totalGap = gap * (gridN - 1);
-      const minCell = gridN >= 10 ? 16 : 8;
-      // SQUARE cells: shapes in a cancellation task must stay recognisable, so
-      // the cell is sized to the smaller of the width-fit and height-fit. The
-      // grid then fits both axes (no scrolling) and is centred by .ct-fq-grid-outer.
-      const innerBudgetW = Math.max(40, availW - INNER_PAD * 2);
-      const innerBudgetH = Math.max(40, availH - INNER_PAD * 2);
-      const fitW = Math.floor((innerBudgetW - totalGap) / gridN);
-      const fitH = Math.floor((innerBudgetH - totalGap) / gridN);
-      let cell = Math.max(minCell, Math.min(fitW, fitH));
-      // Guard against either axis overflowing if min-cell forced an oversize.
-      const needSide = cell * gridN + totalGap + INNER_PAD * 2;
-      if (needSide > availW || needSide > availH) {
-        cell = Math.max(
-          8,
-          Math.floor((Math.min(availW, availH) - totalGap - INNER_PAD * 2) / gridN),
-        );
-      }
-      // Square cells leave vertical slack on tall phones (board looks empty).
-      // The shape is sized by the SMALLER dimension, so we make cells TALLER to
-      // fill the height without distorting shapes (the shape stays centred with
-      // even spacing) — this exploits the phone's spare vertical space and gives
-      // bigger, more comfortable tap targets. Capped so cells never look stretched.
-      const cellH = Math.max(cell, Math.min(fitH, Math.round(cell * 1.85)));
-      setGridMetrics({ cellW: cell, cellH, gap, pad: INNER_PAD });
+      // +8px so the top row clears the bar rather than touching it. The
+      // fallback covers the frame before the HUD has painted.
+      const reserve = bottom > 0 ? Math.ceil(bottom) + 8 : 96;
+      wrap.style.setProperty('--fq-hud-reserve', reserve + 'px');
     };
     measure();
-    const ro = new ResizeObserver(() => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(measure);
-    });
-    ro.observe(wrap);
-    const onVv = () => {
+    const schedule = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(measure);
     };
-    window.visualViewport?.addEventListener('resize', onVv);
-    window.visualViewport?.addEventListener('scroll', onVv);
+    const ro = new ResizeObserver(schedule);
+    ro.observe(wrap);
+    wrap.querySelectorAll('[data-fq-chrome]').forEach((el) => ro.observe(el));
+    window.visualViewport?.addEventListener('resize', schedule);
     return () => {
       cancelAnimationFrame(raf);
-      window.visualViewport?.removeEventListener('resize', onVv);
-      window.visualViewport?.removeEventListener('scroll', onVv);
+      window.visualViewport?.removeEventListener('resize', schedule);
       ro.disconnect();
     };
-  }, [phase, round, cells.length]);
+  }, [phase, round]);
 
   const runCountdownThen = async (onDone) => {
     if (!settings.countdown) {
@@ -2476,12 +2438,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                 isAr={isAr}
               />
             </div>
+            {/* No "looks exactly like this" branch any more: `identity` boards
+                are gone, so the instruction is always about the OBJECT. Saying
+                "exactly" when colour no longer counts would teach the wrong
+                rule and produce the false alarms it used to describe. */}
             <div className="ct-fq-cue-text">
-              {round.searchMode === 'identity'
-                ? t.cueExact
-                : round.mode === 'free'
-                  ? t.survivalCueTask
-                  : t.cueShape}
+              {round.mode === 'free' ? t.survivalCueTask : t.cueShape}
             </div>
             {round.mode === 'free' && cueShow && (
               <span className="ct-fq-cue-ready-label">{t.survivalCueReady}</span>

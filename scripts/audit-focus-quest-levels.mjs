@@ -21,10 +21,13 @@ import {
   prepareChallengePlayState,
   getLvCfg,
   sigmoidTime,
+  expertTargetSec,
+  timeHeadroom,
   computeFeatureInterference,
   getLevelDifficultyModel,
   getSurvivalDifficultyModel,
   prepareFreeRound,
+  PASS_PLAY_CONFIG,
 } from '../src/features/training/shared/focusQuestData.js';
 
 const SHAPES = new Set(Object.keys(SH));
@@ -55,29 +58,43 @@ function auditOneRound(r, label) {
     assert(typeof c.fill === 'string' && c.fill.startsWith('#'), `${label}: bad fill`);
   }
 
-  const id = r.searchMode === 'identity';
-  const cat = r.searchMode === 'categorical';
-  assert(id || cat, `${label}: searchMode "${r.searchMode}"`);
+  /*
+   * Every board is a categorical search now — the target is an OBJECT, and the
+   * board may not contain that object anywhere it is not a target. The old
+   * `identity` mode allowed exactly that (same object, different colour) and is
+   * retired; asserting the mode here stops it reappearing by accident.
+   */
+  assert(r.searchMode === 'categorical', `${label}: searchMode "${r.searchMode}" (only categorical is allowed)`);
 
   for (const c of r.cells) {
-    if (cat) {
-      if (c.isT) assert(c.shape === r.target, `${label}: categorical isT must be target shape`);
-      else assert(c.shape !== r.target, `${label}: categorical distractor must not be target shape`);
-    }
-    if (id) {
-      if (c.isT) {
-        assert(c.shape === r.target, `${label}: identity isT shape`);
-        assert(c.fill === r.targetCol, `${label}: identity isT fill`);
-      } else {
-        const fullMatch = c.shape === r.target && c.fill === r.targetCol;
-        assert(!fullMatch, `${label}: identity distractor must not fully match target`);
-      }
+    if (c.isT) {
+      assert(c.shape === r.target, `${label}: target cell is not the target object`);
+      // All targets share one colour, so "the object" is never ambiguous.
+      assert(c.fill === r.targetCol, `${label}: target cell is not the target colour`);
+    } else {
+      assert(
+        c.shape !== r.target,
+        `${label}: a distractor shows the target object — that is the retired colour conjunction`,
+      );
     }
   }
 }
 
-// Config shape pools; TC has one entry per level (FQ_LEVELS_PER_TIER).
-// Gradual difficulty: targets non-decreasing, time non-increasing, interference non-decreasing
+/*
+ * Config shape pools; TC has one entry per level (FQ_LEVELS_PER_TIER).
+ *
+ * Gradual difficulty: targets non-decreasing, TIME PER TARGET non-increasing,
+ * interference non-decreasing — and, above all, every level FINISHABLE.
+ *
+ * ⚠ This block used to assert `time must not increase`, and that assertion is
+ * why the tiers shipped unwinnable. Target counts rise with level, so holding
+ * total time down forces seconds-per-target to collapse from both ends: hard
+ * L100 ended up granting 11 s for 26 targets that take 44.5 s at expert pace.
+ * The audit passed the whole time, because it was validating the SHAPE of the
+ * curve and never asked whether a human could finish the board. Total time is
+ * now allowed to rise when a level adds targets; what must fall is the budget
+ * per target, and what must never fall below 1.0 is the feasibility ratio.
+ */
 for (const diff of Object.keys(DM)) {
   assert(Array.isArray(SP[diff]) && SP[diff].length >= 2, `${diff}: SP must have shape pools`);
   assert(
@@ -85,7 +102,8 @@ for (const diff of Object.keys(DM)) {
     `${diff}: TC must have ${FQ_LEVELS_PER_TIER} entries`,
   );
 
-  let prevT = Infinity;
+  let prevPerTarget = Infinity;
+  let prevHeadroom = Infinity;
   let prevI = -1;
   let prevTc = -1;
 
@@ -102,13 +120,50 @@ for (const diff of Object.keys(DM)) {
       assert(SHAPES.has(sh), `${diff} L${li + 1}: pool references unknown "${sh}"`);
     }
 
-    const t = sigmoidTime(diff, li);
+    // sigmoidTime is the unrounded model; cfg.time is what the player is given,
+    // and the assertions below deliberately check the latter.
+    assert(
+      Math.abs(sigmoidTime(diff, li) - cfg.time) <= 0.5,
+      `${diff} L${li + 1}: cfg.time ${cfg.time}s is not sigmoidTime ${sigmoidTime(diff, li)}s rounded`,
+    );
     const i = computeFeatureInterference(li, diff);
     const tc = TC[diff][li];
     assert(tc >= prevTc, `${diff} L${li + 1}: TC must be non-decreasing (${tc} < ${prevTc})`);
-    assert(t <= prevT + 0.01, `${diff} L${li + 1}: time must not increase (${t} > ${prevT})`);
     assert(i >= prevI - 0.001, `${diff} L${li + 1}: interference must be non-decreasing`);
-    prevT = t;
+
+    /*
+     * THE FEASIBILITY GATE. `expertTargetSec` is the game's own search model —
+     * 700 ms per target plus the slope for this set size — so a ratio under 1
+     * means the level cannot be cleared by anyone, at any skill, ever.
+     * cfg.time (rounded, what the player actually gets) is the number checked,
+     * not the unrounded model output.
+     */
+    const needed = expertTargetSec(diff) * tc;
+    const ratio = cfg.time / needed;
+    assert(
+      ratio >= 1,
+      `${diff} L${li + 1}: UNWINNABLE — ${tc} targets need ${needed.toFixed(1)}s at expert pace, `
+        + `clock grants ${cfg.time}s (${ratio.toFixed(2)}x)`,
+    );
+
+    // Difficulty rises as the budget PER TARGET falls. Headroom is the
+    // rounding-free statement of that; the granted time is checked too, with
+    // the tolerance Math.round can actually introduce (±0.5s spread over tc).
+    const headroom = timeHeadroom(diff, li);
+    assert(
+      headroom <= prevHeadroom + 1e-9,
+      `${diff} L${li + 1}: headroom must not increase (${headroom.toFixed(3)} > ${prevHeadroom.toFixed(3)})`,
+    );
+    const perTarget = cfg.time / tc;
+    const roundingSlack = 0.5 / tc + 0.5 / Math.max(1, prevTc);
+    assert(
+      perTarget <= prevPerTarget + roundingSlack,
+      `${diff} L${li + 1}: time per target must not increase `
+        + `(${perTarget.toFixed(2)}s > ${prevPerTarget.toFixed(2)}s)`,
+    );
+
+    prevPerTarget = perTarget;
+    prevHeadroom = headroom;
     prevI = i;
     prevTc = tc;
   }
@@ -135,10 +190,18 @@ for (const diff of Object.keys(DM)) {
   }
 }
 
-// Survival must never ease off at a tier boundary. The QA load is deliberately
-// ordinal (not a clinical score), but it includes every lever the generator
-// controls: set size, target density, pool size, time, interference and
-// conjunction search. It also guards against sudden >3× jumps between rounds.
+/*
+ * Survival must never ease off at a tier boundary. The QA load is deliberately
+ * ordinal (not a clinical score), but it includes every lever the generator
+ * controls: set size, target density, pool size, time and interference. It also
+ * guards against sudden >3× jumps between rounds.
+ *
+ * ⚠ And every stage must be FINISHABLE. Survival runs on ONE life, so a single
+ * impossible stage is not a difficulty spike, it is a hard ceiling on the whole
+ * mode — every player's run ended at exactly the same round. It walks the same
+ * curriculum the loop above checks, but through survivalStageToDiffLv's own
+ * mapping, so it needs its own assertion rather than inheriting one.
+ */
 let previousSurvivalLoad = -Infinity;
 for (let stage = 0; stage < 15; stage++) {
   const model = getSurvivalDifficultyModel(stage);
@@ -152,8 +215,28 @@ for (let stage = 0; stage < 15; stage++) {
       `survival stage ${stage}: load jump exceeds 3x`,
     );
   }
-  auditOneRound(prepareFreeRound(stage), `survival ${stage}`);
+  const round = prepareFreeRound(stage);
+  auditOneRound(round, `survival ${stage}`);
+  const survNeeded = expertTargetSec(round.diff) * round.tc;
+  assert(
+    round.tlim / survNeeded >= 1,
+    `survival stage ${stage} (${round.diff} L${round.lv}): UNWINNABLE — ${round.tc} targets need `
+      + `${survNeeded.toFixed(1)}s at expert pace, clock grants ${round.tlim}s`,
+  );
   previousSurvivalLoad = model.ordinalLoad;
+}
+
+// Pass n Play hands every player the same fixed board and a flat 30s clock, so
+// it does not go through the level curve at all — and therefore needs the
+// feasibility check spelled out separately.
+for (const diff of Object.keys(PASS_PLAY_CONFIG)) {
+  const cfg = PASS_PLAY_CONFIG[diff];
+  const needed = expertTargetSec(diff) * cfg.tc;
+  assert(
+    cfg.tlim / needed >= 1,
+    `pass-n-play ${diff}: UNWINNABLE — ${cfg.tc} targets need ${needed.toFixed(1)}s at expert `
+      + `pace, clock grants ${cfg.tlim}s`,
+  );
 }
 
 // The premium training atlas must cover the complete engine vocabulary, with a
@@ -172,6 +255,42 @@ assert(new Set(artMap.values()).size === artMap.size, 'art files must be one-to-
 for (const shape of SHAPES) {
   assert(artMap.has(shape), `missing premium art mapping for ${shape}`);
 }
+
+/*
+ * ── Atlas II: the per-round `variant` pictures ──
+ *
+ * A shape may carry a second illustration, and shapeArtSetForRound() picks
+ * which one a whole round is drawn with. These files are referenced from
+ * committed code exactly like the base atlas, so they need exactly the same
+ * guarantees — existence, 256x256, alpha, enough ink, centred. Nothing checked
+ * them when they were added, which is how art referenced from `src` but never
+ * `git add`ed builds green locally and 404s in production.
+ *
+ * The variants carry no `motif` of their own and must not: a variant swaps the
+ * PICTURE for one shape key, and the motif is what guarantees no two objects on
+ * a board belong to the same family. Letting a variant re-declare it would let
+ * Atlas II quietly violate a board that Atlas I satisfies.
+ */
+const variantMap = new Map();
+for (const m of shapeArtSource.matchAll(
+  /^\s{2}([A-Za-z][A-Za-z0-9]*):\s*\{[\s\S]*?\n\s{4}variant:\s*\{\s*file:\s*'([^']+)'([^}]*)\}/gm,
+)) {
+  assert(
+    !/\bmotif\s*:/.test(m[3]),
+    `${m[1]}: a variant must not declare its own motif — the family rule is per shape key`,
+  );
+  variantMap.set(m[1], m[2]);
+}
+for (const [shape, file] of variantMap) {
+  assert(artMap.has(shape), `variant art for unknown shape "${shape}"`);
+  assert(SHAPES.has(shape), `variant art for a shape with no SH silhouette: "${shape}"`);
+  assert(file !== artMap.get(shape), `${shape}: variant reuses the base file "${file}"`);
+}
+const allArtFiles = [...artMap.values(), ...variantMap.values()];
+assert(
+  new Set(allArtFiles).size === allArtFiles.length,
+  'every atlas file (base AND variant) must be used by exactly one shape',
+);
 
 const usedTrainingShapes = new Set();
 for (const diff of Object.keys(DM)) {
@@ -258,7 +377,12 @@ for (const [name, markup] of Object.entries(SH)) {
 }
 
 const artDir = path.join(ROOT, 'public/Assets/training/cancel-cosmic-atlas-2026');
-for (const [shape, file] of artMap) {
+// Base atlas AND Atlas II variants — both reach the screen, so both are checked.
+const artAssets = [
+  ...[...artMap].map(([shape, file]) => [shape, file]),
+  ...[...variantMap].map(([shape, file]) => [`${shape} (variant)`, file]),
+];
+for (const [shape, file] of artAssets) {
   const asset = path.join(artDir, `${file}.webp`);
   assert(fs.existsSync(asset), `${shape}: missing ${path.relative(ROOT, asset)}`);
   const image = sharp(asset).ensureAlpha();
@@ -295,5 +419,7 @@ console.log('audit-focus-quest-levels: OK', {
   samplesPerLevel: ITERS,
   totalPrepareSamples: Object.keys(DM).length * AUDIT_LEVEL_SAMPLE * ITERS,
   premiumAssets: artMap.size,
+  atlasIIVariants: variantMap.size,
+  artFilesValidated: artAssets.length,
   survivalStagesAudited: 15,
 });

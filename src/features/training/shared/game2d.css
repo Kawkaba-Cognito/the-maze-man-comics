@@ -102,9 +102,21 @@
 
 .game2d-piece--tappable {
   cursor: pointer;
-  /* 44x44 minimum hit area regardless of how small the art is drawn. */
-  min-width: 44px;
-  min-height: 44px;
+  /*
+   * 44x44 minimum hit area — but never LARGER than the piece's own cell.
+   *
+   * A flat 44px min-size is right until a board's cells are smaller than that.
+   * Cancellation's 9x9 computes 36-40px cells on a phone, so every button grew
+   * past its grid track and overlapped its neighbours: a tap near the edge of a
+   * tile was scored against the tile next to it, and once that neighbour was
+   * cleared its (disabled) button swallowed the tap silently instead. Both read
+   * to the player as "I tapped it and nothing happened".
+   *
+   * --game2d-piece-size is the size GamePiece was asked to draw at, so on every
+   * board with room for 44px this is still exactly 44px.
+   */
+  min-width: min(44px, var(--game2d-piece-size, 44px));
+  min-height: min(44px, var(--game2d-piece-size, 44px));
   -webkit-tap-highlight-color: transparent;
 }
 

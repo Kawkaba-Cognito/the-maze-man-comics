@@ -79,6 +79,25 @@ const ATLASES = Object.freeze([
   },
 ]);
 
+/*
+ * Cosmic Atlas II was generated as ten standalone chroma-key sources rather
+ * than another sheet. The ImageGen skill removes the key into these PNGs first;
+ * this script owns the same trim/scale/canvas contract as the original atlas so
+ * old and new objects are interchangeable at runtime.
+ */
+const SINGLES = Object.freeze([
+  'galaxy',
+  'lunar-rover',
+  'space-fighter',
+  'quantum-shard',
+  'astronaut-suit',
+  'radio-telescope',
+  'supernova',
+  'docking-hub',
+  'meteor-cluster',
+  'solar-flare',
+]);
+
 function keepLargestAlphaComponent(data, info) {
   const pixels = info.width * info.height;
   const seen = new Uint8Array(pixels);
@@ -190,4 +209,42 @@ for (const atlas of ATLASES) {
       `  optical ${optical.x}/${optical.y}`,
     );
   }
+}
+
+for (const name of SINGLES) {
+  const source = path.join(SRC, `${name}.png`);
+  if (!fs.existsSync(source)) {
+    throw new Error(`Missing source icon: ${path.relative(ROOT, source)}`);
+  }
+
+  const icon = await sharp(source)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  /* The prompts prohibit detached decoration. Keeping the primary connected
+   * illustration also strips any faint chroma-removal residue before bounds are
+   * measured, so a stray edge pixel cannot shrink or offset the real object. */
+  keepLargestAlphaComponent(icon.data, icon.info);
+  const bounds = alphaBounds(icon.data, icon.info);
+  const trimmed = await sharp(icon.data, { raw: icon.info })
+    .extract(bounds)
+    .resize(ART_SIZE, ART_SIZE, { fit: 'inside', withoutEnlargement: false })
+    .png()
+    .toBuffer();
+  const iconMeta = await sharp(trimmed).metadata();
+  const padX = Math.floor((SIZE - iconMeta.width) / 2);
+  const padY = Math.floor((SIZE - iconMeta.height) / 2);
+
+  await sharp(trimmed)
+    .extend({
+      left: padX,
+      right: SIZE - iconMeta.width - padX,
+      top: padY,
+      bottom: SIZE - iconMeta.height - padY,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .webp({ quality: 92, alphaQuality: 100, effort: 5 })
+    .toFile(path.join(DIR, `${name}.webp`));
+
+  console.log(`${name.padEnd(17)} ${iconMeta.width}x${iconMeta.height} -> ${SIZE}x${SIZE}`);
 }

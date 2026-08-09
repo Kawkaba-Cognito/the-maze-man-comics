@@ -216,43 +216,74 @@ export const PAL = {
 //   Duncan & Humphreys (1989) — search efficiency falls with target–distractor
 //     similarity; the colour-interference ramp models this for hard+ tiers.
 //
-// Per-level time T(diff, L) interpolates between two empirically-anchored
-// endpoints with a logistic in L (1..20):
-//   T_raw(L) = T20 + (T1 - T20) / (1 + exp(k (L - L_mid)))
-// where T1 (beginner ceiling, ~3–4× expert search time) and T20 (expert
-// performance floor, ~1.0–1.2× the search-slope ceiling for that tier+target
-// count) come from TIER_TIME_ENDPOINTS below.
+// Per-level time T(diff, L) = expertTargetSec(diff) × TC[diff][L] × headroom(L),
+// with headroom falling logistically from 2.8–4.5× at L1 to 1.35× at L100. See
+// the block above sigmoidTime for why it is budgeted per TARGET and not per
+// level, and what the total-seconds curve it replaced got wrong.
 //
 // Target counts and colour interference are unchanged in shape — both are
 // already principled — but capped against the grid for safety.
 // =============================================================================
 
-/**
- * Per-tier time endpoints in seconds.
- *   L1  = beginner-friendly ceiling (generous; ~3× expert search time).
- *   L20 = expert performance floor, derived from
- *         per-target = 700 ms (Mesulam ~1.06 targets/s baseline)
- *                    + slope_ms × (set_size / 2)
- *         × target_count_at_L20 (TC[diff][19]).
- *   slope: 0 ms/item for feature, 12 ms/item for feature+colour binding,
- *   25 ms/item for conjunction search (mid of Wolfe 20–30 range).
+/*
+ * ⚠ THE CLOCK IS BUDGETED PER TARGET, NOT PER LEVEL. (rewritten 2026-08-09)
+ *
+ * It used to be a total-seconds curve — `TIER_TIME_ENDPOINTS` interpolated by a
+ * logistic in L, then multiplied AGAIN by a per-tier `TIER_TIME_MULT` of
+ * 0.8/0.72/0.62. Both were described as tightenings of an already-expert floor,
+ * and stacking them produced levels that could not be finished by anyone:
+ *
+ *     hard L100 · 26 targets · 11 s granted · 44.5 s at expert pace  (0.25×)
+ *     medium L75 · 14 targets ·  8 s granted · 13.9 s at expert pace (0.58×)
+ *
+ * Medium went impossible at L52, Hard at L33, and Survival — which walks the
+ * same curriculum on ONE life — hit the wall at round 8 for every player alive.
+ * The player's report was "I cancel all the shapes and still I don't win",
+ * which was literally true.
+ *
+ * The structural fault, and the reason a total-seconds curve cannot be patched:
+ * target count RISES with level while total time FALLS, so seconds-per-target
+ * collapses from both ends at once. And the audit enforced exactly that shape
+ * ("time must not increase"), so it certified the curve while it was
+ * unwinnable. Difficulty has to be expressed as time PER TARGET; total time is
+ * then whatever that budget times the target count comes to, and it is allowed
+ * to rise when a level adds targets.
  */
-// Tightened 2026-06-25: the old endpoints gave ~3–4× expert search time even on
-// the hardest levels, so every tier (Hard included) was trivially winnable with
-// seconds to spare. These are anchored closer to real cancellation-task pace
-// (~1 target/s feature search, slower for conjunction) so the clock is a genuine
-// constraint: Easy stays approachable, Medium bites, Hard is meant to be hard.
-export const TIER_TIME_ENDPOINTS = {
-  easy:   { L1: 16, L100: 8 },
-  medium: { L1: 24, L100: 11 },
-  hard:   { L1: 42, L100: 17 },
+
+/**
+ * Expert search time per target, in seconds:
+ *   700 ms baseline (Mesulam: healthy adults cancel ≈1.06 targets/s)
+ *   + slope × (set size / 2)
+ * Slope is 0 ms/item for a pure feature search and 12 ms/item once distractors
+ * share the target's hue, so the target no longer pops out (Wolfe, Guided
+ * Search; Duncan & Humphreys 1989 on distractor heterogeneity). Conjunction's
+ * 25 ms/item is gone along with the conjunction itself — see
+ * buildCellsFromParams.
+ */
+const SEARCH_SLOPE_MS = { easy: 0, medium: 12, hard: 12 };
+
+export function expertTargetSec(diff) {
+  const grid = (DM[diff] ?? DM.easy).grid;
+  return (700 + (SEARCH_SLOPE_MS[diff] ?? 0) * ((grid * grid) / 2)) / 1000;
+}
+
+/**
+ * Clock headroom over expert pace: generous while the player is learning the
+ * tier, tight at the top of it — but never below 1, because below 1 the level
+ * is not hard, it is broken. L1 differs per tier because a beginner on a 5×5 is
+ * further from expert pace than a practised player arriving at a 9×9.
+ */
+const TIME_HEADROOM = {
+  easy:   { L1: 4.5, L100: 1.35 },
+  medium: { L1: 3.2, L100: 1.35 },
+  hard:   { L1: 2.8, L100: 1.35 },
 };
 
-/** Logistic steepness across the 20-level curriculum. */
+/** Logistic steepness across the curriculum. */
 const LEVEL_LOGISTIC_K = 0.35;
 /** 1-based level where the logistic crosses its mid-point. */
 const LEVEL_LOGISTIC_MID = 50.5;
-/** Hard floor — no level ever drops below this even if endpoints are misconfigured. */
+/** Hard floor — no round is ever shorter than this, however few targets it has. */
 export const ABSOLUTE_TIME_FLOOR_SEC = 8;
 
 /** Sigmoid weight at 1-based level (1.0 at L≪Lmid, 0 at L≫Lmid). */
@@ -260,13 +291,10 @@ function levelSigmoid(level1Based) {
   return 1 / (1 + Math.exp(LEVEL_LOGISTIC_K * (level1Based - LEVEL_LOGISTIC_MID)));
 }
 
-/**
- * Backwards-compatible shim. Returns the easy-tier curve when called without a
- * tier argument; new callers should use `sigmoidTime(diff, li)`.
- */
-export function rawLogisticTimeSeconds(level1Based) {
-  const ep = TIER_TIME_ENDPOINTS.easy;
-  return ep.L100 + (ep.L1 - ep.L100) * levelSigmoid(level1Based);
+/** Granted-over-expert multiplier for this level. Strictly decreasing in L. */
+export function timeHeadroom(diff, li) {
+  const h = TIME_HEADROOM[diff] ?? TIME_HEADROOM.easy;
+  return h.L100 + (h.L1 - h.L100) * levelSigmoid(li + 1);
 }
 
 /**
@@ -321,14 +349,14 @@ export const TC = Object.fromEntries(
 );
 
 /**
- * Per-level time limit (seconds). Logistic interpolation between the
- * empirically-derived T1 and T20 endpoints for the tier. Strictly
- * non-increasing in L within a tier (audit invariant).
+ * Per-level time limit (seconds) = expert time for this board's target count,
+ * times the level's headroom. The AUDIT INVARIANT is that time-per-target is
+ * non-increasing and never drops below expert pace — not that total time falls,
+ * which is what made the tiers unwinnable.
  */
 export function sigmoidTime(diff, li) {
-  const ep = TIER_TIME_ENDPOINTS[diff] ?? TIER_TIME_ENDPOINTS.easy;
-  const level = li + 1;
-  const t = ep.L100 + (ep.L1 - ep.L100) * levelSigmoid(level);
+  const tc = (TC[diff] ?? TC.easy)[li] ?? 3;
+  const t = expertTargetSec(diff) * tc * timeHeadroom(diff, li);
   return +Math.max(ABSOLUTE_TIME_FLOOR_SEC, t).toFixed(1);
 }
 
@@ -352,25 +380,13 @@ export function computeFeatureInterference(li, diff) {
 }
 
 /**
- * Conjunction strength for the HARD tier [0..1] — the fraction of distractors
- * that share a target feature (its colour OR its shape) rather than neither.
- *
- * This is the real difficulty lever for hard. In a true conjunction search the
- * target is defined by a COMBINATION of features, and it is only hard if NEITHER
- * feature isolates it: many distractors must share the target's colour (so you
- * can't just filter by colour) AND many must share its shape (so you can't filter
- * by shape). With few feature-sharing distractors, colour "guides" the search to
- * a small subset and the target pops out — which is why hard felt easy.
- *
- * Treisman & Gelade 1980 (conjunction = serial search); Duncan & Humphreys 1989
- * (search slows as target–distractor similarity and distractor heterogeneity
- * rise); Wolfe Guided Search (a unique feature guides search and must be denied).
- * Ramps 0.66 → 0.95 across the tier so even early hard demands real conjunction.
+ * Conjunction strength — now always 0. Retired 2026-08-09; see the note on
+ * buildCellsFromParams for why. Kept as an export so the difficulty models and
+ * the audit keep one honest name for "no board duplicates the target object",
+ * rather than each re-deriving a zero.
  */
-export function computeConjunctionStrength(li, diff) {
-  if (diff !== 'hard') return 0;
-  const u = Math.max(0, Math.min(1, li / (FQ_LEVELS_PER_TIER - 1)));
-  return +Math.min(0.95, 0.66 + 0.29 * u).toFixed(2);
+export function computeConjunctionStrength() {
+  return 0;
 }
 
 /** One row for tooling / UI: reproducible description of level parameters. */
@@ -381,8 +397,7 @@ export function getLevelDifficultyModel(diff, li) {
   const area = m.grid * m.grid;
   const tc = TC[diff][li];
   const interference = computeFeatureInterference(li, diff);
-  const search =
-    diff === 'hard' ? 'conjunction' : 'featureSingleton';
+  const search = 'featureSingleton';
   return {
     difficulty: diff,
     levelIndex0Based: li,
@@ -399,36 +414,61 @@ export function getLevelDifficultyModel(diff, li) {
   };
 }
 
-// Per-tier clock tightness (× the empirical sigmoid time). Hard is tightest so
-// that, combined with a true conjunction search AND near-identical shapes,
-// finding EVERY target before time runs out is genuinely hard, not a formality.
-export const TIER_TIME_MULT = { easy: 0.8, medium: 0.72, hard: 0.62 };
+/**
+ * Retired 2026-08-09, kept at 1 so nothing silently re-tightens the clock.
+ *
+ * This was a second, independent tightening applied on top of endpoints that
+ * were already documented as an expert floor — 0.62 on hard turned a 17 s
+ * budget into 11 s for a 44.5 s job. Tier tightness now lives in ONE place, the
+ * headroom curve above, where it can be read against the expert model it is a
+ * multiple of.
+ */
+export const TIER_TIME_MULT = { easy: 1, medium: 1, hard: 1 };
 
 /**
  * Shape pool for a level. The HARD tier ramps target–distractor SHAPE similarity
- * (Duncan & Humphreys 1989 — the dominant driver of search difficulty): it walks
- * from distinguishable curves (SP.hard) → similar (SP.xhard) → near-identical
- * (SP.deadly: almostCircle vs circle, fatOval vs ovalH). With the colour-or-shape
- * conjunction on top, a colour-sharing distractor is then same-colour AND nearly
- * the same shape as the target — so you must attend to each item to tell them
- * apart, instead of scanning by shape. This is the real "challenge attention"
- * lever; those harder pools existed but were never used.
+ * (Duncan & Humphreys 1989 — the dominant driver of search difficulty).
+ *
+ * It used to walk SP.hard → SP.xhard → SP.deadly as three similarity tiers,
+ * from distinguishable curves to near-identical ones. That grading is gone:
+ * every pool is motif-distinct now (an illustration's difference lives in
+ * interior detail, which peripheral vision cannot resolve — see shapeArt), so
+ * what those lists actually differ in is how MANY object types they hold. They
+ * are therefore walked as one sequence ordered by that; see POOL_SEQUENCE.
  */
+/*
+ * The pool sequence a tier walks, ordered by OBJECT VARIETY.
+ *
+ * Sorted by size, and that is the fix, not a tidy-up. These lists were authored
+ * in order of silhouette similarity, which stopped meaning anything when the
+ * pools were rebuilt motif-distinct — so their sizes ended up bouncing (hard
+ * ran 7 object types at L60, 5 at L73, 7 again at L87). Distractor
+ * heterogeneity is a real difficulty lever (Duncan & Humphreys 1989), so a
+ * board with fewer object types than the one before it is a difficulty DROP
+ * mid-tier. Survival walks these levels on one life and hit that dip at round
+ * 12; audit:fq now fails on it.
+ *
+ * Hard draws from all three of its lists as ONE sequence: sorting each list
+ * separately would just move the bounce to the list boundaries (…8 objects,
+ * then back to 4). Every pool is unchanged — only their order is.
+ */
+const bySize = (lists) => lists.flat().slice().sort((a, b) => a.length - b.length);
+const POOL_SEQUENCE = {
+  easy: bySize([SP.easy]),
+  medium: bySize([SP.medium]),
+  hard: bySize([SP.hard, SP.xhard, SP.deadly]),
+};
+
 function poolForLevel(diff, li) {
-  if (diff === 'hard') {
-    const u = li / (FQ_LEVELS_PER_TIER - 1); // 0..1 across the tier
-    const list = u < 0.3 ? SP.hard : u < 0.65 ? SP.xhard : SP.deadly;
-    const idx = Math.max(0, Math.min(list.length - 1, Math.floor(u * list.length)));
-    return list[idx];
-  }
-  const list = SP[diff] || SP.easy;
-  return list[Math.max(0, Math.min(list.length - 1, Math.floor((li * list.length) / FQ_LEVELS_PER_TIER)))];
+  const list = POOL_SEQUENCE[diff] || POOL_SEQUENCE.easy;
+  const idx = Math.floor((li * list.length) / FQ_LEVELS_PER_TIER);
+  return list[Math.max(0, Math.min(list.length - 1, idx))];
 }
 
 export function getLvCfg(diff, li) {
   const m = DM[diff];
   const pool = poolForLevel(diff, li);
-  const time = Math.round(sigmoidTime(diff, li) * (TIER_TIME_MULT[diff] ?? 0.78));
+  const time = Math.round(sigmoidTime(diff, li) * (TIER_TIME_MULT[diff] ?? 1));
   const interference = computeFeatureInterference(li, diff);
   return {
     pool,
@@ -651,8 +691,27 @@ export function chooseTargetPositions(grid, tc, rng = Math.random, opts = {}) {
   return chosen;
 }
 
+/*
+ * ⚠ EVERY board is a CATEGORICAL search: the target is an OBJECT, and no
+ * distractor is ever that object in another colour. (2026-08-09)
+ *
+ * Hard used to be an `identity` conjunction — target = object AND colour, with
+ * 66–95% of distractors sharing one of the two. Measured on real boards, hard
+ * L1 put 11 targets on screen beside 26 tiles showing the SAME object in the
+ * wrong colour. It is a legitimate lab paradigm and it was legitimately
+ * implemented; it is simply not the game we want. Once the illustrations
+ * landed, colour survived as a ~2px frame and a 16% tint around a full-colour
+ * picture, so "same rocket, different frame" was the whole task, and clearing
+ * every rocket on the board scored 11 hits and 26 false alarms — the player's
+ * report was "I cancelled everything and still didn't win".
+ *
+ * Difficulty now rides the levers getLvCfg already composes and that do not
+ * require duplicating an object: set size (5x5 → 9x9), target density, pool
+ * variety, hue interference, and the clock. `useFeatureBinding` below still
+ * gives half the distractors the target's hue, which keeps colour from GUIDING
+ * the search — it just never makes colour the answer.
+ */
 export function buildCellsFromParams(grid, pool, tc, diff, seed, interference, rng = Math.random) {
-  const searchMode = diff === 'hard' ? 'identity' : 'categorical';
   const pal = PAL[diff] || PAL.easy;
   const tgt = seed?.tgt ?? pool[Math.floor(rng() * pool.length)];
   const tgtCol = seed?.tgtCol ?? pal[Math.floor(rng() * pal.length)];
@@ -671,39 +730,17 @@ export function buildCellsFromParams(grid, pool, tc, diff, seed, interference, r
   // smart spatial sampler and drop distractors into whatever cells are left.
   const targets = [];
   for (let k = 0; k < guaranteedTc; k++) {
-    targets.push(
-      searchMode === 'identity'
-        ? { shape: tgt, col: tgtCol, isT: true }
-        : { shape: tgt, col: null, isT: true },
-    );
+    // col null → assignFillColors paints every target the one target colour.
+    targets.push({ shape: tgt, col: null, isT: true });
   }
   const distractors = [];
   const need = total - guaranteedTc;
-  const othCols = pal.filter((c) => c !== tgtCol);
-  const pickOthCol = () => othCols[Math.floor(rng() * othCols.length)] || pal[0];
-  // Conjunction strength (hard only): share = fraction of distractors that share
-  // a target feature; split evenly between colour-sharing and shape-sharing so
-  // neither feature isolates the target. The rest share neither (easy rejects).
-  const conj = Math.max(0, Math.min(0.98, seed?.conjunction ?? 0.8));
   for (let k = 0; k < need; k++) {
-    if (searchMode === 'identity') {
-      const r = rng();
-      if (r < conj / 2) {
-        // Shares the target COLOUR, different shape (defeats colour filtering).
-        const dshp = dist[Math.floor(rng() * dist.length)];
-        distractors.push({ shape: dshp, col: tgtCol, isT: false });
-      } else if (r < conj) {
-        // Shares the target SHAPE, different colour (defeats shape filtering).
-        distractors.push({ shape: tgt, col: pickOthCol(), isT: false });
-      } else {
-        // Shares neither (a fast reject); keeps the board from being all-similar.
-        distractors.push({ shape: dist[Math.floor(rng() * dist.length)], col: pickOthCol(), isT: false });
-      }
-    } else {
-      const dshp = dist[Math.floor(rng() * dist.length)];
-      const dcol = useFeatureBinding && rng() < 0.5 ? tgtCol : pal[Math.floor(rng() * pal.length)];
-      distractors.push({ shape: dshp, col: dcol, isT: false });
-    }
+    // `dist` excludes the target object, so no distractor can ever be mistaken
+    // for a target by anything but a careless glance — which is the task.
+    const dshp = dist[Math.floor(rng() * dist.length)];
+    const dcol = useFeatureBinding && rng() < 0.5 ? tgtCol : pal[Math.floor(rng() * pal.length)];
+    distractors.push({ shape: dshp, col: dcol, isT: false });
   }
   fisherYatesInPlace(distractors, rng);
 
@@ -850,11 +887,22 @@ export const SURVIVAL_TIER_PLAN = [
   // lighter than the final easy round after its larger time allowance was
   // considered, so Survival briefly became easier when the board grew.
   { diff: 'medium', rounds: 5, liStart: 33, liEnd: 64 },
-  // Start hard at L20. Entering hard at L9 used to add a larger grid but also
-  // gave 18 extra seconds and fewer targets than the preceding medium round,
-  // producing a real difficulty dip. L20 is the first point whose combined
-  // set-size + conjunction load clears the medium ceiling without a harsh jump.
-  { diff: 'hard',   rounds: 6, liStart: 19, liEnd: 99 },
+  /*
+   * Start hard at L33 (was L20, and L9 before that).
+   *
+   * This entry point is not a taste call — it is the first hard level whose
+   * ordinal load clears the load of the medium round before it, and it has to
+   * be recomputed whenever the difficulty model changes. It moved to L33
+   * because two things changed at once: hard lost its conjunction (so its
+   * search weight fell 2.5 → 1.7) and the clock is budgeted per target (so hard
+   * L20 now grants 2.83× headroom against medium L65's 1.39×). Entering there
+   * would have made the bigger, denser board the EASIEST round in the run —
+   * precisely the dip the two earlier entry points were moved to avoid.
+   *
+   * audit:fq asserts the monotonicity; if it fails here, recompute rather than
+   * nudge.
+   */
+  { diff: 'hard',   rounds: 6, liStart: 32, liEnd: 99 },
 ];
 
 export function survivalStageToDiffLv(stageIndex) {
@@ -875,12 +923,16 @@ export function survivalStageToDiffLv(stageIndex) {
 
 /* QA-only ordinal weights for search type. These are not norms or user scores;
  * they let the finite audit catch a tier transition that accidentally becomes
- * easier after accounting for set size, time, similarity, interference and the
- * extra serial cost of feature conjunction. */
+ * easier after accounting for set size, time, similarity and interference.
+ *
+ * Hard was 2.5 when it ran a feature conjunction, which carries a genuine extra
+ * serial cost. It is a categorical search like the others now (see
+ * buildCellsFromParams), so the weight tracks set size and distractor
+ * heterogeneity only. */
 const SURVIVAL_SEARCH_LOAD_WEIGHT = Object.freeze({
   easy: 1,
   medium: 1.35,
-  hard: 2.5,
+  hard: 1.7,
 });
 
 export function getSurvivalDifficultyModel(stageIndex) {
@@ -889,9 +941,20 @@ export function getSurvivalDifficultyModel(stageIndex) {
   const area = cfg.grid * cfg.grid;
   const searchWeight = SURVIVAL_SEARCH_LOAD_WEIGHT[diff] ?? 1;
   const featureLoad = 1 + cfg.interference + cfg.conjunction * 1.5;
+  /*
+   * Clock pressure is HEADROOM, not seconds.
+   *
+   * This used to divide by cfg.time. That was fine while time was a per-level
+   * curve, but the clock is budgeted per target now (time ≈ expert × tc ×
+   * headroom), so dividing by seconds cancels `tc` straight out of the formula
+   * — the load stopped counting targets at all and read the easy→medium
+   * boundary as a difficulty DROP. Dividing by headroom keeps target count as a
+   * real term and measures the thing a player actually feels: how much of the
+   * clock the board leaves you.
+   */
+  const pressure = Math.max(1, cfg.time / Math.max(0.001, expertTargetSec(diff) * cfg.tc));
   const ordinalLoad =
-    (area * cfg.tc * cfg.pool.length * featureLoad * searchWeight) /
-    Math.max(1, cfg.time);
+    (area * cfg.tc * cfg.pool.length * featureLoad * searchWeight) / pressure;
   return {
     stageIndex: Math.max(0, stageIndex | 0),
     diff,
@@ -921,7 +984,7 @@ export function prepareLevelRound(diff, lv) {
   const pal = PAL[diff] || PAL.easy;
   const lockedTarget = cfg.pool[Math.floor(Math.random() * cfg.pool.length)];
   const lockedCol = pal[Math.floor(Math.random() * pal.length)];
-  const searchMode = diff === 'hard' ? 'identity' : 'categorical';
+  const searchMode = 'categorical';
   const eccentricityBias = computeEccentricityBias(lv - 1, diff);
   const built = buildCellsFromParams(
     cfg.grid,
@@ -954,9 +1017,9 @@ export function prepareLevelRound(diff, lv) {
  * Pass-n-Play difficulty presets. The pass-and-play challenge is a single fair
  * grid every player faces; difficulty picks the grid size, target count, time
  * limit, and which curriculum level supplies the distractor pool.
- *   easy   — 5×5 feature search (shape only)
- *   medium — 7×7 feature search with colour interference
- *   hard   — 9×9 conjunction (identity) search, the original challenge
+ *   easy   — 5×5, few object types
+ *   medium — 7×7 with colour interference
+ *   hard   — 9×9, most objects and the densest board
  */
 export const PASS_PLAY_CONFIG = {
   easy:   { grid: 5, tc: 8,  tlim: 30, poolLevel: 49 },
@@ -994,32 +1057,20 @@ export function prepareChallengeSeed(diff = 'hard') {
     diff,
   );
   const targetPos = chooseTargetPositions(grid, tc, rng, { eccentricityBias });
-  // Bake fill colours so every player sees the exact same coloured grid. For the
-  // HARD tier, use the same balanced conjunction as level mode (≈80% of
-  // distractors share the target's colour or shape) so colour can't guide the
-  // search — otherwise hard Pass-n-Play was a trivial pop-out. Easy/medium keep
-  // shape-only search with random fills.
-  const othCols = pal.filter((c) => c !== tgtCol);
-  const pickOth = () => othCols[Math.floor(rng() * othCols.length)] || pal[0];
-  const conj = diff === 'hard' ? 0.82 : 0;
+  // Bake fill colours so every player sees the exact same coloured grid.
+  // Categorical on every tier — hard used to bake an ≈82% conjunction here, the
+  // same mechanic buildCellsFromParams dropped; see the note there. Half the
+  // distractors still take the target's hue so colour cannot guide the search,
+  // but the target OBJECT never appears in a second colour.
   const cellsWithFill = new Array(total);
   for (let i = 0; i < total; i++) {
     if (targetPos.has(i)) {
       cellsWithFill[i] = { shape: tgt, isT: true, fill: tgtCol };
-    } else if (conj > 0) {
-      const r = rng();
-      if (r < conj / 2) {
-        cellsWithFill[i] = { shape: dist[Math.floor(rng() * dist.length)], isT: false, fill: tgtCol };
-      } else if (r < conj) {
-        cellsWithFill[i] = { shape: tgt, isT: false, fill: pickOth() };
-      } else {
-        cellsWithFill[i] = { shape: dist[Math.floor(rng() * dist.length)], isT: false, fill: pickOth() };
-      }
     } else {
       cellsWithFill[i] = {
         shape: dist[Math.floor(rng() * dist.length)],
         isT: false,
-        fill: pal[Math.floor(rng() * pal.length)],
+        fill: rng() < 0.5 ? tgtCol : pal[Math.floor(rng() * pal.length)],
       };
     }
   }
@@ -1053,7 +1104,7 @@ export function prepareChallengePlayState(cSeed, tlimOverride) {
     tlim: tlimOverride ?? cSeed.tlim ?? 50,
     target: cSeed.tgt,
     targetCol: cSeed.tgtCol,
-    searchMode: diff === 'hard' ? 'identity' : 'categorical',
+    searchMode: 'categorical',
     interference: 0,
     cells,
   };

@@ -36,16 +36,46 @@ import { assetUrl } from '../../../lib/assetUrl';
  * round they cannot read.
  */
 const COSMIC_ART = Object.freeze({
-  circle: { file: 'planet', motif: 'planet', en: 'Ringed planet', ar: 'كوكب ذو حلقات' },
-  square: { file: 'satellite', motif: 'satellite', en: 'Satellite', ar: 'قمر اصطناعي' },
-  triangle: { file: 'rocket', motif: 'rocket', en: 'Rocket', ar: 'صاروخ' },
-  diamond: { file: 'crystal', motif: 'crystal', en: 'Crystal cluster', ar: 'بلورات كونية' },
-  pentagon: { file: 'helmet', motif: 'helmet', en: 'Astronaut helmet', ar: 'خوذة رائد فضاء' },
-  hexagon: { file: 'telescope', motif: 'optics', en: 'Telescope', ar: 'تلسكوب' },
-  star: { file: 'star', motif: 'star', en: 'Radiant star', ar: 'نجمة مشعّة' },
-  cross: { file: 'station', motif: 'station', en: 'Space station', ar: 'محطة فضائية' },
-  heart: { file: 'comet', motif: 'comet', en: 'Comet', ar: 'مذنّب' },
-  lightning: { file: 'nebula-bolt', motif: 'nebula', en: 'Electric nebula', ar: 'سديم كهربائي' },
+  circle: {
+    file: 'planet', motif: 'planet', en: 'Ringed planet', ar: 'كوكب ذو حلقات',
+    variant: { file: 'galaxy', en: 'Spiral galaxy', ar: 'مجرة حلزونية' },
+  },
+  square: {
+    file: 'satellite', motif: 'satellite', en: 'Satellite', ar: 'قمر اصطناعي',
+    variant: { file: 'lunar-rover', en: 'Lunar rover', ar: 'مركبة قمرية' },
+  },
+  triangle: {
+    file: 'rocket', motif: 'rocket', en: 'Rocket', ar: 'صاروخ',
+    variant: { file: 'space-fighter', en: 'Space fighter', ar: 'مقاتلة فضائية' },
+  },
+  diamond: {
+    file: 'crystal', motif: 'crystal', en: 'Crystal cluster', ar: 'بلورات كونية',
+    variant: { file: 'quantum-shard', en: 'Quantum shard', ar: 'شظية كمومية' },
+  },
+  pentagon: {
+    file: 'helmet', motif: 'helmet', en: 'Astronaut helmet', ar: 'خوذة رائد فضاء',
+    variant: { file: 'astronaut-suit', en: 'Astronaut suit', ar: 'بدلة رائد فضاء' },
+  },
+  hexagon: {
+    file: 'telescope', motif: 'optics', en: 'Telescope', ar: 'تلسكوب',
+    variant: { file: 'radio-telescope', en: 'Radio telescope', ar: 'تلسكوب راديوي' },
+  },
+  star: {
+    file: 'star', motif: 'star', en: 'Radiant star', ar: 'نجمة مشعّة',
+    variant: { file: 'supernova', en: 'Supernova', ar: 'مستعر أعظم' },
+  },
+  cross: {
+    file: 'station', motif: 'station', en: 'Space station', ar: 'محطة فضائية',
+    variant: { file: 'docking-hub', en: 'Docking hub', ar: 'مركز التحام' },
+  },
+  heart: {
+    file: 'comet', motif: 'comet', en: 'Comet', ar: 'مذنّب',
+    variant: { file: 'meteor-cluster', en: 'Meteor cluster', ar: 'عنقود نيازك' },
+  },
+  lightning: {
+    file: 'nebula-bolt', motif: 'nebula', en: 'Electric nebula', ar: 'سديم كهربائي',
+    variant: { file: 'solar-flare', en: 'Solar flare', ar: 'توهج شمسي' },
+  },
 
   roundsq: { file: 'portal', motif: 'portal', en: 'Cosmic portal', ar: 'بوابة كونية' },
   ovalH: { file: 'oval-planet-h', motif: 'planet', en: 'Horizontal exoplanet', ar: 'كوكب بيضاوي أفقي' },
@@ -79,23 +109,50 @@ export const TRAINING_ART_SHAPES = Object.freeze(Object.keys(COSMIC_ART));
 /** Backwards-compatible name retained for older callers. */
 export const SURVIVAL_ART_SHAPES = TRAINING_ART_SHAPES;
 
+/**
+ * Stable 0/1 visual set for a round. It is derived from authored round fields,
+ * so every occurrence of a target uses the same picture and Pass n Play stays
+ * identical for every player, while consecutive rounds can show Atlas II.
+ */
+export function shapeArtSetForRound(round) {
+  const key = [
+    round?.mode,
+    round?.diff,
+    round?.lv,
+    round?.freeStage,
+    round?.target,
+    round?.targetCol,
+    round?.grid,
+  ].join('|');
+  let hash = 2166136261;
+  for (let i = 0; i < key.length; i += 1) {
+    hash ^= key.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) & 1;
+}
+
 /** File slug used by audits and asset tooling, or null for controlled stimuli. */
-export function shapeArtFile(shape) {
-  return COSMIC_ART[shape]?.file ?? null;
+export function shapeArtFile(shape, artSet = 0) {
+  const art = COSMIC_ART[shape];
+  if (!art) return null;
+  return artSet === 1 && art.variant ? art.variant.file : art.file;
 }
 
 /** URL of the illustrated object for `shape`, or null outside the art family. */
-export function shapeArtUrl(shape) {
-  const file = shapeArtFile(shape);
+export function shapeArtUrl(shape, artSet = 0) {
+  const file = shapeArtFile(shape, artSet);
   return file
     ? assetUrl(`Assets/training/cancel-cosmic-atlas-2026/${file}.webp`)
     : null;
 }
 
 /** Human label matching the illustrated object rather than the internal key. */
-export function shapeArtLabel(shape, isAr = false) {
+export function shapeArtLabel(shape, isAr = false, artSet = 0) {
   const art = COSMIC_ART[shape];
-  return art ? art[isAr ? 'ar' : 'en'] : shape;
+  if (!art) return shape;
+  const active = artSet === 1 && art.variant ? art.variant : art;
+  return active[isAr ? 'ar' : 'en'];
 }
 
 export function hasShapeArt(shape) {

@@ -1,6 +1,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import GamePiece from '../../../../shared/GamePiece';
-import { shapeArtLabel, shapeArtUrl } from '../../../../shared/shapeArt';
+import {
+  shapeArtLabel,
+  shapeArtSetForRound,
+  shapeArtUrl,
+} from '../../../../shared/shapeArt';
 import '../../../../shared/game2d.css';
 import './cancelBoard2d.css';
 
@@ -164,6 +168,8 @@ export default function CancelBoard2D({
     );
   }
 
+  const artSet = shapeArtSetForRound(round);
+
   return (
     <div className="cb2d-wrap" ref={wrapRef} dir={isAr ? 'rtl' : 'ltr'}>
       <div className="cb2d-fit" ref={fitRef}>
@@ -194,11 +200,11 @@ export default function CancelBoard2D({
                 color={cell.fill}
                 state={state}
                 size={pieceSize}
-                artUrl={useArt ? shapeArtUrl(cell.shape) : null}
+                artUrl={useArt ? shapeArtUrl(cell.shape, artSet) : null}
                 onTap={() => handleTap(idx)}
                 disabled={!interactive || !!cell.tapped}
                 ariaLabel={useArt
-                  ? shapeArtLabel(cell.shape, isAr)
+                  ? shapeArtLabel(cell.shape, isAr, artSet)
                   : `${cell.shape} ${isAr ? 'شكل' : 'shape'}`}
               />
             </div>

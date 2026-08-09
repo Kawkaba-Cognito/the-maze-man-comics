@@ -162,6 +162,23 @@ export default function MathGatesBoard2D({
 
     const laneCentre = (i) => (i + 0.5) / LANES;   // 0..1 within the play column
 
+    /* The play column, defined ONCE.
+     *
+     * This used to exist twice: the draw centred a capped column (below), while
+     * the pointer handler split the FULL canvas into thirds. Those agree only
+     * while the column happens to fill the canvas — i.e. on a phone. On a
+     * 1400x760 play area the column is 593px starting at x=403, so the visible
+     * lanes are 403-601 / 601-799 / 799-997 while the handler was splitting at
+     * 467 and 933: tapping the left or right answer selected the wrong lane
+     * about 68% of the time, which reads as a crash you did not earn and, once
+     * lives run out, as the game quitting by itself.
+     *
+     * One function, both callers, so they cannot drift apart again. */
+    const column = () => {
+      const colW = Math.min(W, Math.max(320, H * 0.78));
+      return { colW, colX: (W - colW) / 2, laneW: colW / LANES };
+    };
+
     const spawnGate = () => {
       const f = clamp(s.gatesPlayed / 36, 0, 1);
       const gateDiff = mode === 'free' ? survivalTier(f) : (diff || 'med');
@@ -229,8 +246,11 @@ export default function MathGatesBoard2D({
     const onDown = (e) => {
       if (s.finished) return;
       const rect = canvas.getBoundingClientRect();
-      const third = (e.clientX - rect.left) / rect.width;   // column-relative below
-      setLane(third < 1 / 3 ? 0 : third < 2 / 3 ? 1 : 2);
+      // Canvas CSS px, then the SAME column geometry the gate is drawn with —
+      // so the lane you tap is the lane you get, at every window size.
+      const x = ((e.clientX - rect.left) / (rect.width || 1)) * W;
+      const { colX, laneW } = column();
+      setLane(Math.floor((x - colX) / laneW));   // setLane clamps to 0..LANES-1
     };
     canvas.addEventListener('pointerdown', onDown);
 
@@ -288,10 +308,10 @@ export default function MathGatesBoard2D({
        * lane ~455px wide, so the runner had to travel half a screen to switch
        * and the three gate answers sat too far apart to compare at a glance —
        * on a task scored in hundreds of milliseconds. The column is capped and
-       * centred, so the game reads the same on a phone and a monitor. */
-      const colW = Math.min(W, Math.max(320, H * 0.78));
-      const colX = (W - colW) / 2;
-      const laneW = colW / LANES;
+       * centred, so the game reads the same on a phone and a monitor.
+       *
+       * From column() — the pointer handler reads the identical numbers. */
+      const { colW, colX, laneW } = column();
       const laneX = (i) => colX + i * laneW;
       const runnerY = H * RUNNER_LINE;
 
@@ -428,7 +448,17 @@ export default function MathGatesBoard2D({
      */
     let rafId = 0;
     let last = nowMs();
-    const tick = (now) => {
+    const tick = () => {
+      /* nowMs(), NOT the rAF timestamp.
+       *
+       * nowMs() is performance.now() minus every millisecond spent paused, so
+       * dt collapses to 0 while the pause menu is open and the gate genuinely
+       * stops. This file already imported it and set `last` from it, then took
+       * dt from the raw rAF clock — so the gate kept falling behind the menu,
+       * arrived, and resolved against whatever lane the runner was parked in.
+       * Lives drained while nobody was playing, and on the last one the run
+       * ended on its own. */
+      const now = nowMs();
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       frame(dt, now);

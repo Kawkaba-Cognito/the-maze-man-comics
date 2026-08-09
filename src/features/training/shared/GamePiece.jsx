@@ -69,7 +69,10 @@ export default function GamePiece({
   return (
     <Tag
       className={`game2d-piece${isButton ? ' game2d-piece--tappable' : ''}${reduced ? ' game2d-piece--still' : ''}${artUrl ? ' game2d-piece--art' : ''}`}
-      style={{ width: size, height: size, opacity: v.opacity }}
+      /* --game2d-piece-size lets the 44px minimum hit area cap itself at the
+         piece's own size, so a dense board's buttons cannot grow past their
+         cells and start stealing each other's taps. See game2d.css. */
+      style={{ width: size, height: size, opacity: v.opacity, '--game2d-piece-size': `${size}px` }}
       onClick={isButton && !disabled ? onTap : undefined}
       disabled={isButton ? disabled : undefined}
       type={isButton ? 'button' : undefined}

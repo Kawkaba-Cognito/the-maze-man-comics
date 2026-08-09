@@ -77,7 +77,11 @@ const CSS = `
 .vr-root * { box-sizing: border-box; }
 
 .vr-container { position:relative; width:100%; height:100%; }
-.vr-root canvas { display:block; position:absolute; top:0; left:0; }
+/* touch-action on the CANVAS, not only on .vr-root: the property does not
+   inherit, and the canvas is the element the swipe listeners are bound to.
+   Without it a horizontal drag can be claimed by the browser as a pan/back
+   gesture, which fires pointercancel mid-swipe and eats the lane change. */
+.vr-root canvas { display:block; position:absolute; top:0; left:0; touch-action:none; }
 
 .vr-scanlines { position:absolute; inset:0; pointer-events:none; z-index:5;
   background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px); }
@@ -103,7 +107,24 @@ const CSS = `
 .vr-speedfill { height:100%; width:0%; background:linear-gradient(90deg,var(--vr-cyan),var(--vr-pink));
   border-radius:2px; transition:width 0.3s; box-shadow:0 0 8px var(--vr-cyan); }
 
-.vr-combodisplay { position:absolute; top:calc(110px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+/* The Pulse charge meter — sits with the speed bar in the top stack, never over
+   the play area (this game has form: a mid-screen level banner had to be pulled
+   out of the dodging sightline twice). */
+.vr-power { position:absolute; top:calc(94px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+  display:none; flex-direction:column; align-items:center; gap:4px; pointer-events:none; z-index:10; }
+.vr-power-label { font-size:9px; letter-spacing:3px; color:rgba(232,172,78,0.55); text-transform:uppercase; }
+.vr-power-track { width:120px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; }
+.vr-power-fill { height:100%; width:0%; background:var(--vr-gold); border-radius:2px;
+  transition:width 0.25s; box-shadow:0 0 8px var(--vr-gold); }
+/* Armed: the label pulses so "you have something to spend" is visible without
+   reading. Fires the moment you TAP — swiping still only steers. */
+.vr-power.vr-ready .vr-power-label { color:var(--vr-gold); animation:vrPowerReady 1.1s ease-in-out infinite; }
+.vr-power.vr-ready .vr-power-fill { box-shadow:0 0 14px var(--vr-gold); }
+@keyframes vrPowerReady { 0%,100%{ opacity:0.55; } 50%{ opacity:1; } }
+.vr-power.vr-firing .vr-power-label { color:#ffd47e; }
+.vr-power.vr-firing .vr-power-fill { background:#ffd47e; box-shadow:0 0 16px #ffd47e; transition:width 0.1s linear; }
+
+.vr-combodisplay { position:absolute; top:calc(126px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
   pointer-events:none; z-index:10; text-align:center; opacity:0; transition:opacity 0.3s; }
 .vr-combotext { font-family:'DM Mono',sans-serif; font-size:20px; font-weight:900; color:var(--vr-gold);
   text-shadow:0 0 20px var(--vr-gold); letter-spacing:3px; }
@@ -117,15 +138,26 @@ const CSS = `
   align-items:center; justify-content:center; transition:border-color 0.2s, color 0.2s; }
 .vr-pausebtn:hover { border-color:var(--vr-cyan); color:var(--vr-cyan); }
 
+/* Steering is a SWIPE, so the controls are a hint, not a target. The two 90px
+   thumb circles that used to sit here were pure decoration — pointer-events:none
+   the whole time — and a round button that cannot be pressed is worse than no
+   button at all. This says what the gesture is, and gets out of the way once
+   the player has made it. */
 .vr-thumbcontrols { position:absolute; bottom:0; left:0; right:0; display:none; z-index:20; pointer-events:none;
-  padding-bottom:max(20px, env(safe-area-inset-bottom)); }
-.vr-thumb-btn { position:absolute; bottom:24px; width:90px; height:90px; border-radius:50%;
-  border:2px solid rgba(143,184,232,0.4); background:rgba(0,20,40,0.6); display:flex; align-items:center; justify-content:center;
-  font-size:30px; pointer-events:none; backdrop-filter:blur(4px);
-  box-shadow:0 0 20px rgba(143,184,232,0.2), inset 0 0 20px rgba(0,0,0,0.5); transition:background 0.1s, border-color 0.1s, transform 0.1s; }
-.vr-thumb-btn.vr-pressed { background:rgba(143,184,232,0.2); border-color:var(--vr-cyan); transform:scale(0.92);
-  box-shadow:0 0 30px rgba(143,184,232,0.5); }
-#vr-btnleft { left:24px; } #vr-btnright { right:24px; }
+  padding-bottom:max(22px, env(safe-area-inset-bottom)); }
+.vr-swipe-hint { display:flex; align-items:center; justify-content:center; gap:14px;
+  opacity:0.5; transition:opacity 0.45s ease; }
+.vr-swipe-hint.vr-faded { opacity:0; }
+.vr-swipe-word { font-size:10px; letter-spacing:4px; text-transform:uppercase; color:rgba(240,226,192,0.75); }
+.vr-swipe-arrow { font-size:20px; color:var(--vr-cyan); display:inline-block;
+  animation:vrSwipeNudge 2.4s ease-in-out infinite; }
+#vr-btnright { animation-delay:1.2s; }
+.vr-swipe-arrow.vr-pressed { color:var(--vr-gold); transform:scale(1.35); }
+@keyframes vrSwipeNudge { 0%,72%,100%{ transform:translateX(0); opacity:0.55; }
+  84%{ transform:translateX(-6px); opacity:1; } }
+#vr-btnright { animation-name:vrSwipeNudgeR; }
+@keyframes vrSwipeNudgeR { 0%,72%,100%{ transform:translateX(0); opacity:0.55; }
+  84%{ transform:translateX(6px); opacity:1; } }
 
 .vr-warningflash { position:absolute; inset:0; pointer-events:none; z-index:6; opacity:0; background:rgba(255,45,0,0.15); transition:opacity 0.1s; }
 .vr-hitflash { position:absolute; inset:0; pointer-events:none; z-index:7; opacity:0; background:rgba(255,0,0,0.4); transition:opacity 0.05s; }
@@ -135,15 +167,14 @@ const CSS = `
 
 #vr-menuscreen { background: radial-gradient(ellipse at 50% 30%, rgba(111,106,156,0.15) 0%, rgba(26,31,56,0.92) 70%);
   padding-top: env(safe-area-inset-top); }
-.vr-game-logo { font-family:'DM Mono',sans-serif; font-size:clamp(42px,10vw,72px); font-weight:900; letter-spacing:8px; line-height:1;
-  background:linear-gradient(135deg,var(--vr-cyan) 0%,var(--vr-pink) 50%,var(--vr-purple) 100%);
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 20px rgba(143,184,232,0.5)); animation:vrLogoPulse 3s ease-in-out infinite; margin-bottom:4px; text-align: center; }
+/* Base layout only — the engraved-caps treatment lives in the app-theme block
+   further down. The gradient wordmark and its pulse animation that used to be
+   here are gone rather than overridden, so there is one description of the
+   title, not one plus a dead one. */
+.vr-game-logo { font-size:clamp(42px,10vw,72px); line-height:1; margin-bottom:4px; text-align:center; }
 .vr-tagline { font-size:12px; letter-spacing:6px; color:rgba(143,184,232,0.5); margin-bottom:40px; text-transform:uppercase; }
-@keyframes vrLogoPulse { 0%,100%{ filter:drop-shadow(0 0 15px rgba(143,184,232,0.4)); } 50%{ filter:drop-shadow(0 0 35px rgba(217,146,79,0.6)); } }
 
 .vr-best-badge { font-size:11px; letter-spacing:3px; color:var(--vr-gold); margin-bottom:32px; text-shadow:0 0 10px var(--vr-gold); opacity:0; transition:opacity 0.5s; }
-.vr-controls-hint { margin-bottom:32px; text-align:center; display:flex; flex-direction:column; gap:8px; }
 .vr-hint-row { font-size:11px; letter-spacing:2px; color:rgba(255,255,255,0.35); }
 .vr-hint-row span { color:rgba(143,184,232,0.6); }
 
@@ -238,14 +269,25 @@ const CSS = `
     radial-gradient(ellipse at 50% 22%, rgba(154,128,200,0.17), transparent 46%),
     linear-gradient(180deg, rgba(17,24,42,0.96), rgba(9,13,25,0.985));
 }
+/* Titles are Cinzel engraved caps — the app's landing-title voice (the Training
+   hub, the domain headers). The logo was a DM Mono gradient wordmark, which is
+   an arcade convention and the one thing on the menu that still announced this
+   as a different product. Same treatment for every screen heading below, so the
+   game's four screens read as one family with the rest of the app. */
 .vr-game-logo {
-  font-family:'Outfit','DM Mono',sans-serif;
-  font-size:clamp(40px,9vw,68px);
-  letter-spacing:0.08em;
-  background:linear-gradient(115deg,#f0dfad 0%,var(--vr-cyan) 48%,#c7b4e5 100%);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 5px 0 rgba(3,7,16,0.9));
+  font-family:'Cinzel','Cormorant Garamond',serif;
+  font-size:clamp(38px,8.4vw,62px);
+  font-weight:700;
+  letter-spacing:0.16em;
+  color:#f4ead6;
+  text-shadow:0 4px 0 rgba(3,7,16,0.92);
+}
+.vr-sub-title,
+.vr-go-title,
+#vr-pausescreen h2 {
+  font-family:'Cinzel','Cormorant Garamond',serif;
+  font-weight:600;
+  letter-spacing:0.18em;
 }
 .vr-tagline,
 .vr-hud-label,
@@ -269,15 +311,18 @@ const CSS = `
   letter-spacing:0.15em;
   box-shadow:3px 3px 0 #030710;
 }
+/* The primary action is AMBER, like every "act on me" button in the app
+   (.ct-fq-btn-pri: the accent over its own edge, an ink outline, a hard offset
+   shadow). It was a lilac #69549b that appears nowhere else in the product. */
 .vr-neon-btn-primary {
-  color:#fff;
-  background:#69549b;
+  color:#2a1c06;
+  background:linear-gradient(180deg,var(--vr-gold) 0%,#c98a30 100%);
   border-color:#f2e8d6;
   box-shadow:3px 3px 0 #030710;
 }
 .vr-neon-btn-primary:hover {
   transform:translateY(-1px);
-  background:#7560a7;
+  background:linear-gradient(180deg,#ffd47e 0%,var(--vr-gold) 100%);
   box-shadow:4px 5px 0 #030710;
 }
 .vr-neon-btn-secondary {
@@ -372,14 +417,22 @@ const HTML = `
     <div class="vr-speedtrack"><div class="vr-speedfill" id="vr-speedfill"></div></div>
   </div>
 
+  <div class="vr-power" id="vr-power">
+    <span class="vr-power-label" id="vr-powerlabel">PULSE</span>
+    <div class="vr-power-track"><div class="vr-power-fill" id="vr-powerfill"></div></div>
+  </div>
+
   <div class="vr-combodisplay" id="vr-combodisplay"><span class="vr-combotext" id="vr-combotext">COMBO x2</span></div>
   <div class="vr-popup" id="vr-popup"></div>
 
   <button class="vr-pausebtn" id="vr-pausebtn" type="button">&#10074;&#10074;</button>
 
   <div class="vr-thumbcontrols" id="vr-thumbcontrols">
-    <button class="vr-thumb-btn" id="vr-btnleft" type="button" tabindex="-1">&#9664;</button>
-    <button class="vr-thumb-btn" id="vr-btnright" type="button" tabindex="-1">&#9654;</button>
+    <div class="vr-swipe-hint" id="vr-swipehint">
+      <span class="vr-swipe-arrow" id="vr-btnleft">&#9664;</span>
+      <span class="vr-swipe-word">swipe to steer</span>
+      <span class="vr-swipe-arrow" id="vr-btnright">&#9654;</span>
+    </div>
   </div>
 
   <div class="vr-screen" id="vr-menuscreen">
@@ -431,9 +484,11 @@ const HTML = `
     <div class="vr-how-row"><div class="vr-how-icon">&#128640;</div>
       <div class="vr-how-text">Your ship flies through the void at increasing speed. <b style="color:#fff">Survive as long as possible.</b></div></div>
     <div class="vr-how-row"><div class="vr-how-icon">&#11013;&#65039;&#10145;&#65039;</div>
-      <div class="vr-how-text">Move left and right using <span class="vr-how-key">&#9664; &#9654;</span> arrow keys, <span class="vr-how-key">A</span> <span class="vr-how-key">D</span> keys, or tap the left/right half of the screen on phone.</div></div>
+      <div class="vr-how-text"><b style="color:#fff">Swipe left or right</b> anywhere on the screen to change lane — keep swiping in one drag to cross two lanes. On a keyboard, use <span class="vr-how-key">&#9664; &#9654;</span> or <span class="vr-how-key">A</span> <span class="vr-how-key">D</span>.</div></div>
     <div class="vr-how-row"><div class="vr-how-icon">&#128142;</div>
-      <div class="vr-how-text">Collect <b style="color:#ffcc00">golden gems</b> to boost your score. Near misses build your COMBO multiplier for bonus points.</div></div>
+      <div class="vr-how-text">Collect <b style="color:#e8ac4e">golden gems</b> to boost your score. Near misses build your COMBO multiplier for bonus points.</div></div>
+    <div class="vr-how-row"><div class="vr-how-icon">&#128165;</div>
+      <div class="vr-how-text">Eight gems charge the <b style="color:#e8ac4e">PULSE CANNON</b>. Press <span class="vr-how-key">SPACE</span> (or tap the screen on phone) to fire it for seven seconds — bolts destroy any obstacle they hit.</div></div>
     <div class="vr-how-row"><div class="vr-how-icon">&#128308;</div>
       <div class="vr-how-text">Obstacles glow red when they enter your lane. Dodge them or lose a life. You have <b style="color:#ff2d9b">3 lives.</b></div></div>
     <div class="vr-how-row"><div class="vr-how-icon">&#9889;</div>
@@ -540,6 +595,11 @@ function createVoidRunner(root, THREE, { onBack }) {
   function sfxLevelUp() { [400, 500, 600, 800, 1000].forEach((f, i) => playTone(f, 'square', 0.1, 0.06, i * 0.08)); }
   function sfxHit() { playTone(120, 'sawtooth', 0.3, 0.15); playTone(80, 'square', 0.4, 0.1, 0.05); }
   function sfxMenuClick() { if (sfxEnabled && audioCtx) playTone(440, 'sine', 0.08, 0.06 * sfxVolume); }
+  /* Pulse cannon. Deliberately short and quiet — it fires ~8 times a second for
+   * seven seconds, so anything with a tail would smear into a drone. */
+  function sfxPulse() { if (sfxEnabled) playTone(880, 'square', 0.05, 0.035 * sfxVolume); }
+  function sfxPulseHit() { if (sfxEnabled) { playTone(220, 'sawtooth', 0.1, 0.07 * sfxVolume); playTone(140, 'square', 0.12, 0.05 * sfxVolume, 0.02); } }
+  function sfxPulseArm() { if (sfxEnabled) [660, 880, 1320].forEach((f, i) => playTone(f, 'triangle', 0.12, 0.07 * sfxVolume, i * 0.06)); }
 
   // ── SYNTHWAVE SOUNDTRACK ──
   let musicRunning = false;
@@ -699,13 +759,45 @@ function createVoidRunner(root, THREE, { onBack }) {
     laneLine: 0x4a4f7d,
     arch: 0x39406b,
     gem: 0xe8ac4e,
+    /* The ship, as one named group rather than seven raw hexes inline.
+     * These mirror the Spaceship game's palette (train-switch/CarPark3DProto)
+     * so the two craft read as the same fleet: pale steel hull, cream spine,
+     * dark glass canopy, warm nacelles and amber thrust. */
+    hull: 0xc3d3e6,
+    hullEmissive: 0x2f4763,
+    stripe: 0xeaf4ff,
+    glass: 0x0e1a22,
+    glassEmissive: 0x6bb3c8,
+    nacelle: 0x2a241a,
+    thrust: 0xffd27a,
+    invincible: 0x8fe8e0,   // the shield tell — cool, but no longer arcade cyan
+    hazardBurst: 0xd9662f,  // debris from a destroyed obstacle
+    cssGold: '#e8ac4e',     // same amber as --vr-gold, for the DOM-side popups
   };
 
   // ── THREE.JS SETUP ──
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isTouch });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isTouch ? 1.5 : 2));
-  renderer.shadowMap.enabled = !isTouch;
-  if (!isTouch) renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  /*
+   * Pixel ratio capped at 1.5 everywhere, was 2 on desktop.
+   *
+   * This is the cheapest large win available: fragment cost scales with the
+   * SQUARE of the ratio, so a retina/4K desktop was shading 1.78x the pixels
+   * of a 1.5 cap for a full-screen tunnel where every pixel is lit and fogged.
+   * At this scene's contrast — emissive neon on a soft dusk gradient — the
+   * difference is close to invisible and the frame time is not.
+   */
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  /*
+   * Shadows OFF, on every device.
+   *
+   * A PCFSoftShadowMap means a second full render pass of every caster, every
+   * frame, plus a soft multi-tap lookup in the fragment shader of every
+   * receiver. What it bought here was a faint blob under a ship that flies over
+   * an emissive grid inside a fog bank — the floor is barely lit by the
+   * directional light in the first place. The pass costs far more than the
+   * effect reads.
+   */
+  renderer.shadowMap.enabled = false;
   renderer.setSize(window.innerWidth, window.innerHeight);
 
   const scene = new THREE.Scene();
@@ -793,18 +885,31 @@ function createVoidRunner(root, THREE, { onBack }) {
    * old 0x0a0020 so surfaces read without needing emissive neon to carry them —
    * this is most of what makes the scene "lighter".
    */
-  const ambient = new THREE.AmbientLight(VR.ambient, 2.6);
+  const ambient = new THREE.AmbientLight(VR.ambient, 2.9);
   scene.add(ambient);
   const dirLight = new THREE.DirectionalLight(VR.keyLight, 2.2);
   dirLight.position.set(5, 12, 8);
-  dirLight.castShadow = !isTouch;
   scene.add(dirLight);
-  const pinkLight = new THREE.PointLight(VR.warmAccent, 2.6, 25);
-  pinkLight.position.set(-6, 3, 2);
-  scene.add(pinkLight);
-  const cyanLight = new THREE.PointLight(VR.coolAccent, 2.6, 25);
-  cyanLight.position.set(6, 3, 2);
-  scene.add(cyanLight);
+  /*
+   * ONE sweeping accent light, not two.
+   *
+   * There used to be a warm one and a cool one crossing the tunnel in opposite
+   * directions. Every point light adds a full lighting evaluation per fragment
+   * of every lit surface, and in a tunnel the camera is looking down a corridor
+   * of overdraw — this is the fragment cost that scales with how much is on
+   * screen, i.e. exactly the busy moments. Dropping from three point lights to
+   * two removes a third of that math.
+   *
+   * The colour play survives because this one light cycles warm <-> cool as it
+   * sweeps (see the run loop), which is what the crossing pair was there to
+   * produce in the first place. `setRGB` into the existing Color allocates
+   * nothing per frame.
+   */
+  const sweepLight = new THREE.PointLight(VR.warmAccent, 2.9, 26);
+  sweepLight.position.set(-6, 3, 2);
+  scene.add(sweepLight);
+  const sweepWarm = new THREE.Color(VR.warmAccent);
+  const sweepCool = new THREE.Color(VR.coolAccent);
   const shipLight = new THREE.PointLight(VR.coolAccent, 2.4, 10);
   scene.add(shipLight);
 
@@ -844,7 +949,7 @@ function createVoidRunner(root, THREE, { onBack }) {
   floorGeo.rotateX(-Math.PI / 2);
   const floorMat = neonMat({ color: VR.floor, roughness: 1, metalness: 0, emissive: 0x0d1128 });
   const floorMesh = new THREE.InstancedMesh(floorGeo, floorMat, NUM_SEGS);
-  floorMesh.receiveShadow = !isTouch;
+  // (shadowMap is disabled — see the renderer setup; these flags are inert)
   scene.add(floorMesh);
 
   const lineGeo = new THREE.BoxGeometry(0.04, 0.02, SEG_DEPTH);
@@ -898,42 +1003,160 @@ function createVoidRunner(root, THREE, { onBack }) {
   updateTunnelInstances();
 
   // ── SHIP ──
+  /*
+   * The same craft the Spaceship game flies (attention/train-switch,
+   * CarPark3DProto) — an extruded hull silhouette rather than a cone with a box
+   * through it, so the two games read as one fleet. Parts, in build order:
+   * hull, cream dorsal stripe, glass canopy, twin nacelles + thrust flames,
+   * under-glow halo, engine core, trail.
+   *
+   * ⚠ Nothing outside here may address these parts by child INDEX. The original
+   * flashed `children[3]` "// cockpit" when index 3 was a wing tip, and this
+   * rebuild would have silently broken the corrected index too. Named handles
+   * on `userData` cannot drift when a part is added or reordered.
+   */
+  function hullGeometry() {
+    const s = new THREE.Shape();
+    // Right half (y >= 0), nose at +X — mirrored below for the left side.
+    s.moveTo(0.52, 0);
+    s.quadraticCurveTo(0.42, 0.1, 0.2, 0.13);      // nose -> shoulder
+    s.lineTo(0.06, 0.15);                           // body side
+    s.lineTo(-0.12, 0.42);                          // wing leading edge
+    s.lineTo(-0.26, 0.44);                          // wing tip
+    s.lineTo(-0.2, 0.15);                           // wing trailing edge
+    s.lineTo(-0.34, 0.13);                          // rear body
+    s.lineTo(-0.46, 0.2);                           // tail fin
+    s.lineTo(-0.4, 0.06);                           // tail notch
+    s.lineTo(-0.4, -0.06);
+    s.lineTo(-0.46, -0.2);
+    s.lineTo(-0.34, -0.13);
+    s.lineTo(-0.2, -0.15);
+    s.lineTo(-0.26, -0.44);
+    s.lineTo(-0.12, -0.42);
+    s.lineTo(0.06, -0.15);
+    s.lineTo(0.2, -0.13);
+    s.quadraticCurveTo(0.42, -0.1, 0.52, 0);
+    const geo = new THREE.ExtrudeGeometry(s, {
+      depth: 0.09,
+      bevelEnabled: true,
+      bevelThickness: 0.035,
+      bevelSize: 0.03,
+      bevelSegments: 2,
+      curveSegments: 8,
+    });
+    /* The silhouette is authored flat in XY with the nose at +X (it is drawn
+     * top-down in the Spaceship game). Void Runner flies down -Z with the
+     * camera behind, so the geometry is baked into that frame ONCE here —
+     * nose -> -Z, wingspan -> +/-X, extrusion depth -> +Y — instead of paying
+     * two mesh rotations every frame. */
+    geo.rotateX(-Math.PI / 2);
+    geo.rotateY(Math.PI / 2);
+    geo.center();
+    return geo;
+  }
+
   function buildShip() {
     const g = new THREE.Group();
-    const bodyM = neonMat({ color: 0xd0eeff, emissive: 0x224466, roughness: 0.2, metalness: 0.9 });
-    const body = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.8, 8), bodyM);
-    body.rotation.x = Math.PI / 2;
-    body.castShadow = !isTouch;
-    g.add(body);
-    const wingM = neonMat({ color: 0x3366aa, emissive: 0x112244, roughness: 0.3, metalness: 0.9 });
-    const wings = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.08, 0.7), wingM);
-    wings.position.z = 0.35;
-    wings.castShadow = !isTouch;
-    g.add(wings);
-    const tipM = neonMat({ color: VR.warmAccent, emissive: VR.warmAccent, emissiveIntensity: 2.2 });
-    [-1.1, 1.1].forEach((x) => {
-      const tip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.6), tipM);
-      tip.position.set(x, 0, 0.35);
-      g.add(tip);
-    });
-    const cockM = neonMat({ color: 0x88ddff, emissive: 0x003355, roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.75 });
-    const cock = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 6), cockM);
-    cock.scale.z = 1.6;
-    cock.position.z = -0.45;
-    g.add(cock);
-    const glowM = neonMat({ color: VR.coolAccent, emissive: VR.coolAccent, emissiveIntensity: 2.8, transparent: true, opacity: 0.85 });
-    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), glowM);
-    glow.position.z = 1.0;
+    const S = 2.3;   // hull is ~1.04 long in shape units -> ~2.4 world units
+
+    const hull = new THREE.Mesh(
+      hullGeometry(),
+      neonMat({ color: VR.hull, emissive: VR.hullEmissive, emissiveIntensity: 0.55, roughness: 0.3, metalness: 0.6 }),
+    );
+    hull.scale.setScalar(S);
+    
+    g.add(hull);
+
+    // Cream dorsal stripe down the spine.
+    const stripe = new THREE.Mesh(
+      new THREE.BoxGeometry(S * 0.05, 0.012, S * 0.66),
+      neonMat({ color: VR.stripe, emissive: VR.stripe, emissiveIntensity: 0.45, roughness: 0.4, metalness: 0.3 }),
+    );
+    stripe.position.set(0, S * 0.055, -S * 0.02);
+    g.add(stripe);
+
+    // Glass canopy.
+    const cockpit = new THREE.Mesh(
+      new THREE.SphereGeometry(S * 0.13, 14, 10),
+      neonMat({ color: VR.glass, emissive: VR.glassEmissive, emissiveIntensity: 0.5, roughness: 0.15, metalness: 0.7 }),
+    );
+    cockpit.scale.set(1, 0.62, 1.7);
+    cockpit.position.set(0, S * 0.06, -S * 0.18);
+    g.add(cockpit);
+
+    // Twin nacelles + thrust flames.
+    const thrusters = [];
+    for (const side of [-1, 1]) {
+      const nac = new THREE.Mesh(
+        new THREE.CylinderGeometry(S * 0.055, S * 0.075, S * 0.3, 10),
+        neonMat({ color: VR.nacelle, emissive: VR.warmAccent, emissiveIntensity: 0.2, roughness: 0.35, metalness: 0.6 }),
+      );
+      nac.rotation.x = Math.PI / 2;
+      nac.position.set(side * S * 0.19, S * 0.02, S * 0.28);
+      g.add(nac);
+      const flame = new THREE.Mesh(
+        new THREE.ConeGeometry(S * 0.055, S * 0.3, 8),
+        new THREE.MeshBasicMaterial({
+          color: VR.thrust,
+          transparent: true,
+          opacity: 0.85,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        }),
+      );
+      /* Apex +Z, i.e. tapering AWAY behind the ship: a cone's apex is +Y, and
+       * +PI/2 about X maps +Y to +Z. (-PI/2 points it forward, which buries the
+       * wide end of the flame inside the hull.) Positioned so the base sits at
+       * the tail — the hull's half-length is 1.21 at this scale and the cone is
+       * 0.69 long, so 0.68*S puts the base on the transom, not through it. */
+      flame.rotation.x = Math.PI / 2;
+      flame.position.set(side * S * 0.19, S * 0.02, S * 0.68);
+      g.add(flame);
+      thrusters.push(flame);
+    }
+
+    // Under-glow halo, so the ship sits ON the lane rather than floating over it.
+    const halo = new THREE.Mesh(
+      new THREE.CircleGeometry(S * 0.55, 20),
+      new THREE.MeshBasicMaterial({
+        color: VR.coolAccent,
+        transparent: true,
+        opacity: 0.2,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+    );
+    halo.rotation.x = -Math.PI / 2;
+    halo.position.y = -S * 0.09;
+    g.add(halo);
+
+    // Engine core — the part the run loop pulses, and the invincibility tell.
+    const glow = new THREE.Mesh(
+      new THREE.SphereGeometry(0.22, 8, 8),
+      neonMat({ color: VR.coolAccent, emissive: VR.coolAccent, emissiveIntensity: 2.8, transparent: true, opacity: 0.85 }),
+    );
+    glow.position.set(0, S * 0.02, S * 0.42);
     g.add(glow);
-    const trailM = neonMat({ color: 0x0088ff, emissive: 0x0044ff, emissiveIntensity: 3, transparent: true, opacity: 0.5 });
-    const trail = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.0, 8), trailM);
+
+    const trail = new THREE.Mesh(
+      new THREE.ConeGeometry(0.2, 1.0, 8),
+      neonMat({ color: VR.coolAccent, emissive: VR.coolAccent, emissiveIntensity: 2.4, transparent: true, opacity: 0.45 }),
+    );
     trail.rotation.x = -Math.PI / 2;
-    trail.position.z = 1.55;
+    trail.position.set(0, S * 0.02, S * 0.72);
     g.add(trail);
+
+    // Named handles — see the warning above. Never index into g.children.
+    g.userData.cockpit = cockpit;
+    g.userData.glow = glow;
+    g.userData.thrusters = thrusters;
     return g;
   }
   const SHIP_BASE_Y = 0.3;
   const ship = buildShip();
+  const shipCockpit = ship.userData.cockpit;
+  const shipGlow = ship.userData.glow;
+  const shipThrusters = ship.userData.thrusters;
   ship.position.set(0, SHIP_BASE_Y, 6);
   ship.frustumCulled = false;
   ship.traverse((child) => { child.frustumCulled = false; });
@@ -966,7 +1189,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     const geoIdx = Math.floor(Math.random() * obsGeos.length);
     const matIdx = Math.floor(Math.random() * obsMats.length);
     const mesh = new THREE.Mesh(obsGeos[geoIdx], obsMats[matIdx]);
-    mesh.castShadow = !isTouch;
+    
     const ringM = neonMat({ color: obsMats[matIdx].color, emissive: obsMats[matIdx].color, emissiveIntensity: 3, transparent: true, opacity: 0.8 });
     const ring = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.04, 4, 20), ringM);
     ring.name = 'ring';
@@ -989,37 +1212,91 @@ function createVoidRunner(root, THREE, { onBack }) {
   function getGem() {
     if (gemPool.length > 0) { const g = gemPool.pop(); g.visible = true; scene.add(g); return g; }
     const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.38), gemMat);
-    m.castShadow = !isTouch;
+    
     scene.add(m);
     return m;
   }
   function returnGem(g) { g.visible = false; scene.remove(g); gemPool.push(g); }
 
   // ── PARTICLES ──
-  const particles = [];
-  function spawnExplosion(x, y, z, col = 0xff4400) {
+  /*
+   * ── Particles are POOLED, and that is a frame-time fix, not tidiness ──
+   *
+   * Every explosion used to allocate 18 Meshes, 18 SphereGeometries and 18
+   * materials, and every gem 10 more — then dispose each geometry as the
+   * particle died. That is ~28 object allocations plus 28 GPU buffer
+   * uploads and deletions at the exact instants the game is busiest: taking a
+   * hit, or grabbing a gem mid-dodge. It is a textbook GC hitch, and it lines
+   * up precisely with "it lags when I go left and right", because that is when
+   * these fire. (The materials were never disposed at all — a real leak: one
+   * per particle, forever.)
+   *
+   * The pool is built ONCE. Geometry is shared across every particle of a kind;
+   * each pooled mesh keeps its own material because opacity fades per particle,
+   * but those materials are created once at boot and reused for the whole
+   * session. Running out of pool just means the oldest particle is recycled —
+   * far better than a stutter.
+   */
+  const PARTICLE_POOL = { spark: 72, gem: 40 };
+  const sparkGeo = new THREE.SphereGeometry(0.12, 4, 4);
+  const gemShardGeo = new THREE.OctahedronGeometry(0.06);
+  const particles = [];      // live
+  const particlePool = { spark: [], gem: [] };
+  function makeParticle(kind) {
+    const mesh = new THREE.Mesh(
+      kind === 'gem' ? gemShardGeo : sparkGeo,
+      neonMat({
+        color: kind === 'gem' ? VR.gem : VR.hazardBurst,
+        emissive: kind === 'gem' ? VR.gem : VR.hazardBurst,
+        emissiveIntensity: kind === 'gem' ? 4 : 3,
+        transparent: true,
+        opacity: 1,
+      }),
+    );
+    mesh.visible = false;
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    return mesh;
+  }
+  for (let i = 0; i < PARTICLE_POOL.spark; i++) particlePool.spark.push(makeParticle('spark'));
+  for (let i = 0; i < PARTICLE_POOL.gem; i++) particlePool.gem.push(makeParticle('gem'));
+
+  function takeParticle(kind) {
+    const pool = particlePool[kind];
+    if (pool.length) return pool.pop();
+    // Pool exhausted: steal the oldest live particle of this kind rather than
+    // allocate. A recycled spark is invisible; a dropped frame is not.
+    for (let i = 0; i < particles.length; i++) {
+      if (particles[i].kind === kind) {
+        const stolen = particles[i].mesh;
+        particles.splice(i, 1);
+        return stolen;
+      }
+    }
+    return null;
+  }
+  function emit(kind, x, y, z, vx, vy, vz, decay, scale) {
+    const mesh = takeParticle(kind);
+    if (!mesh) return;
+    mesh.position.set(x, y, z);
+    mesh.scale.setScalar(scale);
+    mesh.material.opacity = 1;
+    mesh.visible = true;
+    particles.push({ kind, mesh, vx, vy, vz, life: 1, decay });
+  }
+  function spawnExplosion(x, y, z) {
     for (let i = 0; i < 18; i++) {
-      const m = new THREE.Mesh(
-        new THREE.SphereGeometry(0.08 + Math.random() * 0.14, 4, 4),
-        neonMat({ color: col, emissive: col, emissiveIntensity: 3, transparent: true, opacity: 1 }),
-      );
-      m.position.set(x, y, z);
-      scene.add(m);
       const a = Math.random() * Math.PI * 2; const b = Math.random() * Math.PI;
       const spd = Math.random() * 0.35 + 0.1;
-      particles.push({ mesh: m, vx: Math.sin(b) * Math.cos(a) * spd, vy: Math.sin(b) * Math.sin(a) * spd, vz: Math.cos(b) * spd, life: 1, decay: 0.025 + Math.random() * 0.02 });
+      emit('spark', x, y, z,
+        Math.sin(b) * Math.cos(a) * spd, Math.sin(b) * Math.sin(a) * spd, Math.cos(b) * spd,
+        0.025 + Math.random() * 0.02, 0.65 + Math.random() * 1.15);
     }
   }
   function spawnGemParticles(x, y, z) {
     for (let i = 0; i < 10; i++) {
-      const m = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.06),
-        neonMat({ color: 0xffcc00, emissive: 0xffaa00, emissiveIntensity: 4, transparent: true, opacity: 1 }),
-      );
-      m.position.set(x, y, z);
-      scene.add(m);
       const a = Math.random() * Math.PI * 2;
-      particles.push({ mesh: m, vx: Math.cos(a) * 0.18, vy: 0.15 + Math.random() * 0.1, vz: Math.sin(a) * 0.18, life: 1, decay: 0.04 });
+      emit('gem', x, y, z, Math.cos(a) * 0.18, 0.15 + Math.random() * 0.1, Math.sin(a) * 0.18, 0.04, 1);
     }
   }
   function updateParticles(dt) {
@@ -1031,8 +1308,8 @@ function createVoidRunner(root, THREE, { onBack }) {
       p.vy -= 0.008 * dt;
       p.life -= p.decay * dt;
       if (p.life <= 0) {
-        scene.remove(p.mesh);
-        p.mesh.geometry.dispose();
+        p.mesh.visible = false;
+        particlePool[p.kind].push(p.mesh);
         particles.splice(i, 1);
         continue;
       }
@@ -1059,6 +1336,113 @@ function createVoidRunner(root, THREE, { onBack }) {
     clearTimeout(popupTimers[key]);
     popupTimers[key] = setTimeout(() => { el.style.opacity = '0'; }, dur);
   }
+
+  /* ── PULSE CANNON ────────────────────────────────────────────────────────
+   *
+   * Gems charge a weapon instead of only scoring. Collect PULSE_NEED of them
+   * and the cannon arms; TAP to spend it for PULSE_MS of auto-fire that
+   * destroys obstacles outright.
+   *
+   * Tap is the right verb here precisely because steering became a swipe —
+   * the gesture is free, it needs no new on-screen button competing with the
+   * board, and it cannot be confused with steering (a tap that moves far enough
+   * to change lane is a swipe, and is not a fire).
+   *
+   * Bolts are pooled for the same reason the particles are: firing is a burst
+   * of activity at the busiest moment of a run, and that is the worst possible
+   * time to allocate.
+   */
+  const PULSE_NEED = 8;        // gems to arm
+  const PULSE_MS = 7000;       // active window
+  const PULSE_INTERVAL = 130;  // ms between bolts
+  const PULSE_SPEED = 1.15;    // world units per frame-unit, away from camera
+  const BOLT_POOL = 16;
+  const boltGeo = new THREE.CylinderGeometry(0.09, 0.09, 1.5, 6);
+  boltGeo.rotateX(Math.PI / 2);   // baked: axis along Z, the direction of travel
+  const boltMat = new THREE.MeshBasicMaterial({
+    color: VR.thrust, transparent: true, opacity: 0.9,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const boltPool = [];
+  const activeBolts = [];
+  for (let i = 0; i < BOLT_POOL; i++) {
+    const b = new THREE.Mesh(boltGeo, boltMat);
+    b.visible = false;
+    b.frustumCulled = false;
+    scene.add(b);
+    boltPool.push(b);
+  }
+  let pulseCharge = 0;      // gems banked toward the next cannon
+  let pulseTimer = 0;       // ms of fire left
+  let pulseCooldown = 0;    // ms until the next bolt
+
+  function fireBolt(x) {
+    const b = boltPool.pop();
+    if (!b) return;
+    b.position.set(x, SHIP_BASE_Y, ship.position.z - 1.6);
+    b.visible = true;
+    activeBolts.push(b);
+  }
+  function retireBolt(idx) {
+    const b = activeBolts[idx];
+    b.visible = false;
+    activeBolts.splice(idx, 1);
+    boltPool.push(b);
+  }
+  function clearBolts() {
+    for (let i = activeBolts.length - 1; i >= 0; i--) retireBolt(i);
+  }
+
+  /* One place that owns the meter, so the three states cannot disagree.
+   * Dirty-checked like the rest of the HUD — this runs every frame while
+   * firing. */
+  function setPulseHud(mode) {
+    const pct = mode === 'firing'
+      ? Math.round((pulseTimer / PULSE_MS) * 100)
+      : Math.round((pulseCharge / PULSE_NEED) * 100);
+    if (pct !== hudCache.power) {
+      hud.powerFill.style.width = `${pct}%`;
+      hudCache.power = pct;
+    }
+    if (mode !== hudCache.powerState) {
+      hud.power.classList.toggle('vr-ready', mode === 'ready');
+      hud.power.classList.toggle('vr-firing', mode === 'firing');
+      // Name the gesture the player actually has. `isTouch` is the same probe
+      // the renderer uses to pick its quality tier.
+      hud.powerLabel.textContent = mode === 'firing'
+        ? 'FIRING'
+        : mode === 'ready' ? (isTouch ? 'TAP TO FIRE' : 'SPACE TO FIRE') : 'PULSE';
+      hudCache.powerState = mode;
+    }
+  }
+
+  /** A tap (not a swipe) spends a charged cannon. */
+  function tryFirePulse() {
+    if (state !== 'playing') return;
+    if (pulseTimer > 0) return;                 // already firing
+    if (pulseCharge < PULSE_NEED) return;       // not charged yet
+    pulseTimer = PULSE_MS;
+    pulseCooldown = 0;
+    setPulseHud('firing');
+    showPopup('PULSE CANNON', VR.cssGold, 900);
+    sfxPulseArm();
+  }
+
+  /* Elements the run loop touches, resolved ONCE. `q` is a querySelector, and
+   * these were being re-queried on every frame. */
+  const hud = {
+    score: q('#vr-scorehud'),
+    level: q('#vr-levelhud'),
+    speedFill: q('#vr-speedfill'),
+    speedLines: q('#vr-speedlines'),
+    warnFlash: q('#vr-warningflash'),
+    combo: q('#vr-combodisplay'),
+    comboText: q('#vr-combotext'),
+    power: q('#vr-power'),
+    powerFill: q('#vr-powerfill'),
+    powerLabel: q('#vr-powerlabel'),
+  };
+  const hudCache = { speedPct: -1, score: -1, lines: -1, warn: -1, power: -1, powerState: '' };
 
   // ── GAME STATE ──
   const LANES = [-3.2, 0, 3.2];
@@ -1169,7 +1553,20 @@ function createVoidRunner(root, THREE, { onBack }) {
     if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
       if (state === 'playing' || state === 'paused') togglePause();
     }
-    if ((e.key === ' ' || e.key === 'Enter') && (state === 'gameover' || state === 'menu')) startCountdown();
+    /* SPACE is the desktop trigger for the Pulse Cannon — the keyboard
+     * counterpart of the tap, and free for it because steering is on the arrow
+     * keys. It keeps its existing job of starting a run, which cannot collide:
+     * the two uses are gated on mutually exclusive states.
+     *
+     * preventDefault because Space scrolls, and because a Space press that
+     * arrives while a menu button still holds focus would otherwise re-trigger
+     * that button as a click.
+     */
+    if (e.key === ' ' && state === 'playing') { e.preventDefault(); tryFirePulse(); return; }
+    if ((e.key === ' ' || e.key === 'Enter') && (state === 'gameover' || state === 'menu')) {
+      e.preventDefault();
+      startCountdown();
+    }
   }
   function onKeyUp(e) {
     if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
@@ -1178,11 +1575,19 @@ function createVoidRunner(root, THREE, { onBack }) {
   document.addEventListener('keydown', onKeyDown);
   document.addEventListener('keyup', onKeyUp);
 
-  // ── INPUT: phone — tap the left/right HALF of the screen to steer.
-  // Attached to the canvas specifically (not document), so taps on the
-  // pause button / HUD / menu buttons — separate sibling elements layered
-  // on top — never reach this handler; there's exactly one input path, so
-  // it can never double-fire the way swipe-vs-button used to. ──
+  // ── INPUT: SWIPE left/right to change lane.
+  //
+  // One pointer path for both touch and mouse (Pointer Events), attached to the
+  // canvas specifically — never to `document` — so the pause button, HUD and
+  // menu buttons, which are sibling elements layered above, cannot also reach
+  // it. That single path is load-bearing: an earlier version ran swipe
+  // detection on `document` AND separate touch handlers on the thumb buttons,
+  // and a jittery tap could fire both, moving two lanes at once.
+  //
+  // A swipe is measured in a fraction of the viewport rather than raw pixels so
+  // the gesture feels the same on a phone and a tablet, and the origin RESETS
+  // after each step, so one long drag can walk left-to-right across all three
+  // lanes without lifting a finger. ──
   let currentLaneIdx = 1;
   let laneLock = false;
   function moveLane(dir) {
@@ -1203,20 +1608,75 @@ function createVoidRunner(root, THREE, { onBack }) {
     clearTimeout(pulseTimers[dir]);
     pulseTimers[dir] = setTimeout(() => el.classList.remove('vr-pressed'), 140);
   }
-  function handleTapSteer(clientX) {
-    if (state !== 'playing') return;
-    const rect = canvas.getBoundingClientRect();
-    const half = rect.left + rect.width / 2;
-    moveLane(clientX < half ? 'left' : 'right');
+  /* A swipe must clear 7% of the viewport width, with a 44px floor so it is
+   * never shorter than a fingertip's own jitter. Deliberately generous: a
+   * missed lane change at speed costs a life. */
+  const swipeStep = () => Math.max(44, (canvas.clientWidth || window.innerWidth) * 0.07);
+  let swipePointerId = null;
+  let swipeOriginX = 0;
+  let swipeOriginY = 0;
+  // A gesture is a TAP only if it never steered, stayed put, and was brief —
+  // so the cannon can share the canvas with steering without either stealing
+  // the other's input.
+  let swipeSteered = false;
+  let tapStartX = 0;
+  let tapStartY = 0;
+  let tapStartT = 0;
+
+  /* The hint has done its job the moment the player swipes once. Fades rather
+   * than disappears, so it never reads as something breaking mid-run. */
+  let swipeHintHidden = false;
+  function hideSwipeHint() {
+    if (swipeHintHidden) return;
+    swipeHintHidden = true;
+    q('#vr-swipehint')?.classList.add('vr-faded');
   }
-  function onCanvasTouchStart(e) {
+
+  function onPointerDown(e) {
     initAudio();
-    if (!e.touches || !e.touches.length) return;
-    handleTapSteer(e.touches[0].clientX);
+    if (state !== 'playing') return;
+    if (swipePointerId !== null) return;   // ignore a second finger mid-gesture
+    swipePointerId = e.pointerId;
+    swipeOriginX = e.clientX;
+    swipeOriginY = e.clientY;
+    tapStartX = e.clientX;
+    tapStartY = e.clientY;
+    tapStartT = performance.now();
+    swipeSteered = false;
+    /* Capture, so a swipe that runs off the edge of the canvas keeps
+     * delivering moves instead of dying halfway — the lanes are 3.2 apart and
+     * the outer ones are reached by swiping toward the edge of the screen,
+     * which is exactly where an uncaptured pointer stops reporting. */
+    try { canvas.setPointerCapture(e.pointerId); } catch { /* not fatal */ }
   }
-  function onCanvasMouseDown(e) { initAudio(); handleTapSteer(e.clientX); }
-  canvas.addEventListener('touchstart', onCanvasTouchStart, { passive: true });
-  canvas.addEventListener('mousedown', onCanvasMouseDown);
+  function onPointerMove(e) {
+    if (e.pointerId !== swipePointerId || state !== 'playing') return;
+    const dx = e.clientX - swipeOriginX;
+    const step = swipeStep();
+    if (Math.abs(dx) < step) return;
+    /* Vertical drags are not lane changes. Checked only once the horizontal
+     * threshold is already met, so a diagonal flick still counts — this
+     * rejects a scroll-like drag, not an imperfect swipe. */
+    if (Math.abs(e.clientY - swipeOriginY) > Math.abs(dx) * 1.2) return;
+    moveLane(dx < 0 ? 'left' : 'right');
+    swipeSteered = true;
+    hideSwipeHint();
+    // Re-origin so a continued drag can step again, one lane per step.
+    swipeOriginX = e.clientX;
+    swipeOriginY = e.clientY;
+  }
+  function endSwipe(e) {
+    if (e.pointerId !== swipePointerId) return;
+    try { canvas.releasePointerCapture(e.pointerId); } catch { /* already gone */ }
+    swipePointerId = null;
+    if (e.type !== 'pointerup') return;   // a cancel is never a tap
+    const moved = Math.hypot(e.clientX - tapStartX, e.clientY - tapStartY);
+    if (!swipeSteered && moved < 16 && performance.now() - tapStartT < 320) tryFirePulse();
+  }
+  canvas.addEventListener('pointerdown', onPointerDown);
+  canvas.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('pointerup', endSwipe);
+  canvas.addEventListener('pointercancel', endSwipe);
 
   // ── SPAWN ──
   function spawnObstacle() {
@@ -1302,7 +1762,13 @@ function createVoidRunner(root, THREE, { onBack }) {
     ship.position.y = SHIP_BASE_Y + Math.sin(time * 2) * 0.04;
     ship.rotation.z = Math.max(-0.45, Math.min(0.45, shipTiltZ));
     ship.rotation.y = shipTiltZ * 0.12;
-    ship.children[5].material.emissiveIntensity = 3.5 + Math.sin(time * 25) * 1.0;
+    shipGlow.material.emissiveIntensity = 3.5 + Math.sin(time * 25) * 1.0;
+    // Thrust flicker — the same idle the Spaceship game gives its craft.
+    for (let i = 0; i < shipThrusters.length; i++) {
+      const f = shipThrusters[i];
+      f.scale.z = 0.85 + Math.sin(time * 22 + i * 1.7) * 0.22;
+      f.material.opacity = 0.7 + Math.sin(time * 19 + i) * 0.15;
+    }
 
     shipLight.position.copy(ship.position);
     shipLight.position.z += 1;
@@ -1310,21 +1776,21 @@ function createVoidRunner(root, THREE, { onBack }) {
     if (invincible) {
       invincibleTimer -= rawDt;
       const pulse = 0.5 + 0.5 * Math.sin(invincibleTimer * 0.4);
-      // children[4] is the cockpit (0:body 1:wings 2-3:wing tips 4:cockpit
-      // 5:engine glow 6:trail) — the original build pulsed children[3] (a
-      // wing tip) here by mistake; fixed so the cockpit actually flashes.
-      ship.children[4].material.emissive.setHex(0x00ffff);
-      ship.children[4].material.emissiveIntensity = 2 + pulse * 3;
-      ship.children[5].material.emissive.setHex(0x00ffff);
-      ship.children[5].material.emissiveIntensity = 4 + pulse * 4;
-      shipLight.color.setHex(0x00ffff);
+      // Named handles, never child indices: this used to reach for
+      // `children[3] // cockpit` when index 3 was a wing tip, and the corrected
+      // index would have broken again the moment the ship was rebuilt.
+      shipCockpit.material.emissive.setHex(VR.invincible);
+      shipCockpit.material.emissiveIntensity = 2 + pulse * 3;
+      shipGlow.material.emissive.setHex(VR.invincible);
+      shipGlow.material.emissiveIntensity = 4 + pulse * 4;
+      shipLight.color.setHex(VR.invincible);
       shipLight.intensity = 4 + pulse * 3;
       if (invincibleTimer <= 0) {
         invincible = false;
-        ship.children[4].material.emissive.setHex(0x003355);
-        ship.children[4].material.emissiveIntensity = 1;
-        ship.children[5].material.emissive.setHex(VR.coolAccent);
-        ship.children[5].material.emissiveIntensity = 4;
+        shipCockpit.material.emissive.setHex(VR.glassEmissive);
+        shipCockpit.material.emissiveIntensity = 0.5;
+        shipGlow.material.emissive.setHex(VR.coolAccent);
+        shipGlow.material.emissiveIntensity = 4;
         shipLight.color.setHex(VR.coolAccent);
         shipLight.intensity = 3;
       }
@@ -1335,20 +1801,43 @@ function createVoidRunner(root, THREE, { onBack }) {
     score = Math.floor(time * 15 + gemsCollected * 8);
 
     level = Math.min(10, Math.floor(gameSpeed * 9) + 1);
-    if (level !== prevLevel) { sfxLevelUp(); q('#vr-levelhud').textContent = `LV ${level}`; prevLevel = level; }
+    if (level !== prevLevel) { sfxLevelUp(); hud.level.textContent = `LV ${level}`; prevLevel = level; }
 
-    q('#vr-speedfill').style.width = `${gameSpeed * 100}%`;
-    q('#vr-scorehud').textContent = score;
-    q('#vr-speedlines').style.opacity = gameSpeed > 0.5 ? String((gameSpeed - 0.5) * 0.8) : '0';
+    /*
+     * ── HUD writes are cached and dirty-checked ──
+     *
+     * This block used to run four querySelector calls per frame and then write
+     * to all four elements unconditionally. Two of those writes are worse than
+     * they look: `.vr-speedfill` carries `transition:width 0.3s`, so setting
+     * width every frame restarted a CSS transition 60 times a second, and
+     * `textContent` on the score forced a text layout every frame. That is
+     * main-thread work competing with the rAF callback itself — it shows up as
+     * stutter, not as a lower GPU frame rate, which is why it survived two
+     * rounds of render-side optimisation.
+     *
+     * Values are quantised so a write only happens when the pixel result would
+     * actually differ.
+     */
+    const speedPct = Math.round(gameSpeed * 100);
+    if (speedPct !== hudCache.speedPct) { hud.speedFill.style.width = `${speedPct}%`; hudCache.speedPct = speedPct; }
+    if (score !== hudCache.score) { hud.score.textContent = score; hudCache.score = score; }
+    const lines = gameSpeed > 0.5 ? Math.round((gameSpeed - 0.5) * 80) / 100 : 0;
+    if (lines !== hudCache.lines) { hud.speedLines.style.opacity = String(lines); hudCache.lines = lines; }
 
-    pinkLight.position.x = Math.sin(time * 0.4) * 5;
-    cyanLight.position.x = Math.cos(time * 0.3) * 5;
-    pinkLight.intensity = 3 + Math.sin(time * 2) * 0.8;
-    cyanLight.intensity = 3 + Math.cos(time * 2.3) * 0.8;
+    // One light doing both jobs: sweeps across, and crossfades warm <-> cool.
+    const sweep = Math.sin(time * 0.4);
+    sweepLight.position.x = sweep * 5.5;
+    const mix = 0.5 + 0.5 * Math.cos(time * 0.3);
+    sweepLight.color.setRGB(
+      sweepWarm.r + (sweepCool.r - sweepWarm.r) * mix,
+      sweepWarm.g + (sweepCool.g - sweepWarm.g) * mix,
+      sweepWarm.b + (sweepCool.b - sweepWarm.b) * mix,
+    );
+    sweepLight.intensity = 3.1 + Math.sin(time * 2) * 0.8;
 
     if (comboTimer > 0) {
       comboTimer -= rawDt;
-      if (comboTimer <= 0) { combo = 0; q('#vr-combodisplay').style.opacity = '0'; }
+      if (comboTimer <= 0) { combo = 0; hud.combo.style.opacity = '0'; }
     }
 
     const spawnRate = Math.max(28, 75 - level * 5);
@@ -1388,7 +1877,7 @@ function createVoidRunner(root, THREE, { onBack }) {
           flashScreen('vr-hitflash', 200);
           camShake = 20;
           combo = 0;
-          q('#vr-combodisplay').style.opacity = '0';
+          hud.combo.style.opacity = '0';
           invincible = true;
           invincibleTimer = 100;
           if (lives <= 0) { endGame(); return; }
@@ -1400,14 +1889,60 @@ function createVoidRunner(root, THREE, { onBack }) {
           combo++;
           comboTimer = 120;
           if (combo >= 2) {
-            q('#vr-combotext').textContent = `COMBO x${combo}`;
-            q('#vr-combodisplay').style.opacity = '1';
+            hud.comboText.textContent = `COMBO x${combo}`;
+            hud.combo.style.opacity = '1';
             score += combo * 5;
           }
         }
       }
     }
-    q('#vr-warningflash').style.opacity = warningThisFrame ? String(0.4 + Math.sin(time * 15) * 0.3) : '0';
+    // Same dirty-check: this one also drives a CSS transition (opacity 0.1s).
+    const warn = warningThisFrame ? Math.round((0.4 + Math.sin(time * 15) * 0.3) * 20) / 20 : 0;
+    if (warn !== hudCache.warn) { hud.warnFlash.style.opacity = String(warn); hudCache.warn = warn; }
+
+    // ── PULSE CANNON: fire, fly, hit ──
+    const msDt = rawDt * (1000 / 60);
+    if (pulseTimer > 0) {
+      pulseTimer = Math.max(0, pulseTimer - msDt);
+      pulseCooldown -= msDt;
+      if (pulseCooldown <= 0) {
+        pulseCooldown = PULSE_INTERVAL;
+        fireBolt(shipCurrentX);
+        sfxPulse();
+      }
+      // Dirty-checked inside, so running it every frame costs a comparison and
+      // gives the meter a real countdown instead of a bar that jumps to empty.
+      setPulseHud(pulseTimer > 0 ? 'firing' : 'idle');
+      if (pulseTimer === 0) pulseCharge = 0;
+    }
+    for (let i = activeBolts.length - 1; i >= 0; i--) {
+      const b = activeBolts[i];
+      const fromZ = b.position.z;
+      b.position.z -= PULSE_SPEED * rawDt;
+      // Obstacles spawn at z = -90, so a bolt is spent once it is past them.
+      if (b.position.z < -96) { retireBolt(i); continue; }
+      let hitSomething = false;
+      for (let j = activeObstacles.length - 1; j >= 0; j--) {
+        const o = activeObstacles[j];
+        /* SWEPT along z, not a proximity test at the sampled position. A bolt
+         * covers 1.15 units per frame and an obstacle closes at up to 1.13 the
+         * other way, so at top speed they approach 2.3 units in one step — a
+         * fixed +/-1.4 window lets them pass straight through each other on
+         * alternate frames, and the shot silently misses. Testing the whole
+         * segment the bolt swept cannot tunnel at any speed. */
+        const oz = o.group.position.z;
+        if (oz > fromZ + 1.1 || oz < b.position.z - 1.1) continue;
+        if (Math.abs(o.group.position.x - b.position.x) > 1.25) continue;
+        spawnExplosion(o.group.position.x, o.group.position.y, o.group.position.z);
+        returnObstacleToPool(o);
+        activeObstacles.splice(j, 1);
+        score += 20;
+        sfxPulseHit();
+        hitSomething = true;
+        break;
+      }
+      if (hitSomething) retireBolt(i);
+    }
 
     for (let i = activeGems.length - 1; i >= 0; i--) {
       const g = activeGems[i];
@@ -1423,9 +1958,15 @@ function createVoidRunner(root, THREE, { onBack }) {
           spawnGemParticles(g.position.x, g.position.y, g.position.z);
           flashScreen('vr-gemflash', 120);
           gemsCollected++;
+          // Gems now do two jobs: score, and charge the cannon.
+          if (pulseTimer === 0 && pulseCharge < PULSE_NEED) {
+            pulseCharge++;
+            setPulseHud(pulseCharge >= PULSE_NEED ? 'ready' : 'idle');
+            if (pulseCharge === PULSE_NEED) { sfxPulseArm(); showPopup('PULSE READY', VR.cssGold, 900); }
+          }
           const gain = 25 * Math.max(1, Math.floor(combo / 2) + 1);
           score += gain;
-          showPopup(`+${gain}`, '#ffcc00', 600);
+          showPopup(`+${gain}`, VR.cssGold, 600);
           returnGem(g);
           activeGems.splice(i, 1);
         }
@@ -1455,7 +1996,9 @@ function createVoidRunner(root, THREE, { onBack }) {
     activeObstacles.length = 0;
     activeGems.forEach((g) => returnGem(g));
     activeGems.length = 0;
-    particles.forEach((p) => { scene.remove(p.mesh); });
+    clearBolts();
+    // Pooled: hide and return, never remove from the scene (they are reused).
+    particles.forEach((p) => { p.mesh.visible = false; particlePool[p.kind].push(p.mesh); });
     particles.length = 0;
   }
 
@@ -1467,11 +2010,16 @@ function createVoidRunner(root, THREE, { onBack }) {
     q('#vr-countdownscreen').style.display = 'flex';
     q('#vr-hud').style.display = 'none';
     q('#vr-speedbar').style.display = 'none';
+    q('#vr-power').style.display = 'none';
     q('#vr-pausebtn').style.display = 'none';
     q('#vr-thumbcontrols').style.display = 'none';
 
     clearGameObjects();
     score = 0; lives = 3; gemsCollected = 0; level = 1; prevLevel = 1;
+    // The cannon does not carry over between runs.
+    pulseCharge = 0; pulseTimer = 0; pulseCooldown = 0;
+    hudCache.power = -1; hudCache.powerState = '';
+    setPulseHud('idle');
     q('#vr-levelhud').textContent = 'LV 1';
     time = 0; totalFrames = 0; rawSpeed = 0.32; gameSpeed = 0;
     shipTargetX = 0; shipCurrentX = 0; shipTiltZ = 0;
@@ -1480,7 +2028,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     combo = 0; comboTimer = 0; camShake = 0;
     obsCooldown = 80; gemCooldown = 100;
     updateLivesHud();
-    q('#vr-combodisplay').style.opacity = '0';
+    hud.combo.style.opacity = '0';
     q('#vr-warningflash').style.opacity = '0';
     q('#vr-speedlines').style.opacity = '0';
 
@@ -1501,8 +2049,14 @@ function createVoidRunner(root, THREE, { onBack }) {
           q('#vr-countdownscreen').style.display = 'none';
           q('#vr-hud').style.display = 'flex';
           q('#vr-speedbar').style.display = 'flex';
+          q('#vr-power').style.display = 'flex';
           q('#vr-pausebtn').style.display = 'flex';
-          if (isTouch) q('#vr-thumbcontrols').style.display = 'block';
+          if (isTouch) {
+            q('#vr-thumbcontrols').style.display = 'block';
+            // Re-show the swipe hint each run; it fades again on the first swipe.
+            swipeHintHidden = false;
+            q('#vr-swipehint')?.classList.remove('vr-faded');
+          }
           state = 'playing';
           startEngine();
           startMusic();
@@ -1517,8 +2071,8 @@ function createVoidRunner(root, THREE, { onBack }) {
     sfxDeath();
     stopEngine();
     stopMusic();
-    spawnExplosion(ship.position.x, ship.position.y, ship.position.z, 0xff4400);
-    spawnExplosion(ship.position.x, ship.position.y, ship.position.z, VR.warmAccent);
+    spawnExplosion(ship.position.x, ship.position.y, ship.position.z);
+    spawnExplosion(ship.position.x, ship.position.y, ship.position.z);
     ship.visible = false;
     camShake = 35;
 
@@ -1542,6 +2096,7 @@ function createVoidRunner(root, THREE, { onBack }) {
       q('#vr-pausebtn').style.display = 'none';
       q('#vr-hud').style.display = 'none';
       q('#vr-speedbar').style.display = 'none';
+      q('#vr-power').style.display = 'none';
       q('#vr-gameoverscreen').style.display = 'flex';
     }, 600);
   }
@@ -1573,6 +2128,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     ship.visible = true;
     q('#vr-hud').style.display = 'none';
     q('#vr-speedbar').style.display = 'none';
+    q('#vr-power').style.display = 'none';
     q('#vr-pausebtn').style.display = 'none';
     q('#vr-thumbcontrols').style.display = 'none';
     q('#vr-warningflash').style.opacity = '0';
@@ -1617,8 +2173,10 @@ function createVoidRunner(root, THREE, { onBack }) {
       window.removeEventListener('resize', onResize);
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('keyup', onKeyUp);
-      canvas.removeEventListener('touchstart', onCanvasTouchStart);
-      canvas.removeEventListener('mousedown', onCanvasMouseDown);
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', endSwipe);
+      canvas.removeEventListener('pointercancel', endSwipe);
       uiHandlers.forEach(([sel, ev, fn]) => q(sel)?.removeEventListener(ev, fn));
       Object.values(popupTimers).forEach((t) => clearTimeout(t));
       Object.values(pulseTimers).forEach((t) => clearTimeout(t));
