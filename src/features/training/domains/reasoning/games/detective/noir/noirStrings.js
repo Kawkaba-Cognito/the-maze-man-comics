@@ -17,10 +17,17 @@ export const NS = {
 
     // scene
     instinct: '◉ Instinct',
+    instinctCount: (n) => `◉ Instinct · ${n}`,
     notebook: '▤ Notebook',
     toSuspects: 'Question the suspects →',
     backToScene: '← Back to the scene',
     allCluesFound: 'The room has told me everything it knows. Now for the people.',
+    clueProgress: (n, total) => `${n}/${total} evidence secured`,
+
+    // Authored level conditions, shown on the case dossier.
+    assignment: 'ASSIGNMENT CONDITIONS',
+    missionRules: (errors, instincts) => `Close the case with no more than ${errors} errors · ${instincts} instinct charge${instincts === 1 ? '' : 's'}`,
+    errorBudget: (used, max) => `Errors ${used}/${max}`,
 
     // suspects
     suspectsSub: 'PICK A FACE. MAKE THEM TALK.',
@@ -99,10 +106,16 @@ export const NS = {
     phaseClosed: 'أُغلقت القضيّة',
 
     instinct: '◉ الحدس',
+    instinctCount: (n) => `◉ الحدس · ${arNum(n)}`,
     notebook: '▤ المفكرة',
     toSuspects: '← استجوب المشتبه بهم',
     backToScene: '→ عُد إلى المسرح',
     allCluesFound: 'أخبرتني الغرفة بكلّ ما تعرفه. الآن إلى الناس.',
+    clueProgress: (n, total) => `${arNum(n)}/${arNum(total)} أدلّة مؤمّنة`,
+
+    assignment: 'شروط المهمّة',
+    missionRules: (errors, instincts) => `أغلق القضيّة بما لا يزيد عن ${arNum(errors)} أخطاء · ${arNum(instincts)} شحنات حدس`,
+    errorBudget: (used, max) => `الأخطاء ${arNum(used)}/${arNum(max)}`,
 
     suspectsSub: 'اختر وجهًا. اجعله يتكلّم.',
     hallway: '→ الصفّ',

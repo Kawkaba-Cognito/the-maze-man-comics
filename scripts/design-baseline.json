@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 776,
+    "raw-colour": 773,
     "conditional-background": 1,
     "stacked-backdrops": 4
   },
@@ -126,7 +126,7 @@
       "raw-colour": 1
     },
     "src/features/training/domains/reasoning/games/detective/noir/noir2d.css": {
-      "raw-colour": 23
+      "raw-colour": 22
     },
     "src/features/training/domains/reasoning/games/detective/noir/noirCancellation.css": {
       "raw-colour": 54
@@ -136,7 +136,7 @@
       "stacked-backdrops": 1
     },
     "src/features/training/domains/reasoning/games/detective/noir/noirPremium.css": {
-      "raw-colour": 79
+      "raw-colour": 77
     },
     "src/features/training/domains/reasoning/games/detective/prototypes/components/AssistantNudge.jsx": {
       "raw-colour": 2

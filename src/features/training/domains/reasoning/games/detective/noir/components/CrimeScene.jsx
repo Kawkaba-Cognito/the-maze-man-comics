@@ -1,4 +1,5 @@
 import React from 'react';
+import { assetUrl } from '../../../../../../../../lib/assetUrl';
 import { L } from '../schema';
 import { sceneFor } from '../scenes';
 
@@ -14,11 +15,18 @@ export default function CrimeScene({
   caseData, isAr, found, hinted, examined, onExamine,
 }) {
   const scene = sceneFor(caseData.id);
-  const Art = scene?.Art;
 
   return (
     <div className="nr-scene">
-      {Art ? <Art /> : <div className="nr-scene-floor" aria-hidden="true" />}
+      {scene?.image ? (
+        <img
+          className="nr-scene-art"
+          src={assetUrl(scene.image)}
+          alt=""
+          aria-hidden="true"
+          draggable="false"
+        />
+      ) : <div className="nr-scene-floor" aria-hidden="true" />}
 
       {caseData.hotspots.map((h) => {
         const isFound = h.clue ? found.includes(h.clue) : examined.has(h.id);

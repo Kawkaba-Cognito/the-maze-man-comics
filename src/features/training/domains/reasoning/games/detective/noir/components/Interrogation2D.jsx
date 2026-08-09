@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
+import { assetUrl } from '../../../../../../../../lib/assetUrl';
 import { cast2dUrl } from '../../../../../../shared/cast2d';
+import { DETECTIVE_ASSETS } from '../scenes';
 
 function localName(suspect, isAr) {
   if (typeof suspect.name === 'string') return suspect.name;
@@ -43,6 +45,13 @@ export default function Interrogation2D({
       role="group"
       aria-label={isAr ? 'صف المشتبه بهم التفاعلي' : 'Interactive suspect line-up'}
     >
+      <img
+        className="nr-2d-backdrop"
+        src={assetUrl(DETECTIVE_ASSETS.interrogation)}
+        alt=""
+        aria-hidden="true"
+        draggable="false"
+      />
       <div className="nr-2d-room" aria-hidden="true">
         <span className="nr-2d-light nr-2d-light--left" />
         <span className="nr-2d-light nr-2d-light--right" />

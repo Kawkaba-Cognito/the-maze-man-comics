@@ -1,26 +1,18 @@
 import React, { Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
-import CaseFileEngine from './CaseFileEngine';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
-/*
- * Survival uses the noir case engine and a clean illustrated suspect line-up.
- * The retired 3D prototype remains recoverable from git history.
- */
-
-// Survival's noir rebuild stays lazy so the full case engine only loads on use.
-const NoirSurvival = lazyWithRetry(() => import('./noir/NoirSurvival'), 'detective-noir');
+// The full investigation engine stays lazy so it only loads when Detective opens.
+const NoirEngine = lazyWithRetry(() => import('./noir/NoirEngine'), 'detective-noir');
 
 /*
  * Detective Kawkab.
  *
- * Survival runs the noir engine: search the scene, break each suspect's stated
- * lie with the one piece of evidence that contradicts it, then pin down who,
- * how, why and the proof. Suspects appear as the shared minimalist 2D cast.
- *
- * Levels and Pass n Play still run the older Case File engine over the
- * original investigation bank, pending the same treatment.
+ * Every mode now shares one premium loop: search the scene, break each lie
+ * with evidence, then reconstruct who, how, why and the decisive proof.
+ * Levels are authored assignments, Survival adapts upward, and Pass n Play
+ * gives every player the same seeded case sequence.
  */
 
 export default function DetectiveGame({ onBack, workoutMode = false }) {
@@ -30,6 +22,7 @@ export default function DetectiveGame({ onBack, workoutMode = false }) {
     <ModeShell
       storageKey="mm_reason_detective"
       scienceId="detective"
+      levelCount={6}
       title={{ en: 'Detective', ar: 'المحقّق' }}
       hints={{
         free: {
@@ -37,42 +30,32 @@ export default function DetectiveGame({ onBack, workoutMode = false }) {
           ar: 'فتّش المسرح · اكشف كلّ كذبة بالدليل الصحيح · ثبّت من وكيف ولماذا والإثبات',
         },
         levels: {
-          en: 'Collect evidence · confront suspects · accuse with the right proof',
-          ar: 'اجمع الأدلة · واجه المشتبهين · اتّهم بالإثبات الصحيح',
+          en: '18 authored assignments · tighter error budgets · master every warrant',
+          ar: '١٨ مهمّة مصمّمة · هامش أخطاء أضيق · أتقن كلّ مذكّرة',
         },
         pass: {
-          en: 'Same cases for all · most correct accusations wins',
-          ar: 'نفس القضايا للجميع · من يصيب أكثر يفوز',
+          en: 'Same case sequence for all · accuracy and speed earn case points',
+          ar: 'نفس تسلسل القضايا للجميع · الدقّة والسرعة تكسبان نقاط القضايا',
         },
       }}
       diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      pass={{ trials: 2, scoreLabel: { en: 'correct accusations', ar: 'اتهامات صحيحة' }, lowerBetter: false, diff: 'med' }}
+      pass={{ trials: 2, scoreLabel: { en: 'case points', ar: 'نقاط القضايا' }, lowerBetter: false, diff: 'med' }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
-      renderEngine={(p) => (p.mode === 'free' ? (
+      renderEngine={(p) => (
         <Suspense fallback={<div style={FALLBACK} />}>
-          <NoirSurvival
-            key={`noir-${p.seed}`}
-            seed={p.seed}
+          <NoirEngine
+            key={`noir-${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+            {...p}
             isAr={isAr}
             playSfx={playSfx}
             awardPoints={awardPoints}
             awardFreeRun={awardFreeRun}
-            onExit={p.onExit}
           />
         </Suspense>
-      ) : (
-        <CaseFileEngine
-          key={`cf-${p.mode}-${p.diff}-${p.level}-${p.seed}`}
-          {...p}
-          isAr={isAr}
-          playSfx={playSfx}
-          awardPoints={awardPoints}
-          awardFreeRun={awardFreeRun}
-        />
-      ))}
+      )}
     />
   );
 }

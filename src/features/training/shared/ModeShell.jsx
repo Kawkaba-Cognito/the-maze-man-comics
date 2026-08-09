@@ -99,6 +99,7 @@ export default function ModeShell({
 
   const goMenu = useCallback(() => { setPhase('menu'); setMode(null); setResult(null); setPpResults(null); }, []);
   const T = isAr ? title.ar : title.en;
+  const levelCountLabel = levelCount.toLocaleString(isAr ? 'ar-EG' : 'en-US');
 
   const onLevelResult = useCallback((res) => {
     if (res.won) {
@@ -207,7 +208,7 @@ export default function ModeShell({
       <TrainingDifficultySelect
         isAr={isAr} playSfx={playSfx} onBack={goMenu}
         title={isAr ? 'اختر الصعوبة' : 'Choose Difficulty'}
-        blurb={isAr ? `${T} · ٣ صعوبات · ١٠٠ مستوى لكل · افتح بالترتيب` : `${T} · 3 difficulties · 100 levels each · unlock in order`}
+        blurb={isAr ? `${T} · ٣ صعوبات · ${levelCountLabel} مستويات لكلّ منها · افتح بالترتيب` : `${T} · 3 difficulties · ${levelCountLabel} levels each · unlock in order`}
         diffKeys={DIFF_KEYS} dm={dm}
         onPick={(k) => { setDiff(k); setPhase('levels'); }}
       />
@@ -219,7 +220,7 @@ export default function ModeShell({
     return (
       <TrainingLevelGrid
         isAr={isAr} playSfx={playSfx} onBack={() => setPhase('diff')} title={`${dm[diff]?.label ?? ''}`}
-        blurb={isAr ? `${T} · ١٠٠ مستوى · افتح بالترتيب` : `${T} · 100 levels · unlock in order`}
+        blurb={isAr ? `${T} · ${levelCountLabel} مستويات · افتح بالترتيب` : `${T} · ${levelCountLabel} levels · unlock in order`}
         count={levelCount} isUnlocked={isUnlocked} isDone={isDone}
         sublabel={(lv) => `L${lv}`}
         onPick={(lv) => { setLevel(lv); setMode('levels'); setPhase('play'); }}

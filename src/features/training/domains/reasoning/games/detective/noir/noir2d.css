@@ -1,8 +1,6 @@
 .nr-stage--2d {
   --nr-paper: #dbe4ec;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.045), transparent 34%),
-    linear-gradient(180deg, #172130 0%, #111927 66%, #0d1420 100%);
+  background: #0b0c15;
 }
 
 .nr-stage--2d::before {
@@ -21,12 +19,23 @@
   inset: 0;
 }
 
-.nr-2d-room {
+.nr-2d-backdrop {
+  position: absolute;
+  inset: 0;
   z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.88) brightness(0.76) contrast(1.06);
+}
+
+.nr-2d-room {
+  z-index: 1;
   overflow: hidden;
   background:
-    repeating-linear-gradient(90deg, transparent 0 14%, rgba(208,224,238,0.035) 14% 14.25%),
-    linear-gradient(180deg, transparent 0 78%, #0a111c 78% 100%);
+    linear-gradient(180deg, rgba(3,4,9,0.02), transparent 54%, rgba(3,5,11,0.44)),
+    radial-gradient(ellipse at 50% 72%, transparent 34%, rgba(3,4,9,0.3));
 }
 
 .nr-2d-light {
@@ -34,7 +43,7 @@
   top: -18%;
   width: 28%;
   height: 104%;
-  opacity: 0.2;
+  opacity: 0.12;
   background: linear-gradient(180deg, rgba(238,220,172,0.7), transparent 86%);
   clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
 }

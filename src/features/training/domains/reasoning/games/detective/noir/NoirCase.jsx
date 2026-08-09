@@ -9,8 +9,10 @@ import Interrogation2D from './components/Interrogation2D';
 import EvidencePicker from './components/EvidencePicker';
 import AccusationBoard from './components/AccusationBoard';
 import Notebook from './components/Notebook';
+import { assetUrl } from '../../../../../../../lib/assetUrl';
 import { L, lieCount, accusationFault } from './schema';
 import { pickStrings, liesRemaining, formatTime } from './noirStrings';
+import { DETECTIVE_ASSETS } from './scenes';
 import './noir.css';
 
 /*
@@ -23,7 +25,8 @@ import './noir.css';
  * step forward without the view cutting between two scenes.
  */
 export default function NoirCase({
-  caseData, isAr, playSfx, caseNo, hudRight, onCaseDone, onExit,
+  caseData, isAr, playSfx, caseNo, hudRight, mission, completionLabel,
+  onCaseDone, onExit,
 }) {
   const t = pickStrings(isAr);
   const lieTotal = useMemo(() => lieCount(caseData), [caseData]);
@@ -43,6 +46,7 @@ export default function NoirCase({
   const [notebook, setNotebook] = useState(false);
   const [bigText, setBigText] = useState(null);
   const [hinted, setHinted] = useState(false);
+  const [instinctLeft, setInstinctLeft] = useState(mission?.instinctUses ?? 2);
   const [reaction, setReaction] = useState(null);
   const [stageArt, setStageArt] = useState('loading'); // loading | ready | failed
 
@@ -116,7 +120,9 @@ export default function NoirCase({
   };
 
   const useInstinct = () => {
+    if (instinctLeft <= 0) return;
     playSfx?.('click');
+    setInstinctLeft((n) => Math.max(0, n - 1));
     setHinted(true);
     later(() => setHinted(false), 2600);
   };
@@ -232,6 +238,11 @@ export default function NoirCase({
                 : phase === 'verdict' ? t.phaseClosed : ''}
         </span>
         <span className="nr-top-btns">
+          {mission && (
+            <span className={`nr-chip nr-budget${mistakes > mission.maxMistakes ? ' is-over' : ''}`}>
+              {t.errorBudget(mistakes, mission.maxMistakes)}
+            </span>
+          )}
           {hudRight}
           <button type="button" className="nr-chip" onClick={() => { playSfx?.('click'); setNotebook((v) => !v); }}>
             {t.notebook}
@@ -260,13 +271,23 @@ export default function NoirCase({
 
       <div className="nr-body">
         {phase === 'intro' && (
-          <div className="nr-center">
+          <div
+            className="nr-center nr-briefing"
+            style={{ '--nr-briefing-art': `url("${assetUrl(DETECTIVE_ASSETS.dossier)}")` }}
+          >
             <div className="nr-file">
+              {mission?.label && <div className="nr-mission-kicker">{mission.label}</div>}
               <h2>{L(caseData.title, isAr)}</h2>
               <div className="nr-rule" />
               <p>{L(caseData.stamp, isAr)}</p>
               <p>{L(caseData.setting, isAr)}</p>
               <p>{L(caseData.time, isAr)}</p>
+              {mission && (
+                <div className="nr-mission-brief">
+                  <span>{t.assignment}</span>
+                  <b>{t.missionRules(mission.maxMistakes, mission.instinctUses)}</b>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -281,9 +302,17 @@ export default function NoirCase({
               examined={examined}
               onExamine={examine}
             />
-            <div className="nr-scene-cap nr-mono">{L(caseData.time, isAr)}</div>
+            <div className="nr-scene-meta">
+              <div className="nr-scene-cap nr-mono">{L(caseData.time, isAr)}</div>
+              <div className="nr-evidence-progress" aria-label={t.clueProgress(found.length, clueIds.length)}>
+                <span style={{ width: `${(found.length / clueIds.length) * 100}%` }} />
+              </div>
+              <strong>{t.clueProgress(found.length, clueIds.length)}</strong>
+            </div>
             <div className="nr-bar">
-              <button type="button" className="nr-btn" onClick={useInstinct}>{t.instinct}</button>
+              <button type="button" className="nr-btn" onClick={useInstinct} disabled={instinctLeft <= 0}>
+                {t.instinctCount(instinctLeft)}
+              </button>
               <button
                 type="button"
                 className="nr-btn nr-btn--red"
@@ -469,9 +498,18 @@ export default function NoirCase({
               <button
                 type="button"
                 className="nr-btn nr-btn--big"
-                onClick={() => { playSfx?.('click'); onCaseDone?.({ win: true, mistakes }); }}
+                onClick={() => {
+                  playSfx?.('click');
+                  onCaseDone?.({
+                    win: true,
+                    mistakes,
+                    elapsedMs: Date.now() - startedAt.current,
+                    cluesFound: found.length,
+                    liesBroken: liesDone,
+                  });
+                }}
               >
-                {t.nextCase}
+                {completionLabel || t.nextCase}
               </button>
             </div>
           </div>

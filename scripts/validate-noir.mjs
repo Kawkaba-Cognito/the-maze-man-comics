@@ -10,6 +10,8 @@
  *   npm run validate:noir
  */
 import { createServer } from 'vite';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const server = await createServer({
   configFile: false,
@@ -20,7 +22,7 @@ const { NOIR_CASES } = await server.ssrLoadModule(
   '/src/features/training/domains/reasoning/games/detective/noir/cases/index.js',
 );
 const { CAST } = await server.ssrLoadModule('/src/features/training/shared/castRoster.js');
-const { SCENES } = await server.ssrLoadModule(
+const { SCENES, DETECTIVE_ASSETS } = await server.ssrLoadModule(
   '/src/features/training/domains/reasoning/games/detective/noir/scenes/index.js',
 );
 await server.close();
@@ -83,6 +85,10 @@ for (const c of NOIR_CASES) {
   if (!scene) {
     fail(c.id, 'no drawn scene — the room would fall back to an empty box');
   } else {
+    if (!scene.image) fail(c.id, 'scene has no premium image path');
+    else if (!existsSync(resolve(process.cwd(), 'public', scene.image))) {
+      fail(c.id, `premium scene image is missing: ${scene.image}`);
+    }
     for (const h of c.hotspots) {
       const a = scene.anchors[h.id];
       if (!a) fail(c.id, `hotspot "${h.id}" has no anchor in the drawn room`);
@@ -171,6 +177,12 @@ for (const c of NOIR_CASES) {
     checkBilingual(c.id, `clue ${id} name`, clue.name);
     checkBilingual(c.id, `clue ${id} desc`, clue.desc);
     checkBilingual(c.id, `clue ${id} narr`, clue.narr);
+  }
+}
+
+for (const [name, assetPath] of Object.entries(DETECTIVE_ASSETS || {})) {
+  if (!existsSync(resolve(process.cwd(), 'public', assetPath))) {
+    fail('shared-art', `${name} asset is missing: ${assetPath}`);
   }
 }
 

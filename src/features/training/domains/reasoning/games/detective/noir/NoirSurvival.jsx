@@ -56,10 +56,16 @@ export default function NoirSurvival({
     }
     let picked = pool.list[pool.idx];
     pool.idx += 1;
-    // With only a handful of cases per tier, avoid an immediate repeat.
-    if (picked.id === lastIdRef.current && pool.list.length > 1) {
-      picked = pool.list[pool.idx % pool.list.length];
-      pool.idx += 1;
+    // Each tier is a tightly authored chapter. If its chapter would repeat,
+    // preview an adjacent file instead of making the player solve the same
+    // mystery twice in a row; the target tier resumes on the next draw.
+    if (picked.id === lastIdRef.current && NOIR_CASES.length > 1) {
+      const alternatives = NOIR_CASES.filter((item) => item.id !== lastIdRef.current);
+      const targetTier = tierFor(solvedCount) + 1;
+      alternatives.sort((a, b) => Math.abs(a.tier - targetTier) - Math.abs(b.tier - targetTier));
+      const nearestDistance = Math.abs(alternatives[0].tier - targetTier);
+      const nearest = alternatives.filter((item) => Math.abs(item.tier - targetTier) === nearestDistance);
+      picked = nearest[Math.floor(rng() * nearest.length)];
     }
     lastIdRef.current = picked.id;
     return picked;

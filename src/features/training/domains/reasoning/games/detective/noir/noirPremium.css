@@ -252,10 +252,30 @@
 .nr-scene {
   width: min(1180px, 100%);
   max-height: calc(100svh - 178px);
+  aspect-ratio: 7 / 4;
   background: #0c1016;
-  border: 1px solid #333945;
-  border-radius: 10px;
-  box-shadow: 0 20px 56px rgba(0,0,0,0.42);
+  border: 1px solid color-mix(in srgb, var(--nr-amber2) 38%, transparent);
+  border-radius: 16px;
+  box-shadow:
+    0 24px 70px color-mix(in srgb, black 58%, transparent),
+    0 0 42px color-mix(in srgb, var(--nr-amber) 12%, transparent);
+}
+
+.nr-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--nr-bg) 4%, transparent), transparent 58%, color-mix(in srgb, var(--nr-bg) 22%, transparent)),
+    radial-gradient(ellipse at center, transparent 63%, color-mix(in srgb, var(--nr-bg) 32%, transparent));
+}
+
+.nr-scene-art {
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.98) contrast(1.03);
 }
 
 .nr-scene-cap {
@@ -265,6 +285,125 @@
 .nr-hs {
   width: 48px;
   height: 48px;
+  z-index: 3;
+  color: var(--nr-amber2);
+  background: radial-gradient(circle, color-mix(in srgb, var(--nr-bg) 90%, transparent) 28%, color-mix(in srgb, var(--nr-amber) 34%, transparent) 55%, transparent 73%);
+  filter: drop-shadow(0 5px 10px color-mix(in srgb, black 58%, transparent));
+}
+
+.nr-hs:focus-visible {
+  outline: 3px solid var(--nr-amber2);
+  outline-offset: 3px;
+}
+
+.nr-scene-meta {
+  width: min(720px, 100%);
+  display: grid;
+  grid-template-columns: auto minmax(90px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  color: var(--nr-dim);
+  font-size: 0.72rem;
+}
+
+.nr-scene-meta strong {
+  color: var(--nr-amber2);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.nr-evidence-progress {
+  height: 5px;
+  overflow: hidden;
+  background: var(--nr-line);
+  border-radius: 999px;
+}
+
+.nr-evidence-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--nr-red), var(--nr-amber2));
+  border-radius: inherit;
+  transition: width 300ms ease;
+}
+
+.nr-budget {
+  cursor: default;
+  color: var(--nr-amber2);
+}
+
+.nr-budget.is-over {
+  color: var(--nr-red2);
+  border-color: var(--nr-red);
+  background: color-mix(in srgb, var(--nr-red) 20%, var(--nr-panel));
+}
+
+/* The generated dossier is the briefing stage; the live card supplies all
+ * localized text and remains readable without baking words into the art. */
+.nr-briefing {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  background-image:
+    linear-gradient(90deg, color-mix(in srgb, var(--nr-bg) 28%, transparent), color-mix(in srgb, var(--nr-bg) 5%, transparent), color-mix(in srgb, var(--nr-bg) 28%, transparent)),
+    var(--nr-briefing-art);
+  background-position: center;
+  background-size: cover;
+}
+
+.nr-briefing::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(ellipse at center, transparent 40%, color-mix(in srgb, var(--nr-bg) 44%, transparent));
+}
+
+.nr-briefing .nr-file {
+  width: min(480px, calc(100% - 28px));
+  padding: 30px 34px;
+  background: color-mix(in srgb, var(--nr-paper) 96%, transparent);
+  box-shadow:
+    0 26px 80px color-mix(in srgb, black 70%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--nr-amber2) 40%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.nr-mission-kicker {
+  margin-bottom: 9px;
+  color: var(--nr-red);
+  font: 800 0.68rem/1.2 'DM Mono', monospace;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.nr-mission-brief {
+  display: grid;
+  gap: 5px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  color: color-mix(in srgb, var(--nr-bg) 74%, var(--nr-amber));
+  background: color-mix(in srgb, var(--nr-amber) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--nr-amber) 22%, transparent);
+  border-radius: 7px;
+  text-align: start;
+}
+
+.nr-mission-brief span {
+  color: var(--nr-amber);
+  font: 800 0.58rem/1.2 'DM Mono', monospace;
+  letter-spacing: 0.16em;
+}
+
+.nr-mission-brief b {
+  font: 650 0.8rem/1.5 'Outfit', sans-serif;
+}
+
+.nr[dir='rtl'] .nr-mission-kicker,
+.nr[dir='rtl'] .nr-mission-brief span,
+.nr[dir='rtl'] .nr-mission-brief b {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
 }
 
 /* Evidence, notebook and deduction use solid archival surfaces. */
@@ -433,9 +572,17 @@
 
   .nr-scene {
     max-height: calc(100svh - 190px);
-    aspect-ratio: 4 / 3;
-    border-radius: 7px;
+    aspect-ratio: 7 / 4;
+    border-radius: 11px;
   }
+
+  .nr-scene-meta {
+    grid-template-columns: 1fr auto;
+  }
+
+  .nr-scene-meta .nr-scene-cap { display: none; }
+
+  .nr-briefing .nr-file { padding: 24px 20px; }
 
   .nr-pick-grid {
     grid-template-columns: 1fr;
