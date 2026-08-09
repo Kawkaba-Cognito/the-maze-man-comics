@@ -1,0 +1,154 @@
+/*
+ * Task Switch — layout only. Every colour is a token from tokens.css except the
+ * two STIMULUS colours, which are set inline from GAME_STIMULUS because they
+ * are the task: the player answers about them, so they must be the CVD-safe
+ * Okabe-Ito pair the rest of the platform uses for stimuli, not a chrome hue.
+ */
+
+.ct-ts-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--play-surface);
+  color: var(--game-ink);
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+
+.ct-ts-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 3vh, 26px);
+  padding: 16px 18px calc(18px + env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+/* The cue is the instruction, so it gets the accent and never moves or resizes
+   between trials — a jumping cue would add a visual search to a task that is
+   supposed to measure only the rule change. */
+.ct-ts-cue {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 18px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--game-accent);
+  background: color-mix(in srgb, var(--game-accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--game-accent) 40%, transparent);
+}
+
+/* Fixed box so the stimulus appearing does not shift anything below it. */
+.ct-ts-stim {
+  width: clamp(110px, 30vw, 150px);
+  height: clamp(110px, 30vw, 150px);
+  display: grid;
+  place-items: center;
+}
+.ct-ts-shape {
+  width: 82%;
+  height: 82%;
+  border: 3px solid var(--game-ink);
+  box-shadow: 0 4px 0 var(--ink-outline);
+}
+.ct-ts-shape--circle { border-radius: 50%; }
+.ct-ts-shape--square { border-radius: 10px; }
+
+.ct-ts-verdict {
+  min-height: 22px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+}
+.ct-ts-verdict.is-ok { color: var(--game-ok-fill, #386544); }
+.ct-ts-verdict.is-bad,
+.ct-ts-verdict.is-slow { color: var(--game-bad-fill, #854c49); }
+
+.ct-ts-keys {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+}
+.ct-ts-key {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px;
+  border-radius: 14px;
+  border: 2px solid var(--game-ink);
+  background: var(--surface-raised);
+  color: var(--game-ink);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--ink-outline);
+  /* No transition on press: this game is scored in milliseconds and an
+     animated key would sit between the tap and the recorded response. */
+}
+.ct-ts-key:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--ink-outline); }
+.ct-ts-key small {
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+  font-weight: 600;
+}
+.ct-ts-key-face { display: flex; gap: 6px; }
+.ct-ts-chip {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--game-ink);
+}
+.ct-ts-chip--circle { border-radius: 50%; }
+.ct-ts-chip--square { border-radius: 4px; }
+
+.ct-ts-hint {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--ink-dim);
+}
+
+.ct-ts-over {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--fx-scrim);
+  padding: 18px;
+}
+.ct-ts-over-card {
+  width: min(94vw, 420px);
+  max-height: 88%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 22px;
+  border-radius: 20px;
+  border: 2px solid var(--game-ink);
+  background: var(--surface-raised);
+  box-shadow: 6px 6px 0 var(--ink-outline);
+  text-align: center;
+}
+.ct-ts-over-title { font-size: 1.35rem; font-weight: 800; }
+.ct-ts-over-note { margin: 0; font-size: 0.8rem; line-height: 1.5; color: var(--ink-dim); }
+.ct-ts-over-actions { display: flex; gap: 10px; width: 100%; }
+.ct-ts-over-actions .ct-fq-btn { flex: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-ts-key:active { transform: none; }
+}

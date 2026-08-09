@@ -58,13 +58,13 @@ export const GOAL_GAME_WEIGHTS = {
     memory: { 'memo-span': 2, 'story-grid': 1.5, nback: 1.5, 'paired-associates': 1.5 },
     language: { wordle: 2, synonyms: 1.8, trivia: 1.8 },
     reasoning: { 'rush-hour': 2, 'raven-matrices': 1.8, detective: 1.5 },
-    flexibility: { 'spatial-stroop': 2, wisconsin: 1.8, brixton: 1.8 },
+    flexibility: { 'spatial-stroop': 2, 'task-switch': 1.8, 'sort-shift': 1.8 },
   },
   focus: {
     attention: { 'cancel-task': 3, mot: 2.5, 'train-switch': 2 },
     speed: { 'speed-match': 1.5, 'trail-making': 1.2 },
     memory: { nback: 1.2, 'memo-span': 1 },
-    flexibility: { 'spatial-stroop': 1.5, wisconsin: 1.2 },
+    flexibility: { 'spatial-stroop': 1.5, 'task-switch': 1.2 },
   },
   memory: {
     memory: { 'memo-span': 3, 'story-grid': 2.5, 'paired-associates': 2, nback: 2 },
@@ -73,7 +73,7 @@ export const GOAL_GAME_WEIGHTS = {
   },
   speed: {
     speed: { 'speed-match': 3, 'trail-making': 2.5, 'math-gates': 2 },
-    flexibility: { 'spatial-stroop': 2, wisconsin: 1.5 },
+    flexibility: { 'spatial-stroop': 2, 'task-switch': 1.5 },
     attention: { 'cancel-task': 1.5, mot: 1.2 },
   },
   solver: {

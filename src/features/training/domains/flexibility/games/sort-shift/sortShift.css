@@ -1,0 +1,184 @@
+/*
+ * Sort It Another Way — layout only. Colours come from tokens.css, except the
+ * two card hues, which are set inline from GAME_STIMULUS: colour is one of the
+ * rules the player sorts by, so it is a stimulus, not chrome.
+ */
+
+.ct-ss-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--play-surface);
+  color: var(--game-ink);
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+
+.ct-ss-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 2.4vh, 18px);
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+.ct-ss-msg {
+  min-height: 40px;
+  max-width: 44ch;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--ink-dim);
+}
+.ct-ss-msg.is-good { color: var(--game-ok-fill, #386544); }
+.ct-ss-msg.is-bad { color: var(--game-bad-fill, #854c49); }
+
+/* Two columns of three on a phone, three of two once there is room — the deck
+   should read as one block of six, never as a ragged list. */
+.ct-ss-deck {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  max-width: 460px;
+}
+@media (min-width: 520px), (min-height: 720px) {
+  .ct-ss-deck { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.ct-ss-card {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 14px;
+  border: 2px solid var(--game-ink);
+  background: var(--surface-raised);
+  color: var(--game-ink);
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--ink-outline);
+}
+.ct-ss-card.is-picked {
+  background: color-mix(in srgb, var(--game-accent) 18%, var(--surface-raised));
+  box-shadow: 0 2px 0 var(--ink-outline);
+  transform: translateY(2px);
+}
+.ct-ss-card:disabled { opacity: 0.5; }
+
+.ct-ss-glyph {
+  width: 40%;
+  aspect-ratio: 1;
+  border: 2px solid var(--game-ink);
+}
+.ct-ss-glyph--circle { border-radius: 50%; }
+.ct-ss-glyph--square { border-radius: 6px; }
+
+.ct-ss-word {
+  text-align: center;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+/* The order pip: which of the three this was. It matters because the player is
+   building a group, not ticking checkboxes. */
+.ct-ss-pip {
+  position: absolute;
+  top: 6px;
+  inset-inline-end: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  background: var(--game-accent);
+  color: var(--game-selected);
+  border: 2px solid var(--game-ink);
+}
+
+.ct-ss-rules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  width: 100%;
+  max-width: 460px;
+}
+.ct-ss-rule {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px dashed var(--line);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-dim);
+}
+.ct-ss-rule.is-found {
+  border-style: solid;
+  border-color: var(--game-ok-fill, #386544);
+  color: var(--game-ok-fill, #386544);
+}
+.ct-ss-rule.is-missed {
+  border-style: solid;
+  border-color: var(--game-bad-fill, #854c49);
+  color: var(--game-bad-fill, #854c49);
+}
+.ct-ss-missed {
+  margin-inline-start: 6px;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.ct-ss-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 460px;
+}
+.ct-ss-actions .ct-fq-btn { flex: 1; }
+
+.ct-ss-over {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--fx-scrim);
+  padding: 18px;
+}
+.ct-ss-over-card {
+  width: min(94vw, 420px);
+  max-height: 88%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 22px;
+  border-radius: 20px;
+  border: 2px solid var(--game-ink);
+  background: var(--surface-raised);
+  box-shadow: 6px 6px 0 var(--ink-outline);
+  text-align: center;
+}
+.ct-ss-over-title { font-size: 1.35rem; font-weight: 800; }
+.ct-ss-over-actions { display: flex; gap: 10px; width: 100%; }
+.ct-ss-over-actions .ct-fq-btn { flex: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-ss-card.is-picked { transform: none; }
+}

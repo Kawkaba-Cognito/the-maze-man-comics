@@ -161,7 +161,7 @@ src/
 ### Training feature (`src/features/training/`)
 
 - **`registry.js`** — the spine: imports every `domains/<domain>/domain.config.js`. **Adding a game = one wiring spot**: add a sub with `gameKey` + `loader: () => import('./games/foo')` to the domain config; `lazyGames.js` auto-builds the lazy component map from the registry. (Optionally wire `rating.js`/trialLog for stats — newer games aren't all instrumented yet.)
-- **Domains & live games** (per domain.config.js): attention `cancel-task, mot, train-switch` · speed `speed-match, math-gates, trail-making` · memory `memo-span, story-grid, nback, paired-associates` · language `wordle, synonyms, trivia` · reasoning `rush-hour, raven-matrices, detective` · flexibility `spatial-stroop, wisconsin, brixton`.
+- **Domains & live games** (per domain.config.js): attention `cancel-task, mot, train-switch` · speed `speed-match, math-gates, trail-making` · memory `memo-span, story-grid, nback, paired-associates` · language `wordle, synonyms, trivia` · reasoning `rush-hour, raven-matrices, detective` · flexibility `spatial-stroop, task-switch, sort-shift`.
 - **`shared/`** — use these, never paste local copies:
   - `ModeShell.jsx` — the standard game flow (menu → Survival / Levels / Pass n Play), tutorial + progress persistence. All newer games are built on it.
   - `trainingStrings.js` — `STR_COMMON.en/.ar`, 43 platform-standard labels (pause/quit, mode names, Pass n Play). Games spread it **first** in their `UI` dict; a local key after the spread is a deliberate override. Wording fixes go here, once.
@@ -171,6 +171,8 @@ src/
 - **Two game generations coexist**: pre-ModeShell monoliths that run their own mode state machines (cancellation ~1.9k lines, rush-hour, speed-match — they also embed assessment batteries), and ModeShell games (3–8× smaller). **Copy a ModeShell game** (e.g. `math-gates`, `detective`) for new work, not a monolith.
 
 ### Benched games (complete but unreachable — see BENCHED.md in each)
+
+`flexibility/games/wisconsin` (Card Sort, WCST) and `flexibility/games/brixton` (Kawkab Hops, Brixton) were benched 2026-08-09 and replaced by `task-switch` + `sort-shift`. Neither was badly built; the domain was running the SAME LOOP twice — infer a hidden rule from sparse feedback, then notice it silently changed — and that loop punishes the player for the trial after a switch that is unguessable by design. Their BENCHED.md files carry the reasoning and, for Brixton, the measured 8% of top-tier rounds unsolvable at any demo length.
 
 `language/games/odd-one-out` — its game component is unreachable, but **its `data.js` is a live dependency** of Word Links (`synonyms` imports `CATEGORIES` from it), so don't delete the folder. `memory/games/memo-span` is also unregistered but deliberately kept for possible re-enable. Flip, Piano Tap, and Colour Sort (tower-hanoi) were retired and deleted 2026-07-16 (recoverable from git history).
 
@@ -189,7 +191,11 @@ Everything is localStorage, keys prefixed `mm_*` and versioned (`mm_wordle_profi
 
 ## Validation scripts
 
-`npm run validate:puzzles` · `npm run validate:rh` (rush-hour reference solutions; `--full` for the hard ref puzzle) · `npm run audit:fq` (cancellation level curriculum **and** a zero-ink guard on every `SH` silhouette) · `npm run audit:mot` (Target Tracking difficulty curve) · `npm run lint`. Run the relevant one after touching generators or level data.
+`npm run validate:puzzles` · `npm run validate:rh` (rush-hour reference solutions; `--full` for the hard ref puzzle) · `npm run audit:fq` (cancellation level curriculum **and** a zero-ink guard on every `SH` silhouette) · `npm run audit:mot` (Target Tracking difficulty curve) · `npm run validate:noir` (Detective case wiring) · `npm run validate:wheel` (The Wheel's three content banks) · `npm run validate:sort` (Sort It Another Way's card sets) · `npm run lint`. Run the relevant one after touching generators, level data or content banks.
+
+**A gate that checks the SHAPE of a curve can certify a game nobody can play** (2026-08-09). `audit:fq` asserted "targets non-decreasing, time non-increasing" for months. Those two together *force* seconds-per-target to collapse, and it did: Cancellation's hard tier granted 11s for 26 targets that take 44.5s at the game's own documented search model. Medium went impossible from L52, Hard from L33, and Survival — one life — walled every player at round 8. The audit passed the whole time, because it validated the curve's shape and never asked whether a human could finish the board. It now asserts feasibility (time >= the expert model) and that TIME PER TARGET falls, which is what difficulty actually is. Same family as the audit:mot lesson: **assert the outcome, not the parameters**.
+
+**Content banks need their own gate, because "no repeats" and "the facts are right" are not human-checkable at scale.** `validate:wheel` caught three ranked puzzles that were duplicates in disguise (two prompts over the same five mountains, the same five heart rates, the same five frequencies) — a prompt-keyed no-repeat draw cannot see those, so it compares ITEM SETS — plus ~20 higher/lower pairs too close to call. `validate:sort` enumerates all ten possible 3-3 splits of six cards for every set, which makes "a player finds a correct grouping the author never listed" impossible by construction rather than by care.
 
 **`npm run audit:mot` checks the RENDER, not just the config, and that distinction is the whole point** (2026-08-08). Target Tracking's tiers were authored independently, so starting Hard was easier than finishing Medium on three of four levers. Worse, `startRound()` rescales the object count to preserve density across devices, and on a wide screen that multiplied it by 3.1× straight into the clamp — so nearly every level rendered an identical swarm and density, the model's primary lever, had stopped grading at all. The first version of this audit **passed while the game was broken**, because it validated the authored numbers. It now simulates the density rescale on four device shapes. If you add a gate to any game, make it assert what reaches the screen.
 

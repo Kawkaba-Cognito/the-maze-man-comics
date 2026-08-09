@@ -16,9 +16,7 @@ export const TRAINING_META = {
   detective: { name: 'Detective', nameAr: 'المحقّق' },
   'rush-hour': { name: 'Block Escape', nameAr: 'هروب القطع' },
   'raven-matrices': { name: 'Matrix Reasoning', nameAr: 'استدلال المصفوفات' },
-  'spatial-stroop': { name: 'Arrow Rush', nameAr: 'اندفاع الأسهم' },
-  wisconsin: { name: 'Card Sort', nameAr: 'فرز البطاقات' },
-  brixton: { name: 'Kawkab Hops', nameAr: 'قفزات كوكب' },
+  'spatial-stroop': { name: 'Arrow Rush', nameAr: 'اندفاع الأسهم' },  'task-switch': { name: 'Task Switch', nameAr: 'تبديل المهمة' },  'sort-shift': { name: 'Sort It Another Way', nameAr: 'رتّبها بطريقة أخرى' },
   'math-gates': { name: 'Math Gates', nameAr: 'بوابات الحساب' },
 };
 

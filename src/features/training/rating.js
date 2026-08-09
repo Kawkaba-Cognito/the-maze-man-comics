@@ -39,9 +39,7 @@ export const RATED_GAMES = {
   rush: { gameKey: 'rush-hour', domainId: 'reasoning', lHalf: 7, en: 'Block Escape', ar: 'هروب القطع' },
   raven: { gameKey: 'raven-matrices', domainId: 'reasoning', lHalf: 6, en: 'Matrix IQ', ar: 'مصفوفات الذكاء' },
   detective: { gameKey: 'detective', domainId: 'reasoning', lHalf: 6, en: 'Detective', ar: 'المحقّق' },
-  stroop: { gameKey: 'spatial-stroop', domainId: 'flexibility', lHalf: 7, en: 'Arrow Rush', ar: 'تبديل الأسهم' },
-  wisconsin: { gameKey: 'wisconsin', domainId: 'flexibility', lHalf: 6, en: 'Card Sort', ar: 'فرز البطاقات' },
-  brixton: { gameKey: 'brixton', domainId: 'flexibility', lHalf: 6, en: 'Kawkab Hops', ar: 'قفزات كوكب' },
+  stroop: { gameKey: 'spatial-stroop', domainId: 'flexibility', lHalf: 7, en: 'Arrow Rush', ar: 'تبديل الأسهم' },  'task-switch': { gameKey: 'task-switch', domainId: 'flexibility', lHalf: 6, en: 'Task Switch', ar: 'تبديل المهمة' },  'sort-shift': { gameKey: 'sort-shift', domainId: 'flexibility', lHalf: 6, en: 'Sort It Another Way', ar: 'رتّبها بطريقة أخرى' },
 };
 const BY_GAMEKEY = Object.fromEntries(Object.entries(RATED_GAMES).map(([k, v]) => [v.gameKey, k]));
 

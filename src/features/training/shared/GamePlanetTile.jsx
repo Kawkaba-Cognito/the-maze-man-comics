@@ -24,7 +24,7 @@ const COVER_KEYS = new Set([
   'story-grid', 'nback', 'paired-associates',
   'wordle', 'synonyms', 'trivia',
   'rush-hour', 'raven-matrices', 'detective',
-  'spatial-stroop', 'wisconsin', 'brixton',
+  'spatial-stroop', 'task-switch', 'sort-shift',
 ]);
 
 const COVER_FILE_OVERRIDES = {
@@ -44,8 +44,11 @@ const COVER_FILE_OVERRIDES = {
   'raven-matrices': 'reasoning-matrix-iq-v2.webp',
   detective: 'reasoning-detective-v2.webp',
   'spatial-stroop': 'flexibility-arrow-rush-v2.webp',
-  wisconsin: 'flexibility-card-sort-v2.webp',
-  brixton: 'flexibility-kawkab-hops-v2.webp',
+  /* The retired games' planets, reused: the tile is a domain-coloured planet
+     rather than a picture of the mechanic, so it still reads correctly. Swap
+     when bespoke art exists. */
+  'task-switch': 'flexibility-card-sort-v2.webp',
+  'sort-shift': 'flexibility-kawkab-hops-v2.webp',
 };
 
 const ILLUSTRATION = Object.fromEntries(

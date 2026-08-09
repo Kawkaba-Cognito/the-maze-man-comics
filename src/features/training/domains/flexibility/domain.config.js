@@ -22,30 +22,46 @@ const flexibility = {
       tier: 'free',
       loader: () => import('./games/spatial-stroop'),
     },
-    // Card Sort (WCST) + Kawkab Hops (Brixton) — replaced Flip + Piano Tap (2026-07-02).
+    /*
+     * Task Switch + Sort It Another Way replaced Card Sort (WCST) and Kawkab
+     * Hops (Brixton) on 2026-08-09.
+     *
+     * Not because either was badly built — both were faithful implementations
+     * of real instruments. Because they were the SAME LOOP: infer a hidden rule
+     * from sparse feedback, then notice it silently changed. Two thirds of a
+     * three-game domain ran that loop, and the loop is inherently punishing —
+     * the trial right after a silent switch is unguessable by design, so a
+     * player doing everything right is still told they are wrong.
+     *
+     * The replacements split the construct instead of serving half of it twice:
+     * Task Switch is EXPLICIT shifting (the rule is always stated, you pay in
+     * milliseconds), Sort It Another Way is GENERATIVE (you produce the rules
+     * yourself). Neither can punish a player for failing to read the game's
+     * mind. Both retired games are benched, not deleted — see BENCHED.md.
+     */
     {
-      id: 'wisconsin',
-      name: 'Card Sort',
-      nameAr: 'فرز البطاقات',
-      blurb: 'Match the card — colour, shape, or number? Figure out the hidden rule.',
-      blurbAr: 'طابق البطاقة — لون أم شكل أم عدد؟ اكتشف القاعدة الخفية.',
+      id: 'task-switch',
+      name: 'Task Switch',
+      nameAr: 'تبديل المهمة',
+      blurb: 'Answer the colour, then the shape — the keys never move, only the rule.',
+      blurbAr: 'أجب عن اللون ثم الشكل — المفتاحان ثابتان والقاعدة وحدها تتغيّر.',
       gameCount: 1,
       progress: 0,
-      gameKey: 'wisconsin',
+      gameKey: 'task-switch',
       tier: 'free',
-      loader: () => import('./games/wisconsin'),
+      loader: () => import('./games/task-switch'),
     },
     {
-      id: 'brixton',
-      name: 'Kawkab Hops',
-      nameAr: 'قفزات كوكب',
-      blurb: 'Watch Kawkab hop a pattern, then continue it — the rule keeps changing.',
-      blurbAr: 'راقب قفزات كوكب ثم أكمل النمط — والقاعدة تتغيّر باستمرار.',
+      id: 'sort-shift',
+      name: 'Sort It Another Way',
+      nameAr: 'رتّبها بطريقة أخرى',
+      blurb: 'Split six cards into two groups — then find a completely different way.',
+      blurbAr: 'قسّم ست بطاقات إلى مجموعتين — ثم جد طريقة مختلفة تماماً.',
       gameCount: 1,
       progress: 0,
-      gameKey: 'brixton',
+      gameKey: 'sort-shift',
       tier: 'free',
-      loader: () => import('./games/brixton'),
+      loader: () => import('./games/sort-shift'),
     },
   ],
 };
