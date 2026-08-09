@@ -47,6 +47,7 @@ const GAME_ART = {
   wavelength: 'Assets/puzzle-studio/game-art-2026/wavelength.webp',
   gettoknow: 'Assets/puzzle-studio/game-art-2026/gettoknow.webp',
   groupwar: 'Assets/puzzle-studio/game-art-2026/groupwar.webp',
+  thewheel: 'Assets/puzzle-studio/game-art-2026/thewheel.webp',
 };
 
 function StudioAtmosphere() {

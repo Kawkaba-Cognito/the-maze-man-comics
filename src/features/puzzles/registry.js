@@ -238,7 +238,20 @@ const groupwar = {
   loader: () => import('./games/groupwar'),
 };
 
-export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, bridges, sudoku, kenken, nonogram, kakuro, crowns, blockburst, flow, tangram, imposter, charades, describeit, wavelength, gettoknow, groupwar];
+const thewheel = {
+  id: 'thewheel',
+  gameKey: 'thewheel',
+  name: 'The Wheel',
+  nameAr: 'العجلة',
+  icon: '🎡',
+  desc: 'Three games, one scoreboard — anchor, gamble, then put five cards in order.',
+  descAr: 'ثلاث ألعاب ولوحة نتائج واحدة — خمّن، وخاطر، ثم رتّب خمس بطاقات.',
+  accent: '#b9842f',
+  sizes: [],
+  loader: () => import('./games/thewheel'),
+};
+
+export const PUZZLE_CONFIGS = [sliding, takuzu, hitori, bridges, sudoku, kenken, nonogram, kakuro, crowns, blockburst, flow, tangram, imposter, charades, describeit, wavelength, gettoknow, groupwar, thewheel];
 
 // ── Categories: every puzzle belongs to exactly one, by core mechanic. ──
 const CATEGORY_OF = {
@@ -246,6 +259,7 @@ const CATEGORY_OF = {
   takuzu: 'logic', hitori: 'logic', crowns: 'logic', bridges: 'logic',
   sliding: 'spatial', blockburst: 'spatial', flow: 'spatial', tangram: 'spatial',
   imposter: 'group', charades: 'group', describeit: 'group', wavelength: 'group', gettoknow: 'group', groupwar: 'group',
+  thewheel: 'group',
 };
 PUZZLE_CONFIGS.forEach((p) => { p.category = CATEGORY_OF[p.id] || 'logic'; });
 

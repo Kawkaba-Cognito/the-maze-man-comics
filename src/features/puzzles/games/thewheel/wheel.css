@@ -1,0 +1,174 @@
+/*
+ * THE WHEEL — the few things GroupShell does not already provide.
+ *
+ * Everything structural (root, header, buttons, cards, player setup) comes from
+ * group-challenge.css so this game sits in the app rather than beside it. What
+ * is here is only what is genuinely specific: the wheel itself, the scoreboard,
+ * the slider, and Dr Kawkab's speech bubble.
+ */
+
+/*
+ * ── Filling the centred column ───────────────────────────────────────────
+ *
+ * GroupShell's body is a flex COLUMN, and on every play phase this game passes
+ * `center`, which sets `align-items: center`. That is the kit's convention (all
+ * the party games do it) and it is what stops a 360px-capped button drifting to
+ * the left edge of a 480px column on desktop — but it also means any block
+ * child now shrinks to its content instead of filling the width, because
+ * `stretch` is no longer in play.
+ *
+ * So every block this game owns states its own width. 420px keeps them just
+ * inside the 480px column with the body's own 20px padding, so the game reads
+ * as one tidy centred strip at any window size rather than a stack of
+ * differently-sized cards.
+ */
+.tw-board, .tw-host, .tw-runbar, .tw-dirs, .tw-cards, .tw-reveal,
+.tw-fact, .tw-verdict, .tw-points, .tw-fact-card, .tw-msg, .tw-slider,
+.tw-caps, .tw-row, .tw-said, .tw-bigval {
+  width: 100%;
+  max-width: 420px;
+  align-self: center;
+}
+
+/* The kit's own .gc-card and .gc-btn-col declare no width, so in a centred
+   column each one shrinks to whatever text it happens to hold — a stack of
+   cards of five different widths. (Imposter works around this with an inline
+   style on the one card it uses; this game has a list of them, so it needs a
+   class.) */
+.tw-block { width: 100%; max-width: 420px; align-self: center; }
+
+/* Text that must stay ragged-start even while the column is centred: a list of
+   ordered cards reads as a list, not as poetry. */
+.tw-card, .tw-row { text-align: start; }
+.tw-row > span:first-child { text-align: center; }
+.tw-block .gc-label, .tw-block .gc-how-text { text-align: start; }
+
+/* ── Scoreboard ─────────────────────────────────────────────────────────── */
+.tw-board { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 14px; }
+.tw-team {
+  flex: 1 1 130px; max-width: 190px;
+  border: 2px solid var(--tw-team, #d46a6a); border-radius: 12px;
+  background: #fffdf8; padding: 8px 10px; text-align: center;
+  opacity: 0.55; transition: opacity 160ms ease, transform 160ms ease;
+}
+.tw-team.is-turn { opacity: 1; transform: translateY(-2px); box-shadow: 0 4px 0 rgba(45, 34, 16, 0.1); }
+.tw-team-name { font-size: 0.66rem; letter-spacing: 0.14em; font-weight: 700; color: #8a7f6f; }
+.tw-team-score { font-size: 1.5rem; font-weight: 800; line-height: 1.1; color: #2d2210; }
+.tw-team-sub { font-size: 0.6rem; letter-spacing: 0.08em; color: #b3a288; }
+
+/* ── The wheel ──────────────────────────────────────────────────────────── */
+.tw-wheelwrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.tw-wheelbox { position: relative; padding-top: 20px; }
+.tw-pointer {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%); transform-origin: 50% 0; z-index: 3;
+  border-left: 13px solid transparent; border-right: 13px solid transparent; border-top: 24px solid #b9842f;
+  filter: drop-shadow(0 2px 0 rgba(45, 34, 16, 0.35));
+}
+.tw-pointer.is-flap { animation: twFlap 160ms ease-out; }
+@keyframes twFlap { 40% { transform: translateX(-50%) rotate(-16deg); } 100% { transform: translateX(-50%) rotate(0); } }
+
+.tw-wheel-outer { position: relative; width: min(300px, 74vw); height: min(300px, 74vw); }
+.tw-wheel {
+  position: absolute; inset: 0; border-radius: 50%; border: 3px solid #2d2210;
+  /* Two-tone segments so the twelve stops read at a glance. The conic gradient
+     is painted once; only `transform` changes while spinning, so the spin stays
+     on the compositor and never repaints the gradient. */
+  background: conic-gradient(
+    #2d2210 0 30deg, #4a6fa5 30deg 60deg, #2d2210 60deg 90deg, #4a6fa5 90deg 120deg,
+    #2d2210 120deg 150deg, #4a6fa5 150deg 180deg, #2d2210 180deg 210deg, #4a6fa5 210deg 240deg,
+    #2d2210 240deg 270deg, #4a6fa5 270deg 300deg, #2d2210 300deg 330deg, #4a6fa5 330deg 360deg);
+  box-shadow: 0 6px 0 rgba(45, 34, 16, 0.12);
+  will-change: transform;
+}
+.tw-wheel::after {
+  content: ''; position: absolute; top: 50%; left: 50%; width: 44px; height: 44px;
+  transform: translate(-50%, -50%); background: #fffdf8; border: 3px solid #2d2210; border-radius: 50%;
+}
+.tw-seg { position: absolute; inset: 0; display: flex; justify-content: center; pointer-events: none; }
+.tw-seg b {
+  margin-top: 10px; font-size: clamp(11px, 3vw, 15px); font-weight: 700; color: #fffdf8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+.tw-said { text-align: center; min-height: 62px; font-size: 0.68rem; letter-spacing: 0.14em; color: #8a7f6f; }
+.tw-said b { display: block; font-size: 2.6rem; font-weight: 800; color: #2d2210; line-height: 1.1; }
+
+/* ── Estimate slider ────────────────────────────────────────────────────── */
+.tw-bigval { text-align: center; font-size: 2.6rem; font-weight: 800; line-height: 1.1; margin: 6px 0 10px; }
+.tw-bigval small { font-size: 0.4em; color: #8a7f6f; font-weight: 600; }
+.tw-slider { width: 100%; appearance: none; -webkit-appearance: none; height: 4px; background: #e3d6c4; border-radius: 2px; outline: none; }
+.tw-slider::-webkit-slider-thumb {
+  appearance: none; -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%;
+  background: #fffdf8; border: 3px solid #2d2210; cursor: grab;
+}
+.tw-slider::-moz-range-thumb { width: 30px; height: 30px; border-radius: 50%; background: #fffdf8; border: 3px solid #2d2210; }
+.tw-caps { display: flex; justify-content: space-between; font-size: 0.62rem; letter-spacing: 0.06em; color: #b3a288; margin-top: 6px; }
+
+/* ── Reveal ─────────────────────────────────────────────────────────────── */
+.tw-reveal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+.tw-rv { border: 2px solid #e3d6c4; border-radius: 10px; background: #fffdf8; padding: 10px 6px; text-align: center; }
+.tw-rv span { display: block; font-size: 0.56rem; letter-spacing: 0.12em; color: #b3a288; margin-bottom: 4px; }
+.tw-rv b { font-size: 1.3rem; font-weight: 800; }
+.tw-rv.is-truth { background: #2d2210; border-color: #2d2210; }
+.tw-rv.is-truth span { color: #b3a288; }
+.tw-rv.is-truth b { color: #e8c07a; }
+.tw-fact { border-inline-start: 4px solid #b9842f; background: rgba(185, 132, 47, 0.1); padding: 10px 12px; border-radius: 0 8px 8px 0; font-size: 0.9rem; margin: 10px 0; }
+.tw-verdict { border: 2px solid #e3d6c4; border-radius: 8px; padding: 10px 12px; font-size: 0.75rem; letter-spacing: 0.05em; font-weight: 700; }
+.tw-verdict.is-bull { border-color: #1d8a52; color: #1d8a52; }
+.tw-verdict.is-resisted { border-color: #4a6fa5; color: #4a6fa5; }
+.tw-verdict.is-pulled { border-color: #c45c26; color: #c45c26; }
+.tw-points { text-align: center; background: #2d2210; color: #fffdf8; border-radius: 8px; padding: 10px; font-size: 0.75rem; letter-spacing: 0.05em; margin-top: 10px; }
+.tw-points b { color: #e8c07a; }
+
+/* ── Streak ─────────────────────────────────────────────────────────────── */
+.tw-runbar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 12px 0; }
+.tw-runstat { border: 2px solid #e3d6c4; border-radius: 8px; background: #fffdf8; padding: 6px 4px; text-align: center; }
+.tw-runstat span { display: block; font-size: 0.52rem; letter-spacing: 0.1em; color: #b3a288; }
+.tw-runstat b { font-size: 1.2rem; font-weight: 800; }
+.tw-fact-card { border: 2px solid #2d2210; border-radius: 12px; background: #fffdf8; text-align: center; padding: 18px 12px; margin: 12px 0; }
+.tw-fact-card span { display: block; font-size: 0.68rem; letter-spacing: 0.12em; color: #8a7f6f; margin-bottom: 6px; }
+.tw-fact-card b { font-size: clamp(1.8rem, 8vw, 2.6rem); font-weight: 800; line-height: 1; }
+.tw-msg { text-align: center; font-size: 0.72rem; letter-spacing: 0.08em; font-weight: 700; min-height: 20px; margin-bottom: 10px; color: #8a7f6f; }
+.tw-msg.is-good { color: #1d8a52; }
+.tw-msg.is-bad { color: #c45c26; }
+.tw-dirs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+@media (max-width: 420px) { .tw-dirs { grid-template-columns: 1fr 1fr; } .tw-dirs .tw-bank { grid-column: 1 / -1; order: 3; } }
+
+/* ── Ranked ─────────────────────────────────────────────────────────────── */
+.tw-cards { display: grid; gap: 8px; margin: 12px 0; }
+.tw-card {
+  position: relative; border: 2px solid #e3d6c4; border-radius: 10px; background: #fffdf8;
+  padding: 13px 14px 13px 46px; text-align: start; font-size: 1rem; font-weight: 600; cursor: pointer;
+  min-height: 52px; width: 100%; color: inherit; font-family: inherit;
+}
+.tw-card.is-picked { background: #2d2210; color: #fffdf8; border-color: #2d2210; }
+.tw-card .tw-badge {
+  position: absolute; inset-inline-start: 10px; top: 50%; transform: translateY(-50%);
+  width: 26px; height: 26px; border-radius: 50%; background: #4a6fa5; color: #fff;
+  display: grid; place-items: center; font-size: 0.75rem; font-weight: 700;
+}
+.tw-row { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: center; border-bottom: 1px dashed #e3d6c4; padding: 8px 2px; font-size: 0.88rem; }
+.tw-row .tw-pos { font-weight: 800; color: #4a6fa5; }
+.tw-row .tw-val { font-size: 0.72rem; color: #b3a288; }
+.tw-row .tw-ok { font-size: 0.62rem; font-weight: 700; color: #1d8a52; }
+.tw-row .tw-no { font-size: 0.62rem; font-weight: 700; color: #c45c26; }
+
+/* ── Dr Kawkab ──────────────────────────────────────────────────────────── */
+.tw-host { display: flex; align-items: flex-end; gap: 10px; margin: 10px 0 14px; }
+.tw-host-sprite { flex: 0 0 auto; animation: twBob 3.4s ease-in-out infinite; }
+.tw-host.is-cheer .tw-host-sprite { animation: twCheer 460ms cubic-bezier(0.2, 1.5, 0.4, 1) 3; }
+.tw-host.is-shake .tw-host-sprite { animation: twShake 140ms linear 5; }
+.tw-bubble {
+  flex: 1 1 auto; background: #fffdf8; border: 2px solid #e3d6c4; border-radius: 12px;
+  padding: 9px 12px; font-size: 0.86rem; line-height: 1.45; position: relative;
+}
+.tw-bubble b { display: block; font-size: 0.56rem; letter-spacing: 0.16em; color: #b9842f; margin-bottom: 3px; }
+@keyframes twBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes twCheer { 50% { transform: translateY(-14px) scale(1.04); } }
+@keyframes twShake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+/* One switch for every decorative motion in the game. */
+@media (prefers-reduced-motion: reduce) {
+  .tw-host-sprite, .tw-host.is-cheer .tw-host-sprite, .tw-host.is-shake .tw-host-sprite { animation: none; }
+  .tw-pointer.is-flap { animation: none; }
+  .tw-team { transition: none; }
+}
