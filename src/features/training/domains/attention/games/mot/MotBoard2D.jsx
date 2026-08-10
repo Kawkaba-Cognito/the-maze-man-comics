@@ -43,7 +43,7 @@ function stateOf(d, phase) {
   return 'idle';
 }
 
-export default function MotBoard2D({ dotsRef, fieldRef, phaseRef, interactive, onPickDot, isAr }) {
+export default function MotBoard2D({ dotsRef, fieldRef, phaseRef, phase, interactive, onPickDot, isAr }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const rafRef = useRef(0);
@@ -142,13 +142,41 @@ export default function MotBoard2D({ dotsRef, fieldRef, phaseRef, interactive, o
     };
   }, [dotsRef, fieldRef, phaseRef]);
 
+  const dots = Array.isArray(dotsRef.current) ? dotsRef.current : [];
+  const targetIds = dots.flatMap((dot, index) => (dot.target ? [index + 1] : []));
+  const status = phase === 'cue'
+    ? (isAr ? `احفظ الأهداف: الأجسام ${targetIds.join('، ')}` : `Remember targets: objects ${targetIds.join(', ')}`)
+    : phase === 'track'
+      ? (isAr ? 'تتبّع الأهداف أثناء حركتها' : 'Track the target objects while they move')
+      : phase === 'respond'
+        ? (isAr ? 'اختر الأجسام التي كانت أهدافاً' : 'Select the objects that were targets')
+        : (isAr ? 'نتيجة الجولة' : 'Round result');
+
   return (
     <div
       ref={wrapRef}
       style={{ position: 'absolute', inset: 0 }}
-      aria-hidden={isAr ? undefined : true}
+      role="group"
+      aria-label={isAr ? 'ساحة تتبّع الأهداف' : 'Target tracking arena'}
     >
-      <canvas ref={canvasRef} style={{ display: 'block', touchAction: 'none' }} />
+      <p className="ct-visually-hidden" aria-live="polite" aria-atomic="true">{status}</p>
+      <canvas ref={canvasRef} style={{ display: 'block', touchAction: 'none' }} aria-hidden="true" />
+      {interactive && dots.map((dot, index) => (
+        <button
+          key={index}
+          type="button"
+          className="ct-mot-access-target"
+          style={{
+            left: dot.x,
+            top: dot.y,
+            width: Math.max(dot.r * 4.4, 56),
+            height: Math.max(dot.r * 4.4, 56),
+          }}
+          aria-label={isAr ? `الجسم ${index + 1}` : `Object ${index + 1}`}
+          aria-pressed={Boolean(dot.selected)}
+          onClick={() => onPickRef.current?.(index)}
+        />
+      ))}
     </div>
   );
 }

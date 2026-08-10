@@ -394,6 +394,67 @@
   }
 }
 
+/* Native alternatives for 3D canvases. These controls intentionally sit above
+   the WebGL surface so keyboard and switch-device users call the same engine
+   actions as ray-cast pointer input. */
+.ct-pal-access-wrap,
+.ct-spaceport-access-wrap {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  width: min(92vw, 430px);
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  pointer-events: auto;
+}
+
+.ct-pal-access-label,
+.ct-spaceport-access-label {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 850;
+  backdrop-filter: blur(8px);
+}
+
+.ct-pal-access-grid,
+.ct-spaceport-access-grid {
+  width: 100%;
+  display: grid;
+  gap: 7px;
+}
+
+.ct-pal-access-btn,
+.ct-spaceport-access-btn {
+  appearance: none;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid color-mix(in srgb, var(--game-accent) 70%, var(--line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.ct-pal-access-btn:focus-visible,
+.ct-spaceport-access-btn:focus-visible {
+  outline: 3px solid var(--game-accent);
+  outline-offset: 2px;
+}
+
+.ct-spaceport-access-btn[aria-pressed='true'] {
+  background: var(--game-accent);
+  color: var(--game-ink);
+}
+
 .ct-stroop-3d-board {
   width: min(100%, 920px);
   height: min(56dvh, 560px);

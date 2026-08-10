@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, Suspense } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
   TrainingMenuBar,
@@ -75,7 +75,7 @@ const UI = {
     handTo: (n) => `Hand device to ${n}.`,
     goReady: 'Start linking',
     chalMeta: (label) => `${label} · 90s`,
-    connectHint: 'Drag through touching letters · lift finger to submit',
+    connectHint: 'Drag through touching letters, or select them one by one',
     tooShort: (n) => `Need at least ${n} letters`,
     notAWord: "Can't spell that on this grid",
     alreadyFound: 'Already found',
@@ -85,6 +85,7 @@ const UI = {
     sessionTime: (s) => `Session ${s}s`,
     foundList: 'Found',
     clearPath: 'Clear',
+    submitWord: 'Submit word',
     restart: 'Restart grid',
     freeLvl: (d, lv) => `Survival · ${d} L${lv}`,
     resultsPass: 'Level complete',
@@ -127,7 +128,7 @@ const UI = {
     chalBulletPass: 'ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
     goReady: 'ابدأ الوصل',
     chalMeta: (label) => `${label} · ٩٠ث`,
-    connectHint: 'اسحب على حروف متلامسة · ارفع الإصبع للإرسال',
+    connectHint: 'اسحب على حروف متلامسة، أو اخترها واحداً تلو الآخر',
     tooShort: (n) => `يلزم ${n} أحرف على الأقل`,
     notAWord: 'لا يمكن تكوينها على هذه الشبكة',
     alreadyFound: 'وُجدت مسبقًا',
@@ -137,6 +138,7 @@ const UI = {
     sessionTime: (s) => `الجلسة ${s}ث`,
     foundList: 'وُجدت',
     clearPath: 'مسح',
+    submitWord: 'إرسال الكلمة',
     restart: 'إعادة الشبكة',
     freeLvl: (d, lv) => `حر · ${d} ${lv}`,
     resultsPass: 'اكتمل المستوى',
@@ -217,7 +219,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
   const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('wordle', isAr, playSfx);
   const pauseRef = useRef(false);
 
-  const doneMap = profile.done || {};
+  const doneMap = useMemo(() => profile.done || {}, [profile.done]);
 
   useEffect(() => {
     pauseRef.current = pauseOpen;
@@ -481,7 +483,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
   }, [finishRound, stopRoundTimer]);
 
   useEffect(() => {
-    if (phase !== 'play' || !round) return undefined;
+    if (phase !== 'play' || !roundRef.current) return undefined;
     startRoundTimer();
     return () => stopRoundTimer();
   }, [phase, round?.seed, round?.mode, startRoundTimer, stopRoundTimer]);
@@ -515,14 +517,14 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
     if (mode === 'challenge') setPhase('chal');
     else if (mode === 'level') setPhase('levels');
     else setPhase('hub');
-  }, [clearPlay, onAssessmentExit, onBack, cosmosAutoPlay]);
+  }, [clearPlay, onAssessmentExit, onBack, cosmosAutoPlay, cosmosEmbed]);
 
   const exitToHub = useCallback(() => {
     clearPlay();
     if (cosmosEmbed) { setCosmosEmbed(false); setPhase('hub'); }
     else if (cosmosAutoPlay) onBack?.();
     else setPhase('hub');
-  }, [clearPlay, cosmosAutoPlay, onBack]);
+  }, [clearPlay, cosmosAutoPlay, onBack, cosmosEmbed]);
 
   const handlePauseOpen = useCallback(() => {
     stopRoundTimer();
@@ -846,8 +848,17 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
                 disabled={pauseOpen || round.complete}
                 currentWord={currentWord}
                 onCommit={commitPath}
+                isAr={isAr}
               />
               <div className="ct-wordle-link-actions">
+                <button
+                  type="button"
+                  className="ct-fq-btn ct-fq-btn-pri ct-wordle-submit-btn"
+                  disabled={path.length < round.minLen}
+                  onClick={commitPath}
+                >
+                  {t.submitWord}
+                </button>
                 <button
                   type="button"
                   className="ct-fq-btn ct-fq-btn-ghost ct-wordle-clear-btn"
@@ -916,9 +927,18 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
               disabled={pauseOpen || round.complete}
               currentWord={currentWord}
               onCommit={commitPath}
+              isAr={isAr}
             />
           </div>
           <div className="ct-wordle-link-actions">
+            <button
+              type="button"
+              className="ct-fq-btn ct-fq-btn-pri ct-wordle-submit-btn"
+              disabled={path.length < round.minLen}
+              onClick={commitPath}
+            >
+              {t.submitWord}
+            </button>
             <button
               type="button"
               className="ct-fq-btn ct-fq-btn-sec ct-wordle-clear-btn"

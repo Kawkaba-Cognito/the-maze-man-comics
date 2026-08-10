@@ -13,7 +13,7 @@
 import {
   BASE, DIFF_KEYS, LEVELS_PER_TIER, ROLE, HIT_DEG,
   levelSchedule, survivalSchedule, passSchedule,
-  perturb, angularError, targetAngles, summarise, levelPassed,
+  perturb, angularError, targetAngles, aimAngles, summarise, levelPassed,
 } from '../src/features/training/domains/flexibility/games/mirror-world/data.js';
 
 const problems = [];
@@ -111,7 +111,75 @@ for (const diff of DIFF_KEYS) {
   if (!levelPassed(learner)) push(`${diff}: a player who adapted did NOT pass the level`);
 }
 
-console.log(`validate-mirror: ${scheds} schedules, ${DIFF_KEYS.length} tiers simulated`);
+/* ── 4. CONTROL PARITY ──────────────────────────────────────────────────────
+ * Every input method must be able to reach the pass criterion on every level.
+ *
+ * The game ships two controls: a drag (continuous, can aim anywhere) and a
+ * direction pad (discrete, WCAG 2.5.7 alternative). The pad originally offered
+ * the TARGET angles — 4 of them on Easy, 90° apart — against rotations of
+ * 20–35°, so its best achievable error exceeded the pass threshold and 156 of
+ * 300 levels were unpassable through the accessible route. Nothing looked
+ * wrong: the buttons rendered, the taps registered, the reaches scored.
+ *
+ * So this asserts the OUTCOME a real button-user gets — an optimal player
+ * restricted to the discrete aim set must actually pass — rather than asserting
+ * that some spacing constant looks reasonable.
+ */
+/*
+ * Models a REAL button user, not an oracle: she starts aiming straight at the
+ * target, sees where it went, and corrects by `adaptRate` of the error she just
+ * saw — exactly the learner in check 3 — except her aim is quantised to the
+ * discrete pad. An oracle that aims perfectly from reach 1 would fail
+ * `levelPassed` for the opposite reason (it requires improvement WITHIN the
+ * block, and a player who is already perfect has none), which would have hidden
+ * the resolution problem behind a simulation artefact.
+ */
+function simulateButtonUser(blocks, adaptRate = 0.6) {
+  const aims = aimAngles();
+  const reaches = [];
+  let held = 0;
+  blocks.forEach((block) => {
+    const angles = targetAngles(block.targets);
+    for (let i = 0; i < block.reaches; i++) {
+      const tgt = angles[i % angles.length];
+      const wanted = tgt - held;
+      // nearest reachable aim to what she intends
+      let aim = aims[0];
+      for (const a of aims) {
+        const d = Math.abs(((a - wanted + 540) % 360) - 180);
+        const best = Math.abs(((aim - wanted + 540) % 360) - 180);
+        if (d < best) aim = a;
+      }
+      const rad = (aim * Math.PI) / 180;
+      const v = perturb(Math.cos(rad), Math.sin(rad), block, i);
+      const seen = (Math.atan2(v.y, v.x) * 180) / Math.PI;
+      const err = angularError(seen, tgt);
+      reaches.push({ role: block.role, err });
+      held += err * adaptRate;
+    }
+  });
+  return reaches;
+}
+
+let padFails = 0;
+for (const diff of DIFF_KEYS) {
+  for (let lv = 1; lv <= LEVELS_PER_TIER; lv++) {
+    const blocks = levelSchedule(diff, lv);
+    const sum = summarise(simulateButtonUser(blocks), blocks);
+    if (!levelPassed(sum)) {
+      padFails++;
+      if (padFails <= 5) {
+        const rot = blocks.find((b) => b.role === ROLE.ADAPT).rotation;
+        push(`${diff} L${lv} (rot ${rot}°): the direction pad CANNOT pass this level `
+          + `— best residual ${Math.abs(Math.round(sum.late))}°, needs ≤ ${HIT_DEG + 6}°`);
+      }
+    }
+  }
+}
+if (padFails > 5) push(`…and ${padFails - 5} more levels unpassable with the direction pad`);
+
+console.log(`validate-mirror: ${scheds} schedules, ${DIFF_KEYS.length} tiers simulated, `
+  + `${DIFF_KEYS.length * LEVELS_PER_TIER} levels checked for control parity`);
 if (problems.length) {
   console.error(`\nFAILED — ${problems.length} problem(s):`);
   problems.slice(0, 20).forEach((p) => console.error('  · ' + p));

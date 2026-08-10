@@ -24,8 +24,8 @@ const reasoning = {
     },
     {
       id: 'problem',
-      name: 'Matrix IQ',
-      nameAr: 'مصفوفات الذكاء',
+      name: 'Matrix Reasoning',
+      nameAr: 'استدلال المصفوفات',
       blurb: 'Detect the pattern and complete the missing matrix cell.',
       blurbAr: 'اكتشف النمط وأكمل الخانة الناقصة في المصفوفة.',
       gameCount: 2,

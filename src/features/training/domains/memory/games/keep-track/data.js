@@ -23,6 +23,8 @@
  * the prototypical bird in Arabic, and Keep Track leans on typicality.
  */
 
+import { levelFraction, tierStage } from '../../../../shared/difficulty.js';
+
 export const CATEGORIES = [
   {
     id: 'animals',
@@ -92,7 +94,7 @@ export const LEVELS_PER_TIER = 100;
 /** Level config. Front-loaded (^0.85) so early levels feel distinct, like Math Gates. */
 export function levelCfg(diff, level) {
   const b = BASE[diff] || BASE.med;
-  const f = Math.pow(Math.max(0, (level || 1) - 1) / (LEVELS_PER_TIER - 1), 0.85);
+  const f = levelFraction(level, LEVELS_PER_TIER);
   return {
     ...b,
     stream: b.stream + Math.round(f * 8),
@@ -103,12 +105,10 @@ export function levelCfg(diff, level) {
 
 /** Survival: one continuous ramp across the three tiers. */
 export function survivalCfg(stage) {
-  const tiers = ['easy', 'med', 'hard'];
-  const per = 12;
-  const ti = Math.min(tiers.length - 1, Math.floor(stage / per));
-  const within = tiers[ti] === 'hard' ? Math.min(1, (stage - ti * per) / per) : (stage - ti * per) / per;
-  const lv = 1 + Math.round(Math.min(1, Math.max(0, within)) * (LEVELS_PER_TIER - 1));
-  return { diff: tiers[ti], lv, ...levelCfg(tiers[ti], lv) };
+  // Shared with Mirror World via tierStage — this used to be duplicated
+  // byte-for-byte in both games.
+  const { diff, lv } = tierStage(stage);
+  return { diff, lv, ...levelCfg(diff, lv) };
 }
 
 /*

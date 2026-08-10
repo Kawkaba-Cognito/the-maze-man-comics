@@ -23,6 +23,7 @@ import {
 import { createStaircase } from './staircase';
 import { useApp } from '../../../../../../context/AppContext';
 import { assetUrl } from '../../../../../../lib/assetUrl';
+import { loadJson, saveJson } from '../../../../../../lib/storage';
 import {
   SH,
   DM,
@@ -119,25 +120,22 @@ function mergeChallengePlayerStats(prev, stats, errCount, nm) {
 const PROFILE_KEY = 'mm_cancel_fq_v1';
 
 function loadProfile() {
-  try {
-    const j = localStorage.getItem(PROFILE_KEY);
-    if (j) {
-      const parsed = JSON.parse(j);
-      return {
-        tel: parsed.tel || [],
-        done: parsed.done || {},
-        freeBest: parsed.freeBest ?? 0,
-        freeBestScore: parsed.freeBestScore ?? 0,
-      };
-    }
-  } catch {
-    /* ignore */
+  const parsed = loadJson(PROFILE_KEY);
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    return {
+      tel: Array.isArray(parsed.tel) ? parsed.tel : [],
+      done: parsed.done && typeof parsed.done === 'object' ? parsed.done : {},
+      freeBest: parsed.freeBest ?? 0,
+      freeBestScore: parsed.freeBestScore ?? 0,
+    };
   }
   return { tel: [], done: {}, freeBest: 0, freeBestScore: 0 };
 }
 
 function saveProfile(p) {
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+  // Persistence is optional. A full/blocked localStorage must never strand the
+  // player on a cleared board before the result screen can render.
+  saveJson(PROFILE_KEY, p);
 }
 
 function sleep(ms) {
@@ -1195,6 +1193,17 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     endRoundRef.current = endRound;
   }, [endRound]);
 
+  // The rendered board is the final authority on completion. The event handler
+  // normally ends the round immediately, but this catches any future count/ref
+  // drift: if every target the player can see has been marked, play must move on.
+  useEffect(() => {
+    if (phase !== 'play' || playStep !== 'running' || !round || roundEndedRef.current) return;
+    const targets = cells.filter((cell) => cell.isT);
+    if (targets.length > 0 && targets.every((cell) => cell.tapped)) {
+      endRoundRef.current(true);
+    }
+  }, [phase, playStep, round, cells]);
+
   useEffect(() => () => trialLogRef.current?.discard(), []);
 
   useEffect(() => {
@@ -1440,17 +1449,20 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       talliesRef.current.found += 1;
       const tappedTargets = talliesRef.current.found;
       setFound(tappedTargets);
-      setCells((prev) => {
-        const next = prev.map((x, i) => (i === idx ? { ...x, tapped: true, feedback: isAssess ? 'mark' : 'ok' } : x));
-        cellsRef.current = next;
-        return next;
-      });
+      // Claim the cell synchronously. Waiting for React's state updater left a
+      // small window where a second event could still observe the old board.
+      const nextCells = cellsRef.current.map((x, i) => (
+        i === idx ? { ...x, tapped: true, feedback: isAssess ? 'mark' : 'ok' } : x
+      ));
+      cellsRef.current = nextCells;
+      setCells(nextCells);
       if (r.mode === 'free') {
         const add = freeTapPoints(r.diff, r.freeStage ?? 0);
         freeScoreRef.current += add;
         setFreeScore(freeScoreRef.current);
       }
-      if (r.tc > 0 && tappedTargets >= r.tc) {
+      const hasRemainingTarget = nextCells.some((cell) => cell.isT && !cell.tapped);
+      if (!hasRemainingTarget) {
         // No green solve-pulse here on purpose — the win screen is enough.
         endRoundRef.current(true);
       }
@@ -1464,11 +1476,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     if (!isAssess) pendingPenaltyRef.current += 3;
     talliesRef.current.errors += 1;
     setErrors(talliesRef.current.errors);
-    setCells((prev) => {
-      const next = prev.map((x, i) => (i === idx ? { ...x, tapped: true, feedback: isAssess ? 'mark' : 'bad' } : x));
-      cellsRef.current = next;
-      return next;
-    });
+    const nextCells = cellsRef.current.map((x, i) => (
+      i === idx ? { ...x, tapped: true, feedback: isAssess ? 'mark' : 'bad' } : x
+    ));
+    cellsRef.current = nextCells;
+    setCells(nextCells);
     if (r.mode === 'free') {
       const pen = freeWrongTapPenalty(r.diff);
       freeScoreRef.current = Math.max(0, freeScoreRef.current - pen);

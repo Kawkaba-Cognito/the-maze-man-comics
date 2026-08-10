@@ -21,6 +21,8 @@
  * showing.
  */
 
+import { levelFraction, tierStage, lerp } from '../../../../shared/difficulty.js';
+
 /** Defaults for every block. A schedule row overrides only what it changes. */
 export const BLOCK_DEFAULTS = {
   reaches: 8,
@@ -56,7 +58,7 @@ export const BASE = {
 
 export const DIFF_KEYS = ['easy', 'med', 'hard'];
 
-function lerp(a, b, f) { return a + (b - a) * f; }
+
 
 /**
  * Build the block schedule for one level.
@@ -66,7 +68,7 @@ function lerp(a, b, f) { return a + (b - a) * f; }
  */
 export function levelSchedule(diff, level) {
   const b = BASE[diff] || BASE.med;
-  const f = Math.pow(Math.max(0, (level || 1) - 1) / (LEVELS_PER_TIER - 1), 0.85);
+  const f = levelFraction(level, LEVELS_PER_TIER);
   const rot = Math.round(lerp(b.rot, b.rotMax, f));
   return [
     { ...BLOCK_DEFAULTS, role: ROLE.BASE, reaches: 5, rotation: 0, targets: b.targets, feedback: b.feedback },
@@ -85,11 +87,8 @@ export function levelSchedule(diff, level) {
 
 /** Survival: one continuous ramp across the three tiers. */
 export function survivalSchedule(stage) {
-  const per = 12;
-  const ti = Math.min(DIFF_KEYS.length - 1, Math.floor(stage / per));
-  const diff = DIFF_KEYS[ti];
-  const within = Math.min(1, Math.max(0, (stage - ti * per) / per));
-  const lv = 1 + Math.round(within * (LEVELS_PER_TIER - 1));
+  // Shared with Keep Track via tierStage — this was duplicated byte-for-byte.
+  const { diff, lv } = tierStage(stage);
   return { diff, lv, blocks: levelSchedule(diff, lv) };
 }
 
@@ -107,6 +106,30 @@ export function passSchedule() {
 export function targetAngles(n) {
   const out = [];
   for (let i = 0; i < n; i++) out.push((-90 + (360 / n) * i));
+  return out;
+}
+
+/*
+ * Aim resolution for the no-drag control (WCAG 2.5.7 alternative to the flick).
+ *
+ * ⚠ This is DELIBERATELY decoupled from `targets`. The first version of the
+ * direction pad offered the target angles themselves — 4 of them on Easy, 90°
+ * apart — while the rotation to be cancelled is 20–35°. A button user's best
+ * achievable error is the distance from the rotation to the nearest button, so
+ * 156 of 300 levels were literally unpassable through the accessible route
+ * while looking perfectly fine on screen.
+ *
+ * 15° spacing bounds that residual at 7.5°, inside HIT_DEG on every scheduled
+ * rotation. `validate:mirror` asserts it per level rather than trusting this
+ * comment — if a future tier raises the rotation or narrows HIT_DEG, the gate
+ * fails instead of quietly locking people out again.
+ */
+export const AIM_STEP_DEG = 15;
+
+export function aimAngles(step = AIM_STEP_DEG) {
+  const n = Math.round(360 / step);
+  const out = [];
+  for (let i = 0; i < n; i++) out.push(-180 + i * step);
   return out;
 }
 
@@ -164,7 +187,28 @@ export function summarise(reaches, blocks) {
   };
 }
 
-/** Levels pass when adaptation actually happened, not merely when time passed. */
+/**
+ * Levels pass when you CANCELLED MOST OF THE PERTURBATION — measured against the
+ * rotation, not against a fixed number of degrees.
+ *
+ * ⚠ This replaces `late <= HIT_DEG + 6 && learned > 0`, which was wrong twice.
+ *
+ * The fixed 20° threshold was scale-blind: on an Easy level with a 20° rotation,
+ * a player who never adapted at all ends ~20° off and slides through, while the
+ * same threshold is trivially loose at 60°. Tying it to the rotation makes the
+ * bar mean the same thing at every tier.
+ *
+ * The `learned > 0` clause looked like a guard against passing without adapting,
+ * but it fails honest players on RAMPED blocks: the rotation eases in, so the
+ * early reaches are nearly unperturbed by design and there is little error left
+ * to improve on. It also punished anyone whose aim is quantised — the no-drag
+ * pad floors its residual at half a button — so it locked accessible players out
+ * of levels a drag user passed. Cancelling the perturbation already implies
+ * adaptation, so the clause was doing harm without doing its job; `learned` is
+ * still reported, just no longer a gate.
+ */
 export function levelPassed(sum) {
-  return sum.late != null && sum.late <= HIT_DEG + 6 && (sum.learned == null || sum.learned > 0);
+  if (sum.late == null) return false;
+  const bar = Math.max(HIT_DEG, (sum.rotation || 0) * 0.4);
+  return sum.late <= bar;
 }

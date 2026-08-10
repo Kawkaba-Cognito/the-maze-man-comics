@@ -1036,7 +1036,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
                   type="button"
                   className={`ct-sm-key${pressedKey === p.digit ? ' ct-sm-key--press' : ''}`}
                   disabled={playStep !== 'running'}
-                  onPointerDown={(e) => { e.preventDefault(); answer(p.digit); }}
+                  onClick={() => answer(p.digit)}
                 >
                   {p.digit}
                 </button>

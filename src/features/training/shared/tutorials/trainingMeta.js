@@ -2,7 +2,7 @@
 export const TRAINING_META = {
   'cancel-task': { name: 'Cancel Task', nameAr: 'مهمة الشطب' },
   mot: { name: 'Target Tracking', nameAr: 'تتبّع الأهداف' },
-  'train-switch': { name: 'Car Park', nameAr: 'موقف السيارات' },
+  'train-switch': { name: 'Spaceship', nameAr: 'السفن الفضائية' },
   'speed-match': { name: 'Speed Match', nameAr: 'مطابقة سريعة' },
   'trail-making': { name: 'Trail Making', nameAr: 'صل الأرقام' },
   'memo-span': { name: 'Memo Span', nameAr: 'مدى الذاكرة' },

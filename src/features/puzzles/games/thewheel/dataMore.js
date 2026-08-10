@@ -113,6 +113,18 @@ export const MORE_STREAK = [
   { id: 'coffee', title: 'CAFFEINE PER SERVING', titleAr: 'الكافيين لكل حصة', unit: ' mg', items: [['DECAF COFFEE', 3], ['GREEN TEA', 28], ['COLA', 34], ['BLACK TEA', 47], ['ESPRESSO SHOT', 63], ['ENERGY DRINK', 80], ['FILTER COFFEE', 95], ['LARGE BREWED COFFEE', 200]] },
   { id: 'moonsizes', title: 'MOON DIAMETERS', titleAr: 'أقطار الأقمار', unit: ' km', items: [['PHOBOS', 22], ['DEIMOS', 12], ['ENCELADUS', 504], ['MIMAS', 396], ['EUROPA', 3122], ['MOON', 3475], ['CALLISTO', 4821], ['GANYMEDE', 5268]] },
   { id: 'currencyage', title: 'COUNTRY FOUNDED', titleAr: 'تأسست عام', unit: ' AD', gapAbs: 8, items: [['SAN MARINO', 301], ['PORTUGAL', 1139], ['SWITZERLAND', 1291], ['USA', 1776], ['ITALY', 1861], ['AUSTRALIA', 1901], ['LEBANON', 1943], ['SOUTH SUDAN', 2011]] },
+  /*
+   * The four below exist to make the bank divide evenly into NIGHT SETS.
+   * 44 pools split four ways leaves a remainder, and a set that runs short
+   * mid-night is worse than no sets at all — so the bank was topped up to 48
+   * rather than the set count quietly reduced. Topics were picked to avoid the
+   * 44 already here (no second rainfall-adjacent "temperatures", no second
+   * "lifespans"); every gap still has to clear the 8% coin-flip rule.
+   */
+  { id: 'rainfall', title: 'ANNUAL RAINFALL', titleAr: 'الأمطار السنوية', unit: ' mm', items: [['CAIRO', 25], ['RIYADH', 100], ['MADRID', 420], ['PARIS', 640], ['NEW YORK', 1200], ['SINGAPORE', 2200], ['MAWSYNRAM', 11800]] },
+  { id: 'booklen', title: 'BOOK LENGTHS', titleAr: 'أطوال الكتب', unit: 'k words', items: [['THE OLD MAN AND THE SEA', 27], ['ANIMAL FARM', 30], ['THE GREAT GATSBY', 47], ['HARRY POTTER 1', 77], ['THE HOBBIT', 95], ['MOBY DICK', 206], ['LORD OF THE RINGS', 455], ['WAR AND PEACE', 587]] },
+  { id: 'filmlen', title: 'FILM RUNTIMES', titleAr: 'مدة الأفلام', unit: ' min', items: [['TOY STORY', 81], ['BACK TO THE FUTURE', 116], ['THE MATRIX', 136], ['GLADIATOR', 155], ['THE GODFATHER', 175], ['TITANIC', 194], ['THE RETURN OF THE KING', 263]] },
+  { id: 'sleep', title: 'DAILY SLEEP', titleAr: 'ساعات النوم', unit: ' hrs', items: [['GIRAFFE', 2], ['HORSE', 3], ['ELEPHANT', 4], ['HUMAN', 8], ['CHIMPANZEE', 10], ['DOG', 12], ['CAT', 15], ['LION', 20], ['KOALA', 22]] },
 ].map(pool);
 
 export const MORE_RANKED = [

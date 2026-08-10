@@ -14,24 +14,24 @@ export const GAME_SCIENCE = {
   'speed-match': {
     en: {
       title: 'The science',
-      intro: 'Speed Match is the Symbol Digit Modalities Test (SDMT) — you see a symbol and respond with its digit, using a key that stays fixed and visible. It is the most sensitive clinical measure of processing speed.',
+      intro: 'Speed Match is a gamified symbol–digit matching task inspired by the Symbol Digit Modalities Test (SDMT). You see a symbol and respond with its digit using a key that stays fixed and visible.',
       sections: [
         { h: '⚡ Processing speed', b: 'How quickly you match symbols to digits indexes processing speed — the raw pace at which your brain takes in information and acts. It quietly underlies almost every other thinking skill.' },
         { h: '🧠 What it trains', b: 'Rapid visual scanning and symbol-to-digit lookup. The key stays fixed and on screen, so this is pure perceptual speed, not memorization — with practice the lookup becomes more automatic.' },
         { h: '🎚️ Trains at your edge', b: 'The time bank adapts to your pace: correct matches add time, the key grows, and each match returns less time — so difficulty settles at the fastest speed you can sustain. Adapting to the individual is what makes speed training work (UFOV / the ACTIVE trial).' },
-        { h: '📊 How it\'s measured', b: 'Your main score is matches per minute — the SDMT score. We also report mean reaction time, RT variability (how steady you are — an attentional-lapse marker), and an efficiency score (IES) that blends speed with accuracy so neither can be gamed.' },
+        { h: '📊 How it\'s measured', b: 'Your main score is matches per minute, an SDMT-like rate rather than a clinical SDMT score. We also report mean reaction time, RT variability (how steady you are), and an efficiency score (IES) that blends speed with accuracy so neither can be gamed.' },
         { h: '📉 Why it matters', b: 'Processing speed is among the first abilities to slow with age and fatigue. Keeping it sharp supports reaction time, reading, and quick decisions.' },
       ],
       foot: 'Short, frequent bursts work best. Practice reliably improves this task and similar speed tests (near transfer); broad “far transfer” to everyday thinking is not well supported. This trains and tracks this specific skill — it is not a medical test.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: 'المطابقة السريعة هي اختبار رموز–أرقام (SDMT): ترى رمزاً وتستجيب برقمه عبر مفتاح ثابت ومرئي. وهو أكثر مقاييس سرعة المعالجة حساسية.',
+      intro: 'المطابقة السريعة مهمة لعبية لمطابقة الرموز بالأرقام، مستوحاة من اختبار SDMT. ترى رمزاً وتستجيب برقمه عبر مفتاح ثابت ومرئي.',
       sections: [
         { h: '⚡ سرعة المعالجة', b: 'سرعتك في مطابقة الرموز بالأرقام تقيس سرعة المعالجة — الإيقاع الذي يستقبل به دماغك المعلومات ويتصرّف. وهي أساس خفيّ لمعظم المهارات الذهنية الأخرى.' },
         { h: '🧠 ما الذي تدرّبه', b: 'المسح البصري السريع والبحث عن الرقم المطابق. يبقى المفتاح ثابتاً وظاهراً، فهي سرعة إدراكية صرفة لا حفظاً — ومع التمرين يصبح البحث أكثر تلقائية.' },
         { h: '🎚️ تدريب عند حدّك', b: 'بنك الوقت يتكيّف مع إيقاعك: المطابقات الصحيحة تضيف وقتاً، ويكبر المفتاح، وتعيد كل مطابقة وقتاً أقل — فتستقر الصعوبة عند أسرع سرعة يمكنك الحفاظ عليها. التكيّف مع الفرد هو ما يجعل تدريب السرعة فعّالاً (UFOV / تجربة ACTIVE).' },
-        { h: '📊 كيف يُقاس', b: 'درجتك الأساسية هي المطابقات في الدقيقة — درجة SDMT. ونعرض أيضاً متوسط زمن الاستجابة، وتغيّره (مدى ثباتك — مؤشر على هفوات الانتباه)، ودرجة كفاءة (IES) تمزج السرعة بالدقة كي لا تُخدع أيٌّ منهما.' },
+        { h: '📊 كيف يُقاس', b: 'درجتك الأساسية هي المطابقات في الدقيقة، وهي وتيرة شبيهة بـ SDMT وليست درجة سريرية للاختبار. ونعرض أيضاً متوسط زمن الاستجابة، وتغيّره، ودرجة كفاءة (IES) تمزج السرعة بالدقة كي لا تُخدع أيٌّ منهما.' },
         { h: '📉 لماذا تهمّ', b: 'سرعة المعالجة من أوائل القدرات التي تتباطأ مع العمر والإرهاق. الحفاظ عليها يدعم زمن ردّ الفعل والقراءة والقرارات السريعة.' },
       ],
       foot: 'الجلسات القصيرة المتكرّرة هي الأفضل. التمرين يحسّن هذه المهمة والاختبارات الشبيهة (انتقال قريب)، أما الانتقال الواسع للحياة اليومية فغير مدعوم جيداً. هذا يدرّب ويتابع هذه المهارة تحديداً، وليس اختباراً طبياً.',
@@ -40,23 +40,23 @@ export const GAME_SCIENCE = {
   'trail-making': {
     en: {
       title: 'The science',
-      intro: 'Built on the Trail Making Test family — connect circles in order as fast as you can. It rotates several validated, language-free variants so it trains a whole battery of speed and executive skills, not one flat task.',
+      intro: 'Inspired by the Trail Making family of tasks: connect circles in order as fast as you can. This game rotates several language-light variants to practise visual scanning, speed and executive control; it is not a standardized TMT administration.',
       sections: [
-        { h: '⚡ Speed & scanning (TMT-A)', b: 'The plain trail (1→2→3…) is the classic Trail Making Test Part A: visual search + processing speed. Difficulty rises with the number of circles (a longer scan path).' },
-        { h: '🎨 Colour Trails (flexibility)', b: 'On colour boards you alternate two colours as you count up (the Color Trails Test, CTT-2) — a language-free set-shifting / cognitive-flexibility task; the same number in the wrong colour is a built-in lure.' },
-        { h: '✕ Distractors (inhibition)', b: 'Some boards add decoy circles you must ignore (Comprehensive TMT) — selective attention and impulse control.' },
-        { h: '📊 How it\'s measured', b: 'Completion time and errors (the clinical TMT metrics), plus scanning rate (circles/min), tap-to-tap consistency (an attentional-lapse marker), and the colour interference cost (Colour time − plain time) that isolates executive control.' },
+        { h: '⚡ Speed & scanning (TMT-A style)', b: 'The plain trail (1→2→3…) resembles Trail Making Part A and loads visual search plus processing speed. Difficulty rises with the number of circles and the length of the scan path.' },
+        { h: '🎨 Colour Trails (flexibility)', b: 'On colour boards you alternate two colours as you count up, borrowing the set-shifting idea used by Colour Trails tasks; the same number in the wrong colour is a built-in lure.' },
+        { h: '✕ Distractors (inhibition)', b: 'Some boards add decoy circles you must ignore, adding selective attention and impulse control to the search.' },
+        { h: '📊 How it\'s measured', b: 'The game reports completion time and errors, plus scanning rate (circles/min), tap-to-tap consistency, and a colour interference cost. These are task metrics, not clinical TMT scores.' },
       ],
       foot: 'Plan your eye path a step or two ahead rather than hunting circle by circle. This trains and tracks these specific skills — it is not a medical test.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: 'مبني على عائلة اختبار وصل الأثر — صل الدوائر بالترتيب بأسرع ما يمكن. يتنقّل بين عدّة صيغ موثّقة وخالية من اللغة فيدرّب حزمة من مهارات السرعة والوظائف التنفيذية، لا مهمة واحدة جامدة.',
+      intro: 'مستوحى من عائلة مهام وصل الأثر: صل الدوائر بالترتيب بأسرع ما يمكن. تتنقّل اللعبة بين صيغ قليلة الاعتماد على اللغة لتدريب المسح البصري والسرعة والتحكّم التنفيذي؛ وهي ليست تطبيقاً معيارياً لاختبار TMT.',
       sections: [
-        { h: '⚡ السرعة والمسح (TMT-A)', b: 'المسار البسيط (١→٢→٣…) هو الجزء A الكلاسيكي: بحث بصري + سرعة معالجة. ترتفع الصعوبة بعدد الدوائر (مسار أطول).' },
-        { h: '🎨 مسار الألوان (المرونة)', b: 'في لوحات الألوان تبدّل بين لونين مع العدّ التصاعدي (اختبار مسار الألوان CTT-2) — مهمة تبديل/مرونة ذهنية خالية من اللغة؛ والرقم نفسه باللون الخاطئ فخّ مدمج.' },
-        { h: '✕ المشتّتات (الكبح)', b: 'بعض اللوحات تضيف دوائر شَرَك يجب تجاهلها (TMT الشامل) — انتباه انتقائي وضبط اندفاع.' },
-        { h: '📊 كيف يُقاس', b: 'زمن الإكمال والأخطاء (مقاييس TMT السريرية)، مع معدّل المسح (دوائر/دقيقة)، وثبات الزمن بين النقرات (مؤشر هفوات الانتباه)، وكلفة تداخل الألوان (زمن الألوان − الزمن البسيط) التي تعزل التحكّم التنفيذي.' },
+        { h: '⚡ السرعة والمسح (على نمط TMT-A)', b: 'يشبه المسار البسيط (١→٢→٣…) الجزء A من مهام وصل الأثر ويحمّل البحث البصري وسرعة المعالجة. ترتفع الصعوبة بعدد الدوائر وطول مسار المسح.' },
+        { h: '🎨 مسار الألوان (المرونة)', b: 'في لوحات الألوان تبدّل بين لونين مع العدّ التصاعدي، مستعيراً فكرة تبديل المجموعة المستخدمة في مهام مسار الألوان؛ والرقم نفسه باللون الخاطئ فخّ مدمج.' },
+        { h: '✕ المشتّتات (الكبح)', b: 'تضيف بعض اللوحات دوائر شَرَك يجب تجاهلها، فتضيف الانتباه الانتقائي وضبط الاندفاع إلى البحث.' },
+        { h: '📊 كيف يُقاس', b: 'تعرض اللعبة زمن الإكمال والأخطاء، مع معدّل المسح وثبات الزمن بين النقرات وكلفة تداخل الألوان. هذه مقاييس داخل اللعبة وليست درجات سريرية لاختبار TMT.' },
       ],
       foot: 'خطّط مسار عينك خطوة أو خطوتين مسبقاً بدل البحث دائرة بدائرة. هذا يدرّب ويتابع هذه المهارات تحديداً، وليس اختباراً طبياً.',
     },
@@ -112,23 +112,23 @@ export const GAME_SCIENCE = {
   'train-switch': {
     en: {
       title: 'The science',
-      intro: 'A Train-of-Thought-style task: route each car to its matching-colour bay while several share the roads. It trains divided attention — tracking and managing multiple moving things at once.',
+      intro: 'A divided-attention routing task: guide each spaceship to its matching-colour docking pad while several share the flight lanes. You must track and manage multiple moving objects at once.',
       sections: [
-        { h: '🎯 Divided attention', b: 'Watching several cars and the right junctions at the same time trains the ability to share focus without losing track. Human tracking capacity is only about four objects, so difficulty rises mainly by adding concurrent cars — easy stays under that limit, hard pushes past it.' },
-        { h: '🧭 Plan ahead', b: 'You must set each junction BEFORE a car reaches it, so you anticipate conflicts and time decisions — planning and prioritising under pressure.' },
+        { h: '🎯 Divided attention', b: 'Watching several ships and their junctions at the same time practises sharing focus without losing track. Human tracking capacity is limited, so difficulty rises mainly by adding concurrent ships.' },
+        { h: '🧭 Plan ahead', b: 'You must set each junction before a ship reaches it, so you anticipate conflicts and time decisions — planning and prioritising under pressure.' },
         { h: '🚫 Response selection & inhibition', b: 'Choosing the right junction at the right moment, and leaving alone the ones you do not need yet, trains rule-based action choice and impulse control.' },
       ],
-      foot: 'Triage: handle the most urgent car first, then the next. This trains and tracks this specific skill — it is not a medical test.',
+      foot: 'Triage: handle the most urgent ship first, then the next. This trains and tracks this specific skill — it is not a medical test.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: 'مهمة على نمط «قطار الأفكار»: وجّه كل سيارة إلى موقف لونها المطابق بينما تتشارك عدّة سيارات الطرق. تدرّب الانتباه الموزّع — تتبّع وإدارة عدّة أشياء متحرّكة معاً.',
+      intro: 'مهمة توجيه للانتباه الموزّع: وجّه كل سفينة فضائية إلى منصة الرسو المطابقة للونها بينما تتشارك عدة سفن مسارات الطيران. عليك تتبّع عدة أجسام متحركة وإدارتها معاً.',
       sections: [
-        { h: '🎯 الانتباه الموزّع', b: 'مراقبة عدّة سيارات والمفترقات الصحيحة معاً تدرّب تقاسم التركيز دون فقدان المسار. سعة التتبّع لدى الإنسان نحو أربعة أجسام فقط، لذا ترتفع الصعوبة أساساً بزيادة السيارات المتزامنة — السهل يبقى دون هذا الحدّ والصعب يتجاوزه.' },
-        { h: '🧭 خطّط مسبقاً', b: 'عليك ضبط كل مفترق قبل وصول السيارة إليه، فتتوقّع التعارضات وتوقّت قراراتك — تخطيط وترتيب أولويات تحت الضغط.' },
+        { h: '🎯 الانتباه الموزّع', b: 'مراقبة عدة سفن والمفترقات الصحيحة معاً تدرّب تقاسم التركيز دون فقدان المسار. سعة التتبّع محدودة، لذلك ترتفع الصعوبة أساساً بزيادة السفن المتزامنة.' },
+        { h: '🧭 خطّط مسبقاً', b: 'عليك ضبط كل مفترق قبل وصول السفينة إليه، فتتوقّع التعارضات وتوقّت قراراتك — تخطيط وترتيب أولويات تحت الضغط.' },
         { h: '🚫 اختيار الاستجابة والكبح', b: 'اختيار المفترق الصحيح في اللحظة الصحيحة، وترك ما لا تحتاجه بعد، يدرّب اختيار الفعل وفق قاعدة وضبط الاندفاع.' },
       ],
-      foot: 'رتّب الأولويات: عالج السيارة الأكثر إلحاحاً أولاً ثم التالية. هذا يدرّب ويتابع هذه المهارة تحديداً، وليس اختباراً طبياً.',
+      foot: 'رتّب الأولويات: عالج السفينة الأكثر إلحاحاً أولاً ثم التالية. هذا يدرّب ويتابع هذه المهارة تحديداً، وليس اختباراً طبياً.',
     },
   },
 
@@ -399,23 +399,23 @@ export const GAME_SCIENCE = {
   'wordle': {
     en: {
       title: 'The science',
-      intro: 'Guessing the hidden word from clues blends vocabulary retrieval with deductive reasoning.',
+      intro: 'Finding words in a connected letter grid blends vocabulary retrieval with visual search and spatial planning.',
       sections: [
-        { h: '🔤 Lexical access', b: 'Searching your mental dictionary for words that fit trains vocabulary and verbal fluency — how quickly the right word comes to mind.' },
-        { h: '🧠 Deduction', b: 'Using each clue (right letter, right place) to rule words in or out trains constraint-based logical reasoning.' },
-        { h: '💡 Working memory', b: 'Juggling which letters are confirmed, absent, or misplaced loads working memory while you plan the next guess.' },
+        { h: '🔤 Lexical access', b: 'Searching your mental dictionary for words that can be traced through adjacent letters practises vocabulary retrieval and verbal fluency.' },
+        { h: '👁 Visual search', b: 'Scanning the grid for useful prefixes and letter clusters practises systematic search rather than random guessing.' },
+        { h: '💡 Working memory', b: 'Holding a possible word and its path in mind while avoiding reused cells adds a short working-memory and inhibition demand.' },
       ],
-      foot: 'Spend an early guess on fresh letters to gather the most clues.',
+      foot: 'Start with short prefixes, then scan neighbouring letters before committing the path. Longer valid words earn more points.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: 'تخمين الكلمة المخفية من التلميحات يمزج استرجاع المفردات بالاستدلال الاستنتاجي.',
+      intro: 'العثور على كلمات داخل شبكة حروف مترابطة يمزج استرجاع المفردات بالمسح البصري والتخطيط المكاني.',
       sections: [
-        { h: '🔤 الوصول المعجمي', b: 'البحث في قاموسك الذهني عن كلمات مناسبة يدرّب المفردات والطلاقة اللفظية — سرعة حضور الكلمة الصحيحة.' },
-        { h: '🧠 الاستنتاج', b: 'استخدام كل تلميح (حرف صحيح، موضع صحيح) لاستبعاد الكلمات أو ترجيحها يدرّب الاستدلال المنطقي القائم على القيود.' },
-        { h: '💡 الذاكرة العاملة', b: 'تتبّع الحروف المؤكّدة والغائبة والمكان الخاطئ يُحمّل الذاكرة العاملة أثناء تخطيط التخمين التالي.' },
+        { h: '🔤 الوصول المعجمي', b: 'البحث في قاموسك الذهني عن كلمات يمكن رسمها عبر حروف متجاورة يدرّب استرجاع المفردات والطلاقة اللفظية.' },
+        { h: '👁 المسح البصري', b: 'مسح الشبكة بحثاً عن بدايات الكلمات وتجمّعات الحروف يدرّب البحث المنظّم بدلاً من التخمين العشوائي.' },
+        { h: '💡 الذاكرة العاملة', b: 'الاحتفاظ بالكلمة المحتملة ومسارها في الذهن مع تجنّب إعادة استخدام الخلية يضيف طلباً على الذاكرة العاملة والكبح.' },
       ],
-      foot: 'اصرف تخميناً مبكّراً على حروف جديدة لجمع أكبر قدر من التلميحات.',
+      foot: 'ابدأ ببدايات قصيرة، ثم افحص الحروف المجاورة قبل إرسال المسار. الكلمات الصحيحة الأطول تمنح نقاطاً أكثر.',
     },
   },
   'synonyms': {

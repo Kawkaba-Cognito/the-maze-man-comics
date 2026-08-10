@@ -277,6 +277,39 @@ export default function PairedAssociates3DProto({
       onBack={onBack}
       playSfx={playSfx}
       canvasRef={wrapRef}
-    />
+    >
+      <p className="ct-visually-hidden" aria-live="polite" aria-atomic="true">
+        {phase === 'study' && openIndex >= 0
+          ? (isAr
+            ? `الصندوق ${openIndex + 1} يحتوي على الرمز ${boxes[openIndex]?.symbol || ''}`
+            : `Box ${openIndex + 1} contains symbol ${boxes[openIndex]?.symbol || ''}`)
+          : question}
+      </p>
+      {phase === 'recall' && interactive ? (
+        <div className="ct-pal-access-wrap">
+          <span className="ct-pal-access-label">
+            {isAr ? 'اختر الصندوق' : 'Choose a box'}
+          </span>
+          <div
+            className="ct-pal-access-grid"
+            role="group"
+            aria-label={isAr ? `اختر صندوق الرمز ${cue}` : `Choose the box for symbol ${cue}`}
+            style={{ gridTemplateColumns: `repeat(${Math.ceil(Math.sqrt(boxes.length))}, minmax(44px, 1fr))` }}
+          >
+            {boxes.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                className="ct-pal-access-btn"
+                aria-label={isAr ? `الصندوق ${index + 1}` : `Box ${index + 1}`}
+                onClick={() => onPick?.(index)}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </C3dProtoChrome>
   );
 }

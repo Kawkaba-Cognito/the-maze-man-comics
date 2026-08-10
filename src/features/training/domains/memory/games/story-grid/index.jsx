@@ -8,6 +8,7 @@ import PersonCharacter from '../../../../../character/PersonCharacter';
 import Emoji from '../../../../../../components/shared/Emoji';
 import { STORIES } from './stories';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+import { useGamePause } from '../../../../shared/useGamePause';
 
 /*
  * Survival plays the story as a sequence of clean illustrated 2D scenes. The
@@ -475,7 +476,7 @@ const T = {
   },
 };
 
-export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
+export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false }) {
   const t = isAr ? T.ar : T.en;
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 5) : 0;
@@ -498,6 +499,14 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
   const [sel, setSel] = useState(null); // { kind:'bg'|'char'|'action'|'erase', id }
   const [hint, setHint] = useState('');
   const [result, setResult] = useState({ n: 0, m: 0 });
+  const [timerPaused, setTimerPaused] = useState(false);
+  const pause = useGamePause({
+    isAr,
+    playSfx,
+    onQuit: onExit,
+    onPause: () => setTimerPaused(true),
+    onResume: () => setTimerPaused(false),
+  });
 
   const len = story ? story.target.length : 0;
 
@@ -527,10 +536,10 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
   }, []);
 
   useEffect(() => {
-    if (phase !== 'watch') return undefined;
+    if (phase !== 'watch' || timerPaused) return undefined;
     const id = setInterval(() => setTimeLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);
-  }, [phase]);
+  }, [phase, timerPaused]);
   useEffect(() => { if (phase === 'watch' && timeLeft === 0) setPhase('rebuild'); }, [phase, timeLeft]);
 
   const fill = useCallback((s) => {
@@ -635,15 +644,24 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
       <style>{ANIM_CSS}</style>
       <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
         {!cosmos && (
-          <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); if (mode === 'free') awardFreeRun?.('storyGrid', bestRef.current); onExit?.(); }}>‹</button>
+          <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={pause.requestQuit}>‹</button>
         )}
         {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">
           <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>{t.title}</div>
           <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>{hudSub}</div>
         </div>
-        <div className="ct-training-chrome-spacer" aria-hidden="true" />
+        <button
+          type="button"
+          className="ct-training-chrome-btn"
+          aria-label={pause.labels.paused}
+          onClick={pause.start}
+          disabled={pause.open}
+        >
+          ⏸
+        </button>
       </header>
+      {pause.modal}
 
       {/* WATCH */}
       {phase === 'watch' && (() => {

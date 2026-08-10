@@ -9,8 +9,10 @@ export default function LetterLinkBoard({
   disabled,
   currentWord,
   onCommit,
+  isAr = false,
 }) {
   const draggingRef = useRef(false);
+  const suppressClickRef = useRef(false);
 
   const cellFromPoint = useCallback((clientX, clientY) => {
     const el = document.elementFromPoint(clientX, clientY);
@@ -55,8 +57,27 @@ export default function LetterLinkBoard({
   };
 
   const endDrag = () => {
-    if (draggingRef.current) onCommit?.();
+    if (draggingRef.current) {
+      suppressClickRef.current = true;
+      onCommit?.();
+      // Pointer-up on a native button is followed by click. Ignore only that
+      // synthetic click; keyboard activation still follows the click path.
+      setTimeout(() => { suppressClickRef.current = false; }, 0);
+    }
     draggingRef.current = false;
+  };
+
+  const onCellClick = (idx) => {
+    if (disabled || suppressClickRef.current) return;
+    if (path.length === 0) {
+      setPath([idx]);
+      return;
+    }
+    if (path[path.length - 1] === idx) {
+      onCommit?.();
+      return;
+    }
+    extendPath(idx);
   };
 
   return (
@@ -72,21 +93,28 @@ export default function LetterLinkBoard({
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         onLostPointerCapture={endDrag}
-        role="application"
-        aria-label="Letter grid — drag to connect"
+        role="group"
+        aria-label={isAr ? 'شبكة الحروف — اسحب أو اختر الحروف واحداً تلو الآخر' : 'Letter grid — drag or select letters one at a time'}
       >
         {grid.map((ch, i) => {
           const pos = path.indexOf(i);
           const active = pos >= 0;
           return (
-            <div
+            <button
               key={i}
+              type="button"
               data-link-idx={i}
               className={`ct-wordle-link-cell${active ? ' ct-wordle-link-cell--active' : ''}${pos === 0 ? ' ct-wordle-link-cell--start' : ''}${pos === path.length - 1 && path.length > 0 ? ' ct-wordle-link-cell--end' : ''}`}
+              disabled={disabled}
+              aria-pressed={active}
+              aria-label={isAr
+                ? `الحرف ${ch.toUpperCase()}، الصف ${Math.floor(i / size) + 1}، العمود ${(i % size) + 1}${active ? `، الترتيب ${pos + 1}` : ''}`
+                : `Letter ${ch.toUpperCase()}, row ${Math.floor(i / size) + 1}, column ${(i % size) + 1}${active ? `, selected ${pos + 1}` : ''}`}
+              onClick={() => onCellClick(i)}
             >
               {active && <span className="ct-wordle-link-order">{pos + 1}</span>}
               <span className="ct-wordle-link-letter">{ch.toUpperCase()}</span>
-            </div>
+            </button>
           );
         })}
       </div>

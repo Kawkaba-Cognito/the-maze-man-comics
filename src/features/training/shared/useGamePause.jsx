@@ -100,14 +100,18 @@ export function useGamePause({ isAr, playSfx, onQuit, sceneRef, onResume, onPaus
     playSfx?.('click');
     apply(true);
     setQuitOpen(true);
-  }, [apply, playSfx]);
+    onPause?.();
+  }, [apply, playSfx, onPause]);
 
   const cancelQuit = useCallback(() => {
     playSfx?.('click');
     setQuitOpen(false);
     // Only resume if the pause menu is not the thing underneath.
-    if (!open) apply(false);
-  }, [apply, playSfx, open]);
+    if (!open) {
+      apply(false);
+      onResume?.();
+    }
+  }, [apply, playSfx, open, onResume]);
 
   const modal = (
     <>

@@ -18,7 +18,7 @@ if (lotImg) { lotImg.decoding = 'async'; lotImg.src = LOT_URL; }
 if (garageImg) { garageImg.decoding = 'async'; garageImg.src = GARAGE_URL; }
 
 /*
- * Car Park — Divided Attention & planning (Train-of-Thought style, re-themed).
+ * Spaceship — Divided Attention & planning (Train-of-Thought style, re-themed).
  * Cars drive out of the garage and wind along a road network laid on a grid.
  * Each branch ends in a colour-matched PARKING bay scattered across the board.
  * At every JUNCTION the player taps the circled control to point the road; you
@@ -596,12 +596,12 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
       scienceId="train-switch"
       title={{ en: 'Spaceship', ar: 'سفينة فضائية' }}
       hints={{
-        free: { en: 'Park cars by colour — escalating waves, lives', ar: 'اركن السيارات حسب اللون — موجات متصاعدة، أرواح' },
+        free: { en: 'Dock ships by colour — escalating waves, lives', ar: 'أرسِ السفن حسب اللون — موجات متصاعدة، أرواح' },
         levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
-        pass: { en: 'Same lot for all · pass the device', ar: 'نفس الموقف للجميع · مرّر الجهاز' },
+        pass: { en: 'Same spaceport for all · pass the device', ar: 'نفس الميناء الفضائي للجميع · مرّر الجهاز' },
       }}
       diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      pass={{ trials: PP_TRAINS, scoreLabel: { en: 'parked', ar: 'ركنت' }, lowerBetter: false, diff: 'med' }}
+      pass={{ trials: PP_TRAINS, scoreLabel: { en: 'docked', ar: 'رست' }, lowerBetter: false, diff: 'med' }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}

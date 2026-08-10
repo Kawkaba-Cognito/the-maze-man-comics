@@ -71,6 +71,7 @@ export function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
   const correctRef = useRef(0);
   const totalRef = useRef(0);
   const timerRef = useRef(null);
+  const newTrialRef = useRef(null);
   // progression
   const pairsRef = useRef(2);         // free/challenge adaptive
   const trialIdxRef = useRef(0);
@@ -134,8 +135,9 @@ export function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
       if (perfect) { playSfx?.('win'); setMsg(isAr ? 'ممتاز ✓' : 'Perfect ✓'); }
       else { playSfx?.('lose'); setMsg(isAr ? `${correctRef.current}/${totalRef.current} صحيحة` : `${correctRef.current}/${totalRef.current} correct`); }
       clearTimeout(timerRef.current);
-      // eslint-disable-next-line no-use-before-define
-      timerRef.current = setTimeout(() => { if (!advance(perfect)) newTrial(); }, 1300);
+      timerRef.current = setTimeout(() => {
+        if (!advance(perfect)) newTrialRef.current?.();
+      }, 1300);
       return;
     }
     subRef.current = 'recall';
@@ -145,7 +147,6 @@ export function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
     const cur = order[cueIdxRef.current];
     setCue(cur.symbol);
     setMsg(isAr ? 'أين كان هذا؟' : 'Where was this?');
-    // eslint-disable-next-line no-use-before-define
   }, [advance, isAr, playSfx]);
 
   const newTrial = useCallback(() => {
@@ -189,6 +190,7 @@ export function PalEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => step(0), 500);
   }, [cfg, isAr, presentCue, updateHud, rng]);
+  newTrialRef.current = newTrial;
 
   const onPick = useCallback((hit) => {
     if (subRef.current !== 'recall') return;

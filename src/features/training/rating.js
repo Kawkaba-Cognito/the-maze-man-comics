@@ -25,7 +25,7 @@ const KEY = 'mm_rating_v1';
 export const RATED_GAMES = {
   cancel: { gameKey: 'cancel-task', domainId: 'attention', lHalf: 8, en: 'Cancellation', ar: 'الشطب' },
   mot: { gameKey: 'mot', domainId: 'attention', lHalf: 6, en: 'Target Tracking', ar: 'تتبّع الأهداف' },
-  trainSwitch: { gameKey: 'train-switch', domainId: 'attention', lHalf: 6, en: 'Car Park', ar: 'موقف السيارات' },
+  trainSwitch: { gameKey: 'train-switch', domainId: 'attention', lHalf: 6, en: 'Spaceship', ar: 'السفن الفضائية' },
   speed: { gameKey: 'speed-match', domainId: 'speed', lHalf: 9, en: 'Speed Match', ar: 'مطابقة سريعة' },
   mathGates: { gameKey: 'math-gates', domainId: 'speed', lHalf: 6, en: 'Math Gates', ar: 'بوابات الحساب' },
   trailMaking: { gameKey: 'trail-making', domainId: 'speed', lHalf: 6, en: 'Trail Making', ar: 'ربط المسار' },
@@ -37,12 +37,23 @@ export const RATED_GAMES = {
   synonyms: { gameKey: 'synonyms', domainId: 'language', lHalf: 6, en: 'Word Links', ar: 'روابط الكلمات' },
   trivia: { gameKey: 'trivia', domainId: 'language', lHalf: 6, en: 'Trivia', ar: 'معلومات' },
   rush: { gameKey: 'rush-hour', domainId: 'reasoning', lHalf: 7, en: 'Block Escape', ar: 'هروب القطع' },
-  raven: { gameKey: 'raven-matrices', domainId: 'reasoning', lHalf: 6, en: 'Matrix IQ', ar: 'مصفوفات الذكاء' },
+  raven: { gameKey: 'raven-matrices', domainId: 'reasoning', lHalf: 6, en: 'Matrix Reasoning', ar: 'استدلال المصفوفات' },
   detective: { gameKey: 'detective', domainId: 'reasoning', lHalf: 6, en: 'Detective', ar: 'المحقّق' },
   stroop: { gameKey: 'spatial-stroop', domainId: 'flexibility', lHalf: 7, en: 'Arrow Rush', ar: 'تبديل الأسهم' },
   'mirror-world': { gameKey: 'mirror-world', domainId: 'flexibility', lHalf: 6, en: 'Mirror World', ar: 'عالم المرآة' },  'task-switch': { gameKey: 'task-switch', domainId: 'flexibility', lHalf: 6, en: 'Task Switch', ar: 'تبديل المهمة' },  'sort-shift': { gameKey: 'sort-shift', domainId: 'flexibility', lHalf: 6, en: 'Sort It Another Way', ar: 'رتّبها بطريقة أخرى' },
 };
 const BY_GAMEKEY = Object.fromEntries(Object.entries(RATED_GAMES).map(([k, v]) => [v.gameKey, k]));
+
+// Keep historical/assessment mappings above so old records remain readable,
+// but only games available in the current Training hub may shape a domain score.
+const ACTIVE_RATED_GAME_KEYS = new Set([
+  'cancel-task', 'mot', 'train-switch',
+  'speed-match', 'math-gates', 'trail-making',
+  'story-grid', 'keep-track', 'paired-associates',
+  'wordle', 'synonyms', 'trivia',
+  'rush-hour', 'raven-matrices', 'detective',
+  'mirror-world', 'task-switch', 'sort-shift',
+]);
 
 /** Rating bands — labels for users, thresholds for difficulty mapping. */
 export const RATING_BANDS = [
@@ -128,7 +139,10 @@ export function gameRatingByGameKey(gameKey) {
 
 /** Domain rating = mean of its games' ratings (measured beats provisional). */
 export function domainRating(domainId) {
-  const keys = Object.keys(RATED_GAMES).filter((k) => RATED_GAMES[k].domainId === domainId);
+  const keys = Object.keys(RATED_GAMES).filter((k) => (
+    RATED_GAMES[k].domainId === domainId
+    && ACTIVE_RATED_GAME_KEYS.has(RATED_GAMES[k].gameKey)
+  ));
   const rs = keys.map((k) => gameRating(k)).filter(Boolean);
   if (!rs.length) return null;
   const measured = rs.filter((r) => r.status !== 'provisional');

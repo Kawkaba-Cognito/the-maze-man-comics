@@ -1,7 +1,7 @@
-import { LINK_WORDS_EN } from './link-words-en';
-import { LINK_WORDS_AR } from './link-words-ar';
-import { LINK_WORDS_AR_COMMON } from './link-words-ar-common';
-import { WordTrie, findWordsOnGrid } from './wordTrie';
+import { LINK_WORDS_EN } from './link-words-en.js';
+import { LINK_WORDS_AR } from './link-words-ar.js';
+import { LINK_WORDS_AR_COMMON } from './link-words-ar-common.js';
+import { WordTrie, findWordsOnGrid } from './wordTrie.js';
 
 const tries = {};
 

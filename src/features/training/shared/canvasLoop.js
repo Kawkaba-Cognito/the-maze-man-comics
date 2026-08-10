@@ -1,6 +1,6 @@
 /*
  * canvasLoop.js — the standard glue shared by the canvas engine games
- * (Flip, Piano Tap, Odd One Out, Math Gates, Car Park): DPR-aware sizing
+ * (Flip, Piano Tap, Odd One Out, Math Gates, Spaceship): DPR-aware sizing
  * kept fresh by a ResizeObserver + a requestAnimationFrame loop with
  * delta-time clamping. Call inside the run effect and return its cleanup:
  *

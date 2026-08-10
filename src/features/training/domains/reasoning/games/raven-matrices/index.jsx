@@ -172,7 +172,7 @@ export default function RavenMatricesGame({ onBack, workoutMode = false, cosmosA
   const [trialIdx, setTrialIdx] = useState(0);
   const [lastResult, setLastResult] = useState(null);
   const [quitOpen, setQuitOpen] = useState(false);
-  // Matrix IQ had no pause at all — the header simply never got an onPause.
+  // Matrix Reasoning had no pause at all — the header simply never got an onPause.
   const pause = useGamePause({ isAr, playSfx, onQuit: onBack });
 
   // Pass n Play
@@ -595,8 +595,14 @@ export default function RavenMatricesGame({ onBack, workoutMode = false, cosmosA
             {puzzle.options.map((fig, i) => {
               const cls = picked ? (i === puzzle.correctIndex ? ' ct-rv-opt--correct' : i === picked.idx ? ' ct-rv-opt--wrong' : ' ct-rv-opt--dim') : '';
               return (
-                <button key={i} type="button" className={`ct-rv-opt${cls}`} disabled={!!picked && picked.ok}
-                  onPointerDown={(e) => { e.preventDefault(); onPick(i); }}>
+                <button
+                  key={i}
+                  type="button"
+                  className={`ct-rv-opt${cls}`}
+                  disabled={!!picked && picked.ok}
+                  aria-label={isAr ? `الخيار ${i + 1}` : `Option ${i + 1}`}
+                  onClick={() => onPick(i)}
+                >
                   <Figure fig={fig} size={58} />
                 </button>
               );

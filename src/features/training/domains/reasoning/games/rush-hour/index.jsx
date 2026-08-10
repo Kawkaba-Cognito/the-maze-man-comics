@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { GAME_COLORS, GAME_STIMULUS_6, shadeOf } from '../../../../shared/gamePalette';
 import { useApp } from '../../../../../../context/AppContext';
 import { IconBack } from '../../../../shared/TrainingIcons';
@@ -34,7 +34,6 @@ import RhWorker from './rh-worker.js?worker';
 import { getCuratedRushHourAssessBoards } from './curated-levels';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
-import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
 import KawkabSprite from '../../../../shared/KawkabSprite';
 
@@ -120,6 +119,11 @@ const UI_EN = {
   moves: 'Moves',
   back: 'Back',
   reset: 'Reset',
+  targetBlock: 'Target block',
+  blockN: (n) => `Block ${n}`,
+  horizontal: 'horizontal',
+  vertical: 'vertical',
+  moveSelected: 'Move selected block',
   hub: 'Menu',
   next: 'Next level',
   nextRound: 'Continue',
@@ -179,6 +183,11 @@ const UI_AR = {
   score: 'النقاط',
   back: 'رجوع',
   reset: 'إعادة',
+  targetBlock: 'القطعة الهدف',
+  blockN: (n) => `القطعة ${n}`,
+  horizontal: 'أفقية',
+  vertical: 'عمودية',
+  moveSelected: 'حرّك القطعة المحددة',
   hub: 'القائمة',
   next: 'المستوى التالي',
   nextRound: 'متابعة',
@@ -271,7 +280,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   const [chalTurnOpen, setChalTurnOpen] = useState(false);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
-  const [chalScores, setChalScores] = useState([]);
+  const [, setChalScores] = useState([]);
   const [lastRhChalRows, setLastRhChalRows] = useState(null);
 
   const chalStartRef = useRef(0);
@@ -284,7 +293,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   const [freeSessionNonce, setFreeSessionNonce] = useState(0);
   const [freeScore, setFreeScore] = useState(0);
   const [freeRoundsWon, setFreeRoundsWon] = useState(0);
-  const [freeStreak, setFreeStreak] = useState(0);
+  const [, setFreeStreak] = useState(0);
   const [freeResSnapshot, setFreeResSnapshot] = useState({ rounds: 0, score: 0, bestStreak: 0 });
 
   const freeStageRef = useRef(0);
@@ -412,7 +421,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         workerRef.current = null;
       });
       return () => { w.terminate(); workerRef.current = null; };
-    } catch (_) {
+    } catch {
       workerRef.current = null;
     }
   }, []);
@@ -527,6 +536,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   const [moves, setMoves] = useState(0);
   const [won, setWon] = useState(false);
   const [cellSize, setCellSize] = useState(56);
+  const [selectedPieceId, setSelectedPieceId] = useState(null);
 
   const playModeRef = useRef(playMode);
   const levelIndexRef = useRef(levelIndex);
@@ -673,6 +683,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         ? pcs
         : RUSH_HOUR_BASE_LAYOUTS[0].pieces;
     setPieces(clonePieces(safe));
+    setSelectedPieceId(null);
     setMoves(0);
     setWon(false);
     wonRef.current = false;
@@ -727,6 +738,11 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   }, [grid]);
 
   const boardPx = cellSize * grid;
+  const selectedPiece = pieces.find((piece) => piece.id === selectedPieceId) ?? null;
+  const selectedRange = selectedPiece ? getRange(selectedPiece, pieces, grid) : null;
+  const selectedPosition = selectedPiece
+    ? (selectedPiece.dir === 'h' ? selectedPiece.col : selectedPiece.row)
+    : null;
 
   const syncProgressWin = useCallback(
     (dk, lv, mv) => {
@@ -828,6 +844,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         ? pcs
         : RUSH_HOUR_BASE_LAYOUTS[0].pieces;
     setPieces(clonePieces(safe));
+    setSelectedPieceId(null);
     setMoves(0);
     setWon(false);
     wonRef.current = false;
@@ -920,6 +937,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         ? pcs
         : RUSH_HOUR_BASE_LAYOUTS[0].pieces;
     setPieces(clonePieces(safe));
+    setSelectedPieceId(null);
     setMoves(0);
     setWon(false);
     wonRef.current = false;
@@ -961,11 +979,90 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
     setPhase('play');
   }, []);
 
+  const commitPieceMove = useCallback((pid, isH, newGridPosition) => {
+    const currentPiece = piecesRef.current.find((piece) => piece.id === pid);
+    if (!currentPiece) return;
+    const currentPosition = isH ? currentPiece.col : currentPiece.row;
+    if (currentPosition === newGridPosition) return;
+
+    const next = piecesRef.current.map((piece) => {
+      if (piece.id !== pid) return piece;
+      return isH
+        ? { ...piece, col: newGridPosition }
+        : { ...piece, row: newGridPosition };
+    });
+    piecesRef.current = next;
+    setPieces(next);
+
+    playSfx('click');
+    if (!firstMoveAtRef.current) firstMoveAtRef.current = performance.now();
+    const nextM = movesRef.current + 1;
+    movesRef.current = nextM;
+    setMoves(nextM);
+
+    if (!isWon(next, grid, exitRow)) return;
+    wonRef.current = true;
+    const lv = levelIndexRef.current;
+    const mode = playModeRef.current;
+    const solveMs = Math.round(performance.now() - puzzleStartRef.current);
+    const planMs = firstMoveAtRef.current
+      ? Math.round(firstMoveAtRef.current - puzzleStartRef.current)
+      : null;
+    setTimeout(() => {
+      playSfx('win');
+      setWon(true);
+      // One puzzle = one trial; rt = solve time, plan = first-move latency.
+      // The assessment warm-up jam is practice — not logged.
+      if (!(mode === 'assess' && assessWarmupRef.current)) {
+        trialLogRef.current?.trial({
+          rt: solveMs,
+          ok: true,
+          moves: nextM,
+          par: parMoves,
+          ...(planMs != null ? { plan: planMs } : {}),
+        });
+      }
+      const dk = diffKeyRef.current;
+      if (mode === 'levels') {
+        syncProgressWin(dk, lv, nextM);
+        awardTrainingWin('rush', dk, lv, RH_LEVELS_PER_TIER);
+        trialLogRef.current?.finish({ won: true, moves: nextM, par: parMoves });
+        trialLogRef.current = null;
+      }
+      if (mode === 'free') {
+        freeStreakRef.current += 1;
+        if (freeStreakRef.current > freeBestStreakRef.current) {
+          freeBestStreakRef.current = freeStreakRef.current;
+        }
+        const pts = rhFreeParPoints(parMoves, nextM, freeStreakRef.current);
+        freeScoreRef.current += pts;
+        setFreeScore(freeScoreRef.current);
+        setFreeStreak(freeStreakRef.current);
+        freeRoundsWonRef.current += 1;
+        setFreeRoundsWon(freeRoundsWonRef.current);
+      }
+    }, 280);
+  }, [awardTrainingWin, exitRow, grid, parMoves, playSfx, syncProgressWin]);
+
+  const nudgePiece = useCallback((pid, delta) => {
+    if (wonRef.current || phase !== 'play' || pauseOpen || quitOpen) return;
+    if (playMode === 'challenge' && chalTurnOpen) return;
+    const piece = piecesRef.current.find((item) => item.id === pid);
+    if (!piece) return;
+    const range = getRange(piece, piecesRef.current, grid);
+    const position = piece.dir === 'h' ? piece.col : piece.row;
+    const nextPosition = Math.max(range.lo, Math.min(range.hi, position + delta));
+    if (nextPosition === position) return;
+    setSelectedPieceId(pid);
+    commitPieceMove(pid, piece.dir === 'h', nextPosition);
+  }, [chalTurnOpen, commitPieceMove, grid, pauseOpen, phase, playMode, quitOpen]);
+
   const handleDown = useCallback(
     (e, pid) => {
       if (wonRef.current || phase !== 'play' || pauseOpen || quitOpen) return;
       if (playMode === 'challenge' && chalTurnOpen) return;
       e.preventDefault();
+      setSelectedPieceId(pid);
       const p = piecesRef.current.find((x) => x.id === pid);
       if (!p) return;
       const range = getRange(p, piecesRef.current, grid);
@@ -1037,61 +1134,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
       if (!d.moved) return;
       const dg = Math.round(d.lastDx / cellSize);
       if (dg === 0) return;
-      playSfx('click');
-      if (!firstMoveAtRef.current) firstMoveAtRef.current = performance.now();
-      setMoves((m) => {
-        const nextM = m + 1;
-        setPieces((prev) => {
-          const next = prev.map((p) => {
-            if (p.id !== d.pid) return p;
-            return d.isH ? { ...p, col: d.startGrid + dg } : { ...p, row: d.startGrid + dg };
-          });
-          if (isWon(next, grid, exitRow)) {
-            wonRef.current = true;
-            const lv = levelIndexRef.current;
-            const mode = playModeRef.current;
-            const solveMs = Math.round(performance.now() - puzzleStartRef.current);
-            const planMs = firstMoveAtRef.current
-              ? Math.round(firstMoveAtRef.current - puzzleStartRef.current)
-              : null;
-            setTimeout(() => {
-              playSfx('win');
-              setWon(true);
-              // One puzzle = one trial; rt = solve time, plan = first-move latency.
-              // The assessment warm-up jam is practice — not logged.
-              if (!(mode === 'assess' && assessWarmupRef.current)) {
-                trialLogRef.current?.trial({
-                  rt: solveMs,
-                  ok: true,
-                  moves: nextM,
-                  par: parMoves,
-                  ...(planMs != null ? { plan: planMs } : {}),
-                });
-              }
-              const dk = diffKeyRef.current;
-              if (mode === 'levels') { syncProgressWin(dk, lv, nextM); awardTrainingWin('rush', dk, lv, RH_LEVELS_PER_TIER); }
-              if (mode === 'levels') {
-                trialLogRef.current?.finish({ won: true, moves: nextM, par: parMoves });
-                trialLogRef.current = null;
-              }
-              if (mode === 'free') {
-                freeStreakRef.current += 1;
-                if (freeStreakRef.current > freeBestStreakRef.current) {
-                  freeBestStreakRef.current = freeStreakRef.current;
-                }
-                const pts = rhFreeParPoints(parMoves, nextM, freeStreakRef.current);
-                freeScoreRef.current += pts;
-                setFreeScore(freeScoreRef.current);
-                setFreeStreak(freeStreakRef.current);
-                freeRoundsWonRef.current += 1;
-                setFreeRoundsWon(freeRoundsWonRef.current);
-              }
-            }, 280);
-          }
-          return next;
-        });
-        return nextM;
-      });
+      commitPieceMove(d.pid, d.isH, d.startGrid + dg);
     };
 
     const onCancel = (e) => {
@@ -1115,7 +1158,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
     };
-  }, [cellSize, playSfx, grid, exitRow, parMoves, syncProgressWin, awardTrainingWin]);
+  }, [cellSize, commitPieceMove]);
 
   // Per-puzzle clock for survival mode: each board gets its own time based on par.
   useEffect(() => {
@@ -1526,6 +1569,12 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
       <style>{`
         .rh-piece { will-change: transform; }
         .rh-piece:active { cursor: grabbing !important; }
+        .rh-piece:focus-visible { outline: 3px solid var(--game-selected); outline-offset: 2px; }
+        .ct-rh-nudge { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; }
+        .ct-rh-nudge button { min-width: 48px; min-height: 48px; border: 1px solid color-mix(in srgb, var(--game-accent) 55%, transparent); border-radius: 12px; background: var(--surface-raised); color: var(--game-ink); font: inherit; font-size: 1.35rem; cursor: pointer; }
+        .ct-rh-nudge button:disabled { cursor: not-allowed; opacity: 0.4; }
+        .ct-rh-nudge button:focus-visible { outline: 3px solid var(--game-selected); outline-offset: 2px; }
+        .ct-rh-nudge span { min-width: 112px; color: var(--game-ink); font-size: 0.82rem; font-weight: 750; text-align: center; }
       `}</style>
       <div className="ct-rh-sky" aria-hidden="true">
         <div className="ct-rh-sky-nebula" />
@@ -1656,20 +1705,33 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
             userSelect: 'none',
           }}
         >
-          {pieces.map((p) => {
+          {pieces.map((p, pieceIndex) => {
             const w = (p.dir === 'h' ? p.len : 1) * cellSize - GAP * 2;
             const h = (p.dir === 'v' ? p.len : 1) * cellSize - GAP * 2;
             const x = p.col * cellSize + GAP;
             const y = p.row * cellSize + GAP;
             const st = pieceStyle(p.id);
             return (
-              <div
+              <button
+                type="button"
                 key={p.id}
                 ref={(el) => {
                   if (el) pieceEls.current[p.id] = el;
                 }}
                 className="rh-piece"
                 onPointerDown={(e) => handleDown(e, p.id)}
+                onClick={() => setSelectedPieceId(p.id)}
+                onKeyDown={(e) => {
+                  const delta = p.dir === 'h'
+                    ? (e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0)
+                    : (e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0);
+                  if (!delta) return;
+                  e.preventDefault();
+                  nudgePiece(p.id, delta);
+                }}
+                aria-label={`${p.isHero ? t.targetBlock : t.blockN(pieceIndex + 1)}, ${p.dir === 'h' ? t.horizontal : t.vertical}`}
+                aria-pressed={selectedPieceId === p.id}
+                disabled={won}
                 style={{
                   position: 'absolute',
                   left: x,
@@ -1689,6 +1751,10 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                   justifyContent: 'center',
                   overflow: 'visible',
                   transition: 'left 0.12s ease, top 0.12s ease',
+                  padding: 0,
+                  appearance: 'none',
+                  outline: selectedPieceId === p.id ? '3px solid var(--game-selected)' : undefined,
+                  outlineOffset: 2,
                 }}
               >
                 {p.isHero ? (
@@ -1731,12 +1797,39 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                 ) : (
                   <BlockDecor dir={p.dir} />
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
           </div>
         </div>
+        {selectedPiece && selectedRange && !won && (
+          <div className="ct-rh-nudge" role="group" aria-label={t.moveSelected}>
+            <button
+              type="button"
+              disabled={selectedPosition <= selectedRange.lo}
+              onClick={() => nudgePiece(selectedPiece.id, -1)}
+              aria-label={isAr
+                ? `حرّك ${selectedPiece.isHero ? t.targetBlock : t.blockN(pieces.indexOf(selectedPiece) + 1)} ${selectedPiece.dir === 'h' ? 'يساراً' : 'للأعلى'}`
+                : `Move ${selectedPiece.isHero ? t.targetBlock : t.blockN(pieces.indexOf(selectedPiece) + 1)} ${selectedPiece.dir === 'h' ? 'left' : 'up'}`}
+            >
+              {selectedPiece.dir === 'h' ? '←' : '↑'}
+            </button>
+            <span aria-live="polite">
+              {selectedPiece.isHero ? t.targetBlock : t.blockN(pieces.indexOf(selectedPiece) + 1)}
+            </span>
+            <button
+              type="button"
+              disabled={selectedPosition >= selectedRange.hi}
+              onClick={() => nudgePiece(selectedPiece.id, 1)}
+              aria-label={isAr
+                ? `حرّك ${selectedPiece.isHero ? t.targetBlock : t.blockN(pieces.indexOf(selectedPiece) + 1)} ${selectedPiece.dir === 'h' ? 'يميناً' : 'للأسفل'}`
+                : `Move ${selectedPiece.isHero ? t.targetBlock : t.blockN(pieces.indexOf(selectedPiece) + 1)} ${selectedPiece.dir === 'h' ? 'right' : 'down'}`}
+            >
+              {selectedPiece.dir === 'h' ? '→' : '↓'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="ct-training-play-actions">

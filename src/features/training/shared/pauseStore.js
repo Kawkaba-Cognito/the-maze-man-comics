@@ -28,7 +28,7 @@ const subscribers = new Set();
 /*
  * WHO is holding the pause, not merely whether someone is.
  *
- * A plain boolean broke as soon as two components could pause: Matrix IQ has
+ * A plain boolean broke as soon as two components could pause: Matrix Reasoning has
  * its own useGamePause AND renders C3dProtoChrome, which has another. With a
  * boolean, whichever unmounted first cleared the flag for BOTH — so the game
  * could resume while its pause menu was still on screen.

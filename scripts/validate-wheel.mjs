@@ -137,6 +137,37 @@ assert(WHEEL_BANK.length >= 32, `wheel bank has ${WHEEL_BANK.length}; a 4-team m
 assert(STREAK_POOLS.length >= 16, `streak has ${STREAK_POOLS.length} pools; a 4-team marathon draws 16`);
 assert(RANKED_PUZZLES.length >= 24, `ranked has ${RANKED_PUZZLES.length} puzzles; a 4-team marathon draws 24`);
 
+/* ── Night sets ───────────────────────────────────────────────────────────
+ * The promise a set makes is "nothing tonight has come up before, and this set
+ * alone will see the night out". Both halves are checkable, and both are the
+ * kind that fail silently: a set that shares a question with another set only
+ * shows up when a group happens to replay it weeks later, and a set that is one
+ * puzzle short only shows up when a night runs dry in front of everybody.
+ */
+const { SETS, SET_COUNT } = await import('../src/features/puzzles/games/thewheel/sets.js');
+const NIGHT = { wheel: 20, streak: 12, ranked: 16 };   // standard, four teams
+
+assert(SET_COUNT >= 2, `only ${SET_COUNT} set(s) — sets are pointless below two`);
+
+const BANKS = { wheel: WHEEL_BANK, streak: STREAK_POOLS, ranked: RANKED_PUZZLES };
+for (const kind of ['wheel', 'streak', 'ranked']) {
+  const seen = new Map();
+  let total = 0;
+  SETS.forEach((s) => {
+    total += s[kind].length;
+    assert(s[kind].length >= NIGHT[kind],
+      `set ${s.index + 1}: only ${s[kind].length} ${kind} — a standard 4-team night needs ${NIGHT[kind]} and would run dry`);
+    s[kind].forEach((item) => {
+      assert(!seen.has(item.id),
+        `${kind} "${item.id}" is in BOTH set ${seen.get(item.id) + 1} and set ${s.index + 1} — the sets are not independent`);
+      seen.set(item.id, s.index);
+    });
+  });
+  // Nothing may be stranded: every authored item must belong to exactly one set.
+  assert(total === BANKS[kind].length,
+    `${kind}: sets hold ${total} items but the bank has ${BANKS[kind].length} — ${BANKS[kind].length - total} are unreachable`);
+}
+
 if (failures) {
   console.error(`\nvalidate-wheel: ${failures} problem(s).`);
   process.exit(1);
@@ -147,4 +178,6 @@ console.log('validate-wheel: OK', {
   streakFacts: STREAK_POOLS.reduce((a, p) => a + p.items.length, 0),
   rankedPuzzles: RANKED_PUZZLES.length,
   maxDrawPerNight: { wheel: 32, streak: 16, ranked: 24 },
+  nightSets: SET_COUNT,
+  perSet: { wheel: SETS[0].wheel.length, streak: SETS[0].streak.length, ranked: SETS[0].ranked.length },
 });

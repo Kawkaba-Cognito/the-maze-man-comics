@@ -1,15 +1,13 @@
 /* =============================================================================
  * SPEED MATCH — Symbol-Digit substitution (processing speed)
  *
- * This is the SYMBOL DIGIT MODALITIES TEST (SDMT; Smith 1982) — the "reverse" of
- * the Wechsler Coding / DSST: a symbol is shown and the player responds with the
- * matching DIGIT (vs DSST, where a digit is shown and a symbol is drawn). SDMT is
- * the most sensitive clinical measure of PROCESSING SPEED, with low motor demand
- * (Salthouse 1996; Jaeger 2018; Smith 1982). The key (legend) stays visible and
- * FIXED for the whole block, so this is a speeded perceptual-matching task, not a
- * memory/relearning task — no key remapping (that would add working-memory load).
+ * This is a gamified SYMBOL-DIGIT matching task inspired by the SDMT paradigm,
+ * not a standardized or clinically normed SDMT administration. A symbol is shown
+ * and the player responds with the matching digit. The key (legend) stays visible
+ * and fixed for the whole block, so the intended construct is speeded perceptual
+ * matching rather than relearning a changing key.
  *
- * Primary metric: correct matches per minute (the SDMT score). We also track
+ * Primary metric: correct matches per minute (an SDMT-like task metric). We also track
  * accuracy, mean response time, RT variability (ICV) and efficiency (IES).
  * ========================================================================== */
 

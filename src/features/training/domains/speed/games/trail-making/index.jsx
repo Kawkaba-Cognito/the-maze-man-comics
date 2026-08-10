@@ -478,7 +478,7 @@ export function TrailEngine({ mode, diff, level, seed, attempt, onResult, onExit
       trialLogRef.current?.discard();
       trialLogRef.current = null;
     };
-  }, [runId, seed]);
+  }, [diff, draw, finishSurvival, fit, isSurvival, level, mode, newBoard, onTimeout, runId, seed, timed]);
 
   const S = styles;
   const total = cfgRef.current.n;

@@ -8,7 +8,7 @@ import { generate, waveCfg, levelCfg, PAL } from './index';
 import '../../../../shared/c3dProto.css';
 
 /*
- * Car Park · 3D — the REAL 2D Survival as a TOP-DOWN spaceport.
+ * Spaceship · 3D — the REAL 2D Survival as a TOP-DOWN spaceport.
  * Engine rules are the 2D game's, untouched: waveCfg escalation, best-of-8
  * generate() route tree, one distinct Okabe-Ito colour per docking bay, the
  * balanced colour bag + 3-ship preview queue, spawn gating (maxC, lead-busy),
@@ -121,6 +121,7 @@ export default function CarPark3DProto({
   const [banner, setBanner] = useState('go');
   const [waveFlash, setWaveFlash] = useState(null);
   const [bootError, setBootError] = useState(null);
+  const [forkStates, setForkStates] = useState([]);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -550,6 +551,7 @@ export default function CarPark3DProto({
       g.queue = [drawColor(), drawColor(), drawColor()];
       layoutWorld();
       buildNetMeshes();
+      setForkStates(g.forks.map((fork) => fork.sw || 0));
     };
 
     const finishRun = (won = false) => {
@@ -727,6 +729,15 @@ export default function CarPark3DProto({
     const ptr = new THREE.Vector2();
     const tmp = new THREE.Vector3();
     const el = renderer.domElement;
+    const toggleFork = (fork) => {
+      if (!fork || g.finished) return;
+      const f = fork.userData.fork;
+      f.sw = f.sw ? 0 : 1;
+      fork.userData.pulse = 0.35;
+      syncEdges();
+      setForkStates(g.forks.map((item) => item.sw || 0));
+      playSfxRef.current?.('click');
+    };
     const onDown = (e) => {
       if (g.finished) return;
       const rect = el.getBoundingClientRect();
@@ -744,17 +755,12 @@ export default function CarPark3DProto({
           if (d < bestD) { bestD = d; fork = ring; }
         }
       }
-      if (fork) {
-        const f = fork.userData.fork;
-        f.sw = f.sw ? 0 : 1;
-        fork.userData.pulse = 0.35;
-        syncEdges();
-        playSfxRef.current?.('click');
-      }
+      if (fork) toggleFork(fork);
     };
     el.addEventListener('pointerdown', onDown);
 
     apiRef.current = {
+      toggleFork: (index) => toggleFork(forkMeshes[index]),
       start: () => {
         const { mode: m, diff: df, level: lv, attempt: at } = modeCfgRef.current;
         g.finished = false;
@@ -834,6 +840,33 @@ export default function CarPark3DProto({
           </div>
         ) : null
       }
-    />
+    >
+      {phase === 'run' && forkStates.length > 0 ? (
+        <div className="ct-spaceport-access-wrap">
+          <span className="ct-spaceport-access-label">
+            {isAr ? 'مفاتيح مسارات السفن' : 'Ship route switches'}
+          </span>
+          <div
+            className="ct-spaceport-access-grid"
+            role="group"
+            aria-label={isAr ? 'بدّل اتجاه المفترقات' : 'Toggle junction directions'}
+            style={{ gridTemplateColumns: `repeat(${Math.min(4, forkStates.length)}, minmax(44px, 1fr))` }}
+          >
+            {forkStates.map((state, index) => (
+              <button
+                key={index}
+                type="button"
+                className="ct-spaceport-access-btn"
+                aria-label={isAr ? `بدّل المفترق ${index + 1}` : `Toggle junction ${index + 1}`}
+                aria-pressed={Boolean(state)}
+                onClick={() => apiRef.current.toggleFork?.(index)}
+              >
+                J{index + 1} · {state ? 'B' : 'A'}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </C3dProtoChrome>
   );
 }

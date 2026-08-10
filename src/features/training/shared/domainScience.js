@@ -17,7 +17,7 @@ export const DOMAIN_SCIENCE = {
         },
         {
           h: '🔬 What these games train',
-          b: 'Cancellation Task comes from neuropsychological visual-search tests. Target Tracking uses multiple-object tracking (most adults follow about 4–5 items). Car Park combines timing, switching, and monitoring — a divided-attention challenge.',
+          b: 'Cancellation Task comes from neuropsychological visual-search tests. Target Tracking uses multiple-object tracking (most adults follow about 4–5 items). Spaceship combines timing, switching, and monitoring — a divided-attention challenge.',
         },
         {
           h: '🏠 Daily life',
@@ -40,7 +40,7 @@ export const DOMAIN_SCIENCE = {
         },
         {
           h: '🔬 ما الذي تدرّبه الألعاب',
-          b: 'مهمة الإلغاء من اختبارات البحث البصري العصبية. تتبّع الأهداف يستخدم تتبّع الأجسام المتعددة (معظم البالغين يتابعون نحو ٤–٥ عناصر). موقف السيارات يجمع التوقيت والتبديل والمراقبة — تحدٍّ في الانتباه المقسّم.',
+          b: 'مهمة الإلغاء من اختبارات البحث البصري العصبية. تتبّع الأهداف يستخدم تتبّع الأجسام المتعددة (معظم البالغين يتابعون نحو ٤–٥ عناصر). السفن الفضائية تجمع التوقيت والتبديل والمراقبة — تحدٍّ في الانتباه المقسّم.',
         },
         {
           h: '🏠 الحياة اليومية',
@@ -66,7 +66,7 @@ export const DOMAIN_SCIENCE = {
         },
         {
           h: '🔬 What these games train',
-          b: 'Speed Match is the Symbol-Digit Modalities Test (SDMT) — the most sensitive clinical measure of processing speed. Math Gates adds rapid rule switching. Trail Making tests visual scanning plus sequencing under time pressure (TMT-A/B family).',
+          b: 'Speed Match is a gamified symbol–digit matching task inspired by the SDMT family; it is not a standardized clinical administration. Math Gates adds rapid rule switching. Trail Making is inspired by TMT-style visual scanning and sequencing under time pressure.',
         },
         {
           h: '🏠 Daily life',
@@ -89,7 +89,7 @@ export const DOMAIN_SCIENCE = {
         },
         {
           h: '🔬 ما الذي تدرّبه الألعاب',
-          b: 'المطابقة السريعة هي اختبار رموز–أرقام (SDMT) — أكثر مقاييس سرعة المعالجة حساسية سريرياً. بوابات الرياضيات تضيف تبديل قواعد سريع. وصل الأثر يختبر المسح البصري والتسلسل تحت ضغط الوقت.',
+          b: 'المطابقة السريعة مهمة رموز–أرقام تفاعلية مستوحاة من عائلة SDMT، وليست تطبيقاً سريرياً معيارياً. بوابات الرياضيات تضيف تبديل قواعد سريعاً. وصل الأثر مستوحى من مهام TMT للمسح البصري والتسلسل تحت ضغط الوقت.',
         },
         {
           h: '🏠 الحياة اليومية',

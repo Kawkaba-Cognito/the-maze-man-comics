@@ -53,7 +53,7 @@ export default function TrailBoard2D({ items, variant, startColor, progress, int
     return () => ro.disconnect();
   }, []);
 
-  const list = Array.isArray(items) ? items : [];
+  const list = useMemo(() => (Array.isArray(items) ? items : []), [items]);
 
   /** The nodes already connected, in trail order — drives the polyline. */
   const trail = useMemo(() => {

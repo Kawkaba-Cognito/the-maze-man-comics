@@ -172,3 +172,61 @@
   .tw-pointer.is-flap { animation: none; }
   .tw-team { transition: none; }
 }
+
+/* ── Night sets ───────────────────────────────────────────────────────────
+   A host scanning this wants two things at a glance: which set is selected,
+   and which are already spent. Selection is a border, "played" is a dimmed
+   card with a struck name — so the two states read differently even when a
+   set is both, and neither relies on colour alone. */
+.tw-sets-hint { margin-bottom: 10px; }
+
+.tw-sets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tw-set {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--surface-raised);
+}
+.tw-set.is-on { border-color: var(--game-accent); box-shadow: 0 0 0 1px var(--game-accent); }
+.tw-set.is-done { opacity: 0.62; }
+
+.tw-set-pick {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 2px;
+  text-align: start;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.tw-set-name { display: block; font-weight: 800; font-size: 0.95rem; }
+.tw-set.is-done .tw-set-name { text-decoration: line-through; }
+.tw-set-meta {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.tw-set-tick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+.tw-set-tick input { width: 16px; height: 16px; cursor: pointer; }
+
+.tw-sets-warn { color: var(--game-accent-edge, var(--ink-dim)); font-weight: 700; }

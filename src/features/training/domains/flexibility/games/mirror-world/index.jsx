@@ -7,7 +7,7 @@ import { TrainingMenuBar, TrainingPauseModal } from '../../../../shared/Training
 import {
   ROLE, HIT_DEG, LEVELS_PER_TIER,
   levelSchedule, survivalSchedule, passSchedule,
-  perturb, angularError, targetAngles, summarise, levelPassed,
+  perturb, angularError, targetAngles, aimAngles, summarise, levelPassed,
 } from './data';
 import './mirrorWorld.css';
 
@@ -41,6 +41,9 @@ const UI = {
     hintLevels: '3 difficulties · 100 levels each',
     hintPass: 'Same run for everyone · pass the device',
     howTo: 'Press the white dot, then flick out to the gold one in one motion.',
+    directionHint: 'No-drag controls: choose an aiming direction',
+    targetDirection: (deg) => `Target direction: ${deg} degrees`,
+    aimDirection: (deg) => `Aim ${deg} degrees`,
     goHome: 'Back to the white dot',
     blockBase: 'Warm-up',
     blockAdapt: 'Something is off',
@@ -65,6 +68,9 @@ const UI = {
     hintLevels: '٣ صعوبات · ١٠٠ مستوى لكل',
     hintPass: 'نفس الجولة للجميع · مرّر الجهاز',
     howTo: 'اضغط النقطة البيضاء ثم اندفع إلى الذهبية بحركة واحدة.',
+    directionHint: 'تحكّم بلا سحب: اختر اتجاه التصويب',
+    targetDirection: (deg) => `اتجاه الهدف: ${deg} درجة`,
+    aimDirection: (deg) => `صوّب بزاوية ${deg} درجة`,
     goHome: 'عد إلى النقطة البيضاء',
     blockBase: 'إحماء',
     blockAdapt: 'شيء ما تغيّر',
@@ -95,6 +101,7 @@ function MirrorEngine({
   const [reachIdx, setReachIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(null);
+  const [targetDeg, setTargetDeg] = useState(null);
 
   const canvasRef = useRef(null);
   const reachesRef = useRef([]);
@@ -188,12 +195,13 @@ function MirrorEngine({
       ctx.fillStyle = T.trail;
       ctx.beginPath(); ctx.arc(cursor.x, cursor.y, 6, 0, Math.PI * 2); ctx.fill();
     }
-  }, [block]);
+  }, [block, tokens]);
 
   const nextTarget = useCallback(() => {
     const angles = targetAngles(block?.targets || 8);
     const a = (angles[Math.floor(Math.random() * angles.length)] * Math.PI) / 180;
     targetRef.current = { a, deg: (a * 180) / Math.PI, x: CX + Math.cos(a) * R, y: CY + Math.sin(a) * R };
+    setTargetDeg(Math.round(targetRef.current.deg));
     pathRef.current = [];
     liveRef.current = true;
     draggingRef.current = false;
@@ -261,6 +269,20 @@ function MirrorEngine({
         setReachIdx(nextReach);
       }
     }, 420);
+  };
+
+  // WCAG 2.5.7 alternative to the drag gesture. Choosing a direction feeds the
+  // same perturbation and scoring path as a physical reach, so adaptation and
+  // aftereffect logic remain shared rather than becoming a separate easy mode.
+  const chooseDirection = (deg) => {
+    if (!liveRef.current || paused) return;
+    const a = (deg * Math.PI) / 180;
+    const hand = { x: Math.cos(a) * R, y: Math.sin(a) * R };
+    const shifted = perturb(hand.x, hand.y, block, reachIdx);
+    const cursor = { x: CX + shifted.x, y: CY + shifted.y };
+    pathRef.current = [{ x: CX, y: CY }, cursor];
+    draw(cursor);
+    land(cursor);
   };
 
   /* ── end of run ──────────────────────────────────────────────────── */
@@ -341,7 +363,27 @@ function MirrorEngine({
               onPointerMove={onMove}
               onPointerUp={() => { draggingRef.current = false; }}
               onPointerCancel={() => { draggingRef.current = false; }}
+              aria-hidden="true"
             />
+            <p className="ct-visually-hidden" aria-live="polite">
+              {targetDeg == null ? '' : t.targetDirection(targetDeg)}
+            </p>
+            <div className="ct-mw-direction-wrap">
+              <span className="ct-mw-direction-hint">{t.directionHint}</span>
+              <div className="ct-mw-direction-pad" role="group" aria-label={t.directionHint}>
+                {aimAngles().map((deg) => (
+                  <button
+                    key={deg}
+                    type="button"
+                    className="ct-mw-direction-btn"
+                    aria-label={t.aimDirection(Math.round(deg))}
+                    onClick={() => chooseDirection(deg)}
+                  >
+                    <span aria-hidden="true" style={{ transform: `rotate(${deg}deg)` }}>→</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="ct-mw-count">{t.reachOf(reachIdx + 1, block.reaches)}</div>
           </div>
         )}

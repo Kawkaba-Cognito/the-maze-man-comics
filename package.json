@@ -35,6 +35,7 @@
     "validate:sort": "node scripts/validate-sort.mjs",
     "validate:keeptrack": "node scripts/validate-keep-track.mjs",
     "validate:mirror": "node scripts/validate-mirror.mjs",
+    "audit:curves": "node scripts/audit-curves.mjs",
     "audit:consistency": "node scripts/audit-consistency.mjs"
   },
   "dependencies": {

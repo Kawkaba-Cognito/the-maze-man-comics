@@ -2,11 +2,11 @@
  * Word Maze — connect adjacent letters to spell words (Boggle-style).
  */
 
-import { mulberry32 } from '../../../../../../lib/rng';
-import { LINK_WORDS_EN } from './link-words-en';
-import { LINK_WORDS_AR_COMMON } from './link-words-ar-common';
-import { computeGridWords } from './linkDictionary';
-import { clamp, lerp } from '../../../../../../lib/math';
+import { mulberry32 } from '../../../../../../lib/rng.js';
+import { LINK_WORDS_EN_COMMON } from './link-words-en-common.js';
+import { LINK_WORDS_AR_COMMON } from './link-words-ar-common.js';
+import { computeGridWords } from './linkDictionary.js';
+import { clamp, lerp } from '../../../../../../lib/math.js';
 
 export const WORDLE_LEVELS_PER_TIER = 100;
 export const WORDLE_DIFF_KEYS = ['easy', 'medium', 'hard'];
@@ -35,7 +35,7 @@ const CHALLENGE_LEVEL = { diff: 'medium', lv: 10 };
 /** Pass-n-Play representative level per difficulty. */
 export const WORDLE_PASS_PLAY_LV = { easy: 10, medium: 10, hard: 10 };
 
-const PLACE_POOL = LINK_WORDS_EN.filter((w) => w.length >= 3 && w.length <= 5);
+const PLACE_POOL = LINK_WORDS_EN_COMMON.filter((w) => w.length >= 3 && w.length <= 5);
 // Seed Arabic grids from the CURATED common list so boards are made of familiar
 // words; the full corpus is still used to validate whatever the player finds.
 const PLACE_POOL_AR = LINK_WORDS_AR_COMMON.filter((w) => w.length >= 3 && w.length <= 5);

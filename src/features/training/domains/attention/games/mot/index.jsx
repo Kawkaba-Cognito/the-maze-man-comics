@@ -639,7 +639,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
       trialLogRef.current?.discard();
       trialLogRef.current = null;
     };
-  }, [seed, runId]);
+  }, [diff, fit, frame, isSurvival, level, mode, runId, seed, startRound]);
 
   const S = styles;
 
@@ -745,6 +745,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
           dotsRef={dotsRef}
           fieldRef={fieldRef}
           phaseRef={phaseRef}
+          phase={phase}
           interactive={phase === 'respond'}
           onPickDot={pickDot}
           isAr={isAr}

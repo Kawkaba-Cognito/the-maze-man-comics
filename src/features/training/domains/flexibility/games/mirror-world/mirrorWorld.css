@@ -102,6 +102,50 @@
   font-variant-numeric: tabular-nums;
 }
 
+.ct-mw-direction-wrap {
+  width: min(100%, 420px);
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.ct-mw-direction-hint {
+  color: var(--ink-dim);
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-align: center;
+}
+
+.ct-mw-direction-pad {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ct-mw-direction-btn {
+  appearance: none;
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+.ct-mw-direction-btn span {
+  display: block;
+}
+
+.ct-mw-direction-btn:focus-visible {
+  outline: 3px solid var(--game-item);
+  outline-offset: 2px;
+}
+
 .ct-mw-actions {
   display: flex;
   gap: 10px;

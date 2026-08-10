@@ -3,6 +3,7 @@ import { useApp } from '../../../../context/AppContext';
 import GroupShell, { GroupHow } from '../_shared/GroupShell';
 import GroupPlayerSetup, { loadGroupPlayerNames, saveGroupPlayerNames } from '../_shared/GroupPlayerSetup';
 import { createDrawer } from '../_shared/drawWithoutRepeat';
+import { SETS, SET_COUNT, loadPlayed, setPlayed, nextUnplayed, setCovers } from './sets';
 import { shuffle, rnd } from '../_shared/groupTheme';
 import KawkabSprite from '../../../training/shared/KawkabSprite';
 import { WHEEL_VALUES, WHEEL_BANK, STREAK_POOLS, RANKED_PUZZLES } from './data';
@@ -127,6 +128,17 @@ export default function TheWheelGame({ onBack }) {
       : 'Three connected games share one scoreboard. First: spin a meaningless number, then estimate the truth — resisting the number pays. Second: higher or lower, where every correct call grows a pot and one miss burns it. Third: order five cards — every correctly ordered pair scores.',
     teams: isAr ? 'الفرق' : 'Teams',
     length: isAr ? 'طول الليلة' : 'Night length',
+    setsLabel: isAr ? 'مجموعة الليلة' : 'Tonight’s set',
+    setsHint: isAr
+      ? 'كل مجموعة أسئلة مختلفة تماماً. العب واحدة الليلة وضع علامة عليها، ثم خذ التالية في المرة القادمة.'
+      : 'Each set is entirely different questions. Play one tonight, tick it off, take the next one next time.',
+    setName: (n) => (isAr ? `المجموعة ${n}` : `Set ${n}`),
+    setDone: isAr ? 'لُعبت' : 'Played',
+    setTick: (n) => (isAr ? `علّم المجموعة ${n} كملعوبة` : `Mark set ${n} as played`),
+    setsAllDone: isAr ? 'لعبت كل المجموعات — ابدأ من جديد' : 'Every set played — start again',
+    setShort: isAr
+      ? 'هذه الليلة أطول من المجموعة. سنكمل من بقية البنك.'
+      : 'This night is longer than one set. The rest will come from the wider bank.',
     quick: isAr ? 'سريعة' : 'Quick',
     standard: isAr ? 'عادية' : 'Standard',
     marathon: isAr ? 'ماراثون' : 'Marathon',
@@ -172,6 +184,8 @@ export default function TheWheelGame({ onBack }) {
   const [phase, setPhase] = useState('setup');
   const [names, setNames] = useState(() => loadGroupPlayerNames(1, 4).slice(0, 2));
   const [lengthKey, setLengthKey] = useState('standard');
+  const [setIdx, setSetIdx] = useState(() => nextUnplayed());
+  const [played, setPlayedState] = useState(() => loadPlayed());
   const [teams, setTeams] = useState([]);
   const [gameIdx, setGameIdx] = useState(0);
   const [host, setHost] = useState({ text: '', mood: '' });
@@ -207,6 +221,9 @@ export default function TheWheelGame({ onBack }) {
   useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
 
   const L = LENGTHS[lengthKey];
+  /* Teams do not exist until the night starts, but the set picker has to warn
+     BEFORE that — so size the warning off the names entered so far. */
+  const teamCount = Math.min(4, Math.max(1, names.filter((n) => String(n).trim()).length));
   const schedule = useMemo(() => {
     if (!teams.length) return { wheel: 0, streak: 0, ranked: 0 };
     return { wheel: teams.length * L.wheel, streak: teams.length * L.streak, ranked: teams.length * L.ranked };
@@ -246,7 +263,7 @@ export default function TheWheelGame({ onBack }) {
     if (wStage !== 'spin') return;
     playSfx?.('click');
     setWStage('spinning');
-    const q = wheelDrawer.draw(WHEEL_BANK, (x) => x.id);
+    const q = wheelDrawer.draw(SETS[setIdx].wheel, (x) => x.id) || wheelDrawer.draw(WHEEL_BANK, (x) => x.id);
     const anchor = Math.random() < 0.5 ? q.low : q.high;
     setWQ(q); setWAnchor(anchor);
     say(isAr ? 'رقم بلا معنى قادم. من فضلك تعلّق به عاطفياً.'
@@ -319,7 +336,7 @@ export default function TheWheelGame({ onBack }) {
   const startStreak = () => { setSIdx(0); setPhase('streak'); beginRun(0); };
 
   const beginRun = (idx) => {
-    const pool = streakDrawer.draw(STREAK_POOLS, (p) => p.id);
+    const pool = streakDrawer.draw(SETS[setIdx].streak, (p) => p.id) || streakDrawer.draw(STREAK_POOLS, (p) => p.id);
     setSRun({ pool, items: shuffle(pool.items), at: 0, pot: 0, calls: 0 });
     setSMsg({ text: isAr ? 'أعلى أم أقل؟' : 'Higher or lower?', tone: '' });
     setSOver(false);
@@ -389,7 +406,7 @@ export default function TheWheelGame({ onBack }) {
   const startRanked = () => { setRIdx(0); setPhase('ranked'); beginPuzzle(0); };
 
   const beginPuzzle = (idx) => {
-    const p = rankedDrawer.draw(RANKED_PUZZLES, (x) => x.id);
+    const p = rankedDrawer.draw(SETS[setIdx].ranked, (x) => x.id) || rankedDrawer.draw(RANKED_PUZZLES, (x) => x.id);
     setRPuzzle(p); setRCards(shuffle(p.items)); setRPick([]); setRResult(null);
     const tm = teams[idx % teams.length];
     say(isAr ? `${tm.name}: خمس بطاقات، عشرة أزواج. اضغط بطاقة مختارة لإلغائها.`
@@ -495,6 +512,48 @@ export default function TheWheelGame({ onBack }) {
             </button>
           ))}
         </div>
+        {/*
+          The set picker. A host plans a games night, so the two things that
+          matter are "which one is fresh" and "tick it when we're done" — the
+          suggestion defaults to the lowest unplayed set so the common case is
+          simply pressing Start.
+        */}
+        <div className="gc-label">{t.setsLabel}</div>
+        <div className="gc-how-text tw-sets-hint">{t.setsHint}</div>
+        <div className="tw-sets">
+          {SETS.map((s) => {
+            const done = played.has(s.index);
+            const n = s.index + 1;
+            return (
+              <div key={s.index} className={`tw-set${setIdx === s.index ? ' is-on' : ''}${done ? ' is-done' : ''}`}>
+                <button
+                  type="button"
+                  className="tw-set-pick"
+                  aria-pressed={setIdx === s.index}
+                  onClick={() => { playSfx?.('click'); setSetIdx(s.index); }}
+                >
+                  <span className="tw-set-name">{t.setName(n)}</span>
+                  <span className="tw-set-meta">{s.wheel.length}·{s.streak.length}·{s.ranked.length}</span>
+                </button>
+                <label className="tw-set-tick">
+                  <input
+                    type="checkbox"
+                    checked={done}
+                    aria-label={t.setTick(n)}
+                    onChange={(e) => {
+                      playSfx?.('click');
+                      setPlayedState(new Set(setPlayed(s.index, e.target.checked)));
+                    }}
+                  />
+                  <span>{t.setDone}</span>
+                </label>
+              </div>
+            );
+          })}
+        </div>
+        {played.size >= SET_COUNT ? <div className="gc-how-text">{t.setsAllDone}</div> : null}
+        {!setCovers(setIdx, { wheel: teamCount * L.wheel, streak: teamCount * L.streak, ranked: teamCount * L.ranked })
+          ? <div className="gc-how-text tw-sets-warn">{t.setShort}</div> : null}
         <button type="button" className="gc-btn" onClick={beginNight}>{t.start}</button>
       </>
     );

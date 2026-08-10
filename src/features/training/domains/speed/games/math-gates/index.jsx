@@ -443,8 +443,8 @@ export function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, on
       </div>
 
       <div style={S.controls}>
-        <button style={S.ctrlBtn} aria-label={isAr ? 'يسار' : 'Left'} onPointerDown={(e) => { e.preventDefault(); moveBy(-1); }}>◀</button>
-        <button style={S.ctrlBtn} aria-label={isAr ? 'يمين' : 'Right'} onPointerDown={(e) => { e.preventDefault(); moveBy(1); }}>▶</button>
+        <button type="button" style={S.ctrlBtn} aria-label={isAr ? 'يسار' : 'Left'} onClick={() => moveBy(-1)}>◀</button>
+        <button type="button" style={S.ctrlBtn} aria-label={isAr ? 'يمين' : 'Right'} onClick={() => moveBy(1)}>▶</button>
       </div>
     </div>
   );
