@@ -1,0 +1,110 @@
+/*
+ * Mirror World. Sparse on purpose: the reach is a measurement, so anything that
+ * moves, pulses or draws the eye near the canvas is a cue the task did not ask
+ * for. Every colour is a token — nothing hard-coded, so audit:design stays flat.
+ */
+
+/* ⚠ The root owns its surface. Without this the app shell's wallpaper shows
+   through and the game sits on a different ground from every other one — the
+   exact bug Keep Track shipped with. Matches .ct-ts-root in taskSwitch.css. */
+.ct-mw-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--play-surface);
+  color: var(--game-ink);
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+
+.ct-mw-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.ct-mw-pause {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.ct-mw-pause:hover { color: var(--game-ink); border-color: var(--game-ink); }
+
+.ct-mw-stage {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 4vw, 28px);
+}
+
+.ct-mw-panel {
+  width: min(100%, 32rem);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.ct-mw-h {
+  font-size: clamp(19px, 5vw, 26px);
+  font-weight: 800;
+  color: var(--game-ink);
+  margin: 0;
+  text-wrap: balance;
+}
+
+.ct-mw-sub {
+  margin: 0;
+  color: var(--ink-dim);
+  font-size: 14.5px;
+  line-height: 1.5;
+  max-width: 34ch;
+  text-wrap: balance;
+}
+
+.ct-mw-cue {
+  font-size: 12.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--game-accent);
+  min-height: 1.4em;
+}
+
+/* The reach surface. `touch-action: none` is load-bearing — without it the
+   browser claims the drag as a scroll and the reach never completes on a
+   phone, which is the whole game. */
+.ct-mw-pad {
+  display: block;
+  width: min(86vw, 22rem);
+  aspect-ratio: 1;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  touch-action: none;
+  cursor: crosshair;
+  user-select: none;
+}
+
+.ct-mw-count {
+  font-size: 12.5px;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.ct-mw-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}

@@ -7,7 +7,7 @@ export const TRAINING_META = {
   'trail-making': { name: 'Trail Making', nameAr: 'صل الأرقام' },
   'memo-span': { name: 'Memo Span', nameAr: 'مدى الذاكرة' },
   'story-grid': { name: 'Story Time', nameAr: 'وقت القصة' },
-  nback: { name: 'N-Back', nameAr: 'إن-باك' },
+  'keep-track': { name: 'Keep Track', nameAr: 'تتبّع الفئات' },
   'paired-associates': { name: 'Pair Match', nameAr: 'مطابقة الأزواج' },
   wordle: { name: 'Word Maze', nameAr: 'متاهة الكلمات' },
   synonyms: { name: 'Word Links', nameAr: 'روابط الكلمات' },
@@ -16,7 +16,8 @@ export const TRAINING_META = {
   detective: { name: 'Detective', nameAr: 'المحقّق' },
   'rush-hour': { name: 'Block Escape', nameAr: 'هروب القطع' },
   'raven-matrices': { name: 'Matrix Reasoning', nameAr: 'استدلال المصفوفات' },
-  'spatial-stroop': { name: 'Arrow Rush', nameAr: 'اندفاع الأسهم' },  'task-switch': { name: 'Task Switch', nameAr: 'تبديل المهمة' },  'sort-shift': { name: 'Sort It Another Way', nameAr: 'رتّبها بطريقة أخرى' },
+  'spatial-stroop': { name: 'Arrow Rush', nameAr: 'اندفاع الأسهم' },
+  'mirror-world': { name: 'Mirror World', nameAr: 'عالم المرآة' },  'task-switch': { name: 'Task Switch', nameAr: 'تبديل المهمة' },  'sort-shift': { name: 'Sort It Another Way', nameAr: 'رتّبها بطريقة أخرى' },
   'math-gates': { name: 'Math Gates', nameAr: 'بوابات الحساب' },
 };
 

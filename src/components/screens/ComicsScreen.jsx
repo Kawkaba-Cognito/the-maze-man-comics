@@ -1,6 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useApp } from '../../context/AppContext';
-import { tokens } from '../../styles/tokens';
 import RadialMazeHub from '../training/RadialMazeHub';
 import { DOMAINS } from '../training/trainingData';
 import { TrainingScreenShell } from '../../features/training/shared/TrainingScreens';
@@ -10,13 +9,25 @@ import AssessmentFlow from '../../features/training/assessment/AssessmentFlow';
 import GamePlanetScene from '../../features/training/shared/GamePlanetTile';
 import { GlassBevel } from '../../features/training/shared/AttentionHeaderProtos';
 
-/** Tiny fallback shown while a game's bundle is being fetched the first time. */
+/*
+ * The loading state every game passes through, shown while its bundle is fetched.
+ *
+ * ⚠ It must read the LIVE theme, never a JS colour constant. This used to be
+ * `background: tokens.trainingPaletteSurface` — a JavaScript value frozen at a
+ * near-white literal. A JS token cannot follow a CSS theme, so in dark mode
+ * every game launch flashed a full-screen pale panel before the game painted;
+ * the game's own inner Suspense then flashed `.c3d-root` blue on top. That
+ * white-then-blue stutter is the reported "palette that appears before the game
+ * as a bug", and it was on the path to all 18 games.
+ *
+ * A loading screen has one job: look like the thing that is about to arrive.
+ */
 function GameLoading({ isAr }) {
   return (
     <div style={{
       position: 'absolute', inset: 0,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: tokens.trainingPaletteSurface, color: '#5c534c',
+      background: 'var(--play-surface)', color: 'var(--game-ink)',
       fontFamily: "'Outfit', system-ui, sans-serif",
       fontSize: 14, letterSpacing: 1.5,
     }}>

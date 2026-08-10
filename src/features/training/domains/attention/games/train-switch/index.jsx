@@ -632,7 +632,7 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--play-surface)', color: 'var(--play-ink)', fontFamily: "'Outfit', system-ui, sans-serif" },
   play: { position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 6, boxSizing: 'border-box' },
   board: { position: 'relative', flex: '0 0 auto', borderRadius: 20, background: 'linear-gradient(160deg, #3a342c 0%, #231e18 100%)', boxShadow: '0 14px 36px rgba(45, 32, 18, 0.28), inset 0 0 0 1.5px rgba(232, 172, 78, 0.32)', overflow: 'hidden' },
   msg: { position: 'absolute', top: 8, left: 0, right: 0, zIndex: 2, textAlign: 'center', fontWeight: 700, fontSize: 13, color: '#f0e2c0', textShadow: `0 1px 3px ${GAME_FX.shadowDrop}`, pointerEvents: 'none', padding: '0 16px' },

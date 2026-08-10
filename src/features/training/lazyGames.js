@@ -35,6 +35,28 @@ if (!cache['memo-span']) {
   cache['memo-span'] = lazyWithRetry(() => import('./domains/memory/games/memo-span'), 'memo-span');
 }
 
+/*
+ * Same deal for N-Back (2026-08-10). Keep Track took its training-hub slot, but
+ * the assessment battery still runs N-Back as the memory paradigm — AssessmentFlow
+ * resolves it through getLazyGame, so dropping it from domain.config alone would
+ * render the memory pillar as nothing at all. It stays registered here until Keep
+ * Track has an assess mode and norms of its own.
+ */
+if (!cache.nback) {
+  cache.nback = lazyWithRetry(() => import('./domains/memory/games/nback'), 'nback');
+}
+
+/*
+ * And Arrow Rush (2026-08-10). Mirror World took its training-hub slot, but
+ * spatial-stroop is still the ASSESSMENT's flexibility paradigm and the Daily
+ * Workout still schedules it by weight in workoutData.js. Both resolve it
+ * through getLazyGame, so without this the flexibility pillar and part of the
+ * workout render nothing — silently.
+ */
+if (!cache['spatial-stroop']) {
+  cache['spatial-stroop'] = lazyWithRetry(() => import('./domains/flexibility/games/spatial-stroop'), 'spatial-stroop');
+}
+
 export function getLazyGame(gameKey) {
   return cache[gameKey] ?? null;
 }

@@ -11,16 +11,30 @@ const flexibility = {
   descAr: 'عزّز المرونة المعرفية عندما تتغيّر القواعد والاستجابات المطلوبة.',
   subs: [
     {
+      /*
+       * Mirror World replaced Arrow Rush in this slot on 2026-08-10.
+       *
+       * Arrow Rush flips a rule and asks for a left/right key. So does Task
+       * Switch, one slot down — different stimuli, one construct, and Task
+       * Switch is the cleaner instrument (stated cue, fixed keys, Rogers &
+       * Monsell). Mirror World is a different ability entirely: it measures
+       * flexibility you undergo rather than flexibility you choose.
+       *
+       * ⚠ Arrow Rush is NOT gone. The Assessment battery runs it as the
+       * flexibility paradigm and the Daily Workout schedules it by weight, so
+       * its loader is kept registered explicitly in lazyGames.js. Deleting that
+       * registration empties the flexibility pillar with no error at all.
+       */
       id: 'switching',
-      name: 'Arrow Rush',
-      nameAr: 'تبديل الأسهم',
-      blurb: 'Follow the active rule — arrow direction or screen position.',
-      blurbAr: 'اتبع القاعدة النشطة — اتجاه السهم أو موضعه على الشاشة.',
+      name: 'Mirror World',
+      nameAr: 'عالم المرآة',
+      blurb: 'Flick to the target. Partway through, your hand stops going where you point it.',
+      blurbAr: 'اندفع نحو الهدف. في منتصف الطريق تتوقّف يدك عن الذهاب حيث تشير.',
       gameCount: 1,
       progress: 0,
-      gameKey: 'spatial-stroop',
+      gameKey: 'mirror-world',
       tier: 'free',
-      loader: () => import('./games/spatial-stroop'),
+      loader: () => import('./games/mirror-world'),
     },
     /*
      * Task Switch + Sort It Another Way replaced Card Sort (WCST) and Kawkab

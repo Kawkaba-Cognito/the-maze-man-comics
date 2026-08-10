@@ -2,7 +2,11 @@
  * raised training cards. Case identity comes from content, not a second UI. */
 
 .nr {
-  --nr-bg: #b3cadd;
+  /* Flat, not the gradient: --nr-bg feeds color-mix() across noirPremium.css
+     and color-mix cannot take a gradient. Was #b3cadd, aligned to Cancellation
+     back when Cancellation was Tide blue; it stayed blue when that board moved
+     to the beige play surface. */
+  --nr-bg: var(--play-surface-flat);
   --nr-panel: rgba(252, 254, 255, 0.94);
   --nr-panel2: #f2f7fb;
   --nr-paper: #fffdf8;

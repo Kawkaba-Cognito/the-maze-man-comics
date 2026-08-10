@@ -6,6 +6,7 @@ import { survivalRampFromRemaining } from '../../../../shared/survival';
 import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
 import KawkabSprite from '../../../../shared/KawkabSprite';
 import { GAME_STIMULUS } from '../../../../shared/gamePalette';
+import { createTrialLog } from '../../../../shared/trialLog';
 import './taskSwitch.css';
 
 /*
@@ -107,6 +108,10 @@ export function TaskSwitchEngine({
   const scoreRef = useRef(0);
   const comboRef = useRef(0);
   const logRef = useRef([]);
+  /* The in-memory logRef above drives THIS run's results panel and dies with it.
+     trialLogRef persists the same responses so switch cost can be tracked across
+     sessions, which is the whole point of measuring a switch cost. */
+  const trialLogRef = useRef(null);
   const onsetRef = useRef(0);
   const acceptRef = useRef(false);
   const finishedRef = useRef(false);
@@ -159,6 +164,11 @@ export function TaskSwitchEngine({
       total: nRef.current,
       cost: rep != null && swi != null ? Math.round(swi - rep) : null,
     });
+    trialLogRef.current?.finish({
+      correct: okRef.current,
+      total: nRef.current,
+      switchCost: rep != null && swi != null ? Math.round(swi - rep) : null,
+    });
     awardFreeRun?.('task-switch', okRef.current);
     playSfx?.('error');
   }, [awardFreeRun, playSfx]);
@@ -172,6 +182,7 @@ export function TaskSwitchEngine({
     acceptRef.current = false;
     clearTimers();
     const acc = nRef.current ? okRef.current / nRef.current : 0;
+    trialLogRef.current?.finish({ correct: okRef.current, total: nRef.current, acc });
     if (mode === 'levels') onResult?.({ won: acc >= TS_WIN_ACC, score: scoreRef.current });
     else onResult?.({ score: okRef.current });
   }, [mode, onResult]);
@@ -211,9 +222,15 @@ export function TaskSwitchEngine({
     nRef.current = 0; okRef.current = 0; scoreRef.current = 0; comboRef.current = 0;
     logRef.current = []; prevTaskRef.current = null;
     rngRef.current = makeRng((seed ?? 1) >>> 0);
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({
+      game: 'task-switch',
+      mode: mode === 'passplay' ? 'challenge' : mode,
+      meta: { diff, lv: level },
+    });
     setScore(0); setCombo(0); setDone(0); setOver(null);
     later(nextTrial, 500);
-    return clearTimers;
+    return () => { clearTimers(); trialLogRef.current?.discard(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, mode, diff, level]);
 
@@ -224,6 +241,9 @@ export function TaskSwitchEngine({
     const ok = side === trial.answer;
     nRef.current += 1;
     logRef.current.push({ rt, ok, isSwitch: trial.isSwitch, congruent: trial.congruent });
+    trialLogRef.current?.trial({
+      rt: Math.round(rt), ok, sw: !!trial.isSwitch, con: !!trial.congruent,
+    });
     if (ok) {
       okRef.current += 1;
       comboRef.current += 1;

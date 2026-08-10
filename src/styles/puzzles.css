@@ -4,7 +4,7 @@
 
 .ct-puzzle-screen {
   min-height: min(100vh, 100dvh);
-  background: var(--color-training-palette-surface, #fff7f2);
+  background: var(--play-surface);
   color: #141210;
   font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
   box-sizing: border-box;

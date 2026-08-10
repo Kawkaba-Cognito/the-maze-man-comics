@@ -21,10 +21,10 @@ import { assetUrl } from '../../../lib/assetUrl';
 const COVER_KEYS = new Set([
   'cancel-task', 'mot', 'train-switch',
   'speed-match', 'math-gates', 'trail-making',
-  'story-grid', 'nback', 'paired-associates',
+  'story-grid', 'keep-track', 'paired-associates',
   'wordle', 'synonyms', 'trivia',
   'rush-hour', 'raven-matrices', 'detective',
-  'spatial-stroop', 'task-switch', 'sort-shift',
+  'mirror-world', 'task-switch', 'sort-shift',
 ]);
 
 const COVER_FILE_OVERRIDES = {
@@ -35,7 +35,9 @@ const COVER_FILE_OVERRIDES = {
   'math-gates': 'speed-math-gates-v2.webp',
   'trail-making': 'speed-trail-making-v2.webp',
   'story-grid': 'memory-story-time-v2.webp',
-  nback: 'memory-nback-v2.webp',
+  // ⚠ PLACEHOLDER: still the N-Back painting. Keep Track needs its own cover —
+  // pointed at a tracked file so the tile cannot 404, not because it fits.
+  'keep-track': 'memory-nback-v2.webp',
   'paired-associates': 'memory-pair-match-v2.webp',
   wordle: 'language-word-maze-v2.webp',
   synonyms: 'language-word-links-v2.webp',
@@ -43,7 +45,9 @@ const COVER_FILE_OVERRIDES = {
   'rush-hour': 'reasoning-block-escape-v2.webp',
   'raven-matrices': 'reasoning-matrix-iq-v2.webp',
   detective: 'reasoning-detective-v2.webp',
-  'spatial-stroop': 'flexibility-arrow-rush-v2.webp',
+  // ⚠ PLACEHOLDER: still the Arrow Rush painting. Mirror World needs its own
+  // cover — pointed at a tracked file so the tile cannot 404, not because it fits.
+  'mirror-world': 'flexibility-arrow-rush-v2.webp',
   /* The retired games' planets, reused: the tile is a domain-coloured planet
      rather than a picture of the mechanic, so it still reads correctly. Swap
      when bespoke art exists. */

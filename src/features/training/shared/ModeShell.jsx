@@ -6,6 +6,7 @@ import PassPlaySetup from './PassPlaySetup';
 import HubScienceLink from './HubScienceLink';
 import SurvivalIntro from './SurvivalIntro';
 import { freshSurvivalSeed } from './survival';
+import { STR_COMMON } from './trainingStrings';
 import { loadJson, saveJson } from '../../../lib/storage';
 import { useTrainingTutorial } from './tutorials/useTrainingTutorial';
 import { getTrainingMeta } from './tutorials/trainingMeta';
@@ -98,6 +99,18 @@ export default function ModeShell({
   const isDone = useCallback((lv) => (prog.done[diff] || []).includes(lv), [prog, diff]);
 
   const goMenu = useCallback(() => { setPhase('menu'); setMode(null); setResult(null); setPpResults(null); }, []);
+  /*
+   * ⚠ Every shared label on this shell comes from STR_COMMON.
+   *
+   * ModeShell used to hard-code 25 bilingual literals inline, which meant the
+   * shared SHELL disagreed with the shared STRINGS file — 'Choose Difficulty' vs
+   * 'Choose difficulty', 'with you' vs 'with this player', 'أضف لاعبَين' vs
+   * 'أضف لاعبين', and both Replay and Retry rendering as 'إعادة' so a win and a
+   * loss offered the identically-worded button. Twelve games inherit their
+   * chrome from here, so a literal typed in this file is a wording fork across
+   * most of the platform. Add the label to trainingStrings.js instead.
+   */
+  const t = isAr ? STR_COMMON.ar : STR_COMMON.en;
   const T = isAr ? title.ar : title.en;
   const levelCountLabel = levelCount.toLocaleString(isAr ? 'ar-EG' : 'en-US');
 
@@ -116,13 +129,13 @@ export default function ModeShell({
   // ── Pass n Play orchestration ──
   const startPass = useCallback(() => {
     const names = players.map((s, i) => (s.trim() || `Player ${i + 1}`));
-    if (names.length < 2) { alert(isAr ? 'أضف لاعبَين على الأقل.' : 'Add at least 2 players.'); return; }
+    if (names.length < 2) { alert(t.needTwo); return; }
     playSfx?.('click');
     scoresRef.current = names.map(() => []);
     seedRef.current = (Math.random() * 1e9) >>> 0;
     setPpView({ roundIdx: 0, playerIdx: 0 });
     setPhase('pp-handoff');
-  }, [players, isAr, playSfx]);
+  }, [players, playSfx, t]);
 
   const onPassResult = useCallback((res) => {
     const { roundIdx, playerIdx } = ppView;
@@ -183,16 +196,16 @@ export default function ModeShell({
     const hintTxt = (h) => (h ? (isAr ? h.ar : h.en) : null);
     const items = [
       // Icons come from TrainingModeList defaults (Cosmos planet design).
-      { k: 'free', lb: isAr ? 'البقاء' : 'Survival mode', hint: hintTxt(hints?.free), on: () => startMode('free') },
-      { k: 'levels', lb: isAr ? 'المستويات' : 'Level mode', hint: hintTxt(hints?.levels), on: () => startMode('levels') },
-      { k: 'chal', lb: isAr ? 'مرّر والعب' : 'Pass n Play', hint: hintTxt(hints?.pass), on: () => startMode('pass') },
+      { k: 'free', lb: t.freeMode, hint: hintTxt(hints?.free), on: () => startMode('free') },
+      { k: 'levels', lb: t.levelMode, hint: hintTxt(hints?.levels), on: () => startMode('levels') },
+      { k: 'chal', lb: t.challengeMode, hint: hintTxt(hints?.pass), on: () => startMode('pass') },
       // Optional game-supplied entries (e.g. an assessment) appended after the
       // standard three. Each: { k, ic, lb, hint, on }.
       ...extraItems,
     ];
     return (
       <>
-        <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} title={T} tag={isAr ? 'تدريب' : 'training'} hub
+        <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} title={T} tag={t.tag} hub
           onReplayTutorial={tutorial.openTutorial} replayHint={tutLabels.replayTutorial}>
           <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />
           <HubScienceLink gameId={scienceId} isAr={isAr} playSfx={playSfx} />
@@ -207,7 +220,7 @@ export default function ModeShell({
     return (
       <TrainingDifficultySelect
         isAr={isAr} playSfx={playSfx} onBack={goMenu}
-        title={isAr ? 'اختر الصعوبة' : 'Choose Difficulty'}
+        title={t.pickDiff}
         blurb={isAr ? `${T} · ٣ صعوبات · ${levelCountLabel} مستويات لكلّ منها · افتح بالترتيب` : `${T} · 3 difficulties · ${levelCountLabel} levels each · unlock in order`}
         diffKeys={DIFF_KEYS} dm={dm}
         onPick={(k) => { setDiff(k); setPhase('levels'); }}
@@ -234,19 +247,19 @@ export default function ModeShell({
     return (
       <div className="ct-training-ov" role="dialog" aria-modal="true">
         <div className="ct-training-modal" style={{ textAlign: 'center' }}>
-          <h2 className="ct-training-modal-title">{result.won ? (isAr ? 'أحسنت! ✓' : 'Level cleared! ✓') : (isAr ? 'حاول مجدداً' : 'Not quite')}</h2>
+          <h2 className="ct-training-modal-title">{result.won ? (t.levelCleared) : (t.notQuite)}</h2>
           {result.summary ? <p className="ct-training-modal-text">{result.summary}</p> : null}
           <div className="ct-training-modal-actions">
             {result.won && !isLast && (
               <button type="button" className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); setLevel(result.level + 1); setResult(null); setPhase('play'); }}>
-                {isAr ? 'المستوى التالي' : 'Next level'}
+                {t.nextLv}
               </button>
             )}
             <button type="button" className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); setResult(null); setPhase('play'); }}>
-              {result.won ? (isAr ? 'إعادة' : 'Replay') : (isAr ? 'حاول مجدداً' : 'Retry')}
+              {result.won ? (t.replay) : (t.retry)}
             </button>
             <button type="button" className="ct-training-btn ct-training-btn--ghost" onClick={() => { playSfx?.('click'); setPhase('levels'); setResult(null); }}>
-              {isAr ? 'المستويات' : 'Levels'}
+              {t.levels}
             </button>
           </div>
         </div>
@@ -272,11 +285,11 @@ export default function ModeShell({
           roundOptions={[1, 2, 3, 4, 5]}
           onStart={startPass}
           labels={{
-            difficulty: isAr ? 'الصعوبة' : 'Difficulty',
-            players: isAr ? 'اللاعبون (2–10)' : 'Players (2–10)',
-            addPlayer: isAr ? '＋ إضافة لاعب' : '＋ Add player',
-            rounds: isAr ? 'الجولات' : 'Rounds',
-            start: <><Sword size="1em" weight="fill" style={{ verticalAlign: '-0.15em', marginInlineEnd: 6 }} />{isAr ? 'ابدأ' : 'Start'}</>,
+            difficulty: t.chalPickDiff,
+            players: t.players,
+            addPlayer: t.addPl,
+            rounds: t.chalRounds,
+            start: <><Sword size="1em" weight="fill" style={{ verticalAlign: '-0.15em', marginInlineEnd: 6 }} />{t.goReady}</>,
           }}
         />
       </TrainingScreenShell>
@@ -289,15 +302,15 @@ export default function ModeShell({
     return (
       <TrainingChallengeHandoff
         isAr={isAr}
-        kicker={isAr ? 'مرّر والعب' : 'Pass n Play'}
+        kicker={t.challengeMode}
         playerName={name}
-        roundLine={isAr ? `الجولة ${ppView.roundIdx + 1}/${rounds}` : `Round ${ppView.roundIdx + 1}/${rounds}`}
-        instruction={isAr ? 'سلّم الجهاز لهذا اللاعب ثم اضغط ابدأ' : 'Pass the device to this player, then tap Start'}
+        roundLine={t.roundNofM(ppView.roundIdx + 1, rounds)}
+        instruction={t.passInstruction}
         bullets={[
-          isAr ? 'نفس اللوحة لكل اللاعبين هذه الجولة' : 'Same board for every player this round',
-          isAr ? 'اضغط ابدأ فقط حين يكون الجهاز معك' : 'Tap Start only when the device is with you',
+          t.chalBulletSame,
+          t.chalBulletPass,
         ]}
-        startLabel={isAr ? `جاهز — ${name}` : `Ready — ${name}`}
+        startLabel={t.readyName(name)}
         onStart={() => setPhase('pp-play')}
         playSfx={playSfx}
       />
@@ -307,7 +320,7 @@ export default function ModeShell({
   // ── Pass n Play: results ──
   if (phase === 'pp-results' && ppResults) {
     return (
-      <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={goMenu} title={isAr ? 'نتائج مرّر والعب' : 'Pass n Play results'}>
+      <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={goMenu} title={t.resultsChalTitle}>
         <div className="ct-pp-results">
           {ppResults.map((r, i) => (
             <div key={r.name} className={`ct-pp-res-row${i === 0 ? ' win' : ''}`}>
@@ -317,8 +330,8 @@ export default function ModeShell({
             </div>
           ))}
           <div className="ct-training-modal-actions" style={{ marginTop: 16 }}>
-            <button className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); setPhase('pp-setup'); setPpResults(null); }}>{isAr ? 'العب مجدداً' : 'Play again'}</button>
-            <button className="ct-training-btn ct-training-btn--ghost" onClick={() => { playSfx?.('click'); goMenu(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
+            <button className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); setPhase('pp-setup'); setPpResults(null); }}>{t.freePlayAgain}</button>
+            <button className="ct-training-btn ct-training-btn--ghost" onClick={() => { playSfx?.('click'); goMenu(); }}>{t.menu}</button>
           </div>
         </div>
       </TrainingScreenShell>

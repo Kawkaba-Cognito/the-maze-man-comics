@@ -179,26 +179,33 @@ export const GAME_SCIENCE = {
       foot: 'انسج اللوحات في قصة صغيرة وأنت تشاهد — التسلسل أرسخ من القوائم.',
     },
   },
-  'nback': {
+  /*
+   * ⚠ This panel deliberately claims MEASUREMENT, not transfer. The N-Back text
+   * it replaces led with Jaeggi et al. (2008) — the "working-memory training
+   * raises fluid intelligence" result, which is the most prominent failed
+   * replication in the brain-training literature (Redick et al. 2013;
+   * Melby-Lervåg & Hulme; Simons et al. 2016). Keep it that way.
+   */
+  'keep-track': {
     en: {
       title: 'The science',
-      intro: 'N-Back (Kirchner, 1958; Jaeggi et al., 2008) is the most-studied working-memory trainer in cognitive science.',
+      intro: 'Keep Track (Miyake et al., 2000) is one of the three classic tests of executive function, and the standard measure of working-memory updating.',
       sections: [
-        { h: '🎯 Continuous updating', b: 'Spotting when an item matches one N steps back forces you to constantly refresh what you hold in mind while discarding the old — a core executive function.' },
-        { h: '🚫 Interference control', b: 'Rejecting near-misses (items that almost match) trains resistance to interference, the noise that crowds working memory.' },
-        { h: '🧠 The central hub', b: 'N-back leans on the dorsolateral prefrontal cortex, the brain region most tied to fluid reasoning and focus.' },
+        { h: '♻️ Updating, not storing', b: 'Each new word from a tracked category has to push out the one before it. Holding a list is memory; replacing the right item at the right moment is updating — a separate ability.' },
+        { h: '🗣️ Words, on purpose', b: 'The rest of this domain is visual. Most everyday memory complaints are verbal — names, instructions, what someone just said — so this game works in words.' },
+        { h: '✍️ Recall, not recognition', b: 'You type the answer instead of picking it from a list. Producing a memory cold is harder than recognising it, and closer to what real remembering asks of you.' },
       ],
-      foot: 'Don’t over-rehearse — let each new item gently push the oldest one out.',
+      foot: 'Don’t rehearse the whole stream — hold one word per category and let each new one replace it.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: '«إن-باك» (كيرشنر 1958؛ ياغي وآخرون 2008) أكثر مدرّبات الذاكرة العاملة دراسةً في علم الإدراك.',
+      intro: '«تتبّع الفئات» (مياكي وآخرون، 2000) أحد الاختبارات الثلاثة الكلاسيكية للوظائف التنفيذية، والمقياس المعياري لتحديث الذاكرة العاملة.',
       sections: [
-        { h: '🎯 التحديث المستمرّ', b: 'اكتشاف تطابق عنصر مع ما ظهر قبل N خطوات يجبرك على تحديث ما تحمله ذهنياً باستمرار مع التخلّص من القديم — وظيفة تنفيذية جوهرية.' },
-        { h: '🚫 ضبط التداخل', b: 'رفض «شبه المطابقات» يدرّب مقاومة التداخل، أي الضجيج الذي يزدحم به الذاكرة العاملة.' },
-        { h: '🧠 المركز التنفيذي', b: 'تعتمد المهمة على القشرة الجبهية الظهرية الوحشية، أكثر مناطق الدماغ ارتباطاً بالاستدلال السائل والتركيز.' },
+        { h: '♻️ تحديث لا تخزين', b: 'كل كلمة جديدة من فئة تتتبّعها يجب أن تزيح التي قبلها. حفظ قائمة ذاكرة؛ أما استبدال العنصر الصحيح في اللحظة الصحيحة فهو التحديث — قدرة مستقلّة.' },
+        { h: '🗣️ كلمات عن قصد', b: 'بقية ألعاب هذا المجال بصرية. ومعظم شكاوى الذاكرة اليومية لفظية — الأسماء والتعليمات وما قاله أحدهم للتوّ — لذا تعمل هذه اللعبة بالكلمات.' },
+        { h: '✍️ استرجاع لا تعرّف', b: 'تكتب الإجابة بدل اختيارها من قائمة. إنتاج الذكرى من الصفر أصعب من التعرّف عليها، وأقرب إلى ما يطلبه التذكّر الحقيقي.' },
       ],
-      foot: 'لا تُفرط في التكرار — دع كل عنصر جديد يدفع الأقدم برفق إلى الخارج.',
+      foot: 'لا تُكرّر التدفّق كله — احتفظ بكلمة واحدة لكل فئة ودع الجديدة تحلّ محلّها.',
     },
   },
   'paired-associates': {
@@ -271,6 +278,28 @@ export const GAME_SCIENCE = {
   },
 
   /* ── Flexibility ── */
+  'mirror-world': {
+    en: {
+      title: 'The science',
+      intro: 'Visuomotor adaptation — the oldest and most reliable demonstration that flexibility is not always a decision.',
+      sections: [
+        { h: '🔄 Your aim rebuilds itself', b: 'When the mapping between hand and cursor is rotated, you correct a little on every reach without planning to. Within a dozen reaches most of the error is gone, and you cannot say what you changed.' },
+        { h: '↩️ The aftereffect', b: 'Take the rotation away and the first reaches go wrong the OTHER way. That is the proof: your motor system had quietly rewritten the map, and it does not hand it back the moment the world changes.' },
+        { h: '🐢 Why gradual is different', b: 'Introduced a couple of degrees at a time, the twist stays below awareness and the adaptation is genuinely implicit. Dropped in all at once, people notice and consciously re-aim — a different ability, and the reason the easier tiers ramp.' },
+      ],
+      foot: 'Do not try to aim off deliberately — let your hand find it. That is the part being measured.',
+    },
+    ar: {
+      title: 'العلم وراء اللعبة',
+      intro: 'التكيّف الحركي البصري — أقدم البراهين وأكثرها موثوقية على أن المرونة ليست دائماً قراراً.',
+      sections: [
+        { h: '🔄 تصويبك يعيد بناء نفسه', b: 'حين يُدار الربط بين اليد والمؤشر، تصحّح قليلاً في كل محاولة دون أن تخطّط لذلك. خلال محاولات قليلة يختفي معظم الخطأ، ولا تستطيع أن تصف ما غيّرته.' },
+        { h: '↩️ الأثر اللاحق', b: 'أزِل الالتواء فتنحرف محاولاتك الأولى في الاتجاه المعاكس. هذا هو البرهان: نظامك الحركي أعاد كتابة الخريطة بهدوء، ولا يعيدها لحظة تغيّر العالم.' },
+        { h: '🐢 لماذا التدرّج مختلف', b: 'إذا أُدخل الالتواء بضع درجات كل مرة بقي تحت الوعي وكان التكيّف ضمنياً حقاً. أما إدخاله دفعة واحدة فيجعل الناس ينتبهون ويعيدون التصويب عمداً — قدرة أخرى، ولهذا تتدرّج المستويات الأسهل.' },
+      ],
+      foot: 'لا تحاول الانحراف عمداً — دع يدك تجدها. هذا هو الجزء الذي يُقاس.',
+    },
+  },
   'spatial-stroop': {
     en: {
       title: 'The science',

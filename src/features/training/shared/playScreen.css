@@ -181,7 +181,7 @@
   z-index: 10;
   display: grid;
   place-items: center;
-  background: rgba(179, 202, 221, 0.92);
+  background: var(--play-surface);
 }
 
 .play-screen--deep .play-screen-overlay {

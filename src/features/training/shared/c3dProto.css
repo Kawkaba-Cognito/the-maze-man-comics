@@ -142,8 +142,12 @@
   text-align: center;
   font-size: 0.74rem;
   line-height: 1.3;
-  color: rgba(240, 226, 192, 0.78);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+  /* ⚠ Was cream (#f0e2c0) at 78% with a dark text-shadow — legible only on the
+     dark 3D scene this chrome was built for. The games underneath now paint the
+     light play surface, so the instruction line rendered as a faint smudge on
+     beige: measured on Spaceship, where the one sentence telling you what to do
+     was the least readable text on screen. Ink token, no dark shadow. */
+  color: var(--ink-dim);
   padding: 0 4px;
 }
 

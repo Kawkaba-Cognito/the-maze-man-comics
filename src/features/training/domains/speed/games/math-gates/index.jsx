@@ -472,7 +472,18 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
       renderEngine={(p) => (
         <Suspense
           key={`math-gates-2d-${p.mode}-${p.diff}-${p.level}-${p.seed}`}
-          fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center' }}>…</div>}
+          /* Themed, not `.c3d-root`. That class paints the 3D scene's Tide blue
+             and is right in front of a 3D proto — but this game loads a 2D
+             board, so the blue was a flash of a palette that never arrives. */
+          fallback={(
+            <div style={{
+              position: 'fixed', inset: 0, zIndex: 50, display: 'grid', placeItems: 'center',
+              background: 'var(--play-surface)', color: 'var(--game-ink)',
+            }}
+            >
+              …
+            </div>
+          )}
         >
           <MathGatesBoard2D
             {...p}
@@ -488,10 +499,10 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--play-surface)', color: 'var(--play-ink)', fontFamily: "'Outfit', system-ui, sans-serif" },
   cosmosRoot: { background: 'transparent', color: 'var(--game-selected)', zIndex: 81 },
   eqWrap: { display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 12, padding: '8px 0 4px', minHeight: 48 },
-  eqNum: { fontWeight: 900, fontSize: 'clamp(30px, 9vw, 48px)', color: 'var(--color-training-ink, #2d2d2d)', letterSpacing: 1 },
+  eqNum: { fontWeight: 900, fontSize: 'clamp(30px, 9vw, 48px)', color: 'var(--play-ink)', letterSpacing: 1 },
   eqQ: { fontWeight: 900, fontSize: 'clamp(20px, 6vw, 30px)', color: ACCENT },
   play: { position: 'relative', flex: 1, overflow: 'hidden', margin: '0 8px 8px', borderRadius: 16, border: '1px solid rgba(58,51,40,0.10)', boxShadow: '0 10px 28px rgba(45,40,30,0.12), inset 0 0 0 1px rgba(255,255,255,0.4)' },
   sting: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' },

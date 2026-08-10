@@ -800,7 +800,7 @@ export default function MotGame({ onBack, workoutMode = false, assessmentOnly = 
 }
 
 const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--play-surface)', color: 'var(--play-ink)', fontFamily: "'Outfit', system-ui, sans-serif" },
   play: { position: 'relative', flex: 1, margin: 12, borderRadius: 20, background: 'linear-gradient(165deg, #f4ebe0 0%, #e8dccb 100%)', overflow: 'hidden', border: '1.5px solid rgba(200,170,120,0.45)', boxShadow: '0 10px 28px rgba(60,40,20,0.10), inset 0 1px 0 rgba(255,255,255,0.7)', touchAction: 'none' },
   canvas: { display: 'block', width: '100%', height: '100%' },
   instr: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, minHeight: 40, margin: '0 12px', padding: '8px 16px', background: 'linear-gradient(180deg, #fffdf9 0%, #f7efe4 100%)', border: '1.5px solid rgba(232,172,78,0.35)', color: '#3a2c12', borderRadius: 14, fontWeight: 700, fontSize: 14, textAlign: 'center', boxShadow: '0 4px 12px rgba(60,40,20,0.06)' },

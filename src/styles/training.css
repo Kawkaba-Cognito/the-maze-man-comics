@@ -2407,13 +2407,22 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
    consistent while the board underneath was the dark 3D scene. On the light
    play surface a black scrim slams the whole screen to near-black and then
    snaps back on the first frame of the round — the worst possible thing to do
-   to a player right before a timed visual search. Tide's mid stop at 92% keeps
-   the surface continuous, so only the cue arrives and leaves. */
+   to a player right before a timed visual search. The veil must be CONTINUOUS
+   with the surface, so only the cue arrives and leaves.
+
+   ⚠ It therefore has to BE the play surface, not a colour that once matched it.
+   This was rgba(179,202,221,0.92) — Tide mid, #b3cadd — which was continuous
+   back when the board was the blue 3D scene. The board moved to --play-surface
+   (beige) and the veil stayed blue, so every Cancellation round opened with a
+   full-screen light-blue wash over a beige board: the reported "white blue
+   palette that appears before the game". Same stale #b3cadd that .c3d-root
+   paints, leaking a third time into a 2D context. Bind it to the token and it
+   cannot drift again. */
 .ct-fq-cd {
     position: fixed;
     inset: 0;
     z-index: 400;
-    background: rgba(179, 202, 221, 0.92);
+    background: var(--play-surface);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -4829,7 +4838,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     z-index: 50;
     display: flex;
     flex-direction: column;
-    background: var(--color-training-palette-surface, #fff7f2);
+    background: var(--play-surface);
     color: var(--ink);
     font-family: 'Outfit', system-ui, sans-serif;
     touch-action: manipulation;
@@ -5034,7 +5043,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     z-index: 50;
     display: flex;
     flex-direction: column;
-    background: var(--color-training-palette-surface, #fff7f2);
+    background: var(--play-surface);
     color: var(--ink);
     font-family: 'Outfit', system-ui, sans-serif;
     touch-action: manipulation;

@@ -813,7 +813,7 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
 }
 
 const S = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--color-training-palette-surface, #fff7f2)', color: 'var(--color-training-ink, #2d2d2d)', fontFamily: "'Outfit', system-ui, sans-serif" },
+  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--play-surface)', color: 'var(--play-ink)', fontFamily: "'Outfit', system-ui, sans-serif" },
   cosmosRoot: { background: 'transparent', color: '#f0e2c0', zIndex: 81 },
   cosmosCard: {
     background: 'rgba(12,10,8,0.72)',

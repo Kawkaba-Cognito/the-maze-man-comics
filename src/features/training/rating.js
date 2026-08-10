@@ -31,7 +31,7 @@ export const RATED_GAMES = {
   trailMaking: { gameKey: 'trail-making', domainId: 'speed', lHalf: 6, en: 'Trail Making', ar: 'ربط المسار' },
   memo: { gameKey: 'memo-span', domainId: 'memory', lHalf: 5, en: 'Memo Span', ar: 'مدى الذاكرة' },
   storyGrid: { gameKey: 'story-grid', domainId: 'memory', lHalf: 6, en: 'Story Time', ar: 'وقت القصة' },
-  nback: { gameKey: 'nback', domainId: 'memory', lHalf: 5, en: 'N-Back', ar: 'إن-باك' },
+  'keep-track': { gameKey: 'keep-track', domainId: 'memory', lHalf: 5, en: 'Keep Track', ar: 'تتبّع الفئات' },
   pairedAssoc: { gameKey: 'paired-associates', domainId: 'memory', lHalf: 6, en: 'Pair Match', ar: 'مطابقة الأزواج' },
   wordle: { gameKey: 'wordle', domainId: 'language', lHalf: 5, en: 'Word Maze', ar: 'متاهة الكلمات' },
   synonyms: { gameKey: 'synonyms', domainId: 'language', lHalf: 6, en: 'Word Links', ar: 'روابط الكلمات' },
@@ -39,7 +39,8 @@ export const RATED_GAMES = {
   rush: { gameKey: 'rush-hour', domainId: 'reasoning', lHalf: 7, en: 'Block Escape', ar: 'هروب القطع' },
   raven: { gameKey: 'raven-matrices', domainId: 'reasoning', lHalf: 6, en: 'Matrix IQ', ar: 'مصفوفات الذكاء' },
   detective: { gameKey: 'detective', domainId: 'reasoning', lHalf: 6, en: 'Detective', ar: 'المحقّق' },
-  stroop: { gameKey: 'spatial-stroop', domainId: 'flexibility', lHalf: 7, en: 'Arrow Rush', ar: 'تبديل الأسهم' },  'task-switch': { gameKey: 'task-switch', domainId: 'flexibility', lHalf: 6, en: 'Task Switch', ar: 'تبديل المهمة' },  'sort-shift': { gameKey: 'sort-shift', domainId: 'flexibility', lHalf: 6, en: 'Sort It Another Way', ar: 'رتّبها بطريقة أخرى' },
+  stroop: { gameKey: 'spatial-stroop', domainId: 'flexibility', lHalf: 7, en: 'Arrow Rush', ar: 'تبديل الأسهم' },
+  'mirror-world': { gameKey: 'mirror-world', domainId: 'flexibility', lHalf: 6, en: 'Mirror World', ar: 'عالم المرآة' },  'task-switch': { gameKey: 'task-switch', domainId: 'flexibility', lHalf: 6, en: 'Task Switch', ar: 'تبديل المهمة' },  'sort-shift': { gameKey: 'sort-shift', domainId: 'flexibility', lHalf: 6, en: 'Sort It Another Way', ar: 'رتّبها بطريقة أخرى' },
 };
 const BY_GAMEKEY = Object.fromEntries(Object.entries(RATED_GAMES).map(([k, v]) => [v.gameKey, k]));
 

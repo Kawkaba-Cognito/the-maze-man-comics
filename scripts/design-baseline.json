@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 773,
+    "raw-colour": 763,
     "conditional-background": 1,
     "stacked-backdrops": 4
   },
@@ -9,7 +9,7 @@
       "raw-colour": 1
     },
     "src/features/training/domains/attention/games/mot/index.jsx": {
-      "raw-colour": 19
+      "raw-colour": 18
     },
     "src/features/training/domains/attention/games/mot/MotBoard2D.jsx": {
       "raw-colour": 1
@@ -18,7 +18,7 @@
       "raw-colour": 20
     },
     "src/features/training/domains/attention/games/train-switch/index.jsx": {
-      "raw-colour": 22
+      "raw-colour": 21
     },
     "src/features/training/domains/flexibility/games/brixton/Brixton3DProto.jsx": {
       "raw-colour": 6
@@ -42,7 +42,7 @@
       "raw-colour": 7
     },
     "src/features/training/domains/language/games/odd-one-out/index.jsx": {
-      "raw-colour": 16
+      "raw-colour": 14
     },
     "src/features/training/domains/language/games/synonyms/index.jsx": {
       "raw-colour": 3
@@ -60,7 +60,7 @@
       "raw-colour": 3
     },
     "src/features/training/domains/memory/games/story-grid/index.jsx": {
-      "raw-colour": 46,
+      "raw-colour": 45,
       "conditional-background": 1
     },
     "src/features/training/domains/memory/games/story-grid/stage/schema.js": {
@@ -71,7 +71,7 @@
       "stacked-backdrops": 1
     },
     "src/features/training/domains/memory/games/story-grid/stage/stageCancellation.css": {
-      "raw-colour": 44
+      "raw-colour": 43
     },
     "src/features/training/domains/memory/games/story-grid/stage/stageLegacy.css": {
       "raw-colour": 36,
@@ -154,7 +154,7 @@
       "raw-colour": 2
     },
     "src/features/training/domains/reasoning/games/detective/prototypes/ProtoEngine.jsx": {
-      "raw-colour": 27
+      "raw-colour": 26
     },
     "src/features/training/domains/reasoning/games/detective/prototypes/protoUtils.js": {
       "raw-colour": 1
@@ -173,7 +173,7 @@
       "stacked-backdrops": 1
     },
     "src/features/training/domains/speed/games/math-gates/index.jsx": {
-      "raw-colour": 10
+      "raw-colour": 8
     },
     "src/features/training/domains/speed/games/math-gates/MathGatesBoard2D.jsx": {
       "raw-colour": 2
@@ -182,7 +182,7 @@
       "raw-colour": 1
     },
     "src/features/training/domains/speed/games/trail-making/index.jsx": {
-      "raw-colour": 11
+      "raw-colour": 10
     },
     "src/features/training/domains/speed/games/trail-making/TrailBoard2D.jsx": {
       "raw-colour": 1

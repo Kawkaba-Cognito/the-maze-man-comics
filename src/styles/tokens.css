@@ -195,6 +195,12 @@
      it would collapse the luminance range the roles are tuned against, which is
      a measurement change dressed up as a style change. */
   --play-surface: linear-gradient(180deg, #dfd7c7 0%, #d0c7b4 58%, #bfb5a0 100%);
+  /* The gradient's mid stop as a FLAT colour, for the two places a gradient
+     cannot go: inside color-mix() (Detective's --nr-bg feeds a dozen of them)
+     and on a full-bleed dip/flash overlay. stageLegacy.css already referenced
+     --play-surface-flat and it was never defined, so it had been falling back
+     to #b3cadd — Tide blue from the retired 3D era — this whole time. */
+  --play-surface-flat: #d0c7b4;
   /* Warm dark to match; luminance essentially unchanged (0.0125 vs 0.0136). */
   --play-ink: #201d18;
   --color-training-palette-surface: var(--play-surface);

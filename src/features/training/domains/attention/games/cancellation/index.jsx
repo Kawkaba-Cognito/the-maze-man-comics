@@ -565,6 +565,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const timerRunIdRef = useRef(0);
   const pendingPenaltyRef = useRef(0);
   const lastTapRef = useRef(0);
+  // Which cell the last accepted tap landed on — the debounce in onCellTap is
+  // scoped to a repeat of THAT cell, never to the next tap anywhere.
+  const lastTapIdxRef = useRef(-1);
   const tapsRef = useRef([]);
   const warned10Ref = useRef(false);
   const roundRef = useRef(null);
@@ -1227,6 +1230,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     // Guarded so resuming from pause doesn't reset it — tOn stays round-relative.
     if (!gridOnsetRef.current) gridOnsetRef.current = performance.now();
     lastTapRef.current = performance.now();
+    lastTapIdxRef.current = -1;
     id = requestAnimationFrame(loop);
     return () => {
       cancelAnimationFrame(id);
@@ -1376,13 +1380,34 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     if (!c || c.tapped) return;
 
     const now = performance.now();
-    // Debounce sub-70ms repeats: two intentional taps are physically ≥100ms
-    // apart, so anything faster is a double-fire / palm-bounce artifact that
-    // would corrupt RT and false-alarm counts. Drop it silently.
-    if (lastTapRef.current && now - lastTapRef.current < 70) return;
+    /*
+     * Debounce sub-70ms repeats OF THE SAME CELL. The window is scoped to one
+     * cell on purpose, and that scoping is the whole point.
+     *
+     * What it still catches: a hardware/synthetic double-fire — touchstart and
+     * click both landing, or a palm bounce. Those always hit the SAME index, and
+     * the `c.tapped` guard above cannot catch them alone, because cellsRef is
+     * refreshed inside the setCells updater and React runs that at render — two
+     * events dispatched in one tick therefore both still read tapped === false.
+     *
+     * ⚠ Why it must NOT be global (the bug this replaces). The old form compared
+     * against the last tap ANYWHERE and dropped anything inside 70ms, so a fast,
+     * entirely genuine tap on a DIFFERENT tile was swallowed — silently: no
+     * sound, no mark, no penalty, the tile left looking exactly like one never
+     * visited. The round clears only on `tappedTargets >= r.tc`, so each
+     * swallowed target is one the player must somehow notice and re-tap. On a
+     * 9x9 board with 17 targets a rapid scanner drops several, and gets the
+     * reported "I cancel every shape and still I do not win".
+     *
+     * The premise was wrong too: the old comment claimed intentional taps are
+     * ≥100ms apart, but practised serial tapping runs 6-8/s and bursts faster,
+     * so on a dense grid the window was inside the range of real responses.
+     */
+    if (lastTapIdxRef.current === idx && now - lastTapRef.current < 70) return;
     const itt = lastTapRef.current ? now - lastTapRef.current : null;
     if (lastTapRef.current) tapsRef.current.push(now - lastTapRef.current);
     lastTapRef.current = now;
+    lastTapIdxRef.current = idx;
 
     // Per-response record: grid position (idx/row/col), target flag, response
     // rank, round-onset latency (tOn), and `lead` marking the first response so
