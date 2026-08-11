@@ -1,9 +1,9 @@
 .martian-maze-root {
-  --amber: #ff5a00;
-  --amber-ring: rgba(255, 90, 0, 0.3);
-  --border: rgba(255, 90, 0, 0.3);
-  --border-strong: rgba(255, 90, 0, 0.5);
-  --ink-muted: #ccc;
+  --amber: #d8b66d;
+  --amber-ring: rgba(216, 182, 109, 0.28);
+  --border: rgba(216, 182, 109, 0.3);
+  --border-strong: rgba(216, 182, 109, 0.52);
+  --ink-muted: #d4ccbd;
   position: fixed;
   inset: 0;
   z-index: 5000;
@@ -30,8 +30,8 @@
 .martian-maze-root::before {
   z-index: 3;
   background:
-    radial-gradient(circle at 50% 50%, rgba(255, 75, 13, 0.2), transparent 22%),
-    radial-gradient(circle at 50% 50%, #1b0502 0, #070102 48%, #000 82%);
+    radial-gradient(circle at 50% 50%, rgba(216, 182, 109, 0.16), transparent 24%),
+    radial-gradient(circle at 50% 50%, #302b22 0, #151410 50%, #080807 84%);
 }
 
 .martian-maze-root::after {
@@ -41,13 +41,25 @@
     0deg,
     transparent 0,
     transparent 3px,
-    rgba(255, 126, 61, 0.06) 4px
+    rgba(223, 205, 167, 0.045) 4px
   );
   mix-blend-mode: screen;
 }
 
 .martian-maze-root.phase-ready::before {
   animation: martian-maze-veil-open 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Home's live universe remains visible during the first half of the dive. The
+   maze still builds underneath it, but contributes no opaque loading frame. */
+.martian-maze-root.is-entry-covered.phase-loading {
+  background: transparent;
+  animation: none;
+}
+
+.martian-maze-root.is-entry-covered.phase-loading::before,
+.martian-maze-root.is-entry-covered.phase-loading::after {
+  opacity: 0;
 }
 
 .martian-maze-root.phase-ready::after,
@@ -124,7 +136,7 @@
   border: 1px solid var(--border-strong);
   border-radius: 30px;
   color: var(--amber);
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(25, 23, 19, 0.76);
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
@@ -139,7 +151,7 @@
 
 .martian-maze-exit:hover,
 .martian-maze-exit:focus-visible {
-  color: #000;
+  color: #191713;
   background: var(--amber);
   box-shadow: 0 0 20px var(--amber-ring);
   outline: none;
@@ -194,7 +206,7 @@
   padding: 32px 24px;
   border: 1px solid var(--border);
   border-radius: 15px;
-  background: linear-gradient(135deg, rgba(20, 10, 10, 0.8), rgba(15, 5, 5, 0.6));
+  background: linear-gradient(135deg, rgba(33, 30, 24, 0.88), rgba(17, 16, 13, 0.78));
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
   flex-direction: column;
   pointer-events: auto;
@@ -230,7 +242,7 @@
   border: 1px solid var(--amber);
   border-radius: 5px;
   color: var(--amber);
-  background: rgba(255, 90, 0, 0.1);
+  background: rgba(216, 182, 109, 0.08);
   font-family: 'Outfit', sans-serif;
   font-size: 16px;
   font-weight: 700;
@@ -244,9 +256,9 @@
 .martian-maze-cta:focus-visible,
 .martian-maze-system-panel button:hover,
 .martian-maze-system-panel button:focus-visible {
-  color: #000;
+  color: #191713;
   background: var(--amber);
-  box-shadow: 0 0 20px rgba(255, 90, 0, 0.4);
+  box-shadow: 0 0 20px rgba(216, 182, 109, 0.34);
   outline: none;
 }
 
@@ -264,7 +276,7 @@
   border: 1px solid var(--border);
   border-radius: 15px;
   color: var(--amber);
-  background: linear-gradient(135deg, rgba(20, 10, 10, 0.92), rgba(15, 5, 5, 0.88));
+  background: linear-gradient(135deg, rgba(33, 30, 24, 0.94), rgba(17, 16, 13, 0.9));
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
   font-size: 18px;
   font-weight: 700;
@@ -281,95 +293,6 @@
   max-width: 260px;
   padding: 13px;
   font-size: 13px;
-}
-
-.martian-maze-transit {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 12;
-  display: flex;
-  align-items: center;
-  width: min(calc(100% - 40px), 420px);
-  transform: translate(-50%, -50%);
-  color: #ffe7d7;
-  flex-direction: column;
-  text-align: center;
-  pointer-events: none;
-}
-
-.martian-maze-aperture {
-  position: relative;
-  width: 148px;
-  aspect-ratio: 1;
-  margin-bottom: 25px;
-  border: 1px solid rgba(255, 105, 39, 0.52);
-  border-radius: 50%;
-  box-shadow:
-    0 0 70px rgba(255, 66, 8, 0.28),
-    inset 0 0 34px rgba(255, 80, 16, 0.17);
-  animation: martian-maze-aperture-spin 2.4s linear infinite;
-}
-
-.martian-maze-aperture::before,
-.martian-maze-aperture::after,
-.martian-maze-aperture i {
-  position: absolute;
-  border-radius: 50%;
-  content: '';
-}
-
-.martian-maze-aperture::before {
-  inset: 17px;
-  border: 1px dashed rgba(255, 151, 92, 0.68);
-}
-
-.martian-maze-aperture::after {
-  inset: 46px;
-  background: #ff5a00;
-  box-shadow: 0 0 34px rgba(255, 75, 11, 0.82);
-  animation: martian-maze-core-pulse 1.15s ease-in-out infinite alternate;
-}
-
-.martian-maze-aperture i:first-child {
-  inset: -7px 64px;
-  border-top: 22px solid rgba(255, 116, 49, 0.86);
-  border-bottom: 22px solid rgba(255, 116, 49, 0.86);
-}
-
-.martian-maze-aperture i:last-child {
-  inset: 64px -7px;
-  border-right: 22px solid rgba(255, 116, 49, 0.86);
-  border-left: 22px solid rgba(255, 116, 49, 0.86);
-}
-
-.martian-maze-transit small {
-  margin-bottom: 9px;
-  color: #ff7738;
-  font:
-    700 10px/1 'DM Mono',
-    monospace;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-}
-
-.martian-maze-transit strong {
-  font-size: clamp(22px, 6vw, 34px);
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  text-shadow: 0 0 24px rgba(255, 82, 16, 0.36);
-  text-transform: uppercase;
-}
-
-.martian-maze-transit span {
-  margin-top: 12px;
-  color: rgba(255, 226, 207, 0.5);
-  font:
-    500 10px/1 'DM Mono',
-    monospace;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  animation: martian-maze-status-pulse 1.25s ease-in-out infinite alternate;
 }
 
 @keyframes martian-maze-rise {
@@ -449,25 +372,6 @@
   }
 }
 
-@keyframes martian-maze-aperture-spin {
-  to {
-    transform: rotate(1turn);
-  }
-}
-
-@keyframes martian-maze-core-pulse {
-  to {
-    transform: scale(0.76);
-    opacity: 0.62;
-  }
-}
-
-@keyframes martian-maze-status-pulse {
-  to {
-    opacity: 0.35;
-  }
-}
-
 @media (max-width: 680px) {
   .martian-maze-joystick {
     right: max(18px, env(safe-area-inset-right));
@@ -505,10 +409,7 @@
   .martian-maze-root::after,
   .martian-maze-canvas,
   .martian-maze-instruction,
-  .martian-maze-joystick,
-  .martian-maze-aperture,
-  .martian-maze-aperture::after,
-  .martian-maze-transit span {
+  .martian-maze-joystick {
     animation: none !important;
   }
 

@@ -72,11 +72,6 @@ const COSMIC_ART = Object.freeze({
     file: 'comet', motif: 'comet', en: 'Comet', ar: 'مذنّب',
     variant: { file: 'meteor-cluster', en: 'Meteor cluster', ar: 'عنقود نيازك' },
   },
-  lightning: {
-    file: 'nebula-bolt', motif: 'nebula', en: 'Electric nebula', ar: 'سديم كهربائي',
-    variant: { file: 'solar-flare', en: 'Solar flare', ar: 'توهج شمسي' },
-  },
-
   roundsq: { file: 'portal', motif: 'portal', en: 'Cosmic portal', ar: 'بوابة كونية' },
   ovalH: { file: 'oval-planet-h', motif: 'planet', en: 'Horizontal exoplanet', ar: 'كوكب بيضاوي أفقي' },
   ovalV: { file: 'oval-planet-v', motif: 'planet', en: 'Aurora planet', ar: 'كوكب الشفق' },
@@ -99,7 +94,6 @@ const COSMIC_ART = Object.freeze({
   almostCircle: { file: 'round-planet', motif: 'planet', en: 'Round mosaic planet', ar: 'كوكب فسيفسائي دائري' },
   wideRect: { file: 'solar-array', motif: 'solar', en: 'Orbital solar array', ar: 'ألواح شمسية مدارية' },
   tallRect: { file: 'launch-tower', motif: 'tower', en: 'Launch tower', ar: 'برج إطلاق' },
-  bigSemi: { file: 'planet-horizon', motif: 'planet', en: 'Planet horizon', ar: 'أفق كوكبي' },
   tinyMoon: { file: 'thin-moon', motif: 'moon', en: 'Thin crescent', ar: 'هلال رفيع' },
   fatDiamond: { file: 'fat-crystal', motif: 'crystal', en: 'Wide cosmic crystal', ar: 'بلورة كونية عريضة' },
 });

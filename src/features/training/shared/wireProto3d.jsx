@@ -11,8 +11,6 @@ export function Proto3dFallback() {
       style={{
         display: 'grid',
         placeItems: 'center',
-        color: '#f0e2c0',
-        background: '#000',
         minHeight: '100dvh',
       }}
     >

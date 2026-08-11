@@ -22,7 +22,6 @@ import {
 } from '../../../../shared/shapeNorm';
 import { createStaircase } from './staircase';
 import { useApp } from '../../../../../../context/AppContext';
-import { assetUrl } from '../../../../../../lib/assetUrl';
 import { loadJson, saveJson } from '../../../../../../lib/storage';
 import {
   SH,
@@ -1636,7 +1635,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           playSfx={playSfx}
           title={t.freeIntroTitle}
           body={t.freeIntroBody}
-          badge={assetUrl('Assets/icons-cc0/scan-reticle.png')}
           onReady={onFreeIntroReady}
           onBack={() => {
             clearPlayRoundState();

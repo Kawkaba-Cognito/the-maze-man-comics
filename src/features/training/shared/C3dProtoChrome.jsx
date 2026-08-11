@@ -34,7 +34,12 @@ import './c3dProto.css';
 function toHudStats(stats, isAr, textOfFn) {
   return (stats || [])
     .map((s) => {
-      if (s && typeof s === 'object' && !React.isValidElement(s) && ('value' in s || 'label' in s)) {
+      if (
+        s &&
+        typeof s === 'object' &&
+        !React.isValidElement(s) &&
+        ('value' in s || 'label' in s)
+      ) {
         return { value: textOfFn(s.value, isAr), label: textOfFn(s.label, isAr), tone: s.tone };
       }
       const str = textOfFn(s, isAr);
@@ -66,6 +71,7 @@ function textOf(v, isAr) {
  */
 export default function C3dProtoChrome({
   isAr,
+  rootClassName = '',
   title,
   tag,
   hint,
@@ -105,12 +111,24 @@ export default function C3dProtoChrome({
   const pause = useGamePause({ isAr, playSfx, onQuit: onBack, sceneRef: canvasEl });
 
   return (
-    <div className="c3d-root" dir={isAr ? 'rtl' : 'ltr'}>
-      <div className="c3d-canvas" ref={canvasEl} aria-hidden="true">{canvasChildren}</div>
+    <div
+      className={`c3d-root${rootClassName ? ` ${rootClassName}` : ''}`}
+      dir={isAr ? 'rtl' : 'ltr'}
+    >
+      <div className="c3d-canvas" ref={canvasEl} aria-hidden="true">
+        {canvasChildren}
+      </div>
       {errText ? (
         <div className="c3d-banner c3d-banner--over">
           <span>{errText}</span>
-          <button type="button" className="c3d-cta" onClick={() => { playSfx?.('click'); onBack(); }}>
+          <button
+            type="button"
+            className="c3d-cta"
+            onClick={() => {
+              playSfx?.('click');
+              onBack();
+            }}
+          >
             {isAr ? 'العودة' : 'Back'}
           </button>
         </div>
@@ -131,9 +149,11 @@ export default function C3dProtoChrome({
           pauseAriaLabel={L.paused}
           playSfx={playSfx}
         />
-        {questionText
-          ? <div className="c3d-question">{questionText}</div>
-          : hintText ? <p className="c3d-hint">{hintText}</p> : null}
+        {questionText ? (
+          <div className="c3d-question">{questionText}</div>
+        ) : hintText ? (
+          <p className="c3d-hint">{hintText}</p>
+        ) : null}
       </div>
       {children}
       {pause.modal}
@@ -153,7 +173,7 @@ export function proto3dExtraItem({ isAr, on, hintEn, hintAr }) {
   return {
     k: 'proto3d',
     lb: isAr ? 'ثلاثي الأبعاد' : '3D',
-    hint: isAr ? (hintAr || 'نموذج ثلاثي الأبعاد') : (hintEn || '3D prototype'),
+    hint: isAr ? hintAr || 'نموذج ثلاثي الأبعاد' : hintEn || '3D prototype',
     on,
   };
 }

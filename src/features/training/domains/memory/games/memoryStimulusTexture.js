@@ -1,31 +1,36 @@
 import { THREE } from '../../../shared/c3dBoot';
+import {
+  GAME_COLORS,
+  GAME_FX,
+  GAME_INK,
+  GAME_STIMULUS_6,
+} from '../../../shared/gamePalette';
 
 const CARD_SIZE = 768;
+/* Canvas textures cannot read CSS variables, so keep their non-semantic card
+ * surfaces here and take all state/accent colours from the shared play palette.
+ * The previous cool-white/dark-blue cards were the last visible remnant of the
+ * retired blue activity theme. */
+const CARD_FACE = '#fffaf0';
+const CARD_HIDDEN = '#16161b';
+const CARD_HIDDEN_RAISED = '#24242a';
+const CARD_HIDDEN_EDGE = '#0e0e12';
 const SYMBOL_COLORS = {
-  '★': '#f2b84b',
-  '▲': '#e85d68',
-  '●': '#3f8fdd',
-  '■': '#39a875',
-  '◆': '#8c6be8',
-  '✚': '#ed7d3f',
-  '✦': '#19a7a0',
-  '❤': '#dc4c74',
-  '☀': '#e6a626',
-  '☾': '#6579d6',
-  '♣': '#25906d',
-  '♠': '#43506b',
+  '★': GAME_STIMULUS_6[1],
+  '▲': GAME_STIMULUS_6[3],
+  '●': GAME_STIMULUS_6[0],
+  '■': GAME_STIMULUS_6[2],
+  '◆': GAME_STIMULUS_6[4],
+  '✚': GAME_STIMULUS_6[3],
+  '✦': GAME_STIMULUS_6[5],
+  '❤': GAME_STIMULUS_6[4],
+  '☀': GAME_STIMULUS_6[1],
+  '☾': GAME_STIMULUS_6[0],
+  '♣': GAME_STIMULUS_6[2],
+  '♠': GAME_COLORS.muted.fill,
 };
 
-const OBJECT_COLORS = [
-  '#327bc4',
-  '#d86455',
-  '#268d76',
-  '#7a66c2',
-  '#d38d2d',
-  '#cf4e79',
-  '#2d93a5',
-  '#5f75ce',
-];
+const OBJECT_COLORS = GAME_STIMULUS_6;
 
 function roundedRect(ctx, x, y, w, h, r) {
   const radius = Math.min(r, w / 2, h / 2);
@@ -55,7 +60,7 @@ function makeCanvas() {
 
 function paintCard(ctx, accent, dark = false) {
   ctx.clearRect(0, 0, CARD_SIZE, CARD_SIZE);
-  ctx.fillStyle = dark ? '#131a24' : '#f8fbff';
+  ctx.fillStyle = dark ? CARD_HIDDEN : CARD_FACE;
   roundedRect(ctx, 22, 22, CARD_SIZE - 44, CARD_SIZE - 44, 92);
   ctx.fill();
 
@@ -65,7 +70,7 @@ function paintCard(ctx, accent, dark = false) {
   ctx.stroke();
 
   ctx.lineWidth = 5;
-  ctx.strokeStyle = dark ? 'rgba(255,255,255,0.18)' : 'rgba(18,36,58,0.13)';
+  ctx.strokeStyle = dark ? GAME_FX.glint : GAME_FX.hairline;
   roundedRect(ctx, 68, 68, CARD_SIZE - 136, CARD_SIZE - 136, 58);
   ctx.stroke();
 }
@@ -84,9 +89,9 @@ function makeTexture(canvas, renderer) {
 export function createHiddenCardTexture(renderer) {
   const canvas = makeCanvas();
   const ctx = canvas.getContext('2d');
-  paintCard(ctx, '#4c92cf', true);
+  paintCard(ctx, GAME_COLORS.accent.fill, true);
 
-  ctx.fillStyle = '#f6fbff';
+  ctx.fillStyle = CARD_FACE;
   ctx.font = '700 330px Georgia, serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -95,7 +100,7 @@ export function createHiddenCardTexture(renderer) {
 }
 
 export function createSymbolCardTexture(symbol, renderer) {
-  const accent = SYMBOL_COLORS[symbol] || '#327bc4';
+  const accent = SYMBOL_COLORS[symbol] || GAME_COLORS.item.fill;
   const canvas = makeCanvas();
   const ctx = canvas.getContext('2d');
   paintCard(ctx, accent);
@@ -114,7 +119,7 @@ export function createObjectCardTexture({ id, emoji }, renderer) {
   const ctx = canvas.getContext('2d');
   paintCard(ctx, accent);
 
-  ctx.fillStyle = '#182334';
+  ctx.fillStyle = GAME_INK;
   ctx.font = '430px "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -126,18 +131,18 @@ export function createGridSlotTexture(renderer) {
   const canvas = makeCanvas();
   const ctx = canvas.getContext('2d');
   const gradient = ctx.createLinearGradient(0, 0, 0, CARD_SIZE);
-  gradient.addColorStop(0, '#19283a');
-  gradient.addColorStop(1, '#0d1520');
+  gradient.addColorStop(0, CARD_HIDDEN_RAISED);
+  gradient.addColorStop(1, CARD_HIDDEN_EDGE);
   ctx.fillStyle = gradient;
   roundedRect(ctx, 24, 24, CARD_SIZE - 48, CARD_SIZE - 48, 88);
   ctx.fill();
 
   ctx.lineWidth = 18;
-  ctx.strokeStyle = '#315776';
+  ctx.strokeStyle = GAME_COLORS.item.edge;
   roundedRect(ctx, 42, 42, CARD_SIZE - 84, CARD_SIZE - 84, 72);
   ctx.stroke();
 
-  ctx.fillStyle = '#4c92cf';
+  ctx.fillStyle = GAME_COLORS.accent.fill;
   ctx.beginPath();
   ctx.arc(CARD_SIZE / 2, CARD_SIZE / 2, 18, 0, Math.PI * 2);
   ctx.fill();

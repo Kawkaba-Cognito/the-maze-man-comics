@@ -6,6 +6,10 @@ import './styles/global.css';
 import './styles/universe-stage.css';
 import './styles/settings.css';
 import './styles/training.css';
+// Loaded eagerly because game chunks use `.c3d-root` as their inner Suspense
+// fallback. If this stylesheet arrives with the lazy 3D chunk, the fallback can
+// paint one unthemed frame before the component and its CSS finish loading.
+import './features/training/shared/c3dProto.css';
 import './styles/puzzles.css';
 import './styles/puzzleStudioTheme.css';
 // After the theme on purpose: it re-skins the studio HUB onto the app's dusk

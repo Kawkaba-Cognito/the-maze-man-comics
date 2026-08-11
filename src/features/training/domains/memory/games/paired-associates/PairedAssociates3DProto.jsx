@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GAME_INTS } from '../../../../shared/gamePalette';
+import { GAME_COLORS, GAME_FX, GAME_INTS, GAME_SKY } from '../../../../shared/gamePalette';
 import { bootC3dScene, disposeObject, matStd, THREE } from '../../../../shared/c3dBoot';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import {
@@ -8,6 +8,7 @@ import {
   createSymbolCardTexture,
 } from '../memoryStimulusTexture';
 import '../../../../shared/c3dProto.css';
+import './pairedAssociates3D.css';
 
 /*
  * Card body colour — near-black, matching the black-planet Kawkab.
@@ -27,6 +28,75 @@ import '../../../../shared/c3dProto.css';
 const CARD_BLACK = 0x16161b;
 const CARD_BLACK_GLOW = 0x0e0e12;
 
+function roundedRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+function createMemoryTableTexture(renderer) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1600;
+  canvas.height = 780;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, GAME_SKY.top);
+  gradient.addColorStop(1, GAME_SKY.mid);
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  roundedRect(ctx, 24, 24, canvas.width - 48, canvas.height - 48, 70);
+  ctx.fillStyle = gradient;
+  ctx.fill();
+  ctx.lineWidth = 7;
+  ctx.strokeStyle = GAME_FX.shadowDrop;
+  ctx.stroke();
+
+  ctx.save();
+  ctx.setLineDash([14, 18]);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = GAME_FX.hairline;
+  ctx.beginPath();
+  ctx.moveTo(500, 105);
+  ctx.lineTo(500, canvas.height - 105);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.strokeStyle = GAME_COLORS.accent.fill;
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(252, canvas.height / 2, 132, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(252, canvas.height / 2, 162, 0, Math.PI * 2);
+  ctx.stroke();
+
+  [0, 1, 2, 3].forEach((index) => {
+    const angle = -0.72 + index * 1.42;
+    ctx.fillStyle = index === 1 ? GAME_COLORS.accent.fill : GAME_FX.shadowDrop;
+    ctx.beginPath();
+    ctx.arc(
+      252 + Math.cos(angle) * 162,
+      canvas.height / 2 + Math.sin(angle) * 162,
+      index === 1 ? 9 : 6,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = Math.min(renderer?.capabilities?.getMaxAnisotropy?.() || 4, 12);
+  texture.needsUpdate = true;
+  return texture;
+}
+
 const PHASE_LABEL = {
   en: { study: 'Study', recall: 'Recall', feedback: 'Check' },
   ar: { study: 'حفظ', recall: 'استرجاع', feedback: 'تحقق' },
@@ -43,6 +113,7 @@ export default function PairedAssociates3DProto({
   phase = 'study',
   question = '',
   hud = '',
+  stats = [],
   interactive = true,
   onPick,
 }) {
@@ -58,29 +129,55 @@ export default function PairedAssociates3DProto({
     const wrap = wrapRef.current;
     if (!wrap || boxes.length === 0) return undefined;
 
-    const boot = bootC3dScene(wrap, { fov: 48, fitHalf: 4.1, bloom: false });
+    const desktopLayout = wrap.clientWidth >= 900 && wrap.clientHeight >= 600;
+    const boot = bootC3dScene(wrap, {
+      fov: desktopLayout ? 44 : 48,
+      fitHalf: 4.1,
+      bloom: false,
+      stars: false,
+    });
     if (boot.error) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');
       return () => boot.dispose();
     }
 
-    const {
-      camera,
-      playRoot,
-      renderer,
-      setFitBox,
-      setTick,
-      dispose,
-    } = boot;
+    const { camera, playRoot, renderer, setFitBox, setTick, dispose } = boot;
     const textureCache = new Map();
+    let memoryTable = null;
+    let memoryTableTexture = null;
+    let cueDock = null;
+
+    if (desktopLayout) {
+      memoryTableTexture = createMemoryTableTexture(renderer);
+      memoryTable = new THREE.Mesh(
+        new THREE.PlaneGeometry(8.8, 4.3),
+        new THREE.MeshBasicMaterial({
+          map: memoryTableTexture,
+          transparent: true,
+          toneMapped: false,
+        }),
+      );
+      memoryTable.position.set(0, -0.06, -0.48);
+      playRoot.add(memoryTable);
+
+      cueDock = new THREE.Mesh(
+        new THREE.RingGeometry(0.83, 0.88, 48),
+        new THREE.MeshBasicMaterial({
+          color: GAME_INTS.accent.fill,
+          transparent: true,
+          opacity: 0.58,
+          depthWrite: false,
+        }),
+      );
+      cueDock.position.set(-3.02, -0.05, -0.18);
+      playRoot.add(cueDock);
+    }
     const textureFor = (symbol) => {
       const key = symbol || 'hidden';
       if (!textureCache.has(key)) {
         textureCache.set(
           key,
-          symbol
-            ? createSymbolCardTexture(symbol, renderer)
-            : createHiddenCardTexture(renderer),
+          symbol ? createSymbolCardTexture(symbol, renderer) : createHiddenCardTexture(renderer),
         );
       }
       return textureCache.get(key);
@@ -108,10 +205,7 @@ export default function PairedAssociates3DProto({
         roughness: 0.5,
       });
       const card = new THREE.Group();
-      const frame = new THREE.Mesh(
-        new THREE.BoxGeometry(cardSize, cardSize, 0.3),
-        frameMaterial,
-      );
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(cardSize, cardSize, 0.3), frameMaterial);
       const faceMaterial = createCardMaterial(hiddenTexture);
       const face = new THREE.Mesh(
         new THREE.PlaneGeometry(cardSize * 0.88, cardSize * 0.88),
@@ -124,9 +218,9 @@ export default function PairedAssociates3DProto({
       const ring = new THREE.Mesh(
         new THREE.RingGeometry(cardSize * 0.57, cardSize * 0.68, 32),
         new THREE.MeshBasicMaterial({
-          color: GAME_INTS.item.fill,
+          color: GAME_INTS.accent.fill,
           transparent: true,
-          opacity: 0.14,
+          opacity: 0.12,
           depthWrite: false,
         }),
       );
@@ -136,7 +230,10 @@ export default function PairedAssociates3DProto({
       station.userData.card = card;
       station.userData.faceMaterial = faceMaterial;
       station.userData.frameMaterial = frameMaterial;
+      station.userData.ringMaterial = ring.material;
       station.userData.reveal = 0;
+      station.userData.hover = 0;
+      station.userData.targetHover = 0;
       playRoot.add(station);
       return station;
     });
@@ -158,17 +255,21 @@ export default function PairedAssociates3DProto({
     const cueFace = new THREE.Mesh(new THREE.PlaneGeometry(1.24, 1.24), cueMaterial);
     cueFace.position.z = 0.116;
     cueCard.add(cueFrame, cueFace);
-    cueCard.position.set(0, 2.35, 0.38);
+    cueCard.position.set(desktopLayout ? -3.02 : 0, desktopLayout ? -0.05 : 2.35, 0.38);
     cueCard.visible = false;
     playRoot.add(cueCard);
 
-    setFitBox(3.25, count > 8 ? 3.0 : 3.15);
+    setFitBox(desktopLayout ? 4.48 : 3.25, desktopLayout ? 2.2 : count > 8 ? 3.0 : 3.15);
 
     const placeStations = (nextBoxes) => {
       stations.forEach((station, index) => {
         const item = nextBoxes[index];
         if (!item) return;
-        station.position.set((item.fx - 0.5) * 5.2, (0.5 - item.fy) * 3.35 - 0.18, 0);
+        station.position.set(
+          (item.fx - 0.5) * (desktopLayout ? 5.95 : 5.2) + (desktopLayout ? 0.95 : 0),
+          (0.5 - item.fy) * (desktopLayout ? 3.2 : 3.35) - (desktopLayout ? 0.06 : 0.18),
+          0,
+        );
       });
     };
 
@@ -193,7 +294,7 @@ export default function PairedAssociates3DProto({
           frameMaterial.emissive.setHex(GAME_INTS.ok.fill);
           frameMaterial.emissiveIntensity = 0.82;
         } else if (isOpen) {
-          frameMaterial.emissive.setHex(GAME_INTS.item.fill);
+          frameMaterial.emissive.setHex(GAME_INTS.accent.fill);
           frameMaterial.emissiveIntensity = 0.7;
         } else {
           /* Back to the idle near-black. Must match the frame material's own
@@ -207,41 +308,72 @@ export default function PairedAssociates3DProto({
       cueCard.visible = Boolean(state.cue);
       cueMaterial.map = textureFor(state.cue);
       cueMaterial.needsUpdate = true;
+      if (state.phase !== 'recall') {
+        stations.forEach((station) => {
+          station.userData.targetHover = 0;
+        });
+        renderer.domElement.style.cursor = 'default';
+      }
     };
     apiRef.current.sync = sync;
 
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
     const canvas = renderer.domElement;
-    const onPointerUp = (event) => {
-      if (phaseRef.current !== 'recall') return;
-      if (event.pointerType === 'mouse' && event.button !== 0) return;
+    const stationAtPointer = (event) => {
       const rect = canvas.getBoundingClientRect();
       pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
       const hit = raycaster.intersectObjects(stations, true)[0];
-      if (!hit) return;
+      if (!hit) return null;
       let node = hit.object;
       while (node && node.userData.index === undefined) node = node.parent;
-      if (node?.userData.index !== undefined) onPickRef.current?.(node.userData.index);
+      return node?.userData.index !== undefined ? node : null;
     };
+    const onPointerMove = (event) => {
+      const station = phaseRef.current === 'recall' ? stationAtPointer(event) : null;
+      stations.forEach((item) => {
+        item.userData.targetHover = item === station ? 1 : 0;
+      });
+      canvas.style.cursor = station ? 'pointer' : 'default';
+    };
+    const onPointerLeave = () => {
+      stations.forEach((station) => {
+        station.userData.targetHover = 0;
+      });
+      canvas.style.cursor = 'default';
+    };
+    const onPointerUp = (event) => {
+      if (phaseRef.current !== 'recall') return;
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      const station = stationAtPointer(event);
+      if (station) onPickRef.current?.(station.userData.index);
+    };
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerleave', onPointerLeave);
     canvas.addEventListener('pointerup', onPointerUp);
 
     setTick((dt, now) => {
-      cueCard.position.y = 2.35 + Math.sin(now * 0.0022) * 0.035;
+      cueCard.position.y = (desktopLayout ? -0.05 : 2.35) + Math.sin(now * 0.0022) * 0.035;
       stations.forEach((station) => {
         const target = station.userData.targetReveal || 0;
         station.userData.reveal += (target - station.userData.reveal) * Math.min(1, dt * 12);
+        station.userData.hover +=
+          (station.userData.targetHover - station.userData.hover) * Math.min(1, dt * 14);
         const reveal = station.userData.reveal;
+        const hover = station.userData.hover;
         station.userData.card.position.z = reveal * 0.38;
-        station.userData.card.scale.setScalar(1 + reveal * 0.055);
+        station.userData.card.scale.setScalar(1 + reveal * 0.055 + hover * 0.045);
+        station.userData.ringMaterial.opacity = 0.12 + reveal * 0.12 + hover * 0.2;
       });
     });
 
     apiRef.current.sync?.({ boxes, openIndex, feedback, cue, phase });
 
     return () => {
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerleave', onPointerLeave);
       canvas.removeEventListener('pointerup', onPointerUp);
       stations.forEach((station) => {
         disposeObject(station);
@@ -249,6 +381,15 @@ export default function PairedAssociates3DProto({
       });
       disposeObject(cueCard);
       playRoot.remove(cueCard);
+      if (cueDock) {
+        disposeObject(cueDock);
+        playRoot.remove(cueDock);
+      }
+      if (memoryTable) {
+        disposeObject(memoryTable);
+        playRoot.remove(memoryTable);
+      }
+      memoryTableTexture?.dispose();
       textureCache.forEach((texture) => texture.dispose());
       textureCache.clear();
       apiRef.current = {};
@@ -264,37 +405,55 @@ export default function PairedAssociates3DProto({
 
   const labels = PHASE_LABEL[isAr ? 'ar' : 'en'];
   const phaseLabel = labels[phase] || labels.study;
+  const phaseHint = isAr
+    ? phase === 'study'
+      ? 'راقب كل رمز ومكانه'
+      : phase === 'recall'
+        ? 'اختر الموقع الصحيح'
+        : 'قارن إجابتك'
+    : phase === 'study'
+      ? 'Observe each symbol and its location'
+      : phase === 'recall'
+        ? 'Choose the location that held the symbol'
+        : 'Compare your choice with the correct location';
 
   return (
     <C3dProtoChrome
       isAr={isAr}
+      rootClassName={`ct-pal3d-root ct-pal3d-root--${phase}`}
       title={isAr ? 'مطابقة الأزواج' : 'Pair Match'}
       question={question ? <span className="ct-pal3d-question">{question}</span> : ''}
       chip={phaseLabel}
-      chipStyle={{ fontSize: '0.76rem', fontWeight: 900, color: 'var(--accent-bright)' }}
-      stats={hud ? [hud] : []}
+      chipStyle={{ fontSize: '0.76rem', fontWeight: 900, color: 'var(--game-accent)' }}
+      stats={stats.length ? stats : hud ? [hud] : []}
       bootError={bootError}
       onBack={onBack}
       playSfx={playSfx}
       canvasRef={wrapRef}
     >
+      <div className="ct-pal3d-phase-card" aria-hidden="true">
+        <span>{isAr ? 'مرصد الذاكرة' : 'Memory observatory'}</span>
+        <strong>{phaseLabel}</strong>
+        <small>{phaseHint}</small>
+      </div>
       <p className="ct-visually-hidden" aria-live="polite" aria-atomic="true">
         {phase === 'study' && openIndex >= 0
-          ? (isAr
+          ? isAr
             ? `الصندوق ${openIndex + 1} يحتوي على الرمز ${boxes[openIndex]?.symbol || ''}`
-            : `Box ${openIndex + 1} contains symbol ${boxes[openIndex]?.symbol || ''}`)
+            : `Box ${openIndex + 1} contains symbol ${boxes[openIndex]?.symbol || ''}`
           : question}
       </p>
       {phase === 'recall' && interactive ? (
         <div className="ct-pal-access-wrap">
-          <span className="ct-pal-access-label">
-            {isAr ? 'اختر الصندوق' : 'Choose a box'}
-          </span>
+          <span className="ct-pal-access-label">{isAr ? 'اختر الصندوق' : 'Choose a box'}</span>
           <div
             className="ct-pal-access-grid"
             role="group"
             aria-label={isAr ? `اختر صندوق الرمز ${cue}` : `Choose the box for symbol ${cue}`}
-            style={{ gridTemplateColumns: `repeat(${Math.ceil(Math.sqrt(boxes.length))}, minmax(44px, 1fr))` }}
+            style={{
+              '--pal-box-count': boxes.length,
+              gridTemplateColumns: `repeat(${Math.ceil(Math.sqrt(boxes.length))}, minmax(44px, 1fr))`,
+            }}
           >
             {boxes.map((_, index) => (
               <button

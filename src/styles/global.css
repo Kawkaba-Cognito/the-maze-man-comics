@@ -2416,11 +2416,22 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
     z-index: 0;
     overflow: hidden;
     background: var(--universe-dusk);
-    opacity: calc(1 - var(--kawnera-progress));
-    transform: scale(calc(1 - var(--kawnera-progress) * 0.08));
-    transform-origin: 50% 55%;
-    filter: blur(calc(var(--kawnera-progress) * 5px));
+    opacity: 1;
+    transform: scale(calc(1 + var(--kawnera-progress) * 0.55));
+    transform-origin: 50% 50%;
+    filter: brightness(calc(1 + var(--kawnera-progress) * 0.16));
     will-change: opacity, transform, filter;
+}
+
+.home-universe-scroll.maze-entry-active .home-universe-stage {
+    z-index: 5001;
+    animation: home-universe-dive-to-core 2.1s cubic-bezier(.16,.72,.18,1) both;
+}
+
+.home-universe-scroll.maze-entry-active .home-universe-heading,
+.home-universe-scroll.maze-entry-active .home-universe-bodies,
+.home-universe-scroll.maze-entry-active .home-slide-hint {
+    animation: home-universe-dive-ui-out 380ms ease forwards;
 }
 
 .home-universe-page {
@@ -2442,106 +2453,41 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
     min-height: 100dvh;
     scroll-snap-align: start;
     pointer-events: none;
-    background: #000;
+    background: var(--universe-dusk);
 }
 
 .home-universe-scroll.maze-is-open {
     overflow-y: hidden;
 }
 
-.home-maze-transition {
-    position: fixed;
-    inset: 0;
-    z-index: 5000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    color: #ffd8bc;
-    background:
-        radial-gradient(circle at 50% 48%, rgba(255, 74, 12, 0.17), transparent 24%),
-        radial-gradient(circle at 50% 50%, #240703 0, #080102 42%, #000 78%);
-    flex-direction: column;
-    text-align: center;
-    animation: home-maze-threshold-in 480ms cubic-bezier(.2,.8,.2,1) both;
+@keyframes home-universe-dive-to-core {
+    0% {
+        opacity: 1;
+        transform: scale(1.1);
+        filter: brightness(1.03) blur(0);
+    }
+    52% {
+        opacity: 1;
+        transform: scale(2.7);
+        filter: brightness(1.2) blur(0);
+    }
+    82% {
+        opacity: .72;
+        transform: scale(6.2);
+        filter: brightness(1.45) blur(2px);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(9.5);
+        filter: brightness(1.55) blur(7px);
+    }
 }
 
-.home-maze-transition::before {
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-        90deg,
-        transparent 0,
-        transparent 7vw,
-        rgba(255, 99, 35, 0.025) 7.1vw,
-        transparent 7.2vw
-    );
-    content: '';
-    pointer-events: none;
-}
-
-.home-maze-transition-aperture {
-    position: relative;
-    width: 132px;
-    aspect-ratio: 1;
-    margin-bottom: 12px;
-    border: 1px solid rgba(255, 116, 49, 0.38);
-    border-radius: 50%;
-    box-shadow: 0 0 56px rgba(255, 67, 9, 0.2), inset 0 0 28px rgba(255, 76, 13, 0.12);
-    animation: home-maze-aperture 1.8s linear infinite;
-}
-
-.home-maze-transition-aperture::before,
-.home-maze-transition-aperture::after,
-.home-maze-transition-aperture i {
-    position: absolute;
-    border-radius: 50%;
-    content: '';
-}
-
-.home-maze-transition-aperture::before {
-    inset: 15px;
-    border: 1px dashed rgba(255, 139, 75, 0.55);
-}
-
-.home-maze-transition-aperture::after {
-    inset: 38px;
-    background: #ff5a00;
-    box-shadow: 0 0 30px rgba(255, 82, 16, 0.72);
-}
-
-.home-maze-transition-aperture i:first-child {
-    inset: -6px 57px;
-    border-top: 20px solid rgba(255, 118, 47, 0.8);
-    border-bottom: 20px solid rgba(255, 118, 47, 0.8);
-}
-
-.home-maze-transition-aperture i:last-child {
-    inset: 57px -6px;
-    border-right: 20px solid rgba(255, 118, 47, 0.8);
-    border-left: 20px solid rgba(255, 118, 47, 0.8);
-}
-
-.home-maze-transition small {
-    color: #ff7432;
-    font: 700 10px/1 'DM Mono', monospace;
-    letter-spacing: .24em;
-    text-transform: uppercase;
-}
-
-.home-maze-transition strong {
-    font: 700 15px/1.4 'Outfit', sans-serif;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-}
-
-@keyframes home-maze-threshold-in {
-    from { opacity: 0; transform: scale(1.04); }
-    to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes home-maze-aperture {
-    to { transform: rotate(1turn); }
+@keyframes home-universe-dive-ui-out {
+    to {
+        opacity: 0;
+        transform: translateY(-18px) scale(.98);
+    }
 }
 
 .home-universe-heading {
@@ -2738,10 +2684,6 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .home-maze-transition,
-    .home-maze-transition-aperture {
-        animation: none;
-    }
     .home-universe-scroll {
         scroll-snap-type: none;
         scroll-behavior: auto;
@@ -2756,6 +2698,10 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
         will-change: auto;
     }
     .home-universe-stage { opacity: 1; }
+    .home-universe-scroll.maze-entry-active .home-universe-stage {
+        opacity: 0;
+        animation: none !important;
+    }
     .home-universe-heading { opacity: 1; }
     .home-kawnera-content { opacity: 1; }
     .home-kawnera-gateway {

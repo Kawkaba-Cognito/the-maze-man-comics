@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { DomainIconArt } from '../../features/training/shared/DomainIcon';
 import UniverseStage from '../shared/UniverseStage';
 import { DOMAINS } from './trainingData';
@@ -552,7 +552,8 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
   const stageRef = useRef(null);
   const [stageScale, setStageScale] = useState(1);
   const [wide, setWide] = useState(false);
-  useEffect(() => {
+  const [stageReady, setStageReady] = useState(false);
+  useLayoutEffect(() => {
     const fit = () => {
       const el = stageRef.current;
       if (!el) return;
@@ -615,6 +616,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       const byHeight = free / L.h;
       const byWidth = freeW / L.w;
       setStageScale(Math.max(0.5, Math.min(L.maxScale, byHeight, byWidth)));
+      setStageReady(true);
       return true;
     };
     fit();
@@ -745,6 +747,12 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           height: LY.h * stageScale,
           marginTop: 4,
           zIndex: 4,
+          // RadialMazeHub is unmounted while a domain/game is open. On every
+          // return its state starts at scale 1, so revealing the authored map
+          // before the first real fit made it appear large and then snap small.
+          // useLayoutEffect normally resolves the fit before paint; visibility
+          // is the safety net for hubs mounted while their app tab is hidden.
+          visibility: stageReady ? 'visible' : 'hidden',
         }}
       >
         <div

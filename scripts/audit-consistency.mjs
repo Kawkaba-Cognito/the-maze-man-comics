@@ -57,6 +57,20 @@ const scienceSrc = read(path.join(SHARED, 'gameScience.js'));
 const metaSrc = read(path.join(SHARED, 'tutorials/trainingMeta.js'));
 const tileSrc = read(path.join(SHARED, 'GamePlanetTile.jsx'));
 const coverKeys = tileSrc.match(/const COVER_KEYS = new Set\(\[([\s\S]*?)\]\)/)?.[1] || '';
+const mainSrc = read(path.join(ROOT, 'src/main.jsx'));
+const c3dProtoCss = read(path.join(SHARED, 'c3dProto.css'));
+const c3dRootBlock = c3dProtoCss.match(/\.c3d-root\s*\{([\s\S]*?)\}/)?.[1] || '';
+const sharedSurfaceChecks = [
+  {
+    label: '3D fallback styles load before lazy game chunks',
+    ok: /features\/training\/shared\/c3dProto\.css/.test(mainSrc),
+  },
+  {
+    label: '3D loading root follows the live play-surface tokens',
+    ok: /background-color:\s*var\(--play-surface-flat\)/.test(c3dRootBlock)
+      && /background-image:\s*var\(--play-surface\)/.test(c3dRootBlock),
+  },
+];
 
 /*
  * The checklist. Each rule is what the PLAYER or the DATA gets, not a coding
@@ -231,6 +245,16 @@ for (const r of RULES) {
   const n = games.filter((g) => g.results.find((x) => x.id === r.id).ok).length;
   const pct = Math.round((n / games.length) * 100);
   console.log(`  ${String(n).padStart(2)}/${games.length}  ${String(pct).padStart(3)}%  ${r.label}`);
+}
+
+console.log('\nshared loading surface:');
+for (const check of sharedSurfaceChecks) {
+  console.log(`  ${check.ok ? '✓' : '✗'} ${check.label}`);
+}
+const sharedSurfaceFailures = sharedSurfaceChecks.filter((check) => !check.ok);
+if (sharedSurfaceFailures.length) {
+  console.error('\nFAILED — the shared game loading surface can flash a stale palette.');
+  process.exit(1);
 }
 
 /*

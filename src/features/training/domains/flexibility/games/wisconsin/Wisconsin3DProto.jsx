@@ -487,7 +487,7 @@ export default function Wisconsin3DProto({
       tag={t.tag}
       question={running && say && say !== t.prompt ? `${t.prompt} · ${say}` : t.prompt}
       chip={t.hidden}
-      chipStyle={{ fontSize: '0.6rem', fontWeight: 800, color: '#55d6e8', maxWidth: 150, whiteSpace: 'normal', lineHeight: 1.1 }}
+      chipStyle={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--game-accent)', maxWidth: 150, whiteSpace: 'normal', lineHeight: 1.1 }}
       stats={stats}
       banner={bannerText}
       bannerOver={isSurvival && banner === 'over'}

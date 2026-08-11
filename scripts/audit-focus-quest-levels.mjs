@@ -28,9 +28,14 @@ import {
   getSurvivalDifficultyModel,
   prepareFreeRound,
   PASS_PLAY_CONFIG,
+  RETIRED_CANCELLATION_SHAPES,
 } from '../src/features/training/shared/focusQuestData.js';
 
 const SHAPES = new Set(Object.keys(SH));
+const RETIRED_SHAPES = new Set(RETIRED_CANCELLATION_SHAPES);
+const ACTIVE_CANCELLATION_SHAPES = new Set(
+  [...SHAPES].filter((shape) => !RETIRED_SHAPES.has(shape)),
+);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const sharp = require('sharp');
@@ -52,9 +57,11 @@ function auditOneRound(r, label) {
   const targets = r.cells.filter((c) => c.isT);
   assert(targets.length === r.tc, `${label}: tc ${r.tc} vs isT count ${targets.length}`);
   assert(r.tc > 0, `${label}: no targets`);
+  assert(!RETIRED_SHAPES.has(r.target), `${label}: retired target object "${r.target}"`);
 
   for (const c of r.cells) {
     assert(SHAPES.has(c.shape), `${label}: unknown shape "${c.shape}"`);
+    assert(!RETIRED_SHAPES.has(c.shape), `${label}: retired object "${c.shape}" reached the board`);
     assert(typeof c.fill === 'string' && c.fill.startsWith('#'), `${label}: bad fill`);
   }
 
@@ -118,6 +125,7 @@ for (const diff of Object.keys(DM)) {
     );
     for (const sh of cfg.pool) {
       assert(SHAPES.has(sh), `${diff} L${li + 1}: pool references unknown "${sh}"`);
+      assert(!RETIRED_SHAPES.has(sh), `${diff} L${li + 1}: pool contains retired "${sh}"`);
     }
 
     // sigmoidTime is the unrounded model; cfg.time is what the player is given,
@@ -239,9 +247,11 @@ for (const diff of Object.keys(PASS_PLAY_CONFIG)) {
   );
 }
 
-// The premium training atlas must cover the complete engine vocabulary, with a
-// unique normalized file for every key. Parse the data-only object literal here
-// rather than importing the Vite asset helper into Node.
+// The premium training atlas must cover every active Cancellation object, with
+// a unique normalized file for every key. Retired objects must have no mapping,
+// so their artwork cannot be pulled back into the compiled game accidentally.
+// Parse the data-only object literal here rather than importing the Vite asset
+// helper into Node.
 const shapeArtSource = fs.readFileSync(
   path.join(ROOT, 'src/features/training/shared/shapeArt.js'),
   'utf8',
@@ -250,10 +260,16 @@ const artPairs = [...shapeArtSource.matchAll(
   /^\s{2}([A-Za-z][A-Za-z0-9]*):\s*\{\s*file:\s*'([^']+)'/gm,
 )].map((m) => [m[1], m[2]]);
 const artMap = new Map(artPairs);
-assert(artMap.size === SHAPES.size, `art coverage ${artMap.size}/${SHAPES.size}`);
+assert(
+  artMap.size === ACTIVE_CANCELLATION_SHAPES.size,
+  `art coverage ${artMap.size}/${ACTIVE_CANCELLATION_SHAPES.size}`,
+);
 assert(new Set(artMap.values()).size === artMap.size, 'art files must be one-to-one');
-for (const shape of SHAPES) {
+for (const shape of ACTIVE_CANCELLATION_SHAPES) {
   assert(artMap.has(shape), `missing premium art mapping for ${shape}`);
+}
+for (const shape of RETIRED_SHAPES) {
+  assert(!artMap.has(shape), `retired object still has premium art mapping: ${shape}`);
 }
 
 /*
@@ -299,8 +315,9 @@ for (const diff of Object.keys(DM)) {
   }
 }
 assert(
-  usedTrainingShapes.size === SHAPES.size,
-  `training curriculum uses ${usedTrainingShapes.size}/${SHAPES.size} assets`,
+  usedTrainingShapes.size === ACTIVE_CANCELLATION_SHAPES.size
+    && [...ACTIVE_CANCELLATION_SHAPES].every((shape) => usedTrainingShapes.has(shape)),
+  `training curriculum uses ${usedTrainingShapes.size}/${ACTIVE_CANCELLATION_SHAPES.size} active assets`,
 );
 
 /*
@@ -331,6 +348,7 @@ assert(
     pools.forEach((pool, i) => {
       const seen = new Map();
       for (const shape of pool) {
+        assert(!RETIRED_SHAPES.has(shape), `SP.${tier}[${i}]: retired object "${shape}"`);
         const motif = motifOf[shape];
         assert(motif, `SP.${tier}[${i}]: "${shape}" has no art motif`);
         assert(

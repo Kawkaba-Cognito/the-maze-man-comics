@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 763,
+    "raw-colour": 734,
     "conditional-background": 1,
     "stacked-backdrops": 4
   },
@@ -15,13 +15,13 @@
       "raw-colour": 1
     },
     "src/features/training/domains/attention/games/train-switch/CarPark3DProto.jsx": {
-      "raw-colour": 20
+      "raw-colour": 19
     },
     "src/features/training/domains/attention/games/train-switch/index.jsx": {
       "raw-colour": 21
     },
     "src/features/training/domains/flexibility/games/brixton/Brixton3DProto.jsx": {
-      "raw-colour": 6
+      "raw-colour": 5
     },
     "src/features/training/domains/flexibility/games/brixton/index.jsx": {
       "raw-colour": 4
@@ -39,7 +39,7 @@
       "raw-colour": 5
     },
     "src/features/training/domains/flexibility/games/wisconsin/Wisconsin3DProto.jsx": {
-      "raw-colour": 7
+      "raw-colour": 6
     },
     "src/features/training/domains/language/games/odd-one-out/index.jsx": {
       "raw-colour": 14
@@ -51,7 +51,7 @@
       "raw-colour": 11
     },
     "src/features/training/domains/memory/games/memoryStimulusTexture.js": {
-      "raw-colour": 30
+      "raw-colour": 4
     },
     "src/features/training/domains/memory/games/nback/NBack3DProto.jsx": {
       "raw-colour": 7

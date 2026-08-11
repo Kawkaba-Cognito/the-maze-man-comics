@@ -8,6 +8,17 @@ const BABYLON_INTEGRITY = 'sha384-uXkmKN+2jmCGDEGble8eNhnYoDGtzLMPhnublKtjvBUzer
 const SIZE = 51;
 const CELL_SIZE = 4;
 const MAZE_OFFSET_Y = -60;
+const PLAYER_BODY_Y = 2.45;
+const WALL_HEIGHT = CELL_SIZE * 1.15;
+const EXPLORATION_HUBS = [
+  { x: 3, y: 3, size: 2 },
+  { x: 7, y: 7, size: 2 },
+  { x: 43, y: 7, size: 2 },
+  { x: 7, y: 43, size: 2 },
+  { x: 43, y: 43, size: 2 },
+  { x: 13, y: 25, size: 2 },
+  { x: 37, y: 25, size: 2 },
+];
 
 let babylonPromise = null;
 
@@ -106,9 +117,15 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
   const inputMap = {};
   const joyInput = { x: 0, z: 0 };
 
-  const camera = new B.ArcRotateCamera('camera', -Math.PI / 2, 0.01, 45, B.Vector3.Zero(), scene);
-  camera.lowerRadiusLimit = 5;
-  camera.upperRadiusLimit = 80;
+  const camera = new B.ArcRotateCamera('camera', -Math.PI / 2, 0.5, 56, B.Vector3.Zero(), scene);
+  const syncCameraForViewport = () => {
+    const isPhone = Math.min(window.innerWidth, window.innerHeight) <= 700;
+    camera.beta = isPhone ? 0.48 : 0.55;
+    camera.radius = isPhone ? 64 : 56;
+    camera.lowerRadiusLimit = isPhone ? 58 : 48;
+    camera.upperRadiusLimit = isPhone ? 74 : 68;
+  };
+  syncCameraForViewport();
   camera.wheelPrecision = 20;
 
   const ambientLight = new B.HemisphericLight('ambient', new B.Vector3(0, 1, 0), scene);
@@ -190,10 +207,10 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
   skybox.isPickable = false;
   skybox.freezeWorldMatrix();
 
-  // This is the material the original code used for both Mars and the maze core.
-  // The planet mesh itself is deliberately not created.
+  // A quiet brass core keeps the objective legible without reviving the old
+  // saturated orange Martian palette.
   const bjsPlanetMat = new B.PBRMaterial('planet', scene);
-  bjsPlanetMat.albedoColor = new B.Color3(0.8, 0.35, 0.15);
+  bjsPlanetMat.albedoColor = new B.Color3(0.48, 0.34, 0.16);
   bjsPlanetMat.metallic = 0.05;
   bjsPlanetMat.roughness = 0.9;
   bjsPlanetMat.bumpTexture = new B.Texture(
@@ -206,77 +223,183 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
   function buildPlayer() {
     playerCollider = B.MeshBuilder.CreateBox(
       'collider',
-      { width: 1.5, height: 4, depth: 1.5 },
+      { width: 1.7, height: 4, depth: 1.7 },
       scene,
     );
     playerCollider.isVisible = false;
     playerCollider.checkCollisions = true;
-    playerCollider.ellipsoid = new B.Vector3(0.7, 2, 0.7);
+    playerCollider.ellipsoid = new B.Vector3(0.78, 2, 0.78);
 
     playerVisual = new B.TransformNode('stickman', scene);
     playerVisual.parent = playerCollider;
     playerVisual.position.y = -2;
+    playerVisual.rotation.y = Math.PI;
 
-    const blackMat = new B.StandardMaterial('blackMat', scene);
-    blackMat.diffuseColor = new B.Color3(0.01, 0.01, 0.01);
-    blackMat.specularColor = new B.Color3(0.4, 0.4, 0.4);
+    const blackMat = new B.StandardMaterial('kawkabBlack', scene);
+    blackMat.diffuseColor = new B.Color3(0.008, 0.009, 0.012);
+    blackMat.specularColor = new B.Color3(0.5, 0.5, 0.52);
     blackMat.freeze();
 
-    const torso = B.MeshBuilder.CreateCylinder(
-      'torso',
-      { height: 1.5, diameterTop: 0.8, diameterBottom: 0.4 },
+    const starMat = new B.StandardMaterial('kawkabStars', scene);
+    starMat.diffuseColor = new B.Color3(0.92, 0.91, 0.86);
+    starMat.emissiveColor = new B.Color3(0.72, 0.74, 0.76);
+    starMat.disableLighting = true;
+    starMat.freeze();
+
+    // Dr Kawkab's large constellation globe is both head and body, matching
+    // the mascot in the Training Hub instead of the old generic stick figure.
+    const torso = B.MeshBuilder.CreateSphere(
+      'kawkabBody',
+      { diameter: 2.5, segments: lowPower ? 20 : 28 },
       scene,
     );
-    torso.position.y = 1.8;
+    torso.position.y = PLAYER_BODY_Y;
     torso.material = blackMat;
     torso.parent = playerVisual;
     shadowGenerator.addShadowCaster(torso);
 
-    const head = B.MeshBuilder.CreateSphere('head', { diameter: 0.8 }, scene);
-    head.position.y = 1;
-    head.material = blackMat;
-    head.parent = torso;
-    shadowGenerator.addShadowCaster(head);
+    const constellationPoints = [
+      [-0.86, 0.62, 0.76],
+      [-0.28, 0.95, 0.84],
+      [0.37, 0.87, 0.88],
+      [0.88, 0.48, 0.76],
+      [-0.95, 0.05, 0.83],
+      [-0.35, 0.28, 1.08],
+      [0.28, 0.23, 1.13],
+      [0.93, -0.02, 0.82],
+      [-0.76, -0.62, 0.82],
+      [-0.12, -0.82, 0.94],
+      [0.58, -0.68, 0.88],
+      [0.15, 1.08, 0.52],
+      [-0.68, 0.68, -0.82],
+      [0.08, 0.98, -0.9],
+      [0.76, 0.5, -0.84],
+      [-0.82, -0.24, -0.92],
+      [0.04, -0.76, -1.0],
+      [0.74, -0.42, -0.9],
+    ].map(([x, y, z]) => new B.Vector3(x, y, z).normalize().scale(1.27));
+    const constellationEdges = [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [0, 4],
+      [0, 5],
+      [1, 5],
+      [1, 11],
+      [2, 6],
+      [2, 11],
+      [3, 7],
+      [4, 5],
+      [4, 8],
+      [5, 6],
+      [5, 8],
+      [6, 7],
+      [6, 9],
+      [6, 10],
+      [7, 10],
+      [8, 9],
+      [9, 10],
+      [12, 13],
+      [13, 14],
+      [12, 15],
+      [13, 16],
+      [14, 17],
+      [15, 16],
+      [16, 17],
+      [0, 12],
+      [3, 14],
+      [8, 15],
+      [10, 17],
+    ];
+    const constellation = B.MeshBuilder.CreateLineSystem(
+      'kawkabConstellation',
+      {
+        lines: constellationEdges.map(([a, b]) => [constellationPoints[a], constellationPoints[b]]),
+      },
+      scene,
+    );
+    constellation.color = new B.Color3(0.8, 0.82, 0.82);
+    constellation.alpha = 0.78;
+    constellation.parent = torso;
+
+    constellationPoints.forEach((point, index) => {
+      const star = B.MeshBuilder.CreateSphere(
+        `kawkabStar_${index}`,
+        { diameter: index % 4 === 0 ? 0.09 : 0.055, segments: 6 },
+        scene,
+      );
+      star.position.copyFrom(point);
+      star.material = starMat;
+      star.parent = torso;
+    });
+
+    [-0.42, 0.42].forEach((x, index) => {
+      const eye = B.MeshBuilder.CreateSphere(
+        `kawkabEye_${index}`,
+        { diameter: 0.34, segments: 12 },
+        scene,
+      );
+      eye.position = new B.Vector3(x, 0.2, 1.19);
+      eye.scaling = new B.Vector3(0.72, 1.08, 0.22);
+      eye.material = starMat;
+      eye.parent = torso;
+    });
+
+    const smile = B.MeshBuilder.CreateLines(
+      'kawkabSmile',
+      {
+        points: [
+          new B.Vector3(-0.3, -0.27, 1.22),
+          new B.Vector3(-0.14, -0.38, 1.24),
+          new B.Vector3(0, -0.42, 1.25),
+          new B.Vector3(0.14, -0.38, 1.24),
+          new B.Vector3(0.3, -0.27, 1.22),
+        ],
+      },
+      scene,
+    );
+    smile.color = new B.Color3(0.96, 0.95, 0.9);
+    smile.parent = torso;
 
     const leftHip = new B.TransformNode('leftHip', scene);
     leftHip.parent = torso;
-    leftHip.position = new B.Vector3(-0.25, -0.75, 0);
+    leftHip.position = new B.Vector3(-0.38, -1.03, 0);
 
     const rightHip = new B.TransformNode('rightHip', scene);
     rightHip.parent = torso;
-    rightHip.position = new B.Vector3(0.25, -0.75, 0);
+    rightHip.position = new B.Vector3(0.38, -1.03, 0);
 
     const leftShoulder = new B.TransformNode('leftShoulder', scene);
     leftShoulder.parent = torso;
-    leftShoulder.position = new B.Vector3(-0.5, 0.6, 0);
+    leftShoulder.position = new B.Vector3(-1.05, 0.16, 0);
 
     const rightShoulder = new B.TransformNode('rightShoulder', scene);
     rightShoulder.parent = torso;
-    rightShoulder.position = new B.Vector3(0.5, 0.6, 0);
+    rightShoulder.position = new B.Vector3(1.05, 0.16, 0);
 
     const legL = B.MeshBuilder.CreateCylinder(
       'legL',
-      { height: 1.4, diameterTop: 0.35, diameterBottom: 0.15 },
+      { height: 1.35, diameterTop: 0.22, diameterBottom: 0.14 },
       scene,
     );
-    legL.position.y = -0.7;
+    legL.position.y = -0.68;
     legL.material = blackMat;
     legL.parent = leftHip;
     shadowGenerator.addShadowCaster(legL);
 
     const legR = B.MeshBuilder.CreateCylinder(
       'legR',
-      { height: 1.4, diameterTop: 0.35, diameterBottom: 0.15 },
+      { height: 1.35, diameterTop: 0.22, diameterBottom: 0.14 },
       scene,
     );
-    legR.position.y = -0.7;
+    legR.position.y = -0.68;
     legR.material = blackMat;
     legR.parent = rightHip;
     shadowGenerator.addShadowCaster(legR);
 
     const armL = B.MeshBuilder.CreateCylinder(
       'armL',
-      { height: 1.2, diameterTop: 0.3, diameterBottom: 0.15 },
+      { height: 1.25, diameterTop: 0.2, diameterBottom: 0.13 },
       scene,
     );
     armL.position.y = -0.6;
@@ -286,13 +409,36 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
 
     const armR = B.MeshBuilder.CreateCylinder(
       'armR',
-      { height: 1.2, diameterTop: 0.3, diameterBottom: 0.15 },
+      { height: 1.25, diameterTop: 0.2, diameterBottom: 0.13 },
       scene,
     );
     armR.position.y = -0.6;
     armR.material = blackMat;
     armR.parent = rightShoulder;
     shadowGenerator.addShadowCaster(armR);
+
+    [leftShoulder, rightShoulder].forEach((shoulder, index) => {
+      const hand = B.MeshBuilder.CreateSphere(
+        `kawkabHand_${index}`,
+        { diameter: 0.25, segments: 8 },
+        scene,
+      );
+      hand.position.y = -1.24;
+      hand.material = blackMat;
+      hand.parent = shoulder;
+    });
+
+    [leftHip, rightHip].forEach((hip, index) => {
+      const shoe = B.MeshBuilder.CreateSphere(
+        `kawkabShoe_${index}`,
+        { diameter: 0.38, segments: 10 },
+        scene,
+      );
+      shoe.position = new B.Vector3(0, -1.4, 0.12);
+      shoe.scaling = new B.Vector3(0.82, 0.5, 1.25);
+      shoe.material = blackMat;
+      shoe.parent = hip;
+    });
 
     stickmanRig = {
       torso,
@@ -303,8 +449,8 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
     };
 
     const playerLight = new B.PointLight('pLight', new B.Vector3(0, 3, 0), scene);
-    playerLight.diffuse = new B.Color3(1, 0.6, 0.2);
-    playerLight.intensity = 1.8;
+    playerLight.diffuse = new B.Color3(0.86, 0.72, 0.45);
+    playerLight.intensity = 1.15;
     playerLight.parent = playerVisual;
   }
 
@@ -330,18 +476,35 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
     }
     carve(1, 1);
 
+    // Keep the procedural maze, then break up the perfect-maze tunnel pattern
+    // with connected plazas and a broad outer promenade. Every clearing cuts
+    // through existing paths, so the world stays fully reachable while giving
+    // the player places to roam, turn around, and choose a direction.
+    EXPLORATION_HUBS.forEach(({ x: hubX, y: hubY, size }) => {
+      for (let y = hubY - size; y <= hubY + size; y += 1) {
+        for (let x = hubX - size; x <= hubX + size; x += 1) {
+          maze[y][x] = 0;
+        }
+      }
+    });
+    for (let step = 7; step <= 43; step += 1) {
+      maze[7][step] = 0;
+      maze[43][step] = 0;
+      maze[step][7] = 0;
+      maze[step][43] = 0;
+    }
+
     const center = Math.floor(SIZE / 2);
-    for (let dy = -1; dy <= 1; dy += 1) {
-      for (let dx = -1; dx <= 1; dx += 1) {
+    for (let dy = -2; dy <= 2; dy += 1) {
+      for (let dx = -2; dx <= 2; dx += 1) {
         maze[center + dy][center + dx] = 0;
       }
     }
-    maze[center - 2][center] = 0;
     maze[center - 3][center] = 0;
 
     const wallBase = B.MeshBuilder.CreateBox(
       'wallBase',
-      { width: CELL_SIZE, height: CELL_SIZE * 1.5, depth: CELL_SIZE },
+      { width: CELL_SIZE, height: WALL_HEIGHT, depth: CELL_SIZE },
       scene,
     );
     const wallMat = new B.PBRMaterial('wallMat', scene);
@@ -353,9 +516,9 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
       'https://playground.babylonjs.com/textures/rockn.png',
       scene,
     );
-    wallMat.metallic = 0.2;
+    wallMat.metallic = 0.05;
     wallMat.roughness = 0.9;
-    wallMat.albedoColor = new B.Color3(0.5, 0.2, 0.1);
+    wallMat.albedoColor = new B.Color3(0.62, 0.55, 0.45);
     wallMat.freeze();
     wallBase.material = wallMat;
     wallBase.isVisible = false;
@@ -368,7 +531,7 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
           const newWall = wallBase.createInstance(`w_${x}_${y}`);
           newWall.position = new B.Vector3(
             x * CELL_SIZE - offset,
-            MAZE_OFFSET_Y + CELL_SIZE / 2,
+            MAZE_OFFSET_Y + WALL_HEIGHT / 2,
             y * CELL_SIZE - offset,
           );
           newWall.checkCollisions = true;
@@ -387,15 +550,9 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
       },
       scene,
     );
-    const groundMat = new B.StandardMaterial('grassMat', scene);
-    const grassTexture = new B.Texture(
-      'https://playground.babylonjs.com/textures/grass.png',
-      scene,
-    );
-    grassTexture.uScale = 25;
-    grassTexture.vScale = 25;
-    groundMat.diffuseTexture = grassTexture;
-    groundMat.specularColor = new B.Color3(0.05, 0.05, 0.05);
+    const groundMat = new B.StandardMaterial('limestoneGround', scene);
+    groundMat.diffuseColor = new B.Color3(0.34, 0.31, 0.27);
+    groundMat.specularColor = new B.Color3(0.09, 0.08, 0.07);
     groundMat.freeze();
     ground.material = groundMat;
     ground.receiveShadows = true;
@@ -403,6 +560,37 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
     ground.isMaze = true;
     ground.position.y = MAZE_OFFSET_Y;
     ground.freezeWorldMatrix();
+
+    const landmarkMat = new B.StandardMaterial('explorationLandmarks', scene);
+    landmarkMat.diffuseColor = new B.Color3(0.58, 0.45, 0.24);
+    landmarkMat.emissiveColor = new B.Color3(0.2, 0.14, 0.06);
+    landmarkMat.freeze();
+    EXPLORATION_HUBS.forEach(({ x, y }, index) => {
+      const ring = B.MeshBuilder.CreateTorus(
+        `explorationRing_${index}`,
+        { diameter: 2.4 + (index % 2) * 0.45, thickness: 0.12, tessellation: 24 },
+        scene,
+      );
+      ring.position = new B.Vector3(
+        x * CELL_SIZE - offset,
+        MAZE_OFFSET_Y + 0.08,
+        y * CELL_SIZE - offset,
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.material = landmarkMat;
+      ring.isPickable = false;
+      ring.freezeWorldMatrix();
+
+      const marker = B.MeshBuilder.CreateCylinder(
+        `explorationMarker_${index}`,
+        { height: 0.7 + (index % 3) * 0.18, diameterTop: 0.12, diameterBottom: 0.3 },
+        scene,
+      );
+      marker.position = new B.Vector3(ring.position.x, MAZE_OFFSET_Y + 0.35, ring.position.z);
+      marker.material = landmarkMat;
+      marker.isPickable = false;
+      marker.freezeWorldMatrix();
+    });
 
     playerCollider.position = new B.Vector3(
       CELL_SIZE - offset,
@@ -425,14 +613,14 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
       new B.Vector3(bossPosition.x, MAZE_OFFSET_Y + 3, bossPosition.z),
       scene,
     );
-    nodeLight.diffuse = new B.Color3(1, 0.4, 0);
-    nodeLight.intensity = 2;
+    nodeLight.diffuse = new B.Color3(0.82, 0.66, 0.34);
+    nodeLight.intensity = 1.6;
   }
 
   function setupEffects() {
     const dynamicTexture = new B.DynamicTexture('dustTex', 64, scene);
     const context = dynamicTexture.getContext();
-    context.fillStyle = 'rgba(100,150,100,1)';
+    context.fillStyle = 'rgba(190,165,116,1)';
     context.beginPath();
     context.arc(32, 32, 30, 0, Math.PI * 2);
     context.fill();
@@ -441,7 +629,7 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
     particleSystem = new B.ParticleSystem('dust', 500, scene);
     particleSystem.particleTexture = dynamicTexture;
     particleSystem.emitter = playerCollider;
-    particleSystem.color1 = new B.Color4(0.3, 0.5, 0.3, 0.6);
+    particleSystem.color1 = new B.Color4(0.72, 0.62, 0.42, 0.5);
     particleSystem.colorDead = new B.Color4(0, 0, 0, 0);
     particleSystem.minSize = 0.3;
     particleSystem.maxSize = 0.8;
@@ -636,7 +824,7 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
           Math.PI / 16,
           0.1,
         );
-        stickmanRig.torso.position.y = 1.8 + Math.abs(Math.sin(walkCycle * 2)) * 0.15;
+        stickmanRig.torso.position.y = PLAYER_BODY_Y + Math.abs(Math.sin(walkCycle * 2)) * 0.12;
 
         particleSystem.emitRate = Math.abs(Math.sin(walkCycle * 2)) < 0.2 ? 40 : 0;
       } else {
@@ -653,7 +841,11 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
           0.1,
         );
         stickmanRig.torso.rotation.x = B.Scalar.Lerp(stickmanRig.torso.rotation.x, 0, 0.1);
-        stickmanRig.torso.position.y = B.Scalar.Lerp(stickmanRig.torso.position.y, 1.8, 0.1);
+        stickmanRig.torso.position.y = B.Scalar.Lerp(
+          stickmanRig.torso.position.y,
+          PLAYER_BODY_Y,
+          0.1,
+        );
         particleSystem.emitRate = 0;
       }
 
@@ -684,6 +876,8 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
   const disposeJoystick = initVirtualJoystick();
 
   camera.target.copyFrom(playerCollider.position);
+  camera.target.y += 0.55;
+  const cameraTarget = camera.target.clone();
 
   const pointerObserver = scene.onPointerObservable.add((pointerInfo) => {
     if (!isMazeActive || isAtBoss) return;
@@ -711,8 +905,10 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
 
   const followPlayer = () => {
     if (isMazeActive && !isAtBoss) {
-      camera.target.x = playerCollider.position.x;
-      camera.target.z = playerCollider.position.z;
+      cameraTarget.x = B.Scalar.Lerp(cameraTarget.x, playerCollider.position.x, 0.12);
+      cameraTarget.y = B.Scalar.Lerp(cameraTarget.y, playerCollider.position.y + 0.55, 0.12);
+      cameraTarget.z = B.Scalar.Lerp(cameraTarget.z, playerCollider.position.z, 0.12);
+      camera.target.copyFrom(cameraTarget);
     }
   };
   scene.registerBeforeRender(followPlayer);
@@ -720,6 +916,7 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
   const render = () => scene.render();
   const resize = () => {
     engine.resize();
+    syncCameraForViewport();
     skyboxMaterial.setVector2(
       'resolution',
       new B.Vector2(engine.getRenderWidth(), engine.getRenderHeight()),
@@ -741,7 +938,13 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
   };
 }
 
-export default function MartianMaze({ onExit }) {
+export default function MartianMaze({
+  isAr = false,
+  onExit,
+  onReady,
+  onLoadError,
+  entryCovered = false,
+}) {
   const canvasRef = useRef(null);
   const joystickCanvasRef = useRef(null);
   const exitTimerRef = useRef(0);
@@ -776,7 +979,10 @@ export default function MartianMaze({ onExit }) {
           canvas: canvasRef.current,
           joystickCanvas: joystickCanvasRef.current,
           onReady: () => {
-            if (!disposed) setPhase('ready');
+            if (!disposed) {
+              setPhase('ready');
+              onReady?.();
+            }
           },
           onVictory: () => {
             if (!disposed) setPhase('victory');
@@ -784,18 +990,21 @@ export default function MartianMaze({ onExit }) {
         });
       })
       .catch(() => {
-        if (!disposed) setPhase('error');
+        if (!disposed) {
+          setPhase('error');
+          onLoadError?.();
+        }
       });
 
     return () => {
       disposed = true;
       disposeWorld?.();
     };
-  }, [attempt]);
+  }, [attempt, onLoadError, onReady]);
 
   return (
     <div
-      className={`martian-maze-root phase-${phase}`}
+      className={`martian-maze-root phase-${phase}${entryCovered ? ' is-entry-covered' : ''}`}
       role="application"
       aria-label="Martian labyrinth"
     >
@@ -819,20 +1028,12 @@ export default function MartianMaze({ onExit }) {
             <button type="button" className="martian-maze-exit" onClick={beginExit}>
               Return to Universe
             </button>
-            <div className="martian-maze-instruction">Use Joystick or WASD to navigate</div>
-          </>
-        )}
-
-        {phase === 'loading' && (
-          <div className="martian-maze-transit" role="status">
-            <div className="martian-maze-aperture" aria-hidden="true">
-              <i />
-              <i />
+            <div className="martian-maze-instruction">
+              {isAr
+                ? 'استكشف بعصا التحكم أو WASD • اضغط على مسار للمشي'
+                : 'Explore with Joystick or WASD • tap a path to walk'}
             </div>
-            <small>Sector transfer</small>
-            <strong>Martian Labyrinth</strong>
-            <span>Generating pathways</span>
-          </div>
+          </>
         )}
 
         {phase === 'error' && (

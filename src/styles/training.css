@@ -1440,26 +1440,10 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     width: 100%;
     margin: 0 auto;
 }
-.ct-survival-intro-badge {
-    width: clamp(92px, 26vw, 124px);
-    height: clamp(92px, 26vw, 124px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 28px;
-    /* Was #62b277 → #3c8a54, the pre-palette green. Same role, palette values:
-       the fill with its own edge tone underneath it as the gradient's far end. */
-    background: linear-gradient(165deg, var(--game-ok) 0%, var(--game-ok-edge) 100%);
-    border: 2px solid var(--game-ink);
-    box-shadow: 4px 5px 0 var(--game-ink);
-    font-size: clamp(46px, 13vw, 62px);
-    line-height: 1;
-}
-.ct-survival-intro-badge-img {
-    width: 58%;
-    height: 58%;
-    object-fit: contain;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+.ct-survival-intro-planet {
+    width: clamp(132px, 34vw, 168px);
+    height: clamp(132px, 34vw, 168px);
+    flex: 0 0 auto;
 }
 .ct-survival-intro-title {
     margin: 0;

@@ -4,6 +4,7 @@ import { KAWNERA_BOOKS } from '../../features/kawnera/books';
 import { setPendingChapter } from '../../features/kawnera/pendingChapter';
 import { useApp } from '../../context/AppContext';
 import { lazyWithRetry } from '../../lib/lazyWithRetry';
+import UniverseDiveTransition from '../../features/universe/UniverseDiveTransition';
 
 // Keep the Three.js world out of the entry bundle.
 const ZenUniverse = lazyWithRetry(
@@ -28,6 +29,9 @@ export default function HomeScreen() {
   const scrollRef = useRef(null);
   const entryTriggeredRef = useRef(false);
   const [mazeOpen, setMazeOpen] = useState(false);
+  const [mazeReady, setMazeReady] = useState(false);
+  const [mazeFailed, setMazeFailed] = useState(false);
+  const [entryComplete, setEntryComplete] = useState(false);
 
   const openChapter = useCallback(
     (bookId, chapterIndex) => {
@@ -39,6 +43,9 @@ export default function HomeScreen() {
 
   const exitMartianMaze = useCallback(() => {
     setMazeOpen(false);
+    setMazeReady(false);
+    setMazeFailed(false);
+    setEntryComplete(false);
     requestAnimationFrame(() => {
       const scroller = scrollRef.current;
       if (!scroller) return;
@@ -48,6 +55,25 @@ export default function HomeScreen() {
         entryTriggeredRef.current = false;
       });
     });
+  }, []);
+
+  const startMazeEntry = useCallback(() => {
+    setMazeReady(false);
+    setMazeFailed(false);
+    setEntryComplete(false);
+    setMazeOpen(true);
+  }, []);
+
+  const finishMazeEntry = useCallback(() => {
+    setEntryComplete(true);
+  }, []);
+
+  const handleMazeReady = useCallback(() => {
+    setMazeReady(true);
+  }, []);
+
+  const handleMazeFailure = useCallback(() => {
+    setMazeFailed(true);
   }, []);
 
   useEffect(() => {
@@ -63,7 +89,7 @@ export default function HomeScreen() {
 
       if (progress > 0.18 && !entryTriggeredRef.current && !mazeOpen) {
         entryTriggeredRef.current = true;
-        setMazeOpen(true);
+        startMazeEntry();
       } else if (progress < 0.04 && !mazeOpen) {
         entryTriggeredRef.current = false;
       }
@@ -79,7 +105,7 @@ export default function HomeScreen() {
       scroller.removeEventListener('scroll', onScroll);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [mazeOpen]);
+  }, [mazeOpen, startMazeEntry]);
 
   useEffect(() => {
     setImmersive('relax', mazeOpen);
@@ -115,7 +141,9 @@ export default function HomeScreen() {
   return (
     <div
       ref={scrollRef}
-      className={`home-universe-scroll${mazeOpen ? ' maze-is-open' : ''}`}
+      className={`home-universe-scroll${mazeOpen ? ' maze-is-open' : ''}${
+        mazeOpen && !entryComplete ? ' maze-entry-active' : ''
+      }`}
       dir={isAr ? 'rtl' : 'ltr'}
     >
       <div className="home-universe-stage">
@@ -154,20 +182,24 @@ export default function HomeScreen() {
       <div className="home-maze-swipe-zone" aria-hidden="true" />
 
       {mazeOpen && (
-        <Suspense
-          fallback={
-            <div className="home-maze-transition" role="status">
-              <div className="home-maze-transition-aperture" aria-hidden="true">
-                <i />
-                <i />
-              </div>
-              <small>{isAr ? 'عبور القطاع' : 'Sector transfer'}</small>
-              <strong>{isAr ? 'الهبوط إلى المتاهة' : 'Descending into the labyrinth'}</strong>
-            </div>
-          }
-        >
-          <MartianMaze isAr={isAr} onExit={exitMartianMaze} />
+        <Suspense fallback={null}>
+          <MartianMaze
+            isAr={isAr}
+            onExit={exitMartianMaze}
+            onReady={handleMazeReady}
+            onLoadError={handleMazeFailure}
+            entryCovered={!entryComplete}
+          />
         </Suspense>
+      )}
+
+      {mazeOpen && !entryComplete && (
+        <UniverseDiveTransition
+          isAr={isAr}
+          ready={mazeReady}
+          failed={mazeFailed}
+          onComplete={finishMazeEntry}
+        />
       )}
     </div>
   );

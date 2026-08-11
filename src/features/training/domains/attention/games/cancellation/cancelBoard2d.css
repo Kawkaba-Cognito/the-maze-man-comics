@@ -38,11 +38,9 @@
   min-height: 0;
 }
 
-/* No `gap` here on purpose. CancelBoard2D sets column-gap and row-gap inline,
-   per axis, from the box it actually measured — a viewport-unit gap in this file
-   cannot see that box's slack, and would also disagree with the value the fit
-   used to derive the cell size, so the board would not land where it was
-   measured. Re-adding a `gap` shorthand here would override both longhands. */
+/* CancelBoard2D supplies one measured inline gap for both axes. Keeping it out
+   of CSS prevents viewport units from drifting away from the geometry used to
+   size the pieces. */
 .cb2d-grid {
   display: grid;
   justify-content: center;
@@ -58,14 +56,13 @@
   aspect-ratio: 1;
 }
 
-/* A cleared target fades out but keeps its slot.
+/* A cleared target settles into a quiet marker while keeping its slot.
  *
  * pointer-events:none is load-bearing, not tidiness. The animation is
- * `forwards`, so a cleared cell ENDS at scale(1.05)/opacity 0 — invisible, but
- * still laid out, still scaled slightly over its neighbours, and still holding a
- * disabled <button>. A disabled button swallows a click without firing
- * anything, so every cleared tile left an invisible dead strip over the tiles
- * beside it, and taps aimed at a real target there did nothing at all. */
+ * `forwards`, so the disabled button stays smaller than its own grid track and
+ * cannot cover a neighbour. The old endpoint was fully transparent, which made
+ * every hit look like a random hole and broke the visual lattice mid-search.
+ * A dim checked tile preserves spatial context without competing with targets. */
 .cb2d-cell--cleared {
   animation: cb2dClear 320ms ease-out forwards;
   pointer-events: none;
@@ -73,14 +70,15 @@
 
 @keyframes cb2dClear {
   0% { transform: scale(1); opacity: 1; }
-  40% { transform: scale(1.18); opacity: 1; }
-  100% { transform: scale(1.05); opacity: 0; }
+  40% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(0.82); opacity: 0.42; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cb2d-cell--cleared {
     animation: none;
-    opacity: 0;
+    transform: scale(0.82);
+    opacity: 0.42;
   }
 }
 

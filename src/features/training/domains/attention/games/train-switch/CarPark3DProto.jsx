@@ -823,7 +823,7 @@ export default function CarPark3DProto({
       tag={t.tag}
       hint={t.hint}
       chip={waveFlash || `${t.wave} ${wave}`}
-      chipStyle={{ fontSize: '0.75rem', fontWeight: 800, color: '#e8ac4e' }}
+      chipStyle={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--game-accent)' }}
       stats={stats}
       banner={banner === 'go' ? t.go : banner === 'over' ? t.over : waveFlash}
       bannerOver={banner === 'over'}

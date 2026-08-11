@@ -9,8 +9,12 @@
   height: 100dvh;
   max-height: -webkit-fill-available;
   overflow: hidden;
-  background: #b3cadd; /* Tide mid — matches TIDE_LIGHT_STOPS in c3dBoot.js */
-  color: #f0e2c0;
+  /* This root is visible twice: while a lazy game chunk loads, and again for
+     the first frame before WebGL paints its canvas. It therefore has to be the
+     SAME live surface as the game, not the retired Tide-blue midpoint. */
+  background-color: var(--play-surface-flat);
+  background-image: var(--play-surface);
+  color: var(--game-ink);
   font-family: 'Outfit', system-ui, sans-serif;
   touch-action: none;
   overscroll-behavior: none;
@@ -160,13 +164,13 @@
   font-weight: 800;
   font-size: clamp(1.15rem, 5vw, 1.75rem);
   line-height: 1.25;
-  color: #fdf4dc;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9), 0 0 20px rgba(232, 172, 78, 0.4);
+  color: var(--game-ink);
+  text-shadow: none;
   padding: 9px 16px;
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(34, 27, 17, 0.66), rgba(20, 16, 10, 0.42));
-  border: 1px solid rgba(232, 172, 78, 0.34);
-  box-shadow: 0 0 26px rgba(232, 172, 78, 0.16);
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--game-accent) 45%, var(--line));
+  box-shadow: 0 8px 22px var(--fx-shadow-soft);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: -webkit-box;
@@ -187,7 +191,7 @@
   font-size: 1.12rem;
   line-height: 1;
   font-weight: 900;
-  color: #f8d487;
+  color: var(--game-accent);
   white-space: nowrap;
 }
 
@@ -286,7 +290,7 @@
 }
 
 .c3d-cta {
-  border: none;
+  border: 2px solid var(--game-ink);
   border-radius: 999px;
   padding: 14px 22px;
   min-height: 48px;
@@ -294,16 +298,16 @@
   font: inherit;
   font-size: 0.95rem;
   font-weight: 800;
-  color: #14110c;
-  background: linear-gradient(165deg, #f0e2c0, #e8ac4e);
+  color: var(--game-ink);
+  background: var(--game-accent);
   cursor: pointer;
-  box-shadow: 0 0 24px rgba(232, 172, 78, 0.35);
+  box-shadow: none;
   -webkit-tap-highlight-color: transparent;
 }
 
 .c3d-cta--ghost {
   color: var(--game-ink);
-  background: transparent;
+  background: var(--surface-raised);
   border: 2px solid var(--game-ink);
   box-shadow: none;
 }
@@ -483,7 +487,8 @@
 .c3d-ui--overlay .c3d-overlay-actions { pointer-events: auto; }
 .c3d-prompt { position: absolute; left: 50%; top: 26%; transform: translate(-50%,-50%); z-index: 1; max-width: min(92vw,420px); text-align: center; font-weight: 800; font-size: clamp(1.2rem,5.5vw,2rem); color: var(--game-ink); pointer-events: none; padding: 0 12px; }
 .c3d-overlay-actions { position: absolute; left: 50%; bottom: max(18px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 1; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: min(96vw, 420px); padding: 0 10px; box-sizing: border-box; }
-.c3d-choice-btn { flex: 1 1 40%; min-height: 52px; border: 1px solid rgba(232,172,78,0.55); border-radius: 16px; background: rgba(0,0,0,0.55); color: #f0e2c0; font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer; backdrop-filter: blur(10px); }
+.c3d-choice-btn { flex: 1 1 40%; min-height: 52px; border: 2px solid var(--game-ink); border-radius: 16px; background: color-mix(in srgb, var(--surface-raised) 90%, transparent); color: var(--game-ink); font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer; backdrop-filter: blur(10px); }
+.c3d-choice-btn:focus-visible { outline: 3px solid var(--game-accent); outline-offset: 2px; }
 
 /* —— Real-engine cosmos shell (same game, 3D environment) —— */
 .c3d-engine-shell .c3d-engine-chrome {

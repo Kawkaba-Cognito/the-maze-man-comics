@@ -552,7 +552,7 @@ export default function Brixton3DProto({
       tag={robotStatus === 'ready' ? t.tag : robotStatus === 'error' ? t.loadError : t.loading}
       question={running ? instr : t.watch}
       chip={isAr ? 'قاعدة خفية' : 'Hidden rule'}
-      chipStyle={{ fontSize: '0.7rem', fontWeight: 800, color: '#55d6e8' }}
+      chipStyle={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--game-accent)' }}
       stats={stats}
       banner={banner === 'solved' ? null : bannerText}
       bannerOver={isSurvival && banner === 'over'}
