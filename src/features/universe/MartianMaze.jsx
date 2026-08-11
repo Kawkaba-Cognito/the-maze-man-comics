@@ -1,24 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
+import {
+  findUniverseZoneAtWorldPosition,
+  generateUniverseMaze,
+  getUniverseZone,
+  UNIVERSE_GRID_SIZE,
+} from './universeZones.mjs';
 import './martian-maze.css';
 
 const BABYLON_SCRIPT_ID = 'babylon-cdn';
 const BABYLON_URL = 'https://cdn.babylonjs.com/v9.11.0/babylon.js';
 const BABYLON_INTEGRITY = 'sha384-uXkmKN+2jmCGDEGble8eNhnYoDGtzLMPhnublKtjvBUzerIVkBQIcJhOeW/hjVuF';
 
-const SIZE = 51;
+const SIZE = UNIVERSE_GRID_SIZE;
 const CELL_SIZE = 4;
 const MAZE_OFFSET_Y = -60;
 const PLAYER_BODY_Y = 2.45;
 const WALL_HEIGHT = CELL_SIZE * 1.15;
-const EXPLORATION_HUBS = [
-  { x: 3, y: 3, size: 2 },
-  { x: 7, y: 7, size: 2 },
-  { x: 43, y: 7, size: 2 },
-  { x: 7, y: 43, size: 2 },
-  { x: 43, y: 43, size: 2 },
-  { x: 13, y: 25, size: 2 },
-  { x: 37, y: 25, size: 2 },
-];
 
 let babylonPromise = null;
 
@@ -82,7 +79,7 @@ function loadBabylon() {
   return babylonPromise;
 }
 
-function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory }) {
+function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory, onZoneChange }) {
   const engine = new B.Engine(canvas, true, { antialias: true });
   const lowPower =
     window.innerWidth <= 900 ||
@@ -110,10 +107,9 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
   let stickmanRig = {};
   let targetPosition = null;
   let isPointerDown = false;
+  let currentZoneId = null;
 
-  const maze = Array(SIZE)
-    .fill()
-    .map(() => Array(SIZE).fill(1));
+  const maze = generateUniverseMaze(SIZE);
   const inputMap = {};
   const joyInput = { x: 0, z: 0 };
 
@@ -147,7 +143,7 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
   }
 
   const pipeline = new B.DefaultRenderingPipeline('pipeline', true, scene, [camera]);
-  pipeline.bloomEnabled = true;
+  pipeline.bloomEnabled = !lowPower;
   pipeline.bloomThreshold = 0.3;
   pipeline.bloomWeight = 1.2;
   pipeline.bloomKernel = lowPower ? 24 : 48;
@@ -455,53 +451,7 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
   }
 
   function buildMaze() {
-    function carve(x, y) {
-      maze[y][x] = 0;
-      const dirs = [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ];
-      dirs.sort(() => Math.random() - 0.5);
-
-      for (let i = 0; i < dirs.length; i += 1) {
-        const nx = x + dirs[i][0] * 2;
-        const ny = y + dirs[i][1] * 2;
-        if (nx > 0 && nx < SIZE - 1 && ny > 0 && ny < SIZE - 1 && maze[ny][nx] === 1) {
-          maze[y + dirs[i][1]][x + dirs[i][0]] = 0;
-          carve(nx, ny);
-        }
-      }
-    }
-    carve(1, 1);
-
-    // Keep the procedural maze, then break up the perfect-maze tunnel pattern
-    // with connected plazas and a broad outer promenade. Every clearing cuts
-    // through existing paths, so the world stays fully reachable while giving
-    // the player places to roam, turn around, and choose a direction.
-    EXPLORATION_HUBS.forEach(({ x: hubX, y: hubY, size }) => {
-      for (let y = hubY - size; y <= hubY + size; y += 1) {
-        for (let x = hubX - size; x <= hubX + size; x += 1) {
-          maze[y][x] = 0;
-        }
-      }
-    });
-    for (let step = 7; step <= 43; step += 1) {
-      maze[7][step] = 0;
-      maze[43][step] = 0;
-      maze[step][7] = 0;
-      maze[step][43] = 0;
-    }
-
     const center = Math.floor(SIZE / 2);
-    for (let dy = -2; dy <= 2; dy += 1) {
-      for (let dx = -2; dx <= 2; dx += 1) {
-        maze[center + dy][center + dx] = 0;
-      }
-    }
-    maze[center - 3][center] = 0;
-
     const wallBase = B.MeshBuilder.CreateBox(
       'wallBase',
       { width: CELL_SIZE, height: WALL_HEIGHT, depth: CELL_SIZE },
@@ -561,41 +511,30 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
     ground.position.y = MAZE_OFFSET_Y;
     ground.freezeWorldMatrix();
 
-    const landmarkMat = new B.StandardMaterial('explorationLandmarks', scene);
-    landmarkMat.diffuseColor = new B.Color3(0.58, 0.45, 0.24);
-    landmarkMat.emissiveColor = new B.Color3(0.2, 0.14, 0.06);
-    landmarkMat.freeze();
-    EXPLORATION_HUBS.forEach(({ x, y }, index) => {
-      const ring = B.MeshBuilder.CreateTorus(
-        `explorationRing_${index}`,
-        { diameter: 2.4 + (index % 2) * 0.45, thickness: 0.12, tessellation: 24 },
-        scene,
-      );
-      ring.position = new B.Vector3(
-        x * CELL_SIZE - offset,
-        MAZE_OFFSET_Y + 0.08,
-        y * CELL_SIZE - offset,
-      );
-      ring.rotation.x = Math.PI / 2;
-      ring.material = landmarkMat;
-      ring.isPickable = false;
-      ring.freezeWorldMatrix();
-
-      const marker = B.MeshBuilder.CreateCylinder(
-        `explorationMarker_${index}`,
-        { height: 0.7 + (index % 3) * 0.18, diameterTop: 0.12, diameterBottom: 0.3 },
-        scene,
-      );
-      marker.position = new B.Vector3(ring.position.x, MAZE_OFFSET_Y + 0.35, ring.position.z);
-      marker.material = landmarkMat;
-      marker.isPickable = false;
-      marker.freezeWorldMatrix();
-    });
+    const landingZone = getUniverseZone('landing');
+    const landingMat = new B.StandardMaterial('landingSignalMaterial', scene);
+    landingMat.diffuseColor = new B.Color3(0.54, 0.42, 0.23);
+    landingMat.emissiveColor = new B.Color3(0.17, 0.12, 0.05);
+    landingMat.freeze();
+    const landingRing = B.MeshBuilder.CreateTorus(
+      'landingSignal',
+      { diameter: 7.4, thickness: 0.12, tessellation: lowPower ? 20 : 32 },
+      scene,
+    );
+    landingRing.position = new B.Vector3(
+      landingZone.center.x * CELL_SIZE - offset,
+      MAZE_OFFSET_Y + 0.08,
+      landingZone.center.y * CELL_SIZE - offset,
+    );
+    landingRing.rotation.x = Math.PI / 2;
+    landingRing.material = landingMat;
+    landingRing.isPickable = false;
+    landingRing.freezeWorldMatrix();
 
     playerCollider.position = new B.Vector3(
-      CELL_SIZE - offset,
+      landingZone.center.x * CELL_SIZE - offset,
       MAZE_OFFSET_Y + 2,
-      CELL_SIZE - offset,
+      landingZone.center.y * CELL_SIZE - offset,
     );
 
     bossPosition = new B.Vector3(
@@ -626,7 +565,7 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
     context.fill();
     dynamicTexture.update();
 
-    particleSystem = new B.ParticleSystem('dust', 500, scene);
+    particleSystem = new B.ParticleSystem('dust', lowPower ? 160 : 300, scene);
     particleSystem.particleTexture = dynamicTexture;
     particleSystem.emitter = playerCollider;
     particleSystem.color1 = new B.Color4(0.72, 0.62, 0.42, 0.5);
@@ -909,6 +848,13 @@ function createExactMazeWorld({ B, canvas, joystickCanvas, onReady, onVictory })
       cameraTarget.y = B.Scalar.Lerp(cameraTarget.y, playerCollider.position.y + 0.55, 0.12);
       cameraTarget.z = B.Scalar.Lerp(cameraTarget.z, playerCollider.position.z, 0.12);
       camera.target.copyFrom(cameraTarget);
+
+      const zone = findUniverseZoneAtWorldPosition(playerCollider.position, CELL_SIZE, SIZE);
+      const nextZoneId = zone?.id || 'open-expanse';
+      if (nextZoneId !== currentZoneId) {
+        currentZoneId = nextZoneId;
+        onZoneChange(nextZoneId);
+      }
     }
   };
   scene.registerBeforeRender(followPlayer);
@@ -950,6 +896,8 @@ export default function MartianMaze({
   const exitTimerRef = useRef(0);
   const [phase, setPhase] = useState('loading');
   const [attempt, setAttempt] = useState(0);
+  const [activeZoneId, setActiveZoneId] = useState('landing');
+  const activeZone = getUniverseZone(activeZoneId);
 
   const beginExit = () => {
     if (phase === 'exiting') return;
@@ -968,6 +916,7 @@ export default function MartianMaze({
     let disposed = false;
     let disposeWorld;
     setPhase('loading');
+    setActiveZoneId('landing');
 
     loadBabylon()
       .then((B) => {
@@ -987,6 +936,7 @@ export default function MartianMaze({
           onVictory: () => {
             if (!disposed) setPhase('victory');
           },
+          onZoneChange: setActiveZoneId,
         });
       })
       .catch(() => {
@@ -1026,12 +976,25 @@ export default function MartianMaze({
         {phase === 'ready' && (
           <>
             <button type="button" className="martian-maze-exit" onClick={beginExit}>
-              Return to Universe
+              {isAr ? 'العودة إلى الكون' : 'Return to Universe'}
             </button>
+            <div className="martian-maze-zone" dir={isAr ? 'rtl' : 'ltr'}>
+              <span>{isAr ? 'منطقة الكون' : 'Universe zone'}</span>
+              <strong>
+                {activeZone
+                  ? isAr
+                    ? activeZone.labelAr
+                    : activeZone.label
+                  : isAr
+                    ? 'الفضاء المفتوح'
+                    : 'Open Expanse'}
+              </strong>
+              <i>{isAr ? 'فارغة · تنتظر تقدمك' : 'Empty · awaiting your progress'}</i>
+            </div>
             <div className="martian-maze-instruction">
               {isAr
-                ? 'استكشف بعصا التحكم أو WASD • اضغط على مسار للمشي'
-                : 'Explore with Joystick or WASD • tap a path to walk'}
+                ? 'استكشف بعصا التحكم أو WASD · اضغط على مسار للمشي'
+                : 'Explore with Joystick or WASD · tap a path to walk'}
             </div>
           </>
         )}

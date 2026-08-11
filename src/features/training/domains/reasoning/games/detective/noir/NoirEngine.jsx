@@ -1,5 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, {
+  useEffect, useMemo, useRef, useState,
+} from 'react';
 import { makeRng } from '../../../../../shared/rng';
+import { createTrialLog } from '../../../../../shared/trialLog';
 import NoirCase from './NoirCase';
 import NoirSurvival from './NoirSurvival';
 import { NOIR_CASES } from './cases';
@@ -50,10 +53,24 @@ function LevelCase({
   diff, level, isAr, playSfx, awardPoints, onResult, onExit,
 }) {
   const assignment = useMemo(() => missionFor(diff, level, isAr), [diff, level, isAr]);
+  const trialLogRef = useRef(null);
+
+  useEffect(() => {
+    trialLogRef.current = createTrialLog({ game: 'detective', mode: 'levels', meta: { diff, level } });
+    return () => trialLogRef.current?.discard();
+  }, [diff, level]);
 
   const finish = (result) => {
     const won = result.mistakes <= assignment.maxMistakes;
     const score = scoreCase(result);
+    trialLogRef.current?.trial({
+      ok: won,
+      case: assignment.caseData.id,
+      mistakes: result.mistakes,
+      rt: result.elapsedMs,
+    });
+    trialLogRef.current?.finish({ won, score });
+    trialLogRef.current = null;
     if (won) awardPoints?.(result.mistakes === 0 ? 10 : 6);
     const summary = won
       ? (isAr
@@ -103,6 +120,7 @@ function PassCases({
   const cases = useMemo(() => passSequence(seed, total), [seed, total]);
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
+  const trialLogRef = useRef(null);
   const baseRules = RULES[diff] || RULES.med;
   const mission = {
     label: isAr ? `ملف المنافسة ${index + 1}/${total}` : `Competitive file ${index + 1}/${total}`,
@@ -110,9 +128,22 @@ function PassCases({
     instinctUses: baseRules.instincts[2],
   };
 
+  useEffect(() => {
+    trialLogRef.current = createTrialLog({ game: 'detective', mode: 'passplay', meta: { diff, total } });
+    return () => trialLogRef.current?.discard();
+  }, [diff, total]);
+
   const finish = (result) => {
     const nextScore = score + scoreCase(result);
+    trialLogRef.current?.trial({
+      ok: result.mistakes <= mission.maxMistakes,
+      case: cases[index].id,
+      mistakes: result.mistakes,
+      rt: result.elapsedMs,
+    });
     if (index + 1 >= total) {
+      trialLogRef.current?.finish({ score: nextScore, cases: total });
+      trialLogRef.current = null;
       onResult?.({ score: nextScore });
       return;
     }

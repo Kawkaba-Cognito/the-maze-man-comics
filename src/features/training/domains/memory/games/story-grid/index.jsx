@@ -1,22 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
-import CosmosCharacter from '../../../../../character/CosmosCharacter';
-import FoxCharacter from '../../../../../character/FoxCharacter';
-import PersonCharacter from '../../../../../character/PersonCharacter';
+import { cast2dUrl } from '../../../../shared/cast2d';
 import Emoji from '../../../../../../components/shared/Emoji';
 import { STORIES } from './stories';
-import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import { useGamePause } from '../../../../shared/useGamePause';
-
-/*
- * Survival plays the story as a sequence of clean illustrated 2D scenes. The
- * retired 3D prototype remains recoverable from git history.
- */
-// Survival's staged rebuild stays lazy so it only loads when a run begins.
-const StageSurvival = lazyWithRetry(() => import('./stage/StageSurvival'), 'story-stage');
-const STAGE_FALLBACK = { position: 'fixed', inset: 0, zIndex: 40, background: '#05050b' };
+import { createTrialLog } from '../../../../shared/trialLog';
 
 /*
  * Story Time — temporal-order / episodic memory.
@@ -265,19 +255,28 @@ function PropLayer({ action }) {
   }
 }
 
+const STORY_CAST_ALIASES = { noor: 'mimi', rami: 'ramy' };
+
 export function CharacterArt({ id, size, mood = 'ready' }) {
-  if (id === 'star') {
-    return (
-      <span style={{ position: 'relative', display: 'inline-block', lineHeight: 0 }}>
-        <CosmosCharacter size={size} mood={mood} glow fur="#3a1430" accent="#ff8fc6" />
-        <span style={{ position: 'absolute', top: '12%', insetInlineStart: '50%', transform: 'translateX(-50%)', fontSize: size * 0.2, pointerEvents: 'none', filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.3))' }}>⭐</span>
-      </span>
-    );
-  }
-  if (id === 'noor') return <FoxCharacter size={size} mood={mood} glow />;
-  if (id === 'rami') return <PersonCharacter variant="male" size={size} mood={mood} />;
-  if (id === 'lola') return <PersonCharacter variant="female" size={size} mood={mood} />;
-  return <CosmosCharacter size={size} mood={mood} glow />;
+  const artId = STORY_CAST_ALIASES[id] || id;
+  return (
+    <img
+      src={cast2dUrl(artId)}
+      alt=""
+      aria-hidden="true"
+      draggable="false"
+      data-mood={mood}
+      style={{
+        display: 'block',
+        width: size,
+        height: size,
+        objectFit: 'contain',
+        objectPosition: 'center bottom',
+        userSelect: 'none',
+        filter: 'drop-shadow(0 5px 3px rgba(38,25,10,0.24))',
+      }}
+    />
+  );
 }
 
 function BgSwatch({ bgId, size = 50 }) {
@@ -455,8 +454,11 @@ const T = {
   en: {
     title: 'Story Time',
     watchTag: 'Watch & remember', rebuildTag: 'Rebuild the story',
-    places: 'Places', characters: 'Characters', actions: 'Actions',
-    selectHint: 'Tap a piece, then tap a panel', placing: (x) => `Placing: ${x} — tap a panel`, erasing: 'Eraser — tap a panel to clear',
+    places: '1 · Place', characters: '2 · Cast', actions: '3 · Action',
+    buildGuide: 'Choose a scene, then build it in three quick steps.',
+    buildingScene: (n, total) => `Building scene ${n} of ${total}`,
+    chooseScene: (n) => `Scene ${n} selected`,
+    sceneReady: 'Scene complete — moving to the next one.',
     needChar: 'Put a character in the panel first', erase: 'Erase',
     check: '✓ Check', perfect: 'Perfect! ✓', score: (n, m) => `${n}/${m} panels correct`, storyWas: 'The story was:',
     next: 'Next ›', prev: '‹ Prev', doneMemo: '✓ Done — rebuild it', cont: 'Continue ›',
@@ -466,8 +468,11 @@ const T = {
   ar: {
     title: 'وقت القصة',
     watchTag: 'شاهد وتذكّر', rebuildTag: 'أعد بناء القصة',
-    places: 'الأماكن', characters: 'الشخصيات', actions: 'الأفعال',
-    selectHint: 'اختر قطعة ثم اضغط لوحة', placing: (x) => `وضع: ${x} — اضغط لوحة`, erasing: 'ممحاة — اضغط لوحة لمسحها',
+    places: '١ · المكان', characters: '٢ · الشخصيات', actions: '٣ · الفعل',
+    buildGuide: 'اختر مشهداً، ثم ابنِه بثلاث خطوات سريعة.',
+    buildingScene: (n, total) => `بناء المشهد ${n} من ${total}`,
+    chooseScene: (n) => `تم اختيار المشهد ${n}`,
+    sceneReady: 'اكتمل المشهد — ننتقل إلى المشهد التالي.',
     needChar: 'ضع شخصية في اللوحة أولاً', erase: 'مسح',
     check: '✓ تحقّق', perfect: 'ممتاز! ✓', score: (n, m) => `${n}/${m} لوحات صحيحة`, storyWas: 'كانت القصة:',
     next: 'التالي ›', prev: '‹ السابق', doneMemo: '✓ تم — أعد البناء', cont: 'متابعة ›',
@@ -490,20 +495,29 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
   const ppDoneRef = useRef(0);
   const ppCorrectRef = useRef(0);
   const usedIdsRef = useRef([]); // last few story ids — keeps sessions repeat-free
+  const rebuildStartedRef = useRef(0);
+  const trialLogRef = useRef(null);
 
   const [phase, setPhase] = useState('watch');
   const [story, setStory] = useState(null);
   const [watchIdx, setWatchIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [panels, setPanels] = useState([]);
-  const [sel, setSel] = useState(null); // { kind:'bg'|'char'|'action'|'erase', id }
+  const [activePanel, setActivePanel] = useState(0);
   const [hint, setHint] = useState('');
   const [result, setResult] = useState({ n: 0, m: 0 });
   const [timerPaused, setTimerPaused] = useState(false);
+  const handleExit = useCallback(() => {
+    if (mode === 'free') {
+      trialLogRef.current?.finish({ rounds: roundsRef.current, best: bestRef.current });
+      trialLogRef.current = null;
+    }
+    onExit();
+  }, [mode, onExit]);
   const pause = useGamePause({
     isAr,
     playSfx,
-    onQuit: onExit,
+    onQuit: handleExit,
     onPause: () => setTimerPaused(true),
     onResume: () => setTimerPaused(false),
   });
@@ -525,7 +539,7 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
     setWatchIdx(0);
     setTimeLeft(cfg.memo);
     setResult({ n: 0, m: 0 });
-    setSel(null);
+    setActivePanel(0);
     setHint('');
     setPhase('watch');
   }, [cfgFor, rng]);
@@ -536,11 +550,25 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
   }, []);
 
   useEffect(() => {
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'story-grid', mode, meta: { diff, level } });
+    return () => {
+      trialLogRef.current?.discard();
+      trialLogRef.current = null;
+    };
+  }, [mode, diff, level]);
+
+  useEffect(() => {
     if (phase !== 'watch' || timerPaused) return undefined;
     const id = setInterval(() => setTimeLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);
   }, [phase, timerPaused]);
   useEffect(() => { if (phase === 'watch' && timeLeft === 0) setPhase('rebuild'); }, [phase, timeLeft]);
+  useEffect(() => {
+    if (phase === 'rebuild') {
+      rebuildStartedRef.current = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    }
+  }, [phase]);
 
   const fill = useCallback((s) => {
     if (!story) return s;
@@ -563,29 +591,51 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t, isAr]);
 
-  // ── press-to-place ──
-  const pickSel = (kind, id) => {
+  // ── scene-first builder ──
+  // A scene stays selected while its place, cast and action are edited. This
+  // removes the old two-tap "piece then panel" loop and makes every tray choice
+  // immediately visible, especially on phones where the tray sits below the grid.
+  const choosePanel = (i) => {
+    if (i === activePanel) return;
     playSfx?.('click');
-    setHint('');
-    setSel((cur) => (cur && cur.kind === kind && cur.id === id ? null : { kind, id }));
+    setActivePanel(i);
+    setHint(t.chooseScene(i + 1));
   };
-  const applyToPanel = (i) => {
-    if (!sel) { setHint(t.selectHint); return; }
-    if (sel.kind === 'erase') { setPanels((ps) => ps.map((p, k) => (k === i ? EMPTY : p))); playSfx?.('click'); return; }
-    if (sel.kind === 'bg') { setPanels((ps) => ps.map((p, k) => (k === i ? { ...p, bg: sel.id } : p))); playSfx?.('click'); return; }
-    if (sel.kind === 'char') {
-      setPanels((ps) => ps.map((p, k) => {
-        if (k !== i) return p;
-        if (p.chars.includes(sel.id)) return { ...p, chars: p.chars.filter((x) => x !== sel.id) }; // toggle off
-        return { ...p, chars: [...p.chars, sel.id].slice(-3) };
-      }));
-      playSfx?.('click');
+  const applyPiece = (kind, id) => {
+    const current = panels[activePanel] || EMPTY;
+    if (kind === 'action' && current.chars.length === 0) {
+      setHint(t.needChar);
+      playSfx?.('error');
       return;
     }
-    if (sel.kind === 'action') {
-      if (panels[i].chars.length === 0) { setHint(t.needChar); return; }
-      setPanels((ps) => ps.map((p, k) => (k === i ? { ...p, action: sel.id } : p)));
-      playSfx?.('click');
+
+    const nextPanels = panels.map((panel, i) => {
+      if (i !== activePanel) return panel;
+      if (kind === 'erase') return EMPTY;
+      if (kind === 'bg') return { ...panel, bg: id };
+      if (kind === 'char') {
+        const chars = panel.chars.includes(id)
+          ? panel.chars.filter((charId) => charId !== id)
+          : [...panel.chars, id].slice(-3);
+        return { ...panel, chars };
+      }
+      if (kind === 'action') return { ...panel, action: id };
+      return panel;
+    });
+
+    setPanels(nextPanels);
+    playSfx?.('click');
+    setHint('');
+
+    const edited = nextPanels[activePanel];
+    if (kind === 'action' && edited.bg && edited.chars.length > 0 && edited.action) {
+      const nextIncomplete = nextPanels.findIndex((panel, i) => i > activePanel && !(panel.bg && panel.chars.length > 0 && panel.action));
+      const anyIncomplete = nextPanels.findIndex((panel) => !(panel.bg && panel.chars.length > 0 && panel.action));
+      const nextIndex = nextIncomplete >= 0 ? nextIncomplete : anyIncomplete;
+      if (nextIndex >= 0 && nextIndex !== activePanel) {
+        setActivePanel(nextIndex);
+        setHint(t.sceneReady);
+      }
     }
   };
 
@@ -598,6 +648,14 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
       const p = panels[i]; const g = story.target[i];
       if (p.bg === g.bg && p.action === g.action && sameSet(p.chars, g.chars)) n += 1;
     }
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    trialLogRef.current?.trial({
+      ok: n === len,
+      correct: n,
+      total: len,
+      story: story.id,
+      rt: Math.max(0, Math.round(now - rebuildStartedRef.current)),
+    });
     setResult({ n, m: len });
     playSfx?.(n === len ? 'win' : 'error');
     setPhase('reveal');
@@ -606,10 +664,20 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
   const advanceRound = useCallback(() => {
     playSfx?.('click');
     const perfect = result.n === result.m && result.m > 0;
-    if (mode === 'levels') { onResult({ won: perfect, score: result.n, summary: t.score(result.n, result.m) }); return; }
+    if (mode === 'levels') {
+      trialLogRef.current?.finish({ won: perfect, score: result.n, level, diff });
+      trialLogRef.current = null;
+      onResult({ won: perfect, score: result.n, summary: t.score(result.n, result.m) });
+      return;
+    }
     if (mode === 'passplay') {
       ppCorrectRef.current += result.n; ppDoneRef.current += 1;
-      if (ppDoneRef.current >= ppTrials) { onResult({ score: ppCorrectRef.current }); return; }
+      if (ppDoneRef.current >= ppTrials) {
+        trialLogRef.current?.finish({ score: ppCorrectRef.current, stories: ppDoneRef.current });
+        trialLogRef.current = null;
+        onResult({ score: ppCorrectRef.current });
+        return;
+      }
       newRound(); return;
     }
     roundsRef.current += 1;
@@ -617,7 +685,7 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
     bestRef.current = Math.max(bestRef.current, stageRef.current);
     if (perfect) awardPoints?.(3);
     newRound();
-  }, [mode, result, onResult, ppTrials, newRound, t, playSfx, awardPoints]);
+  }, [mode, result, onResult, ppTrials, newRound, t, playSfx, awardPoints, level, diff]);
 
   const hudSub = mode === 'levels'
     ? (isAr ? `مستوى ${level}` : `Level ${level}`)
@@ -630,8 +698,13 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
   const refSize = Math.round(fsz * 0.74);
   const storyTitle = story.title ? (isAr ? story.title.ar : story.title.en) : '';
   const reveal = phase === 'reveal';
-  const selLabel = sel ? (sel.kind === 'erase' ? t.erase : sel.kind === 'bg' ? (isAr ? BACKGROUNDS[sel.id].ar : BACKGROUNDS[sel.id].en) : sel.kind === 'char' ? nameOf(sel.id) : `${actEmoji(sel.id)} ${actWord(sel.id)}`) : '';
-  const isSel = (kind, id) => sel && sel.kind === kind && sel.id === id;
+  const activeScene = panels[activePanel] || EMPTY;
+  const isSel = (kind, id) => (
+    kind === 'bg' ? activeScene.bg === id
+      : kind === 'char' ? activeScene.chars.includes(id)
+        : kind === 'action' ? activeScene.action === id
+          : false
+  );
   const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
   const cardStyle = cosmos ? { ...S.watchCard, ...S.cosmosCard } : S.watchCard;
   const rebuildStyle = cosmos ? { ...S.rebuildCard, ...S.cosmosCard } : S.rebuildCard;
@@ -693,18 +766,39 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
       {(phase === 'rebuild' || phase === 'reveal') && (
         <div style={S.gameBody}>
           <div style={rebuildStyle}>
-            <div style={S.instr}>{reveal ? (result.n === result.m ? t.perfect : t.score(result.n, result.m)) : (hint || (sel ? (sel.kind === 'erase' ? t.erasing : t.placing(selLabel)) : t.selectHint))}</div>
+            {reveal ? (
+              <div style={S.instr}>{result.n === result.m ? t.perfect : t.score(result.n, result.m)}</div>
+            ) : (
+              <div style={S.builderIntro}>
+                <div style={S.builderTitle}>{t.buildingScene(activePanel + 1, len)}</div>
+                <div style={S.builderProgress}>{filledCount}/{len}</div>
+                <div style={S.builderGuide}>{hint || t.buildGuide}</div>
+              </div>
+            )}
             <div style={{ ...S.grid, gridTemplateColumns: `repeat(${gridCols(len)}, max-content)` }}>
               {panels.map((p, i) => {
                 const g = story.target[i];
                 const ok = reveal && p.bg === g.bg && p.action === g.action && sameSet(p.chars, g.chars);
                 const bad = reveal && !ok;
+                const complete = p.bg && p.chars.length > 0 && p.action;
+                const selected = !reveal && i === activePanel;
                 return (
-                  <div key={i} style={{ position: 'relative' }} onClick={() => { if (!reveal) applyToPanel(i); }}>
-                    <span style={{ ...S.badge, ...(reveal ? { background: ok ? 'var(--success)' : '#d23b3b' } : null) }}>{i + 1}</span>
-                    <div style={{ borderRadius: 16, outline: !reveal && sel ? '3px dashed var(--accent)' : ok ? '3px solid var(--success)' : bad ? '3px solid #d23b3b' : 'none', outlineOffset: 2, cursor: !reveal ? 'pointer' : 'default' }}>
+                  <div key={i} style={{ position: 'relative' }}>
+                    <span style={{ ...S.badge, ...(!reveal && complete ? { background: 'var(--success)' } : null), ...(reveal ? { background: ok ? 'var(--success)' : '#d23b3b' } : null) }}>{complete && !reveal ? '✓' : i + 1}</span>
+                    <button
+                      type="button"
+                      aria-label={t.chooseScene(i + 1)}
+                      aria-pressed={selected}
+                      disabled={reveal}
+                      onClick={() => choosePanel(i)}
+                      style={{
+                        ...S.sceneButton,
+                        outline: selected ? '4px solid var(--accent)' : ok ? '3px solid var(--success)' : bad ? '3px solid #d23b3b' : '2px solid transparent',
+                        cursor: !reveal ? 'pointer' : 'default',
+                      }}
+                    >
                       <PanelStage panel={p} size={fsz} />
-                    </div>
+                    </button>
                     {!reveal && p.chars.length > 0 && !p.action && <span style={S.tapPlus}>＋</span>}
                   </div>
                 );
@@ -748,7 +842,7 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
               <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true"><Emoji char="📍" /></span>{t.places}</span>
               <div style={S.dockChips}>
                 {story.paletteBgs.map((id) => (
-                  <button key={id} type="button" style={{ ...S.bgChip, ...(isSel('bg', id) ? S.chipSel : null) }} onClick={() => pickSel('bg', id)}>
+                  <button key={id} type="button" aria-pressed={isSel('bg', id)} style={{ ...S.bgChip, ...(isSel('bg', id) ? S.chipSel : null) }} onClick={() => applyPiece('bg', id)}>
                     <BgSwatch bgId={id} size={54} />
                   </button>
                 ))}
@@ -759,7 +853,7 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
               <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true"><Emoji char="🙂" /></span>{t.characters}</span>
               <div style={S.dockChips}>
                 {story.paletteChars.map((id) => (
-                  <button key={id} type="button" style={{ ...S.charChip, ...(isSel('char', id) ? S.chipSel : null) }} onClick={() => pickSel('char', id)}>
+                  <button key={id} type="button" aria-pressed={isSel('char', id)} style={{ ...S.charChip, ...(isSel('char', id) ? S.chipSel : null) }} onClick={() => applyPiece('char', id)}>
                     <div style={S.charChipArt}><CharacterArt id={id} size={48} /></div>
                     <span style={S.chipName}>{nameOf(id)}</span>
                   </button>
@@ -771,12 +865,12 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
               <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true"><Emoji char="⚡" /></span>{t.actions}</span>
               <div style={S.dockChips}>
                 {story.paletteActions.map((id) => (
-                  <button key={id} type="button" style={{ ...S.actChip, ...(isSel('action', id) ? S.chipSel : null) }} onClick={() => pickSel('action', id)}>
+                  <button key={id} type="button" aria-pressed={isSel('action', id)} style={{ ...S.actChip, ...(isSel('action', id) ? S.chipSel : null) }} onClick={() => applyPiece('action', id)}>
                     <span style={{ fontSize: 24, lineHeight: 1 }}><Emoji char={actEmoji(id)} /></span>
                     <span style={S.chipName}>{actWord(id)}</span>
                   </button>
                 ))}
-                <button type="button" style={{ ...S.eraseChip, ...(isSel('erase', 'x') ? S.chipSel : null) }} onClick={() => pickSel('erase', 'x')}>
+                <button type="button" style={S.eraseChip} onClick={() => applyPiece('erase')}>
                   <span style={{ fontSize: 22, lineHeight: 1 }}><Emoji char="🧽" /></span>
                   <span style={S.chipName}>{t.erase}</span>
                 </button>
@@ -793,7 +887,7 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
 }
 
 export default function StoryGridGame({ onBack, workoutMode = false }) {
-  const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
+  const { currentLang, playSfx, awardPoints } = useApp();
   const isAr = currentLang === 'ar';
   return (
     <ModeShell
@@ -811,21 +905,15 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
-      renderEngine={(p) => (p.mode === 'free' ? (
-        <Suspense fallback={<div style={STAGE_FALLBACK} />}>
-          <StageSurvival
-            key={`stage-${p.seed}`}
-            seed={p.seed}
-            isAr={isAr}
-            playSfx={playSfx}
-            awardPoints={awardPoints}
-            awardFreeRun={awardFreeRun}
-            onExit={p.onExit}
-          />
-        </Suspense>
-      ) : (
-        <StoryEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
-      ))}
+      renderEngine={(p) => (
+        <StoryEngine
+          key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+          {...p}
+          isAr={isAr}
+          playSfx={playSfx}
+          awardPoints={awardPoints}
+        />
+      )}
     />
   );
 }
@@ -860,7 +948,12 @@ const S = {
   gameBody: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 12, padding: '10px 14px 16px', overflowY: 'auto' },
   rebuildCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, background: 'var(--surface-raised)', border: '2px solid var(--line)', borderRadius: 22, padding: '16px 10px 18px', maxWidth: '100%', boxShadow: '4px 4px 0 rgba(26,18,8,0.1)' },
   instr: { fontWeight: 800, fontSize: 13.5, color: 'var(--ink-dim)', textAlign: 'center', padding: '7px 16px', background: 'var(--surface-raised)', border: '2px solid #e3c489', borderRadius: 999, maxWidth: '94%' },
+  builderIntro: { width: 'min(100%, 540px)', display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', columnGap: 10, rowGap: 4, padding: '8px 12px', background: 'color-mix(in srgb, var(--surface-raised) 88%, var(--game-accent))', border: '2px solid var(--game-accent-edge)', borderRadius: 14 },
+  builderTitle: { fontWeight: 900, fontSize: 14, color: 'var(--game-ink)' },
+  builderProgress: { minWidth: 44, padding: '4px 9px', borderRadius: 999, background: 'var(--game-accent)', border: '1px solid var(--game-ink)', color: 'var(--game-ink)', fontWeight: 900, fontSize: 12, textAlign: 'center' },
+  builderGuide: { gridColumn: '1 / -1', color: 'var(--game-muted)', fontSize: 12.5, fontWeight: 650, lineHeight: 1.4 },
   grid: { display: 'grid', gap: 14, justifyContent: 'center', justifyItems: 'center' },
+  sceneButton: { appearance: 'none', display: 'block', padding: 0, border: 0, borderRadius: 16, background: 'transparent', outlineOffset: 3, transition: 'outline-color 0.16s ease, transform 0.16s ease' },
   recap: { display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 480, textAlign: 'start', padding: '0 6px' },
   recapLine: { display: 'flex', gap: 9, alignItems: 'flex-start' },
   recapNum: { flex: '0 0 auto', width: 20, height: 20, borderRadius: '50%', background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 },
@@ -872,7 +965,7 @@ const S = {
   // press-to-place board (builder tray)
   dock: { flex: '0 0 auto', background: 'linear-gradient(180deg,var(--surface-raised) 0%,#fff6ea 100%)', borderTop: '2px solid var(--line)', borderRadius: '20px 20px 0 0', padding: '6px 14px max(12px, env(safe-area-inset-bottom))', boxShadow: '0 -6px 20px rgba(26,18,8,0.1)' },
   dockHandle: { width: 44, height: 5, borderRadius: 999, background: 'var(--line)', margin: '0 auto 2px' },
-  dockInner: { width: '100%', maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 9 },
+  dockInner: { width: '100%', maxWidth: 900, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 9 },
   dockRow: { display: 'flex', alignItems: 'center', gap: 10 },
   dockLabel: { flex: '0 0 66px', display: 'flex', alignItems: 'center', gap: 3, fontSize: 10.5, fontWeight: 900, color: '#7a6a52', textTransform: 'uppercase', letterSpacing: 0.4 },
   dockIcon: { fontSize: 14, lineHeight: 1 },

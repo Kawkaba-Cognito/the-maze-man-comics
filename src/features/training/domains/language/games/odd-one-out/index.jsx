@@ -176,11 +176,10 @@ function OddOneOutEngine({ mode, diff, level, seed, attempt, onResult, onExit, i
       const baseCharY = g.H - 64;
       let secsLeft = 0;
       let runnerFeetY = baseCharY;
-      let progress = 0;
 
       if (g.gate) {
         const elapsed = (now - g.gate.t0) / 1000;
-        progress = Math.min(1, elapsed / THINK_SEC);
+        const progress = Math.min(1, elapsed / THINK_SEC);
         secsLeft = Math.max(0, Math.ceil(THINK_SEC - elapsed));
         const reachY = g.gate.y + bh * 0.75;
         runnerFeetY = baseCharY - progress * (baseCharY - reachY);

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { makeRng } from '../../../../../shared/rng';
+import { createTrialLog } from '../../../../../shared/trialLog';
 import { NOIR_BY_TIER, NOIR_CASES } from './cases';
 import NoirCase from './NoirCase';
 import { pickStrings } from './noirStrings';
@@ -31,6 +32,7 @@ export default function NoirSurvival({
 }) {
   const t = pickStrings(isAr);
   const rngRef = useRef(null);
+  const trialLogRef = useRef(null);
   if (!rngRef.current) rngRef.current = makeRng(seed ?? ((Math.random() * 1e9) >>> 0));
 
   const poolsRef = useRef(null);
@@ -72,6 +74,8 @@ export default function NoirSurvival({
   }, []);
 
   const boot = useCallback(() => {
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({ game: 'detective', mode: 'free' });
     poolsRef.current = null;
     lastIdRef.current = null;
     setSolved(0);
@@ -82,11 +86,18 @@ export default function NoirSurvival({
   }, [nextCase]);
 
   useEffect(() => { boot(); }, [boot]);
+  useEffect(() => () => trialLogRef.current?.discard(), []);
 
   const handleCaseDone = ({ mistakes }) => {
     // Every case ends in a conviction; the run's currency is how clean it was.
     // More than four wrong moves costs a life.
     const clean = mistakes <= 4;
+    trialLogRef.current?.trial({
+      ok: clean,
+      case: caseData.id,
+      mistakes,
+      tier: caseData.tier,
+    });
     if (clean) awardPoints?.(mistakes === 0 ? 8 : 5);
 
     const nextSolved = solved + 1;
@@ -99,11 +110,19 @@ export default function NoirSurvival({
       if (remaining <= 0) {
         playSfx?.('lose');
         awardFreeRun?.('detective', nextSolved);
+        trialLogRef.current?.finish({ solved: nextSolved, lives: 0 });
+        trialLogRef.current = null;
         setOver(true);
         return;
       }
     }
     setCaseData(nextCase(nextSolved));
+  };
+
+  const exitRun = () => {
+    trialLogRef.current?.finish({ solved, lives });
+    trialLogRef.current = null;
+    onExit?.();
   };
 
   if (over) {
@@ -117,7 +136,7 @@ export default function NoirSurvival({
             <button type="button" className="nr-btn nr-btn--big" onClick={() => { playSfx?.('click'); boot(); }}>
               {t.freePlayAgain}
             </button>
-            <button type="button" className="nr-btn" onClick={() => { playSfx?.('click'); onExit?.(); }}>
+            <button type="button" className="nr-btn" onClick={() => { playSfx?.('click'); exitRun(); }}>
               {t.quitMenu}
             </button>
           </div>
@@ -143,7 +162,7 @@ export default function NoirSurvival({
         </span>
       )}
       onCaseDone={handleCaseDone}
-      onExit={onExit}
+      onExit={exitRun}
     />
   );
 }

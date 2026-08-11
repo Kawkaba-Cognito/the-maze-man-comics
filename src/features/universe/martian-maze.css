@@ -43,7 +43,6 @@
     transparent 3px,
     rgba(223, 205, 167, 0.045) 4px
   );
-  mix-blend-mode: screen;
 }
 
 .martian-maze-root.phase-ready::before {
@@ -97,8 +96,7 @@
   touch-action: none;
   opacity: 0;
   transform: scale(1.055);
-  filter: brightness(0.42) saturate(0.65);
-  will-change: opacity, transform, filter;
+  will-change: opacity, transform;
 }
 
 .martian-maze-root.phase-ready .martian-maze-canvas {
@@ -109,7 +107,6 @@
 .martian-maze-root.phase-exiting .martian-maze-canvas {
   opacity: 1;
   transform: none;
-  filter: none;
 }
 
 .martian-maze-content {
@@ -172,6 +169,51 @@
   text-transform: uppercase;
   pointer-events: none;
   animation: martian-maze-hud-in 480ms 620ms ease both;
+}
+
+.martian-maze-zone {
+  position: absolute;
+  top: calc(78px + env(safe-area-inset-top));
+  left: max(18px, env(safe-area-inset-left));
+  display: flex;
+  width: min(270px, calc(100vw - 36px));
+  padding: 12px 15px 13px;
+  border: 1px solid rgba(216, 182, 109, 0.25);
+  border-radius: 13px;
+  color: #f4ecdc;
+  background: rgba(15, 16, 22, 0.78);
+  flex-direction: column;
+  pointer-events: none;
+  animation: martian-maze-hud-in 420ms 520ms ease both;
+}
+
+.martian-maze-zone span {
+  margin-bottom: 4px;
+  color: rgba(216, 182, 109, 0.72);
+  font: 650 8px/1.2 'DM Mono', monospace;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.martian-maze-zone strong {
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+}
+
+.martian-maze-zone i {
+  margin-top: 4px;
+  color: rgba(231, 224, 210, 0.62);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.martian-maze-zone[dir='rtl'] span,
+.martian-maze-zone[dir='rtl'] strong,
+.martian-maze-zone[dir='rtl'] i {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
 }
 
 .martian-maze-joystick {
@@ -323,7 +365,6 @@
   to {
     opacity: 1;
     transform: scale(1);
-    filter: brightness(1) saturate(1);
   }
 }
 
@@ -387,6 +428,11 @@
     line-height: 1.45;
     text-align: left;
   }
+
+  .martian-maze-zone {
+    top: calc(70px + env(safe-area-inset-top));
+    width: min(230px, calc(100vw - 36px));
+  }
 }
 
 @media (max-height: 560px) and (orientation: landscape) {
@@ -421,7 +467,6 @@
   .martian-maze-root.phase-ready .martian-maze-canvas {
     opacity: 1;
     transform: none;
-    filter: none;
   }
 
   .martian-maze-victory {

@@ -1,17 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './universe-dive-transition.css';
 
-const STAR_STREAKS = [
-  ['12%', '18%', '82px', '-12deg', '40ms'],
-  ['78%', '14%', '118px', '16deg', '180ms'],
-  ['22%', '38%', '68px', '-7deg', '260ms'],
-  ['88%', '42%', '96px', '9deg', '90ms'],
-  ['6%', '61%', '124px', '-18deg', '330ms'],
-  ['72%', '67%', '76px', '13deg', '210ms'],
-  ['31%', '78%', '106px', '-5deg', '120ms'],
-  ['91%', '81%', '138px', '19deg', '380ms'],
-  ['45%', '12%', '64px', '3deg', '300ms'],
-  ['57%', '88%', '92px', '-2deg', '20ms'],
+const WARP_PALETTE = [
+  'rgba(38, 44, 60, 0.82)',
+  'rgba(99, 80, 79, 0.74)',
+  'rgba(138, 101, 83, 0.78)',
 ];
 
 function prefersReducedMotion() {
@@ -21,14 +14,171 @@ function prefersReducedMotion() {
   );
 }
 
+function hasLimitedGraphicsBudget() {
+  return (
+    window.innerWidth <= 760 ||
+    (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
+    (navigator.deviceMemory && navigator.deviceMemory <= 4)
+  );
+}
+
+function createStar() {
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 0.06 + Math.pow(Math.random(), 0.62) * 1.08;
+  return {
+    x: Math.cos(angle) * radius,
+    y: Math.sin(angle) * radius,
+    z: 0.16 + Math.random() * 0.92,
+    color: Math.floor(Math.random() * WARP_PALETTE.length),
+  };
+}
+
 export default function UniverseDiveTransition({ isAr = false, ready = false, failed = false, onComplete }) {
+  const canvasRef = useRef(null);
   const [minimumJourneyDone, setMinimumJourneyDone] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext('2d', { alpha: false });
+    if (!canvas || !context) return undefined;
+
+    const reducedMotion = prefersReducedMotion();
+    const lowPower = hasLimitedGraphicsBudget();
+    const starCount = reducedMotion ? 54 : lowPower ? 82 : 142;
+    const stars = Array.from({ length: starCount }, createStar);
+    let width = 1;
+    let height = 1;
+    let dpr = 1;
+    let background;
+    let animationFrame = 0;
+    let startedAt = 0;
+    let previousTime = 0;
+    let hidden = document.hidden;
+
+    const resize = () => {
+      width = Math.max(1, window.innerWidth);
+      height = Math.max(1, window.innerHeight);
+      dpr = Math.min(window.devicePixelRatio || 1, lowPower ? 1 : 1.25);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      background = context.createRadialGradient(
+        width * 0.5,
+        height * 0.48,
+        0,
+        width * 0.5,
+        height * 0.48,
+        Math.max(width, height) * 0.76,
+      );
+      background.addColorStop(0, '#eee8dc');
+      background.addColorStop(0.32, '#d9cfbd');
+      background.addColorStop(1, '#b9aa91');
+    };
+
+    const resetStar = (star) => {
+      Object.assign(star, createStar(), { z: 0.82 + Math.random() * 0.24 });
+    };
+
+    const draw = (time = 0) => {
+      if (!startedAt) startedAt = time;
+      if (!previousTime) previousTime = time;
+      const deltaSeconds = Math.min((time - previousTime) / 1000, 0.034);
+      const elapsed = Math.max(0, time - startedAt);
+      previousTime = time;
+
+      context.fillStyle = background;
+      context.fillRect(0, 0, width, height);
+
+      const centerX = width * 0.5;
+      const centerY = height * 0.47;
+      const focalLength = Math.min(width, height) * 0.48;
+      const acceleration = Math.min(1, elapsed / 1050);
+      const easedAcceleration = acceleration * acceleration * (3 - 2 * acceleration);
+      const speed = reducedMotion ? 0 : 0.22 + easedAcceleration * 1.38;
+      const travel = Math.max(0.0015, speed * deltaSeconds);
+
+      stars.forEach((star) => {
+        const previousZ = star.z + travel * (2.8 + easedAcceleration * 3.8);
+        star.z -= travel;
+        if (star.z <= 0.035) {
+          resetStar(star);
+          star.visible = false;
+          return;
+        }
+
+        const x = centerX + (star.x / star.z) * focalLength;
+        const y = centerY + (star.y / star.z) * focalLength;
+        const previousX = centerX + (star.x / previousZ) * focalLength;
+        const previousY = centerY + (star.y / previousZ) * focalLength;
+
+        if (x < -120 || x > width + 120 || y < -120 || y > height + 120) {
+          resetStar(star);
+          star.visible = false;
+          return;
+        }
+
+        star.visible = true;
+        star.xNow = x;
+        star.yNow = y;
+        star.xPrevious = previousX;
+        star.yPrevious = previousY;
+      });
+
+      context.lineCap = 'round';
+      WARP_PALETTE.forEach((color, index) => {
+        context.beginPath();
+        stars.forEach((star) => {
+          if (!star.visible || star.color !== index) return;
+          context.moveTo(star.xPrevious, star.yPrevious);
+          context.lineTo(star.xNow, star.yNow);
+        });
+        context.strokeStyle = color;
+        context.lineWidth = index === 0 ? 1.45 : 1.05;
+        context.stroke();
+      });
+
+      const coreRadius = 5 + easedAcceleration * 12;
+      context.beginPath();
+      context.arc(centerX, centerY, coreRadius, 0, Math.PI * 2);
+      context.fillStyle = `rgba(31, 79, 133, ${0.13 + easedAcceleration * 0.17})`;
+      context.fill();
+
+      if (!reducedMotion && !hidden) animationFrame = window.requestAnimationFrame(draw);
+    };
+
+    const handleVisibility = () => {
+      hidden = document.hidden;
+      if (!hidden && !reducedMotion) {
+        previousTime = performance.now();
+        window.cancelAnimationFrame(animationFrame);
+        animationFrame = window.requestAnimationFrame(draw);
+      }
+    };
+
+    const handleResize = () => {
+      resize();
+      if (reducedMotion) draw(performance.now());
+    };
+
+    resize();
+    draw(performance.now());
+    window.addEventListener('resize', handleResize, { passive: true });
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
     const timer = window.setTimeout(
       () => setMinimumJourneyDone(true),
-      prefersReducedMotion() ? 160 : 2100,
+      prefersReducedMotion() ? 160 : 1900,
     );
     return () => window.clearTimeout(timer);
   }, []);
@@ -36,7 +186,7 @@ export default function UniverseDiveTransition({ isAr = false, ready = false, fa
   useEffect(() => {
     if (!minimumJourneyDone || (!ready && !failed)) return undefined;
     setLeaving(true);
-    const timer = window.setTimeout(onComplete, prefersReducedMotion() ? 80 : 520);
+    const timer = window.setTimeout(onComplete, prefersReducedMotion() ? 80 : 400);
     return () => window.clearTimeout(timer);
   }, [failed, minimumJourneyDone, onComplete, ready]);
 
@@ -47,46 +197,20 @@ export default function UniverseDiveTransition({ isAr = false, ready = false, fa
       className={`universe-dive${waiting ? ' is-waiting' : ''}${leaving ? ' is-leaving' : ''}`}
       role="status"
       aria-live="polite"
-      aria-label={isAr ? 'دخول عالم المتاهة' : 'Entering the maze universe'}
+      aria-label={isAr ? 'الانتقال عبر الفضاء إلى عالمك' : 'Travelling through space to your universe'}
     >
-      <div className="universe-dive__streaks" aria-hidden="true">
-        {STAR_STREAKS.map(([left, top, width, angle, delay]) => (
-          <i
-            key={`${left}-${top}`}
-            style={{
-              '--streak-left': left,
-              '--streak-top': top,
-              '--streak-width': width,
-              '--streak-angle': angle,
-              '--streak-delay': delay,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="universe-dive__atmosphere" aria-hidden="true" />
-      <div className="universe-dive__horizon" aria-hidden="true" />
-
-      <div className="universe-dive__maze" aria-hidden="true">
-        <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
-          <g>
-            <path d="M-40 650H170V540H330V700H490V480H650V620H830V410H1010V560H1240" />
-            <path d="M-20 350H130V220H300V390H430V170H610V330H760V210H930V360H1080V160H1230" />
-            <path d="M110 850V700H250V570H410V760H590V590H740V740H910V610H1080V820" />
-            <path d="M60-20V130H220V280H370V90H540V250H700V70H870V250H1030V40H1180V310" />
-          </g>
-        </svg>
-      </div>
+      <canvas ref={canvasRef} className="universe-dive__canvas" aria-hidden="true" />
+      <div className="universe-dive__gate" aria-hidden="true"><i /></div>
 
       <div className="universe-dive__copy">
-        <span>{isAr ? 'رحلة إلى الداخل' : 'Journey inward'}</span>
+        <span>{isAr ? 'عبور فضائي' : 'Space transit'}</span>
         <strong>
           {waiting
             ? isAr
-              ? 'يُبنى كونك الآن'
-              : 'Your universe is taking shape'
+              ? 'جارٍ تحديد منطقة الهبوط'
+              : 'Mapping the landing zone'
             : isAr
-              ? 'دخول كونك'
+              ? 'الانطلاق إلى عالمك'
               : 'Entering your universe'}
         </strong>
         <i aria-hidden="true" />

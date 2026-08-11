@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 734,
+    "raw-colour": 731,
     "conditional-background": 1,
     "stacked-backdrops": 4
   },
@@ -60,7 +60,7 @@
       "raw-colour": 3
     },
     "src/features/training/domains/memory/games/story-grid/index.jsx": {
-      "raw-colour": 45,
+      "raw-colour": 43,
       "conditional-background": 1
     },
     "src/features/training/domains/memory/games/story-grid/stage/schema.js": {
@@ -82,9 +82,6 @@
     },
     "src/features/training/domains/reasoning/games/detective/CaseFileEngine.jsx": {
       "raw-colour": 4
-    },
-    "src/features/training/domains/reasoning/games/detective/index.jsx": {
-      "raw-colour": 1
     },
     "src/features/training/domains/reasoning/games/detective/investigations/quick1.js": {
       "raw-colour": 6

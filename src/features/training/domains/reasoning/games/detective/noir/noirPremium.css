@@ -286,9 +286,98 @@
   width: 48px;
   height: 48px;
   z-index: 3;
+  overflow: visible;
   color: var(--nr-amber2);
-  background: radial-gradient(circle, color-mix(in srgb, var(--nr-bg) 90%, transparent) 28%, color-mix(in srgb, var(--nr-amber) 34%, transparent) 55%, transparent 73%);
-  filter: drop-shadow(0 5px 10px color-mix(in srgb, black 58%, transparent));
+  background: transparent;
+  filter: none;
+}
+
+.nr-hs::before {
+  inset: 8px;
+  border-color: color-mix(in srgb, var(--nr-amber2) 54%, transparent);
+  animation-duration: 3.2s;
+}
+
+.nr-hs-mark {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  color: var(--nr-amber2);
+  background: color-mix(in srgb, var(--nr-bg) 84%, transparent);
+  border: 1px solid color-mix(in srgb, var(--nr-amber2) 58%, transparent);
+  border-radius: 50%;
+  box-shadow:
+    0 5px 14px color-mix(in srgb, black 56%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, white 8%, transparent);
+  backdrop-filter: blur(4px);
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.nr-hs-mark svg {
+  width: 21px;
+  height: 21px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nr-hs-label {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: calc(100% + 4px);
+  width: max-content;
+  max-width: min(210px, 42vw);
+  padding: 6px 9px;
+  opacity: 0;
+  color: var(--nr-paper);
+  background: color-mix(in srgb, var(--nr-bg) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--nr-amber2) 38%, transparent);
+  border-radius: 7px;
+  box-shadow: 0 8px 22px color-mix(in srgb, black 54%, transparent);
+  font: 700 0.68rem/1.2 'Outfit', 'Cairo', sans-serif;
+  text-align: start;
+  transform: translate(3px, -50%);
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.nr-hs[data-label-side='left'] .nr-hs-label {
+  right: calc(100% + 4px);
+  left: auto;
+  transform: translate(-3px, -50%);
+}
+
+.nr-hs:hover .nr-hs-mark,
+.nr-hs:focus-visible .nr-hs-mark,
+.nr-hs.hinted .nr-hs-mark {
+  color: var(--nr-bg);
+  background: var(--nr-amber2);
+  border-color: color-mix(in srgb, var(--nr-amber2) 82%, white);
+  transform: scale(1.08);
+}
+
+.nr-hs:hover .nr-hs-label,
+.nr-hs:focus-visible .nr-hs-label,
+.nr-hs.hinted .nr-hs-label {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
+.nr-hs.found {
+  opacity: 0.68;
+}
+
+.nr-hs.found .nr-hs-mark {
+  color: var(--nr-paper);
+  background: color-mix(in srgb, var(--nr-panel) 88%, transparent);
+  border-color: color-mix(in srgb, var(--game-ok) 68%, white);
 }
 
 .nr-hs:focus-visible {

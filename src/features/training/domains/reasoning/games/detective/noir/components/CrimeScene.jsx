@@ -3,6 +3,23 @@ import { assetUrl } from '../../../../../../../../lib/assetUrl';
 import { L } from '../schema';
 import { sceneFor } from '../scenes';
 
+function InspectionMark({ found }) {
+  return (
+    <span className={`nr-hs-mark${found ? ' is-found' : ''}`} aria-hidden="true">
+      <svg viewBox="0 0 32 32" focusable="false">
+        {found ? (
+          <path d="M8.2 16.4 13.1 21l10.7-11" />
+        ) : (
+          <>
+            <circle cx="14" cy="14" r="6.5" />
+            <path d="m18.8 18.8 5.4 5.4M14 4.5v3M14 20.5v3M4.5 14h3M20.5 14h3" />
+          </>
+        )}
+      </svg>
+    </span>
+  );
+}
+
 /*
  * The searchable room.
  *
@@ -32,6 +49,7 @@ export default function CrimeScene({
         const isFound = h.clue ? found.includes(h.clue) : examined.has(h.id);
         const label = L(h.name, isAr);
         const pos = scene?.anchors?.[h.id] || h.pos;
+        const labelSide = pos.x > 70 ? 'left' : 'right';
         return (
           <button
             type="button"
@@ -41,8 +59,10 @@ export default function CrimeScene({
             onClick={() => onExamine(h)}
             aria-label={label}
             title={label}
+            data-label-side={labelSide}
           >
-            <span aria-hidden="true">{isFound && h.clue ? '✓' : h.e}</span>
+            <InspectionMark found={isFound && h.clue} />
+            <span className="nr-hs-label" aria-hidden="true">{label}</span>
           </button>
         );
       })}

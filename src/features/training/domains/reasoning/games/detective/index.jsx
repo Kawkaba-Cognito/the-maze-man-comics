@@ -60,4 +60,10 @@ export default function DetectiveGame({ onBack, workoutMode = false }) {
   );
 }
 
-const FALLBACK = { position: 'fixed', inset: 0, zIndex: 50, background: '#0a0a0f' };
+const FALLBACK = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 50,
+  backgroundColor: 'var(--play-surface-deep-flat)',
+  backgroundImage: 'var(--play-surface-deep)',
+};
