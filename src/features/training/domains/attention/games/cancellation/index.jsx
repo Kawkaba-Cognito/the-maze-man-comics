@@ -767,6 +767,24 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     setPlayStep('running');
   }, [cueShow, playSfx]);
 
+  /*
+   * DEV-ONLY: ?survivalStage=N starts Survival at that stage.
+   *
+   * Survival runs on one life, so the tiers past the first are ~9 clean rounds
+   * away — which makes the hard board impossible to eyeball while tuning it.
+   * Gated on import.meta.env.DEV so it is dead code in any build; production
+   * always starts at 0.
+   */
+  const devStartStage = useCallback(() => {
+    if (!import.meta.env?.DEV) return 0;
+    try {
+      const n = Number(new URLSearchParams(window.location.search).get('survivalStage'));
+      return Number.isFinite(n) && n > 0 ? Math.min(14, Math.floor(n)) : 0;
+    } catch {
+      return 0;
+    }
+  }, []);
+
   const startFreeMode = useCallback(() => {
     freeStageRef.current = 0;
     freeRoundsWonRef.current = 0;
@@ -783,8 +801,10 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     playSfx('click');
     trialLogRef.current?.discard();
     trialLogRef.current = createTrialLog({ game: 'cancel-task', mode: 'free' });
-    void beginFreeRoundAtStage(0);
-  }, [playSfx, beginFreeRoundAtStage]);
+    const start = devStartStage();
+    freeStageRef.current = start;
+    void beginFreeRoundAtStage(start);
+  }, [playSfx, beginFreeRoundAtStage, devStartStage]);
 
   const beginAssessmentTrial = useCallback(
     async (idx) => {
@@ -949,7 +969,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       if (Array.isArray(r.cells)) {
         r.cells.forEach((cell, i) => {
           if (cell.isT && !foundIdxRef.current.has(i)) {
-            omitPos.push({ idx: i, row: Math.floor(i / r.grid), col: i % r.grid });
+            // Boards are cols×rows (Survival deals portrait rectangles), so
+            // row/col come off the COLUMN count — `r.grid` is that count on
+            // every board, square or not.
+            const nCols = r.cols || r.grid;
+            omitPos.push({ idx: i, row: Math.floor(i / nCols), col: i % nCols });
           }
         });
       }
@@ -965,6 +989,10 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           timeUsed: stats.timeUsed,
           won,
           grid: r.grid,
+          // Board shape travels with the round so a CoC read on stored history
+          // can tell a 7×9 from a 9×9 rather than assuming grid².
+          cols: r.cols || r.grid,
+          rows: r.rows || r.grid,
           foundPos: foundSeq,
           omitPos,
         });
@@ -1423,10 +1451,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     // times. Feeds Center-of-Cancellation, search-organization, and SDT metrics.
     const ord = (roundOrdRef.current += 1);
     const tOn = gridOnsetRef.current ? Math.round(now - gridOnsetRef.current) : null;
+    const tapCols = r.cols || r.grid;
     const posFields = {
       idx,
-      row: Math.floor(idx / r.grid),
-      col: idx % r.grid,
+      row: Math.floor(idx / tapCols),
+      col: idx % tapCols,
       isT: !!c.isT,
       ord,
       ...(ord === 1 ? { lead: true } : {}),

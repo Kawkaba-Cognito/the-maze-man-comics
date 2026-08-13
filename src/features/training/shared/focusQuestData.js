@@ -267,9 +267,13 @@ export const PAL = {
  */
 const SEARCH_SLOPE_MS = { easy: 0, medium: 12, hard: 12 };
 
+export function expertTargetSecForSetSize(diff, setSize) {
+  return (700 + (SEARCH_SLOPE_MS[diff] ?? 0) * (Math.max(1, setSize) / 2)) / 1000;
+}
+
 export function expertTargetSec(diff) {
   const grid = (DM[diff] ?? DM.easy).grid;
-  return (700 + (SEARCH_SLOPE_MS[diff] ?? 0) * ((grid * grid) / 2)) / 1000;
+  return expertTargetSecForSetSize(diff, grid * grid);
 }
 
 /**
@@ -565,33 +569,63 @@ export function computeEccentricityBias(li, diff) {
   return +Math.min(0.75, base + ramp).toFixed(2);
 }
 
-/**
- * Choose grid indices (row-major, 0..N*N-1) for the targets. Returns a Set of
- * exactly `min(tc, N*N)` indices placed with quadrant balance, anti-clustering,
- * and eccentricity weighting (see header).
+/*
+ * A BOARD IS cols×rows, NOT N×N. (2026-08-13)
+ *
+ * The lattice was square everywhere, and on a phone that is what made the hard
+ * tier untappable: the board fits the SHORTER axis (CancelBoard2D), so on a
+ * 375px-wide phone a 9×9 renders 33px pieces on a 41px pitch — under the 44px
+ * touch minimum and smaller than a finger's contact patch. A mis-tap there is
+ * scored as a false alarm, so on hard the error count and d′ were partly
+ * measuring thumb width instead of attention.
+ *
+ * Nothing in the task requires a square: real cancellation sheets (Mesulam,
+ * Bells) are landscape rectangles. Square was costing us the ~280px of vertical
+ * space a portrait phone leaves under a square board. Accepting cols≠rows lets
+ * set size stay a difficulty lever while the piece stays thumb-sized.
+ *
+ * Accepts a plain number (square, the legacy call) or {cols, rows}.
  */
-export function chooseTargetPositions(grid, tc, rng = Math.random, opts = {}) {
-  const N = grid;
-  const total = N * N;
+export function normalizeBoard(board) {
+  if (typeof board === 'number') {
+    const n = Math.max(1, board | 0);
+    return { cols: n, rows: n, total: n * n };
+  }
+  const cols = Math.max(1, (board?.cols ?? board?.grid ?? 5) | 0);
+  const rows = Math.max(1, (board?.rows ?? cols) | 0);
+  return { cols, rows, total: cols * rows };
+}
+
+/**
+ * Choose board indices (row-major, 0..cols*rows-1) for the targets. Returns a
+ * Set of exactly `min(tc, cols*rows)` indices placed with quadrant balance,
+ * anti-clustering, and eccentricity weighting (see header).
+ */
+export function chooseTargetPositions(board, tc, rng = Math.random, opts = {}) {
+  const { cols, rows, total } = normalizeBoard(board);
   const want = Math.max(0, Math.min(tc | 0, total));
   if (want === 0) return new Set();
   if (want >= total) return new Set(Array.from({ length: total }, (_, i) => i));
 
   const eccBias = Math.max(0, Math.min(1, opts.eccentricityBias ?? 0.3));
-  const center = (N - 1) / 2;
-  const maxEcc = Math.hypot(center, center) || 1;
-  const rc = (idx) => [Math.floor(idx / N), idx % N];
+  // Two centres now — one per axis. On a rectangle they differ, and using a
+  // single one would push the "periphery" bias off-centre along the long axis.
+  const centerR = (rows - 1) / 2;
+  const centerC = (cols - 1) / 2;
+  const maxEcc = Math.hypot(centerR, centerC) || 1;
+  const rc = (idx) => [Math.floor(idx / cols), idx % cols];
   const ecc = (idx) => {
     const [r, c] = rc(idx);
-    return Math.hypot(r - center, c - center) / maxEcc; // 0 centre … 1 corner
+    return Math.hypot(r - centerR, c - centerC) / maxEcc; // 0 centre … 1 corner
   };
-  // Quadrant by sign of offset from centre. Cells on the centre cross (odd grids)
-  // are dealt round-robin so the middle row/col isn't biased to one quadrant.
+  // Quadrant by sign of offset from centre. Cells on the centre cross (odd side
+  // lengths) are dealt round-robin so the middle row/col isn't biased to one
+  // quadrant.
   let centreTie = 0;
   const quad = (idx) => {
     const [r, c] = rc(idx);
-    const dr = r - center;
-    const dc = c - center;
+    const dr = r - centerR;
+    const dc = c - centerC;
     if (dr === 0 || dc === 0) return centreTie++ % 4;
     return (dr < 0 ? 0 : 2) + (dc < 0 ? 0 : 1);
   };
@@ -716,7 +750,7 @@ export function chooseTargetPositions(grid, tc, rng = Math.random, opts = {}) {
  * gives half the distractors the target's hue, which keeps colour from GUIDING
  * the search — it just never makes colour the answer.
  */
-export function buildCellsFromParams(grid, pool, tc, diff, seed, interference, rng = Math.random) {
+export function buildCellsFromParams(board, pool, tc, diff, seed, interference, rng = Math.random) {
   const pal = PAL[diff] || PAL.easy;
   const tgt = seed?.tgt ?? pool[Math.floor(rng() * pool.length)];
   const tgtCol = seed?.tgtCol ?? pal[Math.floor(rng() * pal.length)];
@@ -726,8 +760,8 @@ export function buildCellsFromParams(grid, pool, tc, diff, seed, interference, r
       `focusQuestData: distractor pool empty (need ≥2 distinct shapes). pool=${JSON.stringify(pool)} tgt=${tgt}`,
     );
   }
-  const total = grid * grid;
-  // Never ask for more targets than cells; keeps UI count and grid in sync.
+  const { total } = normalizeBoard(board);
+  // Never ask for more targets than cells; keeps UI count and board in sync.
   const guaranteedTc = Math.min(Math.max(tc, 3), total);
   const useFeatureBinding = diff === 'medium' || diff === 'hard';
 
@@ -749,7 +783,7 @@ export function buildCellsFromParams(grid, pool, tc, diff, seed, interference, r
   }
   fisherYatesInPlace(distractors, rng);
 
-  const targetPos = chooseTargetPositions(grid, guaranteedTc, rng, {
+  const targetPos = chooseTargetPositions(board, guaranteedTc, rng, {
     eccentricityBias: seed?.eccentricityBias ?? 0.3,
   });
   const cells = new Array(total);
@@ -886,6 +920,47 @@ export function freeStageToDiffLv(stageIndex) {
  * Within a tier the position is mapped onto the curriculum level index
  * (`liStart..liEnd`) so it reuses the tuned time/target/interference curves.
  */
+/*
+ * SURVIVAL BOARDS — thumb-first, one spec for every device. (2026-08-13)
+ *
+ * Survival is where this bites hardest: it walks all three tiers on ONE life, so
+ * the 9×9 arrives whatever your screen is. The boards below are the largest that
+ * still render a ≥44px piece on the SMALLEST supported phone (375×667, i.e. an
+ * iPhone SE, whose playable box is ~375×531 once the HUD and home indicator are
+ * taken off). Measured through CancelBoard2D's own fit formula:
+ *
+ *      easy  5×5 = 25 cells → 66px      (unchanged; it was never cramped)
+ *      medium 6×8 = 48 cells → 54px     (was 7×7=49 at 45px — same set size)
+ *      hard  7×9 = 63 cells → 45px      (was 9×9=81 at 33px)
+ *
+ * Medium keeps its set size almost exactly and simply stops being square, which
+ * is free. Hard genuinely loses 22% of its items, and that is not avoidable:
+ * 81 cells at a thumb-safe 52px pitch needs ~223k px² and an SE has ~199k. The
+ * lost load is paid back by entering the tier higher up the curriculum — see
+ * SURVIVAL_TIER_PLAN's hard liStart, recomputed for exactly this reason.
+ *
+ * ONE spec for every device, deliberately: sizing the board per-device would
+ * make difficulty depend on the phone, which is the trap audit:mot documents
+ * (rescaling to fit the screen silently stopped grading difficulty at all). Big
+ * screens get bigger pieces, not more of them.
+ */
+export const SURVIVAL_BOARD = Object.freeze({
+  easy:   Object.freeze({ cols: 5, rows: 5 }),
+  medium: Object.freeze({ cols: 6, rows: 8 }),
+  hard:   Object.freeze({ cols: 7, rows: 9 }),
+});
+
+/**
+ * Re-express an authored target count on a board of a different size, keeping
+ * the DENSITY the curriculum authored (targets/cell) rather than the raw count.
+ * Still bounded by the same "targets stay a sparse minority" cap as TARGET_CURVE.
+ */
+export function reflowTargetCount(tc, fromArea, toArea) {
+  const scaled = Math.round(tc * (toArea / Math.max(1, fromArea)));
+  const cap = Math.min(Math.floor(toArea * 0.34), toArea - MIN_NON_TARGET_CELLS);
+  return Math.max(3, Math.min(scaled, cap));
+}
+
 export const SURVIVAL_TIER_PLAN = [
   { diff: 'easy',   rounds: 4, liStart: 2,  liEnd: 78 },
   // Enter medium at L34 and leave at L65. The former L7 entry was objectively
@@ -906,8 +981,15 @@ export const SURVIVAL_TIER_PLAN = [
    *
    * audit:fq asserts the monotonicity; if it fails here, recompute rather than
    * nudge.
+   *
+   * Recomputed to L49 on 2026-08-13, when hard's survival board went 9×9 → 7×9
+   * to keep the pieces thumb-sized (SURVIVAL_BOARD above). 63 cells at the
+   * curriculum's own density is 12 targets where 81 gave 16, so hard L33 entered
+   * BELOW the medium round before it — the exact dip the previous two entry
+   * points were moved to avoid. L49 is the first hard level whose ordinal load
+   * clears medium's exit; searched over the whole plan, not nudged.
    */
-  { diff: 'hard',   rounds: 6, liStart: 32, liEnd: 99 },
+  { diff: 'hard',   rounds: 6, liStart: 48, liEnd: 99 },
 ];
 
 export function survivalStageToDiffLv(stageIndex) {
@@ -943,7 +1025,16 @@ const SURVIVAL_SEARCH_LOAD_WEIGHT = Object.freeze({
 export function getSurvivalDifficultyModel(stageIndex) {
   const { diff, lv } = survivalStageToDiffLv(stageIndex);
   const cfg = getLvCfg(diff, lv - 1);
-  const area = cfg.grid * cfg.grid;
+  /*
+   * The area/tc/clock here are the REFLOWED ones — what prepareFreeRound
+   * actually deals — not the square curriculum's. Reading the model off the
+   * authored numbers while the player gets a different board is how audit:mot's
+   * bug happened: the audit certified a curve nobody was playing.
+   */
+  const board = normalizeBoard(SURVIVAL_BOARD[diff] ?? cfg.grid);
+  const area = board.total;
+  const tc = reflowTargetCount(cfg.tc, cfg.grid * cfg.grid, area);
+  const time = survivalRoundTime(diff, lv - 1, tc, area);
   const searchWeight = SURVIVAL_SEARCH_LOAD_WEIGHT[diff] ?? 1;
   const featureLoad = 1 + cfg.interference + cfg.conjunction * 1.5;
   /*
@@ -957,21 +1048,38 @@ export function getSurvivalDifficultyModel(stageIndex) {
    * real term and measures the thing a player actually feels: how much of the
    * clock the board leaves you.
    */
-  const pressure = Math.max(1, cfg.time / Math.max(0.001, expertTargetSec(diff) * cfg.tc));
+  const pressure = Math.max(
+    1,
+    time / Math.max(0.001, expertTargetSecForSetSize(diff, area) * tc),
+  );
   const ordinalLoad =
-    (area * cfg.tc * cfg.pool.length * featureLoad * searchWeight) / pressure;
+    (area * tc * cfg.pool.length * featureLoad * searchWeight) / pressure;
   return {
     stageIndex: Math.max(0, stageIndex | 0),
     diff,
     lv,
-    grid: cfg.grid,
-    targetCount: cfg.tc,
-    timeLimitSec: cfg.time,
+    grid: board.cols,
+    cols: board.cols,
+    rows: board.rows,
+    setSize: area,
+    targetCount: tc,
+    timeLimitSec: time,
     poolSize: cfg.pool.length,
     interference: cfg.interference,
     conjunction: cfg.conjunction,
     ordinalLoad: +ordinalLoad.toFixed(2),
   };
+}
+
+/**
+ * Clock for a reflowed board: the same per-target budget the curriculum uses,
+ * recomputed against the board the player is actually given. Set size feeds the
+ * expert model (search cost per target rises with the number of distractors), so
+ * a smaller board must not keep the bigger board's clock.
+ */
+export function survivalRoundTime(diff, li, tc, setSize) {
+  const t = expertTargetSecForSetSize(diff, setSize) * tc * timeHeadroom(diff, li);
+  return Math.round(Math.max(ABSOLUTE_TIME_FLOOR_SEC, t));
 }
 
 export function prepareFreeRound(stageIndex) {
@@ -980,21 +1088,33 @@ export function prepareFreeRound(stageIndex) {
   // atlas now covers every key, so Survival can preserve the intended ramp from
   // distinct objects to within-family variants instead of flattening every
   // stage into the same first-ten object pool.
-  const base = prepareLevelRound(diff, lv);
+  //
+  // The BOARD, though, is Survival's own (SURVIVAL_BOARD): a portrait rectangle
+  // sized so the piece stays thumb-tappable on the smallest phone. Levels and
+  // Pass n Play still deal the square curriculum board.
+  const base = prepareLevelRound(diff, lv, { board: SURVIVAL_BOARD[diff] });
   return { ...base, mode: 'free', freeStage: stageIndex };
 }
 
-export function prepareLevelRound(diff, lv) {
+export function prepareLevelRound(diff, lv, opts = {}) {
   const cfg = getLvCfg(diff, lv - 1);
   const pal = PAL[diff] || PAL.easy;
   const lockedTarget = cfg.pool[Math.floor(Math.random() * cfg.pool.length)];
   const lockedCol = pal[Math.floor(Math.random() * pal.length)];
   const searchMode = 'categorical';
   const eccentricityBias = computeEccentricityBias(lv - 1, diff);
+  // Default board is the tier's square grid; a caller may deal a different
+  // shape (Survival does), in which case target count and clock are re-derived
+  // from the new set size rather than carried over.
+  const board = normalizeBoard(opts.board ?? cfg.grid);
+  const squareArea = cfg.grid * cfg.grid;
+  const reflowed = board.total !== squareArea;
+  const tc = reflowed ? reflowTargetCount(cfg.tc, squareArea, board.total) : cfg.tc;
+  const tlim = reflowed ? survivalRoundTime(diff, lv - 1, tc, board.total) : cfg.time;
   const built = buildCellsFromParams(
-    cfg.grid,
+    board,
     cfg.pool,
-    cfg.tc,
+    tc,
     diff,
     { tgt: lockedTarget, tgtCol: lockedCol, eccentricityBias, conjunction: cfg.conjunction },
     cfg.interference,
@@ -1006,10 +1126,19 @@ export function prepareLevelRound(diff, lv) {
     mode: 'level',
     diff,
     lv,
-    grid: cfg.grid,
+    /*
+     * `grid` is the COLUMN count, and equals `rows` on a square board. It stays
+     * because every consumer that reads it wants columns: index.jsx derives
+     * row/col for the Center-of-Cancellation from `idx / grid`, and the art-set
+     * hash just needs a stable field. `cols`/`rows` are the honest names — new
+     * code should read those.
+     */
+    grid: board.cols,
+    cols: board.cols,
+    rows: board.rows,
     pool: cfg.pool,
     tc: targetCount,
-    tlim: cfg.time,
+    tlim,
     target: built.tgt,
     targetCol: built.tgtCol,
     searchMode,

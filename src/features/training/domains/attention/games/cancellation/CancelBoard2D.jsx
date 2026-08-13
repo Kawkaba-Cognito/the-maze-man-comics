@@ -61,16 +61,27 @@ export default function CancelBoard2D({
   const [pieceSize, setPieceSize] = useState(56);
   const [gap, setGap] = useState(8);
 
-  const grid = round?.grid || 5;
+  const cols = round?.cols || round?.grid || 5;
+  const rows = round?.rows || round?.grid || cols;
   const n = cells?.length || 0;
 
-  /* Fit one SQUARE lattice to the shorter axis of the available box.
+  /* Fit a cols×rows lattice of SQUARE pieces inside the available box.
+   *
+   * It used to fit an N×N lattice to `Math.min(w, h)`, which is why the hard
+   * tier was untappable on a phone: width binds there, so a 9×9 came out at 33px
+   * pieces while ~280px of height sat unused under the board. The piece is now
+   * the smaller of what each axis affords, so a portrait board (Survival deals
+   * 6×8 and 7×9 — see SURVIVAL_BOARD) spends that height on piece size instead.
    *
    * Row and column gaps deliberately share one value. The old per-axis spread
    * consumed every spare portrait pixel by pulling rows apart while columns
    * stayed tight; on a tall phone the board read as separate horizontal strips
    * instead of one visual-search field. A uniform gap keeps eccentricity and
    * scan density comparable in both directions and leaves balanced outer space.
+   *
+   * Pieces stay SQUARE (one `size` for both axes, aspect-ratio:1 on the cell).
+   * Non-square pieces would change eccentricity per axis and corrupt the
+   * Center-of-Cancellation and search-organisation metrics.
    *
    * Measured on the INNER element, not the wrapper: the wrapper carries the HUD
    * reserve, and measuring that padding would overstate the playable height. */
@@ -80,11 +91,12 @@ export default function CancelBoard2D({
     const fit = () => {
       const w = box.clientWidth || 1;
       const h = box.clientHeight || 1;
-      const extent = Math.min(w, h);
-      const nextGap = Math.max(6, Math.min(14, extent * 0.02));
-      // `grid + 1` leaves one gap of breathing room on each outside edge as
-      // well as between tracks; the actual CSS grid remains centred by its box.
-      const size = Math.max(20, Math.floor((extent - nextGap * (grid + 1)) / grid));
+      const nextGap = Math.max(6, Math.min(14, Math.min(w, h) * 0.02));
+      // `+ 1` leaves one gap of breathing room on each outside edge as well as
+      // between tracks; the actual CSS grid remains centred by its box.
+      const byW = Math.floor((w - nextGap * (cols + 1)) / cols);
+      const byH = Math.floor((h - nextGap * (rows + 1)) / rows);
+      const size = Math.max(20, Math.min(byW, byH));
       setPieceSize(size);
       setGap(nextGap);
     };
@@ -92,7 +104,7 @@ export default function CancelBoard2D({
     const ro = new ResizeObserver(fit);
     ro.observe(box);
     return () => ro.disconnect();
-  }, [grid]);
+  }, [cols, rows]);
 
   /* The tutorial coach points a hand at a specific cell and follows it, so it
    * needs that cell's position as a fraction of this box. The 3D scene answered
@@ -140,7 +152,7 @@ export default function CancelBoard2D({
         /* The measured gap is set inline so sizing and rendered geometry use
            exactly the same value at every viewport. */
         style={{
-          gridTemplateColumns: `repeat(${grid}, ${pieceSize}px)`,
+          gridTemplateColumns: `repeat(${cols}, ${pieceSize}px)`,
           gap: `${gap}px`,
         }}
         role="grid"

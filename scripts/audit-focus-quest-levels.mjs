@@ -29,6 +29,7 @@ import {
   prepareFreeRound,
   PASS_PLAY_CONFIG,
   RETIRED_CANCELLATION_SHAPES,
+  expertTargetSecForSetSize,
 } from '../src/features/training/shared/focusQuestData.js';
 
 const SHAPES = new Set(Object.keys(SH));
@@ -52,8 +53,15 @@ function auditOneRound(r, label) {
     `${label}: bad targetCol "${r.targetCol}"`,
   );
   assert(Number.isFinite(r.grid) && r.grid > 0, `${label}: grid`);
+  // Boards are cols×rows now (Survival deals portrait rectangles so the pieces
+  // stay thumb-sized); `grid` is the column count and equals `rows` on a square.
+  const cols = r.cols || r.grid;
+  const rows = r.rows || r.grid;
+  assert(Number.isFinite(cols) && cols > 0, `${label}: cols`);
+  assert(Number.isFinite(rows) && rows > 0, `${label}: rows`);
+  assert(r.grid === cols, `${label}: grid ${r.grid} must be the column count ${cols}`);
   const n = r.cells.length;
-  assert(n === r.grid * r.grid, `${label}: cell count ${n} != ${r.grid}^2`);
+  assert(n === cols * rows, `${label}: cell count ${n} != ${cols}x${rows}`);
   const targets = r.cells.filter((c) => c.isT);
   assert(targets.length === r.tc, `${label}: tc ${r.tc} vs isT count ${targets.length}`);
   assert(r.tc > 0, `${label}: no targets`);
@@ -84,6 +92,57 @@ function auditOneRound(r, label) {
         `${label}: a distractor shows the target object — that is the retired colour conjunction`,
       );
     }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * TOUCH TARGETS — assert the RENDER, not the config. (2026-08-13)
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * A board can be perfectly graded and still be unplayable with a thumb. Before
+ * this gate, Survival's hard tier fitted a 9×9 to the shorter axis of a phone
+ * and rendered 33px pieces on a 41px pitch — under the 44px touch minimum and
+ * smaller than a finger's contact patch. Mis-taps land on the neighbour, and the
+ * game scores those as false alarms, so the difficulty the player felt at the
+ * top of Survival was partly motor, and the d′ stored in trialLog was partly
+ * measuring thumb width.
+ *
+ * Nothing in build, lint or the rest of this audit could see that: the config
+ * was fine and the failure only existed once the CSS grid was laid out. So this
+ * REPLICATES CancelBoard2D's fit formula exactly (keep the two in sync) and runs
+ * every dealt round through it on the smallest phone we support.
+ *
+ * Same family as audit:mot simulating the density rescale on four device shapes:
+ * a gate that only reads the authored numbers certifies a game nobody can play.
+ */
+const MIN_TOUCH_PX = 44; // WCAG 2.2 target size (minimum) / Apple HIG 44pt
+
+/* Playable box = viewport minus the HUD reserve and the bottom inset that
+ * clears the home indicator (see cancelBoard2d.css). Smallest first. */
+const DEVICE_BOXES = [
+  { name: 'iPhone SE 375x667', w: 375, h: 667 - 96 - 40 },
+  { name: 'iPhone 13 390x844', w: 390, h: 844 - 96 - 50 },
+  { name: 'Pixel 7 412x915', w: 412, h: 915 - 96 - 50 },
+];
+
+/** Mirrors CancelBoard2D's useLayoutEffect fit(). Keep in sync. */
+function renderedPieceSize(cols, rows, w, h) {
+  const gap = Math.max(6, Math.min(14, Math.min(w, h) * 0.02));
+  const byW = Math.floor((w - gap * (cols + 1)) / cols);
+  const byH = Math.floor((h - gap * (rows + 1)) / rows);
+  return Math.max(20, Math.min(byW, byH));
+}
+
+function assertTappable(round, label) {
+  const cols = round.cols || round.grid;
+  const rows = round.rows || round.grid;
+  for (const dev of DEVICE_BOXES) {
+    const px = renderedPieceSize(cols, rows, dev.w, dev.h);
+    assert(
+      px >= MIN_TOUCH_PX,
+      `${label}: ${cols}x${rows} board renders ${px}px pieces on ${dev.name} — under the `
+        + `${MIN_TOUCH_PX}px touch minimum, so mis-taps get scored as false alarms`,
+    );
   }
 }
 
@@ -225,12 +284,21 @@ for (let stage = 0; stage < 15; stage++) {
   }
   const round = prepareFreeRound(stage);
   auditOneRound(round, `survival ${stage}`);
-  const survNeeded = expertTargetSec(round.diff) * round.tc;
+  // The model must describe the round the player is DEALT, not the curriculum's
+  // square board — the audit:mot lesson, applied here: assert what reaches the
+  // screen. Without this, reflowing the board would silently desync the two.
+  assert(
+    model.targetCount === round.tc && model.timeLimitSec === round.tlim,
+    `survival stage ${stage}: model (${model.targetCount} targets / ${model.timeLimitSec}s) `
+      + `does not match the dealt round (${round.tc} / ${round.tlim}s)`,
+  );
+  const survNeeded = expertTargetSecForSetSize(round.diff, round.cells.length) * round.tc;
   assert(
     round.tlim / survNeeded >= 1,
     `survival stage ${stage} (${round.diff} L${round.lv}): UNWINNABLE — ${round.tc} targets need `
       + `${survNeeded.toFixed(1)}s at expert pace, clock grants ${round.tlim}s`,
   );
+  assertTappable(round, `survival stage ${stage}`);
   previousSurvivalLoad = model.ordinalLoad;
 }
 
