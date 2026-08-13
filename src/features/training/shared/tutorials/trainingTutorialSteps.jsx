@@ -27,6 +27,49 @@ const TM_DECOY_DIAGRAM = (
   </div>
 );
 
+/* Intercept diagrams.
+ *
+ * ⚠ Every colour here is a TOKEN, read through var() in the inline style, not a
+ * hex like the Trail Making pair above. Inline styles accept var() perfectly
+ * well, so there is no reason for a tutorial to be the one place in a game that
+ * cannot follow the theme — and it keeps the audit:design ratchet flat. */
+const icRail = (frac, covered) => (
+  <span style={{
+    display: 'inline-block', height: covered ? 14 : 4, width: `${frac * 100}%`,
+    borderRadius: 7, verticalAlign: 'middle',
+    background: covered ? 'var(--game-muted)' : 'var(--game-muted-edge)',
+  }} />
+);
+const icGoal = (
+  <span style={{
+    display: 'inline-block', width: 4, height: 26, borderRadius: 2,
+    background: 'var(--game-accent)', verticalAlign: 'middle',
+  }} />
+);
+const icDot = (glyph) => (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: 26, height: 26, borderRadius: '50%', background: 'var(--game-accent)',
+    color: 'var(--play-surface-deep-flat)', fontSize: 13, fontWeight: 800, verticalAlign: 'middle',
+  }}>{glyph}</span>
+);
+const IC_RAIL_DIAGRAM = (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+    {icDot('●')}{icRail(0.5)}{icRail(0.28, true)}{icGoal}
+  </div>
+);
+const IC_COVER_DIAGRAM = (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+    {icRail(0.42)}{icRail(0.32, true)}{icGoal}
+    <span style={{ fontSize: 18 }} aria-hidden="true">👆</span>
+  </div>
+);
+const IC_SHAPES_DIAGRAM = (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}>
+    {icDot('●')}{icDot('▶')}{icDot('◆')}
+  </div>
+);
+
 const STEPS = {
   'cancel-task': {
     en: [
@@ -246,6 +289,18 @@ const STEPS = {
       { title: 'اختر البوابة', body: 'مسألة حسابية في الأعلى. بوابتان تعرضان إجابات — انتقل للصحيحة قبل انتهاء الوقت.', icon: '➕' },
       { title: 'تحرّك بسرعة', body: 'استخدم الأسهم أو اسحب للبوابة الصحيحة. البوابة الخاطئة تنهي الجولة أو تخصم أرواحاً.', icon: '🏃' },
       { title: 'عمليات متنوعة', body: 'المستويات الصعبة تمزج + − × ÷ وأرقام أكبر. البقاء يتكيّف مع صعوبتك.', icon: '🧮', note: READY_NOTE.ar },
+    ],
+  },
+  intercept: {
+    en: [
+      { title: 'Watch it move', body: 'A shape sets off along the route. The first stretch is all you get to see — read how fast it is going.', diagram: IC_RAIL_DIAGRAM, pills: ['Watch the open stretch', 'Read the speed'] },
+      { title: 'It hides — you keep counting', body: 'Partway along, the shape slips under cover and you cannot see it any more. Keep running it in your head. Tap the instant it would touch the goal line.', diagram: IC_COVER_DIAGRAM, pills: ['Tap at the line', 'Not when it hides'] },
+      { title: 'The shape tells you how it moves', body: 'A circle holds a steady speed. An arrow ▶ is speeding up, so it arrives sooner than the open stretch suggests. A diamond ◆ is slowing down and arrives later. Identify it before it hides.', diagram: IC_SHAPES_DIAGRAM, pills: ['● steady', '▶ speeding up', '◆ slowing down'], note: READY_NOTE.en },
+    ],
+    ar: [
+      { title: 'راقب حركته', body: 'ينطلق شكل على المسار. الجزء الأول هو كل ما تراه — اقرأ سرعته منه.', diagram: IC_RAIL_DIAGRAM, pills: ['راقب الجزء المكشوف', 'اقرأ السرعة'] },
+      { title: 'يختفي — وأنت تُكمل العدّ', body: 'في منتصف الطريق يدخل تحت الغطاء ولا تعود تراه. أكمل تتبّعه في ذهنك، واضغط لحظة وصوله إلى خط الهدف.', diagram: IC_COVER_DIAGRAM, pills: ['اضغط عند الخط', 'لا عند الاختفاء'] },
+      { title: 'الشكل يخبرك بحركته', body: 'الدائرة سرعتها ثابتة. السهم ▶ يتسارع فيصل أبكر مما يوحي الجزء المكشوف. والمعيّن ◆ يتباطأ فيصل متأخّراً. تعرّف عليه قبل أن يختفي.', diagram: IC_SHAPES_DIAGRAM, pills: ['● ثابت', '▶ متسارع', '◆ متباطئ'], note: READY_NOTE.ar },
     ],
   },
 };

@@ -125,23 +125,66 @@ const DEVICE_BOXES = [
   { name: 'Pixel 7 412x915', w: 412, h: 915 - 96 - 50 },
 ];
 
-/** Mirrors CancelBoard2D's useLayoutEffect fit(). Keep in sync. */
+/* Mirrors CancelBoard2D's fit(). ⚠ KEEP THESE FOUR NUMBERS IN SYNC WITH THE
+ * COMPONENT — they are the piece-size contract, and a gate that models a
+ * different layout from the one that ships is worse than no gate at all. */
+const CELL_MIN = 52;
+const CELL_MAX = 108;
+const GAP_MIN = 8;
+const MAX_COLS = 6;
+const MAX_ROWS = 8;
+
 function renderedPieceSize(cols, rows, w, h) {
-  const gap = Math.max(6, Math.min(14, Math.min(w, h) * 0.02));
-  const byW = Math.floor((w - gap * (cols + 1)) / cols);
-  const byH = Math.floor((h - gap * (rows + 1)) / rows);
-  return Math.max(20, Math.min(byW, byH));
+  const screenTarget = Math.round(Math.min(w, h) / 8);
+  const fitsMaxW = Math.floor((w - GAP_MIN * (MAX_COLS + 1)) / MAX_COLS);
+  const fitsMaxH = Math.floor((h - GAP_MIN * (MAX_ROWS + 1)) / MAX_ROWS);
+  const target = Math.max(CELL_MIN, Math.min(CELL_MAX, screenTarget, fitsMaxW, fitsMaxH));
+  const byW = Math.floor((w - GAP_MIN * (cols + 1)) / cols);
+  const byH = Math.floor((h - GAP_MIN * (rows + 1)) / rows);
+  return Math.max(20, Math.min(target, byW, byH));
 }
 
+/* MAX_COLS/MAX_ROWS above are the layout contract. If a board ever exceeds
+ * them the piece silently starts shrinking again, so assert it here rather
+ * than discovering it on a phone. */
+function assertWithinMaxBoard(round, label) {
+  const cols = round.cols || round.grid;
+  const rows = round.rows || round.grid;
+  assert(
+    cols <= MAX_COLS && rows <= MAX_ROWS,
+    `${label}: board ${cols}x${rows} exceeds the layout contract ${MAX_COLS}x${MAX_ROWS} — `
+      + 'raise MAX_COLS/MAX_ROWS in BOTH CancelBoard2D and this audit, deliberately.',
+  );
+}
+
+/*
+ * Two things are asserted, and the second is the one that matters now.
+ *
+ *   1. The piece clears the touch minimum on every supported phone.
+ *   2. It is exactly CELL_MIN there — i.e. the board is NOT being squeezed.
+ *
+ * The whole point of the fixed-size model is that difficulty stops shrinking
+ * the target. A board dense enough to fall below CELL_MIN would silently slide
+ * back into the old behaviour, still pass a bare 44px check for a while, and
+ * only be noticed when someone's thumb started missing. Catch it at the board
+ * spec instead.
+ */
 function assertTappable(round, label) {
   const cols = round.cols || round.grid;
   const rows = round.rows || round.grid;
+  assertWithinMaxBoard(round, label);
   for (const dev of DEVICE_BOXES) {
     const px = renderedPieceSize(cols, rows, dev.w, dev.h);
     assert(
       px >= MIN_TOUCH_PX,
-      `${label}: ${cols}x${rows} board renders ${px}px pieces on ${dev.name} — under the `
+      `${label}: ${cols}x${rows} renders ${px}px pieces on ${dev.name} — under the `
         + `${MIN_TOUCH_PX}px touch minimum, so mis-taps get scored as false alarms`,
+    );
+    assert(
+      px >= CELL_MIN,
+      `${label}: ${cols}x${rows} renders ${px}px on ${dev.name}, below the fixed `
+        + `${CELL_MIN}px piece — the board is too dense for the space, so the piece is `
+        + `being squeezed. Difficulty must add squares, never shrink them.`,
     );
   }
 }
@@ -213,6 +256,22 @@ for (const diff of Object.keys(DM)) {
         + `clock grants ${cfg.time}s (${ratio.toFixed(2)}x)`,
     );
 
+    /*
+     * And the round as DEALT must be both winnable and tappable. cfg above is
+     * the authored curriculum; prepareLevelRound reflows it onto the thumb-safe
+     * board, so its target count and clock are the ones a player meets. Checking
+     * only cfg would certify a level nobody plays — the same mistake audit:mot
+     * documents, one layer up.
+     */
+    const dealt = prepareLevelRound(diff, li + 1);
+    const dealtNeed = expertTargetSecForSetSize(diff, dealt.cells.length) * dealt.tc;
+    assert(
+      dealt.tlim / dealtNeed >= 1,
+      `${diff} L${li + 1}: dealt round UNWINNABLE — ${dealt.tc} targets on `
+        + `${dealt.cols}x${dealt.rows} need ${dealtNeed.toFixed(1)}s, clock grants ${dealt.tlim}s`,
+    );
+    assertTappable(dealt, `level ${diff} L${li + 1}`);
+
     // Difficulty rises as the budget PER TARGET falls. Headroom is the
     // rounding-free statement of that; the granted time is checked too, with
     // the tolerance Math.round can actually introduce (±0.5s spread over tc).
@@ -250,10 +309,14 @@ for (const diff of Object.keys(DM)) {
 for (const diff of Object.keys(DM)) {
   for (let i = 0; i < 15; i++) {
     const seed = prepareChallengeSeed(diff);
-    assert(seed.grid === DM[diff].grid, `${diff} challenge seed grid`);
-    assert(seed.cells.length === seed.grid * seed.grid, `${diff} challenge seed cell count`);
+    assert(seed.grid === PASS_PLAY_CONFIG[diff].cols, `${diff} challenge seed grid`);
+    assert(
+      seed.cells.length === seed.cols * seed.rows,
+      `${diff} challenge seed cells ${seed.cells.length} != ${seed.cols}x${seed.rows}`,
+    );
     const r = prepareChallengePlayState(seed);
     auditOneRound(r, `${diff} challenge ${i}`);
+    assertTappable(r, `pass-n-play ${diff}`);
   }
 }
 

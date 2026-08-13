@@ -54,7 +54,7 @@ export const GOALS_BY_ID = Object.fromEntries(GOALS.map((g) => [g.id, g]));
 export const GOAL_GAME_WEIGHTS = {
   overall: {
     attention: { 'cancel-task': 2, mot: 1.5, 'train-switch': 1.5 },
-    speed: { 'speed-match': 2, 'trail-making': 1.5, 'math-gates': 1.5 },
+    speed: { 'speed-match': 2, intercept: 1.5, 'math-gates': 1.5 },
     memory: { 'memo-span': 2, 'story-grid': 1.5, nback: 1.5, 'paired-associates': 1.5 },
     language: { wordle: 2, synonyms: 1.8, trivia: 1.8 },
     reasoning: { 'rush-hour': 2, 'raven-matrices': 1.8, detective: 1.5 },
@@ -62,7 +62,7 @@ export const GOAL_GAME_WEIGHTS = {
   },
   focus: {
     attention: { 'cancel-task': 3, mot: 2.5, 'train-switch': 2 },
-    speed: { 'speed-match': 1.5, 'trail-making': 1.2 },
+    speed: { 'speed-match': 1.5, intercept: 1.2 },
     memory: { nback: 1.2, 'memo-span': 1 },
     flexibility: { 'spatial-stroop': 1.5, 'task-switch': 1.2 },
   },
@@ -72,7 +72,7 @@ export const GOAL_GAME_WEIGHTS = {
     reasoning: { 'raven-matrices': 1.2 },
   },
   speed: {
-    speed: { 'speed-match': 3, 'trail-making': 2.5, 'math-gates': 2 },
+    speed: { 'speed-match': 3, intercept: 2.5, 'math-gates': 2 },
     flexibility: { 'spatial-stroop': 2, 'task-switch': 1.5 },
     attention: { 'cancel-task': 1.5, mot: 1.2 },
   },

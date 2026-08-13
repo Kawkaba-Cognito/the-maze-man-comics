@@ -944,11 +944,48 @@ export function freeStageToDiffLv(stageIndex) {
  * (rescaling to fit the screen silently stopped grading difficulty at all). Big
  * screens get bigger pieces, not more of them.
  */
+/*
+ * ⚠ CELLS AND PIECE SIZE TRADE DIRECTLY AGAINST EACH OTHER. There is no board
+ * that is both big and comfortable, so these three numbers are a decision, not
+ * a default. Measured on the smallest supported phone (375x667, ~375x531
+ * playable) through CancelBoard2D's own fit formula:
+ *
+ *      3x4 = 12 -> 115px      6x8 = 48 -> 53px
+ *      4x5 = 20 ->  84px      7x9 = 63 -> 45px
+ *      5x7 = 35 ->  66px      9x12 = 108 -> 33px
+ *
+ * The ladder sits one notch kinder than it did, because 45px on the hard tier
+ * was still a thumb-width target. It deliberately stops short of the smallest
+ * boards: set size IS the difficulty in visual search, and at ~12 items the
+ * whole board falls inside one fixation — no serial search happens at all and
+ * the tier stops measuring attention. ~20 is where search starts behaving like
+ * search, so easy sits there and hard keeps 48 for a real sustained scan.
+ */
 export const SURVIVAL_BOARD = Object.freeze({
-  easy:   Object.freeze({ cols: 5, rows: 5 }),
-  medium: Object.freeze({ cols: 6, rows: 8 }),
-  hard:   Object.freeze({ cols: 7, rows: 9 }),
+  easy:   Object.freeze({ cols: 4, rows: 5 }),
+  medium: Object.freeze({ cols: 5, rows: 7 }),
+  hard:   Object.freeze({ cols: 6, rows: 8 }),
 });
+
+/*
+ * EVERY MODE A HUMAN PLAYS ON A PHONE GETS THE SAME THUMB-SAFE BOARDS.
+ *
+ * The first pass at this reflowed Survival only, and that was the wrong call
+ * for two reasons the player found immediately:
+ *
+ *   1. Survival's first four rounds are the EASY tier, which was already 5x5
+ *      and did not change. Survival runs on one life, so unless you clear four
+ *      rounds you see nothing different at all — the fix was invisible to
+ *      exactly the players who needed it.
+ *   2. Levels and Pass n Play — the modes people actually spend time in — were
+ *      untouched, so hard still dealt 9x9 at 33px on a small phone.
+ *
+ * One spec now covers Survival, Levels, adaptive and Pass n Play. The
+ * ASSESSMENT is deliberately excluded: it builds its boards in assessmentData
+ * and its percentiles are tied to the 7x7 geometry, so reflowing it would
+ * invalidate every stored session.
+ */
+export const PLAY_BOARD = SURVIVAL_BOARD;
 
 /**
  * Re-express an authored target count on a board of a different size, keeping
@@ -1103,10 +1140,14 @@ export function prepareLevelRound(diff, lv, opts = {}) {
   const lockedCol = pal[Math.floor(Math.random() * pal.length)];
   const searchMode = 'categorical';
   const eccentricityBias = computeEccentricityBias(lv - 1, diff);
-  // Default board is the tier's square grid; a caller may deal a different
-  // shape (Survival does), in which case target count and clock are re-derived
-  // from the new set size rather than carried over.
-  const board = normalizeBoard(opts.board ?? cfg.grid);
+  /*
+   * The thumb-safe board is the DEFAULT now, not something a caller opts into.
+   * Levels is where most of the play happens, and leaving it square meant the
+   * hard tier still rendered 33px pieces on a small phone. A caller can still
+   * force the square curriculum board by passing one explicitly — the
+   * assessment does not come through here at all (see PLAY_BOARD).
+   */
+  const board = normalizeBoard(opts.board ?? PLAY_BOARD[diff] ?? cfg.grid);
   const squareArea = cfg.grid * cfg.grid;
   const reflowed = board.total !== squareArea;
   const tc = reflowed ? reflowTargetCount(cfg.tc, squareArea, board.total) : cfg.tc;
@@ -1149,16 +1190,20 @@ export function prepareLevelRound(diff, lv, opts = {}) {
 
 /**
  * Pass-n-Play difficulty presets. The pass-and-play challenge is a single fair
- * grid every player faces; difficulty picks the grid size, target count, time
+ * board every player faces; difficulty picks its shape, target count, time
  * limit, and which curriculum level supplies the distractor pool.
+ *
+ * Boards match PLAY_BOARD, so a phone gets thumb-sized pieces here too — this
+ * is the mode most likely to be played by passing one handset around, which
+ * makes a 33px target the worst possible thing to hand someone.
  *   easy   — 5×5, few object types
- *   medium — 7×7 with colour interference
- *   hard   — 9×9, most objects and the densest board
+ *   medium — 6×8 with colour interference
+ *   hard   — 7×9, most objects and the densest board
  */
 export const PASS_PLAY_CONFIG = {
-  easy:   { grid: 5, tc: 8,  tlim: 30, poolLevel: 49 },
-  medium: { grid: 7, tc: 13, tlim: 30, poolLevel: 59 },
-  hard:   { grid: 9, tc: 17, tlim: 30, poolLevel: 79 },
+  easy:   { cols: 4, rows: 5, grid: 4, tc: 6,  tlim: 30, poolLevel: 49 },
+  medium: { cols: 5, rows: 7, grid: 5, tc: 10, tlim: 32, poolLevel: 59 },
+  hard:   { cols: 6, rows: 8, grid: 6, tc: 14, tlim: 38, poolLevel: 79 },
 };
 
 /**
@@ -1174,9 +1219,10 @@ export function prepareChallengeSeed(diff = 'hard') {
   // the curriculum level through getLvCfg rather than indexing SP directly).
   const { pool } = getLvCfg(diff, Math.min(cfg.poolLevel, FQ_LEVELS_PER_TIER - 1));
   const pal = PAL[diff] || PAL.hard;
-  const grid = cfg.grid;
+  const board = normalizeBoard({ cols: cfg.cols, rows: cfg.rows });
+  const grid = board.cols;   // `grid` is the COLUMN count; see prepareLevelRound
   const tc = cfg.tc;
-  const total = grid * grid;
+  const total = board.total;
   // Mix epoch ms with one Math.random() draw so two seeds requested in the
   // same millisecond still diverge.
   const seedNum = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
@@ -1190,7 +1236,7 @@ export function prepareChallengeSeed(diff = 'hard') {
     Math.min(cfg.poolLevel, FQ_LEVELS_PER_TIER - 1),
     diff,
   );
-  const targetPos = chooseTargetPositions(grid, tc, rng, { eccentricityBias });
+  const targetPos = chooseTargetPositions(board, tc, rng, { eccentricityBias });
   // Bake fill colours so every player sees the exact same coloured grid.
   // Categorical on every tier — hard used to bake an ≈82% conjunction here, the
   // same mechanic buildCellsFromParams dropped; see the note there. Half the
@@ -1209,8 +1255,8 @@ export function prepareChallengeSeed(diff = 'hard') {
     }
   }
   return {
-    pool, tgt, tgtCol, cells: cellsWithFill, grid, tc, seed: seedNum,
-    diff, tlim: cfg.tlim,
+    pool, tgt, tgtCol, cells: cellsWithFill, grid, cols: board.cols, rows: board.rows,
+    tc, seed: seedNum, diff, tlim: cfg.tlim,
   };
 }
 
@@ -1233,6 +1279,9 @@ export function prepareChallengePlayState(cSeed, tlimOverride) {
     diff,
     lv: 'CH',
     grid: cSeed.grid,
+    // Carried through, or the board renders as a square of the column count.
+    cols: cSeed.cols ?? cSeed.grid,
+    rows: cSeed.rows ?? cSeed.grid,
     pool: cSeed.pool,
     tc: targetCount,
     tlim: tlimOverride ?? cSeed.tlim ?? 50,

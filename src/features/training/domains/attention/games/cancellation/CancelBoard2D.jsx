@@ -35,6 +35,42 @@ import './cancelBoard2d.css';
  * state colour once they have something to say. See visualFor() in board2d.js.
  */
 
+/*
+ * THE PIECE SIZE CONTRACT.
+ *
+ * CELL_MIN is the floor on the smallest supported phone and is what makes
+ * every board tappable by construction: 52px is comfortably past the 44px
+ * touch minimum, and audit:fq refuses any board that cannot be dealt at it.
+ * CELL_MAX stops a sparse board on a large desktop from becoming a handful of
+ * dinner plates.
+ *
+ * GAP_MIN keeps two neighbours from ever touching — a fat-fingered tap should
+ * land in dead space rather than on the wrong square, because dead space costs
+ * nothing and a neighbour costs a false alarm. GAP_MAX stops a small board
+ * scattering into islands once the leftover space is shared out.
+ *
+ * These four numbers, plus the board shapes in focusQuestData's PLAY_BOARD,
+ * are the whole layout. Change one and run audit:fq.
+ */
+const CELL_MIN = 52;
+const CELL_MAX = 108;
+const GAP_MIN = 8;
+const GAP_MAX = 26;
+
+/*
+ * The DENSEST board the game can deal — keep in step with PLAY_BOARD in
+ * focusQuestData (hard is 6x8). The piece is sized so that THIS board fits,
+ * and every smaller board then uses the same size with more space around it.
+ *
+ * Sizing each board independently was the obvious approach and it was subtly
+ * wrong: on a short landscape window 8 rows would not fit at the screen's
+ * preferred size, so hard came out at 64px while easy sat at 74px — the piece
+ * changed when the tier changed, which is exactly the property this whole model
+ * exists to remove. Sizing for the worst case makes it identical everywhere.
+ */
+const MAX_COLS = 6;
+const MAX_ROWS = 8;
+
 /** cell → the shared kit's piece state. */
 function stateOf(cell) {
   if (!cell?.tapped) return 'idle';
@@ -65,38 +101,72 @@ export default function CancelBoard2D({
   const rows = round?.rows || round?.grid || cols;
   const n = cells?.length || 0;
 
-  /* Fit a cols×rows lattice of SQUARE pieces inside the available box.
+  /*
+   * ⚠ THE PIECE IS A FIXED SIZE. ADDING SQUARES GROWS THE BOARD, NOT THE
+   *   DIFFICULTY OF HITTING ONE.
    *
-   * It used to fit an N×N lattice to `Math.min(w, h)`, which is why the hard
-   * tier was untappable on a phone: width binds there, so a 9×9 came out at 33px
-   * pieces while ~280px of height sat unused under the board. The piece is now
-   * the smaller of what each axis affords, so a portrait board (Survival deals
-   * 6×8 and 7×9 — see SURVIVAL_BOARD) spends that height on piece size instead.
+   * This used to derive the piece from the cell count — fit the lattice to the
+   * box and take whatever size came out. That makes the target SHRINK every
+   * time the game gets harder, which is how the hard tier ended up at 33px:
+   * below the 44px touch minimum, smaller than a finger's contact patch, and
+   * scoring the resulting mis-taps as attention errors.
    *
-   * Row and column gaps deliberately share one value. The old per-axis spread
-   * consumed every spare portrait pixel by pulling rows apart while columns
-   * stayed tight; on a tall phone the board read as separate horizontal strips
-   * instead of one visual-search field. A uniform gap keeps eccentricity and
-   * scan density comparable in both directions and leaves balanced outer space.
+   * Now the size is chosen from the SCREEN and nothing else, so it is the same
+   * on level 1 and level 100. A denser board simply occupies more of the space
+   * it is given. The cell count can never make the target harder to hit — only
+   * harder to FIND, which is the thing the task is supposed to measure.
    *
-   * Pieces stay SQUARE (one `size` for both axes, aspect-ratio:1 on the cell).
-   * Non-square pieces would change eccentricity per axis and corrupt the
-   * Center-of-Cancellation and search-organisation metrics.
+   *   size = clamp(CELL_MIN, min(w, h) / 8, CELL_MAX)
+   *
+   * ⚠ `byW`/`byH` are a SAFETY NET, not the primary path. If a board is ever
+   * dense enough that it cannot fit at CELL_MIN, the piece shrinks rather than
+   * overflowing the box — but audit:fq gates every dealt round against the 44px
+   * minimum, so this should never fire in practice. If it does, the board data
+   * is wrong, not this.
+   *
+   * ── Spacing ──
+   * Leftover space becomes GAP rather than being left at the edges, so a small
+   * board sits spread out and an dense one closes up, and the lattice always
+   * reads as one field filling its space. The cap stops a 4×5 board drifting
+   * into scattered islands. Row and column gaps deliberately share one value:
+   * a per-axis spread pulled rows apart while columns stayed tight and the
+   * board read as separate horizontal strips. One gap also keeps eccentricity
+   * comparable in both directions, which the Center-of-Cancellation and
+   * search-organisation metrics depend on.
+   *
+   * Pieces stay SQUARE (one `size`, aspect-ratio:1 on the cell) for the same
+   * reason.
    *
    * Measured on the INNER element, not the wrapper: the wrapper carries the HUD
-   * reserve, and measuring that padding would overstate the playable height. */
+   * reserve, and measuring that padding would overstate the playable height.
+   */
   useLayoutEffect(() => {
     const box = fitRef.current;
     if (!box) return undefined;
     const fit = () => {
       const w = box.clientWidth || 1;
       const h = box.clientHeight || 1;
-      const nextGap = Math.max(6, Math.min(14, Math.min(w, h) * 0.02));
-      // `+ 1` leaves one gap of breathing room on each outside edge as well as
-      // between tracks; the actual CSS grid remains centred by its box.
-      const byW = Math.floor((w - nextGap * (cols + 1)) / cols);
-      const byH = Math.floor((h - nextGap * (rows + 1)) / rows);
-      const size = Math.max(20, Math.min(byW, byH));
+
+      /* One piece size per device, independent of how many squares are on it.
+         Sized against the DENSEST board rather than this one, so every tier
+         renders the same square — see MAX_COLS / MAX_ROWS. */
+      const screenTarget = Math.round(Math.min(w, h) / 8);
+      const fitsMaxW = Math.floor((w - GAP_MIN * (MAX_COLS + 1)) / MAX_COLS);
+      const fitsMaxH = Math.floor((h - GAP_MIN * (MAX_ROWS + 1)) / MAX_ROWS);
+      const target = Math.max(
+        CELL_MIN,
+        Math.min(CELL_MAX, screenTarget, fitsMaxW, fitsMaxH),
+      );
+      // Safety net only: a board denser than MAX would otherwise overflow.
+      const byW = Math.floor((w - GAP_MIN * (cols + 1)) / cols);
+      const byH = Math.floor((h - GAP_MIN * (rows + 1)) / rows);
+      const size = Math.max(20, Math.min(target, byW, byH));
+
+      // Spend what is left on the spaces between, equally on both axes.
+      const gapW = (w - cols * size) / (cols + 1);
+      const gapH = (h - rows * size) / (rows + 1);
+      const nextGap = Math.max(GAP_MIN, Math.min(GAP_MAX, Math.min(gapW, gapH)));
+
       setPieceSize(size);
       setGap(nextGap);
     };

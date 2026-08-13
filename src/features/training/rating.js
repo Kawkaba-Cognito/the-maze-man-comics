@@ -28,7 +28,7 @@ export const RATED_GAMES = {
   trainSwitch: { gameKey: 'train-switch', domainId: 'attention', lHalf: 6, en: 'Spaceship', ar: 'السفن الفضائية' },
   speed: { gameKey: 'speed-match', domainId: 'speed', lHalf: 9, en: 'Speed Match', ar: 'مطابقة سريعة' },
   mathGates: { gameKey: 'math-gates', domainId: 'speed', lHalf: 6, en: 'Math Gates', ar: 'بوابات الحساب' },
-  trailMaking: { gameKey: 'trail-making', domainId: 'speed', lHalf: 6, en: 'Trail Making', ar: 'ربط المسار' },
+  intercept: { gameKey: 'intercept', domainId: 'speed', lHalf: 6, en: 'Intercept', ar: 'الاعتراض' },
   memo: { gameKey: 'memo-span', domainId: 'memory', lHalf: 5, en: 'Memo Span', ar: 'مدى الذاكرة' },
   storyGrid: { gameKey: 'story-grid', domainId: 'memory', lHalf: 6, en: 'Story Time', ar: 'وقت القصة' },
   'keep-track': { gameKey: 'keep-track', domainId: 'memory', lHalf: 5, en: 'Keep Track', ar: 'تتبّع الفئات' },
@@ -48,7 +48,7 @@ const BY_GAMEKEY = Object.fromEntries(Object.entries(RATED_GAMES).map(([k, v]) =
 // but only games available in the current Training hub may shape a domain score.
 const ACTIVE_RATED_GAME_KEYS = new Set([
   'cancel-task', 'mot', 'train-switch',
-  'speed-match', 'math-gates', 'trail-making',
+  'speed-match', 'math-gates', 'intercept',
   'story-grid', 'keep-track', 'paired-associates',
   'wordle', 'synonyms', 'trivia',
   'rush-hour', 'raven-matrices', 'detective',

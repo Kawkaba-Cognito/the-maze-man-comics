@@ -1,0 +1,114 @@
+/*
+ * Intercept.
+ *
+ * Every colour is a token. The play surface is --play-surface (a gradient, on
+ * purpose — flattening it collapses the luminance range the six piece roles are
+ * tuned against) and text is --game-ink. Nothing here reads a frozen value out
+ * of styles/tokens.js: a JS constant cannot follow a theme, and that is exactly
+ * what caused the white-flash bug on every game launch.
+ */
+
+.ic-root {
+  /* fixed + z-index, exactly as .ct-kt-root — the play screen covers the tab
+     shell rather than scrolling inside it. */
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--play-surface);
+  color: var(--game-ink);
+  font-family: 'Outfit', system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* ── the run ─────────────────────────────────────────────────────────────
+   The header is the shared TrainingPlayHeader, so back / title / pause sit
+   exactly where they do in every other game. It is ABOVE the board and never
+   over it: the whole point of Intercept is a tap landing on a precise instant,
+   and chrome covering the rail would eat it. */
+.ic-stage-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.ic-stage { position: relative; flex: 1; min-height: 0; }
+
+.ic-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: manipulation;
+}
+
+.ic-cue {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--game-ink);
+  opacity: .72;
+  pointer-events: none;
+  text-align: center;
+  max-width: 90%;
+}
+
+/* ── feedback + results ──────────────────────────────────────────────── */
+.ic-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.ic-panel h3 { margin: 0; font-size: 22px; font-weight: 650; }
+.ic-ok { color: var(--game-ok); }
+.ic-no { color: var(--game-bad); }
+
+/* Signed error is the game's own measure, so it gets tabular figures — the
+   number changes every trial and must not jitter sideways as it does. */
+.ic-err {
+  margin: 0;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--game-ink);
+}
+.ic-profile { color: var(--game-accent); font-weight: 600; }
+
+.ic-sum { margin: 0; font-size: 15px; opacity: .85; font-variant-numeric: tabular-nums; }
+.ic-meaning { margin: 0; font-size: 12.5px; opacity: .62; max-width: 34ch; }
+
+.ic-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+
+/* ── countdown ───────────────────────────────────────────────────────────
+   Over the board rather than instead of it, so the route and the goal line are
+   already readable when GO lands and the first run is not a surprise. */
+.ic-count {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(64px, 22vw, 132px);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--game-accent);
+  pointer-events: none;
+  animation: ic-count-in 620ms ease-out;
+}
+
+@keyframes ic-count-in {
+  from { opacity: 0; transform: scale(1.35); }
+  40%  { opacity: 1; transform: scale(1); }
+  to   { opacity: .55; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ic-canvas { transition: none; }
+  .ic-count { animation: none; }
+}

@@ -121,8 +121,13 @@ const RULES = [
     test: (g) => new RegExp(`gameKey:\\s*['"]${g.key}['"]`).test(ratingSrc) },
   { id: 'triallog', w: 2, label: 'createTrialLog (per-trial records)',
     test: (g) => /createTrialLog/.test(g.all) },
+  /* Quotes optional, matching the `tutorial` rule below. They were required
+     here, so a single-word key written without them — legal JS, and what you
+     get from most editors — was reported as a MISSING entry on a game that had
+     one. A gate that says "missing" about something present sends you looking
+     in the wrong file. */
   { id: 'science', w: 2, label: 'gameScience entry',
-    test: (g) => new RegExp(`['"]${g.key}['"]\\s*:`).test(scienceSrc) },
+    test: (g) => new RegExp(`['"]?${g.key.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}['"]?\\s*:`).test(scienceSrc) },
   { id: 'tutorial', w: 2, label: 'trainingMeta entry (coach/tutorial)',
     test: (g) => new RegExp(`['"]?${g.key.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}['"]?\\s*:`).test(metaSrc) },
   { id: 'cover', w: 1, label: 'cover art registered',

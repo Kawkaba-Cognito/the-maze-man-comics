@@ -34,17 +34,27 @@ const speed = {
       tier: 'free',
       loader: () => import('./games/math-gates'),
     },
+    /*
+     * Intercept took Trail Making's slot on 2026-08-14.
+     *
+     * Speed Match and Math Gates are both foveal, symbolic and sequential —
+     * look at one thing in the middle, decode it, answer — and Trail Making was
+     * a third of those, which is why the domain felt like one game three times.
+     * Intercept is none of them: nothing to decode, nothing to choose, and the
+     * measure is a signed error in milliseconds. Trail Making is benched, not
+     * deleted; see its BENCHED.md.
+     */
     {
-      id: 'trail-making',
-      name: 'Trail Making',
-      nameAr: 'ربط المسار',
-      blurb: 'Connect numbered nodes in order before time runs out.',
-      blurbAr: 'صل العقد المرقّمة بالترتيب قبل انتهاء الوقت.',
+      id: 'intercept',
+      name: 'Intercept',
+      nameAr: 'الاعتراض',
+      blurb: 'Tap the instant it reaches the line — after it disappears.',
+      blurbAr: 'اضغط لحظة وصوله إلى الخط — بعد أن يختفي.',
       gameCount: 1,
       progress: 0,
-      gameKey: 'trail-making',
+      gameKey: 'intercept',
       tier: 'free',
-      loader: () => import('./games/trail-making'),
+      loader: () => import('./games/intercept'),
     },
   ],
 };

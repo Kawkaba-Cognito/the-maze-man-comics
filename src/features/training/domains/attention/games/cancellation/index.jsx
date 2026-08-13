@@ -42,6 +42,7 @@ import {
   freeRoundClearPoints,
   freeWrongTapPenalty,
   PASS_PLAY_CONFIG,
+  PLAY_BOARD,
   FQ_DIFF_KEYS,
   FQ_LEVELS_PER_TIER,
 } from '../../../../shared/focusQuestData';
@@ -274,7 +275,7 @@ const UI = {
     },
     diffTargets: 'targets',
     diffGrid: 'grid',
-    levelsSub: (pop, g) => `${pop} · ${g}×${g} grid · Levels 1–100`,
+    levelsSub: (pop, g) => `${pop} · ${g} board · Levels 1–100`,
     levelsBack: '← Back',
     challengeSub: 'Same board for everyone · pick a difficulty · pass the device · best score wins',
     ready: (n) => `Ready — ${n}`,
@@ -411,7 +412,7 @@ const UI = {
     },
     diffTargets: 'أهداف',
     diffGrid: 'شبكة',
-    levelsSub: (pop, g) => `${pop} · شبكة ${g}×${g} · مستويات 1–100`,
+    levelsSub: (pop, g) => `${pop} · شبكة ${g} · مستويات 1–100`,
     levelsBack: '← رجوع',
     challengeSub: 'نفس اللوحة للجميع · اختر الصعوبة · مرّر الجهاز',
     ready: (n) => `جاهز — ${n}`,
@@ -1712,7 +1713,10 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           playSfx={playSfx}
           onBack={() => setPhase('diff')}
           title={DM[diffKey].label}
-          blurb={t.levelsSub(DM[diffKey].pop, DM[diffKey].grid)}
+          blurb={t.levelsSub(
+            DM[diffKey].pop,
+            `${PLAY_BOARD[diffKey]?.cols ?? DM[diffKey].grid}×${PLAY_BOARD[diffKey]?.rows ?? DM[diffKey].grid}`,
+          )}
           count={FQ_LEVELS_PER_TIER}
           lvc={DM[diffKey].lvc}
           isUnlocked={(lv) => isLevelUnlocked(diffKey, lv, doneMap)}
@@ -1770,7 +1774,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           roundLine={
             chalRoundsTotal > 1 ? t.roundNofM(chalRoundIdx + 1, chalRoundsTotal) : null
           }
-          metaLine={`${DM[chalDiff]?.label ?? ''} · ${PASS_PLAY_CONFIG[chalDiff]?.grid ?? 9}×${PASS_PLAY_CONFIG[chalDiff]?.grid ?? 9} · ${PASS_PLAY_CONFIG[chalDiff]?.tlim ?? 50}s`}
+          metaLine={`${DM[chalDiff]?.label ?? ''} · ${PASS_PLAY_CONFIG[chalDiff]?.cols ?? 7}×${PASS_PLAY_CONFIG[chalDiff]?.rows ?? 9} · ${PASS_PLAY_CONFIG[chalDiff]?.tlim ?? 50}s`}
           instruction={t.handTo(chalNames[chalIdx])}
           bullets={[t.chalBulletSame, t.chalBulletPass]}
           startLabel={t.goReady}

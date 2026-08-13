@@ -37,6 +37,33 @@ export const GAME_SCIENCE = {
       foot: 'الجلسات القصيرة المتكرّرة هي الأفضل. التمرين يحسّن هذه المهمة والاختبارات الشبيهة (انتقال قريب)، أما الانتقال الواسع للحياة اليومية فغير مدعوم جيداً. هذا يدرّب ويتابع هذه المهارة تحديداً، وليس اختباراً طبياً.',
     },
   },
+  /* Quoted, like every other key here. The consistency audit's `science` rule
+     matches a QUOTED key, so an unquoted one is a valid entry the gate cannot
+     see — it reports "missing: science" for a game that has it. */
+  'intercept': {
+    en: {
+      title: 'The science',
+      intro: 'Intercept is a coincidence anticipation timing task — the family used to study how people catch, drive and cross roads. A shape travels toward a line and disappears behind cover; you tap the instant it would arrive. Because you cannot see it arrive, you are reading a prediction off your own internal model.',
+      sections: [
+        { h: '🎯 Predictive timing', b: 'Your brain runs a forward model of moving things and keeps it running when they are out of sight. Tapping in the right place means that model kept good time in the dark — a different ability from reacting fast to something you can see.' },
+        { h: '🔺 The shape tells you how it moves', b: 'A circle holds its speed, an arrow builds speed, a diamond eases off. Time an accelerating shape from what you saw and you are always late; time a slowing one and you are always early. Later levels mix them, so you must read the shape before it hides.' },
+        { h: '↔️ Early or late is information', b: 'Most people lean one way and stay leaning. The game reports your signed bias, not just your error, because knowing you consistently tap early is more useful than knowing you were 80ms off.' },
+        { h: '📊 How it\'s measured', b: 'Your score is the size of your timing error in milliseconds, plus your closest single run and your directional bias. These are task measures, not a clinical assessment.' },
+      ],
+      foot: 'Watch the whole visible stretch rather than the last moment before it hides — the speed is easier to read over a longer look. This trains and tracks these specific skills; it is not a medical test.',
+    },
+    ar: {
+      title: 'العلم وراء اللعبة',
+      intro: 'الاعتراض مهمة توقيت تنبّؤي — العائلة نفسها التي تُدرس بها القدرة على الالتقاط والقيادة وعبور الطريق. يتحرّك شكل نحو خط ثم يختفي خلف غطاء، وعليك الضغط لحظة وصوله. وبما أنك لا تراه يصل، فأنت تقرأ التوقّع من نموذجك الداخلي.',
+      sections: [
+        { h: '🎯 التوقيت التنبّؤي', b: 'يبني دماغك نموذجاً للأشياء المتحرّكة ويواصل تشغيله حتى بعد اختفائها. الضغط في اللحظة الصحيحة يعني أن هذا النموذج حافظ على التوقيت في الظلام — وهي قدرة مختلفة عن سرعة الاستجابة لشيء تراه.' },
+        { h: '🔺 الشكل يخبرك بحركته', b: 'الدائرة تحافظ على سرعتها، والسهم يتسارع، والمعيّن يتباطأ. إن قدّرت المتسارع مما رأيته فستتأخّر دائماً، وإن قدّرت المتباطئ فستتعجّل دائماً. تخلط المستويات المتقدّمة بينها، فعليك قراءة الشكل قبل اختفائه.' },
+        { h: '↔️ التبكير والتأخير معلومة', b: 'يميل معظم الناس إلى جهة واحدة ويظلّون كذلك. تعرض اللعبة اتجاه ميلك لا حجم خطئك فقط، لأن معرفتك أنك تضغط مبكّراً باستمرار أنفع من معرفة أنك أخطأت بـ٨٠ مللي ثانية.' },
+        { h: '📊 كيف تُقاس', b: 'نتيجتك هي حجم خطأ التوقيت بالمللي ثانية، مع أقرب محاولة واتجاه ميلك. هذه مقاييس للّعبة وليست تقييماً سريرياً.' },
+      ],
+      foot: 'راقب المسار المرئي كاملاً بدل اللحظة الأخيرة قبل الاختفاء — تُقرأ السرعة أسهل عبر نظرة أطول. تدرّب اللعبة هذه المهارات وتتابعها، وهي ليست اختباراً طبياً.',
+    },
+  },
   'trail-making': {
     en: {
       title: 'The science',

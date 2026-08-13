@@ -4,7 +4,7 @@ export const TRAINING_META = {
   mot: { name: 'Target Tracking', nameAr: 'تتبّع الأهداف' },
   'train-switch': { name: 'Spaceship', nameAr: 'السفن الفضائية' },
   'speed-match': { name: 'Speed Match', nameAr: 'مطابقة سريعة' },
-  'trail-making': { name: 'Trail Making', nameAr: 'صل الأرقام' },
+  intercept: { name: 'Intercept', nameAr: 'الاعتراض' },
   'memo-span': { name: 'Memo Span', nameAr: 'مدى الذاكرة' },
   'story-grid': { name: 'Story Time', nameAr: 'وقت القصة' },
   'keep-track': { name: 'Keep Track', nameAr: 'تتبّع الفئات' },

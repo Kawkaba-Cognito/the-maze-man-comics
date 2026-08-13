@@ -20,7 +20,7 @@ import { assetUrl } from '../../../lib/assetUrl';
 /** Full-bleed painted cover art for every live training game. */
 const COVER_KEYS = new Set([
   'cancel-task', 'mot', 'train-switch',
-  'speed-match', 'math-gates', 'trail-making',
+  'speed-match', 'math-gates', 'intercept',
   'story-grid', 'keep-track', 'paired-associates',
   'wordle', 'synonyms', 'trivia',
   'rush-hour', 'raven-matrices', 'detective',
@@ -33,7 +33,10 @@ const COVER_FILE_OVERRIDES = {
   'train-switch': 'attention-spaceship-v2.webp',
   'speed-match': 'speed-speed-match-v2.webp',
   'math-gates': 'speed-math-gates-v2.webp',
-  'trail-making': 'speed-trail-making-v2.webp',
+  /* ⚠ PLACEHOLDER: still the Trail Making painting, which Intercept took the
+     slot from. Pointed at a tracked file so the tile cannot 404 — untracked art
+     builds green locally and 404s live. Swap when bespoke art exists. */
+  intercept: 'speed-trail-making-v2.webp',
   'story-grid': 'memory-story-time-v2.webp',
   // ⚠ PLACEHOLDER: still the N-Back painting. Keep Track needs its own cover —
   // pointed at a tracked file so the tile cannot 404, not because it fits.
