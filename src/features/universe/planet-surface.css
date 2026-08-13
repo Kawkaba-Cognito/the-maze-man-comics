@@ -1,0 +1,190 @@
+/*
+ * PlanetSurface — the full-screen world under the Home swipe.
+ *
+ * `position: fixed` + a high z-index, matching what MartianMaze used, because
+ * this has to escape the app shell entirely. `contain: strict` keeps its
+ * repaints out of the rest of the tree.
+ */
+
+.planet-surface {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  overflow: hidden;
+  background: #05070f;
+  color: #fff;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  isolation: isolate;
+  contain: strict;
+  animation: planet-enter 460ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.planet-surface.phase-exiting {
+  animation: planet-leave 400ms ease forwards;
+}
+
+/* The dive transition covers the screen while it settles; without this the
+   world flashes in behind the animation. */
+.planet-surface.is-covered .planet-ui {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes planet-enter {
+  from { opacity: 0; transform: scale(1.04); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes planet-leave {
+  from { opacity: 1; }
+  to { opacity: 0; transform: scale(1.03); }
+}
+
+.planet-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.planet-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 340ms ease;
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+
+.planet-ui > * {
+  pointer-events: auto;
+}
+
+/* ── chrome ──────────────────────────────────────────────────────────── */
+
+.planet-exit {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  inset-inline-start: 12px;
+  appearance: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #dbe7f7;
+  background: rgba(8, 12, 22, 0.72);
+  border: 1px solid rgba(140, 175, 215, 0.34);
+  border-radius: 999px;
+  padding: 9px 16px;
+  backdrop-filter: blur(6px);
+}
+
+.planet-exit:hover { border-color: rgba(140, 205, 235, 0.7); }
+.planet-exit:focus-visible { outline: 2px solid #7fe3ec; outline-offset: 2px; }
+
+.planet-place {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  inset-inline-end: 14px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #d8b66d;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+
+.planet-action {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  appearance: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #06222a;
+  background: #7fe3ec;
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 22px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5);
+}
+
+.planet-action:disabled {
+  background: rgba(8, 12, 22, 0.78);
+  color: #9fb4cc;
+  border: 1px solid rgba(140, 175, 215, 0.3);
+  cursor: default;
+}
+
+.planet-action:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.planet-hint {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  font-size: 11.5px;
+  color: rgba(190, 208, 232, 0.72);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 92vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── climb ───────────────────────────────────────────────────────────────
+ *
+ * The only on-screen key. Steering is the invisible stick — touch the world
+ * anywhere and it appears under your thumb — so nothing needs to sit over the
+ * planet permanently. Climb is the one instruction a two-axis stick cannot
+ * give, and this only exists while you are flying.
+ *
+ * 64px, well past the 44px touch minimum, and on the opposite side from where
+ * a right thumb rests on the stick.
+ */
+.planet-climb {
+  position: absolute;
+  inset-inline-end: calc(18px + env(safe-area-inset-right, 0px));
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  width: 64px;
+  height: 64px;
+  appearance: none;
+  cursor: pointer;
+  border: 1px solid rgba(236, 224, 200, 0.3);
+  background: rgba(24, 16, 11, 0.6);
+  color: #ece0c8;
+  border-radius: 50%;
+  font-size: 22px;
+  font-family: inherit;
+  display: grid;
+  place-items: center;
+  -webkit-user-select: none;
+  user-select: none;
+  backdrop-filter: blur(4px);
+  touch-action: none;
+}
+
+.planet-climb:active {
+  background: rgba(232, 172, 78, 0.34);
+  border-color: #e8ac4e;
+}
+
+.planet-climb:focus-visible { outline: 2px solid #e8ac4e; outline-offset: 2px; }
+
+/* On a short landscape phone the hint and the climb key would collide. */
+@media (max-height: 460px) {
+  .planet-hint { display: none; }
+  .planet-climb { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planet-surface,
+  .planet-surface.phase-exiting { animation: none; }
+  .planet-ui { transition: none; }
+}

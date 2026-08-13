@@ -11,14 +11,20 @@ const ZenUniverse = lazyWithRetry(
   () => import('../../features/universe/ZenUniverse'),
   'zen-universe',
 );
-const MartianMaze = lazyWithRetry(
-  () => import('../../features/universe/MartianMaze'),
-  'martian-maze',
+/*
+ * The planet replaced MartianMaze on 2026-08-14. That was Babylon pulled from a
+ * CDN to draw a flat, face-on grid; this is an isometric canvas world with no
+ * engine, no network and no WebGL context, and it is a PLANET rather than a
+ * labyrinth. MartianMaze.jsx is left in the tree for now, unreferenced.
+ */
+const PlanetSurface = lazyWithRetry(
+  () => import('../../features/universe/PlanetSurface'),
+  'planet-surface',
 );
 
 /*
  * Home opens in the user's living universe. Swiping upward crosses an invisible
- * threshold and immediately launches the standalone Martian labyrinth.
+ * threshold and lands Dr Kawkab on the planet he arrived at.
  */
 export default function HomeScreen() {
   const { currentLang, setImmersive, switchTab, activeTab } = useApp();
@@ -72,9 +78,13 @@ export default function HomeScreen() {
     setMazeReady(true);
   }, []);
 
-  const handleMazeFailure = useCallback(() => {
-    setMazeFailed(true);
-  }, []);
+  /*
+   * `mazeFailed` used to be raised when the Babylon CDN script failed. The
+   * planet has nothing to download — it is generated from maths — so the only
+   * remaining failure is the lazy chunk itself, and lazyWithRetry owns that.
+   * The state stays because UniverseDiveTransition takes the prop; it simply
+   * never becomes true now.
+   */
 
   useEffect(() => {
     const scroller = scrollRef.current;
@@ -174,7 +184,11 @@ export default function HomeScreen() {
         </div>
 
         <div className="home-slide-hint" aria-hidden="true">
-          <span>{isAr ? 'اسحب للأعلى وادخل المتاهة' : 'Swipe up to enter the maze'}</span>
+          {/* "Down", not "up". The finger moves up, but you are diving DOWN out
+              of the universe onto the planet — which is what the chevron below
+              says, what UniverseDiveTransition is named for, and how this reads
+              to anyone using it. Describe the destination, not the gesture. */}
+          <span>{isAr ? 'انزل إلى الكوكب' : 'Dive down to the planet'}</span>
           <span>⌄</span>
         </div>
       </section>
@@ -183,11 +197,10 @@ export default function HomeScreen() {
 
       {mazeOpen && (
         <Suspense fallback={null}>
-          <MartianMaze
+          <PlanetSurface
             isAr={isAr}
             onExit={exitMartianMaze}
             onReady={handleMazeReady}
-            onLoadError={handleMazeFailure}
             entryCovered={!entryComplete}
           />
         </Suspense>
