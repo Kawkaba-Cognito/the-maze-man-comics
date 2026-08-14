@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { REFLECTION_QUESTIONS, getReflection, saveReflection, weekKey } from './habitState';
 
 const INK = '#2d2210';
-const SUB = '#8a7f6f';
+const SUB = '#524b3f';
 const LINE = '#e3d6c4';
 const CARD = '#fffdf8';
 const GOLD = '#b9842f';
@@ -73,7 +73,7 @@ export const REFLECT_TAB_CSS = `
 .hb-reflect-q { display:block; margin-bottom:16px; }
 .hb-reflect-q span { display:block; font-size:14px; font-weight:800; color:${INK}; margin-bottom:6px; line-height:1.4; }
 .hb-reflect-q textarea { width:100%; padding:12px; border-radius:12px; border:2px solid ${LINE}; background:${CARD}; font-size:14px; font-family:inherit; color:${INK}; resize:vertical; min-height:72px; }
-.hb-reflect-save { width:100%; padding:14px; border-radius:12px; border:none; background:linear-gradient(135deg,#c89a4a,${GOLD}); color:#fff; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; }
+.hb-reflect-save { width:100%; padding:14px; border-radius:12px; border:none; background:linear-gradient(135deg,#c89a4a,${GOLD}); color:#201d18; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; }
 .hb-reflect-save:disabled { opacity:0.45; cursor:not-allowed; }
 .serif { font-family:${SERIF}; }
 `;

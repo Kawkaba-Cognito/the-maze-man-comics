@@ -161,6 +161,165 @@ const RULES = [
 const MAX = RULES.reduce((a, r) => a + r.w, 0);
 
 /*
+ * ── LOOK — the third axis, and the one this audit was blind to ────────────
+ *
+ * Structure asks "is this game wired like the others". Depth asks "is it
+ * finished". Neither asks the question a player actually asks first: DOES IT
+ * LOOK LIKE THE SAME APP. For a long time this file said outright that layout,
+ * palette and type were "not measured", and that hole is exactly where the two
+ * most art-directed games drifted: Detective and Story Time carry 47 of the ~75
+ * hand-rolled black/white shadows in the entire platform, and nothing said so.
+ *
+ * ⚠ These rules are deliberately NOT folded into the structure score. Doing that
+ * would drop the weakest games below the floor the moment it shipped, and a gate
+ * that breaks CI on the day it lands gets switched off rather than fixed. This
+ * is its own axis with its own ratchet, exactly like audit:design.
+ *
+ * ⚠ AND THEY ARE NOT A STYLE GUIDE. A game is allowed to look like itself —
+ * Detective's noir and Story Time's illustrated scenes are deliberate art
+ * direction, and the token layers they already have (--nr-*, --sgs-*) map to app
+ * tokens correctly. What is measured here is only the stuff that CANNOT be
+ * art direction: a font nobody loaded, a ground that ignores the theme, an
+ * effect hand-mixed instead of taken from the one place it is defined, and audio
+ * that bypasses the player's own sound setting.
+ */
+
+/* The roster is whatever index.html actually LOADS. Deriving it rather than
+   listing it means a font added to the page passes automatically and a font
+   used but never loaded fails — which is the real failure, since it silently
+   falls back to Times. */
+const indexHtml = read(path.join(ROOT, 'index.html'));
+const FONT_ROSTER = new Set(
+  (indexHtml.match(/family=([A-Za-z+0-9]+)/g) || [])
+    .map((m) => m.replace('family=', '').replace(/\+/g, ' ').toLowerCase()),
+);
+/* Generic families and web-safe fallbacks are not roster members and never
+   need to be — they are what the stack degrades TO. */
+const GENERIC_FAMILIES = new Set([
+  'serif', 'sans-serif', 'monospace', 'system-ui', 'ui-monospace', 'ui-serif',
+  'ui-sans-serif', 'cursive', 'fantasy', 'inherit', 'initial', 'unset', 'georgia',
+  'times new roman', 'courier new', 'arial', 'helvetica', 'menlo', 'consolas',
+]);
+
+/** The family that will actually RENDER — the first in the stack. */
+function firstFamilies(src) {
+  return (src.match(/font-family:\s*[^;}\n]+/gi) || [])
+    .map((d) => d.replace(/font-family:\s*/i, '').split(',')[0])
+    .map((f) => f.replace(/["']/g, '').trim().toLowerCase())
+    .filter(Boolean)
+    .filter((f) => !f.startsWith('var(') && !f.startsWith('$'));
+}
+
+/** CSS blocks for selectors naming a full-bleed game root. */
+function rootBlocks(css) {
+  const out = [];
+  const re = /([^{}]*-root[^{}]*)\{([^}]*)\}/g;
+  let m;
+  while ((m = re.exec(css))) out.push(m[2]);
+  return out;
+}
+
+const LITERAL_COLOUR = /#[0-9a-f]{3,8}\b|\brgba?\(|\bhsla?\(/i;
+
+const LOOK = [
+  {
+    id: 'surface',
+    label: 'ground comes from a play-surface token, not a frozen colour',
+    /*
+     * A game that paints its own full-bleed root a literal colour is stuck in
+     * one appearance forever — the same defect as the loading flash the
+     * `palette` rule already guards, one screen later and far more visible.
+     */
+    test: (g) => {
+      const blocks = rootBlocks(g.css);
+      if (!blocks.length) return true;            // no root of its own; uses the shared one
+      return !blocks.some((b) => (b.match(/background[^:]*:\s*([^;]+)/gi) || [])
+        .some((decl) => LITERAL_COLOUR.test(decl)));
+    },
+  },
+  {
+    id: 'fonts',
+    label: 'every rendered font is one the app actually loads',
+    /*
+     * Only the FIRST family in each stack is checked, because that is the one
+     * that renders; everything after it is the fallback chain. A family that is
+     * not in index.html never loads, so the player silently gets Times.
+     */
+    test: (g) => firstFamilies(g.all)
+      .every((f) => FONT_ROSTER.has(f) || GENERIC_FAMILIES.has(f)),
+  },
+  {
+    id: 'fx',
+    label: 'shadows/scrims come from the --fx-* tokens, not hand-mixed',
+    /*
+     * tokens.css introduced --fx-scrim / --fx-shadow-* precisely because "~60
+     * hand-rolled rgba() shadows accumulated across the games, each at a
+     * slightly different alpha". The measurement is clean: every game that uses
+     * the tokens has ZERO hand-mixed values, and every game that hand-mixes uses
+     * none of the tokens. There is no middle group to argue about.
+     */
+    test: (g) => !/rgba\(\s*(0\s*,\s*0\s*,\s*0|255\s*,\s*255\s*,\s*255)\s*,/.test(g.all),
+  },
+  {
+    id: 'sfx',
+    label: 'audio goes through playSfx, so the sound setting is obeyed',
+    /*
+     * A guard, not a gap: every game passes today. A game that builds its own
+     * oscillator ignores the player's sound toggle in Other → Settings, which is
+     * the kind of thing nobody notices until someone unmutes in a quiet room.
+     */
+    test: (g) => !/new Audio\(|new (window\.)?(webkit)?AudioContext|createOscillator/.test(g.all),
+  },
+];
+
+const LOOK_MAX = LOOK.length;
+
+/*
+ * ⚠ THE DETECTORS ARE TESTED ON EVERY RUN, and this is not ceremony.
+ *
+ * This audit has already shipped three rules that measured the wrong thing and
+ * reported it with total confidence: `bilingual` missed Math Gates, then missed
+ * Rush Hour, and the whole first version read only index.jsx and declared
+ * Detective monolingual. A rule that passes everything looks identical to a rule
+ * that works, and there is no way to tell them apart by reading the output.
+ *
+ * So each look rule carries a fixture it MUST reject and one it MUST accept. If
+ * a detector ever stops firing — a regex edited, a token renamed — the gate
+ * fails here, loudly, instead of quietly certifying every game as fine.
+ */
+const LOOK_FIXTURES = {
+  surface: {
+    bad: { all: '', css: '.xx-root { position: fixed; inset: 0; background: #1b1b1b; }' },
+    good: { all: '', css: '.xx-root { position: fixed; inset: 0; background: var(--play-surface); }' },
+  },
+  fonts: {
+    bad: { all: ".a { font-family: 'Papyrus', cursive; }", css: '' },
+    good: { all: ".a { font-family: 'Cinzel', Georgia, serif; }", css: '' },
+  },
+  fx: {
+    bad: { all: '.a { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.42); }', css: '' },
+    good: { all: '.a { box-shadow: 0 2px 8px var(--fx-shadow-drop); }', css: '' },
+  },
+  sfx: {
+    bad: { all: 'const ctx = new AudioContext(); ctx.createOscillator();', css: '' },
+    good: { all: "playSfx?.('click');", css: '' },
+  },
+};
+
+const detectorFaults = [];
+for (const rule of LOOK) {
+  const fx = LOOK_FIXTURES[rule.id];
+  if (!fx) { detectorFaults.push(`${rule.id}: no fixture — the detector is unverified`); continue; }
+  if (rule.test(fx.bad)) detectorFaults.push(`${rule.id}: PASSED a known-bad fixture (it is not detecting anything)`);
+  if (!rule.test(fx.good)) detectorFaults.push(`${rule.id}: FAILED a known-good fixture (it would flag correct code)`);
+}
+if (detectorFaults.length) {
+  console.error('FAILED — a look detector does not work, so its results mean nothing:');
+  detectorFaults.forEach((f) => console.error(`  · ${f}`));
+  process.exit(1);
+}
+
+/*
  * DEPTH — a second, independent axis, and the one players actually feel.
  *
  * Structure asks "is this game wired like the others". Depth asks "is this game
@@ -188,12 +347,19 @@ for (const g of games) {
   const dir = path.join(DOMAINS_DIR, g.domain, 'games', g.folder);
   g.src = read(path.join(dir, 'index.jsx'));
   g.all = readTree(dir);
+  /* The look rules that reason about CSS blocks need the CSS on its own — a
+     brace-matching regex run over concatenated JSX would match template
+     literals and JS object bodies and report confident nonsense. */
+  g.css = walk(dir).filter((p) => p.endsWith('.css')).map(read).join('\n');
   g.lines = countTree(dir);
   g.results = RULES.map((r) => ({ ...r, ok: !!r.test(g) }));
   g.score = g.results.reduce((a, r) => a + (r.ok ? r.w : 0), 0);
   g.missing = g.results.filter((r) => !r.ok);
   g.depth = DEPTH.map((r) => ({ ...r, ok: !!r.test(g.all) }));
   g.depthScore = g.depth.filter((r) => r.ok).length;
+  g.look = LOOK.map((r) => ({ ...r, ok: !!r.test(g) }));
+  g.lookScore = g.look.filter((r) => r.ok).length;
+  g.lookMissing = g.look.filter((r) => !r.ok);
 }
 
 games.sort((a, b) => b.score - a.score || a.lines - b.lines);
@@ -218,6 +384,7 @@ if (listMode) {
   for (const g of games) {
     console.log(`\n── ${g.key} (${g.domain}, ${g.lines} lines) ──`);
     g.results.forEach((r) => console.log(`   ${r.ok ? '✓' : '✗'} ${r.label}`));
+    g.look.forEach((r) => console.log(`   ${r.ok ? '✓' : '✗'} [look] ${r.label}`));
   }
 }
 
@@ -252,6 +419,24 @@ for (const r of RULES) {
   console.log(`  ${String(n).padStart(2)}/${games.length}  ${String(pct).padStart(3)}%  ${r.label}`);
 }
 
+// ── Look: the third axis ──
+const byLook = games.slice().sort((a, b) => a.lookScore - b.lookScore || a.key.localeCompare(b.key));
+console.log('\nlook (does it read as the same app — palette, type, effects, settings):');
+console.log(' look  game                         missing');
+console.log('─────  ───────────────────────────  ──────────────────────────────────');
+for (const g of byLook) {
+  console.log(`  ${g.lookScore}/${LOOK_MAX}  ${g.key.padEnd(27)}  ${g.lookMissing.map((d) => d.id).join(' ') || '—'}`);
+}
+console.log('\nlook adoption:');
+for (const r of LOOK) {
+  const n = games.filter((g) => g.look.find((x) => x.id === r.id).ok).length;
+  console.log(`  ${String(n).padStart(2)}/${games.length}  ${r.label}`);
+}
+console.log('\n  not measured here, and still needs a human: layout, spacing, motion,');
+console.log('  type SCALE, and art direction. Physical left/right vs logical inset-inline');
+console.log('  was tried and dropped — `left: 50%` is direction-neutral, so the rule');
+console.log('  flagged correct code and a gate that cries wolf gets ignored.');
+
 console.log('\nshared loading surface:');
 for (const check of sharedSurfaceChecks) {
   console.log(`  ${check.ok ? '✓' : '✗'} ${check.label}`);
@@ -275,4 +460,17 @@ if (below.length) {
   below.forEach((g) => console.error(`  · ${g.key} (${g.score}/${MAX}) missing ${g.missing.map((m) => m.id).join(', ')}`));
   process.exit(1);
 }
-console.log(`\nOK — every game at or above the floor of ${FLOOR}/${MAX}`);
+/*
+ * The look ratchet, separate from the structure one so a game can be perfectly
+ * wired and still be told its palette has drifted. Starts at the current worst
+ * score, which is the only honest starting point: it blocks the next regression
+ * without pretending today's state is fine. Raise it by fixing games.
+ */
+const LOOK_FLOOR = Number(process.env.LOOK_FLOOR || 3);
+const lookBelow = games.filter((g) => g.lookScore < LOOK_FLOOR);
+if (lookBelow.length) {
+  console.error(`\nFAILED — ${lookBelow.length} game(s) below the look floor of ${LOOK_FLOOR}/${LOOK_MAX}:`);
+  lookBelow.forEach((g) => console.error(`  · ${g.key} (${g.lookScore}/${LOOK_MAX}) missing ${g.lookMissing.map((m) => m.id).join(', ')}`));
+  process.exit(1);
+}
+console.log(`\nOK — every game at or above the floor of ${FLOOR}/${MAX} (look floor ${LOOK_FLOOR}/${LOOK_MAX})`);

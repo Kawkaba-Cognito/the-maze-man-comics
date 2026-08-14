@@ -53,6 +53,7 @@ export default function ModeShell({
   pass = {},
   scienceId,
   extraItems = [],
+  survivalIntro,
 }) {
   const gameId = gameIdProp || scienceId;
   const tutorial = useTrainingTutorial(gameId, isAr);
@@ -183,6 +184,8 @@ export default function ModeShell({
         isAr={isAr}
         playSfx={playSfx}
         onBack={goMenu}
+        title={survivalIntro?.title ? (isAr ? survivalIntro.title.ar : survivalIntro.title.en) : undefined}
+        body={survivalIntro?.body ? (isAr ? survivalIntro.body.ar : survivalIntro.body.en) : undefined}
         onReady={() => {
           freeSeedRef.current = freshSurvivalSeed();
           setPhase('play');

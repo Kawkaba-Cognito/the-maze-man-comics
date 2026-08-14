@@ -109,7 +109,7 @@ export default function GroundingPractice({ onBack }) {
 
 const CSS = `
 .grd-intro { font-size:15px; color:${SUB}; line-height:1.7; max-width:340px; }
-.grd-count { font-family:${SERIF}; font-size:72px; font-weight:700; color:${ACCENT}; line-height:1; }
+.grd-count { font-family:${SERIF}; font-size:72px; font-weight:700; color:var(--universe-accent,#1f4f85); line-height:1; }
 .grd-ic { font-size:46px; margin-top:-6px; }
 .grd-prompt { font-family:${SERIF}; font-size:24px; font-weight:600; color:${INK}; max-width:320px; }
 .grd-hint { font-size:13px; color:${SUB}; }
@@ -124,4 +124,9 @@ const CSS = `
 .grd-dot.cur { background:${'#3d8a52'}; transform:scale(1.3); }
 .grd-doneT { font-family:${SERIF}; font-size:30px; font-weight:600; color:${INK}; }
 .grd-doneS { font-size:14px; color:${SUB}; max-width:300px; }
+[data-home-theme='dark'] .grd-intro,
+[data-home-theme='dark'] .grd-hint,
+[data-home-theme='dark'] .grd-doneS { color:#c9b384; }
+[data-home-theme='dark'] .grd-prompt,
+[data-home-theme='dark'] .grd-doneT { color:#f0e2c0; }
 `;

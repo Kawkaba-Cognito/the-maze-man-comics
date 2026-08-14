@@ -110,4 +110,6 @@ const CSS = `
 
 [data-home-theme='dark'] .slp-track { background:#211a10; border-color:rgba(123,134,200,0.3); color:#c9b384; }
 [data-home-theme='dark'] .slp-track.on { background:#2a2d4a; color:#e4e6fa; }
+[data-home-theme='dark'] .slp-intro,
+[data-home-theme='dark'] .slp-playLabel { color:#c9b384; }
 `;

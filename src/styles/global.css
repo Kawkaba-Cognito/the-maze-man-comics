@@ -109,11 +109,27 @@ html[data-home-theme='dark'] .bg-overlay {
         rgba(8, 6, 16, 0.42) 100%
     );
 }
-html[data-home-theme='light'] body {
-    background-color: #e8eef5;
-}
+/*
+ * ⚠ THE GROUND UNDER THE WHOLE APP, and it was the wrong colour in light.
+ *
+ * Line 73 already sets this from --universe-dusk, which is themed correctly
+ * (#cfc4b0 light / #0a0a0b dark). These two rules then overrode it with frozen
+ * values — and the light one, #e8eef5, is a pale BLUE-GREY left over from the
+ * paper-and-sunset appearance that was retired on 2026-08-08 in favour of one
+ * flat beige ground. So every gap the app content did not cover — overscroll,
+ * the strip below the tab bar on a short viewport, any screen shorter than the
+ * frame — showed blue underneath a beige product.
+ *
+ * It had even been worked AROUND rather than fixed: the cosmos-hub rule below
+ * carries a comment about beating "light-theme body #e8eef5 grey".
+ *
+ * Kept as explicit per-theme rules rather than deleted, because they have to
+ * out-specify anything that sets a body background later; they now just point
+ * at the same token line 73 does, so the value cannot drift again.
+ */
+html[data-home-theme='light'] body,
 html[data-home-theme='dark'] body {
-    background-color: #12101c;
+    background-color: var(--universe-dusk);
 }
 
 /* ═══════════════════════ 2D UI (COMIC INTERFACE) ═══════════════════════ */
@@ -1628,15 +1644,36 @@ html[data-home-theme='dark'] .rewards-screen { color: #f3ead9; }
 .wk-remind-note { font-size: 0.76rem; line-height: 1.5; color: #b9ad99; margin: 0; }
 .wk-remind-note.is-ok { color: #9be85a; }
 
-/* Habits / Wellbeing — follow app light/dark (overrides injected cream CSS) */
+/* Habits / Wellbeing — follow app light/dark (overrides injected cream CSS)
+ *
+ * ⚠ THIS BLOCK REACHED FOR THE ONE TOKEN THAT DELIBERATELY DOES NOT FLIP.
+ *
+ * Every --color-stage-* value here is themed (light at tokens.css:268, dark at
+ * :392), which is why the cards, ink and badges below all went dark correctly.
+ * The GROUND alone used --color-training-palette-surface, and tokens.css says
+ * in as many words why that never worked: "--color-training-* is intentionally
+ * NOT overridden here. The play surface is fixed light in both themes …
+ * everything else in this block still flips, so hubs, shop, habits and
+ * wellbeing go dark as before — only the surfaces that carry a timed trial stay
+ * put."
+ *
+ * So the rule whose entire job is "follow app light/dark" pinned the page to
+ * the light beige, with !important, and the result in dark appearance was dark
+ * cards and cream text floating on a light sheet under a black tab bar. It
+ * presumably worked before the palette was flattened to one beige on
+ * 2026-08-08 and has been silently inverted since.
+ *
+ * --universe-dusk is the app's own ground (and what body uses), so the page
+ * behind the cards is now the same surface as every other non-game screen.
+ */
 html[data-home-theme='dark'] .rx-root,
 html[data-home-theme='dark'] .rxp-root {
-    background: var(--color-training-palette-surface) !important;
+    background: var(--universe-dusk) !important;
     color: var(--color-stage-ink) !important;
 }
 html[data-home-theme='dark'] .rx-root .header,
 html[data-home-theme='dark'] .rxp-root .rxp-header {
-    background: linear-gradient(180deg, var(--color-stage-header) 0%, var(--color-training-palette-surface) 100%) !important;
+    background: linear-gradient(180deg, var(--color-stage-header) 0%, var(--universe-dusk) 100%) !important;
 }
 html[data-home-theme='dark'] .rx-root .header-title,
 html[data-home-theme='dark'] .rx-root .rx-menu-title,

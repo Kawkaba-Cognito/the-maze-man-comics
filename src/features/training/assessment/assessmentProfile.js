@@ -14,7 +14,7 @@
  * inconsistent, so applying a correction would be unjustified.
  * ========================================================================== */
 
-import { loadJson, saveJson } from '../../../lib/storage';
+import { loadJson, saveJson } from '../../../lib/storage.js';
 
 const PROFILE_KEY = 'mm_assess_profile_v1';
 

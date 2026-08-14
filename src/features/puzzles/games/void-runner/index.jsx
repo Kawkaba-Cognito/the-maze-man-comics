@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useApp } from '../../../../context/AppContext';
 import { releaseGlContext } from '../../../training/shared/c3dViewport';
 
 /*
@@ -60,16 +61,16 @@ const CSS = `
   /* App palette: Kawkab blue + app amber over dusk indigo. These now match the
      3D scene's VR.* constants, and the raw neon literals that used to bypass
      them (rgba(0,245,255…) / rgba(255,45,155…)) have been folded in. */
-  --vr-pink:   #d9924f;
-  --vr-cyan:   #8fb8e8;
+  --vr-pink:   var(--game-bad, #854c49);
+  --vr-cyan:   var(--game-accent, #8fb8e8);
   --vr-purple: #6f6a9c;
-  --vr-gold:   #e8ac4e;
-  --vr-dark-bg: #1a1f38;
+  --vr-gold:   var(--color-amber, #e8ac4e);
+  --vr-dark-bg: var(--play-surface-deep-flat, #121826);
   position: fixed; inset: 0; z-index: 60;
   background: var(--vr-dark-bg);
   overflow: hidden;
   font-family: 'DM Mono', monospace;
-  color: #fff;
+  color: var(--play-ink-deep, #ece0c8);
   touch-action: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -92,10 +93,13 @@ const CSS = `
 
 .vr-hud { position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:flex-start;
   padding:calc(16px + env(safe-area-inset-top)) 20px 16px; pointer-events:none; z-index:10; }
-.vr-hud-block { display:flex; flex-direction:column; align-items:center; gap:2px; }
-.vr-hud-label { font-size:9px; letter-spacing:4px; color:rgba(143,184,232,0.5); text-transform:uppercase; }
-.vr-hud-val { font-family:'DM Mono',sans-serif; font-size:22px; font-weight:700; color:#fff; text-shadow:0 0 12px var(--vr-cyan); }
-.vr-liveshud { display:flex; gap:6px; align-items:center; padding-top:4px; }
+.vr-hud-block,
+.vr-liveshud { min-width:82px; min-height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  padding:7px 10px; background:rgba(18,24,38,0.8); border:1px solid rgba(236,224,200,0.32); border-radius:12px;
+  box-shadow:3px 3px 0 var(--fx-shadow-drop, rgba(3,7,16,0.88)); backdrop-filter:blur(5px); }
+.vr-hud-label { font-size:9px; letter-spacing:3px; color:var(--play-ink-deep-dim, #b9bfd0); text-transform:uppercase; }
+.vr-hud-val { font-family:'DM Mono',sans-serif; font-size:20px; font-weight:700; color:var(--play-ink-deep, #ece0c8); text-shadow:none; }
+.vr-liveshud { flex-direction:row; gap:6px; }
 .vr-heart { font-size:18px; transition:transform 0.2s, opacity 0.2s; }
 .vr-heart.vr-dead { opacity:0.2; transform:scale(0.7); }
 
@@ -132,7 +136,7 @@ const CSS = `
 .vr-popup { position:absolute; left:50%; top:calc(148px + env(safe-area-inset-top)); transform:translateX(-50%); pointer-events:none; z-index:15; text-align:center;
   font-family:'DM Mono',sans-serif; font-size:18px; font-weight:900; letter-spacing:4px; opacity:0; text-shadow:0 0 20px currentColor; }
 
-.vr-pausebtn { position:absolute; top:calc(16px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+.vr-pausebtn { position:absolute; top:calc(22px + env(safe-area-inset-top)); left:calc(50% + 58px); transform:none;
   z-index:20; pointer-events:all; background:rgba(0,0,0,0.5); border:1px solid rgba(143,184,232,0.3); border-radius:50%;
   width:38px; height:38px; color:rgba(143,184,232,0.7); font-size:14px; cursor:pointer; display:none;
   align-items:center; justify-content:center; transition:border-color 0.2s, color 0.2s; }
@@ -159,6 +163,14 @@ const CSS = `
 @keyframes vrSwipeNudgeR { 0%,72%,100%{ transform:translateX(0); opacity:0.55; }
   84%{ transform:translateX(6px); opacity:1; } }
 
+.vr-lane-indicator { position:absolute; left:50%; bottom:max(56px, calc(34px + env(safe-area-inset-bottom)));
+  transform:translateX(-50%); display:none; align-items:center; gap:10px; z-index:14; pointer-events:none;
+  padding:8px 12px; border:1px solid rgba(236,224,200,0.28); border-radius:999px;
+  background:rgba(18,24,38,0.76); box-shadow:2px 2px 0 rgba(3,7,16,0.78); }
+.vr-lane-dot { width:8px; height:8px; border-radius:50%; background:rgba(184,222,217,0.34); border:1px solid rgba(184,222,217,0.56);
+  transition:transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease; }
+.vr-lane-dot.vr-active { transform:scale(1.35); background:var(--vr-gold); border-color:#f4ead6; box-shadow:0 0 10px rgba(232,172,78,0.72); }
+
 .vr-warningflash { position:absolute; inset:0; pointer-events:none; z-index:6; opacity:0; background:rgba(255,45,0,0.15); transition:opacity 0.1s; }
 .vr-hitflash { position:absolute; inset:0; pointer-events:none; z-index:7; opacity:0; background:rgba(255,0,0,0.4); transition:opacity 0.05s; }
 .vr-gemflash { position:absolute; inset:0; pointer-events:none; z-index:6; opacity:0; background:rgba(255,204,0,0.12); transition:opacity 0.1s; }
@@ -172,7 +184,11 @@ const CSS = `
    here are gone rather than overridden, so there is one description of the
    title, not one plus a dead one. */
 .vr-game-logo { font-size:clamp(42px,10vw,72px); line-height:1; margin-bottom:4px; text-align:center; }
-.vr-tagline { font-size:12px; letter-spacing:6px; color:rgba(143,184,232,0.5); margin-bottom:40px; text-transform:uppercase; }
+.vr-menu-eyebrow { margin-bottom:14px; font-size:10px; font-weight:700; letter-spacing:0.22em; text-transform:uppercase; color:var(--vr-gold); }
+.vr-tagline { font-size:12px; letter-spacing:6px; color:rgba(143,184,232,0.5); margin-bottom:14px; text-transform:uppercase; }
+.vr-menu-meta { display:flex; gap:8px; margin-bottom:28px; flex-wrap:wrap; justify-content:center; }
+.vr-menu-meta span { padding:5px 9px; border:1px solid rgba(236,224,200,0.25); border-radius:999px; background:rgba(18,24,38,0.66);
+  color:var(--play-ink-deep-dim, #b9bfd0); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; }
 
 .vr-best-badge { font-size:11px; letter-spacing:3px; color:var(--vr-gold); margin-bottom:32px; text-shadow:0 0 10px var(--vr-gold); opacity:0; transition:opacity 0.5s; }
 .vr-hint-row { font-size:11px; letter-spacing:2px; color:rgba(255,255,255,0.35); }
@@ -255,7 +271,7 @@ const CSS = `
   background:
     radial-gradient(ellipse at 18% 12%, rgba(154,128,200,0.16), transparent 42%),
     radial-gradient(ellipse at 86% 72%, rgba(101,183,176,0.12), transparent 44%),
-    var(--vr-dark-bg);
+    var(--play-surface-deep, var(--vr-dark-bg));
 }
 .vr-scanlines { opacity:0.2; }
 .vr-speedlines {
@@ -267,7 +283,13 @@ const CSS = `
 .vr-sub-screen {
   background:
     radial-gradient(ellipse at 50% 22%, rgba(154,128,200,0.17), transparent 46%),
-    linear-gradient(180deg, rgba(17,24,42,0.96), rgba(9,13,25,0.985));
+    linear-gradient(180deg, rgba(17,24,42,0.88), rgba(9,13,25,0.94));
+}
+.vr-sub-screen {
+  background:
+    radial-gradient(ellipse at 50% 18%, rgba(154,128,200,0.14), transparent 42%),
+    linear-gradient(180deg, rgba(17,24,42,0.97), rgba(9,13,25,0.985));
+  backdrop-filter:blur(7px);
 }
 /* Titles are Cinzel engraved caps — the app's landing-title voice (the Training
    hub, the domain headers). The logo was a DM Mono gradient wordmark, which is
@@ -390,6 +412,20 @@ const CSS = `
   border:1px solid rgba(101,183,176,0.46);
   border-radius:6px;
 }
+.vr-copy-strong { color:var(--play-ink-deep, #ece0c8); font-weight:700; }
+.vr-copy-gold { color:var(--vr-gold); font-weight:700; }
+.vr-copy-bad { color:#e4a09b; font-weight:700; }
+.vr-root button:focus-visible,
+.vr-root input:focus-visible { outline:3px solid var(--game-selected, #b8ded9); outline-offset:3px; }
+@media (max-width:520px) {
+  .vr-hud { padding-inline:10px; }
+  .vr-hud-block, .vr-liveshud { min-width:70px; min-height:48px; padding:6px 8px; }
+  .vr-hud-val { font-size:18px; }
+  .vr-menu-meta { max-width:300px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .vr-root *, .vr-root *::before, .vr-root *::after { animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
+}
 `;
 
 const HTML = `
@@ -402,7 +438,7 @@ const HTML = `
   <div class="vr-hitflash" id="vr-hitflash"></div>
   <div class="vr-gemflash" id="vr-gemflash"></div>
 
-  <div class="vr-hud" id="vr-hud">
+  <div class="vr-hud" id="vr-hud" style="display:none">
     <div class="vr-hud-block"><span class="vr-hud-label">Score</span><span class="vr-hud-val" id="vr-scorehud">0</span></div>
     <div class="vr-liveshud" id="vr-liveshud">
       <span class="vr-heart" id="vr-h1">&#9829;</span>
@@ -412,7 +448,7 @@ const HTML = `
     <div class="vr-hud-block"><span class="vr-hud-label">Best</span><span class="vr-hud-val" id="vr-besthud">0</span></div>
   </div>
 
-  <div class="vr-speedbar" id="vr-speedbar">
+  <div class="vr-speedbar" id="vr-speedbar" style="display:none">
     <span class="vr-speedlabel">SPEED<span class="vr-levellabel" id="vr-levelhud">LV 1</span></span>
     <div class="vr-speedtrack"><div class="vr-speedfill" id="vr-speedfill"></div></div>
   </div>
@@ -435,11 +471,19 @@ const HTML = `
     </div>
   </div>
 
+  <div class="vr-lane-indicator" id="vr-laneindicator" aria-hidden="true">
+    <span class="vr-lane-dot" data-lane="0"></span>
+    <span class="vr-lane-dot vr-active" data-lane="1"></span>
+    <span class="vr-lane-dot" data-lane="2"></span>
+  </div>
+
   <div class="vr-screen" id="vr-menuscreen">
+    <div class="vr-menu-eyebrow">Puzzle Studio &middot; Flight Run</div>
     <div class="vr-game-logo">VOID<br>RUNNER</div>
     <div class="vr-tagline">Survive the Impossible</div>
+    <div class="vr-menu-meta"><span>3 lanes</span><span>Pulse cannon</span><span>Endless</span></div>
     <div class="vr-best-badge" id="vr-menubest">&#127942; BEST: 0</div>
-    <button class="vr-neon-btn vr-neon-btn-primary" id="vr-btnplay" type="button" style="margin-bottom:12px">&#9654; &nbsp;PLAY</button>
+    <button class="vr-neon-btn vr-neon-btn-primary" id="vr-btnplay" type="button" style="margin-bottom:12px">&#9654; &nbsp;START RUN</button>
     <button class="vr-neon-btn vr-neon-btn-secondary" id="vr-btnscores" type="button" style="margin-bottom:8px">&#127942; &nbsp;HIGH SCORES</button>
     <button class="vr-neon-btn vr-neon-btn-secondary" id="vr-btnsettings" type="button" style="margin-bottom:8px">&#9881; &nbsp;SETTINGS</button>
     <button class="vr-neon-btn vr-neon-btn-secondary" id="vr-btnhow" type="button" style="margin-bottom:8px">? &nbsp;HOW TO PLAY</button>
@@ -482,15 +526,15 @@ const HTML = `
   <div class="vr-sub-screen" id="vr-howscreen">
     <div class="vr-sub-title">HOW TO PLAY</div>
     <div class="vr-how-row"><div class="vr-how-icon">&#128640;</div>
-      <div class="vr-how-text">Your ship flies through the void at increasing speed. <b style="color:#fff">Survive as long as possible.</b></div></div>
+      <div class="vr-how-text">Your ship flies through the void at increasing speed. <b class="vr-copy-strong">Survive as long as possible.</b></div></div>
     <div class="vr-how-row"><div class="vr-how-icon">&#11013;&#65039;&#10145;&#65039;</div>
-      <div class="vr-how-text"><b style="color:#fff">Swipe left or right</b> anywhere on the screen to change lane — keep swiping in one drag to cross two lanes. On a keyboard, use <span class="vr-how-key">&#9664; &#9654;</span> or <span class="vr-how-key">A</span> <span class="vr-how-key">D</span>.</div></div>
+      <div class="vr-how-text"><b class="vr-copy-strong">Swipe left or right</b> anywhere on the screen to change lane — keep swiping in one drag to cross two lanes. On a keyboard, use <span class="vr-how-key">&#9664; &#9654;</span> or <span class="vr-how-key">A</span> <span class="vr-how-key">D</span>.</div></div>
     <div class="vr-how-row"><div class="vr-how-icon">&#128142;</div>
-      <div class="vr-how-text">Collect <b style="color:#e8ac4e">golden gems</b> to boost your score. Near misses build your COMBO multiplier for bonus points.</div></div>
+      <div class="vr-how-text">Collect <b class="vr-copy-gold">golden gems</b> to boost your score. Near misses build your COMBO multiplier for bonus points.</div></div>
     <div class="vr-how-row"><div class="vr-how-icon">&#128165;</div>
-      <div class="vr-how-text">Eight gems charge the <b style="color:#e8ac4e">PULSE CANNON</b>. Press <span class="vr-how-key">SPACE</span> (or tap the screen on phone) to fire it for seven seconds — bolts destroy any obstacle they hit.</div></div>
+      <div class="vr-how-text">Eight gems charge the <b class="vr-copy-gold">PULSE CANNON</b>. Press <span class="vr-how-key">SPACE</span> (or tap the screen on phone) to fire it for seven seconds — bolts destroy any obstacle they hit.</div></div>
     <div class="vr-how-row"><div class="vr-how-icon">&#128308;</div>
-      <div class="vr-how-text">Obstacles glow red when they enter your lane. Dodge them or lose a life. You have <b style="color:#ff2d9b">3 lives.</b></div></div>
+      <div class="vr-how-text">Obstacles glow red when they enter your lane. Dodge them or lose a life. You have <b class="vr-copy-bad">3 lives.</b></div></div>
     <div class="vr-how-row"><div class="vr-how-icon">&#9889;</div>
       <div class="vr-how-text">Speed increases every level. The faster you go, the higher your score multiplier.</div></div>
     <div class="vr-how-row"><div class="vr-how-icon">&#9208;</div>
@@ -539,7 +583,7 @@ const HTML = `
  * HUD updates 60x/second and is cheaper and simpler driven directly, same
  * pattern already used by the Babylon rooms' overlayEl.innerHTML HUDs.
  */
-function createVoidRunner(root, THREE, { onBack }) {
+function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
   const isTouch = typeof navigator !== 'undefined' && (navigator.maxTouchPoints > 0 || 'ontouchstart' in window);
   const q = (sel) => root.querySelector(sel);
   const canvas = q('#vr-canvas');
@@ -551,8 +595,26 @@ function createVoidRunner(root, THREE, { onBack }) {
     if (!audioCtx) audioCtx = new AudioCtx();
     if (audioCtx.state === 'suspended') audioCtx.resume();
   }
+  /*
+   * ⚠ THE APP'S SOUND SETTING IS CHECKED HERE, AT THE CHOKE POINT.
+   *
+   * Void Runner is the only game in the app with its own audio engine — every
+   * other puzzle and training game calls `playSfx` from AppContext, which
+   * already honours the toggle in Other → Settings. This one declared its own
+   * `let sfxEnabled = true` and its own in-game ON/OFF, so muting the app
+   * silenced the entire product EXCEPT this screen. It is the loudest possible
+   * way for one screen not to feel like the same app.
+   *
+   * Gated inside playTone and startMusic rather than at the six call sites, so
+   * a sound added later cannot reintroduce the bug by forgetting the guard.
+   * The in-game toggles still work and still mean what they say — they are
+   * ANDed with the app setting, never override it.
+   */
+  const appSfxOn = () => isAppSfxOn?.() !== false;
+  const appMusicOn = () => isAppMusicOn?.() !== false;
+
   function playTone(freq, type, dur, vol, delay = 0) {
-    if (!audioCtx) return;
+    if (!audioCtx || !appSfxOn()) return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain); gain.connect(audioCtx.destination);
@@ -713,7 +775,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     engineNodes.gain.gain.setTargetAtTime(0.018 + speed * 0.012, audioCtx.currentTime, 0.4);
   }
   function startMusic() {
-    if (!audioCtx || musicRunning || !musicEnabled) return;
+    if (!audioCtx || musicRunning || !musicEnabled || !appMusicOn()) return;
     musicRunning = true;
     masterGain = audioCtx.createGain();
     masterGain.gain.value = musicVolume * 0.55;
@@ -747,17 +809,17 @@ function createVoidRunner(root, THREE, { onBack }) {
    * and the app amber as the two accents.
    */
   const VR = {
-    skyTop: '#252a46',      // dusk zenith
-    skyMid: '#5d4a5c',      // mauve band
-    skyLow: '#9c7156',      // warm horizon
-    fog: 0x6a5560,          // sits between mid and horizon so distance recedes
-    ambient: 0x2b2f4d,
+    skyTop: '#101725',      // Training's deep play surface
+    skyMid: '#28304a',      // cool graphite-violet band
+    skyLow: '#5d4a4f',      // restrained warm horizon
+    fog: 0x34394e,          // distance recedes without washing out the lanes
+    ambient: 0x30364c,
     keyLight: 0xffd9a8,     // warm sun, replaces the violet key
     warmAccent: 0xd9924f,   // app amber, replaces the hot pink
     coolAccent: 0x8fb8e8,   // Kawkab blue, replaces the electric cyan
-    floor: 0x1b2140,
-    laneLine: 0x4a4f7d,
-    arch: 0x39406b,
+    floor: 0x151c2d,
+    laneLine: 0x526278,
+    arch: 0x46526a,
     gem: 0xe8ac4e,
     /* The ship, as one named group rather than seven raw hexes inline.
      * These mirror the Spaceship game's palette (train-switch/CarPark3DProto)
@@ -776,7 +838,13 @@ function createVoidRunner(root, THREE, { onBack }) {
   };
 
   // ── THREE.JS SETUP ──
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isTouch });
+  const lowCore = Number.isFinite(navigator.hardwareConcurrency) && navigator.hardwareConcurrency <= 4;
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: !(isTouch || lowCore),
+    powerPreference: 'high-performance',
+  });
   /*
    * Pixel ratio capped at 1.5 everywhere, was 2 on desktop.
    *
@@ -786,7 +854,10 @@ function createVoidRunner(root, THREE, { onBack }) {
    * At this scene's contrast — emissive neon on a soft dusk gradient — the
    * difference is close to invisible and the frame time is not.
    */
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  const maxPixelRatio = isTouch || lowCore ? 1 : 1.35;
+  let renderPixelRatio = Math.min(window.devicePixelRatio || 1, maxPixelRatio);
+  renderer.setPixelRatio(renderPixelRatio);
+  root.dataset.renderScale = renderPixelRatio.toFixed(2);
   /*
    * Shadows OFF, on every device.
    *
@@ -885,9 +956,9 @@ function createVoidRunner(root, THREE, { onBack }) {
    * old 0x0a0020 so surfaces read without needing emissive neon to carry them —
    * this is most of what makes the scene "lighter".
    */
-  const ambient = new THREE.AmbientLight(VR.ambient, 2.9);
+  const ambient = new THREE.AmbientLight(VR.ambient, 2.0);
   scene.add(ambient);
-  const dirLight = new THREE.DirectionalLight(VR.keyLight, 2.2);
+  const dirLight = new THREE.DirectionalLight(VR.keyLight, 1.45);
   dirLight.position.set(5, 12, 8);
   scene.add(dirLight);
   /*
@@ -905,17 +976,17 @@ function createVoidRunner(root, THREE, { onBack }) {
    * produce in the first place. `setRGB` into the existing Color allocates
    * nothing per frame.
    */
-  const sweepLight = new THREE.PointLight(VR.warmAccent, 2.9, 26);
+  const sweepLight = new THREE.PointLight(VR.warmAccent, 2.2, 24);
   sweepLight.position.set(-6, 3, 2);
   scene.add(sweepLight);
   const sweepWarm = new THREE.Color(VR.warmAccent);
   const sweepCool = new THREE.Color(VR.coolAccent);
-  const shipLight = new THREE.PointLight(VR.coolAccent, 2.4, 10);
+  const shipLight = new THREE.PointLight(VR.coolAccent, 1.8, 9);
   scene.add(shipLight);
 
   // ── STAR FIELD ──
   const starGeo = new THREE.BufferGeometry();
-  const SC = isTouch ? 1800 : 3000;
+  const SC = isTouch || lowCore ? 1100 : 1900;
   const sp = new Float32Array(SC * 3);
   const scArr = new Float32Array(SC * 3);
   for (let i = 0; i < SC; i++) {
@@ -933,6 +1004,29 @@ function createVoidRunner(root, THREE, { onBack }) {
   const stars = new THREE.Points(starGeo, starMat);
   scene.add(stars);
 
+  // A few distant, unlit landmarks turn the corridor into a place without
+  // adding dynamic lights or texture fetches. They are intentionally low-poly
+  // and sit behind the playable tunnel, so they improve depth at negligible cost.
+  const horizonGroup = new THREE.Group();
+  const warmWorld = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(10, 1),
+    new THREE.MeshBasicMaterial({ color: 0xb17a4f, transparent: true, opacity: 0.34, fog: false, depthWrite: false }),
+  );
+  warmWorld.position.set(-24, 15, -128);
+  const coolMoon = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(5.5, 1),
+    new THREE.MeshBasicMaterial({ color: 0x8fb8e8, transparent: true, opacity: 0.22, fog: false, depthWrite: false }),
+  );
+  coolMoon.position.set(22, 7, -102);
+  const horizonRing = new THREE.Mesh(
+    new THREE.TorusGeometry(11.8, 0.14, 5, 48),
+    new THREE.MeshBasicMaterial({ color: VR.warmAccent, transparent: true, opacity: 0.36, fog: false, depthWrite: false }),
+  );
+  horizonRing.position.copy(warmWorld.position);
+  horizonRing.rotation.x = Math.PI * 0.32;
+  horizonGroup.add(warmWorld, coolMoon, horizonRing);
+  scene.add(horizonGroup);
+
   // ── NEON GRID TUNNEL ──
   // Instanced instead of 15 separate meshes x 30 segments (~450 draw calls,
   // the dominant cost on mobile GPUs where per-draw-call overhead dominates
@@ -940,37 +1034,39 @@ function createVoidRunner(root, THREE, { onBack }) {
   // this only changes HOW it's drawn, not how it looks. Segment count is cut
   // for touch since fog (density 0.028) already hides the tunnel well before
   // either segment count's draw distance, so the difference is invisible.
-  const TUNNEL_H = 6.5; const SEG_DEPTH = 5; const NUM_SEGS = isTouch ? 20 : 30;
+  const TUNNEL_H = 6.5; const SEG_DEPTH = 5; const NUM_SEGS = isTouch || lowCore ? 20 : 26;
   const LINES_PER_SEG = 9; // i = -4..4
   const segZ = new Float32Array(NUM_SEGS);
   for (let i = 0; i < NUM_SEGS; i++) segZ[i] = -i * SEG_DEPTH;
+  const tunnelGroup = new THREE.Group();
+  scene.add(tunnelGroup);
 
   const floorGeo = new THREE.PlaneGeometry(TUNNEL_W, SEG_DEPTH, 8, 1);
   floorGeo.rotateX(-Math.PI / 2);
   const floorMat = neonMat({ color: VR.floor, roughness: 1, metalness: 0, emissive: 0x0d1128 });
   const floorMesh = new THREE.InstancedMesh(floorGeo, floorMat, NUM_SEGS);
   // (shadowMap is disabled — see the renderer setup; these flags are inert)
-  scene.add(floorMesh);
+  tunnelGroup.add(floorMesh);
 
   const lineGeo = new THREE.BoxGeometry(0.04, 0.02, SEG_DEPTH);
-  const lineMat = neonMat({ color: VR.laneLine, emissive: VR.laneLine, emissiveIntensity: 1.15 });
+  const lineMat = new THREE.MeshBasicMaterial({ color: VR.laneLine, transparent: true, opacity: 0.76 });
   const lineMesh = new THREE.InstancedMesh(lineGeo, lineMat, NUM_SEGS * LINES_PER_SEG);
-  scene.add(lineMesh);
+  tunnelGroup.add(lineMesh);
 
   const stripGeo = new THREE.BoxGeometry(0.06, 0.06, SEG_DEPTH);
-  const leftStripMat = neonMat({ color: VR.warmAccent, emissive: VR.warmAccent, emissiveIntensity: 1.1 });
-  const rightStripMat = neonMat({ color: VR.coolAccent, emissive: VR.coolAccent, emissiveIntensity: 1.1 });
+  const leftStripMat = new THREE.MeshBasicMaterial({ color: VR.warmAccent });
+  const rightStripMat = new THREE.MeshBasicMaterial({ color: VR.coolAccent });
   const leftStripMesh = new THREE.InstancedMesh(stripGeo, leftStripMat, NUM_SEGS);
   const rightStripMesh = new THREE.InstancedMesh(stripGeo, rightStripMat, NUM_SEGS);
-  scene.add(leftStripMesh); scene.add(rightStripMesh);
+  tunnelGroup.add(leftStripMesh, rightStripMesh);
 
-  const archMat = neonMat({ color: VR.arch, emissive: VR.arch, emissiveIntensity: 0.8 });
+  const archMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.68 });
   const sideArchGeo = new THREE.BoxGeometry(0.1, TUNNEL_H, 0.1);
   const sideArchMesh = new THREE.InstancedMesh(sideArchGeo, archMat, NUM_SEGS * 2); // left+right
-  scene.add(sideArchMesh);
+  tunnelGroup.add(sideArchMesh);
   const topArchGeo = new THREE.BoxGeometry(TUNNEL_W, 0.1, 0.1);
   const topArchMesh = new THREE.InstancedMesh(topArchGeo, archMat, NUM_SEGS);
-  scene.add(topArchMesh);
+  tunnelGroup.add(topArchMesh);
 
   const _tm = new THREE.Matrix4();
   const _tpos = new THREE.Vector3();
@@ -992,6 +1088,10 @@ function createVoidRunner(root, THREE, { onBack }) {
       setInstance(sideArchMesh, i * 2, -TUNNEL_W / 2, TUNNEL_H / 2 - 1.1, archZ);
       setInstance(sideArchMesh, i * 2 + 1, TUNNEL_W / 2, TUNNEL_H / 2 - 1.1, archZ);
       setInstance(topArchMesh, i, 0, TUNNEL_H - 1.1, archZ);
+      const archColor = new THREE.Color(i % 6 === 0 ? VR.warmAccent : VR.arch);
+      sideArchMesh.setColorAt(i * 2, archColor);
+      sideArchMesh.setColorAt(i * 2 + 1, archColor);
+      topArchMesh.setColorAt(i, archColor);
     }
     floorMesh.instanceMatrix.needsUpdate = true;
     lineMesh.instanceMatrix.needsUpdate = true;
@@ -999,8 +1099,16 @@ function createVoidRunner(root, THREE, { onBack }) {
     rightStripMesh.instanceMatrix.needsUpdate = true;
     sideArchMesh.instanceMatrix.needsUpdate = true;
     topArchMesh.instanceMatrix.needsUpdate = true;
+    sideArchMesh.instanceColor.needsUpdate = true;
+    topArchMesh.instanceColor.needsUpdate = true;
   }
   updateTunnelInstances();
+  floorMesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+  lineMesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+  leftStripMesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+  rightStripMesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+  sideArchMesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+  topArchMesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
 
   // ── SHIP ──
   /*
@@ -1154,6 +1262,12 @@ function createVoidRunner(root, THREE, { onBack }) {
   }
   const SHIP_BASE_Y = 0.3;
   const ship = buildShip();
+  const SHIP_VISUAL_SCALE = 0.68;
+  const SHIP_HIT_X = 0.78;
+  const SHIP_HIT_Y = 0.72;
+  const SHIP_PICKUP_X = 0.9;
+  const SHIP_PICKUP_Y = 0.86;
+  ship.scale.setScalar(SHIP_VISUAL_SCALE);
   const shipCockpit = ship.userData.cockpit;
   const shipGlow = ship.userData.glow;
   const shipThrusters = ship.userData.thrusters;
@@ -1167,11 +1281,9 @@ function createVoidRunner(root, THREE, { onBack }) {
   const obstaclePool = [];
   const activeObstacles = [];
   const obsMats = [
-    neonMat({ color: 0xff2d2d, emissive: 0x660000, roughness: 0.3, metalness: 0.7 }),
-    neonMat({ color: 0xff6600, emissive: 0x552200, roughness: 0.3, metalness: 0.7 }),
-    neonMat({ color: 0xcc00ff, emissive: 0x440066, roughness: 0.3, metalness: 0.7 }),
-    neonMat({ color: 0xff0066, emissive: 0x550022, roughness: 0.3, metalness: 0.7 }),
-    neonMat({ color: 0xff4400, emissive: 0x661100, roughness: 0.3, metalness: 0.7 }),
+    neonMat({ color: 0x9b4f49, emissive: 0x3f1715, roughness: 0.45, metalness: 0.45 }),
+    neonMat({ color: 0xb26b32, emissive: 0x46230d, roughness: 0.45, metalness: 0.45 }),
+    neonMat({ color: 0x744b67, emissive: 0x2c1727, roughness: 0.45, metalness: 0.45 }),
   ];
   const obsGeos = [
     new THREE.BoxGeometry(1.3, 1.3, 1.3),
@@ -1237,7 +1349,7 @@ function createVoidRunner(root, THREE, { onBack }) {
    * session. Running out of pool just means the oldest particle is recycled —
    * far better than a stutter.
    */
-  const PARTICLE_POOL = { spark: 72, gem: 40 };
+  const PARTICLE_POOL = isTouch || lowCore ? { spark: 40, gem: 24 } : { spark: 56, gem: 32 };
   const sparkGeo = new THREE.SphereGeometry(0.12, 4, 4);
   const gemShardGeo = new THREE.OctahedronGeometry(0.06);
   const particles = [];      // live
@@ -1245,12 +1357,11 @@ function createVoidRunner(root, THREE, { onBack }) {
   function makeParticle(kind) {
     const mesh = new THREE.Mesh(
       kind === 'gem' ? gemShardGeo : sparkGeo,
-      neonMat({
+      new THREE.MeshBasicMaterial({
         color: kind === 'gem' ? VR.gem : VR.hazardBurst,
-        emissive: kind === 'gem' ? VR.gem : VR.hazardBurst,
-        emissiveIntensity: kind === 'gem' ? 4 : 3,
         transparent: true,
         opacity: 1,
+        depthWrite: false,
       }),
     );
     mesh.visible = false;
@@ -1535,9 +1646,12 @@ function createVoidRunner(root, THREE, { onBack }) {
   let invincible = false; let invincibleTimer = 0;
   let camShake = 0;
   let combo = 0; let comboTimer = 0;
-  let time = 0;
-  let obsCooldown = 0; let gemCooldown = 0;
-  let totalFrames = 0;
+  let worldTime = 0;
+  let runTime = 0;
+  let bonusScore = 0;
+  let waveCooldown = 0;
+  let lastSafeLane = 1;
+  let tunnelScroll = 0;
   let prevLevel = 1;
 
   const keys = { left: false, right: false };
@@ -1590,12 +1704,17 @@ function createVoidRunner(root, THREE, { onBack }) {
   // lanes without lifting a finger. ──
   let currentLaneIdx = 1;
   let laneLock = false;
+  const laneDots = Array.from(root.querySelectorAll('.vr-lane-dot'));
+  function updateLaneIndicator() {
+    laneDots.forEach((dot, idx) => dot.classList.toggle('vr-active', idx === currentLaneIdx));
+  }
   function moveLane(dir) {
     if (laneLock) return;
     const next = currentLaneIdx + (dir === 'left' ? -1 : 1);
     if (next < 0 || next >= LANES.length) return;
     currentLaneIdx = next;
     shipTargetX = LANES[currentLaneIdx];
+    updateLaneIndicator();
     laneLock = true;
     if (sfxEnabled && audioCtx) playTone(dir === 'left' ? 300 : 340, 'sine', 0.04, 0.03 * sfxVolume);
     pulseSide(dir);
@@ -1679,16 +1798,15 @@ function createVoidRunner(root, THREE, { onBack }) {
   canvas.addEventListener('pointercancel', endSwipe);
 
   // ── SPAWN ──
-  function spawnObstacle() {
+  function spawnObstacle(laneIdx = Math.floor(Math.random() * LANES.length), z = -90) {
     const obj = getObstacleFromPool();
-    const laneIdx = Math.floor(Math.random() * LANES.length);
     const lane = LANES[laneIdx];
     // Height is centred on the ship's fixed cruise Y (it never moves
     // vertically) and kept within the 0.95 hit-test radius with margin —
     // previously this ranged 0.3..2.1 while only ~-0.65..1.25 was ever
     // reachable, so roughly half of everything spawned could never be hit.
-    const height = SHIP_BASE_Y + (Math.random() - 0.5) * 1.5;
-    obj.group.position.set(lane, height, -90);
+    const height = SHIP_BASE_Y + (Math.random() - 0.5) * 0.8;
+    obj.group.position.set(lane, height, z);
     obj.group.visible = true;
     scene.add(obj.group);
     obj.mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
@@ -1698,13 +1816,36 @@ function createVoidRunner(root, THREE, { onBack }) {
     obj.warned = false;
     activeObstacles.push(obj);
   }
-  function spawnGem() {
+  function spawnGem(laneIdx = Math.floor(Math.random() * LANES.length), z = -95) {
     const g = getGem();
-    const laneIdx = Math.floor(Math.random() * LANES.length);
     // Same reachability fix as obstacles, sized to the gem hit radius (1.1).
-    g.position.set(LANES[laneIdx], SHIP_BASE_Y + (Math.random() - 0.5) * 1.7, -95);
+    g.position.set(LANES[laneIdx], SHIP_BASE_Y + (Math.random() - 0.5) * 0.7, z);
     g.rotation.set(0, 0, 0);
     activeGems.push(g);
+  }
+
+  function chooseSafeLane() {
+    const minLane = Math.max(0, lastSafeLane - 1);
+    const maxLane = Math.min(LANES.length - 1, lastSafeLane + 1);
+    const safeLane = minLane + Math.floor(Math.random() * (maxLane - minLane + 1));
+    lastSafeLane = safeLane;
+    return safeLane;
+  }
+
+  // Obstacles now arrive as legible lane waves. Every wave has a guaranteed
+  // safe route, that route moves by at most one lane, and its gem acts as a
+  // warm visual guide. Double blockers grow more common with speed.
+  function spawnWave() {
+    const safeLane = chooseSafeLane();
+    const blockers = [0, 1, 2].filter((laneIdx) => laneIdx !== safeLane);
+    const doubleBlocker = Math.random() < 0.14 + gameSpeed * 0.46;
+    if (doubleBlocker) {
+      spawnObstacle(blockers[0]);
+      spawnObstacle(blockers[1]);
+    } else {
+      spawnObstacle(blockers[Math.floor(Math.random() * blockers.length)]);
+    }
+    if (Math.random() < 0.76) spawnGem(safeLane, -94);
   }
 
   function updateLivesHud() {
@@ -1714,27 +1855,45 @@ function createVoidRunner(root, THREE, { onBack }) {
   // ── MAIN LOOP ──
   let lastTS = 0;
   let rafId = null;
+  let frameBudgetMs = 0;
+  let frameBudgetSamples = 0;
+  function monitorRenderScale(frameMs) {
+    if (state !== 'playing' || frameMs >= 50 || renderPixelRatio <= 0.85) return;
+    frameBudgetMs += frameMs;
+    frameBudgetSamples++;
+    if (frameBudgetSamples < 180) return;
+    const meanFrameMs = frameBudgetMs / frameBudgetSamples;
+    frameBudgetMs = 0;
+    frameBudgetSamples = 0;
+    if (meanFrameMs <= 21) return;
+    renderPixelRatio = Math.max(0.85, renderPixelRatio - 0.15);
+    renderer.setPixelRatio(renderPixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    root.dataset.renderScale = renderPixelRatio.toFixed(2);
+  }
   function loop(ts) {
     rafId = requestAnimationFrame(loop);
-    const rawDt = Math.min((ts - lastTS) / 16.667, 3.0);
+    const frameMs = Math.min(Math.max(ts - lastTS, 0), 50);
+    const rawDt = frameMs / 16.667;
     lastTS = ts;
-    totalFrames++;
-    time = totalFrames / 60;
+    worldTime += rawDt / 60;
+    monitorRenderScale(frameMs);
 
     stars.rotation.y += 0.00008 * rawDt;
+    if (!reducedMotion) {
+      horizonGroup.rotation.y = Math.sin(worldTime * 0.08) * 0.035;
+      horizonRing.rotation.z += 0.00015 * rawDt;
+    }
 
     if (state === 'playing') {
-      for (let i = 0; i < NUM_SEGS; i++) {
-        segZ[i] += rawSpeed * rawDt;
-        if (segZ[i] > 12) segZ[i] -= NUM_SEGS * SEG_DEPTH;
-      }
-      updateTunnelInstances();
+      tunnelScroll = (tunnelScroll + rawSpeed * rawDt) % SEG_DEPTH;
+      tunnelGroup.position.z = tunnelScroll;
     }
 
     if (state === 'menu' || state === 'gameover') {
-      ship.position.y = SHIP_BASE_Y + Math.sin(time * 1.2) * 0.2;
-      ship.rotation.y = Math.sin(time * 0.4) * 0.25;
-      camera.position.x = Math.sin(time * 0.2) * 1.5;
+      ship.position.y = SHIP_BASE_Y + Math.sin(worldTime * 1.2) * 0.12;
+      ship.rotation.y = Math.sin(worldTime * 0.4) * 0.18;
+      camera.position.x = Math.sin(worldTime * 0.2) * 1.2;
       camera.lookAt(0, 0.5, 0);
       shipLight.position.copy(ship.position);
       updateParticles(rawDt);
@@ -1744,6 +1903,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     if (state === 'paused' || state === 'countdown') { renderer.render(scene, camera); return; }
 
     // ═══ PLAYING ═══
+    runTime += rawDt / 60;
     if (keys.left) moveLane('left');
     if (keys.right) moveLane('right');
 
@@ -1759,15 +1919,15 @@ function createVoidRunner(root, THREE, { onBack }) {
     shipTiltZ += (tiltTgt - shipTiltZ) * alpha * 1.2;
 
     ship.position.x = shipCurrentX;
-    ship.position.y = SHIP_BASE_Y + Math.sin(time * 2) * 0.04;
+    ship.position.y = SHIP_BASE_Y + Math.sin(worldTime * 2) * 0.04;
     ship.rotation.z = Math.max(-0.45, Math.min(0.45, shipTiltZ));
     ship.rotation.y = shipTiltZ * 0.12;
-    shipGlow.material.emissiveIntensity = 3.5 + Math.sin(time * 25) * 1.0;
+    shipGlow.material.emissiveIntensity = 3.2 + Math.sin(worldTime * 25) * 0.8;
     // Thrust flicker — the same idle the Spaceship game gives its craft.
     for (let i = 0; i < shipThrusters.length; i++) {
       const f = shipThrusters[i];
-      f.scale.z = 0.85 + Math.sin(time * 22 + i * 1.7) * 0.22;
-      f.material.opacity = 0.7 + Math.sin(time * 19 + i) * 0.15;
+      f.scale.z = 0.85 + Math.sin(worldTime * 22 + i * 1.7) * 0.22;
+      f.material.opacity = 0.7 + Math.sin(worldTime * 19 + i) * 0.15;
     }
 
     shipLight.position.copy(ship.position);
@@ -1796,9 +1956,9 @@ function createVoidRunner(root, THREE, { onBack }) {
       }
     }
 
-    rawSpeed = Math.min(MAX_RAW_SPEED, 0.32 + time * 0.006);
+    rawSpeed = Math.min(MAX_RAW_SPEED, 0.32 + runTime * 0.006);
     gameSpeed = (rawSpeed - 0.32) / (MAX_RAW_SPEED - 0.32);
-    score = Math.floor(time * 15 + gemsCollected * 8);
+    score = Math.floor(runTime * 15 + gemsCollected * 8 + bonusScore);
 
     level = Math.min(10, Math.floor(gameSpeed * 9) + 1);
     if (level !== prevLevel) { sfxLevelUp(); hud.level.textContent = `LV ${level}`; prevLevel = level; }
@@ -1825,26 +1985,24 @@ function createVoidRunner(root, THREE, { onBack }) {
     if (lines !== hudCache.lines) { hud.speedLines.style.opacity = String(lines); hudCache.lines = lines; }
 
     // One light doing both jobs: sweeps across, and crossfades warm <-> cool.
-    const sweep = Math.sin(time * 0.4);
+    const sweep = Math.sin(worldTime * 0.4);
     sweepLight.position.x = sweep * 5.5;
-    const mix = 0.5 + 0.5 * Math.cos(time * 0.3);
+    const mix = 0.5 + 0.5 * Math.cos(worldTime * 0.3);
     sweepLight.color.setRGB(
       sweepWarm.r + (sweepCool.r - sweepWarm.r) * mix,
       sweepWarm.g + (sweepCool.g - sweepWarm.g) * mix,
       sweepWarm.b + (sweepCool.b - sweepWarm.b) * mix,
     );
-    sweepLight.intensity = 3.1 + Math.sin(time * 2) * 0.8;
+    sweepLight.intensity = 2.2 + Math.sin(worldTime * 2) * 0.55;
 
     if (comboTimer > 0) {
       comboTimer -= rawDt;
       if (comboTimer <= 0) { combo = 0; hud.combo.style.opacity = '0'; }
     }
 
-    const spawnRate = Math.max(28, 75 - level * 5);
-    obsCooldown -= rawDt;
-    if (obsCooldown <= 0) { spawnObstacle(); obsCooldown = spawnRate; }
-    gemCooldown -= rawDt;
-    if (gemCooldown <= 0) { spawnGem(); gemCooldown = 65 + Math.random() * 40; }
+    const spawnRate = Math.max(48, 82 - level * 3.2);
+    waveCooldown -= rawDt;
+    if (waveCooldown <= 0) { spawnWave(); waveCooldown = spawnRate; }
 
     let warningThisFrame = false;
     for (let i = activeObstacles.length - 1; i >= 0; i--) {
@@ -1855,7 +2013,7 @@ function createVoidRunner(root, THREE, { onBack }) {
       o.ring.rotation.z += 0.04 * rawDt;
 
       if (o.group.position.z > -30 && o.group.position.z < -8) {
-        const a = 0.4 + Math.sin(time * 12) * 0.3;
+        const a = 0.4 + Math.sin(worldTime * 12) * 0.3;
         o.ring.material.emissiveIntensity = 2 + a * 3;
         if (Math.abs(o.group.position.x - shipCurrentX) < 1.5) warningThisFrame = true;
       } else {
@@ -1867,7 +2025,7 @@ function createVoidRunner(root, THREE, { onBack }) {
       if (!invincible && o.group.position.z > 4 && o.group.position.z < 9) {
         const dx = Math.abs(o.group.position.x - ship.position.x);
         const dy = Math.abs(o.group.position.y - ship.position.y);
-        if (dx < 0.95 && dy < 0.95) {
+        if (dx < SHIP_HIT_X && dy < SHIP_HIT_Y) {
           spawnExplosion(o.group.position.x, o.group.position.y, o.group.position.z);
           returnObstacleToPool(o);
           activeObstacles.splice(i, 1);
@@ -1891,13 +2049,13 @@ function createVoidRunner(root, THREE, { onBack }) {
           if (combo >= 2) {
             hud.comboText.textContent = `COMBO x${combo}`;
             hud.combo.style.opacity = '1';
-            score += combo * 5;
+            bonusScore += combo * 5;
           }
         }
       }
     }
     // Same dirty-check: this one also drives a CSS transition (opacity 0.1s).
-    const warn = warningThisFrame ? Math.round((0.4 + Math.sin(time * 15) * 0.3) * 20) / 20 : 0;
+    const warn = warningThisFrame ? Math.round((0.4 + Math.sin(worldTime * 15) * 0.3) * 20) / 20 : 0;
     if (warn !== hudCache.warn) { hud.warnFlash.style.opacity = String(warn); hudCache.warn = warn; }
 
     // ── PULSE CANNON: fire, fly, hit ──
@@ -1936,7 +2094,7 @@ function createVoidRunner(root, THREE, { onBack }) {
         spawnExplosion(o.group.position.x, o.group.position.y, o.group.position.z);
         returnObstacleToPool(o);
         activeObstacles.splice(j, 1);
-        score += 20;
+        bonusScore += 20;
         sfxPulseHit();
         hitSomething = true;
         break;
@@ -1953,7 +2111,7 @@ function createVoidRunner(root, THREE, { onBack }) {
       if (g.position.z > 4 && g.position.z < 9) {
         const dx = Math.abs(g.position.x - ship.position.x);
         const dy = Math.abs(g.position.y - ship.position.y);
-        if (dx < 1.1 && dy < 1.1) {
+        if (dx < SHIP_PICKUP_X && dy < SHIP_PICKUP_Y) {
           sfxGem();
           spawnGemParticles(g.position.x, g.position.y, g.position.z);
           flashScreen('vr-gemflash', 120);
@@ -1965,7 +2123,7 @@ function createVoidRunner(root, THREE, { onBack }) {
             if (pulseCharge === PULSE_NEED) { sfxPulseArm(); showPopup('PULSE READY', VR.cssGold, 900); }
           }
           const gain = 25 * Math.max(1, Math.floor(combo / 2) + 1);
-          score += gain;
+          bonusScore += gain;
           showPopup(`+${gain}`, VR.cssGold, 600);
           returnGem(g);
           activeGems.splice(i, 1);
@@ -1979,8 +2137,8 @@ function createVoidRunner(root, THREE, { onBack }) {
     camera.position.x += (camTargetX - camera.position.x) * 0.08 * rawDt;
     camera.position.y += (2.8 - camera.position.y) * 0.04 * rawDt;
     if (camShake > 0) {
-      camera.position.x += Math.sin(time * 60) * (camShake * 0.018);
-      camera.position.y += Math.cos(time * 55) * (camShake * 0.012);
+      camera.position.x += Math.sin(worldTime * 60) * (camShake * 0.018);
+      camera.position.y += Math.cos(worldTime * 55) * (camShake * 0.012);
       camShake -= rawDt * 1.8;
       if (camShake < 0) camShake = 0;
     }
@@ -2013,6 +2171,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     q('#vr-power').style.display = 'none';
     q('#vr-pausebtn').style.display = 'none';
     q('#vr-thumbcontrols').style.display = 'none';
+    q('#vr-laneindicator').style.display = 'none';
 
     clearGameObjects();
     score = 0; lives = 3; gemsCollected = 0; level = 1; prevLevel = 1;
@@ -2021,12 +2180,14 @@ function createVoidRunner(root, THREE, { onBack }) {
     hudCache.power = -1; hudCache.powerState = '';
     setPulseHud('idle');
     q('#vr-levelhud').textContent = 'LV 1';
-    time = 0; totalFrames = 0; rawSpeed = 0.32; gameSpeed = 0;
+    runTime = 0; bonusScore = 0; rawSpeed = 0.32; gameSpeed = 0;
+    tunnelScroll = 0; tunnelGroup.position.z = 0;
     shipTargetX = 0; shipCurrentX = 0; shipTiltZ = 0;
     currentLaneIdx = 1; laneLock = false;
+    updateLaneIndicator();
     invincible = false; ship.visible = true;
     combo = 0; comboTimer = 0; camShake = 0;
-    obsCooldown = 80; gemCooldown = 100;
+    waveCooldown = 82; lastSafeLane = 1;
     updateLivesHud();
     hud.combo.style.opacity = '0';
     q('#vr-warningflash').style.opacity = '0';
@@ -2051,6 +2212,7 @@ function createVoidRunner(root, THREE, { onBack }) {
           q('#vr-speedbar').style.display = 'flex';
           q('#vr-power').style.display = 'flex';
           q('#vr-pausebtn').style.display = 'flex';
+          q('#vr-laneindicator').style.display = 'flex';
           if (isTouch) {
             q('#vr-thumbcontrols').style.display = 'block';
             // Re-show the swipe hint each run; it fades again on the first swipe.
@@ -2093,6 +2255,7 @@ function createVoidRunner(root, THREE, { onBack }) {
 
     popupTimers.gameover = setTimeout(() => {
       q('#vr-thumbcontrols').style.display = 'none';
+      q('#vr-laneindicator').style.display = 'none';
       q('#vr-pausebtn').style.display = 'none';
       q('#vr-hud').style.display = 'none';
       q('#vr-speedbar').style.display = 'none';
@@ -2131,6 +2294,7 @@ function createVoidRunner(root, THREE, { onBack }) {
     q('#vr-power').style.display = 'none';
     q('#vr-pausebtn').style.display = 'none';
     q('#vr-thumbcontrols').style.display = 'none';
+    q('#vr-laneindicator').style.display = 'none';
     q('#vr-warningflash').style.opacity = '0';
     q('#vr-speedlines').style.opacity = '0';
     q('#vr-menubest').style.opacity = bestScore > 0 ? '1' : '0';
@@ -2168,6 +2332,13 @@ function createVoidRunner(root, THREE, { onBack }) {
   rafId = requestAnimationFrame(loop);
 
   return {
+    /* Gating startMusic only stops the NEXT track — a player who mutes the app
+       while a track is already playing would keep hearing it until they died.
+       This lets the React side stop it the moment the setting changes. */
+    syncAppAudio() {
+      if (!appMusicOn()) stopMusic();
+      else if (musicEnabled) startMusic();
+    },
     dispose() {
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', onResize);
@@ -2203,10 +2374,24 @@ export default function VoidRunnerGame({ onBack }) {
   const onBackRef = useRef(onBack);
   onBackRef.current = onBack;
 
+  /*
+   * ⚠ READ THROUGH REFS, NOT CLOSED OVER. The game is built once in a mount
+   * effect with an empty dep list — deliberately, since rebuilding it would
+   * restart the run — so a value captured at that moment would freeze on
+   * whatever the setting was when the player opened the game. The refs are
+   * updated on every render and read live inside the audio guards, which is
+   * what makes toggling sound in Other → Settings take effect mid-flight.
+   */
+  const { sfxEnabled, musicEnabled } = useApp();
+  const instanceRef = useRef(null);
+  const sfxOnRef = useRef(sfxEnabled);
+  const musicOnRef = useRef(musicEnabled);
+  sfxOnRef.current = sfxEnabled;
+  musicOnRef.current = musicEnabled;
+
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return undefined;
-    let instance = null;
     let cancelled = false;
 
     root.innerHTML = HTML;
@@ -2214,7 +2399,11 @@ export default function VoidRunnerGame({ onBack }) {
     loadThree()
       .then((THREE) => {
         if (cancelled || !root.isConnected) return;
-        instance = createVoidRunner(root, THREE, { onBack: () => onBackRef.current?.() });
+        instanceRef.current = createVoidRunner(root, THREE, {
+          onBack: () => onBackRef.current?.(),
+          isAppSfxOn: () => sfxOnRef.current,
+          isAppMusicOn: () => musicOnRef.current,
+        });
       })
       .catch(() => {
         if (cancelled) return;
@@ -2223,10 +2412,17 @@ export default function VoidRunnerGame({ onBack }) {
 
     return () => {
       cancelled = true;
-      instance?.dispose();
+      instanceRef.current?.dispose();
+      instanceRef.current = null;
       root.innerHTML = '';
     };
   }, []);
+
+  /* Stop or resume the soundtrack the instant the app's sound settings change,
+     rather than at the start of the next track. */
+  useEffect(() => {
+    instanceRef.current?.syncAppAudio?.();
+  }, [sfxEnabled, musicEnabled]);
 
   // The <style> tag must NOT be a child of the ref'd div — the mount effect
   // does `root.innerHTML = HTML` to build the game DOM (matching the
@@ -2235,7 +2431,7 @@ export default function VoidRunnerGame({ onBack }) {
   return (
     <>
       <style>{CSS}</style>
-      <div className="vr-root" ref={rootRef} />
+      <div className="vr-root mode-void" ref={rootRef} />
     </>
   );
 }

@@ -492,7 +492,7 @@ const QUAD_CSS = `
 .qz-quad-cell { position:absolute; width:50%; padding:8px; font-size:10.5px; font-weight:800; line-height:1.25; text-align:center; }
 .qz-quad-axis { position:absolute; background:#e3d6c4; }
 .qz-quad-dot { position:absolute; width:16px; height:16px; border-radius:50%; background:#1a1208; border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.3); transform:translate(-50%,-50%); }
-.qz-quad-axislabel-y, .qz-quad-axislabel-x { font-size:10px; font-weight:800; color:#8a7f6f; }
+.qz-quad-axislabel-y, .qz-quad-axislabel-x { font-size:10px; font-weight:800; color:${SUB}; }
 [data-home-theme='dark'] .qz-quad { border-color:rgba(212,168,80,0.25); background:#211a10; }
 [data-home-theme='dark'] .qz-quad-axis { background:rgba(212,168,80,0.25); }
 [data-home-theme='dark'] .qz-quad-dot { border-color:#211a10; }

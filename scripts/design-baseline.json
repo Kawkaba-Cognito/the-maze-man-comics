@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 731,
+    "raw-colour": 677,
     "conditional-background": 1,
     "stacked-backdrops": 4
   },
@@ -124,9 +124,6 @@
     },
     "src/features/training/domains/reasoning/games/detective/noir/noir2d.css": {
       "raw-colour": 22
-    },
-    "src/features/training/domains/reasoning/games/detective/noir/noirCancellation.css": {
-      "raw-colour": 54
     },
     "src/features/training/domains/reasoning/games/detective/noir/noirLegacy.css": {
       "raw-colour": 74,

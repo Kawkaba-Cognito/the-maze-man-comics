@@ -123,4 +123,9 @@ const CSS = `
 .pmr-cue { font-size:14px; color:${SUB}; max-width:300px; }
 .pmr-doneT { font-family:${SERIF}; font-size:30px; font-weight:600; color:${INK}; }
 .pmr-doneS { font-size:14px; color:${SUB}; max-width:300px; }
+[data-home-theme='dark'] .pmr-intro,
+[data-home-theme='dark'] .pmr-cue,
+[data-home-theme='dark'] .pmr-doneS { color:#c9b384; }
+[data-home-theme='dark'] .pmr-group,
+[data-home-theme='dark'] .pmr-doneT { color:#f0e2c0; }
 `;

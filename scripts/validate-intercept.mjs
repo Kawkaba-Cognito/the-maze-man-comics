@@ -19,8 +19,10 @@
  */
 
 import {
-  BASE, LEVELS_PER_TIER, MIN_TOLERANCE, MIN_VISIBLE_MS, PATHS, PATH_IDS, PROFILES, PROFILE_IDS,
-  buildTrial, hideAtFor, levelCfg, pathPoint, positionAt, scoreTap, survivalCfg,
+  BASE, GATE_S, LAUNCH_BEATS, LEVELS_PER_TIER, MIN_HIDDEN_MS, MIN_REACT_MS, MIN_TOLERANCE,
+  MIN_VISIBLE_MS, PATHS, PATH_IDS, PROFILES, PROFILE_IDS, WARPS,
+  WAVES_PER_SECTOR, buildTrial, hideAtFor, levelCfg, pathPoint, positionAt, scoreLaunch, scoreTap, survivalCfg,
+  timeAtS,
 } from '../src/features/training/domains/speed/games/intercept/data.js';
 
 let failures = 0;
@@ -44,12 +46,23 @@ const TIERS = ['easy', 'med', 'hard'];
  * rest rose and the curve drifted DOWN from level 81 to 100 by a fraction of a
  * percent. Every term here is authored and independent.
  */
+/*
+ * ⚠ `strobe` and `launchShare` are deliberately absent, and for opposite
+ * reasons. The strobe makes a trial EASIER — it is the payment for warp — so
+ * scoring it as difficulty would be a lie; and launch is a different reading of
+ * the same skill rather than a harder one. Either folded in here would let a
+ * real regression in the levers that decide whether a level is POSSIBLE hide
+ * behind a rising number, which is the dilution audit:fq shipped for months.
+ * Both are asserted on their own below.
+ */
 function ordinalLoad(c) {
   return (1000 / c.visibleMs)          // less time to read the speed
     * (200 / c.tol)                    // tighter window
     * (2000 / c.travel)                // the whole run is quicker
     * c.profiles.length                // more motions to tell apart
-    * c.movers;                        // more forward models at once
+    * c.movers                         // more forward models at once
+    * c.gates                          // a crossing to choose as well as time
+    * c.warps.length;                  // the speed may change while hidden
 }
 
 /* ── 1. Every level must be playable ─────────────────────────────────────── */
@@ -197,15 +210,136 @@ for (const diff of TIERS) {
   }
 }
 
+/* ── 3c. The new levers, each asserted against what it does to the PLAYER ──
+ *
+ * Gate, warp, strobe and launch were added because the curve turned one knob a
+ * hundred times and the game got boring. Each of them can also make a level
+ * unplayable in a way no monotonic check would ever notice, so each gets the
+ * question a player would ask.
+ */
+for (const diff of TIERS) {
+  for (let lv = 1; lv <= LEVELS_PER_TIER; lv++) {
+    const c = levelCfg(diff, lv);
+    const visFrac = Math.min(1, c.visibleMs / c.travel);
+
+    for (const p of c.profiles) {
+      const prof = PROFILES[p];
+      const hideAt = hideAtFor(p, c.visibleMs, c.travel);
+      const uHide = prof.inv(hideAt);
+
+      /* `inv` is used to place gates and to re-time warped movers. If it ever
+         stops being the exact inverse of `at`, the shape is drawn in one place
+         and scored in another — silently, and only for some profiles. */
+      for (const u of [0.1, 0.35, 0.6, 0.85, 1]) {
+        assert(Math.abs(prof.inv(prof.at(u)) - u) < 1e-9, `${p}: inv is not the inverse of at at u=${u}`);
+      }
+
+      for (const gateS of (c.gates > 1 ? GATE_S : [1])) {
+        for (const warp of c.warps) {
+          // Warp is refused on the near gate at the source; mirror that here.
+          if (warp !== 1 && gateS !== 1) continue;
+          const m = { profile: p, travel: c.travel, startAt: 0, uHide, warp };
+          const arriveAt = timeAtS(m, gateS);
+          const hideTime = timeAtS(m, hideAt);
+          const hidden = arriveAt - hideTime;
+
+          /* THE PREDICTION HAS TO EXIST. A near gate shortens the hidden
+             stretch, and a short enough one turns the trial from a prediction
+             into a reaction — measuring the wrong thing while looking fine. */
+          assert(
+            hidden >= MIN_HIDDEN_MS,
+            `${diff} L${lv} ${p} gate=${gateS} warp=${warp}: only ${hidden.toFixed(0)}ms hidden `
+              + `— under ${MIN_HIDDEN_MS}ms there is nothing to predict`,
+          );
+
+          /* A SPEED CHANGE YOU CANNOT OBSERVE IS A COIN FLIP. Warp is only
+             honest because a glimpse lands mid-tunnel with time left to act on
+             it. This is the Mirror World lesson: an alternative route that
+             renders and registers and still cannot reach the win condition. */
+          if (warp !== 1) {
+            const room = hidden - 130 - MIN_REACT_MS;   // STROBE_MS is 130
+            assert(
+              room > 0,
+              `${diff} L${lv} ${p} warp=${warp}: ${hidden.toFixed(0)}ms hidden leaves no room for a `
+                + `glimpse plus ${MIN_REACT_MS}ms to act on it — the speed change is unobservable`,
+            );
+          }
+        }
+      }
+    }
+
+    /* Launch has to be releasable. The player must have heard enough beats to
+       have a tempo, and must not still be waiting when the target arrives. */
+    if (c.launchShare > 0) {
+      for (const p of c.profiles) {
+        const hideAt = hideAtFor(p, c.visibleMs, c.travel);
+        const uHide = PROFILES[p].inv(hideAt);
+        for (const gateS of (c.gates > 1 ? GATE_S : [1])) {
+          for (const warp of c.warps) {
+            if (warp !== 1 && gateS !== 1) continue;
+            const m = { profile: p, travel: c.travel, startAt: 0, uHide, warp };
+            const toGate = timeAtS(m, gateS);
+            const beatMs = Math.max(420, Math.min(900, Math.round((toGate + 900) / 3)));
+            const targetAt = beatMs * LAUNCH_BEATS;
+            const launchAt = targetAt - toGate;
+            assert(
+              launchAt > 2 * beatMs,
+              `${diff} L${lv} ${p} gate=${gateS} warp=${warp}: release falls at ${launchAt.toFixed(0)}ms, `
+                + `before beat 2 (${2 * beatMs}ms) — no tempo to lock onto yet`,
+            );
+            assert(
+              launchAt < targetAt - 250,
+              `${diff} L${lv} ${p} gate=${gateS} warp=${warp}: release falls ${(targetAt - launchAt).toFixed(0)}ms `
+                + 'before the target beat — too late to be a prediction',
+            );
+          }
+        }
+      }
+    }
+  }
+}
+
+/* Easy must stay the plain game. Someone meeting this for the first time gets
+   one shape, one gate, one speed — every new lever is a later tier's job. */
+{
+  const e = levelCfg('easy', LEVELS_PER_TIER);
+  assert(e.gates === 1, 'easy L100 deals two gates — the entry tier should stay the plain task');
+  assert(e.warps.length === 1, 'easy L100 warps — the entry tier should stay the plain task');
+  assert(e.launchShare === 0, 'easy L100 deals launch trials — the entry tier should stay the plain task');
+  assert(e.movers === 1, 'easy L100 deals two movers');
+}
+
 /* ── 4. Survival must never ease off ─────────────────────────────────────── */
 let prev = -Infinity;
-for (let stage = 0; stage < 40; stage++) {
+let maxSurvivalMovers = 0;
+for (let stage = 0; stage < 60; stage++) {
   const c = survivalCfg(stage);
   const load = ordinalLoad(c);
   assert(load >= prev - 1e-6, `survival stage ${stage}: difficulty dropped`);
   assert(c.visibleMs >= MIN_VISIBLE_MS, `survival stage ${stage}: only ${c.visibleMs}ms visible`);
   assert(c.tol >= MIN_TOLERANCE, `survival stage ${stage}: window ${c.tol}ms below the floor`);
+  assert(c.mission?.sector === Math.floor(stage / WAVES_PER_SECTOR) + 1, `survival stage ${stage}: wrong sector`);
+  assert(c.mission?.wave === (stage % WAVES_PER_SECTOR) + 1, `survival stage ${stage}: wrong wave`);
+  assert(c.mission?.surge === (c.mission.wave === WAVES_PER_SECTOR), `survival stage ${stage}: wrong surge marker`);
+  maxSurvivalMovers = Math.max(maxSurvivalMovers, c.movers);
   prev = load;
+}
+assert(maxSurvivalMovers === 4, `endless scaling reached ${maxSurvivalMovers} movers instead of the capped four`);
+
+/* The late-game scaling is real only if every added threat remains independently
+   tappable. Build representative post-curriculum waves with launch disabled (a
+   launch is intentionally single-mover) and check every pair, not just the first
+   two the authored level curriculum can deal. */
+for (const stage of [30, 40, 50]) {
+  const c = { ...survivalCfg(stage), launchShare: 0 };
+  const tr = buildTrial(c, () => 0.42);
+  assert(tr.movers.length === c.movers, `survival stage ${stage}: built ${tr.movers.length}/${c.movers} threats`);
+  for (let i = 0; i < tr.movers.length; i++) {
+    for (let j = i + 1; j < tr.movers.length; j++) {
+      const gap = Math.abs(tr.movers[i].arriveAt - tr.movers[j].arriveAt);
+      assert(gap > tr.tol * 2, `survival stage ${stage}: threats ${i}/${j} share one hit window`);
+    }
+  }
 }
 
 /* ── 5. Built trials must be answerable ──────────────────────────────────── */
@@ -216,22 +350,67 @@ const rng = () => {
 };
 let trials = 0;
 const seenPaths = new Set();
+const seenKinds = new Set();
+const seenGates = new Set();
+const seenWarps = new Set();
+let strobed = 0;
 for (const diff of TIERS) {
   for (let lv = 1; lv <= LEVELS_PER_TIER; lv += 3) {
     const c = levelCfg(diff, lv);
-    for (let k = 0; k < 4; k++) {
+    for (let k = 0; k < 8; k++) {
       const tr = buildTrial(c, rng);
       trials += 1;
-      assert(tr.movers.length === c.movers, `${diff} L${lv}: wrong mover count`);
+      seenKinds.add(tr.kind);
+      assert(
+        tr.movers.length === (tr.kind === 'launch' ? 1 : c.movers),
+        `${diff} L${lv}: wrong mover count for a ${tr.kind} trial`,
+      );
       assert(c.paths.includes(tr.path), `${diff} L${lv}: built a trial on path ${tr.path}, not in the tier`);
       assert(tr.movers.every((m) => m.path === tr.path), `${diff} L${lv}: movers disagree on the path`);
       seenPaths.add(tr.path);
       for (const m of tr.movers) {
         assert(PROFILE_IDS.includes(m.profile), `${diff} L${lv}: unknown profile ${m.profile}`);
-        // A perfect tap must score, and the arrival must be where the maths says.
-        assert(Math.abs(positionAt(m, m.arriveAt) - 1) < 1e-9, `${diff} L${lv}: mover does not reach the line at arriveAt`);
+        seenGates.add(m.gateS);
+        seenWarps.add(m.warp);
+        assert(c.warps.includes(m.warp), `${diff} L${lv}: dealt warp ${m.warp}, not in the tier`);
+        assert(c.gates > 1 || m.gateS === 1, `${diff} L${lv}: dealt a near gate on a one-gate level`);
+
+        /*
+         * ⚠ THE RENDERER AND THE SCORER MUST AGREE. positionAt draws the shape;
+         * timeAtS decides when it counts as arrived. They are inverses by
+         * construction, and this asserts it on the built object rather than
+         * trusting it — a mover drawn crossing at one instant and scored at
+         * another is the exact bug that would be invisible in play and would
+         * make every error reading a lie.
+         */
+        assert(
+          Math.abs(positionAt(m, m.arriveAt) - m.gateS) < 1e-6,
+          `${diff} L${lv}: the shape is not at its gate when it is scored as arriving`,
+        );
+        assert(Math.abs(positionAt(m, m.endAt) - 1) < 1e-9, `${diff} L${lv}: mover never reaches the end of the route`);
+        assert(m.arriveAt <= m.endAt + 1e-9, `${diff} L${lv}: arrival is after the route ends`);
+
+        // A perfect tap must score, and be recognised as perfect.
         assert(scoreTap(m, m.arriveAt, tr.tol).hit, `${diff} L${lv}: a perfect tap does not register as a hit`);
+        assert(scoreTap(m, m.arriveAt, tr.tol).perfect, `${diff} L${lv}: a perfect tap is not graded perfect`);
         assert(!scoreTap(m, m.arriveAt + tr.tol + 1, tr.tol).hit, `${diff} L${lv}: a tap outside the window still counts`);
+
+        /* Warp without a glimpse is unobservable; a glimpse without warp is a
+           free hint. Both directions are asserted, because the pairing is the
+           only thing that makes warp fair. */
+        if (m.warp !== 1) {
+          strobed += 1;
+          assert(m.strobeAt != null, `${diff} L${lv}: a warped mover was dealt with no glimpse`);
+          assert(m.gateS === 1, `${diff} L${lv}: a warped mover was aimed at the near gate`);
+          assert(m.strobeAt >= m.hideTime, `${diff} L${lv}: the glimpse falls before the cover starts`);
+          const react = m.arriveAt - (m.strobeAt + m.strobeMs);
+          assert(
+            react >= MIN_REACT_MS - 0.5,
+            `${diff} L${lv}: the glimpse ends ${react.toFixed(0)}ms before the crossing — too late to act on`,
+          );
+        } else {
+          assert(m.strobeAt == null, `${diff} L${lv}: an unwarped mover was given a free glimpse`);
+        }
       }
       if (tr.movers.length > 1) {
         const [a, b] = tr.movers;
@@ -239,6 +418,15 @@ for (const diff of TIERS) {
           Math.abs(a.arriveAt - b.arriveAt) > tr.tol * 2,
           `${diff} L${lv}: two movers arrive within one hit window — a single tap would answer both`,
         );
+      }
+      if (tr.kind === 'launch') {
+        assert(tr.beatMs > 0 && tr.targetAt > 0, `${diff} L${lv}: launch trial has no tempo`);
+        assert(
+          Math.abs(tr.launchAt + tr.toGate - tr.targetAt) < 1e-6,
+          `${diff} L${lv}: the ideal release does not put the arrival on the target beat`,
+        );
+        assert(scoreLaunch(tr, tr.launchAt).perfect, `${diff} L${lv}: a perfect release is not graded perfect`);
+        assert(!scoreLaunch(tr, tr.launchAt + tr.tol + 1).hit, `${diff} L${lv}: a release outside the window still counts`);
       }
     }
   }
@@ -249,6 +437,14 @@ for (const diff of TIERS) {
 for (const id of PATH_IDS) {
   assert(seenPaths.has(id), `path ${id} is authored but was never dealt in ${trials} simulated trials`);
 }
+/* And so must every lever. A warp authored in WARPS, a second gate, or a launch
+   share that the draw never actually produces is work nobody plays — the same
+   failure as an unreachable path, and just as invisible. */
+for (const w of WARPS) assert(seenWarps.has(w), `warp ${w} is authored but was never dealt in ${trials} trials`);
+for (const g of GATE_S) assert(seenGates.has(g), `gate ${g} is authored but was never dealt in ${trials} trials`);
+assert(seenKinds.has('launch'), `no launch trial was dealt in ${trials} trials`);
+assert(seenKinds.has('intercept'), `no ordinary trial was dealt in ${trials} trials`);
+assert(strobed > 0, 'no warped mover was ever dealt, so the glimpse is dead content');
 
 if (failures) {
   console.error(`\nvalidate-intercept: ${failures} failure(s)`);
@@ -260,6 +456,10 @@ console.log('validate-intercept: OK', {
   trialsSimulated: trials,
   paths: PATH_IDS.length,
   pathsDealt: seenPaths.size,
+  kindsDealt: [...seenKinds].join('+'),
+  gatesDealt: seenGates.size,
+  warpsDealt: seenWarps.size,
+  warpedMovers: strobed,
   easyVisibleMs: levelCfg('easy', 1).visibleMs,
   hardestVisibleMs: levelCfg('hard', LEVELS_PER_TIER).visibleMs,
   hardestWindowMs: levelCfg('hard', LEVELS_PER_TIER).tol,

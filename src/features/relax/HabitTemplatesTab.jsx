@@ -5,7 +5,7 @@ import {
 } from './habitState';
 
 const INK = '#2d2210';
-const SUB = '#8a7f6f';
+const SUB = '#524b3f';
 const LINE = '#e3d6c4';
 const CARD = '#fffdf8';
 const GOLD = '#b9842f';

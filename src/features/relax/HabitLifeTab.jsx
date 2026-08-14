@@ -7,8 +7,8 @@ import {
 } from './habitState';
 
 const INK = '#2d2210';
-const SUB = '#8a7f6f';
-const FAINT = '#b3a288';
+const SUB = '#524b3f';
+const FAINT = '#5a5144';
 const LINE = '#e3d6c4';
 const CARD = '#fffdf8';
 const GOLD = '#b9842f';
@@ -226,5 +226,5 @@ export const LIFE_TAB_CSS = `
 .hb-suggest-add { flex-shrink:0; padding:8px 12px; border-radius:10px; border:2px solid currentColor; background:#fffaf5; font-size:12px; font-weight:800; cursor:pointer; font-family:inherit; }
 .hb-section-title { font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:${SUB}; margin-bottom:6px; }
 .hb-btn-ghost { padding:10px 16px; border-radius:10px; border:2px solid ${LINE}; background:transparent; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; color:${SUB}; }
-.hb-btn-primary { padding:10px 20px; border-radius:10px; border:none; background:linear-gradient(135deg,#c89a4a,${GOLD}); color:#fff; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit; }
+.hb-btn-primary { padding:10px 20px; border-radius:10px; border:none; background:linear-gradient(135deg,#c89a4a,${GOLD}); color:#201d18; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit; }
 `;

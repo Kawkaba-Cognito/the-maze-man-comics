@@ -23,7 +23,21 @@
 .pz-theme-spatial,
 .pz-theme-group {
   --pz-surface: var(--surface);
-  --pz-surface-strong: #adb5c4;
+  /*
+   * ⚠ DERIVED, because "one step down" from a surface cannot be a frozen hex.
+   *
+   * These two are a PAIR — the board and the given cells that sit on it. When
+   * the app's surfaces moved to the warm beige tokens, --pz-surface followed
+   * via var(--surface) and this one did not, so every filled cell in every
+   * puzzle stayed Cool Silver #adb5c4: blue-grey squares on a beige board, in
+   * the most looked-at part of the screen. That is the "puzzles look like a
+   * different app" report, and it was one literal.
+   *
+   * Mixing toward the ink keeps it exactly one step down from whatever the
+   * surface currently is, and does the right thing in both appearances — on the
+   * dark board the ink is cream, so a given cell reads lighter instead.
+   */
+  --pz-surface-strong: color-mix(in srgb, var(--pz-surface) 82%, var(--pz-ink));
 }
 
 .pz-theme-numbers {
@@ -56,8 +70,14 @@
   --pz-card-soft: #e9eef4;
   position: absolute;
   inset: 0;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--universe-line, rgba(72, 62, 48, 0.34)) transparent;
+  scrollbar-gutter: stable;
   isolation: isolate;
   color: var(--pz-on-cosmos);
   background:
@@ -65,6 +85,18 @@
     radial-gradient(ellipse 66% 42% at 88% 42%, rgba(74, 150, 151, 0.14), transparent 74%),
     linear-gradient(180deg, var(--pz-cosmos-mid), var(--pz-cosmos));
   font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+}
+
+.pz-studio::-webkit-scrollbar,
+.pz-studio-game::-webkit-scrollbar { width: 9px; }
+.pz-studio::-webkit-scrollbar-track,
+.pz-studio-game::-webkit-scrollbar-track { background: transparent; }
+.pz-studio::-webkit-scrollbar-thumb,
+.pz-studio-game::-webkit-scrollbar-thumb {
+  background: var(--universe-line, rgba(72, 62, 48, 0.34));
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
 }
 
 .pz-studio *,
@@ -191,7 +223,7 @@
   z-index: 2;
   width: min(100%, 980px);
   margin: 0 auto;
-  padding: 18px clamp(16px, 4vw, 34px) calc(104px + env(safe-area-inset-bottom, 0px));
+  padding: 18px clamp(16px, 4vw, 34px) calc(124px + env(safe-area-inset-bottom, 0px));
 }
 
 .pz-studio-intro {
@@ -562,13 +594,23 @@ html[data-home-theme='light'] .pz-studio-lang {
   --pz-ink: var(--ink);
   --pz-muted: var(--ink-dim);
   --pz-card: var(--surface-raised);
-  --pz-card-soft: #cfd4de;
+  /* Was #cfd4de — the same Cool Silver leftover as --pz-surface-strong, and
+     missed for the same reason: the tokens either side of it were aliased and
+     this one was typed. --play-surface-flat is the warm twin at the same
+     luminance step below the card. */
+  --pz-card-soft: var(--play-surface-flat);
   --pz-line: rgba(20, 26, 40, 0.24);
   --pz-shadow: rgba(20, 26, 40, 0.9);
   position: absolute;
   inset: 0;
   z-index: 45;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pz-line) transparent;
+  scrollbar-gutter: stable;
   isolation: isolate;
   color: var(--pz-ink);
   background: var(--pz-surface, #edf8f6);
@@ -582,20 +624,35 @@ html[data-home-theme='light'] .pz-studio-lang {
   background:
     radial-gradient(circle at 12% 6%, color-mix(in srgb, var(--pz-accent) 16%, transparent), transparent 32%),
     radial-gradient(circle at 92% 90%, color-mix(in srgb, var(--pz-accent) 10%, transparent), transparent 30%),
-    linear-gradient(180deg, #f8fafc 0%, var(--pz-surface) 100%) !important;
+    /* Was #f8fafc → warm surface: a cool near-white washing the top half of
+       every puzzle screen and fading into beige at the bottom. Both stops are
+       tokens now, which lands on ~#ded5c4 → #c6bda9 — the same warm ramp the
+       training games get from --play-surface (#dfd7c7 → #bfb5a0) — and still
+       does the right thing in dark, where a fixed near-white could not. */
+    linear-gradient(180deg, var(--pz-card) 0%, var(--pz-surface) 100%) !important;
 }
 
+/*
+ * ⚠ NO BACKGROUND ON THE HEADER. It is a 420px-wide centred bar.
+ *
+ * .ct-training-play-header is `max-width: 420px; margin: 0 auto` — phone width,
+ * centred — and in every TRAINING game it is transparent, so the play surface
+ * runs behind it and you cannot see where it ends. Painting it here gave it a
+ * fill the page behind it does not have, so on any viewport wider than 420px it
+ * rendered as a beige rectangle floating at the top middle of the screen, which
+ * is exactly how it was reported. On a phone it happened to span the width and
+ * looked fine, which is why it survived.
+ *
+ * Only the ink is set now; the surface behind comes from the screen, as it does
+ * in the training games this is meant to match. If a scrim is ever needed for
+ * legibility it has to go on a FULL-BLEED wrapper, never on this element.
+ */
 .pz-studio-game .ct-training-menubar,
 .pz-studio-game .ct-training-play-header {
   min-height: calc(58px + env(safe-area-inset-top, 0px));
   color: var(--pz-ink);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--pz-surface) 92%, white) 72%,
-    color-mix(in srgb, var(--pz-surface) 58%, transparent)
-  ) !important;
-  border-bottom: 1px solid var(--pz-line);
-  backdrop-filter: blur(10px);
+  background: none !important;
+  border-bottom: 0;
 }
 
 .pz-studio-game .ct-training-menubar-center,
@@ -732,7 +789,12 @@ html[data-home-theme='light'] .pz-studio-lang {
 .pz-studio-game .ct-puzzle-numkey,
 .pz-studio-game .ct-tangram-piece {
   color: var(--pz-ink) !important;
-  background: linear-gradient(180deg, #d6dae3 0%, var(--pz-card) 100%) !important;
+  /* Both stops derive from --pz-card now. The note above says the top was
+     anchored to the raised token "instead of pure white" — but only the BOTTOM
+     stop was, so every empty cell still began on Cool Silver #d6dae3 and faded
+     into warm beige. A cool-to-warm ramp inside one cell is why the boards read
+     as a different product even after the givens were fixed. */
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pz-card) 74%, white) 0%, var(--pz-card) 100%) !important;
   border-color: var(--pz-ink) !important;
   box-shadow: 2px 2px 0 color-mix(in srgb, var(--pz-ink) 78%, transparent) !important;
 }
@@ -1036,7 +1098,8 @@ html[data-home-theme='light'] .pz-studio-lang {
   background:
     radial-gradient(circle at 10% 4%, rgba(201, 111, 99, 0.14), transparent 30%),
     radial-gradient(circle at 96% 78%, rgba(85, 169, 159, 0.12), transparent 32%),
-    linear-gradient(180deg, #f8fafc, var(--pz-surface)) !important;
+    /* Same cool-white leftover as the play screen above — see the note there. */
+    linear-gradient(180deg, var(--pz-card), var(--pz-surface)) !important;
 }
 
 .pz-studio-game.pz-theme-group .gc-app {

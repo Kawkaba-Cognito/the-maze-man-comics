@@ -17,7 +17,8 @@
  *  - The Daily Workout reads the DOMAIN rating to pick block difficulty, so
  *    as ratings climb, tomorrow's workout climbs with them.
  */
-import { loadAssessSessions } from './assessment/assessmentProfile';
+import { loadAssessSessions } from './assessment/assessmentProfile.js';
+import { recordTrainingOutcome } from '../personalization/neuralPersonalization.js';
 
 const KEY = 'mm_rating_v1';
 
@@ -105,6 +106,7 @@ export function updateRating(freeKey, level) {
   if (!def || L <= 0) return null;
   const st = load();
   const g = st.games[freeKey] || { n: 0, ewma: 0, hist: [] };
+  const priorLevel = g.ewma || 0;
   const before = g.n > 0 ? toRating(g.ewma, def.lHalf) : null;
   const K = g.n < 3 ? 0.5 : 0.25;
   g.ewma = g.n === 0 ? L : g.ewma + K * (L - g.ewma);
@@ -113,6 +115,17 @@ export function updateRating(freeKey, level) {
   g.hist = [...(g.hist || []), { d: new Date().toISOString().slice(0, 10), r: rating }].slice(-60);
   st.games[freeKey] = g;
   save(st);
+  // This remains a no-op until the player explicitly enables on-device
+  // personalization. No additional raw trial data is copied into the model.
+  recordTrainingOutcome({
+    domainId: def.domainId,
+    gameKey: def.gameKey,
+    level: L,
+    priorLevel,
+    ratingBefore: before,
+    ratingAfter: rating,
+    runCount: g.n,
+  });
   return { rating, delta: before == null ? null : rating - before, status: g.n < 3 ? 'calibrating' : 'stable' };
 }
 

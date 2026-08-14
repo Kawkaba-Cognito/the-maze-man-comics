@@ -113,6 +113,10 @@ html[data-home-theme] .pz-studio--category .pz-studio-lang {
     0 0 22px rgba(232, 172, 78, 0.5);
 }
 
+html[data-home-theme='light'] .pz-hub .pz-studio-intro h1 {
+  text-shadow: none;
+}
+
 [dir='rtl'] .pz-hub .pz-studio-intro h1 {
   font-family: 'Cairo', sans-serif;
   letter-spacing: 0;

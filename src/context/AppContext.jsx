@@ -356,7 +356,8 @@ export function AppProvider({ children }) {
     stopSpeech();
     // Legacy "home" now lands on Habits (the Home tab).
     let next = tabId === 'home' ? 'habits' : tabId;
-    // Habits / Wellbeing share RelaxScreen; seed the daily view for Habits.
+    // Home uses the legacy "habits" id. Daily Habits opens through the
+    // internal "relax" route so the one-time view flag reaches RelaxScreen.
     if (next === 'habits') {
       try { sessionStorage.setItem('rx_open_daily', '1'); } catch { /* ignore */ }
     } else if (next === 'wellbeing') {

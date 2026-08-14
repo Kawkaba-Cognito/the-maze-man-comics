@@ -55,7 +55,10 @@ export default function AtmosphericBackground({ strength = 'hub', photo = true }
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundColor: dark ? '#12101c' : '#e8eef5',
+            /* The same ground as body, from the same token — this used to carry
+               its own copy of the retired #e8eef5 blue-grey, which is a frozen
+               colour in a render path and could never follow the appearance. */
+            backgroundColor: 'var(--universe-dusk)',
             backgroundImage: `url("${bgUrl}")`,
             backgroundSize: 'cover',
             backgroundPosition: desktop ? 'center center' : 'center 42%',

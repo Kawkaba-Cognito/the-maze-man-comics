@@ -69,6 +69,42 @@ const IC_SHAPES_DIAGRAM = (
     {icDot('●')}{icDot('▶')}{icDot('◆')}
   </div>
 );
+/* The four levers the curve introduces after the basic act is learned. They are
+   taught here rather than discovered mid-run: a rule you meet for the first
+   time by being marked wrong reads as unfairness, not as difficulty. */
+const icGoalIn = (colour) => (
+  <span style={{
+    display: 'inline-block', width: 4, height: 26, borderRadius: 2,
+    background: colour, verticalAlign: 'middle',
+  }} />
+);
+const icDotIn = (glyph, colour) => (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: 26, height: 26, borderRadius: '50%', background: colour,
+    color: 'var(--play-surface-deep-flat)', fontSize: 13, fontWeight: 800, verticalAlign: 'middle',
+  }}>{glyph}</span>
+);
+const IC_GATES_DIAGRAM = (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+    {icDotIn('●', 'var(--game-ok)')}{icRail(0.3)}{icRail(0.2, true)}
+    {icGoalIn('var(--game-ok)')}{icRail(0.16, true)}{icGoalIn('var(--game-accent)')}
+  </div>
+);
+const IC_WARP_DIAGRAM = (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+    {icRail(0.34)}
+    <span style={{ fontSize: 15, color: 'var(--game-accent)', fontWeight: 800 }} aria-hidden="true">»»</span>
+    {icRail(0.3, true)}{icDot('●')}{icRail(0.16, true)}{icGoal}
+  </div>
+);
+const IC_LAUNCH_DIAGRAM = (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+    <span style={{ fontSize: 15, letterSpacing: 3, color: 'var(--game-accent)' }} aria-hidden="true">●●●●</span>
+    <span style={{ fontSize: 15, color: 'var(--game-muted-edge)' }} aria-hidden="true">○</span>
+    {icRail(0.3)}{icGoal}
+  </div>
+);
 
 const STEPS = {
   'cancel-task': {
@@ -293,14 +329,20 @@ const STEPS = {
   },
   intercept: {
     en: [
-      { title: 'Watch it move', body: 'A shape sets off along the route. The first stretch is all you get to see — read how fast it is going.', diagram: IC_RAIL_DIAGRAM, pills: ['Watch the open stretch', 'Read the speed'] },
+      { title: 'Defend through five-wave sectors', body: 'In Rift Defense, each hidden flight is a threat to the station. Read its open stretch, intercept it at the rift, then choose a system upgrade after every fifth wave.', diagram: IC_RAIL_DIAGRAM, pills: ['5 waves per sector', 'Choose an upgrade'] },
       { title: 'It hides — you keep counting', body: 'Partway along, the shape slips under cover and you cannot see it any more. Keep running it in your head. Tap the instant it would touch the goal line.', diagram: IC_COVER_DIAGRAM, pills: ['Tap at the line', 'Not when it hides'] },
-      { title: 'The shape tells you how it moves', body: 'A circle holds a steady speed. An arrow ▶ is speeding up, so it arrives sooner than the open stretch suggests. A diamond ◆ is slowing down and arrives later. Identify it before it hides.', diagram: IC_SHAPES_DIAGRAM, pills: ['● steady', '▶ speeding up', '◆ slowing down'], note: READY_NOTE.en },
+      { title: 'The shape tells you how it moves', body: 'A circle holds a steady speed. An arrow ▶ is speeding up, so it arrives sooner than the open stretch suggests. A diamond ◆ is slowing down and arrives later. Identify it before it hides.', diagram: IC_SHAPES_DIAGRAM, pills: ['● steady', '▶ speeding up', '◆ slowing down'] },
+      { title: 'Later: two gates', body: 'Higher levels put a second gate on the route. The shape is filled in the colour of the gate it belongs to — green for the near one, amber for the far one. Read the colour while you can still see it.', diagram: IC_GATES_DIAGRAM, pills: ['Colour = your gate', 'Decide before it hides'] },
+      { title: 'Later: it may change speed', body: 'Chevrons at the mouth of the cover warn you the shape will change speed while hidden — forward means faster, backward means slower. You get one brief glimpse mid-tunnel to correct your estimate.', diagram: IC_WARP_DIAGRAM, pills: ['»» faster', '«« slower', 'Watch for the glimpse'] },
+      { title: 'Later: release on the beat', body: 'Some runs are backwards. You watch a practice pass, then four beats play. Tap to release the shape so that it crosses on the silent fifth beat — the same prediction, made in reverse.', diagram: IC_LAUNCH_DIAGRAM, pills: ['4 beats sound', 'Arrive on the 5th'], note: READY_NOTE.en },
     ],
     ar: [
-      { title: 'راقب حركته', body: 'ينطلق شكل على المسار. الجزء الأول هو كل ما تراه — اقرأ سرعته منه.', diagram: IC_RAIL_DIAGRAM, pills: ['راقب الجزء المكشوف', 'اقرأ السرعة'] },
+      { title: 'دافع عبر قطاعات من خمس موجات', body: 'في دفاع الشق، كل حركة مخفية تهديد للمحطة. اقرأ الجزء المكشوف واعترض التهديد عند الشق، ثم اختر ترقية للنظام بعد كل موجة خامسة.', diagram: IC_RAIL_DIAGRAM, pills: ['٥ موجات لكل قطاع', 'اختر ترقية'] },
       { title: 'يختفي — وأنت تُكمل العدّ', body: 'في منتصف الطريق يدخل تحت الغطاء ولا تعود تراه. أكمل تتبّعه في ذهنك، واضغط لحظة وصوله إلى خط الهدف.', diagram: IC_COVER_DIAGRAM, pills: ['اضغط عند الخط', 'لا عند الاختفاء'] },
-      { title: 'الشكل يخبرك بحركته', body: 'الدائرة سرعتها ثابتة. السهم ▶ يتسارع فيصل أبكر مما يوحي الجزء المكشوف. والمعيّن ◆ يتباطأ فيصل متأخّراً. تعرّف عليه قبل أن يختفي.', diagram: IC_SHAPES_DIAGRAM, pills: ['● ثابت', '▶ متسارع', '◆ متباطئ'], note: READY_NOTE.ar },
+      { title: 'الشكل يخبرك بحركته', body: 'الدائرة سرعتها ثابتة. السهم ▶ يتسارع فيصل أبكر مما يوحي الجزء المكشوف. والمعيّن ◆ يتباطأ فيصل متأخّراً. تعرّف عليه قبل أن يختفي.', diagram: IC_SHAPES_DIAGRAM, pills: ['● ثابت', '▶ متسارع', '◆ متباطئ'] },
+      { title: 'لاحقاً: بوابتان', body: 'في المستويات الأعلى تظهر بوابة ثانية على المسار. يُملأ الشكل بلون البوابة التي تخصّه — الأخضر للقريبة والكهرماني للبعيدة. اقرأ اللون وهو ما يزال ظاهراً.', diagram: IC_GATES_DIAGRAM, pills: ['اللون = بوابتك', 'قرّر قبل اختفائه'] },
+      { title: 'لاحقاً: قد تتغيّر سرعته', body: 'الأسهم عند مدخل الغطاء تنبّهك أنّ الشكل سيغيّر سرعته وهو مختفٍ — إلى الأمام أسرع، وإلى الخلف أبطأ. تحصل على لمحة قصيرة في منتصف النفق لتصحيح تقديرك.', diagram: IC_WARP_DIAGRAM, pills: ['»» أسرع', '«« أبطأ', 'انتبه للّمحة'] },
+      { title: 'لاحقاً: أطلقه مع النبضة', body: 'بعض الجولات معكوسة. تشاهد تمريرة تجريبية، ثم تُسمع أربع نبضات. اضغط لإطلاق الشكل بحيث يعبر مع النبضة الخامسة الصامتة — التوقّع نفسه، بالمقلوب.', diagram: IC_LAUNCH_DIAGRAM, pills: ['أربع نبضات مسموعة', 'الوصول مع الخامسة'], note: READY_NOTE.ar },
     ],
   },
 };

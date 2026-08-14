@@ -150,4 +150,6 @@ const CSS = `
 .brk-word { position:relative; z-index:2; font-family:${SERIF}; font-weight:600; font-size:24px; color:#0e3a4a; text-shadow:0 1px 3px rgba(255,255,255,0.5); }
 .brk-doneT { font-family:${SERIF}; font-size:30px; font-weight:600; color:${INK}; }
 .brk-doneS { font-size:14px; color:${SUB}; max-width:300px; }
+[data-home-theme='dark'] .brk-doneT { color:#f0e2c0; }
+[data-home-theme='dark'] .brk-doneS { color:#c9b384; }
 `;

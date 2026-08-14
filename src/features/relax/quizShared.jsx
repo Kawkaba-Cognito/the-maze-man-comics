@@ -15,7 +15,7 @@ export const QUIZ_CSS = `
 .qz-item-text { font-family:${SERIF}; font-size:22px; font-weight:600; color:${INK}; text-align:center; line-height:1.35; padding:0 4px; }
 .qz-likert { display:flex; gap:6px; justify-content:space-between; }
 .qz-likert-btn { flex:1; aspect-ratio:1; border-radius:12px; border:2px solid ${LINE}; background:${CARD}; color:${SUB}; font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; transition:all .15s; }
-.qz-likert-btn.on { border-color:var(--acc); background:var(--acc); color:#fff; }
+.qz-likert-btn.on { border-color:var(--acc); background:var(--acc); color:#201d18; }
 .qz-likert-labels { display:flex; justify-content:space-between; font-size:11px; color:${FAINT}; margin-top:6px; line-height:1.4; gap:10px; }
 .qz-likert-labels span { max-width:44%; }
 .qz-likert-labels span:last-child { text-align:end; }
@@ -38,16 +38,16 @@ export const QUIZ_CSS = `
 .qz-choice.on { border-color:var(--acc); background:#fff6ec; }
 .qz-example { font-size:12.5px; color:${SUB}; font-style:italic; text-align:center; line-height:1.55; padding:0 10px; max-width:420px; margin:0 auto; }
 .qz-deeper { margin-top:8px; }
-.qz-deeper-toggle { display:flex; align-items:center; gap:5px; background:none; border:none; color:var(--acc); font-weight:800; font-size:12px; cursor:pointer; font-family:inherit; padding:2px 0; }
+.qz-deeper-toggle { display:flex; align-items:center; gap:5px; background:none; border:none; color:var(--universe-accent,#1f4f85); font-weight:800; font-size:12px; cursor:pointer; font-family:inherit; padding:2px 0; }
 .qz-deeper-body { font-size:12.5px; color:${SUB}; line-height:1.6; margin-top:8px; padding-top:8px; border-top:1px dashed ${LINE}; }
 
 [data-home-theme='dark'] .qz-progress { color:#c9b384; }
 [data-home-theme='dark'] .qz-item-text { color:#f0e2c0; }
 [data-home-theme='dark'] .qz-likert-btn { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
-[data-home-theme='dark'] .qz-likert-labels { color:#8f7d58; }
+[data-home-theme='dark'] .qz-likert-labels { color:#9b8c69; }
 [data-home-theme='dark'] .qz-intro-meta { color:#c9b384; }
-[data-home-theme='dark'] .qz-cite { color:#8f7d58; }
-[data-home-theme='dark'] .qz-disclaimer { color:#8f7d58; }
+[data-home-theme='dark'] .qz-cite { color:#9b8c69; }
+[data-home-theme='dark'] .qz-disclaimer { color:#9b8c69; }
 [data-home-theme='dark'] .qz-trait-name { color:#f0e2c0; }
 [data-home-theme='dark'] .qz-trait-track { background:#332818; }
 [data-home-theme='dark'] .qz-trait-blurb { color:#c9b384; }

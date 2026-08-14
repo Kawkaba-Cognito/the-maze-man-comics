@@ -51,7 +51,7 @@ export default function HabitReminderBanner() {
         onClick={() => {
           playSfx?.('click');
           try { sessionStorage.setItem(OPEN_DAILY_KEY, '1'); } catch { /* ignore */ }
-          switchTab('habits');
+          switchTab('relax');
         }}
       >
         {isAr ? 'اليوم' : 'Today'}

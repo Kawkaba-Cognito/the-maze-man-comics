@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Star, CaretRight, CaretLeft } from '@phosphor-icons/react';
+import { Star, CaretRight, CaretLeft, ShieldCheck, Sparkle } from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
 import BreathePractice from './BreathePractice';
 import GroundingPractice from './GroundingPractice';
@@ -13,6 +13,18 @@ import { planetTextureLayerStyle } from '../../lib/planetTexture';
 import { planetIconUrl } from '../../lib/planetIcons';
 import { OPEN_DAILY_KEY } from './HabitReminderBanner';
 import UniverseStage from '../../components/shared/UniverseStage';
+import {
+  PERSONALIZATION_EVENT,
+  getWellbeingContext,
+  personalizationEnabled,
+  resetPersonalization,
+  saveWellbeingContext,
+  setPersonalizationEnabled,
+} from '../personalization/neuralPersonalization.js';
+import {
+  getWellbeingRecommendation,
+  recordWellbeingSelection,
+} from '../personalization/wellbeingRecommendations.js';
 
 /*
  * Wellbeing — 8-Week MBSR Tracker (lives under the Stress & Calm category).
@@ -29,19 +41,19 @@ import UniverseStage from '../../components/shared/UniverseStage';
  */
 
 const PHASES = [
-  { phase: 'I', label: 'The Body', weeks: [1, 2], technique: 'Body Scan', duration: '20–30 min', color: '#d07a3e', icon: '🫁',
+  { phase: 'I', label: 'The Body', weeks: [1, 2], technique: 'Body Scan', duration: '20–30 min', color: '#d07a3e', ink: '#7e3b16', inkDark: '#e79a63', icon: '🫁',
     instructions: ['Lie down on your back in a comfortable position.', 'Close your eyes and take three slow breaths to settle in.', 'Bring attention to your LEFT toes — just notice whatever is there. Tingling? Warmth? Numbness? Nothing?', 'Slowly move up: foot → ankle → calf → knee → thigh.', 'Repeat on the RIGHT leg.', 'Continue upward: hips → lower back → abdomen → chest → shoulders.', 'Move down each arm: shoulder → elbow → wrist → fingers.', 'Finally: neck → jaw → face → crown of the head.', "If you fall asleep — that's fine. If your mind wanders — gently return. No judgment."],
     tip: "Don't try to relax each body part. Just notice it, as if you're a curious scientist." },
-  { phase: 'II', label: 'The Breath', weeks: [3, 4], technique: 'Mindful Breathing', duration: '20 min', color: '#3f7fc4', icon: '🌬️',
+  { phase: 'II', label: 'The Breath', weeks: [3, 4], technique: 'Mindful Breathing', duration: '20 min', color: '#3f7fc4', ink: '#224c7c', inkDark: '#70a5df', icon: '🌬️',
     instructions: ['Sit upright — on a chair, floor, or cushion. Dignified but not rigid.', 'Eyes closed or softly focused on the floor 3 feet ahead.', 'Choose your anchor: the sensation of air at your NOSTRILS, or the RISE AND FALL of your abdomen.', 'Simply rest attention there. Feel the cool air coming in, the warm air going out.', 'When your mind wanders (it will, within seconds) — that is NORMAL. Gently return.', "Each return is one 'rep.' You are literally training your attention muscle.", 'No counting. No controlling the breath. Just observing.'],
     tip: 'The goal is NOT to have a clear mind. The goal is to notice when it wanders, and return. That noticing IS the practice.' },
-  { phase: 'III', label: 'Movement', weeks: [5], technique: 'Mindful Stretching', duration: '20–30 min', color: '#3a9d5d', icon: '🧘',
+  { phase: 'III', label: 'Movement', weeks: [5], technique: 'Mindful Stretching', duration: '20–30 min', color: '#3a9d5d', ink: '#245733', inkDark: '#70c686', icon: '🧘',
     instructions: ['Stand or sit. No special equipment needed.', 'Begin with a slow neck roll — left, forward, right. Move at 10% of normal speed.', 'Raise both arms slowly overhead. Feel every millimeter of the stretch.', 'Shoulder rolls — forward 5 times, backward 5 times. Full attention on the sensation.', 'Gentle forward fold from the waist — feel the pull in your hamstrings.', 'Seated spinal twist — left then right. Notice which side feels different.', 'Throughout all movement: the mind is FULLY in the body. If it wanders, return to sensation.'],
     tip: 'This week bridges mental and physical mindfulness. It also builds body awareness that deepens your future sitting practice.' },
-  { phase: 'IV', label: 'Observation', weeks: [6, 7], technique: 'Open Awareness', duration: '20 min', color: '#8b5cc4', icon: '🌌',
+  { phase: 'IV', label: 'Observation', weeks: [6, 7], technique: 'Open Awareness', duration: '20 min', color: '#8b5cc4', ink: '#623d85', inkDark: '#b894df', icon: '🌌',
     instructions: ['Sit as in the breathing practice. Settle with 3 breaths.', 'Instead of focusing on ONE thing — open your awareness to EVERYTHING.', "Notice sounds — near, far, loud, faint. Don't label them, just hear.", 'Notice physical sensations arising and passing — an itch, a heaviness, a tightness.', 'Notice thoughts — watch them appear like bubbles, without grabbing onto them.', 'You are the sky. Thoughts, feelings, sounds are clouds passing through.', 'If you feel lost — return briefly to the breath, then open up again.'],
     tip: 'This phase can feel uncomfortable at first — you have no single anchor. That discomfort IS the training.' },
-  { phase: 'V', label: 'Integration', weeks: [8], technique: 'Choiceless Awareness', duration: '20–30 min', color: '#cf5b8f', icon: '✨',
+  { phase: 'V', label: 'Integration', weeks: [8], technique: 'Choiceless Awareness', duration: '20–30 min', color: '#cf5b8f', ink: '#863755', inkDark: '#e58ab4', icon: '✨',
     instructions: ['Sit and begin with 5 minutes of focused breath (Phase II style).', 'Then expand to open awareness (Phase IV style) for 5–10 minutes.', 'Alternate between the two freely — breath when you need grounding, open when you feel stable.', 'After your sitting practice, choose ONE daily chore today: washing dishes, making coffee, walking.', "Do that chore with complete attention — as if you've never done it before.", 'Notice textures, temperatures, sounds, smells. Notice resistance or boredom. Stay anyway.', 'This is where MBSR becomes a way of life, not just a 20-minute session.'],
     tip: "Formal practice ends, but mindfulness doesn't. Every moment of daily life is now an opportunity to practice." },
 ];
@@ -80,7 +92,8 @@ const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return nu
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } };
 
 function MbsrTracker({ onBack }) {
-  const { playSfx } = useApp();
+  const { playSfx, appTheme } = useApp();
+  const phaseInk = (phase) => (appTheme === 'light' ? phase.ink : phase.inkDark);
   const today = dateKey(new Date());
 
   const [tab, setTab] = useState('today');
@@ -164,7 +177,7 @@ function MbsrTracker({ onBack }) {
           </div>
           {todayPhase && (
             <div className="phase-info">
-              <span style={{ color: todayPhase.color, fontWeight: 700 }}>Phase {todayPhase.phase}: {todayPhase.label}</span> · Week {currentWeek}, Day {currentDay}
+              <span style={{ color: phaseInk(todayPhase), fontWeight: 700 }}>Phase {todayPhase.phase}: {todayPhase.label}</span> · Week {currentWeek}, Day {currentDay}
             </div>
           )}
         </div>
@@ -196,7 +209,7 @@ function MbsrTracker({ onBack }) {
               <div className="technique-card" style={{ background: `linear-gradient(135deg, ${p.color}1f, ${p.color}0c)`, border: `1.5px solid ${p.color}55` }}>
                 <div className="technique-header">
                   <div>
-                    <div style={{ fontSize: 11, color: p.color, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4, fontWeight: 800 }}>Today's Practice</div>
+                    <div style={{ fontSize: 11, color: phaseInk(p), letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4, fontWeight: 800 }}>Today's Practice</div>
                     <div className="technique-name">{p.technique}</div>
                     <div className="technique-duration">{p.duration}</div>
                   </div>
@@ -218,14 +231,14 @@ function MbsrTracker({ onBack }) {
                     ))}
                   </div>
                   <div className="action-btns">
-                    <button className={`begin-btn${timerActive ? ' begin-btn--paused' : ''}`} onClick={toggleTimer} style={timerActive ? undefined : { background: `linear-gradient(135deg,${p.color},${p.color}cc)`, color: '#fff' }}>
+                    <button className={`begin-btn${timerActive ? ' begin-btn--paused' : ''}`} onClick={toggleTimer} style={timerActive ? undefined : { background: `linear-gradient(135deg,${p.color},${p.color}cc)`, color: '#201d18' }}>
                       {timerActive ? '⏸ Pause' : timerSeconds > 0 ? '▶ Resume' : '▶ Begin session'}
                     </button>
                     {timerSeconds > 0 && <button className="reset-btn" onClick={resetTimer}>↺</button>}
                   </div>
                 </div>
 
-                <button className="done-btn" onClick={() => toggleDay(today)} style={completed[today] ? { background: `${p.color}26`, borderColor: p.color, color: p.color } : undefined}>
+                <button className="done-btn" onClick={() => toggleDay(today)} style={completed[today] ? { background: `${p.color}26`, borderColor: p.color, color: phaseInk(p) } : undefined}>
                   {completed[today] ? '✓ Session complete' : 'Mark as done'}
                 </button>
               </div>
@@ -234,12 +247,12 @@ function MbsrTracker({ onBack }) {
                 <div className="section-label">Step-by-step instructions</div>
                 {p.instructions.map((s, i) => (
                   <div key={i} className="step-item">
-                    <div className="step-num" style={{ background: `${p.color}1f`, borderColor: `${p.color}66`, color: p.color }}>{i + 1}</div>
+                    <div className="step-num" style={{ background: `${p.color}1f`, borderColor: `${p.color}66`, color: phaseInk(p) }}>{i + 1}</div>
                     <div className="step-text">{s}</div>
                   </div>
                 ))}
                 <div className="insight-box" style={{ borderLeftColor: p.color, background: `${p.color}10` }}>
-                  <div className="insight-label" style={{ color: p.color }}>💡 KEY INSIGHT</div>
+                  <div className="insight-label" style={{ color: phaseInk(p) }}>💡 KEY INSIGHT</div>
                   <div className="insight-text">{p.tip}</div>
                 </div>
               </div>
@@ -272,7 +285,7 @@ function MbsrTracker({ onBack }) {
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
                 {PHASES.map((ph) => (
-                  <div key={ph.phase} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#8a7f6f' }}>
+                  <div key={ph.phase} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: SUB }}>
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: ph.color }} />Ph.{ph.phase} {ph.label}
                   </div>
                 ))}
@@ -283,7 +296,7 @@ function MbsrTracker({ onBack }) {
                 return (
                   <div key={wi} className="week-row">
                     <div className="week-label-row">
-                      <div className="week-label" style={{ color: phase.color }}>Week {week}</div>
+                      <div className="week-label" style={{ color: phaseInk(phase) }}>Week {week}</div>
                       <div className="week-technique">{phase.technique}</div>
                     </div>
                     <div className="day-grid">
@@ -297,7 +310,7 @@ function MbsrTracker({ onBack }) {
                           <button
                             key={di}
                             className={`day-btn${isToday ? ' today-day' : ''}${isFuture ? ' future-day' : ''}`}
-                            style={{ ...(isToday ? { borderColor: phase.color, borderWidth: 2 } : {}), ...(isDone ? { background: `${phase.color}2e`, color: phase.color, borderColor: `${phase.color}80` } : {}) }}
+                            style={{ ...(isToday ? { borderColor: phase.color, borderWidth: 2 } : {}), ...(isDone ? { background: `${phase.color}2e`, color: phaseInk(phase), borderColor: `${phase.color}80` } : {}) }}
                             onClick={isFuture ? undefined : () => toggleDay(dk)}
                           >
                             {isDone ? '✓' : isFuture ? '·' : di + 1}
@@ -309,17 +322,17 @@ function MbsrTracker({ onBack }) {
                   </div>
                 );
               })}
-              <div className="legend-box"><span style={{ color: '#2e8b57' }}>✓</span> = done &nbsp;·&nbsp; <span style={{ color: '#b9842f' }}>●</span> dot = has note &nbsp;·&nbsp; tap any past/today day to toggle</div>
+              <div className="legend-box"><span style={{ color: '#2e8b57' }}>✓</span> = done &nbsp;·&nbsp; <span style={{ color: '#6b4d16' }}>●</span> dot = has note &nbsp;·&nbsp; tap any past/today day to toggle</div>
             </>
           )}
 
           {tab === 'guide' && (
             <>
               <div className="serif rx-heading-ink" style={{ fontSize: 22, marginBottom: 6 }}>The full protocol</div>
-              <div style={{ fontSize: 13, color: '#8a7f6f', marginBottom: 20 }}>Reference guide — all phases, dos & don'ts.</div>
+              <div style={{ fontSize: 13, color: SUB, marginBottom: 20 }}>Reference guide — all phases, dos & don'ts.</div>
 
               <div className="principle-card">
-                <div className="section-label" style={{ color: '#b9842f' }}>Core principles</div>
+                <div className="section-label" style={{ color: '#6b4d16' }}>Core principles</div>
                 {[['⚡', 'Minimum effective dose', 'About 20 minutes a day. Short and consistent beats long and rare.'], ['🚫', 'The non-striving rule', 'Don\'t try to "feel relaxed." Just notice what\'s happening — even if it\'s stress.'], ['🧬', 'Practice adds up', 'Several weeks of regular practice is linked, in studies, to better attention and stress regulation — and in some research, measurable brain changes.']].map(([icon, title, text]) => (
                   <div key={title} className="principle-item">
                     <div className="principle-icon">{icon}</div>
@@ -332,7 +345,7 @@ function MbsrTracker({ onBack }) {
                 <div key={ph.phase} className="phase-guide-card" style={{ background: `${ph.color}0d`, borderColor: `${ph.color}40` }}>
                   <div className="phase-guide-header">
                     <div>
-                      <div className="phase-guide-sub" style={{ color: ph.color }}>Phase {ph.phase} · Week{ph.weeks.length > 1 ? 's' : ''} {ph.weeks.join('–')}</div>
+                      <div className="phase-guide-sub" style={{ color: phaseInk(ph) }}>Phase {ph.phase} · Week{ph.weeks.length > 1 ? 's' : ''} {ph.weeks.join('–')}</div>
                       <div className="phase-guide-name">{ph.technique}</div>
                     </div>
                     <div style={{ fontSize: 32 }}>{ph.icon}</div>
@@ -360,7 +373,7 @@ function MbsrTracker({ onBack }) {
               ))}
 
               <div className="principle-card" style={{ marginTop: 6 }}>
-                <div className="section-label" style={{ color: '#b9842f' }}>Daily pre-session checklist</div>
+                <div className="section-label" style={{ color: '#6b4d16' }}>Daily pre-session checklist</div>
                 {['Set a timer — use a neutral, calm sound.', 'Posture: upright but not rigid. "Dignified but relaxed."', 'Eyes: closed, or softly focused on the floor 3 feet ahead.', 'Every time distracted → smile inwardly → return to anchor.'].map((item, i) => (
                   <div key={i} className="checklist-item"><div className="check-num">{i + 1}</div>{item}</div>
                 ))}
@@ -391,7 +404,7 @@ function MbsrTracker({ onBack }) {
 
 const SERIF = "'Cormorant Garamond', Georgia, serif";
 const SANS = "'Outfit', system-ui, sans-serif";
-const INK = '#2d2210'; const SUB = '#8a7f6f'; const FAINT = '#b3a288'; const LINE = '#e3d6c4'; const CARD = '#fffdf8'; const GOLD = '#b9842f';
+const INK = '#2d2210'; const SUB = '#524b3f'; const FAINT = '#5a5144'; const LINE = '#e3d6c4'; const CARD = '#fffdf8'; const GOLD = '#b9842f'; const GOLD_TEXT = '#6b4d16';
 const CSS = `
 .rx-root { position:fixed; inset:0; z-index:50; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--color-training-palette-surface,#fff7f2); color:${INK}; font-family:${SANS}; }
 .rx-root *, .rx-root *::before, .rx-root *::after { box-sizing:border-box; }
@@ -399,9 +412,9 @@ const CSS = `
 .rx-back { position:absolute; top:14px; left:12px; z-index:20; width:36px; height:36px; border-radius:10px; border:2px solid ${LINE}; background:${CARD}; color:#141210; font-size:22px; line-height:1; cursor:pointer; }
 .rx-root .header { padding:24px 20px 16px; background:linear-gradient(180deg,#fffaf3 0%,var(--color-training-palette-surface,#fff7f2) 100%); }
 .rx-root .header-row { display:flex; justify-content:space-between; align-items:flex-start; padding-left:42px; }
-.rx-root .header-sub { font-size:11px; letter-spacing:3px; color:${GOLD}; text-transform:uppercase; margin-bottom:4px; font-weight:700; }
+.rx-root .header-sub { font-size:11px; letter-spacing:3px; color:${GOLD_TEXT}; text-transform:uppercase; margin-bottom:4px; font-weight:700; }
 .rx-root .header-title { font-family:${SERIF}; font-size:32px; font-weight:600; line-height:1.04; color:${INK}; }
-.rx-root .header-title em { font-style:italic; color:${GOLD}; }
+.rx-root .header-title em { font-style:italic; color:${GOLD_TEXT}; }
 .rx-root .header-stats { text-align:right; }
 .rx-root .stat-num { font-size:28px; font-weight:700; line-height:1; }
 .rx-root .stat-label { font-size:10px; color:${SUB}; letter-spacing:1px; }
@@ -410,7 +423,7 @@ const CSS = `
 .rx-root .phase-info { margin-top:8px; font-size:12px; color:${SUB}; }
 .rx-root .tabs { display:flex; border-bottom:2px solid ${LINE}; background:#fffaf3; position:sticky; top:0; z-index:10; }
 .rx-root .tab-btn { flex:1; padding:13px 0; background:none; border:none; border-bottom:3px solid transparent; color:${SUB}; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit; transition:color .2s; margin-bottom:-2px; }
-.rx-root .tab-btn.active { color:${GOLD}; border-bottom-color:${GOLD}; }
+.rx-root .tab-btn.active { color:${GOLD_TEXT}; border-bottom-color:${GOLD}; }
 .rx-root .content { padding:20px; }
 .rx-root .section-label { font-size:11px; color:${SUB}; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; font-weight:700; }
 .rx-root .serif { font-family:${SERIF}; font-weight:600; }
@@ -462,7 +475,7 @@ const CSS = `
 .rx-root .phase-guide-name { font-family:${SERIF}; font-weight:600; font-size:23px; color:${INK}; margin-top:2px; }
 .rx-root .phase-guide-dur { font-size:12px; color:${FAINT}; margin-bottom:10px; }
 .rx-root .phase-step { font-size:13px; color:#6a5a40; line-height:1.6; padding-left:16px; position:relative; margin-bottom:6px; }
-.rx-root .phase-step::before { content:'▸'; position:absolute; left:0; font-size:11px; color:${GOLD}; }
+.rx-root .phase-step::before { content:'▸'; position:absolute; left:0; font-size:11px; color:${GOLD_TEXT}; }
 .rx-root .phase-tip { margin-top:10px; padding:10px 12px; background:#fbf5ec; border-radius:9px; font-size:12px; color:#6a5a40; border-left:4px solid; }
 .rx-root .dos-head { font-size:13px; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; font-weight:800; }
 .rx-root .do-card { display:flex; gap:12px; margin-bottom:14px; border-radius:12px; padding:14px; border:2px solid; }
@@ -470,7 +483,7 @@ const CSS = `
 .rx-root .do-title { font-size:13.5px; font-weight:800; margin-bottom:3px; }
 .rx-root .do-text { font-size:13px; color:#6a5a40; line-height:1.5; }
 .rx-root .checklist-item { display:flex; gap:10px; margin-bottom:10px; font-size:13px; color:${SUB}; line-height:1.5; }
-.rx-root .check-num { min-width:22px; height:22px; border:2px solid ${LINE}; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; color:${GOLD}; flex-shrink:0; font-weight:800; }
+.rx-root .check-num { min-width:22px; height:22px; border:2px solid ${LINE}; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; color:${GOLD_TEXT}; flex-shrink:0; font-weight:800; }
 .rx-root .disclaimer { margin-top:18px; font-size:11.5px; color:${FAINT}; line-height:1.5; text-align:center; padding:0 8px; }
 .rx-root .modal-overlay { position:fixed; inset:0; background:rgba(26,18,8,0.45); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
 .rx-root .modal { background:${CARD}; border:2px solid #1a1208; border-radius:18px; padding:26px; width:100%; max-width:340px; box-shadow:6px 6px 0 rgba(26,18,8,0.18); }
@@ -479,12 +492,12 @@ const CSS = `
 .rx-root .date-input { width:100%; background:#fff; border:2px solid ${LINE}; border-radius:10px; padding:12px 14px; color:${INK}; font-size:15px; font-family:inherit; margin-bottom:16px; outline:none; }
 .rx-root .modal-btns { display:flex; gap:10px; }
 .rx-root .cancel-btn { flex:1; padding:12px; border-radius:10px; background:#efe6d6; border:none; color:${SUB}; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
-.rx-root .confirm-btn { flex:2; padding:12px; border-radius:10px; background:linear-gradient(135deg,#c89a4a,${GOLD}); border:none; color:#fff; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; }
+.rx-root .confirm-btn { flex:2; padding:12px; border-radius:10px; background:linear-gradient(135deg,#c89a4a,${GOLD}); border:none; color:#201d18; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; }
 .rx-root .empty-state { text-align:center; padding:44px 0; }
 .rx-root .empty-emoji { font-size:48px; margin-bottom:16px; }
 .rx-root .empty-title { font-family:${SERIF}; font-weight:600; font-size:27px; color:${INK}; margin-bottom:8px; }
 .rx-root .empty-sub { color:${SUB}; font-size:14px; margin-bottom:24px; line-height:1.6; max-width:320px; margin-left:auto; margin-right:auto; }
-.rx-root .start-btn { background:linear-gradient(135deg,#c89a4a,${GOLD}); color:#fff; border:none; border-radius:12px; padding:14px 32px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; box-shadow:3px 3px 0 #1a1208; }
+.rx-root .start-btn { background:linear-gradient(135deg,#c89a4a,${GOLD}); color:#201d18; border:none; border-radius:12px; padding:14px 32px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; box-shadow:3px 3px 0 #1a1208; }
 .rx-root .go-btn { background:#efe6d6; color:#7a5a1e; border:none; border-radius:10px; padding:12px 24px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
 .rx-root .rx-heading-ink { color:${INK}; }
 .rx-root .begin-btn--paused { background:#efe6d6; color:#7a6a52; }
@@ -505,7 +518,7 @@ const CSS = `
 [data-home-theme='dark'] .rx-root .technique-name { color:#f0e2c0; }
 [data-home-theme='dark'] .rx-root .technique-duration { color:#c9b384; }
 [data-home-theme='dark'] .rx-root .timer-display { color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .timer-target { color:#8f7d58; }
+[data-home-theme='dark'] .rx-root .timer-target { color:#9b8c69; }
 [data-home-theme='dark'] .rx-root .min-btn { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
 [data-home-theme='dark'] .rx-root .min-btn.active-min { background:color-mix(in srgb, var(--phase-color) 22%, #14100a); }
 [data-home-theme='dark'] .rx-root .reset-btn { background:#332818; color:#c9b384; }
@@ -514,8 +527,8 @@ const CSS = `
 [data-home-theme='dark'] .rx-root .insight-text { color:#c9b384; }
 [data-home-theme='dark'] .rx-root .note-area { background:#211a10; border-color:rgba(212,168,80,0.25); color:#f0e2c0; }
 [data-home-theme='dark'] .rx-root .save-btn { background:#332818; color:#e8ac4e; }
-[data-home-theme='dark'] .rx-root .week-technique { color:#8f7d58; }
-[data-home-theme='dark'] .rx-root .day-btn { background:#211a10; border-color:rgba(212,168,80,0.25); color:#8f7d58; }
+[data-home-theme='dark'] .rx-root .week-technique { color:#9b8c69; }
+[data-home-theme='dark'] .rx-root .day-btn { background:#211a10; border-color:rgba(212,168,80,0.25); color:#9b8c69; }
 [data-home-theme='dark'] .rx-root .day-btn.future-day { background:#1a140c; color:#4a3c28; }
 [data-home-theme='dark'] .rx-root .legend-box { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
 [data-home-theme='dark'] .rx-root .ghost-pill { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
@@ -523,13 +536,13 @@ const CSS = `
 [data-home-theme='dark'] .rx-root .principle-title { color:#f0e2c0; }
 [data-home-theme='dark'] .rx-root .principle-text { color:#c9b384; }
 [data-home-theme='dark'] .rx-root .phase-guide-name { color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .phase-guide-dur { color:#8f7d58; }
+[data-home-theme='dark'] .rx-root .phase-guide-dur { color:#9b8c69; }
 [data-home-theme='dark'] .rx-root .phase-step { color:#c9b384; }
 [data-home-theme='dark'] .rx-root .phase-tip { background:#1a140c; color:#c9b384; }
 [data-home-theme='dark'] .rx-root .do-text { color:#c9b384; }
 [data-home-theme='dark'] .rx-root .checklist-item { color:#c9b384; }
 [data-home-theme='dark'] .rx-root .check-num { border-color:rgba(212,168,80,0.3); }
-[data-home-theme='dark'] .rx-root .disclaimer { color:#8f7d58; }
+[data-home-theme='dark'] .rx-root .disclaimer { color:#9b8c69; }
 [data-home-theme='dark'] .rx-root .modal-overlay { background:rgba(0,0,0,0.6); }
 [data-home-theme='dark'] .rx-root .modal { background:#211a10; border-color:rgba(212,168,80,0.35); }
 [data-home-theme='dark'] .rx-root .modal-title { color:#f0e2c0; }
@@ -751,9 +764,45 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
   const [group, setGroup] = useState('program'); // 'program' | 'quick'
   const [favs, setFavs] = useState(() => rxLoad(FAV_KEY, []));
   const [orders, setOrders] = useState(() => rxLoad(ORDER_KEY, {}));
+  const [personalizationOn, setPersonalizationOn] = useState(personalizationEnabled);
+  const [wellbeingContext, setWellbeingContext] = useState(() => getWellbeingContext());
   const favSet = useMemo(() => new Set(favs), [favs]);
   const byId = (id) => RELAX_PRACTICES.find((p) => p.id === id);
   const cat = openCat && openCat !== 'favorites' ? CATEGORIES.find((c) => c.id === openCat) : null;
+  const wellbeingRecommendation = getWellbeingRecommendation(wellbeingContext);
+  const recommendedPractice = byId(wellbeingRecommendation.id);
+
+  useEffect(() => {
+    const syncPersonalization = (event) => {
+      setPersonalizationOn(Boolean(event.detail?.enabled));
+      if (event.detail?.reset) setWellbeingContext(getWellbeingContext());
+    };
+    window.addEventListener(PERSONALIZATION_EVENT, syncPersonalization);
+    return () => window.removeEventListener(PERSONALIZATION_EVENT, syncPersonalization);
+  }, []);
+
+  const updateWellbeingContext = (field, value) => {
+    const next = saveWellbeingContext({ ...wellbeingContext, [field]: value });
+    setWellbeingContext(next);
+  };
+
+  const enablePersonalization = () => {
+    playSfx?.('click');
+    setPersonalizationEnabled(true);
+    setPersonalizationOn(true);
+  };
+
+  const clearPersonalization = () => {
+    playSfx?.('click');
+    resetPersonalization({ enabled: false });
+    setWellbeingContext(getWellbeingContext());
+    setPersonalizationOn(false);
+  };
+
+  const openPersonalizedPractice = (id) => {
+    if (personalizationOn) recordWellbeingSelection(id, wellbeingContext);
+    onOpen(id);
+  };
 
   const toggleFav = (id) => {
     playSfx?.('click');
@@ -778,8 +827,8 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
     return (
       <div
         className="rx-menu-card" role="button" tabIndex={0} style={{ borderColor: `${o.color}55` }}
-        onClick={() => { if (justDragged && justDragged()) return; onOpen(o.id); }}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(o.id); } }}
+        onClick={() => { if (justDragged && justDragged()) return; openPersonalizedPractice(o.id); }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPersonalizedPractice(o.id); } }}
       >
         <span className="rx-menu-ic" style={{ background: `${o.color}1f` }}>{o.icon}</span>
         <span className="rx-menu-body">
@@ -794,7 +843,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
             onClick={(e) => { e.stopPropagation(); toggleFav(o.id); }}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleFav(o.id); } }}
           >{faved ? '★' : '☆'}</span>
-          <span className="rx-menu-chev" style={{ color: o.color }}>{isAr ? '‹' : '›'}</span>
+          <span className="rx-menu-chev">{isAr ? '‹' : '›'}</span>
         </span>
       </div>
     );
@@ -815,7 +864,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
     <div className="header">
       <button className="rx-back" onClick={onBack} aria-label="Back">‹</button>
       <div style={{ paddingInlineStart: 42 }}>
-        <div className="header-sub" style={{ color }}>{isAr ? 'العافية' : 'Wellbeing'}</div>
+        <div className="header-sub">{isAr ? 'العافية' : 'Wellbeing'}</div>
         <div className="rx-cat-hd">
           <span className="rx-cat-ic rx-cat-ic--hd" style={{ background: `${color}22`, color }}>{icon}</span>
           <span className="header-title serif">{title}</span>
@@ -925,15 +974,32 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
    * sticker outline trick) — four passes and no extra DOM. The plain colour
    * discs, which really are circles, take a crisp ring instead.
    */
-  const orbArtFilter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.42))';
+  /*
+   * ⚠ THIS WAS DESCRIBED BUT NEVER IMPLEMENTED. The comment above promised four
+   * 1-pixel drop-shadows; the constant underneath it was a single soft one,
+   * applied in BOTH appearances. A soft shadow does nothing for contour, so on
+   * the pale sky the artwork dissolved exactly as the comment said it would —
+   * pale herb on pale sky, with the note explaining the fix sitting directly
+   * above the line that did not do it.
+   *
+   * On the dark sky the glow still does the separating, so the soft shadow is
+   * right there and the outline would read as a sticker for no reason.
+   */
+  const contour = 'var(--universe-ink)';
+  const orbArtFilter = dark
+    ? 'drop-shadow(0 4px 8px rgba(0,0,0,0.42))'
+    : `drop-shadow(1px 0 0 ${contour}) drop-shadow(-1px 0 0 ${contour})`
+      + ` drop-shadow(0 1px 0 ${contour}) drop-shadow(0 -1px 0 ${contour})`
+      + ' drop-shadow(0 4px 8px rgba(32,29,24,0.28))';
 
   return (
     <div
       className="rx-root"
       dir={isAr ? 'rtl' : 'ltr'}
-      style={{ overflow: 'hidden', background: 'transparent' }}
+      style={{ background: 'transparent' }}
     >
       <style>{MENU_CSS}</style>
+      <div className="rx-landing-stage">
       <UniverseStage accent="wellbeing" dark={dark} homeDusk />
 
       {/* Landing is a top-level tab (nav bar visible) — no back button, matching
@@ -1014,6 +1080,103 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
           : <CaretRight size={13} weight="bold" color={FAV_GOLD} aria-hidden="true" />}
       </button>
 
+      <div
+        className="rx-fade"
+        style={{
+          position: 'absolute', top: 'calc(158px + env(safe-area-inset-top))', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 4, width: 'min(92vw, 430px)', minHeight: 54, padding: '9px 11px', borderRadius: 16,
+          border: '1px solid var(--universe-line)', background: 'var(--universe-glass-strong)',
+          boxShadow: '0 7px 22px rgba(0,0,0,0.22)', color: skyText,
+          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
+        }}
+      >
+        {personalizationOn && recommendedPractice ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Sparkle size={19} weight="fill" color="var(--universe-accent)" aria-hidden="true" />
+              <button
+                type="button"
+                onClick={() => { playSfx?.('click'); openPersonalizedPractice(recommendedPractice.id); }}
+                style={{
+                  flex: 1, minWidth: 0, border: 0, padding: 0, background: 'none', color: 'inherit',
+                  cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
+                }}
+              >
+                <span style={{ display: 'block', fontWeight: 850, fontSize: 13.5 }}>
+                  {isAr ? 'مقترح لك' : 'For you'} · {isAr ? recommendedPractice.titleAr : recommendedPractice.title}
+                </span>
+                <span style={{ display: 'block', color: skyMuted, fontSize: 10.8, marginTop: 1 }}>
+                  {isAr ? 'اقتراح عافية فقط — ليس تشخيصاً طبياً' : 'Wellbeing suggestion only — never a diagnosis'}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={clearPersonalization}
+                title={isAr ? 'إيقاف التخصيص ومسح النموذج' : 'Turn off personalization and erase its model'}
+                aria-label={isAr ? 'إيقاف التخصيص ومسح النموذج' : 'Turn off personalization and erase its model'}
+                style={{ border: 0, background: 'none', color: skyMuted, cursor: 'pointer', padding: 4, font: 'inherit', fontSize: 10.5, fontWeight: 750 }}
+              >
+                {isAr ? 'مسح' : 'Reset'}
+              </button>
+            </div>
+            <div style={{ display: 'flex', gap: 7, marginTop: 7 }}>
+              <select
+                aria-label={isAr ? 'ما الذي تحتاجه الآن؟' : 'What do you need right now?'}
+                value={wellbeingContext.need}
+                onChange={(event) => updateWellbeingContext('need', event.target.value)}
+                style={{
+                  flex: 1, minWidth: 0, height: 29, borderRadius: 9, border: '1px solid var(--universe-line)',
+                  background: 'var(--universe-glass)', color: skyText, paddingInline: 8, font: 'inherit', fontSize: 11.5,
+                }}
+              >
+                <option value="calm">{isAr ? 'الهدوء الآن' : 'Calm now'}</option>
+                <option value="sleep">{isAr ? 'النوم' : 'Sleep'}</option>
+                <option value="meaning">{isAr ? 'المعنى' : 'Meaning'}</option>
+                <option value="connection">{isAr ? 'التواصل' : 'Connection'}</option>
+                <option value="self">{isAr ? 'فهم الذات' : 'Understand myself'}</option>
+              </select>
+              <select
+                aria-label={isAr ? 'كم لديك من الوقت؟' : 'How much time do you have?'}
+                value={wellbeingContext.time}
+                onChange={(event) => updateWellbeingContext('time', event.target.value)}
+                style={{
+                  flex: 1, minWidth: 0, height: 29, borderRadius: 9, border: '1px solid var(--universe-line)',
+                  background: 'var(--universe-glass)', color: skyText, paddingInline: 8, font: 'inherit', fontSize: 11.5,
+                }}
+              >
+                <option value="quick">{isAr ? 'دقيقتان–٥' : '2–5 minutes'}</option>
+                <option value="medium">{isAr ? '١٠–١٥ دقيقة' : '10–15 minutes'}</option>
+                <option value="deep">{isAr ? '٢٠ دقيقة أو أكثر' : '20+ minutes'}</option>
+              </select>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+            <ShieldCheck size={21} weight="duotone" color="var(--universe-accent)" aria-hidden="true" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 850, fontSize: 13 }}>
+                {isAr ? 'اقتراحات عافية على هذا الجهاز' : 'On-device wellbeing suggestions'}
+              </div>
+              <div style={{ color: skyMuted, fontSize: 10.8, marginTop: 1 }}>
+                {isAr ? 'اختياراتك لا تغادر هذا الجهاز.' : 'Your choices never leave this device.'}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={enablePersonalization}
+              style={{
+                flexShrink: 0, borderRadius: 999, border: '1px solid var(--universe-line)',
+                background: 'color-mix(in srgb, var(--universe-accent) 16%, var(--universe-glass-strong))',
+                color: skyText, padding: '7px 11px', cursor: 'pointer', font: 'inherit', fontSize: 11.5, fontWeight: 850,
+              }}
+            >
+              {isAr ? 'تشغيل' : 'Turn on'}
+            </button>
+          </div>
+        )}
+      </div>
+
       {CATEGORIES.map((c, idx) => {
         const p = CAT_LAYOUT[c.id];
         const soon = c.soon && !c.items?.length;
@@ -1092,6 +1255,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
 
       <style>{`
         .rx-fade { animation: rxFade .7s ease both; }
+        .rx-landing-stage { position:relative; min-height:max(100dvh, 860px); }
         @keyframes rxFade { from { opacity:0; } to { opacity:1; } }
         .rx-planet { position:absolute; background:none; border:none; padding:0; cursor:pointer;
           animation-name: rxFloat; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
@@ -1107,6 +1271,12 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
           display:flex; align-items:center; justify-content:center;
           box-shadow: 0 12px 30px rgba(8,6,4,.28), inset 0 -8px 18px rgba(0,0,0,.14), inset 0 2px 10px rgba(255,255,255,.28);
           transition: transform .28s cubic-bezier(.3,.9,.4,1.2); }
+        /* The discs really are circles, so they take the crisp ring the artwork
+           cannot — same reason as the contour above: on beige the orb's own
+           26%-alpha glow has nothing to sit against and the edge disappears. */
+        html[data-home-theme='light'] .rx-orb {
+          box-shadow: 0 10px 22px rgba(32,29,24,.20), inset 0 -8px 18px rgba(0,0,0,.14),
+                      inset 0 2px 10px rgba(255,255,255,.28), 0 0 0 1.5px rgba(32,29,24,.30); }
         .rx-planet:hover .rx-orb { transform: scale(1.06); }
         .rx-planet:active .rx-orb { transform: scale(.95); }
         .rx-orb-shade { position:absolute; inset:0; border-radius:50%;
@@ -1128,6 +1298,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
           .rx-planet, .rx-planet-in, .rx-orb-aura, .rx-star, .rx-blob, .rx-shoot, .rx-spark, .rx-fade { animation:none !important; }
         }
       `}</style>
+      </div>
     </div>
   );
 }
@@ -1138,10 +1309,7 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
   const [view, setView] = useState(() => {
     if (entry === 'daily') return 'daily';
     try {
-      if (sessionStorage.getItem(OPEN_DAILY_KEY) === '1') {
-        sessionStorage.removeItem(OPEN_DAILY_KEY);
-        return 'daily';
-      }
+      if (sessionStorage.getItem(OPEN_DAILY_KEY) === '1') return 'daily';
     } catch { /* ignore */ }
     return 'menu';
   });
@@ -1154,6 +1322,10 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
     setImmersive('relax', view !== 'menu' && view !== 'daily');
     return () => setImmersive('relax', false);
   }, [view, setImmersive]);
+  useEffect(() => {
+    if (view !== 'daily') return;
+    try { sessionStorage.removeItem(OPEN_DAILY_KEY); } catch { /* ignore */ }
+  }, [view]);
   const openPractice = (id, from = 'menu') => {
     playSfx?.('click');
     setReturnTo(from);
@@ -1206,13 +1378,20 @@ const MENU_CSS = `
  * fixed attachment as well made Chrome drop the paint entirely (the computed
  * style still reported the gradient; the pixels stayed the page's cream).
  */
-.rx-root { position:fixed; inset:0; z-index:50; overflow-y:auto; -webkit-overflow-scrolling:touch;
+.rx-root { position:fixed; inset:0; z-index:50; min-height:0; overflow-x:hidden; overflow-y:auto;
+  overscroll-behavior-y:contain; -webkit-overflow-scrolling:touch; scrollbar-gutter:stable;
+  scrollbar-width:thin; scrollbar-color:var(--universe-line) transparent;
   background:var(--universe-dusk);
+  --rx-favorite-ink:#6b4d16;
+  --rx-success-ink:#285d3d;
   color:var(--universe-ink); font-family:${SANS}; }
+.rx-root::-webkit-scrollbar { width:9px; }
+.rx-root::-webkit-scrollbar-track { background:transparent; }
+.rx-root::-webkit-scrollbar-thumb { background:var(--universe-line); border:2px solid transparent; border-radius:999px; background-clip:padding-box; }
 .rx-root *, .rx-root *::before, .rx-root *::after { box-sizing:border-box; }
 .rx-root .rx-app { max-width:480px; margin:0 auto; padding-bottom:110px; position:relative; z-index:3; }
 .rx-root .rx-back { position:absolute; top:max(14px, env(safe-area-inset-top)); left:12px; z-index:20; width:36px; height:36px; border-radius:999px;
-  border:1px solid var(--universe-line); background:var(--universe-glass-strong); color:#e8d4a8; font-size:22px; line-height:1; cursor:pointer;
+  border:1px solid var(--universe-line); background:var(--universe-glass-strong); color:var(--universe-ink); font-size:22px; line-height:1; cursor:pointer;
   box-shadow:0 4px 14px rgba(0,0,0,0.35); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
 .rx-root .header { padding:max(24px, calc(12px + env(safe-area-inset-top))) 20px 18px; background:transparent; }
 .rx-root .header-sub { font-size:11px; letter-spacing:3px; color:var(--universe-accent); text-transform:uppercase; margin-bottom:4px; font-weight:700; }
@@ -1230,7 +1409,7 @@ const MENU_CSS = `
 .rx-root .rx-menu-title { font-family:Outfit,${SANS}; font-weight:800; font-size:18px; color:var(--universe-ink); }
 .rx-root .rx-menu-sub { font-size:12.5px; color:var(--universe-muted); line-height:1.5; }
 .rx-root .rx-menu-chev { font-size:28px; font-weight:700; flex-shrink:0; color:var(--universe-accent); }
-.rx-root .rx-menu-more { text-align:center; font-size:12px; color:#8a7a58; margin-top:6px; }
+.rx-root .rx-menu-more { text-align:center; font-size:12px; color:var(--universe-muted); margin-top:6px; }
 .rx-root .rx-cat-tile { display:flex; align-items:center; gap:14px; width:100%; text-align:start;
   background:var(--universe-glass); border:1px solid var(--universe-line); border-radius:16px; padding:16px; margin-bottom:14px;
   cursor:pointer; font-family:inherit; box-shadow:0 4px 18px rgba(0,0,0,0.35); transition:transform .1s; }
@@ -1242,21 +1421,21 @@ const MENU_CSS = `
 .rx-root .rx-cat-tag { font-size:12.5px; color:var(--universe-muted); line-height:1.4; }
 .rx-root .rx-cat-meta { display:flex; align-items:center; gap:9px; flex-shrink:0; }
 .rx-root .rx-cat-hd { display:flex; align-items:center; gap:11px; }
-.rx-root .rx-seg { display:flex; gap:5px; background:rgba(14,12,24,0.55); border:1px solid var(--universe-line); border-radius:13px; padding:4px; margin-bottom:18px; }
+.rx-root .rx-seg { display:flex; gap:5px; background:var(--universe-glass-strong); border:1px solid var(--universe-line); border-radius:13px; padding:4px; margin-bottom:18px; }
 .rx-root .rx-seg-btn { flex:1; padding:10px 0; border:none; background:none; border-radius:9px; font-family:inherit; font-size:13.5px; font-weight:800; color:var(--universe-muted); cursor:pointer; transition:all .15s; }
-.rx-root .rx-seg-btn.on { background:rgba(232,172,78,0.18); color:var(--universe-ink); box-shadow:0 2px 8px rgba(0,0,0,0.25); }
+.rx-root .rx-seg-btn.on { background:color-mix(in srgb, var(--universe-accent) 14%, var(--universe-glass-strong)); color:var(--universe-ink); box-shadow:0 2px 8px rgba(0,0,0,0.18); }
 .rx-root .rx-soon-badge { flex-shrink:0; font-size:10.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--universe-accent); background:rgba(232,172,78,0.14); border:1px solid var(--universe-line); border-radius:999px; padding:4px 11px; }
 .rx-root .rx-soon-empty { text-align:center; padding:40px 16px; }
 .rx-root .rx-soon-emoji { width:88px; height:88px; border-radius:24px; display:flex; align-items:center; justify-content:center; font-size:44px; margin:0 auto 18px; }
 .rx-root .rx-soon-title { font-family:Outfit,${SANS}; font-weight:800; font-size:24px; color:var(--universe-ink); margin-bottom:10px; }
 .rx-root .rx-soon-desc { font-size:14px; color:var(--universe-muted); line-height:1.6; max-width:320px; margin:0 auto; }
 .rx-root .rx-menu-tail { display:flex; align-items:center; gap:5px; flex-shrink:0; }
-.rx-root .rx-fav { width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:20px; line-height:1; color:#8a7a58; cursor:pointer; border-radius:9px; user-select:none; -webkit-user-select:none; transition:transform .12s ease, color .12s ease; }
+.rx-root .rx-fav { width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:20px; line-height:1; color:var(--universe-muted); cursor:pointer; border-radius:9px; user-select:none; -webkit-user-select:none; transition:transform .12s ease, color .12s ease; }
 .rx-root .rx-fav:active { transform:scale(0.82); }
-.rx-root .rx-fav.on { color:${FAV_GOLD}; }
-.rx-root .rx-fav-count { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:rgba(232,172,78,0.2); color:${FAV_GOLD}; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
-.rx-root .rx-habit-badge { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:rgba(90,160,122,0.25); color:#9ed4b0; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
-.rx-root .rx-habit-badge--done { background:#5aa07a; color:#fff; }
+.rx-root .rx-fav.on { color:var(--rx-favorite-ink); }
+.rx-root .rx-fav-count { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:rgba(232,172,78,0.2); color:var(--rx-favorite-ink); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.rx-root .rx-habit-badge { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:rgba(90,160,122,0.25); color:var(--rx-success-ink); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.rx-root .rx-habit-badge--done { background:#5aa07a; color:#201d18; }
 .rx-root .rx-cat-divider { height:1px; background:rgba(232,172,78,0.22); margin:2px 2px 18px; }
 .rx-root .rx-rl { position:relative; }
 .rx-root .rx-rl-item { will-change:transform; }
@@ -1264,4 +1443,6 @@ const MENU_CSS = `
 [dir='rtl'] .rx-root .header-title,
 [dir='rtl'] .rx-root .rx-menu-title,
 [dir='rtl'] .rx-root .rx-cat-title { font-family:Cairo,${SANS}; }
+html[data-home-theme='light'] .rx-root .header-title { text-shadow:none; }
+html[data-home-theme='dark'] .rx-root { --rx-favorite-ink:#f3c65f; --rx-success-ink:#9fd4a3; }
 `;

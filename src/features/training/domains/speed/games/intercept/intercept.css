@@ -28,16 +28,67 @@
    over it: the whole point of Intercept is a tap landing on a precise instant,
    and chrome covering the rail would eat it. */
 .ic-stage-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.ic-stage { position: relative; flex: 1; min-height: 0; }
+.ic-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  isolation: isolate;
+  overflow: hidden;
+  /* One painted surface, not a stack of full-screen overlays: the tracked
+     nebula is softly blended into Training's paper gradient. */
+  background-color: var(--play-surface-flat);
+  background-image: var(--ic-nebula), var(--play-surface);
+  background-position: center;
+  background-size: cover;
+  background-blend-mode: soft-light, normal;
+}
 
 .ic-canvas {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   display: block;
   touch-action: manipulation;
 }
+
+.ic-mission-strip {
+  width: min(720px, calc(100% - 28px));
+  min-height: 48px;
+  margin: 4px auto 0;
+  padding: 6px 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--game-accent) 36%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--play-surface) 88%, transparent);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--game-ink) 8%, transparent);
+}
+
+.ic-mission-strip > img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+
+.ic-mission-copy,
+.ic-mission-score {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.ic-mission-copy strong { font-size: 13px; }
+.ic-mission-copy span,
+.ic-mission-score span { font-size: 11px; opacity: .68; }
+.ic-mission-score { align-items: flex-end; font-variant-numeric: tabular-nums; }
+.ic-mission-score strong { font-size: 18px; color: var(--game-accent); }
 
 .ic-cue {
   position: absolute;
@@ -53,6 +104,82 @@
   max-width: 90%;
 }
 
+/* ── live readouts ───────────────────────────────────────────────────────
+   The streak and the bias meter sit at the top of the stage, clear of the rail
+   in every route: the horizontal ones run at y=0.5 and the vertical ones start
+   at y=0.08 with 26px of canvas padding above, so a chip at the top edge never
+   covers the moment of a crossing. */
+.ic-chips {
+  position: absolute;
+  top: 6px;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  pointer-events: none;
+  max-width: 94%;
+}
+
+.ic-chip {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: var(--game-ink);
+  background: color-mix(in srgb, var(--game-accent) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--game-accent) 42%, transparent);
+  white-space: nowrap;
+}
+
+.ic-chip--even {
+  background: color-mix(in srgb, var(--game-ok) 20%, transparent);
+  border-color: color-mix(in srgb, var(--game-ok) 42%, transparent);
+}
+
+.ic-chip--streak {
+  background: color-mix(in srgb, var(--game-ok) 26%, transparent);
+  border-color: color-mix(in srgb, var(--game-ok) 50%, transparent);
+}
+
+/* ── the verdict ─────────────────────────────────────────────────────────
+   OVER the finished scene, never instead of it. The whole reason this game got
+   its reveal back is that the arrival has to stay on screen while the number is
+   read; a panel that replaces the canvas is exactly what hid it in v1. Pinned
+   low so it clears the rail, and non-interactive so a tap meant for the next
+   run is never eaten by it. */
+.ic-flash {
+  position: absolute;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  bottom: calc(44px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--game-ink) 12%, transparent);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  animation: ic-flash-in 180ms ease-out;
+  white-space: nowrap;
+}
+
+.ic-flash strong { font-size: 17px; font-weight: 650; }
+.ic-flash .ic-err { font-size: 14px; opacity: .82; }
+
+.ic-flash--perfect {
+  background: color-mix(in srgb, var(--game-ok) 26%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--game-ok) 55%, transparent);
+}
+
+@keyframes ic-flash-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 /* ── feedback + results ──────────────────────────────────────────────── */
 .ic-panel {
   flex: 1;
@@ -64,6 +191,7 @@
   gap: 12px;
   padding: 20px;
   text-align: center;
+  overflow-y: auto;
 }
 
 .ic-panel h3 { margin: 0; font-size: 22px; font-weight: 650; }
@@ -85,12 +213,115 @@
 
 .ic-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
 
+/* ── Rift Defense sector choice ─────────────────────────────────────────── */
+.ic-eyebrow {
+  margin: 0;
+  color: var(--game-accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.ic-upgrade-panel { gap: 8px; }
+.ic-upgrade-station {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px color-mix(in srgb, var(--game-accent) 22%, transparent));
+}
+.ic-upgrade-copy { margin: 0 0 6px; max-width: 40ch; opacity: .72; font-size: 14px; }
+
+.ic-upgrade-grid {
+  width: min(860px, 100%);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ic-upgrade-card {
+  min-width: 0;
+  min-height: 116px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  color: var(--game-ink);
+  font: inherit;
+  text-align: start;
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 44%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--play-surface) 82%, transparent);
+  box-shadow: 0 9px 20px color-mix(in srgb, var(--game-ink) 9%, transparent);
+  cursor: pointer;
+}
+
+.ic-upgrade-card:hover,
+.ic-upgrade-card:focus-visible {
+  border-color: var(--game-accent);
+  transform: translateY(-2px);
+  outline: none;
+}
+.ic-upgrade-card > img { width: 50px; height: 50px; object-fit: contain; }
+.ic-upgrade-card > span { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.ic-upgrade-card strong { font-size: 14px; }
+.ic-upgrade-card small { font-size: 11.5px; line-height: 1.3; opacity: .7; }
+.ic-upgrade-card b { color: var(--game-accent); font-size: 13px; }
+
+/* ── Mission debrief ────────────────────────────────────────────────────── */
+.ic-debrief-panel { gap: 9px; }
+.ic-debrief-art {
+  position: relative;
+  width: 92px;
+  height: 74px;
+}
+.ic-debrief-art img:first-child {
+  position: absolute;
+  inset: 8px 12px 0;
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+}
+.ic-debrief-art img:last-child {
+  position: absolute;
+  top: -6px;
+  right: -2px;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+.ic-debrief-metrics {
+  width: min(420px, 100%);
+  padding: 12px 16px;
+  display: grid;
+  gap: 4px;
+  border: 1px solid color-mix(in srgb, var(--game-accent) 34%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--play-surface) 84%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+.ic-debrief-metrics strong { color: var(--game-accent); font-size: 18px; }
+.ic-debrief-metrics span { font-size: 13px; opacity: .76; }
+.ic-coach {
+  margin: 0;
+  max-width: 38ch;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--game-ok) 16%, transparent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* ── countdown ───────────────────────────────────────────────────────────
    Over the board rather than instead of it, so the route and the goal line are
    already readable when GO lands and the first run is not a surprise. */
 .ic-count {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -111,4 +342,17 @@
 @media (prefers-reduced-motion: reduce) {
   .ic-canvas { transition: none; }
   .ic-count { animation: none; }
+  .ic-flash { animation: none; }
+}
+
+@media (max-width: 760px) {
+  .ic-mission-strip { width: calc(100% - 20px); }
+  .ic-upgrade-grid { grid-template-columns: 1fr; max-width: 430px; }
+  .ic-upgrade-card { min-height: 84px; }
+}
+
+@media (max-height: 620px) and (min-width: 761px) {
+  .ic-upgrade-station { width: 48px; height: 48px; }
+  .ic-upgrade-card { min-height: 92px; }
+  .ic-debrief-art { height: 54px; transform: scale(.78); }
 }

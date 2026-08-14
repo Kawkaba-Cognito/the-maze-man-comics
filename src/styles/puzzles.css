@@ -56,7 +56,7 @@
   font-weight: 800;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #c8881e;
+  color: #6b4d16;
   line-height: 1.2;
 }
 
@@ -161,7 +161,7 @@
   bottom: 8px;
   font-size: 1.1rem;
   font-weight: 700;
-  color: #8a7868;
+  color: #5c534c;
   line-height: 1;
 }
 
@@ -258,7 +258,7 @@
 
 .ct-puzzle-grid-pick-chev {
   font-size: 1.35rem;
-  color: #8a7868;
+  color: #5c534c;
 }
 
 [dir='rtl'] .ct-puzzle-grid-pick-chev {
@@ -890,7 +890,12 @@
   left: 2.5px;
   bottom: 1.5px;
   font-style: normal;
-  color: #9ad8ff;
+  /* The two clues have to be told apart at a glance, so they need different
+     hues — but the down-clue was #9ad8ff, an ice blue that belongs to no other
+     surface in the app and sits right next to the warm across-clue. This green
+     is the one already used for habit badges: same job, same separation from
+     #ffe28a, and it does not drag the board back toward Cool Silver. */
+  color: #9fd4a3;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 

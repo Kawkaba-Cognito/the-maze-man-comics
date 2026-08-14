@@ -481,7 +481,7 @@ const CSS = `
 .ikg-reveal-msg { margin:0; font-size:20px; color:${INK}; text-align:center; max-width:300px; line-height:1.35; }
 .ikg-reveal-chip { display:inline-block; padding:6px 14px; border-radius:999px; border:2px solid; background:${CARD}; font-size:13px; font-weight:800; }
 .ikg-reveal-answer { margin:0; font-size:17px; line-height:1.55; color:${INK}; text-align:center; max-width:320px; font-weight:600; }
-.ikg-centre-reveal { font-size:clamp(26px,7vw,34px); color:${GOLD}; text-align:center; line-height:1.2; max-width:300px; word-break:break-word; }
+.ikg-centre-reveal { font-size:clamp(26px,7vw,34px); color:var(--universe-accent,#1f4f85); text-align:center; line-height:1.2; max-width:300px; word-break:break-word; }
 .ikg-map-body { gap:14px; }
 .ikg-final-header { display:flex; flex-direction:column; align-items:center; gap:4px; }
 .ikg-map-title { margin:0; font-size:28px; color:${INK}; text-align:center; }
@@ -501,5 +501,23 @@ const CSS = `
 .ikg-overlap-card.on { opacity:1; border-color:color-mix(in srgb, var(--ov) 55%, ${LINE}); background:color-mix(in srgb, var(--ov) 8%, ${CARD}); }
 .ikg-overlap-name { display:block; font-size:12px; font-weight:900; color:var(--ov, ${SUB}); margin-bottom:3px; }
 .ikg-overlap-snippet { font-size:12px; color:${SUB}; line-height:1.4; }
+[data-home-theme='dark'] .ikg-intro,
+[data-home-theme='dark'] .ikg-step-meta,
+[data-home-theme='dark'] .ikg-q-hint,
+[data-home-theme='dark'] .ikg-saved-date,
+[data-home-theme='dark'] .ikg-final-label,
+[data-home-theme='dark'] .ikg-section-label,
+[data-home-theme='dark'] .ikg-overlap-snippet { color:#c9b384; }
+[data-home-theme='dark'] .ikg-q-title,
+[data-home-theme='dark'] .ikg-reveal-msg,
+[data-home-theme='dark'] .ikg-reveal-answer,
+[data-home-theme='dark'] .ikg-map-title,
+[data-home-theme='dark'] .ikg-final-word,
+[data-home-theme='dark'] .ikg-map-text { color:#f0e2c0; }
+[data-home-theme='dark'] .ikg-input,
+[data-home-theme='dark'] .ikg-map-card,
+[data-home-theme='dark'] .ikg-overlap-card { background:#211a10; border-color:rgba(212,168,80,0.25); color:#f0e2c0; }
+[data-home-theme='dark'] .ikg-input--centre,
+[data-home-theme='dark'] .ikg-overlap-card.on { background:#332818; }
 .ikg-overlap-snippet.muted { opacity:0.7; }
 `;

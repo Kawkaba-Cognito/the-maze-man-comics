@@ -4,8 +4,8 @@ import {
 } from './habitState';
 
 const INK = '#2d2210';
-const SUB = '#8a7f6f';
-const FAINT = '#b3a288';
+const SUB = '#524b3f';
+const FAINT = '#5a5144';
 const LINE = '#e3d6c4';
 const CARD = '#fffdf8';
 const GOLD = '#b9842f';

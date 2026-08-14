@@ -17,8 +17,8 @@ import HabitTemplatesTab, { TEMPLATES_TAB_CSS } from './HabitTemplatesTab';
 import HabitInsightsTab, { INSIGHTS_TAB_CSS } from './HabitInsightsTab';
 
 const INK = '#2d2210';
-const SUB = '#8a7f6f';
-const FAINT = '#b3a288';
+const SUB = '#524b3f';
+const FAINT = '#5a5144';
 const LINE = '#e3d6c4';
 const CARD = '#fffdf8';
 const GOLD = '#b9842f';
@@ -743,7 +743,7 @@ ${INSIGHTS_TAB_CSS}
 .hb-grace-check { display:flex; align-items:center; gap:8px; font-size:13px; color:${SUB}; margin-bottom:14px; cursor:pointer; }
 .hb-modal-actions { display:flex; gap:10px; justify-content:flex-end; }
 .hb-btn-ghost { padding:10px 16px; border-radius:10px; border:2px solid ${LINE}; background:transparent; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; color:${SUB}; }
-.hb-btn-primary { padding:10px 20px; border-radius:10px; border:none; background:linear-gradient(135deg,#c89a4a,${GOLD}); color:#fff; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit; }
+.hb-btn-primary { padding:10px 20px; border-radius:10px; border:none; background:linear-gradient(135deg,#c89a4a,${GOLD}); color:#201d18; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit; }
 .hb-btn-primary:disabled { opacity:0.45; cursor:not-allowed; }
 .hb-domains { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
 .hb-domain { width:40px; height:40px; border-radius:10px; border:2px solid ${LINE}; background:#fffaf5; font-size:20px; cursor:pointer; }
@@ -757,6 +757,10 @@ ${INSIGHTS_TAB_CSS}
 .hb-freq { padding:8px 14px; border-radius:999px; border:2px solid ${LINE}; background:#fffaf5; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; color:${SUB}; }
 .hb-freq.on { border-color:${GOLD}; background:#fff8ef; color:${INK}; }
 
+/* The GROUND for this screen in dark is owned by global.css (the
+   html[data-home-theme='dark'] .rx-root block) — it out-specifies anything here
+   and carries !important. Do not add a competing background rule; fix it there.
+   (No backticks in this comment: the whole file is one template literal.) */
 [data-home-theme='dark'] .rx-root { color:#f0e2c0; }
 [data-home-theme='dark'] .rx-root .rx-back { background:#241c10; border-color:rgba(212,168,80,0.3); color:#f0e2c0; }
 [data-home-theme='dark'] .rx-root .header { background:linear-gradient(180deg,#1f1810 0%,var(--color-training-palette-surface) 100%); }
@@ -772,7 +776,7 @@ ${INSIGHTS_TAB_CSS}
 [data-home-theme='dark'] .hb-ring-center span { color:#c9b384; }
 [data-home-theme='dark'] .hb-hero-label { color:#c9b384; }
 [data-home-theme='dark'] .hb-hero-stat { color:#f0e2c0; }
-[data-home-theme='dark'] .hb-hero-sub { color:#8f7d58; }
+[data-home-theme='dark'] .hb-hero-sub { color:#9b8c69; }
 [data-home-theme='dark'] .hb-hero-consistency { color:#c9b384; }
 [data-home-theme='dark'] .hb-empty { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
 [data-home-theme='dark'] .hb-item { background:#211a10; border-color:rgba(212,168,80,0.22); }
@@ -780,7 +784,7 @@ ${INSIGHTS_TAB_CSS}
 [data-home-theme='dark'] .hb-check { background:#1a140c; border-color:rgba(212,168,80,0.3); }
 [data-home-theme='dark'] .hb-title { color:#f0e2c0; }
 [data-home-theme='dark'] .hb-hint { color:#c9b384; }
-[data-home-theme='dark'] .hb-auto { color:#8f7d58; background:#332818; }
+[data-home-theme='dark'] .hb-auto { color:#9b8c69; background:#332818; }
 [data-home-theme='dark'] .hb-skip-tag { color:#e8ac4e; background:#332818; }
 [data-home-theme='dark'] .hb-recipe { background:#1a140c; color:#f0e2c0; }
 [data-home-theme='dark'] .hb-stacks .hb-stack-chain { background:#211a10; border-color:rgba(212,168,80,0.22); }
@@ -792,11 +796,11 @@ ${INSIGHTS_TAB_CSS}
 [data-home-theme='dark'] .hb-add-btn { background:rgba(111,174,122,0.18); border-color:#6fae7a; color:#8fd49a; }
 [data-home-theme='dark'] .hb-edit-toggle { background:#332818; border-color:rgba(212,168,80,0.25); color:#c9b384; }
 [data-home-theme='dark'] .hb-manage { background:#211a10; border-color:rgba(212,168,80,0.22); }
-[data-home-theme='dark'] .hb-manage-label { color:#8f7d58; }
+[data-home-theme='dark'] .hb-manage-label { color:#9b8c69; }
 [data-home-theme='dark'] .hb-manage-row { border-color:rgba(212,168,80,0.14); color:#f0e2c0; }
 [data-home-theme='dark'] .hb-manage-x { background:#332818; color:#c9b384; }
 [data-home-theme='dark'] .hb-manage-add { background:#1a140c; border-color:rgba(212,168,80,0.25); color:#c9b384; }
-[data-home-theme='dark'] .hb-note { color:#8f7d58; }
+[data-home-theme='dark'] .hb-note { color:#9b8c69; }
 [data-home-theme='dark'] .hb-modal-bg { background:rgba(0,0,0,0.6); }
 [data-home-theme='dark'] .hb-modal { background:#211a10; border-color:rgba(212,168,80,0.25); }
 [data-home-theme='dark'] .hb-modal-title { color:#f0e2c0; }
