@@ -98,7 +98,19 @@ const SECRET_PATTERNS = [
 // SRI hashes are long base64 and look exactly like secrets. So do lockfile
 // integrity fields and the design baseline's hashes. Skip those lines, not
 // those files — a real key on another line of the same file must still fire.
-const SECRET_LINE_EXEMPT = /\b(integrity|sha256-|sha384-|sha512-|_SRI|SRI\s*=)/;
+/*
+ * `NOT-A-SECRET` is the escape hatch for THIS file's own self-test fixtures.
+ *
+ * The fixtures are deliberately secret-shaped — that is the whole point, they
+ * prove the detector fires — so once this script became a tracked file it
+ * started reporting itself and blocked a push. Caught live on 2026-08-15 by
+ * the pre-push hook, which is the gate working exactly as intended.
+ *
+ * Scoped to a marker rather than exempting the file, because exempting the
+ * file would mean a REAL credential pasted here goes unseen. The marker has to
+ * be typed deliberately on the line it excuses.
+ */
+const SECRET_LINE_EXEMPT = /\b(integrity|sha256-|sha384-|sha512-|_SRI|SRI\s*=|NOT-A-SECRET)/;
 
 function detectSecrets(text, file) {
   const out = [];
@@ -297,8 +309,8 @@ function selfTest() {
   const expect = (name, got) => { total += 1; if (!got) broken.push(name); };
 
   expect('D1 secrets/token', detectSecrets('const k = "ghp_' + 'a'.repeat(36) + '";', 'fx').length > 0);
-  expect('D1 secrets/jwt', detectSecrets('url=eyJhbGciOiJIUzI1NiIsInR5cCI6.abcdefghij.sig', 'fx').length > 0);
-  expect('D1 secrets/assigned', detectSecrets('apiKey: "abcdefghijklmnopqrstuvwxyz123"', 'fx').length > 0);
+  expect('D1 secrets/jwt', detectSecrets('url=eyJhbGciOiJIUzI1NiIsInR5cCI6.abcdefghij.sig', 'fx').length > 0); // NOT-A-SECRET (fixture)
+  expect('D1 secrets/assigned', detectSecrets('apiKey: "abcdefghijklmnopqrstuvwxyz123"', 'fx').length > 0); // NOT-A-SECRET (fixture)
   // …and does NOT fire on this repo's SRI lines, or it is useless in practice.
   expect('D1 secrets/no-false-positive-on-SRI',
     detectSecrets("script.integrity = 'sha384-uXkmKN2jmCGDEGble8eNhnYoDGtzLMPhnublKtjvBUzerIVkBQIcJhOeW';", 'fx').length === 0);
