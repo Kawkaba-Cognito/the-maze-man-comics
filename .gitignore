@@ -45,3 +45,9 @@ npm-debug.log*
 *.keystore
 android/local.properties
 ios/App/App/GoogleService-Info.plist
+
+# Review board GENERATED output. `review/standards.mjs` (the source) and
+# `.last-review.json` (the acknowledged-state ledger CI diffs against) ARE
+# tracked; these two are rebuilt by `npm run review:html` on demand.
+review/findings.json
+review/report.html

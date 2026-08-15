@@ -54,13 +54,11 @@ const BLOBS_LIGHT = [
   { x: '42%', y: '52%', w: 480, h: 320, c: 'rgba(226,214,186,0.42)', dur: 42 },
 ];
 
-/* The seven-stop Home dusk already carries the broad colour movement, so its
-   extra nebulae stay restrained and atmospheric. */
-const BLOBS_DUSK = [
-  { x: '4%', y: '8%', w: 380, h: 250, c: 'rgba(132,148,194,0.16)', dur: 30 },
-  { x: '56%', y: '18%', w: 430, h: 280, c: 'rgba(184,118,103,0.18)', dur: 36 },
-  { x: '36%', y: '60%', w: 480, h: 320, c: 'rgba(244,169,101,0.14)', dur: 42 },
-];
+/* BLOBS_DUSK was removed on 2026-08-15 — see the note at `const blobs` below.
+   It was a dusk nebula (blue-lavender / terracotta / orange) that, by the shape
+   of the ternary, could only ever be painted on the LIGHT ground, and was on
+   Training, Wellbeing and Other. Recoverable from git history if Home's dusk
+   sky ever adopts this stage; do not restore it into the light branch. */
 
 /*
  * Kawnera's --accent (#a8792b), used for the few loose flecks light mode keeps.
@@ -84,7 +82,25 @@ export default function UniverseStage({
   const { appTheme } = useApp();
   const dark = darkProp ?? appTheme !== 'light';
   const key = BLOBS_DARK[accent] ? accent : 'default';
-  const blobs = dark ? BLOBS_DARK[key] : (homeDusk ? BLOBS_DUSK : BLOBS_LIGHT);
+  /*
+   * ⚠ BLOBS_DUSK IS NOT REACHABLE IN DARK, so `homeDusk ? BLOBS_DUSK : …` only
+   * ever painted a DUSK nebula on a LIGHT ground (2026-08-15).
+   *
+   * Every one of the eight call sites — Training hub, Wellbeing ×3, Other ×4 —
+   * passes `homeDusk` unconditionally, and `dark` wins the ternary first. So in
+   * light theme those screens got rgba(132,148,194) blue-lavender,
+   * rgba(184,118,103) terracotta and rgba(244,169,101) orange washed over the
+   * flat warm beige. That is what "some palettes have other palettes under
+   * them, extra colours" was describing, and it is the SAME bug the
+   * BLOBS_LIGHT comment below records being fixed once already, when its middle
+   * blob was a cool blue that "cannot appear on paper".
+   *
+   * `duskSky` below is the corrected reading of the prop: dusk is a DARK sky,
+   * so every COLOUR decision keyed on it must also require `dark`. Star scatter
+   * still uses the raw prop because that is layout, not colour.
+   */
+  const duskSky = homeDusk && dark;
+  const blobs = dark ? BLOBS_DARK[key] : BLOBS_LIGHT;
   const showShoot = shootingStar ?? dark;
 
   const stars = useMemo(
@@ -101,11 +117,14 @@ export default function UniverseStage({
         width: sz,
         height: sz,
         opacity: dark ? 0.25 + seed(i, 4) * 0.5 : 0.28 + seed(i, 4) * 0.34,
-        background: dark ? undefined : (homeDusk ? DUSK_STAR : GOLD_STAR),
+        /* GOLD_STAR is documented below as the light-mode fleck. DUSK_STAR is a
+           pale cream that only reads against a dusk sky; on the flat beige it
+           is nearly invisible AND off-family. Keyed on duskSky, not homeDusk. */
+        background: dark ? undefined : (duskSky ? DUSK_STAR : GOLD_STAR),
         boxShadow: sz > 2.7
           ? (dark
             ? '0 0 6px 1px rgba(255,255,255,0.55)'
-            : (homeDusk
+            : (duskSky
               ? '0 0 6px 1px rgba(255,224,184,0.36)'
               : '0 0 5px 1px rgba(214,168,74,0.35)'))
           : 'none',
@@ -113,7 +132,7 @@ export default function UniverseStage({
         animationDelay: `-${seed(i, 6) * 5}s`,
       };
     }),
-    [dark, homeDusk],
+    [dark, homeDusk, duskSky],
   );
 
   return (
@@ -186,7 +205,9 @@ export default function UniverseStage({
         <span key={`s${i}`} className="uv-star" style={s} />
       ))}
 
-      {(dark || homeDusk) && <span className="uv-kawkab-glow" />}
+      {/* The glow is rgba(120,180,255) — a cool blue. Correct over a night sky,
+          foreign over flat beige, so it follows duskSky rather than the prop. */}
+      {(dark || duskSky) && <span className="uv-kawkab-glow" />}
       {showShoot && <span className="uv-shoot" />}
 
       <span
@@ -194,7 +215,7 @@ export default function UniverseStage({
         style={{
           background: dark
             ? 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 100%)'
-            : homeDusk
+            : duskSky
               ? 'linear-gradient(180deg, transparent 0%, rgba(42,28,39,0.24) 100%)'
               : 'linear-gradient(180deg, transparent 0%, rgba(233,227,210,0.55) 100%)',
         }}
@@ -207,7 +228,7 @@ export default function UniverseStage({
             /* Paper gets a vignette rather than a top-lit wash: a sheet darkens
                slightly at its edges where it curls, which is the opposite of the
                sky's brighter-toward-the-light reading. */
-            : homeDusk
+            : duskSky
               ? 'radial-gradient(ellipse 128% 92% at 50% 42%, transparent 58%, rgba(20,14,28,0.34) 100%)'
               : 'radial-gradient(ellipse 128% 92% at 50% 42%, transparent 62%, rgba(196,183,152,0.2) 100%)',
         }}

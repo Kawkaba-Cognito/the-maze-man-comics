@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Star, CaretRight, CaretLeft, ShieldCheck, Sparkle } from '@phosphor-icons/react';
+import { Star, CaretRight, CaretLeft } from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
 import BreathePractice from './BreathePractice';
 import GroundingPractice from './GroundingPractice';
@@ -13,18 +13,13 @@ import { planetTextureLayerStyle } from '../../lib/planetTexture';
 import { planetIconUrl } from '../../lib/planetIcons';
 import { OPEN_DAILY_KEY } from './HabitReminderBanner';
 import UniverseStage from '../../components/shared/UniverseStage';
-import {
-  PERSONALIZATION_EVENT,
-  getWellbeingContext,
-  personalizationEnabled,
-  resetPersonalization,
-  saveWellbeingContext,
-  setPersonalizationEnabled,
-} from '../personalization/neuralPersonalization.js';
-import {
-  getWellbeingRecommendation,
-  recordWellbeingSelection,
-} from '../personalization/wellbeingRecommendations.js';
+import { RELAX_PRACTICES } from './practices.js';
+/* The personalization CONTROLS moved to Home (features/personalization/
+ * NeuralPanel) — there is one model, so it now has one surface. What stays here
+ * is the RECORDING: choosing a practice is the example the wellbeing model
+ * learns from, and that has to happen where the choice is made. */
+import { getWellbeingContext, personalizationEnabled } from '../personalization/neuralPersonalization.js';
+import { recordWellbeingSelection } from '../personalization/wellbeingRecommendations.js';
 
 /*
  * Wellbeing — 8-Week MBSR Tracker (lives under the Stress & Calm category).
@@ -555,42 +550,8 @@ const CSS = `
 `;
 
 /* ── Wellbeing landing — practices grouped into categories ── */
-// The practice registry (each opens a full-screen practice). Categories below
-// reference these by id; a practice may appear in more than one category.
-const RELAX_PRACTICES = [
-  { id: 'mbsr', icon: '🧘', color: '#c47a3e',
-    title: '8-Week MBSR', titleAr: 'اليقظة الذهنية — ٨ أسابيع',
-    sub: 'Mindfulness-Based Stress Reduction — a guided daily practice with a timer, an 8-week tracker and a full guide.',
-    subAr: 'برنامج اليقظة الذهنية للحدّ من التوتر — ممارسة يومية موجّهة مع مؤقّت ومتابعة ٨ أسابيع ودليل كامل.' },
-  { id: 'breathe', icon: '🫁', color: '#5aa9c8',
-    title: 'Breathe', titleAr: 'تنفّس',
-    sub: 'A guided breathing pacer — box, 4-7-8, coherent & physiological-sigh patterns.',
-    subAr: 'موجّه تنفّس متحرّك — أنماط الصندوق و٤-٧-٨ والمتناغم والتنهيدة.' },
-  { id: 'grounding', icon: '🖐️', color: '#6fae7a',
-    title: '5-4-3-2-1 Grounding', titleAr: 'تأريض ٥-٤-٣-٢-١',
-    sub: 'Break acute anxiety by walking through your five senses in the moment.',
-    subAr: 'اكسر القلق الحاد بالمرور على حواسك الخمس في اللحظة.' },
-  { id: 'pmr', icon: '💪', color: '#b07ac8',
-    title: 'Muscle Relaxation', titleAr: 'استرخاء العضلات',
-    sub: 'Progressive tense-and-release through the body — great for tension and sleep.',
-    subAr: 'شدّ وإرخاء تدريجي للجسم — ممتاز للتوتر والنوم.' },
-  { id: 'ikigai', icon: '🎯', color: '#c9a24b',
-    title: 'Ikigai', titleAr: 'إيكيغاي',
-    sub: 'Reflect on what you love, what you\'re good at, what the world needs, and what you can offer — and glimpse your purpose.',
-    subAr: 'تأمّل فيما تحبّ وما تجيد وما يحتاجه العالم وما يمكنك تقديمه — ولمح معنى حياتك.' },
-  { id: 'personality-quiz', icon: '🧭', color: '#c47a3e',
-    title: 'Big Five Personality', titleAr: 'الشخصية — العوامل الخمسة',
-    sub: 'A validated 10-question science quiz (TIPI) mapping your Openness, Conscientiousness, Extraversion, Agreeableness & Neuroticism — with the research behind each trait.',
-    subAr: 'اختبار علمي موثّق من ١٠ أسئلة (TIPI) يقيس انفتاحك وضميرك الحي وانبساطك وتوافقك واستقرارك العاطفي — مع الأبحاث وراء كل سمة.' },
-  { id: 'relationship-quiz', icon: '💞', color: '#c86f8f',
-    title: 'Attachment Style', titleAr: 'نمط التعلّق',
-    sub: 'A validated 12-question quiz (ECR-S) revealing your attachment style in close relationships, grounded in decades of attachment research.',
-    subAr: 'اختبار موثّق من ١٢ سؤالاً (ECR-S) يكشف نمط تعلّقك في العلاقات الحميمة، مبنيّ على عقود من أبحاث نظرية التعلّق.' },
-  { id: 'sleep-sounds', icon: '🌧️', color: '#7b86c8',
-    title: 'Sleep Sounds', titleAr: 'أصوات النوم',
-    sub: 'A looping ambient sound to play while you wind down or drift off.',
-    subAr: 'صوت محيطي متكرر لتشغيله أثناء الاسترخاء أو النوم.' },
-];
+// Practice registry moved to ./practices.js so NeuralPanel (on Home) can name
+// a practice without importing this whole screen.
 
 // Five wellbeing categories. `items` lists practice ids; `soon` marks a category
 // whose practices are still to come (with a teaser of what's planned).
@@ -764,43 +725,16 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
   const [group, setGroup] = useState('program'); // 'program' | 'quick'
   const [favs, setFavs] = useState(() => rxLoad(FAV_KEY, []));
   const [orders, setOrders] = useState(() => rxLoad(ORDER_KEY, {}));
-  const [personalizationOn, setPersonalizationOn] = useState(personalizationEnabled);
-  const [wellbeingContext, setWellbeingContext] = useState(() => getWellbeingContext());
   const favSet = useMemo(() => new Set(favs), [favs]);
   const byId = (id) => RELAX_PRACTICES.find((p) => p.id === id);
   const cat = openCat && openCat !== 'favorites' ? CATEGORIES.find((c) => c.id === openCat) : null;
-  const wellbeingRecommendation = getWellbeingRecommendation(wellbeingContext);
-  const recommendedPractice = byId(wellbeingRecommendation.id);
 
-  useEffect(() => {
-    const syncPersonalization = (event) => {
-      setPersonalizationOn(Boolean(event.detail?.enabled));
-      if (event.detail?.reset) setWellbeingContext(getWellbeingContext());
-    };
-    window.addEventListener(PERSONALIZATION_EVENT, syncPersonalization);
-    return () => window.removeEventListener(PERSONALIZATION_EVENT, syncPersonalization);
-  }, []);
-
-  const updateWellbeingContext = (field, value) => {
-    const next = saveWellbeingContext({ ...wellbeingContext, [field]: value });
-    setWellbeingContext(next);
-  };
-
-  const enablePersonalization = () => {
-    playSfx?.('click');
-    setPersonalizationEnabled(true);
-    setPersonalizationOn(true);
-  };
-
-  const clearPersonalization = () => {
-    playSfx?.('click');
-    resetPersonalization({ enabled: false });
-    setWellbeingContext(getWellbeingContext());
-    setPersonalizationOn(false);
-  };
-
+  /* Recording, not displaying. The panel on Home owns the toggle and the
+   * suggestion; this only reports the example. Read live rather than held in
+   * state — there is no UI here to keep in sync, and the flag can be flipped
+   * from Home while this screen is mounted but hidden. */
   const openPersonalizedPractice = (id) => {
-    if (personalizationOn) recordWellbeingSelection(id, wellbeingContext);
+    if (personalizationEnabled()) recordWellbeingSelection(id, getWellbeingContext());
     onOpen(id);
   };
 
@@ -946,9 +880,10 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
    * "Choose an area." line and the bottom hint.
    *
    * Deliberately NOT flipped to black: that just moves the bug to the other
-   * theme. They follow --universe-ink / --universe-muted, the same tokens
-   * Home's "Your universe" heading reads, so one appearance switch drives both
-   * screens and neither can drift from the other again.
+   * theme. They follow --universe-ink / --universe-muted, the tokens Home's
+   * heading also reads, so one appearance switch drives both screens and
+   * neither can drift from the other again. (Home's "Your universe" TITLE was
+   * removed on 2026-08-15; its heading and these tokens are unchanged.)
    *
    * The shadow has to go with them. It is a hard black drop plus an amber glow
    * — legibility scaffolding for light text on a dark sky. Left on dark ink
@@ -1033,10 +968,13 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
           {isAr ? 'ركن العافية' : 'Wellbeing pillar'}
         </div>
         {/*
-         * Set by the SAME rule as Home's "Your universe" — `.home-universe-title`
-         * in global.css — rather than by a local copy of its numbers. The two
-         * were hand-typed apart (30px / 1.6 letter-spacing here vs 24px / 4px
-         * there), which is exactly how they drifted.
+         * Set by `.home-universe-title` in global.css rather than by a local
+         * copy of its numbers. It was named for Home's "Your universe" title,
+         * which the two once shared; that title was removed on 2026-08-15 and
+         * this overlay is now the ONLY user of the class. The name is kept
+         * because the rule is unchanged — before they were wired together they
+         * had been hand-typed apart (30px / 1.6 letter-spacing here vs 24px /
+         * 4px there), which is exactly how they drifted.
          *
          * Nothing about the type may be set inline here. An element's own
          * declaration beats an inherited one at any specificity, so a leftover
@@ -1080,102 +1018,6 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
           : <CaretRight size={13} weight="bold" color={FAV_GOLD} aria-hidden="true" />}
       </button>
 
-      <div
-        className="rx-fade"
-        style={{
-          position: 'absolute', top: 'calc(158px + env(safe-area-inset-top))', left: '50%', transform: 'translateX(-50%)',
-          zIndex: 4, width: 'min(92vw, 430px)', minHeight: 54, padding: '9px 11px', borderRadius: 16,
-          border: '1px solid var(--universe-line)', background: 'var(--universe-glass-strong)',
-          boxShadow: '0 7px 22px rgba(0,0,0,0.22)', color: skyText,
-          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-          fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-        }}
-      >
-        {personalizationOn && recommendedPractice ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Sparkle size={19} weight="fill" color="var(--universe-accent)" aria-hidden="true" />
-              <button
-                type="button"
-                onClick={() => { playSfx?.('click'); openPersonalizedPractice(recommendedPractice.id); }}
-                style={{
-                  flex: 1, minWidth: 0, border: 0, padding: 0, background: 'none', color: 'inherit',
-                  cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit',
-                }}
-              >
-                <span style={{ display: 'block', fontWeight: 850, fontSize: 13.5 }}>
-                  {isAr ? 'مقترح لك' : 'For you'} · {isAr ? recommendedPractice.titleAr : recommendedPractice.title}
-                </span>
-                <span style={{ display: 'block', color: skyMuted, fontSize: 10.8, marginTop: 1 }}>
-                  {isAr ? 'اقتراح عافية فقط — ليس تشخيصاً طبياً' : 'Wellbeing suggestion only — never a diagnosis'}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={clearPersonalization}
-                title={isAr ? 'إيقاف التخصيص ومسح النموذج' : 'Turn off personalization and erase its model'}
-                aria-label={isAr ? 'إيقاف التخصيص ومسح النموذج' : 'Turn off personalization and erase its model'}
-                style={{ border: 0, background: 'none', color: skyMuted, cursor: 'pointer', padding: 4, font: 'inherit', fontSize: 10.5, fontWeight: 750 }}
-              >
-                {isAr ? 'مسح' : 'Reset'}
-              </button>
-            </div>
-            <div style={{ display: 'flex', gap: 7, marginTop: 7 }}>
-              <select
-                aria-label={isAr ? 'ما الذي تحتاجه الآن؟' : 'What do you need right now?'}
-                value={wellbeingContext.need}
-                onChange={(event) => updateWellbeingContext('need', event.target.value)}
-                style={{
-                  flex: 1, minWidth: 0, height: 29, borderRadius: 9, border: '1px solid var(--universe-line)',
-                  background: 'var(--universe-glass)', color: skyText, paddingInline: 8, font: 'inherit', fontSize: 11.5,
-                }}
-              >
-                <option value="calm">{isAr ? 'الهدوء الآن' : 'Calm now'}</option>
-                <option value="sleep">{isAr ? 'النوم' : 'Sleep'}</option>
-                <option value="meaning">{isAr ? 'المعنى' : 'Meaning'}</option>
-                <option value="connection">{isAr ? 'التواصل' : 'Connection'}</option>
-                <option value="self">{isAr ? 'فهم الذات' : 'Understand myself'}</option>
-              </select>
-              <select
-                aria-label={isAr ? 'كم لديك من الوقت؟' : 'How much time do you have?'}
-                value={wellbeingContext.time}
-                onChange={(event) => updateWellbeingContext('time', event.target.value)}
-                style={{
-                  flex: 1, minWidth: 0, height: 29, borderRadius: 9, border: '1px solid var(--universe-line)',
-                  background: 'var(--universe-glass)', color: skyText, paddingInline: 8, font: 'inherit', fontSize: 11.5,
-                }}
-              >
-                <option value="quick">{isAr ? 'دقيقتان–٥' : '2–5 minutes'}</option>
-                <option value="medium">{isAr ? '١٠–١٥ دقيقة' : '10–15 minutes'}</option>
-                <option value="deep">{isAr ? '٢٠ دقيقة أو أكثر' : '20+ minutes'}</option>
-              </select>
-            </div>
-          </>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-            <ShieldCheck size={21} weight="duotone" color="var(--universe-accent)" aria-hidden="true" />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 850, fontSize: 13 }}>
-                {isAr ? 'اقتراحات عافية على هذا الجهاز' : 'On-device wellbeing suggestions'}
-              </div>
-              <div style={{ color: skyMuted, fontSize: 10.8, marginTop: 1 }}>
-                {isAr ? 'اختياراتك لا تغادر هذا الجهاز.' : 'Your choices never leave this device.'}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={enablePersonalization}
-              style={{
-                flexShrink: 0, borderRadius: 999, border: '1px solid var(--universe-line)',
-                background: 'color-mix(in srgb, var(--universe-accent) 16%, var(--universe-glass-strong))',
-                color: skyText, padding: '7px 11px', cursor: 'pointer', font: 'inherit', fontSize: 11.5, fontWeight: 850,
-              }}
-            >
-              {isAr ? 'تشغيل' : 'Turn on'}
-            </button>
-          </div>
-        )}
-      </div>
 
       {CATEGORIES.map((c, idx) => {
         const p = CAT_LAYOUT[c.id];

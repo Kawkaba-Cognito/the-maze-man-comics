@@ -34,13 +34,20 @@
   min-height: 0;
   isolation: isolate;
   overflow: hidden;
-  /* One painted surface, not a stack of full-screen overlays: the tracked
-     nebula is softly blended into Training's paper gradient. */
-  background-color: var(--play-surface-flat);
-  background-image: var(--ic-nebula), var(--play-surface);
-  background-position: center;
-  background-size: cover;
-  background-blend-mode: soft-light, normal;
+  /* TRANSPARENT — the ground belongs to .ic-root, which already paints
+     --play-surface across the whole screen (2026-08-15).
+
+     This used to soft-light a nebula photo over its own second copy of that
+     gradient. Two problems, both visible: the nebula is pink/mauve and the app
+     is warm beige, so the play area read as a different product; and repainting
+     the gradient from y=101 restarted the ramp, leaving a hard seam where the
+     header ended. Reported as "the palette is ruined" — it was the same mistake
+     as the app-wide maze photo layer removed the same day, one game down.
+
+     If this game ever wants atmosphere again, tint it INSIDE the canvas draw
+     where the piece palette can be measured against it, not as a photo blended
+     over the shared ground. */
+  background: transparent;
 }
 
 .ic-canvas {

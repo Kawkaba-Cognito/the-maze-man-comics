@@ -6,6 +6,7 @@ import { mulberry32 } from '../../../../../../lib/rng.js';
 import { LINK_WORDS_EN_COMMON } from './link-words-en-common.js';
 import { LINK_WORDS_AR_COMMON } from './link-words-ar-common.js';
 import { computeGridWords } from './linkDictionary.js';
+import { CURATED_EN_SHORT, CURATED_MAX_LEN } from './link-words-en-curated.js';
 import { clamp, lerp } from '../../../../../../lib/math.js';
 
 export const WORDLE_LEVELS_PER_TIER = 100;
@@ -127,6 +128,31 @@ export function wordFromPath(path, grid) {
   return path.map((i) => grid[i]).join('').toLowerCase();
 }
 
+/**
+ * Is this a word the game will accept at all?
+ *
+ * `computeGridWords` searches words_alpha.txt, which at 3–4 letters is mostly
+ * abbreviations and archaic forms — 2,130 three-letter entries including aal,
+ * abt, abv, aeq, and 7,186 four-letter including abbr, acct, acpt. A player
+ * tracing letters in what looked like a scramble kept hitting one and being
+ * told "correct" (`sart` scored). Reported 2026-08-15.
+ *
+ * 5+ letters keep the permissive corpus: nobody traces a five-letter path by
+ * accident, so discovery stays open. Arabic is unaffected — its corpus is
+ * already paired with a curated common list (see linkDictionary.js).
+ *
+ * ⚠ Applied when the ROUND IS BUILT, not at submit time. If it were only a
+ * submit-time filter, `gridWords` would still count the junk — and the
+ * pass-target clamp below divides by that count, so a grid with 50 corpus words
+ * but 8 real ones would set a target of 12 and be unwinnable. Filtering here
+ * keeps the clamp, the target and the player looking at the same set. Same
+ * lesson as audit:fq certifying a board nobody could clear.
+ */
+export function acceptableWord(word, lang = 'en') {
+  if (lang === 'ar' || word.length > CURATED_MAX_LEN) return true;
+  return CURATED_EN_SHORT.has(word);
+}
+
 export function isValidLinkedWord(word, gridWords, minLen) {
   return word.length >= minLen && gridWords.has(word);
 }
@@ -151,7 +177,10 @@ export function specificationForLevel(diff, lv) {
 
 export function createRound(seed, spec, extra = {}, lang = 'en') {
   const grid = generateLetterGrid(spec.size, seed, lang);
-  const gridWords = computeGridWords(grid, spec.size, spec.minLen, lang);
+  const gridWords = new Set(
+    [...computeGridWords(grid, spec.size, spec.minLen, lang)]
+      .filter((w) => acceptableWord(w, lang)),
+  );
   // Keep the pass target achievable on THIS grid (essential for the sparser
   // Arabic dictionary): never ask for more than ~60% of the findable words.
   let targetWords = spec.targetWords;

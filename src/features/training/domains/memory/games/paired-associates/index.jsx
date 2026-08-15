@@ -17,52 +17,18 @@ const PairedAssociates3DProto = lazyWithRetry(() => import('./PairedAssociates3D
  * Procedural Canvas, zero assets. Shared 3-mode flow (Free / Levels / Challenge).
  */
 
-// Exported so the 3D proto studies + recalls the SAME pairs with the same counts,
-// timings and adaptive progression as 2D free mode.
-export const SYMBOLS = ['★', '▲', '●', '■', '◆', '✚', '✦', '❤', '☀', '☾', '♣', '♠'];
-export const STUDY_GAP = 240;
+/*
+ * Config + trial generation live in palData.js (a .js module, so the pacing
+ * gate can import them — plain Node cannot parse .jsx). Re-exported here so
+ * the 3D proto and Group War keep importing from the game entry as before.
+ */
+export {
+  SYMBOLS, STUDY_GAP, PAL_MIN_STUDY, BASE, levelCfg, palFreeCfg, buildPalTrial,
+} from './palData.js';
+import { SYMBOLS, STUDY_GAP, PAL_MIN_STUDY, BASE, levelCfg, palFreeCfg, buildPalTrial } from './palData.js';
+
 const ROUNDS_PER_LEVEL = 3;
 const LEVEL_WIN = 2; // perfect trials needed
-
-export const BASE = {
-  easy: { boxes: 4, pairs: 2, study: 1100 },
-  med: { boxes: 6, pairs: 3, study: 950 },
-  hard: { boxes: 8, pairs: 4, study: 820 },
-};
-export function levelCfg(diff, level) {
-  const b = BASE[diff] || BASE.med;
-  const f = ((level || 1) - 1) / 99;
-  const boxes = Math.min(b.boxes + Math.round(f * 4), 12);
-  return {
-    boxes,
-    pairs: Math.min(b.pairs + Math.round(f * 4), boxes),
-    study: Math.max(520, Math.round(b.study - f * 500)),
-  };
-}
-
-/** Free/Survival config — 6 boxes, pairs grow adaptively, study time shrinks. */
-export function palFreeCfg(pairs) {
-  return { boxes: 6, pairs: Math.min(pairs, 6), study: Math.max(620, 1050 - pairs * 40) };
-}
-
-/**
- * Pure PAL trial generator (same draw order as the 2D engine's newTrial): choose
- * K symbols, K box slots, build the study reveal order + shuffled recall cues.
- */
-export function buildPalTrial(cfg, rng) {
-  const { boxes: N, pairs: K } = cfg;
-  const syms = [...SYMBOLS].sort(() => rng() - 0.5).slice(0, K);
-  const boxIdxs = [...Array(N).keys()].sort(() => rng() - 0.5).slice(0, K);
-  const boxes = Array.from({ length: N }, () => ({ symbol: null }));
-  boxIdxs.forEach((bi, j) => {
-    boxes[bi].symbol = syms[j];
-  });
-  const cueOrder = boxIdxs
-    .map((bi) => ({ boxIdx: bi, symbol: boxes[bi].symbol }))
-    .sort(() => rng() - 0.5);
-  const studyOrder = [...boxIdxs].sort(() => rng() - 0.5);
-  return { boxes, boxIdxs, cueOrder, studyOrder, total: K };
-}
 
 export function PalEngine({
   mode,
@@ -109,7 +75,7 @@ export function PalEngine({
 
   const cfg = useCallback(() => {
     if (mode === 'levels') return levelCfg(diff, level);
-    if (mode === 'passplay') return { boxes: 8, pairs: 4, study: 900 };
+    if (mode === 'passplay') return { boxes: 8, pairs: 4, study: 1400 };
     return palFreeCfg(pairsRef.current);
   }, [mode, diff, level]);
 
@@ -254,7 +220,11 @@ export function PalEngine({
       }, studyMs);
     };
     clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => step(0), 500);
+    /* A ready beat before the first box opens. At 500ms the first symbol had
+       come and gone before the player had finished looking at the board — the
+       "starts very fast" half of the 2026-08-15 report. The study time fix
+       alone does not help if the sequence begins before you are watching. */
+    timerRef.current = setTimeout(() => step(0), 1100);
   }, [cfg, isAr, presentCue, updateHud, rng]);
   newTrialRef.current = newTrial;
 

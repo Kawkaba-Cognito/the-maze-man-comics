@@ -57,6 +57,25 @@ const CURVES = {
     levels: (m) => m.LEVELS_PER_TIER,
     fields: { targets: 'up', stream: 'up', rate: 'down' },
   },
+  /* Moved out of index.jsx on 2026-08-15 so it could be gated at all. `gap`
+     falls (faster gates) and `target`/`opCount` rise, and opCount is what makes
+     a harder TIER harder at the same level number — easy never sees × or ÷. */
+  'math-gates': {
+    mod: 'speed/games/math-gates/mathGatesData.js',
+    get: (m) => (diff, lv) => m.levelCfg(diff, lv),
+    diffs: (m) => Object.keys(m.BASE),
+    levels: (m) => m.LEVELS_PER_TIER,
+    fields: { gap: 'down', target: 'up', opCount: 'up' },
+  },
+  /* Also moved out of index.jsx the same day (palData.js), for the pacing gate;
+     registering it here closes the second half of the same gap. */
+  'paired-associates': {
+    mod: 'memory/games/paired-associates/palData.js',
+    get: (m) => (diff, lv) => m.levelCfg(diff, lv),
+    diffs: (m) => Object.keys(m.BASE),
+    levels: () => 100,
+    fields: { boxes: 'up', pairs: 'up', study: 'down' },
+  },
   'mirror-world': {
     mod: 'flexibility/games/mirror-world/data.js',
     get: (m) => (diff, lv) => {

@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 677,
+    "raw-colour": 674,
     "conditional-background": 1,
     "stacked-backdrops": 4
   },
@@ -60,7 +60,7 @@
       "raw-colour": 3
     },
     "src/features/training/domains/memory/games/story-grid/index.jsx": {
-      "raw-colour": 43,
+      "raw-colour": 40,
       "conditional-background": 1
     },
     "src/features/training/domains/memory/games/story-grid/stage/schema.js": {

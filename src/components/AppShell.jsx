@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import MazeBackground from './MazeBackground';
 import BottomTabBar, { resolveActiveTabId } from './BottomTabBar';
 import ComicsScreen from './screens/ComicsScreen';
 import PuzzlesScreen from './screens/PuzzlesScreen';
@@ -70,9 +69,26 @@ export default function AppShell() {
 
   return (
     <>
-      <canvas id="maze-bg-canvas"></canvas>
-      <div id="maze-photo-layer" aria-hidden="true"></div>
-      <MazeBackground />
+      {/*
+       * The comics-era maze backdrop (a generated maze canvas, plus two
+       * Wikimedia maze photos soft-lighted over everything) was REMOVED on
+       * 2026-08-15. It rendered unconditionally on every screen and was then
+       * hidden again, screen by screen, by a hand-maintained list in
+       * global.css — which had grown to ten selectors and still missed the two
+       * biggest areas, Training and Puzzles. That is why those were the screens
+       * that looked "not clean": a 20%-opacity soft-light texture over a warm
+       * beige product.
+       *
+       * It also hotlinked two images from upload.wikimedia.org on every load —
+       * an outbound request from an app whose stated property is zero network
+       * calls, leaking every user's IP to a third party and carrying a
+       * CC BY-SA attribution obligation nothing satisfied. `audit:sec` missed
+       * it because `no-network-in-src` only inspects JS, not CSS url().
+       *
+       * `.bg-poster` + `.bg-overlay` below are a different thing and stay: a
+       * real themed asset with its legibility scrim, gated to non-universe
+       * screens.
+       */}
 
       {!mazeVisible && !universeLanding && (
         <>

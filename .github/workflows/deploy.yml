@@ -32,6 +32,29 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      # Secrets, .gitignore integrity, CSP ratchet, SRI pins, network isolation,
+      # XSS sinks, npm audit — all against scripts/security-baseline.json. Runs
+      # FIRST: if a credential is in the tree, nothing else about this build
+      # matters. See SECURITY.md for what each rule means.
+      - name: Security audit
+        run: npm run audit:sec
+
+      # Reports only — see ci.yml for why this must never gate a deploy.
+      - name: Review board (delta since last acknowledged state)
+        run: npm run review:since || true
+
+      # The curated short-word dictionary, both directions (junk rejected, real
+      # words accepted) AND that every level is still winnable after tightening.
+      - name: Validate Word Maze dictionary
+        run: npm run validate:wordmaze
+
+      # No game may outrun the player. Asserts the ms-per-stimulus FLOOR a human
+      # actually meets at every level and survival stage — three games had been
+      # ramped to 650ms/520ms/150ms, which measured reading speed, not the
+      # construct. Same failure family as audit:fq below.
+      - name: Audit game pacing floors
+        run: npm run audit:pacing
+
       - name: Audit FocusQuest level math & generation
         run: npm run audit:fq
 

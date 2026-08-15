@@ -866,12 +866,12 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
               <div style={S.dockChips}>
                 {story.paletteActions.map((id) => (
                   <button key={id} type="button" aria-pressed={isSel('action', id)} style={{ ...S.actChip, ...(isSel('action', id) ? S.chipSel : null) }} onClick={() => applyPiece('action', id)}>
-                    <span style={{ fontSize: 24, lineHeight: 1 }}><Emoji char={actEmoji(id)} /></span>
+                    <span style={{ fontSize: 32, lineHeight: 1 }}><Emoji char={actEmoji(id)} /></span>
                     <span style={S.chipName}>{actWord(id)}</span>
                   </button>
                 ))}
                 <button type="button" style={S.eraseChip} onClick={() => applyPiece('erase')}>
-                  <span style={{ fontSize: 22, lineHeight: 1 }}><Emoji char="🧽" /></span>
+                  <span style={{ fontSize: 30, lineHeight: 1 }}><Emoji char="🧽" /></span>
                   <span style={S.chipName}>{t.erase}</span>
                 </button>
               </div>
@@ -963,21 +963,21 @@ const S = {
   tapPlus: { position: 'absolute', bottom: 4, insetInlineEnd: 4, width: 22, height: 22, borderRadius: '50%', background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--surface-raised)', pointerEvents: 'none' },
   storyWas: { fontWeight: 800, fontSize: 13, color: 'var(--success)', marginTop: 6 },
   // press-to-place board (builder tray)
-  dock: { flex: '0 0 auto', background: 'linear-gradient(180deg,var(--surface-raised) 0%,#fff6ea 100%)', borderTop: '2px solid var(--line)', borderRadius: '20px 20px 0 0', padding: '6px 14px max(12px, env(safe-area-inset-bottom))', boxShadow: '0 -6px 20px rgba(26,18,8,0.1)' },
+  dock: { flex: '0 0 auto', background: 'var(--surface-raised)', borderTop: '2px solid var(--line)', borderRadius: '20px 20px 0 0', padding: '6px 14px max(12px, env(safe-area-inset-bottom))', boxShadow: '0 -6px 20px rgba(26,18,8,0.1)' },
   dockHandle: { width: 44, height: 5, borderRadius: 999, background: 'var(--line)', margin: '0 auto 2px' },
   dockInner: { width: '100%', maxWidth: 900, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 9 },
   dockRow: { display: 'flex', alignItems: 'center', gap: 10 },
-  dockLabel: { flex: '0 0 66px', display: 'flex', alignItems: 'center', gap: 3, fontSize: 10.5, fontWeight: 900, color: '#7a6a52', textTransform: 'uppercase', letterSpacing: 0.4 },
-  dockIcon: { fontSize: 14, lineHeight: 1 },
-  dockChips: { display: 'flex', gap: 7, flexWrap: 'nowrap', overflowX: 'auto', flex: 1, paddingBottom: 3, scrollbarWidth: 'none' },
-  dockDivider: { height: 1, background: '#ece2d2' },
-  bgChip: { flex: '0 0 auto', padding: 4, borderRadius: 13, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--line)', background: '#fff', cursor: 'pointer', lineHeight: 0 },
-  charChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, padding: '3px 7px 4px', borderRadius: 13, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--line)', background: '#fff', cursor: 'pointer' },
-  charChipArt: { width: 50, height: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' },
-  actChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '7px 10px', borderRadius: 13, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--line)', background: '#fff', cursor: 'pointer', minWidth: 58 },
-  eraseChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '7px 10px', borderRadius: 13, borderWidth: 2, borderStyle: 'solid', borderColor: '#d8c4c0', background: '#fff6f4', cursor: 'pointer', minWidth: 58 },
-  chipName: { fontSize: 10.5, fontWeight: 800, color: 'var(--ink-dim)', whiteSpace: 'nowrap' },
-  chipSel: { borderColor: 'var(--accent)', background: '#fff1d8', boxShadow: '0 0 0 3px rgba(185,132,47,0.32)', transform: 'translateY(-2px)' },
+  dockLabel: { flex: '0 0 74px', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 900, color: 'var(--ink-dim)', textTransform: 'uppercase', letterSpacing: 0.4 },
+  dockIcon: { fontSize: 16, lineHeight: 1 },
+  dockChips: { display: 'flex', gap: 9, flexWrap: 'nowrap', overflowX: 'auto', flex: 1, paddingBottom: 3, scrollbarWidth: 'none' },
+  dockDivider: { height: 1, background: 'var(--line)' },
+  bgChip: { flex: '0 0 auto', padding: 5, borderRadius: 15, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--line)', background: 'var(--surface)', cursor: 'pointer', lineHeight: 0, minHeight: 64 },
+  charChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '5px 9px 6px', borderRadius: 15, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--line)', background: 'var(--surface)', cursor: 'pointer', minWidth: 72 },
+  charChipArt: { width: 58, height: 58, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' },
+  actChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '11px 14px', borderRadius: 16, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--line)', background: 'var(--surface)', cursor: 'pointer', minWidth: 84, minHeight: 76 },
+  eraseChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '11px 14px', borderRadius: 16, borderWidth: 2, borderStyle: 'dashed', borderColor: 'var(--line)', background: 'var(--surface)', cursor: 'pointer', minWidth: 84, minHeight: 76 },
+  chipName: { fontSize: 12.5, fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap' },
+  chipSel: { borderColor: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 16%, var(--surface))', boxShadow: '0 0 0 3px rgba(185,132,47,0.32)', transform: 'translateY(-2px)' },
   checkBtn: { alignSelf: 'stretch', marginTop: 3, padding: '13px 20px', borderRadius: 15, borderWidth: 3, borderStyle: 'solid', borderColor: 'var(--ink-outline)', background: 'linear-gradient(180deg,#38a866,var(--success))', color: '#fff', fontWeight: 900, fontSize: 16, letterSpacing: 0.5, cursor: 'pointer', boxShadow: '4px 4px 0 var(--ink-outline)' },
   primary: { padding: '11px 22px', borderRadius: 14, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--ink-outline)', background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '3px 3px 0 var(--ink-outline)' },
   primaryOff: { background: '#c9bfae', borderColor: '#a89a82', boxShadow: 'none', cursor: 'default' },

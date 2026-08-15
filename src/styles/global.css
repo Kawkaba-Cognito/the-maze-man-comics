@@ -259,9 +259,7 @@ html[data-home-theme='dark'] body:has(#screen-home.active) #lang-btn:hover {
     background: var(--color-training-palette-surface);
 }
 body:has(#screen-comics.active .cancellation-task-game) .bg-poster,
-body:has(#screen-comics.active .cancellation-task-game) .bg-overlay,
-body:has(#screen-comics.active .cancellation-task-game) #maze-bg-canvas,
-body:has(#screen-comics.active .cancellation-task-game) #maze-photo-layer {
+body:has(#screen-comics.active .cancellation-task-game) .bg-overlay {
     display: none !important;
 }
 /* Cosmos mode hubs — force the same deep black void as Cancellation
@@ -274,32 +272,9 @@ body:has(.ct-fq-training-shell--mode-cosmos),
     background: #07060b !important;
     background-color: #07060b !important;
 }
-/* Universe landings paint their own black void — hide light maze textures
- * that otherwise soft-light over the scene (reads as white haze on desktop). */
-body:has(#screen-home.active) #maze-bg-canvas,
-body:has(#screen-home.active) #maze-photo-layer,
-body:has(#screen-learn.active) #maze-bg-canvas,
-body:has(#screen-learn.active) #maze-photo-layer,
-body:has(#screen-other.active) #maze-bg-canvas,
-body:has(#screen-other.active) #maze-photo-layer,
-body:has(#screen-relax.active) #maze-bg-canvas,
-body:has(#screen-relax.active) #maze-photo-layer,
-/* The Other tab's destinations. `.bg-poster` / `.bg-overlay` are React-gated by
- * `universeLanding` in AppShell, but these two are only ever hidden here — so
- * without these rows Profile and Shop kept the maze canvas and the (externally
- * hotlinked) photo layer under an otherwise cosmic page. */
-body:has(#screen-profile.active) #maze-bg-canvas,
-body:has(#screen-profile.active) #maze-photo-layer,
-body:has(#screen-pointshop.active) #maze-bg-canvas,
-body:has(#screen-pointshop.active) #maze-photo-layer,
-body:has(#screen-shop.active) #maze-bg-canvas,
-body:has(#screen-shop.active) #maze-photo-layer,
-body:has(#screen-character.active) #maze-bg-canvas,
-body:has(#screen-character.active) #maze-photo-layer,
-body:has(#screen-workout.active) #maze-bg-canvas,
-body:has(#screen-workout.active) #maze-photo-layer {
-    display: none !important;
-}
+/* The twenty `body:has(#screen-X.active) #maze-*` rows that used to sit here
+ * are gone with the layers they hid — see the MAZE BACKGROUND note above.
+ * Deleting the cause removed the need for the workaround. */
 /* ── HOME SCREEN ── */
 /* ═══════════════════════════════════
    HOME — dawn-mind stage (full bleed)
@@ -1173,24 +1148,26 @@ html[data-home-theme='dark'] .rewards-screen { color: #f3ead9; }
 .puzzle-input { background: #000; border: 1px solid var(--amber); color: #fff; padding: 15px; font-size: 1.2em; border-radius: 8px; text-align: center; margin-bottom: 15px; width: 100%; font-family: 'DM Mono', monospace; text-transform: uppercase;}
 .puzzle-input:focus { outline: none; box-shadow: 0 0 15px var(--amber-ring); }
 
-/* ── MAZE BACKGROUND ── */
-#maze-bg-canvas {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    z-index: 0; pointer-events: none; opacity: 0.1;
-}
-/* Wikimedia Commons maze textures (CC BY-SA 3.0) — see HTML comment near #maze-photo-layer */
-#maze-photo-layer {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    z-index: 0; pointer-events: none;
-    opacity: 0.2;
-    background-image:
-        url("https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Prim_Maze.svg/500px-Prim_Maze.svg.png"),
-        url("https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Simple_maze_3.svg/960px-Simple_maze_3.svg.png");
-    background-size: 380px 380px, 520px 520px;
-    background-position: 0 0, 40% 60%;
-    background-repeat: repeat, repeat;
-    mix-blend-mode: soft-light;
-}
+/* ── MAZE BACKGROUND — REMOVED 2026-08-15 ──
+ *
+ * `#maze-bg-canvas` (a generated maze, drawn by MazeBackground.jsx) and
+ * `#maze-photo-layer` (two Wikimedia maze photos, soft-light at 20% over the
+ * entire viewport) are gone, along with MazeBackground.jsx and the ~20 rows of
+ * `body:has(#screen-X.active)` selectors that existed only to hide them again
+ * on individual screens.
+ *
+ * They were a comics-era decoration that survived into the training platform.
+ * The hide list had reached ten screens and still missed the two largest —
+ * Training and Puzzles — which is exactly where the palette was reported as
+ * "not clean": a soft-light texture tinting a warm beige product.
+ *
+ * The photo layer also hotlinked upload.wikimedia.org on every page load: an
+ * outbound request from an app that claims zero network calls, a third party
+ * learning every user's IP, and a CC BY-SA attribution nothing honoured.
+ *
+ * Do not reintroduce a decorative layer that paints over ALL screens and is
+ * then subtracted per screen. If a screen wants a texture, that screen adds it.
+ */
 
 /* ── LANGUAGE BUTTON ── */
 #lang-btn {
@@ -2514,6 +2491,33 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
     }
 }
 
+/* Top-of-hero column: the personalization panel, then the universe title.
+   .home-universe-page sets `pointer-events: none` so the scroll gesture passes
+   through to the stage — which silently makes anything interactive placed in
+   here unclickable. The panel re-enables them on itself only. */
+.home-universe-top {
+    position: absolute;
+    top: calc(16px + env(safe-area-inset-top));
+    left: 0;
+    right: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    pointer-events: none;
+}
+
+.home-universe-top .np { pointer-events: auto; }
+
+/* Inside the column the wrapper owns placement; the heading keeps its own
+   dive opacity/transform below. */
+.home-universe-top .home-universe-heading {
+    position: static;
+    padding: 0;
+}
+
 .home-universe-heading {
     position: absolute;
     top: calc(58px + env(safe-area-inset-top));
@@ -2528,6 +2532,10 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
     transform: translateY(calc(var(--kawnera-progress) * -28px));
 }
 
+/* Named for Home's "Your universe" title, which was REMOVED on 2026-08-15.
+   Wellbeing's overlay title is now the only user of this class — kept rather
+   than renamed because the two were deliberately wired to one rule after they
+   drifted apart, and RelaxScreen's comment cites this name. */
 .home-universe-title {
     font-family: 'Cinzel', 'Cormorant Garamond', serif;
     font-size: 24px;

@@ -27,18 +27,14 @@ const LANES = 3;
 // timer; the only way to lose is steering into the wrong answer.
 const DESCEND_SEC = 3.8;
 
-export const BASE = {
-  easy: { ops: ['+', '-'], gap: 700, lives: 5, target: 8 },
-  med: { ops: ['+', '-', '×'], gap: 650, lives: 4, target: 10 },
-  hard: { ops: ['+', '-', '×', '÷'], gap: 600, lives: 3, target: 12 },
-};
-export function levelCfg(diff, level) {
-  const b = BASE[diff] || BASE.med;
-  // Front-loaded curve (^0.85): the climb is felt earlier so levels feel more
-  // distinct; level 1 and 100 unchanged.
-  const f = Math.pow(((level || 1) - 1) / 99, 0.85);
-  return { ...b, gap: Math.max(450, b.gap - f * 180), target: b.target + Math.round(f * 10), f };
-}
+/*
+ * The level curve lives in mathGatesData.js — a .js data module, so
+ * `audit:curves` can import and gate it. Re-exported here so nothing
+ * downstream changes.
+ */
+export { BASE, levelCfg, LEVELS_PER_TIER, MG_MIN_GAP, survivalGap } from './mathGatesData.js';
+import { BASE, levelCfg, survivalGap } from './mathGatesData.js';
+
 const PP_GATES = 12;
 
 
@@ -268,7 +264,14 @@ export function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, on
         if (mode === 'levels' || mode === 'free') { g.lives -= 1; if (g.lives <= 0) { finish(); return; } }
       }
       if (mode === 'passplay' && g.gatesPlayed >= ppGates) { g.gate = null; finish(); return; }
-      g.gate = null; g.gapTimer = cfg.gap;
+      g.gate = null;
+      /* Survival tightens the interval on the same skill fraction that raises
+         the equation tier. It used to reuse `cfg.gap`, which in Survival is
+         levelCfg('easy', 1) computed once — so the sums got harder while the
+         pace stayed at a fixed 700ms forever. See survivalGap()'s note. */
+      g.gapTimer = mode === 'free'
+        ? survivalGap(clamp(g.gatesPlayed / 36, 0, 1))
+        : cfg.gap;
     };
 
     const resize = () => {

@@ -51,9 +51,15 @@ const UI = {
     ...STR_COMMON.en,
     title: 'Intercept',
     tag: 'predictive timing',
-    hintFree: 'Rift Defense — protect the station through escalating sectors',
-    hintLevels: '3 difficulties · 100 levels each',
-    hintPass: 'Same runs for everyone · pass the device',
+    /* Intercept is the one game whose Survival is a DIFFERENT GAME: Rift
+       Defense adds sectors, a shield and between-sector upgrades, while Levels
+       and Pass n Play stay the plain timing task. That is deliberate, but a
+       player picking a mode could not tell — every other game's three modes are
+       the same activity at different lengths. So each hint now names the ACTION
+       first, and Survival says outright that it is a different shape. */
+    hintFree: 'Rift Defense — a different mode: sectors, shield, upgrades',
+    hintLevels: 'Tap the moment it reaches the gate · 3 difficulties · 100 levels each',
+    hintPass: 'Tap the moment it reaches the gate · same runs for everyone',
     ready: 'Tap the moment it reaches the gate',
     readyGates: 'Tap at the gate matching its colour',
     readyLaunch: 'Tap to release — it must arrive on the silent beat',
@@ -117,9 +123,9 @@ const UI = {
     ...STR_COMMON.ar,
     title: 'الاعتراض',
     tag: 'توقيت تنبّؤي',
-    hintFree: 'دفاع الشق — احمِ المحطة عبر قطاعات متصاعدة',
-    hintLevels: '٣ صعوبات · ١٠٠ مستوى لكل',
-    hintPass: 'نفس الجولات للجميع · مرّر الجهاز',
+    hintFree: 'دفاع الشق — نمط مختلف: قطاعات ودرع وترقيات',
+    hintLevels: 'اضغط لحظة الوصول إلى البوابة · ٣ صعوبات · ١٠٠ مستوى لكل',
+    hintPass: 'اضغط لحظة الوصول إلى البوابة · نفس الجولات للجميع',
     ready: 'اضغط لحظة وصوله إلى البوابة',
     readyGates: 'اضغط عند البوابة المطابقة للونه',
     readyLaunch: 'اضغط للإطلاق — عليه أن يصل مع النبضة الصامتة',
@@ -182,7 +188,6 @@ const UI = {
 
 const MAX_SHIELD = 4;
 const MAX_SYSTEM_LEVEL = 4;
-const NEBULA_URL = assetUrl('Assets/universe-nebula.webp');
 const ART_URLS = {
   steady: assetUrl('Assets/training/cancel-cosmic-atlas-2026/comet.webp'),
   accel: assetUrl('Assets/training/cancel-cosmic-atlas-2026/space-fighter.webp'),
@@ -1072,7 +1077,6 @@ function InterceptEngine({
     <div
       className="ct-training-root ic-root"
       dir={isAr ? 'rtl' : 'ltr'}
-      style={{ '--ic-nebula': `url("${NEBULA_URL}")` }}
     >
       <TrainingPlayHeader
         isAr={isAr}

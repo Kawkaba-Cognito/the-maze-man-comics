@@ -24,10 +24,27 @@ export const WELLBEING_PRACTICE_IDS = [
 export const WELLBEING_NEEDS = ['calm', 'sleep', 'meaning', 'connection', 'self'];
 export const WELLBEING_TIMES = ['quick', 'medium', 'deep'];
 
+/* Kawnera (the Learn library) — the volume ids from features/kawnera/books.js.
+ *
+ * ⚠️ DORMANT BY DESIGN. `authored/index.js` exports an empty AUTHORED map: every
+ * chapter was removed on 2026-08-07 because the source material was not ours to
+ * publish, so all nine volumes are shells ("Volume 1" / "Chapter 01") with no
+ * text behind them. The model, its spec and its slot in the UI all exist, but
+ * `kawneraReady()` gates them off until real chapters are authored — training a
+ * recommender on placeholder titles would bake in preferences over books that
+ * do not exist yet, and those weights would survive into the real library.
+ *
+ * Duplicated here rather than imported so this module stays a leaf with no
+ * feature dependencies; kawneraRecommendations.js asserts the two lists agree. */
+export const KAWNERA_BOOK_IDS = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9'];
+export const KAWNERA_TIMES = ['quick', 'medium', 'deep'];
+
 const MODEL_VERSION = 1;
 const HISTORY_LIMIT = 40;
 const TRAINING_INPUTS = TRAINING_DOMAIN_IDS.length * 3;
 const WELLBEING_INPUTS = WELLBEING_NEEDS.length + WELLBEING_TIMES.length;
+/* Per volume: recent opens + completion. Plus the session-length bucket. */
+const KAWNERA_INPUTS = KAWNERA_BOOK_IDS.length * 2 + KAWNERA_TIMES.length;
 
 const clamp = (n, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, Number(n) || 0));
 
@@ -147,6 +164,8 @@ function networkSpecs() {
     training: { inputSize: TRAINING_INPUTS, hiddenSize: 12, outputSize: TRAINING_DOMAIN_IDS.length, seed: 'training-v1' },
     difficulty: { inputSize: 6, hiddenSize: 7, outputSize: 3, seed: 'difficulty-v1' },
     wellbeing: { inputSize: WELLBEING_INPUTS, hiddenSize: 9, outputSize: WELLBEING_PRACTICE_IDS.length, seed: 'wellbeing-v1' },
+    // Dormant until chapters are authored — see KAWNERA_BOOK_IDS above.
+    kawnera: { inputSize: KAWNERA_INPUTS, hiddenSize: 10, outputSize: KAWNERA_BOOK_IDS.length, seed: 'kawnera-v1' },
   };
 }
 
@@ -159,8 +178,11 @@ function freshStore(enabled = false) {
       key,
       createNetwork(spec.inputSize, spec.hiddenSize, spec.outputSize, spec.seed),
     ])),
-    stats: { trainingChoices: 0, trainingOutcomes: 0, wellbeingChoices: 0, wellbeingFeedback: 0 },
-    history: { training: [], wellbeing: [] },
+    stats: {
+      trainingChoices: 0, trainingOutcomes: 0, wellbeingChoices: 0, wellbeingFeedback: 0,
+      kawneraChoices: 0,
+    },
+    history: { training: [], wellbeing: [], kawnera: [] },
     wellbeingContext: { need: 'calm', time: 'quick' },
   };
 }
@@ -177,6 +199,7 @@ export function loadPersonalization() {
   fallback.history = {
     training: Array.isArray(stored.history?.training) ? stored.history.training.slice(-HISTORY_LIMIT) : [],
     wellbeing: Array.isArray(stored.history?.wellbeing) ? stored.history.wellbeing.slice(-HISTORY_LIMIT) : [],
+    kawnera: Array.isArray(stored.history?.kawnera) ? stored.history.kawnera.slice(-HISTORY_LIMIT) : [],
   };
   fallback.wellbeingContext = sanitizeWellbeingContext(stored.wellbeingContext);
   return fallback;

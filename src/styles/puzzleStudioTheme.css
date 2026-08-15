@@ -40,24 +40,48 @@
   --pz-surface-strong: color-mix(in srgb, var(--pz-surface) 82%, var(--pz-ink));
 }
 
+/* ── CATEGORY ACCENTS — one family, four hues (2026-08-15) ────────────────
+ *
+ * These were authored independently and spanned four unrelated hue families at
+ * four different saturations: gold s66%, teal s33%, violet s40%, coral s49% —
+ * a 33-point saturation spread and a 1.30–2.05 contrast spread on the beige
+ * ground. Four tiles side by side therefore read as four different products,
+ * which is what "extra colours, not clean" was describing.
+ *
+ * The hues are KEPT: category identity is information, and a player should be
+ * able to tell Numbers from Logic at a glance. What changed is everything else
+ * — saturation locked to 34% and lightness solved per hue so all four land on
+ * the SAME contrast (2.70:1) against --pz-surface.
+ *
+ * That is the principle tokens.css already applies to the six game-piece roles:
+ * near-isoluminant, told apart by hue rather than brightness. It also means no
+ * category can shout louder than another by accident.
+ *
+ * ⚠ Because they are isoluminant, an accent may never be the ONLY thing marking
+ * a state — move a ring, icon or label too, or the distinction vanishes under
+ * colour-vision deficiency. Same rule as the game pieces.
+ *
+ * Recompute rather than eyeball if the ground changes: solve lightness per hue
+ * for equal contrast against --pz-surface, keeping saturation fixed.
+ */
 .pz-theme-numbers {
-  --pz-accent: #d8a541;
-  --pz-accent-deep: #63410f;
+  --pz-accent: #897143;
+  --pz-accent-deep: #493a1d;
 }
 
 .pz-theme-logic {
-  --pz-accent: #55a99f;
-  --pz-accent-deep: #194240;
+  --pz-accent: #3f7f77;
+  --pz-accent-deep: #1d4944;
 }
 
 .pz-theme-spatial {
-  --pz-accent: #9a80c8;
-  --pz-accent-deep: #3a2c5c;
+  --pz-accent: #8266b4;
+  --pz-accent-deep: #2d1d49;
 }
 
 .pz-theme-group {
-  --pz-accent: #c96f63;
-  --pz-accent-deep: #5e2c28;
+  --pz-accent: #ab5f55;
+  --pz-accent-deep: #49221d;
 }
 
 .pz-studio {

@@ -83,10 +83,28 @@ export const CATEGORIES = [
  * making the words harder: how many categories you must hold at once, how long
  * the stream runs, and how fast it moves.
  */
+
+/** Floor for ms-per-word, asserted by `npm run audit:pacing`. */
+export const KEEP_TRACK_MIN_RATE = 1200;
+
 export const BASE = {
-  easy: { targets: 2, pool: 4, stream: 10, rate: 1500 },
-  med: { targets: 3, pool: 5, stream: 14, rate: 1250 },
-  hard: { targets: 4, pool: 6, stream: 18, rate: 1000 },
+  /*
+   * `rate` is ms per stream word, and it is NOT the difficulty lever.
+   *
+   * Reported 2026-08-15 as "it goes so fast, I don't have time to memorize".
+   * It was 1500/1250/1000 falling to a 650ms floor — but every word costs the
+   * player a read, a category decision, and (if it is a target category) an
+   * overwrite of what they were holding. Miyake et al. present the keep-track
+   * stream at about 2s per word for exactly that reason. At 650ms the task
+   * stopped measuring updating and started measuring reading speed.
+   *
+   * Difficulty comes from LOAD instead — targets, pool and stream length, all
+   * of which still ramp. `audit:pacing` gates the floor so this cannot be
+   * quietly traded back for a harder-looking curve.
+   */
+  easy: { targets: 2, pool: 4, stream: 10, rate: 2200 },
+  med: { targets: 3, pool: 5, stream: 14, rate: 1900 },
+  hard: { targets: 4, pool: 6, stream: 18, rate: 1600 },
 };
 
 export const LEVELS_PER_TIER = 100;
@@ -98,7 +116,8 @@ export function levelCfg(diff, level) {
   return {
     ...b,
     stream: b.stream + Math.round(f * 8),
-    rate: Math.max(650, Math.round(b.rate - f * 420)),
+    // Floor 1200ms: still brisk, still readable. The old floor was 650.
+    rate: Math.max(KEEP_TRACK_MIN_RATE, Math.round(b.rate - f * 420)),
     f,
   };
 }

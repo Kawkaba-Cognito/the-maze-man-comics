@@ -1,0 +1,23 @@
+{
+  "acknowledged": "2026-08-15T12:30:11.958Z",
+  "state": {
+    "SCI-01": "manual|No outcome claims — nothing about preventing decline, raising IQ, or improving school/work performance. 7 instance(s) of the milder ACTIVITY claim \"Why this trains your brain\" (shared hub label, EN + AR, on every game). Mitigated: domainScience.js already states \"supports everyday focus but is not a medical test or diagnosis\".",
+    "SCI-02": "pass|Disclaimer defined in EN + AR and referenced at 6 render sites (AssessmentFlow, WorkoutStats). assessmentNorms.js states outright: \"RESEARCH-INFORMED reference values, NOT validated clinical or population norms\".",
+    "SCI-03": "pass|Reliable Change Index implemented and cited (Jacobson & Truax 1991); 20 reference(s). WorkoutStats marks changes beyond noise with RCI ≥ 1.96.",
+    "SCI-04": "manual|trialLog.js captures per-trial data, so reliability is computable — but nothing computes it yet. No test-retest, split-half or ICC anywhere in src/.",
+    "SCI-05": "manual|No normative sample exists — correctly disclosed rather than hidden (see SCI-02). Reference means/SDs are author-set, age curves are literature-derived.",
+    "PRI-01": "fail|No privacy policy anywhere in the repo, and no in-app link. This blocks Play Store release outright.",
+    "PRI-02": "fail|No consent or disclosure gate found. PersonalityQuiz, RelationshipQuiz, the assessment battery and the habit tracker all collect special-category data with no prior notice.",
+    "PRI-03": "fail|No whole-account export and no global erase found. Per-feature resets exist (habits, individual game profiles) but nothing covers the user's data as a whole.",
+    "PRI-04": "fail|Age is collected and used for percentile banding (6 reference(s) to ageBand/ageGroup) but there is no age gate, no minimum age, and no parental-consent path.",
+    "SEC-01": "pass|audit:sec present, wired into deploy.yml and ci.yml, with a pre-push hook and a weekly sweep. 21 self-test assertions guard the detectors themselves.",
+    "SEC-02": "fail|Void Runner high-score board renders a stored player name via innerHTML (8 innerHTML site(s) in that file).",
+    "SEC-03": "fail|CI uses `npm install`, not `npm ci` — the lockfile is not enforced\nno .github/dependabot.yml\nGitHub secret scanning + push protection are OFF (verified via API; free on public repos)",
+    "BK-01": "not-yet|No backend yet — src/ makes zero network calls, verified by audit:sec.",
+    "BK-02": "not-yet|No Supabase keys in the project yet. audit:sec already fails on any JWT-shaped literal in a tracked file, so the tripwire is live before the risk is.",
+    "BK-03": "not-yet|No auth endpoints exist.",
+    "BK-04": "not-yet|Nothing is submitted anywhere.",
+    "BK-05": "not-yet|No edge functions.",
+    "BK-06": "not-yet|Accepted risk, documented in SECURITY.md §4.2 with Supabase Auth as its stated trigger."
+  }
+}

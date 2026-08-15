@@ -40,7 +40,16 @@
     "validate:mirror": "node scripts/validate-mirror.mjs",
     "audit:curves": "node scripts/audit-curves.mjs",
     "audit:consistency": "node scripts/audit-consistency.mjs",
-    "validate:personalization": "node scripts/validate-personalization.mjs"
+    "validate:personalization": "node scripts/validate-personalization.mjs",
+    "audit:sec": "node scripts/audit-security.mjs",
+    "audit:sec:fast": "node scripts/audit-security.mjs --fast",
+    "hooks:install": "git config core.hooksPath .githooks",
+    "review": "node scripts/review-board.mjs",
+    "review:html": "node scripts/review-board.mjs --json && node scripts/review-report.mjs",
+    "review:since": "node scripts/review-board.mjs --since",
+    "review:ack": "node scripts/review-board.mjs --ack",
+    "validate:wordmaze": "node scripts/validate-wordmaze.mjs",
+    "audit:pacing": "node scripts/audit-pacing.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^7.6.8",

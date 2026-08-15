@@ -42,57 +42,14 @@ import './taskSwitch.css';
 const RED = GAME_STIMULUS[0];
 const BLUE = GAME_STIMULUS[3];
 
-export const TS_PP_TRIALS = 24;
-export const TS_LEVEL_TRIALS = 24;
-export const TS_WIN_ACC = 0.75;
-
-/**
- * Difficulty is the preparation interval and how often the rule changes.
- *
- * The cue–stimulus interval is the honest lever: given ~1200 ms you can
- * reconfigure before the stimulus lands and the switch cost nearly vanishes;
- * at 150 ms you cannot, and you pay it on every switch. Switch PROPORTION is
- * the second lever — a run of repeats lets a set settle, so more switching is
- * more work even at the same interval.
+/*
+ * Config + trial generation live in taskSwitchData.js (a .js module, so the
+ * pacing gate can import them). Re-exported here so importers are unaffected.
  */
-export function tsCfg(mode, diff, level, ramp) {
-  if (mode === 'free') {
-    const r = ramp ?? 0;
-    return { csi: Math.round(1100 - r * 800), pSwitch: 0.3 + r * 0.35, deadline: Math.round(3000 - r * 900) };
-  }
-  if (mode === 'passplay') return { csi: 600, pSwitch: 0.5, deadline: 2600 };
-  const f = ((level || 1) - 1) / 99;
-  const base = diff === 'easy' ? { csi: 1100, p: 0.3, dl: 3200 }
-    : diff === 'hard' ? { csi: 550, p: 0.5, dl: 2400 }
-      : { csi: 800, p: 0.4, dl: 2800 };
-  return {
-    csi: Math.round(base.csi - f * (diff === 'hard' ? 400 : 500)),
-    pSwitch: Math.min(0.65, base.p + f * 0.2),
-    deadline: Math.round(base.dl - f * 700),
-  };
-}
-
-/** One trial. `prevTask` null on the first, which is neither switch nor repeat. */
-export function makeTrial(rng, prevTask, pSwitch) {
-  const task = prevTask === null
-    ? (rng() < 0.5 ? 'colour' : 'shape')
-    : (rng() < pSwitch ? (prevTask === 'colour' ? 'shape' : 'colour') : prevTask);
-  const colour = rng() < 0.5 ? 'red' : 'blue';
-  const shape = rng() < 0.5 ? 'circle' : 'square';
-  return {
-    task,
-    colour,
-    shape,
-    isSwitch: prevTask !== null && task !== prevTask,
-    // Same key under either rule ⇒ congruent.
-    congruent: (colour === 'red') === (shape === 'circle'),
-    answer: task === 'colour'
-      ? (colour === 'red' ? 'left' : 'right')
-      : (shape === 'circle' ? 'left' : 'right'),
-  };
-}
-
-const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+export {
+  TS_PP_TRIALS, TS_LEVEL_TRIALS, TS_WIN_ACC, TS_MIN_CSI, TS_MIN_DEADLINE, tsCfg, makeTrial, mean,
+} from './taskSwitchData.js';
+import { TS_PP_TRIALS, TS_LEVEL_TRIALS, TS_WIN_ACC, tsCfg, makeTrial, mean } from './taskSwitchData.js';
 
 export function TaskSwitchEngine({
   mode, diff, level, seed, attempt, onResult, onExit,

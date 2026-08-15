@@ -5,6 +5,7 @@ import { setPendingChapter } from '../../features/kawnera/pendingChapter';
 import { useApp } from '../../context/AppContext';
 import { lazyWithRetry } from '../../lib/lazyWithRetry';
 import UniverseDiveTransition from '../../features/universe/UniverseDiveTransition';
+import NeuralPanel from '../../features/personalization/NeuralPanel';
 
 // Keep the Three.js world out of the entry bundle.
 const ZenUniverse = lazyWithRetry(
@@ -27,7 +28,7 @@ const PlanetSurface = lazyWithRetry(
  * threshold and lands Dr Kawkab on the planet he arrived at.
  */
 export default function HomeScreen() {
-  const { currentLang, setImmersive, switchTab, activeTab } = useApp();
+  const { currentLang, setImmersive, switchTab, activeTab, playSfx } = useApp();
   const isAr = currentLang === 'ar';
   const bodies = useLearnedBodies(KAWNERA_BOOKS);
   const cooling = bodies.filter((b) => b.warmth < 0.5).length;
@@ -46,6 +47,14 @@ export default function HomeScreen() {
     },
     [switchTab],
   );
+
+  /* Tapping a suggestion goes to that TAB, not to the specific domain or
+   * practice. Kawnera is the only feature with a pending-target seam
+   * (pendingChapter.js); training and wellbeing have none, and inventing two
+   * more here would be a bigger change than this one. Landing on the right
+   * screen with the suggestion still on Home is the honest middle. */
+  const openTrainingDomain = useCallback(() => switchTab('comics'), [switchTab]);
+  const openWellbeingPractice = useCallback(() => switchTab('relax'), [switchTab]);
 
   const exitMartianMaze = useCallback(() => {
     setMazeOpen(false);
@@ -157,7 +166,13 @@ export default function HomeScreen() {
       dir={isAr ? 'rtl' : 'ltr'}
     >
       <div className="home-universe-stage">
-        <Suspense fallback={<div style={{ position: 'absolute', inset: 0, background: '#000' }} />}>
+        {/* The fallback follows the theme. It was a frozen `#000`, so every
+            cold load of Home flashed a full-screen black rectangle under a warm
+            beige app while the Three.js chunk arrived — the same frozen-colour
+            class as the layers removed on 2026-08-15, just in a loading state
+            nobody screenshots. --universe-dusk is the ground both themes
+            already use (#cfc4b0 light / #0a0a0b dark), so dark keeps its void. */}
+        <Suspense fallback={<div style={{ position: 'absolute', inset: 0, background: 'var(--universe-dusk)' }} />}>
           <ZenUniverse ref={zenRef} planets={bodies} />
         </Suspense>
       </div>
@@ -166,12 +181,39 @@ export default function HomeScreen() {
         className="home-universe-page home-universe-page--hero"
         aria-label={isAr ? 'كونك' : 'Your universe'}
       >
-        <div className="home-universe-heading">
-          <div className="home-universe-title">{isAr ? 'كونك' : 'Your universe'}</div>
+        {/* The one personalization surface, above the universe. It used to be
+            two panels — one in the Training hub, one in Wellbeing — sharing a
+            single global on/off flag, so switching it on in one place silently
+            switched it on in the other. Home is where the whole app is in view,
+            which is the only place a model that spans training, wellbeing and
+            reading belongs. */}
+        {/* One absolutely-positioned column owns the top of the hero. The
+            heading used to position itself (top: 58px); it now sits in this
+            wrapper's flow so the panel can push it down instead of landing on
+            top of it. Its dive opacity/transform are untouched. */}
+        <div className="home-universe-top">
+          <NeuralPanel
+            isAr={isAr}
+            playSfx={playSfx}
+            onOpenDomain={openTrainingDomain}
+            onOpenPractice={openWellbeingPractice}
+          />
+
+          {/* The "Your universe" title was removed on 2026-08-15 — the screen
+              says what it is. The heading now renders ONLY when there is a
+              count to show; an always-present empty div would still take the
+              column's 12px gap and push the sky down for nothing.
+
+              `.home-universe-title` itself stays in global.css: Wellbeing's
+              overlay title uses that exact class on purpose, so the two cannot
+              drift apart again. The section keeps its aria-label, which is the
+              region's accessible name rather than a visible word. */}
           {bodies.length > 0 && (
-            <div className="home-universe-sub">
-              {bodies.length} {bodies.length === 1 ? 'chapter' : 'chapters'} learned
-              {cooling > 0 && ` · ${cooling} cooling`}
+            <div className="home-universe-heading">
+              <div className="home-universe-sub">
+                {bodies.length} {bodies.length === 1 ? 'chapter' : 'chapters'} learned
+                {cooling > 0 && ` · ${cooling} cooling`}
+              </div>
             </div>
           )}
         </div>

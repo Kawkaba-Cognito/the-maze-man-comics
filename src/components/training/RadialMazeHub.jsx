@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, Suspense, lazy } from 'react';
-import { ShieldCheck, Sparkle } from '@phosphor-icons/react';
 import { DomainIconArt } from '../../features/training/shared/DomainIcon';
 import UniverseStage from '../shared/UniverseStage';
 import { DOMAINS } from './trainingData';
@@ -7,16 +6,8 @@ import { useApp } from '../../context/AppContext';
 import { useThemedChrome } from '../../hooks/useThemedChrome';
 import { tokens } from '../../styles/tokens';
 import { domainPlanetUrl } from '../../lib/planetIcons';
-import {
-  PERSONALIZATION_EVENT,
-  personalizationEnabled,
-  resetPersonalization,
-  setPersonalizationEnabled,
-} from '../../features/personalization/neuralPersonalization.js';
-import {
-  getTrainingRecommendation,
-  recordTrainingSelection,
-} from '../../features/personalization/trainingRecommendations.js';
+import { personalizationEnabled } from '../../features/personalization/neuralPersonalization.js';
+import { recordTrainingSelection } from '../../features/personalization/trainingRecommendations.js';
 
 /** Kawkab at the hub centre. Imported directly, not lazily: it is a 108 KB
  *  image now, so there is no 3D stack left worth deferring. */
@@ -554,30 +545,15 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
   const [hovered, setHovered] = useState(null);
   const [tick, setTick] = useState(0);
   const [reducedMotion] = useState(prefersReducedMotion);
-  const [personalizationOn, setPersonalizationOn] = useState(personalizationEnabled);
-  const trainingRecommendation = getTrainingRecommendation();
-
-  useEffect(() => {
-    const syncPersonalization = (event) => setPersonalizationOn(Boolean(event.detail?.enabled));
-    window.addEventListener(PERSONALIZATION_EVENT, syncPersonalization);
-    return () => window.removeEventListener(PERSONALIZATION_EVENT, syncPersonalization);
-  }, []);
-
+  /* The personalization CONTROLS moved to Home (features/personalization/
+   * NeuralPanel) — one model, one surface. Only the RECORDING stays: opening a
+   * domain is the example the training model learns from, and that has to
+   * happen where the choice is made. Read the flag live rather than mirroring
+   * it in state, since it can now be toggled from Home while this hub is
+   * mounted but hidden. */
   const openDomain = (domainId) => {
-    if (personalizationOn) recordTrainingSelection(domainId);
+    if (personalizationEnabled()) recordTrainingSelection(domainId);
     onOpenDomain(domainId);
-  };
-
-  const enablePersonalization = () => {
-    playSfx?.('click');
-    setPersonalizationEnabled(true);
-    setPersonalizationOn(true);
-  };
-
-  const clearPersonalization = () => {
-    playSfx?.('click');
-    resetPersonalization({ enabled: false });
-    setPersonalizationOn(false);
   };
 
   /*
@@ -758,76 +734,6 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           : 'Select a cognitive domain, or open Assessment for a complete baseline.'}
       </p>
 
-      <div
-        className="rh-personalization"
-        style={{
-          position: 'relative', zIndex: 6, width: 'min(92vw, 430px)', margin: '8px auto 2px',
-          minHeight: 52, display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
-          border: '1px solid var(--universe-line)', borderRadius: 15,
-          background: 'var(--universe-glass-strong)', color: 'var(--universe-ink)',
-          boxShadow: '0 5px 16px rgba(0,0,0,0.18)',
-          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-        }}
-      >
-        {personalizationOn ? (
-          <>
-            <Sparkle size={20} weight="fill" color="var(--universe-accent)" aria-hidden="true" />
-            <button
-              type="button"
-              onClick={() => { playSfx?.('click'); openDomain(trainingRecommendation.domainId); }}
-              style={{
-                flex: 1, minWidth: 0, padding: 0, border: 0, background: 'none', color: 'inherit',
-                textAlign: 'start', cursor: 'pointer', fontFamily: 'inherit',
-              }}
-            >
-              <span style={{ display: 'block', fontSize: 13.5, fontWeight: 850 }}>
-                {isAr ? 'مقترح لك' : 'Suggested for you'} · {domainDoorLabel(trainingRecommendation.domainId, isAr)}
-              </span>
-              <span style={{ display: 'block', marginTop: 2, color: chrome.muted, fontSize: 11.5, lineHeight: 1.3 }}>
-                {isAr
-                  ? `تحدٍ مقترح ${trainingRecommendation.suggestedLevel} من 5 · يتعلم على هذا الجهاز`
-                  : `${trainingRecommendation.reason} · challenge ${trainingRecommendation.suggestedLevel}/5 · on-device`}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={clearPersonalization}
-              title={isAr ? 'إيقاف التخصيص ومسح النموذج' : 'Turn off personalization and erase its model'}
-              aria-label={isAr ? 'إيقاف التخصيص ومسح النموذج' : 'Turn off personalization and erase its model'}
-              style={{
-                border: 0, background: 'none', color: chrome.muted, cursor: 'pointer',
-                padding: '5px 4px', fontFamily: 'inherit', fontSize: 11, fontWeight: 700,
-              }}
-            >
-              {isAr ? 'مسح' : 'Reset'}
-            </button>
-          </>
-        ) : (
-          <>
-            <ShieldCheck size={21} weight="duotone" color="var(--universe-accent)" aria-hidden="true" />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 850 }}>
-                {isAr ? 'تخصيص التدريب على هذا الجهاز' : 'On-device training personalization'}
-              </div>
-              <div style={{ color: chrome.muted, fontSize: 11.5, marginTop: 1 }}>
-                {isAr ? 'يتعلم من الجولات المكتملة فقط. يمكنك مسحه في أي وقت.' : 'Learns only from completed runs. Erase it at any time.'}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={enablePersonalization}
-              style={{
-                flexShrink: 0, borderRadius: 999, border: '1px solid var(--universe-line)',
-                background: 'color-mix(in srgb, var(--universe-accent) 16%, var(--universe-glass-strong))',
-                color: 'var(--universe-ink)', padding: '7px 11px', cursor: 'pointer',
-                fontFamily: 'inherit', fontSize: 11.5, fontWeight: 850,
-              }}
-            >
-              {isAr ? 'تشغيل' : 'Turn on'}
-            </button>
-          </>
-        )}
-      </div>
 
       {/*
         Radial maze canvas.

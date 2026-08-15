@@ -861,7 +861,14 @@ export default function CarPark3DProto({
                 aria-pressed={Boolean(state)}
                 onClick={() => apiRef.current.toggleFork?.(index)}
               >
-                J{index + 1} · {state ? 'B' : 'A'}
+                {/* Just the junction number. This used to read "J1 · B" — an
+                    internal id plus an A/B branch code that meant nothing to a
+                    player, and the branch half was already redundant: the
+                    button fills with --game-accent at aria-pressed, so its
+                    state is visible without naming it. The number stays because
+                    it is the only thing mapping this button to a junction on
+                    the board; the screen-reader name above carries the rest. */}
+                {index + 1}
               </button>
             ))}
           </div>

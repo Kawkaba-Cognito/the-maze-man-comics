@@ -1,0 +1,27 @@
+#!/bin/sh
+# Fast security gate — runs before every push, including the MANUAL gh-pages
+# deploy that skips CI entirely (see CLAUDE.md: "a manual gh-pages deploy skips
+# every one of these gates"). That hole is the reason this hook exists.
+#
+# Deliberately fast: no network, no npm audit, no build. It must stay under a
+# second, because pushing from this machine is already slow enough that a hook
+# people want to skip is a hook that gets skipped.
+#
+# Lives in .githooks/ (tracked, travels with a clone) rather than .git/hooks/
+# (local, invisible, lost on re-clone). Activated with:
+#     git config core.hooksPath .githooks
+#
+# Genuine emergency escape: git push --no-verify
+# If you use it, run `npm run audit:sec` afterwards and fix what it finds.
+
+echo "pre-push: security gate (fast)…"
+
+if ! npm run --silent audit:sec:fast; then
+  echo ""
+  echo "  ✗ PUSH BLOCKED by audit:sec."
+  echo "    Inspect:  npm run audit:sec -- --list"
+  echo "    Override: git push --no-verify   (then fix it immediately)"
+  exit 1
+fi
+
+exit 0

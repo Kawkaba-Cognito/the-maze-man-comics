@@ -20,6 +20,17 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Security audit
+        run: npm run audit:sec
+
+      # REPORTS, never blocks — the board raises questions of judgement
+      # (scientific claims, consent design) that must not gate a bug fix.
+      # `|| true` is deliberate, not sloppy: --since exits 0 anyway, but this
+      # guarantees a future check that starts exiting non-zero cannot silently
+      # turn the board into a gate.
+      - name: Review board (delta since last acknowledged state)
+        run: npm run review:since || true
+
       - name: Audit FocusQuest level math & generation
         run: npm run audit:fq
 

@@ -1,0 +1,99 @@
+name: Security sweep
+
+# The one class of risk a commit-triggered gate CANNOT catch: a dependency
+# vulnerability is disclosed while you change nothing. deploy.yml only fires on
+# a push, so a quiet fortnight is a fortnight of no checking at all. This runs
+# on a schedule instead, and opens an issue when the picture gets worse.
+#
+# Kept separate from deploy.yml on purpose — a newly-disclosed CVE in a build
+# tool should NOT be able to block shipping a bug fix. This reports; the deploy
+# gate blocks. Different jobs, different urgency.
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write # open a report when the sweep finds something new
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      # Full run: secrets, gitignore integrity, CSP ratchet, SRI, network
+      # isolation, XSS sinks, AND npm audit against the recorded baseline.
+      - name: Full security audit
+        id: audit
+        # `set -o pipefail` is load-bearing: GitHub's default shell is `bash -e`
+        # WITHOUT pipefail, so `npm run audit:sec | tee` would exit with tee's
+        # status (always 0). The step would pass on every failing audit and this
+        # workflow would never once open an issue — a sweep that always reports
+        # healthy is worse than no sweep, because you stop checking.
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run audit:sec 2>&1 | tee /tmp/audit.txt
+
+      # `npm audit` alone, unbaselined — so a vulnerability that exists but sits
+      # at or under the ceiling still shows up in the log for a human to read.
+      - name: Raw vulnerability report (informational)
+        if: always()
+        run: npm audit || true
+
+      # The board rides along with the sweep so the weekly notification covers
+      # judgement items (claims, consent, psychometrics) and not only the
+      # mechanical security gate. Captured whether or not the audit failed.
+      - name: Review board
+        if: always()
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run --silent review -- --brief 2>&1 | tee /tmp/board.txt || true
+
+      - name: Open an issue if the sweep failed
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '';
+            try { body = fs.readFileSync('/tmp/audit.txt', 'utf8'); } catch {}
+            let board = '';
+            try { board = fs.readFileSync('/tmp/board.txt', 'utf8'); } catch {}
+            const title = 'Security sweep failed';
+            // Reuse the open issue instead of filing a new one every Monday.
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'security',
+            });
+            const found = existing.data.find(i => i.title === title);
+            const text = [
+              'The weekly security sweep failed. Output:',
+              '', '```', body.slice(0, 40000), '```', '',
+              ...(board ? ['<details><summary>Review board — full standing review</summary>', '',
+                '```', board.slice(0, 20000), '```', '</details>', ''] : []),
+              `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              '', 'See SECURITY.md for what each rule means and how to respond.',
+            ].join('\n');
+            if (found) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: found.number, body: text,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body: text, labels: ['security'],
+              });
+            }
