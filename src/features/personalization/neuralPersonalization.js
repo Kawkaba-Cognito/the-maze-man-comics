@@ -279,6 +279,42 @@ export function predictTrainingPreferences(features) {
   return predictNetwork(store.models.training, features).probabilities;
 }
 
+/**
+ * A READ-ONLY window into the training model, for the diagram on Home.
+ *
+ * It returns the REAL forward pass — the input vector, the hidden activations
+ * and the output probabilities — so the picture on screen is the model that is
+ * actually running. A decorative animation of a generic neural net would have
+ * been easier and would have been a lie: this app tells people it learns from
+ * them, so what it shows them has to be the thing that learned.
+ *
+ * ⚠ Takes `features` as an argument rather than computing them. The feature
+ * vector is built in trainingRecommendations.js, which imports from this file —
+ * reaching back for it here would close an import cycle.
+ *
+ * Returns null when there is nothing honest to show (off, or never trained).
+ */
+export function inspectTrainingNetwork(features) {
+  const store = loadPersonalization();
+  if (!store.enabled) return null;
+  const net = store.models.training;
+  if (!net || !Array.isArray(features) || features.length !== net.inputSize) return null;
+  const pass = predictNetwork(net, features);
+  return {
+    input: pass.input,
+    hidden: pass.hidden,
+    output: pass.probabilities,
+    inputSize: net.inputSize,
+    hiddenSize: net.hiddenSize,
+    outputSize: net.outputSize,
+    steps: net.steps ?? 0,
+    examples: store.stats.trainingChoices + store.stats.trainingOutcomes,
+    /* Matches the gate inside predictTrainingPreferences, so the diagram and
+       the recommendation can never disagree about whether the model is cold. */
+    cold: store.stats.trainingChoices < 3,
+  };
+}
+
 export function recordTrainingChoice(domainId, features) {
   const store = loadPersonalization();
   const index = TRAINING_DOMAIN_IDS.indexOf(domainId);

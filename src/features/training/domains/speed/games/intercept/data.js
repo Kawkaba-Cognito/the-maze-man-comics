@@ -1,625 +1,434 @@
 /*
- * Intercept — coincidence anticipation timing.
+ * INTERCEPT — Rift Defense.  [speed]
  *
- * A shape travels toward a gate and disappears behind cover partway. You tap the
- * instant it would cross. Because you cannot see it arrive, you are running a
- * forward model of where it is — the same machinery behind catching a ball,
- * pulling out at a junction, or stepping off a kerb.
+ * Ships come down the lanes toward your gate. Partway they cross a cover band
+ * and vanish. You strike the lane at the exact instant the ship reaches the
+ * strike line — which you cannot see it do. Because it is hidden, you are
+ * running a forward model of where it is: the same machinery behind catching a
+ * ball, pulling out at a junction, or stepping off a kerb.
+ *
+ * The measure is a SIGNED ERROR IN MILLISECONDS, early or late. Not a count of
+ * correct answers.
  *
  * ⚠ WHY IT REPLACED TRAIL MAKING. The speed domain's other two games — Speed
- * Match (symbol to digit code) and Math Gates (arithmetic) — are both foveal,
+ * Match (symbol→digit code) and Math Gates (arithmetic) — are both foveal,
  * symbolic and sequential: look at one thing in the middle, decode it, answer.
- * Trail Making was a third of those. This is none of them: no symbol to decode,
- * no answer to choose, and the measure is a signed error in milliseconds rather
- * than a count of correct responses.
+ * Trail Making was a third. This is none of them, and that is the whole reason
+ * it exists. Keep it that way.
  *
- * ── WHY THE FIRST VERSION GOT BORING, AND WHAT CHANGED (2026-08-14) ──
+ * ── WHY IT WAS REBUILT AS A WAVE GAME (2026-08-17) ────────────────────────
  *
- * The curve was never the problem. v1 had five levers and a hundred levels per
- * tier, and all five turned the SAME knob: travel down, visible down, tolerance
- * down. Level 1 and level 60 of a tier were the identical act, performed meaner.
- * A hundred levels delivered about three sensations, because the only genuinely
- * new things — profile mixing, the bounce path, the second mover — were pinned
- * to tier boundaries.
+ * Reported as boring, not obviously scaling, and carrying a between-sector
+ * UPGRADE SHOP that "doesn't feel like it belongs". All three were true, and
+ * measurable:
  *
- * So this version adds levers that change WHAT YOU DO rather than how tight the
- * window is, and each one is a different question:
+ *   · The shop sold difficulty. `scan` bought +80ms of visibility and `pulse`
+ *     +12ms of hit window, and the stage reached feeds awardFreeRun → the speed
+ *     domain rating. Two players with identical timing got different ratings
+ *     depending on what they bought. In a measurement app that is backwards, so
+ *     it is gone — difficulty now comes only from the wave, which a gate checks.
  *
- *   gates    WHERE does it cross? Two lines; the mover's mark says which one is
- *            live. A decision layered under the timing, made before it hides.
- *   warp     the mover changes speed WHILE HIDDEN. The forward model has to be
- *            updated mid-flight, not merely run forward. This is the big one —
- *            extrapolation and revision are different skills.
- *   strobe   one ~130ms glimpse inside the tunnel. It exists BECAUSE of warp:
- *            a speed change you can never observe is a coin flip, so warp is
- *            never dealt without it (asserted by validate:intercept).
- *   launch   the whole task inverted. A metronome counts; you RELEASE the mover
- *            so it arrives on the silent fifth beat. Same forward model, read
- *            backwards, and the reason Survival stops feeling like one act.
+ *   · It did not scale. Counting NAMEABLE mechanics rather than continuous
+ *     knobs, the easy tier had exactly ONE across all 100 levels: the identical
+ *     act, with travel 2400→1584ms and the window 190→105ms. Every genuinely
+ *     new lever lived in med/hard. The previous version's own header complained
+ *     about precisely this failure in the version before it, and then shipped it
+ *     again in the tier where new players spend their first hundred levels.
  *
- * ⚠ `strobe` and `launch` are deliberately NOT terms in the gate's ordinalLoad.
- * Strobe makes a trial EASIER (that is its job — it pays for warp), and launch
- * is a different skill rather than a harder one. Folding either into the
- * difficulty number would let a real regression in the levers that decide
- * whether a level is POSSIBLE hide behind them. They are asserted on their own.
+ *   · The boredom was structural, not tuning. One countdown, one mover, ONE
+ *     TAP, then dead air. Every other game in the platform gives you something
+ *     to do continuously.
+ *
+ * So the unit of play changed. A wave puts several ships in flight at once, in
+ * different lanes, arriving at different moments. You are no longer waiting
+ * between trials — you are holding two or three forward models simultaneously
+ * and acting on each as it comes due. That is both a better game and a harder,
+ * more honest version of the same construct: predicting one hidden arrival is
+ * the skill; predicting three overlapping ones is that skill under load.
+ *
+ * ⚠ Explicit .js extensions. Vite resolves without them, plain Node does not,
+ * and validate:intercept runs in Node — dropping one breaks the GATE, not the
+ * app, which is the kind of failure that only shows up in CI.
  */
-
-/* ⚠ Explicit .js extensions. Vite resolves without them, plain Node does not,
-   and validate:intercept runs in Node — dropping one breaks the GATE, not the
-   app, which is the kind of failure that only shows up in CI. */
 import { CURVE, levelFraction } from '../../../../shared/difficulty.js';
 
 export const LEVELS_PER_TIER = 100;
-export const WAVES_PER_SECTOR = 5;
 
-/*
- * Motion profiles, as position along the path for u = elapsed / total.
- *
- * Every profile is normalised to arrive at exactly u = 1, so an UNWARPED mover
- * always reaches the far gate at the same instant regardless of profile — what
- * differs is what the visible portion tells you about it. That keeps scoring
- * identical across profiles and puts the whole difficulty into the inference.
- *
- * ⚠ `inv` is not decoration. Two of the new levers need to run the profile
- * BACKWARDS — "at what time is it at s?" — to place a near gate and to re-time a
- * warped mover. Both are exact inverses of `at`, not numeric searches, because
- * they are called per frame and a bisection here would be measurable.
+/* ── PERCEPTUAL FLOORS ────────────────────────────────────────────────────
+ * These are the numbers that decide whether a wave is POSSIBLE, as opposed to
+ * merely hard, and they are why this file has a gate. Carried over unchanged
+ * from the previous version, plus one new one for the wave format.
  */
-export const PROFILES = {
-  steady: {
-    id: 'steady',
-    name: { en: 'Steady', ar: 'ثابت' },
-    /** Constant speed — linear extrapolation is correct. */
-    at: (u) => u,
-    inv: (s) => s,
+/** Below this there is nothing to estimate speed from, so the strike is a guess. */
+export const MIN_VISIBLE_MS = 340;
+/** A hit window tighter than this is inside human timing noise, not skill. */
+export const MIN_TOLERANCE = 62;
+/** Below this the ship is barely hidden and there is nothing to predict. */
+export const MIN_HIDDEN_MS = 200;
+/** Time to see a glimpse and act on it. */
+export const MIN_REACT_MS = 220;
+/** One strobe glimpse inside the cover, for waves that warp. */
+export const STROBE_MS = 130;
+/**
+ * NEW for waves: two ships must never come due closer together than this, in
+ * any lane. A player has one thumb. Without this a wave can be arithmetically
+ * clearable and physically impossible — the same failure audit:fq caught in
+ * Cancellation, where the curve was fine and the board could not be finished.
+ */
+export const MIN_ARRIVAL_GAP_MS = 300;
+
+/* ── SHIP KINDS ───────────────────────────────────────────────────────────
+ * Position along the lane for u = elapsed / travel. Every kind is normalised to
+ * arrive at exactly u = 1, so ARRIVAL TIME IS THE SAME for all of them — what
+ * differs is what the visible stretch tells you about it. A charger looks slow
+ * early and is not; a stalker looks fast early and is not. That is the whole
+ * trick, and it is why the profile is a difficulty lever rather than decoration.
+ */
+export const KINDS = {
+  drifter: {
+    id: 'drifter', art: 'steady',
+    en: 'Drifter', ar: 'الهائمة',
+    pos: (u) => u,
   },
-  accel: {
-    id: 'accel',
-    name: { en: 'Accelerating', ar: 'مُتسارِع' },
-    /* Starts slow and builds. Time it from the visible part alone and you tap
-       LATE, because the hidden stretch is covered faster than what you saw. */
-    at: (u) => u ** 1.6,
-    inv: (s) => s ** (1 / 1.6),
+  charger: {
+    id: 'charger', art: 'accel',
+    en: 'Charger', ar: 'المندفعة',
+    pos: (u) => u * u,
   },
-  decel: {
-    id: 'decel',
-    name: { en: 'Slowing', ar: 'مُتباطِئ' },
-    /* Starts fast and eases off — the mirror error, and players tap EARLY. */
-    at: (u) => u ** 0.62,
-    inv: (s) => s ** (1 / 0.62),
+  stalker: {
+    id: 'stalker', art: 'decel',
+    en: 'Stalker', ar: 'المتربّصة',
+    pos: (u) => 1 - (1 - u) * (1 - u),
+  },
+  blinker: {
+    id: 'blinker', art: 'accel',
+    en: 'Blinker', ar: 'الوامضة',
+    /* Constant, but its SPEED CHANGES while hidden — see `warp` below. The
+       forward model has to be revised mid-flight rather than merely run
+       forward, which is a different skill from extrapolation. */
+    pos: (u) => u,
+    warps: true,
   },
 };
+export const KIND_IDS = Object.keys(KINDS);
 
-export const PROFILE_IDS = Object.keys(PROFILES);
+/** Speed multipliers applied inside the cover. 1 = no change. */
+export const WARPS = [1.32, 0.74];
 
-/*
- * PATHS — the second kind of variety, and the reason no two runs look alike.
- *
- * A single left-to-right rail is one picture repeated for a hundred levels. The
- * skill barely changes when the path does, but the SCENE does, and a game you
- * are asked to play daily cannot look identical every time.
- *
- * `bounce` is the one that is not merely cosmetic: the mover reflects off a
- * wall while it is hidden, so the forward model has to carry a direction change
- * you never see happen.
- *
- * Points are normalised to the play box, so this works at any aspect ratio.
- */
-export const PATHS = {
-  ltr: { id: 'ltr', pts: [[0.06, 0.5], [0.94, 0.5]] },
-  rtl: { id: 'rtl', pts: [[0.94, 0.5], [0.06, 0.5]] },
-  ttb: { id: 'ttb', pts: [[0.5, 0.08], [0.5, 0.92]] },
-  btt: { id: 'btt', pts: [[0.5, 0.92], [0.5, 0.08]] },
-  diagDown: { id: 'diagDown', pts: [[0.08, 0.14], [0.92, 0.86]] },
-  diagUp: { id: 'diagUp', pts: [[0.08, 0.86], [0.92, 0.14]] },
-  bounce: { id: 'bounce', pts: [[0.06, 0.26], [0.58, 0.9], [0.94, 0.3]] },
-  bounceHi: { id: 'bounceHi', pts: [[0.06, 0.82], [0.55, 0.12], [0.94, 0.74]] },
-};
+/** Where along the lane the strike line sits (0 = spawn edge, 1 = the gate). */
+export const STRIKE_AT = 0.86;
 
-export const PATH_IDS = Object.keys(PATHS);
-
-/*
- * THE GATES.
+/* ── DIFFICULTY ───────────────────────────────────────────────────────────
+ * Seven levers, and every one is something the player can name:
  *
- * The near gate sits at 0.74 of the route, comfortably past the furthest any
- * cover starts, so a near-gate crossing is still hidden. Which gate is live is
- * carried by a MARK ON THE MOVER, readable before it hides — the decision has to
- * be made from the visible stretch or it is not a decision, it is a memory test.
+ *   lanes        how wide the front is
+ *   perWave      how many ships a wave sends
+ *   concurrency  HOW MANY ARE IN FLIGHT AT ONCE — the lever that makes this a
+ *                wave game rather than a series of single trials, and the one
+ *                that scales load rather than just meanness
+ *   waves        how long a level runs
+ *   travel       how long a ship takes to cross
+ *   visibleMs    how much of that you get to watch before the cover
+ *   tol          the hit window
+ *   kinds        which ship types can appear
  *
- * ⚠ The near gate shortens the hidden stretch, which on its own makes a trial
- * EASIER. That is fine and intended — the cost is the decision, not the timing —
- * but it means the gate has to assert a floor on hidden time per GATE rather
- * than per level, or a near-gate trial could quietly become "just watch it".
- */
-export const GATE_S = [0.74, 1.0];
-
-/** Cumulative arc length of a path, memoised — the geometry never changes. */
-const pathLenCache = new Map();
-function pathMetrics(id) {
-  const hit = pathLenCache.get(id);
-  if (hit) return hit;
-  const pts = (PATHS[id] || PATHS.ltr).pts;
-  const segs = [];
-  let total = 0;
-  for (let i = 1; i < pts.length; i++) {
-    const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-    segs.push(d);
-    total += d;
-  }
-  const rec = { pts, segs, total };
-  pathLenCache.set(id, rec);
-  return rec;
-}
-
-/** Point at arc-length fraction `s` (0..1) along a path, in normalised space. */
-export function pathPoint(id, s) {
-  const { pts, segs, total } = pathMetrics(id);
-  let want = Math.max(0, Math.min(1, s)) * total;
-  for (let i = 0; i < segs.length; i++) {
-    if (want <= segs[i] || i === segs.length - 1) {
-      const f = segs[i] ? Math.min(1, want / segs[i]) : 0;
-      return [
-        pts[i][0] + (pts[i + 1][0] - pts[i][0]) * f,
-        pts[i][1] + (pts[i + 1][1] - pts[i][1]) * f,
-      ];
-    }
-    want -= segs[i];
-  }
-  return pts[pts.length - 1];
-}
-
-/*
- * Difficulty levers, independent on purpose so the curve has somewhere to go for
- * 100 levels without any one of them going silly:
+ * ⚠ NOTE WHAT IS ABSENT: there is no shop, and no lever the player can buy.
+ * There is also no lever that makes a wave unclearable — MIN_ARRIVAL_GAP_MS is
+ * enforced when the wave is BUILT, not hoped for.
  *
- *   travel      how long the whole run takes (faster = less time to estimate)
- *   visible     how long you get to WATCH before the cover
- *   tolerance   the hit window, in ms
- *   profiles    which motion profiles can appear
- *   gates       one crossing line, or two with a mark saying which
- *   warps       the speed multipliers that can apply inside the tunnel
- *   movers      how many arrive in one trial (hard tier only)
- *   launch      the share of trials that run inverted (release on the beat)
- */
-/*
- * ⚠ THE VISIBLE WINDOW IS AUTHORED; THE OCCLUSION IS DERIVED. Do not swap them.
- *
- * The first version of this authored `occlude` as a fraction of the path and let
- * it rise while `travel` fell. Both are reasonable-looking ramps and together
- * they collapse a third quantity nobody was watching — the time you actually
- * get to WATCH — which fell through the floor at Hard level 2 and reached 130ms
- * by level 100. validate:intercept caught it on the first run.
- *
- * It is the same shape as the bug audit:fq shipped for months: targets rising
- * and time falling are each defensible, and their product made the tier
- * impossible. So the quantity the player depends on is the one authored here,
- * and the cover position is computed from it per profile.
+ * ⚠ Every tier must introduce something. The previous curve's easy tier had one
+ * mechanic across 100 levels; `validate:intercept` now counts distinct mechanic
+ * sets per tier and fails a tier that never introduces anything.
  */
 export const BASE = {
   easy: {
-    travel: 2400, visible: 1100, tol: 190,
-    profiles: ['steady'],
-    paths: ['ltr', 'rtl'],
-    movers: 1,
+    lanes0: 2, lanes1: 3,
+    per0: 4, per1: 8,
+    conc0: 1, conc1: 2,
+    waves0: 3, waves1: 4,
+    travel0: 2600, travel1: 1900,
+    vis0: 1150, vis1: 780,
+    tol0: 190, tol1: 120,
+    kinds0: ['drifter'],
+    kinds1: ['drifter', 'charger'],
   },
   med: {
-    travel: 2100, visible: 820, tol: 140,
-    profiles: ['steady', 'accel'],
-    paths: ['ltr', 'rtl', 'ttb', 'btt'],
-    movers: 1,
+    lanes0: 3, lanes1: 3,
+    per0: 6, per1: 11,
+    conc0: 2, conc1: 3,
+    waves0: 4, waves1: 5,
+    travel0: 2300, travel1: 1650,
+    vis0: 900, vis1: 620,
+    tol0: 150, tol1: 92,
+    kinds0: ['drifter', 'charger'],
+    kinds1: ['drifter', 'charger', 'stalker'],
   },
   hard: {
-    travel: 1800, visible: 620, tol: 105,
-    profiles: ['steady', 'accel', 'decel'],
-    paths: ['ltr', 'rtl', 'ttb', 'btt', 'diagDown', 'diagUp', 'bounce', 'bounceHi'],
-    movers: 1,
+    lanes0: 3, lanes1: 4,
+    per0: 8, per1: 14,
+    conc0: 2, conc1: 3,
+    waves0: 4, waves1: 5,
+    travel0: 2000, travel1: 1500,
+    vis0: 760, vis1: 520,
+    tol0: 120, tol1: 70,
+    kinds0: ['drifter', 'charger', 'stalker'],
+    kinds1: ['drifter', 'charger', 'stalker', 'blinker'],
   },
 };
 
-/*
- * WHERE EACH NEW LEVER SWITCHES ON, as a fraction of the tier's curve.
- *
- * They are staggered rather than stacked: a level that introduces the second
- * gate does not also introduce warp, because the first time a player meets a
- * lever it should be the only new thing on the screen. The order is by how much
- * each one changes the act — gate (a decision), warp (a revision), second mover
- * (two models at once) — and `launch` sits alone because it is not on that
- * ladder at all.
- */
-const ONSET = {
-  easy: { gates: Infinity, warp: Infinity, movers: Infinity, launch: Infinity },
-  med: { gates: 0.55, warp: Infinity, movers: Infinity, launch: 0.30 },
-  hard: { gates: 0.22, warp: 0.44, movers: 0.72, launch: 0.30 },
-};
+/** Gate hearts. A wave is survivable losing a few, so one slip is not fatal. */
+export const HEARTS = 3;
 
-/** The speed multipliers a warped mover can take. 1 is always in the deal. */
-export const WARPS = [1, 1.34, 0.76];
+const lerp = (a, b, f) => a + (b - a) * f;
+const li = (a, b, f) => Math.round(lerp(a, b, f));
 
-/*
- * ⚠ THE FLOORS THAT KEEP IT PLAYABLE.
- *
- * Every one of these is asserted by validate:intercept rather than trusted, and
- * every one of them exists because the shape of a curve says nothing about
- * whether a human can play it — the lesson audit:fq learned the hard way.
- *
- *   MIN_VISIBLE_MS  you must see enough of the run to estimate its speed. Below
- *                   roughly a third of a second there is nothing to estimate
- *                   from and the trial becomes a coin flip dressed as a skill.
- *   MIN_TOLERANCE   human timing precision on this task sits around 60-80ms
- *                   even for experts, so a window under this is not difficulty,
- *                   it is noise.
- *   MIN_HIDDEN_MS   the stretch you have to PREDICT, per gate. A near gate with
- *                   90ms of cover is not a prediction, it is a reaction — and it
- *                   would measure the wrong thing while looking fine.
- *   MIN_REACT_MS    time between the strobe glimpse ending and the crossing. If
- *                   the glimpse lands too late to act on, warp is unobservable
- *                   again and we are back to a coin flip.
- */
-export const MIN_VISIBLE_MS = 340;
-export const MIN_TOLERANCE = 62;
-export const MIN_HIDDEN_MS = 200;
-export const MIN_REACT_MS = 180;
-
-/** The mid-tunnel glimpse that pays for `warp`. */
-export const STROBE_FRAC = 0.45;
-export const STROBE_MS = 130;
-
-/*
- * LAUNCH MODE.
- *
- * Five beats. Four of them sound; the fifth is silent and is the target. You
- * release the mover so that it CROSSES on the fifth, which means solving
- * `launchAt = beat5 - timeToGate` — the same forward model, run backwards.
- *
- * The tempo is derived rather than fixed, because a fixed one breaks at both
- * ends of the curve: at Easy's 2400ms travel a 620ms beat would have you launch
- * before you had heard two beats (nothing to lock onto), and at Hard's 1200ms it
- * would leave you waiting through most of the bar. Deriving it from the travel
- * keeps the release between beats 2 and 5 at every level, which the gate
- * asserts.
- */
-export const LAUNCH_BEATS = 5;
-export function launchBeatMs(timeToGate) {
-  return Math.max(420, Math.min(900, Math.round((timeToGate + 900) / 3)));
-}
-
-/** Level config. Front-loaded so early levels feel distinct, like Math Gates. */
 export function levelCfg(diff, level) {
   const b = BASE[diff] || BASE.med;
-  const on = ONSET[diff] || ONSET.med;
   const f = levelFraction(level, LEVELS_PER_TIER, CURVE.FRONT);
-
-  const travel = Math.round(b.travel - f * (b.travel * 0.34));
-  const tol = Math.max(MIN_TOLERANCE, Math.round(b.tol - f * (b.tol * 0.45)));
-
-  /* The watching window shrinks, but never past the floor — and never past the
-     point where less than a fifth of the run is hidden, or there is nothing to
-     predict. Both bounds are structural, so no level can be authored below them. */
-  const visibleMs = Math.round(Math.max(
+  const travel = li(b.travel0, b.travel1, f);
+  // Visibility is floored, and also capped so a ship is always hidden long
+  // enough that there is something to predict.
+  const visibleMs = Math.max(
     MIN_VISIBLE_MS,
-    Math.min(b.visible - f * (b.visible * 0.42), travel * 0.8),
-  ));
-
-  /* A second mover only in the top third of Hard. It is the biggest jump in the
-     game — two independent forward models at once — so it arrives late and
-     alone rather than stacking on top of a fresh profile. */
-  const movers = f > on.movers ? 2 : b.movers;
-  const gates = f > on.gates ? 2 : 1;
-  const warps = f > on.warp ? WARPS : [1];
-
-  /* Launch trials are a SHARE of the set, not a mode switch, so a level mixes
-     the two readings of the same skill. It tops out below half: the forward
-     direction is the one the science is named for, and launch is the variation. */
-  const launchShare = f > on.launch
-    ? Math.min(0.4, 0.18 + (f - on.launch) * 0.42)
-    : 0;
-
+    Math.min(li(b.vis0, b.vis1, f), travel - MIN_HIDDEN_MS),
+  );
   return {
+    lanes: li(b.lanes0, b.lanes1, f),
+    perWave: li(b.per0, b.per1, f),
+    concurrency: li(b.conc0, b.conc1, f),
+    waves: li(b.waves0, b.waves1, f),
     travel,
     visibleMs,
-    tol,
-    profiles: b.profiles,
-    paths: b.paths,
-    movers,
-    gates,
-    warps,
-    launchShare,
+    tol: Math.max(MIN_TOLERANCE, li(b.tol0, b.tol1, f)),
+    kinds: f < 0.5 ? b.kinds0 : b.kinds1,
+    hearts: HEARTS,
     f,
-    /** Derived, and only for reporting: how much of the PATH ends up hidden. */
-    occlude: occlusionFor(visibleMs, travel, b.profiles),
+    // numeric mirrors so audit:curves can assert the list levers never shrink
+    kindCount: (f < 0.5 ? b.kinds0 : b.kinds1).length,
   };
 }
 
-/*
- * How much of the path is hidden, given how long the player gets to watch.
- *
- * Profile-dependent, and that is the point: on an accelerating mover the first
- * 620ms covers far less ground than on a slowing one, so the same watching
- * window hides very different amounts. Reported as the worst (largest) case
- * across the profiles a level can deal.
- */
-export function occlusionFor(visibleMs, travel, profiles) {
-  let most = 0;
-  for (const id of profiles) {
-    const p = PROFILES[id];
-    if (!p) continue;
-    most = Math.max(most, 1 - p.at(Math.min(1, visibleMs / travel)));
-  }
-  return most;
-}
-
-/** Where along the path this mover's cover begins, 0..1. */
-export function hideAtFor(profileId, visibleMs, travel) {
-  const p = PROFILES[profileId] || PROFILES.steady;
-  return p.at(Math.min(1, visibleMs / travel));
-}
-
-/*
- * SURVIVAL ENTERS EACH TIER PART-WAY UP, and that is not a detail.
- *
- * Survival walks easy → med → hard continuously, so every tier's FIRST round
- * has to be harder than the previous tier's LAST. Starting each tier at level 1
- * failed exactly there: Medium level 92 scored 18.0 and Hard level 1 scored
- * 16.8, so the run got easier at the moment it was supposed to get frightening.
- *
- * The fix is not to make Hard's opening brutal — Levels mode needs a gentle
- * Hard level 1 for someone choosing it fresh. It is to enter the tier higher up
- * its own curve, which is what Cancellation does for the same reason. These
- * entry levels were searched against the boundary; validate:intercept asserts
- * the result, so if the curve is ever retuned the gate will name the tier that
- * dips rather than letting it ship.
- */
-export const SURVIVAL_PLAN = [
-  { diff: 'easy', rounds: 8, from: 4, to: 100 },
-  { diff: 'med', rounds: 8, from: 12, to: 90 },
-  { diff: 'hard', rounds: 14, from: 22, to: 100 },
-];
-
-/** Survival: one continuous ramp, entering each tier part-way up its curve. */
+/** Survival: one continuous ramp, endless waves, no shop. */
 export function survivalCfg(stage) {
-  const absoluteStage = Math.max(0, Math.floor(Number(stage) || 0));
-  let s = absoluteStage;
-  let baseCfg = null;
-  for (let i = 0; i < SURVIVAL_PLAN.length; i++) {
-    const tier = SURVIVAL_PLAN[i];
-    const last = i === SURVIVAL_PLAN.length - 1;
-    if (s < tier.rounds || last) {
-      const span = Math.max(1, tier.rounds - 1);
-      const u = Math.min(1, s / span);
-      const lv = Math.round(tier.from + (tier.to - tier.from) * u);
-      baseCfg = { diff: tier.diff, lv, ...levelCfg(tier.diff, lv) };
-      break;
-    }
-    s -= tier.rounds;
-  }
-
-  if (!baseCfg) baseCfg = { diff: 'hard', lv: LEVELS_PER_TIER, ...levelCfg('hard', LEVELS_PER_TIER) };
-
-  /*
-   * A survival run used to stop growing after round 30: Hard L100 was returned
-   * forever, so the promise of an endless mode became the same trial repeated
-   * until three misses accumulated. The timing window cannot honestly shrink
-   * below the human-noise floor, so late strength scales through simultaneous
-   * forward models instead. A new threat joins every ten post-curriculum waves,
-   * capped at four so every arrival remains readable and independently tappable.
-   */
-  const postCurriculum = Math.max(0, absoluteStage - 29);
-  const extraMovers = postCurriculum > 0 ? 1 + Math.floor((postCurriculum - 1) / 10) : 0;
-  const movers = Math.min(4, baseCfg.movers + extraMovers);
-
-  const sector = Math.floor(absoluteStage / WAVES_PER_SECTOR) + 1;
-  const wave = (absoluteStage % WAVES_PER_SECTOR) + 1;
-  const mission = {
-    sector,
-    wave,
-    surge: wave === WAVES_PER_SECTOR,
-    pressure: Math.min(5, 1 + Math.floor(absoluteStage / 8)),
-  };
-
-  return {
-    ...baseCfg,
-    movers,
-    mission,
-    /* Launch remains a change of task rather than a difficulty multiplier, but
-       later sectors deal it a little more often so the endless game keeps
-       changing rhythm after the authored level curve is exhausted. */
-    launchShare: Math.min(0.58, baseCfg.launchShare + Math.floor(postCurriculum / 10) * 0.05),
-  };
+  // walk the three tiers, then keep tightening within hard
+  const span = 12;
+  const tier = stage < span ? 'easy' : stage < span * 2 ? 'med' : 'hard';
+  const within = tier === 'easy' ? stage / span
+    : tier === 'med' ? (stage - span) / span
+      : Math.min(1, (stage - span * 2) / (span * 1.6));
+  const lv = Math.max(1, Math.round(within * LEVELS_PER_TIER));
+  return { ...levelCfg(tier, lv), waves: 1, tier, lv };
 }
 
-/* ── The timing model ─────────────────────────────────────────────────────
+/** Pass n Play: everyone defends the same waves. */
+export function passCfg() {
+  return { ...levelCfg('med', 40), waves: 3 };
+}
+
+/* ── WAVE BUILDER ─────────────────────────────────────────────────────────
+ * A wave is a list of ships, each with a lane, a launch time and an arrival
+ * time. The builder's job is to place arrivals so that:
  *
- * One pair of functions, exact inverses of each other, and everything else in
- * the game is expressed through them: the renderer asks "where at time t", the
- * scorer and the launch tempo ask "when at position s". Keeping it to one pair
- * is what makes warp safe to add — a second, separate arrival calculation is
- * how a mover ends up drawn in one place and scored in another.
+ *   · no two are closer together than MIN_ARRIVAL_GAP_MS (one thumb)
+ *   · no more than `concurrency` are in flight at any instant
+ *   · every ship is visible for at least MIN_VISIBLE_MS and hidden for at
+ *     least MIN_HIDDEN_MS
+ *   · a warping ship always gets its strobe glimpse, with MIN_REACT_MS left
+ *     to act on it — a speed change you can never observe is a coin flip
+ *
+ * These are enforced HERE, at build time, rather than asserted hopefully after
+ * the fact. `validate:intercept` then re-checks the built waves independently.
  */
+const pickR = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 
-/** Where a mover is along its path, 0..1, at time `ms` since the round began. */
-export function positionAt(mover, ms) {
-  const u0 = (ms - mover.startAt) / mover.travel;
-  if (u0 <= 0) return 0;
-  const p = PROFILES[mover.profile] || PROFILES.steady;
-  const w = mover.warp || 1;
-  /* Before the cover it moves as its profile says; after, the same profile is
-     read at a stretched or compressed rate. Continuous at uHide by construction,
-     so nothing jumps on the frame the cover starts. */
-  const u = u0 <= mover.uHide ? u0 : mover.uHide + (u0 - mover.uHide) * w;
-  return u >= 1 ? 1 : p.at(u);
+export function buildWave(rng, cfg, waveIndex = 0) {
+  const { lanes, perWave, concurrency, travel, visibleMs, tol, kinds } = cfg;
+  const ships = [];
+  const baseGap = Math.max(MIN_ARRIVAL_GAP_MS, Math.round(travel / Math.max(1, concurrency)) - 120);
+  let prevDue = 0;
+  let lastLane = -1;
+
+  for (let i = 0; i < perWave; i++) {
+    // spread the gap a little so the wave does not become a metronome — a fixed
+    // cadence is predictable WITHOUT running the forward model, which would let
+    // a player beat the game by counting instead of estimating
+    const jitter = Math.round((rng() - 0.5) * baseGap * 0.5);
+
+    // avoid the same lane twice in a row when there is a choice, so the eye moves
+    const laneChoices = lanes > 1 ? [...Array(lanes).keys()].filter((l) => l !== lastLane) : [0];
+    const lane = pickR(laneChoices.length ? laneChoices : [...Array(lanes).keys()], rng);
+    lastLane = lane;
+
+    const kind = KINDS[pickR(kinds, rng)];
+    let warp = 1;
+    let strobeAt = null;
+    const hidden = travel - visibleMs;
+    if (kind.warps && hidden >= STROBE_MS + MIN_REACT_MS + 80) {
+      // only warp when the cover is long enough to show a glimpse AND leave
+      // time to act on it — an unobservable speed change is a coin flip
+      warp = pickR(WARPS, rng);
+      strobeAt = visibleMs + Math.round((hidden - STROBE_MS - MIN_REACT_MS) * 0.45);
+    }
+
+    /*
+     * ⚠ Space by the moment the ship COMES DUE, not by its unwarped arrival.
+     * Spacing the unwarped time left blinkers landing 22ms after the ship
+     * before them against a 300ms floor, because a warp of 1.32 pulls the due
+     * moment forward. The due time is the only thing the player acts on, so it
+     * is the only thing worth spacing.
+     */
+    const dueSpan = visibleMs + (travel - visibleMs) / warp;
+    let due = i === 0 ? dueSpan + 600 : prevDue + Math.max(MIN_ARRIVAL_GAP_MS, baseGap + jitter);
+    let launchAt = due - dueSpan;
+
+    /*
+     * ⚠ And enforce CONCURRENCY, which the first version declared and never
+     * applied — a "3 in flight" config was putting 6 on the field.
+     *
+     * ⚠⚠ The count has to be taken across EVERY launch instant, not just this
+     * ship's. A slow warp (0.74) stretches the run, so that ship launches
+     * EARLIER than the one placed before it — launches are not monotonic, and
+     * an incremental "who is airborne when I take off" check misses the
+     * overlap it creates behind itself. The gate caught exactly that: 3 ships
+     * on a 2-ship field at hard L1.
+     *
+     * Overlap only ever rises at a launch, so checking each launch instant is
+     * sufficient as well as necessary.
+     */
+    const overlapFits = (cand) => {
+      const all = [...ships, cand];
+      for (const p of all) {
+        let n = 0;
+        for (const q of all) if (q.launchAt <= p.launchAt && p.launchAt <= q.due) n += 1;
+        if (n > concurrency) return false;
+      }
+      return true;
+    };
+    for (let guard = 0; guard < 60; guard++) {
+      if (overlapFits({ launchAt, due })) break;
+      // slide the whole ship later until the field has room
+      const nextFree = ships
+        .map((s) => s.due)
+        .filter((d) => d > launchAt)
+        .sort((a, b) => a - b)[0];
+      launchAt = (nextFree != null ? nextFree : launchAt + 120) + 1;
+      due = launchAt + dueSpan;
+    }
+    prevDue = Math.max(prevDue, due);
+
+    ships.push({
+      id: `w${waveIndex}s${i}`,
+      lane,
+      kind: kind.id,
+      art: kind.art,
+      travel,
+      warp,
+      strobeAt,
+      launchAt,
+      due,
+      visibleMs,
+      tol,
+      struck: false,
+    });
+  }
+  return ships;
 }
 
-/** When a mover reaches position `s`, in ms since the round began. */
-export function timeAtS(mover, s) {
-  const p = PROFILES[mover.profile] || PROFILES.steady;
-  const u = p.inv(Math.max(0, Math.min(1, s)));
-  const w = mover.warp || 1;
-  const uT = u <= mover.uHide ? u : mover.uHide + (u - mover.uHide) / w;
-  return mover.startAt + uT * mover.travel;
+/** All the waves for one level. */
+export function buildLevel(rng, cfg) {
+  const out = [];
+  for (let w = 0; w < cfg.waves; w++) out.push(buildWave(rng, cfg, w));
+  return out;
+}
+
+/* ── MOTION ───────────────────────────────────────────────────────────────
+ * Where a ship is along its lane at time `t` (ms since the wave started), as a
+ * fraction 0..1 where STRIKE_AT is the strike line and 1 is the gate.
+ *
+ * A warp changes the speed INSIDE the cover, so the ship still departs when it
+ * departed but arrives early or late. The visible stretch is untouched — which
+ * is the point: everything you were shown remains true, and is no longer enough.
+ */
+/** How far through its run a ship is, as u where 1 = due at the strike line. */
+export function runFraction(ship, t) {
+  const el = t - ship.launchAt;
+  if (el <= 0) return 0;
+  if (ship.warp === 1 || el <= ship.visibleMs) return el / ship.travel;
+  // the warp only bends the hidden stretch; everything already seen stays true
+  const visU = ship.visibleMs / ship.travel;
+  return visU + ((el - ship.visibleMs) / ship.travel) * ship.warp;
+}
+
+export function progressAt(ship, t) {
+  const u = runFraction(ship, t);
+  if (u <= 0) return 0;
+  if (u <= 1) return KINDS[ship.kind].pos(u) * STRIKE_AT;
+  // past the strike line it coasts on to the gate, so a miss is visibly a miss
+  return STRIKE_AT + Math.min(1, (u - 1) * 2.6) * (1 - STRIKE_AT);
+}
+
+/** Is the ship behind the cover band right now? */
+export function isHidden(ship, t) {
+  const u = runFraction(ship, t);
+  if (u <= 0 || u >= 1) return false;
+  const el = t - ship.launchAt;
+  if (el < ship.visibleMs) return false;
+  if (ship.strobeAt != null && el >= ship.strobeAt && el < ship.strobeAt + STROBE_MS) return false;
+  return true;
 }
 
 /**
- * Build one trial. Deterministic given `rng`, so Pass n Play hands every player
- * the identical run.
- */
-export function buildTrial(cfg, rng = Math.random) {
-  /* One path for the whole trial: two movers on different paths would be two
-     scenes at once rather than one harder scene, and there would be no honest
-     place to put the second cover. */
-  const pathId = cfg.paths[Math.floor(rng() * cfg.paths.length)];
-
-  /* Launch is single-mover by nature — you have one release to give, and two
-     shapes waiting on one tap would be a different game with no answer. */
-  const kind = (cfg.launchShare > 0 && rng() < cfg.launchShare) ? 'launch' : 'intercept';
-  const count = kind === 'launch' ? 1 : cfg.movers;
-
-  const movers = [];
-  for (let i = 0; i < count; i++) {
-    const id = cfg.profiles[Math.floor(rng() * cfg.profiles.length)];
-    const warp = cfg.warps[Math.floor(rng() * cfg.warps.length)];
-
-    /*
-     * ⚠ WARP ONLY EVER RUNS TO THE FAR GATE, and this is a feasibility rule
-     * rather than a taste one.
-     *
-     * A warped mover has to be glimpsed mid-tunnel or the speed change is
-     * unobservable, and the glimpse needs STROBE_MS to be seen plus MIN_REACT_MS
-     * afterwards to be acted on — 310ms of hidden stretch before any of it is
-     * honest. The near gate at Hard L100 leaves 277ms in total, so the strobe
-     * would have ended 22ms before the crossing: visible, correct-looking, and
-     * far too late to use. That is the Mirror World failure exactly — an
-     * alternative that renders and registers and still cannot reach the win
-     * condition — so the combination is refused at the source.
-     *
-     * The side effect is a rule players can learn (a near-gate mark means the
-     * speed will hold), which is fine: the far gate stays ambiguous, so the
-     * glimpse still has to be read on the trials that have one.
-     */
-    const canWarp = warp !== 1;
-    const gateIdx = (cfg.gates > 1 && !canWarp) ? Math.floor(rng() * cfg.gates) : GATE_S.length - 1;
-    const gateS = GATE_S[gateIdx];
-
-    const hideAt = hideAtFor(id, cfg.visibleMs, cfg.travel);
-    const m = {
-      profile: id,
-      travel: cfg.travel,
-      startAt: 0,
-      lane: i,
-      /* Its own cover, positioned so THIS mover is visible for exactly
-         cfg.visibleMs whatever its profile. One shared cover would give the
-         accelerating shape a much shorter look than the slowing one. */
-      hideAt,
-      uHide: (PROFILES[id] || PROFILES.steady).inv(hideAt),
-      warp,
-      gate: gateIdx,
-      gateS,
-      path: pathId,
-      /* Two movers share a path, so they are drawn on parallel offsets — see
-         the renderer. Lane 0 sits on the line, lane 1 beside it. */
-      offset: count === 1 ? 0 : i - (count - 1) / 2,
-    };
-
-    /*
-     * ⚠ THE STAGGER IS SOLVED AGAINST THE ARRIVALS, NOT AUTHORED AS A FRACTION.
-     *
-     * v1 offset the second mover by 34-56% of travel and called it separated.
-     * With warp that is no longer true: a slowed first mover and a sped-up
-     * second one converge, and at Hard L100 the pair landed 31ms apart — inside
-     * one 62ms window, so a single tap would have answered both and the second
-     * forward model would have been decoration. So the offset is pushed out
-     * until the arrivals are genuinely apart, whatever the warps did.
-     */
-    if (i > 0) {
-      m.startAt = Math.round(cfg.travel * (0.34 + rng() * 0.22));
-      const gap = Math.max(2.6 * cfg.tol, 240);
-      let guard = 0;
-      while (guard < 200 && movers.some((o) => Math.abs(timeAtS(m, m.gateS) - timeAtS(o, o.gateS)) < gap)) {
-        m.startAt += Math.round(gap / 4);
-        guard += 1;
-      }
-    }
-
-    m.arriveAt = timeAtS(m, m.gateS);
-    m.endAt = timeAtS(m, 1);
-    m.hideTime = timeAtS(m, m.hideAt);
-
-    /*
-     * The glimpse exists only where it is needed. A strobe on an unwarped mover
-     * would be a free hint on a trial that never needed one; on a warped one it
-     * is the only reason the speed change is knowable at all.
-     *
-     * ⚠ Placed against the ROOM LEFT, not at a flat fraction of the tunnel. At a
-     * flat 0.45 the glimpse drifts later as the hidden stretch shortens, and on
-     * the tightest levels it ends after the crossing it was meant to inform —
-     * the same class of bug as authoring occlusion instead of visible time. So
-     * the deadline is subtracted first and the fraction spends what is left.
-     */
-    if (warp !== 1) {
-      const span = m.arriveAt - m.hideTime;
-      const room = span - STROBE_MS - MIN_REACT_MS;
-      m.strobeAt = m.hideTime + Math.max(40, room * STROBE_FRAC);
-      m.strobeMs = STROBE_MS;
-    }
-
-    movers.push(m);
-  }
-
-  const trial = {
-    kind,
-    movers,
-    path: pathId,
-    visibleMs: cfg.visibleMs,
-    tol: cfg.tol,
-    gates: cfg.gates,
-  };
-
-  if (kind === 'launch') {
-    const m = movers[0];
-    /* Time from release to the crossing — the quantity the player has to have
-       learned from the preview run, and the one the tempo is built around. */
-    const toGate = m.arriveAt - m.startAt;
-    trial.beatMs = launchBeatMs(toGate);
-    trial.targetAt = trial.beatMs * LAUNCH_BEATS;
-    trial.launchAt = trial.targetAt - toGate;
-    trial.toGate = toGate;
-  }
-
-  return trial;
-}
-
-/*
- * Score one tap. Returns the signed error in ms (negative = early) and whether
- * it landed inside the window.
+ * The moment a ship comes due at the strike line.
  *
- * ⚠ POINTS REWARD PRECISION, AND v1 NEVER SHOWED THEM. The graded value has
- * been computed here since the first version and was thrown away by the caller,
- * so every hit felt identical to every other hit and there was no reason to
- * keep improving once you could reliably land inside the window. `perfect` is
- * the same number given a name the player can see and hear.
+ * Stored on the ship rather than recomputed, because the builder has to space
+ * ships BY this value — and a due time computed in two places is a due time
+ * that will eventually disagree with itself.
  */
-export const PERFECT_FRAC = 0.34;
-
-export function scoreTap(mover, tapMs, tol) {
-  const err = tapMs - mover.arriveAt;
-  const hit = Math.abs(err) <= tol;
-  const perfect = Math.abs(err) <= tol * PERFECT_FRAC;
-  const points = hit ? Math.max(1, Math.round(((tol - Math.abs(err)) / tol) * 20)) : 0;
-  return { err, hit, perfect, points };
+export function dueAt(ship) {
+  return ship.due;
 }
 
-/** Launch trials score the ARRIVAL against the silent beat, not the tap. */
-export function scoreLaunch(trial, releaseMs) {
-  const m = trial.movers[0];
-  const arrival = releaseMs + trial.toGate;
-  const err = arrival - trial.targetAt;
-  const hit = Math.abs(err) <= trial.tol;
-  const perfect = Math.abs(err) <= trial.tol * PERFECT_FRAC;
-  const points = hit ? Math.max(1, Math.round(((trial.tol - Math.abs(err)) / trial.tol) * 20)) : 0;
-  return { err, hit, perfect, points, profile: m.profile, arrival };
+/**
+ * Score one strike. Returns the SIGNED error in ms (negative = early) and
+ * whether it counts as a hit. `perfect` is the inner half of the window, which
+ * is what a streak is built from — it rewards precision without making the
+ * ordinary hit feel like a miss.
+ */
+export function scoreStrike(ship, tapAt) {
+  const err = tapAt - dueAt(ship);
+  const abs = Math.abs(err);
+  return {
+    err,
+    hit: abs <= ship.tol,
+    perfect: abs <= ship.tol * 0.4,
+    early: err < 0,
+  };
 }
 
-/** Levels are cleared by hitting enough of the trials in the set. */
-export const TRIALS_PER_LEVEL = 6;
-export function levelPassed(hits) {
-  return hits >= 4;
+/** A level is cleared if the gate survived. */
+export function levelPassed(heartsLeft) {
+  return heartsLeft > 0;
+}
+
+/** Summary stats for a run — the psychometrics, not the score. */
+export function summarise(strikes) {
+  const hits = strikes.filter((s) => s.hit);
+  const errs = strikes.map((s) => s.err);
+  const abs = errs.map(Math.abs);
+  const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+  const m = mean(errs);
+  const sd = errs.length > 1
+    ? Math.sqrt(mean(errs.map((e) => (e - m) * (e - m))))
+    : 0;
+  return {
+    total: strikes.length,
+    hits: hits.length,
+    perfect: strikes.filter((s) => s.perfect).length,
+    // signed mean: negative = habitually early. This is the interesting number
+    // and the reason the game measures error rather than counting successes.
+    bias: Math.round(m),
+    // spread: consistency, which is usually the better marker
+    spread: Math.round(sd),
+    absMean: Math.round(mean(abs)),
+  };
 }

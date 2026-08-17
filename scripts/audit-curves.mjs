@@ -101,6 +101,27 @@ const CURVES = {
     levels: (m) => m.LEVELS_PER_TIER,
     fields: { suspects: 'up', kitSize: 'up', ruleCount: 'up', questionCount: 'up', evidenceChance: 'up' },
   },
+  /* Intercept became a WAVE game on 2026-08-18 and its curve moved to data.js
+     with it, so it can finally be gated. The levers are what the player feels
+     arriving: a wider front, more ships, more of them in the air AT ONCE, and
+     more ship types to tell apart — against less warning (`visibleMs`) and a
+     tighter window (`tol`).
+
+     ⚠ `travel` is deliberately NOT a field. A slower ship is not an easier one
+     here: the measure is a signed error against a HIDDEN arrival, and a longer
+     flight means a longer stretch of it unseen. Gating it as 'down' would have
+     forced the curve to shorten flights to stay green, which makes the game
+     easier while the number says harder — the audit:fq mistake exactly. */
+  intercept: {
+    mod: 'speed/games/intercept/data.js',
+    get: (m) => (diff, lv) => m.levelCfg(diff, lv),
+    diffs: (m) => Object.keys(m.BASE),
+    levels: (m) => m.LEVELS_PER_TIER,
+    fields: {
+      lanes: 'up', perWave: 'up', concurrency: 'up', kindCount: 'up',
+      visibleMs: 'down', tol: 'down',
+    },
+  },
   'mirror-world': {
     mod: 'flexibility/games/mirror-world/data.js',
     get: (m) => (diff, lv) => {

@@ -40,6 +40,11 @@ export const STR_COMMON = {
     needTwo: 'Add at least 2 players.',
     newCh: 'New game',
     nextLv: 'Next level',
+    /* The button that leaves a results screen. Four games referenced `t.cont`
+       while it existed in no dictionary, so each rendered a full-width primary
+       button with NO LABEL — see the undefined-string rule in audit:consistency,
+       added the day this was found. */
+    cont: 'Continue',
     passInstruction: 'Pass the device to this player, then tap Start',
     paused: 'Paused',
     pickDiff: 'Choose difficulty',
@@ -95,6 +100,7 @@ export const STR_COMMON = {
     needTwo: 'أضف لاعبين على الأقل.',
     newCh: 'لعبة جديدة',
     nextLv: 'المستوى التالي',
+    cont: 'متابعة',
     passInstruction: 'سلّم الجهاز لهذا اللاعب ثم اضغط ابدأ',
     paused: 'متوقف',
     pickDiff: 'اختر الصعوبة',

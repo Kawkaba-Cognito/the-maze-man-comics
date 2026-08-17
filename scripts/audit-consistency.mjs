@@ -221,6 +221,15 @@ function rootBlocks(css) {
 
 const LITERAL_COLOUR = /#[0-9a-f]{3,8}\b|\brgba?\(|\bhsla?\(/i;
 
+/*
+ * The platform-standard label set, read from the real module rather than
+ * re-listed here — a hand-copied list would drift and start reporting healthy
+ * games as broken. trainingStrings.js is plain .js with no imports, so plain
+ * Node can load it; keep it that way (see the .js-extension note in CLAUDE.md).
+ */
+const { STR_COMMON } = await import('../src/features/training/shared/trainingStrings.js');
+const COMMON_KEYS = new Set(Object.keys(STR_COMMON.en));
+
 const LOOK = [
   {
     id: 'surface',
@@ -295,6 +304,40 @@ const LOOK = [
      */
     test: (g) => !/ct-training-chrome-btn[\s\S]{0,240}?>\s*[‹›❚⏸⏮◀▶]{1,2}\s*<\/button>/u.test(g.all),
   },
+  {
+    id: 'strings',
+    label: 'every rendered {t.key} resolves — no button ships with a blank label',
+    /*
+     * Added 2026-08-18, after Intercept's results screen shipped a full-width
+     * primary button with NOTHING WRITTEN ON IT. It rendered `{t.cont}`, and
+     * `cont` was in no dictionary — not STR_COMMON, not the game's own UI table.
+     * React renders `undefined` as empty, so there is no error, no warning and
+     * no failing test: just an orange bar the player is expected to press. It
+     * survived a build, a lint and a nine-gate CI run.
+     *
+     * ⚠ THE FIRST TWO VERSIONS OF THIS RULE WERE BOTH WRONG, and only the
+     * planted-bug check below caught them:
+     *
+     *   1. Keys were collected with /(\w+)\s*:/ anywhere in the file, which
+     *      matches the middle branch of every ternary — `x ? a : b` made `a`
+     *      look like a declared key. Nearly everything resolved, so the rule
+     *      passed the planted bug and reported the codebase as clean.
+     *   2. Tightened to line-start-only keys, it then FLAGGED NINE HEALTHY
+     *      GAMES: Raven declares `perfect: '…', good: '…', tryAgain: '…'` on one
+     *      line, and `mot`/`train-switch` have local variables also called `t`
+     *      (`t.kind`, `t.parent`) that have nothing to do with strings.
+     *
+     * What works is narrow on both sides: a key is a key only after `{`, `,` or
+     * a line start (so ternaries are excluded but same-line declarations are
+     * not), and a reference counts only in the JSX form `{t.key}` — which is
+     * exactly where an undefined string becomes a blank label on screen.
+     */
+    test: (g) => {
+      const defined = new Set([...g.all.matchAll(/(?:^|[{,])\s*([A-Za-z_$][\w$]*)\s*:/gm)].map((x) => x[1]));
+      const refs = new Set([...g.all.matchAll(/\{\s*t\.([A-Za-z_$][\w$]*)\s*\}/g)].map((x) => x[1]));
+      return ![...refs].some((k) => !COMMON_KEYS.has(k) && !defined.has(k));
+    },
+  },
 ];
 
 const LOOK_MAX = LOOK.length;
@@ -332,6 +375,22 @@ const LOOK_FIXTURES = {
   chrome: {
     bad: { all: '<button className="ct-training-chrome-btn" aria-label="Menu">‹</button>', css: '' },
     good: { all: '<button className="ct-training-chrome-btn"><IconBack size={18} /></button>', css: '' },
+  },
+  strings: {
+    /* The real Intercept bug, reduced: a key rendered, declared nowhere.
+       ⚠ The key here must be one that will never exist. The first fixture used
+       `cont` — the actual key from the actual bug — and stopped being a bug the
+       moment `cont` was added to STR_COMMON to FIX it. The self-test failed on
+       the next run, correctly: the fixture no longer described anything wrong. */
+    bad: { all: 'const UI = { en: { title: "X" } };\n<button>{t.noSuchLabelAnywhere}</button>', css: '' },
+    /* Both shapes that fooled earlier versions must still pass: a same-line
+       declaration, and a ternary whose branches must NOT be read as keys. */
+    good: {
+      all: 'const UI = { en: { perfect: "A", good: "B", tryAgain: "C" } };\n'
+        + 'const label = ok ? good : tryAgain;\n'
+        + '<button>{t.good}</button><span>{t.paused}</span>',
+      css: '',
+    },
   },
 };
 
