@@ -296,10 +296,17 @@ export function InterceptEngine({
 
       // the cover band — the reason the game is a prediction and not a reaction
       const grd = ctx.createLinearGradient(0, coverTop, 0, coverBot);
-      /* The DEEP half of the tide palette, not the text-ink token. Same family
-         either way, but --game-ink means "the colour writing is set in"; this
-         band is a surface, and surfaces have their own token. */
-      const cov = tok('--play-surface-deep-flat', '#121826');
+      /* ⚠ --game-ink, and NOT the palette's "deep surface" token. That one reads
+         better semantically for a band and is wrong: audit:design reserves the
+         deep-surface family for an allow-list of ADDITIVE-BLENDED games, and
+         Intercept is a plain 2D canvas. The ratchet caught the swap in CI.
+         --game-ink is the near-black of the same tide palette, so the band looks
+         identical and stays inside the system.
+
+         (Naming that token here in prose re-fails the gate — the detector greps
+         the file and cannot tell a warning about a token from a use of it. Same
+         shape as the review board firing on a comment that criticised a claim.) */
+      const cov = tok('--game-ink', '#131e28');
       grd.addColorStop(0, 'transparent');
       grd.addColorStop(0.25, cov);
       grd.addColorStop(0.75, cov);

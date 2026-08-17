@@ -33,7 +33,7 @@
   line-height: 1;
   flex: 0 0 auto;
 }
-.ic-heart { color: var(--danger); filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.15)); }
+.ic-heart { color: var(--danger); filter: drop-shadow(0 1px 0 var(--fx-shadow-soft)); }
 .ic-heart--spent { color: var(--line); opacity: 0.55; }
 
 /* ── the field ──────────────────────────────────────────────────────────── */
@@ -103,7 +103,7 @@
   background: var(--surface-raised);
   border: 2px solid var(--line);
   border-radius: 22px;
-  box-shadow: 4px 4px 0 rgba(26, 18, 8, 0.1);
+  box-shadow: 4px 4px 0 var(--fx-shadow-soft);
   text-align: center;
 }
 .ic-panel h3 {
