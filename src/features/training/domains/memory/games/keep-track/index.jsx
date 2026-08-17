@@ -4,7 +4,7 @@ import ModeShell from '../../../../shared/ModeShell';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
 import { makeRng } from '../../../../shared/rng';
 import { createTrialLog } from '../../../../shared/trialLog';
-import { TrainingMenuBar, TrainingPauseModal } from '../../../../shared/TrainingChrome';
+import { TrainingPauseModal, TrainingPlayHeader } from '../../../../shared/TrainingChrome';
 import {
   CATEGORIES, LEVELS_PER_TIER, levelCfg, survivalCfg, buildRound, isCorrect,
 } from './data';
@@ -217,24 +217,19 @@ function KeepTrackEngine({
 
   return (
     <div className="ct-training-root ct-kt-root" dir={isAr ? 'rtl' : 'ltr'}>
-      <TrainingMenuBar
+      {/* The shared PLAY header, not TrainingMenuBar — that one is the hub/lobby
+          bar (full width, 18px gutter) and using it mid-play put this game's
+          back button in a different place and size from every other game's.
+          The pause also had its own glyph (ct-kt-pausebtn "❚❚"); it now goes
+          through the header's pause slot like everywhere else. */}
+      <TrainingPlayHeader
+        isAr={isAr}
         playSfx={playSfx}
-        onBack={() => { playSfx?.('click'); onExit?.(); }}
-        center={
-          <span className="ct-kt-header">
-            {headerLabel}
-            {step === 'stream' ? (
-              <button
-                type="button"
-                className="ct-kt-pausebtn"
-                onClick={() => { setPaused(true); playSfx?.('click'); }}
-                aria-label={t.paused}
-              >
-                ❚❚
-              </button>
-            ) : null}
-          </span>
-        }
+        title={headerLabel}
+        onMenu={() => onExit?.()}
+        menuAriaLabel={t.menu}
+        onPause={step === 'stream' ? () => setPaused(true) : undefined}
+        pauseAriaLabel={t.paused}
       />
 
       <div className="ct-kt-stage">

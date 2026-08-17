@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { IconBack } from '../../../../shared/TrainingIcons';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
@@ -243,7 +244,7 @@ export function TaskSwitchEngine({
   return (
     <div className="ct-ts-root" dir={isAr ? 'rtl' : 'ltr'}>
       <header className="ct-training-play-header">
-        <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+        <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); onExit?.(); }}><IconBack size={18} c="currentColor" /></button>
         <div className="ct-training-play-header-body">
           <div className="ct-training-play-title">{t.title}</div>
           <div className="ct-training-play-sub">

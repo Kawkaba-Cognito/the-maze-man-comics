@@ -5,6 +5,7 @@ import { makeRng } from '../../../../shared/rng';
 import { cast2dUrl } from '../../../../shared/cast2d';
 import Emoji from '../../../../../../components/shared/Emoji';
 import { useGamePause } from '../../../../shared/useGamePause';
+import { TrainingPlayHeader } from '../../../../shared/TrainingChrome';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { assetUrl } from '../../../../../../lib/assetUrl';
 import {
@@ -216,7 +217,7 @@ export function DetectiveEngine({
     const m = results.length;
     return (
       <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} dir={isAr ? 'rtl' : 'ltr'}>
-        <Header t={t} sub={hudSub} pause={pause} cosmos={cosmos} />
+        <Header t={t} sub={hudSub} pause={pause} cosmos={cosmos} isAr={isAr} playSfx={playSfx} />
         {pause.modal}
         <div style={S.body}>
           <div style={cardStyle}>
@@ -235,7 +236,7 @@ export function DetectiveEngine({
 
   return (
     <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
-      <Header t={t} sub={hudSub} pause={pause} cosmos={cosmos} />
+      <Header t={t} sub={hudSub} pause={pause} cosmos={cosmos} isAr={isAr} playSfx={playSfx} />
       {pause.modal}
 
       <div style={S.body}>
@@ -527,27 +528,26 @@ function Explanation({ caseData, t, nameOf }) {
   );
 }
 
-function Header({ t, sub, pause, cosmos }) {
+/*
+ * The shared header, not a hand-rolled one. This used to write the
+ * `ct-training-play-header` markup itself with TEXT glyphs — a literal ‹ and ⏸
+ * — while every game built on TrainingChromeBtn drew IconBack/IconPause. Same
+ * frame, different glyph shapes, which is half of why the back button looked
+ * inconsistent across the app.
+ */
+function Header({ t, sub, pause, cosmos, isAr, playSfx }) {
   return (
-    <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
-      {!cosmos && (
-        <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={pause.requestQuit}>‹</button>
-      )}
-      {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
-      <div className="ct-training-play-header-body">
-        <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>{t.title}</div>
-        <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>{sub}</div>
-      </div>
-      <button
-        type="button"
-        className="ct-training-chrome-btn"
-        aria-label={pause.labels.paused}
-        onClick={pause.start}
-        disabled={pause.open}
-      >
-        ⏸
-      </button>
-    </header>
+    <TrainingPlayHeader
+      isAr={isAr}
+      playSfx={playSfx}
+      title={t.title}
+      subtitle={sub}
+      onMenu={cosmos ? undefined : pause.requestQuit}
+      menuAriaLabel={t.menu}
+      onPause={pause.open ? undefined : pause.start}
+      pauseAriaLabel={pause.labels.paused}
+      style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}
+    />
   );
 }
 

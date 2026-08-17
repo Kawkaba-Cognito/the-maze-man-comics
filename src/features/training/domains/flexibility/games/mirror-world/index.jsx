@@ -3,7 +3,7 @@ import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
 import { createTrialLog } from '../../../../shared/trialLog';
-import { TrainingMenuBar, TrainingPauseModal } from '../../../../shared/TrainingChrome';
+import { TrainingPauseModal, TrainingPlayHeader } from '../../../../shared/TrainingChrome';
 import {
   ROLE, HIT_DEG, LEVELS_PER_TIER,
   levelSchedule, survivalSchedule, passSchedule,
@@ -323,21 +323,18 @@ function MirrorEngine({
 
   return (
     <div className="ct-mw-root" dir={isAr ? 'rtl' : 'ltr'}>
-      <TrainingMenuBar
+      {/* The shared PLAY header, not TrainingMenuBar — that is the hub/lobby bar
+          and using it mid-play sat this game's back button at a different size
+          and gutter from the rest. The pause had its own glyph too
+          (ct-mw-pause "❚❚") and now uses the header's slot. */}
+      <TrainingPlayHeader
+        isAr={isAr}
         playSfx={playSfx}
-        onBack={() => { playSfx?.('click'); onExit?.(); }}
-        center={(
-          <span className="ct-mw-header">
-            {headerLabel}
-            {step === 'reach' ? (
-              <button type="button" className="ct-mw-pause" aria-label={t.paused}
-                onClick={() => { setPaused(true); playSfx?.('click'); }}
-              >
-                ❚❚
-              </button>
-            ) : null}
-          </span>
-        )}
+        title={headerLabel}
+        onMenu={() => onExit?.()}
+        menuAriaLabel={t.menu}
+        onPause={step === 'reach' ? () => setPaused(true) : undefined}
+        pauseAriaLabel={t.paused}
       />
 
       <div className="ct-mw-stage">

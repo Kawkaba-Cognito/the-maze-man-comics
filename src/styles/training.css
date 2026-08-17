@@ -2079,15 +2079,20 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     box-sizing: border-box;
 }
 /* Consolidated play bar: back · target chip · stats · pause (one row). */
+/* The STATS ROW inside TrainingPlayHeader — no longer a bar of its own.
+   It used to carry the frame itself (full width, --fq-card background, radius,
+   shadow), which is why Cancellation's chrome looked like a different app from
+   Story Time's. The frame now comes from the shared header; this only lays the
+   counters out. It must stay transparent: the header is `max-width: 420px;
+   margin: 0 auto`, and a fill on centred phone-width chrome renders as a
+   floating rectangle on any wider viewport — the Puzzle Studio bug. */
 .ct-fq-bar {
     display: flex;
     align-items: center;
-    width: 100%;
-    background: var(--fq-card);
-    border-radius: 12px;
-    padding: 4px 6px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-    margin-bottom: 4px;
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    padding: 0;
     gap: 6px;
     box-sizing: border-box;
 }

@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { getShapeScale, subscribeShapeNorm, getShapeNormVersion } from './shapeNorm';
 import { SH } from './focusQuestData';
-import { TrainingChromeBtn } from './TrainingChrome';
-import { IconBack, IconPause } from './TrainingIcons';
+import { TrainingPlayHeader } from './TrainingChrome';
 import './playHud.css';
 
 /*
@@ -149,16 +148,19 @@ export default function PlayHud({
 
   return (
     <>
-      <div className="ct-fq-bar" data-fq-chrome>
-        <TrainingChromeBtn
-          ariaLabel={menuAriaLabel}
-          onClick={() => {
-            playSfx?.('click');
-            onMenu();
-          }}
-        >
-          <IconBack size={18} c="#141210" />
-        </TrainingChromeBtn>
+      {/* The frame comes from TrainingPlayHeader so a stats-carrying game sits
+          in exactly the same chrome as a title-carrying one — same width, same
+          back glyph in the same place. `ct-fq-bar` is now only the stats row
+          INSIDE that frame; it lost its card background and radius, which on a
+          420px centred bar rendered as a floating panel on wide screens. */}
+      <TrainingPlayHeader
+        onMenu={onMenu}
+        menuAriaLabel={menuAriaLabel}
+        playSfx={playSfx}
+        onPause={onPause}
+        pauseAriaLabel={pauseAriaLabel}
+      >
+        <div className="ct-fq-bar" data-fq-chrome>
         {/* Only games with a "find this" target carry the chip. Without this
             gate every other game showed ShapeSvg's fallback circle — a target
             reminder for a target that does not exist. */}
@@ -240,18 +242,8 @@ export default function PlayHud({
             </div>
           )}
         </div>
-        {onPause && (
-          <TrainingChromeBtn
-            ariaLabel={pauseAriaLabel}
-            onClick={() => {
-              playSfx?.('click');
-              onPause();
-            }}
-          >
-            <IconPause size={17} c="#141210" />
-          </TrainingChromeBtn>
-        )}
-      </div>
+        </div>
+      </TrainingPlayHeader>
       {showTimeBar && (
       <div className="ct-fq-cbw" data-fq-chrome>
         <div

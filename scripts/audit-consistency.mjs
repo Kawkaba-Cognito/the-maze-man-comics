@@ -270,6 +270,31 @@ const LOOK = [
      */
     test: (g) => !/new Audio\(|new (window\.)?(webkit)?AudioContext|createOscillator/.test(g.all),
   },
+  {
+    id: 'chrome',
+    label: 'the in-game back/pause glyph is the shared icon, not a typed character',
+    /*
+     * Added 2026-08-17, after the back button was reported as looking different
+     * from game to game — and nothing here caught it, so `keep-track` could
+     * score 22/22 while using a LOBBY bar mid-play and `story-grid` drew a text
+     * ‹ where PlayHud drew IconBack. Four treatments of one control.
+     *
+     * The frame is fixed now (everything routes through TrainingPlayHeader),
+     * but the frame is hard to detect from source without parsing JSX. The
+     * GLYPH is not: a typed ‹ ❚❚ ⏸ inside a CHROME button is always the
+     * hand-rolled variant, because the shared path renders an SVG component.
+     * So this measures the tell rather than the cause — the same trick as the
+     * fx rule, which counts hand-mixed rgba() rather than trying to prove a
+     * shadow came from a token.
+     *
+     * ⚠ Scoped to `ct-training-chrome-btn` deliberately. The first version
+     * matched any typed chevron in any button and immediately flagged Story
+     * Time's SCENE navigation arrows (‹ ›) and Math Gates' in-board controls —
+     * correct code, doing a different job. A gate that cries wolf gets muted,
+     * which is why the physical-vs-logical CSS rule was dropped from this file.
+     */
+    test: (g) => !/ct-training-chrome-btn[\s\S]{0,240}?>\s*[‹›❚⏸⏮◀▶]{1,2}\s*<\/button>/u.test(g.all),
+  },
 ];
 
 const LOOK_MAX = LOOK.length;
@@ -303,6 +328,10 @@ const LOOK_FIXTURES = {
   sfx: {
     bad: { all: 'const ctx = new AudioContext(); ctx.createOscillator();', css: '' },
     good: { all: "playSfx?.('click');", css: '' },
+  },
+  chrome: {
+    bad: { all: '<button className="ct-training-chrome-btn" aria-label="Menu">‹</button>', css: '' },
+    good: { all: '<button className="ct-training-chrome-btn"><IconBack size={18} /></button>', css: '' },
   },
 };
 

@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { IconBack } from '../../../../shared/TrainingIcons';
 import PlayHud from '../../../../shared/PlayHud';
 import { useGamePause } from '../../../../shared/useGamePause';
 import { getTrainingPaused } from '../../../../shared/pauseStore';
@@ -655,7 +656,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
     return (
       <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
         <header className="ct-training-play-header">
-          <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}>‹</button>
+          <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}><IconBack size={18} c="currentColor" /></button>
           <div className="ct-training-play-header-body">
             <div className="ct-training-play-title">{isAr ? 'تقييم التتبّع' : 'Tracking assessment'}</div>
           </div>

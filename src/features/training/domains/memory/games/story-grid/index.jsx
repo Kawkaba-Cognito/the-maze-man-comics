@@ -5,6 +5,7 @@ import { makeRng } from '../../../../shared/rng';
 import { cast2dUrl } from '../../../../shared/cast2d';
 import Emoji from '../../../../../../components/shared/Emoji';
 import { useGamePause } from '../../../../shared/useGamePause';
+import { TrainingPlayHeader } from '../../../../shared/TrainingChrome';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { assetUrl } from '../../../../../../lib/assetUrl';
 import {
@@ -558,25 +559,20 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
   return (
     <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
       <style>{ANIM_CSS}</style>
-      <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
-        {!cosmos && (
-          <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={pause.requestQuit}>‹</button>
-        )}
-        {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
-        <div className="ct-training-play-header-body">
-          <div className="ct-training-play-title" style={cosmos ? { color: '#f0e2c0' } : undefined}>{t.title}</div>
-          <div className="ct-training-play-sub" style={cosmos ? { color: 'rgba(240,226,192,0.75)' } : undefined}>{hudSub}</div>
-        </div>
-        <button
-          type="button"
-          className="ct-training-chrome-btn"
-          aria-label={pause.labels.paused}
-          onClick={pause.start}
-          disabled={pause.open}
-        >
-          ⏸
-        </button>
-      </header>
+      {/* The shared header. This used to hand-write the same markup with TEXT
+          glyphs (‹ and ⏸) while every game built on TrainingChromeBtn drew
+          IconBack/IconPause — same frame, different glyph shapes. */}
+      <TrainingPlayHeader
+        isAr={isAr}
+        playSfx={playSfx}
+        title={t.title}
+        subtitle={hudSub}
+        onMenu={cosmos ? undefined : pause.requestQuit}
+        menuAriaLabel={t.menu}
+        onPause={pause.open ? undefined : pause.start}
+        pauseAriaLabel={pause.labels.paused}
+        style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}
+      />
       {pause.modal}
 
       {/* WATCH — swipe (or the arrows) through the scenes; no skip button */}

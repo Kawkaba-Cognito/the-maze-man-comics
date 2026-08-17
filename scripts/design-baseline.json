@@ -1,7 +1,7 @@
 {
   "rules": {
-    "raw-colour": 414,
-    "stacked-backdrops": 3
+    "raw-colour": 213,
+    "stacked-backdrops": 1
   },
   "files": {
     "src/features/training/domains/attention/games/cancellation/index.jsx": {
@@ -62,27 +62,10 @@
       "raw-colour": 15
     },
     "src/features/training/domains/memory/games/story-grid/index.jsx": {
-      "raw-colour": 23
-    },
-    "src/features/training/domains/memory/games/story-grid/stage/schema.js": {
-      "raw-colour": 4
-    },
-    "src/features/training/domains/memory/games/story-grid/stage/stage2d.css": {
-      "raw-colour": 41,
-      "stacked-backdrops": 1
-    },
-    "src/features/training/domains/memory/games/story-grid/stage/stageCancellation.css": {
-      "raw-colour": 43
-    },
-    "src/features/training/domains/memory/games/story-grid/stage/stageLegacy.css": {
-      "raw-colour": 36,
-      "stacked-backdrops": 1
-    },
-    "src/features/training/domains/memory/games/story-grid/stage/stagePremium.css": {
-      "raw-colour": 73
+      "raw-colour": 21
     },
     "src/features/training/domains/reasoning/games/detective/index.jsx": {
-      "raw-colour": 9
+      "raw-colour": 7
     },
     "src/features/training/domains/reasoning/games/raven-matrices/index.jsx": {
       "raw-colour": 1

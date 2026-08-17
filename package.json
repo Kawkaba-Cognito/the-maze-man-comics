@@ -27,7 +27,6 @@
     "deploy:live": "npm run build && npx gh-pages -d dist -r https://github.com/kawkaba-cognito/the-maze-man-comics.git",
     "ship:live": "npm run push:both && npm run deploy:live",
     "validate:liars": "node scripts/validate-liars.mjs",
-    "validate:stage": "node scripts/validate-stage.mjs",
     "validate:story": "node scripts/validate-story-grid.mjs",
     "validate:kawnera": "node scripts/validate-kawnera.mjs",
     "validate:universe": "node scripts/validate-universe-zones.mjs",

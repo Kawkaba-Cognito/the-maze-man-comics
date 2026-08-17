@@ -85,11 +85,47 @@ export function TrainingMenuBar({
   );
 }
 
-/** In-game header: back (menu), title, optional pause or tutorial (?). */
+/**
+ * THE in-game header: back (menu), a middle, and pause or tutorial (?).
+ *
+ * ── Two content modes ─────────────────────────────────────────────────────
+ *   title    <TrainingPlayHeader title="Detective" subtitle="Level 100" … />
+ *   stats    <TrainingPlayHeader>{…live counters…}</TrainingPlayHeader>
+ *
+ * Both render the identical frame — same width, same back glyph in the same
+ * place, same pause on the right. Only the middle differs. Cancellation needs
+ * lives and a found-counter in the bar; Story Time needs a title; neither
+ * should have to invent a header to get one.
+ *
+ * ── Why the modes were added (2026-08-17) ─────────────────────────────────
+ * This component already existed and was already correct. The problem was that
+ * games were not using it: the in-game back button had drifted into four
+ * treatments, and no gate checked it, so `keep-track` scored 22/22 while
+ * looking nothing like `story-grid`.
+ *
+ *   ct-training-play-header  7 games  — this component's frame, hand-rolled
+ *   PlayHud / ct-fq-bar      4 games  — full width, CARD BACKGROUND, radius
+ *   TrainingMenuBar          6 games  — a LOBBY bar used mid-play, pad 18px
+ *   hand-rolled              2 games  — intercept, paired-associates
+ *
+ * The glyph differed too: story-grid and detective drew a text ‹, everything
+ * built on TrainingChromeBtn drew IconBack.
+ *
+ * The lobby/play distinction is semantic, not stylistic, so CSS alone could not
+ * fix it — `ct-training-menubar` is the right class in a hub and the wrong one
+ * in play. PlayHud now renders its stats INSIDE this frame rather than beside
+ * a second one.
+ *
+ * ⚠ The frame is TRANSPARENT on purpose. It is `max-width: 420px; margin: 0
+ * auto`, and CLAUDE.md records what phone-width centred chrome with a fill does
+ * on a wider viewport: it renders as a rectangle floating at the top of the
+ * screen. Puzzle Studio shipped exactly that, because it looks fine on a phone.
+ */
 export function TrainingPlayHeader({
   isAr,
   title,
   subtitle,
+  children,
   onMenu,
   onPause,
   onTutorial,
@@ -97,9 +133,11 @@ export function TrainingPlayHeader({
   menuAriaLabel = 'Menu',
   tutorialAriaLabel = 'How to play',
   playSfx,
+  className = '',
+  style,
 }) {
   return (
-    <header className="ct-training-play-header">
+    <header className={`ct-training-play-header${className ? ` ${className}` : ''}`} style={style}>
       {onMenu ? (
         <TrainingChromeBtn
           ariaLabel={menuAriaLabel}
@@ -114,17 +152,21 @@ export function TrainingPlayHeader({
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       )}
       <div className="ct-training-play-header-body">
-        <div
-          className="ct-training-play-title"
-          style={{
-            fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-            fontWeight: isAr ? 900 : 400,
-            letterSpacing: isAr ? 0 : 1,
-          }}
-        >
-          {title}
-        </div>
-        {subtitle ? <div className="ct-training-play-sub">{subtitle}</div> : null}
+        {children ?? (
+          <>
+            <div
+              className="ct-training-play-title"
+              style={{
+                fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
+                fontWeight: isAr ? 900 : 400,
+                letterSpacing: isAr ? 0 : 1,
+              }}
+            >
+              {title}
+            </div>
+            {subtitle ? <div className="ct-training-play-sub">{subtitle}</div> : null}
+          </>
+        )}
       </div>
       {onTutorial ? (
         <TrainingChromeBtn

@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { IconBack } from '../../../../shared/TrainingIcons';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
@@ -394,7 +395,7 @@ export function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, on
     <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
       <header className="ct-training-play-header" style={cosmos ? { background: 'transparent', paddingTop: 52 } : undefined}>
         {!cosmos && (
-          <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx('click'); onExit?.(); }}>‹</button>
+          <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx('click'); onExit?.(); }}><IconBack size={18} c="currentColor" /></button>
         )}
         {cosmos && <div className="ct-training-chrome-spacer" aria-hidden="true" />}
         <div className="ct-training-play-header-body">

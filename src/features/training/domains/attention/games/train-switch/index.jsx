@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { IconBack } from '../../../../shared/TrainingIcons';
 import { GAME_STIMULUS_6, GAME_FX, GAME_COLORS } from '../../../../shared/gamePalette';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
@@ -546,7 +547,7 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
   return (
     <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
       <header className="ct-training-play-header">
-        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx('click'); onExit?.(); }}>‹</button>
+        <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx('click'); onExit?.(); }}><IconBack size={18} c="currentColor" /></button>
         <div className="ct-training-play-header-body">
           <div className="ct-training-play-title">{isAr ? 'سفينة فضائية' : 'Spaceship'}</div>
           <div className="ct-training-play-sub">{head}{showLives ? ` · ${'♥'.repeat(Math.max(0, hud.lives))}` : ''}</div>
