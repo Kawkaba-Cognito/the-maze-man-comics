@@ -1,1 +1,0 @@
-import{r as e}from"./assetUrl-B4uwb7Oh.js";var t=[`kawkab`,`ramy`,`lola`,`mimi`,`star`,`fadi`];function n(n){return e(`Assets/cast-2d-minimal-2026/${t.includes(n)?n:`kawkab`}.webp`)}export{n as t};
