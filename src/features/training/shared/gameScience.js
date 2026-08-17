@@ -185,23 +185,23 @@ export const GAME_SCIENCE = {
   'story-grid': {
     en: {
       title: 'The science',
-      intro: 'Story Time trains temporal-order memory — holding not just WHAT happened but the SEQUENCE it happened in, then reproducing it (the comic-strip cousin of the Picture-Arrangement task).',
+      intro: 'Story Time trains temporal-order memory — holding not just WHAT happened but the SEQUENCE it happened in, then answering for it (the comic-strip cousin of the Picture-Arrangement task).',
       sections: [
         { h: '🧠 Order memory', b: 'Remembering the order of events is a distinct memory skill, leaning on the hippocampus and prefrontal cortex — the same system that lets you retell your day.' },
-        { h: '🔗 Binding who · what · where', b: 'Rebuilding each panel from its place, character and action trains relational binding — the hippocampus stitching separate details into one event (Eichenbaum, 2004). It is exactly how real episodic memories are stored.' },
+        { h: '🔗 Binding who · what · where', b: 'Kawkab asks about a scene\'s place, its cast and what came after it, so each answer probes relational binding — the hippocampus stitching separate details into one event (Eichenbaum, 2004). It is exactly how real episodic memories are stored.' },
         { h: '📖 Chunk it into a story', b: 'Linked events form a single narrative chunk, so memory holds far more than a loose list (Miller, 1956). A good story is easier to recall than random items.' },
-        { h: '🕵️ Filtering decoys', b: 'Ignoring places, characters and actions that never happened trains selective gating — keeping working memory clear of irrelevant material, which predicts higher capacity (Vogel et al., 2005).' },
+        { h: '🕵️ The scene that never happened', b: 'One question shows a scene recombined from two real ones — the right place with the wrong people. Accepting it is a memory CONJUNCTION error, the classic sign that recall is reconstruction rather than playback (Reinitz et al., 1992; Loftus, 2005).' },
       ],
       foot: 'Knit the panels into one little story as you watch — sequences stick better than lists.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: '«وقت القصة» يدرّب ذاكرة التسلسل الزمني — لا حفظ ما حدث فقط بل ترتيب حدوثه، ثم إعادة إنتاجه (ابن عمّ مهمة «ترتيب الصور» على هيئة شريط مصوّر).',
+      intro: '«وقت القصة» يدرّب ذاكرة التسلسل الزمني — لا حفظ ما حدث فقط بل ترتيب حدوثه، ثم الإجابة عنه (ابن عمّ مهمة «ترتيب الصور» على هيئة شريط مصوّر).',
       sections: [
         { h: '🧠 ذاكرة الترتيب', b: 'تذكّر ترتيب الأحداث مهارة ذاكرة مستقلّة، تعتمد على الحُصين والقشرة الجبهية — النظام نفسه الذي يتيح لك سرد يومك.' },
-        { h: '🔗 ربط: مَن · ماذا · أين', b: 'إعادة بناء كل لوحة من مكانها وشخصيتها وفعلها يدرّب الربط العلائقي — حيث يجمع الحُصين تفاصيل منفصلة في حدث واحد (آيخنباوم، 2004). هكذا تُخزَّن الذكريات الحدثية فعلاً.' },
+        { h: '🔗 ربط: مَن · ماذا · أين', b: 'يسألك كوكب عن مكان المشهد ومن كان فيه وما تلاه، فيتحقّق كل جواب من الربط العلائقي — حيث يجمع الحُصين تفاصيل منفصلة في حدث واحد (آيخنباوم، 2004). هكذا تُخزَّن الذكريات الحدثية فعلاً.' },
         { h: '📖 اجعلها قصة', b: 'الأحداث المترابطة تشكّل «كتلة» سردية واحدة، فتحمل الذاكرة أكثر بكثير من قائمة مبعثرة (ميلر، 1956). القصة الجيدة أسهل استرجاعاً من عناصر عشوائية.' },
-        { h: '🕵️ تصفية الخدع', b: 'تجاهل أماكن وشخصيات وأفعال لم تحدث يدرّب البوّابة الانتقائية — إبقاء الذاكرة العاملة نقيّة من غير المهمّ، وهو ما يتنبأ بسعة أعلى (فوغل وآخرون، 2005).' },
+        { h: '🕵️ المشهد الذي لم يحدث', b: 'أحد الأسئلة يعرض مشهداً مُركّباً من مشهدين حقيقيين — المكان الصحيح مع الأشخاص الخطأ. وقبولُه خطأُ «اقتران» في الذاكرة، وهو العلامة الكلاسيكية على أن الاسترجاع إعادة بناء لا إعادة تشغيل (راينيتز وآخرون، 1992؛ لوفتَس، 2005).' },
       ],
       foot: 'انسج اللوحات في قصة صغيرة وأنت تشاهد — التسلسل أرسخ من القوائم.',
     },
@@ -492,25 +492,25 @@ export const GAME_SCIENCE = {
   'detective': {
     en: {
       title: 'The science',
-      intro: 'Detective is deductive reasoning in action — you gather evidence at the scene, cross-check each suspect’s story against what you can SEE, and eliminate possibilities until only one answer can be true.',
+      intro: 'Detective is deductive reasoning in action. Each suspect makes one statement, a rule says how many of them are lying, and only one arrangement of guilt and honesty can hold. Finding it is the same move as any formal proof — the knights-and-knaves puzzle, dressed as a case.',
       sections: [
-        { h: '🔎 Deduction & elimination', b: 'Each piece of evidence is a constraint. Crossing out suspects that violate it is logical elimination — the same process behind formal deduction and everyday problem-solving.' },
-        { h: '🎭 Contradiction detection', b: 'On harder cases the culprit lies: their alibi clashes with their own appearance. Spotting a statement that contradicts observable facts is a core critical-thinking skill.' },
-        { h: '🧠 Working memory + logic', b: 'You hold several clues in mind at once and combine them, leaning on prefrontal cortex networks for reasoning and rule integration. The notebook lets you offload and organise, like a real investigator.' },
-        { h: '🎯 Hypothesis testing', b: 'Treating each suspect as a hypothesis and checking it against every clue trains careful, evidence-based thinking instead of guessing.' },
+        { h: '🔎 Deduction, not induction', b: 'Matrix Reasoning asks you to spot a pattern and guess the rule (induction). This asks the opposite: the rules are given, and you derive the one conclusion they force. Both matter, and they are different skills.' },
+        { h: '🎭 Contradiction detection', b: 'A statement about another statement — “Ramy is lying” — cannot be checked on its own. You have to assume, follow the consequences, and notice when they collide. Detecting that collision is the core of critical thinking.' },
+        { h: '🧠 Working memory + logic', b: 'You hold several partial conclusions at once, leaning on prefrontal networks for reasoning and rule integration. The notebook exists so you can offload them: the game is meant to measure your reasoning, not your memory span.' },
+        { h: '⚖️ Knowing when you cannot know', b: 'Some cases genuinely do not settle, and the honest answer is “not enough evidence”. Being willing to say so — rather than committing to the most available suspect — is calibration, and it is the single most transferable habit here (Fischhoff et al., 1977).' },
       ],
-      foot: 'Find every clue before accusing: the culprit is the only suspect that survives all of them — and the only one whose story doesn’t add up.',
+      foot: 'Take one suspect, assume they did it, and follow the statements until something breaks. The answer is the assumption that never breaks.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: '«المحقّق» استدلال استنباطي عملي — تجمع الأدلة من مكان الجريمة، وتقارن رواية كل مشتبه بما تراه بعينيك، وتستبعد الاحتمالات حتى يبقى جواب واحد ممكن.',
+      intro: '«المحقّق» استدلال استنباطي عملي. كل مشتبه يدلي بإفادة واحدة، وقاعدة تخبرك كم منهم يكذب، ولا يتّسق إلا ترتيب واحد للذنب والصدق. والعثور عليه هو حركة أي برهان صوري — أحجية الفرسان والأوغاد في ثوب قضية.',
       sections: [
-        { h: '🔎 الاستنباط والاستبعاد', b: 'كل دليل قيد. شطب المشتبهين الذين يخالفونه هو استبعاد منطقي — العملية نفسها وراء الاستدلال الصوري وحل المشكلات اليومي.' },
-        { h: '🎭 كشف التناقض', b: 'في القضايا الأصعب يكذب الفاعل: روايته تناقض مظهره. اكتشاف قولٍ يناقض الوقائع المرئية مهارة أساسية في التفكير النقدي.' },
-        { h: '🧠 الذاكرة العاملة والمنطق', b: 'تحتفظ بعدة أدلة في ذهنك معاً وتجمعها، معتمداً على شبكات القشرة الجبهية للاستدلال ودمج القواعد. والدفتر يساعدك على التنظيم كمحقّق حقيقي.' },
-        { h: '🎯 اختبار الفرضيات', b: 'معاملة كل مشتبه كفرضية تختبرها أمام كل دليل تدرّب التفكير القائم على الأدلة بدل التخمين.' },
+        { h: '🔎 استنباط لا استقراء', b: '«استدلال المصفوفات» يطلب منك التقاط نمط وتخمين القاعدة (استقراء). وهذه تطلب العكس: القواعد معطاة، وعليك أن تشتقّ النتيجة الوحيدة التي تفرضها. كلاهما مهم، وهما مهارتان مختلفتان.' },
+        { h: '🎭 كشف التناقض', b: 'الإفادة عن إفادة أخرى — «رامي يكذب» — لا يمكن التحقق منها وحدها. عليك أن تفترض وتتبع النتائج وتلاحظ متى تتصادم. وكشف ذلك التصادم هو جوهر التفكير النقدي.' },
+        { h: '🧠 الذاكرة العاملة والمنطق', b: 'تحتفظ بعدة نتائج جزئية معاً، معتمداً على شبكات القشرة الجبهية للاستدلال ودمج القواعد. والدفتر موجود لتُفرغ فيه هذه النتائج: اللعبة تقيس استدلالك لا سعة ذاكرتك.' },
+        { h: '⚖️ أن تعرف متى لا تعرف', b: 'بعض القضايا لا تُحسم فعلاً، والجواب الصادق هو «الأدلّة لا تكفي». والاستعداد لقول ذلك — بدل التمسّك بأقرب مشتبه إلى الذهن — هو المعايرة، وأكثر عادة هنا قابلية للانتقال إلى الحياة (فيشهوف وآخرون، 1977).' },
       ],
-      foot: 'اعثر على كل الأدلة قبل الاتهام: الفاعل هو الوحيد الذي تنطبق عليه جميعها — والوحيد الذي لا تستقيم روايته.',
+      foot: 'خذ مشتبهاً واحداً، وافترض أنه الفاعل، وتابع الإفادات حتى ينكسر شيء. والجواب هو الافتراض الذي لا ينكسر.',
     },
   },
   'trivia': {

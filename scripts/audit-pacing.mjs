@@ -112,6 +112,46 @@ const url = (p) => new URL(`../src/features/training/domains/${p}`, import.meta.
   }
 }
 
+/* ── Story Time ─────────────────────────────────────────────────────────────
+ * The stimulus here is a whole SCENE plus its narration, not a word or a cue,
+ * so the floor is seconds rather than milliseconds. Story Time's own comments
+ * always claimed the memorize budget assumed the player actually READS the
+ * narration at roughly 8s a panel — this asserts that claim instead of trusting
+ * it, at every level of every tier and across the survival ramp.
+ *
+ * ⚠ Gate SECONDS PER PANEL, never the raw countdown: a six-scene story is given
+ * more total time than a four-scene one, so raw `memo` would report the hard
+ * tier as the easiest one.
+ */
+{
+  const { levelCfg: sgCfg, survivalCfg: sgSurv, passCfg: sgPass, MIN_SEC_PER_PANEL } =
+    await import(url('memory/games/story-grid/data.js'));
+  // one source of truth: the game states the floor, this asserts it is met
+  const SG_MIN_PER_PANEL = Math.round(MIN_SEC_PER_PANEL * 1000);
+
+  let worst = Infinity; let where = '';
+  const visit = (c, label) => {
+    const ms = Math.round(c.memoPerPanel * 1000);
+    if (ms < worst) { worst = ms; where = label; }
+  };
+  for (const diff of ['easy', 'med', 'hard']) {
+    for (let lv = 1; lv <= 100; lv += 1) visit(sgCfg(diff, lv), `${diff} L${lv}`);
+  }
+  for (let stage = 0; stage <= 40; stage += 1) visit(sgSurv(stage), `survival stage ${stage}`);
+  visit(sgPass(), 'pass-n-play');
+
+  rows.push(['story-grid', 'ms per watched scene', worst, SG_MIN_PER_PANEL, where]);
+  if (worst < SG_MIN_PER_PANEL) {
+    fail(`story-grid: ${worst}ms per scene at ${where} — floor is ${SG_MIN_PER_PANEL}ms`);
+  }
+
+  // …and difficulty must still grow through LOAD once the clock is floored.
+  const e1 = sgCfg('easy', 1); const h100 = sgCfg('hard', 100);
+  if (!(h100.len > e1.len && h100.questions > e1.questions)) {
+    fail('story-grid: scenes and questions no longer grow — the honest levers once the watch clock is floored');
+  }
+}
+
 /* ── Report ─────────────────────────────────────────────────────────────── */
 console.log('audit-pacing: tightest value a player can meet, per game.\n');
 for (const [game, what, got, floor, where] of rows) {

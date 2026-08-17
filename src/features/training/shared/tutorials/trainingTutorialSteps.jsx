@@ -195,16 +195,16 @@ const STEPS = {
   },
   'story-grid': {
     en: [
-      { title: 'Watch Kawkab\'s story', body: 'A short story plays one panel at a time — Kawkab eats, then studies, then sleeps… Watch the ORDER the panels appear in.', icon: '📖', pills: ['One panel at a time', 'Remember the order'] },
-      { title: 'Rebuild it in order', body: 'The panels get shuffled into a tray. Tap them in the order the story happened — first panel first, and so on into the numbered slots.', icon: '🔢', pills: ['Tap in story order', 'Tap a slot to undo'] },
-      { title: 'Watch for decoys', body: 'Harder rounds slip in extra scenes that never happened. Don\'t place those — only the panels you actually saw, in their real order.', icon: '🕵️' },
-      { title: 'Stories grow', body: 'More panels, faster telling, and more decoys come as you climb. Tip: link the panels into a little story in your head — sequences stick better than lists.', icon: '🧠', note: READY_NOTE.en },
+      { title: 'Watch the story', body: 'A short story plays one scene at a time. Swipe left and right to move through it, and take the time you have — where it happens, who is there and what they do all matter later.', icon: '📖', pills: ['Swipe between scenes', 'Place · cast · action'] },
+      { title: 'Kawkab asks', body: 'When the story ends, Kawkab asks about it: where it began, who was in a scene, what happened right after something, how many scenes had company.', icon: '🪐', pills: ['A few questions', 'Order counts'] },
+      { title: 'Pick, then confirm', body: 'Tap the answer you want — nothing is committed yet — then press Confirm. You find out straight away, and the story is read back in full at the end.', icon: '✓', pills: ['Tap to pick', 'Confirm to commit'] },
+      { title: 'One scene never happened', body: 'One question shows a scene and asks whether you saw it. Sometimes you did; sometimes it was quietly stitched together from two others — the right place with the wrong people. Tip: knit the scenes into one little story as you watch. Sequences stick better than lists.', icon: '🕵️', note: READY_NOTE.en },
     ],
     ar: [
-      { title: 'شاهد قصة كوكب', body: 'تُعرض قصة قصيرة لوحةً لوحة — كوكب يأكل، ثم يدرس، ثم ينام… راقب ترتيب ظهور اللوحات.', icon: '📖', pills: ['لوحة في كل مرة', 'احفظ الترتيب'] },
-      { title: 'أعد ترتيبها', body: 'تُخلط اللوحات في صينية. اضغطها بالترتيب الذي حدثت فيه القصة — الأولى أولاً، وهكذا في الخانات المرقّمة.', icon: '🔢', pills: ['اضغط بترتيب القصة', 'اضغط خانة للتراجع'] },
-      { title: 'انتبه للخدع', body: 'الجولات الأصعب تدسّ مشاهد لم تحدث. لا تضعها — فقط اللوحات التي رأيتها فعلاً، بترتيبها الحقيقي.', icon: '🕵️' },
-      { title: 'القصص تطول', body: 'لوحات أكثر وسرد أسرع وخدع أكثر كلما تقدّمت. نصيحة: اربط اللوحات في قصة صغيرة في ذهنك — التسلسل أرسخ من القوائم.', icon: '🧠', note: READY_NOTE.ar },
+      { title: 'شاهد القصة', body: 'تُعرض قصة قصيرة مشهداً مشهداً. اسحب يميناً ويساراً للتنقّل بينها، وخُذ وقتك المتاح — المكان ومن كان فيه وما فعلوه، كلها ستهمّ لاحقاً.', icon: '📖', pills: ['اسحب بين المشاهد', 'المكان · الشخصيات · الفعل'] },
+      { title: 'كوكب يسأل', body: 'عند انتهاء القصة يسألك كوكب عنها: أين بدأت، ومن كان في مشهد ما، وما الذي حدث بعد شيء معيّن مباشرة، وكم مشهداً ظهرت فيه أكثر من شخصية.', icon: '🪐', pills: ['أسئلة قليلة', 'الترتيب مهم'] },
+      { title: 'اختر ثم أكّد', body: 'اضغط الجواب الذي تريده — لا شيء يُحسم بعد — ثم اضغط «تأكيد». تعرف النتيجة فوراً، وتُقرأ القصة كاملة في النهاية.', icon: '✓', pills: ['اضغط للاختيار', 'أكّد للحسم'] },
+      { title: 'مشهد لم يحدث', body: 'أحد الأسئلة يعرض مشهداً ويسأل إن كنت رأيته. أحياناً رأيته فعلاً، وأحياناً رُكّب بهدوء من مشهدين — المكان الصحيح مع الأشخاص الخطأ. نصيحة: اربط المشاهد في قصة صغيرة أثناء المشاهدة، فالتسلسل أرسخ من القوائم.', icon: '🕵️', note: READY_NOTE.ar },
     ],
   },
   'memo-span': {
@@ -301,6 +301,20 @@ const STEPS = {
       { title: 'اقرأ المصفوفة', body: 'أشكال في شبكة. كل صف وعمود يتبع قاعدة خفية — انظر أفقياً وعمودياً.', icon: '🔲' },
       { title: 'املأ الفراغ', body: 'خلية واحدة فارغة (?). استنتج أي شكل يكمل النمط من الخيارات بالأسفل.', icon: '❓' },
       { title: 'القواعد تتراكم', body: 'خمس أنواع قواعد — ثبات الصف، التدرّج، التوزيع، والجمع. المستويات الصعبة تمزج حتى خمس قواعد. الدقة أهم من السرعة.', icon: '🧩', note: READY_NOTE.ar },
+    ],
+  },
+  detective: {
+    en: [
+      { title: 'Read the rule first', body: 'Every case opens with a rule — “exactly one of them is telling the truth”, or “the thief always lies”. The rule is always true, and nothing can be worked out without it.', icon: '⚖️', pills: ['The rule never lies', 'The suspects might'] },
+      { title: 'Assume, then follow it through', body: 'Take one suspect. Assume they did it, and check every statement against the rule. If something contradicts, they are innocent. The answer is the assumption that survives.', icon: '🔎', pills: ['Assume · check · discard'] },
+      { title: 'Use the notebook', body: 'From four suspects up, tap a card to mark them — once for cleared, again for suspect. It changes no score. It is there so you can park a conclusion instead of holding it in your head.', icon: '📓' },
+      { title: 'The question changes', body: 'Sometimes it is who did it. Sometimes who is lying, how many are lying, or which statement cracks it alone. Sometimes you are asked whether one suspect is guilty — and the honest answer is “not enough evidence”. Read the question every time.', icon: '❓', note: READY_NOTE.en },
+    ],
+    ar: [
+      { title: 'اقرأ القاعدة أولاً', body: 'كل قضية تبدأ بقاعدة — «واحد فقط منهم يقول الصدق»، أو «الفاعل يكذب دائماً». القاعدة صادقة دائماً، ولا يمكن استنتاج شيء بدونها.', icon: '⚖️', pills: ['القاعدة لا تكذب', 'أما المشتبهون فربما'] },
+      { title: 'افترض ثم تابع', body: 'خذ مشتبهاً واحداً. افترض أنه الفاعل، وتحقّق من كل إفادة أمام القاعدة. فإن ظهر تناقض فهو بريء. والجواب هو الافتراض الذي يصمد.', icon: '🔎', pills: ['افترض · تحقّق · استبعد'] },
+      { title: 'استخدم الدفتر', body: 'من أربعة مشتبهين فصاعداً، المس البطاقة لتضع علامة — مرة «بريء» ومرة «مشتبه». لا تغيّر النتيجة. هي هناك لتضع فيها استنتاجاً بدل أن تحمله في رأسك.', icon: '📓' },
+      { title: 'السؤال يتغيّر', body: 'أحياناً من الفاعل. وأحياناً من يكذب، أو كم واحداً يكذب، أو أي إفادة تحسم القضية وحدها. وأحياناً يُسأل هل مشتبه بعينه مذنب — والجواب الصادق قد يكون «الأدلّة لا تكفي». اقرأ السؤال في كل مرة.', icon: '❓', note: READY_NOTE.ar },
     ],
   },
   'spatial-stroop': {

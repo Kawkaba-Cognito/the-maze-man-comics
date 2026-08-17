@@ -80,8 +80,11 @@ export const WAR_GAMES = [
     ar: 'المحقّق',
     icon: '🕵️',
     accent: '#c0433d',
-    blurb: { en: 'Crack the case — accuse the right suspect.', ar: 'حلّ القضية — اتّهم المشتبه الصحيح.' },
-    loader: () => import('../../../training/domains/reasoning/games/detective/CaseFileEngine').then((m) => m.default),
+    blurb: { en: 'One of them is lying — work out who took it.', ar: 'أحدهم يكذب — استنتج من أخذها.' },
+    // Detective became Liars' Ring on 2026-08-17; the old CaseFileEngine is
+    // gone. DetectiveEngine takes the same ModeShell props, and the seeded
+    // generator makes a bout genuinely identical for both players.
+    loader: () => import('../../../training/domains/reasoning/games/detective').then((m) => m.DetectiveEngine),
     trials: { easy: 1, med: 1, hard: 2 },
     hardMode: 'passplay',
   },

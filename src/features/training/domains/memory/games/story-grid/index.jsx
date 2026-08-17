@@ -4,26 +4,37 @@ import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import { cast2dUrl } from '../../../../shared/cast2d';
 import Emoji from '../../../../../../components/shared/Emoji';
-import { STORIES } from './stories';
 import { useGamePause } from '../../../../shared/useGamePause';
 import { createTrialLog } from '../../../../shared/trialLog';
+import { assetUrl } from '../../../../../../lib/assetUrl';
+import {
+  ACTIONS, BACKGROUNDS, CHARS,
+  buildQuestions, levelCfg, levelPassed, makeStory, passCfg, survivalCfg,
+} from './data.js';
 
 /*
  * Story Time — temporal-order / episodic memory.
  *
- *   WATCH   — an authored, connected story plays panel by panel (characters go
- *             places, things happen, they react via speech bubbles). A memorize
- *             timer; flip panels with Prev/Next; Done to finish.
- *   REBUILD — press-to-place: tap a PLACE / CHARACTER / ACTION in the board, then
- *             tap a panel to drop it in. Harder rounds add DISTRACTOR pieces.
- *   REVEAL  — each panel scored against the story.
+ *   WATCH — an authored, connected story plays panel by panel (characters go
+ *           places, things happen, they react via speech bubbles). SWIPE (or the
+ *           arrows) to move between scenes; a memorize countdown runs behind it,
+ *           and swiping past the last scene starts the questions early.
+ *   ASK   — Kawkab, the mascot from the middle of the Training hub, asks about
+ *           the story: where it began, who was there, what came next, which came
+ *           first, how many scenes had company, and one scene that may never
+ *           have happened. Pick an answer, then CONFIRM it.
+ *   REVEAL— the score, the whole story read back, and its moral.
  *
- * Shared 3-mode flow (Survival / Levels / Pass n Play). Seeded → deterministic
- * (Pass-n-Play players rebuild the same story).
+ * Shared 3-mode flow (Survival / Levels / Pass n Play). Seeded → deterministic,
+ * so Pass-n-Play players get the same story AND the same questions.
+ *
+ * The scene vocabulary, the level curve and the question generator live in
+ * `data.js` — see the note there about why. Two shared scene modules still
+ * import the vocabulary from this file, so it is re-exported below.
  *
  * Cast: Kawkab, Star, Noor (fox), Ramy (boy), Lola (girl).
- * Self-contained: inline styles, CSS keyframes only, no image assets.
  */
+export { ACTIONS, BACKGROUNDS, BG_LIST, CHARS, makeStory } from './data.js';
 
 export const ANIM_CSS = `
 @keyframes sg-bounce {0%,100%{transform:translateY(0)}30%{transform:translateY(-13%)}55%{transform:translateY(0)}}
@@ -48,149 +59,6 @@ export const ANIM_CSS = `
 @keyframes sg-steam {0%{transform:translateY(0) scale(0.7);opacity:0}30%{opacity:.8}100%{transform:translateY(-30px) scale(1.1);opacity:0}}
 `;
 
-// ── CONTENT ──────────────────────────────────────────────────────────────
-// Each background is a little SCENE: sky/wall gradient + a floor band + a few
-// anchored props (in the sky, along the far edges, or resting on the floor) so
-// the place reads at a glance and never blurs into another. Props hug the sides
-// and top so the centre-bottom stays clear for the characters. `floor` sets how
-// tall the ground band is (indoor rooms get a taller floor). `fenceless` keeps
-// the sky→ground edge soft. Numeric positions/sizes scale with the panel.
-export const BACKGROUNDS = {
-  home: { en: 'Home', ar: 'البيت', chip: '🏠', bg: 'linear-gradient(180deg,#fbe6cf 0%,#f4d3ab 100%)', ground: '#c69a67', floor: 30, amb: [
-    { e: '🖼️', s: { top: 12, insetInlineStart: 14, fontSize: 20 } },
-    { e: '🪟', s: { top: 10, insetInlineEnd: 14, fontSize: 24, opacity: 0.95 } },
-    { e: '🛋️', s: { bottom: '20%', insetInlineStart: 8, fontSize: 30 } },
-    { e: '🪴', s: { bottom: '22%', insetInlineEnd: 10, fontSize: 22 } },
-  ] },
-  street: { en: 'Street', ar: 'الطريق', chip: '🚸', bg: 'linear-gradient(180deg,#bfe3ff 0%,#e9f4ce 100%)', ground: '#9a948a', floor: 24, amb: [
-    { e: '☀️', s: { top: 10, insetInlineEnd: 14, fontSize: 22 } },
-    { e: '☁️', s: { top: 16, insetInlineStart: 18, fontSize: 18, opacity: 0.9, animation: 'sg-float 6s ease-in-out infinite' } },
-    { e: '🏠', s: { bottom: '20%', insetInlineStart: 6, fontSize: 30 } },
-    { e: '🌳', s: { bottom: '20%', insetInlineEnd: 8, fontSize: 28 } },
-    { e: '🚦', s: { bottom: '22%', insetInlineStart: '50%', transform: 'translateX(-50%)', fontSize: 16, opacity: 0.85 } },
-  ] },
-  school: { en: 'School', ar: 'المدرسة', chip: '🏫', bg: 'linear-gradient(180deg,#d3ecff 0%,#c7ecd0 100%)', ground: '#8fbf72', floor: 22, amb: [
-    { e: '🏫', s: { bottom: '18%', insetInlineStart: '50%', transform: 'translateX(-50%)', fontSize: 40 } },
-    { e: '☀️', s: { top: 10, insetInlineEnd: 14, fontSize: 22 } },
-    { e: '🚩', s: { top: 8, insetInlineStart: 16, fontSize: 18 } },
-    { e: '🌳', s: { bottom: '18%', insetInlineEnd: 8, fontSize: 24 } },
-  ] },
-  classroom: { en: 'Classroom', ar: 'الصف', chip: '📚', bg: 'linear-gradient(180deg,#f3e7cd 0%,#ead6ae 100%)', ground: '#b98e58', floor: 30, amb: [
-    { e: '🟩', s: { top: 12, insetInlineStart: 14, fontSize: 34 } },
-    { e: '🕐', s: { top: 12, insetInlineEnd: 14, fontSize: 18 } },
-    { e: '📚', s: { bottom: '22%', insetInlineEnd: 10, fontSize: 22 } },
-    { e: '🪑', s: { bottom: '20%', insetInlineStart: 10, fontSize: 22 } },
-  ] },
-  kitchen: { en: 'Kitchen', ar: 'مطبخ', chip: '🍳', bg: 'linear-gradient(180deg,#fff1dc 0%,#ffdcae 100%)', ground: '#d79f63', floor: 32, amb: [
-    { e: '🪟', s: { top: 10, insetInlineEnd: 14, fontSize: 22, opacity: 0.9 } },
-    { e: '🍎', s: { top: 14, insetInlineStart: 16, fontSize: 18 } },
-    { e: '🔥', s: { bottom: '24%', insetInlineStart: 12, fontSize: 22 } },
-    { e: '🧺', s: { bottom: '22%', insetInlineEnd: 12, fontSize: 22 } },
-  ] },
-  garden: { en: 'Garden', ar: 'حديقة', chip: '🌷', bg: 'linear-gradient(180deg,#d7f0ff 0%,#cdeeae 100%)', ground: '#7fb85c', floor: 26, amb: [
-    { e: '☀️', s: { top: 10, insetInlineEnd: 14, fontSize: 22 } },
-    { e: '🦋', s: { top: 26, insetInlineStart: 22, fontSize: 16, animation: 'sg-fly 3s ease-in-out infinite' } },
-    { e: '🌳', s: { bottom: '20%', insetInlineStart: 4, fontSize: 34 } },
-    { e: '🌷', s: { bottom: '20%', insetInlineEnd: 8, fontSize: 20 } },
-    { e: '🌻', s: { bottom: '20%', insetInlineEnd: 30, fontSize: 18 } },
-  ] },
-  park: { en: 'Park', ar: 'منتزه', chip: '⚽', bg: 'linear-gradient(180deg,#c6e8ff 0%,#a9dbf7 100%)', ground: '#78bd5f', floor: 26, amb: [
-    { e: '☀️', s: { top: 10, insetInlineEnd: 14, fontSize: 24 } },
-    { e: '☁️', s: { top: 16, insetInlineStart: 16, fontSize: 18, opacity: 0.9, animation: 'sg-float 7s ease-in-out infinite' } },
-    { e: '🌳', s: { bottom: '20%', insetInlineStart: 6, fontSize: 32 } },
-    { e: '🪑', s: { bottom: '20%', insetInlineEnd: 8, fontSize: 22 } },
-  ] },
-  beach: { en: 'Beach', ar: 'الشاطئ', chip: '🏖️', bg: 'linear-gradient(180deg,#aee2ff 0%,#ffe9bd 100%)', ground: '#f0d79a', floor: 30, amb: [
-    { e: '☀️', s: { top: 10, insetInlineEnd: 14, fontSize: 24 } },
-    { e: '🌴', s: { bottom: '24%', insetInlineStart: 6, fontSize: 32 } },
-    { e: '⛱️', s: { bottom: '24%', insetInlineEnd: 8, fontSize: 26 } },
-    { e: '🌊', s: { bottom: '26%', insetInlineStart: '50%', transform: 'translateX(-50%)', fontSize: 18, opacity: 0.85, animation: 'sg-sway 2.4s ease-in-out infinite' } },
-  ] },
-  pool: { en: 'Pool', ar: 'المسبح', chip: '🏊', bg: 'linear-gradient(180deg,#cdeeff 0%,#79cbe8 100%)', ground: '#39a6cf', floor: 40, amb: [
-    { e: '☀️', s: { top: 10, insetInlineEnd: 14, fontSize: 22 } },
-    { e: '🏖️', s: { top: 12, insetInlineStart: 14, fontSize: 18, opacity: 0.9 } },
-    { e: '🛟', s: { bottom: '30%', insetInlineEnd: 10, fontSize: 24 } },
-    { e: '💦', s: { bottom: '30%', insetInlineStart: 14, fontSize: 16, animation: 'sg-twinkle 1.8s ease-in-out infinite' } },
-  ] },
-  museum: { en: 'Museum', ar: 'المتحف', chip: '🖼️', bg: 'linear-gradient(180deg,#f0e8f8 0%,#dbccec 100%)', ground: '#a98ec6', floor: 28, amb: [
-    { e: '🖼️', s: { top: 14, insetInlineStart: 14, fontSize: 24 } },
-    { e: '🖼️', s: { top: 14, insetInlineEnd: 14, fontSize: 20 } },
-    { e: '🏺', s: { bottom: '22%', insetInlineStart: 12, fontSize: 22 } },
-    { e: '🗿', s: { bottom: '22%', insetInlineEnd: 12, fontSize: 24 } },
-  ] },
-  library: { en: 'Library', ar: 'المكتبة', chip: '📖', bg: 'linear-gradient(180deg,#f7ecd8 0%,#e6cfa2 100%)', ground: '#b58f5c', floor: 30, amb: [
-    { e: '📚', s: { bottom: '22%', insetInlineStart: 6, fontSize: 30 } },
-    { e: '📚', s: { bottom: '22%', insetInlineEnd: 6, fontSize: 30 } },
-    { e: '🪔', s: { top: 12, insetInlineEnd: 16, fontSize: 18 } },
-    { e: '🪜', s: { bottom: '22%', insetInlineStart: 34, fontSize: 22, opacity: 0.85 } },
-  ] },
-  space: { en: 'Space', ar: 'الفضاء', chip: '🌌', bg: 'linear-gradient(180deg,#080d24 0%,#232c56 100%)', ground: '#171f42', floor: 18, dark: true, amb: [
-    { e: '🪐', s: { top: 12, insetInlineEnd: 14, fontSize: 26 } },
-    { e: '⭐', s: { top: 12, insetInlineStart: 16, fontSize: 14, animation: 'sg-twinkle 2s ease-in-out infinite' } },
-    { e: '✨', s: { top: 34, insetInlineEnd: 42, fontSize: 12, animation: 'sg-twinkle 1.8s ease-in-out 0.6s infinite' } },
-    { e: '🌙', s: { bottom: '20%', insetInlineStart: 10, fontSize: 24 } },
-    { e: '☄️', s: { top: 46, insetInlineStart: 30, fontSize: 16, animation: 'sg-fly 4s ease-in-out infinite' } },
-  ] },
-  stage: { en: 'Stage', ar: 'مسرح', chip: '🎤', bg: 'linear-gradient(180deg,#341a4c 0%,#7a4aa0 100%)', ground: '#3f2357', floor: 24, dark: true, amb: [
-    { e: '🪩', s: { top: 8, insetInlineStart: '50%', transform: 'translateX(-50%)', fontSize: 26, animation: 'sg-spin 1.2s linear infinite' } },
-    { e: '✨', s: { top: 30, insetInlineEnd: 22, fontSize: 14, animation: 'sg-twinkle 1.6s ease-in-out infinite' } },
-    { e: '🎶', s: { top: 34, insetInlineStart: 20, fontSize: 16, animation: 'sg-note 2.2s ease-in-out infinite' } },
-    { e: '🔦', s: { bottom: '22%', insetInlineStart: 10, fontSize: 20, opacity: 0.8 } },
-    { e: '🔦', s: { bottom: '22%', insetInlineEnd: 10, fontSize: 20, opacity: 0.8, transform: 'scaleX(-1)' } },
-  ] },
-  bedroom: { en: 'Bedroom', ar: 'غرفة النوم', chip: '🛏️', bg: 'linear-gradient(180deg,#ede2f8 0%,#cdbce6 100%)', ground: '#a48cc4', floor: 32, amb: [
-    { e: '🌙', s: { top: 12, insetInlineStart: 14, fontSize: 20 } },
-    { e: '🖼️', s: { top: 12, insetInlineEnd: 16, fontSize: 16 } },
-    { e: '🛏️', s: { bottom: '22%', insetInlineEnd: 6, fontSize: 34 } },
-    { e: '🧸', s: { bottom: '22%', insetInlineStart: 12, fontSize: 22 } },
-  ] },
-  night: { en: 'Night', ar: 'ليل', chip: '🌙', bg: 'linear-gradient(180deg,#101d3f 0%,#3a5080 100%)', ground: '#25335a', floor: 24, dark: true, amb: [
-    { e: '🌙', s: { top: 12, insetInlineEnd: 16, fontSize: 26 } },
-    { e: '⭐', s: { top: 20, insetInlineStart: 18, fontSize: 14, animation: 'sg-twinkle 2.2s ease-in-out infinite' } },
-    { e: '✨', s: { top: 40, insetInlineEnd: 46, fontSize: 12, animation: 'sg-twinkle 1.9s ease-in-out 0.5s infinite' } },
-    { e: '🏘️', s: { bottom: '20%', insetInlineStart: 8, fontSize: 26, opacity: 0.92 } },
-    { e: '🌳', s: { bottom: '20%', insetInlineEnd: 10, fontSize: 22, opacity: 0.9 } },
-  ] },
-};
-const BG_LIST = Object.keys(BACKGROUNDS);
-
-export const CHARS = [
-  { id: 'kawkab', en: 'Kawkab', ar: 'كوكب' },
-  { id: 'star', en: 'Star', ar: 'ستار' },
-  { id: 'noor', en: 'Noor', ar: 'نور' },
-  { id: 'rami', en: 'Ramy', ar: 'رامي' },
-  { id: 'lola', en: 'Lola', ar: 'لولا' },
-];
-
-// `en` is the third-person-singular form ("helps"); `enPl` is the bare/plural
-// form used when two or more characters share the action ("help") — English
-// verbs need to drop the -s for a plural subject ("Lola & Kawkab help").
-export const ACTIONS = [
-  { id: 'walk', e: '🚶', en: 'walks', enPl: 'walk', ar: 'يمشي' },
-  { id: 'greet', e: '👋', en: 'meets', enPl: 'meet', ar: 'يقابل' },
-  { id: 'hug', e: '🤗', en: 'hugs', enPl: 'hug', ar: 'يعانق' },
-  { id: 'idea', e: '💡', en: 'gets an idea', enPl: 'get an idea', ar: 'تخطر له فكرة' },
-  { id: 'tell', e: '💬', en: 'tells', enPl: 'tell', ar: 'يخبر' },
-  { id: 'find', e: '🔍', en: 'discovers', enPl: 'discover', ar: 'يكتشف' },
-  { id: 'help', e: '🤝', en: 'helps', enPl: 'help', ar: 'يساعد' },
-  { id: 'build', e: '🔨', en: 'builds', enPl: 'build', ar: 'يبني' },
-  { id: 'eat', e: '🍔', en: 'eats', enPl: 'eat', ar: 'يأكل' },
-  { id: 'cook', e: '🍳', en: 'cooks', enPl: 'cook', ar: 'يطبخ' },
-  { id: 'study', e: '📖', en: 'studies', enPl: 'study', ar: 'يدرس' },
-  { id: 'read', e: '📕', en: 'reads', enPl: 'read', ar: 'يقرأ' },
-  { id: 'ace', e: '💯', en: 'aces the test', enPl: 'ace the test', ar: 'يتفوّق' },
-  { id: 'paint', e: '🎨', en: 'paints', enPl: 'paint', ar: 'يرسم' },
-  { id: 'plant', e: '🌱', en: 'plants', enPl: 'plant', ar: 'يزرع' },
-  { id: 'play', e: '⚽', en: 'plays', enPl: 'play', ar: 'يلعب' },
-  { id: 'swim', e: '🏊', en: 'swims', enPl: 'swim', ar: 'يسبح' },
-  { id: 'sing', e: '🎤', en: 'sings', enPl: 'sing', ar: 'يغنّي' },
-  { id: 'dance', e: '🪩', en: 'dances', enPl: 'dance', ar: 'يرقص' },
-  { id: 'fly', e: '🚀', en: 'blasts off', enPl: 'blast off', ar: 'ينطلق' },
-  { id: 'win', e: '🏆', en: 'wins', enPl: 'win', ar: 'يفوز' },
-  { id: 'gift', e: '🎁', en: 'gives a gift', enPl: 'give a gift', ar: 'يُهدي' },
-  { id: 'cheer', e: '🎉', en: 'celebrates', enPl: 'celebrate', ar: 'يحتفل' },
-  { id: 'sleep', e: '😴', en: 'sleeps', enPl: 'sleep', ar: 'ينام' },
-];
 
 function actionCharAnim(action) {
   return ({
@@ -359,65 +227,6 @@ export function PanelStage({ panel, size, say }) {
   );
 }
 
-const EMPTY = { bg: null, chars: [], action: null };
-const sameSet = (a, b) => a.length === b.length && a.every((x) => b.includes(x));
-const shuffleR = (arr, rng) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-
-export function makeStory(n, rng, distract, exclude = []) {
-  const byLen = STORIES.filter((s) => s.beats.length === n);
-  const pool0 = byLen.length ? byLen : STORIES;
-  // Anti-repeat: skip recently played stories when the pool allows it, so a
-  // survival / pass-n-play session never replays the same tale back to back.
-  const fresh = pool0.filter((s) => !exclude.includes(s.id));
-  const src = fresh.length ? fresh : pool0;
-  const script = src[Math.floor(rng() * src.length)];
-  // Fixed-cast stories name real characters in `who`; generic ones cast H/F at random.
-  const fixed = !!script.fixed;
-  const cast = shuffleR(CHARS.map((c) => c.id), rng);
-  const roleChar = fixed ? {} : { H: cast[0], F: cast[1] };
-  // `narr` rides along so the watch captions and reveal recap can tell the
-  // actual authored story, not a reconstructed verb phrase.
-  const target = script.beats.map((b) => ({ bg: b.bg, chars: fixed ? [...b.who] : b.who.map((r) => roleChar[r]), action: b.action, say: b.say || null, item: b.item || null, narr: b.narr || null }));
-  const usedChar = new Set(target.flatMap((p) => p.chars));
-  const usedBg = new Set(target.map((p) => p.bg));
-  const usedAct = new Set(target.map((p) => p.action));
-  const dC = shuffleR(CHARS.map((c) => c.id).filter((c) => !usedChar.has(c)), rng).slice(0, distract);
-  const dB = shuffleR(BG_LIST.filter((b) => !usedBg.has(b)), rng).slice(0, distract);
-  const dA = shuffleR(ACTIONS.map((a) => a.id).filter((a) => !usedAct.has(a)), rng).slice(0, distract);
-  const palChar = new Set([...usedChar, ...dC]);
-  const palBg = new Set([...usedBg, ...dB]);
-  const palAct = new Set([...usedAct, ...dA]);
-  return {
-    id: script.id,
-    title: script.title || null,
-    moral: script.moral || null,
-    roleChar,
-    target,
-    paletteBgs: shuffleR(BG_LIST.filter((b) => palBg.has(b)), rng),
-    paletteChars: shuffleR(CHARS.map((c) => c.id).filter((c) => palChar.has(c)), rng),
-    paletteActions: shuffleR(ACTIONS.filter((a) => palAct.has(a.id)).map((a) => a.id), rng),
-  };
-}
-
-// ── difficulty ──
-// len = number of acts (panels). Each difficulty tells a longer story; distractor
-// pieces and the memorize countdown ramp across the 100 levels. Memo budgets
-// assume the player actually READS the narration (~8s a panel) on top of
-// memorizing the scenes — the countdown is a ceiling, "Done" skips it early.
-const LEVEL_BASE = {
-  easy: { len: 4, d0: 0, d1: 2, m0: 55, m1: 44 },
-  med: { len: 5, d0: 1, d1: 3, m0: 62, m1: 48 },
-  hard: { len: 6, d0: 2, d1: 4, m0: 70, m1: 52 },
-};
-function levelCfg(diff, level) {
-  const b = LEVEL_BASE[diff] || LEVEL_BASE.med;
-  const f = (((level || 1) - 1) / 99);
-  return { len: b.len, distract: Math.round(b.d0 + (b.d1 - b.d0) * f), memo: Math.round(b.m0 + (b.m1 - b.m0) * f) };
-}
-export function survivalCfg(stage) {
-  return { len: Math.min(6, 3 + Math.floor(stage / 2)), distract: Math.min(5, Math.floor(stage / 1.5)), memo: Math.max(30, Math.round(52 - stage * 1.1)) };
-}
-function passCfgFor() { return { len: 5, distract: 2, memo: 48 }; }
 
 // Fewer columns on phones → bigger, clearer panels (narrow screens go 2-wide from
 // 3 panels up — a single row of 3 no longer fits once the rebuildCard's own chrome
@@ -450,36 +259,78 @@ const bigSize = () => {
   return Math.round(Math.max(220, Math.min(380, byW, byH)));
 };
 
+// Kawkab from the middle of the Training hub — the same character and the same
+// keyed art file the hub centre uses, so the mascot who sets the assessment is
+// the one who asks about the story.
+const KAWKAB_URL = assetUrl('Assets/characters/kawkab/kawkab-planet.webp');
+const KAWKAB_ASPECT = 480 / 546;
+
 const T = {
   en: {
     title: 'Story Time',
-    watchTag: 'Watch & remember', rebuildTag: 'Rebuild the story',
-    places: '1 · Place', characters: '2 · Cast', actions: '3 · Action',
-    buildGuide: 'Choose a scene, then build it in three quick steps.',
-    buildingScene: (n, total) => `Building scene ${n} of ${total}`,
-    chooseScene: (n) => `Scene ${n} selected`,
-    sceneReady: 'Scene complete — moving to the next one.',
-    needChar: 'Put a character in the panel first', erase: 'Erase',
-    check: '✓ Check', perfect: 'Perfect! ✓', score: (n, m) => `${n}/${m} panels correct`, storyWas: 'The story was:',
-    next: 'Next ›', prev: '‹ Prev', doneMemo: '✓ Done — rebuild it', cont: 'Continue ›',
+    watchTag: 'Watch & remember',
+    swipeHint: 'Swipe to move between scenes',
+    swipeLast: 'Swipe on for Kawkab\'s questions',
+    askTag: 'Kawkab asks',
+    qOf: (n, total) => `Question ${n} of ${total}`,
+    pick: 'Pick an answer, then confirm it.',
+    confirm: '✓ Confirm', confirmOff: 'Pick an answer',
+    yes: 'Yes, I saw it', no: 'No, that never happened',
+    scenes: (n) => (n === 1 ? '1 scene' : `${n} scenes`),
+    perfect: 'Every answer right! ✓',
+    score: (n, m) => `${n}/${m} questions right`,
+    storyWas: 'The story was:',
+    next: 'Next ›', prev: '‹ Prev', toQuestions: 'Kawkab\'s questions ›', cont: 'Continue ›',
     seq: (i, m) => (i === 0 ? 'First,' : i === m - 1 ? 'Finally,' : 'Then,'),
     meets: 'meets', congrats: 'congratulates', hugs: 'hugs', and: ' & ', menu: 'Menu',
   },
   ar: {
     title: 'وقت القصة',
-    watchTag: 'شاهد وتذكّر', rebuildTag: 'أعد بناء القصة',
-    places: '١ · المكان', characters: '٢ · الشخصيات', actions: '٣ · الفعل',
-    buildGuide: 'اختر مشهداً، ثم ابنِه بثلاث خطوات سريعة.',
-    buildingScene: (n, total) => `بناء المشهد ${n} من ${total}`,
-    chooseScene: (n) => `تم اختيار المشهد ${n}`,
-    sceneReady: 'اكتمل المشهد — ننتقل إلى المشهد التالي.',
-    needChar: 'ضع شخصية في اللوحة أولاً', erase: 'مسح',
-    check: '✓ تحقّق', perfect: 'ممتاز! ✓', score: (n, m) => `${n}/${m} لوحات صحيحة`, storyWas: 'كانت القصة:',
-    next: 'التالي ›', prev: '‹ السابق', doneMemo: '✓ تم — أعد البناء', cont: 'متابعة ›',
+    watchTag: 'شاهد وتذكّر',
+    swipeHint: 'اسحب للتنقّل بين المشاهد',
+    swipeLast: 'اسحب للمتابعة إلى أسئلة كوكب',
+    askTag: 'كوكب يسأل',
+    qOf: (n, total) => `السؤال ${n} من ${total}`,
+    pick: 'اختر جواباً ثم أكّده.',
+    confirm: '✓ تأكيد', confirmOff: 'اختر جواباً',
+    yes: 'نعم، رأيته', no: 'لا، لم يحدث أبداً',
+    scenes: (n) => (n === 1 ? 'مشهد واحد' : `${n} مشاهد`),
+    perfect: 'كل الأجوبة صحيحة! ✓',
+    score: (n, m) => `${n}/${m} أجوبة صحيحة`,
+    storyWas: 'كانت القصة:',
+    next: 'التالي ›', prev: '‹ السابق', toQuestions: 'أسئلة كوكب ›', cont: 'متابعة ›',
     seq: (i, m) => (i === 0 ? 'أولاً،' : i === m - 1 ? 'أخيراً،' : 'ثم،'),
     meets: 'يقابل', congrats: 'يهنّئ', hugs: 'يعانق', and: ' و ', menu: 'القائمة',
   },
 };
+
+/**
+ * Swipe between scenes. Pointer events, so a mouse drag works the same as a
+ * thumb; the arrows and dots stay as the accessible route, because a control
+ * that is the ONLY way through is a control that locks somebody out.
+ *
+ * Direction is reading-relative: in English you swipe left to go on, in Arabic
+ * you swipe right, matching the way the panels themselves are laid out.
+ */
+function useSwipe({ onNext, onPrev, isAr, enabled = true }) {
+  const from = useRef(null);
+  if (!enabled) return {};
+  const THRESHOLD = 42;
+  return {
+    onPointerDown: (e) => { from.current = { x: e.clientX, y: e.clientY }; },
+    onPointerUp: (e) => {
+      const start = from.current;
+      from.current = null;
+      if (!start) return;
+      const dx = e.clientX - start.x;
+      const dy = e.clientY - start.y;
+      if (Math.abs(dx) < THRESHOLD || Math.abs(dy) > Math.abs(dx)) return;
+      const forward = isAr ? dx > 0 : dx < 0;
+      if (forward) onNext(); else onPrev();
+    },
+    onPointerCancel: () => { from.current = null; },
+  };
+}
 
 export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false }) {
   const t = isAr ? T.ar : T.en;
@@ -487,7 +338,6 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 5) : 0;
   const nameOf = (id) => { const c = CHARS.find((x) => x.id === id); return c ? (isAr ? c.ar : c.en) : ''; };
   const actWord = (id, plural) => { const a = ACTIONS.find((x) => x.id === id); return a ? (isAr ? a.ar : (plural ? a.enPl : a.en)) : ''; };
-  const actEmoji = (id) => { const a = ACTIONS.find((x) => x.id === id); return a ? a.e : ''; };
 
   const stageRef = useRef(0);
   const roundsRef = useRef(0);
@@ -495,16 +345,18 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
   const ppDoneRef = useRef(0);
   const ppCorrectRef = useRef(0);
   const usedIdsRef = useRef([]); // last few story ids — keeps sessions repeat-free
-  const rebuildStartedRef = useRef(0);
+  const askedAtRef = useRef(0);
   const trialLogRef = useRef(null);
 
   const [phase, setPhase] = useState('watch');
   const [story, setStory] = useState(null);
   const [watchIdx, setWatchIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [panels, setPanels] = useState([]);
-  const [activePanel, setActivePanel] = useState(0);
-  const [hint, setHint] = useState('');
+  const [questions, setQuestions] = useState([]);
+  const [qIdx, setQIdx] = useState(0);
+  const [choice, setChoice] = useState(null);   // selected option index, before confirming
+  const [judged, setJudged] = useState(null);   // { ok } once confirmed — freezes the row
+  const [marks, setMarks] = useState([]);       // one boolean per answered question
   const [result, setResult] = useState({ n: 0, m: 0 });
   const [timerPaused, setTimerPaused] = useState(false);
   const handleExit = useCallback(() => {
@@ -526,21 +378,25 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
 
   const cfgFor = useCallback(() => {
     if (mode === 'levels') return levelCfg(diff, level);
-    if (mode === 'passplay') return passCfgFor();
+    if (mode === 'passplay') return passCfg();
     return survivalCfg(stageRef.current);
   }, [mode, diff, level]);
 
   const newRound = useCallback(() => {
     const cfg = cfgFor();
-    const st = makeStory(cfg.len, rng, cfg.distract, usedIdsRef.current);
+    const st = makeStory(cfg.len, rng, usedIdsRef.current);
     usedIdsRef.current = [...usedIdsRef.current, st.id].slice(-4);
     setStory(st);
-    setPanels(Array(cfg.len).fill(EMPTY));
+    // Questions are drawn from the SAME seeded rng as the story, so a Pass n Play
+    // round asks every player the same things in the same order.
+    setQuestions(buildQuestions(st, rng, cfg));
+    setQIdx(0);
+    setChoice(null);
+    setJudged(null);
+    setMarks([]);
     setWatchIdx(0);
     setTimeLeft(cfg.memo);
     setResult({ n: 0, m: 0 });
-    setActivePanel(0);
-    setHint('');
     setPhase('watch');
   }, [cfgFor, rng]);
 
@@ -563,12 +419,13 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
     const id = setInterval(() => setTimeLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);
   }, [phase, timerPaused]);
-  useEffect(() => { if (phase === 'watch' && timeLeft === 0) setPhase('rebuild'); }, [phase, timeLeft]);
+  useEffect(() => { if (phase === 'watch' && timeLeft === 0) setPhase('ask'); }, [phase, timeLeft]);
+  // Reaction time is per QUESTION, measured from the moment it appears to the
+  // moment it is confirmed — the one clean number the old all-at-once rebuild
+  // could never produce.
   useEffect(() => {
-    if (phase === 'rebuild') {
-      rebuildStartedRef.current = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    }
-  }, [phase]);
+    if (phase === 'ask') askedAtRef.current = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  }, [phase, qIdx]);
 
   const fill = useCallback((s) => {
     if (!story) return s;
@@ -591,87 +448,74 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t, isAr]);
 
-  // ── scene-first builder ──
-  // A scene stays selected while its place, cast and action are edited. This
-  // removes the old two-tap "piece then panel" loop and makes every tray choice
-  // immediately visible, especially on phones where the tray sits below the grid.
-  const choosePanel = (i) => {
-    if (i === activePanel) return;
+  // ── watching ──
+  // Swiping forward on the LAST scene is how a player who is ready leaves the
+  // watch phase early. There is no skip button: a story is not a cutscene to be
+  // dismissed, it is the material, so the only way out is through the end of it.
+  const goNextScene = useCallback(() => {
+    if (phase !== 'watch') return;
     playSfx?.('click');
-    setActivePanel(i);
-    setHint(t.chooseScene(i + 1));
-  };
-  const applyPiece = (kind, id) => {
-    const current = panels[activePanel] || EMPTY;
-    if (kind === 'action' && current.chars.length === 0) {
-      setHint(t.needChar);
-      playSfx?.('error');
-      return;
-    }
-
-    const nextPanels = panels.map((panel, i) => {
-      if (i !== activePanel) return panel;
-      if (kind === 'erase') return EMPTY;
-      if (kind === 'bg') return { ...panel, bg: id };
-      if (kind === 'char') {
-        const chars = panel.chars.includes(id)
-          ? panel.chars.filter((charId) => charId !== id)
-          : [...panel.chars, id].slice(-3);
-        return { ...panel, chars };
-      }
-      if (kind === 'action') return { ...panel, action: id };
-      return panel;
+    setWatchIdx((w) => {
+      if (w >= (story ? story.target.length : 1) - 1) { setPhase('ask'); return w; }
+      return w + 1;
     });
-
-    setPanels(nextPanels);
+  }, [phase, story, playSfx]);
+  const goPrevScene = useCallback(() => {
+    if (phase !== 'watch') return;
     playSfx?.('click');
-    setHint('');
+    setWatchIdx((w) => Math.max(0, w - 1));
+  }, [phase, playSfx]);
+  const swipe = useSwipe({ onNext: goNextScene, onPrev: goPrevScene, isAr, enabled: phase === 'watch' });
 
-    const edited = nextPanels[activePanel];
-    if (kind === 'action' && edited.bg && edited.chars.length > 0 && edited.action) {
-      const nextIncomplete = nextPanels.findIndex((panel, i) => i > activePanel && !(panel.bg && panel.chars.length > 0 && panel.action));
-      const anyIncomplete = nextPanels.findIndex((panel) => !(panel.bg && panel.chars.length > 0 && panel.action));
-      const nextIndex = nextIncomplete >= 0 ? nextIncomplete : anyIncomplete;
-      if (nextIndex >= 0 && nextIndex !== activePanel) {
-        setActivePanel(nextIndex);
-        setHint(t.sceneReady);
-      }
-    }
+  // ── answering ──
+  // Two taps on purpose: pick, then confirm. A single tap that commits turns a
+  // mis-tap into a wrong answer, and the pause before confirming is where the
+  // player actually checks the memory against the option.
+  const question = questions[qIdx] || null;
+  const pickOption = (i) => {
+    if (judged) return;
+    playSfx?.('click');
+    setChoice(i);
   };
-
-  const filledCount = panels.filter((p) => p.bg && p.chars.length > 0 && p.action).length;
-  const allFilled = panels.length === len && filledCount === len;
-  const check = () => {
-    if (!allFilled) return;
-    let n = 0;
-    for (let i = 0; i < len; i++) {
-      const p = panels[i]; const g = story.target[i];
-      if (p.bg === g.bg && p.action === g.action && sameSet(p.chars, g.chars)) n += 1;
-    }
+  const confirmAnswer = () => {
+    if (!question || choice == null || judged) return;
+    const ok = choice === question.answer;
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
     trialLogRef.current?.trial({
-      ok: n === len,
-      correct: n,
-      total: len,
+      ok,
+      kind: question.kind,
       story: story.id,
-      rt: Math.max(0, Math.round(now - rebuildStartedRef.current)),
+      opts: question.options.length,
+      rt: Math.max(0, Math.round(now - askedAtRef.current)),
     });
-    setResult({ n, m: len });
-    playSfx?.(n === len ? 'win' : 'error');
-    setPhase('reveal');
+    setJudged({ ok });
+    setMarks((m) => [...m, ok]);
+    playSfx?.(ok ? 'win' : 'error');
+  };
+  const nextQuestion = () => {
+    playSfx?.('click');
+    if (qIdx >= questions.length - 1) {
+      setResult({ n: marks.filter(Boolean).length, m: questions.length });
+      setPhase('reveal');
+      return;
+    }
+    setQIdx(qIdx + 1);
+    setChoice(null);
+    setJudged(null);
   };
 
   const advanceRound = useCallback(() => {
     playSfx?.('click');
-    const perfect = result.n === result.m && result.m > 0;
+    const { n, m } = result;
+    const won = m > 0 && levelPassed(n, m);
     if (mode === 'levels') {
-      trialLogRef.current?.finish({ won: perfect, score: result.n, level, diff });
+      trialLogRef.current?.finish({ won, score: n, level, diff });
       trialLogRef.current = null;
-      onResult({ won: perfect, score: result.n, summary: t.score(result.n, result.m) });
+      onResult({ won, score: n, summary: t.score(n, m) });
       return;
     }
     if (mode === 'passplay') {
-      ppCorrectRef.current += result.n; ppDoneRef.current += 1;
+      ppCorrectRef.current += n; ppDoneRef.current += 1;
       if (ppDoneRef.current >= ppTrials) {
         trialLogRef.current?.finish({ score: ppCorrectRef.current, stories: ppDoneRef.current });
         trialLogRef.current = null;
@@ -680,10 +524,14 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
       }
       newRound(); return;
     }
+    // Survival ladder with a dead band: perfect climbs, two or more misses drops,
+    // exactly one miss holds the stage. A 1-up/1-down ladder over six questions
+    // would send everyone back down on a single slip.
     roundsRef.current += 1;
-    stageRef.current = perfect ? stageRef.current + 1 : Math.max(0, stageRef.current - 1);
+    if (n === m) stageRef.current += 1;
+    else if (n <= m - 2) stageRef.current = Math.max(0, stageRef.current - 1);
     bestRef.current = Math.max(bestRef.current, stageRef.current);
-    if (perfect) awardPoints?.(3);
+    if (n === m) awardPoints?.(3);
     newRound();
   }, [mode, result, onResult, ppTrials, newRound, t, playSfx, awardPoints, level, diff]);
 
@@ -698,19 +546,14 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
   const refSize = Math.round(fsz * 0.74);
   const storyTitle = story.title ? (isAr ? story.title.ar : story.title.en) : '';
   const reveal = phase === 'reveal';
-  const activeScene = panels[activePanel] || EMPTY;
-  const isSel = (kind, id) => (
-    kind === 'bg' ? activeScene.bg === id
-      : kind === 'char' ? activeScene.chars.includes(id)
-        : kind === 'action' ? activeScene.action === id
-          : false
-  );
   const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
   const cardStyle = cosmos ? { ...S.watchCard, ...S.cosmosCard } : S.watchCard;
   const rebuildStyle = cosmos ? { ...S.rebuildCard, ...S.cosmosCard } : S.rebuildCard;
-  const dockStyle = cosmos ? { ...S.dock, ...S.cosmosDock } : S.dock;
   const titleStyle = cosmos ? { ...S.storyTitle, color: '#f0e2c0', textShadow: '0 0 18px rgba(232,172,78,0.45)' } : S.storyTitle;
   const capStyle = cosmos ? { ...S.watchCap, color: 'rgba(240,226,192,0.9)' } : S.watchCap;
+  // Panel-shaped options sit UNDER a reference panel on order questions, so they
+  // are kept smaller than it — both must fit on a phone screen without scrolling.
+  const optSize = Math.round(fsz * (question && question.ref ? 0.78 : 0.92));
 
   return (
     <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
@@ -736,150 +579,180 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
       </header>
       {pause.modal}
 
-      {/* WATCH */}
+      {/* WATCH — swipe (or the arrows) through the scenes; no skip button */}
       {phase === 'watch' && (() => {
         const g = story.target[watchIdx];
+        const last = watchIdx >= len - 1;
         return (
           <div style={S.center}>
-            <div style={{ ...cardStyle, ...(cosmos ? { transform: 'perspective(900px) rotateX(3deg)', transformOrigin: 'center top' } : null) }}>
+            <div
+              style={{ ...cardStyle, touchAction: 'pan-y', ...(cosmos ? { transform: 'perspective(900px) rotateX(3deg)', transformOrigin: 'center top' } : null) }}
+              {...swipe}
+            >
               {storyTitle && <div style={titleStyle}>📖 {storyTitle}</div>}
               <div style={{ ...S.timerChip, ...(timeLeft <= 5 ? S.timerLow : null) }}>⏱ {timeLeft}s · {t.watchTag}</div>
               <div style={{ position: 'relative' }}>
                 <span style={S.badge}>{watchIdx + 1}</span>
-                <PanelStage panel={g} size={bigSize()} say={resolveSay(g)} />
+                <PanelStage key={watchIdx} panel={g} size={bigSize()} say={resolveSay(g)} />
               </div>
               <div key={watchIdx} style={capStyle}>{resolveNarr(g) || `${t.seq(watchIdx, len)} ${narrate(g)}`}</div>
               <div style={S.watchNav}>
-                <button type="button" aria-label={t.prev} style={{ ...S.navArrow, ...(watchIdx === 0 ? S.navOff : null) }} disabled={watchIdx === 0} onClick={() => { playSfx?.('click'); setWatchIdx((w) => Math.max(0, w - 1)); }}>‹</button>
+                <button type="button" aria-label={t.prev} style={{ ...S.navArrow, ...(watchIdx === 0 ? S.navOff : null) }} disabled={watchIdx === 0} onClick={goPrevScene}>‹</button>
                 <div style={S.dots}>{story.target.map((_, i) => (
                   <button key={i} type="button" aria-label={`${i + 1}`} style={{ ...S.dot, ...(i === watchIdx ? S.dotOn : null) }} onClick={() => { playSfx?.('click'); setWatchIdx(i); }} />
                 ))}</div>
-                <button type="button" aria-label={t.next} style={{ ...S.navArrow, ...(watchIdx >= len - 1 ? S.navOff : null) }} disabled={watchIdx >= len - 1} onClick={() => { playSfx?.('click'); setWatchIdx((w) => Math.min(len - 1, w + 1)); }}>›</button>
+                {/* On the last scene the forward arrow becomes the way into the
+                    questions, so swiping and tapping agree about what "on" means. */}
+                <button type="button" aria-label={last ? t.toQuestions : t.next} style={S.navArrow} onClick={goNextScene}>{last ? '✦' : '›'}</button>
               </div>
+              <div style={S.swipeHint}>{last ? t.swipeLast : t.swipeHint}</div>
             </div>
-            <button type="button" style={S.primary} onClick={() => { playSfx?.('click'); setPhase('rebuild'); }}>{t.doneMemo}</button>
           </div>
         );
       })()}
 
-      {/* REBUILD / REVEAL */}
-      {(phase === 'rebuild' || phase === 'reveal') && (
+      {/* ASK — Kawkab's questions: pick, then confirm */}
+      {phase === 'ask' && question && (
         <div style={S.gameBody}>
           <div style={rebuildStyle}>
-            {reveal ? (
-              <div style={S.instr}>{result.n === result.m ? t.perfect : t.score(result.n, result.m)}</div>
-            ) : (
-              <div style={S.builderIntro}>
-                <div style={S.builderTitle}>{t.buildingScene(activePanel + 1, len)}</div>
-                <div style={S.builderProgress}>{filledCount}/{len}</div>
-                <div style={S.builderGuide}>{hint || t.buildGuide}</div>
+            <div style={S.askHead}>
+              <img src={KAWKAB_URL} alt="" aria-hidden="true" style={{ ...S.mascot, height: Math.round(80 / KAWKAB_ASPECT) }} />
+              <div style={S.askHeadText}>
+                <div style={S.askTag}>{t.askTag}</div>
+                <div style={S.qCount}>{t.qOf(qIdx + 1, questions.length)}</div>
+              </div>
+              <div style={S.marks}>
+                {questions.map((_, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      ...S.mark,
+                      ...(marks[i] === true ? S.markOk : null),
+                      ...(marks[i] === false ? S.markBad : null),
+                      ...(i === qIdx && marks[i] == null ? S.markNow : null),
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div style={cosmos ? { ...S.qText, color: '#f0e2c0' } : S.qText}>
+              {isAr ? question.prompt.ar : question.prompt.en}
+            </div>
+
+            {/* The scene being asked about. Deliberately larger than the option
+                panels but small enough that both fit above the fold on a phone —
+                a reference you have to scroll away from to see the answers is
+                not a reference. */}
+            {question.ref && (
+              <div style={{ position: 'relative' }}>
+                <PanelStage panel={question.ref} size={Math.min(bigSize(), 172)} />
               </div>
             )}
-            <div style={{ ...S.grid, gridTemplateColumns: `repeat(${gridCols(len)}, max-content)` }}>
-              {panels.map((p, i) => {
-                const g = story.target[i];
-                const ok = reveal && p.bg === g.bg && p.action === g.action && sameSet(p.chars, g.chars);
-                const bad = reveal && !ok;
-                const complete = p.bg && p.chars.length > 0 && p.action;
-                const selected = !reveal && i === activePanel;
+
+            {/* Four panel options read as a 2×2 block rather than a 3-and-1 row,
+                which is what plain wrapping gives you at this width. */}
+            <div
+              style={{
+                ...S.optRow,
+                ...(question.options[0].kind === 'panel' ? { gap: 12 } : null),
+                /* optSize + 14 is one option's own chrome (5px padding + 2px
+                   border, both sides), + 12 for the gap between the pair. */
+                ...(question.options[0].kind === 'panel' && question.options.length === 4
+                  ? { maxWidth: (optSize + 14) * 2 + 14 }
+                  : null),
+              }}
+            >
+              {question.options.map((o, i) => {
+                const picked = choice === i;
+                const isAnswer = i === question.answer;
+                const showOk = judged && isAnswer;
+                const showBad = judged && picked && !isAnswer;
                 return (
-                  <div key={i} style={{ position: 'relative' }}>
-                    <span style={{ ...S.badge, ...(!reveal && complete ? { background: 'var(--success)' } : null), ...(reveal ? { background: ok ? 'var(--success)' : '#d23b3b' } : null) }}>{complete && !reveal ? '✓' : i + 1}</span>
-                    <button
-                      type="button"
-                      aria-label={t.chooseScene(i + 1)}
-                      aria-pressed={selected}
-                      disabled={reveal}
-                      onClick={() => choosePanel(i)}
-                      style={{
-                        ...S.sceneButton,
-                        outline: selected ? '4px solid var(--accent)' : ok ? '3px solid var(--success)' : bad ? '3px solid #d23b3b' : '2px solid transparent',
-                        cursor: !reveal ? 'pointer' : 'default',
-                      }}
-                    >
-                      <PanelStage panel={p} size={fsz} />
-                    </button>
-                    {!reveal && p.chars.length > 0 && !p.action && <span style={S.tapPlus}>＋</span>}
-                  </div>
+                  <button
+                    key={i}
+                    type="button"
+                    aria-pressed={picked}
+                    disabled={!!judged}
+                    onClick={() => pickOption(i)}
+                    style={{
+                      ...S.opt,
+                      ...(o.kind === 'panel' ? S.optPanel : null),
+                      ...(picked ? S.optSel : null),
+                      ...(showOk ? S.optOk : null),
+                      ...(showBad ? S.optBad : null),
+                    }}
+                  >
+                    {o.kind === 'place' && (
+                      <>
+                        <BgSwatch bgId={o.value} size={54} />
+                        <span style={S.optLabel}>{isAr ? BACKGROUNDS[o.value].ar : BACKGROUNDS[o.value].en}</span>
+                      </>
+                    )}
+                    {o.kind === 'face' && (
+                      <>
+                        <span style={S.faceRow}>
+                          {o.value.map((id) => <CharacterArt key={id} id={id} size={o.value.length > 1 ? 40 : 52} />)}
+                        </span>
+                        <span style={S.optLabel}>{o.value.map(nameOf).join(t.and)}</span>
+                      </>
+                    )}
+                    {o.kind === 'panel' && <PanelStage panel={o.panel} size={optSize} />}
+                    {o.kind === 'num' && <span style={S.optNum}>{o.value}</span>}
+                    {o.kind === 'bool' && <span style={S.optLabel}>{o.value ? t.yes : t.no}</span>}
+                  </button>
                 );
               })}
             </div>
 
-            {reveal && (
-              <>
-                <div style={S.storyWas}>{t.storyWas}{storyTitle ? ` “${storyTitle}”` : ''}</div>
-                <div style={{ ...S.grid, rowGap: 6, gridTemplateColumns: `repeat(${gridCols(len)}, max-content)` }}>
-                  {story.target.map((g, i) => (
-                    <div key={i} style={{ position: 'relative' }}>
-                      <span style={{ ...S.badge, background: 'var(--success)' }}>{i + 1}</span>
-                      <PanelStage panel={g} size={refSize} />
-                    </div>
-                  ))}
-                </div>
-                {/* The story read back as prose — full sentences, not fragments. */}
-                <div style={S.recap}>
-                  {story.target.map((g, i) => (
-                    <div key={i} style={S.recapLine}>
-                      <span style={S.recapNum}>{i + 1}</span>
-                      <span style={S.recapText}>{resolveNarr(g) || `${t.seq(i, len)} ${narrate(g)}`}</span>
-                    </div>
-                  ))}
-                </div>
-                {story.moral && <div style={S.moral}>✨ {isAr ? story.moral.ar : story.moral.en}</div>}
-              </>
-            )}
+            {judged
+              ? <button type="button" style={S.primary} onClick={nextQuestion}>{qIdx >= questions.length - 1 ? t.cont : t.next}</button>
+              : (
+                <button
+                  type="button"
+                  style={{ ...S.primary, ...(choice == null ? S.primaryOff : null) }}
+                  disabled={choice == null}
+                  onClick={confirmAnswer}
+                >
+                  {choice == null ? t.confirmOff : t.confirm}
+                </button>
+              )}
+            {!judged && <div style={S.swipeHint}>{t.pick}</div>}
           </div>
-          {reveal && <button type="button" style={S.primary} onClick={advanceRound}>{t.cont}</button>}
         </div>
       )}
 
-      {/* press-to-place board (rebuild only) */}
-      {phase === 'rebuild' && (
-        <div style={dockStyle}>
-          <div style={S.dockHandle} aria-hidden="true" />
-          <div style={S.dockInner}>
-            <div style={S.dockRow}>
-              <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true"><Emoji char="📍" /></span>{t.places}</span>
-              <div style={S.dockChips}>
-                {story.paletteBgs.map((id) => (
-                  <button key={id} type="button" aria-pressed={isSel('bg', id)} style={{ ...S.bgChip, ...(isSel('bg', id) ? S.chipSel : null) }} onClick={() => applyPiece('bg', id)}>
-                    <BgSwatch bgId={id} size={54} />
-                  </button>
-                ))}
-              </div>
+      {/* REVEAL — the score, the story read back, and its moral */}
+      {reveal && (
+        <div style={S.gameBody}>
+          <div style={rebuildStyle}>
+            <div style={S.instr}>{result.n === result.m ? t.perfect : t.score(result.n, result.m)}</div>
+            <div style={S.marks}>
+              {marks.map((ok, i) => (
+                <span key={i} style={{ ...S.mark, ...(ok ? S.markOk : S.markBad) }} />
+              ))}
             </div>
-            <div style={S.dockDivider} aria-hidden="true" />
-            <div style={S.dockRow}>
-              <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true"><Emoji char="🙂" /></span>{t.characters}</span>
-              <div style={S.dockChips}>
-                {story.paletteChars.map((id) => (
-                  <button key={id} type="button" aria-pressed={isSel('char', id)} style={{ ...S.charChip, ...(isSel('char', id) ? S.chipSel : null) }} onClick={() => applyPiece('char', id)}>
-                    <div style={S.charChipArt}><CharacterArt id={id} size={48} /></div>
-                    <span style={S.chipName}>{nameOf(id)}</span>
-                  </button>
-                ))}
-              </div>
+            <div style={S.storyWas}>{t.storyWas}{storyTitle ? ` “${storyTitle}”` : ''}</div>
+            <div style={{ ...S.grid, rowGap: 6, gridTemplateColumns: `repeat(${gridCols(len)}, max-content)` }}>
+              {story.target.map((g, i) => (
+                <div key={i} style={{ position: 'relative' }}>
+                  <span style={{ ...S.badge, background: 'var(--success)' }}>{i + 1}</span>
+                  <PanelStage panel={g} size={refSize} />
+                </div>
+              ))}
             </div>
-            <div style={S.dockDivider} aria-hidden="true" />
-            <div style={S.dockRow}>
-              <span style={S.dockLabel}><span style={S.dockIcon} aria-hidden="true"><Emoji char="⚡" /></span>{t.actions}</span>
-              <div style={S.dockChips}>
-                {story.paletteActions.map((id) => (
-                  <button key={id} type="button" aria-pressed={isSel('action', id)} style={{ ...S.actChip, ...(isSel('action', id) ? S.chipSel : null) }} onClick={() => applyPiece('action', id)}>
-                    <span style={{ fontSize: 32, lineHeight: 1 }}><Emoji char={actEmoji(id)} /></span>
-                    <span style={S.chipName}>{actWord(id)}</span>
-                  </button>
-                ))}
-                <button type="button" style={S.eraseChip} onClick={() => applyPiece('erase')}>
-                  <span style={{ fontSize: 30, lineHeight: 1 }}><Emoji char="🧽" /></span>
-                  <span style={S.chipName}>{t.erase}</span>
-                </button>
-              </div>
+            {/* The story read back as prose — full sentences, not fragments. */}
+            <div style={S.recap}>
+              {story.target.map((g, i) => (
+                <div key={i} style={S.recapLine}>
+                  <span style={S.recapNum}>{i + 1}</span>
+                  <span style={S.recapText}>{resolveNarr(g) || `${t.seq(i, len)} ${narrate(g)}`}</span>
+                </div>
+              ))}
             </div>
-            <button type="button" style={{ ...S.checkBtn, ...(allFilled ? null : S.primaryOff) }} disabled={!allFilled} onClick={check}>
-              {allFilled ? t.check : `${t.check} · ${filledCount}/${len}`}
-            </button>
+            {story.moral && <div style={S.moral}>✨ {isAr ? story.moral.ar : story.moral.en}</div>}
           </div>
+          <button type="button" style={S.primary} onClick={advanceRound}>{t.cont}</button>
         </div>
       )}
     </div>
@@ -897,7 +770,7 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
       hints={{
         free: { en: 'Endless · stories grow harder', ar: 'لا ينتهي · قصص أصعب' },
         levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
-        pass: { en: 'Same story for all · most panels right wins', ar: 'نفس القصة للجميع · الأكثر صحة يفوز' },
+        pass: { en: 'Same story and questions for all · most right wins', ar: 'نفس القصة والأسئلة للجميع · الأكثر صحة يفوز' },
       }}
       diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
       pass={{ trials: 3, scoreLabel: { en: 'correct', ar: 'صحيحة' }, lowerBetter: false, diff: 'med' }}
@@ -928,11 +801,6 @@ const S = {
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
   },
-  cosmosDock: {
-    background: 'linear-gradient(180deg, rgba(18,14,10,0.92), rgba(8,6,4,0.96))',
-    borderTop: '1px solid rgba(232,172,78,0.35)',
-    boxShadow: '0 -8px 28px rgba(0,0,0,0.45)',
-  },
   center: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 14, padding: '10px 18px 24px', overflowY: 'auto' },
   watchCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, background: 'var(--surface-raised)', border: '2px solid var(--line)', borderRadius: 22, padding: '18px 20px 20px', maxWidth: '100%', boxShadow: '4px 4px 0 rgba(26,18,8,0.1)' },
   storyTitle: { fontFamily: "'Outfit', system-ui, sans-serif", fontSize: 24, letterSpacing: 0.5, color: 'var(--ink)', textAlign: 'center', lineHeight: 1.1, padding: '0 8px', textShadow: '1px 1px 0 rgba(255,255,255,0.6)' },
@@ -948,37 +816,38 @@ const S = {
   gameBody: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 12, padding: '10px 14px 16px', overflowY: 'auto' },
   rebuildCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, background: 'var(--surface-raised)', border: '2px solid var(--line)', borderRadius: 22, padding: '16px 10px 18px', maxWidth: '100%', boxShadow: '4px 4px 0 rgba(26,18,8,0.1)' },
   instr: { fontWeight: 800, fontSize: 13.5, color: 'var(--ink-dim)', textAlign: 'center', padding: '7px 16px', background: 'var(--surface-raised)', border: '2px solid #e3c489', borderRadius: 999, maxWidth: '94%' },
-  builderIntro: { width: 'min(100%, 540px)', display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', columnGap: 10, rowGap: 4, padding: '8px 12px', background: 'color-mix(in srgb, var(--surface-raised) 88%, var(--game-accent))', border: '2px solid var(--game-accent-edge)', borderRadius: 14 },
-  builderTitle: { fontWeight: 900, fontSize: 14, color: 'var(--game-ink)' },
-  builderProgress: { minWidth: 44, padding: '4px 9px', borderRadius: 999, background: 'var(--game-accent)', border: '1px solid var(--game-ink)', color: 'var(--game-ink)', fontWeight: 900, fontSize: 12, textAlign: 'center' },
-  builderGuide: { gridColumn: '1 / -1', color: 'var(--game-muted)', fontSize: 12.5, fontWeight: 650, lineHeight: 1.4 },
   grid: { display: 'grid', gap: 14, justifyContent: 'center', justifyItems: 'center' },
-  sceneButton: { appearance: 'none', display: 'block', padding: 0, border: 0, borderRadius: 16, background: 'transparent', outlineOffset: 3, transition: 'outline-color 0.16s ease, transform 0.16s ease' },
+  // ── watch ──
+  swipeHint: { fontSize: 12, fontWeight: 700, color: 'var(--ink-dim)', opacity: 0.8, textAlign: 'center', letterSpacing: 0.2 },
+  // ── ask: Kawkab and the question ──
+  askHead: { width: 'min(100%, 540px)', display: 'flex', alignItems: 'center', gap: 10, padding: '2px 8px' },
+  mascot: { width: 80, objectFit: 'contain', objectPosition: 'center bottom', flex: '0 0 auto', animation: 'sg-idle 4.5s ease-in-out infinite', transformOrigin: 'center bottom', filter: 'drop-shadow(0 6px 5px rgba(38,25,10,0.22))' },
+  askHeadText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 },
+  askTag: { fontWeight: 900, fontSize: 15, color: 'var(--ink)' },
+  qCount: { fontWeight: 700, fontSize: 12, color: 'var(--ink-dim)', letterSpacing: 0.3 },
+  marks: { display: 'flex', gap: 5, flexWrap: 'wrap', justifyContent: 'center' },
+  mark: { width: 9, height: 9, borderRadius: '50%', background: 'var(--line)' },
+  markNow: { background: 'var(--accent)', transform: 'scale(1.3)' },
+  markOk: { background: 'var(--success)' },
+  markBad: { background: 'var(--danger)' },
+  qText: { fontWeight: 800, fontSize: 17, lineHeight: 1.4, color: 'var(--ink)', textAlign: 'center', maxWidth: 440, padding: '0 6px', textWrap: 'balance' },
+  optRow: { display: 'flex', flexWrap: 'wrap', gap: 9, justifyContent: 'center', width: '100%', maxWidth: 540 },
+  opt: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '9px 12px', minWidth: 96, minHeight: 74, borderRadius: 16, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--line)', background: 'var(--surface)', color: 'var(--ink)', cursor: 'pointer', transition: 'transform 0.14s ease, border-color 0.14s ease' },
+  optPanel: { padding: 5, minWidth: 0, minHeight: 0, lineHeight: 0 },
+  optSel: { borderColor: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 16%, var(--surface))', boxShadow: '0 0 0 3px color-mix(in srgb, var(--accent) 34%, transparent)', transform: 'translateY(-2px)' },
+  optOk: { borderColor: 'var(--success)', background: 'color-mix(in srgb, var(--success) 18%, var(--surface))', boxShadow: '0 0 0 3px color-mix(in srgb, var(--success) 30%, transparent)' },
+  optBad: { borderColor: 'var(--danger)', background: 'color-mix(in srgb, var(--danger) 14%, var(--surface))' },
+  optLabel: { fontSize: 12.5, fontWeight: 800, color: 'var(--ink)', textAlign: 'center', lineHeight: 1.25 },
+  optNum: { fontSize: 26, fontWeight: 900, color: 'var(--ink)', lineHeight: 1.1 },
+  faceRow: { display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 2 },
   recap: { display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 480, textAlign: 'start', padding: '0 6px' },
   recapLine: { display: 'flex', gap: 9, alignItems: 'flex-start' },
   recapNum: { flex: '0 0 auto', width: 20, height: 20, borderRadius: '50%', background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   recapText: { fontSize: 12.5, fontWeight: 600, color: '#4a3c28', lineHeight: 1.55, overflowWrap: 'break-word', minWidth: 0 },
   moral: { fontWeight: 800, fontSize: 13.5, color: 'var(--ink-dim)', background: 'var(--surface-raised)', border: '2px solid #e3c489', borderRadius: 14, padding: '9px 16px', textAlign: 'center', maxWidth: '96%', lineHeight: 1.55, marginTop: 2 },
   badge: { position: 'absolute', top: -8, insetInlineStart: -8, zIndex: 2, width: 22, height: 22, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontWeight: 900, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--surface-raised)' },
-  tapPlus: { position: 'absolute', bottom: 4, insetInlineEnd: 4, width: 22, height: 22, borderRadius: '50%', background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--surface-raised)', pointerEvents: 'none' },
   storyWas: { fontWeight: 800, fontSize: 13, color: 'var(--success)', marginTop: 6 },
   // press-to-place board (builder tray)
-  dock: { flex: '0 0 auto', background: 'var(--surface-raised)', borderTop: '2px solid var(--line)', borderRadius: '20px 20px 0 0', padding: '6px 14px max(12px, env(safe-area-inset-bottom))', boxShadow: '0 -6px 20px rgba(26,18,8,0.1)' },
-  dockHandle: { width: 44, height: 5, borderRadius: 999, background: 'var(--line)', margin: '0 auto 2px' },
-  dockInner: { width: '100%', maxWidth: 900, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 9 },
-  dockRow: { display: 'flex', alignItems: 'center', gap: 10 },
-  dockLabel: { flex: '0 0 74px', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 900, color: 'var(--ink-dim)', textTransform: 'uppercase', letterSpacing: 0.4 },
-  dockIcon: { fontSize: 16, lineHeight: 1 },
-  dockChips: { display: 'flex', gap: 9, flexWrap: 'nowrap', overflowX: 'auto', flex: 1, paddingBottom: 3, scrollbarWidth: 'none' },
-  dockDivider: { height: 1, background: 'var(--line)' },
-  bgChip: { flex: '0 0 auto', padding: 5, borderRadius: 15, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--line)', background: 'var(--surface)', cursor: 'pointer', lineHeight: 0, minHeight: 64 },
-  charChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '5px 9px 6px', borderRadius: 15, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--line)', background: 'var(--surface)', cursor: 'pointer', minWidth: 72 },
-  charChipArt: { width: 58, height: 58, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' },
-  actChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '11px 14px', borderRadius: 16, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--line)', background: 'var(--surface)', cursor: 'pointer', minWidth: 84, minHeight: 76 },
-  eraseChip: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '11px 14px', borderRadius: 16, borderWidth: 2, borderStyle: 'dashed', borderColor: 'var(--line)', background: 'var(--surface)', cursor: 'pointer', minWidth: 84, minHeight: 76 },
-  chipName: { fontSize: 12.5, fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap' },
-  chipSel: { borderColor: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 16%, var(--surface))', boxShadow: '0 0 0 3px rgba(185,132,47,0.32)', transform: 'translateY(-2px)' },
-  checkBtn: { alignSelf: 'stretch', marginTop: 3, padding: '13px 20px', borderRadius: 15, borderWidth: 3, borderStyle: 'solid', borderColor: 'var(--ink-outline)', background: 'linear-gradient(180deg,#38a866,var(--success))', color: '#fff', fontWeight: 900, fontSize: 16, letterSpacing: 0.5, cursor: 'pointer', boxShadow: '4px 4px 0 var(--ink-outline)' },
   primary: { padding: '11px 22px', borderRadius: 14, borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--ink-outline)', background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '3px 3px 0 var(--ink-outline)' },
   primaryOff: { background: '#c9bfae', borderColor: '#a89a82', boxShadow: 'none', cursor: 'default' },
 };

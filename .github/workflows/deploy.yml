@@ -55,6 +55,23 @@ jobs:
       - name: Audit game pacing floors
         run: npm run audit:pacing
 
+      # Story Time's retrieval half is GENERATED — Kawkab's questions are derived
+      # from whichever story was dealt. A generator can emit a question with two
+      # right answers, or a "did you see this scene?" lure that shows a real
+      # scene while the answer says it never happened; neither is visible from
+      # playing one round. This re-derives every answer from the beats.
+      - name: Validate Story Time's generated questions
+        run: npm run validate:storyq
+
+      # Detective is fully generated: suspects, statements, a rule and a
+      # question, dealt at runtime. A generator can emit a case with no
+      # consistent world (unanswerable), or several worlds where the question
+      # has different answers in each (ambiguous) — and the player would just
+      # lose and assume they reasoned badly. This re-solves every case
+      # independently, and asserts the question mix stays varied.
+      - name: Validate Detective's generated cases
+        run: npm run validate:liars
+
       - name: Audit FocusQuest level math & generation
         run: npm run audit:fq
 

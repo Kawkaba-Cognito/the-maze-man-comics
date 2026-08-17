@@ -1,8 +1,7 @@
 {
   "rules": {
-    "raw-colour": 674,
-    "conditional-background": 1,
-    "stacked-backdrops": 4
+    "raw-colour": 414,
+    "stacked-backdrops": 3
   },
   "files": {
     "src/features/training/domains/attention/games/cancellation/index.jsx": {
@@ -59,9 +58,11 @@
     "src/features/training/domains/memory/games/paired-associates/PairedAssociates3DProto.jsx": {
       "raw-colour": 3
     },
+    "src/features/training/domains/memory/games/story-grid/data.js": {
+      "raw-colour": 15
+    },
     "src/features/training/domains/memory/games/story-grid/index.jsx": {
-      "raw-colour": 40,
-      "conditional-background": 1
+      "raw-colour": 23
     },
     "src/features/training/domains/memory/games/story-grid/stage/schema.js": {
       "raw-colour": 4
@@ -80,78 +81,8 @@
     "src/features/training/domains/memory/games/story-grid/stage/stagePremium.css": {
       "raw-colour": 73
     },
-    "src/features/training/domains/reasoning/games/detective/CaseFileEngine.jsx": {
-      "raw-colour": 4
-    },
-    "src/features/training/domains/reasoning/games/detective/investigations/quick1.js": {
-      "raw-colour": 6
-    },
-    "src/features/training/domains/reasoning/games/detective/investigations/quick2.js": {
-      "raw-colour": 6
-    },
-    "src/features/training/domains/reasoning/games/detective/investigations/quick3.js": {
-      "raw-colour": 6
-    },
-    "src/features/training/domains/reasoning/games/detective/investigations/tier1.js": {
-      "raw-colour": 3
-    },
-    "src/features/training/domains/reasoning/games/detective/investigations/tier2.js": {
-      "raw-colour": 3
-    },
-    "src/features/training/domains/reasoning/games/detective/investigations/tier3.js": {
-      "raw-colour": 3
-    },
-    "src/features/training/domains/reasoning/games/detective/noir/cases/encore.js": {
-      "raw-colour": 4
-    },
-    "src/features/training/domains/reasoning/games/detective/noir/cases/longRain.js": {
-      "raw-colour": 5
-    },
-    "src/features/training/domains/reasoning/games/detective/noir/cases/observatory.js": {
-      "raw-colour": 3
-    },
-    "src/features/training/domains/reasoning/games/detective/noir/components/AccusationBoard.jsx": {
-      "raw-colour": 1
-    },
-    "src/features/training/domains/reasoning/games/detective/noir/components/Cutscene.jsx": {
-      "raw-colour": 1
-    },
-    "src/features/training/domains/reasoning/games/detective/noir/components/Interrogation2D.jsx": {
-      "raw-colour": 1
-    },
-    "src/features/training/domains/reasoning/games/detective/noir/components/Weather.jsx": {
-      "raw-colour": 1
-    },
-    "src/features/training/domains/reasoning/games/detective/noir/noir2d.css": {
-      "raw-colour": 22
-    },
-    "src/features/training/domains/reasoning/games/detective/noir/noirLegacy.css": {
-      "raw-colour": 74,
-      "stacked-backdrops": 1
-    },
-    "src/features/training/domains/reasoning/games/detective/noir/noirPremium.css": {
-      "raw-colour": 77
-    },
-    "src/features/training/domains/reasoning/games/detective/prototypes/components/AssistantNudge.jsx": {
-      "raw-colour": 2
-    },
-    "src/features/training/domains/reasoning/games/detective/prototypes/components/DeductionBoard.jsx": {
-      "raw-colour": 8
-    },
-    "src/features/training/domains/reasoning/games/detective/prototypes/components/LocationPolaroid.jsx": {
-      "raw-colour": 4
-    },
-    "src/features/training/domains/reasoning/games/detective/prototypes/components/ProofChainPreview.jsx": {
-      "raw-colour": 4
-    },
-    "src/features/training/domains/reasoning/games/detective/prototypes/components/VerdictFilePage.jsx": {
-      "raw-colour": 2
-    },
-    "src/features/training/domains/reasoning/games/detective/prototypes/ProtoEngine.jsx": {
-      "raw-colour": 26
-    },
-    "src/features/training/domains/reasoning/games/detective/prototypes/protoUtils.js": {
-      "raw-colour": 1
+    "src/features/training/domains/reasoning/games/detective/index.jsx": {
+      "raw-colour": 9
     },
     "src/features/training/domains/reasoning/games/raven-matrices/index.jsx": {
       "raw-colour": 1

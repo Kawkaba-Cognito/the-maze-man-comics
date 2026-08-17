@@ -76,6 +76,31 @@ const CURVES = {
     levels: () => 100,
     fields: { boxes: 'up', pairs: 'up', study: 'down' },
   },
+  /* Story Time joined the gateable list on 2026-08-17, when the builder was
+     replaced by Kawkab's questions and the curve moved to data.js. Note that
+     raw `memo` is deliberately NOT a field here: a six-scene story is given
+     more seconds than a four-scene one, so the honest lever is SECONDS PER
+     SCENE, which falls in both directions. Gating `memo` would report the hard
+     tier as easier. */
+  'story-grid': {
+    mod: 'memory/games/story-grid/data.js',
+    get: (m) => (diff, lv) => m.levelCfg(diff, lv),
+    diffs: (m) => Object.keys(m.BASE),
+    levels: (m) => m.LEVELS_PER_TIER,
+    fields: { len: 'up', questions: 'up', opts: 'up', memoPerPanel: 'down' },
+  },
+  /* Detective became Liars' Ring on 2026-08-17 and its curve moved out of the
+     old noir engine into data.js. All four levers are things the player feels:
+     more suspects, a richer statement kit, more rules in play and more question
+     shapes. Deliberately NO time lever — this is the one game where thinking
+     longer is the correct play. */
+  detective: {
+    mod: 'reasoning/games/detective/data.js',
+    get: (m) => (diff, lv) => m.levelCfg(diff, lv),
+    diffs: (m) => Object.keys(m.BASE),
+    levels: (m) => m.LEVELS_PER_TIER,
+    fields: { suspects: 'up', kitSize: 'up', ruleCount: 'up', questionCount: 'up', evidenceChance: 'up' },
+  },
   'mirror-world': {
     mod: 'flexibility/games/mirror-world/data.js',
     get: (m) => (diff, lv) => {
