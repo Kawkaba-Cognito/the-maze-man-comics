@@ -49,7 +49,8 @@
     "review:since": "node scripts/review-board.mjs --since",
     "review:ack": "node scripts/review-board.mjs --ack",
     "validate:wordmaze": "node scripts/validate-wordmaze.mjs",
-    "audit:pacing": "node scripts/audit-pacing.mjs"
+    "audit:pacing": "node scripts/audit-pacing.mjs",
+    "audit:gamekeys": "node scripts/audit-game-keys.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^7.6.8",

@@ -89,6 +89,13 @@ jobs:
       # than scripts/design-baseline.json. See the header of audit-design.mjs.
       # If this fails, a game gained a hardcoded colour (or similar) — fix it or
       # deliberately raise the ceiling with `npm run audit:design -- --update`.
+      # Games are asked for by STRING KEY through getLazyGame(), which returns
+      # null for anything unregistered — and every caller then renders nothing,
+      # with no error. Three load-bearing games (nback, spatial-stroop,
+      # memo-span) have no training-hub slot, so they read as dead code to
+      # anyone tidying up. This fails the build instead of failing silently.
+      - name: Audit game-key resolution
+        run: npm run audit:gamekeys
       - name: Audit design drift (ratchet)
         run: npm run audit:design
 

@@ -5,7 +5,12 @@ import { DOMAINS } from '../training/trainingData';
 import { TrainingScreenShell } from '../../features/training/shared/TrainingScreens';
 import DomainAboutLink from '../../features/training/shared/DomainAboutLink';
 import { getLazyGame, hasGame } from '../../features/training/lazyGames';
-import AssessmentFlow from '../../features/training/assessment/AssessmentFlow';
+/* ⚠ The real battery is a DEMO — unfinished content AND unfinished flow — but it
+ * renders percentiles, standard scores and a "Cognitive Index" with nothing marking
+ * any of it provisional. Swapping this import back is all it takes to restore it,
+ * and should happen only once its numbers can be trusted.
+ * See assessment/AssessmentComingSoon.jsx. */
+import AssessmentComingSoon from '../../features/training/assessment/AssessmentComingSoon';
 import GamePlanetScene from '../../features/training/shared/GamePlanetTile';
 import { GlassBevel } from '../../features/training/shared/AttentionHeaderProtos';
 
@@ -125,7 +130,7 @@ export default function ComicsScreen() {
         />
       )}
       {screen === 'assessment' && (
-        <AssessmentFlow onBack={backToHub} />
+        <AssessmentComingSoon onBack={backToHub} isAr={isAr} playSfx={playSfx} />
       )}
       {screen === 'pick' && d && (
         <TrainingScreenShell
