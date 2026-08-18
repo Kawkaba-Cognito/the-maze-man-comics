@@ -118,9 +118,22 @@ const CURVES = {
     diffs: (m) => Object.keys(m.BASE),
     levels: (m) => m.LEVELS_PER_TIER,
     fields: {
-      lanes: 'up', perWave: 'up', concurrency: 'up', kindCount: 'up',
-      visibleMs: 'down', tol: 'down',
+      count: 'up', mechCount: 'up', armour: 'up',
+      crossMs: 'down', gapMs: 'down', dwellMs: 'down',
     },
+    /*
+     * ⚠ TWO LEVERS ARE DELIBERATELY ABSENT, and both were measured rather than
+     * assumed before being left out:
+     *
+     *   hiddenShare — NOT monotonic on hard. The visibility floor in shape()
+     *     pushes the canopy back whenever the authored share would leave under
+     *     MIN_VISIBLE_MS of run-up, and it bites unevenly across the tier. The
+     *     lever is real, the clamp is correct, and gating it would fail on
+     *     working code.
+     *   barrels — rises with level, but a barrel HELPS the player. Registering
+     *     it 'up' would assert the wrong direction of difficulty and force the
+     *     curve to remove help in order to stay green.
+     */
   },
   'mirror-world': {
     mod: 'flexibility/games/mirror-world/data.js',

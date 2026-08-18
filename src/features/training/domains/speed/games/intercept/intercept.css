@@ -2,13 +2,13 @@
  * INTERCEPT — Rift Defense.
  *
  * The play field is a canvas; everything here is the frame around it. Colours
- * come from the play-surface tokens, never literals — a canvas game cannot read
- * CSS variables, so index.jsx pulls the live token values off the element and
- * the two must agree about which tokens exist.
+ * come from the play-surface tokens, never literals — a canvas cannot read CSS
+ * variables, so index.jsx pulls the live token values off the element with
+ * getComputedStyle and the two must agree about which tokens exist.
  *
- * ⚠ The lane buttons are FULL-HEIGHT columns on purpose. The measure is WHEN
- * you tap, never whether you can hit a moving target — a small tap target would
- * quietly turn a timing task into a pointing one.
+ * ⚠ Shadows come from --fx-* rather than hand-mixed rgba(). audit:design is a
+ * CI-blocking ratchet that counts raw colours, and two hand-rolled shadows in
+ * this very file blocked a deploy in August.
  */
 
 .ic-root {
@@ -24,17 +24,82 @@
   overflow: hidden;
 }
 
-/* ── hearts ─────────────────────────────────────────────────────────────── */
-.ic-hearts {
+/* ── status strip ───────────────────────────────────────────────────────── */
+.ic-status {
   display: flex;
-  gap: 6px;
-  padding: 2px 0 6px;
-  font-size: 20px;
-  line-height: 1;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 460px);
+  padding: 2px 12px 8px;
   flex: 0 0 auto;
 }
-.ic-heart { color: var(--danger); filter: drop-shadow(0 1px 0 var(--fx-shadow-soft)); }
-.ic-heart--spent { color: var(--line); opacity: 0.55; }
+
+.ic-hp {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ic-hp-label {
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.ic-hp-track {
+  flex: 1;
+  height: 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 55%, transparent);
+  overflow: hidden;
+}
+
+.ic-hp-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--game-ok);
+  transition: width 160ms ease;
+}
+
+.ic-hp-fill--low { background: var(--game-bad); }
+
+.ic-combo {
+  flex-shrink: 0;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--game-accent) 30%, transparent);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The safe colour stays on screen the whole time a no-go rule is in force.
+   REMEMBERING the rule is not the task — WITHHOLDING is, and hiding the rule
+   would quietly turn an inhibition measure into a memory one. */
+.ic-safe {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.ic-swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
 
 /* ── the field ──────────────────────────────────────────────────────────── */
 .ic-field {
@@ -48,34 +113,16 @@
   border: 2px solid var(--line);
   background: var(--surface);
   touch-action: manipulation;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
+
 .ic-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   display: block;
-}
-
-/* Lane tap targets sit ON TOP of the canvas and span its full height. */
-.ic-lanes {
-  position: absolute;
-  inset: 0;
-  display: flex;
-}
-.ic-lane-btn {
-  flex: 1 1 0;
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.ic-lane-btn:active {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-}
-.ic-lane-btn + .ic-lane-btn {
-  border-inline-start: 1px solid transparent;
 }
 
 .ic-taphint {
@@ -106,12 +153,14 @@
   box-shadow: 4px 4px 0 var(--fx-shadow-soft);
   text-align: center;
 }
+
 .ic-panel h3 {
   margin: 0;
   font-size: 22px;
   font-weight: 900;
   color: var(--ink);
 }
+
 .ic-brief {
   margin: 0;
   font-size: 15px;
@@ -120,6 +169,30 @@
   color: var(--ink-dim);
   max-width: 34ch;
 }
+
+/* Only the rules actually in force this level. Listing the ones that are NOT
+   would teach the player to stop reading the list. */
+.ic-rules {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 34ch;
+}
+
+.ic-rules li {
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
 .ic-note {
   margin: 0;
   font-size: 12.5px;
@@ -129,39 +202,7 @@
   line-height: 1.5;
 }
 
-/* ── the ship types in this wave ────────────────────────────────────────── */
-.ic-kinds-label {
-  margin: 2px 0 0;
-  font-size: 10.5px;
-  font-weight: 900;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: var(--ink-faint, var(--ink-dim));
-}
-.ic-kinds {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-}
-.ic-kind {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 11px 5px 6px;
-  border-radius: 999px;
-  border: 2px solid var(--line);
-  background: var(--surface);
-  font-size: 12.5px;
-  font-weight: 800;
-  color: var(--ink);
-}
-.ic-kind img {
-  width: 26px;
-  height: 26px;
-  object-fit: contain;
-  display: block;
-}
+.ic-note--score { color: var(--ink); font-weight: 750; }
 
 /* ── stat readout ───────────────────────────────────────────────────────── */
 .ic-stats {
@@ -171,21 +212,24 @@
   justify-content: center;
   width: 100%;
 }
+
 .ic-stats > div {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 74px;
-  border-inline-start: 2px solid var(--accent);
+  border-inline-start: 2px solid var(--game-accent);
   padding-inline-start: 9px;
   text-align: start;
 }
+
 .ic-stats b {
   font-size: 17px;
   font-weight: 900;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
+
 .ic-stats small {
   font-size: 10px;
   font-weight: 800;
@@ -195,5 +239,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ic-lane-btn:active { background: transparent; }
+  .ic-hp-fill { transition: none; }
 }

@@ -43,25 +43,25 @@ export const GAME_SCIENCE = {
   'intercept': {
     en: {
       title: 'The science',
-      intro: 'Intercept is a coincidence anticipation timing task — the family used to study how people catch, drive and cross roads. A shape travels toward a line and disappears behind cover; you tap the instant it would arrive. Because you cannot see it arrive, you are reading a prediction off your own internal model.',
+      intro: 'An army walks a trail toward your gate, and your tower reaches one stretch of it. Strike them inside that stretch. Three separate abilities are layered on top of each other as you climb, and the game keeps them apart in the results rather than blending them into one score.',
       sections: [
-        { h: '🎯 Predictive timing', b: 'Your brain runs a forward model of moving things and keeps it running when they are out of sight. Tapping in the right place means that model kept good time in the dark — a different ability from reacting fast to something you can see.' },
-        { h: '🔺 The shape tells you how it moves', b: 'A circle holds its speed, an arrow builds speed, a diamond eases off. Time an accelerating shape from what you saw and you are always late; time a slowing one and you are always early. Later levels mix them, so you must read the shape before it hides.' },
-        { h: '↔️ Early or late is information', b: 'Most people lean one way and stay leaning. The game reports your signed bias, not just your error, because knowing you consistently tap early is more useful than knowing you were 80ms off.' },
-        { h: '📊 How it\'s measured', b: 'Your score is the size of your timing error in milliseconds, plus your closest single run and your directional bias. These are task measures, not a clinical assessment.' },
+        { h: '⚡ Reaction time', b: 'The first layer is simply how fast you strike something you can see arrive. That is the foundation, and on the early levels it is all there is — which is exactly what makes the next two layers measurable, because striking has to become automatic before withholding it means anything.' },
+        { h: '✋ Holding back', b: 'Some marchers are the wrong colour and must be left alone. This is a Go/No-Go task: once tapping has become the automatic response, NOT tapping takes active effort. Striking one is a commission error, the standard measure of response inhibition — a different ability from being fast, and one the two other speed games do not touch.' },
+        { h: '🌲 Striking what you cannot see', b: 'Higher levels run the trail under forest canopy, so part of your reach is blind. You watch a marcher long enough to read their pace, they vanish, and you strike where you believe they now are. That is a forward model — the same machinery behind catching a ball or pulling out at a junction.' },
+        { h: '📊 How it\'s measured', b: 'Three numbers, kept separate: how fast you struck what you could see, how many of the forbidden marchers you managed to leave alone, and — for the hidden ones — whether you run early or late, in milliseconds. A single combined score would hide which of the three you are actually good at. These are task measures, not a clinical assessment.' },
       ],
-      foot: 'Watch the whole visible stretch rather than the last moment before it hides — the speed is easier to read over a longer look. This trains and tracks these specific skills; it is not a medical test.',
+      foot: 'Early on, speed is everything. Later, the player who wins is usually the one who stops striking at the right moments rather than the one who strikes fastest. This trains and tracks these specific skills; it is not a medical test.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: 'الاعتراض مهمة توقيت تنبّؤي — العائلة نفسها التي تُدرس بها القدرة على الالتقاط والقيادة وعبور الطريق. يتحرّك شكل نحو خط ثم يختفي خلف غطاء، وعليك الضغط لحظة وصوله. وبما أنك لا تراه يصل، فأنت تقرأ التوقّع من نموذجك الداخلي.',
+      intro: 'يزحف جيش على درب نحو بوابتك، ويغطّي برجك جزءاً منه. اضربهم داخل ذلك الجزء. تتراكب ثلاث قدرات مختلفة كلما تقدّمت، وتفصلها اللعبة في النتائج بدل دمجها في رقم واحد.',
       sections: [
-        { h: '🎯 التوقيت التنبّؤي', b: 'يبني دماغك نموذجاً للأشياء المتحرّكة ويواصل تشغيله حتى بعد اختفائها. الضغط في اللحظة الصحيحة يعني أن هذا النموذج حافظ على التوقيت في الظلام — وهي قدرة مختلفة عن سرعة الاستجابة لشيء تراه.' },
-        { h: '🔺 الشكل يخبرك بحركته', b: 'الدائرة تحافظ على سرعتها، والسهم يتسارع، والمعيّن يتباطأ. إن قدّرت المتسارع مما رأيته فستتأخّر دائماً، وإن قدّرت المتباطئ فستتعجّل دائماً. تخلط المستويات المتقدّمة بينها، فعليك قراءة الشكل قبل اختفائه.' },
-        { h: '↔️ التبكير والتأخير معلومة', b: 'يميل معظم الناس إلى جهة واحدة ويظلّون كذلك. تعرض اللعبة اتجاه ميلك لا حجم خطئك فقط، لأن معرفتك أنك تضغط مبكّراً باستمرار أنفع من معرفة أنك أخطأت بـ٨٠ مللي ثانية.' },
-        { h: '📊 كيف تُقاس', b: 'نتيجتك هي حجم خطأ التوقيت بالمللي ثانية، مع أقرب محاولة واتجاه ميلك. هذه مقاييس للّعبة وليست تقييماً سريرياً.' },
+        { h: '⚡ زمن رد الفعل', b: 'الطبقة الأولى هي ببساطة سرعتك في ضرب ما تراه قادماً. هذا هو الأساس، وفي المستويات الأولى لا يوجد سواه — وهذا بالضبط ما يجعل الطبقتين التاليتين قابلتين للقياس، إذ يجب أن يصير الضرب تلقائياً قبل أن يعني الامتناع عنه شيئاً.' },
+        { h: '✋ الامتناع', b: 'بعض الزاحفين بلون مختلف ويجب تركهم. هذه مهمة «اضغط/لا تضغط»: حين يصير الضغط استجابة تلقائية، يصبح عدمُ الضغط جهداً فعلياً. ضربُ أحدهم خطأُ ارتكاب، وهو المقياس المعياري لكبح الاستجابة — قدرة تختلف عن السرعة، ولا تلمسها لعبتا السرعة الأخريان.' },
+        { h: '🌲 ضربُ ما لا تراه', b: 'تمرّ المستويات الأعلى بالدرب تحت غطاء الأشجار، فيصير جزء من مداك أعمى. تراقب الزاحف حتى تقرأ سرعته، ثم يختفي، فتضرب حيث تظنّه الآن. هذا نموذج تنبّؤي — الآلية نفسها وراء التقاط كرة أو الانعطاف من تقاطع.' },
+        { h: '📊 كيف تُقاس', b: 'ثلاثة أرقام منفصلة: سرعتك في ضرب ما تراه، وكم من الزاحفين الممنوعين تركتهم، ثم — للمخفيّين — هل تميل إلى التبكير أم التأخير بالمللي ثانية. الرقم الموحّد كان سيخفي أيّ الثلاثة تُتقن. هذه مقاييس للّعبة وليست تقييماً سريرياً.' },
       ],
-      foot: 'راقب المسار المرئي كاملاً بدل اللحظة الأخيرة قبل الاختفاء — تُقرأ السرعة أسهل عبر نظرة أطول. تدرّب اللعبة هذه المهارات وتتابعها، وهي ليست اختباراً طبياً.',
+      foot: 'في البداية السرعة هي كل شيء. لاحقاً، الفائز عادةً من يتوقّف عن الضرب في اللحظات الصحيحة، لا من يضرب أسرع. تدرّب اللعبة هذه المهارات وتتابعها، وهي ليست اختباراً طبياً.',
     },
   },
   'trail-making': {
