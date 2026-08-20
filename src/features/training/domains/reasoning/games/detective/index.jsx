@@ -78,6 +78,20 @@ const KAWKAB_ASPECT = 480 / 546;
 const MARKS = ['none', 'clear', 'suspect'];
 const MARK_ICON = { none: '', clear: '✓', suspect: '?', jail: '🔒' };
 
+/*
+ * Questions whose answer IS a person. For these the jail is the answer box:
+ * you drag the one you accuse into it and submit, and — following Hotel
+ * Oddity's tray in the Grand Parlor prototype — they LEAVE THE LINE-UP while
+ * they are in there, so a name is never on screen twice. The old build showed
+ * the same three faces in the line-up and again as answer buttons directly
+ * below, which read as two different questions.
+ *
+ * The other kinds answer with a number, a yes/no/unsure, or a statement, so
+ * they never duplicated a name; they keep their own controls and the jail
+ * stays what it was there — a separate arrest, scored apart from the answer.
+ */
+const PERSON_Q = new Set(['who', 'liar', 'honest']);
+
 /* How far a pointer must travel before a press counts as a drag rather than a
    tap. Below it the card's own onClick still runs and cycles the mark. */
 const DRAG_SLOP = 7;
@@ -159,13 +173,16 @@ export function DetectiveEngine({
 
   const q = caseData ? caseData.question : null;
   const isMulti = q && q.kind === 'clearAll';
-  const canConfirm = isMulti ? true : choice != null;
+  /** True when the jail IS the answer box rather than a separate arrest. */
+  const jailIsAnswer = !!q && PERSON_Q.has(q.kind);
 
   /** Who is in the cell right now — at most one, by construction. */
   const jailed = useMemo(
     () => Object.keys(marks).find((id) => marks[id] === 'jail') || null,
     [marks],
   );
+
+  const canConfirm = isMulti ? true : (jailIsAnswer ? jailed != null : choice != null);
 
   const cycleMark = (id) => {
     if (judged) return;
@@ -223,10 +240,15 @@ export function DetectiveEngine({
     });
   }, []);
 
-  const onCardDown = (e, id) => {
+  /*
+   * `from` is which side the drag started on — 'lineup' or 'jail'. The gesture
+   * is symmetrical on purpose: whatever you can drag in, you can drag back out,
+   * and a door that only opens one way is the thing a player notices first.
+   */
+  const onCardDown = (e, id, from = 'lineup') => {
     if (judged) return; // === !showNotebook, which is declared further down
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    dragRef.current = { id, x0: e.clientX, y0: e.clientY, moved: false, pid: e.pointerId };
+    dragRef.current = { id, from, x0: e.clientX, y0: e.clientY, moved: false, pid: e.pointerId };
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* capture is a nicety */ }
   };
 
@@ -240,23 +262,26 @@ export function DetectiveEngine({
       d.moved = true;
       playSfx?.('click'); // the lift
     }
-    setDrag({ id: d.id, dx, dy, over: overCell(e.clientX, e.clientY) });
+    setDrag({ id: d.id, from: d.from, dx, dy, over: overCell(e.clientX, e.clientY) });
   };
 
   const onCardUp = (e) => {
     const d = dragRef.current;
     dragRef.current = null;
     setDrag(null);
-    if (!d || d.pid !== e.pointerId || !d.moved) return; // a tap: let onClick cycle
+    if (!d || d.pid !== e.pointerId || !d.moved) return; // a tap: let onClick handle it
     // A drag is not also a tap. Pointer capture means the trailing click may
     // land anywhere or not fire at all, so this is a timestamp rather than a
     // flag — a flag left set would eat the NEXT genuine tap.
     dragEndedAt.current = Date.now();
-    if (overCell(e.clientX, e.clientY)) {
-      if (marks[d.id] !== 'jail') { putInCell(d.id); playSfx?.('collect'); }
-    } else if (marks[d.id] === 'jail') {
-      emptyCell(); // dragged back out of the cell
-      playSfx?.('click');
+    const dropped = overCell(e.clientX, e.clientY);
+    if (d.from === 'jail') {
+      // Carried out of the cell and let go: they walk. Dropped back inside, the
+      // door simply shuts again.
+      if (!dropped) { emptyCell(); playSfx?.('click'); }
+    } else if (dropped && marks[d.id] !== 'jail') {
+      putInCell(d.id);
+      playSfx?.('collect');
     }
   };
 
@@ -303,11 +328,18 @@ export function DetectiveEngine({
       ok = s.ok;
       given = [...multi].sort().join(',');
     } else {
-      given = String(choice);
+      // On a person question the jail's occupant IS the submitted answer.
+      given = String(jailIsAnswer ? jailed : choice);
       ok = given === String(caseData.answer);
     }
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    const jv = jailVerdict(caseData, jailed);
+    /*
+     * The separate arrest verdict only exists where the jail is NOT the answer.
+     * When it is, "sound arrest" alongside "SOLVED" would be the same fact
+     * stamped twice, and the 2-point bonus would silently double the value of
+     * one question kind.
+     */
+    const jv = jailIsAnswer ? null : jailVerdict(caseData, jailed);
     trialLogRef.current?.trial({
       ok,
       // The cell, recorded as its OWN fields. `ok` above is untouched by it.
@@ -453,7 +485,11 @@ export function DetectiveEngine({
 
           {/* the line-up */}
           <div style={S.lineUp}>
-            {caseData.people.map((p) => {
+            {/* Somebody in the jail is NOT also standing in the line-up — the
+                Hotel Oddity rule, and the whole point: one name, one place.
+                After judging everyone comes back, because the reveal has to be
+                able to colour the thief's card. */}
+            {caseData.people.filter((p) => judged || marks[p] !== 'jail').map((p) => {
               const mk = marks[p] || 'none';
               const revealed = judged && caseData.tally === 1;
               const isThief = revealed && caseData.worlds[0].thief === p;
@@ -510,45 +546,7 @@ export function DetectiveEngine({
               Rendered as its own row rather than left implicit in a card's
               border, because it is a COMMITMENT and the player has to be able
               to see at a glance who they have decided to hold. */}
-          <button
-            ref={cellRef}
-            type="button"
-            disabled={!showNotebook}
-            onClick={pickNextForCell}
-            aria-label={t.cellPick}
-            style={{
-              ...S.cell,
-              ...(showNotebook ? S.cellLive : null),
-              ...(drag ? S.cellArmed : null),
-              ...(drag?.over ? S.cellOver : null),
-              ...(jailed && !drag ? S.cellFull : null),
-            }}
-          >
-            <span style={S.cellLabel}>
-              <Emoji char="🔒" /> {t.cellLabel}
-            </span>
-            {/* While a card is in hand the cell always speaks as a target, even
-                when occupied — "drop to replace" is the honest reading, and
-                showing the current occupant instead looks like a refusal. */}
-            {drag ? (
-              <span style={{ ...S.cellEmpty, ...(drag.over ? S.cellDropNow : null) }}>
-                {drag.over ? t.cellDrop : t.cellDragHere}
-              </span>
-            ) : jailed ? (
-              <span style={S.cellWho}>
-                <img src={cast2dUrl(jailed)} alt="" aria-hidden="true" draggable="false" style={S.cellArt} />
-                {nameOf(jailed)}
-              </span>
-            ) : (
-              <span style={S.cellEmpty}>{t.cellEmpty}</span>
-            )}
-          </button>
-          {showNotebook && (
-            <>
-              <div style={S.hint}>{t.notebookHint}</div>
-              <div style={S.hint}>{t.cellHint}</div>
-            </>
-          )}
+          {showNotebook && <div style={S.hint}>{t.notebookHint}</div>}
 
           {/* the statements */}
           <div style={S.says}>
@@ -602,8 +600,9 @@ export function DetectiveEngine({
             </div>
           </div>
 
-          {/* the answer controls */}
-          {!judged && (
+          {/* The answer controls — skipped entirely on a person question, where
+              the jail below IS the answer box. */}
+          {!judged && !jailIsAnswer && (
             <AnswerControls
               q={q}
               caseData={caseData}
@@ -617,6 +616,97 @@ export function DetectiveEngine({
                 setMulti((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
               }}
             />
+          )}
+
+          {/* ── THE JAIL ──
+              Always on screen, down at the bottom where a cell belongs, and on
+              a person question it is where the answer goes. Drag a suspect in
+              (or tap it to cycle through them) and submit. */}
+          <div
+            ref={cellRef}
+            style={{
+              ...S.jail,
+              /* Only light up as a target for a card coming IN. During a drag
+                 OUT the accent would be telling you to drop where you are
+                 already leaving, which is the cancel, not the action. */
+              ...(drag?.from === 'lineup' ? S.jailArmed : null),
+              ...(drag?.from === 'lineup' && drag.over ? S.jailOver : null),
+              ...(jailed && !drag ? S.jailFull : null),
+            }}
+          >
+            <div style={S.jailHead}>
+              <span style={S.cellLabel}>
+                <Emoji char="🔒" /> {jailIsAnswer ? t.jailAccuse : t.cellLabel}
+              </span>
+              {showNotebook && (
+                <button type="button" onClick={pickNextForCell} aria-label={t.cellPick} style={S.jailPick}>
+                  {t.cellPickShort}
+                </button>
+              )}
+            </div>
+
+            <div
+              style={{
+                ...S.jailBay,
+                ...(jailed && !drag ? S.jailBayShut : null),
+                /* ⚠ The bay clips (overflow hidden gives the cell its recessed
+                   mouth). Carrying the occupant out would make them VANISH at
+                   the edge instead of following the finger, so the walls come
+                   off for the duration of that one gesture. */
+                ...(drag?.from === 'jail' ? S.jailBayOpen : null),
+              }}
+            >
+              {/* The door only closes once somebody is inside. Bars over an
+                  EMPTY cell read as a fence across the drop target — and the
+                  first build drew them over the "drag your answer in" label,
+                  which made the one instruction on screen unreadable. */}
+              {jailed && !drag && <div aria-hidden="true" style={S.jailBars} />}
+              {drag && drag.from === 'lineup' ? (
+                <span style={{ ...S.cellEmpty, ...(drag.over ? S.cellDropNow : null) }}>
+                  {drag.over ? t.cellDrop : t.cellDragHere}
+                </span>
+              ) : jailed ? (
+                /* The occupant is draggable BACK OUT, and a plain tap releases
+                   them too — the same thing tapping a filled room does in the
+                   Hotel Oddity prototype this is modelled on. */
+                <button
+                  type="button"
+                  disabled={!showNotebook}
+                  onPointerDown={(e) => onCardDown(e, jailed, 'jail')}
+                  onPointerMove={onCardMove}
+                  onPointerUp={onCardUp}
+                  onPointerCancel={onCardCancel}
+                  onClick={() => {
+                    if (Date.now() - dragEndedAt.current < 350) return;
+                    playSfx?.('click');
+                    emptyCell();
+                  }}
+                  aria-label={t.cellFree(nameOf(jailed))}
+                  style={{
+                    ...S.jailWho,
+                    ...(showNotebook ? S.susGrab : null),
+                    ...(drag?.from === 'jail' ? S.jailWhoOut : null),
+                    ...(drag?.from === 'jail' ? {
+                      transform: `translate(${drag.dx}px, ${drag.dy}px) `
+                        + `rotate(${Math.max(-7, Math.min(7, drag.dx * 0.07))}deg) scale(1.07)`,
+                    } : null),
+                    cursor: showNotebook ? (drag?.from === 'jail' ? 'grabbing' : 'grab') : 'default',
+                  }}
+                >
+                  <img src={cast2dUrl(jailed)} alt="" aria-hidden="true" draggable="false" style={S.jailArt} />
+                  <span style={S.jailName}>{nameOf(jailed)}</span>
+                </button>
+              ) : (
+                <span style={S.cellEmpty}>{jailIsAnswer ? t.jailEmptyAccuse : t.cellEmpty}</span>
+              )}
+            </div>
+          </div>
+          {showNotebook && (
+            <div style={S.hint}>
+              {drag?.from === 'jail' ? t.cellFreeHint
+                : jailed ? t.cellOutHint
+                  : jailIsAnswer ? t.jailHintAccuse : t.cellHint}
+            </div>
           )}
 
           {/* the verdict */}
@@ -913,27 +1003,72 @@ const S = {
   },
   susAside: { opacity: 0.45 },
 
-  /* The cell. Dashed and empty-looking on purpose — it should read as a slot
-     waiting to be filled, which is what makes dragging into it obvious. */
-  cell: {
-    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-    padding: '7px 12px', borderRadius: 12, color: 'var(--ink)',
+  /* ── THE JAIL ──
+     A real cell at the bottom of the case, not a status strip. Empty it is a
+     dashed opening; filled, it closes to solid and the occupant stands behind
+     bars. On a person question this is the answer box. */
+  jail: {
+    width: '100%', display: 'flex', flexDirection: 'column', gap: 6,
+    padding: '9px 11px 11px', borderRadius: 14, color: 'var(--ink)',
     border: '2px dashed var(--line)', background: 'var(--surface)',
-    transition: 'border-color 0.16s, background 0.16s, transform 0.16s, padding 0.16s, box-shadow 0.16s',
+    transition: 'border-color 0.16s, background 0.16s, transform 0.16s, box-shadow 0.16s',
   },
-  cellLive: { cursor: 'pointer' },
-  cellFull: { borderStyle: 'solid', borderColor: 'var(--ink)' },
-  /* Armed: a card is in hand. The slot opens up — a bigger target for a thumb,
-     and the movement itself is what tells you where the card is meant to go. */
-  cellArmed: {
-    padding: '13px 12px', borderColor: 'var(--accent)',
+  jailFull: {
+    borderStyle: 'solid', borderColor: 'var(--ink)',
+    background: 'color-mix(in srgb, var(--ink) 7%, var(--surface))',
+  },
+  /* Armed: a card is in hand. */
+  jailArmed: {
+    borderColor: 'var(--accent)',
     background: 'color-mix(in srgb, var(--accent) 7%, var(--surface))',
   },
-  cellOver: {
+  jailOver: {
     borderStyle: 'solid', borderColor: 'var(--accent)',
     background: 'color-mix(in srgb, var(--accent) 18%, var(--surface))',
-    transform: 'scale(1.03)', boxShadow: `0 6px 18px var(--fx-shadow-soft)`,
+    transform: 'scale(1.02)', boxShadow: '0 6px 18px var(--fx-shadow-soft)',
   },
+  jailHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  jailPick: {
+    fontSize: 10, fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase',
+    color: 'var(--ink-dim)', background: 'none', border: 'none', padding: '2px 4px',
+    cursor: 'pointer', textDecoration: 'underline',
+  },
+  /* The bay is the cell mouth. Open and pale while it waits for somebody, so
+     the label inside it stays readable and it reads as a place to drop. */
+  jailBay: {
+    position: 'relative', minHeight: 74, borderRadius: 9,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'color-mix(in srgb, var(--ink) 4%, var(--surface))',
+    transition: 'background 0.16s',
+    overflow: 'hidden',
+  },
+  jailBayShut: { background: 'color-mix(in srgb, var(--ink) 13%, var(--surface))' },
+  jailBayOpen: { overflow: 'visible' },
+  /* Vertical bars, in front of whoever is inside. A repeating gradient rather
+     than N elements, and pointerEvents none so a drop is never eaten.
+     ⚠ Spacing is the whole illusion: 3px-on-15px looked like a barcode. Real
+     bars are thin and far apart, and you must be able to see the face between
+     them — that is what makes it a cell instead of a hatched box. */
+  jailBars: {
+    position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2,
+    backgroundImage: 'repeating-linear-gradient(90deg,'
+      + ' var(--ink) 0 2px, transparent 2px 27px)',
+    opacity: 0.42,
+  },
+  jailWho: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, zIndex: 1,
+    background: 'none', border: 'none', padding: 0, color: 'var(--ink)',
+    transition: 'transform 0.12s',
+  },
+  /* Being carried out. Lifts above the bars so they read as coming through the
+     open door rather than sliding behind it. */
+  jailWhoOut: {
+    zIndex: 6,
+    filter: 'drop-shadow(0 12px 18px var(--fx-shadow-drop))',
+    transition: 'none',
+  },
+  jailArt: { width: 44, height: 44, objectFit: 'contain', objectPosition: 'center bottom' },
+  jailName: { fontSize: 12.5, fontWeight: 900, color: 'var(--ink)' },
   cellDropNow: { color: 'var(--accent)', fontWeight: 900, opacity: 1 },
   cellLabel: {
     fontSize: 10.5, fontWeight: 900, letterSpacing: 1.1, textTransform: 'uppercase', color: 'var(--ink-dim)',
