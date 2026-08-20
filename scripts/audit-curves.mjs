@@ -135,6 +135,28 @@ const CURVES = {
      *     curve to remove help in order to stay green.
      */
   },
+  /*
+   * THE GATE. Two levers move in opposite directions and both are difficulty:
+   * the law can say more (`poolSize`, and `fillOn` adds a whole fourth
+   * attribute to reason about), while the budget for finding it out shrinks
+   * (`probes`).
+   *
+   * ⚠ `gates` is deliberately NOT a field. More gates in a level is more WORK,
+   * not a harder induction, and one refusal is forgiven either way — gating it
+   * 'up' would let a tier look harder by simply being longer, which is the
+   * audit:fq mistake (assert what the player meets, not what the config says).
+   *
+   * The real difficulty guarantee — that every gate is actually DECIDABLE
+   * within the probes it grants — is not a curve property at all and lives in
+   * validate:gatekeeper, which re-derives it per gate with its own enumerator.
+   */
+  gatekeeper: {
+    mod: 'reasoning/games/gatekeeper/data.js',
+    get: (m) => (diff, lv) => m.levelCfg(diff, lv),
+    diffs: (m) => Object.keys(m.BASE),
+    levels: (m) => m.LEVELS_PER_TIER,
+    fields: { poolSize: 'up', fillOn: 'up', probes: 'down' },
+  },
   'mirror-world': {
     mod: 'flexibility/games/mirror-world/data.js',
     get: (m) => (diff, lv) => {

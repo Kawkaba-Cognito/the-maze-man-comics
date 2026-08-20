@@ -23,16 +23,23 @@ const reasoning = {
       loader: () => import('./games/rush-hour'),
     },
     {
+      /*
+       * Took Matrix Reasoning's slot on 2026-08-20. Raven's matrices measure
+       * whether you SPOT a pattern already laid out; nothing you do changes what
+       * you are shown. The Gate measures the other half of induction — finding a
+       * rule by TESTING for it — which the domain had nowhere to put. See
+       * games/raven-matrices/BENCHED.md.
+       */
       id: 'problem',
-      name: 'Matrix Reasoning',
-      nameAr: 'استدلال المصفوفات',
-      blurb: 'Detect the pattern and complete the missing matrix cell.',
-      blurbAr: 'اكتشف النمط وأكمل الخانة الناقصة في المصفوفة.',
+      name: 'The Gate',
+      nameAr: 'البوابة',
+      blurb: 'Probe the travellers, work out the gate’s secret law, send the one who passes.',
+      blurbAr: 'افحص المسافرين، استنتج قانون البوابة السرّي، وأرسل من يعبر.',
       gameCount: 2,
       progress: 0,
-      gameKey: 'raven-matrices',
+      gameKey: 'gatekeeper',
       tier: 'free',
-      loader: () => import('./games/raven-matrices'),
+      loader: () => import('./games/gatekeeper'),
     },
     {
       id: 'planning',

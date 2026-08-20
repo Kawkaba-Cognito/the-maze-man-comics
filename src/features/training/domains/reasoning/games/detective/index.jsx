@@ -44,8 +44,47 @@ import { T, ruleText, sayText } from './strings.js';
 const KAWKAB_URL = assetUrl('Assets/characters/kawkab/kawkab-planet.webp');
 const KAWKAB_ASPECT = 480 / 546;
 
+/*
+ * ── THE NOTEBOOK AND THE HOLDING CELL ────────────────────────────────────
+ *
+ * Two gestures, deliberately different weights:
+ *   TAP  cycles a private mark — unmarked → cleared → held → unmarked.
+ *   DRAG a suspect down into the cell to lock them up.
+ *
+ * The marks are private working memory and score nothing — they exist because
+ * the construct here is REASONING, and without somewhere to park a partial
+ * conclusion a five-suspect case quietly becomes a working-memory test.
+ *
+ * ⚠ THE GESTURES ARE SPLIT BY WEIGHT, NOT BY TASTE. A mark is a thought and
+ * costs a tap; an arrest is a COMMITMENT and costs a deliberate drag across the
+ * screen. When the cell sat at the end of the tap cycle, a third tap while
+ * taking notes jailed somebody by accident, and the one scored decision in the
+ * game was the easiest thing on it to do by mistake.
+ *
+ * `jail` is different: it is a COMMITMENT, at most one per case, and it is
+ * scored against the case's consistent worlds. Its whole point is that it asks
+ * a question the case's own question often does not — "who do you actually
+ * think did it" — so a level that asks how many are lying still exercises the
+ * judgement the game is named for.
+ *
+ * ⚠ IT IS SCORED SEPARATELY AND NEVER FOLDED INTO `ok`. Correctness of the
+ * ANSWER is the measure this game feeds to rating.js; a bonus judgement bolted
+ * onto the same number would make two players with identical reasoning score
+ * differently, and would quietly change what the reasoning domain means. Same
+ * discipline CLAUDE.md records for keeping Intercept's three measures apart.
+ */
+/* The tap cycle. `jail` is NOT in it — the cell is reached by dragging, or by
+   the cell's own picker (below), never by tapping a card one more time. */
 const MARKS = ['none', 'clear', 'suspect'];
-const MARK_ICON = { none: '', clear: '✓', suspect: '?' };
+const MARK_ICON = { none: '', clear: '✓', suspect: '?', jail: '🔒' };
+
+/* How far a pointer must travel before a press counts as a drag rather than a
+   tap. Below it the card's own onClick still runs and cycles the mark. */
+const DRAG_SLOP = 7;
+/* The cell's hit box is grown by this much while a drag is live. A thumb is
+   fatter than a 40px row, and a drop that lands *almost* on the cell reading as
+   a cancel is the whole difference between premium and fiddly. */
+const DROP_PAD = 20;
 
 export function DetectiveEngine({
   mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false,
@@ -122,14 +161,138 @@ export function DetectiveEngine({
   const isMulti = q && q.kind === 'clearAll';
   const canConfirm = isMulti ? true : choice != null;
 
+  /** Who is in the cell right now — at most one, by construction. */
+  const jailed = useMemo(
+    () => Object.keys(marks).find((id) => marks[id] === 'jail') || null,
+    [marks],
+  );
+
   const cycleMark = (id) => {
     if (judged) return;
     playSfx?.('click');
     setMarks((m) => {
-      const cur = m[id] || 'none';
+      // Somebody in the cell who gets tapped comes out of it first, rather than
+      // jumping to the next mark — the visible state and the gesture agree.
+      const cur = m[id] === 'jail' ? 'none' : (m[id] || 'none');
       return { ...m, [id]: MARKS[(MARKS.indexOf(cur) + 1) % MARKS.length] };
     });
   };
+
+  /* ── dragging a suspect into the cell ─────────────────────────────────────
+   *
+   * Pointer events, so one code path covers mouse, touch and pen — the same
+   * choice story-grid's scene swipe makes.
+   *
+   * The card MOVES ITSELF with a transform rather than a floating clone.
+   * `#ui-shell` traps `position: fixed` (it is a transformed ancestor), so a
+   * fixed ghost would need a portal to body; a transform is relative to the
+   * card's own layout box and simply cannot be trapped. The cell sits directly
+   * under the line-up, so the whole gesture is ~80px and never leaves the
+   * scroll container.
+   */
+  const [drag, setDrag] = useState(null); // { id, dx, dy, over } while in hand
+  const dragRef = useRef(null);
+  const cellRef = useRef(null);
+  const dragEndedAt = useRef(0);
+
+  /** Point-in-cell, with a thumb-sized tolerance. */
+  const overCell = useCallback((x, y) => {
+    const r = cellRef.current?.getBoundingClientRect();
+    if (!r) return false;
+    return x >= r.left - DROP_PAD && x <= r.right + DROP_PAD
+      && y >= r.top - DROP_PAD && y <= r.bottom + DROP_PAD;
+  }, []);
+
+  /** Put somebody in the cell, releasing whoever was already in it. */
+  const putInCell = useCallback((id) => {
+    setMarks((m) => {
+      const out = { ...m };
+      // The cell holds ONE. The evicted suspect keeps a `?`, not a blank — they
+      // were on your list a second ago and losing that is losing your notes.
+      for (const other of Object.keys(out)) if (out[other] === 'jail') out[other] = 'suspect';
+      out[id] = 'jail';
+      return out;
+    });
+  }, []);
+
+  const emptyCell = useCallback(() => {
+    setMarks((m) => {
+      const out = { ...m };
+      for (const id of Object.keys(out)) if (out[id] === 'jail') out[id] = 'suspect';
+      return out;
+    });
+  }, []);
+
+  const onCardDown = (e, id) => {
+    if (judged) return; // === !showNotebook, which is declared further down
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    dragRef.current = { id, x0: e.clientX, y0: e.clientY, moved: false, pid: e.pointerId };
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* capture is a nicety */ }
+  };
+
+  const onCardMove = (e) => {
+    const d = dragRef.current;
+    if (!d || d.pid !== e.pointerId) return;
+    const dx = e.clientX - d.x0;
+    const dy = e.clientY - d.y0;
+    if (!d.moved) {
+      if (Math.hypot(dx, dy) < DRAG_SLOP) return;
+      d.moved = true;
+      playSfx?.('click'); // the lift
+    }
+    setDrag({ id: d.id, dx, dy, over: overCell(e.clientX, e.clientY) });
+  };
+
+  const onCardUp = (e) => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    setDrag(null);
+    if (!d || d.pid !== e.pointerId || !d.moved) return; // a tap: let onClick cycle
+    // A drag is not also a tap. Pointer capture means the trailing click may
+    // land anywhere or not fire at all, so this is a timestamp rather than a
+    // flag — a flag left set would eat the NEXT genuine tap.
+    dragEndedAt.current = Date.now();
+    if (overCell(e.clientX, e.clientY)) {
+      if (marks[d.id] !== 'jail') { putInCell(d.id); playSfx?.('collect'); }
+    } else if (marks[d.id] === 'jail') {
+      emptyCell(); // dragged back out of the cell
+      playSfx?.('click');
+    }
+  };
+
+  const onCardCancel = () => { dragRef.current = null; setDrag(null); };
+
+  /*
+   * The cell is ALSO a picker, and that is an accessibility requirement rather
+   * than a convenience: tapping it walks nobody → first suspect → … → nobody.
+   *
+   * ⚠ Do not remove it to make dragging the only way in. CLAUDE.md records
+   * Mirror World shipping an accessible control that could not reach the win
+   * condition — 156 of 300 levels unpassable, with every button rendering and
+   * every tap registering. A drag needs a pointer that can press, move and hold;
+   * a keyboard has none, and neither does a player with a tremor.
+   */
+  const pickNextForCell = () => {
+    if (!caseData || judged) return;
+    const order = caseData.people;
+    const at = jailed ? order.indexOf(jailed) : -1;
+    const next = order[at + 1] || null;
+    playSfx?.(next ? 'collect' : 'click');
+    if (next) putInCell(next); else emptyCell();
+  };
+
+  /**
+   * How the cell's occupant stands against the evidence.
+   *   sound    — the thief in EVERY consistent world
+   *   wrongful — the thief in NONE of them
+   *   open     — the thief in some but not all: allowed, but not settled
+   */
+  const jailVerdict = useCallback((c, who) => {
+    if (!who || !c) return null;
+    if (c.worlds.every((w) => w.thief === who)) return 'sound';
+    if (c.worlds.every((w) => w.thief !== who)) return 'wrongful';
+    return 'open';
+  }, []);
 
   const confirm = () => {
     if (!caseData || judged || !canConfirm) return;
@@ -144,8 +307,12 @@ export function DetectiveEngine({
       ok = given === String(caseData.answer);
     }
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const jv = jailVerdict(caseData, jailed);
     trialLogRef.current?.trial({
       ok,
+      // The cell, recorded as its OWN fields. `ok` above is untouched by it.
+      jailed: jailed || null,
+      jailVerdict: jv,
       kind: q.kind,
       rule: caseData.rule.kind,
       suspects: caseData.people.length,
@@ -155,8 +322,11 @@ export function DetectiveEngine({
       given,
       rt: Math.max(0, Math.round(now - askedAtRef.current)),
     });
-    setJudged({ ok });
+    setJudged({ ok, jail: jv, jailedId: jailed });
     setResults((r) => [...r, ok]);
+    // A sound arrest is worth something on its own, so the cell is a real
+    // decision rather than a sticker. It cannot rescue a wrong answer.
+    if (jv === 'sound') awardPoints?.(2);
     playSfx?.(ok ? 'win' : 'error');
   };
 
@@ -208,7 +378,13 @@ export function DetectiveEngine({
 
   const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
   const cardStyle = cosmos ? { ...S.card, ...S.cosmosCard } : S.card;
-  const showNotebook = caseData.people.length >= 4 && !judged;
+  /*
+   * The notebook used to appear only from four suspects up, because two private
+   * marks were clutter on a three-suspect board. The cycle now ends in the
+   * holding cell, which is a real mechanic and the game's namesake judgement, so
+   * it is available on every case.
+   */
+  const showNotebook = !judged;
   const solvedCount = results.filter(Boolean).length;
 
   /* ── the run is over ── */
@@ -281,19 +457,39 @@ export function DetectiveEngine({
               const mk = marks[p] || 'none';
               const revealed = judged && caseData.tally === 1;
               const isThief = revealed && caseData.worlds[0].thief === p;
+              const inHand = drag?.id === p;
               return (
                 <button
                   key={p}
                   type="button"
                   disabled={!showNotebook}
-                  onClick={() => cycleMark(p)}
+                  onPointerDown={(e) => onCardDown(e, p)}
+                  onPointerMove={onCardMove}
+                  onPointerUp={onCardUp}
+                  onPointerCancel={onCardCancel}
+                  onClick={() => {
+                    // Swallow the click that trails a drag; see onCardUp.
+                    if (Date.now() - dragEndedAt.current < 350) return;
+                    cycleMark(p);
+                  }}
                   aria-label={nameOf(p)}
                   style={{
                     ...S.sus,
                     ...(mk === 'clear' ? S.susClear : null),
                     ...(mk === 'suspect' ? S.susMark : null),
+                    ...(mk === 'jail' ? S.susJail : null),
                     ...(isThief ? S.susThief : null),
-                    cursor: showNotebook ? 'pointer' : 'default',
+                    ...(showNotebook ? S.susGrab : null),
+                    // Everyone else recedes, so the card in hand reads as lifted
+                    // off the board rather than merely tinted.
+                    ...(drag && !inHand ? S.susAside : null),
+                    ...(inHand ? S.susInHand : null),
+                    ...(inHand ? {
+                      transform: `translate(${drag.dx}px, ${drag.dy}px) `
+                        + `rotate(${Math.max(-7, Math.min(7, drag.dx * 0.07))}deg) `
+                        + `scale(${drag.over ? 1.14 : 1.07})`,
+                    } : null),
+                    cursor: showNotebook ? (inHand ? 'grabbing' : 'grab') : 'default',
                   }}
                 >
                   <img src={cast2dUrl(p)} alt="" aria-hidden="true" draggable="false" style={S.susArt} />
@@ -310,7 +506,49 @@ export function DetectiveEngine({
               );
             })}
           </div>
-          {showNotebook && <div style={S.hint}>{t.notebookHint}</div>}
+          {/* ── the holding cell ──
+              Rendered as its own row rather than left implicit in a card's
+              border, because it is a COMMITMENT and the player has to be able
+              to see at a glance who they have decided to hold. */}
+          <button
+            ref={cellRef}
+            type="button"
+            disabled={!showNotebook}
+            onClick={pickNextForCell}
+            aria-label={t.cellPick}
+            style={{
+              ...S.cell,
+              ...(showNotebook ? S.cellLive : null),
+              ...(drag ? S.cellArmed : null),
+              ...(drag?.over ? S.cellOver : null),
+              ...(jailed && !drag ? S.cellFull : null),
+            }}
+          >
+            <span style={S.cellLabel}>
+              <Emoji char="🔒" /> {t.cellLabel}
+            </span>
+            {/* While a card is in hand the cell always speaks as a target, even
+                when occupied — "drop to replace" is the honest reading, and
+                showing the current occupant instead looks like a refusal. */}
+            {drag ? (
+              <span style={{ ...S.cellEmpty, ...(drag.over ? S.cellDropNow : null) }}>
+                {drag.over ? t.cellDrop : t.cellDragHere}
+              </span>
+            ) : jailed ? (
+              <span style={S.cellWho}>
+                <img src={cast2dUrl(jailed)} alt="" aria-hidden="true" draggable="false" style={S.cellArt} />
+                {nameOf(jailed)}
+              </span>
+            ) : (
+              <span style={S.cellEmpty}>{t.cellEmpty}</span>
+            )}
+          </button>
+          {showNotebook && (
+            <>
+              <div style={S.hint}>{t.notebookHint}</div>
+              <div style={S.hint}>{t.cellHint}</div>
+            </>
+          )}
 
           {/* the statements */}
           <div style={S.says}>
@@ -389,6 +627,22 @@ export function DetectiveEngine({
                   {judged.ok ? t.solved : t.missed}
                 </div>
               </div>
+              {/* The cell's own verdict — a separate line, deliberately. It is
+                  never merged into Solved/Missed above, because the answer is
+                  what the domain score is built from. */}
+              {judged.jail && (
+                <div
+                  style={{
+                    ...S.jailVerdict,
+                    ...(judged.jail === 'sound' ? S.jailSound
+                      : judged.jail === 'wrongful' ? S.jailWrong : S.jailOpen),
+                  }}
+                >
+                  <Emoji char={judged.jail === 'sound' ? '🔒' : judged.jail === 'wrongful' ? '🕊️' : '🕰️'} />
+                  {' '}
+                  {t[judged.jail === 'sound' ? 'jailSound' : judged.jail === 'wrongful' ? 'jailWrongful' : 'jailOpen'](nameOf(judged.jailedId))}
+                </div>
+              )}
               <Explanation caseData={caseData} t={t} nameOf={nameOf} />
             </>
           )}
@@ -635,6 +889,75 @@ const S = {
   susClear: { borderColor: 'var(--success)', background: 'color-mix(in srgb, var(--success) 14%, var(--surface))', opacity: 0.72 },
   susMark: { borderColor: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 16%, var(--surface))' },
   susThief: { borderColor: 'var(--danger)', background: 'color-mix(in srgb, var(--danger) 16%, var(--surface))' },
+  /* In the cell. Darker and heavier than a mere mark, because it is a decision
+     rather than a note — and it must not be mistaken for the `suspect` mark it
+     sits next to in the cycle. */
+  susJail: {
+    borderColor: 'var(--ink)', borderWidth: 3,
+    background: 'color-mix(in srgb, var(--ink) 20%, var(--surface))',
+  },
+
+  /* ── the drag ──
+     `touchAction: none` is what stops a touch drag scrolling the page instead
+     of moving the card. It is scoped to the live notebook so a finger that
+     starts on a card AFTER judging still scrolls the results normally. */
+  susGrab: { touchAction: 'none' },
+  susInHand: {
+    zIndex: 6,
+    borderColor: 'var(--accent)',
+    boxShadow: '0 16px 28px var(--fx-shadow-drop)',
+    /* transform is deliberately NOT transitioned while in hand — the card has
+       to sit under the finger, not chase it. Dropping restores S.sus's 0.12s
+       transform transition, so the card springs home on release for free. */
+    transition: 'border-color 0.15s, background 0.15s, box-shadow 0.15s',
+  },
+  susAside: { opacity: 0.45 },
+
+  /* The cell. Dashed and empty-looking on purpose — it should read as a slot
+     waiting to be filled, which is what makes dragging into it obvious. */
+  cell: {
+    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+    padding: '7px 12px', borderRadius: 12, color: 'var(--ink)',
+    border: '2px dashed var(--line)', background: 'var(--surface)',
+    transition: 'border-color 0.16s, background 0.16s, transform 0.16s, padding 0.16s, box-shadow 0.16s',
+  },
+  cellLive: { cursor: 'pointer' },
+  cellFull: { borderStyle: 'solid', borderColor: 'var(--ink)' },
+  /* Armed: a card is in hand. The slot opens up — a bigger target for a thumb,
+     and the movement itself is what tells you where the card is meant to go. */
+  cellArmed: {
+    padding: '13px 12px', borderColor: 'var(--accent)',
+    background: 'color-mix(in srgb, var(--accent) 7%, var(--surface))',
+  },
+  cellOver: {
+    borderStyle: 'solid', borderColor: 'var(--accent)',
+    background: 'color-mix(in srgb, var(--accent) 18%, var(--surface))',
+    transform: 'scale(1.03)', boxShadow: `0 6px 18px var(--fx-shadow-soft)`,
+  },
+  cellDropNow: { color: 'var(--accent)', fontWeight: 900, opacity: 1 },
+  cellLabel: {
+    fontSize: 10.5, fontWeight: 900, letterSpacing: 1.1, textTransform: 'uppercase', color: 'var(--ink-dim)',
+  },
+  cellWho: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 13.5, fontWeight: 900, color: 'var(--ink)' },
+  cellArt: { width: 28, height: 28, objectFit: 'contain', objectPosition: 'center bottom' },
+  cellEmpty: { fontSize: 12.5, fontWeight: 650, color: 'var(--ink-dim)', opacity: 0.8 },
+
+  jailVerdict: {
+    width: '100%', borderRadius: 11, padding: '9px 13px',
+    fontSize: 13.5, fontWeight: 700, lineHeight: 1.45, textAlign: 'center',
+    borderWidth: 2, borderStyle: 'solid',
+  },
+  jailSound: {
+    color: 'var(--success)', borderColor: 'var(--success)',
+    background: 'color-mix(in srgb, var(--success) 12%, var(--surface))',
+  },
+  jailWrong: {
+    color: 'var(--danger)', borderColor: 'var(--danger)',
+    background: 'color-mix(in srgb, var(--danger) 12%, var(--surface))',
+  },
+  jailOpen: {
+    color: 'var(--ink-dim)', borderColor: 'var(--line)', background: 'var(--surface)',
+  },
   susArt: { width: 46, height: 46, objectFit: 'contain', objectPosition: 'center bottom', display: 'block' },
   susName: { fontSize: 12.5, fontWeight: 800 },
   traitRow: { display: 'flex', gap: 2, fontSize: 13, lineHeight: 1 },

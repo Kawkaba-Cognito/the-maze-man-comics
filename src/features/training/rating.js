@@ -39,6 +39,7 @@ export const RATED_GAMES = {
   trivia: { gameKey: 'trivia', domainId: 'language', lHalf: 6, en: 'Trivia', ar: 'معلومات' },
   rush: { gameKey: 'rush-hour', domainId: 'reasoning', lHalf: 7, en: 'Block Escape', ar: 'هروب القطع' },
   raven: { gameKey: 'raven-matrices', domainId: 'reasoning', lHalf: 6, en: 'Matrix Reasoning', ar: 'استدلال المصفوفات' },
+  gatekeeper: { gameKey: 'gatekeeper', domainId: 'reasoning', lHalf: 6, en: 'The Gate', ar: 'البوابة' },
   detective: { gameKey: 'detective', domainId: 'reasoning', lHalf: 6, en: 'Detective', ar: 'المحقّق' },
   stroop: { gameKey: 'spatial-stroop', domainId: 'flexibility', lHalf: 7, en: 'Arrow Rush', ar: 'تبديل الأسهم' },
   'mirror-world': { gameKey: 'mirror-world', domainId: 'flexibility', lHalf: 6, en: 'Mirror World', ar: 'عالم المرآة' },  'task-switch': { gameKey: 'task-switch', domainId: 'flexibility', lHalf: 6, en: 'Task Switch', ar: 'تبديل المهمة' },  'sort-shift': { gameKey: 'sort-shift', domainId: 'flexibility', lHalf: 6, en: 'Sort It Another Way', ar: 'رتّبها بطريقة أخرى' },
@@ -52,7 +53,7 @@ const ACTIVE_RATED_GAME_KEYS = new Set([
   'speed-match', 'math-gates', 'intercept',
   'story-grid', 'keep-track', 'paired-associates',
   'wordle', 'synonyms', 'trivia',
-  'rush-hour', 'raven-matrices', 'detective',
+  'rush-hour', 'gatekeeper', 'detective',
   'mirror-world', 'task-switch', 'sort-shift',
 ]);
 

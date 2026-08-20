@@ -304,6 +304,29 @@ export const GAME_SCIENCE = {
     },
   },
 
+  gatekeeper: {
+    en: {
+      title: 'The science',
+      intro: 'Rule induction by active hypothesis testing — the Wason 2-4-6 task (Wason, 1960) and the Zendo family. What is measured is how you FIND a rule, not whether you spot one.',
+      sections: [
+        { h: '🔬 Testing beats guessing', b: 'The gate obeys one law and you may spend only a few probes. Which travellers you choose to test is the whole task: the point is to narrow what the law could be, not to collect examples of it.' },
+        { h: '🪞 Confirmation bias, measured', b: 'People overwhelmingly test cases they expect to PASS, which cannot rule anything out (Wason, 1960; Klayman & Ha, 1987). A probe you expect to be refused usually eliminates far more laws. Your probe sharpness is exactly that — how much each test actually narrowed the field.' },
+        { h: '🧠 Why it sits beside Block Escape', b: 'Matrix puzzles show you a finished pattern and ask if you can see it. Here nothing is laid out: you have to generate a hypothesis, design a test, and revise. That is the other half of fluid reasoning.' },
+      ],
+      foot: 'Two numbers, kept apart on purpose: gates cleared says whether you were right, probe sharpness says how well you looked.',
+    },
+    ar: {
+      title: 'العلم وراء اللعبة',
+      intro: 'استنتاج القاعدة عبر الاختبار الفعّال — مهمة واسون 2-4-6 (Wason, 1960) وعائلة زيندو. ما يُقاس هو كيف تصل إلى القاعدة، لا مجرد ملاحظتها.',
+      sections: [
+        { h: '🔬 الاختبار خير من التخمين', b: 'للبوابة قانون واحد، ولديك فحوص معدودة. اختيارك لمن تفحص هو المهمة كلها: الهدف تضييق ما يمكن أن يكونه القانون، لا جمع أمثلة عليه.' },
+        { h: '🪞 انحياز التأكيد، مقيساً', b: 'يميل الناس بشدة لاختبار الحالات التي يتوقّعون نجاحها، وهي لا تستبعد شيئاً (Wason, 1960; Klayman & Ha, 1987). الفحص الذي تتوقّع رفضه يستبعد عادةً قوانين أكثر بكثير. «حدّة الفحص» عندك هي هذا بالضبط.' },
+        { h: '🧠 لماذا بجانب هروب القطع', b: 'ألغاز المصفوفات تعرض نمطاً مكتملاً وتسألك إن كنت تراه. هنا لا شيء معروض: عليك توليد فرضية، وتصميم اختبار، ثم المراجعة. هذا هو النصف الآخر من الاستدلال السائل.' },
+      ],
+      foot: 'رقمان منفصلان عمداً: البوابات المجتازة تقول هل كنت مصيباً، وحدّة الفحص تقول كم أحسنت النظر.',
+    },
+  },
+
   /* ── Flexibility ── */
   'mirror-world': {
     en: {

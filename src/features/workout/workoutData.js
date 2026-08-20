@@ -57,7 +57,7 @@ export const GOAL_GAME_WEIGHTS = {
     speed: { 'speed-match': 2, intercept: 1.5, 'math-gates': 1.5 },
     memory: { 'memo-span': 2, 'story-grid': 1.5, nback: 1.5, 'paired-associates': 1.5 },
     language: { wordle: 2, synonyms: 1.8, trivia: 1.8 },
-    reasoning: { 'rush-hour': 2, 'raven-matrices': 1.8, detective: 1.5 },
+    reasoning: { 'rush-hour': 2, gatekeeper: 1.8, detective: 1.5 },
     flexibility: { 'spatial-stroop': 2, 'task-switch': 1.8, 'sort-shift': 1.8 },
   },
   focus: {
@@ -69,7 +69,7 @@ export const GOAL_GAME_WEIGHTS = {
   memory: {
     memory: { 'memo-span': 3, 'story-grid': 2.5, 'paired-associates': 2, nback: 2 },
     attention: { mot: 1.5, 'cancel-task': 1.2 },
-    reasoning: { 'raven-matrices': 1.2 },
+    reasoning: { gatekeeper: 1.2 },
   },
   speed: {
     speed: { 'speed-match': 3, intercept: 2.5, 'math-gates': 2 },
@@ -77,7 +77,7 @@ export const GOAL_GAME_WEIGHTS = {
     attention: { 'cancel-task': 1.5, mot: 1.2 },
   },
   solver: {
-    reasoning: { 'rush-hour': 3, 'raven-matrices': 2.5, detective: 2 },
+    reasoning: { 'rush-hour': 3, gatekeeper: 2.5, detective: 2 },
     language: { synonyms: 2.5, trivia: 2, wordle: 1.8 },
     memory: { 'story-grid': 1.5, 'memo-span': 1.2 },
   },

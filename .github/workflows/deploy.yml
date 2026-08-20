@@ -72,6 +72,15 @@ jobs:
       - name: Validate Detective's generated cases
         run: npm run validate:liars
 
+      # The Gate's whole promise is that the law can be DEDUCED from the probes
+      # it grants. A tray that never separates the trio turns the final choice
+      # into a 1-in-3 guess wearing a puzzle's clothes, and a player who cannot
+      # work it out simply assumes they reasoned badly. This re-derives the
+      # fairness of every generated gate with an independent enumerator, and
+      # asserts no half-tier is inert.
+      - name: Validate The Gate's generated gates
+        run: npm run validate:gatekeeper
+
       - name: Audit FocusQuest level math & generation
         run: npm run audit:fq
 

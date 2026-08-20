@@ -175,11 +175,30 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     pulseCenter: () => {}, setRunning: () => {},
   });
 
+  /*
+   * The caller's LAST wish about whether this scene should be drawing, held
+   * outside the effect so it survives two things that used to discard it:
+   *
+   *  1. The gap before the scene exists. `useImperativeHandle` attaches during
+   *     the layout phase; the effect that builds the scene and installs the
+   *     real `setRunning` runs afterwards. A `setRunning(false)` arriving in
+   *     that window hit the no-op placeholder below and was lost, so the scene
+   *     started drawing and was never told to stop — 22k particles rendering
+   *     behind whatever screen the user had actually navigated to.
+   *  2. A rebuild. `wantAwake` was a plain `let` re-initialised to `true` on
+   *     every effect run, so a WebGL context restore woke a scene that the app
+   *     had deliberately idled.
+   */
+  const wantAwakeRef = useRef(true);
+
   useImperativeHandle(ref, () => ({
     dissolvePlanet: (id) => apiRef.current.dissolvePlanet(id),
     reformPlanet: (id) => apiRef.current.reformPlanet(id),
     pulseCenter: () => apiRef.current.pulseCenter(),
-    setRunning: (on) => apiRef.current.setRunning(on),
+    setRunning: (on) => {
+      wantAwakeRef.current = !!on;
+      apiRef.current.setRunning(!!on);
+    },
   }), []);
 
   useEffect(() => {
@@ -214,8 +233,30 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
      * preventDefault() on the loss event is what makes restoration possible at
      * all; without it the browser will not fire webglcontextrestored.
      */
+    /*
+     * Loop state is declared HERE, above the context handlers that touch it,
+     * rather than down beside the frame loop. `let` is in the temporal dead
+     * zone until its declaration runs, and webglcontextlost can fire while this
+     * effect is still building the scene — a lost context during shader
+     * compilation is exactly when the browser is under context pressure. From
+     * down there, the handler would have thrown a ReferenceError instead of
+     * parking the loop.
+     */
+    let raf = 0;
+    let pageVisible = document.visibilityState === 'visible';
+    let wantAwake = wantAwakeRef.current;
+    let contextLost = false;
+    let running = pageVisible && wantAwake;
+
     const onContextLost = (e) => {
       e.preventDefault();
+      // `running` MUST come down with the loop. Left true, it disagreed with
+      // reality, and applyRunning()'s `next === running` early return then made
+      // the scene unwakeable — a frozen universe that a tab switch could not
+      // revive. contextLost also stops a wake from spinning a dead context;
+      // webglcontextrestored bumps glEpoch and rebuilds from scratch.
+      contextLost = true;
+      running = false;
       cancelAnimationFrame(raf);
       raf = 0;
     };
@@ -1115,8 +1156,8 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
 
-    let raf = 0;
-    let running = true;
+    // raf / pageVisible / wantAwake / contextLost / running are declared at the
+    // top of this effect, above the context-loss handler that touches them.
     let sceneDim = 0;
     function frame() {
       if (!running) return;
@@ -1249,15 +1290,21 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       if (composer) composer.render();
       else renderer.render(scene, camera);
     }
+    /*
+     * Draw ONE frame either way, then honour `running`. An idle scene still has
+     * to have painted something — otherwise a universe that starts idle is a
+     * blank canvas rather than a still one.
+     */
+    const wantLoop = running;
+    running = true;
     frame();
+    if (!wantLoop) { running = false; cancelAnimationFrame(raf); }
 
     // Two independent reasons to stop drawing â€” the tab being hidden, and the
     // scene being scrolled off-screen. They must COMPOSE: tabbing away and back
     // while Kawnera covers the universe should not restart it.
-    let pageVisible = document.visibilityState === 'visible';
-    let wantAwake = true;
     function applyRunning() {
-      const next = pageVisible && wantAwake;
+      const next = pageVisible && wantAwake && !contextLost;
       if (next === running) return;
       // Waking: drop the delta that accrued while idle before drawing, so the
       // first resumed frame advances by ~0 rather than by the whole absence.
@@ -1269,7 +1316,11 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     // Idling is ALWAYS preferable to unmounting: a remount rebuilds thousands
     // of particles, recompiles shaders and takes a fresh WebGL context, which
     // is what phones run out of.
-    apiRef.current.setRunning = (on) => { wantAwake = !!on; applyRunning(); };
+    apiRef.current.setRunning = (on) => {
+      wantAwake = !!on;
+      wantAwakeRef.current = !!on;
+      applyRunning();
+    };
 
     function onVisibility() {
       pageVisible = document.visibilityState === 'visible';

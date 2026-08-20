@@ -23,7 +23,7 @@ const COVER_KEYS = new Set([
   'speed-match', 'math-gates', 'intercept',
   'story-grid', 'keep-track', 'paired-associates',
   'wordle', 'synonyms', 'trivia',
-  'rush-hour', 'raven-matrices', 'detective',
+  'rush-hour', 'gatekeeper', 'detective',
   'mirror-world', 'task-switch', 'sort-shift',
 ]);
 
@@ -46,7 +46,10 @@ const COVER_FILE_OVERRIDES = {
   synonyms: 'language-word-links-v2.webp',
   trivia: 'language-trivia-v2.webp',
   'rush-hour': 'reasoning-block-escape-v2.webp',
-  'raven-matrices': 'reasoning-matrix-iq-v2.webp',
+  /* ⚠ PLACEHOLDER: still the Matrix Reasoning painting, whose hub slot The
+     Gate took. Pointed at a tracked file so the tile cannot 404 — untracked
+     art builds green locally and 404s live. Swap when bespoke art exists. */
+  gatekeeper: 'reasoning-matrix-iq-v2.webp',
   detective: 'reasoning-detective-v2.webp',
   // ⚠ PLACEHOLDER: still the Arrow Rush painting. Mirror World needs its own
   // cover — pointed at a tracked file so the tile cannot 404, not because it fits.

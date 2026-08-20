@@ -33,6 +33,9 @@ export default function HomeScreen() {
   const bodies = useLearnedBodies(KAWNERA_BOOKS);
   const cooling = bodies.filter((b) => b.warmth < 0.5).length;
   const zenRef = useRef(null);
+  // The latest wish for the universe's run state, kept outside React so it can
+  // be replayed the moment the lazy scene finally attaches. See attachZen.
+  const zenWantRef = useRef(true);
   const scrollRef = useRef(null);
   const entryTriggeredRef = useRef(false);
   const [mazeOpen, setMazeOpen] = useState(false);
@@ -152,9 +155,28 @@ export default function HomeScreen() {
    * setRunning idles rather than unmounts, which is what ZenUniverse asks for —
    * a remount rebuilds every particle, recompiles shaders and takes a fresh
    * WebGL context.
+   *
+   * ⚠️ The `?.` is NOT enough on its own, and that gap was the second half of
+   * this bug (2026-08-20). ZenUniverse is LAZY, so on the runs before its chunk
+   * resolves `zenRef.current` is null and the call is silently dropped — and
+   * this effect only re-runs when activeTab/mazeOpen change. Leave Home before
+   * the chunk lands and the scene mounts already running, is never told to
+   * idle, and then draws 22k particles behind every other screen for the rest
+   * of the session. That is a WebGL context and a full frame budget spent on an
+   * invisible canvas, which is felt as jank everywhere else in the app.
+   *
+   * So the wish is stored in a ref and replayed from the attach callback below,
+   * which fires exactly when the instance becomes available.
    */
+  const attachZen = useCallback((inst) => {
+    zenRef.current = inst;
+    inst?.setRunning(zenWantRef.current);
+  }, []);
+
   useEffect(() => {
-    zenRef.current?.setRunning(activeTab === 'habits' && !mazeOpen);
+    const want = activeTab === 'habits' && !mazeOpen;
+    zenWantRef.current = want;
+    zenRef.current?.setRunning(want);
   }, [activeTab, mazeOpen]);
 
   return (
@@ -173,7 +195,7 @@ export default function HomeScreen() {
             nobody screenshots. --universe-dusk is the ground both themes
             already use (#cfc4b0 light / #0a0a0b dark), so dark keeps its void. */}
         <Suspense fallback={<div style={{ position: 'absolute', inset: 0, background: 'var(--universe-dusk)' }} />}>
-          <ZenUniverse ref={zenRef} planets={bodies} />
+          <ZenUniverse ref={attachZen} planets={bodies} />
         </Suspense>
       </div>
 

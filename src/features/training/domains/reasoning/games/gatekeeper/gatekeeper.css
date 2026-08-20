@@ -1,0 +1,407 @@
+/*
+ * THE GATE — Haris the Gatekeeper.
+ *
+ * ⚠ The ground is --play-surface, never a literal. That is consistency rule 0.1
+ * and the `surface` look rule: a frozen colour cannot follow the theme, and this
+ * repo's loading-flash bug was exactly that one screen earlier.
+ *
+ * ⚠ Shadows and scrims come from --fx-*, never a hand-mixed rgba(0,0,0,…). Seven
+ * games hand-mix and that is the one real gap on the look axis; a new game has
+ * no excuse to widen it.
+ *
+ * The four folk hues below are IDENTITY colours, not role colours. They are
+ * deliberately separate from --game-ok / --game-bad, which mean "admitted" and
+ * "refused" here — CLAUDE.md records what happened in Intercept when a piece's
+ * own colour collided with a feedback colour: the thing to tap and the thing
+ * not to tap rendered identically.
+ */
+
+.gk-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--play-surface);
+  color: var(--game-ink);
+  font-family: 'Outfit', system-ui, sans-serif;
+
+  /* traveller identity — four hues, each also carrying a face and a name */
+  --gk-ember: #c4633a;
+  --gk-gold: #c9962f;
+  --gk-moss: #55803f;
+  --gk-river: #35798c;
+  --gk-ink: #1e2a33;
+  --gk-stripe: #f6efe1;
+  --gk-moon: #efe6d2;
+  /* Ink for text sitting ON a solid role colour (the stamps, the primary
+     button). Declared once so the value is not repeated at four call sites. */
+  --gk-on-solid: #fff;
+
+  /* the gate itself */
+  --gk-keeper: #4a6b78;
+  --gk-arch: #3b3128;
+  --gk-arch-fill: #2b2620;
+}
+
+.gk-root--cosmos {
+  background: transparent;
+  color: #f0e2c0;
+  z-index: 81;
+}
+
+.gk-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 20px;
+  overflow-y: auto;
+}
+
+.gk-card {
+  width: min(100%, 480px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface-raised);
+  border: 2px solid var(--line);
+  border-radius: 22px;
+  padding: 14px 12px 16px;
+  box-shadow: 3px 3px 0 var(--fx-shadow-soft);
+}
+
+/* ── HUD ─────────────────────────────────────────────────────────────── */
+.gk-hud {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+.gk-seals { display: flex; gap: 5px; align-items: center; }
+.gk-seal {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--game-bad);
+  border: 2px solid var(--ink-outline);
+}
+.gk-seal--off {
+  background: transparent;
+  border-style: dashed;
+  opacity: 0.45;
+}
+
+.gk-family {
+  margin: 0;
+  text-align: center;
+  line-height: 1.25;
+}
+.gk-family b {
+  display: block;
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--ink);
+}
+.gk-family small {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-dim);
+}
+
+/* ── Haris ───────────────────────────────────────────────────────────── */
+.gk-haris {
+  width: min(70%, 220px);
+  height: auto;
+  display: block;
+}
+
+.gk-led {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 6px 18px;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-dim);
+}
+.gk-led--yes {
+  color: var(--gk-on-solid);
+  background: var(--game-ok);
+  border-color: var(--game-ok-edge);
+}
+.gk-led--no {
+  color: var(--gk-on-solid);
+  background: var(--game-bad);
+  border-color: var(--game-bad-edge);
+}
+
+/* ── tools ───────────────────────────────────────────────────────────── */
+.gk-toolrow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.gk-chip {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.gk-lens {
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 800;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 2px solid var(--ink-outline);
+  background: var(--game-accent);
+  color: var(--game-ink);
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--fx-shadow-soft);
+}
+.gk-lens:disabled { opacity: 0.42; cursor: default; box-shadow: none; }
+
+.gk-lenssay {
+  width: 100%;
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 2px dashed var(--game-accent);
+  background: color-mix(in srgb, var(--game-accent) 16%, var(--surface));
+  color: var(--ink);
+}
+
+.gk-h2 {
+  margin: 4px 0 0;
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--ink);
+  text-align: center;
+}
+.gk-hint {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink-dim);
+  text-align: center;
+  max-width: 40ch;
+}
+
+/* ── the travellers ──────────────────────────────────────────────────── */
+.gk-tray {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+.gk-trio {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.gk-trav {
+  position: relative;
+  /* rule 9.5 — every tappable target is at least 44px */
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 4px 6px;
+  border-radius: 14px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+}
+.gk-trav:disabled { cursor: default; }
+.gk-trav--big { padding: 10px 12px 8px; }
+
+.gk-trav--in {
+  border-color: var(--game-ok);
+  background: color-mix(in srgb, var(--game-ok) 13%, var(--surface));
+}
+.gk-trav--out {
+  border-color: var(--game-bad);
+  background: color-mix(in srgb, var(--game-bad) 13%, var(--surface));
+}
+.gk-trav--picked {
+  border-color: var(--game-accent);
+  background: color-mix(in srgb, var(--game-accent) 18%, var(--surface));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--game-accent) 32%, transparent);
+  transform: translateY(-2px);
+}
+.gk-trav--right {
+  border-color: var(--game-ok);
+  background: color-mix(in srgb, var(--game-ok) 18%, var(--surface));
+}
+.gk-trav--wrong {
+  border-color: var(--game-bad);
+  background: color-mix(in srgb, var(--game-bad) 18%, var(--surface));
+}
+
+.gk-folk {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.gk-folk-svg { display: block; }
+.gk-folk-name {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+/*
+ * The stamp is a WORD, not a colour wash. The verdict is the one piece of
+ * information a player must never misread, and rule 9.6 forbids carrying it by
+ * colour alone — the tinted border above is the redundant channel, not the
+ * primary one.
+ */
+.gk-stamp {
+  position: absolute;
+  top: -8px;
+  inset-inline-end: -6px;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  padding: 3px 7px;
+  border-radius: 6px;
+  border: 2px solid var(--ink-outline);
+  color: var(--gk-on-solid);
+}
+.gk-stamp--in { background: var(--game-ok); }
+.gk-stamp--out { background: var(--game-bad); }
+
+.gk-alive {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+/* ── the reveal ──────────────────────────────────────────────────────── */
+.gk-reveal {
+  width: 100%;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  border-inline-start-width: 4px;
+  border-inline-start-color: var(--game-accent);
+  background: var(--surface);
+  padding: 9px 13px;
+}
+.gk-reveal-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 2px;
+}
+.gk-law {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+/* ── results ─────────────────────────────────────────────────────────── */
+.gk-verdict-big {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--ink);
+  text-align: center;
+  padding: 6px 4px;
+}
+.gk-metrics {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  margin: 4px 0 0;
+  padding: 0;
+}
+.gk-metrics div { text-align: center; }
+.gk-metrics dt {
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.gk-metrics dd {
+  margin: 2px 0 0;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--ink);
+}
+.gk-means {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink-dim);
+  text-align: center;
+  max-width: 42ch;
+}
+
+/* ── the one primary action ──────────────────────────────────────────── */
+.gk-primary {
+  font-family: inherit;
+  padding: 12px 24px;
+  border-radius: 14px;
+  border: 2px solid var(--ink-outline);
+  background: var(--game-ok);
+  color: var(--gk-on-solid);
+  font-weight: 900;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--ink-outline);
+}
+.gk-primary--off {
+  background: var(--game-muted);
+  border-color: var(--game-muted-edge);
+  box-shadow: none;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gk-trav { transition: none; }
+}

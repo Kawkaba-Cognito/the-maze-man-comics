@@ -84,6 +84,20 @@ const sharedSurfaceChecks = [
  * strings live in noir/). A gate that measures the wrong file is worse than no
  * gate, because its output looks authoritative.
  */
+/**
+ * Blank out /* … *\/ and // … comments, keeping the source length roughly
+ * intact so nothing that relies on offsets shifts.
+ *
+ * Only rules that hunt for a LITERAL a player can see should use this — a rule
+ * about what the code does (an import, a call) is fine reading comments, since
+ * a commented-out import is not a false positive worth chasing. See `fx`.
+ */
+function stripComments(src) {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1');
+}
+
 const RULES = [
   { id: 'modeshell', w: 3, label: 'ModeShell (same 3 modes, same flow)',
     test: (g) => /from ['"][^'"]*shared\/ModeShell['"]/.test(g.all) },
@@ -267,7 +281,24 @@ const LOOK = [
      * the tokens has ZERO hand-mixed values, and every game that hand-mixes uses
      * none of the tokens. There is no middle group to argue about.
      */
-    test: (g) => !/rgba\(\s*(0\s*,\s*0\s*,\s*0|255\s*,\s*255\s*,\s*255)\s*,/.test(g.all),
+    /*
+     * ⚠ Read from CODE ONLY, not from comments (2026-08-20).
+     *
+     * The Gate was written with a header comment saying, in as many words, that
+     * shadows come from --fx-* and never from a hand-mixed rgba(0,0,0,…) — and
+     * this rule flagged it for containing the very pattern it was promising not
+     * to use. The game's actual CSS has no hand-mixed values at all.
+     *
+     * That is the same failure the review board hit on its first day, recorded
+     * in CLAUDE.md: its claims detector fired on a BENCHED.md and a code comment
+     * that were CRITICISING the claim in question. A grep cannot tell an
+     * assertion from a rebuttal, so the fix is to stop showing it prose.
+     *
+     * Stripping comments can only ever REMOVE matches, so no game can lose a
+     * point to this change — a game that now passes was only ever failing on
+     * something no player could see.
+     */
+    test: (g) => !/rgba\(\s*(0\s*,\s*0\s*,\s*0|255\s*,\s*255\s*,\s*255)\s*,/.test(stripComments(g.all)),
   },
   {
     id: 'sfx',
@@ -366,7 +397,16 @@ const LOOK_FIXTURES = {
   },
   fx: {
     bad: { all: '.a { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.42); }', css: '' },
-    good: { all: '.a { box-shadow: 0 2px 8px var(--fx-shadow-drop); }', css: '' },
+    /* The good fixture carries the hand-mixed pattern INSIDE A COMMENT, because
+       that is the false positive this rule shipped with: The Gate's header
+       comment promised never to hand-mix and was flagged for saying so. If a
+       future edit stops stripping comments, this fixture fails loudly instead
+       of the rule quietly going back to flagging prose. */
+    good: {
+      all: '/* shadows come from --fx-*, never a hand-mixed rgba(0, 0, 0, 0.4) */\n'
+        + '.a { box-shadow: 0 2px 8px var(--fx-shadow-drop); }',
+      css: '',
+    },
   },
   sfx: {
     bad: { all: 'const ctx = new AudioContext(); ctx.createOscillator();', css: '' },

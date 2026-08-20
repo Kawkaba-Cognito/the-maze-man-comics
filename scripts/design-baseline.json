@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 213,
+    "raw-colour": 225,
     "stacked-backdrops": 1
   },
   "files": {
@@ -66,6 +66,9 @@
     },
     "src/features/training/domains/reasoning/games/detective/index.jsx": {
       "raw-colour": 7
+    },
+    "src/features/training/domains/reasoning/games/gatekeeper/gatekeeper.css": {
+      "raw-colour": 12
     },
     "src/features/training/domains/reasoning/games/raven-matrices/index.jsx": {
       "raw-colour": 1

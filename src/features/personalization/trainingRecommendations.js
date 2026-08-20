@@ -12,7 +12,7 @@ const clamp = (n, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, Number(n) || 0));
 const ACTIVE_GAME_KEYS = new Set([
   'cancel-task', 'mot', 'train-switch', 'speed-match', 'math-gates', 'intercept',
   'story-grid', 'keep-track', 'paired-associates', 'wordle', 'synonyms', 'trivia',
-  'rush-hour', 'raven-matrices', 'detective', 'mirror-world', 'task-switch', 'sort-shift',
+  'rush-hour', 'gatekeeper', 'detective', 'mirror-world', 'task-switch', 'sort-shift',
 ]);
 
 function daysSince(day) {
