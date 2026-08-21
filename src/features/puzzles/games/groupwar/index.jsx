@@ -63,7 +63,11 @@ export default function GroupWarGame({ onBack }) {
   // setup | handoff | play | roundResult | final
   const [teamCount, setTeamCount] = useState(2);
   const [teams, setTeams] = useState(() => defaultTeams(2));
-  const [selected, setSelected] = useState(() => new Set(['mot', 'math-gates', 'trivia', 'brixton']));
+  // Every id here must exist in WAR_GAMES. 'brixton' sat in this Set for months
+  // after its catalog entry was deleted (60e74f4): the playlist filtered it out
+  // but the start button counted it, so deselecting the three real defaults left
+  // a "startable" war with no games — a blank screen with no back button.
+  const [selected, setSelected] = useState(() => new Set(['mot', 'math-gates', 'trivia']));
   const [rounds, setRounds] = useState(1);
   const [diff, setDiff] = useState('hard');
 
@@ -209,6 +213,9 @@ export default function GroupWarGame({ onBack }) {
 
   // ── SETUP ──
   if (phase === 'setup') {
+    // Count what buildPlaylist would actually deal, not what the Set holds — an
+    // id with no catalog entry must never keep the button enabled.
+    const playableCount = WAR_GAMES.filter((g) => selected.has(g.id)).length;
     return (
       <GroupShell isAr={isAr} title={t.title} accent={ACCENT} onBack={() => { playSfx?.('click'); onBack?.(); }} menuLabel={t.menu}>
         <div className="gc-hero">⚔️</div>
@@ -282,8 +289,8 @@ export default function GroupWarGame({ onBack }) {
           </div>
         </div>
 
-        {selected.size < 1 && <div className="gc-tip">{t.needGames}</div>}
-        <button type="button" className="gc-btn" disabled={selected.size < 1} style={{ opacity: selected.size < 1 ? 0.5 : 1 }} onClick={begin}>
+        {playableCount < 1 && <div className="gc-tip">{t.needGames}</div>}
+        <button type="button" className="gc-btn" disabled={playableCount < 1} style={{ opacity: playableCount < 1 ? 0.5 : 1 }} onClick={begin}>
           {t.start}
         </button>
         <GroupHow title={t.howTitle} text={t.how} />

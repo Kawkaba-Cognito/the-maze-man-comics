@@ -5,9 +5,9 @@ import React, {
   useMemo,
   useRef,
   useLayoutEffect,
-  useSyncExternalStore,
 } from 'react';
 import PlayHud, { ShapeSvg } from '../../../../shared/PlayHud';
+import PlayResults from '../../../../shared/PlayResults';
 import GamePiece from '../../../../shared/GamePiece';
 import {
   shapeArtLabel,
@@ -15,18 +15,12 @@ import {
   shapeArtUrl,
   shapesAreArtSafe,
 } from '../../../../shared/shapeArt';
-import {
-  getShapeScale,
-  subscribeShapeNorm,
-  getShapeNormVersion,
-} from '../../../../shared/shapeNorm';
 import { createStaircase } from './staircase';
 import { useApp } from '../../../../../../context/AppContext';
 import { loadJson, saveJson } from '../../../../../../lib/storage';
 import {
   SH,
   DM,
-  TC,
   prepareLevelRound,
   prepareChallengeSeed,
   prepareChallengePlayState,
@@ -48,12 +42,10 @@ import {
 } from '../../../../shared/focusQuestData';
 import {
   TrainingMenuBar,
-  TrainingChromeBtn,
   TrainingPauseModal,
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
-import { IconBack, IconPause } from '../../../../shared/TrainingIcons';
 import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
 import ModePlanetHub from '../../../../shared/ModePlanetHub';
 import HubScienceLink from '../../../../shared/HubScienceLink';
@@ -233,6 +225,7 @@ const UI = {
     freeStrikes: 'Errors',
     freeLvlLabel: (tier, lv) => `Survival · ${tier} ${lv}`,
     freeRoundsCleared: (n) => `Rounds cleared: ${n}`,
+    roundsClearedLabel: 'Rounds cleared',
     freeBest: (n) => `Best clears: ${n}`,
     freeBestScoreLine: (n) => `Best score: ${n}`,
     freeIntroBody:
@@ -294,7 +287,11 @@ const UI = {
       nr > 1
         ? `${nr}× · ${t}s avg · ${e} err total · ${a}% · ${tp} t/s`
         : `${t}s · ${e} err · ${a}% · ${tp} t/s`,
-    ies: 'IES score',
+    efficiency: 'Efficiency score',
+    efficiencyHint: 'Higher is better · combines speed and accuracy',
+    targetsFound: 'Targets found',
+    accuracy: 'Accuracy',
+    timeRanOut: 'Time ran out',
     rt: 'Avg RT',
     countdownHint: 'Get ready…',
     survivalCueTitle: 'Your target',
@@ -376,6 +373,7 @@ const UI = {
     freeStrikes: 'أخطاء',
     freeLvlLabel: (tier, lv) => `حر · ${tier} ${lv}`,
     freeRoundsCleared: (n) => `جولات ناجحة: ${n}`,
+    roundsClearedLabel: 'جولات مكتملة',
     freeBest: (n) => `أفضل إكمال: ${n}`,
     freeBestScoreLine: (n) => `أفضل نقاط: ${n}`,
     freeIntroBody:
@@ -434,7 +432,11 @@ const UI = {
       nr > 1
         ? `${nr}× · ${t}s معدل · ${e} أخطاء المجموع · ${a}% · ${tp} هدف/ث`
         : `${t}s · ${e} أخطاء · ${a}% · ${tp} هدف/ث`,
-    ies: 'درجة IES',
+    efficiency: 'درجة الكفاءة',
+    efficiencyHint: 'الأعلى أفضل · تجمع السرعة والدقة',
+    targetsFound: 'الأهداف الموجودة',
+    accuracy: 'الدقة',
+    timeRanOut: 'انتهى الوقت',
     rt: 'متوسط زمن الاستجابة',
     countdownHint: 'استعد…',
     survivalCueTitle: 'هدفك',
@@ -544,13 +546,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const [errors, setErrors] = useState(0);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
-  const [shake, setShake] = useState(false);
   const [lastResult, setLastResult] = useState(null);
 
   const [chalNames, setChalNames] = useState(['Player 1', 'Player 2']);
   const [chalSeed, setChalSeed] = useState(null);
   const [chalIdx, setChalIdx] = useState(0);
-  const [chalScores, setChalScores] = useState([]);
   const [chalTurnOpen, setChalTurnOpen] = useState(false);
   const [chalRoundsTotal, setChalRoundsTotal] = useState(1);
   const [chalRoundIdx, setChalRoundIdx] = useState(0);
@@ -606,7 +606,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const staircaseRef = useRef(null); // adaptive 2-down/1-up threshold engine
   const [assessResult, setAssessResult] = useState(null);
   const [assessHistory, setAssessHistory] = useState(() => loadAssessHistory());
-  const shakeTimerRef = useRef(0);
 
   const juice = useJuice();
   const rLabels = ratingLabels(isAr);
@@ -639,10 +638,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   }, [markTutorialDone]);
 
   useEffect(() => () => {
-    if (shakeTimerRef.current) {
-      clearTimeout(shakeTimerRef.current);
-      shakeTimerRef.current = 0;
-    }
   }, []);
 
   useEffect(() => {
@@ -1005,7 +1000,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         const prevRow = base[idx];
         base[idx] = mergeChallengePlayerStats(prevRow, stats, e, names[idx]);
         chalScoresRef.current = base;
-        setChalScores(base);
         if (won) playSfx('win');
         else playSfx('error');
         const nextIdx = idx + 1;
@@ -1520,14 +1514,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         return;
       }
     }
-    if (!isAssess) {
-      setShake(true);
-      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
-      shakeTimerRef.current = setTimeout(() => {
-        setShake(false);
-        shakeTimerRef.current = 0;
-      }, 350);
-    }
   }, [playStep, pauseOpen, cdShow, playSfx, juice]);
 
   const onHudPause = useCallback(() => {
@@ -1559,7 +1545,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     chalIdxRef.current = 0;
     const initial = names.map((nm) => ({ nm, rounds: [] }));
     chalScoresRef.current = initial;
-    setChalScores(initial);
     setChalTurnOpen(true);
     setPhase('play');
   };
@@ -1904,138 +1889,77 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         </>
       )}
 
-      {phase === 'res' && lastResult?.type === 'level' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar
-              onBack={() => {
-                setLastResult(null);
-                clearPlayRoundState();
-                setPhase('hub');
-              }}
-              playSfx={playSfx}
-              variant="paper"
-              center={
-                <div style={{ textAlign: 'center' }}>
-                  <div className="ct-fq-training-title ct-fq-training-title-sm">
-                    {lastResult.stats.won ? t.resultsLevelPass : t.resultsLevelRetryTitle}
-                  </div>
-                </div>
-              }
-            />
-            <div className="ct-fq-sbig">{Math.round(lastResult.stats.ies)}</div>
-            <div className="ct-fq-ies-lbl">{t.ies}</div>
-            <div className="ct-fq-rm ct-fq-rm-training">
-              <div className="ct-fq-rmi">
-                <div className="ct-fq-rv">{lastResult.stats.timeUsed}s</div>
-                <div className="ct-fq-rl">{t.time}</div>
-              </div>
-              <div className="ct-fq-rmi">
-                <div className="ct-fq-rv">{lastResult.errors}</div>
-                <div className="ct-fq-rl">{t.err}</div>
-              </div>
-              <div className="ct-fq-rmi">
-                <div className="ct-fq-rv">{lastResult.stats.acc}%</div>
-                <div className="ct-fq-rl">Acc</div>
-              </div>
-              <div className="ct-fq-rmi">
-                <div className="ct-fq-rv">{lastResult.stats.avgRt}ms</div>
-                <div className="ct-fq-rl">{t.rt}</div>
-              </div>
-            </div>
-            <div className="ct-fq-row">
-              {lastResult.stats.won && lastResult.r.lv < 20 && (
-                <button
-                  type="button"
-                  className="ct-fq-btn ct-fq-btn-pri"
-                  onClick={() => {
-                    playSfx('click');
+      {phase === 'res' && lastResult?.type === 'level' && (() => {
+        const targetCount = Array.isArray(lastResult.r.cells)
+          ? lastResult.r.cells.filter((cell) => cell.isT).length
+          : lastResult.r.tc;
+        const leaveResults = () => {
+          setLastResult(null);
+          clearPlayRoundState();
+          setPhase('hub');
+        };
+        return (
+          <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+            <PlayResults
+              isAr={isAr}
+              title={lastResult.stats.won ? t.resultsLevelPass : t.timeRanOut}
+              tone={lastResult.stats.won ? 'success' : 'retry'}
+              headline={{ value: `${lastResult.found}/${targetCount}`, label: t.targetsFound }}
+              stats={[
+                { value: Math.round(lastResult.stats.ies), label: t.efficiency },
+                { value: `${lastResult.stats.timeUsed}s`, label: t.time },
+                { value: `${lastResult.stats.acc}%`, label: t.accuracy },
+                { value: lastResult.errors, label: t.err },
+                { value: `${lastResult.stats.avgRt}ms`, label: t.rt },
+              ]}
+              notes={[t.efficiencyHint]}
+              actions={[
+                lastResult.stats.won && lastResult.r.lv < FQ_LEVELS_PER_TIER ? {
+                  key: 'next',
+                  label: t.nextLv,
+                  onClick: () => {
                     setPhase('play');
                     setLastResult(null);
                     startLevelGame(lastResult.r.diff, lastResult.r.lv + 1);
-                  }}
-                >
-                  {t.nextLv}
-                </button>
-              )}
-              <button
-                type="button"
-                className="ct-fq-btn ct-fq-btn-ghost"
-                onClick={() => {
-                  playSfx('click');
-                  setLastResult(null);
-                  startLevelGame(lastResult.r.diff, lastResult.r.lv);
-                }}
-              >
-                {t.retry}
-              </button>
-              <button
-                type="button"
-                className="ct-fq-btn ct-fq-btn-ghost"
-                onClick={() => {
-                  setLastResult(null);
-                  clearPlayRoundState();
-                  setPhase('hub');
-                }}
-              >
-                {t.menu}
-              </button>
-            </div>
+                  },
+                } : null,
+                {
+                  key: 'retry',
+                  label: lastResult.stats.won ? t.replay : t.retry,
+                  variant: lastResult.stats.won ? 'ghost' : 'primary',
+                  onClick: () => {
+                    setLastResult(null);
+                    startLevelGame(lastResult.r.diff, lastResult.r.lv);
+                  },
+                },
+                { key: 'menu', label: t.menu, variant: 'ghost', onClick: leaveResults },
+              ]}
+              onMenu={leaveResults}
+              playSfx={playSfx}
+            />
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {phase === 'freeRes' && lastResult?.type === 'free' && (
         <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar
-              onBack={() => {
-                setLastResult(null);
-                clearPlayRoundState();
-                setPhase('hub');
-              }}
-              playSfx={playSfx}
-              variant="paper"
-              center={
-                <div style={{ textAlign: 'center' }}>
-                  <div className="ct-fq-training-title ct-fq-training-title-sm">{t.freeGameOver}</div>
-                </div>
-              }
-            />
-            <div className="ct-fq-sbig">{lastResult.score ?? 0}</div>
-            <div className="ct-fq-ies-lbl">{t.score}</div>
-            <div
-              className="ct-fq-sub ct-fq-training-blurb"
-              style={{ marginTop: 10, fontWeight: 700, fontSize: '0.92rem' }}
-            >
-              {t.freeRoundsCleared(lastResult.roundsWon)}
-            </div>
-            <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 6 }}>
-              {t.freeBest(profile.freeBest ?? 0)} · {t.freeBestScoreLine(profile.freeBestScore ?? 0)}
-            </p>
-            <button
-              type="button"
-              className="ct-fq-btn ct-fq-btn-pri"
-              onClick={() => {
-                playSfx('click');
-                setLastResult(null);
-                startFreeMode();
-              }}
-            >
-              {t.freePlayAgain}
-            </button>
-            <button
-              type="button"
-              className="ct-fq-btn ct-fq-btn-ghost"
-              onClick={() => {
-                setLastResult(null);
-                clearPlayRoundState();
-                setPhase('hub');
-              }}
-            >
-              {t.menu}
-            </button>
-          </div>
+          <PlayResults
+            isAr={isAr}
+            title={t.freeGameOver}
+            headline={{ value: lastResult.score ?? 0, label: t.score }}
+            stats={[{ value: lastResult.roundsWon, label: t.roundsClearedLabel }]}
+            notes={[`${t.freeBest(profile.freeBest ?? 0)} · ${t.freeBestScoreLine(profile.freeBestScore ?? 0)}`]}
+            onAgain={() => {
+              setLastResult(null);
+              startFreeMode();
+            }}
+            onMenu={() => {
+              setLastResult(null);
+              clearPlayRoundState();
+              setPhase('hub');
+            }}
+            playSfx={playSfx}
+          />
         </div>
       )}
 

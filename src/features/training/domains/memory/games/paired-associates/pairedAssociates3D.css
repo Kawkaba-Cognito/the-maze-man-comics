@@ -11,6 +11,13 @@
   padding-top: max(14px, env(safe-area-inset-top, 0px));
 }
 
+/* The shared 3D header may use the desktop canvas width; constraining the
+   outer frame to the old phone width made the stats and two controls collide
+   even though the inner bar asked for more room. */
+.ct-pal3d-root .ct-training-play-header {
+  max-width: min(100%, 1080px);
+}
+
 .ct-pal3d-root .ct-fq-bar {
   --fq-pdk: var(--game-ink);
   --fq-txt: var(--game-ink);
@@ -106,7 +113,12 @@
   transform: translateY(0);
 }
 
-@media (min-width: 900px) and (min-height: 600px) {
+/* ⚠ 560px, not 600px — see the same note in mot.css. A 1366x768 laptop has a
+   ~577px VIEWPORT once browser chrome is removed, so a 600px gate locked this
+   entire desktop layout out of the commonest desktop screen: the question rail,
+   the phase card and the collapsed keyboard grid below all stayed unreachable,
+   and the game rendered its phone layout stretched across a wide window. */
+@media (min-width: 900px) and (min-height: 560px) {
   .ct-pal3d-root .c3d-ui--overlay {
     padding-right: 28px;
     padding-left: 28px;
@@ -135,7 +147,18 @@
   }
 
   .ct-pal3d-root .c3d-question {
+    position: absolute;
+    top: clamp(210px, 48vh, 430px);
+    right: max(32px, calc(50% - 520px));
+    width: 210px;
+    margin: 0;
     padding: 11px 24px;
+    transform: translateY(-50%);
+  }
+
+  [dir='rtl'].ct-pal3d-root .c3d-question {
+    right: auto;
+    left: max(32px, calc(50% - 520px));
   }
 
   .ct-pal3d-phase-card {
@@ -235,7 +258,15 @@
   }
 }
 
-@media (max-width: 480px), (max-height: 720px) {
+/* ⚠ The comma is OR, and the second half used to read (max-height: 720px) —
+   which is true on virtually every LAPTOP, not just phones. Because this block
+   sits after the desktop block above, a 1366x577 desktop took its `position`
+   and `right` from the desktop rail rule and its `width: 520px` from here: a
+   520px pill pinned to a 210px rail, sitting on top of the card grid.
+   The two blocks are now mutually exclusive — this one stops exactly where the
+   desktop gate (560px) begins. A short viewport is not the same thing as a
+   phone; say which one you mean. */
+@media (max-width: 480px), (max-height: 559px) {
   .ct-pal3d-root .c3d-ui--overlay {
     gap: 6px;
     padding-top: max(8px, env(safe-area-inset-top, 0px));
@@ -261,6 +292,33 @@
   .ct-pal3d-root .ct-pal-access-btn {
     min-height: 42px;
   }
+}
+
+/* The real cards are the visible pointer controls. Numbered buttons remain a
+   complete keyboard/switch-device alternative, but stay visually collapsed
+   until keyboard focus enters them, so they never cover the cue or lower row. */
+.ct-pal3d-root .ct-pal-access-wrap {
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  opacity: 0;
+  clip-path: inset(50%);
+}
+
+.ct-pal3d-root .ct-pal-access-wrap:focus-within {
+  width: min(calc(100% - 28px), 900px);
+  height: auto;
+  padding: 10px 12px 12px;
+  overflow: visible;
+  border: 1px solid var(--pal-line);
+  opacity: 1;
+  clip-path: none;
+}
+
+.ct-pal3d-root .ct-pal-access-wrap:focus-within .ct-pal-access-grid {
+  grid-template-columns: repeat(var(--pal-box-count), minmax(44px, 1fr)) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

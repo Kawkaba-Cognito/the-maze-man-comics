@@ -60,6 +60,7 @@ export default function MotBoard2D({ dotsRef, fieldRef, phaseRef, phase, interac
     let dpr = 1;
     let w = 1;
     let h = 1;
+    let lastPaint = 0;
 
     // A sparse, fixed speckle field — the light-key echo of the 3D scene's
     // starfield. Generated once in normalised space so it doesn't crawl on
@@ -78,7 +79,12 @@ export default function MotBoard2D({ dotsRef, fieldRef, phaseRef, phase, interac
       canvas.style.height = `${h}px`;
     };
 
-    const frame = () => {
+    const frame = (_dt, now) => {
+      /* Motion needs display-rate painting; cue/response/result screens do not.
+         Throttle those static phases to 10Hz so an idle result does not burn a
+         full canvas repaint loop behind the player's decision. */
+      if (phaseRef.current !== 'track' && now - lastPaint < 100) return true;
+      lastPaint = now;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       paintSky(ctx, w, h);
 

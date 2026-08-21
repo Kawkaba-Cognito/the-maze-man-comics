@@ -488,7 +488,15 @@ export function passCfg() {
  * One refusal forgiven on a multi-gate level. All-or-nothing across four
  * independent inductions turns a good run into a failed level — the same
  * complaint that retired Story Time's all-or-nothing panel scoring.
+ *
+ * ⚠ The threshold is `>= 3`, not `>= 4`, and that is the whole point: easy's
+ * first 44 levels deal THREE gates (BASE.easy.g0), so a `>= 4` cut forgave
+ * nothing there. Easy demanded 100% while med and hard asked 75%, and the bar
+ * then DROPPED at easy L45 — where striped travellers arrive and the tier gets
+ * harder. A forgiveness rule keyed to gate count has to cover the smallest
+ * count any tier actually deals; `audit:curves` cannot see this, because
+ * levelPassed is not a registered lever.
  */
 export function levelPassed(cleared, total) {
-  return cleared >= total - (total >= 4 ? 1 : 0);
+  return cleared >= total - (total >= 3 ? 1 : 0);
 }

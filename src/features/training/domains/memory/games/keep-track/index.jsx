@@ -5,6 +5,8 @@ import { STR_COMMON } from '../../../../shared/trainingStrings';
 import { makeRng } from '../../../../shared/rng';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { TrainingPauseModal, TrainingPlayHeader } from '../../../../shared/TrainingChrome';
+import PlayResults from '../../../../shared/PlayResults';
+import { assetUrl } from '../../../../../../lib/assetUrl';
 import {
   CATEGORIES, LEVELS_PER_TIER, levelCfg, survivalCfg, buildRound, isCorrect,
 } from './data';
@@ -57,6 +59,11 @@ const UI = {
     levelFailed: 'Not quite',
     needAll: 'Recall every category to clear the level.',
     updated: (n) => `${n} updates survived`,
+    trackCategory: (name) => `Track · ${name}`,
+    ignoreCategory: (name) => `Ignore · ${name}`,
+    roundsCleared: 'rounds cleared',
+    wordsRecalled: 'words recalled',
+    reachedRound: (n) => `Reached round ${n}`,
   },
   ar: {
     ...STR_COMMON.ar,
@@ -83,8 +90,23 @@ const UI = {
     levelFailed: 'ليس تماماً',
     needAll: 'تذكّر كل الفئات لاجتياز المستوى.',
     updated: (n) => `${n} تحديثات صمدت`,
+    trackCategory: (name) => `تتبّع · ${name}`,
+    ignoreCategory: (name) => `تجاهل · ${name}`,
+    roundsCleared: 'جولات مكتملة',
+    wordsRecalled: 'كلمات متذكّرة',
+    reachedRound: (n) => `وصلت إلى الجولة ${n}`,
   },
 };
+
+function wordArt(category, word, lang) {
+  if (!category || !word) return '';
+  const localized = category.items[lang] || category.items.en;
+  const index = localized.indexOf(word);
+  const english = category.items.en[index];
+  if (!english) return '';
+  const slug = english.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return assetUrl(`Assets/training/keep-track-words-2026/${category.id}/${slug}.webp`);
+}
 
 /* ── The engine: one round is watch → recall ──────────────────────────────── */
 function KeepTrackEngine({
@@ -117,6 +139,21 @@ function KeepTrackEngine({
     const rng = seed != null ? makeRng((seed >>> 0) + stage * 7919 + ppRound * 104729) : Math.random;
     return buildRound(cfg, lang, rng);
   }, [cfg, lang, seed, stage, ppRound]);
+
+  const roundArt = useMemo(() => round.stream.map((item) => {
+    const category = CATEGORIES.find((candidate) => candidate.id === item.catId);
+    return wordArt(category, item.word, lang);
+  }).filter(Boolean), [lang, round.stream]);
+
+  // The word stream is deliberately paced. Preload its local illustrations so
+  // decoding never steals part of a stimulus interval or flashes a blank card.
+  useEffect(() => {
+    [...new Set(roundArt)].forEach((src) => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = src;
+    });
+  }, [roundArt]);
 
   useEffect(() => {
     trialLogRef.current = createTrialLog({
@@ -214,6 +251,30 @@ function KeepTrackEngine({
 
   const current = round.stream[Math.min(idx, round.stream.length - 1)];
   const currentCat = CATEGORIES.find((c) => c.id === current?.catId);
+  const currentArt = wordArt(currentCat, current?.word, lang);
+  const currentTracked = Boolean(currentCat && round.targets.some((c) => c.id === currentCat.id));
+
+  if (step === 'over') {
+    return (
+      <div className="ct-training-root ct-kt-root" dir={isAr ? 'rtl' : 'ltr'}>
+        <PlayResults
+          isAr={isAr}
+          title={t.runOver}
+          headline={{ value: stage, label: t.roundsCleared }}
+          stats={[{ value: totalCorrect, label: t.wordsRecalled }]}
+          notes={[t.reachedRound(stage + 1)]}
+          onAgain={() => {
+            setStage(0);
+            setTotalCorrect(0);
+            setFeedback(null);
+            setStep('brief');
+          }}
+          onMenu={() => onExit?.()}
+          playSfx={playSfx}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="ct-training-root ct-kt-root" dir={isAr ? 'rtl' : 'ltr'}>
@@ -250,11 +311,45 @@ function KeepTrackEngine({
 
         {step === 'stream' && current && (
           <div className="ct-kt-panel">
-            <div className="ct-kt-word" key={idx}>{current.word}</div>
-            <div className="ct-kt-wordcat">{currentCat?.name[lang]}</div>
+            <div
+              className={`ct-kt-stimulus${currentTracked ? ' is-tracked' : ' is-distractor'}`}
+              key={idx}
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              aria-label={`${current.word}. ${currentTracked
+                ? t.trackCategory(currentCat?.name[lang] || '')
+                : t.ignoreCategory(currentCat?.name[lang] || '')}`}
+            >
+              {currentArt ? (
+                <img
+                  className="ct-kt-wordart"
+                  src={currentArt}
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  width="512"
+                  height="512"
+                  decoding="async"
+                />
+              ) : null}
+              <div className="ct-kt-wordcopy">
+                <div className="ct-kt-word">{current.word}</div>
+                <div className={`ct-kt-wordcat${currentTracked ? ' is-tracked' : ' is-distractor'}`}>
+                  {currentTracked
+                    ? t.trackCategory(currentCat?.name[lang] || '')
+                    : t.ignoreCategory(currentCat?.name[lang] || '')}
+                </div>
+              </div>
+            </div>
             <div className="ct-kt-track">
               {round.targets.map((c) => (
-                <span key={c.id} className="ct-kt-cat ct-kt-cat--dim">{c.name[lang]}</span>
+                <span
+                  key={c.id}
+                  className={`ct-kt-cat ct-kt-cat--dim${currentCat?.id === c.id ? ' is-active' : ''}`}
+                >
+                  {c.name[lang]}
+                </span>
               ))}
             </div>
             <div className="ct-kt-count">{t.streamOf(idx + 1, round.stream.length)}</div>
@@ -295,6 +390,16 @@ function KeepTrackEngine({
             <div className="ct-kt-marks">
               {feedback.marks.map((m) => (
                 <div key={m.cat.id} className={`ct-kt-mark${m.ok ? ' ok' : ''}`}>
+                  <img
+                    className="ct-kt-markart"
+                    src={wordArt(m.cat, m.expected, lang)}
+                    alt=""
+                    aria-hidden="true"
+                    draggable={false}
+                    width="96"
+                    height="96"
+                    decoding="async"
+                  />
                   <span className="ct-kt-fieldname">{m.cat.name[lang]}</span>
                   <span className="ct-kt-expected">{m.expected}</span>
                   {!m.ok && m.given ? <span className="ct-kt-given">{m.given}</span> : null}
@@ -307,27 +412,6 @@ function KeepTrackEngine({
           </div>
         )}
 
-        {step === 'over' && (
-          <div className="ct-kt-panel">
-            <h2 className="ct-kt-h">{t.runOver}</h2>
-            <p className="ct-kt-sub">{t.bestStage(stage + 1)}</p>
-            <div className="ct-kt-actions">
-              <button
-                type="button"
-                className="ct-training-btn ct-training-btn--pri"
-                onClick={() => {
-                  playSfx?.('click');
-                  setStage(0); setTotalCorrect(0); setFeedback(null); setStep('brief');
-                }}
-              >
-                {t.freePlayAgain}
-              </button>
-              <button type="button" className="ct-training-btn ct-training-btn--ghost" onClick={() => onExit?.()}>
-                {t.menu}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       <TrainingPauseModal

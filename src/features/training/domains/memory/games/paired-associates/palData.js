@@ -9,7 +9,27 @@
  * index.jsx re-exports everything here, so existing importers (including the
  * 3D proto and Group War) are unaffected.
  */
-export const SYMBOLS = ['★', '▲', '●', '■', '◆', '✚', '✦', '❤', '☀', '☾', '♣', '♠'];
+export const PAIR_OBJECTS = [
+  { id: 'pocket-watch', en: 'pocket watch', ar: 'ساعة جيب' },
+  { id: 'ornate-key', en: 'ornate key', ar: 'مفتاح مزخرف' },
+  { id: 'lantern', en: 'lantern', ar: 'فانوس' },
+  { id: 'feather', en: 'feather', ar: 'ريشة' },
+  { id: 'hourglass', en: 'hourglass', ar: 'ساعة رملية' },
+  { id: 'compass', en: 'compass', ar: 'بوصلة' },
+  { id: 'seashell', en: 'seashell', ar: 'صدفة' },
+  { id: 'storybook', en: 'storybook', ar: 'كتاب قصص' },
+  { id: 'crown', en: 'crown', ar: 'تاج' },
+  { id: 'teacup', en: 'teacup', ar: 'فنجان' },
+  { id: 'maple-leaf', en: 'maple leaf', ar: 'ورقة قيقب' },
+  { id: 'gemstone', en: 'gemstone', ar: 'حجر كريم' },
+];
+
+export const SYMBOLS = PAIR_OBJECTS.map((item) => item.id);
+
+export function pairObjectLabel(id, lang = 'en') {
+  const item = PAIR_OBJECTS.find((candidate) => candidate.id === id);
+  return item?.[lang] || item?.en || id;
+}
 export const STUDY_GAP = 240;
 const ROUNDS_PER_LEVEL = 3;
 const LEVEL_WIN = 2; // perfect trials needed
@@ -72,4 +92,3 @@ export function buildPalTrial(cfg, rng) {
   const studyOrder = [...boxIdxs].sort(() => rng() - 0.5);
   return { boxes, boxIdxs, cueOrder, studyOrder, total: K };
 }
-

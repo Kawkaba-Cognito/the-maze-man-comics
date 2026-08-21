@@ -215,12 +215,21 @@ export function GatekeeperEngine({
     if (cleared > 0) { stageRef.current += 1; awardPoints?.(3); }
     else stageRef.current = Math.max(0, stageRef.current - 1);
     bestRef.current = Math.max(bestRef.current, stageRef.current);
+    // ⚠ EVERY per-gate budget has to be restocked here. The mount effect above
+    // runs exactly once — survival is one continuous mount, because ModeShell
+    // holds freeSeedRef steady for the whole run so the engine's key never
+    // changes. lensLeft was missing from this list, so the Lens went dead from
+    // round 2 to the end of an endless run, and lensUsed then banked a lens
+    // spent on every gate where the button was disabled.
+    // Read stageRef AFTER the ladder moves, so this is the incoming gate's cfg.
+    const nextCfg = cfgFor();
     setCleared(0);
     setGateNo(1);
-    setSeals(SEALS);
+    setSeals(nextCfg.seals ?? SEALS);
+    setLensLeft(nextCfg.lenses ?? 1);
     setDone(false);
     dealGate();
-  }, [mode, seals, cleared, totalGates, onResult, t, playSfx, awardPoints, level, diff, dealGate, gateNo]);
+  }, [mode, seals, cleared, totalGates, onResult, t, playSfx, awardPoints, level, diff, dealGate, cfgFor, gateNo]);
 
   const cfg = cfgFor();
   const fam = FAMILY[lang][familyIndex(mode === 'levels' ? diff : (cfg.diff || 'med'), cfg.f ?? 0.5)];

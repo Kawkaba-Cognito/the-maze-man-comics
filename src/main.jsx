@@ -35,6 +35,17 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
   }
 }
 
+/* Dev: TEMPORARY (2026-08-21) — instrument the "screen freezes, then back and
+ * pause do nothing" report. Prints [LONGTASK] for any main-thread block >=200ms
+ * and [TAP] for every pointerdown, so we can tell a covered button apart from a
+ * stalled thread instead of guessing. DEV-only, so it cannot reach users.
+ * Delete this block and src/lib/longTaskWatch.js once the cause is fixed. */
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  import('./lib/longTaskWatch')
+    .then(({ startLongTaskWatch }) => startLongTaskWatch({ thresholdMs: 200 }))
+    .catch(() => { /* diagnostics are best-effort */ });
+}
+
 /* Prod: when a freshly-deployed service worker takes control of a page that was
  * already controlled by an older one, reload once so users never sit on a stale
  * (or half-updated) build — the cause of "it still shows the old version / two

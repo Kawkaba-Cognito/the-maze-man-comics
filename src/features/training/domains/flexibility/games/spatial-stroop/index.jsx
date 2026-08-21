@@ -142,6 +142,7 @@ const UI = {
     hintColor: 'Match COLOUR only: blue → LEFT · amber → RIGHT.',
     reverseHint: 'REVERSE trial — tap the OPPOSITE side of what the rule says.',
     reverseBadge: '⟳ REVERSE — tap the OPPOSITE',
+    frozenBanner: '❄️ FROZEN — take your time then answer',
     ansLeft: 'Left',
     ansRight: 'Right',
     rating: { perfect: 'PERFECT!', fast: 'FAST!', good: '' },

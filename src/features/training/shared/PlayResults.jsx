@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { TrainingMenuBar } from './TrainingChrome';
 import { STR_COMMON } from './trainingStrings';
 /* Its own styles AND its own --fq-* tokens live here. Imported explicitly even
@@ -44,10 +44,15 @@ export default function PlayResults({
   againLabel,
   menuLabel,
   playSfx,
+  actions,
+  tone = 'neutral',
 }) {
   const L = isAr ? STR_COMMON.ar : STR_COMMON.en;
   const rows = (stats || []).filter(Boolean);
   const lines = (notes || []).filter(Boolean);
+  const resultActions = (actions || []).filter(Boolean);
+  const titleId = useId();
+  const displayTitle = title || L.freeGameOver;
 
   return (
     <div className="ct-play-results" dir={isAr ? 'rtl' : 'ltr'}>
@@ -55,61 +60,73 @@ export default function PlayResults({
         onBack={onMenu}
         playSfx={playSfx}
         variant="paper"
-        center={(
-          <div style={{ textAlign: 'center' }}>
-            <div className="ct-fq-training-title ct-fq-training-title-sm">
-              {title || L.freeGameOver}
-            </div>
-          </div>
-        )}
+        center={<span className="ct-play-results-kicker">{isAr ? 'النتيجة' : 'Results'}</span>}
       />
 
-      {headline ? (
-        <>
-          <div className="ct-fq-sbig">{headline.value}</div>
-          <div className="ct-fq-ies-lbl">{headline.label}</div>
-        </>
-      ) : null}
+      <main className={`ct-play-results-card ct-play-results-card--${tone}`} aria-labelledby={titleId}>
+        <span className="ct-play-results-mark" aria-hidden="true">
+          {tone === 'success' ? '✓' : tone === 'retry' ? '↻' : '◇'}
+        </span>
+        <h2 id={titleId} className="ct-play-results-title">{displayTitle}</h2>
 
-      {rows.length ? (
-        <div className="ct-play-results-stats">
-          {rows.map((s, i) => (
-            <div className="ct-play-results-stat" key={s.label ?? i}>
-              <div className="ct-play-results-stat-v">{s.value}</div>
-              <div className="ct-play-results-stat-l">{s.label}</div>
-            </div>
-          ))}
+        {headline ? (
+          <div className="ct-play-results-headline">
+            <div className="ct-fq-sbig">{headline.value}</div>
+            <div className="ct-fq-ies-lbl">{headline.label}</div>
+          </div>
+        ) : null}
+
+        {rows.length ? (
+          <div className="ct-play-results-stats">
+            {rows.map((s, i) => (
+              <div className="ct-play-results-stat" key={s.label ?? i}>
+                <div className="ct-play-results-stat-v">{s.value}</div>
+                <div className="ct-play-results-stat-l">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {lines.length ? (
+          <div className="ct-play-results-notes">
+            {lines.map((n, i) => <p key={i}>{n}</p>)}
+          </div>
+        ) : null}
+
+        {extra ? <div className="ct-play-results-extra">{extra}</div> : null}
+
+        <div className="ct-play-results-actions">
+          {resultActions.length ? resultActions.map((action, index) => (
+            <button
+              key={action.key || action.label || index}
+              type="button"
+              className={`ct-fq-btn ${action.variant === 'ghost' ? 'ct-fq-btn-ghost' : 'ct-fq-btn-pri'}`}
+              onClick={() => { playSfx?.('click'); action.onClick?.(); }}
+            >
+              {action.label}
+            </button>
+          )) : (
+            <>
+              {onAgain ? (
+                <button
+                  type="button"
+                  className="ct-fq-btn ct-fq-btn-pri"
+                  onClick={() => { playSfx?.('click'); onAgain(); }}
+                >
+                  {againLabel || L.freePlayAgain || L.again}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="ct-fq-btn ct-fq-btn-ghost"
+                onClick={() => { playSfx?.('click'); onMenu?.(); }}
+              >
+                {menuLabel || L.menu}
+              </button>
+            </>
+          )}
         </div>
-      ) : null}
-
-      {lines.map((n, i) => (
-        <p
-          className="ct-fq-sub ct-fq-training-blurb"
-          style={{ marginTop: i === 0 ? 10 : 6 }}
-          key={i}
-        >
-          {n}
-        </p>
-      ))}
-
-      {extra}
-
-      {onAgain ? (
-        <button
-          type="button"
-          className="ct-fq-btn ct-fq-btn-pri"
-          onClick={() => { playSfx?.('click'); onAgain(); }}
-        >
-          {againLabel || L.freePlayAgain || L.again}
-        </button>
-      ) : null}
-      <button
-        type="button"
-        className="ct-fq-btn ct-fq-btn-ghost"
-        onClick={() => { playSfx?.('click'); onMenu?.(); }}
-      >
-        {menuLabel || L.menu}
-      </button>
+      </main>
     </div>
   );
 }

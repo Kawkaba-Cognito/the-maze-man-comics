@@ -33,32 +33,19 @@ const COVER_FILE_OVERRIDES = {
   'train-switch': 'attention-spaceship-v2.webp',
   'speed-match': 'speed-speed-match-v2.webp',
   'math-gates': 'speed-math-gates-v2.webp',
-  /* ⚠ PLACEHOLDER: still the Trail Making painting, which Intercept took the
-     slot from. Pointed at a tracked file so the tile cannot 404 — untracked art
-     builds green locally and 404s live. Swap when bespoke art exists. */
-  intercept: 'speed-trail-making-v2.webp',
+  intercept: 'speed-intercept-v2.webp',
   'story-grid': 'memory-story-time-v2.webp',
-  // ⚠ PLACEHOLDER: still the N-Back painting. Keep Track needs its own cover —
-  // pointed at a tracked file so the tile cannot 404, not because it fits.
-  'keep-track': 'memory-nback-v2.webp',
+  'keep-track': 'memory-keep-track-v2.webp',
   'paired-associates': 'memory-pair-match-v2.webp',
   wordle: 'language-word-maze-v2.webp',
   synonyms: 'language-word-links-v2.webp',
   trivia: 'language-trivia-v2.webp',
   'rush-hour': 'reasoning-block-escape-v2.webp',
-  /* ⚠ PLACEHOLDER: still the Matrix Reasoning painting, whose hub slot The
-     Gate took. Pointed at a tracked file so the tile cannot 404 — untracked
-     art builds green locally and 404s live. Swap when bespoke art exists. */
-  gatekeeper: 'reasoning-matrix-iq-v2.webp',
+  gatekeeper: 'reasoning-gatekeeper-v2.webp',
   detective: 'reasoning-detective-v2.webp',
-  // ⚠ PLACEHOLDER: still the Arrow Rush painting. Mirror World needs its own
-  // cover — pointed at a tracked file so the tile cannot 404, not because it fits.
-  'mirror-world': 'flexibility-arrow-rush-v2.webp',
-  /* The retired games' planets, reused: the tile is a domain-coloured planet
-     rather than a picture of the mechanic, so it still reads correctly. Swap
-     when bespoke art exists. */
-  'task-switch': 'flexibility-card-sort-v2.webp',
-  'sort-shift': 'flexibility-kawkab-hops-v2.webp',
+  'mirror-world': 'flexibility-mirror-world-v2.webp',
+  'task-switch': 'flexibility-task-switch-v2.webp',
+  'sort-shift': 'flexibility-sort-shift-v2.webp',
 };
 
 const ILLUSTRATION = Object.fromEntries(

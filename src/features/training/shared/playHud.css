@@ -61,17 +61,81 @@
    the others are converging on. Colours come from tokens — nothing here is a
    literal. */
 .ct-play-results {
-  /* layout */
+  position: relative;
+  width: 100%;
   min-height: min(100vh, 100dvh);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 18px 16px calc(24px + env(safe-area-inset-bottom));
+  padding: max(108px, calc(60px + env(safe-area-inset-top))) 16px calc(24px + env(safe-area-inset-bottom));
   text-align: center;
   box-sizing: border-box;
 }
+
+.ct-play-results > .ct-training-menubar {
+  position: absolute;
+  inset: 0 0 auto;
+}
+
+.ct-play-results-kicker {
+  color: var(--ink-dim);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ct-play-results-card {
+  position: relative;
+  display: flex;
+  width: min(100%, 34rem);
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(22px, 5vw, 34px);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--game-accent) 35%, var(--line));
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--game-accent) 13%, transparent), transparent 46%),
+    color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  box-shadow: 0 22px 56px var(--fx-shadow-drop);
+  box-sizing: border-box;
+}
+
+.ct-play-results-card--success {
+  border-color: color-mix(in srgb, var(--game-ok) 55%, var(--line));
+}
+
+.ct-play-results-card--retry {
+  border-color: color-mix(in srgb, var(--game-bad) 40%, var(--line));
+}
+
+.ct-play-results-mark {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 12px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  color: var(--game-accent);
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.ct-play-results-card--success .ct-play-results-mark { color: var(--game-ok); }
+.ct-play-results-card--retry .ct-play-results-mark { color: var(--game-bad); }
+
+.ct-play-results-title {
+  margin: 0;
+  color: var(--game-ink);
+  font-size: clamp(1.35rem, 4vw, 1.85rem);
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.ct-play-results-headline { margin-top: 14px; }
 
 /* Secondary figures as COLUMNS, not a run-together sentence. The games this
    replaces each punctuated that sentence differently ("3 rounds · 40 pts" vs
@@ -81,7 +145,10 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px 18px;
-  margin-top: 14px;
+  width: 100%;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
 }
 
 .ct-play-results-stat {
@@ -95,19 +162,36 @@
   color: var(--play-ink);
 }
 
-.ct-play-results .ct-fq-btn {
-  margin-top: 18px;
-  margin-bottom: 0;
-}
-
-.ct-play-results .ct-fq-btn + .ct-fq-btn {
-  margin-top: 10px;
-}
-
 .ct-play-results-stat-l {
   font-size: 0.58rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-dim);
+}
+
+.ct-play-results-notes {
+  margin-top: 16px;
+  color: var(--ink-dim);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.ct-play-results-notes p { margin: 4px 0; }
+.ct-play-results-extra { width: 100%; margin-top: 12px; }
+
+.ct-play-results-actions {
+  display: grid;
+  width: min(100%, 23rem);
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.ct-play-results-actions .ct-fq-btn { margin: 0; }
+
+@media (max-height: 640px) {
+  .ct-play-results {
+    justify-content: flex-start;
+    overflow-y: auto;
+  }
 }

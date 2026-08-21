@@ -13,7 +13,8 @@ import './playHud.css';
  * games, six with none at all — and that, not stray colours, is why the
  * platform looked inconsistent.
  *
- * It owns its own rAF tick so the timer updates without repainting the board.
+ * It owns a small 10Hz timer tick so the visible tenth-of-a-second display can
+ * update without forcing React to repaint this header 60 times per second.
  *
  * Games pass VALUES, never styles. If you find yourself wanting a colour prop
  * here, the answer is a new semantic role in gamePalette, not a prop.
@@ -120,13 +121,10 @@ export default function PlayHud({
   const [, setTick] = useState(0);
   useEffect(() => {
     if (playStep !== 'running' || pauseOpen) return undefined;
-    let id = 0;
-    const step = () => {
+    const id = window.setInterval(() => {
       setTick((n) => (n + 1) % 1_000_000);
-      id = requestAnimationFrame(step);
-    };
-    id = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(id);
+    }, 100);
+    return () => window.clearInterval(id);
   }, [playStep, pauseOpen]);
 
   /* The timer refs are OPTIONAL. A game with no clock (every C3dProtoChrome
@@ -160,7 +158,7 @@ export default function PlayHud({
         onPause={onPause}
         pauseAriaLabel={pauseAriaLabel}
       >
-        <div className="ct-fq-bar" data-fq-chrome>
+        <div className="ct-fq-bar" data-fq-chrome role="group" aria-label="Game status">
         {/* Only games with a "find this" target carry the chip. Without this
             gate every other game showed ShapeSvg's fallback circle — a target
             reminder for a target that does not exist. */}

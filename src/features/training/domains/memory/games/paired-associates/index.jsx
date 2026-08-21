@@ -14,7 +14,8 @@ const PairedAssociates3DProto = lazyWithRetry(() => import('./PairedAssociates3D
  * pairs are added as you succeed. Trains "what ↔ where" binding — the
  * hippocampus / medial-temporal-lobe facet that span and n-back don't.
  *
- * Procedural Canvas, zero assets. Shared 3-mode flow (Free / Levels / Challenge).
+ * The 3D cards use a local illustrated object deck. Shared 3-mode flow
+ * (Free / Levels / Challenge) and trial generation remain unchanged.
  */
 
 /*

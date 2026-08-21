@@ -1,10 +1,10 @@
-import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
-import { IconBack } from '../../../../shared/TrainingIcons';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import PlayHud from '../../../../shared/PlayHud';
+import PlayResults from '../../../../shared/PlayResults';
+import { TrainingStatusStrip } from '../../../../shared/TrainingChrome';
 import { useGamePause } from '../../../../shared/useGamePause';
 import { getTrainingPaused } from '../../../../shared/pauseStore';
 import { GAME_COLORS } from '../../../../shared/gamePalette';
-import { paintSky } from '../../../../shared/board2d';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
@@ -13,20 +13,11 @@ import { summarizeMot } from './motMetrics';
 import { createSpeedStaircase } from './speedStaircase';
 import { saveMotAssess, motAssessReport, speedIndex } from './motAssessStore';
 import { clamp, lerp } from '../../../../../../lib/math';
-import { assetUrl } from '../../../../../../lib/assetUrl';
-import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
-import { planetIconUrl } from '../../../../../../lib/planetIcons';
 
 // The arena. 2D since the 3D scene was retired — this game's look is the
 // platform palette's reference, so the 2D board reproduces it directly.
 import MotBoard2D from './MotBoard2D';
-
-const MOT_ARENA_URL = assetUrl('Assets/attention/mot-arena-plate.svg');
-const motArenaImg = typeof Image !== 'undefined' ? new Image() : null;
-if (motArenaImg) {
-  motArenaImg.decoding = 'async';
-  motArenaImg.src = MOT_ARENA_URL;
-}
+import './mot.css';
 
 /*
  * Multiple Object Tracking (MOT) — dynamic attention.
@@ -136,42 +127,10 @@ function levelConfig(diff, level) {
   return { targets, total: Math.round(lerp(b.n0, b.n1, u)), speedFrac: lerp(b.s0, b.s1, u), trackMs: Math.round(lerp(b.tr0, b.tr1, u)) };
 }
 
-/** Centered glyph (✓ / ✕) inside a dot — redundant, colour-blind-safe coding. */
-function drawGlyph(ctx, d, ch, color) {
-  ctx.fillStyle = color;
-  ctx.font = `800 ${Math.round(d.r * 1.2)}px system-ui, -apple-system, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(ch, d.x, d.y + 1);
-}
-
-const hexToRgb = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
-const mixCh = (c, t, tgt) => Math.round(c + (tgt - c) * t);
-/**
- * Soft glass-bubble fill: fixed top-left specular + rim shade. Same recipe for
- * every dot so objects stay IDENTICAL while reading as polished 3-D orbs.
- */
-function sphereFill(ctx, d, base) {
-  const [r, g, b] = hexToRgb(base);
-  const hi = `rgb(${mixCh(r, 0.72, 255)},${mixCh(g, 0.72, 255)},${mixCh(b, 0.72, 255)})`;
-  const mid = `rgb(${mixCh(r, 0.12, 255)},${mixCh(g, 0.12, 255)},${mixCh(b, 0.12, 255)})`;
-  const lo = `rgb(${mixCh(r, 0.38, 0)},${mixCh(g, 0.38, 0)},${mixCh(b, 0.38, 0)})`;
-  const grad = ctx.createRadialGradient(
-    d.x - d.r * 0.38, d.y - d.r * 0.42, d.r * 0.06,
-    d.x + d.r * 0.1, d.y + d.r * 0.15, d.r * 1.05,
-  );
-  grad.addColorStop(0, hi);
-  grad.addColorStop(0.35, mid);
-  grad.addColorStop(0.78, base);
-  grad.addColorStop(1, lo);
-  return grad;
-}
-
 export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 6) : 0;
   const wrapRef = useRef(null);
-  const canvasRef = useRef(null);
   const dotsRef = useRef([]);
   const phaseRef = useRef('cue');
   const cfgRef = useRef(freeConfig(0));
@@ -183,7 +142,6 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
   const timerRef = useRef(null);
   // progression
   const freeRoundRef = useRef(0);
-  const chalRoundRef = useRef(0);
   const livesRef = useRef(CHAL_LIVES);
   const roundIdxRef = useRef(0);
   const wonRef = useRef(0);
@@ -208,106 +166,12 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
 
   const [phase, setPhase] = useState('cue');
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(CHAL_LIVES);
   const [picksLeft, setPicksLeft] = useState(0);
-  const [hud, setHud] = useState('');
+  const [hudStats, setHudStats] = useState([]);
   const pause = useGamePause({ isAr, playSfx, onQuit: onExit });
   const [msg, setMsg] = useState('');
 
   const setPhaseBoth = useCallback((p) => { phaseRef.current = p; setPhase(p); }, []);
-
-  const draw = useCallback(() => {
-    const c = canvasRef.current;
-    if (!c) return;
-    const ctx = c.getContext('2d');
-    const { w, h } = sizeRef.current;
-    ctx.clearRect(0, 0, w, h);
-    const ph = phaseRef.current;
-    const f = fieldRef.current;
-    const now = performance.now();
-
-    // Tide Dusk surround. Canvas paint, so --play-surface cannot reach it —
-    // these stops are the same three, kept in step with tokens.css by hand.
-    // Vertical rather than radial: Tide is a top-to-bottom ramp, cool zenith
-    // to warm horizon, and a radial wash flattens that into a vignette.
-    {
-      paintSky(ctx, w, h);
-    }
-
-    // Premium arena plate asset (or flat fallback)
-    if (f.w > 0) {
-      ctx.save();
-      if (motArenaImg?.complete && motArenaImg.naturalWidth > 0) {
-        ctx.drawImage(motArenaImg, f.x0 - 4, f.y0 - 4, f.w + 8, f.h + 8);
-      } else {
-        ctx.fillStyle = 'var(--surface-raised)';
-        ctx.strokeStyle = 'rgba(232,172,78,0.55)';
-        ctx.lineWidth = 2.25;
-        if (ctx.roundRect) {
-          ctx.beginPath();
-          ctx.roundRect(f.x0, f.y0, f.w, f.h, 16);
-          ctx.fill();
-          ctx.stroke();
-        } else {
-          ctx.fillRect(f.x0, f.y0, f.w, f.h);
-          ctx.strokeRect(f.x0, f.y0, f.w, f.h);
-        }
-      }
-      ctx.restore();
-    }
-
-    for (const d of dotsRef.current) {
-      // During tracking all dots are identical blue (identity must be held by
-      // attention, not read off a feature). Cue + result use CVD-safe hues
-      // (Okabe-Ito) reinforced with symbols so the feedback never relies on
-      // red/green alone.
-      let fill = GAME_COLORS.item.fill;
-      if (ph === 'cue' && d.target) fill = GAME_COLORS.accent.fill;                       // amber cue
-      if (ph === 'result') fill = d.target ? GAME_COLORS.ok.fill : (d.selected ? GAME_COLORS.bad.fill : GAME_COLORS.muted.fill);
-
-      // soft contact shadow (same for every sphere)
-      ctx.beginPath();
-      ctx.ellipse(d.x, d.y + d.r * 0.72, d.r * 0.72, d.r * 0.22, 0, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(40, 28, 14, 0.14)';
-      ctx.fill();
-
-      ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-      ctx.fillStyle = sphereFill(ctx, d, fill); ctx.fill();
-      // glass rim
-      ctx.lineWidth = Math.max(1.25, d.r * 0.08);
-      ctx.strokeStyle = 'rgba(255,255,255,0.45)';
-      ctx.stroke();
-      ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(0,0,0,0.10)';
-      ctx.stroke();
-
-      const ring = Math.max(4, d.r * 0.34);
-      if (ph === 'cue' && d.target) {
-        // pulsing white ring — BrainHQ-style “remember these”
-        const pulse = 0.55 + 0.45 * Math.sin(now / 180);
-        ctx.lineWidth = ring * pulse;
-        ctx.strokeStyle = `rgba(255,255,255,${0.55 + 0.4 * pulse})`;
-        ctx.stroke();
-      }
-      if (ph === 'respond' && d.selected) {
-        ctx.lineWidth = ring;
-        ctx.strokeStyle = '#1a1208';
-        ctx.stroke();
-        // soft amber halo for selected pick
-        ctx.beginPath();
-        ctx.arc(d.x, d.y, d.r + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(232,172,78,0.55)';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-      }
-      if (ph === 'result') {
-        if (d.target && d.selected) drawGlyph(ctx, d, '✓', '#fff');
-        else if (d.target) { ctx.setLineDash([5, 4]); ctx.lineWidth = Math.max(3, d.r * 0.28); ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.setLineDash([]); }
-        else if (d.selected) drawGlyph(ctx, d, '✕', '#fff');
-      }
-    }
-  }, []);
 
   const frame = useCallback((ts) => {
     /* Paused: keep the loop alive so the field stays drawn behind the menu, but
@@ -408,12 +272,27 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
   }, [mode, diff, level]);
 
   const updateHud = useCallback(() => {
-    if (mode === 'levels') setHud(isAr ? `مستوى ${level} · جولة ${roundIdxRef.current}/${ROUNDS_PER_LEVEL} · ✓${wonRef.current}` : `Lvl ${level} · Round ${roundIdxRef.current}/${ROUNDS_PER_LEVEL} · ✓${wonRef.current}`);
-    else if (mode === 'assess') setHud(isAr ? `تقييم · جولة ${(staircaseRef.current?.trialCount ?? 0) + 1}` : `Assessment · round ${(staircaseRef.current?.trialCount ?? 0) + 1}`);
-    else if (mode === 'passplay') setHud(isAr ? `جولة ${roundIdxRef.current + 1}/${ppTrials} · ✓${wonRef.current}` : `Round ${roundIdxRef.current + 1}/${ppTrials} · ✓${wonRef.current}`);
-    else setHud(isAr
-      ? `جولة ${freeRoundRef.current + 1} · ${'♥'.repeat(Math.max(0, livesRef.current))}`
-      : `Round ${freeRoundRef.current + 1} · ${'♥'.repeat(Math.max(0, livesRef.current))}`);
+    if (mode === 'levels') {
+      setHudStats([
+        { value: level, label: isAr ? 'المستوى' : 'Level' },
+        { value: `${roundIdxRef.current + 1}/${ROUNDS_PER_LEVEL}`, label: isAr ? 'المحاولة' : 'Trial' },
+        { value: wonRef.current, label: isAr ? 'مثالية' : 'Perfect' },
+      ]);
+    } else if (mode === 'assess') {
+      setHudStats([
+        { value: (staircaseRef.current?.trialCount ?? 0) + 1, label: isAr ? 'محاولة التقييم' : 'Assessment trial' },
+      ]);
+    } else if (mode === 'passplay') {
+      setHudStats([
+        { value: `${roundIdxRef.current + 1}/${ppTrials}`, label: isAr ? 'المحاولة' : 'Trial' },
+        { value: wonRef.current, label: isAr ? 'مثالية' : 'Perfect' },
+      ]);
+    } else {
+      setHudStats([
+        { value: freeRoundRef.current + 1, label: isAr ? 'الجولة' : 'Round' },
+        { value: '♥'.repeat(Math.max(0, livesRef.current)), label: isAr ? 'أرواح' : 'Lives' },
+      ]);
+    }
   }, [mode, level, isAr, ppTrials]);
 
   const startRound = useCallback(() => {
@@ -581,7 +460,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
         if (roundIdxRef.current >= ppTrials) { finishLog({ score: wonRef.current }); onResult({ score: wonRef.current }); return; }
       } else {
         // Survival: no clock — an imperfect round costs a life; out of lives ends it.
-        if (!perfect) { livesRef.current -= 1; setLives(livesRef.current); }
+        if (!perfect) livesRef.current -= 1;
         if (livesRef.current <= 0) {
           finishedRef.current = true;
           const session = finishLog({ rounds: freeRoundRef.current, score: scoreRef.current });
@@ -620,7 +499,6 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
       finishedRef.current = false;
       freeRoundRef.current = 0;
       livesRef.current = SURVIVAL_LIVES;
-      setLives(SURVIVAL_LIVES);
       scoreRef.current = 0;
       setScore(0);
       setOver(null);
@@ -642,8 +520,6 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
     };
   }, [diff, fit, frame, isSurvival, level, mode, runId, seed, startRound]);
 
-  const S = styles;
-
   if (over && over.assess) {
     const thr = over.threshold || 0;
     const idx = speedIndex(thr);
@@ -654,75 +530,75 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
       ? series.map((v, i) => `${((i / (series.length - 1)) * 200).toFixed(1)},${(40 - (Math.max(0, Math.min(100, v)) / 100) * 40).toFixed(1)}`).join(' ')
       : null;
     return (
-      <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
-        <header className="ct-training-play-header">
-          <button className="ct-training-chrome-btn" aria-label="Menu" onClick={() => { playSfx?.('click'); onExit?.(); }}><IconBack size={18} c="currentColor" /></button>
-          <div className="ct-training-play-header-body">
-            <div className="ct-training-play-title">{isAr ? 'تقييم التتبّع' : 'Tracking assessment'}</div>
-          </div>
-          <div className="ct-training-chrome-spacer" aria-hidden="true" />
-        </header>
-        <div style={S.overWrap}>
-          <div style={S.capNum}>{idx}</div>
-          <div style={S.capLbl}>{isAr ? 'مؤشر سرعة التتبّع · ٠–١٠٠' : 'Tracking speed index · 0–100'}</div>
-          <p style={S.overSub}>{isAr ? `العتبة: تتبّع ٤ أهداف تعبر الشاشة في ${crossSec.toFixed(1)} ث` : `Threshold: 4 targets crossing the screen in ${crossSec.toFixed(1)}s`}</p>
-          {rep && (
-            <p style={S.overSub}>
-              {isAr ? `أفضل ${rep.best}` : `Best ${rep.best}`}
-              {rep.n > 1 ? ` · ${rep.reliable
-                ? (rep.delta > 0 ? (isAr ? `▲ +${rep.delta} تحسّن موثوق` : `▲ +${rep.delta} reliable gain`) : (isAr ? `▼ ${rep.delta} تراجع موثوق` : `▼ ${rep.delta} reliable decline`))
-                : (isAr ? `±${Math.abs(rep.delta)} ضمن التغيّر الطبيعي` : `±${Math.abs(rep.delta)} within normal variation`)}` : ''}
-            </p>
-          )}
-          {sparkPts && (
-            <svg viewBox="0 0 200 40" width="200" height="40" preserveAspectRatio="none" aria-hidden="true" style={{ margin: '2px 0' }}>
+      <div className="ct-mot-root" dir={isAr ? 'rtl' : 'ltr'}>
+        <PlayResults
+          isAr={isAr}
+          title={isAr ? 'تقييم التتبّع' : 'Tracking assessment'}
+          headline={{ value: idx, label: isAr ? 'مؤشر سرعة التتبّع · ٠–١٠٠' : 'Tracking speed index · 0–100' }}
+          stats={[
+            { value: `${crossSec.toFixed(1)}s`, label: isAr ? 'عبور ٤ أهداف' : '4-target crossing' },
+            rep ? { value: rep.best, label: isAr ? 'الأفضل' : 'Personal best' } : null,
+            { value: over.trials, label: isAr ? 'محاولات' : 'Trials' },
+          ]}
+          notes={[
+            rep?.n > 1 ? (rep.reliable
+              ? (rep.delta > 0
+                ? (isAr ? `▲ +${rep.delta} تحسّن موثوق` : `▲ +${rep.delta} reliable gain`)
+                : (isAr ? `▼ ${rep.delta} تراجع موثوق` : `▼ ${rep.delta} reliable decline`))
+              : (isAr ? `±${Math.abs(rep.delta)} ضمن التغيّر الطبيعي` : `±${Math.abs(rep.delta)} within normal variation`)) : null,
+            isAr
+              ? 'درجة مرجعية ذاتية — لتتبّع تغيّرك مع الوقت، لا للمقارنة بالآخرين.'
+              : 'Self-referenced — tracks your own change over time, not a comparison to others.',
+          ]}
+          extra={sparkPts ? (
+            <svg className="ct-mot-spark" viewBox="0 0 200 40" width="200" height="40" preserveAspectRatio="none" aria-hidden="true">
               <polyline points={sparkPts} fill="none" stroke={GAME_COLORS.item.fill} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
             </svg>
-          )}
-          <p style={{ ...S.overSub, fontSize: 12, color: '#8a7a62', maxWidth: 300 }}>
-            {isAr ? 'درجة مرجعية ذاتية — لتتبّع تغيّرك مع الوقت، لا للمقارنة بالآخرين.' : 'Self-referenced — tracks your own change over time, not a comparison to others.'}
-          </p>
-          <button type="button" style={S.overBtn} onClick={() => { playSfx?.('click'); setRunId((n) => n + 1); }}>{isAr ? 'أعد الاختبار' : 'Test again'}</button>
-          <button type="button" style={S.overBtnGhost} onClick={() => { playSfx?.('click'); onExit?.(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
-        </div>
+          ) : null}
+          onAgain={() => setRunId((n) => n + 1)}
+          againLabel={isAr ? 'أعد الاختبار' : 'Test again'}
+          onMenu={() => onExit?.()}
+          playSfx={playSfx}
+        />
       </div>
     );
   }
 
   if (over && isSurvival) {
     return (
-      <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
-        <div style={S.overWrap}>
-          <h2 style={S.overTitle}>{isAr ? 'انتهى البقاء!' : 'Survival over!'}</h2>
-          <p style={S.overSub}>{isAr ? `${over.rounds} جولات · ${over.score} نقطة` : `${over.rounds} rounds · ${over.score} pts`}</p>
-          {over.capacity != null && (
-            <div style={S.capWrap}>
-              <div style={S.capNum}>{over.capacity.toFixed(1)}</div>
-              <div style={S.capLbl}>{isAr ? 'سعة التتبّع (أهداف)' : 'Tracking capacity (objects)'}</div>
-            </div>
-          )}
-          <button type="button" style={S.overBtn} onClick={() => { playSfx?.('click'); setRunId((n) => n + 1); }}>{isAr ? 'العب مجدداً' : 'Play again'}</button>
-          <button type="button" style={S.overBtnGhost} onClick={() => { playSfx?.('click'); onExit?.(); }}>{isAr ? 'القائمة' : 'Menu'}</button>
-        </div>
+      <div className="ct-mot-root" dir={isAr ? 'rtl' : 'ltr'}>
+        <PlayResults
+          isAr={isAr}
+          title={isAr ? 'انتهى البقاء!' : 'Survival over!'}
+          headline={{ value: over.score, label: isAr ? 'نقاط' : 'Score' }}
+          stats={[
+            { value: over.rounds, label: isAr ? 'جولات مكتملة' : 'Rounds cleared' },
+            over.capacity != null ? {
+              value: over.capacity.toFixed(1),
+              label: isAr ? 'سعة التتبّع' : 'Tracking capacity',
+            } : null,
+          ]}
+          onAgain={() => setRunId((n) => n + 1)}
+          onMenu={() => onExit?.()}
+          playSfx={playSfx}
+        />
       </div>
     );
   }
 
-  const phaseDot = phase === 'respond' ? 'var(--ink-outline)' : phase === 'result' ? null : '#E69F00';
+  const statusMeta = phase === 'respond'
+    ? (isAr ? `${picksLeft} متبقية` : `${picksLeft} left`)
+    : (phase === 'cue' || phase === 'track') && cfgRef.current?.targets
+      ? (isAr ? `${cfgRef.current.targets} أهداف` : `${cfgRef.current.targets} targets`)
+      : null;
   return (
-    <div style={S.root} dir={isAr ? 'rtl' : 'ltr'}>
-      {/* Standard header + pause. `hud` is a short free-text round/lives string
-          the engine writes, so it gets a slot of its own rather than being
-          split — the score is the number worth column-aligning. */}
+    <div className="ct-mot-root" dir={isAr ? 'rtl' : 'ltr'}>
       <PlayHud
         t={{}}
         playStep="running"
         showTimer={false}
         showTimeBar={false}
-        stats={[
-          hud ? { value: hud, label: '', small: true } : null,
-          { value: score, label: isAr ? 'نقاط' : 'score' },
-        ]}
+        stats={[...hudStats, { value: score, label: isAr ? 'نقاط' : 'Score' }]}
         pauseOpen={pause.open}
         onMenu={pause.requestQuit}
         onPause={pause.start}
@@ -731,26 +607,21 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
         playSfx={playSfx}
       />
       {pause.modal}
-      {/* Instruction lives in its OWN strip above the field, so it never covers
-          a dot (the in-canvas banner used to overlap targets near the top). */}
-      <div style={S.instr}>
-        {phaseDot && <span style={{ ...S.dot, background: phaseDot }} />}
-        <span>{msg}</span>
-        {(phase === 'cue' || phase === 'track') && cfgRef.current?.targets ? (
-          <b style={{ marginInlineStart: 4 }}>· 🎯×{cfgRef.current.targets}</b>
-        ) : null}
-        {phase === 'respond' ? <b style={{ marginInlineStart: 4 }}>· {picksLeft}</b> : null}
-      </div>
-      <div ref={wrapRef} style={S.play}>
-        <MotBoard2D
-          dotsRef={dotsRef}
-          fieldRef={fieldRef}
-          phaseRef={phaseRef}
-          phase={phase}
-          interactive={phase === 'respond'}
-          onPickDot={pickDot}
-          isAr={isAr}
-        />
+      <div className="ct-mot-workspace">
+        <TrainingStatusStrip className="ct-mot-instruction" meta={statusMeta}>
+          {msg}
+        </TrainingStatusStrip>
+        <div ref={wrapRef} className="ct-mot-play">
+          <MotBoard2D
+            dotsRef={dotsRef}
+            fieldRef={fieldRef}
+            phaseRef={phaseRef}
+            phase={phase}
+            interactive={phase === 'respond'}
+            onPickDot={pickDot}
+            isAr={isAr}
+          />
+        </div>
       </div>
     </div>
   );
@@ -759,7 +630,6 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
 export default function MotGame({ onBack, workoutMode = false, assessmentOnly = false }) {
   const { currentLang, playSfx, awardPoints, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
-  const [view, setView] = useState('shell');
   // The speed-threshold ASSESSMENT lives in the Assessment flow, not as a play
   // mode. When launched from there, render only the assessment engine.
   if (assessmentOnly) {
@@ -800,19 +670,3 @@ export default function MotGame({ onBack, workoutMode = false, assessmentOnly = 
     />
   );
 }
-
-const styles = {
-  root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--play-surface)', color: 'var(--play-ink)', fontFamily: "'Outfit', system-ui, sans-serif" },
-  play: { position: 'relative', flex: 1, margin: 12, borderRadius: 20, background: 'linear-gradient(165deg, #f4ebe0 0%, #e8dccb 100%)', overflow: 'hidden', border: '1.5px solid rgba(200,170,120,0.45)', boxShadow: '0 10px 28px rgba(60,40,20,0.10), inset 0 1px 0 rgba(255,255,255,0.7)', touchAction: 'none' },
-  canvas: { display: 'block', width: '100%', height: '100%' },
-  instr: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, minHeight: 40, margin: '0 12px', padding: '8px 16px', background: 'linear-gradient(180deg, #fffdf9 0%, #f7efe4 100%)', border: '1.5px solid rgba(232,172,78,0.35)', color: '#3a2c12', borderRadius: 14, fontWeight: 700, fontSize: 14, textAlign: 'center', boxShadow: '0 4px 12px rgba(60,40,20,0.06)' },
-  dot: { width: 11, height: 11, borderRadius: '50%', display: 'inline-block', flexShrink: 0 },
-  overWrap: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, textAlign: 'center' },
-  overTitle: { margin: 0, fontWeight: 900, fontSize: 24 },
-  overSub: { margin: 0, fontWeight: 700, color: 'var(--ink-dim)' },
-  capWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, margin: '4px 0 6px' },
-  capNum: { fontWeight: 900, fontSize: 42, lineHeight: 1, color: GAME_COLORS.item.fill },
-  capLbl: { fontWeight: 700, fontSize: 13, color: '#7a6a52' },
-  overBtn: { padding: '12px 20px', borderRadius: 12, border: '2px solid var(--ink-outline)', background: GAME_COLORS.item.fill, color: '#fff', fontWeight: 900, cursor: 'pointer' },
-  overBtnGhost: { padding: '12px 20px', borderRadius: 12, border: '2px solid #cdbfa6', background: '#fff', fontWeight: 800, cursor: 'pointer' },
-};

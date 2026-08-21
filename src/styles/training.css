@@ -3283,8 +3283,8 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
  * Shared training chrome — play header, comic buttons, pause / challenge UI
  * ============================================================================ */
 .ct-training-chrome-btn {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 12px;
     border: 2px solid var(--ink-outline);
     background: linear-gradient(180deg, var(--surface-raised) 0%, var(--surface) 100%);
@@ -3298,24 +3298,38 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     color: var(--ink);
     transition: transform 0.1s ease, filter 0.12s ease;
 }
-/* On a PLAY header this button sits on the blue play surface, but --surface /
-   --surface-raised are the app THEME's warm paper — so it rendered as a cream
-   chip on blue. The theme tokens are deliberately left warm (hubs, shop and
-   wellbeing still follow the theme); only the trial-bearing surface is
-   theme-independent, so the correction is scoped here rather than global. */
+.ct-training-chrome-btn:focus-visible,
+.ct-training-btn:focus-visible {
+    outline: 3px solid var(--game-ink, var(--ink-outline));
+    outline-offset: 3px;
+}
+/* On a PLAY header this button must match the surface it sits on, and --surface
+   / --surface-raised are the app THEME's paper, which flips with dark mode —
+   the trial-bearing surface is deliberately theme-independent, so the chip is
+   corrected here rather than globally.
+   ⚠ It was a COOL gradient (#f8fbfd → #e4ebf2) because the play surface used to
+   be blue. The boards moved to the beige --play-surface and this never
+   followed, so every in-game back and pause button read as a pale blue chip on
+   beige. Derived from the token now, so the next palette move carries it. */
 .ct-training-play-header .ct-training-chrome-btn {
-    background: linear-gradient(180deg, #f8fbfd 0%, #e4ebf2 100%);
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--play-surface-flat) 35%, #fff) 0%,
+        color-mix(in srgb, var(--play-surface-flat) 80%, #fff) 100%);
 }
 .ct-training-chrome-btn:active { transform: scale(0.96); }
 .ct-training-chrome-btn--paper {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     border-radius: 11px;
-    /* Cool, because the BASE of this button sits on the blue play surface. The
-       two hub overrides below (.ct-domain-pick / --mode-cosmos) keep the warm
-       paper version, since those screens sit on the warm app theme. */
+    /* Warm, because the BASE of this button sits on the beige play surface. The
+       two hub overrides below (.ct-domain-pick / --mode-cosmos) keep their own
+       paper version, since those screens sit on the warm app theme.
+       ⚠ This was cool (#f8fbfd → #e4ebf2) from when the play surface was blue —
+       the same stale pair as the play-header chip above. */
     border: 1px solid rgba(72, 90, 107, 0.38);
-    background: linear-gradient(180deg, #f8fbfd 0%, #e4ebf2 100%);
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--play-surface-flat) 35%, #fff) 0%,
+        color-mix(in srgb, var(--play-surface-flat) 80%, #fff) 100%);
     box-shadow: 0 2px 10px rgba(45, 45, 40, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.65) inset;
 }
 .ct-training-chrome-btn--tutorial {
@@ -3325,7 +3339,8 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     color: var(--accent);
 }
 .ct-training-chrome-spacer {
-    width: 40px;
+    width: 44px;
+    height: 44px;
     flex-shrink: 0;
 }
 .ct-training-menubar {
@@ -3350,7 +3365,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     display: flex;
     align-items: center;
     width: 100%;
-    max-width: 420px;
+    max-width: 720px;
     margin: 0 auto;
     padding: max(52px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 6px
         max(14px, env(safe-area-inset-left));
@@ -3376,6 +3391,44 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     color: var(--ink-dim);
     margin-top: 3px;
     line-height: 1.35;
+}
+
+/* One instruction/status surface shared by trial-bearing games. It stays
+   compact on phones and becomes a deliberate side panel where a game opts into
+   a desktop workspace. */
+.ct-training-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 9px 14px;
+    border: 1px solid color-mix(in srgb, var(--game-accent) 38%, var(--line));
+    border-radius: 15px;
+    background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+    box-shadow: 0 6px 18px var(--fx-shadow-soft);
+    color: var(--game-ink);
+    font-size: 0.9rem;
+    font-weight: 750;
+    line-height: 1.35;
+    text-align: center;
+    box-sizing: border-box;
+}
+.ct-training-status-text { text-wrap: balance; }
+.ct-training-status-meta {
+    flex: 0 0 auto;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--game-accent) 15%, transparent);
+    color: var(--game-accent);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.ct-training-status--success {
+    border-color: color-mix(in srgb, var(--game-ok) 55%, var(--line));
+}
+.ct-training-status--warning {
+    border-color: color-mix(in srgb, var(--game-bad) 55%, var(--line));
 }
 [data-home-theme='dark'] .ct-training-play-title {
     color: var(--color-stage-ink);
@@ -3407,6 +3460,11 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     width: 100%;
     text-align: center;
     box-sizing: border-box;
+}
+.ct-training-modal:focus-visible,
+.ct-training-handoff:focus-visible {
+    outline: 3px solid var(--game-accent);
+    outline-offset: 4px;
 }
 .ct-training-modal-title {
     font-family: 'Outfit', system-ui, sans-serif;
@@ -3441,6 +3499,12 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     transition: transform 0.1s ease, filter 0.12s ease;
 }
 .ct-training-btn:active { transform: scale(0.98); }
+@media (prefers-reduced-motion: reduce) {
+    .ct-training-chrome-btn,
+    .ct-training-btn {
+        transition: none;
+    }
+}
 .ct-training-btn--pri {
     background: linear-gradient(180deg, #f5c44a 0%, #e8a830 100%);
     color: var(--ink-outline);

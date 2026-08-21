@@ -182,7 +182,11 @@ export function DetectiveEngine({
     [marks],
   );
 
-  const canConfirm = isMulti ? true : (jailIsAnswer ? jailed != null : choice != null);
+  // clearAll needs at least one pick like every other kind: scoreClearAll wants
+  // hits === want.length with no false alarms, and validate:liars guarantees
+  // `want` is never empty — so an empty submission can only ever be wrong. Armed
+  // from the first frame, one stray tap burned the case with no confirmation.
+  const canConfirm = isMulti ? multi.size > 0 : (jailIsAnswer ? jailed != null : choice != null);
 
   const cycleMark = (id) => {
     if (judged) return;

@@ -109,13 +109,65 @@
 
 /* The stream word. Fixed min-height so the layout never jumps between items —
    a reflow mid-stream is a cue the task must not give. */
+.ct-kt-stimulus {
+  display: grid;
+  grid-template-columns: clamp(118px, 28vw, 172px) minmax(0, 1fr);
+  align-items: center;
+  width: min(100%, 31rem);
+  min-height: clamp(150px, 34vw, 190px);
+  padding: clamp(10px, 2.5vw, 16px);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--game-accent) 28%, var(--line));
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 22% 28%, color-mix(in srgb, var(--game-accent) 12%, transparent), transparent 48%),
+    color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  box-shadow:
+    inset 0 1px 0 var(--fx-glint),
+    0 18px 46px var(--fx-shadow-soft);
+  animation: ct-kt-arrive 280ms ease-out both;
+}
+
+.ct-kt-stimulus.is-tracked {
+  border-color: color-mix(in srgb, var(--game-accent) 62%, var(--line));
+}
+
+.ct-kt-stimulus.is-distractor {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+}
+
+@keyframes ct-kt-arrive {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ct-kt-wordart {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 12px var(--fx-shadow-soft));
+  user-select: none;
+}
+
+.ct-kt-wordcopy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
 .ct-kt-word {
-  font-size: clamp(34px, 11vw, 62px);
+  font-size: clamp(30px, 8vw, 56px);
   font-weight: 900;
   color: var(--game-ink);
   line-height: 1.1;
   min-height: 1.2em;
+  padding-inline: clamp(8px, 2vw, 18px);
+  text-align: start;
   word-break: break-word;
+  text-wrap: balance;
 }
 
 .ct-kt-wordcat {
@@ -124,6 +176,17 @@
   text-transform: uppercase;
   color: var(--game-accent);
   font-weight: 700;
+}
+
+.ct-kt-wordcat.is-distractor {
+  color: var(--ink-dim);
+}
+
+.ct-kt-cat--dim.is-active {
+  border-color: var(--game-accent);
+  background: color-mix(in srgb, var(--game-accent) 16%, transparent);
+  color: var(--game-accent);
+  font-weight: 800;
 }
 
 .ct-kt-track {
@@ -186,8 +249,8 @@
 
 .ct-kt-mark {
   display: grid;
-  grid-template-columns: minmax(6.5rem, auto) 1fr auto;
-  align-items: baseline;
+  grid-template-columns: 46px minmax(6.5rem, auto) 1fr auto;
+  align-items: center;
   gap: 10px;
   text-align: start;
   padding: 8px 12px;
@@ -195,6 +258,12 @@
   border: 1px solid var(--line);
 }
 .ct-kt-mark.ok { border-color: var(--game-ok, var(--game-accent)); }
+
+.ct-kt-markart {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
 
 .ct-kt-expected { font-weight: 800; color: var(--game-ink); }
 .ct-kt-given {
@@ -204,3 +273,32 @@
 }
 
 .ct-kt-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+@media (max-width: 520px) {
+  .ct-kt-stimulus {
+    grid-template-columns: minmax(100px, 38vw) minmax(0, 1fr);
+    min-height: 138px;
+    border-radius: 20px;
+  }
+
+  .ct-kt-word {
+    font-size: clamp(25px, 9.5vw, 42px);
+  }
+
+  .ct-kt-mark {
+    grid-template-columns: 38px minmax(5.5rem, auto) 1fr;
+  }
+
+  .ct-kt-markart {
+    width: 36px;
+    height: 36px;
+  }
+
+  .ct-kt-given {
+    grid-column: 2 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-kt-stimulus { animation: none; }
+}

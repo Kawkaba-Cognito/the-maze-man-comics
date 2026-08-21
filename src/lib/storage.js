@@ -37,7 +37,14 @@ export function createProfileStore(key, defaults = {}) {
   return {
     load() {
       const p = loadJson(key);
-      const out = { ...defaults };
+      // ⚠ Deep-copy, not `{ ...defaults }`. `defaults` is a module-level object,
+      // so a shallow copy handed the CALLER's own array back — on a fresh
+      // profile, `load().tel` WAS the module's `tel: []`. Today every caller
+      // copies before writing, so nothing is broken; the first one that does
+      // `profile.tel.push(x)` would mutate the default, and every later load()
+      // of an unsaved profile would return the previous session's telemetry.
+      // That reads as corrupt history, not as a storage bug.
+      const out = structuredClone(defaults);
       if (p && typeof p === 'object' && !Array.isArray(p)) {
         for (const k of Object.keys(p)) if (p[k] != null) out[k] = p[k];
       }

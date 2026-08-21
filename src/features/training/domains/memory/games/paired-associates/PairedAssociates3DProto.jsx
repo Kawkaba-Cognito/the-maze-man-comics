@@ -5,8 +5,10 @@ import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import {
   createCardMaterial,
   createHiddenCardTexture,
-  createSymbolCardTexture,
+  createIllustratedCardTexture,
 } from '../memoryStimulusTexture';
+import { assetUrl } from '../../../../../../lib/assetUrl';
+import { pairObjectLabel } from './palData.js';
 import '../../../../shared/c3dProto.css';
 import './pairedAssociates3D.css';
 
@@ -177,7 +179,12 @@ export default function PairedAssociates3DProto({
       if (!textureCache.has(key)) {
         textureCache.set(
           key,
-          symbol ? createSymbolCardTexture(symbol, renderer) : createHiddenCardTexture(renderer),
+          symbol
+            ? createIllustratedCardTexture({
+              id: symbol,
+              src: assetUrl(`Assets/training/pair-match-2026/${symbol}.webp`),
+            }, renderer)
+            : createHiddenCardTexture(renderer),
         );
       }
       return textureCache.get(key);
@@ -439,8 +446,8 @@ export default function PairedAssociates3DProto({
       <p className="ct-visually-hidden" aria-live="polite" aria-atomic="true">
         {phase === 'study' && openIndex >= 0
           ? isAr
-            ? `الصندوق ${openIndex + 1} يحتوي على الرمز ${boxes[openIndex]?.symbol || ''}`
-            : `Box ${openIndex + 1} contains symbol ${boxes[openIndex]?.symbol || ''}`
+            ? `الصندوق ${openIndex + 1} يحتوي على ${pairObjectLabel(boxes[openIndex]?.symbol, 'ar')}`
+            : `Box ${openIndex + 1} contains ${pairObjectLabel(boxes[openIndex]?.symbol, 'en')}`
           : question}
       </p>
       {phase === 'recall' && interactive ? (
@@ -449,7 +456,9 @@ export default function PairedAssociates3DProto({
           <div
             className="ct-pal-access-grid"
             role="group"
-            aria-label={isAr ? `اختر صندوق الرمز ${cue}` : `Choose the box for symbol ${cue}`}
+            aria-label={isAr
+              ? `اختر صندوق ${pairObjectLabel(cue, 'ar')}`
+              : `Choose the box for ${pairObjectLabel(cue, 'en')}`}
             style={{
               '--pal-box-count': boxes.length,
               gridTemplateColumns: `repeat(${Math.ceil(Math.sqrt(boxes.length))}, minmax(44px, 1fr))`,

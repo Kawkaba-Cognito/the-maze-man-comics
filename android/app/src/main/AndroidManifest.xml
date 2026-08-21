@@ -1,8 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        allowBackup is deliberately FALSE. All app state lives unencrypted in the
+        WebView's localStorage (app_webview/Default/Local Storage/), and that
+        includes special-category data: journal entries with a mood tag, the
+        personality and relationship quizzes, Ikigai reflections and habit
+        history. With Auto Backup on and no exclusion rules, Android copies the
+        whole app data dir to the user's Google Drive — with no consent step and
+        while the app itself says the data never leaves the device.
+        Turning this back on requires android:dataExtractionRules excluding
+        app_webview, and a disclosure the user actually sees.
+    -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"

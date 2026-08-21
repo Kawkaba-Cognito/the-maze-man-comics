@@ -10,14 +10,17 @@
        Babylon is fetched only after the user swipes into the standalone Home labyrinth.
        Keep cdn.babylonjs.com in both script-src and connect-src so the pinned,
        SRI-checked engine in MartianMaze can load on demand. The original maze
-       textures come from playground.babylonjs.com.
+       textures come from playground.babylonjs.com — the ONLY external image
+       host, which is why img-src names it instead of a blanket https:. A
+       wildcard img-src is the exfiltration channel left open when connect-src
+       is closed; keep this list as short as the assets actually require.
        'unsafe-eval' was justified by Babylon's shader paths and is now a
        candidate for removal too, but it is left in place until something can
        actually exercise the app and confirm nothing else needs it.
        object-src/base-uri stay locked down. -->
   <meta
     http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.babylonjs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.babylonjs.com https://playground.babylonjs.com; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; object-src 'none'"
+    content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.babylonjs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://playground.babylonjs.com; connect-src 'self' blob: https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.babylonjs.com https://playground.babylonjs.com; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; object-src 'none'"
   />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
   <title>The Maze Man | Psychological Comics</title>

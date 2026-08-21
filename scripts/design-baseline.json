@@ -1,14 +1,11 @@
 {
   "rules": {
-    "raw-colour": 225,
+    "raw-colour": 207,
     "stacked-backdrops": 1
   },
   "files": {
     "src/features/training/domains/attention/games/cancellation/index.jsx": {
       "raw-colour": 1
-    },
-    "src/features/training/domains/attention/games/mot/index.jsx": {
-      "raw-colour": 18
     },
     "src/features/training/domains/attention/games/mot/MotBoard2D.jsx": {
       "raw-colour": 1

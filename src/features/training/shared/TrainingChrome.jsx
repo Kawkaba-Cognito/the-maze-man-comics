@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { IconBack, IconPause } from './TrainingIcons';
 
 /** Comic training chrome — back / pause icon buttons (Rush Hour play style). */
@@ -31,6 +31,82 @@ export function TrainingChromeBtn({
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * Keep keyboard focus inside a modal surface while it is open, restore focus
+ * afterwards, and give Escape the same meaning as the least-destructive
+ * visible action. All shared pause / quit / handoff dialogs use this hook so a
+ * game cannot accidentally invent a different keyboard contract.
+ */
+function useModalFocus(open, onEscape) {
+  const dialogRef = useRef(null);
+  const escapeRef = useRef(onEscape);
+  escapeRef.current = onEscape;
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const dialog = dialogRef.current;
+    if (!dialog) return undefined;
+    const previous = document.activeElement;
+    const focusables = () => [...dialog.querySelectorAll(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )];
+    (focusables()[0] || dialog).focus();
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape' && escapeRef.current) {
+        event.preventDefault();
+        escapeRef.current();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const items = focusables();
+      if (!items.length) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      if (previous && typeof previous.focus === 'function') previous.focus();
+    };
+  }, [open]);
+
+  return dialogRef;
+}
+
+/** One semantic instruction/status treatment for trial-bearing screens. */
+export function TrainingStatusStrip({
+  children,
+  meta,
+  tone = 'neutral',
+  className = '',
+  ariaLive = 'polite',
+}) {
+  return (
+    <div
+      className={`ct-training-status ct-training-status--${tone}${className ? ` ${className}` : ''}`}
+      role="status"
+      aria-live={ariaLive}
+      aria-atomic="true"
+    >
+      <span className="ct-training-status-text">{children}</span>
+      {meta ? <strong className="ct-training-status-meta">{meta}</strong> : null}
+    </div>
   );
 }
 
@@ -116,10 +192,10 @@ export function TrainingMenuBar({
  * in play. PlayHud now renders its stats INSIDE this frame rather than beside
  * a second one.
  *
- * ⚠ The frame is TRANSPARENT on purpose. It is `max-width: 420px; margin: 0
- * auto`, and CLAUDE.md records what phone-width centred chrome with a fill does
- * on a wider viewport: it renders as a rectangle floating at the top of the
- * screen. Puzzle Studio shipped exactly that, because it looks fine on a phone.
+ * ⚠ The frame is TRANSPARENT on purpose. It is centred and width-capped, and
+ * CLAUDE.md records what centred chrome with a fill does on a wider viewport:
+ * it renders as a rectangle floating at the top of the screen. Puzzle Studio
+ * shipped exactly that, because it looks fine on a phone.
  */
 export function TrainingPlayHeader({
   isAr,
@@ -205,11 +281,20 @@ export function TrainingPauseModal({
   onQuitMenu,
   showRestart = true,
 }) {
+  const titleId = useId();
+  const dialogRef = useModalFocus(open, onResume);
   if (!open) return null;
   return (
-    <div className="ct-training-ov" role="dialog" aria-modal="true" aria-labelledby="training-pause-title">
-      <div className="ct-training-modal ct-training-modal--pause">
-        <h2 id="training-pause-title" className="ct-training-modal-title">
+    <div className="ct-training-ov">
+      <div
+        ref={dialogRef}
+        className="ct-training-modal ct-training-modal--pause"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
+        <h2 id={titleId} className="ct-training-modal-title">
           {labels.paused}
         </h2>
         <div className="ct-training-modal-actions">
@@ -236,14 +321,25 @@ export function TrainingQuitModal({
   onConfirmQuit,
   onKeepPlaying,
 }) {
+  const titleId = useId();
+  const descId = useId();
+  const dialogRef = useModalFocus(open, onKeepPlaying);
   if (!open) return null;
   return (
-    <div className="ct-training-ov" role="dialog" aria-modal="true" aria-labelledby="training-quit-title">
-      <div className="ct-training-modal ct-training-modal--quit">
-        <h2 id="training-quit-title" className="ct-training-modal-title">
+    <div className="ct-training-ov">
+      <div
+        ref={dialogRef}
+        className="ct-training-modal ct-training-modal--quit"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descId}
+        tabIndex={-1}
+      >
+        <h2 id={titleId} className="ct-training-modal-title">
           {labels.quitQ}
         </h2>
-        <p className="ct-training-modal-text">{labels.quitLose}</p>
+        <p id={descId} className="ct-training-modal-text">{labels.quitLose}</p>
         <div className="ct-training-modal-actions">
           <button type="button" className="ct-training-btn ct-training-btn--warn" onClick={onConfirmQuit}>
             {labels.yesQuit}
@@ -270,12 +366,23 @@ export function TrainingChallengeHandoff({
   onStart,
   playSfx,
 }) {
+  const titleId = useId();
+  const dialogRef = useModalFocus(true);
   return (
-    <div className="ct-training-ov ct-training-ov--handoff" role="dialog" aria-modal="true">
-      <div className="ct-training-handoff" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className="ct-training-ov ct-training-ov--handoff">
+      <div
+        ref={dialogRef}
+        className="ct-training-handoff"
+        dir={isAr ? 'rtl' : 'ltr'}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
         {roundLine ? <p className="ct-training-handoff-round">{roundLine}</p> : null}
         <p className="ct-training-handoff-kicker">{kicker}</p>
         <h2
+          id={titleId}
           className="ct-training-handoff-name"
           style={{
             fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",

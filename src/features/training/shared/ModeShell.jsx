@@ -12,6 +12,7 @@ import { useTrainingTutorial } from './tutorials/useTrainingTutorial';
 import { getTrainingMeta } from './tutorials/trainingMeta';
 import TrainingOnboardingLayer from './tutorials/TrainingOnboardingLayer';
 import { TUTORIAL_UI } from './tutorials/tutorialContent';
+import PlayResults from './PlayResults';
 
 /*
  * ModeShell — the standard 3-mode flow shared by the newer training games,
@@ -247,25 +248,39 @@ export default function ModeShell({
   // ── Levels result ──
   if (phase === 'result' && result) {
     const isLast = result.level >= levelCount;
+    const score = Number(result.score);
+    const actions = [
+      result.won && !isLast ? {
+        key: 'next',
+        label: t.nextLv,
+        onClick: () => { setLevel(result.level + 1); setResult(null); setPhase('play'); },
+      } : null,
+      {
+        key: 'replay',
+        label: result.won ? t.replay : t.retry,
+        variant: result.won && !isLast ? 'ghost' : 'primary',
+        onClick: () => { setResult(null); setPhase('play'); },
+      },
+      {
+        key: 'levels',
+        label: t.levels,
+        variant: 'ghost',
+        onClick: () => { setPhase('levels'); setResult(null); },
+      },
+    ];
     return (
-      <div className="ct-training-ov" role="dialog" aria-modal="true">
-        <div className="ct-training-modal" style={{ textAlign: 'center' }}>
-          <h2 className="ct-training-modal-title">{result.won ? (t.levelCleared) : (t.notQuite)}</h2>
-          {result.summary ? <p className="ct-training-modal-text">{result.summary}</p> : null}
-          <div className="ct-training-modal-actions">
-            {result.won && !isLast && (
-              <button type="button" className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); setLevel(result.level + 1); setResult(null); setPhase('play'); }}>
-                {t.nextLv}
-              </button>
-            )}
-            <button type="button" className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); setResult(null); setPhase('play'); }}>
-              {result.won ? (t.replay) : (t.retry)}
-            </button>
-            <button type="button" className="ct-training-btn ct-training-btn--ghost" onClick={() => { playSfx?.('click'); setPhase('levels'); setResult(null); }}>
-              {t.levels}
-            </button>
-          </div>
-        </div>
+      <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+        <PlayResults
+          isAr={isAr}
+          title={result.won ? t.levelCleared : t.notQuite}
+          tone={result.won ? 'success' : 'retry'}
+          headline={{ value: `L${result.level}`, label: dm[result.diff]?.label || t.levelMode }}
+          stats={Number.isFinite(score) ? [{ value: score, label: t.score }] : []}
+          notes={result.summary ? [result.summary] : []}
+          actions={actions}
+          onMenu={() => { setPhase('levels'); setResult(null); }}
+          playSfx={playSfx}
+        />
       </div>
     );
   }

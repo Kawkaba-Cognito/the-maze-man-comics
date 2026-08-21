@@ -63,12 +63,24 @@
  * dispatchEvent() fires a handler directly and BYPASSES hit-testing — only a
  * real tap, or elementFromPoint(), can catch it.
  *
- * If you add chrome here, add its root to this list.
+ * ⚠ IT HAPPENED A SECOND TIME, and this list was again the last thing updated
+ * (2026-08-21). PlayHud now renders its stats INSIDE TrainingPlayHeader, so the
+ * back and pause buttons are .ct-training-chrome-btn — while .ct-fq-bar, still
+ * listed here, had been demoted to the stats block that holds no buttons at all.
+ * Back and pause were dead in all seven games below. Measured, not guessed:
+ * every tap logged `topmost=canvas`, i.e. hit-testing never reached the button.
+ *
+ * Only the CONTROLS are listed, never a chrome ROOT — .ct-training-play-header
+ * spans the top strip, and giving the whole frame pointer-events:auto would eat
+ * canvas taps in that band.
+ *
+ * If you add chrome here, add its BUTTONS to this list, and tap them for real.
  */
 .c3d-ui--overlay .c3d-icon-btn,
 .c3d-ui--overlay .c3d-target-chip,
 .c3d-ui--overlay .ct-fq-bar,
-.c3d-ui--overlay .ct-fq-cbw {
+.c3d-ui--overlay .ct-fq-cbw,
+.c3d-ui--overlay .ct-training-chrome-btn {
   pointer-events: auto;
 }
 
