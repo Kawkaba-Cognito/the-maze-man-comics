@@ -241,7 +241,7 @@ const UI = {
     resultsLevelRetryTitle: 'Try again',
     hubMapAria: 'Modes map — choose a path',
     hubNodeFreeHint: 'Endless · one life · ramps up',
-    hubNodeLevelsHint: '100 levels per tier · unlock in order',
+    hubNodeLevelsHint: '60 levels · one ladder · unlock in order',
     hubNodeChallengeHint: 'Same board for all · pick a difficulty',
     mode3d: '3D',
     hubNode3dHint: 'Prototype · same task in a 3D arena',
@@ -389,7 +389,7 @@ const UI = {
     resultsLevelRetryTitle: 'حاول مجددًا',
     hubMapAria: 'خريطة الأوضاع — اختر مسارًا',
     hubNodeFreeHint: 'لا ينتهي · حياة واحدة · يزداد صعوبة',
-    hubNodeLevelsHint: '١٠٠ مستوى لكل صعوبة · بالترتيب',
+    hubNodeLevelsHint: '٦٠ مستوى · سلّم واحد · بالترتيب',
     hubNodeChallengeHint: 'نفس اللوحة للجميع · اختر الصعوبة',
     mode3d: 'ثلاثي الأبعاد',
     hubNode3dHint: 'نموذج · نفس المهمة في ساحة ثلاثية الأبعاد',
@@ -616,12 +616,35 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   // than in a modal over a mock grid: Dr Kawkab and the pointing hand sit on the
   // real board and the player clears a real target. `coachOpen` holds the round
   // clock while that happens — see the timer effect — so reading costs no time.
-  const tutorial = useTrainingTutorial('cancel-task', isAr);
+  /*
+   * ⚠ VERSIONED ON PURPOSE — `'cancel-task@coach1'`, not `'cancel-task'`.
+   *
+   * `shouldRunOnboarding` keys off this id in `mm_tutorial_prefs_v2`, and the
+   * RETIRED three-slide carousel wrote that same `'cancel-task'` flag. So every
+   * player who had opened this game before the 2026-08-28 rewrite already had
+   * `{skipped:true}` or `{completed:true}` stored — meaning `coachArmed` began
+   * `false` and the new lesson (the one that teaches decoys, the thing this
+   * game actually measures) would never auto-run for them. It would have
+   * reached fresh installs only, silently, with no gate able to see it.
+   *
+   * Bumping the suffix gives the new lesson its own flag so it runs once for
+   * everybody. Bump it again if the lesson materially changes.
+   *
+   * The id is ALSO the key for `getTrainingDiagramSteps`, which returns [] for
+   * an unknown id — harmless here, because this game never renders the rules
+   * carousel (it teaches on the live board) and uses only `shouldRun`/`skipAll`
+   * from this hook. `getTrainingTrial` is guarded for unknown ids too.
+   */
+  const tutorial = useTrainingTutorial('cancel-task@coach1', isAr);
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
   const tutReplayHint = tutLabels.replayTutorial;
   // `armed` = a coach run is owed (first ever visit, or the player asked to
   // replay). It becomes `open` once a Survival round is actually on screen.
   const [coachOpen, setCoachOpen] = useState(false);
+  /* Read inside `onCellTap`, which is a stable callback and would otherwise
+     close over a stale `coachOpen`. */
+  const coachOpenRef = useRef(false);
+  useEffect(() => { coachOpenRef.current = coachOpen; }, [coachOpen]);
   const [coachArmed, setCoachArmed] = useState(() => tutorial.onboarding.shouldRun);
   const boardApiRef = useRef(null);
   const startFreeModeRef = useRef(null);
@@ -638,6 +661,15 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     setCoachOpen(false);
     setCoachArmed(false);
     markTutorialDone?.();
+    /*
+     * ⚠ Hand the round back. While the coach is open the auto-win is suppressed
+     * (see `onCellTap`), so a player who cleared every target during the lesson
+     * would otherwise be left sitting on an empty board with a running clock
+     * and nothing to tap. Resolve it here, once, on the way out.
+     */
+    const cleared = (cellsRef.current || []).length > 0
+      && !cellsRef.current.some((cell) => cell?.isT && !cell.tapped);
+    if (cleared) endRoundRef.current?.(true);
   }, [markTutorialDone]);
 
   useEffect(() => () => {
@@ -1475,7 +1507,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     const isAssess = (r.mode === 'assess' || r.mode === 'adaptive') && !r.assessPractice;
     if (c.isT) {
       if (!r.assessPractice) {
-        trialLogRef.current?.trial({ ...(itt != null ? { rt: Math.round(itt) } : {}), ok: true, ...posFields });
+        /* ⚠ Not while the coach is open — see the note on the false-alarm
+           write below. A guided tap is not a measurement. */
+        if (!coachOpenRef.current) {
+          trialLogRef.current?.trial({ ...(itt != null ? { rt: Math.round(itt) } : {}), ok: true, ...posFields });
+        }
       }
       foundIdxRef.current.add(idx);
       roundFoundSeqRef.current.push({ idx, row: posFields.row, col: posFields.col });
@@ -1497,7 +1533,18 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         setFreeScore(freeScoreRef.current);
       }
       const hasRemainingTarget = nextCells.some((cell) => cell.isT && !cell.tapped);
-      if (!hasRemainingTarget) {
+      /*
+       * ⚠ CLEARING THE BOARD MUST NOT END THE LESSON EITHER. The tutorial board
+       * has three targets; step 2 has the player clear one. The natural next
+       * move — the hand just said "tap it" — is to tap the other two, which won
+       * the round, closed the coach and marked onboarding complete at step 2 of
+       * 4. The player never met the decoy step, which is the entire reason this
+       * lesson exists, and then met decoys by being punished for tapping one.
+       *
+       * So while the coach is open the round simply stays open. The coach ends
+       * it (`onFinish`/`onSkip` → `endCoach`), and the round resolves after.
+       */
+      if (!hasRemainingTarget && !coachOpenRef.current) {
         // No green solve-pulse here on purpose — the win screen is enough.
         endRoundRef.current(true);
       }
@@ -1505,18 +1552,62 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     }
 
     if (!r.assessPractice) {
-      trialLogRef.current?.trial({ ...(itt != null ? { rt: Math.round(itt) } : {}), ok: false, ...posFields });
+      /*
+       * ⚠ TUTORIAL TAPS ARE NOT DATA.
+       *
+       * The trial log is created before the coach opens and `performance.now()`
+       * keeps running while it holds the clock, so a tap made during the lesson
+       * — with a hand pointing at the answer and unlimited time to read — was
+       * being written into `mm_trials_cancel-task_v1` as a genuine hit or false
+       * alarm, carrying however many seconds the player spent reading. That
+       * contaminates search-onset RT, inter-response times and Center-of-
+       * Cancellation for that round, in the player's own history. This app is
+       * built by a psychologist; a demonstration must not enter the record.
+       */
+      if (!coachOpenRef.current) {
+        trialLogRef.current?.trial({ ...(itt != null ? { rt: Math.round(itt) } : {}), ok: false, ...posFields });
+      }
     }
     playSfx(isAssess ? 'click' : 'error');
-    if (!isAssess) pendingPenaltyRef.current += 3;
-    talliesRef.current.errors += 1;
-    setErrors(talliesRef.current.errors);
+    /*
+     * ⚠ A MISTAKE MADE DURING THE LESSON COSTS NO TIME.
+     *
+     * The coach holds the clock while it is open, but the wrong-tap penalty is
+     * BANKED (`pendingPenaltyRef`) and spends itself the moment the clock
+     * restarts. So a first-time player who tapped a decoy while Dr Kawkab was
+     * explaining decoys used to walk into the round already three seconds down,
+     * with nothing on screen connecting the loss to the tap. Trying the wrong
+     * thing is the point of a tutorial; it must be free.
+     */
+    if (!isAssess && !coachOpenRef.current) pendingPenaltyRef.current += 3;
+    if (!coachOpenRef.current) {
+      talliesRef.current.errors += 1;
+      setErrors(talliesRef.current.errors);
+    }
     const nextCells = cellsRef.current.map((x, i) => (
       i === idx ? { ...x, tapped: true, feedback: isAssess ? 'mark' : 'bad' } : x
     ));
     cellsRef.current = nextCells;
     setCells(nextCells);
-    if (r.mode === 'free') {
+    /*
+     * ⚠ THE LESSON MUST NOT BE LOSABLE. The three lines above/below are the
+     * three consequences of a wrong tap, and guarding only the CLOCK left the
+     * other two live — which was worse than not guarding at all:
+     *
+     * Survival has ONE life (FREE_LIVES) and the tutorial board carries three
+     * targets, so `freeRoundErrorCap(3)` is 2. Dr Kawkab points a crossed-out
+     * hand at a decoy and says it is not your shape; the player taps it to see
+     * what happens — which this coach's own header calls the point of a
+     * tutorial — and that is error 1 of 2. One more slip anywhere on a 20-cell
+     * board failed the round, spent the only life, and dropped them on a
+     * results screen mid-sentence. Worse, ANY round end closes the coach
+     * (`endCoach` → `markOnboardingSkipped`), so the lesson was then marked
+     * permanently complete having never shown steps 3 and 4.
+     *
+     * The red 'bad' feedback above still fires, because seeing the mistake IS
+     * the lesson. Only the punishment is suspended.
+     */
+    if (r.mode === 'free' && !coachOpenRef.current) {
       const pen = freeWrongTapPenalty(r.diff);
       freeScoreRef.current = Math.max(0, freeScoreRef.current - pen);
       setFreeScore(freeScoreRef.current);

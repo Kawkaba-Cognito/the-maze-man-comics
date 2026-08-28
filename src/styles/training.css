@@ -8740,9 +8740,41 @@ html[data-home-theme='light'] .ct-domain-pick .ct-mph-planet-name {
    pointing hand (Clash-Royale style), so the instruction and the shape to tap
    land in one glance; when nothing is being pointed at it drops to a low,
    centred rest position that keeps the grid readable. */
+/*
+ * ⚠ THE FOUR RESETS ARE LOAD-BEARING. `.ct-coach-bubble` is declared TWICE at
+ * top level: this block, and an older one (~line 6089) belonging to the retired
+ * spotlight coach, whose markup was deleted but whose CSS was not. Its
+ * siblings — .ct-coach-text, .ct-coach-actions, .ct-coach-spot, .ct-coach-dim —
+ * have no JSX users at all, but the NAME still collides, so it cascades into
+ * this one.
+ *
+ * What it was silently imposing:
+ *   display: flex     → the <p> and the Skip/Next row became SIBLINGS IN A ROW,
+ *                       so a long instruction rendered as a tall narrow column
+ *                       with the buttons jammed beside it. `.ct-coach-btns`
+ *                       sets `margin-top` and `justify-content: flex-end`,
+ *                       which only make sense stacked — the markup was always
+ *                       written for a block.
+ *   margin: 0 auto    → with `inset-inline` AND an inline `left` AND a fixed
+ *   inset-inline: 16px  width, the box is over-constrained: the auto margins
+ *   max-width: 420px    split the leftover space, so the bubble's true centre
+ *                       drifts away from the hand it is supposed to be
+ *                       attached to.
+ *
+ * `audit:consistency` scores this game 6/6 on look while all of that is true —
+ * no gate reads the cascade. Same family as the half-migrated token pairs in
+ * CLAUDE.md: the later declaration looked complete and wasn't.
+ */
 .ct-coach-bubble {
+    display: block;
+    margin: 0;
+    inset-inline: auto;
+    max-width: none;
     pointer-events: auto;
-    width: min(300px, 74vw);
+    /* Published as a custom property so the component can clamp `left` by HALF
+       THE BUBBLE'S OWN WIDTH. A percentage clamp cannot know this number. */
+    --ctc-bw: min(300px, 74vw);
+    width: var(--ctc-bw);
     background: var(--surface-raised);
     border: 2px solid #e3d6c4;
     border-radius: 16px;
@@ -8776,11 +8808,21 @@ html[data-home-theme='light'] .ct-domain-pick .ct-mph-planet-name {
     cursor: pointer;
 }
 
+/*
+ * ⚠ CONTRAST AND TARGET SIZE, both measured rather than eyeballed.
+ *
+ * `#8a7a61` on the bubble's `--surface-raised` (#ded5c4) is **2.86:1** — under
+ * WCAG 2.2 SC 1.4.3's 4.5:1. `--ink-dim` is **5.92:1** on the same ground.
+ * That matters more here than on a decorative control: on the "tap it" step the
+ * coach renders NO Next button, so Skip is the only non-pointer way out of a
+ * first-run tutorial. The padding lifts it toward a 44px touch target for the
+ * same reason.
+ */
 .ct-coach-skip {
     background: none;
     border: none;
-    color: #8a7a61;
-    padding: 6px 8px;
+    color: var(--ink-dim);
+    padding: 11px 10px;
     text-decoration: underline;
 }
 

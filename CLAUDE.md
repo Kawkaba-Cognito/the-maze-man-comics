@@ -245,6 +245,46 @@ raw trial data is copied in. Keep it that way — see the security note below.
 
 No i18n framework. Each component/game carries `const UI = { en: {…}, ar: {…} }` and receives `isAr`; shared labels come from `trainingStrings.js` via spread (see above). RTL is per-component `dir={isAr ? 'rtl' : 'ltr'}`. Some AR strings use Arabic-Indic numerals (`٩٠ث`) — match the surrounding file's convention. Language toggles live in the shell and per-screen headers.
 
+⚠️ **A STRING CHANGE IS TWO EDITS, AND THE SECOND IS THE ONE THAT GETS MISSED** (2026-08-28). The EN and AR halves of a `UI` dict sit ~40 lines apart, so a find-and-fix on the English line leaves the Arabic one stating the opposite. The ladder migration did exactly that: **Mirror World, Intercept and Block Escape** kept telling Arabic players `'٣ صعوبات · ١٠٠ مستوى لكل'` — three difficulties, a hundred levels each — for a game that had one ladder of fifty, and Cancellation's hub still read "100 levels per tier" in both. Nothing catches this: `audit:consistency`'s `strings` rule only proves a key RESOLVES, not that it is true, and a stale sentence resolves perfectly. **After editing any user-facing string, grep the Arabic-Indic numeral or the AR phrase too**, e.g. `grep -rn "٣ صعوبات\|levels per tier" src/features/training/domains/*/games/*/index.jsx`.
+
+## Tutorials — Dr Kawkab teaches on the LIVE board
+
+Cancellation is the reference (`CancelTaskCoach.jsx`). The lesson runs INSIDE a
+real Survival round: Dr Kawkab stands in a corner, his pointing hand sits on a
+real tile, and the player clears it themselves. The round clock is held while the
+coach is open, so reading costs no time.
+
+Both figures are 2D images, deliberately: **`KawkabSprite`** (86 KB) and
+**`TutorialHand`** (`Assets/characters/kawkab/kawkab-hand.webp`, 30 KB). They
+replaced `AssessmentMascot3D` (3.4 MB GLB) and `TutorialHand3D` (1.36 MB GLB), so
+opening a tutorial cost ~5 MB and TWO WebGL contexts. ⚠️ `AssessmentMascot3D` is
+STILL used by trivia, rush-hour and Kawnera — the same swap is available there.
+
+Keying new character art: `py scripts/key-kawkab-planet.py <src.png> --out <path>
+--width N`. It alpha-solves the edge and flood-fills from the border, so white
+star points INSIDE the body survive instead of punching pinholes through it.
+
+⚠️ **A TUTORIAL MUST TEACH THE CONSTRUCT, NOT THE CONTROLS.** The old lesson
+taught "find the shape, tap it, clear them all" — none of which is what this game
+measures. Cancellation is a test of SELECTIVE attention, so the lesson now points
+at a DECOY and says leave it.
+
+⚠️ **AND THE LESSON MUST NOT BE LOSABLE.** Guarding only the wrong-tap TIME
+penalty left the error tally and the round-error cap live; Survival has one life
+and a 3-target board caps at 2 errors, so the coach's own crossed-out hand
+invited error 1 of 2 — and any round end fires `endCoach` →
+`markOnboardingSkipped`, marking the lesson permanently done having never shown
+its last two steps. Clearing the remaining targets did the same via the auto-win.
+Guard **every** consequence with `coachOpenRef`, not one. Tutorial taps are also
+kept out of `trialLog`: a guided tap with unlimited reading time is not a
+measurement.
+
+⚠️ **VERSION THE ONBOARDING FLAG WHEN A LESSON CHANGES.** `shouldRunOnboarding`
+keys off the game id in `mm_tutorial_prefs_v2`, so a rewritten tutorial that
+reuses the old id never runs for anyone who already played — it reaches fresh
+installs only, silently. Cancellation now uses `'cancel-task@coach1'`; bump the
+suffix next time.
+
 ## Persistence
 
 Everything is localStorage, keys prefixed `mm_*` and versioned (`mm_wordle_profile_v1`, `mm_trials_<game>_v1`, `mm_assess_sessions_v1`, …). Go through `src/lib/storage.js` (`createProfileStore(key, defaults)` for per-game profiles; `loadJson`/`saveJson` elsewhere) — it owns the try/catch and quota handling.

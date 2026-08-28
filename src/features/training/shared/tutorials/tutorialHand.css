@@ -1,0 +1,86 @@
+/*
+ * Dr Kawkab's pointing hand.
+ *
+ * Everything here is transform/opacity so the browser can run it on the
+ * compositor: the hand glides over a live, animating board and must not cost
+ * layout. Shadows come from the shared --fx-* tokens, never hand-mixed — see
+ * the `look` axis of `npm run audit:consistency`.
+ */
+
+.ct-tut-hand {
+  position: absolute;
+  z-index: 7;
+  pointer-events: none;
+  /* Glide to the next target. Long enough to be followable with the eye,
+     short enough not to feel like the lesson is waiting for the hand. */
+  transition: left 420ms cubic-bezier(0.22, 0.61, 0.36, 1),
+              top 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: left, top;
+}
+
+.ct-tut-hand img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* The art is near-black on a board that can be dark. A drop shadow is what
+     keeps the silhouette readable against it. */
+  /* Scaled with the hand: at 54px a 14px blur reads as a smudge under it. */
+  filter: drop-shadow(0 4px 9px var(--fx-shadow-drop))
+          drop-shadow(0 1px 2px var(--fx-shadow-soft));
+  animation: ct-tut-hand-float 2.6s ease-in-out infinite;
+}
+
+/* A slow hover, so the hand reads as held over the board rather than stuck to
+   it. Small on purpose: a big bob makes the fingertip ambiguous. */
+@keyframes ct-tut-hand-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-5px) rotate(0deg); }
+}
+
+/* The tap: a quick dip onto the target and back. Replayed by `tapSignal`. */
+.ct-tut-hand.is-tapping img {
+  animation: ct-tut-hand-tap 420ms cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+@keyframes ct-tut-hand-tap {
+  0%   { transform: translateY(0) scale(1); }
+  38%  { transform: translateY(9px) scale(0.9); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/*
+ * ⚠ THE "DO NOT TAP THIS" STATE.
+ *
+ * The decoy step points at something the player must LEAVE ALONE, and a normal
+ * pointing hand says the opposite. So this variant pulls the hand back off the
+ * board, fades it, and carries a crossed-out badge: the gesture reads as
+ * "not this one" rather than "here". It also never plays the tap dip.
+ */
+.ct-tut-hand--avoid img {
+  opacity: 0.72;
+  animation: none;
+  transform: translateY(-10px) rotate(-14deg);
+}
+
+/* Sits ON the fingertip, which is what the badge is marking. Sized for the
+   54px hand — at 26px it was half the width of the pointer itself. */
+.ct-tut-hand--avoid::after {
+  content: '✕';
+  position: absolute;
+  top: -14%;
+  left: 26%;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--game-bad, #d4574e);
+  text-shadow: 0 1px 4px var(--fx-shadow-drop);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-tut-hand,
+  .ct-tut-hand img,
+  .ct-tut-hand.is-tapping img {
+    transition: none;
+    animation: none;
+  }
+}

@@ -141,14 +141,14 @@ const UI_EN = {
   // so this one line made Block Escape the odd tile out. The game type is
   // already carried by its blurb underneath.
   training: 'training',
-  pickDiffSub: '3 difficulties · 100 verified stages each · unlock in order',
+  pickDiffSub: '60 levels · one ladder · unlock in order',
   diffDesc: {
     easy: 'Smaller jams, gentle par — learn to plan ahead.',
     medium: 'Busier boards, tighter par.',
     hard: 'Dense expert jams, long solutions.',
   },
   hubNodeFreeHint: 'Endless · 3 lives · solve before the timer',
-  hubNodeLevelsHint: '3 tiers · 100 levels each',
+  hubNodeLevelsHint: '60 levels · one ladder · unlock in order',
   hubNodeChallengeHint: 'Same puzzle for everyone · pass the device',
   freeIntroBody:
     'Endless puzzles that get harder. Each puzzle has its own timer — solve it before time runs out. You have 3 lives; run out of time on a puzzle and you lose one. Fewer moves = more points, and streaks multiply your score. The run ends only when your lives reach zero.',
@@ -202,14 +202,14 @@ const UI_AR = {
   freeHint: 'لا ينتهي · ٣ أرواح · مؤقت لكل لغز',
   locked: 'مقفل',
   training: 'تدريب',
-  pickDiffSub: '٣ صعوبات · ١٠٠ مرحلة مؤكدة لكل صعوبة · افتح بالترتيب',
+  pickDiffSub: '٦٠ مستوى · سلّم واحد · افتح بالترتيب',
   diffDesc: {
     easy: 'ازدحام أصغر وهدف سهل — تعلّم التخطيط.',
     medium: 'لوحات أكثر ازدحاماً وهدف أضيق.',
     hard: 'ازدحام خبير كثيف وحلول طويلة.',
   },
   hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · حل قبل المؤقت',
-  hubNodeLevelsHint: '٣ صعوبات · ١٠٠ مرحلة لكل صعوبة',
+  hubNodeLevelsHint: '٦٠ مستوى · سلّم واحد · بالترتيب',
   hubNodeChallengeHint: 'نفس اللغز للجميع · مرّر الجهاز',
   freeIntroBody:
     'ألغاز لا تنتهي وتزداد صعوبة. لكل لغز مؤقته الخاص — حلّه قبل نفاد الوقت. لديك ٣ أرواح؛ إذا نفد وقت لغز تخسر روحاً. حركات أقل = نقاط أكثر، والسلسلة تضاعف النقاط. تنتهي المحاولة فقط عند نفاد الأرواح.',

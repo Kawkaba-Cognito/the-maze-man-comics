@@ -32,7 +32,14 @@ stays fully opaque no matter what its colour says.
 
 Flood fill for the REGION, alpha-solve for the EDGE.
 
-    python scripts/key-kawkab-planet.py <source.png>
+    py scripts/key-kawkab-planet.py <source.png> [--out <path>] [--width N]
+
+Defaults write the planet mascot. Dr Kawkab's POINTING HAND (2026-08-28) is
+keyed by the same script for the same reason: it is the same black-on-white
+plate with white star points enclosed by the body, so a threshold would punch
+pinholes straight through it.
+
+    py scripts/key-kawkab-planet.py "%USERPROFILE%/Desktop/pointing_hand_constellation.png"        --out public/Assets/characters/kawkab/kawkab-hand.webp --width 260
 """
 from __future__ import annotations
 
@@ -60,11 +67,24 @@ TARGET_W = 480
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        raise SystemExit(f"usage: {Path(__file__).name} <source.png>")
-    src = Path(sys.argv[1])
+    argv = sys.argv[1:]
+    if not argv:
+        raise SystemExit(f"usage: {Path(__file__).name} <source.png> [--out <path>] [--width N]")
+    src = Path(argv[0])
     if not src.is_file():
         raise SystemExit(f"missing source: {src}")
+
+    out_path, target_w = OUT, TARGET_W
+    i = 1
+    while i < len(argv):
+        if argv[i] == "--out" and i + 1 < len(argv):
+            out_path = (ROOT / argv[i + 1]).resolve()
+            i += 2
+        elif argv[i] == "--width" and i + 1 < len(argv):
+            target_w = int(argv[i + 1])
+            i += 2
+        else:
+            raise SystemExit(f"unknown argument: {argv[i]}")
 
     im = Image.open(src).convert("RGB")
     w, h = im.size
@@ -138,15 +158,15 @@ def main() -> None:
     out = out.crop(box)
 
     cw, ch = out.size
-    out = out.resize((TARGET_W, round(ch * TARGET_W / cw)), Image.Resampling.LANCZOS)
+    out = out.resize((target_w, round(ch * target_w / cw)), Image.Resampling.LANCZOS)
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    out.save(OUT, "WEBP", quality=90, method=6)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out.save(out_path, "WEBP", quality=90, method=6)
 
     print(f"plate      {tuple(round(v) for v in B)}")
     print(f"crop       {box}  ->  {cw}x{ch}")
-    print(f"written    {OUT.relative_to(ROOT)}  {out.size[0]}x{out.size[1]}  "
-          f"{OUT.stat().st_size // 1024} KB  aspect {out.size[0] / out.size[1]:.3f}")
+    print(f"written    {out_path.relative_to(ROOT)}  {out.size[0]}x{out.size[1]}  "
+          f"{out_path.stat().st_size // 1024} KB  aspect {out.size[0] / out.size[1]:.3f}")
     print(f"corner a   {out.getpixel((0, 0))[3]}")
 
 
