@@ -6,7 +6,7 @@ import PlayResults from '../../../../shared/PlayResults';
 import { useGamePause } from '../../../../shared/useGamePause';
 import { makeRng } from '../../../../shared/rng';
 import { SURVIVAL_MS, survivalRamp, survivalTier } from '../../../../shared/survival';
-import { RELATION } from './data';
+import { RELATION, LADDER_LEVELS, levelCfg, pickTrialTier } from './data';
 import { CATEGORIES } from '../odd-one-out/data';
 import { markSeen, pickTrial } from './trialBank';
 
@@ -53,21 +53,25 @@ function shuffle(a, rng) {
   return arr;
 }
 
-function tierFor(mode, diff, trialNum, level, ramp) {
+/*
+ * ONE LADDER (2026-08-28). The content tier is drawn from the band's WEIGHTED
+ * pool rather than picked by a menu word, and the question KINDS come from the
+ * band too — see the note in data.js about analogies and pair matching having
+ * been unreachable for anyone who chose Easy.
+ */
+function tierFor(mode, level, trialNum, ramp, rng) {
   if (mode === 'free') return survivalTier(ramp ?? 0);
-  if (mode === 'levels') {
-    const f = ((level || 1) - 1) / 99;
-    if (diff === 'easy') return f < 0.68 ? 'easy' : 'med';
-    if (diff === 'hard') return f < 0.28 ? 'med' : 'hard';
-    return f < 0.32 ? 'easy' : f < 0.72 ? 'med' : 'hard';
+  if (mode === 'levels' || mode === 'passplay') {
+    return pickTrialTier(levelCfg(mode === 'passplay' ? (level || 25) : level), rng);
   }
-  if (mode === 'passplay') return 'hard';
   if (trialNum < 4) return 'easy';
   if (trialNum < 10) return 'med';
   return 'hard';
 }
 
-function allowedKinds(tier) {
+/* Survival keeps the old tier→kinds rule; Levels reads the band. */
+function allowedKinds(tier, cfg) {
+  if (cfg?.kinds) return cfg.kinds;
   if (tier === 'easy') return ['similarity', 'odd'];
   return ['similarity', 'analogy', 'pair', 'odd'];
 }
@@ -100,9 +104,12 @@ function genOdd(rng, isAr, tier) {
   };
 }
 
-export function buildTrial({ mode, diff, level, trialNum, rng, isAr, ramp = 0 }) {
-  const tier = tierFor(mode, diff, trialNum, level, ramp);
-  const kinds = allowedKinds(tier);
+export function buildTrial({ mode, level, trialNum, rng, isAr, ramp = 0 }) {
+  const cfg = (mode === 'levels' || mode === 'passplay')
+    ? levelCfg(mode === 'passplay' ? (level || 25) : level)
+    : null;
+  const tier = tierFor(mode, level, trialNum, ramp, rng);
+  const kinds = allowedKinds(tier, cfg);
   const kind = pickOne(kinds, rng);
   const L = (o) => (isAr ? o.ar : o.en);
 
@@ -138,7 +145,7 @@ export function buildTrial({ mode, diff, level, trialNum, rng, isAr, ramp = 0 })
   return { kind: 'pair', tier, rel, prompt: isAr ? 'اختر الزوجين المتطابقين' : 'Tap the matching pair', words: shuffle(words, rng), pair: raw.pair, rule: L(raw.rule) };
 }
 
-export function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
+export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
   const ppTrials = mode === 'passplay' ? (attempt?.trials || PP_TRIALS) : 0;
   const font = isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif";
   const isSurvival = mode === 'free';
@@ -188,10 +195,10 @@ export function WordLinksEngine({ mode, diff, level, seed, attempt, onResult, on
     const n = trialNumRef.current;
     const ramp = isSurvival ? survivalRamp(performance.now() - survT0Ref.current) : 0;
     const rng = makeRng(((seed ?? 1) >>> 0) + n * 7919 + runId * 104729);
-    const t = buildTrial({ mode, diff, level, trialNum: n, rng, isAr, ramp });
+    const t = buildTrial({ mode, level, trialNum: n, rng, isAr, ramp });
     trialRef.current = t;
     setTrial(t);
-  }, [mode, diff, level, seed, isAr, isSurvival, runId]);
+  }, [mode, level, seed, isAr, isSurvival, runId]);
 
   useEffect(() => {
     if (!isSurvival) return undefined;
@@ -407,17 +414,18 @@ export default function WordLinksGame({ onBack, workoutMode = false }) {
       title={{ en: 'Word Links', ar: 'روابط الكلمات' }}
       hints={{
         free: { en: '60s survival · synonyms, analogies & odd-one-out', ar: '٦٠ث بقاء · مرادفات وقياسات وشاذّ' },
-        levels: { en: '3 difficulties · trickier word relationships on hard', ar: '٣ صعوبات · علاقات كلمات أصعب في المستوى الصعب' },
+        levels: { en: '50 levels · analogies at 11, pair match at 21', ar: '٥٠ مستوى · القياس عند ١١ والأزواج عند ٢١' },
         pass: { en: 'Hard mix for everyone · pass the device', ar: 'مزيج صعب للجميع · مرّر الجهاز' },
       }}
-      diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      pass={{ trials: PP_TRIALS, scoreLabel: { en: 'correct', ar: 'صحيحة' }, lowerBetter: false, diff: 'hard' }}
+      /* ONE LADDER — no easy/med/hard. See data.js LADDER. */
+      ladder={{ levels: LADDER_LEVELS }}
+      pass={{ trials: PP_TRIALS, scoreLabel: { en: 'correct', ar: 'صحيحة' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <WordLinksEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
+        <WordLinksEngine key={`${p.mode}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
     />
   );

@@ -7,7 +7,7 @@ import { TrainingPlayHeader } from '../../../../shared/TrainingChrome';
 import { createTrialLog } from '../../../../shared/trialLog';
 import PlanetFolk, { folkName } from './PlanetFolk';
 import {
-  buildGate, cardKey, informationOf, lawHolds, levelCfg, levelPassed,
+  buildGate, cardKey, informationOf, LADDER_LEVELS, lawHolds, levelCfg, levelPassed,
   passCfg, ruleSpace, survivors, survivalCfg,
 } from './data.js';
 import { FAMILY, T, attrWords, familyIndex, lawText } from './strings.js';
@@ -43,7 +43,7 @@ import './gatekeeper.css';
 const SEALS = 3;
 
 export function GatekeeperEngine({
-  mode, diff, level, seed, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false,
+  mode, level, seed, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false,
 }) {
   const t = isAr ? T.ar : T.en;
   const lang = isAr ? 'ar' : 'en';
@@ -81,10 +81,10 @@ export function GatekeeperEngine({
   const pause = useGamePause({ isAr, playSfx, onQuit: handleExit });
 
   const cfgFor = useCallback(() => {
-    if (mode === 'levels') return levelCfg(diff, level);
-    if (mode === 'passplay') return passCfg();
+    if (mode === 'levels') return levelCfg(level);
+    if (mode === 'passplay') return level ? levelCfg(level) : passCfg();
     return survivalCfg(stageRef.current);
-  }, [mode, diff, level]);
+  }, [mode, level]);
 
   /*
    * The hypothesis space is rebuilt per gate and handed to buildGate, because
@@ -126,9 +126,9 @@ export function GatekeeperEngine({
 
   useEffect(() => {
     trialLogRef.current?.discard();
-    trialLogRef.current = createTrialLog({ game: 'gatekeeper', mode, meta: { diff, level } });
+    trialLogRef.current = createTrialLog({ game: 'gatekeeper', mode, meta: { level } });
     return () => { trialLogRef.current?.discard(); trialLogRef.current = null; };
-  }, [mode, diff, level]);
+  }, [mode, level]);
 
   /*
    * How many laws are still consistent with everything stamped so far. This is
@@ -198,7 +198,7 @@ export function GatekeeperEngine({
     const won = seals > 0 && levelPassed(cleared, totalGates);
     const sharp = infoRef.current.n ? infoRef.current.sum / infoRef.current.n : 0;
     if (mode === 'levels') {
-      trialLogRef.current?.finish({ won, score: cleared, level, diff, sharpness: sharp });
+      trialLogRef.current?.finish({ won, score: cleared, level, sharpness: sharp });
       trialLogRef.current = null;
       onResult({ won, score: cleared, summary: t.gatesCleared(cleared, totalGates) });
       return;
@@ -229,10 +229,10 @@ export function GatekeeperEngine({
     setLensLeft(nextCfg.lenses ?? 1);
     setDone(false);
     dealGate();
-  }, [mode, seals, cleared, totalGates, onResult, t, playSfx, awardPoints, level, diff, dealGate, cfgFor, gateNo]);
+  }, [mode, seals, cleared, totalGates, onResult, t, playSfx, awardPoints, level, dealGate, cfgFor, gateNo]);
 
   const cfg = cfgFor();
-  const fam = FAMILY[lang][familyIndex(mode === 'levels' ? diff : (cfg.diff || 'med'), cfg.f ?? 0.5)];
+  const fam = FAMILY[lang][familyIndex(cfg.lv ?? level ?? 1)];
   const hudSub = mode === 'levels'
     ? (isAr ? `مستوى ${level}` : `Level ${level}`)
     : mode === 'passplay'
@@ -520,11 +520,12 @@ export default function GatekeeperGame({ onBack, workoutMode = false }) {
       title={{ en: 'The Gate', ar: 'البوابة' }}
       hints={{
         free: { en: 'Endless gates · the laws grow slyer', ar: 'بوابات بلا نهاية · تزداد القوانين مكراً' },
-        levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
+        levels: { en: '50 levels · a new kind of law every 10', ar: '٥٠ مستوى · قانون جديد كل ١٠' },
         pass: { en: 'Same gates for all · most cleared wins', ar: 'نفس البوابات للجميع · الأكثر عبوراً يفوز' },
       }}
-      diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      pass={{ trials: 1, scoreLabel: { en: 'gates', ar: 'بوابات' }, lowerBetter: false, diff: 'med' }}
+      /* ONE LADDER — no easy/med/hard. See data.js LADDER. */
+      ladder={{ levels: LADDER_LEVELS }}
+      pass={{ trials: 1, scoreLabel: { en: 'gates', ar: 'بوابات' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}

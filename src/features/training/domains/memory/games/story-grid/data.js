@@ -28,7 +28,9 @@
  * exactly the failures `validate:storyq` asserts against, on every story and
  * across many seeds.
  */
-import { levelFraction, tierStage } from '../../../../shared/difficulty.js';
+import {
+  BAND_SIZE, ladderFraction, ladderStage, mechanicsAt,
+} from '../../../../shared/difficulty.js';
 import { STORIES } from './stories.js';
 
 /* ── CONTENT ─────────────────────────────────────────────────────────────
@@ -193,12 +195,44 @@ export const ACTION_IDS = ACTIONS.map((a) => a.id);
  * falls, which is the honest direction, and it is the field `audit:curves`
  * checks. Do not gate raw `memo` — a harder tier would read as easier.
  */
-export const BASE = {
-  easy: { len: 4, m0: 55, m1: 44, q0: 4, q1: 5, o0: 3, o1: 3 },
-  med: { len: 5, m0: 62, m1: 48, q0: 5, q1: 6, o0: 3, o1: 4 },
-  hard: { len: 6, m0: 70, m1: 52, q0: 6, q1: 6, o0: 4, o1: 4 },
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 60 levels, in six bands of ten. Replaced easy/med/hard on
+ * 2026-08-28 — see LADDER-PLAN.md and shared/difficulty.js.
+ *
+ * The span is unchanged at both ends: L1 is the old easy L1 (4 scenes, 4
+ * questions, 3 options) and L60 is the old hard L100 (6 scenes, 6 questions,
+ * 4 options).
+ *
+ * Six bands because this game has exactly three structural levers and they have
+ * 3 · 3 · 2 useful values between them. Each band moves one of them, so each is
+ * a change the player meets: a longer story to hold, another thing Kawkab asks,
+ * or one fewer answer to guess between.
+ *
+ * ⚠ `memoPerPanel` — SECONDS PER SCENE — is the honest time lever and the one
+ * `audit:curves` checks. Raw `memo` RISES across the ladder because a six-scene
+ * story genuinely takes longer to read than a four-scene one; gating it would
+ * report the top of the ladder as the easiest part. Gate what reaches a human.
+ */
+export const LADDER = [
+  /* L1–10  */ { len: 4, questions: 4, opts: 3, adds: ['watch'] },
+  /* L11–20 */ { len: 4, questions: 5, opts: 3, adds: [] },
+  /* L21–30 */ { len: 5, questions: 5, opts: 3, adds: [] },
+  /* L31–40 */ { len: 5, questions: 6, opts: 3, adds: [] },
+  /* L41–50 */ { len: 5, questions: 6, opts: 4, adds: [] },
+  /* L51–60 */ { len: 6, questions: 6, opts: 4, adds: [] },
+];
+
+export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 60
+
+export const MECHANIC_LABELS = {
+  watch: { en: 'Watch, then answer', ar: 'شاهد ثم أجب' },
 };
-export const LEVELS_PER_TIER = 100;
+
+/** Seconds per scene at L1 and at the top of the ladder. */
+const PANEL_SEC_START = 13.75;
+const PANEL_SEC_END = 8.67;
 export const MIN_OPTS = 2;
 /**
  * Seconds a player gets per scene, at the very hardest setting. The narration is
@@ -208,21 +242,28 @@ export const MIN_OPTS = 2;
 export const MIN_SEC_PER_PANEL = 8.4;
 
 /** Level config. Front-loaded (^0.85), same curve kit as every other game. */
-export function levelCfg(diff, level) {
-  const b = BASE[diff] || BASE.med;
-  const f = levelFraction(level, LEVELS_PER_TIER);
+/** ⚠ SIGNATURE CHANGED with the ladder: one argument, no tier. */
+export function levelCfg(level) {
+  const lv = Math.min(LADDER_LEVELS, Math.max(1, Math.round(Number(level) || 1)));
+  const band = LADDER[Math.min(LADDER.length - 1, Math.floor((lv - 1) / BAND_SIZE))];
+  const f = ladderFraction(lv, LADDER_LEVELS);
   // The per-scene floor is enforced HERE, structurally, rather than trusted to
-  // the hand-tuned m0/m1 numbers staying kind as the story lengths change.
-  const memo = Math.max(
-    Math.ceil(b.len * MIN_SEC_PER_PANEL),
-    Math.round(b.m0 + (b.m1 - b.m0) * f),
+  // hand-tuned totals staying kind as the story lengths change.
+  const perPanel = Math.max(
+    MIN_SEC_PER_PANEL,
+    PANEL_SEC_START + (PANEL_SEC_END - PANEL_SEC_START) * f,
   );
+  // ceil, not round: rounding the total down can push the per-scene budget back
+  // under the floor the line above just enforced.
+  const memo = Math.ceil(band.len * perPanel);
   return {
-    len: b.len,
+    len: band.len,
     memo,
-    memoPerPanel: Math.round((memo / b.len) * 100) / 100,
-    questions: Math.round(b.q0 + (b.q1 - b.q0) * f),
-    opts: Math.round(b.o0 + (b.o1 - b.o0) * f),
+    memoPerPanel: Math.round((memo / band.len) * 100) / 100,
+    questions: band.questions,
+    opts: band.opts,
+    mechanics: mechanicsAt(LADDER, lv),
+    lv,
     f,
   };
 }
@@ -249,7 +290,7 @@ export function survivalCfg(stage) {
     memoPerPanel: Math.round((memo / len) * 100) / 100,
     questions: Math.min(8, 3 + Math.floor(stage / 2)),
     opts: Math.min(4, 3 + Math.floor(stage / 4)),
-    ...tierStage(stage),
+    ...ladderStage(stage, { levels: LADDER_LEVELS }),
   };
 }
 

@@ -25,9 +25,13 @@ export const WAR_GAMES = [
     blurb: { en: 'Race through arithmetic gates before they close.', ar: 'سابق بوابات الحساب قبل أن تُغلق.' },
     loader: () => import('../../../training/domains/speed/games/math-gates').then((m) => m.MathGatesEngine),
     trials: { easy: 6, med: 10, hard: 12 },
-    // passplay ignores diff — use levels@hard for challenge
+    /* passplay ignores diff — use levels for the challenge setting.
+       ⚠ Math Gates went to the single LADDER on 2026-08-28, so this is a ladder
+       level, not a level within a "hard" tier. L45 is the band that has all
+       four operators and 3 lives — the equivalent of what hard/L40 used to
+       hand a Group War table. */
     hardMode: 'levels',
-    hardLevel: 40,
+    hardLevel: 45,
   },
   {
     id: 'paired-associates',
@@ -60,8 +64,13 @@ export const WAR_GAMES = [
     blurb: { en: 'Climb the knowledge stairs — one miss ends the climb.', ar: 'تسلّق سلّم المعرفة — خطأ واحد يوقفك.' },
     loader: () => import('../../../training/domains/language/games/trivia').then((m) => m.TriviaEngine),
     trials: { easy: 1, med: 1, hard: 1 },
+    /* ⚠ Trivia went to the single LADDER on 2026-08-28. This used to be
+       `hardLevel: 1` — level 1 of the HARD TIER, which opened straight onto the
+       ★★★★ expert pool. On the ladder L1 is the gentlest level in the game, so
+       leaving it at 1 would have quietly turned Group War's hard setting into
+       its easiest. L45 is the band where expert questions dominate. */
     hardMode: 'levels',
-    hardLevel: 1,
+    hardLevel: 45,
   },
   {
     id: 'synonyms',

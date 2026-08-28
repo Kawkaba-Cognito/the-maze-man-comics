@@ -34,9 +34,8 @@
  * CI. This module therefore takes its RNG as an ARGUMENT rather than importing
  * shared/rng.js, which re-exports extensionlessly and Node cannot load.
  */
-import { CURVE, levelFraction } from '../../../../shared/difficulty.js';
+import { BAND_SIZE, ladderFraction } from '../../../../shared/difficulty.js';
 
-export const LEVELS_PER_TIER = 100;
 
 /* ── THE TRAIL ────────────────────────────────────────────────────────────
  * A polyline in a UNIT SQUARE. Everything downstream — where a marcher is,
@@ -147,49 +146,66 @@ export const BLAST_FRAC = 0.075;
  * no-go colour → barrels → armour → canopy. validate:intercept counts distinct
  * mechanic sets per tier and fails a tier that never introduces one.
  */
-export const BASE = {
-  easy: {
-    count0: 5, count1: 10,
-    cross0: 8200, cross1: 6200,
-    gap0: 1500, gap1: 1000,
-    ring0: 0.30, ring1: 0.24,
-    /* No-go arrives a fifth of the way in — far enough that striking has become
-       automatic, which is the state the measure needs. */
-    nogoFrom: 0.20, nogo0: 0.18, nogo1: 0.30,
-    hiddenFrom: 1.01, hidden0: 0, hidden1: 0,      // no canopy on easy, ever
-    armourFrom: 0.70, armour0: 0, armour1: 2,
-    barrelFrom: 0.45, barrel0: 0, barrel1: 1,
-  },
-  med: {
-    count0: 8, count1: 14,
-    cross0: 7000, cross1: 5200,
-    gap0: 1200, gap1: 780,
-    ring0: 0.26, ring1: 0.20,
-    nogoFrom: 0.00, nogo0: 0.18, nogo1: 0.30,
-    /* Canopy is the medium tier's new idea, and it starts small. */
-    hiddenFrom: 0.35, hidden0: 0.00, hidden1: 0.55,
-    armourFrom: 0.20, armour0: 1, armour1: 4,
-    barrelFrom: 0.00, barrel0: 1, barrel1: 2,
-  },
-  hard: {
-    count0: 11, count1: 18,
-    cross0: 6000, cross1: 4400,
-    gap0: 950, gap1: 620,
-    ring0: 0.24, ring1: 0.18,
-    nogoShuffle: true,           // the safe colour changes between waves
-    nogoFrom: 0.00, nogo0: 0.22, nogo1: 0.34,
-    hiddenFrom: 0.00, hidden0: 0.40, hidden1: 0.78,
-    /* ⚠ Hard STILL has to introduce things, not merely start hard. Turning
-       every mechanic on at level 1 gave the tier a single mechanic set across
-       all 100 levels — the identical failure the old easy tier shipped, just
-       with bigger numbers. Barrels and armour are held back so hard has a
-       ladder of its own. */
-    armourFrom: 0.55, armour0: 2, armour1: 6,
-    barrelFrom: 0.30, barrel0: 1, barrel1: 3,
-  },
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 60 levels, in six bands of ten. Replaced easy/med/hard on
+ * 2026-08-28 — see LADDER-PLAN.md and shared/difficulty.js.
+ *
+ * Intercept is the game the whole ladder model was derived from: it ALREADY
+ * named its mechanics (`mechanics()` below) and already gated per-tier variety,
+ * and counting them is what established that a real game has about six, not
+ * ten. So its bands are simply its six mechanics, one per band, in the staging
+ * order the tiers were groping towards: pure sight → no-go colour → barrels →
+ * armour → canopy → a shuffling safe colour.
+ *
+ * ⚠ The `*From` thresholds are DERIVED from the band boundaries, never typed.
+ * `f` is `ladderFraction` (^0.85), so the fraction at L11 is 0.221, not 0.167 —
+ * hand-writing these would drift every mechanic off the band edge it is
+ * supposed to arrive on, and nothing on screen would show it.
+ */
+export const LADDER = [
+  /* L1–10  */ { adds: ['strike'] },
+  /* L11–20 */ { adds: ['nogo'] },
+  /* L21–30 */ { adds: ['barrel'] },
+  /* L31–40 */ { adds: ['armour'] },
+  /* L41–50 */ { adds: ['canopy'] },
+  /* L51–60 */ { adds: ['shuffle'] },
+];
+
+export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 60
+
+/** The curve fraction at the first level of band `b`. */
+export const bandStartF = (b) => ladderFraction(b * BAND_SIZE + 1, LADDER_LEVELS);
+
+/** Which band introduces each mechanic — the single source for the thresholds. */
+const BAND_OF = { nogo: 1, barrel: 2, armour: 3, canopy: 4, shuffle: 5 };
+
+export const MECHANIC_LABELS = {
+  strike: { en: 'Strike them in the reach', ar: 'اضرب داخل المدى' },
+  nogo: { en: 'Leave the wrong colour', ar: 'اترك اللون الخطأ' },
+  barrel: { en: 'Explosive drums', ar: 'براميل متفجّرة' },
+  armour: { en: 'Armour takes two', ar: 'المدرّع يحتاج ضربتين' },
+  canopy: { en: 'Forest canopy', ar: 'مظلّة الغابة' },
+  shuffle: { en: 'The safe colour changes', ar: 'اللون الآمن يتغيّر' },
 };
 
-export const DIFFS = Object.keys(BASE);
+/*
+ * ONE span, from the old easy L1 to the old hard L100, so nothing got easier or
+ * harder at either end. Each mechanic arrives already inside its usable range —
+ * see the `staged` note below about a no-go share that ramps up from zero.
+ */
+export const LADDER_BASE = {
+  count0: 5, count1: 18,
+  cross0: 8200, cross1: 4400,
+  gap0: 1500, gap1: 620,
+  ring0: 0.30, ring1: 0.18,
+  nogoFrom: bandStartF(BAND_OF.nogo), nogo0: 0.18, nogo1: 0.34,
+  hiddenFrom: bandStartF(BAND_OF.canopy), hidden0: 0.40, hidden1: 0.78,
+  armourFrom: bandStartF(BAND_OF.armour), armour0: 1, armour1: 6,
+  barrelFrom: bandStartF(BAND_OF.barrel), barrel0: 1, barrel1: 3,
+  shuffleFrom: bandStartF(BAND_OF.shuffle),
+};
 
 /** The tower's reach is centred on this fraction of the trail. */
 export const RING_AT = 0.62;
@@ -238,7 +254,8 @@ function shape(B, f) {
     hiddenShare: staged(f, B.hiddenFrom, B.hidden0, B.hidden1),
     armour: Math.round(staged(f, B.armourFrom, B.armour0, B.armour1)),
     barrels: Math.round(staged(f, B.barrelFrom, B.barrel0, B.barrel1)),
-    nogoShuffle: Boolean(B.nogoShuffle),
+    // The safe colour starts shuffling at its band, like every other mechanic.
+    nogoShuffle: B.shuffleFrom != null ? f >= B.shuffleFrom : Boolean(B.nogoShuffle),
     f,
   };
 
@@ -266,27 +283,28 @@ function shape(B, f) {
   return cfg;
 }
 
-export function levelCfg(diff, level) {
-  const B = BASE[diff] || BASE.easy;
-  return { ...shape(B, levelFraction(level, LEVELS_PER_TIER, CURVE.FRONT)), diff, level };
+/** ⚠ SIGNATURE CHANGED with the ladder: one argument, no tier. */
+export function levelCfg(level) {
+  const lv = Math.min(LADDER_LEVELS, Math.max(1, Math.round(Number(level) || 1)));
+  const cfg = shape(LADDER_BASE, ladderFraction(lv, LADDER_LEVELS));
+  return { ...cfg, mechanics: mechanics(cfg), lv, level: lv };
 }
 
-/** Survival keeps climbing past the top of hard, but only through LOAD. */
+/** Survival keeps climbing past the top of the ladder, but only through LOAD. */
 export function survivalCfg(stage) {
   const s = Math.max(0, stage);
-  const base = shape(BASE.hard, Math.min(1, s / 14));
-  if (s <= 14) return { ...base, diff: 'free', stage: s };
+  const base = shape(LADDER_BASE, Math.min(1, s / 14));
+  if (s <= 14) return { ...base, stage: s };
   const over = s - 14;
   return {
     ...base,
     count: base.count + Math.round(over * 0.8),
     gapMs: Math.max(430, base.gapMs - over * 22),
-    diff: 'free',
     stage: s,
   };
 }
 
-export const passCfg = () => ({ ...shape(BASE.med, 0.5), diff: 'passplay' });
+export const passCfg = () => ({ ...shape(LADDER_BASE, ladderFraction(30, LADDER_LEVELS)) });
 
 /* ── BUILDING A WAVE ──────────────────────────────────────────────────────
  * `rng` is passed in — see the header note on Node and extensionless imports.

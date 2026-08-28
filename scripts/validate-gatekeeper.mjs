@@ -30,7 +30,7 @@
  * broken by the built wave.
  */
 import {
-  BASE, DECK, FILLS, FOLK_IDS, LEVELS_PER_TIER, MOONS, SHAPES, TRAY_SIZE,
+  LADDER, DECK, FILLS, FOLK_IDS, LADDER_LEVELS, MOONS, SHAPES, TRAY_SIZE,
   atomsFor, buildGate, cardKey, deckFor, lawAttrs, lawHolds, levelCfg,
   levelPassed, passCfg, ruleSpace, survivalCfg,
 } from '../src/features/training/domains/reasoning/games/gatekeeper/data.js';
@@ -148,16 +148,16 @@ function checkGate(gate, cfg, where) {
  * several gates × a rule-space enumeration per gate is minutes of work, and the
  * curve is smooth, so the ends and the middles are what carry the risk.
  */
-const LEVEL_SAMPLE = [1, 2, 5, 12, 25, 40, 49, 50, 51, 60, 75, 88, 96, 99, 100];
-for (const diff of ['easy', 'med', 'hard']) {
-  for (const lv of LEVEL_SAMPLE) {
-    const cfg = levelCfg(diff, lv);
+/* ⚠ ONE LADDER since 2026-08-28 — every level of it, both edges of every band. */
+{
+  for (let lv = 1; lv <= LADDER_LEVELS; lv += 1) {
+    const cfg = levelCfg(lv);
     seen.pool.add(cfg.pool.join('+'));
     for (let s = 0; s < 3; s++) {
-      const rng = mulberry32(diff.charCodeAt(0) * 7919 + lv * 131 + s);
+      const rng = mulberry32(lv * 131 + s);
       const gate = buildGate(rng, cfg);
-      if (!gate) { push(`${diff} L${lv} seed${s} buildGate returned NULL — dead level`); continue; }
-      checkGate(gate, cfg, `${diff} L${lv} seed${s}`);
+      if (!gate) { push(`L${lv} seed${s} buildGate returned NULL — dead level`); continue; }
+      checkGate(gate, cfg, `L${lv} seed${s}`);
     }
   }
 }
@@ -195,54 +195,51 @@ for (let stage = 0; stage < 40; stage += 2) {
  * Asserted on the OUTCOME a player meets, not on the authored numbers: the
  * hypothesis space must grow and the probe budget must not grow.
  */
-for (const diff of ['easy', 'med', 'hard']) {
+{
   let prevSpace = 0;
   let prevProbes = Infinity;
-  for (const lv of [1, 25, 50, 51, 75, 100]) {
-    const cfg = levelCfg(diff, lv);
+  for (let lv = 1; lv <= LADDER_LEVELS; lv += 1) {
+    const cfg = levelCfg(lv);
     const size = ruleSpace(cfg).length;
-    if (size < prevSpace) push(`${diff} L${lv}: hypothesis space SHRANK (${prevSpace} → ${size})`);
-    if (cfg.probes > prevProbes) push(`${diff} L${lv}: probe budget GREW (${prevProbes} → ${cfg.probes})`);
+    if (size < prevSpace) push(`L${lv}: hypothesis space SHRANK (${prevSpace} → ${size})`);
+    if (cfg.probes > prevProbes) push(`L${lv}: probe budget GREW (${prevProbes} → ${cfg.probes})`);
     prevSpace = size;
     prevProbes = cfg.probes;
-    if (cfg.probes < 3) push(`${diff} L${lv}: only ${cfg.probes} probes — below the floor of 3`);
+    if (cfg.probes < 3) push(`L${lv}: only ${cfg.probes} probes — below the floor of 3`);
   }
 }
 
 /*
- * ⚠ EVERY HALF-TIER MUST ACTUALLY BE HARDER THAN THE ONE BEFORE IT.
+ * ⚠ EVERY BAND MUST ACTUALLY BE HARDER THAN THE ONE BEFORE IT.
  *
  * This is the check the first model failed silently. Its "COUNTERS" family was
  * extensionally identical to laws already in the space, so easy's second half
  * posed precisely the same puzzles as its first — and a non-decreasing
  * assertion happily passed a lever that did nothing. Difficulty has to go UP
- * across the six half-tiers, either by widening what the law can say or by
- * narrowing what the player may spend finding out.
+ * at every band edge, either by widening what the law can say or by narrowing
+ * what the player may spend finding out.
+ *
+ * ⚠ Measured on the HYPOTHESIS SPACE, not on `poolSize`. `audit:curves` proves
+ * a band moves a declared lever; this proves the lever actually changes the
+ * puzzle. A pool that grows by a clause which says nothing new would pass there
+ * and fail here — which is exactly the bug that shipped once.
  */
 {
-  const steps = [['easy', 1], ['easy', 100], ['med', 1], ['med', 100], ['hard', 1], ['hard', 100]];
   let prev = null;
-  for (const [diff, lv] of steps) {
-    const cfg = levelCfg(diff, lv);
-    const cur = { space: ruleSpace(cfg).length, probes: cfg.probes, label: `${diff} L${lv}` };
+  LADDER.forEach((_, b) => {
+    const lv = b * 10 + 1;
+    const cfg = levelCfg(lv);
+    const cur = { space: ruleSpace(cfg).length, probes: cfg.probes, label: `band ${b + 1} (L${lv})` };
     if (prev) {
       const wider = cur.space > prev.space;
       const tighter = cur.probes < prev.probes;
       if (!wider && !tighter) {
-        push(`${prev.label} → ${cur.label}: INERT STEP — hypothesis space ${prev.space}→${cur.space} and probes ${prev.probes}→${cur.probes}. Nothing got harder.`);
+        push(`${prev.label} → ${cur.label}: INERT BAND — hypothesis space ${prev.space}→${cur.space} and probes ${prev.probes}→${cur.probes}. Nothing got harder.`);
       }
       if (cur.space < prev.space) push(`${prev.label} → ${cur.label}: hypothesis space shrank`);
     }
     prev = cur;
-  }
-}
-// a harder tier must be harder AT THE SAME LEVEL NUMBER, which is the check
-// audit:curves exists for and the one authored tiers get wrong independently
-for (const lv of [1, 50, 100]) {
-  const e = ruleSpace(levelCfg('easy', lv)).length;
-  const m = ruleSpace(levelCfg('med', lv)).length;
-  const h = ruleSpace(levelCfg('hard', lv)).length;
-  if (!(e <= m && m <= h)) push(`L${lv}: tiers are not ordered by hypothesis space (easy ${e}, med ${m}, hard ${h})`);
+  });
 }
 
 /* ── the pass rule ───────────────────────────────────────────────────── */
@@ -273,7 +270,7 @@ for (const a of atomsFor(true)) {
  * mistaken for proof the detector was sound.
  */
 {
-  const cfg = levelCfg('med', 60);
+  const cfg = levelCfg(30);
   const gate = buildGate(mulberry32(777), cfg);
   if (!gate) push('SELF-TEST could not deal a gate to plant against');
   else {

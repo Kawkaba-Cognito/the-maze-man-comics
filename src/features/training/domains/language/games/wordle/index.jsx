@@ -7,7 +7,7 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
-import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import { TrainingLevelGrid } from '../../../../shared/TrainingScreens';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import PassPlaySetup from '../../../../shared/PassPlaySetup';
@@ -22,10 +22,9 @@ import WordleModes from './WordleModes';
 import LetterLinkBoard from './LetterLinkBoard';
 import WordleLiveHud from './WordleLiveHud';
 import {
-  WORDLE_LEVELS_PER_TIER,
-  WORDLE_DIFF_KEYS,
-  WORDLE_DM,
-  wordleDiffMeta,
+  LADDER_LEVELS,
+  WORDLE_PP_DEPTHS,
+  migrateLadderReached,
   WORDLE_FREE_LIVES,
   specificationForLevel,
   prepareFreeRound,
@@ -55,20 +54,13 @@ const UI = {
     title: 'Word Maze',
     subtitle: 'Connect letters to spell words',
     hubNodeFreeHint: 'Endless · 3 lives · grids ramp up',
-    hubNodeLevelsHint: '100 levels · connect letters on the grid',
-    hubNodeChallengeHint: 'Same grid for all · pick a difficulty',
-    pickDiffSub: 'Drag across touching letters (including diagonals) to spell words',
-    diffDesc: {
-      easy: 'Common words · 3+ letters · 4×4 grid.',
-      medium: 'Mixed vocabulary · 3+ letters · 5×5 grid.',
-      hard: 'Tougher words · 4+ letters · 5×5 grid.',
-    },
-    levelsSub: (pop, g) => `${pop} · ${g}×${g} grid · Levels 1–100`,
+    hubNodeLevelsHint: '50 levels · one ladder · unlock in order',
+    hubNodeChallengeHint: 'Same grid for all · pick a depth',
     lvl: 'Level',
     resultsLevelRetryTitle: 'Try again',
     freeIntroBody:
       'Endless grids that get harder. Each grid asks for a few words before its timer runs out. You have 3 lives — miss the target in time and you lose one. The run ends only when your lives reach zero.',
-    challengeSub: 'Same letter grid for everyone · pick a difficulty · pass the device',
+    challengeSub: 'Same letter grid for everyone · pick a depth · pass the device',
     chalRoundsHint: 'Same grid each round · pass device between players',
     chalBulletSame: 'Same letter grid for every player this round',
     chalBulletPass: 'Start only when this player holds the device',
@@ -87,7 +79,7 @@ const UI = {
     clearPath: 'Clear',
     submitWord: 'Submit word',
     restart: 'Restart grid',
-    freeLvl: (d, lv) => `Survival · ${d} L${lv}`,
+    freeLvl: (lv) => `Survival · L${lv}`,
     resultsPass: 'Level complete',
     resultsFail: 'Time up — try again',
     vfs: 'VFS (verbal fluency)',
@@ -96,7 +88,7 @@ const UI = {
     freeStages: (n) => `Words found: ${n}`,
     freeBest: (n) => `Best words: ${n}`,
     chalRes: (vfs, sc) => `VFS ${vfs} · ${sc} pts`,
-    levelHeader: (d, lv) => `${WORDLE_DM[d]?.label ?? d} · L${lv}`,
+    levelHeader: (lv) => `L${lv}`,
     levelMeta: (n, min) => `Find ${n} words · ${min}+ letters`,
     minLetters: (n) => `Min ${n} letters`,
     formulaHint: 'Any real word you can connect on the grid counts. Longer words score more.',
@@ -109,20 +101,13 @@ const UI = {
     title: 'متاهة الكلمات',
     subtitle: 'وصّل الحروف لتكوين كلمات',
     hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · شبكات تزداد صعوبة',
-    hubNodeLevelsHint: '١٠٠ مستوى · وصّل الحروف',
-    hubNodeChallengeHint: 'نفس الشبكة للجميع · اختر الصعوبة',
-    pickDiffSub: 'اسحب على حروف متجاورة (بما فيها القطر) لتكوين كلمات',
-    diffDesc: {
-      easy: 'كلمات شائعة · ٣+ أحرف · شبكة ٤×٤.',
-      medium: 'مفردات متنوعة · ٣+ أحرف · شبكة ٥×٥.',
-      hard: 'كلمات أصعب · ٤+ أحرف · شبكة ٥×٥.',
-    },
-    levelsSub: (pop, g) => `${pop} · شبكة ${g}×${g} · مستويات 1–100`,
+    hubNodeLevelsHint: '٥٠ مستوى · سلّم واحد · بالترتيب',
+    hubNodeChallengeHint: 'نفس الشبكة للجميع · اختر العمق',
     lvl: 'مستوى',
     resultsLevelRetryTitle: 'حاول مجددًا',
     freeIntroBody:
       'شبكات لا تنتهي وتزداد صعوبة. كل شبكة تطلب بضع كلمات قبل نفاد مؤقتها. لديك ٣ أرواح — إن لم تبلغ الهدف في الوقت تخسر روحاً. تنتهي المحاولة فقط عند نفاد الأرواح.',
-    challengeSub: 'نفس الشبكة للجميع · اختر الصعوبة · مرّر الجهاز',
+    challengeSub: 'نفس الشبكة للجميع · اختر العمق · مرّر الجهاز',
     chalRoundsHint: 'نفس الشبكة · مرّر الجهاز',
     chalBulletSame: 'نفس شبكة الحروف للجميع',
     chalBulletPass: 'ابدأ فقط عندما يكون الجهاز مع هذا اللاعب',
@@ -140,7 +125,7 @@ const UI = {
     clearPath: 'مسح',
     submitWord: 'إرسال الكلمة',
     restart: 'إعادة الشبكة',
-    freeLvl: (d, lv) => `حر · ${d} ${lv}`,
+    freeLvl: (lv) => `حر · مستوى ${lv}`,
     resultsPass: 'اكتمل المستوى',
     resultsFail: 'انتهى الوقت — حاول مجددًا',
     vfs: 'VFS',
@@ -149,7 +134,7 @@ const UI = {
     freeStages: (n) => `كلمات: ${n}`,
     freeBest: (n) => `أفضل: ${n}`,
     chalRes: (vfs, sc) => `VFS ${vfs} · ${sc}`,
-    levelHeader: (d, lv) => `${WORDLE_DM[d]?.label ?? d} · ${lv}`,
+    levelHeader: (lv) => `مستوى ${lv}`,
     levelMeta: (n, min) => `${n} كلمات · ${min}+ أحرف`,
     minLetters: (n) => `الحد ${n} أحرف`,
     formulaHint: 'الكلمات الأطول = نقاط أكثر. الحروف متجاورة دون تكرار.',
@@ -157,7 +142,7 @@ const UI = {
 };
 
 export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'language' }) {
-  const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
+  const { playSfx, currentLang, awardLadderWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
   const [cosmosEmbed, setCosmosEmbed] = useState(false);
@@ -176,7 +161,6 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
 
   const [profile, setProfile] = useState(() => loadWordleProfile());
   const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
-  const [diffKey, setDiffKey] = useState('easy');
   const [round, setRound] = useState(null);
   const [path, setPath] = useState([]);
   const [msg, setMsg] = useState('');
@@ -195,8 +179,8 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
   const [chalTurnOpen, setChalTurnOpen] = useState(false);
   const [chalRoundsTotal, setChalRoundsTotal] = useState(1);
   const [chalRoundIdx, setChalRoundIdx] = useState(0);
-  const [chalDiff, setChalDiff] = useState('medium');
-  const chalDiffRef = useRef('medium');
+  const [chalDiff, setChalDiff] = useState('mid');
+  const chalDiffRef = useRef('mid');
 
   const roundRef = useRef(null);
   const pathRef = useRef([]);
@@ -220,6 +204,13 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
   const pauseRef = useRef(false);
 
   const doneMap = useMemo(() => profile.done || {}, [profile.done]);
+  /* One-time conversion of the old per-tier record into a ladder position.
+     Unlocked, not ticked — a ✓ on a level nobody played is a lie. */
+  const ladderReached = useMemo(() => migrateLadderReached(doneMap), [doneMap]);
+  const PP_DEPTH_KEYS = Object.keys(WORDLE_PP_DEPTHS);
+  const PP_DEPTH_LABELS = Object.fromEntries(
+    PP_DEPTH_KEYS.map((k) => [k, { label: `L${WORDLE_PP_DEPTHS[k]}` }]),
+  );
 
   useEffect(() => {
     pauseRef.current = pauseOpen;
@@ -263,7 +254,6 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
         done: { ...doneMap },
       };
       p.tel.push({
-        diff: r.diff,
         lv: r.lv,
         won: grade.won,
         vfs: grade.vfs,
@@ -271,13 +261,13 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
         ts: new Date().toISOString(),
       });
       if (grade.won && r.mode === 'level') {
-        p.done[`${r.diff}-${r.lv}`] = true;
-        awardTrainingWin('wordle', r.diff, r.lv, WORDLE_LEVELS_PER_TIER);
+        p.done[`lad-${r.lv}`] = true;
+        awardLadderWin('wordle', r.lv, LADDER_LEVELS);
       }
       saveWordleProfile(p);
       setProfile(p);
     },
-    [profile, doneMap, awardTrainingWin],
+    [profile, doneMap, awardLadderWin],
   );
 
   const finishRound = useCallback(
@@ -315,7 +305,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
         trialLogRef.current = null;
         setLastResult({
           type: 'level',
-          r: { diff: r.diff, lv: r.lv },
+          r: { lv: r.lv },
           stats: {
             won: grade.won,
             vfs: grade.vfs,
@@ -542,7 +532,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
     if (!r) return;
     const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
     if (r.mode === 'free') beginRound(prepareFreeRound(r.freeStage ?? freeStageRef.current, seed, lang));
-    else if (r.mode === 'level') beginRound(prepareLevelRound(r.diff, r.lv, seed, lang));
+    else if (r.mode === 'level') beginRound(prepareLevelRound(r.lv, seed, lang));
     else if (chalSeed) beginRound(prepareChallengeRound(chalSeed));
   }, [beginRound, chalSeed, lang]);
 
@@ -574,12 +564,12 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
   }, [beginRound, lang]);
 
   const startLevelGame = useCallback(
-    (diff, lv) => {
-      const base = ((diff.charCodeAt(0) * 997 + lv * 7919) ^ 0x5eed) >>> 0;
+    (lv) => {
+      const base = ((lv * 7919) ^ 0x5eed) >>> 0;
       const seed = seedWithDay(base);
       trialLogRef.current?.discard();
-      trialLogRef.current = createTrialLog({ game: 'wordle', mode: 'level', meta: { diff, lv, lang } });
-      beginRound(prepareLevelRound(diff, lv, seed, lang));
+      trialLogRef.current = createTrialLog({ game: 'wordle', mode: 'level', meta: { lv, lang } });
+      beginRound(prepareLevelRound(lv, seed, lang));
     },
     [beginRound, lang],
   );
@@ -621,18 +611,18 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
     if (r.mode === 'free') {
       return {
         title: t.freeHeader,
-        subtitle: t.freeLvl(r.diff, r.lv),
+        subtitle: t.freeLvl(r.lv),
       };
     }
     if (r.mode === 'challenge') {
       return {
         title: t.challengeHeader,
-        subtitle: `${WORDLE_DM[r.diff]?.grid ?? 5}×${WORDLE_DM[r.diff]?.grid ?? 5} · ${Number(r.timeLeft).toFixed(0)}s`,
+        subtitle: `${r.size ?? 5}×${r.size ?? 5} · ${Number(r.timeLeft).toFixed(0)}s`,
       };
     }
     return {
-      title: `${WORDLE_DM[r.diff]?.label ?? r.diff} · L${r.lv}`,
-      subtitle: `${WORDLE_DM[r.diff]?.grid ?? 4}×${WORDLE_DM[r.diff]?.grid ?? 4} · ${r.targetWords} words · ${Number(r.timeSec || r.timeLeft).toFixed(0)}s`,
+      title: `L${r.lv}`,
+      subtitle: `${r.size ?? 4}×${r.size ?? 4} · ${r.targetWords} words · ${Number(r.timeSec || r.timeLeft).toFixed(0)}s`,
     };
   };
 
@@ -680,7 +670,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
               isAr={isAr}
               playSfx={playSfx}
               onFree={() => setPhase('freeIntro')}
-              onLevels={() => setPhase('diff')}
+              onLevels={() => setPhase('levels')}
               onChallenge={() => setPhase('chal')}
             />
             <HubScienceLink gameId="wordle" isAr={isAr} playSfx={playSfx} />
@@ -699,42 +689,23 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
         />
       )}
 
-      {phase === 'diff' && (
-        <TrainingDifficultySelect
-          isAr={isAr}
-          playSfx={playSfx}
-          onBack={() => {
-            clearPlay();
-            setPhase('hub');
-          }}
-          title={t.pickDiff}
-          blurb={t.pickDiffSub}
-          diffKeys={WORDLE_DIFF_KEYS}
-          dm={WORDLE_DM}
-          descs={t.diffDesc}
-          onPick={(k) => {
-            setDiffKey(k);
-            setPhase('levels');
-          }}
-        />
-      )}
-
+      {/* ⚠ The `diff` phase is gone (2026-08-28, the ladder). Level mode goes
+          straight from the hub to ONE grid — no Easy/Medium/Hard screen. */}
       {phase === 'levels' && (
         <TrainingLevelGrid
           isAr={isAr}
           playSfx={playSfx}
-          onBack={() => setPhase('diff')}
-          title={wordleDiffMeta(diffKey, isAr).label}
-          blurb={t.levelsSub(wordleDiffMeta(diffKey, isAr).pop, wordleDiffMeta(diffKey, isAr).grid)}
-          count={WORDLE_LEVELS_PER_TIER}
-          lvc={wordleDiffMeta(diffKey, isAr).lvc}
-          isUnlocked={(lv) => isWordleLevelUnlocked(diffKey, lv, doneMap)}
-          isDone={(lv) => !!doneMap[`${diffKey}-${lv}`]}
+          onBack={() => { clearPlay(); setPhase('hub'); }}
+          title={t.hub}
+          blurb={t.ladderBlurb(LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
+          count={LADDER_LEVELS}
+          isUnlocked={(lv) => isWordleLevelUnlocked(lv, doneMap, ladderReached)}
+          isDone={(lv) => !!doneMap[`lad-${lv}`]}
           sublabel={(lv) => {
-            const spec = specificationForLevel(diffKey, lv);
+            const spec = specificationForLevel(lv);
             return `${spec.targetWords}w·${spec.timeSec}s`;
           }}
-          onPick={(lv) => startLevelGame(diffKey, lv)}
+          onPick={(lv) => startLevelGame(lv)}
         />
       )}
 
@@ -753,8 +724,8 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
               isAr={isAr}
               playSfx={playSfx}
               subtitle={t.challengeSub}
-              diffKeys={WORDLE_DIFF_KEYS}
-              diffLabels={WORDLE_DM}
+              diffKeys={PP_DEPTH_KEYS}
+              diffLabels={PP_DEPTH_LABELS}
               diff={chalDiff}
               onDiffChange={setChalDiff}
               players={chalNames}
@@ -788,7 +759,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
               ? t.roundNofM(chalRoundIdx + 1, chalRoundsTotal)
               : null
           }
-          metaLine={t.chalMeta(WORDLE_DM[chalDiff]?.label ?? '')}
+          metaLine={t.chalMeta(`L${WORDLE_PP_DEPTHS[chalDiff] ?? WORDLE_PP_DEPTHS.mid}`)}
           instruction={t.handTo(chalNames[chalIdx])}
           bullets={[t.chalBulletSame, t.chalBulletPass]}
           startLabel={t.goReady}
@@ -1043,14 +1014,14 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
               </div>
             </div>
             <div className="ct-fq-row">
-              {lastResult.stats.won && lastResult.r.lv < WORDLE_LEVELS_PER_TIER && (
+              {lastResult.stats.won && lastResult.r.lv < LADDER_LEVELS && (
                 <button
                   type="button"
                   className="ct-fq-btn ct-fq-btn-pri"
                   onClick={() => {
                     playSfx('click');
                     setLastResult(null);
-                    startLevelGame(lastResult.r.diff, lastResult.r.lv + 1);
+                    startLevelGame(lastResult.r.lv + 1);
                   }}
                 >
                   {t.nextLv}
@@ -1062,7 +1033,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
                 onClick={() => {
                   playSfx('click');
                   setLastResult(null);
-                  startLevelGame(lastResult.r.diff, lastResult.r.lv);
+                  startLevelGame(lastResult.r.lv);
                 }}
               >
                 {t.retry}

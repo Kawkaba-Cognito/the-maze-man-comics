@@ -26,7 +26,7 @@
  *   · all three measures survive into the results
  */
 import {
-  BASE, BLAST_FRAC, COLOURS, DIFFS, KIND, LEVELS_PER_TIER,
+  LADDER, LADDER_BASE, BLAST_FRAC, COLOURS, KIND, LADDER_LEVELS,
   MIN_DWELL_MS, MIN_TAP_GAP_MS, MIN_TOLERANCE_MS, MIN_VISIBLE_MS,
   NOGO_MAX_SHARE, NOGO_MIN_SHARE, RING_AT, TRAIL_SEGS,
   buildWave, dwellMs, feasible, levelCfg, mechanics, passCfg, posAt,
@@ -154,24 +154,23 @@ function checkWave(label, cfg, wave) {
   }
 }
 
-for (const diff of DIFFS) {
-  for (let lv = 1; lv <= LEVELS_PER_TIER; lv += 1) {
-    const cfg = levelCfg(diff, lv);
+/* ⚠ ONE LADDER since 2026-08-28 — 60 levels, not three tiers of a hundred. */
+{
+  for (let lv = 1; lv <= LADDER_LEVELS; lv += 1) {
+    const cfg = levelCfg(lv);
 
-    if (cfg.tolMs < MIN_TOLERANCE_MS) fail(`${diff} L${lv}: tolerance ${cfg.tolMs}ms below the floor`);
-    if (dwellMs(cfg) < MIN_DWELL_MS - 1) fail(`${diff} L${lv}: dwell ${Math.round(dwellMs(cfg))}ms below the floor`);
+    if (cfg.tolMs < MIN_TOLERANCE_MS) fail(`L${lv}: tolerance ${cfg.tolMs}ms below the floor`);
+    if (dwellMs(cfg) < MIN_DWELL_MS - 1) fail(`L${lv}: dwell ${Math.round(dwellMs(cfg))}ms below the floor`);
     if (cfg.hiddenShare > 0 && visibleMs(cfg) < MIN_VISIBLE_MS - 1) {
-      fail(`${diff} L${lv}: only ${Math.round(visibleMs(cfg))}ms visible before the canopy`);
+      fail(`L${lv}: only ${Math.round(visibleMs(cfg))}ms visible before the canopy`);
     }
-    if (cfg.ringA < 0 || cfg.ringB > 1) fail(`${diff} L${lv}: the tower's reach runs off the trail`);
-    if (cfg.hiddenShare > 1.0001) fail(`${diff} L${lv}: hiddenShare above 1`);
+    if (cfg.ringA < 0 || cfg.ringB > 1) fail(`L${lv}: the tower's reach runs off the trail`);
+    if (cfg.hiddenShare > 1.0001) fail(`L${lv}: hiddenShare above 1`);
 
-    /* Every level gets its floors checked above; a sample gets a full wave
-       build on three seeds. 300 levels x many seeds is a gate nobody runs. */
-    if (lv % 7 === 1 || lv === LEVELS_PER_TIER) {
-      for (const seed of ['a', 'b', 'c']) {
-        checkWave(`${diff} L${lv} (${seed})`, cfg, buildWave(rngFor(`${diff}-${lv}-${seed}`), cfg, lv));
-      }
+    /* The ladder is short enough to build a wave on EVERY level now — 60×3
+       seeds, where 300 levels × seeds was a gate nobody would run. */
+    for (const seed of ['a', 'b', 'c']) {
+      checkWave(`L${lv} (${seed})`, cfg, buildWave(rngFor(`${lv}-${seed}`), cfg, lv));
     }
   }
 }
@@ -191,54 +190,68 @@ for (let stage = 0; stage <= 30; stage += 1) {
 }
 
 /* ── 3. the curve actually climbs ──────────────────────────────────────── */
-for (const diff of DIFFS) {
-  const lo = levelCfg(diff, 1);
-  const hi = levelCfg(diff, LEVELS_PER_TIER);
+{
+  const diff = 'ladder';
+  const lo = levelCfg(1);
+  const hi = levelCfg(LADDER_LEVELS);
   if (hi.count <= lo.count) fail(`${diff}: the wave never gets bigger (${lo.count} → ${hi.count})`);
   if (hi.crossMs >= lo.crossMs) fail(`${diff}: the march never gets faster`);
   if (hi.gapMs >= lo.gapMs) fail(`${diff}: the column never tightens`);
 
-  for (let lv = 2; lv <= LEVELS_PER_TIER; lv += 1) {
-    const a = levelCfg(diff, lv - 1);
-    const b = levelCfg(diff, lv);
+  for (let lv = 2; lv <= LADDER_LEVELS; lv += 1) {
+    const a = levelCfg(lv - 1);
+    const b = levelCfg(lv);
     if (b.count < a.count) { fail(`${diff} L${lv}: the wave shrank`); break; }
     if (b.crossMs > a.crossMs) { fail(`${diff} L${lv}: the march slowed`); break; }
     if (b.gapMs > a.gapMs) { fail(`${diff} L${lv}: the column loosened`); break; }
   }
 }
 
-/* A harder tier must be harder AT THE SAME LEVEL NUMBER — what audit:curves
- * exists to catch, checked here for the levers it cannot see. */
-for (const lv of [1, 25, 50, 75, 100]) {
-  const e = levelCfg('easy', lv);
-  const m = levelCfg('med', lv);
-  const h = levelCfg('hard', lv);
-  if (!(e.crossMs > m.crossMs && m.crossMs > h.crossMs)) fail(`L${lv}: the march is not faster on a harder tier`);
-  if (!(e.count < m.count && m.count < h.count)) fail(`L${lv}: the wave is not bigger on a harder tier`);
-  if (!(e.hiddenShare <= m.hiddenShare && m.hiddenShare <= h.hiddenShare)) {
-    fail(`L${lv}: a harder tier hides less of the trail`);
-  }
-}
+/* The old cross-tier check ("hard must beat med at the same level number")
+ * retired with the tiers. Monotonicity across the one climb, asserted at every
+ * level just above, is the same promise and a stronger version of it. */
 
-/* ── 4. every tier introduces something ────────────────────────────────── */
-const tierMechanics = {};
-for (const diff of DIFFS) {
+/* ── 4. every BAND introduces something, and it arrives on the band edge ──
+ *
+ * ⚠ This is the check that caught the previous build shipping a tier with ONE
+ * mechanic set across all 100 levels. On the ladder it becomes sharper: each of
+ * the six bands must add exactly the mechanic its LADDER entry claims, and it
+ * must be absent on the last level of the band before. `audit:curves` proves no
+ * band is inert; this proves the band introduces the RIGHT thing, on time.
+ */
+{
+  const at = (lv) => mechanics(levelCfg(lv));
   const sets = new Set();
-  for (let lv = 1; lv <= LEVELS_PER_TIER; lv += 1) sets.add(mechanics(levelCfg(diff, lv)).join('+'));
-  tierMechanics[diff] = sets;
-  if (sets.size < 2) {
-    fail(`${diff}: ONE mechanic set across all ${LEVELS_PER_TIER} levels — the tier never `
-      + 'introduces anything (the exact failure the previous version shipped)');
+  for (let lv = 1; lv <= LADDER_LEVELS; lv += 1) sets.add(at(lv).join('+'));
+  if (sets.size < LADDER.length) {
+    fail(`only ${sets.size} distinct mechanic sets across ${LADDER_LEVELS} levels, `
+      + `but the ladder declares ${LADDER.length} bands — a band introduces nothing`);
   }
-}
-/* Easy must never hide the trail: a new player learns the game by seeing it. */
-for (let lv = 1; lv <= LEVELS_PER_TIER; lv += 1) {
-  if (levelCfg('easy', lv).hiddenShare > 0) { fail(`easy L${lv}: canopy on the easy tier`); break; }
-}
-/* …and each headline mechanic must actually appear somewhere. */
-for (const want of ['nogo', 'canopy', 'barrel', 'armour']) {
-  const seen = DIFFS.some((d) => [...tierMechanics[d]].some((s) => s.split('+').includes(want)));
-  if (!seen) fail(`the ${want} mechanic never appears at any level of any tier`);
+
+  LADDER.forEach((band, b) => {
+    const first = b * 10 + 1;
+    for (const want of band.adds || []) {
+      if (want === 'strike') continue; // the core, on from L1 by definition
+      if (!at(first).includes(want)) {
+        fail(`band ${b + 1} (L${first}): declares it introduces "${want}", but the level does not have it`);
+      }
+      if (b > 0 && at(first - 1).includes(want)) {
+        fail(`L${first - 1}: "${want}" is already present the level BEFORE the band that introduces it `
+          + '— the mechanic has drifted off its band edge (check bandStartF, not a hand-typed threshold)');
+      }
+    }
+  });
+
+  /* The first band must never hide the trail: a new player learns by seeing. */
+  for (let lv = 1; lv <= 10; lv += 1) {
+    if (levelCfg(lv).hiddenShare > 0) { fail(`L${lv}: canopy in the first band`); break; }
+  }
+  /* …and each headline mechanic must actually appear somewhere. */
+  for (const want of ['nogo', 'canopy', 'barrel', 'armour', 'shuffle']) {
+    if (![...sets].some((s) => s.split('+').includes(want))) {
+      fail(`the ${want} mechanic never appears at any level of the ladder`);
+    }
+  }
 }
 
 /* ── 5. SELF-TEST: an unclearable wave MUST be rejected ────────────────────
@@ -300,7 +313,11 @@ if (!(BLAST_FRAC > 0.02 && BLAST_FRAC < 0.25)) {
   fail(`BLAST_FRAC ${BLAST_FRAC} is either invisible or clears the whole trail`);
 }
 if (!(RING_AT > 0.3 && RING_AT < 0.9)) fail('the tower sits too near an end of the trail');
-for (const d of DIFFS) if (!BASE[d]) fail(`tier ${d} has no BASE entry`);
+/* The ladder's mechanic onsets must be DERIVED from band edges, never typed.
+   If a threshold is missing the mechanic silently never arrives. */
+for (const k of ['nogoFrom', 'barrelFrom', 'armourFrom', 'hiddenFrom', 'shuffleFrom']) {
+  if (!Number.isFinite(LADDER_BASE[k])) fail(`LADDER_BASE.${k} is not a number — the mechanic will never turn on`);
+}
 
 /* ── report ────────────────────────────────────────────────────────────── */
 if (problems.length) {

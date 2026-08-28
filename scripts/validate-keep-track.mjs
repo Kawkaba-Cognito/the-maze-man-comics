@@ -19,7 +19,7 @@
  *   4. difficulty is monotonic where it claims to be: rate falls, stream grows
  */
 import {
-  CATEGORIES, BASE, LEVELS_PER_TIER, levelCfg, survivalCfg, buildRound, isCorrect,
+  CATEGORIES, LADDER, LADDER_LEVELS, levelCfg, survivalCfg, buildRound, isCorrect,
 } from '../src/features/training/domains/memory/games/keep-track/data.js';
 
 const problems = [];
@@ -52,13 +52,15 @@ for (const lang of LANGS) {
 // ── 3: simulated rounds ──
 let rounds = 0;
 for (const lang of LANGS) {
-  for (const diff of Object.keys(BASE)) {
-    for (const lv of [1, 25, 50, 75, LEVELS_PER_TIER]) {
-      const cfg = levelCfg(diff, lv);
+  // One sample level per band, plus the very top of the ladder.
+  {
+    const probe = [...LADDER.map((_, b) => b * (LADDER_LEVELS / LADDER.length) + 1), LADDER_LEVELS];
+    for (const lv of probe) {
+      const cfg = levelCfg(lv);
       for (let rep = 0; rep < 40; rep++) {
         const r = buildRound(cfg, lang);
         rounds++;
-        const tag = `${lang}/${diff}/L${lv}#${rep}`;
+        const tag = `${lang}/L${lv}#${rep}`;
 
         if (r.stream.length < cfg.stream) {
           problems.push(`${tag}: stream ${r.stream.length} shorter than requested ${cfg.stream}`);
@@ -96,12 +98,12 @@ for (const lang of LANGS) {
 }
 
 // ── 4: the curve actually goes the way it claims ──
-for (const diff of Object.keys(BASE)) {
+{
   let prevRate = Infinity, prevStream = -Infinity;
-  for (let lv = 1; lv <= LEVELS_PER_TIER; lv++) {
-    const c = levelCfg(diff, lv);
-    if (c.rate > prevRate) problems.push(`${diff} L${lv}: rate rose (${prevRate}→${c.rate}) — later levels must not be slower`);
-    if (c.stream < prevStream) problems.push(`${diff} L${lv}: stream shrank (${prevStream}→${c.stream})`);
+  for (let lv = 1; lv <= LADDER_LEVELS; lv++) {
+    const c = levelCfg(lv);
+    if (c.rate > prevRate) problems.push(`L${lv}: rate rose (${prevRate}→${c.rate}) — later levels must not be slower`);
+    if (c.stream < prevStream) problems.push(`L${lv}: stream shrank (${prevStream}→${c.stream})`);
     prevRate = c.rate; prevStream = c.stream;
   }
 }

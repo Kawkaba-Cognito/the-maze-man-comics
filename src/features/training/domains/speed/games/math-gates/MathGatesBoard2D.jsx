@@ -4,9 +4,8 @@ import { paintSky } from '../../../../shared/board2d';
 import { assetUrl } from '../../../../../../lib/assetUrl';
 import { GAME_COLORS, GAME_INK, GAME_STIMULUS, shadeOf } from '../../../../shared/gamePalette';
 import { makeRng } from '../../../../shared/rng';
-import { survivalTier } from '../../../../shared/survival';
 import { clamp } from '../../../../../../lib/math';
-import { genGate, levelCfg } from './index';
+import { genGate, levelCfg, LADDER_LEVELS } from './index';
 import '../../../../shared/c3dProto.css';
 // nowMs() = performance.now() minus paused time, so the pause menu really
 // stops this game's clock. See shared/pauseStore.js.
@@ -16,7 +15,7 @@ import { nowMs } from '../../../../shared/pauseStore';
  * MathGatesBoard2D — the lane runner.
  *
  * Replaces MathGates3DProto.jsx. Every rule below is carried over unchanged:
- * the same genGate() with the same skill ramp (gatesPlayed/36 → survivalTier),
+ * the same genGate() with the same skill ramp (gatesPlayed/36 → ladder level),
  * the same constant 3.8s descent with no clock and no speed-up, the same
  * lives/gap config from levelCfg, and the same "the lane you occupy on ARRIVAL
  * is your answer". Only the drawing changed.
@@ -68,14 +67,14 @@ const LANE_COLORS = [GAME_STIMULUS[0], GAME_STIMULUS[1], GAME_STIMULUS[3]];
 
 export default function MathGatesBoard2D({
   isAr, playSfx, onBack, awardFreeRun,
-  mode = 'free', diff = 'med', level = 1, seed, attempt, onResult,
+  mode = 'free', level = 1, seed, attempt, onResult,
 }) {
   const t = UI[isAr ? 'ar' : 'en'];
   const cfg = mode === 'levels'
-    ? levelCfg(diff, level)
+    ? levelCfg(level)
     : mode === 'passplay'
-      ? levelCfg(diff || 'med', 1)
-      : levelCfg('easy', 1);
+      ? levelCfg(level || 21)
+      : levelCfg(1);
 
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
@@ -181,8 +180,9 @@ export default function MathGatesBoard2D({
 
     const spawnGate = () => {
       const f = clamp(s.gatesPlayed / 36, 0, 1);
-      const gateDiff = mode === 'free' ? survivalTier(f) : (diff || 'med');
-      const eq = genGate(gateDiff, mode === 'free' ? f : (cfg.f || 0), rng);
+      // Survival walks the ladder by skill — same depth a Levels player meets.
+      const gateCfg = mode === 'free' ? levelCfg(1 + Math.round(f * (LADDER_LEVELS - 1))) : cfg;
+      const eq = genGate(gateCfg, mode === 'free' ? f : (cfg.f || 0), rng);
       s.gate = { eq, y: 0 };
       setEqText(`${eq.text} = ?`);
     };

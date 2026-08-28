@@ -167,8 +167,66 @@ export function ruleForTrio(setDef, trio) {
   return null;
 }
 
-/** Every set the given difficulty should draw from. */
+/** Every set of one tier. */
 export function setsForTier(tier) {
   const pick = SORT_SETS.filter((s) => s.tier === tier);
   return pick.length ? pick : SORT_SETS;
+}
+
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 50 levels, in five bands of ten. Replaced easy/med/hard on
+ * 2026-08-28 — see LADDER-PLAN.md and shared/difficulty.js.
+ *
+ * ⚠ THIS GAME IS WHY THE POOL ACCUMULATES INSTEAD OF SLIDING. There are only
+ * THREE sets per tier. A band drawing from one tier alone would cycle the same
+ * three boards for ten levels — the precise repetition the ladder exists to
+ * remove. So the pool grows as you climb and the newest tier is weighted up:
+ * the top band draws from all nine sets, but sees a hard one most of the time.
+ *
+ * The second lever is how many of a set's rules you must FIND before it
+ * clears. Two is a taster; all three is the real task, and it arrives at band 2
+ * rather than being locked behind a menu word as it was on the old easy tier.
+ */
+import { BAND_SIZE, ladderFraction, mechanicsAt, pickWeighted, tierMass } from '../../../../shared/difficulty.js';
+
+/** Tier order, easiest first — the axis `tierMass` measures along. */
+export const TIER_ORDER = ['easy', 'med', 'hard'];
+
+export const LADDER = [
+  /* L1–10  */ { tiers: { easy: 1 }, rules: 2, adds: ['sort'] },
+  /* L11–20 */ { tiers: { easy: 1 }, rules: 3, adds: ['allRules'] },
+  /* L21–30 */ { tiers: { easy: 0.30, med: 0.70 }, rules: 3, adds: ['meaning'] },
+  /* L31–40 */ { tiers: { easy: 0.15, med: 0.45, hard: 0.40 }, rules: 3, adds: ['abstract'] },
+  /* L41–50 */ { tiers: { easy: 0.10, med: 0.30, hard: 0.60 }, rules: 3, adds: [] },
+];
+
+export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 50
+
+export const MECHANIC_LABELS = {
+  sort: { en: 'Find a way to group them', ar: 'جد طريقة لتجميعها' },
+  allRules: { en: 'Find every rule', ar: 'جد كل القواعد' },
+  meaning: { en: 'Rules hide in meaning', ar: 'القواعد في المعنى' },
+  abstract: { en: 'Abstract rules', ar: 'قواعد مجرّدة' },
+};
+
+/** ⚠ SIGNATURE CHANGED with the ladder: one argument, no tier. */
+export function levelCfg(level) {
+  const lv = Math.min(LADDER_LEVELS, Math.max(1, Math.round(Number(level) || 1)));
+  const b = LADDER[Math.min(LADDER.length - 1, Math.floor((lv - 1) / BAND_SIZE))];
+  return {
+    tiers: b.tiers,
+    rules: b.rules,
+    tierMass: tierMass(b.tiers, TIER_ORDER),
+    poolSize: Object.keys(b.tiers).reduce((n, t) => n + setsForTier(t).length, 0),
+    mechanics: mechanicsAt(LADDER, lv),
+    lv,
+    f: ladderFraction(lv, LADDER_LEVELS),
+  };
+}
+
+/** The sets a level may deal, drawn by the band's weights. */
+export function pickSetTier(cfg, rng) {
+  return pickWeighted(cfg.tiers, rng) || 'easy';
 }

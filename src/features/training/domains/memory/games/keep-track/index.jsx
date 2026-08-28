@@ -8,7 +8,7 @@ import { TrainingPauseModal, TrainingPlayHeader } from '../../../../shared/Train
 import PlayResults from '../../../../shared/PlayResults';
 import { assetUrl } from '../../../../../../lib/assetUrl';
 import {
-  CATEGORIES, LEVELS_PER_TIER, levelCfg, survivalCfg, buildRound, isCorrect,
+  CATEGORIES, LADDER_LEVELS, levelCfg, survivalCfg, buildRound, isCorrect,
 } from './data';
 import './keepTrack.css';
 
@@ -37,7 +37,7 @@ const UI = {
     title: 'Keep Track',
     tag: 'working memory',
     hintFree: 'Endless — categories pile on as you go',
-    hintLevels: '3 difficulties · 100 levels each',
+    hintLevels: '50 levels · a new twist every 10',
     hintPass: 'Same stream for everyone · pass the device',
     watchThese: 'Keep track of these',
     watchSub: (n) => `${n} categor${n === 1 ? 'y' : 'ies'} to hold. Remember the LAST word you see in each.`,
@@ -70,7 +70,7 @@ const UI = {
     title: 'تتبّع الفئات',
     tag: 'ذاكرة عاملة',
     hintFree: 'بلا نهاية — تتراكم الفئات كلما تقدّمت',
-    hintLevels: '٣ صعوبات · ١٠٠ مستوى لكل',
+    hintLevels: '٥٠ مستوى · جديد كل ١٠',
     hintPass: 'نفس التدفّق للجميع · مرّر الجهاز',
     watchThese: 'تتبّع هذه الفئات',
     watchSub: (n) => `${n} فئات عليك تتبّعها. تذكّر آخر كلمة تراها في كلٍّ منها.`,
@@ -110,7 +110,8 @@ function wordArt(category, word, lang) {
 
 /* ── The engine: one round is watch → recall ──────────────────────────────── */
 function KeepTrackEngine({
-  mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardFreeRun,
+  // No `diff` — this game is on the ladder, so every mode is addressed by level.
+  mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardFreeRun,
 }) {
   const t = isAr ? UI.ar : UI.en;
   const lang = isAr ? 'ar' : 'en';
@@ -131,9 +132,9 @@ function KeepTrackEngine({
 
   const cfg = useMemo(() => {
     if (mode === 'free') return survivalCfg(stage);
-    if (mode === 'passplay') return levelCfg(diff, 40);
-    return levelCfg(diff, level || 1);
-  }, [mode, diff, level, stage]);
+    // Pass n Play now carries its own ladder level (ModeShell picks the depth).
+    return levelCfg(level || 1);
+  }, [mode, level, stage]);
 
   const round = useMemo(() => {
     const rng = seed != null ? makeRng((seed >>> 0) + stage * 7919 + ppRound * 104729) : Math.random;
@@ -159,7 +160,7 @@ function KeepTrackEngine({
     trialLogRef.current = createTrialLog({
       game: 'keep-track',
       mode: mode === 'free' ? 'free' : mode === 'passplay' ? 'challenge' : 'level',
-      meta: { diff, lv: level, targets: cfg.targets, rate: cfg.rate },
+      meta: { lv: cfg.lv, targets: cfg.targets, rate: cfg.rate, mechanics: cfg.mechanics },
     });
     return () => { trialLogRef.current?.discard?.(); };
     // One log per engine mount, matching the other ModeShell games.
@@ -439,13 +440,10 @@ export default function KeepTrackGame({ onBack, workoutMode = false }) {
         levels: { en: UI.en.hintLevels, ar: UI.ar.hintLevels },
         pass: { en: UI.en.hintPass, ar: UI.ar.hintPass },
       }}
-      diffLabels={{
-        easy: { en: 'Easy', ar: 'سهل' },
-        med: { en: 'Medium', ar: 'متوسط' },
-        hard: { en: 'Hard', ar: 'صعب' },
-      }}
-      levelCount={LEVELS_PER_TIER}
-      pass={{ trials: 4, scoreLabel: { en: 'recalled', ar: 'تذكّر' }, lowerBetter: false, diff: 'med' }}
+      /* ONE LADDER — no easy/med/hard, so no `diffLabels` and no `levelCount`.
+         See data.js LADDER and shared/difficulty.js. */
+      ladder={{ levels: LADDER_LEVELS }}
+      pass={{ trials: 4, scoreLabel: { en: 'recalled', ar: 'تذكّر' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}

@@ -10,6 +10,7 @@
  * would be a bug, not a style choice.
  */
 import { STR_COMMON } from '../../../../shared/trainingStrings.js';
+import { BAND_SIZE } from '../../../../shared/difficulty.js';
 import { folkOf } from './data.js';
 
 /* ── the parts a law is built from ──────────────────────────────────────── */
@@ -74,11 +75,14 @@ export const attrWords = (attrs, lang) => attrs.map((a) => ATTR_WORD[lang === 'a
 
 /* ── the level families, so a player can name what changed ──────────────── */
 export const FAMILY = {
+  /* ⚠ ONE PER BAND, in band order (2026-08-28, the ladder). There used to be
+     six — one per half-tier. The ladder has five bands, so 'THIN SCRUTINY'
+     ("one probe fewer") retired: the probe budget now drops inside bands 4 and
+     5, which already have names for what else arrives with it. */
   en: [
     { name: 'THE FIRST GATE', sub: 'one law, plainly said' },
     { name: 'STRIPED ARRIVALS', sub: 'a new thing to notice' },
     { name: 'CROSSED LAWS', sub: 'two ideas at once' },
-    { name: 'THIN SCRUTINY', sub: 'one probe fewer' },
     { name: 'THE REFUSAL', sub: 'what is forbidden' },
     { name: "THE KEEPER'S MAZE", sub: 'everything he knows' },
   ],
@@ -86,16 +90,16 @@ export const FAMILY = {
     { name: 'البوابة الأولى', sub: 'قانون واحد، واضح' },
     { name: 'القادمون المخطّطون', sub: 'شيء جديد تنتبه له' },
     { name: 'قوانين متقاطعة', sub: 'فكرتان معاً' },
-    { name: 'تدقيق ضيّق', sub: 'فحص أقلّ بواحد' },
     { name: 'الرفض', sub: 'ما هو ممنوع' },
     { name: 'متاهة الحارس', sub: 'كل ما يعرفه' },
   ],
 };
 
 /** Which family a level belongs to — mirrors the six half-tiers in data.js. */
-export function familyIndex(diff, f) {
-  const tier = diff === 'easy' ? 0 : diff === 'med' ? 1 : 2;
-  return tier * 2 + (f < 0.5 ? 0 : 1);
+/** Ladder level → which FAMILY name to show. One per band. */
+export function familyIndex(lv, bands = FAMILY.en.length) {
+  const b = Math.floor(((Number(lv) || 1) - 1) / BAND_SIZE);
+  return Math.min(bands - 1, Math.max(0, b));
 }
 
 export const T = {

@@ -46,65 +46,17 @@ const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const lerpN = (a, b, t) => a + (b - a) * t;
 
 /*
- * DIFFICULTY — grounded in the Train-of-Thought / divided-attention literature
- * (Lumosity Train of Thought; the validated construct is DIVIDED ATTENTION —
- * monitoring & routing several moving targets at once). The dominant lever is
- * therefore the number of CONCURRENT cars (`maxC`); secondary levers are SPEED
- * (`cps`, spawn rate), TRACK COMPLEXITY (`forks`) and DISCRIMINATION (number of
- * colours/bays, kept CVD-separable so difficulty is attentional, not colour
- * confusion). Each lever ramps on its own [start,end] track across the 100
- * levels so the curve is readable and concurrency clearly leads.
+ * DIFFICULTY lives in carParkData.js now (2026-08-28).
+ *
+ * It used to sit right here, in a React file, which is why audit:curves
+ * printed this game under "CANNOT be gated where it sits" for weeks: the gates
+ * run in plain Node and cannot parse JSX. The curve is a ONE-LADDER band table
+ * there now, and the gate imports exactly what the game runs.
+ *
+ * Re-exported so CarPark3DProto.jsx keeps importing them from './index'.
  */
-// Tiers are differentiated mainly by CONCURRENCY (maxC), anchored on the ~4-object
-// divided-attention capacity limit (Pylyshyn & Storm 1988): EASY stays below it
-// (1–3 cars), MEDIUM rides it (2–4), HARD pushes past it into overload (3–5),
-// where accuracy is known to fall sharply. Colour count (discrimination / spatial
-// memory of bays) and track forks are the secondary tier markers; speed is a
-// modifier kept within reactable bounds (≥~1 s lead time to the first fork).
-const LV = {
-  easy: { grid: [5, 6], maxC: [1, 3], colors: [3, 4], forks: [2, 4], cps: [0.65, 0.95], spawn: [2200, 1400], target: [6, 16], lives: 5 },
-  med:  { grid: [6, 8], maxC: [2, 4], colors: [4, 5], forks: [3, 6], cps: [0.80, 1.15], spawn: [1900, 1150], target: [8, 20], lives: 4 },
-  hard: { grid: [7, 9], maxC: [3, 5], colors: [5, 6], forks: [4, 8], cps: [0.95, 1.40], spawn: [1700, 950],  target: [10, 24], lives: 3 },
-};
-export function levelCfg(diff, level) {
-  const b = LV[diff] || LV.med;
-  // Front-loaded curve (f^0.85): the climb is felt earlier so adjacent levels
-  // feel more distinct; level 1 and 100 are unchanged (no cap/balance change).
-  const f = Math.pow(clampN(((level || 1) - 1) / 99, 0, 1), 0.85);
-  const grid = Math.round(lerpN(b.grid[0], b.grid[1], f));
-  return {
-    R: grid, C: grid,
-    forks: Math.round(lerpN(b.forks[0], b.forks[1], f)),
-    colors: Math.round(lerpN(b.colors[0], b.colors[1], f)),
-    maxC: Math.round(lerpN(b.maxC[0], b.maxC[1], f)),
-    cps: +lerpN(b.cps[0], b.cps[1], f).toFixed(2),
-    spawn: Math.round(lerpN(b.spawn[0], b.spawn[1], f)),
-    target: Math.round(lerpN(b.target[0], b.target[1], f)),
-    lives: b.lives,
-    wave: false,
-  };
-}
-
-// Survival WAVES: endless escalation. Every wave is a FRESH board (no two look
-// alike) and is strictly harder: it always adds a car to clear, and concurrency
-// — the divided-attention lever — steps up every 2 waves toward and past the
-// ~4-object capacity limit. Speed/complexity ramp alongside; speed is capped so
-// it stays reactable.
-export function waveCfg(wave) {
-  const w = wave - 1;
-  return {
-    R: clampN(5 + Math.floor(w / 3), 5, 9),
-    C: clampN(5 + Math.floor(w / 3), 5, 9),
-    forks: clampN(2 + Math.floor(w / 2), 2, 8),
-    colors: clampN(3 + Math.floor(w / 3), 3, 6),
-    cars: 4 + w,                                  // cars to clear (always grows each wave)
-    maxC: clampN(1 + Math.floor(w / 2), 1, 5),    // concurrency steps every 2 waves, capped at overload (5)
-    cps: +Math.min(1.7, 0.7 + w * 0.05).toFixed(2), // capped so it stays reactable
-    spawn: Math.max(900, 2100 - w * 100),
-    lives: 4,
-    wave: true,
-  };
-}
+export { LADDER, LADDER_LEVELS, levelCfg, waveCfg } from './carParkData.js';
+import { LADDER_LEVELS, levelCfg, waveCfg } from './carParkData.js';
 const PP_TRAINS = 16;
 
 // build a grid-embedded routing tree (garage → junctions → scattered parking bays)
@@ -154,7 +106,7 @@ export function generate(R, C, desired, rng, colorCount = 6) {
   return { root, all, forks, stations };
 }
 
-function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
+function TrainSwitchEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
   const ppTrains = mode === 'passplay' ? (attempt?.trials || PP_TRAINS) : 0;
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
@@ -169,10 +121,12 @@ function TrainSwitchEngine({ mode, diff, level, seed, attempt, onResult, onExit,
   const [msg, setMsg] = useState('');
 
   const cfg = useMemo(() => {
-    if (mode === 'levels') return levelCfg(diff, level);
-    if (mode === 'passplay') return levelCfg('med', 30); // representative mid challenge for all players
+    if (mode === 'levels') return levelCfg(level);
+    // Pass n Play takes a ladder level so ModeShell's depth picker reaches the
+    // engine; L25 is the 3-cars-at-once band, the old `med` L30 equivalent.
+    if (mode === 'passplay') return levelCfg(level || 25);
     return waveCfg(1); // survival starts at wave 1 and escalates in-engine
-  }, [mode, diff, level]);
+  }, [mode, level]);
 
   const finish = useCallback(() => {
     if (finishedRef.current) return;
@@ -598,11 +552,12 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
       title={{ en: 'Spaceship', ar: 'سفينة فضائية' }}
       hints={{
         free: { en: 'Dock ships by colour — escalating waves, lives', ar: 'أرسِ السفن حسب اللون — موجات متصاعدة، أرواح' },
-        levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
+        levels: { en: '50 levels · one more ship at once every 10', ar: '٥٠ مستوى · سفينة إضافية كل ١٠' },
         pass: { en: 'Same spaceport for all · pass the device', ar: 'نفس الميناء الفضائي للجميع · مرّر الجهاز' },
       }}
-      diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      pass={{ trials: PP_TRAINS, scoreLabel: { en: 'docked', ar: 'رست' }, lowerBetter: false, diff: 'med' }}
+      /* ONE LADDER — no easy/med/hard. See carParkData.js LADDER. */
+      ladder={{ levels: LADDER_LEVELS }}
+      pass={{ trials: PP_TRAINS, scoreLabel: { en: 'docked', ar: 'رست' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
@@ -612,7 +567,7 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
         // Survival escalates + banks XP, Levels play to target, Pass-n-Play runs a
         // fixed ship count — all reporting back through ModeShell like the 2D did.
         <Suspense
-          key={`carpark-3d-${p.mode}-${p.diff}-${p.level}`}
+          key={`carpark-3d-${p.mode}-${p.level}`}
           fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}>…</div>}
         >
           <CarPark3DProto
@@ -620,7 +575,6 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
             playSfx={playSfx}
             awardFreeRun={awardFreeRun}
             mode={p.mode}
-            diff={p.diff}
             level={p.level}
             attempt={p.attempt}
             onResult={p.onResult}

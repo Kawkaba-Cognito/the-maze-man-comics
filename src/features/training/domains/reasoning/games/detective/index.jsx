@@ -9,7 +9,7 @@ import { TrainingPlayHeader } from '../../../../shared/TrainingChrome';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { assetUrl } from '../../../../../../lib/assetUrl';
 import {
-  TRAITS, buildCase, evalStatement, levelCfg, levelPassed, nameOf as nameOfId,
+  TRAITS, buildCase, evalStatement, LADDER_LEVELS, levelCfg, levelPassed, nameOf as nameOfId,
   passCfg, scoreClearAll, survivalCfg,
 } from './data.js';
 import { T, ruleText, sayText } from './strings.js';
@@ -101,7 +101,7 @@ const DRAG_SLOP = 7;
 const DROP_PAD = 20;
 
 export function DetectiveEngine({
-  mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false,
+  mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false,
 }) {
   const t = isAr ? T.ar : T.en;
   const lang = isAr ? 'ar' : 'en';
@@ -137,10 +137,10 @@ export function DetectiveEngine({
   const pause = useGamePause({ isAr, playSfx, onQuit: handleExit });
 
   const cfgFor = useCallback(() => {
-    if (mode === 'levels') return levelCfg(diff, level);
-    if (mode === 'passplay') return passCfg();
+    if (mode === 'levels') return levelCfg(level);
+    if (mode === 'passplay') return level ? levelCfg(level) : passCfg();
     return survivalCfg(stageRef.current);
-  }, [mode, diff, level]);
+  }, [mode, level]);
 
   const dealCase = useCallback(() => {
     const cfg = cfgFor();
@@ -167,9 +167,9 @@ export function DetectiveEngine({
 
   useEffect(() => {
     trialLogRef.current?.discard();
-    trialLogRef.current = createTrialLog({ game: 'detective', mode, meta: { diff, level } });
+    trialLogRef.current = createTrialLog({ game: 'detective', mode, meta: { level } });
     return () => { trialLogRef.current?.discard(); trialLogRef.current = null; };
-  }, [mode, diff, level]);
+  }, [mode, level]);
 
   const q = caseData ? caseData.question : null;
   const isMulti = q && q.kind === 'clearAll';
@@ -379,7 +379,7 @@ export function DetectiveEngine({
     const m = results.length;
     const won = m > 0 && levelPassed(n, m);
     if (mode === 'levels') {
-      trialLogRef.current?.finish({ won, score: n, level, diff });
+      trialLogRef.current?.finish({ won, score: n, level });
       trialLogRef.current = null;
       onResult({ won, score: n, summary: t.score(n, m) });
       return;
@@ -400,7 +400,7 @@ export function DetectiveEngine({
     setIdx(0);
     setDone(false);
     dealCase();
-  }, [mode, results, onResult, t, playSfx, awardPoints, level, diff, dealCase]);
+  }, [mode, results, onResult, t, playSfx, awardPoints, level, dealCase]);
 
   const hudSub = mode === 'levels'
     ? (isAr ? `مستوى ${level}` : `Level ${level}`)
@@ -910,18 +910,19 @@ export default function DetectiveGame({ onBack, workoutMode = false }) {
       title={{ en: 'Detective', ar: 'المحقّق' }}
       hints={{
         free: { en: 'Endless cases · they grow trickier', ar: 'قضايا بلا نهاية · تزداد مكراً' },
-        levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
+        levels: { en: '50 levels · a new kind of clue every 10', ar: '٥٠ مستوى · دليل جديد كل ١٠' },
         pass: { en: 'Same cases for all · most solved wins', ar: 'نفس القضايا للجميع · الأكثر حلاً يفوز' },
       }}
-      diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      pass={{ trials: 1, scoreLabel: { en: 'solved', ar: 'محلولة' }, lowerBetter: false, diff: 'med' }}
+      /* ONE LADDER — no easy/med/hard. See data.js LADDER. */
+      ladder={{ levels: LADDER_LEVELS }}
+      pass={{ trials: 1, scoreLabel: { en: 'solved', ar: 'محلولة' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
         <DetectiveEngine
-          key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+          key={`${p.mode}-${p.level}-${p.seed}`}
           {...p}
           isAr={isAr}
           playSfx={playSfx}

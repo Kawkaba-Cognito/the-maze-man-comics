@@ -35,15 +35,15 @@ const url = (p) => new URL(`../src/features/training/domains/${p}`, import.meta.
 
 /* ── Keep Track ─────────────────────────────────────────────────────────── */
 {
-  const { levelCfg, survivalCfg, KEEP_TRACK_MIN_RATE } =
+  // ⚠ On the LADDER since 2026-08-28: levelCfg takes one argument, and there
+  // are LADDER_LEVELS of them rather than three tiers of a hundred.
+  const { levelCfg, survivalCfg, KEEP_TRACK_MIN_RATE, LADDER_LEVELS } =
     await import(url('memory/games/keep-track/data.js'));
 
   let min = Infinity; let where = '';
-  for (const diff of ['easy', 'med', 'hard']) {
-    for (let lv = 1; lv <= 100; lv += 1) {
-      const c = levelCfg(diff, lv);
-      if (c.rate < min) { min = c.rate; where = `${diff} L${lv}`; }
-    }
+  for (let lv = 1; lv <= LADDER_LEVELS; lv += 1) {
+    const c = levelCfg(lv);
+    if (c.rate < min) { min = c.rate; where = `L${lv}`; }
   }
   for (let s = 1; s <= 400; s += 1) {
     const c = survivalCfg(s);
@@ -53,7 +53,7 @@ const url = (p) => new URL(`../src/features/training/domains/${p}`, import.meta.
   if (min < KEEP_TRACK_MIN_RATE) fail(`keep-track: ${min}ms per word at ${where} — floor is ${KEEP_TRACK_MIN_RATE}ms`);
 
   // Load must still grow, or the fix would have removed difficulty entirely.
-  const easy1 = levelCfg('easy', 1); const hard100 = levelCfg('hard', 100);
+  const easy1 = levelCfg(1); const hard100 = levelCfg(LADDER_LEVELS);
   if (hard100.stream <= easy1.stream || hard100.targets <= easy1.targets) {
     fail('keep-track: difficulty no longer grows through LOAD (stream/targets) — the whole point of raising the rate floor');
   }
@@ -61,14 +61,15 @@ const url = (p) => new URL(`../src/features/training/domains/${p}`, import.meta.
 
 /* ── Pair Match ─────────────────────────────────────────────────────────── */
 {
-  const { levelCfg, palFreeCfg, PAL_MIN_STUDY } =
+  // ⚠ On the LADDER since 2026-08-28: levelCfg takes one argument.
+  const { levelCfg, palFreeCfg, PAL_MIN_STUDY, LADDER_LEVELS } =
     await import(url('memory/games/paired-associates/palData.js'));
 
   let min = Infinity; let where = '';
-  for (const diff of ['easy', 'med', 'hard']) {
-    for (let lv = 1; lv <= 100; lv += 1) {
-      const c = levelCfg(diff, lv);
-      if (c.study < min) { min = c.study; where = `${diff} L${lv}`; }
+  {
+    for (let lv = 1; lv <= LADDER_LEVELS; lv += 1) {
+      const c = levelCfg(lv);
+      if (c.study < min) { min = c.study; where = `L${lv}`; }
     }
   }
   for (let p = 1; p <= 12; p += 1) {
@@ -78,7 +79,7 @@ const url = (p) => new URL(`../src/features/training/domains/${p}`, import.meta.
   rows.push(['paired-associates', 'ms per studied pair', min, PAL_MIN_STUDY, where]);
   if (min < PAL_MIN_STUDY) fail(`paired-associates: ${min}ms per pair at ${where} — floor is ${PAL_MIN_STUDY}ms`);
 
-  const e1 = levelCfg('easy', 1); const h100 = levelCfg('hard', 100);
+  const e1 = levelCfg(1); const h100 = levelCfg(LADDER_LEVELS);
   if (h100.pairs <= e1.pairs || h100.boxes <= e1.boxes) {
     fail('paired-associates: difficulty no longer grows through LOAD (pairs/boxes)');
   }
@@ -86,7 +87,7 @@ const url = (p) => new URL(`../src/features/training/domains/${p}`, import.meta.
 
 /* ── Task Switch ────────────────────────────────────────────────────────── */
 {
-  const { tsCfg, TS_MIN_CSI, TS_MIN_DEADLINE } =
+  const { tsCfg, TS_MIN_CSI, TS_MIN_DEADLINE, LADDER_LEVELS: TS_LEVELS } =
     await import(url('flexibility/games/task-switch/taskSwitchData.js'));
 
   let minCsi = Infinity; let csiWhere = '';
@@ -95,10 +96,9 @@ const url = (p) => new URL(`../src/features/training/domains/${p}`, import.meta.
     if (c.csi < minCsi) { minCsi = c.csi; csiWhere = label; }
     if (c.deadline < minDl) { minDl = c.deadline; dlWhere = label; }
   };
-  for (const diff of ['easy', 'med', 'hard']) {
-    for (let lv = 1; lv <= 100; lv += 1) visit(tsCfg('levels', diff, lv), `${diff} L${lv}`);
-  }
-  for (let i = 0; i <= 100; i += 1) visit(tsCfg('free', null, null, i / 100), `survival ramp ${i}%`);
+  // ⚠ On the LADDER since 2026-08-28: no tier argument, LADDER_LEVELS levels.
+  for (let lv = 1; lv <= TS_LEVELS; lv += 1) visit(tsCfg('levels', lv), `L${lv}`);
+  for (let i = 0; i <= 100; i += 1) visit(tsCfg('free', null, i / 100), `survival ramp ${i}%`);
   visit(tsCfg('passplay'), 'pass-n-play');
 
   rows.push(['task-switch', 'cue-stimulus interval', minCsi, TS_MIN_CSI, csiWhere]);
@@ -106,7 +106,7 @@ const url = (p) => new URL(`../src/features/training/domains/${p}`, import.meta.
   if (minCsi < TS_MIN_CSI) fail(`task-switch: ${minCsi}ms CSI at ${csiWhere} — floor is ${TS_MIN_CSI}ms`);
   if (minDl < TS_MIN_DEADLINE) fail(`task-switch: ${minDl}ms deadline at ${dlWhere} — floor is ${TS_MIN_DEADLINE}ms`);
 
-  const e1 = tsCfg('levels', 'easy', 1); const h100 = tsCfg('levels', 'hard', 100);
+  const e1 = tsCfg('levels', 1); const h100 = tsCfg('levels', TS_LEVELS);
   if (!(h100.pSwitch > e1.pSwitch)) {
     fail('task-switch: switch RATE no longer grows — the honest difficulty lever once the interval is floored');
   }
@@ -124,8 +124,11 @@ const url = (p) => new URL(`../src/features/training/domains/${p}`, import.meta.
  * tier as the easiest one.
  */
 {
-  const { levelCfg: sgCfg, survivalCfg: sgSurv, passCfg: sgPass, MIN_SEC_PER_PANEL } =
-    await import(url('memory/games/story-grid/data.js'));
+  // ⚠ On the LADDER since 2026-08-28: levelCfg takes one argument.
+  const {
+    levelCfg: sgCfg, survivalCfg: sgSurv, passCfg: sgPass, MIN_SEC_PER_PANEL,
+    LADDER_LEVELS: SG_LEVELS,
+  } = await import(url('memory/games/story-grid/data.js'));
   // one source of truth: the game states the floor, this asserts it is met
   const SG_MIN_PER_PANEL = Math.round(MIN_SEC_PER_PANEL * 1000);
 
@@ -134,9 +137,7 @@ const url = (p) => new URL(`../src/features/training/domains/${p}`, import.meta.
     const ms = Math.round(c.memoPerPanel * 1000);
     if (ms < worst) { worst = ms; where = label; }
   };
-  for (const diff of ['easy', 'med', 'hard']) {
-    for (let lv = 1; lv <= 100; lv += 1) visit(sgCfg(diff, lv), `${diff} L${lv}`);
-  }
+  for (let lv = 1; lv <= SG_LEVELS; lv += 1) visit(sgCfg(lv), `L${lv}`);
   for (let stage = 0; stage <= 40; stage += 1) visit(sgSurv(stage), `survival stage ${stage}`);
   visit(sgPass(), 'pass-n-play');
 
@@ -146,7 +147,7 @@ const url = (p) => new URL(`../src/features/training/domains/${p}`, import.meta.
   }
 
   // …and difficulty must still grow through LOAD once the clock is floored.
-  const e1 = sgCfg('easy', 1); const h100 = sgCfg('hard', 100);
+  const e1 = sgCfg(1); const h100 = sgCfg(SG_LEVELS);
   if (!(h100.len > e1.len && h100.questions > e1.questions)) {
     fail('story-grid: scenes and questions no longer grow — the honest levers once the watch clock is floored');
   }

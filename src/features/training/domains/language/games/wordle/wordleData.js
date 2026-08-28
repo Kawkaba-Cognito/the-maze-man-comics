@@ -8,6 +8,7 @@ import { LINK_WORDS_AR_COMMON } from './link-words-ar-common.js';
 import { computeGridWords } from './linkDictionary.js';
 import { CURATED_EN_SHORT, CURATED_MAX_LEN } from './link-words-en-curated.js';
 import { clamp, lerp } from '../../../../../../lib/math.js';
+import { BAND_SIZE, ladderFraction, mechanicsAt } from '../../../../shared/difficulty.js';
 
 export const WORDLE_LEVELS_PER_TIER = 100;
 export const WORDLE_DIFF_KEYS = ['easy', 'medium', 'hard'];
@@ -162,17 +163,56 @@ export function scoreLinkedWord(word) {
   return n * n;
 }
 
-export function specificationForLevel(diff, lv) {
-  const key = WORDLE_DIFF_KEYS.includes(diff) ? diff : 'easy';
-  const li = clamp(lv, 1, WORDLE_LEVELS_PER_TIER);
-  const t = (li - 1) / (WORDLE_LEVELS_PER_TIER - 1);
-  const size = key === 'easy' ? 4 : 5;
-  const minLen = key === 'hard' ? 4 : 3;
-  const targetWords = Math.round(
-    lerp(key === 'easy' ? 4 : 5, key === 'easy' ? 7 : key === 'medium' ? 9 : 12, t),
-  );
-  const timeSec = Math.round(lerp(75, 55, t));
-  return { diff: key, lv: li, size, minLen, targetWords, timeSec };
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 50 levels, in five bands of ten. Replaced easy/med/hard on
+ * 2026-08-28 — see LADDER-PLAN.md and shared/difficulty.js.
+ *
+ * ⚠ Word Maze has only TWO structural states to spend — the grid grows 4→5 and
+ * the minimum word length goes 3→4 — so, like Task Switch, the honest per-band
+ * lever is the LOAD: how many words the board asks you to find. Each band steps
+ * it, which is a change the player meets directly, rather than padding the
+ * ladder with bands that are the same board slightly faster.
+ *
+ * Span unchanged at both ends: L1 is the old easy L1 (4×4 grid, 3-letter words,
+ * find 4, 75s) and L50 the old hard L100 (5×5, 4-letter minimum, find 12, 55s).
+ *
+ * ⚠ `targetWords` is what `validate:wordmaze` simulates against. It builds real
+ * boards through createRound() and asserts the findable words exceed the target
+ * by 1.5×, because a player never finds every word on a grid. Raising a band's
+ * target without running that gate can make a level unwinnable in a way nothing
+ * else would catch.
+ */
+export const LADDER = [
+  /* L1–10  */ { size: 4, minLen: 3, targetWords: 4, adds: ['find'] },
+  /* L11–20 */ { size: 4, minLen: 3, targetWords: 6, adds: [] },
+  /* L21–30 */ { size: 5, minLen: 3, targetWords: 8, adds: ['biggerGrid'] },
+  /* L31–40 */ { size: 5, minLen: 4, targetWords: 10, adds: ['longerWords'] },
+  /* L41–50 */ { size: 5, minLen: 4, targetWords: 12, adds: [] },
+];
+
+export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 50
+
+export const MECHANIC_LABELS = {
+  find: { en: 'Trace words in the grid', ar: 'تتبّع الكلمات في الشبكة' },
+  biggerGrid: { en: 'A bigger grid', ar: 'شبكة أكبر' },
+  longerWords: { en: 'Four letters minimum', ar: 'أربعة أحرف على الأقل' },
+};
+
+/** ⚠ SIGNATURE CHANGED with the ladder: one argument, no tier. */
+export function specificationForLevel(lv) {
+  const li = clamp(Math.round(Number(lv) || 1), 1, LADDER_LEVELS);
+  const b = LADDER[Math.min(LADDER.length - 1, Math.floor((li - 1) / BAND_SIZE))];
+  const t = ladderFraction(li, LADDER_LEVELS);
+  return {
+    lv: li,
+    size: b.size,
+    minLen: b.minLen,
+    targetWords: b.targetWords,
+    timeSec: Math.round(lerp(75, 55, t)),
+    mechanics: mechanicsAt(LADDER, li),
+  };
 }
 
 export function createRound(seed, spec, extra = {}, lang = 'en') {
@@ -284,33 +324,48 @@ export function gradeRound(round) {
   return { won, stars, vfs };
 }
 
-export function isWordleLevelUnlocked(diff, lv, doneMap) {
+/* ⚠ LADDER PROGRESS: flat `lad-N` keys. The old per-tier keys stay on disk so
+   migrateLadderReached can read them once and the change stays reversible. */
+export function isWordleLevelUnlocked(lv, doneMap, reached = 0) {
   if (lv <= 1) return true;
-  return !!(doneMap[`${diff}-${lv - 1}`] || doneMap[`${diff}-${lv}`]);
+  if (lv <= (reached || 0) + 1) return true;
+  return !!(doneMap[`lad-${lv - 1}`] || doneMap[`lad-${lv}`]);
 }
 
+/** Deepest level under the old tiers → a level on the ladder (best tier wins). */
+export function migrateLadderReached(doneMap) {
+  const per = LADDER_LEVELS / WORDLE_DIFF_KEYS.length;
+  let reached = 0;
+  WORDLE_DIFF_KEYS.forEach((k, i) => {
+    let deepest = 0;
+    for (const key of Object.keys(doneMap || {})) {
+      const m = key.match(/^([a-z]+)-(\d+)$/);
+      if (m && m[1] === k) deepest = Math.max(deepest, Number(m[2]) || 0);
+    }
+    if (deepest > 0) {
+      reached = Math.max(reached, Math.round(i * per + (deepest / WORDLE_LEVELS_PER_TIER) * per));
+    }
+  });
+  return Math.max(0, Math.min(LADDER_LEVELS, reached));
+}
+
+/** Survival stage → a level on the ladder (it used to be a tier + a level). */
 export function freeStageToDiffLv(stage) {
   const s = Math.max(0, stage | 0);
-  const max = WORDLE_PROGRESS_ORDER.length * WORDLE_LEVELS_PER_TIER - 1;
-  const capped = Math.min(s, max);
-  const diffIx = Math.floor(capped / WORDLE_LEVELS_PER_TIER);
-  return {
-    diff: WORDLE_PROGRESS_ORDER[diffIx],
-    lv: (capped % WORDLE_LEVELS_PER_TIER) + 1,
-  };
+  return { lv: clamp(s + 1, 1, LADDER_LEVELS) };
 }
 
 export function prepareFreeRound(stage, seed, lang = 'en') {
-  const { diff, lv } = freeStageToDiffLv(stage);
-  const spec = specificationForLevel(diff, lv);
+  const { lv } = freeStageToDiffLv(stage);
+  const spec = specificationForLevel(lv);
   // Small per-grid target that grows slowly, on a shrinking per-grid clock.
   const targetWords = Math.min(6, 3 + Math.floor(stage / 10));
   const timeSec = Math.max(35, 60 - Math.floor(stage * 0.8));
   return createRound(seed, { ...spec, targetWords, timeSec }, { mode: 'free', freeStage: stage }, lang);
 }
 
-export function prepareLevelRound(diff, lv, seed, lang = 'en') {
-  const spec = specificationForLevel(diff, lv);
+export function prepareLevelRound(lv, seed, lang = 'en') {
+  const spec = specificationForLevel(lv);
   return createRound(seed, spec, { mode: 'level' }, lang);
 }
 
@@ -325,16 +380,17 @@ export function prepareAssessRound(seed, lang = 'en') {
   );
 }
 
-export function prepareChallengeSeed(diff = 'medium', lang = 'en') {
-  const d = WORDLE_DIFF_KEYS.includes(diff) ? diff : 'medium';
-  const lv = WORDLE_PASS_PLAY_LV[d] ?? CHALLENGE_LEVEL.lv;
+/* Pass n Play depths on the ladder — three points on one climb. */
+export const WORDLE_PP_DEPTHS = { start: 12, mid: 27, deep: 43 };
+export function prepareChallengeSeed(depth = 'mid', lang = 'en') {
+  const lv = WORDLE_PP_DEPTHS[depth] ?? WORDLE_PP_DEPTHS.mid;
   const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-  const spec = specificationForLevel(d, lv);
-  return { seed, spec, diff: d, lv, lang };
+  const spec = specificationForLevel(lv);
+  return { seed, spec, depth, lv, lang };
 }
 
 export function prepareChallengeRound(cSeed) {
-  const spec = cSeed.spec ?? specificationForLevel(CHALLENGE_LEVEL.diff, CHALLENGE_LEVEL.lv);
+  const spec = cSeed.spec ?? specificationForLevel(WORDLE_PP_DEPTHS.mid);
   return createRound(
     cSeed.seed,
     { ...spec, timeSec: 90, targetWords: 999 },

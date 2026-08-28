@@ -10,7 +10,7 @@ import { createTrialLog } from '../../../../shared/trialLog';
 import { assetUrl } from '../../../../../../lib/assetUrl';
 import {
   ACTIONS, BACKGROUNDS, CHARS,
-  buildQuestions, levelCfg, levelPassed, makeStory, passCfg, survivalCfg,
+  buildQuestions, LADDER_LEVELS, levelCfg, levelPassed, makeStory, passCfg, survivalCfg,
 } from './data.js';
 
 /*
@@ -333,7 +333,7 @@ function useSwipe({ onNext, onPrev, isAr, enabled = true }) {
   };
 }
 
-export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false }) {
+export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false }) {
   const t = isAr ? T.ar : T.en;
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 5) : 0;
@@ -378,10 +378,13 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
   const len = story ? story.target.length : 0;
 
   const cfgFor = useCallback(() => {
-    if (mode === 'levels') return levelCfg(diff, level);
-    if (mode === 'passplay') return passCfg();
+    if (mode === 'levels') return levelCfg(level);
+    // Pass n Play takes a ladder level so ModeShell's depth picker reaches the
+    // engine; Group War launches passplay with `level: null` and gets L25,
+    // which is the 5-scene / 5-question band its fixed config used to be.
+    if (mode === 'passplay') return level ? levelCfg(level) : passCfg();
     return survivalCfg(stageRef.current);
-  }, [mode, diff, level]);
+  }, [mode, level]);
 
   const newRound = useCallback(() => {
     const cfg = cfgFor();
@@ -408,12 +411,12 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
 
   useEffect(() => {
     trialLogRef.current?.discard();
-    trialLogRef.current = createTrialLog({ game: 'story-grid', mode, meta: { diff, level } });
+    trialLogRef.current = createTrialLog({ game: 'story-grid', mode, meta: { level } });
     return () => {
       trialLogRef.current?.discard();
       trialLogRef.current = null;
     };
-  }, [mode, diff, level]);
+  }, [mode, level]);
 
   useEffect(() => {
     if (phase !== 'watch' || timerPaused) return undefined;
@@ -510,7 +513,7 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
     const { n, m } = result;
     const won = m > 0 && levelPassed(n, m);
     if (mode === 'levels') {
-      trialLogRef.current?.finish({ won, score: n, level, diff });
+      trialLogRef.current?.finish({ won, score: n, level });
       trialLogRef.current = null;
       onResult({ won, score: n, summary: t.score(n, m) });
       return;
@@ -534,7 +537,7 @@ export function StoryEngine({ mode, diff, level, seed, attempt, onResult, onExit
     bestRef.current = Math.max(bestRef.current, stageRef.current);
     if (n === m) awardPoints?.(3);
     newRound();
-  }, [mode, result, onResult, ppTrials, newRound, t, playSfx, awardPoints, level, diff]);
+  }, [mode, result, onResult, ppTrials, newRound, t, playSfx, awardPoints, level]);
 
   const hudSub = mode === 'levels'
     ? (isAr ? `مستوى ${level}` : `Level ${level}`)
@@ -765,18 +768,19 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
       title={{ en: 'Story Time', ar: 'وقت القصة' }}
       hints={{
         free: { en: 'Endless · stories grow harder', ar: 'لا ينتهي · قصص أصعب' },
-        levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
+        levels: { en: '60 levels · a new twist every 10', ar: '٦٠ مستوى · جديد كل ١٠' },
         pass: { en: 'Same story and questions for all · most right wins', ar: 'نفس القصة والأسئلة للجميع · الأكثر صحة يفوز' },
       }}
-      diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      pass={{ trials: 3, scoreLabel: { en: 'correct', ar: 'صحيحة' }, lowerBetter: false, diff: 'med' }}
+      /* ONE LADDER — no easy/med/hard. See data.js LADDER. */
+      ladder={{ levels: LADDER_LEVELS }}
+      pass={{ trials: 3, scoreLabel: { en: 'correct', ar: 'صحيحة' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
         <StoryEngine
-          key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+          key={`${p.mode}-${p.level}-${p.seed}`}
           {...p}
           isAr={isAr}
           playSfx={playSfx}

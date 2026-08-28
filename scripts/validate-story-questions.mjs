@@ -27,7 +27,7 @@
  */
 import { STORIES } from '../src/features/training/domains/memory/games/story-grid/stories.js';
 import {
-  BACKGROUNDS, BASE, CHAR_IDS, LEVELS_PER_TIER, Q_STR,
+  BACKGROUNDS, LADDER, LADDER_LEVELS, CHAR_IDS, Q_STR,
   buildQuestions, levelCfg, levelPassed, makeStory, passCfg, survivalCfg,
 } from '../src/features/training/domains/memory/games/story-grid/data.js';
 import { mulberry32 } from '../src/lib/rng.js';
@@ -136,22 +136,23 @@ function checkQuestion(q, story, where) {
   checked += 1;
 }
 
-/* ── every story, every tier, many seeds ───────────────────────────────── */
-const TIERS = Object.keys(BASE);
-const LEVELS = [1, 25, 50, 75, 100];
+/* ── every story, one level per BAND, many seeds ────────────────────────
+ * On the LADDER since 2026-08-28: one level sampled from each band, plus the
+ * top, rather than five levels of each of three tiers. */
+const LEVELS = [...LADDER.map((_, b) => b * (LADDER_LEVELS / LADDER.length) + 1), LADDER_LEVELS];
 const SEEDS_PER_STORY = 12;
 
 for (const story of STORIES) {
   const len = story.beats.length;
-  for (const diff of TIERS) {
+  {
     for (const level of LEVELS) {
-      const cfg = levelCfg(diff, level);
+      const cfg = levelCfg(level);
       for (let s = 0; s < SEEDS_PER_STORY; s++) {
         const rng = mulberry32(story.id.length * 7919 + s * 104729 + level);
         // deal THIS story rather than a random one, so the bank is covered
         const dealt = makeStory(len, rng, [], [story]);
         const qs = buildQuestions(dealt, rng, cfg);
-        const where = `${story.id} ${diff}/L${level} seed${s}:`;
+        const where = `${story.id} L${level} seed${s}:`;
         if (qs.length !== cfg.questions) {
           push(`${where} asked ${qs.length} questions, the curve promises ${cfg.questions}`);
         }
@@ -197,27 +198,20 @@ for (let stage = 0; stage < 24; stage++) {
   if (JSON.stringify(qa) !== JSON.stringify(qb)) push('pass n play: the same seed asked different questions');
 }
 
-/* ── the curve: monotone within a tier, harder across tiers ────────────── */
+/* ── the curve: monotone across the whole ladder ────────────────────────
+ * The old cross-tier half of this check ("hard must beat med at the same level
+ * number") retired with the tiers — there is one climb now, so monotonicity
+ * across it says the same thing and says it at every level rather than every
+ * ninth. The band-level rules (no inert band) live in `audit:curves`. */
 const FIELDS = { len: 'up', questions: 'up', opts: 'up', memoPerPanel: 'down' };
 for (const [field, dir] of Object.entries(FIELDS)) {
-  for (const diff of TIERS) {
-    let prev = null;
-    for (let lv = 1; lv <= LEVELS_PER_TIER; lv++) {
-      const v = levelCfg(diff, lv)[field];
-      if (prev != null && ((dir === 'up' && v < prev) || (dir === 'down' && v > prev))) {
-        push(`curve: ${diff} ${field} goes ${dir === 'up' ? 'DOWN' : 'UP'} at level ${lv} (${prev} → ${v})`);
-      }
-      prev = v;
+  let prev = null;
+  for (let lv = 1; lv <= LADDER_LEVELS; lv++) {
+    const v = levelCfg(lv)[field];
+    if (prev != null && ((dir === 'up' && v < prev) || (dir === 'down' && v > prev))) {
+      push(`curve: ${field} goes ${dir === 'up' ? 'DOWN' : 'UP'} at level ${lv} (${prev} → ${v})`);
     }
-  }
-  for (let lv = 1; lv <= LEVELS_PER_TIER; lv += 9) {
-    for (let i = 1; i < TIERS.length; i++) {
-      const a = levelCfg(TIERS[i - 1], lv)[field];
-      const b = levelCfg(TIERS[i], lv)[field];
-      if ((dir === 'up' && b < a) || (dir === 'down' && b > a)) {
-        push(`curve: at level ${lv}, ${TIERS[i]} is EASIER than ${TIERS[i - 1]} on ${field} (${a} → ${b})`);
-      }
-    }
+    prev = v;
   }
 }
 

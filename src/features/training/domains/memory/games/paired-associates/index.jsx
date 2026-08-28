@@ -24,16 +24,17 @@ const PairedAssociates3DProto = lazyWithRetry(() => import('./PairedAssociates3D
  * the 3D proto and Group War keep importing from the game entry as before.
  */
 export {
-  SYMBOLS, STUDY_GAP, PAL_MIN_STUDY, BASE, levelCfg, palFreeCfg, buildPalTrial,
+  SYMBOLS, STUDY_GAP, PAL_MIN_STUDY, LADDER, LADDER_LEVELS, levelCfg, palFreeCfg, buildPalTrial,
 } from './palData.js';
-import { SYMBOLS, STUDY_GAP, PAL_MIN_STUDY, BASE, levelCfg, palFreeCfg, buildPalTrial } from './palData.js';
+import { SYMBOLS, STUDY_GAP, PAL_MIN_STUDY, LADDER_LEVELS, levelCfg, palFreeCfg, buildPalTrial } from './palData.js';
 
 const ROUNDS_PER_LEVEL = 3;
 const LEVEL_WIN = 2; // perfect trials needed
 
 export function PalEngine({
   mode,
-  diff,
+  // No `diff` — on the ladder, every mode is addressed by level. Group War
+  // still passes one (catalog.js), and it is correctly ignored.
   level,
   seed,
   attempt,
@@ -75,10 +76,14 @@ export function PalEngine({
   const [scenePhase, setScenePhase] = useState('study');
 
   const cfg = useCallback(() => {
-    if (mode === 'levels') return levelCfg(diff, level);
-    if (mode === 'passplay') return { boxes: 8, pairs: 4, study: 1400 };
+    if (mode === 'levels') return levelCfg(level);
+    /* Pass n Play takes a LADDER LEVEL now, so ModeShell's depth picker actually
+       reaches the engine. Group War still launches this in passplay with
+       `level: null` (catalog.js `hardMode: 'passplay'`), and L25 is band 3 —
+       8 boxes / 4 pairs, which is what its hard-coded config used to be. */
+    if (mode === 'passplay') return levelCfg(level || 25);
     return palFreeCfg(pairsRef.current);
-  }, [mode, diff, level]);
+  }, [mode, level]);
 
   const updateHud = useCallback(() => {
     bestRef.current = Math.max(bestRef.current, cfgRef.current.pairs);
@@ -305,22 +310,18 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
       title={{ en: 'Pair Match', ar: 'مطابقة الأزواج' }}
       hints={{
         free: { en: 'Endless practice — pairs grow', ar: 'تدريب مفتوح — تزداد الأزواج' },
-        levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
+        levels: { en: '70 levels · a new twist every 10', ar: '٧٠ مستوى · جديد كل ١٠' },
         pass: {
           en: 'Same pairs for all · pass the device',
           ar: 'نفس الأزواج للجميع · مرّر الجهاز',
         },
       }}
-      diffLabels={{
-        easy: { en: 'Easy', ar: 'سهل' },
-        med: { en: 'Medium', ar: 'متوسط' },
-        hard: { en: 'Hard', ar: 'صعب' },
-      }}
+      /* ONE LADDER — no easy/med/hard. See palData.js LADDER. */
+      ladder={{ levels: LADDER_LEVELS }}
       pass={{
         trials: 3,
         scoreLabel: { en: 'correct', ar: 'صحيحة' },
         lowerBetter: false,
-        diff: 'med',
       }}
       isAr={isAr}
       playSfx={playSfx}
@@ -328,7 +329,7 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
       workoutMode={workoutMode}
       renderEngine={(p) => (
         <PalEngine
-          key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+          key={`${p.mode}-${p.level}-${p.seed}`}
           {...p}
           isAr={isAr}
           playSfx={playSfx}

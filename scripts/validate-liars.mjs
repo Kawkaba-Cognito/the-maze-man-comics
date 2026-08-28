@@ -28,7 +28,7 @@
  * pass every other check here.
  */
 import {
-  BASE, CASES_PER_LEVEL, LEVELS_PER_TIER, QUESTION_KINDS,
+  LADDER, CASES_PER_LEVEL, LADDER_LEVELS, QUESTION_KINDS,
   answerFor, buildCase, evalStatement, levelCfg, levelPassed, passCfg,
   ruleHolds, scoreClearAll, solveWorlds, survivalCfg,
 } from '../src/features/training/domains/reasoning/games/detective/data.js';
@@ -132,19 +132,19 @@ function checkCase(c, where) {
   }
 }
 
-/* ── every tier, across the level range, many seeds ───────────────────── */
-const TIERS = Object.keys(BASE);
-const LEVELS = [1, 20, 40, 60, 80, 100];
+/* ── ONE LADDER since 2026-08-28: both edges of every band, many seeds ── */
+const LEVELS = LADDER.flatMap((_, b) => [b * 10 + 1, b * 10 + 10]);
 const SEEDS = 26;
 const seen = { question: new Map(), rule: new Map(), statement: new Map() };
 const bump = (map, k) => map.set(k, (map.get(k) || 0) + 1);
 
-for (const diff of TIERS) {
+{
+  const diff = 'L';
   for (const level of LEVELS) {
-    const cfg = levelCfg(diff, level);
+    const cfg = levelCfg(level);
     let built = 0;
     for (let s = 0; s < SEEDS; s++) {
-      const rng = mulberry32(level * 7919 + s * 104729 + diff.length * 31);
+      const rng = mulberry32(level * 7919 + s * 104729);
       for (let k = 0; k < CASES_PER_LEVEL; k++) {
         const c = buildCase(rng, cfg);
         if (!c) continue;
@@ -192,12 +192,12 @@ for (let stage = 0; stage < 30; stage += 1) {
     const missing = QUESTION_KINDS.filter((k) => !seen.question.has(k));
     push(`variety: question kind(s) never appeared anywhere: ${missing.join(', ')}`);
   }
-  /* The top tier must actually deal every shape it allows. This is the check
-   * that caught the real bug: with unweighted selection `key` came up in 0.7%
-   * of hard cases and `who` in 8%, because verdict/clearAll accept almost any
-   * dealt case while `who` needs a single consistent world. */
+  /* The TOP OF THE LADDER must actually deal every shape it allows. This is the
+   * check that caught the real bug: with unweighted selection `key` came up in
+   * 0.7% of hard cases and `who` in 8%, because verdict/clearAll accept almost
+   * any dealt case while `who` needs a single consistent world. */
   {
-    const cfg = levelCfg('hard', 100);
+    const cfg = levelCfg(LADDER_LEVELS);
     const mix = new Map();
     for (let i = 0; i < 240; i++) {
       const c = buildCase(mulberry32(i * 31337 + 7), cfg);
@@ -205,10 +205,10 @@ for (let stage = 0; stage < 30; stage += 1) {
     }
     for (const k of cfg.questions) {
       const share = (mix.get(k) || 0) / 240;
-      if (share < 0.03) push(`variety: hard L100 deals "${k}" only ${Math.round(share * 100)}% of the time — allowed but effectively absent`);
+      if (share < 0.03) push(`variety: L${LADDER_LEVELS} deals "${k}" only ${Math.round(share * 100)}% of the time — allowed but effectively absent`);
     }
     const top = [...mix.entries()].sort((a, b) => b[1] - a[1])[0];
-    if (top && top[1] / 240 > 0.45) push(`variety: hard L100 is ${Math.round(top[1] / 240 * 100)}% "${top[0]}" — one shape is swamping the tier`);
+    if (top && top[1] / 240 > 0.45) push(`variety: L${LADDER_LEVELS} is ${Math.round(top[1] / 240 * 100)}% "${top[0]}" — one shape is swamping the top of the ladder`);
   }
   const rKinds = [...seen.rule.keys()];
   if (rKinds.length < 4) push(`variety: only ${rKinds.length} rule kinds ever appeared (${rKinds.join(', ')})`);
@@ -223,25 +223,23 @@ for (let stage = 0; stage < 30; stage += 1) {
 
 /* ── the curve ────────────────────────────────────────────────────────── */
 {
-  for (const diff of TIERS) {
+  {
     let prev = null;
-    for (let lv = 1; lv <= LEVELS_PER_TIER; lv++) {
-      const c = levelCfg(diff, lv);
+    for (let lv = 1; lv <= LADDER_LEVELS; lv++) {
+      const c = levelCfg(lv);
       if (prev) {
-        if (c.suspects < prev.suspects) push(`curve: ${diff} L${lv} suspects fell (${prev.suspects} → ${c.suspects})`);
-        if (c.kit.length < prev.kit.length) push(`curve: ${diff} L${lv} statement kit shrank`);
-        if (c.questions.length < prev.questions.length) push(`curve: ${diff} L${lv} question pool shrank`);
-        if (c.evidenceChance < prev.evidenceChance - 1e-9) push(`curve: ${diff} L${lv} evidence chance fell`);
+        if (c.suspects < prev.suspects) push(`curve: L${lv} suspects fell (${prev.suspects} → ${c.suspects})`);
+        if (c.kit.length < prev.kit.length) push(`curve: L${lv} statement kit shrank`);
+        if (c.questions.length < prev.questions.length) push(`curve: L${lv} question pool shrank`);
+        if (c.evidenceChance < prev.evidenceChance - 1e-9) push(`curve: L${lv} evidence chance fell`);
+        /* A band may only ADD to the kit and the question pool — a superset
+           check, not a length check. A band that swapped one statement type for
+           another would keep the count identical and quietly remove something
+           the player had already learned to read. */
+        for (const k of prev.kit) if (!c.kit.includes(k)) push(`curve: L${lv} dropped statement type "${k}"`);
+        for (const q of prev.questions) if (!c.questions.includes(q)) push(`curve: L${lv} dropped question kind "${q}"`);
       }
       prev = c;
-    }
-  }
-  for (let lv = 1; lv <= LEVELS_PER_TIER; lv += 11) {
-    for (let i = 1; i < TIERS.length; i++) {
-      const a = levelCfg(TIERS[i - 1], lv);
-      const b = levelCfg(TIERS[i], lv);
-      if (b.suspects < a.suspects) push(`curve: at L${lv}, ${TIERS[i]} has fewer suspects than ${TIERS[i - 1]}`);
-      if (b.kit.length < a.kit.length) push(`curve: at L${lv}, ${TIERS[i]} has a smaller statement kit than ${TIERS[i - 1]}`);
     }
   }
 }
@@ -266,7 +264,7 @@ if (levelPassed(2, 4) !== false) push('pass rule: two misses out of four must no
 {
   const before = problems.length;
   const rng = mulberry32(11);
-  const c = buildCase(rng, levelCfg('med', 50));
+  const c = buildCase(rng, levelCfg(25));
   if (!c) push('self-test: could not build a case to break');
   else {
     const other = c.people.find((p) => p !== c.answer) || c.people[0];

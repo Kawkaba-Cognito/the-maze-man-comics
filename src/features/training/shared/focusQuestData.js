@@ -474,6 +474,85 @@ function poolForLevel(diff, li) {
   return list[Math.max(0, Math.min(list.length - 1, idx))];
 }
 
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 60 levels, in six bands of ten. Replaced easy/med/hard on
+ * 2026-08-28 — see LADDER-PLAN.md.
+ *
+ * ⚠ THIS LADDER IS A PATH THROUGH THE AUTHORED CURRICULUM, NOT A REWRITE OF IT.
+ *
+ * Cancellation's difficulty is not a handful of knobs — it is `TC[diff]`, a
+ * hand-built monotonic target series per tier, plus a pool, a sigmoid time
+ * curve, feature interference and conjunction strength, all keyed by tier. Every
+ * one of those 300 authored points is validated by `audit:fq`, which asserts the
+ * time granted actually covers the expert search model. Re-authoring them as one
+ * span would have thrown that away and re-opened the exact bug audit:fq exists
+ * for: a curve whose shape looked right granting 11 seconds for 44.5 seconds of
+ * work.
+ *
+ * So the ladder WALKS the existing curriculum instead: each ladder level maps to
+ * an authored (tier, level) that is already gated. Two bands per tier, each
+ * sweeping half of that tier's hundred levels. Nothing about the content moved,
+ * and audit:fq still covers every point the ladder can reach.
+ */
+export const FQ_LADDER = [
+  /* L1–10  */ { diff: 'easy', half: 0, adds: ['scan'] },
+  /* L11–20 */ { diff: 'easy', half: 1, adds: [] },
+  /* ⚠ 'medium', not 'med' — this game's tier keys are easy/medium/hard while
+     most others use easy/med/hard. Getting it wrong makes TC[diff] undefined
+     and every level of these two bands throws. audit:curves caught exactly
+     that on the first run. */
+  /* L21–30 */ { diff: 'medium', half: 0, adds: ['denser'] },
+  /* L31–40 */ { diff: 'medium', half: 1, adds: [] },
+  /* L41–50 */ { diff: 'hard', half: 0, adds: ['lookalikes'] },
+  /* L51–60 */ { diff: 'hard', half: 1, adds: [] },
+];
+
+export const FQ_LADDER_LEVELS = FQ_LADDER.length * 10; // 60
+
+export const FQ_MECHANIC_LABELS = {
+  scan: { en: 'Find every target', ar: 'جد كل الأهداف' },
+  denser: { en: 'A denser board', ar: 'لوحة أكثف' },
+  lookalikes: { en: 'Look-alike distractors', ar: 'مشتّتات متشابهة' },
+};
+
+/** Ladder level → the authored (tier, level) it plays. */
+export function ladderToTier(lv) {
+  const n = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+  const b = FQ_LADDER[Math.min(FQ_LADDER.length - 1, Math.floor((n - 1) / 10))];
+  const within = (n - 1) % 10;
+  return { diff: b.diff, li: b.half * 50 + Math.round((within / 9) * 49) + 1 };
+}
+
+/**
+ * Ladder level → the level config, via the authored curriculum.
+ *
+ * ⚠ `ladderToTier` returns a 1-BASED authored level (what `prepareLevelRound`
+ * takes), while `getLvCfg` indexes the TC arrays 0-BASED. Hence the `- 1`.
+ * Getting this wrong shifts every level by one and is invisible in play.
+ */
+export function ladderLvCfg(lv) {
+  const { diff, li } = ladderToTier(lv);
+  const cfg = getLvCfg(diff, li - 1);
+  return { ...cfg, diff, li, lv: Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1))) };
+}
+
+/** Deepest level under the old tiers → a level on the ladder. */
+export function fqMigrateLadderReached(doneMap) {
+  const order = ['easy', 'medium', 'hard'];
+  let reached = 0;
+  order.forEach((k, i) => {
+    let deepest = 0;
+    for (const key of Object.keys(doneMap || {})) {
+      const m = key.match(/^([a-z]+)-(\d+)$/);
+      if (m && m[1] === k) deepest = Math.max(deepest, Number(m[2]) || 0);
+    }
+    if (deepest > 0) reached = Math.max(reached, i * 20 + Math.round((deepest / 100) * 20));
+  });
+  return Math.max(0, Math.min(FQ_LADDER_LEVELS, reached));
+}
+
 export function getLvCfg(diff, li) {
   const m = DM[diff];
   const pool = poolForLevel(diff, li);

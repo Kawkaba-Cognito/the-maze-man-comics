@@ -11,7 +11,7 @@
  * a hand that has fully adapted must produce an aftereffect of the OPPOSITE sign.
  */
 import {
-  BASE, DIFF_KEYS, LEVELS_PER_TIER, ROLE, HIT_DEG,
+  LADDER, LADDER_LEVELS, ROLE, HIT_DEG,
   levelSchedule, survivalSchedule, passSchedule,
   perturb, angularError, targetAngles, aimAngles, summarise, levelPassed,
 } from '../src/features/training/domains/flexibility/games/mirror-world/data.js';
@@ -40,27 +40,26 @@ function checkSchedule(tag, blocks) {
 }
 
 let scheds = 0;
-for (const diff of DIFF_KEYS) {
-  for (const lv of [1, 25, 50, 75, LEVELS_PER_TIER]) {
-    checkSchedule(`${diff}/L${lv}`, levelSchedule(diff, lv));
-    scheds++;
-  }
+/* ⚠ ONE LADDER since 2026-08-28 — every level of it. */
+for (let lv = 1; lv <= LADDER_LEVELS; lv++) {
+  checkSchedule(`L${lv}`, levelSchedule(lv));
+  scheds++;
 }
 for (let s = 0; s < 36; s++) { checkSchedule(`survival/${s}`, survivalSchedule(s).blocks); scheds++; }
 checkSchedule('passplay', passSchedule());
 scheds++;
 
 /* ── 2. Difficulty goes the way it claims ── */
-for (const diff of DIFF_KEYS) {
+{
   let prev = -Infinity;
-  for (let lv = 1; lv <= LEVELS_PER_TIER; lv++) {
-    const rot = levelSchedule(diff, lv).find((b) => b.role === ROLE.ADAPT).rotation;
-    if (rot < prev) push(`${diff} L${lv}: rotation fell (${prev}→${rot})`);
+  for (let lv = 1; lv <= LADDER_LEVELS; lv++) {
+    const rot = levelSchedule(lv).find((b) => b.role === ROLE.ADAPT).rotation;
+    if (rot < prev) push(`L${lv}: rotation fell (${prev}→${rot})`);
     prev = rot;
   }
-  const lo = levelSchedule(diff, 1).find((b) => b.role === ROLE.ADAPT).rotation;
-  const hi = levelSchedule(diff, LEVELS_PER_TIER).find((b) => b.role === ROLE.ADAPT).rotation;
-  if (hi <= lo) push(`${diff}: rotation does not grow across the tier (${lo}→${hi})`);
+  const lo = levelSchedule(1).find((b) => b.role === ROLE.ADAPT).rotation;
+  const hi = levelSchedule(LADDER_LEVELS).find((b) => b.role === ROLE.ADAPT).rotation;
+  if (hi <= lo) push(`rotation does not grow across the ladder (${lo}→${hi})`);
 }
 
 /* ── 3. The geometry does what the game says it does ── */
@@ -85,8 +84,10 @@ function simulate(blocks, adaptRate) {
   return reaches;
 }
 
-for (const diff of DIFF_KEYS) {
-  const blocks = levelSchedule(diff, 60);
+/* One probe per BAND, so every structural setting is exercised. */
+for (const diff of LADDER.map((_, b) => `band ${b + 1}`)) {
+  const bandIdx = Number(diff.split(' ')[1]) - 1;
+  const blocks = levelSchedule(bandIdx * 10 + 5);
   const rot = blocks.find((b) => b.role === ROLE.ADAPT).rotation;
 
   // A player who never learns should show error ≈ the rotation and NO aftereffect.
@@ -162,15 +163,15 @@ function simulateButtonUser(blocks, adaptRate = 0.6) {
 }
 
 let padFails = 0;
-for (const diff of DIFF_KEYS) {
-  for (let lv = 1; lv <= LEVELS_PER_TIER; lv++) {
-    const blocks = levelSchedule(diff, lv);
+{
+  for (let lv = 1; lv <= LADDER_LEVELS; lv++) {
+    const blocks = levelSchedule(lv);
     const sum = summarise(simulateButtonUser(blocks), blocks);
     if (!levelPassed(sum)) {
       padFails++;
       if (padFails <= 5) {
         const rot = blocks.find((b) => b.role === ROLE.ADAPT).rotation;
-        push(`${diff} L${lv} (rot ${rot}°): the direction pad CANNOT pass this level `
+        push(`L${lv} (rot ${rot}°): the direction pad CANNOT pass this level `
           + `— best residual ${Math.abs(Math.round(sum.late))}°, needs ≤ ${HIT_DEG + 6}°`);
       }
     }
@@ -178,8 +179,8 @@ for (const diff of DIFF_KEYS) {
 }
 if (padFails > 5) push(`…and ${padFails - 5} more levels unpassable with the direction pad`);
 
-console.log(`validate-mirror: ${scheds} schedules, ${DIFF_KEYS.length} tiers simulated, `
-  + `${DIFF_KEYS.length * LEVELS_PER_TIER} levels checked for control parity`);
+console.log(`validate-mirror: ${scheds} schedules, ${LADDER.length} bands simulated, `
+  + `${LADDER_LEVELS} levels checked for control parity`);
 if (problems.length) {
   console.error(`\nFAILED — ${problems.length} problem(s):`);
   problems.slice(0, 20).forEach((p) => console.error('  · ' + p));

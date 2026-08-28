@@ -5,6 +5,7 @@ import PlayHud from '../../../../shared/PlayHud';
 import { useGamePause } from '../../../../shared/useGamePause';
 import { makeRng } from '../../../../shared/rng';
 import { TRIVIA, TRIVIA_CATEGORIES, TABLE_FOR } from './triviaData';
+import { LADDER_LEVELS as TRIVIA_LADDER_LEVELS, levelCfg as triviaLevelCfg } from './triviaLadder.js';
 import { generateFor } from './procedural';
 
 import KawkabSprite from '../../../../shared/KawkabSprite';
@@ -16,7 +17,7 @@ import KawkabSprite from '../../../../shared/KawkabSprite';
  *
  * Kawkab climbs one step per correct answer; reach the top to clear the
  * staircase. THREE wrong answers and Kawkab is out.
- *   Levels    — topic cycles with the level; difficulty setting picks the
+ *   Levels    — topic cycles with the level; the BAND picks the
  *               question tier (Hard pulls the ★★★★ expert pool first).
  *   Survival  — endless staircases; after each clear YOU choose the next topic
  *               from three cards; question difficulty ramps as you go.
@@ -36,7 +37,6 @@ const STAIR_CSS = `
 `;
 
 const LIVES = 3;
-const STEPS = { easy: 5, med: 6, hard: 7 };
 export const survivalSteps = (stage) => Math.min(8, 5 + Math.floor(stage / 2));
 // Tier sets are tried IN ORDER — the first one with enough questions wins.
 // Survival ramps into the ★★★★ expert tier on long runs.
@@ -48,9 +48,10 @@ export const survivalTiers = (stage) =>
   : stage < 9 ? [[3]]
   : stage < 11 ? [[3, 4]]
   : [[4], [3, 4]];
-// Levels: "Hard" is expert-first (★★★★, falling back to ★★★–★★★★ if a
-// category's expert pool is thin) so hard actually feels hard.
-const levelTiers = { easy: [[1, 2]], med: [[2, 3]], hard: [[4], [3, 4]] };
+/* THE LADDER lives in triviaLadder.js — a module with no bank imports, so
+   `audit:curves` can load it. See the note at the top of that file. The old
+   `levelTiers` map that stood here made "Hard" expert-first; the ladder's bands
+   accumulate toward expert instead. */
 
 const shuffleR = (arr, rng) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
@@ -189,21 +190,21 @@ const T = {
   },
 };
 
-export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
+export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
   const t = isAr ? T.ar : T.en;
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const persist = mode !== 'passplay'; // pass n play must stay seed-deterministic
 
   const stepRef = useRef(0);
   const mistakesRef = useRef(0);
-  const stepsRef = useRef(STEPS.med);
+  const stepsRef = useRef(6);
   const queueRef = useRef([]);
   const qIdxRef = useRef(0);
   const stairsRef = useRef(0);   // survival: staircases cleared
   const scoreRef = useRef(0);    // survival: points
 
   const [category, setCategory] = useState(TRIVIA_CATEGORIES[0]);
-  const [steps, setSteps] = useState(STEPS.med);
+  const [steps, setSteps] = useState(6);
   const [step, setStep] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [q, setQ] = useState(null);
@@ -213,15 +214,15 @@ export function TriviaEngine({ mode, diff, level, seed, attempt, onResult, onExi
   const [over, setOver] = useState(null);
 
   const tiersFor = useCallback(() => {
-    if (mode === 'levels') return levelTiers[diff] || [[2]];
-    if (mode === 'passplay') return [[2, 3]];
+    if (mode === 'levels') return triviaLevelCfg(level).sets;
+    if (mode === 'passplay') return triviaLevelCfg(level || 25).sets;
     return survivalTiers(stairsRef.current);
-  }, [mode, diff]);
+  }, [mode, level]);
   const stepsForRound = useCallback(() => {
-    if (mode === 'levels') return STEPS[diff] || STEPS.med;
-    if (mode === 'passplay') return 6;
+    if (mode === 'levels') return triviaLevelCfg(level).steps;
+    if (mode === 'passplay') return triviaLevelCfg(level || 25).steps;
     return survivalSteps(stairsRef.current);
-  }, [mode, diff]);
+  }, [mode, level]);
 
   const present = useCallback(() => {
     const item = queueRef.current[qIdxRef.current % queueRef.current.length];
@@ -476,17 +477,18 @@ export default function TriviaGame({ onBack, workoutMode = false }) {
       title={{ en: 'Trivia', ar: 'معلومات' }}
       hints={{
         free: { en: '24 topics · pick your path · 3 mistakes out', ar: '٢٤ موضوعاً · اختر طريقك · ٣ أخطاء وتخرج' },
-        levels: { en: 'A new topic each level · ★ by difficulty', ar: 'موضوع جديد كل مستوى · النجوم بحسب الصعوبة' },
+        levels: { en: '50 levels · a new topic each · ★★★★ from 31', ar: '٥٠ مستوى · موضوع جديد كل مستوى · ★★★★ من ٣١' },
         pass: { en: 'Same questions for all · climb highest', ar: 'نفس الأسئلة للجميع · من يصعد أعلى' },
       }}
-      diffLabels={{ easy: { en: 'Easy ★–★★', ar: 'سهل ★–★★' }, med: { en: 'Medium ★★–★★★', ar: 'متوسط ★★–★★★' }, hard: { en: 'Expert ★★★★', ar: 'خبير ★★★★' } }}
-      pass={{ trials: 1, scoreLabel: { en: 'steps', ar: 'درجات' }, lowerBetter: false, diff: 'med' }}
+      /* ONE LADDER — no easy/med/hard. See TRIVIA_LADDER above. */
+      ladder={{ levels: TRIVIA_LADDER_LEVELS }}
+      pass={{ trials: 1, scoreLabel: { en: 'steps', ar: 'درجات' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
-        <TriviaEngine key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
+        <TriviaEngine key={`${p.mode}-${p.level}-${p.seed}`} {...p} isAr={isAr} playSfx={playSfx} awardPoints={awardPoints} awardFreeRun={awardFreeRun} />
       )}
     />
   );

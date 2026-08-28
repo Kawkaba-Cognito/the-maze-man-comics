@@ -31,6 +31,10 @@ export const STR_COMMON = {
     hubMapAria: 'Modes',
     hubTag: 'training',
     keep: 'Keep playing',
+    /* THE LADDER (2026-08-28). Games migrated off easy/med/hard use these two
+       instead of `pickDiff`; a ladder game never shows a difficulty screen. */
+    ladderBlurb: (n) => `${n} levels · one ladder · unlock in order`,
+    ladderPickLevel: 'Choose starting level',
     levelCleared: 'Level cleared! ✓',
     levelMode: 'Level mode',
     levels: 'Levels',
@@ -91,6 +95,8 @@ export const STR_COMMON = {
     hubMapAria: 'الأوضاع',
     hubTag: 'تدريب',
     keep: 'متابعة اللعب',
+    ladderBlurb: (n) => `${n} مستوى · سلّم واحد · افتح بالترتيب`,
+    ladderPickLevel: 'اختر مستوى البداية',
     levelCleared: 'أحسنت! ✓',
     levelMode: 'وضع المستويات',
     levels: 'المستويات',

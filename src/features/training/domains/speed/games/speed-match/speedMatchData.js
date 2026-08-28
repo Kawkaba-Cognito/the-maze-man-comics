@@ -11,22 +11,29 @@
  * accuracy, mean response time, RT variability (ICV) and efficiency (IES).
  * ========================================================================== */
 
-import { SH } from '../../../../shared/focusQuestData';
-import { mulberry32, shuffle } from '../../../../../../lib/rng';
-import { clamp, lerp } from '../../../../../../lib/math';
+/* ⚠ EXPLICIT .js ON ALL THREE. Vite resolves extensionless paths, plain Node
+   does not — and `audit:curves` imports this module directly. Dropping an
+   extension here does not break the app, it breaks the GATE, which is the kind
+   of failure that only shows up in CI. Caught exactly this way on 2026-08-28
+   when speed-match was first registered. */
+import { SH } from '../../../../shared/focusQuestData.js';
+import { mulberry32, shuffle } from '../../../../../../lib/rng.js';
+import { clamp, lerp } from '../../../../../../lib/math.js';
+import { BAND_SIZE, ladderFraction, mechanicsAt } from '../../../../shared/difficulty.js';
 
 export { SH, mulberry32 };
 
+/*
+ * ⚠ THESE TWO SURVIVE ONLY TO READ OLD SAVES (2026-08-28, the ladder).
+ * `migrateLadderReached` parses per-tier keys like `hard-40` out of a profile
+ * written before the migration. Nothing else uses them, and the labels/
+ * descriptions that stood beside them (`SM_DM`, `SM_PROGRESS_ORDER`) are gone
+ * with the difficulty screen they fed.
+ */
 export const SM_DIFF_KEYS = ['easy', 'medium', 'hard'];
-export const SM_PROGRESS_ORDER = SM_DIFF_KEYS;
 export const SM_LEVELS_PER_TIER = 100;
-export const SM_FREE_LIVES = 3;
 
-export const SM_DM = {
-  easy: { label: 'Easy', pop: '4–6 symbols · relaxed pace', lvc: 'fq-lve' },
-  medium: { label: 'Medium', pop: '5–7 symbols · brisk', lvc: 'fq-lvm' },
-  hard: { label: 'Hard', pop: '6–9 symbols · rapid · fixed key', lvc: 'fq-lvh' },
-};
+export const SM_FREE_LIVES = 3;
 
 /** Curated distinct glyphs (rendered via the shared SH SVG set). */
 export const SM_SYMBOLS = [
@@ -34,15 +41,10 @@ export const SM_SYMBOLS = [
   'cross', 'hexagon', 'heart', 'pentagon', 'lightning',
 ];
 
-/** Pass-n-Play uses a representative level per difficulty. */
-export const SM_PASS_PLAY_LV = { easy: 12, medium: 12, hard: 12 };
+/* Pass n Play depths on the ladder — three points on one climb, replacing the
+   three tier choices. Same idea as ModeShell's start/mid/deep. */
+export const SM_PP_DEPTHS = { start: 15, mid: 33, deep: 51 };
 const PASS_PLAY_DURATION = 45;
-
-const BOUNDS = {
-  easy: { pairs: [4, 6], target: [12, 22], minAcc: 0.8, remapEvery: 0, itemMs: [2600, 1900] },
-  medium: { pairs: [5, 7], target: [16, 30], minAcc: 0.82, remapEvery: 0, itemMs: [2200, 1500] },
-  hard: { pairs: [6, 9], target: [20, 38], minAcc: 0.85, remapEvery: 0, itemMs: [1800, 1050] },
-};
 
 const LEVEL_DURATION = 60;
 
@@ -67,23 +69,56 @@ export function bankGainMs(legendSize) {
 
 
 
-/** Block parameters for a tier level (1–100). */
-export function specForLevel(diff, levelIndex) {
-  const key = SM_DIFF_KEYS.includes(diff) ? diff : 'easy';
-  const lv = clamp(Math.floor(levelIndex) || 1, 1, SM_LEVELS_PER_TIER);
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 60 levels, in six bands of ten. Replaced easy/med/hard on
+ * 2026-08-28 — see LADDER-PLAN.md and shared/difficulty.js.
+ *
+ * `pairCount` — how many symbol→digit pairs the key holds — is the structural
+ * lever, and it has exactly six useful values (4..9). This is a coding-speed
+ * task in the WAIS Digit Symbol family, so each extra pair is a real step in
+ * how much of the key you must hold rather than look up.
+ *
+ * Span unchanged at both ends: L1 is the old easy L1 (4 pairs, 2600ms an item)
+ * and L60 the old hard L100 (9 pairs, 1050ms, 85% accuracy floor).
+ */
+export const LADDER = [
+  /* L1–10  */ { pairCount: 4, minAcc: 0.80, adds: ['match'] },
+  /* L11–20 */ { pairCount: 5, minAcc: 0.80, adds: ['fivePairs'] },
+  /* L21–30 */ { pairCount: 6, minAcc: 0.82, adds: ['sixPairs'] },
+  /* L31–40 */ { pairCount: 7, minAcc: 0.82, adds: ['sevenPairs'] },
+  /* L41–50 */ { pairCount: 8, minAcc: 0.85, adds: ['eightPairs'] },
+  /* L51–60 */ { pairCount: 9, minAcc: 0.85, adds: ['ninePairs'] },
+];
+
+export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 60
+
+export const MECHANIC_LABELS = {
+  match: { en: 'Match symbol to digit', ar: 'طابق الرمز بالرقم' },
+  fivePairs: { en: 'Five in the key', ar: 'خمسة في المفتاح' },
+  sixPairs: { en: 'Six in the key', ar: 'ستة في المفتاح' },
+  sevenPairs: { en: 'Seven in the key', ar: 'سبعة في المفتاح' },
+  eightPairs: { en: 'Eight in the key', ar: 'ثمانية في المفتاح' },
+  ninePairs: { en: 'Nine in the key', ar: 'تسعة في المفتاح' },
+};
+
+/** ⚠ SIGNATURE CHANGED with the ladder: one argument, no tier. */
+export function specForLevel(levelIndex) {
+  const lv = clamp(Math.floor(Number(levelIndex)) || 1, 1, LADDER_LEVELS);
+  const b = LADDER[Math.min(LADDER.length - 1, Math.floor((lv - 1) / BAND_SIZE))];
   // Front-loaded curve (^0.85): the climb is felt earlier so levels feel more
-  // distinct where players are; level 1 and 100 unchanged.
-  const t = Math.pow((lv - 1) / (SM_LEVELS_PER_TIER - 1), 0.85);
-  const b = BOUNDS[key];
+  // distinct where players actually are.
+  const t = ladderFraction(lv, LADDER_LEVELS);
   return {
-    diff: key,
     lv,
-    pairCount: Math.round(lerp(b.pairs[0], b.pairs[1], t)),
+    pairCount: b.pairCount,
     durationSec: LEVEL_DURATION,
-    targetCorrect: Math.round(lerp(b.target[0], b.target[1], t)),
+    targetCorrect: Math.round(lerp(12, 38, t)),
     minAcc: b.minAcc,
-    remapEvery: b.remapEvery,
-    itemMs: Math.round(lerp(b.itemMs[0], b.itemMs[1], t)),
+    remapEvery: 0,
+    itemMs: Math.round(lerp(2600, 1050, t)),
+    mechanics: mechanicsAt(LADDER, lv),
   };
 }
 
@@ -254,40 +289,66 @@ export function gradeBlock(summary, spec, { freeMode = false } = {}) {
   return { won, stars, score };
 }
 
-export function isLevelUnlocked(diff, lv, doneMap) {
+/*
+ * ⚠ LADDER PROGRESS (2026-08-28). Cleared levels are stored flat under `lad-N`.
+ *
+ * The old per-tier keys (`easy-12`) are NOT deleted — `migrateLadderReached`
+ * reads them once to work out how far the player had got, and they stay on disk
+ * so this is reversible. Migrations that overwrite are how "it erased my
+ * progress" happens, and localStorage has no undo.
+ */
+export function isLevelUnlocked(lv, doneMap, reached = 0) {
   if (lv <= 1) return true;
-  const key = (d, L) => `${d}-${L}`;
-  return !!(doneMap[key(diff, lv - 1)] || doneMap[key(diff, lv)]);
+  if (lv <= (reached || 0) + 1) return true;
+  return !!(doneMap[`lad-${lv - 1}`] || doneMap[`lad-${lv}`]);
 }
 
+/**
+ * Deepest level reached under the old tiers → a level on the new ladder.
+ * Same rule ModeShell uses: map each old tier onto its third of the ladder and
+ * take the best. Returns 0 when there is nothing to migrate.
+ */
+export function migrateLadderReached(doneMap) {
+  const per = LADDER_LEVELS / SM_DIFF_KEYS.length;
+  let reached = 0;
+  SM_DIFF_KEYS.forEach((k, i) => {
+    let deepest = 0;
+    for (const key of Object.keys(doneMap || {})) {
+      const m = key.match(/^(\w+)-(\d+)$/);
+      if (m && m[1] === k) deepest = Math.max(deepest, Number(m[2]) || 0);
+    }
+    if (deepest > 0) {
+      reached = Math.max(reached, Math.round(i * per + (deepest / SM_LEVELS_PER_TIER) * per));
+    }
+  });
+  return Math.max(0, Math.min(LADDER_LEVELS, reached));
+}
+
+/** Survival stage → a level on the ladder (it used to be a tier + a level). */
 export function freeStageToDiffLv(stageIndex) {
   const s = Math.max(0, stageIndex | 0);
-  const maxLinear = SM_PROGRESS_ORDER.length * SM_LEVELS_PER_TIER - 1;
-  const capped = Math.min(s, maxLinear);
-  const diffIx = Math.floor(capped / SM_LEVELS_PER_TIER);
-  const lv = (capped % SM_LEVELS_PER_TIER) + 1;
-  return { diff: SM_PROGRESS_ORDER[diffIx], lv };
+  const lv = clamp(s + 1, 1, LADDER_LEVELS);
+  return { lv };
 }
 
 /* --- Block / seed preparation -------------------------------------------- */
-export function prepareLevelBlock(diff, lv) {
-  const spec = specForLevel(diff, lv);
+export function prepareLevelBlock(lv) {
+  const spec = specForLevel(lv);
   const legend = buildLegend(spec.pairCount);
-  return { mode: 'level', diff, lv, spec, legend };
+  return { mode: 'level', lv: spec.lv, spec, legend };
 }
 
-export function prepareChallengeSeed(diff = 'hard') {
-  const d = SM_DIFF_KEYS.includes(diff) ? diff : 'hard';
-  const lv = SM_PASS_PLAY_LV[d] ?? 12;
+export function prepareChallengeSeed(depth = 'mid') {
+  const lv = SM_PP_DEPTHS[depth] ?? SM_PP_DEPTHS.mid;
   const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
-  const base = specForLevel(d, lv);
+  const base = specForLevel(lv);
   const spec = { ...base, durationSec: PASS_PLAY_DURATION };
-  return { seed, diff: d, lv, spec };
+  return { seed, depth, lv, spec };
 }
 
 export function prepareChallengeBlock(cSeed) {
   const spec = cSeed.spec;
   // Deterministic legend so every player faces the same key + symbol stream.
   const legend = buildLegend(spec.pairCount, mulberry32(cSeed.seed));
-  return { mode: 'challenge', diff: spec.diff, lv: spec.lv, spec, legend, seed: cSeed.seed };
+  return { mode: 'challenge', lv: spec.lv, spec, legend, seed: cSeed.seed };
 }

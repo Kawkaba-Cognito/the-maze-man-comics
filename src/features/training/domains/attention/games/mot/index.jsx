@@ -52,7 +52,8 @@ const ASSESS_TRACK_MS = 6000;
 // a big sparse field is why this used to be trivially easy.
 //
 // `total` = objects in the arena (the density knob); `targets` = load.
-export const MOT_CAP = 5; // max simultaneously trackable targets (capacity ceiling)
+export { MOT_CAP, LADDER, LADDER_LEVELS, levelConfig } from './motData.js';
+import { MOT_CAP, LADDER_LEVELS, levelConfig } from './motData.js';
 
 // Survival/free + pass-n-play: r = escalation index. Reaches peak by ~r=16.
 export function freeConfig(r) {
@@ -113,21 +114,7 @@ export function freeConfig(r) {
  * tracking duration 3s -> 9s across the curve. Both produce close encounters,
  * which is what actually causes tracking errors (Franconeri 2008; Feria 2012).
  */
-const BASE = {
-  easy: { t0: 2, t1: 3, n0: 5,  n1: 7,  s0: 0.09, s1: 0.17, tr0: 3000, tr1: 4500 },
-  med:  { t0: 3, t1: 4, n0: 7,  n1: 9,  s0: 0.17, s1: 0.25, tr0: 4500, tr1: 6500 },
-  hard: { t0: 4, t1: 5, n0: 9,  n1: 12, s0: 0.25, s1: 0.33, tr0: 6500, tr1: 9000 },
-};
-function levelConfig(diff, level) {
-  const b = BASE[diff] || BASE.med;
-  // Front-loaded curve (^0.85): difficulty is felt climbing earlier (more distinct
-  // levels where players actually are); endpoints (level 1 / 100) are unchanged.
-  const u = Math.pow(clamp(((level || 1) - 1) / 99, 0, 1), 0.85);
-  const targets = clamp(Math.round(lerp(b.t0, b.t1, u)), 1, MOT_CAP);
-  return { targets, total: Math.round(lerp(b.n0, b.n1, u)), speedFrac: lerp(b.s0, b.s1, u), trackMs: Math.round(lerp(b.tr0, b.tr1, u)) };
-}
-
-export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
+export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 6) : 0;
   const wrapRef = useRef(null);
@@ -262,14 +249,14 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
   }, []);
 
   const nextParams = useCallback(() => {
-    if (mode === 'levels') return levelConfig(diff, level);
+    if (mode === 'levels') return levelConfig(level);
     if (mode === 'passplay') return freeConfig(2 + roundIdxRef.current);
     if (mode === 'assess') {
       return { targets: ASSESS_TARGETS, total: ASSESS_TOTAL, speedFrac: staircaseRef.current?.speed ?? 0.26, trackMs: ASSESS_TRACK_MS };
     }
     // Survival ramps by ROUND (no clock — it ends on lives, see evaluate).
     return freeConfig(freeRoundRef.current);
-  }, [mode, diff, level]);
+  }, [mode, level]);
 
   const updateHud = useCallback(() => {
     if (mode === 'levels') {
@@ -450,7 +437,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
         roundIdxRef.current += 1;
         if (perfect) wonRef.current += 1;
         if (roundIdxRef.current >= ROUNDS_PER_LEVEL) {
-          finishLog({ won: wonRef.current >= LEVEL_WIN, level, diff });
+          finishLog({ won: wonRef.current >= LEVEL_WIN, level });
           onResult({ won: wonRef.current >= LEVEL_WIN, score: scoreRef.current, summary: isAr ? `${wonRef.current}/${ROUNDS_PER_LEVEL} جولات مثالية` : `${wonRef.current}/${ROUNDS_PER_LEVEL} perfect rounds` });
           return;
         }
@@ -473,7 +460,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
       }
       startRound();
     }, 1300);
-  }, [awardFreeRun, awardPoints, isAr, mode, onResult, playSfx, ppTrials, setPhaseBoth, startRound, finishLog, level, diff]);
+  }, [awardFreeRun, awardPoints, isAr, mode, onResult, playSfx, ppTrials, setPhaseBoth, startRound, finishLog, level]);
 
   // The 3D scene raycasts the tap and hands us the dot index; selection logic is
   // unchanged (toggle, cap at cfg.targets, auto-evaluate when the last pick lands).
@@ -509,7 +496,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
     }
     // Fresh trial log per run (a survival run, a level attempt, a pass-n-play set).
     trialLogRef.current?.discard();
-    trialLogRef.current = createTrialLog({ game: 'mot', mode, meta: { diff, level } });
+    trialLogRef.current = createTrialLog({ game: 'mot', mode, meta: { level } });
     startRound();
     return () => {
       window.removeEventListener('resize', onResize);
@@ -518,7 +505,7 @@ export function MotEngine({ mode, diff, level, seed, attempt, onResult, onExit, 
       trialLogRef.current?.discard();
       trialLogRef.current = null;
     };
-  }, [diff, fit, frame, isSurvival, level, mode, runId, seed, startRound]);
+  }, [fit, frame, isSurvival, level, mode, runId, seed, startRound]);
 
   if (over && over.assess) {
     const thr = over.threshold || 0;
@@ -637,7 +624,6 @@ export default function MotGame({ onBack, workoutMode = false, assessmentOnly = 
       <MotEngine
         key="mot-assess"
         mode="assess"
-        diff="med"
         level={1}
         seed={null}
         onResult={onBack}
@@ -655,11 +641,12 @@ export default function MotGame({ onBack, workoutMode = false, assessmentOnly = 
       title={{ en: 'Target Tracking', ar: 'تتبّع الأهداف' }}
       hints={{
         free: { en: '3 lives · gets harder each round', ar: '٣ أرواح · يزداد صعوبة كل جولة' },
-        levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
+        levels: { en: '40 levels · one more to hold every 10', ar: '٤٠ مستوى · واحد إضافي كل ١٠' },
         pass: { en: 'Same dots for all · pass the device', ar: 'نفس النقاط للجميع · مرّر الجهاز' },
       }}
-      diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      pass={{ trials: 6, scoreLabel: { en: 'perfect', ar: 'مثالية' }, lowerBetter: false, diff: 'med' }}
+      /* ONE LADDER — no easy/med/hard. See motData.js LADDER. */
+      ladder={{ levels: LADDER_LEVELS }}
+      pass={{ trials: 6, scoreLabel: { en: 'perfect', ar: 'مثالية' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}

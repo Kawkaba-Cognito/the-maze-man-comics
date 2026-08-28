@@ -1,21 +1,21 @@
 import {
   freeStageToDiffLv,
   isLevelUnlocked,
-} from '../../../../shared/focusQuestData';
+} from '../../../../shared/focusQuestData.js';
 import {
   clonePieces,
   RUSH_HOUR_BASE_LAYOUTS,
-} from './engine';
+} from './engine.js';
 import {
   RH_LEVELS_PER_TIER,
   RH_DIFF_KEYS,
   specificationForLevel,
-} from './data-spec';
+} from './data-spec.js';
 import {
   getCuratedRushHourChallenge,
   getCuratedRushHourFreeRound,
   getCuratedRushHourLevel,
-} from './curated-levels';
+} from './curated-levels.js';
 
 export { RH_LEVELS_PER_TIER, RH_DIFF_KEYS, specificationForLevel };
 
@@ -58,6 +58,62 @@ export function rhFreeRoundClearPoints(parMoves, clearStreak) {
 }
 
 
+
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 60 levels, in six bands of ten. Replaced easy/med/hard on
+ * 2026-08-28 — see LADDER-PLAN.md.
+ *
+ * ⚠ THE CURATED BANK IS NOT RE-SEQUENCED. Block Escape serves hand-built
+ * puzzles with authored difficulty, verified by `validate:rh` (which re-solves
+ * every reference board). Re-banding that content was flagged as the one
+ * irreversible step in this whole migration — so the ladder does not touch it.
+ * It is a PATH through the existing bank: each ladder level maps to an authored
+ * (tier, level) that is already in the bank and already verified. Two bands per
+ * tier, each sweeping half of that tier's hundred puzzles.
+ *
+ * The same approach the Cancellation ladder uses, for the same reason.
+ */
+export const RH_LADDER = [
+  /* L1–10  */ { diff: 'easy', half: 0, adds: ['escape'] },
+  /* L11–20 */ { diff: 'easy', half: 1, adds: [] },
+  /* L21–30 */ { diff: 'medium', half: 0, adds: ['tighter'] },
+  /* L31–40 */ { diff: 'medium', half: 1, adds: [] },
+  /* L41–50 */ { diff: 'hard', half: 0, adds: ['gridlock'] },
+  /* L51–60 */ { diff: 'hard', half: 1, adds: [] },
+];
+
+export const RH_LADDER_LEVELS = RH_LADDER.length * 10; // 60
+
+export const RH_MECHANIC_LABELS = {
+  escape: { en: 'Clear a path out', ar: 'افتح طريق الخروج' },
+  tighter: { en: 'Tighter boards', ar: 'لوحات أضيق' },
+  gridlock: { en: 'Gridlock', ar: 'ازدحام تام' },
+};
+
+/** Ladder level → the authored (tier, level) it plays. */
+export function rhLadderToTier(lv) {
+  const n = Math.min(RH_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+  const b = RH_LADDER[Math.min(RH_LADDER.length - 1, Math.floor((n - 1) / 10))];
+  const within = (n - 1) % 10;
+  return { diff: b.diff, li: b.half * 50 + Math.round((within / 9) * 49) + 1 };
+}
+
+/** Deepest level under the old tiers → a level on the ladder. */
+export function rhMigrateLadderReached(doneMap) {
+  const order = ['easy', 'medium', 'hard'];
+  let reached = 0;
+  order.forEach((k, i) => {
+    let deepest = 0;
+    for (const key of Object.keys(doneMap || {})) {
+      const m = key.match(/^([a-z]+)-(\d+)$/);
+      if (m && m[1] === k) deepest = Math.max(deepest, Number(m[2]) || 0);
+    }
+    if (deepest > 0) reached = Math.max(reached, i * 20 + Math.round((deepest / 100) * 20));
+  });
+  return Math.max(0, Math.min(RH_LADDER_LEVELS, reached));
+}
 
 export function getRushHourLevel(diffKey, levelIndex) {
   if (!RH_DIFF_KEYS.includes(diffKey)) return null;

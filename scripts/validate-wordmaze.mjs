@@ -107,27 +107,29 @@ if (CURATED_EN_4.length < 700) fail(`CURATED_EN_4 has only ${CURATED_EN_4.length
  *
  * So: build real rounds through the real code path and assert the target is
  * reachable, with headroom — a player will not find 100% of a grid's words. */
-const { specificationForLevel, createRound } = await import(new URL(`../${DIR}/wordleData.js`, import.meta.url));
+const { specificationForLevel, createRound, LADDER_LEVELS } = await import(new URL(`../${DIR}/wordleData.js`, import.meta.url));
 
 const HEADROOM = 1.5; // findable must exceed target by this factor
 let worst = null;
 let boards = 0;
-for (const diff of ['easy', 'medium', 'hard']) {
-  for (let lv = 1; lv <= 100; lv += 7) {
-    const spec = specificationForLevel(diff, lv);
+/* ⚠ ONE LADDER since 2026-08-28 — every level of it, not three tiers sampled
+   every seventh. The ladder is short enough to simulate exhaustively. */
+{
+  for (let lv = 1; lv <= LADDER_LEVELS; lv += 1) {
+    const spec = specificationForLevel(lv);
     for (let s = 0; s < 4; s += 1) {
       const round = createRound(lv * 1000 + s, spec, { mode: 'level' }, 'en');
       boards += 1;
       const findable = round.gridWords.size;
       const ratio = findable / Math.max(1, round.targetWords);
       if (!worst || ratio < worst.ratio) {
-        worst = { diff, lv, seed: s, findable, target: round.targetWords, ratio };
+        worst = { diff: 'L', lv, seed: s, findable, target: round.targetWords, ratio };
       }
     }
   }
 }
 if (worst && worst.ratio < HEADROOM) {
-  fail(`level not comfortably winnable — ${worst.diff} L${worst.lv} (seed ${worst.seed}): `
+  fail(`level not comfortably winnable — L${worst.lv} (seed ${worst.seed}): `
     + `${worst.findable} findable word(s) for a target of ${worst.target} (ratio ${worst.ratio.toFixed(2)}, need >= ${HEADROOM})`);
 }
 

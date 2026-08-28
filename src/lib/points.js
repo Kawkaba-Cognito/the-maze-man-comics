@@ -33,6 +33,23 @@ export function trainingWinPoints(diff, level = 1, levelsPerTier = 100) {
   return pointsForDifficulty01((tier + Math.min(1, within)) / 3);
 }
 
+/**
+ * Training level win on THE LADDER (2026-08-28) — one climb, no tiers.
+ *
+ * Same 0..1 scale and therefore the same 5/10/15/20 ladder as
+ * `trainingWinPoints`; the position just comes from the level's place on the
+ * whole climb rather than from a tier index plus an offset. L1 pays 5, the top
+ * level pays 20, exactly as easy-L1 → hard-L100 used to.
+ *
+ * ⚠ `trainingWinPoints` is NOT deprecated. The pre-ModeShell monoliths still on
+ * tiers (cancel-task, rush-hour, wordle) go on calling it, and so do the benched
+ * games. Deleting it would silently zero their point awards.
+ */
+export function ladderWinPoints(level = 1, levels = 50) {
+  const f = levels > 1 ? (Math.max(1, Number(level) || 1) - 1) / (levels - 1) : 0;
+  return pointsForDifficulty01(Math.min(1, f));
+}
+
 /** A win at a NAMED difficulty (no levels): easy/medium/hard/expert → 5/10/15/20. */
 export function difficultyNamePoints(name) {
   const map = { easy: 0, medium: 1, hard: 2, expert: 3, evil: 3, master: 3, insane: 3, extreme: 3 };

@@ -78,3 +78,149 @@ export function tierStage(stage, {
 export function lerp(a, b, f) {
   return a + (b - a) * f;
 }
+
+/* ── THE LADDER ───────────────────────────────────────────────────────────
+ *
+ * One climb per game, in BANDS of ten levels, replacing the easy/med/hard
+ * triple in Levels mode.
+ *
+ * ── Why ──
+ * The three tiers were never three difficulties. Measured across the seven
+ * games whose curves are gateable, the lever that decides what the game IS
+ * never moved inside a tier — Keep Track was `targets: 2→2` for a hundred
+ * levels, Math Gates `opCount: 2→2`, Story Time `len: 4→4`. Only timing and
+ * count nudged. So "Easy" was not an easier version of the game, it was a
+ * DIFFERENT game hidden behind a menu word, and the seven-of-twenty-three
+ * levers where finishing Easy already exceeded starting Hard meant the
+ * intended journey stepped backwards as often as forwards.
+ *
+ * A band is the unit of a new thing. Numeric levers ramp continuously
+ * underneath, so a band is never merely "the same, slightly faster".
+ *
+ * ⚠ A BAND'S `adds` MUST NAME SOMETHING THE PLAYER CAN SEE ARRIVE.
+ * Intercept already proves the shape (`mechanics()` in its data.js returns
+ * strike · nogo · barrel · armour · canopy · shuffle) and it also proves the
+ * ceiling: six, not ten. A game with six real mechanics gets a 60-level
+ * ladder. Padding it to 100 with invented levers is how you get the tier
+ * problem back — a longer ladder that measures the same thing throughout.
+ * LADDERS MAY GROW as features are authored; they must never be padded to a
+ * target length. Growing is safe under strict unlock (a player's cleared
+ * levels stay cleared); shrinking takes levels away from people.
+ *
+ * ⚠ IMPORT WITH AN EXPLICIT .js EXTENSION — see the warning at the top of
+ * this file. The gates run in plain Node and cannot resolve it otherwise.
+ */
+
+/** Levels per band. Ten, so "a new thing every ~10 levels" is literal. */
+export const BAND_SIZE = 10;
+
+/** 0-based band index for a 1-based level. */
+export function bandIndex(level, bandSize = BAND_SIZE) {
+  return Math.max(0, Math.floor(((Number(level) || 1) - 1) / bandSize));
+}
+
+/**
+ * Normalised position along the WHOLE ladder — 0 at L1, 1 at the last level.
+ *
+ * Deliberately the same curve contract as `levelFraction`, so a game's
+ * continuous levers migrate without being re-tuned: only the span changes.
+ */
+export function ladderFraction(level, levels, curve = CURVE.FRONT) {
+  return levelFraction(level, levels, curve);
+}
+
+/**
+ * Every mechanic in play at `level` — the union of `adds` from band 0 up to
+ * and including this level's band.
+ *
+ * This is what a gate should assert rises, and what the level grid should
+ * eventually show. Cumulative on purpose: a mechanic introduced at L21 is
+ * still there at L60, so the count is monotonic by construction and a band
+ * cannot quietly drop a mechanic to make room for another.
+ */
+export function mechanicsAt(bands, level, bandSize = BAND_SIZE) {
+  const upto = Math.min(bandIndex(level, bandSize), bands.length - 1);
+  const seen = [];
+  for (let i = 0; i <= upto; i++) {
+    for (const m of bands[i]?.adds || []) if (!seen.includes(m)) seen.push(m);
+  }
+  return seen;
+}
+
+/* ── WEIGHTED CONTENT POOLS ───────────────────────────────────────────────
+ *
+ * Some games do not scale by turning a knob — they scale by WHICH CONTENT they
+ * serve. Word Links, Trivia and Sort It Another Way all tag their banks
+ * `easy` / `med` / `hard` (or by star rating) and the old tiers simply filtered
+ * to one of them. That is a sliding window, and on a ladder it reads badly:
+ * Sort It Another Way has only THREE sets per tier, so a band that drew from
+ * one tier alone would cycle the same three boards for ten levels — the exact
+ * repetition the ladder exists to remove.
+ *
+ * So a band declares an explicit WEIGHT MAP instead. The pool accumulates as
+ * you climb and the newest tier dominates:
+ *
+ *     { easy: 0.15, med: 0.45, hard: 0.40 }
+ *
+ * ⚠ EXPLICIT, NOT COMPUTED. A decay formula would be shorter, but the mix is a
+ * content judgement per game — how soon `hard` should take over depends on how
+ * much hard content exists, and Word Links has 12 hard items against 16 medium.
+ * Written out, it is readable, authorable, and the gate can assert it directly.
+ */
+
+/** Pick a key from a `{key: weight}` map. Weights need not sum to 1. */
+export function pickWeighted(weights, rng = Math.random) {
+  const keys = Object.keys(weights || {}).filter((k) => weights[k] > 0);
+  if (!keys.length) return null;
+  const total = keys.reduce((s, k) => s + weights[k], 0);
+  // One roll, once. (An earlier draft called rng() twice and multiplied the
+  // bare Math.random reference by `total`, giving NaN for a non-function rng —
+  // which would have silently always returned the last key.)
+  const roll = typeof rng === 'function' ? rng() : Math.random();
+  let r = roll * total;
+  for (const k of keys) {
+    r -= weights[k];
+    if (r <= 0) return k;
+  }
+  return keys[keys.length - 1];
+}
+
+/**
+ * A single number for "how hard is this mix" — the weighted mean rank of the
+ * tiers in play, normalised to 0..1.
+ *
+ * This is what makes a weighted pool GATEABLE. `audit:curves` compares numbers,
+ * and a band that widened its pool without shifting weight toward the harder
+ * end would otherwise look like progress while playing identically. Register it
+ * as a structural field and a band cannot go sideways.
+ */
+export function tierMass(weights, order) {
+  const keys = Object.keys(weights || {}).filter((k) => weights[k] > 0);
+  if (!keys.length) return 0;
+  const span = Math.max(1, order.length - 1);
+  let sum = 0; let total = 0;
+  for (const k of keys) {
+    const rank = order.indexOf(k);
+    if (rank < 0) continue;
+    sum += weights[k] * (rank / span);
+    total += weights[k];
+  }
+  return total ? Math.round((sum / total) * 1000) / 1000 : 0;
+}
+
+/**
+ * Survival stage → a level on the ladder.
+ *
+ * Replaces `tierStage` for migrated games. `tierStage` stays for the games
+ * still on tiers (and for Mirror World, which shares it) — do not delete it.
+ *
+ * `stages` is how many survival stages it takes to reach the top of the
+ * ladder; beyond that the level clamps, which is correct: Survival's own
+ * ramp keeps tightening after the ladder runs out.
+ */
+export function ladderStage(stage, { levels, stages = 36, curve = CURVE.FRONT } = {}) {
+  const s = Math.max(0, Math.floor(Number(stage) || 0));
+  const t = Math.min(1, s / Math.max(1, stages));
+  const lv = 1 + Math.round(t * (levels - 1));
+  return { lv, f: ladderFraction(lv, levels, curve) };
+}

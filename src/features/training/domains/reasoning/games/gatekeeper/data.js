@@ -36,7 +36,9 @@
  * ⚠ Every import here must carry its explicit `.js`. Vite resolves
  * extensionless paths, plain Node does not, and the gate runs in Node.
  */
-import { levelFraction, tierStage } from '../../../../shared/difficulty.js';
+import {
+  BAND_SIZE, ladderFraction, ladderStage, mechanicsAt,
+} from '../../../../shared/difficulty.js';
 
 /* ── THE TRAVELLERS ───────────────────────────────────────────────────────
  * Four attributes, deliberately orthogonal, so a law about one of them says
@@ -417,42 +419,53 @@ const POOL_ALL = [...POOL_TWIST, 'boss'];
  * The gate asserts the hypothesis space strictly grows across that sequence,
  * which is the check that caught the inert counting family above.
  */
-export const BASE = {
-  easy: {
-    pools: [POOL_SIMPLE, POOL_SIMPLE],
-    g0: 3, g1: 4,
-    p0: 5, p1: 5,
-    fill0: false, fill1: true,
-  },
-  med: {
-    pools: [POOL_JOIN, POOL_JOIN],
-    g0: 4, g1: 4,
-    p0: 5, p1: 4,
-    fill0: true, fill1: true,
-  },
-  hard: {
-    pools: [POOL_TWIST, POOL_ALL],
-    g0: 4, g1: 5,
-    p0: 4, p1: 3,
-    fill0: true, fill1: true,
-  },
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 50 levels, in five bands of ten. Replaced easy/med/hard on
+ * 2026-08-28 — see LADDER-PLAN.md and shared/difficulty.js.
+ *
+ * The tiers were already groping towards this: each split itself in half and
+ * swapped a pool at the seam. Bands make that the whole structure instead of a
+ * hidden detail — the law can say more (a wider `pool`, and `fill` adds a
+ * fourth attribute to reason about) while the budget for finding it out
+ * shrinks (`probes`).
+ *
+ * Span unchanged at both ends: L1 is the old easy L1 (the simplest pool, no
+ * fill, 5 probes) and L50 the old hard L100 (every clause type, 3 probes).
+ */
+export const LADDER = [
+  /* L1–10  */ { pool: POOL_SIMPLE, fill: false, probes: 5, adds: ['law'] },
+  /* L11–20 */ { pool: POOL_SIMPLE, fill: true, probes: 5, adds: ['fill'] },
+  /* L21–30 */ { pool: POOL_JOIN, fill: true, probes: 5, adds: ['join'] },
+  /* L31–40 */ { pool: POOL_TWIST, fill: true, probes: 4, adds: ['twist'] },
+  /* L41–50 */ { pool: POOL_ALL, fill: true, probes: 3, adds: ['boss'] },
+];
+
+export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 50
+
+export const MECHANIC_LABELS = {
+  law: { en: 'Find the law', ar: 'اكتشف القانون' },
+  fill: { en: 'Filled shapes count', ar: 'الأشكال المملوءة تُحتسب' },
+  join: { en: 'And / or clauses', ar: 'عبارات و/أو' },
+  twist: { en: 'Mixed and not-both', ar: 'مختلط ولا-كلاهما' },
+  boss: { en: 'The boss clause', ar: 'عبارة الرئيس' },
 };
 
-export const LEVELS_PER_TIER = 100;
-
-export function levelCfg(diff, level) {
-  const b = BASE[diff] || BASE.med;
-  const f = levelFraction(level, LEVELS_PER_TIER);
-  const half = f < 0.5 ? 0 : 1;
-  const pool = b.pools[half];
-  const fill = half === 0 ? b.fill0 : b.fill1;
+/** ⚠ SIGNATURE CHANGED with the ladder: one argument, no tier. */
+export function levelCfg(level) {
+  const lv = Math.min(LADDER_LEVELS, Math.max(1, Math.round(Number(level) || 1)));
+  const b = LADDER[Math.min(LADDER.length - 1, Math.floor((lv - 1) / BAND_SIZE))];
+  const f = ladderFraction(lv, LADDER_LEVELS);
+  const pool = b.pool;
+  const fill = b.fill;
   return {
     pool,
     fill,
-    gates: Math.round(b.g0 + (b.g1 - b.g0) * f),
-    // rounded DOWN so the promised budget is never one probe better than the
-    // curve says — a guarantee made on a rounding is not a guarantee
-    probes: Math.max(3, Math.floor(b.p0 + (b.p1 - b.p0) * f)),
+    gates: 3 + Math.round(f * 2),
+    // Per band now, so the promised budget is never one probe better than the
+    // curve says — a guarantee made on a rounding is not a guarantee.
+    probes: b.probes,
     lenses: 1,
     seals: 3,
     // Numeric mirrors of the list levers so audit:curves can assert they never
@@ -460,14 +473,16 @@ export function levelCfg(diff, level) {
     // that regresses silently.
     poolSize: pool.length,
     fillOn: fill ? 1 : 0,
+    mechanics: mechanicsAt(LADDER, lv),
+    lv,
     f,
   };
 }
 
-/** Survival: one continuous ramp through the tiers, then past them. */
+/** Survival: one continuous ramp up the ladder, then past it. */
 export function survivalCfg(stage) {
-  const { diff, lv } = tierStage(stage);
-  return { ...levelCfg(diff, lv), diff, lv, gates: 1 };
+  const { lv } = ladderStage(stage, { levels: LADDER_LEVELS });
+  return { ...levelCfg(lv), lv, gates: 1 };
 }
 
 /** Pass n Play: everyone faces the same gates from the same seed. */
@@ -481,6 +496,7 @@ export function passCfg() {
     seals: 3,
     poolSize: POOL_JOIN.length,
     fillOn: 0,
+    lv: 21, // the band that opens the JOIN pool — for the FAMILY heading
   };
 }
 

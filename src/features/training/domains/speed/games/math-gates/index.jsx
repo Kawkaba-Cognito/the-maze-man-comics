@@ -3,7 +3,6 @@ import { IconBack } from '../../../../shared/TrainingIcons';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
-import { survivalTier } from '../../../../shared/survival';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
 const MathGatesBoard2D = lazyWithRetry(() => import('./MathGatesBoard2D'), 'math-gates-2d');
@@ -33,8 +32,8 @@ const DESCEND_SEC = 3.8;
  * `audit:curves` can import and gate it. Re-exported here so nothing
  * downstream changes.
  */
-export { BASE, levelCfg, LEVELS_PER_TIER, MG_MIN_GAP, survivalGap } from './mathGatesData.js';
-import { BASE, levelCfg, survivalGap } from './mathGatesData.js';
+export { LADDER, LADDER_LEVELS, levelCfg, MG_MIN_GAP, survivalGap } from './mathGatesData.js';
+import { LADDER_LEVELS, levelCfg, survivalGap } from './mathGatesData.js';
 
 const PP_GATES = 12;
 
@@ -53,19 +52,26 @@ const PP_GATES = 12;
  *    comparison is forced. For × we also seed a table-confusion operand error
  *    (ans ± a) when it is parity-safe.
  */
-export function genGate(diff, f, rng) {
-  const ops = (BASE[diff] || BASE.med).ops;
+/*
+ * ⚠ Takes a CONFIG, not a tier name (2026-08-28, the ladder). `cfg.ops` is the
+ * operator set and `cfg.mag` (0/1/2) the number-magnitude band — the same three
+ * magnitude branches this used to select with `diff === 'easy'` etc., now a
+ * config value so nothing outside mathGatesData.js knows tiers ever existed.
+ */
+export function genGate(cfg, f, rng) {
+  const ops = cfg?.ops?.length ? cfg.ops : ['+', '-'];
+  const mag = cfg?.mag ?? 0;
   const op = ops[Math.floor(rng() * ops.length)];
   const ri = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
   let a, b, ans;
   if (op === '+') {
-    const hi = diff === 'easy' ? 9 + Math.round(f * 12) : diff === 'med' ? 20 + Math.round(f * 25) : 40 + Math.round(f * 55);
+    const hi = mag === 0 ? 9 + Math.round(f * 12) : mag === 1 ? 20 + Math.round(f * 25) : 40 + Math.round(f * 55);
     a = ri(1, hi); b = ri(1, hi); ans = a + b;
   } else if (op === '-') {
-    const hi = diff === 'easy' ? 9 + Math.round(f * 12) : diff === 'med' ? 25 + Math.round(f * 30) : 50 + Math.round(f * 60);
+    const hi = mag === 0 ? 9 + Math.round(f * 12) : mag === 1 ? 25 + Math.round(f * 30) : 50 + Math.round(f * 60);
     a = ri(2, hi); b = ri(1, a); ans = a - b;
   } else if (op === '×') {
-    const hi = 9 + Math.round(f * (diff === 'med' ? 2 : 4));
+    const hi = 9 + Math.round(f * (mag === 1 ? 2 : 4));
     a = ri(2, hi); b = ri(2, hi); ans = a * b;
   } else { // ÷
     const dh = 9 + Math.round(f * 3), qh = 9 + Math.round(f * 3);
@@ -153,7 +159,7 @@ function summarizeGates(events, elapsedSec) {
   return { correct, total, accuracy, accuracyPct: Math.round(accuracy * 100), correctPerMin, meanRt, icv, switchCost, perOp };
 }
 
-export function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
+export function MathGatesEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
   const ppGates = mode === 'passplay' ? (attempt?.trials || PP_GATES) : 0;
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
@@ -169,10 +175,13 @@ export function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, on
   const [sting, setSting] = useState(null);
 
   const cfg = useMemo(() => {
-    if (mode === 'levels') return levelCfg(diff, level);
-    if (mode === 'passplay') return { ...levelCfg('med', 1) };
-    return { ...levelCfg('easy', 1) };
-  }, [mode, diff, level]);
+    if (mode === 'levels') return levelCfg(level);
+    // Pass n Play takes a ladder level so ModeShell's depth picker reaches the
+    // engine; L21 is the band that opens multiplication with 4 lives, which is
+    // what the old `levelCfg('med', 1)` gave it.
+    if (mode === 'passplay') return levelCfg(level || 21);
+    return levelCfg(1);
+  }, [mode, level]);
 
   const finish = useCallback(() => {
     if (finishedRef.current) return;
@@ -212,7 +221,6 @@ export function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, on
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const dkey = mode === 'levels' ? diff : mode === 'passplay' ? 'med' : 'easy';
     const rng = makeRng(((seed ?? 1) >>> 0) ^ ((runId * 40503) >>> 0));
 
     const g = {
@@ -230,8 +238,11 @@ export function MathGatesEngine({ mode, diff, level, seed, attempt, onResult, on
       // gates you've cleared — not the wall-clock, so a slower (accurate) player
       // isn't punished and a fast one can't out-run the ramp. Reaches peak ≈36 gates.
       const f = mode === 'free' ? clamp(g.gatesPlayed / 36, 0, 1) : cfg.f;
-      const dk = mode === 'free' ? survivalTier(f) : dkey;
-      const eqObj = genGate(dk, f, rng);
+      // Survival walks the LADDER by skill rather than mapping onto tier names:
+      // the operator set and magnitude it reaches are the same ones a Levels
+      // player meets at that depth.
+      const gCfg = mode === 'free' ? levelCfg(1 + Math.round(f * (LADDER_LEVELS - 1))) : cfg;
+      const eqObj = genGate(gCfg, f, rng);
       const bandH = Math.min(g.H * 0.16, 96);
       g.gate = { y: -bandH, eq: eqObj, shownAt: performance.now() };
       g.lastMoveAt = null; // decision time is measured from this gate's onset
@@ -464,18 +475,19 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
       title={{ en: 'Math Gates', ar: 'بوابات الحساب' }}
       hints={{
         free: { en: 'Run the right gate — operations keep changing', ar: 'اعبُر البوابة الصحيحة — العمليات تتغيّر' },
-        levels: { en: '3 difficulties · 100 levels each', ar: '٣ صعوبات · ١٠٠ مستوى لكل' },
+        levels: { en: '50 levels · × at 21, ÷ at 41', ar: '٥٠ مستوى · الضرب عند ٢١ والقسمة عند ٤١' },
         pass: { en: 'Same equations for all · pass the device', ar: 'نفس المعادلات للجميع · مرّر الجهاز' },
       }}
-      diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      pass={{ trials: PP_GATES, scoreLabel: { en: 'correct', ar: 'صحيح' }, lowerBetter: false, diff: 'med' }}
+      /* ONE LADDER — no easy/med/hard. See mathGatesData.js LADDER. */
+      ladder={{ levels: LADDER_LEVELS }}
+      pass={{ trials: PP_GATES, scoreLabel: { en: 'correct', ar: 'صحيح' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
         <Suspense
-          key={`math-gates-2d-${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+          key={`math-gates-2d-${p.mode}-${p.level}-${p.seed}`}
           /* Themed, not `.c3d-root`. That class paints the 3D scene's Tide blue
              and is right in front of a 3D proto — but this game loads a 2D
              board, so the blue was a flash of a palette that never arrives. */

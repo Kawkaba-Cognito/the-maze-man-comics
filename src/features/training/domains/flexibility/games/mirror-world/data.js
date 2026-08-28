@@ -21,7 +21,9 @@
  * showing.
  */
 
-import { levelFraction, tierStage, lerp } from '../../../../shared/difficulty.js';
+import {
+  BAND_SIZE, ladderFraction, ladderStage, lerp, mechanicsAt,
+} from '../../../../shared/difficulty.js';
 
 /** Defaults for every block. A schedule row overrides only what it changes. */
 export const BLOCK_DEFAULTS = {
@@ -39,7 +41,6 @@ export const ROLE = { BASE: 'baseline', ADAPT: 'adaptation', WASH: 'washout' };
 /** Angular error (deg) under which a reach counts as on-target. */
 export const HIT_DEG = 14;
 
-export const LEVELS_PER_TIER = 100;
 
 /*
  * Tier shape. `rot` is the rotation at level 1; it grows across the tier.
@@ -50,13 +51,44 @@ export const LEVELS_PER_TIER = 100;
  * and consciously re-aim — which is a different ability, and a different thing
  * to measure. Easy ramps; Hard does not.
  */
-export const BASE = {
-  easy: { rot: 20, rotMax: 35, ramp: true, feedback: 'continuous', targets: 4, adaptReaches: 14 },
-  med: { rot: 30, rotMax: 45, ramp: true, feedback: 'continuous', targets: 6, adaptReaches: 16 },
-  hard: { rot: 40, rotMax: 60, ramp: false, feedback: 'continuous', targets: 8, adaptReaches: 18 },
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 50 levels, in five bands of ten. Replaced easy/med/hard on
+ * 2026-08-28 — see LADDER-PLAN.md and shared/difficulty.js.
+ *
+ * The rotation ramps continuously underneath (20° → 60°, the old easy L1 to the
+ * old hard L100, so neither end moved). What each band ADDS is structural: more
+ * targets to re-aim at, a longer adaptation block, and finally the loss of the
+ * gradual ramp-in, which is the hardest thing this game does — the whole
+ * distortion arrives at once and has to be absorbed cold.
+ *
+ * ⚠ `targets` is not only load here. The accessible direction pad offers the
+ * TARGET angles, so target count IS the pad's angular resolution: 4 targets
+ * means 90° steps. Raising it makes the pad finer, which is why the pad-parity
+ * simulation in validate:mirror must be re-run whenever this table changes.
+ * 156 of 300 levels were once unpassable through that route.
+ */
+export const LADDER = [
+  /* L1–10  */ { targets: 4, ramp: true, adaptReaches: 14, adds: ['mirror'] },
+  /* L11–20 */ { targets: 6, ramp: true, adaptReaches: 15, adds: ['sixWays'] },
+  /* L21–30 */ { targets: 6, ramp: true, adaptReaches: 16, adds: [] },
+  /* L31–40 */ { targets: 8, ramp: true, adaptReaches: 17, adds: ['eightWays'] },
+  /* L41–50 */ { targets: 8, ramp: false, adaptReaches: 18, adds: ['coldStart'] },
+];
+
+export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 50
+
+export const MECHANIC_LABELS = {
+  mirror: { en: 'The world is turned', ar: 'العالم مُدار' },
+  sixWays: { en: 'Six directions', ar: 'ستّ اتجاهات' },
+  eightWays: { en: 'Eight directions', ar: 'ثمانية اتجاهات' },
+  coldStart: { en: 'No gentle ramp', ar: 'بلا تدرّج' },
 };
 
-export const DIFF_KEYS = ['easy', 'med', 'hard'];
+/** Rotation at the ends of the ladder — unchanged from the old tier span. */
+const ROT_START = 20;
+const ROT_END = 60;
 
 
 
@@ -66,12 +98,16 @@ export const DIFF_KEYS = ['easy', 'med', 'hard'];
  * Always baseline → adaptation → washout. The washout is not optional and its
  * rotation is always 0; that block is where the aftereffect is measured.
  */
-export function levelSchedule(diff, level) {
-  const b = BASE[diff] || BASE.med;
-  const f = levelFraction(level, LEVELS_PER_TIER);
-  const rot = Math.round(lerp(b.rot, b.rotMax, f));
+/** ⚠ SIGNATURE CHANGED with the ladder: one argument, no tier. */
+export function levelSchedule(level) {
+  const lv = Math.min(LADDER_LEVELS, Math.max(1, Math.round(Number(level) || 1)));
+  const b = LADDER[Math.min(LADDER.length - 1, Math.floor((lv - 1) / BAND_SIZE))];
+  const f = ladderFraction(lv, LADDER_LEVELS);
+  const rot = Math.round(lerp(ROT_START, ROT_END, f));
+  // Local, NOT written onto the band — LADDER is module-level and shared.
+  const feedback = 'continuous';
   return [
-    { ...BLOCK_DEFAULTS, role: ROLE.BASE, reaches: 5, rotation: 0, targets: b.targets, feedback: b.feedback },
+    { ...BLOCK_DEFAULTS, role: ROLE.BASE, reaches: 5, rotation: 0, targets: b.targets, feedback },
     {
       ...BLOCK_DEFAULTS,
       role: ROLE.ADAPT,
@@ -79,22 +115,21 @@ export function levelSchedule(diff, level) {
       rotation: rot,
       ramp: b.ramp,
       targets: b.targets,
-      feedback: b.feedback,
+      feedback,
     },
-    { ...BLOCK_DEFAULTS, role: ROLE.WASH, reaches: 6, rotation: 0, targets: b.targets, feedback: b.feedback },
+    { ...BLOCK_DEFAULTS, role: ROLE.WASH, reaches: 6, rotation: 0, targets: b.targets, feedback },
   ];
 }
 
-/** Survival: one continuous ramp across the three tiers. */
+/** Survival: one continuous ramp up the ladder. */
 export function survivalSchedule(stage) {
-  // Shared with Keep Track via tierStage — this was duplicated byte-for-byte.
-  const { diff, lv } = tierStage(stage);
-  return { diff, lv, blocks: levelSchedule(diff, lv) };
+  const { lv } = ladderStage(stage, { levels: LADDER_LEVELS });
+  return { lv, blocks: levelSchedule(lv) };
 }
 
 /** Pass n Play: one fixed schedule so every player faces the same run. */
 export function passSchedule() {
-  return levelSchedule('med', 40);
+  return levelSchedule(25);
 }
 
 /* ── Geometry ─────────────────────────────────────────────────────────────

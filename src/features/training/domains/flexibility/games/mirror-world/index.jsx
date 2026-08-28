@@ -5,7 +5,7 @@ import { STR_COMMON } from '../../../../shared/trainingStrings';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { TrainingPauseModal, TrainingPlayHeader } from '../../../../shared/TrainingChrome';
 import {
-  ROLE, HIT_DEG, LEVELS_PER_TIER,
+  ROLE, HIT_DEG, LADDER_LEVELS,
   levelSchedule, survivalSchedule, passSchedule,
   perturb, angularError, targetAngles, aimAngles, summarise, levelPassed,
 } from './data';
@@ -38,7 +38,7 @@ const UI = {
     ...STR_COMMON.en,
     title: 'Mirror World',
     hintFree: 'Endless — the twist grows each round',
-    hintLevels: '3 difficulties · 100 levels each',
+    hintLevels: '50 levels · a new twist every 10',
     hintPass: 'Same run for everyone · pass the device',
     howTo: 'Press the white dot, then flick out to the gold one in one motion.',
     directionHint: 'No-drag controls: choose an aiming direction',
@@ -91,7 +91,7 @@ const UI = {
 };
 
 function MirrorEngine({
-  mode, diff, level, attempt, onResult, onExit, isAr, playSfx, awardFreeRun,
+  mode, level, attempt, onResult, onExit, isAr, playSfx, awardFreeRun,
 }) {
   const t = isAr ? UI.ar : UI.en;
 
@@ -116,8 +116,8 @@ function MirrorEngine({
   const blocks = useMemo(() => {
     if (mode === 'free') return survivalSchedule(stage).blocks;
     if (mode === 'passplay') return passSchedule();
-    return levelSchedule(diff, level || 1);
-  }, [mode, diff, level, stage]);
+    return levelSchedule(level || 1);
+  }, [mode, level, stage]);
 
   const block = blocks[Math.min(blockIdx, blocks.length - 1)];
 
@@ -125,7 +125,7 @@ function MirrorEngine({
     trialLogRef.current = createTrialLog({
       game: 'mirror-world',
       mode: mode === 'free' ? 'free' : mode === 'passplay' ? 'challenge' : 'level',
-      meta: { diff, lv: level },
+      meta: { lv: level },
     });
     return () => { trialLogRef.current?.discard?.(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -432,13 +432,9 @@ export default function MirrorWorldGame({ onBack, workoutMode = false }) {
         levels: { en: UI.en.hintLevels, ar: UI.ar.hintLevels },
         pass: { en: UI.en.hintPass, ar: UI.ar.hintPass },
       }}
-      diffLabels={{
-        easy: { en: 'Easy', ar: 'سهل' },
-        med: { en: 'Medium', ar: 'متوسط' },
-        hard: { en: 'Hard', ar: 'صعب' },
-      }}
-      levelCount={LEVELS_PER_TIER}
-      pass={{ trials: 1, scoreLabel: { en: 'on target', ar: 'إصابات' }, lowerBetter: false, diff: 'med' }}
+      /* ONE LADDER — no easy/med/hard. See data.js LADDER. */
+      ladder={{ levels: LADDER_LEVELS }}
+      pass={{ trials: 1, scoreLabel: { en: 'on target', ar: 'إصابات' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}

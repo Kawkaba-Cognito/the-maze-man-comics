@@ -6,6 +6,10 @@
  * gate must assert has to live in a .js module (keep-track/data.js already had
  * this shape). index.jsx re-exports it all, so nothing downstream changes.
  */
+import {
+  BAND_SIZE, ladderFraction, mechanicsAt,
+} from '../../../../shared/difficulty.js';
+
 export const TS_PP_TRIALS = 24;
 export const TS_LEVEL_TRIALS = 24;
 export const TS_WIN_ACC = 0.75;
@@ -37,7 +41,43 @@ export const TS_WIN_ACC = 0.75;
 export const TS_MIN_CSI = 450;
 export const TS_MIN_DEADLINE = 2100;
 
-export function tsCfg(mode, diff, level, ramp) {
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 50 levels, in five bands of ten. Replaced easy/med/hard on
+ * 2026-08-28 — see LADDER-PLAN.md and shared/difficulty.js.
+ *
+ * ⚠ THIS IS THE THINNEST LADDER IN THE APP, and the honest reason is that Task
+ * Switch has exactly ONE nameable mechanic — read the cue, apply that rule —
+ * plus three continuous knobs. It has no barrels, no canopy, no fourth category
+ * to hold. So rather than invent mechanics it does not have, the bands quantise
+ * `pSwitch`, which is the construct's own primary lever: a run of repeats lets
+ * a task set settle, so each band is a genuinely different switching regime
+ * rather than the same one slightly faster.
+ *
+ * That makes it the FIRST game to revisit when the deferred feature work
+ * starts — an extra rule to switch between, a third cue dimension, an
+ * occasional no-go. Until then five bands is what it honestly supports.
+ *
+ * Span unchanged at both ends: L1 is the old easy L1 (1200ms CSI, 30% switches)
+ * and L50 the old hard L100 (both perception floors, 65% switches).
+ */
+export const LADDER = [
+  /* L1–10  */ { pSwitch: 0.30, adds: ['switch'] },
+  /* L11–20 */ { pSwitch: 0.40, adds: [] },
+  /* L21–30 */ { pSwitch: 0.50, adds: [] },
+  /* L31–40 */ { pSwitch: 0.58, adds: [] },
+  /* L41–50 */ { pSwitch: 0.65, adds: [] },
+];
+
+export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 50
+
+export const MECHANIC_LABELS = {
+  switch: { en: 'Follow the cue, not the habit', ar: 'اتبع الإشارة لا العادة' },
+};
+
+/** ⚠ SIGNATURE CHANGED with the ladder: no `diff` argument. */
+export function tsCfg(mode, level, ramp) {
   if (mode === 'free') {
     const r = ramp ?? 0;
     return {
@@ -46,15 +86,17 @@ export function tsCfg(mode, diff, level, ramp) {
       deadline: Math.max(TS_MIN_DEADLINE, Math.round(3200 - r * 900)),
     };
   }
-  if (mode === 'passplay') return { csi: 700, pSwitch: 0.5, deadline: 2800 };
-  const f = ((level || 1) - 1) / 99;
-  const base = diff === 'easy' ? { csi: 1200, p: 0.3, dl: 3400 }
-    : diff === 'hard' ? { csi: 800, p: 0.5, dl: 2800 }
-      : { csi: 1000, p: 0.4, dl: 3100 };
+  const lv = Math.min(LADDER_LEVELS, Math.max(1, Math.round(Number(level) || 1)));
+  if (mode === 'passplay' && !level) return { csi: 700, pSwitch: 0.5, deadline: 2800, lv: 25 };
+  const band = LADDER[Math.min(LADDER.length - 1, Math.floor((lv - 1) / BAND_SIZE))];
+  const f = ladderFraction(lv, LADDER_LEVELS);
   return {
-    csi: Math.max(TS_MIN_CSI, Math.round(base.csi - f * (diff === 'hard' ? 350 : 450))),
-    pSwitch: Math.min(0.65, base.p + f * 0.2),
-    deadline: Math.max(TS_MIN_DEADLINE, Math.round(base.dl - f * 700)),
+    csi: Math.max(TS_MIN_CSI, Math.round(1200 - f * 750)),
+    pSwitch: band.pSwitch,
+    deadline: Math.max(TS_MIN_DEADLINE, Math.round(3400 - f * 1300)),
+    mechanics: mechanicsAt(LADDER, lv),
+    lv,
+    f,
   };
 }
 

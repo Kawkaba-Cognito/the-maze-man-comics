@@ -99,7 +99,7 @@ function hullGeometry() {
 
 export default function CarPark3DProto({
   isAr, playSfx, onBack, awardFreeRun,
-  mode = 'free', diff = 'med', level = 1, attempt = null, onResult,
+  mode = 'free', level = 1, attempt = null, onResult,
 }) {
   const t = UI[isAr ? 'ar' : 'en'];
   const wrapRef = useRef(null);
@@ -110,9 +110,9 @@ export default function CarPark3DProto({
   awardRef.current = awardFreeRun;
   const onResultRef = useRef(onResult);
   onResultRef.current = onResult;
-  // mode/diff/level/attempt are captured per mount (ModeShell remounts on change).
-  const modeCfgRef = useRef({ mode, diff, level, attempt });
-  modeCfgRef.current = { mode, diff, level, attempt };
+  // mode/level/attempt are captured per mount (ModeShell remounts on change).
+  const modeCfgRef = useRef({ mode, level, attempt });
+  modeCfgRef.current = { mode, level, attempt };
 
   const [phase, setPhase] = useState('boot'); // boot | run | over
   const [wave, setWave] = useState(1);
@@ -762,12 +762,13 @@ export default function CarPark3DProto({
     apiRef.current = {
       toggleFork: (index) => toggleFork(forkMeshes[index]),
       start: () => {
-        const { mode: m, diff: df, level: lv, attempt: at } = modeCfgRef.current;
+        const { mode: m, level: lv, attempt: at } = modeCfgRef.current;
         g.finished = false;
         g.mode = m;
         g.escalate = m === 'free';
-        const cfg = m === 'levels' ? levelCfg(df, lv)
-          : m === 'passplay' ? levelCfg('med', 30)
+        // ONE LADDER since 2026-08-28: levelCfg takes a level, no tier.
+        const cfg = m === 'levels' ? levelCfg(lv)
+          : m === 'passplay' ? levelCfg(lv || 25)
             : waveCfg(1);
         g.target = m === 'levels' ? cfg.target : 0;
         g.budget = m === 'passplay' ? (at?.trials || 16) : Infinity;

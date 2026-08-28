@@ -36,7 +36,7 @@ import './taskSwitch.css';
  * that is unguessable by design. Here the rule is always stated. You lose time,
  * never fairness.
  *
- * Modes (shared ModeShell): Survival (60s) · Levels (100 each × 3 diff) · Pass n Play.
+ * Modes (shared ModeShell): Survival (60s) · Levels (ONE ladder of 50) · Pass n Play.
  */
 
 /** Left key answers RED and CIRCLE; right key answers BLUE and SQUARE. */
@@ -48,12 +48,12 @@ const BLUE = GAME_STIMULUS[3];
  * pacing gate can import them). Re-exported here so importers are unaffected.
  */
 export {
-  TS_PP_TRIALS, TS_LEVEL_TRIALS, TS_WIN_ACC, TS_MIN_CSI, TS_MIN_DEADLINE, tsCfg, makeTrial, mean,
+  TS_PP_TRIALS, TS_LEVEL_TRIALS, TS_WIN_ACC, TS_MIN_CSI, TS_MIN_DEADLINE, LADDER, LADDER_LEVELS, tsCfg, makeTrial, mean,
 } from './taskSwitchData.js';
-import { TS_PP_TRIALS, TS_LEVEL_TRIALS, TS_WIN_ACC, tsCfg, makeTrial, mean } from './taskSwitchData.js';
+import { TS_PP_TRIALS, TS_LEVEL_TRIALS, TS_WIN_ACC, LADDER_LEVELS, tsCfg, makeTrial, mean } from './taskSwitchData.js';
 
 export function TaskSwitchEngine({
-  mode, diff, level, seed, attempt, onResult, onExit,
+  mode, level, seed, attempt, onResult, onExit,
   isAr, playSfx, awardPoints, awardFreeRun,
 }) {
   const isSurvival = mode === 'free';
@@ -148,7 +148,7 @@ export function TaskSwitchEngine({
   const nextTrial = useCallback(() => {
     if (finishedRef.current) return;
     if (!isSurvival && nRef.current >= targetTrials) { finishRound(); return; }
-    const cfg = tsCfg(mode, diff, level, rampRef.current);
+    const cfg = tsCfg(mode, level, rampRef.current);
     const tr = makeTrial(rngRef.current, prevTaskRef.current, cfg.pSwitch);
     prevTaskRef.current = tr.task;
     setTrial(tr);
@@ -173,7 +173,7 @@ export function TaskSwitchEngine({
         later(nextTrial, 520);
       }, cfg.deadline);
     }, cfg.csi);
-  }, [diff, finishRound, isSurvival, level, mode, playSfx, targetTrials]);
+  }, [finishRound, isSurvival, level, mode, playSfx, targetTrials]);
 
   useEffect(() => {
     finishedRef.current = false;
@@ -184,13 +184,13 @@ export function TaskSwitchEngine({
     trialLogRef.current = createTrialLog({
       game: 'task-switch',
       mode: mode === 'passplay' ? 'challenge' : mode,
-      meta: { diff, lv: level },
+      meta: { lv: level },
     });
     setScore(0); setCombo(0); setDone(0); setOver(null);
     later(nextTrial, 500);
     return () => { clearTimers(); trialLogRef.current?.discard(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, mode, diff, level]);
+  }, [seed, mode, level]);
 
   const respond = useCallback((side) => {
     if (!acceptRef.current || finishedRef.current || !trial) return;
@@ -337,18 +337,19 @@ export default function TaskSwitchGame({ onBack, workoutMode = false }) {
       title={{ en: 'Task Switch', ar: 'تبديل المهمة' }}
       hints={{
         free: { en: '60s survival · less warning as you go', ar: '٦٠ث بقاء · تحذير أقل كلما تقدّمت' },
-        levels: { en: '3 difficulties · shorter warning, more switching', ar: '٣ صعوبات · تحذير أقصر وتبديل أكثر' },
+        levels: { en: '50 levels · shorter warning, more switching', ar: '٥٠ مستوى · تحذير أقصر وتبديل أكثر' },
         pass: { en: 'Same trials for everyone · pass the device', ar: 'نفس المحاولات للجميع · مرّر الجهاز' },
       }}
-      diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      pass={{ trials: TS_PP_TRIALS, scoreLabel: { en: 'correct', ar: 'صحيحة' }, lowerBetter: false, diff: 'med' }}
+      /* ONE LADDER — no easy/med/hard. See taskSwitchData.js LADDER. */
+      ladder={{ levels: LADDER_LEVELS }}
+      pass={{ trials: TS_PP_TRIALS, scoreLabel: { en: 'correct', ar: 'صحيحة' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
         <TaskSwitchEngine
-          key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+          key={`${p.mode}-${p.level}-${p.seed}`}
           {...p}
           isAr={isAr}
           playSfx={playSfx}

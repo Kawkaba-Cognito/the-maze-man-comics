@@ -39,6 +39,41 @@ function loadProg(key) { return loadJson(key, {}) || {}; }
 function saveProg(key, st) { saveJson(key, st); }
 function seedFor(diff, level) { return ((diff.charCodeAt(0) * 7919) ^ (level * 104729)) >>> 0; }
 
+/*
+ * ── LADDER MIGRATION (2026-08-28) ────────────────────────────────────────
+ *
+ * A game that passes `ladder` has left easy/med/hard behind and runs ONE climb
+ * in Levels mode. Games that don't pass it are untouched — the two models
+ * coexist on purpose while the platform migrates game by game, because a
+ * big-bang switch would strand every game whose curve had not been rewritten
+ * yet.
+ *
+ * Old records are converted ONCE, on first load under the ladder, by mapping
+ * the deepest level cleared in each old tier onto the matching third of the new
+ * ladder and taking the best. Hard L40 of 100 lands at 2/3 + 40% of a third.
+ *
+ * ⚠ THE OLD `done` RECORD IS NOT DELETED. It is carried through untouched, so
+ * this is reversible: a game can be put back on tiers and the player's history
+ * is still there. Migrations that overwrite are how "it erased my progress"
+ * happens, and localStorage has no undo.
+ *
+ * ⚠ Migrated levels are UNLOCKED, not ticked. They go to `reached`, never into
+ * `lad` (the cleared list), because marking a level ✓ that the player never
+ * played is a lie the grid would tell on every visit.
+ */
+function migrateToLadder(p, levels) {
+  const done = p.done || {};
+  const per = levels / DIFF_KEYS.length;
+  let reached = 0;
+  DIFF_KEYS.forEach((k, i) => {
+    const list = Array.isArray(done[k]) ? done[k].filter((n) => Number.isFinite(n)) : [];
+    if (!list.length) return;
+    // Old tiers were always 100 levels; that is what these records are in.
+    reached = Math.max(reached, Math.round(i * per + (Math.max(...list) / 100) * per));
+  });
+  return Math.max(0, Math.min(levels, reached));
+}
+
 export default function ModeShell({
   storageKey,
   gameId: gameIdProp,
@@ -55,6 +90,9 @@ export default function ModeShell({
   scienceId,
   extraItems = [],
   survivalIntro,
+  /* { levels } — presence switches this game to the single ladder. See
+     migrateToLadder above and shared/difficulty.js for the model. */
+  ladder = null,
 }) {
   const gameId = gameIdProp || scienceId;
   const tutorial = useTrainingTutorial(gameId, isAr);
@@ -71,9 +109,17 @@ export default function ModeShell({
   ) : null;
   const passCfg = { trials: 8, scoreLabel: { en: 'Score', ar: 'النتيجة' }, lowerBetter: false, diff: 'med', ...pass };
 
+  const ladderLevels = Number(ladder?.levels) || 0;
+  const isLadder = ladderLevels > 0;
+  const effCount = isLadder ? ladderLevels : levelCount;
+
   const [prog, setProg] = useState(() => {
     const p = loadProg(storageKey);
-    return { done: { easy: [], med: [], hard: [], ...(p.done || {}) } };
+    if (!isLadder) return { done: { easy: [], med: [], hard: [], ...(p.done || {}) } };
+    if (Array.isArray(p.lad)) return { ...p, lad: p.lad, reached: p.reached || 0 };
+    const migrated = { ...p, lad: [], reached: migrateToLadder(p, ladderLevels) };
+    saveProg(storageKey, migrated);
+    return migrated;
   });
   const [phase, setPhase] = useState(workoutMode ? 'play' : 'menu');
   const [mode, setMode] = useState(workoutMode ? 'free' : null);
@@ -84,21 +130,41 @@ export default function ModeShell({
   // Pass n Play state
   const [players, setPlayers] = useState(['Player 1', 'Player 2']);
   const [rounds, setRounds] = useState(2);
-  const [ppDiff, setPpDiff] = useState(passCfg.diff);
+  const [ppDiff, setPpDiff] = useState(() => (Number(ladder?.levels) > 0 ? 'mid' : passCfg.diff));
   const [ppView, setPpView] = useState(null);
   const [ppResults, setPpResults] = useState(null);
   const scoresRef = useRef([]);
   const seedRef = useRef(1);
   const freeSeedRef = useRef(workoutMode ? freshSurvivalSeed() : null);
 
-  const dm = useMemo(() => ({
-    easy: { label: isAr ? diffLabels.easy.ar : diffLabels.easy.en },
-    med: { label: isAr ? diffLabels.med.ar : diffLabels.med.en },
-    hard: { label: isAr ? diffLabels.hard.ar : diffLabels.hard.en },
-  }), [diffLabels, isAr]);
+  /* Ladder games pass no `diffLabels` — they have no difficulties to label. */
+  const dm = useMemo(() => Object.fromEntries(DIFF_KEYS.map((k) => [
+    k, { label: diffLabels?.[k] ? (isAr ? diffLabels[k].ar : diffLabels[k].en) : '' },
+  ])), [diffLabels, isAr]);
 
-  const isUnlocked = useCallback((lv) => lv === 1 || (prog.done[diff] || []).includes(lv - 1), [prog, diff]);
-  const isDone = useCallback((lv) => (prog.done[diff] || []).includes(lv), [prog, diff]);
+  /*
+   * Pass n Play still needs a fairness knob: everyone plays the SAME board, so
+   * the table has to agree how hard it is. On a ladder that is a level rather
+   * than a tier, so the three choices become three depths on the climb. The
+   * labels are `L21`-style and therefore language-neutral, which is why no new
+   * bilingual strings were needed for them.
+   */
+  const ppLadder = useMemo(() => {
+    if (!isLadder) return null;
+    const at = (frac) => Math.max(1, Math.round(frac * ladderLevels));
+    return { start: at(0.25), mid: at(0.55), deep: at(0.85) };
+  }, [isLadder, ladderLevels]);
+  const ppKeys = isLadder ? ['start', 'mid', 'deep'] : DIFF_KEYS;
+  const ppDm = useMemo(() => (isLadder
+    ? Object.fromEntries(ppKeys.map((k) => [k, { label: `L${ppLadder[k]}` }]))
+    : dm), [isLadder, ppLadder, dm]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isUnlocked = useCallback((lv) => (isLadder
+    ? (lv === 1 || lv <= (prog.reached || 0) + 1 || (prog.lad || []).includes(lv - 1))
+    : (lv === 1 || (prog.done?.[diff] || []).includes(lv - 1))), [prog, diff, isLadder]);
+  const isDone = useCallback((lv) => (isLadder
+    ? (prog.lad || []).includes(lv)
+    : (prog.done?.[diff] || []).includes(lv)), [prog, diff, isLadder]);
 
   const goMenu = useCallback(() => { setPhase('menu'); setMode(null); setResult(null); setPpResults(null); }, []);
   /*
@@ -119,14 +185,20 @@ export default function ModeShell({
   const onLevelResult = useCallback((res) => {
     if (res.won) {
       setProg((p) => {
-        const cur = new Set(p.done[diff] || []); cur.add(level);
-        const next = { ...p, done: { ...p.done, [diff]: [...cur] } };
+        let next;
+        if (isLadder) {
+          const cur = new Set(p.lad || []); cur.add(level);
+          next = { ...p, lad: [...cur] };
+        } else {
+          const cur = new Set(p.done?.[diff] || []); cur.add(level);
+          next = { ...p, done: { ...p.done, [diff]: [...cur] } };
+        }
         saveProg(storageKey, next); return next;
       });
     }
     setResult({ ...res, diff, level });
     setPhase('result');
-  }, [diff, level, storageKey]);
+  }, [diff, level, storageKey, isLadder]);
 
   // ── Pass n Play orchestration ──
   const startPass = useCallback(() => {
@@ -162,20 +234,29 @@ export default function ModeShell({
     playSfx?.('click');
     setMode(m);
     if (m === 'free') setPhase('free-intro');
-    else if (m === 'levels') setPhase('diff');
+    // A ladder game has no difficulty screen — that is the whole point of it.
+    else if (m === 'levels') setPhase(isLadder ? 'levels' : 'diff');
     else {
-      setPpDiff(passCfg.diff);
+      setPpDiff(isLadder ? 'mid' : passCfg.diff);
       setPhase('pp-setup');
     }
   };
 
   // ── PLAY (engine) ──
   if (phase === 'play') {
-    const playSeed = mode === 'levels' ? seedFor(diff, level) : mode === 'free' ? freeSeedRef.current : null;
+    const playSeed = mode === 'levels' ? seedFor(isLadder ? 'lad' : diff, level) : mode === 'free' ? freeSeedRef.current : null;
     return renderEngine({ mode, diff, level, seed: playSeed, attempt: null, onResult: onLevelResult, onExit: workoutMode ? onBack : goMenu });
   }
   if (phase === 'pp-play') {
-    return renderEngine({ mode: 'passplay', diff: ppDiff, level: null, seed: seedRef.current, attempt: { trials: passCfg.trials }, onResult: onPassResult, onExit: goMenu });
+    return renderEngine({
+      mode: 'passplay',
+      diff: isLadder ? null : ppDiff,
+      level: isLadder ? ppLadder[ppDiff] : null,
+      seed: seedRef.current,
+      attempt: { trials: passCfg.trials },
+      onResult: onPassResult,
+      onExit: goMenu,
+    });
   }
 
   // ── Survival intro ──
@@ -236,9 +317,13 @@ export default function ModeShell({
   if (phase === 'levels') {
     return (
       <TrainingLevelGrid
-        isAr={isAr} playSfx={playSfx} onBack={() => setPhase('diff')} title={`${dm[diff]?.label ?? ''}`}
-        blurb={isAr ? `${T} · ${levelCountLabel} مستويات · افتح بالترتيب` : `${T} · ${levelCountLabel} levels · unlock in order`}
-        count={levelCount} isUnlocked={isUnlocked} isDone={isDone}
+        isAr={isAr} playSfx={playSfx}
+        onBack={isLadder ? goMenu : () => setPhase('diff')}
+        title={isLadder ? T : `${dm[diff]?.label ?? ''}`}
+        blurb={isLadder
+          ? t.ladderBlurb(effCount.toLocaleString(isAr ? 'ar-EG' : 'en-US'))
+          : (isAr ? `${T} · ${levelCountLabel} مستويات · افتح بالترتيب` : `${T} · ${levelCountLabel} levels · unlock in order`)}
+        count={effCount} isUnlocked={isUnlocked} isDone={isDone}
         sublabel={(lv) => `L${lv}`}
         onPick={(lv) => { setLevel(lv); setMode('levels'); setPhase('play'); }}
       />
@@ -247,7 +332,7 @@ export default function ModeShell({
 
   // ── Levels result ──
   if (phase === 'result' && result) {
-    const isLast = result.level >= levelCount;
+    const isLast = result.level >= effCount;
     const score = Number(result.score);
     const actions = [
       result.won && !isLast ? {
@@ -292,8 +377,8 @@ export default function ModeShell({
         <PassPlaySetup
           isAr={isAr}
           playSfx={playSfx}
-          diffKeys={DIFF_KEYS}
-          diffLabels={dm}
+          diffKeys={ppKeys}
+          diffLabels={ppDm}
           diff={ppDiff}
           onDiffChange={setPpDiff}
           players={players}
@@ -303,7 +388,7 @@ export default function ModeShell({
           roundOptions={[1, 2, 3, 4, 5]}
           onStart={startPass}
           labels={{
-            difficulty: t.chalPickDiff,
+            difficulty: isLadder ? t.ladderPickLevel : t.chalPickDiff,
             players: t.players,
             addPlayer: t.addPl,
             rounds: t.chalRounds,

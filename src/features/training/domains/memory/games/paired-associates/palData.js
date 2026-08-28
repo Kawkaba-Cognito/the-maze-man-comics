@@ -9,6 +9,10 @@
  * index.jsx re-exports everything here, so existing importers (including the
  * 3D proto and Group War) are unaffected.
  */
+import {
+  BAND_SIZE, ladderFraction, mechanicsAt,
+} from '../../../../shared/difficulty.js';
+
 export const PAIR_OBJECTS = [
   { id: 'pocket-watch', en: 'pocket watch', ar: 'ساعة جيب' },
   { id: 'ornate-key', en: 'ornate key', ar: 'مفتاح مزخرف' },
@@ -49,19 +53,48 @@ const LEVEL_WIN = 2; // perfect trials needed
  */
 export const PAL_MIN_STUDY = 900;
 
-export const BASE = {
-  easy: { boxes: 4, pairs: 2, study: 1800 },
-  med: { boxes: 6, pairs: 3, study: 1500 },
-  hard: { boxes: 8, pairs: 4, study: 1250 },
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 70 levels, in seven bands of ten. Replaced easy/med/hard on
+ * 2026-08-28 — see LADDER-PLAN.md and shared/difficulty.js.
+ *
+ * The span is unchanged at both ends: L1 is the old easy L1 (4 boxes, 2 pairs,
+ * 1800ms) and L70 is the old hard L100 (12 boxes, 8 pairs, 900ms).
+ *
+ * Seven bands because `pairs` has seven distinct values, and each one is a
+ * whole extra symbol→place binding to hold — the thing this game measures. That
+ * is a step the player feels, so it earns its ten levels. `boxes` widens the
+ * field underneath it, and `study` shrinks continuously across all seventy.
+ */
+export const LADDER = [
+  /* L1–10  */ { boxes: 4, pairs: 2, adds: ['bind'] },
+  /* L11–20 */ { boxes: 6, pairs: 3, adds: [] },
+  /* L21–30 */ { boxes: 8, pairs: 4, adds: [] },
+  /* L31–40 */ { boxes: 10, pairs: 5, adds: [] },
+  /* L41–50 */ { boxes: 12, pairs: 6, adds: [] },
+  /* L51–60 */ { boxes: 12, pairs: 7, adds: [] },
+  /* L61–70 */ { boxes: 12, pairs: 8, adds: [] },
+];
+
+export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 70
+
+export const MECHANIC_LABELS = {
+  bind: { en: 'Remember where each symbol sat', ar: 'تذكّر مكان كل رمز' },
 };
-export function levelCfg(diff, level) {
-  const b = BASE[diff] || BASE.med;
-  const f = ((level || 1) - 1) / 99;
-  const boxes = Math.min(b.boxes + Math.round(f * 4), 12);
+
+/** ⚠ SIGNATURE CHANGED with the ladder: one argument, no tier. */
+export function levelCfg(level) {
+  const lv = Math.min(LADDER_LEVELS, Math.max(1, Math.round(Number(level) || 1)));
+  const band = LADDER[Math.min(LADDER.length - 1, Math.floor((lv - 1) / BAND_SIZE))];
+  const f = ladderFraction(lv, LADDER_LEVELS);
   return {
-    boxes,
-    pairs: Math.min(b.pairs + Math.round(f * 4), boxes),
-    study: Math.max(PAL_MIN_STUDY, Math.round(b.study - f * 500)),
+    boxes: band.boxes,
+    pairs: Math.min(band.pairs, band.boxes),
+    study: Math.max(PAL_MIN_STUDY, Math.round(1800 - f * 900)),
+    mechanics: mechanicsAt(LADDER, lv),
+    lv,
+    f,
   };
 }
 

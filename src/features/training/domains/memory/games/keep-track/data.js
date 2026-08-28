@@ -23,7 +23,9 @@
  * the prototypical bird in Arabic, and Keep Track leans on typicality.
  */
 
-import { levelFraction, tierStage } from '../../../../shared/difficulty.js';
+import {
+  BAND_SIZE, ladderFraction, ladderStage, mechanicsAt,
+} from '../../../../shared/difficulty.js';
 
 export const CATEGORIES = [
   {
@@ -87,47 +89,90 @@ export const CATEGORIES = [
 /** Floor for ms-per-word, asserted by `npm run audit:pacing`. */
 export const KEEP_TRACK_MIN_RATE = 1200;
 
-export const BASE = {
-  /*
-   * `rate` is ms per stream word, and it is NOT the difficulty lever.
-   *
-   * Reported 2026-08-15 as "it goes so fast, I don't have time to memorize".
-   * It was 1500/1250/1000 falling to a 650ms floor — but every word costs the
-   * player a read, a category decision, and (if it is a target category) an
-   * overwrite of what they were holding. Miyake et al. present the keep-track
-   * stream at about 2s per word for exactly that reason. At 650ms the task
-   * stopped measuring updating and started measuring reading speed.
-   *
-   * Difficulty comes from LOAD instead — targets, pool and stream length, all
-   * of which still ramp. `audit:pacing` gates the floor so this cannot be
-   * quietly traded back for a harder-looking curve.
-   */
-  easy: { targets: 2, pool: 4, stream: 10, rate: 2200 },
-  med: { targets: 3, pool: 5, stream: 14, rate: 1900 },
-  hard: { targets: 4, pool: 6, stream: 18, rate: 1600 },
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 50 levels, in five bands of ten. This replaced easy/med/hard on
+ * 2026-08-28; Keep Track was the pilot for the platform-wide migration and the
+ * reasoning behind bands lives in `shared/difficulty.js`.
+ *
+ * The three tiers were never three difficulties HERE, and this game is the
+ * clearest case in the app: `targets` was 2→2 across all hundred Easy levels,
+ * 3→3 across Medium, 4→4 across Hard. The one lever that changes what the task
+ * asks of working memory only ever moved when the player backed out to a menu
+ * and chose a different word. Now it moves at L21 and L41, by playing.
+ *
+ * The span is unchanged at both ends — L1 is the old easy L1, L50 is the old
+ * hard L100 — so nothing got easier or harder. What went away is 250 levels of
+ * repetition in the middle.
+ *
+ * ⚠ WHY 50 AND NOT 100. Counting only mechanics a player can NAME, this game
+ * currently has three: hold two, hold three, hold four. Five bands is what that
+ * honestly supports, and the number was not chosen — it was FOUND. The first
+ * draft of this table had six bands, and `audit:curves` rejected it: L51–60
+ * introduced no mechanic and moved no structural lever, so it was ten levels of
+ * the same game slightly faster. That is the tier problem in miniature, and the
+ * fix was to delete the band rather than soften the gate.
+ *
+ * The empty `adds` below are the SLOTS for the deferred feature work, and the
+ * ladder grows when they are filled. Growing is safe (cleared levels stay
+ * cleared); shrinking takes levels away from people who earned them.
+ *
+ * ⚠ `rate` is ms per stream word, and it is NOT the difficulty lever.
+ * Reported 2026-08-15 as "it goes so fast, I don't have time to memorize". It
+ * was 1500/1250/1000 falling to a 650ms floor — but every word costs the player
+ * a read, a category decision, and (if it is a target category) an overwrite of
+ * what they were holding. Miyake et al. present the keep-track stream at about
+ * 2s per word for exactly that reason. At 650ms the task stopped measuring
+ * updating and started measuring reading speed. Difficulty comes from LOAD —
+ * targets, pool and stream length. `audit:pacing` gates the floor so this
+ * cannot be quietly traded back for a harder-looking curve.
+ */
+export const LADDER = [
+  /* L1–10  */ { targets: 2, pool: 4, adds: ['track'] },
+  /* L11–20 */ { targets: 2, pool: 5, adds: [] },
+  /* L21–30 */ { targets: 3, pool: 5, adds: ['hold3'] },
+  /* L31–40 */ { targets: 3, pool: 6, adds: [] },
+  /* L41–50 */ { targets: 4, pool: 6, adds: ['hold4'] },
+];
+
+export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 50
+
+/** What arrives at each band, for the level grid and the results screen. */
+export const MECHANIC_LABELS = {
+  track: { en: 'Track the last word', ar: 'تتبّع آخر كلمة' },
+  hold3: { en: 'A third category', ar: 'فئة ثالثة' },
+  hold4: { en: 'A fourth category', ar: 'فئة رابعة' },
 };
 
-export const LEVELS_PER_TIER = 100;
-
-/** Level config. Front-loaded (^0.85) so early levels feel distinct, like Math Gates. */
-export function levelCfg(diff, level) {
-  const b = BASE[diff] || BASE.med;
-  const f = levelFraction(level, LEVELS_PER_TIER);
+/**
+ * Level config. Front-loaded (^0.85) so early levels feel distinct.
+ *
+ * ⚠ SIGNATURE CHANGED with the ladder: `levelCfg(level)`, one argument. The
+ * old `levelCfg(diff, level)` is gone rather than shimmed, deliberately — a
+ * shim that quietly accepted a tier name would let a caller keep passing
+ * 'easy' and silently get band 0 forever.
+ */
+export function levelCfg(level) {
+  const lv = Math.min(LADDER_LEVELS, Math.max(1, Math.round(Number(level) || 1)));
+  const band = LADDER[Math.min(LADDER.length - 1, Math.floor((lv - 1) / BAND_SIZE))];
+  const f = ladderFraction(lv, LADDER_LEVELS);
   return {
-    ...b,
-    stream: b.stream + Math.round(f * 8),
+    targets: band.targets,
+    pool: band.pool,
+    stream: 10 + Math.round(f * 16),
     // Floor 1200ms: still brisk, still readable. The old floor was 650.
-    rate: Math.max(KEEP_TRACK_MIN_RATE, Math.round(b.rate - f * 420)),
+    rate: Math.max(KEEP_TRACK_MIN_RATE, Math.round(2200 - f * 1000)),
+    mechanics: mechanicsAt(LADDER, lv),
+    lv,
     f,
   };
 }
 
-/** Survival: one continuous ramp across the three tiers. */
+/** Survival: one continuous ramp up the ladder, then it clamps at the top. */
 export function survivalCfg(stage) {
-  // Shared with Mirror World via tierStage — this used to be duplicated
-  // byte-for-byte in both games.
-  const { diff, lv } = tierStage(stage);
-  return { diff, lv, ...levelCfg(diff, lv) };
+  const { lv } = ladderStage(stage, { levels: LADDER_LEVELS });
+  return { lv, ...levelCfg(lv) };
 }
 
 /*

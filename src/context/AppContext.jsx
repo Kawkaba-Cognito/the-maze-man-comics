@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
-import { trainingWinPoints } from '../lib/points';
+import { trainingWinPoints, ladderWinPoints } from '../lib/points';
 import { updateRating } from '../features/training/rating';
 import { recruit as armyRecruit, recordAttempt as armyRecordAttempt, markGone as armyMarkGone, MAX_ATTEMPTS } from '../features/army/armyState';
 import { getCampaignFloor, DEFAULT_FLOOR, hasEnteredLabyrinth, prepareOuterGateEntry, ensureGateProgress } from '../features/campaign/campaignProgress';
@@ -299,6 +299,26 @@ export function AppProvider({ children }) {
   }, [awardPoints]);
 
   /**
+   * The same, for a game on THE LADDER (2026-08-28) — one climb, no tier.
+   *
+   * ⚠ The claim key keeps a `lad` segment where the tier name used to sit, so a
+   * player who cleared `speed-match:hard:40` before the migration can still
+   * claim `speed-match:lad:40`. Reusing the old key shape would have made every
+   * migrated level look already-farmed and silently pay nothing.
+   */
+  const awardLadderWin = useCallback((gameKey, level, levels = 50) => {
+    const key = `${gameKey}:lad:${level}`;
+    let claimed = {};
+    try { claimed = JSON.parse(localStorage.getItem('mazeman_claimed_wins') || '{}') || {}; } catch (e) { /* ignore */ }
+    if (claimed[key]) return 0;
+    claimed[key] = 1;
+    try { localStorage.setItem('mazeman_claimed_wins', JSON.stringify(claimed)); } catch (e) { /* ignore */ }
+    const gained = ladderWinPoints(level, levels);
+    awardPoints(gained);
+    return gained;
+  }, [awardPoints]);
+
+  /**
    * Award points for a FREE-mode run — gradual & farm-proof. Each free LEVEL you
    * reach is worth its level number (level 1 → 1pt, level 2 → 2pts, …), and each
    * level pays only the FIRST time it's reached (persisted ledger keyed by
@@ -487,7 +507,7 @@ export function AppProvider({ children }) {
       assessmentRequested, openAssessment, consumeAssessmentRequest,
       mazeStartRoom, setMazeStartRoom, openWorkout, leaveWorkout,
       challenge, openPuzzleChallenge, finishChallenge,
-      updateXP, awardPoints, spendPoints, awardTrainingWin, awardFreeRun, toggleLang, switchTab,
+      updateXP, awardPoints, spendPoints, awardTrainingWin, awardLadderWin, awardFreeRun, toggleLang, switchTab,
       requestMazeEntry, requestOuterGate, requestContinueMaze, requestEscapeRoom, enterMaze, exitMaze,
       playSfx, stopSpeech, saveProfile,
       setProfileData,

@@ -39,6 +39,10 @@ import {
   PLAY_BOARD,
   FQ_DIFF_KEYS,
   FQ_LEVELS_PER_TIER,
+  FQ_LADDER_LEVELS,
+  ladderToTier,
+  ladderLvCfg,
+  fqMigrateLadderReached,
 } from '../../../../shared/focusQuestData';
 import {
   TrainingMenuBar,
@@ -46,7 +50,7 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
-import { TrainingDifficultySelect, TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import { TrainingLevelGrid } from '../../../../shared/TrainingScreens';
 import ModePlanetHub from '../../../../shared/ModePlanetHub';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
@@ -511,7 +515,7 @@ const UI = {
 };
 
 export default function CancellationTaskGame({ onBack, workoutMode = false, assessmentMode = false, onAssessmentExit, onAssessmentComplete, assessmentLabel, assessmentStep, assessmentDomainId = 'attention' }) {
-  const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
+  const { playSfx, currentLang, awardLadderWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
 
@@ -528,7 +532,6 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   // When launched as an assessment (from the training-page fox), skip the game
   // hub and go straight into the standardized assessment intro.
   const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
-  const [diffKey, setDiffKey] = useState('easy');
 
   const [round, setRound] = useState(null);
   const [cells, setCells] = useState([]);
@@ -661,6 +664,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   }, [round]);
 
   const doneMap = useMemo(() => profile.done || {}, [profile.done]);
+  /* One-time conversion of the old per-tier record into a ladder position.
+     Unlocked, not ticked — a ✓ on a level nobody played is a lie. */
+  const ladderReached = useMemo(() => fqMigrateLadderReached(doneMap), [doneMap]);
 
   const persistLevel = useCallback(
     (r, stats, f, e) => {
@@ -681,7 +687,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         ts: new Date().toISOString(),
       });
       if (stats.won && r.mode === 'level') {
-        p.done[`${r.diff}-${r.lv}`] = true;
+        p.done[`lad-${r.ladderLv ?? r.lv}`] = true;
       }
       saveProfile(p);
       setProfile(p);
@@ -1203,12 +1209,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       else playSfx('error');
       trialLogRef.current?.finish({ won });
       trialLogRef.current = null;
-      if (won) awardTrainingWin('cancel', r.diff, r.lv, FQ_LEVELS_PER_TIER);
+      if (won) awardLadderWin('cancel', r.ladderLv ?? r.lv, FQ_LADDER_LEVELS);
       persistLevel(r, stats, f, e);
       setLastResult({ type: 'level', stats, r, won, found: f, errors: e });
       setPhase('res');
     },
-    [stopTimer, persistLevel, playSfx, beginFreeRoundAtStage, beginAssessmentTrial, beginAdaptiveTrial, onAssessmentComplete, awardFreeRun, awardTrainingWin],
+    [stopTimer, persistLevel, playSfx, beginFreeRoundAtStage, beginAssessmentTrial, beginAdaptiveTrial, onAssessmentComplete, awardFreeRun, awardLadderWin],
   );
 
   useEffect(() => {
@@ -1369,21 +1375,27 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     onDone();
   };
 
-  const startLevelGame = async (diff, lv) => {
+  const startLevelGame = async (lv) => {
+    const { diff, li } = ladderToTier(lv);
     setPhase('play');
     setPlayStep('idle');
     setCdShow(false);
     trialLogRef.current?.discard();
-    trialLogRef.current = createTrialLog({ game: 'cancel-task', mode: 'level', meta: { diff, lv } });
+    trialLogRef.current = createTrialLog({ game: 'cancel-task', mode: 'level', meta: { lv, diff, li } });
     let r;
     try {
-      r = prepareLevelRound(diff, lv);
+      r = prepareLevelRound(diff, li);
     } catch (err) {
-      console.error('[Focus Quest] prepareLevelRound failed', diff, lv, err);
+      console.error('[Focus Quest] prepareLevelRound failed', diff, li, err);
       clearPlayRoundState();
       setPhase('levels');
       return;
     }
+    // Tag the round with WHERE ON THE LADDER it came from. The round itself
+    // still carries the authored (diff, lv) it was built from — everything
+    // downstream (scoring, telemetry, the results screen) reads those — but
+    // progress, unlocking and points are all ladder-positioned.
+    r.ladderLv = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
     roundRef.current = r;
     setRound(r);
     setCells(r.cells);
@@ -1635,7 +1647,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                 isAr={isAr}
                 playSfx={playSfx}
                 onFree={startFreeMode}
-                onLevels={() => setPhase('diff')}
+                onLevels={() => setPhase('levels')}
                 onChallenge={() => setPhase('chal')}
               />
               <HubScienceLink gameId="cancel-task" isAr={isAr} playSfx={playSfx} />
@@ -1672,45 +1684,24 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         />
       )}
 
-      {phase === 'diff' && (
-        <TrainingDifficultySelect
-          isAr={isAr}
-          playSfx={playSfx}
-          onBack={() => {
-            clearPlayRoundState();
-            setPhase('hub');
-          }}
-          title={t.pickDiff}
-          blurb={t.pickDiffSub}
-          diffKeys={FQ_DIFF_KEYS}
-          dm={DM}
-          descs={t.diffDesc}
-          onPick={(k) => {
-            setDiffKey(k);
-            setPhase('levels');
-          }}
-        />
-      )}
-
+      {/* ⚠ The `diff` phase is gone (2026-08-28, the ladder). Level mode goes
+          straight from the hub to ONE grid — no Easy/Medium/Hard screen. */}
       {phase === 'levels' && (
         <TrainingLevelGrid
           isAr={isAr}
           playSfx={playSfx}
-          onBack={() => setPhase('diff')}
-          title={DM[diffKey].label}
-          blurb={t.levelsSub(
-            DM[diffKey].pop,
-            `${PLAY_BOARD[diffKey]?.cols ?? DM[diffKey].grid}×${PLAY_BOARD[diffKey]?.rows ?? DM[diffKey].grid}`,
-          )}
-          count={FQ_LEVELS_PER_TIER}
-          lvc={DM[diffKey].lvc}
-          isUnlocked={(lv) => isLevelUnlocked(diffKey, lv, doneMap)}
-          isDone={(lv) => !!doneMap[`${diffKey}-${lv}`]}
+          onBack={() => setPhase('hub')}
+          title={t.title}
+          blurb={t.ladderBlurb(FQ_LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
+          count={FQ_LADDER_LEVELS}
+          isUnlocked={(lv) => (lv === 1 || lv <= ladderReached + 1
+            || !!doneMap[`lad-${lv - 1}`] || !!doneMap[`lad-${lv}`])}
+          isDone={(lv) => !!doneMap[`lad-${lv}`]}
           sublabel={(lv) => {
-            const cfg = getLvCfg(diffKey, lv - 1);
+            const cfg = ladderLvCfg(lv);
             return `${cfg.tc}t·${cfg.time}s`;
           }}
-          onPick={(lv) => startLevelGame(diffKey, lv)}
+          onPick={(lv) => startLevelGame(lv)}
         />
       )}
 
@@ -1867,7 +1858,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
             }}
             onRestart={() => {
               setPauseOpen(false);
-              if (round.mode === 'level') startLevelGame(round.diff, round.lv);
+              if (round.mode === 'level') startLevelGame(round.ladderLv ?? 1);
               else if (round.mode === 'free') void beginFreeRoundAtStage(round.freeStage ?? 0);
               else if (round.mode === 'challenge') startChallengeRound();
             }}
@@ -1920,7 +1911,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                   onClick: () => {
                     setPhase('play');
                     setLastResult(null);
-                    startLevelGame(lastResult.r.diff, lastResult.r.lv + 1);
+                    startLevelGame((lastResult.r.ladderLv ?? 1) + 1);
                   },
                 } : null,
                 {
@@ -1929,7 +1920,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                   variant: lastResult.stats.won ? 'ghost' : 'primary',
                   onClick: () => {
                     setLastResult(null);
-                    startLevelGame(lastResult.r.diff, lastResult.r.lv);
+                    startLevelGame(lastResult.r.ladderLv ?? 1);
                   },
                 },
                 { key: 'menu', label: t.menu, variant: 'ghost', onClick: leaveResults },

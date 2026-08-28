@@ -8,6 +8,73 @@ import { TRIALS_EXTRA } from './data-extra.js';
  *   pair     — four tiles, tap the TWO that belong together (only one valid pair)
  */
 
+import {
+  BAND_SIZE, ladderFraction, mechanicsAt, pickWeighted, tierMass,
+} from '../../../../shared/difficulty.js';
+
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 50 levels, in five bands of ten. Replaced easy/med/hard on
+ * 2026-08-28 — see LADDER-PLAN.md and shared/difficulty.js.
+ *
+ * TWO levers, and the second is the interesting one. `tiers` is the weighted
+ * content pool (see the note in shared/difficulty.js — it accumulates rather
+ * than sliding, so a late band still meets an occasional easy item but hard
+ * ones dominate). `kinds` is the QUESTION FORMAT, and the old tiers hid three
+ * of the four behind the medium/hard menu words: `allowedKinds` returned
+ * ['similarity', 'odd'] on easy and everything otherwise. Analogies and pair
+ * matching — the two formats that make this a reasoning task rather than a
+ * vocabulary quiz — were unreachable for anyone who picked Easy. They now
+ * arrive at bands 2 and 3, by playing.
+ *
+ * Bank sizes are small (9 easy / 16 med / 12 hard authored, plus procedural
+ * generation), which is the other reason the pool accumulates.
+ */
+export const TIER_ORDER = ['easy', 'med', 'hard'];
+
+const K1 = ['similarity', 'odd'];
+const K2 = [...K1, 'analogy'];
+const K3 = [...K2, 'pair'];
+
+export const LADDER = [
+  /* L1–10  */ { tiers: { easy: 1 }, kinds: K1, adds: ['link'] },
+  /* L11–20 */ { tiers: { easy: 0.55, med: 0.45 }, kinds: K2, adds: ['analogy'] },
+  /* L21–30 */ { tiers: { easy: 0.25, med: 0.75 }, kinds: K3, adds: ['pair'] },
+  /* L31–40 */ { tiers: { easy: 0.15, med: 0.45, hard: 0.40 }, kinds: K3, adds: ['abstract'] },
+  /* L41–50 */ { tiers: { easy: 0.10, med: 0.30, hard: 0.60 }, kinds: K3, adds: [] },
+];
+
+export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 50
+
+export const MECHANIC_LABELS = {
+  link: { en: 'What links them?', ar: 'ما الرابط بينهما؟' },
+  analogy: { en: 'Analogies', ar: 'القياس' },
+  pair: { en: 'Find the matching pair', ar: 'جد الزوج المتطابق' },
+  abstract: { en: 'Abstract links', ar: 'روابط مجرّدة' },
+};
+
+/** ⚠ Level config for the ladder. One argument, no tier. */
+export function levelCfg(level) {
+  const lv = Math.min(LADDER_LEVELS, Math.max(1, Math.round(Number(level) || 1)));
+  const b = LADDER[Math.min(LADDER.length - 1, Math.floor((lv - 1) / BAND_SIZE))];
+  return {
+    tiers: b.tiers,
+    kinds: b.kinds,
+    kindCount: b.kinds.length,
+    tierMass: tierMass(b.tiers, TIER_ORDER),
+    poolTiers: Object.keys(b.tiers).length,
+    mechanics: mechanicsAt(LADDER, lv),
+    lv,
+    f: ladderFraction(lv, LADDER_LEVELS),
+  };
+}
+
+/** The content tier this trial should draw from, by the band's weights. */
+export function pickTrialTier(cfg, rng) {
+  return pickWeighted(cfg.tiers, rng) || 'easy';
+}
+
 export const RELATION = {
   category: { en: 'Category', ar: 'فئة' },
   function: { en: 'Function', ar: 'وظيفة' },

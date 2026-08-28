@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
 import {
   TrainingMenuBar,
@@ -7,7 +7,7 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
-import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
+import { TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import PassPlaySetup from '../../../../shared/PassPlaySetup';
@@ -24,9 +24,9 @@ import { STR_COMMON } from '../../../../shared/trainingStrings';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import {
   SH,
-  SM_DIFF_KEYS,
-  SM_DM,
-  SM_LEVELS_PER_TIER,
+  SM_PP_DEPTHS,
+  LADDER_LEVELS,
+  migrateLadderReached,
   specForLevel,
   buildLegend,
   growLegend,
@@ -72,18 +72,11 @@ const UI = {
     title: 'Speed Match',
     hubMapAria: 'Modes — choose a path',
     hubNodeFreeHint: 'Endless · time bank · gets faster',
-    hubNodeLevelsHint: '100 levels per tier · unlock in order',
-    hubNodeChallengeHint: 'Same key for all · pick a difficulty',
+    hubNodeLevelsHint: '60 levels · one ladder · unlock in order',
+    hubNodeChallengeHint: 'Same key for all · pick a depth',
     freeIntroBody:
       'Match the symbol to its number. You have one time bank that keeps ticking down — every correct match adds time, a wrong tap subtracts it. As you go, the key grows and each correct match returns less time, so you must get faster to stay alive. The run ends when the time bank empties.',
-    pickDiffSub: 'Each tier has 100 levels. Unlock them in order.',
-    diffDesc: {
-      easy: 'Few symbols, gentle pace — learn the matching.',
-      medium: 'More symbols, brisker — build speed.',
-      hard: 'Up to 9 symbols (the full key), fast and demanding.',
-    },
-    levelsSub: (pop) => `${pop} · ${SM_LEVELS_PER_TIER} levels`,
-    challengeSub: 'Same key & symbols for everyone · pick a difficulty · pass the device',
+    challengeSub: 'Same key & symbols for everyone · pick a depth · pass the device',
     chalRoundsHint: 'Each player plays once per round · new fair key each round',
     chalBulletSame: 'Same key and symbol order for everyone this round',
     chalMeta: (label, sec) => `${label} · ${sec}s`,
@@ -94,7 +87,7 @@ const UI = {
     correct: 'Correct',
     combo: 'Combo',
     restart: 'Restart',
-    levelHeader: (diff, lv) => `${SM_DM[diff]?.label ?? diff} · L${lv}`,
+    levelHeader: (lv) => `L${lv}`,
     targetSub: (n) => `Reach ${n} correct`,
     resultsLevelPass: 'Level passed',
     resultsLevelRetry: 'Try again',
@@ -130,18 +123,11 @@ const UI = {
     title: 'مطابقة سريعة',
     hubMapAria: 'الأوضاع — اختر مسارًا',
     hubNodeFreeHint: 'لا ينتهي · بنك وقت · يتسارع',
-    hubNodeLevelsHint: '١٠٠ مستوى لكل صعوبة · بالترتيب',
-    hubNodeChallengeHint: 'نفس المفتاح للجميع · اختر الصعوبة',
+    hubNodeLevelsHint: '٦٠ مستوى · سلّم واحد · بالترتيب',
+    hubNodeChallengeHint: 'نفس المفتاح للجميع · اختر العمق',
     freeIntroBody:
       'طابق الرمز مع رقمه. لديك بنك وقت واحد يتناقص باستمرار — كل مطابقة صحيحة تضيف وقتاً والنقر الخاطئ يخصم منه. كلما تقدمت يكبر المفتاح وتعيد كل مطابقة وقتاً أقل، فعليك أن تتسارع لتبقى. تنتهي المحاولة عند نفاد بنك الوقت.',
-    pickDiffSub: 'كل صعوبة تحتوي ١٠٠ مستوى. افتحها بالترتيب.',
-    diffDesc: {
-      easy: 'رموز قليلة وإيقاع هادئ — تعلّم المطابقة.',
-      medium: 'رموز أكثر وأسرع — ابنِ سرعتك.',
-      hard: 'حتى ٩ رموز (المفتاح الكامل)، سريع ومُجهِد.',
-    },
-    levelsSub: (pop) => `${pop} · ${SM_LEVELS_PER_TIER} مستوى`,
-    challengeSub: 'نفس المفتاح والرموز للجميع · اختر الصعوبة · مرّر الجهاز',
+    challengeSub: 'نفس المفتاح والرموز للجميع · اختر العمق · مرّر الجهاز',
     chalRoundsHint: 'كل لاعب يلعب مرة في الجولة · مفتاح عادل جديد كل جولة',
     chalBulletSame: 'نفس المفتاح وترتيب الرموز للجميع في هذه الجولة',
     chalMeta: (label, sec) => `${label} · ${sec}ث`,
@@ -152,7 +138,7 @@ const UI = {
     correct: 'صحيح',
     combo: 'تتابع',
     restart: 'إعادة',
-    levelHeader: (diff, lv) => `${SM_DM[diff]?.label ?? diff} · ${lv}`,
+    levelHeader: (lv) => `مستوى ${lv}`,
     targetSub: (n) => `اجمع ${n} صحيحة`,
     resultsLevelPass: 'المستوى اجتُاز',
     resultsLevelRetry: 'حاول مجددًا',
@@ -255,7 +241,7 @@ function SpeedModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
 }
 
 export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAutoPlay = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'speed' }) {
-  const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
+  const { playSfx, currentLang, awardLadderWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI.ar : UI.en;
   // Workout and direct-play entries skip the hub and start Survival.
@@ -275,7 +261,6 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
 
   const [profile, setProfile] = useState(() => loadProfile());
   const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
-  const [diffKey, setDiffKey] = useState('easy');
 
   const [playStep, setPlayStep] = useState('idle');
   const [cdVal, setCdVal] = useState(3);
@@ -301,8 +286,8 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
   const [chalTurnOpen, setChalTurnOpen] = useState(false);
   const [chalRoundsTotal, setChalRoundsTotal] = useState(1);
   const [chalRoundIdx, setChalRoundIdx] = useState(0);
-  const [chalDiff, setChalDiff] = useState('hard');
-  const chalDiffRef = useRef('hard');
+  const [chalDiff, setChalDiff] = useState('mid');
+  const chalDiffRef = useRef('mid');
   const chalIdxRef = useRef(0);
   const chalNamesRef = useRef(chalNames);
   const chalScoresRef = useRef([]);
@@ -336,7 +321,15 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
   const pauseRef = useRef(false);
   const fbTimerRef = useRef(0);
 
-  const doneMap = profile.done || {};
+  // Memoised so `ladderReached` below does not recompute on every render.
+  const doneMap = useMemo(() => profile.done || {}, [profile.done]);
+  /* One-time conversion of the old per-tier record into a ladder position.
+     Unlocked, not ticked — a ✓ on a level nobody played is a lie. */
+  const ladderReached = useMemo(() => migrateLadderReached(doneMap), [doneMap]);
+  const PP_DEPTH_KEYS = Object.keys(SM_PP_DEPTHS);
+  const PP_DEPTH_LABELS = Object.fromEntries(
+    PP_DEPTH_KEYS.map((k) => [k, { label: `L${SM_PP_DEPTHS[k]}` }]),
+  );
 
   const finishBlockRef = useRef(() => {});
   const nextItemRef = useRef(() => {});
@@ -403,9 +396,12 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
   }, []);
   useEffect(() => { nextItemRef.current = nextItem; }, [nextItem]);
 
-  const persistLevelDone = useCallback((diff, lv) => {
+  const persistLevelDone = useCallback((lv) => {
     setProfile((prev) => {
-      const next = { ...prev, done: { ...prev.done, [`${diff}-${lv}`]: true } };
+      // ⚠ Flat `lad-N` keys. The old `easy-12` keys are left on disk untouched —
+      // migrateLadderReached reads them once, and keeping them makes this
+      // reversible. localStorage has no undo.
+      const next = { ...prev, done: { ...prev.done, [`lad-${lv}`]: true } };
       saveProfile(next);
       return next;
     });
@@ -512,13 +508,13 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
     }
 
     // level
-    if (grade.won) { playSfx('win'); persistLevelDone(block.diff, block.lv); awardTrainingWin('speed', block.diff, block.lv, SM_LEVELS_PER_TIER); }
+    if (grade.won) { playSfx('win'); persistLevelDone(block.lv); awardLadderWin('speed-match', block.lv, LADDER_LEVELS); }
     else playSfx('error');
     setLastResult({ type: 'level', block, summary, grade });
     setPhase('res');
     setPlayStep('idle');
     blockRef.current = null;
-  }, [stopLoop, playSfx, persistLevelDone, assessmentMode, onAssessmentComplete, t.motor, awardTrainingWin]);
+  }, [stopLoop, playSfx, persistLevelDone, assessmentMode, onAssessmentComplete, t.motor, awardLadderWin]);
   useEffect(() => { finishBlockRef.current = finishBlock; }, [finishBlock]);
 
   const finishFreeRun = useCallback(() => {
@@ -704,8 +700,8 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
     beginBlock(block, makeRng(freshSurvivalSeed()));
   }, [beginBlock]);
 
-  const startLevel = useCallback((diff, lv) => {
-    beginBlock(prepareLevelBlock(diff, lv), Math.random);
+  const startLevel = useCallback((lv) => {
+    beginBlock(prepareLevelBlock(lv), Math.random);
   }, [beginBlock]);
 
   /* --- Standardized assessment: practice → motor baseline → 120s SDMT ------
@@ -818,7 +814,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
         subtitle: chalRoundsTotal > 1 ? `${t.roundNofM(chalRoundIdx + 1, chalRoundsTotal)} · ${chalNames[chalIdx] ?? ''}` : (chalNames[chalIdx] ?? ''),
       };
     }
-    return { title: t.levelHeader(block.diff, block.lv), subtitle: t.targetSub(block.spec.targetCorrect) };
+    return { title: t.levelHeader(block.lv), subtitle: t.targetSub(block.spec.targetCorrect) };
   })();
 
   const starLabel = lastResult?.grade?.stars === 3 ? t.perfect : lastResult?.grade?.stars === 2 ? t.good : t.tryAgain;
@@ -859,7 +855,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
                 isAr={isAr}
                 playSfx={playSfx}
                 onFree={() => setPhase('freeIntro')}
-                onLevels={() => setPhase('diff')}
+                onLevels={() => setPhase('levels')}
                 onChallenge={() => setPhase('chal')}
               />
               <HubScienceLink gameId="speed-match" isAr={isAr} playSfx={playSfx} />
@@ -880,39 +876,23 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
         />
       )}
 
-      {phase === 'diff' && (
-        <TrainingDifficultySelect
-          isAr={isAr}
-          playSfx={playSfx}
-          onBack={() => setPhase('hub')}
-          title={t.pickDiff}
-          blurb={t.pickDiffSub}
-          diffKeys={SM_DIFF_KEYS}
-          dm={SM_DM}
-          descs={t.diffDesc}
-          onPick={(k) => {
-            setDiffKey(k);
-            setPhase('levels');
-          }}
-        />
-      )}
-
+      {/* ⚠ The `diff` phase is gone (2026-08-28, the ladder). Level mode goes
+          straight from the hub to ONE grid — no Easy/Medium/Hard screen. */}
       {phase === 'levels' && (
         <TrainingLevelGrid
           isAr={isAr}
           playSfx={playSfx}
-          onBack={() => setPhase('diff')}
-          title={SM_DM[diffKey].label}
-          blurb={t.levelsSub(SM_DM[diffKey].pop)}
-          count={SM_LEVELS_PER_TIER}
-          lvc={SM_DM[diffKey].lvc}
-          isUnlocked={(lv) => isLevelUnlocked(diffKey, lv, doneMap)}
-          isDone={(lv) => !!doneMap[`${diffKey}-${lv}`]}
+          onBack={() => setPhase('hub')}
+          title={t.title}
+          blurb={t.ladderBlurb(LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
+          count={LADDER_LEVELS}
+          isUnlocked={(lv) => isLevelUnlocked(lv, doneMap, ladderReached)}
+          isDone={(lv) => !!doneMap[`lad-${lv}`]}
           sublabel={(lv) => {
-            const spec = specForLevel(diffKey, lv);
+            const spec = specForLevel(lv);
             return `${spec.pairCount}◆·${spec.targetCorrect}`;
           }}
-          onPick={(lv) => startLevel(diffKey, lv)}
+          onPick={(lv) => startLevel(lv)}
         />
       )}
 
@@ -928,8 +908,8 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
               isAr={isAr}
               playSfx={playSfx}
               subtitle={t.challengeSub}
-              diffKeys={SM_DIFF_KEYS}
-              diffLabels={SM_DM}
+              diffKeys={PP_DEPTH_KEYS}
+              diffLabels={PP_DEPTH_LABELS}
               diff={chalDiff}
               onDiffChange={setChalDiff}
               players={chalNames}
@@ -956,7 +936,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
           kicker={t.chalTurnKicker}
           playerName={chalNames[chalIdx]}
           roundLine={chalRoundsTotal > 1 ? t.roundNofM(chalRoundIdx + 1, chalRoundsTotal) : null}
-          metaLine={`${SM_DM[chalDiff]?.label ?? ''} · ${chalSeed?.spec?.pairCount ?? 6} ${isAr ? 'رموز' : 'symbols'}`}
+          metaLine={`L${chalSeed?.lv ?? SM_PP_DEPTHS.mid} · ${chalSeed?.spec?.pairCount ?? 6} ${isAr ? 'رموز' : 'symbols'}`}
           instruction={t.handTo(chalNames[chalIdx])}
           bullets={[t.chalBulletSame, t.chalBulletPass]}
           startLabel={t.goReady}
@@ -1053,7 +1033,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
               setPauseOpen(false);
               const b = blockRef.current;
               if (!b) return;
-              if (b.mode === 'level') startLevel(b.diff, b.lv);
+              if (b.mode === 'level') startLevel(b.lv);
               else if (b.mode === 'free') startFreeMode();
               else startChallengeBlock();
             }}
@@ -1093,10 +1073,10 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
             </div>
             <p className="ct-sm-metrics-note">{t.metricsNote}</p>
             <div className="ct-fq-row">
-              {lastResult.grade.won && lastResult.block.lv < SM_LEVELS_PER_TIER && (
-                <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); setLastResult(null); startLevel(lastResult.block.diff, lastResult.block.lv + 1); }}>{t.nextLv}</button>
+              {lastResult.grade.won && lastResult.block.lv < LADDER_LEVELS && (
+                <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); setLastResult(null); startLevel(lastResult.block.lv + 1); }}>{t.nextLv}</button>
               )}
-              <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { playSfx('click'); setLastResult(null); startLevel(lastResult.block.diff, lastResult.block.lv); }}>{t.retry}</button>
+              <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { playSfx('click'); setLastResult(null); startLevel(lastResult.block.lv); }}>{t.retry}</button>
               <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { setLastResult(null); clearPlay(); setPhase('levels'); }}>{t.menu}</button>
             </div>
           </div>

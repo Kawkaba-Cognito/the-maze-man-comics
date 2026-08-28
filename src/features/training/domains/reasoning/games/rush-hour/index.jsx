@@ -10,7 +10,7 @@ import {
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
 import PassPlaySetup from '../../../../shared/PassPlaySetup';
-import { TrainingDifficultySelect, TrainingLevelGrid, TrainingModeList, TrainingScreenShell } from '../../../../shared/TrainingScreens';
+import { TrainingLevelGrid, TrainingModeList, TrainingScreenShell } from '../../../../shared/TrainingScreens';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import { useJuice } from '../../../../shared/juice/useJuice';
@@ -25,6 +25,9 @@ import {
   mergeRhChallengeRow,
   RH_LEVELS_PER_TIER,
   RH_DIFF_KEYS,
+  RH_LADDER_LEVELS,
+  rhLadderToTier,
+  rhMigrateLadderReached,
   isLevelUnlocked,
   loadRhProgress,
   saveRhProgress,
@@ -233,7 +236,7 @@ const UI_AR = {
 };
 
 export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPlay = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'reasoning' }) {
-  const { playSfx, currentLang, awardTrainingWin, awardFreeRun } = useApp();
+  const { playSfx, currentLang, awardLadderWin, awardFreeRun } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? UI_AR : UI_EN;
   const [cosmosEmbed, setCosmosEmbed] = useState(false);
@@ -269,6 +272,10 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   const [progress, setProgress] = useState(() => loadRhProgress());
   const [diffKey, setDiffKey] = useState('easy');
   const [levelIndex, setLevelIndex] = useState(1);
+  /* Where on the LADDER this round sits. The board still comes from the
+     authored bank via (diffKey, levelIndex); this is what progress, unlocking
+     and points are keyed by. */
+  const ladderLvRef = useRef(1);
   const [playMode, setPlayMode] = useState('levels');
   const [chalFrozenDef, setChalFrozenDef] = useState(null);
   const [chalNames, setChalNames] = useState(['Player 1', 'Player 2']);
@@ -747,7 +754,9 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   const syncProgressWin = useCallback(
     (dk, lv, mv) => {
       if (playMode !== 'levels') return;
-      const doneKey = `${dk}-${lv}`;
+      // Keyed by LADDER position, not by the authored (tier, level) the board
+      // happened to come from — two ladder rungs must never collide.
+      const doneKey = `lad-${ladderLvRef.current}`;
       const next = {
         ...progress,
         done: { ...progress.done, [doneKey]: true },
@@ -1025,7 +1034,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
       const dk = diffKeyRef.current;
       if (mode === 'levels') {
         syncProgressWin(dk, lv, nextM);
-        awardTrainingWin('rush', dk, lv, RH_LEVELS_PER_TIER);
+        awardLadderWin('rush', ladderLvRef.current, RH_LADDER_LEVELS);
         trialLogRef.current?.finish({ won: true, moves: nextM, par: parMoves });
         trialLogRef.current = null;
       }
@@ -1042,7 +1051,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         setFreeRoundsWon(freeRoundsWonRef.current);
       }
     }, 280);
-  }, [awardTrainingWin, exitRow, grid, parMoves, playSfx, syncProgressWin]);
+  }, [awardLadderWin, exitRow, grid, parMoves, playSfx, syncProgressWin]);
 
   const nudgePiece = useCallback((pid, delta) => {
     if (wonRef.current || phase !== 'play' || pauseOpen || quitOpen) return;
@@ -1244,7 +1253,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
             playSfx={playSfx}
             items={[
               { k: 'free', ic: '♾️', lb: t.free, hint: t.hubNodeFreeHint, on: () => setPhase('freeIntro') },
-              { k: 'levels', ic: '🎯', lb: t.levels, hint: t.hubNodeLevelsHint, on: () => { setPlayMode('levels'); setPhase('pickDiff'); } },
+              { k: 'levels', ic: '🎯', lb: t.levels, hint: t.hubNodeLevelsHint, on: () => { setPlayMode('levels'); setPhase('levels'); } },
               { k: 'chal', ic: '⚔️', lb: t.challenge, hint: t.hubNodeChallengeHint, on: () => setPhase('chal') },
             ]}
           />
@@ -1256,24 +1265,8 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   }
 
 
-  if (phase === 'pickDiff') {
-    return (
-      <TrainingDifficultySelect
-        isAr={isAr}
-        playSfx={playSfx}
-        onBack={() => setPhase('hub')}
-        title={t.pickDiff}
-        blurb={t.pickDiffSub}
-        diffKeys={RH_DIFF_KEYS}
-        dm={DM}
-        descs={t.diffDesc}
-        onPick={(k) => {
-          setDiffKey(k);
-          setPhase('levels');
-        }}
-      />
-    );
-  }
+  /* ⚠ The `pickDiff` phase is gone (2026-08-28, the ladder). Level mode goes
+     straight from the hub to ONE grid — no Easy/Medium/Hard screen. */
 
   if (phase === 'freeIntro') {
     return (
@@ -1498,23 +1491,29 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   /* ─── Level pick ─── */
   if (phase === 'levels') {
     const doneMap = progress.done || {};
+    const ladderReached = rhMigrateLadderReached(doneMap);
     return (
       <TrainingLevelGrid
         isAr={isAr}
         playSfx={playSfx}
-        onBack={() => setPhase('pickDiff')}
-        title={DM[diffKey]?.label ?? diffKey}
-        blurb={t.levelsSub(DM[diffKey]?.pop ?? '')}
-        count={RH_LEVELS_PER_TIER}
-        lvc={DM[diffKey]?.lvc ?? 'lvi'}
-        isUnlocked={(lv) => isLevelUnlocked(diffKey, lv, doneMap)}
-        isDone={() => false}
+        onBack={() => setPhase('hub')}
+        title={t.title}
+        blurb={t.ladderBlurb(RH_LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
+        count={RH_LADDER_LEVELS}
+        isUnlocked={(lv) => (lv === 1 || lv <= ladderReached + 1
+          || !!doneMap[`lad-${lv - 1}`] || !!doneMap[`lad-${lv}`])}
+        isDone={(lv) => !!doneMap[`lad-${lv}`]}
         sublabel={(lv) => {
-          const best = progress.best?.[`${diffKey}-${lv}`];
+          const best = progress.best?.[`lad-${lv}`];
           return best != null ? `★ ${best}` : '—';
         }}
         onPick={(lv) => {
-          setLevelIndex(lv);
+          // The board still comes from the AUTHORED bank — the ladder only
+          // decides which authored (tier, level) this rung plays.
+          const { diff, li } = rhLadderToTier(lv);
+          setDiffKey(diff);
+          setLevelIndex(li);
+          ladderLvRef.current = lv;
           setPlayMode('levels');
           setPhase('play');
         }}

@@ -29,85 +29,80 @@ const src = fs.readFileSync(SRC, 'utf8');
 let failures = 0;
 const fail = (msg) => { console.error(`  FAIL  ${msg}`); failures += 1; };
 
-/* Parse BASE and the runtime clamp straight out of the component, so this can
- * never drift from what actually ships. */
-const baseBlock = src.match(/const BASE = \{([\s\S]*?)\n\};/);
-if (!baseBlock) throw new Error('BASE table not found in mot/index.jsx');
-const BASE = {};
-for (const m of baseBlock[1].matchAll(
-  /(\w+):\s*\{\s*t0:\s*([\d.]+),\s*t1:\s*([\d.]+),\s*n0:\s*([\d.]+),\s*n1:\s*([\d.]+),\s*s0:\s*([\d.]+),\s*s1:\s*([\d.]+),\s*tr0:\s*([\d.]+),\s*tr1:\s*([\d.]+)/g,
-)) {
-  const [, tier, t0, t1, n0, n1, s0, s1, tr0, tr1] = m;
-  BASE[tier] = { t0: +t0, t1: +t1, n0: +n0, n1: +n1, s0: +s0, s1: +s1, tr0: +tr0, tr1: +tr1 };
-}
-const tiers = Object.keys(BASE);
-if (tiers.length !== 3) fail(`expected 3 tiers, parsed ${tiers.length}`);
+/*
+ * ⚠ THE CURVE IS NOW IMPORTED, NOT SCRAPED (2026-08-28, the ladder).
+ *
+ * This used to regex-parse `const BASE = {...}` out of mot/index.jsx, because
+ * the gates run in plain Node and cannot load a React file. That worked, but a
+ * scraped curve is one refactor away from being silently ungated: a changed
+ * shape throws, and a subtly changed shape matches the WRONG numbers. The curve
+ * now lives in motData.js and the gate imports exactly what the game runs.
+ *
+ * What still has to be scraped is the RUNTIME CLAMP and the arena aspect,
+ * because those live in the component's render path, not in the data module.
+ */
+const { LADDER, LADDER_LEVELS, MOT_CAP, levelConfig } =
+  await import(`file:///${path.join(ROOT, 'src/features/training/domains/attention/games/mot/motData.js').replace(/\\/g, '/')}`);
 
 const clampMatch = src.match(/cfg\.targets \+ 2,\s*(\d+)\)/);
 const RUNTIME_MAX = clampMatch ? +clampMatch[1] : null;
 if (!RUNTIME_MAX) fail('could not find the runtime object-count clamp');
 
-const capMatch = src.match(/MOT_CAP = (\d+)/);
-const MOT_CAP = capMatch ? +capMatch[1] : 5;
-
 console.log('Target Tracking difficulty curve');
-console.log(`  tiers: ${tiers.join(' -> ')}   runtime object clamp: ${RUNTIME_MAX}   MOT_CAP: ${MOT_CAP}`);
+console.log(`  ONE LADDER: ${LADDER.length} bands × 10 = ${LADDER_LEVELS} levels   `
+  + `runtime object clamp: ${RUNTIME_MAX}   MOT_CAP: ${MOT_CAP}`);
 
-/* 1. Every lever must rise WITHIN a tier. */
-for (const [tier, b] of Object.entries(BASE)) {
-  for (const [lo, hi, label] of [['t0', 't1', 'targets'], ['n0', 'n1', 'objects'], ['s0', 's1', 'speed'], ['tr0', 'tr1', 'trackMs']]) {
-    if (b[hi] < b[lo]) fail(`${tier}: ${label} falls across the tier (${b[lo]} -> ${b[hi]})`);
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const cfg = (level) => {
+  const c = levelConfig(level);
+  return { targets: c.targets, total: c.total, speed: +c.speedFrac.toFixed(3), trackMs: c.trackMs };
+};
+
+/* 1. Every lever must rise across the ladder, and stay renderable. */
+{
+  const lo = cfg(1); const hi = cfg(LADDER_LEVELS);
+  for (const [k, label] of [['targets', 'targets'], ['total', 'objects'], ['speed', 'speed'], ['trackMs', 'trackMs']]) {
+    if (hi[k] < lo[k]) fail(`${label} falls across the ladder (${lo[k]} -> ${hi[k]})`);
   }
-  if (b.t1 > MOT_CAP) fail(`${tier}: t1 ${b.t1} exceeds MOT_CAP ${MOT_CAP}`);
-  if (b.n1 > RUNTIME_MAX) {
-    fail(`${tier}: n1 ${b.n1} exceeds the runtime clamp ${RUNTIME_MAX} — the top of `
-      + 'this tier would render identically and stop getting harder');
+  for (let l = 1; l <= LADDER_LEVELS; l += 1) {
+    const c = cfg(l);
+    if (c.targets > MOT_CAP) fail(`L${l}: targets ${c.targets} exceeds MOT_CAP ${MOT_CAP}`);
+    if (c.total > RUNTIME_MAX) {
+      fail(`L${l}: ${c.total} objects exceeds the runtime clamp ${RUNTIME_MAX} — this level `
+        + 'would render identically to the ones around it and stop getting harder');
+    }
+    if (c.total < c.targets + 2) fail(`L${l}: ${c.total} objects leaves fewer than 2 distractors for ${c.targets} targets`);
   }
-  if (b.n0 < b.t0 + 2) fail(`${tier}: n0 ${b.n0} leaves fewer than 2 distractors for ${b.t0} targets`);
 }
 
-/* 2. Tiers must CHAIN — each starts where the previous ended. This is the check
- *    that would have caught the original regression. */
-for (let i = 0; i < tiers.length - 1; i += 1) {
-  const a = BASE[tiers[i]], b = BASE[tiers[i + 1]];
-  for (const [end, start, label] of [['t1', 't0', 'targets'], ['n1', 'n0', 'objects'], ['s1', 's0', 'speed'], ['tr1', 'tr0', 'trackMs']]) {
-    if (b[start] < a[end]) {
-      fail(`${tiers[i]} -> ${tiers[i + 1]}: ${label} DROPS (${a[end]} -> ${b[start]}) `
-        + '— the next tier starts easier than the last one ended');
-    }
+/* 2. No band may be inert — the ladder's own rule (see audit:curves). */
+for (let b = 1; b < LADDER.length; b += 1) {
+  const before = cfg((b - 1) * 10 + 1);
+  const now = cfg(b * 10 + 1);
+  const addsSomething = (LADDER[b].adds || []).length > 0;
+  if (!addsSomething && before.targets === now.targets) {
+    fail(`band ${b + 1}: introduces no mechanic and does not change the tracking load`);
   }
 }
 
 /* 3. Report the curve so a human can sanity-check the shape. */
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const lerp = (a, b, t) => a + (b - a) * t;
-const cfg = (tier, level) => {
-  const b = BASE[tier];
-  const u = Math.pow(clamp((level - 1) / 99, 0, 1), 0.85);
-  return {
-    targets: clamp(Math.round(lerp(b.t0, b.t1, u)), 1, MOT_CAP),
-    total: Math.round(lerp(b.n0, b.n1, u)),
-    speed: +lerp(b.s0, b.s1, u).toFixed(3),
-    trackMs: Math.round(lerp(b.tr0, b.tr1, u)),
-  };
-};
-console.log('\n  tier  lvl  targets objects speed trackMs');
-for (const tier of tiers) {
-  for (const l of [1, 50, 100]) {
-    const c = cfg(tier, l);
-    console.log(`  ${tier.padEnd(4)} ${String(l).padStart(4)}  ${String(c.targets).padStart(7)} ${String(c.total).padStart(7)} ${String(c.speed).padStart(5)} ${String(c.trackMs).padStart(7)}`);
+console.log('\n  band  lvl  targets objects speed trackMs');
+LADDER.forEach((_, b) => {
+  for (const l of [b * 10 + 1, b * 10 + 10]) {
+    const c = cfg(l);
+    console.log(`  ${String(b + 1).padEnd(4)} ${String(l).padStart(4)}  ${String(c.targets).padStart(7)} ${String(c.total).padStart(7)} ${String(c.speed).padStart(5)} ${String(c.trackMs).padStart(7)}`);
   }
-}
+});
 
-/* 4. The whole 300-level sequence must be non-decreasing on objects and speed. */
-let prev = null;
-for (const tier of tiers) {
-  for (let l = 1; l <= 100; l += 1) {
-    const c = cfg(tier, l);
+/* 4. The whole ladder must be non-decreasing on every lever. */
+{
+  let prev = null;
+  for (let l = 1; l <= LADDER_LEVELS; l += 1) {
+    const c = cfg(l);
     if (prev) {
-      if (c.total < prev.total) fail(`objects drop at ${tier} L${l} (${prev.total} -> ${c.total})`);
-      if (c.speed < prev.speed) fail(`speed drops at ${tier} L${l} (${prev.speed} -> ${c.speed})`);
-      if (c.targets < prev.targets) fail(`targets drop at ${tier} L${l} (${prev.targets} -> ${c.targets})`);
+      if (c.total < prev.total) fail(`objects drop at L${l} (${prev.total} -> ${c.total})`);
+      if (c.speed < prev.speed) fail(`speed drops at L${l} (${prev.speed} -> ${c.speed})`);
+      if (c.targets < prev.targets) fail(`targets drop at L${l} (${prev.targets} -> ${c.targets})`);
     }
     prev = c;
   }
@@ -151,14 +146,14 @@ for (const [name, w, h] of DEVICES) {
   const seen = [];
   let prevTotal = null;
   let flatRun = 0, worstFlat = 0;
-  for (const tier of tiers) {
-    for (let l = 1; l <= 100; l += 1) {
-      const s = onScreen(cfg(tier, l), w, h);
-      if (s === RUNTIME_MAX) fail(`${name}: ${tier} L${l} hits the clamp (${RUNTIME_MAX}) — density stops grading`);
+  {
+    for (let l = 1; l <= LADDER_LEVELS; l += 1) {
+      const s = onScreen(cfg(l), w, h);
+      if (s === RUNTIME_MAX) fail(`${name}: L${l} hits the clamp (${RUNTIME_MAX}) — density stops grading`);
       if (s === prevTotal) { flatRun += 1; worstFlat = Math.max(worstFlat, flatRun); } else flatRun = 0;
       prevTotal = s;
     }
-    seen.push(`${tier} ${onScreen(cfg(tier, 1), w, h)}->${onScreen(cfg(tier, 100), w, h)}`);
+    seen.push(`${onScreen(cfg(1), w, h)}->${onScreen(cfg(LADDER_LEVELS), w, h)}`);
   }
   console.log(`    ${name.padEnd(15)} ${seen.join('  ')}   longest identical run: ${worstFlat} levels`);
   /*
@@ -166,7 +161,7 @@ for (const [name, w, h] of DEVICES) {
    * what this guard measures, not a relaxed threshold.
    *
    * Object count is now a coarse lever by design. Keeping the display inside the
-   * classic MOT range (8-16) leaves only ~8 integer values across 300 levels, so
+   * classic MOT range (8-16) leaves only ~8 integer values across the ladder, so
    * long identical runs are arithmetic. Failing on them would just be pressure to
    * add balls back, which is the opposite of what the count was reduced for.
    *
@@ -196,16 +191,16 @@ for (const [name, w, h] of DEVICES) {
   let worstStall = 0;
   let run = 0;
   let prev = null;
-  for (const tier of tiers) {
-    /* Reset at each tier. The seams are SUPPOSED to repeat — chaining means the
-     * next tier starts exactly where the last ended, so easy L100 and med L1 are
-     * deliberately the same trial. Comparing across the seam flagged those two
-     * as stalls when they are the fix, not the fault. Tiers are separate tracks
-     * a player selects, not one 300-level run. */
+  {
+    /* ⚠ There are no tier seams to reset at any more. The note that stood here
+     * explained that easy L100 and med L1 were DELIBERATELY the same trial
+     * (tiers chained end-to-start), so comparing across the seam produced false
+     * stalls. On ONE ladder there is no seam and no exemption: every level must
+     * differ from the one before it, everywhere. */
     prev = null;
     run = 0;
-    for (let l = 1; l <= 100; l += 1) {
-      const c = cfg(tier, l);
+    for (let l = 1; l <= LADDER_LEVELS; l += 1) {
+      const c = cfg(l);
       const key = `${c.targets}|${c.total}|${c.speed}|${c.trackMs}`;
       if (prev === key) { run += 1; stalls += 1; worstStall = Math.max(worstStall, run); } else run = 0;
       prev = key;
@@ -215,7 +210,7 @@ for (const [name, w, h] of DEVICES) {
     fail(`${stalls} level(s) are identical to the one before on every lever `
       + `(longest run ${worstStall}) — difficulty stalls completely there`);
   } else {
-    console.log('\n  every one of the 300 levels differs from the previous on at least one lever');
+    console.log(`\n  every one of the ${LADDER_LEVELS} levels differs from the previous on at least one lever`);
   }
 }
 
@@ -223,4 +218,4 @@ if (failures) {
   console.error(`\naudit-mot-curve: ${failures} failure(s)`);
   process.exit(1);
 }
-console.log('\naudit-mot-curve: OK — monotonic across 300 levels, and the curve survives the density rescale on every device shape');
+console.log(`\naudit-mot-curve: OK — monotonic across ${LADDER_LEVELS} ladder levels, and the curve survives the density rescale on every device shape`);

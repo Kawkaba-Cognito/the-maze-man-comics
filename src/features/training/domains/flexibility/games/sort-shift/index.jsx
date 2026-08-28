@@ -7,7 +7,7 @@ import { survivalRampFromRemaining } from '../../../../shared/survival';
 import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
 import KawkabSprite from '../../../../shared/KawkabSprite';
 import { GAME_STIMULUS } from '../../../../shared/gamePalette';
-import { SORT_SETS, ruleForTrio, setsForTier } from './sets';
+import { SORT_SETS, ruleForTrio, setsForTier, levelCfg, LADDER_LEVELS } from './sets';
 import './sortShift.css';
 
 /*
@@ -32,7 +32,7 @@ import './sortShift.css';
  * ten possible 3–3 splits of six cards is enumerated by `npm run validate:sort`
  * before any of this ships. See sets.js.
  *
- * Modes (shared ModeShell): Survival (60s) · Levels (100 each × 3 diff) · Pass n Play.
+ * Modes (shared ModeShell): Survival (60s) · Levels (ONE ladder of 50) · Pass n Play.
  */
 
 const RED = GAME_STIMULUS[0];
@@ -42,17 +42,16 @@ export const SS_PP_TRIALS = 4;
 export const SS_LEVEL_SETS = 3;
 
 /** How many of a set's rules must be found to clear it. */
-export function rulesNeeded(setDef, mode, diff, level, ramp) {
+export function rulesNeeded(setDef, mode, level, ramp) {
   const all = setDef.features.length;
   if (mode === 'free') return Math.min(all, (ramp ?? 0) < 0.4 ? 2 : all);
   if (mode === 'passplay') return all;
-  const f = ((level || 1) - 1) / 99;
-  if (diff === 'easy') return Math.min(all, f < 0.5 ? 2 : 3);
-  return all;
+  // ONE LADDER: the band says how many rules the level asks for.
+  return Math.min(all, levelCfg(level).rules);
 }
 
 export function SortShiftEngine({
-  mode, diff, level, seed, attempt, onResult, onExit,
+  mode, level, seed, attempt, onResult, onExit,
   isAr, playSfx, awardPoints, awardFreeRun,
 }) {
   const isSurvival = mode === 'free';
@@ -98,16 +97,30 @@ export function SortShiftEngine({
   /* A fresh bag per run, drawn from the tier's sets so a run never repeats a
    * set until the tier is exhausted. */
   const refillQueue = useCallback(() => {
+    /* The band's WEIGHTED pool, not a single tier. With only three sets per
+       tier, drawing from one tier alone cycled the same three boards for a
+       whole band — see the note in sets.js. The bag now holds every set the
+       band can serve, each repeated in proportion to its weight, so a run
+       still never repeats a set until the bag is empty. */
     const tier = mode === 'free'
       ? (rampRef.current < 0.35 ? 'easy' : rampRef.current < 0.7 ? 'med' : 'hard')
-      : mode === 'passplay' ? 'med' : (diff === 'easy' ? 'easy' : diff === 'hard' ? 'hard' : 'med');
-    const pool = setsForTier(tier).slice();
+      : null;
+    const pool = [];
+    if (tier) {
+      pool.push(...setsForTier(tier));
+    } else {
+      const cfg = levelCfg(mode === 'passplay' ? (level || 25) : level);
+      for (const [t, w] of Object.entries(cfg.tiers)) {
+        const reps = Math.max(1, Math.round(w * 10));
+        for (let r = 0; r < reps; r++) pool.push(...setsForTier(t));
+      }
+    }
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(rngRef.current() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
     queueRef.current = pool;
-  }, [diff, mode]);
+  }, [level, mode]);
 
   const dealSet = useCallback(() => {
     if (!queueRef.current.length) refillQueue();
@@ -144,9 +157,9 @@ export function SortShiftEngine({
     refillQueue();
     dealSet();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, mode, diff, level]);
+  }, [seed, mode, level]);
 
-  const need = setDef ? rulesNeeded(setDef, mode, diff, level, rampRef.current) : 0;
+  const need = setDef ? rulesNeeded(setDef, mode, level, rampRef.current) : 0;
 
   const advance = useCallback((cleared) => {
     setsDoneRef.current += 1;
@@ -310,18 +323,19 @@ export default function SortShiftGame({ onBack, workoutMode = false }) {
       title={{ en: 'Sort It Another Way', ar: 'رتّبها بطريقة أخرى' }}
       hints={{
         free: { en: '60s survival · the rules get less obvious', ar: '٦٠ث بقاء · القواعد تصبح أخفى' },
-        levels: { en: '3 difficulties · harder sets hide the rule in meaning', ar: '٣ صعوبات · القواعد الأصعب في المعنى' },
+        levels: { en: '50 levels · harder sets hide the rule in meaning', ar: '٥٠ مستوى · القواعد الأصعب في المعنى' },
         pass: { en: 'Same cards for everyone · pass the device', ar: 'نفس البطاقات للجميع · مرّر الجهاز' },
       }}
-      diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      pass={{ trials: SS_PP_TRIALS, scoreLabel: { en: 'rules found', ar: 'قواعد' }, lowerBetter: false, diff: 'med' }}
+      /* ONE LADDER — no easy/med/hard. See sets.js LADDER. */
+      ladder={{ levels: LADDER_LEVELS }}
+      pass={{ trials: SS_PP_TRIALS, scoreLabel: { en: 'rules found', ar: 'قواعد' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
         <SortShiftEngine
-          key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+          key={`${p.mode}-${p.level}-${p.seed}`}
           {...p}
           isAr={isAr}
           playSfx={playSfx}

@@ -29,7 +29,9 @@
  * ⚠ Every import here must carry its explicit `.js`. Vite resolves
  * extensionless paths, plain Node does not, and `validate:liars` runs in Node.
  */
-import { levelFraction, tierStage } from '../../../../shared/difficulty.js';
+import {
+  BAND_SIZE, ladderFraction, ladderStage, mechanicsAt,
+} from '../../../../shared/difficulty.js';
 
 /* ── CAST ─────────────────────────────────────────────────────────────────
  * Kawkab himself is the detective and never a suspect, so the suspect pool is
@@ -417,48 +419,72 @@ const KIT_LINKED = [...KIT_BLUNT, 'together', 'oneOf', 'selfAccuse'];
 const KIT_META = [...KIT_LINKED, 'liar', 'honest', 'sameAs'];
 const KIT_ALL = [...KIT_META, 'countLiars', 'atLeastLiars', 'traitClaim'];
 
-export const BASE = {
-  easy: {
-    s0: 3, s1: 3,
-    kits: [KIT_BLUNT, KIT_LINKED],
-    rules0: ['exactlyTrue', 'exactlyLies'],
-    rules1: ['exactlyTrue', 'exactlyLies', 'knaves'],
-    q0: ['who'], q1: ['who', 'liar', 'honest'],
-    ev0: 0, ev1: 0.2,
-  },
-  med: {
-    s0: 3, s1: 4,
-    kits: [KIT_LINKED, KIT_META],
-    rules0: ['exactlyTrue', 'exactlyLies', 'knaves'],
-    rules1: ['exactlyTrue', 'exactlyLies', 'knaves', 'atLeastTrue'],
-    q0: ['who', 'liar', 'honest'], q1: ['who', 'liar', 'honest', 'count', 'verdict'],
-    ev0: 0.15, ev1: 0.35,
-  },
-  hard: {
-    s0: 4, s1: 5,
-    kits: [KIT_META, KIT_ALL],
-    rules0: ['exactlyTrue', 'exactlyLies', 'knaves', 'atLeastTrue'],
-    rules1: ['exactlyTrue', 'exactlyLies', 'knaves', 'invertedKnaves', 'atLeastTrue', 'free'],
-    q0: ['who', 'liar', 'count', 'verdict'], q1: QUESTION_KINDS,
-    ev0: 0.25, ev1: 0.45,
-  },
+/* Rule sets and question sets, each a superset of the one before it. Written as
+   spreads so a band can only ever ADD — a band that quietly dropped a rule
+   would still satisfy a length check, and `ruleCount` is what audit:curves
+   sees. */
+const R1 = ['exactlyTrue', 'exactlyLies'];
+const R2 = [...R1, 'knaves'];
+const R3 = [...R2, 'atLeastTrue'];
+const R4 = [...R3, 'invertedKnaves'];
+const R5 = [...R4, 'free'];
+
+const Q1 = ['who'];
+const Q2 = [...Q1, 'liar', 'honest'];
+const Q3 = [...Q2, 'count', 'verdict'];
+const Q4 = [...Q3, 'clearAll'];
+const Q5 = [...Q4, 'key']; // === QUESTION_KINDS
+
+/*
+ * ── THE LADDER ──
+ *
+ * ONE climb of 50 levels, in five bands of ten. Replaced easy/med/hard on
+ * 2026-08-28 — see LADDER-PLAN.md and shared/difficulty.js.
+ *
+ * Every band opens something nameable: a wider statement kit, another rule
+ * about who lies, another shape of question, or one more suspect in the ring.
+ * The tiers already did this in halves — the ladder just stops hiding the seam
+ * behind a menu word.
+ *
+ * Span unchanged at both ends: L1 is the old easy L1 (3 suspects, the blunt
+ * kit, two rules, one question shape) and L50 the old hard L100 (5 suspects,
+ * every statement type, six rules, all seven question shapes).
+ *
+ * ⚠ NO TIME LEVER, on the ladder as before. This is the one game where thinking
+ * longer is the correct play.
+ */
+export const LADDER = [
+  /* L1–10  */ { suspects: 3, kit: KIT_BLUNT, rules: R1, questions: Q1, adds: ['accuse'] },
+  /* L11–20 */ { suspects: 3, kit: KIT_LINKED, rules: R2, questions: Q2, adds: ['linked'] },
+  /* L21–30 */ { suspects: 4, kit: KIT_META, rules: R3, questions: Q3, adds: ['meta'] },
+  /* L31–40 */ { suspects: 4, kit: KIT_ALL, rules: R4, questions: Q4, adds: ['counting'] },
+  /* L41–50 */ { suspects: 5, kit: KIT_ALL, rules: R5, questions: Q5, adds: ['fifth'] },
+];
+
+export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 50
+
+export const MECHANIC_LABELS = {
+  accuse: { en: 'Who is lying?', ar: 'من يكذب؟' },
+  linked: { en: 'Statements about each other', ar: 'أقوال عن بعضهم' },
+  meta: { en: 'Claims about lying itself', ar: 'ادّعاءات عن الكذب' },
+  counting: { en: 'Counting the liars', ar: 'عدّ الكاذبين' },
+  fifth: { en: 'A fifth suspect', ar: 'مشتبه خامس' },
 };
-export const LEVELS_PER_TIER = 100;
 /** Cases in one level. Short on purpose — a level is a coffee break, not a sitting. */
 export const CASES_PER_LEVEL = 4;
 
-export function levelCfg(diff, level) {
-  const b = BASE[diff] || BASE.med;
-  const f = levelFraction(level, LEVELS_PER_TIER);
-  const kit = f < 0.5 ? b.kits[0] : b.kits[1];
-  const rules = f < 0.5 ? b.rules0 : b.rules1;
-  const questions = f < 0.5 ? b.q0 : b.q1;
+/** ⚠ SIGNATURE CHANGED with the ladder: one argument, no tier. */
+export function levelCfg(level) {
+  const lv = Math.min(LADDER_LEVELS, Math.max(1, Math.round(Number(level) || 1)));
+  const b = LADDER[Math.min(LADDER.length - 1, Math.floor((lv - 1) / BAND_SIZE))];
+  const f = ladderFraction(lv, LADDER_LEVELS);
+  const { kit, rules, questions } = b;
   return {
-    suspects: Math.round(b.s0 + (b.s1 - b.s0) * f),
+    suspects: b.suspects,
     kit,
     rules,
     questions,
-    evidenceChance: b.ev0 + (b.ev1 - b.ev0) * f,
+    evidenceChance: 0 + 0.45 * f,
     cases: CASES_PER_LEVEL,
     // Numeric mirrors of the three list levers, so `audit:curves` can assert
     // they never shrink — it compares numbers, and an array length buried in a
@@ -466,14 +492,16 @@ export function levelCfg(diff, level) {
     kitSize: kit.length,
     ruleCount: rules.length,
     questionCount: questions.length,
+    mechanics: mechanicsAt(LADDER, lv),
+    lv,
     f,
   };
 }
 
-/** Survival: one continuous ramp through the tiers, then past them. */
+/** Survival: one continuous ramp up the ladder, then past it. */
 export function survivalCfg(stage) {
-  const { diff, lv } = tierStage(stage);
-  return { ...levelCfg(diff, lv), diff, lv, cases: 1 };
+  const { lv } = ladderStage(stage, { levels: LADDER_LEVELS });
+  return { ...levelCfg(lv), lv, cases: 1 };
 }
 
 /** Pass n Play: everyone gets the same cases from the same seed. */

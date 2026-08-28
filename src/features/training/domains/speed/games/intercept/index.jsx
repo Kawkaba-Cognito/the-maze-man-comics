@@ -9,7 +9,7 @@ import { TrainingPlayHeader } from '../../../../shared/TrainingChrome';
 import { startCanvasLoop } from '../../../../shared/canvasLoop';
 import {
   BASE_HP, BLAST_FRAC, KIND, RING_AT, TRAIL,
-  buildWave, levelCfg, levelPassed, passCfg, posAt, summarise, survivalCfg,
+  buildWave, LADDER_LEVELS, levelCfg, levelPassed, passCfg, posAt, summarise, survivalCfg,
 } from './data.js';
 import './intercept.css';
 
@@ -38,7 +38,7 @@ const UI = {
     ...STR_COMMON.en,
     title: 'Intercept',
     hintFree: 'Rift Defense — endless waves, the army keeps coming',
-    hintLevels: '3 difficulties · 100 levels each',
+    hintLevels: '60 levels · a new mechanic every 10',
     hintPass: 'Same waves for everyone · pass the device',
     briefTitle: 'Hold the trail',
     brief: 'An army marches to your gate. Tap them while they are inside your tower’s reach.',
@@ -131,7 +131,7 @@ const COLOUR_TOKEN = {
 };
 
 export function InterceptEngine({
-  mode, diff, level, seed, attempt, onResult, onExit, isAr, playSfx, awardFreeRun,
+  mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardFreeRun,
 }) {
   const t = isAr ? UI.ar : UI.en;
 
@@ -159,16 +159,18 @@ export function InterceptEngine({
   const sizeRef = useRef({ w: 0, h: 0 });
 
   const cfg = useMemo(
-    () => (mode === 'free' ? survivalCfg(stage) : mode === 'passplay' ? passCfg() : levelCfg(diff, level)),
-    [mode, stage, diff, level],
+    () => (mode === 'free' ? survivalCfg(stage)
+      : mode === 'passplay' ? (level ? levelCfg(level) : passCfg())
+        : levelCfg(level)),
+    [mode, stage, level],
   );
 
   /* Survival runs forever; a level is a fixed handful of waves. */
   const totalWaves = mode === 'free' ? Infinity : 3;
 
   const rng = useMemo(
-    () => makeRng(`${seed}-${mode}-${diff}-${level}-${stage}-${waveNo}-${attempt}`),
-    [seed, mode, diff, level, stage, waveNo, attempt],
+    () => makeRng(`${seed}-${mode}-${level}-${stage}-${waveNo}-${attempt}`),
+    [seed, mode, level, stage, waveNo, attempt],
   );
 
   const handleExit = useCallback(() => {
@@ -186,9 +188,9 @@ export function InterceptEngine({
   });
 
   useEffect(() => {
-    trialLogRef.current = createTrialLog({ game: 'intercept', mode, meta: { diff, level } });
+    trialLogRef.current = createTrialLog({ game: 'intercept', mode, meta: { level } });
     return () => { trialLogRef.current?.discard(); trialLogRef.current = null; };
-  }, [mode, diff, level]);
+  }, [mode, level]);
 
   /* ── wave control ─────────────────────────────────────────────────────── */
   const startWave = useCallback(() => {
@@ -581,7 +583,7 @@ export function InterceptEngine({
     const s = summarise(logRef.current);
     if (mode === 'levels') {
       const won = levelPassed(hpRef.current);
-      trialLogRef.current?.finish({ won, score: s.kills, level, diff });
+      trialLogRef.current?.finish({ won, score: s.kills, level });
       trialLogRef.current = null;
       onResult?.({ won, score: s.kills, summary: `${s.kills} · ${hpRef.current}/${BASE_HP}` });
       return;
@@ -595,7 +597,7 @@ export function InterceptEngine({
     trialLogRef.current?.finish({ best: stage, kills: s.kills });
     trialLogRef.current = null;
     onExit?.();
-  }, [mode, level, diff, onResult, onExit, playSfx, stage]);
+  }, [mode, level, onResult, onExit, playSfx, stage]);
 
   const biasText = (b) => (Math.abs(b) <= 12 ? t.biasEven : b < 0 ? t.biasEarly(Math.abs(b)) : t.biasLate(b));
 
@@ -739,15 +741,16 @@ export default function InterceptGame({ onBack, workoutMode = false }) {
         levels: { en: UI.en.hintLevels, ar: UI.ar.hintLevels },
         pass: { en: UI.en.hintPass, ar: UI.ar.hintPass },
       }}
-      diffLabels={{ easy: { en: 'Easy', ar: 'سهل' }, med: { en: 'Medium', ar: 'متوسط' }, hard: { en: 'Hard', ar: 'صعب' } }}
-      pass={{ trials: 1, scoreLabel: { en: 'cut down', ar: 'أُسقطوا' }, lowerBetter: false, diff: 'med' }}
+      /* ONE LADDER — no easy/med/hard. See data.js LADDER. */
+      ladder={{ levels: LADDER_LEVELS }}
+      pass={{ trials: 1, scoreLabel: { en: 'cut down', ar: 'أُسقطوا' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
       onBack={onBack}
       workoutMode={workoutMode}
       renderEngine={(p) => (
         <InterceptEngine
-          key={`${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+          key={`${p.mode}-${p.level}-${p.seed}`}
           {...p}
           isAr={isAr}
           playSfx={playSfx}
