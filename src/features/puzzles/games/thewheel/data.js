@@ -139,15 +139,20 @@ const BASE_STREAK = [
   { id: 'biology', title: 'HUMAN BIOLOGY', titleAr: 'جسم الإنسان', unit: '', items: [['HYOID BONE', 1], ['HEART CHAMBERS', 4], ['LUNG LOBES', 5], ['NECK VERTEBRAE', 7], ['CRANIAL NERVE PAIRS', 12], ['FINGER BONES, BOTH HANDS', 28], ['ADULT TEETH', 32], ['CHROMOSOMES', 46], ['ADULT BONES', 206], ['MUSCLES', 600]] },
   { id: 'storage', title: 'DIGITAL STORAGE', titleAr: 'سعة التخزين', unit: ' GB', items: [['FLOPPY DISK', 0.00144], ['CD', 0.7], ['DVD', 4.7], ['BLU-RAY', 25], ['OLD PHONE', 64], ['MODERN PHONE', 256], ['LAPTOP SSD', 1000], ['DESKTOP HDD', 4000], ['SMALL NAS', 16000]] },
   { id: 'diameters', title: 'PLANET DIAMETERS', titleAr: 'أقطار الكواكب', unit: ' km', items: [['MERCURY', 4879], ['MARS', 6779], ['EARTH', 12742], ['NEPTUNE', 49244], ['SATURN', 116460], ['JUPITER', 139820], ['SUN', 1392700]] },
-  { id: 'atomic', title: 'ATOMIC NUMBERS', titleAr: 'الأعداد الذرية', unit: '', items: [['HYDROGEN', 1], ['HELIUM', 2], ['CARBON', 6], ['OXYGEN', 8], ['NEON', 10], ['ALUMINIUM', 13], ['CHLORINE', 17], ['IRON', 26], ['SILVER', 47], ['GOLD', 79]] },
+  /* ⚠ REPLACED 2026-08-29, same reason as the ranked sets above: ATOMIC
+     NUMBERS, PROGRAMMING LANGUAGES and MELTING POINTS (gallium, tungsten) are
+     not things a normal person can call higher or lower. In THIS game that is
+     worse than in the ranking one — a blind call loses the whole run, so an
+     unknowable pool does not just bore the table, it punishes them for it. */
+  { id: 'everydayweights', title: 'EVERYDAY WEIGHTS', titleAr: 'أوزان يومية', unit: ' kg', items: [['SMARTPHONE', 0.2], ['LAPTOP', 1.5], ['HOUSE CAT', 4.5], ['BOWLING BALL', 7], ['BICYCLE', 12], ['FULL SUITCASE', 23], ['WASHING MACHINE', 70], ['UPRIGHT PIANO', 300], ['SMALL CAR', 1200]] },
   { id: 'areas', title: 'COUNTRY AREAS', titleAr: 'مساحات الدول', unit: ' M km²', items: [['LEBANON', 0.0105], ['UNITED KINGDOM', 0.244], ['JAPAN', 0.378], ['FRANCE', 0.552], ['EGYPT', 1.01], ['INDIA', 3.287], ['USA', 9.834], ['RUSSIA', 17.1]] },
   { id: 'mountains', title: 'MOUNTAIN HEIGHTS', titleAr: 'ارتفاعات الجبال', unit: ' m', items: [['BEN NEVIS', 1345], ['MOUNT ETNA', 3357], ['MOUNT FUJI', 3776], ['MONT BLANC', 4808], ['KILIMANJARO', 5895], ['ACONCAGUA', 6961], ['EVEREST', 8849], ['OLYMPUS MONS', 21900]] },
   { id: 'planet-years', title: 'PLANET YEARS', titleAr: 'سنوات الكواكب', unit: ' Earth days', items: [['MERCURY', 88], ['VENUS', 225], ['EARTH', 365], ['MARS', 687], ['CERES', 1682], ['JUPITER', 4333], ['SATURN', 10759], ['URANUS', 30687], ['NEPTUNE', 60190], ['PLUTO', 90560]] },
   { id: 'gravity', title: 'SURFACE GRAVITY', titleAr: 'جاذبية السطح', unit: ' m/s²', items: [['PLUTO', 0.62], ['MOON', 1.62], ['MARS', 3.71], ['URANUS', 8.69], ['EARTH', 9.81], ['JUPITER', 24.79], ['SUN', 274]] },
   { id: 'inventions', title: 'INVENTED IN', titleAr: 'سنة الاختراع', unit: ' AD', gapAbs: 8, items: [['PRINTING PRESS', 1440], ['TELESCOPE', 1608], ['STEAM ENGINE', 1712], ['PHOTOGRAPHY', 1826], ['TELEPHONE', 1876], ['RADIO', 1895], ['AIRPLANE', 1903], ['TELEVISION', 1927], ['WORLD WIDE WEB', 1989]] },
-  { id: 'melting', title: 'MELTING POINTS', titleAr: 'درجات الانصهار', unit: ' °C', items: [['ICE', 0], ['GALLIUM', 30], ['TIN', 232], ['LEAD', 327], ['ALUMINIUM', 660], ['SILVER', 962], ['GOLD', 1064], ['IRON', 1538], ['TUNGSTEN', 3422]] },
+  { id: 'howold', title: 'HOW OLD YOU MUST BE', titleAr: 'كم يجب أن يكون عمرك', unit: ' years', gapAbs: 2, items: [['START SCHOOL', 5], ['SECONDARY SCHOOL', 11], ['TEENAGER', 13], ['DRIVE A CAR', 17], ['RENT A CAR', 25], ['RUN FOR US PRESIDENT', 35], ['RETIREMENT', 66]] },
   { id: 'heartrate', title: 'RESTING HEART RATES', titleAr: 'نبضات القلب', unit: ' bpm', items: [['BLUE WHALE', 10], ['ELEPHANT', 30], ['HORSE', 36], ['HUMAN', 70], ['DOG', 90], ['CAT', 150], ['RABBIT', 205], ['HAMSTER', 450], ['MOUSE', 600], ['HUMMINGBIRD', 1000]] },
-  { id: 'langyears', title: 'PROGRAMMING LANGUAGES', titleAr: 'لغات البرمجة', unit: ' AD', gapAbs: 4, items: [['C', 1972], ['C++', 1985], ['PYTHON', 1991], ['JAVA', 1995], ['C#', 2000], ['GO', 2009], ['SWIFT', 2014], ['KOTLIN', 2019]] },
+  { id: 'films', title: 'FILMS RELEASED IN', titleAr: 'سنة صدور الأفلام', unit: ' AD', gapAbs: 5, items: [['SNOW WHITE', 1937], ['STAR WARS', 1977], ['E.T.', 1982], ['THE LION KING', 1994], ['SHREK', 2001], ['AVATAR', 2009], ['AVENGERS: ENDGAME', 2019]] },
   { id: 'datasizes', title: 'DATA SIZES', titleAr: 'وحدات البيانات', unit: ' bytes', items: [['BYTE', 1], ['KILOBYTE', 1e3], ['MEGABYTE', 1e6], ['GIGABYTE', 1e9], ['TERABYTE', 1e12], ['PETABYTE', 1e15], ['EXABYTE', 1e18], ['ZETTABYTE', 1e21], ['YOTTABYTE', 1e24]] },
   { id: 'sportsfield', title: 'PLAYING AREAS', titleAr: 'أطوال الملاعب', unit: ' m long', items: [['VOLLEYBALL COURT', 18], ['CRICKET PITCH', 20.1], ['TENNIS COURT', 23.8], ['BASKETBALL COURT', 28], ['OLYMPIC POOL', 50], ['ICE HOCKEY RINK', 60], ['FOOTBALL PITCH', 105], ['ATHLETICS LAP', 400]] },
 ].map(pool);
@@ -187,23 +192,33 @@ const BASE_RANKED = [
   { id: 'building', prompt: 'SHORTEST → TALLEST BUILDING', promptAr: 'الأقصر ← الأطول مبنى', unit: ' m', items: [['LONDON EYE', 135], ['EIFFEL TOWER', 330], ['EMPIRE STATE', 443], ['CN TOWER', 553], ['BURJ KHALIFA', 828]] },
   { id: 'speakers', prompt: 'FEWEST → MOST NATIVE SPEAKERS', promptAr: 'الأقل ← الأكثر متحدثين', unit: ' M', items: [['ITALIAN', 65], ['JAPANESE', 123], ['RUSSIAN', 154], ['SPANISH', 485], ['MANDARIN', 940]] },
   { id: 'oceans', prompt: 'SMALLEST → LARGEST OCEAN', promptAr: 'الأصغر ← الأكبر محيطاً', unit: ' M km²', items: [['ARCTIC', 14], ['SOUTHERN', 20], ['INDIAN', 71], ['ATLANTIC', 106], ['PACIFIC', 165]] },
-  { id: 'daylen', prompt: 'SHORTEST → LONGEST DAY', promptAr: 'الأقصر ← الأطول يوماً', unit: ' hours', items: [['JUPITER', 9.9], ['SATURN', 10.7], ['EARTH', 24], ['MERCURY', 1408], ['VENUS', 5832]] },
+  { id: 'prices', prompt: 'CHEAPEST → MOST EXPENSIVE', promptAr: 'الأرخص ← الأغلى', unit: ' $', items: [['CUP OF COFFEE', 4], ['CINEMA TICKET', 15], ['PAIR OF JEANS', 60], ['SMARTPHONE', 900], ['SMALL CAR', 20000]] },
   { id: 'moons', prompt: 'FEWEST → MOST MOONS', promptAr: 'الأقل ← الأكثر أقماراً', unit: ' moons', items: [['EARTH', 1], ['MARS', 2], ['NEPTUNE', 16], ['URANUS', 28], ['JUPITER', 95]] },
   { id: 'pulse', prompt: 'SLOWEST → FASTEST HEARTBEAT', promptAr: 'الأبطأ ← الأسرع نبضاً', unit: ' bpm', items: [['BLUE WHALE', 10], ['HORSE', 36], ['HUMAN', 70], ['CAT', 150], ['MOUSE', 600]] },
   { id: 'water', prompt: 'DRIEST → MOST WATERY', promptAr: 'الأقل ← الأكثر ماءً', unit: ' % water', items: [['BUTTER', 16], ['BREAD', 35], ['BANANA', 75], ['APPLE', 86], ['CUCUMBER', 95]] },
-  { id: 'racetime', prompt: 'FASTEST → SLOWEST ELITE RACE TIME', promptAr: 'الأسرع ← الأبطأ زمناً', unit: ' min', items: [['100 M SPRINT', 0.16], ['400 M', 0.72], ['5 KM', 13], ['HALF MARATHON', 57], ['MARATHON', 121]] },
-  { id: 'freq', prompt: 'LOWEST → HIGHEST PITCH', promptAr: 'الأخفض ← الأعلى نغمة', unit: ' Hz', items: [['LOW BASS', 60], ['CONCERT PITCH A', 440], ['SMOKE ALARM', 3000], ['MOSQUITO WHINE', 10000], ['LIMIT OF HEARING', 20000]] },
-  { id: 'atomic', prompt: 'LOWEST → HIGHEST ATOMIC NUMBER', promptAr: 'الأدنى ← الأعلى عدداً ذرياً', unit: '', items: [['HELIUM', 2], ['CARBON', 6], ['OXYGEN', 8], ['IRON', 26], ['GOLD', 79]] },
+  /* ⚠ REPLACED 2026-08-29 — the seven sets that used to sit in these slots were
+     ELITE RACE TIMES in decimal minutes, PITCH IN HERTZ, ATOMIC NUMBERS,
+     MELTING POINTS, BOILING POINTS, PLANET DAY LENGTHS and PROGRAMMING
+     LANGUAGES BY RELEASE YEAR. Every one was factually correct and none of them
+     belonged in a party game: ordering tin against aluminium, or Go against
+     Swift, is not something a normal person knows, so the round stops being a
+     guess you can reason about and becomes a shrug. A ranking puzzle is fun
+     exactly when the table ARGUES about it, and you cannot argue about a fact
+     you have never met. These are replacements rather than deletions because
+     the bank size is load-bearing — see the exact 64 ÷ 4 split in sets.js. */
+  { id: 'sugar', prompt: 'LEAST → MOST SUGAR', promptAr: 'الأقل ← الأكثر سكراً', unit: ' g per glass', items: [['MILK', 12], ['ORANGE JUICE', 21], ['COLA', 35], ['ENERGY DRINK', 55], ['MILKSHAKE', 80]] },
+  { id: 'screens', prompt: 'SMALLEST → LARGEST SCREEN', promptAr: 'الأصغر ← الأكبر شاشة', unit: ' cm across', items: [['SMARTWATCH', 4], ['PHONE', 15], ['TABLET', 27], ['LAPTOP', 35], ['LIVING-ROOM TV', 140]] },
+  { id: 'cooking', prompt: 'QUICKEST → SLOWEST TO COOK', promptAr: 'الأسرع ← الأبطأ طهياً', unit: ' min', items: [['BOILED EGG', 7], ['PASTA', 11], ['RICE', 20], ['ROAST CHICKEN', 90], ['SLOW-COOKED STEW', 300]] },
   { id: 'area', prompt: 'SMALLEST → LARGEST COUNTRY', promptAr: 'الأصغر ← الأكبر دولة', unit: ' M km²', items: [['LEBANON', 0.0105], ['ITALY', 0.301], ['EGYPT', 1.01], ['INDIA', 3.287], ['RUSSIA', 17.1]] },
   { id: 'grav', prompt: 'WEAKEST → STRONGEST GRAVITY', promptAr: 'الأضعف ← الأقوى جاذبية', unit: ' m/s²', items: [['MOON', 1.62], ['MARS', 3.71], ['EARTH', 9.81], ['JUPITER', 24.79], ['SUN', 274]] },
-  { id: 'melt', prompt: 'LOWEST → HIGHEST MELTING POINT', promptAr: 'الأدنى ← الأعلى انصهاراً', unit: ' °C', items: [['ICE', 0], ['TIN', 232], ['ALUMINIUM', 660], ['GOLD', 1064], ['IRON', 1538]] },
-  { id: 'langs', prompt: 'OLDEST → NEWEST LANGUAGE', promptAr: 'الأقدم ← الأحدث لغة', unit: ' AD', gapAbs: 4, items: [['C', 1972], ['C++', 1985], ['PYTHON', 1991], ['GO', 2009], ['SWIFT', 2014]] },
+  { id: 'holidays', prompt: 'EARLIEST → LATEST IN THE YEAR', promptAr: 'الأبكر ← الأمتأخر في السنة', unit: '', items: [["NEW YEAR'S DAY", 1], ["VALENTINE'S DAY", 45], ['LONGEST DAY OF SUMMER', 172], ['HALLOWEEN', 304], ['CHRISTMAS', 359]] },
+  { id: 'appsage', prompt: 'OLDEST → NEWEST', promptAr: 'الأقدم ← الأحدث', unit: ' AD', gapAbs: 4, items: [['EMAIL', 1971], ['GOOGLE', 1998], ['FACEBOOK', 2004], ['WHATSAPP', 2009], ['TIKTOK', 2016]] },
   { id: 'data', prompt: 'SMALLEST → LARGEST DATA UNIT', promptAr: 'الأصغر ← الأكبر وحدة', unit: ' bytes', items: [['BYTE', 1], ['KILOBYTE', 1e3], ['MEGABYTE', 1e6], ['GIGABYTE', 1e9], ['TERABYTE', 1e12]] },
   { id: 'sides', prompt: 'FEWEST → MOST SIDES', promptAr: 'الأقل ← الأكثر أضلاعاً', unit: ' sides', items: [['TRIANGLE', 3], ['SQUARE', 4], ['PENTAGON', 5], ['HEXAGON', 6], ['OCTAGON', 8]] },
   { id: 'angles', prompt: 'LOWEST → HIGHEST ANGLE SUM', promptAr: 'الأدنى ← الأعلى مجموع زوايا', unit: '°', items: [['TRIANGLE', 180], ['QUADRILATERAL', 360], ['PENTAGON', 540], ['HEXAGON', 720], ['OCTAGON', 1080]] },
   { id: 'seconds', prompt: 'SHORTEST → LONGEST TIME', promptAr: 'الأقصر ← الأطول زمناً', unit: ' sec', items: [['MINUTE', 60], ['HOUR', 3600], ['DAY', 86400], ['WEEK', 604800], ['YEAR', 31557600]] },
   { id: 'density', prompt: 'LIGHTEST → DENSEST MATERIAL', promptAr: 'الأخف ← الأكثف مادة', unit: ' g/cm³', items: [['CORK', 0.24], ['WATER', 1], ['ALUMINIUM', 2.7], ['IRON', 7.87], ['GOLD', 19.3]] },
-  { id: 'boil', prompt: 'LOWEST → HIGHEST BOILING POINT', promptAr: 'الأدنى ← الأعلى غلياناً', unit: ' °C', items: [['NITROGEN', -196], ['ETHANOL', 78], ['WATER', 100], ['SULFUR', 445], ['IRON', 2862]] },
+  { id: 'devices', prompt: 'OLDEST → NEWEST DEVICE', promptAr: 'الأقدم ← الأحدث جهازاً', unit: ' AD', gapAbs: 8, items: [['RADIO', 1895], ['TELEVISION', 1927], ['MOBILE PHONE', 1973], ['LAPTOP', 1981], ['SMARTPHONE', 2007]] },
   { id: 'balls', prompt: 'SMALLEST → LARGEST BALL', promptAr: 'الأصغر ← الأكبر كرة', unit: ' cm across', items: [['GOLF BALL', 4.3], ['TENNIS BALL', 6.7], ['BASEBALL', 7.3], ['SOFTBALL', 9.7], ['BASKETBALL', 24]] },
   { id: 'consoles', prompt: 'OLDEST → NEWEST CONSOLE', promptAr: 'الأقدم ← الأحدث جهازاً', unit: ' AD', gapAbs: 5, items: [['NES', 1983], ['GAME BOY', 1989], ['PLAYSTATION', 1994], ['XBOX', 2001], ['NINTENDO SWITCH', 2017]] },
   { id: 'track', prompt: 'SHORTEST → LONGEST TRACK RACE', promptAr: 'الأقصر ← الأطول سباقاً', unit: ' m', items: [['100 M', 100], ['200 M', 200], ['400 M', 400], ['800 M', 800], ['1500 M', 1500]] },

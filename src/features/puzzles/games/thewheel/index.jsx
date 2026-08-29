@@ -50,58 +50,67 @@ const fmtNum = (n) => (Number.isInteger(n) ? n.toLocaleString('en-US') : n.toLoc
 /*
  * ── SCORING ──────────────────────────────────────────────────────────────
  *
- * Every game pays for the thing it is actually testing, and every game has a
- * reason to keep playing well rather than coast once a lead exists.
+ * ⚠ EVERY ROUND OF EVERY GAME IS WORTH 0–5. NOTHING MAY PAY MORE (2026-08-29).
  *
- * GAME 1 · accuracy decays continuously with RELATIVE error — halving every
- * 15% — so a near miss on "how many bones" and on "how far is the Moon" are
- * worth the same, which points-per-unit cannot do. On top:
- *   • DIFFICULTY WEIGHT. A question whose bullseye window is a hair of its
- *     truth is harder than one you can hit by leaning on the slider, so the
- *     accuracy is scaled by how tight that window is (1.0x–1.6x). Without it
- *     every question paid the same and the tolerances were decoration.
- *   • ANCHOR-PROOF +20 for not drifting toward the number you were just shown,
- *     and BULLSEYE +40 for landing inside the window. These are the lesson.
- *   • RESIST STREAK. Consecutive rounds without being pulled pay 10, 20, 30…
- *     Anchoring resistance is a habit, so it is scored like one.
+ * It used to pay in the hundreds, on three different scales that did not agree
+ * with each other: a Game 1 round could return ~270 (a continuous accuracy
+ * curve × a 1.0–1.6 difficulty weight, + 40 bullseye, + 20 anchor-proof, + up
+ * to 50 streak), Game 3 up to 220, and a hot Game 2 run about 150. Every one of
+ * those numbers was defensible on its own and the whole was unreadable: nobody
+ * at a table can tell whether 247 was a good round, or why the team that felt
+ * like it was losing is somehow ahead.
+ *
+ * A party scoreboard has to be sayable out loud. "Four out of five" is; "247"
+ * is not. The three games keep their distinct SHAPES — estimate under an
+ * anchor, push your luck, order five cards — and now share one legible scale.
+ *
+ * The lessons survive as they can inside a 0–5 band:
+ *   • GAME 1 bands are multiples of the QUESTION'S OWN tolerance, so a tight
+ *     question and a loose one both pay 5 for "you got it" — the reason the old
+ *     formula used relative error rather than raw units.
+ *   • Anchoring is a PENALTY now, not a bonus: a bonus would push a round past
+ *     5, and the cap is the point. Drift toward the number you were shown and
+ *     you cannot take full marks.
  */
-function scoreEstimate(guess, q, verdict, resistStreak) {
+function scoreEstimate(guess, q, verdict) {
   const relErr = Math.abs(guess - q.truth) / Math.max(Math.abs(q.truth), 1e-9);
-  /* Tolerance as a share of the truth: ~1% of the value is a precision
-   * question, ~20% is a gimme. Clamped so nothing can pay less than face
-   * value or run away with the round. */
-  const tolShare = q.tol / Math.max(Math.abs(q.truth), 1e-9);
-  const diffMult = Math.min(1.6, Math.max(1, 1 + (0.12 - Math.min(tolShare, 0.12)) * 5));
-  let acc = 100 * (0.5 ** ((relErr * 100) / 15));
-  if (verdict === 'bull') acc = Math.max(acc, 100);
-  acc *= diffMult;
-  const bullseye = verdict === 'bull' ? 40 : 0;
-  const anchorProof = verdict === 'pulled' ? 0 : 20;
-  const streak = verdict === 'pulled' ? 0 : Math.min(resistStreak, 5) * 10;
-  return {
-    total: Math.round(acc) + bullseye + anchorProof + streak,
-    relErr: relErr * 100, diffMult, bullseye, anchorProof, streak,
-  };
+  /* Bands measured in MULTIPLES OF THE QUESTION'S OWN TOLERANCE, so a tight
+     question and a loose one both pay 5 for "you got it" — the same reason the
+     old formula scaled by relative error rather than by units. */
+  const tolShare = Math.max(q.tol / Math.max(Math.abs(q.truth), 1e-9), 0.01);
+  const k = relErr / tolShare;
+  let base;
+  if (verdict === 'bull' || k <= 1) base = 5;
+  else if (k <= 2) base = 4;
+  else if (k <= 4) base = 3;
+  else if (k <= 8) base = 2;
+  else if (k <= 16) base = 1;
+  else base = 0;
+  /* The anchoring lesson survives as a PENALTY rather than a bonus, because a
+     bonus would push the round past 5 and the whole point is that a round is
+     worth 0–5. Drift toward the meaningless number you were just shown and you
+     cannot take full marks. */
+  const pulled = verdict === 'pulled';
+  const total = Math.max(0, pulled ? Math.min(base, 3) - 1 : base);
+  return { total, relErr: relErr * 100, bullseye: verdict === 'bull' ? 1 : 0, pulled };
 }
 
 /*
- * GAME 2 · the pot escalates 10, 15, 20… and BANKING MULTIPLIES it: 1.5x from
- * five correct calls, 2x from eight. Without a multiplier the optimal play was
- * simply to bank early and often, because each extra call risked more than it
- * added; the milestone turns "do I stop?" into a real question with a number
- * attached to it.
+ * GAME 2 · a run is worth the number of correct calls you BANK, capped at 5.
+ * The push-your-luck shape survives untouched — keep calling to raise what you
+ * are holding, lose it all if you call wrong — but the ceiling means a hot
+ * streak cannot bury the other two games, and "I banked 4" is a thing a person
+ * can say out loud. The old escalating pot with 1.5x/2x milestones paid up to
+ * ~150 for one lucky run.
  */
-function bankMultiplier(calls) {
-  if (calls >= 8) return 2;
-  if (calls >= 5) return 1.5;
-  return 1;
-}
+const RUN_CAP = 5;
+const runWorth = (calls) => Math.min(RUN_CAP, calls);
 
 /*
- * GAME 3 · every one of the ten pairwise relationships pays 15, an exact
- * position pays 8, and a flawless line pays 30 on top. Pairs alone meant two
- * quite different answers — one card badly misplaced versus a pair swapped in
- * the middle — could score identically; position credit separates them.
+ * GAME 3 · the ten pairwise relationships, mapped onto 0–5. A flawless line is
+ * 5; below that each band is two pairs wide. Position credit is gone: it was
+ * there to separate two answers with equal pairs, which is a distinction worth
+ * making on a 220-point scale and invisible on a 5-point one.
  */
 function scoreOrder(pick, correct) {
   let pairs = 0; let total = 0;
@@ -113,7 +122,8 @@ function scoreOrder(pick, correct) {
   }
   const exact = correct.reduce((n, it, i) => n + (pick.indexOf(it) === i ? 1 : 0), 0);
   const perfect = pairs === total;
-  return { pairs, total, exact, perfect, pts: pairs * 15 + exact * 8 + (perfect ? 30 : 0) };
+  const pts = perfect ? 5 : Math.min(4, Math.floor(pairs / 2));
+  return { pairs, total, exact, perfect, pts };
 }
 
 export default function TheWheelGame({ onBack }) {
@@ -124,8 +134,8 @@ export default function TheWheelGame({ onBack }) {
     title: isAr ? 'العجلة' : 'The Wheel',
     tagline: isAr ? 'ثلاث ألعاب. لوحة نتائج واحدة.' : 'Three games. One scoreboard.',
     how: isAr
-      ? 'ثلاث ألعاب متصلة تتقاسم نفس النتيجة. أولاً: أدر العجلة لرقم لا معنى له ثم خمّن الحقيقة — كلما ابتعدت عن الرقم كسبت أكثر. ثانياً: أعلى أم أقل؟ كل إجابة صحيحة تكبّر الرصيد، وخطأ واحد يحرقه. ثالثاً: رتّب خمس بطاقات — كل زوج صحيح يُحتسب.'
-      : 'Three connected games share one scoreboard. First: spin a meaningless number, then estimate the truth — resisting the number pays. Second: higher or lower, where every correct call grows a pot and one miss burns it. Third: order five cards — every correctly ordered pair scores.',
+      ? 'ثلاث ألعاب متصلة تتقاسم نفس النتيجة، وكل جولة من ٠ إلى ٥. أولاً: أدر العجلة لرقم لا معنى له ثم خمّن الحقيقة — الانجرار وراء الرقم يكلّفك نقطة. ثانياً: هل الشيء التالي أعلى أم أقل من الذي أمامك؟ كل إجابة صحيحة ترفع رصيدك، وخطأ واحد يضيّع الجولة — فاسحب قبل ذلك. ثالثاً: رتّب خمس بطاقات — كل زوج صحيح يُحتسب.'
+      : 'Three connected games share one scoreboard, and every round is worth 0–5. First: spin a meaningless number, then estimate the truth — drifting toward the number costs you a point. Second: is the next thing higher or lower than the one in front of you? Each correct call raises your run and one miss loses it, so bank before that. Third: order five cards — every correctly ordered pair counts.',
     teams: isAr ? 'الفرق' : 'Teams',
     length: isAr ? 'طول الليلة' : 'Night length',
     setsLabel: isAr ? 'مجموعة الليلة' : 'Tonight’s set',
@@ -153,6 +163,12 @@ export default function TheWheelGame({ onBack }) {
     next: isAr ? 'التالي' : 'Next',
     higher: isAr ? '▲ أعلى' : '▲ Higher',
     lower: isAr ? '▼ أقل' : '▼ Lower',
+    vs: isAr ? 'مقابل' : 'versus',
+    /* Names the two things being compared, in both directions of the sentence,
+       because "Higher" on its own never said higher THAN WHAT. */
+    askHL: (next, cur) => (isAr
+      ? `هل ${next} أعلى أم أقل من ${cur}؟`
+      : `Is ${next} higher or lower than ${cur}?`),
     bank: isAr ? 'اسحب' : 'Bank',
     run: isAr ? 'الجولة' : 'Run',
     streak: isAr ? 'المتتالية' : 'Streak',
@@ -306,7 +322,7 @@ export default function TheWheelGame({ onBack }) {
     const absErr = Math.abs(wGuess - q.truth);
     const verdict = absErr <= q.tol ? 'bull' : drift > q.tol ? 'pulled' : 'resisted';
     const ti = wRound % teams.length;
-    const sc = scoreEstimate(wGuess, q, verdict, teams[ti].stats.resist);
+    const sc = scoreEstimate(wGuess, q, verdict);
     addScore(ti, sc.total, 'wheel');
     setTeams((prev) => prev.map((tm, i) => (i === ti ? {
       ...tm,
@@ -357,15 +373,14 @@ export default function TheWheelGame({ onBack }) {
     const right = dir === 1 ? next.v > cur.v : next.v < cur.v;
     const ti = sIdx % teams.length;
     if (right) {
-      const worth = 10 + 5 * sRun.calls;
-      const run = { ...sRun, at: at + 1, calls: sRun.calls + 1, pot: sRun.pot + worth };
+      const run = { ...sRun, at: at + 1, calls: sRun.calls + 1, pot: runWorth(sRun.calls + 1) };
       setSRun(run);
-      setSMsg({ text: isAr ? `✓ صحيح · +${worth}` : `✓ Correct · +${worth}`, tone: 'good' });
+      setSMsg({ text: isAr ? `✓ صحيح · ${run.pot}/${RUN_CAP}` : `✓ Correct · ${run.pot}/${RUN_CAP}`, tone: 'good' });
       playSfx?.('collect');
       say(isAr ? 'صحيح. الرصيد يكبر. والطمع يدخل الغرفة.' : 'Correct. The pot grows. Greed enters the room.', 'cheer');
       if (run.at >= items.length - 1) {
-        // Pool exhausted — bank automatically rather than strand the pot.
-        const paid = Math.round(run.pot * bankMultiplier(run.calls));
+        // Pool exhausted — bank automatically rather than strand the run.
+        const paid = runWorth(run.calls);
         addScore(ti, paid, 'streak');
         setTeams((prev) => prev.map((tm, i) => (i === ti ? { ...tm, stats: { ...tm.stats, best: Math.max(tm.stats.best, run.calls) } } : tm)));
         setSMsg({ text: isAr ? `نفدت الحقائق — سُحب ${paid}` : `Facts exhausted — banked ${paid}`, tone: 'good' });
@@ -373,8 +388,8 @@ export default function TheWheelGame({ onBack }) {
       }
       setTimeout(() => { sLock.current = false; }, 260);
     } else {
-      setSRun({ ...sRun, at: at + 1 });
-      setSMsg({ text: isAr ? `✗ خطأ — احترق ${sRun.pot}` : `✗ Wrong — the ${sRun.pot} pot burns`, tone: 'bad' });
+      setSRun({ ...sRun, at: at + 1, pot: 0 });
+      setSMsg({ text: isAr ? `✗ خطأ — ضاعت الجولة` : '✗ Wrong — the run is lost', tone: 'bad' });
       setTeams((prev) => prev.map((tm, i) => (i === ti ? { ...tm, stats: { ...tm.stats, busts: tm.stats.busts + 1, best: Math.max(tm.stats.best, sRun.calls) } } : tm)));
       playSfx?.('error');
       say(isAr ? 'انفجر. الرصيد ذهب. لست غاضباً — حاجباي غاضبان.' : 'Boom. Pot gone. I am not angry; my eyebrows are.', 'shake');
@@ -386,11 +401,10 @@ export default function TheWheelGame({ onBack }) {
     if (sLock.current || !sRun || !sRun.pot || sOver) return;
     playSfx?.('win');
     const ti = sIdx % teams.length;
-    const mult = bankMultiplier(sRun.calls);
-    const paid = Math.round(sRun.pot * mult);
+    const paid = runWorth(sRun.calls);
     addScore(ti, paid, 'streak');
     setTeams((prev) => prev.map((tm, i) => (i === ti ? { ...tm, stats: { ...tm.stats, best: Math.max(tm.stats.best, sRun.calls) } } : tm)));
-    setSMsg({ text: mult > 1 ? (isAr ? `سُحب ${sRun.pot} × ${mult} = +${paid}` : `Banked ${sRun.pot} × ${mult} = +${paid}`) : (isAr ? `سُحب +${paid}` : `Banked +${paid}`), tone: 'good' });
+    setSMsg({ text: isAr ? `سُحب +${paid}` : `Banked +${paid}`, tone: 'good' });
     setSOver(true);
     say(isAr ? 'سُحب. معقول. معقول بشكل مريب.' : 'Banked. Sensible. Suspiciously sensible.', 'cheer');
   };
@@ -640,13 +654,14 @@ export default function TheWheelGame({ onBack }) {
                 : wResult.verdict === 'resisted' ? (isAr ? 'قاومت الرقم' : 'Resisted — you moved away from the anchor')
                   : (isAr ? 'جذبك الرقم' : 'Pulled — the anchor dragged your estimate toward it')}
             </div>
+            {/* One line, one number out of five. The old readout showed the
+                relative error, a difficulty multiplier, a bullseye bonus, an
+                anchor-proof bonus and a streak bonus, then a total — six
+                figures to explain a single round at a party. */}
             <div className="tw-points">
-              {isAr ? 'خطأ نسبي' : 'Relative error'} {wResult.relErr.toFixed(1)}%
-              {wResult.diffMult > 1.01 ? ` · ×${wResult.diffMult.toFixed(2)}` : ''}
-              {wResult.bullseye ? ` · ${isAr ? 'إصابة' : 'bullseye'} +40` : ''}
-              {wResult.anchorProof ? ` · ${isAr ? 'مقاومة' : 'anchor-proof'} +20` : ''}
-              {wResult.streak ? ` · ${isAr ? 'سلسلة' : 'streak'} +${wResult.streak}` : ''}
-              {' → '}<b>{teams[ti].name} +{wResult.total}</b>
+              {isAr ? 'خطأ نسبي' : 'Off by'} {wResult.relErr.toFixed(1)}%
+              {wResult.pulled ? ` · ${isAr ? 'جذبك الرقم −1' : 'anchored −1'}` : ''}
+              {' → '}<b>{teams[ti].name} +{wResult.total}/5</b>
             </div>
             <button type="button" className="gc-btn" onClick={nextWheel}>
               {wRound === schedule.wheel - 1 ? t.matchCard : t.next}
@@ -661,7 +676,7 @@ export default function TheWheelGame({ onBack }) {
     const ti = sIdx % teams.length;
     const cur = sRun.items[sRun.at];
     const hasNext = sRun.at < sRun.items.length - 1;
-    const worth = 10 + 5 * sRun.calls;
+    const worth = runWorth(sRun.calls + 1);
     body = (
       <>
         <Board activeIdx={ti} key="streak" />
@@ -670,13 +685,31 @@ export default function TheWheelGame({ onBack }) {
         <div className="tw-runbar">
           <div className="tw-runstat"><span>{t.run}</span><b>{Math.floor(sIdx / teams.length) + 1}/{L.streak}</b></div>
           <div className="tw-runstat"><span>{t.streak}</span><b>{sRun.calls}</b></div>
-          <div className="tw-runstat"><span>{t.pot}</span><b>{sRun.pot}</b></div>
-          <div className="tw-runstat"><span>{t.nextWorth}</span><b>{hasNext && !sOver ? worth : '—'}</b></div>
+          <div className="tw-runstat"><span>{t.pot}</span><b>{sRun.pot}/{RUN_CAP}</b></div>
+          <div className="tw-runstat"><span>{t.nextWorth}</span><b>{hasNext && !sOver ? `${worth}/${RUN_CAP}` : '—'}</b></div>
         </div>
+        {/*
+          ⚠ THE NEXT ITEM'S NAME MUST BE ON SCREEN. This showed only the current
+          card and then asked "Higher or Lower?", while call() compared against
+          items[at + 1] — an item the player was never shown. There was nothing
+          to reason about and no way to be right on purpose: a coin flip wearing
+          a quiz's clothes, and reported simply as "confusing".
+          The value is hidden; the NAME is the whole question.
+        */}
         <div className="tw-fact-card">
           <span>{cur.n}</span>
           <b>{fmtNum(cur.v)}{sRun.pool.unit}</b>
         </div>
+        {hasNext && (
+          <>
+            <div className="tw-vs">{t.vs}</div>
+            <div className="tw-fact-card tw-fact-card--ask">
+              <span>{sRun.items[sRun.at + 1].n}</span>
+              <b>?</b>
+            </div>
+            <div className="tw-ask">{t.askHL(sRun.items[sRun.at + 1].n, cur.n)}</div>
+          </>
+        )}
         <div className={`tw-msg${sMsg.tone ? ` is-${sMsg.tone}` : ''}`}>{sMsg.text}</div>
         {sOver ? (
           <button type="button" className="gc-btn" onClick={nextRun}>
@@ -738,7 +771,7 @@ export default function TheWheelGame({ onBack }) {
               );
             })}
             <div className="tw-points">
-              {rResult.pairs}/{rResult.total} × 15{rResult.exact ? ` · ${rResult.exact}× ${isAr ? 'موضع' : 'exact'} +${rResult.exact * 8}` : ''}{rResult.perfect ? ' · +30' : ''} → <b>{teams[ti].name} +{rResult.pts}</b>
+              {rResult.pairs}/{rResult.total} {isAr ? 'أزواج صحيحة' : 'pairs right'}{rResult.perfect ? ` · ${isAr ? 'ترتيب مثالي' : 'perfect line'}` : ''} → <b>{teams[ti].name} +{rResult.pts}/5</b>
             </div>
             <button type="button" className="gc-btn" onClick={nextPuzzle}>
               {rIdx === schedule.ranked - 1 ? t.matchCard : t.next}

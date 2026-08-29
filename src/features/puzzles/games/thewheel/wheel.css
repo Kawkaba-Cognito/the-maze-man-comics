@@ -127,6 +127,22 @@
 .tw-fact-card { border: 2px solid #2d2210; border-radius: 12px; background: #fffdf8; text-align: center; padding: 18px 12px; margin: 12px 0; }
 .tw-fact-card span { display: block; font-size: 0.68rem; letter-spacing: 0.12em; color: #8a7f6f; margin-bottom: 6px; }
 .tw-fact-card b { font-size: clamp(1.8rem, 8vw, 2.6rem); font-weight: 800; line-height: 1; }
+/* The card whose value is hidden — the thing you are actually being asked
+   about. Dashed, so at a glance it reads as the unknown of the pair rather than
+   as a second fact; the solid card above it is the one you have been told. */
+.tw-fact-card--ask { border-style: dashed; background: transparent; }
+.tw-fact-card--ask b { color: #8a7f6f; }
+.tw-vs {
+  width: 100%; max-width: 420px; align-self: center;
+  text-align: center; font-size: 0.66rem; letter-spacing: 0.16em;
+  text-transform: uppercase; font-weight: 800; color: #b3a288; margin: -4px 0;
+}
+.tw-ask {
+  width: 100%; max-width: 420px; align-self: center;
+  text-align: center; font-size: 0.86rem; font-weight: 700;
+  color: #2d2210; margin: 2px 0 10px; line-height: 1.35;
+}
+
 .tw-msg { text-align: center; font-size: 0.72rem; letter-spacing: 0.08em; font-weight: 700; min-height: 20px; margin-bottom: 10px; color: #8a7f6f; }
 .tw-msg.is-good { color: #1d8a52; }
 .tw-msg.is-bad { color: #c45c26; }

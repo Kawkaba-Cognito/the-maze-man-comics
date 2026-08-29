@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useApp } from '../../../../context/AppContext';
 import { PACKS, rnd, fmt, shuffle, packById, randomPack } from '../_shared/groupTheme';
 import GroupShell, { GroupHow, GroupPackChips } from '../_shared/GroupShell';
@@ -23,9 +23,34 @@ export default function ImposterGame({ onBack }) {
   const [timerOn, setTimerOn] = useState(false);
   const [starter, setStarter] = useState(0);
 
+  /* How often each seat has been the imposter, and who it was last round.
+     Refs, not state: they steer the NEXT draw and must never trigger a render
+     (see the rotation note in startRound). Reset when the roster changes,
+     because seat 3 is a different person once the players do. */
+  const recentImpRef = useRef({});
+  const lastImpRef = useRef([]);
+
+  /*
+   * Does the imposter get told the CATEGORY? On by default, and that default is
+   * the single biggest thing making this game fun.
+   *
+   * Knowing neither word nor category, the imposter has nothing to say on their
+   * first turn — any noun they invent is either off-category and instantly
+   * damning, or a lucky guess. They are caught on turn one, every time, and the
+   * round is over before the bluffing that the game is FOR ever starts. Given
+   * the category they can say something plausible, the table has to actually
+   * listen, and the imposter has a chance worth playing for. The old blind mode
+   * is still here for groups who want it brutal.
+   */
+  const [impSeesCat, setImpSeesCat] = useState(true);
+
   const n = players.length;
   const maxImp = Math.max(1, Math.min(4, n - 2));
   useEffect(() => { if (imposters > maxImp) setImposters(maxImp); }, [imposters, maxImp]);
+
+  /* A different roster means seat i is a different person, so the rotation
+     memory above is meaningless — clear it rather than carry it over. */
+  useEffect(() => { recentImpRef.current = {}; lastImpRef.current = []; }, [n]);
 
   const t = useMemo(() => ({
     title: isAr ? 'الدخيل' : 'Imposter',
@@ -38,7 +63,11 @@ export default function ImposterGame({ onBack }) {
     tapReveal: isAr ? 'اضغط لرؤية دورك' : 'Tap to see your role',
     youAreImp: isAr ? 'أنت الدخيل!' : "You're the Imposter!",
     impNoWord: isAr ? 'لا تعرف الكلمة ولا الفئة.' : "You don't know the word — or the category.",
+    impKnowsCat: isAr ? 'تعرف الفئة فقط — لا الكلمة.' : 'You know the category — not the word.',
     impBlend: isAr ? 'اندمج ولا تنكشف.' : "Blend in — don't get caught.",
+    hintL: isAr ? 'الدخيل يرى الفئة' : 'Imposter sees the category',
+    hintOn: isAr ? 'أسهل وأمتع' : 'Fairer, more fun',
+    hintOff: isAr ? 'وضع قاسٍ' : 'Brutal mode',
     yourWord: isAr ? 'كلمتك السرية' : 'Your secret word',
     hidePass: isAr ? 'أخفِ ومرّر' : 'Hide & pass',
     allSeen: isAr ? 'رأى الجميع بطاقاتهم' : 'Everyone has seen their card',
@@ -55,8 +84,8 @@ export default function ImposterGame({ onBack }) {
     menu: isAr ? 'القائمة' : 'Menu',
     howTitle: isAr ? 'كيف تلعب' : 'How to play',
     how: isAr
-      ? 'يحصل كل لاعب على نفس الكلمة السرية عدا الدخيل (أو الدخلاء) الذي لا يعرف الكلمة ولا الفئة. مرّروا الهاتف ليرى كلٌّ بطاقته سراً، ثم قولوا بالتناوب كلمة واحدة عن الكلمة — والدخلاء يخادعون. صوّتوا على المشتبه بهم ثم اكشفوا.'
-      : 'Everyone gets the same secret word except the imposter(s), who know neither the word nor the category. Pass the phone so each player reads their card in secret, then take turns saying one word about it — imposters bluff. Vote out the suspect(s), then reveal.',
+      ? 'يحصل كل لاعب على نفس الكلمة السرية عدا الدخيل (أو الدخلاء). افتراضياً يرى الدخيل الفئة فقط، فيستطيع المخادعة — ويمكنكم إطفاء ذلك. مرّروا الهاتف ليرى كلٌّ بطاقته سراً، ثم قولوا بالتناوب كلمة واحدة عن الكلمة. صوّتوا على المشتبه بهم ثم اكشفوا.'
+      : 'Everyone gets the same secret word except the imposter(s). By default the imposter is told the category but not the word, so they have something to bluff with — you can switch that off. Pass the phone so each player reads their card in secret, then take turns saying one word about it. Vote out the suspect(s), then reveal.',
   }), [isAr]);
 
   const nameOf = (i) => players[i] || `Player ${i + 1}`;
@@ -64,15 +93,45 @@ export default function ImposterGame({ onBack }) {
   const startRound = useCallback(() => {
     const names = commitPlayers(players);
     const pack = packId === 'random' ? randomPack() : packById(packId) || randomPack();
-    const items = pack.words.map((word) => ({ id: `${pack.id}:${word.en}`, word, pack }));
+    /* ⚠ `base`, NOT `words` — see the header of groupPacks.js. `words` carries
+       the acted-out variants that Charades wants, so this used to hand out
+       secrets like "Broken Lion" and "Giant Elephant": two words, not a thing,
+       and impossible to give a one-word clue about. */
+    const items = pack.base.map((word) => ({ id: `${pack.id}:${word.en}`, word, pack }));
     const picked = wordDrawer.draw(items);
     const w = picked.word;
-    const impSet = shuffle([...Array(names.length).keys()]).slice(0, Math.min(imposters, Math.max(1, names.length - 2)));
+
+    /*
+     * ⚠ WHO IS THE IMPOSTER IS DRAWN WITHOUT REPLACEMENT, not sampled fresh.
+     * A uniform shuffle each round is "random" and feels broken: over six
+     * rounds with five players somebody is picked three times and somebody
+     * never, and the table stops believing the phone. Players who have not been
+     * the imposter recently are drawn first, and the previous round's imposters
+     * are excluded outright whenever the group is big enough to allow it — so
+     * the one thing a player would actually notice, being it twice in a row,
+     * cannot happen.
+     */
+    const need = Math.min(imposters, Math.max(1, names.length - 2));
+    const recent = recentImpRef.current;
+    const lastRound = lastImpRef.current;
+    const eligible = [...Array(names.length).keys()]
+      .filter((i) => !lastRound.includes(i));
+    const pool = eligible.length >= need ? eligible : [...Array(names.length).keys()];
+    // fewest recent turns first, ties broken randomly so it never becomes a rota
+    const impSet = shuffle(pool)
+      .sort((a, b) => (recent[a] || 0) - (recent[b] || 0))
+      .slice(0, need);
+    impSet.forEach((i) => { recent[i] = (recent[i] || 0) + 1; });
+    lastImpRef.current = impSet;
+
     setRound({
       word: isAr ? w.ar : w.en,
       category: isAr ? pack.ar : pack.en,
       accent: pack.accent || ACCENT,
       imposterSet: impSet,
+      /* Frozen into the round, not read live: flipping the setting mid-handoff
+         would otherwise change what later players are shown. */
+      hintCategory: impSeesCat,
       names,
     });
     setRevealIdx(0);
@@ -82,7 +141,7 @@ export default function ImposterGame({ onBack }) {
     setTimerOn(false);
     setPhase('reveal');
     playSfx?.('click');
-  }, [packId, players, imposters, isAr, playSfx, commitPlayers]);
+  }, [packId, players, imposters, isAr, playSfx, commitPlayers, impSeesCat]);
 
   const nextReveal = useCallback(() => {
     playSfx?.('click');
@@ -134,6 +193,28 @@ export default function ImposterGame({ onBack }) {
           </div>
 
           <div className="gc-section">
+            <div className="gc-label">{t.hintL}</div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <button
+                type="button"
+                className={`gc-pill${impSeesCat ? ' on' : ''}`}
+                aria-pressed={impSeesCat}
+                onClick={() => { playSfx?.('click'); setImpSeesCat(true); }}
+              >
+                {t.hintOn}
+              </button>
+              <button
+                type="button"
+                className={`gc-pill${!impSeesCat ? ' on' : ''}`}
+                aria-pressed={!impSeesCat}
+                onClick={() => { playSfx?.('click'); setImpSeesCat(false); }}
+              >
+                {t.hintOff}
+              </button>
+            </div>
+          </div>
+
+          <div className="gc-section">
             <div className="gc-label">{t.packL}</div>
             <GroupPackChips
               packs={PACKS}
@@ -179,7 +260,14 @@ export default function ImposterGame({ onBack }) {
               {round.imposterSet.includes(revealIdx) ? (
                 <>
                   <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#c0433d' }}>🕵️ {t.youAreImp}</div>
-                  <div style={{ color: '#8a5a52', fontWeight: 600 }}>{t.impNoWord}</div>
+                  {round.hintCategory ? (
+                    <>
+                      <div style={{ color: '#8a5a52', fontWeight: 600 }}>{t.impKnowsCat}</div>
+                      <div style={{ fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 800, color: round.accent }}>{round.category}</div>
+                    </>
+                  ) : (
+                    <div style={{ color: '#8a5a52', fontWeight: 600 }}>{t.impNoWord}</div>
+                  )}
                   <div style={{ fontSize: '0.85rem', color: 'var(--pz-muted, #5b687d)' }}>{t.impBlend}</div>
                 </>
               ) : (
