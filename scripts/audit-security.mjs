@@ -300,6 +300,41 @@ function detectInnerHtml(text, file) {
   return out;
 }
 
+/* ── D7 · THE FRAME GUARD MUST STAY WIRED ──────────────────────────────────
+ * GitHub Pages sends no X-Frame-Options and no CSP header (verified with
+ * `curl -sI` against the live site), and `frame-ancestors` is specified to be
+ * IGNORED in a <meta> CSP — it is header-only. So src/lib/frameGuard.js is the
+ * one and only thing stopping this app being embedded in a hostile page and
+ * clickjacked, and it is a plain import that a tidy-up would happily delete.
+ *
+ * Deleting it breaks nothing visible: the app builds, boots and plays exactly
+ * the same. That is precisely the profile of a protection that silently
+ * disappears, so it gets a gate rather than a comment.
+ *
+ * ⚠ The guard must be a MODULE, never an inline <script> in index.html — the
+ * CSP's script-src has no 'unsafe-inline', so an inline frame-buster would be
+ * blocked by our own policy and do nothing at all.
+ */
+export function detectFrameGuard(mainSrc, guardExists) {
+  const out = [];
+  if (!guardExists) {
+    out.push({ file: 'src/lib/frameGuard.js', detail: 'the frame guard module is missing — the app can be embedded and clickjacked' });
+    return out;
+  }
+  if (!/from\s+['"]\.\/lib\/frameGuard['"]/.test(mainSrc)) {
+    out.push({ file: 'src/main.jsx', detail: 'main.jsx no longer imports the frame guard' });
+  }
+  if (!/guardAgainstFraming\s*\(/.test(mainSrc)) {
+    out.push({ file: 'src/main.jsx', detail: 'guardAgainstFraming() is imported but never called' });
+  }
+  /* Called is not enough — the result has to actually gate the render, or the
+     guard runs and the app mounts underneath the notice anyway. */
+  if (!/if\s*\(\s*!framed\s*\)/.test(mainSrc)) {
+    out.push({ file: 'src/main.jsx', detail: 'the render is not gated on the frame check' });
+  }
+  return out;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
  * SELF-TEST — prove every detector fires before trusting a clean run.
  * ═══════════════════════════════════════════════════════════════════════ */
@@ -314,6 +349,15 @@ function selfTest() {
   // …and does NOT fire on this repo's SRI lines, or it is useless in practice.
   expect('D1 secrets/no-false-positive-on-SRI',
     detectSecrets("script.integrity = 'sha384-uXkmKN2jmCGDEGble8eNhnYoDGtzLMPhnublKtjvBUzerIVkBQIcJhOeW';", 'fx').length === 0);
+
+  /* D7 — each way the guard can be lost must be caught, and the healthy file
+     must stay clean, or the rule is either useless or permanently red. */
+  const goodMain = "import { guardAgainstFraming } from './lib/frameGuard';\nconst framed = guardAgainstFraming();\nif (!framed) { render(); }";
+  expect('D7 frame-guard/healthy-is-clean', detectFrameGuard(goodMain, true).length === 0);
+  expect('D7 frame-guard/module-deleted', detectFrameGuard(goodMain, false).length > 0);
+  expect('D7 frame-guard/import-removed', detectFrameGuard("const framed = guardAgainstFraming();\nif (!framed) { render(); }", true).length > 0);
+  expect('D7 frame-guard/never-called', detectFrameGuard("import { guardAgainstFraming } from './lib/frameGuard';\nif (!framed) { render(); }", true).length > 0);
+  expect('D7 frame-guard/render-not-gated', detectFrameGuard("import { guardAgainstFraming } from './lib/frameGuard';\nconst framed = guardAgainstFraming();\nrender();", true).length > 0);
 
   expect('D2 gitignore', detectGitignoreGaps('node_modules/\ndist/\n').length > 0);
   expect('D2 gitignore/clean', detectGitignoreGaps(REQUIRED_IGNORES.join('\n')).length === 0);
@@ -450,6 +494,9 @@ for (const f of detectCspDrift(csp, baseline.csp, 'index.html')) add('csp-ratche
 for (const f of detectCspDrift(episodeCsp, baseline.episodeCsp, 'public/episode-1-problem-solving.html'))
   add('csp-ratchet', f.file, f.detail);
 
+for (const f of detectFrameGuard(readOr('src/main.jsx'), existsSync(join(ROOT, 'src/lib/frameGuard.js'))))
+  add('frame-guard', f.file, f.detail);
+
 const counts = {};
 for (const f of findings) counts[f.rule] = (counts[f.rule] || 0) + 1;
 
@@ -461,7 +508,7 @@ if (broken.length) {
 }
 
 // Rules that are never allowed any findings, baseline or not.
-const ZERO_TOLERANCE = new Set(['secret-in-tracked-file', 'gitignore-coverage', 'sri-integrity', 'csp-ratchet']);
+const ZERO_TOLERANCE = new Set(['secret-in-tracked-file', 'gitignore-coverage', 'sri-integrity', 'csp-ratchet', 'frame-guard']);
 
 for (const [rule, n] of Object.entries(counts)) {
   if (ZERO_TOLERANCE.has(rule)) { failures.push(`${rule}: ${n} finding(s) — zero tolerance`); continue; }

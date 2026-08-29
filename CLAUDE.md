@@ -319,6 +319,24 @@ The gate parses source TEXT rather than importing, deliberately: `workoutData.js
 
 ⚠ **Its first plant test was broken and produced a false PASS.** The test removed the `spatial-stroop` fallback with a regex ending `\n}\n`, but this working tree is **CRLF** — so the deletion silently never happened, the gate was run against an intact file, and its "OK" was mistaken for proof that it detects nothing. Re-planted correctly it fires on both callers, naming each and the fix. **When a plant test passes, verify the plant actually landed before trusting the detector.** Same family as the `audit:consistency` string rule, whose first two versions also passed a bug they were written to catch.
 
+## Party games — a mechanical expansion is only as good as its worst combination
+
+The seven Group Challenge games (`features/puzzles/games/`: imposter, charades, describeit, wavelength, gettoknow, groupwar, thewheel) generate content by crossing a small authored list with a set of modifiers. **Nobody ever reads all N combinations, so the bad ones ship** — this cost three separate fixes on 2026-08-29:
+
+- `_shared/groupPacks.js` crossed every term with `Tiny/Giant/Broken`, so **Imposter's secret word could be "Broken Lion"**. Packs now expose **`base`** (clean term) and **`words`** (with variants). ⚠️ **Imposter MUST use `base`** — a modifier is not a thing you can give a one-word clue about, and it *leaks*, because the table starts describing the modifier. Charades/Describe It genuinely want `words`.
+- The same file applied one `abstract` mode to three different parts of speech: **"Sudden Happy"**, **"Sudden The mentor"**, **"Quiet Entropy"**. A mode now states what KIND of term a pack holds (`thing`/`action`/`adjective`/`none`). ⚠️ `culture` is `none` deliberately — "Giant Ramadan" is not funny.
+- `wavelength/spectra.js` crossed five contexts onto every pair unconditionally: **"Villain as a gift ↔ Hero as a gift"**. A context only applies where the pair judges a THING. 200 → 156 spectra, nonsense 44 → 0.
+
+⚠️ **`Random` must never draw the Hard pack.** Entropy / Cognitive bias / Opportunity cost are fine for a table that *chose* them and the fastest way to kill a round for one that asked for random. `CASUAL_PACKS` excludes it; the chip still offers it.
+
+⚠️ **THE WHEEL SCORES 0–5 PER ROUND, AND NOTHING MAY PAY MORE.** It used to pay in the hundreds on three scales that disagreed (a Game 1 round could return ~270). Each formula was defensible alone and the whole was unreadable — nobody at a table can tell whether 247 was good. Anchoring is a **penalty**, never a bonus, because a bonus would breach the cap that is the point.
+
+⚠️ **A ranking/higher-lower set must be answerable by a normal person.** Ten sets were replaced for failing this (atomic numbers, melting/boiling points, pitch in Hz, planet day lengths, elite race times in decimal minutes, programming languages by release year). In higher/lower it is worse than boring — a blind call loses the whole run, so it punishes the table for content they could not have known. **Replace, never delete**: `sets.js` splits 48 streak and 64 ranked exactly four ways and `validate:wheel` asserts it.
+
+⚠️ **A push-your-luck round must show BOTH things being compared.** The higher/lower round rendered only the current card while `call()` compared against `items[at+1]` — an item whose name was never on screen. It was a coin flip wearing a quiz's clothes, and it was reported simply as "confusing".
+
+⚠️ **"Random" is not the same as uniform.** Imposter re-sampled every round: measured over 12 rounds with 5 players that gave counts `[2,0,6,4,0]` — one player six times, two never — and could repeat back-to-back. It now draws without replacement, least-recent first, excluding last round's imposters: `[2,2,3,2,3]`.
+
 ## The review board (`npm run review`) — reports, never blocks
 
 `review/standards.mjs` holds 18 standards this app is actually held to, across **scientific validity** (cognitive claims, norms, reliable change), **privacy** (GDPR Art. 9 special-category data, Play Store), **application security**, and the **backend that does not exist yet**. Added 2026-08-15 because an assistant is compliant by default: it builds what is asked and does not volunteer "this ships an XSS" or "this scoring model is psychometrically invalid".
@@ -438,6 +456,14 @@ Status: Supabase project exists but is **not integrated**; must be done before p
 - [ ] Migrate the `mm_*` **and `rx_*`** localStorage state through `src/lib/storage.js`. ⚠️ It is **not** the single choke point this line used to claim: **33 files reach `localStorage` directly**, including `training/rating.js`, `training/shared/trialLog.js`, `workout/workoutState.js`, `context/AppContext.jsx`, `lib/appTheme.js` and all four `relax/` special-category stores. Plan the migration against ~34 call sites, not one — and consider exporting one `ALL_KEY_PREFIXES` from `storage.js` first, so erase/export can never miss a namespace.
 
 ### Security checklist (partially done)
+- [x] **Clickjacking: the app refuses to run in an iframe** (2026-08-29) — `src/lib/frameGuard.js`, called from `main.jsx` before React mounts, gated by `audit:sec`'s zero-tolerance `frame-guard` rule.
+
+  ⚠️ **`frame-ancestors` DOES NOT WORK HERE AND MUST NOT BE ADDED TO THE META CSP.** It is header-only by spec and is *ignored* in `<meta>`; GitHub Pages cannot send headers (`curl -sI` the live site: no `X-Frame-Options`, no CSP header at all). Adding it would sit in `index.html` looking like protection while doing nothing — worse than none, because the next reader stops looking.
+
+  ⚠️ **And the guard cannot be an inline `<script>`** — `script-src` has no `'unsafe-inline'`, so an inline frame-buster is blocked by our own CSP and silently does nothing. It has to be a module.
+
+  Confirmed vulnerable before the fix by framing the live site and reading the frame: the app mounted normally inside it (`#root` had 3 children, no refusal). Re-tested after deploy. The risk was **never data theft** — a cross-origin frame cannot read this app's DOM or `localStorage`, and there is no session to steal — it is UI redressing: steering a user into clicking Settings → Delete Account, or into the `rx_*` wellbeing stores, in their own session.
+- [x] No iframes and no `window` message listener — the app renders zero `<iframe>`s, `default-src 'self'` already blocks embedding third-party frames, and the only `postMessage` is rush-hour's Web Worker (`w.addEventListener`, not `window.addEventListener('message')`), so there is no origin-check hole. Re-check both if either ever changes.
 - [x] CSP meta tag in `index.html` (trusted CDNs only) — keep in sync when adding origins
 - [x] SRI on the Babylon CDN script (in AppContext, not index.html)
 - [x] HTTPS (GitHub Pages enforced)

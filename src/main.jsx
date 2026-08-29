@@ -18,6 +18,13 @@ import './styles/puzzleStudioTheme.css';
 import './styles/puzzleStudioHub.css';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
+import { guardAgainstFraming } from './lib/frameGuard';
+
+/* ⚠ BEFORE ANYTHING ELSE. GitHub Pages cannot send X-Frame-Options, and
+   `frame-ancestors` is ignored in a meta CSP, so this module is the only thing
+   preventing the app being embedded in a hostile page and clickjacked. See
+   lib/frameGuard.js for what the risk is and — as importantly — what it is not. */
+const framed = guardAgainstFraming();
 
 applyAssetCssVars();
 
@@ -61,18 +68,20 @@ if (import.meta.env.PROD && typeof navigator !== 'undefined' && 'serviceWorker' 
   });
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  </React.StrictMode>
-);
+if (!framed) {
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </React.StrictMode>
+  );
+}
 
 /* Prod: once the app is up, quietly pre-fetch every game chunk in the background
  * so games still open when the user goes offline. Deferred to idle / after load
  * so it never competes with first paint or the service-worker install. */
-if (import.meta.env.PROD && typeof window !== 'undefined') {
+if (import.meta.env.PROD && typeof window !== 'undefined' && !framed) {
   import('./lib/warmGameChunks')
     .then(({ warmGameChunks }) => {
       if (document.readyState === 'complete') warmGameChunks();
