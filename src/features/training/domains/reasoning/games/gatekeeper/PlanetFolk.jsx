@@ -2,7 +2,7 @@ import React, { useId } from 'react';
 import { folkOf } from './data.js';
 
 /*
- * THE TRAVELLERS — four little planet folk who come to the gate.
+ * THE TRAVELLERS — six little planet folk who come to the gate.
  *
  * Drawn as inline SVG rather than shipped as art, on purpose. `public/` is
  * served straight from the repo and dev reads the working tree, so art that is
@@ -17,7 +17,7 @@ import { folkOf } from './data.js';
  * carrying task information by colour alone, and "only the rust ones may pass"
  * would be exactly that. So each attribute has a redundant channel:
  *
- *   folk    hue  + a distinct FACE + the character's name printed on the card
+ *   folk    hue + a distinct FACE + a forehead CREST + the name on the card
  *   shape   the silhouette (round / boxy / pointy) — already non-colour
  *   moons   counted objects — already non-colour
  *   fill    diagonal stripes — a texture, not a tint
@@ -31,6 +31,40 @@ import { folkOf } from './data.js';
  * when a piece's identity colour collided with a feedback colour — the thing to
  * tap and the thing not to tap rendered identically.
  */
+
+/*
+ * ── THE CREST ────────────────────────────────────────────────────────────
+ * A small mark on the forehead, one per folk. It exists because the six folk
+ * had to become tellable apart WITHOUT binding appearance to `shape` — shape is
+ * its own puzzle attribute, so a folk that was always boxy would make every law
+ * about shape secretly a law about folk, and the two attributes would stop
+ * being orthogonal. `validate:gatekeeper` would still pass, because each gate
+ * would remain decidable; the game would just be quietly measuring less.
+ *
+ * So identity is carried by face + crest, both of which are pure decoration
+ * that no law can ever be about.
+ *
+ * ⚠ GEOMETRY: the crest must fit inside ALL THREE bodies, and `pointy` is the
+ * tight one — it is a triangle from (32, 20.5) widening to y=48, so at y=30 it
+ * is only about 12 units across. Anything wider than ~8 units centred on x=32
+ * pokes out of the silhouette on pointy cards only, which is the kind of bug
+ * that shows up on one card in nine. Keep crests within x 28–36 at y≈30.
+ * It also has to stay BELOW the moons (y 10–17, outside the body) so the two
+ * never read as one group — the moon count is a real attribute a law can use.
+ */
+const CREST = {
+  toti: <circle cx="32" cy="30" r="1.9" fill="var(--gk-ink)" />,
+  zuzu: <path d="M28.5 30h7" stroke="var(--gk-ink)" strokeWidth="2.2" strokeLinecap="round" />,
+  lulu: (
+    <>
+      <circle cx="29.2" cy="30" r="1.7" fill="var(--gk-ink)" />
+      <circle cx="34.8" cy="30" r="1.7" fill="var(--gk-ink)" />
+    </>
+  ),
+  nunu: <path d="M28.6 28.9 32 31.6l3.4-2.7" stroke="var(--gk-ink)" strokeWidth="2.1" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+  momo: <path d="M32 27.9 35.4 31.4h-6.8Z" fill="var(--gk-ink)" />,
+  kiki: <path d="M32 27.8 34.9 30.2 32 32.6 29.1 30.2Z" fill="var(--gk-ink)" />,
+};
 
 const FACE = {
   // Toti — wide awake and a little anxious.
@@ -48,8 +82,8 @@ const FACE = {
       <path d="M26 43q6 6 12 0" stroke="var(--gk-ink)" strokeWidth="2" fill="none" strokeLinecap="round" />
     </>
   ),
-  // Bibi — mid-wink, so the two eyes differ in shape as well as the face doing.
-  bibi: (
+  // Lulu — mid-wink, so the two eyes differ in shape as well as the face doing.
+  lulu: (
     <>
       <circle cx="26" cy="36" r="3.4" fill="var(--gk-ink)" />
       <path d="M35 36h6" stroke="var(--gk-ink)" strokeWidth="2.4" strokeLinecap="round" />
@@ -63,6 +97,25 @@ const FACE = {
       <circle cx="26" cy="38" r="1.8" fill="var(--gk-ink)" />
       <circle cx="38" cy="38" r="1.8" fill="var(--gk-ink)" />
       <path d="M28 45h8" stroke="var(--gk-ink)" strokeWidth="2" strokeLinecap="round" />
+    </>
+  ),
+  // Momo — square eyes and a small round mouth: startled, and unmistakably
+  // not a curve, which is what separates it from Toti at 40px.
+  momo: (
+    <>
+      <rect x="23.6" y="33.6" width="5" height="5" rx="1" fill="var(--gk-ink)" />
+      <rect x="35.4" y="33.6" width="5" height="5" rx="1" fill="var(--gk-ink)" />
+      <circle cx="32" cy="45" r="2.4" stroke="var(--gk-ink)" strokeWidth="2" fill="none" />
+    </>
+  ),
+  // Kiki — angled brows over small eyes, and a bold flat mouth. The brows are
+  // the read at small size; the eyes alone would look like Nunu's.
+  kiki: (
+    <>
+      <path d="M22.8 32.6 29 35M41.2 32.6 35 35" stroke="var(--gk-ink)" strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="26" cy="38.4" r="2.3" fill="var(--gk-ink)" />
+      <circle cx="38" cy="38.4" r="2.3" fill="var(--gk-ink)" />
+      <path d="M27.5 45.4h9" stroke="var(--gk-ink)" strokeWidth="2.6" strokeLinecap="round" />
     </>
   ),
 };
@@ -131,6 +184,7 @@ export default function PlanetFolk({ card, size = 56, name = false, dim = false,
           {bodyPath(card.shape)}
         </g>
 
+        {CREST[card.folk] || CREST.toti}
         {FACE[card.folk] || FACE.toti}
       </svg>
       {name && <span className="gk-folk-name">{isAr ? f.ar : f.en}</span>}

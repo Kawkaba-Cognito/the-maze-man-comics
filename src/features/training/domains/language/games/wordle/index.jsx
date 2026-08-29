@@ -77,7 +77,6 @@ const UI = {
     sessionTime: (s) => `Session ${s}s`,
     foundList: 'Found',
     clearPath: 'Clear',
-    submitWord: 'Submit word',
     restart: 'Restart grid',
     freeLvl: (lv) => `Survival · L${lv}`,
     resultsPass: 'Level complete',
@@ -123,7 +122,6 @@ const UI = {
     sessionTime: (s) => `الجلسة ${s}ث`,
     foundList: 'وُجدت',
     clearPath: 'مسح',
-    submitWord: 'إرسال الكلمة',
     restart: 'إعادة الشبكة',
     freeLvl: (lv) => `حر · مستوى ${lv}`,
     resultsPass: 'اكتمل المستوى',
@@ -821,15 +819,13 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
                 onCommit={commitPath}
                 isAr={isAr}
               />
+              {/* No Submit button. The board already commits two ways — lift
+                  your finger after tracing, or tap the last letter again — so
+                  it was a third copy of a gesture the player had already made,
+                  and it sat between them and the grid. Both routes live in
+                  LetterLinkBoard (endDrag / onCellClick), which is what keeps
+                  the tap route available without a pointer drag. */}
               <div className="ct-wordle-link-actions">
-                <button
-                  type="button"
-                  className="ct-fq-btn ct-fq-btn-pri ct-wordle-submit-btn"
-                  disabled={path.length < round.minLen}
-                  onClick={commitPath}
-                >
-                  {t.submitWord}
-                </button>
                 <button
                   type="button"
                   className="ct-fq-btn ct-fq-btn-ghost ct-wordle-clear-btn"
@@ -901,15 +897,9 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
               isAr={isAr}
             />
           </div>
+          {/* See the note on the other board: committing is the board's own
+              gesture, so there is no Submit button here either. */}
           <div className="ct-wordle-link-actions">
-            <button
-              type="button"
-              className="ct-fq-btn ct-fq-btn-pri ct-wordle-submit-btn"
-              disabled={path.length < round.minLen}
-              onClick={commitPath}
-            >
-              {t.submitWord}
-            </button>
             <button
               type="button"
               className="ct-fq-btn ct-fq-btn-sec ct-wordle-clear-btn"

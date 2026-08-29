@@ -427,6 +427,38 @@
   pointer-events: auto;
 }
 
+/*
+ * ⚠ SPACESHIP ONLY — its junction strip is hidden; Pair Match
+ * (.ct-pal-access-*) deliberately keeps its visible one, so do not merge these
+ * back into the selector above.
+ *
+ * Taken off the screen 2026-08-29 on the owner's call ("no need for it"), and
+ * they are right for a pointer user: every junction is already directly
+ * tappable in the 3D scene through the raycast on `pointerdown`, so the strip
+ * was a second copy of a control the player already had, sitting across the
+ * bottom of the board.
+ *
+ * ⚠ IT IS HIDDEN RATHER THAN DELETED, and that distinction is load-bearing:
+ * it is the only KEYBOARD route to toggleFork. Deleting it is exactly the
+ * Mirror World lockout — an accessible alternative that rendered, registered
+ * input and still could not reach the win condition — except worse, because
+ * there would be no alternative at all. Tab into it and it comes back.
+ * opacity/clip-path are used rather than display:none or visibility:hidden
+ * precisely because those two remove focusability and this must keep it.
+ */
+.ct-spaceport-access-wrap {
+  opacity: 0;
+  clip-path: inset(50%);
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.ct-spaceport-access-wrap:focus-within {
+  opacity: 1;
+  clip-path: none;
+  pointer-events: auto;
+}
+
 .ct-pal-access-label,
 .ct-spaceport-access-label {
   padding: 4px 9px;

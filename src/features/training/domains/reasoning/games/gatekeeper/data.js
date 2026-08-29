@@ -50,12 +50,22 @@ import {
  * never be carried by colour alone, and a law like "only the rust ones may
  * pass" would otherwise be unsolvable without colour vision. Bound to a folk,
  * the same law reads "only Toti-folk may pass" and the card carries the name.
+ *
+ * ⚠ SIX folk since 2026-08-29, up from four. That widens the hypothesis space —
+ * a law about `folk` now has six values to pin down instead of four, against
+ * the same probe budget — so the decidability proof in validate:gatekeeper is
+ * what says the ladder is still fair, not the fact that it used to be. Each one
+ * carries a face AND a forehead crest (see PlanetFolk.jsx); appearance is
+ * deliberately NOT bound to `shape`, which is its own attribute and would stop
+ * being orthogonal if a folk always came in one silhouette.
  */
 export const FOLK = [
   { id: 'toti', en: 'Toti', ar: 'توتي', hue: 'ember' },
   { id: 'zuzu', en: 'Zuzu', ar: 'زوزو', hue: 'gold' },
-  { id: 'bibi', en: 'Bibi', ar: 'بيبي', hue: 'moss' },
+  { id: 'lulu', en: 'Lulu', ar: 'لولو', hue: 'moss' },
   { id: 'nunu', en: 'Nunu', ar: 'نونو', hue: 'river' },
+  { id: 'momo', en: 'Momo', ar: 'مومو', hue: 'plum' },
+  { id: 'kiki', en: 'Kiki', ar: 'كيكي', hue: 'rose' },
 ];
 export const FOLK_IDS = FOLK.map((f) => f.id);
 export const folkOf = (id) => FOLK.find((f) => f.id === id) || FOLK[0];
@@ -67,7 +77,7 @@ export const MOONS = [1, 2, 3];
 /** Surface: plain, or ringed with stripes. */
 export const FILLS = ['plain', 'striped'];
 
-/** The full deck: 4 folk × 3 shapes × 3 moon counts × 2 fills = 72. */
+/** The full deck: 6 folk × 3 shapes × 3 moon counts × 2 fills = 108. */
 export const DECK = [];
 for (const folk of FOLK_IDS) {
   for (const shape of SHAPES) {

@@ -725,10 +725,18 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
       const availH = slot?.clientHeight
         ? slot.clientHeight - 8
         : Math.max(grid * 8, window.innerHeight - 270);
-      const maxW = Math.min(availW, 440);
+      /* ⚠ These two caps are what decides whether freed space is USED.
+         Dropping the in-play End run row and the "Block 3" label gave the slot
+         back most of a row, and the measure above picks that up on its own —
+         but at 440px/72px the board simply stopped growing and left the space
+         empty, which is the "more space, use it better" report. A phone is
+         bound by availW either way, so it is unaffected; a laptop viewport
+         (~577px tall here, see the desktop-breakpoint note in CLAUDE.md) is
+         where the extra room actually exists. */
+      const maxW = Math.min(availW, 520);
       const fromW = Math.floor(maxW / grid);
       const fromH = Math.floor(availH / grid);
-      setCellSize(Math.max(40, Math.min(fromW, fromH, 72)));
+      setCellSize(Math.max(40, Math.min(fromW, fromH, 88)));
     };
     measure();
     // The slot has no height until after first paint, so the initial measure
@@ -1573,7 +1581,14 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         .ct-rh-nudge button { min-width: 48px; min-height: 48px; border: 1px solid color-mix(in srgb, var(--game-accent) 55%, transparent); border-radius: 12px; background: var(--surface-raised); color: var(--game-ink); font: inherit; font-size: 1.35rem; cursor: pointer; }
         .ct-rh-nudge button:disabled { cursor: not-allowed; opacity: 0.4; }
         .ct-rh-nudge button:focus-visible { outline: 3px solid var(--game-selected); outline-offset: 2px; }
-        .ct-rh-nudge span { min-width: 112px; color: var(--game-ink); font-size: 0.82rem; font-weight: 750; text-align: center; }
+        /* ⚠ The "Block 3" label is HIDDEN, not deleted. On screen it named a
+           piece the player had just tapped and was already looking at, and it
+           held 112px open between the two arrows. But it is an aria-live
+           region: it is what ANNOUNCES the change of selection to a screen
+           reader, and the arrows' own labels do not fire on selection. So it
+           stays in the DOM, unseen. clip-path rather than display:none because
+           display:none is not announced. */
+        .ct-rh-nudge span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
       `}</style>
       <div className="ct-rh-sky" aria-hidden="true">
         <div className="ct-rh-sky-nebula" />
@@ -1842,19 +1857,11 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         >
           {t.reset}
         </button>
-        {playMode === 'free' && (
-          <button
-            type="button"
-            className="ct-training-btn ct-training-btn--ghost"
-            style={{ maxWidth: 200 }}
-            onClick={() => {
-              playSfx('click');
-              endFreeRun();
-            }}
-          >
-            {isAr ? 'إنهاء المحاولة' : 'End run'}
-          </button>
-        )}
+        {/* No in-play "End run". Quitting from the pause menu already lands in
+            endFreeRun — see the comment on it: "a free run banks whatever it
+            reached" — so this button was a second door to the same room, taking
+            a row of the board's space to offer it. The win card keeps its own
+            End run, which is the one place stopping is the natural next act. */}
       </div>
 
       {phase === 'play' && playMode === 'challenge' && chalTurnOpen && chalNames[chalIdx] && (

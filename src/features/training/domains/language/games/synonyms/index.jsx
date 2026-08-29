@@ -449,8 +449,23 @@ const S = {
    * scrollable if a long analogy row ever outgrows the viewport — without it,
    * centring a too-tall column clips its top beyond reach.
    */
-  body: { position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 20, padding: '16px 18px calc(24px + env(safe-area-inset-bottom))', maxWidth: 'min(680px, 100%)', width: '100%', margin: '0 auto', minHeight: 0, overflowY: 'auto' },
-  metaRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: -8 },
+  /* ⚠ `safe center`, never plain `center`, because this column also scrolls.
+     A centred flex column whose content outgrows it overflows in BOTH
+     directions, and the overflow above the start edge cannot be scrolled to —
+     the top of a long question is simply unreachable. `safe` falls back to
+     flex-start exactly when that would happen. A pair trial with four long
+     tiles on a short laptop viewport (~577px here) is the case that hits it;
+     on a phone the content fits and nothing changes.
+     An engine that does not know `safe` drops the declaration and lands on
+     flex-start, which is the same graceful result. */
+  body: { position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'safe center', gap: 20, padding: '16px 18px calc(24px + env(safe-area-inset-bottom))', maxWidth: 'min(680px, 100%)', width: '100%', margin: '0 auto', minHeight: 0, overflowY: 'auto' },
+  /* ⚠ CENTRED, not space-between. This row holds exactly ONE child — the
+     relation badge — and `space-between` on a single child is just flex-start,
+     so the badge sat hard against the leading edge while the prompt, the word
+     cards and the analogy row underneath it were all centred. The negative
+     marginTop went with it: it was pulling the badge up into the HUD to hide
+     how far off the stack it looked. */
+  metaRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 },
   badge: { fontSize: 10.5, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: SUB_ON_DARK },
   prompt: { fontWeight: 600, fontSize: 'clamp(16px, 4.4vw, 20px)', textAlign: 'center', color: PROMPT_ON_DARK, margin: '4px 0 2px' },
   pairRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexWrap: 'wrap' },

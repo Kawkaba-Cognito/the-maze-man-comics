@@ -9,7 +9,7 @@
  * games hand-mix and that is the one real gap on the look axis; a new game has
  * no excuse to widen it.
  *
- * The four folk hues below are IDENTITY colours, not role colours. They are
+ * The six folk hues below are IDENTITY colours, not role colours. They are
  * deliberately separate from --game-ok / --game-bad, which mean "admitted" and
  * "refused" here — CLAUDE.md records what happened in Intercept when a piece's
  * own colour collided with a feedback colour: the thing to tap and the thing
@@ -26,11 +26,17 @@
   color: var(--game-ink);
   font-family: 'Outfit', system-ui, sans-serif;
 
-  /* traveller identity — four hues, each also carrying a face and a name */
+  /* Traveller identity — SIX hues, each also carrying a face, a crest and a
+     name. Six is more than a palette can keep comfortably distinct, which is
+     exactly why the hue is never the only channel: see the header of
+     PlanetFolk.jsx. A player who cannot separate plum from rose still reads
+     the crest and the printed name. */
   --gk-ember: #c4633a;
   --gk-gold: #c9962f;
   --gk-moss: #55803f;
   --gk-river: #35798c;
+  --gk-plum: #8a4f7d;
+  --gk-rose: #b8496f;
   --gk-ink: #1e2a33;
   --gk-stripe: #f6efe1;
   --gk-moon: #efe6d2;
