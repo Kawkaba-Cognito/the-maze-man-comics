@@ -89,26 +89,73 @@ function checkWave(label, cfg, wave) {
       + `but leaves the reach at ${f.deadline}ms (one thumb, ${MIN_TAP_GAP_MS}ms apart)`);
   }
 
-  // (b) each marcher is strikeable long enough to see and hit
+  /* (b) each marcher is strikeable long enough to see and hit — PER WINDOW.
+   *
+   * ⚠ Measuring `u.exitAt - u.enterAt` is the trap here, and it is the same
+   * trap audit:pacing caught in Story Time. Those two now bracket EVERY tower,
+   * so their difference includes the long walk BETWEEN reaches — time in which
+   * the marcher cannot be struck at all. A wave whose every window was far
+   * under the floor would report a comfortable dwell and sail through. The
+   * floor belongs to the window, because the window is what the thumb meets. */
   for (const u of wave.units) {
-    const dwell = u.exitAt - u.enterAt;
-    if (dwell < MIN_DWELL_MS - 1) {
-      fail(`${label}: ${u.id} is strikeable for only ${dwell}ms (floor ${MIN_DWELL_MS}ms)`);
-      break;
+    const wins = u.windows || [{ enterAt: u.enterAt, exitAt: u.exitAt, hideAt: u.hideAt }];
+    let bad = false;
+    for (const w of wins) {
+      const dwell = w.exitAt - w.enterAt;
+      if (dwell < MIN_DWELL_MS - 1) {
+        fail(`${label}: ${u.id} is strikeable for only ${dwell}ms at the tower on `
+          + `${(w.at ?? 0).toFixed(2)} (floor ${MIN_DWELL_MS}ms)${u.sprint ? ' [sprinter]' : ''}`);
+        bad = true; break;
+      }
+      if (w.enterAt >= w.exitAt) { fail(`${label}: ${u.id} enters a reach after it leaves`); bad = true; break; }
+      if (w.exitAt > u.gateAt) { fail(`${label}: ${u.id} reaches the gate before leaving a reach`); bad = true; break; }
     }
-    if (u.enterAt >= u.exitAt) { fail(`${label}: ${u.id} enters the reach after it leaves`); break; }
-    if (u.exitAt > u.gateAt) { fail(`${label}: ${u.id} reaches the gate before leaving the reach`); break; }
+    if (bad) break;
   }
 
-  // (c) a hidden marcher must have been visible first
+  // (c) a hidden marcher must have been visible first — again, per window
   if (cfg.hiddenShare > 0) {
+    let bad = false;
     for (const u of wave.units) {
-      const seen = u.hideAt - u.enterAt;
-      if (seen < MIN_VISIBLE_MS - 1) {
-        fail(`${label}: ${u.id} visible for only ${seen}ms before the canopy (floor ${MIN_VISIBLE_MS}ms)`);
-        break;
+      const wins = u.windows || [{ enterAt: u.enterAt, hideAt: u.hideAt }];
+      for (const w of wins) {
+        const seen = w.hideAt - w.enterAt;
+        if (seen < MIN_VISIBLE_MS - 1) {
+          fail(`${label}: ${u.id} visible for only ${seen}ms before the canopy at the tower `
+            + `on ${(w.at ?? 0).toFixed(2)} (floor ${MIN_VISIBLE_MS}ms)`);
+          bad = true; break;
+        }
       }
+      if (bad) break;
     }
+  }
+
+  /* (b2) the towers must not overlap. `boundOf` marks a marcher for exactly one
+   * of them, so overlapping reaches would make "which tower is this for"
+   * undecidable from where it is standing. Checked on the BUILT geometry
+   * because the spans shrink with the curve while the centres stay put. */
+  const tw = cfg.towers || [];
+  for (let i = 1; i < tw.length; i += 1) {
+    if (tw[i].a < tw[i - 1].b - 1e-9) {
+      fail(`${label}: towers on ${tw[i - 1].at.toFixed(2)} and ${tw[i].at.toFixed(2)} overlap `
+        + `([${tw[i - 1].a.toFixed(3)}, ${tw[i - 1].b.toFixed(3)}] vs [${tw[i].a.toFixed(3)}, ${tw[i].b.toFixed(3)}])`);
+      break;
+    }
+  }
+
+  /* (b3) a bound marcher answers to exactly ONE tower, an unbound one to all of
+   * them. If binding silently stopped narrowing the windows the mechanic would
+   * still be announced in the UI while changing nothing about the game. */
+  for (const u of wave.units) {
+    const want = u.towerIdx >= 0 ? 1 : Math.max(1, cfg.nTowers || 1);
+    if ((u.windows || []).length !== want) {
+      fail(`${label}: ${u.id} has ${(u.windows || []).length} window(s), expected ${want} `
+        + `(towerIdx ${u.towerIdx}, ${cfg.nTowers} tower(s))`);
+      break;
+    }
+  }
+  if (!(cfg.boundShare > 0) && wave.units.some((u) => u.towerIdx >= 0)) {
+    fail(`${label}: a marcher is bound to one tower on a level with no binding`);
   }
 
   // (d) the no-go share stays inside the band inhibition is measurable in
@@ -140,11 +187,14 @@ function checkWave(label, cfg, wave) {
     if (!COLOURS.includes(u.colour)) { fail(`${label}: ${u.id} has an unknown colour`); break; }
   }
 
-  // (g) barrels sit inside the reach, or they are scenery
+  /* (g) barrels sit inside SOME tower's reach, or they are scenery. */
+  const reaches = (cfg.towers || []).length
+    ? cfg.towers
+    : [{ a: cfg.ringA, b: cfg.ringB, at: RING_AT }];
   for (const b of wave.barrels) {
-    if (b.at < cfg.ringA - 1e-9 || b.at > cfg.ringB + 1e-9) {
-      fail(`${label}: barrel ${b.id} at ${b.at.toFixed(3)} is outside the reach `
-        + `[${cfg.ringA.toFixed(3)}, ${cfg.ringB.toFixed(3)}]`);
+    if (!reaches.some((r) => b.at >= r.a - 1e-9 && b.at <= r.b + 1e-9)) {
+      fail(`${label}: barrel ${b.id} at ${b.at.toFixed(3)} is inside no tower's reach `
+        + `(${reaches.map((r) => `[${r.a.toFixed(3)}, ${r.b.toFixed(3)}]`).join(' ')})`);
     }
   }
 

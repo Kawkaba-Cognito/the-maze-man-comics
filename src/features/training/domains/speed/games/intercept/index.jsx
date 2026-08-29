@@ -8,7 +8,7 @@ import { useGamePause } from '../../../../shared/useGamePause';
 import { TrainingPlayHeader } from '../../../../shared/TrainingChrome';
 import { startCanvasLoop } from '../../../../shared/canvasLoop';
 import {
-  BASE_HP, BLAST_FRAC, KIND, RING_AT, TRAIL,
+  BASE_HP, BLAST_FRAC, KIND, RING_AT, TOWER_AT, TRAIL,
   buildWave, LADDER_LEVELS, levelCfg, levelPassed, passCfg, posAt, summarise, survivalCfg,
 } from './data.js';
 import './intercept.css';
@@ -38,10 +38,10 @@ const UI = {
     ...STR_COMMON.en,
     title: 'Intercept',
     hintFree: 'Rift Defense — endless waves, the army keeps coming',
-    hintLevels: '60 levels · a new mechanic every 10',
+    hintLevels: '100 levels · a new mechanic every 10',
     hintPass: 'Same waves for everyone · pass the device',
     briefTitle: 'Hold the trail',
-    brief: 'An army marches to your gate. Tap them while they are inside your tower’s reach.',
+    brief: 'An army marches to your gate. Tap them while they are inside a tower’s reach.',
     briefNogo: 'Leave the {c} ones alone — they are not the enemy.',
     briefCanopy: 'Part of your reach is under the trees. Strike where you believe they are.',
     briefBarrel: 'Tap a barrel to blow up everything near it.',
@@ -81,10 +81,10 @@ const UI = {
     ...STR_COMMON.ar,
     title: 'الاعتراض',
     hintFree: 'دفاع الشق — موجات بلا نهاية، والجيش لا يتوقف',
-    hintLevels: '٦٠ مستوى · آلية جديدة كل ١٠',
+    hintLevels: '١٠٠ مستوى · آلية جديدة كل ١٠',
     hintPass: 'نفس الموجات للجميع · مرّر الجهاز',
     briefTitle: 'احمِ الدرب',
-    brief: 'جيش يزحف نحو بوابتك. المسهم وهم داخل مدى برجك.',
+    brief: 'جيش يزحف نحو بوابتك. المسهم وهم داخل مدى أحد الأبراج.',
     briefNogo: 'اترك ذوي اللون {c} — ليسوا أعداءً.',
     briefCanopy: 'جزء من مداك تحت الأشجار. اضرب حيث تظنّهم.',
     briefBarrel: 'المس برميلاً لتفجير كل من حوله.',
@@ -129,6 +129,22 @@ const COLOUR_TOKEN = {
   moss: '--game-ok',
   bone: '--game-muted',
 };
+
+/* Each tower gets its own hue, and a bound marcher wears a ring in it — that
+   ring is the ONLY thing telling a player which tower can take it, so the hues
+   are information rather than decoration. Defined in intercept.css and read
+   back off the element, like every other colour here; the literals are only
+   the fallbacks for the moment before styles resolve. */
+const TOWER_TOKEN = [
+  ['--game-tower-a', '#e0a33a'],
+  ['--game-tower-b', '#5fb3d4'],
+  ['--game-tower-c', '#c77ad4'],
+];
+
+/** The reach a marcher is standing in right now, or null if it is between them. */
+const windowAt = (u, now) => (u.windows || []).find(
+  (w) => now >= w.enterAt && now <= w.exitAt,
+) || null;
 
 export function InterceptEngine({
   mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardFreeRun,
@@ -268,7 +284,12 @@ export function InterceptEngine({
         caught += 1;
         const q = posAt(f);
         fxRef.current.push({ kind: 'boom', at: now, x: q.x, y: q.y });
-        record({ type: 'hit', rt: Math.round(now - u.enterAt), hidden: false, err: 0, barrel: true });
+        const bw = windowAt(u, now);
+        record({
+          type: 'hit',
+          rt: Math.round(now - (bw ? bw.enterAt : u.enterAt)),
+          hidden: false, err: 0, barrel: true,
+        });
       }
       if (caught > 1) {
         comboRef.current += caught;
@@ -278,21 +299,25 @@ export function InterceptEngine({
       return;
     }
 
-    // then a marcher, nearest to the finger among those inside the reach
+    // then a marcher, nearest to the finger among those inside SOME reach
     let best = null;
     for (const u of wave.units) {
       if (u.dead || u.through) continue;
-      if (now < u.enterAt || now > u.exitAt) continue;
+      /* ⚠ A marcher may answer to several towers now, and a bound one to
+         exactly one — so "is it strikeable" is a question about which window it
+         is standing in, not about a single pair of times. */
+      const win = windowAt(u, now);
+      if (!win) continue;
       const f = (now - u.spawnAt) / u.crossMs;
       const p = posAt(f);
       const d = Math.hypot(nx - p.x, ny - p.y);
       if (d > grab) continue;
-      if (!best || d < best.d) best = { u, d, p, f };
+      if (!best || d < best.d) best = { u, d, p, f, win };
     }
     if (!best) return;
 
-    const { u, p } = best;
-    const hidden = now >= u.hideAt;
+    const { u, p, win } = best;
+    const hidden = now >= win.hideAt;
 
     if (u.kind === KIND.NOGO) {
       /* A commission error — the whole point of the no-go colour. It costs the
@@ -316,10 +341,13 @@ export function InterceptEngine({
     }
 
     u.dead = true;
-    const rt = Math.round(now - u.enterAt);
+    /* Measured from the window they were actually struck in. Against the FIRST
+       window it would read as several seconds of dithering whenever a marcher
+       was taken at the second or third tower. */
+    const rt = Math.round(now - win.enterAt);
     /* On a hidden marcher the meaningful number is the signed error against the
        middle of the covered stretch — early or late — not how fast you were. */
-    const mid = (u.hideAt + u.exitAt) / 2;
+    const mid = (win.hideAt + win.exitAt) / 2;
     record({ type: 'hit', rt, hidden, err: hidden ? Math.round(now - mid) : 0 });
     comboRef.current += 1;
     setCombo(comboRef.current);
@@ -367,19 +395,43 @@ export function InterceptEngine({
       /* ── the trail ───────────────────────────────────────────────────── */
       const line = tok('--line', '#a3957c');
       const surface = tok('--surface', '#e8e1d2');
+      /* ⚠ EVERY SIZE ON THIS BOARD IS A FRACTION OF min(w, h), AND THEY WERE
+         ALL RAISED TOGETHER (2026-08-29) because the game was unreadable on a
+         phone: the trail was 0.056 and a marcher 0.020, which on a 390px screen
+         is a 22px path carrying 8px dots. The tap radius (`grab`) was NOT
+         raised with them — it was already 0.075, far larger than the marcher it
+         selects, so the old art was promising a smaller target than the game
+         actually accepted. Enlarging the art closes that gap rather than
+         changing difficulty, which is why no timing gate moved. */
+      const S = Math.min(w, h);
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(X(TRAIL[0][0]), Y(TRAIL[0][1]));
-      for (let i = 1; i < TRAIL.length; i += 1) ctx.lineTo(X(TRAIL[i][0]), Y(TRAIL[i][1]));
+      const tracePath = () => {
+        ctx.beginPath();
+        ctx.moveTo(X(TRAIL[0][0]), Y(TRAIL[0][1]));
+        for (let i = 1; i < TRAIL.length; i += 1) ctx.lineTo(X(TRAIL[i][0]), Y(TRAIL[i][1]));
+      };
+      // the packed earth either side of the road
+      tracePath();
       ctx.strokeStyle = line;
-      ctx.globalAlpha = 0.55;
-      ctx.lineWidth = Math.min(w, h) * 0.072;
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = S * 0.118;
       ctx.stroke();
+      // the road itself
       ctx.globalAlpha = 1;
+      tracePath();
       ctx.strokeStyle = surface;
-      ctx.lineWidth = Math.min(w, h) * 0.056;
+      ctx.lineWidth = S * 0.092;
       ctx.stroke();
+      // a worn centre line, so the road reads as a road and not as a pipe
+      tracePath();
+      ctx.strokeStyle = line;
+      ctx.globalAlpha = 0.30;
+      ctx.lineWidth = Math.max(1.5, S * 0.007);
+      ctx.setLineDash([S * 0.022, S * 0.030]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
 
       /* ── the tower's reach ───────────────────────────────────────────── */
       const accent = tok('--game-accent', '#d4952f');
@@ -407,13 +459,46 @@ export function InterceptEngine({
         ctx.globalAlpha = 1;
         ctx.lineCap = 'round';
       };
-      strokeStretch(cfg.ringA, cfg.ringB, accent, Math.min(w, h) * 0.060, 0.30, 'butt');
+      /* One reach per tower, each in its own hue — the hue is what tells a
+         player which tower a BOUND marcher (ringed in the same colour) belongs
+         to, so reach and ring must be drawn from the same array. */
+      const towers = cfg.towers && cfg.towers.length ? cfg.towers : [{
+        at: RING_AT, a: cfg.ringA, b: cfg.ringB,
+        hiddenA: cfg.hiddenA, hiddenB: cfg.hiddenB,
+      }];
+      const hueOf = (tw) => {
+        const spec = TOWER_TOKEN[Math.max(0, TOWER_AT.indexOf(tw.at))];
+        return spec ? tok(spec[0], spec[1]) : accent;
+      };
+
+      towers.forEach((tw) => {
+        strokeStretch(tw.a, tw.b, hueOf(tw), S * 0.100, 0.26, 'butt');
+      });
 
       /* ── the canopy: the reason this is a prediction ─────────────────── */
+      /* ⚠ Drawn for EVERY tower. The model hides a stretch of each reach so the
+         prediction measure cannot be dodged by waiting for a clear tower; if
+         only the first were drawn, the others would hide marchers with nothing
+         on screen explaining where they went. */
       if (cfg.hiddenShare > 0) {
         const ink = tok('--game-ink', '#131e28');
-        strokeStretch(cfg.hiddenA, cfg.hiddenB, ink, Math.min(w, h) * 0.082, 0.28, 'round');
-        strokeStretch(cfg.hiddenA, cfg.hiddenB, ink, Math.min(w, h) * 0.066, 0.97, 'round');
+        towers.forEach((tw) => {
+          if (!(tw.hiddenB > tw.hiddenA)) return;
+          strokeStretch(tw.hiddenA, tw.hiddenB, ink, S * 0.126, 0.26, 'round');
+          strokeStretch(tw.hiddenA, tw.hiddenB, ink, S * 0.104, 0.97, 'round');
+          // a scatter of crowns so it reads as forest rather than as a black bar
+          for (let i = 0; i <= 5; i += 1) {
+            const p = posAt(tw.hiddenA + (tw.hiddenB - tw.hiddenA) * (i / 5));
+            const wob = ((i * 37) % 11) / 11 - 0.5;
+            ctx.fillStyle = ink;
+            ctx.globalAlpha = 0.9;
+            ctx.beginPath();
+            ctx.arc(X(p.x) + wob * S * 0.03, Y(p.y) - S * 0.035 + wob * S * 0.02,
+              S * (0.030 + Math.abs(wob) * 0.014), 0, 6.2832);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        });
       }
 
       /* ── barrels ─────────────────────────────────────────────────────── */
@@ -425,11 +510,20 @@ export function InterceptEngine({
       for (const b of wave.barrels) {
         if (b.spent) continue;
         const p = posAt(b.at);
-        const s = Math.min(w, h) * 0.020;
+        const s = S * 0.032;
+        const ink = tok('--game-ink', '#131e28');
         ctx.fillStyle = tok('--game-bad', '#854c49');
         ctx.fillRect(X(p.x) - s, Y(p.y) - s, s * 2, s * 2);
-        ctx.strokeStyle = tok('--game-ink', '#131e28');
-        ctx.lineWidth = 2;
+        // two hoops, so the square reads as a drum seen side-on
+        ctx.strokeStyle = ink;
+        ctx.globalAlpha = 0.45;
+        ctx.lineWidth = Math.max(1.5, s * 0.16);
+        ctx.beginPath();
+        ctx.moveTo(X(p.x) - s, Y(p.y) - s * 0.35); ctx.lineTo(X(p.x) + s, Y(p.y) - s * 0.35);
+        ctx.moveTo(X(p.x) - s, Y(p.y) + s * 0.35); ctx.lineTo(X(p.x) + s, Y(p.y) + s * 0.35);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = Math.max(2, s * 0.20);
         ctx.strokeRect(X(p.x) - s, Y(p.y) - s, s * 2, s * 2);
         // a stub of fuse, so it reads as explosive rather than as a crate
         ctx.beginPath();
@@ -439,25 +533,45 @@ export function InterceptEngine({
       }
 
       /* ── the tower ───────────────────────────────────────────────────── */
-      const tp = posAt(RING_AT);
-      const towerY = Y(tp.y) - Math.min(w, h) * 0.072;
-      ctx.strokeStyle = accent;
-      ctx.globalAlpha = 0.45;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(X(tp.x), towerY);
-      ctx.lineTo(X(tp.x), Y(tp.y));
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = accent;
-      ctx.beginPath();
-      ctx.arc(X(tp.x), towerY, Math.min(w, h) * 0.026, 0, 6.2832);
-      ctx.fill();
+      towers.forEach((tw) => {
+        const tp = posAt(tw.at);
+        const hue = hueOf(tw);
+        const topY = Y(tp.y) - S * 0.105;
+        // mast
+        ctx.strokeStyle = hue;
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = Math.max(2, S * 0.011);
+        ctx.beginPath();
+        ctx.moveTo(X(tp.x), topY);
+        ctx.lineTo(X(tp.x), Y(tp.y));
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        // head
+        ctx.fillStyle = hue;
+        ctx.beginPath();
+        ctx.arc(X(tp.x), topY, S * 0.038, 0, 6.2832);
+        ctx.fill();
+        ctx.strokeStyle = tok('--game-ink', '#131e28');
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = Math.max(1.5, S * 0.006);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        // a slow pulse outward, so a tower reads as live rather than as scenery
+        const pulse = ((now >= 0 ? now : 0) % 1600) / 1600;
+        ctx.strokeStyle = hue;
+        ctx.globalAlpha = 0.34 * (1 - pulse);
+        ctx.lineWidth = Math.max(1.5, S * 0.007);
+        ctx.beginPath();
+        ctx.arc(X(tp.x), topY, S * (0.038 + pulse * 0.055), 0, 6.2832);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      });
 
       /* ── the gate ────────────────────────────────────────────────────── */
       const gp = posAt(1);
-      const gs = Math.min(w, h) * 0.05;
-      ctx.fillStyle = hpRef.current <= 3 ? tok('--game-bad', '#854c49') : accent;
+      const gs = S * 0.076;
+      const hurt = hpRef.current <= 3;
+      ctx.fillStyle = hurt ? tok('--game-bad', '#854c49') : accent;
       ctx.beginPath();
       ctx.moveTo(X(gp.x) - gs, Y(gp.y) + gs * 0.7);
       ctx.lineTo(X(gp.x) - gs, Y(gp.y) - gs * 0.25);
@@ -466,10 +580,34 @@ export function InterceptEngine({
       ctx.lineTo(X(gp.x) + gs, Y(gp.y) + gs * 0.7);
       ctx.closePath();
       ctx.fill();
+      // battlements, and a doorway — a keep rather than a pentagon
+      ctx.fillStyle = tok('--game-ink', '#131e28');
+      ctx.globalAlpha = 0.30;
+      for (let i = -1; i <= 1; i += 1) {
+        ctx.fillRect(X(gp.x) + i * gs * 0.62 - gs * 0.17, Y(gp.y) - gs * 0.22, gs * 0.34, gs * 0.30);
+      }
+      ctx.globalAlpha = 0.45;
+      ctx.fillRect(X(gp.x) - gs * 0.26, Y(gp.y) + gs * 0.12, gs * 0.52, gs * 0.58);
+      ctx.globalAlpha = 1;
+      /* HP as pips under the gate. The number lived only in the HUD strip
+         before, which is the far corner of the screen from the thing losing it.
+         ⚠ Capped at 10 columns so a survival run cannot draw pips off-screen. */
+      const pips = Math.max(0, Math.min(BASE_HP, hpRef.current));
+      for (let i = 0; i < BASE_HP; i += 1) {
+        ctx.fillStyle = i < pips
+          ? (hurt ? tok('--game-bad', '#854c49') : tok('--game-ok', '#386544'))
+          : tok('--line', '#a3957c');
+        ctx.globalAlpha = i < pips ? 1 : 0.30;
+        ctx.beginPath();
+        ctx.arc(X(gp.x) + (i - (BASE_HP - 1) / 2) * S * 0.028,
+          Y(gp.y) + gs * 1.06, S * 0.009, 0, 6.2832);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
 
       /* ── the army ────────────────────────────────────────────────────── */
       if (now >= 0) {
-        const r = Math.min(w, h) * 0.020;
+        const r = S * 0.034;
         for (const u of wave.units) {
           if (u.dead) continue;
           const f = (now - u.spawnAt) / u.crossMs;
@@ -491,23 +629,56 @@ export function InterceptEngine({
             }
             continue;
           }
-          /* Under the canopy they are simply not there to see. */
-          if (cfg.hiddenShare > 0 && f > cfg.hiddenA && f < cfg.hiddenB) continue;
+          /* Under the canopy they are simply not there to see — and that is
+             true of EVERY tower's canopy, not just the first one's. */
+          if (cfg.hiddenShare > 0
+            && towers.some((tw) => tw.hiddenB > tw.hiddenA && f > tw.hiddenA && f < tw.hiddenB)) continue;
           const p = posAt(f);
           /* Out of reach = out of play. Dimming says so without hiding the
              colour, which the player still needs in order to decide whether
              this is one to leave alone when it does arrive. */
-          const inReach = f >= cfg.ringA && f <= cfg.ringB;
+          const mine = u.towerIdx >= 0 && towers[u.towerIdx] ? [towers[u.towerIdx]] : towers;
+          const inReach = mine.some((tw) => f >= tw.a && f <= tw.b);
+          const rad = u.kind === KIND.ARMOUR ? r * 1.26 : r;
+
+          /* A sprinter gets a streak, because "that one is faster" has to be
+             readable BEFORE it matters — a marcher you only recognise as fast
+             once it is past you is not a mechanic, it is a surprise. */
+          if (u.sprint) {
+            const back = posAt(Math.max(0, f - 0.045));
+            ctx.strokeStyle = tok(COLOUR_TOKEN[u.colour] || '--game-item', '#2f5f86');
+            ctx.globalAlpha = inReach ? 0.34 : 0.16;
+            ctx.lineCap = 'round';
+            ctx.lineWidth = rad * 1.1;
+            ctx.beginPath();
+            ctx.moveTo(X(back.x), Y(back.y));
+            ctx.lineTo(X(p.x), Y(p.y));
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+
           ctx.globalAlpha = inReach ? 1 : 0.42;
           ctx.fillStyle = tok(COLOUR_TOKEN[u.colour] || '--game-item', '#2f5f86');
           ctx.beginPath();
-          ctx.arc(X(p.x), Y(p.y), u.kind === KIND.ARMOUR ? r * 1.28 : r, 0, 6.2832);
+          ctx.arc(X(p.x), Y(p.y), rad, 0, 6.2832);
           ctx.fill();
           ctx.globalAlpha = 1;
           if (u.kind === KIND.ARMOUR) {
             ctx.strokeStyle = tok('--game-ink', '#131e28');
             ctx.globalAlpha = u.hits ? 0.35 : 0.8;
-            ctx.lineWidth = 2.4;
+            ctx.lineWidth = Math.max(2.4, rad * 0.22);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+          /* A bound marcher wears a ring in ITS tower's hue — the only thing on
+             screen saying which reach can take it. Drawn outside the body so it
+             survives the armour stroke sitting on the body's edge. */
+          if (u.towerIdx >= 0 && towers[u.towerIdx]) {
+            ctx.strokeStyle = hueOf(towers[u.towerIdx]);
+            ctx.globalAlpha = inReach ? 0.95 : 0.5;
+            ctx.lineWidth = Math.max(2, rad * 0.20);
+            ctx.beginPath();
+            ctx.arc(X(p.x), Y(p.y), rad * 1.55, 0, 6.2832);
             ctx.stroke();
             ctx.globalAlpha = 1;
           }
@@ -521,21 +692,21 @@ export function InterceptEngine({
         if (e.kind === 'text') {
           ctx.globalAlpha = Math.max(0, 1 - k);
           ctx.fillStyle = e.good ? tok('--game-ok', '#386544') : tok('--game-bad', '#854c49');
-          ctx.font = '800 14px Outfit, system-ui, sans-serif';
+          ctx.font = `800 ${Math.round(Math.max(15, S * 0.052))}px Outfit, system-ui, sans-serif`;
           ctx.textAlign = 'center';
-          ctx.fillText(e.text, X(e.x), Y(e.y) - 20 - k * 14);
+          ctx.fillText(e.text, X(e.x), Y(e.y) - S * 0.062 - k * S * 0.038);
         } else if (e.kind === 'boom') {
           ctx.globalAlpha = Math.max(0, 0.75 - k);
           ctx.strokeStyle = e.bad ? tok('--game-bad', '#854c49') : accent;
-          ctx.lineWidth = e.big ? 4 : 2.5;
+          ctx.lineWidth = Math.max(2.5, S * (e.big ? 0.013 : 0.008));
           ctx.beginPath();
-          ctx.arc(X(e.x), Y(e.y), Math.min(w, h) * (e.big ? 0.09 : 0.05) * k + 4, 0, 6.2832);
+          ctx.arc(X(e.x), Y(e.y), S * (e.big ? 0.13 : 0.075) * k + S * 0.014, 0, 6.2832);
           ctx.stroke();
         } else {
           ctx.globalAlpha = Math.max(0, 0.9 - k);
           ctx.fillStyle = accent;
           ctx.beginPath();
-          ctx.arc(X(e.x), Y(e.y), 4, 0, 6.2832);
+          ctx.arc(X(e.x), Y(e.y), S * 0.012, 0, 6.2832);
           ctx.fill();
         }
       }

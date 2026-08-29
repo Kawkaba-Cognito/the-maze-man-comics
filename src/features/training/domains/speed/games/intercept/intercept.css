@@ -11,7 +11,21 @@
  * this very file blocked a deploy in August.
  */
 
+/*
+ * The tower hues. There are up to three towers on the trail from L61, each with
+ * its own reach, and a BOUND marcher wears a ring in the hue of the one tower
+ * that can take it — so these are load-bearing information, not decoration, and
+ * they must stay distinguishable from each other AND from the four marcher
+ * colours (--game-item / --game-bad / --game-ok / --game-muted).
+ *
+ * They live here rather than as literals in index.jsx because the canvas reads
+ * them back with getComputedStyle, the same contract as every other colour in
+ * this game — see the header note above.
+ */
 .ic-root {
+  --game-tower-a: #e0a33a;
+  --game-tower-b: #5fb3d4;
+  --game-tower-c: #c77ad4;
   position: fixed;
   inset: 0;
   z-index: 50;

@@ -143,8 +143,17 @@ const CURVES = {
     bands: (m) => m.LADDER,
     fields: {
       count: 'up', mechCount: 'up', armour: 'up',
+      /* Measured non-decreasing across L1–100 before being registered, per the
+         hiddenShare lesson — both are genuinely harder: a bound marcher can be
+         struck from ONE tower, and a sprinter gives you less of a window. */
+      boundShare: 'up', sprinters: 'up',
       crossMs: 'down', gapMs: 'down', dwellMs: 'down',
     },
+    /* ⚠ `nTowers` is deliberately NOT registered, for the same reason `barrels`
+       is not: a second tower HELPS the player. Declaring it 'up' would assert
+       that more towers means more difficulty and force the curve to take help
+       away to stay green. That towers never vanish is guaranteed instead by
+       mechCount and by validate:intercept's per-band check on twin/triple. */
     /* No `structural` needed: every band of this ladder declares an `adds`,
        because its six bands ARE its six mechanics. */
     /*

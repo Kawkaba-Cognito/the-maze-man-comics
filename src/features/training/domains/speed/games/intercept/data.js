@@ -165,21 +165,28 @@ export const BLAST_FRAC = 0.075;
  * supposed to arrive on, and nothing on screen would show it.
  */
 export const LADDER = [
-  /* L1–10  */ { adds: ['strike'] },
-  /* L11–20 */ { adds: ['nogo'] },
-  /* L21–30 */ { adds: ['barrel'] },
-  /* L31–40 */ { adds: ['armour'] },
-  /* L41–50 */ { adds: ['canopy'] },
-  /* L51–60 */ { adds: ['shuffle'] },
+  /* L1–10   */ { adds: ['strike'] },
+  /* L11–20  */ { adds: ['nogo'] },
+  /* L21–30  */ { adds: ['barrel'] },
+  /* L31–40  */ { adds: ['armour'] },
+  /* L41–50  */ { adds: ['canopy'] },
+  /* L51–60  */ { adds: ['shuffle'] },
+  /* L61–70  */ { adds: ['twin'] },
+  /* L71–80  */ { adds: ['bound'] },
+  /* L81–90  */ { adds: ['triple'] },
+  /* L91–100 */ { adds: ['sprint'] },
 ];
 
-export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 60
+export const LADDER_LEVELS = LADDER.length * BAND_SIZE; // 100
 
 /** The curve fraction at the first level of band `b`. */
 export const bandStartF = (b) => ladderFraction(b * BAND_SIZE + 1, LADDER_LEVELS);
 
 /** Which band introduces each mechanic — the single source for the thresholds. */
-const BAND_OF = { nogo: 1, barrel: 2, armour: 3, canopy: 4, shuffle: 5 };
+const BAND_OF = {
+  nogo: 1, barrel: 2, armour: 3, canopy: 4, shuffle: 5,
+  twin: 6, bound: 7, triple: 8, sprint: 9,
+};
 
 export const MECHANIC_LABELS = {
   strike: { en: 'Strike them in the reach', ar: 'اضرب داخل المدى' },
@@ -188,6 +195,10 @@ export const MECHANIC_LABELS = {
   armour: { en: 'Armour takes two', ar: 'المدرّع يحتاج ضربتين' },
   canopy: { en: 'Forest canopy', ar: 'مظلّة الغابة' },
   shuffle: { en: 'The safe colour changes', ar: 'اللون الآمن يتغيّر' },
+  twin: { en: 'A second tower', ar: 'برج ثانٍ' },
+  bound: { en: 'Marked for one tower', ar: 'موسوم لبرج واحد' },
+  triple: { en: 'A third tower', ar: 'برج ثالث' },
+  sprint: { en: 'Runners break ranks', ar: 'العدّاؤون ينطلقون' },
 };
 
 /*
@@ -205,10 +216,43 @@ export const LADDER_BASE = {
   armourFrom: bandStartF(BAND_OF.armour), armour0: 1, armour1: 6,
   barrelFrom: bandStartF(BAND_OF.barrel), barrel0: 1, barrel1: 3,
   shuffleFrom: bandStartF(BAND_OF.shuffle),
+  twinFrom: bandStartF(BAND_OF.twin),
+  boundFrom: bandStartF(BAND_OF.bound), bound0: 0.25, bound1: 0.55,
+  tripleFrom: bandStartF(BAND_OF.triple),
+  sprintFrom: bandStartF(BAND_OF.sprint), sprint0: 1, sprint1: 3,
 };
 
-/** The tower's reach is centred on this fraction of the trail. */
-export const RING_AT = 0.62;
+/*
+ * ── THE TOWERS ──
+ *
+ * Reaches are centred on these fractions of the trail, and they arrive in this
+ * order: one tower to L60, a second from L61, a third from L81.
+ *
+ * ⚠ THE ORDER OF THIS ARRAY IS THE ORDER THEY ARRIVE, NOT THEIR ORDER ALONG
+ * THE TRAIL. T2 sits EARLIER on the trail than T1 (0.30 vs 0.62), so when it
+ * appears the player gains a strike window *before* the one they already know
+ * rather than after it. Adding the new tower downstream instead would have let
+ * a player simply wait — the old window first, the new one as a safety net —
+ * which is not divided attention, it is a second chance.
+ *
+ * ⚠ They must never OVERLAP. `boundOf` marks a marcher for exactly one tower,
+ * and overlapping reaches would make "which tower is this one for" undecidable
+ * from position alone. validate:intercept asserts disjointness at every level,
+ * because the spans SHRINK with the curve and the centres do not move — so the
+ * check has to run against the built geometry, not against these numbers.
+ */
+export const TOWER_AT = [0.62, 0.30, 0.86];
+
+/** How many towers stand at a given curve fraction. */
+export function towerCount(B, f) {
+  let n = 1;
+  if (B.twinFrom != null && f >= B.twinFrom) n = 2;
+  if (B.tripleFrom != null && f >= B.tripleFrom) n = 3;
+  return n;
+}
+
+/** Kept for the tutorial and the hub art: where the FIRST tower stands. */
+export const RING_AT = TOWER_AT[0];
 
 const lerp = (a, b, f) => a + (b - a) * f;
 
@@ -243,13 +287,18 @@ function shape(B, f) {
    */
   if (ringSpan * crossMs < MIN_DWELL_MS) ringSpan = MIN_DWELL_MS / crossMs;
 
+  const nTowers = towerCount(B, f);
+
   const cfg = {
     count: Math.round(lerp(B.count0, B.count1, f)),
     crossMs,
     gapMs: Math.round(lerp(B.gap0, B.gap1, f)),
     ringSpan,
-    ringA: RING_AT - ringSpan / 2,
-    ringB: RING_AT + ringSpan / 2,
+    nTowers,
+    ringA: TOWER_AT[0] - ringSpan / 2,
+    ringB: TOWER_AT[0] + ringSpan / 2,
+    boundShare: nTowers > 1 ? staged(f, B.boundFrom, B.bound0, B.bound1) : 0,
+    sprinters: nTowers > 0 ? Math.round(staged(f, B.sprintFrom, B.sprint0, B.sprint1)) : 0,
     nogoShare: staged(f, B.nogoFrom, B.nogo0, B.nogo1),
     hiddenShare: staged(f, B.hiddenFrom, B.hidden0, B.hidden1),
     armour: Math.round(staged(f, B.armourFrom, B.armour0, B.armour1)),
@@ -270,11 +319,34 @@ function shape(B, f) {
    * hiddenShare is recomputed FROM the result so nothing downstream believes a
    * number the geometry does not honour.
    */
-  const wantHiddenA = cfg.ringB - cfg.ringSpan * cfg.hiddenShare;
-  const floorHiddenA = cfg.ringA + MIN_VISIBLE_MS / cfg.crossMs;
-  cfg.hiddenA = Math.min(cfg.ringB, Math.max(wantHiddenA, floorHiddenA));
-  cfg.hiddenB = cfg.ringB;
-  cfg.hiddenShare = cfg.ringSpan > 0 ? (cfg.ringB - cfg.hiddenA) / cfg.ringSpan : 0;
+  /*
+   * ⚠ THE CANOPY COVERS A STRETCH OF *EVERY* TOWER, not just the first.
+   * With canopy on one tower only, a marcher walking into a hidden reach could
+   * simply be left until the next tower's clear reach — the prediction measure
+   * would be optional, and an optional measure is one nobody's score reflects.
+   * The floor is re-applied per tower for the same reason it is re-applied per
+   * marcher below: a guarantee made on the average is not a guarantee.
+   */
+  cfg.towers = TOWER_AT.slice(0, nTowers).map((at) => {
+    const a = at - ringSpan / 2;
+    const b = at + ringSpan / 2;
+    const wantA = b - ringSpan * cfg.hiddenShare;
+    const floorA = a + MIN_VISIBLE_MS / crossMs;
+    const hiddenA = cfg.hiddenShare > 0 ? Math.min(b, Math.max(wantA, floorA)) : b;
+    return { at, a, b, span: ringSpan, hiddenA, hiddenB: b };
+  });
+  /* Sorted along the trail so a marcher's windows arrive in time order — the
+     renderer, the strike test and the feasibility proof all rely on that. */
+  cfg.towers.sort((p, q) => p.at - q.at);
+
+  /* The first tower's numbers stay on `cfg` under their old names: the tutorial,
+     the hub art and audit:curves all read them, and the canopy share below is
+     re-derived from the geometry so nothing downstream trusts a number the
+     towers do not honour. */
+  const t0 = cfg.towers.find((tw) => tw.at === TOWER_AT[0]) || cfg.towers[0];
+  cfg.hiddenA = t0.hiddenA;
+  cfg.hiddenB = t0.hiddenB;
+  cfg.hiddenShare = ringSpan > 0 ? (t0.hiddenB - t0.hiddenA) / ringSpan : 0;
   cfg.tolMs = Math.max(MIN_TOLERANCE_MS, Math.round(cfg.ringSpan * cfg.crossMs * 0.22));
 
   /* Numeric mirrors so audit:curves can assert the non-numeric levers too. */
@@ -304,7 +376,9 @@ export function survivalCfg(stage) {
   };
 }
 
-export const passCfg = () => ({ ...shape(LADDER_BASE, ladderFraction(30, LADDER_LEVELS)) });
+/* The midpoint of the ladder — L50 of 100 since the climb doubled, so Pass n
+   Play sits where it always did rather than sliding to the easy end. */
+export const passCfg = () => ({ ...shape(LADDER_BASE, ladderFraction(50, LADDER_LEVELS)) });
 
 /* ── BUILDING A WAVE ──────────────────────────────────────────────────────
  * `rng` is passed in — see the header note on Node and extensionless imports.
@@ -354,22 +428,84 @@ export function buildWave(rng, cfg, waveNo = 1) {
   const firstGo = kinds.findIndex((k) => k !== KIND.NOGO);
   if (firstGo > 0) { const t = kinds[0]; kinds[0] = kinds[firstGo]; kinds[firstGo] = t; }
 
+  const towers = cfg.towers || [{
+    at: TOWER_AT[0], a: cfg.ringA, b: cfg.ringB, span: cfg.ringSpan,
+    hiddenA: cfg.hiddenA, hiddenB: cfg.hiddenB,
+  }];
+
+  /* Which marchers are marked for exactly one tower. Never the first of the
+     wave, for the same reason the first is never a no-go: a rule you meet
+     before the plain case has nothing to be an exception to. */
+  const boundCount = towers.length > 1 && cfg.boundShare > 0
+    ? Math.min(cfg.count - 1, Math.round(cfg.count * cfg.boundShare))
+    : 0;
+  /* Sprinters likewise — a wave that opens on the odd one out reads as a trick
+     rather than as a break in a rank you had already settled into. */
+  const sprintCount = Math.min(Math.max(0, cfg.sprinters), Math.max(0, cfg.count - 1));
+
+  const flags = [];
+  for (let i = 0; i < cfg.count; i += 1) {
+    flags.push({ bound: i > 0 && i <= boundCount, sprint: false });
+  }
+  /* Sprinters are drawn from the BACK of the column so the two marks rarely
+     land on the same marcher — a bound sprinter is legal but a wave made of
+     them stops testing either idea on its own. */
+  for (let i = 0, n = 0; i < cfg.count && n < sprintCount; i += 1) {
+    const idx = cfg.count - 1 - i;
+    if (idx <= 0) break;
+    flags[idx].sprint = true; n += 1;
+  }
+  for (let i = flags.length - 1; i > 1; i -= 1) {
+    const j = 1 + Math.floor(rng() * i);
+    const t = flags[i]; flags[i] = flags[j]; flags[j] = t;
+  }
+
   const units = [];
   let at = 0;
   for (let i = 0; i < cfg.count; i += 1) {
     const kind = kinds[i];
-    const crossMs = Math.round(cfg.crossMs * (0.94 + rng() * 0.12));
-    const enterAt = Math.round(at + cfg.ringA * crossMs);
+    const flag = flags[i] || { bound: false, sprint: false };
     /*
-     * ⚠ THE VISIBILITY FLOOR IS RE-APPLIED PER MARCHER, not just per level.
-     * Each one walks at ±6% of the wave's pace, and a marcher on the fast end
-     * reaches the canopy sooner — so a floor honoured by the config was broken
-     * by 3–20ms in the built wave, at 21 levels of the hard tier. Exactly the
-     * class of bug that sank the previous rebuild, where ships were spaced on
-     * their unwarped times: A GUARANTEE MADE ON THE AVERAGE IS NOT A GUARANTEE.
-     * Safe against exitAt because dwell >= 620ms and this floor is 340ms.
+     * ⚠ A SPRINTER'S SPEED IS FLOORED BY THE DWELL IT LEAVES, not authored.
+     * `ringSpan` is already floored so that span × crossMs >= MIN_DWELL_MS at
+     * the wave's pace — but a marcher walking the trail in 0.7× that time is
+     * strikeable for 0.7× as long, which at the top of the ladder is 434ms
+     * against a 620ms floor. The whole point of a sprinter is that it is hard
+     * to catch, not that it is impossible, so the speed-up yields to the floor.
      */
-    const hideAt = Math.max(Math.round(at + cfg.hiddenA * crossMs), enterAt + MIN_VISIBLE_MS);
+    let factor = 0.94 + rng() * 0.12;
+    if (flag.sprint) {
+      const floorFactor = MIN_DWELL_MS / (cfg.ringSpan * cfg.crossMs);
+      factor = Math.max(0.66 + rng() * 0.06, floorFactor);
+    }
+    const crossMs = Math.round(cfg.crossMs * factor);
+    /* A bound marcher answers to one tower; everyone else to all of them. */
+    const towerIdx = flag.bound ? Math.floor(rng() * towers.length) : -1;
+    const mine = towerIdx >= 0 ? [towers[towerIdx]] : towers;
+    const windows = mine.map((tw) => {
+      const enter = Math.round(at + tw.a * crossMs);
+      const exit = Math.round(at + tw.b * crossMs);
+      return {
+        at: tw.at,
+        enterAt: enter,
+        exitAt: exit,
+        /* Per window AND per marcher — see the note above. */
+        hideAt: cfg.hiddenShare > 0
+          ? Math.max(Math.round(at + tw.hiddenA * crossMs), enter + MIN_VISIBLE_MS)
+          : exit,
+      };
+    });
+    const enterAt = windows[0].enterAt;
+    /*
+     * ⚠ THE VISIBILITY FLOOR IS RE-APPLIED PER MARCHER AND PER WINDOW, not per
+     * level. Each one walks at ±6% of the wave's pace (a sprinter far faster),
+     * and a marcher on the fast end reaches the canopy sooner — so a floor
+     * honoured by the config was broken by 3–20ms in the built wave, at 21
+     * levels of the old hard tier. Exactly the class of bug that sank the
+     * previous rebuild, where ships were spaced on their unwarped times:
+     * A GUARANTEE MADE ON THE AVERAGE IS NOT A GUARANTEE. That floor now lives
+     * in the `windows` map above, where the geometry actually is.
+     */
     units.push({
       id: `w${waveNo}-${i}`,
       kind,
@@ -377,28 +513,38 @@ export function buildWave(rng, cfg, waveNo = 1) {
       spawnAt: Math.round(at),
       crossMs,
       taps: kind === KIND.ARMOUR ? 2 : 1,
+      /* Which tower this one answers to, or -1 for "any". */
+      towerIdx,
+      sprint: flag.sprint,
       /* Absolute moments, precomputed so the renderer and the gate cannot
-         re-derive them differently. */
+         re-derive them differently. One entry per reach this marcher may be
+         struck in, in trail order. */
+      windows,
       enterAt,
-      exitAt: Math.round(at + cfg.ringB * crossMs),
-      hideAt,
+      exitAt: windows[windows.length - 1].exitAt,
+      hideAt: windows[0].hideAt,
       gateAt: Math.round(at + crossMs),
     });
     at += cfg.gapMs * (0.85 + rng() * 0.3);
   }
 
   const barrels = [];
+  /* Barrels sit INSIDE a reach, so detonating one is a real alternative to
+     tapping — outside one they would only be scenery. They are dealt round
+     robin across the towers so a wave never stacks every drum on one reach. */
   for (let i = 0; i < cfg.barrels; i += 1) {
-    /* Barrels sit INSIDE the reach, so detonating one is a real alternative to
-       tapping — outside it they would only be scenery. */
+    const tw = towers[i % towers.length];
+    const nth = Math.floor(i / towers.length) + 1;
+    const per = Math.ceil(cfg.barrels / towers.length) + 1;
     barrels.push({
       id: `b${waveNo}-${i}`,
-      at: cfg.ringA + (cfg.ringSpan * (i + 1)) / (cfg.barrels + 1),
+      at: tw.a + (tw.span * nth) / per,
+      tower: tw.at,
       spent: false,
     });
   }
 
-  return { units, barrels, goColour, nogoColour, waveNo };
+  return { units, barrels, goColour, nogoColour, towers, waveNo };
 }
 
 /* ── FEASIBILITY ──────────────────────────────────────────────────────────
@@ -415,20 +561,56 @@ export function buildWave(rng, cfg, waveNo = 1) {
  * so if the greedy pass fits, a perfect player can clear the wave — and if it
  * does not, no player can, however good they are.
  */
+/*
+ * ⚠ A MARCHER NOW HAS SEVERAL WINDOWS, AND THAT CHANGES WHAT THIS PROVES.
+ * With one tower each tap was a unit job with a single release time and
+ * deadline, where greedy earliest-deadline scheduling is provably optimal — so
+ * "greedy fails" meant "nobody can". With two or three towers the allowed set
+ * is a UNION of intervals and that textbook optimality no longer transfers.
+ *
+ * The direction that matters still holds, and it is the direction the game's
+ * honesty rests on: when this returns ok it has CONSTRUCTED a real schedule —
+ * concrete tap times, each inside a real window, none closer than
+ * MIN_TAP_GAP_MS — so a perfect player demonstrably can clear the wave. It can
+ * in principle be conservative the other way and reject a wave some cleverer
+ * ordering would fit. That is the safe direction for a gate to be wrong in, and
+ * it would surface as validate:intercept failing rather than as a player
+ * meeting an impossible wave. Do not "fix" it by weakening it to a heuristic
+ * that returns ok without building the schedule.
+ */
 export function feasible(wave) {
   const jobs = [];
   for (const u of wave.units) {
     if (u.kind === KIND.NOGO) continue;
-    for (let k = 0; k < u.taps; k += 1) jobs.push({ open: u.enterAt, due: u.exitAt, id: u.id });
+    const wins = (u.windows && u.windows.length
+      ? u.windows
+      : [{ enterAt: u.enterAt, exitAt: u.exitAt }]
+    ).slice().sort((a, b) => a.enterAt - b.enterAt);
+    const due = wins[wins.length - 1].exitAt;
+    for (let k = 0; k < u.taps; k += 1) jobs.push({ wins, due, id: u.id });
   }
-  jobs.sort((a, b) => a.due - b.due || a.open - b.open);
+  jobs.sort((a, b) => a.due - b.due || a.wins[0].enterAt - b.wins[0].enterAt);
   let t = -Infinity;
+  const plan = [];
   for (const j of jobs) {
-    const at = Math.max(j.open, t + MIN_TAP_GAP_MS);
-    if (at > j.due) return { ok: false, failedAt: j.id, need: at, deadline: j.due };
+    const earliest = t === -Infinity ? -Infinity : t + MIN_TAP_GAP_MS;
+    let at = null;
+    for (const w of j.wins) {
+      const cand = Math.max(w.enterAt, earliest);
+      if (cand <= w.exitAt) { at = cand; break; }
+    }
+    if (at == null) {
+      return {
+        ok: false,
+        failedAt: j.id,
+        need: earliest === -Infinity ? j.wins[0].enterAt : earliest,
+        deadline: j.due,
+      };
+    }
+    plan.push(at);
     t = at;
   }
-  return { ok: true, taps: jobs.length };
+  return { ok: true, taps: jobs.length, plan };
 }
 
 /** How long a marcher is strikeable, in ms. */
@@ -446,6 +628,10 @@ export function mechanics(cfg) {
   if (cfg.armour > 0) m.push('armour');
   if (cfg.hiddenShare > 0) m.push('canopy');
   if (cfg.nogoShuffle) m.push('shuffle');
+  if (cfg.nTowers >= 2) m.push('twin');
+  if (cfg.boundShare > 0) m.push('bound');
+  if (cfg.nTowers >= 3) m.push('triple');
+  if (cfg.sprinters > 0) m.push('sprint');
   return m;
 }
 
