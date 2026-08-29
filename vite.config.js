@@ -120,6 +120,41 @@ function pwaPlugin() {
           },
         },
         {
+          // Stylesheets, for the SAME reason scripts are here — and this rule
+          // exists because its absence had a visible symptom: opening the app
+          // with no connection rendered it as UNSTYLED HTML, then it was fine
+          // once the network came back (reported 2026-08-29).
+          //
+          // CSS is content-hashed and precached; the precache is version-locked
+          // and `cleanupOutdatedCaches` deletes the previous build's copy on
+          // every SW update. Scripts are NOT precached — they live in
+          // `app-scripts` at 400 entries, so several builds' worth survive a
+          // deploy. That asymmetry is the bug: a client offline on the previous
+          // shell (served by the NetworkFirst rule above, which is the whole
+          // point of that rule) resolved its old entry chunk from cache and its
+          // old stylesheet from nowhere, because no runtime rule matched a
+          // stylesheet at all — `assets` below is png|jpg|jpeg|webp|ico|svg|glb.
+          // React booted, the app rendered, and every rule was missing.
+          //
+          // Precache routes are registered first and still win for the CURRENT
+          // build, so this costs nothing on the hot path; it only catches the
+          // superseded hashes the precache has dropped. maxEntries 100 ≈ six
+          // builds (16 CSS files each) — and, as with app-scripts, it must stay
+          // well above one build's count, because ExpirationPlugin refuses to
+          // SERVE past the cap, not merely to evict.
+          // Same-origin only, on purpose: a Google Fonts stylesheet is also
+          // `destination: 'style'`, and the first matching route wins, so an
+          // unscoped rule here would silently swallow the google-fonts rule
+          // below and leave it catching nothing but gstatic .woff2 files.
+          urlPattern: ({ request, url }) =>
+            request.destination === 'style' && url.origin === self.location.origin,
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'app-styles',
+            expiration: { maxEntries: 100, purgeOnQuotaError: true },
+          },
+        },
+        {
           urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com/,
           handler: 'StaleWhileRevalidate',
           options: { cacheName: 'google-fonts', expiration: { maxEntries: 20 } },
