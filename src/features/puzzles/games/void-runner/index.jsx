@@ -2381,13 +2381,16 @@ export default function VoidRunnerGame({ onBack }) {
    * whatever the setting was when the player opened the game. The refs are
    * updated on every render and read live inside the audio guards, which is
    * what makes toggling sound in Other → Settings take effect mid-flight.
+   *
+   * Music is no longer one of them. The app-wide soundtrack and its Settings
+   * row are gone, so there is no app-level music preference left to read; this
+   * game's own synthesized score is governed solely by its in-game MUSIC
+   * ON/OFF button, which is why the app gate below is a constant.
    */
-  const { sfxEnabled, musicEnabled } = useApp();
+  const { sfxEnabled } = useApp();
   const instanceRef = useRef(null);
   const sfxOnRef = useRef(sfxEnabled);
-  const musicOnRef = useRef(musicEnabled);
   sfxOnRef.current = sfxEnabled;
-  musicOnRef.current = musicEnabled;
 
   useEffect(() => {
     const root = rootRef.current;
@@ -2402,7 +2405,7 @@ export default function VoidRunnerGame({ onBack }) {
         instanceRef.current = createVoidRunner(root, THREE, {
           onBack: () => onBackRef.current?.(),
           isAppSfxOn: () => sfxOnRef.current,
-          isAppMusicOn: () => musicOnRef.current,
+          isAppMusicOn: () => true,
         });
       })
       .catch(() => {
@@ -2422,7 +2425,7 @@ export default function VoidRunnerGame({ onBack }) {
      rather than at the start of the next track. */
   useEffect(() => {
     instanceRef.current?.syncAppAudio?.();
-  }, [sfxEnabled, musicEnabled]);
+  }, [sfxEnabled]);
 
   // The <style> tag must NOT be a child of the ref'd div — the mount effect
   // does `root.innerHTML = HTML` to build the game DOM (matching the

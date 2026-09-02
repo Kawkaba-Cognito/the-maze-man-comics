@@ -165,6 +165,11 @@ function pwaPlugin() {
           // whole build, and only what a player actually opens is ever fetched.
           // The old cap of 60 could not even hold the character GLBs plus one
           // screen's backgrounds, so every session re-downloaded multi-MB models.
+          //
+          // No audio pattern is needed: the interface sounds are synthesized in
+          // lib/sfx.js, so they are already offline by construction. `rain.mp3`
+          // is a deliberate exception — it is a long ambience track for one
+          // practice, and caching it would cost more than re-fetching it.
           urlPattern: /\.(png|jpg|jpeg|webp|ico|svg|glb)$/,
           handler: 'StaleWhileRevalidate',
           options: {

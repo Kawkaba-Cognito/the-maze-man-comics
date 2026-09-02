@@ -48,6 +48,32 @@
     padding: 12px 14px 24px;
     min-height: min(100vh, 100dvh);
     box-sizing: border-box;
+    /*
+     * Screen entry. Menu → mode → levels → play used to be a hard cut: React
+     * swapped the subtree and the next screen simply existed. Nothing about
+     * that is broken, and it is most of why navigating the games felt abrupt
+     * next to the rest of the app.
+     *
+     * A short rise-and-fade, once, on mount. Deliberately understated and
+     * SHORT (240ms): this fires on every navigation in every game, so anything
+     * longer becomes a tax the player pays over and over. No exit animation —
+     * that would mean holding the outgoing screen alive and delaying the
+     * incoming one, which is latency dressed as polish.
+     *
+     * ⚠ Transform-and-opacity only, so it stays on the compositor. Animating
+     * height or margin here would lay out the whole screen every frame, on the
+     * exact frame a game is also booting its canvas.
+     */
+    animation: ct-screen-in 0.24s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes ct-screen-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ct-fq-screen { animation: none; }
 }
 
 .ct-fq-hub-maze {
@@ -603,29 +629,27 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     margin: 0;
     padding: clamp(16px, 2.2vh, 22px) 18px;
     border-radius: 20px;
-    border: 2px solid var(--ink-outline);
+    /* Moved off the sticker treatment WITH .ct-fq-btn above. These two are the
+       pair a player sees together on the mode screen — leaving one on a hard
+       ink shadow while the other went soft is exactly how an area ends up
+       looking like two different apps. */
+    border: 1px solid var(--fx-hairline);
     background: linear-gradient(168deg, rgba(255, 255, 255, 0.99) 0%, rgba(252, 250, 246, 0.97) 100%);
-    box-shadow:
-        4px 5px 0 var(--ink-outline),
-        0 1px 0 rgba(255, 255, 255, 0.9) inset;
+    box-shadow: var(--elev-rest), 0 1px 0 var(--fx-glint) inset;
     cursor: pointer;
     text-align: start;
     font: inherit;
     color: inherit;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 0.14s ease, box-shadow 0.16s ease;
+    transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.18s ease;
 }
 .ct-fq-attn-mode:hover {
-    transform: translate(-1px, -1px);
-    box-shadow:
-        6px 7px 0 var(--ink-outline),
-        0 1px 0 rgba(255, 255, 255, 0.9) inset;
+    transform: translateY(-2px);
+    box-shadow: var(--elev-raise), 0 1px 0 var(--fx-glint) inset;
 }
 .ct-fq-attn-mode:active {
-    transform: translate(2px, 2px);
-    box-shadow:
-        1px 1px 0 var(--ink-outline),
-        0 1px 0 rgba(255, 255, 255, 0.9) inset;
+    transform: translateY(1px);
+    box-shadow: var(--elev-press);
 }
 .ct-fq-attn-mode:focus-visible {
     outline: 3px solid rgba(107, 158, 122, 0.45);
@@ -1249,28 +1273,55 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     margin-bottom: 6px;
 }
 
+/*
+ * The shared action button, worn by all eighteen games.
+ *
+ * It used to be a STICKER: `border: 2px solid` ink, `font-weight: 900`, and a
+ * hard unblurred offset shadow (`4px 5px 0`) that slid the whole button
+ * diagonally on hover. Nothing else in the app was doing more to make the
+ * training platform read as a children's toy — and because it is one rule, it
+ * was doing it everywhere at once.
+ *
+ * Now: a hairline edge, a weight that is emphatic without shouting, and depth
+ * from the --elev-* scale (a tight contact shadow plus a wide soft one, which
+ * is what an object over a surface actually casts).
+ *
+ * ⚠ PRESS SINKS, IT DOES NOT SLIDE. The old `translate(2px, 2px)` moved the
+ * label diagonally out from under the finger already on it. Pressing now uses
+ * the inset shadow and a 1px settle, so the thing you aimed at stays where you
+ * aimed. Colours are deliberately untouched here — this is an elevation and
+ * type-weight pass, not a palette change.
+ */
 .ct-fq-btn {
     display: block;
     width: 100%;
     max-width: 340px;
     padding: 16px 18px;
-    border: 2px solid var(--ink-outline);
+    border: 1px solid var(--fx-hairline);
     border-radius: var(--fq-r);
     font-family: inherit;
     font-size: 1.08rem;
-    font-weight: 900;
+    font-weight: 750;
+    letter-spacing: 0.005em;
     cursor: pointer;
     margin-bottom: 10px;
     text-align: center;
-    transition: transform 0.14s ease, box-shadow 0.16s ease;
+    box-shadow: var(--elev-rest);
+    transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.18s ease, filter 0.18s ease;
 }
-.ct-fq-btn:active { transform: translate(2px, 2px); }
-.ct-fq-btn-pri { background: var(--fq-pri); color: #fff; box-shadow: 4px 5px 0 var(--ink-outline); }
-.ct-fq-btn-pri:hover { transform: translate(-1px, -1px); box-shadow: 6px 7px 0 var(--ink-outline); }
-.ct-fq-btn-pri:active { box-shadow: 1px 1px 0 var(--ink-outline); }
-.ct-fq-btn-sec { background: var(--fq-acc); color: var(--game-selected); box-shadow: 4px 5px 0 var(--ink-outline); }
-.ct-fq-btn-ghost { background: var(--fq-sur); color: var(--fq-mut); border: 2px solid var(--ink-outline); box-shadow: 3px 3px 0 var(--ink-outline); max-width: 200px; padding: 11px; font-size: 0.86rem; }
-.ct-fq-btn-ghost:active { box-shadow: 1px 1px 0 var(--ink-outline); }
+.ct-fq-btn:hover { transform: translateY(-1px); box-shadow: var(--elev-raise); }
+.ct-fq-btn:active { transform: translateY(1px); box-shadow: var(--elev-press); }
+.ct-fq-btn-pri { background: var(--fq-pri); color: #fff; }
+.ct-fq-btn-pri:hover { filter: brightness(1.04); }
+.ct-fq-btn-sec { background: var(--fq-acc); color: var(--game-selected); }
+.ct-fq-btn-ghost {
+    background: var(--fq-sur);
+    color: var(--fq-mut);
+    max-width: 200px;
+    padding: 11px;
+    font-size: 0.86rem;
+    box-shadow: var(--elev-rest);
+}
 
 .ct-fq-db {
     width: 100%;
@@ -1466,7 +1517,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     max-width: 360px;
     margin: 16px auto 0;
     padding: 16px 24px;
-    border: 2px solid var(--game-ink);
+    border: 1px solid var(--fx-hairline);
     border-radius: 16px;
     /* Was #ffd66b → #f0b94a. The accent is the palette's "hot / act on me"
        role, which is exactly what a Start button is. */
@@ -1476,11 +1527,14 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     font-weight: 800;
     font-size: 1.16rem;
     cursor: pointer;
-    box-shadow: 4px 5px 0 var(--game-ink);
-    transition: transform 0.14s ease, box-shadow 0.16s ease;
+    /* The single most important button in the app — the one that starts a run.
+       It keeps the heaviest rest elevation of any control, which is how a
+       player finds it without reading. */
+    box-shadow: var(--elev-raise);
+    transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.18s ease, filter 0.18s ease;
 }
-.ct-survival-intro-go:hover { transform: translate(-1px, -1px); box-shadow: 6px 7px 0 var(--game-ink); }
-.ct-survival-intro-go:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--game-ink); }
+.ct-survival-intro-go:hover { transform: translateY(-2px); filter: brightness(1.05); }
+.ct-survival-intro-go:active { transform: translateY(1px); box-shadow: var(--elev-press); }
 
 /* Result screens (any non-hub training screen showing a big score) center their
    content vertically so there's no dead band under the buttons. The menubar
@@ -3485,20 +3539,23 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     gap: 8px;
     align-items: stretch;
 }
+/* The pause/quit modal's buttons — same elevation language as .ct-fq-btn. */
 .ct-training-btn {
     font-family: 'Outfit', 'Cairo', sans-serif;
     font-size: 1.08rem;
-    font-weight: 900;
-    letter-spacing: 0.02em;
+    font-weight: 750;
+    letter-spacing: 0.015em;
     border-radius: 14px;
-    border: 2px solid var(--ink-outline);
+    border: 1px solid var(--fx-hairline);
     padding: 16px 18px;
     cursor: pointer;
     width: 100%;
     box-sizing: border-box;
-    transition: transform 0.1s ease, filter 0.12s ease;
+    box-shadow: var(--elev-rest);
+    transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.18s ease, filter 0.18s ease;
 }
-.ct-training-btn:active { transform: scale(0.98); }
+.ct-training-btn:hover { box-shadow: var(--elev-raise); filter: brightness(1.03); }
+.ct-training-btn:active { transform: translateY(1px); box-shadow: var(--elev-press); }
 @media (prefers-reduced-motion: reduce) {
     .ct-training-chrome-btn,
     .ct-training-btn {

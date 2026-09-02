@@ -593,15 +593,24 @@ const PROGRAM_IDS = new Set(['mbsr']);
 // NOT a hub-and-spoke grid (that's Training's signature) and NOT an orbit
 // around a center (that's Home's). Categories here are independent, so
 // nothing connects them; each just drifts on its own slow, gentle timer.
-// Positions assume the FULL screen is the canvas (not a boxed card) — y
-// leaves room for the header above (~0-26%) and the hint text/tab bar
-// below (~86-100%).
+//
+// ⚠ `fy` IS NOT A PERCENTAGE OF THE SCREEN. It is a fraction of the FIELD —
+// the band left over once the title stack, the favourites pill, the bottom
+// hint and the tab bar have taken their fixed heights (--rx-top / --rx-bot in
+// the stylesheet below). It used to be a percentage of the stage, and the
+// stage carried `min-height: max(100dvh, 860px)`: on any phone the landing was
+// taller than the screen, so a picker of five planets became something you had
+// to scroll to see all of. Anchoring to the field is what makes it one screen
+// at any height — the planets keep their spread and their clearances instead of
+// being measured against a canvas that no longer matches the viewport.
+//
+// `size` is the orb at full scale; --rx-k shrinks it on short viewports.
 const CAT_LAYOUT = {
-  calm:          { x: 24, y: 32, size: 96, dur: 7.4, delay: 0 },
-  sleep:         { x: 74, y: 40, size: 78, dur: 8.6, delay: 1.6 },
-  meaning:       { x: 45, y: 55, size: 88, dur: 7.9, delay: 3.1 },
-  relationships: { x: 78, y: 68, size: 76, dur: 9.2, delay: 0.8 },
-  personality:   { x: 22, y: 78, size: 80, dur: 8.1, delay: 2.3 },
+  calm:          { x: 24, fy: 0.14, size: 96, dur: 7.4, delay: 0 },
+  sleep:         { x: 74, fy: 0.31, size: 78, dur: 8.6, delay: 1.6 },
+  meaning:       { x: 45, fy: 0.52, size: 88, dur: 7.9, delay: 3.1 },
+  relationships: { x: 78, fy: 0.72, size: 76, dur: 9.2, delay: 0.8 },
+  personality:   { x: 22, fy: 0.84, size: 80, dur: 8.1, delay: 2.3 },
 };
 
 // ── favourites + custom order (persisted) ──────────────────────────────────
@@ -929,7 +938,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
 
   return (
     <div
-      className="rx-root"
+      className="rx-root rx-root--landing"
       dir={isAr ? 'rtl' : 'ltr'}
       style={{ background: 'transparent' }}
     >
@@ -943,24 +952,12 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
         type="button"
         onClick={() => { playSfx?.('click'); toggleLang(); }}
         aria-label={isAr ? 'English' : 'العربية'}
-        className="rx-fade"
-        style={{
-          position: 'absolute', top: 'calc(14px + env(safe-area-inset-top))', insetInlineEnd: 14, zIndex: 5,
-          minWidth: 38, height: 38, padding: '0 12px', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: '1px solid rgba(240,182,106,0.34)',
-          background: 'rgba(24,20,34,0.66)',
-          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
-          color: '#f0b66a', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-          fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-        }}
+        className="rx-fade rx-landing-lang"
+        style={{ fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif" }}
       >
         {isAr ? 'EN' : 'عر'}
       </button>
-      <div className="rx-fade" style={{
-        position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: 0, right: 0, zIndex: 3,
-        textAlign: 'center', padding: '0 60px', pointerEvents: 'none',
-      }}>
+      <div className="rx-fade rx-landing-head">
         <div style={{
           fontSize: 10.5, letterSpacing: 4, fontWeight: 800, textTransform: 'uppercase',
           color: dark ? 'rgba(255,224,170,0.82)' : 'var(--universe-muted)',
@@ -997,17 +994,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
       <button
         type="button"
         onClick={() => { playSfx?.('click'); setOpenCat('favorites'); }}
-        className="rx-fade"
-        style={{
-          position: 'absolute', top: 'calc(112px + env(safe-area-inset-top))', left: '50%', transform: 'translateX(-50%)',
-          zIndex: 3, display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', maxWidth: 'min(92vw, 420px)',
-          borderRadius: 100, border: '1px solid rgba(240,182,106,0.4)',
-          background: 'rgba(24,20,34,0.58)',
-          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-          boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
-          color: '#ffe9ae',
-          cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap',
-        }}
+        className="rx-fade rx-landing-favs"
       >
         <Star size={16} weight="fill" color={FAV_GOLD} aria-hidden="true" />
         {favs.length
@@ -1030,12 +1017,15 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
             className="rx-planet"
             aria-label={isAr ? c.titleAr : c.title}
             style={{
-              left: `${p.x}%`, top: `${p.y}%`, zIndex: 2,
+              left: `${p.x}%`,
+              // Placed inside the field, not on the raw stage — see CAT_LAYOUT.
+              top: `calc(var(--rx-top) + (100% - var(--rx-top) - var(--rx-bot)) * ${p.fy})`,
+              zIndex: 2,
               animationDuration: `${p.dur}s`, animationDelay: `-${p.delay}s`,
             }}
           >
             <span className="rx-planet-in" style={{ '--i': idx }}>
-              <span className="rx-orb-wrap" style={{ width: p.size, height: p.size }}>
+              <span className="rx-orb-wrap" style={{ '--rx-orb': `${p.size}px` }}>
                 <span aria-hidden="true" className="rx-orb-aura" style={{
                   background: `radial-gradient(circle, ${c.color}5e 0%, ${c.color}1f 48%, transparent 72%)`,
                 }} />
@@ -1060,7 +1050,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
                       <span aria-hidden="true" className="rx-orb-texture" style={planetTextureLayerStyle(0.4)} />
                       <span aria-hidden="true" className="rx-orb-shade" />
                       <span aria-hidden="true" className="rx-orb-sheen" />
-                      <span className="rx-orb-icon" style={{ fontSize: p.size * 0.34 }}>{c.icon}</span>
+                      <span className="rx-orb-icon">{c.icon}</span>
                     </>
                   )}
                 </span>
@@ -1088,24 +1078,147 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
         );
       })}
 
-      <p className="rx-fade" style={{
-        position: 'absolute', bottom: 'calc(94px + env(safe-area-inset-bottom))', left: 0, right: 0,
-        textAlign: 'center', fontSize: 12, color: skyMuted, margin: 0, padding: '0 20px', zIndex: 2,
-      }}>
+      <p className="rx-fade rx-landing-hint" style={{ color: skyMuted }}>
         {isAr ? 'المس أي كوكب لاستكشاف مجاله.' : 'Tap any planet to explore that area.'}
       </p>
 
       <style>{`
         .rx-fade { animation: rxFade .7s ease both; }
-        .rx-landing-stage { position:relative; min-height:max(100dvh, 860px); }
+
+        /*
+         * ── ONE SCREEN, NO SCROLL ──────────────────────────────────────────
+         *
+         * This landing is a picker of five things. It used to be
+         * \`min-height: max(100dvh, 860px)\` inside .rx-root's own
+         * \`overflow-y: auto\` scroller, so on every phone — a viewport of
+         * roughly 620–760px once browser chrome is gone — the constellation was
+         * taller than the screen and the bottom planets were below the fold.
+         * A five-item menu you have to scroll reads as broken, and the drift
+         * animation made the scroll feel like the page was sliding on its own.
+         *
+         * The stage is now exactly the viewport (.rx-root is \`position: fixed;
+         * inset: 0\`, so 100% IS the viewport) and cannot scroll. Everything
+         * fits by construction rather than by luck:
+         *
+         *   --rx-top  the chrome above the planets: the title stack, then the
+         *             favourites pill under it.
+         *   --rx-bot  the chrome below: the "tap any planet" hint, then the
+         *             app tab bar (~68px + its own safe-area inset).
+         *   FIELD     what is left. Each planet sits at a FRACTION of it
+         *             (CAT_LAYOUT.fy), so the spread stretches and squeezes
+         *             with the screen instead of running off the end of it.
+         *   --rx-k    scales the orbs, labels and the 118px column together,
+         *             stepped by viewport HEIGHT. Everything sized in this
+         *             block multiplies by it, which is what keeps a shrunken
+         *             planet from tearing away from its own name.
+         *
+         * ⚠ Measured against the VIEWPORT, not the screen — a 1366x768 laptop
+         * has a ~577px viewport, and a height breakpoint written for the screen
+         * locks out the machines it was meant for (this repo has shipped that
+         * bug before, on Pair Match and Target Tracking).
+         *
+         * ⚠ The bottom clearance a planet needs is NOT half its orb: the name
+         * hangs under it (gap 7 + ~18px of line), and the float animation lifts
+         * it another 9px at the top of its cycle. \`personality\` (fy .84, the
+         * lowest) is the tightest vertically and \`sleep\`/\`meaning\` the tightest
+         * horizontally; those two pairs are what set every step below.
+         */
+        /* Doubled class: .rx-root in MENU_CSS sets overflow-y:auto at the same
+           specificity, and relying on source order between two <style> tags is
+           how this quietly comes back. */
+        .rx-root.rx-root--landing { overflow: hidden; }
+        .rx-landing-stage {
+          position:relative; height:100%; overflow:hidden;
+          --rx-top: calc(162px + env(safe-area-inset-top));
+          --rx-bot: calc(120px + env(safe-area-inset-bottom));
+          --rx-k: 1;
+        }
+        /* A tall phone or a desktop window: full size, generous field. */
+        @media (max-height: 820px) { .rx-landing-stage { --rx-k: .88; } }
+        /* The common phone viewport (~620-760px) and short laptops. */
+        @media (max-height: 720px) {
+          .rx-landing-stage {
+            --rx-k: .78;
+            --rx-top: calc(146px + env(safe-area-inset-top));
+            --rx-bot: calc(108px + env(safe-area-inset-bottom));
+          }
+        }
+        @media (max-height: 620px) {
+          .rx-landing-stage {
+            --rx-k: .68;
+            --rx-top: calc(134px + env(safe-area-inset-top));
+            --rx-bot: calc(100px + env(safe-area-inset-bottom));
+          }
+        }
+        /*
+         * ⚠ HEIGHT ALONE IS NOT ENOUGH — the second axis is real.
+         * --rx-k also sets the 118px label column, and horizontal crowding is a
+         * function of WIDTH. A narrow phone with lots of height (an installed
+         * PWA on a 390pt device: ~390x760) keeps a big k from the queries above
+         * and \`sleep\` (x 74%) then overlaps \`meaning\` (x 45%) — 29% of 390px is
+         * 113px of separation against two 118px columns. Tall does not imply
+         * wide. This must come AFTER the height steps to win the cascade.
+         */
+        @media (max-width: 440px) and (min-height: 721px) { .rx-landing-stage { --rx-k: .82; } }
+        @media (max-width: 360px) and (min-height: 721px) { .rx-landing-stage { --rx-k: .72; } }
+        /*
+         * Below this there is no honest one-screen layout — a phone held in
+         * landscape has ~350px of height, and five planets plus two blocks of
+         * chrome cannot fit without overlapping. Overlapping planets would be
+         * unreadable AND untappable, so scrolling comes back deliberately: a
+         * scroll is worse than the default and much better than a broken board.
+         */
+        @media (max-height: 520px) {
+          .rx-root.rx-root--landing { overflow-y: auto; }
+          .rx-landing-stage { height:auto; min-height:560px; overflow:visible; }
+        }
+
         @keyframes rxFade { from { opacity:0; } to { opacity:1; } }
+
+        /* ── Chrome, positioned in CSS so the height queries above can move it.
+             Only the theme-dependent colours stay inline. ── */
+        .rx-landing-lang { position:absolute; top:calc(14px + env(safe-area-inset-top)); inset-inline-end:14px; z-index:5;
+          min-width:38px; height:38px; padding:0 12px; border-radius:999px;
+          display:flex; align-items:center; justify-content:center;
+          border:1px solid rgba(240,182,106,0.34); background:rgba(24,20,34,0.66);
+          backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+          box-shadow:0 4px 16px rgba(0,0,0,0.35);
+          color:#f0b66a; font-size:13px; font-weight:700; cursor:pointer; }
+        .rx-landing-head { position:absolute; top:calc(20px + env(safe-area-inset-top)); left:0; right:0; z-index:3;
+          text-align:center; padding:0 60px; pointer-events:none; }
+        .rx-landing-favs { position:absolute; top:calc(112px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+          z-index:3; display:flex; align-items:center; gap:8px; padding:9px 18px; max-width:min(92vw, 420px);
+          border-radius:100px; border:1px solid rgba(240,182,106,0.4); background:rgba(24,20,34,0.58);
+          backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+          box-shadow:0 6px 20px rgba(0,0,0,0.35);
+          color:#ffe9ae; cursor:pointer; font-family:inherit; font-weight:700; font-size:13px; white-space:nowrap; }
+        .rx-landing-hint { position:absolute; bottom:calc(94px + env(safe-area-inset-bottom)); left:0; right:0;
+          text-align:center; font-size:12px; margin:0; padding:0 20px; z-index:2; }
+        /* Tightened in step with --rx-top / --rx-bot, or the chrome would sit
+           on top of the field it just handed to the planets. */
+        @media (max-height: 720px) {
+          .rx-landing-head { top:calc(14px + env(safe-area-inset-top)); }
+          .rx-landing-favs { top:calc(100px + env(safe-area-inset-top)); padding:7px 15px; font-size:12.5px; }
+          .rx-landing-lang { top:calc(10px + env(safe-area-inset-top)); height:34px; min-width:34px; }
+          .rx-landing-hint { bottom:calc(84px + env(safe-area-inset-bottom)); font-size:11.5px; }
+        }
+        @media (max-height: 620px) {
+          .rx-landing-head { top:calc(10px + env(safe-area-inset-top)); }
+          .rx-landing-favs { top:calc(90px + env(safe-area-inset-top)); }
+          .rx-landing-hint { bottom:calc(80px + env(safe-area-inset-bottom)); }
+        }
+
         .rx-planet { position:absolute; background:none; border:none; padding:0; cursor:pointer;
           animation-name: rxFloat; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
         @keyframes rxFloat { 0%,100% { transform: translate(-50%,-50%) translateY(0); } 50% { transform: translate(-50%,-50%) translateY(-9px); } }
-        .rx-planet-in { display:flex; flex-direction:column; align-items:center; gap:7px; width:118px;
+        .rx-planet-in { display:flex; flex-direction:column; align-items:center; gap:calc(7px * var(--rx-k,1)); width:calc(118px * var(--rx-k,1));
           animation: rxPop .7s cubic-bezier(.22,.9,.32,1.28) both; animation-delay: calc(var(--i,0) * 90ms); }
         @keyframes rxPop { from { opacity:0; transform: scale(.65) translateY(12px); } to { opacity:1; transform: none; } }
-        .rx-orb-wrap { position:relative; display:flex; align-items:center; justify-content:center; }
+        /* --rx-orb is the full-size diameter (CAT_LAYOUT.size), set inline per
+           planet; --rx-k shrinks it on short viewports. It was a plain inline
+           width/height, which no height query could reach. */
+        .rx-orb-wrap { position:relative; display:flex; align-items:center; justify-content:center;
+          width:calc(var(--rx-orb, 88px) * var(--rx-k,1)); height:calc(var(--rx-orb, 88px) * var(--rx-k,1)); }
         .rx-orb-aura { position:absolute; inset:-30%; border-radius:50%;
           animation: rxBreathe 5.5s ease-in-out infinite; }
         @keyframes rxBreathe { 0%,100% { opacity:.6; transform:scale(1); } 50% { opacity:1; transform:scale(1.1); } }
@@ -1126,13 +1239,17 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
         .rx-orb-sheen { position:absolute; inset:0; border-radius:50%;
           background: radial-gradient(ellipse 46% 34% at 30% 20%, rgba(255,255,255,.8) 0%, rgba(255,255,255,.14) 52%, transparent 68%); }
         .rx-orb-texture { position:absolute; inset:0; border-radius:50%; pointer-events:none; }
-        .rx-orb-icon { position:relative; filter: drop-shadow(0 2px 5px rgba(0,0,0,.4)); }
+        /* Was an inline \`fontSize: p.size * 0.34\`. Same ratio, expressed
+           against the orb so it follows --rx-k with everything else. */
+        .rx-orb-icon { position:relative; font-size:calc(var(--rx-orb, 88px) * .34 * var(--rx-k,1));
+          filter: drop-shadow(0 2px 5px rgba(0,0,0,.4)); }
         .rx-orb-ring { position:absolute; width:156%; height:42%; border:1.5px solid; border-radius:50%;
           transform: rotate(-24deg); opacity:.5; }
         .rx-spark { position:absolute; font-size:11px; color:#ffd98a; line-height:1;
           text-shadow: 0 0 8px rgba(255,200,90,.95); animation: rxTwinkle 2.8s ease-in-out infinite; }
         .rx-spark--b { font-size:8px; animation-delay:1.3s; }
-        .rx-planet-name { font-family:Outfit,${SANS}; font-weight:800; font-size:15px;
+        .rx-planet-name { font-family:Outfit,${SANS}; font-weight:800;
+          font-size:max(11.5px, calc(15px * var(--rx-k,1)));
           letter-spacing:.02em; line-height:1.15; text-align:center; }
         .rx-soon-pill { font-size:9.5px; font-weight:800; letter-spacing:1.4px; border:1px solid;
           border-radius:100px; padding:2.5px 9px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }

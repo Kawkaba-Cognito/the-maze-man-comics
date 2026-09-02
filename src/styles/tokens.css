@@ -249,6 +249,40 @@
   --fx-hairline: rgba(19, 30, 40, 0.12);
   --fx-glint: rgba(255, 255, 255, 0.55);
 
+  /* The plate laid over a photographic training background so the task on top
+     of it stays readable. A board is a measurement surface before it is a
+     picture: this is what keeps the art a textured ground rather than a
+     competing stimulus. Raise the alpha to quieten a background further —
+     ONE number, every game. */
+  --fx-training-scrim: rgba(8, 14, 30, 0.58);
+  /* The lighter plate for a HUB backdrop, which sits behind cards rather than
+     behind a scored task and so does not need to go as dark. */
+  --fx-training-scrim-soft: rgba(7, 11, 25, 0.28);
+  /* A barely-there lift over the scrim: it stops the darkened photo reading as
+     a flat black wash. 6%, not 55% — this is not --fx-glint, which is a
+     specular highlight for an edge and would wash the board out completely. */
+  --fx-training-veil: rgba(245, 248, 252, 0.06);
+
+  /* ─── Elevation — the three states a pressable control can be in ────────
+     Training's shared controls were drawn as STICKERS: a 2px ink border and a
+     hard, unblurred offset shadow (`box-shadow: 4px 5px 0`), with the hover
+     state sliding the whole button diagonally. It is a confident look and it
+     is the single loudest reason the games read as a children's toy rather
+     than a premium instrument — one rule in training.css wearing it made all
+     eighteen games do so at once.
+
+     Depth here comes from light instead: a tight contact shadow plus a wide
+     soft one, which is what a real object over a surface does. Pressing sinks
+     the control (inset) rather than translating it, so the label does not move
+     under the reader's finger.
+
+     ⚠ Composed ONLY from --fx-* above — no new colour literals, so
+     `audit:design`'s ratchet cannot rise on account of this block, and one
+     change to the shadow hue still moves everything at once. */
+  --elev-rest: 0 1px 1px var(--fx-hairline), 0 3px 10px var(--fx-shadow-soft);
+  --elev-raise: 0 2px 3px var(--fx-hairline), 0 10px 26px var(--fx-shadow-drop);
+  --elev-press: inset 0 1px 3px var(--fx-shadow-drop);
+
   /* ─── Tide DEEP — the same sky, dark end ───────────────────────────────
      ONE palette, two depths. Which depth a surface gets is a RENDERING
      constraint, not taste: a scene built from additive blending and emissive

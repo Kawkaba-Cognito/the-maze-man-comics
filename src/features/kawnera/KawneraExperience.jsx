@@ -175,23 +175,13 @@ export default function KawneraExperience({
   return (
     <main className="kawnera-app kawnera-app--universe kw" dir={isAr ? 'rtl' : 'ltr'}>
       {/*
-        Header, written the way Training's is: an empty left slot, the name
-        centred in Cinzel caps, and one piece of status on the right. The
-        logo mark and the "brandSub" strapline are gone — a lockup in the bar
-        made this the only screen in the app that leads with a badge, and it
-        pushed the name off-centre against every other header.
+        There is no top bar. It used to carry the name in Cinzel caps and a
+        completion count, and it said nothing the page below did not already
+        say: the shelf's own hero states the title, and the volume view states
+        its own progress. Removing it also removes a sticky 66px strip from
+        every scroll on this tab. `home()` survives — the volume and chapter
+        views each carry their own back button, which is now the only way up.
       */}
-      <header className="kw-bar">
-        <div className="kw-bar-slot" />
-        <button className="kw-brand" onClick={home} aria-label={isAr ? 'الصفحة الرئيسية لكونيرا' : 'Kawnera home'}>
-          <span className="kw-brand-name">{isAr ? 'كونيرا' : 'Kawnera'}</span>
-        </button>
-        <div className="kw-bar-slot kw-bar-slot--end">
-          <div className="kw-bar-count">
-            {count(done.length, isAr)} {t.complete}
-          </div>
-        </div>
-      </header>
 
       {/* ── The shelf: nine worlds ── */}
       {!book && (

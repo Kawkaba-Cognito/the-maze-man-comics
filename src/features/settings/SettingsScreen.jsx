@@ -101,8 +101,6 @@ export default function SettingsScreen({ onClose }) {
     playSfx,
     sfxEnabled,
     setSfxEnabled,
-    musicEnabled,
-    setMusicEnabled,
   } = useApp();
   const isAr = currentLang === 'ar';
   const [subModal, setSubModal] = useState(null);
@@ -159,14 +157,9 @@ export default function SettingsScreen({ onClose }) {
                 if (next) playSfx('click');
               }}
             />
-            <SettingsRow
-              label={isAr ? 'الموسيقى' : 'Music'}
-              value={musicEnabled ? (isAr ? 'تشغيل' : 'On') : (isAr ? 'إيقاف' : 'Off')}
-              onClick={() => {
-                playSfx('click');
-                setMusicEnabled(!musicEnabled);
-              }}
-            />
+            {/* No Music row: the app has no soundtrack any more (see the note
+                at the top of AppContext). Sound effects above are the only
+                audio the shell produces. */}
           </SettingsSection>
 
           <SettingsSection title={isAr ? 'الدعم' : 'Support'}>

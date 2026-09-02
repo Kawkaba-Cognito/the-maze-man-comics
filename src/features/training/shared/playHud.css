@@ -103,6 +103,52 @@
   box-sizing: border-box;
 }
 
+/*
+ * The results reveal.
+ *
+ * Everything used to appear in one frame — the mark, the verdict, the score and
+ * the stats all snapping in together. A run that took a minute of concentration
+ * ended in a hard cut, which is the moment the app felt cheapest.
+ *
+ * The card rises once, then its children arrive in reading order on a short
+ * stagger. This is pure decoration on an already-final state: the numbers are
+ * computed before any of it runs, so nothing here can change or delay a result.
+ *
+ * ⚠ The delays are capped deliberately. The last item lands at 260ms; a player
+ * who has just finished a timed round is waiting to press Again, and a reveal
+ * they have to sit through stops being premium about the second time they see
+ * it. Anything longer belongs to a celebration, not to a results screen.
+ */
+.ct-play-results-card {
+  animation: ct-results-rise 0.34s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.ct-play-results-card > * {
+  animation: ct-results-item 0.3s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.ct-play-results-card > *:nth-child(1) { animation-delay: 0.08s; }
+.ct-play-results-card > *:nth-child(2) { animation-delay: 0.14s; }
+.ct-play-results-card > *:nth-child(3) { animation-delay: 0.20s; }
+.ct-play-results-card > *:nth-child(n + 4) { animation-delay: 0.26s; }
+
+@keyframes ct-results-rise {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes ct-results-item {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* A reveal is the first thing to drop for anyone who asked for less motion —
+   the information is identical either way. */
+@media (prefers-reduced-motion: reduce) {
+  .ct-play-results-card,
+  .ct-play-results-card > * {
+    animation: none;
+  }
+}
+
 .ct-play-results-card--success {
   border-color: color-mix(in srgb, var(--game-ok) 55%, var(--line));
 }
@@ -187,7 +233,23 @@
   margin-top: 20px;
 }
 
-.ct-play-results-actions .ct-fq-btn { margin: 0; }
+/*
+ * ⚠ THE ACTIONS MUST OVERRIDE .ct-fq-btn's max-width, or they come out RAGGED.
+ *
+ * This grid column is 23rem (368px). The shared button caps itself at 340px and
+ * the ghost variant at 200px — sensible defaults where a button sits alone in a
+ * centred column, and wrong here, because the results screen stacks a primary
+ * and a ghost in the SAME column. The result was a 340px button above a 200px
+ * one, both flush to the inline start of a 368px track (a block box with a
+ * max-width does not centre itself in a stretched grid item), leaving 28px and
+ * 168px of dead space respectively.
+ *
+ * That is the "buttons are misaligned when a game ends" report. It showed up
+ * only on results screens carrying two actions, which is why it looked
+ * intermittent, and read worst on desktop where the column is at its full
+ * 368px. Every action in this stack now fills the column and they agree.
+ */
+.ct-play-results-actions .ct-fq-btn { margin: 0; max-width: none; }
 
 @media (max-height: 640px) {
   .ct-play-results {
