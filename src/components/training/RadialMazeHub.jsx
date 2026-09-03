@@ -682,10 +682,26 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
   return (
     <div
       className={`app-stage app-stage--universe app-stage--${chrome.dark ? 'dark' : 'light'} rh-training-hub rh-training-hub--${wide ? 'desktop' : 'phone'}`}
+      /*
+       * ⚠ THE TRAINING HUB DOES NOT SCROLL (2026-09-03, by request). It used to:
+       * `minHeight: 100%` with `overflowY: visible` and 110px of bottom padding
+       * let the page drift up and down under the sticky header, which on a phone
+       * reads as the screen coming loose.
+       *
+       * It is now pinned to exactly one viewport. `100dvh` rather than `100vh`
+       * because mobile browser chrome makes vh taller than what you can see —
+       * the same reason `.ct-fq-play` uses dvh.
+       *
+       * ⚠ The bottom padding stays: it clears the tab bar, and dropping it would
+       * hide the last row behind it rather than fixing anything. Anything that
+       * does not fit is now CLIPPED instead of reachable, so if a domain planet
+       * or the Puzzles button ever goes missing on a small screen, this is why —
+       * shrink the content, do not restore the scroll.
+       */
       style={{
-        minHeight: '100%', ...chrome.shell,
+        height: '100dvh', maxHeight: '100dvh', ...chrome.shell,
         fontFamily: 'Outfit, system-ui, sans-serif', position: 'relative',
-        paddingBottom: 110, overflowX: 'hidden', overflowY: 'visible',
+        paddingBottom: 110, overflowX: 'hidden', overflowY: 'hidden',
       }}
     >
       <UniverseStage accent="training" dark={chrome.dark} homeDusk />

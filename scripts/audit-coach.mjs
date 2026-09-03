@@ -169,6 +169,67 @@ for (const key of Object.keys(COACH_IDS)) {
   }
 }
 
+/* ── 5. a coach effect must not read a binding declared LATER ─────────────
+ *
+ * ⚠ THIS ONE SHIPPED AND CRASHED A GAME ON A REAL PHONE (2026-09-03). Intercept's
+ * coach effect was placed above `const pause = useGamePause(...)` and listed
+ * `pause.open` in its dependency array. A dependency array is evaluated DURING
+ * RENDER, so that is a temporal dead zone ReferenceError on mount — the game
+ * died for every player, not only inside the tutorial, and it was reported as
+ * "Intercept says an error occurred".
+ *
+ * Neither eslint nor the build can see it: the code is valid, the ordering is
+ * not. Only running the game finds it, and a coach effect is exactly the kind of
+ * block that gets pasted near the top of a component next to the state it reads.
+ */
+const DECL_RE = (id) => new RegExp(String.raw`^\s*(?:const|let|var)\s+${id}\b`);
+
+for (const key of Object.keys(COACH_IDS)) {
+  const p = gameIndexPath(key);
+  if (!p) continue;
+  const lines = fs.readFileSync(p, 'utf8').split('\n');
+  for (let i = 0; i < lines.length; i += 1) {
+    if (!/coach\??\.(begin|end)\(/.test(lines[i])) continue;
+    /*
+     * ⚠ Most `coach.end()` calls are NOT in an effect — they are inline JSX
+     * props (`onFinish={() => coach?.end()}`). Walking outward from those runs
+     * off the end of the file, which is how the first version of this rule
+     * crashed the whole gate with a TypeError instead of reporting anything.
+     * Bail unless a `useEffect` opener and its deps array are both close by.
+     */
+    let start = i;
+    while (start > 0 && i - start < 12 && !/useEffect\(\(\)\s*=>/.test(lines[start])) start -= 1;
+    if (!/useEffect\(\(\)\s*=>/.test(lines[start] || '')) continue;
+    let end = i;
+    while (end < lines.length && end - i < 12 && !/^\s*\}, \[/.test(lines[end])) end += 1;
+    if (!/^\s*\}, \[/.test(lines[end] || '')) continue;
+    /*
+     * ⚠ ONLY THE DEPENDENCY ARRAY, NOT THE EFFECT BODY. The body runs after
+     * render, so reading a later-declared binding there is fine — it is the
+     * ARRAY that is evaluated during render and throws.
+     *
+     * Narrowing to it is also what makes this rule usable: the first version
+     * scanned the whole block, swept up every identifier in reach, and reported
+     * five healthy names in keep-track. A gate that cries wolf gets ignored —
+     * the same failure the audit:consistency string rule shipped twice.
+     */
+    const deps = lines[end].slice(lines[end].indexOf('['));
+    const ids = new Set([...deps.matchAll(/\b([a-z][A-Za-z0-9_]*)/g)].map((m) => m[1]));
+    for (const id of ids) {
+      if (['coach', 'mode'].includes(id)) continue;
+      const decl = lines.findIndex((l) => DECL_RE(id).test(l));
+      if (decl > -1 && decl > start) {
+        fail(
+          `'${key}': its coach effect at line ${start + 1} reads \`${id}\`, which is not\n`
+          + `      declared until line ${decl + 1}. A dependency array is evaluated during\n`
+          + '      RENDER, so this is a temporal dead zone ReferenceError that crashes the\n'
+          + '      game on mount for every player. Move the effect below the declaration.',
+        );
+      }
+    }
+  }
+}
+
 /* ── SELF-TEST ─────────────────────────────────────────────────────────────
  * ⚠ A checker that always passes is indistinguishable from one that works, and
  * this repo has shipped several detectors that measured nothing while reporting
@@ -191,6 +252,19 @@ for (const key of Object.keys(COACH_IDS)) {
 
   /* The rendered-coach detector, against fixtures rather than the real files —
      this is the rule that was added AFTER it failed to catch a real bug. */
+  /* The declaration-order rule, against the exact shape that shipped broken. */
+  const tdz = [
+    '  useEffect(() => {',
+    '    if (step !== \'run\' || pause.open) return;',
+    '    coach.begin();',
+    '  }, [coach, step, pause.open]);',
+    '  const pause = useGamePause({});',
+  ];
+  const findDecl = (ls, id) => ls.findIndex((l) => new RegExp(String.raw`^\s*(?:const|let|var)\s+${id}\b`).test(l));
+  if (!(findDecl(tdz, 'pause') > 0)) fail('SELF-TEST: the declaration-order check cannot find a planted late declaration');
+  const ok = ['  const pause = useGamePause({});', '  useEffect(() => { coach.begin(); }, [pause.open]);'];
+  if (findDecl(ok, 'pause') !== 0) fail('SELF-TEST: the declaration-order check misreads a correctly ordered file');
+
   const mounted = 'return (<div>{coachOpen && <DomCoach pack={X} />}</div>);';
   const unmounted = 'const coachOpen = coach?.open; return (<div>{msg}</div>);';
   const mountRe = /<\s*(DomCoach|[A-Z]\w*Coach)\b/;

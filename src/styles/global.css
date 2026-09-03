@@ -262,6 +262,22 @@ body:has(#screen-comics.active .cancellation-task-game) .bg-poster,
 body:has(#screen-comics.active .cancellation-task-game) .bg-overlay {
     display: none !important;
 }
+/*
+ * The training hub does not scroll (2026-09-03, by request).
+ *
+ * ⚠ PINNING THE HUB ITSELF IS NOT ENOUGH. `#ui-shell` is the real scroller —
+ * `height: 100dvh; overflow-y: auto` — so with only the child locked the page
+ * still drifts up and down under the sticky "Training" title, which is exactly
+ * what the screen coming loose feels like on a phone.
+ *
+ * ⚠ SCOPED TO THE HUB, NOT TO TRAINING. `.rh-training-hub` is the planet hub
+ * only; the games render their own roots, so level grids — fifty entries on one
+ * ladder — keep the scrolling they cannot work without.
+ */
+#ui-shell:has(#screen-comics.active .rh-training-hub) {
+    overflow-y: hidden;
+}
+
 /* Cosmos mode hubs — force the same deep black void as Cancellation
  * (beats ComicsScreen cream/purple surface AND light-theme body #e8eef5 grey). */
 html:has(.ct-fq-training-shell--mode-cosmos),

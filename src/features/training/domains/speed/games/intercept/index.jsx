@@ -169,18 +169,12 @@ export function InterceptEngine({
   const [over, setOver] = useState(null);
   const [waveStat, setWaveStat] = useState(null);
 
-  /* Open the lesson once a Survival wave is actually running, so the field it
-     points at exists — the brief screen has no trail on it. */
-  useEffect(() => {
-    if (!coach?.armed || coach.open || mode !== 'free') return;
-    if (step !== 'run' || over || pause.open) return;
-    coach.begin();
-  }, [coach, mode, step, over, pause.open]);
-
-  // Never strand it off the field — it would freeze the wave.
-  useEffect(() => {
-    if (coachOpen && (step !== 'run' || over)) coach?.end();
-  }, [coachOpen, step, over, coach]);
+  /* ⚠ The coach effects live BELOW `const pause = useGamePause(...)`, not here.
+     A dependency array is evaluated DURING RENDER, so `[..., pause.open]` above
+     the declaration is a temporal dead zone ReferenceError that crashes the game
+     on mount — for every player, not only inside the tutorial. It shipped that
+     way on 2026-09-03 and was reported as "Intercept says an error occurred".
+     Neither lint nor the build can see it. */
 
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
@@ -230,6 +224,20 @@ export function InterceptEngine({
     trialLogRef.current = createTrialLog({ game: 'intercept', mode, meta: { level } });
     return () => { trialLogRef.current?.discard(); trialLogRef.current = null; };
   }, [mode, level]);
+
+  /* Open the lesson once a Survival wave is actually running, so the field it
+     points at exists — the brief screen has no trail on it. Must stay below
+     `pause`; see the note where these effects used to sit. */
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free') return;
+    if (step !== 'run' || over || pause.open) return;
+    coach.begin();
+  }, [coach, mode, step, over, pause.open]);
+
+  // Never strand it off the field — it would freeze the wave.
+  useEffect(() => {
+    if (coachOpen && (step !== 'run' || over)) coach?.end();
+  }, [coachOpen, step, over, coach]);
 
   /* ── wave control ─────────────────────────────────────────────────────── */
   const startWave = useCallback(() => {

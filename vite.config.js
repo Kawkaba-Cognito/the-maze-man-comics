@@ -39,8 +39,20 @@ function pwaPlugin() {
       display: 'fullscreen',
       display_override: ['fullscreen', 'standalone', 'minimal-ui'],
       orientation: 'portrait',
-      background_color: '#05050f',
-      theme_color: '#00f5ff',
+      /*
+       * ⚠ THIS IS THE LAUNCH SCREEN. Android builds the PWA splash from the
+       * manifest icon centred on `background_color` — there is no splash image
+       * to edit. It was `#05050f` (near-black) with a neon `#00f5ff`, both from
+       * the retired maze identity, and the icon was the hooded Maze Man: that
+       * combination WAS the "hooded character" the app opened with.
+       *
+       * The plate is now the app's own light training surface (`--surface`,
+       * #c6bda9), matching the icons generated onto it — Kawkab is a near-black
+       * planet, so a dark plate would erase him. Keep the two in step: change
+       * one and the splash shows a beige square floating on black.
+       */
+      background_color: '#c6bda9',
+      theme_color: '#c6bda9',
       lang: 'en',
       categories: ['education', 'entertainment', 'games'],
       icons: [
