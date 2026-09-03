@@ -6,17 +6,32 @@ live-board coach tutorial, the kind `cancel-task` has. Not a slide deck. Phased.
 **Status: ALL PHASES DONE (2026-09-03). 18/18 live games have a live-board
 coach; `COACH_WAITING` is empty and `audit:coach` guards it.**
 
-⚠️ **NOT YET VERIFIED BY LOOKING — THIS IS THE OUTSTANDING WORK.** The Chrome
-extension was not connected during this session, so all eighteen lessons have
-passed lint, a clean build and eighteen gates, and **nobody has watched a single
-one run.** What no gate can see is exactly what has bitten this repo before:
-bubble placement on a phone and near the top of a board (both clipping bugs
-rendered perfectly and landed off-screen), whether the hand points at the right
-thing, and whether a sentence is true at level 1. Walk all eighteen before
-trusting them.
+**Confirmed working by the project owner on 2026-09-03**, after deploy. That
+closes the one thing no gate could check — bubble placement, whether the hand
+points at the right thing, and whether a sentence is true at level 1.
 
-The cheapest way in: clear `mm_tutorial_prefs_v2` in localStorage, then open each
-game's **Survival** mode — every coach is Survival-only, matching cancellation.
+Every coach is **Survival-only**, matching cancellation. To see one again: clear
+`mm_tutorial_prefs_v2` in localStorage, or press "How to play" on the game's hub,
+which arms the lesson and drops into Survival.
+
+### The claims pass (2026-09-03)
+
+65 English and 65 Arabic steps are a large amount of user-facing *scientific*
+copy, in a product whose Assessment is parked behind "Coming Soon" precisely
+because unfinished instruments must not hand people cognitive conclusions. So the
+scripts were swept for benefit language in both languages.
+
+**One line needed changing**, in `task-switch`: "that pause … gets shorter."
+Switch cost genuinely does shrink with practice **on the task**, which is what
+was meant — but unscoped, the sentence reads as a promise that your flexibility
+improves in life. That is the transfer claim `SCI-01` exists to keep out and the
+FTC's actual complaint against Lumosity. It now says "with practice at this
+task", in both languages.
+
+⚠️ **The review board's claims detector DOES cover coach scripts** — verified, not
+assumed, by planting an FTC-style outcome claim in `scripts/mot.js` and watching
+`SCI-01` flip to NEEDS WORK. The scripts sit outside `DATA_PATHS`, so `grepUi`
+reads them as the product copy they are. Do not move them into a data path.
 
 ---
 

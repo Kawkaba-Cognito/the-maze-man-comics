@@ -270,6 +270,8 @@ flag under every game's PLAIN id. Register a coach as `'keep-track'` and it neve
 auto-runs for anyone who has opened that game — fresh installs only, silently.
 The gate enforces it.
 
+⚠️ **COACH COPY IS PRODUCT COPY, AND THE REVIEW BOARD READS IT.** The scripts sit outside the board's DATA_PATHS, so SCI-01 (unsupported cognitive-benefit claims) greps them — verified by planting an FTC-style outcome claim in a script and watching the standard flip. One real line needed scoping: task-switch's "it gets shorter" now reads "with practice at this task", because unscoped it promises transfer to life rather than practice on the task. Keep the scripts out of any data path.
+
 ⚠️ **A REGISTERED COACH MUST ALSO BE RENDERED**, and the gate learned that the
 hard way: every other check passed for `mot` while its `<DomCoach>` mount had
 silently failed to land. Script perfect, id versioned, ledger agreed, lesson

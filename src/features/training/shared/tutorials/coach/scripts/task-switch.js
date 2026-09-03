@@ -36,8 +36,17 @@ export const TASK_SWITCH_COACH = {
     {
       point: '[data-coach="cue"]',
       awaitTap: false,
-      en: 'When the question flips, your last answer is a habit pulling the wrong way, and you will feel yourself hesitate. That pause IS what this game measures — it is not a mistake, and it gets shorter. Your turn.',
-      ar: 'وحين ينقلب السؤال، تصير إجابتك السابقة عادةً تشدّك في الاتجاه الخطأ، فتشعر بتردّدك. هذا التردّد هو ما تقيسه اللعبة — وليس خطأً، وهو يقصر مع التمرين. دورك.',
+      /*
+       * ⚠ "it gets shorter" IS SCOPED TO THIS TASK ON PURPOSE, and it is the one
+       * line in all 65 steps that needed it. Switch cost genuinely shrinks with
+       * practice ON the task, which is what this says. Unscoped, the same
+       * sentence reads as a promise that your flexibility improves in life —
+       * the transfer claim SCI-01 exists to keep out, and the FTC's actual
+       * complaint against Lumosity. The whole app's posture is that practice
+       * makes you better at the games; a tutorial must not quietly say more.
+       */
+      en: 'When the question flips, your last answer is a habit pulling the wrong way, and you will feel yourself hesitate. That pause IS what this game measures — it is not a mistake, and with practice at this task it gets shorter. Your turn.',
+      ar: 'وحين ينقلب السؤال، تصير إجابتك السابقة عادةً تشدّك في الاتجاه الخطأ، فتشعر بتردّدك. هذا التردّد هو ما تقيسه اللعبة — وليس خطأً، وهو يقصر مع التمرّن على هذه المهمة نفسها. دورك.',
     },
   ],
 };
