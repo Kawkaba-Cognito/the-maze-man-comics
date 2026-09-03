@@ -28,13 +28,34 @@
   filter: drop-shadow(0 4px 9px var(--fx-shadow-drop))
           drop-shadow(0 1px 2px var(--fx-shadow-soft));
   animation: ct-tut-hand-float 2.6s ease-in-out infinite;
+  /*
+   * ⚠ EVERY TRANSFORM PIVOTS ON THE FINGERTIP, NOT ON THE IMAGE CENTRE — this
+   * is what makes "the hand is well aligned" true while it is moving.
+   *
+   * The numbers are TIP_X / TIP_Y from TutorialHand.jsx, measured off the art
+   * (the mean x of the topmost rows carrying ink). The component positions the
+   * image so the tip sits exactly on the target; a transform about the centre
+   * then moved it off again. The old float was `translateY(-5px) rotate(-2deg)`
+   * about the centre, which walked the fingertip ~5px vertically and another
+   * ~1.5px from the rotation — on cancellation's 57px tile that is a tenth of
+   * the target, on story-grid's 11px chevron it is half of it.
+   *
+   * With the origin at the tip, a rotation contributes ZERO drift, so the
+   * animations below can be as expressive as they like and the fingertip stays
+   * nailed to the thing being pointed at.
+   */
+  transform-origin: 40.8% 1.2%;
 }
 
-/* A slow hover, so the hand reads as held over the board rather than stuck to
-   it. Small on purpose: a big bob makes the fingertip ambiguous. */
+/*
+ * A slow swing, so the hand reads as HELD over the board rather than stuck to
+ * it — but rotational, not translational, because rotation about the tip does
+ * not move the tip and a translate does. Same intent as the old float, minus
+ * the drift that made the fingertip ambiguous.
+ */
 @keyframes ct-tut-hand-float {
-  0%, 100% { transform: translateY(0) rotate(-2deg); }
-  50%      { transform: translateY(-5px) rotate(0deg); }
+  0%, 100% { transform: rotate(-3deg); }
+  50%      { transform: rotate(1.5deg); }
 }
 
 /* The tap: a quick dip onto the target and back. Replayed by `tapSignal`. */
@@ -42,10 +63,13 @@
   animation: ct-tut-hand-tap 420ms cubic-bezier(0.3, 0, 0.2, 1);
 }
 
+/* Scale, not translate: with the origin on the fingertip a scale reads as the
+   hand pressing down onto the target while the tip stays exactly on it. The old
+   `translateY(9px)` slid the tip a third of the way off an 11px anchor. */
 @keyframes ct-tut-hand-tap {
-  0%   { transform: translateY(0) scale(1); }
-  38%  { transform: translateY(9px) scale(0.9); }
-  100% { transform: translateY(0) scale(1); }
+  0%   { transform: rotate(-3deg) scale(1); }
+  38%  { transform: rotate(0deg) scale(0.82); }
+  100% { transform: rotate(-3deg) scale(1); }
 }
 
 /*
@@ -62,14 +86,17 @@
   transform: translateY(-10px) rotate(-14deg);
 }
 
-/* Sits ON the fingertip, which is what the badge is marking. Sized for the
-   54px hand — at 26px it was half the width of the pointer itself. */
+/* Sits ON the fingertip, which is what the badge is marking. Scales WITH the
+   hand: it was a fixed 19px chosen for the old fixed 54px pointer, and now that
+   the hand sizes itself from its target (30–52px, see TutorialHand.jsx) a fixed
+   badge would be two thirds of the width of a small one. 0.35em of the hand
+   keeps the same proportion the 19px-on-54px pair had. */
 .ct-tut-hand--avoid::after {
   content: '✕';
   position: absolute;
   top: -14%;
   left: 26%;
-  font-size: 19px;
+  font-size: calc(var(--ct-hand-w, 54px) * 0.35);
   font-weight: 800;
   line-height: 1;
   color: var(--game-bad, #d4574e);

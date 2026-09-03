@@ -1,57 +1,85 @@
 /*
- * Detective's coach script (COACH-PLAN.md Phase 2).
+ * Detective Kawkab's coach script.
  *
- * ⚠ THE CONSTRUCT IS DEDUCTION FROM A GUARANTEED PREMISE, AND THE PREMISE IS THE
- * PART PLAYERS SKIP. Every case opens with a rule — "exactly one of them is
- * telling the truth", "the thief always lies" — and that rule is the only thing
- * on screen that is certainly true. Players who read the statements first treat
- * them as evidence, get contradictory testimony, and conclude the case is
- * unfair. Nothing can be worked out without the rule; with it, every case has a
- * mechanical method.
+ * ⚠ THE METHOD IS THE LESSON. This is a constraint-satisfaction puzzle wearing a
+ * story: N suspects, one statement each, a rule about who lies. A player without
+ * a method reads the statements, forms an impression, and picks the person who
+ * "seems" guilty — which is not solving it, and which fails as soon as the cases
+ * stop being small. Assume-and-check is teachable in one sentence and is the
+ * entire difference between playing this and guessing at it.
  *
- * So step 1 is the rule and step 2 is the method, stated as a procedure the
- * player can actually run: assume, check, discard. That is teachable in a
- * sentence and is what separates solving from guessing here.
+ * ⚠ AND THE TWO GESTURES MEAN DIFFERENT THINGS, WHICH HAS TO BE SAID. A tap is a
+ * private note and changes no score; a DRAG into the cell is the answer. That
+ * asymmetry is deliberate — a mark is a thought and costs a tap, an arrest is a
+ * commitment and costs a deliberate gesture — but it is invisible until stated,
+ * and the cell used to sit at the end of the tap cycle where it was triggered by
+ * accident while taking notes.
  *
- * ⚠ THE GESTURE ALSO HAS TO BE TAUGHT, because this game deliberately gives its
- * scored action a heavier one. Tapping a card cycles a PRIVATE note; dragging
- * someone into the cell is the ANSWER, and on the three question kinds whose
- * answer is a person the cell IS the answer box — the suspect leaves the line-up
- * when they go in (one name, one place). A player who never discovers the drag
- * can mark cards all day and never answer.
+ * ⚠ THE DRAG IS SYMMETRICAL. Reported immediately after the first build: "when i
+ * dragged in i should be able to drag out also." Say so, because a door that
+ * only opens one way is the first thing a player finds.
  *
- * ⚠ NO AWAIT STEP. The obvious one would be "drag someone in", and it is a trap
- * twice over: the cell is only the answer box on person questions, so on a
- * "how many are lying" case the instruction would be wrong; and an await step
- * renders no Next button, so gating a first-run tutorial behind a drag would
- * strand exactly the players the tap-through fallback exists for.
+ * ── 2026-09-03: four steps became eight, on the spine in COACH-PLAN.md ──
+ * The old step 2 carried the entire assume-and-check method in one paragraph and
+ * the old step 4 carried the drag, the reverse drag AND the warning about the
+ * question all at once.
+ *
+ * ⚠ NO AWAIT STEP: no `satisfiedFor` predicate on this game.
  */
 export const DETECTIVE_COACH = {
-  id: 'detective@coach1',
+  id: 'detective@coach2',
   steps: [
     {
       point: '[data-coach="rule"]',
       awaitTap: false,
       en: "I'm Dr Kawkab. Read this first, every time. The rule is the one thing here that is certainly TRUE — the suspects are under no such obligation.",
-      ar: 'أنا د. كوكب. اقرأ هذا أوّلاً في كل مرة. فالقاعدة هي الشيء الوحيد هنا المؤكَّد صدقه — أما المشتبهون فلا يلزمهم ذلك.',
+      ar: 'أنا د. كوكب. اقرأ هذا أوّلاً في كل مرّة. فالقاعدة هي الشيء الوحيد هنا المؤكَّد صدقه — أمّا المشتبهون فلا يلزمهم ذلك.',
     },
     {
       point: '[data-coach="says"]',
       awaitTap: false,
-      en: 'Each of them says one thing. Here is the method: take one suspect, ASSUME they did it, then check every statement against the rule. If that assumption forces a contradiction, they are innocent. The answer is the assumption left standing.',
-      ar: 'ويقول كلٌّ منهم شيئاً واحداً. وإليك الطريقة: خذ مشتبهاً واحداً، وافترض أنه الفاعل، ثم قِس كل إفادة على القاعدة. فإن أدّى افتراضك إلى تناقض فهو بريء. والجواب هو الافتراض الذي يصمد.',
+      en: 'Each of them says exactly one thing. Some of those statements are lies, and the rule is what tells you how many.',
+      ar: 'ويقول كلٌّ منهم شيئاً واحداً لا غير. وبعض تلك الإفادات كذب، والقاعدة هي التي تخبرك كم منها.',
+    },
+    /*
+     * ⚠ THE ONE THAT MATTERS. A method, stated as steps the player can actually
+     * carry out, not as a description of what solving looks like.
+     */
+    {
+      point: '[data-coach="says"]',
+      awaitTap: false,
+      en: 'Here is the method. Take one suspect and ASSUME they did it. Then read every statement as true or false under that assumption.',
+      ar: 'وإليك الطريقة. خذ مشتبهاً واحداً وافترض أنه الفاعل. ثم اقرأ كل إفادة صادقةً أو كاذبةً على ذلك الافتراض.',
+    },
+    {
+      point: '[data-coach="says"]',
+      awaitTap: false,
+      en: 'If that forces a contradiction with the rule — too many liars, or too few — then they did not do it. Cross them off and try the next. The answer is the assumption left standing.',
+      ar: 'فإن أفضى ذلك إلى تناقضٍ مع القاعدة — كاذبون أكثر من اللازم أو أقلّ — فليس هو الفاعل. فاشطبه وجرّب الذي يليه. والجواب هو الافتراض الذي يصمد.',
     },
     {
       point: '[data-coach="lineup"]',
       awaitTap: false,
-      en: 'Tap a card to mark it — cleared, or suspected. That is only your notebook; it changes no score. It is here so you can park a conclusion instead of carrying it in your head.',
-      ar: 'المس البطاقة لتضع عليها علامة — بريء أو مشتبه. وهذا دفترك وحدك؛ لا يغيّر نتيجة. وُجد لتضع فيه استنتاجاً بدل أن تحمله في رأسك.',
+      en: 'Tap a card to mark it — cleared, or suspected. That is only your notebook; it changes no score and I never look at it.',
+      ar: 'المس البطاقة لتضع عليها علامة — بريء أو مشتبه. وهذا دفترك وحدك؛ لا يغيّر نتيجةً ولا أنظر إليه.',
     },
     {
       point: '[data-coach="lineup"]',
       awaitTap: false,
-      en: 'And when you are sure, DRAG them into the cell — that is your answer, not a note, which is why it costs a bigger gesture. Drag them back out if you change your mind. Read the question each time, though: it is not always who did it. Your turn.',
-      ar: 'وإذا تيقّنت، فاسحبه إلى الزنزانة — فذاك جوابك لا ملاحظتك، ولهذا كلّفك حركة أكبر. واسحبه خارجاً إن غيّرت رأيك. لكن اقرأ السؤال في كل مرة: فليس دائماً «من الفاعل». دورك.',
+      en: 'It is there so you can park a conclusion instead of carrying it in your head — which is what makes the fourth and fifth suspect possible at all.',
+      ar: 'وُجد لتضع فيه استنتاجاً بدل أن تحمله في رأسك — وهو ما يجعل المشتبه الرابع والخامس ممكنَين أصلاً.',
+    },
+    {
+      point: '[data-coach="lineup"]',
+      awaitTap: false,
+      en: 'And when you are sure, DRAG them into the cell. That is your answer, not a note — which is why it costs a bigger gesture than a tap. Drag them straight back out if you change your mind.',
+      ar: 'وإذا تيقّنت، فاسحبه إلى الزنزانة. فذاك جوابك لا ملاحظتك — ولهذا كلّفك حركةً أكبر من اللمس. واسحبه خارجاً على الفور إن غيّرت رأيك.',
+    },
+    {
+      point: '[data-coach="rule"]',
+      awaitTap: false,
+      en: 'One last warning, and it is the commonest way to lose a case you had solved: read the question each time. It is not always "who did it" — sometimes I ask who is lying, or how many are, or whether there is enough to convict at all. Your turn.',
+      ar: 'وتحذيرٌ أخير، وهو أكثر ما يُضيّع قضيّةً قد حللتها: اقرأ السؤال في كل مرّة. فليس دائماً «من الفاعل» — بل أسأل أحياناً من الكاذب، أو كم عددهم، أو هل في الأمر ما يكفي للإدانة أصلاً. دورك.',
     },
   ],
 };

@@ -1,55 +1,81 @@
 /*
- * Intercept (Rift Defense)'s coach script (COACH-PLAN.md Phase 3).
+ * Intercept / Rift Defense's coach script.
  *
- * ⚠ THIS GAME MEASURES THREE DIFFERENT THINGS, AND THE LESSON MUST KEEP THEM
- * APART — the same rule CLAUDE.md sets for its results screen. Striking inside
- * the tower's reach is reaction time; leaving the forbidden colour alone is
- * response INHIBITION; striking under the canopy where you believe a marcher
- * will be is prediction. Blur them into "tap the baddies fast" and the player
- * has no idea which of the three they are actually good at, which is the one
- * thing that stops this being a fourth reaction test in a domain that benched
- * Trail Making for exactly that.
+ * ⚠ THIS GAME LAYERS THREE CONSTRUCTS AND SCORES THEM SEPARATELY — reaction
+ * time, response inhibition (the no-go colour), and prediction (striking under
+ * the canopy). That separation is the only thing stopping it being a fourth
+ * reaction test in a domain that benched Trail Making for exactly that, so the
+ * lesson has to name all three and say they are different skills. Otherwise the
+ * results screen shows a player three numbers they have no frame for.
  *
- * ⚠ THE INHIBITION RULE IS A PROHIBITION, SO STATE IT AS ONE. The HUD swatch
- * shows the FORBIDDEN colour, not the target — an earlier build showed the go
- * colour under the label "safe colour", which told players the thing to strike
- * was the thing to leave alone. The lesson names the swatch for what it is.
+ * ⚠ AND "DO NOT STRIKE" IS A REAL MOVE, WHICH HAS TO BE SAID. Withholding only
+ * measures inhibition while striking is prepotent, so by the time a no-go
+ * marcher appears the player must already be striking automatically — which
+ * means the instruction has to arrive before the habit, not after it.
  *
- * ⚠ IT MUST NOT POINT AT THE SWATCH. The swatch only renders when the wave has
- * a no-go share, and early Survival waves have none — a hand pointing at nothing
- * while the text says "this swatch" would be worse than describing it. Both
- * mechanics are therefore introduced against the field, in words that stay true
- * whether or not this particular wave contains them.
+ * ── 2026-09-03: four steps became eight, on the spine in COACH-PLAN.md ──
+ * The old lesson pointed three of its four steps at `[data-coach="field"]`, the
+ * whole play area, so the hand barely moved and indicated nothing in
+ * particular. Steps about scoring and progression now park the hand instead.
  *
- * ⚠ NO AWAIT STEP: the wave is held while the lesson is open, so no marcher is
- * crossing the reach to strike.
+ * ⚠ NO AWAIT STEP: no `satisfiedFor` predicate, and the wave is held while the
+ * lesson is open, so there is no marcher inside the tower's reach to strike.
  */
 export const INTERCEPT_COACH = {
-  id: 'intercept@coach1',
+  id: 'intercept@coach2',
   steps: [
     {
       point: '[data-coach="field"]',
       awaitTap: false,
-      en: "I'm Dr Kawkab. An army walks the trail toward your gate. Your tower reaches only part of the path — strike a marcher while they are inside it, and they go down.",
-      ar: 'أنا د. كوكب. جيش يسير على الدرب نحو بوّابتك. وبرجك لا يبلغ إلا جزءاً من الطريق — فاضرب المسير وهو داخل مداه يسقط.',
+      en: "I'm Dr Kawkab. An army walks this trail toward your gate, wave after wave.",
+      ar: 'أنا د. كوكب. جيشٌ يسير على هذا الدرب نحو بوّابتك، موجةً بعد موجة.',
     },
     {
       point: '[data-coach="field"]',
       awaitTap: false,
-      en: 'One colour is forbidden. When a wave has one, its colour sits in the bar above — and that is the colour to LEAVE ALONE, not the one to hit. Not striking is a real move here, and a harder one than striking.',
-      ar: 'ولونٌ واحد محرَّم. فإذا حملت الموجة لوناً محرَّماً ظهر في الشريط أعلاه — وهو اللون الذي تتركه، لا الذي تضربه. والامتناع فعلٌ حقيقي هنا، وهو أشقّ من الضرب.',
+      en: 'Your tower reaches only part of the path. Strike a marcher while they are inside that reach and they go down; outside it, a tap does nothing.',
+      ar: 'وبرجك لا يبلغ إلا جزءاً من الطريق. فاضرب المسير وهو داخل ذلك المدى يسقط؛ وخارجه لا تُجدي الضربة شيئاً.',
+    },
+    /*
+     * ⚠ THE INHIBITION LAYER. Stated as the colour to LEAVE, because the first
+     * build showed the go colour under the label "safe colour" — precisely
+     * inverted, telling the player the thing to strike was the thing to avoid.
+     */
+    {
+      point: '[data-coach="hud"]',
+      awaitTap: false,
+      en: 'Some waves carry a forbidden colour, and when they do it appears up here. That is the colour to LEAVE ALONE — not the one to hit.',
+      ar: 'وبعض الموجات تحمل لوناً محرَّماً، فإذا حملته ظهر هاهنا. وذلك هو اللون الذي تتركه — لا الذي تضربه.',
+    },
+    {
+      point: null,
+      awaitTap: false,
+      en: 'Not striking is a real move here, and a harder one than striking. By the time a forbidden marcher arrives your hand is already in the habit of hitting everything — stopping it is the second thing I am measuring.',
+      ar: 'والامتناع فعلٌ حقيقي هنا، وهو أشقّ من الضرب. فحين يصل المسير المحرَّم تكون يدك قد اعتادت ضرب كل شيء — وكبحها هو الأمر الثاني الذي أقيسه.',
     },
     {
       point: '[data-coach="field"]',
       awaitTap: false,
-      en: 'Later, forest hides part of the trail. A marcher who walks behind it is still walking — strike where you believe they have got to, not where you last saw them. That is a guess you can get good at.',
-      ar: 'ولاحقاً يحجب الشجر جزءاً من الدرب. والمسير الذي يمضي خلفه ما زال يمشي — فاضرب حيث تظنّ أنه بلغ، لا حيث رأيته آخر مرة. وهذا حدسٌ يمكن أن تُتقنه.',
+      en: 'Later, forest hides part of the trail. A marcher who walks behind it is still walking — strike where you believe they have got to, not where you last saw them.',
+      ar: 'ولاحقاً يحجب الشجر جزءاً من الدرب. والمسير الذي يمضي خلفه ما زال يمشي — فاضرب حيث تظنّ أنه بلغ، لا حيث رأيته آخر مرّة.',
+    },
+    {
+      point: null,
+      awaitTap: false,
+      en: 'That is a guess, and it is a guess you can get good at. I never hide a marcher you have not seen walking first, so you always have their pace before they disappear.',
+      ar: 'وذلك حدس، وهو حدسٌ يمكن أن تُتقنه. فأنا لا أُخفي مسيراً لم ترَه يمشي قبل ذلك، فتكون سرعته معك دائماً قبل أن يغيب.',
     },
     {
       point: '[data-coach="hud"]',
       awaitTap: false,
-      en: 'Your gate has ten. At the end I will show you those three separately — how fast you were, how well you held back, and how close your hidden strikes came. They are different skills, and you will not be equal at them. Your turn.',
-      ar: 'ولبوّابتك عشر. وفي النهاية أعرض عليك الثلاثة منفصلة — كم كنت سريعاً، وكم أحسنت الامتناع، وكم قاربت ضرباتك في الخفاء. فهي مهارات مختلفة، ولن تكون فيها سواءً. دورك.',
+      en: 'Your gate has ten. A marcher who reaches it takes one — so a wave you handle untidily still counts, and only losing the gate ends the run.',
+      ar: 'ولبوّابتك عشر. والمسير الذي يبلغها يأخذ واحدة — فالموجة التي تعالجها بغير إتقان تُحتسب لك مع ذلك، ولا تنتهي المحاولة إلا بسقوط البوّابة.',
+    },
+    {
+      point: null,
+      awaitTap: false,
+      en: 'At the end I show those three separately: how fast you were, how well you held back, and how close your hidden strikes came. They are different skills and you will not be equal at them — that is the point of showing them apart. Your turn.',
+      ar: 'وفي النهاية أعرض الثلاثة منفصلة: كم كنت سريعاً، وكم أحسنت الامتناع، وكم قاربت ضرباتك في الخفاء. فهي مهارات مختلفة، ولن تكون فيها سواءً — وهذا هو المقصود من عرضها متفرّقة. دورك.',
     },
   ],
 };

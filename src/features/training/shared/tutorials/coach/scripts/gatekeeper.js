@@ -1,45 +1,43 @@
 /*
- * The Gate's coach script (COACH-PLAN.md Phase 2) — the highest-value lesson in
- * this plan, and the only one in the app that teaches a thinking error.
+ * The Gate's coach script.
  *
- * ⚠ THE CONSTRUCT IS RULE INDUCTION, AND WASON'S ACTUAL FINDING IS THAT PEOPLE
- * TEST TO CONFIRM. In the 2-4-6 task, subjects form a hypothesis and then spend
- * every trial on cases they expect to PASS — which cannot distinguish their
- * guess from the many rules that agree with it. The only informative move is to
- * test something you expect to FAIL. Almost nobody does this unprompted, and
- * that is the whole reason the paradigm is famous.
+ * ⚠ THE CONSTRUCT IS HYPOTHESIS TESTING, AND THE INSTINCT IT MEASURES IS THE
+ * ONE ALMOST NOBODY HAS. This is Wason 2-4-6 / Zendo: it measures how you FIND a
+ * rule, where Raven measured whether you spot one already laid out. The
+ * documented human default is to send probes you expect to CONFIRM your guess,
+ * which is exactly the probe that teaches you nothing — a guess you cannot break
+ * is a guess you have not tested.
  *
- * So the lesson does not say "probe wisely". It walks the player into spending a
- * probe on a traveller they believe will be turned away, and then points at the
- * count of laws still standing so they can SEE that it moved further than a
- * confirming probe would have. That is the difference between telling someone
- * about a bias and letting them feel it.
+ * ⚠ SO THE LESSON HAS TO ASK FOR THE UNCOMFORTABLE MOVE OUTRIGHT. Hinting at it
+ * is read as permission to carry on confirming, which is what the player was
+ * going to do anyway.
  *
- * ⚠ WITHOUT THIS, A LOSS IS UNREADABLE. Probes are a budget and
- * `validate:gatekeeper` only guarantees each gate is decidable WITHIN it. A
- * player who spends all of them confirming reaches the trio with three laws
- * still alive, guesses 1-in-3, and has no way to know they were never given a
- * puzzle they had failed to solve — they simply assume they reasoned badly.
- *
- * ⚠ THE TAUGHT PROBE IS FREE. See `freeProbesRef` in index.jsx: charging the
- * budget for a probe the tutorial asked for could push the gate below the
- * decidability the gate guarantees, which is precisely the failure this lesson
- * exists to prevent.
+ * ── 2026-09-03: four steps became eight, on the spine in COACH-PLAN.md ──
+ * The falsification instruction previously shared a step with "pick your
+ * traveller and watch the count", so the single hardest idea in the reasoning
+ * domain arrived as the opening clause of a step about pressing a button. It now
+ * stands alone, and it is explained rather than only asserted.
  */
 export const GATEKEEPER_COACH = {
-  id: 'gatekeeper@coach1',
+  id: 'gatekeeper@coach2',
   steps: [
     {
       point: '[data-coach="tray"]',
       awaitTap: false,
-      en: "I'm Dr Kawkab. Haris is keeping a law he will not tell you. Send him a traveller and he stamps them IN or OUT — that stamp is the only way to learn what the law is.",
-      ar: 'أنا د. كوكب. حارس يحفظ قانوناً لن يخبرك به. أرسل إليه مسافراً فيختمه بالدخول أو المنع — وهذا الختم هو سبيلك الوحيد لمعرفة القانون.',
+      en: "I'm Dr Kawkab. Haris is keeping a law, and he will not tell you what it is.",
+      ar: 'أنا د. كوكب. حارسٌ يحفظ قانوناً، ولن يخبرك ما هو.',
+    },
+    {
+      point: '[data-coach="tray"]',
+      awaitTap: false,
+      en: 'Send him a traveller and he stamps them IN or OUT. That stamp is the only way to learn anything here — there is nothing else to read.',
+      ar: 'أرسل إليه مسافراً فيختمه بالدخول أو المنع. وهذا الختم هو سبيلك الوحيد إلى معرفة شيء هنا — فليس ثمّة ما يُقرأ سواه.',
     },
     {
       point: '[data-coach="alive"]',
       awaitTap: false,
-      en: 'This counts how many laws still fit everything you have seen. Your job is to drive it down to one. Watch it after every stamp.',
-      ar: 'وهذا يحصي كم قانوناً ما زال يوافق كل ما رأيت. ومهمّتك أن تهبط به إلى واحد. راقبه بعد كل ختم.',
+      en: 'This counts how many laws still fit everything you have seen so far. Your job is to drive it down to one.',
+      ar: 'وهذا يحصي كم قانوناً ما زال يوافق كلّ ما رأيته إلى الآن. ومهمّتك أن تهبط به إلى واحد.',
     },
     /*
      * ⚠ THE STEP THE WHOLE GAME TURNS ON. Phrased as an instruction to do the
@@ -47,16 +45,34 @@ export const GATEKEEPER_COACH = {
      * carry on confirming.
      */
     {
+      point: null,
+      awaitTap: false,
+      en: 'Now the move almost nobody makes. Do NOT send someone you expect to be let in. If they walk through, you learn nearly nothing — you already thought they would.',
+      ar: 'والآن الحركة التي لا يكاد أحد يقوم بها. لا تُرسل من تتوقّع دخوله. فإن دخل لم تتعلّم شيئاً يُذكر — إذ كنت تظنّ ذلك أصلاً.',
+    },
+    {
+      point: null,
+      awaitTap: false,
+      en: 'Send one you expect to be REFUSED instead. If he is refused, that kills a whole family of laws at once. If he is let in, your guess was wrong — and finding that out is worth more than being right.',
+      ar: 'بل أرسل من تتوقّع منعه. فإن مُنع، أسقط ذلك أسرةً من القوانين دفعةً واحدة. وإن دخل، فقد أخطأ ظنّك — ومعرفةُ ذلك خيرٌ لك من أن تكون مصيباً.',
+    },
+    {
       point: '[data-coach="tray"]',
       awaitTap: true,
-      en: 'Now the move almost nobody makes. Do NOT send someone you expect to be let in — that teaches you nearly nothing. Send one you expect to be REFUSED. Pick your traveller and watch the count. This probe is on me.',
-      ar: 'والآن الحركة التي لا يكاد أحد يقوم بها. لا تُرسل من تتوقّع دخوله — فذلك لا يعلّمك شيئاً يُذكر. أرسل من تتوقّع منعه. اختر مسافرك وراقب العدد. وهذه المحاولة على حسابي.',
+      en: 'Try it. Pick a traveller you think he will turn away, and watch the count. This probe is on me.',
+      ar: 'جرّب. اختر مسافراً تظنّ أنه سيردّه، وراقب العدد. وهذه المحاولة على حسابي.',
     },
     {
       point: '[data-coach="alive"]',
       awaitTap: false,
-      en: 'That is the habit worth building: a guess you cannot break is a guess you have not tested. Spend your probes trying to be wrong, and by the trio only one law will be left standing. Your turn.',
-      ar: 'وهذه هي العادة الجديرة بأن تبنيها: الظنّ الذي لا تستطيع كسره ظنّ لم تختبره. أنفق محاولاتك في السعي إلى الخطأ، وعند الثلاثة لن يبقى إلا قانون واحد. دورك.',
+      en: 'Your probes are limited, and that is the real constraint. Confirming probes feel productive and move that number barely at all — which is how people run out with three laws still standing.',
+      ar: 'ومحاولاتك محدودة، وتلك هي القيد الحقيقي. والمحاولات المؤكِّدة تبدو مثمرة ولا تكاد تحرّك ذلك العدد — وبذلك تنفد محاولات الناس وثلاثة قوانين ما زالت قائمة.',
+    },
+    {
+      point: null,
+      awaitTap: false,
+      en: 'So spend them trying to be wrong, and by the trio only one law will be left standing. That habit is the whole game, and it is worth more outside it than in. Your turn.',
+      ar: 'فأنفقها في السعي إلى الخطأ، وعند الثلاثة لن يبقى إلا قانون واحد. وتلك العادة هي اللعبة كلّها، وهي خارجها أنفع منها فيها. دورك.',
     },
   ],
 };

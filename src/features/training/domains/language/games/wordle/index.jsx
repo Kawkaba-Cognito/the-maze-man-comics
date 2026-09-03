@@ -906,8 +906,34 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
         </>
       )}
 
+      {/*
+        * ⚠ THE COACH LIVES HERE, IN THE SURVIVAL BLOCK — AND USED TO LIVE ONLY IN
+        * THE LEVELS ONE, WHICH MADE IT UNREACHABLE.
+        *
+        * `<DomCoach>` was mounted inside the `round.mode === 'level'` branch
+        * above, while the effect that opens it requires `round.mode === 'free'`.
+        * Those two conditions are MUTUALLY EXCLUSIVE, so the lesson could never
+        * render: no error, no warning, nothing on screen. All three
+        * `data-coach` anchors were up there with it.
+        *
+        * ⚠ `audit:coach` PASSED THE WHOLE TIME. Its rule 4 asserts a registered
+        * coach is *rendered* by grepping the game's source for the mount — which
+        * it finds, in a branch that never runs during the only mode the coach
+        * opens in. Reachability is a level deeper than the gate can see; found
+        * by driving the real game and observing no `.ct-coach` in the DOM.
+        */}
       {phase === 'play' && round && round.mode !== 'level' && (
-        <div className="ct-wordle-play-wrap">
+        <div className="ct-wordle-play-wrap" ref={coachRootRef} style={{ position: 'relative' }}>
+          {coachOpen && (
+            <DomCoach
+              isAr={isAr}
+              playSfx={playSfx}
+              stageRef={coachRootRef}
+              pack={WORDLE_COACH}
+              onFinish={() => coach.end()}
+              onSkip={() => coach.end()}
+            />
+          )}
           <TrainingPlayHeader
             isAr={isAr}
             title={playHeaderForRound(round).title}
@@ -924,10 +950,14 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
             onPause={handlePauseOpen}
             pauseAriaLabel={t.paused}
           />
-          <p className="ct-wordle-connect-hint">{t.connectHint}</p>
-          <p className="ct-wordle-min-len">{t.minLetters(round.minLen)}</p>
+          {/* The coach's "how long a word must be" anchor. Wraps both lines so
+              the hand points at the rule, not at one half of it. */}
+          <div data-coach="rules">
+            <p className="ct-wordle-connect-hint">{t.connectHint}</p>
+            <p className="ct-wordle-min-len">{t.minLetters(round.minLen)}</p>
+          </div>
           {msg && <p className="ct-wordle-msg ct-wordle-msg--ok">{msg}</p>}
-          <div className="ct-juice-host" style={{ position: 'relative' }}>
+          <div className="ct-juice-host" style={{ position: 'relative' }} data-coach="board">
             <JuiceLayer
               combo={juice.combo}
               particle={juice.particle}
@@ -949,7 +979,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
           </div>
           {/* See the note on the other board: committing is the board's own
               gesture, so there is no Submit button here either. */}
-          <div className="ct-wordle-link-actions">
+          <div className="ct-wordle-link-actions" data-coach="clear">
             <button
               type="button"
               className="ct-fq-btn ct-fq-btn-sec ct-wordle-clear-btn"

@@ -1,46 +1,77 @@
 /*
- * Pair Match's coach script (COACH-PLAN.md Phase 1).
+ * Pair Match's coach script.
  *
- * ⚠ THE CONSTRUCT IS ASSOCIATIVE MEMORY, AND THE STRATEGY THAT WINS IT IS
- * TEACHABLE IN ONE SENTENCE — which is exactly why it belongs in a tutorial.
- * Paired-associate learning is the classic demonstration that ELABORATIVE
- * encoding beats rote rehearsal: a player who silently repeats "star, box three"
- * performs far worse than one who pictures the star doing something to the box.
- * Both feel like trying equally hard, so nobody discovers the difference by
- * playing more.
+ * ⚠ THE LESSON IS AN ENCODING STRATEGY, AND IT IS THE WHOLE GAME. Paired-
+ * associate learning separates people almost entirely on whether they build an
+ * interactive image or rehearse the words. Rehearsal feels like effort and
+ * remembers very little; a silly picture takes less work and holds. A player
+ * left to discover this alone will rehearse, because rehearsal is what "trying
+ * to remember" feels like from the inside.
  *
- * This is the one script in the set that teaches a METHOD rather than a rule,
- * and it is defensible here precisely because the method is what the test
- * measures the absence of.
+ * ── 2026-09-03: three steps became eight, on the spine in COACH-PLAN.md ──
+ * The old middle step was one long paragraph carrying the strategy, the reason,
+ * the "sillier is better" refinement and the criticism of rehearsal. That is
+ * four ideas in a block a nervous first-time player reads once. Each now has its
+ * own step, and the strategy is DEMONSTRATED with a worked example rather than
+ * only described — the worked-example effect is the most robust finding in
+ * cognitive-load research and this lesson had no example at all.
  *
- * ⚠ STEP 2 POINTS AT NOTHING ON PURPOSE. It is about what to do inside your own
- * head while the boxes open; there is no element on the board that means
- * "imagine". A null `point` parks the bubble low and centred and shows no hand,
- * which leaves the whole board visible while it is read.
- *
- * ⚠ NO AWAIT STEP: this lesson runs before the study sequence begins (the boxes
- * are a timed chain — see the hold in index.jsx), so there is nothing to tap.
+ * ⚠ NO AWAIT STEP: no `satisfiedFor` predicate, and the lesson runs before the
+ * boxes open, so there is nothing on the board to act on yet.
  */
 export const PAIRED_ASSOCIATES_COACH = {
-  id: 'paired-associates@coach1',
+  id: 'paired-associates@coach2',
   steps: [
     {
       point: '[data-coach="phase"]',
       awaitTap: false,
-      en: "I'm Dr Kawkab. In a moment the boxes open one at a time and show you what lives inside each one. Watch, do not rush.",
-      ar: 'أنا د. كوكب. بعد لحظة تُفتح الصناديق واحداً تلو الآخر لتريك ما يسكن كلاً منها. راقب ولا تستعجل.',
+      en: "I'm Dr Kawkab. In a moment the boxes open one at a time and show you what lives inside each one.",
+      ar: 'أنا د. كوكب. بعد لحظة تُفتح الصناديق واحداً تلو الآخر لتريك ما يسكن كلاً منها.',
+    },
+    {
+      point: '[data-coach="boxes"]',
+      awaitTap: false,
+      en: 'Watch, and do not rush. Nothing is being timed while they are open — the only thing that matters is what you do with each pair while you can see it.',
+      ar: 'راقب ولا تستعجل. فلا شيء يُقاس بالوقت وهي مفتوحة — وإنما يهمّ ما تصنعه بكل قرين ما دمت تراه.',
+    },
+    /*
+     * ⚠ THE ONE THAT MATTERS, and the reason this game separates people at all.
+     */
+    {
+      point: null,
+      awaitTap: false,
+      en: 'Here is the whole difference, and it is not effort: do NOT repeat the names to yourself. Make a picture instead — the object doing something to its box.',
+      ar: 'وإليك الفارق كلّه، وليس هو المجهود: لا تكرّر الأسماء في نفسك. بل اصنع صورة — الشيء يفعل شيئاً بصندوقه.',
     },
     {
       point: null,
       awaitTap: false,
-      en: 'Here is the trick, and it is the whole difference: do NOT repeat the names to yourself. Make a picture instead — the object doing something to its box. The sillier the picture, the better it sticks. Repeating a word feels like effort and remembers almost nothing.',
-      ar: 'وإليك الحيلة، وهي الفارق كلّه: لا تكرّر الأسماء في نفسك. بل اصنع صورة — الشيء يفعل شيئاً بصندوقه. وكلما كانت الصورة أطرف، رسخت أكثر. أما ترديد الكلمة فيبدو مجهوداً ولا يُبقي شيئاً تقريباً.',
+      en: 'Say a key and the third box: do not think "key, three". See the key kicking the door of box three until it splinters. That is all a picture has to be.',
+      ar: 'خذ مفتاحاً والصندوق الثالث: لا تقل في نفسك «مفتاح، ثلاثة». بل انظر إلى المفتاح يركل باب الصندوق الثالث حتى يتشظّى. وهذا كل ما ينبغي أن تكونه الصورة.',
+    },
+    {
+      point: null,
+      awaitTap: false,
+      en: 'The sillier and the more violent, the better it sticks. A calm picture of a key resting on a box is worth almost nothing — nothing happened in it.',
+      ar: 'وكلما كانت الصورة أطرف وأعنف رسخت أكثر. أما صورة هادئة لمفتاح راقد على صندوق فلا تكاد تساوي شيئاً — إذ لم يحدث فيها شيء.',
+    },
+    {
+      point: null,
+      awaitTap: false,
+      en: 'Repeating a word over and over feels like hard work, which is exactly why people do it. It remembers almost nothing. You will feel like you are cheating by making pictures; you are not.',
+      ar: 'وترديد الكلمة مرّة بعد مرّة يبدو عملاً شاقّاً، ولهذا بالذات يفعله الناس. وهو لا يُبقي شيئاً تقريباً. وستشعر أنك تحتال حين تصنع الصور؛ ولست تحتال.',
     },
     {
       point: '[data-coach="phase"]',
       awaitTap: false,
-      en: 'Then I show you one object and you tell me its box. If you built a picture, it comes back on its own. Your turn.',
-      ar: 'ثم أعرض عليك شيئاً واحداً فتخبرني بصندوقه. فإن كنت قد بنيت صورة، عادت إليك وحدها. دورك.',
+      en: 'Then I show you one object and you tell me its box. If you built a picture, you will not retrieve it — it simply arrives.',
+      ar: 'ثم أعرض عليك شيئاً واحداً فتخبرني بصندوقه. فإن كنت قد بنيت صورة، فلن تستدعيها — بل تأتيك من تلقائها.',
+    },
+    {
+      point: null,
+      awaitTap: false,
+      en: 'It grows by adding pairs, so the strategy matters more the further you climb, not less. Your turn.',
+      ar: 'وهي تشتدّ بزيادة الأقران، فتزداد الحيلة أهمّية كلما صعدت لا العكس. دورك.',
     },
   ],
 };

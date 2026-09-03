@@ -30,8 +30,38 @@ import { useEffect, useState } from 'react';
    loop calls setState 60×/s with numbers that differ in the 15th decimal. */
 const EPSILON = 0.002;
 
+/*
+ * ⚠ AN ANCHOR ALSO CARRIES THE TARGET'S SIZE (`tw`/`th`, CSS px), and that is
+ * not decoration — it is what stops the hand being the wrong size.
+ *
+ * TutorialHand used to be a flat 54px (44px under 420px wide), a number measured
+ * against ONE thing: a cancellation board tile. Measured across the platform on
+ * 2026-09-03, the hand/target width ratio ran from **0.08 to 4.91**:
+ *
+ *   story-grid  'nav'    11×11 px   → ratio 4.91  the pointer is FIVE TIMES the
+ *                                     width of the thing it is pointing at
+ *   cancel-task  tile    57×57 px   → ratio 0.95  same width as its target, and
+ *                                     its 87px body covers the tile BELOW
+ *   mot          'board' 698×449 px → ratio 0.08  parked in the middle of a
+ *                                     whole container, indicating nothing
+ *
+ * No single constant can serve a 49× spread. So the anchor reports how big the
+ * thing is and `TutorialHand` sizes itself from it.
+ *
+ * ⚠ `tw`/`th` ARE PIXELS WHILE `x`/`y` ARE FRACTIONS. Deliberate, and the one
+ * trap here: x/y address the overlay box (matching CSS %), but the hand's width
+ * is set in px, so a fraction would have to be converted back at the point of
+ * use — by a component that does not know the overlay's width. Keep the units
+ * as they are and keep this note with them.
+ */
 function sameSpot(a, b) {
-  return a && b && Math.abs(a.x - b.x) < EPSILON && Math.abs(a.y - b.y) < EPSILON;
+  return a && b
+    && Math.abs(a.x - b.x) < EPSILON
+    && Math.abs(a.y - b.y) < EPSILON
+    /* Size changes matter too: a reflow that resizes the target without moving
+       its centre must still re-size the hand. 1px is below anything visible. */
+    && Math.abs((a.tw ?? 0) - (b.tw ?? 0)) < 1
+    && Math.abs((a.th ?? 0) - (b.th ?? 0)) < 1;
 }
 
 /** Track a point published by a canvas game's own draw geometry. */
@@ -73,7 +103,7 @@ export function useCanvasAnchor(apiRef, index, method = 'cellScreenPos') {
  * `task-switch` are the first two games that will, and COACH-PLAN.md §7 says to
  * re-plan there if this does not carry both without per-game geometry.
  */
-export function useDomAnchor(containerRef, selector) {
+export function useDomAnchor(containerRef, selector, scope = 'inside') {
   const [anchor, setAnchor] = useState(null);
 
   useEffect(() => {
@@ -82,7 +112,23 @@ export function useDomAnchor(containerRef, selector) {
     const follow = () => {
       raf = requestAnimationFrame(follow);
       const box = containerRef?.current;
-      const node = box?.querySelector?.(selector);
+      /*
+       * ⚠ SEARCHING AND MEASURING ARE TWO DIFFERENT BOXES, AND CONFLATING THEM
+       * FAILS SILENTLY. `querySelector` on the container only ever finds its
+       * DESCENDANTS — fine for a game whose stage contains the thing being
+       * pointed at, and wrong for chrome. Cancellation's goal chip lives in the
+       * HUD, a SIBLING of the coach overlay, so the first version of that step
+       * resolved to null: no hand, no error, no warning. It rendered a lesson
+       * saying "start here" while pointing at nothing.
+       *
+       * `scope: 'document'` searches the whole page and still measures against
+       * the container, which is the combination that was missing. It is opt-in
+       * rather than a fallback on purpose: a selector that silently widens its
+       * search is how you end up pointing at another screen's copy of the same
+       * element — this app keeps every tab mounted under `display: none`.
+       */
+      const root = scope === 'document' ? document : box;
+      const node = root?.querySelector?.(selector);
       if (!box || !node) {
         setAnchor((prev) => (prev ? null : prev));
         return;
@@ -96,12 +142,14 @@ export function useDomAnchor(containerRef, selector) {
       const pos = {
         x: (n.left + n.width / 2 - b.left) / b.width,
         y: (n.top + n.height / 2 - b.top) / b.height,
+        tw: n.width,
+        th: n.height,
       };
       setAnchor((prev) => (sameSpot(prev, pos) ? prev : pos));
     };
     raf = requestAnimationFrame(follow);
     return () => cancelAnimationFrame(raf);
-  }, [containerRef, selector]);
+  }, [containerRef, selector, scope]);
 
   return anchor;
 }

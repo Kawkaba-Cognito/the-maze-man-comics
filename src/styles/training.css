@@ -8896,16 +8896,56 @@ html[data-home-theme='light'] .ct-domain-pick .ct-mph-planet-name {
     padding: 7px 16px;
 }
 
-/* Kawkab watches from the corner. Deliberately inline-end so he never covers
-   the hand, which favours the board's left/top where scanning tends to start. */
+/* Kawkab watches from a bottom corner — never over the board, because a teacher
+   standing on the thing being taught is worse than no teacher.
+   ⚠ WHICH corner is decided per step by CoachLayer (`.is-flipped`): he moves out
+   of the way when the hand is in his quadrant. See the note there. */
 .ct-coach-kawkab {
     position: absolute;
     inset-inline-end: 10px;
+    inset-inline-start: auto;
     bottom: 8px;
     width: 78px;
     height: 88px;
     pointer-events: none;
     z-index: 1;
+    /* He is moving between two corners now, so the move has to be legible as a
+       move rather than a teleport. Cheap: only the two inline offsets change. */
+    transition: inset-inline-end 380ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                inset-inline-start 380ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.ct-coach-kawkab.is-flipped {
+    inset-inline-end: auto;
+    inset-inline-start: 10px;
+}
+
+/*
+ * ⚠ ON A WIDE DESKTOP HE WAS STRANDED, and that is a placement bug even though
+ * nothing overlapped. Measured at 1366×577: the cancellation board sat at
+ * x 668–968 while Kawkab sat at x 1278 — roughly 300px of empty beige between
+ * the teacher and everything he is talking about, at 78px tall. He read as a
+ * stray sticker in the corner of the window rather than as the person speaking.
+ *
+ * The play surface is a centred column, so pull him in to the edge of a column
+ * of the same order instead of to the edge of the glass, and let him grow a
+ * little now that he is somewhere the eye actually goes.
+ *
+ * `max()` rather than a media query on purpose — it tracks the real box at any
+ * width, including the 1366×577 laptop viewport that CLAUDE.md records as the
+ * reason a `min-height: 600px` gate locked the desktop out of the desktop.
+ */
+@media (min-width: 900px) {
+    .ct-coach-kawkab {
+        inset-inline-end: max(10px, calc((100% - 760px) / 2));
+        width: 96px;
+        height: 108px;
+    }
+
+    .ct-coach-kawkab.is-flipped {
+        inset-inline-end: auto;
+        inset-inline-start: max(10px, calc((100% - 760px) / 2));
+    }
 }
 
 @media (max-width: 480px) {
@@ -8921,6 +8961,12 @@ html[data-home-theme='light'] .ct-domain-pick .ct-mph-planet-name {
 
     .ct-coach-bubble p {
         font-size: 13px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ct-coach-kawkab {
+        transition: none;
     }
 }
 

@@ -192,6 +192,14 @@ export default function CancelBoard2D({
         return {
           x: (r.left + r.width / 2 - b.left) / b.width,
           y: (r.top + r.height / 2 - b.top) / b.height,
+          /* ⚠ SIZE IN PX, next to fractions, on purpose — see the note on
+             `sameSpot` in shared/tutorials/coach/anchors.js. The hand sizes
+             itself from this. Without it the pointer stays a fixed 54px against
+             a 57px tile: measured at a 0.95 width ratio, with its 87px body
+             covering the tile below, on a board whose whole point is comparing
+             a shape against its neighbours. */
+          tw: r.width,
+          th: r.height,
         };
       },
     };

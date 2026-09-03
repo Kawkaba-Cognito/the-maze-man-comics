@@ -108,6 +108,21 @@ export function generate(R, C, desired, rng, colorCount = 6) {
   return { root, all, forks, stations };
 }
 
+/*
+ * ⚠⚠ NOTHING RENDERS THIS. IT IS THE 2D BOARD THIS GAME NO LONGER USES.
+ *
+ * `renderEngine` below mounts `CarPark3DProto` for every mode, and this
+ * function is referenced nowhere else in the app (eslint reports it unused).
+ * It is kept as a working 2D reference, not deleted.
+ *
+ * ⚠ AND ITS COACH WIRING BELOW IS THE TRAP THAT COST THIS GAME ITS TUTORIAL.
+ * `audit:coach` rule 4 asserts a registered coach is RENDERED by grepping the
+ * game's source for a `<DomCoach>` mount — it found the one in here, passed,
+ * and Spaceship shipped with no tutorial at all. The real coach now lives in
+ * `CarPark3DProto.jsx`. If you are reading this because you are looking for
+ * Spaceship's lesson: it is not here.
+ */
+// eslint-disable-next-line no-unused-vars
 function TrainSwitchEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, coach }) {
   /*
    * The live-board coach (COACH-PLAN.md Phase 3). Survival only. The whole
@@ -606,6 +621,20 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
           key={`carpark-3d-${p.mode}-${p.level}`}
           fallback={<div className="c3d-root" style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}>…</div>}
         >
+          {/*
+            * ⚠ `coach` HAD TO BE ADDED HERE, and its absence is why this game
+            * shipped with no tutorial at all.
+            *
+            * `TrainSwitchEngine` above is a complete, correctly-wired coach
+            * host — and is referenced NOWHERE. ModeShell renders this component
+            * instead, and this call site listed its props explicitly, so
+            * `p.coach` was dropped on the floor. `audit:coach` still passed:
+            * its rule 4 greps this file for a `<DomCoach>` mount and finds the
+            * one in the dead engine.
+            *
+            * Found by driving the real game — no `.ct-coach` in the DOM at
+            * either viewport. Reachability is a level deeper than a grep sees.
+            */}
           <CarPark3DProto
             isAr={isAr}
             playSfx={playSfx}
@@ -615,6 +644,7 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
             attempt={p.attempt}
             onResult={p.onResult}
             onBack={p.onExit}
+            coach={p.coach}
           />
         </Suspense>
       )}

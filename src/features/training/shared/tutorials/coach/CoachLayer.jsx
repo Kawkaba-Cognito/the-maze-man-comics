@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import TutorialHand from '../TutorialHand';
+import TutorialHand, { handHeightFor } from '../TutorialHand';
 import KawkabSprite from '../../KawkabSprite';
 
 /*
@@ -58,6 +58,16 @@ export default function CoachLayer({
   awaiting = false,
   stranded: strandedProp,
   isLast = false,
+  /*
+   * Optional. Attaches to this overlay's own root, so a caller can measure a DOM
+   * anchor against THE EXACT BOX THE HAND IS DRAWN IN rather than against a
+   * stage element it hopes is the same. They usually are — the games all set
+   * `position: relative` on their stage deliberately — but "usually" is how the
+   * hand ends up a header's height out, and cancellation genuinely needs it: the
+   * HUD chip it points at lives outside the board wrap the cells are measured
+   * against.
+   */
+  hostRef,
   onNext,
   onSkip,
 }) {
@@ -111,6 +121,30 @@ export default function CoachLayer({
    * the viewport — and it rendered perfectly the whole time.
    */
   const nearTop = anchor && anchor.y < 0.5;
+
+  /*
+   * Kawkab's default corner is bottom / inline-end. Flip him to the other side
+   * when the hand is standing in it, so the teacher never covers the thing the
+   * lesson is pointing at.
+   *
+   * `inlineEndFrac` converts the anchor's physical x into a logical one, which
+   * is the whole reason this is not a bare `anchor.x > 0.62`.
+   */
+  const inlineEndFrac = anchor ? (isAr ? 1 - anchor.x : anchor.x) : 0;
+  /*
+   * ⚠ NO `y` TEST — HE HAS TO DODGE THE BUBBLE, NOT ONLY THE HAND, and the
+   * bubble is the bigger object. The first version of this flipped only when
+   * the HAND was low on his side (`inlineEndFrac > 0.6 && anchor.y > 0.52`),
+   * which measured clean on the hand and immediately collided with the bubble:
+   * on cancellation step 2 the anchor sits HIGH (y 0.37), so the bubble takes
+   * the below-hand branch and lands low at y 413–504 — squarely in the corner
+   * he had just been pulled into.
+   *
+   * The bubble's centre tracks the hand's x whichever branch it takes, so one
+   * test on x covers both objects. With no anchor at all the bubble parks
+   * centred and narrow (≤300px), which clears the corner on its own.
+   */
+  const kawkabFlipped = Boolean(anchor) && inlineEndFrac > 0.55;
   const bubbleStyle = anchor
     ? {
       /*
@@ -132,8 +166,16 @@ export default function CoachLayer({
        * buttons — this app has shipped unpressable chrome three times (see
        * CLAUDE.md), and only real hit-testing catches it.
        */
+      /*
+       * ⚠ THE BELOW-HAND GAP IS IN THE HAND'S OWN PIXELS, NOT A PERCENTAGE OF
+       * THE STAGE. It was `anchor.y*100 + 14`, and 14% of Target Tracking's
+       * 449px-tall board is 63px — against a hand that hangs 87px below its
+       * fingertip. Measured result: the bubble sat ON the hand in both mot and
+       * speed-match on desktop. A percentage of a container can never reliably
+       * clear a fixed-size sprite; ask the sprite how tall it is.
+       */
       top: nearTop
-        ? `max(calc(var(--fq-hud-reserve, 96px) + 8px), ${anchor.y * 100 + 14}%)`
+        ? `max(calc(var(--fq-hud-reserve, 96px) + 8px), calc(${anchor.y * 100}% + ${handHeightFor(anchor) + 14}px))`
         : `${anchor.y * 100 - 16}%`,
       transform: nearTop ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
     }
@@ -142,6 +184,7 @@ export default function CoachLayer({
   return (
     <div
       className="ct-coach"
+      ref={hostRef}
       dir={isAr ? 'rtl' : 'ltr'}
       style={{ position: 'absolute', inset: 0, zIndex: 6, pointerEvents: 'none' }}
     >
@@ -175,9 +218,27 @@ export default function CoachLayer({
         </div>
       </div>
 
-      <div className="ct-coach-kawkab" aria-hidden="true">
-        {/* width:100% so the existing responsive box (78px → 62px on a phone)
-            keeps controlling him, rather than an inline size fighting it. */}
+      {/*
+        * ⚠ KAWKAB MOVES OUT OF THE HAND'S WAY. He used to be pinned to the
+        * inline-end bottom corner unconditionally, on the reasoning that the
+        * hand "favours the board's left/top where scanning tends to start".
+        * That is true of where scanning starts and not true of where the hand
+        * ends up: it goes wherever the step's anchor is, and on any step whose
+        * target sits low on the inline-end side he was standing on it.
+        *
+        * So the corner is chosen per step. `nearKawkab` is the bottom
+        * inline-end quadrant in LOGICAL terms — mirrored under RTL, because
+        * `inset-inline-end` is the right edge in English and the LEFT edge in
+        * Arabic, and a check written in physical x would send him TOWARD the
+        * hand in one of the two languages. Same family as the string trap in
+        * CLAUDE.md: the second half is the one that gets missed.
+        */}
+      <div
+        className={`ct-coach-kawkab${kawkabFlipped ? ' is-flipped' : ''}`}
+        aria-hidden="true"
+      >
+        {/* width:100% so the responsive box in training.css keeps controlling
+            him, rather than an inline size fighting it. */}
         <KawkabSprite size={78} style={{ width: '100%' }} />
       </div>
     </div>

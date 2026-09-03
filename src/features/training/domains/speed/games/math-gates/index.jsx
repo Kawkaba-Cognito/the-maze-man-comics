@@ -162,6 +162,18 @@ function summarizeGates(events, elapsedSec) {
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
 import { MATH_GATES_COACH } from '../../../../shared/tutorials/coach/scripts/math-gates';
 
+/*
+ * ⚠⚠ THE TRAINING HUB DOES NOT RENDER THIS. `renderEngine` below mounts
+ * `MathGatesBoard2D`; this engine survives only because
+ * `features/puzzles/games/groupwar/catalog.js` imports it for the party game.
+ *
+ * ⚠ AND ITS COACH WIRING BELOW IS THE TRAP THAT COST THIS GAME ITS TUTORIAL.
+ * `audit:coach` rule 4 asserts a registered coach is RENDERED by grepping this
+ * file for a `<DomCoach>` mount — it found the one in here, passed, and Math
+ * Gates shipped with no tutorial at all. The real coach now lives in
+ * `MathGatesBoard2D.jsx`. If you are looking for Math Gates' lesson, it is not
+ * here.
+ */
 export function MathGatesEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false, coach }) {
   /*
    * The live-board coach (COACH-PLAN.md Phase 3). Survival only; the simulation

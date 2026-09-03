@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { GAME_INTS } from '../../../../shared/gamePalette';
 import { bootC3dScene, matStd, disposeObject, THREE } from '../../../../shared/c3dBoot';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { TRAIN_SWITCH_COACH } from '../../../../shared/tutorials/coach/scripts/train-switch';
 import { makeRng } from '../../../../shared/rng';
 // SAME engine as the 2D game: real road-tree generator, wave escalation, palette.
 import { generate, waveCfg, levelCfg, PAL } from './index';
@@ -99,10 +101,28 @@ function hullGeometry() {
 
 export default function CarPark3DProto({
   isAr, playSfx, onBack, awardFreeRun,
-  mode = 'free', level = 1, attempt = null, onResult,
+  mode = 'free', level = 1, attempt = null, onResult, coach,
 }) {
   const t = UI[isAr ? 'ar' : 'en'];
   const wrapRef = useRef(null);
+  /*
+   * ⚠ THIS GAME SHIPPED WITH NO TUTORIAL AT ALL, AND `audit:coach` PASSED IT.
+   *
+   * `TrainSwitchEngine` in index.jsx is a complete coach host that nothing
+   * renders — the hub renders this component, and the call site did not pass
+   * `p.coach`. The gate found the mount in the dead engine and declared the
+   * coach rendered. See the note at that call site.
+   *
+   * `.c3d-root` is the host, NOT `.c3d-canvas`: that element is
+   * `aria-hidden="true"`, and since aria-hidden cannot be undone by a
+   * descendant, mounting the lesson inside it would hand a screen-reader user
+   * eight steps of silence — CoachLayer's bubble carries the whole lesson,
+   * because the hand and Kawkab are deliberately decorative. Both boxes are
+   * `inset: 0` over the same rectangle, so the anchor fractions are unaffected.
+   */
+  const coachHostRef = useRef(null);
+  const coachOpen = coach?.open || false;
+  const coachOpenRef = coach?.openRef || { current: false };
   const apiRef = useRef({});
   const playSfxRef = useRef(playSfx);
   playSfxRef.current = playSfx;
@@ -122,6 +142,20 @@ export default function CarPark3DProto({
   const [waveFlash, setWaveFlash] = useState(null);
   const [bootError, setBootError] = useState(null);
   const [forkStates, setForkStates] = useState([]);
+
+  /* Open the lesson once a Survival run is live — the junction buttons only
+     exist while `phase === 'run'`, and step 3 points at one. */
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free') return;
+    if (phase !== 'run') return;
+    coach.begin();
+  }, [coach, mode, phase]);
+
+  /* Never strand it off a running board: the simulation is frozen while the
+     lesson is open, so a coach left up after the run ends would hold it there. */
+  useEffect(() => {
+    if (coachOpen && phase !== 'run') coach?.end();
+  }, [coachOpen, phase, coach]);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -636,7 +670,23 @@ export default function CarPark3DProto({
       };
       for (const mini of queueGroup.children) animShip(mini, null);
 
-      if (g.finished) return;
+      /*
+       * ⚠ THE SIMULATION IS HELD WHILE THE LESSON IS OPEN, and this is the
+       * complete guard — traced, not assumed. Everything ABOVE this line is
+       * decorative (ship bob, roll, the drifting dots), so the scene stays alive
+       * and does not look frozen. Everything BELOW is the run: the spawn, the
+       * ships' travel, the bay resolution that awards `routed` or takes a life,
+       * and `finishRun` — which is the only caller of `awardFreeRun`/`onResult`.
+       * Nothing scored can fire while this returns early.
+       *
+       * CLAUDE.md's rule is to guard EVERY consequence, not one: cancellation
+       * guarded only its time penalty and shipped a LOSABLE tutorial, where the
+       * error cap ended the round mid-lesson and marked it permanently done.
+       * Here they all funnel through this single return, and toggling a junction
+       * still works — the player can try the one control while I talk, and with
+       * no ship moving it costs nothing.
+       */
+      if (g.finished || coachOpenRef.current) return;
       if (g.bannerT > 0) {
         g.bannerT -= dt;
         if (g.bannerT <= 0 && waveFlashOn.current) {
@@ -833,6 +883,18 @@ export default function CarPark3DProto({
       onBack={onBack}
       playSfx={playSfx}
       canvasRef={wrapRef}
+      /* `.c3d-root`, not `.c3d-canvas` — see the note on `coachHostRef`. */
+      rootRef={coachHostRef}
+      coachSlot={coachOpen ? (
+        <DomCoach
+          isAr={isAr}
+          playSfx={playSfx}
+          stageRef={coachHostRef}
+          pack={TRAIN_SWITCH_COACH}
+          onFinish={() => coach?.end()}
+          onSkip={() => coach?.end()}
+        />
+      ) : null}
       bannerActions={
         banner === 'over' ? (
           <div className="c3d-banner-actions">
@@ -858,6 +920,12 @@ export default function CarPark3DProto({
                 key={index}
                 type="button"
                 className="ct-spaceport-access-btn"
+                /* ⚠ ON ONE BUTTON, NOT ON THE ROW. Anchored to the grid, the
+                   hand pointed at the exact centre of a 430×44 strip — correct
+                   to the pixel and useless, a 0.12 hand-to-target ratio with the
+                   fingertip in the gap BETWEEN two buttons. The copy says "tap a
+                   junction", so it should point at a junction. */
+                data-coach={index === 0 ? 'switches' : undefined}
                 aria-label={isAr ? `بدّل المفترق ${index + 1}` : `Toggle junction ${index + 1}`}
                 aria-pressed={Boolean(state)}
                 onClick={() => apiRef.current.toggleFork?.(index)}

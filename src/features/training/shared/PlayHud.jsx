@@ -162,12 +162,19 @@ export default function PlayHud({
         {/* Only games with a "find this" target carry the chip. Without this
             gate every other game showed ShapeSvg's fallback circle — a target
             reminder for a target that does not exist. */}
+        {/* ⚠ `data-coach` MAKES THE CHROME POINTABLE, and the first thing it
+            fixed was a lie. Cancellation's opening line was "the shape you are
+            hunting is up in the bar" with NO hand — and on a 1366px desktop the
+            HUD is not a bar across the top, it is a panel down the LEFT side. So
+            the one spatial instruction in that lesson was wrong on half the
+            devices, and nothing pointed anywhere to correct it. The coach now
+            points at this chip and says nothing about where it lives. */}
         {targetShape && (
-          <div className="ct-fq-bar-chip" aria-hidden="true">
+          <div className="ct-fq-bar-chip" data-coach="goal" aria-hidden="true">
             {targetVisual ?? <ShapeSvg shape={targetShape} color={targetColor} size={30} />}
           </div>
         )}
-        <div className="ct-fq-bar-stats">
+        <div className="ct-fq-bar-stats" data-coach="stats">
           {/*
             `stats` is the generic escape hatch, and the reason this component
             can now be the header for every game rather than only Cancellation.

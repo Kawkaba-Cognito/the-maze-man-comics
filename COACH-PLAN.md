@@ -35,6 +35,177 @@ reads them as the product copy they are. Do not move them into a data path.
 
 ---
 
+## 0. THE DEPTH PASS (2026-09-03, second sitting) — 65 steps → 144
+
+**Asked for by the project owner:** *"make them longer, more instruction … make
+sure that the tutorial is well structured and strong and will teach the user
+well."* Every lesson was rewritten onto one spine, and the pointing kit was
+rebuilt underneath them.
+
+### 0a. The spine — eight steps, ONE IDEA EACH
+
+The old lessons were not wrong, they were **compressed**. Their weakness was a
+single shape repeated eighteen times: the construct — the genuinely valuable,
+counter-intuitive thing — arrived as the *third clause of a five-sentence
+paragraph*, next to the controls and the sign-off. Detective packed the entire
+assume-and-check method into one step; Mirror World's washout, its reassurance
+and its explanation shared a step; Speed Match's last step carried the time
+bank, the refill rule, the rhythm advice and the goodbye.
+
+That is the failure mode instructional design is loudest about: **stagger the
+concepts, one at a time, and give the learner somewhere to put each one.** So:
+
+| # | Step | Gagné's event |
+|---|---|---|
+| 1 | Orient — who I am, what this board is | gain attention |
+| 2 | The goal — what winning looks like | inform the objective |
+| 3 | The object / the control — point at the thing, name the gesture | present the content |
+| 4 | **Do it now** — on the live board, scored | elicit performance |
+| 5 | The construct — the counter-intuitive rule | learning guidance |
+| 6 | The named error — the specific wrong move | feedback |
+| 7 | What it costs — hearts, clock, errors; and that reaching your ceiling IS the measurement | assess |
+| 8 | How it grows, and one habit to take with you | retention |
+
+Not every game fills all eight identically — a game with no `satisfiedFor`
+predicate cannot have step 4 at all (see below) — but every game now names its
+goal, its control, its error and its progression, which most of them did not.
+
+⚠️ **STEPS 7 AND 8 ARE THE ONES THAT WERE MISSING EVERYWHERE.** Almost no lesson
+said what a wrong answer costs, and almost none said what changes as you climb.
+Both were left to trial and error, in an app whose whole posture is that
+reaching your limit is the *point* rather than a failure. Trivia now says
+outright "the run is MEANT to end somewhere you cannot reach"; mot says "it is
+built to keep going until it finds the number where you start dropping them".
+
+### 0b. Guided practice is limited by `satisfiedFor`, not by the script
+
+Only **6 of 18** games pass a `satisfiedFor` predicate to `DomCoach`
+(`sort-shift`, `synonyms`, `trivia`, `keep-track`, `gatekeeper`, `speed-match`),
+plus cancellation's bespoke coach. Those seven have a real step 4. The other
+eleven deliberately do **not** — an await step with no reachable condition
+strands the player in a first-run tutorial with only Skip and Escape, which
+`DomCoach`'s own header warns about. Wiring the remaining eleven is the obvious
+next increment and was explicitly deferred by the owner.
+
+### 0c. What the measurement pass found — and why a constant could never work
+
+Measured on a real page (headless Chrome over CDP, `getBoundingClientRect` on
+the hand plus `elementFromPoint` under the fingertip), at 1366×577 and 390×780:
+
+| game / anchor | target | hand | ratio |
+|---|---|---|---|
+| `story-grid` → `nav` | **11×11 px** | 54 px | **4.91** |
+| `cancel-task` → a tile | 57×57 px | 54 px | **0.95** |
+| `speed-match` → `pad` | 520×84 px | 54 px | **0.10** |
+| `mot` → `board` | 698×449 px | 54 px | **0.08** |
+
+`TutorialHand` was a flat **54 px** (44 px under a 420 px viewport). Both numbers
+were measured once against a cancellation tile and then worn by all eighteen
+games across a **49× spread** of target sizes. A viewport breakpoint cannot
+address any of it — story-grid's 11 px chevron and cancellation's 57 px tile were
+on the *same* 1366 px desktop.
+
+Three distinct failure modes fell out of that one constant:
+
+1. **Target much smaller than the hand** → the pointer swamps what it points at.
+2. **Target the same size** → the hand covers it *and* its neighbour, on a board
+   whose whole point is comparing a shape against its neighbours.
+3. **Target is a whole container** → the hand is parked in the middle of a big
+   thing, indicating nothing in particular.
+
+(1) and (2) are a **kit** problem: the anchor now carries `tw`/`th` and the hand
+sizes itself at `0.62 ×` the target, clamped 30–52 px. Cancellation went
+0.95 → **0.61**, and its drawn height 87 → 57 px, so it stopped covering the tile
+below. (3) is a **script** problem: `math-gates` pointed all three of its steps
+at `[data-coach="board"]`, so the hand never moved for the entire lesson. Steps
+about pace, cost or progression now carry `point: null`, which parks the hand
+honestly instead of pretending to point.
+
+### 0d. Four kit bugs the measurement exposed
+
+- ⚠️ **Every transform pivoted on the image centre, so the fingertip drifted.**
+  The float was `translateY(-5px) rotate(-2deg)`, walking the tip ~6 px — a tenth
+  of a cancellation tile, half of story-grid's chevron. `transform-origin` is now
+  the measured fingertip (`40.8% 1.2%`), so rotation contributes **zero** drift
+  and the float/tap animations became rotational rather than translational.
+- ⚠️ **The bubble cleared the hand with a percentage of the stage.**
+  `anchor.y + 14%` is 63 px on mot's 449 px board, against a hand hanging 87 px
+  below its fingertip — measured result: the bubble sat *on* the hand in both
+  `mot` and `speed-match`. It now clears it in the hand's own pixels via
+  `handHeightFor()`.
+- ⚠️ **Kawkab was pinned to one corner regardless of where the hand went.** The
+  original note reasoned that inline-end is safe because the hand "favours the
+  board's left/top where scanning tends to start" — true of where scanning
+  starts, false of where the hand ends up. He now flips corners when the action
+  is on his side. ⚠️ The test is on the **logical** inline-end fraction, mirrored
+  under RTL: written in physical `x` it would send him *toward* the hand in one
+  of the two languages. ⚠️ And it must test the **bubble**, not only the hand —
+  the first version flipped on the hand's `y` and immediately collided with the
+  bubble, because a high anchor puts the bubble on the *below-hand* branch.
+- ⚠️ **`useDomAnchor` only ever searched inside the box it measures against**, so
+  a step pointing at chrome resolved to null: no hand, no error, no warning. It
+  now takes an explicit `scope: 'document'`. Opt-in rather than a fallback,
+  because this app keeps every tab mounted under `display: none` and a silently
+  widening selector would find another screen's copy of the same element.
+
+### 0e. A wrong instruction, found only by looking at both widths
+
+Cancellation's opening line was *"the shape you are hunting is **up in the
+bar**"* — with **no hand pointing at anything**. On a phone the HUD is a bar
+across the top; on a 1366 px desktop it is a panel down the **left** side. The
+one spatial instruction in the lesson was wrong on half the devices, and nothing
+pointed anywhere to correct it. `PlayHud` now tags the goal chip
+`data-coach="goal"`, cancellation's coach can point at chrome, and the copy says
+nothing about where the chip lives.
+
+### 0f. ⚠ THREE GAMES HAD NO TUTORIAL AT ALL, AND `audit:coach` PASSED THEM
+
+Found by driving the real app rather than reading it: enter each game's Survival
+and ask whether `.ct-coach-bubble` ever appears. Three never did.
+
+| game | why it could never run |
+|---|---|
+| **Word Maze** | `<DomCoach>` was mounted inside the `round.mode === 'level'` branch, while the effect that opens it requires `round.mode === 'free'`. **Mutually exclusive.** All three `data-coach` anchors were in that branch too. |
+| **Spaceship** | `TrainSwitchEngine` — a complete, correctly-wired coach host — is referenced **nowhere** (eslint reports it unused). ModeShell renders `CarPark3DProto`, whose call site listed props explicitly and dropped `p.coach`. |
+| **Math Gates** | `MathGatesEngine` is imported only by `puzzles/games/groupwar/catalog.js`. The hub renders `MathGatesBoard2D`, which already *received* `coach` via `{...p}` and never read it. |
+
+⚠️ **THE GATE'S BLIND SPOT IS REACHABILITY.** Rule 4 asserts a registered coach is
+*rendered* by grepping the game's source for a `<DomCoach>` mount. It finds one —
+in a function nothing calls, or in a JSX branch that never runs during the only
+mode the coach opens in. **A grep can see that the mount exists; it cannot see
+that the mount is reached.** That is one level deeper than static text, and it is
+the same shape as the bug rule 4 was written to catch in the first place.
+
+⚠️ **A WEAK STATIC DETECTOR WOULD BE WORSE THAN NONE HERE**, so none was added: a
+"is this function referenced?" check passes Math Gates (the party game imports
+it), and a same-component check passes Word Maze (both halves are in one file).
+The honest tool is the live smoke test — enter Survival, assert the bubble
+appears — which needs a browser and therefore cannot block CI. Run it by hand
+after touching any coach wiring.
+
+⚠️ **AND THE COACH MUST NOT GO IN `canvasChildren`.** `.c3d-canvas` carries
+`aria-hidden="true"`, and aria-hidden cannot be undone by a descendant — the
+bubble carries the ENTIRE lesson (hand and Kawkab are deliberately decorative),
+so mounting there hands a screen-reader user eight steps of silence. Use
+`coachSlot` + `rootRef`, which render last inside `.c3d-root`: the same
+`inset: 0` rectangle, outside the hidden subtree. `paired-associates` was already
+doing this correctly and is the pattern to copy.
+
+Fixed in all three; verified live, **18/18 coaches open at 1366×577 and 390×780**,
+with lives and score untouched afterwards in both games that freeze a simulation.
+
+⚠️ **The two dead engines are now marked, not deleted.** Both still contain a
+correct-looking coach mount, which is exactly what misled the gate — each carries
+a header saying nothing renders it and pointing at the real host.
+
+### 0g. Ids bumped to `@coach2`
+
+All eighteen. A rewritten lesson under the old id reaches fresh installs **only**
+— see the standing warning in `coachRegistry.js`. `audit:coach`: 18/18,
+**144 steps** (was 65). `review:since`: no change, so no new benefit claim.
+
+---
+
 ## 1. Where we actually start
 
 Not "cancellation only". Three tiers, and one of them is broken.

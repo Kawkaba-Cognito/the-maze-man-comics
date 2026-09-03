@@ -1,51 +1,78 @@
 /*
- * Word Maze's coach script (COACH-PLAN.md Phase 2).
+ * Word Maze's coach script.
  *
- * ⚠ THE CONTROL IS THE THING NOBODY GUESSES HERE, and that is unusual in this
- * set — most of these scripts fight to teach a construct rather than a gesture.
- * But this board has no Submit button by design: a traced path commits when you
- * LIFT YOUR FINGER, or when you tap the last letter again. Both routes are
- * deliberate (the tap route is what keeps the game playable without a pointer
- * drag), and neither is discoverable. A player who traces a correct word and
- * then hunts for a button concludes the board is broken.
+ * ⚠ THE CONTROLS ARE THE WHOLE PROBLEM HERE, not the construct. There is no
+ * Submit button — you lift your finger — and nothing on screen says so. A player
+ * who traces a perfectly good word and then hunts for a button has been failed
+ * by the interface, not by their vocabulary. So this lesson spends more of
+ * itself on the gesture than any other in the platform, and that is correct: a
+ * game whose input is undiscoverable does not get to measure anything.
  *
- * ⚠ THE OTHER HALF IS THAT THE DICTIONARY IS CURATED. Short words validate
- * against an authored list, not the unabridged corpus, because that corpus's
- * 3–4 letter tiers are mostly abbreviations — this is why `sart` is refused.
- * Players who assume any letter run counts read a refusal as a bug rather than
- * as the game holding a standard.
+ * ⚠ AND THE DICTIONARY RULE HAS TO BE STATED, because a rejection with no
+ * explanation reads as a bug. Short words validate against a hand-authored list
+ * (444 three-letter + 1,527 four-letter, see validate:wordmaze) precisely
+ * because the unabridged corpus is mostly abbreviations at that length.
  *
- * ⚠ NO AWAIT STEP. The obvious one is "trace a word", and it fails the
- * reachability rule in DomCoach: an await step renders no Next button, and a
- * beginner who cannot yet find a word on the board would be stranded in a
- * first-run tutorial with only Skip and Escape.
+ * ── 2026-09-03: four steps became eight, on the spine in COACH-PLAN.md ──
+ * The old step 2 carried the lift-to-submit rule AND the whole tap alternative
+ * in one sentence, which is two different input methods in one breath.
+ *
+ * ⚠ NO AWAIT STEP: no `satisfiedFor` predicate on this game.
  */
 export const WORDLE_COACH = {
-  id: 'wordle@coach1',
+  id: 'wordle@coach2',
   steps: [
     {
       point: '[data-coach="board"]',
       awaitTap: false,
-      en: "I'm Dr Kawkab. Spell a word by dragging through letters that touch — sideways, up and down, or corner to corner. The path has to stay connected.",
-      ar: 'أنا د. كوكب. اكتب كلمة بسحب إصبعك عبر حروف متلاصقة — أفقياً أو رأسياً أو قُطرياً. ويجب أن يبقى المسار متّصلاً.',
+      en: "I'm Dr Kawkab. Spell a word by dragging through letters that touch — sideways, up and down, or corner to corner.",
+      ar: 'أنا د. كوكب. اكتب كلمة بسحب إصبعك عبر حروف متلاصقة — أفقيّاً أو رأسيّاً أو قُطريّاً.',
     },
     {
       point: '[data-coach="board"]',
       awaitTap: false,
-      en: 'There is no Submit button, on purpose. LIFT your finger to send the word — or, if you would rather tap than drag, tap the letters one by one and tap the last one twice.',
-      ar: 'ولا يوجد زرّ إرسال، عن قصد. ارفع إصبعك لإرسال الكلمة — أو إن كنت تفضّل النقر على السحب، فانقر الحروف واحداً واحداً ثم انقر الأخير مرّتين.',
+      en: 'The path has to stay connected the whole way. You cannot jump a gap, and you cannot use the same tile twice in one word.',
+      ar: 'ويجب أن يبقى المسار متّصلاً إلى آخره. فلا تقفز فجوةً، ولا تستعمل البلاطة نفسها مرّتين في كلمة واحدة.',
+    },
+    /*
+     * ⚠ THE ONE THAT MATTERS, and it is not a strategy — it is the fact that the
+     * input has no visible affordance at all.
+     */
+    {
+      point: '[data-coach="board"]',
+      awaitTap: false,
+      en: 'There is no Submit button, on purpose. LIFT your finger to send the word — that is the whole gesture.',
+      ar: 'ولا يوجد زرّ إرسال، عن قصد. ارفع إصبعك لإرسال الكلمة — وهذه هي الحركة كلّها.',
     },
     {
-      point: '[data-coach="rules"]',
+      point: '[data-coach="board"]',
       awaitTap: false,
-      en: 'This says how long a word must be and how many you need. Real words only — I keep a hand-checked list, so odd letter runs and abbreviations will be turned down.',
-      ar: 'وهذا يبيّن كم يجب أن تطول الكلمة وكم كلمة تحتاج. وكلمات حقيقية فقط — فعندي قائمة مراجَعة يدوياً، وستُرفض الحروف الغريبة والاختصارات.',
+      en: 'If you would rather tap than drag, you can: tap the letters one at a time, then tap the last one twice to send. Both routes score identically.',
+      ar: 'وإن كنت تفضّل النقر على السحب فلك ذلك: انقر الحروف واحداً واحداً، ثم انقر الأخير مرّتين للإرسال. والطريقان يُحسبان سواءً.',
     },
     {
       point: '[data-coach="clear"]',
       awaitTap: false,
-      en: 'Gone wrong mid-path? Clear it and start again — it costs nothing but the seconds. Your turn.',
-      ar: 'وإن أخطأت في منتصف المسار، فامسحه وابدأ من جديد — ولا يكلّفك ذلك إلا الثواني. دورك.',
+      en: 'Gone wrong halfway along a path? Clear it and start again. It costs nothing but the seconds — there is no penalty for a word you never sent.',
+      ar: 'وإن أخطأت في منتصف المسار، فامسحه وابدأ من جديد. ولا يكلّفك ذلك إلا الثواني — فلا عقوبة على كلمة لم ترسلها.',
+    },
+    {
+      point: '[data-coach="rules"]',
+      awaitTap: false,
+      en: 'This says how long a word has to be and how many you need to finish.',
+      ar: 'وهذا يبيّن كم يجب أن تطول الكلمة، وكم كلمة تحتاج لتُنهي.',
+    },
+    {
+      point: '[data-coach="rules"]',
+      awaitTap: false,
+      en: 'Real words only. I keep a hand-checked list for the short ones, so odd letter runs and abbreviations get turned down — if a word you are sure of is refused, that is the list being strict, not you being wrong.',
+      ar: 'وكلمات حقيقيّة فقط. فعندي للقصيرة قائمة مراجَعة يدويّاً، فتُردّ الحروف الغريبة والاختصارات — فإن رُدّت كلمة أنت واثق منها، فتلك صرامة القائمة لا خطأٌ منك.',
+    },
+    {
+      point: null,
+      awaitTap: false,
+      en: 'One habit beats hunting: start from a letter that begins a lot of words and look at what it touches, rather than looking for a word and then trying to find a path for it. The grid decides what is possible. Your turn.',
+      ar: 'وعادةٌ واحدة خيرٌ من الاصطياد: ابدأ من حرفٍ تُستهلّ به كلمات كثيرة وانظر إلى ما يلامسه، بدل أن تبحث عن كلمة ثم تلتمس لها مساراً. فالشبكة هي التي تقرّر ما يمكن. دورك.',
     },
   ],
 };

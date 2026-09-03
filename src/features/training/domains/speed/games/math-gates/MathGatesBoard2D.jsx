@@ -6,6 +6,8 @@ import { GAME_COLORS, GAME_INK, GAME_STIMULUS, shadeOf } from '../../../../share
 import { makeRng } from '../../../../shared/rng';
 import { clamp } from '../../../../../../lib/math';
 import { genGate, levelCfg, LADDER_LEVELS } from './index';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { MATH_GATES_COACH } from '../../../../shared/tutorials/coach/scripts/math-gates';
 import '../../../../shared/c3dProto.css';
 // nowMs() = performance.now() minus paused time, so the pause menu really
 // stops this game's clock. See shared/pauseStore.js.
@@ -67,9 +69,28 @@ const LANE_COLORS = [GAME_STIMULUS[0], GAME_STIMULUS[1], GAME_STIMULUS[3]];
 
 export default function MathGatesBoard2D({
   isAr, playSfx, onBack, awardFreeRun,
-  mode = 'free', level = 1, seed, attempt, onResult,
+  mode = 'free', level = 1, seed, attempt, onResult, coach,
 }) {
   const t = UI[isAr ? 'ar' : 'en'];
+
+  /*
+   * ⚠ THIS GAME SHIPPED WITH NO TUTORIAL AT ALL, AND `audit:coach` PASSED IT.
+   *
+   * The coach was wired into `MathGatesEngine` in index.jsx — a complete,
+   * correct implementation that the training hub never renders. ModeShell's
+   * `renderEngine` mounts THIS component; `MathGatesEngine` survives only
+   * because `features/puzzles/games/groupwar/catalog.js` imports it for the
+   * party game. So the gate found a `<DomCoach>` in the game's source, declared
+   * the coach rendered, and no lesson ever reached a player.
+   *
+   * Found by driving the real game and observing no `.ct-coach` in the DOM at
+   * either viewport — reachability is one level deeper than a grep can see.
+   *
+   * `coach` already arrived here: ModeShell puts it in the props bag and
+   * index.jsx spreads `{...p}`. It was simply never read.
+   */
+  const coachOpen = coach?.open || false;
+  const coachOpenRef = coach?.openRef || { current: false };
   const cfg = mode === 'levels'
     ? levelCfg(level)
     : mode === 'passplay'
@@ -78,6 +99,10 @@ export default function MathGatesBoard2D({
 
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
+  /* `.c3d-root` — the box the coach overlay is `inset: 0` inside, and the box
+     its `data-coach` anchors are measured against. Same rectangle as
+     `.c3d-canvas`, but outside that element's `aria-hidden`. */
+  const coachHostRef = useRef(null);
   const apiRef = useRef({});
   /* The runner's artwork — the same black-planet Kawkab the Training hub uses.
    * Loaded once here rather than per frame; the draw loop skips it until
@@ -102,6 +127,20 @@ export default function MathGatesBoard2D({
   const [combo, setCombo] = useState(0);
   const [eqText, setEqText] = useState('');
   const [banner, setBanner] = useState('go');
+
+  /* Open the lesson once a Survival run is actually on screen — the gate has to
+     exist before the coach can talk about steering through one. */
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free') return;
+    if (phase !== 'run') return;
+    coach.begin();
+  }, [coach, mode, phase]);
+
+  /* Never strand it on a game-over screen: the simulation is frozen while the
+     lesson is open, so a coach left up after the run ends would hold it there. */
+  useEffect(() => {
+    if (coachOpen && phase !== 'run') coach?.end();
+  }, [coachOpen, phase, coach]);
 
   /*
    * The live run, in a ref rather than in the draw effect's closure.
@@ -287,7 +326,23 @@ export default function MathGatesBoard2D({
     const runTop = () => Math.min(0.42, eqBandBottom() + 0.025);
 
     const frame = (dt) => {
-      if (!s.finished) {
+      /*
+       * ⚠ THE WHOLE SIMULATION IS HELD WHILE THE LESSON IS OPEN, and this single
+       * guard is the complete set of guards — verified by following the calls,
+       * not assumed. Every scored consequence in this game is downstream of the
+       * two branches below: the gate's descent reaches `resolveGate`, which is
+       * the only caller of the lives decrement, the score, the combo, the SFX
+       * and `finishRun` (which is in turn the only caller of `awardFreeRun` and
+       * `onResult`). Freeze the descent and the spawn, and none of them can run.
+       *
+       * CLAUDE.md's rule is to guard EVERY consequence rather than one — that
+       * warning comes from cancellation, which guarded only its time penalty and
+       * shipped a LOSABLE tutorial: the error cap ended the round mid-lesson and
+       * marked it permanently done. Here the consequences genuinely funnel
+       * through one place; steering still works, so the player can move between
+       * lanes while I talk, and moving costs nothing.
+       */
+      if (!s.finished && !coachOpenRef.current) {
         if (s.gate) {
           s.gate.y += dt / DESCEND_SEC;
           if (s.gate.y >= 1) { s.gate.y = 1; resolveGate(); }
@@ -537,9 +592,39 @@ export default function MathGatesBoard2D({
       canvasRef={wrapRef}
       canvasChildren={(
         <>
-          <canvas ref={canvasRef} style={{ display: 'block', touchAction: 'none' }} />
+          {/* `data-coach="board"` is this game's only pointing anchor, and the
+              script only aims at it for the steps that are genuinely about the
+              board — the rest carry `point: null`, which parks the hand rather
+              than leaving it hovering in the middle of a container indicating
+              nothing (measured at a 0.08 hand-to-target ratio before). */}
+          <canvas ref={canvasRef} style={{ display: 'block', touchAction: 'none' }} data-coach="board" />
         </>
       )}
+      /*
+       * ⚠ THE COACH GOES IN `coachSlot`, NOT IN `canvasChildren`.
+       *
+       * `.c3d-canvas` carries `aria-hidden="true"` — correctly, since it exists
+       * to hold a decorative WebGL/2D canvas. Mounting the lesson inside it
+       * hides the ENTIRE tutorial from assistive tech, and `aria-hidden` cannot
+       * be undone by a descendant: CoachLayer's `role="dialog"` and `aria-live`
+       * carry the whole lesson (the hand and Kawkab are deliberately decorative),
+       * so a screen-reader user would get eight steps of total silence.
+       *
+       * `coachSlot` renders last, inside `.c3d-root` — which is
+       * `position: fixed; inset: 0`, the same rectangle `.c3d-canvas` fills, so
+       * the anchor fractions still address the box the hand is drawn in.
+       */
+      rootRef={coachHostRef}
+      coachSlot={coachOpen ? (
+        <DomCoach
+          isAr={isAr}
+          playSfx={playSfx}
+          stageRef={coachHostRef}
+          pack={MATH_GATES_COACH}
+          onFinish={() => coach?.end()}
+          onSkip={() => coach?.end()}
+        />
+      ) : null}
       bannerActions={
         banner === 'over' ? (
           <div className="c3d-banner-actions">

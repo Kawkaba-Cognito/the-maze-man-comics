@@ -266,6 +266,76 @@ bubble placement, ARIA, Escape), `anchors.js` (`useDomAnchor` / `useCanvasAnchor
 (the ledger), and `scripts/<game>.js` (the step data, EN and AR on the SAME step
 so a mismatch is inexpressible). `npm run audit:coach` blocks the deploy.
 
+**THE DEPTH PASS (2026-09-03): 65 STEPS → 144, ON ONE SPINE.** Asked for by the
+owner ("longer, more instruction … well structured and strong"). The old lessons
+were not wrong, they were **compressed**: the construct — the counter-intuitive
+thing worth knowing — kept arriving as the third clause of a five-sentence
+paragraph, beside the controls and the sign-off. Every lesson is now eight steps
+carrying **one idea each**: orient · the goal · the object/control · *do it now* ·
+the construct · the named error · what it costs · how it grows. COACH-PLAN.md §0
+has the table and the reasoning.
+
+⚠️ **STEPS 7 AND 8 WERE MISSING FROM ALMOST EVERY GAME.** Nearly none said what a
+wrong answer costs, and nearly none said what changes as you climb — both left to
+trial and error, in an app whose posture is that reaching your limit is the
+*point*. Trivia now says outright that the run is meant to end where you cannot
+reach; mot says it keeps going until it finds where you start dropping them.
+
+⚠️ **GUIDED PRACTICE IS CAPPED BY `satisfiedFor`, NOT BY THE SCRIPT.** Only 6 of 18
+games pass that predicate to `DomCoach`, so only they (plus cancellation) can have
+a "do it now" step. The other eleven deliberately have none — an await step whose
+condition cannot fire strands the player with only Skip and Escape. Wiring those
+eleven is the obvious next increment.
+
+⚠️ **THE HAND'S SIZE COMES FROM ITS TARGET, AND A SCREEN BREAKPOINT CANNOT
+SUBSTITUTE.** `TutorialHand` was a flat 54px (44px under 420px) — measured once
+against a cancellation tile, then worn by all eighteen games. Measured across the
+platform, the hand/target width ratio ran **0.08 → 4.91**: story-grid's `nav` is
+an **11×11px** chevron under a 54px pointer, cancellation's tile is 57px (ratio
+0.95, with the hand's 87px body covering the tile *below*), mot's `board` is
+698×449. None of that is about the viewport — story-grid's chevron and
+cancellation's tile were on the *same* 1366px desktop. The anchor now carries
+`tw`/`th` and the hand takes `0.62 ×` the target, clamped 30–52px.
+
+⚠️ **A HAND ON A WHOLE-CONTAINER ANCHOR IS NOT POINTING AT ANYTHING.** `math-gates`
+aimed all three of its steps at `[data-coach="board"]`, so the hand never moved
+for the entire lesson. Steps about pace, cost or progression now use
+`point: null`, which parks the hand honestly instead of pretending.
+
+⚠️ **EVERY TRANSFORM PIVOTS ON THE FINGERTIP** (`transform-origin: 40.8% 1.2%`, the
+measured TIP_X/TIP_Y). The float was `translateY(-5px) rotate(-2deg)` about the
+image centre, walking the tip ~6px — a tenth of a cancellation tile, half of
+story-grid's chevron. Rotation about the tip contributes zero drift, so the float
+and tap became rotational rather than translational.
+
+⚠️ **THE BUBBLE MUST CLEAR THE HAND IN THE HAND'S OWN PIXELS.** It used
+`anchor.y + 14%`; 14% of mot's 449px board is 63px against a hand hanging 87px
+below its fingertip, and the bubble was measured sitting *on* the hand in mot and
+speed-match. A percentage of a container cannot clear a fixed-size sprite.
+
+⚠️ **KAWKAB DODGES, AND THE TEST IS LOGICAL, NOT PHYSICAL.** He was pinned to the
+inline-end corner on the reasoning that the hand favours the board's left/top —
+true of where scanning *starts*, false of where the hand *ends up*. He now flips
+corners when the action is on his side. The check is on the inline-end fraction
+mirrored under RTL: written in physical `x` it would send him **toward** the hand
+in one of the two languages. And it must consider the **bubble**, not just the
+hand — the first version tested the hand's `y`, measured clean, and collided with
+the bubble immediately, because a high anchor puts the bubble on the *below-hand*
+branch.
+
+⚠️ **`useDomAnchor` SEARCHES INSIDE THE BOX IT MEASURES AGAINST.** A step pointing
+at chrome resolved to null — no hand, no error, no warning. Pass
+`scope: 'document'` to search the page while still measuring against the
+container. Opt-in rather than a fallback: this app keeps every tab mounted under
+`display: none`, so a silently widening selector finds another screen's copy.
+
+⚠️ **AND ONE INSTRUCTION WAS SIMPLY WRONG ON DESKTOP.** Cancellation opened with
+"the shape you are hunting is **up in the bar**" and pointed at nothing. On a
+phone the HUD is a top bar; on a 1366px desktop it is a **left rail**. `PlayHud`
+now tags the goal chip `data-coach="goal"` and the copy no longer claims to know
+where it is. Same family as the string trap above: *the layout has two halves and
+the copy only checked one.*
+
 ⚠️ **THE `@coachN` SUFFIX IS THE WHOLE DEFENCE.** `shouldRunOnboarding` keys off
 the id in `mm_tutorial_prefs_v2`, and the retired rules carousel already wrote a
 flag under every game's PLAIN id. Register a coach as `'keep-track'` and it never
@@ -278,6 +348,37 @@ The gate enforces it.
 hard way: every other check passed for `mot` while its `<DomCoach>` mount had
 silently failed to land. Script perfect, id versioned, ledger agreed, lesson
 unreachable. Rule 4 of `audit:coach` now catches it.
+
+⚠️ **AND RULE 4 STILL CANNOT SEE REACHABILITY — THREE GAMES SHIPPED WITH NO
+TUTORIAL WHILE THE GATE SAID 18/18** (2026-09-04). It greps the game's source for
+a `<DomCoach>` mount and finds one; it cannot tell whether that mount is ever
+reached. **Word Maze** mounted the coach inside `round.mode === 'level'` while the
+effect that opens it requires `'free'` — mutually exclusive. **Spaceship**'s
+`TrainSwitchEngine` is referenced nowhere at all (eslint says unused) while
+ModeShell renders `CarPark3DProto`, whose call site listed props explicitly and
+dropped `p.coach`. **Math Gates**' `MathGatesEngine` is imported only by the
+Group War party game; the hub renders `MathGatesBoard2D`, which *received*
+`coach` via `{...p}` and never read it. All three fixed and verified live.
+
+No static detector was added, deliberately: "is the function referenced?" passes
+Math Gates, and "same component?" passes Word Maze. The honest check is to open
+the game and look for `.ct-coach-bubble` — do that by hand after touching any
+coach wiring. **Both dead engines are marked with a header rather than deleted**,
+because each still contains a correct-looking coach mount, which is precisely
+what misled the gate.
+
+⚠️ **NEVER MOUNT A COACH IN `canvasChildren`.** `.c3d-canvas` is
+`aria-hidden="true"`, and aria-hidden cannot be undone by a descendant. The
+bubble carries the WHOLE lesson (`role="dialog"` + `aria-live`; the hand and
+Kawkab are deliberately decorative), so mounting there gives a screen-reader user
+total silence for every step. Use `coachSlot` + `rootRef` — they render last
+inside `.c3d-root`, the same `inset: 0` rectangle, outside the hidden subtree.
+`paired-associates` is the reference.
+
+⚠️ **SIZE THE HAND FROM THE TARGET'S SMALLER DIMENSION**, not its width. The drawn
+hand is 1.6× as tall as it is wide, so width alone over-sizes it on anything wide
+and short — Spaceship's junction button is a stretched `1fr` grid cell (430×44
+with one junction), which put a 52px hand standing 84px over a 44px control.
 
 ⚠️ **ModeShell hides "How to play" when a game has no lesson.** It used to pass
 `onReplayTutorial` unconditionally — always a truthy `useCallback` — while

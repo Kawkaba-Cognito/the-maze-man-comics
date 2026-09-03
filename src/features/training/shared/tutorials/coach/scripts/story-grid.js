@@ -1,32 +1,41 @@
 /*
- * Story Time's coach script (COACH-PLAN.md Phase 2).
+ * Story Time's coach script.
  *
- * ⚠ THE CONSTRUCT IS EPISODIC MEMORY — WHAT HAPPENED, NOT WHAT IT LOOKED LIKE.
- * The questions are generated from the story's BEATS (see validate:storyq): who
- * was in a scene, what came next, which came first, how many scenes had company.
- * A player who studies the pictures is encoding the wrong thing entirely, and
- * they cannot discover that until the questions arrive, by which point the
- * scenes are gone and it is too late to have watched differently.
+ * ⚠ THE PLAYER HAS TO KNOW WHAT WILL BE ASKED, OR THEY ENCODE THE WRONG THING.
+ * The retrieval half (Kawkab Asks, 2026-08-17) asks about ORDER, WHO WAS THERE,
+ * WHAT CAME NEXT and HOW MANY scenes had company. None of that is about how a
+ * panel is drawn — and a player who spends the memorise phase studying the art
+ * has spent it on nothing. Telling them the shape of the questions in advance is
+ * not giving away the answers; it is the difference between a memory test and a
+ * guessing game.
  *
- * This is the clearest case in the whole plan of a lesson that has to arrive
- * BEFORE the measured behaviour: the encoding strategy is the thing being
- * measured, and it is unrecoverable once the watch phase ends.
+ * ⚠ AND THE FALSE-SCENE QUESTION MUST BE WARNED ABOUT. One question shows a
+ * scene that may never have happened. Recognising a plausible fabrication is
+ * genuinely hard, and a player ambushed by it reads their own false memory as
+ * carelessness.
  *
- * ⚠ IT ALSO WARNS ABOUT THE LURE. One question shows a scene that may never have
- * happened, which is a recognition test for false memory. Told about it, players
- * watch for it; ambushed by it, they read it as the game cheating.
+ * ── 2026-09-03: four steps became eight, on the spine in COACH-PLAN.md ──
+ * The old step 3 listed all the question kinds inside a sentence about the
+ * timer. They are now separated, because the question list is the single most
+ * useful thing in this lesson and it was riding as a subordinate clause.
  *
- * ⚠ NO AWAIT STEP: the watch phase advances by swipe or arrow, and the clock is
- * held while this is open, so there is no scored action to wait on.
+ * ⚠ NO AWAIT STEP: no `satisfiedFor` predicate. The lesson runs during the
+ * memorise phase, where the only action is paging through scenes.
  */
 export const STORY_GRID_COACH = {
-  id: 'story-grid@coach1',
+  id: 'story-grid@coach2',
   steps: [
     {
       point: '[data-coach="panel"]',
       awaitTap: false,
-      en: "I'm Dr Kawkab. This is a story, not a picture. Watch what HAPPENS in each scene — who is there, and what they do. The details of how it is drawn will not be asked about.",
-      ar: 'أنا د. كوكب. هذه قصة لا صورة. راقب ما يحدث في كل مشهد — من فيه، وماذا يفعلون. أما تفاصيل الرسم فلن تُسأل عنها.',
+      en: "I'm Dr Kawkab. This is a story, not a picture.",
+      ar: 'أنا د. كوكب. هذه قصّة لا صورة.',
+    },
+    {
+      point: '[data-coach="panel"]',
+      awaitTap: false,
+      en: 'Watch what HAPPENS in each scene — who is there, and what they do. How it is drawn will never be asked about, so do not spend your time on it.',
+      ar: 'راقب ما يحدث في كل مشهد — من فيه، وماذا يفعلون. أما كيف رُسم فلن يُسأل عنه أبداً، فلا تُنفق وقتك فيه.',
     },
     {
       point: '[data-coach="nav"]',
@@ -37,14 +46,36 @@ export const STORY_GRID_COACH = {
     {
       point: '[data-coach="timer"]',
       awaitTap: false,
-      en: 'This is your time with the whole story. When it runs out I will ask you what happened — the order of things, who was there, how many scenes had company.',
-      ar: 'وهذا وقتك مع القصة كلّها. فإذا نفد سألتك عمّا جرى — ترتيب الأحداث، ومن كان حاضراً، وكم مشهداً كان فيه رفيق.',
+      en: 'This is your time with the whole story. It is set so every scene gets a fair share — you are not being hurried.',
+      ar: 'وهذا وقتك مع القصّة كلّها. وقد قُدّر ليَنال كل مشهد نصيبه العادل — فلست مستعجَلاً.',
+    },
+    /*
+     * ⚠ THE ONE THAT MATTERS. Knowing the question shapes in advance changes
+     * what the player encodes, which is the entire lesson.
+     */
+    {
+      point: null,
+      awaitTap: false,
+      en: 'When it runs out I ask you what happened: the ORDER of things, WHO was in a scene, what came NEXT, and how many scenes had company.',
+      ar: 'فإذا نفد سألتك عمّا جرى: ترتيب الأحداث، ومن كان في المشهد، وما الذي جاء بعده، وكم مشهداً كان فيه رفيق.',
+    },
+    {
+      point: null,
+      awaitTap: false,
+      en: 'So watch it as a chain rather than as a set of pictures. "He did this, and THEN this" holds up under those questions; a pile of separate scenes does not.',
+      ar: 'فانظر إليها سلسلةً لا مجموعةَ صور. فقولك «فعل هذا، ثم هذا» يصمد أمام تلك الأسئلة؛ أمّا كومةٌ من مشاهد متفرّقة فلا تصمد.',
     },
     {
       point: '[data-coach="panel"]',
       awaitTap: false,
-      en: 'And be careful of one question: I will show you a scene and ask whether you saw it. Sometimes I made it up. Remembering something that never happened is easier than you would think. Your turn.',
-      ar: 'واحذر سؤالاً واحداً: سأعرض عليك مشهداً وأسألك أرأيته أم لا. وأحياناً أكون قد اختلقته. فتذكّر ما لم يحدث أسهل ممّا تظنّ. دورك.',
+      en: 'And be careful of one question in particular: I will show you a scene and ask whether you saw it. Sometimes I made it up.',
+      ar: 'واحذر سؤالاً واحداً بعينه: سأعرض عليك مشهداً وأسألك أرأيته أم لا. وأحياناً أكون قد اختلقته.',
+    },
+    {
+      point: null,
+      awaitTap: false,
+      en: 'Remembering something that never happened is easier than you would think, and it is not carelessness — a made-up scene that fits the story feels exactly like one you saw. Trust a scene you can place in the chain, not one that merely feels familiar. Your turn.',
+      ar: 'وتذكّر ما لم يحدث أسهل ممّا تظنّ، وليس ذلك تفريطاً — فالمشهد المختلَق الذي يوافق القصّة يبدو كالذي رأيته سواءً بسواء. فثِق بمشهدٍ تستطيع وضعه في السلسلة، لا بمشهدٍ يبدو مألوفاً فحسب. دورك.',
     },
   ],
 };

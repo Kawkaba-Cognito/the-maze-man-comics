@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import CoachLayer from '../../../../shared/tutorials/coach/CoachLayer';
-import { useCanvasAnchor, useAwaitAdvance } from '../../../../shared/tutorials/coach/anchors';
+import { useCanvasAnchor, useDomAnchor, useAwaitAdvance } from '../../../../shared/tutorials/coach/anchors';
 import { CANCEL_TASK_COACH } from '../../../../shared/tutorials/coach/scripts/cancel-task';
 
 /*
@@ -70,8 +70,24 @@ export default function CancelTaskCoach({
   const cellsRef = useRef(cells);
   cellsRef.current = cells;
 
+  /*
+   * ⚠ A STEP MAY POINT AT CHROME RATHER THAN AT A BOARD CELL. `point` is
+   * 'target' | 'decoy' | null as before, plus any `[data-coach="…"]` selector —
+   * which is what lets the opening step point at the goal chip in the HUD
+   * instead of describing where it is and being wrong on desktop.
+   *
+   * The two families are measured differently (a cell comes from the board's own
+   * draw geometry, a chip from the DOM) but both produce the same {x, y, tw, th}
+   * against the same box: the coach overlay is `inset: 0` in the board wrap, and
+   * `hostRef` below is that overlay, so the HUD's rect is expressed in exactly
+   * the fractions the hand is drawn with.
+   */
+  const domPoint = typeof step.point === 'string' && step.point.startsWith('[')
+    ? step.point
+    : null;
+
   useEffect(() => {
-    if (!step.point) { setCellIdx(null); return; }
+    if (!step.point || domPoint) { setCellIdx(null); return; }
     const list = cellsRef.current || [];
     /*
      * A decoy is any untapped NON-target. Picking the one nearest the middle of
@@ -93,11 +109,17 @@ export default function CancelTaskCoach({
     const mid = list.length / 2;
     candidates.sort((a, b) => Math.abs(a.i - mid) - Math.abs(b.i - mid));
     setCellIdx(candidates[0].i);
-  }, [stepIdx, step.point]);
+  }, [stepIdx, step.point, domPoint]);
 
   // Track the shape live: the pieces bob and the board reflows on resize, so a
   // position sampled once would slide off the target.
-  const anchor = useCanvasAnchor(boardApiRef, cellIdx);
+  const cellAnchor = useCanvasAnchor(boardApiRef, cellIdx);
+  const hostRef = useRef(null);
+  /* 'document' because the HUD is a SIBLING of this overlay, not a child — see
+     the scope note in anchors.js. Measured against `hostRef` either way, so the
+     fractions still address the box the hand is drawn in. */
+  const chromeAnchor = useDomAnchor(hostRef, domPoint, 'document');
+  const anchor = domPoint ? chromeAnchor : cellAnchor;
 
   // The player cleared the shape we pointed at → that is the lesson landed.
   const cleared = cellIdx != null && !!cells?.[cellIdx]?.tapped;
@@ -120,6 +142,7 @@ export default function CancelTaskCoach({
       speech={step.speech}
       anchor={anchor}
       tapSignal={tapSignal}
+      hostRef={hostRef}
       variant={step.point === 'decoy' ? 'avoid' : 'point'}
       awaiting={step.awaitTap}
       /* Derived from the CHOSEN cell, not the anchor: the rAF anchor is null on

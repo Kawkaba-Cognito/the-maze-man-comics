@@ -1,57 +1,74 @@
 /*
- * Block Escape's coach script (COACH-PLAN.md Phase 2).
+ * Block Escape's coach script.
  *
- * ⚠ THE CONSTRUCT IS PLANNING — LOOK-AHEAD BEFORE THE FIRST MOVE. This is a
- * sliding-block puzzle in the Rush Hour family, and the failure mode is
- * universal: players shove the blocker directly in front of the goal piece,
- * find it will not go, shove the next one, and end up in a jam they cannot read
- * a way out of. The pieces that need moving first are usually the ones NOT
- * touching the exit row.
+ * ⚠ THE CONSTRUCT IS PLANNING BEFORE ACTING, AND THE BOARD INVITES THE OPPOSITE.
+ * The instinctive first move is always the piece directly in front of the exit,
+ * and that is almost always the move that builds the jam. What this game
+ * measures is whether you trace the chain of blockers BEFORE touching anything —
+ * which costs nothing and feels like doing nothing, so players skip it.
  *
- * That single sentence is the difference between solving these and thrashing,
- * and it cannot be discovered by playing badly — thrashing produces a solved
- * board eventually on easy puzzles, which teaches the wrong lesson.
+ * ── 2026-09-03: four steps became eight, on the spine in COACH-PLAN.md ──
+ * The old step 2 carried the whole method AND the warning about the obvious
+ * move in one paragraph. The method is now demonstrated as a procedure the
+ * player can actually follow ("find what blocks the exit, then what blocks
+ * that") rather than described in passing.
  *
- * ⚠ AND THE CLOCK MUST BE PUT IN ITS PLACE. Survival puts a per-puzzle timer on
- * a game whose correct play is to sit still and look. A player who does not know
- * the timer only costs a life — not the run — plays it as a speed game, which is
- * precisely the behaviour that loses.
- *
- * ⚠ NO AWAIT STEP: an await here would have to wait for a MOVE, and a beginner
- * staring at a jam is exactly who this lesson is for. Stranding them behind a
- * required move, with no Next button, is the reachability trap DomCoach warns
- * about.
+ * ⚠ NO AWAIT STEP: no `satisfiedFor` predicate on this game.
  */
 export const RUSH_HOUR_COACH = {
-  id: 'rush-hour@coach1',
+  id: 'rush-hour@coach2',
   steps: [
     {
       point: '[data-coach="board"]',
       awaitTap: false,
-      en: "I'm Dr Kawkab. One piece has to reach the exit. Every piece slides only along its own length — the long ones never turn, and nothing jumps.",
-      ar: 'أنا د. كوكب. قطعة واحدة عليها أن تبلغ المخرج. وكل قطعة تنزلق في اتجاه طولها وحده — فالطويلة لا تستدير، ولا شيء يقفز فوق شيء.',
+      en: "I'm Dr Kawkab. One piece has to reach the exit. Only that one — the rest are in the way.",
+      ar: 'أنا د. كوكب. قطعة واحدة عليها أن تبلغ المخرج. هي وحدها — وسائرها في الطريق.',
+    },
+    {
+      point: '[data-coach="board"]',
+      awaitTap: false,
+      en: 'Every piece slides only along its own length. The long ones never turn, and nothing ever jumps over anything.',
+      ar: 'وكل قطعة تنزلق في اتجاه طولها وحده. فالطويلة لا تستدير، ولا شيء يقفز فوق شيء أبداً.',
+    },
+    {
+      point: '[data-coach="nudge"]',
+      awaitTap: false,
+      en: 'Drag a piece, or select it and use these arrows — whichever suits you. Both do exactly the same thing.',
+      ar: 'اسحب القطعة، أو اخترها واستعمل هذه الأسهم — أيّهما شئت. وكلاهما يؤدّي الغرض نفسه تماماً.',
     },
     /*
-     * ⚠ THE ONE THAT MATTERS. Stated as a instruction to NOT move, because the
+     * ⚠ THE ONE THAT MATTERS. Stated as an instruction to NOT move, because the
      * instinctive first move is always the blocker in front of the goal.
      */
     {
       point: '[data-coach="board"]',
       awaitTap: false,
-      en: 'Before you touch anything: find what is blocking the way out, then find what is blocking THAT. The piece you must move first is usually nowhere near the exit — and shoving the obvious blocker first is what builds the jam.',
-      ar: 'وقبل أن تلمس شيئاً: اعرف ما يسدّ الطريق إلى الخارج، ثم اعرف ما يسدّ عليه هو. والقطعة التي يجب تحريكها أوّلاً غالباً ما تكون بعيدة عن المخرج — ودفع الساتر الظاهر أوّلاً هو ما يصنع الانحشار.',
+      en: 'Now the habit worth having, and it happens before you touch anything. Find what is blocking the way out. Then find what is blocking THAT. Keep going until you reach a piece that can actually move.',
+      ar: 'والآن العادة الجديرة بأن تملكها، وهي تسبق أن تلمس شيئاً. اعرف ما يسدّ الطريق إلى الخارج. ثم اعرف ما يسدّ عليه هو. وامضِ كذلك حتى تبلغ قطعة تستطيع التحرّك فعلاً.',
     },
     {
-      point: '[data-coach="nudge"]',
+      point: '[data-coach="board"]',
       awaitTap: false,
-      en: 'Drag a piece, or select it and use these arrows — whichever suits you. Both do the same thing.',
-      ar: 'اسحب القطعة، أو اخترها واستعمل هذه الأسهم — أيّهما شئت. وكلاهما يؤدّي الغرض نفسه.',
+      en: 'That last piece is your first move — and it is usually nowhere near the exit. Shoving the obvious blocker first is what builds the jam you then cannot undo.',
+      ar: 'وتلك القطعة الأخيرة هي حركتك الأولى — وهي غالباً بعيدة عن المخرج. ودفعُ الساتر الظاهر أوّلاً هو ما يصنع الانحشار الذي لا تستطيع فكّه بعدُ.',
     },
     {
       point: '[data-coach="time"]',
       awaitTap: false,
-      en: 'This clock costs you a life if it runs out, not the run. So think first — a minute spent looking beats six moves that make it worse. Your turn.',
-      ar: 'وهذه الساعة إن نفدت كلّفتك حياةً لا المحاولة كلّها. ففكّر أوّلاً — فدقيقة في النظر خير من ستّ حركات تزيد الأمر سوءاً. دورك.',
+      en: 'This clock costs you a life if it runs out, not the run. So there is room to sit and look.',
+      ar: 'وهذه الساعة إن نفدت كلّفتك حياةً لا المحاولة كلّها. فثمّة متّسع لأن تجلس وتنظر.',
+    },
+    {
+      point: null,
+      awaitTap: false,
+      en: 'And looking is cheaper than it feels. A minute spent tracing the chain beats six moves that make the board worse — moves cannot be taken back.',
+      ar: 'والنظر أقلّ كلفةً ممّا يبدو. فدقيقةٌ في تتبّع السلسلة خيرٌ من ستّ حركات تزيد اللوح سوءاً — فالحركات لا تُستردّ.',
+    },
+    {
+      point: null,
+      awaitTap: false,
+      en: 'It grows by adding pieces and by making that chain longer, so the boards do not get faster — they get deeper. If you are stuck, you have almost always mis-traced the chain rather than run out of ideas. Your turn.',
+      ar: 'وهي تشتدّ بزيادة القطع وبإطالة تلك السلسلة، فاللوحات لا تصير أسرع — بل أعمق. وإن استعصى عليك الأمر، فأنت في الغالب أخطأت تتبّع السلسلة لا أنك نفدت من الحيل. دورك.',
     },
   ],
 };
