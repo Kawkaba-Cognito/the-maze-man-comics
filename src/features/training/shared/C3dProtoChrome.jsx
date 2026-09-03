@@ -90,6 +90,19 @@ export default function C3dProtoChrome({
   /* Rendered INSIDE the canvas box. The 3D scenes appended their WebGL canvas
      to this div imperatively; the 2D boards pass their <canvas> here instead. */
   canvasChildren,
+  /*
+   * The live-board coach (COACH-PLAN.md). `.c3d-root` is `position: fixed;
+   * inset: 0`, which makes it the only correct box to measure a 3D proto's
+   * anchors against — a wrapper the caller puts around this component would
+   * measure 0×0, because everything here is out of flow.
+   *
+   * ⚠ `coachSlot` RENDERS LAST, INSIDE THE ROOT. It must sit above the pause
+   * modal's siblings in paint order and inside the element `rootRef` hands back,
+   * or the hand's {x, y} fractions address a different rectangle than the
+   * anchors were measured in.
+   */
+  rootRef,
+  coachSlot,
   children,
 }) {
   const hintText = textOf(hint, isAr);
@@ -114,6 +127,7 @@ export default function C3dProtoChrome({
     <div
       className={`c3d-root${rootClassName ? ` ${rootClassName}` : ''}`}
       dir={isAr ? 'rtl' : 'ltr'}
+      ref={rootRef}
     >
       <div className="c3d-canvas" ref={canvasEl} aria-hidden="true">
         {canvasChildren}
@@ -164,6 +178,7 @@ export default function C3dProtoChrome({
           {bannerActions}
         </div>
       ) : null}
+      {coachSlot}
     </div>
   );
 }

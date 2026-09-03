@@ -17,6 +17,8 @@ import { clamp, lerp } from '../../../../../../lib/math';
 // The arena. 2D since the 3D scene was retired — this game's look is the
 // platform palette's reference, so the 2D board reproduces it directly.
 import MotBoard2D from './MotBoard2D';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { MOT_COACH } from '../../../../shared/tutorials/coach/scripts/mot';
 import './mot.css';
 
 /*
@@ -114,7 +116,7 @@ export function freeConfig(r) {
  * tracking duration 3s -> 9s across the curve. Both produce close encounters,
  * which is what actually causes tracking errors (Franconeri 2008; Feria 2012).
  */
-export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
+export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, coach }) {
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 6) : 0;
   const wrapRef = useRef(null);
@@ -140,6 +142,7 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
   const encountersRef = useRef(0);
   const encActiveRef = useRef(new Set());
   const staircaseRef = useRef(null); // assessment speed-threshold staircase
+  const startRoundRef = useRef(null);
 
   const finishLog = useCallback((extra) => {
     const session = trialLogRef.current?.finish(extra) || null;
@@ -151,11 +154,35 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
   const [runId, setRunId] = useState(0);
   const [over, setOver] = useState(null);
 
+  /*
+   * ── The live-board coach (COACH-PLAN.md Phase 3) ──
+   * Survival only, and it runs BEFORE the first cue: this is a phase machine on
+   * timers, so a lesson over a live round would have dots flashing behind the
+   * bubble. Nothing runs while it is open.
+   */
+  const coachRootRef = useRef(null);
+  const coachOpen = coach?.open || false;
+  const coachHoldRef = useRef(Boolean(coach?.enabled && coach?.armed && mode === 'free'));
+
   const [phase, setPhase] = useState('cue');
   const [score, setScore] = useState(0);
   const [picksLeft, setPicksLeft] = useState(0);
   const [hudStats, setHudStats] = useState([]);
   const pause = useGamePause({ isAr, playSfx, onQuit: onExit });
+
+  // Open the lesson at the top of a Survival run, before the first cue flashes.
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free') return;
+    coach.begin();
+  }, [coach, mode]);
+
+  /* Release the round machine. One place, so finishing, skipping and Escape all
+     start the game identically. */
+  const endCoach = useCallback(() => {
+    coachHoldRef.current = false;
+    coach?.end();
+    startRoundRef.current?.();
+  }, [coach]);
   const [msg, setMsg] = useState('');
 
   const setPhaseBoth = useCallback((p) => { phaseRef.current = p; setPhase(p); }, []);
@@ -282,6 +309,7 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
     }
   }, [mode, level, isAr, ppTrials]);
 
+  // Published for the coach, which starts the first round when the lesson ends.
   const startRound = useCallback(() => {
     fit();
     const cfg = nextParams(); cfgRef.current = cfg;
@@ -382,6 +410,9 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
       }, cfg.trackMs);
     }, cueMs);
   }, [fit, isAr, mode, nextParams, setPhaseBoth, updateHud, rng]);
+  /* Published so the coach can start the first round when the lesson ends —
+     `endCoach` is declared above `startRound`, so it cannot call it directly. */
+  startRoundRef.current = startRound;
 
   const evaluate = useCallback(() => {
     const cfg = cfgRef.current;
@@ -497,7 +528,10 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
     // Fresh trial log per run (a survival run, a level attempt, a pass-n-play set).
     trialLogRef.current?.discard();
     trialLogRef.current = createTrialLog({ game: 'mot', mode, meta: { level } });
-    startRound();
+    /* Held while the lesson is up: this is a phase machine on timers, so the
+       dots would be flashing behind the bubble while it is being read about.
+       The coach's own exit starts the first round instead. */
+    if (!coachHoldRef.current) startRound();
     return () => {
       window.removeEventListener('resize', onResize);
       cancelAnimationFrame(rafRef.current);
@@ -594,11 +628,11 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
         playSfx={playSfx}
       />
       {pause.modal}
-      <div className="ct-mot-workspace">
-        <TrainingStatusStrip className="ct-mot-instruction" meta={statusMeta}>
+      <div className="ct-mot-workspace" ref={coachRootRef}>
+        <TrainingStatusStrip className="ct-mot-instruction" meta={statusMeta} data-coach="instruction">
           {msg}
         </TrainingStatusStrip>
-        <div ref={wrapRef} className="ct-mot-play">
+        <div ref={wrapRef} className="ct-mot-play" data-coach="board">
           <MotBoard2D
             dotsRef={dotsRef}
             fieldRef={fieldRef}
@@ -609,6 +643,16 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
             isAr={isAr}
           />
         </div>
+        {coachOpen && (
+          <DomCoach
+            isAr={isAr}
+            playSfx={playSfx}
+            stageRef={coachRootRef}
+            pack={MOT_COACH}
+            onFinish={endCoach}
+            onSkip={endCoach}
+          />
+        )}
       </div>
     </div>
   );

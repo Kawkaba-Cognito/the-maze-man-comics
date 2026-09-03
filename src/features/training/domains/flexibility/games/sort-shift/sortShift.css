@@ -16,6 +16,8 @@
 }
 
 .ct-ss-stage {
+  /* Hosts the coach overlay (`position: absolute; inset: 0`). */
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;

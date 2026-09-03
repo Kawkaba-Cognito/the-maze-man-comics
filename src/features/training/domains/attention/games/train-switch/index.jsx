@@ -5,6 +5,8 @@ import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import { startCanvasLoop } from '../../../../shared/canvasLoop';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { TRAIN_SWITCH_COACH } from '../../../../shared/tutorials/coach/scripts/train-switch';
 import { assetUrl } from '../../../../../../lib/assetUrl';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import { planetIconUrl } from '../../../../../../lib/planetIcons';
@@ -106,7 +108,13 @@ export function generate(R, C, desired, rng, colorCount = 6) {
   return { root, all, forks, stations };
 }
 
-function TrainSwitchEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun }) {
+function TrainSwitchEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, coach }) {
+  /*
+   * The live-board coach (COACH-PLAN.md Phase 3). Survival only. The whole
+   * simulation is held while the lesson is open — see the frame guard below.
+   */
+  const coachOpen = coach?.open || false;
+  const coachOpenRef = coach?.openRef || { current: false };
   const ppTrains = mode === 'passplay' ? (attempt?.trials || PP_TRAINS) : 0;
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
@@ -119,6 +127,17 @@ function TrainSwitchEngine({ mode, level, seed, attempt, onResult, onExit, isAr,
   const [over, setOver] = useState(null);
   const [hud, setHud] = useState({ routed: 0, lives: 0, wave: 1 });
   const [msg, setMsg] = useState('');
+
+  // Open the lesson at the top of a Survival run; the board is up immediately.
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free' || over) return;
+    coach.begin();
+  }, [coach, mode, over]);
+
+  // Never strand it on a game-over screen — it would freeze the simulation.
+  useEffect(() => {
+    if (coachOpen && over) coach?.end();
+  }, [coachOpen, over, coach]);
 
   const cfg = useMemo(() => {
     if (mode === 'levels') return levelCfg(level);
@@ -286,6 +305,10 @@ function TrainSwitchEngine({ mode, level, seed, attempt, onResult, onExit, isAr,
 
     let hudCache = { routed: -1, lives: -1, wave: -1 };
     const frame = (dt, now) => {
+      /* Hold everything while the lesson is up: no spawns, no movement, no
+         misses. A bare return keeps the rAF loop alive — returning false would
+         STOP it permanently (see shared/canvasLoop.js). */
+      if (coachOpenRef.current) return;
       if (g.bannerT > 0) g.bannerT -= dt; // wave banner countdown
       const speed = g.cps * g.cell; // px/s (escalation now comes from waves, not a ramp)
 
@@ -509,9 +532,22 @@ function TrainSwitchEngine({ mode, level, seed, attempt, onResult, onExit, isAr,
         <div className="ct-training-chrome-spacer" aria-hidden="true" />
       </header>
 
+      {/* `wrapRef` doubles as the coach's stage: it is the same DOM node, it is
+          `position: relative`, and the canvas sits inside it — so the anchors
+          and the pointing hand address one box. */}
       <div ref={wrapRef} style={S.play}>
+        {coachOpen && (
+          <DomCoach
+            isAr={isAr}
+            playSfx={playSfx}
+            stageRef={wrapRef}
+            pack={TRAIN_SWITCH_COACH}
+            onFinish={() => coach?.end()}
+            onSkip={() => coach?.end()}
+          />
+        )}
         {msg && !over && <div style={S.msg}>{msg}</div>}
-        <div ref={boardRef} style={S.board}>
+        <div ref={boardRef} style={S.board} data-coach="board">
           <canvas ref={canvasRef} onPointerDown={(e) => { e.preventDefault(); tapAt(e.clientX, e.clientY); }} style={{ display: 'block', touchAction: 'none' }} />
         </div>
         {over && (

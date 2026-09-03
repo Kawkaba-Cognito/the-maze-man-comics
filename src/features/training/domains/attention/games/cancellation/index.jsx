@@ -59,8 +59,9 @@ import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
 import { createTrialLog } from '../../../../shared/trialLog';
-import { useTrainingTutorial } from '../../../../shared/tutorials/useTrainingTutorial';
 import { TUTORIAL_UI } from '../../../../shared/tutorials/tutorialContent';
+import { useCoachRun } from '../../../../shared/tutorials/coach/useCoachRun';
+import { coachIdFor } from '../../../../shared/tutorials/coach/coachRegistry';
 import CancelTaskCoach from './CancelTaskCoach';
 import {
   prepareAssessmentTrial,
@@ -616,61 +617,56 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   // than in a modal over a mock grid: Dr Kawkab and the pointing hand sit on the
   // real board and the player clears a real target. `coachOpen` holds the round
   // clock while that happens — see the timer effect — so reading costs no time.
-  /*
-   * ⚠ VERSIONED ON PURPOSE — `'cancel-task@coach1'`, not `'cancel-task'`.
-   *
-   * `shouldRunOnboarding` keys off this id in `mm_tutorial_prefs_v2`, and the
-   * RETIRED three-slide carousel wrote that same `'cancel-task'` flag. So every
-   * player who had opened this game before the 2026-08-28 rewrite already had
-   * `{skipped:true}` or `{completed:true}` stored — meaning `coachArmed` began
-   * `false` and the new lesson (the one that teaches decoys, the thing this
-   * game actually measures) would never auto-run for them. It would have
-   * reached fresh installs only, silently, with no gate able to see it.
-   *
-   * Bumping the suffix gives the new lesson its own flag so it runs once for
-   * everybody. Bump it again if the lesson materially changes.
-   *
-   * The id is ALSO the key for `getTrainingDiagramSteps`, which returns [] for
-   * an unknown id — harmless here, because this game never renders the rules
-   * carousel (it teaches on the live board) and uses only `shouldRun`/`skipAll`
-   * from this hook. `getTrainingTrial` is guarded for unknown ids too.
-   */
-  const tutorial = useTrainingTutorial('cancel-task@coach1', isAr);
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
   const tutReplayHint = tutLabels.replayTutorial;
-  // `armed` = a coach run is owed (first ever visit, or the player asked to
-  // replay). It becomes `open` once a Survival round is actually on screen.
-  const [coachOpen, setCoachOpen] = useState(false);
-  /* Read inside `onCellTap`, which is a stable callback and would otherwise
-     close over a stale `coachOpen`. */
-  const coachOpenRef = useRef(false);
-  useEffect(() => { coachOpenRef.current = coachOpen; }, [coachOpen]);
-  const [coachArmed, setCoachArmed] = useState(() => tutorial.onboarding.shouldRun);
   const boardApiRef = useRef(null);
   const startFreeModeRef = useRef(null);
-  const markTutorialDone = tutorial.onboarding.skipAll;
 
-  const openTutorial = useCallback(() => {
-    // The hub's "?" replays the lesson — but the lesson now lives on a live
-    // board, so arm it and drop straight into Survival.
-    setCoachArmed(true);
-    startFreeModeRef.current?.();
-  }, []);
+  /*
+   * The arm/open/persist machinery is `useCoachRun` (COACH-PLAN.md Phase 0), so
+   * the other seventeen games get it from ModeShell instead of copying this.
+   * `armed` = a run is owed (first ever visit, or the player pressed "How to
+   * play"); it becomes `open` once a Survival round is actually on screen.
+   *
+   * ⚠ THE ID IS VERSIONED — `'cancel-task@coach1'`, from coachRegistry.js, never
+   * the plain game key. `shouldRunOnboarding` keys off it in
+   * `mm_tutorial_prefs_v2`, and the RETIRED three-slide carousel already wrote a
+   * `'cancel-task'` flag: every player who opened this game before the
+   * 2026-08-28 rewrite had `{skipped:true}` or `{completed:true}` stored, so
+   * under the plain id `armed` would begin `false` and the new lesson — the one
+   * that teaches decoys, the thing this game actually measures — would never
+   * auto-run for them. Fresh installs only, silently. Bump the suffix again if
+   * the lesson materially changes.
+   */
+  const coach = useCoachRun(coachIdFor('cancel-task'), {
+    onReplay: () => {
+      // The hub's "?" replays the lesson — but the lesson lives on a live
+      // board, so arming it has to drop straight into Survival.
+      startFreeModeRef.current?.();
+    },
+  });
+  const coachOpen = coach.open;
+  const coachArmed = coach.armed;
+  /* Read inside `onCellTap`, which is a stable callback and would otherwise
+     close over a stale `coachOpen`. */
+  const coachOpenRef = coach.openRef;
+  const openTutorial = coach.replay;
+  const { end: coachRunEnd } = coach;
 
   const endCoach = useCallback(() => {
-    setCoachOpen(false);
-    setCoachArmed(false);
-    markTutorialDone?.();
-    /*
-     * ⚠ Hand the round back. While the coach is open the auto-win is suppressed
-     * (see `onCellTap`), so a player who cleared every target during the lesson
-     * would otherwise be left sitting on an empty board with a running clock
-     * and nothing to tap. Resolve it here, once, on the way out.
-     */
-    const cleared = (cellsRef.current || []).length > 0
-      && !cellsRef.current.some((cell) => cell?.isT && !cell.tapped);
-    if (cleared) endRoundRef.current?.(true);
-  }, [markTutorialDone]);
+    coachRunEnd(() => {
+      /*
+       * ⚠ Hand the round back. While the coach is open the auto-win is
+       * suppressed (see `onCellTap`), so a player who cleared every target
+       * during the lesson would otherwise be left sitting on an empty board with
+       * a running clock and nothing to tap. Resolve it here, once, on the way
+       * out.
+       */
+      const cleared = (cellsRef.current || []).length > 0
+        && !cellsRef.current.some((cell) => cell?.isT && !cell.tapped);
+      if (cleared) endRoundRef.current?.(true);
+    });
+  }, [coachRunEnd]);
 
   useEffect(() => () => {
   }, []);
@@ -1313,8 +1309,8 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   useEffect(() => {
     if (!coachArmed || coachOpen) return;
     if (round?.mode !== 'free' || playStep !== 'running' || cdShow || pauseOpen) return;
-    setCoachOpen(true);
-  }, [coachArmed, coachOpen, round, playStep, cdShow, pauseOpen]);
+    coach.begin();
+  }, [coachArmed, coachOpen, round, playStep, cdShow, pauseOpen, coach]);
 
   // Never strand the coach on a screen that has no board (round ended, quit,
   // paused out) — it would hold the clock forever. Closing this way also ends
@@ -1617,7 +1613,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         return;
       }
     }
-  }, [playStep, pauseOpen, cdShow, playSfx, juice]);
+    /* `coachOpenRef` is a ref and never changes identity, but it now arrives
+       from `useCoachRun` rather than a local `useRef`, so the lint rule can no
+       longer tell. Listed to keep the warning off; it does not re-create this
+       callback. */
+  }, [playStep, pauseOpen, cdShow, playSfx, juice, coachOpenRef]);
 
   const onHudPause = useCallback(() => {
     if (playStep !== 'running') return;

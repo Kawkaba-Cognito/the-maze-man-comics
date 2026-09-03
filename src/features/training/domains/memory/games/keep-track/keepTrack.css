@@ -48,6 +48,11 @@
   display: grid;
   place-items: center;
   padding: clamp(12px, 4vw, 28px);
+  /* Hosts the coach overlay, which is `position: absolute; inset: 0`. Without
+     this it would escape to the nearest positioned ancestor and every {x, y}
+     fraction the hand is given would address a different box than the one the
+     anchors were measured in. */
+  position: relative;
 }
 
 .ct-kt-panel {

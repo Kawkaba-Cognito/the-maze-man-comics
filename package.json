@@ -51,7 +51,8 @@
     "review:ack": "node scripts/review-board.mjs --ack",
     "validate:wordmaze": "node scripts/validate-wordmaze.mjs",
     "audit:pacing": "node scripts/audit-pacing.mjs",
-    "audit:gamekeys": "node scripts/audit-game-keys.mjs"
+    "audit:gamekeys": "node scripts/audit-game-keys.mjs",
+    "audit:coach": "node scripts/audit-coach.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^7.6.8",

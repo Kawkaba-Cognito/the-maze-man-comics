@@ -9,6 +9,8 @@ import { LADDER_LEVELS as TRIVIA_LADDER_LEVELS, levelCfg as triviaLevelCfg } fro
 import { generateFor } from './procedural';
 
 import KawkabSprite from '../../../../shared/KawkabSprite';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { TRIVIA_COACH } from '../../../../shared/tutorials/coach/scripts/trivia';
 
 /*
  * Trivia — general-knowledge quiz with a STAIRCASE. 24 categories of graded
@@ -190,7 +192,7 @@ const T = {
   },
 };
 
-export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
+export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false, coach }) {
   const t = isAr ? T.ar : T.en;
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const persist = mode !== 'passplay'; // pass n play must stay seed-deterministic
@@ -212,6 +214,18 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
   const [picked, setPicked] = useState(null);
   const [pickCats, setPickCats] = useState(null); // survival topic choice
   const [over, setOver] = useState(null);
+
+  /*
+   * ── The live-board coach (COACH-PLAN.md Phase 1) ──
+   * Survival only. NOTHING NEEDS GUARDING HERE, which is unusual enough to say
+   * out loud: Trivia has no timer of any kind (it is a staircase, not a race —
+   * see the PlayHud comment below), so the only consequence in reach is a life,
+   * and the player has three. The taught answer is a real scored answer, which
+   * is the same choice cancellation makes. Do not assume the next game is this
+   * cheap.
+   */
+  const stageRef = useRef(null);
+  const coachOpen = coach?.open || false;
 
   const tiersFor = useCallback(() => {
     if (mode === 'levels') return triviaLevelCfg(level).sets;
@@ -316,7 +330,21 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
         { value: scoreRef.current, label: isAr ? 'نقاط' : 'score' },
       ];
 
-  const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
+  /* `position: relative` hosts the coach overlay, which is `inset: 0` — see
+     DomCoach. The `data-coach` attributes below are its pointing contract. */
+  const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot, position: 'relative' } : { ...S.root, position: 'relative' };
+
+  // Open the lesson once a Survival question is actually on screen.
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free') return;
+    if (!q || over || pickCats) return;
+    coach.begin();
+  }, [coach, mode, q, over, pickCats]);
+
+  // Never strand it on a screen with no question.
+  useEffect(() => {
+    if (coachOpen && (over || pickCats || !q)) coach?.end();
+  }, [coachOpen, over, pickCats, q, coach]);
   const embedCls = cosmos ? 'c3d-embed-root' : undefined;
 
   if (over && mode === 'free') {
@@ -393,7 +421,7 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
   const outOfLives = mistakesRef.current >= LIVES;
 
   return (
-    <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
+    <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} ref={stageRef}>
       <style>{STAIR_CSS}</style>
       
       {/* The standard header + pause. No clock: Trivia is untimed, so a frozen
@@ -414,7 +442,7 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
       {pause.modal}
 
       {/* staircase + lives + topic */}
-      <div style={S.stairWrap}>
+      <div style={S.stairWrap} data-coach="stairs">
         <div style={S.livesRow}>
           <span style={S.topicChip}>{category.emoji} {isAr ? category.ar : category.en}</span>
           <span style={S.hearts} aria-label={`${LIVES - mistakes} lives`}>
@@ -429,10 +457,10 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
         <div style={S.qWrap}>
           <div style={{ ...S.feedback, color: wasCorrect ? 'var(--success)' : 'var(--danger)' }}>{feedback || t.step(Math.min(step + 1, steps), steps)}</div>
           <div style={S.qCard}>
-            <span style={S.qStars}>{'★'.repeat(q.q.d)}</span>
+            <span style={S.qStars} data-coach="stars">{'★'.repeat(q.q.d)}</span>
             <span style={S.qText}>{isAr ? q.q.ar : q.q.en}</span>
           </div>
-          <div style={S.opts}>
+          <div style={S.opts} data-coach="options">
             {options.map((o, i) => {
               const isPicked = picked === i;
               const showCorrect = answered && o.correct;
@@ -462,6 +490,20 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
             </div>
           )}
         </div>
+      )}
+
+      {coachOpen && q && (
+        <DomCoach
+          isAr={isAr}
+          playSfx={playSfx}
+          stageRef={stageRef}
+          pack={TRIVIA_COACH}
+          /* The question having been ANSWERED, not a button press — the options
+             are disabled once `answered`, so this cannot fire twice. */
+          satisfiedFor={() => answered}
+          onFinish={() => coach?.end()}
+          onSkip={() => coach?.end()}
+        />
       )}
     </div>
   );

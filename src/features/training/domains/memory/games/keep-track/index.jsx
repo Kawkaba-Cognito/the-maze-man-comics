@@ -10,6 +10,8 @@ import { assetUrl } from '../../../../../../lib/assetUrl';
 import {
   CATEGORIES, LADDER_LEVELS, levelCfg, survivalCfg, buildRound, isCorrect,
 } from './data';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { KEEP_TRACK_COACH } from '../../../../shared/tutorials/coach/scripts/keep-track';
 import './keepTrack.css';
 
 /*
@@ -111,7 +113,7 @@ function wordArt(category, word, lang) {
 /* ── The engine: one round is watch → recall ──────────────────────────────── */
 function KeepTrackEngine({
   // No `diff` — this game is on the ladder, so every mode is addressed by level.
-  mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardFreeRun,
+  mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardFreeRun, coach,
 }) {
   const t = isAr ? UI.ar : UI.en;
   const lang = isAr ? 'ar' : 'en';
@@ -129,6 +131,28 @@ function KeepTrackEngine({
   const timerRef = useRef(null);
   const pausedRef = useRef(false);
   useEffect(() => { pausedRef.current = paused; }, [paused]);
+
+  /*
+   * ── The live-board coach (COACH-PLAN.md Phase 1) ──
+   * Survival only, matching cancellation: Levels and Pass n Play are untouched.
+   * `stageRef` is the box every `data-coach` anchor is measured against, so the
+   * overlay and the fractions it is given address the same rectangle.
+   */
+  const stageRef = useRef(null);
+  const coachOpen = coach?.open || false;
+  useEffect(() => {
+    if (!coach?.armed || coach.open) return;
+    if (mode !== 'free' || paused) return;
+    if (step !== 'brief') return;
+    coach.begin();
+  }, [coach, mode, step, paused]);
+
+  /* Never strand the lesson on a screen it has nothing to point at — that would
+     hold the stream forever. Recall and feedback are past the lesson. */
+  useEffect(() => {
+    if (!coachOpen) return;
+    if (step !== 'brief' && step !== 'stream') coach?.end();
+  }, [coachOpen, step, coach]);
 
   const cfg = useMemo(() => {
     if (mode === 'free') return survivalCfg(stage);
@@ -168,8 +192,12 @@ function KeepTrackEngine({
   }, []);
 
   // Advance the stream on a timer; pausing genuinely stops it.
+  /* ⚠ The coach holds it too. The lesson points at the word currently on
+     screen, so letting the stream keep arriving would teach over a moving board
+     AND spend the round the player is being taught on. Same reasoning as
+     cancellation holding its round clock. */
   useEffect(() => {
-    if (step !== 'stream') return undefined;
+    if (step !== 'stream' || coachOpen) return undefined;
     if (idx >= round.stream.length) {
       setStep('recall');
       return undefined;
@@ -179,15 +207,15 @@ function KeepTrackEngine({
       setIdx((i) => i + 1);
     }, cfg.rate);
     return () => clearTimeout(timerRef.current);
-  }, [step, idx, round.stream.length, cfg.rate]);
+  }, [step, idx, round.stream.length, cfg.rate, coachOpen]);
 
-  // Re-arm the tick that was swallowed while paused.
+  // Re-arm the tick that was swallowed while paused (or held by the coach).
   useEffect(() => {
-    if (step !== 'stream' || paused) return undefined;
+    if (step !== 'stream' || paused || coachOpen) return undefined;
     if (timerRef.current) return undefined;
     timerRef.current = setTimeout(() => setIdx((i) => i + 1), cfg.rate);
     return () => clearTimeout(timerRef.current);
-  }, [paused, step, cfg.rate]);
+  }, [paused, step, cfg.rate, coachOpen]);
 
   const startStream = useCallback(() => {
     playSfx?.('click');
@@ -294,17 +322,20 @@ function KeepTrackEngine({
         pauseAriaLabel={t.paused}
       />
 
-      <div className="ct-kt-stage">
+      {/* `data-coach` attributes are the coach's entire pointing contract — see
+          KeepTrackCoach and shared/tutorials/coach/anchors.js. They are inert
+          for every player who is not in a lesson. */}
+      <div className="ct-kt-stage" ref={stageRef}>
         {step === 'brief' && (
           <div className="ct-kt-panel">
             <h2 className="ct-kt-h">{t.watchThese}</h2>
             <p className="ct-kt-sub">{t.watchSub(round.targets.length)}</p>
-            <div className="ct-kt-cats">
+            <div className="ct-kt-cats" data-coach="cats">
               {round.targets.map((c) => (
                 <span key={c.id} className="ct-kt-cat">{c.name[lang]}</span>
               ))}
             </div>
-            <button type="button" className="ct-training-btn ct-training-btn--pri" onClick={startStream}>
+            <button type="button" className="ct-training-btn ct-training-btn--pri" onClick={startStream} data-coach="begin">
               {t.begin}
             </button>
           </div>
@@ -315,6 +346,7 @@ function KeepTrackEngine({
             <div
               className={`ct-kt-stimulus${currentTracked ? ' is-tracked' : ' is-distractor'}`}
               key={idx}
+              data-coach="word"
               role="status"
               aria-live="polite"
               aria-atomic="true"
@@ -343,7 +375,7 @@ function KeepTrackEngine({
                 </div>
               </div>
             </div>
-            <div className="ct-kt-track">
+            <div className="ct-kt-track" data-coach="track">
               {round.targets.map((c) => (
                 <span
                   key={c.id}
@@ -413,6 +445,21 @@ function KeepTrackEngine({
           </div>
         )}
 
+        {coachOpen && (
+          <DomCoach
+            isAr={isAr}
+            playSfx={playSfx}
+            stageRef={stageRef}
+            pack={KEEP_TRACK_COACH}
+            /* The one await step is "press Start", satisfied by the stream being
+               on screen rather than by intercepting the click — so a player who
+               started it before reading this far still advances, instead of
+               being asked to press a button that is already gone. */
+            satisfiedFor={() => step === 'stream'}
+            onFinish={() => coach?.end()}
+            onSkip={() => coach?.end()}
+          />
+        )}
       </div>
 
       <TrainingPauseModal

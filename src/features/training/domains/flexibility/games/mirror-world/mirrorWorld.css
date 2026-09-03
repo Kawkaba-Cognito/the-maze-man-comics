@@ -38,6 +38,8 @@
 .ct-mw-pause:hover { color: var(--game-ink); border-color: var(--game-ink); }
 
 .ct-mw-stage {
+  /* Hosts the coach overlay (position: absolute; inset: 0). */
+  position: relative;
   flex: 1;
   display: grid;
   place-items: center;

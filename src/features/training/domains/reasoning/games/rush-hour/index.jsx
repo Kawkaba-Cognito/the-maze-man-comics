@@ -15,7 +15,11 @@ import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
-import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { useCoachRun } from '../../../../shared/tutorials/coach/useCoachRun';
+import { coachIdFor } from '../../../../shared/tutorials/coach/coachRegistry';
+import { RUSH_HOUR_COACH } from '../../../../shared/tutorials/coach/scripts/rush-hour';
+import { TUTORIAL_UI } from '../../../../shared/tutorials/tutorialContent';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { getRange, isWon, clonePieces, RUSH_HOUR_BASE_LAYOUTS } from './engine';
 import {
@@ -241,7 +245,21 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   const t = isAr ? UI_AR : UI_EN;
   const [cosmosEmbed, setCosmosEmbed] = useState(false);
   const isCosmos = cosmosAutoPlay || cosmosEmbed;
-  const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('rush-hour', isAr, playSfx);
+  /*
+   * ── The live-board coach (COACH-PLAN.md Phase 2) ──
+   * This game runs its own mode state machine rather than ModeShell, so it wires
+   * the coach itself — as cancellation, speed-match and wordle do. The
+   * per-puzzle Survival clock is held while the lesson is open (see the interval
+   * further down).
+   */
+  const coachRootRef = useRef(null);
+  const startFreeRef = useRef(null);
+  const coach = useCoachRun(coachIdFor('rush-hour'), {
+    onReplay: () => startFreeRef.current?.(),
+  });
+  const coachOpen = coach.open;
+  const openTutorial = coach.replay;
+  const tutReplayHint = TUTORIAL_UI[isAr ? 'ar' : 'en'].replayTutorial;
 
   // WORKOUT / cosmos 3D: skip the hub and jump straight into Survival/free.
   const workoutLaunched = useRef(false);
@@ -995,6 +1013,22 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
     setPlayMode('free');
     setPhase('play');
   }, []);
+  startFreeRef.current = startFreeRun;
+
+  // Open the lesson once a Survival board is on screen and movable.
+  useEffect(() => {
+    if (!coach.armed || coach.open) return;
+    if (phase !== 'play' || playMode !== 'free') return;
+    if (pauseOpen || quitOpen || wonRef.current) return;
+    coach.begin();
+  }, [coach, phase, playMode, pauseOpen, quitOpen]);
+
+  /* Never strand it on a screen with no board — it would hold the puzzle clock
+     forever. */
+  useEffect(() => {
+    if (!coach.open) return;
+    if (phase !== 'play' || playMode !== 'free') coach.end();
+  }, [coach, phase, playMode]);
 
   const commitPieceMove = useCallback((pid, isH, newGridPosition) => {
     const currentPiece = piecesRef.current.find((piece) => piece.id === pid);
@@ -1189,7 +1223,10 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   }, [levelDef, phase, playMode]);
 
   useEffect(() => {
-    if (phase !== 'play' || playMode !== 'free' || pauseOpen || quitOpen) return undefined;
+    /* ⚠ The per-puzzle clock stops for the lesson, exactly as it does for the
+       pause modal. This game's correct play is to sit and look, and a tutorial
+       telling the player to do that must not charge them for it. */
+    if (phase !== 'play' || playMode !== 'free' || pauseOpen || quitOpen || coachOpen) return undefined;
     const id = setInterval(() => {
       if (wonRef.current) return; // solved board: clock pauses until the next puzzle
       freeTimeRef.current = Math.max(0, freeTimeRef.current - 1);
@@ -1267,7 +1304,9 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
           />
           <HubScienceLink gameId="rush-hour" isAr={isAr} playSfx={playSfx} />
         </TrainingScreenShell>
-        {tutLayer}
+        {/* The rules carousel used to render here; this game teaches on the live
+            board now, and running both would open a slide deck and then a
+            lesson on the same first visit. */}
       </>
     );
   }
@@ -1618,14 +1657,24 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         onPause={onRhPause}
       />
 
-      <div className="ct-rh-stage">
+      <div className="ct-rh-stage" ref={coachRootRef}>
+        {coachOpen && (
+          <DomCoach
+            isAr={isAr}
+            playSfx={playSfx}
+            stageRef={coachRootRef}
+            pack={RUSH_HOUR_COACH}
+            onFinish={() => coach.end()}
+            onSkip={() => coach.end()}
+          />
+        )}
         {playMode === 'free' && (
           <div className="ct-rh-hud" aria-label={isAr ? 'حالة اللعب' : 'Run status'}>
             <span className="ct-fq-lives" aria-label={`${freeLives} lives`}>
               {'♥'.repeat(Math.max(0, freeLives))}
               <span className="ct-fq-lives-spent">{'♥'.repeat(Math.max(0, 3 - freeLives))}</span>
             </span>
-            <span ref={freeTimeEl} className="ct-rh-hud-time" data-low={freeTimeRef.current <= 15 ? '1' : undefined}>
+            <span ref={freeTimeEl} className="ct-rh-hud-time" data-coach="time" data-low={freeTimeRef.current <= 15 ? '1' : undefined}>
               {`${Math.floor(freeTimeRef.current / 60)}:${String(freeTimeRef.current % 60).padStart(2, '0')}`}
             </span>
             <span>{isAr ? 'نجح' : 'Solved'}: {freeRoundsWon}</span>
@@ -1818,7 +1867,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
           </div>
         </div>
         {selectedPiece && selectedRange && !won && (
-          <div className="ct-rh-nudge" role="group" aria-label={t.moveSelected}>
+          <div className="ct-rh-nudge" role="group" aria-label={t.moveSelected} data-coach="nudge">
             <button
               type="button"
               disabled={selectedPosition <= selectedRange.lo}

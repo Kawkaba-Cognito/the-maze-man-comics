@@ -8,6 +8,8 @@ import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/S
 import KawkabSprite from '../../../../shared/KawkabSprite';
 import { GAME_STIMULUS } from '../../../../shared/gamePalette';
 import { SORT_SETS, ruleForTrio, setsForTier, levelCfg, LADDER_LEVELS } from './sets';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { SORT_SHIFT_COACH } from '../../../../shared/tutorials/coach/scripts/sort-shift';
 import './sortShift.css';
 
 /*
@@ -52,7 +54,7 @@ export function rulesNeeded(setDef, mode, level, ramp) {
 
 export function SortShiftEngine({
   mode, level, seed, attempt, onResult, onExit,
-  isAr, playSfx, awardPoints, awardFreeRun,
+  isAr, playSfx, awardPoints, awardFreeRun, coach,
 }) {
   const isSurvival = mode === 'free';
   const targetSets = mode === 'passplay' ? (attempt?.trials || SS_PP_TRIALS) : SS_LEVEL_SETS;
@@ -68,6 +70,14 @@ export function SortShiftEngine({
 
   const [setDef, setSetDef] = useState(null);
   const [order, setOrder] = useState([]);       // shuffled card indices
+  /*
+   * ── The live-board coach (COACH-PLAN.md Phase 1) ──
+   * Survival only. The taught submit is a REAL scored submit on the real cards;
+   * only the 60s clock is held. See SortShiftCoach.
+   */
+  const stageRef = useRef(null);
+  const coachOpen = coach?.open || false;
+
   const [picked, setPicked] = useState([]);
   const [found, setFound] = useState([]);       // feature keys
   const [msg, setMsg] = useState(null);         // { text, tone }
@@ -146,7 +156,8 @@ export function SortShiftEngine({
     playSfx?.('error');
   }, [awardFreeRun, playSfx]);
 
-  const remaining = useSurvivalCountdown(isSurvival && !over, finishSurvival);
+  /* ⚠ The survival clock stops for the lesson — reading must never cost time. */
+  const remaining = useSurvivalCountdown(isSurvival && !over && !coachOpen, finishSurvival);
   rampRef.current = isSurvival ? survivalRampFromRemaining(remaining) : 0;
 
   useEffect(() => {
@@ -160,6 +171,18 @@ export function SortShiftEngine({
   }, [seed, mode, level]);
 
   const need = setDef ? rulesNeeded(setDef, mode, level, rampRef.current) : 0;
+
+  // Open the lesson once a Survival set is actually dealt and pointable.
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free') return;
+    if (!setDef || over) return;
+    coach.begin();
+  }, [coach, mode, setDef, over]);
+
+  // Never strand it on a screen with no cards — it would hold the clock forever.
+  useEffect(() => {
+    if (coachOpen && over) coach?.end();
+  }, [coachOpen, over, coach]);
 
   const advance = useCallback((cleared) => {
     setsDoneRef.current += 1;
@@ -241,10 +264,12 @@ export function SortShiftEngine({
 
       {isSurvival && !over ? <SurvivalCountdownBar remaining={remaining} /> : null}
 
-      <div className="ct-ss-stage">
+      {/* The `data-coach` attributes are the coach's whole pointing contract —
+          see SortShiftCoach and shared/tutorials/coach/anchors.js. */}
+      <div className="ct-ss-stage" ref={stageRef}>
         <div className={`ct-ss-msg${msg?.tone ? ` is-${msg.tone}` : ''}`}>{msg?.text}</div>
 
-        <div className="ct-ss-deck">
+        <div className="ct-ss-deck" data-coach="deck">
           {order.map((cardIdx) => {
             const card = setDef.cards[cardIdx];
             const at = picked.indexOf(cardIdx);
@@ -268,7 +293,7 @@ export function SortShiftEngine({
           })}
         </div>
 
-        <ul className="ct-ss-rules">
+        <ul className="ct-ss-rules" data-coach="rules">
           {setDef.features.slice(0, need).map((f) => {
             const got = found.includes(f.key);
             return (
@@ -280,7 +305,7 @@ export function SortShiftEngine({
           })}
         </ul>
 
-        <div className="ct-ss-actions">
+        <div className="ct-ss-actions" data-coach="actions">
           <button type="button" className="ct-fq-btn ct-fq-btn-pri" disabled={picked.length !== 3 || revealed} onClick={submit}>
             {t.submit}
           </button>
@@ -291,6 +316,26 @@ export function SortShiftEngine({
             {t.next}
           </button>
         </div>
+
+        {coachOpen && (
+          <DomCoach
+            isAr={isAr}
+            playSfx={playSfx}
+            stageRef={stageRef}
+            pack={SORT_SHIFT_COACH}
+            /* A rule actually LANDING, not the Submit press: a submit naming no
+               rule, or one already found, is rejected by the game and must not
+               advance the lesson either.
+               ⚠ The lesson deliberately ends before the second rule. Waiting for
+               it is the obvious design and a trap — finding a second split is the
+               hard part, so an await step there could park a new player in a
+               tutorial they cannot leave, on the one screen where being stuck is
+               the intended experience. */
+            satisfiedFor={() => found.length > 0}
+            onFinish={() => coach?.end()}
+            onSkip={() => coach?.end()}
+          />
+        )}
       </div>
 
       {over ? (

@@ -15,7 +15,11 @@ import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { seedWithDay } from '../../../../shared/dailySeed';
-import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { useCoachRun } from '../../../../shared/tutorials/coach/useCoachRun';
+import { coachIdFor } from '../../../../shared/tutorials/coach/coachRegistry';
+import { WORDLE_COACH } from '../../../../shared/tutorials/coach/scripts/wordle';
+import { TUTORIAL_UI } from '../../../../shared/tutorials/tutorialContent';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import WordleModes from './WordleModes';
 
@@ -198,7 +202,21 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
   const chalCycleRef = useRef(0);
 
   const juice = useJuice();
-  const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('wordle', isAr, playSfx);
+  /*
+   * ── The live-board coach (COACH-PLAN.md Phase 2) ──
+   * This game runs its own mode state machine rather than ModeShell, so it wires
+   * the coach itself — as cancellation and speed-match do. The round clock is
+   * held while the lesson is open (see startRoundTimer).
+   */
+  const coachRootRef = useRef(null);
+  const startFreeRef = useRef(null);
+  const coach = useCoachRun(coachIdFor('wordle'), {
+    onReplay: () => startFreeRef.current?.(),
+  });
+  const coachOpen = coach.open;
+  const coachOpenRef = coach.openRef;
+  const openTutorial = coach.replay;
+  const tutReplayHint = TUTORIAL_UI[isAr ? 'ar' : 'en'].replayTutorial;
   const pauseRef = useRef(false);
 
   const doneMap = useMemo(() => profile.done || {}, [profile.done]);
@@ -458,6 +476,10 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
     const tick = () => {
       const r = roundRef.current;
       if (!r || roundTimerIdRef.current !== rid || pauseRef.current) return;
+      /* ⚠ The round clock is HELD for the lesson, not stopped: returning here
+         the way the pause branch does would kill the chain, and only the pause
+         path knows how to restart it. Reschedule and drain nothing. */
+      if (coachOpenRef.current) { setTimeout(tick, 1000); return; }
       r.timeLeft -= 1;
       tlRef.current = r.timeLeft;
       setRound({ ...r });
@@ -560,6 +582,22 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
     trialLogRef.current = createTrialLog({ game: 'wordle', mode: 'free', meta: { lang } });
     beginRound(prepareFreeRound(0, seed, lang));
   }, [beginRound, lang]);
+  startFreeRef.current = startFree;
+
+  // Open the lesson once a Survival board is on screen and traceable.
+  useEffect(() => {
+    if (!coach.armed || coach.open) return;
+    if (phase !== 'play' || !round || round.mode !== 'free') return;
+    if (pauseOpen || quitOpen || round.complete) return;
+    coach.begin();
+  }, [coach, phase, round, pauseOpen, quitOpen]);
+
+  /* Never strand it on a screen with no board — it would hold the round clock
+     forever. */
+  useEffect(() => {
+    if (!coach.open) return;
+    if (phase !== 'play' || !round || round.complete) coach.end();
+  }, [coach, phase, round]);
 
   const startLevelGame = useCallback(
     (lv) => {
@@ -662,7 +700,9 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
                 </div>
               }
             />
-            {tutLayer}
+            {/* The rules carousel used to render here; this game teaches on the
+                live board now, and running both would open a slide deck and
+                then a lesson on the same first visit. */}
             <WordleModes
               t={t}
               isAr={isAr}
@@ -781,7 +821,17 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
             }}
             onPause={handlePauseOpen}
           />
-          <div className="ct-fq-g-wrap">
+          <div className="ct-fq-g-wrap" ref={coachRootRef} style={{ position: 'relative' }}>
+            {coachOpen && (
+              <DomCoach
+                isAr={isAr}
+                playSfx={playSfx}
+                stageRef={coachRootRef}
+                pack={WORDLE_COACH}
+                onFinish={() => coach.end()}
+                onSkip={() => coach.end()}
+              />
+            )}
             <WordleLiveHud
               t={t}
               pauseOpen={pauseOpen}
@@ -793,7 +843,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
               lvlLabel={`L${round.lv}`}
               score={round.score}
             />
-            <div className="ct-fq-tb" data-fq-chrome>
+            <div className="ct-fq-tb" data-fq-chrome data-coach="rules">
               <div className="ct-fq-tb-row">
                 <span className="ct-fq-tb-cue">{t.connectHint}</span>
               </div>
@@ -808,7 +858,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
                 {msg}
               </p>
             )}
-            <div className="ct-wordle-in-fq">
+            <div className="ct-wordle-in-fq" data-coach="board">
               <LetterLinkBoard
                 grid={round.grid}
                 size={round.size}
@@ -825,7 +875,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
                   and it sat between them and the grid. Both routes live in
                   LetterLinkBoard (endDrag / onCellClick), which is what keeps
                   the tap route available without a pointer drag. */}
-              <div className="ct-wordle-link-actions">
+              <div className="ct-wordle-link-actions" data-coach="clear">
                 <button
                   type="button"
                   className="ct-fq-btn ct-fq-btn-ghost ct-wordle-clear-btn"

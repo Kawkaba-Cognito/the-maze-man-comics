@@ -9,6 +9,8 @@ import { SURVIVAL_MS, survivalRamp, survivalTier } from '../../../../shared/surv
 import { RELATION, LADDER_LEVELS, levelCfg, pickTrialTier } from './data';
 import { CATEGORIES } from '../odd-one-out/data';
 import { markSeen, pickTrial } from './trialBank';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { SYNONYMS_COACH } from '../../../../shared/tutorials/coach/scripts/synonyms';
 
 /*
  * Word Links — verbal-reasoning / semantic judgment (bilingual), minimalist.
@@ -145,7 +147,7 @@ export function buildTrial({ mode, level, trialNum, rng, isAr, ramp = 0 }) {
   return { kind: 'pair', tier, rel, prompt: isAr ? 'اختر الزوجين المتطابقين' : 'Tap the matching pair', words: shuffle(words, rng), pair: raw.pair, rule: L(raw.rule) };
 }
 
-export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
+export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false, coach }) {
   const ppTrials = mode === 'passplay' ? (attempt?.trials || PP_TRIALS) : 0;
   const font = isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif";
   const isSurvival = mode === 'free';
@@ -160,6 +162,19 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
   const trialRef = useRef(null);
   const survT0Ref = useRef(performance.now());
   const finishedRef = useRef(false);
+
+  /*
+   * ── The live-board coach (COACH-PLAN.md Phase 1) ──
+   * Survival only. The taught answer is a REAL scored answer; the only thing
+   * held is the 60s run clock, which is frozen by pushing its origin forward
+   * frame by frame (see the survival tick below) rather than by pausing the rAF
+   * — the clock is derived from `performance.now()`, so stopping the loop alone
+   * would let the whole reading time land at once when it resumed.
+   */
+  const stageRef = useRef(null);
+  const coachOpen = coach?.open || false;
+  const coachOpenRef = useRef(false);
+  useEffect(() => { coachOpenRef.current = coachOpen; }, [coachOpen]);
 
   const [runId, setRunId] = useState(0);
   const [over, setOver] = useState(null);
@@ -242,9 +257,18 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
   useEffect(() => {
     if (!isSurvival) return undefined;
     let raf = 0;
+    let last = 0;
     const tick = () => {
+      const now = performance.now();
+      const dt = last ? now - last : 0;
+      last = now;
+      /* ⚠ The clock stops for the lesson, and it has to stop by MOVING ITS
+         ORIGIN. `left` is computed from `performance.now()` against a fixed t0,
+         so merely not updating the bar would still let every second spent
+         reading count — the run would simply jump when the coach closed. */
+      if (coachOpenRef.current) survT0Ref.current += dt;
       if (!finishedRef.current) {
-        const left = SURVIVAL_MS - (performance.now() - survT0Ref.current);
+        const left = SURVIVAL_MS - (now - survT0Ref.current);
         setSurvPct(Math.max(0, left / SURVIVAL_MS));
         if (left <= 0) { finishSurvival(); return; }
       }
@@ -253,6 +277,18 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [isSurvival, runId, finishSurvival]);
+
+  // Open the lesson once a Survival trial is actually on screen and pointable.
+  useEffect(() => {
+    if (!coach?.armed || coach.open || !isSurvival) return;
+    if (!trial || over) return;
+    coach.begin();
+  }, [coach, isSurvival, trial, over]);
+
+  // Never strand it on a screen with no question — it would freeze the clock.
+  useEffect(() => {
+    if (coachOpen && (over || !trial)) coach?.end();
+  }, [coachOpen, over, trial, coach]);
 
   const pickOption = (opt) => {
     if (lockRef.current || trialRef.current?.kind === 'pair') return;
@@ -350,12 +386,14 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
       {pause.modal}
 
       {trial && (
-        <div style={S.body}>
+        /* `position: relative` hosts the coach overlay, and the `data-coach`
+           attributes below are its whole pointing contract — see DomCoach. */
+        <div style={{ ...S.body, position: 'relative' }} ref={stageRef}>
           <div style={S.metaRow}>
-            <span style={S.badge}>{relLabel}</span>
+            <span style={S.badge} data-coach="relation">{relLabel}</span>
           </div>
 
-          <div style={{ ...S.prompt, fontFamily: font }}>{trial.prompt}</div>
+          <div style={{ ...S.prompt, fontFamily: font }} data-coach="prompt">{trial.prompt}</div>
 
           {trial.kind === 'similarity' && (
             <div style={S.pairRow}>
@@ -375,7 +413,10 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
           )}
 
           {trial.kind === 'pair' && (
-            <div style={S.pairGrid}>
+            /* Same `data-coach` name as the options row below: exactly one of
+               the two is ever mounted, so the coach's "answer" step points at
+               whichever widget this trial actually uses. */
+            <div style={S.pairGrid} data-coach="answer">
               {trial.words.map((w) => {
                 const on = picked.includes(w.key);
                 return (
@@ -386,7 +427,7 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
           )}
 
           {trial.kind !== 'pair' && (
-            <div style={S.options}>
+            <div style={S.options} data-coach="answer">
               {trial.options.map((o) => (
                 <button key={o.key} type="button" style={{ ...S.opt, ...optState(o), fontFamily: font }} onClick={() => pickOption(o)}>{o.label}</button>
               ))}
@@ -397,6 +438,20 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
             <div style={{ ...S.feedback, color: fb.ok ? OK : BAD }}>
               {fb.ok ? (isAr ? '✓ صحيح' : '✓ Correct') : (isAr ? '✗ ليست الأفضل' : '✗ Not quite')}
             </div>
+          )}
+
+          {coachOpen && (
+            <DomCoach
+              isAr={isAr}
+              playSfx={playSfx}
+              stageRef={stageRef}
+              pack={SYNONYMS_COACH}
+              /* An answer having been RESOLVED, not a button press: both widgets
+                 route through `resolve`, and `fb` is what it sets. */
+              satisfiedFor={() => fb != null}
+              onFinish={() => coach?.end()}
+              onSkip={() => coach?.end()}
+            />
           )}
         </div>
       )}

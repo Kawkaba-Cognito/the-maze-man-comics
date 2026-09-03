@@ -12,6 +12,8 @@ import { useTrainingTutorial } from './tutorials/useTrainingTutorial';
 import { getTrainingMeta } from './tutorials/trainingMeta';
 import TrainingOnboardingLayer from './tutorials/TrainingOnboardingLayer';
 import { TUTORIAL_UI } from './tutorials/tutorialContent';
+import { useCoachRun } from './tutorials/coach/useCoachRun';
+import { coachIdFor } from './tutorials/coach/coachRegistry';
 import PlayResults from './PlayResults';
 
 /*
@@ -24,11 +26,18 @@ import PlayResults from './PlayResults';
  *   Pass n Play → 2–10 players, N rounds, the SAME board each round (shared
  *                 seed), pass the device between players, ranked results table
  *
- * The game supplies `renderEngine({ mode, diff, level, seed, attempt, onResult, onExit })`:
+ * The game supplies `renderEngine({ mode, diff, level, seed, attempt, onResult, onExit, coach })`:
  *   • Levels:     onResult({ won, score })
  *   • Pass n Play (mode 'passplay'): run a fixed `attempt.trials` then onResult({ score })
  *   • Free:       never resolves (player exits via the in-game back button → onExit)
  * and a `pass` config: { trials, scoreLabel:{en,ar}, lowerBetter, diff }.
+ *
+ * `coach` is the live-board tutorial run (COACH-PLAN.md) — inert unless the game
+ * is listed in `tutorials/coach/coachRegistry.js`. The game calls `coach.begin()`
+ * when a round is on screen and pointable, mounts its own coach component while
+ * `coach.open`, ends with `coach.end()`, and guards EVERY scored consequence
+ * with `coach.openRef.current` — the clock, penalties, the error cap, the
+ * auto-win, lives, trialLog and the rating award.
  *
  * Cleared levels per difficulty are persisted in localStorage under `storageKey`.
  */
@@ -98,7 +107,32 @@ export default function ModeShell({
   const tutorial = useTrainingTutorial(gameId, isAr);
   const meta = getTrainingMeta(gameId);
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
-  const onboardingLayer = tutorial.onboarding.phase ? (
+
+  /*
+   * ── The live-board coach (COACH-PLAN.md) ────────────────────────────────
+   *
+   * `renderEngine` is the one funnel every game's play view already goes
+   * through, so wiring the coach here reaches all seventeen ModeShell games at
+   * once. This shell owns arming, replay and the persistence flag; the game
+   * owns mounting the overlay and guarding its own consequences with
+   * `coach.openRef` (see useCoachRun).
+   *
+   * A game opts in by appearing in `coachRegistry.js` — nothing to pass.
+   */
+  const startFreeRef = useRef(null);
+  const coach = useCoachRun(coachIdFor(gameId), {
+    // The lesson lives on a live board, so replaying it means dropping into a
+    // real Survival round. Deferred through a ref because `startMode` is
+    // declared further down the component.
+    onReplay: () => startFreeRef.current?.(),
+  });
+
+  /*
+   * ⚠ A COACH AND THE RULES CAROUSEL MUST NOT BOTH RUN. A game being converted
+   * in Phase 1–3 already has a carousel pack, and leaving both wired would open
+   * a slide deck and then a live lesson on the same first visit.
+   */
+  const onboardingLayer = !coach.enabled && tutorial.onboarding.phase ? (
     <TrainingOnboardingLayer
       onboarding={tutorial.onboarding}
       config={meta}
@@ -107,6 +141,27 @@ export default function ModeShell({
       playSfx={playSfx}
     />
   ) : null;
+
+  /*
+   * ⚠ NO LESSON MEANS NO BUTTON.
+   *
+   * `TrainingChrome` renders the "How to play" button whenever it is handed an
+   * `onReplayTutorial`, and this was passing one unconditionally — it is always
+   * a truthy `useCallback`. But `getTrainingDiagramSteps` returns null for a
+   * game with no pack, `TutorialCarousel` returns null on zero steps, and the
+   * result was a button that rendered, took the tap, and did nothing: no error,
+   * no warning, no boundary. Six live games shipped that way — keep-track,
+   * trivia, gatekeeper, mirror-world, task-switch, sort-shift — including two of
+   * the newest games in the app.
+   *
+   * Same silent-failure family as the blank `{t.cont}` button and the
+   * `getLazyGame` → `return null` blocks. A button that does nothing is worse
+   * than an absent one, so the button goes until that game's coach lands and
+   * `audit:coach` tracks the ones still owed.
+   */
+  const replayTutorial = coach.enabled
+    ? coach.replay
+    : (tutorial.steps.length > 0 ? tutorial.openTutorial : undefined);
   const passCfg = { trials: 8, scoreLabel: { en: 'Score', ar: 'النتيجة' }, lowerBetter: false, diff: 'med', ...pass };
 
   const ladderLevels = Number(ladder?.levels) || 0;
@@ -230,6 +285,13 @@ export default function ModeShell({
     setPhase('pp-handoff');
   }, [ppView, players, rounds, passCfg.lowerBetter]);
 
+  /* Lets `coach.replay` drop the player into Survival — see the coach block at
+     the top of this component. */
+  startFreeRef.current = () => {
+    setMode('free');
+    setPhase('free-intro');
+  };
+
   const startMode = (m) => {
     playSfx?.('click');
     setMode(m);
@@ -245,7 +307,11 @@ export default function ModeShell({
   // ── PLAY (engine) ──
   if (phase === 'play') {
     const playSeed = mode === 'levels' ? seedFor(isLadder ? 'lad' : diff, level) : mode === 'free' ? freeSeedRef.current : null;
-    return renderEngine({ mode, diff, level, seed: playSeed, attempt: null, onResult: onLevelResult, onExit: workoutMode ? onBack : goMenu });
+    /* `coach` is handed to the engine, not to Pass n Play: a tutorial in a
+       multiplayer round would teach one player while the others wait. The game
+       decides when to `begin()` — normally once a Survival round is on screen
+       and pointable. */
+    return renderEngine({ mode, diff, level, seed: playSeed, attempt: null, onResult: onLevelResult, onExit: workoutMode ? onBack : goMenu, coach });
   }
   if (phase === 'pp-play') {
     return renderEngine({
@@ -291,7 +357,7 @@ export default function ModeShell({
     return (
       <>
         <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} title={T} tag={t.tag} hub
-          onReplayTutorial={tutorial.openTutorial} replayHint={tutLabels.replayTutorial}>
+          onReplayTutorial={replayTutorial} replayHint={tutLabels.replayTutorial}>
           <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />
           <HubScienceLink gameId={scienceId} isAr={isAr} playSfx={playSfx} />
         </TrainingScreenShell>

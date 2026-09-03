@@ -8,6 +8,8 @@ import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/S
 import KawkabSprite from '../../../../shared/KawkabSprite';
 import { GAME_STIMULUS } from '../../../../shared/gamePalette';
 import { createTrialLog } from '../../../../shared/trialLog';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { TASK_SWITCH_COACH } from '../../../../shared/tutorials/coach/scripts/task-switch';
 import './taskSwitch.css';
 
 /*
@@ -54,7 +56,7 @@ import { TS_PP_TRIALS, TS_LEVEL_TRIALS, TS_WIN_ACC, LADDER_LEVELS, tsCfg, makeTr
 
 export function TaskSwitchEngine({
   mode, level, seed, attempt, onResult, onExit,
-  isAr, playSfx, awardPoints, awardFreeRun,
+  isAr, playSfx, awardPoints, awardFreeRun, coach,
 }) {
   const isSurvival = mode === 'free';
   const targetTrials = mode === 'passplay' ? (attempt?.trials || TS_PP_TRIALS) : TS_LEVEL_TRIALS;
@@ -86,6 +88,23 @@ export function TaskSwitchEngine({
 
   const clearTimers = () => { timersRef.current.forEach(clearTimeout); timersRef.current = []; };
   const later = (fn, ms) => { timersRef.current.push(setTimeout(fn, ms)); };
+
+  /*
+   * ── The live-board coach (COACH-PLAN.md Phase 1) ──
+   * Survival only. The lesson runs on the real board but BEFORE the first trial,
+   * so the trial chain is held rather than the five things it would otherwise
+   * set running being guarded one by one — see TaskSwitchCoach for the argument.
+   *
+   * `coachHoldRef` is read synchronously by the init effect below, so it has to
+   * be known at first render: `coach.armed` already is.
+   */
+  const stageRef = useRef(null);
+  const coachOpen = coach?.open || false;
+  const coachHoldRef = useRef(Boolean(coach?.enabled && coach?.armed && mode === 'free'));
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free') return;
+    coach.begin();
+  }, [coach, mode]);
 
   const t = useMemo(() => ({
     title: isAr ? 'تبديل المهمة' : 'Task Switch',
@@ -131,7 +150,9 @@ export function TaskSwitchEngine({
     playSfx?.('error');
   }, [awardFreeRun, playSfx]);
 
-  const remaining = useSurvivalCountdown(isSurvival && !over, finishSurvival);
+  /* ⚠ The survival clock does not run during the lesson. Reading must never cost
+     a player part of their 60 seconds. */
+  const remaining = useSurvivalCountdown(isSurvival && !over && !coachOpen, finishSurvival);
   rampRef.current = isSurvival ? survivalRampFromRemaining(remaining) : 0;
 
   const finishRound = useCallback(() => {
@@ -147,6 +168,9 @@ export function TaskSwitchEngine({
 
   const nextTrial = useCallback(() => {
     if (finishedRef.current) return;
+    /* Nothing starts while the lesson is up — no stimulus, no deadline, no
+       scored trial. The chain is kicked once from `endCoach` below. */
+    if (coachHoldRef.current) return;
     if (!isSurvival && nRef.current >= targetTrials) { finishRound(); return; }
     const cfg = tsCfg(mode, level, rampRef.current);
     const tr = makeTrial(rngRef.current, prevTaskRef.current, cfg.pSwitch);
@@ -187,13 +211,18 @@ export function TaskSwitchEngine({
       meta: { lv: level },
     });
     setScore(0); setCombo(0); setDone(0); setOver(null);
-    later(nextTrial, 500);
+    /* Held until the lesson ends — `endCoach` kicks the chain instead. */
+    if (!coachHoldRef.current) later(nextTrial, 500);
     return () => { clearTimers(); trialLogRef.current?.discard(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, mode, level]);
 
   const respond = useCallback((side) => {
     if (!acceptRef.current || finishedRef.current || !trial) return;
+    /* Belt and braces: no trial is live during the lesson, so `acceptRef` is
+       already false — but the keyboard listener is still bound, and a scored
+       response must never come out of a tutorial. */
+    if (coachHoldRef.current) return;
     acceptRef.current = false;
     const rt = performance.now() - onsetRef.current;
     const ok = side === trial.answer;
@@ -235,6 +264,14 @@ export function TaskSwitchEngine({
     return () => window.removeEventListener('keydown', onKey);
   }, [respond]);
 
+  /* Release the trial chain. One place, so a lesson that is finished, skipped or
+     escaped all resume the game identically. */
+  const endCoach = useCallback(() => {
+    coachHoldRef.current = false;
+    coach?.end();
+    later(nextTrial, 400);
+  }, [coach, nextTrial]);
+
   const hits = logRef.current.filter((d) => d.ok);
   const repM = mean(hits.filter((d) => !d.isSwitch).map((d) => d.rt));
   const swiM = mean(hits.filter((d) => d.isSwitch).map((d) => d.rt));
@@ -257,12 +294,14 @@ export function TaskSwitchEngine({
 
       {isSurvival && !over ? <SurvivalCountdownBar remaining={remaining} /> : null}
 
-      <div className="ct-ts-stage">
-        <div className={`ct-ts-cue${trial ? ' is-live' : ''}`}>
+      {/* `data-coach` attributes are the coach's whole pointing contract — see
+          TaskSwitchCoach and shared/tutorials/coach/anchors.js. */}
+      <div className="ct-ts-stage" ref={stageRef}>
+        <div className={`ct-ts-cue${trial ? ' is-live' : ''}`} data-coach="cue">
           {trial ? (trial.task === 'colour' ? t.answerColour : t.answerShape) : t.ready}
         </div>
 
-        <div className="ct-ts-stim" aria-live="polite">
+        <div className="ct-ts-stim" aria-live="polite" data-coach="stim">
           {showStim && trial ? (
             <span
               className={`ct-ts-shape ct-ts-shape--${trial.shape}`}
@@ -276,7 +315,7 @@ export function TaskSwitchEngine({
           {feedback === 'ok' ? t.ok : feedback === 'bad' ? t.bad : feedback === 'slow' ? t.slow : ''}
         </div>
 
-        <div className="ct-ts-keys">
+        <div className="ct-ts-keys" data-coach="keys">
           <button type="button" className="ct-ts-key" onClick={() => respond('left')}>
             <span className="ct-ts-key-face">
               <span className="ct-ts-chip ct-ts-chip--circle" style={{ background: RED }} />
@@ -293,6 +332,25 @@ export function TaskSwitchEngine({
           </button>
         </div>
         <p className="ct-ts-hint">{t.keysHint}</p>
+
+        {/* ⚠ This lesson runs on the real board but BEFORE the first trial, so
+            the script has no await step — there is nothing live to answer.
+            Cancellation can teach mid-round because holding one clock suspends
+            everything it scores; Task Switch has five live consequences (the 60s
+            countdown, the per-trial deadline, the score, trialLog, awardPoints)
+            driven by a self-rescheduling chain. Guarding five and hoping is how
+            cancellation shipped a losable tutorial. Nothing runs instead — see
+            `coachHoldRef`. */}
+        {coachOpen && (
+          <DomCoach
+            isAr={isAr}
+            playSfx={playSfx}
+            stageRef={stageRef}
+            pack={TASK_SWITCH_COACH}
+            onFinish={endCoach}
+            onSkip={endCoach}
+          />
+        )}
       </div>
 
       {over ? (

@@ -146,9 +146,19 @@ const windowAt = (u, now) => (u.windows || []).find(
   (w) => now >= w.enterAt && now <= w.exitAt,
 ) || null;
 
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { INTERCEPT_COACH } from '../../../../shared/tutorials/coach/scripts/intercept';
+
 export function InterceptEngine({
-  mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardFreeRun,
+  mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardFreeRun, coach,
 }) {
+  /*
+   * The live-board coach (COACH-PLAN.md Phase 3). Survival only. The wave is
+   * held while the lesson is open — see the frame guard below.
+   */
+  const coachRootRef = useRef(null);
+  const coachOpen = coach?.open || false;
+  const coachOpenRef = coach?.openRef || { current: false };
   const t = isAr ? UI.ar : UI.en;
 
   const [step, setStep] = useState('brief');       // brief | run | between | over
@@ -158,6 +168,19 @@ export function InterceptEngine({
   const [combo, setCombo] = useState(1);
   const [over, setOver] = useState(null);
   const [waveStat, setWaveStat] = useState(null);
+
+  /* Open the lesson once a Survival wave is actually running, so the field it
+     points at exists — the brief screen has no trail on it. */
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free') return;
+    if (step !== 'run' || over || pause.open) return;
+    coach.begin();
+  }, [coach, mode, step, over, pause.open]);
+
+  // Never strand it off the field — it would freeze the wave.
+  useEffect(() => {
+    if (coachOpen && (step !== 'run' || over)) coach?.end();
+  }, [coachOpen, step, over, coach]);
 
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
@@ -379,6 +402,10 @@ export function InterceptEngine({
 
     const frame = () => {
       if (step !== 'run' || overRef.current) return false;
+      /* Hold the whole wave while the lesson is up — no marching, no strikes,
+         no gate damage. Returning TRUE keeps the loop alive; false would stop it
+         permanently (shared/canvasLoop.js). */
+      if (coachOpenRef.current) return true;
       const { w, h } = sizeRef.current;
       if (!w || !h) return true;
       const wave = waveRef.current;
@@ -779,7 +806,20 @@ export function InterceptEngine({
   const wave = waveRef.current;
 
   return (
-    <div className="ic-root" dir={isAr ? 'rtl' : 'ltr'}>
+    /* `.ic-root` is `position: fixed; inset: 0`, and it is the only element that
+       contains BOTH the status bar and the field — so it is the box the coach's
+       anchors are measured in. */
+    <div className="ic-root" dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef}>
+      {coachOpen && (
+        <DomCoach
+          isAr={isAr}
+          playSfx={playSfx}
+          stageRef={coachRootRef}
+          pack={INTERCEPT_COACH}
+          onFinish={() => coach?.end()}
+          onSkip={() => coach?.end()}
+        />
+      )}
       <TrainingPlayHeader
         isAr={isAr}
         playSfx={playSfx}
@@ -793,7 +833,7 @@ export function InterceptEngine({
       {pause.modal}
 
       {(step === 'run' || step === 'between') && (
-        <div className="ic-status">
+        <div className="ic-status" data-coach="hud">
           <div className="ic-hp" aria-label={`${t.base} ${hp}/${BASE_HP}`}>
             <span className="ic-hp-label">{t.base}</span>
             <span className="ic-hp-track">
@@ -837,6 +877,7 @@ export function InterceptEngine({
         <div
           className="ic-field"
           ref={wrapRef}
+          data-coach="field"
           onPointerDown={onPointer}
           role="application"
           aria-label={t.tapHint}

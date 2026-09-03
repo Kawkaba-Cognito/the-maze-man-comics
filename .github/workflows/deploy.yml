@@ -105,6 +105,13 @@ jobs:
       # anyone tidying up. This fails the build instead of failing silently.
       - name: Audit game-key resolution
         run: npm run audit:gamekeys
+      # Every live game must end up with a live-board coach tutorial, and the
+      # ways one fails are silent: a coach id without its @coachN suffix reuses
+      # a flag existing players already stored, so the lesson never auto-runs
+      # for them — fresh installs only, nothing on screen, no error. This also
+      # keeps the waiting list honest as COACH-PLAN.md's phases land.
+      - name: Audit training coach coverage
+        run: npm run audit:coach
       - name: Audit design drift (ratchet)
         run: npm run audit:design
 

@@ -19,7 +19,11 @@ import { ratingLabels } from '../../../../shared/juice/juiceUtils';
 import { createTrialLog } from '../../../../shared/trialLog';
 import { loadGameSettings } from '../../../../shared/focusQuestData';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
-import { useTrainingTutorialHost } from '../../../../shared/tutorials/useTrainingTutorialHost';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { useCoachRun } from '../../../../shared/tutorials/coach/useCoachRun';
+import { coachIdFor } from '../../../../shared/tutorials/coach/coachRegistry';
+import { SPEED_MATCH_COACH } from '../../../../shared/tutorials/coach/scripts/speed-match';
+import { TUTORIAL_UI } from '../../../../shared/tutorials/tutorialContent';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import {
@@ -257,7 +261,28 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
 
   const juice = useJuice();
   const rLabels = ratingLabels(isAr);
-  const { openTutorial, replayHint: tutReplayHint, layer: tutLayer } = useTrainingTutorialHost('speed-match', isAr, playSfx);
+  /*
+   * ── The live-board coach (COACH-PLAN.md Phase 1) ──
+   *
+   * This game runs its OWN mode state machine rather than ModeShell, so it wires
+   * the coach itself — the same as cancellation. `tutLayer` (the retired rules
+   * carousel) is gone with it: a game must never open a slide deck and a live
+   * lesson on the same first visit.
+   *
+   * ⚠ The id is versioned (`speed-match@coach1`, from coachRegistry.js). The
+   * carousel this replaces already wrote a `'speed-match'` flag for every player
+   * who has opened the game, so under the plain id the lesson would reach fresh
+   * installs only, silently.
+   */
+  const stageRef = useRef(null);
+  const startFreeModeRef = useRef(null);
+  const coach = useCoachRun(coachIdFor('speed-match'), {
+    onReplay: () => startFreeModeRef.current?.(),
+  });
+  const coachOpen = coach.open;
+  const coachOpenRef = coach.openRef;
+  const openTutorial = coach.replay;
+  const tutReplayHint = TUTORIAL_UI[isAr ? 'ar' : 'en'].replayTutorial;
 
   const [profile, setProfile] = useState(() => loadProfile());
   const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
@@ -551,7 +576,9 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
     let last = performance.now();
     const loop = (ts) => {
       if (runIdRef.current !== myRun) return;
-      if (pauseRef.current) { rafRef.current = requestAnimationFrame(loop); last = ts; return; }
+      /* ⚠ The time bank stops for the lesson exactly as it does for the pause
+         modal. Reading must never drain a run. */
+      if (pauseRef.current || coachOpenRef.current) { rafRef.current = requestAnimationFrame(loop); last = ts; return; }
       const block = blockRef.current;
       if (!block) return;
       const dt = ts - last;
@@ -572,7 +599,10 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
-  }, [stopLoop, finishFreeRun]);
+    /* `coachOpenRef` is a ref and never changes identity, but it arrives from
+       `useCoachRun` rather than a local `useRef`, so the lint rule cannot tell.
+       Listing it does not re-create this callback. */
+  }, [stopLoop, finishFreeRun, coachOpenRef]);
 
   const answer = useCallback((digit) => {
     if (playStepRef.current !== 'running' || pauseRef.current) return;
@@ -699,6 +729,23 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
     const block = { mode: 'free', diff: 'free', lv: 0, spec: { durationSec: 0, remapEvery: 0, pairCount: 4 }, legend: buildLegend(4) };
     beginBlock(block, makeRng(freshSurvivalSeed()));
   }, [beginBlock]);
+  startFreeModeRef.current = startFreeMode;
+
+  /* Open the lesson once a Survival round is actually running and pointable —
+     after the countdown, so the hand never points at a "3, 2, 1" card. */
+  useEffect(() => {
+    if (!coach.armed || coach.open) return;
+    if (phase !== 'play' || playStep !== 'running') return;
+    if (blockRef.current?.mode !== 'free' || pauseOpen || quitOpen) return;
+    coach.begin();
+  }, [coach, phase, playStep, pauseOpen, quitOpen]);
+
+  /* Never strand it on a screen with no board — it would hold the time bank
+     forever. Any exit from a running round ends the lesson. */
+  useEffect(() => {
+    if (!coach.open) return;
+    if (phase !== 'play' || playStep !== 'running') coach.end();
+  }, [coach, phase, playStep]);
 
   const startLevel = useCallback((lv) => {
     beginBlock(prepareLevelBlock(lv), Math.random);
@@ -861,7 +908,9 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
               <HubScienceLink gameId="speed-match" isAr={isAr} playSfx={playSfx} />
             </div>
           </div>
-          {tutLayer}
+          {/* The rules carousel used to render here. It is gone: this game now
+              teaches on the live board, and running both would open a slide deck
+              and then a lesson on the same first visit. */}
         </>
       )}
 
@@ -956,7 +1005,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
             onPause={onPause}
             pauseAriaLabel={t.paused}
           />
-          <div className={`ct-sm-stage ct-juice-host${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}${juice.shake ? ' ct-juice-shake' : ''}`}>
+          <div className={`ct-sm-stage ct-juice-host${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}${juice.shake ? ' ct-juice-shake' : ''}`} ref={stageRef}>
             {playStep === 'countdown' && (
               <div className="ct-sm-countdown">{cdVal > 0 ? cdVal : t.go}</div>
             )}
@@ -970,7 +1019,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
               showCombo={false}
             />
             {block.assessStage !== 'motor' && (
-              <div className="ct-sm-legend-wrap" data-fq-chrome>
+              <div className="ct-sm-legend-wrap" data-fq-chrome data-coach="legend">
                 <div className="ct-sm-legend-label">{t.key}</div>
                 <LegendBar legend={legend} t={t} />
               </div>
@@ -994,12 +1043,12 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
             </div>
 
             {!isAssess && (
-              <div className="ct-sm-itembar" data-fq-chrome aria-hidden="true">
+              <div className="ct-sm-itembar" data-fq-chrome aria-hidden="true" data-coach="bank">
                 <div className="ct-sm-itembar-fill" style={{ width: `${bankPct * 100}%`, background: bankPct > 0.4 ? 'linear-gradient(90deg,#6b9e7a,#7ab87a)' : 'linear-gradient(90deg,#e8a07a,#c97a7a)' }} />
               </div>
             )}
 
-            <div className="ct-sm-card" aria-live="polite">
+            <div className="ct-sm-card" aria-live="polite" data-coach="card">
               {playStep === 'countdown' ? (
                 <div className="ct-sm-countdown">{cdVal > 0 ? cdVal : t.go}</div>
               ) : item ? (
@@ -1009,7 +1058,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
               ) : null}
             </div>
 
-            <div className="ct-sm-pad" role="group" aria-label={t.tapNumber}>
+            <div className="ct-sm-pad" role="group" aria-label={t.tapNumber} data-coach="pad">
               {legend.map((p) => (
                 <button
                   key={p.digit}
@@ -1022,6 +1071,21 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
                 </button>
               ))}
             </div>
+
+            {coachOpen && (
+              <DomCoach
+                isAr={isAr}
+                playSfx={playSfx}
+                stageRef={stageRef}
+                pack={SPEED_MATCH_COACH}
+                /* A scored answer having landed, not the key press — `answer`
+                   ignores taps outside `running`, so a press during the
+                   countdown must not advance the lesson either. */
+                satisfiedFor={() => correct > 0}
+                onFinish={() => coach.end()}
+                onSkip={() => coach.end()}
+              />
+            )}
           </div>
 
           <TrainingPauseModal

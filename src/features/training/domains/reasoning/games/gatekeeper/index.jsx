@@ -11,6 +11,8 @@ import {
   passCfg, ruleSpace, survivors, survivalCfg,
 } from './data.js';
 import { FAMILY, T, attrWords, familyIndex, lawText } from './strings.js';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { GATEKEEPER_COACH } from '../../../../shared/tutorials/coach/scripts/gatekeeper';
 import './gatekeeper.css';
 
 /*
@@ -43,7 +45,7 @@ import './gatekeeper.css';
 const SEALS = 3;
 
 export function GatekeeperEngine({
-  mode, level, seed, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false,
+  mode, level, seed, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false, coach,
 }) {
   const t = isAr ? T.ar : T.en;
   const lang = isAr ? 'ar' : 'en';
@@ -57,6 +59,21 @@ export function GatekeeperEngine({
   const askedAtRef = useRef(0);
   // running totals for the strategy measure
   const infoRef = useRef({ sum: 0, n: 0 });
+
+  /*
+   * ── The live-board coach (COACH-PLAN.md Phase 2) ──
+   * Survival only. `.gk-root` is `position: fixed; inset: 0`, so it is the box
+   * the anchors are measured in — note this file already uses `stageRef` for the
+   * survival stage counter, hence the separate name.
+   *
+   * Nothing needs holding: The Gate has no clock of any kind. The one
+   * consequence in reach is the probe budget, and the taught probe is granted
+   * free — see `freeProbesRef` where `probesLeft` is computed.
+   */
+  const coachRootRef = useRef(null);
+  const freeProbesRef = useRef(0);
+  const coachOpen = coach?.open || false;
+  const coachOpenRef = coach?.openRef || { current: false };
 
   const [gate, setGate] = useState(null);
   const [gateNo, setGateNo] = useState(1);
@@ -107,6 +124,7 @@ export function GatekeeperEngine({
     }
     setGate(g ? { ...g, space } : null);
     setStamped([]);
+    freeProbesRef.current = 0;
     setPick(null);
     setJudged(null);
     setPhase('probe');
@@ -130,6 +148,20 @@ export function GatekeeperEngine({
     return () => { trialLogRef.current?.discard(); trialLogRef.current = null; };
   }, [mode, level]);
 
+  // Open the lesson once a Survival gate is dealt and the tray is pointable.
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free') return;
+    if (!gate || phase !== 'probe' || done || pause.open) return;
+    coach.begin();
+  }, [coach, mode, gate, phase, done, pause.open]);
+
+  /* Never strand it past the probe phase — the tray it points at is gone by
+     then, and so is the free probe it promised. */
+  useEffect(() => {
+    if (!coachOpen) return;
+    if (!gate || phase !== 'probe' || done) coach?.end();
+  }, [coachOpen, gate, phase, done, coach]);
+
   /*
    * How many laws are still consistent with everything stamped so far. This is
    * the honest state of the player's knowledge, and showing it is the single
@@ -142,12 +174,20 @@ export function GatekeeperEngine({
   }, [gate, stamped]);
 
   const probesUsed = stamped.length;
-  const probesLeft = gate ? Math.max(0, gate.probes - probesUsed) : 0;
+  /*
+   * ⚠ A PROBE THE TUTORIAL ASKED FOR IS FREE. The lesson tells the player to
+   * spend one on a traveller they expect to be REFUSED, and validate:gatekeeper
+   * only guarantees a gate is decidable within the probes it grants — so
+   * charging for it could push this gate below solvable, which is the exact
+   * failure the lesson exists to prevent.
+   */
+  const probesLeft = gate ? Math.max(0, gate.probes + freeProbesRef.current - probesUsed) : 0;
 
   const doProbe = (card) => {
     if (!gate || phase !== 'probe' || probesLeft <= 0) return;
     if (stamped.some((s) => cardKey(s.card) === cardKey(card))) return;
     const ok = lawHolds(gate.law, card);
+    if (coachOpenRef.current) freeProbesRef.current += 1;
     const before = alive.length;
     const after = survivors(gate.space, [...stamped.map((s) => s.card), card], [...stamped.map((s) => s.ok), ok]).length;
     infoRef.current.sum += informationOf(before, after);
@@ -279,7 +319,7 @@ export function GatekeeperEngine({
   const stampedKeys = new Set(stamped.map((s) => cardKey(s.card)));
 
   return (
-    <div className={`gk-root${cosmos ? ' gk-root--cosmos' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>
+    <div className={`gk-root${cosmos ? ' gk-root--cosmos' : ''}`} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef}>
       <Header t={t} sub={hudSub} pause={pause} cosmos={cosmos} isAr={isAr} playSfx={playSfx} />
       {pause.modal}
 
@@ -339,7 +379,7 @@ export function GatekeeperEngine({
               <h2 className="gk-h2">{t.probeTitle}</h2>
               <p className="gk-hint">{t.probeHint}</p>
 
-              <div className="gk-tray">
+              <div className="gk-tray" data-coach="tray">
                 {gate.tray.map((c) => {
                   const k = cardKey(c);
                   const rec = stamped.find((s) => cardKey(s.card) === k);
@@ -364,7 +404,7 @@ export function GatekeeperEngine({
               </div>
 
               {/* the honest state of what is known */}
-              <p className="gk-alive">
+              <p className="gk-alive" data-coach="alive">
                 {isAr
                   ? `${alive.length} قانوناً ما زال ممكناً`
                   : `${alive.length} law${alive.length === 1 ? '' : 's'} still possible`}
@@ -431,6 +471,21 @@ export function GatekeeperEngine({
           </button>
         )}
       </div>
+
+      {coachOpen && (
+        <DomCoach
+          isAr={isAr}
+          playSfx={playSfx}
+          stageRef={coachRootRef}
+          pack={GATEKEEPER_COACH}
+          /* A stamp having actually come back, not a tap: `doProbe` refuses a
+             traveller already stamped and refuses when the budget is spent, so
+             only a real probe advances the lesson. */
+          satisfiedFor={() => stamped.length > 0}
+          onFinish={() => coach?.end()}
+          onSkip={() => coach?.end()}
+        />
+      )}
     </div>
   );
 }

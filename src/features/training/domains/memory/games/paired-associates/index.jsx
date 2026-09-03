@@ -3,6 +3,8 @@ import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { PAIRED_ASSOCIATES_COACH } from '../../../../shared/tutorials/coach/scripts/paired-associates';
 
 const PairedAssociates3DProto = lazyWithRetry(() => import('./PairedAssociates3DProto'), 'pal-3d');
 
@@ -44,6 +46,7 @@ export function PalEngine({
   playSfx,
   awardPoints,
   awardFreeRun,
+  coach,
 }) {
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 3) : 0;
@@ -66,6 +69,24 @@ export function PalEngine({
   const scoreRef = useRef(0);
   const bestRef = useRef(0);
   const cfgRef = useRef({ boxes: 6, pairs: 3, study: 950 });
+
+  /*
+   * ── The live-board coach (COACH-PLAN.md) ──
+   * Survival only. The study phase is a self-rescheduling `setTimeout` chain
+   * that opens each box for `studyMs`, so a lesson running over it would spend
+   * the very pairs it is telling the player how to memorise. The chain is
+   * therefore HELD rather than the timers being guarded one by one — the same
+   * choice as task-switch, and for the same reason.
+   *
+   * ⚠ The board is a three.js scene inside `.c3d-root` (`position: fixed;
+   * inset: 0`). That element is the only correct box to measure anchors
+   * against — a wrapper around the proto would measure 0×0, because everything
+   * inside is out of flow. Hence `rootRef`/`coachSlot` on C3dProtoChrome.
+   */
+  const stageRef = useRef(null);
+  const startStudyRef = useRef(null);
+  const coachOpen = coach?.open || false;
+  const coachHoldRef = useRef(Boolean(coach?.enabled && coach?.armed && mode === 'free'));
 
   const [hudStats, setHudStats] = useState([]);
   const [msg, setMsg] = useState('');
@@ -230,6 +251,9 @@ export function PalEngine({
        come and gone before the player had finished looking at the board — the
        "starts very fast" half of the 2026-08-15 report. The study time fix
        alone does not help if the sequence begins before you are watching. */
+    startStudyRef.current = () => step(0);
+    /* Held while the lesson is up — see the coach block above. */
+    if (coachHoldRef.current) return;
     timerRef.current = setTimeout(() => step(0), 1100);
   }, [cfg, isAr, presentCue, updateHud, rng]);
   newTrialRef.current = newTrial;
@@ -280,6 +304,21 @@ export function PalEngine({
     onExit?.();
   };
 
+  // Open the lesson at the top of a Survival run, before the first box opens.
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free') return;
+    coach.begin();
+  }, [coach, mode]);
+
+  /* Release the study chain. One place, so finishing, skipping and Escape all
+     resume the game identically. */
+  const endCoach = useCallback(() => {
+    coachHoldRef.current = false;
+    coach?.end();
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => startStudyRef.current?.(), 500);
+  }, [coach]);
+
   return (
     <Suspense fallback={<div className="c3d-root" />}>
       <PairedAssociates3DProto
@@ -295,6 +334,17 @@ export function PalEngine({
         stats={hudStats}
         interactive={scenePhase === 'recall'}
         onPick={onPick}
+        rootRef={stageRef}
+        coachSlot={coachOpen ? (
+          <DomCoach
+            isAr={isAr}
+            playSfx={playSfx}
+            stageRef={stageRef}
+            pack={PAIRED_ASSOCIATES_COACH}
+            onFinish={endCoach}
+            onSkip={endCoach}
+          />
+        ) : null}
       />
     </Suspense>
   );

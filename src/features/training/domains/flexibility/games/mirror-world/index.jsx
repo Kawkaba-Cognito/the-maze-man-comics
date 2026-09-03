@@ -9,6 +9,8 @@ import {
   levelSchedule, survivalSchedule, passSchedule,
   perturb, angularError, targetAngles, aimAngles, summarise, levelPassed,
 } from './data';
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { MIRROR_WORLD_COACH } from '../../../../shared/tutorials/coach/scripts/mirror-world';
 import './mirrorWorld.css';
 
 /*
@@ -91,8 +93,15 @@ const UI = {
 };
 
 function MirrorEngine({
-  mode, level, attempt, onResult, onExit, isAr, playSfx, awardFreeRun,
+  mode, level, attempt, onResult, onExit, isAr, playSfx, awardFreeRun, coach,
 }) {
+  /*
+   * The live-board coach (COACH-PLAN.md Phase 3). Survival only. Nothing needs
+   * holding: Mirror World has no clock and no deadline — a reach only happens
+   * when the player makes one, so the lesson costs nothing to read.
+   */
+  const coachRootRef = useRef(null);
+  const coachOpen = coach?.open || false;
   const t = isAr ? UI.ar : UI.en;
 
   const [stage, setStage] = useState(0);
@@ -102,6 +111,19 @@ function MirrorEngine({
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(null);
   const [targetDeg, setTargetDeg] = useState(null);
+
+  /* Open the lesson once a Survival reach block is on screen — the pad and the
+     block cue it points at only exist there, not on the block-intro panel. */
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free') return;
+    if (step !== 'reach' || over || paused) return;
+    coach.begin();
+  }, [coach, mode, step, over, paused]);
+
+  // Never strand it on a screen with no pad to point at.
+  useEffect(() => {
+    if (coachOpen && (step !== 'reach' || over)) coach?.end();
+  }, [coachOpen, step, over, coach]);
 
   const canvasRef = useRef(null);
   const reachesRef = useRef([]);
@@ -337,7 +359,17 @@ function MirrorEngine({
         pauseAriaLabel={t.paused}
       />
 
-      <div className="ct-mw-stage">
+      <div className="ct-mw-stage" ref={coachRootRef}>
+        {coachOpen && (
+          <DomCoach
+            isAr={isAr}
+            playSfx={playSfx}
+            stageRef={coachRootRef}
+            pack={MIRROR_WORLD_COACH}
+            onFinish={() => coach?.end()}
+            onSkip={() => coach?.end()}
+          />
+        )}
         {step === 'block' && (
           <div className="ct-mw-panel">
             <h2 className="ct-mw-h">{blockLabel}</h2>
@@ -352,10 +384,11 @@ function MirrorEngine({
 
         {step === 'reach' && (
           <div className="ct-mw-panel">
-            <div className="ct-mw-cue">{blockLabel}</div>
+            <div className="ct-mw-cue" data-coach="cue">{blockLabel}</div>
             <canvas
               ref={canvasRef}
               className="ct-mw-pad"
+              data-coach="pad"
               onPointerDown={onDown}
               onPointerMove={onMove}
               onPointerUp={() => { draggingRef.current = false; }}

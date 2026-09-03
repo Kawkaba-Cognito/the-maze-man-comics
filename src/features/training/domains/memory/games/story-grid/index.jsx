@@ -333,7 +333,10 @@ function useSwipe({ onNext, onPrev, isAr, enabled = true }) {
   };
 }
 
-export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false }) {
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { STORY_GRID_COACH } from '../../../../shared/tutorials/coach/scripts/story-grid';
+
+export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false, coach }) {
   const t = isAr ? T.ar : T.en;
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 5) : 0;
@@ -360,6 +363,15 @@ export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr
   const [marks, setMarks] = useState([]);       // one boolean per answered question
   const [result, setResult] = useState({ n: 0, m: 0 });
   const [timerPaused, setTimerPaused] = useState(false);
+
+  /*
+   * ── The live-board coach (COACH-PLAN.md Phase 2) ──
+   * Survival only, and it must run during WATCH: the strategy it teaches (encode
+   * what happens, not how it is drawn) is unrecoverable once the scenes are
+   * gone. The memorize clock is held while it is open — see the interval below.
+   */
+  const coachRootRef = useRef(null);
+  const coachOpen = coach?.open || false;
   const handleExit = useCallback(() => {
     if (mode === 'free') {
       trialLogRef.current?.finish({ rounds: roundsRef.current, best: bestRef.current });
@@ -419,11 +431,27 @@ export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr
   }, [mode, level]);
 
   useEffect(() => {
-    if (phase !== 'watch' || timerPaused) return undefined;
+    /* ⚠ The memorize clock stops for the lesson. audit:pacing enforces a FLOOR
+       of seconds-per-scene a player actually gets, and letting a tutorial eat
+       into it would break that guarantee where no gate can see it. */
+    if (phase !== 'watch' || timerPaused || coachOpen) return undefined;
     const id = setInterval(() => setTimeLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);
-  }, [phase, timerPaused]);
+  }, [phase, timerPaused, coachOpen]);
   useEffect(() => { if (phase === 'watch' && timeLeft === 0) setPhase('ask'); }, [phase, timeLeft]);
+
+  // Open the lesson at the top of a Survival run, while the scenes are still up.
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free') return;
+    if (phase !== 'watch' || !story || pause.open) return;
+    coach.begin();
+  }, [coach, mode, phase, story, pause.open]);
+
+  /* Never strand it past the watch phase — the scenes it points at are gone,
+     and it would hold a clock that is no longer running anyway. */
+  useEffect(() => {
+    if (coachOpen && phase !== 'watch') coach?.end();
+  }, [coachOpen, phase, coach]);
   // Reaction time is per QUESTION, measured from the moment it appears to the
   // moment it is confirmed — the one clean number the old all-at-once rebuild
   // could never produce.
@@ -550,7 +578,7 @@ export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr
   const refSize = Math.round(fsz * 0.74);
   const storyTitle = story.title ? (isAr ? story.title.ar : story.title.en) : '';
   const reveal = phase === 'reveal';
-  const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
+  const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot, position: 'relative' } : { ...S.root, position: 'relative' };
   const cardStyle = cosmos ? { ...S.watchCard, ...S.cosmosCard } : S.watchCard;
   const rebuildStyle = cosmos ? { ...S.rebuildCard, ...S.cosmosCard } : S.rebuildCard;
   const titleStyle = cosmos ? { ...S.storyTitle, color: '#f0e2c0', textShadow: '0 0 18px rgba(232,172,78,0.45)' } : S.storyTitle;
@@ -560,8 +588,18 @@ export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr
   const optSize = Math.round(fsz * (question && question.ref ? 0.78 : 0.92));
 
   return (
-    <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
+    <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef}>
       <style>{ANIM_CSS}</style>
+      {coachOpen && phase === 'watch' && (
+        <DomCoach
+          isAr={isAr}
+          playSfx={playSfx}
+          stageRef={coachRootRef}
+          pack={STORY_GRID_COACH}
+          onFinish={() => coach?.end()}
+          onSkip={() => coach?.end()}
+        />
+      )}
       {/* The shared header. This used to hand-write the same markup with TEXT
           glyphs (‹ and ⏸) while every game built on TrainingChromeBtn drew
           IconBack/IconPause — same frame, different glyph shapes. */}
@@ -589,13 +627,13 @@ export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr
               {...swipe}
             >
               {storyTitle && <div style={titleStyle}>📖 {storyTitle}</div>}
-              <div style={{ ...S.timerChip, ...(timeLeft <= 5 ? S.timerLow : null) }}>⏱ {timeLeft}s · {t.watchTag}</div>
-              <div style={{ position: 'relative' }}>
+              <div style={{ ...S.timerChip, ...(timeLeft <= 5 ? S.timerLow : null) }} data-coach="timer">⏱ {timeLeft}s · {t.watchTag}</div>
+              <div style={{ position: 'relative' }} data-coach="panel">
                 <span style={S.badge}>{watchIdx + 1}</span>
                 <PanelStage key={watchIdx} panel={g} size={bigSize()} say={resolveSay(g)} />
               </div>
               <div key={watchIdx} style={capStyle}>{resolveNarr(g) || `${t.seq(watchIdx, len)} ${narrate(g)}`}</div>
-              <div style={S.watchNav}>
+              <div style={S.watchNav} data-coach="nav">
                 <button type="button" aria-label={t.prev} style={{ ...S.navArrow, ...(watchIdx === 0 ? S.navOff : null) }} disabled={watchIdx === 0} onClick={goPrevScene}>‹</button>
                 <div style={S.dots}>{story.target.map((_, i) => (
                   <button key={i} type="button" aria-label={`${i + 1}`} style={{ ...S.dot, ...(i === watchIdx ? S.dotOn : null) }} onClick={() => { playSfx?.('click'); setWatchIdx(i); }} />

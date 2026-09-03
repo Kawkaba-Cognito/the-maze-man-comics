@@ -100,9 +100,21 @@ const DRAG_SLOP = 7;
    a cancel is the whole difference between premium and fiddly. */
 const DROP_PAD = 20;
 
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { DETECTIVE_COACH } from '../../../../shared/tutorials/coach/scripts/detective';
+
 export function DetectiveEngine({
-  mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false,
+  mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, cosmos = false, coach,
 }) {
+  /*
+   * ── The live-board coach (COACH-PLAN.md Phase 2) ──
+   * Survival only. Nothing needs holding: this game has no clock anywhere, by
+   * the same deliberate choice as The Gate — thinking longer is the correct
+   * play. Marking cards costs nothing and the lesson never submits an answer.
+   */
+  const coachRootRef = useRef(null);
+  const coachOpen = coach?.open || false;
+
   const t = isAr ? T.ar : T.en;
   const lang = isAr ? 'ar' : 'en';
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
@@ -135,6 +147,19 @@ export function DetectiveEngine({
     onExit();
   }, [mode, onExit]);
   const pause = useGamePause({ isAr, playSfx, onQuit: handleExit });
+
+  // Open the lesson once a Survival case is on screen and its cards exist.
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free') return;
+    if (!caseData || judged || done || pause.open) return;
+    coach.begin();
+  }, [coach, mode, caseData, judged, done, pause.open]);
+
+  // Never strand it on a screen with no line-up to point at.
+  useEffect(() => {
+    if (!coachOpen) return;
+    if (!caseData || judged || done) coach?.end();
+  }, [coachOpen, caseData, judged, done, coach]);
 
   const cfgFor = useCallback(() => {
     if (mode === 'levels') return levelCfg(level);
@@ -412,7 +437,7 @@ export function DetectiveEngine({
     return <div style={cosmos ? { ...S.root, ...S.cosmosRoot } : S.root} dir={isAr ? 'rtl' : 'ltr'} />;
   }
 
-  const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
+  const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot, position: 'relative' } : { ...S.root, position: 'relative' };
   const cardStyle = cosmos ? { ...S.card, ...S.cosmosCard } : S.card;
   /*
    * The notebook used to appear only from four suspects up, because two private
@@ -447,9 +472,19 @@ export function DetectiveEngine({
   }
 
   return (
-    <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
+    <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef}>
       <Header t={t} sub={hudSub} pause={pause} cosmos={cosmos} isAr={isAr} playSfx={playSfx} />
       {pause.modal}
+      {coachOpen && (
+        <DomCoach
+          isAr={isAr}
+          playSfx={playSfx}
+          stageRef={coachRootRef}
+          pack={DETECTIVE_COACH}
+          onFinish={() => coach?.end()}
+          onSkip={() => coach?.end()}
+        />
+      )}
 
       <div style={S.body}>
         <div style={cardStyle}>
@@ -472,7 +507,7 @@ export function DetectiveEngine({
           </div>
 
           {/* the rule */}
-          <div style={S.ruleCard}>
+          <div style={S.ruleCard} data-coach="rule">
             <span style={S.ruleLabel}>{t.ruleLabel}</span>
             {ruleText(caseData.rule, t, caseData.people)}
           </div>
@@ -488,7 +523,7 @@ export function DetectiveEngine({
           )}
 
           {/* the line-up */}
-          <div style={S.lineUp}>
+          <div style={S.lineUp} data-coach="lineup">
             {/* Somebody in the jail is NOT also standing in the line-up — the
                 Hotel Oddity rule, and the whole point: one name, one place.
                 After judging everyone comes back, because the reveal has to be
@@ -553,7 +588,7 @@ export function DetectiveEngine({
           {showNotebook && <div style={S.hint}>{t.notebookHint}</div>}
 
           {/* the statements */}
-          <div style={S.says}>
+          <div style={S.says} data-coach="says">
             {caseData.says.map((s, i) => {
               const world = judged ? caseData.worlds[0] : null;
               const val = world ? evalStatement(s, world, { people: caseData.people, traits: caseData.traits }) : null;

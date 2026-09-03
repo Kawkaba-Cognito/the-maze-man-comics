@@ -118,6 +118,9 @@ export default function PairedAssociates3DProto({
   stats = [],
   interactive = true,
   onPick,
+  /* The live-board coach mounts inside `.c3d-root` — see C3dProtoChrome. */
+  rootRef,
+  coachSlot,
 }) {
   const wrapRef = useRef(null);
   const apiRef = useRef({});
@@ -437,8 +440,10 @@ export default function PairedAssociates3DProto({
       onBack={onBack}
       playSfx={playSfx}
       canvasRef={wrapRef}
+      rootRef={rootRef}
+      coachSlot={coachSlot}
     >
-      <div className="ct-pal3d-phase-card" aria-hidden="true">
+      <div className="ct-pal3d-phase-card" aria-hidden="true" data-coach="phase">
         <span>{isAr ? 'مرصد الذاكرة' : 'Memory observatory'}</span>
         <strong>{phaseLabel}</strong>
         <small>{phaseHint}</small>
@@ -451,7 +456,7 @@ export default function PairedAssociates3DProto({
           : question}
       </p>
       {phase === 'recall' && interactive ? (
-        <div className="ct-pal-access-wrap">
+        <div className="ct-pal-access-wrap" data-coach="boxes">
           <span className="ct-pal-access-label">{isAr ? 'اختر الصندوق' : 'Choose a box'}</span>
           <div
             className="ct-pal-access-grid"

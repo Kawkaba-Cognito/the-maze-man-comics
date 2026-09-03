@@ -3741,6 +3741,8 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     border-color: var(--line);
 }
 .ct-rh-stage {
+    /* Hosts the live-board coach overlay (position: absolute; inset: 0). */
+    position: relative;
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
@@ -3832,6 +3834,10 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     touch-action: manipulation;
 }
 .ct-sm-stage {
+    /* Hosts the live-board coach overlay (`position: absolute; inset: 0`), so
+       the pointing hand's {x, y} fractions address the same box the
+       `data-coach` anchors are measured in. See DomCoach. */
+    position: relative;
     flex: 1 1 auto;
     min-height: 0;
     display: flex;

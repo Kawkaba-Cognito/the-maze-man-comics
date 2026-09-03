@@ -159,7 +159,16 @@ function summarizeGates(events, elapsedSec) {
   return { correct, total, accuracy, accuracyPct: Math.round(accuracy * 100), correctPerMin, meanRt, icv, switchCost, perOp };
 }
 
-export function MathGatesEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false }) {
+import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
+import { MATH_GATES_COACH } from '../../../../shared/tutorials/coach/scripts/math-gates';
+
+export function MathGatesEngine({ mode, level, seed, attempt, onResult, onExit, isAr, playSfx, awardPoints, awardFreeRun, cosmos = false, coach }) {
+  /*
+   * The live-board coach (COACH-PLAN.md Phase 3). Survival only; the simulation
+   * is held while the lesson is open — see the frame guard below.
+   */
+  const coachOpen = coach?.open || false;
+  const coachOpenRef = coach?.openRef || { current: false };
   const ppGates = mode === 'passplay' ? (attempt?.trials || PP_GATES) : 0;
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
@@ -170,6 +179,17 @@ export function MathGatesEngine({ mode, level, seed, attempt, onResult, onExit, 
 
   const [runId, setRunId] = useState(0);
   const [over, setOver] = useState(null);
+
+  // Open the lesson at the top of a Survival run; the track is up immediately.
+  useEffect(() => {
+    if (!coach?.armed || coach.open || mode !== 'free' || over) return;
+    coach.begin();
+  }, [coach, mode, over]);
+
+  // Never strand it on a game-over screen — it would freeze the simulation.
+  useEffect(() => {
+    if (coachOpen && over) coach?.end();
+  }, [coachOpen, over, coach]);
   const [hud, setHud] = useState({ passed: 0, lives: 0, combo: 0 });
   const [eqParts, setEqParts] = useState(null);
   const [sting, setSting] = useState(null);
@@ -301,6 +321,9 @@ export function MathGatesEngine({ mode, level, seed, attempt, onResult, onExit, 
 
     let hudCache = { passed: -1, lives: -1, combo: -1 };
     const frame = (dt, now) => {
+      /* Hold everything while the lesson is up. A bare return keeps the rAF loop
+         alive; returning false would stop it permanently (shared/canvasLoop.js). */
+      if (coachOpenRef.current) return;
       const bandH = Math.min(g.H * 0.16, 96);
       const charY = g.H - 64;
       const catchY = charY - bandH * 0.3;
@@ -428,7 +451,17 @@ export function MathGatesEngine({ mode, level, seed, attempt, onResult, onExit, 
         <span style={S.eqQ}>= ?</span>
       </div>
 
-      <div ref={wrapRef} style={S.play}>
+      <div ref={wrapRef} style={S.play} data-coach="board">
+        {coachOpen && (
+          <DomCoach
+            isAr={isAr}
+            playSfx={playSfx}
+            stageRef={wrapRef}
+            pack={MATH_GATES_COACH}
+            onFinish={() => coach?.end()}
+            onSkip={() => coach?.end()}
+          />
+        )}
         <canvas ref={canvasRef} onPointerDown={onCanvasTap} style={{ display: 'block', touchAction: 'none' }} />
         {sting && <div key={sting.id} style={S.sting}><div style={S.stingInner}>{sting.text}</div></div>}
         {over && (
