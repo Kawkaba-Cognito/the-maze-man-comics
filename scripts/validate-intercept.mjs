@@ -98,6 +98,42 @@ function checkWave(label, cfg, wave) {
       + `but the earliest available is ${Math.round(f.need)}ms (${f.reason || 'no window'})`);
   }
 
+  /*
+   * (a2) …AND CLEARING IT NEVER COSTS A FRIENDLY.
+   *
+   * ⚠ This is the check the game shipped without, and its absence was the bug:
+   * `feasible` used to filter the no-go marchers out and prove a wave clearable
+   * without ever asking at what price. Measured on the build before this gate
+   * existed, the OPTIMAL plan killed a friendly on 85.9% of waves — so the
+   * commission-error count, which is the entire inhibition measure, was mostly
+   * recording moments where withholding was impossible.
+   *
+   * It is re-derived from the returned plan rather than trusted: `feasible`
+   * builds a real schedule, so the gate can replay it against the friendlies'
+   * own windows with arithmetic that shares no code with the interval maths
+   * that placed the shots. A `pickClean` that silently stopped subtracting
+   * would still return ok; it could not also survive this.
+   */
+  if (f.ok) {
+    const hits = [];
+    for (const p of f.plan || []) {
+      for (const u of wave.units) {
+        if (u.kind !== KIND.NOGO) continue;
+        for (const w of u.windows || []) {
+          if (w.weapon !== p.weapon) continue;
+          if (p.at >= w.enterAt && p.at <= w.exitAt) {
+            hits.push(`${u.id} by the ${p.weapon} at ${Math.round(p.at)}ms`);
+          }
+        }
+      }
+    }
+    if (hits.length) {
+      fail(`${label}: the only way to clear this wave kills ${hits.length} friendly `
+        + `marcher(s) — ${hits.slice(0, 3).join(', ')}. Withholding is impossible, so a `
+        + 'commission error here measures the wave, not the player');
+    }
+  }
+
   /* (a2) armour is never marked for a weapon that needs two shots to kill it.
    * Two turret-bound armoured marchers back to back is serviceable by
    * milliseconds or not at all — the worst cell of this wave builder's
@@ -248,8 +284,13 @@ function checkWave(label, cfg, wave) {
   }
 }
 
-/* ── 2. survival and pass n play ───────────────────────────────────────── */
-for (let stage = 0; stage <= 30; stage += 1) {
+/* ── 2. survival and pass n play ─────────────────────────────────────────
+ * ⚠ Out to stage 60, not 30. Survival is UNBOUNDED — `survivalCfg` keeps adding
+ * marchers and tightening `gapMs` to its 430ms floor — so the friendly-sparing
+ * constraint added in 2026-09 is tightest exactly where the old range stopped
+ * looking. Measured over the whole ladder plus survival to stage 90, the deals
+ * that needed the most re-dealing were all up here. */
+for (let stage = 0; stage <= 60; stage += 1) {
   const cfg = survivalCfg(stage);
   if (dwellMs(cfg) < MIN_DWELL_MS - 1) fail(`survival s${stage}: dwell below the floor`);
   if (cfg.hiddenShare > 0 && visibleMs(cfg) < MIN_VISIBLE_MS - 1) fail(`survival s${stage}: too little visible`);
@@ -434,6 +475,71 @@ for (let stage = 0; stage <= 30; stage += 1) {
     barrels: [], goColour: 'steel', nogoColour: 'rust', waveNo: 0,
   };
   if (feasible(boundWrong).ok) fail('SELF-TEST: two turret-bound marchers 150ms apart cannot both be served');
+
+  /* ── SPARING THE FRIENDLIES ───────────────────────────────────────────────
+   *
+   * Four plants, because this constraint can fail in four different directions
+   * and three of them look like success.
+   */
+  const friend = (id, windows) => unit(id, windows, { kind: KIND.NOGO, colour: 'rust' });
+
+  /* 1. TOO STRICT is as wrong as too loose. A friendly that merely OVERLAPS a
+     threat must still pass — overlap is the mechanic. The player fires in the
+     gap; a proof that rejected this would re-deal every wave in the game and
+     the retry loop would spin to its cap on levels that are perfectly fine. */
+  const overlapOk = {
+    units: [unit('n1', [win('turret', 0, 1000)]), friend('n2', [win('turret', 0, 400)])],
+    barrels: [], goColour: 'steel', nogoColour: 'rust', waveNo: 0,
+  };
+  const ov = feasible(overlapOk);
+  if (!ov.ok) fail('SELF-TEST: feasible() rejected a friendly that leaves 600ms of clean line — it is too strict');
+  else if ((ov.plan || []).some((p) => p.at >= 0 && p.at <= 400)) {
+    fail('SELF-TEST: feasible() scheduled a shot straight through a friendly it had room to avoid');
+  }
+
+  /* 2. THE REAL PLANT. The friendly stands in the stretch for exactly as long as
+     the threat does, so every moment that serves one kills the other. This is
+     the wave the old build shipped by the hundred, and it must be rejected. */
+  const noClean = {
+    units: [unit('n3', [win('turret', 0, 400)]), friend('n4', [win('turret', 0, 400)])],
+    barrels: [], goColour: 'steel', nogoColour: 'rust', waveNo: 0,
+  };
+  const nc = feasible(noClean);
+  if (nc.ok) {
+    fail('SELF-TEST: feasible() passed a wave whose every clearing shot kills a friendly '
+      + '— it is not subtracting the no-go windows at all');
+  } else if (!nc.friendly) {
+    fail(`SELF-TEST: feasible() rejected the friendly plant but blamed "${nc.reason}" — `
+      + 'the wrong repair. A reload problem is a weapon spec; this is the column spacing');
+  }
+
+  /* 3. A friendly in ANOTHER weapon's stretch constrains nothing. If this fails,
+     the forbidden intervals are being pooled across weapons and the game would
+     re-deal waves that were never in conflict. */
+  const otherGun = {
+    units: [unit('n5', [win('turret', 0, 400)]), friend('n6', [win('missile', 0, 400, { heavy: true })])],
+    barrels: [], goColour: 'steel', nogoColour: 'rust', waveNo: 0,
+  };
+  if (!feasible(otherGun).ok) fail('SELF-TEST: a friendly in the missile\'s stretch blocked the turret');
+
+  /* 4. ⚠ BOTH of armour's shots must land clean, not just the first.
+     Window [0,1000] with a 500ms reload puts the opening shot in [0,500] and the
+     second exactly 500ms later. A friendly holding [500,1000] therefore blocks
+     the second shot for EVERY legal opening — there is no clean line at all.
+     A check that only tested the first hit would find [0,499] wide open and pass
+     this, which is the same miss as the lookahead that forgot its own second
+     shot. */
+  const armourSecond = {
+    units: [
+      unit('n7', [win('turret', 0, 1000)], { kind: KIND.ARMOUR, taps: 2 }),
+      friend('n8', [win('turret', 500, 1000)]),
+    ],
+    barrels: [], goColour: 'steel', nogoColour: 'rust', waveNo: 0,
+  };
+  if (feasible(armourSecond).ok) {
+    fail('SELF-TEST: feasible() passed armour whose SECOND shot must kill a friendly '
+      + '— it is only checking the first hit of a multi-hit press');
+  }
 }
 
 /* ── 6. the scoring reports all three measures ─────────────────────────────

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import PracticeShell, { INK, SUB, SERIF } from './PracticeShell';
+import PracticeShell, { PracticeHero, INK, SUB, SERIF } from './PracticeShell';
 import { markWellbeingPracticeDone } from './habitState';
 
 /*
@@ -8,7 +8,8 @@ import { markWellbeingPracticeDone } from './habitState';
  * and contracts on the exhale, with four evidence-based patterns. Non-medical.
  */
 
-const ACCENT = '#5aa9c8';
+const ACCENT = 'var(--rx-calm-core)';
+const ACCENT_LIT = 'var(--rx-calm-lit)';
 
 const PATTERNS = [
   { id: 'box', en: 'Box', ar: 'الصندوق', d: { en: 'Calm & focus', ar: 'هدوء وتركيز' }, phases: [
@@ -88,12 +89,12 @@ export default function BreathePractice({ onBack }) {
   const ph = pattern.phases[phaseIdx];
 
   return (
-    <PracticeShell title={t.title} accent={ACCENT} isAr={isAr} onBack={onBack}>
+    <PracticeShell title={t.title} accent={ACCENT} accentLit={ACCENT_LIT} isAr={isAr} onBack={onBack}>
       <style>{CSS}</style>
 
       {phase === 'setup' && (
         <div className="rxp-body">
-          <div className="rxp-hero">🫁</div>
+          <PracticeHero emoji="🫁" />
           <div className="rxp-field">
             <div className="rxp-label">{t.pick}</div>
             <div className="rxp-chips" style={{ flexDirection: 'column' }}>
@@ -132,7 +133,7 @@ export default function BreathePractice({ onBack }) {
 
       {phase === 'done' && (
         <div className="rxp-body rxp-center">
-          <div className="rxp-hero">🌿</div>
+          <PracticeHero emoji="🌿" />
           <div className="brk-doneT serif">{t.done}</div>
           <div className="brk-doneS">{t.doneSub}</div>
           <button className="rxp-primary" onClick={start}>{t.again}</button>

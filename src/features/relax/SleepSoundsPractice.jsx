@@ -8,7 +8,8 @@ import { assetUrl } from '../../lib/assetUrl';
  * Only one track for now (Rain); more can be added to TRACKS later.
  */
 
-const ACCENT = '#7b86c8';
+const ACCENT = 'var(--rx-sleep-core)';
+const ACCENT_LIT = 'var(--rx-sleep-lit)';
 
 const TRACKS = [
   { id: 'rain', icon: '🌧️', en: 'Rain', ar: 'مطر', src: 'Assets/sounds/rain.mp3' },
@@ -54,7 +55,7 @@ export default function SleepSoundsPractice({ onBack }) {
   const toggle = () => { playSfx?.('click'); setPlaying((p) => !p); };
 
   return (
-    <PracticeShell title={t.title} accent={ACCENT} isAr={isAr} onBack={onBack}>
+    <PracticeShell title={t.title} accent={ACCENT} accentLit={ACCENT_LIT} isAr={isAr} onBack={onBack}>
       <style>{CSS}</style>
       <audio ref={audioRef} src={assetUrl(current.src)} loop preload="none" />
 

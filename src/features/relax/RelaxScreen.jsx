@@ -14,6 +14,8 @@ import { planetIconUrl } from '../../lib/planetIcons';
 import { OPEN_DAILY_KEY } from './HabitReminderBanner';
 import UniverseStage from '../../components/shared/UniverseStage';
 import { RELAX_PRACTICES } from './practices.js';
+import KawkabSprite from '../training/shared/KawkabSprite';
+import './wellbeing.css';
 /* The personalization CONTROLS moved to Home (features/personalization/
  * NeuralPanel) — there is one model, so it now has one surface. What stays here
  * is the RECORDING: choosing a practice is the example the wellbeing model
@@ -148,7 +150,7 @@ function MbsrTracker({ onBack }) {
   const p = todayPhase;
 
   return (
-    <div className="rx-root" dir="ltr">
+    <div className="rx-wb rx-root" dir="ltr">
       <style>{CSS}</style>
       <div className="rx-app">
         <div className="header">
@@ -803,13 +805,33 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
       <div className="rx-soon-desc">{desc}</div>
     </div>
   );
-  const detailHeader = (icon, color, title, tag, onBack) => (
+  /*
+   * `areaId` names one of the five areas, and when it is given the header wears
+   * that area's PLANET — the same `.rx-body` the landing draws, at 34px.
+   *
+   * ⚠ It used to be the category's emoji on a `${color}22` chip. 13% alpha of an
+   * already-muted hue is a grey square, so the screen you arrived at after
+   * tapping a jade planet opened with a colourless box, and nothing carried the
+   * area's identity across the transition. Repeating the body is the cheapest
+   * way to say "this is the inside of the thing you just tapped".
+   */
+  const detailHeader = (icon, color, title, tag, onBack, areaId) => (
     <div className="header">
       <button className="rx-back" onClick={onBack} aria-label="Back">‹</button>
       <div style={{ paddingInlineStart: 42 }}>
         <div className="header-sub">{isAr ? 'العافية' : 'Wellbeing'}</div>
         <div className="rx-cat-hd">
-          <span className="rx-cat-ic rx-cat-ic--hd" style={{ background: `${color}22`, color }}>{icon}</span>
+          {areaId ? (
+            <span className="rx-cat-planet" aria-hidden="true">
+              <span className="rx-body">
+                {planetIconUrl(areaId)
+                  ? <img className="rx-emblem" src={planetIconUrl(areaId)} alt="" draggable={false} />
+                  : <span className="rx-orb-icon">{icon}</span>}
+              </span>
+            </span>
+          ) : (
+            <span className="rx-cat-ic rx-cat-ic--hd" style={{ background: `${color}22`, color }}>{icon}</span>
+          )}
           <span className="header-title serif">{title}</span>
         </div>
         <div className="menu-tag">{tag}</div>
@@ -821,7 +843,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
   if (openCat === 'favorites') {
     const favItems = favs.map(byId).filter(Boolean);
     return (
-      <div className="rx-root" dir={isAr ? 'rtl' : 'ltr'}>
+      <div className="rx-wb rx-root" dir={isAr ? 'rtl' : 'ltr'}>
         <style>{MENU_CSS}</style>
         <UniverseStage accent="wellbeing" dark={dark} homeDusk />
         <div className="rx-app">
@@ -845,16 +867,24 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
     const emptyDesc = group === 'program'
       ? (isAr ? (cat.programSoonAr || 'برنامج موجّه لهذا المجال — قريباً.') : (cat.programSoon || 'A guided program for this area is coming soon.'))
       : (isAr ? (cat.quickSoonAr || 'ممارسات سريعة — قريباً.') : (cat.quickSoon || 'Quick practices are coming soon.'));
+    /* ⚠ The area's hue is set on the ROOT, not on the header, so the planet
+       mark, the segmented control, the cards and every hover state on this
+       screen all read the same pair. That is what makes a category screen feel
+       like the inside of its planet rather than a generic list. */
     return (
-      <div className="rx-root" dir={isAr ? 'rtl' : 'ltr'}>
+      <div
+        className="rx-wb rx-root"
+        dir={isAr ? 'rtl' : 'ltr'}
+        style={{ '--rx-hue': `var(--rx-${cat.id}-core)`, '--rx-hue-lit': `var(--rx-${cat.id}-lit)` }}
+      >
         <style>{MENU_CSS}</style>
         <UniverseStage accent="wellbeing" dark={dark} homeDusk />
         <div className="rx-app">
-          {detailHeader(cat.icon, cat.color, isAr ? cat.titleAr : cat.title, isAr ? cat.tagAr : cat.tag, () => setOpenCat(null))}
+          {detailHeader(cat.icon, cat.color, isAr ? cat.titleAr : cat.title, isAr ? cat.tagAr : cat.tag, () => setOpenCat(null), cat.id)}
           <div className="content">
             {cat.items ? (
               <>
-                <div className="rx-seg" style={{ '--seg': cat.color }}>
+                <div className="rx-seg">
                   <button className={`rx-seg-btn${group === 'program' ? ' on' : ''}`} onClick={() => setGroup('program')}>{isAr ? 'برامج' : 'Programs'}</button>
                   <button className={`rx-seg-btn${group === 'quick' ? ' on' : ''}`} onClick={() => setGroup('quick')}>{isAr ? 'سريعة' : 'Quick'}</button>
                 </div>
@@ -938,7 +968,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
 
   return (
     <div
-      className="rx-root rx-root--landing"
+      className="rx-wb rx-root rx-root--landing"
       dir={isAr ? 'rtl' : 'ltr'}
       style={{ background: 'transparent' }}
     >
@@ -1024,35 +1054,43 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
               animationDuration: `${p.dur}s`, animationDelay: `-${p.delay}s`,
             }}
           >
-            <span className="rx-planet-in" style={{ '--i': idx }}>
+            {/*
+              * ⚠ THE HUE FINALLY DOES SOMETHING (2026-09-05).
+              *
+              * Every category has carried a `color` since this screen was
+              * written, and it was very nearly invisible: the orb painted it as
+              * `${c.color}42` over `${c.color}20` — 26% then 12% alpha — with
+              * the rest transparent, behind a Fluent emoji wearing a 1px black
+              * outline. All five rendered as the same grey-lilac disc, so the
+              * only thing distinguishing Sleep from Relationships was the
+              * caption underneath. Defined, wired, and doing no work.
+              *
+              * They are proper bodies now: `.rx-body` shades a sphere from the
+              * area's own two tokens, `.rx-halo` is the light it throws, and the
+              * old icon becomes an EMBLEM riding on the surface at 46%. Colour
+              * and emblem are two independent channels, which is what keeps the
+              * five apart for a colour-blind player.
+              *
+              * ⚠ The hue is set here, on the wrapper, rather than inside
+              * wellbeing.css: the stylesheet defines the five pairs, the markup
+              * chooses which pair this orb wears. One source, one selection.
+              */}
+            <span
+              className="rx-planet-in"
+              style={{
+                '--i': idx,
+                '--rx-hue': `var(--rx-${c.id}-core)`,
+                '--rx-hue-lit': `var(--rx-${c.id}-lit)`,
+              }}
+            >
               <span className="rx-orb-wrap" style={{ '--rx-orb': `${p.size}px` }}>
-                <span aria-hidden="true" className="rx-orb-aura" style={{
-                  background: `radial-gradient(circle, ${c.color}5e 0%, ${c.color}1f 48%, transparent 72%)`,
-                }} />
-                {c.id === 'sleep' && (
-                  <span aria-hidden="true" className="rx-orb-ring" style={{ borderColor: c.color }} />
-                )}
-                <span className="rx-orb" style={{
-                  background: planetIconUrl(c.id) ? `radial-gradient(circle, ${c.color}42 0%, ${c.color}20 55%, transparent 76%)` : c.color,
-                }}>
-                  {planetIconUrl(c.id) ? (
-                    <img
-                      src={planetIconUrl(c.id)}
-                      alt=""
-                      draggable={false}
-                      style={{
-                        width: '80%', height: '80%', objectFit: 'contain', filter: orbArtFilter,
-                        pointerEvents: 'none', WebkitUserDrag: 'none', WebkitTouchCallout: 'none', userSelect: 'none',
-                      }}
-                    />
-                  ) : (
-                    <>
-                      <span aria-hidden="true" className="rx-orb-texture" style={planetTextureLayerStyle(0.4)} />
-                      <span aria-hidden="true" className="rx-orb-shade" />
-                      <span aria-hidden="true" className="rx-orb-sheen" />
-                      <span className="rx-orb-icon">{c.icon}</span>
-                    </>
-                  )}
+                <span aria-hidden="true" className="rx-halo" />
+                {c.id === 'sleep' && <span aria-hidden="true" className="rx-orb-ring" />}
+                <span className="rx-body">
+                  <span aria-hidden="true" className="rx-orb-texture" style={planetTextureLayerStyle(0.22)} />
+                  {planetIconUrl(c.id)
+                    ? <img className="rx-emblem" src={planetIconUrl(c.id)} alt="" draggable={false} />
+                    : <span className="rx-orb-icon">{c.icon}</span>}
                 </span>
                 {c.id === 'meaning' && (
                   <>
@@ -1078,9 +1116,45 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
         );
       })}
 
-      <p className="rx-fade rx-landing-hint" style={{ color: skyMuted }}>
-        {isAr ? 'المس أي كوكب لاستكشاف مجاله.' : 'Tap any planet to explore that area.'}
-      </p>
+      {/*
+        * ── DR KAWKAB, THE GUIDE ──────────────────────────────────────────────
+        *
+        * Training puts him at the centre of its hub; Wellbeing had no character
+        * at all, while its two quizzes drew a DIFFERENT mascot and said "Hi, I'm
+        * Kawkab!" underneath. Same character, same file the hub loads
+        * (`kawkab-planet.webp`, via the shared KawkabSprite), so the two halves
+        * of the app are visibly one product.
+        *
+        * ⚠ He stands at the FOOT of the sky rather than in the middle of it, and
+        * that is the whole difference between the two screens. Training is a
+        * hub-and-spoke wheel with the mascot at the nexus and everything
+        * orbiting him; Wellbeing's areas are independent and nothing connects
+        * them (see the CAT_LAYOUT note). Putting him at the centre here would
+        * import Training's geometry and collapse the one deliberate distinction
+        * between the two landings — so he is beside the constellation, not the
+        * thing it revolves around.
+        *
+        * ⚠ `pointer-events: none` on the guide (wellbeing.css). He sits over the
+        * lower band of the field, and a decorative character that swallows taps
+        * aimed at the Personality planet is the unreachable-control failure this
+        * repo keeps re-learning.
+        */}
+      {/*
+        * ⚠ HE SAYS THE HINT — the two are ONE element, not a character parked
+        * next to a caption. There was already a line of instruction stranded at
+        * the bottom of this screen ("Tap any planet to explore that area."),
+        * grey on beige, belonging to nobody. Giving it to the guide costs no
+        * extra space, gives the character a reason to be on the screen, and
+        * fills the empty bottom band that was most of what made this landing
+        * read as unfinished. Adding a mascot AND keeping a separate orphan
+        * caption would have been two things saying one thing.
+        */}
+      <div className="rx-fade rx-landing-guide">
+        <KawkabSprite size={56} className="rx-guide-art" />
+        <p className="rx-guide-line rx-landing-hint">
+          {isAr ? 'المس أي كوكب لاستكشاف مجاله.' : 'Tap any planet to explore that area.'}
+        </p>
+      </div>
 
       <style>{`
         .rx-fade { animation: rxFade .7s ease both; }
@@ -1219,32 +1293,41 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
            width/height, which no height query could reach. */
         .rx-orb-wrap { position:relative; display:flex; align-items:center; justify-content:center;
           width:calc(var(--rx-orb, 88px) * var(--rx-k,1)); height:calc(var(--rx-orb, 88px) * var(--rx-k,1)); }
-        .rx-orb-aura { position:absolute; inset:-30%; border-radius:50%;
-          animation: rxBreathe 5.5s ease-in-out infinite; }
+        /* The halo breathes. It used to be .rx-orb-aura with the colour baked
+           inline at 37%/12% alpha; wellbeing.css now owns the gradient and it
+           reads the area's own hue, so this rule only has to say "breathe". */
+        .rx-halo { animation: rxBreathe 5.5s ease-in-out infinite; }
         @keyframes rxBreathe { 0%,100% { opacity:.6; transform:scale(1); } 50% { opacity:1; transform:scale(1.1); } }
-        .rx-orb { position:relative; width:100%; height:100%; border-radius:50%; overflow:hidden;
-          display:flex; align-items:center; justify-content:center;
-          box-shadow: 0 12px 30px rgba(8,6,4,.28), inset 0 -8px 18px rgba(0,0,0,.14), inset 0 2px 10px rgba(255,255,255,.28);
-          transition: transform .28s cubic-bezier(.3,.9,.4,1.2); }
-        /* The discs really are circles, so they take the crisp ring the artwork
-           cannot — same reason as the contour above: on beige the orb's own
-           26%-alpha glow has nothing to sit against and the edge disappears. */
-        html[data-home-theme='light'] .rx-orb {
-          box-shadow: 0 10px 22px rgba(32,29,24,.20), inset 0 -8px 18px rgba(0,0,0,.14),
-                      inset 0 2px 10px rgba(255,255,255,.28), 0 0 0 1.5px rgba(32,29,24,.30); }
-        .rx-planet:hover .rx-orb { transform: scale(1.06); }
-        .rx-planet:active .rx-orb { transform: scale(.95); }
-        .rx-orb-shade { position:absolute; inset:0; border-radius:50%;
-          background: radial-gradient(circle at 71% 78%, rgba(22,14,6,.4) 0%, rgba(22,14,6,.12) 36%, transparent 58%); }
-        .rx-orb-sheen { position:absolute; inset:0; border-radius:50%;
-          background: radial-gradient(ellipse 46% 34% at 30% 20%, rgba(255,255,255,.8) 0%, rgba(255,255,255,.14) 52%, transparent 68%); }
-        .rx-orb-texture { position:absolute; inset:0; border-radius:50%; pointer-events:none; }
-        /* Was an inline \`fontSize: p.size * 0.34\`. Same ratio, expressed
-           against the orb so it follows --rx-k with everything else. */
-        .rx-orb-icon { position:relative; font-size:calc(var(--rx-orb, 88px) * .34 * var(--rx-k,1));
+        /*
+         * ⚠ THE SPHERE IS wellbeing.css's \`.rx-body\` NOW, and the shading that
+         * used to live here in three stacked layers (.rx-orb + .rx-orb-shade +
+         * .rx-orb-sheen) went with it. What is left here is only what the
+         * LANDING adds: the cast shadow onto the sky, and the press response.
+         *
+         * The old light-theme branch drew a hard \`0 0 0 1.5px rgba(32,29,24,.3)\`
+         * ring because "the orb's own 26%-alpha glow has nothing to sit against"
+         * on beige — true of a nearly transparent disc, and no longer true of a
+         * shaded body with a lit limb. The body separates itself.
+         */
+        .rx-planet .rx-body { box-shadow:
+          inset -6px -8px 18px -6px rgba(0,0,0,.55),
+          inset 3px 4px 10px -4px rgba(255,255,255,.5),
+          0 12px 30px rgba(8,6,4,.3); }
+        html[data-home-theme='light'] .rx-planet .rx-body { box-shadow:
+          inset -6px -8px 18px -6px rgba(0,0,0,.45),
+          inset 3px 4px 10px -4px rgba(255,255,255,.55),
+          0 10px 22px rgba(32,29,24,.22); }
+        .rx-planet:hover .rx-body { transform: scale(1.06); }
+        .rx-planet:active .rx-body { transform: scale(.95); }
+        /* Kept, at a much lower strength: on a shaded body the old 0.4 texture
+           fought the terminator instead of sitting on it. */
+        .rx-orb-texture { position:absolute; inset:0; border-radius:50%; pointer-events:none; opacity:.5; }
+        .rx-orb-icon { position:relative; z-index:1; font-size:calc(var(--rx-orb, 88px) * .30 * var(--rx-k,1));
           filter: drop-shadow(0 2px 5px rgba(0,0,0,.4)); }
-        .rx-orb-ring { position:absolute; width:156%; height:42%; border:1.5px solid; border-radius:50%;
-          transform: rotate(-24deg); opacity:.5; }
+        /* Sleep's ring takes the area's own lit hue rather than an inline
+           borderColor — one source for the colour, like everything else here. */
+        .rx-orb-ring { position:absolute; width:156%; height:42%; border-radius:50%;
+          border:1.5px solid var(--rx-hue-lit); transform: rotate(-24deg); opacity:.55; }
         .rx-spark { position:absolute; font-size:11px; color:#ffd98a; line-height:1;
           text-shadow: 0 0 8px rgba(255,200,90,.95); animation: rxTwinkle 2.8s ease-in-out infinite; }
         .rx-spark--b { font-size:8px; animation-delay:1.3s; }
@@ -1253,8 +1336,59 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
           letter-spacing:.02em; line-height:1.15; text-align:center; }
         .rx-soon-pill { font-size:9.5px; font-weight:800; letter-spacing:1.4px; border:1px solid;
           border-radius:100px; padding:2.5px 9px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+        /*
+         * The guide. Anchored to the same --rx-bot the hint uses, so he rises
+         * and falls with the chrome instead of being measured against the raw
+         * stage — the mistake CAT_LAYOUT.fy exists to avoid.
+         *
+         * ⚠ pointer-events:none. He overlaps the lower band where the
+         * Personality and Relationships planets sit, and a decorative figure
+         * that eats their taps is the unreachable-control bug this repo has
+         * shipped three times.
+         *
+         * (No backticks anywhere in this block — it lives inside a template
+         * literal, and one would close the string. The parse error that causes
+         * points at the next stray word, not at the quote.)
+         */
+        /* He replaces the old free-floating hint, so he takes its anchor: the
+           full width of the stage above the tab bar, centred, rather than a
+           corner. That also keeps him clear of the two lowest planets. */
+        /*
+         * ⚠ ANCHORED ABOVE THE TAB BAR, AND THAT NUMBER IS MEASURED, NOT GUESSED.
+         * The first version sat at 78px and the speech line was cut in half by
+         * the nav — the guide is a 56px character standing on a bubble, so the
+         * group is far taller than the single line of text it replaced, and it
+         * cannot inherit that line's clearance. 100px is the hint's old 94px
+         * plus the room the character adds.
+         */
+        .rx-landing-guide { position:absolute; z-index:3; pointer-events:none;
+          left:0; right:0; bottom:calc(100px + env(safe-area-inset-bottom));
+          display:flex; align-items:flex-end; justify-content:center; gap:9px;
+          padding-inline:16px; }
+        .rx-landing-guide .rx-landing-hint { position:static; margin:0; bottom:auto; }
+        @media (max-height: 620px) {
+          .rx-landing-guide { bottom:calc(90px + env(safe-area-inset-bottom)); }
+        }
+        /*
+         * ⚠ ON A PHONE THE ORDER REVERSES, so the CHARACTER takes the free end
+         * of the band and the line takes the middle.
+         *
+         * Centred, the sprite landed at roughly 20% of a 390px stage — exactly
+         * where CAT_LAYOUT puts Personality (x: 22) — and his head sat on that
+         * planet's caption. justify-content:flex-end was the obvious fix and
+         * measured almost nothing: sprite + gap + bubble is ~333px inside a
+         * 358px stage, so there were 25px of slack to shift into and he moved
+         * about ten. Reversing costs no width at all and moves him the full
+         * width of the bubble, which is the only thing here that was ever going
+         * to clear that planet.
+         */
+        @media (max-width: 560px) {
+          .rx-landing-guide { flex-direction:row-reverse; }
+          /* The notch follows him to the other side. */
+          .rx-landing-guide .rx-guide-line { border-radius:14px 14px 4px 14px; }
+        }
         @media (prefers-reduced-motion: reduce) {
-          .rx-planet, .rx-planet-in, .rx-orb-aura, .rx-star, .rx-blob, .rx-shoot, .rx-spark, .rx-fade { animation:none !important; }
+          .rx-planet, .rx-planet-in, .rx-halo, .rx-star, .rx-blob, .rx-shoot, .rx-spark, .rx-fade { animation:none !important; }
         }
       `}</style>
       </div>
@@ -1382,7 +1516,17 @@ const MENU_CSS = `
 .rx-root .rx-cat-hd { display:flex; align-items:center; gap:11px; }
 .rx-root .rx-seg { display:flex; gap:5px; background:var(--universe-glass-strong); border:1px solid var(--universe-line); border-radius:13px; padding:4px; margin-bottom:18px; }
 .rx-root .rx-seg-btn { flex:1; padding:10px 0; border:none; background:none; border-radius:9px; font-family:inherit; font-size:13.5px; font-weight:800; color:var(--universe-muted); cursor:pointer; transition:all .15s; }
-.rx-root .rx-seg-btn.on { background:color-mix(in srgb, var(--universe-accent) 14%, var(--universe-glass-strong)); color:var(--universe-ink); box-shadow:0 2px 8px rgba(0,0,0,0.18); }
+/* The selected tab wears the AREA's hue, not the one global accent. Five
+   categories that all highlight in the same blue is the same failure as five
+   planets that all render grey. */
+.rx-root .rx-seg-btn.on { background:color-mix(in srgb, var(--rx-hue, var(--universe-accent)) 18%, var(--universe-glass-strong)); color:var(--universe-ink); box-shadow:var(--elev-rest); }
+/* The area's planet, repeated at header size — see detailHeader.
+   ⚠ display:block is load-bearing. This is a <span>, so it is inline by
+   default, width/height are ignored on an inline box, and the .rx-body inside
+   it sizes at 100% OF NOTHING. It reserved its 40px of layout (the title was
+   indented by it) and painted zero pixels — a gap where a planet should be,
+   with a perfectly correct gradient in getComputedStyle. */
+.rx-root .rx-cat-planet { display:block; position:relative; width:40px; height:40px; flex-shrink:0; }
 .rx-root .rx-soon-badge { flex-shrink:0; font-size:10.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--universe-accent); background:rgba(232,172,78,0.14); border:1px solid var(--universe-line); border-radius:999px; padding:4px 11px; }
 .rx-root .rx-soon-empty { text-align:center; padding:40px 16px; }
 .rx-root .rx-soon-emoji { width:88px; height:88px; border-radius:24px; display:flex; align-items:center; justify-content:center; font-size:44px; margin:0 auto 18px; }

@@ -9,7 +9,8 @@ import { markWellbeingPracticeDone } from './habitState';
  * a step-by-step reveal, then a final map with your answers on the drawing.
  */
 
-const ACCENT = '#c9a24b';
+const ACCENT = 'var(--rx-meaning-core)';
+const ACCENT_LIT = 'var(--rx-meaning-lit)';
 const STORAGE_KEY = 'rx_ikigai_v1';
 
 const QUADRANTS = [
@@ -268,7 +269,7 @@ export default function IkigaiPractice({ onBack }) {
     : null;
 
   return (
-    <PracticeShell title={t.title} accent={ACCENT} isAr={isAr} onBack={onBack}>
+    <PracticeShell title={t.title} accent={ACCENT} accentLit={ACCENT_LIT} isAr={isAr} onBack={onBack}>
       <style>{CSS}</style>
 
       {phase === 'intro' && (

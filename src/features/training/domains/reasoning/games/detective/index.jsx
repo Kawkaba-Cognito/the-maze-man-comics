@@ -634,23 +634,24 @@ export function DetectiveEngine({
             })}
           </div>
 
-          {/* the question — Detective Kawkab asks it, so the hub mascot is the
-              one running the case rather than a disembodied prompt */}
-          <div style={S.askRow}>
-            <img
-              src={KAWKAB_URL}
-              alt=""
-              aria-hidden="true"
-              draggable="false"
-              style={{ ...S.detective, height: Math.round(56 / KAWKAB_ASPECT) }}
-            />
-            <div style={S.question}>
-              {q.kind === 'verdict' ? t.q.verdict(nameOf(q.about)) : t.q[q.kind]}
-            </div>
+          {/* ── THE DOCK ──
+              Detective Kawkab and the cell, side by side, ONE band instead of
+              three stacked full-width rows.
+
+              ⚠ It is here, in the body of the case, rather than at the bottom
+              of the column. Measured on this project's own 1366×577 desktop
+              (project_desktop_breakpoints): the line-up sat at y=283 and the
+              cell at y≈684, so the drag SOURCE and the drop TARGET were never
+              on screen together — the one committing gesture in the game
+              crossed a scroll boundary. The column is 452px inside a 1366px
+              window, so the width either side was doing nothing; Kawkab now
+              stands in it, next to the door he is asking you to close. */}
+          <div style={S.question}>
+            {q.kind === 'verdict' ? t.q.verdict(nameOf(q.about)) : t.q[q.kind]}
           </div>
 
           {/* The answer controls — skipped entirely on a person question, where
-              the jail below IS the answer box. */}
+              the cell IS the answer box. */}
           {!judged && !jailIsAnswer && (
             <AnswerControls
               q={q}
@@ -667,22 +668,29 @@ export function DetectiveEngine({
             />
           )}
 
-          {/* ── THE JAIL ──
-              Always on screen, down at the bottom where a cell belongs, and on
-              a person question it is where the answer goes. Drag a suspect in
-              (or tap it to cycle through them) and submit. */}
-          <div
-            ref={cellRef}
-            style={{
-              ...S.jail,
-              /* Only light up as a target for a card coming IN. During a drag
-                 OUT the accent would be telling you to drop where you are
-                 already leaving, which is the cancel, not the action. */
-              ...(drag?.from === 'lineup' ? S.jailArmed : null),
-              ...(drag?.from === 'lineup' && drag.over ? S.jailOver : null),
-              ...(jailed && !drag ? S.jailFull : null),
-            }}
-          >
+          <div style={S.dock}>
+            <img
+              src={KAWKAB_URL}
+              alt=""
+              aria-hidden="true"
+              draggable="false"
+              style={{ ...S.detective, height: Math.round(74 / KAWKAB_ASPECT) }}
+            />
+            <div style={S.dockBody}>
+              {/* ── THE CELL ── on a person question this is where the answer
+                  goes. Drag a suspect in (or tap Choose to cycle) and submit. */}
+              <div
+                ref={cellRef}
+                style={{
+                  ...S.jail,
+                  /* Only light up as a target for a card coming IN. During a drag
+                     OUT the accent would be telling you to drop where you are
+                     already leaving, which is the cancel, not the action. */
+                  ...(drag?.from === 'lineup' ? S.jailArmed : null),
+                  ...(drag?.from === 'lineup' && drag.over ? S.jailOver : null),
+                  ...(jailed && !drag ? S.jailFull : null),
+                }}
+              >
             <div style={S.jailHead}>
               <span style={S.cellLabel}>
                 <Emoji char="🔒" /> {jailIsAnswer ? t.jailAccuse : t.cellLabel}
@@ -705,11 +713,32 @@ export function DetectiveEngine({
                 ...(drag?.from === 'jail' ? S.jailBayOpen : null),
               }}
             >
-              {/* The door only closes once somebody is inside. Bars over an
-                  EMPTY cell read as a fence across the drop target — and the
-                  first build drew them over the "drag your answer in" label,
-                  which made the one instruction on screen unreadable. */}
-              {jailed && !drag && <div aria-hidden="true" style={S.jailBars} />}
+              {/* Stone floor, so whoever is inside stands on something rather
+                  than floating in a tinted box. */}
+              <div aria-hidden="true" style={S.jailFloor} />
+              {/*
+               * The door. It is drawn in EVERY state now — an empty cell that is
+               * a flat pale rectangle does not read as a cell at all, which is
+               * what this looked like on screen.
+               *
+               * ⚠ The original reason bars were withheld until somebody was
+               * inside still stands and is still honoured: drawn at full weight
+               * they made the "drag your answer in" label — the only instruction
+               * on screen — unreadable. So the bars FADE with the state (open
+               * while a card is in hand, ghosted while empty, shut once
+               * occupied) and the empty label sits on its own solid chip, which
+               * is what actually fixes the legibility rather than deleting the
+               * door.
+               */}
+              <div
+                aria-hidden="true"
+                style={{
+                  ...S.jailBars,
+                  ...(drag?.from === 'lineup' ? S.jailBarsOpen
+                    : jailed && !drag ? S.jailBarsShut : S.jailBarsIdle),
+                }}
+              />
+              {jailed && !drag && <div aria-hidden="true" style={S.jailLock} />}
               {drag && drag.from === 'lineup' ? (
                 <span style={{ ...S.cellEmpty, ...(drag.over ? S.cellDropNow : null) }}>
                   {drag.over ? t.cellDrop : t.cellDragHere}
@@ -748,6 +777,8 @@ export function DetectiveEngine({
               ) : (
                 <span style={S.cellEmpty}>{jailIsAnswer ? t.jailEmptyAccuse : t.cellEmpty}</span>
               )}
+            </div>
+              </div>
             </div>
           </div>
           {showNotebook && (
@@ -1062,19 +1093,39 @@ const S = {
   },
   susAside: { opacity: 0.45 },
 
+  /* ── THE DOCK ──
+     Detective Kawkab standing beside the cell. One band across the column
+     instead of a 56px mascot on its own row above a full-width box.
+     `flex-end` is what makes him STAND next to the door: his feet land on the
+     cell's baseline rather than floating against its middle.
+     ⚠ `flexWrap` rather than a media query — this game styles inline, so there
+     is nowhere to put one. Below ~330px of body the cell drops under him. */
+  dock: {
+    display: 'flex', alignItems: 'flex-end', gap: 10, width: '100%',
+    flexWrap: 'wrap',
+  },
+  dockBody: {
+    flex: '1 1 250px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 7,
+  },
+
   /* ── THE JAIL ──
-     A real cell at the bottom of the case, not a status strip. Empty it is a
-     dashed opening; filled, it closes to solid and the occupant stands behind
-     bars. On a person question this is the answer box. */
+     A stone cell, not a status strip: a recessed mouth cut into the wall, a
+     floor to stand on, a barred door and a lock. On a person question this is
+     the answer box.
+     ⚠ It is SOLID in every state. The old empty state was a dashed pale
+     rectangle, which is the flattest thing that was on the screen and read as a
+     form field. Where a card is allowed to land is said by `jailArmed` while
+     one is actually in hand, which is the only moment it matters. */
   jail: {
-    width: '100%', display: 'flex', flexDirection: 'column', gap: 6,
-    padding: '9px 11px 11px', borderRadius: 14, color: 'var(--ink)',
-    border: '2px dashed var(--line)', background: 'var(--surface)',
+    width: '100%', display: 'flex', flexDirection: 'column', gap: 5,
+    padding: '7px 9px 9px', borderRadius: '13px 13px 9px 9px', color: 'var(--ink)',
+    border: '2px solid color-mix(in srgb, var(--ink) 30%, var(--line))',
+    background: 'color-mix(in srgb, var(--ink) 5%, var(--surface))',
     transition: 'border-color 0.16s, background 0.16s, transform 0.16s, box-shadow 0.16s',
   },
   jailFull: {
-    borderStyle: 'solid', borderColor: 'var(--ink)',
-    background: 'color-mix(in srgb, var(--ink) 7%, var(--surface))',
+    borderColor: 'var(--ink)',
+    background: 'color-mix(in srgb, var(--ink) 11%, var(--surface))',
   },
   /* Armed: a card is in hand. */
   jailArmed: {
@@ -1092,27 +1143,70 @@ const S = {
     color: 'var(--ink-dim)', background: 'none', border: 'none', padding: '2px 4px',
     cursor: 'pointer', textDecoration: 'underline',
   },
-  /* The bay is the cell mouth. Open and pale while it waits for somebody, so
-     the label inside it stays readable and it reads as a place to drop. */
+  /* The bay is the cell mouth: a hollow cut into the wall. The inset shadow
+     along the top is what makes it read as a recess rather than a tinted panel
+     — the single biggest difference between "a box" and "a cell".
+     ⚠ The tint stops at 18% of ink deliberately. Deeper looks more like stone
+     and starts eating the contrast of the occupant's name and the empty label,
+     both of which are `--ink` and have to survive BOTH themes. */
   jailBay: {
-    position: 'relative', minHeight: 74, borderRadius: 9,
+    position: 'relative', minHeight: 78, borderRadius: '8px 8px 5px 5px',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'color-mix(in srgb, var(--ink) 4%, var(--surface))',
+    background: 'color-mix(in srgb, var(--ink) 9%, var(--surface))',
+    boxShadow: 'inset 0 9px 14px -5px color-mix(in srgb, var(--ink) 48%, transparent),'
+      + ' inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent)',
     transition: 'background 0.16s',
     overflow: 'hidden',
   },
-  jailBayShut: { background: 'color-mix(in srgb, var(--ink) 13%, var(--surface))' },
+  jailBayShut: { background: 'color-mix(in srgb, var(--ink) 15%, var(--surface))' },
   jailBayOpen: { overflow: 'visible' },
-  /* Vertical bars, in front of whoever is inside. A repeating gradient rather
-     than N elements, and pointerEvents none so a drop is never eaten.
+  /* The ground the occupant stands on. Without it a 44px sprite centred in a
+     78px hollow floats, which is the same complaint the weapon emplacements in
+     Intercept had before they were given a footing. */
+  jailFloor: {
+    position: 'absolute', insetInline: 0, bottom: 0, height: 8, zIndex: 1,
+    background: 'color-mix(in srgb, var(--ink) 34%, var(--surface))',
+    pointerEvents: 'none',
+  },
+  /* The door: vertical bars plus a top and bottom cross rail, all in one
+     element as three stacked backgrounds. pointerEvents none so a drop is never
+     eaten.
      ⚠ Spacing is the whole illusion: 3px-on-15px looked like a barcode. Real
      bars are thin and far apart, and you must be able to see the face between
-     them — that is what makes it a cell instead of a hatched box. */
+     them — that is what makes it a cell instead of a hatched box.
+     ⚠ They are drawn LIGHTER than the hollow, not darker. Steel catches light;
+     dark-on-dark just dirties the recess and disappears in the dark theme. */
   jailBars: {
     position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2,
-    backgroundImage: 'repeating-linear-gradient(90deg,'
-      + ' var(--ink) 0 2px, transparent 2px 27px)',
-    opacity: 0.42,
+    backgroundImage: [
+      'linear-gradient(var(--ink), var(--ink))',
+      'linear-gradient(var(--ink), var(--ink))',
+      'repeating-linear-gradient(90deg, var(--ink) 0 4px, transparent 4px 34px)',
+    ].join(','),
+    backgroundRepeat: 'no-repeat, no-repeat, repeat',
+    backgroundSize: '100% 4px, 100% 4px, 100% 100%',
+    /* ⚠ The rails sit FLUSH with the top and bottom of the recess, not inset.
+       At 15%/85% they crossed the verticals mid-height and the whole thing read
+       as a table — the rails have to merge into the frame so what is left in
+       the middle is bars. */
+    backgroundPosition: '0 0, 0 100%, 0 0',
+    transition: 'opacity 0.16s',
+  },
+  /* Shut, ghosted, or swung open — see the note at the render site.
+     ⚠ 4px-on-34px, not 3px-on-27px. The cell went from full column width to
+     ~360px inside the dock, and thirteen thin lines across it read as a
+     spreadsheet grid rather than as a door. Bars are counted, not textured. */
+  jailBarsShut: { opacity: 0.55 },
+  jailBarsIdle: { opacity: 0.24 },
+  jailBarsOpen: { opacity: 0.08 },
+  /* The lock, on the closing edge where a cell door carries one. Not centred:
+     the middle of the door is where the occupant's face is. */
+  jailLock: {
+    position: 'absolute', insetInlineEnd: 9, top: '50%', zIndex: 3,
+    width: 13, height: 13, borderRadius: '50%', pointerEvents: 'none',
+    transform: 'translateY(-50%)',
+    background: 'color-mix(in srgb, var(--surface) 50%, var(--ink))',
+    border: '2px solid color-mix(in srgb, var(--ink) 62%, var(--surface))',
   },
   jailWho: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, zIndex: 1,
@@ -1134,7 +1228,17 @@ const S = {
   },
   cellWho: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 13.5, fontWeight: 900, color: 'var(--ink)' },
   cellArt: { width: 28, height: 28, objectFit: 'contain', objectPosition: 'center bottom' },
-  cellEmpty: { fontSize: 12.5, fontWeight: 650, color: 'var(--ink-dim)', opacity: 0.8 },
+  /* ⚠ On its own chip, and that is what pays for the door being drawn over an
+     empty cell. The instruction is the only text in the game a first-time
+     player MUST be able to read, and it now sits on solid surface with the bars
+     behind it rather than through it. */
+  cellEmpty: {
+    position: 'relative', zIndex: 3,
+    fontSize: 12.5, fontWeight: 700, color: 'var(--ink-dim)',
+    padding: '4px 10px', borderRadius: 999,
+    background: 'color-mix(in srgb, var(--surface) 92%, var(--ink))',
+    border: '1px solid color-mix(in srgb, var(--ink) 14%, transparent)',
+  },
 
   jailVerdict: {
     width: '100%', borderRadius: 11, padding: '9px 13px',
@@ -1186,12 +1290,22 @@ const S = {
   sayVerdictTrue: { color: 'var(--success)', borderColor: 'var(--success)' },
   sayVerdictFalse: { color: 'var(--danger)', borderColor: 'var(--danger)' },
 
-  askRow: { display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '2px 4px' },
+  /* He stands beside the cell now, so he is drawn at the size of somebody
+     standing there rather than at the size of a bullet point. The drop shadow
+     is the shared token — it used to be a hand-mixed rgba, which is exactly
+     what `audit:design` counts. */
   detective: {
-    width: 56, flex: '0 0 auto', objectFit: 'contain', objectPosition: 'center bottom',
-    filter: 'drop-shadow(0 5px 4px rgba(38,25,10,0.22))',
+    width: 74, flex: '0 0 auto', objectFit: 'contain', objectPosition: 'center bottom',
+    filter: 'drop-shadow(0 5px 4px var(--fx-shadow-drop))',
   },
-  question: { flex: 1, fontSize: 17, fontWeight: 900, textAlign: 'start', color: 'var(--ink)', lineHeight: 1.35 },
+  /* Full width and start-aligned, like the scene and the rule above it. It used
+     to be `flex: 1` inside a row with the mascot; on its own line that did
+     nothing and left it shrink-wrapped and centred, out of step with every
+     other block in the case. */
+  question: {
+    width: '100%', fontSize: 17, fontWeight: 900, textAlign: 'start',
+    color: 'var(--ink)', lineHeight: 1.35, padding: '2px 4px',
+  },
   hint: { fontSize: 12, fontWeight: 650, color: 'var(--ink-dim)', textAlign: 'center', opacity: 0.85 },
 
   answerRow: { display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', width: '100%' },

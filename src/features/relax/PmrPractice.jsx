@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import PracticeShell, { INK, SUB, SERIF } from './PracticeShell';
+import PracticeShell, { PracticeHero, INK, SUB, SERIF } from './PracticeShell';
 import { markWellbeingPracticeDone } from './habitState';
 
 /*
@@ -8,7 +8,8 @@ import { markWellbeingPracticeDone } from './habitState';
  * major muscle groups. Tense ~5s, release ~12s, notice the difference. Non-medical.
  */
 
-const ACCENT = '#b07ac8';
+const ACCENT = 'var(--rx-sleep-core)';
+const ACCENT_LIT = 'var(--rx-sleep-lit)';
 const TENSE_S = 5;
 const RELEASE_S = 12;
 
@@ -72,12 +73,12 @@ export default function PmrPractice({ onBack }) {
   const tensing = sub === 'tense';
 
   return (
-    <PracticeShell title={t.title} accent={ACCENT} isAr={isAr} onBack={onBack}>
+    <PracticeShell title={t.title} accent={ACCENT} accentLit={ACCENT_LIT} isAr={isAr} onBack={onBack}>
       <style>{CSS}</style>
 
       {phase === 'intro' && (
         <div className="rxp-body rxp-center">
-          <div className="rxp-hero">💪</div>
+          <PracticeHero emoji="💪" />
           <div className="pmr-intro">{t.intro}</div>
           <button className="rxp-primary" onClick={start}>{t.start}</button>
           <div className="rxp-tip">{t.note}</div>
@@ -99,7 +100,7 @@ export default function PmrPractice({ onBack }) {
 
       {phase === 'done' && (
         <div className="rxp-body rxp-center">
-          <div className="rxp-hero">🌙</div>
+          <PracticeHero emoji="🌙" />
           <div className="pmr-doneT serif">{t.done}</div>
           <div className="pmr-doneS">{t.doneSub}</div>
           <button className="rxp-primary" onClick={start}>{t.again}</button>

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import PracticeShell, { INK, SUB, SERIF } from './PracticeShell';
+import PracticeShell, { PracticeHero, INK, SUB, SERIF } from './PracticeShell';
 import { markWellbeingPracticeDone } from './habitState';
 
 /*
@@ -8,7 +8,8 @@ import { markWellbeingPracticeDone } from './habitState';
  * pulling attention back to the present. Tap each item as you notice it.
  */
 
-const ACCENT = '#6fae7a';
+const ACCENT = 'var(--rx-calm-core)';
+const ACCENT_LIT = 'var(--rx-calm-lit)';
 
 const STEPS = [
   { n: 5, ic: '👁️', en: 'see', ar: 'تراها' },
@@ -63,12 +64,12 @@ export default function GroundingPractice({ onBack }) {
   const step = STEPS[idx];
 
   return (
-    <PracticeShell title={t.title} accent={ACCENT} isAr={isAr} onBack={onBack}>
+    <PracticeShell title={t.title} accent={ACCENT} accentLit={ACCENT_LIT} isAr={isAr} onBack={onBack}>
       <style>{CSS}</style>
 
       {phase === 'intro' && (
         <div className="rxp-body rxp-center">
-          <div className="rxp-hero">🖐️</div>
+          <PracticeHero emoji="🖐️" />
           <div className="grd-intro">{t.intro}</div>
           <button className="rxp-primary" onClick={() => { playSfx?.('click'); startStep(0); }}>{t.start}</button>
           <div className="rxp-tip">{t.note}</div>
@@ -96,7 +97,7 @@ export default function GroundingPractice({ onBack }) {
 
       {phase === 'done' && (
         <div className="rxp-body rxp-center">
-          <div className="rxp-hero">🌿</div>
+          <PracticeHero emoji="🌿" />
           <div className="grd-doneT serif">{t.done}</div>
           <div className="grd-doneS">{t.doneSub}</div>
           <button className="rxp-primary" onClick={() => { playSfx?.('click'); startStep(0); }}>{t.again}</button>

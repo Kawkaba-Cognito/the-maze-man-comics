@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import PracticeShell, { SUB, FAINT } from './PracticeShell';
+import PracticeShell, { PracticeHero, SUB, FAINT } from './PracticeShell';
 import { QUIZ_CSS, LikertRow, KawkabSay, ScenarioChoice, QuestionExample, DeeperScience } from './quizShared';
 import { markWellbeingPracticeDone } from './habitState';
 
@@ -17,7 +17,8 @@ import { markWellbeingPracticeDone } from './habitState';
  * an experiential layer around that score and never feed it.
  */
 
-const ACCENT = '#c86f8f';
+const ACCENT = 'var(--rx-relationships-core)';
+const ACCENT_LIT = 'var(--rx-relationships-lit)';
 const STORAGE_KEY = 'rx_relationship_v1';
 const MIDPOINT_AT = 6;
 
@@ -355,13 +356,13 @@ export default function RelationshipQuiz({ onBack }) {
   const tally = result ? topTally(result.scenarioAnswers) : null;
 
   return (
-    <PracticeShell title={t.title} accent={ACCENT} isAr={isAr} onBack={onBack}>
+    <PracticeShell title={t.title} accent={ACCENT} accentLit={ACCENT_LIT} isAr={isAr} onBack={onBack}>
       <style>{QUIZ_CSS}</style>
       <style>{QUAD_CSS}</style>
 
       {phase === 'intro' && (
-        <div className="rxp-body rxp-center" style={{ '--acc': ACCENT }}>
-          <div className="qz-intro-emoji">💞</div>
+        <div className="rxp-body rxp-center" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
+          <PracticeHero emoji="💞" />
           <KawkabSay>{t.kawkabIntro}</KawkabSay>
           <div className="qz-intro-meta">{t.meta}</div>
           <p className="qz-cite">{t.cite}</p>
@@ -372,7 +373,7 @@ export default function RelationshipQuiz({ onBack }) {
       )}
 
       {phase === 'quiz' && (
-        <div className="rxp-body" style={{ '--acc': ACCENT }}>
+        <div className="rxp-body" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
           <div className="qz-progress" dir="ltr">{index + 1} / {ITEMS.length}</div>
           <div className="qz-item-text">{isAr ? ITEMS[index].ar : ITEMS[index].en}</div>
           <QuestionExample>{isAr ? ITEMS[index].exampleAr : ITEMS[index].example}</QuestionExample>
@@ -390,15 +391,15 @@ export default function RelationshipQuiz({ onBack }) {
       )}
 
       {phase === 'midpoint' && (
-        <div className="rxp-body rxp-center" style={{ '--acc': ACCENT }}>
+        <div className="rxp-body rxp-center" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
           <KawkabSay>{t.kawkabMidpoint}</KawkabSay>
           <button className="rxp-primary" onClick={() => { playSfx?.('click'); setPhase('quiz'); }}>{t.scenarioContinue}</button>
         </div>
       )}
 
       {phase === 'scenario-intro' && (
-        <div className="rxp-body rxp-center" style={{ '--acc': ACCENT }}>
-          <div className="qz-intro-emoji">🧪</div>
+        <div className="rxp-body rxp-center" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
+          <PracticeHero emoji="🧪" />
           <KawkabSay>{t.kawkabScenarioIntro}</KawkabSay>
           <button className="rxp-primary" onClick={() => { playSfx?.('click'); setPhase('scenario'); }}>{t.tryScenarios}</button>
           <button
@@ -412,7 +413,7 @@ export default function RelationshipQuiz({ onBack }) {
       )}
 
       {phase === 'scenario' && scenario && (
-        <div className="rxp-body" style={{ '--acc': ACCENT }}>
+        <div className="rxp-body" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
           <div className="qz-progress" dir="ltr">{t.scenarioProgress(scenarioIndex + 1, SCENARIOS.length)}</div>
           <KawkabSay>{isAr ? scenario.kawkabAr : scenario.kawkabEn}</KawkabSay>
           {!scenarioAnswered ? (
@@ -440,7 +441,7 @@ export default function RelationshipQuiz({ onBack }) {
       )}
 
       {phase === 'result' && result && styleInfo && (
-        <div className="rxp-body" style={{ '--acc': ACCENT }}>
+        <div className="rxp-body" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
           <KawkabSay>{isAr ? styleInfo.takeawayAr : styleInfo.takeawayEn}</KawkabSay>
           <div className="rxp-label" style={{ textAlign: 'center' }}>{t.resultsTitle}</div>
           <Quadrant anxiety={result.anxiety} avoidance={result.avoidance} isAr={isAr} t={t} />

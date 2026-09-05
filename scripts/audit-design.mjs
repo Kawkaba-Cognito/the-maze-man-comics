@@ -51,6 +51,33 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const GAMES_DIR = join(ROOT, 'src/features/training/domains');
 const PALETTE = 'src/features/training/shared/gamePalette.js';
 
+/*
+ * ⚠ WELLBEING WAS NEVER SCANNED, AND THAT IS WHY IT DRIFTED (2026-09-05).
+ *
+ * This audit walked `src/features/training/domains` and nothing else. Every
+ * other feature was therefore unratcheted, unmeasured and unbounded — and
+ * `src/features/relax` had quietly accumulated **596 raw colour literals
+ * against about 60 token references**, which is roughly three times the entire
+ * training tree's ceiling, in a fifth of the code.
+ *
+ * It was not carelessness. There was no signal: the practice shell exported six
+ * frozen hex constants that eight files interpolated into CSS, and the dark
+ * appearance was a hand-written second palette under
+ * `[data-home-theme='dark']`. Nothing anywhere could say that was wrong, so it
+ * grew for as long as the feature existed and reported as "the cheap corner of
+ * the app" rather than as a defect.
+ *
+ * The ratchet is what stops it coming back. A baseline is a DEBT CEILING that
+ * can only fall on its own, so adding the tree here does not demand the backlog
+ * be paid today — it demands it never grow again.
+ *
+ * ⚠ Do NOT fold these into one list keyed by game. The `game` label below is
+ * parsed from a `games/<name>/` path segment, which relax has none of; they
+ * legitimately fall into the '(shared)' bucket, and the 3D-proto pairing rule
+ * (6) is scoped to real games only.
+ */
+const EXTRA_DIRS = [join(ROOT, 'src/features/relax')];
+
 /* Games whose 3D scene is built from additive blending + bloom. Additive on a
  * light ground resolves to nothing, so these legitimately take Tide Deep. Any
  * OTHER game reaching for the deep surface is drift. */
@@ -69,6 +96,9 @@ function walk(dir, out = []) {
 }
 
 const files = walk(GAMES_DIR);
+for (const dir of EXTRA_DIRS) {
+  if (existsSync(dir)) walk(dir, files);
+}
 
 /*
  * Palette exemptions.
@@ -97,6 +127,9 @@ for (const abs of files) {
   if (rel === PALETTE) continue;
   const src = readFileSync(abs, 'utf8');
   const game = rel.match(/games\/([^/]+)\//)?.[1] ?? '(shared)';
+  /* Inside the training domains tree = a game board. Everything reached through
+     EXTRA_DIRS is app chrome and is exempt from the play-surface rules below. */
+  const isGameFile = rel.startsWith('src/features/training/');
   const lines = src.split('\n');
   const exemptMatch = lines.slice(0, 40).join('\n').match(EXEMPT_RE);
   const paletteExempt = Boolean(exemptMatch);
@@ -116,14 +149,31 @@ for (const abs of files) {
       add(at, 'raw-colour', colour[0]);
     }
 
-    // 2. A surface from outside the shared palette.
-    if (/UniverseStage/.test(line) && /import|<UniverseStage/.test(line)) {
-      add(at, 'foreign-surface', 'UniverseStage — games use --play-surface');
-    }
+    /*
+     * 2 & 3. Both are claims about a PLAY SURFACE — the board a timed trial is
+     * performed on — so they only mean anything inside a game.
+     *
+     * ⚠ Scoped when relax joined the walk (2026-09-05). `UniverseStage` is the
+     * app's shared starfield chrome: Home wears it, and so does the Wellbeing
+     * landing, entirely correctly. Unscoped, the rule reported four findings
+     * against RelaxScreen for using the right component, and the only ways out
+     * would have been to baseline a false positive or to "fix" working code by
+     * taking the sky off a screen whose whole design is a sky.
+     *
+     * A gate that fails correct code gets weakened, and then it protects
+     * nothing — the lesson validate:intercept learned when it asserted a shell's
+     * flight had to fit inside the dwell.
+     */
+    if (isGameFile) {
+      // A surface from outside the shared palette.
+      if (/UniverseStage/.test(line) && /import|<UniverseStage/.test(line)) {
+        add(at, 'foreign-surface', 'UniverseStage — games use --play-surface');
+      }
 
-    // 3. Deep surface outside the games that need it.
-    if (/play-surface-deep/.test(line) && !DEEP_ALLOWED.includes(game)) {
-      add(at, 'deep-surface', `${game} is not additive-blended; use --play-surface`);
+      // Deep surface outside the games that need it.
+      if (/play-surface-deep/.test(line) && !DEEP_ALLOWED.includes(game)) {
+        add(at, 'deep-surface', `${game} is not additive-blended; use --play-surface`);
+      }
     }
 
     // 4. A background behind a condition — half the states go unstyled.

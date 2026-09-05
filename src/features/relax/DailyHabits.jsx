@@ -16,12 +16,31 @@ import HabitReflectTab, { REFLECT_TAB_CSS } from './HabitReflectTab';
 import HabitTemplatesTab, { TEMPLATES_TAB_CSS } from './HabitTemplatesTab';
 import HabitInsightsTab, { INSIGHTS_TAB_CSS } from './HabitInsightsTab';
 
-const INK = '#2d2210';
-const SUB = '#524b3f';
-const FAINT = '#5a5144';
-const LINE = '#e3d6c4';
-const CARD = '#fffdf8';
-const GOLD = '#b9842f';
+/*
+ * ⚠ A THIRD COPY OF THE SAME SIX NAMES (2026-09-05). PracticeShell exported
+ * them, quizShared imported them, and this file re-declared its own identical
+ * set of frozen hex — so "the wellbeing ink colour" existed in two places with
+ * no relationship, and changing one could never move the other.
+ *
+ * They point at the shared tokens now, like PracticeShell's do. Light stops
+ * being a private palette and joins the system.
+ *
+ * ⚠ The `[data-home-theme='dark']` block at the bottom of this file is
+ * DELIBERATELY still there, unlike the ones deleted from PracticeShell and
+ * quizShared. It is not purely a colour restatement: global.css owns this
+ * screen's dark ground through an `html[data-home-theme='dark'] .rx-root` rule
+ * carrying `!important`, and the overrides here are written around that
+ * interaction (see the note above them). Untangling it is a separate job on a
+ * screen this size. It is remaining debt, and it is now CAPPED — audit:design
+ * walks this tree as of today, so the count can fall on its own but can never
+ * grow again.
+ */
+const INK = 'var(--rx-ink)';
+const SUB = 'var(--rx-sub)';
+const FAINT = 'var(--rx-faint)';
+const LINE = 'var(--rx-hair)';
+const CARD = 'var(--rx-card)';
+const GOLD = 'var(--rx-meaning-core)';
 const SERIF = "'Cormorant Garamond', Georgia, serif";
 const SANS = "'Outfit', system-ui, sans-serif";
 

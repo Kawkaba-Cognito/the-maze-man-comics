@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { INK, SUB, FAINT, LINE, CARD, SERIF } from './PracticeShell';
-import CosmosCharacter from '../character/CosmosCharacter';
-import SpeechBubble from '../training/shared/scene/SpeechBubble';
+import KawkabSprite from '../training/shared/KawkabSprite';
 
 /*
  * Shared pieces for the Wellbeing science quizzes (Personality, Relationship).
@@ -14,8 +13,8 @@ export const QUIZ_CSS = `
 .qz-progress { font-size:12px; color:${SUB}; font-weight:700; text-align:center; letter-spacing:1px; text-transform:uppercase; }
 .qz-item-text { font-family:${SERIF}; font-size:22px; font-weight:600; color:${INK}; text-align:center; line-height:1.35; padding:0 4px; }
 .qz-likert { display:flex; gap:6px; justify-content:space-between; }
-.qz-likert-btn { flex:1; aspect-ratio:1; border-radius:12px; border:2px solid ${LINE}; background:${CARD}; color:${SUB}; font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; transition:all .15s; }
-.qz-likert-btn.on { border-color:var(--acc); background:var(--acc); color:#201d18; }
+.qz-likert-btn { flex:1; aspect-ratio:1; border-radius:12px; border:1px solid ${LINE}; background:${CARD}; color:${SUB}; font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; transition:border-color .15s, background .15s, color .15s; box-shadow:var(--elev-rest); }
+.qz-likert-btn.on { border-color:var(--rx-hue); background:var(--rx-hue); color:#fff; }
 .qz-likert-labels { display:flex; justify-content:space-between; font-size:11px; color:${FAINT}; margin-top:6px; line-height:1.4; gap:10px; }
 .qz-likert-labels span { max-width:44%; }
 .qz-likert-labels span:last-child { text-align:end; }
@@ -27,35 +26,31 @@ export const QUIZ_CSS = `
 .qz-trait-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; gap:8px; }
 .qz-trait-name { font-weight:800; font-size:14.5px; color:${INK}; }
 .qz-trait-val { font-weight:800; font-size:13px; flex-shrink:0; }
-.qz-trait-track { height:10px; border-radius:6px; background:#efe6d6; overflow:hidden; }
+.qz-trait-track { height:10px; border-radius:6px; background:color-mix(in srgb, var(--rx-ink) 12%, var(--rx-card)); overflow:hidden; }
 .qz-trait-fill { height:100%; border-radius:6px; transition:width .6s cubic-bezier(.2,.9,.3,1); }
 .qz-trait-blurb { font-size:12.5px; color:${SUB}; line-height:1.55; margin-top:6px; }
 .qz-trait-try { font-size:12.5px; color:${INK}; line-height:1.55; margin-top:6px; padding-top:6px; border-top:1px dashed ${LINE}; }
-.qz-kawkab { position:relative; margin:30px 0 4px; }
-.qz-kawkab-face { position:absolute; top:-28px; inset-inline-start:6px; }
+/* He STANDS beside the line now. The old rule pinned a 42px cropped face at
+   top:-28px over the bubble's corner, so the character was half outside its own
+   container — the sticker look this pass is removing. */
+.qz-kawkab { display:flex; align-items:flex-end; gap:10px; margin:22px 0 4px; }
+.qz-kawkab-art { flex:0 0 auto; filter:drop-shadow(0 5px 8px var(--fx-shadow-drop)); }
+.qz-kawkab-bubble { flex:1; min-width:0; padding:11px 15px; border-radius:15px 15px 15px 4px;
+  background:${CARD}; border:1px solid ${LINE}; box-shadow:var(--elev-rest);
+  color:${INK}; font-size:14px; font-weight:600; line-height:1.5; }
 .qz-choice-list { display:flex; flex-direction:column; gap:10px; }
-.qz-choice { text-align:start; padding:14px 16px; border-radius:14px; border:2px solid ${LINE}; background:${CARD}; color:${INK}; font-size:14px; font-weight:600; line-height:1.5; cursor:pointer; font-family:inherit; transition:all .15s; }
-.qz-choice.on { border-color:var(--acc); background:#fff6ec; }
+.qz-choice { text-align:start; padding:14px 16px; border-radius:14px; border:1px solid ${LINE}; background:${CARD}; color:${INK}; font-size:14px; font-weight:600; line-height:1.5; cursor:pointer; font-family:inherit; transition:border-color .15s, background .15s, box-shadow .15s; box-shadow:var(--elev-rest); }
+.qz-choice.on { border-color:var(--rx-hue); background:color-mix(in srgb, var(--rx-hue) 14%, ${CARD}); }
 .qz-example { font-size:12.5px; color:${SUB}; font-style:italic; text-align:center; line-height:1.55; padding:0 10px; max-width:420px; margin:0 auto; }
 .qz-deeper { margin-top:8px; }
-.qz-deeper-toggle { display:flex; align-items:center; gap:5px; background:none; border:none; color:var(--universe-accent,#1f4f85); font-weight:800; font-size:12px; cursor:pointer; font-family:inherit; padding:2px 0; }
+.qz-deeper-toggle { display:flex; align-items:center; gap:5px; background:none; border:none; color:var(--rx-accent); font-weight:800; font-size:12px; cursor:pointer; font-family:inherit; padding:2px 0; }
 .qz-deeper-body { font-size:12.5px; color:${SUB}; line-height:1.6; margin-top:8px; padding-top:8px; border-top:1px dashed ${LINE}; }
 
-[data-home-theme='dark'] .qz-progress { color:#c9b384; }
-[data-home-theme='dark'] .qz-item-text { color:#f0e2c0; }
-[data-home-theme='dark'] .qz-likert-btn { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
-[data-home-theme='dark'] .qz-likert-labels { color:#9b8c69; }
-[data-home-theme='dark'] .qz-intro-meta { color:#c9b384; }
-[data-home-theme='dark'] .qz-cite { color:#9b8c69; }
-[data-home-theme='dark'] .qz-disclaimer { color:#9b8c69; }
-[data-home-theme='dark'] .qz-trait-name { color:#f0e2c0; }
-[data-home-theme='dark'] .qz-trait-track { background:#332818; }
-[data-home-theme='dark'] .qz-trait-blurb { color:#c9b384; }
-[data-home-theme='dark'] .qz-trait-try { color:#f0e2c0; border-top-color:rgba(212,168,80,0.25); }
-[data-home-theme='dark'] .qz-choice { background:#211a10; border-color:rgba(212,168,80,0.25); color:#f0e2c0; }
-[data-home-theme='dark'] .qz-choice.on { background:#332818; }
-[data-home-theme='dark'] .qz-example { color:#c9b384; }
-[data-home-theme='dark'] .qz-deeper-body { color:#c9b384; border-top-color:rgba(212,168,80,0.25); }
+/* ⚠ The seventeen dark-theme overrides that used to close this
+   file are GONE. They re-stated every surface above in a second hard-coded
+   palette; now that the constants resolve to --rx-* → --universe-*, the theme
+   flips on its own and a duplicate could only ever drift out of step with the
+   original. Adding one back means a colour above it is wrong. */
 `;
 
 /*
@@ -131,14 +126,37 @@ export function DeeperScience({ moreLabel, lessLabel, children }) {
   );
 }
 
-/** Kawkab, in first person, delivering a short guiding line — used at intro, mid-quiz check-ins, scenario transitions, and the top of results. */
+/**
+ * Dr Kawkab, in first person, delivering a short guiding line — used at intro,
+ * mid-quiz check-ins, scenario transitions, and the top of results.
+ *
+ * ⚠ THIS WAS A DIFFERENT CHARACTER (2026-09-05), under the words "Hi, I'm
+ * Kawkab!". It rendered `CosmosCharacter size={42} faceOnly`, which resolves to
+ * `kawkab-idle.png`/`kawkab-face.png` — the RETIRED sprite, a separate drawing
+ * from the `kawkab-planet.webp` the Training hub puts at its centre. So a player
+ * met one mascot in Training and a different one in Wellbeing, both introducing
+ * themselves by the same name.
+ *
+ * `KawkabSprite`'s own file header already documented this as a known problem
+ * ("CosmosCharacter — 2D, but a different character") and had consolidated the
+ * training side onto one image; Wellbeing was simply never included in that
+ * sweep, because nothing checks this tree.
+ *
+ * ⚠ It is a FULL FIGURE now, not a cropped face peeking from behind the bubble.
+ * The old layout absolutely-positioned a 42px head above the bubble's top-left
+ * corner, so the character was clipped by its own container and read as a
+ * sticker stuck on the panel. He stands beside what he is saying instead.
+ */
 export function KawkabSay({ children }) {
   return (
     <div className="qz-kawkab">
-      <div className="qz-kawkab-face">
-        <CosmosCharacter size={42} faceOnly glow={false} />
-      </div>
-      <SpeechBubble tail="top">{children}</SpeechBubble>
+      {/* ⚠ NOT the shared `SpeechBubble`. That one is the comic bubble Story
+          Time and Detective wear — hard-coded `#fffdf8`, a 2px ink outline and
+          a `2px 2px 0` sticker shadow. It is right for a comic panel and wrong
+          for a wellbeing screen, and restyling it here would silently change
+          two games. Wellbeing states its own. */}
+      <KawkabSprite size={54} className="qz-kawkab-art" />
+      <p className="qz-kawkab-bubble">{children}</p>
     </div>
   );
 }

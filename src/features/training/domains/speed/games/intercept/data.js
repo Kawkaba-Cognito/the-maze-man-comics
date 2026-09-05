@@ -546,7 +546,16 @@ export const COLOURS = ['steel', 'rust', 'moss', 'bone'];
  * one enters the reach, when it leaves, when it reaches the gate — is derivable
  * from these numbers without rendering anything.
  */
-export function buildWave(rng, cfg, waveNo = 1) {
+/*
+ * ⚠ `dealWave` DEALS a wave; `buildWave` (below) is what callers use, and it
+ * deals repeatedly until the result is one a player can clear WITHOUT shooting
+ * a friendly. See the note on `buildWave` — the separation is the whole fix.
+ *
+ * `gapScale` eases the column apart. It is 1 on every ordinary deal and only
+ * ever rises on the late retries, as the fallback that makes the loop provably
+ * terminate rather than merely lucky.
+ */
+function dealWave(rng, cfg, waveNo = 1, gapScale = 1) {
   const swap = cfg.nogoShuffle && rng() < 0.5;
   const goColour = COLOURS[swap ? 1 : 0];
   const nogoColour = COLOURS[swap ? 0 : 1];
@@ -704,7 +713,7 @@ export function buildWave(rng, cfg, waveNo = 1) {
       hideAt: windows[0].hideAt,
       gateAt: Math.round(at + crossMs),
     });
-    at += cfg.gapMs * (0.85 + rng() * 0.3);
+    at += cfg.gapMs * gapScale * (0.85 + rng() * 0.3);
   }
 
   const barrels = [];
@@ -724,6 +733,71 @@ export function buildWave(rng, cfg, waveNo = 1) {
   }
 
   return { units, barrels, goColour, nogoColour, towers, waveNo };
+}
+
+/* How many deals to try before easing the column apart, and how many in total.
+   Measured over 1,900 built waves (the whole ladder × 10 seeds plus survival to
+   stage 90): 81% are clean on the FIRST deal, the worst case needed 8, and none
+   ever exhausted the loop. PURE_DEALS is set far above that worst case so the
+   widening path is a guarantee of termination rather than something a player
+   routinely meets. */
+const PURE_DEALS = 20;
+const MAX_DEALS = 32;
+
+/**
+ * ⚠ A WAVE IS NOT CLEARABLE IF CLEARING IT REQUIRES SHOOTING A FRIENDLY.
+ *
+ * 2026-09-05. Reported by the owner as "when you hit the turret all the balls
+ * inside the area zone are attacked, so when there is a red ball it will be shot
+ * also". It was not a rendering bug and not tuning — it was structural, and it
+ * had been true of most of the game:
+ *
+ *   · 90.7% of no-go marchers stood in a weapon's stretch alongside a threat
+ *     at some point in their walk;
+ *   · on 85.9% of waves the OPTIMAL clearing plan killed at least one friendly.
+ *
+ * So the commission-error count — the whole inhibition measure, and one of the
+ * three things that stop this being a fourth reaction test — was mostly
+ * recording waves where withholding was impossible. The player was shown
+ * "DON'T HIT" over a shot they had to take.
+ *
+ * The cause was one line in `feasible`: it began by filtering the no-go
+ * marchers out. It proved a wave could be cleared and never asked at what cost,
+ * so nothing anywhere in the build could see the problem.
+ *
+ * ⚠ THE FIX IS NOT TO STOP THE SPLASH. A press has to serve everything in the
+ * stretch — that is what makes a crowded wave clearable at all, and taking it
+ * away would put aiming back into a game that deliberately removed it. Nor is
+ * it to spare friendlies from the blast: if a press can never hurt one, there is
+ * nothing left to withhold and the measure dies outright.
+ *
+ * What is required instead is that a clean line exists and the player has to
+ * find it: the threats can all be served at moments when no friendly shares the
+ * stretch. Overlap is still allowed and is the point — the prepotent response is
+ * to fire the moment a target is in range, and the player has to hold that press
+ * while a friendly is crossing. A commission error now means what it says.
+ *
+ * Measured before the fix was written: 90.8% of waves ALREADY had such a line,
+ * so the geometry mostly supported this and only the check was missing. The rest
+ * are re-dealt here.
+ */
+export function buildWave(rng, cfg, waveNo = 1) {
+  let last = null;
+  for (let i = 0; i < MAX_DEALS; i += 1) {
+    /* Widening is bounded and only starts once a long run of ordinary deals has
+       failed. It makes the wave slightly easier, which is the correct direction
+       to be wrong in — the alternative is a wave that punishes a player for a
+       shot the game left them no way to avoid. */
+    const gapScale = i < PURE_DEALS ? 1 : Math.min(1.6, 1 + (i - PURE_DEALS + 1) * 0.05);
+    const wave = dealWave(rng, cfg, waveNo, gapScale);
+    last = wave;
+    if (feasible(wave).ok) return wave;
+  }
+  /* Unreachable across every level and survival stage measured. Returning the
+     last deal rather than throwing is deliberate: a live player must never lose
+     a run to a build failure, and validate:intercept asserts the condition
+     across the whole ladder, so this surfaces in CI rather than on a phone. */
+  return last;
 }
 
 /* ── FEASIBILITY ──────────────────────────────────────────────────────────
@@ -805,11 +879,74 @@ const winsOf = (u) => {
   }));
 };
 
+/*
+ * ── SPARING THE FRIENDLIES ────────────────────────────────────────────────
+ *
+ * A press hits everything in the stretch, so a hit time is legal only if no
+ * no-go marcher is standing in that weapon's stretch when the shell lands.
+ * Those are FORBIDDEN INTERVALS on that weapon's clock.
+ *
+ * `cleanStarts` subtracts them from a candidate range. It has to shift each
+ * interval back by k reloads, once per hit: armour takes two turret shots a
+ * reload apart, and a start time is only clean if BOTH land clear — checking
+ * the first alone passes a schedule whose second shot kills a friendly, which
+ * is the same class of miss as the lookahead that forgot its own second shot.
+ */
+function cleanStarts(lo, hi, hits, coolMs, bad) {
+  if (lo > hi) return [];
+  if (!bad || !bad.length) return [[lo, hi]];
+  const blocks = [];
+  for (let k = 0; k < hits; k += 1) {
+    for (const [a, b] of bad) blocks.push([a - k * coolMs, b - k * coolMs]);
+  }
+  blocks.sort((p, q) => p[0] - q[0]);
+  const out = [];
+  let cur = lo;
+  for (const [a, b] of blocks) {
+    if (b < cur) continue;
+    if (a > hi) break;
+    if (a > cur) out.push([cur, Math.min(hi, a - 1)]);
+    cur = Math.max(cur, b + 1);
+    if (cur > hi) break;
+  }
+  if (cur <= hi) out.push([cur, hi]);
+  return out.filter(([a, b]) => a <= b);
+}
+
+/** The clean moment closest to `pref` without going past it, or the first clean
+ *  moment after it. Preserves the fire-as-late-as-you-can heuristic below while
+ *  refusing any time that would take a friendly with it. */
+function pickClean(lo, hi, pref, hits, coolMs, bad) {
+  const iv = cleanStarts(lo, hi, hits, coolMs, bad);
+  if (!iv.length) return null;
+  let best = null;
+  for (const [a, b] of iv) {
+    if (a > pref) continue;
+    const t = Math.min(b, pref);
+    if (best === null || t > best) best = t;
+  }
+  return best !== null ? best : iv[0][0];
+}
+
 export function feasible(wave) {
-  const units = (wave.units || []).filter((u) => u.kind !== KIND.NOGO);
+  const all = wave.units || [];
+  const units = all.filter((u) => u.kind !== KIND.NOGO);
   const need = new Map();
   const wins = new Map();
   const guns = new Map();
+
+  /* ⚠ The no-go marchers used to be filtered out and forgotten. They are the
+     constraint, not noise: see the note on `buildWave`. Their windows already
+     carry the mortar's blast margin, so a marcher standing in the overshoot is
+     forbidden ground too — which is right, because the blast kills it. */
+  const forbid = new Map();
+  for (const u of all) {
+    if (u.kind !== KIND.NOGO) continue;
+    for (const w of winsOf(u)) {
+      if (!forbid.has(w.weapon)) forbid.set(w.weapon, []);
+      forbid.get(w.weapon).push([w.enterAt, w.exitAt]);
+    }
+  }
 
   for (const u of units) {
     need.set(u.id, Math.max(1, u.taps || 1));
@@ -897,7 +1034,12 @@ export function feasible(wave) {
          too late, and its second shot then ate the reload the next marcher's
          first shot needed. Both were serviceable; the schedule was not. */
       const room = cap === Infinity ? latest : cap - hitsHere * gun.coolMs;
-      const at = Math.max(earliest, Math.min(latest, room));
+      /* Where we WANT to fire — then the nearest moment to it that takes no
+         friendly with it. `null` means this weapon cannot serve the marcher at
+         all without a commission error, so the window is not usable. */
+      const pref = Math.max(earliest, Math.min(latest, room));
+      const at = pickClean(earliest, latest, pref, hitsHere, gun.coolMs, forbid.get(w.weapon));
+      if (at == null) continue;
       /*
        * ⚠ THE EARLIEST-DEADLINE WINDOW, NOT THE ROOMIEST ONE.
        *
@@ -913,12 +1055,24 @@ export function feasible(wave) {
     }
     if (!chosen) {
       const gun = guns.get(urgent.w.weapon);
+      /* ⚠ Say WHICH of the two it is. "Still reloading" was the only reason this
+         could give, and once friendlies became a constraint it would have
+         reported a wave that needs a commission error as a cooldown problem —
+         sending the next reader to tune `coolMs`, which would not fix it. The
+         two failures want opposite repairs: a reload problem is a weapon spec, a
+         friendly problem is the column's spacing. */
+      const wall = (forbid.get(urgent.w.weapon) || []).some(
+        ([a, b]) => a <= urgent.latest && b >= urgent.w.enterAt,
+      );
       return {
         ok: false,
         failedAt: urgent.u.id,
         need: gun.last === -Infinity ? urgent.w.enterAt : gun.last + gun.coolMs,
         deadline: urgent.latest,
-        reason: `${urgent.w.weapon} is still reloading`,
+        reason: wall
+          ? `every moment that would serve it also kills a friendly in the ${urgent.w.weapon}'s stretch`
+          : `${urgent.w.weapon} is still reloading`,
+        friendly: wall,
       };
     }
 

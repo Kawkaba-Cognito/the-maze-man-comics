@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import PracticeShell, { SUB, FAINT } from './PracticeShell';
+import PracticeShell, { PracticeHero, SUB, FAINT } from './PracticeShell';
 import { QUIZ_CSS, LikertRow, TraitBar, KawkabSay, ScenarioChoice, QuestionExample, DeeperScience } from './quizShared';
 import { markWellbeingPracticeDone } from './habitState';
 
@@ -13,7 +13,8 @@ import { markWellbeingPracticeDone } from './habitState';
  * experiential layer around that score, and never feeds it.
  */
 
-const ACCENT = '#c47a3e';
+const ACCENT = 'var(--rx-personality-core)';
+const ACCENT_LIT = 'var(--rx-personality-lit)';
 const STORAGE_KEY = 'rx_personality_v1';
 const MIDPOINT_AT = 5; // show Kawkab's check-in once this many items are answered
 
@@ -315,12 +316,12 @@ export default function PersonalityQuiz({ onBack }) {
   const scenarioAnswered = scenario && scenarioAnswers[scenario.id];
 
   return (
-    <PracticeShell title={t.title} accent={ACCENT} isAr={isAr} onBack={onBack}>
+    <PracticeShell title={t.title} accent={ACCENT} accentLit={ACCENT_LIT} isAr={isAr} onBack={onBack}>
       <style>{QUIZ_CSS}</style>
 
       {phase === 'intro' && (
-        <div className="rxp-body rxp-center" style={{ '--acc': ACCENT }}>
-          <div className="qz-intro-emoji">🧭</div>
+        <div className="rxp-body rxp-center" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
+          <PracticeHero emoji="🧭" />
           <KawkabSay>{t.kawkabIntro}</KawkabSay>
           <div className="qz-intro-meta">{t.meta}</div>
           <p className="qz-cite">{t.cite}</p>
@@ -331,7 +332,7 @@ export default function PersonalityQuiz({ onBack }) {
       )}
 
       {phase === 'quiz' && (
-        <div className="rxp-body" style={{ '--acc': ACCENT }}>
+        <div className="rxp-body" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
           <div className="qz-progress" dir="ltr">{index + 1} / {ITEMS.length}</div>
           <div className="qz-item-text">
             {t.prompt}<br /><strong>{isAr ? ITEMS[index].ar : ITEMS[index].en}</strong>
@@ -351,15 +352,15 @@ export default function PersonalityQuiz({ onBack }) {
       )}
 
       {phase === 'midpoint' && (
-        <div className="rxp-body rxp-center" style={{ '--acc': ACCENT }}>
+        <div className="rxp-body rxp-center" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
           <KawkabSay>{t.kawkabMidpoint}</KawkabSay>
           <button className="rxp-primary" onClick={() => { playSfx?.('click'); setPhase('quiz'); }}>{t.scenarioContinue}</button>
         </div>
       )}
 
       {phase === 'scenario-intro' && (
-        <div className="rxp-body rxp-center" style={{ '--acc': ACCENT }}>
-          <div className="qz-intro-emoji">🧪</div>
+        <div className="rxp-body rxp-center" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
+          <PracticeHero emoji="🧪" />
           <KawkabSay>{t.kawkabScenarioIntro}</KawkabSay>
           <button className="rxp-primary" onClick={() => { playSfx?.('click'); setPhase('scenario'); }}>{t.tryScenarios}</button>
           <button
@@ -373,7 +374,7 @@ export default function PersonalityQuiz({ onBack }) {
       )}
 
       {phase === 'scenario' && scenario && (
-        <div className="rxp-body" style={{ '--acc': ACCENT }}>
+        <div className="rxp-body" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
           <div className="qz-progress" dir="ltr">{t.scenarioProgress(scenarioIndex + 1, SCENARIOS.length)}</div>
           <KawkabSay>{isAr ? scenario.kawkabAr : scenario.kawkabEn}</KawkabSay>
           {!scenarioAnswered ? (
@@ -401,7 +402,7 @@ export default function PersonalityQuiz({ onBack }) {
       )}
 
       {phase === 'result' && traits && (
-        <div className="rxp-body" style={{ '--acc': ACCENT }}>
+        <div className="rxp-body" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
           <KawkabSay>{buildTakeaway(traits, isAr)}</KawkabSay>
           <div className="rxp-label" style={{ textAlign: 'center' }}>{t.resultsTitle}</div>
           {TRAITS.map((tr) => (

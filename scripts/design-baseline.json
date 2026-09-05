@@ -1,7 +1,8 @@
 {
   "rules": {
-    "raw-colour": 209,
-    "stacked-backdrops": 1
+    "raw-colour": 580,
+    "stacked-backdrops": 1,
+    "conditional-background": 1
   },
   "files": {
     "src/features/training/domains/attention/games/cancellation/index.jsx": {
@@ -62,7 +63,7 @@
       "raw-colour": 21
     },
     "src/features/training/domains/reasoning/games/detective/index.jsx": {
-      "raw-colour": 7
+      "raw-colour": 6
     },
     "src/features/training/domains/reasoning/games/gatekeeper/gatekeeper.css": {
       "raw-colour": 14
@@ -94,6 +95,58 @@
     },
     "src/features/training/domains/speed/games/trail-making/TrailBoard2D.jsx": {
       "raw-colour": 1
+    },
+    "src/features/relax/BreathePractice.jsx": {
+      "raw-colour": 5
+    },
+    "src/features/relax/DailyHabits.jsx": {
+      "raw-colour": 99,
+      "conditional-background": 1
+    },
+    "src/features/relax/GroundingPractice.jsx": {
+      "raw-colour": 7
+    },
+    "src/features/relax/HabitInsightsTab.jsx": {
+      "raw-colour": 15
+    },
+    "src/features/relax/HabitLifeTab.jsx": {
+      "raw-colour": 15
+    },
+    "src/features/relax/HabitReflectTab.jsx": {
+      "raw-colour": 7
+    },
+    "src/features/relax/habitState.js": {
+      "raw-colour": 13
+    },
+    "src/features/relax/HabitTemplatesTab.jsx": {
+      "raw-colour": 7
+    },
+    "src/features/relax/IkigaiPractice.jsx": {
+      "raw-colour": 24
+    },
+    "src/features/relax/PersonalityQuiz.jsx": {
+      "raw-colour": 5
+    },
+    "src/features/relax/PmrPractice.jsx": {
+      "raw-colour": 7
+    },
+    "src/features/relax/practices.js": {
+      "raw-colour": 8
+    },
+    "src/features/relax/PracticeShell.jsx": {
+      "raw-colour": 2
+    },
+    "src/features/relax/quizShared.jsx": {
+      "raw-colour": 2
+    },
+    "src/features/relax/RelationshipQuiz.jsx": {
+      "raw-colour": 13
+    },
+    "src/features/relax/RelaxScreen.jsx": {
+      "raw-colour": 137
+    },
+    "src/features/relax/SleepSoundsPractice.jsx": {
+      "raw-colour": 6
     }
   }
 }

@@ -1,0 +1,296 @@
+/*
+ * @palette-exempt: this IS the Wellbeing palette — literals belong here and
+ * nowhere else under src/features/relax.
+ *
+ * ── THE QUIET OBSERVATORY ─────────────────────────────────────────────────
+ *
+ * Wellbeing is the night side of the same universe Training lives in. Training
+ * is a hub-and-spoke solar system: warm, lit, scored, and every screen is
+ * counting something. Wellbeing is a sky you drift through — nothing is scored,
+ * nothing is timed against you, and the five areas are independent, which is
+ * why the landing is a scatter and not a wheel. That distinction is deliberate
+ * and predates this file; see the CAT_LAYOUT note in RelaxScreen.
+ *
+ * ── WHY THIS FILE EXISTS (2026-09-05) ─────────────────────────────────────
+ *
+ * `src/features/relax` carried **596 raw colour literals against ~60 token
+ * references**. It was not carelessness, it was structural: `audit:design`
+ * walks only `src/features/training/domains`, so Wellbeing had no ratchet, no
+ * ceiling and no signal, and drift accumulated for as long as the feature has
+ * existed. The audit now walks this tree too (see scripts/audit-design.mjs), so
+ * the literals have to live in one place — this one.
+ *
+ * ⚠ EVERY COLOUR HERE DERIVES FROM `--universe-*`, NOT `--surface`/`--ink`.
+ * That is not a style preference, it is the difference between working and not
+ * working in dark mode. tokens.css deliberately does NOT flip `--surface` and
+ * `--ink` with the theme — they are the *play surface*, fixed light in both
+ * appearances so a digit's legibility never depends on a setting. Chrome —
+ * landings, headers, menus, and everything in Wellbeing — reads `--universe-*`,
+ * which does flip. `PracticeShell` used to hard-code a whole SECOND palette
+ * under `[data-home-theme='dark']`; deriving from the right family deletes that
+ * duplicate outright, which is the only reason the two can no longer disagree.
+ *
+ * ⚠ AND `--color-training-palette-surface` MUST NOT COME BACK. The practice
+ * shell used it as its ground. tokens.css says outright that the training
+ * palette is the one thing never flipped for theme, so every practice screen
+ * sat on a fixed pale board while the chrome around it went dark. CLAUDE.md
+ * already records this exact mistake being made on the Habits screen.
+ */
+
+.rx-wb {
+  /* ── ink & ground ────────────────────────────────────────────────────── */
+  --rx-ink: var(--universe-ink);
+  --rx-sub: var(--universe-muted);
+  --rx-faint: color-mix(in srgb, var(--universe-muted) 78%, var(--universe-dusk));
+  --rx-line: var(--universe-line);
+  --rx-hair: color-mix(in srgb, var(--universe-line) 55%, transparent);
+  --rx-ground: var(--universe-dusk);
+  --rx-card: var(--universe-glass-strong);
+  --rx-card-soft: color-mix(in srgb, var(--universe-glass) 70%, var(--universe-dusk));
+  --rx-accent: var(--universe-accent);
+
+  /*
+   * ── THE FIVE AREAS ───────────────────────────────────────────────────
+   *
+   * Each area owns a hue, and until now that hue did almost nothing: the orb
+   * painted it at `${color}42` over `${color}20` — 26% then 12% alpha — behind
+   * a Fluent emoji, so all five rendered as the same grey-lilac disc and the
+   * only thing telling them apart was a caption. The colour was defined, wired
+   * and invisible.
+   *
+   * `core` is the body of the sphere, `lit` is the limb the light catches.
+   * Both flip with the theme: a jade that reads calm on beige is mud on black,
+   * and a jade that glows on black is neon on beige. Two values, one name.
+   *
+   * The hues are chosen to stay apart at 80px for the commonest colour-vision
+   * deficiency, which is why they are spread around the wheel rather than
+   * clustered in the greens and blues a wellbeing app reaches for by reflex —
+   * and why every orb also carries its own emblem. Colour is never the only
+   * channel.
+   */
+  --rx-calm-core: #3d7d68;         /* jade — settle, breathe          */
+  --rx-calm-lit: #6fbfa2;
+  --rx-sleep-core: #4a5691;        /* indigo — wind down              */
+  --rx-sleep-lit: #8f9be0;
+  --rx-meaning-core: #9a6c1f;      /* amber — purpose, gratitude      */
+  --rx-meaning-lit: #e0b465;
+  --rx-relationships-core: #a44f6b;/* rose — connection               */
+  --rx-relationships-lit: #eb90ac;
+  --rx-personality-core: #9c5a30;  /* copper — know yourself          */
+  --rx-personality-lit: #dd9a63;
+
+  /* The area currently in play. Set inline per orb / per category screen so
+     one hue drives the sphere, its atmosphere, its heading and its controls. */
+  --rx-hue: var(--rx-calm-core);
+  --rx-hue-lit: var(--rx-calm-lit);
+}
+
+/* ⚠ Dark lifts the CORES and keeps the lits; on a near-black sky the light
+   value is what carries the identity, and an unlifted core goes to mud. Not a
+   second palette — the same five names, re-pointed. */
+html[data-home-theme='dark'] .rx-wb {
+  --rx-calm-core: #2f7f66;
+  --rx-calm-lit: #79e0bd;
+  --rx-sleep-core: #4a56a8;
+  --rx-sleep-lit: #a6b1ff;
+  --rx-meaning-core: #a97c26;
+  --rx-meaning-lit: #f2ca77;
+  --rx-relationships-core: #b4506f;
+  --rx-relationships-lit: #ff9fba;
+  --rx-personality-core: #ad5f2c;
+  --rx-personality-lit: #f0a86d;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * A CELESTIAL BODY, BUILT IN CSS
+ *
+ * ⚠ WELLBEING HAS NO PLANET ART AND TRAINING DOES, and that inequality is most
+ * of why this screen read as the cheap corner of the app. `planetIcons.js`
+ * gives the six training domains hand-painted `category-drawings-2026`
+ * paintings and gives the five wellbeing pillars **Fluent emoji** — herb.webp,
+ * crescent_moon.webp, sparkles.webp. Emoji next to paintings looks exactly like
+ * what it is.
+ *
+ * Commissioning five paintings is the right long-term answer and is the owner's
+ * call, not something to fake. What is available meanwhile is real shading: a
+ * sphere is a body colour, a terminator, a lit limb and an atmosphere, and CSS
+ * can draw all four. The emoji stops being the planet and becomes an EMBLEM
+ * carried on it — small, centred, still the second channel next to hue.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+.rx-body {
+  /*
+   * ⚠ `display: block` IS LOAD-BEARING, and leaving it out fails in the most
+   * misleading way available. `.rx-body` is a <span>, so it is inline by
+   * default; width and height are ignored on an inline box and it measures
+   * 0×0 while `getComputedStyle` still reports the full gradient. The landing
+   * hid this completely — its orbs sit inside `.rx-orb-wrap`, which is a flex
+   * container, and a flex ITEM is blockified automatically. So the sphere
+   * rendered perfectly in the one place it had a flex parent and painted
+   * nothing in the header, which is a plain block.
+   *
+   * The component must not depend on what its parent happens to be.
+   */
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  isolation: isolate;
+  /* Body + terminator in one paint. The light sits up and to the inline start,
+     matching every other lit object in the app. */
+  background:
+    radial-gradient(circle at 32% 26%,
+      color-mix(in srgb, var(--rx-hue-lit) 92%, white) 0%,
+      var(--rx-hue-lit) 18%,
+      var(--rx-hue) 52%,
+      color-mix(in srgb, var(--rx-hue) 62%, black) 88%);
+  box-shadow:
+    inset -6px -8px 18px -6px rgba(0, 0, 0, 0.55),
+    inset 3px 4px 10px -4px rgba(255, 255, 255, 0.5);
+  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+/* The atmosphere: a rim of the lit colour just inside the edge. This is the
+   single cheapest thing that makes a disc read as a globe. */
+.rx-body::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--rx-hue-lit) 62%, transparent);
+  pointer-events: none;
+}
+
+/* The emblem — the old Fluent icon, now riding on the sphere at ~46% rather
+   than being the whole object. */
+.rx-emblem {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 46%;
+  height: 46%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  /* ⚠ A soft shadow does NOT give contour — CLAUDE.md records that exact note
+     sitting above a constant that did not implement it. On a lit sphere the
+     emblem needs to sit ON the surface, so it takes a tight contact shadow
+     rather than an outline. An outline here would read as a sticker, which is
+     precisely the look this pass is removing. */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+
+/* The glow the body throws onto the sky. Sized off the orb so it scales with
+   --rx-k like everything else. */
+.rx-halo {
+  position: absolute;
+  inset: -34%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle,
+    color-mix(in srgb, var(--rx-hue-lit) 46%, transparent) 0%,
+    color-mix(in srgb, var(--rx-hue) 18%, transparent) 46%,
+    transparent 72%);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * SURFACES
+ *
+ * ⚠ DEPTH, NOT OUTLINE. Wellbeing was drawn in the sticker idiom the training
+ * platform left behind on 2026-09-02: 2px solid borders everywhere and hard
+ * unblurred offset shadows (`box-shadow: 3px 3px 0`). The premium pass replaced
+ * those with hairlines and the `--elev-*` tokens, and Wellbeing never got the
+ * same treatment. It does now — same tokens, so the two areas cannot drift
+ * apart again.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+.rx-card {
+  background: var(--rx-card);
+  border: 1px solid var(--rx-hair);
+  border-radius: 16px;
+  color: var(--rx-ink);
+  box-shadow: var(--elev-rest);
+  transition: box-shadow 0.18s, transform 0.18s, border-color 0.18s;
+}
+
+.rx-card--tap {
+  cursor: pointer;
+}
+
+.rx-card--tap:hover {
+  box-shadow: var(--elev-raise);
+  border-color: color-mix(in srgb, var(--rx-hue) 45%, var(--rx-hair));
+}
+
+/* ⚠ Press SINKS. A translate would move the label diagonally out from under
+   the finger already on it — the note the training buttons carry. */
+.rx-card--tap:active {
+  box-shadow: var(--elev-press);
+}
+
+.rx-btn {
+  border: 1px solid color-mix(in srgb, var(--rx-hue) 55%, transparent);
+  border-radius: 14px;
+  padding: 14px 18px;
+  background: color-mix(in srgb, var(--rx-hue) 88%, var(--rx-card));
+  color: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: var(--elev-rest);
+  transition: box-shadow 0.18s, background 0.18s;
+}
+
+.rx-btn:hover { box-shadow: var(--elev-raise); }
+.rx-btn:active { box-shadow: var(--elev-press); }
+
+.rx-btn--quiet {
+  background: var(--rx-card);
+  color: var(--rx-ink);
+  border-color: var(--rx-hair);
+}
+
+/* ── the guide ─────────────────────────────────────────────────────────────
+ * Dr Kawkab, the same character the Training hub puts at its centre. Not a
+ * decoration: Wellbeing had no character at all on its landing while Training
+ * had one, and the two quizzes drew a DIFFERENT mascot (the retired
+ * kawkab-face.png sprite) under the words "Hi, I'm Kawkab!".
+ */
+.rx-guide {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.rx-guide-art {
+  filter: drop-shadow(0 6px 10px var(--fx-shadow-drop));
+  animation: rx-guide-float 6.5s ease-in-out infinite;
+}
+
+.rx-guide-line {
+  max-width: 20rem;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--rx-card);
+  border: 1px solid var(--rx-hair);
+  box-shadow: var(--elev-rest);
+  color: var(--rx-ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+@keyframes rx-guide-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rx-guide-art { animation: none; }
+  .rx-body { transition: none; }
+}

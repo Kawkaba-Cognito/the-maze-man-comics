@@ -7,7 +7,17 @@ import { loadHabits, getTodayProgress, getMorningDigestText, habitTitle, todayKe
 
 export const HABIT_NOTIF_BASE = 5100;
 export const HABIT_MORNING_ID = 5099;
-const ICON = `${import.meta.env.BASE_URL}Assets/guide-fox-sprite.webp`;
+/*
+ * ⚠ THIS WAS A FOX (2026-09-05). `Assets/guide-fox-sprite.webp` is the retired
+ * Maze Man guide, a different animal from the app's mascot — so a wellbeing
+ * reminder arrived on the lock screen wearing a character that appears nowhere
+ * in the product any more. It is the same class of mistake as the quizzes
+ * drawing the old sprite: art that nothing checks, on a surface nobody revisits.
+ *
+ * A notification icon is the one place the mascot appears OUTSIDE the app, so it
+ * is the last place it should disagree with what is inside it.
+ */
+const ICON = `${import.meta.env.BASE_URL}Assets/characters/kawkab/kawkab-planet.webp`;
 const NOTIFIED_KEY = 'rx_habit_notified';
 
 export const HABIT_REMINDER_STRINGS = {
