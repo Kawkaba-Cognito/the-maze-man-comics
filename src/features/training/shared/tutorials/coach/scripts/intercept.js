@@ -19,10 +19,19 @@
  * particular. Steps about scoring and progression now park the hand instead.
  *
  * ⚠ NO AWAIT STEP: no `satisfiedFor` predicate, and the wave is held while the
- * lesson is open, so there is no marcher inside the tower's reach to strike.
+ * lesson is open, so there is nothing to fire on.
+ *
+ * ── 2026-09-05: THE CONTROLS CHANGED, SO THIS LESSON WAS A LIE ──
+ * It told the player to strike a marcher inside the tower's reach. There is no
+ * longer any way to touch a marcher: the board is a picture and every input is
+ * a weapon button. A tutorial that teaches a gesture the game does not accept
+ * is worse than none — the player follows it, nothing happens, and they
+ * conclude the game is broken. The id is bumped to `@coach3` for the same
+ * reason it exists at all: `shouldRunOnboarding` keys off it, so a rewritten
+ * lesson reusing the old id would reach fresh installs only, silently.
  */
 export const INTERCEPT_COACH = {
-  id: 'intercept@coach2',
+  id: 'intercept@coach3',
   steps: [
     {
       point: '[data-coach="field"]',
@@ -31,10 +40,16 @@ export const INTERCEPT_COACH = {
       ar: 'أنا د. كوكب. جيشٌ يسير على هذا الدرب نحو بوّابتك، موجةً بعد موجة.',
     },
     {
+      point: '[data-coach="weapons"]',
+      awaitTap: false,
+      en: 'You never touch them. Your weapons stand along the trail and their buttons are down here — press one and it fires on its own stretch of path, hitting everything standing there.',
+      ar: 'ولا تلمسهم أبداً. فأسلحتك قائمة على امتداد الدرب وأزرارها هاهنا — اضغط واحداً يُطلق على مداه وحده، فيصيب كل من وقف فيه.',
+    },
+    {
       point: '[data-coach="field"]',
       awaitTap: false,
-      en: 'Your tower reaches only part of the path. Strike a marcher while they are inside that reach and they go down; outside it, a tap does nothing.',
-      ar: 'وبرجك لا يبلغ إلا جزءاً من الطريق. فاضرب المسير وهو داخل ذلك المدى يسقط؛ وخارجه لا تُجدي الضربة شيئاً.',
+      en: 'Each weapon owns one stretch and no other. A marcher crossing the turret\'s ground cannot be touched by the missile — so the question is never how fast can you tap, it is which one, and when.',
+      ar: 'ولكل سلاح مدى واحد لا غير. فالمسير الذي يعبر أرض المدفع لا يبلغه الصاروخ — فالسؤال ليس كم تسرع في الضغط، بل أيّها، ومتى.',
     },
     /*
      * ⚠ THE INHIBITION LAYER. Stated as the colour to LEAVE, because the first
@@ -56,14 +71,32 @@ export const INTERCEPT_COACH = {
     {
       point: '[data-coach="field"]',
       awaitTap: false,
-      en: 'Later, forest hides part of the trail. A marcher who walks behind it is still walking — strike where you believe they have got to, not where you last saw them.',
-      ar: 'ولاحقاً يحجب الشجر جزءاً من الدرب. والمسير الذي يمضي خلفه ما زال يمشي — فاضرب حيث تظنّ أنه بلغ، لا حيث رأيته آخر مرّة.',
+      en: 'Later, forest hides part of the trail. A marcher who walks behind it is still walking — fire where you believe they have got to, not where you last saw them.',
+      ar: 'ولاحقاً يحجب الشجر جزءاً من الدرب. والمسير الذي يمضي خلفه ما زال يمشي — فأطلق حيث تظنّ أنه بلغ، لا حيث رأيته آخر مرّة.',
+    },
+    /*
+     * ⚠ THE FLYING WEAPONS ARE THE PREDICTION MEASURE ON EVERY SHOT, not only
+     * under the canopy — and that has to be said, because the natural reading
+     * of a button is that pressing it acts now. A player who presses the
+     * missile as a marcher passes will miss and will not know why.
+     */
+    {
+      point: '[data-coach="weapons"]',
+      awaitTap: false,
+      en: 'From level sixty-one you get a missile, and it FLIES. Press it as they pass and the shell arrives behind them — you have to fire at where they will be, every single shot.',
+      ar: 'ومن المستوى الحادي والستّين يصير لك صاروخ، وهو يطير. فإن ضغطته وهم يمرّون وصلت القذيفة خلفهم — فعليك أن تُطلق نحو حيث سيكونون، في كل رمية.',
     },
     {
       point: null,
       awaitTap: false,
       en: 'That is a guess, and it is a guess you can get good at. I never hide a marcher you have not seen walking first, so you always have their pace before they disappear.',
       ar: 'وذلك حدس، وهو حدسٌ يمكن أن تُتقنه. فأنا لا أُخفي مسيراً لم ترَه يمشي قبل ذلك، فتكون سرعته معك دائماً قبل أن يغيب.',
+    },
+    {
+      point: '[data-coach="weapons"]',
+      awaitTap: false,
+      en: 'Every weapon reloads on its own clock, so mashing both buttons stops working. A shot into an empty stretch costs you nothing but that reload — and the reload is the whole cost, because the weapon is then missing for the marcher that did need it.',
+      ar: 'ولكل سلاح ساعة تذخير خاصة به، فلا يُجدي ضربُ الأزرار معاً. والرمية في مدى خالٍ لا تكلّفك إلا ذلك التذخير — وهو الكلفة كلها، إذ يغيب السلاح عمّن كان يحتاجه حقاً.',
     },
     {
       point: '[data-coach="hud"]',

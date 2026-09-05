@@ -41,10 +41,22 @@ const UI = {
     hintLevels: '100 levels · a new mechanic every 10',
     hintPass: 'Same waves for everyone · pass the device',
     briefTitle: 'Hold the trail',
-    brief: 'An army marches to your gate. Tap them while they are inside a tower’s reach.',
+    brief: 'An army marches to your gate. Press a weapon to fire on its own stretch of trail — you never touch the marchers.',
     briefNogo: 'Leave the {c} ones alone — they are not the enemy.',
-    briefCanopy: 'Part of your reach is under the trees. Strike where you believe they are.',
-    briefBarrel: 'Tap a barrel to blow up everything near it.',
+    briefCanopy: 'Part of your reach is under the trees. Fire where you believe they are.',
+    briefBarrel: 'A barrel in your stretch goes up with everything near it.',
+    briefMissile: 'The missile flies. Fire it before they arrive, not as they pass.',
+    briefMortar: 'The mortar throws past its own stretch and takes armour in one.',
+    /* Weapon names. Short on purpose — they sit on a button that must stay
+       readable at 320px with three of them side by side. */
+    wTurret: 'Turret',
+    wMissile: 'Missile',
+    wMortar: 'Mortar',
+    wReady: 'ready',
+    wReloading: 'reloading',
+    wInstant: 'instant',
+    wFlies: (s) => `flies ${s}s`,
+    wasted: 'NOTHING THERE',
     begin: 'Hold the trail',
     nextWave: 'Next wave ›',
     waveCleared: 'Wave held',
@@ -59,7 +71,7 @@ const UI = {
     early: 'EARLY',
     late: 'LATE',
     chain: (n) => `×${n}`,
-    tapHint: 'Tap a marcher inside the ring',
+    tapHint: 'Fire the weapon whose stretch they are crossing',
     safeIs: 'Don’t hit',
     // results
     resKills: 'cut down',
@@ -84,10 +96,20 @@ const UI = {
     hintLevels: '١٠٠ مستوى · آلية جديدة كل ١٠',
     hintPass: 'نفس الموجات للجميع · مرّر الجهاز',
     briefTitle: 'احمِ الدرب',
-    brief: 'جيش يزحف نحو بوابتك. المسهم وهم داخل مدى أحد الأبراج.',
+    brief: 'جيش يزحف نحو بوابتك. اضغط سلاحاً ليطلق على مداه — لا تلمس الزاحفين أبداً.',
     briefNogo: 'اترك ذوي اللون {c} — ليسوا أعداءً.',
-    briefCanopy: 'جزء من مداك تحت الأشجار. اضرب حيث تظنّهم.',
-    briefBarrel: 'المس برميلاً لتفجير كل من حوله.',
+    briefCanopy: 'جزء من مداك تحت الأشجار. أطلق حيث تظنّهم.',
+    briefBarrel: 'البرميل داخل مداك ينفجر بكل من حوله.',
+    briefMissile: 'الصاروخ يطير. أطلقه قبل وصولهم، لا عند مرورهم.',
+    briefMortar: 'الهاون يرمي خارج مداه ويسقط المدرّع بضربة واحدة.',
+    wTurret: 'المدفع',
+    wMissile: 'الصاروخ',
+    wMortar: 'الهاون',
+    wReady: 'جاهز',
+    wReloading: 'يعيد التذخير',
+    wInstant: 'فوري',
+    wFlies: (s) => `يطير ${s}ث`,
+    wasted: 'لا شيء هناك',
     begin: 'احمِ الدرب',
     nextWave: 'الموجة التالية ›',
     waveCleared: 'صُدّت الموجة',
@@ -102,7 +124,7 @@ const UI = {
     early: 'مبكر',
     late: 'متأخر',
     chain: (n) => `×${n}`,
-    tapHint: 'المس زاحفاً داخل الدائرة',
+    tapHint: 'أطلق السلاح الذي يعبرون مداه',
     safeIs: 'لا تضرب',
     resKills: 'أُسقطوا',
     resThrough: 'عبروا',
@@ -141,10 +163,11 @@ const TOWER_TOKEN = [
   ['--game-tower-c', '#c77ad4'],
 ];
 
-/** The reach a marcher is standing in right now, or null if it is between them. */
-const windowAt = (u, now) => (u.windows || []).find(
-  (w) => now >= w.enterAt && now <= w.exitAt,
-) || null;
+/** Is this marcher inside a stretch that weapon can actually reach right now?
+ *  ⚠ The BLAST counts. The mortar throws past the ends of its own stretch, so a
+ *  marcher standing in that margin is killable — and drawing it dimmed, as the
+ *  plain a/b test did, told the player it was out of play when it was not. */
+const reaches = (tw, f) => f >= tw.a - (tw.blast || 0) && f <= tw.b + (tw.blast || 0);
 
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
 import { INTERCEPT_COACH } from '../../../../shared/tutorials/coach/scripts/intercept';
@@ -158,7 +181,11 @@ export function InterceptEngine({
    */
   const coachRootRef = useRef(null);
   const coachOpen = coach?.open || false;
-  const coachOpenRef = coach?.openRef || { current: false };
+  /* ⚠ Memoised. `coach?.openRef || { current: false }` builds a FRESH object on
+     every render when there is no coach, and `fire` closes over it — so the
+     fallback would change identity every frame and rebuild the callback that
+     the weapon buttons are bound to. */
+  const coachOpenRef = useMemo(() => coach?.openRef || { current: false }, [coach]);
   const t = isAr ? UI.ar : UI.en;
 
   const [step, setStep] = useState('brief');       // brief | run | between | over
@@ -190,6 +217,21 @@ export function InterceptEngine({
   const pausedRef = useRef(false);
   const overRef = useRef(false);
   const sizeRef = useRef({ w: 0, h: 0 });
+  /** kind → { readyAt, coolMs, flightMs, at, heavy } — the weapon timelines. */
+  const gunsRef = useRef({});
+  /** Shells in the air: { weapon, firedAt, landsAt, at }. */
+  const shotsRef = useRef([]);
+  /*
+   * ⚠ THE WAVE CLOCK MUST STOP WHEN THE WAVE DOES.
+   * `now` was `performance.now() - t0Ref.current`, which keeps running while the
+   * game is paused or the coach is open — so the frame loop froze the picture
+   * while the model kept marching, and everyone TELEPORTED forward the moment
+   * play resumed. Invisible in a screenshot and fatal to a game measuring
+   * milliseconds: a marcher could cross its whole window during a tutorial step
+   * and be recorded as missed. Held time is accumulated here and subtracted.
+   */
+  const holdRef = useRef({ since: 0, total: 0 });
+  const [guns, setGuns] = useState([]);   // for the buttons only, not the loop
 
   const cfg = useMemo(
     () => (mode === 'free' ? survivalCfg(stage)
@@ -241,9 +283,30 @@ export function InterceptEngine({
 
   /* ── wave control ─────────────────────────────────────────────────────── */
   const startWave = useCallback(() => {
-    waveRef.current = buildWave(rng, cfg, waveNo);
+    const wave = buildWave(rng, cfg, waveNo);
+    waveRef.current = wave;
     waveLogRef.current = [];
     fxRef.current = [];
+    shotsRef.current = [];
+    /* One timeline per weapon. Built from the wave's own towers so a level that
+       has not unlocked the missile yet simply has no missile button — there is
+       no separate list of what the player owns that could drift out of step. */
+    const g = {};
+    (wave.towers || cfg.towers || []).forEach((tw) => {
+      g[tw.weapon] = {
+        tower: tw,
+        coolMs: tw.coolMs,
+        flightMs: tw.flightMs,
+        heavy: !!tw.heavy,
+        blast: tw.blast || 0,
+        readyAt: 0,
+      };
+    });
+    gunsRef.current = g;
+    /* Trail order, so the buttons sit left-to-right the way the stretches do —
+       the mapping a player has to learn is easier when it is spatial. */
+    setGuns((wave.towers || cfg.towers || []).map((tw) => tw.weapon));
+    holdRef.current = { since: 0, total: 0 };
     t0Ref.current = performance.now();
     setStep('run');
   }, [rng, cfg, waveNo]);
@@ -285,110 +348,168 @@ export function InterceptEngine({
     if (hpRef.current <= 0) endRun(false);
   }, [endRun]);
 
-  /* ── the strike ───────────────────────────────────────────────────────── */
-  const strike = useCallback((nx, ny) => {
-    if (step !== 'run' || pausedRef.current || !waveRef.current) return;
-    const now = performance.now() - t0Ref.current;
+  /* The wave clock, with paused and coached time taken out. See `holdRef`. */
+  const nowMs = useCallback(() => {
+    const h = holdRef.current;
+    const held = h.total + (h.since ? performance.now() - h.since : 0);
+    return performance.now() - t0Ref.current - held;
+  }, []);
+
+  /* Start and stop the hold whenever play stops for a reason that is not the
+     game's fault. Both branches write to the same accumulator on purpose. */
+  useEffect(() => {
+    const stopped = pause.open || coachOpen;
+    const h = holdRef.current;
+    if (stopped && !h.since) h.since = performance.now();
+    else if (!stopped && h.since) { h.total += performance.now() - h.since; h.since = 0; }
+  }, [pause.open, coachOpen]);
+
+  /*
+   * ── THE SHOT ────────────────────────────────────────────────────────────
+   *
+   * 2026-09-05: the player fires WEAPONS, and never touches a marcher.
+   *
+   * `fire` only presses the button. What the press does is decided when the
+   * shell LANDS — instantly for the turret, `flightMs` later for the missile and
+   * the mortar. That split is the whole prediction measure: with a flying weapon
+   * you are aiming at where you believe they will be, on every shot, not only
+   * under the canopy.
+   */
+  const landShot = useCallback((shot, now) => {
     const wave = waveRef.current;
-    const { w, h } = sizeRef.current;
-    if (!w || !h) return;
+    if (!wave) return;
+    const gun = gunsRef.current[shot.weapon];
+    if (!gun) return;
+    const tw = gun.tower;
+    const lo = tw.a - (tw.blast || 0);
+    const hi = tw.b + (tw.blast || 0);
+    const centre = posAt(tw.at);
 
-    /* Tap radius in normalised units. Generous on purpose: this measures WHEN
-       you strike, and a fiddly target would turn it into a test of aim. */
-    const grab = 0.075;
+    fxRef.current.push({ kind: 'boom', at: now, x: centre.x, y: centre.y, big: gun.blast > 0 });
 
-    // barrels first — they are the deliberate, planned action
+    let killed = 0;
+    let commissions = 0;
+    let touched = false;
+
+    /* Barrels in the stretch go up, and take their own neighbourhood with them.
+       Resolved BEFORE the marchers so a chained kill is not double-counted. */
+    const chained = new Set();
     for (const b of wave.barrels) {
       if (b.spent) continue;
-      const p = posAt(b.at);
-      if (Math.hypot(nx - p.x, ny - p.y) > grab) continue;
+      if (b.at < lo || b.at > hi) continue;
       b.spent = true;
-      playSfx?.('win');
-      fxRef.current.push({ kind: 'boom', at: now, x: p.x, y: p.y, big: true });
-      let caught = 0;
+      touched = true;
+      const bp = posAt(b.at);
+      fxRef.current.push({ kind: 'boom', at: now, x: bp.x, y: bp.y, big: true });
       for (const u of wave.units) {
         if (u.dead || u.through || u.kind === KIND.NOGO) continue;
         const f = (now - u.spawnAt) / u.crossMs;
         if (f < 0 || f > 1) continue;
         if (Math.abs(f - b.at) > BLAST_FRAC) continue;
-        u.dead = true;
-        caught += 1;
-        const q = posAt(f);
-        fxRef.current.push({ kind: 'boom', at: now, x: q.x, y: q.y });
-        const bw = windowAt(u, now);
-        record({
-          type: 'hit',
-          rt: Math.round(now - (bw ? bw.enterAt : u.enterAt)),
-          hidden: false, err: 0, barrel: true,
-        });
+        chained.add(u.id);
       }
-      if (caught > 1) {
-        comboRef.current += caught;
-        setCombo(comboRef.current);
-        fxRef.current.push({ kind: 'text', at: now, x: p.x, y: p.y, text: t.chain(caught), good: true });
-      }
-      return;
     }
 
-    // then a marcher, nearest to the finger among those inside SOME reach
-    let best = null;
     for (const u of wave.units) {
       if (u.dead || u.through) continue;
-      /* ⚠ A marcher may answer to several towers now, and a bound one to
-         exactly one — so "is it strikeable" is a question about which window it
-         is standing in, not about a single pair of times. */
-      const win = windowAt(u, now);
-      if (!win) continue;
       const f = (now - u.spawnAt) / u.crossMs;
+      if (f < 0 || f > 1) continue;
+      const chain = chained.has(u.id);
+      /* ⚠ The marcher must be in a window belonging to THIS weapon. A bound one
+         has a single window, which is what makes "marked for one weapon" mean
+         anything at all — without this check every press would serve everybody
+         and the mechanic would be announced in the UI while changing nothing. */
+      const win = chain ? null : (u.windows || []).find(
+        (x) => x.weapon === shot.weapon && now >= x.enterAt && now <= x.exitAt,
+      );
+      if (!chain && !win) continue;
+      touched = true;
       const p = posAt(f);
-      const d = Math.hypot(nx - p.x, ny - p.y);
-      if (d > grab) continue;
-      if (!best || d < best.d) best = { u, d, p, f, win };
-    }
-    if (!best) return;
 
-    const { u, p, win } = best;
-    const hidden = now >= win.hideAt;
+      if (u.kind === KIND.NOGO) {
+        /* A commission error — the whole point of the no-go colour. It costs the
+           chain and is recorded, but it does NOT damage the gate: hitting a
+           friendly is the player's mistake, not the army's success. */
+        u.dead = true;
+        commissions += 1;
+        record({ type: 'commission' });
+        fxRef.current.push({ kind: 'text', at: now, x: p.x, y: p.y, text: t.dontHit, good: false });
+        fxRef.current.push({ kind: 'boom', at: now, x: p.x, y: p.y, bad: true });
+        continue;
+      }
 
-    if (u.kind === KIND.NOGO) {
-      /* A commission error — the whole point of the no-go colour. It costs the
-         chain and is recorded, but it does NOT damage the gate: hitting a
-         friendly is the player's mistake, not the army's success. */
+      /* A heavy shell takes armour outright; the turret has to go twice. */
+      u.hits = (u.hits || 0) + (chain || gun.heavy ? (u.taps || 1) : 1);
+      if (u.hits < (u.taps || 1)) {
+        fxRef.current.push({ kind: 'spark', at: now, x: p.x, y: p.y });
+        continue;
+      }
+
       u.dead = true;
-      record({ type: 'commission' });
+      killed += 1;
+      if (chain) {
+        record({ type: 'hit', rt: Math.round(now - u.enterAt), hidden: false, err: 0, barrel: true });
+        fxRef.current.push({ kind: 'boom', at: now, x: p.x, y: p.y });
+        continue;
+      }
+      const hidden = now >= win.hideAt;
+      /* Measured from the window they were actually struck in. Against the FIRST
+         window it would read as several seconds of dithering whenever a marcher
+         was taken at the second or third weapon. */
+      const rt = Math.round(now - win.enterAt);
+      /* On a hidden marcher the meaningful number is the signed error against the
+         middle of the covered stretch — early or late — not how fast you were. */
+      const mid = (win.hideAt + win.exitAt) / 2;
+      record({ type: 'hit', rt, hidden, err: hidden ? Math.round(now - mid) : 0 });
+      fxRef.current.push({ kind: 'boom', at: now, x: p.x, y: p.y });
+      const label = hidden
+        ? (Math.abs(now - mid) < cfg.tolMs ? t.perfect : (now < mid ? t.early : t.late))
+        : t.hit;
+      fxRef.current.push({ kind: 'text', at: now, x: p.x, y: p.y, text: label, good: true });
+    }
+
+    if (commissions > 0) {
       comboRef.current = 1;
       setCombo(1);
       playSfx?.('error');
-      fxRef.current.push({ kind: 'text', at: now, x: p.x, y: p.y, text: t.dontHit, good: false });
-      fxRef.current.push({ kind: 'boom', at: now, x: p.x, y: p.y, bad: true });
-      return;
+    } else if (killed > 0) {
+      comboRef.current += killed;
+      setCombo(comboRef.current);
+      playSfx?.('win');
+      if (killed > 1) {
+        fxRef.current.push({ kind: 'text', at: now, x: centre.x, y: centre.y, text: t.chain(killed), good: true });
+      }
+    } else if (!touched) {
+      /*
+       * A wasted shot. It costs nothing but the reload — which is the whole
+       * cost, because that weapon is now unavailable for the marcher that did
+       * need it. Deliberately NOT gate damage: a mistimed press doing the
+       * enemy's job reads as unfair on a fast wave, and every wave in this game
+       * is guaranteed clearable by a perfect player.
+       */
+      fxRef.current.push({ kind: 'text', at: now, x: centre.x, y: centre.y, text: t.wasted, good: false });
     }
+  }, [t, playSfx, record, cfg.tolMs]);
 
-    u.hits = (u.hits || 0) + 1;
-    if (u.hits < u.taps) {
-      playSfx?.('click');
-      fxRef.current.push({ kind: 'spark', at: now, x: p.x, y: p.y });
-      return;
+  const fire = useCallback((kind) => {
+    if (step !== 'run' || pausedRef.current || !waveRef.current) return;
+    /* ⚠ Guarded like every other consequence while the lesson is open. A guided
+       press with unlimited reading time is not a measurement, and a round that
+       ends under the coach marks the lesson permanently done having shown two
+       steps — the cancellation lesson learned that the hard way. */
+    if (coachOpenRef.current) return;
+    const gun = gunsRef.current[kind];
+    if (!gun) return;
+    const now = nowMs();
+    if (now < gun.readyAt) return;
+    gun.readyAt = now + gun.coolMs;
+    playSfx?.('click');
+    if (gun.flightMs > 0) {
+      shotsRef.current.push({ weapon: kind, firedAt: now, landsAt: now + gun.flightMs, at: gun.tower.at });
+    } else {
+      landShot({ weapon: kind, at: gun.tower.at }, now);
     }
-
-    u.dead = true;
-    /* Measured from the window they were actually struck in. Against the FIRST
-       window it would read as several seconds of dithering whenever a marcher
-       was taken at the second or third tower. */
-    const rt = Math.round(now - win.enterAt);
-    /* On a hidden marcher the meaningful number is the signed error against the
-       middle of the covered stretch — early or late — not how fast you were. */
-    const mid = (win.hideAt + win.exitAt) / 2;
-    record({ type: 'hit', rt, hidden, err: hidden ? Math.round(now - mid) : 0 });
-    comboRef.current += 1;
-    setCombo(comboRef.current);
-    playSfx?.('win');
-    fxRef.current.push({ kind: 'boom', at: now, x: p.x, y: p.y });
-    const label = hidden
-      ? (Math.abs(now - mid) < cfg.tolMs ? t.perfect : (now < mid ? t.early : t.late))
-      : t.hit;
-    fxRef.current.push({ kind: 'text', at: now, x: p.x, y: p.y, text: label, good: true });
-  }, [step, t, playSfx, record, cfg.tolMs]);
+  }, [step, playSfx, nowMs, landShot, coachOpenRef]);
 
   /* ── the loop ─────────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -418,7 +539,18 @@ export function InterceptEngine({
       if (!w || !h) return true;
       const wave = waveRef.current;
       if (!wave) return true;
-      const now = pausedRef.current ? -1 : performance.now() - t0Ref.current;
+      const now = pausedRef.current ? -1 : nowMs();
+
+      /* ── shells landing ──────────────────────────────────────────────── */
+      /* Resolved at the TOP of the frame, before anything moves, so a shell
+         lands against the positions it was aimed at rather than one frame on. */
+      if (now >= 0 && shotsRef.current.length) {
+        const still = [];
+        for (const sh of shotsRef.current) {
+          if (now >= sh.landsAt) landShot(sh, now); else still.push(sh);
+        }
+        shotsRef.current = still;
+      }
 
       const cs = getComputedStyle(cv);
       const tok = (n, f) => (cs.getPropertyValue(n) || '').trim() || f;
@@ -446,26 +578,59 @@ export function InterceptEngine({
         ctx.moveTo(X(TRAIL[0][0]), Y(TRAIL[0][1]));
         for (let i = 1; i < TRAIL.length; i += 1) ctx.lineTo(X(TRAIL[i][0]), Y(TRAIL[i][1]));
       };
-      // the packed earth either side of the road
+      /*
+       * ⚠ A ROAD IS FOUR STROKES, NOT ONE. The old trail was a fat line, a
+       * thinner line and a dashed centre — which reads as a pipe, and was
+       * reported as such. What makes it a road is the SHOULDER: a soft, wider
+       * band of trodden earth under a harder bed, with the bed's own edge drawn
+       * on top so the two meet at a line rather than a blur. The ruts are what
+       * give it direction of travel.
+       *
+       * All four are the same traced path at different widths, so they can never
+       * drift apart, and every colour is a token so both themes work.
+       */
+      const ink = tok('--game-ink', '#131e28');
+      // 1. trodden earth, soft-edged, wider than the road
       tracePath();
       ctx.strokeStyle = line;
-      ctx.globalAlpha = 0.5;
-      ctx.lineWidth = S * 0.118;
+      ctx.globalAlpha = 0.28;
+      ctx.lineWidth = S * 0.150;
       ctx.stroke();
-      // the road itself
+      // 2. the packed shoulder
+      tracePath();
+      ctx.globalAlpha = 0.55;
+      ctx.lineWidth = S * 0.114;
+      ctx.stroke();
+      // 3. the road bed
       ctx.globalAlpha = 1;
       tracePath();
       ctx.strokeStyle = surface;
       ctx.lineWidth = S * 0.092;
       ctx.stroke();
-      // a worn centre line, so the road reads as a road and not as a pipe
-      tracePath();
-      ctx.strokeStyle = line;
-      ctx.globalAlpha = 0.30;
-      ctx.lineWidth = Math.max(1.5, S * 0.007);
-      ctx.setLineDash([S * 0.022, S * 0.030]);
-      ctx.stroke();
+      // 4. two cart ruts, offset from the centre — direction of travel
+      ctx.strokeStyle = ink;
+      ctx.globalAlpha = 0.13;
+      ctx.lineWidth = Math.max(1.5, S * 0.010);
+      ctx.setLineDash([S * 0.045, S * 0.028]);
+      for (const off of [-S * 0.021, S * 0.021]) {
+        ctx.save();
+        ctx.translate(0, off);
+        tracePath();
+        ctx.stroke();
+        ctx.restore();
+      }
       ctx.setLineDash([]);
+      // loose stones, deterministic so they do not crawl between frames
+      ctx.fillStyle = ink;
+      ctx.globalAlpha = 0.16;
+      for (let i = 0; i < 26; i += 1) {
+        const p = posAt((i * 0.0384 + 0.012) % 1);
+        const j = ((i * 53) % 17) / 17 - 0.5;
+        const k = ((i * 31) % 13) / 13 - 0.5;
+        ctx.beginPath();
+        ctx.arc(X(p.x) + j * S * 0.055, Y(p.y) + k * S * 0.052, S * (0.004 + Math.abs(j) * 0.004), 0, 6.2832);
+        ctx.fill();
+      }
       ctx.globalAlpha = 1;
 
       /* ── the tower's reach ───────────────────────────────────────────── */
@@ -516,21 +681,43 @@ export function InterceptEngine({
          only the first were drawn, the others would hide marchers with nothing
          on screen explaining where they went. */
       if (cfg.hiddenShare > 0) {
-        const ink = tok('--game-ink', '#131e28');
+        /*
+         * ⚠ IT HAS TO HIDE THEM, AND IT HAS TO LOOK LIKE TREES.
+         *
+         * The first build drew this in `--game-ink` at alpha 0.97 with six fat
+         * crowns per weapon. It hid marchers perfectly and, with three weapons
+         * on screen at L85, rendered as three black ink blots swallowing most of
+         * the board — the same failure as the barrel that was a `--game-bad`
+         * disc beside a `--game-bad` marcher: technically correct, unreadable.
+         *
+         * Now: a moss canopy, opaque (it must genuinely conceal — the prediction
+         * measure depends on it), with a scatter of small crowns and a darker
+         * underside so it reads as a treeline rather than a hole in the page.
+         * Twice as many crowns at half the radius is what makes a mass look
+         * like foliage.
+         */
+        const moss = tok('--game-ok', '#386544');
         towers.forEach((tw) => {
           if (!(tw.hiddenB > tw.hiddenA)) return;
-          strokeStretch(tw.hiddenA, tw.hiddenB, ink, S * 0.126, 0.26, 'round');
-          strokeStretch(tw.hiddenA, tw.hiddenB, ink, S * 0.104, 0.97, 'round');
-          // a scatter of crowns so it reads as forest rather than as a black bar
-          for (let i = 0; i <= 5; i += 1) {
-            const p = posAt(tw.hiddenA + (tw.hiddenB - tw.hiddenA) * (i / 5));
+          // the shadow the wood casts on the road
+          strokeStretch(tw.hiddenA, tw.hiddenB, ink, S * 0.128, 0.20, 'round');
+          // the canopy body — opaque, so a marcher under it is genuinely gone
+          strokeStretch(tw.hiddenA, tw.hiddenB, moss, S * 0.100, 1, 'round');
+          const n = 11;
+          for (let i = 0; i <= n; i += 1) {
+            const p = posAt(tw.hiddenA + (tw.hiddenB - tw.hiddenA) * (i / n));
             const wob = ((i * 37) % 11) / 11 - 0.5;
+            const wob2 = ((i * 53) % 7) / 7 - 0.5;
+            const r = S * (0.017 + Math.abs(wob) * 0.010);
+            const cxp = X(p.x) + wob * S * 0.036;
+            const cyp = Y(p.y) + wob2 * S * 0.030;
+            // a darker underside first, then the lit crown offset up-left
             ctx.fillStyle = ink;
-            ctx.globalAlpha = 0.9;
-            ctx.beginPath();
-            ctx.arc(X(p.x) + wob * S * 0.03, Y(p.y) - S * 0.035 + wob * S * 0.02,
-              S * (0.030 + Math.abs(wob) * 0.014), 0, 6.2832);
-            ctx.fill();
+            ctx.globalAlpha = 0.30;
+            ctx.beginPath(); ctx.arc(cxp, cyp + r * 0.30, r, 0, 6.2832); ctx.fill();
+            ctx.fillStyle = moss;
+            ctx.globalAlpha = 1;
+            ctx.beginPath(); ctx.arc(cxp, cyp, r, 0, 6.2832); ctx.fill();
           }
           ctx.globalAlpha = 1;
         });
@@ -546,7 +733,6 @@ export function InterceptEngine({
         if (b.spent) continue;
         const p = posAt(b.at);
         const s = S * 0.032;
-        const ink = tok('--game-ink', '#131e28');
         ctx.fillStyle = tok('--game-bad', '#854c49');
         ctx.fillRect(X(p.x) - s, Y(p.y) - s, s * 2, s * 2);
         // two hoops, so the square reads as a drum seen side-on
@@ -567,40 +753,189 @@ export function InterceptEngine({
         ctx.stroke();
       }
 
-      /* ── the tower ───────────────────────────────────────────────────── */
-      towers.forEach((tw) => {
+      /* ── the weapons ─────────────────────────────────────────────────────
+       *
+       * ⚠ THREE DIFFERENT SILHOUETTES, NOT THREE TINTS OF ONE.
+       *
+       * They used to be identical masts in three hues, which put the entire
+       * burden of "which weapon is this" on colour — unreadable for a
+       * colour-blind player and, more basically, a lie: they now behave
+       * completely differently. A turret is a squat body with a long flat
+       * barrel; a missile is a raked rail carrying visible warheads; a mortar is
+       * a short fat tube pointing nearly straight up on a bipod. Those read at a
+       * glance, at 24px, in either theme, and they say what the weapon does
+       * before the player has fired it once.
+       *
+       * Everything is drawn in the weapon's own local frame — translate to the
+       * emplacement, then draw upright — so a change to where a weapon stands on
+       * the trail cannot skew its art.
+       */
+      const drawWeapon = (tw, hue, ready, charge) => {
         const tp = posAt(tw.at);
-        const hue = hueOf(tw);
-        const topY = Y(tp.y) - S * 0.105;
-        // mast
-        ctx.strokeStyle = hue;
-        ctx.globalAlpha = 0.55;
-        ctx.lineWidth = Math.max(2, S * 0.011);
+        const cxp = X(tp.x);
+        const cyp = Y(tp.y);
+        const u = S * 0.042;                        // one "unit" of weapon
+        ctx.save();
+        ctx.translate(cxp, cyp);
+
+        // a footing on the ground, so the weapon stands rather than floats
+        ctx.fillStyle = ink;
+        ctx.globalAlpha = 0.18;
         ctx.beginPath();
-        ctx.moveTo(X(tp.x), topY);
-        ctx.lineTo(X(tp.x), Y(tp.y));
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-        // head
-        ctx.fillStyle = hue;
-        ctx.beginPath();
-        ctx.arc(X(tp.x), topY, S * 0.038, 0, 6.2832);
+        ctx.ellipse(0, u * 0.15, u * 1.35, u * 0.42, 0, 0, 6.2832);
         ctx.fill();
-        ctx.strokeStyle = tok('--game-ink', '#131e28');
-        ctx.globalAlpha = 0.55;
-        ctx.lineWidth = Math.max(1.5, S * 0.006);
-        ctx.stroke();
         ctx.globalAlpha = 1;
-        // a slow pulse outward, so a tower reads as live rather than as scenery
-        const pulse = ((now >= 0 ? now : 0) % 1600) / 1600;
-        ctx.strokeStyle = hue;
-        ctx.globalAlpha = 0.34 * (1 - pulse);
-        ctx.lineWidth = Math.max(1.5, S * 0.007);
-        ctx.beginPath();
-        ctx.arc(X(tp.x), topY, S * (0.038 + pulse * 0.055), 0, 6.2832);
-        ctx.stroke();
-        ctx.globalAlpha = 1;
+
+        const body = () => {
+          ctx.fillStyle = hue;
+          ctx.strokeStyle = ink;
+          ctx.lineWidth = Math.max(1.4, u * 0.13);
+          ctx.globalAlpha = ready ? 1 : 0.5;
+        };
+        const outline = () => {
+          ctx.globalAlpha = ready ? 0.65 : 0.3;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        };
+
+        if (tw.weapon === 'missile') {
+          // a raked launch rail on a low carriage, three warheads showing
+          body();
+          ctx.beginPath();
+          ctx.moveTo(-u * 1.1, 0); ctx.lineTo(u * 1.1, 0);
+          ctx.lineTo(u * 0.8, -u * 0.62); ctx.lineTo(-u * 0.85, -u * 0.62);
+          ctx.closePath(); ctx.fill(); outline();
+          ctx.save();
+          ctx.translate(0, -u * 0.62);
+          ctx.rotate(-0.62);                       // the rake
+          ctx.beginPath();
+          ctx.roundRect(-u * 1.25, -u * 0.34, u * 2.5, u * 0.68, u * 0.16);
+          ctx.fill(); outline();
+          // warheads poking out of the front of the rail
+          ctx.globalAlpha = ready ? 1 : 0.5;
+          for (const k of [-1, 0, 1]) {
+            const yy = k * u * 0.22;
+            ctx.beginPath();
+            ctx.moveTo(u * 1.25, yy - u * 0.12);
+            ctx.lineTo(u * 1.85, yy);
+            ctx.lineTo(u * 1.25, yy + u * 0.12);
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+          ctx.restore();
+        } else if (tw.weapon === 'mortar') {
+          // a bipod under a short fat tube, aimed steeply up
+          ctx.strokeStyle = ink;
+          ctx.globalAlpha = ready ? 0.7 : 0.35;
+          ctx.lineWidth = Math.max(1.6, u * 0.16);
+          ctx.beginPath();
+          ctx.moveTo(-u * 0.75, 0); ctx.lineTo(0, -u * 0.95);
+          ctx.moveTo(u * 0.75, 0); ctx.lineTo(0, -u * 0.95);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          // baseplate
+          body();
+          ctx.beginPath();
+          ctx.roundRect(-u * 1.15, -u * 0.22, u * 2.3, u * 0.44, u * 0.14);
+          ctx.fill(); outline();
+          // the tube
+          ctx.save();
+          ctx.rotate(-0.36);
+          ctx.globalAlpha = ready ? 1 : 0.5;
+          ctx.fillStyle = hue;
+          ctx.beginPath();
+          ctx.roundRect(-u * 0.34, -u * 2.05, u * 0.68, u * 1.9, u * 0.2);
+          ctx.fill(); outline();
+          // a fat muzzle ring — this is the wide one
+          ctx.globalAlpha = ready ? 0.8 : 0.4;
+          ctx.lineWidth = Math.max(1.8, u * 0.2);
+          ctx.beginPath();
+          ctx.ellipse(0, -u * 2.02, u * 0.44, u * 0.16, 0, 0, 6.2832);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          ctx.restore();
+        } else {
+          // turret: squat body, long flat barrel down the trail
+          body();
+          ctx.beginPath();
+          ctx.moveTo(-u * 1.05, 0); ctx.lineTo(u * 1.05, 0);
+          ctx.lineTo(u * 0.72, -u * 0.72); ctx.lineTo(-u * 0.72, -u * 0.72);
+          ctx.closePath(); ctx.fill(); outline();
+          // the head
+          ctx.globalAlpha = ready ? 1 : 0.5;
+          ctx.beginPath();
+          ctx.arc(0, -u * 0.72, u * 0.62, Math.PI, 0);
+          ctx.fill(); outline();
+          // the barrel, laid along the trail
+          ctx.globalAlpha = ready ? 1 : 0.5;
+          ctx.fillStyle = hue;
+          ctx.beginPath();
+          ctx.roundRect(u * 0.2, -u * 1.12, u * 1.75, u * 0.4, u * 0.14);
+          ctx.fill(); outline();
+          ctx.globalAlpha = 1;
+        }
+
+        /*
+         * The reload, drawn ON the weapon as well as on its button. A player
+         * watching the trail should not have to look away to find out whether
+         * the thing they are about to press will do anything.
+         */
+        if (charge < 1) {
+          ctx.strokeStyle = ink;
+          ctx.globalAlpha = 0.22;
+          ctx.lineWidth = Math.max(2, u * 0.22);
+          ctx.beginPath();
+          ctx.arc(0, 0, u * 1.6, -Math.PI / 2, -Math.PI / 2 + 6.2832);
+          ctx.stroke();
+          ctx.strokeStyle = hue;
+          ctx.globalAlpha = 0.95;
+          ctx.beginPath();
+          ctx.arc(0, 0, u * 1.6, -Math.PI / 2, -Math.PI / 2 + 6.2832 * charge);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        ctx.restore();
+      };
+
+      towers.forEach((tw) => {
+        const gun = gunsRef.current[tw.weapon];
+        const left = gun ? Math.max(0, gun.readyAt - Math.max(0, now)) : 0;
+        const charge = gun && gun.coolMs > 0 ? Math.min(1, 1 - left / gun.coolMs) : 1;
+        drawWeapon(tw, hueOf(tw), charge >= 1, charge);
       });
+
+      /* ── shells in the air ───────────────────────────────────────────────
+       * The reticle is the honest part: it closes on the impact point over the
+       * flight, so a player can SEE that a flying weapon commits early and can
+       * learn the lead rather than guessing at it. */
+      for (const sh of shotsRef.current) {
+        if (now < 0) break;
+        const gun = gunsRef.current[sh.weapon];
+        if (!gun) continue;
+        const from = posAt(sh.at);
+        const to = posAt(sh.at);
+        const k = Math.min(1, Math.max(0, (now - sh.firedAt) / Math.max(1, gun.flightMs)));
+        const hue = hueOf(gun.tower);
+        // the shell arcs up out of the emplacement and back down onto the trail
+        const lift = S * (gun.blast > 0 ? 0.30 : 0.20) * Math.sin(Math.PI * k);
+        const sx = X(from.x) + (X(to.x) - X(from.x)) * k;
+        const sy = Y(from.y) + (Y(to.y) - Y(from.y)) * k - lift;
+        ctx.fillStyle = hue;
+        ctx.globalAlpha = 0.95;
+        ctx.beginPath();
+        ctx.arc(sx, sy, S * (gun.blast > 0 ? 0.017 : 0.013), 0, 6.2832);
+        ctx.fill();
+        // closing reticle over the ground it will land on
+        ctx.strokeStyle = hue;
+        ctx.globalAlpha = 0.30 + 0.5 * k;
+        ctx.lineWidth = Math.max(1.5, S * 0.008);
+        const rr = S * (0.11 - 0.062 * k);
+        ctx.beginPath();
+        ctx.arc(X(to.x), Y(to.y), rr, 0, 6.2832);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
 
       /* ── the gate ────────────────────────────────────────────────────── */
       const gp = posAt(1);
@@ -673,7 +1008,7 @@ export function InterceptEngine({
              colour, which the player still needs in order to decide whether
              this is one to leave alone when it does arrive. */
           const mine = u.towerIdx >= 0 && towers[u.towerIdx] ? [towers[u.towerIdx]] : towers;
-          const inReach = mine.some((tw) => f >= tw.a && f <= tw.b);
+          const inReach = mine.some((tw) => reaches(tw, f));
           const rad = u.kind === KIND.ARMOUR ? r * 1.26 : r;
 
           /* A sprinter gets a streak, because "that one is faster" has to be
@@ -772,16 +1107,60 @@ export function InterceptEngine({
     const stop = startCanvasLoop({ wrap, rafRef, resize, frame });
     return stop;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, waveNo, cfg, mode, totalWaves]);
+  }, [step, waveNo, cfg, mode, totalWaves, nowMs, landShot]);
 
-  /* ── pointer ──────────────────────────────────────────────────────────── */
-  const onPointer = useCallback((ev) => {
-    ev.preventDefault();
-    const wrap = wrapRef.current;
-    if (!wrap) return;
-    const r = wrap.getBoundingClientRect();
-    strike((ev.clientX - r.left) / r.width, (ev.clientY - r.top) / r.height);
-  }, [strike]);
+  /* ── the weapon bar ───────────────────────────────────────────────────── */
+  const WEAPON_KEYS = ['a', 's', 'd'];
+  const btnRefs = useRef({});
+
+  /*
+   * ⚠ THE RELOAD BAR IS WRITTEN STRAIGHT TO THE DOM, NOT HELD IN STATE.
+   * Three cooldowns ticking at 60fps through React would re-render the whole
+   * board every frame — the exact thing the header of this file forbids, and in
+   * a game measuring milliseconds a dropped frame is a measurement error.
+   */
+  useEffect(() => {
+    if (step !== 'run') return undefined;
+    let id = 0;
+    const tick = () => {
+      const now = nowMs();
+      for (const kind of Object.keys(btnRefs.current)) {
+        const node = btnRefs.current[kind];
+        const gun = gunsRef.current[kind];
+        if (!node || !gun) continue;
+        const left = Math.max(0, gun.readyAt - now);
+        const charge = gun.coolMs > 0 ? Math.min(1, 1 - left / gun.coolMs) : 1;
+        if (node.fill) node.fill.style.width = `${charge * 100}%`;
+        if (node.el) node.el.classList.toggle('ic-weapon--cooling', charge < 1);
+        if (node.st) {
+          const want = left > 0
+            ? t.wReloading
+            : (gun.flightMs > 0 ? t.wFlies((gun.flightMs / 1000).toFixed(1)) : t.wReady);
+          if (node.st.textContent !== want) node.st.textContent = want;
+        }
+      }
+      id = requestAnimationFrame(tick);
+    };
+    id = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(id);
+  }, [step, nowMs, t]);
+
+  useEffect(() => {
+    if (step !== 'run') return undefined;
+    const onKey = (ev) => {
+      if (ev.repeat || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+      const i = WEAPON_KEYS.indexOf(ev.key.toLowerCase());
+      const kind = i >= 0 ? guns[i] : null;
+      if (!kind) return;
+      ev.preventDefault();
+      fire(kind);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, guns, fire]);
+
+  const weaponLabel = (kind) => (kind === 'missile' ? t.wMissile : kind === 'mortar' ? t.wMortar : t.wTurret);
 
   /* ── finish ───────────────────────────────────────────────────────────── */
   const finish = useCallback(() => {
@@ -872,6 +1251,8 @@ export function InterceptEngine({
           <p className="ic-brief">{t.brief}</p>
           <ul className="ic-rules">
             {cfg.nogoShare > 0 && <li>{t.briefNogo.replace('{c}', isAr ? 'الآخر' : 'other-coloured')}</li>}
+            {cfg.nTowers >= 2 && <li>{t.briefMissile}</li>}
+            {cfg.nTowers >= 3 && <li>{t.briefMortar}</li>}
             {cfg.hiddenShare > 0 && <li>{t.briefCanopy}</li>}
             {cfg.barrels > 0 && <li>{t.briefBarrel}</li>}
           </ul>
@@ -882,17 +1263,49 @@ export function InterceptEngine({
       )}
 
       {step === 'run' && (
-        <div
-          className="ic-field"
-          ref={wrapRef}
-          data-coach="field"
-          onPointerDown={onPointer}
-          role="application"
-          aria-label={t.tapHint}
-        >
-          <canvas ref={canvasRef} className="ic-canvas" />
-          <div className="ic-taphint">{t.tapHint}</div>
-        </div>
+        <>
+          <div
+            className="ic-field"
+            ref={wrapRef}
+            data-coach="field"
+            role="img"
+            aria-label={t.tapHint}
+          >
+            <canvas ref={canvasRef} className="ic-canvas" />
+          </div>
+          {/* ⚠ Real <button>s, not canvas hit areas. This is now the ONLY input
+              the game has, so it has to be reachable by a keyboard and legible
+              to a screen reader — the Mirror World lockout was an accessible
+              control that rendered, took taps and could not reach the win
+              state. Each one also carries its shortcut. */}
+          <div className="ic-weapons" data-coach="weapons">
+            {guns.map((kind, i) => (
+              <button
+                key={kind}
+                type="button"
+                className={`ic-weapon ic-weapon--${kind}`}
+                data-coach={`weapon-${kind}`}
+                ref={(el) => {
+                  if (!el) { delete btnRefs.current[kind]; return; }
+                  btnRefs.current[kind] = {
+                    el,
+                    fill: el.querySelector('.ic-weapon-fill'),
+                    st: el.querySelector('.ic-weapon-state'),
+                  };
+                }}
+                onPointerDown={(ev) => { ev.preventDefault(); fire(kind); }}
+                aria-label={`${weaponLabel(kind)} — ${WEAPON_KEYS[i]}`}
+              >
+                <span className="ic-weapon-key" aria-hidden="true">{WEAPON_KEYS[i]}</span>
+                <span className="ic-weapon-name">{weaponLabel(kind)}</span>
+                <span className="ic-weapon-state">{t.wReady}</span>
+                <span className="ic-weapon-cool" aria-hidden="true">
+                  <span className="ic-weapon-fill" />
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {step === 'between' && (

@@ -15,20 +15,29 @@
  * that does not share code with the game.
  *
  * What it proves:
- *   · one thumb can clear every wave        (feasibility, by scheduling proof)
+ *   · one player can clear every wave       (feasibility, by covering proof)
  *   · every marcher is strikeable long enough to see and hit
  *   · a hidden marcher was VISIBLE first, so prediction has something to go on
  *   · the no-go share stays inside the band where inhibition is measurable
  *   · a wave never opens on a no-go marcher
- *   · barrels sit inside the tower's reach
- *   · every tier introduces new mechanics, and harder tiers really are harder
+ *   · barrels sit inside a weapon's reach
+ *   · every band introduces its mechanic, on its own edge
  *   · the curve is monotonic and the floors hold at every level
  *   · all three measures survive into the results
+ *
+ * ── 2026-09-05: THE INPUT CHANGED, SO THE PROOF DID ──
+ * The player fires WEAPONS from buttons and never touches a marcher. That means
+ * a press serves everything standing in that weapon's stretch (the wave got
+ * easier) while each weapon has its own reload, far longer than the old thumb
+ * gap (the wave got harder). Section 8 below asserts the invariants the new
+ * model rests on — every weapon can fire at least once inside a dwell, the
+ * mortar's blast never reaches a neighbour's ground, and armour is never marked
+ * for a weapon that cannot take it in one shot.
  */
 import {
-  LADDER, LADDER_BASE, BLAST_FRAC, COLOURS, KIND, LADDER_LEVELS,
-  MIN_DWELL_MS, MIN_TAP_GAP_MS, MIN_TOLERANCE_MS, MIN_VISIBLE_MS,
-  NOGO_MAX_SHARE, NOGO_MIN_SHARE, RING_AT, TRAIL_SEGS,
+  LADDER, LADDER_BASE, BLAST_CLEARANCE, BLAST_FRAC, COLOURS, KIND, LADDER_LEVELS,
+  MIN_DWELL_MS, MIN_TOLERANCE_MS, MIN_VISIBLE_MS,
+  NOGO_MAX_SHARE, NOGO_MIN_SHARE, RING_AT, TRAIL_SEGS, WEAPON_SPECS,
   buildWave, dwellMs, feasible, levelCfg, mechanics, passCfg, posAt,
   summarise, survivalCfg, visibleMs,
 } from '../src/features/training/domains/speed/games/intercept/data.js';
@@ -82,11 +91,25 @@ function checkWave(label, cfg, wave) {
   wavesChecked += 1;
   unitsChecked += wave.units.length;
 
-  // (a) one thumb can clear it
+  // (a) a perfect player can clear it
   const f = feasible(wave);
   if (!f.ok) {
-    fail(`${label}: NOT CLEARABLE — ${f.failedAt} needs a strike at ${Math.round(f.need)}ms `
-      + `but leaves the reach at ${f.deadline}ms (one thumb, ${MIN_TAP_GAP_MS}ms apart)`);
+    fail(`${label}: NOT CLEARABLE — ${f.failedAt} needs a hit by ${Math.round(f.deadline)}ms `
+      + `but the earliest available is ${Math.round(f.need)}ms (${f.reason || 'no window'})`);
+  }
+
+  /* (a2) armour is never marked for a weapon that needs two shots to kill it.
+   * Two turret-bound armoured marchers back to back is serviceable by
+   * milliseconds or not at all — the worst cell of this wave builder's
+   * cross-product, and exactly the kind nobody enumerates by playing. */
+  for (const u of wave.units) {
+    if (u.kind !== KIND.ARMOUR || u.towerIdx < 0) continue;
+    const tw = (cfg.towers || [])[u.towerIdx];
+    if (!tw) continue;
+    if (!tw.heavy && (cfg.towers || []).some((x) => x.heavy)) {
+      fail(`${label}: ${u.id} wears armour and is bound to the ${tw.weapon}, which cannot take it in one shot`);
+      break;
+    }
   }
 
   /* (b) each marcher is strikeable long enough to see and hit — PER WINDOW.
@@ -311,25 +334,106 @@ for (let stage = 0; stage <= 30; stage += 1) {
  * serve and require the checker to say so.
  */
 {
-  const impossible = {
+  const COOL = 500;
+  const win = (weapon, enterAt, exitAt, extra = {}) => ({
+    weapon, enterAt, exitAt, hideAt: exitAt, at: 0.5, coolMs: COOL, flightMs: 0, heavy: false, ...extra,
+  });
+  const unit = (id, windows, over = {}) => ({
+    id, kind: KIND.GO, taps: 1, colour: 'steel',
+    enterAt: windows[0].enterAt, exitAt: windows[windows.length - 1].exitAt,
+    gateAt: windows[windows.length - 1].exitAt + 900, windows, ...over,
+  });
+
+  /*
+   * ⚠ THE OLD PLANT STOPPED BEING A PLANT, and that is the single most
+   * important thing about this block.
+   *
+   * It was three marchers sharing one 0–100ms window, unclearable when each
+   * needed its own tap. A press now serves EVERYTHING in the stretch, so one
+   * shot clears all three and the wave is trivially fine — the plant would have
+   * passed, the gate would have reported OK, and nobody would have learned that
+   * `feasible` had stopped checking anything. This repo has shipped three
+   * detectors that measured nothing while reporting everything as fine.
+   *
+   * What is genuinely unclearable now is SEPARATION: windows that do not
+   * overlap, closer together than the reload.
+   */
+  const tooFast = {
     units: [
-      { id: 'x1', kind: KIND.GO, taps: 1, enterAt: 0, exitAt: 100, gateAt: 900, colour: 'steel' },
-      { id: 'x2', kind: KIND.GO, taps: 1, enterAt: 0, exitAt: 100, gateAt: 900, colour: 'steel' },
-      { id: 'x3', kind: KIND.GO, taps: 1, enterAt: 0, exitAt: 100, gateAt: 900, colour: 'steel' },
+      unit('x1', [win('turret', 0, 100)]),
+      unit('x2', [win('turret', 200, 300)]),
+      unit('x3', [win('turret', 400, 500)]),
     ],
     barrels: [], goColour: 'steel', nogoColour: 'rust', waveNo: 0,
   };
-  if (feasible(impossible).ok) {
-    fail('SELF-TEST: feasible() passed three strikes inside 100ms — it is not checking anything');
+  if (feasible(tooFast).ok) {
+    fail(`SELF-TEST: feasible() passed three separated windows 200ms apart on one ${COOL}ms reload `
+      + '— it is not checking the cooldown');
   }
-  const possible = {
+
+  /* The same three marchers, but standing in the stretch together: one press
+     serves all of them, so this MUST pass. If it does not, the proof has
+     forgotten that a shot hits a group and would reject playable waves. */
+  const together = {
     units: [
-      { id: 'y1', kind: KIND.GO, taps: 1, enterAt: 0, exitAt: 900, gateAt: 2000, colour: 'steel' },
-      { id: 'y2', kind: KIND.GO, taps: 1, enterAt: 400, exitAt: 1400, gateAt: 2400, colour: 'steel' },
+      unit('y1', [win('turret', 0, 900)]),
+      unit('y2', [win('turret', 300, 1100)]),
+      unit('y3', [win('turret', 500, 1300)]),
     ],
     barrels: [], goColour: 'steel', nogoColour: 'rust', waveNo: 0,
   };
-  if (!feasible(possible).ok) fail('SELF-TEST: feasible() rejected a wave that is obviously clearable');
+  const tf = feasible(together);
+  if (!tf.ok) fail('SELF-TEST: feasible() rejected three marchers one press could clear together');
+  else if (tf.presses !== 1) fail(`SELF-TEST: three overlapping marchers should cost ONE press, not ${tf.presses}`);
+
+  /* Armour on a non-heavy weapon needs two hits a reload apart INSIDE its own
+     window. 600ms of window against a 500ms reload fits; 400ms does not. */
+  const armourOk = {
+    units: [unit('a1', [win('turret', 0, 600)], { kind: KIND.ARMOUR, taps: 2 })],
+    barrels: [], goColour: 'steel', nogoColour: 'rust', waveNo: 0,
+  };
+  if (!feasible(armourOk).ok) fail('SELF-TEST: feasible() rejected armour that two shots comfortably fit');
+  const armourNo = {
+    units: [unit('a2', [win('turret', 0, 400)], { kind: KIND.ARMOUR, taps: 2 })],
+    barrels: [], goColour: 'steel', nogoColour: 'rust', waveNo: 0,
+  };
+  if (feasible(armourNo).ok) fail('SELF-TEST: feasible() passed armour needing two shots inside one reload');
+
+  /* A heavy weapon takes armour in one, so the same impossible window is fine. */
+  const armourHeavy = {
+    units: [unit('a3', [win('missile', 0, 400, { heavy: true, flightMs: 300 })], { kind: KIND.ARMOUR, taps: 2 })],
+    barrels: [], goColour: 'steel', nogoColour: 'rust', waveNo: 0,
+  };
+  if (!feasible(armourHeavy).ok) fail('SELF-TEST: feasible() ignored that a heavy shell takes armour outright');
+
+  /* ⚠ A shell cannot land before it has flown. A window entirely inside the
+     flight time is unreachable however good the player is. */
+  const tooSoon = {
+    units: [unit('f1', [win('mortar', 0, 300, { flightMs: 900 })])],
+    barrels: [], goColour: 'steel', nogoColour: 'rust', waveNo: 0,
+  };
+  if (feasible(tooSoon).ok) fail('SELF-TEST: feasible() passed a window that closes before the shell could arrive');
+
+  /* Two weapons must keep SEPARATE clocks. If they shared one, this would fail. */
+  const twoGuns = {
+    units: [
+      unit('g1', [win('turret', 0, 100)]),
+      unit('g2', [win('missile', 120, 220, { flightMs: 0 })]),
+    ],
+    barrels: [], goColour: 'steel', nogoColour: 'rust', waveNo: 0,
+  };
+  if (!feasible(twoGuns).ok) fail('SELF-TEST: feasible() is sharing one reload clock across weapons');
+
+  /* A bound marcher answers to ONE weapon: firing the other must not serve it.
+     If this passes, `landShot`'s weapon match is not being modelled. */
+  const boundWrong = {
+    units: [
+      unit('b1', [win('turret', 0, 100)]),
+      unit('b2', [win('turret', 150, 250)]),
+    ],
+    barrels: [], goColour: 'steel', nogoColour: 'rust', waveNo: 0,
+  };
+  if (feasible(boundWrong).ok) fail('SELF-TEST: two turret-bound marchers 150ms apart cannot both be served');
 }
 
 /* ── 6. the scoring reports all three measures ─────────────────────────────
@@ -365,8 +469,104 @@ if (!(BLAST_FRAC > 0.02 && BLAST_FRAC < 0.25)) {
 if (!(RING_AT > 0.3 && RING_AT < 0.9)) fail('the tower sits too near an end of the trail');
 /* The ladder's mechanic onsets must be DERIVED from band edges, never typed.
    If a threshold is missing the mechanic silently never arrives. */
-for (const k of ['nogoFrom', 'barrelFrom', 'armourFrom', 'hiddenFrom', 'shuffleFrom']) {
+for (const k of ['nogoFrom', 'barrelFrom', 'armourFrom', 'hiddenFrom', 'shuffleFrom', 'missileFrom', 'boundFrom', 'mortarFrom']) {
   if (!Number.isFinite(LADDER_BASE[k])) fail(`LADDER_BASE.${k} is not a number — the mechanic will never turn on`);
+}
+
+/* ── 8. THE WEAPONS ────────────────────────────────────────────────────────
+ *
+ * Everything the button-driven model rests on, asserted against BUILT levels
+ * rather than the authored specs — because both the reload and the blast yield
+ * to geometry that changes at every level, and it is precisely the "authored
+ * number that the built config does not honour" that this gate exists to catch.
+ */
+{
+  const kinds = WEAPON_SPECS.map((w) => w.kind);
+  if (new Set(kinds).size !== kinds.length) fail(`two weapons share a kind: ${kinds.join(', ')}`);
+  if (WEAPON_SPECS[0].flightMs !== 0) fail('the FIRST weapon must hit instantly — it is the one a new player learns on');
+  if (!WEAPON_SPECS.slice(1).every((w) => w.flightMs > 0)) {
+    fail('every weapon after the first must fly — otherwise the ladder unlocks a second copy of the turret');
+  }
+  if (!WEAPON_SPECS.slice(1).every((w) => w.heavy)) {
+    fail('a flying weapon must be heavy: its reload cannot fit two hits in one dwell, so bound armour would be unkillable');
+  }
+
+  for (let lv = 1; lv <= LADDER_LEVELS; lv += 1) {
+    const cfg = levelCfg(lv);
+    const towers = cfg.towers || [];
+    const dwell = dwellMs(cfg);
+    let stop = false;
+
+    for (let i = 0; i < towers.length && !stop; i += 1) {
+      const tw = towers[i];
+      if (!tw.weapon || !Number.isFinite(tw.coolMs) || !Number.isFinite(tw.flightMs)) {
+        fail(`L${lv}: the stretch at ${tw.at.toFixed(2)} carries no weapon`); stop = true; break;
+      }
+      /* (a) EVERY WEAPON CAN FIRE AT LEAST ONCE WHILE A MARCHER STANDS IN ITS
+         STRETCH. This is the invariant COOL_DWELL_MAX buys, and without it a
+         marcher bound to a slow weapon simply cannot be served — which reads to
+         a player as an unfair level, not as a bug. */
+      if (tw.coolMs > dwell) {
+        fail(`L${lv}: the ${tw.weapon} reloads in ${tw.coolMs}ms but a marcher is only strikeable for `
+          + `${Math.round(dwell)}ms — it cannot answer its own stretch`);
+        stop = true; break;
+      }
+      /* (b) a non-heavy weapon must fit BOTH armour hits inside one dwell. */
+      if (!tw.heavy && tw.coolMs * 2 > dwell + 1) {
+        fail(`L${lv}: the ${tw.weapon} cannot take armour — two hits need ${tw.coolMs * 2}ms `
+          + `inside a ${Math.round(dwell)}ms dwell`);
+        stop = true; break;
+      }
+      /*
+       * ⚠ THERE IS DELIBERATELY NO "FLIGHT MUST FIT INSIDE THE DWELL" RULE, and
+       * the first version of this gate had one — it failed L84 for a mortar
+       * whose 980ms shell "could never land on anyone" inside a 970ms dwell.
+       * That reasoning is simply wrong. Flight time is a LEAD, not a window: you
+       * press before the marcher arrives and the shell lands while they are
+       * standing there. The only genuine constraint is that a shell cannot land
+       * before it has flown, which bites when a window CLOSES inside the flight
+       * time — and that is enforced where it belongs, inside `feasible`, and
+       * planted in the `tooSoon` self-test above.
+       *
+       * Measure a constraint before asserting it. A gate that fails working code
+       * gets weakened or muted, and then it is protecting nothing.
+       */
+      /* (d) THE BLAST MUST NOT REACH A NEIGHBOUR'S GROUND. `boundOf` marks a
+         marcher for exactly one weapon, and that is only decidable from where
+         it stands if the weapons' reachable stretches stay disjoint. Checked on
+         built geometry: the spans shrink with the curve while the centres do
+         not move, so the gap between them is different at every level. */
+      const lo = tw.a - (tw.blast || 0);
+      const hi = tw.b + (tw.blast || 0);
+      if (lo < -1e-9 || hi > 1 + 1e-9) {
+        fail(`L${lv}: the ${tw.weapon}'s blast runs off the trail ([${lo.toFixed(3)}, ${hi.toFixed(3)}])`);
+        stop = true; break;
+      }
+      const prev = towers[i - 1];
+      if (prev) {
+        const prevHi = prev.b + (prev.blast || 0);
+        if (lo < prevHi + BLAST_CLEARANCE - 1e-9) {
+          fail(`L${lv}: the ${tw.weapon} reaches ${lo.toFixed(3)} but the ${prev.weapon} already `
+            + `reaches ${prevHi.toFixed(3)} — "which weapon is this marcher for" is no longer decidable`);
+          stop = true; break;
+        }
+      }
+    }
+    if (stop) break;
+  }
+
+  /* (e) the weapons arrive in the order the ladder promises, and never vanish. */
+  const kindsAt = (lv) => (levelCfg(lv).towers || []).map((tw) => tw.weapon);
+  if (kindsAt(1).length !== 1 || kindsAt(1)[0] !== 'turret') fail('L1 must be the turret alone');
+  if (!kindsAt(61).includes('missile')) fail('L61 must have the missile — the band says so');
+  if (kindsAt(60).includes('missile')) fail('L60 already has the missile — it has drifted off its band edge');
+  if (!kindsAt(81).includes('mortar')) fail('L81 must have the mortar — the band says so');
+  if (kindsAt(80).includes('mortar')) fail('L80 already has the mortar — it has drifted off its band edge');
+  for (let lv = 2; lv <= LADDER_LEVELS; lv += 1) {
+    const a = kindsAt(lv - 1);
+    const b = kindsAt(lv);
+    if (a.some((k) => !b.includes(k))) { fail(`L${lv}: a weapon the player had at L${lv - 1} disappeared`); break; }
+  }
 }
 
 /* ── report ────────────────────────────────────────────────────────────── */
@@ -379,7 +579,10 @@ if (problems.length) {
 
 console.log(
   `validate:intercept OK — ${wavesChecked} waves / ${unitsChecked} marchers checked as a player meets them.\n`
-  + '  one-thumb feasibility, strike dwell, visible-before-hidden, the Go/No-Go\n'
-  + '  share band, no wave opening on a no-go, barrels inside the reach,\n'
-  + '  per-tier variety, the curve, and all three measures reaching the results.',
+  + '  clearability by a covering proof over per-weapon reloads, strike dwell,\n'
+  + '  visible-before-hidden, the Go/No-Go share band, no wave opening on a\n'
+  + '  no-go, barrels inside a reach, armour never bound to a weapon that cannot\n'
+  + '  take it, every weapon able to answer its own stretch, the mortar blast\n'
+  + '  clear of its neighbours, the weapons arriving on their band edges, the\n'
+  + '  curve, and all three measures reaching the results.',
 );

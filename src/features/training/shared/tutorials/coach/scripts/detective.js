@@ -25,15 +25,30 @@
  * question all at once.
  *
  * ⚠ NO AWAIT STEP: no `satisfiedFor` predicate on this game.
+ *
+ * ── 2026-09-05: the scene ──
+ * Every case now opens by naming what went missing and where. The lesson has to
+ * introduce it, and — more importantly — has to say what it is NOT. The scene
+ * is colour: it makes the case readable and gives the player somewhere to put
+ * each fact, but no part of the answer is hidden in it. A player hunting the
+ * observatory for a clue is being misled by their own diligence, which is a
+ * worse failure than being confused. Id bumped to `@coach3` so everyone who has
+ * already played is owed the new lesson.
  */
 export const DETECTIVE_COACH = {
-  id: 'detective@coach2',
+  id: 'detective@coach3',
   steps: [
+    {
+      point: '[data-coach="scene"]',
+      awaitTap: false,
+      en: "I'm Dr Kawkab. Every case opens with what went missing and where — read it, because it tells you who was there. But the answer is never hidden in the scene itself. It is in what they say.",
+      ar: 'أنا د. كوكب. وكل قضية تبدأ بما ضاع وأين — فاقرأه، إذ يخبرك من كان هناك. لكنّ الجواب لا يكمن في المشهد نفسه أبداً، بل فيما يقولونه.',
+    },
     {
       point: '[data-coach="rule"]',
       awaitTap: false,
-      en: "I'm Dr Kawkab. Read this first, every time. The rule is the one thing here that is certainly TRUE — the suspects are under no such obligation.",
-      ar: 'أنا د. كوكب. اقرأ هذا أوّلاً في كل مرّة. فالقاعدة هي الشيء الوحيد هنا المؤكَّد صدقه — أمّا المشتبهون فلا يلزمهم ذلك.',
+      en: 'Then read this, every time. The rule is the one thing here that is certainly TRUE — the suspects are under no such obligation.',
+      ar: 'ثم اقرأ هذا في كل مرّة. فالقاعدة هي الشيء الوحيد هنا المؤكَّد صدقه — أمّا المشتبهون فلا يلزمهم ذلك.',
     },
     {
       point: '[data-coach="says"]',

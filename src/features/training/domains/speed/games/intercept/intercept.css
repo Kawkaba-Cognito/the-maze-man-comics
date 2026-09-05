@@ -126,8 +126,11 @@
   overflow: hidden;
   border: 2px solid var(--line);
   background: var(--surface);
+  /* ⚠ NOT interactive any more. The board took taps until 2026-09-05; it is now
+     a picture, and every input is a button in `.ic-weapons` below. Leaving
+     `cursor: pointer` here would promise a target that does nothing — which is
+     the same lie as a button rendering a blank label. */
   touch-action: manipulation;
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -139,17 +142,111 @@
   display: block;
 }
 
-.ic-taphint {
+/* ── the weapon bar ─────────────────────────────────────────────────────────
+ * 2026-09-05: the ONLY input the game has. The field above is now inert — see
+ * the note on `.ic-field` — so everything about these buttons is load-bearing:
+ * they must be big enough for a thumb, legible while your eyes are on the
+ * trail, and reachable by a keyboard.
+ *
+ * ⚠ Width matches `.ic-field` exactly (min(100%, 460px)). A bar wider than the
+ * board it fires into reads as app chrome rather than as part of the game.
+ */
+.ic-weapons {
+  display: flex;
+  gap: 8px;
+  width: min(100%, 460px);
+  margin: 10px auto 0;
+  flex: 0 0 auto;
+}
+
+.ic-weapon {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 10px 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: var(--elev-rest);
+  /* A weapon button is pressed dozens of times a round; a transition on it
+     would lag the feedback behind the shot it fired. */
+  transition: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.ic-weapon:active { box-shadow: var(--elev-press); }
+.ic-weapon--cooling { opacity: 0.62; }
+
+.ic-weapon-key {
+  position: absolute;
+  top: 3px;
+  inset-inline-end: 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  opacity: 0.7;
+}
+
+.ic-weapon-name {
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.ic-weapon-state {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+/* The reload, mirrored from the ring drawn on the weapon itself. */
+.ic-weapon-cool {
   position: absolute;
   inset-inline: 0;
-  bottom: 6px;
-  text-align: center;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  color: var(--ink-dim);
-  opacity: 0.75;
-  pointer-events: none;
+  bottom: 0;
+  height: 3px;
+  background: color-mix(in srgb, var(--line) 60%, transparent);
+}
+
+.ic-weapon-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--game-accent);
+}
+
+/* Each weapon wears its own hue — the SAME hue as its stretch on the trail and
+   as the ring on a marcher bound to it. That three-way match is the whole
+   mapping the player has to learn, so it must come from one place. */
+.ic-weapon--turret { border-color: color-mix(in srgb, var(--game-tower-a) 60%, var(--line)); }
+.ic-weapon--turret .ic-weapon-name { color: var(--game-tower-a); }
+.ic-weapon--turret .ic-weapon-fill { background: var(--game-tower-a); }
+
+.ic-weapon--missile { border-color: color-mix(in srgb, var(--game-tower-b) 60%, var(--line)); }
+.ic-weapon--missile .ic-weapon-name { color: var(--game-tower-b); }
+.ic-weapon--missile .ic-weapon-fill { background: var(--game-tower-b); }
+
+.ic-weapon--mortar { border-color: color-mix(in srgb, var(--game-tower-c) 60%, var(--line)); }
+.ic-weapon--mortar .ic-weapon-name { color: var(--game-tower-c); }
+.ic-weapon--mortar .ic-weapon-fill { background: var(--game-tower-c); }
+
+@media (max-width: 360px) {
+  .ic-weapon-name { font-size: 12px; }
+  .ic-weapon { padding: 8px 4px 10px; }
 }
 
 /* ── panels (brief / between waves / results) ───────────────────────────── */

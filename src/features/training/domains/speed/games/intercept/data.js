@@ -128,6 +128,105 @@ export const KIND = {
 /** Blast reach of a barrel, as a fraction of the whole trail. */
 export const BLAST_FRAC = 0.075;
 
+/* ── WEAPONS ──────────────────────────────────────────────────────────────
+ * 2026-09-05: THE PLAYER NO LONGER TOUCHES THE MARCHERS.
+ *
+ * Every input is a button under the thumb, one per weapon, always in the same
+ * place. Press a weapon and it fires at ITS OWN stretch of trail, hitting
+ * everything standing there.
+ *
+ * ── Why this measures better rather than worse ──
+ * Tapping a small moving target confounds reaction time with AIMING: a fast
+ * little target costs pointing time (Fitts) that has nothing to do with the
+ * construct. A button in a fixed place holds the motor act constant, so what is
+ * left is the decision. And with two or three buttons the task stops being
+ * simple reaction time and becomes CHOICE reaction time with a stimulus–response
+ * mapping to learn — which is the thing that stops this being a fourth reaction
+ * test in a domain that benched Trail Making for exactly that.
+ *
+ * It is also a better control on every axis that matters here: a bigger target,
+ * one thumb, and a keyboard can reach it (see `WEAPON_KEYS` in index.jsx).
+ *
+ * ⚠ THE ORDER MATCHES `TOWER_AT`, NOT THE TRAIL. Tower 0 stands at 0.62 and is
+ * the turret you own from L1; the missile arrives with band `missile` at L61 and
+ * the mortar with band `mortar` at L81. `shape()` attaches the weapon BEFORE
+ * sorting the towers along the trail, because after that sort the index is trail
+ * order and no longer says which weapon you unlocked when.
+ */
+export const WEAPON_SPECS = [
+  {
+    kind: 'turret',
+    /** Hits the instant you press. */
+    flightMs: 0,
+    /*
+     * ⚠ THE RELOAD MUST FIT TWO SHOTS INSIDE ONE DWELL. Armour takes two turret
+     * hits and a marcher is only strikeable for MIN_DWELL_MS, so a reload at or
+     * above that floor makes an armoured marcher in a turret-only band literally
+     * impossible — and it would present as "this level is unfair", not as a bug.
+     */
+    coolMs: 520,
+    heavy: false,
+    blast: 0,
+  },
+  {
+    kind: 'missile',
+    /** Flies, so you fire BEFORE they arrive. This is the prediction measure
+     *  running on every shot rather than only under the canopy. */
+    flightMs: 620,
+    coolMs: 1500,
+    /** Explosive: one shell takes armour outright. Not a convenience — a slow
+     *  reload cannot fit two hits inside one dwell, so without this a marcher
+     *  bound to the missile and wearing armour could never be killed at all. */
+    heavy: true,
+    blast: 0,
+  },
+  {
+    kind: 'mortar',
+    flightMs: 980,
+    coolMs: 2400,
+    heavy: true,
+    /** The mortar is the one that hits a GROUP: its shell throws past the ends
+     *  of its own stretch. Clamped in `shape()` against the real gap to the next
+     *  stretch and asserted by validate:intercept — an unclamped blast would
+     *  reach into another weapon's ground and make "which weapon is this marcher
+     *  for" undecidable, which is the same property `boundOf` depends on. */
+    blast: 0.030,
+  },
+];
+
+/** Keep a weapon clear of its neighbour's stretch by at least this much trail. */
+export const BLAST_CLEARANCE = 0.005;
+
+/*
+ * ⚠ A RELOAD IS CAPPED BY THE DWELL IT HAS TO WORK INSIDE. Authored alone, the
+ * mortar's 2400ms is longer than a marcher is strikeable for at the top of the
+ * ladder (620ms), so a marcher bound to it simply could not be served — and 64
+ * of 500 built waves came back unclearable, every one of them reading "still
+ * reloading". The authored numbers are what the weapon feels like EARLY, where
+ * the dwell is 2.4 seconds and the mortar really is ponderous; they yield to the
+ * geometry as the march tightens, exactly the way `ringSpan` yields to
+ * MIN_DWELL_MS. The invariant this buys is simple and worth stating:
+ *
+ *     every weapon can always fire at least once while a marcher stands in its
+ *     stretch, at every level.
+ *
+ * validate:intercept asserts that against the built config rather than trusting
+ * this line.
+ */
+export const COOL_DWELL_MAX = 0.9;
+
+/*
+ * ⚠ AND CAPPED AGAIN BY THE COLUMN'S OWN PACE. The dwell cap alone still left 2
+ * waves in 800 unclearable, each about 100ms short, all at the top of the ladder
+ * where the column tightens to 620ms and a SPRINTER can close the gap further by
+ * breaking ranks. A weapon that cannot answer marchers arriving at the wave's
+ * own spacing is not slow, it is broken — and it fails as "this level is
+ * unfair", which is indistinguishable from bad design.
+ */
+export const COOL_GAP_MAX = 0.75;
+
+export const weaponSpec = (i) => WEAPON_SPECS[Math.min(WEAPON_SPECS.length - 1, Math.max(0, i))];
+
 /* ── DIFFICULTY ───────────────────────────────────────────────────────────
  * Eight levers, every one something a player can name:
  *
@@ -171,9 +270,9 @@ export const LADDER = [
   /* L31–40  */ { adds: ['armour'] },
   /* L41–50  */ { adds: ['canopy'] },
   /* L51–60  */ { adds: ['shuffle'] },
-  /* L61–70  */ { adds: ['twin'] },
+  /* L61–70  */ { adds: ['missile'] },
   /* L71–80  */ { adds: ['bound'] },
-  /* L81–90  */ { adds: ['triple'] },
+  /* L81–90  */ { adds: ['mortar'] },
   /* L91–100 */ { adds: ['sprint'] },
 ];
 
@@ -185,19 +284,25 @@ export const bandStartF = (b) => ladderFraction(b * BAND_SIZE + 1, LADDER_LEVELS
 /** Which band introduces each mechanic — the single source for the thresholds. */
 const BAND_OF = {
   nogo: 1, barrel: 2, armour: 3, canopy: 4, shuffle: 5,
-  twin: 6, bound: 7, triple: 8, sprint: 9,
+  missile: 6, bound: 7, mortar: 8, sprint: 9,
 };
 
+/* ⚠ `missile` and `mortar` were `twin` and `triple` until 2026-09-05, when the
+   three identical towers became three DIFFERENT weapons. The keys were renamed
+   with them rather than left lying: a band whose label says "a flying missile"
+   while its key says "a second tower" is the half-migrated-token failure this
+   repo keeps paying for. Nothing persists these keys — they live in `LADDER`,
+   `BAND_OF`, `LADDER_BASE.*From` and `mechanics()`, all in this file. */
 export const MECHANIC_LABELS = {
-  strike: { en: 'Strike them in the reach', ar: 'اضرب داخل المدى' },
+  strike: { en: 'Fire on your stretch', ar: 'أطلق على مداك' },
   nogo: { en: 'Leave the wrong colour', ar: 'اترك اللون الخطأ' },
   barrel: { en: 'Explosive drums', ar: 'براميل متفجّرة' },
   armour: { en: 'Armour takes two', ar: 'المدرّع يحتاج ضربتين' },
   canopy: { en: 'Forest canopy', ar: 'مظلّة الغابة' },
   shuffle: { en: 'The safe colour changes', ar: 'اللون الآمن يتغيّر' },
-  twin: { en: 'A second tower', ar: 'برج ثانٍ' },
-  bound: { en: 'Marked for one tower', ar: 'موسوم لبرج واحد' },
-  triple: { en: 'A third tower', ar: 'برج ثالث' },
+  missile: { en: 'A missile that flies', ar: 'صاروخ يطير' },
+  bound: { en: 'Marked for one weapon', ar: 'موسوم لسلاح واحد' },
+  mortar: { en: 'A mortar that hits a group', ar: 'هاون يصيب مجموعة' },
   sprint: { en: 'Runners break ranks', ar: 'العدّاؤون ينطلقون' },
 };
 
@@ -216,9 +321,9 @@ export const LADDER_BASE = {
   armourFrom: bandStartF(BAND_OF.armour), armour0: 1, armour1: 6,
   barrelFrom: bandStartF(BAND_OF.barrel), barrel0: 1, barrel1: 3,
   shuffleFrom: bandStartF(BAND_OF.shuffle),
-  twinFrom: bandStartF(BAND_OF.twin),
+  missileFrom: bandStartF(BAND_OF.missile),
   boundFrom: bandStartF(BAND_OF.bound), bound0: 0.25, bound1: 0.55,
-  tripleFrom: bandStartF(BAND_OF.triple),
+  mortarFrom: bandStartF(BAND_OF.mortar),
   sprintFrom: bandStartF(BAND_OF.sprint), sprint0: 1, sprint1: 3,
 };
 
@@ -243,11 +348,11 @@ export const LADDER_BASE = {
  */
 export const TOWER_AT = [0.62, 0.30, 0.86];
 
-/** How many towers stand at a given curve fraction. */
+/** How many weapons you own at a given curve fraction. */
 export function towerCount(B, f) {
   let n = 1;
-  if (B.twinFrom != null && f >= B.twinFrom) n = 2;
-  if (B.tripleFrom != null && f >= B.tripleFrom) n = 3;
+  if (B.missileFrom != null && f >= B.missileFrom) n = 2;
+  if (B.mortarFrom != null && f >= B.mortarFrom) n = 3;
   return n;
 }
 
@@ -327,17 +432,66 @@ function shape(B, f) {
    * The floor is re-applied per tower for the same reason it is re-applied per
    * marcher below: a guarantee made on the average is not a guarantee.
    */
-  cfg.towers = TOWER_AT.slice(0, nTowers).map((at) => {
+  /* ⚠ The weapon is attached HERE, by TOWER_AT index, because the sort below
+     replaces that index with trail order. Tower 0 is the turret you own from
+     L1; index 1 is the missile; index 2 is the mortar. */
+  cfg.towers = TOWER_AT.slice(0, nTowers).map((at, i) => {
     const a = at - ringSpan / 2;
     const b = at + ringSpan / 2;
     const wantA = b - ringSpan * cfg.hiddenShare;
     const floorA = a + MIN_VISIBLE_MS / crossMs;
     const hiddenA = cfg.hiddenShare > 0 ? Math.min(b, Math.max(wantA, floorA)) : b;
-    return { at, a, b, span: ringSpan, hiddenA, hiddenB: b };
+    const w = weaponSpec(i);
+    return {
+      at, a, b, span: ringSpan, hiddenA, hiddenB: b,
+      weapon: w.kind,
+      flightMs: w.flightMs,
+      /* See COOL_DWELL_MAX — the authored reload is what the weapon feels like
+         early on; it yields to the dwell as the march tightens. */
+      /*
+       * ⚠ A WEAPON THAT CANNOT TAKE ARMOUR GETS HALF THE DWELL, NOT 0.9 OF IT.
+       * The turret needs TWO hits inside one window, so its reload has to fit
+       * twice over. Authored at 520ms it overran by ten milliseconds at exactly
+       * one level of the hundred (L79: 1040ms of shooting inside a 1030ms
+       * dwell) — invisible by playing, and it would have presented as one level
+       * in the middle of the ladder being quietly unfair.
+       */
+      coolMs: Math.min(
+        w.coolMs,
+        Math.round(ringSpan * crossMs * (w.heavy ? COOL_DWELL_MAX : 0.5)),
+        Math.round(cfg.gapMs * COOL_GAP_MAX),
+      ),
+      heavy: w.heavy,
+      blast: w.blast,
+    };
   });
   /* Sorted along the trail so a marcher's windows arrive in time order — the
      renderer, the strike test and the feasibility proof all rely on that. */
   cfg.towers.sort((p, q) => p.at - q.at);
+
+  /*
+   * ⚠ THE MORTAR'S BLAST IS CLAMPED AGAINST THE REAL GAP, NOT HOPED TO FIT.
+   *
+   * `blast` is what makes the mortar the weapon that hits a group — its shell
+   * throws past the ends of its own stretch. But the stretches SHRINK with the
+   * curve while the centres stay put, so the gap between them changes at every
+   * level, and an authored 0.03 that is clear at L100 reaches into the turret's
+   * ground at L81. If it ever did, "which weapon is this marcher for" would stop
+   * being decidable from where it is standing — and `boundOf` rests on exactly
+   * that. So the blast yields to the geometry, the same way ringSpan yields to
+   * the dwell floor above. validate:intercept asserts the result rather than
+   * trusting this arithmetic.
+   */
+  for (let i = 0; i < cfg.towers.length; i += 1) {
+    const tw = cfg.towers[i];
+    if (!(tw.blast > 0)) { tw.blast = 0; continue; }
+    const before = cfg.towers[i - 1];
+    const after = cfg.towers[i + 1];
+    let room = Math.min(tw.a, 1 - tw.b);              // never off the trail
+    if (before) room = Math.min(room, tw.a - before.b - BLAST_CLEARANCE);
+    if (after) room = Math.min(room, after.a - tw.b - BLAST_CLEARANCE);
+    tw.blast = Math.max(0, Math.min(tw.blast, room));
+  }
 
   /* The first tower's numbers stay on `cfg` under their old names: the tutorial,
      the hub art and audit:curves all read them, and the canopy share below is
@@ -479,14 +633,39 @@ export function buildWave(rng, cfg, waveNo = 1) {
       factor = Math.max(0.66 + rng() * 0.06, floorFactor);
     }
     const crossMs = Math.round(cfg.crossMs * factor);
-    /* A bound marcher answers to one tower; everyone else to all of them. */
-    const towerIdx = flag.bound ? Math.floor(rng() * towers.length) : -1;
+    /*
+     * A bound marcher answers to one weapon; everyone else to all of them.
+     *
+     * ⚠ ARMOUR IS NEVER MARKED FOR A WEAPON THAT CANNOT TAKE IT IN ONE SHOT.
+     * Two turret-bound armoured marchers arriving back to back is the single
+     * worst combination this wave builder can deal: four turret shots, each a
+     * reload apart, inside two windows that do not overlap. It is serviceable by
+     * milliseconds, or not at all, depending on where the sprinters fell — the
+     * mechanical-expansion failure exactly, where a cross-product ships its
+     * worst case because nobody enumerates it. A heavy weapon takes armour
+     * outright, so binding armour to one of those removes the case rather than
+     * tuning around it.
+     */
+    const eligible = kind === KIND.ARMOUR && towers.some((tw) => tw.heavy)
+      ? towers.filter((tw) => tw.heavy)
+      : towers;
+    const boundTower = flag.bound ? eligible[Math.floor(rng() * eligible.length)] : null;
+    const towerIdx = boundTower ? towers.indexOf(boundTower) : -1;
     const mine = towerIdx >= 0 ? [towers[towerIdx]] : towers;
     const windows = mine.map((tw) => {
-      const enter = Math.round(at + tw.a * crossMs);
-      const exit = Math.round(at + tw.b * crossMs);
+      /* The HIT window, which is the stretch plus whatever the weapon throws
+         past it. Only the mortar has a blast; for the others this is the
+         stretch exactly. It is clamped in `shape()` so it can never reach a
+         neighbouring weapon's ground. */
+      const blast = tw.blast || 0;
+      const enter = Math.round(at + (tw.a - blast) * crossMs);
+      const exit = Math.round(at + (tw.b + blast) * crossMs);
       return {
         at: tw.at,
+        weapon: tw.weapon,
+        flightMs: tw.flightMs,
+        coolMs: tw.coolMs,
+        heavy: !!tw.heavy,
         enterAt: enter,
         exitAt: exit,
         /* Per window AND per marcher — see the note above. */
@@ -578,39 +757,203 @@ export function buildWave(rng, cfg, waveNo = 1) {
  * meeting an impossible wave. Do not "fix" it by weakening it to a heuristic
  * that returns ok without building the schedule.
  */
+/*
+ * ⚠ 2026-09-05: THE PROOF CHANGED SHAPE, BECAUSE THE INPUT DID.
+ *
+ * When the player tapped marchers, every strike was a unit job with one release
+ * time and one deadline, and greedy earliest-deadline scheduling is provably
+ * optimal for that — so "greedy fails" meant "nobody can". Buttons break that in
+ * BOTH directions at once, and the two pull opposite ways:
+ *
+ *   · a press hits EVERYTHING in that weapon's stretch, so one press can serve
+ *     several marchers — the wave got easier, and a tap-per-marcher proof would
+ *     now reject waves a player clears comfortably;
+ *   · each weapon has its OWN reload, far longer than the old 240ms thumb gap —
+ *     so the same weapon genuinely cannot answer two separated marchers in
+ *     quick succession, and a proof that ignored cooldown would pass waves
+ *     nobody can clear.
+ *
+ * So this is a COVERING proof now, not a scheduling one: repeatedly serve the
+ * most urgent unsatisfied marcher at the LATEST moment that still works, which
+ * is the classic interval-stabbing choice and sweeps up every other marcher
+ * standing in the same stretch for free.
+ *
+ * The direction that matters is unchanged and is what the game's honesty rests
+ * on: when this returns ok it has CONSTRUCTED a real schedule — concrete hit
+ * times, each inside a real window, none closer than that weapon's reload — so a
+ * perfect player demonstrably can clear the wave. It may still be conservative
+ * the other way. That is the safe direction for a gate to be wrong in, and it
+ * surfaces as validate:intercept failing rather than as a player meeting a wave
+ * that cannot be beaten. Do not "fix" it into a heuristic that returns ok
+ * without building the schedule.
+ *
+ * ⚠ FLIGHT TIME DOES NOT LOOSEN A DEADLINE. A hit is scheduled at the moment it
+ * LANDS; the press happens `flightMs` earlier. Two hits from the same weapon are
+ * therefore still exactly `coolMs` apart, and the only extra constraint is that
+ * the first hit cannot land before the shell has had time to fly.
+ */
+const winsOf = (u) => {
+  const raw = (u.windows && u.windows.length)
+    ? u.windows
+    : [{ enterAt: u.enterAt, exitAt: u.exitAt, weapon: 'turret', coolMs: WEAPON_SPECS[0].coolMs, flightMs: 0, heavy: false }];
+  return raw.map((w) => ({
+    ...w,
+    weapon: w.weapon || 'turret',
+    coolMs: Number.isFinite(w.coolMs) ? w.coolMs : WEAPON_SPECS[0].coolMs,
+    flightMs: Number.isFinite(w.flightMs) ? w.flightMs : 0,
+    heavy: !!w.heavy,
+  }));
+};
+
 export function feasible(wave) {
-  const jobs = [];
-  for (const u of wave.units) {
-    if (u.kind === KIND.NOGO) continue;
-    const wins = (u.windows && u.windows.length
-      ? u.windows
-      : [{ enterAt: u.enterAt, exitAt: u.exitAt }]
-    ).slice().sort((a, b) => a.enterAt - b.enterAt);
-    const due = wins[wins.length - 1].exitAt;
-    for (let k = 0; k < u.taps; k += 1) jobs.push({ wins, due, id: u.id });
-  }
-  jobs.sort((a, b) => a.due - b.due || a.wins[0].enterAt - b.wins[0].enterAt);
-  let t = -Infinity;
-  const plan = [];
-  for (const j of jobs) {
-    const earliest = t === -Infinity ? -Infinity : t + MIN_TAP_GAP_MS;
-    let at = null;
-    for (const w of j.wins) {
-      const cand = Math.max(w.enterAt, earliest);
-      if (cand <= w.exitAt) { at = cand; break; }
+  const units = (wave.units || []).filter((u) => u.kind !== KIND.NOGO);
+  const need = new Map();
+  const wins = new Map();
+  const guns = new Map();
+
+  for (const u of units) {
+    need.set(u.id, Math.max(1, u.taps || 1));
+    const ws = winsOf(u);
+    wins.set(u.id, ws);
+    for (const w of ws) {
+      if (!guns.has(w.weapon)) guns.set(w.weapon, { coolMs: w.coolMs, flightMs: w.flightMs, last: -Infinity });
     }
-    if (at == null) {
+  }
+
+  const plan = [];
+  const total = units.reduce((s, u) => s + Math.max(1, u.taps || 1), 0);
+
+  /* One press always satisfies at least the marcher it was aimed at, so this
+     can run at most `total` times. The bound is a guard, not a policy. */
+  for (let guard = 0; guard <= total + 4; guard += 1) {
+    /* The most urgent marcher: the one whose last usable moment comes soonest.
+       For each of its windows, the latest hit that still leaves room for the
+       hits it has left — a heavy weapon needs only one, whatever the armour. */
+    let urgent = null;
+    for (const u of units) {
+      const rem = need.get(u.id);
+      if (rem <= 0) continue;
+      let bestForU = null;
+      for (const w of wins.get(u.id)) {
+        const gun = guns.get(w.weapon);
+        const hitsHere = w.heavy ? 1 : rem;
+        const latest = w.exitAt - (hitsHere - 1) * gun.coolMs;
+        if (latest < w.enterAt) continue;               // its taps cannot fit here
+        if (!bestForU || latest < bestForU.latest) bestForU = { u, w, gun, latest };
+      }
+      if (!bestForU) {
+        const last = wins.get(u.id).reduce((m, w) => Math.max(m, w.exitAt), 0);
+        return { ok: false, failedAt: u.id, need: need.get(u.id), deadline: last, reason: 'reload cannot fit its hits inside any reach' };
+      }
+      if (!urgent || bestForU.latest < urgent.latest) urgent = bestForU;
+    }
+    if (!urgent) return { ok: true, presses: plan.length, plan };
+
+    /* Serve it. Fire as LATE as it can still be served, which is what sweeps up
+       everyone else standing in the same stretch. */
+    let chosen = null;
+    for (const w of wins.get(urgent.u.id)) {
+      const gun = guns.get(w.weapon);
+      const rem = need.get(urgent.u.id);
+      const hitsHere = w.heavy ? 1 : rem;
+      const latest = w.exitAt - (hitsHere - 1) * gun.coolMs;
+      if (latest < w.enterAt) continue;
+      const earliest = Math.max(
+        w.enterAt,
+        gun.last === -Infinity ? w.enterAt : gun.last + gun.coolMs,
+        gun.flightMs,                                    // the shell has to fly
+      );
+      if (earliest > latest) continue;
+      /*
+       * ⚠ AS LATE AS POSSIBLE WITHOUT BLOCKING THE NEXT MARCHER THIS WEAPON OWES.
+       *
+       * Firing late sweeps up everyone else standing in the stretch, which is
+       * what makes a crowded wave clearable at all. Firing early keeps the
+       * weapon available. Neither alone works: measured over 1,600 built ladder
+       * waves and 656 survival waves, always-late left 26 survival waves
+       * unclearable and always-early left 11 — every one of them by less than
+       * 100ms, all reading "still reloading".
+       *
+       * So look one step ahead. Find the soonest deadline any OTHER unsatisfied
+       * marcher has on this same weapon, and never fire so late that the reload
+       * would run past it.
+       */
+      let cap = Infinity;
+      for (const v of units) {
+        if (v.id === urgent.u.id) continue;
+        const vRem = need.get(v.id);
+        if (vRem <= 0) continue;
+        for (const vw of wins.get(v.id)) {
+          if (vw.weapon !== w.weapon) continue;
+          const vHits = vw.heavy ? 1 : vRem;
+          const vLatest = vw.exitAt - (vHits - 1) * gun.coolMs;
+          if (vLatest < vw.enterAt) continue;
+          if (vLatest < cap) cap = vLatest;
+        }
+      }
+      /* ⚠ Leave room for MY OWN remaining hits too, not just the next marcher's
+         first. Two turret-bound armoured marchers back to back is the case: the
+         first version subtracted one reload, fired armour's opening shot 63ms
+         too late, and its second shot then ate the reload the next marcher's
+         first shot needed. Both were serviceable; the schedule was not. */
+      const room = cap === Infinity ? latest : cap - hitsHere * gun.coolMs;
+      const at = Math.max(earliest, Math.min(latest, room));
+      /*
+       * ⚠ THE EARLIEST-DEADLINE WINDOW, NOT THE ROOMIEST ONE.
+       *
+       * The first version took the window with the LARGEST `latest`, reasoning
+       * that a later shot sweeps up more marchers. It served an unbound marcher
+       * through the turret when the missile was the reach that made it urgent,
+       * and firing at the turret's latest moment pushed that weapon's clock
+       * thousands of milliseconds past everybody else's deadline: 65 of 300
+       * waves came back unclearable. Choose the window the urgency actually
+       * came from.
+       */
+      if (!chosen || latest < chosen.latest) chosen = { w, gun, at, latest, hitsHere };
+    }
+    if (!chosen) {
+      const gun = guns.get(urgent.w.weapon);
       return {
         ok: false,
-        failedAt: j.id,
-        need: earliest === -Infinity ? j.wins[0].enterAt : earliest,
-        deadline: j.due,
+        failedAt: urgent.u.id,
+        need: gun.last === -Infinity ? urgent.w.enterAt : gun.last + gun.coolMs,
+        deadline: urgent.latest,
+        reason: `${urgent.w.weapon} is still reloading`,
       };
     }
-    plan.push(at);
-    t = at;
+
+    /*
+     * ⚠ A MARCHER'S HITS ARE PLACED TOGETHER, NOT ONE PER PASS.
+     *
+     * Armour needs two turret hits inside one dwell. Placing only the first and
+     * going back round the loop let a marcher who was now more urgent take the
+     * turret in between, and the second hit then fell outside the window — a
+     * self-inflicted failure that had nothing to do with whether a player could
+     * do it. A player servicing armour fires twice; so does the proof.
+     */
+    for (let k = 0; k < chosen.hitsHere; k += 1) {
+      const at = chosen.at + k * chosen.gun.coolMs;
+      chosen.gun.last = at;
+      plan.push({ weapon: chosen.w.weapon, at, press: at - chosen.gun.flightMs });
+
+      /* Everything of that weapon standing in the stretch takes this hit. */
+      for (const v of units) {
+        const rem = need.get(v.id);
+        if (rem <= 0) continue;
+        for (const w of wins.get(v.id)) {
+          if (w.weapon !== chosen.w.weapon) continue;
+          if (at < w.enterAt || at > w.exitAt) continue;
+          need.set(v.id, w.heavy ? 0 : rem - 1);
+          break;
+        }
+      }
+    }
   }
-  return { ok: true, taps: jobs.length, plan };
+
+  const stuck = units.find((u) => need.get(u.id) > 0);
+  return stuck
+    ? { ok: false, failedAt: stuck.id, need: need.get(stuck.id), deadline: 0, reason: 'ran out of presses' }
+    : { ok: true, presses: plan.length, plan };
 }
 
 /** How long a marcher is strikeable, in ms. */
@@ -628,9 +971,9 @@ export function mechanics(cfg) {
   if (cfg.armour > 0) m.push('armour');
   if (cfg.hiddenShare > 0) m.push('canopy');
   if (cfg.nogoShuffle) m.push('shuffle');
-  if (cfg.nTowers >= 2) m.push('twin');
+  if (cfg.nTowers >= 2) m.push('missile');
   if (cfg.boundShare > 0) m.push('bound');
-  if (cfg.nTowers >= 3) m.push('triple');
+  if (cfg.nTowers >= 3) m.push('mortar');
   if (cfg.sprinters > 0) m.push('sprint');
   return m;
 }

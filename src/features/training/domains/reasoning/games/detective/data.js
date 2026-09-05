@@ -65,6 +65,54 @@ export const TRAITS = {
 };
 export const TRAIT_IDS = Object.keys(TRAITS);
 
+/* ── THE SCENE ────────────────────────────────────────────────────────────
+ * 2026-09-05, asked for by the owner: *"make it more clear, like a story, and
+ * make it not all the same — now you are repeating the same stories."*
+ *
+ * ── The diagnosis ──
+ * The LOGIC was never repetitive. Twelve statement types, six rules, seven
+ * question shapes, a fresh line-up shuffled out of the cast every case: no two
+ * puzzles are alike. What repeated was the FICTION, because there wasn't any. A
+ * case knew only `{ thief, truth }` — no what, no where, no when — so every one
+ * of them was "somebody took the unnamed thing", and a player met "Lola says
+ * Ramy did it" for the fortieth time while the puzzle underneath was new.
+ *
+ * It is also why it was hard to follow. An abstract truth table wearing five
+ * names gives you nowhere to PUT each fact; a place and a missing object do.
+ *
+ * ⚠ THE LOGIC ENGINE DOES NOT KNOW THIS EXISTS. `evalStatement`, `ruleHolds`,
+ * `solveWorlds` and `answerFor` are untouched, and validate:liars re-solves
+ * every case with an independent enumerator that is likewise ignorant of it. A
+ * scene can therefore never change an answer — it changes the words. That is
+ * the whole reason this was safe to add to a game that is currently correct.
+ *
+ * ⚠ AND THE CROSS-PRODUCT IS THE RISK. A place crossed with an object crossed
+ * with a phrasing is exactly the shape that ships "Broken Lion" and "Villain as
+ * a gift" — nobody reads all N combinations, so the bad ones ship. Each scene
+ * therefore carries its OWN object rather than the two being crossed, and
+ * validate:liars renders every statement kind against every scene in both
+ * languages and asserts nothing comes out empty or half-substituted.
+ */
+export const SCENES = [
+  { id: 'observatory', place: { en: 'the observatory', ar: 'المرصد' }, obj: { en: 'the star-chart', ar: 'خريطة النجوم' } },
+  { id: 'kitchen', place: { en: 'the kitchen', ar: 'المطبخ' }, obj: { en: 'the good knife', ar: 'السكين الجيّدة' } },
+  { id: 'workshop', place: { en: 'the workshop', ar: 'الورشة' }, obj: { en: 'the brass key', ar: 'المفتاح النحاسي' } },
+  { id: 'shed', place: { en: 'the garden shed', ar: 'سقيفة الحديقة' }, obj: { en: 'the seed tin', ar: 'علبة البذور' } },
+  { id: 'library', place: { en: 'the library', ar: 'المكتبة' }, obj: { en: 'the red notebook', ar: 'الدفتر الأحمر' } },
+  { id: 'carriage', place: { en: 'the train carriage', ar: 'عربة القطار' }, obj: { en: 'the leather case', ar: 'الحقيبة الجلدية' } },
+  { id: 'boathouse', place: { en: 'the boat house', ar: 'بيت القوارب' }, obj: { en: 'the brass compass', ar: 'البوصلة النحاسية' } },
+  { id: 'bakery', place: { en: 'the bakery', ar: 'المخبز' }, obj: { en: 'the morning takings', ar: 'حصيلة الصباح' } },
+  { id: 'attic', place: { en: 'the attic', ar: 'العلّية' }, obj: { en: 'the music box', ar: 'صندوق الموسيقى' } },
+  { id: 'greenhouse', place: { en: 'the greenhouse', ar: 'البيت الزجاجي' }, obj: { en: 'the orchid cutting', ar: 'غصن الأوركيد' } },
+  { id: 'lighthouse', place: { en: 'the lighthouse', ar: 'المنارة' }, obj: { en: 'the log book', ar: 'دفتر السجل' } },
+  { id: 'market', place: { en: 'the market stall', ar: 'بسطة السوق' }, obj: { en: 'the copper scales', ar: 'الميزان النحاسي' } },
+];
+
+/** How many phrasings each scene-aware statement kind carries. */
+export const SAY_VARIANTS = 3;
+/** How many ways a case can open. */
+export const OPENER_VARIANTS = 4;
+
 /* ── STATEMENT TYPES ──────────────────────────────────────────────────────
  * Grouped by what they let a player do, which is also the unlock order:
  *
@@ -375,7 +423,19 @@ function dealFor(rng, cfg, kind) {
     }
 
     const says = people.map((p) => pickR(statementOptions(p, people, cfg.kit, wantTraits ? traits : null), rng));
-    const base = { people, says, rule: ruleObj, evidence, traits: wantTraits ? traits : null };
+    /*
+     * The wording is dealt with the case and carried ON the statement, so it is
+     * as reproducible as everything else here: same seed, same sentence. Rolled
+     * for every statement whether or not its kind has scene-aware phrasings, so
+     * that adding phrasings to a kind later cannot shift the rest of the deal.
+     */
+    says.forEach((s) => { s.v = Math.floor(rng() * SAY_VARIANTS); });
+    const scene = pickR(SCENES, rng);
+    const opener = Math.floor(rng() * OPENER_VARIANTS);
+    const base = {
+      people, says, rule: ruleObj, evidence, scene, opener,
+      traits: wantTraits ? traits : null,
+    };
     const worlds = solveWorlds(base);
     if (!worlds.length) continue;
 

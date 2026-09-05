@@ -12,7 +12,7 @@ import {
   TRAITS, buildCase, evalStatement, LADDER_LEVELS, levelCfg, levelPassed, nameOf as nameOfId,
   passCfg, scoreClearAll, survivalCfg,
 } from './data.js';
-import { T, ruleText, sayText } from './strings.js';
+import { T, ruleText, sayText, sceneText } from './strings.js';
 
 /*
  * DETECTIVE KAWKAB — Liars' Ring.
@@ -506,6 +506,16 @@ export function DetectiveEngine({
             </span>
           </div>
 
+          {/* The scene: what went missing, from where, and who was there.
+              Placed ABOVE the rule on purpose — it is the thing that makes the
+              rule mean something, and a rule read before you know what happened
+              is a constraint on nothing. */}
+          {caseData.scene && (
+            <p style={S.scene} data-coach="scene">
+              {sceneText(caseData, lang, t.nWord(caseData.people.length))}
+            </p>
+          )}
+
           {/* the rule */}
           <div style={S.ruleCard} data-coach="rule">
             <span style={S.ruleLabel}>{t.ruleLabel}</span>
@@ -612,7 +622,7 @@ export function DetectiveEngine({
                   <img src={cast2dUrl(s.by)} alt="" aria-hidden="true" draggable="false" style={S.sayArt} />
                   <span style={S.sayBody}>
                     <span style={S.sayName}>{nameOf(s.by)}</span>
-                    <span>{`“${sayText(s, t, nameOf, traitWord)}”`}</span>
+                    <span>{`“${sayText(s, t, nameOf, traitWord, caseData.scene, lang)}”`}</span>
                   </span>
                   {judged && caseData.tally === 1 && (
                     <span style={{ ...S.sayVerdict, ...(val ? S.sayVerdictTrue : S.sayVerdictFalse) }}>
@@ -997,6 +1007,15 @@ const S = {
   markNow: { background: 'var(--accent)', transform: 'scale(1.3)' },
   markOk: { background: 'var(--success)' },
   markBad: { background: 'var(--danger)' },
+
+  /* The scene reads as prose, not as a control: no card, no border, no label.
+     It is deliberately the only thing on the board set in the display face —
+     everything else here is UI, and this is the story. */
+  scene: {
+    width: '100%', margin: 0, fontSize: 15.5, lineHeight: 1.5,
+    fontWeight: 500, color: 'var(--ink)', fontFamily: 'var(--font-display, inherit)',
+    borderInlineStart: '3px solid var(--accent)', paddingInlineStart: 11,
+  },
 
   ruleCard: {
     width: '100%', background: 'var(--surface)', border: '2px solid var(--line)',

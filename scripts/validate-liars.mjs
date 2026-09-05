@@ -28,10 +28,14 @@
  * pass every other check here.
  */
 import {
-  LADDER, CASES_PER_LEVEL, LADDER_LEVELS, QUESTION_KINDS,
+  LADDER, CASES_PER_LEVEL, LADDER_LEVELS, QUESTION_KINDS, SCENES, SAY_VARIANTS,
+  OPENER_VARIANTS, SUSPECTS, STATEMENT_KINDS, TRAITS,
   answerFor, buildCase, evalStatement, levelCfg, levelPassed, passCfg,
   ruleHolds, scoreClearAll, solveWorlds, survivalCfg,
 } from '../src/features/training/domains/reasoning/games/detective/data.js';
+import {
+  T, OPENERS, SAY_SCENE, sayText, sceneText,
+} from '../src/features/training/domains/reasoning/games/detective/strings.js';
 import { mulberry32 } from '../src/lib/rng.js';
 
 const problems = [];
@@ -272,6 +276,224 @@ if (levelPassed(2, 4) !== false) push('pass rule: two misses out of four must no
     if (problems.length === before) push('SELF-TEST FAILED: a wrong answer was accepted');
     else problems.splice(before);
   }
+}
+
+/* ── THE SCENE LAYER ───────────────────────────────────────────────────────
+ *
+ * Added 2026-09-05 with the scene itself. A place, an object and a phrasing
+ * crossed together is the shape that ships its worst case: the party games
+ * proved it three times in one day with "Broken Lion", "Sudden The mentor" and
+ * "Villain as a gift". Nobody will ever read all 12 scenes × 9 kinds × 3
+ * phrasings × 2 languages, so this does.
+ *
+ * ⚠ WHAT MATTERS MOST IS THE FIRST RULE. The scene may only change WORDS. If a
+ * phrasing ever disagreed with the statement kind it renders, the text on
+ * screen would contradict the logic that scores it — and no gate can read
+ * English well enough to notice. So the structural guarantee is asserted
+ * instead: the same case, rendered with and without a scene, must still be the
+ * same case to the solver.
+ */
+{
+  const langs = ['en', 'ar'];
+  const tOf = (L) => (L === 'ar' ? T.ar : T.en);
+  /*
+   * ⚠ THE IDS ARE NOT THE NAMES, and this gate caught itself getting that
+   * wrong. Noor's id is `mimi`, so a fixture written against `'noor'` resolved
+   * to the EMPTY STRING — and `out.includes('')` is true for every sentence
+   * ever written, so the "does it name its subject" rule reported 180 failures
+   * that were all the test's fault. Take the ids from the cast rather than
+   * typing them, and refuse to run on a name that does not resolve.
+   */
+  const nameIn = (L) => (id) => {
+    const s = SUSPECTS.find((x) => x.id === id);
+    return s ? (L === 'ar' ? s.ar : s.en) : '';
+  };
+  const nameOf = nameIn('en');
+  const [SUBJECT, OTHER] = [SUSPECTS[1].id, SUSPECTS[2].id];
+  if (!nameOf(SUBJECT) || !nameOf(OTHER)) push('SELF-TEST: the cast fixture does not resolve to names');
+
+  /*
+   * ⚠ "CONTAINS SOME ARABIC" IS NOT A TEST, and a plant proved it. An opener
+   * whose whole template was rewritten in English still passed, because the
+   * count word ("ثلاثة") is substituted into it and that alone satisfied the
+   * script check. The rule that actually holds is the strict one: an Arabic
+   * sentence contains NO LATIN LETTERS. Every name, place and object in this
+   * game has an Arabic form, so there is nothing legitimate for a Latin
+   * character to be doing in one.
+   */
+  const latin = (s) => /[A-Za-z]/.test(s || '');
+  const traitWord = (k) => (TRAITS[k] ? TRAITS[k].en : 'something');
+
+  /* 1. Every scene is complete in both languages. A missing half renders as
+        `undefined` inside a sentence, which React prints happily. */
+  for (const sc of SCENES) {
+    for (const L of langs) {
+      if (!sc.place?.[L] || !sc.obj?.[L]) push(`scene ${sc.id}: no ${L} for place or object`);
+    }
+    if (!/[؀-ۿ]/.test(sc.place.ar) || !/[؀-ۿ]/.test(sc.obj.ar)) {
+      push(`scene ${sc.id}: the "Arabic" half contains no Arabic — it is a copy of the English`);
+    }
+  }
+  if (SCENES.length < 8) push(`only ${SCENES.length} scenes — a level of 4 cases would repeat one within two levels`);
+  if (new Set(SCENES.map((s) => s.id)).size !== SCENES.length) push('two scenes share an id');
+  if (new Set(SCENES.map((s) => s.obj.en)).size !== SCENES.length) push('two scenes are missing the same object');
+
+  /* 2. Every openers entry renders, in both languages, for every scene and
+        every plausible line-up size. */
+  if (OPENERS.length !== OPENER_VARIANTS) {
+    push(`OPENER_VARIANTS says ${OPENER_VARIANTS} but strings.js has ${OPENERS.length} — the deal would never reach the last one`);
+  }
+  for (const sc of SCENES) {
+    for (let o = 0; o < OPENERS.length; o += 1) {
+      for (const L of langs) {
+        for (const n of [3, 4, 5]) {
+          const out = sceneText({ scene: sc, opener: o }, L, tOf(L).nWord(n));
+          if (!out || out.length < 12) push(`opener ${o} / ${sc.id} / ${L}: renders empty`);
+          if (/undefined|NaN|\[object/.test(out)) push(`opener ${o} / ${sc.id} / ${L}: "${out}"`);
+          if (/\{\w+\}|\$\{/.test(out)) push(`opener ${o} / ${sc.id} / ${L}: a placeholder was never filled — "${out}"`);
+          /* ⚠ ADDED AFTER A PLANT TEST WENT UNCAUGHT. The Arabic-script rule
+             covered the scene WORDS and the statement phrasings but not the
+             openers, so an opener whose `ar` half reached for `.place.en`
+             sailed through — an Arabic player would have been handed an English
+             opening line under Arabic statements. The rule is only worth having
+             where the copy is, which is everywhere the copy is. */
+          if (L === 'ar' && out && latin(out)) {
+            push(`opener ${o} / ${sc.id}: Latin letters in the Arabic opener — "${out}"`);
+          }
+          /* …and it must be built from the ARABIC scene words, not reach for
+             the English ones. Every opener names both. */
+          if (L === 'ar' && out && !(out.includes(sc.place.ar) && out.includes(sc.obj.ar))) {
+            push(`opener ${o} / ${sc.id}: the Arabic opener does not use the Arabic place and object`);
+          }
+        }
+      }
+    }
+  }
+
+  /* 3. Every scene-aware phrasing renders for every scene, in both languages.
+        Two names are passed because `oneOf` needs them; the rest ignore the
+        second, which is exactly what we want to prove does not break. */
+  for (const kind of Object.keys(SAY_SCENE)) {
+    if (!STATEMENT_KINDS.includes(kind)) push(`SAY_SCENE has phrasings for "${kind}", which is not a statement kind`);
+    if (SAY_SCENE[kind].length !== SAY_VARIANTS) {
+      push(`${kind}: ${SAY_SCENE[kind].length} phrasings but SAY_VARIANTS is ${SAY_VARIANTS} — some can never be dealt`);
+    }
+    for (let v = 0; v < SAY_SCENE[kind].length; v += 1) {
+      const variant = SAY_SCENE[kind][v];
+      for (const L of langs) {
+        if (typeof variant[L] !== 'function') { push(`${kind} v${v}: no ${L} phrasing`); continue; }
+        for (const sc of SCENES) {
+          const aboutSelf = kind === 'selfClear' || kind === 'selfAccuse';
+          const s = {
+            kind, by: SUSPECTS[0].id, k: 1, trait: 'hat', v,
+            /* A statement about the speaker genuinely has no `about`; giving it
+               one would be testing a case the generator never produces. */
+            ...(aboutSelf ? {} : { about: SUBJECT, other: OTHER }),
+          };
+          const nm = nameIn(L);
+          const out = sayText(s, tOf(L), nm, traitWord, sc, L);
+          if (!out || out.length < 8) push(`${kind} v${v} / ${sc.id} / ${L}: renders empty`);
+          else if (/undefined|NaN|\[object/.test(out)) push(`${kind} v${v} / ${sc.id} / ${L}: "${out}"`);
+          else if (/\{\w+\}|\$\{|\s,|\s\./.test(out)) push(`${kind} v${v} / ${sc.id} / ${L}: badly formed — "${out}"`);
+          else if (L === 'ar' && latin(out)) push(`${kind} v${v} / ${sc.id}: Latin letters in the Arabic phrasing — "${out}"`);
+          /*
+           * ⚠ SENTENCE CASE. Every place and object is authored lowercase
+           * because it is nearly always mid-sentence — so the one phrasing that
+           * put it first rendered "Search me. the good knife is not mine to
+           * take." Nothing about meaning was wrong, which is exactly why no
+           * other rule here could see it; it was found by reading the screen.
+           * English only: Arabic has no capitals to get wrong.
+           */
+          if (L === 'en' && out) {
+            if (/^[a-z]/.test(out)) push(`${kind} v${v} / ${sc.id}: starts lowercase — "${out}"`);
+            const mid = out.match(/[.!?]\s+[a-z]/);
+            if (mid) push(`${kind} v${v} / ${sc.id}: lowercase after a full stop — "${out}"`);
+          }
+          /* A statement naming somebody must actually name them. This is what
+             catches a phrasing that quietly drops its subject — the sentence
+             would still read fine and would be about nobody. */
+          if (!aboutSelf && out && !out.includes(nm(SUBJECT))) {
+            push(`${kind} v${v} / ${sc.id} / ${L}: never names the person it is about — "${out}"`);
+          }
+          /* …and one that does NOT name anybody must not invent a name. */
+          if (aboutSelf && out
+            && (out.includes(nm(SUBJECT)) || out.includes(nm(OTHER)))) {
+            push(`${kind} v${v} / ${sc.id} / ${L}: names somebody else, but it is a statement about the speaker`);
+          }
+        }
+      }
+    }
+  }
+
+  /* 4. ⚠ THE ONE THAT MATTERS: a scene cannot change an answer.
+        Re-solve every generated case twice — once as dealt, once with the
+        scene stripped out entirely — and require an identical verdict. If the
+        solver ever started reading the fiction, this is what would catch it. */
+  let sceneCases = 0;
+  for (let lv = 1; lv <= LADDER_LEVELS; lv += 5) {
+    const cfg = levelCfg(lv);
+    for (let s = 0; s < 12; s += 1) {
+      const c = buildCase(mulberry32(lv * 7919 + s), cfg);
+      if (!c) continue;
+      sceneCases += 1;
+      if (!c.scene) { push(`L${lv} seed${s}: a case was dealt with no scene`); continue; }
+      if (!Number.isInteger(c.opener) || c.opener < 0 || c.opener >= OPENER_VARIANTS) {
+        push(`L${lv} seed${s}: opener index ${c.opener} is outside 0..${OPENER_VARIANTS - 1}`);
+      }
+      for (const st of c.says) {
+        if (!Number.isInteger(st.v) || st.v < 0 || st.v >= SAY_VARIANTS) {
+          push(`L${lv} seed${s}: statement phrasing index ${st.v} is outside 0..${SAY_VARIANTS - 1}`);
+          break;
+        }
+      }
+      const bare = { ...c, scene: null, opener: 0, says: c.says.map(({ v, ...rest }) => rest) };
+      const a = answerFor(c.question, solveWorlds(c), c);
+      const b = answerFor(c.question, solveWorlds(bare), bare);
+      if (JSON.stringify(a) !== JSON.stringify(b)) {
+        push(`L${lv} seed${s}: the SCENE CHANGED THE ANSWER (${JSON.stringify(a)} vs ${JSON.stringify(b)}) `
+          + '— the solver is reading the fiction');
+      }
+      /* Every statement in a real case must render in both languages. */
+      for (const st of c.says) {
+        for (const L of langs) {
+          const out = sayText(st, tOf(L), nameOf, traitWord, c.scene, L);
+          if (!out || /undefined|\[object/.test(out)) {
+            push(`L${lv} seed${s}: ${st.kind} renders "${out}" in ${L}`);
+          }
+        }
+      }
+    }
+  }
+  if (sceneCases < 100) push(`only ${sceneCases} cases exercised the scene layer — too few to mean anything`);
+
+  /* 5. SELF-TEST. ⚠ Plant against DATA, in memory — never by rewriting a file.
+        audit:gamekeys produced a false PASS because its plant regex ended
+        `\n}\n` and this tree is CRLF, so the deletion silently never happened
+        and an intact file was mistaken for a working detector. */
+  {
+    const before = problems.length;
+    const brokenScene = { id: 'x', place: { en: 'the vault', ar: 'the vault' }, obj: { en: 'the ring', ar: 'the ring' } };
+    if (!/[؀-ۿ]/.test(brokenScene.place.ar)) push('PLANT: english-as-arabic');
+    if (problems.length === before) push('SELF-TEST FAILED: the Arabic-script check does not fire on English text');
+    else problems.splice(before);
+  }
+  {
+    const before = problems.length;
+    /* A phrasing that drops the name it is about — reads fine, means nothing. */
+    const nameless = (_n, sc) => `Somebody walked out of ${sc.place.en}.`;
+    const out = nameless('Ramy', SCENES[0]);
+    if (!out.includes('Ramy')) push('PLANT: nameless accusation');
+    if (problems.length === before) push('SELF-TEST FAILED: the names-its-subject check does not fire');
+    else problems.splice(before);
+  }
+  {
+    const before = problems.length;
+    const unfilled = 'I saw {name} leave the library.';
+    if (/\{\w+\}|\$\{/.test(unfilled)) push('PLANT: unfilled placeholder');
+    if (problems.length === before) push('SELF-TEST FAILED: the placeholder check does not fire');
+    else problems.splice(before);
+  }
+  checked += sceneCases;
 }
 
 /* ── report ───────────────────────────────────────────────────────────── */

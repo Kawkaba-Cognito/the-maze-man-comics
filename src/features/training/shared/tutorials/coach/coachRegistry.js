@@ -33,14 +33,14 @@ export const COACH_IDS = {
   'paired-associates': 'paired-associates@coach2',
   'speed-match': 'speed-match@coach2',
   gatekeeper: 'gatekeeper@coach2',
-  detective: 'detective@coach2',
+  detective: 'detective@coach3',
   'story-grid': 'story-grid@coach2',
   wordle: 'wordle@coach2',
   'rush-hour': 'rush-hour@coach2',
   mot: 'mot@coach2',
   'train-switch': 'train-switch@coach2',
   'math-gates': 'math-gates@coach2',
-  intercept: 'intercept@coach2',
+  intercept: 'intercept@coach3',
   'mirror-world': 'mirror-world@coach2',
 };
 
