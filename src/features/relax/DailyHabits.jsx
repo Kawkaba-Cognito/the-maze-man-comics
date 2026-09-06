@@ -268,7 +268,11 @@ export default function DailyHabits({ isAr, playSfx, onBack, onOpenPractice }) {
     add: isAr ? '+ عادة جديدة' : '+ New habit',
     heatmap: isAr ? '12 أسبوعاً' : '12 weeks',
     nudge: isAr ? 'لا تفوّت مرتين — أكمل هذه العادة اليوم.' : 'Don\'t miss twice — finish this habit today.',
-    note: isAr ? 'تأمل شخصي — ليس تشخيصاً.' : 'Personal reflection — not medical advice.',
+    /* ⚠ These two must say the SAME thing. They used to differ: the English
+       said "not medical advice" while the Arabic said "ليس تشخيصاً" (not a
+       diagnosis) — a different claim, in the one string whose whole job is to
+       be the claim. */
+    note: isAr ? 'تأمل شخصي — وليس نصيحة طبية.' : 'Personal reflection — not medical advice.',
     skipped: isAr ? 'متخطّى' : 'Skipped',
     presets: isAr ? 'إضافة من القوالب' : 'Add from templates',
     active: isAr ? 'نشطة' : 'Active',

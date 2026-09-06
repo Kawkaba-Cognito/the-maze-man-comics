@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import PracticeShell, { PracticeHero, SUB, FAINT } from './PracticeShell';
 import { QUIZ_CSS, LikertRow, KawkabSay, ScenarioChoice, QuestionExample, DeeperScience } from './quizShared';
 import { markWellbeingPracticeDone } from './habitState';
+import SafetyNote, { SAFETY_CSS } from './SafetyNote';
 
 /*
  * Attachment Style quiz — items adapted from the two dimensions measured by
@@ -22,45 +23,82 @@ const ACCENT_LIT = 'var(--rx-relationships-lit)';
 const STORAGE_KEY = 'rx_relationship_v1';
 const MIDPOINT_AT = 6;
 
+/*
+ * ⚠ HALF THE ITEMS ARE REVERSE-KEYED NOW, AND THAT IS A CORRECTNESS FIX RATHER
+ * THAN A STYLE ONE (2026-09-07).
+ *
+ * Every item used to point the same way: agreeing always pushed a score UP.
+ * On a scale like this, that hands the result to acquiescence — the ordinary
+ * tendency to agree with whatever a questionnaire says. A yes-biased respondent
+ * scored high on anxiety AND high on avoidance, and the classifier below then
+ * cut at the raw midpoint, so two independent errors pushed the same people
+ * into the same corner: fearful-avoidant, the rarest and most alarming of the
+ * four labels. The screen then told them most adults are secure.
+ *
+ * The real ECR scales are balanced for exactly this reason. Agreeing with `rev`
+ * items now LOWERS the dimension, so a flat "agree with everything" response
+ * lands mid-scale on both axes, which is the honest answer to a meaningless
+ * response set.
+ *
+ * ⚠ `you`/`them` ARE NOT HARD-CODED TO A ROMANTIC PARTNER. The intro asks the
+ * user to pick who they are answering about (see TARGETS): the items used to
+ * say "my partner" while the instructions said "someone you're close to", which
+ * left a large part of an EN/AR audience — anyone not currently dating — with
+ * no referent at all, answering about a hypothetical. Same dimensions, chosen
+ * target, which is what the ECR-RS was built to do (Fraley et al., 2011).
+ */
 const ANXIETY_ITEMS = [
-  { id: 'a1', en: "I worry that my partner won't care about me as much as I care about them.", ar: 'أقلق من ألّا يهتم شريكي بي بقدر اهتمامي به.',
-    example: "You notice you're the one who initiates texts more often, and it makes you wonder if they feel the same way.",
-    exampleAr: 'تلاحظ أنك من يبادر بالرسائل غالباً، فتتساءل إن كان يشعر بالمثل.' },
-  { id: 'a2', en: 'I need a lot of reassurance that I am loved.', ar: 'أحتاج إلى الكثير من الطمأنة بأنني محبوب.',
-    example: "Hearing \"I love you\" once doesn't quite settle it — part of you wants to hear it again, or looks for other signs.",
-    exampleAr: 'سماع "أحبّك" مرة واحدة لا يكفي لتشعر بالطمأنينة — جزء منك يريد سماعها مجدداً، أو يبحث عن علامات أخرى.' },
-  { id: 'a3', en: "I worry about being abandoned by people I'm close to.", ar: 'أقلق من أن يتخلّى عنّي من أنا مقرّب منهم.',
-    example: "Even in a relationship that's going fine, part of you quietly braces for it to end.",
-    exampleAr: 'حتى في علاقة تسير بشكل جيد، جزء منك يتحصّن بصمت لاحتمال انتهائها.' },
-  { id: 'a4', en: 'I get frustrated when my partner is not available when I need them.', ar: 'أشعر بالإحباط عندما لا يكون شريكي متاحاً عندما أحتاجه.',
-    example: "They don't pick up right away, and irritation shows up before any explanation does.",
-    exampleAr: 'لا يردّ على الفور، فيظهر الانزعاج قبل أن تصلك أي تفسير.' },
-  { id: 'a5', en: "I find myself thinking about my relationship a lot — sometimes more than I'd like to.", ar: 'أجد نفسي أفكّر في علاقتي كثيراً — أحياناً أكثر ممّا أريد.',
-    example: "You're at work, and a conversation from last night replays in your head instead of the task in front of you.",
-    exampleAr: 'أنت في العمل، وتُعاد محادثة الليلة الماضية في ذهنك بدلاً من التركيز على مهمتك.' },
-  { id: 'a6', en: "I worry that romantic partners won't want to stay with me.", ar: 'أقلق من ألّا يرغب شركاء العلاقة في البقاء معي.',
-    example: 'Things are going well, and a quiet thought still surfaces: "how long until this changes?"',
-    exampleAr: 'الأمور تسير جيداً، ومع ذلك تخطر لك فكرة هادئة: "إلى متى سيستمر هذا؟"' },
+  { id: 'a1', rev: false, en: "I worry that they won't care about me as much as I care about them.", ar: 'أقلق من ألّا يهتموا بي بقدر اهتمامي بهم.',
+    example: "You notice you're the one who reaches out more often, and it makes you wonder if they feel the same way.",
+    exampleAr: 'تلاحظ أنك من يبادر بالتواصل غالباً، فتتساءل إن كانوا يشعرون بالمثل.' },
+  { id: 'a2', rev: false, en: 'I need a lot of reassurance that I am cared about.', ar: 'أحتاج إلى الكثير من الطمأنة بأنني محلّ اهتمام.',
+    example: 'Being told once doesn\'t quite settle it — part of you wants to hear it again, or looks for other signs.',
+    exampleAr: 'أن تُقال لك مرة واحدة لا يكفي لتطمئن — جزء منك يريد سماعها مجدداً، أو يبحث عن علامات أخرى.' },
+  { id: 'a3', rev: false, en: "I worry about being left by people I'm close to.", ar: 'أقلق من أن يتركني من أنا مقرّب منهم.',
+    example: "Even when things are going fine, part of you quietly braces for it to end.",
+    exampleAr: 'حتى حين تسير الأمور جيداً، جزء منك يتحصّن بصمت لاحتمال انتهائها.' },
+  { id: 'a4', rev: false, en: 'I get frustrated when they are not available when I need them.', ar: 'أشعر بالإحباط عندما لا يكونون متاحين حين أحتاجهم.',
+    example: "They don't reply right away, and irritation shows up before any explanation does.",
+    exampleAr: 'لا يردّون على الفور، فيظهر الانزعاج قبل أن يصلك أي تفسير.' },
+  { id: 'a5', rev: true, en: 'I rarely worry about where I stand with them.', ar: 'نادراً ما أقلق بشأن مكانتي لديهم.',
+    example: 'A gap in contact passes without you reading anything into it.',
+    exampleAr: 'تمرّ فترة انقطاع في التواصل دون أن تُحمّلها أي معنى.' },
+  { id: 'a6', rev: true, en: 'When they are quiet or distant, I can let it be without assuming the worst.', ar: 'حين يصمتون أو يبتعدون، أستطيع تقبّل ذلك دون افتراض الأسوأ.',
+    example: 'They seem off, and your first thought is that they have had a hard day — not that something is wrong between you.',
+    exampleAr: 'يبدون غير على ما يرام، فأول ما يخطر لك أن يومهم كان صعباً — لا أن هناك خطباً بينكما.' },
 ];
 const AVOIDANCE_ITEMS = [
-  { id: 'v1', en: 'I prefer not to show a partner how I really feel deep down.', ar: 'أفضّل ألّا أُظهر لشريكي ما أشعر به فعلاً في أعماقي.',
+  { id: 'v1', rev: false, en: 'I prefer not to show them how I really feel deep down.', ar: 'أفضّل ألّا أُظهر لهم ما أشعر به فعلاً في أعماقي.',
     example: "Something upset you, but you'd rather work through it alone than explain the whole thing out loud.",
     exampleAr: 'أزعجك أمر ما، لكنك تفضّل معالجته بمفردك بدلاً من شرحه بصوت مسموع.' },
-  { id: 'v2', en: 'I find it difficult to get close to others.', ar: 'أجد صعوبة في الاقتراب عاطفياً من الآخرين.',
-    example: "Even with people you like, there's a point where you pull back rather than let them in further.",
-    exampleAr: 'حتى مع من تحبّهم، هناك نقطة تتراجع عندها بدلاً من السماح لهم بالاقتراب أكثر.' },
-  { id: 'v3', en: 'I get nervous when a partner wants to be very close emotionally.', ar: 'أشعر بالتوتّر عندما يريد شريكي قرباً عاطفياً كبيراً.',
-    example: 'A partner says "I feel like we can tell each other anything" — and something in you tightens instead of warms.',
-    exampleAr: 'يقول شريكك "أشعر أننا نستطيع إخبار بعضنا بأي شيء" — فيتوتّر شيء بداخلك بدلاً من أن يدفأ.' },
-  { id: 'v4', en: 'I prefer not to depend on romantic partners.', ar: 'أفضّل ألّا أعتمد على شريكي العاطفي.',
-    example: "You'd rather struggle with a hard problem alone than ask your partner to help you with it.",
-    exampleAr: 'تفضّل المكافحة بمفردك في مشكلة صعبة على أن تطلب من شريكك المساعدة فيها.' },
-  { id: 'v5', en: 'I try to avoid getting too emotionally close to a partner.', ar: 'أحاول تجنّب الاقتراب العاطفي الشديد من شريكي.',
-    example: 'When a relationship starts feeling serious, you notice yourself quietly creating a little distance.',
-    exampleAr: 'عندما تبدأ العلاقة تصبح جدّية، تلاحظ نفسك تخلق مسافة صغيرة بهدوء.' },
-  { id: 'v6', en: 'I am uncomfortable opening up to romantic partners.', ar: 'أشعر بعدم الارتياح عند البوح لشريكي بمشاعري.',
-    example: "You'll talk about your day, but the harder stuff — fears, insecurities — tends to stay unspoken.",
-    exampleAr: 'تتحدّث عن يومك، لكن الأمور الأصعب — مخاوفك وشكوكك — تبقى عادة دون أن تُقال.' },
+  { id: 'v2', rev: false, en: 'I get uneasy when they want to be very close emotionally.', ar: 'أشعر بعدم ارتياح عندما يريدون قرباً عاطفياً كبيراً.',
+    example: 'They say "we can tell each other anything" — and something in you tightens instead of warms.',
+    exampleAr: 'يقولون "نستطيع إخبار بعضنا بأي شيء" — فيتوتّر شيء بداخلك بدلاً من أن يدفأ.' },
+  { id: 'v3', rev: false, en: 'I prefer not to depend on them.', ar: 'أفضّل ألّا أعتمد عليهم.',
+    example: "You'd rather struggle with a hard problem alone than ask them to help you with it.",
+    exampleAr: 'تفضّل المكافحة بمفردك في مشكلة صعبة على أن تطلب منهم المساعدة فيها.' },
+  { id: 'v4', rev: true, en: 'It helps to turn to them when something is wrong.', ar: 'يساعدني أن ألجأ إليهم حين يسوء شيء ما.',
+    example: 'A bad day happens and going to them is the obvious move, not a last resort.',
+    exampleAr: 'يمرّ يوم سيّئ فيكون اللجوء إليهم هو الخيار البديهي، لا الملاذ الأخير.' },
+  { id: 'v5', rev: true, en: 'I find it easy to be close to them.', ar: 'أجد من السهل أن أكون قريباً منهم.',
+    example: 'Closeness feels like the natural state of things rather than something you have to manage.',
+    exampleAr: 'يبدو القرب هو الحالة الطبيعية للأمور، لا شيئاً عليك إدارته.' },
+  { id: 'v6', rev: true, en: 'I talk to them about my worries and the harder things.', ar: 'أتحدّث معهم عن مخاوفي وعن الأمور الأصعب.',
+    example: 'Not just how your day went — the fears and doubts get said out loud too.',
+    exampleAr: 'ليس فقط كيف كان يومك — بل تُقال المخاوف والشكوك بصوت مسموع أيضاً.' },
+];
+
+/*
+ * Who the user is answering about. Attachment is relationship-specific — the
+ * same person is commonly more secure with a friend than with a partner — so
+ * the target is chosen rather than assumed, and named back to them on the
+ * results screen so the score is never read as a verdict on their whole self.
+ */
+export const TARGETS = [
+  { id: 'partner', icon: '💞', en: 'A current partner', ar: 'شريك حالي' },
+  { id: 'ex', icon: '🕰️', en: 'A past relationship', ar: 'علاقة سابقة' },
+  { id: 'friend', icon: '🤝', en: 'A close friend', ar: 'صديق مقرّب' },
+  { id: 'family', icon: '🏠', en: 'A parent or family member', ar: 'أحد الوالدين أو من العائلة' },
 ];
 // Interleaved anxiety/avoidance so the two dimensions aren't obvious from item order.
 const ITEMS = ANXIETY_ITEMS.flatMap((a, i) => [
@@ -88,8 +126,17 @@ const STYLES = {
     tipAr: 'حاول أن تمنح نفسك وقفة قصيرة قبل طلب الطمأنة — دقائق قليلة من تهدئة الذات (كالمشي أو ممارسة التنفّس) غالباً ما تكشف أن القلق كان أعلى صوتاً من الدليل عليه.',
     takeawayEn: "In plain terms: you feel connection deeply, and small silences can feel loud — that's not neediness, it's a very tuned-in nervous system.",
     takeawayAr: 'بعبارة بسيطة: تشعر بالارتباط بعمق، وقد تبدو السكتات الصغيرة صاخبة بالنسبة لك — هذا ليس تعلّقاً مفرطاً، بل جهاز عصبي شديد الحساسية.',
-    deeperEn: 'This pattern often forms in childhood environments where caregiving was loving but inconsistent — sometimes warmly available, sometimes not, in a way that was hard to predict. That taught a young nervous system that closeness needs vigilance to keep. It made sense once, in that context — it just costs more than it used to now.',
-    deeperAr: 'غالباً ما يتشكّل هذا النمط في بيئة طفولة كانت الرعاية فيها محبّة لكن غير منتظمة — متاحة بدفء أحياناً، وغائبة أحياناً أخرى، بطريقة يصعب توقّعها. علّم ذلك الجهاز العصبي الصغير أن القرب يحتاج يقظة دائمة للحفاظ عليه. كان ذلك منطقياً حينها، ضمن ذلك السياق — لكنه يكلّف الآن أكثر ممّا كان يكلّف سابقاً.',
+    /* ⚠ "OFTEN FORMS IN" BECAME "FOR SOME PEOPLE", HERE AND IN THE TWO BELOW.
+       These passages read, to the person holding the phone, as a finding about
+       THEIR history — delivered by twelve self-report items that asked nothing
+       about their childhood. The link between recalled caregiving and adult
+       attachment is real but modest, and in a family-central culture "your
+       parents did this" lands considerably harder than the English original
+       intends. The developmental explanation stays, because it is the
+       compassionate part and it works; what changes is that it is offered as
+       one common route rather than as a reading of their life. */
+    deeperEn: 'For some people this pattern traces back to care that was loving but hard to predict — sometimes warmly available, sometimes not. A nervous system that grew up in that learns closeness needs watching to keep. For others it comes from a later relationship entirely, and for some there is no clean story at all. What it is not is a flaw you were handed.',
+    deeperAr: 'لدى بعض الناس يعود هذا النمط إلى رعاية كانت محبّة لكن يصعب توقّعها — متاحة بدفء أحياناً وغائبة أحياناً. الجهاز العصبي الذي ينشأ في ذلك يتعلّم أن القرب يحتاج مراقبة للحفاظ عليه. ولدى آخرين ينشأ من علاقة لاحقة تماماً، ولدى بعضهم لا توجد قصة واضحة إطلاقاً. لكنه ليس عيباً وُرِّثتَه.',
   },
   dismissive: {
     color: '#5aa9c8', en: 'Dismissive-Avoidant', ar: 'رافض-متجنّب',
@@ -99,8 +146,12 @@ const STYLES = {
     tipAr: 'الاستقلالية ميزة حقيقية؛ المهارة التي تستحق الإضافة هي التعبير عن شعورك بصوت مسموع قبل معالجته كاملاً بمفردك — فالشريك لا يستطيع فهم باب مغلق دائماً.',
     takeawayEn: 'In plain terms: you value your independence and keep your inner world to yourself — closeness is welcome, just on your own terms.',
     takeawayAr: 'بعبارة بسيطة: تقدّر استقلاليتك وتحتفظ بعالمك الداخلي لنفسك — القرب مرحّب به، لكن بشروطك أنت.',
-    deeperEn: "This pattern often forms when a child's bids for comfort went consistently unanswered, so self-reliance became the safer strategy. Adults with this style commonly report feeling fine on self-report tests while their body still shows a measurable stress response underneath — so \"I'm fine\" can be genuinely felt and physiologically incomplete at the same time (Fraley & Shaver, 1997).",
-    deeperAr: 'غالباً ما يتشكّل هذا النمط عندما لا تُلبَّى محاولات الطفل المتكررة لطلب العزاء، فيصبح الاعتماد على الذات هو الاستراتيجية الأكثر أماناً. غالباً ما يشعر البالغون بهذا النمط بأنهم "بخير" في اختبارات التقرير الذاتي، بينما يُظهر الجسد استجابة توتّر قابلة للقياس تحت السطح — أي أن "أنا بخير" قد تكون شعوراً صادقاً وغير مكتمل فسيولوجياً في آن واحد (Fraley & Shaver, 1997).',
+    /* ⚠ CITATION CORRECTED (2026-09-07): this was attributed to Fraley & Shaver
+       (1997), which is the airport-separation study. The finding described here
+       — self-reported calm alongside a measurable physiological stress response
+       — is the deactivation work, Dozier & Kobak (1992). */
+    deeperEn: "For some people self-reliance became the safer strategy early on, when asking for comfort reliably did not bring it. Adults with this style often report feeling fine on questionnaires while their body still shows a measurable stress response underneath — so \"I'm fine\" can be genuinely felt and physiologically incomplete at the same time (Dozier & Kobak, 1992).",
+    deeperAr: 'لدى بعض الناس أصبح الاعتماد على الذات هو الاستراتيجية الأكثر أماناً مبكراً، حين كان طلب العزاء لا يأتي به عادةً. وغالباً ما يشعر البالغون بهذا النمط بأنهم "بخير" في الاستبيانات، بينما يُظهر الجسد استجابة توتّر قابلة للقياس تحت السطح — أي أن "أنا بخير" قد تكون شعوراً صادقاً وغير مكتمل فسيولوجياً في آن واحد (Dozier & Kobak, 1992).',
   },
   fearful: {
     color: '#a06fae', en: 'Fearful-Avoidant', ar: 'خائف-متجنّب',
@@ -110,8 +161,11 @@ const STYLES = {
     tipAr: 'هذا النمط يستجيب بشكل خاص لشريك صبور وثابت، وغالباً للعلاج النفسي المرَكَّز على العلاقات — كلاهما يمنح الجهاز العصبي أدلّة متكرّرة على أن القرب يمكن أن يكون آمناً.',
     takeawayEn: 'In plain terms: part of you wants closeness, and part of you braces for it to hurt — both parts make sense together.',
     takeawayAr: 'بعبارة بسيطة: جزء منك يريد القرب، وجزء آخر يتحصّن من أن يؤلمه — وكلا الجزأين منطقي معاً.',
-    deeperEn: 'This is the least common and most researched of the four styles, often linked to relationships where the same person who gave comfort was also, at times, a source of fear or unpredictability. It tends to respond especially well to attachment-focused therapy — specifically because both fears (of closeness, and of being alone) get addressed together, rather than one being treated as "the real problem."',
-    deeperAr: 'هذا هو الأنمط الأربعة الأقل شيوعاً والأكثر دراسة، ويرتبط غالباً بعلاقات كان فيها الشخص نفسه الذي يمنح العزاء مصدراً للخوف أو عدم القدرة على التنبؤ في أحيان أخرى. يستجيب هذا النمط بشكل خاص للعلاج النفسي المرَكَّز على التعلّق — تحديداً لأن كلا الخوفين (من القرب، ومن الوحدة) يُعالَجان معاً، بدلاً من اعتبار أحدهما "المشكلة الحقيقية".',
+    /* ⚠ It used to open "the least common and MOST RESEARCHED of the four" —
+       self-contradictory in one sentence, and false: secure and anxious are far
+       more researched. The Arabic also carried a typo ("الأنمط"). */
+    deeperEn: 'This is the least common of the four, and for some people it traces to relationships where the same person who gave comfort was also, at times, a source of fear or unpredictability. It tends to respond well to therapy focused on relationships — specifically because both fears (of closeness, and of being alone) get addressed together, rather than one being treated as "the real problem."',
+    deeperAr: 'هذا أقل الأنماط الأربعة شيوعاً، ولدى بعض الناس يعود إلى علاقات كان فيها الشخص نفسه الذي يمنح العزاء مصدراً للخوف أو عدم القدرة على التنبؤ في أحيان أخرى. ويستجيب عادةً استجابة جيدة للعلاج النفسي المرَكَّز على العلاقات — تحديداً لأن كلا الخوفين (من القرب، ومن الوحدة) يُعالَجان معاً، بدلاً من اعتبار أحدهما "المشكلة الحقيقية".',
   },
 };
 
@@ -171,9 +225,15 @@ const TEXT = {
   en: {
     title: 'Attachment Style',
     meta: '12 questions · about 2 minutes',
-    cite: 'Items are adapted from the two dimensions measured by the Experiences in Close Relationships scale family (ECR-R, Fraley, Waller & Brennan, 2000; short form: Wei et al., 2007) — the standard research tool for adult attachment.',
-    disclaimer: 'For self-reflection, not a clinical diagnosis. Think of a current or recent close relationship as you answer.',
-    kawkabIntro: "Hi, I'm Kawkab! I'm not a therapist, and this isn't a diagnosis — just an honest mirror on how you experience closeness. Think of someone you're close to, and answer honestly.",
+    cite: 'Items are adapted from the two dimensions measured by the Experiences in Close Relationships scale family (ECR-R, Fraley, Waller & Brennan, 2000; short form: Wei et al., 2007), with a choosable relationship target as in the ECR-RS (Fraley et al., 2011). Adapted, not the original instrument — so treat the result as a conversation starter, not a score.',
+    disclaimer: 'For self-reflection, not a clinical diagnosis.',
+    kawkabIntro: "Hi, I'm Kawkab! I'm not a therapist, and this isn't a diagnosis — just an honest mirror on how you experience closeness. First, who should we do this about?",
+    targetTitle: 'Answer about…',
+    targetHint: 'Attachment is relationship-specific — most people are more secure with a friend than with a partner, so pick one and keep them in mind for all 12 questions.',
+    targetAbout: (label) => `About: ${label}`,
+    borderline: 'Your scores sit close to the line, so this label is a coin toss — the two numbers below it are the real result, and they are more useful than the name.',
+    dimTitle: 'Your two dimensions',
+    dimNote: 'Compared against approximate averages from the research literature, not norms collected from this app. Roughly, not precisely.',
     kawkabMidpoint: "Halfway there — there's no \"right\" way to attach to people, just your own way.",
     kawkabScenarioIntro: "Nice work! Now 3 quick everyday moments — they won't change your score, but they'll make it feel real.",
     start: 'Start the quiz',
@@ -200,9 +260,15 @@ const TEXT = {
   ar: {
     title: 'نمط التعلّق',
     meta: '١٢ سؤالاً · حوالي دقيقتين',
-    cite: 'الأسئلة مقتبسة من البُعدين اللذين تقيسهما عائلة مقياس "الخبرات في العلاقات الحميمة" (ECR-R، Fraley, Waller & Brennan, 2000؛ والنسخة القصيرة: Wei et al., 2007) — الأداة البحثية المعيارية لقياس التعلّق لدى البالغين.',
-    disclaimer: 'للتأمّل الذاتي فقط، وليس تشخيصاً سريرياً. فكّر في علاقة حميمة حالية أو حديثة أثناء إجابتك.',
-    kawkabIntro: 'مرحباً، أنا كوكب! أنا لست معالجاً نفسياً، وهذا ليس تشخيصاً — فقط مرآة صادقة لكيفية تجربتك للقرب العاطفي. فكّر في شخص مقرّب منك، وأجب بصدق.',
+    cite: 'الأسئلة مقتبسة من البُعدين اللذين تقيسهما عائلة مقياس "الخبرات في العلاقات الحميمة" (ECR-R، Fraley, Waller & Brennan, 2000؛ والنسخة القصيرة: Wei et al., 2007)، مع إمكانية اختيار طرف العلاقة كما في ECR-RS (Fraley et al., 2011). وهي مقتبسة لا الأداة الأصلية — فاعتبر النتيجة بداية حوار لا درجة نهائية.',
+    disclaimer: 'للتأمّل الذاتي فقط، وليس تشخيصاً سريرياً.',
+    kawkabIntro: 'مرحباً، أنا كوكب! أنا لست معالجاً نفسياً، وهذا ليس تشخيصاً — فقط مرآة صادقة لكيفية تجربتك للقرب العاطفي. أولاً، عمّن سنتحدّث؟',
+    targetTitle: 'أجب عن…',
+    targetHint: 'نمط التعلّق يختلف باختلاف العلاقة — معظم الناس أكثر أماناً مع صديق منهم مع شريك. اختر شخصاً واحداً وأبقِه في ذهنك طوال الأسئلة الاثني عشر.',
+    targetAbout: (label) => `عن: ${label}`,
+    borderline: 'نتيجتك قريبة من الحدّ الفاصل، لذا فهذا التصنيف أقرب إلى الصدفة — الرقمان أدناه هما النتيجة الحقيقية، وهما أنفع من الاسم.',
+    dimTitle: 'بُعداك',
+    dimNote: 'المقارنة مع متوسطات تقريبية من الأدبيات البحثية، لا مع معايير مجمّعة من هذا التطبيق. تقريباً، لا بدقّة.',
     kawkabMidpoint: 'منتصف الطريق — لا توجد طريقة "صحيحة" للتعلّق بالآخرين، فقط طريقتك الخاصة.',
     kawkabScenarioIntro: 'أحسنت! الآن ٣ لحظات يومية سريعة — لن تغيّر نتيجتك، لكنها ستجعلها أكثر واقعية.',
     start: 'ابدأ الاختبار',
@@ -236,16 +302,78 @@ const loadSaved = () => {
   return null;
 };
 
+/*
+ * ⚠ THE CUT POINTS ARE NOT THE SCALE MIDPOINT, AND THAT WAS THE SECOND BUG.
+ *
+ * The old classifier split both axes at 4.0 — the middle of a 1–7 scale — as if
+ * the average adult sat exactly there. They do not: on ECR-family measures,
+ * community samples run noticeably BELOW the midpoint on avoidance in
+ * particular, so cutting at 4.0 labels a perfectly ordinary person "avoidant".
+ * Combined with the unbalanced items above, the two errors compounded in the
+ * same direction and manufactured fearful-avoidants.
+ *
+ * ⚠ AND THEY ARE NOT THE COMMUNITY MEANS EITHER — cutting at the mean is a
+ * MEDIAN SPLIT, which sorts roughly a quarter of all users into each of the
+ * four boxes. That reproduces the original bug in a politer form: it would hand
+ * ~25% of people the fearful-avoidant label on a screen that tells them, three
+ * paragraphs later, that most adults are secure. The instrument would be
+ * contradicting itself, and the user would believe the label.
+ *
+ * So the cuts sit near the upper quartile of community distributions instead.
+ * Two roughly independent dimensions each cut at ~the 75th percentile leave
+ * about 0.75 × 0.75 ≈ 56% in the low/low region — which is the secure share the
+ * results screen actually reports (Mickelson, Kessler & Shaver, 1997). The
+ * classification and the prevalence claim now agree.
+ *
+ * These are approximate figures from the ECR literature, not norms derived from
+ * this app's own users, and the results screen says so.
+ */
+/*
+ * ⚠ THE AVOIDANCE CUT SITS ABOVE 4.0 FOR A STRUCTURAL REASON, not a statistical
+ * one. Now that the avoidance subscale is balanced 3-direct / 3-reverse, a
+ * uniform response set — every item answered 4, which is what "I don't really
+ * know" looks like — lands on EXACTLY 4.0 by construction. A cut anywhere below
+ * that labels the undecided user avoidant, every time. Measured: at 3.9, all-4s,
+ * all-7s and all-1s each came out "avoidant".
+ *
+ * The undecided case has to land in the low/low region and be flagged
+ * borderline, which is the honest reading of a response set carrying no
+ * information. 4.2 is roughly one SD above the community mean; paired with the
+ * anxiety cut it leaves ~60% secure, still inside the range the results screen
+ * reports.
+ */
+const CUT = { anxiety: 4.5, avoidance: 4.2 };
+
+/*
+ * ⚠ AN UNANSWERED ITEM IS NOT A 4. The old code did `answers[it.id] || 4`,
+ * quietly inventing a midpoint response for anything missing — the same
+ * fabricate-the-data failure the practice check-in was built to avoid. Every
+ * item is required to advance, so a gap means something went wrong; averaging
+ * over what IS answered is the honest response to that.
+ */
+function subscaleMean(items, answers) {
+  const vals = items
+    .map((it) => (Number.isFinite(answers[it.id]) ? (it.rev ? 8 - answers[it.id] : answers[it.id]) : null))
+    .filter((v) => v != null);
+  if (!vals.length) return 4;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
 function scoreAndClassify(answers) {
-  const mean = (items) => items.reduce((s, it) => s + (answers[it.id] || 4), 0) / items.length;
-  const anxiety = mean(ANXIETY_ITEMS);
-  const avoidance = mean(AVOIDANCE_ITEMS);
+  const anxiety = subscaleMean(ANXIETY_ITEMS, answers);
+  const avoidance = subscaleMean(AVOIDANCE_ITEMS, answers);
+  const hiAnx = anxiety >= CUT.anxiety;
+  const hiAvo = avoidance >= CUT.avoidance;
   let style;
-  if (anxiety < 4 && avoidance < 4) style = 'secure';
-  else if (anxiety >= 4 && avoidance < 4) style = 'anxious';
-  else if (anxiety < 4 && avoidance >= 4) style = 'dismissive';
+  if (!hiAnx && !hiAvo) style = 'secure';
+  else if (hiAnx && !hiAvo) style = 'anxious';
+  else if (!hiAnx && hiAvo) style = 'dismissive';
   else style = 'fearful';
-  return { anxiety, avoidance, style };
+  /* How far from a cut the person actually sits — a score of 3.05 on a 3.0 cut
+     is a coin toss wearing a category's clothes, and the results screen says so
+     rather than presenting every classification with equal confidence. */
+  const margin = Math.min(Math.abs(anxiety - CUT.anxiety), Math.abs(avoidance - CUT.avoidance));
+  return { anxiety, avoidance, style, borderline: margin < 0.5 };
 }
 
 /** Which tag (secure/anxious/avoidant) came up most across the 3 scenario picks. */
@@ -263,9 +391,23 @@ function tallyMatchesStyle(tally, style) {
 
 const clampPct = (v) => Math.max(4, Math.min(96, v));
 
+/*
+ * ⚠ THE CROSSHAIRS MUST SIT ON THE CUT POINTS, NOT AT 50%.
+ *
+ * The axes were hard-coded to the middle of the box while the classifier cut at
+ * the middle of the scale — which agreed only by coincidence, and stopped
+ * agreeing the moment the cuts moved to real reference means. A dot drawn in
+ * the bottom-left while the caption underneath says "Dismissive-Avoidant" is
+ * the kind of contradiction a user notices immediately and cannot explain, and
+ * it would quietly discredit the whole result. Both now derive from CUT.
+ */
+const pctOf = (v) => ((v - 1) / 6) * 100;
+const AX_X = pctOf(CUT.avoidance);        // vertical line: avoidance cut
+const AX_Y_TOP = 100 - pctOf(CUT.anxiety); // horizontal line: anxiety cut
+
 function Quadrant({ anxiety, avoidance, isAr, t }) {
-  const x = clampPct(((avoidance - 1) / 6) * 100);
-  const yTop = clampPct(100 - ((anxiety - 1) / 6) * 100);
+  const x = clampPct(pctOf(avoidance));
+  const yTop = clampPct(100 - pctOf(anxiety));
   // Forced dir="ltr": this is a data plot, not direction-sensitive text — the
   // cells use logical inset-inline-start/end (which flip with RTL), while the
   // dot uses physical left/top (which doesn't). Pinning direction here keeps
@@ -277,8 +419,8 @@ function Quadrant({ anxiety, avoidance, isAr, t }) {
         <span className="qz-quad-cell" style={{ top: 0, insetInlineEnd: 0, color: STYLES.fearful.color }}>{isAr ? STYLES.fearful.ar : STYLES.fearful.en}</span>
         <span className="qz-quad-cell" style={{ bottom: 0, insetInlineStart: 0, color: STYLES.secure.color }}>{isAr ? STYLES.secure.ar : STYLES.secure.en}</span>
         <span className="qz-quad-cell" style={{ bottom: 0, insetInlineEnd: 0, color: STYLES.dismissive.color }}>{isAr ? STYLES.dismissive.ar : STYLES.dismissive.en}</span>
-        <span className="qz-quad-axis" style={{ left: '50%', top: 0, bottom: 0, width: 1.5 }} />
-        <span className="qz-quad-axis" style={{ top: '50%', left: 0, right: 0, height: 1.5 }} />
+        <span className="qz-quad-axis" style={{ left: `${AX_X}%`, top: 0, bottom: 0, width: 1.5 }} />
+        <span className="qz-quad-axis" style={{ top: `${AX_Y_TOP}%`, left: 0, right: 0, height: 1.5 }} />
         <span className="qz-quad-dot" style={{ left: `${x}%`, top: `${yTop}%` }} />
       </div>
       <div className="qz-quad-axislabel-y">↑ {t.axisAnxiety}</div>
@@ -291,27 +433,33 @@ export default function RelationshipQuiz({ onBack }) {
   const { currentLang, playSfx } = useApp();
   const isAr = currentLang === 'ar';
   const t = isAr ? TEXT.ar : TEXT.en;
-  const [saved, setSaved] = useState(() => loadSaved());
-  const [phase, setPhase] = useState(saved ? 'result' : 'intro'); // intro | quiz | midpoint | scenario-intro | scenario | result
+  const [saved] = useState(() => loadSaved());
+  const [phase, setPhase] = useState(saved ? 'result' : 'intro'); // intro | target | quiz | midpoint | scenario-intro | scenario | result
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(saved || null);
+  const [target, setTarget] = useState(saved?.target || 'partner');
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const [scenarioAnswers, setScenarioAnswers] = useState({});
 
   const start = () => {
     playSfx?.('click');
     setAnswers({}); setIndex(0); setScenarioIndex(0); setScenarioAnswers({});
-    setPhase('quiz');
+    setPhase('target');
   };
 
   const finish = (scored, scenarioData) => {
-    const rec = { ...scored, scenarioAnswers: scenarioData || null, savedAt: Date.now() };
+    const rec = { ...scored, target, scenarioAnswers: scenarioData || null, savedAt: Date.now() };
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(rec)); } catch { /* ignore */ }
     markWellbeingPracticeDone('relationship-quiz');
     setResult(rec);
     playSfx?.('collect');
     setPhase('result');
+  };
+
+  const targetLabel = (id) => {
+    const tg = TARGETS.find((x) => x.id === id);
+    return tg ? (isAr ? tg.ar : tg.en) : '';
   };
 
   const answer = (val) => {
@@ -359,6 +507,7 @@ export default function RelationshipQuiz({ onBack }) {
     <PracticeShell title={t.title} accent={ACCENT} accentLit={ACCENT_LIT} isAr={isAr} onBack={onBack}>
       <style>{QUIZ_CSS}</style>
       <style>{QUAD_CSS}</style>
+      <style>{SAFETY_CSS}</style>
 
       {phase === 'intro' && (
         <div className="rxp-body rxp-center" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
@@ -372,9 +521,30 @@ export default function RelationshipQuiz({ onBack }) {
         </div>
       )}
 
+      {phase === 'target' && (
+        <div className="rxp-body" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
+          <div className="rxp-label" style={{ textAlign: 'center' }}>{t.targetTitle}</div>
+          <p className="qz-example">{t.targetHint}</p>
+          <div className="qz-choice-list">
+            {TARGETS.map((tg) => (
+              <button
+                key={tg.id}
+                type="button"
+                className={`qz-choice${target === tg.id ? ' on' : ''}`}
+                onClick={() => { playSfx?.('click'); setTarget(tg.id); }}
+              >
+                {tg.icon} {isAr ? tg.ar : tg.en}
+              </button>
+            ))}
+          </div>
+          <button className="rxp-primary" onClick={() => { playSfx?.('click'); setPhase('quiz'); }}>{t.scenarioContinue}</button>
+        </div>
+      )}
+
       {phase === 'quiz' && (
         <div className="rxp-body" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
           <div className="qz-progress" dir="ltr">{index + 1} / {ITEMS.length}</div>
+          <div className="qz-target-chip">{t.targetAbout(targetLabel(target))}</div>
           <div className="qz-item-text">{isAr ? ITEMS[index].ar : ITEMS[index].en}</div>
           <QuestionExample>{isAr ? ITEMS[index].exampleAr : ITEMS[index].example}</QuestionExample>
           <LikertRow value={answers[ITEMS[index].id] || null} onChange={answer} leftLabel={t.left} rightLabel={t.right} />
@@ -444,9 +614,21 @@ export default function RelationshipQuiz({ onBack }) {
         <div className="rxp-body" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
           <KawkabSay>{isAr ? styleInfo.takeawayAr : styleInfo.takeawayEn}</KawkabSay>
           <div className="rxp-label" style={{ textAlign: 'center' }}>{t.resultsTitle}</div>
+          {result.target && <div className="qz-target-chip">{t.targetAbout(targetLabel(result.target))}</div>}
           <Quadrant anxiety={result.anxiety} avoidance={result.avoidance} isAr={isAr} t={t} />
           <div style={{ textAlign: 'center', fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 700, fontSize: 26, color: styleInfo.color, marginTop: 4 }}>
             {isAr ? styleInfo.ar : styleInfo.en}
+          </div>
+          {/* ⚠ A label a tenth of a point from its own cut is a coin toss, and
+              presenting it with the same confidence as a clear one is how a
+              user reorganises their self-understanding around rounding. The
+              dimensions are the result; the name is a convenience. */}
+          {result.borderline && <p className="qz-borderline">{t.borderline}</p>}
+          <div className="qz-dims">
+            <div className="rxp-label">{t.dimTitle}</div>
+            <div className="qz-dim-row"><span>{t.axisAnxiety}</span><b dir="ltr">{result.anxiety.toFixed(1)} / 7</b></div>
+            <div className="qz-dim-row"><span>{t.axisAvoidance}</span><b dir="ltr">{result.avoidance.toFixed(1)} / 7</b></div>
+            <p className="qz-dim-note">{t.dimNote}</p>
           </div>
           <p style={{ fontSize: 14, lineHeight: 1.6, color: SUB, textAlign: 'center' }}>{isAr ? styleInfo.descAr : styleInfo.descEn}</p>
           <div style={{ padding: '13px 15px', borderRadius: 12, background: `${styleInfo.color}14`, borderInlineStart: `4px solid ${styleInfo.color}` }}>
@@ -481,6 +663,12 @@ export default function RelationshipQuiz({ onBack }) {
 
           <button className="rxp-ghost" onClick={start}>{t.retake}</button>
           <p className="qz-disclaimer" style={{ color: FAINT }}>{t.disclaimer}</p>
+          {/* ⚠ THE ONE PLACE THIS MOST NEEDED TO BE. A person can arrive here
+              having just answered twelve items about being left, be handed a
+              label, and read a paragraph about a caregiver who was also a
+              source of fear. Before 2026-09-07 the next thing on screen was
+              "Retake the quiz", and nothing else. */}
+          <SafetyNote isAr={isAr} />
         </div>
       )}
     </PracticeShell>
@@ -488,6 +676,15 @@ export default function RelationshipQuiz({ onBack }) {
 }
 
 const QUAD_CSS = `
+.qz-target-chip { align-self:center; font-size:11.5px; font-weight:800; letter-spacing:0.4px; color:${SUB};
+  background:var(--rx-card); border:1px solid var(--rx-hair); border-radius:999px; padding:5px 13px; }
+.qz-borderline { margin:0; font-size:12.5px; line-height:1.6; color:${SUB}; text-align:center;
+  padding:10px 14px; border-radius:12px; background:color-mix(in srgb, var(--rx-hue) 10%, transparent); }
+.qz-dims { display:flex; flex-direction:column; gap:6px; padding:13px 15px; border-radius:13px;
+  border:1px solid var(--rx-hair); background:var(--rx-card); }
+.qz-dim-row { display:flex; justify-content:space-between; align-items:baseline; font-size:13.5px; color:${SUB}; }
+.qz-dim-row b { font-size:15px; color:var(--rx-ink); font-variant-numeric:tabular-nums; }
+.qz-dim-note { margin:4px 0 0; font-size:11.5px; line-height:1.55; color:${FAINT}; }
 .qz-quad-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; }
 .qz-quad { position:relative; width:100%; max-width:280px; aspect-ratio:1; margin:0 auto; border-radius:16px; border:2px solid #e3d6c4; background:#fffdf8; }
 .qz-quad-cell { position:absolute; width:50%; padding:8px; font-size:10.5px; font-weight:800; line-height:1.25; text-align:center; }

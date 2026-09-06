@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 579,
+    "raw-colour": 566,
     "stacked-backdrops": 2,
     "conditional-background": 1
   },
@@ -97,14 +97,11 @@
       "raw-colour": 1
     },
     "src/features/relax/BreathePractice.jsx": {
-      "raw-colour": 5
+      "raw-colour": 1
     },
     "src/features/relax/DailyHabits.jsx": {
       "raw-colour": 99,
       "conditional-background": 1
-    },
-    "src/features/relax/GroundingPractice.jsx": {
-      "raw-colour": 7
     },
     "src/features/relax/HabitInsightsTab.jsx": {
       "raw-colour": 15
@@ -128,7 +125,10 @@
       "raw-colour": 5
     },
     "src/features/relax/PmrPractice.jsx": {
-      "raw-colour": 7
+      "raw-colour": 1
+    },
+    "src/features/relax/PracticeCheckIn.jsx": {
+      "raw-colour": 1
     },
     "src/features/relax/practices.js": {
       "raw-colour": 8
@@ -143,7 +143,7 @@
       "raw-colour": 13
     },
     "src/features/relax/RelaxScreen.jsx": {
-      "raw-colour": 136,
+      "raw-colour": 139,
       "stacked-backdrops": 1
     },
     "src/features/relax/SleepSoundsPractice.jsx": {

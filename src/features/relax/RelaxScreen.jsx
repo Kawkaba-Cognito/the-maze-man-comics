@@ -14,6 +14,8 @@ import { planetIconUrl } from '../../lib/planetIcons';
 import { OPEN_DAILY_KEY } from './HabitReminderBanner';
 import UniverseStage from '../../components/shared/UniverseStage';
 import { RELAX_PRACTICES } from './practices.js';
+import SafetyNote, { SAFETY_CSS } from './SafetyNote';
+import { NEED_STATES, MEASURED_PRACTICES, getPracticeStats } from './practiceLog';
 import './wellbeing.css';
 /* The personalization CONTROLS moved to Home (features/personalization/
  * NeuralPanel) — there is one model, so it now has one surface. What stays here
@@ -64,7 +66,12 @@ const DONTS = [
   { icon: '⚔️', title: "Don't Fight Thoughts", text: 'You cannot clear your mind. Just watch thoughts without following them.' },
   { icon: '⚖️', title: "Don't Judge the Session", text: 'Distracted the whole time and stayed? Showing up still counts.' },
   { icon: '😤', title: "Don't Force Relaxation", text: "Note 'tension is present' — chasing calm often makes it harder to find." },
-  { icon: '📅', title: "Don't Skip Days", text: 'Short on time? Do 5 minutes. Consistency is what builds the habit.' },
+  /* ⚠ This used to read "Don't Skip Days", which contradicted two things at
+     once: the non-striving rule three cards above it, and the Habits module in
+     this same feature, which deliberately ships grace days and skip reasons
+     because guilt is what drives people away from a wellbeing tool. A missed
+     day cannot mean one thing in Habits and the opposite here. */
+  { icon: '📅', title: "Don't Make Up for Lost Days", text: 'Missed one? Start again today — five minutes counts. A gap is not a debt to repay.' },
 ];
 
 const dateKey = (d) => { const dt = new Date(d); return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`; };
@@ -151,13 +158,24 @@ function MbsrTracker({ onBack }) {
   return (
     <div className="rx-wb rx-root" dir="ltr">
       <style>{CSS}</style>
+      <style>{SAFETY_CSS}</style>
       <div className="rx-app">
         <div className="header">
           <button className="rx-back" onClick={onBack} aria-label="Back">‹</button>
           <div className="header-row">
             <div>
-              <div className="header-sub">Mindfulness Protocol</div>
-              <div className="header-title serif">8-Week MBSR<br /><em>Tracker</em></div>
+              {/* ⚠ IT IS NOT CALLED "MBSR" ANY MORE (2026-09-07). MBSR is a
+                  specific manualised course: eight weekly ~2.5-hour classes
+                  with a certified teacher, group inquiry, a day-long silent
+                  retreat between weeks 6 and 7, mindful yoga, and the
+                  pleasant/unpleasant-events calendars. What ships here is a
+                  solo timer and a reading guide — a good self-guided programme,
+                  but MBSR's evidence base rests on the TAUGHT format, so
+                  wearing the name borrows credibility the format has not
+                  earned. "Inspired by" is the honest claim, and it costs
+                  nothing: see the guide tab for a pointer to the real course. */}
+              <div className="header-sub">Mindfulness Programme</div>
+              <div className="header-title serif">8 Weeks of<br /><em>Mindfulness</em></div>
             </div>
             <div className="header-stats">
               <div className="stat-num" style={{ color: '#c47a3e' }}>{streak}</div>
@@ -329,7 +347,19 @@ function MbsrTracker({ onBack }) {
 
               <div className="principle-card">
                 <div className="section-label" style={{ color: '#6b4d16' }}>Core principles</div>
-                {[['⚡', 'Minimum effective dose', 'About 20 minutes a day. Short and consistent beats long and rare.'], ['🚫', 'The non-striving rule', 'Don\'t try to "feel relaxed." Just notice what\'s happening — even if it\'s stress.'], ['🧬', 'Practice adds up', 'Several weeks of regular practice is linked, in studies, to better attention and stress regulation — and in some research, measurable brain changes.']].map(([icon, title, text]) => (
+                {/* ⚠ THE "MEASURABLE BRAIN CHANGES" CLAUSE IS GONE (2026-09-07),
+                    and it should not come back. It alluded to the 2011
+                    hippocampal grey-matter finding, which failed to replicate
+                    in a well-powered active-controlled RCT (Kral et al., 2022,
+                    Science Advances). It was the weakest sentence on the screen
+                    and the only one that could not be defended.
+
+                    What replaced it is stronger BECAUSE it is qualified: the
+                    honest comparison — against doing nothing vs. against
+                    another active programme — is the interesting part, and it
+                    is what stops a reader assuming a bigger effect than the
+                    evidence carries (Goyal et al., 2014, JAMA Intern Med). */}
+                {[['⚡', 'Minimum effective dose', 'About 20 minutes a day. Short and consistent beats long and rare.'], ['🚫', 'The non-striving rule', 'Don\'t try to "feel relaxed." Just notice what\'s happening — even if it\'s stress.'], ['🧬', 'What the evidence supports', 'Compared with doing nothing, mindfulness programmes show moderate improvements in anxiety and depression. Compared with another active programme, the advantage is smaller (Goyal et al., 2014).']].map(([icon, title, text]) => (
                   <div key={title} className="principle-item">
                     <div className="principle-icon">{icon}</div>
                     <div><div className="principle-title">{title}</div><div className="principle-text">{text}</div></div>
@@ -375,7 +405,33 @@ function MbsrTracker({ onBack }) {
                 ))}
               </div>
 
-              <div className="disclaimer">This is a self-guided practice for calm and focus — not medical treatment. If you're dealing with significant distress, please reach out to a professional.</div>
+              <div className="principle-card" style={{ marginTop: 6 }}>
+                <div className="section-label" style={{ color: '#6b4d16' }}>What this is, and what it isn't</div>
+                <div className="principle-text">
+                  This programme is <b>inspired by MBSR</b> (Mindfulness-Based Stress Reduction), not a copy of it.
+                  The real course is taught: eight weekly classes with a certified teacher, group discussion, and a
+                  day-long silent retreat — and that taught format is what the research was done on. If you want the
+                  original, free online versions of the full curriculum are offered by several universities.
+                </div>
+              </div>
+              {/* ⚠ Meditation is not inert, and an 8-week programme at 20–30
+                  minutes a day is a real dose. Distressing memories, feeling
+                  detached, or increased anxiety are documented and rise with
+                  practice time. One sentence here is the difference between a
+                  person pausing and a person concluding they are broken. */}
+              <div className="principle-card">
+                <div className="section-label" style={{ color: '#6b4d16' }}>If practice starts to feel bad</div>
+                <div className="principle-text">
+                  Sitting quietly with your attention can bring up difficult memories or feelings, or a sense of being
+                  detached from yourself. That is a known effect of meditation, not a sign you are doing it wrong or that
+                  something is wrong with you. Stop, open your eyes, move around — and if it keeps happening, talk to
+                  someone before continuing.
+                </div>
+              </div>
+              <div className="disclaimer">This is a self-guided practice for calm and focus — not medical treatment.</div>
+              {/* The tracker root already carries `rx-wb`, which is what scopes
+                  the --rx-* tokens SafetyNote styles itself with. */}
+              <SafetyNote isAr={false} />
             </>
           )}
         </div>
@@ -728,6 +784,86 @@ function ReorderList({ items, disabled, onCommit, children }) {
 
 const FAV_GOLD = '#d9a520';
 
+/**
+ * The one-line record under a practice's name: how many times, and what it
+ * usually does for this person. Renders nothing until the practice has been
+ * done at least once, and mentions the average drop only once two rated
+ * sessions exist — one session is an anecdote, and stating it as "usually"
+ * would be the app inventing a pattern out of a single data point.
+ */
+function PracticeStatLine({ practiceId, isAr }) {
+  const s = useMemo(() => (MEASURED_PRACTICES.has(practiceId) ? getPracticeStats(practiceId) : null), [practiceId]);
+  if (!s || !s.runs) return null;
+  const runs = isAr
+    ? `${s.runs} ${s.runs === 1 ? 'جلسة' : 'جلسات'}`
+    : `${s.runs} ${s.runs === 1 ? 'session' : 'sessions'}`;
+  const usually = s.ratedRuns >= 2 && s.avgDrop > 0
+    ? (isAr ? ` · عادةً ${Math.round(s.avgDrop * 10) / 10}− نقطة` : ` · usually −${Math.round(s.avgDrop * 10) / 10}`)
+    : '';
+  return <span className="rx-menu-stat">{runs}{usually} · {isAr ? s.tier.ar : s.tier.en}</span>;
+}
+
+/*
+ * NeedStrip — "not sure which? tell me what's going on."
+ *
+ * ⚠ IT LIVES INSIDE THE CATEGORY SCREENS, NOT ON THE LANDING (owner's call,
+ * 2026-09-07). The landing is out of scope and its markup stays byte-identical;
+ * see the note above `detailHeader`. So the strip is scoped to the area you have
+ * already opened, and only renders where that area holds at least two distinct
+ * answers — in practice Stress & Calm and Sleep, which is where a person arrives
+ * needing a decision made for them rather than a menu to browse.
+ *
+ * ⚠ THE REASON IS THE PAYLOAD, WHICH IS WHY A CHIP DOES NOT OPEN THE PRACTICE
+ * DIRECTLY. Tapping reveals WHY that tool suits that state — grounding rather
+ * than breathing for panic, because breath-focus mid-panic can amplify the
+ * interoceptive cues the panic is feeding on. A router that silently teleports
+ * you teaches nothing and has to be re-consulted every time; one that explains
+ * itself is teaching you to choose for yourself, which is the actual goal.
+ */
+function NeedStrip({ cat, isAr, playSfx, onOpen }) {
+  const [openId, setOpenId] = useState(null);
+
+  // Only the states this area can actually answer, one chip per practice.
+  const states = useMemo(() => {
+    const items = new Set(cat.items || []);
+    const seen = new Set();
+    return NEED_STATES.filter((n) => {
+      if (!items.has(n.practice) || seen.has(n.practice)) return false;
+      seen.add(n.practice);
+      return true;
+    });
+  }, [cat]);
+
+  if (states.length < 2) return null;
+  const open = states.find((s) => s.id === openId);
+
+  return (
+    <div className="rx-need">
+      <div className="rx-need-q">{isAr ? 'لست متأكداً أيّها تختار؟ ما الذي يحدث الآن؟' : "Not sure which? What's going on right now?"}</div>
+      <div className="rx-need-chips">
+        {states.map((n) => (
+          <button
+            key={n.id}
+            type="button"
+            className={`rx-need-chip${openId === n.id ? ' on' : ''}`}
+            onClick={() => { playSfx?.('click'); setOpenId(openId === n.id ? null : n.id); }}
+          >
+            <span aria-hidden="true">{n.icon}</span> {isAr ? n.ar : n.en}
+          </button>
+        ))}
+      </div>
+      {open && (
+        <div className="rx-need-why">
+          <p>{isAr ? open.whyAr : open.whyEn}</p>
+          <button type="button" className="rx-need-go" onClick={() => onOpen(open.practice)}>
+            {isAr ? 'افتحها' : 'Open it'} {isAr ? '←' : '→'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RelaxMenu({ isAr, onOpen, playSfx }) {
   const { appTheme, toggleLang } = useApp();
   const dark = appTheme !== 'light';
@@ -778,6 +914,11 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
         <span className="rx-menu-body">
           <span className="rx-menu-title">{isAr ? o.titleAr : o.title}</span>
           <span className="rx-menu-sub">{isAr ? o.subAr : o.sub}</span>
+          {/* ⚠ Shown only once there is something true to say. An empty
+              "0 sessions · no data" on every card would turn a menu of
+              invitations into a list of things you have failed to do — which is
+              precisely the pressure this feature is supposed to be free of. */}
+          <PracticeStatLine practiceId={o.id} isAr={isAr} />
         </span>
         <span className="rx-menu-tail">
           <span
@@ -889,6 +1030,12 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
           <div className="content">
             {cat.items ? (
               <>
+                <NeedStrip
+                  cat={cat}
+                  isAr={isAr}
+                  playSfx={playSfx}
+                  onOpen={openPersonalizedPractice}
+                />
                 <div className="rx-seg">
                   <button className={`rx-seg-btn${group === 'program' ? ' on' : ''}`} onClick={() => setGroup('program')}>{isAr ? 'برامج' : 'Programs'}</button>
                   <button className={`rx-seg-btn${group === 'quick' ? ' on' : ''}`} onClick={() => setGroup('quick')}>{isAr ? 'سريعة' : 'Quick'}</button>
@@ -898,6 +1045,12 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
                   : soonState(group === 'program' ? '🗺️' : '⚡', `${cat.color}1f`, isAr ? 'قريباً' : 'Coming soon', emptyDesc)}
               </>
             ) : soonState(cat.icon, `${cat.color}1f`, isAr ? 'قريباً' : 'Coming soon', isAr ? cat.soonAr : cat.soon)}
+            {/* ⚠ The crisis route sits on every category screen, which is the
+                furthest out it can go while the landing stays out of scope
+                (owner, 2026-09-06). Every practice in this feature is reached
+                through one of these five screens, so no path into Wellbeing is
+                left without it. */}
+            <SafetyNote isAr={isAr} />
           </div>
         </div>
       </div>
@@ -1406,6 +1559,24 @@ const MENU_CSS = `
 .rx-root .rx-menu-body { display:flex; flex-direction:column; gap:4px; flex:1; }
 .rx-root .rx-menu-title { font-family:Outfit,${SANS}; font-weight:800; font-size:18px; color:var(--universe-ink); }
 .rx-root .rx-menu-sub { font-size:12.5px; color:var(--universe-muted); line-height:1.5; }
+.rx-root .rx-menu-stat { display:block; margin-top:5px; font-size:11px; font-weight:800; letter-spacing:0.3px;
+  color:var(--rx-hue-lit, var(--universe-accent)); }
+
+/* ── the "what's going on right now?" router (category screens only) ── */
+.rx-root .rx-need { margin-bottom:14px; padding:13px 14px; border-radius:15px;
+  border:1px solid var(--rx-hair); background:var(--rx-card); box-shadow:var(--elev-rest); }
+.rx-root .rx-need-q { font-size:12.5px; font-weight:800; color:var(--rx-ink); margin-bottom:9px; line-height:1.45; }
+.rx-root .rx-need-chips { display:flex; flex-wrap:wrap; gap:7px; }
+.rx-root .rx-need-chip { padding:8px 13px; border-radius:999px; border:1px solid var(--rx-hair);
+  background:transparent; color:var(--rx-sub); font-size:12.5px; font-weight:700; cursor:pointer;
+  font-family:inherit; transition:border-color .15s, background .15s, color .15s; }
+.rx-root .rx-need-chip.on { border-color:var(--rx-hue); background:color-mix(in srgb, var(--rx-hue) 16%, transparent); color:var(--rx-ink); }
+.rx-root .rx-need-why { margin-top:11px; padding-top:11px; border-top:1px dashed var(--rx-hair); }
+.rx-root .rx-need-why p { margin:0 0 9px; font-size:12.5px; color:var(--rx-sub); line-height:1.6; }
+.rx-root .rx-need-go { padding:9px 16px; border-radius:11px; border:1px solid color-mix(in srgb, var(--rx-hue) 55%, transparent);
+  background:var(--rx-hue); color:#fff; font-size:13px; font-weight:750; cursor:pointer; font-family:inherit;
+  box-shadow:var(--elev-rest); }
+.rx-root .rx-need-go:active { box-shadow:var(--elev-press); }
 .rx-root .rx-menu-chev { font-size:28px; font-weight:700; flex-shrink:0; color:var(--universe-accent); }
 .rx-root .rx-menu-more { text-align:center; font-size:12px; color:var(--universe-muted); margin-top:6px; }
 .rx-root .rx-cat-tile { display:flex; align-items:center; gap:14px; width:100%; text-align:start;

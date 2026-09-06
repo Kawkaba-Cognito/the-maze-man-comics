@@ -10,10 +10,15 @@
 // The practice registry (each opens a full-screen practice). Categories below
 // reference these by id; a practice may appear in more than one category.
 export const RELAX_PRACTICES = [
+  /* ⚠ NOT "MBSR" — see the header note in RelaxScreen's MbsrTracker. MBSR is a
+     specific taught course, and the evidence people mean when they say the word
+     was collected on that taught format. This is a self-guided programme built
+     on the same practices, which is a fair thing to offer and a different thing
+     to claim. The `id` stays 'mbsr' so no saved progress or habit link breaks. */
   { id: 'mbsr', icon: '🧘', color: '#c47a3e',
-    title: '8-Week MBSR', titleAr: 'اليقظة الذهنية — ٨ أسابيع',
-    sub: 'Mindfulness-Based Stress Reduction — a guided daily practice with a timer, an 8-week tracker and a full guide.',
-    subAr: 'برنامج اليقظة الذهنية للحدّ من التوتر — ممارسة يومية موجّهة مع مؤقّت ومتابعة ٨ أسابيع ودليل كامل.' },
+    title: '8 Weeks of Mindfulness', titleAr: 'اليقظة الذهنية — ٨ أسابيع',
+    sub: 'A self-guided daily programme inspired by MBSR — a timer, an 8-week tracker and a full guide.',
+    subAr: 'برنامج يومي ذاتي التوجيه مستوحى من MBSR — مؤقّت ومتابعة ٨ أسابيع ودليل كامل.' },
   { id: 'breathe', icon: '🫁', color: '#5aa9c8',
     title: 'Breathe', titleAr: 'تنفّس',
     sub: 'A guided breathing pacer — box, 4-7-8, coherent & physiological-sigh patterns.',

@@ -25,7 +25,11 @@ export const QUIZ_CSS = `
 .qz-trait { margin-bottom:18px; }
 .qz-trait-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; gap:8px; }
 .qz-trait-name { font-weight:800; font-size:14.5px; color:${INK}; }
-.qz-trait-val { font-weight:800; font-size:13px; flex-shrink:0; }
+/* ⚠ This carries a BAND ("Higher than most") rather than the bare number it
+   used to, so it needs room to be a phrase without pushing the trait name off
+   the row — hence the smaller size and the end-alignment. See bandFor() in
+   PersonalityQuiz for why a two-item scale must not print a point estimate. */
+.qz-trait-val { font-weight:800; font-size:11.5px; flex-shrink:0; text-align:end; max-width:52%; letter-spacing:0.2px; }
 .qz-trait-track { height:10px; border-radius:6px; background:color-mix(in srgb, var(--rx-ink) 12%, var(--rx-card)); overflow:hidden; }
 .qz-trait-fill { height:100%; border-radius:6px; transition:width .6s cubic-bezier(.2,.9,.3,1); }
 .qz-trait-blurb { font-size:12.5px; color:${SUB}; line-height:1.55; margin-top:6px; }

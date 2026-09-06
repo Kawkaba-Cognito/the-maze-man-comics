@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import PracticeShell, { PracticeHero, SUB, FAINT } from './PracticeShell';
 import { QUIZ_CSS, LikertRow, TraitBar, KawkabSay, ScenarioChoice, QuestionExample, DeeperScience } from './quizShared';
 import { markWellbeingPracticeDone } from './habitState';
+import SafetyNote, { SAFETY_CSS } from './SafetyNote';
 
 /*
  * Big Five Personality quiz — the Ten-Item Personality Inventory (TIPI;
@@ -77,8 +78,15 @@ const TRAITS = [
   {
     id: 'conscientiousness', color: '#c9a24b',
     en: 'Conscientiousness', ar: 'الضمير الحي (الانضباط)',
-    blurbEn: 'Organization, discipline, and follow-through. The single strongest Big Five predictor of job performance across occupations (Barrick & Mount, 1991 meta-analysis, r ≈ .31), and linked to a longer lifespan.',
-    blurbAr: 'التنظيم والانضباط والمثابرة. أقوى سمة من العوامل الخمسة في التنبّؤ بالأداء الوظيفي عبر مختلف المهن (Barrick & Mount, 1991)، ويرتبط أيضاً بعمر أطول.',
+    /* ⚠ THE NUMBER WAS WRONG AND IS NOW GONE (2026-09-07). This claimed
+       "r ≈ .31" for Barrick & Mount (1991); that meta-analysis reported a
+       corrected validity nearer ρ ≈ .22. Worse, quoting any single figure here
+       is now hard to defend at all: Sackett et al. (2022) argue that the
+       corrected personality–performance validities quoted for thirty years were
+       systematically overstated. The direction of the finding survives that
+       re-analysis; the decimal does not, so the claim is stated without one. */
+    blurbEn: 'Organization, discipline, and follow-through. Of the Big Five it is the most consistent predictor of job performance across occupations (Barrick & Mount, 1991), though how large that effect really is has been revised downward (Sackett et al., 2022). Also linked to a longer lifespan.',
+    blurbAr: 'التنظيم والانضباط والمثابرة. هي أكثر سمات العوامل الخمسة اتساقاً في التنبّؤ بالأداء الوظيفي عبر المهن (Barrick & Mount, 1991)، وإن كان حجم هذا الأثر قد رُوجع نزولاً في تحليلات أحدث (Sackett et al., 2022). وترتبط أيضاً بعمر أطول.',
     tryEn: 'This week: pick the task you keep avoiding and give it just 10 focused minutes today.',
     tryAr: 'هذا الأسبوع: اختر المهمة التي تتجنّبها أكثر وامنحها ١٠ دقائق مركّزة اليوم فقط.',
     deeperEn: "This trait rises naturally through your 20s and 30s for most people — researchers call it \"the maturity principle\" (Roberts, Walton & Viechtbauer, 2006). If your score feels lower than you'd like right now, that's partly just where you are in life, not a fixed ceiling — and it's the single most trainable Big Five trait through habits and structure.",
@@ -91,8 +99,12 @@ const TRAITS = [
     blurbAr: 'الاجتماعية والحزم والطاقة المستمدّة من التفاعل مع الآخرين. يرتبط باستمرار بمزاج يومي أكثر إيجابية ورضا أعلى عن الحياة (DeNeve & Cooper, 1998).',
     tryEn: "This week: notice what actually refills your energy after a long day — and do more of that, even if it's not what others expect of you.",
     tryAr: 'هذا الأسبوع: لاحظ ما الذي يعيد لك طاقتك فعلاً بعد يوم طويل، وافعل المزيد منه — حتى لو لم يكن ما يتوقّعه الآخرون منك.',
-    deeperEn: "Extraversion isn't \"more social\" as a virtue — introverts have equally rich social lives, just calibrated to smaller doses and quieter settings. What differs is where energy comes from: extraverts tend to run at lower baseline nervous-system arousal and seek stimulation to feel their best, while introverts are often already there (Eysenck's arousal theory).",
-    deeperAr: 'الانبساط ليس معناه "أكثر اجتماعية" كفضيلة — فالمنطوون يعيشون حياة اجتماعية غنية بالقدر ذاته، لكن بجرعات أصغر وأجواء أهدأ. الفرق الحقيقي هو مصدر الطاقة: يميل المنبسطون لمستوى يقظة عصبية أساسي أقل فيبحثون عن التحفيز ليشعروا بأفضل حال، بينما يكون المنطوون غالباً في تلك الحالة أصلاً (نظرية الاستثارة لآيزنك).',
+    /* ⚠ Eysenck's cortical-arousal account is stated as a HYPOTHESIS now, in
+       both places it appears. It is a historically important idea that modern
+       psychophysiology has not cleanly supported, and it was written here as
+       settled mechanism. */
+    deeperEn: "Extraversion isn't \"more social\" as a virtue — introverts have equally rich social lives, just calibrated to smaller doses and quieter settings. What differs is where energy comes from. One long-standing explanation (Eysenck's arousal theory) proposed that extraverts run at lower baseline arousal and seek stimulation to feel their best, while introverts are already there; it is a useful picture, though the evidence for the mechanism itself is still debated.",
+    deeperAr: 'الانبساط ليس معناه "أكثر اجتماعية" كفضيلة — فالمنطوون يعيشون حياة اجتماعية غنية بالقدر ذاته، لكن بجرعات أصغر وأجواء أهدأ. الفرق الحقيقي هو مصدر الطاقة. ويقترح تفسير قديم (نظرية الاستثارة لآيزنك) أن المنبسطين لديهم مستوى يقظة أساسي أقل فيبحثون عن التحفيز، بينما يكون المنطوون في تلك الحالة أصلاً؛ وهي صورة مفيدة، وإن كانت الأدلة على الآلية نفسها ما تزال محلّ جدل.',
   },
   {
     id: 'agreeableness', color: '#6fae7a',
@@ -109,8 +121,12 @@ const TRAITS = [
     en: 'Emotional Stability', ar: 'الاستقرار العاطفي',
     blurbEn: "Calm under pressure vs. reactivity to stress (psychology calls the low end of this \"Neuroticism\"). It's one of the strongest personality predictors of anxiety and mood — and also one of the most responsive to therapy and sustained practice (Roberts et al., 2017 meta-analysis).",
     blurbAr: 'الهدوء تحت الضغط مقابل سرعة التأثر بالتوتر (يسمّي علم النفس الطرف المنخفض منها "العصابية"). من أقوى سمات الشخصية المرتبطة بالقلق والمزاج — وأيضاً من أكثرها قابلية للتحسّن بالعلاج والممارسة المستمرّة (Roberts et al., 2017).',
-    tryEn: "This week: when you feel stress rising, name it out loud (\"I'm anxious right now\") before reacting — naming an emotion measurably calms its grip (Lieberman et al., 2007).",
-    tryAr: 'هذا الأسبوع: عندما تلاحظ ارتفاع توترك، سمِّه بصوت مسموع ("أشعر بالقلق الآن") قبل أن تتصرّف — تسمية المشاعر تُهدّئ تأثيرها فعلياً بحسب الأبحاث (Lieberman et al., 2007).',
+    /* ⚠ Softened: the Lieberman (2007) finding is reduced amygdala response
+       when an emotion is labelled. Effects on what a person REPORTS feeling are
+       more mixed, and "measurably calms its grip" quietly promised the second
+       thing while citing the first. */
+    tryEn: "This week: when you feel stress rising, name it out loud (\"I'm anxious right now\") before reacting. Putting a feeling into words changes how the brain's threat circuitry responds to it (Lieberman et al., 2007) — and it buys you the half-second before the reaction.",
+    tryAr: 'هذا الأسبوع: عندما تلاحظ ارتفاع توترك، سمِّه بصوت مسموع ("أشعر بالقلق الآن") قبل أن تتصرّف. تحويل الشعور إلى كلمات يغيّر استجابة دوائر التهديد في الدماغ له (Lieberman et al., 2007) — ويمنحك نصف الثانية التي تسبق ردّ الفعل.',
     deeperEn: 'This is the Big Five trait most responsive to intervention — cognitive behavioral therapy, mindfulness training, and even regular exercise measurably shift it over months, not years (Roberts et al., 2017 meta-analysis). A lower score today is a snapshot of where your nervous system is right now, not a fixed diagnosis or a life sentence.',
     deeperAr: 'هذه أكثر سمات العوامل الخمسة استجابة للتدخّل العلاجي — فالعلاج المعرفي السلوكي، وتدريب اليقظة الذهنية، وحتى الرياضة المنتظمة، تُحدث تغييراً ملموساً خلال أشهر لا سنوات (Roberts et al., 2017). النتيجة المنخفضة اليوم هي لقطة لحالة جهازك العصبي الآن، لا تشخيصاً ثابتاً ولا حكماً مؤبّداً.',
   },
@@ -152,8 +168,8 @@ const SCENARIOS = [
       { id: 'a', en: 'Text people, go out, be around noise and energy.', ar: 'أراسل أصدقائي، أخرج، أكون وسط الضجيج والطاقة.' },
       { id: 'b', en: 'Home, quiet, just recharge alone.', ar: 'أبقى في المنزل، بهدوء، أستعيد طاقتي وحدي.' },
     ],
-    reactionEn: 'Extraverts tend to run at lower baseline arousal, so they seek stimulation to feel their best; introverts are often already there, and seek less of it (Eysenck\'s arousal theory).',
-    reactionAr: 'غالباً ما يكون مستوى اليقظة العصبية الأساسي لدى المنبسطين أقل، فيبحثون عن التحفيز ليشعروا بأفضل حال؛ بينما يكون المنطوون غالباً في تلك الحالة أصلاً، فيميلون لتحفيز أقل (نظرية الاستثارة لآيزنك).',
+    reactionEn: 'Neither answer is the healthy one — what differs is where your energy comes back from. One classic account (Eysenck\'s arousal theory, still debated) put this down to a difference in baseline arousal: seeking stimulation versus already having enough.',
+    reactionAr: 'لا إجابة منهما هي "الصحية" — الفرق هو من أين تعود طاقتك. ويعزو تفسير كلاسيكي (نظرية الاستثارة لآيزنك، وما تزال محلّ جدل) ذلك إلى اختلاف في مستوى اليقظة الأساسي: البحث عن التحفيز مقابل امتلاك ما يكفي منه أصلاً.',
   },
 ];
 
@@ -179,6 +195,7 @@ const TEXT = {
     scenarioSeeResults: 'See my results',
     resultsTitle: 'Your Big Five profile',
     moreLabel: 'Go deeper into the research', lessLabel: 'Show less',
+    normsNote: '"Higher" and "lower" compare you against approximate published averages for this questionnaire — largely Western internet samples, not norms from this app. And with only two questions per trait, treat each as a rough band rather than a precise score: a retake will wobble a little without anything about you having changed.',
     closingTitle: 'What the science says about all five',
     closing: 'Big Five traits are roughly 40–60% heritable in twin studies (Jang, Livesley & Vernon, 1996) and show up in essentially the same structure across 50+ cultures (McCrae & Terracciano, 2005) — this is real, stable wiring, not a mood. But "stable" isn\'t "fixed": traits shift gradually across adulthood with sustained effort and new life experience (Roberts, Walton & Viechtbauer, 2006). None of these are good or bad — every trait trades strengths for costs depending on the situation.',
   },
@@ -203,6 +220,7 @@ const TEXT = {
     scenarioSeeResults: 'شاهد نتيجتي',
     resultsTitle: 'ملفّك في العوامل الخمسة',
     moreLabel: 'تعمّق أكثر في البحث العلمي', lessLabel: 'عرض أقل',
+    normsNote: 'كلمتا "أعلى" و"أقل" تقارنانك بمتوسطات منشورة تقريبية لهذا الاستبيان — من عيّنات إنترنت غربية غالباً، لا معايير من هذا التطبيق. ومع سؤالين فقط لكل سمة، اعتبر كل نتيجة نطاقاً تقريبياً لا درجة دقيقة: إعادة الاختبار ستتذبذب قليلاً دون أن يتغيّر فيك شيء.',
     closingTitle: 'ماذا يقول العلم عن العوامل الخمسة كلّها',
     closing: 'سمات العوامل الخمسة موروثة بنسبة تقارب ٤٠-٦٠٪ بحسب دراسات التوائم (Jang, Livesley & Vernon, 1996)، وتظهر بنفس البنية تقريباً عبر أكثر من ٥٠ ثقافة حول العالم (McCrae & Terracciano, 2005) — أي أنها توصيل حقيقي وثابت في الشخصية، وليست مزاجاً عابراً. لكن "الثبات" لا يعني "الجمود": هذه السمات تتغيّر تدريجياً خلال مراحل البلوغ مع الجهد المستمر والتجارب الجديدة (Roberts, Walton & Viechtbauer, 2006). لا توجد سمة "جيدة" أو "سيئة" — فكل سمة تحمل مزايا وتكاليف بحسب الموقف.',
   },
@@ -234,15 +252,63 @@ function scoreTraits(answers) {
   return traits;
 }
 
-/** The two most distinctive traits (furthest from the midpoint, high or low), turned into one plain-language sentence. */
+/*
+ * ⚠ 50 IS NOT AVERAGE, AND TREATING IT AS ONE BIASED EVERY RESULT (2026-09-07).
+ *
+ * The old takeaway ranked traits by distance from the midpoint of the bar. But
+ * the midpoint of a scale is not the middle of a population: on the TIPI,
+ * published means sit WELL above the midpoint for agreeableness (~5.2/7) and
+ * conscientiousness (~5.4/7) and near it for extraversion. So "your two most
+ * distinctive traits" systematically selected the same two traits for almost
+ * everybody, and a perfectly average-agreeable person was told that warmth was
+ * one of the two things that defines them.
+ *
+ * Comparison is now against approximate published TIPI norms (Gosling, Rentfrow
+ * & Swann, 2003 and the norms distributed with it), which is what makes "higher
+ * than most people" a statement about other people rather than about the
+ * geometry of a progress bar.
+ *
+ * ⚠ THEY ARE APPROXIMATE, LARGELY WESTERN INTERNET-SAMPLE NORMS, and the
+ * results screen says so. Presenting a precise percentile off a 2-item scale
+ * would be a bigger lie than the one being fixed.
+ */
+const NORMS = {
+  openness: { m: 5.38, sd: 1.07 },
+  conscientiousness: { m: 5.40, sd: 1.32 },
+  extraversion: { m: 4.44, sd: 1.45 },
+  agreeableness: { m: 5.23, sd: 1.11 },
+  stability: { m: 4.83, sd: 1.42 },
+};
+
+/** The bar stores 0–100; the norms live on the original 1–7 scale. */
+const rawFromPct = (pct) => 1 + (pct / 100) * 6;
+const zFor = (id, pct) => (rawFromPct(pct) - NORMS[id].m) / NORMS[id].sd;
+
+/*
+ * ⚠ A BAND, NOT A POINT. The TIPI measures each trait with TWO items, which
+ * carries a lot of measurement error — its own authors describe it as the
+ * measure to use when brevity matters more than precision, and say outright not
+ * to prefer it over longer instruments. Rendering "78" invites the user to read
+ * a precision that is not there, and then a retake moves several points on noise
+ * alone and reads as their personality having changed. Three bands are about as
+ * much resolution as two items can honestly support.
+ */
+export function bandFor(id, pct, isAr) {
+  const z = zFor(id, pct);
+  if (z >= 0.5) return isAr ? 'أعلى من معظم الناس' : 'Higher than most';
+  if (z <= -0.5) return isAr ? 'أقل من معظم الناس' : 'Lower than most';
+  return isAr ? 'قريب من المتوسط' : 'About average';
+}
+
+/** The two traits furthest from the population average, in either direction. */
 function buildTakeaway(traits, isAr) {
-  const entries = TRAITS.map((t) => ({ id: t.id, v: traits[t.id] }));
-  entries.sort((a, b) => Math.abs(b.v - 50) - Math.abs(a.v - 50));
+  const entries = TRAITS.map((t) => ({ id: t.id, z: zFor(t.id, traits[t.id]) }));
+  entries.sort((a, b) => Math.abs(b.z) - Math.abs(a.z));
   const [first, second] = entries;
   const phrase = (e) => {
     const p = PLAIN[e.id];
-    if (isAr) return e.v >= 50 ? p.highAr : p.lowAr;
-    return e.v >= 50 ? p.highEn : p.lowEn;
+    if (isAr) return e.z >= 0 ? p.highAr : p.lowAr;
+    return e.z >= 0 ? p.highEn : p.lowEn;
   };
   return isAr
     ? `بعبارة بسيطة: ${phrase(first)}، و${phrase(second)}. هذا مزيجك الحالي — ليس حكماً نهائياً.`
@@ -318,6 +384,7 @@ export default function PersonalityQuiz({ onBack }) {
   return (
     <PracticeShell title={t.title} accent={ACCENT} accentLit={ACCENT_LIT} isAr={isAr} onBack={onBack}>
       <style>{QUIZ_CSS}</style>
+      <style>{SAFETY_CSS}</style>
 
       {phase === 'intro' && (
         <div className="rxp-body rxp-center" style={{ '--rx-hue': ACCENT, '--rx-hue-lit': ACCENT_LIT }}>
@@ -411,7 +478,7 @@ export default function PersonalityQuiz({ onBack }) {
               label={isAr ? tr.ar : tr.en}
               value={traits[tr.id]}
               color={tr.color}
-              valueLabel={`${traits[tr.id]}`}
+              valueLabel={bandFor(tr.id, traits[tr.id], isAr)}
               tryThis={isAr ? tr.tryAr : tr.tryEn}
             >
               {isAr ? tr.blurbAr : tr.blurbEn}
@@ -424,8 +491,10 @@ export default function PersonalityQuiz({ onBack }) {
             <div style={{ fontWeight: 800, fontSize: 13.5, color: ACCENT, marginBottom: 6 }}>{t.closingTitle}</div>
             <div style={{ fontSize: 12.5, lineHeight: 1.6, color: SUB }}>{t.closing}</div>
           </div>
+          <p className="qz-disclaimer">{t.normsNote}</p>
           <button className="rxp-ghost" onClick={start}>{t.retake}</button>
           <p className="qz-disclaimer" style={{ color: FAINT }}>{t.disclaimer}</p>
+          <SafetyNote isAr={isAr} />
         </div>
       )}
     </PracticeShell>
