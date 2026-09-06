@@ -254,43 +254,22 @@ html[data-home-theme='dark'] .rx-wb {
   border-color: var(--rx-hair);
 }
 
-/* ── the guide ─────────────────────────────────────────────────────────────
- * Dr Kawkab, the same character the Training hub puts at its centre. Not a
- * decoration: Wellbeing had no character at all on its landing while Training
- * had one, and the two quizzes drew a DIFFERENT mascot (the retired
- * kawkab-face.png sprite) under the words "Hi, I'm Kawkab!".
+/*
+ * ⚠ THERE IS NO LANDING GUIDE HERE, AND THAT IS ON PURPOSE (2026-09-06).
+ *
+ * A `.rx-guide` / `.rx-guide-art` / `.rx-guide-line` set briefly put Dr Kawkab
+ * at the foot of the Wellbeing constellation, speaking the "tap any planet"
+ * hint. The owner reverted it: **the outer landing stays as it was, and this
+ * work belongs inside the planets.** The rules are deleted rather than left
+ * unused, because a dead selector in a palette file is an invitation to wire it
+ * back up.
+ *
+ * Dr Kawkab is still fixed where he was genuinely WRONG rather than absent:
+ * `quizShared.jsx` drew the retired `kawkab-face.png` sprite under the words
+ * "Hi, I'm Kawkab!", and `habitReminders.js` shipped a fox. Both now use the
+ * shared `KawkabSprite`. That is inside the planets; the constellation is not.
  */
-.rx-guide {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  pointer-events: none;
-}
-
-.rx-guide-art {
-  filter: drop-shadow(0 6px 10px var(--fx-shadow-drop));
-  animation: rx-guide-float 6.5s ease-in-out infinite;
-}
-
-.rx-guide-line {
-  max-width: 20rem;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: var(--rx-card);
-  border: 1px solid var(--rx-hair);
-  box-shadow: var(--elev-rest);
-  color: var(--rx-ink);
-  font-size: 13.5px;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-@keyframes rx-guide-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .rx-guide-art { animation: none; }
   .rx-body { transition: none; }
 }

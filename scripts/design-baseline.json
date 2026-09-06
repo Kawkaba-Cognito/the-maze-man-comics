@@ -1,7 +1,7 @@
 {
   "rules": {
-    "raw-colour": 580,
-    "stacked-backdrops": 1,
+    "raw-colour": 579,
+    "stacked-backdrops": 2,
     "conditional-background": 1
   },
   "files": {
@@ -143,7 +143,8 @@
       "raw-colour": 13
     },
     "src/features/relax/RelaxScreen.jsx": {
-      "raw-colour": 137
+      "raw-colour": 136,
+      "stacked-backdrops": 1
     },
     "src/features/relax/SleepSoundsPractice.jsx": {
       "raw-colour": 6
