@@ -3,28 +3,28 @@ import { assetUrl } from '../../../lib/assetUrl';
 
 const DOMAIN_BACKGROUNDS = Object.freeze({
   attention: {
-    desktop: 'Assets/training/domain-backgrounds-2026-v2/desktop/attention.webp',
-    mobile: 'Assets/training/domain-backgrounds-2026-v2/mobile/attention.webp',
+    desktop: 'Assets/training/domain-backgrounds-universal-v1/desktop.webp',
+    mobile: 'Assets/training/domain-backgrounds-universal-v1/mobile.webp',
   },
   speed: {
-    desktop: 'Assets/training/domain-backgrounds-2026-v2/desktop/speed.webp',
-    mobile: 'Assets/training/domain-backgrounds-2026-v2/mobile/speed.webp',
+    desktop: 'Assets/training/domain-backgrounds-universal-v1/desktop.webp',
+    mobile: 'Assets/training/domain-backgrounds-universal-v1/mobile.webp',
   },
   memory: {
-    desktop: 'Assets/training/domain-backgrounds-2026-v2/desktop/memory.webp',
-    mobile: 'Assets/training/domain-backgrounds-2026-v2/mobile/memory.webp',
+    desktop: 'Assets/training/domain-backgrounds-universal-v1/desktop.webp',
+    mobile: 'Assets/training/domain-backgrounds-universal-v1/mobile.webp',
   },
   language: {
-    desktop: 'Assets/training/domain-backgrounds-2026-v2/desktop/language.webp',
-    mobile: 'Assets/training/domain-backgrounds-2026-v2/mobile/language.webp',
+    desktop: 'Assets/training/domain-backgrounds-universal-v1/desktop.webp',
+    mobile: 'Assets/training/domain-backgrounds-universal-v1/mobile.webp',
   },
   reasoning: {
-    desktop: 'Assets/training/domain-backgrounds-2026-v2/desktop/reasoning.webp',
-    mobile: 'Assets/training/domain-backgrounds-2026-v2/mobile/reasoning.webp',
+    desktop: 'Assets/training/domain-backgrounds-universal-v1/desktop.webp',
+    mobile: 'Assets/training/domain-backgrounds-universal-v1/mobile.webp',
   },
   flexibility: {
-    desktop: 'Assets/training/domain-backgrounds-2026-v2/desktop/flexibility.webp',
-    mobile: 'Assets/training/domain-backgrounds-2026-v2/mobile/flexibility.webp',
+    desktop: 'Assets/training/domain-backgrounds-universal-v1/desktop.webp',
+    mobile: 'Assets/training/domain-backgrounds-universal-v1/mobile.webp',
   },
 });
 

@@ -3038,3 +3038,60 @@ html[data-home-theme='light'] #screen-pointshop .uv-veil {
 html[data-home-theme='light'] .home-universe-title {
     text-shadow: none;
 }
+
+/* ============================================================================
+ * APP-WIDE BACKGROUND — TRIAL (2026-09-07, owner: "add it on the main screens
+ * so i can test it … if i dont like i can revert")
+ *
+ * The universal watercolour pair behind every tab screen, not just training
+ * games. It works app-wide for the same reason it works in a game: the
+ * composition keeps its middle clear in the app's own ground colour, so text
+ * lands on plain surface and only the perimeter carries art. No veil.
+ *
+ * ⚠ REVERTING IS THIS WHOLE BLOCK PLUS THE ONE `background` LINE IT OVERRIDES
+ * BELOW — it is deliberately self-contained and appended at the end of the file
+ * so `git revert` of a single commit removes it cleanly.
+ *
+ * ⚠ Absolute base-qualified URL, not relative. A relative url() resolves
+ * against the STYLESHEET's location, which differs between dev (/src/styles/…)
+ * and the build (/Assets/index-hash.css) — the same path would point at two
+ * different places. These live in public/ so Vite never rewrites them.
+ * ========================================================================= */
+body {
+    background-image: url("/the-maze-man-comics/Assets/training/domain-backgrounds-universal-v1/desktop.webp");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+@media (orientation: portrait) {
+    body {
+        background-image: url("/the-maze-man-comics/Assets/training/domain-backgrounds-universal-v1/mobile.webp");
+    }
+}
+
+/* The tab screens paint the flat ground on top of body, which would hide it.
+   Transparent here lets the one background read across the whole app. */
+.ui-screen,
+.ui-shell--tabbed .ui-screen {
+    background-color: transparent;
+    background-image: none;
+}
+
+/* Each tab paints its own ground on top of body, so the trial is invisible
+   without naming them. These are the five containers measured as blocking it:
+   Home's scroll/stage, Training's app-stage, Learn's kawnera-app, and the
+   shared uv-stage starfield behind Wellbeing and Other.
+
+   ⚠ Home also runs a 3D particle CANVAS, which CSS cannot see through — that
+   screen will keep its own sky whatever this rule says. */
+.home-universe-scroll,
+.home-universe-stage,
+.app-stage,
+.kawnera-app,
+.other-screen,
+.uv-stage {
+    background-color: transparent !important;
+    background-image: none !important;
+}

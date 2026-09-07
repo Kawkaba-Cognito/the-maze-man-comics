@@ -9601,7 +9601,9 @@ html[data-home-theme='dark'] .ct-domain-game-stage > .ct-fq-root {
  * dark-ground variants would let this drop to ~45% in both themes.
  */
 :root, html[data-home-theme='light'] {
-    --training-art-scrim: 45%;
+    /* The universal art keeps its own clear centre, so no veil is needed in
+       light: text lands at 11-12:1 on the untouched ground. */
+    --training-art-scrim: 0%;
 }
 html[data-home-theme='dark'] {
     --training-art-scrim: 70%;
