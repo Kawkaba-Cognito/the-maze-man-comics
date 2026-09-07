@@ -160,7 +160,24 @@ const BASE_CSS = `
 .rxp-primary:active { box-shadow:var(--elev-press); }
 .rxp-ghost { align-self:center; width:100%; max-width:340px; padding:13px; border-radius:14px; border:1px solid ${LINE}; background:${CARD}; color:${SUB}; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; box-shadow:var(--elev-rest); }
 .rxp-ghost:active { box-shadow:var(--elev-press); }
-.rxp-tip { font-size:12.5px; color:${FAINT}; line-height:1.6; text-align:center; max-width:360px; }
+/*
+ * ⚠ align-self:center — THE SAME BUG AS .rxp-primary ABOVE, ONE RULE LOWER, and
+ * it survived that fix because text-align:center makes it LOOK handled. The TEXT
+ * was centred inside a 360px box that itself sat flush against the inline start
+ * of a 520px stretched flex column, so on desktop every practice's hint sat
+ * visibly left of the button it belongs to. Measured at 1366x577: box at x=416
+ * in a column centred on 676.
+ *
+ * text-align centres content within a box; it never centres the box. Whenever a
+ * child of .rxp-body caps itself with max-width it needs align-self or an auto
+ * inline margin too — see .rx-caution, which uses margin:0 auto and is correct
+ * for that reason.
+ *
+ * (No backticks in this comment on purpose: the whole block is inside a template
+ * literal, so one would end the string and break the build — which is exactly
+ * what the first version of this comment did.)
+ */
+.rxp-tip { align-self:center; font-size:12.5px; color:${FAINT}; line-height:1.6; text-align:center; max-width:360px; }
 
 /*
  * ⚠ THE HERO IS A SPHERE NOW, NOT A 60px EMOJI. font-size:60px on a lone

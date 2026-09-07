@@ -8,6 +8,9 @@ import IkigaiPractice from './IkigaiPractice';
 import PersonalityQuiz from './PersonalityQuiz';
 import RelationshipQuiz from './RelationshipQuiz';
 import SleepSoundsPractice from './SleepSoundsPractice';
+import SleepResetPractice from './SleepResetPractice';
+import ConnectPractice from './ConnectPractice';
+import Who5Practice from './Who5Practice';
 import DailyHabits from './DailyHabits';
 import { planetTextureLayerStyle } from '../../lib/planetTexture';
 import { planetIconUrl } from '../../lib/planetIcons';
@@ -616,13 +619,11 @@ const CATEGORIES = [
   { id: 'calm', icon: '🌿', color: '#5aa07a',
     title: 'Stress & Calm', titleAr: 'التوتر والهدوء',
     tag: 'Settle your body and mind in the moment.', tagAr: 'هدّئ جسدك وعقلك في اللحظة.',
-    items: ['breathe', 'grounding', 'mbsr'] },
+    items: ['breathe', 'grounding', 'mbsr', 'who5'] },
   { id: 'sleep', icon: '🌙', color: '#7b86c8',
     title: 'Sleep', titleAr: 'النوم',
     tag: 'Wind down and drift off.', tagAr: 'استرخِ واغفُ بسلام.',
-    items: ['pmr', 'breathe', 'sleep-sounds'],
-    programSoon: 'A guided wind-down sleep program is coming soon.',
-    programSoonAr: 'برنامج نوم موجّه للاسترخاء — قريباً.' },
+    items: ['sleep-reset', 'pmr', 'breathe', 'sleep-sounds'] },
   { id: 'meaning', icon: '✨', color: '#c9a24b',
     title: 'Meaning', titleAr: 'المعنى',
     tag: 'Values, gratitude and purpose.', tagAr: 'القيم والامتنان والغاية.',
@@ -632,19 +633,23 @@ const CATEGORIES = [
   { id: 'relationships', icon: '❤️', color: '#c86f8f',
     title: 'Relationships', titleAr: 'العلاقات',
     tag: 'Kindness and connection.', tagAr: 'اللطف والتواصل.',
-    items: ['relationship-quiz'],
-    programSoon: 'A loving-kindness meditation and appreciation program is coming soon.',
-    programSoonAr: 'تأمّل المحبّة اللطيفة وبرنامج ممارسات التقدير — قريباً.' },
+    items: ['connect', 'relationship-quiz'],
+    programSoon: 'A loving-kindness meditation program is coming soon.',
+    programSoonAr: 'برنامج تأمّل المحبّة اللطيفة — قريباً.' },
   { id: 'personality', icon: '🧭', color: '#c47a3e',
     title: 'Personality', titleAr: 'الشخصية',
     tag: 'Get to know yourself.', tagAr: 'تعرّف على نفسك.',
-    items: ['personality-quiz'],
+    items: ['personality-quiz', 'who5'],
     programSoon: 'A deeper, guided Big Five program is coming soon.',
     programSoonAr: 'برنامج موجّه أعمق للعوامل الخمسة الكبرى — قريباً.' },
 ];
 
 // Which practices are structured, multi-session PROGRAMS (vs quick, single-use).
-const PROGRAM_IDS = new Set(['mbsr']);
+/* ⚠ `sleep-reset` belongs here, not under Quick: it is a multi-night programme
+   whose whole value is the accumulating diary. Filed as a one-off "quick"
+   practice it would read as something you do once, which is the one way to use
+   it that produces nothing. */
+const PROGRAM_IDS = new Set(['mbsr', 'sleep-reset']);
 
 // Loose, hand-placed scatter for the Wellbeing constellation — deliberately
 // NOT a hub-and-spoke grid (that's Training's signature) and NOT an orbit
@@ -894,9 +899,9 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
     setOrders((o) => { const nx = { ...o, [key]: ids }; rxSave(ORDER_KEY, nx); return nx; });
   };
 
-  // opening a category picks the first non-empty group (Programs, then Quick)
+  // Opening a category lands on QUICK when it has any, else Programs.
   const openCategory = (c) => {
-    if (c.items) setGroup(c.items.some((id) => PROGRAM_IDS.has(id)) ? 'program' : 'quick');
+    if (c.items) setGroup(c.items.some((id) => !PROGRAM_IDS.has(id)) ? 'quick' : 'program');
     setOpenCat(c.id);
   };
 
@@ -906,11 +911,20 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
     const faved = favSet.has(o.id);
     return (
       <div
-        className="rx-menu-card" role="button" tabIndex={0} style={{ borderColor: `${o.color}55` }}
+        /* ⚠ A practice without its own `color` inherits the AREA's hue token
+           rather than carrying a fresh hex. The older entries still hold literal
+           colours (that is what the design ratchet's baseline counts); new ones
+           must not add more, and they do not need to — every one of these cards
+           is already rendered inside a category screen that sets --rx-hue. A hex
+           cannot be swapped for a var here directly, because these were alpha
+           suffixes (`${'${color}'}55`) and `var(--x)55` is not a colour; hence
+           color-mix. */
+        className="rx-menu-card" role="button" tabIndex={0}
+        style={{ borderColor: o.color ? `${o.color}55` : 'color-mix(in srgb, var(--rx-hue) 42%, transparent)' }}
         onClick={() => { if (justDragged && justDragged()) return; openPersonalizedPractice(o.id); }}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPersonalizedPractice(o.id); } }}
       >
-        <span className="rx-menu-ic" style={{ background: `${o.color}1f` }}>{o.icon}</span>
+        <span className="rx-menu-ic" style={{ background: o.color ? `${o.color}1f` : 'color-mix(in srgb, var(--rx-hue) 14%, transparent)' }}>{o.icon}</span>
         <span className="rx-menu-body">
           <span className="rx-menu-title">{isAr ? o.titleAr : o.title}</span>
           <span className="rx-menu-sub">{isAr ? o.subAr : o.sub}</span>
@@ -1036,9 +1050,17 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
                   playSfx={playSfx}
                   onOpen={openPersonalizedPractice}
                 />
+                {/* ⚠ QUICK COMES FIRST, AND IS THE DEFAULT (owner, 2026-09-07).
+                    Programs led, so opening Stress & Calm showed one card — the
+                    8-week programme — while Breathe, Grounding and the check-in
+                    sat behind a tab nobody had a reason to press. That is the
+                    wrong way round for the person this area is for: someone
+                    opening Wellbeing while wound up wants the two-minute thing,
+                    not an eight-week commitment. The long programmes are still
+                    one tap away for the person who has decided to commit. */}
                 <div className="rx-seg">
-                  <button className={`rx-seg-btn${group === 'program' ? ' on' : ''}`} onClick={() => setGroup('program')}>{isAr ? 'برامج' : 'Programs'}</button>
                   <button className={`rx-seg-btn${group === 'quick' ? ' on' : ''}`} onClick={() => setGroup('quick')}>{isAr ? 'سريعة' : 'Quick'}</button>
+                  <button className={`rx-seg-btn${group === 'program' ? ' on' : ''}`} onClick={() => setGroup('program')}>{isAr ? 'برامج' : 'Programs'}</button>
                 </div>
                 {activeItems.length
                   ? list(activeItems, listKey)
@@ -1501,6 +1523,9 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
   if (view === 'personality-quiz') return <PersonalityQuiz onBack={back} />;
   if (view === 'relationship-quiz') return <RelationshipQuiz onBack={back} />;
   if (view === 'sleep-sounds') return <SleepSoundsPractice onBack={back} />;
+  if (view === 'sleep-reset') return <SleepResetPractice onBack={back} />;
+  if (view === 'connect') return <ConnectPractice onBack={back} />;
+  if (view === 'who5') return <Who5Practice onBack={back} />;
   return (
     <RelaxMenu
       isAr={isAr}

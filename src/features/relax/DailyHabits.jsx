@@ -15,6 +15,7 @@ import HabitLifeTab, { LIFE_TAB_CSS } from './HabitLifeTab';
 import HabitReflectTab, { REFLECT_TAB_CSS } from './HabitReflectTab';
 import HabitTemplatesTab, { TEMPLATES_TAB_CSS } from './HabitTemplatesTab';
 import HabitInsightsTab, { INSIGHTS_TAB_CSS } from './HabitInsightsTab';
+import AutomaticityCheck, { AUTOMATICITY_CSS } from './AutomaticityCheck';
 
 /*
  * ⚠ A THIRD COPY OF THE SAME SIX NAMES (2026-09-05). PracticeShell exported
@@ -524,6 +525,18 @@ export default function DailyHabits({ isAr, playSfx, onBack, onOpenPractice }) {
                             </label>
                           </>
                         )}
+                        {/* ⚠ Offered only once the habit has enough completed
+                            days to be worth asking about — rating automaticity
+                            in week one measures intention, not habit. */}
+                        {(auto.canRate || auto.measured) && (
+                          <AutomaticityCheck
+                            habit={habit}
+                            auto={auto}
+                            isAr={isAr}
+                            playSfx={playSfx}
+                            onSaved={(next) => setSt(next)}
+                          />
+                        )}
                       </div>
                     )}
                   </button>
@@ -676,6 +689,7 @@ ${LIFE_TAB_CSS}
 ${REFLECT_TAB_CSS}
 ${TEMPLATES_TAB_CSS}
 ${INSIGHTS_TAB_CSS}
+${AUTOMATICITY_CSS}
 .rx-root { position:fixed; inset:0; z-index:50; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--color-training-palette-surface,#fff7f2); color:${INK}; font-family:${SANS}; }
 .hb-tabs { display:flex; gap:4px; padding:0 16px 12px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
 .hb-tab { flex:1; min-width:0; padding:10px 6px; border-radius:12px; border:2px solid ${LINE}; background:${CARD}; font-size:12px; font-weight:800; color:${SUB}; cursor:pointer; font-family:inherit; position:relative; white-space:nowrap; }

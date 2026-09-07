@@ -47,4 +47,24 @@ export const RELAX_PRACTICES = [
     title: 'Sleep Sounds', titleAr: 'أصوات النوم',
     sub: 'A looping ambient sound to play while you wind down or drift off.',
     subAr: 'صوت محيطي متكرر لتشغيله أثناء الاسترخاء أو النوم.' },
+  /* ⚠ The Sleep pillar shipped with relaxation, breathing and a rain loop — the
+     three WEAKEST arms available, while the first-line treatment for chronic
+     insomnia in every major guideline (CBT-I) was absent entirely. */
+  { id: 'sleep-reset', icon: '🛏️',
+    title: 'Sleep Reset', titleAr: 'إعادة ضبط النوم',
+    sub: 'A morning sleep log that tracks your sleep efficiency, plus the stimulus-control rules that CBT-I is built on.',
+    subAr: 'سجلّ نوم صباحي يتتبّع كفاءة نومك، مع قواعد ضبط المثير التي يقوم عليها العلاج المعرفي السلوكي للأرق.' },
+  /* ⚠ Relationships previously held ONE QUIZ ABOUT YOURSELF and no practice —
+     a pillar you could finish without doing anything involving another person. */
+  { id: 'connect', icon: '💬',
+    title: 'Good News', titleAr: 'الأخبار الجيدة',
+    sub: "How you respond when someone's news is good predicts a relationship better than how you respond when it's bad. Four moments, then one thing to actually say.",
+    subAr: 'طريقة استجابتك حين يكون خبر أحدهم جيداً تتنبّأ بالعلاقة أكثر من استجابتك حين يكون سيّئاً. أربع لحظات، ثم أمر واحد لتقوله فعلاً.' },
+  /* ⚠ The one VALIDATED OUTCOME measure in the feature — the only thing that can
+     answer "is any of this working?". See Who5Practice for why it is presented
+     as a wellbeing score and never as a depression screen. */
+  { id: 'who5', icon: '📊',
+    title: 'Wellbeing Check-in', titleAr: 'قياس العافية',
+    sub: 'The WHO-5 index — five questions, tracked over time, so you can see whether anything is actually changing.',
+    subAr: 'مؤشّر WHO-5 — خمسة أسئلة تُتابَع عبر الزمن، لترى إن كان شيء يتغيّر فعلاً.' },
 ];

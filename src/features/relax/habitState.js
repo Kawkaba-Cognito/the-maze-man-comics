@@ -205,6 +205,8 @@ function defaultState() {
     life: defaultLife(),
     settings: defaultSettings(),
     reminderDismiss: {},
+    /* SRBAI ratings, keyed by habit id — see getAutomaticity. */
+    automaticity: {},
   };
 }
 
@@ -225,6 +227,10 @@ function normalizeState(v) {
     life: { ...defaultLife(), ...(v.life && typeof v.life === 'object' ? v.life : {}) },
     settings: { ...defaultSettings(), ...(v.settings && typeof v.settings === 'object' ? v.settings : {}) },
     reminderDismiss: v.reminderDismiss && typeof v.reminderDismiss === 'object' ? v.reminderDismiss : {},
+    /* ⚠ THIS FUNCTION IS A WHITELIST — a key that is not rebuilt here is dropped
+       on every single load, silently. Leaving `automaticity` out would have made
+       every SRBAI rating vanish the next time the app started, with no error. */
+    automaticity: v.automaticity && typeof v.automaticity === 'object' ? v.automaticity : {},
   };
   if (!st.life.wheel || typeof st.life.wheel !== 'object') st.life.wheel = { scores: {}, lastCheck: null };
   if (!st.life.wheel.scores) st.life.wheel.scores = {};
@@ -712,6 +718,47 @@ export function wheelAverage(st = loadHabits()) {
 
 // ── Phase C: automaticity, stacks, reminders, export ──
 
+/*
+ * ⚠ 66 DAYS WAS NEVER A TARGET (2026-09-07). `FORMATION_DAYS` comes from Lally
+ * et al. (2010), where 66 was the **median** of a range running from 18 to 254
+ * days — an observation about a sample, not a milestone any individual habit is
+ * supposed to hit. Showing a progress bar toward it told most users they were
+ * behind on a schedule that does not exist.
+ *
+ * Worse, the count was being used as a PROXY for automaticity, which it is not:
+ * "has done this 56 times" and "does this without thinking" are different
+ * claims, and only the second is what "Stable" means to a reader.
+ *
+ * So automaticity is now MEASURED where possible, using the SRBAI (Self-Report
+ * Behavioural Automaticity Index — Gardner, Abraham, Lally & de Bruijn, 2012):
+ * four items, one minute, the standard short instrument for exactly this. The
+ * day count remains as a fallback for habits not yet rated, and `measured` says
+ * which of the two a caller is looking at so the UI never presents a guess with
+ * the confidence of a measurement.
+ */
+export const AUTOMATICITY_ITEMS = [
+  { id: 's1', en: 'I do it automatically', ar: 'أفعلها تلقائياً' },
+  { id: 's2', en: 'I do it without having to consciously remember', ar: 'أفعلها دون أن أحتاج لتذكّرها بوعي' },
+  { id: 's3', en: 'I do it without thinking', ar: 'أفعلها دون تفكير' },
+  { id: 's4', en: 'I start doing it before I realise I am doing it', ar: 'أبدأ بفعلها قبل أن أدرك أنني أفعلها' },
+];
+/** SRBAI runs 1–7; ≥4 is the conventional read for "this has become automatic". */
+export const AUTOMATIC_THRESHOLD = 4;
+/** Rating before this many completed days measures intention, not habit. */
+export const AUTOMATICITY_MIN_DAYS = 14;
+/** A habit changes slowly; re-asking sooner than this just harvests noise. */
+export const AUTOMATICITY_RECHECK_DAYS = 21;
+
+export function saveAutomaticityRating(habitId, mean, st = loadHabits()) {
+  const next = { ...st, automaticity: { ...(st.automaticity || {}), [habitId]: { score: mean, at: Date.now() } } };
+  saveHabits(next);
+  return next;
+}
+
+export function getAutomaticityRating(habitId, st = loadHabits()) {
+  return st.automaticity?.[habitId] || null;
+}
+
 export function getAutomaticity(habit, st = loadHabits()) {
   const start = new Date(`${habit.createdAt || todayKey()}T12:00:00`);
   const today = new Date();
@@ -723,9 +770,33 @@ export function getAutomaticity(habit, st = loadHabits()) {
     d.setDate(d.getDate() + 1);
   }
   const week = Math.min(10, Math.max(1, Math.ceil(completedDays / 7) || (completedDays > 0 ? 1 : 0)));
-  const pct = Math.min(100, Math.round((completedDays / FORMATION_DAYS) * 100));
-  const phase = completedDays >= Math.round(FORMATION_DAYS * 0.85) ? 'stable' : 'forming';
-  return { completedDays, week, pct, phase, target: FORMATION_DAYS };
+  const rating = getAutomaticityRating(habit.id, st);
+  const ratedDaysAgo = rating ? Math.floor((Date.now() - rating.at) / 86400000) : null;
+
+  if (rating) {
+    return {
+      completedDays,
+      week,
+      measured: true,
+      score: rating.score,
+      ratedDaysAgo,
+      /* 1–7 mapped onto the same 0–100 the bar already speaks. */
+      pct: Math.round(((rating.score - 1) / 6) * 100),
+      phase: rating.score >= AUTOMATIC_THRESHOLD ? 'stable' : 'forming',
+      dueRecheck: ratedDaysAgo >= AUTOMATICITY_RECHECK_DAYS,
+      canRate: true,
+    };
+  }
+  return {
+    completedDays,
+    week,
+    measured: false,
+    score: null,
+    pct: Math.min(100, Math.round((completedDays / FORMATION_DAYS) * 100)),
+    phase: completedDays >= Math.round(FORMATION_DAYS * 0.85) ? 'stable' : 'forming',
+    dueRecheck: false,
+    canRate: completedDays >= AUTOMATICITY_MIN_DAYS,
+  };
 }
 
 /** Chains of 2+ habits linked via stackAfter. */
