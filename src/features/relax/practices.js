@@ -7,6 +7,8 @@
  * Home's chunk. Copying the eight titles instead would guarantee drift the
  * first time one is reworded. So the data moves here and both import it.
  */
+import { WORKSHEETS } from './worksheets.js';
+
 // The practice registry (each opens a full-screen practice). Categories below
 // reference these by id; a practice may appear in more than one category.
 export const RELAX_PRACTICES = [
@@ -67,4 +69,20 @@ export const RELAX_PRACTICES = [
     title: 'Wellbeing Check-in', titleAr: 'قياس العافية',
     sub: 'The WHO-5 index — five questions, tracked over time, so you can see whether anything is actually changing.',
     subAr: 'مؤشّر WHO-5 — خمسة أسئلة تُتابَع عبر الزمن، لترى إن كان شيء يتغيّر فعلاً.' },
+
+  /* ⚠ WORKSHEET ENTRIES ARE DERIVED, NOT LISTED. Everything below this line is
+     built from `worksheets.js`, so authoring a worksheet is the ONLY step needed
+     to make it appear in a category — no second registry to forget, which is the
+     failure mode CLAUDE.md records for training games (a module that keeps its
+     own list of ids and silently omits a new one). It also means a worksheet's
+     title and blurb have exactly one source and cannot drift. */
+  ...WORKSHEETS.map((w) => ({
+    id: w.id,
+    icon: w.icon,
+    worksheet: true,
+    title: w.title.en,
+    titleAr: w.title.ar,
+    sub: w.intro.en,
+    subAr: w.intro.ar,
+  })),
 ];

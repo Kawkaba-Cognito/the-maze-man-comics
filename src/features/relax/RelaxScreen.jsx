@@ -11,6 +11,8 @@ import SleepSoundsPractice from './SleepSoundsPractice';
 import SleepResetPractice from './SleepResetPractice';
 import ConnectPractice from './ConnectPractice';
 import Who5Practice from './Who5Practice';
+import WorksheetRunner from './worksheetEngine';
+import { worksheetById } from './worksheets.js';
 import DailyHabits from './DailyHabits';
 import { planetTextureLayerStyle } from '../../lib/planetTexture';
 import { planetIconUrl } from '../../lib/planetIcons';
@@ -619,7 +621,7 @@ const CATEGORIES = [
   { id: 'calm', icon: '🌿', color: '#5aa07a',
     title: 'Stress & Calm', titleAr: 'التوتر والهدوء',
     tag: 'Settle your body and mind in the moment.', tagAr: 'هدّئ جسدك وعقلك في اللحظة.',
-    items: ['breathe', 'grounding', 'mbsr', 'who5'] },
+    items: ['breathe', 'grounding', 'ws-thought-record', 'ws-worry-window', 'mbsr', 'who5'] },
   { id: 'sleep', icon: '🌙', color: '#7b86c8',
     title: 'Sleep', titleAr: 'النوم',
     tag: 'Wind down and drift off.', tagAr: 'استرخِ واغفُ بسلام.',
@@ -627,19 +629,19 @@ const CATEGORIES = [
   { id: 'meaning', icon: '✨', color: '#c9a24b',
     title: 'Meaning', titleAr: 'المعنى',
     tag: 'Values, gratitude and purpose.', tagAr: 'القيم والامتنان والغاية.',
-    items: ['ikigai'],
+    items: ['ws-values-compass', 'ws-activation', 'ikigai'],
     programSoon: 'A guided values journal and gratitude program are coming soon.',
     programSoonAr: 'دفتر قيم موجّه وبرنامج امتنان — قريباً.' },
   { id: 'relationships', icon: '❤️', color: '#c86f8f',
     title: 'Relationships', titleAr: 'العلاقات',
     tag: 'Kindness and connection.', tagAr: 'اللطف والتواصل.',
-    items: ['connect', 'relationship-quiz'],
+    items: ['connect', 'ws-repair', 'relationship-quiz'],
     programSoon: 'A loving-kindness meditation program is coming soon.',
     programSoonAr: 'برنامج تأمّل المحبّة اللطيفة — قريباً.' },
   { id: 'personality', icon: '🧭', color: '#c47a3e',
     title: 'Personality', titleAr: 'الشخصية',
     tag: 'Get to know yourself.', tagAr: 'تعرّف على نفسك.',
-    items: ['personality-quiz', 'who5'],
+    items: ['ws-self-compassion', 'personality-quiz', 'who5'],
     programSoon: 'A deeper, guided Big Five program is coming soon.',
     programSoonAr: 'برنامج موجّه أعمق للعوامل الخمسة الكبرى — قريباً.' },
 ];
@@ -1560,6 +1562,13 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
   if (view === 'sleep-reset') return <SleepResetPractice onBack={back} />;
   if (view === 'connect') return <ConnectPractice onBack={back} />;
   if (view === 'who5') return <Who5Practice onBack={back} />;
+  /* ⚠ ONE ROUTE FOR EVERY WORKSHEET. A worksheet is data, so it needs no line
+     here of its own — authoring it in worksheets.js is enough. Adding a `if
+     (view === 'ws-…')` for a new sheet means the engine has been bypassed. */
+  if (view.startsWith('ws-')) {
+    const sheet = worksheetById(view);
+    if (sheet) return <WorksheetRunner sheet={sheet} onBack={back} />;
+  }
   return (
     <RelaxMenu
       isAr={isAr}

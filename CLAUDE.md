@@ -702,6 +702,22 @@ WCAG AAA for body text is 7:1. Re-run this if the art is ever regenerated — Co
 
 ⚠ **THE DAILY HABITS SCREEN COULD NOT BE REACHED IN TESTING, and the SRBAI UI is therefore UNVERIFIED ON SCREEN.** `switchTab('wellbeing')` *deliberately removes* `rx_open_daily` (AppContext), while `switchTab('habits')` sets it — so Daily opens only via the Home tab routing onward into the `'relax'` view. Driving that route headlessly never rendered `DailyHabits` in dev **or** production. Whether that is a harness limitation or a real routing break is unresolved and worth a look; the SRBAI code and its persistence fix are sound, but nobody has watched them run.
 
+### Worksheets — content as DATA (2026-09-08)
+
+Wellbeing's content was eight hand-built screens: a new practice meant a new component, its own state, persistence, bilingual dict and CSS. The cost per practice was constant and high, which is *why* the content stayed thin. Asked for worksheets and activities that scale, the answer was to stop writing screens.
+
+**`worksheetEngine.jsx` is the only renderer. `worksheets.js` is the only place content lives.** A worksheet is an object with `steps[]`, each a `read` / `write` / `scale` / `choice` / `multi` / `plan`. Authoring one is the *only* step needed to ship it: `practices.js` derives its registry entries from `WORKSHEETS` (`...WORKSHEETS.map(…)`) and `RelaxScreen` routes every id through one `view.startsWith('ws-')` branch. ⚠ **Adding an `if (view === 'ws-…')` for a new sheet means the engine has been bypassed** — and deriving the registry is deliberate, because the eight-wiring-spots trap in Training is exactly what a second hand-maintained list produces.
+
+⚠ **`tier` IS A REQUIRED FIELD AND THE RUNTIME PRINTS IT ON SCREEN.** The clinical audit found this feature's worst failures were overclaims — "validated ECR-S" over adapted items, "8-Week MBSR" over a solo timer. Making the strength of the evidence a schema field, rendered to the user, is what stops that depending on whoever writes the next one. `meta` only where a meta-analysis exists for *that* technique (behavioural activation, self-compassion); `protocol` for a component of an established treatment (thought record, worry postponement, values clarification); `replicated` for a solid research line without one (Gottman repair); `framework` for a useful idea with no experimental base.
+
+⚠ **NOTHING IN A WORKSHEET MAY DIAGNOSE, SCORE OR STRATIFY.** They are structured reflection. The one validated instrument in the feature is WHO-5, which keeps its own screen, cut-offs and 14-day cadence.
+
+⚠ **NOTHING IS EVER REQUIRED TO ADVANCE.** A sheet that refuses to move on until you have written something turns a reflective prompt into a form — and the user most likely to be stuck on a prompt is the one it is trying to help.
+
+⚠ **Answers are plain, unencrypted `localStorage` (`rx_worksheets_v1`)** — the known limitation this file already records for the other `rx_*` stores. Do not author a worksheet asking something a user would be harmed by someone else reading off an unlocked device. The Repair sheet closes by naming the limit of its own technique (repair assumes an argument between equals; fear or control is not a row to repair), which is the pattern to copy where a technique has a population it is wrong for.
+
+First six: thought record · worry postponement (Calm) · values compass · behavioural activation (Meaning) · repair after a row (Relationships) · self-compassion (Personality). Verified by driving three of them end to end — steps walked, summaries rendered, answers persisted, zero exceptions.
+
 **Still open**: five wellbeing planet paintings (above); verifying the SRBAI on screen once the Daily route is understood (above); loving-kindness for Relationships, still promised in `programSoon`; and the Wheel of Life's averaged single number, which reduces eight incommensurable domains to one figure that means nothing.
 
 
