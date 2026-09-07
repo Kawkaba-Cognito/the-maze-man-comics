@@ -273,3 +273,49 @@ html[data-home-theme='dark'] .rx-wb {
 @media (prefers-reduced-motion: reduce) {
   .rx-body { transition: none; }
 }
+
+/*
+ * The category header's planet — the SAME orb the constellation landing draws.
+ *
+ * ⚠ It exists here because `.rx-orb`'s own rules live in the landing's inline
+ * <style>, which only that screen renders; on a category screen the class
+ * matched nothing and the element computed `width:auto`, rendering 32x20 inside
+ * its 40px box. These were briefly inline styles on the element instead, which
+ * put five raw colours into a JSX file and failed `audit:design`. This file is
+ * @palette-exempt, so the literals belong here and only here.
+ */
+.rx-wb .rx-cat-orb {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 30px rgba(8, 6, 4, 0.28),
+              inset 0 -8px 18px rgba(0, 0, 0, 0.14),
+              inset 0 2px 10px rgba(255, 255, 255, 0.28);
+}
+/* On beige the orb's own low-alpha glow has nothing to sit against, so the
+   light appearance takes the crisp ring — same reasoning as the landing. */
+html[data-home-theme='light'] .rx-wb .rx-cat-orb {
+  box-shadow: 0 10px 22px rgba(32, 29, 24, 0.20),
+              inset 0 -8px 18px rgba(0, 0, 0, 0.14),
+              inset 0 2px 10px rgba(255, 255, 255, 0.28),
+              0 0 0 1.5px rgba(32, 29, 24, 0.30);
+}
+/* The artwork's contour, again matching the landing: without it the emblem's
+   edge disappears against the pale ground. */
+.rx-wb .rx-cat-orb img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(1px 0 0 var(--universe-ink)) drop-shadow(-1px 0 0 var(--universe-ink))
+          drop-shadow(0 1px 0 var(--universe-ink)) drop-shadow(0 -1px 0 var(--universe-ink))
+          drop-shadow(0 4px 8px rgba(32, 29, 24, 0.28));
+}
+html[data-home-theme='dark'] .rx-wb .rx-cat-orb img {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.42));
+}

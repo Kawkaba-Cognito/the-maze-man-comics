@@ -981,12 +981,46 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
       <div style={{ paddingInlineStart: 42 }}>
         <div className="header-sub">{isAr ? 'العافية' : 'Wellbeing'}</div>
         <div className="rx-cat-hd">
+          {/* ⚠ THE LANDING'S ORB IS THE OFFICIAL PLANET, AND THIS RENDERS THE
+              SAME ONE (owner, 2026-09-07). It used to draw `.rx-body` — the
+              shaded sphere tinted from the area's core/lit pair — while the
+              constellation drew `.rx-orb`, a disc carrying a radial tint of the
+              category's own colour behind the artwork. Same source image, two
+              different housings, so tapping Meaning took you to a planet that
+              was visibly not the one you had just tapped.
+
+              The classes below are the landing's, unchanged, and `.rx-orb*` is
+              already defined in MENU_CSS which this screen renders — so this is
+              the same rule set, not a copy that can drift. `--rx-orb` is the
+              diameter the wrap reads. */}
+          {/* ⚠ `.rx-orb-wrap` ALONE, not also `.rx-cat-planet` — that rule sets
+              `display:block` and sits later in MENU_CSS, so it would beat the
+              wrap's flex centring and leave the artwork off-centre in its disc.
+              (A JSX comment cannot live between `? (` and the element — that is
+              a parse error, and it took the whole app down once.) */}
           {areaId ? (
             <span className="rx-cat-planet" aria-hidden="true">
-              <span className="rx-body">
-                {planetIconUrl(areaId)
-                  ? <img className="rx-emblem" src={planetIconUrl(areaId)} alt="" draggable={false} />
-                  : <span className="rx-orb-icon">{icon}</span>}
+              {/* ⚠ THE ORB'S GEOMETRY IS INLINE HERE ON PURPOSE. `.rx-orb`'s
+                  rules live in the LANDING's own <style> block, which only that
+                  screen renders — so on a category screen the class matches
+                  nothing and the element computed `width:auto`, rendering 32x20
+                  inside its 40px box. Measured, not guessed. The tint, artwork
+                  and contour below are the landing's values, so the two read as
+                  the same planet. */}
+              <span
+                className="rx-orb rx-cat-orb"
+                style={{ background: planetIconUrl(areaId) ? `radial-gradient(circle, ${color}42 0%, ${color}20 55%, transparent 76%)` : color }}
+              >
+                {planetIconUrl(areaId) ? (
+                  <img src={planetIconUrl(areaId)} alt="" draggable={false} />
+                ) : (
+                  <>
+                    <span aria-hidden="true" className="rx-orb-texture" style={planetTextureLayerStyle(0.4)} />
+                    <span aria-hidden="true" className="rx-orb-shade" />
+                    <span aria-hidden="true" className="rx-orb-sheen" />
+                    <span className="rx-orb-icon">{icon}</span>
+                  </>
+                )}
               </span>
             </span>
           ) : (

@@ -3095,3 +3095,32 @@ body {
     background-color: transparent !important;
     background-image: none !important;
 }
+
+/* The three screens that still painted over it, named exactly. Each was
+   measured, not guessed:
+     · Training  — `.rh-training-hub.app-stage--universe` (0,2,0) outranked the
+                   plain `.app-stage` rule above.
+     · Wellbeing — `#screen-relax`, an ID selector.
+     · Home      — an inline-styled wrapper plus `.home-maze-swipe-zone`;
+                   `!important` in a stylesheet beats a non-important inline style.
+   ⚠ Home also runs a 3D particle CANVAS. If that clears to an opaque colour no
+   CSS here can reveal the art behind it — canvases are not transparent by
+   wishing. */
+#screen-relax,
+.rh-training-hub.app-stage--universe,
+#screen-home > div,
+.home-maze-swipe-zone {
+    background-color: transparent !important;
+    background-image: none !important;
+}
+
+/* ⚠ Training needed MORE than equal specificity. `.rh-training-hub.app-stage--universe`
+   lives in training.css, which is imported after this file, so at the same
+   (0,2,0) weight and the same `!important` the later file won. Anchoring on
+   `html[data-home-theme]` lifts this to (0,3,1) so file order stops deciding it. */
+html[data-home-theme] .rh-training-hub.app-stage--universe,
+html[data-home-theme] .app-stage--universe,
+html[data-home-theme] #screen-comics .app-stage {
+    background-color: transparent !important;
+    background-image: none !important;
+}
