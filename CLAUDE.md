@@ -675,6 +675,29 @@ Audited as a clinical psychologist would, then fixed. The writing was never the 
 
 ⚠ **`.rxp-tip` NEEDED `align-self:center`, AND `text-align:center` IS WHY NOBODY SAW IT.** A 360px `max-width` box in a stretched flex column goes flush to the inline start; centring the *text inside it* makes it look handled. Measured at 1366×577: the hint sat at x=416 under a button centred on 676. **text-align centres content within a box; it never centres the box.** Fourth instance of this exact bug in the repo. ⚠ And the first fix broke the build: the explanatory comment used backticks *inside a template literal*, which ended the string.
 
+## Domain game backgrounds (2026-09-07)
+
+Every game launched from Training or the Daily Workout sits on its domain's illustration. `DomainGameStage` wraps the game and hands the art down as CSS custom properties; `training.css` makes the game shells transparent so it shows through. **Two sets** live under `public/Assets/training/domain-backgrounds-2026-v2/`: `desktop/` at 1672×941 (16:9) and `mobile/` at 941×1672 (9:16), selected by `@media (orientation: portrait)`.
+
+⚠ **ONE COMPOSITION CANNOT SERVE BOTH SHAPES, AND THE FIRST ATTEMPT PROVED IT.** The v1 set was landscape only. On a 390×844 phone `background-size: cover` scales to fill the HEIGHT, so it shows 390 of ~1500 scaled pixels of width — **26% of the picture**, magnified 1.9×, taken from the middle. These illustrations compose *across* the frame (arcs and planets out at the edges), so the middle 26% is empty sky. It looked finished on desktop, where a 2.37 aspect shows nearly everything, and looked like plain beige on a phone. **Two separate desktop-shaped checks missed it**; the owner caught it. A CSS band-and-mask workaround got portrait to 61%; the real fix was Codex generating a portrait-composed set, which reaches 82% with plain `cover` and no mask.
+
+⚠ **THE SCRIM IS A MEASURED FLOOR AND DARK THEME IS THE BINDING CONSTRAINT.** `.ct-domain-game-stage::after` paints `--universe-dusk` at **70%** between the art and the content. It is not a darkener — an early version used `rgba(0,0,0,.28)` and *cut* contrast, because the type on these screens is dark ink. Painting the known-good ground at high alpha keeps the documented contrast and lets the art through as texture.
+
+⚠ **AND MEASURE BOTH ENDS OF THE LUMINANCE RANGE.** An earlier sweep took only the DARKEST composited pixel as the worst case. That is right for dark ink on a light ground — but in dark theme the ink is light, so the LIGHTEST pixel is the dangerous one, and the sweep was reporting dark theme's *best* case as its worst. The scrim shipped at 60% on that reading, which was really **5.16:1 in dark**. True worst case, min of both ends, against the v2 art:
+
+| scrim | light | dark |
+|---|---|---|
+| 60% | 6.85 | **5.16** |
+| 65% | 7.18 | 6.44 |
+| **70%** | **7.51** | **7.28** |
+| 75% | 7.85 | 8.99 |
+
+WCAG AAA for body text is 7:1. Re-run this if the art is ever regenerated — Codex colour-grades each set to the `--play-surface` midpoint before export, but grading is not a guarantee about the extreme pixels.
+
+⚠ **GAMEPLAY IS DELIBERATELY ALMOST UNTOUCHED.** Boards, target cards and the HUD stay opaque; the art reads on menu and mode screens. A visual-search task is not the place for texture — the levels are tuned and `audit:fq` certifies a human can clear them, and background noise would change the task without changing the numbers that certify it.
+
+⚠ **Verified by driving all six domains × both viewports × both themes** (correct art set, HTTP 200, no horizontal overflow, zero exceptions), because `audit:design` passing says nothing about whether a picture is visible. Codex's own `design-qa.md` records that it could not capture browser-rendered evidence; that is the gap to close by hand every time this art changes.
+
 ⚠ **THERE IS NO WELLBEING PLANET ART, AND THAT IS WHY THE OLD ONES ARE STILL THERE.** Every painted set under `public/Assets/domain-planets/` (`premium-2026`, `celestial-mist-2026`, `graphite-mist-2026`, `materials-2026`) covers the six **training domains** only. `planetIconUrl` therefore hands the five wellbeing pillars Microsoft Fluent emoji (`herb.webp`, `crescent_moon.webp`, …), inside the category headers and `PracticeHero` as well as on the landing. Five paintings — calm / sleep / meaning / relationships / personality — is the fix, and the art has to be made before it can be wired.
 
 ⚠ **THE DAILY HABITS SCREEN COULD NOT BE REACHED IN TESTING, and the SRBAI UI is therefore UNVERIFIED ON SCREEN.** `switchTab('wellbeing')` *deliberately removes* `rx_open_daily` (AppContext), while `switchTab('habits')` sets it — so Daily opens only via the Home tab routing onward into the `'relax'` view. Driving that route headlessly never rendered `DailyHabits` in dev **or** production. Whether that is a harness limitation or a real routing break is unresolved and worth a look; the SRBAI code and its persistence fix are sound, but nobody has watched them run.
