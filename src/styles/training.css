@@ -9547,23 +9547,28 @@ html[data-home-theme='dark'] .ct-domain-game-stage > .ct-fq-root {
     inset: 0;
     pointer-events: none;
     z-index: 0;
-/* ⚠ 60% IS A MEASURED FLOOR, NOT A TASTE SETTING — do not raise the art's share
- * past it without re-running the numbers. The scrim was composited over all six
- * images the way the browser does and checked against the ink on top; the light
- * theme is the binding constraint because its ink is dark and the art lightens
- * the ground:
+/* ⚠ 70% IS A MEASURED FLOOR, NOT A TASTE SETTING — do not lower it without
+ * re-running the numbers, and measure BOTH ends of the luminance range when you
+ * do. The scrim is composited over every image the way the browser does and
+ * checked against the ink on top.
  *
- *   scrim   light worst-case   dark worst-case
- *   82%          8.56               13.46
- *   70%          7.83               10.70
- *   60%          7.26                8.63   <- here
- *   55%          6.99  FAILS         7.73
+ * ⚠ DARK THEME IS THE BINDING CONSTRAINT, WHICH IS NOT OBVIOUS AND WAS GOT
+ * WRONG ONCE. An earlier pass measured only the DARKEST composited pixel. That
+ * is the worst case for dark ink on a light ground (light theme) — but in dark
+ * theme the ink is light, so the LIGHTEST pixel is the dangerous one, and
+ * reporting the darkest reported dark theme's BEST case as its worst. The
+ * scrim shipped at 60% on that reading. True worst case, min of both ends,
+ * against the v2 art:
  *
- * WCAG AAA for body text is 7:1, so 55% drops below it in light. 82% was the
- * first shipped value and was too cautious to see — reported as "I see no
- * change on the live link", which was fair: it let 18% of the illustration
- * through. This lets 40% through and still clears AAA in both appearances. */
-    background: color-mix(in srgb, var(--universe-dusk) 60%, transparent);
+ *   scrim    light    dark
+ *    60%      6.85     5.16   <- what 60% actually was
+ *    65%      7.18     6.44
+ *    70%      7.51     7.28   <- here, both clear
+ *    75%      7.85     8.99
+ *
+ * WCAG AAA for body text is 7:1. 70% is the lowest value where both appearances
+ * clear it against these images, so it lets 30% of the illustration through. */
+    background: color-mix(in srgb, var(--universe-dusk) 70%, transparent);
 }
 .ct-domain-game-stage > * {
     position: relative;
@@ -9571,32 +9576,13 @@ html[data-home-theme='dark'] .ct-domain-game-stage > .ct-fq-root {
 }
 
 /* ============================================================================
- * Domain art: sizing it for the screen it is actually on
+ * Domain art: one composition for each real screen shape.
  *
- * ⚠ THE IMAGES ARE 1672x941 — 16:9 LANDSCAPE — AND A PHONE IS NOT.
- *
- * With `background-size: cover` on a 390x844 viewport the browser scales to fill
- * the HEIGHT, so it shows 390 of 1672*0.897 = 1500 pixels of width: 26% of the
- * picture, magnified 1.9x, taken from the middle. Every one of these
- * illustrations puts its content across the frame — orbital arcs, small planets
- * left and right — so the middle 26% is mostly empty sky. Reported as the
- * backgrounds not being aligned on the phone, and that was exactly right: on
- * desktop (2.37 aspect) almost the whole width shows, which is why it looked
- * finished there and blank on a phone.
- *
- * Landscape keeps `cover` — it genuinely fits. Portrait gets the art as a
- * top-anchored band at its NATURAL aspect, wide enough to keep the composition
- * (61% of the frame rather than 26%), dissolving into the ground with a mask so
- * there is no pasted-rectangle edge.
- *
- * ⚠ TWO ALTERNATIVES WERE TRIED ON A REAL PHONE VIEWPORT AND REJECTED:
- *   · `contain` shows all of it but as a hard-edged stripe across the middle;
- *   · stretching to fill the band (`background-size: 100% 100%`) looked good
- *     because the art is soft and abstract, but it is a 1.7x vertical distortion
- *     and shipping distortion silently is not on.
- *
- * ⚠ THIS IS A FIT, NOT A FIX. The real answer is six portrait-composed images;
- * no CSS can invent the 39% of frame that a narrow screen cannot show.
+ * Desktop uses the 16:9 composition. Portrait uses a separately generated
+ * 9:16 companion with its roads and planets distributed down both sides, so a
+ * phone never crops a landscape image down to its empty middle. Both sets are
+ * colour-graded to the --play-surface midpoint before export; the shared
+ * readability layer above keeps the final surface on that palette.
  * ========================================================================= */
 .ct-domain-game-stage::before {
     content: '';
@@ -9612,13 +9598,8 @@ html[data-home-theme='dark'] .ct-domain-game-stage > .ct-fq-root {
 
 @media (orientation: portrait) {
     .ct-domain-game-stage::before {
-        /* A band at the top, at the image's own aspect (165% of viewport width
-           => 644x362 on a 390px screen), fading out over its lower third. */
-        inset: 0 0 auto 0;
-        height: 125vw;
-        background-size: 165% auto;
-        background-position: center top;
-        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%);
-        mask-image: linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%);
+        background-image: var(--training-domain-background-mobile, var(--training-domain-background));
+        background-position: center center;
+        background-size: cover;
     }
 }

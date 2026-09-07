@@ -2,12 +2,30 @@ import React from 'react';
 import { assetUrl } from '../../../lib/assetUrl';
 
 const DOMAIN_BACKGROUNDS = Object.freeze({
-  attention: 'Assets/training/domain-backgrounds-2026/attention.webp',
-  speed: 'Assets/training/domain-backgrounds-2026/speed.webp',
-  memory: 'Assets/training/domain-backgrounds-2026/memory.webp',
-  language: 'Assets/training/domain-backgrounds-2026/language.webp',
-  reasoning: 'Assets/training/domain-backgrounds-2026/reasoning.webp',
-  flexibility: 'Assets/training/domain-backgrounds-2026/flexibility.webp',
+  attention: {
+    desktop: 'Assets/training/domain-backgrounds-2026-v2/desktop/attention.webp',
+    mobile: 'Assets/training/domain-backgrounds-2026-v2/mobile/attention.webp',
+  },
+  speed: {
+    desktop: 'Assets/training/domain-backgrounds-2026-v2/desktop/speed.webp',
+    mobile: 'Assets/training/domain-backgrounds-2026-v2/mobile/speed.webp',
+  },
+  memory: {
+    desktop: 'Assets/training/domain-backgrounds-2026-v2/desktop/memory.webp',
+    mobile: 'Assets/training/domain-backgrounds-2026-v2/mobile/memory.webp',
+  },
+  language: {
+    desktop: 'Assets/training/domain-backgrounds-2026-v2/desktop/language.webp',
+    mobile: 'Assets/training/domain-backgrounds-2026-v2/mobile/language.webp',
+  },
+  reasoning: {
+    desktop: 'Assets/training/domain-backgrounds-2026-v2/desktop/reasoning.webp',
+    mobile: 'Assets/training/domain-backgrounds-2026-v2/mobile/reasoning.webp',
+  },
+  flexibility: {
+    desktop: 'Assets/training/domain-backgrounds-2026-v2/desktop/flexibility.webp',
+    mobile: 'Assets/training/domain-backgrounds-2026-v2/mobile/flexibility.webp',
+  },
 });
 
 /**
@@ -19,7 +37,10 @@ export default function DomainGameStage({ domainId, children, className = '' }) 
   const background = DOMAIN_BACKGROUNDS[domainId];
   const classes = ['ct-domain-game-stage', className].filter(Boolean).join(' ');
   const style = background
-    ? { '--training-domain-background': `url("${assetUrl(background)}")` }
+    ? {
+        '--training-domain-background': `url("${assetUrl(background.desktop)}")`,
+        '--training-domain-background-mobile': `url("${assetUrl(background.mobile)}")`,
+      }
     : undefined;
 
   return (
@@ -32,4 +53,3 @@ export default function DomainGameStage({ domainId, children, className = '' }) 
     </div>
   );
 }
-
