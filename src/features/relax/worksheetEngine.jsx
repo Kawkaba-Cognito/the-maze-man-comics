@@ -385,11 +385,14 @@ const WS_CSS = `
 .ws-scale { display:flex; gap:4px; }
 .ws-pip { flex:1; aspect-ratio:1; min-width:0; padding:0; border-radius:9px; border:1px solid ${LINE};
   background:${CARD}; color:${SUB}; font-size:12px; font-weight:800; cursor:pointer; font-family:inherit; }
-/* ⚠ A TINT, NOT A SOLID FILL. A solid hue needs a contrasting label colour, and
-   the only one that works across both themes is a literal — which is how a raw
+/* A TINT, NOT A SOLID FILL. A solid hue needs a contrasting label colour, and
+   the only one that works across both themes is a literal, which is how a raw
    colour gets into a JSX file and fails audit:design. Tinting keeps the ink and
-   matches `.ws-chip.on` two rules down, so the two selection states also look
-   like the same system. */
+   matches the .ws-chip.on rule below, so the two selection states look like one
+   system.
+   NO BACKTICKS IN THIS BLOCK: it is inside a template literal, so a backtick
+   ends the string and everything after it becomes JavaScript. That exact
+   mistake shipped a broken bundle to production. */
 .ws-pip.on { border-color:var(--rx-hue); background:color-mix(in srgb, var(--rx-hue) 24%, transparent); color:${INK}; font-weight:900; }
 .ws-scale-ends { display:flex; justify-content:space-between; font-size:11px; color:${FAINT}; }
 .ws-choices { display:flex; flex-direction:column; gap:9px; }
