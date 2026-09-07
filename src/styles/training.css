@@ -9359,7 +9359,11 @@ html[data-home-theme='light'] .ct-ms-root:has(.ct-fq-training-shell--mode-cosmos
     overflow: hidden;
     isolation: isolate;
     background-color: var(--play-surface-flat);
-    background-image: var(--training-domain-background), var(--play-surface);
+    /* ⚠ The art itself moved to ::before (see the portrait block at the end of
+       this file). It cannot stay here: a single background layer can only have
+       one sizing rule, and portrait phones need a different one from landscape.
+       This keeps only the flat fallback ground. */
+    background-image: var(--play-surface);
     background-position: center, center;
     background-repeat: no-repeat, no-repeat;
     background-size: cover, cover;
@@ -9564,4 +9568,57 @@ html[data-home-theme='dark'] .ct-domain-game-stage > .ct-fq-root {
 .ct-domain-game-stage > * {
     position: relative;
     z-index: 1;
+}
+
+/* ============================================================================
+ * Domain art: sizing it for the screen it is actually on
+ *
+ * ⚠ THE IMAGES ARE 1672x941 — 16:9 LANDSCAPE — AND A PHONE IS NOT.
+ *
+ * With `background-size: cover` on a 390x844 viewport the browser scales to fill
+ * the HEIGHT, so it shows 390 of 1672*0.897 = 1500 pixels of width: 26% of the
+ * picture, magnified 1.9x, taken from the middle. Every one of these
+ * illustrations puts its content across the frame — orbital arcs, small planets
+ * left and right — so the middle 26% is mostly empty sky. Reported as the
+ * backgrounds not being aligned on the phone, and that was exactly right: on
+ * desktop (2.37 aspect) almost the whole width shows, which is why it looked
+ * finished there and blank on a phone.
+ *
+ * Landscape keeps `cover` — it genuinely fits. Portrait gets the art as a
+ * top-anchored band at its NATURAL aspect, wide enough to keep the composition
+ * (61% of the frame rather than 26%), dissolving into the ground with a mask so
+ * there is no pasted-rectangle edge.
+ *
+ * ⚠ TWO ALTERNATIVES WERE TRIED ON A REAL PHONE VIEWPORT AND REJECTED:
+ *   · `contain` shows all of it but as a hard-edged stripe across the middle;
+ *   · stretching to fill the band (`background-size: 100% 100%`) looked good
+ *     because the art is soft and abstract, but it is a 1.7x vertical distortion
+ *     and shipping distortion silently is not on.
+ *
+ * ⚠ THIS IS A FIT, NOT A FIX. The real answer is six portrait-composed images;
+ * no CSS can invent the 39% of frame that a narrow screen cannot show.
+ * ========================================================================= */
+.ct-domain-game-stage::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: var(--training-domain-background);
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+}
+
+@media (orientation: portrait) {
+    .ct-domain-game-stage::before {
+        /* A band at the top, at the image's own aspect (165% of viewport width
+           => 644x362 on a 390px screen), fading out over its lower third. */
+        inset: 0 0 auto 0;
+        height: 125vw;
+        background-size: 165% auto;
+        background-position: center top;
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%);
+    }
 }
