@@ -9543,7 +9543,23 @@ html[data-home-theme='dark'] .ct-domain-game-stage > .ct-fq-root {
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    background: color-mix(in srgb, var(--universe-dusk) 82%, transparent);
+/* ⚠ 60% IS A MEASURED FLOOR, NOT A TASTE SETTING — do not raise the art's share
+ * past it without re-running the numbers. The scrim was composited over all six
+ * images the way the browser does and checked against the ink on top; the light
+ * theme is the binding constraint because its ink is dark and the art lightens
+ * the ground:
+ *
+ *   scrim   light worst-case   dark worst-case
+ *   82%          8.56               13.46
+ *   70%          7.83               10.70
+ *   60%          7.26                8.63   <- here
+ *   55%          6.99  FAILS         7.73
+ *
+ * WCAG AAA for body text is 7:1, so 55% drops below it in light. 82% was the
+ * first shipped value and was too cautious to see — reported as "I see no
+ * change on the live link", which was fair: it let 18% of the illustration
+ * through. This lets 40% through and still clears AAA in both appearances. */
+    background: color-mix(in srgb, var(--universe-dusk) 60%, transparent);
 }
 .ct-domain-game-stage > * {
     position: relative;
