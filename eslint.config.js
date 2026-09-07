@@ -10,6 +10,17 @@ export default [
       'dist/**', '**/dist/**', 'node_modules/**', '.claude/**',
       'android/**', 'ios/**', 'public/**', 'scripts/**', '**/*.min.js',
       /*
+       * ⚠ SAME FAILURE AS THE MINIFIED-BUNDLE ONE BELOW, AND IT HAD COME BACK.
+       * On 2026-09-07 `npm run lint` reported 107 errors — and every single one
+       * was inside untracked scratch (`tmp/`, `.character-preview/`,
+       * `artifacts/`): browser globals in Playwright snippets, `process` in
+       * Node tooling. REAL SOURCE HAD ZERO. So the command failed no matter how
+       * clean src/ was, which is the same as having no linter at all — exactly
+       * what the note below says about the 117 fake errors.
+       * Scratch now lives in `.scratch/` (see .gitignore) and is ignored here.
+       */
+      '.scratch/**',
+      /*
        * Build output that lives at the REPO ROOT rather than in dist/.
        * `Assets/` here is the stale snapshot main still tracks (CLAUDE.md:
        * "leave them alone") and the rest is written by vite-plugin-pwa during

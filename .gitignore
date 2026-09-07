@@ -23,6 +23,27 @@ scripts/ar_freq.txt
 .shots/
 .claude/
 
+# ── SCRATCH ────────────────────────────────────────────────────────────────
+# One ignored home for everything that is not the project: art-pipeline output,
+# throwaway scripts, screenshots, abandoned experiments. 2026-09-07: 320 MB
+# across ~600 untracked paths was sitting loose in the working tree, none of it
+# ignored — which is one `git add -A` away from committing 320 MB into a PUBLIC
+# repo's history, permanently. (A dist mirror already got committed to main once,
+# on 2026-07-15.)
+#
+# ⚠ NOTHING IN HERE HAS EVER BEEN COMMITTED, so git cannot restore it. Deleting
+# .scratch/ is genuinely irreversible — unlike deleting a tracked file, which git
+# always remembers. That is the opposite of most people's instinct and it is why
+# this content was archived rather than removed.
+#
+# ⚠ `.scratch/public-scratch/` held things that were living inside `public/`.
+# Everything in public/ is copied into dist/ by a local build, so a MANUAL
+# gh-pages deploy publishes it to the live site and into the service-worker
+# precache — `public/_tmp_preview/` did exactly that on 2026-08-06, putting 211
+# files on production. Do not move anything back into public/ unless the app
+# actually references it.
+.scratch/
+
 # Secrets and local credentials — never commit
 .env
 .env.*
