@@ -9341,6 +9341,50 @@ html[data-home-theme='light'] .ct-ms-root:has(.ct-fq-training-shell--mode-cosmos
     color: var(--universe-ink) !important;
 }
 
+/* ============================================================================
+ * Domain gameplay backgrounds
+ *
+ * The route owns the illustration so all games in a cognitive domain share
+ * one stable visual world, including Daily Workout launches and lazy-loading.
+ * Game roots are made transparent here (rather than edited 18 times); opaque
+ * puzzle boards/canvases remain intact so stimulus contrast is not weakened.
+ * No raw colours are introduced: the design-ratchet play-surface token remains
+ * the fallback while the image is loading or unavailable.
+ * ========================================================================= */
+.ct-domain-game-stage {
+    position: absolute;
+    inset: 0;
+    min-width: 0;
+    min-height: min(100vh, 100dvh);
+    overflow: hidden;
+    isolation: isolate;
+    background-color: var(--play-surface-flat);
+    background-image: var(--training-domain-background), var(--play-surface);
+    background-position: center, center;
+    background-repeat: no-repeat, no-repeat;
+    background-size: cover, cover;
+}
+
+/* React renders the resolved game root directly under the shared stage. */
+.ct-domain-game-stage > :not(.wk-hud) {
+    background-color: transparent !important;
+    background-image: none !important;
+}
+
+/* These full-height 2D play panes otherwise repaint the old flat surface over
+   the shared art. Their actual task boards and stimulus cards stay opaque. */
+.ct-domain-game-stage .ct-fq-play,
+.ct-domain-game-stage .ct-sm-play,
+.ct-domain-game-stage .ct-ms-play,
+.ct-domain-game-stage .ct-rh-play {
+    background-color: transparent !important;
+    background-image: none !important;
+}
+
+.ct-domain-game-stage .workout-loading {
+    background: transparent;
+}
+
 /* Every Training title is now dark ink on the light ground — the difficulty
  * pick, level grid, pass-n-play setup, results, the domain page AND the mode
  * hub. The :not(.ct-domain-pick) carve-out is gone with the dusk it protected:
@@ -9426,4 +9470,82 @@ html[data-home-theme='light'] .ct-fq-training-shell--mode-cosmos .ct-fq-sci-link
   font-weight: 650;
   color: var(--ink-dim);
   max-width: 34ch;
+}
+
+/* ============================================================================
+ * Domain gameplay backgrounds — making the art actually VISIBLE
+ *
+ * Continues the DomainGameStage work. That stage sets the domain illustration
+ * correctly and the image loads (verified 200), but nothing was visible: two
+ * full-bleed layers sit on top of it, each exactly the size of the stage —
+ *
+ *   .ct-domain-game-stage            390x844   the art
+ *     .<game>.ct-fq-root             390x844   opaque
+ *       .ct-fq-training-shell--mode-cosmos  390x844   opaque
+ *
+ * The stage's own rule reaches only its DIRECT child, so the inner shell was
+ * never addressed at all; and on the direct child it lost the cascade, because
+ * the "--mode-cosmos" ground uses `!important` with `:has()` selectors that
+ * out-specify a `.a > :not(.b)` rule.
+ *
+ * ⚠ THOSE COSMOS RULES ARE NOT JUNK — do not simply delete them. training.css
+ * documents them as fixing a MEASURED contrast bug: mode-hub titles were 1.2:1
+ * in both themes after --ink was made appearance-independent. They are the
+ * reason those screens are readable. So this block does not remove them; it
+ * only suppresses the opaque FILL while the shell is inside a domain stage,
+ * leaving their colour rules untouched.
+ *
+ * ⚠ Specificity is deliberate, not defensive noise. The rules being overridden
+ * are (0,2,0) `!important` (`.game:has(> .shell)`), so an equal (0,2,0) would
+ * depend on source order alone. These sit at the END of the file and add a
+ * third class where one exists, so the win does not rest on file position.
+ * ========================================================================= */
+.ct-domain-game-stage > .ct-fq-root,
+.ct-domain-game-stage > .ct-fq-root.cancellation-task-game,
+.ct-domain-game-stage .ct-fq-training-shell,
+.ct-domain-game-stage .ct-fq-training-shell.ct-fq-training-shell--mode-cosmos,
+.ct-domain-game-stage .ct-fq-training-shell.ct-fq-training-shell--hub-light {
+    background-color: transparent !important;
+    background-image: none !important;
+}
+
+/* The same two layers, addressed through the theme-scoped forms the light/dark
+   rules use, so neither appearance re-paints over the art. */
+html[data-home-theme='light'] .ct-domain-game-stage .ct-fq-training-shell,
+html[data-home-theme='dark'] .ct-domain-game-stage .ct-fq-training-shell,
+html[data-home-theme='light'] .ct-domain-game-stage > .ct-fq-root,
+html[data-home-theme='dark'] .ct-domain-game-stage > .ct-fq-root {
+    background-color: transparent !important;
+    background-image: none !important;
+}
+
+/* ⚠ A READABILITY FLOOR OVER THE ART, and it is the whole reason this is safe.
+ * The cosmos ground existed to guarantee contrast; removing the fill gives that
+ * guarantee back to an illustration, which varies pixel to pixel. A single
+ * flat scrim between the art and the content restores a predictable ground —
+ * dark enough to hold type, light enough that the art still reads. It is one
+ * layer on the stage rather than a fill on each shell, so it cannot be
+ * repainted by a game's own chrome. */
+/* ⚠ THE SCRIM IS THE GROUND COLOUR, NOT A DARKENER, and the first version got
+ * this backwards. A `rgba(0,0,0,.28)` veil darkened the page while the type on
+ * these screens is dark INK (--universe-ink on --universe-dusk), so it pushed
+ * contrast the wrong way and made "Survival mode" and the mode captions harder
+ * to read than the flat beige they replaced — reintroducing the exact 1.2:1
+ * problem the cosmos rules were written to fix.
+ *
+ * Painting the KNOWN-GOOD ground at high alpha instead keeps the documented
+ * contrast almost intact and lets the illustration through as a texture rather
+ * than as a competing image. It is theme-aware for free, because
+ * --universe-dusk already flips. */
+.ct-domain-game-stage::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: color-mix(in srgb, var(--universe-dusk) 82%, transparent);
+}
+.ct-domain-game-stage > * {
+    position: relative;
+    z-index: 1;
 }

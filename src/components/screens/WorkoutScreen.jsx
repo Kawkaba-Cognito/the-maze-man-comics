@@ -7,6 +7,7 @@ import {
 } from '../../features/workout/workoutState';
 import { ensureNotifPermission, syncNativeReminder, notifPermission, formatTimeLabel } from '../../features/workout/reminders';
 import { getLazyGame } from '../../features/training/lazyGames';
+import DomainGameStage from '../../features/training/shared/DomainGameStage';
 import { hasAssessProfile } from '../../features/training/assessment/assessmentProfile';
 import { reliableChangeRaw } from '../../features/training/assessment/assessmentNorms';
 import { ANCHORS } from '../../features/training/assessment/paradigmAnchors';
@@ -307,7 +308,7 @@ export default function WorkoutScreen() {
     const total = st.today?.exercises.length || 0;
     const pos = (st.today?.done || []).filter(Boolean).length + 1;
     return (
-      <div style={{ position: 'absolute', inset: 0 }}>
+      <DomainGameStage domainId={ex.domainId}>
         <Suspense fallback={<div className="workout-loading">{isAr ? 'جارِ التحميل…' : 'Loading…'}</div>}>
           <GameView onBack={finishExercise} workoutMode={sessionMode} />
         </Suspense>
@@ -318,7 +319,7 @@ export default function WorkoutScreen() {
             <button className="wk-hud-btn" onClick={() => { playSfx('click'); finishExercise(); }}>{isAr ? 'التالي ↦' : 'Next ↦'}</button>
           </div>
         )}
-      </div>
+      </DomainGameStage>
     );
   }
 

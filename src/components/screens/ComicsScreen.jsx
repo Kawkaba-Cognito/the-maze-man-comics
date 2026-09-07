@@ -5,6 +5,7 @@ import { DOMAINS } from '../training/trainingData';
 import { TrainingScreenShell } from '../../features/training/shared/TrainingScreens';
 import DomainAboutLink from '../../features/training/shared/DomainAboutLink';
 import { getLazyGame, hasGame } from '../../features/training/lazyGames';
+import DomainGameStage from '../../features/training/shared/DomainGameStage';
 /* ⚠ The real battery is a DEMO — unfinished content AND unfinished flow — but it
  * renders percentiles, standard scores and a "Cognitive Index" with nothing marking
  * any of it provisional. Swapping this import back is all it takes to restore it,
@@ -32,7 +33,7 @@ function GameLoading({ isAr }) {
     <div style={{
       position: 'absolute', inset: 0,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--play-surface)', color: 'var(--game-ink)',
+      background: 'transparent', color: 'var(--game-ink)',
       fontFamily: "'Outfit', system-ui, sans-serif",
       fontSize: 14, letterSpacing: 1.5,
     }}>
@@ -179,9 +180,11 @@ export default function ComicsScreen() {
         </TrainingScreenShell>
       )}
       {screen === 'game' && GameView && (
-        <Suspense fallback={<GameLoading isAr={isAr} />}>
-          <GameView onBack={exitGame} />
-        </Suspense>
+        <DomainGameStage domainId={activeDomain}>
+          <Suspense fallback={<GameLoading isAr={isAr} />}>
+            <GameView onBack={exitGame} />
+          </Suspense>
+        </DomainGameStage>
       )}
     </div>
   );
