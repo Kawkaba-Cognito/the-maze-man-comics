@@ -9568,7 +9568,43 @@ html[data-home-theme='dark'] .ct-domain-game-stage > .ct-fq-root {
  *
  * WCAG AAA for body text is 7:1. 70% is the lowest value where both appearances
  * clear it against these images, so it lets 30% of the illustration through. */
-    background: color-mix(in srgb, var(--universe-dusk) 70%, transparent);
+    background: color-mix(in srgb, var(--universe-dusk) var(--training-art-scrim, 70%), transparent);
+}
+
+/*
+ * ⚠ THE TWO THEMES NEED DIFFERENT AMOUNTS OF VEIL, AND THE REASON IS THE ART.
+ *
+ * Both sets are colour-graded to the --play-surface midpoint, i.e. to the LIGHT
+ * ground. In light theme that is ideal: dark ink on a light picture already
+ * measures 3.77:1 with no scrim at all, so a modest veil clears AA comfortably
+ * and the illustration stays legible as a picture.
+ *
+ * Dark theme puts LIGHT ink on that same light picture. Unveiled it is 1.05:1 —
+ * text on top of the artwork is effectively invisible, which is why a single
+ * shared value had to be set for the dark case and left the light case far more
+ * muted than it needed to be. Reported as the backgrounds being too weak to see;
+ * the art was never weak, the veil was.
+ *
+ * Measured true worst case (min of both luminance extremes) against the v2 art:
+ *
+ *          light    dark
+ *    0%     3.77     1.05
+ *   45%     5.95     3.40
+ *   70%     7.51     7.28
+ *
+ * Light drops to AA (4.5:1) rather than AAA, deliberately, so the art is
+ * actually visible — these are mode and menu screens, not the play board, and
+ * the board itself is opaque and unaffected. Dark stays at 70% because nothing
+ * lower is readable at all against light-graded art.
+ *
+ * ⚠ THE REAL FIX FOR DARK IS DARK-GRADED ART, not a heavier veil. Six
+ * dark-ground variants would let this drop to ~45% in both themes.
+ */
+:root, html[data-home-theme='light'] {
+    --training-art-scrim: 45%;
+}
+html[data-home-theme='dark'] {
+    --training-art-scrim: 70%;
 }
 .ct-domain-game-stage > * {
     position: relative;
