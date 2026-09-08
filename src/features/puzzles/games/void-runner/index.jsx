@@ -923,10 +923,12 @@ function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
      * this repo keeps shipping: retune the floor, and a hand-copied hex here
      * would silently stop matching it.
      */
+    const floorHex = `#${VR.floor.toString(16).padStart(6, '0')}`;
     grad.addColorStop(0, VR.skyTop);
-    grad.addColorStop(0.52, VR.skyMid);
-    grad.addColorStop(0.72, VR.skyLow);
-    grad.addColorStop(1, `#${VR.floor.toString(16).padStart(6, '0')}`);
+    grad.addColorStop(0.40, VR.skyMid);
+    grad.addColorStop(0.54, VR.skyLow);   // the dusk band, up where a horizon sits
+    grad.addColorStop(0.70, floorHex);    // ...and fully resolved before the floor's near edge
+    grad.addColorStop(1, floorHex);
     g.fillStyle = grad;
     g.fillRect(0, 0, 2, 256);
     /*
