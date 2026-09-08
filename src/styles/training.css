@@ -9601,12 +9601,17 @@ html[data-home-theme='dark'] .ct-domain-game-stage > .ct-fq-root {
  * dark-ground variants would let this drop to ~45% in both themes.
  */
 :root, html[data-home-theme='light'] {
-    /* The universal art keeps its own clear centre, so no veil is needed in
-       light: text lands at 11-12:1 on the untouched ground. */
+    /* ⚠ ZERO IN BOTH THEMES NOW, and the dark value in particular had to go.
+       It was 70%, set when dark mode had only light-graded art and light ink on
+       it measured 1.05:1 — a veil was the only defence. There is purpose-made
+       dark art now: the dark gameplay pair measures 17.2:1 in the centre, so a
+       70% veil would be hiding art that needs no protection at all. Any small
+       lift dark still wants comes from `--app-veil` in global.css, which is
+       measured and applies to every background surface rather than this one. */
     --training-art-scrim: 0%;
 }
 html[data-home-theme='dark'] {
-    --training-art-scrim: 70%;
+    --training-art-scrim: 0%;
 }
 .ct-domain-game-stage > * {
     position: relative;
@@ -9628,16 +9633,82 @@ html[data-home-theme='dark'] {
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    background-image: var(--training-domain-background);
+    /* ⚠ ONE GAMEPLAY IMAGE FOR EVERY GAME NOW, not one per domain (owner,
+       2026-09-08). `--game-bg` is set in global.css and already switches
+       portrait/landscape, so the per-domain variables DomainGameStage still
+       supplies are unused — left in place deliberately as the hook if
+       per-domain art ever returns, not because anything reads them. */
+    background-image: linear-gradient(var(--app-veil), var(--app-veil)), var(--game-bg);
     background-repeat: no-repeat;
     background-position: center center;
     background-size: cover;
 }
 
+/* ⚠ The portrait override this block used to carry is GONE, and its absence is
+   correct: `--game-bg` already switches to the 9:16 gameplay image inside
+   global.css's own portrait query, so re-pointing the layer here would just
+   name a second source for the same thing and give it somewhere to drift. */
+
+/* ============================================================================
+ * Per-domain art on the DOMAIN screen (owner, 2026-09-08: "in each domain, i
+ * want to see the backgrounds").
+ *
+ * Three surfaces, three jobs, and the split is the point:
+ *   · app screens   the cosmic pair              (global.css, on body)
+ *   · a DOMAIN      that domain's own painting   (here)
+ *   · gameplay      the quiet minimal pair       (--game-bg)
+ *
+ * So entering Attention looks like a different place from Memory, and starting
+ * a game quiets down to something that cannot compete with the task. This also
+ * gives the six domain-backgrounds-2026-v2 images a job again — they were
+ * superseded for gameplay when one shared pair replaced them.
+ *
+ * ⚠ No JSX needed: ComicsScreen already puts `ct-domain-pick--<id>` on this
+ * screen's shell, so the art hangs off a class that exists.
+ * ========================================================================= */
+/* ⚠ THE ART GOES ON `::after`, AND THAT IS NOT A STYLE CHOICE — `::before` WAS
+   ALREADY OWNED, BY THREE RULES THAT EACH BROKE THIS DIFFERENTLY.
+   `.ct-domain-pick::before` is this screen's pre-existing decorative glow, and
+   putting the art there measured `domain art: none` in dark while reading
+   correctly in light — the classic one-appearance gap. Two dark rules
+   (`training.css:7303`, `:8211`) set the `background` SHORTHAND, which resets
+   `background-image` to none; a shorthand does not have to mention a longhand
+   to erase it. And the light rule at `:9301` applies `opacity: 0.34` +
+   `mix-blend-mode: multiply` to that same layer, which is right for a glow and
+   wrong for a painting — so even the appearance that "worked" was showing the
+   art at a third strength, multiplied into the ground.
+   `::after` is used by nothing on this screen (verified), so the art gets a
+   layer of its own and inherits none of that. It sits at z-index 0 under the
+   content, above the glow. */
+.ct-domain-pick { position: relative; }
+.ct-domain-pick::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    background-image: var(--domain-art);
+}
+.ct-domain-pick > * { position: relative; z-index: 1; }
+
+.ct-domain-pick--attention { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/attention.webp"); }
+.ct-domain-pick--speed { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/speed.webp"); }
+.ct-domain-pick--memory { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/memory.webp"); }
+.ct-domain-pick--language { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/language.webp"); }
+.ct-domain-pick--reasoning { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/reasoning.webp"); }
+.ct-domain-pick--flexibility { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/flexibility.webp"); }
+
+/* ⚠ The portrait set is a different COMPOSITION, not the same image scaled.
+   A 16:9 painting on a 390x844 screen shows 26% of its width — measured, and
+   the reason the mobile set exists at all. */
 @media (orientation: portrait) {
-    .ct-domain-game-stage::before {
-        background-image: var(--training-domain-background-mobile, var(--training-domain-background));
-        background-position: center center;
-        background-size: cover;
-    }
+    .ct-domain-pick--attention { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/attention.webp"); }
+    .ct-domain-pick--speed { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/speed.webp"); }
+    .ct-domain-pick--memory { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/memory.webp"); }
+    .ct-domain-pick--language { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/language.webp"); }
+    .ct-domain-pick--reasoning { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/reasoning.webp"); }
+    .ct-domain-pick--flexibility { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/flexibility.webp"); }
 }

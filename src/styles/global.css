@@ -3057,18 +3057,132 @@ html[data-home-theme='light'] .home-universe-title {
  * and the build (/Assets/index-hash.css) — the same path would point at two
  * different places. These live in public/ so Vite never rewrites them.
  * ========================================================================= */
+/*
+ * ⚠ TWO SETS, AND WHICH ONE YOU SEE DEPENDS ON WHETHER YOU ARE PLAYING.
+ *
+ *   app-backgrounds-v2      the cosmic pair — planets and orbits around the
+ *                           edge. Everything that is not gameplay.
+ *   gameplay-backgrounds-v2 a deliberately quieter pair. Anything you play.
+ *
+ * The split is not decoration. A visual-search or timed task is a measurement,
+ * and texture behind it changes the task without changing the numbers that
+ * certify the levels (audit:fq). The busy pair stays where nothing is scored.
+ *
+ * ⚠ The mobile cosmic image is the CORRECTED one. Its predecessor cropped its
+ * planets at the edges on a phone.
+ */
+/*
+ * ⚠ FOUR IMAGES PER SET: light/dark × landscape/portrait. Dark is a separately
+ * PAINTED image, not the light one dimmed, and that is what finally fixes dark
+ * mode. The light art is graded to the beige ground, so under dark mode's light
+ * ink it measured 1.05:1 unveiled — invisible text — and the only defence was a
+ * 70% veil that hid the art in both appearances. Purpose-made dark art removes
+ * the veil entirely.
+ */
+:root, html[data-home-theme='light'] {
+    --app-bg: url("/the-maze-man-comics/Assets/training/app-backgrounds-v2/desktop.webp");
+}
+html[data-home-theme='dark'] {
+    --app-bg: url("/the-maze-man-comics/Assets/training/app-backgrounds-v2/desktop-dark.webp");
+}
+@media (orientation: portrait) {
+    :root, html[data-home-theme='light'] {
+        --app-bg: url("/the-maze-man-comics/Assets/training/app-backgrounds-v2/mobile.webp");
+    }
+    html[data-home-theme='dark'] {
+        --app-bg: url("/the-maze-man-comics/Assets/training/app-backgrounds-v2/mobile-dark.webp");
+    }
+}
+
+/* ⚠ ONE BACKGROUND FOR THE WHOLE APP, GAMEPLAY INCLUDED (owner, 2026-09-08).
+ *
+ * There used to be a second pair — `gameplay-backgrounds-v2/*` — on the theory
+ * that a play surface should not compete with a timed task. The theory was
+ * sound and the execution killed it: the gameplay art was composed with a few
+ * small planets in the CORNERS and an empty centre, and `background-size:
+ * cover` crops the sides on a phone, so it trimmed the only content there was.
+ * Reported as "cancellation task doesnt have any background" — and the report
+ * was fair. The layer was working perfectly; there was simply nothing on it.
+ *
+ * ⚠ It was NOT a wiring bug, and it cost real time to prove that. Forcing the
+ * layer to solid magenta painted the entire screen, the image returned 200,
+ * and a sweep of all six domains found the art present on every game. The
+ * defect was in the picture, not the CSS — so DO NOT go looking for a
+ * compositing problem here if a background ever looks missing again. Screenshot
+ * it first; a computed `background-image` proves the DECLARATION only, which is
+ * exactly what made this look healthy while the screen looked blank.
+ *
+ * ⚠ `--game-bg` is DERIVED rather than re-declared, deliberately. Four parallel
+ * declarations (light/dark × landscape/portrait) is precisely the shape that
+ * ships a half-migrated pair — one retargeted, its partner left behind — which
+ * this codebase has hit repeatedly. Deriving makes disagreement inexpressible.
+ * The name is kept so the game stage keeps its own seam if quieter art ever
+ * returns; point it at a real pair here and every game picks it up at once.
+ *
+ * ⚠ A per-game split (rich menus, quiet board) was tried and rejected on
+ * measurement, not taste: `.ct-training-play-header` is already present on the
+ * MENU in Target Tracking and Story Time, so `:has()` on it would mislabel most
+ * menus as gameplay. There is no reliable "a round is live" marker today. */
+:root {
+    --game-bg: var(--app-bg);
+}
+
+/*
+ * ⚠ A SMALL DARK-ONLY VEIL, and the asymmetry is measured rather than aesthetic.
+ * Centre-zone worst case against the ink that sits on it:
+ *
+ *              light art / light ink     dark art / light ink
+ *   app          9.43 – 9.72                4.31 (desktop) · 11.95 (mobile)
+ *   gameplay    10.72 – 11.43              17.17 – 17.20
+ *
+ * Everything clears AAA except the desktop app image in dark, at 4.31 — under
+ * even AA (4.5), because that painting carries a pale nebula through part of
+ * its middle. In DARK the veil darkens, which RAISES contrast against light
+ * ink, so 25% lifts that case to roughly 5.3 while being close to invisible on
+ * near-black art. Light needs none and gets none.
+ *
+ * Layering it as a gradient inside `background-image` keeps it on the same
+ * element as the art — no overlay element, and nothing for a stacking context
+ * to trap.
+ */
+:root, html[data-home-theme='light'] { --app-veil: transparent; }
+html[data-home-theme='dark'] { --app-veil: color-mix(in srgb, var(--universe-dusk) 25%, transparent); }
+
 body {
-    background-image: url("/the-maze-man-comics/Assets/training/domain-backgrounds-universal-v1/desktop.webp");
+    background-image: linear-gradient(var(--app-veil), var(--app-veil)), var(--app-bg);
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
     background-attachment: fixed;
 }
 
-@media (orientation: portrait) {
-    body {
-        background-image: url("/the-maze-man-comics/Assets/training/domain-backgrounds-universal-v1/mobile.webp");
-    }
+/*
+ * Gameplay surfaces. Each is a full-bleed container that already sits over the
+ * page, so each carries the quieter pair itself rather than trying to tell body
+ * what to paint.
+ *
+ * ⚠ `.ct-puzzle-screen--play`, NOT `.ct-puzzle-screen` — the hub variant is a
+ * menu and belongs to the cosmic set.
+ * ⚠ `.vr-root` is listed for completeness and will not show it: Void Runner is
+ * a full-screen 3D canvas with its own dark world, and a canvas cannot be seen
+ * through. Same situation as Home, but here it is correct rather than a gap.
+ */
+.ct-puzzle-screen--play::before,
+.vr-root::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: linear-gradient(var(--app-veil), var(--app-veil)), var(--game-bg);
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+}
+.ct-puzzle-screen--play > *,
+.vr-root > * {
+    position: relative;
+    z-index: 1;
 }
 
 /* The tab screens paint the flat ground on top of body, which would hide it.
@@ -3123,4 +3237,21 @@ html[data-home-theme] .app-stage--universe,
 html[data-home-theme] #screen-comics .app-stage {
     background-color: transparent !important;
     background-image: none !important;
+}
+
+/* ⚠ The Wellbeing LANDING paints its own ground in dark and covered the app
+   background there — measured: visible in light, blocked in dark, which is
+   exactly the kind of one-appearance gap that ships unnoticed. Transparent in
+   both so the constellation floats on the same sky as every other screen.
+
+   ⚠ The selector is deliberately over-specific. `.rx-root--landing` alone is
+   (0,1,0) and LOST to RelaxScreen's injected
+   `html[data-home-theme='dark'] .rx-root { background: … !important }` at
+   (0,2,1) — two !importants, so specificity decided it, and the landing stayed
+   opaque in dark only. Matching that specificity would still be a coin toss on
+   file order against an injected <style>, so this goes to (0,3,1) and settles
+   it in both appearances. */
+html[data-home-theme] .rx-root.rx-root--landing,
+.rx-root.rx-root--landing {
+    background: transparent !important;
 }

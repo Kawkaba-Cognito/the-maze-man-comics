@@ -717,8 +717,13 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
         background: chrome.dark
           ? 'linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 65%, rgba(0,0,0,0) 100%)'
           : 'linear-gradient(180deg, var(--universe-dusk) 0%, color-mix(in srgb, var(--universe-dusk) 76%, transparent) 65%, transparent 100%)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        /* ⚠ NO backdrop-filter (owner, 2026-09-08: "there is a blur, remove the
+         * blur"). It was blur(12px) across the full-width 60px strip at the top
+         * of the hub, which smeared the background artwork behind the title —
+         * fine when the page behind it was a flat colour, wrong now that there
+         * is a picture there. The gradient above still fades the page out from
+         * under the sticky title, which is what actually keeps it readable;
+         * the blur was only ever doing that job a second time, badly. */
       }}>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }} />
         {/* Type treatment lives entirely in trainingHubPremium.css

@@ -1367,9 +1367,25 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         position: 'absolute',
         inset: 0,
         overflow: 'hidden',
-        /* Both branches are the theme token now — the canvas and the DOM behind
-           it were separately hard-coded and could disagree. */
-        background: lightSky ? SKY.css : 'var(--universe-dusk)',
+        /*
+         * ⚠ TRANSPARENT, SO HOME GETS THE APP BACKGROUND (owner, 2026-09-08).
+         *
+         * This div WAS the sky: the renderer is `alpha: true` with a fully
+         * transparent clear colour, so the canvas only ever drew particles and
+         * this element supplied the colour behind them. That made Home the one
+         * screen no CSS background could reach — not because of the canvas,
+         * which was already see-through, but because of this.
+         *
+         * Dropping it hands that job to `body`, so the particles now drift over
+         * the same artwork as the rest of the app and Home stops being a
+         * different place. Nothing else about the scene changes.
+         *
+         * ⚠ If a future scene needs its own ground again, give it to the CANVAS
+         * (a clear colour) rather than putting it back here — a DOM background
+         * on this element is invisible to everything outside the component and
+         * is exactly why this took a measurement to find.
+         */
+        background: 'transparent',
       }}
     />
   );
