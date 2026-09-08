@@ -755,6 +755,38 @@ The same shape appeared three more times the same day: `body` was pinned to `#e8
 
 ---
 
+## PENDING WORK: Brand & IP — the next session's agenda (opened 2026-09-08)
+
+The owner has settled on a brand and a name and asked for a plan before sharing them: *"it is time to be professional, we are not building a prototype anymore we are building a planet and experience."* **The name is deliberately NOT written in this file, or anywhere else in the repo, and must not be until step 2 is done** — see why below.
+
+⚠ **I am not a lawyer and none of this is legal advice.** Everything here is either mechanical (a check you can run) or a pointer to an official registry. Steps 3 and 4 are where a professional is worth paying for; the rest you can do yourself in an afternoon.
+
+⚠ **THE REPO IS PUBLIC, AND THAT IS THE WHOLE REASON FOR THE ORDER OF THESE STEPS.** Anything committed here is world-readable the moment it is pushed, and it stays reachable afterwards — this project already learned that purging content from `main` does not remove it, because **GitHub still serves old commits by SHA**, and `gh-pages` history was never cleaned. A name pushed once is public permanently. That is not a reason to panic; it is a reason to do the cheap protective steps *first* and the commits *second*.
+
+**1 — Clear the name before falling in love with it.** Free, same day, and it is the step people skip. Search each register for the exact name and near-misses, in the classes that matter (below):
+   - WIPO **Global Brand Database** (`branddb.wipo.int`) — the widest single net, covers many national registers at once
+   - **EUIPO eSearch plus** (`euipo.europa.eu`) and **USPTO** trademark search (`tmsearch.uspto.gov`) — the two markets an app store reaches by default
+   - the **national registry** wherever the entity will be based
+   - non-registry, but decisive in practice: Google Play + Apple App Store listings, `.com`/local domains, and the handles on Instagram / TikTok / X / YouTube. A name that is legally free but has no available handle anywhere is still a bad name.
+
+**2 — Secure the cheap things immediately, before the name appears anywhere public.** Domain (`.com` plus the local ccTLD) and the social handles. This is minutes and small money, and it is the only step that is genuinely time-critical: handle-squatting follows public mentions. **Only after this is it safe to put the name in the repo, the manifest, or a commit message.**
+
+**3 — Trademark registration.** This is what actually protects a brand — *not* keeping it secret, and not the repo being private. Rights come from registration and use in commerce. For this product the classes to discuss with an attorney are:
+   - **Class 9** — downloadable software / mobile application (the app itself)
+   - **Class 41** — education and training services (this is the app's stated identity: *an education app about psychology for the curious public*)
+   - **Class 42** — SaaS / hosted software, which is what it becomes once Supabase lands
+   - ⚠ **Class 44** (medical / psychological services) is the one to think hard about *against* registering. Claiming it invites the reading that this is a clinical service, which is precisely the posture the assessment was parked to avoid, and which the review board's scientific-validity standards exist to police. The app is education and training. Register what it is.
+
+**4 — The logo has a copyright problem the name does not.** ⚠ **A purely AI-generated logo may not be copyrightable** — the US Copyright Office has refused registration for works without human authorship, and much of this project's art pipeline is generative (Codex, Pollinations; see the skills note). A trademark can still be registered over it, but the underlying artwork may fall outside copyright, which is a weak foundation for the one asset a brand is built on. **Commission the wordmark and logo from a human designer, with a written assignment of rights.** Everything else — planets, backgrounds, character art — is lower stakes and can stay as it is.
+
+**5 — Repo visibility, and the trap in it.** Discussed 2026-09-08. `Kawkaba-Cognito` is a **personal (non-org) account**, and **GitHub Pages on a private repo requires a paid plan**. Going private on the free plan *unpublishes the live site* and leaves the `gh-pages` deploy with nowhere to land. Going private is also **not retroactive** — forks, existing clones and caches persist, and existing forks detach rather than vanish. If the source needs to be private, decide the hosting first: GitHub Pro, or migrate to **Cloudflare Pages / Netlify**, both of which serve a private repo on their free tier. That is a migration, not a toggle — do not flip visibility the same day.
+
+**6 — Housekeeping that is already half-done.** `LICENSE` reserves all rights; `CREDITS.md` tracks third-party material and must be updated in the same commit as any asset it covers. Before launch, reconcile the **product name** across `package.json`, the PWA manifest (`name`/`short_name`, which is what shows under the installed icon), the Play Store listing, and the `<title>` — today these disagree, and the repo name (`the-maze-man-comics`) already lies about what the app is.
+
+**Order matters: 1 → 2 → (safe to commit the name) → 3, 4, 5 in parallel.**
+
+---
+
 ## PENDING WORK: Security & Database
 
 Status: Supabase project exists but is **not integrated**; must be done before public launch.
