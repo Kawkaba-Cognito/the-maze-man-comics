@@ -896,9 +896,37 @@ function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
     c.width = 2; c.height = 256;
     const g = c.getContext('2d');
     const grad = g.createLinearGradient(0, 0, 0, 256);
+    /*
+     * THE WARM HORIZON IS A BAND, NOT THE BOTTOM STOP (owner, 2026-09-08:
+     * "there is blurring in the screen", on a phone).
+     *
+     * `scene.background` is a plain texture, so three.js draws it SCREEN
+     * ALIGNED and stretched to the viewport - it does not move with the camera.
+     * That means whatever colour sits at stop 1.0 is permanently painted across
+     * the bottom edge of the screen. `skyLow` was that stop, so the tunnel's
+     * near end always sat on a broad pale mauve block with a hard horizontal
+     * seam where the floor stopped. A horizon colour was doing a floor's job.
+     *
+     * ⚠ IT IS WORST ON A PHONE, WHICH IS WHY IT WAS REPORTED FROM ONE. The
+     * gradient is in SCREEN space, so a tall 9:16 viewport hands the bottom
+     * stop far more pixels than a 16:9 one - and puts them directly under the
+     * ship, where the player is actually looking. Verify this on portrait, not
+     * just on a desktop window.
+     *
+     * So `skyLow` now peaks at 0.72 and the gradient falls back to the FLOOR's
+     * own colour by 1.0. The dusk horizon the palette asks for still reads, at
+     * a height where a horizon belongs, and the bottom of the frame matches the
+     * surface the player is flying over instead of glowing against it.
+     *
+     * ⚠ The last stop is DERIVED from `VR.floor` rather than written out again.
+     * A second literal of the same colour is exactly the half-migrated pair
+     * this repo keeps shipping: retune the floor, and a hand-copied hex here
+     * would silently stop matching it.
+     */
     grad.addColorStop(0, VR.skyTop);
-    grad.addColorStop(0.58, VR.skyMid);
-    grad.addColorStop(1, VR.skyLow);
+    grad.addColorStop(0.52, VR.skyMid);
+    grad.addColorStop(0.72, VR.skyLow);
+    grad.addColorStop(1, `#${VR.floor.toString(16).padStart(6, '0')}`);
     g.fillStyle = grad;
     g.fillRect(0, 0, 2, 256);
     /*
