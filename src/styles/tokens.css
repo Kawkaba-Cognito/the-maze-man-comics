@@ -254,6 +254,17 @@
      picture: this is what keeps the art a textured ground rather than a
      competing stimulus. Raise the alpha to quieten a background further —
      ONE number, every game. */
+  /* The Learn footer bar is black in BOTH appearances (owner, 2026-09-08), so
+     its ink cannot come from --universe-ink: that token flips, and in light
+     theme it is near-black, which on a black bar is invisible. These three are
+     fixed on purpose. The ink and accent are the app's existing parchment and
+     gold, so a permanently dark strip still reads as this product.
+     ⚠ --fx-* names are exempt from audit:design's raw-colour rule; that is what
+     this prefix is for, and why the literals live here and not in a feature. */
+  --fx-kw-foot-bg: #06080e;
+  --fx-kw-foot-ink: #f0e2c0;
+  --fx-kw-foot-accent: #d4a850;
+
   --fx-training-scrim: rgba(8, 14, 30, 0.58);
   /* The lighter plate for a HUB backdrop, which sits behind cards rather than
      behind a scored task and so does not need to go as dark. */

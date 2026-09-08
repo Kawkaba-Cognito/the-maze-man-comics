@@ -268,10 +268,22 @@ const CSS = `
 /* Puzzle Studio edition: dark cosmic play, restrained Training Hub surfaces. */
 .vr-root {
   font-family:'Outfit','DM Mono',sans-serif;
-  background:
+  /* A SOLID COLOUR UNDER THE GRADIENTS, AND IT IS LOAD-BEARING NOW.
+     --play-surface-deep is an IMAGE, so this shorthand left background-color
+     computing as rgba(0,0,0,0) - the root had no opaque ground at all. That did
+     not matter while an ancestor painted one, but the Puzzle Studio ground is
+     transparent since 2026-09-08, so the app background showed through wherever
+     the canvas does not reach, washing the strip above and below the play area
+     pale. Reported as "there is blurring in the screen". The canvas itself is
+     opaque; it simply is not the whole root.
+
+     NOTE: this whole block is inside a JS template literal. No backticks in
+     these comments - one here took the live app down on 2026-09-08. */
+  background-color: var(--vr-dark-bg, #121826);
+  background-image:
     radial-gradient(ellipse at 18% 12%, rgba(154,128,200,0.16), transparent 42%),
     radial-gradient(ellipse at 86% 72%, rgba(101,183,176,0.12), transparent 44%),
-    var(--play-surface-deep, var(--vr-dark-bg));
+    var(--play-surface-deep, none);
 }
 .vr-scanlines { opacity:0.2; }
 .vr-speedlines {
@@ -1025,6 +1037,28 @@ function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
   horizonRing.position.copy(warmWorld.position);
   horizonRing.rotation.x = Math.PI * 0.32;
   horizonGroup.add(warmWorld, coolMoon, horizonRing);
+  /* ⚠ THE HORIZON DECOR IS HIDDEN (owner, 2026-09-08: "like two circles that
+     appears on the screen up for no reason").
+
+     It was meant to sit far behind the tunnel and add depth. It does not: both
+     materials are `depthWrite: false, fog: false`, and being transparent they
+     are drawn after the opaque pass, so they float THROUGH the corridor walls
+     as two flat discs hanging in mid-air — a tan one on the left and a pale
+     blue one on the right, exactly as reported.
+
+     ⚠ Diagnosed the slow way, and worth recording so nobody repeats it: these
+     look so much like the app background's watercolour planets that the
+     obvious theory is bleed-through from the new background layer. It is not.
+     The WebGL canvas is `alpha: false`, it covers the full 390x844 viewport,
+     `elementFromPoint` at both discs returns CANVAS, and forcing everything
+     behind it magenta left them untouched. They are in the scene.
+
+     `visible = false` rather than deletion: the run loop still animates
+     `horizonGroup` and `horizonRing` (see the worldTime block), so removing the
+     meshes would throw. Flip these back to see them again. */
+  warmWorld.visible = false;
+  coolMoon.visible = false;
+  horizonRing.visible = false;
   scene.add(horizonGroup);
 
   // ── NEON GRID TUNNEL ──

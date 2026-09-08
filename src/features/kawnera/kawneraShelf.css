@@ -626,7 +626,11 @@ html[data-home-theme='light'] .kw .kawkabButton {
   padding: clamp(26px, 5vw, 44px) var(--kw-gap) clamp(90px, 12vw, 130px);
   border-top: 1px solid var(--universe-line);
   text-align: center;
-  color: var(--universe-muted);
+  /* Black bar, light type (owner, 2026-09-08). It used to inherit the page's
+     muted ink on a transparent ground, which on the new app background read as
+     a smudge rather than a closing bar. */
+  background: var(--fx-kw-foot-bg);
+  color: var(--fx-kw-foot-ink);
 }
 
 .kw .kw-foot b {
@@ -656,7 +660,8 @@ html[data-home-theme='light'] .kw .kawkabButton {
   font: 700 9px 'DM Mono', ui-monospace, monospace;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--universe-accent);
+  /* --universe-accent is tuned against the page ground, not against black. */
+  color: var(--fx-kw-foot-accent);
 }
 
 .kw[dir='rtl'] .kw-foot small {

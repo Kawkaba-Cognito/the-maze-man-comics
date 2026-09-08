@@ -3081,16 +3081,20 @@ html[data-home-theme='light'] .home-universe-title {
  */
 :root, html[data-home-theme='light'] {
     --app-bg: url("/the-maze-man-comics/Assets/training/app-backgrounds-v2/desktop.webp");
+    --game-bg: url("/the-maze-man-comics/Assets/training/gameplay-backgrounds-v2/desktop.webp");
 }
 html[data-home-theme='dark'] {
     --app-bg: url("/the-maze-man-comics/Assets/training/app-backgrounds-v2/desktop-dark.webp");
+    --game-bg: url("/the-maze-man-comics/Assets/training/gameplay-backgrounds-v2/desktop-dark.webp");
 }
 @media (orientation: portrait) {
     :root, html[data-home-theme='light'] {
         --app-bg: url("/the-maze-man-comics/Assets/training/app-backgrounds-v2/mobile.webp");
+        --game-bg: url("/the-maze-man-comics/Assets/training/gameplay-backgrounds-v2/mobile.webp");
     }
     html[data-home-theme='dark'] {
         --app-bg: url("/the-maze-man-comics/Assets/training/app-backgrounds-v2/mobile-dark.webp");
+        --game-bg: url("/the-maze-man-comics/Assets/training/gameplay-backgrounds-v2/mobile-dark.webp");
     }
 }
 
@@ -3112,20 +3116,27 @@ html[data-home-theme='dark'] {
  * it first; a computed `background-image` proves the DECLARATION only, which is
  * exactly what made this look healthy while the screen looked blank.
  *
- * ⚠ `--game-bg` is DERIVED rather than re-declared, deliberately. Four parallel
- * declarations (light/dark × landscape/portrait) is precisely the shape that
- * ships a half-migrated pair — one retargeted, its partner left behind — which
- * this codebase has hit repeatedly. Deriving makes disagreement inexpressible.
- * The name is kept so the game stage keeps its own seam if quieter art ever
- * returns; point it at a real pair here and every game picks it up at once.
- *
  * ⚠ A per-game split (rich menus, quiet board) was tried and rejected on
  * measurement, not taste: `.ct-training-play-header` is already present on the
  * MENU in Target Tracking and Story Time, so `:has()` on it would mislabel most
- * menus as gameplay. There is no reliable "a round is live" marker today. */
-:root {
-    --game-bg: var(--app-bg);
-}
+ * menus as gameplay. There is no reliable "a round is live" marker today.
+ *
+ * ⚠ REVERSED THE NEXT DAY BY THE OWNER, HAVING SEEN BOTH ON A PHONE
+ * (2026-09-08): "use the minimalist background and set it as the background for
+ * all the games gameplay". So `--game-bg` names the quiet pair again, above,
+ * and the cosmic art stays on everything that is not a play surface.
+ *
+ * This does NOT overturn the diagnosis above — the minimal art really is nearly
+ * empty in the centre, and that really is why it read as missing. It is the
+ * owner choosing quiet over visible for the surface a timed task is played on,
+ * which is the same reasoning that produced the second image in the first
+ * place. Keep the finding: if anyone reports a missing background here again,
+ * the answer is almost certainly "the picture is empty", not "the CSS is wrong".
+ *
+ * ⚠ The four `--game-bg` declarations each sit on the line IMMEDIATELY AFTER
+ * their `--app-bg` partner. That adjacency is the whole defence against the
+ * half-migrated pair this file keeps recording — retarget one and its partner
+ * is the next line down, impossible to miss. Do not separate them. */
 
 /*
  * ⚠ A SMALL DARK-ONLY VEIL, and the asymmetry is measured rather than aesthetic.
@@ -3163,12 +3174,25 @@ body {
  *
  * ⚠ `.ct-puzzle-screen--play`, NOT `.ct-puzzle-screen` — the hub variant is a
  * menu and belongs to the cosmic set.
- * ⚠ `.vr-root` is listed for completeness and will not show it: Void Runner is
- * a full-screen 3D canvas with its own dark world, and a canvas cannot be seen
- * through. Same situation as Home, but here it is correct rather than a gap.
+ *
+ * ⚠ `.vr-root` WAS LISTED HERE AND HAD TO BE REMOVED (2026-09-08). The comment
+ * that used to sit here said it was "listed for completeness and will not show
+ * it: a canvas cannot be seen through". That was an assumption, it was never
+ * tested, and it was wrong. Void Runner's canvas is NOT opaque, so the art
+ * rendered straight through the 3D world: two of the background's little
+ * planets hung in mid-air inside the tunnel and the lower third of the screen
+ * washed pale. Reported exactly as seen — "two circles that appears on the
+ * screen up for no reason and there is blurring in the screen".
+ *
+ * Void Runner paints its own space and must be left alone. It is the one place
+ * in the app where a gameplay background is WRONG rather than missing.
+ *
+ * ⚠ And note what caught it: `getComputedStyle` said the layer was declared and
+ * correct, which it was. Only the screenshot showed a planet floating in a
+ * corridor. Do not "restore" this selector on the reasoning that a 3D game
+ * ought to be opaque — look at it first.
  */
-.ct-puzzle-screen--play::before,
-.vr-root::before {
+.ct-puzzle-screen--play::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -3179,8 +3203,10 @@ body {
     background-position: center center;
     background-repeat: no-repeat;
 }
-.ct-puzzle-screen--play > *,
-.vr-root > * {
+/* `.vr-root > *` is gone with the layer above — it existed only to lift content
+   over a background Void Runner no longer has, and leaving it would impose a
+   stacking context on every child of a hand-tuned 3D game for no reason. */
+.ct-puzzle-screen--play > * {
     position: relative;
     z-index: 1;
 }

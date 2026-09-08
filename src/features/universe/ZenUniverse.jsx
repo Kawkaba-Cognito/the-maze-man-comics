@@ -81,6 +81,22 @@ const SKY = {
 };
 
 const CENTER_RADIUS = 1.35;
+/* ⚠ THE CENTRE PLANET SHRANK, THE ORBITS DID NOT (owner, 2026-09-08: "make the
+   3d planet in home smaller").
+
+   `CENTER_RADIUS` was the single lever for six things — the particle sphere,
+   the solid body, the halo ring, the glow sprite, the tap sphere AND the three
+   orbit radii the user planets ride on. Scaling it down would have dragged the
+   user planets inward with it and crowded the middle, which is not what was
+   asked for. So the BODY group now derives from `CENTER_BODY` and the orbits
+   stay on `CENTER_RADIUS`: the planet gets smaller, the system keeps its
+   spread.
+
+   ⚠ The tap sphere (`hitSphere`) MUST scale with the body. It is invisible, so
+   a body that shrank while its hit target did not would leave a ring of dead
+   space that still swallows taps aimed past the planet — the kind of fault
+   nobody can see and everybody feels. */
+const CENTER_BODY = CENTER_RADIUS * 0.74;
 const SMALL_RADIUS = 0.36;
 const SMALL_PLANE_Z = 0.8;
 const CARD_Z = 3.2;
@@ -274,7 +290,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     wrap.appendChild(renderer.domElement);
 
     // ---------- Central white particle planet with touch-ripple dissolve ----------
-    const centerGeo = makeSphereAttributes(finePointer ? 22000 : 16000, CENTER_RADIUS);
+    const centerGeo = makeSphereAttributes(finePointer ? 22000 : 16000, CENTER_BODY);
     const touchPoints = [];
     const touchStarts = [];
     for (let i = 0; i < MAX_TOUCHES; i++) { touchPoints.push(new THREE.Vector3()); touchStarts.push(-99); }
@@ -534,7 +550,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       depthWrite: false,
     });
     const bodyMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(CENTER_RADIUS * 0.98, 64, 48),
+      new THREE.SphereGeometry(CENTER_BODY * 0.98, 64, 48),
       bodyMat,
     );
     bodyMesh.visible = false;
@@ -544,7 +560,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
 
     // Soft additive halo â€” readable glow on phones; keep desktop sparse
     const HALO_COUNT = finePointer ? 220 : 480;
-    const haloGeo = makeHaloRingAttributes(HALO_COUNT, CENTER_RADIUS * 1.38);
+    const haloGeo = makeHaloRingAttributes(HALO_COUNT, CENTER_BODY * 1.38);
     const haloMat = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
@@ -600,8 +616,8 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
 
     // ---------- Atmosphere shell + breathing core (single billboard, phone-safe glow) ----------
     const glowGeo = new THREE.PlaneGeometry(
-      CENTER_RADIUS * (finePointer ? 3.6 : 5.2),
-      CENTER_RADIUS * (finePointer ? 3.6 : 5.2),
+      CENTER_BODY * (finePointer ? 3.6 : 5.2),
+      CENTER_BODY * (finePointer ? 3.6 : 5.2),
     );
     const glowMat = new THREE.ShaderMaterial({
       transparent: true,
@@ -737,7 +753,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
     scene.add(wisps);
 
     const hitSphere = new THREE.Mesh(
-      new THREE.SphereGeometry(CENTER_RADIUS * 1.12, 16, 16),
+      new THREE.SphereGeometry(CENTER_BODY * 1.12, 16, 16),
       new THREE.MeshBasicMaterial({ visible: false })
     );
     scene.add(hitSphere);
@@ -1117,7 +1133,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
         if (t - lastCenterPulse < 1.4) return;
         lastCenterPulse = t;
         const p = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, 0.6 + Math.random())
-          .normalize().multiplyScalar(CENTER_RADIUS);
+          .normalize().multiplyScalar(CENTER_BODY);
         ripple(centerPlanet.worldToLocal(p));
       },
     };
@@ -1128,7 +1144,7 @@ const ZenUniverse = forwardRef(function ZenUniverse({ planets }, ref) {
       raycaster.setFromCamera(ndc, camera);
       const hit = raycaster.intersectObject(hitSphere)[0];
       if (!hit) return;
-      ripple(centerPlanet.worldToLocal(hit.point.clone()).normalize().multiplyScalar(CENTER_RADIUS));
+      ripple(centerPlanet.worldToLocal(hit.point.clone()).normalize().multiplyScalar(CENTER_BODY));
     }
     renderer.domElement.addEventListener('pointerdown', onPointerDown);
 

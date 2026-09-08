@@ -588,6 +588,28 @@ html[data-home-theme='light'] .pz-studio {
     linear-gradient(180deg, #f3f6f9, #dfe8f0);
 }
 
+/* ⚠ THE STUDIO PAINTS ITS OWN GROUND, WHICH IS WHY THE APP BACKGROUND STOPPED
+   AT THE PUZZLES TAB (owner, 2026-09-08: "you didnt put the backgrounds in the
+   whole studio"). Measured on a phone: `.pz-studio--hub` computed an opaque
+   rgb(207,196,176) over the whole viewport.
+
+   Both grounds are cleared here — the base rule's and the light rule's above.
+   Note the light one ramps `#f3f6f9 → #dfe8f0`, which is the retired COOL
+   SILVER palette this repo already documented as "wrong palette, looks so
+   different"; it was covering the warm app art with cold grey.
+
+   ⚠ The selector is (0,3,1) deliberately. `html[data-home-theme='light']
+   .pz-studio` is (0,2,1), so a (0,2,1) override would be decided by file order
+   against a stylesheet that may load either side of this one — the same coin
+   toss the Wellbeing landing lost. Doubling the class settles it outright.
+
+   ⚠ The `--pz-*` custom properties are NOT touched. Children read them for
+   cards, given cells and type; clearing the ground must not restyle the
+   contents. */
+html[data-home-theme] .pz-studio.pz-studio {
+  background: transparent;
+}
+
 html[data-home-theme='light'] .pz-studio-header {
   background: linear-gradient(180deg, rgba(239,244,248,0.96) 58%, rgba(239,244,248,0));
 }

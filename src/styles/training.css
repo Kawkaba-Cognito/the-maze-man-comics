@@ -9356,7 +9356,28 @@ html[data-home-theme='light'] .ct-ms-root:has(.ct-fq-training-shell--mode-cosmos
     inset: 0;
     min-width: 0;
     min-height: min(100vh, 100dvh);
-    overflow: hidden;
+    /* ⚠ THIS WAS `overflow: hidden`, AND IT MADE TALL GAMES UNFINISHABLE
+       (owner, 2026-09-08: "there is a sliding problem ... like detective i cant
+       go down", reported on desktop AND then on mobile).
+
+       Every game launched from Training or the Daily Workout is wrapped in this
+       one element, and it is `position: absolute; inset: 0` — so it is exactly
+       the viewport, never taller. With `overflow: hidden`, any game whose
+       content ran past the fold had that content CLIPPED and reachable by
+       nothing: no scrollbar, no wheel, no touch drag. Detective is the clearest
+       case because its line-up, the jail and the submit button stack, but the
+       clip applied to all 18 games equally — it just only bit the tall ones.
+
+       `overflow-y: auto` changes nothing for a game that fits (no scrollbar, no
+       scrolling) and gives the tall ones a way down. `overflow-x` stays hidden
+       so a wide board still cannot shove the page sideways.
+
+       ⚠ `overscroll-behavior: contain` is not decoration. Without it a scroll
+       that reaches the end of the stage CHAINS to the page behind, which on a
+       phone drags the whole app under a live round. */
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     isolation: isolate;
     background-color: var(--play-surface-flat);
     /* ⚠ The art itself moved to ::before (see the portrait block at the end of
@@ -9629,7 +9650,15 @@ html[data-home-theme='dark'] {
  * ========================================================================= */
 .ct-domain-game-stage::before {
     content: '';
-    position: absolute;
+    /* ⚠ `fixed`, NOT `absolute`, and it is a consequence of the stage becoming
+       scrollable (see `overflow-y: auto` above). An absolutely positioned child
+       of a scroll container is laid out against the padding box and SCROLLS
+       WITH the content — so on a tall game the art would slide up and leave a
+       flat band under it. Fixed pins it to the viewport, which is what a
+       background is. It resolves against `#ui-shell` (a transformed ancestor,
+       so it traps fixed) and that box is the app area, so the framing is the
+       same either way. */
+    position: fixed;
     inset: 0;
     pointer-events: none;
     z-index: 0;

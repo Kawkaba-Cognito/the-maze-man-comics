@@ -46,7 +46,11 @@ const DRIFT = [-0.16, 0.1, -0.06, 0.14, -0.18, 0.04, -0.02, 0.16, -0.1];
 
 const STR = {
   en: {
-    eyebrow: 'KAWNERA · YOUR LIBRARY',
+    /* ⚠ The "KAWNERA" wordmark was dropped from BOTH the eyebrow and the footer
+       (owner, 2026-09-08) — it appeared twice on one screen, top and bottom.
+       ⚠ EDIT BOTH LANGUAGES: the AR half sits ~25 lines below and a fix applied
+       to only the English one is this repo's most-repeated string bug. */
+    eyebrow: 'YOUR LIBRARY',
     volumes: 'VOLUMES',
     title: 'Your Library',
     lede: 'Nine worlds are mapped and waiting. Their lessons are being written — open one to see how far it has come.',
@@ -71,7 +75,7 @@ const STR = {
     guideFoot: 'YOUR COSMIC STUDY COMPANION',
   },
   ar: {
-    eyebrow: 'كاونيرا · مكتبتك',
+    eyebrow: 'مكتبتك',
     volumes: 'مجلدات',
     title: 'مكتبتك',
     lede: 'تسعة عوالم مرسومة وبانتظارك. دروسها قيد الكتابة — افتح واحدًا لترى إلى أين وصل.',
@@ -290,50 +294,22 @@ export default function KawneraExperience({
       )}
 
       <footer className="kw-foot">
-        <b>KAWNERA</b>
         <i>{t.footer}</i>
         <small>
           {count(B.reduce((n, b) => n + b.chapterCount, 0), isAr)} {t.mapped}
         </small>
       </footer>
 
-      {/* One Dr. Kawkab at a time: this rig is a WebGL context, and the Home
-          universe already holds one. A second pair used to make the browser
-          evict the oldest, which is what blanked the universe. */}
-      {isActive && (
-        <aside
-          className={book ? 'kawkabGuide mentor' : 'kawkabGuide'}
-          aria-label="Dr. Kawkab study companion"
-        >
-          {kawkabOpen && (
-            <div className="kawkabBubble" role="status">
-              <b>{book ? t.guideMentor : t.guide}</b>
-              <p>{guideMessage}</p>
-              <small>{t.guideFoot}</small>
-            </div>
-          )}
-          <button
-            type="button"
-            className={kawkabOpen ? 'kawkabButton open' : 'kawkabButton'}
-            onClick={() => setKawkabOpen((x) => !x)}
-            aria-expanded={kawkabOpen}
-            aria-label={kawkabOpen ? 'Close Dr. Kawkab tip' : 'Ask Dr. Kawkab for a study tip'}
-          >
-            {/* The same Kawkab the Training hub uses — one character across the
-                app, and one fewer WebGL context on this tab (the 3D rig that
-                was here competed with Home's universe for a scarce resource;
-                see Kawkab3D, which stays on disk for the parked chapter run). */}
-            <img
-              className="kw-guide-art"
-              src={assetUrl('Assets/characters/kawkab/kawkab-planet.webp')}
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-            />
-            <span className="kawkabTag">{book ? t.guideMentor : t.guideTap}</span>
-          </button>
-        </aside>
-      )}
+      {/* ⚠ THE FLOATING Dr. KAWKAB GUIDE WAS REMOVED HERE (owner, 2026-09-08).
+          It sat over the shelf as a fixed sprite and covered volume art on a
+          phone — visible in the 390x844 capture, where it overlapped 06.
+
+          Do NOT reinstate it as a 3D rig if it ever comes back: that is a
+          second WebGL context on a tab whose sibling (Home's universe) already
+          holds one, and the browser evicting the oldest is what used to blank
+          the universe. The 2D `kawkab-planet.webp` sprite is the safe form.
+          `KawneraExperience`'s guide strings (t.guide / t.guideMentor /
+          t.guideTap / t.guideFoot) are deliberately left in the dictionary. */}
     </main>
   );
 }
