@@ -565,6 +565,9 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
   const [stageScale, setStageScale] = useState(1);
   const [wide, setWide] = useState(false);
   const [stageReady, setStageReady] = useState(false);
+  // The last successful measurement, kept only to CONFIRM the next one before
+  // the very first reveal — see the note where it is read, below.
+  const lastFitRef = useRef(null);
   useLayoutEffect(() => {
     const fit = () => {
       const el = stageRef.current;
@@ -627,18 +630,55 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       const L = nextWide ? HUB_LAYOUTS.landscape : HUB_LAYOUTS.portrait;
       const byHeight = free / L.h;
       const byWidth = freeW / L.w;
-      setStageScale(Math.max(0.5, Math.min(L.maxScale, byHeight, byWidth)));
-      setStageReady(true);
+      const scale = Math.max(0.5, Math.min(L.maxScale, byHeight, byWidth));
+      setStageScale(scale);
+
+      /*
+       * ⚠ A SINGLE SUCCESSFUL MEASUREMENT IS NOT PROOF IT IS A SETTLED ONE
+       * (2026-09-09). `offsetParent` truthy and a non-zero rect are enough to
+       * pass every check above and still be wrong: on a domain screen's "back"
+       * — a real remount, `stageReady` starting fresh at `false` again, not the
+       * hidden-tab path the note above already covers — the FIRST call here has
+       * measured a real, valid, fully laid-out box and still returned a scale
+       * ~15-20% too large, self-correcting one poll tick later with every input
+       * (`top`, the tab bar, the CTA reserve) reading identical both times.
+       * Confirmed live, on a real GPU, by polling the rendered `transform`
+       * directly rather than trusting a screenshot to land on the right frame.
+       *
+       * Rather than chase whatever transient the browser is settling in that
+       * window, don't reveal on trust: before the first reveal, require a LATER
+       * measurement to agree with an earlier one. ⚠ "Later" is load-bearing —
+       * the very next call here is the `untilVisible` rAF one frame below,
+       * and one frame is exactly the gap this bug lives inside of: the sync
+       * call and its immediate rAF follow-up can both observe the SAME
+       * not-yet-settled layout and agree with each other while still wrong.
+       * 120ms is comfortably past every settle time measured live, so a pair
+       * has to actually span real time, not just two calls, to count. A
+       * resize afterward still applies its scale immediately either way —
+       * this only guards the reveal nobody can undo once seen.
+       */
+      if (!stageReady) {
+        const now = performance.now();
+        const prev = lastFitRef.current;
+        const confirmed = prev
+          && prev.wide === nextWide
+          && Math.abs(prev.scale - scale) < 0.01
+          && (now - prev.time) >= 120;
+        lastFitRef.current = { scale, wide: nextWide, time: now };
+        if (confirmed) setStageReady(true);
+      }
       return true;
     };
     fit();
     window.addEventListener('resize', fit);
 
     /*
-     * First entry has no valid measurement yet, and waiting for the 500ms poll
-     * would show one wrong frame — the same flash, just once. Watch per-frame
-     * until the first real measurement lands, then stop; `offsetParent` is a
-     * cheap check and this ends as soon as the tab is opened.
+     * First entry has no valid measurement yet. Watch per-frame until the
+     * stage is genuinely laid out (not the hidden-tab 0×0 case above), then
+     * stop; `offsetParent` is a cheap check and this ends as soon as the tab
+     * is opened. This alone does NOT reveal anything — see the confirmation
+     * gate inside `fit()` above — it only feeds that gate its first candidate
+     * reading as early as possible instead of waiting on the 500ms poll.
      */
     let raf = 0;
     const untilVisible = () => {
@@ -646,6 +686,18 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       raf = window.requestAnimationFrame(untilVisible);
     };
     raf = window.requestAnimationFrame(untilVisible);
+
+    /*
+     * A dedicated, fast SECOND OPINION for the confirmation gate above.
+     * Without this, the only thing spaced far enough past the mount-time
+     * sync + one-frame-later rAF pair to count as a genuine confirmation is
+     * the 500ms poll below — meaning every single hub entry would sit hidden
+     * for half a second even on the common path where the very first
+     * measurement was already correct. 140ms clears the 120ms confirmation
+     * window with room to spare while staying well under anything a user
+     * would read as a stall.
+     */
+    const confirmTimer = window.setTimeout(fit, 140);
 
     /*
      * AppShell mounts every tab up front and hides the inactive ones, so this
@@ -664,6 +716,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
     return () => {
       window.removeEventListener('resize', fit);
       window.clearInterval(id);
+      window.clearTimeout(confirmTimer);
       window.cancelAnimationFrame(raf);
     };
   }, []);
