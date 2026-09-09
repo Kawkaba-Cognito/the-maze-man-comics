@@ -9655,11 +9655,12 @@ html[data-home-theme='dark'] .ct-domain-game-stage > .ct-fq-root {
 :root, html[data-home-theme='light'] {
     /* ⚠ ZERO IN BOTH THEMES NOW, and the dark value in particular had to go.
        It was 70%, set when dark mode had only light-graded art and light ink on
-       it measured 1.05:1 — a veil was the only defence. There is purpose-made
-       dark art now: the dark gameplay pair measures 17.2:1 in the centre, so a
-       70% veil would be hiding art that needs no protection at all. Any small
-       lift dark still wants comes from `--app-veil` in global.css, which is
-       measured and applies to every background surface rather than this one. */
+       it measured 1.05:1 — a veil was the only defence. Any lift dark still
+       wants comes from `--app-veil` / `--game-veil` in global.css — TWO tokens
+       as of 2026-09-10, since `--app-bg` now has its own purpose-painted dark
+       asset (measured 15:1, no veil needed) while `--game-bg` still does not
+       and still leans on `--game-veil`'s 72% mix. Whichever surface this scrim
+       sits on, one of those two is already doing the theme-contrast work. */
     --training-art-scrim: 0%;
 }
 html[data-home-theme='dark'] {
@@ -9679,12 +9680,14 @@ html[data-home-theme='dark'] {
  * export; the shared readability layer above keeps the final surface on that
  * palette.
  *
- * ⚠ "roads and planets distributed down both sides" described `--app-bg`
- * only, and even that only while this element happens to be showing it
- * (menus, mode pick). `--game-bg` — the actual live-round pixels — is a plain
- * gradient with nothing on it (2026-09-09): see the note beside its
- * declaration in global.css for why a search task's own background cannot
- * carry pictorial content without becoming a second, unscored answer sheet.
+ * ⚠ `--app-bg` (menus, mode pick — whenever this element is showing that
+ * variable) is the PLAIN gradient; `--game-bg` (the actual live-round pixels)
+ * carries a small, deliberately abstract orbit diagram — thin ring outlines
+ * and dots, no filled/painted objects. That split was picked and then
+ * reversed once already the same day (2026-09-09/10) — see the note beside
+ * the variable declarations in global.css for the full reasoning and for why
+ * gameplay's art stops short of anything a player could mistake for one of
+ * Cancellation's own pictorial search targets.
  * ========================================================================= */
 .ct-domain-game-stage::before {
     content: '';
@@ -9716,9 +9719,12 @@ html[data-home-theme='dark'] {
    (`data-gameplay-active="true"` on the round's own root, not its outer
    chrome — see each game's index.jsx and shared/C3dProtoChrome.jsx). Menus,
    mode/level pick, briefings, pauses and results inherit the main app
-   background instead. All 18 live games carry the marker as of 2026-09-09. */
+   background instead. All 18 live games carry the marker as of 2026-09-09.
+   ⚠ `--game-veil`, not `--app-veil` — this layer shows `--game-bg`, which has
+   no dark-painted asset of its own and still needs the 72% dark-theme lift
+   `--app-bg` no longer does. See the note beside both tokens in global.css. */
 .ct-domain-game-stage:has([data-gameplay-active='true'])::before {
-    background-image: linear-gradient(var(--app-veil), var(--app-veil)), var(--game-bg);
+    background-image: linear-gradient(var(--game-veil), var(--game-veil)), var(--game-bg);
 }
 
 /* ⚠ The portrait override this block used to carry is GONE, and its absence is

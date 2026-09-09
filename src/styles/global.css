@@ -3083,22 +3083,58 @@ html[data-home-theme='light'] .home-universe-title {
  * repaint `backgrounds-v3` the same way rather than reinventing the veil math.
  */
 /*
- * ⚠ `gameplay-*.webp` IS NOW A PLAIN GRADIENT, NOT AN ILLUSTRATION (2026-09-09,
- * same day as the block above, owner: "i like the plain"). The filenames are
- * unchanged — only the pixels were swapped — because a search task like
- * Cancellation asks the player to find pictorial ICONS (a rocket, a ringed
- * planet, …), and a moon or planet sitting in the corner of the SAME screen is
- * a plausible-looking answer, not mere texture. `app-*.webp` (menus, hubs —
- * nothing scored) keeps the illustrated pair; only the play surface went
- * plain. Contrast re-measured against the new pixels below.
+ * ⚠ REVERSED WITHIN THE SAME DAY (2026-09-09). First cut: `gameplay-*.webp`
+ * went to a plain gradient, `app-*.webp` kept the illustrated pair — reasoned
+ * through above (a search task's own background carrying pictorial icons is a
+ * live confound, not texture, when the task IS finding pictorial icons).
+ * Owner then asked for the opposite split: PLAIN everywhere except gameplay,
+ * which gets its OWN look. That would have reintroduced the exact confound
+ * just fixed if gameplay went back to full illustration, so gameplay instead
+ * got the most abstract of Codex's five prototype concepts — a small flat
+ * disc with thin orbit-ring outlines and dots, no fill detail, nothing that
+ * reads as "an object" the way a painted planet does. `app-*.webp` is now the
+ * plain gradient; `gameplay-*.webp` is the orbit-diagram pair. Filenames
+ * unchanged either time — only pixels swap — so this paragraph is the only
+ * place that needs to describe which is which.
+ *
+ * ⚠ THE ORBIT-DIAGRAM'S LINE COLOUR FAILS AA IN LIGHT THEME, MEASURED. A
+ * full-resolution scan (not the sparse sample below, which missed a 1-2px
+ * line by stepping over it) found the ring's own ink at ~L 0.08–0.09 —
+ * dark enough that light theme's dark ink (#201d18) reads 2.1–2.2:1 against
+ * it, under even AA (4.5:1). Left as-is for now: the diagram sits in one
+ * corner and nothing in this app renders real text directly on the raw
+ * background there (opaque cards elsewhere, by design — see the training.css
+ * note above `.ct-domain-game-stage::before`). Re-measure before trusting
+ * this if that ever changes, and mention it if Codex repaints this set for a
+ * dedicated dark version — the same line colour is what makes dark theme's
+ * numbers clear a full 7.7–7.8:1 unveiled.
  */
-:root, html[data-home-theme='light'], html[data-home-theme='dark'] {
+/*
+ * ⚠ `--app-bg` FORKS BY THEME NOW; `--game-bg` STILL DOES NOT (2026-09-10).
+ * Codex painted a dedicated dark version of the plain app gradient
+ * (`app-*-dark.webp`, "obsidian") — the purpose-made dark art this file has
+ * wanted since the v2 sets, restored for at least one of the two pairs.
+ * `game-bg` has no dark-specific asset yet, so it still leans on the veil
+ * below; that is why its line is REPEATED, unchanged, in both theme blocks
+ * rather than hoisted out — the moment it gets its own dark asset, only the
+ * block that needs editing is obvious, instead of a shared line quietly
+ * serving two themes that have stopped agreeing.
+ */
+:root, html[data-home-theme='light'] {
     --app-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/app-16x9.webp");
     --game-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/gameplay-16x9.webp");
 }
+html[data-home-theme='dark'] {
+    --app-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/app-16x9-dark.webp");
+    --game-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/gameplay-16x9.webp");
+}
 @media (orientation: portrait) {
-    :root, html[data-home-theme='light'], html[data-home-theme='dark'] {
+    :root, html[data-home-theme='light'] {
         --app-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/app-9x16.webp");
+        --game-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/gameplay-9x16.webp");
+    }
+    html[data-home-theme='dark'] {
+        --app-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/app-9x16-dark.webp");
         --game-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/gameplay-9x16.webp");
     }
 }
@@ -3152,45 +3188,52 @@ html[data-home-theme='light'] .home-universe-title {
  * impossible to miss. Do not separate them. */
 
 /*
- * ⚠ A DARK-ONLY VEIL, re-measured 2026-09-09 against the actual backgrounds-v3
- * pixels (sampled with sharp — worst pixel in the centre 60% box, both ends of
- * the luminance range, per the "measure both ends" lesson above). No veil in
- * light theme (`--app-veil: transparent`); dark theme mixes `--universe-dusk`
- * (#0a0a0b) at 72% over the same light-graded image, since it is no longer a
- * separately painted dark asset:
+ * ⚠ TWO VEIL TOKENS NOW, NOT ONE (2026-09-10) — `--app-veil` and `--game-veil`,
+ * split the moment `--app-bg` got a real dark asset and `--game-bg` didn't.
+ * A single shared veil tuned to lift a LIGHT-graded image under dark theme's
+ * light ink is exactly wrong once one of the two images is already dark on
+ * purpose: re-applying that same 72% mix on top of the obsidian art would
+ * crush its own (subtle, deliberate) gradient toward flat black for no
+ * reason. `--app-veil` is transparent in BOTH themes now; `--game-veil` keeps
+ * the old dark-theme 72% mix, because `--game-bg` still has no dark-painted
+ * counterpart and still needs the lift.
  *
- *                    light theme, no veil   dark theme, 72% veil
- *   app     desktop        5.57:1                7.18:1
- *   app     mobile         5.12:1                7.09:1
- *   gameplay desktop       8.37:1                8.64:1
- *   gameplay mobile        8.53:1                8.61:1
+ * ⚠ RE-MEASURED 2026-09-10 AT FULL RESOLUTION, not the sparse "every 3rd
+ * pixel in the centre 60% box" sample the first version of this note used.
+ * That sample MISSED the gameplay set's 1-2px orbit-ring line entirely by
+ * stepping over it, and reported a false-healthy number. A thin line is
+ * exactly the kind of feature a step-3 sample is built to skip — full-scan
+ * every pixel when a candidate image has any linework, not just washes:
  *
- * ⚠ GAMEPLAY ROWS RE-MEASURED AGAIN THE SAME DAY, after `gameplay-*` was
- * replaced a second time — the illustrated pair (planets in two corners) was
- * itself replaced with a deliberately PLAIN, symbol-free gradient (owner:
- * "i like the plain", after the moons/planets in that art were found to risk
- * being confused with the pictorial target ICONS a search task like
- * Cancellation actually asks the player to find — a background object that
- * looks like a possible answer is a live confound, not a texture question).
- * A flat gradient with a small, contained luminance range clears AAA on both
- * themes with room to spare, which is expected — it has almost no range to
- * fail on.
+ *                    light theme, no veil   dark theme
+ *   app     desktop        7.54:1                15.30:1  (own dark art, no veil)
+ *   app     mobile         7.71:1                15.15:1  (own dark art, no veil)
+ *   gameplay desktop       2.11:1                 7.79:1  (light art, 72% game-veil)
+ *   gameplay mobile        2.16:1                 7.73:1  (light art, 72% game-veil)
  *
- * Everything clears AA (4.5:1) body text. Dark clears AAA (7:1) on all four by
- * design — the veil was chosen deliberately heavy specifically because it is
- * doing a painted image's job. Light does NOT clear AAA on the app background
- * (5.12–5.57), only AA — it has no veil of its own. Gameplay clears AAA on
- * both themes now regardless. Known and accepted for the app row: fixing it
- * means either grading `app-*` lighter in the centre or giving light theme a
- * veil of its own, and either is an art/design call, not a wiring one —
- * re-measure with the same method if that changes.
+ * `app-*` is the plain gradient in light, a separately painted near-black
+ * gradient ("obsidian") in dark — its numbers are unrelated to the old
+ * illustrated app image's 5.57/5.12 this comment used to cite. Dark clears
+ * AAA by 2× over the floor, which is what a purpose-painted dark asset with
+ * no veil work to do buys you.
+ *
+ * `gameplay-*`'s dark-theme number is fine (7.73–7.79, AAA, via `--game-veil`)
+ * but its LIGHT-theme number is not: 2.11–2.16:1, well under even AA (4.5:1).
+ * The failure is the orbit-diagram's own ring ink (~L 0.08), which is dark
+ * enough that light theme's dark body ink (#201d18) barely separates from it.
+ * Known and accepted for now — see the note above `--game-bg`'s declaration
+ * for why — but re-measure with a FULL scan, not a sparse one, if this art is
+ * ever repainted, and if `gameplay-*` ever gets its own dark-painted asset the
+ * way `app-*` just did, `--game-veil` becomes transparent in dark too and
+ * this whole note collapses to match the app row.
  *
  * Layering the veil as a gradient inside `background-image` keeps it on the
  * same element as the art — no overlay element, nothing for a stacking
  * context to trap.
  */
-:root, html[data-home-theme='light'] { --app-veil: transparent; }
-html[data-home-theme='dark'] { --app-veil: color-mix(in srgb, var(--universe-dusk) 72%, transparent); }
+:root, html[data-home-theme='light'], html[data-home-theme='dark'] { --app-veil: transparent; }
+:root, html[data-home-theme='light'] { --game-veil: transparent; }
+html[data-home-theme='dark'] { --game-veil: color-mix(in srgb, var(--universe-dusk) 72%, transparent); }
 
 body {
     background-image: linear-gradient(var(--app-veil), var(--app-veil)), var(--app-bg);
@@ -3231,7 +3274,10 @@ body {
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background-image: linear-gradient(var(--app-veil), var(--app-veil)), var(--game-bg);
+    /* `--game-veil`, not `--app-veil` — this shows `--game-bg`, which still
+       has no dark-painted asset and still needs the lift. See the note beside
+       both tokens' declarations for why they're no longer the same variable. */
+    background-image: linear-gradient(var(--game-veil), var(--game-veil)), var(--game-bg);
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
