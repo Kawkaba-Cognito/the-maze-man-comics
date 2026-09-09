@@ -1852,7 +1852,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
 
       {phase === 'play' && round && (
         <>
-          <div className="ct-fq-play">
+          <div className="ct-fq-play" data-gameplay-active="true">
           <div className={`ct-fq-g-wrap ct-fq-g-wrap--scene2d ct-juice-host${juice.shake ? ' ct-juice-shake' : ''}`} ref={gridWrapRef}>
             <CancelBoard2D
               cells={cells}

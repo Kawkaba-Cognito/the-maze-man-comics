@@ -128,6 +128,14 @@ export default function C3dProtoChrome({
       className={`c3d-root${rootClassName ? ` ${rootClassName}` : ''}`}
       dir={isAr ? 'rtl' : 'ltr'}
       ref={rootRef}
+      /* This chrome IS the live round for as long as it is mounted — the mode
+         menu and level pick happen in ModeShell before this ever renders, and
+         a finished run unmounts it in favour of ModeShell's own results screen.
+         So unconditional, the same as the other games with no in-engine
+         results sub-state (gatekeeper, rush-hour, speed-match, wordle). Covers
+         train-switch (CarPark3DProto), math-gates (MathGatesBoard2D) and
+         paired-associates (PairedAssociates3DProto) from this one spot. */
+      data-gameplay-active="true"
     >
       <div className="c3d-canvas" ref={canvasEl} aria-hidden="true">
         {canvasChildren}

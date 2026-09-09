@@ -363,8 +363,8 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
   };
 
   return (
-    <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
-      
+    <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active="true">
+
       {isSurvival && (
         <div style={S.survTrack}><div style={{ ...S.survFill, width: `${survPct * 100}%`, background: survPct < 0.2 ? BAD : ACC }} /></div>
       )}

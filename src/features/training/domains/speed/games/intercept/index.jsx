@@ -1196,7 +1196,7 @@ export function InterceptEngine({
     /* `.ic-root` is `position: fixed; inset: 0`, and it is the only element that
        contains BOTH the status bar and the field — so it is the box the coach's
        anchors are measured in. */
-    <div className="ic-root" dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef}>
+    <div className="ic-root" dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef} data-gameplay-active={step === 'run' ? 'true' : undefined}>
       {coachOpen && (
         <DomCoach
           isAr={isAr}

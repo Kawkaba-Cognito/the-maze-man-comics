@@ -923,7 +923,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
         * by driving the real game and observing no `.ct-coach` in the DOM.
         */}
       {phase === 'play' && round && round.mode !== 'level' && (
-        <div className="ct-wordle-play-wrap" ref={coachRootRef} style={{ position: 'relative' }}>
+        <div className="ct-wordle-play-wrap" ref={coachRootRef} style={{ position: 'relative' }} data-gameplay-active="true">
           {coachOpen && (
             <DomCoach
               isAr={isAr}

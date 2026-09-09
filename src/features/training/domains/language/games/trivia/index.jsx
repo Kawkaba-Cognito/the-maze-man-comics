@@ -421,7 +421,7 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
   const outOfLives = mistakesRef.current >= LIVES;
 
   return (
-    <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} ref={stageRef}>
+    <div style={rootStyle} className={embedCls} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} ref={stageRef} data-gameplay-active="true">
       <style>{STAIR_CSS}</style>
       
       {/* The standard header + pause. No clock: Trivia is untimed, so a frozen

@@ -9406,6 +9406,37 @@ html[data-home-theme='light'] .ct-ms-root:has(.ct-fq-training-shell--mode-cosmos
     background-image: none !important;
 }
 
+/* ⚠ CANCELLATION IS THE ONE GAME WHERE THE ABOVE ISN'T ENOUGH (2026-09-09),
+ * and it took two rounds to find why. Every other game's opaque surface is a
+ * CENTERED CARD with visible margins, so once its root is transparent the
+ * shared art shows around it. Cancellation's board fills the stage edge to
+ * edge with no margin at all, so ANY opaque layer anywhere in its chain blocks
+ * the art completely — there is no gap for it to peek through.
+ *
+ * ⚠ THE FIRST FIX (making `.cb2d-wrap` transparent) WAS CORRECT BUT NOT THE
+ * BLOCKER. `CancelBoard2D.jsx`'s `.cb2d-wrap` (cancelBoard2d.css) is
+ * `position: absolute; inset: 0`, genuinely full-bleed, and genuinely lacked
+ * this rule — but making it transparent changed nothing on screen. Chasing
+ * that dead end cost real time on z-index/position theories (none of them
+ * were it — position:fixed + z-index:50, matching Gatekeeper's own working
+ * values exactly, made no difference either, ruling out both).
+ *
+ * ⚠ THE REAL BLOCKER WAS `.ct-fq-g-wrap--scene2d`, found only by scanning
+ * every descendant's rendered `getBoundingClientRect()` for one large enough
+ * to cover the screen with a non-transparent computed background. Its own
+ * comment already explained the bug: "the board paints its own --play-surface;
+ * this only covers the moment before it mounts" — true once, and no longer
+ * true once `.cb2d-wrap` (the board) stopped painting an opaque surface of its
+ * own. With both fixed, cancellation shows the art like every other game.
+ * Confirmed live, on a REAL GPU (not just headless/software rendering) —
+ * Detective, The Gate and Speed Match all showed the art without needing
+ * either of these two rules; only Cancellation's full-bleed board did. */
+.ct-domain-game-stage .cb2d-wrap,
+.ct-domain-game-stage .ct-fq-g-wrap--scene2d {
+    background-color: transparent !important;
+    background-image: none !important;
+}
+
 .ct-domain-game-stage .workout-loading {
     background: transparent;
 }
@@ -9662,15 +9693,25 @@ html[data-home-theme='dark'] {
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    /* ⚠ ONE GAMEPLAY IMAGE FOR EVERY GAME NOW, not one per domain (owner,
-       2026-09-08). `--game-bg` is set in global.css and already switches
-       portrait/landscape, so the per-domain variables DomainGameStage still
-       supplies are unused — left in place deliberately as the hook if
-       per-domain art ever returns, not because anything reads them. */
-    background-image: linear-gradient(var(--app-veil), var(--app-veil)), var(--game-bg);
+    /* ⚠ ONE PAIR OF IMAGES FOR EVERY GAME NOW, not one per domain (owner,
+       2026-09-08) — `DomainGameStage.jsx` no longer supplies per-domain CSS
+       vars at all (removed 2026-09-09), so there is nothing unused to explain
+       here any more. The default is `--app-bg`, the same cosmic/discovery
+       image every non-game screen uses; the rule below switches a game to the
+       quieter `--game-bg` for as long as it is actually being played. */
+    background-image: linear-gradient(var(--app-veil), var(--app-veil)), var(--app-bg);
     background-repeat: no-repeat;
     background-position: center center;
     background-size: cover;
+}
+
+/* A game opts into the quiet art only while a scored/interactive round is live
+   (`data-gameplay-active="true"` on the round's own root, not its outer
+   chrome — see each game's index.jsx and shared/C3dProtoChrome.jsx). Menus,
+   mode/level pick, briefings, pauses and results inherit the main app
+   background instead. All 18 live games carry the marker as of 2026-09-09. */
+.ct-domain-game-stage:has([data-gameplay-active='true'])::before {
+    background-image: linear-gradient(var(--app-veil), var(--app-veil)), var(--game-bg);
 }
 
 /* ⚠ The portrait override this block used to carry is GONE, and its absence is

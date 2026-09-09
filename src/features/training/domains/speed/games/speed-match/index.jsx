@@ -995,7 +995,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
       )}
 
       {phase === 'play' && block && (
-        <div className="ct-sm-play">
+        <div className="ct-sm-play" data-gameplay-active="true">
           <TrainingPlayHeader
             isAr={isAr}
             title={header.title}

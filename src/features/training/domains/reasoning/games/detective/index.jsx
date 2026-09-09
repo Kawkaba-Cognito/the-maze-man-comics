@@ -472,7 +472,7 @@ export function DetectiveEngine({
   }
 
   return (
-    <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef}>
+    <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef} data-gameplay-active="true">
       <Header t={t} sub={hudSub} pause={pause} cosmos={cosmos} isAr={isAr} playSfx={playSfx} />
       {pause.modal}
       {coachOpen && (

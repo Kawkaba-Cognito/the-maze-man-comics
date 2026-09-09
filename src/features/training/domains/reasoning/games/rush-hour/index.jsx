@@ -1604,6 +1604,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   return withCosmos(
     <div
       className={`ct-rh-play cancellation-task-game${isCosmos ? ' c3d-embed-root' : ''}`}
+      data-gameplay-active="true"
       data-c3d-embed={isCosmos || undefined}
       dir={isAr ? 'rtl' : 'ltr'}
       style={{

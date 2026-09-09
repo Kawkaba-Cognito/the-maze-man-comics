@@ -632,7 +632,7 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
         <TrainingStatusStrip className="ct-mot-instruction" meta={statusMeta} data-coach="instruction">
           {msg}
         </TrainingStatusStrip>
-        <div ref={wrapRef} className="ct-mot-play" data-coach="board">
+        <div ref={wrapRef} className="ct-mot-play" data-coach="board" data-gameplay-active="true">
           <MotBoard2D
             dotsRef={dotsRef}
             fieldRef={fieldRef}

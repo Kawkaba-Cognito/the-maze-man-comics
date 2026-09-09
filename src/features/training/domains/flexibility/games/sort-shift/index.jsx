@@ -250,7 +250,7 @@ export function SortShiftEngine({
   if (!setDef) return null;
 
   return (
-    <div className="ct-ss-root" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className="ct-ss-root" dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active={!over ? 'true' : undefined}>
       <header className="ct-training-play-header">
         <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); onExit?.(); }}><IconBack size={18} c="currentColor" /></button>
         <div className="ct-training-play-header-body">

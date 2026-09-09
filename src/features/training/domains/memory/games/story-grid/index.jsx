@@ -588,7 +588,7 @@ export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr
   const optSize = Math.round(fsz * (question && question.ref ? 0.78 : 0.92));
 
   return (
-    <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef}>
+    <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef} data-gameplay-active={phase !== 'reveal' ? 'true' : undefined}>
       <style>{ANIM_CSS}</style>
       {coachOpen && phase === 'watch' && (
         <DomCoach

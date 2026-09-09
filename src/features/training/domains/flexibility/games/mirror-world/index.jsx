@@ -344,7 +344,7 @@ function MirrorEngine({
     : mode === 'passplay' ? `${t.challengeHeader}` : `${t.levelMode} · L${level}`;
 
   return (
-    <div className="ct-mw-root" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className="ct-mw-root" dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active={step === 'reach' ? 'true' : undefined}>
       {/* The shared PLAY header, not TrainingMenuBar — that is the hub/lobby bar
           and using it mid-play sat this game's back button at a different size
           and gutter from the rest. The pause had its own glyph too

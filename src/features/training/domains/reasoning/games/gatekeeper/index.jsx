@@ -319,7 +319,7 @@ export function GatekeeperEngine({
   const stampedKeys = new Set(stamped.map((s) => cardKey(s.card)));
 
   return (
-    <div className={`gk-root${cosmos ? ' gk-root--cosmos' : ''}`} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef}>
+    <div className={`gk-root${cosmos ? ' gk-root--cosmos' : ''}`} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef} data-gameplay-active="true">
       <Header t={t} sub={hudSub} pause={pause} cosmos={cosmos} isAr={isAr} playSfx={playSfx} />
       {pause.modal}
 

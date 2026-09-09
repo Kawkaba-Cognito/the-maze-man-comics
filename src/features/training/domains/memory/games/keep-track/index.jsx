@@ -306,7 +306,7 @@ function KeepTrackEngine({
   }
 
   return (
-    <div className="ct-training-root ct-kt-root" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className="ct-training-root ct-kt-root" dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active={step === 'stream' || step === 'recall' ? 'true' : undefined}>
       {/* The shared PLAY header, not TrainingMenuBar — that one is the hub/lobby
           bar (full width, 18px gutter) and using it mid-play put this game's
           back button in a different place and size from every other game's.
