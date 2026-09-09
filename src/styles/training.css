@@ -9674,10 +9674,17 @@ html[data-home-theme='dark'] {
  * Domain art: one composition for each real screen shape.
  *
  * Desktop uses the 16:9 composition. Portrait uses a separately generated
- * 9:16 companion with its roads and planets distributed down both sides, so a
- * phone never crops a landscape image down to its empty middle. Both sets are
- * colour-graded to the --play-surface midpoint before export; the shared
- * readability layer above keeps the final surface on that palette.
+ * 9:16 companion, so a phone never crops a landscape image down to its empty
+ * middle. Both sets are colour-graded to the --play-surface midpoint before
+ * export; the shared readability layer above keeps the final surface on that
+ * palette.
+ *
+ * ⚠ "roads and planets distributed down both sides" described `--app-bg`
+ * only, and even that only while this element happens to be showing it
+ * (menus, mode pick). `--game-bg` — the actual live-round pixels — is a plain
+ * gradient with nothing on it (2026-09-09): see the note beside its
+ * declaration in global.css for why a search task's own background cannot
+ * carry pictorial content without becoming a second, unscored answer sheet.
  * ========================================================================= */
 .ct-domain-game-stage::before {
     content: '';
