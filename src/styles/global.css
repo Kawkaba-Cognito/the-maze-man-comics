@@ -2507,10 +2507,15 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
     }
 }
 
-/* Top-of-hero column: the personalization panel, then the universe title.
-   .home-universe-page sets `pointer-events: none` so the scroll gesture passes
-   through to the stage — which silently makes anything interactive placed in
-   here unclickable. The panel re-enables them on itself only. */
+/* Top-of-hero column: the personalization panel, then the progress card, then
+   the universe title. .home-universe-page sets `pointer-events: none` so the
+   scroll gesture passes through to the stage — which silently makes anything
+   interactive placed in here unclickable unless it opts back in explicitly.
+   ⚠ EVERY NEW CARD IN THIS COLUMN NEEDS ITS OWN LINE HERE. `.np` was carved
+   out when the panel first went here; `.pc` (ProgressCard) had every button
+   render, look correct, and eat zero clicks until this was added — verified
+   live via elementFromPoint, which returned the ZenUniverse <canvas>, not the
+   button underneath the tap. Screenshots alone would never have shown this. */
 .home-universe-top {
     position: absolute;
     top: calc(16px + env(safe-area-inset-top));
@@ -2525,7 +2530,10 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
     pointer-events: none;
 }
 
-.home-universe-top .np { pointer-events: auto; }
+.home-universe-top .np,
+.home-universe-top .pc {
+    pointer-events: auto;
+}
 
 /* Inside the column the wrapper owns placement; the heading keeps its own
    dive opacity/transform below. */

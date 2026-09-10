@@ -1,0 +1,104 @@
+/*
+ * Real-history counterpart to .np (NeuralPanel), sitting right below it on
+ * Home. Same chrome recipe deliberately: the two are siblings in the same
+ * column, and a visitor should read them as one family of surface, not two
+ * competing card styles stacked on top of each other.
+ */
+
+.pc {
+  width: min(100%, 520px);
+  margin: 0 auto 14px;
+  padding: 12px 13px;
+  border: 1px solid var(--universe-line);
+  border-radius: 17px;
+  background: var(--universe-glass-strong);
+  color: var(--universe-ink);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 20%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: start;
+}
+
+.pc-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pc-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--universe-glass);
+  border: 1px solid var(--universe-line);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--universe-ink);
+  white-space: nowrap;
+}
+
+/* Only the habits stat is interactive (it opens today's list); streak and
+   points are plain facts with nowhere to go. Reset the <button> chrome only
+   where it's actually a button, so the two look identical either way. */
+button.pc-stat--tap {
+  border: 1px solid var(--universe-line);
+  cursor: pointer;
+  font: inherit;
+}
+button.pc-stat--tap:hover,
+button.pc-stat--tap:focus-visible {
+  border-color: var(--universe-accent);
+}
+
+.pc-stat-glyph {
+  font-size: 0.95em;
+  line-height: 1;
+}
+
+.pc-continue-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pc-continue {
+  flex: 1 1 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--universe-line);
+  background: var(--universe-glass);
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.pc-continue:hover,
+.pc-continue:focus-visible {
+  border-color: var(--universe-accent);
+}
+
+.pc-continue-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--universe-muted);
+}
+
+.pc-continue-name {
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.pc :focus-visible {
+  outline: 2px solid var(--universe-accent);
+  outline-offset: -2px;
+}

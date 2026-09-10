@@ -6,6 +6,7 @@ import { useApp } from '../../context/AppContext';
 import { lazyWithRetry } from '../../lib/lazyWithRetry';
 import UniverseDiveTransition from '../../features/universe/UniverseDiveTransition';
 import NeuralPanel from '../../features/personalization/NeuralPanel';
+import ProgressCard from '../../features/home/ProgressCard';
 
 // Keep the Three.js world out of the entry bundle.
 const ZenUniverse = lazyWithRetry(
@@ -219,6 +220,20 @@ export default function HomeScreen() {
             playSfx={playSfx}
             onOpenDomain={openTrainingDomain}
             onOpenPractice={openWellbeingPractice}
+          />
+
+          {/* Real history, not a suggestion — streak, points, today's habits
+              and whichever domain/practice was last touched. Complements
+              NeuralPanel rather than replacing it: that one only has
+              something to say once its model is opted in AND warmed up, so
+              most visits it says nothing useful. This has something to show
+              the moment a user has done anything at all. */}
+          <ProgressCard
+            isAr={isAr}
+            playSfx={playSfx}
+            onOpenDomain={openTrainingDomain}
+            onOpenPractice={openWellbeingPractice}
+            onOpenHabits={openWellbeingPractice}
           />
 
           {/* The "Your universe" title was removed on 2026-08-15 — the screen
