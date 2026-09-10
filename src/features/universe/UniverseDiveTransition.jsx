@@ -1,3 +1,9 @@
+/*
+ * UNREFERENCED since 2026-09-10 (owner: "remove the 3d planet"). HomeScreen
+ * no longer mounts the dive transition - there is nothing to transition
+ * into any more (ZenUniverse and PlanetSurface are also unreferenced). Left
+ * in the tree rather than deleted, same convention as MartianMaze.jsx.
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import './universe-dive-transition.css';
 

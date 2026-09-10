@@ -328,11 +328,25 @@ export function AppProvider({ children }) {
     stopSpeech();
     // Legacy "home" now lands on Habits (the Home tab).
     let next = tabId === 'home' ? 'habits' : tabId;
-    // Home uses the legacy "habits" id. Daily Habits opens through the
-    // internal "relax" route so the one-time view flag reaches RelaxScreen.
-    if (next === 'habits') {
-      try { sessionStorage.setItem('rx_open_daily', '1'); } catch { /* ignore */ }
-    } else if (next === 'wellbeing') {
+    /* ⚠ FIXED 2026-09-10 — this used to ALSO arm the `rx_open_daily` flag on
+     * `next === 'habits'`, on the theory (see BottomTabBar's own comment,
+     * "the daily habits check-in is Home") that the Home tab opens Daily
+     * Habits directly. It does not, and has not for a while: `activeTab ===
+     * 'habits'` renders HomeScreen (the dashboard), not RelaxScreen — so the
+     * flag never got consumed on the Home tap itself. It just sat in
+     * sessionStorage, live, until WHATEVER navigation next reached 'relax'
+     * (Wellbeing's "Continue" buttons, a domain suggestion, anything) — which
+     * would then silently open Daily Habits instead of what was actually
+     * tapped. Confirmed reachable: RelaxScreen.jsx's own `onHome` button
+     * calls `switchTab('habits')` to leave for the Home tab, arming the trap
+     * for the very next Wellbeing visit.
+     *
+     * Genuinely wanting Daily Habits now goes through the SAME one-shot
+     * sessionStorage handoff, but set immediately before switching to
+     * 'relax' in the SAME call — see HabitReminderBanner.jsx and
+     * ProgressCard's onOpenHabits (HomeScreen.jsx) for the two real callers.
+     * `next === 'habits'` no longer touches the flag at all. */
+    if (next === 'wellbeing') {
       try { sessionStorage.removeItem('rx_open_daily'); } catch { /* ignore */ }
     }
     setActiveTab(next);

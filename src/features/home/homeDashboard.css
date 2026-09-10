@@ -1,0 +1,186 @@
+/*
+ * Home dashboard — the plain-scroll replacement for the 3D universe hero
+ * (removed 2026-09-10, owner: "remove the 3d planet, add stuff that are
+ * useful for the app"). Same chrome recipe as .np/.pc (NeuralPanel/
+ * ProgressCard) on purpose: this is one more card in that same column, not a
+ * new visual language.
+ */
+
+.home-dashboard {
+  width: 100%;
+  min-height: 100%;
+  padding: max(16px, env(safe-area-inset-top)) 16px 32px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-dashboard-col {
+  width: min(100%, 520px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Workout card ---------------------------------------------------- */
+.wc {
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 14px 15px;
+  border: 1px solid var(--universe-line);
+  border-radius: 17px;
+  background: var(--universe-glass-strong);
+  color: var(--universe-ink);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 20%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: start;
+  cursor: pointer;
+  font: inherit;
+}
+.wc:hover, .wc:focus-visible {
+  border-color: var(--universe-accent);
+}
+.wc--done { opacity: 0.86; }
+
+.wc-glyph { font-size: 1.4rem; line-height: 1; flex: 0 0 auto; }
+
+.wc-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wc-title { font-size: 0.94rem; font-weight: 800; }
+.wc-sub { font-size: 0.78rem; color: var(--universe-muted); }
+
+.wc-cta {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--universe-accent);
+  color: var(--universe-glass-strong);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+/* ---- Domain snapshot --------------------------------------------------- */
+.ds {
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 13px 15px;
+  border: 1px solid var(--universe-line);
+  border-radius: 17px;
+  background: var(--universe-glass-strong);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 20%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ds-head {
+  align-self: flex-start;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--universe-muted);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ds-head:hover, .ds-head:focus-visible { color: var(--universe-ink); }
+
+.ds-rows { display: flex; flex-direction: column; gap: 7px; }
+
+.ds-row {
+  display: grid;
+  grid-template-columns: 5.4rem 1fr 5.2rem;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  padding: 3px 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+}
+
+.ds-row-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--universe-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ds-row-track {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--universe-glass);
+  border: 1px solid var(--universe-line);
+  overflow: hidden;
+}
+.ds-row-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.ds-row-band {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--universe-muted);
+  text-align: end;
+  white-space: nowrap;
+}
+
+/* ---- Reading / spaced-review card -------------------------------------- */
+.rc {
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 13px 15px;
+  border: 1px solid var(--universe-line);
+  border-radius: 17px;
+  background: var(--universe-glass);
+  color: var(--universe-ink);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: start;
+  cursor: pointer;
+  font: inherit;
+}
+.rc:hover, .rc:focus-visible { border-color: var(--universe-accent); }
+
+.rc-glyph { font-size: 1.2rem; line-height: 1; flex: 0 0 auto; }
+
+.rc-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rc-title { font-size: 0.86rem; font-weight: 800; }
+.rc-sub {
+  font-size: 0.76rem;
+  color: var(--universe-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rc-cta {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--universe-line);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+[dir='rtl'] .home-dashboard { direction: rtl; }
+
+.home-dashboard :focus-visible {
+  outline: 2px solid var(--universe-accent);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-row-fill { transition: none; }
+}

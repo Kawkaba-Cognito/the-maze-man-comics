@@ -9,6 +9,11 @@ import {
 import './planet-surface.css';
 
 /*
+ * UNREFERENCED since 2026-09-10 (owner: "remove the 3d planet"). HomeScreen
+ * no longer scrolls into this - the dive/swipe mechanic that reached it is
+ * gone along with ZenUniverse. Left in the tree rather than deleted, same
+ * convention as MartianMaze.jsx before it.
+ *
  * PlanetSurface - the world at the bottom of the Home swipe.
  *
  * Replaces MartianMaze. That was Babylon loaded from a CDN to draw a flat,

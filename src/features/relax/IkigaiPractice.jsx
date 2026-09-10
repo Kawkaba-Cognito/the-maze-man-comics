@@ -206,10 +206,16 @@ export default function IkigaiPractice({ onBack }) {
   const [revealStep, setRevealStep] = useState(0);
 
   const t = useMemo(() => ({
-    title: isAr ? 'إيكيغاي' : 'Ikigai',
+    /* ⚠ RENAMED FROM "Ikigai" (2026-09-10) — the four-circle diagram below is
+       a Western business-coaching invention, not the concept from the
+       Japanese sources the word actually comes from, and has no experimental
+       evidence of its own. The reflection itself is kept (values/purpose
+       reflection is a genuinely useful thing to do); only the implied
+       pedigree is corrected. See practices.js for the fuller note. */
+    title: isAr ? 'بوصلة المعنى' : 'Purpose Compass',
     intro: isAr
-      ? 'أربعة دوائر تتقاطع — ما تحبّ، ما تجيد، ما يحتاجه العالم، وما يمكنك تقديمه. في الوسط، حيث يلتقي الكل، يظهر معنى حياتك.'
-      : 'Four circles overlap — what you love, what you\'re good at, what the world needs, and what you can offer. At the centre, where they meet, your purpose lives.',
+      ? 'أربعة دوائر تتقاطع — ما تحبّ، ما تجيد، ما يحتاجه العالم، وما يمكنك تقديمه. في الوسط، حيث يلتقي الكل، عدسة للتفكير في معنى حياتك — مستوحاة من مفهوم "إيكيغاي" الياباني، لا هي المفهوم نفسه.'
+      : 'Four circles overlap — what you love, what you\'re good at, what the world needs, and what you can offer. At the centre, where they meet, a lens for thinking about purpose — inspired by the Japanese concept of Ikigai, not the concept itself.',
     start: isAr ? 'ابدأ التأمل' : 'Begin reflection',
     viewSaved: isAr ? 'عرض إيكيغاي المحفوظ' : 'View saved Ikigai',
     stepOf: (n, total) => (isAr ? `${n} من ${total}` : `${n} of ${total}`),
@@ -230,7 +236,7 @@ export default function IkigaiPractice({ onBack }) {
     overlaps: isAr ? 'أين تتقاطع' : 'Where they overlap',
     again: isAr ? 'مراجعة الدوائر' : 'Review circles',
     back: isAr ? 'رجوع' : 'Back',
-    note: isAr ? 'تأمل شخصي — ليس تشخيصاً أو نصيحة مهنية.' : 'Personal reflection — not diagnosis or career advice.',
+    note: isAr ? 'تأمل شخصي مستوحى — ليس تشخيصاً أو نصيحة مهنية أو أداة مُثبَتة علمياً.' : 'A personal, inspired-by reflection — not diagnosis, career advice, or a scientifically validated tool.',
     empty: '—',
     together: isAr ? 'دوائرك تكتمل…' : 'Your circles come together…',
     seeMap: isAr ? 'عرض الخريطة الكاملة' : 'See full map',

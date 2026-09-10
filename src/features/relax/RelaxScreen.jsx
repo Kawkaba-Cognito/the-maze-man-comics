@@ -11,7 +11,7 @@ import SleepSoundsPractice from './SleepSoundsPractice';
 import SleepResetPractice from './SleepResetPractice';
 import ConnectPractice from './ConnectPractice';
 import Who5Practice from './Who5Practice';
-import WorksheetRunner from './worksheetEngine';
+import WorksheetRunner, { TIERS } from './worksheetEngine';
 import { worksheetById } from './worksheets.js';
 import DailyHabits from './DailyHabits';
 import { planetTextureLayerStyle } from '../../lib/planetTexture';
@@ -935,6 +935,18 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
               invitations into a list of things you have failed to do — which is
               precisely the pressure this feature is supposed to be free of. */}
           <PracticeStatLine practiceId={o.id} isAr={isAr} />
+          {/* ⚠ THE SAME BADGE EVERY PRACTICE CARRIES, NOT JUST WORKSHEETS
+              (2026-09-10). Worksheets already printed their evidence tier
+              inside worksheetEngine.jsx; a quiz or a breathing pacer said
+              nothing about its own evidence basis until you opened it (some
+              never said anything at all). `o.tier` is required on every
+              RELAX_PRACTICES entry now (see practices.js) so this can never
+              silently render nothing for a real practice — it renders
+              nothing only for entries with no tier assigned, which audit
+              should treat as a bug, not a feature. */}
+          {o.tier && TIERS[o.tier] && (
+            <span className="rx-menu-tier">{isAr ? TIERS[o.tier].ar : TIERS[o.tier].en}</span>
+          )}
         </span>
         <span className="rx-menu-tail">
           <span
@@ -1629,6 +1641,18 @@ const MENU_CSS = `
 .rx-root .rx-menu-sub { font-size:12.5px; color:var(--universe-muted); line-height:1.5; }
 .rx-root .rx-menu-stat { display:block; margin-top:5px; font-size:11px; font-weight:800; letter-spacing:0.3px;
   color:var(--rx-hue-lit, var(--universe-accent)); }
+/* Same recipe as worksheetEngine.jsx's .ws-tier class (same --rx-hue tokens,
+   same pill shape) so a practice's evidence tier reads identically whether
+   you see it on the menu card or inside the practice itself. Kept as its own
+   rule rather than sharing one class name across two CSS-in-JS template
+   strings that only one of the two screens ever has mounted at once — and
+   note this comment lives INSIDE a template literal, so it must never
+   contain a backtick character or it silently truncates the string. */
+.rx-root .rx-menu-tier { display:inline-block; margin-top:6px; font-size:10.5px; font-weight:800;
+  padding:3px 10px; border-radius:999px; letter-spacing:0.1px;
+  color:var(--rx-hue-lit, var(--universe-accent));
+  background:color-mix(in srgb, var(--rx-hue, var(--universe-accent)) 14%, transparent);
+  border:1px solid color-mix(in srgb, var(--rx-hue, var(--universe-accent)) 34%, transparent); }
 
 /* ── the "what's going on right now?" router (category screens only) ── */
 .rx-root .rx-need { margin-bottom:14px; padding:13px 14px; border-radius:15px;

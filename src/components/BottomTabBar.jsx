@@ -2,7 +2,10 @@ import React from 'react';
 import { House, Target, BookOpen, Leaf, DotsThreeOutline } from '@phosphor-icons/react';
 import { useApp } from '../context/AppContext';
 
-/** Primary app destinations — the daily habits check-in is Home; Training is its own tab. */
+/** Primary app destinations. Home renders the dashboard (HomeScreen); Daily
+ * Habits lives inside Wellbeing (RelaxScreen), reached via the rx_open_daily
+ * one-shot flag (see AppContext.switchTab) — not through this tab directly,
+ * despite the 'habits' screen id below (kept for saved-tab compatibility). */
 export const APP_TABS = [
   { id: 'home', screen: 'habits', Icon: House, en: 'Home', ar: 'الرئيسية' },
   { id: 'training', screen: 'comics', Icon: Target, en: 'Training', ar: 'تدريب' },

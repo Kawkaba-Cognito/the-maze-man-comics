@@ -2417,295 +2417,17 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
   100% { transform: scale(0.92); opacity: 0; }
 }
 
-/* ── Home: universe-to-Kawnera vertical gateway ───────────────────────────
-   The first phone-height page is the original living universe. As it slides
-   away, an orbital aperture opens at the seam and reveals the local Kawnera
-   learning experience. --kawnera-progress is updated without React renders. */
-.home-universe-scroll {
-    --kawnera-progress: 0;
-    position: absolute;
-    inset: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior-y: auto;
-    scroll-snap-type: y proximity;
-    scrollbar-width: none;
-    /* Follows the theme. Pinned #000 before, which framed the beige canvas in a
-       black border on the light appearance. */
-    background: var(--universe-dusk);
-    -webkit-overflow-scrolling: touch;
-}
-.home-universe-scroll::-webkit-scrollbar { display: none; }
-
-.home-universe-stage {
-    position: sticky;
-    top: 0;
-    width: 100%;
-    height: 100dvh;
-    margin-bottom: -100dvh;
-    z-index: 0;
-    overflow: hidden;
-    background: var(--universe-dusk);
-    opacity: 1;
-    transform: scale(calc(1 + var(--kawnera-progress) * 0.08));
-    transform-origin: 50% 50%;
-    will-change: opacity, transform;
-}
-
-.home-universe-scroll.maze-entry-active .home-universe-stage {
-    z-index: 5001;
-    animation: home-universe-dive-to-core 460ms cubic-bezier(.16,.72,.18,1) both;
-}
-
-.home-universe-scroll.maze-entry-active .home-universe-heading,
-.home-universe-scroll.maze-entry-active .home-universe-bodies,
-.home-universe-scroll.maze-entry-active .home-slide-hint {
-    animation: home-universe-dive-ui-out 380ms ease forwards;
-}
-
-.home-universe-page {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    min-height: 100dvh;
-    overflow: hidden;
-    scroll-snap-align: start;
-    pointer-events: none;
-}
-
-/* The second scroll page is intentionally empty. Crossing into it is the
-   gesture threshold that launches the 3D labyrinth from HomeScreen. */
-.home-maze-swipe-zone {
-    position: relative;
-    z-index: 2;
-    width: 100%;
-    min-height: 100dvh;
-    scroll-snap-align: start;
-    pointer-events: none;
-    background: var(--universe-dusk);
-}
-
-.home-universe-scroll.maze-is-open {
-    overflow-y: hidden;
-}
-
-@keyframes home-universe-dive-to-core {
-    from {
-        opacity: 1;
-        transform: scale(1.06);
-    }
-    to {
-        opacity: 0;
-        transform: scale(1.14);
-    }
-}
-
-@keyframes home-universe-dive-ui-out {
-    to {
-        opacity: 0;
-        transform: translateY(-18px) scale(.98);
-    }
-}
-
-/* Top-of-hero column: the personalization panel, then the progress card, then
-   the universe title. .home-universe-page sets `pointer-events: none` so the
-   scroll gesture passes through to the stage — which silently makes anything
-   interactive placed in here unclickable unless it opts back in explicitly.
-   ⚠ EVERY NEW CARD IN THIS COLUMN NEEDS ITS OWN LINE HERE. `.np` was carved
-   out when the panel first went here; `.pc` (ProgressCard) had every button
-   render, look correct, and eat zero clicks until this was added — verified
-   live via elementFromPoint, which returned the ZenUniverse <canvas>, not the
-   button underneath the tap. Screenshots alone would never have shown this. */
-.home-universe-top {
-    position: absolute;
-    top: calc(16px + env(safe-area-inset-top));
-    left: 0;
-    right: 0;
-    z-index: 5;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    padding: 0 16px;
-    pointer-events: none;
-}
-
-.home-universe-top .np,
-.home-universe-top .pc {
-    pointer-events: auto;
-}
-
-/* Inside the column the wrapper owns placement; the heading keeps its own
-   dive opacity/transform below. */
-.home-universe-top .home-universe-heading {
-    position: static;
-    padding: 0;
-}
-
-.home-universe-heading {
-    position: absolute;
-    top: calc(58px + env(safe-area-inset-top));
-    left: 0;
-    right: 0;
-    z-index: 4;
-    padding: 0 20px;
-    text-align: center;
-    color: var(--universe-ink);
-    pointer-events: none;
-    opacity: calc(1 - var(--kawnera-progress) * 1.8);
-    transform: translateY(calc(var(--kawnera-progress) * -28px));
-}
-
-/* Named for Home's "Your universe" title, which was REMOVED on 2026-08-15.
-   Wellbeing's overlay title is now the only user of this class — kept rather
-   than renamed because the two were deliberately wired to one rule after they
-   drifted apart, and RelaxScreen's comment cites this name. */
-.home-universe-title {
-    font-family: 'Cinzel', 'Cormorant Garamond', serif;
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    opacity: 0.95;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 0 22px rgba(232,172,78,0.5);
-}
-[dir='rtl'] .home-universe-title {
-    font-family: 'Cairo', sans-serif;
-    font-size: 22px;
-    letter-spacing: 1px;
-}
-
-.home-slide-hint {
-    position: absolute;
-    left: 50%;
-    bottom: calc(96px + env(safe-area-inset-bottom));
-    z-index: 4;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    pointer-events: none;
-    color: var(--universe-ink);
-    opacity: calc(0.42 - var(--kawnera-progress));
-    font-family: 'Outfit', system-ui, sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-    animation: home-slide-bob 2.6s ease-in-out infinite;
-}
-
-@keyframes home-slide-bob {
-    0%, 100% { transform: translate(-50%, 0); }
-    50% { transform: translate(-50%, 4px); }
-}
-
-.home-kawnera-page {
-    position: relative;
-    z-index: 3;
-    min-height: 100dvh;
-    scroll-snap-align: start;
-    background: #f5f2e9;
-    isolation: isolate;
-}
-
-.home-kawnera-content {
-    position: relative;
-    z-index: 2;
-    min-height: 100dvh;
-    background: #f5f2e9;
-    opacity: clamp(0, calc((var(--kawnera-progress) - 0.3) * 1.8), 1);
-    transform: translateY(calc((1 - var(--kawnera-progress)) * 44px));
-    clip-path: circle(calc(12vmax + var(--kawnera-progress) * 150vmax) at 50% 0);
-    will-change: opacity, transform, clip-path;
-}
-
-.home-universe-scroll.kawnera-is-active .home-kawnera-content {
-    opacity: 1;
-    transform: none;
-    clip-path: none;
-    will-change: auto;
-}
-
-.home-kawnera-gateway {
-    position: absolute;
-    z-index: 5;
-    top: 0;
-    left: 50%;
-    width: min(72vw, 360px);
-    aspect-ratio: 1;
-    pointer-events: none;
-    opacity: clamp(0, calc((1 - var(--kawnera-progress)) * 3), 1);
-    transform:
-      translate(-50%, -50%)
-      scale(calc(0.35 + var(--kawnera-progress) * 0.9))
-      rotate(calc((1 - var(--kawnera-progress)) * -20deg));
-    filter: drop-shadow(0 0 35px rgba(255, 207, 85, 0.5));
-    will-change: transform, opacity;
-}
-
-.home-kawnera-orbit,
-.home-kawnera-gateway-core {
-    position: absolute;
-    inset: 13%;
-    border: 1px solid rgba(255, 218, 129, 0.72);
-    border-radius: 50%;
-}
-.home-kawnera-orbit::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: -5px;
-    width: 10px;
-    height: 10px;
-    margin-top: -5px;
-    border-radius: 50%;
-    background: #ffcf55;
-    box-shadow: 0 0 18px #ffcf55;
-}
-.home-kawnera-orbit--one { transform: rotate(18deg) scaleY(0.38); }
-.home-kawnera-orbit--two { transform: rotate(76deg) scaleY(0.43); }
-.home-kawnera-orbit--three { transform: rotate(138deg) scaleY(0.35); }
-.home-kawnera-gateway-core {
-    inset: 35%;
-    border: 0;
-    background:
-      radial-gradient(circle at 40% 35%, #fff 0 8%, #ffe0a1 25%, #c58a2a 58%, #082c58 100%);
-    box-shadow:
-      0 0 20px #fff,
-      0 0 55px rgba(255, 207, 85, 0.9),
-      0 0 95px rgba(80, 140, 203, 0.55);
-}
-
-.home-kawnera-gateway-name {
-    position: absolute;
-    top: 72%;
-    left: 50%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transform: translateX(-50%);
-    color: #fff5d7;
-    text-align: center;
-    text-shadow: 0 2px 14px #000;
-    white-space: nowrap;
-}
-.home-kawnera-gateway-name b {
-    font: 800 clamp(16px, 4vw, 25px)/1 monospace;
-    letter-spacing: 0.18em;
-}
-.home-kawnera-gateway-name small {
-    margin-top: 7px;
-    font: 700 8px/1.2 'Outfit', system-ui, sans-serif;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-}
-[dir='rtl'] .home-kawnera-gateway-name small {
-    font-family: 'Cairo', sans-serif;
-    letter-spacing: 0;
-}
-
+/* ── Home: dead CSS removed 2026-09-10 ────────────────────────────────────
+   This used to be ~500 lines running the old universe-to-Kawnera scroll
+   gateway (.home-universe-scroll/-stage/-page, .home-maze-swipe-zone, the
+   dive keyframes, .home-universe-top/-heading/-title/-sub/-bodies,
+   .home-slide-hint, the .home-kawnera-page/-content/-gateway/-orbit/-core/
+   -name gateway aperture, and LearningUniverse's own .lu-hit/-empty/-card/
+   -warm/-state/-go). HomeScreen.jsx no longer renders any of it — see the
+   header comment there. `.home-kawnera-loading` is the ONE class from this
+   family still in use (LearnScreen.jsx's loading spinner) and is kept below,
+   with its keyframe. Everything else here had zero remaining references,
+   confirmed by grep before deletion. */
 .home-kawnera-loading {
     min-height: 100dvh;
     display: grid;
@@ -2733,235 +2455,32 @@ html[data-home-theme='light'] .other-theme-desc { color: var(--universe-muted); 
 }
 @keyframes home-kawnera-spin { to { transform: rotate(1turn); } }
 
-@media (max-width: 560px) {
-    .home-kawnera-gateway {
-        width: min(86vw, 330px);
-    }
-}
-
 @media (prefers-reduced-motion: reduce) {
-    .home-universe-scroll {
-        scroll-snap-type: none;
-        scroll-behavior: auto;
-    }
-    .home-universe-stage,
-    .home-universe-heading,
-    .home-kawnera-content,
-    .home-kawnera-gateway {
-        filter: none;
-        transform: none;
-        clip-path: none;
-        will-change: auto;
-    }
-    .home-universe-stage { opacity: 1; }
-    .home-universe-scroll.maze-entry-active .home-universe-stage {
-        opacity: 0;
-        animation: none !important;
-    }
-    .home-universe-heading { opacity: 1; }
-    .home-kawnera-content { opacity: 1; }
-    .home-kawnera-gateway {
-        left: 50%;
-        opacity: 1;
-        transform: translate(-50%, -50%);
-    }
-    .home-slide-hint,
     .home-kawnera-loading span {
         animation: none;
     }
 }
 
-/* ── Your Universe: the bodies you have learned ──────────────────────────
-   Hit areas are DOM (reliable on a phone); the glowing body itself is drawn
-   by ZenUniverse at the same percentage position. See learningStore.js for
-   why the review schedule is drawn in the sky rather than queued in a list. */
-.home-universe-sub {
-    margin-top: 8px;
-    font-family: 'Outfit', system-ui, sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: rgba(232, 220, 192, 0.55);
-}
-
-.home-universe-bodies {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    pointer-events: none;
-}
-
-.home-universe-bodies > * {
-    pointer-events: auto;
-}
-
-.lu-hit {
-    position: absolute;
-    width: 58px;
-    height: 58px;
-    margin: -29px 0 0 -29px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: transparent;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.lu-hit:focus-visible {
-    outline: 2px solid #e8ac4e;
-    outline-offset: 2px;
-}
-
-.lu-empty {
-    position: absolute;
-    left: 50%;
-    bottom: calc(150px + env(safe-area-inset-bottom));
-    transform: translateX(-50%);
-    width: max-content;
-    max-width: calc(100vw - 48px);
-    text-align: center;
-    /* Was cream at 50%, for the black sky. --universe-muted flips with the
-     * appearance; on beige the old value was 1.1:1 and the whole empty state
-     * simply was not there. */
-    color: var(--universe-muted);
-    font-family: 'Outfit', system-ui, sans-serif;
-    pointer-events: none;
-}
-
-.lu-empty p {
-    margin: 0;
-    font-size: 14px;
-    letter-spacing: 0.02em;
-}
-
-.lu-empty small {
-    display: block;
-    margin-top: 5px;
-    font-size: 11px;
-    opacity: 0.72;
-}
-
-/* ── the readout ── */
-.lu-card {
-    position: absolute;
-    left: 50%;
-    bottom: calc(120px + env(safe-area-inset-bottom));
-    transform: translateX(-50%);
-    width: min(340px, calc(100vw - 32px));
-    padding: 20px 22px 22px;
-    background: rgba(9, 10, 16, 0.94);
-    border: 1px solid rgba(232, 172, 78, 0.34);
-    border-radius: 14px;
-    backdrop-filter: blur(10px);
-    color: #f3e6c8;
-    font-family: 'Outfit', system-ui, sans-serif;
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
-}
-
-.lu-close {
-    position: absolute;
-    top: 8px;
-    right: 10px;
-    width: 28px;
-    height: 28px;
-    border: 0;
-    background: none;
-    color: rgba(243, 230, 200, 0.6);
-    font-size: 15px;
-    cursor: pointer;
-}
-
-.lu-card > small {
-    font-size: 10px;
+/* ⚠ `.home-universe-title` MUST STAY — despite the name, Home no longer uses
+   it (removed 2026-09-10 along with the rest of the universe hero). It is
+   Wellbeing's overlay title now (RelaxScreen.jsx:1234), kept under its old
+   name rather than renamed because RelaxScreen's own comment cites this
+   name and the two were deliberately wired to one rule when Home's original
+   "Your universe" heading (removed 2026-08-15) and Wellbeing's title were
+   still drifting apart. Renaming needs both files touched together. */
+.home-universe-title {
+    font-family: 'Cinzel', 'Cormorant Garamond', serif;
+    font-size: 24px;
     font-weight: 700;
-    letter-spacing: 0.13em;
+    letter-spacing: 4px;
     text-transform: uppercase;
-    color: rgba(232, 172, 78, 0.85);
+    opacity: 0.95;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 0 22px rgba(232,172,78,0.5);
 }
-
-.lu-card h3 {
-    margin: 7px 0 16px;
-    padding-right: 20px;
-    font-size: 19px;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
-}
-
-.lu-warm {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-}
-
-.lu-warmTrack {
-    flex: 1;
-    height: 5px;
-    border-radius: 3px;
-    background: rgba(243, 230, 200, 0.14);
-    overflow: hidden;
-}
-
-.lu-warmTrack i {
-    display: block;
-    height: 100%;
-    border-radius: 3px;
-    transition: width 320ms ease;
-}
-
-.lu-warm b {
-    flex: none;
-    font-family: 'DM Mono', ui-monospace, monospace;
-    font-size: 12px;
-}
-
-.lu-state {
-    margin: 13px 0 0;
-    font-size: 13px;
-    line-height: 1.55;
-    color: rgba(243, 230, 200, 0.74);
-}
-
-.lu-go {
-    display: block;
-    width: 100%;
-    margin-top: 17px;
-    padding: 12px;
-    border: 1px solid rgba(232, 172, 78, 0.5);
-    border-radius: 10px;
-    background: rgba(232, 172, 78, 0.16);
-    color: #f3e6c8;
-    font: inherit;
-    font-weight: 700;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-.lu-go:hover {
-    background: rgba(232, 172, 78, 0.26);
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .lu-warmTrack i {
-        transition: none;
-    }
-}
-
-/* ══ Home hero — light (sunset) appearance ════════════════════════════════
- *
- * The "Slide down" hint is cream at 0.42 opacity, which is right over black.
- * It sits at the BOTTOM of the hero, and that is exactly where the sunset sky
- * is brightest — pale gold on pale gold, invisible. The title and subtitle
- * need no override: they live at the top, against the indigo zenith.
- *
- * The `- var(--kawnera-progress)` fade is preserved; only the base level and
- * the ink change, so the hint still dissolves as the library slides up.
- */
-html[data-home-theme='light'] .home-slide-hint {
-    color: #5a2a18;
-    opacity: calc(0.66 - var(--kawnera-progress));
-    text-shadow: 0 1px 2px rgba(255, 236, 208, 0.5);
+[dir='rtl'] .home-universe-title {
+    font-family: 'Cairo', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
 }
 
 /* ══ Dr. Kawkab's medallion ════════════════════════════════════════════════
@@ -3118,32 +2637,42 @@ html[data-home-theme='light'] .home-universe-title {
  * numbers clear a full 7.7–7.8:1 unveiled.
  */
 /*
- * ⚠ `--app-bg` FORKS BY THEME NOW; `--game-bg` STILL DOES NOT (2026-09-10).
- * Codex painted a dedicated dark version of the plain app gradient
- * (`app-*-dark.webp`, "obsidian") — the purpose-made dark art this file has
- * wanted since the v2 sets, restored for at least one of the two pairs.
- * `game-bg` has no dark-specific asset yet, so it still leans on the veil
- * below; that is why its line is REPEATED, unchanged, in both theme blocks
- * rather than hoisted out — the moment it gets its own dark asset, only the
- * block that needs editing is obvious, instead of a shared line quietly
- * serving two themes that have stopped agreeing.
+ * ⚠ `--game-bg` NOW POINTS AT THE SAME PLAIN ASSET AS `--app-bg` (2026-09-10,
+ * same day as the fork above, owner: "i dont want this random circle" after
+ * seeing the orbit-diagram concept live in Cancellation and other games). The
+ * orbit diagram itself was never restored to a painted planet — that confound
+ * was already ruled out earlier the same day — but its own ring-and-dot
+ * diagram read as an unexplained shape sitting over live gameplay, and it
+ * separately measured 2.11–2.16:1 contrast in light theme, well under AA
+ * (see the veil note below, now moot). Pointing `--game-bg` at the plain
+ * gradient fixes both at once and gives gameplay the obsidian dark asset it
+ * never had of its own. `gameplay-*.webp` is left on disk, unreferenced,
+ * rather than deleted — see CLAUDE.md's asset-hygiene notes on why an unused
+ * file is not urgent to clean up.
+ *
+ * The two variables stay separate rather than collapsing to one: every game
+ * already carries the `data-gameplay-active` marker that switches
+ * `.ct-domain-game-stage::before` from `--app-bg` to `--game-bg` only while a
+ * round is actually live (training.css). That seam is real and load-bearing
+ * even though both tokens currently resolve to the same pixels — the moment
+ * gameplay wants its own look again, only this block needs editing.
  */
 :root, html[data-home-theme='light'] {
     --app-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/app-16x9.webp");
-    --game-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/gameplay-16x9.webp");
+    --game-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/app-16x9.webp");
 }
 html[data-home-theme='dark'] {
     --app-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/app-16x9-dark.webp");
-    --game-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/gameplay-16x9.webp");
+    --game-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/app-16x9-dark.webp");
 }
 @media (orientation: portrait) {
     :root, html[data-home-theme='light'] {
         --app-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/app-9x16.webp");
-        --game-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/gameplay-9x16.webp");
+        --game-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/app-9x16.webp");
     }
     html[data-home-theme='dark'] {
         --app-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/app-9x16-dark.webp");
-        --game-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/gameplay-9x16.webp");
+        --game-bg: url("/the-maze-man-comics/Assets/training/backgrounds-v3/app-9x16-dark.webp");
     }
 }
 
@@ -3225,23 +2754,22 @@ html[data-home-theme='dark'] {
  * AAA by 2× over the floor, which is what a purpose-painted dark asset with
  * no veil work to do buys you.
  *
- * `gameplay-*`'s dark-theme number is fine (7.73–7.79, AAA, via `--game-veil`)
- * but its LIGHT-theme number is not: 2.11–2.16:1, well under even AA (4.5:1).
- * The failure is the orbit-diagram's own ring ink (~L 0.08), which is dark
- * enough that light theme's dark body ink (#201d18) barely separates from it.
- * Known and accepted for now — see the note above `--game-bg`'s declaration
- * for why — but re-measure with a FULL scan, not a sparse one, if this art is
- * ever repainted, and if `gameplay-*` ever gets its own dark-painted asset the
- * way `app-*` just did, `--game-veil` becomes transparent in dark too and
- * this whole note collapses to match the app row.
+ * ⚠ COLLAPSED BACK TO TRANSPARENT IN BOTH THEMES (2026-09-10, same change
+ * that repointed `--game-bg` above): `game-bg` now IS the obsidian dark asset,
+ * not a light-graded image under a 72% lift, so the gameplay row's numbers are
+ * the app row's numbers — 7.54–7.71:1 light, 15.15–15.30:1 dark, both AAA,
+ * neither needs a veil. The 2.11–2.16:1 light-theme failure this note used to
+ * document was the orbit-diagram's own ring ink; that image is no longer
+ * referenced by either token, so the failure is moot rather than fixed in
+ * place. If gameplay ever gets its own distinct art again, re-measure before
+ * assuming this table still applies.
  *
  * Layering the veil as a gradient inside `background-image` keeps it on the
  * same element as the art — no overlay element, nothing for a stacking
  * context to trap.
  */
 :root, html[data-home-theme='light'], html[data-home-theme='dark'] { --app-veil: transparent; }
-:root, html[data-home-theme='light'] { --game-veil: transparent; }
-html[data-home-theme='dark'] { --game-veil: color-mix(in srgb, var(--universe-dusk) 72%, transparent); }
+:root, html[data-home-theme='light'], html[data-home-theme='dark'] { --game-veil: transparent; }
 
 body {
     background-image: linear-gradient(var(--app-veil), var(--app-veil)), var(--app-bg);
@@ -3282,9 +2810,9 @@ body {
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    /* `--game-veil`, not `--app-veil` — this shows `--game-bg`, which still
-       has no dark-painted asset and still needs the lift. See the note beside
-       both tokens' declarations for why they're no longer the same variable. */
+    /* `--game-veil`, kept distinct from `--app-veil` as a seam even though both
+       are transparent today — `--game-bg` shares `--app-bg`'s purpose-painted
+       assets since 2026-09-10. See the note beside both tokens' declarations. */
     background-image: linear-gradient(var(--game-veil), var(--game-veil)), var(--game-bg);
     background-size: cover;
     background-position: center center;
@@ -3307,14 +2835,16 @@ body {
 }
 
 /* Each tab paints its own ground on top of body, so the trial is invisible
-   without naming them. These are the five containers measured as blocking it:
-   Home's scroll/stage, Training's app-stage, Learn's kawnera-app, and the
-   shared uv-stage starfield behind Wellbeing and Other.
+   without naming them. These are the containers measured as blocking it:
+   Training's app-stage, Learn's kawnera-app, and the shared uv-stage
+   starfield behind Wellbeing and Other.
 
-   ⚠ Home also runs a 3D particle CANVAS, which CSS cannot see through — that
-   screen will keep its own sky whatever this rule says. */
-.home-universe-scroll,
-.home-universe-stage,
+   ⚠ Home is NOT listed here (2026-09-10): it used to run a 3D particle
+   CANVAS that CSS cannot see through, which is why this comment previously
+   warned "will keep its own sky whatever this rule says". That canvas
+   (ZenUniverse) is gone — Home is now `.home-dashboard`, a plain div with no
+   background of its own, already forced transparent by the `#screen-home >
+   div` rule below. */
 .app-stage,
 .kawnera-app,
 .other-screen,
@@ -3328,15 +2858,11 @@ body {
      · Training  — `.rh-training-hub.app-stage--universe` (0,2,0) outranked the
                    plain `.app-stage` rule above.
      · Wellbeing — `#screen-relax`, an ID selector.
-     · Home      — an inline-styled wrapper plus `.home-maze-swipe-zone`;
-                   `!important` in a stylesheet beats a non-important inline style.
-   ⚠ Home also runs a 3D particle CANVAS. If that clears to an opaque colour no
-   CSS here can reveal the art behind it — canvases are not transparent by
-   wishing. */
+     · Home      — an inline-styled wrapper; `!important` in a stylesheet
+                   beats a non-important inline style. */
 #screen-relax,
 .rh-training-hub.app-stage--universe,
-#screen-home > div,
-.home-maze-swipe-zone {
+#screen-home > div {
     background-color: transparent !important;
     background-image: none !important;
 }

@@ -3,7 +3,14 @@ import * as THREE from 'three';
 import { releaseGlContext } from '../training/shared/c3dViewport';
 
 /*
- * ZenUniverse â€” the Home screen's living 3D backdrop.
+ * UNREFERENCED since 2026-09-10 (owner: "remove the 3d planet"). HomeScreen
+ * no longer imports this. Left in the tree rather than deleted, same
+ * convention as MartianMaze.jsx before it - the code is correct, it was
+ * removed by product decision (a WebGL context running continuously behind
+ * the most-visited screen, on a machine that has already BSOD'd once under
+ * multi-context WebGL load) not because it was broken.
+ *
+ * ZenUniverse - the Home screen's living 3D backdrop.
  * Pure black space, twinkling stars, soft dust, occasional shooting stars,
  * a particle planet at the center (white on the night sky, ink on the lit one)
  * that dissolves locally where touched

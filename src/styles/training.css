@@ -9680,14 +9680,14 @@ html[data-home-theme='dark'] {
  * export; the shared readability layer above keeps the final surface on that
  * palette.
  *
- * ⚠ `--app-bg` (menus, mode pick — whenever this element is showing that
- * variable) is the PLAIN gradient; `--game-bg` (the actual live-round pixels)
- * carries a small, deliberately abstract orbit diagram — thin ring outlines
- * and dots, no filled/painted objects. That split was picked and then
- * reversed once already the same day (2026-09-09/10) — see the note beside
- * the variable declarations in global.css for the full reasoning and for why
- * gameplay's art stops short of anything a player could mistake for one of
- * Cancellation's own pictorial search targets.
+ * ⚠ `--app-bg` and `--game-bg` (the actual live-round pixels) are BOTH the
+ * plain gradient now (2026-09-10) — a prior version of `--game-bg` carried a
+ * small abstract orbit diagram (thin ring outlines and dots), reported live
+ * as "a random circle" showing up during Cancellation and other games. See
+ * the note beside the variable declarations in global.css for the fuller
+ * history: the two tokens stay separate even though they currently resolve
+ * to the same asset, because the `data-gameplay-active` marker below is a
+ * real seam if gameplay ever wants its own look again.
  * ========================================================================= */
 .ct-domain-game-stage::before {
     content: '';
@@ -9720,9 +9720,11 @@ html[data-home-theme='dark'] {
    chrome — see each game's index.jsx and shared/C3dProtoChrome.jsx). Menus,
    mode/level pick, briefings, pauses and results inherit the main app
    background instead. All 18 live games carry the marker as of 2026-09-09.
-   ⚠ `--game-veil`, not `--app-veil` — this layer shows `--game-bg`, which has
-   no dark-painted asset of its own and still needs the 72% dark-theme lift
-   `--app-bg` no longer does. See the note beside both tokens in global.css. */
+   ⚠ Uses `--game-veil`, kept distinct from `--app-veil` for the same reason
+   the two background tokens stay distinct: both are transparent today (2026-09-10,
+   `--game-bg` now shares `--app-bg`'s purpose-painted assets, no lift needed),
+   but the seam still exists so a future dedicated gameplay asset only needs
+   this token touched. See the note beside both pairs in global.css. */
 .ct-domain-game-stage:has([data-gameplay-active='true'])::before {
     background-image: linear-gradient(var(--game-veil), var(--game-veil)), var(--game-bg);
 }
@@ -9731,6 +9733,46 @@ html[data-home-theme='dark'] {
    correct: `--game-bg` already switches to the 9:16 gameplay image inside
    global.css's own portrait query, so re-pointing the layer here would just
    name a second source for the same thing and give it somewhere to drift. */
+
+/* ============================================================================
+ * TRIAL, ONE GAME ONLY (2026-09-10, owner: "we will add a background only for
+ * the games, for now try to put the speed background that currently exists in
+ * the speed page domain, and put it in cancellation task gameplay so i can
+ * see how it goes"). NOT a rollout — Cancellation only, so it can be judged
+ * live before deciding whether any other game gets a per-game background.
+ *
+ * Scoped to Cancellation's own rendered root class, not `[data-training-
+ * domain="attention"]` — MOT and Car Park share that domain and were not
+ * asked for. Reuses the exact asset that used to live on the Speed
+ * domain-pick screen (removed above) rather than a new export.
+ *
+ * `--training-art-scrim` is put back to its originally-measured 70% here,
+ * scoped to this one stage — it defaults to 0% everywhere else because
+ * `--game-bg`'s plain asset needs no scrim, but THIS image is the old
+ * illustrated domain painting, which is exactly what 70% was measured
+ * against (see the contrast table above `.ct-domain-game-stage::after`).
+ * `--game-veil` is left alone (transparent): the scrim is doing the
+ * contrast work here, the way it did on the domain-pick screen.
+ *
+ * ⚠ Gated on `[data-gameplay-active='true']` too, not just the root class —
+ * `.cancellation-task-game` is on the game's OUTER root and stays mounted
+ * across menu/mode-pick/results, while the marker sits on a descendant
+ * (`.ct-fq-play`) only while a round is actually live. Without the second
+ * condition this would paint the menu and results screens too, which is not
+ * what "in cancellation task gameplay" asked for. */
+.ct-domain-game-stage:has(.cancellation-task-game [data-gameplay-active='true']) {
+    --training-art-scrim: 70%;
+}
+.ct-domain-game-stage:has(.cancellation-task-game [data-gameplay-active='true'])::before {
+    background-image: linear-gradient(var(--game-veil), var(--game-veil)),
+        url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/speed.webp");
+}
+@media (orientation: portrait) {
+    .ct-domain-game-stage:has(.cancellation-task-game [data-gameplay-active='true'])::before {
+        background-image: linear-gradient(var(--game-veil), var(--game-veil)),
+            url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/speed.webp");
+    }
+}
 
 /* ============================================================================
  * Per-domain art on the DOMAIN screen (owner, 2026-09-08: "in each domain, i
@@ -9749,49 +9791,14 @@ html[data-home-theme='dark'] {
  * ⚠ No JSX needed: ComicsScreen already puts `ct-domain-pick--<id>` on this
  * screen's shell, so the art hangs off a class that exists.
  * ========================================================================= */
-/* ⚠ THE ART GOES ON `::after`, AND THAT IS NOT A STYLE CHOICE — `::before` WAS
-   ALREADY OWNED, BY THREE RULES THAT EACH BROKE THIS DIFFERENTLY.
-   `.ct-domain-pick::before` is this screen's pre-existing decorative glow, and
-   putting the art there measured `domain art: none` in dark while reading
-   correctly in light — the classic one-appearance gap. Two dark rules
-   (`training.css:7303`, `:8211`) set the `background` SHORTHAND, which resets
-   `background-image` to none; a shorthand does not have to mention a longhand
-   to erase it. And the light rule at `:9301` applies `opacity: 0.34` +
-   `mix-blend-mode: multiply` to that same layer, which is right for a glow and
-   wrong for a painting — so even the appearance that "worked" was showing the
-   art at a third strength, multiplied into the ground.
-   `::after` is used by nothing on this screen (verified), so the art gets a
-   layer of its own and inherits none of that. It sits at z-index 0 under the
-   content, above the glow. */
+/* ⚠ REMOVED (2026-09-10, owner: "remove the backgrounds from the domains
+   pages"). The domain-pick screens (Attention/Speed/Memory/…) go back to
+   their plain --app-bg with no per-domain painting on top. The six
+   domain-backgrounds-2026-v2 images stay on disk, unreferenced from here —
+   one of them (speed.webp) is on trial as a GAMEPLAY background instead, see
+   `.ct-domain-game-stage.ct-domain-game-stage--cancel-task-art::before` below.
+   `.ct-domain-pick--<id>` modifier classes are untouched (ComicsScreen still
+   sets them); only the ::after art layer and its --domain-art vars are gone,
+   so re-adding this is a matter of restoring this block from git history. */
 .ct-domain-pick { position: relative; }
-.ct-domain-pick::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background-repeat: no-repeat;
-    background-position: center center;
-    background-size: cover;
-    background-image: var(--domain-art);
-}
 .ct-domain-pick > * { position: relative; z-index: 1; }
-
-.ct-domain-pick--attention { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/attention.webp"); }
-.ct-domain-pick--speed { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/speed.webp"); }
-.ct-domain-pick--memory { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/memory.webp"); }
-.ct-domain-pick--language { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/language.webp"); }
-.ct-domain-pick--reasoning { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/reasoning.webp"); }
-.ct-domain-pick--flexibility { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/flexibility.webp"); }
-
-/* ⚠ The portrait set is a different COMPOSITION, not the same image scaled.
-   A 16:9 painting on a 390x844 screen shows 26% of its width — measured, and
-   the reason the mobile set exists at all. */
-@media (orientation: portrait) {
-    .ct-domain-pick--attention { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/attention.webp"); }
-    .ct-domain-pick--speed { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/speed.webp"); }
-    .ct-domain-pick--memory { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/memory.webp"); }
-    .ct-domain-pick--language { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/language.webp"); }
-    .ct-domain-pick--reasoning { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/reasoning.webp"); }
-    .ct-domain-pick--flexibility { --domain-art: url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/flexibility.webp"); }
-}
