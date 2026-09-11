@@ -41,13 +41,34 @@
   /* ── ink & ground ────────────────────────────────────────────────────── */
   --rx-ink: var(--universe-ink);
   --rx-sub: var(--universe-muted);
-  --rx-faint: color-mix(in srgb, var(--universe-muted) 78%, var(--universe-dusk));
+  /* ⚠ WAS BELOW AA IN LIGHT (3.28:1 on --universe-dusk) — a design review
+     measured every label/hint/citation carrying this token (`.ws-cite`,
+     `.rx-caution`, the safety note's own limitation line) failing contrast at
+     11-12.5px. Mixed toward --universe-ink instead of --universe-dusk so it
+     darkens in light and still lightens correctly in dark (muted already
+     flips). ~4.6:1 in light now. */
+  --rx-faint: color-mix(in srgb, var(--universe-muted) 88%, var(--universe-ink));
   --rx-line: var(--universe-line);
   --rx-hair: color-mix(in srgb, var(--universe-line) 55%, transparent);
   --rx-ground: var(--universe-dusk);
   --rx-card: var(--universe-glass-strong);
   --rx-card-soft: color-mix(in srgb, var(--universe-glass) 70%, var(--universe-dusk));
   --rx-accent: var(--universe-accent);
+
+  /* ── type scale ──────────────────────────────────────────────────────────
+   * One scale for every screen inside the planets (category, practice,
+   * worksheet, quiz). Replaces ~40 ad hoc font-size values that had drifted
+   * across the feature's files with no shared steps between them. */
+  --rx-display: 'Cormorant Garamond', Georgia, serif;
+  --rx-sans: 'Outfit', 'Cairo', system-ui, sans-serif;
+  --rx-fs-display: 30px;   /* screen title            lh 1.12  w 600 */
+  --rx-fs-title: 24px;     /* section / result head   lh 1.2   w 600 */
+  --rx-fs-head: 17px;      /* card title, prompt      lh 1.35  w 600 */
+  --rx-fs-lead: 16px;      /* worksheet question      lh 1.5   w 600 */
+  --rx-fs-body: 14.5px;    /* body                    lh 1.65  w 400 */
+  --rx-fs-small: 12.5px;   /* sub, note, hint         lh 1.55  w 400 */
+  --rx-fs-label: 11px;     /* eyebrow / uppercase     lh 1.4   w 700 */
+  --rx-fs-numeral: 64px;   /* timers, counts, scores  lh 1     w 600 */
 
   /*
    * ── THE FIVE AREAS ───────────────────────────────────────────────────
@@ -79,10 +100,27 @@
   --rx-personality-core: #9c5a30;  /* copper — know yourself          */
   --rx-personality-lit: #dd9a63;
 
+  /*
+   * ⚠ `-lit` WAS ALSO BEING USED AS TEXT COLOUR IN ~18 PLACES (labels, tier
+   * badges, journey kickers, score numerals) AND FAILS CONTRAST THERE IN
+   * LIGHT THEME — measured 1.12–1.53:1 on --universe-dusk, because `lit` is
+   * tuned to read as a LIMB on a near-black sphere, not as ink on beige. A
+   * third value per pillar, for TEXT ONLY: derived from `-core` in light
+   * (darker, so it reads on the beige ground) and equal to `-lit` in dark
+   * (where `-lit` already measures 12+:1 and is correct). Never repoint a
+   * non-text usage (fills, borders, the sphere gradient, bar fills) to this —
+   * those want `-lit`, which is still the right value there. */
+  --rx-calm-ink: #26543f;
+  --rx-sleep-ink: #33407a;
+  --rx-meaning-ink: #68450b;
+  --rx-relationships-ink: #7c2f47;
+  --rx-personality-ink: #6f3a18;
+
   /* The area currently in play. Set inline per orb / per category screen so
      one hue drives the sphere, its atmosphere, its heading and its controls. */
   --rx-hue: var(--rx-calm-core);
   --rx-hue-lit: var(--rx-calm-lit);
+  --rx-hue-ink: var(--rx-calm-ink);
 }
 
 /* ⚠ Dark lifts the CORES and keeps the lits; on a near-black sky the light
@@ -93,12 +131,23 @@ html[data-home-theme='dark'] .rx-wb {
   --rx-calm-lit: #79e0bd;
   --rx-sleep-core: #4a56a8;
   --rx-sleep-lit: #a6b1ff;
-  --rx-meaning-core: #a97c26;
+  /* ⚠ #a97c26 measured 3.75:1 with white text (the primary-button fix below)
+     — the one core in this set that didn't clear AA. Darkened slightly;
+     still reads as the same amber, now 5.06:1. */
+  --rx-meaning-core: #8e6820;
   --rx-meaning-lit: #f2ca77;
   --rx-relationships-core: #b4506f;
   --rx-relationships-lit: #ff9fba;
   --rx-personality-core: #ad5f2c;
   --rx-personality-lit: #f0a86d;
+
+  /* `-lit` already measures 12+:1 on the dark ground, so it IS the text
+     colour here — derive, do not restate a second literal per pillar. */
+  --rx-calm-ink: var(--rx-calm-lit);
+  --rx-sleep-ink: var(--rx-sleep-lit);
+  --rx-meaning-ink: var(--rx-meaning-lit);
+  --rx-relationships-ink: var(--rx-relationships-lit);
+  --rx-personality-ink: var(--rx-personality-lit);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -231,15 +280,20 @@ html[data-home-theme='dark'] .rx-wb {
   box-shadow: var(--elev-press);
 }
 
+/* ⚠ WAS `color-mix(--rx-hue 88%, --rx-card)` — mixing the hue TOWARD THE CARD
+   makes it lighter than the hue itself, and white text on it measured well
+   under AA on every pillar (a design review found 1.9–2.7:1). Flat `--rx-hue`
+   is the correct floor: 4.6–6.9:1 with white across all five pillars, both
+   themes (after the meaning-core fix above). */
 .rx-btn {
   border: 1px solid color-mix(in srgb, var(--rx-hue) 55%, transparent);
   border-radius: 14px;
   padding: 14px 18px;
-  background: color-mix(in srgb, var(--rx-hue) 88%, var(--rx-card));
+  background: var(--rx-hue);
   color: #fff;
   font-family: inherit;
-  font-size: 16px;
-  font-weight: 750;
+  font-size: var(--rx-fs-lead);
+  font-weight: 600;
   cursor: pointer;
   box-shadow: var(--elev-rest);
   transition: box-shadow 0.18s, background 0.18s;
@@ -297,25 +351,40 @@ html[data-home-theme='dark'] .rx-wb {
               inset 0 2px 10px rgba(255, 255, 255, 0.28);
 }
 /* On beige the orb's own low-alpha glow has nothing to sit against, so the
-   light appearance takes the crisp ring — same reasoning as the landing. */
+   light appearance takes the crisp ring — same reasoning as the landing.
+   ⚠ Ringed in the pillar's OWN hue, not a neutral ink — a near-black painted
+   sphere on beige with a plain grey ring reads as a hole in the page; the
+   `-lit` ring is what makes it read as a lit body instead. */
 html[data-home-theme='light'] .rx-wb .rx-cat-orb {
-  box-shadow: 0 10px 22px rgba(32, 29, 24, 0.20),
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--rx-hue) 34%, transparent),
               inset 0 -8px 18px rgba(0, 0, 0, 0.14),
               inset 0 2px 10px rgba(255, 255, 255, 0.28),
-              0 0 0 1.5px rgba(32, 29, 24, 0.30);
+              0 0 0 1.5px color-mix(in srgb, var(--rx-hue-lit) 70%, transparent);
 }
-/* The artwork's contour, again matching the landing: without it the emblem's
-   edge disappears against the pale ground. */
+/* Full-bleed generated pillar paintings are authored for this circular crop. */
 .rx-wb .rx-cat-orb img {
-  width: 80%;
-  height: 80%;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   pointer-events: none;
   user-select: none;
-  filter: drop-shadow(1px 0 0 var(--universe-ink)) drop-shadow(-1px 0 0 var(--universe-ink))
-          drop-shadow(0 1px 0 var(--universe-ink)) drop-shadow(0 -1px 0 var(--universe-ink))
-          drop-shadow(0 4px 8px rgba(32, 29, 24, 0.28));
 }
-html[data-home-theme='dark'] .rx-wb .rx-cat-orb img {
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.42));
+
+/* ── Arabic under this scale ───────────────────────────────────────────────
+ * ⚠ LETTER-SPACING BREAKS ARABIC'S CURSIVE JOINS — connected letters render
+ * as separate glyphs when tracked apart. The feature carries ~46
+ * letter-spacing declarations (mostly eyebrows/uppercase labels, correctly
+ * tracked for LATIN caps); this guard neutralises all of them under RTL in
+ * one place rather than hunting each one down. */
+[dir='rtl'] .rx-wb, [dir='rtl'] .rx-wb * { letter-spacing: normal; }
+/* ⚠ `--rx-display` (Cormorant Garamond) has no Arabic glyphs at all, so any
+   title using it was silently falling through to Georgia → a generic serif
+   under RTL. Arabic titles take Cairo at a heavier weight instead, since
+   Cairo has no true serif; 700 is what reads as "titled" rather than "body"
+   at these sizes. */
+[dir='rtl'] .rx-wb .serif,
+[dir='rtl'] .rx-wb .rxp-title,
+[dir='rtl'] .rx-wb .header-title {
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
 }

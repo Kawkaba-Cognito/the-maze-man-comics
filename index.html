@@ -37,7 +37,11 @@
   <link rel="shortcut icon" href="/favicon.ico" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet" />
+  <!-- ⚠ Wellbeing's --rx-sans stack (Outfit, Cairo) uses Cairo at 400/600/700
+       for body text and labels, not just the 700/900 the rest of the app
+       requested — without 400/600 the browser was substituting 900 at any
+       Arabic weight above 700, and had no match at all under 700. -->
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet" />
   <!-- Babylon.js (the 3D maze engine, several MB) is NOT loaded here. A blocking
        <script> made it parse + execute on every launch — ~2.5s of frozen boot
        even on screens that never use 3D. MartianMaze now loads it on demand

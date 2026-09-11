@@ -32,6 +32,10 @@ const DOMAIN_PLANET_IDS = [
   'attention', 'speed', 'memory', 'language', 'reasoning', 'flexibility',
 ];
 
+const WELLBEING_PILLAR_IDS = [
+  'calm', 'sleep', 'meaning', 'relationships', 'personality',
+];
+
 export function planetIconUrl(categoryId) {
   const file = FILES[categoryId];
   return file ? assetUrl(`Assets/planets/${file}`) : null;
@@ -41,4 +45,16 @@ export function planetIconUrl(categoryId) {
 export function domainPlanetUrl(domainId) {
   if (!DOMAIN_PLANET_IDS.includes(domainId)) return planetIconUrl(domainId);
   return assetUrl(`Assets/domain-art/category-drawings-2026/${domainId}.webp`);
+}
+
+/**
+ * Generated premium paintings used only after entering Wellbeing.
+ *
+ * The outer constellation deliberately keeps its established Fluent artwork;
+ * these richer, circular-crop masters belong to pillar headers, practice cards
+ * and practice heroes where the user asked for a closer, more premium view.
+ */
+export function wellbeingPillarArtUrl(pillarId) {
+  if (!WELLBEING_PILLAR_IDS.includes(pillarId)) return null;
+  return assetUrl(`Assets/wellbeing/pillars/${pillarId}.webp`);
 }

@@ -366,7 +366,7 @@ const CSS = `
 .cn-verdict { padding:12px 15px; border-radius:13px; border:1px solid ${LINE}; background:${CARD}; }
 .cn-verdict.good { border-color:color-mix(in srgb, var(--rx-hue) 55%, transparent); background:color-mix(in srgb, var(--rx-hue) 12%, transparent); }
 .cn-verdict-name { font-size:14.5px; font-weight:800; color:${INK}; margin-bottom:3px; }
-.cn-verdict.good .cn-verdict-name { color:var(--rx-hue-lit); }
+.cn-verdict.good .cn-verdict-name { color:var(--rx-hue-ink); }
 .cn-verdict-tag { font-size:12.5px; color:${SUB}; line-height:1.55; }
 .cn-feedback { margin:0; font-size:13.5px; color:${SUB}; line-height:1.7; }
 .cn-summary { margin:0; font-size:16px; font-weight:700; color:${INK}; text-align:center; line-height:1.5; max-width:340px; }
@@ -374,7 +374,7 @@ const CSS = `
 .cn-cell { padding:10px 12px; border-radius:12px; border:1px solid ${LINE}; background:${CARD}; text-align:start; }
 .cn-cell.good { border-color:color-mix(in srgb, var(--rx-hue) 55%, transparent); }
 .cn-cell-name { display:block; font-size:11.5px; font-weight:800; color:${INK}; margin-bottom:3px; }
-.cn-cell.good .cn-cell-name { color:var(--rx-hue-lit); }
+.cn-cell.good .cn-cell-name { color:var(--rx-hue-ink); }
 .cn-cell-tag { font-size:11px; color:${SUB}; line-height:1.45; }
 .cn-deeper { width:100%; max-width:360px; }
 .cn-action-title { font-family:${SERIF}; font-size:25px; font-weight:600; color:${INK}; text-align:center; }

@@ -4,6 +4,7 @@
  */
 import { loadWorkout, isDoneToday } from '../workout/workoutState';
 import { timeToMinutes, nowMinutes } from '../workout/reminders';
+import { recordWellbeingCompletion } from './wellbeingJourney';
 
 export const HABIT_KEY = 'rx_habits_v2';
 const HABIT_KEY_V1 = 'rx_habits_v1';
@@ -564,6 +565,7 @@ export function toggleEnabled(habitId) {
 /** Mark linked wellbeing practice done for today (all matching habits + calm group). */
 export function markWellbeingPracticeDone(practiceId) {
   if (!practiceId) return;
+  recordWellbeingCompletion(practiceId);
   const st = loadHabits();
   const day = todayKey();
   const mark = (h) => {

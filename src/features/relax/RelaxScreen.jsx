@@ -15,12 +15,14 @@ import WorksheetRunner, { TIERS } from './worksheetEngine';
 import { worksheetById } from './worksheets.js';
 import DailyHabits from './DailyHabits';
 import { planetTextureLayerStyle } from '../../lib/planetTexture';
-import { planetIconUrl } from '../../lib/planetIcons';
+import { planetIconUrl, wellbeingPillarArtUrl } from '../../lib/planetIcons';
 import { OPEN_DAILY_KEY } from './HabitReminderBanner';
 import UniverseStage from '../../components/shared/UniverseStage';
 import { RELAX_PRACTICES } from './practices.js';
 import SafetyNote, { SAFETY_CSS } from './SafetyNote';
-import { NEED_STATES, MEASURED_PRACTICES, getPracticeStats } from './practiceLog';
+import { NEED_STATES, MEASURED_PRACTICES, getPracticeStats, tierFor } from './practiceLog';
+import { loadWellbeingJourney } from './wellbeingJourney';
+import { markWellbeingPracticeDone } from './habitState';
 import './wellbeing.css';
 /* The personalization CONTROLS moved to Home (features/personalization/
  * NeuralPanel) — there is one model, so it now has one surface. What stays here
@@ -139,7 +141,13 @@ function MbsrTracker({ onBack }) {
     if (timerActive && timerSeconds >= timerTarget && timerTarget > 0) {
       setTimerActive(false);
       playSfx?.('collect');
-      setCompleted((prev) => { if (prev[today]) return prev; const n = { ...prev, [today]: true }; lsSet('mbsr_completed', JSON.stringify(n)); return n; });
+      setCompleted((prev) => {
+        if (prev[today]) return prev;
+        const n = { ...prev, [today]: true };
+        lsSet('mbsr_completed', JSON.stringify(n));
+        markWellbeingPracticeDone('mbsr');
+        return n;
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerActive, timerSeconds, timerTarget]);
@@ -149,7 +157,16 @@ function MbsrTracker({ onBack }) {
   const streak = computeStreak(completed);
   const totalDone = Object.values(completed).filter(Boolean).length;
 
-  const toggleDay = (key) => { setCompleted((prev) => { const n = { ...prev, [key]: !prev[key] }; lsSet('mbsr_completed', JSON.stringify(n)); return n; }); playSfx?.('click'); };
+  const toggleDay = (key) => {
+    setCompleted((prev) => {
+      const done = !prev[key];
+      const n = { ...prev, [key]: done };
+      lsSet('mbsr_completed', JSON.stringify(n));
+      if (done) markWellbeingPracticeDone('mbsr');
+      return n;
+    });
+    playSfx?.('click');
+  };
   const setTarget = (min) => { setTimerActive(false); setTimerSeconds(0); setTimerTarget(min * 60); playSfx?.('click'); };
   const toggleTimer = () => { playSfx?.('click'); setTimerActive((a) => !a); };
   const resetTimer = () => { setTimerActive(false); setTimerSeconds(0); };
@@ -210,7 +227,7 @@ function MbsrTracker({ onBack }) {
         <div className="content">
           {tab === 'today' && !startDate && (
             <div className="empty-state">
-              <div className="empty-emoji">🧘</div>
+              <img className="empty-art" src={wellbeingPillarArtUrl('calm')} alt="" draggable={false} />
               <div className="empty-title">Ready to begin?</div>
               <div className="empty-sub">Set your start date and we'll guide you through all 8 weeks — daily instructions, a timer, and a session log.</div>
               <button className="start-btn" onClick={() => setShowModal(true)}>Start my program</button>
@@ -459,15 +476,30 @@ function MbsrTracker({ onBack }) {
   );
 }
 
-const SERIF = "'Cormorant Garamond', Georgia, serif";
-const SANS = "'Outfit', system-ui, sans-serif";
-const INK = '#2d2210'; const SUB = '#524b3f'; const FAINT = '#5a5144'; const LINE = '#e3d6c4'; const CARD = '#fffdf8'; const GOLD = '#b9842f'; const GOLD_TEXT = '#6b4d16';
+/*
+ * ⚠ THESE SIX CONSTANTS WERE FROZEN HEX, NOT TOKENS — the exact half-migrated
+ * pattern `PracticeShell.jsx` already fixed once (see its own comment on
+ * INK/SUB/FAINT/LINE/CARD/GOLD there). Every rule below that interpolates one
+ * of these emitted a literal no theme could reach, which is why a SECOND,
+ * hand-written `[data-home-theme='dark']` block used to follow — ~90 of this
+ * file's baselined raw colours, all restating what `--rx-*` already flips on
+ * its own. Pointing these six names at the shared tokens deletes that whole
+ * block outright rather than maintaining two palettes that can disagree.
+ * `GOLD_TEXT` becomes `--rx-meaning-ink` — the text-safe variant of the same
+ * gold `GOLD` (`--rx-meaning-core`) already names.
+ */
+/* ⚠ Fallback stacks matter here too: DailyHabits.jsx (rendered by this same
+   screen) roots at plain .rx-root, never .rx-wb, so var(--rx-display) has
+   nothing to resolve to there and would silently lose the serif. */
+const SERIF = "var(--rx-display, 'Cormorant Garamond', Georgia, serif)";
+const SANS = "var(--rx-sans, 'Outfit', 'Cairo', system-ui, sans-serif)";
+const INK = 'var(--rx-ink)'; const SUB = 'var(--rx-sub)'; const FAINT = 'var(--rx-faint)'; const LINE = 'var(--rx-hair)'; const CARD = 'var(--rx-card)'; const GOLD = 'var(--rx-meaning-core)'; const GOLD_TEXT = 'var(--rx-meaning-ink)';
 const CSS = `
-.rx-root { position:fixed; inset:0; z-index:50; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--color-training-palette-surface,#fff7f2); color:${INK}; font-family:${SANS}; }
+.rx-root { position:fixed; inset:0; z-index:50; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--rx-ground); color:${INK}; font-family:${SANS}; }
 .rx-root *, .rx-root *::before, .rx-root *::after { box-sizing:border-box; }
 .rx-app { max-width:480px; margin:0 auto; padding-bottom:80px; position:relative; }
-.rx-back { position:absolute; top:14px; left:12px; z-index:20; width:36px; height:36px; border-radius:10px; border:2px solid ${LINE}; background:${CARD}; color:#141210; font-size:22px; line-height:1; cursor:pointer; }
-.rx-root .header { padding:24px 20px 16px; background:linear-gradient(180deg,#fffaf3 0%,var(--color-training-palette-surface,#fff7f2) 100%); }
+.rx-back { position:absolute; top:14px; left:12px; z-index:20; width:36px; height:36px; border-radius:10px; border:1px solid ${LINE}; background:${CARD}; color:${INK}; font-size:22px; line-height:1; cursor:pointer; box-shadow:var(--elev-rest); }
+.rx-root .header { padding:24px 20px 16px; background:linear-gradient(180deg, color-mix(in srgb, var(--rx-ground) 88%, white) 0%, var(--rx-ground) 100%); }
 .rx-root .header-row { display:flex; justify-content:space-between; align-items:flex-start; padding-left:42px; }
 .rx-root .header-sub { font-size:11px; letter-spacing:3px; color:${GOLD_TEXT}; text-transform:uppercase; margin-bottom:4px; font-weight:700; }
 .rx-root .header-title { font-family:${SERIF}; font-size:32px; font-weight:600; line-height:1.04; color:${INK}; }
@@ -478,13 +510,13 @@ const CSS = `
 .rx-root .phase-bar-row { display:flex; gap:4px; margin-top:16px; }
 .rx-root .phase-bar { height:5px; border-radius:3px; transition:opacity .3s; }
 .rx-root .phase-info { margin-top:8px; font-size:12px; color:${SUB}; }
-.rx-root .tabs { display:flex; border-bottom:2px solid ${LINE}; background:#fffaf3; position:sticky; top:0; z-index:10; }
+.rx-root .tabs { display:flex; border-bottom:1px solid ${LINE}; background:color-mix(in srgb, var(--rx-ground) 88%, white); position:sticky; top:0; z-index:10; }
 .rx-root .tab-btn { flex:1; padding:13px 0; background:none; border:none; border-bottom:3px solid transparent; color:${SUB}; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit; transition:color .2s; margin-bottom:-2px; }
 .rx-root .tab-btn.active { color:${GOLD_TEXT}; border-bottom-color:${GOLD}; }
 .rx-root .content { padding:20px; }
 .rx-root .section-label { font-size:11px; color:${SUB}; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; font-weight:700; }
 .rx-root .serif { font-family:${SERIF}; font-weight:600; }
-.rx-root .technique-card { border-radius:18px; padding:20px; margin-bottom:20px; box-shadow:3px 3px 0 rgba(26,18,8,0.06); }
+.rx-root .technique-card { border-radius:18px; padding:20px; margin-bottom:20px; box-shadow:var(--elev-rest); }
 .rx-root .technique-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
 .rx-root .technique-name { font-family:${SERIF}; font-weight:600; font-size:27px; color:${INK}; }
 .rx-root .technique-duration { font-size:12px; color:${SUB}; margin-top:2px; }
@@ -498,117 +530,73 @@ const CSS = `
 .rx-root .min-btn { padding:6px 13px; border-radius:9px; border:2px solid ${LINE}; background:${CARD}; color:${SUB}; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .15s; }
 .rx-root .min-btn.active-min { border-color:var(--phase-color); background:color-mix(in srgb, var(--phase-color) 14%, white); color:var(--phase-color); }
 .rx-root .action-btns { display:flex; gap:10px; margin-top:12px; }
-.rx-root .begin-btn { padding:12px 28px; border-radius:12px; border:none; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; transition:all .15s; box-shadow:2px 2px 0 rgba(26,18,8,0.12); }
-.rx-root .reset-btn { padding:12px 16px; border-radius:12px; background:#efe6d6; color:${SUB}; border:none; font-size:14px; cursor:pointer; font-family:inherit; }
-.rx-root .done-btn { width:100%; padding:13px; border-radius:12px; border:2px solid ${LINE}; background:#f3ece0; color:${SUB}; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; transition:all .2s; }
+.rx-root .begin-btn { padding:12px 28px; border-radius:12px; border:none; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:box-shadow .15s; box-shadow:var(--elev-rest); }
+.rx-root .begin-btn:active { box-shadow:var(--elev-press); }
+.rx-root .reset-btn { padding:12px 16px; border-radius:12px; background:var(--rx-card-soft); color:${SUB}; border:none; font-size:14px; cursor:pointer; font-family:inherit; }
+.rx-root .done-btn { width:100%; padding:13px; border-radius:12px; border:1px solid ${LINE}; background:var(--rx-card-soft); color:${SUB}; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:box-shadow .2s; }
 .rx-root .step-list { margin-bottom:20px; }
 .rx-root .step-item { display:flex; gap:12px; margin-bottom:12px; }
-.rx-root .step-num { min-width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; border:2px solid; flex-shrink:0; }
-.rx-root .step-text { font-size:14px; color:#4a3c28; line-height:1.6; }
+.rx-root .step-num { min-width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; border:2px solid; flex-shrink:0; }
+.rx-root .step-text { font-size:var(--rx-fs-body); color:${INK}; line-height:1.6; }
 .rx-root .insight-box { border-radius:10px; padding:12px 14px; margin-top:10px; border-left:4px solid; }
-.rx-root .insight-label { font-size:11px; letter-spacing:1px; margin-bottom:4px; font-weight:800; }
-.rx-root .insight-text { font-size:13px; color:#6a5a40; line-height:1.6; }
-.rx-root .note-area { width:100%; background:${CARD}; border:2px solid ${LINE}; border-radius:12px; padding:12px 14px; color:${INK}; font-size:14px; line-height:1.6; min-height:90px; resize:vertical; font-family:inherit; outline:none; }
-.rx-root .save-btn { margin-top:8px; padding:10px 20px; border-radius:10px; background:#efe6d6; border:none; color:#7a5a1e; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
-.rx-root .saved-txt { margin-left:10px; font-size:12px; color:#2e8b57; font-weight:700; }
+.rx-root .insight-label { font-size:var(--rx-fs-label); letter-spacing:1px; margin-bottom:4px; font-weight:700; }
+.rx-root .insight-text { font-size:13px; color:${SUB}; line-height:1.6; }
+.rx-root .note-area { width:100%; background:${CARD}; border:1px solid ${LINE}; border-radius:12px; padding:12px 14px; color:${INK}; font-size:var(--rx-fs-body); line-height:1.6; min-height:90px; resize:vertical; font-family:inherit; outline:none; }
+.rx-root .save-btn { margin-top:8px; padding:10px 20px; border-radius:10px; background:var(--rx-card-soft); border:none; color:var(--rx-meaning-ink); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+.rx-root .saved-txt { margin-left:10px; font-size:12px; color:var(--rx-success-ink, var(--rx-calm-ink)); font-weight:600; }
 .rx-root .week-row { margin-bottom:14px; }
 .rx-root .week-label-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
-.rx-root .week-label { font-size:11px; font-weight:800; min-width:52px; }
+.rx-root .week-label { font-size:11px; font-weight:700; min-width:52px; }
 .rx-root .week-technique { font-size:11px; color:${FAINT}; }
 .rx-root .day-grid { display:flex; gap:6px; }
-.rx-root .day-btn { flex:1; aspect-ratio:1; border-radius:9px; border:2px solid ${LINE}; background:${CARD}; color:${FAINT}; font-size:13px; font-weight:800; cursor:pointer; position:relative; display:flex; align-items:center; justify-content:center; font-family:inherit; transition:all .15s; }
-.rx-root .day-btn.future-day { background:#f3ece0; color:#d8cab4; cursor:default; }
+.rx-root .day-btn { flex:1; aspect-ratio:1; border-radius:9px; border:2px solid ${LINE}; background:${CARD}; color:${FAINT}; font-size:13px; font-weight:700; cursor:pointer; position:relative; display:flex; align-items:center; justify-content:center; font-family:inherit; transition:all .15s; }
+.rx-root .day-btn.future-day { background:var(--rx-card-soft); color:${FAINT}; cursor:default; }
 .rx-root .day-dot { position:absolute; top:4px; right:4px; width:5px; height:5px; border-radius:50%; }
 .rx-root .legend-box { margin-top:16px; padding:14px; background:${CARD}; border-radius:12px; border:2px solid ${LINE}; font-size:13px; color:${SUB}; }
 .rx-root .ghost-pill { font-size:11px; color:${SUB}; background:${CARD}; border:2px solid ${LINE}; border-radius:9px; padding:6px 12px; cursor:pointer; font-family:inherit; font-weight:700; }
 .rx-root .principle-card { background:${CARD}; border:2px solid ${LINE}; border-radius:16px; padding:16px; margin-bottom:20px; }
 .rx-root .principle-item { display:flex; gap:12px; margin-bottom:12px; }
 .rx-root .principle-icon { font-size:20px; }
-.rx-root .principle-title { font-size:13.5px; font-weight:800; color:${INK}; margin-bottom:2px; }
+.rx-root .principle-title { font-size:13.5px; font-weight:700; color:${INK}; margin-bottom:2px; }
 .rx-root .principle-text { font-size:13px; color:${SUB}; line-height:1.55; }
 .rx-root .phase-guide-card { border-radius:16px; padding:16px; margin-bottom:14px; border:2px solid; }
 .rx-root .phase-guide-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-.rx-root .phase-guide-sub { font-size:11px; letter-spacing:2px; text-transform:uppercase; font-weight:800; }
+.rx-root .phase-guide-sub { font-size:11px; letter-spacing:2px; text-transform:uppercase; font-weight:700; }
 .rx-root .phase-guide-name { font-family:${SERIF}; font-weight:600; font-size:23px; color:${INK}; margin-top:2px; }
 .rx-root .phase-guide-dur { font-size:12px; color:${FAINT}; margin-bottom:10px; }
-.rx-root .phase-step { font-size:13px; color:#6a5a40; line-height:1.6; padding-left:16px; position:relative; margin-bottom:6px; }
+.rx-root .phase-step { font-size:13px; color:${SUB}; line-height:1.6; padding-left:16px; position:relative; margin-bottom:6px; }
 .rx-root .phase-step::before { content:'▸'; position:absolute; left:0; font-size:11px; color:${GOLD_TEXT}; }
-.rx-root .phase-tip { margin-top:10px; padding:10px 12px; background:#fbf5ec; border-radius:9px; font-size:12px; color:#6a5a40; border-left:4px solid; }
-.rx-root .dos-head { font-size:13px; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; font-weight:800; }
+.rx-root .phase-tip { margin-top:10px; padding:10px 12px; background:var(--rx-card-soft); border-radius:9px; font-size:12px; color:${SUB}; border-left:4px solid; }
+.rx-root .dos-head { font-size:13px; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; font-weight:700; }
 .rx-root .do-card { display:flex; gap:12px; margin-bottom:14px; border-radius:12px; padding:14px; border:2px solid; }
 .rx-root .do-icon { font-size:22px; }
-.rx-root .do-title { font-size:13.5px; font-weight:800; margin-bottom:3px; }
-.rx-root .do-text { font-size:13px; color:#6a5a40; line-height:1.5; }
+.rx-root .do-title { font-size:13.5px; font-weight:600; margin-bottom:3px; }
+.rx-root .do-text { font-size:13px; color:${SUB}; line-height:1.5; }
 .rx-root .checklist-item { display:flex; gap:10px; margin-bottom:10px; font-size:13px; color:${SUB}; line-height:1.5; }
-.rx-root .check-num { min-width:22px; height:22px; border:2px solid ${LINE}; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; color:${GOLD_TEXT}; flex-shrink:0; font-weight:800; }
+.rx-root .check-num { min-width:22px; height:22px; border:2px solid ${LINE}; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; color:${GOLD_TEXT}; flex-shrink:0; font-weight:700; }
 .rx-root .disclaimer { margin-top:18px; font-size:11.5px; color:${FAINT}; line-height:1.5; text-align:center; padding:0 8px; }
-.rx-root .modal-overlay { position:fixed; inset:0; background:rgba(26,18,8,0.45); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
-.rx-root .modal { background:${CARD}; border:2px solid #1a1208; border-radius:18px; padding:26px; width:100%; max-width:340px; box-shadow:6px 6px 0 rgba(26,18,8,0.18); }
-.rx-root .modal-title { font-family:${SERIF}; font-weight:600; font-size:26px; color:${INK}; margin-bottom:8px; }
+.rx-root .modal-overlay { position:fixed; inset:0; background:var(--fx-scrim); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+.rx-root .modal { background:${CARD}; border:1px solid color-mix(in srgb, var(--rx-ink) 65%, transparent); border-radius:18px; padding:26px; width:100%; max-width:340px; box-shadow:var(--elev-raise); }
+.rx-root .modal-title { font-family:${SERIF}; font-weight:600; font-size:var(--rx-fs-title); color:${INK}; margin-bottom:8px; }
 .rx-root .modal-sub { font-size:13px; color:${SUB}; margin-bottom:20px; line-height:1.6; }
-.rx-root .date-input { width:100%; background:#fff; border:2px solid ${LINE}; border-radius:10px; padding:12px 14px; color:${INK}; font-size:15px; font-family:inherit; margin-bottom:16px; outline:none; }
+.rx-root .date-input { width:100%; background:${CARD}; border:1px solid ${LINE}; border-radius:10px; padding:12px 14px; color:${INK}; font-size:15px; font-family:inherit; margin-bottom:16px; outline:none; }
 .rx-root .modal-btns { display:flex; gap:10px; }
-.rx-root .cancel-btn { flex:1; padding:12px; border-radius:10px; background:#efe6d6; border:none; color:${SUB}; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
-.rx-root .confirm-btn { flex:2; padding:12px; border-radius:10px; background:linear-gradient(135deg,#c89a4a,${GOLD}); border:none; color:#201d18; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; }
+.rx-root .cancel-btn { flex:1; padding:12px; border-radius:10px; background:var(--rx-card-soft); border:none; color:${SUB}; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+.rx-root .confirm-btn { flex:2; padding:12px; border-radius:10px; background:linear-gradient(180deg, ${GOLD}, color-mix(in srgb, ${GOLD} 78%, black)); border:none; color:#fff; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
 .rx-root .empty-state { text-align:center; padding:44px 0; }
+.rx-root .empty-art { width:112px; height:112px; display:block; object-fit:cover; border-radius:50%; margin:0 auto 18px; border:1px solid color-mix(in srgb, var(--rx-calm-lit) 54%, transparent); box-shadow:var(--elev-raise); }
 .rx-root .empty-emoji { font-size:48px; margin-bottom:16px; }
-.rx-root .empty-title { font-family:${SERIF}; font-weight:600; font-size:27px; color:${INK}; margin-bottom:8px; }
+.rx-root .empty-title { font-family:${SERIF}; font-weight:600; font-size:var(--rx-fs-title); color:${INK}; margin-bottom:8px; }
 .rx-root .empty-sub { color:${SUB}; font-size:14px; margin-bottom:24px; line-height:1.6; max-width:320px; margin-left:auto; margin-right:auto; }
-.rx-root .start-btn { background:linear-gradient(135deg,#c89a4a,${GOLD}); color:#201d18; border:none; border-radius:12px; padding:14px 32px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; box-shadow:3px 3px 0 #1a1208; }
-.rx-root .go-btn { background:#efe6d6; color:#7a5a1e; border:none; border-radius:10px; padding:12px 24px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+.rx-root .start-btn { background:linear-gradient(180deg, ${GOLD}, color-mix(in srgb, ${GOLD} 78%, black)); color:#fff; border:none; border-radius:12px; padding:14px 32px; font-size:15px; font-weight:600; cursor:pointer; font-family:inherit; box-shadow:var(--elev-raise); }
+.rx-root .go-btn { background:var(--rx-card-soft); color:var(--rx-meaning-ink); border:none; border-radius:10px; padding:12px 24px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
 .rx-root .rx-heading-ink { color:${INK}; }
-.rx-root .begin-btn--paused { background:#efe6d6; color:#7a6a52; }
-
-[data-home-theme='dark'] .rx-root { color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .rx-heading-ink { color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .begin-btn--paused { background:#332818; color:#c9b384; }
-[data-home-theme='dark'] .rx-root .rx-back { background:#241c10; border-color:rgba(212,168,80,0.3); color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .header { background:linear-gradient(180deg,#1f1810 0%,var(--color-training-palette-surface) 100%); }
-[data-home-theme='dark'] .rx-root .header-title { color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .header-title em { color:#e8ac4e; }
-[data-home-theme='dark'] .rx-root .stat-label { color:#c9b384; }
-[data-home-theme='dark'] .rx-root .phase-info { color:#c9b384; }
-[data-home-theme='dark'] .rx-root .tabs { background:#1f1810; border-color:rgba(212,168,80,0.25); }
-[data-home-theme='dark'] .rx-root .tab-btn { color:#c9b384; }
-[data-home-theme='dark'] .rx-root .tab-btn.active { color:#e8ac4e; border-bottom-color:#e8ac4e; }
-[data-home-theme='dark'] .rx-root .section-label { color:#c9b384; }
-[data-home-theme='dark'] .rx-root .technique-name { color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .technique-duration { color:#c9b384; }
-[data-home-theme='dark'] .rx-root .timer-display { color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .timer-target { color:#9b8c69; }
-[data-home-theme='dark'] .rx-root .min-btn { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
-[data-home-theme='dark'] .rx-root .min-btn.active-min { background:color-mix(in srgb, var(--phase-color) 22%, #14100a); }
-[data-home-theme='dark'] .rx-root .reset-btn { background:#332818; color:#c9b384; }
-[data-home-theme='dark'] .rx-root .done-btn { background:#332818; border-color:rgba(212,168,80,0.25); color:#c9b384; }
-[data-home-theme='dark'] .rx-root .step-text { color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .insight-text { color:#c9b384; }
-[data-home-theme='dark'] .rx-root .note-area { background:#211a10; border-color:rgba(212,168,80,0.25); color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .save-btn { background:#332818; color:#e8ac4e; }
-[data-home-theme='dark'] .rx-root .week-technique { color:#9b8c69; }
-[data-home-theme='dark'] .rx-root .day-btn { background:#211a10; border-color:rgba(212,168,80,0.25); color:#9b8c69; }
-[data-home-theme='dark'] .rx-root .day-btn.future-day { background:#1a140c; color:#4a3c28; }
-[data-home-theme='dark'] .rx-root .legend-box { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
-[data-home-theme='dark'] .rx-root .ghost-pill { background:#211a10; border-color:rgba(212,168,80,0.25); color:#c9b384; }
-[data-home-theme='dark'] .rx-root .principle-card { background:#211a10; border-color:rgba(212,168,80,0.22); }
-[data-home-theme='dark'] .rx-root .principle-title { color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .principle-text { color:#c9b384; }
-[data-home-theme='dark'] .rx-root .phase-guide-name { color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .phase-guide-dur { color:#9b8c69; }
-[data-home-theme='dark'] .rx-root .phase-step { color:#c9b384; }
-[data-home-theme='dark'] .rx-root .phase-tip { background:#1a140c; color:#c9b384; }
-[data-home-theme='dark'] .rx-root .do-text { color:#c9b384; }
-[data-home-theme='dark'] .rx-root .checklist-item { color:#c9b384; }
-[data-home-theme='dark'] .rx-root .check-num { border-color:rgba(212,168,80,0.3); }
-[data-home-theme='dark'] .rx-root .disclaimer { color:#9b8c69; }
-[data-home-theme='dark'] .rx-root .modal-overlay { background:rgba(0,0,0,0.6); }
-[data-home-theme='dark'] .rx-root .modal { background:#211a10; border-color:rgba(212,168,80,0.35); }
-[data-home-theme='dark'] .rx-root .modal-title { color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .modal-sub { color:#c9b384; }
-[data-home-theme='dark'] .rx-root .date-input { background:#1a140c; border-color:rgba(212,168,80,0.25); color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .cancel-btn { background:#332818; color:#c9b384; }
-[data-home-theme='dark'] .rx-root .empty-title { color:#f0e2c0; }
-[data-home-theme='dark'] .rx-root .empty-sub { color:#c9b384; }
-[data-home-theme='dark'] .rx-root .go-btn { background:#332818; color:#e8ac4e; }
+.rx-root .begin-btn--paused { background:var(--rx-card-soft); color:${SUB}; }
+/* ⚠ THERE IS NO [data-home-theme='dark'] BLOCK ANY MORE, AND ITS ABSENCE IS
+   THE POINT — see the comment above the six constants at the top of this
+   stylesheet. ~50 lines of hand-written dark overrides used to sit here,
+   restating in hex what --rx-* to --universe-* already flips on its own.
+   NO BACKTICKS IN THIS COMMENT: it is inside a template literal. */
 `;
 
 /* ── Wellbeing landing — practices grouped into categories ── */
@@ -798,16 +786,56 @@ const FAV_GOLD = '#d9a520';
  * sessions exist — one session is an anecdote, and stating it as "usually"
  * would be the app inventing a pattern out of a single data point.
  */
-function PracticeStatLine({ practiceId, isAr }) {
+function PracticeStatLine({ practiceId, isAr, journeyRuns = 0 }) {
   const s = useMemo(() => (MEASURED_PRACTICES.has(practiceId) ? getPracticeStats(practiceId) : null), [practiceId]);
-  if (!s || !s.runs) return null;
+  const count = Math.max(s?.runs || 0, journeyRuns);
+  if (!count) return null;
+  const tier = s?.tier || tierFor(count);
   const runs = isAr
-    ? `${s.runs} ${s.runs === 1 ? 'جلسة' : 'جلسات'}`
-    : `${s.runs} ${s.runs === 1 ? 'session' : 'sessions'}`;
-  const usually = s.ratedRuns >= 2 && s.avgDrop > 0
+    ? `${count} ${count === 1 ? 'جلسة' : 'جلسات'}`
+    : `${count} ${count === 1 ? 'session' : 'sessions'}`;
+  const usually = s?.ratedRuns >= 2 && s.avgDrop > 0
     ? (isAr ? ` · عادةً ${Math.round(s.avgDrop * 10) / 10}− نقطة` : ` · usually −${Math.round(s.avgDrop * 10) / 10}`)
     : '';
-  return <span className="rx-menu-stat">{runs}{usually} · {isAr ? s.tier.ar : s.tier.en}</span>;
+  return <span className="rx-menu-stat">{runs}{usually} · {isAr ? tier.ar : tier.en}</span>;
+}
+
+function JourneyOrbit({ cat, isAr, journey, byId, onOpen }) {
+  const items = (cat.items || []).map(byId).filter(Boolean);
+  const explored = items.filter((item) => (journey.practices[item.id]?.count || 0) > 0).length;
+  const progress = items.length ? Math.round((explored / items.length) * 100) : 0;
+
+  if (!items.length) return null;
+  return (
+    <section className="rx-journey" aria-label={isAr ? 'مدار رحلتك' : 'Your journey orbit'}>
+      <div className="rx-journey-head">
+        <div>
+          <div className="rx-journey-kicker">{isAr ? 'مدارك' : 'Your orbit'}</div>
+          <div className="rx-journey-title">{isAr ? 'استكشف الأدوات بطريقتك' : 'Explore at your own pace'}</div>
+        </div>
+        <span className="rx-journey-count">{explored}/{items.length}</span>
+      </div>
+      <div className="rx-journey-bar" aria-hidden="true"><span style={{ width: `${progress}%` }} /></div>
+      <p className="rx-journey-note">{isAr ? 'كل زيارة تبقى محفوظة. لا سلاسل ولا ضغط.' : 'Every visit stays with you. No streaks, no pressure.'}</p>
+      <div className="rx-journey-track">
+        {items.map((item, index) => {
+          const done = (journey.practices[item.id]?.count || 0) > 0;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`rx-journey-step${done ? ' done' : ''}`}
+              onClick={() => onOpen(item.id)}
+              aria-label={`${isAr ? item.titleAr : item.title}${done ? (isAr ? '، تم استكشافها' : ', explored') : ''}`}
+            >
+              <span className="rx-journey-node" aria-hidden="true">{done ? <Star size={17} weight="fill" /> : index + 1}</span>
+              <span>{isAr ? item.titleAr : item.title}</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 /*
@@ -871,13 +899,14 @@ function NeedStrip({ cat, isAr, playSfx, onOpen }) {
   );
 }
 
-function RelaxMenu({ isAr, onOpen, playSfx }) {
+function RelaxMenu({ isAr, onOpen, playSfx, initialCategory = null, initialGroup = 'program' }) {
   const { appTheme, toggleLang } = useApp();
   const dark = appTheme !== 'light';
-  const [openCat, setOpenCat] = useState(null); // category id, or 'favorites'
-  const [group, setGroup] = useState('program'); // 'program' | 'quick'
+  const [openCat, setOpenCat] = useState(initialCategory); // category id, or 'favorites'
+  const [group, setGroup] = useState(initialGroup); // 'program' | 'quick'
   const [favs, setFavs] = useState(() => rxLoad(FAV_KEY, []));
   const [orders, setOrders] = useState(() => rxLoad(ORDER_KEY, {}));
+  const journey = loadWellbeingJourney();
   const favSet = useMemo(() => new Set(favs), [favs]);
   const byId = (id) => RELAX_PRACTICES.find((p) => p.id === id);
   const cat = openCat && openCat !== 'favorites' ? CATEGORIES.find((c) => c.id === openCat) : null;
@@ -888,7 +917,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
    * from Home while this screen is mounted but hidden. */
   const openPersonalizedPractice = (id) => {
     if (personalizationEnabled()) recordWellbeingSelection(id, getWellbeingContext());
-    onOpen(id);
+    onOpen(id, cat?.id || null, PROGRAM_IDS.has(id) ? 'program' : 'quick');
   };
 
   const toggleFav = (id) => {
@@ -911,6 +940,7 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
   // (from ReorderList) swallows the click that lands right after a drag-drop.
   const renderCard = (o, justDragged) => {
     const faved = favSet.has(o.id);
+    const journeyRuns = journey.practices[o.id]?.count || 0;
     return (
       <div
         /* ⚠ A practice without its own `color` inherits the AREA's hue token
@@ -921,20 +951,30 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
            cannot be swapped for a var here directly, because these were alpha
            suffixes (`${'${color}'}55`) and `var(--x)55` is not a colour; hence
            color-mix. */
-        className="rx-menu-card" role="button" tabIndex={0}
+        className="rx-menu-card"
         style={{ borderColor: o.color ? `${o.color}55` : 'color-mix(in srgb, var(--rx-hue) 42%, transparent)' }}
-        onClick={() => { if (justDragged && justDragged()) return; openPersonalizedPractice(o.id); }}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPersonalizedPractice(o.id); } }}
       >
-        <span className="rx-menu-ic" style={{ background: o.color ? `${o.color}1f` : 'color-mix(in srgb, var(--rx-hue) 14%, transparent)' }}>{o.icon}</span>
-        <span className="rx-menu-body">
-          <span className="rx-menu-title">{isAr ? o.titleAr : o.title}</span>
-          <span className="rx-menu-sub">{isAr ? o.subAr : o.sub}</span>
+        <button
+          type="button"
+          className="rx-menu-open"
+          onClick={() => { if (justDragged && justDragged()) return; openPersonalizedPractice(o.id); }}
+        >
+          {/* ⚠ THE PILLAR PHOTO DOES NOT BELONG HERE (it stays on the category
+              header orb and the practice hero) — every card in a pillar was
+              rendering the IDENTICAL thumbnail (six cards in Stress & Calm all
+              showed the same calm.webp), so the practice's own distinguishing
+              emoji (🫁 🖐️ 💪 …) never appeared anywhere once this was wired.
+              Six cards read as six different tools again, all still tinted
+              their pillar's hue via .rx-menu-ic's own CSS. */}
+          <span className="rx-menu-ic" aria-hidden="true">{o.icon}</span>
+          <span className="rx-menu-body">
+            <span className="rx-menu-title">{isAr ? o.titleAr : o.title}</span>
+            <span className="rx-menu-sub">{isAr ? o.subAr : o.sub}</span>
           {/* ⚠ Shown only once there is something true to say. An empty
               "0 sessions · no data" on every card would turn a menu of
               invitations into a list of things you have failed to do — which is
               precisely the pressure this feature is supposed to be free of. */}
-          <PracticeStatLine practiceId={o.id} isAr={isAr} />
+            <PracticeStatLine practiceId={o.id} isAr={isAr} journeyRuns={journeyRuns} />
           {/* ⚠ THE SAME BADGE EVERY PRACTICE CARRIES, NOT JUST WORKSHEETS
               (2026-09-10). Worksheets already printed their evidence tier
               inside worksheetEngine.jsx; a quiz or a breathing pacer said
@@ -944,20 +984,21 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
               silently render nothing for a real practice — it renders
               nothing only for entries with no tier assigned, which audit
               should treat as a bug, not a feature. */}
-          {o.tier && TIERS[o.tier] && (
-            <span className="rx-menu-tier">{isAr ? TIERS[o.tier].ar : TIERS[o.tier].en}</span>
-          )}
-        </span>
-        <span className="rx-menu-tail">
-          <span
-            className={`rx-fav${faved ? ' on' : ''}`} role="button" tabIndex={0}
-            aria-label={faved ? (isAr ? 'إزالة من المفضّلة' : 'Remove favourite') : (isAr ? 'إضافة إلى المفضّلة' : 'Add favourite')}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.stopPropagation(); toggleFav(o.id); }}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleFav(o.id); } }}
-          >{faved ? '★' : '☆'}</span>
-          <span className="rx-menu-chev">{isAr ? '‹' : '›'}</span>
-        </span>
+            {o.tier && TIERS[o.tier] && (
+              <span className="rx-menu-tier">{isAr ? TIERS[o.tier].ar : TIERS[o.tier].en}</span>
+            )}
+          </span>
+          <span className="rx-menu-chev" aria-hidden="true">{isAr ? '‹' : '›'}</span>
+        </button>
+        <button
+          type="button"
+          className={`rx-fav${faved ? ' on' : ''}`}
+          aria-label={faved ? (isAr ? 'إزالة من المفضّلة' : 'Remove favourite') : (isAr ? 'إضافة إلى المفضّلة' : 'Add favourite')}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => toggleFav(o.id)}
+        >
+          <Star size={20} weight={faved ? 'fill' : 'regular'} aria-hidden="true" />
+        </button>
       </div>
     );
   };
@@ -1021,12 +1062,18 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
                   inside its 40px box. Measured, not guessed. The tint, artwork
                   and contour below are the landing's values, so the two read as
                   the same planet. */}
+              {/* ⚠ WAS `background: color` — the CATEGORIES[].color literal
+                  (or FAV_GOLD), NOT the --rx-hue token the ring/glow rules
+                  around this orb already read. --rx-hue is set on this
+                  screen's own root (see the category-detail return below,
+                  and the Favorites root two call sites up) for exactly this
+                  reason: one hue, everywhere on the screen it belongs to. */}
               <span
                 className="rx-orb rx-cat-orb"
-                style={{ background: planetIconUrl(areaId) ? `radial-gradient(circle, ${color}42 0%, ${color}20 55%, transparent 76%)` : color }}
+                style={{ background: 'var(--rx-hue)' }}
               >
-                {planetIconUrl(areaId) ? (
-                  <img src={planetIconUrl(areaId)} alt="" draggable={false} />
+                {wellbeingPillarArtUrl(areaId) ? (
+                  <img src={wellbeingPillarArtUrl(areaId)} alt="" draggable={false} />
                 ) : (
                   <>
                     <span aria-hidden="true" className="rx-orb-texture" style={planetTextureLayerStyle(0.4)} />
@@ -1051,15 +1098,23 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
   if (openCat === 'favorites') {
     const favItems = favs.map(byId).filter(Boolean);
     return (
-      <div className="rx-wb rx-root" dir={isAr ? 'rtl' : 'ltr'}>
+      /* ⚠ Wearing the meaning pillar's amber (FAV_GOLD is that same family) —
+         without an explicit hue here, this screen was falling back to
+         .rx-wb's DEFAULT --rx-hue (jade), and `detailHeader`'s orb went grey
+         entirely on its OWN raw-colour fallback. See the note there. */
+      <div
+        className="rx-wb rx-root"
+        dir={isAr ? 'rtl' : 'ltr'}
+        style={{ '--rx-hue': 'var(--rx-meaning-core)', '--rx-hue-lit': 'var(--rx-meaning-lit)', '--rx-hue-ink': 'var(--rx-meaning-ink)' }}
+      >
         <style>{MENU_CSS}</style>
         <UniverseStage accent="wellbeing" dark={dark} homeDusk />
         <div className="rx-app">
-          {detailHeader('⭐', FAV_GOLD, isAr ? 'المفضّلة' : 'Favorites', favItems.length ? (isAr ? 'اضغط مطوّلاً لإعادة الترتيب.' : 'Press and hold to reorder.') : (isAr ? 'ممارساتك المفضّلة.' : 'Your go-to practices.'), () => setOpenCat(null))}
+          {detailHeader('⭐', FAV_GOLD, isAr ? 'المفضّلة' : 'Favorites', favItems.length ? (isAr ? 'اضغط مطوّلاً لإعادة الترتيب.' : 'Press and hold to reorder.') : (isAr ? 'ممارساتك المفضّلة.' : 'Your go-to practices.'), () => setOpenCat(null), 'meaning')}
           <div className="content">
             {favItems.length
               ? list(favItems, 'favorites')
-              : soonState('⭐', '#fdeecb', isAr ? 'لا مفضّلة بعد' : 'No favorites yet', isAr ? 'اضغط على النجمة ☆ في أي ممارسة لإضافتها هنا.' : 'Tap the ☆ star on any practice to add it here.')}
+              : soonState('⭐', 'color-mix(in srgb, var(--rx-hue) 14%, transparent)', isAr ? 'لا مفضّلة بعد' : 'No favorites yet', isAr ? 'اضغط على النجمة ☆ في أي ممارسة لإضافتها هنا.' : 'Tap the ☆ star on any practice to add it here.')}
           </div>
         </div>
       </div>
@@ -1083,7 +1138,11 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
       <div
         className="rx-wb rx-root"
         dir={isAr ? 'rtl' : 'ltr'}
-        style={{ '--rx-hue': `var(--rx-${cat.id}-core)`, '--rx-hue-lit': `var(--rx-${cat.id}-lit)` }}
+        style={{
+          '--rx-hue': `var(--rx-${cat.id}-core)`,
+          '--rx-hue-lit': `var(--rx-${cat.id}-lit)`,
+          '--rx-hue-ink': `var(--rx-${cat.id}-ink)`,
+        }}
       >
         <style>{MENU_CSS}</style>
         <UniverseStage accent="wellbeing" dark={dark} homeDusk />
@@ -1092,6 +1151,13 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
           <div className="content">
             {cat.items ? (
               <>
+                <JourneyOrbit
+                  cat={cat}
+                  isAr={isAr}
+                  journey={journey}
+                  byId={byId}
+                  onOpen={openPersonalizedPractice}
+                />
                 <NeedStrip
                   cat={cat}
                   isAr={isAr}
@@ -1112,9 +1178,9 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
                 </div>
                 {activeItems.length
                   ? list(activeItems, listKey)
-                  : soonState(group === 'program' ? '🗺️' : '⚡', `${cat.color}1f`, isAr ? 'قريباً' : 'Coming soon', emptyDesc)}
+                  : soonState(group === 'program' ? '🗺️' : '⚡', 'color-mix(in srgb, var(--rx-hue) 12%, transparent)', isAr ? 'قريباً' : 'Coming soon', emptyDesc)}
               </>
-            ) : soonState(cat.icon, `${cat.color}1f`, isAr ? 'قريباً' : 'Coming soon', isAr ? cat.soonAr : cat.soon)}
+            ) : soonState(cat.icon, 'color-mix(in srgb, var(--rx-hue) 12%, transparent)', isAr ? 'قريباً' : 'Coming soon', isAr ? cat.soonAr : cat.soon)}
             {/* ⚠ The crisis route sits on every category screen, which is the
                 furthest out it can go while the landing stays out of scope
                 (owner, 2026-09-06). Every practice in this feature is reached
@@ -1510,10 +1576,10 @@ function RelaxMenu({ isAr, onOpen, playSfx }) {
         .rx-spark { position:absolute; font-size:11px; color:#ffd98a; line-height:1;
           text-shadow: 0 0 8px rgba(255,200,90,.95); animation: rxTwinkle 2.8s ease-in-out infinite; }
         .rx-spark--b { font-size:8px; animation-delay:1.3s; }
-        .rx-planet-name { font-family:Outfit,${SANS}; font-weight:800;
+        .rx-planet-name { font-family:Outfit,${SANS}; font-weight:700;
           font-size:max(11.5px, calc(15px * var(--rx-k,1)));
           letter-spacing:.02em; line-height:1.15; text-align:center; }
-        .rx-soon-pill { font-size:9.5px; font-weight:800; letter-spacing:1.4px; border:1px solid;
+        .rx-soon-pill { font-size:9.5px; font-weight:700; letter-spacing:1.4px; border:1px solid;
           border-radius:100px; padding:2.5px 9px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
         @media (prefers-reduced-motion: reduce) {
           .rx-planet, .rx-planet-in, .rx-orb-aura, .rx-star, .rx-blob, .rx-shoot, .rx-spark, .rx-fade { animation:none !important; }
@@ -1535,6 +1601,8 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
     return 'menu';
   });
   const [returnTo, setReturnTo] = useState(entry === 'daily' ? 'daily' : 'menu');
+  const [resumeCategory, setResumeCategory] = useState(null);
+  const [resumeGroup, setResumeGroup] = useState('program');
   const back = () => { playSfx?.('click'); setView(returnTo); setReturnTo(entry === 'daily' ? 'daily' : 'menu'); };
 
   // Hide the bottom tab bar inside a practice — the menu / daily landing are
@@ -1547,9 +1615,11 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
     if (view !== 'daily') return;
     try { sessionStorage.removeItem(OPEN_DAILY_KEY); } catch { /* ignore */ }
   }, [view]);
-  const openPractice = (id, from = 'menu') => {
+  const openPractice = (id, from = 'menu', categoryId = null, categoryGroup = 'program') => {
     playSfx?.('click');
     setReturnTo(from);
+    setResumeCategory(from === 'menu' ? categoryId : null);
+    if (from === 'menu') setResumeGroup(categoryGroup);
     setView(id);
   };
 
@@ -1585,8 +1655,10 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
     <RelaxMenu
       isAr={isAr}
       playSfx={playSfx}
+      initialCategory={resumeCategory}
+      initialGroup={resumeGroup}
       onHome={() => { playSfx?.('click'); switchTab('habits'); }}
-      onOpen={(id) => openPractice(id, 'menu')}
+      onOpen={(id, categoryId, categoryGroup) => openPractice(id, 'menu', categoryId, categoryGroup)}
     />
   );
 }
@@ -1626,21 +1698,39 @@ const MENU_CSS = `
   box-shadow:0 4px 14px rgba(0,0,0,0.35); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
 .rx-root .header { padding:max(24px, calc(12px + env(safe-area-inset-top))) 20px 18px; background:transparent; }
 .rx-root .header-sub { font-size:11px; letter-spacing:3px; color:var(--universe-accent); text-transform:uppercase; margin-bottom:4px; font-weight:700; }
-.rx-root .header-title { font-family:Outfit,${SANS}; font-size:28px; font-weight:800; line-height:1.1; color:var(--universe-ink);
-  text-shadow:0 1px 0 rgba(255,220,120,0.2), 0 0 14px rgba(232,172,78,0.3); }
+/* ⚠ WAS Outfit/28px/700 WITH AN AMBER GLOW HARD-CODED. Three screens deep —
+   landing (Cinzel) → category (this) → practice (Cormorant, PracticeShell's
+   .rxp-title) — used three different display faces for the same role; this
+   now matches the practice screen's face and scale so the type does not
+   visibly change the moment you go one level in or out. The glow was a
+   leftover from when every category shared one accent; a Sleep or Calm
+   title (indigo, jade) glowed gold regardless of its own hue. The [dir='rtl']
+   rule below still swaps this to Cairo - Cormorant has no Arabic glyphs at
+   all. NO BACKTICKS IN THIS COMMENT: it is inside a template literal. */
+.rx-root .header-title { font-family:${SERIF}; font-size:var(--rx-fs-display); font-weight:600; line-height:1.12; color:var(--universe-ink); }
 .rx-root .menu-tag { font-size:13px; color:var(--universe-muted); margin-top:6px; }
 .rx-root .content { padding:20px; }
-.rx-root .rx-menu-card { display:flex; align-items:center; gap:14px; width:100%; text-align:left;
-  background:var(--universe-glass); border:1px solid var(--universe-line); border-radius:16px; padding:16px; margin-bottom:14px;
-  cursor:pointer; font-family:inherit; box-shadow:0 4px 18px rgba(0,0,0,0.35);
-  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); transition:transform .1s, border-color .15s; }
-.rx-root .rx-menu-card:active { transform:translateY(1px); }
-.rx-root .rx-menu-ic { font-size:30px; flex-shrink:0; width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
+.rx-root .rx-menu-card { display:flex; align-items:center; gap:4px; width:100%; text-align:left;
+  background:var(--universe-glass); border:1px solid var(--universe-line); border-radius:20px; padding:6px; margin-bottom:14px;
+  font-family:inherit; box-shadow:0 10px 28px color-mix(in srgb, var(--universe-ink) 32%, transparent);
+  backdrop-filter:blur(15px); -webkit-backdrop-filter:blur(15px); overflow:hidden; transition:transform .15s, border-color .15s, box-shadow .15s; }
+.rx-root .rx-menu-card:hover { transform:translateY(-2px); box-shadow:0 14px 34px color-mix(in srgb, var(--universe-ink) 38%, transparent); }
+.rx-root .rx-menu-open { flex:1; min-width:0; display:flex; align-items:center; gap:14px; padding:10px; border:0; border-radius:15px; background:transparent; color:inherit; text-align:start; font:inherit; cursor:pointer; }
+.rx-root .rx-menu-open:active { transform:translateY(1px); }
+.rx-root .rx-menu-open:focus-visible, .rx-root .rx-fav:focus-visible, .rx-root .rx-journey-step:focus-visible, .rx-root .rx-seg-btn:focus-visible, .rx-root .rx-need-chip:focus-visible, .rx-root .rx-need-go:focus-visible { outline:3px solid color-mix(in srgb, var(--rx-hue-lit, var(--universe-accent)) 72%, transparent); outline-offset:2px; }
+/* ⚠ 56px on a hue-tinted ground, not a 70px opaque photo tile — see the JSX
+   comment above where this renders. The pillar's own hue does the tinting so
+   six cards in one pillar still read as belonging together. */
+.rx-root .rx-menu-ic { font-size:26px; flex-shrink:0; width:56px; height:56px; border-radius:16px; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--rx-hue-lit, var(--universe-accent)) 34%, transparent), color-mix(in srgb, var(--rx-hue, var(--universe-accent)) 20%, transparent));
+  border:1px solid color-mix(in srgb, var(--rx-hue, var(--universe-accent)) 34%, transparent); box-shadow:var(--elev-rest); }
 .rx-root .rx-menu-body { display:flex; flex-direction:column; gap:4px; flex:1; }
-.rx-root .rx-menu-title { font-family:Outfit,${SANS}; font-weight:800; font-size:18px; color:var(--universe-ink); }
-.rx-root .rx-menu-sub { font-size:12.5px; color:var(--universe-muted); line-height:1.5; }
-.rx-root .rx-menu-stat { display:block; margin-top:5px; font-size:11px; font-weight:800; letter-spacing:0.3px;
-  color:var(--rx-hue-lit, var(--universe-accent)); }
+.rx-root .rx-menu-title { font-family:Outfit,${SANS}; font-weight:600; font-size:var(--rx-fs-head); color:var(--universe-ink); }
+.rx-root .rx-menu-sub { font-size:var(--rx-fs-small); color:var(--universe-muted); line-height:1.5; }
+/* ⚠ WAS var(--rx-hue-lit) — fails contrast as TEXT in light theme; see the
+   note on --rx-hue-ink in wellbeing.css. */
+.rx-root .rx-menu-stat { display:block; margin-top:5px; font-size:var(--rx-fs-label); font-weight:700; letter-spacing:0.3px;
+  color:var(--rx-hue-ink, var(--universe-accent)); }
 /* Same recipe as worksheetEngine.jsx's .ws-tier class (same --rx-hue tokens,
    same pill shape) so a practice's evidence tier reads identically whether
    you see it on the menu card or inside the practice itself. Kept as its own
@@ -1648,16 +1738,32 @@ const MENU_CSS = `
    strings that only one of the two screens ever has mounted at once — and
    note this comment lives INSIDE a template literal, so it must never
    contain a backtick character or it silently truncates the string. */
-.rx-root .rx-menu-tier { display:inline-block; margin-top:6px; font-size:10.5px; font-weight:800;
+.rx-root .rx-menu-tier { display:inline-block; margin-top:6px; font-size:10.5px; font-weight:700;
   padding:3px 10px; border-radius:999px; letter-spacing:0.1px;
-  color:var(--rx-hue-lit, var(--universe-accent));
+  color:var(--rx-hue-ink, var(--universe-accent));
   background:color-mix(in srgb, var(--rx-hue, var(--universe-accent)) 14%, transparent);
   border:1px solid color-mix(in srgb, var(--rx-hue, var(--universe-accent)) 34%, transparent); }
+
+.rx-root .rx-journey { margin-bottom:16px; padding:16px; border-radius:20px; border:1px solid color-mix(in srgb, var(--rx-hue-lit) 38%, var(--universe-line)); background:linear-gradient(145deg, color-mix(in srgb, var(--rx-hue) 15%, var(--universe-glass-strong)), var(--universe-glass)); box-shadow:0 12px 30px color-mix(in srgb, var(--universe-ink) 30%, transparent); backdrop-filter:blur(15px); -webkit-backdrop-filter:blur(15px); }
+.rx-root .rx-journey-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.rx-root .rx-journey-kicker { margin-bottom:3px; color:var(--rx-hue-ink, var(--universe-accent)); font-size:var(--rx-fs-label); font-weight:700; letter-spacing:2px; text-transform:uppercase; }
+.rx-root .rx-journey-title { color:var(--universe-ink); font-family:Outfit,${SANS}; font-size:var(--rx-fs-head); font-weight:600; }
+.rx-root .rx-journey-count { min-width:48px; height:30px; padding:0 10px; border-radius:999px; display:flex; align-items:center; justify-content:center; color:var(--universe-ink); background:color-mix(in srgb, var(--rx-hue) 22%, transparent); border:1px solid color-mix(in srgb, var(--rx-hue-lit) 38%, transparent); font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; }
+.rx-root .rx-journey-bar { height:5px; margin:13px 0 9px; overflow:hidden; border-radius:999px; background:color-mix(in srgb, var(--universe-line) 75%, transparent); }
+.rx-root .rx-journey-bar span { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg, var(--rx-hue), var(--rx-hue-lit)); box-shadow:0 0 12px color-mix(in srgb, var(--rx-hue-lit) 54%, transparent); transition:width .35s ease; }
+.rx-root .rx-journey-note { margin:0 0 12px; color:var(--universe-muted); font-size:11.5px; line-height:1.45; }
+.rx-root .rx-journey-track { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(78px, 1fr); gap:7px; overflow-x:auto; padding:2px 1px 5px; scrollbar-width:none; }
+.rx-root .rx-journey-track::-webkit-scrollbar { display:none; }
+.rx-root .rx-journey-step { min-height:76px; padding:7px 4px; border:0; border-radius:13px; display:flex; flex-direction:column; align-items:center; gap:7px; background:transparent; color:var(--universe-muted); font:700 10.5px/1.2 ${SANS}; text-align:center; cursor:pointer; }
+.rx-root .rx-journey-step:hover { background:color-mix(in srgb, var(--rx-hue) 10%, transparent); color:var(--universe-ink); }
+.rx-root .rx-journey-node { width:38px; height:38px; flex:0 0 38px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--universe-muted); border:1px solid var(--universe-line); background:var(--universe-glass-strong); box-shadow:var(--elev-rest); font-size:12px; }
+.rx-root .rx-journey-step.done { color:var(--universe-ink); }
+.rx-root .rx-journey-step.done .rx-journey-node { color:var(--rx-hue-ink, var(--rx-hue-lit)); border-color:color-mix(in srgb, var(--rx-hue-lit) 62%, transparent); background:color-mix(in srgb, var(--rx-hue) 22%, var(--universe-glass-strong)); box-shadow:0 0 18px color-mix(in srgb, var(--rx-hue) 30%, transparent); }
 
 /* ── the "what's going on right now?" router (category screens only) ── */
 .rx-root .rx-need { margin-bottom:14px; padding:13px 14px; border-radius:15px;
   border:1px solid var(--rx-hair); background:var(--rx-card); box-shadow:var(--elev-rest); }
-.rx-root .rx-need-q { font-size:12.5px; font-weight:800; color:var(--rx-ink); margin-bottom:9px; line-height:1.45; }
+.rx-root .rx-need-q { font-size:12.5px; font-weight:700; color:var(--rx-ink); margin-bottom:9px; line-height:1.45; }
 .rx-root .rx-need-chips { display:flex; flex-wrap:wrap; gap:7px; }
 .rx-root .rx-need-chip { padding:8px 13px; border-radius:999px; border:1px solid var(--rx-hair);
   background:transparent; color:var(--rx-sub); font-size:12.5px; font-weight:700; cursor:pointer;
@@ -1666,7 +1772,7 @@ const MENU_CSS = `
 .rx-root .rx-need-why { margin-top:11px; padding-top:11px; border-top:1px dashed var(--rx-hair); }
 .rx-root .rx-need-why p { margin:0 0 9px; font-size:12.5px; color:var(--rx-sub); line-height:1.6; }
 .rx-root .rx-need-go { padding:9px 16px; border-radius:11px; border:1px solid color-mix(in srgb, var(--rx-hue) 55%, transparent);
-  background:var(--rx-hue); color:#fff; font-size:13px; font-weight:750; cursor:pointer; font-family:inherit;
+  background:var(--rx-hue); color:#fff; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;
   box-shadow:var(--elev-rest); }
 .rx-root .rx-need-go:active { box-shadow:var(--elev-press); }
 .rx-root .rx-menu-chev { font-size:28px; font-weight:700; flex-shrink:0; color:var(--universe-accent); }
@@ -1678,12 +1784,12 @@ const MENU_CSS = `
 .rx-root .rx-cat-ic { width:56px; height:56px; border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0; }
 .rx-root .rx-cat-ic--hd { width:40px; height:40px; border-radius:11px; font-size:22px; }
 .rx-root .rx-cat-body { display:flex; flex-direction:column; gap:3px; flex:1; min-width:0; }
-.rx-root .rx-cat-title { font-family:Outfit,${SANS}; font-weight:800; font-size:20px; color:var(--universe-ink); line-height:1.1; }
+.rx-root .rx-cat-title { font-family:Outfit,${SANS}; font-weight:700; font-size:20px; color:var(--universe-ink); line-height:1.1; }
 .rx-root .rx-cat-tag { font-size:12.5px; color:var(--universe-muted); line-height:1.4; }
 .rx-root .rx-cat-meta { display:flex; align-items:center; gap:9px; flex-shrink:0; }
 .rx-root .rx-cat-hd { display:flex; align-items:center; gap:11px; }
 .rx-root .rx-seg { display:flex; gap:5px; background:var(--universe-glass-strong); border:1px solid var(--universe-line); border-radius:13px; padding:4px; margin-bottom:18px; }
-.rx-root .rx-seg-btn { flex:1; padding:10px 0; border:none; background:none; border-radius:9px; font-family:inherit; font-size:13.5px; font-weight:800; color:var(--universe-muted); cursor:pointer; transition:all .15s; }
+.rx-root .rx-seg-btn { flex:1; padding:10px 0; border:none; background:none; border-radius:9px; font-family:inherit; font-size:13.5px; font-weight:700; color:var(--universe-muted); cursor:pointer; transition:all .15s; }
 /* The selected tab wears the AREA's hue, not the one global accent. Five
    categories that all highlight in the same blue is the same failure as five
    planets that all render grey. */
@@ -1694,18 +1800,21 @@ const MENU_CSS = `
    it sizes at 100% OF NOTHING. It reserved its 40px of layout (the title was
    indented by it) and painted zero pixels — a gap where a planet should be,
    with a perfectly correct gradient in getComputedStyle. */
-.rx-root .rx-cat-planet { display:block; position:relative; width:40px; height:40px; flex-shrink:0; }
-.rx-root .rx-soon-badge { flex-shrink:0; font-size:10.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--universe-accent); background:rgba(232,172,78,0.14); border:1px solid var(--universe-line); border-radius:999px; padding:4px 11px; }
+/* ⚠ WAS 40px — these are 640x640 paintings with real filigree (Meaning's
+   armillary, Personality's mirror); at 40px the detail that makes them read
+   as paintings rather than icons was lost. */
+.rx-root .rx-cat-planet { display:block; position:relative; width:52px; height:52px; flex-shrink:0; }
+.rx-root .rx-soon-badge { flex-shrink:0; font-size:10.5px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--universe-accent); background:rgba(232,172,78,0.14); border:1px solid var(--universe-line); border-radius:999px; padding:4px 11px; }
 .rx-root .rx-soon-empty { text-align:center; padding:40px 16px; }
 .rx-root .rx-soon-emoji { width:88px; height:88px; border-radius:24px; display:flex; align-items:center; justify-content:center; font-size:44px; margin:0 auto 18px; }
-.rx-root .rx-soon-title { font-family:Outfit,${SANS}; font-weight:800; font-size:24px; color:var(--universe-ink); margin-bottom:10px; }
+.rx-root .rx-soon-title { font-family:${SERIF}; font-weight:600; font-size:var(--rx-fs-title); color:var(--universe-ink); margin-bottom:10px; }
 .rx-root .rx-soon-desc { font-size:14px; color:var(--universe-muted); line-height:1.6; max-width:320px; margin:0 auto; }
-.rx-root .rx-menu-tail { display:flex; align-items:center; gap:5px; flex-shrink:0; }
-.rx-root .rx-fav { width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:20px; line-height:1; color:var(--universe-muted); cursor:pointer; border-radius:9px; user-select:none; -webkit-user-select:none; transition:transform .12s ease, color .12s ease; }
+.rx-root .rx-fav { width:44px; height:44px; flex:0 0 44px; padding:0; border:0; background:transparent; display:flex; align-items:center; justify-content:center; line-height:1; color:var(--universe-muted); cursor:pointer; border-radius:12px; user-select:none; -webkit-user-select:none; transition:transform .12s ease, color .12s ease, background .12s ease; }
+.rx-root .rx-fav:hover { background:color-mix(in srgb, var(--rx-hue) 12%, transparent); }
 .rx-root .rx-fav:active { transform:scale(0.82); }
 .rx-root .rx-fav.on { color:var(--rx-favorite-ink); }
-.rx-root .rx-fav-count { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:rgba(232,172,78,0.2); color:var(--rx-favorite-ink); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
-.rx-root .rx-habit-badge { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:rgba(90,160,122,0.25); color:var(--rx-success-ink); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.rx-root .rx-fav-count { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:rgba(232,172,78,0.2); color:var(--rx-favorite-ink); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.rx-root .rx-habit-badge { min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:rgba(90,160,122,0.25); color:var(--rx-success-ink); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
 .rx-root .rx-habit-badge--done { background:#5aa07a; color:#201d18; }
 .rx-root .rx-cat-divider { height:1px; background:rgba(232,172,78,0.22); margin:2px 2px 18px; }
 .rx-root .rx-rl { position:relative; }
@@ -1713,7 +1822,6 @@ const MENU_CSS = `
 .rx-root .rx-rl-item--drag .rx-menu-card { box-shadow:0 12px 26px rgba(0,0,0,0.45); border-color:var(--universe-accent); cursor:grabbing; }
 [dir='rtl'] .rx-root .header-title,
 [dir='rtl'] .rx-root .rx-menu-title,
-[dir='rtl'] .rx-root .rx-cat-title { font-family:Cairo,${SANS}; }
-html[data-home-theme='light'] .rx-root .header-title { text-shadow:none; }
+[dir='rtl'] .rx-root .rx-cat-title { font-family:Cairo,${SANS}; font-weight:700; }
 html[data-home-theme='dark'] .rx-root { --rx-favorite-ink:#f3c65f; --rx-success-ink:#9fd4a3; }
 `;

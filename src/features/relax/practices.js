@@ -47,19 +47,19 @@ export const RELAX_PRACTICES = [
      was collected on that taught format. This is a self-guided programme built
      on the same practices, which is a fair thing to offer and a different thing
      to claim. The `id` stays 'mbsr' so no saved progress or habit link breaks. */
-  { id: 'mbsr', icon: '🧘', color: '#c47a3e', tier: 'protocol',
+  { id: 'mbsr', icon: '🧘', tier: 'protocol',
     title: '8 Weeks of Mindfulness', titleAr: 'اليقظة الذهنية — ٨ أسابيع',
     sub: 'A self-guided daily programme inspired by MBSR — a timer, an 8-week tracker and a full guide.',
     subAr: 'برنامج يومي ذاتي التوجيه مستوحى من MBSR — مؤقّت ومتابعة ٨ أسابيع ودليل كامل.' },
-  { id: 'breathe', icon: '🫁', color: '#5aa9c8', tier: 'framework',
+  { id: 'breathe', icon: '🫁', tier: 'framework',
     title: 'Breathe', titleAr: 'تنفّس',
     sub: 'A guided breathing pacer — box, 4-7-8, coherent & physiological-sigh patterns.',
     subAr: 'موجّه تنفّس متحرّك — أنماط الصندوق و٤-٧-٨ والمتناغم والتنهيدة.' },
-  { id: 'grounding', icon: '🖐️', color: '#6fae7a', tier: 'framework',
+  { id: 'grounding', icon: '🖐️', tier: 'framework',
     title: '5-4-3-2-1 Grounding', titleAr: 'تأريض ٥-٤-٣-٢-١',
     sub: 'Break acute anxiety by walking through your five senses in the moment.',
     subAr: 'اكسر القلق الحاد بالمرور على حواسك الخمس في اللحظة.' },
-  { id: 'pmr', icon: '💪', color: '#b07ac8', tier: 'protocol',
+  { id: 'pmr', icon: '💪', tier: 'protocol',
     title: 'Muscle Relaxation', titleAr: 'استرخاء العضلات',
     sub: 'Progressive tense-and-release through the body — great for tension and sleep.',
     subAr: 'شدّ وإرخاء تدريجي للجسم — ممتاز للتوتر والنوم.' },
@@ -72,11 +72,11 @@ export const RELAX_PRACTICES = [
      real and useful thing to do — it just is not "the ancient Japanese
      secret to a long life" a lot of internet content claims. Framed honestly
      now as a reflection exercise Ikigai INSPIRED, not Ikigai itself. */
-  { id: 'ikigai', icon: '🎯', color: '#c9a24b', tier: 'framework',
+  { id: 'ikigai', icon: '🎯', tier: 'framework',
     title: 'Purpose Compass', titleAr: 'بوصلة المعنى',
     sub: 'A reflection exercise inspired by Ikigai — where what you love, what you\'re good at, what the world needs and what you can offer overlap. A useful lens for thinking about purpose, not a proven method for finding it.',
     subAr: 'تأمّل مستوحى من مفهوم "إيكيغاي" الياباني — حيث تتقاطع ما تحبّه وما تجيده وما يحتاجه العالم وما يمكنك تقديمه. عدسة مفيدة للتفكير في المعنى، لا طريقة مُثبَتة لإيجاده.' },
-  { id: 'personality-quiz', icon: '🧭', color: '#c47a3e', tier: 'replicated',
+  { id: 'personality-quiz', icon: '🧭', tier: 'replicated',
     title: 'Big Five Personality', titleAr: 'الشخصية — العوامل الخمسة',
     sub: 'A 10-question brief form (TIPI) mapping your Openness, Conscientiousness, Extraversion, Agreeableness & Neuroticism — a short instrument, replicated across many studies, not a full clinical assessment.',
     subAr: 'استبيان قصير من ١٠ أسئلة (TIPI) يقيس انفتاحك وضميرك الحي وانبساطك وتوافقك واستقرارك العاطفي — أداة موجزة تكرّرت نتائجها في دراسات عديدة، وليست تقييماً إكلينيكياً كاملاً.' },
@@ -88,11 +88,11 @@ export const RELAX_PRACTICES = [
      separate description in the menu registry was never updated to match.
      Exactly the two-lists-disagree failure this repo's own history keeps
      recording elsewhere. */
-  { id: 'relationship-quiz', icon: '💞', color: '#c86f8f', tier: 'framework',
+  { id: 'relationship-quiz', icon: '💞', tier: 'framework',
     title: 'Attachment Style', titleAr: 'نمط التعلّق',
     sub: 'A 12-question reflection adapted from the attachment research literature (ECR-S family) — not the validated instrument itself, so treat the result as a conversation starter, not a score.',
     subAr: 'تأمّل من ١٢ سؤالاً مقتبس من أدبيات أبحاث التعلّق (عائلة ECR-S) — وليس الأداة الموثّقة نفسها، فاعتبر النتيجة بداية حوار لا درجة نهائية.' },
-  { id: 'sleep-sounds', icon: '🌧️', color: '#7b86c8', tier: 'framework',
+  { id: 'sleep-sounds', icon: '🌧️', tier: 'framework',
     title: 'Sleep Sounds', titleAr: 'أصوات النوم',
     sub: 'A looping ambient sound to play while you wind down or drift off.',
     subAr: 'صوت محيطي متكرر لتشغيله أثناء الاسترخاء أو النوم.' },

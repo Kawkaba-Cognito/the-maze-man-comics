@@ -1,0 +1,164 @@
+/* ── CANCEL PLANET PATH — the level-map prototype ────────────────────────
+ * Scoped to this one game (see the header comment in CancelPlanetPath.jsx).
+ * Reuses `.ct-lv-grid-wrap` / `.ct-lv-hero-title` / `.ct-lv-hero-sub` from
+ * the shared level-grid styling so the title/blurb sit identically to the
+ * screen this replaces.
+ */
+
+.cpp-path {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* The one guide line down the centre. A straight spine rather than a real
+   segment-by-segment line through every node's actual (x, y) — see the
+   comment in the component for why that trade is right for a prototype. */
+.cpp-spine {
+  position: absolute;
+  left: 50%;
+  top: 24px;
+  bottom: 24px;
+  width: 3px;
+  transform: translateX(-50%);
+  background: repeating-linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--game-accent, var(--fq-pri)) 45%, transparent) 0,
+    color-mix(in srgb, var(--game-accent, var(--fq-pri)) 45%, transparent) 10px,
+    transparent 10px,
+    transparent 20px
+  );
+  z-index: 0;
+}
+
+.cpp-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 74px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 1;
+  font: inherit;
+}
+.cpp-node:disabled { cursor: not-allowed; }
+.cpp-node:focus-visible .cpp-orb {
+  outline: 3px solid var(--game-selected, var(--fq-pri));
+  outline-offset: 3px;
+}
+
+/* ⚠ THE THREE `hsl(var(--cpp-hue) ...)` STOPS ARE THE ONLY RAW-COLOUR DEBT
+ * HERE, AND THEY ARE IRREDUCIBLE BY DESIGN. `--cpp-hue` is a per-NODE custom
+ * property (set inline in CancelPlanetPath.jsx, one value per level) — the
+ * entire point is that a 60-planet path reads as variety rather than the
+ * same tile 60 times, which a single static token cannot express. Every
+ * other colour in this file is tokenised (see `--game-ok` / `--ink-dim` /
+ * `--fx-glint` / `--fx-shadow-drop` / `--color-text` below).
+ */
+.cpp-orb {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, hsl(var(--cpp-hue) 75% 68%), transparent 55%),
+    radial-gradient(circle at 60% 70%, hsl(var(--cpp-hue) 55% 32%), transparent 60%),
+    hsl(var(--cpp-hue) 60% 46%);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--ink) 30%, transparent);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.cpp-node:not(:disabled):active .cpp-orb { transform: scale(0.94); }
+
+/* Reuses the shared `--fx-glint` / `--fx-shadow-drop` tokens (tokens.css) for
+   the sphere's bevel rather than one-off rgba literals — the same two the
+   rest of the app already uses for "a highlight" / "a shadow". */
+.cpp-orb-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 2px 4px var(--fx-glint), inset 0 -6px 10px var(--fx-shadow-drop);
+}
+.cpp-orb-shade {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 70% 75%, var(--fx-shadow-drop), transparent 60%);
+}
+
+.cpp-num {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 15px;
+  font-weight: 900;
+  /* `--color-text` — the app's own "main text on a dark surface" token,
+     not a raw white — legible against any of the procedural hues below it. */
+  color: var(--color-text);
+  text-shadow: 0 1px 3px var(--fx-shadow-drop), 0 1px 3px var(--fx-shadow-drop);
+  pointer-events: none;
+}
+
+.cpp-sub {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+/* Done: the orb desaturates toward the app's own success green rather than
+   staying at its hue full-strength — a cleared planet should read as
+   "behind you", not identical to one still ahead. `--game-ok` is the same
+   token every other correct/cleared state in Training already uses. */
+.cpp-node--done .cpp-orb {
+  background:
+    radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--game-ok) 55%, white), transparent 55%),
+    radial-gradient(circle at 60% 70%, color-mix(in srgb, var(--game-ok) 70%, black), transparent 60%),
+    var(--game-ok);
+}
+.cpp-node--done .cpp-num { font-size: 20px; }
+
+/* Locked: flattened to stone, off `--ink-dim` rather than a new grey — no
+   hue at all, so "not yet reachable" reads before the lock glyph is even
+   parsed. */
+.cpp-node--locked .cpp-orb {
+  background:
+    radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--ink-dim) 55%, white), transparent 55%),
+    radial-gradient(circle at 60% 70%, color-mix(in srgb, var(--ink-dim) 70%, black), transparent 60%),
+    var(--ink-dim);
+}
+.cpp-node--locked .cpp-num { font-size: 18px; text-shadow: none; opacity: 0.85; }
+.cpp-node--locked .cpp-sub { opacity: 0.6; }
+
+/* Current: where Kawkab is actually standing. A soft pulse, not a static
+   ring — the one node on the whole path that is doing something. */
+.cpp-node--current .cpp-orb {
+  animation: cpp-pulse 2.2s ease-in-out infinite;
+}
+@keyframes cpp-pulse {
+  0%, 100% { box-shadow: 0 4px 10px color-mix(in srgb, var(--ink, #000) 30%, transparent), 0 0 0 0 hsl(var(--cpp-hue) 80% 60% / 0.55); }
+  50% { box-shadow: 0 4px 10px color-mix(in srgb, var(--ink, #000) 30%, transparent), 0 0 0 10px hsl(var(--cpp-hue) 80% 60% / 0); }
+}
+
+.cpp-kawkab {
+  position: absolute;
+  transform: translate(-50%, -108%);
+  pointer-events: none;
+  z-index: 2;
+  animation: cpp-bob 2.4s ease-in-out infinite;
+}
+@keyframes cpp-bob {
+  0%, 100% { transform: translate(-50%, -108%); }
+  50% { transform: translate(-50%, -118%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cpp-node--current .cpp-orb { animation: none; }
+  .cpp-kawkab { animation: none; }
+}

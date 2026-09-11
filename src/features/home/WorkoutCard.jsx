@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { loadWorkout, isDoneToday } from '../workout/workoutState.js';
+import KawkabSprite from '../training/shared/KawkabSprite.jsx';
 
 /*
  * A direct, always-available way onto the Daily Workout tab from Home.
@@ -51,7 +52,17 @@ export default function WorkoutCard({ isAr, playSfx, onOpenWorkout }) {
       className={`wc wc--${state.kind}`}
       onClick={() => { playSfx?.('click'); onOpenWorkout?.(); }}
     >
-      <span className="wc-glyph" aria-hidden="true">{state.kind === 'done' ? '✅' : '🧠'}</span>
+      {/*
+       * Dr Kawkab, not a generic 🧠 — the same mascot every game's coach and
+       * the Training hub's centre already show. The Daily Workout is this
+       * app's own flagship feature; a stock emoji here read as a to-do-app
+       * card that happened to land inside this one. The done state keeps ✅,
+       * which ProgressCard's habit row already uses for the same meaning
+       * elsewhere on this screen — that one was never the generic part.
+       */}
+      {state.kind === 'done'
+        ? <span className="wc-glyph" aria-hidden="true">✅</span>
+        : <KawkabSprite size={40} className="wc-glyph wc-glyph--kawkab" />}
       <span className="wc-text">
         <span className="wc-title">{state.copy.title}</span>
         <span className="wc-sub">{state.copy.sub}</span>

@@ -228,7 +228,7 @@ export const CHECKIN_CSS = `
 .ci-delta-cell b { font-family:${SERIF}; font-size:44px; font-weight:700; line-height:1; color:${SUB}; }
 .ci-delta-cell small { font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:${FAINT}; margin-top:4px; }
 .ci-delta-cell--now b { color:${INK}; }
-.ci-delta-cell--now.good b { color:var(--rx-hue-lit); }
+.ci-delta-cell--now.good b { color:var(--rx-hue-ink); }
 .ci-delta-arrow { font-size:22px; color:${FAINT}; }
 .ci-headline { font-family:${SERIF}; font-size:26px; font-weight:600; color:${INK}; text-align:center; }
 .ci-body { margin:0; font-size:13.5px; color:${SUB}; line-height:1.65; text-align:center; max-width:340px; }
@@ -236,11 +236,11 @@ export const CHECKIN_CSS = `
 .ci-tier { width:100%; max-width:340px; padding:11px 14px; border-radius:13px; border:1px solid ${LINE}; background:${CARD}; box-shadow:var(--elev-rest); }
 .ci-tier-row { display:flex; justify-content:space-between; align-items:baseline; }
 .ci-tier-label { font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:${FAINT}; }
-.ci-tier-name { font-size:14px; font-weight:800; color:var(--rx-hue-lit); }
+.ci-tier-name { font-size:14px; font-weight:800; color:var(--rx-hue-ink); }
 .ci-tier-count { font-size:11.5px; color:${SUB}; margin-top:3px; }
 .ci-signature { width:100%; max-width:340px; padding:12px 14px; border-radius:13px;
   background:color-mix(in srgb, var(--rx-hue) 12%, transparent);
   border:1px solid color-mix(in srgb, var(--rx-hue) 34%, transparent); }
-.ci-signature-label { font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:var(--rx-hue-lit); margin-bottom:4px; }
+.ci-signature-label { font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:var(--rx-hue-ink); margin-bottom:4px; }
 .ci-signature p { margin:0; font-size:12.5px; color:${SUB}; line-height:1.6; }
 `;

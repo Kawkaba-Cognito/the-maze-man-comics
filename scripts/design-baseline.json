@@ -1,10 +1,13 @@
 {
   "rules": {
-    "raw-colour": 566,
+    "raw-colour": 481,
     "stacked-backdrops": 2,
     "conditional-background": 1
   },
   "files": {
+    "src/features/training/domains/attention/games/cancellation/cancelPlanetPath.css": {
+      "raw-colour": 3
+    },
     "src/features/training/domains/attention/games/cancellation/index.jsx": {
       "raw-colour": 1
     },
@@ -130,11 +133,8 @@
     "src/features/relax/PracticeCheckIn.jsx": {
       "raw-colour": 1
     },
-    "src/features/relax/practices.js": {
-      "raw-colour": 8
-    },
     "src/features/relax/PracticeShell.jsx": {
-      "raw-colour": 2
+      "raw-colour": 3
     },
     "src/features/relax/quizShared.jsx": {
       "raw-colour": 2
@@ -143,11 +143,11 @@
       "raw-colour": 13
     },
     "src/features/relax/RelaxScreen.jsx": {
-      "raw-colour": 139,
+      "raw-colour": 63,
       "stacked-backdrops": 1
     },
     "src/features/relax/SleepSoundsPractice.jsx": {
-      "raw-colour": 6
+      "raw-colour": 1
     }
   }
 }

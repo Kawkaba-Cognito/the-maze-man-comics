@@ -76,6 +76,15 @@ export default function HomeScreen() {
 
   return (
     <div className="home-dashboard" dir={isAr ? 'rtl' : 'ltr'}>
+      {/* Purely decorative — see the CSS comment in homeDashboard.css for why
+          this exists and why it is CSS-only rather than a 3rd WebGL scene. */}
+      <div className="hd-meteors" aria-hidden="true">
+        <span className="hd-meteor hd-meteor--1" />
+        <span className="hd-meteor hd-meteor--2" />
+        <span className="hd-meteor hd-meteor--3" />
+        <span className="hd-meteor hd-meteor--4" />
+        <span className="hd-meteor hd-meteor--5" />
+      </div>
       <div className="home-dashboard-col">
         <NeuralPanel
           isAr={isAr}

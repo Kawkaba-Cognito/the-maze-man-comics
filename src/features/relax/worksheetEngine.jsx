@@ -363,28 +363,31 @@ export default function WorksheetRunner({ sheet, onBack }) {
 }
 
 const WS_CSS = `
-.ws-intro { margin:0; font-size:15px; color:${SUB}; line-height:1.7; max-width:350px; text-align:center; }
-.ws-meta { font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:${FAINT}; }
-.ws-tier { font-size:11.5px; font-weight:800; padding:5px 13px; border-radius:999px;
-  color:var(--rx-hue-lit); background:color-mix(in srgb, var(--rx-hue) 14%, transparent);
+.ws-intro { margin:0; font-size:var(--rx-fs-body); color:${SUB}; line-height:1.7; max-width:350px; text-align:center; }
+.ws-meta { font-size:var(--rx-fs-label); font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:${FAINT}; }
+/* ⚠ WAS var(--rx-hue-lit) — fails contrast as TEXT in light theme (see the
+   note on --rx-hue-ink in wellbeing.css). This pill's fill/border keep
+   -lit/-hue; only the text repoints. */
+.ws-tier { font-size:11.5px; font-weight:700; padding:5px 13px; border-radius:999px;
+  color:var(--rx-hue-ink); background:color-mix(in srgb, var(--rx-hue) 14%, transparent);
   border:1px solid color-mix(in srgb, var(--rx-hue) 34%, transparent); }
 .ws-cite { margin:0; font-size:11.5px; color:${FAINT}; font-style:italic; line-height:1.6; text-align:center; max-width:360px; }
 .ws-progress { display:flex; flex-direction:column; gap:5px; }
 .ws-progress-bar { height:4px; border-radius:999px; background:color-mix(in srgb, var(--rx-ink) 12%, transparent); overflow:hidden; }
 .ws-progress-bar span { display:block; height:100%; background:var(--rx-hue-lit); transition:width .3s ease; }
-.ws-progress-txt { font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:${FAINT}; }
-.ws-read-h { font-family:${SERIF}; font-size:23px; font-weight:600; color:${INK}; margin-bottom:8px; }
-.ws-read p { margin:0 0 11px; font-size:14.5px; color:${SUB}; line-height:1.75; }
+.ws-progress-txt { font-size:var(--rx-fs-label); font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:${FAINT}; }
+.ws-read-h { font-family:${SERIF}; font-size:var(--rx-fs-title); font-weight:600; color:${INK}; margin-bottom:8px; }
+.ws-read p { margin:0 0 11px; font-size:var(--rx-fs-body); color:${SUB}; line-height:1.75; }
 .ws-field { display:flex; flex-direction:column; gap:8px; }
-.ws-label { font-size:16px; font-weight:750; color:${INK}; line-height:1.45; }
-.ws-hint { margin:0; font-size:13px; color:${SUB}; line-height:1.6; }
+.ws-label { font-size:var(--rx-fs-lead); font-weight:600; color:${INK}; line-height:1.45; }
+.ws-hint { margin:0; font-size:var(--rx-fs-small); color:${SUB}; line-height:1.6; }
 .ws-input { width:100%; padding:13px 15px; border-radius:13px; border:1px solid ${LINE}; background:${CARD};
   font-family:inherit; font-size:15px; line-height:1.6; color:${INK}; resize:vertical; }
 .ws-input:focus { outline:none; border-color:var(--rx-hue); }
 .ws-input--line { min-height:0; }
 .ws-scale { display:flex; gap:4px; }
 .ws-pip { flex:1; aspect-ratio:1; min-width:0; padding:0; border-radius:9px; border:1px solid ${LINE};
-  background:${CARD}; color:${SUB}; font-size:12px; font-weight:800; cursor:pointer; font-family:inherit; }
+  background:${CARD}; color:${SUB}; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; }
 /* A TINT, NOT A SOLID FILL. A solid hue needs a contrasting label colour, and
    the only one that works across both themes is a literal, which is how a raw
    colour gets into a JSX file and fails audit:design. Tinting keeps the ink and
@@ -393,24 +396,24 @@ const WS_CSS = `
    NO BACKTICKS IN THIS BLOCK: it is inside a template literal, so a backtick
    ends the string and everything after it becomes JavaScript. That exact
    mistake shipped a broken bundle to production. */
-.ws-pip.on { border-color:var(--rx-hue); background:color-mix(in srgb, var(--rx-hue) 24%, transparent); color:${INK}; font-weight:900; }
+.ws-pip.on { border-color:var(--rx-hue); background:color-mix(in srgb, var(--rx-hue) 24%, transparent); color:${INK}; font-weight:700; }
 .ws-scale-ends { display:flex; justify-content:space-between; font-size:11px; color:${FAINT}; }
 .ws-choices { display:flex; flex-direction:column; gap:9px; }
 .ws-choice { text-align:start; padding:13px 15px; border-radius:13px; border:1px solid ${LINE}; background:${CARD};
   cursor:pointer; font-family:inherit; display:flex; flex-direction:column; gap:3px; }
 .ws-choice.on { border-color:var(--rx-hue); background:color-mix(in srgb, var(--rx-hue) 13%, transparent); }
-.ws-choice-label { font-size:14.5px; font-weight:700; color:${INK}; line-height:1.5; }
+.ws-choice-label { font-size:var(--rx-fs-body); font-weight:600; color:${INK}; line-height:1.5; }
 .ws-choice-note { font-size:12px; color:${SUB}; line-height:1.5; }
 .ws-chips { display:flex; flex-wrap:wrap; gap:8px; }
 .ws-chip { padding:9px 14px; border-radius:999px; border:1px solid ${LINE}; background:${CARD};
-  color:${SUB}; font-size:13.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+  color:${SUB}; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit; }
 .ws-chip.on { border-color:var(--rx-hue); background:color-mix(in srgb, var(--rx-hue) 16%, transparent); color:${INK}; }
-.ws-count { font-size:11.5px; font-weight:800; color:var(--rx-hue-lit); }
+.ws-count { font-size:11.5px; font-weight:700; color:var(--rx-hue-ink); }
 .ws-plan { display:flex; flex-direction:column; gap:7px; }
-.ws-plan-tag { font-size:11px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; color:var(--rx-hue-lit); }
+.ws-plan-tag { font-size:var(--rx-fs-label); font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--rx-hue-ink); }
 .ws-backlink { align-self:center; background:none; border:none; color:${FAINT}; font-size:12.5px; font-weight:700;
   cursor:pointer; font-family:inherit; padding:2px; }
-.ws-done { font-family:${SERIF}; font-size:29px; font-weight:600; color:${INK}; }
+.ws-done { font-family:${SERIF}; font-size:var(--rx-fs-display); font-weight:600; color:${INK}; }
 .ws-doneday { font-size:11.5px; font-weight:700; color:${FAINT}; }
 .ws-summary { padding:11px 14px; border-radius:12px; border:1px solid ${LINE}; background:${CARD}; }
 .ws-summary-q { font-size:12px; font-weight:800; color:${FAINT}; margin-bottom:4px; line-height:1.45; }

@@ -50,7 +50,7 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
-import { TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import CancelPlanetPath from './CancelPlanetPath.jsx';
 import ModePlanetHub from '../../../../shared/ModePlanetHub';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
@@ -1776,9 +1776,14 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       )}
 
       {/* ⚠ The `diff` phase is gone (2026-08-28, the ladder). Level mode goes
-          straight from the hub to ONE grid — no Easy/Medium/Hard screen. */}
+          straight from the hub to ONE grid — no Easy/Medium/Hard screen.
+          ⚠ PROTOTYPE (2026-09-11): this ONE call site swapped the flat
+          `TrainingLevelGrid` for `CancelPlanetPath` — same prop contract,
+          Cancellation only. See the header comment in CancelPlanetPath.jsx
+          for why. Revert by importing `TrainingLevelGrid` again and
+          swapping the tag name below; nothing else here changes. */}
       {phase === 'levels' && (
-        <TrainingLevelGrid
+        <CancelPlanetPath
           isAr={isAr}
           playSfx={playSfx}
           onBack={() => setPhase('hub')}

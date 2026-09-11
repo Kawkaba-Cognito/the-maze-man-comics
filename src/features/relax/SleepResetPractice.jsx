@@ -411,7 +411,7 @@ const CSS = `
 .sr-quality { display:flex; gap:5px; }
 .sr-q { flex:1; padding:9px 2px; border-radius:10px; border:1px solid ${LINE}; background:${CARD}; color:${FAINT};
   font-size:11px; cursor:pointer; font-family:inherit; overflow:hidden; }
-.sr-q.on { border-color:var(--rx-hue); background:color-mix(in srgb, var(--rx-hue) 16%, transparent); color:var(--rx-hue-lit); }
+.sr-q.on { border-color:var(--rx-hue); background:color-mix(in srgb, var(--rx-hue) 16%, transparent); color:var(--rx-hue-ink); }
 .sr-note { margin:0; font-size:12.5px; color:${FAINT}; line-height:1.6; text-align:center; }
 .sr-rule { display:flex; gap:11px; padding:13px 14px; border-radius:13px; border:1px solid ${LINE}; background:${CARD}; box-shadow:var(--elev-rest); }
 .sr-rule-ic { font-size:22px; flex-shrink:0; }
@@ -423,7 +423,7 @@ const CSS = `
 .sr-card p { margin:0; font-size:12.5px; color:${SUB}; line-height:1.7; }
 .sr-se-wrap { display:flex; flex-direction:column; align-items:center; gap:3px; }
 .sr-se { font-family:${SERIF}; font-size:64px; font-weight:700; line-height:1; color:${INK}; display:flex; align-items:baseline; }
-.sr-se.good { color:var(--rx-hue-lit); }
+.sr-se.good { color:var(--rx-hue-ink); }
 .sr-se small { font-size:22px; font-weight:700; }
 .sr-se-sub { font-size:11.5px; color:${FAINT}; font-weight:700; }
 .sr-stats { display:grid; grid-template-columns:1fr 1fr; gap:9px; }

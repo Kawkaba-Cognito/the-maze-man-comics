@@ -42,7 +42,6 @@ import { T, ruleText, sayText, sceneText } from './strings.js';
  */
 
 const KAWKAB_URL = assetUrl('Assets/characters/kawkab/kawkab-planet.webp');
-const KAWKAB_ASPECT = 480 / 546;
 
 /*
  * ── THE NOTEBOOK AND THE HOLDING CELL ────────────────────────────────────
@@ -591,7 +590,144 @@ export function DetectiveEngine({
               );
             })}
           </div>
-          {/* ── the holding cell ──
+          {/* ── THE DOCK ──
+              Detective Kawkab and the cell, directly under the line-up —
+              the jail takes half the row and Kawkab stands in the other
+              half, beside the door he is asking you to close, instead of
+              being a small icon squeezed next to a full-width box.
+
+              ⚠ It used to sit at the BOTTOM of the case, after the
+              statements and the answer controls. Measured on this project's
+              own 1366×577 desktop (project_desktop_breakpoints): the
+              line-up sat at y=283 and the cell at y≈684, so the drag SOURCE
+              and the drop TARGET were never on screen together — the one
+              committing gesture in the game crossed a scroll boundary.
+              Putting the dock immediately under the line-up removes that
+              gap outright instead of merely narrowing it. */}
+          <div style={S.dock}>
+            <div style={S.kawkabDock}>
+              <img
+                src={KAWKAB_URL}
+                alt=""
+                aria-hidden="true"
+                draggable="false"
+                style={S.detective}
+              />
+            </div>
+            <div style={S.dockBody}>
+              {/* ── THE CELL ── on a person question this is where the answer
+                  goes. Drag a suspect in (or tap Choose to cycle) and submit. */}
+              <div
+                ref={cellRef}
+                style={{
+                  ...S.jail,
+                  /* Only light up as a target for a card coming IN. During a drag
+                     OUT the accent would be telling you to drop where you are
+                     already leaving, which is the cancel, not the action. */
+                  ...(drag?.from === 'lineup' ? S.jailArmed : null),
+                  ...(drag?.from === 'lineup' && drag.over ? S.jailOver : null),
+                  ...(jailed && !drag ? S.jailFull : null),
+                }}
+              >
+                <div style={S.jailHead}>
+                  <span style={S.cellLabel}>
+                    <Emoji char="🔒" /> {jailIsAnswer ? t.jailAccuse : t.cellLabel}
+                  </span>
+                  {showNotebook && (
+                    <button type="button" onClick={pickNextForCell} aria-label={t.cellPick} style={S.jailPick}>
+                      {t.cellPickShort}
+                    </button>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    ...S.jailBay,
+                    ...(jailed && !drag ? S.jailBayShut : null),
+                    /* ⚠ The bay clips (overflow hidden gives the cell its recessed
+                       mouth). Carrying the occupant out would make them VANISH at
+                       the edge instead of following the finger, so the walls come
+                       off for the duration of that one gesture. */
+                    ...(drag?.from === 'jail' ? S.jailBayOpen : null),
+                  }}
+                >
+                  {/* Stone floor, so whoever is inside stands on something rather
+                      than floating in a tinted box. */}
+                  <div aria-hidden="true" style={S.jailFloor} />
+                  {/*
+                   * The door. It is drawn in EVERY state now — an empty cell that is
+                   * a flat pale rectangle does not read as a cell at all, which is
+                   * what this looked like on screen.
+                   *
+                   * ⚠ The original reason bars were withheld until somebody was
+                   * inside still stands and is still honoured: drawn at full weight
+                   * they made the "drag your answer in" label — the only instruction
+                   * on screen — unreadable. So the bars FADE with the state (open
+                   * while a card is in hand, ghosted while empty, shut once
+                   * occupied) and the empty label sits on its own solid chip, which
+                   * is what actually fixes the legibility rather than deleting the
+                   * door.
+                   */}
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      ...S.jailBars,
+                      ...(drag?.from === 'lineup' ? S.jailBarsOpen
+                        : jailed && !drag ? S.jailBarsShut : S.jailBarsIdle),
+                    }}
+                  />
+                  {jailed && !drag && <div aria-hidden="true" style={S.jailLock} />}
+                  {drag && drag.from === 'lineup' ? (
+                    <span style={{ ...S.cellEmpty, ...(drag.over ? S.cellDropNow : null) }}>
+                      {drag.over ? t.cellDrop : t.cellDragHere}
+                    </span>
+                  ) : jailed ? (
+                    /* The occupant is draggable BACK OUT, and a plain tap releases
+                       them too — the same thing tapping a filled room does in the
+                       Hotel Oddity prototype this is modelled on. */
+                    <button
+                      type="button"
+                      disabled={!showNotebook}
+                      onPointerDown={(e) => onCardDown(e, jailed, 'jail')}
+                      onPointerMove={onCardMove}
+                      onPointerUp={onCardUp}
+                      onPointerCancel={onCardCancel}
+                      onClick={() => {
+                        if (Date.now() - dragEndedAt.current < 350) return;
+                        playSfx?.('click');
+                        emptyCell();
+                      }}
+                      aria-label={t.cellFree(nameOf(jailed))}
+                      style={{
+                        ...S.jailWho,
+                        ...(showNotebook ? S.susGrab : null),
+                        ...(drag?.from === 'jail' ? S.jailWhoOut : null),
+                        ...(drag?.from === 'jail' ? {
+                          transform: `translate(${drag.dx}px, ${drag.dy}px) `
+                            + `rotate(${Math.max(-7, Math.min(7, drag.dx * 0.07))}deg) scale(1.07)`,
+                        } : null),
+                        cursor: showNotebook ? (drag?.from === 'jail' ? 'grabbing' : 'grab') : 'default',
+                      }}
+                    >
+                      <img src={cast2dUrl(jailed)} alt="" aria-hidden="true" draggable="false" style={S.jailArt} />
+                      <span style={S.jailName}>{nameOf(jailed)}</span>
+                    </button>
+                  ) : (
+                    <span style={S.cellEmpty}>{jailIsAnswer ? t.jailEmptyAccuse : t.cellEmpty}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          {showNotebook && (
+            <div style={S.hint}>
+              {drag?.from === 'jail' ? t.cellFreeHint
+                : jailed ? t.cellOutHint
+                  : jailIsAnswer ? t.jailHintAccuse : t.cellHint}
+            </div>
+          )}
+
+          {/* ── the notebook ──
               Rendered as its own row rather than left implicit in a card's
               border, because it is a COMMITMENT and the player has to be able
               to see at a glance who they have decided to hold. */}
@@ -634,18 +770,6 @@ export function DetectiveEngine({
             })}
           </div>
 
-          {/* ── THE DOCK ──
-              Detective Kawkab and the cell, side by side, ONE band instead of
-              three stacked full-width rows.
-
-              ⚠ It is here, in the body of the case, rather than at the bottom
-              of the column. Measured on this project's own 1366×577 desktop
-              (project_desktop_breakpoints): the line-up sat at y=283 and the
-              cell at y≈684, so the drag SOURCE and the drop TARGET were never
-              on screen together — the one committing gesture in the game
-              crossed a scroll boundary. The column is 452px inside a 1366px
-              window, so the width either side was doing nothing; Kawkab now
-              stands in it, next to the door he is asking you to close. */}
           <div style={S.question}>
             {q.kind === 'verdict' ? t.q.verdict(nameOf(q.about)) : t.q[q.kind]}
           </div>
@@ -666,127 +790,6 @@ export function DetectiveEngine({
                 setMulti((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
               }}
             />
-          )}
-
-          <div style={S.dock}>
-            <img
-              src={KAWKAB_URL}
-              alt=""
-              aria-hidden="true"
-              draggable="false"
-              style={{ ...S.detective, height: Math.round(74 / KAWKAB_ASPECT) }}
-            />
-            <div style={S.dockBody}>
-              {/* ── THE CELL ── on a person question this is where the answer
-                  goes. Drag a suspect in (or tap Choose to cycle) and submit. */}
-              <div
-                ref={cellRef}
-                style={{
-                  ...S.jail,
-                  /* Only light up as a target for a card coming IN. During a drag
-                     OUT the accent would be telling you to drop where you are
-                     already leaving, which is the cancel, not the action. */
-                  ...(drag?.from === 'lineup' ? S.jailArmed : null),
-                  ...(drag?.from === 'lineup' && drag.over ? S.jailOver : null),
-                  ...(jailed && !drag ? S.jailFull : null),
-                }}
-              >
-            <div style={S.jailHead}>
-              <span style={S.cellLabel}>
-                <Emoji char="🔒" /> {jailIsAnswer ? t.jailAccuse : t.cellLabel}
-              </span>
-              {showNotebook && (
-                <button type="button" onClick={pickNextForCell} aria-label={t.cellPick} style={S.jailPick}>
-                  {t.cellPickShort}
-                </button>
-              )}
-            </div>
-
-            <div
-              style={{
-                ...S.jailBay,
-                ...(jailed && !drag ? S.jailBayShut : null),
-                /* ⚠ The bay clips (overflow hidden gives the cell its recessed
-                   mouth). Carrying the occupant out would make them VANISH at
-                   the edge instead of following the finger, so the walls come
-                   off for the duration of that one gesture. */
-                ...(drag?.from === 'jail' ? S.jailBayOpen : null),
-              }}
-            >
-              {/* Stone floor, so whoever is inside stands on something rather
-                  than floating in a tinted box. */}
-              <div aria-hidden="true" style={S.jailFloor} />
-              {/*
-               * The door. It is drawn in EVERY state now — an empty cell that is
-               * a flat pale rectangle does not read as a cell at all, which is
-               * what this looked like on screen.
-               *
-               * ⚠ The original reason bars were withheld until somebody was
-               * inside still stands and is still honoured: drawn at full weight
-               * they made the "drag your answer in" label — the only instruction
-               * on screen — unreadable. So the bars FADE with the state (open
-               * while a card is in hand, ghosted while empty, shut once
-               * occupied) and the empty label sits on its own solid chip, which
-               * is what actually fixes the legibility rather than deleting the
-               * door.
-               */}
-              <div
-                aria-hidden="true"
-                style={{
-                  ...S.jailBars,
-                  ...(drag?.from === 'lineup' ? S.jailBarsOpen
-                    : jailed && !drag ? S.jailBarsShut : S.jailBarsIdle),
-                }}
-              />
-              {jailed && !drag && <div aria-hidden="true" style={S.jailLock} />}
-              {drag && drag.from === 'lineup' ? (
-                <span style={{ ...S.cellEmpty, ...(drag.over ? S.cellDropNow : null) }}>
-                  {drag.over ? t.cellDrop : t.cellDragHere}
-                </span>
-              ) : jailed ? (
-                /* The occupant is draggable BACK OUT, and a plain tap releases
-                   them too — the same thing tapping a filled room does in the
-                   Hotel Oddity prototype this is modelled on. */
-                <button
-                  type="button"
-                  disabled={!showNotebook}
-                  onPointerDown={(e) => onCardDown(e, jailed, 'jail')}
-                  onPointerMove={onCardMove}
-                  onPointerUp={onCardUp}
-                  onPointerCancel={onCardCancel}
-                  onClick={() => {
-                    if (Date.now() - dragEndedAt.current < 350) return;
-                    playSfx?.('click');
-                    emptyCell();
-                  }}
-                  aria-label={t.cellFree(nameOf(jailed))}
-                  style={{
-                    ...S.jailWho,
-                    ...(showNotebook ? S.susGrab : null),
-                    ...(drag?.from === 'jail' ? S.jailWhoOut : null),
-                    ...(drag?.from === 'jail' ? {
-                      transform: `translate(${drag.dx}px, ${drag.dy}px) `
-                        + `rotate(${Math.max(-7, Math.min(7, drag.dx * 0.07))}deg) scale(1.07)`,
-                    } : null),
-                    cursor: showNotebook ? (drag?.from === 'jail' ? 'grabbing' : 'grab') : 'default',
-                  }}
-                >
-                  <img src={cast2dUrl(jailed)} alt="" aria-hidden="true" draggable="false" style={S.jailArt} />
-                  <span style={S.jailName}>{nameOf(jailed)}</span>
-                </button>
-              ) : (
-                <span style={S.cellEmpty}>{jailIsAnswer ? t.jailEmptyAccuse : t.cellEmpty}</span>
-              )}
-            </div>
-              </div>
-            </div>
-          </div>
-          {showNotebook && (
-            <div style={S.hint}>
-              {drag?.from === 'jail' ? t.cellFreeHint
-                : jailed ? t.cellOutHint
-                  : jailIsAnswer ? t.jailHintAccuse : t.cellHint}
-            </div>
           )}
 
           {/* the verdict */}
@@ -1094,18 +1097,22 @@ const S = {
   susAside: { opacity: 0.45 },
 
   /* ── THE DOCK ──
-     Detective Kawkab standing beside the cell. One band across the column
-     instead of a 56px mascot on its own row above a full-width box.
+     Detective Kawkab standing beside the cell, EACH taking half the row —
+     not a small mascot squeezed next to a full-width box. Both sides share
+     the same `flex: 1 1 0` so the split is even regardless of viewport width.
      `flex-end` is what makes him STAND next to the door: his feet land on the
      cell's baseline rather than floating against its middle.
      ⚠ `flexWrap` rather than a media query — this game styles inline, so there
-     is nowhere to put one. Below ~330px of body the cell drops under him. */
+     is nowhere to put one. Below ~230px of body the cell drops under him. */
   dock: {
-    display: 'flex', alignItems: 'flex-end', gap: 10, width: '100%',
+    display: 'flex', alignItems: 'flex-end', gap: 12, width: '100%',
     flexWrap: 'wrap',
   },
+  kawkabDock: {
+    flex: '1 1 0', minWidth: 96, display: 'flex', justifyContent: 'center',
+  },
   dockBody: {
-    flex: '1 1 250px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 7,
+    flex: '1 1 0', minWidth: 150, display: 'flex', flexDirection: 'column', gap: 7,
   },
 
   /* ── THE JAIL ──
@@ -1290,12 +1297,14 @@ const S = {
   sayVerdictTrue: { color: 'var(--success)', borderColor: 'var(--success)' },
   sayVerdictFalse: { color: 'var(--danger)', borderColor: 'var(--danger)' },
 
-  /* He stands beside the cell now, so he is drawn at the size of somebody
-     standing there rather than at the size of a bullet point. The drop shadow
-     is the shared token — it used to be a hand-mixed rgba, which is exactly
-     what `audit:design` counts. */
+  /* He fills his half of the dock now rather than standing at the size of a
+     bullet point beside a full-width cell — `width: 100%` of `.kawkabDock`
+     (itself half the row), capped so he doesn't balloon on a wide desktop.
+     No explicit height: the <img> keeps its natural aspect ratio on its own.
+     The drop shadow is the shared token — it used to be a hand-mixed rgba,
+     which is exactly what `audit:design` counts. */
   detective: {
-    width: 74, flex: '0 0 auto', objectFit: 'contain', objectPosition: 'center bottom',
+    width: '100%', maxWidth: 150, flex: '0 0 auto', objectFit: 'contain', objectPosition: 'center bottom',
     filter: 'drop-shadow(0 5px 4px var(--fx-shadow-drop))',
   },
   /* Full width and start-aligned, like the scene and the rule above it. It used

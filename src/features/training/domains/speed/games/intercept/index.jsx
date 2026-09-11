@@ -58,6 +58,11 @@ const UI = {
     wFlies: (s) => `flies ${s}s`,
     wasted: 'NOTHING THERE',
     begin: 'Hold the trail',
+    deployTitle: 'Deploy your towers',
+    deployHint: 'Tap each tower to arm it. Its zone lights up on the trail — only marchers who cross it can be struck from there.',
+    deployArm: (name) => `Arm the ${name}`,
+    deployArmed: 'armed',
+    deployStart: 'Start wave',
     nextWave: 'Next wave ›',
     waveCleared: 'Wave held',
     waveLeaked: 'They got past you',
@@ -111,6 +116,11 @@ const UI = {
     wFlies: (s) => `يطير ${s}ث`,
     wasted: 'لا شيء هناك',
     begin: 'احمِ الدرب',
+    deployTitle: 'انشر أبراجك',
+    deployHint: 'المس كل برج لتجهيزه. تضيء منطقته على الدرب — ولا يمكن ضرب أحد إلا من عبر تلك المنطقة.',
+    deployArm: (name) => `جهّز ${name}`,
+    deployArmed: 'جاهز',
+    deployStart: 'ابدأ الموجة',
     nextWave: 'الموجة التالية ›',
     waveCleared: 'صُدّت الموجة',
     waveLeaked: 'تسلّلوا من أمامك',
@@ -169,6 +179,20 @@ const TOWER_TOKEN = [
  *  plain a/b test did, told the player it was out of play when it was not. */
 const reaches = (tw, f) => f >= tw.a - (tw.blast || 0) && f <= tw.b + (tw.blast || 0);
 
+/** Sample the trail between two fractions into an SVG `points` string, in a
+ *  0–100 viewBox. Pure and stateless — `posAt` already is — so this lives
+ *  outside the component rather than being rebuilt as a callback. Used by the
+ *  DEPLOY screen's static map; the live game keeps its own canvas drawing,
+ *  unrelated to this. */
+const trailPoints = (a, b, steps = 24) => {
+  const pts = [];
+  for (let i = 0; i <= steps; i += 1) {
+    const p = posAt(a + (b - a) * (i / steps));
+    pts.push(`${(p.x * 100).toFixed(2)},${(p.y * 100).toFixed(2)}`);
+  }
+  return pts.join(' ');
+};
+
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
 import { INTERCEPT_COACH } from '../../../../shared/tutorials/coach/scripts/intercept';
 
@@ -188,13 +212,17 @@ export function InterceptEngine({
   const coachOpenRef = useMemo(() => coach?.openRef || { current: false }, [coach]);
   const t = isAr ? UI.ar : UI.en;
 
-  const [step, setStep] = useState('brief');       // brief | run | between | over
+  const [step, setStep] = useState('brief');       // brief | deploy | run | between | over
   const [waveNo, setWaveNo] = useState(1);
   const [hp, setHp] = useState(BASE_HP);
   const [stage, setStage] = useState(0);
   const [combo, setCombo] = useState(1);
   const [over, setOver] = useState(null);
   const [waveStat, setWaveStat] = useState(null);
+  /* Which of this wave's towers the player has tapped to arm, on the DEPLOY
+     screen — see the note above `prepareWave` for why this is a separate step
+     from `run` rather than a change to the (validated) combat model. */
+  const [deployArmed, setDeployArmed] = useState(() => new Set());
 
   /* ⚠ The coach effects live BELOW `const pause = useGamePause(...)`, not here.
      A dependency array is evaluated DURING RENDER, so `[..., pause.open]` above
@@ -282,7 +310,23 @@ export function InterceptEngine({
   }, [coachOpen, step, over, coach]);
 
   /* ── wave control ─────────────────────────────────────────────────────── */
-  const startWave = useCallback(() => {
+  /*
+   * ⚠ BUILDING THE WAVE AND STARTING ITS CLOCK ARE NOW TWO SEPARATE STEPS
+   * (owner: "i want to be able to choose where to put the turret, then the
+   * turret has a circle around it, it means the places it shoots"). This is a
+   * PRESENTATION change, not a mechanics one — every position, reach and
+   * timing here is exactly what `validate:intercept` already proved
+   * clearable, because moving a tower would require re-deriving that whole
+   * feasibility proof. `prepareWave` builds the wave (unchanged) and stops at
+   * `deploy` instead of `run`; the player taps each of their OWNED towers on
+   * a static trail map to arm it (a real gate — Start Wave stays disabled
+   * until every tower is armed) and `launchWave` is what actually starts the
+   * clock, `t0Ref` included. Splitting the clock start out matters: if it
+   * were set here, the deploy screen's own dwell time would count against the
+   * wave and the first marchers would already be stale the moment `run`
+   * begins.
+   */
+  const prepareWave = useCallback(() => {
     const wave = buildWave(rng, cfg, waveNo);
     waveRef.current = wave;
     waveLogRef.current = [];
@@ -306,10 +350,15 @@ export function InterceptEngine({
     /* Trail order, so the buttons sit left-to-right the way the stretches do —
        the mapping a player has to learn is easier when it is spatial. */
     setGuns((wave.towers || cfg.towers || []).map((tw) => tw.weapon));
+    setDeployArmed(new Set());
+    setStep('deploy');
+  }, [rng, cfg, waveNo]);
+
+  const launchWave = useCallback(() => {
     holdRef.current = { since: 0, total: 0 };
     t0Ref.current = performance.now();
     setStep('run');
-  }, [rng, cfg, waveNo]);
+  }, []);
 
   /*
    * ⚠ ONE-WAY LATCH, and it is not optional. The frame that marks the last
@@ -1256,8 +1305,72 @@ export function InterceptEngine({
             {cfg.hiddenShare > 0 && <li>{t.briefCanopy}</li>}
             {cfg.barrels > 0 && <li>{t.briefBarrel}</li>}
           </ul>
-          <button type="button" className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); startWave(); }}>
+          <button type="button" className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); prepareWave(); }}>
             {t.begin}
+          </button>
+        </div>
+      )}
+
+      {/* ── DEPLOY — choose where each owned tower sits, before the clock
+          starts. See the note above `prepareWave` for why the combat model
+          itself is untouched: this is a static preview of the SAME towers
+          `buildWave` already placed, not a new placement the player invents.
+          `wave.towers` (or `cfg.towers` before the very first build) is the
+          one list also used to build the `guns` state the weapon buttons
+          read from `run`, so what is armed here is exactly what fires there. */}
+      {step === 'deploy' && (
+        <div className="ic-panel ic-deploy">
+          <h3>{t.deployTitle}</h3>
+          <p className="ic-brief">{t.deployHint}</p>
+          <div className="ic-deploy-map" data-coach="deploy-map">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <polyline className="ic-deploy-trail" points={trailPoints(0, 1)} />
+              {(wave?.towers || cfg.towers || []).map((tw) => {
+                const armed = deployArmed.has(tw.weapon);
+                const spec = TOWER_TOKEN[Math.max(0, TOWER_AT.indexOf(tw.at))];
+                return (
+                  <polyline
+                    key={`zone-${tw.weapon}`}
+                    className={`ic-deploy-zone${armed ? ' ic-deploy-zone--armed' : ''}`}
+                    style={{ '--tw-hue': `var(${spec[0]}, ${spec[1]})` }}
+                    points={trailPoints(tw.a, tw.b)}
+                  />
+                );
+              })}
+            </svg>
+            {/* Real HTML buttons over the SVG, not SVG hit areas — same reason
+                the weapon buttons below are DOM buttons: keyboard + screen
+                reader reach, which an SVG shape does not give for free. */}
+            {(wave?.towers || cfg.towers || []).map((tw) => {
+              const p = posAt(tw.at);
+              const armed = deployArmed.has(tw.weapon);
+              const spec = TOWER_TOKEN[Math.max(0, TOWER_AT.indexOf(tw.at))];
+              return (
+                <button
+                  key={`marker-${tw.weapon}`}
+                  type="button"
+                  className={`ic-deploy-marker${armed ? ' ic-deploy-marker--armed' : ''}`}
+                  style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%`, '--tw-hue': `var(${spec[0]}, ${spec[1]})` }}
+                  aria-pressed={armed}
+                  aria-label={t.deployArm(weaponLabel(tw.weapon))}
+                  onClick={() => {
+                    playSfx?.('click');
+                    setDeployArmed((s) => (s.has(tw.weapon) ? s : new Set(s).add(tw.weapon)));
+                  }}
+                >
+                  <span className="ic-deploy-marker-name">{weaponLabel(tw.weapon)}</span>
+                  {armed && <span className="ic-deploy-marker-check" aria-hidden="true">✓</span>}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            className="ct-training-btn ct-training-btn--pri"
+            disabled={deployArmed.size < (wave?.towers || cfg.towers || []).length}
+            onClick={() => { playSfx?.('click'); launchWave(); }}
+          >
+            {t.deployStart}
           </button>
         </div>
       )}
@@ -1322,7 +1435,7 @@ export function InterceptEngine({
               )}
             </div>
           )}
-          <button type="button" className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); startWave(); }}>
+          <button type="button" className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); prepareWave(); }}>
             {t.nextWave}
           </button>
         </div>

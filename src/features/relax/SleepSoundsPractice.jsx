@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import PracticeShell, { SUB, FAINT } from './PracticeShell';
+import PracticeShell, { PracticeHero, SUB } from './PracticeShell';
 import { assetUrl } from '../../lib/assetUrl';
+import { markWellbeingPracticeDone } from './habitState';
 
 /*
  * Sleep Sounds — a looping ambient track to play while winding down.
@@ -19,6 +20,7 @@ export default function SleepSoundsPractice({ onBack }) {
   const { currentLang, playSfx } = useApp();
   const isAr = currentLang === 'ar';
   const audioRef = useRef(null);
+  const countedRef = useRef(false);
   const [track, setTrack] = useState(TRACKS[0].id);
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(0.7);
@@ -52,7 +54,17 @@ export default function SleepSoundsPractice({ onBack }) {
   // Stop playback when leaving the practice.
   useEffect(() => () => { if (audioRef.current) audioRef.current.pause(); }, []);
 
-  const toggle = () => { playSfx?.('click'); setPlaying((p) => !p); };
+  const toggle = () => {
+    playSfx?.('click');
+    setPlaying((p) => {
+      const next = !p;
+      if (next && !countedRef.current) {
+        countedRef.current = true;
+        markWellbeingPracticeDone('sleep-sounds');
+      }
+      return next;
+    });
+  };
 
   return (
     <PracticeShell title={t.title} accent={ACCENT} accentLit={ACCENT_LIT} isAr={isAr} onBack={onBack}>
@@ -60,7 +72,7 @@ export default function SleepSoundsPractice({ onBack }) {
       <audio ref={audioRef} src={assetUrl(current.src)} loop preload="none" />
 
       <div className="rxp-body rxp-center">
-        <div className="rxp-hero">{current.icon}</div>
+        <PracticeHero emoji={current.icon} />
         <div className="slp-intro">{t.intro}</div>
 
         <div className="slp-tracks">
@@ -100,17 +112,13 @@ export default function SleepSoundsPractice({ onBack }) {
 const CSS = `
 .slp-intro { font-size:15px; color:${SUB}; line-height:1.7; max-width:340px; }
 .slp-tracks { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
-.slp-track { display:flex; align-items:center; gap:8px; padding:10px 16px; border-radius:999px; border:2px solid #d8dbf0; background:#fff; color:${SUB}; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
-.slp-track.on { border-color:${ACCENT}; background:#eef0fb; color:#2d2f52; }
+.slp-track { min-height:44px; display:flex; align-items:center; gap:8px; padding:10px 16px; border-radius:999px; border:1px solid var(--rx-hair); background:var(--rx-card); color:${SUB}; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; box-shadow:var(--elev-rest); }
+.slp-track.on { border-color:${ACCENT}; background:color-mix(in srgb, ${ACCENT} 18%, var(--rx-card)); color:var(--rx-ink); }
 .slp-track-ic { font-size:18px; }
-.slp-play { width:84px; height:84px; border-radius:50%; border:none; background:${ACCENT}; color:#fff; font-size:30px; cursor:pointer; box-shadow:3px 3px 0 rgba(26,18,8,0.14); margin-top:6px; }
+.slp-play { width:84px; height:84px; border-radius:50%; border:1px solid color-mix(in srgb, ${ACCENT_LIT} 65%, transparent); background:linear-gradient(135deg,${ACCENT_LIT},${ACCENT}); color:#fff; font-size:30px; cursor:pointer; box-shadow:var(--elev-raise); margin-top:6px; }
 .slp-playLabel { font-size:13px; font-weight:700; color:${SUB}; margin-top:-8px; }
 .slp-volume { display:flex; align-items:center; gap:10px; width:100%; max-width:280px; margin-top:8px; }
 .slp-volume input[type="range"] { flex:1; }
 .slp-volIc { font-size:15px; }
 
-[data-home-theme='dark'] .slp-track { background:#211a10; border-color:rgba(123,134,200,0.3); color:#c9b384; }
-[data-home-theme='dark'] .slp-track.on { background:#2a2d4a; color:#e4e6fa; }
-[data-home-theme='dark'] .slp-intro,
-[data-home-theme='dark'] .slp-playLabel { color:#c9b384; }
 `;

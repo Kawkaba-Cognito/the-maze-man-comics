@@ -292,7 +292,7 @@ export default function Who5Practice({ onBack }) {
 
 const CSS = `
 .w5-window { font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:${SUB}; text-align:center; }
-.w5-score { font-family:${SERIF}; font-size:76px; font-weight:700; line-height:1; color:var(--rx-hue-lit); display:flex; flex-direction:column; align-items:center; gap:2px; }
+.w5-score { font-family:${SERIF}; font-size:76px; font-weight:700; line-height:1; color:var(--rx-hue-ink); display:flex; flex-direction:column; align-items:center; gap:2px; }
 .w5-score small { font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:${FAINT}; font-family:inherit; }
 .w5-score--low, .w5-score--verylow { color:${INK}; }
 .w5-taken { font-size:11.5px; font-weight:700; color:${FAINT}; }

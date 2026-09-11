@@ -48,11 +48,60 @@ import { BAND_SIZE, ladderFraction } from '../../../../shared/difficulty.js';
  * the bug audit:mot caught in Target Tracking, where a wide screen silently
  * changed the difficulty.
  */
-export const TRAIL = [
-  [0.04, 0.13], [0.70, 0.13], [0.86, 0.25], [0.86, 0.41],
-  [0.72, 0.51], [0.20, 0.51], [0.07, 0.61], [0.07, 0.75],
-  [0.21, 0.86], [0.50, 0.86],
+/*
+ * ⚠ THREE SHAPES NOW, NOT ONE (owner: "improve the track and add different
+ * tracks to it"). Safe to vary freely because NOTHING downstream cares about
+ * the trail's real shape or length — every timing number in this file (dwell,
+ * crossMs, reach fractions, the whole feasibility proof) is defined purely as
+ * a FRACTION of whichever trail is active, and `posAt` normalises any
+ * polyline the same way. Swapping the shape changes what the game looks
+ * like and changes NOTHING about whether a wave is clearable — verified by
+ * running validate:intercept unchanged against whichever variant is active.
+ *
+ * ⚠ PICKED ONCE, DETERMINISTICALLY, NOT AT RANDOM. This module otherwise
+ * takes its RNG as an explicit argument rather than reading global state (see
+ * the file banner above) precisely so a reported bug reproduces — a bare
+ * `Math.random()` here would quietly break that for every wave built while
+ * this module is loaded. Keyed off the calendar day instead: stable for an
+ * entire session (the module is evaluated once per page load), different
+ * from one day to the next.
+ */
+/*
+ * ⚠ CORNERS ARE CHAMFERED, NOT SQUARE — this is load-bearing, not styling.
+ * validate:intercept independently re-walks `posAt` at 400 fixed fractions
+ * and checks the result against the polyline's own analytic length; a sharp
+ * 90° turn is exactly where that discrete walk "cuts the corner" hardest, and
+ * the first version of the serpentine and spiral below both failed the gate
+ * on that check alone (0.018–0.019 against a 0.01 tolerance) despite being
+ * perfectly valid shapes — the geometry was fine, the corners just weren't
+ * gentle enough for a 400-sample proof to agree with it. A short diagonal cut
+ * at each turn (c = 0.06 of the unit square) was the smallest change that
+ * cleared the tolerance with margin; verified against the SAME check the gate
+ * runs before this was committed.
+ */
+const TRAIL_VARIANTS = [
+  // The original: a wide diagonal sweep down the field.
+  [
+    [0.04, 0.13], [0.70, 0.13], [0.86, 0.25], [0.86, 0.41],
+    [0.72, 0.51], [0.20, 0.51], [0.07, 0.61], [0.07, 0.75],
+    [0.21, 0.86], [0.50, 0.86],
+  ],
+  // A serpentine: full-width rows, alternating direction.
+  [
+    [0.05, 0.10], [0.84, 0.10], [0.90, 0.16], [0.90, 0.24], [0.84, 0.30],
+    [0.16, 0.30], [0.10, 0.36], [0.10, 0.44], [0.16, 0.50],
+    [0.84, 0.50], [0.90, 0.56], [0.90, 0.64], [0.84, 0.70],
+    [0.16, 0.70], [0.10, 0.76], [0.10, 0.84], [0.16, 0.90], [0.55, 0.90],
+  ],
+  // A spiral, tightening from the outer edge toward the centre.
+  [
+    [0.06, 0.06], [0.88, 0.06], [0.94, 0.12], [0.94, 0.88], [0.88, 0.94],
+    [0.26, 0.94], [0.20, 0.88], [0.20, 0.31], [0.26, 0.25],
+    [0.69, 0.25], [0.75, 0.31], [0.75, 0.69], [0.69, 0.75],
+    [0.46, 0.75], [0.40, 0.69], [0.40, 0.51], [0.46, 0.45], [0.58, 0.45],
+  ],
 ];
+export const TRAIL = TRAIL_VARIANTS[new Date().getDate() % TRAIL_VARIANTS.length];
 
 /** Segment lengths and the total, in normalised units. */
 export const TRAIL_SEGS = (() => {

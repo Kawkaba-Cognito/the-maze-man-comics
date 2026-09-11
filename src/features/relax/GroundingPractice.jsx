@@ -208,7 +208,7 @@ export const PRACTICE_NAMES = (isAr) => (isAr
 
 const CSS = `
 .grd-intro { font-size:15px; color:${SUB}; line-height:1.7; max-width:340px; }
-.grd-count { font-family:${SERIF}; font-size:72px; font-weight:700; color:var(--rx-hue-lit); line-height:1; }
+.grd-count { font-family:${SERIF}; font-size:72px; font-weight:700; color:var(--rx-hue-ink); line-height:1; }
 .grd-ic { font-size:46px; margin-top:-6px; }
 .grd-prompt { font-family:${SERIF}; font-size:24px; font-weight:600; color:${INK}; max-width:320px; }
 .grd-coach { font-size:13px; color:${SUB}; line-height:1.6; max-width:320px; }

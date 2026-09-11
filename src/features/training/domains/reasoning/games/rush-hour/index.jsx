@@ -1617,18 +1617,47 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
         .rh-piece { will-change: transform; }
         .rh-piece:active { cursor: grabbing !important; }
         .rh-piece:focus-visible { outline: 3px solid var(--game-selected); outline-offset: 2px; }
-        .ct-rh-nudge { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; }
-        .ct-rh-nudge button { min-width: 48px; min-height: 48px; border: 1px solid color-mix(in srgb, var(--game-accent) 55%, transparent); border-radius: 12px; background: var(--surface-raised); color: var(--game-ink); font: inherit; font-size: 1.35rem; cursor: pointer; }
-        .ct-rh-nudge button:disabled { cursor: not-allowed; opacity: 0.4; }
-        .ct-rh-nudge button:focus-visible { outline: 3px solid var(--game-selected); outline-offset: 2px; }
-        /* ⚠ The "Block 3" label is HIDDEN, not deleted. On screen it named a
-           piece the player had just tapped and was already looking at, and it
-           held 112px open between the two arrows. But it is an aria-live
-           region: it is what ANNOUNCES the change of selection to a screen
-           reader, and the arrows' own labels do not fire on selection. So it
-           stays in the DOM, unseen. clip-path rather than display:none because
-           display:none is not announced. */
-        .ct-rh-nudge span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+        /* ⚠ REPLACED A FULL-WIDTH ROW BELOW THE BOARD WITH TWO SMALL OVERLAY
+           BUTTONS ON THE SELECTED PIECE ITSELF (owner: "i dont want the
+           arrows that appear down, use the space in the best way possible").
+           The old .ct-rh-nudge bar reserved ~70px under the board (margin +
+           two 48px buttons) every time a piece was selected — which on a
+           6x6 board is most of the round — for a control that duplicates the
+           drag gesture and the arrow-key handler already on every piece
+           button. It is not deleted outright: touch users who cannot drag
+           precisely still need SOME non-drag way to move a piece one cell,
+           so the same two buttons move to .ct-rh-nudge-ovl below, sitting
+           right at the piece's own two ends instead of a separate row. Net
+           space freed, control kept. ⚠ NO BACKTICKS in this comment — this
+           whole block sits inside a CSS-in-JS template literal, and a
+           backtick here ends that string early (see CLAUDE.md's Wellbeing
+           notes for the same mistake caught once already). */
+        .ct-rh-nudge-ovl {
+          position: absolute;
+          width: 30px;
+          height: 30px;
+          border: 1px solid color-mix(in srgb, var(--game-accent) 55%, transparent);
+          border-radius: 999px;
+          background: var(--surface-raised);
+          color: var(--game-ink);
+          font: inherit;
+          font-size: 1rem;
+          line-height: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 2px 6px color-mix(in srgb, var(--game-ink) 25%, transparent);
+          z-index: 6;
+        }
+        .ct-rh-nudge-ovl:disabled { cursor: not-allowed; opacity: 0.35; }
+        .ct-rh-nudge-ovl:focus-visible { outline: 3px solid var(--game-selected); outline-offset: 2px; }
+        /* ⚠ The "Block 3" announcement is HIDDEN, not deleted — it is an
+           aria-live region that ANNOUNCES the change of selection to a screen
+           reader, and the overlay buttons' own labels do not fire on
+           selection. clip-path rather than display:none because display:none
+           is not announced. */
+        .ct-rh-nudge-announce { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
       `}</style>
       <div className="ct-rh-sky" aria-hidden="true">
         <div className="ct-rh-sky-nebula" />
@@ -1864,36 +1893,59 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
               </button>
             );
           })}
+          {/* The two move buttons for the selected piece, overlaid at its own
+              two ends rather than a separate row below the board — see the
+              CSS comment above `.ct-rh-nudge-ovl` for why. Geometry mirrors
+              the pieceIndex map above (col/row * cellSize + GAP) so a button
+              always sits flush against the piece it belongs to. */}
+          {selectedPiece && selectedRange && !won && (() => {
+            const isH = selectedPiece.dir === 'h';
+            const pw = (isH ? selectedPiece.len : 1) * cellSize - GAP * 2;
+            const ph = (isH ? 1 : selectedPiece.len) * cellSize - GAP * 2;
+            const px = selectedPiece.col * cellSize + GAP;
+            const py = selectedPiece.row * cellSize + GAP;
+            const label = selectedPiece.isHero ? t.targetBlock : t.blockN(pieces.indexOf(selectedPiece) + 1);
+            return (
+              <React.Fragment key="rh-nudge-ovl">
+                <button
+                  type="button"
+                  className="ct-rh-nudge-ovl"
+                  data-coach="nudge"
+                  style={isH
+                    ? { left: px - 15, top: py + ph / 2, transform: 'translate(-50%, -50%)' }
+                    : { left: px + pw / 2, top: py - 15, transform: 'translate(-50%, -50%)' }}
+                  disabled={selectedPosition <= selectedRange.lo}
+                  onClick={() => nudgePiece(selectedPiece.id, -1)}
+                  aria-label={isAr
+                    ? `حرّك ${label} ${isH ? 'يساراً' : 'للأعلى'}`
+                    : `Move ${label} ${isH ? 'left' : 'up'}`}
+                >
+                  {isH ? '←' : '↑'}
+                </button>
+                <button
+                  type="button"
+                  className="ct-rh-nudge-ovl"
+                  style={isH
+                    ? { left: px + pw + 15, top: py + ph / 2, transform: 'translate(-50%, -50%)' }
+                    : { left: px + pw / 2, top: py + ph + 15, transform: 'translate(-50%, -50%)' }}
+                  disabled={selectedPosition >= selectedRange.hi}
+                  onClick={() => nudgePiece(selectedPiece.id, 1)}
+                  aria-label={isAr
+                    ? `حرّك ${label} ${isH ? 'يميناً' : 'للأسفل'}`
+                    : `Move ${label} ${isH ? 'right' : 'down'}`}
+                >
+                  {isH ? '→' : '↓'}
+                </button>
+                {/* Announces the selection change to a screen reader — the
+                    overlay buttons' own labels don't fire on selection, only
+                    on activation. Visually hidden, no layout footprint. */}
+                <span className="ct-rh-nudge-announce" aria-live="polite">{label}</span>
+              </React.Fragment>
+            );
+          })()}
         </div>
           </div>
         </div>
-        {selectedPiece && selectedRange && !won && (
-          <div className="ct-rh-nudge" role="group" aria-label={t.moveSelected} data-coach="nudge">
-            <button
-              type="button"
-              disabled={selectedPosition <= selectedRange.lo}
-              onClick={() => nudgePiece(selectedPiece.id, -1)}
-              aria-label={isAr
-                ? `حرّك ${selectedPiece.isHero ? t.targetBlock : t.blockN(pieces.indexOf(selectedPiece) + 1)} ${selectedPiece.dir === 'h' ? 'يساراً' : 'للأعلى'}`
-                : `Move ${selectedPiece.isHero ? t.targetBlock : t.blockN(pieces.indexOf(selectedPiece) + 1)} ${selectedPiece.dir === 'h' ? 'left' : 'up'}`}
-            >
-              {selectedPiece.dir === 'h' ? '←' : '↑'}
-            </button>
-            <span aria-live="polite">
-              {selectedPiece.isHero ? t.targetBlock : t.blockN(pieces.indexOf(selectedPiece) + 1)}
-            </span>
-            <button
-              type="button"
-              disabled={selectedPosition >= selectedRange.hi}
-              onClick={() => nudgePiece(selectedPiece.id, 1)}
-              aria-label={isAr
-                ? `حرّك ${selectedPiece.isHero ? t.targetBlock : t.blockN(pieces.indexOf(selectedPiece) + 1)} ${selectedPiece.dir === 'h' ? 'يميناً' : 'للأسفل'}`
-                : `Move ${selectedPiece.isHero ? t.targetBlock : t.blockN(pieces.indexOf(selectedPiece) + 1)} ${selectedPiece.dir === 'h' ? 'right' : 'down'}`}
-            >
-              {selectedPiece.dir === 'h' ? '→' : '↓'}
-            </button>
-          </div>
-        )}
       </div>
 
       <div className="ct-training-play-actions">

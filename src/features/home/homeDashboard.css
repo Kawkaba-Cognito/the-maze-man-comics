@@ -7,6 +7,7 @@
  */
 
 .home-dashboard {
+  position: relative;
   width: 100%;
   min-height: 100%;
   padding: max(16px, env(safe-area-inset-top)) 16px 32px;
@@ -17,12 +18,77 @@
 }
 
 .home-dashboard-col {
+  position: relative;
+  z-index: 1;
   width: min(100%, 520px);
   display: flex;
   flex-direction: column;
 }
 
+/* ---- Meteors ------------------------------------------------------------
+ * The one decorative touch on this otherwise plain dashboard (owner: "add
+ * meteors to the app... make them occur in a certain loop"). Home is the only
+ * screen this is scoped to, matching that same "Home screen only" choice —
+ * ZenUniverse (the WebGL scene this originally would have joined) was removed
+ * from Home the same day this was requested (see the file banner above), so
+ * this is plain CSS instead of a third WebGL context: nothing to add to the
+ * GPU load that already BSOD'd this machine once (see CLAUDE.md).
+ *
+ * `position: fixed` + `inset: 0` rather than sized to the (scrollable, can
+ * grow past one viewport) dashboard column — the streaks are meant to read as
+ * sky behind the cards, not scroll content of their own. It sits UNDER
+ * `.home-dashboard-col` (z-index 1 above) and is `aria-hidden`+
+ * `pointer-events: none`: it must never be reachable by a screen reader or
+ * intercept a tap meant for a card.
+ *
+ * "A certain loop" — each meteor is a single streak inside a long `infinite`
+ * animation whose visible window is a small fraction of its own duration
+ * (2%–16%), so it crosses the sky once and then is invisible for the rest of
+ * the cycle before repeating. Five of them at different positions, durations
+ * and delays keep the loop from reading as one metronome. Respects
+ * `prefers-reduced-motion` by simply not animating — the streak is decorative,
+ * losing it costs nothing.
+ */
+.hd-meteors {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hd-meteor {
+  position: absolute;
+  width: 2px;
+  height: 90px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, transparent, var(--universe-accent) 55%, transparent);
+  opacity: 0;
+  transform-origin: top center;
+  transform: rotate(215deg);
+  animation: hd-meteor-streak linear infinite;
+}
+@keyframes hd-meteor-streak {
+  0%, 100% { opacity: 0; transform: rotate(215deg) translateY(0); }
+  2% { opacity: 1; }
+  15% { opacity: 0; transform: rotate(215deg) translateY(420px); }
+}
+.hd-meteor--1 { top: 4%;  left: 18%; height: 70px;  animation-duration: 9s;  animation-delay: 0.5s; }
+.hd-meteor--2 { top: 10%; left: 62%; height: 100px; animation-duration: 12s; animation-delay: 3s; }
+.hd-meteor--3 { top: 2%;  left: 82%; height: 80px;  animation-duration: 8s;  animation-delay: 5.5s; }
+.hd-meteor--4 { top: 22%; left: 8%;  height: 60px;  animation-duration: 14s; animation-delay: 1.5s; }
+.hd-meteor--5 { top: 15%; left: 42%; height: 75px;  animation-duration: 10s; animation-delay: 7s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hd-meteor { animation: none; opacity: 0; }
+}
+
 /* ---- Workout card ---------------------------------------------------- */
+/* ⚠ Given the same elevation recipe Training's premium buttons use
+   (--elev-rest/-raise/-press, see CLAUDE.md "PREMIUM IS ELEVATION AND
+   RESTRAINT") rather than a flat card + hand-mixed shadow — this card is the
+   one flagship-feature entry point on Home and was reading as a generic
+   to-do-app row instead of a part of this app. The mascot swap in
+   WorkoutCard.jsx is the other half of that fix. */
 .wc {
   width: 100%;
   margin: 0 0 14px;
@@ -31,20 +97,28 @@
   border-radius: 17px;
   background: var(--universe-glass-strong);
   color: var(--universe-ink);
-  box-shadow: 0 6px 20px rgb(0 0 0 / 20%);
+  box-shadow: var(--elev-rest);
   display: flex;
   align-items: center;
   gap: 12px;
   text-align: start;
   cursor: pointer;
   font: inherit;
+  transition: box-shadow 0.15s, border-color 0.15s;
 }
 .wc:hover, .wc:focus-visible {
   border-color: var(--universe-accent);
+  box-shadow: var(--elev-raise);
+}
+.wc:active {
+  box-shadow: var(--elev-press);
 }
 .wc--done { opacity: 0.86; }
 
 .wc-glyph { font-size: 1.4rem; line-height: 1; flex: 0 0 auto; }
+/* Kawkab's art is taller than the plain emoji it replaced; cap the row's
+   glyph height instead of letting a 40px-wide sprite stretch the card. */
+.wc-glyph--kawkab { max-height: 40px; }
 
 .wc-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .wc-title { font-size: 0.94rem; font-weight: 800; }
@@ -54,10 +128,18 @@
   flex: 0 0 auto;
   padding: 7px 14px;
   border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--universe-accent) 60%, transparent);
   background: var(--universe-accent);
   color: var(--universe-glass-strong);
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 750;
+  box-shadow: var(--elev-rest);
+  transition: box-shadow 0.12s;
+}
+/* Press SINKS (inset), it does not slide — the same rule the shared training
+   button follows, so this reads as one hand across the app. */
+.wc:active .wc-cta {
+  box-shadow: var(--elev-press);
 }
 
 /* ---- Domain snapshot --------------------------------------------------- */

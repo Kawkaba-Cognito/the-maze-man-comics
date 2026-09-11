@@ -190,7 +190,7 @@ const CSS = `
 .pmr-circle.release { transform:scale(1.12); background:color-mix(in srgb, var(--rx-hue-lit) 62%, transparent); box-shadow:var(--elev-rest); }
 .pmr-num { font-family:${SERIF}; font-size:52px; font-weight:700; color:#fff; }
 .pmr-action { font-weight:800; font-size:18px; letter-spacing:1px; }
-.pmr-action.tense { color:var(--rx-hue-lit); }
+.pmr-action.tense { color:var(--rx-hue-ink); }
 .pmr-action.release { color:var(--rx-calm-lit); }
 .pmr-cue { font-size:14px; color:${SUB}; max-width:320px; line-height:1.6; min-height:44px; }
 .pmr-doneT { font-family:${SERIF}; font-size:30px; font-weight:600; color:${INK}; }

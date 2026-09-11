@@ -1,4 +1,7 @@
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { createContext, useContext, useLayoutEffect, useRef } from 'react';
+import { useApp } from '../../context/AppContext';
+import UniverseStage from '../../components/shared/UniverseStage';
+import { wellbeingPillarArtUrl } from '../../lib/planetIcons';
 import './wellbeing.css';
 
 /*
@@ -34,11 +37,27 @@ export const FAINT = 'var(--rx-faint)';
 export const LINE = 'var(--rx-hair)';
 export const CARD = 'var(--rx-card)';
 export const GOLD = 'var(--rx-meaning-core)';
-export const SERIF = "'Cormorant Garamond', Georgia, serif";
-export const SANS = "'Outfit', system-ui, sans-serif";
+/* ⚠ Point at the shared --rx-display/--rx-sans tokens (wellbeing.css) rather
+   than restating the stacks here — every one of the ~15 files that imports
+   SERIF/SANS gets the type-scale fix and the Arabic fallback (Cairo is in
+   --rx-sans; --rx-display has no Arabic glyphs at all, which is what the
+   [dir='rtl'] .serif rule in wellbeing.css corrects for).
+   ⚠ Both tokens are only DEFINED on .rx-wb (wellbeing.css). DailyHabits.jsx
+   and its two Insights/Reflect tabs root at plain .rx-root, never .rx-wb, so
+   var(--rx-display) resolves to nothing there and the inherited body sans
+   silently wins over the intended serif. The inline fallback keeps those
+   screens correct without widening the .rx-wb selector (which would also
+   hand .rx-root the whole type scale, a bigger change than this needs). */
+export const SERIF = "var(--rx-display, 'Cormorant Garamond', Georgia, serif)";
+export const SANS = "var(--rx-sans, 'Outfit', 'Cairo', system-ui, sans-serif)";
+
+const PracticeArtContext = createContext(null);
 
 export default function PracticeShell({ title, accent, accentLit, isAr, onBack, children }) {
+  const { appTheme } = useApp();
   const rootRef = useRef(null);
+  const pillarMatch = typeof accent === 'string' ? accent.match(/--rx-([a-z-]+)-core/) : null;
+  const pillarArt = wellbeingPillarArtUrl(pillarMatch?.[1] || 'calm');
 
   // A card near the bottom of the scrollable Wellbeing menu can leave the
   // browser preserving that scroll offset while React swaps in a practice.
@@ -56,19 +75,28 @@ export default function PracticeShell({ title, accent, accentLit, isAr, onBack, 
        which renders as unstyled text rather than as an error. */
     <div ref={rootRef} className="rx-wb rxp-root" dir={isAr ? 'rtl' : 'ltr'}>
       <style>{BASE_CSS}</style>
+      <UniverseStage accent="wellbeing" dark={appTheme !== 'light'} homeDusk />
       <div
         className="rxp-app"
         /* `accent` names an area hue. A practice appears in more than one
            category (Breathe is in both Calm and Sleep), so the caller decides
            which one it is wearing rather than the practice hard-coding it. */
-        style={{ '--rx-hue': accent || 'var(--rx-calm-core)', '--rx-hue-lit': accentLit || 'var(--rx-calm-lit)' }}
+        style={{
+          '--rx-hue': accent || 'var(--rx-calm-core)',
+          '--rx-hue-lit': accentLit || 'var(--rx-calm-lit)',
+          /* Text-only variant (see wellbeing.css) — derived from the same
+             pillar match `pillarArt` already computes above. */
+          '--rx-hue-ink': `var(--rx-${pillarMatch?.[1] || 'calm'}-ink)`,
+        }}
       >
         <div className="rxp-head">
           <button className="rxp-back" onClick={onBack} aria-label="Back">‹</button>
           <div className="rxp-title serif">{title}</div>
           <div style={{ width: 36 }} />
         </div>
-        {children}
+        <PracticeArtContext.Provider value={pillarArt}>
+          {children}
+        </PracticeArtContext.Provider>
       </div>
     </div>
   );
@@ -98,13 +126,28 @@ export default function PracticeShell({ title, accent, accentLit, isAr, onBack, 
  * emblem is a glyph rather than a file.
  */
 export function PracticeHero({ emblem, emoji }) {
+  const pillarArt = useContext(PracticeArtContext);
+  /*
+   * ⚠ THE ART IS THE PLACE, THE EMOJI IS THE PRACTICE — show both, not
+   * either/or. Every one of the 15 practices calling this only ever passes
+   * `emoji`, never `emblem`, so the old either/or branch meant EVERY practice
+   * in a pillar (Breathe, Grounding, Thought Record, the Calm worksheets…)
+   * opened on the identical pillar photo with no way to tell them apart. The
+   * pillar art becomes the sphere's surface; the emblem (an explicit image)
+   * or the emoji rides on top of it, same as it always did on the plain CSS
+   * sphere — so a practice is still visibly ITS pillar, but also still
+   * visibly itself.
+   */
   return (
     <div className="rxp-hero">
       <span aria-hidden="true" className="rx-halo" />
       <span aria-hidden="true" className="rx-body">
+        {pillarArt && <img className="rxp-hero-art" src={pillarArt} alt="" draggable={false} />}
         {emblem
           ? <img className="rx-emblem" src={emblem} alt="" draggable={false} />
-          : <span className="rxp-hero-glyph">{emoji}</span>}
+          : emoji
+            ? <span className={`rxp-hero-glyph${pillarArt ? ' rxp-hero-glyph--onart' : ''}`}>{emoji}</span>
+            : null}
       </span>
     </div>
   );
@@ -122,20 +165,24 @@ const BASE_CSS = `
  * breathing pacer does not want to be a metre wide), but the shell now has a
  * padded field around it so the screen reads as composed rather than abandoned.
  */
-.rxp-app { width:100%; max-width:520px; margin:0 auto; min-height:100%; display:flex; flex-direction:column; padding-bottom:40px; }
-.rxp-head { display:flex; align-items:center; justify-content:space-between; padding:calc(14px + env(safe-area-inset-top)) 14px 8px; }
+.rxp-app { width:100%; max-width:560px; margin:0 auto; min-height:100%; display:flex; flex-direction:column; padding-bottom:40px; position:relative; z-index:2; }
+.rxp-head { position:sticky; top:0; z-index:8; display:flex; align-items:center; justify-content:space-between; padding:calc(14px + env(safe-area-inset-top)) 16px 10px; background:color-mix(in srgb, var(--rx-ground) 72%, transparent); border-bottom:1px solid color-mix(in srgb, var(--rx-line) 58%, transparent); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
 .rxp-back { width:36px; height:36px; border-radius:11px; border:1px solid ${LINE}; background:${CARD}; color:${INK}; font-size:22px; line-height:1; cursor:pointer; box-shadow:var(--elev-rest); }
 .rxp-back:active { box-shadow:var(--elev-press); }
-.rxp-title { font-family:${SERIF}; font-size:26px; font-weight:600; color:${INK}; }
+.rxp-title { font-family:${SERIF}; font-size:var(--rx-fs-display); font-weight:600; line-height:1.12; letter-spacing:.01em; color:${INK}; }
 .rxp-root .serif { font-family:${SERIF}; font-weight:600; }
-.rxp-body { flex:1; padding:8px 22px 20px; display:flex; flex-direction:column; gap:18px; }
+.rxp-body { flex:1; width:100%; padding:18px 24px 28px; display:flex; flex-direction:column; gap:20px; }
 .rxp-center { align-items:center; text-align:center; justify-content:center; }
 .rxp-field { display:flex; flex-direction:column; gap:10px; }
-.rxp-label { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:${SUB}; font-weight:800; }
+/* ⚠ WAS var(--rx-hue-lit) — that value fails contrast as TEXT in light theme
+   (see wellbeing.css). --rx-hue-ink is the text-safe variant of the same
+   pillar hue. */
+.rxp-label { font-size:var(--rx-fs-label); letter-spacing:2.2px; text-transform:uppercase; color:var(--rx-hue-ink); font-weight:700; }
 .rxp-chips { display:flex; flex-wrap:wrap; gap:8px; }
-.rxp-chip { padding:10px 14px; border-radius:999px; border:1px solid ${LINE}; background:${CARD}; color:${SUB}; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; text-align:start; transition:border-color .16s, background .16s, color .16s; }
+.rxp-chip { min-height:44px; padding:10px 14px; border-radius:999px; border:1px solid ${LINE}; background:color-mix(in srgb, ${CARD} 88%, transparent); color:${SUB}; font-size:var(--rx-fs-body); font-weight:600; cursor:pointer; font-family:inherit; text-align:start; box-shadow:var(--elev-rest); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); transition:border-color .16s, background .16s, color .16s, box-shadow .16s; }
 .rxp-chip.on { border-color:var(--rx-hue); background:color-mix(in srgb, var(--rx-hue) 16%, ${'var(--rx-card)'}); color:${INK}; }
-.rxp-chip small { display:block; font-size:11px; font-weight:600; color:${FAINT}; margin-top:1px; }
+.rxp-chip:focus-visible, .rxp-primary:focus-visible, .rxp-ghost:focus-visible, .rxp-back:focus-visible { outline:3px solid color-mix(in srgb, var(--rx-hue-lit) 78%, transparent); outline-offset:3px; }
+.rxp-chip small { display:block; font-size:var(--rx-fs-label); font-weight:600; color:${FAINT}; margin-top:1px; }
 
 /*
  * ⚠ ELEVATION, NOT A STICKER. This was box-shadow:3px 3px 0 rgba(26,18,8,.14)
@@ -155,10 +202,18 @@ const BASE_CSS = `
  * CLAUDE.md records the identical bug in '.ct-play-results-actions', where it
  * was a grid track rather than a flex column. Same cause, same tell, same fix.
  */
-.rxp-primary { align-self:center; width:100%; max-width:340px; padding:15px; border-radius:14px; border:1px solid color-mix(in srgb, var(--rx-hue) 55%, transparent); background:var(--rx-hue); color:#fff; font-size:16px; font-weight:750; cursor:pointer; font-family:inherit; box-shadow:var(--elev-rest); transition:box-shadow .18s; }
-.rxp-primary:hover { box-shadow:var(--elev-raise); }
+/* ⚠ WAS linear-gradient(135deg, var(--rx-hue-lit), var(--rx-hue)) with
+   white text — the LIT stop is the light limb colour, not a button fill, and
+   white-on-lit measured 1.6-2.7:1 across the five pillars in both themes: the
+   label was unreadable across roughly the first third of the button, on
+   every practice. The core itself (darkened toward black, not lightened
+   toward the lit value) is the correct floor - 4.6-6.9:1 with white.
+   NO BACKTICKS IN THIS COMMENT: this whole block sits inside a CSS-in-JS
+   template literal, and one ends the string early. */
+.rxp-primary { align-self:center; width:100%; max-width:360px; min-height:52px; padding:15px 20px; border-radius:16px; border:1px solid color-mix(in srgb, var(--rx-hue-lit) 58%, transparent); background:linear-gradient(180deg, var(--rx-hue), color-mix(in srgb, var(--rx-hue) 78%, black)); color:#fff; font-size:var(--rx-fs-lead); font-weight:600; letter-spacing:.01em; cursor:pointer; font-family:inherit; box-shadow:var(--elev-raise); transition:box-shadow .18s, filter .18s; }
+.rxp-primary:hover { filter:saturate(1.08) brightness(1.03); box-shadow:var(--elev-raise); }
 .rxp-primary:active { box-shadow:var(--elev-press); }
-.rxp-ghost { align-self:center; width:100%; max-width:340px; padding:13px; border-radius:14px; border:1px solid ${LINE}; background:${CARD}; color:${SUB}; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; box-shadow:var(--elev-rest); }
+.rxp-ghost { align-self:center; width:100%; max-width:340px; padding:13px; border-radius:14px; border:1px solid ${LINE}; background:${CARD}; color:${SUB}; font-size:var(--rx-fs-body); font-weight:600; cursor:pointer; font-family:inherit; box-shadow:var(--elev-rest); }
 .rxp-ghost:active { box-shadow:var(--elev-press); }
 /*
  * ⚠ align-self:center — THE SAME BUG AS .rxp-primary ABOVE, ONE RULE LOWER, and
@@ -177,7 +232,7 @@ const BASE_CSS = `
  * literal, so one would end the string and break the build — which is exactly
  * what the first version of this comment did.)
  */
-.rxp-tip { align-self:center; font-size:12.5px; color:${FAINT}; line-height:1.6; text-align:center; max-width:360px; }
+.rxp-tip { align-self:center; font-size:var(--rx-fs-small); color:${FAINT}; line-height:1.6; text-align:center; max-width:360px; }
 
 /*
  * ⚠ THE HERO IS A SPHERE NOW, NOT A 60px EMOJI. font-size:60px on a lone
@@ -185,7 +240,12 @@ const BASE_CSS = `
  * pacer, a 💪 over muscle relaxation. The area's own body carries it instead,
  * so the practice is visibly part of the area it was opened from.
  */
-.rxp-hero { width:86px; height:86px; margin:0 auto; position:relative; display:flex; align-items:center; justify-content:center; }
+.rxp-hero { width:118px; height:118px; margin:2px auto 6px; position:relative; display:flex; align-items:center; justify-content:center; }
+.rxp-hero .rx-body { border:1px solid color-mix(in srgb, var(--rx-hue-lit) 62%, var(--rx-line)); box-shadow:0 16px 36px color-mix(in srgb, var(--rx-hue) 32%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--rx-hue-lit) 30%, transparent); }
+.rxp-hero-art { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; }
 .rxp-hero-glyph { position:relative; z-index:1; font-size:38px; line-height:1; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.45)); }
-.rxp-remain { font-size:15px; font-weight:800; color:${SUB}; font-variant-numeric:tabular-nums; }
+/* Riding on a photo rather than the plain CSS sphere — a bit more contact
+   shadow so the glyph still reads as sitting ON the surface, not just near it. */
+.rxp-hero-glyph--onart { filter:drop-shadow(0 2px 5px rgba(0,0,0,0.6)) drop-shadow(0 0 10px rgba(0,0,0,0.35)); }
+.rxp-remain { font-size:var(--rx-fs-body); font-weight:600; color:${SUB}; font-variant-numeric:tabular-nums; }
 `;
