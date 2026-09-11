@@ -1,0 +1,492 @@
+/* ── THE INKED ATLAS — Cancellation's design system ────────────────────────
+ * ONE scope (.cx-atlas), ONE motion language, ONE chrome recipe, ONE type
+ * ladder. Everything premium about this game is declared here or derives
+ * from here. If you are about to invent a sixth border recipe or a fifth
+ * duration, the answer is already in this file.
+ *
+ * ⚠ --cx- is NOT --fx-, so audit:design's raw-colour rule DOES apply.
+ * Every value below either contains no colour at all or references a token
+ * (--game- / --play- / --line / --accent), which is what satisfies the rule
+ * (scripts/audit-design.mjs). Never write a literal here.
+ *
+ * Full reasoning: review/cancellation-master-prompt.md ("The Inked Atlas").
+ */
+.cx-atlas {
+  /* motion — four easings, four durations, one stagger. Nothing in this
+     game may use a duration or easing not in this table. */
+  --cx-ease-enter:  cubic-bezier(0.16, 1, 0.30, 1);     /* expo.out   — something arriving */
+  --cx-ease-exit:   cubic-bezier(0.55, 0, 1, 0.45);     /* expo.in    — something leaving  */
+  --cx-ease-move:   cubic-bezier(0.65, 0, 0.35, 1);     /* power2.inOut — travelling A→B   */
+  --cx-ease-settle: cubic-bezier(0.34, 1.28, 0.64, 1);  /* back.out(1.28) — ONE object landing */
+  --cx-t-tap:    120ms;   /* a state change under a finger */
+  --cx-t-item:   240ms;   /* one element arriving */
+  --cx-t-screen: 380ms;   /* a whole screen arriving */
+  /* 620ms is CUES.win's own length (last voice at 0.21 + dur 0.38 + 0.04
+     tail = 630ms). The results screen lands on the chord's last ring. */
+  --cx-t-hold:   620ms;
+  --cx-stagger:   45ms;   /* cap the run at 6 items; beyond that the tail reads laggy */
+
+  /* chrome — ONE recipe, five tiers. Every chrome object in this game is
+     exactly one of: Plate / Object / Pill / Readout / Pressed. */
+  --cx-r-plate:   26px;
+  --cx-r-object:  20px;
+  --cx-r-readout: 12px;
+  --cx-r-pill:   999px;
+  --cx-edge-plate:   1px solid color-mix(in srgb, var(--game-ink) 22%, var(--line));
+  --cx-edge-object:  1px solid color-mix(in srgb, var(--game-ink) 55%, transparent);
+  --cx-edge-readout: 1px solid var(--line);
+  --cx-ring-hot:  inset 0 0 0 2px color-mix(in srgb, var(--game-accent) 28%, transparent);
+  --cx-ring-done: inset 0 0 0 2px color-mix(in srgb, var(--game-ok) 62%, transparent);
+  --cx-ground:       var(--play-surface-flat);
+  --cx-ground-quiet: color-mix(in srgb, var(--play-surface-flat) 88%, transparent);
+
+  /* type — two voices and a clock. Cormorant Garamond for the world,
+     Outfit for the instrument, DM Mono for anything that counts. */
+  --cx-fs-hero:   clamp(2.4rem, 9vw, 3.4rem);
+  --cx-fs-title:  clamp(1.3rem, 5vw, 1.75rem);
+  --cx-fs-lead:   1rem;
+  --cx-fs-body:   0.875rem;
+  --cx-fs-label:  0.62rem;
+  --cx-fs-num-lg: 2.6rem;
+  --cx-fs-num:    clamp(0.8rem, 3.2vw, 1.05rem);
+
+  /*
+   * colour roles — no new tokens, two role reassignments, both scoped here.
+   * Numbers go ink; amber is reserved for state. --fq-pdk was low-contrast
+   * (a raw hex is deliberately not restated here — see git blame for the
+   * measured value) on this ground; --game-ink measures ~10:1.
+   */
+  --fq-pdk: var(--game-ink);
+  --fq-mut: color-mix(in srgb, var(--game-ink) 72%, var(--play-surface-flat));
+}
+
+/* The atlas page: warm paper with a light dusting of star-glints. Fixed
+   light in BOTH app themes — the whole gameplay palette already is
+   (--play-surface and --game- never flip), and this is what stops the game
+   changing key between its menus and its board. */
+.cx-page {
+  background-color: var(--play-surface-flat);
+  background-image:
+    radial-gradient(1.6px 1.6px at 18% 6%,  var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.2px 1.2px at 62% 14%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.8px 1.8px at 82% 44%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.2px 1.2px at 34% 66%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 8%  86%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.3px 1.3px at 92% 92%, var(--fx-glint) 0%, transparent 60%);
+  background-size: 240px 240px;
+  background-repeat: repeat;
+}
+
+/* Screen entry, keyed to this game's own rhythm (the shared 240ms default
+   in training.css is untouched — every other game keeps it). */
+.cx-atlas .ct-fq-screen {
+  animation: cx-screen-in var(--cx-t-screen) var(--cx-ease-enter) both;
+}
+@keyframes cx-screen-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cx-atlas .ct-fq-screen { animation: none; }
+}
+/* The level select opts out and runs its own entry beat (Step 5) —
+   CancelPlanetPath measures a real DOM rect via scrollIntoView in
+   useLayoutEffect, and a live translateY on an ancestor would shift it. */
+.cx-atlas .ct-lv-grid-wrap {
+  animation: none;
+}
+
+/* ── ONE GROUND, EVERY SCREEN (Step 2) ──────────────────────────────────────
+ * The mode-pick screen ("--mode-cosmos") is forced to a near-black void by
+ * TWO existing rules this game shares with math-gates/wordle/raven/stroop:
+ *   global.css   — unconditional #07060b, wins in DARK app-theme
+ *   training.css — a light-theme-scoped override to --universe-dusk, wins
+ *                  in LIGHT app-theme
+ * The atlas is drawn with NAVY CONTOURS on warm paper: on a dark ground the
+ * contour merges into the ground and the pieces lose the inking that IS the
+ * art direction. This game gets ONE ground, in both themes, matching every
+ * other screen it has — and does so without touching either shared rule, so
+ * every other game keeping the black void is byte-for-byte unaffected.
+ *
+ * ⚠ SPECIFICITY, NOT SOURCE ORDER. Both existing rules are `!important`.
+ * `:has(.cx-atlas .ct-fq-training-shell--mode-cosmos)` carries two classes in
+ * its argument, and each rule below also names the theme attribute — (0,3,1)
+ * — which beats both the plain (0,1,1) dark rule and the (0,2,1) light rule
+ * on specificity alone, regardless of which stylesheet loads last. This is
+ * the thing Round 3's own history says to verify live rather than trust from
+ * reading: screenshot the hub with the window wider than the shell and
+ * confirm there is no dark band at the edges, in both themes.
+ *
+ * ONE-LINE OWNER REVERT: delete this block and `cx-page` off the
+ * `--mode-cosmos` div in index.jsx to put the mode hub back on the black
+ * void. Nothing else depends on it.
+ */
+html[data-home-theme='dark']:has(.cx-atlas .ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='dark'] body:has(.cx-atlas .ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='dark'] #screen-comics:has(.cx-atlas .ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='dark'] #ui-shell:has(#screen-comics.active .cx-atlas .ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='dark'] #screen-comics:has(.cx-atlas .ct-fq-training-shell--mode-cosmos) > div,
+html[data-home-theme='light']:has(.cx-atlas .ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='light'] body:has(.cx-atlas .ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='light'] #screen-comics:has(.cx-atlas .ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='light'] #ui-shell:has(#screen-comics.active .cx-atlas .ct-fq-training-shell--mode-cosmos),
+html[data-home-theme='light'] #screen-comics:has(.cx-atlas .ct-fq-training-shell--mode-cosmos) > div {
+  background: var(--play-surface-flat) !important;
+  background-color: var(--play-surface-flat) !important;
+  background-image: none !important;
+  color: var(--game-ink) !important;
+}
+/* The shell div itself (`.cx-atlas` is the OUTER root; this is the nested
+   `--mode-cosmos` div `.cx-atlas` wraps, not the same element as the :has()
+   targets above). The star-glint gradients are repeated here rather than
+   left to the separate `.cx-page` class — that class's own
+   `background-image` has no `!important`, and would otherwise lose outright
+   to the `!important` rules above it is fighting; `none` would have quietly
+   erased the glints along with the void. */
+html[data-home-theme='dark'] .cx-atlas .ct-fq-training-shell--mode-cosmos,
+html[data-home-theme='light'] .cx-atlas .ct-fq-training-shell--mode-cosmos {
+  background-color: var(--play-surface-flat) !important;
+  background-image:
+    radial-gradient(1.6px 1.6px at 18% 6%,  var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.2px 1.2px at 62% 14%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.8px 1.8px at 82% 44%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.2px 1.2px at 34% 66%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 8%  86%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.3px 1.3px at 92% 92%, var(--fx-glint) 0%, transparent 60%) !important;
+  background-size: 240px 240px !important;
+  background-repeat: repeat !important;
+  color: var(--game-ink) !important;
+}
+
+/* ── Step 3: the mode-pick screen ("The Inked Atlas" cover plate) ────────── */
+.cxm { display: flex; flex-direction: column; align-items: center;
+       gap: 22px; width: 100%; padding: 6px 16px 22px; box-sizing: border-box; }
+
+.cxm-hero { display: flex; justify-content: center; }
+.cxm-hero-mark { width: 148px; height: 148px; object-fit: contain; display: block;
+                 filter: drop-shadow(0 10px 22px var(--fx-shadow-soft)); }
+@media (max-width: 419px) { .cxm-hero-mark { width: 120px; height: 120px; } }
+
+.cxm-cards { display: grid; gap: 12px; width: min(100%, 34rem); }
+@media (min-width: 560px) { .cxm-cards { grid-template-columns: repeat(3, 1fr); gap: 14px; } }
+
+/* Tier 1 Plate */
+.cxm-card {
+    display: flex; align-items: center; gap: 16px;
+    min-height: 96px; padding: 14px 18px; width: 100%;
+    border: var(--cx-edge-plate); border-radius: var(--cx-r-plate);
+    background: var(--cx-ground); box-shadow: var(--elev-raise);
+    cursor: pointer; font: inherit; text-align: start; box-sizing: border-box;
+    transition: box-shadow var(--cx-t-tap) var(--cx-ease-enter),
+                transform   var(--cx-t-tap) var(--cx-ease-enter);
+    animation: cx-item-in var(--cx-t-item) var(--cx-ease-enter) both;
+    animation-delay: calc(120ms + var(--cx-i) * var(--cx-stagger));
+}
+@media (min-width: 560px) {
+    .cxm-card { flex-direction: column; min-height: 232px; justify-content: center; text-align: center; gap: 10px; }
+}
+
+.cxm-card-art { display: grid; place-items: center; flex-shrink: 0;
+                width: 84px; height: 84px; }
+.cxm-card-art img { width: 100%; height: 100%; object-fit: contain; }
+@media (min-width: 560px) { .cxm-card-art { width: 132px; height: 132px; } }
+
+.cxm-card-name { display: block; font-family: 'Cormorant Garamond', 'Cinzel', serif;
+                 font-weight: 600; font-size: var(--cx-fs-title);
+                 letter-spacing: 0.04em; color: var(--game-ink); line-height: 1.15; }
+.cxm-card-hint { display: block; margin-top: 4px;
+                 font-family: 'Outfit', system-ui, sans-serif;
+                 font-size: var(--cx-fs-body); font-weight: 450; line-height: 1.45;
+                 color: var(--fq-mut); }
+
+.cxm-card:active { box-shadow: var(--elev-press); transform: scale(0.985); }
+.cxm-card:focus-visible { outline: 3px solid var(--game-ink); outline-offset: 3px; }
+@media (hover: hover) {
+    .cxm-card:hover { box-shadow: var(--elev-raise), var(--cx-ring-hot); }
+    .cxm-card:hover .cxm-card-art { transform: translateY(-3px); transition: transform var(--cx-t-item) var(--cx-ease-enter); }
+}
+
+@keyframes cx-item-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+    .cxm-card { animation: none; }
+    .cxm-card:hover .cxm-card-art { transform: none; }
+}
+
+[dir='rtl'] .cxm-card-name { font-family: 'Cairo', 'Cormorant Garamond', serif; font-weight: 700; letter-spacing: 0; }
+[dir='rtl'] .cxm-card-hint { font-family: 'Cairo', 'Outfit', sans-serif; font-weight: 500; }
+
+/*
+ * ── Step 3c: kill the letterpress on the hub title ──────────────────────
+ * The old .ct-fq-hub-attn-big carried a 5-6 layer stacked text-shadow of
+ * hand-mixed ambers plus a text-stroke — the loudest remaining "children's
+ * toy" signal in this game.
+ */
+.cx-atlas .ct-fq-hub-attn-big {
+    font-family: 'Cormorant Garamond', 'Cinzel', serif;
+    font-size: var(--cx-fs-hero); font-weight: 700;
+    letter-spacing: -0.01em; line-height: 1.02;
+    color: var(--game-ink);
+    -webkit-text-stroke: 0;
+    text-shadow: 0 2px 18px var(--fx-shadow-soft);
+}
+.cx-atlas .ct-fq-training-screen--hub .ct-fq-hub-attn-sub {
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-size: var(--cx-fs-label); font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--fq-mut);
+    background: none; border: 0; box-shadow: none; text-shadow: none; padding: 0; margin-top: 8px;
+}
+[dir='rtl'] .cx-atlas .ct-fq-hub-attn-big { font-family: 'Cairo', 'Cormorant Garamond', serif; font-weight: 800; letter-spacing: 0; }
+[dir='rtl'] .cx-atlas .ct-fq-training-screen--hub .ct-fq-hub-attn-sub { font-family: 'Cairo', 'Outfit', sans-serif; letter-spacing: 0.04em; text-transform: none; }
+
+/* ── Step 3d: kill the italic, re-key every blurb in the game ─────────────
+   .ct-fq-training-blurb set font-style:italic on every blurb — a legibility
+   loss with no expressive gain at 0.82rem. */
+.cx-atlas .ct-fq-training-blurb,
+.cx-atlas .ct-fq-training-screen .ct-fq-sub {
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-style: normal; font-weight: 450;
+    font-size: var(--cx-fs-body); line-height: 1.55;
+    color: var(--fq-mut) !important;
+}
+.cx-atlas .ct-fq-training-title {
+    font-family: 'Cormorant Garamond', 'Cinzel', serif;
+    font-size: var(--cx-fs-title); font-weight: 600;
+    letter-spacing: 0.06em; color: var(--game-ink); text-shadow: none;
+}
+
+/* ── Step 4: the chrome sweep — every existing chip/card onto the tier table ── */
+
+/* Tier 2 Object — the goal chip.
+   ⚠ COACH ANCHOR. data-coach="goal" is on this element and useDomAnchor
+   measures its rect. Radius, border tint and shadow may change. Width,
+   height, padding, display and the attribute may NOT. 52x52 stays. */
+.cx-atlas .ct-fq-bar-chip {
+    border-radius: var(--cx-r-object);
+    border: var(--cx-edge-object);
+    box-shadow: var(--elev-raise), var(--cx-ring-hot);
+}
+
+/* Tier 2 Object — the pre-round target chip */
+.cx-atlas .ct-fq-cue-chip {
+    border-radius: var(--cx-r-object);
+    border: var(--cx-edge-object);
+    box-shadow: var(--elev-raise), var(--cx-ring-hot);
+}
+
+/* Tier 1 Plate — the Survival ready card; its big chip becomes part of the
+   same plate rather than a second nested object. */
+.cx-atlas .ct-fq-cue-card--ready {
+    border-radius: var(--cx-r-plate);
+    border: var(--cx-edge-plate);
+}
+.cx-atlas .ct-fq-cue-card--ready .ct-fq-cue-chip {
+    border-radius: var(--cx-r-plate);
+    box-shadow: none;
+}
+
+/* Tier 4 Readout — the five HUD numbers (phone layout only; the wide-rail
+   panel at cancelBoard2d.css already carries its own recipe). */
+@media (max-width: 899px), (max-aspect-ratio: 1/1) {
+    .cx-atlas .ct-fq-gs {
+        border-radius: var(--cx-r-readout);
+        border: var(--cx-edge-readout);
+        background: var(--cx-ground-quiet);
+        box-shadow: none;
+    }
+}
+.cx-atlas .ct-fq-gv {
+    font-family: 'DM Mono', ui-monospace, monospace;
+    font-weight: 500;
+    font-size: var(--cx-fs-num);
+    font-variant-numeric: tabular-nums;
+    color: var(--fq-pdk);
+}
+.cx-atlas .ct-fq-gl {
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-size: var(--cx-fs-label);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--fq-mut);
+}
+
+/* The countdown numeral joins the clock voice; timing (0.34s) is unchanged —
+   the countdown itself steps every 380ms. */
+.cx-atlas .ct-fq-cd-num {
+    font-family: 'DM Mono', ui-monospace, monospace;
+    font-weight: 500;
+}
+
+/* Tier 3 Pill — .ct-fq-cue-ready-label already has this shape (999px radius,
+   --elev-rest) and a fixed WCAG-verified 7.01:1 colour pairing from a prior
+   round. Not retouched here — its colours are load-bearing, not decorative. */
+
+/* ── Step 6: the countdown veil lifts off, it does not vanish (Carry A) ────
+ * The board underneath is already fully laid out and completely static by
+ * the time this fires — only the departing overlay moves, and it completes
+ * BEFORE playStep becomes 'running' (index.jsx's runCountdownThen), so it
+ * costs no measured time. Level mode only — Survival's Ready card and
+ * Assessment/Adaptive's fixation cross never call runCountdownThen at all. */
+.cx-atlas .ct-fq-cd.is-leaving {
+  animation: cx-veil-lift 220ms var(--cx-ease-exit) both;
+  pointer-events: none;
+}
+@keyframes cx-veil-lift {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.04); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cx-atlas .ct-fq-cd.is-leaving { animation: none; opacity: 0; }
+}
+
+/* The Survival cue backdrop (already wired to the atlas galaxy piece) grows
+   to fill more of the card — same asset, more presence. */
+.cx-atlas .ct-fq-cd--ready {
+  background-size: cover, clamp(280px, 72vw, 460px) auto;
+  background-position: center, center 34%;
+}
+
+/* ── Step 7: celebration → results, one event (Carry B) ───────────────────
+ * The hold is 620ms (index.jsx) to match CUES.win's own length. The ring,
+ * the plate's bloom and the chord all start together at t=0; results mounts
+ * at t=620, on the chord's last ring. */
+
+/* Retime the shared solve-pulse ring to this game's hold length. */
+.cx-atlas .ct-juice-solvepulse {
+  animation-duration: var(--cx-t-hold);
+}
+
+/* The plate blooms — colour and shadow only, NOTHING under a tile moves.
+   This fires only after the last target has already fallen, stopTimer()
+   has run and clearingRef is set (the board is non-interactive), which is
+   the "after the round is decided" window Round 1 explicitly opened for
+   motion. Never add a transform here — ::before sits UNDER the tiles and
+   moving it would shift the visual field they're read against. */
+.cx-atlas .is-clearing .cb2d-grid::before {
+  border-color: color-mix(in srgb, var(--game-ok) 55%, var(--line));
+  box-shadow: var(--elev-raise), 0 0 0 3px color-mix(in srgb, var(--game-ok) 30%, transparent);
+  transition: border-color 300ms var(--cx-ease-enter), box-shadow 300ms var(--cx-ease-enter);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cx-atlas .is-clearing .cb2d-grid::before { transition: none; }
+}
+
+/* The results mark becomes the atlas — CSS over an element PlayResults.jsx
+   already renders (`.ct-play-results-mark`, aria-hidden, the title carries
+   the meaning), no fork of the shared component. */
+.cx-atlas .ct-play-results-mark {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 14px;
+  border: 0;
+  font-size: 0; /* hides the underlying ✓ / ↻ / ◇ text glyph */
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  animation: cx-mark-bloom 420ms var(--cx-ease-settle) both;
+}
+.cx-atlas .ct-play-results-card--success .ct-play-results-mark {
+  background-image: var(--asset-attn-cancel-atlas-supernova, none);
+}
+.cx-atlas .ct-play-results-card--retry .ct-play-results-mark {
+  background-image: var(--asset-attn-cancel-atlas-comet, none);
+}
+.cx-atlas .ct-play-results-card--neutral .ct-play-results-mark {
+  background-image: var(--asset-attn-cancel-atlas-moon, none);
+}
+@keyframes cx-mark-bloom {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cx-atlas .ct-play-results-mark { animation: none; }
+}
+
+/* Results card → Tier 1 Plate, fixed ground, clock-voice numbers. */
+.cx-atlas .ct-play-results-card {
+  border-radius: var(--cx-r-plate);
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--game-accent) 13%, transparent), transparent 46%),
+    var(--play-surface-flat);
+  box-shadow: var(--elev-raise);
+}
+.cx-atlas .ct-play-results-card--neutral {
+  border: var(--cx-edge-plate);
+}
+.cx-atlas .ct-play-results-title {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-weight: 600;
+  color: var(--game-ink);
+}
+.cx-atlas .ct-fq-sbig {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-size: var(--cx-fs-num-lg);
+  font-variant-numeric: tabular-nums;
+  color: var(--game-ink);
+}
+.cx-atlas .ct-fq-ies-lbl,
+.cx-atlas .ct-play-results-stat-l {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: var(--cx-fs-label);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fq-mut);
+}
+.cx-atlas .ct-play-results-stat-v {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--game-ink);
+}
+[dir='rtl'] .cx-atlas .ct-play-results-title {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+  font-weight: 700;
+}
+
+/* ── Step 8: results earn their emotion (band-cleared / personal-best) ──── */
+.cx-atlas .ct-play-results-extra {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.cx-atlas .cx-res-sigil {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+.cx-atlas .cx-res-head {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--game-ink);
+}
+.cx-atlas .cx-res-sub {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: var(--cx-fs-body);
+  color: var(--fq-mut);
+}
+.cx-atlas .cx-res-best {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: var(--cx-r-pill);
+  border: 1px solid var(--game-accent-edge);
+  background: var(--game-accent);
+  color: var(--game-ink);
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: var(--cx-fs-label);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  box-shadow: var(--elev-rest);
+}
+[dir='rtl'] .cx-atlas .cx-res-best {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-family: 'Cairo', 'Outfit', sans-serif;
+}

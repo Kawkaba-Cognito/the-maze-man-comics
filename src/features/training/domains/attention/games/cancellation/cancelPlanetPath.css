@@ -10,26 +10,74 @@
   width: 100%;
   max-width: 420px;
   margin: 0 auto;
+  /* Tier 1 Plate (Master Prompt Step 5a) — this whole screen is one plate. */
+  border-radius: var(--cx-r-plate, 26px);
+  overflow: hidden;
+  box-shadow: var(--elev-raise);
+  /*
+   * ── ROUND 4: the generated photo is gone. ──
+   * A "premium background" was asked for here, and a cropped AI-generated
+   * navy/amber nebula shipped in Round 2/3. Opus's Round 4 review (after
+   * reading this game's own art-direction README, `cancel-cosmic-atlas-2026/
+   * README.md`) called it correctly: this game already has a written,
+   * enforced, hand-inked flat-vector art direction — the same README
+   * explicitly PROHIBITS photorealism and gradients — and the photo violated
+   * both, while being 82%-scrimmed to near-invisibility anyway (see the
+   * `feasible? no.` arithmetic that reasoning produces: an asset that is
+   * barely visible cannot earn a contradiction of the game's own art
+   * direction). It also put a third, unrelated visual language on a screen
+   * that sits one tap away from the live board's own illustrated art and the
+   * hand-inked stimuli inside it — three "premium" languages in one game.
+   *
+   * What replaces it: real pieces from that same cosmic atlas, one per node
+   * (see CancelPlanetPath.jsx) — so this screen, the pre-round cue, and the
+   * live board are now the SAME art family for the first time. The ground
+   * itself stays flat (`--play-surface-flat`, this game's fixed gameplay
+   * palette — never flips with theme, matching everything else in it) with
+   * a light dusting of star-glint dots, decorative only, negligible average
+   * luminance, so it never becomes a second thing captions have to clear
+   * contrast against.
+   */
+  background-color: var(--play-surface-flat);
+  background-image:
+    radial-gradient(1.6px 1.6px at 18% 6%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.2px 1.2px at 62% 14%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.8px 1.8px at 82% 44%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.2px 1.2px at 34% 66%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.5px 1.5px at 8% 86%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.3px 1.3px at 92% 92%, var(--fx-glint) 0%, transparent 60%);
+  background-size: 240px 240px;
+  background-repeat: repeat;
 }
 
-/* The one guide line down the centre. A straight spine rather than a real
-   segment-by-segment line through every node's actual (x, y) — see the
-   comment in the component for why that trade is right for a prototype. */
-.cpp-spine {
+/* A trail that actually touches the planets — two SVG paths through the
+   nodes' real (x, y) coordinates (see the component), replacing a straight
+   dashed centre spine the nodes swung ±30% past without ever meeting.
+   `preserveAspectRatio="none"` maps the 0-100 x-units onto the container's
+   width and the 0-pathHeight y-units onto px 1:1 — the non-uniform scale
+   that results is exactly why `vector-effect="non-scaling-stroke"` is set
+   in the JSX, or the stroke would render as a wedge. */
+.cpp-trail {
   position: absolute;
-  left: 50%;
-  top: 24px;
-  bottom: 24px;
-  width: 3px;
-  transform: translateX(-50%);
-  background: repeating-linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--game-accent, var(--fq-pri)) 45%, transparent) 0,
-    color-mix(in srgb, var(--game-accent, var(--fq-pri)) 45%, transparent) 10px,
-    transparent 10px,
-    transparent 20px
-  );
+  inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 0;
+  pointer-events: none;
+}
+.cpp-trail-rest {
+  fill: none;
+  stroke: color-mix(in srgb, var(--line) 85%, transparent);
+  stroke-width: 3;
+  stroke-dasharray: 5 9;
+  stroke-linecap: round;
+}
+.cpp-trail-done {
+  /* The road already walked, in the app's own "cleared" colour. */
+  fill: none;
+  stroke: color-mix(in srgb, var(--game-ok) 70%, transparent);
+  stroke-width: 4;
+  stroke-linecap: round;
 }
 
 .cpp-node {
@@ -46,6 +94,11 @@
   cursor: pointer;
   z-index: 1;
   font: inherit;
+  /* Off-screen nodes (most of a 60-node, 6,610px path at any given scroll
+     position) skip layout+paint entirely — now load-bearing, not just a
+     nice-to-have, since each node carries a real image. */
+  content-visibility: auto;
+  contain-intrinsic-size: 74px 90px;
 }
 .cpp-node:disabled { cursor: not-allowed; }
 .cpp-node:focus-visible .cpp-orb {
@@ -53,42 +106,31 @@
   outline-offset: 3px;
 }
 
-/* ⚠ THE THREE `hsl(var(--cpp-hue) ...)` STOPS ARE THE ONLY RAW-COLOUR DEBT
- * HERE, AND THEY ARE IRREDUCIBLE BY DESIGN. `--cpp-hue` is a per-NODE custom
- * property (set inline in CancelPlanetPath.jsx, one value per level) — the
- * entire point is that a 60-planet path reads as variety rather than the
- * same tile 60 times, which a single static token cannot express. Every
- * other colour in this file is tokenised (see `--game-ok` / `--ink-dim` /
- * `--fx-glint` / `--fx-shadow-drop` / `--color-text` below).
- */
+/* The orb is a small Tier 2 Object carrying a real cosmic-atlas illustration
+   (see CancelPlanetPath.jsx) rather than a procedurally-hued CSS sphere.
+   ⚠ NO BEVEL (Master Prompt Step 5a) — the atlas README explicitly
+   prohibits bevels/cast-shadows; the old inset --fx-glint/--fx-shadow-drop
+   rim was exactly that, and is deleted rather than reduced. */
 .cpp-orb {
   position: relative;
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 34% 28%, hsl(var(--cpp-hue) 75% 68%), transparent 55%),
-    radial-gradient(circle at 60% 70%, hsl(var(--cpp-hue) 55% 32%), transparent 60%),
-    hsl(var(--cpp-hue) 60% 46%);
-  box-shadow: 0 4px 10px color-mix(in srgb, var(--ink) 30%, transparent);
+  background: var(--play-surface-flat);
+  border: var(--cx-edge-object, 1px solid var(--line));
+  box-shadow: var(--elev-raise);
+  overflow: hidden;
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .cpp-node:not(:disabled):active .cpp-orb { transform: scale(0.94); }
 
-/* Reuses the shared `--fx-glint` / `--fx-shadow-drop` tokens (tokens.css) for
-   the sphere's bevel rather than one-off rgba literals — the same two the
-   rest of the app already uses for "a highlight" / "a shadow". */
-.cpp-orb-rim {
+.cpp-orb-art {
   position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  box-shadow: inset 0 2px 4px var(--fx-glint), inset 0 -6px 10px var(--fx-shadow-drop);
-}
-.cpp-orb-shade {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle at 70% 75%, var(--fx-shadow-drop), transparent 60%);
+  inset: 9%;
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 .cpp-num {
@@ -96,42 +138,46 @@
   top: 18px;
   left: 50%;
   transform: translateX(-50%);
+  font-family: 'DM Mono', ui-monospace, monospace;
   font-size: 15px;
-  font-weight: 900;
-  /* `--color-text` — the app's own "main text on a dark surface" token,
-     not a raw white — legible against any of the procedural hues below it. */
-  color: var(--color-text);
-  text-shadow: 0 1px 3px var(--fx-shadow-drop), 0 1px 3px var(--fx-shadow-drop);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  /*
+   * --game-ink, not --color-text (that token is "main text ON DARK"
+   * parchment, and this orb sits on the fixed LIGHT gameplay ground). A
+   * light halo instead of a dark shadow, for the same reason.
+   */
+  color: var(--game-ink);
+  text-shadow: 0 0 3px var(--play-surface-flat), 0 0 3px var(--play-surface-flat);
   pointer-events: none;
 }
+.cpp-num svg { display: block; }
 
 .cpp-sub {
+  font-family: 'Outfit', system-ui, sans-serif;
   font-size: 10px;
   font-weight: 700;
-  color: var(--ink-dim);
+  /* --fq-mut, not --ink-dim — this is the SAME fixed-palette family every
+     other label in this game uses now (a theme-flipping token here would
+     put light-on-light text in dark app-theme, on this game's fixed ground). */
+  color: var(--fq-mut, var(--ink-dim));
   white-space: nowrap;
 }
 
-/* Done: the orb desaturates toward the app's own success green rather than
-   staying at its hue full-strength — a cleared planet should read as
-   "behind you", not identical to one still ahead. `--game-ok` is the same
-   token every other correct/cleared state in Training already uses. */
+/* Done: a green ring states "cleared" without needing to re-tint the art
+   itself (re-tinting a multi-colour illustration with a hue filter reads as
+   a colour-blindness bug, not a status) — the check glyph in .cpp-num
+   carries the rest of the signal. */
 .cpp-node--done .cpp-orb {
-  background:
-    radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--game-ok) 55%, white), transparent 55%),
-    radial-gradient(circle at 60% 70%, color-mix(in srgb, var(--game-ok) 70%, black), transparent 60%),
-    var(--game-ok);
+  box-shadow: var(--elev-raise), var(--cx-ring-done, inset 0 0 0 2px var(--game-ok));
 }
-.cpp-node--done .cpp-num { font-size: 20px; }
+.cpp-node--done .cpp-num { font-size: 20px; color: var(--game-ok); }
 
-/* Locked: flattened to stone, off `--ink-dim` rather than a new grey — no
-   hue at all, so "not yet reachable" reads before the lock glyph is even
-   parsed. */
-.cpp-node--locked .cpp-orb {
-  background:
-    radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--ink-dim) 55%, white), transparent 55%),
-    radial-gradient(circle at 60% 70%, color-mix(in srgb, var(--ink-dim) 70%, black), transparent 60%),
-    var(--ink-dim);
+/* Locked: flattened toward stone via filter on the SAME image (no second
+   asset) — desaturated and dimmed, so "not yet reachable" reads before the
+   lock glyph is even parsed. */
+.cpp-node--locked .cpp-orb-art {
+  filter: grayscale(0.85) brightness(0.68) contrast(0.92);
 }
 .cpp-node--locked .cpp-num { font-size: 18px; text-shadow: none; opacity: 0.85; }
 .cpp-node--locked .cpp-sub { opacity: 0.6; }
@@ -142,23 +188,109 @@
   animation: cpp-pulse 2.2s ease-in-out infinite;
 }
 @keyframes cpp-pulse {
-  0%, 100% { box-shadow: 0 4px 10px color-mix(in srgb, var(--ink, #000) 30%, transparent), 0 0 0 0 hsl(var(--cpp-hue) 80% 60% / 0.55); }
-  50% { box-shadow: 0 4px 10px color-mix(in srgb, var(--ink, #000) 30%, transparent), 0 0 0 10px hsl(var(--cpp-hue) 80% 60% / 0); }
+  0%, 100% { box-shadow: 0 4px 10px var(--fx-shadow-drop), 0 0 0 0 color-mix(in srgb, var(--game-accent) 55%, transparent); }
+  50% { box-shadow: 0 4px 10px var(--fx-shadow-drop), 0 0 0 10px color-mix(in srgb, var(--game-accent) 0%, transparent); }
 }
 
+/* Kawkab walks between planets on a clear (Master Prompt Step 5c). The
+   outer element positions and (when walking) translates from the old
+   planet to the new one; the inner .cpp-kawkab-bob layer carries the
+   separate idle bob — split so the two transforms never fight (the old
+   single-element version had the bob's keyframes write the FULL
+   translate(-50%,-108%), which reset the walk's transform every 2.4s and
+   made Kawkab visibly teleport mid-walk). */
 .cpp-kawkab {
   position: absolute;
   transform: translate(-50%, -108%);
   pointer-events: none;
   z-index: 2;
+}
+.cpp-kawkab--walking {
+  animation: cpp-walk 900ms var(--cx-ease-move, ease-in-out) both;
+}
+@keyframes cpp-walk {
+  from { transform: translate(calc(-50% + var(--cx-walk-dx, 0%)), calc(-108% + var(--cx-walk-dy, 0px))); }
+  to   { transform: translate(-50%, -108%); }
+}
+.cpp-kawkab-bob {
   animation: cpp-bob 2.4s ease-in-out infinite;
 }
 @keyframes cpp-bob {
-  0%, 100% { transform: translate(-50%, -108%); }
-  50% { transform: translate(-50%, -118%); }
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cpp-node--current .cpp-orb { animation: none; }
-  .cpp-kawkab { animation: none; }
+  .cpp-kawkab--walking { animation: none; }
+  .cpp-kawkab-bob { animation: none; }
+  .cpp-trail-done { animation: none !important; }
+}
+
+/* ── Band chapters (Master Prompt Step 5b) ────────────────────────────────
+ * A quiet chapter rule between decades of levels, naming the band and (for
+ * bands that add a mechanic) what it introduces — sourced from FQ_LADDER /
+ * FQ_MECHANIC_LABELS via a prop, never derived here. */
+.cpp-band {
+  position: absolute;
+  inset-inline: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 1;
+  pointer-events: none;
+  content-visibility: auto;
+  contain-intrinsic-size: 100% 52px;
+}
+.cpp-band-rule {
+  display: block;
+  width: min(88%, 320px);
+  height: 1px;
+  background: var(--line);
+}
+.cpp-band-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: var(--cx-r-pill, 999px);
+  border: var(--cx-edge-readout, 1px solid var(--line));
+  background: var(--cx-ground-quiet, var(--play-surface-flat));
+}
+.cpp-band-sigil {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+.cpp-band-name {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  color: var(--game-ink);
+}
+.cpp-band-sub {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: var(--cx-fs-label, 0.62rem);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fq-mut, var(--ink-dim));
+}
+[dir='rtl'] .cpp-band-name { font-family: 'Cairo', 'Cormorant Garamond', serif; font-weight: 700; letter-spacing: 0; }
+[dir='rtl'] .cpp-band-sub  { font-family: 'Cairo', 'Outfit', sans-serif; letter-spacing: 0.02em; text-transform: none; }
+
+/* The walked trail draws itself in on mount (Master Prompt Step 5d).
+   pathLength="1" (set in the JSX) normalises the path to length 1
+   regardless of its real length, so no JS measurement is needed on a
+   multi-thousand-px path. */
+.cpp-trail-done {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: cpp-trail-draw 520ms var(--cx-ease-move, ease-out) both;
+}
+@keyframes cpp-trail-draw {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
 }

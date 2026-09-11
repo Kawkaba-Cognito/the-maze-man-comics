@@ -45,11 +45,90 @@
   display: grid;
   justify-content: center;
   align-content: center;
+  position: relative;
+}
+
+/* The board plate. Without it the stimulus pieces sit directly on the
+   gameplay art layer behind .ct-domain-game-stage rather than on the surface
+   their colours were CONTRAST-MEASURED against (tokens.css: the six --game-*
+   roles are ~3.3:1 on --play-surface specifically). A soft panel restores
+   that surface under the lattice and nothing else — every other game in this
+   app already plays on a centred opaque card; this was the only one that
+   didn't, which is why it needed a special transparency rule in the first
+   place (see the !important block in training.css this does NOT touch).
+   Layout-neutral: a pseudo-element on the grid itself, so CancelBoard2D's
+   fit maths (which measures .cb2d-fit) is unaffected, and it never lands on
+   .cb2d-wrap / .ct-fq-g-wrap--scene2d, which stay forced transparent. */
+.cb2d-grid::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  z-index: 0;
+  border-radius: 26px;
+  /* Split colour + image: --play-surface is itself a gradient/image value in
+     some themes, so `background: var(--play-surface)` alone would leave
+     background-color transparent and this plate would silently stop working
+     the day an ancestor's background goes clear (the Void Runner lesson). */
+  /* ⚠ ROUND 3: interior stays FLAT — do not add a gradient/vignette/bevel
+     here. The --game-* piece colours are measured at ~3.3:1 against
+     --play-surface specifically; a gradient would put the corner tile on a
+     different ground than the centre tile and that number would stop being
+     true of the whole board. Now that the art behind is actually visible
+     (lowered --training-art-scrim, this file below), all the extra "premium"
+     this plate gets is on the RIM — elevation and a slightly stronger edge —
+     never the fill. */
+  background-color: var(--play-surface-flat);
+  background-image: var(--play-surface);
+  border: 1px solid color-mix(in srgb, var(--game-ink) 22%, var(--line));
+  box-shadow: var(--elev-raise);
+  pointer-events: none;
+}
+
+@media (max-width: 400px) {
+  .cb2d-grid::before {
+    inset: -6px;
+    border-radius: 20px;
+  }
+}
+
+/*
+ * ── ROUND 3: the live board's illustrated background is now visible (see the
+ * --training-art-scrim override further down this file) ──
+ *
+ * On a phone, the five HUD readouts (.ct-fq-gs: found/errors/level/etc.) have
+ * NO surface of their own (training.css's .ct-fq-bar / .ct-fq-bar-stats are
+ * deliberately transparent, to avoid the Puzzle Studio floating-rectangle
+ * bug). At the old 70% scrim that was invisible — the "ground" behind them
+ * was already a near-flat colour. Once the scrim drops, it stops being
+ * invisible: these five short numbers would sit directly on a watercolour
+ * illustration.
+ *
+ * This gives each readout the SAME treatment the wide-screen rail panel
+ * already uses one media query below (`--surface-raised` there) — except
+ * fixed to `--play-surface-flat`, not the theme-flipping token, because the
+ * text drawn on it (.ct-fq-gv/.ct-fq-gl, via --fq-pdk/--fq-mut) is part of
+ * this game's FIXED gameplay palette (defined once in .ct-fq-root, no
+ * dark-theme override) and must sit on a ground that is equally fixed.
+ *
+ * ⚠ Scoped to the exact inverse of the rail's own media query
+ * (min-width:900px and min-aspect-ratio:1/1) so there is never a viewport
+ * where both this rule and the rail's chip-in-a-panel layout apply, and
+ * never one where neither does.
+ */
+@media (max-width: 899px), (max-aspect-ratio: 1/1) {
+  .cancellation-task-game .ct-fq-gs {
+    background: color-mix(in srgb, var(--play-surface-flat) 88%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 3px 5px;
+  }
 }
 
 .cb2d-cell {
   display: grid;
   place-items: center;
+  position: relative;
+  z-index: 1;
   /* Fixed track size: a cleared piece must not let its neighbours reflow, or
      the player's search path is disturbed mid-round and the position metrics
      (Center of Cancellation, search organisation) stop meaning anything. */
@@ -64,21 +143,43 @@
  * every hit look like a random hole and broke the visual lattice mid-search.
  * A dim checked tile preserves spatial context without competing with targets. */
 .cb2d-cell--cleared {
-  animation: cb2dClear 320ms ease-out forwards;
+  animation: cb2dClear 300ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards;
   pointer-events: none;
 }
 
 @keyframes cb2dClear {
   0% { transform: scale(1); opacity: 1; }
-  40% { transform: scale(1.12); opacity: 1; }
-  100% { transform: scale(0.82); opacity: 0.42; }
+  40% { transform: scale(1.07); opacity: 1; }
+  100% { transform: scale(0.84); opacity: 0.40; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cb2d-cell--cleared {
     animation: none;
-    transform: scale(0.82);
-    opacity: 0.42;
+    transform: scale(0.84);
+    opacity: 0.40;
+  }
+}
+
+/* A wrong tap gets a LOCAL settle on the tapped tile only — never a board
+   shake (deliberately removed platform-wide: attention-capturing motion is a
+   distractor confound in cognitive training, see useJuice.js). Two short
+   lateral cycles, transform only, done before a saccade can be re-planned off
+   the search path. On during the coach on purpose — seeing the mistake IS the
+   lesson; only the time/error PENALTY is suspended there, not the feedback. */
+.cb2d-cell--wrong {
+  animation: cb2dWrong 160ms ease-out;
+}
+
+@keyframes cb2dWrong {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb2d-cell--wrong {
+    animation: none;
   }
 }
 
@@ -246,5 +347,73 @@
 
   .cancellation-task-game[dir='rtl'] .cb2d-wrap {
     padding: 32px 284px 12px 12px;
+  }
+}
+
+/* The time bar re-renders on a 100ms tick (PlayHud), so its width naturally
+   steps rather than flows. A short linear transition — shorter than the tick,
+   so it never falls behind — turns that into a continuous sweep and makes a
+   wrong-tap penalty read as a drop instead of a teleport. Scoped to this game
+   only: .ct-fq-cb is shared chrome worn by every training game's HUD. */
+.cancellation-task-game .ct-fq-cb {
+  transition: width 140ms linear;
+}
+
+/* The shared solve-pulse ring centres on its whole overlay (inset:0 of the
+   full play area), but the lattice itself is pushed down by the HUD's
+   reserved top padding (see .cb2d-wrap above) and by a smaller bottom
+   padding — so the overlay's true centre sits noticeably above the board it
+   is meant to celebrate. Re-centre on the board's own content box instead. */
+.cancellation-task-game .ct-juice-solvepulse {
+  top: calc(50% + (var(--fq-hud-reserve, 96px) - 20px) / 2);
+}
+
+/* A wrong tap silently banked a 3s time cost with nothing on screen
+   connecting the two. Rises and fades near the time bar; never written to
+   trialLog (it is a display of an already-applied cost, not a measurement).
+   dir="ltr" on the element itself keeps the minus sign leading under
+   Arabic's RTL flow. */
+.cb2d-penalty-flash {
+  position: absolute;
+  top: calc(var(--fq-hud-reserve, 96px) - 22px);
+  inset-inline-end: 18px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: var(--game-bad);
+  /* --play-surface-flat, not the general --surface-raised: the latter flips
+     to a dark navy in dark app-theme while --game-bad (the text) never
+     flips, which would pair dark-on-dark. The whole gameplay palette
+     (--play-surface*, --game-*) is deliberately theme-invariant — stay
+     inside that family here. */
+  background: color-mix(in srgb, var(--play-surface-flat) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--game-bad) 45%, transparent);
+  box-shadow: var(--elev-rest);
+  pointer-events: none;
+  animation: cb2dPenaltyFlash 620ms ease-out forwards;
+}
+@keyframes cb2dPenaltyFlash {
+  0% { opacity: 0; transform: translateY(4px); }
+  20% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-14px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cb2d-penalty-flash { animation: cb2dPenaltyFlashFade 620ms ease-out forwards; }
+  @keyframes cb2dPenaltyFlashFade {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+}
+
+@media (min-width: 900px) and (min-aspect-ratio: 1/1) {
+  /* Follows the time bar into the left rail in this layout (see the .ct-fq-cbw
+     override above), rather than staying anchored to a HUD reserve that no
+     longer applies. */
+  .cancellation-task-game .cb2d-penalty-flash {
+    top: 44px;
+    inset-inline-start: 12px;
+    inset-inline-end: auto;
   }
 }

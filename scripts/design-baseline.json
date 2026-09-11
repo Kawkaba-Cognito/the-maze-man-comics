@@ -1,13 +1,10 @@
 {
   "rules": {
-    "raw-colour": 481,
+    "raw-colour": 478,
     "stacked-backdrops": 2,
     "conditional-background": 1
   },
   "files": {
-    "src/features/training/domains/attention/games/cancellation/cancelPlanetPath.css": {
-      "raw-colour": 3
-    },
     "src/features/training/domains/attention/games/cancellation/index.jsx": {
       "raw-colour": 1
     },

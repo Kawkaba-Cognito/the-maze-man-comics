@@ -6,6 +6,7 @@ import React, {
   useRef,
   useLayoutEffect,
 } from 'react';
+import './cancelAtlas.css';
 import PlayHud, { ShapeSvg } from '../../../../shared/PlayHud';
 import PlayResults from '../../../../shared/PlayResults';
 import GamePiece from '../../../../shared/GamePiece';
@@ -50,8 +51,8 @@ import {
   TrainingQuitModal,
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
-import CancelPlanetPath from './CancelPlanetPath.jsx';
-import ModePlanetHub from '../../../../shared/ModePlanetHub';
+import CancelPlanetPath, { atlasUrl, BAND_SIGIL } from './CancelPlanetPath.jsx';
+import CancelModeAtlas from './CancelModeAtlas.jsx';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import PassPlaySetup from '../../../../shared/PassPlaySetup';
@@ -197,7 +198,35 @@ function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx
     { k: 'levels', lb: t.levelMode, hint: t.hubNodeLevelsHint, on: onLevels },
     { k: 'chal', lb: t.challengeMode, hint: t.hubNodeChallengeHint, on: onChallenge },
   ];
-  return <ModePlanetHub items={items} isAr={isAr} playSfx={playSfx} />;
+  return <CancelModeAtlas items={items} isAr={isAr} playSfx={playSfx} />;
+}
+
+/*
+ * Master Prompt Step 8 — the results screen earns its emotion, through
+ * PlayResults.jsx's existing `extra` slot (no fork of the shared component).
+ * Two cases only: a band was just cleared (level results), or a personal
+ * best was just set (Survival results). Never rendered for assess/adaptive
+ * — those results screens don't render PlayResults' `extra` slot at all.
+ */
+function CxResultsExtra({ kind, t, bandTitle, nextBand, prevBest }) {
+  if (kind === 'band' && nextBand) {
+    return (
+      <div className="cx-res">
+        <img className="cx-res-sigil" src={atlasUrl(nextBand.sigil)} alt="" aria-hidden="true" />
+        <div className="cx-res-head">{t.cxBandCleared(bandTitle)}</div>
+        <div className="cx-res-sub">{t.cxNextBand(nextBand.title, nextBand.sub)}</div>
+      </div>
+    );
+  }
+  if (kind === 'best') {
+    return (
+      <div className="cx-res">
+        <span className="cx-res-best">{t.cxNewBest}</span>
+        <div className="cx-res-sub">{t.cxPrevBest(prevBest)}</div>
+      </div>
+    );
+  }
+  return null;
 }
 
 /**
@@ -244,8 +273,6 @@ const UI = {
     hubNodeFreeHint: 'Endless · one life · ramps up',
     hubNodeLevelsHint: '60 levels · one ladder · unlock in order',
     hubNodeChallengeHint: 'Same board for all · pick a difficulty',
-    mode3d: '3D',
-    hubNode3dHint: 'Prototype · same task in a 3D arena',
     thresholdMode: 'Threshold test',
     hubNodeThresholdHint: 'Adaptive · finds your level',
     adaptIntroTitle: 'Adaptive threshold',
@@ -259,22 +286,6 @@ const UI = {
     adaptRoundLabel: (n) => `Round ${n}`,
     adaptAgain: 'Test again',
     menuHint: 'Visual search training: bind features, suppress distractors, and respond quickly—like lab tasks for attention and cognitive control.',
-    pickDiff: 'Choose Difficulty',
-    pickDiffSub: 'Each tier has 100 levels — unlock them in order.',
-    diffDesc: {
-      /* These describe the levers that actually escalate, and nothing else.
-         They have been wrong twice: they promised "near-identical shapes" after
-         the pools were rebuilt motif-distinct, then "match the object and its
-         colour" after the colour conjunction was retired (2026-08-09). Colour
-         is now interference, never the answer — the target is always an object. */
-      easy: 'A few clearly different objects — find the target fast.',
-      medium: 'More object types, and some share the target colour.',
-      hard: 'A big, crowded grid — more objects and more of them to find.',
-    },
-    diffTargets: 'targets',
-    diffGrid: 'grid',
-    levelsSub: (pop, g) => `${pop} · ${g} board · Levels 1–100`,
-    levelsBack: '← Back',
     challengeSub: 'Same board for everyone · pick a difficulty · pass the device · best score wins',
     ready: (n) => `Ready — ${n}`,
     goReady: 'Start round',
@@ -367,6 +378,27 @@ const UI = {
       'Honest limits: practice reliably improves performance on this task and on visual search; broad "far transfer" to everyday attention is debated in the literature (Simons et al., 2016). Use this to train and track these specific skills — not as a medical test.',
     ],
     sciClose: 'Close',
+    // ── Master Prompt Step 9 — "The Inked Atlas" ────────────────────────
+    // Six chapter titles/subtitles for the level-select bands. Bands 2, 4
+    // and 6 deliberately share their subtitle with bands 1, 3, 5's own
+    // named mechanic (FQ_MECHANIC_LABELS, focusQuestData.js) — those two
+    // halves of each tier add no NEW mechanic, only load, and audit:fq's
+    // own invariant is that time-per-target falls across the whole climb,
+    // so "more targets, less time for each" is true of them by construction.
+    // ⚠ If you ever change one half's wording, change the other to match.
+    cxBands: [
+      { title: 'First Light', sub: 'Find every target' },
+      { title: 'Open Field', sub: 'More targets, less time for each' },
+      { title: 'Crowded Sky', sub: 'A denser board' },
+      { title: 'Deep Field', sub: 'More targets, less time for each' },
+      { title: 'Twin Signals', sub: 'Look-alike distractors' },
+      { title: 'Far Orbit', sub: 'More targets, less time for each' },
+    ],
+    cxNodeSub: (tc, sec) => `${tc} targets · ${sec}s`,
+    cxBandCleared: (title) => `Band cleared — ${title}`,
+    cxNextBand: (title, sub) => `Next: ${title} · ${sub}`,
+    cxNewBest: 'New personal best',
+    cxPrevBest: (n) => `Previous best: ${n}`,
   },
   ar: {
     ...STR_COMMON.ar,
@@ -392,8 +424,6 @@ const UI = {
     hubNodeFreeHint: 'لا ينتهي · حياة واحدة · يزداد صعوبة',
     hubNodeLevelsHint: '٦٠ مستوى · سلّم واحد · بالترتيب',
     hubNodeChallengeHint: 'نفس اللوحة للجميع · اختر الصعوبة',
-    mode3d: 'ثلاثي الأبعاد',
-    hubNode3dHint: 'نموذج · نفس المهمة في ساحة ثلاثية الأبعاد',
     thresholdMode: 'اختبار العتبة',
     hubNodeThresholdHint: 'تكيّفي · يحدّد مستواك',
     adaptIntroTitle: 'العتبة التكيّفية',
@@ -407,16 +437,6 @@ const UI = {
     adaptRoundLabel: (n) => `جولة ${n}`,
     adaptAgain: 'أعد الاختبار',
     menuHint: 'تدريب بحث بصري: ربط السمات، كبح المشتتات، والاستجابة بسرعة—كمهام الانتباه في العلوم المعرفية.',
-    pickDiffSub: 'كل صعوبة ١٠٠ مستوى · افتحها بالترتيب.',
-    diffDesc: {
-      easy: 'أجسام قليلة ومختلفة بوضوح — اعثر على الهدف بسرعة.',
-      medium: 'أنواع أكثر، وبعضها يشارك الهدف لونه.',
-      hard: 'شبكة كبيرة ومزدحمة — أجسام أكثر وأهداف أكثر.',
-    },
-    diffTargets: 'أهداف',
-    diffGrid: 'شبكة',
-    levelsSub: (pop, g) => `${pop} · شبكة ${g} · مستويات 1–100`,
-    levelsBack: '← رجوع',
     challengeSub: 'نفس اللوحة للجميع · اختر الصعوبة · مرّر الجهاز',
     ready: (n) => `جاهز — ${n}`,
     goReady: 'ابدأ الجولة',
@@ -512,6 +532,22 @@ const UI = {
       'حدود صادقة: التمرين يحسّن الأداء في هذه المهمة وفي البحث البصري بشكل موثوق؛ أما الانتقال الواسع إلى الانتباه اليومي فمختلَف عليه علمياً (Simons et al., 2016). استخدمه لتدريب وتتبّع هذه المهارات تحديداً — لا كاختبار طبي.',
     ],
     sciClose: 'إغلاق',
+    // ── Master Prompt Step 9 — نفس الفصول الستة بالعربية، معجميًا مطابقة
+    // لبنود ٢ و٤ و٦ (لا تضيف آلية جديدة، فقط حِمل أكبر — طابِق أي تعديل
+    // لاحق في كلا الشطرين). أرقام هندية عربية عبر toLocaleString('ar-EG'). ──
+    cxBands: [
+      { title: 'الضوء الأول', sub: 'جد كل الأهداف' },
+      { title: 'الحقل المفتوح', sub: 'أهداف أكثر، ووقت أقل لكل هدف' },
+      { title: 'سماء مزدحمة', sub: 'لوحة أكثف' },
+      { title: 'الحقل العميق', sub: 'أهداف أكثر، ووقت أقل لكل هدف' },
+      { title: 'إشارات متشابهة', sub: 'مشتّتات متشابهة' },
+      { title: 'المدار البعيد', sub: 'أهداف أكثر، ووقت أقل لكل هدف' },
+    ],
+    cxNodeSub: (tc, sec) => `${tc.toLocaleString('ar-EG')} هدفًا · ${sec.toLocaleString('ar-EG')}ث`,
+    cxBandCleared: (title) => `اكتمل النطاق — ${title}`,
+    cxNextBand: (title, sub) => `التالي: ${title} · ${sub}`,
+    cxNewBest: 'أفضل نتيجة جديدة',
+    cxPrevBest: (n) => `الأفضل سابقًا: ${n.toLocaleString('ar-EG')}`,
   },
 };
 
@@ -538,6 +574,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const [cells, setCells] = useState([]);
   const [playStep, setPlayStep] = useState('idle');
   const [cdShow, setCdShow] = useState(false);
+  // True for the 220ms the countdown veil takes to lift off the board
+  // (Master Prompt Carry A) — the board underneath is already laid out and
+  // completely static by this point; only the departing veil moves, and it
+  // finishes BEFORE playStep becomes 'running', so it costs no measured time.
+  const [cdLeaving, setCdLeaving] = useState(false);
   const [cdVal, setCdVal] = useState(3);
   // Central fixation cue shown before each assessment grid — controls the start
   // gaze so Center-of-Cancellation, scan laterality and RT have a clean origin.
@@ -550,6 +591,17 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const [errors, setErrors] = useState(0);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
+  // Mirrors clearingRef into render state: the ref alone blocks taps/scoring
+  // correctly during the clear-celebration hold, but the board's own
+  // `interactive` prop never saw it, so pieces stayed enabled and focusable
+  // with no visible reason a tap did nothing.
+  const [clearing, setClearing] = useState(false);
+  // A wrong tap silently banked a 3s time cost with nothing on screen
+  // connecting the two. A brief chip near the time bar makes the penalty
+  // legible — never shown during the coach or assessment (see the gate at the
+  // set site, which already suppresses the real penalty there too).
+  const [penaltyFlash, setPenaltyFlash] = useState(null);
+  const penaltyFlashTimeoutRef = useRef(null);
   const [lastResult, setLastResult] = useState(null);
 
   const [chalNames, setChalNames] = useState(['Player 1', 'Player 2']);
@@ -594,6 +646,23 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const chalRoundsTotalRef = useRef(1);
   const chalCycleRef = useRef(0);
   const roundEndedRef = useRef(false);
+  // True for the brief hold between the last target falling and the round
+  // actually ending (see the clear-celebration in onCellTap) — guards BOTH the
+  // tap handler and the safety-net auto-win effect below so a stray tap or a
+  // re-render during that hold cannot score a false alarm or re-fire the win.
+  // Cleared inside endRound itself, the one choke point every path already
+  // runs through.
+  const clearingRef = useRef(false);
+  // The celebration hold's setTimeout id — cleared on unmount and on
+  // clearPlayRoundState so a hold in flight when the player quits/backs out
+  // never fires endRound (persistLevel + a live AppContext award) against an
+  // already-torn-down round.
+  const clearHoldTimeoutRef = useRef(null);
+  // 'win' now plays at the START of the clear-celebration hold (onCellTap),
+  // not 420ms later when endRound actually runs — the ring plays silently and
+  // the fanfare landed on the results screen. Set there, consumed (and reset)
+  // by whichever endRound branch would otherwise have played it itself.
+  const winPlayedRef = useRef(false);
   const endRoundRef = useRef((_won) => {});
   const trialLogRef = useRef(null);
   const freeStageRef = useRef(0);
@@ -621,6 +690,10 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const tutReplayHint = tutLabels.replayTutorial;
   const boardApiRef = useRef(null);
   const startFreeModeRef = useRef(null);
+  // The Survival "ready" card claims aria-modal — a real claim needs a focus
+  // target, or a screen-reader user is told they're in a dialog and put
+  // nowhere. Also makes Enter-to-start work without hunting for the button.
+  const readyBtnRef = useRef(null);
 
   /*
    * The arm/open/persist machinery is `useCoachRun` (COACH-PLAN.md Phase 0), so
@@ -732,6 +805,13 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const clearPlayRoundState = useCallback(() => {
     stopTimer();
     roundEndedRef.current = false;
+    clearTimeout(clearHoldTimeoutRef.current);
+    clearHoldTimeoutRef.current = null;
+    clearingRef.current = false;
+    setClearing(false);
+    winPlayedRef.current = false;
+    clearTimeout(penaltyFlashTimeoutRef.current);
+    setPenaltyFlash(null);
     roundRef.current = null;
     setRound(null);
     setCells([]);
@@ -752,7 +832,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   }, [playSfx]);
 
   const beginFreeRoundAtStage = useCallback(
-    async (stageIndex) => {
+    async (stageIndex, { skipCueSound = false } = {}) => {
       try {
         setPhase('play');
         setCdShow(false);
@@ -771,28 +851,33 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         setFound(0);
         setErrors(0);
         talliesRef.current = { found: 0, errors: 0 };
+        warned10Ref.current = false;
         // Every free round has its own timer (from the level curve); the run is
         // bounded by lives, not by one global session clock.
         tlRef.current = r.tlim;
         tlimRef.current = r.tlim;
         tapsRef.current = [];
         pendingPenaltyRef.current = 0;
+        juice.reset();
         // Survival is player-paced at the boundary between rounds. Show the
         // exact illustrated target and keep the clock stopped until Ready is
         // tapped; countdown preferences continue to apply to Levels only.
         setPlayStep('idle');
         setCueShow(true);
-        playSfx('click');
+        // Skipped right after a win: 'win' just played at the top of the clear
+        // celebration (see onCellTap), and stacking a 'click' 420ms later on
+        // top of it read as two acknowledgements for one event.
+        if (!skipCueSound) playSfx('click');
       } finally {
         roundEndedRef.current = false;
       }
     },
-    [playSfx, clearPlayRoundState],
+    [playSfx, clearPlayRoundState, juice],
   );
 
   const confirmSurvivalTarget = useCallback(() => {
     if (roundRef.current?.mode !== 'free' || !cueShow) return;
-    playSfx('collect');
+    playSfx('correct'); // "ready", not "hit" — collect is reserved for tapping a target
     setCueShow(false);
     setPlayStep('running');
   }, [cueShow, playSfx]);
@@ -858,6 +943,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         setFound(0);
         setErrors(0);
         talliesRef.current = { found: 0, errors: 0 };
+        warned10Ref.current = false;
         tlRef.current = r.tlim;
         tlimRef.current = r.tlim;
         tapsRef.current = [];
@@ -906,6 +992,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         setFound(0);
         setErrors(0);
         talliesRef.current = { found: 0, errors: 0 };
+        warned10Ref.current = false;
         tlRef.current = r.tlim;
         tlimRef.current = r.tlim;
         tapsRef.current = [];
@@ -969,6 +1056,8 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     (won) => {
       if (roundEndedRef.current) return;
       roundEndedRef.current = true;
+      clearingRef.current = false;
+      setClearing(false);
       stopTimer();
       const r = roundRef.current;
       if (!r) {
@@ -1034,7 +1123,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         const prevRow = base[idx];
         base[idx] = mergeChallengePlayerStats(prevRow, stats, e, names[idx]);
         chalScoresRef.current = base;
-        if (won) playSfx('win');
+        // 'win' already played at the START of the clear-celebration hold
+        // (onCellTap) — don't play it again 420ms later.
+        if (won) { if (winPlayedRef.current) winPlayedRef.current = false; else playSfx('win'); }
         else playSfx('error');
         const nextIdx = idx + 1;
         if (nextIdx < names.length) {
@@ -1071,7 +1162,8 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       if (r.mode === 'free') {
         if (won) {
           // Cleared the round — bank the clear bonus and ramp to a harder stage.
-          playSfx('win');
+          // 'win' already played at the START of the clear-celebration hold.
+          if (winPlayedRef.current) winPlayedRef.current = false; else playSfx('win');
           freeStreakRef.current += 1;
           const clearPts = freeRoundClearPoints(r.tlim, freeStreakRef.current);
           freeScoreRef.current += clearPts;
@@ -1079,7 +1171,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           freeRoundsWonRef.current += 1;
           freeStageRef.current += 1;
           setPauseOpen(false);
-          void beginFreeRoundAtStage(freeStageRef.current);
+          void beginFreeRoundAtStage(freeStageRef.current, { skipCueSound: true });
           return;
         }
         // Round failed (timed out or too many wrong taps): lose a life.
@@ -1099,6 +1191,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         playSfx('error');
         const rw = freeRoundsWonRef.current;
         const runScore = freeScoreRef.current;
+        // Captured BEFORE the update below — comparing against profile.* on
+        // the results screen would always read "not a best" once the state
+        // it derives from has already moved.
+        const prevBest = profile.freeBest ?? 0;
+        const prevBestScore = profile.freeBestScore ?? 0;
         setProfile((prev) => {
           let next = { ...prev };
           let changed = false;
@@ -1116,7 +1213,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         trialLogRef.current?.finish({ roundsWon: rw, score: runScore });
         trialLogRef.current = null;
         awardFreeRun('cancel', rw);
-        setLastResult({ type: 'free', roundsWon: rw, score: runScore, lastR: r });
+        setLastResult({
+          type: 'free', roundsWon: rw, score: runScore, lastR: r, prevBest, prevBestScore,
+        });
         setPhase('freeRes');
         setPlayStep('idle');
         setPauseOpen(false);
@@ -1233,8 +1332,17 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         setPhase('adaptRes');
         return;
       }
-      if (won) playSfx('win');
+      // Level mode. 'win' already played at the START of the clear-celebration
+      // hold (onCellTap) — don't play it again 420ms later.
+      if (won) { if (winPlayedRef.current) winPlayedRef.current = false; else playSfx('win'); }
       else playSfx('error');
+      // Defensive, matching every other mode's branch above: pauseOpen/
+      // quitOpen cannot actually be true here today (onHudPause/onHudQuit
+      // both bail on clearingRef, and a paused board can't register the
+      // winning tap in the first place), but this branch was the one that
+      // didn't reset them, and it's one line to not depend on that staying true.
+      setPauseOpen(false);
+      setQuitOpen(false);
       trialLogRef.current?.finish({ won });
       trialLogRef.current = null;
       if (won) awardLadderWin('cancel', r.ladderLv ?? r.lv, FQ_LADDER_LEVELS);
@@ -1242,7 +1350,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       setLastResult({ type: 'level', stats, r, won, found: f, errors: e });
       setPhase('res');
     },
-    [stopTimer, persistLevel, playSfx, beginFreeRoundAtStage, beginAssessmentTrial, beginAdaptiveTrial, onAssessmentComplete, awardFreeRun, awardLadderWin],
+    [stopTimer, persistLevel, playSfx, beginFreeRoundAtStage, beginAssessmentTrial, beginAdaptiveTrial, onAssessmentComplete, awardFreeRun, awardLadderWin, profile],
   );
 
   useEffect(() => {
@@ -1252,15 +1360,31 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   // The rendered board is the final authority on completion. The event handler
   // normally ends the round immediately, but this catches any future count/ref
   // drift: if every target the player can see has been marked, play must move on.
+  //
+  // ⚠ MUST carry the same two guards the tap handler's own win path carries:
+  // `coachOpen` (clearing the 3-target tutorial board must NOT end the round —
+  // the player hasn't met the decoy step yet, and any round end force-closes
+  // the coach) and `clearingRef` (the tap handler already started the
+  // celebration hold; this effect re-fires on the resulting re-render and must
+  // not race it into calling endRound a second time).
   useEffect(() => {
     if (phase !== 'play' || playStep !== 'running' || !round || roundEndedRef.current) return;
+    if (coachOpen || clearingRef.current) return;
     const targets = cells.filter((cell) => cell.isT);
     if (targets.length > 0 && targets.every((cell) => cell.tapped)) {
       endRoundRef.current(true);
     }
-  }, [phase, playStep, round, cells]);
+  }, [phase, playStep, round, cells, coachOpen]);
 
-  useEffect(() => () => trialLogRef.current?.discard(), []);
+  useEffect(() => () => {
+    trialLogRef.current?.discard();
+    clearTimeout(clearHoldTimeoutRef.current);
+    clearTimeout(penaltyFlashTimeoutRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (round?.mode === 'free' && cueShow) readyBtnRef.current?.focus();
+  }, [round, cueShow]);
 
   useEffect(() => {
     // The coach holds the clock exactly like the pause menu does — a first-time
@@ -1270,8 +1394,18 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     let last = performance.now();
     const runId = timerRunIdRef.current + 1;
     timerRunIdRef.current = runId;
-    warned10Ref.current = false;
+    // ⚠ NOT reset here. This effect re-runs on every pause/resume and every
+    // coach open/close (see its own deps below), so resetting the flag on
+    // entry made the warning re-fire once per resume instead of once per
+    // round. It is reset only where a round actually BEGINS (the 5 call
+    // sites that also call juice.reset()).
     runRef.current = true;
+    // A fixed 10s warning fires on frame one of the shortest boards (the
+    // ladder's 8s levels, the earliest Survival stages) — audible before the
+    // player has looked at a single tile. Scale it to the round's own limit
+    // instead: 30% of the way in, never sooner than 3s (a genuinely short
+    // board still deserves SOME warning) or later than 10s.
+    const warnAt = Math.min(10, Math.max(3, Math.round(tlimRef.current * 0.3)));
     const loop = (ts) => {
       if (!runRef.current || pauseOpen || coachOpen || timerRunIdRef.current !== runId) return;
       const dt = (ts - last) / 1000;
@@ -1281,9 +1415,15 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         tlRef.current - dt - pendingPenaltyRef.current,
       );
       pendingPenaltyRef.current = 0;
-      if (!warned10Ref.current && tlRef.current <= 10) {
+      // Scored assessment/adaptive trials are feedback-free by clinical
+      // design (same neutral tap sound for hits and false alarms, no time
+      // penalty) — a distinct urgency alarm has no business firing inside
+      // one. Unscored practice is fine; it already gets full feedback.
+      const rNow = roundRef.current;
+      const isAssessNow = (rNow?.mode === 'assess' || rNow?.mode === 'adaptive') && !rNow?.assessPractice;
+      if (!isAssessNow && !warned10Ref.current && tlRef.current <= warnAt) {
         warned10Ref.current = true;
-        playSfx('click');
+        playSfx('warn');
       }
       if (tlRef.current <= 0) {
         endRoundRef.current(false);
@@ -1391,14 +1531,29 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     try {
       for (let n = 3; n > 0; n--) {
         setCdVal(n);
-        playSfx('click');
+        // A rising 3-note phrase as the round arms, not 3 identical button
+        // clicks — count1/2/3 climb C4→E4→G4 and resolve into GO's `correct`.
+        playSfx(`count${4 - n}`);
         await sleep(380);
       }
       setCdVal('GO');
-      playSfx('collect');
+      // `collect` is the target-HIT sound; playing it here taught "this noise
+      // = you found one" and then played it when nothing had been found yet.
+      // `correct` is what every other "the round starts now" moment uses
+      // (confirmSurvivalTarget).
+      playSfx('correct');
       await sleep(320);
     } finally {
+      // The veil LIFTS off a board that already exists, rather than being
+      // unmounted over it — the overlay departs (fade + slight scale-up),
+      // and the board it reveals never itself fades/slides/scales. This is
+      // deliberately sequenced BEFORE onDone() (which flips playStep to
+      // 'running'), so the lift costs no measured time and the clock has
+      // not started while anything is still moving.
       setCdShow(false);
+      setCdLeaving(true);
+      await sleep(220);
+      setCdLeaving(false);
     }
     onDone();
   };
@@ -1430,18 +1585,23 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     setFound(0);
     setErrors(0);
     talliesRef.current = { found: 0, errors: 0 };
+    warned10Ref.current = false;
     tlRef.current = r.tlim;
     tlimRef.current = r.tlim;
     tapsRef.current = [];
     pendingPenaltyRef.current = 0;
     roundEndedRef.current = false;
+    juice.reset();
     await runCountdownThen(() => {
       setPlayStep('running');
     });
   };
 
   const onCellTap = useCallback((idx) => {
-    if (playStep !== 'running' || pauseOpen || cdShow) return;
+    // Held during the brief clear-celebration hold (see below) — a tap landing
+    // in that window is on a round that has already finished, not a new
+    // response.
+    if (playStep !== 'running' || pauseOpen || cdShow || clearingRef.current) return;
     const r = roundRef.current;
     if (!r) return;
     // Source of truth is cellsRef (kept in sync), so all side effects run ONCE
@@ -1511,8 +1671,17 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       }
       foundIdxRef.current.add(idx);
       roundFoundSeqRef.current.push({ idx, row: posFields.row, col: posFields.col });
-      playSfx(isAssess ? 'click' : 'collect');
-      if (!isAssess) juice.hit({});
+      /* A rising streak ladder on consecutive hits (collect → collect2/3/4),
+         picked from the combo useJuice already tracks. Off in assessment
+         (feedback-free by clinical design) and while the coach is open — a
+         guided tap is not a performance, it stays the plain 'collect' cue. */
+      if (isAssess || coachOpenRef.current) {
+        playSfx(isAssess ? 'click' : 'collect');
+      } else {
+        const { combo } = juice.hit({});
+        const step = Math.min(combo, 4);
+        playSfx(step <= 1 ? 'collect' : `collect${step}`);
+      }
       talliesRef.current.found += 1;
       const tappedTargets = talliesRef.current.found;
       setFound(tappedTargets);
@@ -1541,8 +1710,31 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
        * it (`onFinish`/`onSkip` → `endCoach`), and the round resolves after.
        */
       if (!hasRemainingTarget && !coachOpenRef.current) {
-        // No green solve-pulse here on purpose — the win screen is enough.
-        endRoundRef.current(true);
+        if (isAssess) {
+          // Feedback-free by clinical design — no pulse, no hold.
+          endRoundRef.current(true);
+        } else {
+          /* The round gets a real ending: freeze the clock on THIS tick (so
+             timeUsed/IES/accuracy are measured at the exact instant of the
+             last hit, identically to before), then hold briefly on a quiet
+             solve pulse before the results screen replaces the board.
+             clearingRef blocks a stray tap and the auto-win effect below
+             during the hold; it's cleared inside endRound itself once the
+             delayed call lands. */
+          stopTimer();
+          clearingRef.current = true;
+          setClearing(true);
+          winPlayedRef.current = true;
+          playSfx('win'); // the fanfare and the ring now start TOGETHER
+          juice.celebrate();
+          // 620ms is CUES.win's own length (last voice at 0.21 + dur 0.38 +
+          // 0.04 tail = 630ms) — the results screen arrives on the chord's
+          // last ring, not half a second after it already ended.
+          clearHoldTimeoutRef.current = setTimeout(() => {
+            clearHoldTimeoutRef.current = null;
+            endRoundRef.current(true);
+          }, 620);
+        }
       }
       return;
     }
@@ -1565,6 +1757,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       }
     }
     playSfx(isAssess ? 'click' : 'error');
+    if (!isAssess) juice.miss(); // resets the streak ladder; the 'bad' visual still fires regardless
     /*
      * ⚠ A MISTAKE MADE DURING THE LESSON COSTS NO TIME.
      *
@@ -1575,7 +1768,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
      * with nothing on screen connecting the loss to the tap. Trying the wrong
      * thing is the point of a tutorial; it must be free.
      */
-    if (!isAssess && !coachOpenRef.current) pendingPenaltyRef.current += 3;
+    if (!isAssess && !coachOpenRef.current) {
+      pendingPenaltyRef.current += 3;
+      setPenaltyFlash({ id: now });
+      clearTimeout(penaltyFlashTimeoutRef.current);
+      penaltyFlashTimeoutRef.current = setTimeout(() => setPenaltyFlash(null), 650);
+    }
     if (!coachOpenRef.current) {
       talliesRef.current.errors += 1;
       setErrors(talliesRef.current.errors);
@@ -1617,15 +1815,27 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
        from `useCoachRun` rather than a local `useRef`, so the lint rule can no
        longer tell. Listed to keep the warning off; it does not re-create this
        callback. */
-  }, [playStep, pauseOpen, cdShow, playSfx, juice, coachOpenRef]);
+  }, [playStep, pauseOpen, cdShow, playSfx, juice, coachOpenRef, stopTimer]);
 
+  /* ⚠ BOTH gated on clearingRef — the round has already ended internally
+     during the ~420ms clear-celebration hold (see onCellTap), it just
+     hasn't SHOWN results yet. Without this, pausing here left `pauseOpen`
+     stuck true into the round the celebration hands off to (nothing in that
+     branch of endRound resets it, because normally there's nothing open to
+     reset) — silently freezing the very next round until the player found
+     and tapped Resume. Restarting was worse: it let the OLD round's already-
+     armed endRound(true) timeout fire against the FRESH round moments later,
+     via the live ref, scoring a level the player never played and awarding
+     it for real. Both bugs are closed the same way: chrome simply can't be
+     reached during a transition this short. */
   const onHudPause = useCallback(() => {
-    if (playStep !== 'running') return;
+    if (playStep !== 'running' || clearingRef.current) return;
     stopTimer();
     setPauseOpen(true);
   }, [playStep, stopTimer]);
 
   const onHudQuit = useCallback(() => {
+    if (clearingRef.current) return;
     if (playStep === 'running') stopTimer();
     setQuitOpen(true);
   }, [playStep, stopTimer]);
@@ -1663,10 +1873,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     setFound(0);
     setErrors(0);
     talliesRef.current = { found: 0, errors: 0 };
+    warned10Ref.current = false;
     tlRef.current = r.tlim;
     tlimRef.current = r.tlim;
     tapsRef.current = [];
     pendingPenaltyRef.current = 0;
+    juice.reset();
     setPlayStep('running');
     playSfx('click');
   };
@@ -1712,12 +1924,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
 
   return (
     <div
-      className="cancellation-task-game ct-fq-root"
+      className="cancellation-task-game ct-fq-root cx-atlas"
       dir={isAr ? 'rtl' : 'ltr'}
     >
       {phase === 'hub' && (
         <>
-          <div className="ct-fq-training-shell ct-fq-training-shell--mode-cosmos">
+          <div className="ct-fq-training-shell ct-fq-training-shell--mode-cosmos cx-page">
             <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
               <TrainingMenuBar
                 onBack={onBack}
@@ -1795,14 +2007,15 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           isDone={(lv) => !!doneMap[`lad-${lv}`]}
           sublabel={(lv) => {
             const cfg = ladderLvCfg(lv);
-            return `${cfg.tc}t·${cfg.time}s`;
+            return t.cxNodeSub(cfg.tc, cfg.time);
           }}
           onPick={(lv) => startLevelGame(lv)}
+          bands={t.cxBands}
         />
       )}
 
       {phase === 'chal' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light cx-page">
           <div className="ct-fq-screen ct-fq-training-screen">
             <TrainingMenuBar
               onBack={() => {
@@ -1858,11 +2071,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       {phase === 'play' && round && (
         <>
           <div className="ct-fq-play" data-gameplay-active="true">
-          <div className={`ct-fq-g-wrap ct-fq-g-wrap--scene2d ct-juice-host${juice.shake ? ' ct-juice-shake' : ''}`} ref={gridWrapRef}>
+          <div className={`ct-fq-g-wrap ct-fq-g-wrap--scene2d ct-juice-host${clearing ? ' is-clearing' : ''}`} ref={gridWrapRef}>
             <CancelBoard2D
               cells={cells}
               round={round}
-              interactive={playStep === 'running' && !pauseOpen && !cdShow}
+              interactive={playStep === 'running' && !pauseOpen && !cdShow && !clearing}
               onTapCell={onCellTap}
               isAr={isAr}
               boardApiRef={boardApiRef}
@@ -1884,10 +2097,13 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               />
             )}
             <div className="ct-fq-scene2d-overlay">
+            {penaltyFlash && (
+              <div key={penaltyFlash.id} className="cb2d-penalty-flash" dir="ltr" aria-hidden="true">
+                {`−${(3).toLocaleString(isAr ? 'ar-EG' : 'en-US')}${isAr ? 'ث' : 's'}`}
+              </div>
+            )}
             <JuiceLayer
               combo={juice.combo}
-              particle={juice.particle}
-              rtFx={juice.rtFx}
               toast={juice.toast}
               burst={juice.burst}
               ratingLabels={rLabels}
@@ -1931,6 +2147,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               targetColor={
                 round.targetCol || cells.find((c) => c.isT)?.fill || 'var(--game-ink)'
               }
+              targetAriaLabel={shapeArtLabel(
+                round.target in SH ? round.target : cells.find((c) => c.isT)?.shape || 'circle',
+                isAr,
+                shapeArtSetForRound(round),
+              )}
               targetVisual={usesPremiumTrainingArt(round, cells)
                 ? <CancellationTarget round={round} cells={cells} size={38} isAr={isAr} />
                 : undefined}
@@ -1980,13 +2201,23 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         const targetCount = Array.isArray(lastResult.r.cells)
           ? lastResult.r.cells.filter((cell) => cell.isT).length
           : lastResult.r.tc;
+        // A band just closed: this level ends a decade (10/20/.../50 — 60 is
+        // the top of the ladder, nothing comes after it) and the player won.
+        const clearedLadderLv = lastResult.r.ladderLv ?? 0;
+        const justClosedBand = lastResult.stats.won
+          && clearedLadderLv % 10 === 0
+          && clearedLadderLv > 0
+          && clearedLadderLv < FQ_LADDER_LEVELS
+          && Array.isArray(t.cxBands);
+        const bandIdx = justClosedBand ? clearedLadderLv / 10 - 1 : -1;
+        const nextBandIdx = bandIdx + 1;
         const leaveResults = () => {
           setLastResult(null);
           clearPlayRoundState();
           setPhase('hub');
         };
         return (
-          <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-training-shell ct-fq-training-shell--hub-light cx-page">
             <PlayResults
               isAr={isAr}
               title={lastResult.stats.won ? t.resultsLevelPass : t.timeRanOut}
@@ -2023,13 +2254,24 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               ]}
               onMenu={leaveResults}
               playSfx={playSfx}
+              extra={justClosedBand && t.cxBands[bandIdx] && t.cxBands[nextBandIdx] ? (
+                <CxResultsExtra
+                  kind="band"
+                  t={t}
+                  bandTitle={t.cxBands[bandIdx].title}
+                  nextBand={{
+                    ...t.cxBands[nextBandIdx],
+                    sigil: BAND_SIGIL[nextBandIdx % BAND_SIGIL.length],
+                  }}
+                />
+              ) : null}
             />
           </div>
         );
       })()}
 
       {phase === 'freeRes' && lastResult?.type === 'free' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light cx-page">
           <PlayResults
             isAr={isAr}
             title={t.freeGameOver}
@@ -2046,6 +2288,13 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               setPhase('hub');
             }}
             playSfx={playSfx}
+            extra={(() => {
+              const rwBeat = (lastResult.roundsWon ?? 0) > (lastResult.prevBest ?? 0);
+              const scoreBeat = (lastResult.score ?? 0) > (lastResult.prevBestScore ?? 0);
+              if (!rwBeat && !scoreBeat) return null;
+              const prevBest = rwBeat ? (lastResult.prevBest ?? 0) : (lastResult.prevBestScore ?? 0);
+              return <CxResultsExtra kind="best" t={t} prevBest={prevBest} />;
+            })()}
           />
         </div>
       )}
@@ -2056,7 +2305,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         const tierLabel = DM[diff]?.label ?? '';
         const norm = Math.round((thr / 299) * 100);
         return (
-          <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+          <div className="ct-fq-training-shell ct-fq-training-shell--hub-light cx-page">
             <div className="ct-fq-screen ct-fq-training-screen">
               <TrainingMenuBar
                 onBack={() => {
@@ -2111,7 +2360,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       })()}
 
       {phase === 'chalRes' && lastResult?.type === 'challenge' && lastResult.rows && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light cx-page">
           <div className="ct-fq-screen ct-fq-training-screen">
             <TrainingMenuBar
               onBack={() => {
@@ -2185,7 +2434,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       )}
 
       {phase === 'assessIntro' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light cx-page">
           <div className="ct-fq-screen ct-fq-training-screen">
             <TrainingMenuBar
               onBack={exitAssess}
@@ -2242,7 +2491,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       )}
 
       {phase === 'assessRes' && assessResult && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light cx-page">
           <div className="ct-fq-screen ct-fq-training-screen">
             <TrainingMenuBar
               onBack={exitAssess}
@@ -2383,7 +2632,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       )}
 
       {phase === 'assessHistory' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light cx-page">
           <div className="ct-fq-screen ct-fq-training-screen">
             <TrainingMenuBar
               onBack={() => {
@@ -2491,9 +2740,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           challenge). Assessment & adaptive use the bare centred "+" fixation so
           the gaze origin stays clean for Center-of-Cancellation; their target
           chip lives in the top bar and the rule is given in the intro. */}
-      {phase === 'play' && (cdShow || cueShow) && round && (
+      {phase === 'play' && (cdShow || cueShow || cdLeaving) && round && (
         <div
-          className={`ct-fq-cd${round.mode === 'free' && cueShow ? ' ct-fq-cd--ready' : ''}`}
+          className={`ct-fq-cd${round.mode === 'free' && cueShow ? ' ct-fq-cd--ready' : ''}${cdLeaving ? ' is-leaving' : ''}`}
           role={round.mode === 'free' && cueShow ? 'dialog' : undefined}
           aria-modal={round.mode === 'free' && cueShow ? 'true' : undefined}
           aria-label={round.mode === 'free' && cueShow ? t.survivalCueTitle : undefined}
@@ -2504,6 +2753,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           )}
           <button
             type="button"
+            ref={round.mode === 'free' && cueShow ? readyBtnRef : undefined}
             className={`ct-fq-cue-card${round.mode === 'free' && cueShow ? ' ct-fq-cue-card--ready' : ''}`}
             onClick={round.mode === 'free' && cueShow ? confirmSurvivalTarget : undefined}
             disabled={!(round.mode === 'free' && cueShow)}

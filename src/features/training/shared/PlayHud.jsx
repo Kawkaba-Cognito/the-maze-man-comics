@@ -107,6 +107,11 @@ export default function PlayHud({
   targetShape,
   targetColor,
   targetVisual,
+  // Optional bilingual name for the target object. Left undefined, the chip
+  // renders exactly as before (aria-hidden) — every other game using this HUD
+  // is unaffected. Passed, it turns the single most important on-screen fact
+  // (what am I hunting for) into something a screen reader can actually say.
+  targetAriaLabel,
   onMenu,
   onPause,
   menuAriaLabel,
@@ -170,7 +175,13 @@ export default function PlayHud({
             devices, and nothing pointed anywhere to correct it. The coach now
             points at this chip and says nothing about where it lives. */}
         {targetShape && (
-          <div className="ct-fq-bar-chip" data-coach="goal" aria-hidden="true">
+          <div
+            className="ct-fq-bar-chip"
+            data-coach="goal"
+            {...(targetAriaLabel
+              ? { role: 'img', 'aria-label': targetAriaLabel }
+              : { 'aria-hidden': 'true' })}
+          >
             {targetVisual ?? <ShapeSvg shape={targetShape} color={targetColor} size={30} />}
           </div>
         )}

@@ -37,7 +37,7 @@
 
 const NOTE = {
   E3: 164.81, G3: 196.00, A3: 220.00,
-  C4: 261.63, E4: 329.63, G4: 392.00,
+  C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
   C5: 523.25,
 };
 
@@ -113,6 +113,32 @@ const CUES = {
   // The same gesture, quieter and shorter: Word Maze fires this on a rejected
   // letter, which is a nudge mid-flow, not a failed round.
   wrong: [{ from: NOTE.G3, to: NOTE.E3, type: 'sine', dur: 0.15, gain: 0.05, cut: 900 }],
+
+  // A streak ladder for consecutive correct hits on a search board (e.g.
+  // Cancellation): the same `collect` voice, transposed up one scale degree
+  // each step, capped before it reaches anything shrill. Named steps rather
+  // than a parameterised pitch on purpose — CUES stays the one place to check
+  // every sound this app can make.
+  collect2: [{ from: NOTE.D4, to: NOTE.A4, type: 'triangle', dur: 0.13, gain: 0.065, cut: 1600 }],
+  collect3: [{ from: NOTE.E4, to: NOTE.B4, type: 'triangle', dur: 0.13, gain: 0.065, cut: 1700 }],
+  collect4: [{ from: NOTE.F4, to: NOTE.C5, type: 'triangle', dur: 0.13, gain: 0.07, cut: 1800 }],
+
+  // A stationary, low, doubled note for a time-running-out warning. Every
+  // other multi-note cue in this palette GLIDES up or down, and a falling
+  // interval already means "wrong" here (see `wrong`/`error` below) — a
+  // falling warning read as a failure tone. Holding one pitch flat is what
+  // makes it unambiguous: nothing else in CUES sits still.
+  warn: [
+    { from: NOTE.A3, to: NOTE.A3, type: 'sine', at: 0.00, dur: 0.08, gain: 0.045, cut: 1000 },
+    { from: NOTE.A3, to: NOTE.A3, type: 'sine', at: 0.20, dur: 0.08, gain: 0.05, cut: 1000 },
+  ],
+
+  // A rising 3-note countdown phrase (C4→E4→G4), replacing 3 identical
+  // button-click sounds — the round arming should feel like an ascent, not
+  // three presses of Back. Resolves into `correct` on GO.
+  count1: [{ from: NOTE.C4, type: 'sine', dur: 0.10, gain: 0.045, cut: 900 }],
+  count2: [{ from: NOTE.E4, type: 'sine', dur: 0.10, gain: 0.05, cut: 950 }],
+  count3: [{ from: NOTE.G4, type: 'sine', dur: 0.10, gain: 0.055, cut: 1000 }],
 };
 
 /** Every cue name this module can play — the fallback list in AppContext. */

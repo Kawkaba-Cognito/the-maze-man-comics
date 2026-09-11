@@ -233,15 +233,23 @@ export default function CancelBoard2D({
           gridTemplateColumns: `repeat(${cols}, ${pieceSize}px)`,
           gap: `${gap}px`,
         }}
-        role="grid"
+        /* role="grid" requires row/gridcell descendants (ARIA 1.2) — this is a
+           CSS grid of plain buttons with neither, which made assistive tech
+           report a malformed grid and could suppress the buttons' own
+           accessible names. "group" makes no structural claim this markup
+           can't back up. */
+        role="group"
         aria-label={isAr ? 'شبكة الأشكال' : 'Shape grid'}
       >
         {cells.map((cell, idx) => {
           const state = stateOf(cell);
+          const cellClass = state === 'correct' ? ' cb2d-cell--cleared'
+            : state === 'wrong' ? ' cb2d-cell--wrong'
+            : '';
           return (
             <div
               key={idx}
-              className={`cb2d-cell${state === 'correct' ? ' cb2d-cell--cleared' : ''}`}
+              className={`cb2d-cell${cellClass}`}
               ref={(el) => { cellRefs.current[idx] = el; }}
             >
               <GamePiece

@@ -2161,10 +2161,25 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--surface-raised);
-    border: 2px solid var(--game-ink);
+    /* --play-surface-flat, not --surface-raised: this chip's shape is drawn
+       in the FIXED gameplay palette (--game-item etc., measured against
+       --play-surface specifically, never flipped for theme) — see every
+       other chip/card in this game, all on the same fixed ground. The old
+       theme-flipping ground relied on a SEPARATE dark-theme override
+       (training.css, "Play HUD: chip behind the target shape was solid
+       white") painting a translucent white over whatever was behind it —
+       which was fine while the live board's art sat at a near-opaque 70%
+       scrim, and stopped being fine once that scrim dropped: the shape's
+       fixed colour composited against actual visible art measured close to
+       1:1 in dark theme. A fixed ground removes the dependency entirely. */
+    background: var(--play-surface-flat);
+    /* Hairline + real elevation + an inner accent ring, not a 2px ink outline
+       and a hand-mixed shadow — an object holding the question, not a sticker.
+       Keeps the same prominence the 2px border was added for (see the comment
+       above): a plain hairline alone read as one more tile on a busy board. */
+    border: 1px solid color-mix(in srgb, var(--game-ink) 55%, transparent);
     border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(19, 30, 40, 0.18);
+    box-shadow: var(--elev-raise), inset 0 0 0 2px color-mix(in srgb, var(--game-accent) 28%, transparent);
 }
 .ct-fq-bar-stats {
     flex: 1 1 auto;
@@ -2471,11 +2486,46 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     align-items: center;
     justify-content: center;
 }
+/* Survival's "ready" interstitial ONLY (not the plain 3-2-1 countdown Levels
+   uses, and not Assessment's fixation cross — both stay the flat surface,
+   deliberately: a fast-paced countdown numeral and a feedback-free clinical
+   screen are the wrong place for a picture behind them). This is the one
+   screen a Survival player actually sees between every single round, so it
+   is where "a new background" in this mode actually reads.
+   ⚠ ROUND 4: the generated photo behind this card is gone, for the same
+   reason it's gone from the level-select screen (see cancelPlanetPath.css) —
+   it broke this game's own hand-inked flat-vector art direction. A single
+   piece from the SAME cosmic atlas the stimuli and the level-select nodes
+   now use sits large and soft behind the card instead — one art family
+   across the whole game, for the first time.
+   ⚠ THE SCRIM MUST BE `--play-surface-flat`, NOT a theme-flipping token like
+   `--universe-dusk`. The whole gameplay palette (`--play-surface`,
+   `--game-ink`, every `--game-*` role) is DELIBERATELY fixed regardless of
+   the app's light/dark theme (tokens.css: single definitions, no dark-theme
+   block) — .ct-fq-cue-kicker's text sits in `--game-ink`, always dark. Pair
+   that with a theme-flipping near-black scrim in dark app-theme and the text
+   goes dark-on-near-black. `--play-surface-flat` is fixed light, same family
+   as the ink it must stay legible against, in every app theme. */
+.ct-fq-cd--ready {
+    background-color: var(--play-surface-flat);
+    background-image:
+        linear-gradient(
+            color-mix(in srgb, var(--play-surface-flat) 84%, transparent),
+            color-mix(in srgb, var(--play-surface-flat) 84%, transparent)
+        ),
+        var(--asset-attn-cancel-atlas-galaxy, none);
+    background-size: cover, 340px 340px;
+    background-position: center, center 38%;
+    background-repeat: no-repeat, no-repeat;
+}
 .ct-fq-cd-num {
     font-family: 'Outfit', system-ui, sans-serif;
     font-size: clamp(4rem, 18vw, 6.5rem);
     color: var(--game-ink);
-    animation: ct-fq-cdpop 0.85s ease;
+    /* Must resolve inside its own step — the countdown advances every 380ms
+       (index.jsx's runCountdownThen); the old 0.85s pop was still mid-animation
+       when the next number replaced it. */
+    animation: ct-fq-cdpop 0.34s cubic-bezier(0.05, 0.7, 0.1, 1);
 }
 .ct-fq-cd-lbl { font-size: 0.95rem; color: var(--ink-dim); margin-top: 6px; }
 /* Pre-round target cue: chip + instruction sentence, shown over the countdown /
@@ -2505,23 +2555,30 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     width: min(88vw, 340px);
     margin-top: 12px;
     padding: 22px 24px 20px;
-    border: 2px solid rgba(20, 37, 57, 0.2);
+    border: 1px solid var(--line);
     border-radius: 30px;
-    background: rgba(255, 250, 240, 0.78);
-    box-shadow: 0 12px 32px rgba(19, 30, 40, 0.16);
+    /* --play-surface-flat, not the general --surface-raised: this card's own
+       text (.ct-fq-cue-kicker/.ct-fq-cue-text) is --game-ink, which never
+       flips with theme, while --surface-raised DOES (goes dark navy in dark
+       app-theme) — pairing them would put dark ink on a dark card. The whole
+       gameplay palette is deliberately theme-invariant; stay inside it. */
+    background: color-mix(in srgb, var(--play-surface-flat) 94%, transparent);
+    box-shadow: var(--elev-raise);
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 140ms ease, border-color 140ms ease, background-color 140ms ease;
+    transition: box-shadow 140ms ease, border-color 140ms ease, background-color 140ms ease;
 }
 .ct-fq-cue-card--ready:hover {
-    border-color: rgba(20, 37, 57, 0.42);
-    background: rgba(255, 250, 240, 0.94);
+    border-color: var(--game-ink);
 }
-.ct-fq-cue-card--ready:active { transform: scale(0.975); }
+/* Press SINKS (inset), it does not slide or scale away from the finger
+   already on it — the platform's premium-pass rule (see training.css's
+   ct-fq-btn history). */
+.ct-fq-cue-card--ready:active { box-shadow: var(--elev-press); }
 .ct-fq-cue-card--ready:focus-visible {
-    outline: 4px solid rgba(255, 255, 255, 0.96);
-    outline-offset: 4px;
+    outline: 3px solid var(--game-ink);
+    outline-offset: 3px;
 }
 /* The target chip is the single most important thing on this screen — it is
    what the player is about to search for. Bigger than the board's own pieces,
@@ -2532,17 +2589,19 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--surface-raised);
-    border: 2px solid var(--game-ink);
+    /* --play-surface-flat, same reason as .ct-fq-cue-card--ready above: the
+       shape drawn inside this chip is fixed-palette (--game-item etc.,
+       measured against --play-surface specifically), not theme-aware. */
+    background: var(--play-surface-flat);
+    border: 1px solid color-mix(in srgb, var(--game-ink) 55%, transparent);
     border-radius: 20px;
-    box-shadow: 0 6px 18px rgba(19, 30, 40, 0.22);
+    box-shadow: var(--elev-raise);
 }
 .ct-fq-cue-card--ready .ct-fq-cue-chip {
     width: 132px;
     height: 132px;
-    border-width: 3px;
     border-radius: 30px;
-    background: #fffaf0;
+    background: color-mix(in srgb, var(--play-surface-flat) 96%, transparent);
     box-shadow: none;
 }
 .ct-fq-cue-text {
@@ -2558,11 +2617,19 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     margin-top: 3px;
     padding: 12px 22px;
     border-radius: 999px;
-    background: var(--game-ink);
-    color: #fffaf0;
+    /* Was the gradient .ct-fq-btn-pri uses with --game-selected text — that
+       pairing measures ~2.16:1 at the gradient's light stop (WCAG needs
+       4.5:1 at this font size), a regression this same pass introduced and
+       .ct-fq-btn-pri itself inherits. FLAT accent + dark ink instead: 7.01:1,
+       and stable in both themes since neither --game-accent nor --game-ink
+       flips with the theme (tokens.css). */
+    background: var(--game-accent);
+    color: var(--game-ink);
+    border: 1px solid var(--game-accent-edge);
+    box-shadow: var(--elev-rest);
     font-family: 'Outfit', system-ui, sans-serif;
-    font-size: 0.92rem;
-    font-weight: 900;
+    font-size: 1rem;
+    font-weight: 800;
     letter-spacing: 0.06em;
 }
 .ct-fq-cue-ready-hint {
@@ -2587,9 +2654,11 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     100% { transform: scale(1); opacity: 1; }
 }
 @keyframes ct-fq-cdpop {
-    0% { transform: scale(1.45); opacity: 0; }
-    60% { transform: scale(0.95); opacity: 1; }
+    0% { transform: scale(1.28); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ct-fq-cd-num, .ct-fq-cue-card, .ct-fq-fix-cross { animation: none; opacity: 1; transform: none; }
 }
 
 .ct-fq-ov {
@@ -6089,7 +6158,7 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     width: 18px;
     height: 18px;
     margin: -9px 0 0 -9px;
-    border: 2px solid #5aa15a;
+    border: 2px solid var(--game-ok);
     border-radius: 50%;
     pointer-events: none;
     z-index: 8;
@@ -6099,6 +6168,13 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
 @keyframes ctJuiceSolvePulse {
     0% { opacity: 0.75; transform: scale(1); }
     100% { opacity: 0; transform: scale(7); }
+}
+/* No reduced-motion guard existed for ANY of this game's animations — a ring
+   scaling x7 across the whole play area, plus the countdown/cue pop below,
+   all ran unconditionally. The pause this ring marks (the round is over) is
+   the part worth keeping motion-free; the scale is not. */
+@media (prefers-reduced-motion: reduce) {
+    .ct-juice-solvepulse { animation: none; opacity: 0; }
 }
 .ct-juice-toast {
     position: absolute;
@@ -7676,11 +7752,14 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     background: transparent !important;
 }
 
-/* Play HUD: chip behind the target shape was solid white */
-[data-home-theme='dark'] .ct-fq-root:not(.ct-wordle-root) .ct-fq-bar-chip {
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 1px 4px rgba(0, 0, 0, 0.3);
-}
+/* This override is now redundant and deliberately removed, not just
+   emptied: .ct-fq-bar-chip's own rule grounds on --play-surface-flat (a
+   FIXED token) as of Round 4, so it no longer needs a theme-specific patch —
+   in fact this rule (a translucent white over whatever art sat behind it)
+   is what caused the goal chip to become near-invisible in dark theme once
+   the live-board art stopped being near-opaque. .ct-fq-root only matches
+   this game and wordle, and wordle was already excluded, so removing this
+   outright touches nothing else. */
 
 /* Board cell tap feedback: translucent tints instead of pastel fills */
 [data-home-theme='dark'] .ct-fq-root:not(.ct-wordle-root) .ct-fq-sc.ok {
@@ -9762,6 +9841,52 @@ html[data-home-theme='dark'] {
  * inheriting the illustration. */
 .ct-domain-game-stage:has([data-gameplay-active='true']) {
     --training-art-scrim: 70%;
+}
+/*
+ * ── ROUND 3 (2026-09-11), PARTIALLY REVERTED IN ROUND 4 — CANCELLATION ONLY ──
+ * Round 3 dropped light theme to 30%, reasoning that the only text exposed
+ * to raw art was the phone HUD readouts (since fixed with their own ground)
+ * and that the rim contrast left was "plate taste, not a hard requirement".
+ * That reasoning was right on the numbers and wrong on the construct.
+ *
+ * Round 4's research (review/cancellation-premium-plan-round4.md) found a
+ * published visual-search result the Round-3 pass didn't have: cluttered
+ * backgrounds slow visual search by up to ~74% (η²=0.80–0.89) specifically
+ * through TARGET–BACKGROUND FEATURE SIMILARITY — and this game's domain art
+ * (ringed planets, stars, orbits) is made of the same objects as its own
+ * stimuli (planets, moons, stars, comets). Cancellation is also the one
+ * game on the platform where that similarity is a construct-validity
+ * question, not just a look — its own metrics (Center of Cancellation,
+ * search organisation) are peripheral-spatial measures, exactly where
+ * margin clutter bites. Round 3 also put the live board at 30%, more
+ * art-forward than this app's own MENUS have ever been measured at (45%,
+ * see the table above), inverting the platform's own standing rule that
+ * gameplay stays quieter than chrome, not louder.
+ *
+ * 55% is the compromise: still a real, visible relaxation from the
+ * platform's uniform 70% (the board still reads as a card on a surface,
+ * not a lattice on wallpaper — the reason Round 3 existed at all), while no
+ * longer the most art-forward surface in an 18-game platform on the one
+ * game where that clutter is a measured risk to the thing being measured.
+ *
+ * Scoped by :has() to Cancellation's OWN live-play marker specifically
+ * (`.cancellation-task-game .ct-fq-play[data-gameplay-active]`), not the
+ * domain attribute — mot and train-switch (also "attention") are
+ * untouched; only Cancellation's board changes. Higher specificity than
+ * the rule above wins on the same element without !important.
+ *
+ * Dark is UNCHANGED at 65%, for the reason Round 3 gave and Round 4 agrees
+ * with: the art is light-graded (colour-graded to the LIGHT --play-surface
+ * midpoint), so a lighter scrim in dark theme puts a bright cream
+ * watercolour behind a dark board — wrong regardless of any contrast
+ * number. The real fix for dark is a dark-graded variant of this art
+ * (named as follow-up work, not built), not a lighter veil.
+ */
+.ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true']) {
+    --training-art-scrim: 55%;
+}
+html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true']) {
+    --training-art-scrim: 65%;
 }
 .ct-domain-game-stage[data-training-domain="attention"]:has([data-gameplay-active='true'])::before {
     background-image: linear-gradient(var(--game-veil), var(--game-veil)),
