@@ -38,7 +38,12 @@ const AMPLITUDE = 30;  // how far a node swings from centre, in % of width
 const BAND_SIZE = 10;
 const BAND_GAP = 56;   // breathing room where a chapter rule sits
 
-const yOf = (i) => 56 + i * ROW_H + Math.floor(i / BAND_SIZE) * BAND_GAP;
+// The first node's own offset (was 56) has to clear KAWKAB standing above
+// it too, not just the orb — his sprite reaches roughly 60px above
+// whichever node is current, and level 1 IS the current node for every
+// new player. 56 gave him ~4px of headroom before `.cpp-path`'s own top
+// edge, which is what the header-crowding report was actually measuring.
+const yOf = (i) => 96 + i * ROW_H + Math.floor(i / BAND_SIZE) * BAND_GAP;
 
 const ATLAS_CYCLE = [
   'galaxy', 'supernova', 'nebula-bolt', 'portal', 'warp-gate', 'moon',
@@ -153,12 +158,24 @@ export default function CancelPlanetPath({
 
   // Land on the player's own marker — a long scroll always opening at the
   // top means a high-level player hunts thousands of px for their own
-  // position. Deliberately instant (`block:'center'`, no smooth option),
-  // which also sidesteps prefers-reduced-motion entirely: nobody watches a
+  // position. Deliberately instant (no smooth option), which also
+  // sidesteps prefers-reduced-motion entirely: nobody watches a
   // multi-thousand-px scroll fly by either way.
+  //
+  // ⚠ `block:'center'` FORCES a scroll even when the node is already on
+  // screen (owner: "the circle is covering up words" — reported for a
+  // low-level frontier, where the marker sits close to the title/blurb
+  // above `.cpp-path`). Centering an early node drags the viewport down
+  // by however much the rest of the page has to move to put it dead
+  // centre, which can crop the header mid-line instead of leaving it
+  // above the fold the way it already was. `nearest` only scrolls the
+  // minimum needed to bring the marker fully into view — nothing at all
+  // for a frontier that's already visible, which is exactly the
+  // low-level case this broke, and still a real jump for a frontier
+  // thousands of px down the ladder.
   const currentRef = useRef(null);
   useLayoutEffect(() => {
-    currentRef.current?.scrollIntoView({ block: 'center' });
+    currentRef.current?.scrollIntoView({ block: 'nearest' });
     // Intentionally once-on-mount: re-running on every `current` change would
     // yank the screen out from under a player who scrolled away to look at a
     // future planet's tag.

@@ -10027,35 +10027,33 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .
      * the landscape rule two blocks up, just scoped inside this media
      * query so it wins here instead.
      *
-     * ⚠ RE-CENTRED (owner: "align the squares... according to the big
-     * circle of the background image") — this background is `fixed`, full
-     * viewport, centred on the WHOLE screen. The board itself is not: on a
-     * phone `.cb2d-wrap`'s top padding reserves real room for the HUD strip
-     * (`--fq-hud-reserve`, ~96px measured) while the bottom only clears the
-     * home indicator (~20px), so the board's own content centres itself
-     * lower than screen-centre — the exact asymmetry `.ct-juice-solvepulse`
-     * already corrects for with this identical `(reserve - 20) / 2` formula
-     * a few files over. The oval was landing above the board it's meant to
-     * frame.
-     *
-     * ⚠ Static, not live: a CSS custom property set on `.ct-fq-g-wrap` (a
-     * DESCENDANT of this stage) does not inherit UP to this `::before`
-     * pseudo-element, so this uses the same 96px fallback the JS falls
-     * back to itself rather than the live measured value. Close on any
-     * phone in the HUD's normal height range; revisit with a real
-     * measurement (e.g. a CSS var written higher, on the stage itself) if
-     * a specific device still looks off. */
+     * ⚠ RE-CENTRING REVERTED (2026-09-12) — a `background-position` shift
+     * was added here on the reasoning that the board sits lower than
+     * screen-centre (true) and the fixed background doesn't know that
+     * (also true). But the arithmetic only works if there's vertical
+     * SLACK to shift within, and there mostly isn't: this asset is
+     * 1080x1916 (≈0.5625 aspect), narrower/taller than nearly every real
+     * phone viewport (≈0.45-0.48), so `cover` scales it to match HEIGHT
+     * exactly and crops the SIDES — there is close to zero vertical
+     * overflow for a `background-position-y` shift to move within, on
+     * the devices that matter. The shift was reported back as new empty-
+     * looking space at the top, which is a DIFFERENT bug (see the
+     * `background-size: cover` note in cancelBoard2d.css's TRIAL comment
+     * for the live diagnosis) — plain centring at least isn't adding a
+     * second unproven variable on top of it. If the board's true offset
+     * from centre is ever worth chasing again, it needs a REAL measured
+     * value written where this pseudo-element can read it (a var set on
+     * the stage itself, not `.ct-fq-g-wrap`, which is a descendant),
+     * not a fallback-based estimate. */
     .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before {
         background-image: linear-gradient(var(--game-veil), var(--game-veil)),
             url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg-portrait.webp");
-        background-position: center calc(50% + (96px - 20px) / 2);
     }
     /* Dark-graded portrait half — same asset pair and reasoning as the
-       landscape dark override two blocks up, same re-centring math. */
+       landscape dark override two blocks up. */
     html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before {
         background-image: linear-gradient(var(--game-veil), var(--game-veil)),
             url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg-dark-portrait.webp");
-        background-position: center calc(50% + (96px - 20px) / 2);
     }
     .ct-domain-game-stage[data-training-domain="speed"]:has([data-gameplay-active='true'])::before {
         background-image: linear-gradient(var(--game-veil), var(--game-veil)),
