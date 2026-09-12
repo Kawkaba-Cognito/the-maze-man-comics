@@ -199,9 +199,25 @@
    single-element version had the bob's keyframes write the FULL
    translate(-50%,-108%), which reset the walk's transform every 2.4s and
    made Kawkab visibly teleport mid-walk). */
+/* ⚠ ALIGNMENT (2026-09-12, owner: "align the character in a perfect way") —
+ * Kawkab's `top` is `current.y`, the same raw coordinate the current NODE
+ * uses, but the node isn't a fixed 56px orb: it's a flex column of the orb
+ * PLUS `.cpp-sub` (the label line under it, `current && unlocked && label`
+ * — true of the current node in every real case, since `sublabel` always
+ * returns a string). That label adds ~3px gap + a ~13px line to the
+ * column's flow height, and the node centres itself with `translate(-50%,
+ * -50%)` on its OWN box — so on the one node that ever carries a label
+ * (the one Kawkab stands on), the orb's true centre sits ~8px ABOVE
+ * `current.y`, not AT it. Kawkab's fixed -108% never knew that, so it was
+ * consistently standing ~8px too low relative to the planet — on every
+ * screen size equally, which is why this wasn't really a desktop-only bug,
+ * just the one the difference was noticed on.
+ * `--cx-kawkab-lift` isolates the correction so it's the one number to
+ * retune after a visual check, without hand-editing three transforms. */
 .cpp-kawkab {
+  --cx-kawkab-lift: 8px;
   position: absolute;
-  transform: translate(-50%, -108%);
+  transform: translate(-50%, calc(-108% - var(--cx-kawkab-lift)));
   pointer-events: none;
   z-index: 2;
 }
@@ -210,7 +226,7 @@
 }
 @keyframes cpp-walk {
   from { transform: translate(calc(-50% + var(--cx-walk-dx, 0%)), calc(-108% + var(--cx-walk-dy, 0px))); }
-  to   { transform: translate(-50%, -108%); }
+  to   { transform: translate(-50%, calc(-108% - var(--cx-kawkab-lift, 8px))); }
 }
 .cpp-kawkab-bob {
   animation: cpp-bob 2.4s ease-in-out infinite;
@@ -225,6 +241,23 @@
   .cpp-kawkab--walking { animation: none; }
   .cpp-kawkab-bob { animation: none; }
   .cpp-trail-done { animation: none !important; }
+}
+
+/* ⚠ PLACEMENT (2026-09-12, owner: "enhance the placement" on desktop) — this
+ * screen had NO desktop rule at all: `.cpp-path` was a flat 420px phone
+ * column, centred with hundreds of idle px on either side on the app's own
+ * documented ~1366px desktop, same as a phone would render it just floating
+ * in the middle of a big window. Every node position (`x` in %) and the
+ * trail SVG (`preserveAspectRatio="none"` over a 0-100 viewBox) is already
+ * percentage-driven, so widening the plate needs no data or JS change —
+ * the zigzag simply covers more real pixels at the same relative amplitude.
+ * `min-width: 900px` matches the breakpoint the live board's own desktop
+ * rail already uses in cancelBoard2d.css, so both of this game's screens
+ * agree on where "desktop" starts. */
+@media (min-width: 900px) {
+  .cpp-path {
+    max-width: 640px;
+  }
 }
 
 /* ── Band chapters (Master Prompt Step 5b) ────────────────────────────────

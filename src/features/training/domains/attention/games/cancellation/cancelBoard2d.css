@@ -91,6 +91,27 @@
   }
 }
 
+/* ⚠ TRIAL (2026-09-12, owner: "without the board ... on it we immediately
+ * put the squares, that's it") — drops the plate above for as long as the
+ * star-chart trial background is live, so pieces sit directly on the
+ * illustration with nothing behind them.
+ *
+ * This REOPENS the exact bug the plate exists to fix, on the record two
+ * comment blocks up: the six --game-* stimulus colours are contrast-measured
+ * at ~3.3:1 against --play-surface-flat specifically, not against an
+ * illustrated image whose luminance varies by where a piece happens to land
+ * (dark over the chart's navy oval, lighter over its gold-ruled border).
+ * Some pieces may simply read worse than others depending on board position
+ * — a real regression, accepted here because this is a same-day visual
+ * trial, not a shipped state.
+ *
+ * Left as a SEPARATE rule rather than edited into the block above so the
+ * reasoning it overrides stays on record if this is reverted — see git
+ * history for a one-line revert (delete this rule) to restore the plate. */
+.cancellation-task-game .cb2d-grid::before {
+  content: none;
+}
+
 /*
  * ── ROUND 3: the live board's illustrated background is now visible (see the
  * --training-art-scrim override further down this file) ──
