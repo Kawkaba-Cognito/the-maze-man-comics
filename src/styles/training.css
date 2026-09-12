@@ -1476,7 +1476,11 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     display: flex;
     flex-direction: column;
     min-height: min(100vh, 100dvh);
-    padding: max(48px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
+    /* Top padding was a flat 48px regardless of height — same `vh` fold as
+       the planet/title below it, so a short window gives back a bit more
+       of what it doesn't have to spare. Never less than the safe-area
+       inset, which is a real device notch, not taste. */
+    padding: max(24px, min(48px, 6vh), env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
     box-sizing: border-box;
 }
 .ct-survival-intro-body {
@@ -1491,16 +1495,33 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     width: 100%;
     margin: 0 auto;
 }
+/* ⚠ FIT (2026-09-12, owner: "you have to swipe to start") — every SINGLE
+ * dimension here (planet, title) was sized purely from `vw`, which is a
+ * mobile assumption: a narrow phone is reliably TALL relative to its own
+ * width, so scaling off width alone kept things proportional. On any wide
+ * viewport `vw` stops being a proxy for available room at all — a 1366px
+ * desktop hits the clamp CEILING on both the 168px planet and the 2.8rem
+ * title regardless of how tall the window actually is, so a short desktop
+ * window (this app's own documented ~577-633px) got the LARGEST possible
+ * version of a screen built to scale down for small phones, stacked with a
+ * header and a button that combined would already fill more than that.
+ * The Start button — the one thing this screen exists to reach — landed
+ * below the fold, on literally every game's Survival mode, not just one.
+ *
+ * Fix: fold a `vh` term into the same clamp so oversized-on-width AND
+ * short-on-height are both covered by construction, no breakpoint needed —
+ * this also protects a short LANDSCAPE PHONE, which `min-width` alone
+ * would have missed. */
 .ct-survival-intro-planet {
-    width: clamp(132px, 34vw, 168px);
-    height: clamp(132px, 34vw, 168px);
+    width: clamp(96px, min(34vw, 24vh), 168px);
+    height: clamp(96px, min(34vw, 24vh), 168px);
     flex: 0 0 auto;
 }
 .ct-survival-intro-title {
     margin: 0;
     font-family: 'Outfit', system-ui, sans-serif;
     font-weight: 400;
-    font-size: clamp(2rem, 8vw, 2.8rem);
+    font-size: clamp(1.6rem, min(8vw, 5.5vh), 2.8rem);
     letter-spacing: 0.5px;
     color: var(--ink-outline);
 }

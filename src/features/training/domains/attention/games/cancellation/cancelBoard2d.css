@@ -3,6 +3,26 @@
  * (--game-*) via the shared kit.
  */
 
+/* ⚠ TRIAL (2026-09-12, owner: "since the background is light make the
+ * squares of the objects dark so they can be seen in the best way") — the
+ * shared piece chip (`game2d.css` .game2d-piece__art`, every art-mode game
+ * on the platform) tints toward `#fffaf0`, near-white, because it was built
+ * for the platform's usual dark-on-light illustrated boards. That's exactly
+ * wrong now that this game's plate is gone and pieces sit straight on the
+ * beige star chart: a near-white chip on a beige field is the lowest-
+ * contrast combination available, not the highest.
+ *
+ * Scoped to Cancellation only — this does NOT touch the shared file, so
+ * every other art-mode game keeps its light chip. Same accent-mix pattern
+ * the shared rule already uses, just against `--play-surface-deep-flat`
+ * (the fixed dark navy this same trial already uses for scrim tokens)
+ * instead of near-white, so each icon still reads as ITS OWN piece — the
+ * accent border was already doing identity work, the fill just needs to
+ * stop fighting a light background. */
+.cancellation-task-game .game2d-piece__art {
+  background: color-mix(in srgb, var(--game2d-piece-accent) 22%, var(--play-surface-deep-flat));
+}
+
 .cb2d-wrap {
   position: absolute;
   inset: 0;
@@ -360,14 +380,31 @@
     inset: 12px 284px auto 12px;
   }
 
-  /* Left padding clears the rail; the top reserve for the old strip is gone,
-     which is where the extra board height comes from. */
+  /* ⚠ RE-TUNED (2026-09-12, owner: "align the squares more into the centre
+   * and make the square bigger") — two separate problems, one padding rule.
+   *
+   * CENTRING: this used to be 284px on the left (clears the rail) and 12px
+   * on the right — asymmetric, on the reasoning that only the left side
+   * needed clearance. But `.cb2d-fit` centres the SQUARE within whatever
+   * box this padding leaves, so an asymmetric reserve puts the centre of
+   * THAT box, and therefore the board, well right of the screen's actual
+   * centre — measured ~136px off at this app's own documented 1366px
+   * desktop width. Matching the reserve on both sides fixes that outright,
+   * and costs nothing: the square is bound by HEIGHT, not width, at every
+   * desktop size this rail applies to (min-aspect-ratio:1/1 guarantees
+   * width ≥ height here), so however much width sits either side of the
+   * square, it was never going to grow past what the height allows.
+   *
+   * BIGGER: the actual lever for size is the vertical reserve, since height
+   * is what's binding. Top was 32px for breathing room, not because
+   * anything needs clearance there any more — the rail centres itself on
+   * `top:50%`, independent of this padding. Matched to bottom's 12px, which
+   * reclaims real height for the one axis that actually grows the board. */
+  /* Symmetric now, so LTR and RTL want the identical value — the rail
+     itself still flips sides on its own rule above; this padding no longer
+     needs to know which side that is. */
   .cancellation-task-game .cb2d-wrap {
-    padding: 32px 12px 12px 284px;
-  }
-
-  .cancellation-task-game[dir='rtl'] .cb2d-wrap {
-    padding: 32px 284px 12px 12px;
+    padding: 12px 284px;
   }
 }
 

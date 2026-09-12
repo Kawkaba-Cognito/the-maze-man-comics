@@ -56,6 +56,37 @@ const CELL_MIN = 52;
 const CELL_MAX = 108;
 const GAP_MIN = 8;
 const GAP_MAX = 26;
+/* ⚠ DESKTOP ONLY (2026-09-12, owner: "spread more the squares … mobile is
+ * not the same as desktop", then "a lot of empty spaces in the desktop
+ * mode") — a sparser board (few targets, low tier) can leave real leftover
+ * room inside the square play area even once every piece is at its capped
+ * size, and GAP_MAX was capping that leftover room at a phone-appropriate
+ * 26px, so it just sat as dead margin around a small centred cluster
+ * instead of the pieces actually using the space they had.
+ *
+ * Piece SIZE and the square-board shape stay untouched — both are
+ * measurement contracts (touch-target floor, eccentricity for the Center-
+ * of-Cancellation metric), not taste, and were asked about directly:
+ * getting pieces themselves visibly bigger on this app's own documented
+ * desktop height would mean sizing them to the ROUND actually dealt
+ * instead of one fixed size for every difficulty — the owner chose to
+ * leave that alone. Gap is the lever that's actually free: more room
+ * BETWEEN pieces spreads the same board wider without changing what's on
+ * it, or how hard any given round is.
+ *
+ * ⚠ 48px was the first pass and still left sparse boards visibly clustered
+ * — the maths: a 4x4 round in a ~600px-tall square wants ~67px of gap
+ * before anything else clamps it, and 48 was the clamp. 84 clears every
+ * board this game deals on this app's own documented desktop range without
+ * being clamped away, so the spread is real rather than nominal. GAP_MAX
+ * (26) stops a SMALL board drifting into scattered islands — deliberately
+ * not the concern here, since the complaint was too little spread, not
+ * too much.
+ *
+ * Gated on the exact condition the desktop rail CSS already uses
+ * (`min-width:900px and min-aspect-ratio:1/1` in cancelBoard2d.css) so JS
+ * and CSS agree on where "desktop" starts — mobile gets none of this. */
+const GAP_MAX_DESKTOP = 84;
 
 /*
  * The DENSEST board the game can deal — keep in step with PLAY_BOARD in
@@ -163,9 +194,12 @@ export default function CancelBoard2D({
       const size = Math.max(20, Math.min(target, byW, byH));
 
       // Spend what is left on the spaces between, equally on both axes.
+      // Desktop gets a higher ceiling on that spend — see GAP_MAX_DESKTOP.
+      const isDesktopRail = w >= 900 && w / h >= 1;
+      const gapMax = isDesktopRail ? GAP_MAX_DESKTOP : GAP_MAX;
       const gapW = (w - cols * size) / (cols + 1);
       const gapH = (h - rows * size) / (rows + 1);
-      const nextGap = Math.max(GAP_MIN, Math.min(GAP_MAX, Math.min(gapW, gapH)));
+      const nextGap = Math.max(GAP_MIN, Math.min(gapMax, Math.min(gapW, gapH)));
 
       setPieceSize(size);
       setGap(nextGap);
