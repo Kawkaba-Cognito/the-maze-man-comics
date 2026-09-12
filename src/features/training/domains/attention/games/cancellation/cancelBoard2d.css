@@ -18,9 +18,21 @@
  * (the fixed dark navy this same trial already uses for scrim tokens)
  * instead of near-white, so each icon still reads as ITS OWN piece — the
  * accent border was already doing identity work, the fill just needs to
- * stop fighting a light background. */
+ * stop fighting a light background.
+ *
+ * ⚠ THEME-SPLIT (2026-09-12) — Codex then generated a genuine dark-graded
+ * background pair (see training.css, the dark-theme override below), which
+ * flips the ground this reasoning was built on: dark tiles on a DARK sky
+ * is the same lowest-contrast mistake in the other direction. Light theme
+ * keeps the dark navy chip against the beige chart; dark theme goes back
+ * to something close to the shared component's own light chip, since the
+ * beige-vs-navy logic that justified darkening it in the first place no
+ * longer holds once the ground itself is navy. */
 .cancellation-task-game .game2d-piece__art {
   background: color-mix(in srgb, var(--game2d-piece-accent) 22%, var(--play-surface-deep-flat));
+}
+html[data-home-theme='dark'] .cancellation-task-game .game2d-piece__art {
+  background: color-mix(in srgb, var(--game2d-piece-accent) 20%, var(--play-surface-flat));
 }
 
 .cb2d-wrap {

@@ -221,8 +221,19 @@
   pointer-events: none;
   z-index: 2;
 }
+/* ⚠ CUT (2026-09-12, owner: keep the map, just cut the walk animation) —
+ * the JS state machine above (`walk`/`lastFrontierLv`) is untouched: it
+ * still fires on every level clear, still computes a real dx/dy. What's
+ * gone is the ANIMATION that used to spend 900ms crossing the map on it.
+ * Kawkab now renders at the new node's position immediately, the same
+ * frame the class is applied — no keyframe, so nothing to disable
+ * separately for reduced-motion either (there was never a second
+ * "how does this look with no animation" state to design; it already
+ * exists, it is simply what happens now on every clear, not just when the
+ * OS asks for less motion). `setTimeout(950)` in the JS still clears the
+ * `--walking` class afterwards; harmless with no animation attached to it. */
 .cpp-kawkab--walking {
-  animation: cpp-walk 900ms var(--cx-ease-move, ease-in-out) both;
+  animation: none;
 }
 @keyframes cpp-walk {
   from { transform: translate(calc(-50% + var(--cx-walk-dx, 0%)), calc(-108% + var(--cx-walk-dy, 0px))); }

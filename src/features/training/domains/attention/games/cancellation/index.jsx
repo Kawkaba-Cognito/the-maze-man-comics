@@ -646,6 +646,26 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const chalRoundsTotalRef = useRef(1);
   const chalCycleRef = useRef(0);
   const roundEndedRef = useRef(false);
+  // ⚠ TRIAL (2026-09-12, owner: "add more waves to each level" — clarified
+  // as multiple rounds back-to-back within one level, not a new mechanic).
+  // A "level" on the ladder used to be exactly one board. Now it is
+  // LEVEL_WAVES boards in a row, same (diff, li) config re-rolled fresh
+  // each time via prepareLevelRound — clearing ALL of them is what wins
+  // the level; losing ANY of them ends it immediately, same binary
+  // semantics a single-round level already had. levelWaveStatsRef holds
+  // each cleared wave's raw scoring inputs (never derived stats) so the
+  // FINAL results screen can run computeRoundStats ONCE on the true totals
+  // rather than averaging three already-rounded numbers.
+  const LEVEL_WAVES = 3;
+  const levelWaveIdxRef = useRef(0);
+  const levelWaveStatsRef = useRef([]);
+  // `startLevelGame` is declared further down this component (after
+  // `endRound`), so `endRound`'s own useCallback cannot close over it
+  // directly without a temporal-dead-zone error at render time — same
+  // problem `endRoundRef` two names below already solves for the reverse
+  // direction. Kept current by the effect right after startLevelGame's
+  // own definition.
+  const startLevelGameRef = useRef(null);
   // True for the brief hold between the last target falling and the round
   // actually ending (see the clear-celebration in onCellTap) — guards BOTH the
   // tap handler and the safety-net auto-win effect below so a stray tap or a
@@ -1343,11 +1363,61 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       // didn't reset them, and it's one line to not depend on that staying true.
       setPauseOpen(false);
       setQuitOpen(false);
-      trialLogRef.current?.finish({ won });
+
+      // Losing ANY wave ends the level right here, on THIS wave's own stats
+      // — no partial credit, same binary pass/fail a single-round level
+      // always had. `r.waveIdx` (0-based, set in startLevelGame) is carried
+      // through so the results screen can say which wave it fell on.
+      if (!won) {
+        trialLogRef.current?.finish({ won, waveIdx: r.waveIdx, wavesTotal: r.wavesTotal });
+        trialLogRef.current = null;
+        persistLevel(r, stats, f, e);
+        setLastResult({ type: 'level', stats, r, won, found: f, errors: e });
+        setPhase('res');
+        return;
+      }
+
+      // Cleared this wave. Bank its RAW inputs (not the already-rounded
+      // per-wave stats) so a multi-wave level's final numbers are computed
+      // once, on the true totals, not averaged from three roundings.
+      levelWaveStatsRef.current.push({
+        found: f, errors: e, tc: targetTc || r.tc, tlim, tl, taps: [...tapsRef.current],
+      });
+      const waveIdx = r.waveIdx ?? 0;
+      if (waveIdx + 1 < (r.wavesTotal ?? LEVEL_WAVES)) {
+        levelWaveIdxRef.current = waveIdx + 1;
+        void startLevelGameRef.current?.(r.ladderLv ?? r.lv, { continueWaves: true });
+        return;
+      }
+
+      // Final wave cleared — the whole level is won. Aggregate every wave's
+      // raw inputs into one pseudo-round and score THAT, so `stats` reflects
+      // the level as a whole (total targets, total time, total taps) rather
+      // than just the last wave played.
+      const waves = levelWaveStatsRef.current;
+      const aggFound = waves.reduce((s, w) => s + w.found, 0);
+      const aggErrors = waves.reduce((s, w) => s + w.errors, 0);
+      const aggTc = waves.reduce((s, w) => s + w.tc, 0);
+      const aggTlim = waves.reduce((s, w) => s + w.tlim, 0);
+      const aggTl = waves.reduce((s, w) => s + w.tl, 0);
+      const aggTaps = waves.flatMap((w) => w.taps);
+      const levelStats = computeRoundStats({
+        tlim: aggTlim, tl: aggTl, found: aggFound, errors: aggErrors,
+        tc: aggTc, taps: aggTaps, diff: r.diff, won: true,
+      });
+      trialLogRef.current?.finish({ won: true, waves: waves.length });
       trialLogRef.current = null;
-      if (won) awardLadderWin('cancel', r.ladderLv ?? r.lv, FQ_LADDER_LEVELS);
-      persistLevel(r, stats, f, e);
-      setLastResult({ type: 'level', stats, r, won, found: f, errors: e });
+      awardLadderWin('cancel', r.ladderLv ?? r.lv, FQ_LADDER_LEVELS);
+      persistLevel(r, levelStats, aggFound, aggErrors);
+      // `r.cells` still belongs to the LAST wave only — the results screen's
+      // own target-count display would otherwise read one wave's worth of
+      // targets under an aggregate found/errors line. `aggTc` is the one it
+      // checks first when a level ran more than one wave.
+      r.aggTc = aggTc;
+      r.aggWaves = waves.length;
+      setLastResult({
+        type: 'level', stats: levelStats, r, won: true, found: aggFound, errors: aggErrors,
+      });
       setPhase('res');
     },
     [stopTimer, persistLevel, playSfx, beginFreeRoundAtStage, beginAssessmentTrial, beginAdaptiveTrial, onAssessmentComplete, awardFreeRun, awardLadderWin, profile],
@@ -1558,13 +1628,23 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     onDone();
   };
 
-  const startLevelGame = async (lv) => {
+  const startLevelGame = async (lv, opts = {}) => {
     const { diff, li } = ladderToTier(lv);
+    // A fresh level entry resets the wave count and the accumulator; a
+    // continuation (called from endRound once a wave is cleared) advances
+    // levelWaveIdxRef itself, before calling this, and must NOT wipe the
+    // waves already banked.
+    if (!opts.continueWaves) {
+      levelWaveIdxRef.current = 0;
+      levelWaveStatsRef.current = [];
+    }
     setPhase('play');
     setPlayStep('idle');
     setCdShow(false);
-    trialLogRef.current?.discard();
-    trialLogRef.current = createTrialLog({ game: 'cancel-task', mode: 'level', meta: { lv, diff, li } });
+    if (!opts.continueWaves) {
+      trialLogRef.current?.discard();
+      trialLogRef.current = createTrialLog({ game: 'cancel-task', mode: 'level', meta: { lv, diff, li } });
+    }
     let r;
     try {
       r = prepareLevelRound(diff, li);
@@ -1579,6 +1659,8 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     // downstream (scoring, telemetry, the results screen) reads those — but
     // progress, unlocking and points are all ladder-positioned.
     r.ladderLv = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+    r.waveIdx = levelWaveIdxRef.current;
+    r.wavesTotal = LEVEL_WAVES;
     roundRef.current = r;
     setRound(r);
     setCells(r.cells);
@@ -1596,6 +1678,10 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       setPlayStep('running');
     });
   };
+
+  useEffect(() => {
+    startLevelGameRef.current = startLevelGame;
+  });
 
   const onCellTap = useCallback((idx) => {
     // Held during the brief clear-celebration hold (see below) — a tap landing
@@ -2198,9 +2284,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       )}
 
       {phase === 'res' && lastResult?.type === 'level' && (() => {
-        const targetCount = Array.isArray(lastResult.r.cells)
+        // A multi-wave level's LAST round's cells are not the level's whole
+        // target count — `aggTc` (set once all waves clear) is the total
+        // across every wave and takes priority when present.
+        const targetCount = lastResult.r.aggTc ?? (Array.isArray(lastResult.r.cells)
           ? lastResult.r.cells.filter((cell) => cell.isT).length
-          : lastResult.r.tc;
+          : lastResult.r.tc);
         // A band just closed: this level ends a decade (10/20/.../50 — 60 is
         // the top of the ladder, nothing comes after it) and the player won.
         const clearedLadderLv = lastResult.r.ladderLv ?? 0;

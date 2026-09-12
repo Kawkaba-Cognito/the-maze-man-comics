@@ -60,6 +60,18 @@
    drew this themselves; the layout below is Cancellation's, which is the one
    the others are converging on. Colours come from tokens — nothing here is a
    literal. */
+/* ⚠ FIT (2026-09-12, "the whole app, swiping all the time" → traced to the
+ * SAME mistake as SurvivalIntro, on the screen every game shows when a run
+ * ENDS, which is why it kept happening after that fix shipped) — 108px was
+ * a FLAT top-padding floor, unconditional, not tied to any real safe-area
+ * need (the actual notch clearance is the separate `env()` term already in
+ * this max()). On this app's own documented short desktop window that's
+ * ~18% of the available height spent on padding before a single word of
+ * the result renders, and this card can carry a mark + title + headline +
+ * a stats row + notes + two buttons — tall content, on top of a tall
+ * floor. `min(108px, 16vh)` keeps the full 108px anywhere reasonably tall
+ * (16vh only bites under ~675px) and shrinks it exactly where it was
+ * costing the most. */
 .ct-play-results {
   position: relative;
   width: 100%;
@@ -68,7 +80,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: max(108px, calc(60px + env(safe-area-inset-top))) 16px calc(24px + env(safe-area-inset-bottom));
+  padding: max(min(108px, 16vh), calc(60px + env(safe-area-inset-top))) 16px calc(24px + env(safe-area-inset-bottom));
   text-align: center;
   box-sizing: border-box;
 }

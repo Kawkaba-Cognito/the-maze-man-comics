@@ -182,8 +182,20 @@ html[data-home-theme='light'] .cx-atlas .ct-fq-training-shell--mode-cosmos {
     animation: cx-item-in var(--cx-t-item) var(--cx-ease-enter) both;
     animation-delay: calc(120ms + var(--cx-i) * var(--cx-stagger));
 }
+/* ⚠ ALIGNMENT (2026-09-12, owner: "the three modes are not aligned well")
+ * — `justify-content: center` centred each card's ICON+TITLE+HINT as one
+ * block inside the card. Grid stretches all three cards to the row's own
+ * height (the tallest card's content), so once Pass n Play's hint wraps to
+ * a second line while Survival's and Levels' don't, that card's content
+ * block is taller than its siblings' — and centering a taller block in an
+ * equal-height box lands its icon at a different Y than the other two.
+ * Anchoring from the top instead means the icon sits at the SAME offset in
+ * every card regardless of how much hint text follows it, which is what
+ * "aligned" actually means for a row of cards — only the mobile row layout
+ * (a single line, icon+text side by side) keeps its own centering, since
+ * cards there aren't stacked into equal-height boxes at all. */
 @media (min-width: 560px) {
-    .cxm-card { flex-direction: column; min-height: 232px; justify-content: center; text-align: center; gap: 10px; }
+    .cxm-card { flex-direction: column; min-height: 232px; justify-content: flex-start; padding-top: 28px; text-align: center; gap: 10px; }
 }
 
 .cxm-card-art { display: grid; place-items: center; flex-shrink: 0;
@@ -354,6 +366,25 @@ html[data-home-theme='light'] .cx-atlas .ct-fq-training-shell--mode-cosmos {
 /* Retime the shared solve-pulse ring to this game's hold length. */
 .cx-atlas .ct-juice-solvepulse {
   animation-duration: var(--cx-t-hold);
+}
+
+/* ⚠ TRIAL (2026-09-12, owner: "when i win the level there is like a blue
+ * wave that comes, i dont like it") — the shared ring (--game-ok, scaling
+ * x7 across the whole play area) is a different game's celebration
+ * language layered on top of this one's own plate-bloom (`.is-clearing
+ * .cb2d-grid::before` above), which already marks "solved" with a colour
+ * and shadow change on the board itself. Scoped to Cancellation only —
+ * other games keep the ring exactly as-is, since this is one game's taste,
+ * not a platform call. `animation:none; opacity:0` reuses the platform's
+ * own reduced-motion pattern for this exact element (training.css) rather
+ * than zeroing opacity alone — the KEYFRAMES set opacity too, and would
+ * win over a static value for the length of the run if left live.
+ * `display:none` was the other option; this keeps the element
+ * mounting/unmounting on its normal schedule so nothing downstream times
+ * off it being absent. */
+.cx-atlas .ct-juice-solvepulse {
+  animation: none;
+  opacity: 0;
 }
 
 /* The plate blooms — colour and shadow only, NOTHING under a tile moves.

@@ -9984,6 +9984,17 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .
     background-image: linear-gradient(var(--game-veil), var(--game-veil)),
         url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg.webp");
 }
+/* ⚠ Dark-graded pair (2026-09-12, Codex) — the exact "revisit with a dark-
+ * graded variant" this file's own Round 3/4 history named as follow-up
+ * work, never built until now. Same empty-centre composition, same
+ * specificity trick, scoped to dark app-theme so light keeps the beige
+ * pair above. cancelBoard2d.css flips the piece-chip colour to match in
+ * the same theme selector — the two must move together, or dark theme
+ * gets either dark-on-dark pieces or a light chip on the beige art. */
+html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before {
+    background-image: linear-gradient(var(--game-veil), var(--game-veil)),
+        url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg-dark.webp");
+}
 
 .ct-domain-game-stage[data-training-domain="speed"]:has([data-gameplay-active='true'])::before {
     background-image: linear-gradient(var(--game-veil), var(--game-veil)),
@@ -10011,14 +10022,40 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .
             url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/attention.webp");
     }
     /* ⚠ Cancellation's star-chart trial, portrait half (2026-09-12) — Codex
-     * generated a genuine 9:16 recompose (`premium-2026/…9x16-4k.webp`, here
-     * downsized to ~500KB), not the same landscape plate stretched, so the
-     * "one crop only" limitation from earlier the same day is gone. Same
-     * higher-specificity :has() selector as the landscape rule two blocks
-     * up, just scoped inside this media query so it wins here instead. */
+     * generated a genuine 9:16 recompose, downsized to ~220KB, empty-centre
+     * composition (see below). Same higher-specificity :has() selector as
+     * the landscape rule two blocks up, just scoped inside this media
+     * query so it wins here instead.
+     *
+     * ⚠ RE-CENTRED (owner: "align the squares... according to the big
+     * circle of the background image") — this background is `fixed`, full
+     * viewport, centred on the WHOLE screen. The board itself is not: on a
+     * phone `.cb2d-wrap`'s top padding reserves real room for the HUD strip
+     * (`--fq-hud-reserve`, ~96px measured) while the bottom only clears the
+     * home indicator (~20px), so the board's own content centres itself
+     * lower than screen-centre — the exact asymmetry `.ct-juice-solvepulse`
+     * already corrects for with this identical `(reserve - 20) / 2` formula
+     * a few files over. The oval was landing above the board it's meant to
+     * frame.
+     *
+     * ⚠ Static, not live: a CSS custom property set on `.ct-fq-g-wrap` (a
+     * DESCENDANT of this stage) does not inherit UP to this `::before`
+     * pseudo-element, so this uses the same 96px fallback the JS falls
+     * back to itself rather than the live measured value. Close on any
+     * phone in the HUD's normal height range; revisit with a real
+     * measurement (e.g. a CSS var written higher, on the stage itself) if
+     * a specific device still looks off. */
     .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before {
         background-image: linear-gradient(var(--game-veil), var(--game-veil)),
             url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg-portrait.webp");
+        background-position: center calc(50% + (96px - 20px) / 2);
+    }
+    /* Dark-graded portrait half — same asset pair and reasoning as the
+       landscape dark override two blocks up, same re-centring math. */
+    html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before {
+        background-image: linear-gradient(var(--game-veil), var(--game-veil)),
+            url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg-dark-portrait.webp");
+        background-position: center calc(50% + (96px - 20px) / 2);
     }
     .ct-domain-game-stage[data-training-domain="speed"]:has([data-gameplay-active='true'])::before {
         background-image: linear-gradient(var(--game-veil), var(--game-veil)),
