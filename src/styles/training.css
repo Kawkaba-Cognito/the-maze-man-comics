@@ -2895,10 +2895,46 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
         height: 44px;
     }
     .cancellation-task-game .ct-fq-bar-stats {
-        gap: 3px;
+        gap: 5px;
     }
+    /* ⚠ SQUARED (owner: "the squares of found error etc need to have the
+     * same size", "keep the text so tiny... inside its square") — these
+     * were never actual boxes, just centred text pairs with a min-width
+     * floor, so Found ("6/12") and Level ("L.47") rendered at different
+     * widths and nothing marked where one stat ended and the next began.
+     * Fixed width+height (not min-width) makes every readout identical
+     * regardless of content, using this game's own Plate/Object/Pill/
+     * Readout/Pressed chrome system (--cx-r-readout / --cx-edge-readout /
+     * --cx-ground-quiet — already the Readout tier used elsewhere in this
+     * exact file) rather than inventing a sixth border recipe. Font sizes
+     * are capped small enough that the widest real value ("12/12") still
+     * clears the box with room either side — see the ratchet note below
+     * if a wider value is ever authored. */
     .cancellation-task-game .ct-fq-gs {
-        min-width: 34px;
+        width: 42px;
+        height: 42px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: var(--cx-edge-readout, 1px solid var(--line));
+        border-radius: var(--cx-r-readout, 12px);
+        background: var(--cx-ground-quiet, color-mix(in srgb, var(--play-surface-flat) 88%, transparent));
+        box-sizing: border-box;
+        padding: 2px;
+        overflow: hidden;
+    }
+    .cancellation-task-game .ct-fq-gv {
+        font-size: 0.66rem;
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+    .cancellation-task-game .ct-fq-gv.sm {
+        font-size: 0.6rem;
+    }
+    .cancellation-task-game .ct-fq-gl {
+        font-size: 0.44rem;
+        line-height: 1.2;
     }
     /* ⚠ FIT (owner: "time found etc... on the phone screen they are not
      * written well") — 4 stat blocks (time/found/errors/level) at a 34px
@@ -10058,16 +10094,44 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .
      * from centre is ever worth chasing again, it needs a REAL measured
      * value written where this pseudo-element can read it (a var set on
      * the stage itself, not `.ct-fq-g-wrap`, which is a descendant),
-     * not a fallback-based estimate. */
+     * not a fallback-based estimate.
+     *
+     * ⚠ NO LONGER EDGE-TO-EDGE (owner: "i prefer if the sides are empty
+     * but now there are tiny stuff that appears and are disgusting") —
+     * measured the actual border width in this asset: it occupies roughly
+     * the outer 10-12% of the image on every edge. `cover` on a real
+     * phone (~0.46-0.48 aspect, narrower than this image's 0.5625) crops
+     * only ~9% off each side — LESS than the border's own width — so it
+     * was cropping straight through the medallions instead of clearing
+     * them, which is the "tiny cut-off stuff". No fixed crop amount can
+     * guarantee clearing a border whose width is measured in IMAGE
+     * pixels against a viewport whose width varies per device.
+     *
+     * So this stops cropping altogether: sized to 82% width (auto
+     * height, no distortion), which is smaller than what `contain` alone
+     * would give on every real phone aspect, guaranteeing real margin on
+     * all four sides rather than however much a particular width happens
+     * to leave over. `background-color` matches the art's own flat
+     * interior tone (measured ~rgb(222,209,190), close to
+     * --play-surface-flat) so the margin reads as the ground the plate
+     * is mounted on, not a letterbox bar. */
     .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before {
         background-image: linear-gradient(var(--game-veil), var(--game-veil)),
             url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg-portrait.webp");
+        background-size: cover, 82%;
+        background-position: center, center;
+        background-repeat: no-repeat, no-repeat;
+        background-color: var(--play-surface-flat);
     }
-    /* Dark-graded portrait half — same asset pair and reasoning as the
-       landscape dark override two blocks up. */
+    /* Dark-graded portrait half — same asset pair, sizing and margin-fill
+       reasoning as the landscape dark override two blocks up. */
     html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before {
         background-image: linear-gradient(var(--game-veil), var(--game-veil)),
             url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg-dark-portrait.webp");
+        background-size: cover, 82%;
+        background-position: center, center;
+        background-repeat: no-repeat, no-repeat;
+        background-color: var(--play-surface-deep-flat);
     }
     .ct-domain-game-stage[data-training-domain="speed"]:has([data-gameplay-active='true'])::before {
         background-image: linear-gradient(var(--game-veil), var(--game-veil)),
