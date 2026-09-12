@@ -1459,7 +1459,19 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   useEffect(() => {
     // The coach holds the clock exactly like the pause menu does — a first-time
     // player must never lose Survival time to reading Dr Kawkab.
-    if (playStep !== 'running' || pauseOpen || coachOpen) return;
+    //
+    // ⚠ BUG (owner: "if i press back then keep playing the time freezes") —
+    // `quitOpen` was missing from this guard AND from the dependency array
+    // below. `onHudQuit` calls stopTimer() (runRef.current = false), which
+    // makes the rAF loop's own frame check fail and it stops calling
+    // itself — correctly pausing. But "Keep Playing" only flips
+    // runRef.current back to true; with `quitOpen` absent from this
+    // effect's deps, React never sees a reason to re-run it, so no new rAF
+    // loop is ever started to READ that flag. `pauseOpen` already gets
+    // this right — resuming from the pause modal re-runs this effect
+    // because it's a listed dependency, which is what actually restarts
+    // the loop. `quitOpen` needed the identical treatment and never got it.
+    if (playStep !== 'running' || pauseOpen || quitOpen || coachOpen) return;
     let id;
     let last = performance.now();
     const runId = timerRunIdRef.current + 1;
@@ -1477,7 +1489,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     // board still deserves SOME warning) or later than 10s.
     const warnAt = Math.min(10, Math.max(3, Math.round(tlimRef.current * 0.3)));
     const loop = (ts) => {
-      if (!runRef.current || pauseOpen || coachOpen || timerRunIdRef.current !== runId) return;
+      if (!runRef.current || pauseOpen || quitOpen || coachOpen || timerRunIdRef.current !== runId) return;
       const dt = (ts - last) / 1000;
       last = ts;
       tlRef.current = Math.max(
@@ -1511,7 +1523,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       cancelAnimationFrame(id);
       if (timerRunIdRef.current === runId) runRef.current = false;
     };
-  }, [playStep, pauseOpen, coachOpen, playSfx]);
+  }, [playStep, pauseOpen, quitOpen, coachOpen, playSfx]);
 
   // Open the coach once a Survival round is actually on screen, so Dr Kawkab
   // can point at real shapes. Survival only — Levels and Pass n Play are

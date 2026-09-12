@@ -1,14 +1,10 @@
 {
   "rules": {
-    "deep-surface": 1,
     "raw-colour": 478,
     "stacked-backdrops": 2,
     "conditional-background": 1
   },
   "files": {
-    "src/features/training/domains/attention/games/cancellation/cancelBoard2d.css": {
-      "deep-surface": 1
-    },
     "src/features/training/domains/attention/games/cancellation/index.jsx": {
       "raw-colour": 1
     },

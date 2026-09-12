@@ -2900,6 +2900,20 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     .cancellation-task-game .ct-fq-gs {
         min-width: 34px;
     }
+    /* ⚠ FIT (owner: "time found etc... on the phone screen they are not
+     * written well") — 4 stat blocks (time/found/errors/level) at a 34px
+     * floor plus the target chip left no room to grow past an already-
+     * shrunk font, and this game shows the SAME number twice: the numeric
+     * time readout here duplicates the visual countdown bar
+     * (.ct-fq-cbw/.ct-fq-cb) sitting right below it. Dropping the
+     * duplicate — not shrinking the remaining three further — is the
+     * lever that actually has room to give, and a player glancing for
+     * urgency has the bar for that regardless. Scoped to this narrow
+     * breakpoint only: desktop's side rail already stacks these with
+     * space to spare, so the numeric time stays there. */
+    .cancellation-task-game .ct-fq-gs--time {
+        display: none;
+    }
     .cancellation-task-game .ct-fq-cbw {
         margin-bottom: 2px;
     }

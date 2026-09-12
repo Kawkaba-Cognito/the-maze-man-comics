@@ -23,13 +23,27 @@
  * ⚠ THEME-SPLIT (2026-09-12) — Codex then generated a genuine dark-graded
  * background pair (see training.css, the dark-theme override below), which
  * flips the ground this reasoning was built on: dark tiles on a DARK sky
- * is the same lowest-contrast mistake in the other direction. Light theme
- * keeps the dark navy chip against the beige chart; dark theme goes back
- * to something close to the shared component's own light chip, since the
- * beige-vs-navy logic that justified darkening it in the first place no
- * longer holds once the ground itself is navy. */
+ * is the same lowest-contrast mistake in the other direction. Dark theme
+ * goes back to something close to the shared component's own light chip.
+ *
+ * ⚠ RECONSIDERED (owner: "i dont like the background colours for the
+ * squares") — light theme's chip was a near-uniform dark navy on EVERY
+ * piece regardless of which one it was, mixed only 22% with the piece's
+ * own accent, so the tile itself barely varied piece to piece — the board
+ * read as one dark colour with small icons on it, not a field of distinct
+ * objects. It also abandoned this game's own measured contrast baseline:
+ * the six --game-* stimulus colours are contrast-checked specifically
+ * against `--play-surface-flat` (see tokens.css), and dark navy was never
+ * that surface — it was invented for this trial, not tested. Back to
+ * `--play-surface-flat` for the chip fill, which is both the validated
+ * surface AND close in tone to the new rect-frame art's own parchment, so
+ * the tile reads as a quiet specimen card resting on the same paper as the
+ * frame around it, rather than a separate dark patch competing with it.
+ * The accent border still carries identity; light and dark theme now use
+ * the SAME light-chip logic, mirrored against each theme's own flat
+ * surface rather than diverging. */
 .cancellation-task-game .game2d-piece__art {
-  background: color-mix(in srgb, var(--game2d-piece-accent) 22%, var(--play-surface-deep-flat));
+  background: color-mix(in srgb, var(--game2d-piece-accent) 18%, var(--play-surface-flat));
 }
 html[data-home-theme='dark'] .cancellation-task-game .game2d-piece__art {
   background: color-mix(in srgb, var(--game2d-piece-accent) 20%, var(--play-surface-flat));

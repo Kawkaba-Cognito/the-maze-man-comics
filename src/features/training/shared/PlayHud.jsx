@@ -211,7 +211,11 @@ export default function PlayHud({
             ))
             : null}
           {!stats && showTimer && (
-            <div className="ct-fq-gs">
+            // ct-fq-gs--time: a hook for games that also show a visual time
+            // bar (Cancellation's .ct-fq-cbw) to hide the redundant numeric
+            // readout on a narrow screen without touching every other
+            // caller of this shared header. See training.css.
+            <div className="ct-fq-gs ct-fq-gs--time">
               <div className={`ct-fq-gv ${liveAnim && timeLeft <= 10 ? 'tv' : ''}`}>
                 {`${Number(displaySeconds).toFixed(1)}s`}
               </div>
