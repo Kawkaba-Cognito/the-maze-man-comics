@@ -66,49 +66,39 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
   z-index: 1;
 }
 
+/* ⚠ THE PLATE IS GONE (owner, 2026-09-12: "why you kept the old one and
+ * you put it over the new background... what i want is the background and
+ * on it you put the planets, level and the character").
+ *
+ * This used to be a Tier 1 Plate: an opaque `--play-surface-flat` card with
+ * star-glint gradients, a 26px radius and `--elev-raise`, capped at 420px
+ * and centred. That was right when the screen had no art of its own — the
+ * plate WAS the ground. With Codex's level-map border behind it (see the
+ * ::before above) it became a second, smaller ground sitting on top of the
+ * first, which is exactly what got reported: the new art framing a screen
+ * that still had the old parchment card pasted over its middle.
+ *
+ * So everything that made it a card is deleted rather than re-tuned — the
+ * fill, the glints, the radius, the shadow, and the `overflow: hidden` that
+ * only existed to clip that radius (dropping it also removes any chance of
+ * clipping Kawkab, who hangs above his node). What is left is pure layout:
+ * a centred, width-constrained positioning context the nodes, trail and
+ * Kawkab are placed inside. The ground is now the art behind it.
+ *
+ * ⚠ WIDTH IS NOW A COLLISION CONSTRAINT, NOT A TASTE ONE. Measured on the
+ * real asset, the portrait border occupies the outer 16.7% of each side
+ * (landscape 8%). A node is 74px wide and centres at 20%/80% of this
+ * element (AMPLITUDE=30 in CancelPlanetPath.jsx), so at the old full-width
+ * setting the outermost planets overlapped the ornament by ~15px on a
+ * 390px phone. Solving `pathLeft + 0.2W - 37 >= 0.167 * vw` gives
+ * W <= ~79vw; 76vw is used, which also holds at 360px and 430px. Change
+ * AMPLITUDE, the node width or the art's border width and this needs
+ * re-deriving — the three are coupled. */
 .cpp-path {
   position: relative;
   width: 100%;
-  max-width: 420px;
+  max-width: min(420px, 76vw);
   margin: 0 auto;
-  /* Tier 1 Plate (Master Prompt Step 5a) — this whole screen is one plate. */
-  border-radius: var(--cx-r-plate, 26px);
-  overflow: hidden;
-  box-shadow: var(--elev-raise);
-  /*
-   * ── ROUND 4: the generated photo is gone. ──
-   * A "premium background" was asked for here, and a cropped AI-generated
-   * navy/amber nebula shipped in Round 2/3. Opus's Round 4 review (after
-   * reading this game's own art-direction README, `cancel-cosmic-atlas-2026/
-   * README.md`) called it correctly: this game already has a written,
-   * enforced, hand-inked flat-vector art direction — the same README
-   * explicitly PROHIBITS photorealism and gradients — and the photo violated
-   * both, while being 82%-scrimmed to near-invisibility anyway (see the
-   * `feasible? no.` arithmetic that reasoning produces: an asset that is
-   * barely visible cannot earn a contradiction of the game's own art
-   * direction). It also put a third, unrelated visual language on a screen
-   * that sits one tap away from the live board's own illustrated art and the
-   * hand-inked stimuli inside it — three "premium" languages in one game.
-   *
-   * What replaces it: real pieces from that same cosmic atlas, one per node
-   * (see CancelPlanetPath.jsx) — so this screen, the pre-round cue, and the
-   * live board are now the SAME art family for the first time. The ground
-   * itself stays flat (`--play-surface-flat`, this game's fixed gameplay
-   * palette — never flips with theme, matching everything else in it) with
-   * a light dusting of star-glint dots, decorative only, negligible average
-   * luminance, so it never becomes a second thing captions have to clear
-   * contrast against.
-   */
-  background-color: var(--play-surface-flat);
-  background-image:
-    radial-gradient(1.6px 1.6px at 18% 6%, var(--fx-glint) 0%, transparent 60%),
-    radial-gradient(1.2px 1.2px at 62% 14%, var(--fx-glint) 0%, transparent 60%),
-    radial-gradient(1.8px 1.8px at 82% 44%, var(--fx-glint) 0%, transparent 60%),
-    radial-gradient(1.2px 1.2px at 34% 66%, var(--fx-glint) 0%, transparent 60%),
-    radial-gradient(1.5px 1.5px at 8% 86%, var(--fx-glint) 0%, transparent 60%),
-    radial-gradient(1.3px 1.3px at 92% 92%, var(--fx-glint) 0%, transparent 60%);
-  background-size: 240px 240px;
-  background-repeat: repeat;
 }
 
 /* A trail that actually touches the planets — two SVG paths through the
@@ -327,6 +317,22 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
  * rail already uses in cancelBoard2d.css, so both of this game's screens
  * agree on where "desktop" starts. */
 @media (min-width: 900px) {
+  /* ⚠ THE PARENT HAS TO MOVE TOO, AND UNTIL NOW IT DIDN'T — so this whole
+   * block was inert. `.ct-lv-grid-wrap` (training.css) is `max-width:
+   * 440px` with 16px of side padding, which caps any child at 408px: the
+   * 640px below could never be reached, and the "wider on desktop" change
+   * this block was added for silently did nothing. Raising the wrapper for
+   * THIS screen only (`:has(.cpp-path)`, the same hook the border above
+   * uses) is what makes it real.
+   *
+   * ⚠ Also overrides the `76vw` collision cap from the base rule, which is
+   * a PORTRAIT constraint and must not leak here: the landscape art's
+   * border is only 8% per side (vs 16.7%), and at 640px the outermost
+   * planet still clears it by a wide margin on a 1366px desktop — the
+   * binding limit there works out near 1790px, so 640 is nowhere close. */
+  .ct-lv-grid-wrap:has(.cpp-path) {
+    max-width: 720px;
+  }
   .cpp-path {
     max-width: 640px;
   }
