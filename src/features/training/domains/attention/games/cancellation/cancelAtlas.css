@@ -322,6 +322,61 @@ html[data-home-theme='light'] .cx-atlas .ct-fq-training-shell--mode-cosmos {
     color: var(--fq-mut);
 }
 
+/* Mobile HUD readouts need their own final type scale. The atlas typography
+   rules above used to win the cascade after training.css had already sized
+   these boxes for a phone, so values and labels escaped otherwise-correct
+   36px readouts. Keep every readout equal and square, allow the set to shrink
+   together on very narrow phones, and size both lines against the usable
+   inner width rather than the desktop atlas scale. The joined root selector
+   is deliberate: it stays Cancellation-only and also beats the later
+   cancelBoard2d surface rule regardless of stylesheet insertion order. */
+@media (max-width: 899px), (max-aspect-ratio: 1/1) {
+    .cx-atlas.cancellation-task-game .ct-fq-bar-stats {
+        justify-content: space-evenly;
+        gap: 4px;
+    }
+
+    .cx-atlas.cancellation-task-game .ct-fq-gs {
+        flex: 1 1 0;
+        width: auto;
+        min-width: 0;
+        max-width: 36px;
+        height: auto;
+        aspect-ratio: 1;
+        padding: 2px 1px;
+        gap: 1px;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    .cx-atlas.cancellation-task-game .ct-fq-gv,
+    .cx-atlas.cancellation-task-game .ct-fq-gv.sm {
+        max-width: 100%;
+        overflow: hidden;
+        font-size: 0.56rem;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    .cx-atlas.cancellation-task-game .ct-fq-lives {
+        font-size: 0.5rem;
+        letter-spacing: 0;
+    }
+
+    .cx-atlas.cancellation-task-game .ct-fq-gl {
+        max-width: 100%;
+        overflow: hidden;
+        font-size: 0.4rem;
+        line-height: 1.1;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+    }
+
+    [dir='rtl'] .cx-atlas.cancellation-task-game .ct-fq-gl {
+        letter-spacing: 0;
+    }
+}
+
 /* The countdown numeral joins the clock voice; timing (0.34s) is unchanged —
    the countdown itself steps every 380ms. */
 .cx-atlas .ct-fq-cd-num {
