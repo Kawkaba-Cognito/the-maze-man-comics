@@ -10053,34 +10053,37 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .
  * `cover` never crops. Portrait gets its OWN real recompose now too, not
  * this same crop stretched — see the media query further down. */
 /* ⚠ `100% 100%`, NOT `cover` (owner, 2026-09-12: "put the image of the
- * background exactly as the border of the screen"). This asset is a FRAME —
- * its whole subject is the ornamental border running along all four edges —
- * and that makes every aspect-preserving fit mode wrong here, for reasons
- * that are arithmetic rather than taste:
+ * background exactly as the border of the screen").
  *
- *   · `cover` scales to the LARGER ratio and crops the overflow. Measured on
- *     the real assets, the border occupies ~10-12% of the image per edge
- *     while the crop removes ~9-25% depending on device — so the cut lands
- *     INSIDE the border, slicing medallions in half. That is the "tiny stuff
- *     that appears and is disgusting" report.
- *   · `contain` (and the 82%-width variant tried before this) never crops,
- *     but leaves the frame floating with dead margin around it — the frame
- *     stops being the screen's border and becomes a picture OF a border.
- *     That is the "it was ruined" report.
+ * ⚠ THE ART CHANGED SHAPE AND THAT CHANGED THE RIGHT ANSWER (2026-09-12,
+ * Codex regenerated the gameplay set with NO LEFT/RIGHT BORDERS — ornament
+ * runs along the top and bottom only, the sides bleed as plain parchment).
+ * That is not a restyle, it removes the constraint the whole argument below
+ * was built on, and PORTRAIT can now use plain `cover` with zero distortion:
  *
- * Both failures share one cause: an aspect-preserving mode cannot make a
+ *   asset 2160x3840 (0.5625) · every real phone is NARROWER (~0.45-0.50)
+ *   -> height binds, so `cover` crops horizontally and never vertically
+ *   -> both ornament bands survive intact, and the crop removes only the
+ *      plain parchment at the sides, where by design there is nothing to cut
+ *
+ * LANDSCAPE still cannot use `cover`, for the opposite reason: this app's
+ * own documented desktop is 1366x577 (2.367) against a 1.778 asset, so
+ * `cover` binds on WIDTH and crops ~95px off each of top and bottom — while
+ * the band itself only renders ~77px tall there. Cover would eat both bands
+ * completely. So landscape keeps `100% 100%`, where the only visible cost is
+ * a vertical squeeze of the bands; the horizontal stretch is free, because
+ * the sides are plain.
+ *
+ * ── Why the four-sided frame this replaced could never be fixed ──
+ * Kept because it is the reason to leave the new art alone. With ornament on
+ * all four edges, `cover` cropped ~9-25% depending on device against a
+ * border only ~10-12% wide, so the cut landed INSIDE the ornament and halved
+ * the medallions ("tiny stuff that appears and is disgusting"); `contain`
+ * and an 82%-width variant never cropped but detached the frame from the
+ * screen edge ("it was ruined"). An aspect-preserving mode cannot make a
  * fixed-aspect rectangle meet a variable-aspect viewport on all four edges
- * at once. `100% 100%` drops the aspect constraint and pins each edge of the
- * art to the matching edge of the screen, which is exactly what was asked
- * for and the only mode that guarantees it on every device.
- *
- * ⚠ The cost is real and deliberate: non-uniform scale. Circular medallions
- * render as slight ovals (~18% horizontal squeeze on a typical phone). That
- * is acceptable HERE and would not be on most art — this is a symmetrical
- * repeating ornament with no face, text or logo, the categories where a
- * stretch reads as a mistake. It is also the quieter error: an evenly
- * squeezed ornament reads as a design choice, a half-cut medallion reads as
- * a bug.
+ * at once — one of crop-or-margin is forced. The new art dissolves that by
+ * simply not putting anything on the axis that has to give.
  *
  * ⚠ BOTH layers must be sized. `background-size` is positional — the first
  * value belongs to the veil gradient, the second to the image — so writing a
@@ -10158,33 +10161,36 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .
      * the stage itself, not `.ct-fq-g-wrap`, which is a descendant),
      * not a fallback-based estimate.
      *
-     * ⚠ THIS EDGE HISTORY IS THE POINT — two failures, opposite
-     * directions, one cause. `cover` crops ~9% off each side on a real
-     * phone while the border itself occupies ~10-12%, so the cut lands
-     * inside the ornament and halves the medallions ("tiny stuff that
-     * appears and is disgusting"). The fix tried next — 82% width,
-     * centred, margin filled with the art's own interior tone — never
-     * crops, but detaches the frame from the screen edge and leaves it
-     * floating ("it was ruined"). Neither is a tuning problem: an
-     * aspect-preserving fit CANNOT meet a variable-aspect viewport on
-     * all four edges at once, so one of crop-or-margin is forced.
+     * ⚠ PORTRAIT IS BACK ON `cover`, AND IT IS NOW LOSSLESS — the whole
+     * edge history above describes a FOUR-SIDED frame, which no fit mode
+     * could serve. Codex's replacement art puts ornament on the top and
+     * bottom ONLY and lets the sides bleed as plain parchment, and that
+     * makes `cover` exactly right here rather than a compromise:
      *
-     * `100% 100%` drops the aspect constraint instead and pins each edge
-     * of the art to the matching screen edge — see the full reasoning on
-     * the landscape rule above, which now does the same thing. */
+     *   asset 2160x3840 (0.5625) vs every real phone (~0.45-0.50)
+     *   -> the phone is always NARROWER, so height binds
+     *   -> zero vertical crop: both ornament bands land intact on the
+     *      screen's top and bottom edges, at their true aspect
+     *   -> the horizontal crop falls entirely on the plain sides, where
+     *      the art deliberately has nothing to lose
+     *
+     * So portrait gets edge-to-edge ornament AND no distortion, which is
+     * the thing the four-sided art made impossible. Landscape still needs
+     * `100% 100%` — see the note on the landscape rule above for why
+     * `cover` would eat both bands on a 1366x577 desktop. */
     .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before {
         background-image: linear-gradient(var(--game-veil), var(--game-veil)),
             url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg-portrait.webp");
-        background-size: 100% 100%, 100% 100%;
+        background-size: cover, cover;
         background-position: center, center;
         background-repeat: no-repeat, no-repeat;
     }
-    /* Dark-graded portrait half — same asset pair and edge-to-edge sizing
-       reasoning as the landscape dark override two blocks up. */
+    /* Dark-graded portrait half — same asset shape and `cover` reasoning
+       as the light rule directly above. */
     html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before {
         background-image: linear-gradient(var(--game-veil), var(--game-veil)),
             url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg-dark-portrait.webp");
-        background-size: 100% 100%, 100% 100%;
+        background-size: cover, cover;
         background-position: center, center;
         background-repeat: no-repeat, no-repeat;
     }

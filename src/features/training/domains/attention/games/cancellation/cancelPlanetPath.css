@@ -5,6 +5,67 @@
  * screen this replaces.
  */
 
+/* ── The level map's own ornamental border (2026-09-12, Codex) ───────────
+ * A dedicated art set, and its shape is the MIRROR of the gameplay one:
+ * ornament runs down the LEFT and RIGHT edges while the top and bottom
+ * bleed as plain parchment. That is the correct choice for this screen
+ * specifically, and the reason is structural rather than decorative —
+ * this is the one screen in the game that SCROLLS (up to 60 levels, a
+ * path thousands of px tall). Ornament on the top/bottom edges would
+ * either scroll away with the content or cap a column that has no end;
+ * ornament on the sides frames the scroll for its whole length.
+ *
+ * ⚠ `position: fixed` (matching `.ct-domain-game-stage::before`, the same
+ * pattern the gameplay background uses) so the border stays pinned to the
+ * screen while levels scroll past it, rather than travelling with the
+ * content and leaving bare edges below the fold. It resolves against
+ * `#ui-shell` — a transformed ancestor traps `fixed` — which is the app
+ * area, so the framing is right either way.
+ *
+ * ⚠ `100% 100%`, not `cover`: the ornament lives on the left and right
+ * edges here, so `cover` (which crops the axis that overflows) would cut
+ * exactly the thing this art exists for on any viewport narrower than the
+ * asset. Stretching pins both ornament columns to the screen's own left
+ * and right edges on every device; the vertical give lands on the plain
+ * top/bottom, where by design there is nothing to distort. This is the
+ * same argument as the gameplay background in training.css, rotated 90
+ * degrees — see that comment for the full derivation.
+ *
+ * ⚠ Scoped by `:has(.cpp-path)` — `.cx-page` dresses EVERY screen in this
+ * game (mode select, level select, results), and only the level map wants
+ * a border. `.cpp-path` exists on this screen and nowhere else. */
+.cx-page:has(.cpp-path)::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("/the-maze-man-comics/Assets/attention/cancel-levelmap-bg.webp");
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
+  background-image: url("/the-maze-man-comics/Assets/attention/cancel-levelmap-bg-dark.webp");
+}
+@media (orientation: portrait) {
+  .cx-page:has(.cpp-path)::before {
+    background-image: url("/the-maze-man-comics/Assets/attention/cancel-levelmap-bg-portrait.webp");
+  }
+  html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
+    background-image: url("/the-maze-man-comics/Assets/attention/cancel-levelmap-bg-dark-portrait.webp");
+  }
+}
+/* ⚠ REQUIRED, not tidiness. A positioned pseudo-element at `z-index: 0`
+   paints ABOVE the content of non-positioned siblings (CSS 2.1 painting
+   order: positioned boxes come after in-flow block content), so without
+   this the border layer would cover the entire level map. Same pairing
+   `.ct-domain-game-stage > *` already carries in training.css. */
+.cx-page:has(.cpp-path) > * {
+  position: relative;
+  z-index: 1;
+}
+
 .cpp-path {
   position: relative;
   width: 100%;
