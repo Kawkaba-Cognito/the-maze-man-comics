@@ -97,8 +97,34 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
 .cpp-path {
   position: relative;
   width: 100%;
-  max-width: min(420px, 76vw);
-  margin: 0 auto;
+  max-width: min(460px, 79vw);
+  margin: 10px auto 0;
+}
+
+/* This screen is a map, not another utility grid. The title uses the atlas'
+   editorial voice while the supporting line stays in the instrument face. */
+.cx-atlas .ct-lv-grid-wrap:has(.cpp-path) .ct-lv-hero-title {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: clamp(2.2rem, 7vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  line-height: 0.96;
+  margin-block: 10px 12px;
+  text-wrap: balance;
+}
+.cx-atlas .ct-lv-grid-wrap:has(.cpp-path) .ct-lv-hero-sub {
+  max-width: 34rem;
+  margin-bottom: 22px;
+  font-size: clamp(0.9rem, 3.2vw, 1rem);
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  line-height: 1.4;
+  text-wrap: balance;
+}
+[dir='rtl'] .cx-atlas .ct-lv-grid-wrap:has(.cpp-path) .ct-lv-hero-title,
+[dir='rtl'] .cx-atlas .ct-lv-grid-wrap:has(.cpp-path) .ct-lv-hero-sub {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
 }
 
 /* A trail that actually touches the planets — two SVG paths through the
@@ -119,15 +145,15 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
 .cpp-trail-rest {
   fill: none;
   stroke: color-mix(in srgb, var(--line) 85%, transparent);
-  stroke-width: 3;
-  stroke-dasharray: 5 9;
+  stroke-width: 4;
+  stroke-dasharray: 6 10;
   stroke-linecap: round;
 }
 .cpp-trail-done {
   /* The road already walked, in the app's own "cleared" colour. */
   fill: none;
   stroke: color-mix(in srgb, var(--game-ok) 70%, transparent);
-  stroke-width: 4;
+  stroke-width: 5;
   stroke-linecap: round;
 }
 
@@ -137,8 +163,8 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  width: 74px;
+  gap: 4px;
+  width: 92px;
   background: none;
   border: none;
   padding: 0;
@@ -149,7 +175,7 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
      position) skip layout+paint entirely — now load-bearing, not just a
      nice-to-have, since each node carries a real image. */
   content-visibility: auto;
-  contain-intrinsic-size: 74px 90px;
+  contain-intrinsic-size: 92px 104px;
 }
 .cpp-node:disabled { cursor: not-allowed; }
 .cpp-node:focus-visible .cpp-orb {
@@ -164,8 +190,8 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
    rim was exactly that, and is deleted rather than reduced. */
 .cpp-orb {
   position: relative;
-  width: 56px;
-  height: 56px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   background: var(--play-surface-flat);
   border: var(--cx-edge-object, 1px solid var(--line));
@@ -186,11 +212,11 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
 
 .cpp-num {
   position: absolute;
-  top: 18px;
+  top: 23px;
   left: 50%;
   transform: translateX(-50%);
   font-family: 'DM Mono', ui-monospace, monospace;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   /*
@@ -202,17 +228,23 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
   text-shadow: 0 0 3px var(--play-surface-flat), 0 0 3px var(--play-surface-flat);
   pointer-events: none;
 }
-.cpp-num svg { display: block; }
+.cpp-num svg { display: block; width: 17px; height: 17px; }
 
 .cpp-sub {
   font-family: 'Outfit', system-ui, sans-serif;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   /* --fq-mut, not --ink-dim — this is the SAME fixed-palette family every
      other label in this game uses now (a theme-flipping token here would
      put light-on-light text in dark app-theme, on this game's fixed ground). */
-  color: var(--fq-mut, var(--ink-dim));
+  color: var(--game-ink);
   white-space: nowrap;
+  line-height: 1;
+  padding: 6px 11px;
+  border: var(--cx-edge-readout, 1px solid var(--line));
+  border-radius: var(--cx-r-pill, 999px);
+  background: color-mix(in srgb, var(--play-surface-flat) 94%, transparent);
+  box-shadow: 0 3px 10px var(--fx-shadow-soft);
 }
 
 /* Done: a green ring states "cleared" without needing to re-tint the art
@@ -222,7 +254,7 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
 .cpp-node--done .cpp-orb {
   box-shadow: var(--elev-raise), var(--cx-ring-done, inset 0 0 0 2px var(--game-ok));
 }
-.cpp-node--done .cpp-num { font-size: 20px; color: var(--game-ok); }
+.cpp-node--done .cpp-num { font-size: 22px; color: var(--game-ok); }
 
 /* Locked: flattened toward stone via filter on the SAME image (no second
    asset) — desaturated and dimmed, so "not yet reachable" reads before the
@@ -230,7 +262,7 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
 .cpp-node--locked .cpp-orb-art {
   filter: grayscale(0.85) brightness(0.68) contrast(0.92);
 }
-.cpp-node--locked .cpp-num { font-size: 18px; text-shadow: none; opacity: 0.85; }
+.cpp-node--locked .cpp-num { font-size: 20px; text-shadow: none; opacity: 0.85; }
 .cpp-node--locked .cpp-sub { opacity: 0.6; }
 
 /* Current: where Kawkab is actually standing. A soft pulse, not a static
@@ -266,7 +298,8 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
  * `--cx-kawkab-lift` isolates the correction so it's the one number to
  * retune after a visual check, without hand-editing three transforms. */
 .cpp-kawkab {
-  --cx-kawkab-lift: 8px;
+  --cpp-kawkab-size: 56px;
+  --cx-kawkab-lift: 12px;
   position: absolute;
   transform: translate(-50%, calc(-108% - var(--cx-kawkab-lift)));
   pointer-events: none;
@@ -331,10 +364,41 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
    * planet still clears it by a wide margin on a 1366px desktop — the
    * binding limit there works out near 1790px, so 640 is nowhere close. */
   .ct-lv-grid-wrap:has(.cpp-path) {
-    max-width: 720px;
+    max-width: 1120px;
   }
   .cpp-path {
-    max-width: 640px;
+    max-width: 1040px;
+    margin-top: 14px;
+  }
+  .cx-atlas .ct-lv-grid-wrap:has(.cpp-path) .ct-lv-hero-title {
+    font-size: 3.35rem;
+  }
+  .cx-atlas .ct-lv-grid-wrap:has(.cpp-path) .ct-lv-hero-sub {
+    font-size: 1.08rem;
+  }
+  .cpp-node {
+    width: 112px;
+    contain-intrinsic-size: 112px 124px;
+  }
+  .cpp-orb {
+    width: 84px;
+    height: 84px;
+  }
+  .cpp-num {
+    top: 29px;
+    font-size: 19px;
+  }
+  .cpp-num svg {
+    width: 20px;
+    height: 20px;
+  }
+  .cpp-sub {
+    font-size: 14px;
+    padding: 7px 13px;
+  }
+  .cpp-kawkab {
+    --cpp-kawkab-size: 72px;
+    --cx-kawkab-lift: 14px;
   }
 }
 
@@ -346,51 +410,128 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
   position: absolute;
   inset-inline: 0;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 6px;
-  z-index: 1;
+  min-height: 72px;
+  z-index: 3;
   pointer-events: none;
   content-visibility: auto;
-  contain-intrinsic-size: 100% 52px;
+  contain-intrinsic-size: 100% 72px;
 }
 .cpp-band-rule {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
   display: block;
-  width: min(88%, 320px);
+  width: min(96%, 380px);
   height: 1px;
+  margin-inline: auto;
   background: var(--line);
 }
 .cpp-band-pill {
-  display: inline-flex;
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-areas:
+    'sigil name'
+    'sigil sub';
   align-items: center;
-  gap: 8px;
-  padding: 5px 12px;
-  border-radius: var(--cx-r-pill, 999px);
-  border: var(--cx-edge-readout, 1px solid var(--line));
-  background: var(--cx-ground-quiet, var(--play-surface-flat));
+  column-gap: 10px;
+  row-gap: 3px;
+  width: min(100%, 340px);
+  min-height: 64px;
+  padding: 10px 16px;
+  box-sizing: border-box;
+  border-radius: var(--cx-r-object, 20px);
+  border: var(--cx-edge-plate, 1px solid var(--line));
+  background: color-mix(in srgb, var(--play-surface-flat) 96%, transparent);
+  box-shadow: 0 8px 24px var(--fx-shadow-soft);
 }
 .cpp-band-sigil {
-  width: 20px;
-  height: 20px;
+  grid-area: sigil;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
 }
 .cpp-band-name {
+  grid-area: name;
   font-family: 'Cormorant Garamond', 'Cinzel', serif;
-  font-weight: 600;
-  font-size: 0.95rem;
-  letter-spacing: 0.05em;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.045em;
+  line-height: 1;
   color: var(--game-ink);
 }
 .cpp-band-sub {
+  grid-area: sub;
   font-family: 'Outfit', system-ui, sans-serif;
-  font-size: var(--cx-fs-label, 0.62rem);
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0.035em;
+  line-height: 1.25;
+  text-transform: none;
   color: var(--fq-mut, var(--ink-dim));
 }
 [dir='rtl'] .cpp-band-name { font-family: 'Cairo', 'Cormorant Garamond', serif; font-weight: 700; letter-spacing: 0; }
 [dir='rtl'] .cpp-band-sub  { font-family: 'Cairo', 'Outfit', sans-serif; letter-spacing: 0.02em; text-transform: none; }
+
+@media (max-width: 480px) {
+  .ct-lv-grid-wrap:has(.cpp-path) {
+    padding-inline: 12px;
+  }
+  .cx-atlas .ct-lv-grid-wrap:has(.cpp-path) .ct-lv-hero-title {
+    font-size: clamp(1.65rem, 7.6vw, 1.85rem);
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .cpp-path {
+    max-width: min(460px, 79vw);
+    margin-top: 6px;
+  }
+  .cpp-band-pill {
+    grid-template-columns: 30px minmax(0, 1fr);
+    width: min(100%, calc(100vw - 128px), 250px);
+    min-height: 64px;
+    padding: 9px 13px;
+  }
+  .cpp-band-sigil {
+    width: 30px;
+    height: 30px;
+  }
+  .cpp-band-name {
+    font-size: 1.08rem;
+  }
+  .cpp-band-sub {
+    font-size: 0.69rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .cpp-band {
+    min-height: 78px;
+    transform: translateY(-16px);
+  }
+  .cpp-band-rule {
+    width: min(96%, 540px);
+  }
+  .cpp-band-pill {
+    grid-template-columns: 38px minmax(0, 1fr);
+    column-gap: 14px;
+    width: min(100%, 440px);
+    min-height: 76px;
+    padding: 12px 20px;
+  }
+  .cpp-band-sigil {
+    width: 38px;
+    height: 38px;
+  }
+  .cpp-band-name {
+    font-size: 1.25rem;
+  }
+  .cpp-band-sub {
+    font-size: 0.76rem;
+  }
+}
 
 /* The walked trail draws itself in on mount (Master Prompt Step 5d).
    pathLength="1" (set in the JSX) normalises the path to length 1

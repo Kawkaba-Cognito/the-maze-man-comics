@@ -33,17 +33,19 @@ import './cancelPlanetPath.css';
  * `prefers-reduced-motion`.
  */
 
-const ROW_H = 108;    // px between one level's centre and the next
+const ROW_H = 112;    // px between one level's centre and the next
 const AMPLITUDE = 30;  // how far a node swings from centre, in % of width
 const BAND_SIZE = 10;
-const BAND_GAP = 56;   // breathing room where a chapter rule sits
+const BAND_GAP = 120;  // breathing room where a chapter card sits
+const FIRST_NODE_Y = 190;
+const BAND_MARKER_OFFSET = 170;
 
 // The first node's own offset (was 56) has to clear KAWKAB standing above
 // it too, not just the orb — his sprite reaches roughly 60px above
 // whichever node is current, and level 1 IS the current node for every
 // new player. 56 gave him ~4px of headroom before `.cpp-path`'s own top
 // edge, which is what the header-crowding report was actually measuring.
-const yOf = (i) => 96 + i * ROW_H + Math.floor(i / BAND_SIZE) * BAND_GAP;
+const yOf = (i) => FIRST_NODE_Y + i * ROW_H + Math.floor(i / BAND_SIZE) * BAND_GAP;
 
 const ATLAS_CYCLE = [
   'galaxy', 'supernova', 'nebula-bolt', 'portal', 'warp-gate', 'moon',
@@ -220,7 +222,7 @@ export default function CancelPlanetPath({
           </svg>
           {bands && bandStarts.map((b) => (
             bands[b] ? (
-              <div className="cpp-band" style={{ top: yOf(b * BAND_SIZE) - 34 }} key={`b${b}`}>
+              <div className="cpp-band" style={{ top: yOf(b * BAND_SIZE) - BAND_MARKER_OFFSET }} key={`b${b}`}>
                 <span className="cpp-band-rule" aria-hidden="true" />
                 <span className="cpp-band-pill" role="note" aria-label={bands[b].aria || bands[b].title}>
                   <img className="cpp-band-sigil" src={atlasUrl(BAND_SIGIL[b % BAND_SIGIL.length])} alt="" aria-hidden="true" />
@@ -257,7 +259,7 @@ export default function CancelPlanetPath({
             aria-hidden="true"
           >
             <div className="cpp-kawkab-bob">
-              <KawkabSprite size={48} />
+              <KawkabSprite size="var(--cpp-kawkab-size)" />
             </div>
           </div>
         </div>
