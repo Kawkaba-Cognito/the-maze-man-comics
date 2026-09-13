@@ -501,3 +501,52 @@ html[data-home-theme='dark'] .cancellation-task-game .game2d-piece__art {
     inset-inline-end: auto;
   }
 }
+
+/* ── DRIFT — the Long Void's rule (L51–60, 2026-09-13) ──────────────────────
+ * The field never quite holds still, so the player cannot lean on where a
+ * piece WAS. Search has to keep updating, which is the point.
+ *
+ * ⚠ AMPLITUDE IS DELIBERATELY SMALL (4px) AND THE PERIOD LONG (6.4s). This is
+ * a task scored on where you tapped: motion big or fast enough to make a tap
+ * miss its own target would convert a search measure into an aiming one — the
+ * exact confound Intercept removed by taking the marchers out of the input.
+ * Drift is here to defeat position memory, not the thumb.
+ *
+ * ⚠ Each cell's phase and direction come from its index (set inline), never
+ * from a random draw at render: a re-rolled value would jitter on every state
+ * change instead of drifting, and this board re-renders on every single tap.
+ *
+ * The round grants 12% more time for it (FQ_DRIFT_TIME_MULT) — drift is the
+ * one rule in the game that makes the search itself slower, so it is the one
+ * that pays for itself, and it pays where audit:fq can see it.
+ */
+.cb2d-cell--drift {
+  animation: cb2dDrift 6.4s ease-in-out infinite alternate;
+  animation-delay: var(--cb2d-drift-delay, 0s);
+  will-change: transform;
+}
+@keyframes cb2dDrift {
+  from { transform: translate(0, 0); }
+  to {
+    transform: translate(
+      calc(var(--cb2d-drift-x, 0) * 4px),
+      calc(var(--cb2d-drift-y, 0) * 4px)
+    );
+  }
+}
+/* ⚠ Not a decorative flourish that can simply be switched off: with the motion
+   gone the rule is gone, and the level would grant its 12% time bonus for
+   nothing. Reduced motion keeps a drift, at a third of the distance and half
+   the speed, so the rule still holds and nobody is made unwell by it. */
+@media (prefers-reduced-motion: reduce) {
+  .cb2d-cell--drift { animation-duration: 12s; }
+  @keyframes cb2dDrift {
+    from { transform: translate(0, 0); }
+    to {
+      transform: translate(
+        calc(var(--cb2d-drift-x, 0) * 1.4px),
+        calc(var(--cb2d-drift-y, 0) * 1.4px)
+      );
+    }
+  }
+}

@@ -498,23 +498,155 @@ function poolForLevel(diff, li) {
  */
 export const FQ_LADDER = [
   /* L1–10  */ { diff: 'easy', half: 0, adds: ['scan'] },
-  /* L11–20 */ { diff: 'easy', half: 1, adds: [] },
+  /* L11–20 */ { diff: 'easy', half: 1, adds: ['switch'] },
   /* ⚠ 'medium', not 'med' — this game's tier keys are easy/medium/hard while
      most others use easy/med/hard. Getting it wrong makes TC[diff] undefined
      and every level of these two bands throws. audit:curves caught exactly
      that on the first run. */
   /* L21–30 */ { diff: 'medium', half: 0, adds: ['denser'] },
-  /* L31–40 */ { diff: 'medium', half: 1, adds: [] },
+  /* L31–40 */ { diff: 'medium', half: 1, adds: ['forbidden'] },
   /* L41–50 */ { diff: 'hard', half: 0, adds: ['lookalikes'] },
-  /* L51–60 */ { diff: 'hard', half: 1, adds: [] },
+  /* L51–60 */ { diff: 'hard', half: 1, adds: ['drift'] },
 ];
+
+/*
+ * ── THE SIX WORLDS ──────────────────────────────────────────────────────────
+ *
+ * Each band of ten is a place, and each place brings ONE new rule (owner,
+ * 2026-09-13: "each section is a planet, and it has its own colours, and every
+ * new section has a new feature, and when a new feature appears the tutorial
+ * will happen").
+ *
+ * ⚠ THE THREE NEW RULES WERE CHOSEN AGAINST `audit:fq`, NOT AGAINST TASTE.
+ * That gate asserts the time a level grants actually covers the expert search
+ * model — it exists because this game once shipped a hard tier granting 11
+ * seconds for 44.5 seconds of work. So a new rule may not make the SEARCH
+ * slower unless it also buys time back:
+ *
+ *   switch     the target changes between sets. Costs nothing per item — it is
+ *              a set-level task switch, which is the construct (set shifting),
+ *              and the search inside a set is exactly as modelled.
+ *   forbidden  one object must be LEFT ALONE. Adds no search time; it converts
+ *              some of the field into no-go items, which is response
+ *              inhibition — the same measure Intercept takes, so the platform
+ *              already has the vocabulary for it.
+ *   drift      the field moves. This one DOES slow search, so it is the only
+ *              rule that carries a time multiplier (`timeMult`), applied where
+ *              the round is built so the gate sees the granted time.
+ *
+ * `stars` is not in here on purpose: a star is earned from what the run
+ * measured, not from which world it happened in.
+ */
+export const FQ_SECTIONS = [
+  {
+    id: 'ember', mech: 'scan', sigil: 'star',
+    en: 'Ember Reach', ar: 'مرتفعات الجمر',
+    enSub: 'Where the hunt begins', arSub: 'حيث يبدأ البحث',
+  },
+  {
+    id: 'dust', mech: 'switch', sigil: 'comet',
+    en: 'The Dust Sea', ar: 'بحر الغبار',
+    enSub: 'The quarry changes', arSub: 'الهدف يتغيّر',
+  },
+  {
+    id: 'frost', mech: 'denser', sigil: 'meteor-cluster',
+    en: 'Frost Hollow', ar: 'جوف الصقيع',
+    enSub: 'A fuller field', arSub: 'حقل أكثف',
+  },
+  {
+    id: 'tempest', mech: 'forbidden', sigil: 'nebula-bolt',
+    en: 'The Tempest', ar: 'العاصفة',
+    enSub: 'Something to leave alone', arSub: 'شيء لا يُلمس',
+  },
+  {
+    id: 'verdant', mech: 'lookalikes', sigil: 'warp-gate',
+    en: 'Verdant Drift', ar: 'الانجراف الأخضر',
+    enSub: 'Near-twins everywhere', arSub: 'أشباه في كل مكان',
+  },
+  {
+    id: 'void', mech: 'drift', sigil: 'supernova',
+    en: 'The Long Void', ar: 'الفراغ الطويل',
+    enSub: 'Nothing holds still', arSub: 'لا شيء يثبت',
+  },
+];
+
+/** Ladder level (1-based) → its section. Every level belongs to exactly one. */
+export function fqSectionOf(lv) {
+  const n = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+  return FQ_SECTIONS[Math.min(FQ_SECTIONS.length - 1, Math.floor((n - 1) / 10))];
+}
+/** 0-based index of a level inside its own section. */
+export const fqIndexInSection = (lv) =>
+  (Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1))) - 1) % 10;
+
+/**
+ * Sets per level — the level gets longer as the ladder climbs (owner: "each
+ * level will be longer and has multiple sets"). It was a flat three.
+ *
+ * ⚠ EACH SET IS A WHOLE BOARD WITH ITS OWN TIME BUDGET, which is what keeps
+ * audit:fq true: feasibility is a per-board property, so lengthening a LEVEL
+ * by adding boards never makes any single board unclearable. Raising the time
+ * per board would have been the unsafe way to do the same thing.
+ */
+export function fqSetsForLevel(lv) {
+  const s = Math.floor((Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1))) - 1) / 10);
+  return s <= 0 ? 2 : s <= 2 ? 3 : 4;
+}
+
+/** Every rule live at a given ladder level — a world keeps what it was taught. */
+export function fqMechanicsAt(lv) {
+  const upto = Math.floor((Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1))) - 1) / 10);
+  const set = new Set();
+  for (let i = 0; i <= upto; i += 1) (FQ_LADDER[i]?.adds || []).forEach((m) => set.add(m));
+  return set;
+}
+
+/** Drift is the one rule that slows the search, so it is the one that pays. */
+export const FQ_DRIFT_TIME_MULT = 1.12;
 
 export const FQ_LADDER_LEVELS = FQ_LADDER.length * 10; // 60
 
 export const FQ_MECHANIC_LABELS = {
   scan: { en: 'Find every target', ar: 'جد كل الأهداف' },
+  switch: { en: 'The target changes each set', ar: 'الهدف يتغيّر كل جولة' },
   denser: { en: 'A denser board', ar: 'لوحة أكثف' },
+  forbidden: { en: 'One object is off limits', ar: 'شيء واحد ممنوع لمسه' },
   lookalikes: { en: 'Look-alike distractors', ar: 'مشتّتات متشابهة' },
+  drift: { en: 'The field drifts', ar: 'الحقل ينجرف' },
+};
+
+/*
+ * What each rule teaches, in the player's words and then in the honest one.
+ * ⚠ `why` states the construct WITHOUT promising a life outcome — this text is
+ * read by the review board's scientific-claims standard, which greps user
+ * facing strings. "Practice at holding a rule" is a claim about this task;
+ * "improves your focus at work" would not be.
+ */
+export const FQ_MECHANIC_TEACH = {
+  scan: {
+    en: { what: 'Clear every tile showing the target object.', why: 'This is visual search: one object among many, found by sweeping the field.' },
+    ar: { what: 'امسح كل مربع يحمل الشكل المطلوب.', why: 'هذا بحث بصري: شكل واحد بين كثير، يُوجد بمسح الحقل.' },
+  },
+  switch: {
+    en: { what: 'Each set hunts a different object. Check the cue before you start.', why: 'Dropping the old rule and taking up a new one is set shifting — the cost shows up on the first few taps after a change.' },
+    ar: { what: 'كل جولة لها شكل مختلف. انظر إلى البطاقة قبل البدء.', why: 'ترك قاعدة وأخذ أخرى هو تحويل المجموعة — وتظهر كلفته في أول نقرات بعد التغيير.' },
+  },
+  denser: {
+    en: { what: 'More objects on the board, same job.', why: 'Crowding is the lever: search slows with the number of things that must be rejected.' },
+    ar: { what: 'أشياء أكثر على اللوحة، والمهمة نفسها.', why: 'الازدحام هو العامل: يبطؤ البحث بعدد ما يجب رفضه.' },
+  },
+  forbidden: {
+    en: { what: 'One object is off limits. Find the targets and leave it alone.', why: 'Not acting is its own skill — holding back a tap you have already started is response inhibition.' },
+    ar: { what: 'شيء واحد ممنوع. جد الأهداف واتركه.', why: 'الامتناع مهارة بذاته — كبح نقرة بدأت بالفعل هو كبح الاستجابة.' },
+  },
+  lookalikes: {
+    en: { what: 'The distractors now share features with the target.', why: 'The more a distractor resembles the target, the closer you must look at each one.' },
+    ar: { what: 'صارت المشتّتات تشبه الهدف في بعض ملامحه.', why: 'كلما أشبه المشتّت الهدف، لزمك نظر أدق في كل واحد.' },
+  },
+  drift: {
+    en: { what: 'The field drifts while you work. You get a little more time for it.', why: 'A moving field stops you relying on where things were — search has to keep updating.' },
+    ar: { what: 'ينجرف الحقل أثناء عملك، ولك وقت أطول قليلاً.', why: 'الحقل المتحرك يمنعك من الاعتماد على مواضع الأشياء — فيبقى البحث يتحدّث.' },
+  },
 };
 
 /** Ladder level → the authored (tier, level) it plays. */
@@ -1215,7 +1347,18 @@ export function prepareFreeRound(stageIndex) {
 export function prepareLevelRound(diff, lv, opts = {}) {
   const cfg = getLvCfg(diff, lv - 1);
   const pal = PAL[diff] || PAL.easy;
-  const lockedTarget = cfg.pool[Math.floor(Math.random() * cfg.pool.length)];
+  /*
+   * ⚠ `avoidTarget` is what makes the SWITCH rule true rather than likely.
+   * Every set already re-rolled the target at random, so it changed most of
+   * the time by accident — and a rule that holds "most of the time" is not a
+   * rule, it is a coincidence the player cannot learn from. Excluding the
+   * previous set's target makes the change guaranteed, which is the only
+   * version worth announcing or measuring.
+   */
+  const choices = opts.avoidTarget && cfg.pool.length > 1
+    ? cfg.pool.filter((s) => s !== opts.avoidTarget)
+    : cfg.pool;
+  const lockedTarget = choices[Math.floor(Math.random() * choices.length)];
   const lockedCol = pal[Math.floor(Math.random() * pal.length)];
   const searchMode = 'categorical';
   const eccentricityBias = computeEccentricityBias(lv - 1, diff);
@@ -1230,7 +1373,11 @@ export function prepareLevelRound(diff, lv, opts = {}) {
   const squareArea = cfg.grid * cfg.grid;
   const reflowed = board.total !== squareArea;
   const tc = reflowed ? reflowTargetCount(cfg.tc, squareArea, board.total) : cfg.tc;
-  const tlim = reflowed ? survivalRoundTime(diff, lv - 1, tc, board.total) : cfg.time;
+  const baseTlim = reflowed ? survivalRoundTime(diff, lv - 1, tc, board.total) : cfg.time;
+  /* Drift is the only rule that makes the search itself slower, so it is the
+     only one that buys time back — and it is bought HERE, where the round is
+     built, so the granted time audit:fq reads is the time the player gets. */
+  const tlim = opts.drift ? Math.round(baseTlim * FQ_DRIFT_TIME_MULT) : baseTlim;
   const built = buildCellsFromParams(
     board,
     cfg.pool,
@@ -1241,11 +1388,43 @@ export function prepareLevelRound(diff, lv, opts = {}) {
   );
   const withFill = assignFillColors(built.cells, diff, cfg.interference, built.tgtCol);
   const cells = withFill.map((c, i) => ({ ...c, id: i, tapped: false, feedback: null }));
+
+  /*
+   * ── FORBIDDEN ───────────────────────────────────────────────────────────
+   * One distractor SHAPE becomes off limits: find the targets, leave that one
+   * alone. Marked on the cells rather than drawn differently, because the
+   * whole point is that it looks like any other distractor until you have
+   * learned it — a no-go you can spot by its styling is not inhibition, it is
+   * a second search.
+   *
+   * ⚠ It never touches `isT`, so the clear condition, the target count and
+   * every feasibility number audit:fq checks are untouched. The rule adds a
+   * way to be WRONG, not more to find.
+   */
+  let noGoShape = null;
+  if (opts.forbidden) {
+    const counts = new Map();
+    cells.forEach((c) => { if (!c.isT) counts.set(c.shape, (counts.get(c.shape) || 0) + 1); });
+    // The commonest distractor, so the rule is actually met often enough to be
+    // learned — a no-go that appears twice on a board teaches nothing.
+    let best = null; let bestN = 0;
+    counts.forEach((n, shape) => { if (n > bestN) { bestN = n; best = shape; } });
+    if (best && bestN >= 2) {
+      noGoShape = best;
+      cells.forEach((c) => { if (!c.isT && c.shape === best) c.isNoGo = true; });
+    }
+  }
+
   const targetCount = cells.filter((c) => c.isT).length;
   return {
     mode: 'level',
     diff,
     lv,
+    /* Rules in force on THIS board, so every consumer — the cue card, the HUD,
+       the tap handler, the results — reads one source rather than each
+       re-deriving the section from the level number. */
+    noGo: noGoShape,
+    drift: !!opts.drift,
     /*
      * `grid` is the COLUMN count, and equals `rows` on a square board. It stays
      * because every consumer that reads it wants columns: index.jsx derives

@@ -162,24 +162,42 @@
     width: min(100%, 420px);
     display: flex;
     flex-direction: column;
+    /* ⚠ STRETCH, NOT THE SHARED `center`. Centred flex items are sized
+       shrink-to-fit, so each register was as wide as ITS OWN TEXT — Survival's
+       hint is the shortest, so its register came out 2.6px narrower and its
+       cut sat 1.3px inboard of the other two. Content was deciding geometry.
+       Stretching makes all three registers the same box by construction, which
+       also makes the printer's rules equal in length. Measured after: orb
+       centres 112.0 / 112.0 / 112.0. */
+    align-items: stretch;
     gap: 0;
 }
 .cx-atlas .ct-mph .ct-mph-row { display: contents; }
+/* ⚠ ALL THREE REGISTERS TAKE THE SAME BOX, and the margin is declared here
+   rather than beside the rule (owner, 2026-09-13: "pass n play is more to the
+   left than the others"). The first build put `margin-inline: 22px` in the
+   selector that draws the printer's rule — which is only the FIRST TWO
+   registers, since the last one has nothing under it. So the third register
+   was 44px wider than its siblings and its cut started 22px further out.
+   Measured: orb centres at 113.3 / 112.0 / 90.0.
+   A rule about SPACING must never ride along inside a rule about DECORATION;
+   that is the whole bug, and it is invisible in the source because the two
+   selectors look like they are describing the same thing. */
 .cx-atlas .ct-mph .ct-mph-slot--survival,
 .cx-atlas .ct-mph .ct-mph-slot--levels,
 .cx-atlas .ct-mph .ct-mph-slot--pass {
-    width: 100%;
-    margin: 0;
     display: block;
+    width: auto;
+    margin: 0 22px;
+    padding: 0;
 }
 /* The printer's rule: it stops short of both margins, so it reads as a rule
    set in a page rather than as a divider between two list items. RTL-safe
-   because it is inset on both sides equally. */
+   because the register is inset equally on both sides. Decoration only —
+   no geometry here. */
 .cx-atlas .ct-mph .ct-mph-slot--survival,
 .cx-atlas .ct-mph .ct-mph-slot--levels {
     border-bottom: 1px solid color-mix(in srgb, var(--universe-ink) 26%, transparent);
-    margin-inline: 22px;
-    width: auto;
 }
 
 /* Each register: the cut, then the words beside it. Text-align start, never
@@ -772,3 +790,155 @@
   letter-spacing: 0.02em;
   font-family: 'Cairo', 'Outfit', sans-serif;
 }
+
+/* ══ THE RULE CARD AND THE WORLD REVIEW (2026-09-13) ════════════════════════
+ * Two screens that bracket a world: one before its first level saying what is
+ * new, one after its tenth saying what happened. Both are Tier 1 Plates in the
+ * atlas' own chrome recipe, so they are the same object the rest of the game
+ * is built from rather than two more independently-invented cards.
+ *
+ * They read their world's hue from `data-section`, the same one attribute the
+ * map nodes use — one place decides what "Tempest" looks like.
+ */
+.cx-rule[data-section='ember'],   .cx-review[data-section='ember']   { --cx-sec: var(--fx-sec-ember-core);   --cx-sec-lit: var(--fx-sec-ember-lit); }
+.cx-rule[data-section='dust'],    .cx-review[data-section='dust']    { --cx-sec: var(--fx-sec-dust-core);    --cx-sec-lit: var(--fx-sec-dust-lit); }
+.cx-rule[data-section='frost'],   .cx-review[data-section='frost']   { --cx-sec: var(--fx-sec-frost-core);   --cx-sec-lit: var(--fx-sec-frost-lit); }
+.cx-rule[data-section='tempest'], .cx-review[data-section='tempest'] { --cx-sec: var(--fx-sec-tempest-core); --cx-sec-lit: var(--fx-sec-tempest-lit); }
+.cx-rule[data-section='verdant'], .cx-review[data-section='verdant'] { --cx-sec: var(--fx-sec-verdant-core); --cx-sec-lit: var(--fx-sec-verdant-lit); }
+.cx-rule[data-section='void'],    .cx-review[data-section='void']    { --cx-sec: var(--fx-sec-void-core);    --cx-sec-lit: var(--fx-sec-void-lit); }
+
+.cx-rule, .cx-review {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  width: min(100%, 24rem);
+  margin: 6px auto 0;
+  padding: 26px 22px 24px;
+  box-sizing: border-box;
+  border-radius: var(--cx-r-plate);
+  border: 1px solid color-mix(in srgb, var(--cx-sec, var(--game-ink)) 42%, var(--line));
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--cx-sec, var(--game-accent)) 16%, transparent), transparent 58%),
+    var(--play-surface-flat);
+  box-shadow: var(--elev-raise);
+}
+
+.cx-rule-world { display: flex; align-items: center; gap: 9px; }
+.cx-rule-sigil, .cx-review-sigil { width: 34px; height: 34px; object-fit: contain; }
+.cx-review-sigil { width: 54px; height: 54px; }
+.cx-rule-world-name, .cx-review-name {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: 1.28rem;
+  color: var(--game-ink);
+  letter-spacing: 0.03em;
+}
+.cx-rule-kicker, .cx-review-kicker, .cx-review-label {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: var(--cx-fs-label);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fq-mut);
+}
+.cx-rule-name {
+  margin: 0;
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-weight: 600;
+  font-size: clamp(1.5rem, 6vw, 1.9rem);
+  line-height: 1.08;
+  color: var(--game-ink);
+  text-wrap: balance;
+}
+.cx-rule-what {
+  margin: 0;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--game-ink);
+  max-width: 30ch;
+}
+/* The construct, set quieter than the instruction: a player who wants to know
+   WHY can read it, and one who just wants to play is not made to. */
+.cx-rule-why {
+  margin: 0;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--fq-mut);
+  max-width: 32ch;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.cx-review-stats { display: flex; gap: 26px; margin: 4px 0 2px; }
+.cx-review-stat { display: flex; flex-direction: column; gap: 3px; }
+.cx-review-stat b {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 1.7rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--game-ink);
+}
+.cx-review-of { font-size: 0.9rem; color: var(--fq-mut); }
+.cx-review-stat em {
+  font-style: normal;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: var(--cx-fs-label);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fq-mut);
+}
+.cx-review-taught, .cx-review-next {
+  display: flex; flex-direction: column; gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  width: 100%;
+}
+.cx-review-line {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--game-ink);
+}
+[dir='rtl'] .cx-rule-kicker,
+[dir='rtl'] .cx-review-kicker,
+[dir='rtl'] .cx-review-label { letter-spacing: 0.04em; text-transform: none; }
+[dir='rtl'] .cx-rule-name,
+[dir='rtl'] .cx-rule-world-name,
+[dir='rtl'] .cx-review-name { font-family: 'Cairo', 'Cormorant Garamond', serif; letter-spacing: 0; }
+
+/* ── The rules, stated on the cue card the player already reads ──────────── */
+.cx-cue-flag {
+  margin-top: 8px;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: var(--cx-fs-label);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--game-accent-ink, var(--game-ink));
+  padding: 4px 12px;
+  border-radius: var(--cx-r-pill);
+  background: var(--game-accent);
+}
+.cx-cue-nogo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 10px;
+  padding: 7px 13px 7px 8px;
+  border-radius: var(--cx-r-pill);
+  border: 1px solid color-mix(in srgb, var(--game-bad) 55%, var(--line));
+  background: color-mix(in srgb, var(--game-bad) 9%, transparent);
+}
+.cx-cue-nogo-chip { display: grid; place-items: center; }
+.cx-cue-nogo-text {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--game-ink);
+}
+[dir='rtl'] .cx-cue-flag { letter-spacing: 0.02em; text-transform: none; }
+[dir='rtl'] .cx-cue-nogo { padding: 7px 8px 7px 13px; }

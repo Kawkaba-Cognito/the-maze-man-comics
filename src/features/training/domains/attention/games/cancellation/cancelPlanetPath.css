@@ -611,3 +611,67 @@
   from { stroke-dashoffset: 1; }
   to   { stroke-dashoffset: 0; }
 }
+
+/* ══ THE SIX WORLDS ON THE MAP (2026-09-13) ═════════════════════════════════
+ * Each band of ten is a place with its own colour, so a 60-level climb reads
+ * as six worlds rather than sixty identical discs — which is what made the old
+ * map feel like a bag of stickers even after the random icons came off.
+ *
+ * ⚠ ONE ATTRIBUTE, NOT SIX RULESETS. Every node and chapter card carries
+ * `data-section`, and the only thing a section changes is the pair of custom
+ * properties below. Adding a seventh world is a data change plus two tokens.
+ *
+ * ⚠ The hues are `--fx-sec-*` (tokens.css) because they are ART IDENTITY, not
+ * theme surface: a lava world is red in both appearances. That prefix is also
+ * what keeps them out of audit:design's raw-colour rule, which is exactly what
+ * the prefix is for.
+ */
+.cpp-node[data-section='ember'],   .cpp-band[data-section='ember']   { --cpp-sec: var(--fx-sec-ember-core);   --cpp-sec-lit: var(--fx-sec-ember-lit); }
+.cpp-node[data-section='dust'],    .cpp-band[data-section='dust']    { --cpp-sec: var(--fx-sec-dust-core);    --cpp-sec-lit: var(--fx-sec-dust-lit); }
+.cpp-node[data-section='frost'],   .cpp-band[data-section='frost']   { --cpp-sec: var(--fx-sec-frost-core);   --cpp-sec-lit: var(--fx-sec-frost-lit); }
+.cpp-node[data-section='tempest'], .cpp-band[data-section='tempest'] { --cpp-sec: var(--fx-sec-tempest-core); --cpp-sec-lit: var(--fx-sec-tempest-lit); }
+.cpp-node[data-section='verdant'], .cpp-band[data-section='verdant'] { --cpp-sec: var(--fx-sec-verdant-core); --cpp-sec-lit: var(--fx-sec-verdant-lit); }
+.cpp-node[data-section='void'],    .cpp-band[data-section='void']    { --cpp-sec: var(--fx-sec-void-core);    --cpp-sec-lit: var(--fx-sec-void-lit); }
+
+/* The world tints the disc it owns. Kept to a WASH (12–18%) rather than a
+   fill: the level number has to stay the highest-contrast thing on the node,
+   and six saturated discs down a column is the crowding this screen just had
+   removed. */
+.cpp-node[data-section] .cpp-orb {
+  background: color-mix(in srgb, var(--cpp-sec) 12%, var(--play-surface-flat));
+  border-color: color-mix(in srgb, var(--cpp-sec) 45%, var(--line));
+}
+.cpp-node[data-section].cpp-node--locked .cpp-orb {
+  background: color-mix(in srgb, var(--cpp-sec) 5%, var(--play-surface-flat));
+  border-color: color-mix(in srgb, var(--cpp-sec) 22%, var(--line));
+}
+.cpp-node[data-section].cpp-node--current .cpp-orb {
+  background: color-mix(in srgb, var(--cpp-sec) 22%, var(--play-surface-flat));
+  border-color: var(--cpp-sec);
+}
+.cpp-node[data-section].cpp-node--done .cpp-orb {
+  /* Cleared keeps the green ring — progress is one language across the whole
+     game, and a per-world "done" colour would make six of them. */
+  background: color-mix(in srgb, var(--cpp-sec) 14%, var(--play-surface-flat));
+}
+.cpp-band[data-section] .cpp-band-sigil { filter: none; }
+.cpp-band[data-section] .cpp-band-pill {
+  border-color: color-mix(in srgb, var(--cpp-sec) 40%, var(--line));
+  background: color-mix(in srgb, var(--cpp-sec) 8%, var(--play-surface-flat));
+}
+.cpp-band[data-section] .cpp-band-rule {
+  background: color-mix(in srgb, var(--cpp-sec) 45%, transparent);
+}
+
+/* ── Stars ─────────────────────────────────────────────────────────────────
+   ⚠ Inside the node's own box, like the state badge: `.cpp-node` carries
+   `content-visibility: auto`, so anything hanging below the box is clipped.
+   The row is 9px glyphs on a 4px lane, which fits the node's flow height. */
+.cpp-stars {
+  display: flex;
+  gap: 2px;
+  margin-top: 3px;
+  line-height: 0;
+}
+.cpp-star { fill: color-mix(in srgb, var(--game-ink) 22%, transparent); }
+.cpp-star--on { fill: var(--game-accent); }

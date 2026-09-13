@@ -280,10 +280,29 @@ export default function CancelBoard2D({
           const cellClass = state === 'correct' ? ' cb2d-cell--cleared'
             : state === 'wrong' ? ' cb2d-cell--wrong'
             : '';
+          /*
+           * ── DRIFT (the Long Void's rule) ─────────────────────────────────
+           * The field moves. Each cell gets its own phase and direction from
+           * its INDEX, not from a random draw, so the pattern is stable for
+           * the life of the board — a cell that re-randomised on every render
+           * would jitter rather than drift.
+           *
+           * ⚠ The movement is a transform on the cell, which means hit
+           * testing follows it: the piece is always where it looks. Animating
+           * the grid's layout instead would have moved the picture away from
+           * the target, and on a task scored by where you tapped that is not
+           * a difficulty lever, it is a lie.
+           */
+          const driftStyle = round?.drift ? {
+            '--cb2d-drift-delay': `${(idx % 7) * 0.41}s`,
+            '--cb2d-drift-x': `${(idx % 3) - 1}`,
+            '--cb2d-drift-y': `${((idx >> 1) % 3) - 1}`,
+          } : undefined;
           return (
             <div
               key={idx}
-              className={`cb2d-cell${cellClass}`}
+              className={`cb2d-cell${cellClass}${round?.drift ? ' cb2d-cell--drift' : ''}`}
+              style={driftStyle}
               ref={(el) => { cellRefs.current[idx] = el; }}
             >
               <GamePiece

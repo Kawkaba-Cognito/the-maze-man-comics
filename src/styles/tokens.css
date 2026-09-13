@@ -288,6 +288,26 @@
      that is the tell for a broken probe, not a broken value. */
   --fx-orb-label-veil: rgba(5, 8, 16, 0.68);
 
+  /* ─── The six worlds of Cancellation's ladder ──────────────────────────
+     One hue pair per section of ten levels: the world's body colour and its
+     lit edge. Fixed literals, and `--fx-` for the documented reason — these
+     are ART IDENTITY, not theme surface. A lava world is red in both
+     appearances or it is not a lava world, exactly as the Learn footer is
+     black in both. The pairs are ordered as the ladder is climbed: ember,
+     dust, frost, tempest, verdant, void. */
+  --fx-sec-ember-core: #b5432a;
+  --fx-sec-ember-lit:  #e8894f;
+  --fx-sec-dust-core:  #a9772f;
+  --fx-sec-dust-lit:   #e2bc72;
+  --fx-sec-frost-core: #3d6f8e;
+  --fx-sec-frost-lit:  #96c7dd;
+  --fx-sec-tempest-core: #5a4a86;
+  --fx-sec-tempest-lit:  #a294d4;
+  --fx-sec-verdant-core: #3f6b4a;
+  --fx-sec-verdant-lit:  #8fbf88;
+  --fx-sec-void-core:  #2f3550;
+  --fx-sec-void-lit:   #8d93b8;
+
   --fx-training-scrim: rgba(8, 14, 30, 0.58);
   /* The lighter plate for a HUB backdrop, which sits behind cards rather than
      behind a scored task and so does not need to go as dark. */

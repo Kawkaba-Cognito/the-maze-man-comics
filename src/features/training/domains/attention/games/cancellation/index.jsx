@@ -44,6 +44,13 @@ import {
   ladderToTier,
   ladderLvCfg,
   fqMigrateLadderReached,
+  FQ_SECTIONS,
+  FQ_MECHANIC_LABELS,
+  FQ_MECHANIC_TEACH,
+  fqSectionOf,
+  fqIndexInSection,
+  fqSetsForLevel,
+  fqMechanicsAt,
 } from '../../../../shared/focusQuestData';
 import {
   TrainingMenuBar,
@@ -125,9 +132,16 @@ function loadProfile() {
       done: parsed.done && typeof parsed.done === 'object' ? parsed.done : {},
       freeBest: parsed.freeBest ?? 0,
       freeBestScore: parsed.freeBestScore ?? 0,
+      /* ⚠ THIS FUNCTION IS A WHITELIST, so a field it does not name is dropped
+         on every load — silently, and only noticed a session later when the
+         thing you earned is gone. `stars` had to be added here the moment it
+         was written in `persistLevel`; CLAUDE.md records the identical trap
+         costing the Wellbeing SRBAI ratings their persistence. Anything new
+         stored on this profile must be listed here too. */
+      stars: parsed.stars && typeof parsed.stars === 'object' ? parsed.stars : {},
     };
   }
-  return { tel: [], done: {}, freeBest: 0, freeBestScore: 0 };
+  return { tel: [], done: {}, freeBest: 0, freeBestScore: 0, stars: {} };
 }
 
 function saveProfile(p) {
@@ -321,6 +335,21 @@ const UI = {
     survivalCueHint: 'Take a good look. The timer starts only when you tap.',
     fixHint: 'Focus on the centre…',
     cueShape: 'Tap every tile that shows this object.',
+    /* ⚠ The AR twins of these five live in the other dict, ~150 lines down.
+       This repo's most repeated bug is editing one half and leaving the other
+       saying something else — see CLAUDE.md. Change them in pairs. */
+    cueNewTarget: 'New target this set',
+    cueNoGo: 'Leave this one alone',
+    setOf: (a, b) => `Set ${a} of ${b}`,
+    starsEarned: (n) => (n === 1 ? '1 star' : `${n} stars`),
+    ruleNew: 'A new rule',
+    ruleBegin: 'Begin',
+    reviewTitle: 'World complete',
+    reviewStars: 'Stars collected',
+    reviewAcc: 'Accuracy across the world',
+    reviewTaught: 'What it taught',
+    reviewNext: 'Next world',
+    reviewOn: 'Onward',
     assessMode: '📊 Assessment',
     hubNodeAssessHint: 'Standardized test · track your attention',
     assessIntroTitle: 'Attention Assessment',
@@ -475,6 +504,20 @@ const UI = {
     survivalCueHint: 'انظر جيدًا. يبدأ المؤقت فقط عند الضغط.',
     fixHint: 'ركّز على المركز…',
     cueShape: 'المس كل مربع يحتوي على هذا الجسم.',
+    /* The AR half of the pairs added with the worlds — edited together with
+       the EN half above, never alone. */
+    cueNewTarget: 'هدف جديد في هذه الجولة',
+    cueNoGo: 'اترك هذا ولا تلمسه',
+    setOf: (a, b) => `الجولة ${a} من ${b}`,
+    starsEarned: (n) => (n === 1 ? 'نجمة واحدة' : n === 2 ? 'نجمتان' : `${n} نجوم`),
+    ruleNew: 'قاعدة جديدة',
+    ruleBegin: 'ابدأ',
+    reviewTitle: 'اكتمل العالم',
+    reviewStars: 'النجوم المجموعة',
+    reviewAcc: 'الدقة في هذا العالم',
+    reviewTaught: 'ما الذي علّمه',
+    reviewNext: 'العالم التالي',
+    reviewOn: 'إلى الأمام',
     assessMode: '📊 تقييم',
     hubNodeAssessHint: 'اختبار موحّد · تابع انتباهك',
     assessIntroTitle: 'تقييم الانتباه',
@@ -661,8 +704,21 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   // each cleared wave's raw scoring inputs (never derived stats) so the
   // FINAL results screen can run computeRoundStats ONCE on the true totals
   // rather than averaging three already-rounded numbers.
+  // ⚠ 2026-09-13: the count is no longer flat. It comes from the SECTION
+  // (`fqSetsForLevel`): two in the first world, three in the next two, four
+  // from the Tempest down — so a level genuinely gets longer as the ladder
+  // climbs, which is what "each level will be longer and has multiple sets"
+  // asked for. The constant stays as the fallback for any caller that has no
+  // ladder level to ask about (Pass n Play and the assessment never come
+  // through here, but `r.wavesTotal ?? LEVEL_WAVES` is read in two places).
   const LEVEL_WAVES = 3;
+  // The rule card waiting to be read, and the world review waiting to be shown.
+  const [pendingRule, setPendingRule] = useState(null);
+  const [sectionReview, setSectionReview] = useState(null);
   const levelWaveIdxRef = useRef(0);
+  // The previous set's target, so the SWITCH rule can guarantee a change
+  // rather than leave it to a re-roll that repeats about one time in six.
+  const lastWaveTargetRef = useRef(null);
   const levelWaveStatsRef = useRef([]);
   // `startLevelGame` is declared further down this component (after
   // `endRound`), so `endRound`'s own useCallback cannot close over it
@@ -795,7 +851,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const ladderReached = useMemo(() => fqMigrateLadderReached(doneMap), [doneMap]);
 
   const persistLevel = useCallback(
-    (r, stats, f, e) => {
+    (r, stats, f, e, stars = 0) => {
       const p = { ...profile, tel: [...(profile.tel || [])], done: { ...doneMap } };
       p.tel.push({
         lv: r.lv,
@@ -813,7 +869,20 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         ts: new Date().toISOString(),
       });
       if (stats.won && r.mode === 'level') {
-        p.done[`lad-${r.ladderLv ?? r.lv}`] = true;
+        const lad = r.ladderLv ?? r.lv;
+        p.done[`lad-${lad}`] = true;
+        /*
+         * ⚠ `Math.max` against what is already stored: a replay that goes
+         * worse must never take a star back. The ladder is something you
+         * climb, not a score you have to defend — and a player who returns to
+         * an early level to practise a rule should not be punished for it.
+         * The stars themselves are computed where the totals live (endRound);
+         * this only records them.
+         */
+        if (stars > 0) {
+          p.stars = { ...(p.stars || {}) };
+          p.stars[lad] = Math.max(p.stars[lad] || 0, stars);
+        }
       }
       saveProfile(p);
       setProfile(p);
@@ -1413,13 +1482,55 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       trialLogRef.current?.finish({ won: true, waves: waves.length });
       trialLogRef.current = null;
       awardLadderWin('cancel', r.ladderLv ?? r.lv, FQ_LADDER_LEVELS);
-      persistLevel(r, levelStats, aggFound, aggErrors);
+      /*
+       * Stars, from what the level already measured and nothing new: you
+       * cleared it (1), you cleared it without a wrong tap (2), and you
+       * cleared it with a quarter of the clock still unspent (3). Computed on
+       * the AGGREGATE of every set, so a level is judged as the whole run it
+       * is — banking a clean first set and then flailing the third earns two,
+       * not three.
+       */
+      const spare = aggTlim > 0 ? aggTl / aggTlim : 0;
+      const earnedStars = 1 + (aggErrors === 0 ? 1 : 0) + (spare >= 0.25 ? 1 : 0);
+      r.stars = earnedStars;
+      persistLevel(r, levelStats, aggFound, aggErrors, earnedStars);
       // `r.cells` still belongs to the LAST wave only — the results screen's
       // own target-count display would otherwise read one wave's worth of
       // targets under an aggregate found/errors line. `aggTc` is the one it
       // checks first when a level ran more than one wave.
       r.aggTc = aggTc;
       r.aggWaves = waves.length;
+      /*
+       * The tenth level of a world earns a review. It is assembled HERE, while
+       * the level that finished it is still in hand, but shown after the
+       * ordinary results screen — the player should see how the level went
+       * before being told how the world went.
+       *
+       * ⚠ Every number in it is read back from what was persisted, not from
+       * this run: a world is ten levels, and nine of them happened in earlier
+       * sessions. Accuracy comes from the telemetry rows for those levels.
+       */
+      const lad = r.ladderLv ?? r.lv;
+      if (fqIndexInSection(lad) === 9) {
+        const sec = fqSectionOf(lad);
+        const firstLv = lad - 9;
+        const starMap = { ...(profile.stars || {}) };
+        starMap[lad] = Math.max(starMap[lad] || 0, earnedStars);
+        let starSum = 0;
+        for (let i = firstLv; i <= lad; i += 1) starSum += starMap[i] || 0;
+        const rows = (profile.tel || []).filter((x) => x && x.won && typeof x.acc === 'number');
+        const recent = rows.slice(-30);
+        const acc = recent.length
+          ? Math.round(recent.reduce((s, x) => s + x.acc, 0) / recent.length)
+          : Math.round(levelStats.acc || 0);
+        setSectionReview({
+          section: sec,
+          stars: starSum,
+          starsMax: 30,
+          acc,
+          next: FQ_SECTIONS[FQ_SECTIONS.indexOf(sec) + 1] || null,
+        });
+      }
       setLastResult({
         type: 'level', stats: levelStats, r, won: true, found: aggFound, errors: aggErrors,
       });
@@ -1662,9 +1773,23 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       trialLogRef.current?.discard();
       trialLogRef.current = createTrialLog({ game: 'cancel-task', mode: 'level', meta: { lv, diff, li } });
     }
+    /*
+     * The rules of the world this level sits in. Every one of them is decided
+     * HERE and handed to the builder, so the board itself carries what is in
+     * force (`r.noGo`, `r.drift`) and nothing downstream has to re-derive a
+     * section from a level number.
+     */
+    const ladderLv = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+    const mech = fqMechanicsAt(ladderLv);
     let r;
     try {
-      r = prepareLevelRound(diff, li);
+      r = prepareLevelRound(diff, li, {
+        forbidden: mech.has('forbidden'),
+        drift: mech.has('drift'),
+        // Only on a continued set: the first board of a level has no previous
+        // target to differ from, and forcing one would quietly shrink the pool.
+        avoidTarget: mech.has('switch') && opts.continueWaves ? lastWaveTargetRef.current : null,
+      });
     } catch (err) {
       console.error('[Focus Quest] prepareLevelRound failed', diff, li, err);
       clearPlayRoundState();
@@ -1675,9 +1800,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     // still carries the authored (diff, lv) it was built from — everything
     // downstream (scoring, telemetry, the results screen) reads those — but
     // progress, unlocking and points are all ladder-positioned.
-    r.ladderLv = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+    r.ladderLv = ladderLv;
     r.waveIdx = levelWaveIdxRef.current;
-    r.wavesTotal = LEVEL_WAVES;
+    r.wavesTotal = fqSetsForLevel(ladderLv);
+    r.section = fqSectionOf(ladderLv);
+    r.mechanics = [...mech];
+    lastWaveTargetRef.current = r.target;
     roundRef.current = r;
     setRound(r);
     setCells(r.cells);
@@ -1699,6 +1827,48 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   useEffect(() => {
     startLevelGameRef.current = startLevelGame;
   });
+
+  /*
+   * ── ENTERING A LEVEL ────────────────────────────────────────────────────
+   * Every route into a level goes through here so the rule card cannot be
+   * skipped by one of them. It fires only on the FIRST level of a world, only
+   * when that world introduces something, and only once per world per player.
+   *
+   * ⚠ THE STORED FLAG IS VERSIONED (`@rules1`), for the reason the coach ids
+   * are: a player who has already played this game has flags under the old
+   * keys, and an unversioned flag would mean these lessons silently never
+   * appear for exactly the people who have most to learn from them.
+   */
+  const RULES_SEEN_KEY = 'mm_cx_rules_seen_v1';
+  const ruleSeen = (id) => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(RULES_SEEN_KEY) || '{}');
+      return !!raw[`${id}@rules1`];
+    } catch { return false; }
+  };
+  const markRuleSeen = (id) => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(RULES_SEEN_KEY) || '{}');
+      raw[`${id}@rules1`] = true;
+      localStorage.setItem(RULES_SEEN_KEY, JSON.stringify(raw));
+    } catch { /* a lesson that cannot be remembered is still worth showing */ }
+  };
+
+  /* Deliberately a plain function, not a useCallback: `startLevelGame` is
+     re-created every render (it closes over live round state), so memoising
+     this would only produce a dependency that changes every time — the
+     warning eslint gives for exactly that. Nothing downstream is memoised on
+     its identity; it is called from click handlers. */
+  const openLevel = (lv) => {
+    const section = fqSectionOf(lv);
+    const first = fqIndexInSection(lv) === 0;
+    if (first && section?.mech && !ruleSeen(section.id)) {
+      setPendingRule({ lv, section, mech: section.mech });
+      setPhase('rule');
+      return;
+    }
+    void startLevelGame(lv);
+  };
 
   const onCellTap = useCallback((idx) => {
     // Held during the brief clear-celebration hold (see below) — a tap landing
@@ -1758,6 +1928,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       ord,
       ...(ord === 1 ? { lead: true } : {}),
       ...(tOn != null ? { tOn } : {}),
+      /* A tap on the forbidden object is a COMMISSION ERROR, not an ordinary
+         miss, and the two mean different things: one is a failure of search,
+         the other a failure to withhold. Flagged in the record so the
+         inhibition measure exists separately — the same distinction Intercept
+         keeps, rather than folding both into one error count. */
+      ...(c.isNoGo ? { noGo: true } : {}),
     };
 
     // Scored assessment is feedback-free: same neutral tap sound for hits and
@@ -2115,9 +2291,120 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
             const cfg = ladderLvCfg(lv);
             return t.cxNodeSub(cfg.tc, cfg.time);
           }}
-          onPick={(lv) => startLevelGame(lv)}
-          bands={t.cxBands}
+          onPick={(lv) => openLevel(lv)}
+          /*
+           * ⚠ THE CHAPTER CARDS COME FROM THE WORLDS NOW, not from `t.cxBands`.
+           * Two lists of the same six things is how a map ends up saying
+           * "First Light" while the rule card two taps later says "Ember
+           * Reach" — the same one-name-one-place rule the Detective line-up
+           * had to learn. `cxBands` is left in the dictionary because the
+           * results screen's band-cleared callout still reads it; when that
+           * moves over too, it can go.
+           */
+          bands={FQ_SECTIONS.map((s) => ({
+            title: isAr ? s.ar : s.en,
+            sub: FQ_MECHANIC_LABELS[s.mech]?.[isAr ? 'ar' : 'en'] || (isAr ? s.arSub : s.enSub),
+            aria: isAr ? s.ar : s.en,
+          }))}
+          stars={(lv) => (profile.stars || {})[lv] || 0}
+          sections={FQ_SECTIONS}
         />
+      )}
+
+      {/* ── A NEW RULE, TAUGHT BEFORE IT CAN BE FAILED ────────────────────────
+          Shown once, on the first level of a world that introduces something,
+          and never again for that world. It states the rule, then why the rule
+          is worth meeting — one screen, one idea, both languages on the same
+          object so they cannot drift apart. */}
+      {phase === 'rule' && pendingRule && (
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light cx-page">
+          <div className="ct-fq-screen ct-fq-training-screen">
+            <TrainingMenuBar
+              variant="paper"
+              playSfx={playSfx}
+              onBack={() => { setPendingRule(null); setPhase('levels'); }}
+            />
+            <div className="cx-rule" data-section={pendingRule.section.id}>
+              <div className="cx-rule-world">
+                <img className="cx-rule-sigil" src={atlasUrl(pendingRule.section.sigil)} alt="" aria-hidden="true" />
+                <div className="cx-rule-world-name">{isAr ? pendingRule.section.ar : pendingRule.section.en}</div>
+              </div>
+              <div className="cx-rule-kicker">{t.ruleNew}</div>
+              <h2 className="cx-rule-name">
+                {FQ_MECHANIC_LABELS[pendingRule.mech]?.[isAr ? 'ar' : 'en'] || ''}
+              </h2>
+              <p className="cx-rule-what">
+                {FQ_MECHANIC_TEACH[pendingRule.mech]?.[isAr ? 'ar' : 'en']?.what || ''}
+              </p>
+              <p className="cx-rule-why">
+                {FQ_MECHANIC_TEACH[pendingRule.mech]?.[isAr ? 'ar' : 'en']?.why || ''}
+              </p>
+              <button
+                type="button"
+                className="ct-fq-btn"
+                onClick={() => {
+                  const lv = pendingRule.lv;
+                  markRuleSeen(pendingRule.section.id);
+                  setPendingRule(null);
+                  void startLevelGame(lv);
+                }}
+              >
+                {t.ruleBegin}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── THE WORLD REVIEW ─────────────────────────────────────────────────
+          Ten levels done. It reports what was measured — stars, accuracy, the
+          rule that was learned — and names what the next world brings. No
+          claim about the player beyond the run they just finished. */}
+      {phase === 'review' && sectionReview && (
+        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light cx-page">
+          <div className="ct-fq-screen ct-fq-training-screen">
+            <div className="cx-review" data-section={sectionReview.section.id}>
+              <div className="cx-review-kicker">{t.reviewTitle}</div>
+              <h2 className="cx-review-name">
+                {isAr ? sectionReview.section.ar : sectionReview.section.en}
+              </h2>
+              <img className="cx-review-sigil" src={atlasUrl(sectionReview.section.sigil)} alt="" aria-hidden="true" />
+              <div className="cx-review-stats">
+                <div className="cx-review-stat">
+                  <b className="readout">{sectionReview.stars}<span className="cx-review-of">/{sectionReview.starsMax}</span></b>
+                  <em>{t.reviewStars}</em>
+                </div>
+                <div className="cx-review-stat">
+                  <b className="readout">{sectionReview.acc}%</b>
+                  <em>{t.reviewAcc}</em>
+                </div>
+              </div>
+              <div className="cx-review-taught">
+                <span className="cx-review-label">{t.reviewTaught}</span>
+                <span className="cx-review-line">
+                  {FQ_MECHANIC_TEACH[sectionReview.section.mech]?.[isAr ? 'ar' : 'en']?.why || ''}
+                </span>
+              </div>
+              {sectionReview.next ? (
+                <div className="cx-review-next">
+                  <span className="cx-review-label">{t.reviewNext}</span>
+                  <span className="cx-review-line">
+                    {(isAr ? sectionReview.next.ar : sectionReview.next.en)}
+                    {' · '}
+                    {FQ_MECHANIC_LABELS[sectionReview.next.mech]?.[isAr ? 'ar' : 'en'] || ''}
+                  </span>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                className="ct-fq-btn"
+                onClick={() => { setSectionReview(null); setPhase('levels'); }}
+              >
+                {t.reviewOn}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {phase === 'chal' && (
@@ -2320,9 +2607,18 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           && Array.isArray(t.cxBands);
         const bandIdx = justClosedBand ? clearedLadderLv / 10 - 1 : -1;
         const nextBandIdx = bandIdx + 1;
+        /*
+         * ⚠ A PENDING WORLD REVIEW INTERCEPTS EVERY EXIT FROM THE RESULTS,
+         * not just the one button someone remembered to wire. Finishing the
+         * tenth level of a world and leaving by "Menu" would otherwise skip
+         * the review entirely — and since it is only offered once, skipping it
+         * means never seeing it. The review then hands the player on to the
+         * level map itself.
+         */
         const leaveResults = () => {
           setLastResult(null);
           clearPlayRoundState();
+          if (sectionReview) { setPhase('review'); return; }
           setPhase('hub');
         };
         return (
@@ -2345,9 +2641,14 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                   key: 'next',
                   label: t.nextLv,
                   onClick: () => {
-                    setPhase('play');
                     setLastResult(null);
-                    startLevelGame((lastResult.r.ladderLv ?? 1) + 1);
+                    // Through `openLevel`, never straight into the round: the
+                    // next level is often the first of a new world, and that
+                    // is precisely the moment its rule has to be taught. A
+                    // pending review comes first — it belongs to the world
+                    // just finished.
+                    if (sectionReview) { setPhase('review'); return; }
+                    openLevel((lastResult.r.ladderLv ?? 1) + 1);
                   },
                 } : null,
                 {
@@ -2883,6 +3184,20 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
             <div className="ct-fq-cue-text">
               {round.mode === 'free' ? t.survivalCueTask : t.cueShape}
             </div>
+            {/* ── The rules in force, stated where the player is already
+                looking. A rule the board keeps but never says is not a rule;
+                it is a trap the player has to be caught by first. ── */}
+            {round.mode === 'level' && (round.waveIdx ?? 0) > 0 && (round.mechanics || []).includes('switch') ? (
+              <div className="cx-cue-flag cx-cue-flag--switch">{t.cueNewTarget}</div>
+            ) : null}
+            {round.mode === 'level' && round.noGo ? (
+              <div className="cx-cue-nogo">
+                <span className="cx-cue-nogo-chip" aria-hidden="true">
+                  <ShapeSvg shape={round.noGo} color="var(--game-bad)" size={30} />
+                </span>
+                <span className="cx-cue-nogo-text">{t.cueNoGo}</span>
+              </div>
+            ) : null}
             {round.mode === 'free' && cueShow && (
               <span className="ct-fq-cue-ready-label">{t.survivalCueReady}</span>
             )}

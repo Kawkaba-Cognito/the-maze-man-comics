@@ -94,8 +94,22 @@ function LockGlyph() {
   );
 }
 
+function StarRow({ n }) {
+  // Three slots always, so a two-star level reads as "two of three" rather
+  // than as a shorter row you have to compare against its neighbours.
+  return (
+    <span className="cpp-stars" aria-hidden="true">
+      {[0, 1, 2].map((i) => (
+        <svg key={i} className={`cpp-star${i < n ? ' cpp-star--on' : ''}`} viewBox="0 0 24 24" width="9" height="9">
+          <path d="M12 3.2l2.5 6.1 6.5.5-5 4.3 1.6 6.4-5.6-3.5-5.6 3.5 1.6-6.4-5-4.3 6.5-.5z" />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
 function CancelPlanet({
-  lv, x, y, unlocked, done, current, label, onPick, playSfx, isAr, nodeRef,
+  lv, x, y, unlocked, done, current, label, onPick, playSfx, isAr, nodeRef, stars = 0, section,
 }) {
   // Full detail lives in aria-label (status + timing, where sighted players
   // get the status from the glyph/tint and the timing only when it's the
@@ -112,6 +126,10 @@ function CancelPlanet({
       ref={nodeRef}
       type="button"
       className={`cpp-node${done ? ' cpp-node--done' : ''}${current ? ' cpp-node--current' : ''}${!unlocked ? ' cpp-node--locked' : ''}`}
+      /* The world this level belongs to. Everything visual about the section
+         hangs off this one attribute in CSS, so a node never has to know what
+         a colour is — and adding a seventh world is a data change. */
+      data-section={section || undefined}
       style={{ left: `${x}%`, top: y }}
       disabled={!unlocked}
       onClick={() => { if (!unlocked) return; playSfx?.('click'); onPick(lv); }}
@@ -129,6 +147,11 @@ function CancelPlanet({
         {done ? <span className="cpp-badge cpp-badge--done"><CheckGlyph /></span> : null}
         {!unlocked ? <span className="cpp-badge cpp-badge--locked"><LockGlyph /></span> : null}
       </span>
+      {/* Stars sit UNDER the disc, never on it — the number is the thing being
+          read, and a row of stars across it is the same mistake the padlock
+          made. Only on a cleared level: an empty row on every locked node
+          would read as sixty failures. */}
+      {done && stars > 0 ? <StarRow n={stars} /> : null}
       {current && unlocked && label ? <span className="cpp-sub">{label}</span> : null}
     </button>
   );
@@ -136,6 +159,7 @@ function CancelPlanet({
 
 export default function CancelPlanetPath({
   isAr, playSfx, onBack, title, blurb, count, isUnlocked, isDone, sublabel, onPick, bands,
+  stars, sections,
 }) {
   const nodes = useMemo(() => Array.from({ length: count }, (_, i) => {
     const lv = i + 1;
@@ -250,7 +274,12 @@ export default function CancelPlanetPath({
           </svg>
           {bands && bandStarts.map((b) => (
             bands[b] ? (
-              <div className="cpp-band" style={{ top: yOf(b * BAND_SIZE) - BAND_MARKER_OFFSET }} key={`b${b}`}>
+              <div
+                className="cpp-band"
+                data-section={sections ? sections[b]?.id : undefined}
+                style={{ top: yOf(b * BAND_SIZE) - BAND_MARKER_OFFSET }}
+                key={`b${b}`}
+              >
                 <span className="cpp-band-rule" aria-hidden="true" />
                 <span className="cpp-band-pill" role="note" aria-label={bands[b].aria || bands[b].title}>
                   <img className="cpp-band-sigil" src={atlasUrl(BAND_SIGIL[b % BAND_SIGIL.length])} alt="" aria-hidden="true" />
@@ -278,6 +307,8 @@ export default function CancelPlanetPath({
               playSfx={playSfx}
               isAr={isAr}
               nodeRef={n.lv === current.lv ? currentRef : undefined}
+              stars={stars ? stars(n.lv) : 0}
+              section={sections ? sections[Math.floor((n.lv - 1) / BAND_SIZE)]?.id : undefined}
             />
           ))}
           <div
