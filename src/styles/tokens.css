@@ -265,6 +265,29 @@
   --fx-kw-foot-ink: #f0e2c0;
   --fx-kw-foot-accent: #d4a850;
 
+  /* Ink for a label written ON a mode planet, and the veil under it. Same
+     reasoning as the Learn footer above and the same exemption: the planet art
+     is ONE image served to both appearances, so this ink must NOT flip — in
+     light theme --universe-ink is near-black and would vanish into the night
+     side of the sphere. Parchment rather than white, to stay in key with the
+     rest of the product. The veil is what makes it hold on the bright amber
+     Survival planet, where a shadow alone is not enough. */
+  --fx-orb-label-ink: #f6efe0;
+  --fx-orb-label-shadow: rgba(5, 8, 16, 0.8);
+  /* 0.68, measured — not picked. Sampled off the composited SCREENSHOT with
+     the glyphs hidden (see the note below), taking the lightest 5% of the
+     pixels behind each label, which is the dangerous end for a light ink:
+       0.46 → worst 2.79-3.50, mean 6.2-7.9
+       0.68 → worst 3.12-4.02, mean 7.5-8.9   (light and dark both)
+     That clears 3:1 for the label's size and weight with room, and the
+     planet still reads as itself rather than as a disc with a hole in it.
+     ⚠ Measure it with the float animation FROZEN. Each planet runs
+     `ct-mph-float` on its own delay, so a rect read one moment and a
+     screenshot taken the next are up to 14px apart — that sampled sky and
+     bright rim, and produced a "worse contrast from a darker veil" result
+     that is the tell for a broken probe, not a broken value. */
+  --fx-orb-label-veil: rgba(5, 8, 16, 0.68);
+
   --fx-training-scrim: rgba(8, 14, 30, 0.58);
   /* The lighter plate for a HUB backdrop, which sits behind cards rather than
      behind a scored task and so does not need to go as dark. */

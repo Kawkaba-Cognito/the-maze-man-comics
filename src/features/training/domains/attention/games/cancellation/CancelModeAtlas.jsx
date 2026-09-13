@@ -2,7 +2,21 @@ import React from 'react';
 import { atlasUrl } from './CancelPlanetPath.jsx';
 
 /*
- * CANCEL MODE ATLAS — the mode-pick screen, Cancellation only.
+ * CANCEL MODE ATLAS — ⚠ NOT MOUNTED (2026-09-13). Kept, not deleted.
+ *
+ * The owner asked for this game's mode-pick screen to go back to looking like
+ * every other game's ("you changed the 3 modes visual … revert it"), so
+ * index.jsx renders the shared `ModePlanetHub` again and nothing imports this
+ * file. It is left in place because it is correct, complete and one line away
+ * from returning — but do not read it as live code.
+ *
+ * ⚠ RESTORING IT IS TWO EDITS, NOT ONE. This component only works on the warm
+ * paper ground: its pieces are navy contours, invisible against the shared
+ * cosmos void. Bring back BOTH the import/render swap in index.jsx AND the
+ * `cx-page` class on the `--mode-cosmos` div plus the ground override that
+ * used to sit in cancelAtlas.css (see the note there, and git b0fa137).
+ *
+ * ── What it is ─────────────────────────────────────────────────────────────
  *
  * Replaces `ModePlanetHub` (shared/ModePlanetHub.jsx) at this ONE call site,
  * same drop-in pattern `CancelPlanetPath` already used to replace

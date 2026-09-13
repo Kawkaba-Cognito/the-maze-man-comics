@@ -96,69 +96,133 @@
   animation: none;
 }
 
-/* ── ONE GROUND, EVERY SCREEN (Step 2) ──────────────────────────────────────
- * The mode-pick screen ("--mode-cosmos") is forced to a near-black void by
- * TWO existing rules this game shares with math-gates/wordle/raven/stroop:
- *   global.css   — unconditional #07060b, wins in DARK app-theme
- *   training.css — a light-theme-scoped override to --universe-dusk, wins
- *                  in LIGHT app-theme
- * The atlas is drawn with NAVY CONTOURS on warm paper: on a dark ground the
- * contour merges into the ground and the pieces lose the inking that IS the
- * art direction. This game gets ONE ground, in both themes, matching every
- * other screen it has — and does so without touching either shared rule, so
- * every other game keeping the black void is byte-for-byte unaffected.
+/* ── THE MODE-PICK SCREEN IS PLATFORM-STANDARD AGAIN (2026-09-13) ───────────
+ * Owner: "you changed the 3 modes visual of cancellation task and now it is
+ * different than all the other games … revert it to look like the others."
  *
- * ⚠ SPECIFICITY, NOT SOURCE ORDER. Both existing rules are `!important`.
- * `:has(.cx-atlas .ct-fq-training-shell--mode-cosmos)` carries two classes in
- * its argument, and each rule below also names the theme attribute — (0,3,1)
- * — which beats both the plain (0,1,1) dark rule and the (0,2,1) light rule
- * on specificity alone, regardless of which stylesheet loads last. This is
- * the thing Round 3's own history says to verify live rather than trust from
- * reading: screenshot the hub with the window wider than the shell and
- * confirm there is no dark band at the edges, in both themes.
+ * So this screen is back on `ModePlanetHub` (the painted mode planets every
+ * other game's hub renders) sitting on the shared near-black cosmos void.
+ * What used to live here — a `:has(.cx-atlas .ct-fq-training-shell--mode-cosmos)`
+ * block forcing that one screen onto the atlas' warm paper in both themes — is
+ * deleted, and `cx-page` is off the `--mode-cosmos` div in index.jsx. The rest
+ * of this game's screens keep the warm paper; only the hub rejoins the platform.
  *
- * ONE-LINE OWNER REVERT: delete this block and `cx-page` off the
- * `--mode-cosmos` div in index.jsx to put the mode hub back on the black
- * void. Nothing else depends on it.
+ * ⚠ The reasoning that block carried is still true and is why it existed: the
+ * atlas pieces are NAVY CONTOURS ON PAPER, and on a dark ground the contour
+ * merges into the ground. That only bites if hand-inked atlas art is put back
+ * on this screen — the shared planets are lit spheres composed for the void.
+ * Restoring the atlas hub means restoring BOTH halves, never one.
  */
-html[data-home-theme='dark']:has(.cx-atlas .ct-fq-training-shell--mode-cosmos),
-html[data-home-theme='dark'] body:has(.cx-atlas .ct-fq-training-shell--mode-cosmos),
-html[data-home-theme='dark'] #screen-comics:has(.cx-atlas .ct-fq-training-shell--mode-cosmos),
-html[data-home-theme='dark'] #ui-shell:has(#screen-comics.active .cx-atlas .ct-fq-training-shell--mode-cosmos),
-html[data-home-theme='dark'] #screen-comics:has(.cx-atlas .ct-fq-training-shell--mode-cosmos) > div,
-html[data-home-theme='light']:has(.cx-atlas .ct-fq-training-shell--mode-cosmos),
-html[data-home-theme='light'] body:has(.cx-atlas .ct-fq-training-shell--mode-cosmos),
-html[data-home-theme='light'] #screen-comics:has(.cx-atlas .ct-fq-training-shell--mode-cosmos),
-html[data-home-theme='light'] #ui-shell:has(#screen-comics.active .cx-atlas .ct-fq-training-shell--mode-cosmos),
-html[data-home-theme='light'] #screen-comics:has(.cx-atlas .ct-fq-training-shell--mode-cosmos) > div {
-  background: var(--play-surface-flat) !important;
-  background-color: var(--play-surface-flat) !important;
-  background-image: none !important;
-  color: var(--game-ink) !important;
-}
-/* The shell div itself (`.cx-atlas` is the OUTER root; this is the nested
-   `--mode-cosmos` div `.cx-atlas` wraps, not the same element as the :has()
-   targets above). The star-glint gradients are repeated here rather than
-   left to the separate `.cx-page` class — that class's own
-   `background-image` has no `!important`, and would otherwise lose outright
-   to the `!important` rules above it is fighting; `none` would have quietly
-   erased the glints along with the void. */
-html[data-home-theme='dark'] .cx-atlas .ct-fq-training-shell--mode-cosmos,
-html[data-home-theme='light'] .cx-atlas .ct-fq-training-shell--mode-cosmos {
-  background-color: var(--play-surface-flat) !important;
-  background-image:
-    radial-gradient(1.6px 1.6px at 18% 6%,  var(--fx-glint) 0%, transparent 60%),
-    radial-gradient(1.2px 1.2px at 62% 14%, var(--fx-glint) 0%, transparent 60%),
-    radial-gradient(1.8px 1.8px at 82% 44%, var(--fx-glint) 0%, transparent 60%),
-    radial-gradient(1.2px 1.2px at 34% 66%, var(--fx-glint) 0%, transparent 60%),
-    radial-gradient(1.5px 1.5px at 8%  86%, var(--fx-glint) 0%, transparent 60%),
-    radial-gradient(1.3px 1.3px at 92% 92%, var(--fx-glint) 0%, transparent 60%) !important;
-  background-size: 240px 240px !important;
-  background-repeat: repeat !important;
-  color: var(--game-ink) !important;
+
+/* ── THE MODE NAME IS WRITTEN ON ITS PLANET (2026-09-13, owner trial) ───────
+ * "write survival levels and pass n play inside their universe, with no
+ * additional texts outside." So the name moves off the caption slot and onto
+ * the sphere, and the hint line under it goes. The page header and the science
+ * link stay (owner's call) — this is about the planets, not the screen.
+ *
+ * ⚠ CANCELLATION ONLY. Every rule is under `.cx-atlas`, so `ModePlanetHub`
+ * itself and the other seventeen games that render it are untouched — the same
+ * drop-in discipline that kept `CancelModeAtlas` from forking the shared
+ * component. Deleting this block returns this screen to the platform default.
+ *
+ * ⚠ HIDING THE HINT COSTS NO ACCESSIBLE TEXT. `PlanetButton` already puts
+ * `label — hint` in the button's own `aria-label`, so a screen reader still
+ * announces both; `display: none` only takes the duplicate off the glass.
+ *
+ * ⚠ SPECIFICITY: the name rules carry THREE classes on purpose.
+ * training.css has `html[data-home-theme='dark'] .ct-mph-planet-name` (0,2,1),
+ * which beats a plain `.cx-atlas .ct-mph-planet-name` (0,2,0) and would keep
+ * its own weaker shadow in dark theme. `.cx-atlas .ct-mph .ct-mph-planet-name`
+ * is (0,3,0) and wins in both appearances.
+ */
+.cx-atlas .ct-mph-planet {
+    position: relative;
+    gap: 0;
 }
 
-/* ── Step 3: the mode-pick screen ("The Inked Atlas" cover plate) ────────── */
+/* Out of flow, so the button's box collapses to the orb and the copy lands on
+   the sphere rather than under it. `pointer-events: none` keeps the whole orb
+   one target — the label must never swallow a tap the planet should take. */
+.cx-atlas .ct-mph .ct-mph-planet-copy {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    /* ⚠ `place-CONTENT`, not just place-items, and it is load-bearing. The
+       caption layout in training.css sets `justify-content: flex-start` for
+       the stacked name+hint; inherited into a grid, that start-aligns the
+       auto-sized track, so the label rendered 11-22px LEFT of the sphere's
+       centre while every computed value (text-align: center, justify-items:
+       center, symmetric padding) said it was centred. Measured with
+       getBoundingClientRect against the orb's rect — the numbers disagreed
+       with the declarations, which is the only way this shows up. */
+    place-content: center;
+    min-height: 0;
+    padding: 0 13%;
+    pointer-events: none;
+    /* Makes `cqh` below resolve against this box — which is the orb's box. */
+    container-type: size;
+}
+
+/* The veil: a soft disc under the words. z-index -1 keeps it behind the label
+   but still above the planet image, because the copy's own z-index makes it a
+   stacking context.
+   ⚠ IT MUST NOT LEAVE THE SPHERE, and an inset percentage cannot promise that.
+   The copy box is the BUTTON's box, which is WIDER than the orb on the two
+   medium planets (148px vs 136px) — an `inset: 24% 6%` ellipse therefore hung
+   past the planet's edge and read as a grey smudge on the pale light-theme
+   ground. Sized off the copy's HEIGHT instead (which is the orb's height
+   exactly) with `aspect-ratio: 1`, so the disc is a circle 78% of the sphere
+   whatever the button does, and the gradient is transparent well before its
+   own edge. No orb size table is restated here — that pair would drift. */
+.cx-atlas .ct-mph .ct-mph-planet-copy::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: 50%;
+    left: 50%;
+    height: 78%;
+    width: auto;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at center,
+        var(--fx-orb-label-veil) 0%,
+        color-mix(in srgb, var(--fx-orb-label-veil) 62%, transparent) 44%,
+        transparent 70%);
+}
+
+.cx-atlas .ct-mph .ct-mph-planet-hint {
+    display: none;
+}
+
+/* ⚠ THE TYPE IS SIZED OFF THE SPHERE, NOT THE VIEWPORT. A `vw` clamp is the
+   obvious move and it is wrong here: the orb has its own size table, including
+   a compact rule that drops the big planet to 112px on a short viewport — a
+   1366x577 laptop, the commonest desktop there is. Measured there, a viewport-
+   sized label ran 106px across a 112px sphere, touching both edges. `cqh`
+   reads the copy box's HEIGHT, which IS the orb's height, so one rule now
+   tracks every planet at every size and the md override is gone with it. The
+   fallback if a browser lacks container queries is the whole declaration being
+   dropped, i.e. today's shared size — readable, just larger. */
+.cx-atlas .ct-mph .ct-mph-planet-name {
+    color: var(--fx-orb-label-ink);
+    font-size: clamp(0.68rem, 14cqh, 1.15rem);
+    line-height: 1.14;
+    letter-spacing: 0.03em;
+    text-shadow:
+        0 1px 2px var(--fx-orb-label-shadow),
+        0 0 16px var(--fx-orb-label-shadow);
+}
+[dir='rtl'] .cx-atlas .ct-mph .ct-mph-planet-name {
+    letter-spacing: 0;
+}
+
+/* ── The unmounted atlas mode-pick screen ("The Inked Atlas" cover plate) ───
+ * `CancelModeAtlas.jsx` is not rendered any more (see above). Its styles are
+ * kept beside it, inert, so the one-line swap back in index.jsx is complete
+ * on its own. */
 .cxm { display: flex; flex-direction: column; align-items: center;
        gap: 22px; width: 100%; padding: 6px 16px 22px; box-sizing: border-box; }
 
@@ -228,28 +292,14 @@ html[data-home-theme='light'] .cx-atlas .ct-fq-training-shell--mode-cosmos {
 [dir='rtl'] .cxm-card-hint { font-family: 'Cairo', 'Outfit', sans-serif; font-weight: 500; }
 
 /*
- * ── Step 3c: kill the letterpress on the hub title ──────────────────────
- * The old .ct-fq-hub-attn-big carried a 5-6 layer stacked text-shadow of
- * hand-mixed ambers plus a text-stroke — the loudest remaining "children's
- * toy" signal in this game.
+ * ── Step 3c (REMOVED 2026-09-13, same owner call as the block above) ────────
+ * This re-voiced the hub title and tag — Cormorant Garamond in --game-ink over
+ * the platform's letterpress amber. Right for warm paper, wrong the moment the
+ * hub went back onto the shared void, and it was part of what made this one
+ * screen read as a different app. `.ct-fq-hub-attn-big` / `-sub` are rendered
+ * ONLY on this game's hub, so deleting these rules changes nothing else.
+ * Every other screen keeps the atlas type ladder (Step 3d, below).
  */
-.cx-atlas .ct-fq-hub-attn-big {
-    font-family: 'Cormorant Garamond', 'Cinzel', serif;
-    font-size: var(--cx-fs-hero); font-weight: 700;
-    letter-spacing: -0.01em; line-height: 1.02;
-    color: var(--game-ink);
-    -webkit-text-stroke: 0;
-    text-shadow: 0 2px 18px var(--fx-shadow-soft);
-}
-.cx-atlas .ct-fq-training-screen--hub .ct-fq-hub-attn-sub {
-    font-family: 'Outfit', system-ui, sans-serif;
-    font-size: var(--cx-fs-label); font-weight: 700;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--fq-mut);
-    background: none; border: 0; box-shadow: none; text-shadow: none; padding: 0; margin-top: 8px;
-}
-[dir='rtl'] .cx-atlas .ct-fq-hub-attn-big { font-family: 'Cairo', 'Cormorant Garamond', serif; font-weight: 800; letter-spacing: 0; }
-[dir='rtl'] .cx-atlas .ct-fq-training-screen--hub .ct-fq-hub-attn-sub { font-family: 'Cairo', 'Outfit', sans-serif; letter-spacing: 0.04em; text-transform: none; }
 
 /* ── Step 3d: kill the italic, re-key every blurb in the game ─────────────
    .ct-fq-training-blurb set font-style:italic on every blurb — a legibility

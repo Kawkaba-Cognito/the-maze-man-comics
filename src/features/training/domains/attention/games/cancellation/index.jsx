@@ -52,7 +52,7 @@ import {
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
 import CancelPlanetPath, { atlasUrl, BAND_SIGIL } from './CancelPlanetPath.jsx';
-import CancelModeAtlas from './CancelModeAtlas.jsx';
+import ModePlanetHub from '../../../../shared/ModePlanetHub';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import PassPlaySetup from '../../../../shared/PassPlaySetup';
@@ -198,7 +198,12 @@ function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx
     { k: 'levels', lb: t.levelMode, hint: t.hubNodeLevelsHint, on: onLevels },
     { k: 'chal', lb: t.challengeMode, hint: t.hubNodeChallengeHint, on: onChallenge },
   ];
-  return <CancelModeAtlas items={items} isAr={isAr} playSfx={playSfx} />;
+  // ⚠ 2026-09-13, owner: the mode-pick screen had drifted away from every other
+  // game ("you changed the 3 modes visual … revert it to look like the others").
+  // Back on the shared `ModePlanetHub` — same painted planets, same layout, same
+  // ground as the other seventeen games. `CancelModeAtlas.jsx` is kept, unmounted;
+  // swapping this one line back restores it.
+  return <ModePlanetHub items={items} isAr={isAr} playSfx={playSfx} />;
 }
 
 /*
@@ -2027,7 +2032,10 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     >
       {phase === 'hub' && (
         <>
-          <div className="ct-fq-training-shell ct-fq-training-shell--mode-cosmos cx-page">
+          {/* No `cx-page` here, deliberately: the mode-pick screen keeps the
+              shared cosmos void every other game's hub sits on. The rest of
+              this game's screens stay on the atlas' warm paper. */}
+          <div className="ct-fq-training-shell ct-fq-training-shell--mode-cosmos">
             <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
               <TrainingMenuBar
                 onBack={onBack}
