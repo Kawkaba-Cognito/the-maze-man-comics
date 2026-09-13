@@ -87,13 +87,21 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
  *
  * ⚠ WIDTH IS NOW A COLLISION CONSTRAINT, NOT A TASTE ONE. Measured on the
  * real asset, the portrait border occupies the outer 16.7% of each side
- * (landscape 8%). A node is 74px wide and centres at 20%/80% of this
- * element (AMPLITUDE=30 in CancelPlanetPath.jsx), so at the old full-width
- * setting the outermost planets overlapped the ornament by ~15px on a
- * 390px phone. Solving `pathLeft + 0.2W - 37 >= 0.167 * vw` gives
- * W <= ~79vw; 76vw is used, which also holds at 360px and 430px. Change
- * AMPLITUDE, the node width or the art's border width and this needs
- * re-deriving — the three are coupled. */
+ * (landscape 8%). The enlarged mobile planet is 68px wide and its outermost
+ * centre lands at 20%/80% of this element (AMPLITUDE=30 in
+ * CancelPlanetPath.jsx). A 79vw path keeps those planets inside the quiet
+ * centre at 360px while making fuller use of the available space. Change
+ * AMPLITUDE, the orb size or the art's border width and re-check all three.
+ *
+ * ⚠ CHECK IT WITH A SCREENSHOT, NOT WITH THE 16.7% ABOVE (2026-09-13). That
+ * figure is inherited from an older portrait asset and no longer matches the
+ * art in `public/Assets/attention/`. Re-deriving from it at 360px says the
+ * outermost node overlaps the ornament by 11px, and the rendered screen says
+ * it clears by about 6px — because the constraint is the NODE COLUMN (92px,
+ * orb + its label pill), not the 68px orb, and the current border is
+ * narrower than 16.7%. Both halves of that were wrong in opposite
+ * directions, which is what an arithmetic-only check buys you. Measure the
+ * gap on a 360px render before moving this number again. */
 .cpp-path {
   position: relative;
   width: 100%;
@@ -282,21 +290,20 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
    single-element version had the bob's keyframes write the FULL
    translate(-50%,-108%), which reset the walk's transform every 2.4s and
    made Kawkab visibly teleport mid-walk). */
-/* ⚠ ALIGNMENT (2026-09-12, owner: "align the character in a perfect way") —
- * Kawkab's `top` is `current.y`, the same raw coordinate the current NODE
- * uses, but the node isn't a fixed 56px orb: it's a flex column of the orb
- * PLUS `.cpp-sub` (the label line under it, `current && unlocked && label`
- * — true of the current node in every real case, since `sublabel` always
- * returns a string). That label adds ~3px gap + a ~13px line to the
- * column's flow height, and the node centres itself with `translate(-50%,
- * -50%)` on its OWN box — so on the one node that ever carries a label
- * (the one Kawkab stands on), the orb's true centre sits ~8px ABOVE
- * `current.y`, not AT it. Kawkab's fixed -108% never knew that, so it was
- * consistently standing ~8px too low relative to the planet — on every
- * screen size equally, which is why this wasn't really a desktop-only bug,
- * just the one the difference was noticed on.
- * `--cx-kawkab-lift` isolates the correction so it's the one number to
- * retune after a visual check, without hand-editing three transforms. */
+/* Kawkab shares the current node's coordinate. The sprite size and lift are
+ * responsive variables so the mascot and planet scale as one composition
+ * without changing the path geometry.
+ *
+ * ⚠ WHY A LIFT EXISTS AT ALL (restored 2026-09-13 — the reasoning was
+ * dropped in an edit and the variable it explains is still here). Kawkab's
+ * `top` is `current.y`, the raw coordinate the current NODE uses — but a node
+ * is not just an orb: it is a flex column of the orb PLUS `.cpp-sub`, the
+ * label line, which only the current node ever shows. That label adds its own
+ * height to the column, and the node centres itself with `translate(-50%,
+ * -50%)` on its OWN box, so on exactly the node Kawkab stands on, the orb's
+ * true centre sits ABOVE `current.y`. Without the lift he stands too low, on
+ * every screen size equally. `--cx-kawkab-lift` keeps that correction in one
+ * number to retune after a visual check. */
 .cpp-kawkab {
   --cpp-kawkab-size: 56px;
   --cx-kawkab-lift: 12px;
@@ -350,19 +357,9 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
  * rail already uses in cancelBoard2d.css, so both of this game's screens
  * agree on where "desktop" starts. */
 @media (min-width: 900px) {
-  /* ⚠ THE PARENT HAS TO MOVE TOO, AND UNTIL NOW IT DIDN'T — so this whole
-   * block was inert. `.ct-lv-grid-wrap` (training.css) is `max-width:
-   * 440px` with 16px of side padding, which caps any child at 408px: the
-   * 640px below could never be reached, and the "wider on desktop" change
-   * this block was added for silently did nothing. Raising the wrapper for
-   * THIS screen only (`:has(.cpp-path)`, the same hook the border above
-   * uses) is what makes it real.
-   *
-   * ⚠ Also overrides the `76vw` collision cap from the base rule, which is
-   * a PORTRAIT constraint and must not leak here: the landscape art's
-   * border is only 8% per side (vs 16.7%), and at 640px the outermost
-   * planet still clears it by a wide margin on a 1366px desktop — the
-   * binding limit there works out near 1790px, so 640 is nowhere close. */
+  /* The shared level wrapper is phone-width, so both it and the path must
+   * widen here. The 1040px path fills the landscape frame while its ±30%
+   * wave still clears the ornament comfortably at 1366px. */
   .ct-lv-grid-wrap:has(.cpp-path) {
     max-width: 1120px;
   }
@@ -417,6 +414,9 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
   pointer-events: none;
   content-visibility: auto;
   contain-intrinsic-size: 100% 72px;
+}
+.cpp-band:not(:first-of-type) {
+  transform: translateY(18px);
 }
 .cpp-band-rule {
   position: absolute;
@@ -509,7 +509,12 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
 @media (min-width: 900px) {
   .cpp-band {
     min-height: 78px;
+  }
+  .cpp-band:first-of-type {
     transform: translateY(-16px);
+  }
+  .cpp-band:not(:first-of-type) {
+    transform: translateY(15px);
   }
   .cpp-band-rule {
     width: min(96%, 540px);
