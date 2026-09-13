@@ -60,10 +60,21 @@
   --fq-mut: color-mix(in srgb, var(--game-ink) 72%, var(--play-surface-flat));
 }
 
-/* The atlas page: warm paper with a light dusting of star-glints. Fixed
-   light in BOTH app themes — the whole gameplay palette already is
-   (--play-surface and --game- never flip), and this is what stops the game
-   changing key between its menus and its board. */
+/* The atlas page: warm paper with a light dusting of star-glints.
+   ⚠ INERT INSIDE A GAME (measured 2026-09-13, and the comment that used to
+   stand here claimed the opposite). `.cx-page` is a class on the training
+   SHELL, and training.css:9733 sets `background-color: transparent
+   !important; background-image: none !important` on
+   `.ct-domain-game-stage .ct-fq-training-shell` so the app-wide background
+   shows through every game. That rule wins, so `getComputedStyle` on
+   `.cx-page` reports a fully transparent colour and no image: these
+   declarations paint nothing while the game is mounted in the stage.
+   (The measured value is deliberately described rather than quoted —
+   audit:design greps text and cannot tell a comment from a declaration, so
+   writing the literal here fails the raw-colour gate.) Kept because they are
+   correct for any context outside the stage and are the documented intent —
+   but do not reason about a screen's ground from this block. The real ground
+   is `--app-bg` (global.css): warm beige in light, near-black in dark. */
 .cx-page {
   background-color: var(--play-surface-flat);
   background-image:
@@ -114,177 +125,243 @@
  * Restoring the atlas hub means restoring BOTH halves, never one.
  */
 
-/* ── THE MODE NAME IS WRITTEN ON ITS PLANET (2026-09-13, owner trial) ───────
- * "write survival levels and pass n play inside their universe, with no
- * additional texts outside." So the name moves off the caption slot and onto
- * the sphere, and the hint line under it goes. The page header and the science
- * link stay (owner's call) — this is about the planets, not the screen.
+/* ══ APERTURE — the mode screen (2026-09-13, owner picked it from the pitch) ══
  *
- * ⚠ CANCELLATION ONLY. Every rule is under `.cx-atlas`, so `ModePlanetHub`
- * itself and the other seventeen games that render it are untouched — the same
- * drop-in discipline that kept `CancelModeAtlas` from forking the shared
- * component. Deleting this block returns this screen to the platform default.
+ * The page is the top layer. The planets are not objects sitting on it: they
+ * are light seen through three holes cut in the page, each one overfilled so
+ * you never see a whole sphere, only a patch of world. That crop is the whole
+ * idea — a cropped sphere reads as MATERIAL, a whole one reads as a ball —
+ * and it is what lets the platform's painted, photoreal spheres sit beside
+ * this game's flat hand-inked art without the two arguing.
  *
- * ⚠ HIDING THE HINT COSTS NO ACCESSIBLE TEXT. `PlanetButton` already puts
- * `label — hint` in the button's own `aria-label`, so a screen reader still
- * announces both; `display: none` only takes the duplicate off the glass.
+ * ⚠ IT REPLACES THE LABELS-ON-PLANETS PASS FROM EARLIER TODAY, deliberately.
+ * That was this screen's own request ("write the modes inside their
+ * universe"), and the design review that produced Aperture named it as part
+ * of the problem: type over painted art needs a veil, a veil is a gradient
+ * over a gradient, and that made the one area carrying words the muddiest
+ * region on the screen. Here the word never touches the art.
  *
- * ⚠ SPECIFICITY: the name rules carry THREE classes on purpose.
- * training.css has `html[data-home-theme='dark'] .ct-mph-planet-name` (0,2,1),
- * which beats a plain `.cx-atlas .ct-mph-planet-name` (0,2,0) and would keep
- * its own weaker shadow in dark theme. `.cx-atlas .ct-mph .ct-mph-planet-name`
- * is (0,3,0) and wins in both appearances.
+ * ⚠ STILL NOT A FORK. Every rule is scoped to `.cx-atlas`, so
+ * `ModePlanetHub` and the seventeen other games that render it are untouched,
+ * and the three shared planet assets ship COMPLETELY UNMODIFIED — which is
+ * what makes this survivable against "it doesn't look like the other games":
+ * the art is the platform's, only the composition is this game's.
+ *
+ * The old `--fx-orb-label-*` tokens (tokens.css) are left in place: they are
+ * the correct recipe for ink on painted art if that ever returns.
  */
-.cx-atlas .ct-mph-planet {
-    position: relative;
-    gap: 0;
-    /* The shared cap (168px / 148px) is sized for a caption UNDER the orb. The
-       orb is now the whole control, so the button must be free to be as wide as
-       the sphere it holds — otherwise the art overflows a box that stops
-       growing and the row's centring goes with it. */
-    max-width: none;
-}
 
-/* ── THE WORLDS FILL THE SCREEN (2026-09-13, owner: "make the planets bigger
- * so they fill the page in a better more professional way") ─────────────────
- *
- * ⚠ SIZED AGAINST BOTH AXES, because this layout is two rows tall. A width-only
- * clamp is what the shared rule does, and it is why training.css carries a
- * `@media (max-height: 640px)` block that shrinks every orb to 112/92px — a
- * 1366x577 laptop, the commonest desktop there is, hits that block and gets the
- * smallest planets in the app on the largest screen. `min(vw, svh, px)` lets
- * the sphere take whichever axis is scarce, so one rule serves a tall phone and
- * a short laptop and neither overflows.
- *
- * ⚠ `svh`, NOT `vh` OR `dvh`. `vh` on a phone is the tall viewport with the URL
- * bar hidden, so the planets would be sized for a screen that isn't there yet
- * and overflow until you scroll; `dvh` fixes that but re-sizes them live as the
- * bar collapses, which reads as the art breathing. `svh` is the smallest of the
- * three and therefore the only stable one. If a browser lacks it the whole
- * declaration is dropped and the shared sizes apply — smaller, never broken.
- *
- * The three-class selector out-specifies the max-height block above (0,3,0 vs
- * 0,2,0); media queries carry no specificity of their own.
- */
+/* The sky goes. Aperture's ground is the page itself — nebulas and shooting
+   stars behind a cut sheet of paper are two metaphors at once. */
+.cx-atlas .ct-mph .ct-mph-sky { display: none; }
+
+/* One column of three registers. `display: contents` dissolves the shared
+   row wrapper so the two lower planets become siblings of the first, which
+   is what lets one rule lay out all three — without touching the markup. */
 .cx-atlas .ct-mph .ct-mph-constellation {
-    width: min(100%, 620px);
-    gap: clamp(14px, 3.4svh, 34px);
+    width: min(100%, 420px);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
 }
-.cx-atlas .ct-mph .ct-mph-planet--lg .ct-mph-planet-orb {
-    width: min(56vw, 30svh, 300px);
-    height: min(56vw, 30svh, 300px);
+.cx-atlas .ct-mph .ct-mph-row { display: contents; }
+.cx-atlas .ct-mph .ct-mph-slot--survival,
+.cx-atlas .ct-mph .ct-mph-slot--levels,
+.cx-atlas .ct-mph .ct-mph-slot--pass {
+    width: 100%;
+    margin: 0;
+    display: block;
 }
-.cx-atlas .ct-mph .ct-mph-planet--md .ct-mph-planet-orb {
-    width: min(42vw, 24svh, 240px);
-    height: min(42vw, 24svh, 240px);
-}
-
-/* On a wide screen the limit is HEIGHT, not width — the spheres are already as
-   large as the two rows allow, so filling the page means opening the triangle
-   out rather than inflating it further. The row is `1fr 1fr` with each planet
-   centred in its column, so widening the container is what moves the two lower
-   worlds apart. */
-@media (min-width: 900px) {
-    /* ⚠ THE REAL CAP IS THE SCREEN, NOT THE HUB. Widening the constellation
-       alone did nothing — measured: 432px constellation inside a 464px
-       `.ct-mph` inside a 560px `.ct-fq-screen`. The cap is training.css:2763,
-       `@media (min-width: 768px)`, and it is written with FOUR classes
-       (`.cancellation-task-game .ct-fq-training-screen--hub
-       .ct-fq-training-screen.ct-fq-screen`) — so a three-class override loses
-       silently and measures unchanged, which is exactly what happened on the
-       first attempt. This one carries five and names the hub screen, so no
-       other screen in the game widens. */
-    .cx-atlas.cancellation-task-game .ct-fq-training-screen--hub.ct-fq-training-screen.ct-fq-screen {
-        max-width: 880px;
-    }
-    .cx-atlas .ct-mph .ct-mph-constellation {
-        width: min(100%, 640px);
-    }
-    .cx-atlas .ct-mph .ct-mph-row {
-        column-gap: clamp(24px, 6vw, 96px);
-    }
-}
-
-/* Out of flow, so the button's box collapses to the orb and the copy lands on
-   the sphere rather than under it. `pointer-events: none` keeps the whole orb
-   one target — the label must never swallow a tap the planet should take. */
-.cx-atlas .ct-mph .ct-mph-planet-copy {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    display: grid;
-    place-items: center;
-    /* ⚠ `place-CONTENT`, not just place-items, and it is load-bearing. The
-       caption layout in training.css sets `justify-content: flex-start` for
-       the stacked name+hint; inherited into a grid, that start-aligns the
-       auto-sized track, so the label rendered 11-22px LEFT of the sphere's
-       centre while every computed value (text-align: center, justify-items:
-       center, symmetric padding) said it was centred. Measured with
-       getBoundingClientRect against the orb's rect — the numbers disagreed
-       with the declarations, which is the only way this shows up. */
-    place-content: center;
-    min-height: 0;
-    padding: 0 13%;
-    pointer-events: none;
-    /* Makes `cqh` below resolve against this box — which is the orb's box. */
-    container-type: size;
-}
-
-/* The veil: a soft disc under the words. z-index -1 keeps it behind the label
-   but still above the planet image, because the copy's own z-index makes it a
-   stacking context.
-   ⚠ IT MUST NOT LEAVE THE SPHERE, and an inset percentage cannot promise that.
-   The copy box is the BUTTON's box, which is WIDER than the orb on the two
-   medium planets (148px vs 136px) — an `inset: 24% 6%` ellipse therefore hung
-   past the planet's edge and read as a grey smudge on the pale light-theme
-   ground. Sized off the copy's HEIGHT instead (which is the orb's height
-   exactly) with `aspect-ratio: 1`, so the disc is a circle 78% of the sphere
-   whatever the button does, and the gradient is transparent well before its
-   own edge. No orb size table is restated here — that pair would drift. */
-.cx-atlas .ct-mph .ct-mph-planet-copy::before {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    top: 50%;
-    left: 50%;
-    height: 78%;
+/* The printer's rule: it stops short of both margins, so it reads as a rule
+   set in a page rather than as a divider between two list items. RTL-safe
+   because it is inset on both sides equally. */
+.cx-atlas .ct-mph .ct-mph-slot--survival,
+.cx-atlas .ct-mph .ct-mph-slot--levels {
+    border-bottom: 1px solid color-mix(in srgb, var(--universe-ink) 26%, transparent);
+    margin-inline: 22px;
     width: auto;
-    aspect-ratio: 1;
-    transform: translate(-50%, -50%);
+}
+
+/* Each register: the cut, then the words beside it. Text-align start, never
+   centre — a centred label under a hole is the composition we just left. */
+.cx-atlas .ct-mph .ct-mph-planet {
+    display: grid;
+    grid-template-columns: 116px minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: none;
+    padding: 18px 4px;
+    text-align: start;
+    /* The page does not float. */
+    animation: none;
+    transform: none;
+}
+.cx-atlas .ct-mph .ct-mph-planet.is-hot,
+.cx-atlas .ct-mph .ct-mph-planet:hover {
+    transform: none;
+    filter: none;
+}
+
+/* The cut itself. `overflow: hidden` is the aperture; the art inside is
+   scaled past the edges so the sphere is always cropped. */
+.cx-atlas .ct-mph .ct-mph-planet-orb {
+    width: 116px;
+    height: 116px;
+    justify-self: center;
+    overflow: hidden;
     border-radius: 50%;
-    background: radial-gradient(circle at center,
-        var(--fx-orb-label-veil) 0%,
-        color-mix(in srgb, var(--fx-orb-label-veil) 62%, transparent) 44%,
-        transparent 70%);
+    border: 1px solid color-mix(in srgb, var(--universe-ink) 62%, transparent);
+    box-shadow: none;
+    /* ⚠ THE SECOND RULE IS AN `outline`, NOT THE SHARED RING SPAN, AND THAT IS
+       FORCED. `.ct-mph-planet-ring` is a CHILD of this element, and the
+       aperture is made by `overflow: hidden` — so a child at `inset: -6px` is
+       clipped to the circle and paints nothing at all. (First build shipped
+       exactly that: measured present in the DOM, invisible on screen. Same
+       shape as the level map's clipped shadow this morning — an element that
+       styles correctly and is then cut off by an ancestor's clip.) An
+       `outline` paints outside the border box, follows the border radius, and
+       is immune to the element's own overflow. */
+    outline: 1px solid color-mix(in srgb, var(--universe-ink) 40%, transparent);
+    outline-offset: 5px;
+    transition: outline-offset 200ms var(--cx-ease-enter), outline-color 200ms var(--cx-ease-enter);
 }
-
-.cx-atlas .ct-mph .ct-mph-planet-hint {
-    display: none;
+.cx-atlas .ct-mph .ct-mph-planet:active .ct-mph-planet-orb { outline-offset: 2px; }
+@media (hover: hover) {
+    .cx-atlas .ct-mph .ct-mph-planet:hover .ct-mph-planet-orb {
+        outline-color: color-mix(in srgb, var(--universe-accent) 75%, transparent);
+    }
 }
+/* The shared orbit ring is unusable here for the reason above — hidden rather
+   than restyled, so nobody spends time wondering why it has no effect. */
+.cx-atlas .ct-mph .ct-mph-planet-ring { display: none; }
+.cx-atlas .ct-mph .ct-mph-planet-img {
+    transform: scale(1.5);
+    border-radius: 0;
+    box-shadow: none;
+    transition: transform 260ms var(--cx-ease-enter);
+}
+/* Parallax on hover — shifting the world behind a fixed hole is the only
+   motion that actually sells a cut. */
+@media (hover: hover) {
+    .cx-atlas .ct-mph .ct-mph-planet:hover .ct-mph-planet-img { transform: scale(1.5) translateX(5px); }
+}
+.cx-atlas .ct-mph .ct-mph-planet:active .ct-mph-planet-img { transform: scale(1.46); }
 
-/* ⚠ THE TYPE IS SIZED OFF THE SPHERE, NOT THE VIEWPORT. A `vw` clamp is the
-   obvious move and it is wrong here: the orb has its own size table, including
-   a compact rule that drops the big planet to 112px on a short viewport — a
-   1366x577 laptop, the commonest desktop there is. Measured there, a viewport-
-   sized label ran 106px across a 112px sphere, touching both edges. `cqh`
-   reads the copy box's HEIGHT, which IS the orb's height, so one rule now
-   tracks every planet at every size and the md override is gone with it. The
-   fallback if a browser lacks container queries is the whole declaration being
-   dropped, i.e. today's shared size — readable, just larger. */
+/* Two things the platform draws that Aperture cannot have: a coloured glow
+   (light escaping a hole in a page) and a gloss overlay (a gradient and a
+   cast highlight, both prohibited by this game's art direction). */
+.cx-atlas .ct-mph .ct-mph-planet-glow,
+.cx-atlas .ct-mph .ct-mph-planet-shade { display: none; }
+
+/* The words. Off the art, start-aligned, and the hint is no longer hidden —
+   in this composition it is the description, which is the whole reason the
+   type has somewhere to live. */
+.cx-atlas .ct-mph .ct-mph-planet-copy {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 5px;
+    min-height: 0;
+    padding: 0;
+    text-align: start;
+    container-type: normal;
+}
+.cx-atlas .ct-mph .ct-mph-planet-copy::before { content: none; }
 .cx-atlas .ct-mph .ct-mph-planet-name {
-    color: var(--fx-orb-label-ink);
-    /* The upper bound rose with the spheres (was 1.15rem against a 168px orb):
-       the label is a fraction of the planet, so a cap tuned for a small one
-       reads as a whisper on a 300px world. */
-    font-size: clamp(0.68rem, 14cqh, 1.5rem);
-    line-height: 1.14;
-    letter-spacing: 0.03em;
-    text-shadow:
-        0 1px 2px var(--fx-orb-label-shadow),
-        0 0 16px var(--fx-orb-label-shadow);
+    width: auto;
+    font-family: 'Cormorant Garamond', 'Cinzel', serif;
+    /* 1.46rem, not 1.6: the platform's own labels are "Survival mode" and
+       "Level mode" — two words, shared with seventeen other games and not
+       this screen's to shorten. At 1.6 they wrapped mid-name in the 200px
+       text column, which puts a ragged break in the one string that has to
+       read as a title. Balance the wrap rather than forbidding it, so Arabic
+       (longer, and it WILL wrap) breaks evenly instead of leaving an orphan. */
+    font-size: 1.46rem;
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: 0.02em;
+    color: var(--universe-ink);
+    text-shadow: none;
+    text-wrap: balance;
+}
+.cx-atlas .ct-mph .ct-mph-planet-hint {
+    display: block;
+    width: auto;
+    max-width: 22ch;
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--universe-muted);
 }
 [dir='rtl'] .cx-atlas .ct-mph .ct-mph-planet-name {
+    font-family: 'Cairo', 'Cormorant Garamond', serif;
     letter-spacing: 0;
+}
+[dir='rtl'] .cx-atlas .ct-mph .ct-mph-planet-hint {
+    font-family: 'Cairo', 'Outfit', sans-serif;
+}
+
+/* Entry: the rules draw outward from the leading margin; the cuts do not
+   animate, because a hole in a page does not arrive. */
+.cx-atlas .ct-mph .ct-mph-planet-copy > * {
+    animation: cx-apert-in 260ms var(--cx-ease-enter) both;
+}
+.cx-atlas .ct-mph .ct-mph-slot--levels .ct-mph-planet-copy > * { animation-delay: 70ms; }
+.cx-atlas .ct-mph .ct-mph-slot--pass .ct-mph-planet-copy > * { animation-delay: 140ms; }
+@keyframes cx-apert-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cx-atlas .ct-mph .ct-mph-planet-copy > * { animation: none; }
+    .cx-atlas .ct-mph .ct-mph-planet-img { transition: none; }
+}
+
+/* Wide screens: the same unit, rotated into a row. Not a second layout —
+   the register is the object, and only its flow direction changes. */
+@media (min-width: 900px) {
+    .cx-atlas.cancellation-task-game .ct-fq-training-screen--hub.ct-fq-training-screen.ct-fq-screen {
+        max-width: 980px;
+    }
+    .cx-atlas .ct-mph .ct-mph-constellation {
+        width: 100%;
+        flex-direction: row;
+        align-items: stretch;
+        gap: 0;
+    }
+    .cx-atlas .ct-mph .ct-mph-slot--survival,
+    .cx-atlas .ct-mph .ct-mph-slot--levels,
+    .cx-atlas .ct-mph .ct-mph-slot--pass {
+        flex: 1 1 0;
+        min-width: 0;
+        margin-inline: 0;
+        border-bottom: 0;
+    }
+    /* The rule turns with the layout: between columns, not under rows. */
+    .cx-atlas .ct-mph .ct-mph-slot--levels,
+    .cx-atlas .ct-mph .ct-mph-slot--pass {
+        border-inline-start: 1px solid color-mix(in srgb, var(--universe-ink) 22%, transparent);
+    }
+    .cx-atlas .ct-mph .ct-mph-planet {
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: center;
+        gap: 14px;
+        padding: 10px 18px;
+        text-align: center;
+    }
+    .cx-atlas .ct-mph .ct-mph-planet-copy { align-items: center; text-align: center; }
+    .cx-atlas .ct-mph .ct-mph-planet-hint { max-width: 20ch; }
+    .cx-atlas .ct-mph .ct-mph-planet-orb { width: 112px; height: 112px; }
+}
+/* A short laptop is the binding case: 577px of viewport with chrome above and
+   a link below leaves the row barely 300px. The cut shrinks, the type holds. */
+@media (min-width: 900px) and (max-height: 680px) {
+    .cx-atlas .ct-mph .ct-mph-planet-orb { width: 92px; height: 92px; }
+    .cx-atlas .ct-mph .ct-mph-planet-name { font-size: 1.4rem; }
 }
 
 /* ── The unmounted atlas mode-pick screen ("The Inked Atlas" cover plate) ───

@@ -34,37 +34,26 @@
  * ⚠ Scoped by `:has(.cpp-path)` — `.cx-page` dresses EVERY screen in this
  * game (mode select, level select, results), and only the level map wants
  * a border. `.cpp-path` exists on this screen and nowhere else. */
-.cx-page:has(.cpp-path)::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image: url("/the-maze-man-comics/Assets/attention/cancel-levelmap-bg.webp");
-  background-size: 100% 100%;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
-  background-image: url("/the-maze-man-comics/Assets/attention/cancel-levelmap-bg-dark.webp");
-}
-@media (orientation: portrait) {
-  .cx-page:has(.cpp-path)::before {
-    background-image: url("/the-maze-man-comics/Assets/attention/cancel-levelmap-bg-portrait.webp");
-  }
-  html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
-    background-image: url("/the-maze-man-comics/Assets/attention/cancel-levelmap-bg-dark-portrait.webp");
-  }
-}
-/* ⚠ REQUIRED, not tidiness. A positioned pseudo-element at `z-index: 0`
-   paints ABOVE the content of non-positioned siblings (CSS 2.1 painting
-   order: positioned boxes come after in-flow block content), so without
-   this the border layer would cover the entire level map. Same pairing
-   `.ct-domain-game-stage > *` already carries in training.css. */
-.cx-page:has(.cpp-path) > * {
-  position: relative;
-  z-index: 1;
-}
+/* ⚠ THE BORDER ART IS GONE (2026-09-13, owner: "i dont like the image we set
+ * in the level mode, it looks so crowded", then "remove the image and upgrade
+ * the design"). The four assets are still tracked in
+ * `public/Assets/attention/` (cancel-levelmap-bg{,-dark}{,-portrait}.webp) and
+ * nothing else references them — restoring is putting this block back.
+ *
+ * Why it read as crowded is worth keeping: the ornament ran the FULL HEIGHT of
+ * both edges at full strength, so on a 390px phone it held roughly a third of
+ * the screen width permanently, while the content it framed is a single column
+ * of nodes down the middle. The frame was bigger than the thing framed. The
+ * ground is now the same warm paper and star-glints `.cx-page` gives every
+ * other screen in this game, which also makes the map agree with the mode
+ * screen and the results screen instead of being the one dressed differently. */
+/* The stacking pairing that used to sit here went with the border layer it
+   defended against: a positioned pseudo-element at `z-index: 0` paints above
+   non-positioned in-flow siblings, so the art needed the content lifted over
+   it. There is no pseudo-element on `.cx-page` any more (checked, not
+   assumed), so the rule would now be lifting content above nothing. If the
+   border is ever restored, restore BOTH halves — the art alone covers the
+   whole map. */
 
 /* ⚠ THE PLATE IS GONE (owner, 2026-09-12: "why you kept the old one and
  * you put it over the new background... what i want is the background and
@@ -196,6 +185,21 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
    ⚠ NO BEVEL (Master Prompt Step 5a) — the atlas README explicitly
    prohibits bevels/cast-shadows; the old inset --fx-glint/--fx-shadow-drop
    rim was exactly that, and is deleted rather than reduced. */
+/* ⚠ THE SHADOW MUST FIT INSIDE THE NODE BOX (2026-09-13). `.cpp-node` above
+   sets `content-visibility: auto`, which brings PAINT CONTAINMENT with it —
+   the node's painting is clipped to its own 92x68 box. `--elev-raise` is
+   `0 2px 3px` plus `0 10px 26px`, and that second layer reaches ~36px from a
+   68px orb centred in a 92px box with 12px of room each side. So it was cut
+   off at the box edge and rendered as a HARD-EDGED GREY SLAB behind every
+   node — the thing that made this screen look like a bug rather than a map.
+   Nothing in the CSS painted a rectangle, which is why reading the styles
+   found nothing: `getComputedStyle` reported a fully transparent background
+   on the node, on its ::before and on its ::after, and the slab was still
+   there. (Described rather than quoted: audit:design greps text and would
+   read the literal in this comment as a raw colour.)
+   Confirmed on the real GPU as well as SwiftShader before being touched.
+   A tight shadow (8px total reach, inside the 12px margin) is also closer to
+   the atlas art direction, which prohibits cast shadows outright. */
 .cpp-orb {
   position: relative;
   width: 68px;
@@ -203,40 +207,66 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
   border-radius: 50%;
   background: var(--play-surface-flat);
   border: var(--cx-edge-object, 1px solid var(--line));
-  box-shadow: var(--elev-raise);
-  overflow: hidden;
+  box-shadow: 0 2px 6px var(--fx-shadow-soft);
+  /* ⚠ NO `overflow: hidden` any more. It existed to clip the per-level
+     illustration to the circle, and that image is gone. Left in place it
+     would clip the state badge at the disc's corner instead — the badge sits
+     inside the NODE box (for containment) but outside the CIRCLE (by design,
+     so it never covers the number). */
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .cpp-node:not(:disabled):active .cpp-orb { transform: scale(0.94); }
 
-.cpp-orb-art {
-  position: absolute;
-  inset: 9%;
-  width: 82%;
-  height: 82%;
-  object-fit: contain;
+/* The number IS the node now (the per-level illustration is gone — see
+   CancelPlanetPath.jsx for why). Centred by grid rather than the old absolute
+   `top: 23px`, which was positioning a small overlay against a picture: with
+   nothing behind it, an arbitrary offset just reads as misaligned, and the
+   two-digit levels (10-60, i.e. most of the ladder) are the ones that showed
+   it. No text-shadow either — that halo existed to lift the digits off a busy
+   illustration, and on a plain disc it only softens them. */
+.cpp-orb {
+  display: grid;
+  place-items: center;
+}
+.cpp-num {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 22px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  /* --game-ink, not --color-text (that token is "main text ON DARK", and this
+     disc sits on the fixed LIGHT gameplay ground). */
+  color: var(--game-ink);
   pointer-events: none;
 }
 
-.cpp-num {
+/* State lives in a corner badge, never over the number. The old markup put a
+   padlock through the middle of the node, which is the one place the eye is
+   already looking. */
+/* ⚠ INSIDE the orb's box, not hanging off it. `.cpp-node` carries
+   `content-visibility: auto` (paint containment), which clips anything that
+   leaves the node box — the same rule that turned the orb's old shadow into a
+   grey slab. A badge at `-2px` would simply lose its outer edge. */
+.cpp-badge {
   position: absolute;
-  top: 23px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: 'DM Mono', ui-monospace, monospace;
-  font-size: 17px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  /*
-   * --game-ink, not --color-text (that token is "main text ON DARK"
-   * parchment, and this orb sits on the fixed LIGHT gameplay ground). A
-   * light halo instead of a dark shadow, for the same reason.
-   */
-  color: var(--game-ink);
-  text-shadow: 0 0 3px var(--play-surface-flat), 0 0 3px var(--play-surface-flat);
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--play-surface-flat);
   pointer-events: none;
 }
-.cpp-num svg { display: block; width: 17px; height: 17px; }
+[dir='rtl'] .cpp-badge { right: auto; left: 0; }
+.cpp-badge svg { display: block; }
+.cpp-badge--done { color: var(--game-ok); border-color: color-mix(in srgb, var(--game-ok) 55%, var(--line)); }
+.cpp-badge--locked { color: var(--fq-mut, var(--ink-dim)); }
+.cpp-badge--done svg { width: 13px; height: 13px; }
+.cpp-badge--locked svg { width: 11px; height: 11px; }
 
 .cpp-sub {
   font-family: 'Outfit', system-ui, sans-serif;
@@ -255,32 +285,46 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
   box-shadow: 0 3px 10px var(--fx-shadow-soft);
 }
 
-/* Done: a green ring states "cleared" without needing to re-tint the art
-   itself (re-tinting a multi-colour illustration with a hue filter reads as
-   a colour-blindness bug, not a status) — the check glyph in .cpp-num
-   carries the rest of the signal. */
+/* Three states, three levels of ink — read as a ladder before any glyph is
+   parsed: cleared is ringed and settled, next is the brightest thing on the
+   screen, locked recedes. ⚠ Every shadow here stays inside the node's 12px
+   margin for the containment reason above; `--elev-raise` must not come back. */
 .cpp-node--done .cpp-orb {
-  box-shadow: var(--elev-raise), var(--cx-ring-done, inset 0 0 0 2px var(--game-ok));
+  box-shadow: 0 2px 6px var(--fx-shadow-soft),
+              var(--cx-ring-done, inset 0 0 0 2px var(--game-ok));
+  background: color-mix(in srgb, var(--game-ok) 9%, var(--play-surface-flat));
 }
-.cpp-node--done .cpp-num { font-size: 22px; color: var(--game-ok); }
+.cpp-node--done .cpp-num { color: color-mix(in srgb, var(--game-ok) 72%, var(--game-ink)); }
 
-/* Locked: flattened toward stone via filter on the SAME image (no second
-   asset) — desaturated and dimmed, so "not yet reachable" reads before the
-   lock glyph is even parsed. */
-.cpp-node--locked .cpp-orb-art {
-  filter: grayscale(0.85) brightness(0.68) contrast(0.92);
+/* Locked: quieter ink and a flatter disc. The number stays legible on purpose
+   — a locked level is still a place on the map you are measuring distance to. */
+.cpp-node--locked .cpp-orb {
+  background: color-mix(in srgb, var(--game-ink) 6%, var(--play-surface-flat));
+  box-shadow: none;
 }
-.cpp-node--locked .cpp-num { font-size: 20px; text-shadow: none; opacity: 0.85; }
+.cpp-node--locked .cpp-num { color: var(--fq-mut, var(--ink-dim)); opacity: 0.85; }
 .cpp-node--locked .cpp-sub { opacity: 0.6; }
 
 /* Current: where Kawkab is actually standing. A soft pulse, not a static
-   ring — the one node on the whole path that is doing something. */
+   ring — the one node on the whole path that is doing something.
+   With the illustrations gone every disc is the same object, so the frontier
+   has to win on ink alone: it is the only node with an accent rim and full
+   ink on the numeral. */
 .cpp-node--current .cpp-orb {
   animation: cpp-pulse 2.2s ease-in-out infinite;
+  border-color: color-mix(in srgb, var(--game-accent) 70%, var(--line));
+  background: color-mix(in srgb, var(--game-accent) 12%, var(--play-surface-flat));
 }
+.cpp-node--current .cpp-num {
+  font-weight: 500;
+  color: var(--game-ink);
+}
+/* Same containment limit as the orb above: the drop layer is 3px/8px so it
+   stays inside the node's 12px margin, and the ring's 10px spread is exactly
+   the widest a 68px orb can grow inside a 92px box without being cut. */
 @keyframes cpp-pulse {
-  0%, 100% { box-shadow: 0 4px 10px var(--fx-shadow-drop), 0 0 0 0 color-mix(in srgb, var(--game-accent) 55%, transparent); }
-  50% { box-shadow: 0 4px 10px var(--fx-shadow-drop), 0 0 0 10px color-mix(in srgb, var(--game-accent) 0%, transparent); }
+  0%, 100% { box-shadow: 0 3px 8px var(--fx-shadow-drop), 0 0 0 0 color-mix(in srgb, var(--game-accent) 55%, transparent); }
+  50% { box-shadow: 0 3px 8px var(--fx-shadow-drop), 0 0 0 10px color-mix(in srgb, var(--game-accent) 0%, transparent); }
 }
 
 /* Kawkab walks between planets on a clear (Master Prompt Step 5c). The
@@ -431,10 +475,13 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
 .cpp-band-pill {
   position: relative;
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
+  /* A third column for the band's progress: the sigil says WHICH chapter,
+     the count says HOW FAR through it you are. With the per-level art gone
+     this card is the only picture on the screen, so it carries the meaning. */
+  grid-template-columns: 32px minmax(0, 1fr) auto;
   grid-template-areas:
-    'sigil name'
-    'sigil sub';
+    'sigil name  count'
+    'sigil sub   count';
   align-items: center;
   column-gap: 10px;
   row-gap: 3px;
@@ -471,6 +518,19 @@ html[data-home-theme='dark'] .cx-page:has(.cpp-path)::before {
   line-height: 1.25;
   text-transform: none;
   color: var(--fq-mut, var(--ink-dim));
+}
+/* The clock voice, same as the level numbers on the discs — anything that
+   counts is DM Mono in this game's type ladder. */
+.cpp-band-count {
+  grid-area: count;
+  align-self: center;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--fq-mut, var(--ink-dim));
+  padding-inline-start: 10px;
 }
 [dir='rtl'] .cpp-band-name { font-family: 'Cairo', 'Cormorant Garamond', serif; font-weight: 700; letter-spacing: 0; }
 [dir='rtl'] .cpp-band-sub  { font-family: 'Cairo', 'Outfit', sans-serif; letter-spacing: 0.02em; text-transform: none; }

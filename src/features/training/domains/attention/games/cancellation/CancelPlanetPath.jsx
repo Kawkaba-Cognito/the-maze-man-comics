@@ -47,12 +47,24 @@ const BAND_MARKER_OFFSET = 170;
 // edge, which is what the header-crowding report was actually measuring.
 const yOf = (i) => FIRST_NODE_Y + i * ROW_H + Math.floor(i / BAND_SIZE) * BAND_GAP;
 
-const ATLAS_CYCLE = [
-  'galaxy', 'supernova', 'nebula-bolt', 'portal', 'warp-gate', 'moon',
-  'thin-moon', 'star', 'comet', 'meteor-cluster', 'planet-rise', 'round-planet',
-];
-// Exported so the results screen's band-cleared callout (index.jsx) uses
-// the exact same sigil-per-band mapping as the map itself.
+/* ⚠ THE PER-LEVEL ART IS GONE (2026-09-13, owner: "in level mode it looks so
+ * random", then "remove the image and upgrade the design").
+ *
+ * Every node used to carry a different piece from a 12-item cycle, assigned by
+ * `(lv - 1) % 12` — so a rainbow spiral, a star, a lightning bolt and a green
+ * block sat next to each other, meaning nothing and agreeing with nothing. The
+ * word for that is exactly the one used: random. Worse, the number the player
+ * actually needs was a small overlay ON the picture, and a locked level got a
+ * padlock stamped through the middle of the illustration.
+ *
+ * A map's job is to tell you WHERE YOU ARE. So the node is now the level
+ * number, in the atlas' own clock voice, and the illustration moves to the one
+ * place on this screen where a picture carries information: the chapter card
+ * at the head of each band of ten, which already had its own sigil. Art where
+ * it means something, numbers where you need them.
+ *
+ * BAND_SIGIL is exported so the results screen's band-cleared callout
+ * (index.jsx) uses the exact same sigil-per-band mapping as the map itself. */
 export const BAND_SIGIL = ['star', 'comet', 'meteor-cluster', 'nebula-bolt', 'warp-gate', 'supernova'];
 
 // Exported so any other screen in this game reaches the same 43 tracked
@@ -85,7 +97,6 @@ function LockGlyph() {
 function CancelPlanet({
   lv, x, y, unlocked, done, current, label, onPick, playSfx, isAr, nodeRef,
 }) {
-  const art = ATLAS_CYCLE[(lv - 1) % ATLAS_CYCLE.length];
   // Full detail lives in aria-label (status + timing, where sighted players
   // get the status from the glyph/tint and the timing only when it's the
   // node they can actually press); the visible .cpp-sub caption is reserved
@@ -107,10 +118,17 @@ function CancelPlanet({
       aria-current={current ? 'step' : undefined}
       aria-label={ariaLabel}
     >
+      {/* The number is the node. It stays visible in EVERY state — including
+          cleared and locked — because "which level is this" is the one
+          question this screen exists to answer, and the old markup replaced
+          it with a glyph in exactly the states a player scrolls past most.
+          State is carried by the disc's tint and a small corner badge
+          instead, so nothing is ever stamped over the thing you are reading. */}
       <span className="cpp-orb" aria-hidden="true">
-        <img src={atlasUrl(art)} alt="" className="cpp-orb-art" loading="lazy" />
+        <span className="cpp-num">{lv}</span>
+        {done ? <span className="cpp-badge cpp-badge--done"><CheckGlyph /></span> : null}
+        {!unlocked ? <span className="cpp-badge cpp-badge--locked"><LockGlyph /></span> : null}
       </span>
-      <span className="cpp-num">{done ? <CheckGlyph /> : unlocked ? lv : <LockGlyph />}</span>
       {current && unlocked && label ? <span className="cpp-sub">{label}</span> : null}
     </button>
   );
@@ -205,6 +223,16 @@ export default function CancelPlanetPath({
 
   const bandStarts = bands ? Array.from({ length: Math.ceil(count / BAND_SIZE) }, (_, b) => b) : [];
 
+  // How much of a band is behind you. Derived from the same `isDone` the nodes
+  // use, so the card can never disagree with the discs under it.
+  const bandCleared = (b) => {
+    let n = 0;
+    for (let lv = b * BAND_SIZE + 1; lv <= Math.min((b + 1) * BAND_SIZE, count); lv += 1) {
+      if (isDone(lv)) n += 1;
+    }
+    return n;
+  };
+
   return (
     <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} shellClassName="cx-page">
       <div className="ct-lv-grid-wrap">
@@ -228,6 +256,10 @@ export default function CancelPlanetPath({
                   <img className="cpp-band-sigil" src={atlasUrl(BAND_SIGIL[b % BAND_SIGIL.length])} alt="" aria-hidden="true" />
                   <span className="cpp-band-name">{bands[b].title}</span>
                   <span className="cpp-band-sub">{bands[b].sub}</span>
+                  {/* Numerals only, no words — so it needs no translation and
+                      cannot drift between the EN and AR halves of a dict, the
+                      most repeated string bug in this repo. */}
+                  <span className="cpp-band-count">{bandCleared(b)}/{BAND_SIZE}</span>
                 </span>
               </div>
             ) : null
