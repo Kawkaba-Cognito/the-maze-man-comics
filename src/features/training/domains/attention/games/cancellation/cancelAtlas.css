@@ -138,6 +138,71 @@
 .cx-atlas .ct-mph-planet {
     position: relative;
     gap: 0;
+    /* The shared cap (168px / 148px) is sized for a caption UNDER the orb. The
+       orb is now the whole control, so the button must be free to be as wide as
+       the sphere it holds — otherwise the art overflows a box that stops
+       growing and the row's centring goes with it. */
+    max-width: none;
+}
+
+/* ── THE WORLDS FILL THE SCREEN (2026-09-13, owner: "make the planets bigger
+ * so they fill the page in a better more professional way") ─────────────────
+ *
+ * ⚠ SIZED AGAINST BOTH AXES, because this layout is two rows tall. A width-only
+ * clamp is what the shared rule does, and it is why training.css carries a
+ * `@media (max-height: 640px)` block that shrinks every orb to 112/92px — a
+ * 1366x577 laptop, the commonest desktop there is, hits that block and gets the
+ * smallest planets in the app on the largest screen. `min(vw, svh, px)` lets
+ * the sphere take whichever axis is scarce, so one rule serves a tall phone and
+ * a short laptop and neither overflows.
+ *
+ * ⚠ `svh`, NOT `vh` OR `dvh`. `vh` on a phone is the tall viewport with the URL
+ * bar hidden, so the planets would be sized for a screen that isn't there yet
+ * and overflow until you scroll; `dvh` fixes that but re-sizes them live as the
+ * bar collapses, which reads as the art breathing. `svh` is the smallest of the
+ * three and therefore the only stable one. If a browser lacks it the whole
+ * declaration is dropped and the shared sizes apply — smaller, never broken.
+ *
+ * The three-class selector out-specifies the max-height block above (0,3,0 vs
+ * 0,2,0); media queries carry no specificity of their own.
+ */
+.cx-atlas .ct-mph .ct-mph-constellation {
+    width: min(100%, 620px);
+    gap: clamp(14px, 3.4svh, 34px);
+}
+.cx-atlas .ct-mph .ct-mph-planet--lg .ct-mph-planet-orb {
+    width: min(56vw, 30svh, 300px);
+    height: min(56vw, 30svh, 300px);
+}
+.cx-atlas .ct-mph .ct-mph-planet--md .ct-mph-planet-orb {
+    width: min(42vw, 24svh, 240px);
+    height: min(42vw, 24svh, 240px);
+}
+
+/* On a wide screen the limit is HEIGHT, not width — the spheres are already as
+   large as the two rows allow, so filling the page means opening the triangle
+   out rather than inflating it further. The row is `1fr 1fr` with each planet
+   centred in its column, so widening the container is what moves the two lower
+   worlds apart. */
+@media (min-width: 900px) {
+    /* ⚠ THE REAL CAP IS THE SCREEN, NOT THE HUB. Widening the constellation
+       alone did nothing — measured: 432px constellation inside a 464px
+       `.ct-mph` inside a 560px `.ct-fq-screen`. The cap is training.css:2763,
+       `@media (min-width: 768px)`, and it is written with FOUR classes
+       (`.cancellation-task-game .ct-fq-training-screen--hub
+       .ct-fq-training-screen.ct-fq-screen`) — so a three-class override loses
+       silently and measures unchanged, which is exactly what happened on the
+       first attempt. This one carries five and names the hub screen, so no
+       other screen in the game widens. */
+    .cx-atlas.cancellation-task-game .ct-fq-training-screen--hub.ct-fq-training-screen.ct-fq-screen {
+        max-width: 880px;
+    }
+    .cx-atlas .ct-mph .ct-mph-constellation {
+        width: min(100%, 640px);
+    }
+    .cx-atlas .ct-mph .ct-mph-row {
+        column-gap: clamp(24px, 6vw, 96px);
+    }
 }
 
 /* Out of flow, so the button's box collapses to the orb and the copy lands on
@@ -208,7 +273,10 @@
    dropped, i.e. today's shared size — readable, just larger. */
 .cx-atlas .ct-mph .ct-mph-planet-name {
     color: var(--fx-orb-label-ink);
-    font-size: clamp(0.68rem, 14cqh, 1.15rem);
+    /* The upper bound rose with the spheres (was 1.15rem against a 168px orb):
+       the label is a fraction of the planet, so a cap tuned for a small one
+       reads as a whisper on a 300px world. */
+    font-size: clamp(0.68rem, 14cqh, 1.5rem);
     line-height: 1.14;
     letter-spacing: 0.03em;
     text-shadow:
@@ -456,12 +524,13 @@
   .cx-atlas .ct-fq-cd.is-leaving { animation: none; opacity: 0; }
 }
 
-/* The Survival cue backdrop (already wired to the atlas galaxy piece) grows
-   to fill more of the card — same asset, more presence. */
-.cx-atlas .ct-fq-cd--ready {
-  background-size: cover, clamp(280px, 72vw, 460px) auto;
-  background-position: center, center 34%;
-}
+/* ⚠ REMOVED 2026-09-13 (owner: "there is the target and an emoji behind it,
+   remove the emoji"). This rule enlarged the galaxy piece behind the Survival
+   cue card; the piece itself is now gone from `.ct-fq-cd--ready` in
+   training.css, so a size/position override for it would be styling nothing
+   — and worse, the second value in each list would reapply a layer that no
+   longer exists the moment anyone put an image back. The ready screen shows
+   ONE object on the flat play surface, which is the whole point of it. */
 
 /* ── Step 7: celebration → results, one event (Carry B) ───────────────────
  * The hold is 620ms (index.jsx) to match CUES.win's own length. The ring,

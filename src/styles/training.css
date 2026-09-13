@@ -2515,10 +2515,15 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
    is where "a new background" in this mode actually reads.
    ⚠ ROUND 4: the generated photo behind this card is gone, for the same
    reason it's gone from the level-select screen (see cancelPlanetPath.css) —
-   it broke this game's own hand-inked flat-vector art direction. A single
-   piece from the SAME cosmic atlas the stimuli and the level-select nodes
-   now use sits large and soft behind the card instead — one art family
-   across the whole game, for the first time.
+   it broke this game's own hand-inked flat-vector art direction. It was
+   replaced by a single piece from the game's cosmic atlas, large and soft.
+   ⚠ 2026-09-13 (owner): THAT PIECE IS GONE TOO, and nothing replaces it.
+   "There is the target and an emoji behind it — remove the emoji." Right
+   call, and for a reason beyond taste: this screen exists to show ONE
+   object, which the player is about to hunt among decoys for the whole
+   round. A second illustration behind it is a decoy on the instruction
+   screen — the one place in the game that must be unambiguous. The ground
+   is now the flat play surface, so nothing competes with the target.
    ⚠ THE SCRIM MUST BE `--play-surface-flat`, NOT a theme-flipping token like
    `--universe-dusk`. The whole gameplay palette (`--play-surface`,
    `--game-ink`, every `--game-*` role) is DELIBERATELY fixed regardless of
@@ -2529,15 +2534,10 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
    as the ink it must stay legible against, in every app theme. */
 .ct-fq-cd--ready {
     background-color: var(--play-surface-flat);
-    background-image:
-        linear-gradient(
-            color-mix(in srgb, var(--play-surface-flat) 84%, transparent),
-            color-mix(in srgb, var(--play-surface-flat) 84%, transparent)
-        ),
-        var(--asset-attn-cancel-atlas-galaxy, none);
-    background-size: cover, 340px 340px;
-    background-position: center, center 38%;
-    background-repeat: no-repeat, no-repeat;
+    background-image: none;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 .ct-fq-cd-num {
     font-family: 'Outfit', system-ui, sans-serif;

@@ -54,17 +54,22 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
 }
 
 /* Prod: when a freshly-deployed service worker takes control of a page that was
- * already controlled by an older one, reload once so users never sit on a stale
+ * already controlled by an older one, reload so users never sit on a stale
  * (or half-updated) build — the cause of "it still shows the old version / two
  * screens overlap on my phone". Guarded so the very first install (which claims
- * a previously-uncontrolled page) does NOT trigger a reload. */
+ * a previously-uncontrolled page) does NOT trigger a reload.
+ *
+ * ⚠ THE RELOAD IS DEFERRED WHILE A GAME IS OPEN (2026-09-13). It used to fire
+ * the instant the new worker claimed the page, which with `skipWaiting` +
+ * `clientsClaim` means DURING PLAY — reported as "cancellation sometimes exits
+ * to the home screen". `activeTab` is not persisted and initialises to Home,
+ * so that is exactly where a mid-round reload lands you. See
+ * lib/swUpdateReload.js; the reload itself is unchanged and still load-bearing. */
 if (import.meta.env.PROD && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   const hadController = !!navigator.serviceWorker.controller;
-  let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController || reloading) return;
-    reloading = true;
-    window.location.reload();
+    if (!hadController) return;
+    void import('./lib/swUpdateReload').then(({ scheduleUpdateReload }) => scheduleUpdateReload());
   });
 }
 
