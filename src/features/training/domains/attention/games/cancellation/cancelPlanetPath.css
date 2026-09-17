@@ -884,3 +884,128 @@
 }
 .cpp-star { fill: color-mix(in srgb, var(--game-ink) 22%, transparent); }
 .cpp-star--on { fill: var(--game-accent); }
+
+/* ══ THE CHROME STAYS WITH YOU (2026-09-17) ════════════════════════════════
+ * Owner: "the back button keep it all the time up, so i dont have to go to the
+ * top to press it, it always exists."
+ *
+ * The map is the one screen in this game that scrolls thousands of pixels
+ * (a 60-node path is ~6,610px tall), and the back button sat at the very top
+ * of it — so the deeper a player had climbed, the further they had to scroll
+ * BACKWARDS to leave. Sticky rather than fixed: the scroll container here is
+ * `.ct-domain-game-stage` (overflow-y: auto), and a fixed element would
+ * resolve against `#ui-shell` and so ignore the screen's own padding.
+ *
+ * ⚠ `sticky` WAS TRIED FIRST AND SILENTLY DID NOTHING. A sticky element sticks
+ * inside its nearest SCROLLPORT, and measuring the ancestor chain on the real
+ * page found `.ct-fq-training-shell` carrying `overflow-y: auto` — so that, not
+ * `.ct-domain-game-stage`, was the scrollport. It is 7,618px tall (the whole
+ * map) and therefore never scrolls internally; the stage scrolls it. The bar
+ * computed `position: sticky` perfectly and rode away with the content:
+ * measured `top: -2582` at a scroll depth of 2,600. No error, no warning.
+ *
+ * `fixed` resolves against `#ui-shell` — a transformed ancestor traps fixed —
+ * which is the app area, and is the pattern this repo already uses for the
+ * gameplay background and the level-map border. So the bar is pinned to the
+ * app viewport, which is what "always up" actually means.
+ */
+.cpp-page .ct-training-menubar {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 6;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 10px max(12px, env(safe-area-inset-left)) 10px max(12px, env(safe-area-inset-right));
+  box-sizing: border-box;
+  /* ⚠ NO BAND BEHIND IT. The first version put a blurred plate across the top
+     so the planets would not scroll through the buttons — and on screen that
+     is a pale strip capping every world, which is precisely the beige header
+     this page just had removed. The two buttons already carry their own paper
+     chrome (`--paper` variant), so they read fine against any of the six
+     grounds on their own, and the world runs unbroken to the top edge.
+     `pointer-events: none` on the bar keeps the empty span between them from
+     swallowing taps aimed at a planet underneath. */
+  background: none;
+  pointer-events: none;
+}
+.cpp-page .ct-training-menubar > * { pointer-events: auto; }
+/* The path starts under a pinned bar, so it needs the bar's height back. */
+.cpp-page .ct-lv-grid-wrap { padding-top: 54px; }
+
+/* ⚠ AND THE SCREEN MUST NOT CARRY A TRANSFORM, OR `fixed` IS TRAPPED BY IT.
+ * `.cx-atlas .ct-fq-screen` runs `cx-screen-in` with `animation-fill-mode:
+ * both`, which leaves a transform applied — and a transformed ancestor becomes
+ * the containing block for a fixed descendant. Measured: the bar pinned to the
+ * top of the 7,608px MAP instead of the viewport, reading `top: -2590` at a
+ * scroll depth of 2,600, which is indistinguishable from the sticky failure it
+ * was meant to fix.
+ *
+ * ⚠ THE EXISTING OPT-OUT WAS ON THE WRONG ELEMENT. cancelAtlas.css already
+ * disables this animation for the level select, with a comment explaining that
+ * CancelPlanetPath measures a real rect via `scrollIntoView` in a layout effect
+ * and "a live translateY on an ancestor would shift it" — but it targets
+ * `.ct-lv-grid-wrap`, which is the CHILD. The transform was never on that
+ * element; it is on `.ct-fq-screen` above it. So the map has been measuring
+ * under a live transform this whole time, and that opt-out has been doing
+ * nothing. This puts it on the element that actually animates.
+ */
+.cpp-page .ct-fq-screen { animation: none; }
+
+/* ── The "?" sheet ──────────────────────────────────────────────────────── */
+.cpp-help {
+  position: fixed;
+  inset: 0;
+  z-index: 620;
+  display: grid;
+  place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: var(--fx-training-scrim);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.cpp-help-card {
+  width: min(100%, 27rem);
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 22px 20px;
+  border-radius: var(--cx-r-plate);
+  border: var(--cx-edge-plate);
+  background: var(--play-surface-flat);
+  box-shadow: var(--elev-raise);
+}
+.cpp-help-title {
+  margin: 0;
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: var(--cx-fs-title);
+  font-weight: 700;
+  color: var(--game-ink);
+  text-align: center;
+}
+.cpp-help-list { margin: 0; display: flex; flex-direction: column; gap: 13px; }
+.cpp-help-row { display: flex; flex-direction: column; gap: 3px; }
+.cpp-help-k {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: var(--cx-fs-label);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fq-mut);
+}
+.cpp-help-v {
+  margin: 0;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: var(--cx-fs-body);
+  line-height: 1.5;
+  color: var(--game-ink);
+}
+[dir='rtl'] .cpp-help-k { letter-spacing: 0.02em; text-transform: none; font-family: 'Cairo', sans-serif; }
+[dir='rtl'] .cpp-help-title { font-family: 'Cairo', 'Cormorant Garamond', serif; }
+[dir='rtl'] .cpp-help-v { font-family: 'Cairo', 'Outfit', sans-serif; }

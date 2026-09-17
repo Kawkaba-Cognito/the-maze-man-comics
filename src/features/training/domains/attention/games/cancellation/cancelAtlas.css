@@ -999,3 +999,131 @@
 }
 [dir='rtl'] .cx-cue-flag { letter-spacing: 0.02em; text-transform: none; }
 [dir='rtl'] .cx-cue-nogo { padding: 7px 8px 7px 13px; }
+
+/* ══ MORE OF EACH WORLD'S OWN LIGHT (2026-09-17, round two) ════════════════
+ * Owner: "add more colours to each one, like survival add more yellow and
+ * level more blue and so on, in an artistic premium way."
+ *
+ * Round one put a halo on the cut. That was correct and too quiet: the accent
+ * touched a hairline and a bloom, while the register it belongs to — the row,
+ * the name, the rule under it — stayed uniformly neutral. So the colour now
+ * runs through the whole register, and the restraint moves from HOW MUCH to
+ * WHERE: one hue per row, used at four strengths, and nothing else added.
+ */
+.cx-atlas .ct-mph .ct-mph-planet {
+    position: relative;
+    isolation: isolate;
+    border-radius: var(--cx-r-object);
+}
+/* The register's own ground — a sweep that starts at the cut and runs out
+   under the words, so the colour reads as light coming OFF the planet rather
+   than as a coloured box drawn behind it. */
+.cx-atlas .ct-mph .ct-mph-planet::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    /* ⚠ RADIAL, NOT A LEFT-TO-RIGHT SWEEP. The sweep was written for the
+       STACKED register layout (cut at the inline start, words beside it) and
+       on the three-across desktop layout it rendered as a rectangle with a
+       visible edge — a coloured box behind each mode, which is the opposite of
+       light coming off a planet. A radial anchored near the cut is shapeless at
+       every edge, so it reads the same in both of this hub's layouts. */
+    background: radial-gradient(
+        ellipse 88% 78% at 50% 32%,
+        color-mix(in srgb, var(--mph-accent) 28%, transparent) 0%,
+        color-mix(in srgb, var(--mph-accent) 10%, transparent) 52%,
+        transparent 86%
+    );
+    opacity: 0.92;
+    transition: opacity 240ms var(--cx-ease-enter);
+}
+@media (hover: hover) {
+    .cx-atlas .ct-mph .ct-mph-planet:hover::after { opacity: 1; }
+}
+/* The name carries a trace of it. ⚠ MIXED INTO `--universe-ink`, NOT USED RAW:
+   these accents are mid-chroma and three of them on a dark ground at full
+   strength would each fail contrast on their own row. A trace tints; a fill
+   would have to be re-measured per world. */
+.cx-atlas .ct-mph .ct-mph-planet-name {
+    color: color-mix(in srgb, var(--mph-accent) 30%, var(--universe-ink));
+}
+.cx-atlas .ct-mph .ct-mph-planet-hint {
+    color: color-mix(in srgb, var(--mph-accent) 16%, var(--universe-ink));
+}
+/* And the rule under each register, so the colour closes the row it opened. */
+.cx-atlas .ct-mph .ct-mph-slot--survival,
+.cx-atlas .ct-mph .ct-mph-slot--levels {
+    border-bottom-color: color-mix(in srgb, var(--mph-accent) 38%, transparent);
+}
+
+/* ══ THE SURVIVAL INTRO IS THE SAME PLANET (2026-09-17) ════════════════════
+ * Owner: "in the survival, when i press there is a page that opens with a
+ * start — make the planet inside it the same like the one in the mode page,
+ * and add a special yellow suitable for a game-style page."
+ *
+ * ⚠ IT WAS ALREADY THE SAME ART AND THE SAME MARKUP, which is why the
+ * mismatch is worth recording rather than just fixing: `SurvivalIntro` renders
+ * `Assets/mode-planets/survival.webp` inside a `.ct-mph-planet-orb` with
+ * `--mph-accent` set, exactly like the hub. But every Aperture rule in this
+ * file is scoped `.cx-atlas .ct-mph …`, and the intro's orb is NOT inside a
+ * `.ct-mph` — so it rendered with the PLATFORM treatment (glow, orbit ring,
+ * gloss) while the hub two taps earlier rendered a cut. Same file, same asset,
+ * two different planets, because of one class in a selector.
+ *
+ * Scoped to `.cx-atlas`, so the other seventeen games' Survival intros keep
+ * the platform planet.
+ */
+.cx-atlas .ct-survival-intro-planet {
+    overflow: hidden;
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--mph-accent) 40%, var(--universe-ink));
+    outline: 1px solid color-mix(in srgb, var(--mph-accent) 52%, transparent);
+    outline-offset: 6px;
+    box-shadow:
+        0 0 38px 8px color-mix(in srgb, var(--mph-accent) 34%, transparent),
+        0 0 104px 30px color-mix(in srgb, var(--mph-accent) 18%, transparent);
+}
+.cx-atlas .ct-survival-intro-planet .ct-mph-planet-img { transform: scale(1.5); border-radius: 0; box-shadow: none; }
+.cx-atlas .ct-survival-intro-planet .ct-mph-planet-glow,
+.cx-atlas .ct-survival-intro-planet .ct-mph-planet-ring,
+.cx-atlas .ct-survival-intro-planet .ct-mph-planet-shade { display: none; }
+
+/* The yellow, on the page rather than only on the planet. A wash from the top
+   where the planet sits, so the screen is lit BY it. */
+/* ⚠ THE WASH HANGS OFF THE SHELL, NOT THE SCREEN, AND THAT IS THE SECOND
+   TIME THIS TRANSFORM HAS BITTEN TODAY.  runs
+    with , which leaves a transform
+   applied — so a  child is contained by the SCREEN rather
+   than the viewport. The screen is width-capped, so the amber lit a rectangle
+   down the middle of the page and left the sides black. Measured, not guessed:
+   the lit band ran x=390..975 on a 1366px viewport.
+    is full-bleed and carries no transform, so a fixed
+   pseudo on it resolves against  — the app area — as intended. */
+.cx-atlas .ct-fq-training-shell:has(.ct-survival-intro) {
+    position: relative;
+    isolation: isolate;
+}
+.cx-atlas .ct-fq-training-shell:has(.ct-survival-intro)::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse 120% 52% at 50% -6%,
+            color-mix(in srgb, var(--color-amber) 34%, transparent) 0%,
+            transparent 68%),
+        radial-gradient(ellipse 90% 40% at 50% 104%,
+            color-mix(in srgb, var(--color-amber) 14%, transparent) 0%,
+            transparent 70%);
+}
+.cx-atlas .ct-survival-intro-title {
+    font-family: 'Cormorant Garamond', 'Cinzel', serif;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: color-mix(in srgb, var(--color-amber) 34%, var(--universe-ink));
+}
+[dir='rtl'] .cx-atlas .ct-survival-intro-title { font-family: 'Cairo', 'Cormorant Garamond', serif; letter-spacing: 0; }

@@ -54,11 +54,21 @@ import { CANCEL_TASK_COACH } from '../../../../shared/tutorials/coach/scripts/ca
  */
 
 export default function CancelTaskCoach({
-  isAr, playSfx, cells, boardApiRef, onFinish, onSkip,
+  isAr, playSfx, cells, boardApiRef, onFinish, onSkip, script,
 }) {
+  /*
+   * ⚠ `script` IS OPTIONAL AND IS HOW THE PER-WORLD LESSONS REUSE ALL OF THIS.
+   * The ladder introduces a new rule every ten levels and each one gets its own
+   * ACTIVE lesson (scripts/cancel-task-worlds.js) — explanation, then the thing
+   * on screen, then a step that waits for the player to actually do it. None of
+   * that needed new machinery: pointing, the await-advance, the hand, the
+   * bubble and the stranded-fallback are already here and already proven. Only
+   * the words change, so only the words are passed in.
+   */
   const steps = useMemo(
-    () => CANCEL_TASK_COACH.steps.map((s) => ({ ...s, speech: isAr ? s.ar : s.en })),
-    [isAr],
+    () => (script?.steps || CANCEL_TASK_COACH.steps)
+      .map((s) => ({ ...s, speech: isAr ? s.ar : s.en })),
+    [isAr, script],
   );
   const [stepIdx, setStepIdx] = useState(0);
   const step = steps[stepIdx];

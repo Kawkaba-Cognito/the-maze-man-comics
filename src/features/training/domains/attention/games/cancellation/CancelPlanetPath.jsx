@@ -313,8 +313,9 @@ function CancelPlanet({
 
 export default function CancelPlanetPath({
   isAr, playSfx, onBack, title, blurb, count, isUnlocked, isDone, sublabel, onPick, bands,
-  stars, sections,
+  stars, sections, help,
 }) {
+  const [helpOpen, setHelpOpen] = useState(false);
   const nodes = useMemo(() => Array.from({ length: count }, (_, i) => {
     const lv = i + 1;
     const x = 50 + AMPLITUDE * Math.sin(i * 0.9);
@@ -441,10 +442,32 @@ export default function CancelPlanetPath({
   };
 
   return (
-    <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} shellClassName="cx-page">
+    <TrainingScreenShell
+      isAr={isAr}
+      playSfx={playSfx}
+      onBack={onBack}
+      shellClassName="cx-page cpp-page"
+      /*
+       * ⚠ THE RIGHT-HAND SLOT ALREADY DRAWS A LITERAL "?" (TrainingChrome), so
+       * the help button is the shared chrome rather than a fourth button
+       * invented here. Owner, 2026-09-17: "put a question mark up on the right
+       * that if i press it it explains everything on the level mode."
+       */
+      onReplayTutorial={help ? () => setHelpOpen(true) : undefined}
+      replayHint={help?.open}
+    >
       <div className="ct-lv-grid-wrap">
-        {title ? <h1 className="ct-lv-hero-title">{title}</h1> : null}
-        {blurb ? <p className="ct-lv-hero-sub">{blurb}</p> : null}
+        {/*
+          ⚠ NO TITLE, NO BLURB (owner, 2026-09-17: "remove the upper beige part
+          that has cancellation on it, and we start from the red immediately").
+          They were a `ct-lv-hero-title` + `ct-lv-hero-sub` pair sitting on bare
+          page above the first world, which is precisely the strip of beige the
+          six grounds were added to get rid of — the map now opens standing IN
+          Ember Reach. What they said lives in the help sheet the "?" opens, so
+          nothing is lost, it just stops costing the top of every screen.
+          `title` / `blurb` are still accepted so the prop contract with
+          `TrainingLevelGrid` (see this file's header) does not fork.
+        */}
         <div className="cpp-path" style={{ height: pathHeight }}>
           {sections && bandStarts.map((b) => (
             sections[b] ? (
@@ -523,6 +546,40 @@ export default function CancelPlanetPath({
           </div>
         </div>
       </div>
+
+      {/* ── What Level mode actually is, on demand ──────────────────────────
+          Everything the removed header used to say, plus what it never did:
+          the worlds, that each one teaches a rule, what the stars mean and how
+          unlocking works. Content comes from the caller so both languages sit
+          on the same object in the game's own dict and cannot drift apart. */}
+      {help && helpOpen ? (
+        <div
+          className="cpp-help"
+          role="dialog"
+          aria-modal="true"
+          aria-label={help.title}
+          onClick={() => setHelpOpen(false)}
+        >
+          <div className="cpp-help-card" onClick={(e) => e.stopPropagation()}>
+            <h2 className="cpp-help-title">{help.title}</h2>
+            <dl className="cpp-help-list">
+              {(help.rows || []).map((row) => (
+                <div className="cpp-help-row" key={row.k}>
+                  <dt className="cpp-help-k">{row.k}</dt>
+                  <dd className="cpp-help-v">{row.v}</dd>
+                </div>
+              ))}
+            </dl>
+            <button
+              type="button"
+              className="ct-fq-btn"
+              onClick={() => { playSfx?.('click'); setHelpOpen(false); }}
+            >
+              {help.close}
+            </button>
+          </div>
+        </div>
+      ) : null}
     </TrainingScreenShell>
   );
 }

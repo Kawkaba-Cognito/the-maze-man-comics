@@ -588,9 +588,24 @@ export const fqIndexInSection = (lv) =>
  * by adding boards never makes any single board unclearable. Raising the time
  * per board would have been the unsafe way to do the same thing.
  */
+/*
+ * ⚠ DOUBLED, BAND BY BAND (2026-09-17, owner: "make each level way longer").
+ * It ran 2 / 3 / 3 / 4 / 4 / 4, so a level in the last world was four boards
+ * and the whole ladder only ever varied by two — "longer" was barely a lever
+ * at all. Now 3 / 4 / 5 / 6 / 7 / 8, which also makes the length itself part
+ * of the climb: the last world asks you to hold the rule together across
+ * nearly three times as many boards as the first.
+ *
+ * ⚠ THIS IS THE SAFE AXIS AND THAT IS WHY IT IS THE ONE PUSHED HARDEST.
+ * Feasibility is a PER-BOARD property — each set is a whole board with its own
+ * clock — so adding boards can never make any single board unclearable, and
+ * `audit:fq` stays true by construction. Buying difficulty by shortening the
+ * per-board clock instead is the move that once shipped 11 seconds for 44.5
+ * seconds of work.
+ */
 export function fqSetsForLevel(lv) {
   const s = Math.floor((Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1))) - 1) / 10);
-  return s <= 0 ? 2 : s <= 2 ? 3 : 4;
+  return Math.min(8, 3 + Math.max(0, s));
 }
 
 /** Every rule live at a given ladder level — a world keeps what it was taught. */
@@ -704,9 +719,24 @@ export function ladderToTier(lv) {
  * ⚠ AND THE START IS TIGHTER TOO (3.4× vs 4.64×). A smooth ramp between two
  * unchanged endpoints would have made the early game *easier*, since today's
  * tight spots at L12-L20 are an artefact of the first reset rather than design.
+ *
+ * ⚠ TIGHTENED AGAIN, AT BOTH ENDS (2026-09-17, owner: "all the levels look so
+ * easy"). 3.4× at level 1 means a board a perfect searcher clears in 2.1s
+ * granted 7 — which is not a first level, it is a demonstration. 2.35 → 1.06 is
+ * the same shape held closer to the model all the way up.
+ *
+ * ⚠ 1.06 IS DELIBERATELY NEAR THE FLOOR AND IS ONLY SAFE BECAUSE OF WHAT
+ * "EXPERT" MEANS HERE. `expertTargetSecForSetSize` is 700ms of decision plus
+ * 12ms per item scanned — a fast but ordinary rate, not a ceiling — so 1.06× is
+ * a level you have to play well rather than one nobody can finish. It is still
+ * above the 1.0 line `audit:fq` calls the difference between hard and broken.
+ * If this ever needs to go lower, lower the MODEL and re-derive, do not push
+ * this under 1.0.
  */
-const FQ_LADDER_HEADROOM_START = 3.4;
-const FQ_LADDER_HEADROOM_END = 1.2;
+/** No ladder round is shorter than this, whatever the envelope asks for. */
+const FQ_LADDER_TIME_FLOOR_SEC = 6;
+const FQ_LADDER_HEADROOM_START = 2.35;
+const FQ_LADDER_HEADROOM_END = 1.06;
 
 /** Multiple of expert search pace granted at a ladder level. Strictly falling. */
 export function fqLadderHeadroom(lv) {
@@ -727,7 +757,7 @@ export function fqLadderHeadroom(lv) {
  */
 export function fqLadderInterference(lv) {
   const n = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
-  return +Math.min(0.85, Math.max(0, (n - 2) / 52)).toFixed(2);
+  return +Math.min(0.92, Math.max(0, (n - 2) / 46)).toFixed(2);
 }
 
 /**
@@ -798,7 +828,18 @@ function fqLadderClockTable() {
     const wanted = Math.round(need * fqLadderHeadroom(n));
     // Never more slack than the level before it, in multiples of expert pace.
     const capped = Math.min(wanted, Math.floor(need * prevRealised));
-    const time = Math.max(ABSOLUTE_TIME_FLOOR_SEC, capped);
+    /*
+     * ⚠ THE LADDER HAS ITS OWN FLOOR, LOWER THAN `ABSOLUTE_TIME_FLOOR_SEC`.
+     * The shared 8s floor was BINDING on the first band and holding it at 3.8x
+     * expert pace no matter what the envelope asked for — a 3-target board a
+     * perfect searcher clears in 2.1s was being handed 8 seconds because of a
+     * constant, which is most of why the early levels read as easy. 6s is still
+     * a real round (audit:pacing gates what actually reaches the player) and it
+     * lets the envelope govern band one instead of a floor written for a
+     * different mode. The 8s constant is untouched, so Survival, Pass n Play
+     * and the assessment keep it.
+     */
+    const time = Math.max(FQ_LADDER_TIME_FLOOR_SEC, capped);
     out.push(time);
     prevRealised = time / need;
   }
@@ -1577,8 +1618,15 @@ export function prepareLevelRound(diff, lv, opts = {}) {
    * comment above `fqLadderHeadroom`). Survival still calls this without the
    * option and still gets `survivalRoundTime`, unchanged.
    */
+  /* ⚠ NO SECOND FLOOR HERE. An earlier version clamped `opts.tlimSec` with
+     `ABSOLUTE_TIME_FLOOR_SEC` as a belt-and-braces guard, and that quietly
+     overrode the caller: the ladder's own 6s floor was re-raised to 8s, which
+     held band one at 3.8x expert pace no matter what the envelope computed —
+     the exact "levels look easy" symptom, reintroduced one line downstream of
+     the fix for it. A caller that passes an explicit clock has already decided;
+     re-floor it and the number it passed is a suggestion. */
   const baseTlim = opts.tlimSec
-    ? Math.max(ABSOLUTE_TIME_FLOOR_SEC, Math.round(opts.tlimSec))
+    ? Math.round(opts.tlimSec)
     : (reflowed ? survivalRoundTime(diff, lv - 1, tc, board.total) : cfg.time);
   // Same story for interference: one continuous ramp along the ladder, rather
   // than three restarting per-tier ones (0 for the whole easy tier).

@@ -42,7 +42,6 @@ import {
   FQ_LEVELS_PER_TIER,
   FQ_LADDER_LEVELS,
   ladderToTier,
-  ladderLvCfg,
   fqLadderTime,
   fqLadderRoundShape,
   fqLadderInterference,
@@ -74,6 +73,7 @@ import { TUTORIAL_UI } from '../../../../shared/tutorials/tutorialContent';
 import { useCoachRun } from '../../../../shared/tutorials/coach/useCoachRun';
 import { coachIdFor } from '../../../../shared/tutorials/coach/coachRegistry';
 import CancelTaskCoach from './CancelTaskCoach';
+import { CANCEL_WORLD_LESSONS, hasWorldLesson } from '../../../../shared/tutorials/coach/scripts/cancel-task-worlds.js';
 import {
   prepareAssessmentTrial,
   computeAssessmentSummary,
@@ -348,6 +348,19 @@ const UI = {
     ruleNew: 'A new rule',
     ruleBegin: 'Begin',
     reviewTitle: 'World complete',
+    /* The level map's "?" sheet — everything the removed header said, plus
+       what it never did. ⚠ Edit this WITH its Arabic twin further down; a
+       one-sided fix to a block this size is this repo's most repeated bug. */
+    mapHelpOpen: 'How Level mode works',
+    mapHelpTitle: 'Level mode',
+    mapHelpClose: 'Got it',
+    mapHelpRows: [
+      { k: 'The climb', v: '60 levels in one ladder, six worlds of ten. Each world looks different because it is a different place, not a different colour.' },
+      { k: 'A rule per world', v: 'Every world introduces one new rule and teaches it before you can fail it. Later worlds keep everything the earlier ones taught.' },
+      { k: 'Stars', v: 'One for clearing it, one for clearing it without a wrong tap, one for finishing with a quarter of the clock still unspent.' },
+      { k: 'Unlocking', v: 'Clear a level to open the next. Kawkab stands on the one you are up to.' },
+      { k: 'The clock', v: 'Every level grants less slack than the one before, all the way up. The last world is meant to be at the edge of what you can reach.' },
+    ],
     reviewStars: 'Stars collected',
     reviewAcc: 'Accuracy across the world',
     reviewTaught: 'What it taught',
@@ -516,6 +529,17 @@ const UI = {
     ruleNew: 'قاعدة جديدة',
     ruleBegin: 'ابدأ',
     reviewTitle: 'اكتمل العالم',
+    /* The Arabic twin of `mapHelp*` above — the two are edited together. */
+    mapHelpOpen: 'كيف يعمل وضع المستويات',
+    mapHelpTitle: 'وضع المستويات',
+    mapHelpClose: 'فهمت',
+    mapHelpRows: [
+      { k: 'الرحلة', v: '٦٠ مستوى في سلّم واحد، ستة عوالم في كل منها عشرة. كل عالم يبدو مختلفاً لأنه مكان مختلف، لا لون مختلف.' },
+      { k: 'قاعدة لكل عالم', v: 'كل عالم يقدّم قاعدة جديدة ويعلّمها قبل أن تخطئ فيها. والعوالم اللاحقة تحتفظ بكل ما علّمته السابقة.' },
+      { k: 'النجوم', v: 'نجمة لإتمامه، ونجمة لإتمامه دون نقرة خاطئة، ونجمة لإنهائه وربع الوقت ما زال باقياً.' },
+      { k: 'الفتح', v: 'أتمم مستوى ليُفتح الذي يليه. وكوكب يقف على المستوى الذي وصلت إليه.' },
+      { k: 'الوقت', v: 'كل مستوى يمنحك هامشاً أقل من الذي قبله، حتى القمة. والعالم الأخير مقصود أن يكون عند حدّ ما تستطيع.' },
+    ],
     reviewStars: 'النجوم المجموعة',
     reviewAcc: 'الدقة في هذا العالم',
     reviewTaught: 'ما الذي علّمه',
@@ -802,11 +826,34 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       startFreeModeRef.current?.();
     },
   });
-  const coachOpen = coach.open;
+  /*
+   * ── THE WORLD LESSON (2026-09-17) ────────────────────────────────────────
+   * A second, separate coach run: the one the ladder fires automatically when a
+   * band introduces a rule. It is NOT routed through `useCoachRun`, and that is
+   * deliberate — that hook is keyed to ONE id (`cancel-task@coach1`) and ending
+   * a run writes that id's done-flag. Reusing it would mean finishing the
+   * Tempest lesson silently marks the game's base onboarding as seen, so a
+   * player who met Survival later would never get the introduction.
+   */
+  const [worldLesson, setWorldLesson] = useState(null);
+  const worldLessonRef = useRef(null);
+  worldLessonRef.current = worldLesson;
+
+  /*
+   * ⚠ EVERY GUARD IN THIS FILE READS `coachOpen`, SO THE WORLD LESSON MUST BE
+   * PART OF IT. The round clock, the wrong-tap time penalty, the error tally
+   * and the auto-win are all suppressed while a lesson is open — and CLAUDE.md
+   * records that guarding only SOME of those is how a tutorial became losable
+   * last time. Folding the two runs into one boolean here means none of those
+   * call sites can forget about the new one.
+   */
+  const coachOpen = coach.open || !!worldLesson;
   const coachArmed = coach.armed;
   /* Read inside `onCellTap`, which is a stable callback and would otherwise
-     close over a stale `coachOpen`. */
-  const coachOpenRef = coach.openRef;
+     close over a stale `coachOpen`. Same union, same reason. */
+  const baseCoachOpenRef = coach.openRef;
+  const coachOpenRef = useRef(false);
+  coachOpenRef.current = baseCoachOpenRef.current || !!worldLesson;
   const openTutorial = coach.replay;
   const { end: coachRunEnd } = coach;
 
@@ -1653,14 +1700,56 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     coach.begin();
   }, [coachArmed, coachOpen, round, playStep, cdShow, pauseOpen, coach]);
 
+  /*
+   * ── THE AUTOMATIC WORLD LESSON ───────────────────────────────────────────
+   * Fires on the FIRST level of a band that introduces a rule, once the board
+   * is actually live — Dr Kawkab teaches the new rule on the real field the
+   * player is about to be scored on, and one step waits for them to do it.
+   *
+   * ⚠ IT WAITS FOR `playStep === 'running'` AND `!cdShow`, like the Survival
+   * coach above. Opening during the countdown would put the hand on a board
+   * that is still being dealt, and the cell it picked could be gone by the time
+   * the player looked.
+   */
+  useEffect(() => {
+    if (worldLesson || coach.open) return;
+    if (round?.mode !== 'level' || playStep !== 'running' || cdShow || pauseOpen) return;
+    if ((round.waveIdx ?? 0) !== 0) return; // the first set of the level only
+    const sec = round.section;
+    const mech = sec?.mech;
+    if (!sec || !mech || !hasWorldLesson(mech)) return;
+    if (fqIndexInSection(round.ladderLv ?? round.lv ?? 1) !== 0) return;
+    if (lessonSeen(sec.id)) return;
+    setWorldLesson({ sectionId: sec.id, script: CANCEL_WORLD_LESSONS[mech] });
+  }, [round, playStep, cdShow, pauseOpen, worldLesson, coach.open]);
+
+  const endWorldLesson = useCallback(() => {
+    const open = worldLessonRef.current;
+    if (!open) return;
+    markLessonSeen(open.sectionId);
+    setWorldLesson(null);
+    /*
+     * Hand the round back, exactly as `endCoach` does: the auto-win is
+     * suppressed while a lesson is open, so a player who cleared the board
+     * during it would otherwise sit on an empty field with a running clock.
+     */
+    const live = cellsRef.current || [];
+    if (live.length && live.every((c) => !c.isT || c.tapped)) {
+      endRoundRef.current?.(true);
+    }
+  }, []);
+
   // Never strand the coach on a screen that has no board (round ended, quit,
   // paused out) — it would hold the clock forever. Closing this way also ends
   // onboarding: a player who cleared the whole board mid-lesson has plainly got
   // it, and re-opening the coach every round would nag them.
   useEffect(() => {
     if (!coachOpen) return;
-    if (phase !== 'play' || playStep !== 'running') endCoach();
-  }, [coachOpen, phase, playStep, endCoach]);
+    if (phase !== 'play' || playStep !== 'running') {
+      if (worldLessonRef.current) endWorldLesson();
+      if (coach.open) endCoach();
+    }
+  }, [coachOpen, phase, playStep, endCoach, endWorldLesson, coach.open]);
 
   /*
    * The board's top reserve is the HUD's MEASURED height, published as a CSS
@@ -1867,6 +1956,26 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       raw[`${id}@rules1`] = true;
       localStorage.setItem(RULES_SEEN_KEY, JSON.stringify(raw));
     } catch { /* a lesson that cannot be remembered is still worth showing */ }
+  };
+  /*
+   * ⚠ THE WORLD LESSON IS FLAGGED SEPARATELY FROM THE RULE CARD, AND THE SUFFIX
+   * IS THE WHOLE DEFENCE. Same trap as `@coachN` on the onboarding id: reusing
+   * `@rules1` would mean anyone who has already seen a world's CARD never gets
+   * its new ACTIVE lesson, silently and only for existing players. A card read
+   * and a rule practised are not the same event, so they do not share a flag.
+   */
+  const lessonSeen = (id) => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(RULES_SEEN_KEY) || '{}');
+      return !!raw[`${id}@lesson1`];
+    } catch { return false; }
+  };
+  const markLessonSeen = (id) => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(RULES_SEEN_KEY) || '{}');
+      raw[`${id}@lesson1`] = true;
+      localStorage.setItem(RULES_SEEN_KEY, JSON.stringify(raw));
+    } catch { /* as above — an unrecordable lesson is still worth showing */ }
   };
 
   /* Deliberately a plain function, not a useCallback: `startLevelGame` is
@@ -2330,6 +2439,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           }))}
           stars={(lv) => (profile.stars || {})[lv] || 0}
           sections={FQ_SECTIONS}
+          help={{
+            open: t.mapHelpOpen,
+            title: t.mapHelpTitle,
+            close: t.mapHelpClose,
+            rows: t.mapHelpRows,
+          }}
         />
       )}
 
@@ -2501,14 +2616,20 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
 
             {/* Dr Kawkab teaches on this exact board. Sibling of the board and
                 also inset:0, so the hand's screen fractions line up with it. */}
+            {/* ⚠ ONE MOUNT, TWO RUNS. `coachOpen` is the union of the base
+                Survival onboarding and the automatic world lesson; whichever is
+                open supplies its own script and its own ending. Mounting the
+                world lesson separately would have been a second `<CoachLayer>`
+                able to open at the same time as the first. */}
             {coachOpen && (
               <CancelTaskCoach
                 isAr={isAr}
                 playSfx={playSfx}
                 cells={cells}
                 boardApiRef={boardApiRef}
-                onFinish={endCoach}
-                onSkip={endCoach}
+                script={worldLesson?.script}
+                onFinish={worldLesson ? endWorldLesson : endCoach}
+                onSkip={worldLesson ? endWorldLesson : endCoach}
               />
             )}
             <div className="ct-fq-scene2d-overlay">
