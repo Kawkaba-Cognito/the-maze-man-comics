@@ -433,11 +433,33 @@ export default function CancelPlanetPath({
    * ⚠ THE FIRST BAND STARTS AT 0 AND THE LAST ENDS AT `pathHeight`, so there
    * is no seam of bare page at either end of a 6,610px scroll.
    */
+  /*
+   * ⚠ THE FIRST AND LAST BANDS OVERSCAN, and the first one is the whole reason
+   * this is not just `top: 0` (owner, twice: "i dont want any beige space,
+   * start immediately with the red").
+   *
+   * `.cpp-path` does not begin at the top of the screen. Above it sit
+   * `.ct-fq-screen`'s 12px padding, the 54px this page reserves for the pinned
+   * back/"?" bar, and the path's own 10px margin — about 76px of bare page that
+   * a terrain starting at 0 leaves uncovered. Pulling the first band up by 240
+   * covers all of it with room for a tall safe-area inset, and the overflow
+   * above simply clips: `.ct-fq-training-shell` is `overflow-y: auto`, and a
+   * scroll container cannot scroll to negative offsets, so nothing is reachable
+   * up there to look wrong.
+   *
+   * The last band overscans DOWN for the same reason at the other end — the
+   * path stops at `pathHeight`, and a short last screen would otherwise show
+   * bare page under the final planet.
+   */
+  const TERRAIN_OVERSCAN_TOP = 240;
+  const TERRAIN_OVERSCAN_BOTTOM = 320;
   const terrainOf = (b) => {
-    const top = b === 0 ? 0 : yOf(b * BAND_SIZE) - BAND_MARKER_OFFSET - 40;
-    const next = b + 1 < bandStarts.length
-      ? yOf((b + 1) * BAND_SIZE) - BAND_MARKER_OFFSET - 40
-      : pathHeight;
+    const first = b === 0;
+    const last = b + 1 >= bandStarts.length;
+    const top = first ? -TERRAIN_OVERSCAN_TOP : yOf(b * BAND_SIZE) - BAND_MARKER_OFFSET - 40;
+    const next = last
+      ? pathHeight + TERRAIN_OVERSCAN_BOTTOM
+      : yOf((b + 1) * BAND_SIZE) - BAND_MARKER_OFFSET - 40;
     return { top, height: Math.max(0, next - top) };
   };
 

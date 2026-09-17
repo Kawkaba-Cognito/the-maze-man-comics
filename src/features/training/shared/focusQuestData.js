@@ -756,9 +756,56 @@ export function ladderToTier(lv) {
  * this under 1.0.
  */
 /** No ladder round is shorter than this, whatever the envelope asks for. */
-const FQ_LADDER_TIME_FLOOR_SEC = 6;
-const FQ_LADDER_HEADROOM_START = 2.35;
-const FQ_LADDER_HEADROOM_END = 1.06;
+const FQ_LADDER_TIME_FLOOR_SEC = 5;
+/*
+ * ⚠ THE BETWEEN-LEVEL ENDPOINTS MOVED UP TO PAY FOR THE WITHIN-LEVEL RAMP
+ * (2026-09-18). They were 2.35 → 1.06, which left NOTHING to spend inside a
+ * level: at 1.06x expert pace the level average was already almost on the floor,
+ * so any wave tighter than average would have gone under 1.0 — unwinnable, the
+ * one line this game must not cross.
+ *
+ * These numbers are the LEVEL AVERAGE now, not what any wave actually grants.
+ * The last wave of a level runs at 0.86x of it and the first at 1.16x, so the
+ * hardest board a level deals is TIGHTER than the old flat value while the
+ * level as a whole opens gentler. The felt ceiling goes down, not up.
+ */
+const FQ_LADDER_HEADROOM_START = 2.60;
+const FQ_LADDER_HEADROOM_END = 1.22;
+
+/*
+ * ── WITHIN A LEVEL: THE WAVES CLIMB (2026-09-18) ───────────────────────────
+ *
+ * Owner: "make the levels longer, like multiple levels for each one, like
+ * waves. then i want to fix the difficulty system, for the waves."
+ *
+ * ⚠ WAVES ALREADY EXISTED AND WERE EXACTLY FLAT. `startLevelGame(lv, {
+ * continueWaves: true })` re-enters with the SAME `lv`, so every wave drew the
+ * same `fqLadderTime(lv)`, the same interference and the same target count —
+ * wave 8 of level 60 was statistically identical to wave 1. A level had become
+ * up to eight boards and ~170 seconds of the same board. Difficulty varied
+ * between levels and not at all inside one.
+ *
+ * So a wave is a rung now: targets climb across the level while the clock
+ * tightens. Both levers are ones `expertTargetSecForSetSize` already prices, so
+ * feasibility stays true per board by construction.
+ *
+ * ⚠ THE MECHANIC SET DOES NOT ROTATE BETWEEN WAVES, deliberately. `switch`
+ * already changes the target every wave; a level whose RULES also changed each
+ * board would stop being a level.
+ */
+const FQ_WAVE_HR_FIRST = 1.16;   // first wave gets 16% more slack than the level's average
+const FQ_WAVE_HR_LAST = 0.86;    // the last wave gets 14% less
+const FQ_WAVE_TC_FIRST = 0.85;
+const FQ_WAVE_TC_LAST = 1.15;
+/** No wave, however deep, is granted less than this multiple of expert pace. */
+const FQ_WAVE_HR_FLOOR = 1.03;
+
+/** Geometric interpolation across the waves of a level. */
+function fqWaveScale(w, waves, a, b) {
+  if (!(waves > 1)) return Math.sqrt(a * b);
+  const t = Math.min(1, Math.max(0, w / (waves - 1)));
+  return a * ((b / a) ** t);
+}
 
 /** Multiple of expert search pace granted at a ladder level. Strictly falling. */
 export function fqLadderHeadroom(lv) {
@@ -839,41 +886,118 @@ export function fqLadderRoundShape(lv) {
  * game, down on import. Caught the first time the table was read; do not
  * "tidy" this back into a top-level constant.
  */
-let fqLadderClock = null;
-function fqLadderClockTable() {
-  if (fqLadderClock) return fqLadderClock;
+/*
+ * Every wave of every ladder level, built ONCE: `[level][wave] = { tc, time }`.
+ *
+ * ⚠ THE MECHANIC MULTIPLIERS ARE BAKED IN HERE, NOT APPLIED DOWNSTREAM, and
+ * that is a correctness point rather than a tidiness one. `drift` and `dual`
+ * each buy time back, and they used to be multiplied on in `prepareLevelRound`
+ * AFTER this table had already capped each level against the last — so the
+ * cap was computed on a number the player never saw, and the envelope's one
+ * promise ("never more generous than the level before") was false on six of the
+ * fifty-nine steps of the dealt round. Baking them in means the cap sees the
+ * real clock.
+ *
+ * ⚠ THE CAP IS ON THE LAST WAVE, because that is the level's true difficulty.
+ * Capping the average would let a level with more waves sneak an easier finish
+ * past a level with fewer.
+ *
+ * ⚠ THE LADDER HAS ITS OWN FLOOR, LOWER THAN `ABSOLUTE_TIME_FLOOR_SEC`. The
+ * shared 8s floor was BINDING on band one and holding it at 3.8x expert pace no
+ * matter what the envelope asked for — a 3-target board a perfect searcher
+ * clears in 2.1s was handed 8 seconds because of a constant. The 8s constant is
+ * untouched, so Survival, Pass n Play and the assessment keep it.
+ */
+let fqLadderWaves = null;
+function fqLadderWaveTable() {
+  if (fqLadderWaves) return fqLadderWaves;
   const out = [];
-  let prevRealised = Infinity;
+  let prevLastRealised = Infinity;
   for (let n = 1; n <= FQ_LADDER_LEVELS; n += 1) {
-    const { diff, cells, tc } = fqLadderRoundShape(n);
-    const need = expertTargetSecForSetSize(diff, cells) * tc;
-    const wanted = Math.round(need * fqLadderHeadroom(n));
-    // Never more slack than the level before it, in multiples of expert pace.
-    const capped = Math.min(wanted, Math.floor(need * prevRealised));
-    /*
-     * ⚠ THE LADDER HAS ITS OWN FLOOR, LOWER THAN `ABSOLUTE_TIME_FLOOR_SEC`.
-     * The shared 8s floor was BINDING on the first band and holding it at 3.8x
-     * expert pace no matter what the envelope asked for — a 3-target board a
-     * perfect searcher clears in 2.1s was being handed 8 seconds because of a
-     * constant, which is most of why the early levels read as easy. 6s is still
-     * a real round (audit:pacing gates what actually reaches the player) and it
-     * lets the envelope govern band one instead of a floor written for a
-     * different mode. The 8s constant is untouched, so Survival, Pass n Play
-     * and the assessment keep it.
-     */
-    const time = Math.max(FQ_LADDER_TIME_FLOOR_SEC, capped);
-    out.push(time);
-    prevRealised = time / need;
+    const { diff, cells, tc: tcBase } = fqLadderRoundShape(n);
+    const waves = fqSetsForLevel(n);
+    const per = expertTargetSecForSetSize(diff, cells);
+    const mech = fqMechanicsAt(n);
+    const mult = (mech.has('drift') ? FQ_DRIFT_TIME_MULT : 1)
+      * (mech.has('dual') ? FQ_DUAL_TIME_MULT : 1);
+    /* Targets stay a sparse minority however hard the wave gets — the same cap
+       `reflowTargetCount` applies, for the same reason. */
+    const tcCap = Math.max(3, Math.min(
+      Math.floor(cells * 0.34),
+      cells - MIN_NON_TARGET_CELLS,
+    ));
+    const base = fqLadderHeadroom(n);
+    const row = [];
+    for (let w = 0; w < waves; w += 1) {
+      const tc = Math.max(3, Math.min(tcCap, Math.round(
+        tcBase * fqWaveScale(w, waves, FQ_WAVE_TC_FIRST, FQ_WAVE_TC_LAST),
+      )));
+      const hr = Math.max(
+        FQ_WAVE_HR_FLOOR,
+        base * fqWaveScale(w, waves, FQ_WAVE_HR_FIRST, FQ_WAVE_HR_LAST),
+      );
+      const need = per * tc;
+      let time = Math.max(FQ_LADDER_TIME_FLOOR_SEC, Math.round(need * hr * mult));
+      if (w === waves - 1) {
+        // The level's hardest board may not be softer than the last level's.
+        const capped = Math.floor(need * prevLastRealised * mult);
+        time = Math.max(FQ_LADDER_TIME_FLOOR_SEC, Math.min(time, capped));
+      }
+      row.push({ tc, time });
+    }
+    const last = row[row.length - 1];
+    prevLastRealised = (last.time / mult) / (per * last.tc);
+    out.push(row);
   }
-  fqLadderClock = out;
+  fqLadderWaves = out;
   return out;
 }
 
+/** The board a given wave of a given ladder level deals: `{ tc, time }`. */
+export function fqWaveShape(lv, waveIdx = 0) {
+  const n = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+  const row = fqLadderWaveTable()[n - 1];
+  const w = Math.min(row.length - 1, Math.max(0, Math.round(Number(waveIdx) || 0)));
+  return row[w];
+}
+
 /** The clock a ladder level grants, on the board it actually deals. */
-export function fqLadderTime(lv) {
-  return fqLadderClockTable()[
-    Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1))) - 1
-  ];
+export function fqLadderTime(lv, waveIdx = 0) {
+  return fqWaveShape(lv, waveIdx).time;
+}
+
+/**
+ * Everything a ladder wave hands `prepareLevelRound` — the rules in force, the
+ * clock, the target count and the interference.
+ *
+ * ⚠ IT EXISTS SO THE GATE AND THE GAME CANNOT DEAL DIFFERENT BOARDS. `audit:fq`
+ * certifies the ladder by building every wave of every level and measuring it;
+ * if the gate assembled its own options object, it would be certifying a round
+ * nobody plays the moment one of these lines changed on only one side — the
+ * audit:mot lesson, one layer up. The only thing the caller adds is
+ * `avoidTarget`, which is live state (the previous wave's target) and cannot be
+ * derived from a level number.
+ */
+export function fqLadderRoundOpts(lv, waveIdx = 0) {
+  const n = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+  const mech = fqMechanicsAt(n);
+  const { tc, time } = fqWaveShape(n, waveIdx);
+  return {
+    forbidden: mech.has('forbidden'),
+    drift: mech.has('drift'),
+    dual: mech.has('dual'),
+    /*
+     * ⚠ THE LADDER'S OWN CLOCK AND INTERFERENCE, NOT THE TIER'S. Without these
+     * two the difficulty envelope is dead code on the only path that matters:
+     * `prepareLevelRound` is given TIER coordinates, so left to itself it
+     * re-derives both from the tier's level index and the ladder's difficulty
+     * resets at every tier boundary. Measured on the dealt rounds before the
+     * fix: L20 granted 1.91x expert pace and L21 granted 3.30x.
+     */
+    tlimSec: time,
+    tcOverride: tc,
+    interference: fqLadderInterference(n),
+  };
 }
 
 /**
@@ -889,7 +1013,7 @@ export function ladderLvCfg(lv) {
   const cfg = getLvCfg(diff, li - 1);
   return {
     ...cfg,
-    time: fqLadderTime(n),
+    time: fqLadderTime(n, 0),
     interference: fqLadderInterference(n),
     diff,
     li,
@@ -1662,7 +1786,20 @@ export function prepareLevelRound(diff, lv, opts = {}) {
   const board = normalizeBoard(opts.board ?? PLAY_BOARD[diff] ?? cfg.grid);
   const squareArea = cfg.grid * cfg.grid;
   const reflowed = board.total !== squareArea;
-  const tc = reflowed ? reflowTargetCount(cfg.tc, squareArea, board.total) : cfg.tc;
+  /* ⚠ `opts.tcOverride` IS HOW THE WAVE RAMP REACHES THE BOARD. Without it the
+     within-level target climb is dead code: `tc` comes from the curriculum via
+     `reflowTargetCount` and no caller could change it, so every wave of a level
+     would deal the same count however carefully the table computed otherwise.
+     Clamped exactly as the reflow is, so a caller cannot ask for a board that is
+     mostly targets. */
+  const tcAuthored = reflowed ? reflowTargetCount(cfg.tc, squareArea, board.total) : cfg.tc;
+  const tc = Number.isFinite(opts.tcOverride)
+    ? Math.max(3, Math.min(
+      Math.floor(board.total * 0.34),
+      board.total - MIN_NON_TARGET_CELLS,
+      Math.round(opts.tcOverride),
+    ))
+    : tcAuthored;
   /*
    * ⚠ `opts.tlimSec` IS HOW THE LADDER'S ENVELOPE REACHES THE PLAYER, and
    * without it the envelope is dead code. Levels always reflows onto
@@ -1708,11 +1845,22 @@ export function prepareLevelRound(diff, lv, opts = {}) {
      thing on it now has to be checked against two things. Compensating here,
      where the round is built, is what keeps the granted time audit:fq reads
      equal to the time the player actually gets. */
-  const tlim = Math.round(
-    baseTlim
-    * (opts.drift ? FQ_DRIFT_TIME_MULT : 1)
-    * (tgt2 ? FQ_DUAL_TIME_MULT : 1),
-  );
+  /*
+   * ⚠ A CALLER-SUPPLIED CLOCK IS FINAL — the multipliers are NOT re-applied to
+   * it. The ladder's wave table already bakes drift and dual in (see
+   * `fqLadderWaveTable`), precisely so its monotonicity cap is computed on the
+   * number the player gets. Multiplying again here would inflate every dual and
+   * drift wave by a further 15%/12% and quietly undo the cap — the same class of
+   * bug as the `ABSOLUTE_TIME_FLOOR_SEC` clamp that used to sit two lines up and
+   * override the caller's floor.
+   */
+  const tlim = opts.tlimSec
+    ? baseTlim
+    : Math.round(
+      baseTlim
+      * (opts.drift ? FQ_DRIFT_TIME_MULT : 1)
+      * (tgt2 ? FQ_DUAL_TIME_MULT : 1),
+    );
   const built = buildCellsFromParams(
     board,
     cfg.pool,

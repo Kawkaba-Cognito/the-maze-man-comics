@@ -30,6 +30,14 @@ import {
   PASS_PLAY_CONFIG,
   RETIRED_CANCELLATION_SHAPES,
   expertTargetSecForSetSize,
+  FQ_LADDER_LEVELS,
+  ladderToTier,
+  fqSetsForLevel,
+  fqMechanicsAt,
+  fqWaveShape,
+  fqLadderRoundOpts,
+  FQ_DRIFT_TIME_MULT,
+  FQ_DUAL_TIME_MULT,
 } from '../src/features/training/shared/focusQuestData.js';
 
 const SHAPES = new Set(Object.keys(SH));
@@ -81,15 +89,27 @@ function auditOneRound(r, label) {
    */
   assert(r.searchMode === 'categorical', `${label}: searchMode "${r.searchMode}" (only categorical is allowed)`);
 
+  /*
+   * ⚠ A DUAL ROUND HAS TWO TARGET OBJECTS, and this check used to know about
+   * one. It never fired because nothing here built a dual board: the loops
+   * above walk the curriculum, which does not carry the rule, and the ladder —
+   * the only path that turns it on, from world three down — was not audited at
+   * all until the wave gate below. Hard-coding `r.target` would have failed
+   * every level from L21 for a board that is exactly right.
+   */
+  const targetShapes = new Set([r.target, ...(r.target2 ? [r.target2] : [])]);
   for (const c of r.cells) {
     if (c.isT) {
-      assert(c.shape === r.target, `${label}: target cell is not the target object`);
+      assert(
+        targetShapes.has(c.shape),
+        `${label}: target cell shows "${c.shape}", not ${[...targetShapes].join(' or ')}`,
+      );
       // All targets share one colour, so "the object" is never ambiguous.
       assert(c.fill === r.targetCol, `${label}: target cell is not the target colour`);
     } else {
       assert(
-        c.shape !== r.target,
-        `${label}: a distractor shows the target object — that is the retired colour conjunction`,
+        !targetShapes.has(c.shape),
+        `${label}: a distractor shows a target object — that is the retired colour conjunction`,
       );
     }
   }
@@ -378,6 +398,100 @@ for (const diff of Object.keys(PASS_PLAY_CONFIG)) {
   );
 }
 
+/*
+ * ── THE LADDER, WAVE BY WAVE ─────────────────────────────────────────────────
+ *
+ * ⚠ THE 60 LEVELS A PLAYER ACTUALLY CLIMBS WERE NOT GATED HERE AT ALL. The
+ * loops above walk the authored CURRICULUM (three tiers × 100 levels) and
+ * Survival; the ladder is a PATH through that curriculum with its own clock
+ * (`fqLadderRoundOpts`), and nothing measured the boards it deals. `audit:curves`
+ * checks that path climbs — not that any rung on it can be finished. So the one
+ * property this game exists to guarantee, "a human can clear this board", was
+ * unasserted on the only mode most players ever open.
+ *
+ * ⚠ AND SINCE 2026-09-18 A LEVEL IS NOT ONE BOARD BUT THREE TO EIGHT, EACH
+ * HARDER THAN THE LAST. The last wave of a level is the tightest board on the
+ * ladder at that point, so it is exactly the board a level-shaped check would
+ * miss. Every wave is built and measured.
+ *
+ * ⚠ IT BUILDS THE ROUND THROUGH `fqLadderRoundOpts`, the same function the game
+ * calls. A gate that assembled its own options would certify a board nobody is
+ * dealt the moment one side gained an option the other lacked — which is the
+ * whole history of this file's `prepareLevelRound` checks.
+ */
+const LADDER_SAMPLES = 3;
+let ladderWavesAudited = 0;
+let prevLastRealised = Infinity;
+for (let lv = 1; lv <= FQ_LADDER_LEVELS; lv += 1) {
+  const { diff, li } = ladderToTier(lv);
+  const waves = fqSetsForLevel(lv);
+  const mech = fqMechanicsAt(lv);
+  // The rules that buy time back, priced exactly as the wave table prices them.
+  const mult = (mech.has('drift') ? FQ_DRIFT_TIME_MULT : 1)
+    * (mech.has('dual') ? FQ_DUAL_TIME_MULT : 1);
+  let prevPerTarget = Infinity;
+  let prevWaveTc = 0;
+  let lastRealised = Infinity;
+  for (let w = 0; w < waves; w += 1) {
+    const want = fqWaveShape(lv, w);
+    const opts = fqLadderRoundOpts(lv, w);
+    const where = `ladder L${lv} wave ${w + 1}/${waves}`;
+    for (let s = 0; s < LADDER_SAMPLES; s += 1) {
+      const r = prepareLevelRound(diff, li, opts);
+      auditOneRound(r, `${where} sample ${s}`);
+      assertTappable(r, where);
+      /*
+       * ⚠ THE RAMP MUST REACH THE BOARD, and this is the assertion that says so.
+       * The wave table can compute a perfect climb and the game still deal the
+       * same board eight times — that is precisely what shipped, because the
+       * target count came from the curriculum and no caller could move it.
+       * Comparing the DEALT round against what the table asked for is the only
+       * check that can tell a live ramp from a dead one.
+       */
+      assert(
+        r.tc === want.tc && r.tlim === want.time,
+        `${where}: dealt ${r.tc} targets / ${r.tlim}s but the wave table asks for `
+          + `${want.tc} / ${want.time}s — the ramp is not reaching the board`,
+      );
+      const need = expertTargetSecForSetSize(diff, r.cells.length) * r.tc;
+      assert(
+        r.tlim / need >= 1,
+        `${where}: UNWINNABLE — ${r.tc} targets on ${r.cols}x${r.rows} need `
+          + `${need.toFixed(1)}s at expert pace, clock grants ${r.tlim}s `
+          + `(${(r.tlim / need).toFixed(2)}x)`,
+      );
+      ladderWavesAudited += 1;
+    }
+    // Within a level the waves climb: more targets, less time for each.
+    const perTarget = want.time / want.tc;
+    const slack = 0.5 / want.tc + 0.5 / Math.max(1, prevWaveTc || want.tc);
+    assert(
+      perTarget <= prevPerTarget + slack,
+      `${where}: time per target must not rise across a level `
+        + `(${perTarget.toFixed(2)}s > ${prevPerTarget.toFixed(2)}s)`,
+    );
+    assert(
+      want.tc >= prevWaveTc,
+      `${where}: targets must not fall across a level (${want.tc} < ${prevWaveTc})`,
+    );
+    prevPerTarget = perTarget;
+    prevWaveTc = want.tc;
+    const per = expertTargetSecForSetSize(diff, prepareLevelRound(diff, li, opts).cells.length);
+    lastRealised = (want.time / mult) / (per * want.tc);
+  }
+  /*
+   * ⚠ MEASURED ON THE LAST WAVE, because that is the level's true difficulty.
+   * Comparing averages would let a long level sneak an easy finish past a short
+   * one — and the finish is what the next level has to be harder than.
+   */
+  assert(
+    lastRealised <= prevLastRealised + 1e-9,
+    `ladder L${lv}: the hardest board eases off — ${lastRealised.toFixed(3)}x expert pace `
+      + `against ${prevLastRealised.toFixed(3)}x at L${lv - 1}`,
+  );
+  prevLastRealised = lastRealised;
+}
+
 // The premium training atlas must cover every active Cancellation object, with
 // a unique normalized file for every key. Retired objects must have no mapping,
 // so their artwork cannot be pulled back into the compiled game accidentally.
@@ -571,4 +685,6 @@ console.log('audit-focus-quest-levels: OK', {
   atlasIIVariants: variantMap.size,
   artFilesValidated: artAssets.length,
   survivalStagesAudited: 15,
+  ladderLevels: FQ_LADDER_LEVELS,
+  ladderWavesAudited,
 });

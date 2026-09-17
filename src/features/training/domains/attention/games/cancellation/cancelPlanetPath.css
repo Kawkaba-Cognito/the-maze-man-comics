@@ -174,6 +174,21 @@
   content-visibility: auto;
   contain-intrinsic-size: 92px 104px;
 }
+/* ⚠ THE CURRENT NODE OPTS OUT OF CONTAINMENT, BECAUSE IT IS THE ONLY ONE
+   CARRYING A CAPTION. `content-visibility: auto` brings PAINT CONTAINMENT with
+   it — the same property the grey-slab note below records — and that clips the
+   node's painting to its own 92/112px box. `.cpp-sub` is the one child wider
+   than the box: measured at 1366px it is 169px inside a 112px node, and it was
+   rendering as a SQUARE-CORNERED BAR with the first and last words sliced off
+   ("argets · 6s · 3 wav"). Nothing in the CSS draws a rectangle and the element
+   measured its full width with `overflow: visible` on every ancestor, so
+   reading styles finds nothing — only a screenshot shows it.
+
+   Turning containment off costs nothing HERE specifically: the map scrolls to
+   the current node on open, so it is the one node guaranteed to be on screen,
+   and skipping the rendering of an element that is always rendered saves no
+   work. The other fifty-nine keep it, which is where the whole benefit was. */
+.cpp-node--current { content-visibility: visible; }
 .cpp-node:disabled { cursor: not-allowed; }
 .cpp-node:focus-visible .cpp-orb {
   outline: 3px solid var(--game-selected, var(--fq-pri));

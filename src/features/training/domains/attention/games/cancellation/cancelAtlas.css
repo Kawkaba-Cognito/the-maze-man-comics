@@ -1021,9 +1021,14 @@
 .cx-atlas .ct-mph .ct-mph-planet::after {
     content: '';
     position: absolute;
-    inset: 0;
+    /* ⚠ BLEEDS WELL PAST THE BUTTON (owner: "spread more the colours to
+       continue the sides"). Confined to the button box the wash stopped at a
+       visible edge and each mode read as a coloured card; reaching past it, the
+       light carries out to the screen and the three worlds meet in between.
+       Safe because the hub container is overflow-hidden and full width, so the
+       bleed is clipped by the SCREEN rather than by each register. */
+    inset: -62% -120%;
     z-index: -1;
-    border-radius: inherit;
     pointer-events: none;
     /* ⚠ RADIAL, NOT A LEFT-TO-RIGHT SWEEP. The sweep was written for the
        STACKED register layout (cut at the inline start, words beside it) and
@@ -1138,4 +1143,33 @@
   justify-content: center;
   gap: 6px;
   line-height: 0;
+}
+
+/* ⚠ THE HUB STOPS CLIPPING, WHICH IS WHAT LETS THE COLOUR REACH THE SCREEN.
+ * `.ct-mph` is `overflow: hidden` on the platform, and measured on this page it
+ * is NOT full width — 884px inside a 1366px viewport (x=241..1125). So the
+ * washes were cut off at a hard vertical edge on both sides and each mode still
+ * read as a card, just a wider one. I had assumed `width: 100%` meant full
+ * bleed; it means 100% of a capped parent.
+ *
+ * Safe to unclip HERE specifically because Aperture already hides everything
+ * that clip was protecting: `.ct-mph-sky` and `.ct-mph-constellation`'s
+ * decorations are `display: none` a few hundred lines up. The bleed is still
+ * bounded — `.ct-fq-training-shell` is `overflow: hidden` at the full 1366 —
+ * so the colour runs to the screen edges and stops there.
+ */
+.cx-atlas .ct-mph { overflow: visible; }
+
+/* ⚠ THE WAVE COUNTER IS A SECOND LINE IN THE HUD'S LEVEL CHIP, BY MEASUREMENT.
+ * `.ct-fq-gv.sm` is 51px wide in 16.8px DM Mono on a 1366px screen, so
+ * "L1 · 1/3" (81px) wrapped — and it broke at the separator, putting a lone
+ * middle dot on a line of its own with "1/3" beneath it. Three lines, one of
+ * them a punctuation mark. Declaring the break makes it two lines that look
+ * intended, and the smaller size says which of the two numbers is the level.
+ * Cancellation-owned class: no other game passes a node to `lvlLabel`. */
+.cx-hud-wave {
+  display: block;
+  font-size: 0.74em;
+  opacity: 0.78;
+  line-height: 1.15;
 }

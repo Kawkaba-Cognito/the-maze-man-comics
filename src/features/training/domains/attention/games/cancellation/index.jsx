@@ -42,9 +42,8 @@ import {
   FQ_LEVELS_PER_TIER,
   FQ_LADDER_LEVELS,
   ladderToTier,
-  fqLadderTime,
-  fqLadderRoundShape,
-  fqLadderInterference,
+  fqWaveShape,
+  fqLadderRoundOpts,
   fqMigrateLadderReached,
   FQ_SECTIONS,
   FQ_MECHANIC_LABELS,
@@ -476,7 +475,7 @@ const UI = {
       { title: 'Twin Signals', sub: 'Look-alike distractors' },
       { title: 'Far Orbit', sub: 'More targets, less time for each' },
     ],
-    cxNodeSub: (tc, sec) => `${tc} targets · ${sec}s`,
+    cxNodeSub: (tc, sec, waves) => `${tc} targets · ${sec}s · ${waves} waves`,
     cxBandCleared: (title) => `Band cleared — ${title}`,
     cxNextBand: (title, sub) => `Next: ${title} · ${sub}`,
     cxNewBest: 'New personal best',
@@ -651,7 +650,11 @@ const UI = {
       { title: 'إشارات متشابهة', sub: 'مشتّتات متشابهة' },
       { title: 'المدار البعيد', sub: 'أهداف أكثر، ووقت أقل لكل هدف' },
     ],
-    cxNodeSub: (tc, sec) => `${tc.toLocaleString('ar-EG')} هدفًا · ${sec.toLocaleString('ar-EG')}ث`,
+    /* ⚠ ٣–١٠ takes the plural (جولات) and ١١+ the singular accusative (جولة).
+       The ladder only ever asks for 3–8, so the second branch is defensive —
+       but a number-carrying string that only happens to be right is how the EN
+       and AR halves of a dict drift apart. */
+    cxNodeSub: (tc, sec, waves) => `${tc.toLocaleString('ar-EG')} هدفًا · ${sec.toLocaleString('ar-EG')}ث · ${waves.toLocaleString('ar-EG')} ${waves >= 3 && waves <= 10 ? 'جولات' : 'جولة'}`,
     cxBandCleared: (title) => `اكتمل النطاق — ${title}`,
     cxNextBand: (title, sub) => `التالي: ${title} · ${sub}`,
     cxNewBest: 'أفضل نتيجة جديدة',
@@ -764,13 +767,16 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   // each cleared wave's raw scoring inputs (never derived stats) so the
   // FINAL results screen can run computeRoundStats ONCE on the true totals
   // rather than averaging three already-rounded numbers.
-  // ⚠ 2026-09-13: the count is no longer flat. It comes from the SECTION
-  // (`fqSetsForLevel`): two in the first world, three in the next two, four
-  // from the Tempest down — so a level genuinely gets longer as the ladder
-  // climbs, which is what "each level will be longer and has multiple sets"
-  // asked for. The constant stays as the fallback for any caller that has no
-  // ladder level to ask about (Pass n Play and the assessment never come
-  // through here, but `r.wavesTotal ?? LEVEL_WAVES` is read in two places).
+  // ⚠ 2026-09-13: the count is no longer flat. It comes from the WORLD
+  // (`fqSetsForLevel`) and runs 3 · 4 · 5 · 6 · 7 · 8 across the six of them —
+  // so a level genuinely gets longer as the ladder climbs, which is what "each
+  // level will be longer and has multiple sets" asked for. The constant stays
+  // as the fallback for any caller that has no ladder level to ask about (Pass
+  // n Play and the assessment never come through here, but
+  // `r.wavesTotal ?? LEVEL_WAVES` is read in two places).
+  // ⚠ 2026-09-18: and the waves are no longer IDENTICAL either. Each one is a
+  // rung — targets climb and the clock tightens across the level — which is
+  // what `fqLadderRoundOpts(lv, waveIdx)` carries into `prepareLevelRound`.
   const LEVEL_WAVES = 3;
   // The rule card waiting to be read, and the world review waiting to be shown.
   const [pendingRule, setPendingRule] = useState(null);
@@ -1906,24 +1912,20 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
      */
     const ladderLv = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
     const mech = fqMechanicsAt(ladderLv);
+    /*
+     * ⚠ THE WAVE INDEX IS AN ARGUMENT TO THE DIFFICULTY, NOT JUST A COUNTER.
+     * Every option below comes from `fqLadderRoundOpts(ladderLv, waveIdx)` —
+     * one function, shared with `audit:fq`, so the board the gate certifies is
+     * the board this line deals. Passing only `ladderLv` (which is what this
+     * did) left the within-level ramp computed and unused: waves 1 and 8 of a
+     * level drew the same clock and the same target count, and a level was up
+     * to eight repeats of one board.
+     */
+    const waveIdx = levelWaveIdxRef.current;
     let r;
     try {
       r = prepareLevelRound(diff, li, {
-        forbidden: mech.has('forbidden'),
-        drift: mech.has('drift'),
-        dual: mech.has('dual'),
-        /*
-         * ⚠ THE LADDER'S OWN CLOCK AND INTERFERENCE, NOT THE TIER'S. Without
-         * these two lines the difficulty envelope in focusQuestData is dead
-         * code on the only path that matters: `prepareLevelRound` is given
-         * TIER coordinates, so left to itself it re-derives both from the
-         * tier's level index and the ladder's difficulty resets at every tier
-         * boundary — which is the bug the envelope exists to fix. Measured on
-         * the dealt rounds before the fix: L20 granted 1.91x expert pace and
-         * L21 granted 3.30x.
-         */
-        tlimSec: fqLadderTime(ladderLv),
-        interference: fqLadderInterference(ladderLv),
+        ...fqLadderRoundOpts(ladderLv, waveIdx),
         // Only on a continued set: the first board of a level has no previous
         // target to differ from, and forcing one would quietly shrink the pool.
         avoidTarget: mech.has('switch') && opts.continueWaves ? lastWaveTargetRef.current : null,
@@ -1939,7 +1941,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     // downstream (scoring, telemetry, the results screen) reads those — but
     // progress, unlocking and points are all ladder-positioned.
     r.ladderLv = ladderLv;
-    r.waveIdx = levelWaveIdxRef.current;
+    r.waveIdx = waveIdx;
     r.wavesTotal = fqSetsForLevel(ladderLv);
     r.section = fqSectionOf(ladderLv);
     r.mechanics = [...mech];
@@ -2451,10 +2453,18 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
            * square 5x5/7x7/9x9 board; every mode a human plays reflows onto
            * the thumb-safe PLAY_BOARD and rescales the count with it. So the
            * map used to promise "4 targets" for a level that deals 3.
+           *
+           * ⚠ AND IT IS THE FIRST WAVE'S BOARD, NAMED AS SUCH BY THE WAVE
+           * COUNT BESIDE IT. The waves of a level no longer deal the same
+           * board — targets climb and the clock tightens across them — so a
+           * single pair of numbers can only honestly describe one of them.
+           * The first is the one the player meets on tapping the planet, and
+           * the count says how many more follow, which is the thing a level
+           * three to eight boards long most needs to state up front.
            */
           sublabel={(lv) => {
-            const shape = fqLadderRoundShape(lv);
-            return t.cxNodeSub(shape.tc, fqLadderTime(lv));
+            const first = fqWaveShape(lv, 0);
+            return t.cxNodeSub(first.tc, first.time, fqSetsForLevel(lv));
           }}
           onPick={(lv) => openLevel(lv)}
           /*
@@ -2704,7 +2714,39 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                       ? `R${(staircaseRef.current?.trialCount ?? 0) + 1}`
                       : round.lv === 'CH'
                         ? 'CH'
-                        : `L${round.lv}`
+                        /*
+                         * ⚠ THE LADDER LEVEL, NOT THE CURRICULUM ONE — and
+                         * WHICH WAVE OF IT. `round.lv` is the authored level
+                         * `prepareLevelRound` was given, which on the ladder is
+                         * a tier index: tapping level 5 on the map opened a
+                         * board whose HUD read "L23", and level 21 read "L1"
+                         * directly after level 20 read "L100". The map and the
+                         * board now agree. The wave counter is the other half —
+                         * a level is three to eight boards and, since the ramp
+                         * landed, they are not the same board, so "which one am
+                         * I on" is a question the screen has to answer.
+                         * Numerals only: nothing to translate, so the EN and AR
+                         * halves of the dict cannot drift apart.
+                         *
+                         * ⚠ TWO LINES, NOT ONE, AND THE CHIP IS WHY. Measured
+                         * on the live HUD it is 51px wide in 16.8px DM Mono, so
+                         * "L1 · 1/3" needs 81px — it wrapped, and it wrapped at
+                         * the separator, leaving a lone "·" on a line of its
+                         * own. A second element is deliberate rather than a
+                         * hoped-for wrap.
+                         */
+                        : round.ladderLv
+                          ? ((round.wavesTotal ?? 1) > 1
+                            ? (
+                              <>
+                                {`L${round.ladderLv}`}
+                                <span className="cx-hud-wave">
+                                  {`${(round.waveIdx ?? 0) + 1}/${round.wavesTotal}`}
+                                </span>
+                              </>
+                            )
+                            : `L${round.ladderLv}`)
+                          : `L${round.lv}`
               }
               freeScore={round.mode === 'free' ? freeScore : undefined}
               freeLives={round.mode === 'free' ? freeLives : undefined}
