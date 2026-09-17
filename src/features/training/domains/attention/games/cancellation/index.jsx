@@ -177,10 +177,8 @@ function usesPremiumTrainingArt(round, cells) {
   return shapesAreArtSafe(new Set(cells.map((cell) => cell.shape)));
 }
 
-function CancellationTarget({ round, cells, size, isAr }) {
-  const shape = round.target in SH
-    ? round.target
-    : cells.find((cell) => cell.isT)?.shape || 'circle';
+/** One shape, drawn the way the board draws it — art when the round uses art. */
+function TargetGlyph({ round, cells, shape, size, isAr }) {
   const color = round.targetCol || cells.find((cell) => cell.isT)?.fill || 'var(--game-ink)';
   const artSet = shapeArtSetForRound(round);
   const artUrl = usesPremiumTrainingArt(round, cells) ? shapeArtUrl(shape, artSet) : null;
@@ -197,6 +195,36 @@ function CancellationTarget({ round, cells, size, isAr }) {
     );
   }
   return <ShapeSvg shape={shape} color={color} size={size} />;
+}
+
+/*
+ * ⚠ THE CUE HAS TO SHOW BOTH SHAPES ON A DUAL ROUND, AND THIS IS THE ONLY
+ * PLACE THAT DECIDES WHAT THE PLAYER IS TOLD TO HUNT. Frost Hollow makes the
+ * hunt a two-shape hunt (`FQ_LADDER` band 3, `dual`); a cue that kept showing
+ * one of them would be telling the player half the rule while the board scored
+ * them on all of it — the same shape as a "find A and B" board that contains no
+ * B, which `buildCellsFromParams` is careful to make impossible.
+ *
+ * Deliberately sized DOWN when there are two, so the pair occupies about the
+ * space one used to and nothing in the HUD or on the cue card has to reflow.
+ */
+function CancellationTarget({ round, cells, size, isAr }) {
+  const shape = round.target in SH
+    ? round.target
+    : cells.find((cell) => cell.isT)?.shape || 'circle';
+  const shape2 = round.target2 && round.target2 in SH && round.target2 !== shape
+    ? round.target2
+    : null;
+  if (!shape2) {
+    return <TargetGlyph round={round} cells={cells} shape={shape} size={size} isAr={isAr} />;
+  }
+  const each = Math.round(size * 0.74);
+  return (
+    <span className="cx-dual-cue" aria-hidden={false}>
+      <TargetGlyph round={round} cells={cells} shape={shape} size={each} isAr={isAr} />
+      <TargetGlyph round={round} cells={cells} shape={shape2} size={each} isAr={isAr} />
+    </span>
+  );
 }
 
 // Parse each shape's SVG markup into a real React element ONCE (cached), so the
@@ -338,6 +366,10 @@ const UI = {
     survivalCueHint: 'Take a good look. The timer starts only when you tap.',
     fixHint: 'Focus on the centre…',
     cueShape: 'Tap every tile that shows this object.',
+    /* ⚠ The dual twin of cueShape. 'this object' is false on a two-shape round,
+       and a cue that states the rule wrongly is worse than one that is vague.
+       Edit WITH the Arabic copy further down. */
+    cueShapeDual: 'Both of these count. Tap every tile showing either one.',
     /* ⚠ The AR twins of these five live in the other dict, ~150 lines down.
        This repo's most repeated bug is editing one half and leaving the other
        saying something else — see CLAUDE.md. Change them in pairs. */
@@ -520,6 +552,7 @@ const UI = {
     survivalCueHint: 'انظر جيدًا. يبدأ المؤقت فقط عند الضغط.',
     fixHint: 'ركّز على المركز…',
     cueShape: 'المس كل مربع يحتوي على هذا الجسم.',
+    cueShapeDual: 'كلاهما يُحتسب. المس كل مربع فيه أيّ منهما.',
     /* The AR half of the pairs added with the worlds — edited together with
        the EN half above, never alone. */
     cueNewTarget: 'هدف جديد في هذه الجولة',
@@ -1878,6 +1911,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       r = prepareLevelRound(diff, li, {
         forbidden: mech.has('forbidden'),
         drift: mech.has('drift'),
+        dual: mech.has('dual'),
         /*
          * ⚠ THE LADDER'S OWN CLOCK AND INTERFERENCE, NOT THE TIER'S. Without
          * these two lines the difficulty envelope in focusQuestData is dead
@@ -3325,7 +3359,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                 "exactly" when colour no longer counts would teach the wrong
                 rule and produce the false alarms it used to describe. */}
             <div className="ct-fq-cue-text">
-              {round.mode === 'free' ? t.survivalCueTask : t.cueShape}
+              {round.mode === 'free'
+                ? t.survivalCueTask
+                : (round.target2 ? t.cueShapeDual : t.cueShape)}
             </div>
             {/* ── The rules in force, stated where the player is already
                 looking. A rule the board keeps but never says is not a rule;

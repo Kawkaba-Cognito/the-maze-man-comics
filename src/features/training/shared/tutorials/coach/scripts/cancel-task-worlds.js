@@ -56,29 +56,37 @@ export const CANCEL_WORLD_LESSONS = {
     ],
   },
 
-  denser: {
-    id: 'denser',
+  /*
+   * ⚠ THIS REPLACED THE `denser` LESSON, and the reason is the point of the
+   * world. Frost Hollow used to introduce "a bigger board" — which is a knob,
+   * not something new to DO, so the band taught nothing a player could act on
+   * differently. The board still grows here (that comes from the tier the
+   * ladder walks), and step two says so; what the world now INTRODUCES is a
+   * second shape to hold.
+   */
+  dual: {
+    id: 'dual',
     steps: [
       {
         point: null,
-        en: 'New rule. The board is bigger from here, and the job is unchanged.',
-        ar: 'قاعدة جديدة. اللوحة أكبر من هنا، والمهمة كما هي.',
+        en: 'New rule. From here you are hunting TWO shapes, not one.',
+        ar: 'قاعدة جديدة. من هنا تبحث عن شكلين، لا شكل واحد.',
       },
       {
-        point: 'decoy',
-        en: 'Most of what is added is this: things to reject. Every one costs you a look.',
-        ar: 'أكثر ما أُضيف هو هذا: أشياء تُرفض. وكل واحد منها يكلّفك نظرة.',
+        point: '[data-coach="goal"]',
+        en: 'Both of these count, equally. The board is wider here too, so there is more to sort through.',
+        ar: 'كلاهما يُحتسب بالتساوي. واللوحة أوسع هنا أيضاً، فما يُفرز أكثر.',
       },
       {
         point: 'target',
         awaitTap: true,
-        en: 'Find one on the fuller board and clear it.',
-        ar: 'جد واحداً على اللوحة الأكثف وامسحه.',
+        en: 'Clear one of them now — either shape is right.',
+        ar: 'امسح واحداً منهما الآن — أيّ الشكلين صحيح.',
       },
       {
         point: null,
-        en: 'Search slows with the number of things that have to be rejected, not with the number you are looking for. A sweep in one direction beats hunting at random.',
-        ar: 'يبطؤ البحث بعدد ما يجب رفضه، لا بعدد ما تبحث عنه. والمسح في اتجاه واحد أفضل من البحث العشوائي.',
+        en: 'Holding two templates at once is the load. Every object now has to be checked against both before you can reject it, so you get a little more time and the misses go up if you let one of the two slip.',
+        ar: 'حمل قالبين معاً هو العبء. كل شيء صار يُقارن بهما معاً قبل رفضه، فلك وقت أطول قليلاً، ويزداد ما يفوتك إن أهملت أحدهما.',
       },
     ],
   },

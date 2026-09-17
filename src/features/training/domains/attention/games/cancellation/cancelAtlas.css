@@ -1127,3 +1127,15 @@
     color: color-mix(in srgb, var(--color-amber) 34%, var(--universe-ink));
 }
 [dir='rtl'] .cx-atlas .ct-survival-intro-title { font-family: 'Cairo', 'Cormorant Garamond', serif; letter-spacing: 0; }
+
+/* ── The two-shape cue (Frost Hollow) ───────────────────────────────────────
+   Both targets side by side wherever one used to stand — the HUD goal chip and
+   the cue card. `CancellationTarget` sizes each at 0.74x so the pair takes
+   about the room the single glyph did and nothing around it has to reflow. */
+.cx-dual-cue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  line-height: 0;
+}

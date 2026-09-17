@@ -503,7 +503,7 @@ export const FQ_LADDER = [
      most others use easy/med/hard. Getting it wrong makes TC[diff] undefined
      and every level of these two bands throws. audit:curves caught exactly
      that on the first run. */
-  /* L21–30 */ { diff: 'medium', half: 0, adds: ['denser'] },
+  /* L21-30 */ { diff: 'medium', half: 0, adds: ['dual'] },
   /* L31–40 */ { diff: 'medium', half: 1, adds: ['forbidden'] },
   /* L41–50 */ { diff: 'hard', half: 0, adds: ['lookalikes'] },
   /* L51–60 */ { diff: 'hard', half: 1, adds: ['drift'] },
@@ -549,7 +549,7 @@ export const FQ_SECTIONS = [
     enSub: 'The quarry changes', arSub: 'الهدف يتغيّر',
   },
   {
-    id: 'frost', mech: 'denser', sigil: 'meteor-cluster',
+    id: 'frost', mech: 'dual', sigil: 'meteor-cluster',
     en: 'Frost Hollow', ar: 'جوف الصقيع',
     enSub: 'A fuller field', arSub: 'حقل أكثف',
   },
@@ -619,12 +619,22 @@ export function fqMechanicsAt(lv) {
 /** Drift is the one rule that slows the search, so it is the one that pays. */
 export const FQ_DRIFT_TIME_MULT = 1.12;
 
+/**
+ * Dual target: two shapes to hold instead of one. Every item on the board has
+ * to be rejected against two templates rather than one, so the search is slower
+ * per item even though the board is no fuller and the target count is unchanged.
+ * 1.15 is the same order as drift's compensation and is applied the same way —
+ * at build time, so the gate reads the clock the player is actually given.
+ */
+export const FQ_DUAL_TIME_MULT = 1.15;
+
 export const FQ_LADDER_LEVELS = FQ_LADDER.length * 10; // 60
 
 export const FQ_MECHANIC_LABELS = {
   scan: { en: 'Find every target', ar: 'جد كل الأهداف' },
   switch: { en: 'The target changes each set', ar: 'الهدف يتغيّر كل جولة' },
   denser: { en: 'A denser board', ar: 'لوحة أكثف' },
+  dual: { en: 'Two shapes to find', ar: 'شكلان تبحث عنهما' },
   forbidden: { en: 'One object is off limits', ar: 'شيء واحد ممنوع لمسه' },
   lookalikes: { en: 'Look-alike distractors', ar: 'مشتّتات متشابهة' },
   drift: { en: 'The field drifts', ar: 'الحقل ينجرف' },
@@ -649,6 +659,18 @@ export const FQ_MECHANIC_TEACH = {
   denser: {
     en: { what: 'More objects on the board, same job.', why: 'Crowding is the lever: search slows with the number of things that must be rejected.' },
     ar: { what: 'أشياء أكثر على اللوحة، والمهمة نفسها.', why: 'الازدحام هو العامل: يبطؤ البحث بعدد ما يجب رفضه.' },
+  },
+  /*
+   * ⚠ `denser` ABOVE IS NO LONGER A BAND'S NAMED RULE, and is deliberately
+   * kept. The board still grows from this world on — that comes from the tier
+   * the ladder walks, not from the rule — so the text stays true and stays
+   * reachable if a future band wants to name it. What changed is that "a bigger
+   * board" was the only thing this world introduced, and a bigger board is a
+   * knob, not something new to DO. `dual` is.
+   */
+  dual: {
+    en: { what: 'Two shapes count now. Find both, and clear every one of each.', why: 'Holding two templates at once is harder than holding one: every object on the board has to be checked against both before it can be rejected.' },
+    ar: { what: 'شكلان يُحتسبان الآن. جدهما معاً، وامسح كل واحد منهما.', why: 'حمل قالبين معاً أصعب من حمل واحد: كل شيء على اللوحة صار يُقارن بهما معاً قبل أن يُرفض.' },
   },
   forbidden: {
     en: { what: 'One object is off limits. Find the targets and leave it alone.', why: 'Not acting is its own skill — holding back a tap you have already started is response inhibition.' },
@@ -1170,7 +1192,12 @@ export function buildCellsFromParams(board, pool, tc, diff, seed, interference, 
   const pal = PAL[diff] || PAL.easy;
   const tgt = seed?.tgt ?? pool[Math.floor(rng() * pool.length)];
   const tgtCol = seed?.tgtCol ?? pal[Math.floor(rng() * pal.length)];
-  const dist = pool.filter((s) => s !== tgt);
+  /* ⚠ EXCLUDES BOTH TARGET SHAPES WHEN THE ROUND IS DUAL. Filtering only
+     `tgt` would leave the SECOND target shape in the distractor pool, so the
+     board would carry cells of that shape marked `isT: false` — identical on
+     screen to the ones marked true. The player would tap a shape they were
+     told to find and be scored wrong for it, which is unanswerable. */
+  const dist = pool.filter((s) => s !== tgt && s !== (seed?.tgt2 ?? null));
   if (dist.length === 0) {
     throw new Error(
       `focusQuestData: distractor pool empty (need ≥2 distinct shapes). pool=${JSON.stringify(pool)} tgt=${tgt}`,
@@ -1212,12 +1239,39 @@ export function buildCellsFromParams(board, pool, tc, diff, seed, interference, 
     ? Math.min(1, interference)
     : (useFeatureBinding ? 0.5 : 0);
 
+  /*
+   * ── DUAL TARGET (2026-09-17) ─────────────────────────────────────────────
+   * `seed.tgt2` makes the hunt a TWO-shape hunt: both count, both must be
+   * cleared, and neither is worth more than the other.
+   *
+   * ⚠ THE TARGET COUNT DOES NOT CHANGE — the same `guaranteedTc` cells are
+   * targets, split between the two shapes. That is what keeps every
+   * feasibility number `audit:fq` checks true: the board still holds exactly
+   * as many things to find. What changes is that finding them needs two
+   * templates held at once instead of one, which is the construct.
+   *
+   * ⚠ BOTH SHAPES ARE GUARANTEED PRESENT. A "find A and B" board that happens
+   * to contain no B teaches the player that the second shape was decorative —
+   * and with a low target count and a fair coin that is not rare (2 targets
+   * would deal an all-A board a quarter of the time). The split is computed,
+   * not rolled: at least one of each, the remainder shared at random.
+   */
+  const tgt2 = seed?.tgt2 && seed.tgt2 !== tgt ? seed.tgt2 : null;
+
   // Build target + distractor tokens separately, then place targets with the
   // smart spatial sampler and drop distractors into whatever cells are left.
   const targets = [];
-  for (let k = 0; k < guaranteedTc; k++) {
-    // col null → assignFillColors paints every target the one target colour.
-    targets.push({ shape: tgt, col: null, isT: true });
+  if (tgt2 && guaranteedTc >= 2) {
+    const secondCount = 1 + Math.floor(rng() * Math.max(1, guaranteedTc - 1));
+    for (let k = 0; k < guaranteedTc; k++) {
+      targets.push({ shape: k < secondCount ? tgt2 : tgt, col: null, isT: true });
+    }
+    fisherYatesInPlace(targets, rng);
+  } else {
+    for (let k = 0; k < guaranteedTc; k++) {
+      // col null → assignFillColors paints every target the one target colour.
+      targets.push({ shape: tgt, col: null, isT: true });
+    }
   }
   const distractors = [];
   const need = total - guaranteedTc;
@@ -1239,7 +1293,7 @@ export function buildCellsFromParams(board, pool, tc, diff, seed, interference, 
   for (let i = 0; i < total; i++) {
     cells[i] = targetPos.has(i) ? targets[ti++] : distractors[di++];
   }
-  return { cells, tgt, tgtCol, tc: guaranteedTc };
+  return { cells, tgt, tgt2, tgtCol, tc: guaranteedTc };
 }
 
 export function assignFillColors(cells, diff, interference, tgtCol, rng = Math.random) {
@@ -1631,16 +1685,40 @@ export function prepareLevelRound(diff, lv, opts = {}) {
   // Same story for interference: one continuous ramp along the ladder, rather
   // than three restarting per-tier ones (0 for the whole easy tier).
   const interference = opts.interference != null ? opts.interference : cfg.interference;
+  /*
+   * ── THE SECOND TARGET ────────────────────────────────────────────────────
+   * ⚠ REQUIRES A POOL OF AT LEAST THREE SHAPES. Two target shapes out of a
+   * two-shape pool leaves `dist` empty, and `buildCellsFromParams` throws on
+   * exactly that ("distractor pool empty") — a crash rather than a bad board,
+   * which is the right failure but not one to reach at runtime.
+   */
+  const tgt2 = opts.dual && cfg.pool.length >= 3
+    ? (() => {
+      const others = cfg.pool.filter((s) => s !== lockedTarget);
+      return others[Math.floor(Math.random() * others.length)] ?? null;
+    })()
+    : null;
+
   /* Drift is the only rule that makes the search itself slower, so it is the
      only one that buys time back — and it is bought HERE, where the round is
-     built, so the granted time audit:fq reads is the time the player gets. */
-  const tlim = opts.drift ? Math.round(baseTlim * FQ_DRIFT_TIME_MULT) : baseTlim;
+     built, so the granted time audit:fq reads is the time the player gets.
+     ⚠ DUAL BUYS TIME BACK FOR THE SAME REASON, and the two stack because a
+     late world has both. Holding two templates instead of one slows the
+     rejection of every item on the board — the board is no fuller, but each
+     thing on it now has to be checked against two things. Compensating here,
+     where the round is built, is what keeps the granted time audit:fq reads
+     equal to the time the player actually gets. */
+  const tlim = Math.round(
+    baseTlim
+    * (opts.drift ? FQ_DRIFT_TIME_MULT : 1)
+    * (tgt2 ? FQ_DUAL_TIME_MULT : 1),
+  );
   const built = buildCellsFromParams(
     board,
     cfg.pool,
     tc,
     diff,
-    { tgt: lockedTarget, tgtCol: lockedCol, eccentricityBias, conjunction: cfg.conjunction },
+    { tgt: lockedTarget, tgt2, tgtCol: lockedCol, eccentricityBias, conjunction: cfg.conjunction },
     interference,
   );
   const withFill = assignFillColors(built.cells, diff, interference, built.tgtCol);
@@ -1696,6 +1774,9 @@ export function prepareLevelRound(diff, lv, opts = {}) {
     tc: targetCount,
     tlim,
     target: built.tgt,
+    /* null on every non-dual round, and every caller must treat it that way —
+       the HUD, the cue card and the coach all read it. */
+    target2: built.tgt2 ?? null,
     targetCol: built.tgtCol,
     searchMode,
     interference: cfg.interference,
