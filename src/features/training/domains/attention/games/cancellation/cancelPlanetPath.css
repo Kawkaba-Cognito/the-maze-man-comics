@@ -354,7 +354,18 @@
   position: absolute;
   transform: translate(-50%, calc(-108% - var(--cx-kawkab-lift)));
   pointer-events: none;
-  z-index: 2;
+  /* ⚠ ABOVE THE CHAPTER CARD (2026-09-17, owner: "on the desktop the mascot is
+     covered now under ember reach tab"). He was z-index 2 against the card's 3
+     and always had been — it only became visible when the card stopped being an
+     8% wash and became an opaque plate in its world's colour. Measured on a
+     1366x577 desktop: Kawkab's box overlaps the Ember Reach pill by 72x29px
+     whenever the frontier is the FIRST level of a band, which for a new player
+     is level 1, i.e. the first thing anyone sees.
+     He wins rather than the card, because he is where the player is standing
+     and the card is a label for the ten levels below him. 29px of his head in
+     front of the sign reads as a character standing there; the reverse read as
+     a decapitated mascot. */
+  z-index: 4;
 }
 /* ⚠ CUT (2026-09-12, owner: keep the map, just cut the walk animation) —
  * the JS state machine above (`walk`/`lastFrontierLv`) is untouched: it
@@ -626,41 +637,239 @@
  * what keeps them out of audit:design's raw-colour rule, which is exactly what
  * the prefix is for.
  */
-.cpp-node[data-section='ember'],   .cpp-band[data-section='ember']   { --cpp-sec: var(--fx-sec-ember-core);   --cpp-sec-lit: var(--fx-sec-ember-lit); }
-.cpp-node[data-section='dust'],    .cpp-band[data-section='dust']    { --cpp-sec: var(--fx-sec-dust-core);    --cpp-sec-lit: var(--fx-sec-dust-lit); }
-.cpp-node[data-section='frost'],   .cpp-band[data-section='frost']   { --cpp-sec: var(--fx-sec-frost-core);   --cpp-sec-lit: var(--fx-sec-frost-lit); }
-.cpp-node[data-section='tempest'], .cpp-band[data-section='tempest'] { --cpp-sec: var(--fx-sec-tempest-core); --cpp-sec-lit: var(--fx-sec-tempest-lit); }
-.cpp-node[data-section='verdant'], .cpp-band[data-section='verdant'] { --cpp-sec: var(--fx-sec-verdant-core); --cpp-sec-lit: var(--fx-sec-verdant-lit); }
-.cpp-node[data-section='void'],    .cpp-band[data-section='void']    { --cpp-sec: var(--fx-sec-void-core);    --cpp-sec-lit: var(--fx-sec-void-lit); }
+.cpp-node[data-section='ember'],   .cpp-band[data-section='ember'],   .cpp-terrain[data-section='ember']   { --cpp-sec: var(--fx-sec-ember-core);   --cpp-sec-lit: var(--fx-sec-ember-lit); }
+.cpp-node[data-section='dust'],    .cpp-band[data-section='dust'],    .cpp-terrain[data-section='dust']    { --cpp-sec: var(--fx-sec-dust-core);    --cpp-sec-lit: var(--fx-sec-dust-lit); }
+.cpp-node[data-section='frost'],   .cpp-band[data-section='frost'],   .cpp-terrain[data-section='frost']   { --cpp-sec: var(--fx-sec-frost-core);   --cpp-sec-lit: var(--fx-sec-frost-lit); }
+.cpp-node[data-section='tempest'], .cpp-band[data-section='tempest'], .cpp-terrain[data-section='tempest'] { --cpp-sec: var(--fx-sec-tempest-core); --cpp-sec-lit: var(--fx-sec-tempest-lit); }
+.cpp-node[data-section='verdant'], .cpp-band[data-section='verdant'], .cpp-terrain[data-section='verdant'] { --cpp-sec: var(--fx-sec-verdant-core); --cpp-sec-lit: var(--fx-sec-verdant-lit); }
+.cpp-node[data-section='void'],    .cpp-band[data-section='void'],    .cpp-terrain[data-section='void']    { --cpp-sec: var(--fx-sec-void-core);    --cpp-sec-lit: var(--fx-sec-void-lit); }
 
-/* The world tints the disc it owns. Kept to a WASH (12–18%) rather than a
-   fill: the level number has to stay the highest-contrast thing on the node,
-   and six saturated discs down a column is the crowding this screen just had
-   removed. */
+/* ══ THE GROUND ════════════════════════════════════════════════════════════
+ * Owner, 2026-09-17: "the pallete look like volcano and so on, and the other
+ * set is ice and so on."
+ *
+ * ⚠ THE PREVIOUS PASS KEPT THIS TO A 12% WASH ON PURPOSE, and the comment
+ * that used to stand here argued for it: the level number must stay the
+ * highest-contrast thing on a node, and six saturated columns of discs was the
+ * crowding this screen had just had removed. That reasoning is now overruled
+ * by the person it was written for — but it names the two real risks, so both
+ * are answered below rather than ignored: the numeral flips to light ink on a
+ * filled planet (measured, not assumed), and the crowding is prevented by
+ * putting the colour in the GROUND and giving the discs a single material,
+ * rather than by keeping the discs pale.
+ *
+ * ⚠ FULL-BLEED VIA `100vw`, WHICH IS ONLY SAFE BECAUSE SOMETHING CLIPS IT.
+ * `.cpp-path` is `max-width: min(460px, 79vw)` and centred, so a terrain
+ * confined to it would be a narrow ribbon with bare page either side. It
+ * therefore breaks out — and a `100vw` element overflows by the scrollbar's
+ * width, which would normally drag the page sideways. It cannot here:
+ * `.ct-domain-game-stage` (training.css) is `overflow-x: hidden`, which the
+ * 2026-09-08 scrolling fix states outright is there "so a wide board still
+ * cannot shove the page sideways". If that ever changes, this needs revisiting.
+ */
+.cpp-terrain {
+  position: absolute;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+  /* The seam. Each world fades in over its first 120px so the six grounds
+     bleed into one another — scrolling reads as travelling, not as six
+     stacked rectangles with hard edges. The last stop is opaque so the body
+     of the band is the world at full strength. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, var(--play-surface-flat) 120px);
+  mask-image: linear-gradient(to bottom, transparent 0, var(--play-surface-flat) 120px);
+}
+/* The first band has nothing above it to fade out of, so it starts solid —
+   otherwise the top of the map is a strip of bare page. */
+.cpp-terrain:first-of-type {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* ── EMBER REACH — molten rock. The light comes UP out of the ground. ────── */
+.cpp-terrain[data-section='ember'] {
+  background-color: color-mix(in srgb, var(--cpp-sec) 58%, transparent);
+  background-image:
+    /* embers, drifting */
+    radial-gradient(2px 2px at 22% 78%, color-mix(in srgb, var(--cpp-sec-lit) 72%, transparent) 0%, transparent 62%),
+    radial-gradient(1.5px 1.5px at 61% 34%, color-mix(in srgb, var(--cpp-sec-lit) 62%, transparent) 0%, transparent 62%),
+    radial-gradient(2.4px 2.4px at 84% 62%, color-mix(in srgb, var(--cpp-sec-lit) 54%, transparent) 0%, transparent 62%),
+    /* fissures — the cracks the heat comes through */
+    repeating-linear-gradient(64deg,
+      color-mix(in srgb, var(--cpp-sec-lit) 15%, transparent) 0px,
+      color-mix(in srgb, var(--cpp-sec-lit) 15%, transparent) 2px,
+      transparent 2px, transparent 132px),
+    /* two lava pools, and the glow along the floor */
+    radial-gradient(ellipse 52% 16% at 14% 96%, color-mix(in srgb, var(--cpp-sec-lit) 52%, transparent), transparent 72%),
+    radial-gradient(ellipse 52% 16% at 88% 88%, color-mix(in srgb, var(--cpp-sec-lit) 40%, transparent), transparent 72%),
+    linear-gradient(to top, color-mix(in srgb, var(--cpp-sec-lit) 40%, transparent) 0%, transparent 44%);
+  background-size: 190px 190px, 230px 230px, 310px 310px, auto, auto, auto, auto;
+  background-repeat: repeat, repeat, repeat, repeat, no-repeat, no-repeat, no-repeat;
+}
+
+/* ── THE DUST SEA — strata. Everything lies flat. ────────────────────────── */
+.cpp-terrain[data-section='dust'] {
+  background-color: color-mix(in srgb, var(--cpp-sec) 52%, transparent);
+  background-image:
+    radial-gradient(1.4px 1.4px at 30% 40%, color-mix(in srgb, var(--cpp-sec-lit) 46%, transparent) 0%, transparent 60%),
+    repeating-linear-gradient(0deg,
+      color-mix(in srgb, var(--cpp-sec-lit) 15%, transparent) 0px,
+      color-mix(in srgb, var(--cpp-sec-lit) 15%, transparent) 3px,
+      transparent 3px, transparent 34px),
+    radial-gradient(ellipse 58% 22% at 6% 46%, color-mix(in srgb, var(--cpp-sec-lit) 34%, transparent), transparent 74%);
+  background-size: 120px 120px, auto, auto;
+  background-repeat: repeat, repeat, no-repeat;
+}
+
+/* ── FROST HOLLOW — ice. The light FALLS, and the field is cut into facets. ─ */
+.cpp-terrain[data-section='frost'] {
+  background-color: color-mix(in srgb, var(--cpp-sec) 54%, transparent);
+  background-image:
+    radial-gradient(1.6px 1.6px at 44% 22%, color-mix(in srgb, var(--cpp-sec-lit) 70%, transparent) 0%, transparent 60%),
+    /* facets, cut at two angles so the field reads as broken ice */
+    repeating-linear-gradient(58deg,
+      color-mix(in srgb, var(--cpp-sec-lit) 17%, transparent) 0px,
+      color-mix(in srgb, var(--cpp-sec-lit) 17%, transparent) 2px,
+      transparent 2px, transparent 104px),
+    repeating-linear-gradient(-58deg,
+      color-mix(in srgb, var(--cpp-sec-lit) 13%, transparent) 0px,
+      color-mix(in srgb, var(--cpp-sec-lit) 13%, transparent) 2px,
+      transparent 2px, transparent 156px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--cpp-sec-lit) 42%, transparent) 0%, transparent 46%);
+  background-size: 170px 170px, auto, auto, auto;
+  background-repeat: repeat, repeat, repeat, no-repeat;
+}
+
+/* ── THE TEMPEST — rain on the diagonal, and a flash off to one side. ────── */
+.cpp-terrain[data-section='tempest'] {
+  background-color: color-mix(in srgb, var(--cpp-sec) 56%, transparent);
+  background-image:
+    repeating-linear-gradient(74deg,
+      color-mix(in srgb, var(--cpp-sec-lit) 18%, transparent) 0px,
+      color-mix(in srgb, var(--cpp-sec-lit) 18%, transparent) 1.5px,
+      transparent 1.5px, transparent 26px),
+    repeating-linear-gradient(74deg,
+      color-mix(in srgb, var(--cpp-sec) 24%, transparent) 0px,
+      color-mix(in srgb, var(--cpp-sec) 24%, transparent) 4px,
+      transparent 4px, transparent 96px),
+    radial-gradient(ellipse 54% 20% at 92% 6%, color-mix(in srgb, var(--cpp-sec-lit) 46%, transparent), transparent 70%);
+  background-size: auto, auto, auto;
+  background-repeat: repeat, repeat, no-repeat;
+}
+
+/* ── VERDANT DRIFT — canopy dapple, light through leaves. ────────────────── */
+.cpp-terrain[data-section='verdant'] {
+  background-color: color-mix(in srgb, var(--cpp-sec) 54%, transparent);
+  background-image:
+    radial-gradient(1.8px 1.8px at 66% 36%, color-mix(in srgb, var(--cpp-sec-lit) 50%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 26% 10% at 12% 8%,  color-mix(in srgb, var(--cpp-sec-lit) 34%, transparent), transparent 72%),
+    radial-gradient(ellipse 30% 12% at 86% 26%, color-mix(in srgb, var(--cpp-sec-lit) 28%, transparent), transparent 72%),
+    radial-gradient(ellipse 22% 9%  at 40% 58%, color-mix(in srgb, var(--cpp-sec-lit) 24%, transparent), transparent 74%),
+    radial-gradient(ellipse 28% 11% at 8%  84%, color-mix(in srgb, var(--cpp-sec-lit) 26%, transparent), transparent 74%);
+  background-size: 210px 210px, auto, auto, auto, auto;
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+}
+
+/* ── THE LONG VOID — a dark room with stars in it. ───────────────────────── */
+/* The one world whose core IS the darkness, so it runs far higher than the
+   rest: anything lighter and the end of the ladder reads as grey, not void. */
+.cpp-terrain[data-section='void'] {
+  background-color: color-mix(in srgb, var(--cpp-sec) 88%, transparent);
+  background-image:
+    radial-gradient(1.5px 1.5px at 18% 14%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(1.1px 1.1px at 74% 32%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(2px   2px   at 46% 82%, var(--fx-glint) 0%, transparent 60%),
+    radial-gradient(ellipse 46% 18% at 50% 40%, color-mix(in srgb, var(--cpp-sec-lit) 22%, transparent), transparent 76%);
+  background-size: 150px 150px, 220px 220px, 330px 330px, auto;
+  background-repeat: repeat, repeat, repeat, no-repeat;
+}
+
+/* ══ THE PLANETS ═══════════════════════════════════════════════════════════
+ * "the planets can be totally read" — so a planet in Ember Reach is molten
+ * rock, not beige with a hint of red. Three stops make it a sphere rather than
+ * a flat disc: the lit side, the body, and the terminator.
+ *
+ * ⚠ THE DARK STOP IS `--game-ink`, AND BOTH OBVIOUS ALTERNATIVES FAIL A GATE.
+ * `--cpp-` is not `--fx-`, so audit:design's raw-colour rule applies here and a
+ * hand-mixed `#000` fails it; `--play-surface-deep-flat` fails the separate
+ * `deep-surface` rule, which reserves the deep tokens for the additive-blended
+ * games (cancellation is not one). `--game-ink` is a fixed dark that this
+ * game already draws its numerals in.
+ */
 .cpp-node[data-section] .cpp-orb {
-  background: color-mix(in srgb, var(--cpp-sec) 12%, var(--play-surface-flat));
-  border-color: color-mix(in srgb, var(--cpp-sec) 45%, var(--line));
+  background:
+    radial-gradient(circle at 36% 28%,
+      color-mix(in srgb, var(--cpp-sec-lit) 72%, var(--cpp-sec)) 0%,
+      var(--cpp-sec) 58%,
+      color-mix(in srgb, var(--cpp-sec) 72%, var(--game-ink)) 100%);
+  border-color: color-mix(in srgb, var(--cpp-sec-lit) 60%, var(--cpp-sec));
 }
+/* ⚠ THE NUMERAL FLIPS WITH THE DISC. It was `--game-ink` against a 12% wash
+   on parchment; on a filled planet that is dark-on-dark. Light ink on the
+   body is the pairing that survives all six worlds — measured, see below. */
+.cpp-node[data-section] .cpp-num {
+  color: var(--play-surface-flat);
+}
+
+/* ⚠ LOCKED IS AN UNLIT PLANET, NOT A BEIGE ONE. The first pass made it a 16%
+   wash on parchment, which put four pale discs directly under a molten one —
+   so most of Ember Reach was not red at all, which is the thing that was asked
+   for. It is the same world, in shadow: the body darkened toward `--game-ink`
+   with no highlight, which reads as "you have not been there yet" while
+   staying unmistakably that world's rock. */
 .cpp-node[data-section].cpp-node--locked .cpp-orb {
-  background: color-mix(in srgb, var(--cpp-sec) 5%, var(--play-surface-flat));
-  border-color: color-mix(in srgb, var(--cpp-sec) 22%, var(--line));
+  background: color-mix(in srgb, var(--cpp-sec) 46%, var(--game-ink));
+  border-color: color-mix(in srgb, var(--cpp-sec) 52%, var(--game-ink));
+  box-shadow: none;
 }
+.cpp-node[data-section].cpp-node--locked .cpp-num {
+  color: color-mix(in srgb, var(--play-surface-flat) 58%, transparent);
+}
+
+/* ══ THE LANDMARKS ═════════════════════════════════════════════════════════
+ * One positioned box per prop; the SVG inside fills it and keeps its own
+ * aspect (`height: auto`), so a volcano is a volcano at every viewport. See
+ * `PROP` / `TERRAIN` in CancelPlanetPath.jsx for what stands where and why. */
+.cpp-prop {
+  position: absolute;
+  display: block;
+  line-height: 0;
+  pointer-events: none;
+}
+.cpp-prop svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Where you are standing: the same planet, lit from its own world. */
 .cpp-node[data-section].cpp-node--current .cpp-orb {
-  background: color-mix(in srgb, var(--cpp-sec) 22%, var(--play-surface-flat));
-  border-color: var(--cpp-sec);
+  border-color: var(--cpp-sec-lit);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--cpp-sec-lit) 34%, transparent),
+    0 2px 10px color-mix(in srgb, var(--cpp-sec) 55%, transparent);
 }
-.cpp-node[data-section].cpp-node--done .cpp-orb {
-  /* Cleared keeps the green ring — progress is one language across the whole
-     game, and a per-world "done" colour would make six of them. */
-  background: color-mix(in srgb, var(--cpp-sec) 14%, var(--play-surface-flat));
-}
+/* Cleared keeps the green badge it already had — progress is one language
+   across the whole game, and a per-world "done" colour would make six of
+   them. The disc itself stays its world's. */
+
 .cpp-band[data-section] .cpp-band-sigil { filter: none; }
 .cpp-band[data-section] .cpp-band-pill {
-  border-color: color-mix(in srgb, var(--cpp-sec) 40%, var(--line));
-  background: color-mix(in srgb, var(--cpp-sec) 8%, var(--play-surface-flat));
+  border-color: color-mix(in srgb, var(--cpp-sec-lit) 55%, var(--cpp-sec));
+  background: color-mix(in srgb, var(--cpp-sec) 82%, var(--game-ink));
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--cpp-sec) 45%, transparent);
+}
+/* The card is now a dark plate in its world's colour, so its type inverts with
+   it — all three lines, or the two quiet ones vanish into the plate. */
+.cpp-band[data-section] .cpp-band-name { color: var(--play-surface-flat); }
+.cpp-band[data-section] .cpp-band-sub,
+.cpp-band[data-section] .cpp-band-count {
+  color: color-mix(in srgb, var(--play-surface-flat) 82%, transparent);
 }
 .cpp-band[data-section] .cpp-band-rule {
-  background: color-mix(in srgb, var(--cpp-sec) 45%, transparent);
+  background: color-mix(in srgb, var(--cpp-sec-lit) 60%, transparent);
 }
 
 /* ── Stars ─────────────────────────────────────────────────────────────────

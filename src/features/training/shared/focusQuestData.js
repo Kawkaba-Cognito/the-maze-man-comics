@@ -657,6 +657,162 @@ export function ladderToTier(lv) {
   return { diff: b.diff, li: b.half * 50 + Math.round((within / 9) * 49) + 1 };
 }
 
+/*
+ * ══ THE LADDER'S OWN DIFFICULTY ENVELOPE (2026-09-17) ══════════════════════
+ *
+ * Owner: "this game is not really challenging attention … fix the difficulty
+ * system." Measured across all 60 ladder levels before changing anything, and
+ * the report was exactly right for two reasons neither of which is taste.
+ *
+ * ⚠ 1. THE CLOCK'S GENEROSITY RESET TWICE, SO THE CLIMB SAWTOOTHED.
+ * `TIME_HEADROOM` is authored PER TIER — 4.5× expert pace at that tier's L1
+ * falling to 1.35× at its L100 — and this ladder WALKS three tiers end to end
+ * (easy 1-100, medium 1-100, hard 1-100). Nobody re-derived the headroom for
+ * the concatenated path when the ladder replaced the tiers on 2026-08-28, so
+ * the multiple over expert pace actually ran:
+ *
+ *     L1  4.64×  →  L20 1.43×   then RESET
+ *     L21 3.16×  →  L40 1.38×   then RESET
+ *     L41 2.84×  →  L60 1.36×
+ *
+ * So level 21 handed back more than twice the slack level 20 had, and the
+ * tightest level on the entire sixty-level ladder was **level 12**. Level 60
+ * demanded 0.519 s per item on the board; level 1 demanded 0.52. The ladder
+ * was not a climb — it was the same difficulty three times, with the board
+ * getting bigger and the clock growing to match. **22 of the 59 steps were
+ * more generous than the step before.**
+ *
+ * ⚠ 2. THE FIRST THIRD ASKED FOR NO SELECTIVE ATTENTION AT ALL.
+ * `computeFeatureInterference` returns a flat 0 for the whole `easy` tier, and
+ * bands 1-2 ARE the easy tier — so for twenty levels no distractor ever shared
+ * the target's colour. That is pop-out search, where the target announces
+ * itself pre-attentively; it is the *least* attention-demanding search there
+ * is. Interference then reset to 0 again at L41 (hard's own L1).
+ *
+ * THE FIX IS ONE CONTINUOUS ENVELOPE OVER THE LADDER, not a rewrite of the
+ * curriculum. Targets, pools, grids and the authored TC series are untouched,
+ * so `audit:fq` still certifies every tier exactly as before and Pass n Play,
+ * Survival and the assessment — which read the TIERS, not the ladder — are
+ * bit-for-bit unchanged. Only the path the player actually climbs is re-shaped.
+ *
+ * ⚠ THE END POINT IS TIGHTER THAN THE OLD FLOOR ON PURPOSE (1.12× vs 1.35×),
+ * because the ask was for more challenge at the top. It stays above 1.0, which
+ * is the line `audit:fq` calls the difference between hard and broken — below
+ * expert pace a level is not difficult, it is unwinnable, and this game has
+ * shipped that bug before (11 s granted for 44.5 s of work).
+ *
+ * ⚠ AND THE START IS TIGHTER TOO (3.4× vs 4.64×). A smooth ramp between two
+ * unchanged endpoints would have made the early game *easier*, since today's
+ * tight spots at L12-L20 are an artefact of the first reset rather than design.
+ */
+const FQ_LADDER_HEADROOM_START = 3.4;
+const FQ_LADDER_HEADROOM_END = 1.2;
+
+/** Multiple of expert search pace granted at a ladder level. Strictly falling. */
+export function fqLadderHeadroom(lv) {
+  const n = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+  const t = (n - 1) / (FQ_LADDER_LEVELS - 1);
+  return FQ_LADDER_HEADROOM_START
+    * ((FQ_LADDER_HEADROOM_END / FQ_LADDER_HEADROOM_START) ** t);
+}
+
+/**
+ * How many distractors share the target's colour, as one ramp across the whole
+ * ladder instead of three restarting ones.
+ *
+ * ⚠ IT STARTS AT ZERO AND STAYS THERE FOR TWO LEVELS, deliberately. Level 1 is
+ * where the coach teaches the task and the rule card names it; a first board
+ * that already hides its target among same-coloured distractors teaches the
+ * wrong thing about what the game is. It is at full strength by the last band.
+ */
+export function fqLadderInterference(lv) {
+  const n = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+  return +Math.min(0.85, Math.max(0, (n - 2) / 52)).toFixed(2);
+}
+
+/**
+ * Ladder level → the level config, via the authored curriculum.
+ *
+ * ⚠ `ladderToTier` returns a 1-BASED authored level (what `prepareLevelRound`
+ * takes), while `getLvCfg` indexes the TC arrays 0-BASED. Hence the `- 1`.
+ * Getting this wrong shifts every level by one and is invisible in play.
+ */
+/*
+ * The clock for all 60 ladder levels, built ONCE.
+ *
+ * ⚠ IT IS A TABLE RATHER THAN A FORMULA BECAUSE THE FORMULA ALONE IS NOT
+ * MONOTONE. The clock is a whole number of seconds, so `round(need × headroom)`
+ * lands slightly above the intended curve whenever the target count ticks up —
+ * measured at five of the fifty-nine steps, by up to 0.05× (e.g. L17→L18 went
+ * 2.449→2.500 because 7 targets became 8 and 12s became 14s). That is rounding
+ * noise and nothing like the 0.13–1.7 resets it replaced, but "the next level
+ * is never more generous" is a property worth having exactly rather than
+ * approximately — it is the whole claim this envelope makes. So each level's
+ * clock is additionally capped at the previous level's realised headroom.
+ *
+ * ⚠ `expertTargetSecForSetSize` is the game's own search model and the one
+ * `audit:fq` measures against, so "1.12× expert" means the same thing here as
+ * it does in the gate. The two cannot drift into different definitions of hard.
+ */
+/**
+ * The round a ladder level actually DEALS — not what the curriculum authored.
+ *
+ * ⚠ THIS DISTINCTION IS THE WHOLE REASON THE FIRST VERSION OF THIS FIX DID
+ * NOTHING. `getLvCfg` describes a square curriculum board (5×5 / 7×7 / 9×9),
+ * but every mode a human plays reflows onto the thumb-safe `PLAY_BOARD`
+ * (4×5 / 5×7 / 6×8 = 20 / 35 / 48 cells) and `reflowTargetCount` rescales the
+ * targets to keep the authored DENSITY. So the board the player searches is
+ * less than two-thirds the size the curriculum names, and `prepareLevelRound`
+ * takes its clock from `survivalRoundTime` on that reflowed board — `cfg.time`
+ * is only consulted when the board is NOT reflowed, which in Levels never
+ * happens. An envelope computed from grid² would have been arithmetic about a
+ * board nobody plays. Measure the dealt round.
+ */
+export function fqLadderRoundShape(lv) {
+  const n = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+  const { diff, li } = ladderToTier(n);
+  const squareArea = (DM[diff] ?? DM.easy).grid ** 2;
+  const board = normalizeBoard(PLAY_BOARD[diff] ?? (DM[diff] ?? DM.easy).grid);
+  const tc = board.total !== squareArea
+    ? reflowTargetCount(TC[diff][li - 1], squareArea, board.total)
+    : TC[diff][li - 1];
+  return { diff, li, cells: board.total, tc };
+}
+
+/*
+ * ⚠ BUILT LAZILY, NOT AT MODULE LOAD. `PLAY_BOARD` and `reflowTargetCount` are
+ * declared further down this file, so an eager IIFE here throws
+ * `ReferenceError: Cannot access 'PLAY_BOARD' before initialization` — a
+ * temporal dead zone that takes the whole module, and therefore the whole
+ * game, down on import. Caught the first time the table was read; do not
+ * "tidy" this back into a top-level constant.
+ */
+let fqLadderClock = null;
+function fqLadderClockTable() {
+  if (fqLadderClock) return fqLadderClock;
+  const out = [];
+  let prevRealised = Infinity;
+  for (let n = 1; n <= FQ_LADDER_LEVELS; n += 1) {
+    const { diff, cells, tc } = fqLadderRoundShape(n);
+    const need = expertTargetSecForSetSize(diff, cells) * tc;
+    const wanted = Math.round(need * fqLadderHeadroom(n));
+    // Never more slack than the level before it, in multiples of expert pace.
+    const capped = Math.min(wanted, Math.floor(need * prevRealised));
+    const time = Math.max(ABSOLUTE_TIME_FLOOR_SEC, capped);
+    out.push(time);
+    prevRealised = time / need;
+  }
+  fqLadderClock = out;
+  return out;
+}
+
+/** The clock a ladder level grants, on the board it actually deals. */
+export function fqLadderTime(lv) {
+  return fqLadderClockTable()[
+    Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1))) - 1
+  ];
+}
+
 /**
  * Ladder level → the level config, via the authored curriculum.
  *
@@ -665,9 +821,17 @@ export function ladderToTier(lv) {
  * Getting this wrong shifts every level by one and is invisible in play.
  */
 export function ladderLvCfg(lv) {
-  const { diff, li } = ladderToTier(lv);
+  const n = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+  const { diff, li } = ladderToTier(n);
   const cfg = getLvCfg(diff, li - 1);
-  return { ...cfg, diff, li, lv: Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1))) };
+  return {
+    ...cfg,
+    time: fqLadderTime(n),
+    interference: fqLadderInterference(n),
+    diff,
+    li,
+    lv: n,
+  };
 }
 
 /** Deepest level under the old tiers → a level on the ladder. */
@@ -974,7 +1138,38 @@ export function buildCellsFromParams(board, pool, tc, diff, seed, interference, 
   const { total } = normalizeBoard(board);
   // Never ask for more targets than cells; keeps UI count and board in sync.
   const guaranteedTc = Math.min(Math.max(tc, 3), total);
+  /*
+   * ⚠ COLOUR INTERFERENCE WAS DEAD CODE, AND THIS IS WHERE IT DIED (found
+   * 2026-09-17 by A/B-ing the lever: `interference: 0` and `interference: 1`
+   * produced statistically identical boards at every level of the ladder).
+   *
+   * Every distractor below is given a `col`, and `assignFillColors` opens with
+   * `if (cell.col) fill = cell.col` — so its `else if (interference > 0)`
+   * branch is unreachable for distractors, which are the only cells it could
+   * ever apply to. `computeFeatureInterference`, its per-tier ramps and the
+   * comment promising it "turns a lazy pop-out scan into a real
+   * selective-attention task" were all describing something that never
+   * happened.
+   *
+   * What actually governed colour was this one boolean: on medium/hard HALF
+   * the distractors took the target's hue, and on easy none did. So for the
+   * ladder's first twenty levels COLOUR PERFECTLY PREDICTED THE TARGET — the
+   * definition of pop-out, and the least attention-demanding search there is —
+   * and from level 21 it stepped to a flat 50% and never moved again. That is
+   * the measured reason the game "is not really challenging attention".
+   *
+   * Now the share of distractors wearing the target's hue IS `interference`,
+   * so the parameter finally means what its name and its model always claimed.
+   *
+   * ⚠ THE FALLBACK KEEPS EVERY OTHER MODE BIT-FOR-BIT. A caller that passes no
+   * interference (Survival, Pass n Play, the assessment, the adaptive
+   * staircase) gets exactly the old boolean. Only callers that opt in — today
+   * just the Levels ladder — get the ramp.
+   */
   const useFeatureBinding = diff === 'medium' || diff === 'hard';
+  const sameHueShare = Number.isFinite(interference) && interference > 0
+    ? Math.min(1, interference)
+    : (useFeatureBinding ? 0.5 : 0);
 
   // Build target + distractor tokens separately, then place targets with the
   // smart spatial sampler and drop distractors into whatever cells are left.
@@ -989,7 +1184,7 @@ export function buildCellsFromParams(board, pool, tc, diff, seed, interference, 
     // `dist` excludes the target object, so no distractor can ever be mistaken
     // for a target by anything but a careless glance — which is the task.
     const dshp = dist[Math.floor(rng() * dist.length)];
-    const dcol = useFeatureBinding && rng() < 0.5 ? tgtCol : pal[Math.floor(rng() * pal.length)];
+    const dcol = rng() < sameHueShare ? tgtCol : pal[Math.floor(rng() * pal.length)];
     distractors.push({ shape: dshp, col: dcol, isT: false });
   }
   fisherYatesInPlace(distractors, rng);
@@ -1373,7 +1568,21 @@ export function prepareLevelRound(diff, lv, opts = {}) {
   const squareArea = cfg.grid * cfg.grid;
   const reflowed = board.total !== squareArea;
   const tc = reflowed ? reflowTargetCount(cfg.tc, squareArea, board.total) : cfg.tc;
-  const baseTlim = reflowed ? survivalRoundTime(diff, lv - 1, tc, board.total) : cfg.time;
+  /*
+   * ⚠ `opts.tlimSec` IS HOW THE LADDER'S ENVELOPE REACHES THE PLAYER, and
+   * without it the envelope is dead code. Levels always reflows onto
+   * PLAY_BOARD, so `reflowed` is always true here and the clock came from
+   * `survivalRoundTime` — a curve keyed to the TIER's level index, which is
+   * why the ladder's difficulty reset at every tier boundary (see the envelope
+   * comment above `fqLadderHeadroom`). Survival still calls this without the
+   * option and still gets `survivalRoundTime`, unchanged.
+   */
+  const baseTlim = opts.tlimSec
+    ? Math.max(ABSOLUTE_TIME_FLOOR_SEC, Math.round(opts.tlimSec))
+    : (reflowed ? survivalRoundTime(diff, lv - 1, tc, board.total) : cfg.time);
+  // Same story for interference: one continuous ramp along the ladder, rather
+  // than three restarting per-tier ones (0 for the whole easy tier).
+  const interference = opts.interference != null ? opts.interference : cfg.interference;
   /* Drift is the only rule that makes the search itself slower, so it is the
      only one that buys time back — and it is bought HERE, where the round is
      built, so the granted time audit:fq reads is the time the player gets. */
@@ -1384,9 +1593,9 @@ export function prepareLevelRound(diff, lv, opts = {}) {
     tc,
     diff,
     { tgt: lockedTarget, tgtCol: lockedCol, eccentricityBias, conjunction: cfg.conjunction },
-    cfg.interference,
+    interference,
   );
-  const withFill = assignFillColors(built.cells, diff, cfg.interference, built.tgtCol);
+  const withFill = assignFillColors(built.cells, diff, interference, built.tgtCol);
   const cells = withFill.map((c, i) => ({ ...c, id: i, tapped: false, feedback: null }));
 
   /*

@@ -78,6 +78,160 @@ export const atlasUrl = (file) => assetUrl(`Assets/training/cancel-cosmic-atlas-
 // A page reload starting fresh (no walk) is the right lifetime for a flourish.
 let lastFrontierLv = null;
 
+/*
+ * ── WHAT IS ACTUALLY STANDING IN EACH WORLD ─────────────────────────────────
+ *
+ * Owner, 2026-09-17: "add some designs, like in the red put some volcanoes and
+ * some black parts that look like lava ground and so on, and the same with
+ * others, e.g. put lakes in the ice."
+ *
+ * The first pass gave each band a coloured GROUND, which answered "different
+ * colours" and not "different places" — a red gradient is a filter, a volcano
+ * is a landscape. These are the landmarks: each world gets a few real props
+ * standing on its ground.
+ *
+ * ⚠ SVG AT A FIXED PIXEL SIZE, NOT A STRETCHED BACKGROUND. A band is ~1,240px
+ * tall and as wide as the viewport, so one image stretched to fill it would
+ * squash every cone and oval by whatever the aspect happened to be. Each prop
+ * is its own small SVG, placed by percentage and sized in px, so a volcano is
+ * the same volcano on a 390px phone and a 1,366px desktop.
+ *
+ * ⚠ EVERY FILL IS A TOKEN. `--cpp-sec` / `--cpp-sec-lit` are the world's own
+ * pair (set from `--fx-sec-*`), and the black of cooled lava is `--game-ink`,
+ * this game's fixed dark. `--cpp-` is not `--fx-`, so audit:design's
+ * raw-colour rule applies to anything written here.
+ *
+ * ⚠ THEY SIT LOW AND OUT AT THE EDGES, DELIBERATELY. The trail runs down the
+ * middle (AMPLITUDE=30, so nodes swing between 20% and 80%) and the chapter
+ * card sits at the top of every band. Landmarks are placed outside that lane
+ * so they never compete with the thing the player is actually reading.
+ */
+const PROP = {
+  // A cone of cooled basalt with a lit crater and one lava run down its flank.
+  volcano: (
+    <svg viewBox="0 0 120 84" width="100%" height="100%" aria-hidden="true">
+      <path d="M4 84 L46 10 Q60 -4 74 10 L116 84 Z" fill="var(--game-ink)" opacity="0.72" />
+      <path d="M46 12 Q60 2 74 12 L82 26 Q60 18 38 26 Z" fill="var(--cpp-sec-lit)" opacity="0.92" />
+      <path d="M58 20 L52 52 L62 70 L58 84 L70 84 L66 56 L72 30 Z" fill="var(--cpp-sec-lit)" opacity="0.6" />
+    </svg>
+  ),
+  // Cooled lava ground — an irregular black slab with a glowing seam in it.
+  basalt: (
+    <svg viewBox="0 0 160 46" width="100%" height="100%" aria-hidden="true">
+      <path d="M6 40 Q24 22 52 28 Q78 12 104 26 Q134 20 154 40 Q120 46 78 44 Q34 46 6 40 Z"
+        fill="var(--game-ink)" opacity="0.66" />
+      <path d="M26 36 Q56 28 88 34 Q118 38 140 34" stroke="var(--cpp-sec-lit)" strokeWidth="2"
+        fill="none" opacity="0.75" />
+    </svg>
+  ),
+  // A dune: one long ridge, lit along its crest.
+  dune: (
+    <svg viewBox="0 0 220 52" width="100%" height="100%" aria-hidden="true">
+      <path d="M0 52 Q48 12 108 22 Q168 32 220 8 L220 52 Z" fill="var(--cpp-sec)" opacity="0.5" />
+      <path d="M0 52 Q48 14 108 24 Q168 34 220 10" stroke="var(--cpp-sec-lit)" strokeWidth="2"
+        fill="none" opacity="0.6" />
+    </svg>
+  ),
+  // A frozen lake: flat pale ice with a crack across it and a bright rim.
+  lake: (
+    <svg viewBox="0 0 180 76" width="100%" height="100%" aria-hidden="true">
+      <ellipse cx="90" cy="38" rx="86" ry="33" fill="var(--cpp-sec-lit)" opacity="0.4" />
+      <ellipse cx="90" cy="38" rx="86" ry="33" fill="none" stroke="var(--cpp-sec-lit)"
+        strokeWidth="2" opacity="0.8" />
+      <path d="M28 30 L62 42 L96 28 L134 44" stroke="var(--cpp-sec-lit)" strokeWidth="1.5"
+        fill="none" opacity="0.7" />
+    </svg>
+  ),
+  // A shard of ice pushed up out of the field.
+  shard: (
+    <svg viewBox="0 0 64 96" width="100%" height="100%" aria-hidden="true">
+      <path d="M32 0 L56 52 L40 96 L20 96 L6 50 Z" fill="var(--cpp-sec-lit)" opacity="0.42" />
+      <path d="M32 0 L40 96 L20 96 Z" fill="var(--cpp-sec-lit)" opacity="0.62" />
+    </svg>
+  ),
+  // A storm cloud with the bolt still under it.
+  storm: (
+    <svg viewBox="0 0 150 90" width="100%" height="100%" aria-hidden="true">
+      <path d="M26 46 Q16 26 38 22 Q46 4 70 12 Q92 2 102 22 Q128 22 124 46 Z"
+        fill="var(--game-ink)" opacity="0.5" />
+      <path d="M72 48 L58 72 L72 72 L62 90 L88 64 L74 64 L84 48 Z"
+        fill="var(--cpp-sec-lit)" opacity="0.9" />
+    </svg>
+  ),
+  // A tree: canopy over a short trunk.
+  tree: (
+    <svg viewBox="0 0 90 120" width="100%" height="100%" aria-hidden="true">
+      <rect x="41" y="70" width="8" height="50" fill="var(--game-ink)" opacity="0.6" />
+      <ellipse cx="45" cy="46" rx="42" ry="38" fill="var(--cpp-sec)" opacity="0.72" />
+      <ellipse cx="34" cy="36" rx="22" ry="19" fill="var(--cpp-sec-lit)" opacity="0.45" />
+    </svg>
+  ),
+  // A far-off ringed world.
+  farworld: (
+    <svg viewBox="0 0 140 90" width="100%" height="100%" aria-hidden="true">
+      <circle cx="70" cy="45" r="27" fill="var(--cpp-sec-lit)" opacity="0.34" />
+      <circle cx="62" cy="38" r="20" fill="var(--cpp-sec-lit)" opacity="0.22" />
+      <ellipse cx="70" cy="45" rx="64" ry="13" fill="none" stroke="var(--cpp-sec-lit)"
+        strokeWidth="2" opacity="0.5" transform="rotate(-16 70 45)" />
+    </svg>
+  ),
+};
+
+/* Where each world's landmarks stand. `t` is a percentage down the BAND, so a
+   band of any height lays them out proportionally; `w` is px, so nothing
+   distorts. Kept off the centre lane (see above). */
+const TERRAIN = {
+  ember: [
+    { p: 'volcano', l: '4%', t: '58%', w: 230 },
+    { p: 'volcano', l: '76%', t: '22%', w: 150 },
+    { p: 'basalt', l: '58%', t: '72%', w: 300 },
+    { p: 'basalt', l: '2%', t: '31%', w: 220 },
+    { p: 'basalt', l: '68%', t: '90%', w: 190 },
+  ],
+  dust: [
+    { p: 'dune', l: '-4%', t: '26%', w: 420 },
+    { p: 'dune', l: '52%', t: '54%', w: 480 },
+    { p: 'dune', l: '6%', t: '82%', w: 380 },
+  ],
+  frost: [
+    { p: 'lake', l: '2%', t: '30%', w: 300 },
+    { p: 'lake', l: '62%', t: '66%', w: 340 },
+    { p: 'shard', l: '82%', t: '14%', w: 78 },
+    { p: 'shard', l: '10%', t: '72%', w: 64 },
+    { p: 'shard', l: '73%', t: '90%', w: 92 },
+  ],
+  tempest: [
+    { p: 'storm', l: '3%', t: '18%', w: 230 },
+    { p: 'storm', l: '70%', t: '52%', w: 280 },
+    { p: 'storm', l: '14%', t: '78%', w: 190 },
+  ],
+  verdant: [
+    { p: 'tree', l: '4%', t: '24%', w: 130 },
+    { p: 'tree', l: '80%', t: '38%', w: 165 },
+    { p: 'tree', l: '9%', t: '62%', w: 150 },
+    { p: 'tree', l: '76%', t: '80%', w: 120 },
+  ],
+  void: [
+    { p: 'farworld', l: '4%', t: '26%', w: 260 },
+    { p: 'farworld', l: '66%', t: '68%', w: 200 },
+  ],
+};
+
+function TerrainArt({ section }) {
+  const props = TERRAIN[section];
+  if (!props) return null;
+  return props.map((f, i) => (
+    <span
+      key={`${f.p}${i}`}
+      className="cpp-prop"
+      style={{ left: f.l, top: f.t, width: f.w }}
+      aria-hidden="true"
+    >
+      {PROP[f.p]}
+    </span>
+  ));
+}
+
 function CheckGlyph() {
   return (
     <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
@@ -257,12 +411,54 @@ export default function CancelPlanetPath({
     return n;
   };
 
+  /*
+   * ── THE GROUND EACH BAND IS WALKED ON (2026-09-17) ───────────────────────
+   *
+   * Owner: "lets say the lava set that have 10 levels, the planets can be
+   * totally red and the pallete look like volcano and so on, and the other set
+   * is ice and so on."
+   *
+   * The six worlds already had names, sigils and hue pairs, and this screen
+   * already knew which band was which — but it painted all sixty levels on one
+   * beige page, so Ember Reach and The Long Void were the same place with
+   * different captions. One terrain per band fixes that: scrolling the trail
+   * now walks you out of the volcano and into the ice.
+   *
+   * ⚠ IT SPANS BAND-TO-BAND, NOT NODE-TO-NODE. A band's ground has to start
+   * ABOVE its chapter card — the card announces the world, so it has to be
+   * standing in it. `BAND_MARKER_OFFSET` is where the card sits, and the extra
+   * 40px is the crossfade's landing room.
+   *
+   * ⚠ THE FIRST BAND STARTS AT 0 AND THE LAST ENDS AT `pathHeight`, so there
+   * is no seam of bare page at either end of a 6,610px scroll.
+   */
+  const terrainOf = (b) => {
+    const top = b === 0 ? 0 : yOf(b * BAND_SIZE) - BAND_MARKER_OFFSET - 40;
+    const next = b + 1 < bandStarts.length
+      ? yOf((b + 1) * BAND_SIZE) - BAND_MARKER_OFFSET - 40
+      : pathHeight;
+    return { top, height: Math.max(0, next - top) };
+  };
+
   return (
     <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} shellClassName="cx-page">
       <div className="ct-lv-grid-wrap">
         {title ? <h1 className="ct-lv-hero-title">{title}</h1> : null}
         {blurb ? <p className="ct-lv-hero-sub">{blurb}</p> : null}
         <div className="cpp-path" style={{ height: pathHeight }}>
+          {sections && bandStarts.map((b) => (
+            sections[b] ? (
+              <div
+                key={`t${b}`}
+                className="cpp-terrain"
+                data-section={sections[b].id}
+                style={terrainOf(b)}
+                aria-hidden="true"
+              >
+                <TerrainArt section={sections[b].id} />
+              </div>
+            ) : null
+          ))}
           <svg
             className="cpp-trail"
             viewBox={`0 0 100 ${pathHeight}`}

@@ -266,11 +266,68 @@
 }
 .cx-atlas .ct-mph .ct-mph-planet:active .ct-mph-planet-img { transform: scale(1.46); }
 
-/* Two things the platform draws that Aperture cannot have: a coloured glow
-   (light escaping a hole in a page) and a gloss overlay (a gradient and a
-   cast highlight, both prohibited by this game's art direction). */
+/* The platform's gloss overlay stays off — a gradient plus a cast highlight,
+   both prohibited by this game's art direction. The shared GLOW stays off too,
+   but only because it is drawn INSIDE the orb, where `overflow: hidden` clips
+   it to nothing (the same trap as the ring above). The colour it was carrying
+   comes back below, outside the cut, where it can actually be seen. */
 .cx-atlas .ct-mph .ct-mph-planet-glow,
 .cx-atlas .ct-mph .ct-mph-planet-shade { display: none; }
+
+/* ══ EACH WORLD LEAKS ITS OWN LIGHT (2026-09-17) ═══════════════════════════
+ * Owner: "in the mode page of cancellation task add some light colours, like
+ * next to survival add some yellow, and next to levels the blue colour like
+ * the planet, and so on with pass n play — make it a premium cool design."
+ *
+ * ⚠ THE COLOURS ALREADY EXISTED AND WERE REACHING NOTHING. `ModePlanetHub`
+ * sets `--mph-accent` per mode — amber for Survival, blue for Levels, a warm
+ * clay for Pass n Play — and Aperture then hid the only element drawing it.
+ * So this adds no new palette: it points the existing one at a surface that
+ * is not clipped.
+ *
+ * ⚠ AND IT IS ON-CONCEPT RATHER THAN DESPITE THE CONCEPT. Aperture's whole
+ * idea is light seen through a hole cut in the page, so a soft bloom spilling
+ * from the cut is what the metaphor predicts. The comment above used to say
+ * Aperture "cannot have" a coloured glow; what it could not have was a glow
+ * drawn inside the clip.
+ *
+ * ⚠ RESTRAINT IS THE PREMIUM PART. One soft bloom, one tinted hairline, one
+ * tinted divider — no ring, no second gradient, no drop shadow. The repo's own
+ * rule from the premium pass: elevation and restraint, not more art.
+ */
+/* ⚠ A `box-shadow` ON THE ORB, NOT A POSITIONED PSEUDO-ELEMENT. The first
+   build hung the bloom off `.ct-mph-planet::before` and it rendered visibly
+   off-centre: the button is a GRID whose orb column sits at a different place
+   in each of this hub's two layouts (a stacked register list, and three
+   across on a wide screen), so any offset that centres the bloom in one
+   layout misses in the other. A box-shadow is drawn from the orb's own border
+   box, so it is centred on the cut at every width by construction — and,
+   unlike a child element, it paints OUTSIDE the `overflow: hidden` that makes
+   the aperture, which is the exact trap that killed the shared ring and the
+   shared glow. */
+.cx-atlas .ct-mph .ct-mph-planet-orb {
+    outline-color: color-mix(in srgb, var(--mph-accent) 52%, transparent);
+    border-color: color-mix(in srgb, var(--mph-accent) 40%, var(--universe-ink));
+    box-shadow:
+        0 0 34px 6px color-mix(in srgb, var(--mph-accent) 30%, transparent),
+        0 0 92px 26px color-mix(in srgb, var(--mph-accent) 16%, transparent);
+    transition:
+        outline-offset 200ms var(--cx-ease-enter),
+        outline-color 200ms var(--cx-ease-enter),
+        box-shadow 260ms var(--cx-ease-enter);
+}
+@media (hover: hover) {
+    .cx-atlas .ct-mph .ct-mph-planet:hover .ct-mph-planet-orb {
+        box-shadow:
+            0 0 40px 8px color-mix(in srgb, var(--mph-accent) 40%, transparent),
+            0 0 110px 32px color-mix(in srgb, var(--mph-accent) 22%, transparent);
+    }
+}
+@media (hover: hover) {
+    .cx-atlas .ct-mph .ct-mph-planet:hover .ct-mph-planet-orb {
+        outline-color: color-mix(in srgb, var(--mph-accent) 85%, transparent);
+    }
+}
 
 /* The words. Off the art, start-aligned, and the hint is no longer hidden —
    in this composition it is the description, which is the whole reason the

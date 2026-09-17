@@ -43,6 +43,9 @@ import {
   FQ_LADDER_LEVELS,
   ladderToTier,
   ladderLvCfg,
+  fqLadderTime,
+  fqLadderRoundShape,
+  fqLadderInterference,
   fqMigrateLadderReached,
   FQ_SECTIONS,
   FQ_MECHANIC_LABELS,
@@ -1786,6 +1789,18 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       r = prepareLevelRound(diff, li, {
         forbidden: mech.has('forbidden'),
         drift: mech.has('drift'),
+        /*
+         * ⚠ THE LADDER'S OWN CLOCK AND INTERFERENCE, NOT THE TIER'S. Without
+         * these two lines the difficulty envelope in focusQuestData is dead
+         * code on the only path that matters: `prepareLevelRound` is given
+         * TIER coordinates, so left to itself it re-derives both from the
+         * tier's level index and the ladder's difficulty resets at every tier
+         * boundary — which is the bug the envelope exists to fix. Measured on
+         * the dealt rounds before the fix: L20 granted 1.91x expert pace and
+         * L21 granted 3.30x.
+         */
+        tlimSec: fqLadderTime(ladderLv),
+        interference: fqLadderInterference(ladderLv),
         // Only on a continued set: the first board of a level has no previous
         // target to differ from, and forcing one would quietly shrink the pool.
         avoidTarget: mech.has('switch') && opts.continueWaves ? lastWaveTargetRef.current : null,
@@ -2287,9 +2302,16 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           isUnlocked={(lv) => (lv === 1 || lv <= ladderReached + 1
             || !!doneMap[`lad-${lv - 1}`] || !!doneMap[`lad-${lv}`])}
           isDone={(lv) => !!doneMap[`lad-${lv}`]}
+          /*
+           * ⚠ THE SHAPE OF THE ROUND THE PLAYER IS DEALT, not the curriculum's
+           * numbers. `ladderLvCfg().tc` is the AUTHORED target count on the
+           * square 5x5/7x7/9x9 board; every mode a human plays reflows onto
+           * the thumb-safe PLAY_BOARD and rescales the count with it. So the
+           * map used to promise "4 targets" for a level that deals 3.
+           */
           sublabel={(lv) => {
-            const cfg = ladderLvCfg(lv);
-            return t.cxNodeSub(cfg.tc, cfg.time);
+            const shape = fqLadderRoundShape(lv);
+            return t.cxNodeSub(shape.tc, fqLadderTime(lv));
           }}
           onPick={(lv) => openLevel(lv)}
           /*
