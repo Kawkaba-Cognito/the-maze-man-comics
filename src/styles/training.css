@@ -2662,6 +2662,42 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     line-height: 1.45;
     text-align: center;
 }
+/* ⚠ THE READY GATE IS THE ONE INDEFINITE SCREEN IN THIS GAME, AND IT HAD NO
+   WAY OUT (2026-09-18). `.ct-fq-cd` is `position: fixed; inset: 0` and
+   OPAQUE, at z-index 400 — so on the ready interstitial the play header's
+   Back and Pause are not merely unclickable, they are covered. Measured with
+   elementFromPoint: both reported `topmost: DIV.ct-fq-cd`. That was survivable
+   while the gate belonged to Survival alone and the only alternative was to
+   start a round you had already chosen; it stops being survivable now every
+   level wave boundary opens one, because a full-screen state with a single
+   button reads exactly like the "the screen freezes and back doesn't work"
+   report this file records three times.
+   ⚠ RAISING THE CHROME INSTEAD WOULD NOT WORK. `.ct-fq-screen` carries a
+   lingering transform from `cx-screen-in` (animation-fill-mode: both), which
+   makes it a stacking context — so the header's z-index is compared inside
+   it, and lifting the header above 400 would mean lifting the whole board
+   with it. A modal needs its own dismiss; this is it.
+   Deliberately quiet: this screen exists to show ONE object (see the long
+   note on .ct-fq-cd--ready), so the exit is text, low-contrast and last in
+   the reading order — present when looked for, not competing with the
+   target. */
+.ct-fq-cue-leave {
+    appearance: none;
+    margin-top: 10px;
+    padding: 8px 18px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-dim);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+.ct-fq-cue-leave:hover { color: var(--game-ink); border-color: var(--game-ink); }
+[dir='rtl'] .ct-fq-cue-leave { letter-spacing: 0; text-transform: none; }
 .ct-fq-fix-cross {
     font-family: 'Outfit', system-ui, sans-serif;
     font-weight: 300;

@@ -22,6 +22,7 @@ import { loadJson, saveJson } from '../../../../../../lib/storage';
 import {
   SH,
   DM,
+  dmLabel,
   prepareLevelRound,
   prepareChallengeSeed,
   prepareChallengePlayState,
@@ -39,7 +40,10 @@ import {
   PASS_PLAY_CONFIG,
   PLAY_BOARD,
   FQ_DIFF_KEYS,
-  FQ_LEVELS_PER_TIER,
+  /* FQ_LEVELS_PER_TIER is deliberately NOT imported any more: its only use
+     here was the "Next level" gate, which was comparing the wrong number
+     (see the note at that call site). Nothing in this file should be
+     reasoning about a 100-level tier — the player climbs a 60-rung ladder. */
   FQ_LADDER_LEVELS,
   ladderToTier,
   fqWaveShape,
@@ -1006,6 +1010,48 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     setCueShow(false);
   }, [stopTimer]);
 
+  /*
+   * ── IS THIS CUE CARD A GATE, OR A GLIMPSE? ───────────────────────────────
+   * Owner, 2026-09-18: "when i end a round the next round starts immediatly,
+   * what should happen is that it shows me the object then i tap it, then the
+   * next round starts."
+   *
+   * ⚠ THE PLAYER-PACED BEAT ALREADY EXISTED AND WAS RESERVED FOR SURVIVAL.
+   * Every `round.mode === 'free' && cueShow` test in this file was really
+   * asking "is this cue waiting for me?", and the answer was hard-coded to one
+   * mode — so a wave boundary got `flashCue`'s 720ms glimpse (or a 1.5s
+   * countdown) and dealt itself. That is the report: the object was shown, but
+   * for less time than it takes to decide you have seen it.
+   *
+   * A wave boundary needs the gate MORE than a Survival boundary does, and by
+   * more than the code suggests. Every wave is a fresh `prepareLevelRound`, so
+   * the target is re-rolled EVERY time — measured on level 1, which has no
+   * mechanics at all: set 1 hunted a crystal and set 2 a planet. The `switch`
+   * world only makes that change *guaranteed* (via `avoidTarget`) rather than
+   * likely. So the object on this card is new information at every boundary,
+   * and it was on screen for 720ms.
+   *
+   * ⚠ Which also means `cx-cue-flag--switch` ("New target this set") is
+   * narrower than the truth — it is gated on the `switch` mechanic, while the
+   * target can differ on any level. Left as it is: the flag promises a
+   * GUARANTEE, which is exactly what that world adds, and the gate now gives
+   * every player time to see the object for themselves.
+   *
+   * ⚠ THE FIRST WAVE OF A LEVEL IS DELIBERATELY NOT A GATE. You have just
+   * chosen that level off the map, having read its target count and clock on
+   * the node itself; a confirm there is a tap between you and a level you
+   * already asked for. The gate is for the boundaries you did not ask for.
+   *
+   * ⚠ AND IT COSTS NO MEASURED TIME, which is what makes it safe against
+   * `audit:fq`. The round clock only advances while `playStep === 'running'`
+   * (see the timer effect) and the board only takes taps in that state, so
+   * this changes the pacing BETWEEN boards and nothing about any board the
+   * gate certifies.
+   */
+  const isCueGate = (r) => !!r && (
+    r.mode === 'free' || (r.mode === 'level' && (r.waveIdx ?? 0) > 0)
+  );
+
   /** Brief target-cue card before a round (used when there's no 3-2-1 countdown). */
   const flashCue = useCallback(async () => {
     setCueShow(true);
@@ -1058,8 +1104,10 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     [playSfx, clearPlayRoundState, juice],
   );
 
-  const confirmSurvivalTarget = useCallback(() => {
-    if (roundRef.current?.mode !== 'free' || !cueShow) return;
+  /* Named for what it does rather than for the one mode that used to do it —
+     it now arms a Survival round OR a continued level wave (see isCueGate). */
+  const confirmTargetReady = useCallback(() => {
+    if (!cueShow || !isCueGate(roundRef.current)) return;
     playSfx('correct'); // "ready", not "hit" — collect is reserved for tapping a target
     setCueShow(false);
     setPlayStep('running');
@@ -1658,8 +1706,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   }, []);
 
   useEffect(() => {
-    if (round?.mode === 'free' && cueShow) readyBtnRef.current?.focus();
+    // The card is a `role="dialog"` whenever it is a gate, so focus has to
+    // follow the same predicate the markup does — a keyboard player otherwise
+    // reaches a modal on a continued wave with focus still on the board.
+    if (cueShow && isCueGate(round)) readyBtnRef.current?.focus();
   }, [round, cueShow]);
+
 
   useEffect(() => {
     // The coach holds the clock exactly like the pause menu does — a first-time
@@ -1869,7 +1921,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       // `collect` is the target-HIT sound; playing it here taught "this noise
       // = you found one" and then played it when nothing had been found yet.
       // `correct` is what every other "the round starts now" moment uses
-      // (confirmSurvivalTarget).
+      // (confirmTargetReady).
       playSfx('correct');
       await sleep(320);
     } finally {
@@ -1959,6 +2011,22 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     pendingPenaltyRef.current = 0;
     roundEndedRef.current = false;
     juice.reset();
+    /*
+     * A CONTINUED WAVE WAITS FOR THE PLAYER (see isCueGate above). The board
+     * is already dealt behind the card, exactly as Survival deals it behind
+     * its own Ready gate; `playStep` stays 'idle' so neither the clock nor the
+     * tiles are live until the card is tapped.
+     *
+     * ⚠ NO 'click' HERE. The wave-clear 'win' cue has just played at the top
+     * of the clear celebration, and a second acknowledgement a moment later
+     * reads as two events for one — the same reason `beginFreeRoundAtStage`
+     * takes `skipCueSound` after a win.
+     */
+    if (opts.continueWaves) {
+      setPlayStep('idle');
+      setCueShow(true);
+      return;
+    }
     await runCountdownThen(() => {
       setPlayStep('running');
     });
@@ -2278,6 +2346,20 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     if (playStep === 'running') stopTimer();
     setQuitOpen(true);
   }, [playStep, stopTimer]);
+
+  /* Escape leaves the ready gate, the same way it leaves the coach — the
+     keyboard half of the visible Quit chip on that screen.
+     ⚠ IT HAS TO LIVE HERE, BELOW `onHudQuit`. The first version sat beside
+     the gate's focus effect ~600 lines up, where `onHudQuit` is still in its
+     temporal dead zone: the effect BODY would have been fine (it runs after
+     render) but the dependency array is evaluated DURING render, which throws
+     before anything paints. */
+  useEffect(() => {
+    if (!cueShow || !isCueGate(roundRef.current)) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); onHudQuit(); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [cueShow, round, onHudQuit]);
 
   const openChallenge = () => {
     const names = chalNames.map((s, i) => s.trim() || `Player ${i + 1}`);
@@ -2633,7 +2715,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           roundLine={
             chalRoundsTotal > 1 ? t.roundNofM(chalRoundIdx + 1, chalRoundsTotal) : null
           }
-          metaLine={`${DM[chalDiff]?.label ?? ''} · ${PASS_PLAY_CONFIG[chalDiff]?.cols ?? 7}×${PASS_PLAY_CONFIG[chalDiff]?.rows ?? 9} · ${PASS_PLAY_CONFIG[chalDiff]?.tlim ?? 50}s`}
+          /* `dmLabel`, not `DM[...].label` — the raw field is English-only
+             and this line sits in an Arabic handoff screen. */
+          metaLine={`${dmLabel(chalDiff, isAr)} · ${PASS_PLAY_CONFIG[chalDiff]?.cols ?? 7}×${PASS_PLAY_CONFIG[chalDiff]?.rows ?? 9} · ${PASS_PLAY_CONFIG[chalDiff]?.tlim ?? 50}s`}
           instruction={t.handTo(chalNames[chalIdx])}
           bullets={[t.chalBulletSame, t.chalBulletPass]}
           startLabel={t.goReady}
@@ -2856,7 +2940,20 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               ]}
               notes={[t.efficiencyHint]}
               actions={[
-                lastResult.stats.won && lastResult.r.lv < FQ_LEVELS_PER_TIER ? {
+                /* ⚠ GATED ON THE LADDER POSITION, NOT THE AUTHORED LEVEL
+                   (2026-09-18). This read `lastResult.r.lv <
+                   FQ_LEVELS_PER_TIER` — and `r.lv` is the AUTHORED level the
+                   round was built from (1–100 within a tier), not the rung the
+                   player is on. `ladderToTier` maps the 10th level of an
+                   upper-half band to authored 100, so at ladder levels 20 and
+                   40 the condition went false and passing the level offered no
+                   "Next level" button at all: Replay and Menu only, at exactly
+                   the band boundary where momentum matters most. 10, 30 and 50
+                   were fine, which is what made it look like a design choice.
+                   Ladder 60 hid the button correctly, but by coincidence.
+                   Same family as the HUD that read L23 for level 5 — every
+                   comparison about WHERE THE PLAYER IS belongs on `ladderLv`. */
+                lastResult.stats.won && (lastResult.r.ladderLv ?? 1) < FQ_LADDER_LEVELS ? {
                   key: 'next',
                   label: t.nextLv,
                   onClick: () => {
@@ -2931,7 +3028,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       {phase === 'adaptRes' && lastResult?.type === 'adaptive' && (() => {
         const thr = lastResult.threshold ?? 0;
         const { diff, lv } = freeStageToDiffLv(thr);
-        const tierLabel = DM[diff]?.label ?? '';
+        const tierLabel = dmLabel(diff, isAr);
         const norm = Math.round((thr / 299) * 100);
         return (
           <div className="ct-fq-training-shell ct-fq-training-shell--hub-light cx-page">
@@ -3369,30 +3466,50 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           challenge). Assessment & adaptive use the bare centred "+" fixation so
           the gaze origin stays clean for Center-of-Cancellation; their target
           chip lives in the top bar and the rule is given in the intro. */}
-      {phase === 'play' && (cdShow || cueShow || cdLeaving) && round && (
+      {phase === 'play' && (cdShow || cueShow || cdLeaving) && round && (() => {
+        /* ⚠ ONE FLAG, READ EVERYWHERE. Every attribute below used to re-derive
+           "is this cue waiting for me?" as `round.mode === 'free' && cueShow`,
+           once per attribute — so widening it to continued waves meant making
+           the identical edit a dozen times, and missing one would have left a
+           card that is a dialog but takes no click, or takes a click with no
+           label. */
+        const cueGate = cueShow && isCueGate(round);
+        const waveGate = cueGate && round.mode === 'level';
+        return (
         <div
-          className={`ct-fq-cd${round.mode === 'free' && cueShow ? ' ct-fq-cd--ready' : ''}${cdLeaving ? ' is-leaving' : ''}`}
-          role={round.mode === 'free' && cueShow ? 'dialog' : undefined}
-          aria-modal={round.mode === 'free' && cueShow ? 'true' : undefined}
-          aria-label={round.mode === 'free' && cueShow ? t.survivalCueTitle : undefined}
+          className={`ct-fq-cd${cueGate ? ' ct-fq-cd--ready' : ''}${cdLeaving ? ' is-leaving' : ''}`}
+          role={cueGate ? 'dialog' : undefined}
+          aria-modal={cueGate ? 'true' : undefined}
+          aria-label={cueGate ? t.survivalCueTitle : undefined}
         >
           {cdShow && <div className="ct-fq-cd-num">{cdVal}</div>}
-          {round.mode === 'free' && cueShow && (
-            <div className="ct-fq-cue-kicker">{t.survivalCueTitle}</div>
+          {cueGate && (
+            /* On a wave the kicker names WHICH wave, because that is the thing
+               the player cannot otherwise tell at this moment — the HUD chip
+               behind the card says it, and the card covers the HUD. `setOf`
+               already existed in both dicts, unused. */
+            <div className="ct-fq-cue-kicker">
+              {waveGate
+                ? t.setOf((round.waveIdx ?? 0) + 1, round.wavesTotal ?? LEVEL_WAVES)
+                : t.survivalCueTitle}
+            </div>
           )}
           <button
             type="button"
-            ref={round.mode === 'free' && cueShow ? readyBtnRef : undefined}
-            className={`ct-fq-cue-card${round.mode === 'free' && cueShow ? ' ct-fq-cue-card--ready' : ''}`}
-            onClick={round.mode === 'free' && cueShow ? confirmSurvivalTarget : undefined}
-            disabled={!(round.mode === 'free' && cueShow)}
-            aria-label={round.mode === 'free' && cueShow ? t.survivalCueReady : undefined}
+            ref={cueGate ? readyBtnRef : undefined}
+            className={`ct-fq-cue-card${cueGate ? ' ct-fq-cue-card--ready' : ''}`}
+            onClick={cueGate ? confirmTargetReady : undefined}
+            disabled={!cueGate}
+            aria-label={cueGate ? t.survivalCueReady : undefined}
           >
             <div className="ct-fq-cue-chip">
               <CancellationTarget
                 round={round}
                 cells={cells}
-                size={round.mode === 'free' ? 78 : 52}
+                /* The big chip is the GATE's chip, not Survival's — on a wave
+                   boundary the object is the whole reason the card is there,
+                   and it can change from the wave before. */
+                size={cueGate ? 78 : 52}
                 isAr={isAr}
               />
             </div>
@@ -3419,16 +3536,25 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                 <span className="cx-cue-nogo-text">{t.cueNoGo}</span>
               </div>
             ) : null}
-            {round.mode === 'free' && cueShow && (
+            {cueGate && (
               <span className="ct-fq-cue-ready-label">{t.survivalCueReady}</span>
             )}
           </button>
-          {round.mode === 'free' && cueShow && (
+          {cueGate && (
             <div className="ct-fq-cue-ready-hint">{t.survivalCueHint}</div>
+          )}
+          {/* The gate's own dismiss — see the .ct-fq-cue-leave note in
+              training.css. The overlay is opaque and covers the play header,
+              so without this the screen has exactly one button on it. */}
+          {cueGate && (
+            <button type="button" className="ct-fq-cue-leave" onClick={onHudQuit}>
+              {t.quit}
+            </button>
           )}
           {cdShow && <div className="ct-fq-cd-lbl">{t.countdownHint}</div>}
         </div>
-      )}
+        );
+      })()}
 
       {phase === 'play' && fixShow && (
         <div className="ct-fq-cd" aria-hidden="true">

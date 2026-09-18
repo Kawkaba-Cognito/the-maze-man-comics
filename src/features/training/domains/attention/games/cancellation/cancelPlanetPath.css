@@ -98,6 +98,34 @@
   margin: 10px auto 0;
 }
 
+/* ══ THE FIRST BAND CARD OPENS THE PAGE (2026-09-18) ═══════════════════════
+ * Owner: "put the ember reach diagram in the top up, so there is no space
+ * left between up and the diagram."
+ *
+ * The card sat 103px down on desktop and 114px on a phone, over empty
+ * terrain, on a screen whose whole job is to open on that card. Three things
+ * stacked to make that gap and only one of them was deliberate:
+ *   54px  `.ct-lv-grid-wrap`'s shared top padding
+ *   10-14px `.cpp-path`'s top margin, which dates from a hero title this
+ *          screen no longer renders
+ *   15-18px a `:first-of-type` nudge that was never meant to apply here at
+ *          all (see `.cpp-band--first` below)
+ *
+ * ⚠ THE TOP SPACING IS ONE NUMBER NOW, ON PURPOSE. It used to be split
+ * across a padding and a margin that each had their own responsive value
+ * (14px at >=900px, 10px default, 6px at <=480px), so the card landed at a
+ * different height in all three and no single edit could move it. Zeroing the
+ * margin here makes `padding-top` the only lever: band top = padding + the
+ * card's own inline 20px offset, in every layout.
+ *
+ * ⚠ THE PADDING ITSELF IS NOT SET HERE. `.cpp-page .ct-lv-grid-wrap` near the
+ * bottom of this file already owns it and, at equal specificity, wins on order
+ * — a second padding rule here would look like the lever and do nothing. It is
+ * tuned there, beside the pinned bar whose height it is paying for. */
+.ct-lv-grid-wrap:has(.cpp-path) .cpp-path {
+  margin-top: 0;
+}
+
 /* This screen is a map, not another utility grid. The title uses the atlas'
    editorial voice while the supporting line stays in the instrument face. */
 .cx-atlas .ct-lv-grid-wrap:has(.cpp-path) .ct-lv-hero-title {
@@ -485,8 +513,17 @@
   content-visibility: auto;
   contain-intrinsic-size: 100% 72px;
 }
-.cpp-band:not(:first-of-type) {
+/* ⚠ `.cpp-band--first`, NOT `:first-of-type` — the class is flagged in the
+   markup because CSS cannot express "the first element with this class".
+   `:first-of-type` matches on the TAG, and six `.cpp-terrain` divs render
+   before the bands, so the first band was never first-of-type: it took the
+   nudge meant to separate a band from the decade above it, on a screen where
+   it has no decade above it. It opens the page, so it takes no nudge. */
+.cpp-band:not(.cpp-band--first) {
   transform: translateY(18px);
+}
+.cpp-band--first {
+  transform: none;
 }
 .cpp-band-rule {
   position: absolute;
@@ -596,10 +633,13 @@
   .cpp-band {
     min-height: 78px;
   }
-  .cpp-band:first-of-type {
-    transform: translateY(-16px);
+  /* Same correction as the base rule: this pair was written against
+     `:first-of-type`, so the -16px lift never once applied and every band —
+     including the one that opens the page — took the +15px push instead. */
+  .cpp-band--first {
+    transform: none;
   }
-  .cpp-band:not(:first-of-type) {
+  .cpp-band:not(.cpp-band--first) {
     transform: translateY(15px);
   }
   .cpp-band-rule {
@@ -946,8 +986,25 @@
   pointer-events: none;
 }
 .cpp-page .ct-training-menubar > * { pointer-events: auto; }
-/* The path starts under a pinned bar, so it needs the bar's height back. */
-.cpp-page .ct-lv-grid-wrap { padding-top: 54px; }
+/* The path starts under a pinned bar, so it needs the bar's height back.
+ * ⚠ 40px, NOT THE BAR'S FULL 64px (2026-09-18, owner: "put the ember reach
+ * diagram in the top up, so there is no space left between up and the
+ * diagram"). What has to clear the bar is the CARD, and the card sits 20px
+ * further down again — its own inline offset, `yOf(0) - BAND_MARKER_OFFSET`
+ * in CancelPlanetPath.jsx. Paying the bar's height here and then adding that
+ * 20 put the card at 74 on desktop and 86 on a phone, over empty terrain, on
+ * the one screen that opens on it.
+ * 40 + 20 lands the card's top at 60 on desktop and 72 on a phone — the extra
+ * 12 is `.ct-fq-screen`'s own top padding at narrow widths, which is shared
+ * chrome and deliberately not overridden here to chase one number. The bar is
+ * 64 tall but it is TRANSPARENT and `pointer-events: none` (see the rule
+ * above), and its two chips end at y=54 at the far left and right while the
+ * pill is centred — so there is nothing at 60 to clear, only chrome to sit
+ * under.
+ * ⚠ This is the ONLY top-spacing lever on this screen, deliberately:
+ * `.cpp-path`'s top margin is zeroed up beside the `.cpp-path` rule so the
+ * card cannot land at three different heights across three breakpoints. */
+.cpp-page .ct-lv-grid-wrap { padding-top: 40px; }
 
 /* ⚠ AND THE SCREEN MUST NOT CARRY A TRANSFORM, OR `fixed` IS TRAPPED BY IT.
  * `.cx-atlas .ct-fq-screen` runs `cx-screen-in` with `animation-fill-mode:

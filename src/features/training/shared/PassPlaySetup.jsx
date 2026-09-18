@@ -41,11 +41,23 @@ export default function PassPlaySetup({
     ? 'نفس اللوحة للجميع · اختر الصعوبة · الأفضل يفوز'
     : 'Same board for everyone · pick a difficulty · best score wins');
 
+  /*
+   * ⚠ THE ARABIC FIELD IS CHECKED FIRST WHEN `isAr` — it used to be checked
+   * LAST, which made it unreachable (2026-09-18). The old order was
+   * `d.label ?? (isAr ? d.ar : d.en)`, so any table carrying `label` won
+   * outright in both languages: cancel-task and rush-hour rendered
+   * "الصعوبة | Easy | Medium | Hard", and `wordleData.js`'s `labelAr`, which
+   * has existed all along, was dead. Both field shapes are in use here —
+   * `{label, labelAr}` (the `DM` family) and `{en, ar}` (four other games) —
+   * so both are read, and English remains the fallback so a table with no
+   * Arabic still renders something rather than the raw key.
+   */
   const diffLabel = (k) => {
     const d = diffLabels[k];
     if (!d) return k;
     if (typeof d === 'string') return d;
-    return d.label ?? (isAr ? d.ar : d.en) ?? k;
+    if (isAr) return d.labelAr ?? d.ar ?? d.label ?? d.en ?? k;
+    return d.label ?? d.en ?? k;
   };
 
   const setName = (i, v) => onPlayersChange(players.map((x, j) => (j === i ? v : x)));

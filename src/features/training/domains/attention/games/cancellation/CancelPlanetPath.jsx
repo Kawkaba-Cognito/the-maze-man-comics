@@ -513,10 +513,18 @@ export default function CancelPlanetPath({
             <path className="cpp-trail-rest" d={trailD.full} vectorEffect="non-scaling-stroke" />
             <path className="cpp-trail-done" d={trailD.done} vectorEffect="non-scaling-stroke" pathLength="1" />
           </svg>
-          {bands && bandStarts.map((b) => (
+          {bands && bandStarts.map((b, bi) => (
             bands[b] ? (
               <div
-                className="cpp-band"
+                /* ⚠ THE FIRST BAND IS FLAGGED HERE BECAUSE CSS CANNOT SEE IT.
+                   `.cpp-band:not(:first-of-type)` nudges every band down to sit
+                   off its preceding decade — but `:first-of-type` is about the
+                   TAG type, not the class, and six `.cpp-terrain` divs render
+                   before the bands. So the first band was never first-of-type,
+                   took the nudge as well, and pushed the top card 15-18px down
+                   a screen that opens on it. There is no `:first-of-class`;
+                   flagging it in the markup is the only honest fix. */
+                className={`cpp-band${bi === 0 ? ' cpp-band--first' : ''}`}
                 data-section={sections ? sections[b]?.id : undefined}
                 style={{ top: yOf(b * BAND_SIZE) - BAND_MARKER_OFFSET }}
                 key={`b${b}`}

@@ -1021,29 +1021,74 @@
 .cx-atlas .ct-mph .ct-mph-planet::after {
     content: '';
     position: absolute;
-    /* ⚠ BLEEDS WELL PAST THE BUTTON (owner: "spread more the colours to
-       continue the sides"). Confined to the button box the wash stopped at a
-       visible edge and each mode read as a coloured card; reaching past it, the
-       light carries out to the screen and the three worlds meet in between.
-       Safe because the hub container is overflow-hidden and full width, so the
-       bleed is clipped by the SCREEN rather than by each register. */
-    inset: -62% -120%;
+    /* ⚠ THE BLEED IS ASYMMETRIC SO THE BOX CENTRES ON THE CUT, NOT ON THE
+       BUTTON — and it is written in LOGICAL properties because the two halves
+       of this hub put the cut in different places. Stacked (the phone), the orb
+       sits in a 116px column at the inline start and the words run beside it,
+       so the light must lean that way; three-across (below, min-width 900px),
+       the orb is centred over its words and the inline bleed goes symmetric.
+       A physical `left`/`right` offset would send the light to the wrong side
+       of the planet in Arabic.
+       The BLOCK axis stays symmetric here and is lifted only in the wide
+       block below, for the same reason: stacked, the orb is centred in its
+       row, so the button centre already IS the cut; three-across the orb sits
+       above the words and the box has to be pulled up onto it.
+       (owner, 2026-09-17: "spread more the colours to continue the sides" —
+       688px of light off a 376px register still carries well past it.) */
+    inset-block: -42%;
+    inset-inline: -75% -8%;
     z-index: -1;
     pointer-events: none;
-    /* ⚠ RADIAL, NOT A LEFT-TO-RIGHT SWEEP. The sweep was written for the
-       STACKED register layout (cut at the inline start, words beside it) and
-       on the three-across desktop layout it rendered as a rectangle with a
-       visible edge — a coloured box behind each mode, which is the opposite of
-       light coming off a planet. A radial anchored near the cut is shapeless at
-       every edge, so it reads the same in both of this hub's layouts. */
+    /* ⚠ `closest-side`, NOT A PERCENTAGE PAIR — AND THAT IS THE WHOLE BUG FIX
+       (2026-09-18, owner: "the colours are overlapping and messed up").
+       A radial gradient is clipped by its OWN box, and the note this replaced
+       assumed the screen would clip the bleed instead. It does not, and it
+       cannot: `.ct-mph` measures `overflow: visible`, and even if it did not,
+       each pseudo-element still paints inside its own rectangle.
+
+       The old `ellipse 88% 78% at 50% 32%` sized the radii against the BOX
+       (847 x 302px) and put the last stop at 86% — so the fade finished 728px
+       from the centre while the box half-width was 481px. The gradient was
+       still ~9% opaque where it was cut off, in both axes. Measured on screen:
+       hard vertical steps at x=193 / x=1157 and horizontal ones at y=70 (the
+       two `--md` registers) and y=80 (`--lg`, which is 17px shorter) — a
+       visible coloured rectangle behind the row, which is precisely the
+       failure the old comment was written to avoid.
+
+       `closest-side` ties each radius to the distance to the nearest edge, so
+       a last stop of 100% reaches full transparency exactly AT that edge and
+       earlier at every other one. There is no number to keep in sync: move the
+       inset or the centre and it stays edge-safe by construction. */
     background: radial-gradient(
-        ellipse 88% 78% at 50% 32%,
-        color-mix(in srgb, var(--mph-accent) 28%, transparent) 0%,
-        color-mix(in srgb, var(--mph-accent) 10%, transparent) 52%,
-        transparent 86%
+        ellipse closest-side at 50% 50%,
+        color-mix(in srgb, var(--mph-accent) 30%, transparent) 0%,
+        color-mix(in srgb, var(--mph-accent) 11%, transparent) 48%,
+        transparent 100%
     );
     opacity: 0.92;
     transition: opacity 240ms var(--cx-ease-enter);
+}
+/* ⚠ THE WIDE-SCREEN HALF OF THE BLEED LIVES HERE, NOT UP IN THE `min-width:
+   900px` BLOCK AROUND LINE 400 — that block is declared BEFORE this rule, so
+   an override written there loses to this one at equal specificity and does
+   nothing at all. Keep the pair adjacent: the inset above and the inset below
+   describe the same decision for this hub's two layouts, and separating them
+   is how one gets retuned while the other is left stale.
+   Three-across, the orb is centred over its words, so the light is too — and
+   the register is only 283px wide, so the reach is pulled in hard. At -42%
+   each bloom is 521px against 284px of column pitch: the three meet at their
+   tails and stop, instead of each washing across all three (the 963px boxes
+   this replaced were wider than the whole 964px row, which is what "the
+   colours are overlapping" was).
+   And the block axis is lifted here only: three-across, the orb sits above its
+   words, so a box centred on the button would put the brightest point ~30px
+   below the cut. Top bleed minus bottom bleed raises the centre by half the
+   difference; measured, 60/25 lands it on the orb. */
+@media (min-width: 900px) {
+    .cx-atlas .ct-mph .ct-mph-planet::after {
+        inset-block: -60% -25%;
+        inset-inline: -42%;
+    }
 }
 @media (hover: hover) {
     .cx-atlas .ct-mph .ct-mph-planet:hover::after { opacity: 1; }

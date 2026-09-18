@@ -62,10 +62,35 @@ export const SH={
 // ══════════════════════════════════════════
 // LEVEL SYSTEM
 // ══════════════════════════════════════════
+/*
+ * ⚠ `labelAr` EXISTS BECAUSE THIS TABLE WAS SHOWING ENGLISH IN ARABIC
+ * (2026-09-18). `DM` feeds the Pass n Play difficulty picker in BOTH live
+ * games that still have one — cancel-task and rush-hour — and it carried only
+ * `label`. Measured on the Arabic build: an otherwise fully Arabic setup
+ * screen reading "الصعوبة | Easy | Medium | Hard".
+ *
+ * Two things had to be true for that to happen, and both were: the table had
+ * no Arabic, and `PassPlaySetup`'s own `diffLabel` returned `d.label` FIRST,
+ * so even a table that did carry Arabic (wordleData.js has had `labelAr` all
+ * along) could never reach the screen. Fixed in both places — a label nobody
+ * reads is not a translation.
+ */
 export const DM={
-  easy:  {label:'Easy',        lvc:'lve', col:'#7ab87a', grid:5,  bt:90,  ts:1.4, pop:'~90% of people'},
-  medium:{label:'Medium',      lvc:'lvi', col:'#7ab8c4', grid:7,  bt:75,  ts:1.25, pop:'Top 50%'},
-  hard:  {label:'Hard',        lvc:'lvh', col:'#e8c47a', grid:9,  bt:60,  ts:1.0, pop:'Top 20%'},
+  easy:  {label:'Easy',   labelAr:'سهل',   lvc:'lve', col:'#7ab87a', grid:5,  bt:90,  ts:1.4, pop:'~90% of people'},
+  medium:{label:'Medium', labelAr:'متوسط', lvc:'lvi', col:'#7ab8c4', grid:7,  bt:75,  ts:1.25, pop:'Top 50%'},
+  hard:  {label:'Hard',   labelAr:'صعب',   lvc:'lvh', col:'#e8c47a', grid:9,  bt:60,  ts:1.0, pop:'Top 20%'},
+};
+
+/**
+ * The one place a `DM`-shaped entry becomes a label a player reads.
+ * Call sites used to reach for `DM[k].label` directly — four of them across
+ * cancel-task and rush-hour — which is how an English word ends up in an
+ * Arabic sentence four separate times.
+ */
+export const dmLabel = (key, isAr) => {
+  const d = DM[key];
+  if (!d) return '';
+  return (isAr ? d.labelAr : d.label) || d.label || '';
 };
 
 export const FQ_LEVELS_PER_TIER = 100;
