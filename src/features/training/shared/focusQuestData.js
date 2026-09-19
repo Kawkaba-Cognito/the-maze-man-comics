@@ -289,6 +289,30 @@ export const PAL = {
  * Search; Duncan & Humphreys 1989 on distractor heterogeneity). Conjunction's
  * 25 ms/item is gone along with the conjunction itself — see
  * buildCellsFromParams.
+ *
+ * ⚠ SUPERSEDED 2026-09-19 BY `expertTargetSecForBoard` BELOW, AND KEPT ONLY AS
+ * THE CLOCK'S GENERATOR. Four things are wrong with it, all measured:
+ *
+ *  1. The 700 ms baseline does not match its own citation. 1.06 targets/s is
+ *     943 ms, not 700 — it is 26% faster than the number it names, and because
+ *     the whole ladder is expressed as multiples of this value, that gap IS the
+ *     feasibility margin at the top of the climb.
+ *  2. It has no motor term. Fitts on this game's own 52 px reference piece puts
+ *     the tap alone at 270–310 ms, so 700 ms leaves under 400 ms for the search
+ *     — and the two scale differently (motor is logarithmic in distance, search
+ *     is linear in set size), which is why one constant cannot be right on more
+ *     than one board shape.
+ *  3. The `/2` is the self-terminating-search assumption and is never named, so
+ *     a reader takes away 12 ms/item when the function uses 6.
+ *  4. Slope is keyed to the TIER NAME, not to `interference` — the lever this
+ *     file itself calls "what turns a lazy pop-out scan into a real selective-
+ *     attention task". So L3–L20 are priced as pop-out on boards measured at
+ *     25–53% same-hue, and a 94%-same-hue board costs the same as a 55% one.
+ *
+ * It still generates the clock because the owner's instruction was to HOLD THE
+ * CURRENT FEEL: the seconds a player is granted must not move. Feasibility is
+ * measured against the honest model; the clock is still produced by this one.
+ * Reconciling the two is the remaining half of CANCELLATION-TASK-PLAN.md §3.1.
  */
 const SEARCH_SLOPE_MS = { easy: 0, medium: 12, hard: 12 };
 
@@ -299,6 +323,179 @@ export function expertTargetSecForSetSize(diff, setSize) {
 export function expertTargetSec(diff) {
   const grid = (DM[diff] ?? DM.easy).grid;
   return expertTargetSecForSetSize(diff, grid * grid);
+}
+
+/**
+ * Seconds taken off the clock by one wrong tap.
+ *
+ * ⚠ IT LIVES HERE NOW BECAUSE IT IS PART OF THE DIFFICULTY MODEL, and until
+ * 2026-09-19 it was a bare `3` inlined in the tap handler — in no model, no
+ * curve and no gate. `audit:fq` proves a board is clearable at expert pace by a
+ * player who makes NO mistakes, which is a different claim from "a human can
+ * finish this": Levels has no error cap, so the penalty is unbounded, and at
+ * L60 wave 8 (16 targets, 20 s) three slips remove 45% of the budget.
+ *
+ * ⚠ It also silently contaminates two reported numbers. `timeUsed` is measured
+ * against a clock the penalty has already been spent from, so `timeUsed` and
+ * `tps = found/timeUsed` are not time measures for a player who made errors —
+ * they carry 3 s of punishment per wrong tap folded in. The assessment exempts
+ * itself (`!isAssess`), which is correct and is why its numbers are clean.
+ */
+export const FQ_WRONG_TAP_PENALTY_SEC = 3;
+
+/**
+ * The clock a board grants, minus what a given number of wrong taps costs.
+ * The honest denominator when asking what time a REAL player has, as opposed
+ * to the flawless one `audit:fq` certifies.
+ */
+export function effectiveClockSec(tlimSec, wrongTaps = 0) {
+  return Math.max(0, (tlimSec || 0) - FQ_WRONG_TAP_PENALTY_SEC * Math.max(0, wrongTaps));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * THE HONEST EXPERT MODEL — search cost and motor cost, priced separately.
+ *
+ *   per(board) = searchMs(N, slope(interference))  +  motorMs(D, W)
+ *
+ * See CANCELLATION-TASK-PLAN.md §3.4 for the derivation and the sources.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Fitts's law, Shannon form (MacKenzie): MT = a + b·log2(D/W + 1).
+ * a and b are for 2D FINGER tapping on a mobile touchscreen — Yamanaka & Usuba,
+ * reciprocal tapping, R² = 0.990. Corroborated by MacKenzie's ~6.95 bits/s
+ * touch throughput: at ID 2.5 bits this regression gives 359 ms, i.e. 6.96 b/s.
+ *
+ * ⚠ DO NOT ADD THE FFitts CORRECTION. It is for targets small enough that the
+ * finger-contact area is ambiguous; our reference piece is 52 px, comfortably
+ * above that regime, and the correction frequently produces a negative value
+ * inside its own square root. */
+const FITTS_A_MS = 110;
+const FITTS_B_MS_PER_BIT = 99.6;
+
+/* ⚠ THE MOTOR TERM IS COMPUTED ON A FIXED REFERENCE DEVICE, ON PURPOSE.
+ *
+ * Fitts needs a distance in pixels, and pixels are a property of the screen —
+ * so the obvious implementation would make difficulty depend on the viewport.
+ * That is precisely the bug `audit:mot` was written for and the one thing this
+ * game already got right: `PLAY_BOARD` is one fixed spec per tier and set size
+ * does NOT rescale with the window.
+ *
+ * So the model states the expert's time ON THE DEVICE THE BOARDS WERE FITTED
+ * FOR — the 375×667 phone `PLAY_BOARD` was measured against — and that number
+ * is the same for every player. A feasibility floor is a claim about the task,
+ * not about someone's screen.
+ *
+ * ⚠ These six numbers mirror CancelBoard2D's `fit()`. Keep them in sync with
+ * the component AND with audit-focus-quest-levels.mjs, which mirrors it too. */
+const REF_BOX_W = 375;
+const REF_BOX_H = 667 - 96 - 40; // viewport minus the HUD reserve and bottom inset
+const REF_CELL_MIN = 52;
+const REF_CELL_MAX = 108;
+const REF_GAP_MIN = 8;
+const REF_GAP_MAX = 26;
+const REF_MAX_COLS = 6;
+const REF_MAX_ROWS = 8;
+
+/** Piece size + gap for a board, on the reference device. Mirrors fit(). */
+export function referenceGeometry(cols, rows) {
+  const w = REF_BOX_W;
+  const h = REF_BOX_H;
+  const screenTarget = Math.round(Math.min(w, h) / 8);
+  const fitsMaxW = Math.floor((w - REF_GAP_MIN * (REF_MAX_COLS + 1)) / REF_MAX_COLS);
+  const fitsMaxH = Math.floor((h - REF_GAP_MIN * (REF_MAX_ROWS + 1)) / REF_MAX_ROWS);
+  const target = Math.max(REF_CELL_MIN, Math.min(REF_CELL_MAX, screenTarget, fitsMaxW, fitsMaxH));
+  const byW = Math.floor((w - REF_GAP_MIN * (cols + 1)) / cols);
+  const byH = Math.floor((h - REF_GAP_MIN * (rows + 1)) / rows);
+  const size = Math.max(20, Math.min(target, byW, byH));
+  const gapW = (w - cols * size) / (cols + 1);
+  const gapH = (h - rows * size) / (rows + 1);
+  const gap = Math.max(REF_GAP_MIN, Math.min(REF_GAP_MAX, Math.min(gapW, gapH)));
+  return { size, gap, pitch: size + gap };
+}
+
+/** Fitts movement time, ms. `d` and `w` in the same units. */
+export function motorMsForMove(d, w) {
+  if (!(w > 0) || !(d > 0)) return FITTS_A_MS;
+  return FITTS_A_MS + FITTS_B_MS_PER_BIT * Math.log2(d / w + 1);
+}
+
+/**
+ * Per-target MOTOR cost on a board, in ms.
+ *
+ * The hop between one target and the next is estimated from the mean spacing of
+ * `tc` targets over `cells` cells — sqrt(cells/tc) cells — converted to pixels
+ * through the reference pitch. It is an estimate of a typical move, not of any
+ * particular one; what matters for a floor is that it scales the way real
+ * movement does (logarithmically in distance) instead of being a constant.
+ */
+export function motorMsForBoard({ cols, rows, cells, tc }) {
+  const nCells = Math.max(1, cells ?? cols * rows);
+  const n = Math.max(1, tc || 1);
+  const { size, pitch } = referenceGeometry(cols, rows);
+  const spacingCells = Math.sqrt(nCells / n);
+  return motorMsForMove(spacingCells * pitch, size);
+}
+
+/* Per-item SEARCH slope, ms per board item, as a function of interference —
+ * the share of distractors wearing the target's hue.
+ *
+ * ⚠ THESE TWO NUMBERS ARE FITTED TO THIS GAME, NOT IMPORTED FROM A PAPER, and
+ * that is deliberate rather than lazy. Kristjánsson's central result is that the
+ * IDENTICAL search task yields 23/48 ms/item under present-absent responding and
+ * 17/27 under go/no-go: "slopes are an ambiguous measure of visual attention."
+ * Importing 12, or 25, as a constant would be borrowing a number measured on a
+ * different response mode. What is imported is the SHAPE — near-zero for a
+ * pop-out search, rising as target–distractor similarity rises (Treisman &
+ * Gelade; Duncan & Humphreys) — and the level is calibrated so that the total
+ * reproduces today's expert time at the reference board (see CALIBRATION below).
+ *
+ * ⚠ `interference` is also not the whole same-hue share: the palette has four
+ * colours, so a board at interference 0 still shows ~25% of distractors in the
+ * target hue by chance. `effectiveSameHue` states that rather than hiding it.
+ *
+ * ⚠ THE CALIBRATION ANCHOR IS STATED SO IT CAN BE ARGUED WITH: the pair below
+ * is chosen so the honest model reproduces the LEGACY 910 ms per target at the
+ * MEDIUM reference board at mid-ladder — 5×7 = 35 cells, 11 targets,
+ * interference 0.61 (ladder L30). Measured there: honest 906 ms vs legacy 910.
+ *
+ * Everything else then diverges, and it is supposed to. Measured across all 330
+ * dealt waves, largest disagreement 33.8% (at L45 wave 1):
+ *   L1  easy, 20 cells, I=0    — legacy 700 ms, honest  541 ms (the old model
+ *                                OVER-priced a pop-out board, so the early
+ *                                ladder is more generous than it claimed)
+ *   L50 hard, 48 cells, I=0.92 — legacy 988 ms, honest 1290 ms (the old model
+ *                                UNDER-priced a 94%-same-hue field, because its
+ *                                slope was keyed to the tier name)
+ *
+ * That second line is the whole point of the rewrite, and it has a consequence
+ * recorded in CANCELLATION-TASK-PLAN.md §3: under the honest model the last
+ * waves of L45–L60 sit at 0.95–0.99× expert. Whether to loosen them is a
+ * product decision, not a maths one, because it changes the feel. */
+const SEARCH_SLOPE_BASE_MS = 6.2;   // slope at zero same-hue pressure
+const SEARCH_SLOPE_SPAN_MS = 15.8;  // added at a fully same-hue field
+
+export function effectiveSameHue(interference) {
+  const i = Math.max(0, Math.min(1, interference || 0));
+  const palette = GAME_STIMULUS.length || 4;
+  return i + (1 - i) * (1 / palette);
+}
+
+export function searchSlopeMsPerItem(interference) {
+  return SEARCH_SLOPE_BASE_MS + SEARCH_SLOPE_SPAN_MS * effectiveSameHue(interference);
+}
+
+/**
+ * Expert time per target on a specific board, in SECONDS.
+ *
+ * ⚠ SEARCH IS PRICED ON N = TARGETS + DISTRACTORS, not on the target count.
+ * The superseded model multiplied a constant by `tc`, so adding distractors —
+ * the thing that actually makes a search harder — changed nothing it could see.
+ */
+export function expertTargetSecForBoard({ cols, rows, cells, tc, interference }) {
+  const nCells = Math.max(1, cells ?? cols * rows);
+  const searchMs = searchSlopeMsPerItem(interference) * nCells;
+  const motor = motorMsForBoard({ cols, rows, cells: nCells, tc });
+  return (searchMs + motor) / 1000;
 }
 
 /**
@@ -2062,55 +2259,120 @@ export function prepareChallengePlayState(cSeed, tlimOverride) {
   };
 }
 
-/**
- * Compute end-of-round metrics.
+/* =============================================================================
+ * END-OF-ROUND METRICS
+ *
+ * ⚠️ `acc` MEANS DETECTION SINCE 2026-09-19, AND THAT IS A BUG FIX, NOT A RENAME.
+ * It used to be `found / (found + errors)` — which is PRECISION, the share of
+ * your taps that were right. The denominator was RESPONSES MADE, so omissions
+ * entered no number the player ever saw: clear 4 of 8 targets with no wrong taps
+ * and the screen read "Accuracy 100%". Tap nothing at all and it ALSO read 100%,
+ * because `total === 0` fell through to a literal `: 100`.
+ *
+ * Omissions are the dependent variable a cancellation task exists to measure —
+ * this file's own assessment half says so ("omissions = attentional lapses").
+ * Both quantities are now returned and they are different measures:
+ *
+ *   detection = found / tc                 ← THIS is accuracy. Omission-sensitive.
+ *   precision = found / (found + errors)   ← what `acc` used to be. Commission-sensitive.
+ *
+ * ⚠️ NOTHING FALLS BACK TO A PERFECT SCORE. A round with no responses returns
+ * `precision: null` and `avgRt: null`, not 100 and 999. A number invented to
+ * avoid a null is indistinguishable from a number the player earned.
+ *
+ * `cp` is the d2 test's CONCENTRATION PERFORMANCE (Brickenkamp), `hits − commissions`.
+ * It is the most reliable index in the cancellation literature (α = .97,
+ * test–retest r = .90–.97) and it is the one score that cannot be gamed by
+ * racing — which matters here, because our clock actively rewards racing.
+ * Published rationale: CP "is not inflated by excessive skipping as it is based
+ * on the number of target and non-target characters cancelled, as opposed to
+ * processing speed, which can be influenced by test strategies."
+ *
+ * ⚠️ ERROR COUNTS MUST NEVER BE SHOWN AS AN INDIVIDUAL CHANGE. The minimal
+ * detectable change in cancellation error counts is 135–219% of the mean error
+ * count (Ruff 2&7, N=101), and the d2 manual calls commission errors "entirely
+ * unreliable". Errors belong INSIDE `cp`, aggregated. Never trend them.
  *
  * `taps` is an array of inter-tap milliseconds plus the search-onset latency for
- * the first tap (collected by the game loop). We filter out implausibly fast
- * taps (<50 ms — double-touch noise) and idle gaps (>30 s — likely user paused
- * or got distracted) before averaging, matching standard practice in cancellation
- * task analysis.
+ * the first tap. Implausibly fast taps (<50 ms, double-touch noise) and idle gaps
+ * (>30 s) are trimmed before averaging (Whelan 2008).
+ *
+ * See CANCELLATION-TASK-PLAN.md §3.1 for the equations and their sources.
  *
  * Returns:
- *   ies / score — Rate-Correct Score (Woltz & Was 2006): items per second
- *     weighted by accuracy, scaled ×1000. Higher is better. The UI surfaces this.
- *   iesMs       — true Inverse Efficiency Score (Townsend & Ashby 1983): mean
- *     RT divided by accuracy, in ms. Lower is better. Reported only when the
- *     error rate is < 15 % (Bruyer & Brysbaert 2011 validity gate); else null.
- *   iesValid    — boolean flag for the IES validity gate.
- *   avgRt       — robust mean of inter-tap RT, in ms.
- */
+ *   detection   — found / tc. The honest accuracy. 0–1.
+ *   precision   — found / (found + errors), or null if no responses. 0–1.
+ *   acc         — detection as a percentage, for display.
+ *   cp          — Concentration Performance: found − errors.
+ *   ies / score — Rate-Correct-shaped rate, kept for score continuity. Higher better.
+ *   iesMs       — Inverse Efficiency Score: mean RT ÷ DETECTION, in ms. Lower
+ *     better. Gated on error rate < 15% (Bruyer & Brysbaert 2011); else null.
+ *   avgRt       — robust mean of tap intervals in ms, or null.
+ *   sv          — stats version. Rows written before this fix have no `sv` and
+ *                 their `acc` is a precision, so a longitudinal reader MUST check.
+ * ========================================================================== */
+export const ROUND_STATS_VERSION = 2;
+
 export function computeRoundStats({ tlim, tl, found, errors, tc, taps, diff, won }) {
   const timeUsed = +(tlim - tl).toFixed(1);
   const total = found + errors;
-  const acc = total > 0 ? Math.round((found / total) * 100) : 100;
-  const accRaw = total > 0 ? found / total : 1;
+  const targets = Math.max(0, Math.round(tc || 0));
+  // Detection — the omission-sensitive measure. Denominator is TARGETS PRESENTED.
+  const detection = targets > 0 ? Math.min(1, found / targets) : null;
+  // Precision — the commission-sensitive measure. null, never 1, when untested.
+  const precision = total > 0 ? found / total : null;
+  // Concentration Performance (d2). Can go negative; that is meaningful.
+  const cp = found - errors;
+  const acc = detection != null ? Math.round(detection * 100) : null;
   const tapList = Array.isArray(taps) ? taps : [];
-  // Trim implausible RTs before averaging (Whelan 2008, robust RT analysis).
   const validTaps = tapList.filter((t) => t > 50 && t < 30000);
   const meanRtMs = validTaps.length
     ? validTaps.reduce((s, x) => s + x, 0) / validTaps.length
     : null;
-  const avgRt = meanRtMs != null ? Math.round(meanRtMs) : 999;
+  const avgRt = meanRtMs != null ? Math.round(meanRtMs) : null;
   const tps = timeUsed > 0 ? +(found / timeUsed).toFixed(3) : 0;
-  // RCS denominator: prefer real per-tap RT, fall back to time-per-found.
+  // Q-score (Hills & Geldmacher 1998; Eq. 2 of CancellationTools): completeness
+  // × rate, in targets/second. Task-native — cancellation has no per-trial RT,
+  // only a board duration, which is exactly what Q is built for.
+  const qScore =
+    targets > 0 && timeUsed > 0 ? +((found * found) / (targets * timeUsed)).toFixed(3) : null;
+  // Rate-Correct denominator: prefer real per-tap RT, fall back to time-per-found.
   const rtSecForScore =
     meanRtMs != null && meanRtMs >= 100
       ? meanRtMs / 1000
       : found > 0
         ? timeUsed / found
-        : timeUsed + 1;
-  let ies = +(1000 * (accRaw / rtSecForScore)).toFixed(1);
-  // Tap-spam clamp: if the player tapped wildly more than 2.5× the target
-  // count, halve the score so brute-forcing can't beat focused search.
-  if (total > tc * 2.5) ies = +(ies * 0.5).toFixed(1);
+        : null;
+  // A round with no responses scores 0, not "accuracy 1 over a fabricated clock".
+  let ies = rtSecForScore != null && detection != null
+    ? +(1000 * (detection / rtSecForScore)).toFixed(1)
+    : 0;
+  // Tap-spam clamp: tapping wildly more than 2.5× the target count halves the
+  // score so brute-forcing can't beat focused search.
+  if (targets > 0 && total > targets * 2.5) ies = +(ies * 0.5).toFixed(1);
   const score = Math.max(0, ies);
-  // True IES — published, lower-is-better, ms — gated on Bruyer & Brysbaert
-  // validity (error rate must be < 15 %).
+  // IES divides by proportion correct OVER TRIALS — i.e. detection, not precision.
   const errRate = total > 0 ? errors / total : 0;
-  const iesValid = accRaw > 0 && errRate < 0.15 && meanRtMs != null;
-  const iesMs = iesValid ? Math.round(meanRtMs / accRaw) : null;
-  return { timeUsed, acc, avgRt, tps, ies, score, accRaw, won, iesMs, iesValid };
+  const iesValid = detection != null && detection > 0 && errRate < 0.15 && meanRtMs != null;
+  const iesMs = iesValid ? Math.round(meanRtMs / detection) : null;
+  return {
+    timeUsed,
+    acc,
+    detection,
+    precision,
+    cp,
+    qScore,
+    avgRt,
+    tps,
+    ies,
+    score,
+    // `accRaw` kept as the IES/score input it always fed, now correctly detection.
+    accRaw: detection,
+    won,
+    iesMs,
+    iesValid,
+    sv: ROUND_STATS_VERSION,
+  };
 }
 
 export function isLevelUnlocked(diff, lv, doneMap) {

@@ -38,6 +38,10 @@ import {
   fqLadderRoundOpts,
   FQ_DRIFT_TIME_MULT,
   FQ_DUAL_TIME_MULT,
+  // The honest model — reported, not gated. See the block at the end.
+  expertTargetSecForBoard,
+  fqLadderInterference,
+  PLAY_BOARD,
 } from '../src/features/training/shared/focusQuestData.js';
 
 const SHAPES = new Set(Object.keys(SH));
@@ -490,6 +494,77 @@ for (let lv = 1; lv <= FQ_LADDER_LEVELS; lv += 1) {
       + `against ${prevLastRealised.toFixed(3)}x at L${lv - 1}`,
   );
   prevLastRealised = lastRealised;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * THE HONEST-MODEL REPORT — REPORTS, DOES NOT BLOCK. Read this before
+ * "fixing" anything it prints.
+ *
+ * Everything above gates against `expertTargetSecForSetSize`, the superseded
+ * flat model, and it must keep doing so: the owner's instruction (2026-09-19)
+ * was to HOLD THE CURRENT FEEL, i.e. the seconds a player is granted do not
+ * move. Re-pointing the assertions at the honest model would change the clock,
+ * which is the one thing that decision ruled out.
+ *
+ * So the honest model is measured here and PRINTED. Three known divergences,
+ * all recorded in CANCELLATION-TASK-PLAN.md §3 and awaiting a product decision
+ * rather than a code fix:
+ *
+ *  (a) The legacy baseline is 700 ms where its own citation (Mesulam, ~1.06
+ *      targets/s) is 943 ms.
+ *  (b) The legacy slope is keyed to the TIER NAME, so it under-prices the
+ *      high-interference boards at the top of the ladder.
+ *  (c) `mult` — drift ×1.12, dual ×1.15 — is divided out of the clock above
+ *      while `per` never contained it, so the same compensation is banked as
+ *      headroom and spent as headroom at once.
+ *
+ * ⚠ This block deliberately calls no `assert`. Turning it into a gate today
+ * would fail CI on working, shipped, playable content — and a gate that fails
+ * working code gets weakened, and then it protects nothing. When the clock is
+ * reconciled with the honest model, promote these to assertions in the same
+ * commit that moves the clock.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+{
+  const honest = [];
+  const multAdjusted = [];
+  for (let lv = 1; lv <= FQ_LADDER_LEVELS; lv += 1) {
+    const { diff } = ladderToTier(lv);
+    const board = PLAY_BOARD[diff];
+    const cells = board.cols * board.rows;
+    const interference = fqLadderInterference(lv);
+    const waves = fqSetsForLevel(lv);
+    const mech = fqMechanicsAt(lv);
+    const mult = (mech.has('drift') ? FQ_DRIFT_TIME_MULT : 1) * (mech.has('dual') ? FQ_DUAL_TIME_MULT : 1);
+    for (let w = 0; w < waves; w += 1) {
+      const shape = fqWaveShape(lv, w);
+      const perHonest = expertTargetSecForBoard({
+        cols: board.cols, rows: board.rows, cells, tc: shape.tc, interference,
+      });
+      honest.push({ lv, w: w + 1, ratio: shape.time / (perHonest * shape.tc), tc: shape.tc, time: shape.time });
+      const perLegacy = expertTargetSecForSetSize(diff, cells);
+      multAdjusted.push({ lv, w: w + 1, ratio: (shape.time / mult) / (perLegacy * shape.tc) });
+    }
+  }
+  const worstHonest = honest.reduce((a, b) => (b.ratio < a.ratio ? b : a));
+  const underHonest = honest.filter((x) => x.ratio < 1);
+  const worstMult = multAdjusted.reduce((a, b) => (b.ratio < a.ratio ? b : a));
+  const underMult = multAdjusted.filter((x) => x.ratio < 1);
+
+  console.log('\n--- honest-model report (NOT a gate; see CANCELLATION-TASK-PLAN.md §3) ---');
+  console.log(
+    `  split Fitts+search model: worst wave ${worstHonest.ratio.toFixed(3)}x expert `
+    + `at L${worstHonest.lv} w${worstHonest.w} (${worstHonest.tc} targets, ${worstHonest.time}s); `
+    + `${underHonest.length} of ${honest.length} waves under 1.0x`,
+  );
+  if (underHonest.length) {
+    const lv = [...new Set(underHonest.map((x) => x.lv))];
+    console.log(`    levels affected: L${lv[0]}-L${lv[lv.length - 1]} (${lv.length} of ${FQ_LADDER_LEVELS})`);
+  }
+  console.log(
+    `  mechanic multipliers treated as compensation: worst ${worstMult.ratio.toFixed(3)}x `
+    + `at L${worstMult.lv} w${worstMult.w}; ${underMult.length} of ${multAdjusted.length} waves under 1.0x`,
+  );
+  console.log('--- end report ---\n');
 }
 
 // The premium training atlas must cover every active Cancellation object, with

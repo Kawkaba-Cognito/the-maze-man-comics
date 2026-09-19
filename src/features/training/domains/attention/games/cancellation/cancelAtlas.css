@@ -848,6 +848,36 @@
   font-family: 'Cairo', 'Outfit', sans-serif;
 }
 
+/* ── The search block (2026-09-19) — the second factor ─────────────────────
+ * Quieter than the band-cleared callout beside it, on purpose. That one is an
+ * announcement; this is an observation, and it is explicitly NOT a score to
+ * beat (see CxSearchBlock's header). Giving it the same visual weight as the
+ * personal-best chip would make it read as a fourth thing to win.
+ *
+ * ⚠ `max-width` + `align-items: center` on the flex parent, not `text-align`
+ * alone. `.ct-play-results-extra` is a centred flex column, so a capped child
+ * centres correctly here — but this file records four separate cases where a
+ * capped box went flush to the inline start because its parent was a GRID.
+ * If this block is ever moved out of `.ct-play-results-extra`, re-check it.
+ */
+.cx-atlas .cx-res--search {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: 34rem;
+  text-align: center;
+}
+.cx-atlas .cx-res--search .cx-res-sub {
+  font-variant-numeric: tabular-nums;
+}
+.cx-atlas .cx-res-sub--fine {
+  font-size: var(--cx-fs-label);
+  line-height: 1.45;
+  opacity: 0.85;
+  text-wrap: pretty;
+}
+
 /* ══ THE RULE CARD AND THE WORLD REVIEW (2026-09-13) ════════════════════════
  * Two screens that bracket a world: one before its first level saying what is
  * new, one after its tenth saying what happened. Both are Tier 1 Plates in the

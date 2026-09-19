@@ -37,6 +37,7 @@ import {
   assignFillColors,
 } from '../../../../shared/focusQuestData';
 import { ageSpeedFactor } from '../../../../assessment/assessmentProfile';
+import { spatialBias, searchOrganization } from '../../../../shared/searchMetrics.js';
 
 /**
  * Fixed protocol. Every assessment uses identical parameters so sessions are
@@ -187,131 +188,13 @@ function std(a) {
   return Math.sqrt(mean(a.map((x) => (x - m) ** 2)));
 }
 
-/**
- * Spatial-bias analysis (Rorden & Karnath 2010 Center of Cancellation).
- * Per trial, each target's position is normalized to [-1, +1] across the target
- * extent (leftmost target = -1, rightmost = +1; top = -1, bottom = +1).
- *   cocH/cocV = mean normalized position of the CANCELLED (found) targets.
- *     0 = balanced; >0 = rightward / downward bias; <0 = leftward / upward.
- *     Deviates when omissions cluster on one side (the neglect-style signal).
- *   scanLat   = mean normalized x of the first quartile of found taps = which
- *     side the search STARTED on (informative even on a full clear, where CoC
- *     just reflects the layout centroid ≈ 0).
- * Values are averaged across the session's trials.
- */
-function spatialBias(trials) {
-  const hVals = [];
-  const vVals = [];
-  const latVals = [];
-  for (const t of trials) {
-    const found = Array.isArray(t.foundSeq) ? t.foundSeq : [];
-    const all = [...found, ...(Array.isArray(t.omitPos) ? t.omitPos : [])];
-    if (!all.length || !found.length) continue;
-    const cols = all.map((p) => p.col);
-    const rows = all.map((p) => p.row);
-    const spanC = Math.max(...cols) - Math.min(...cols);
-    const spanR = Math.max(...rows) - Math.min(...rows);
-    const minC = Math.min(...cols);
-    const minR = Math.min(...rows);
-    if (spanC > 0) hVals.push(mean(found.map((p) => ((p.col - minC) / spanC) * 2 - 1)));
-    if (spanR > 0) vVals.push(mean(found.map((p) => ((p.row - minR) / spanR) * 2 - 1)));
-    if (found.length >= 4 && spanC > 0) {
-      const q = Math.max(1, Math.round(found.length * 0.25));
-      latVals.push(mean(found.slice(0, q).map((p) => ((p.col - minC) / spanC) * 2 - 1)));
-    }
-  }
-  return {
-    cocH: hVals.length ? +mean(hVals).toFixed(3) : null,
-    cocV: vVals.length ? +mean(vVals).toFixed(3) : null,
-    scanLat: latVals.length ? +mean(latVals).toFixed(3) : null,
-  };
-}
-
-function pearson(xs, ys) {
-  const n = xs.length;
-  if (n < 3) return null;
-  const mx = mean(xs);
-  const my = mean(ys);
-  let sxy = 0;
-  let sxx = 0;
-  let syy = 0;
-  for (let i = 0; i < n; i++) {
-    const dx = xs[i] - mx;
-    const dy = ys[i] - my;
-    sxy += dx * dy;
-    sxx += dx * dx;
-    syy += dy * dy;
-  }
-  if (sxx === 0 || syy === 0) return null;
-  return sxy / Math.sqrt(sxx * syy);
-}
-
-/** Do segments p1-p2 and p3-p4 properly cross? (orientation test, grid coords). */
-function segmentsCross(p1, p2, p3, p4) {
-  const o = (a, b, c) => Math.sign((b.col - a.col) * (c.row - a.row) - (b.row - a.row) * (c.col - a.col));
-  return o(p1, p2, p3) !== o(p1, p2, p4) && o(p3, p4, p1) !== o(p3, p4, p2);
-}
-
-/**
- * Search-organization metrics (Dalmaijer et al. 2015, CancellationTools), from
- * the tap-ordered found positions. A distinct executive construct — HOW you
- * scan, separate from speed/accuracy.
- *   bestR        — max |Pearson r| between cancellation rank and column/row.
- *                  →1 = systematic row/column sweep; →0 = chaotic order.
- *   intersectRate— path self-crossings ÷ cancellations (revisits are impossible
- *                  here — cells lock once tapped). Lower = more organized.
- *   orgAngle     — mean |2·θ/90 − 1| of each move's angle (θ∈[0,90]°). →1 for
- *                  axis-aligned (horizontal/vertical) moves, →0 for diagonals.
- *   orgScore     — 0..1 blend (bestR, orgAngle, and 1−intersectRate), higher =
- *                  more organized. Each trial is scored, then averaged.
- */
-function searchOrganization(trials) {
-  const rVals = [];
-  const interVals = [];
-  const angleVals = [];
-  for (const t of trials) {
-    const seq = Array.isArray(t.foundSeq) ? t.foundSeq : [];
-    const n = seq.length;
-    if (n < 5) continue;
-    const ranks = seq.map((_, i) => i + 1);
-    const rCol = pearson(ranks, seq.map((p) => p.col));
-    const rRow = pearson(ranks, seq.map((p) => p.row));
-    rVals.push(Math.max(Math.abs(rCol ?? 0), Math.abs(rRow ?? 0)));
-
-    let crossings = 0;
-    for (let i = 0; i < n - 1; i++) {
-      for (let j = i + 2; j < n - 1; j++) {
-        if (segmentsCross(seq[i], seq[i + 1], seq[j], seq[j + 1])) crossings++;
-      }
-    }
-    interVals.push(crossings / n);
-
-    let aSum = 0;
-    let aCount = 0;
-    for (let i = 0; i < n - 1; i++) {
-      const dx = Math.abs(seq[i + 1].col - seq[i].col);
-      const dy = Math.abs(seq[i + 1].row - seq[i].row);
-      if (dx === 0 && dy === 0) continue;
-      const theta = (Math.atan2(dy, dx) * 180) / Math.PI; // [0,90]
-      aSum += Math.abs((2 * theta) / 90 - 1);
-      aCount++;
-    }
-    if (aCount > 0) angleVals.push(aSum / aCount);
-  }
-  const br = rVals.length ? mean(rVals) : null;
-  const inter = interVals.length ? mean(interVals) : null;
-  const ang = angleVals.length ? mean(angleVals) : null;
-  let orgScore = null;
-  if (br != null && inter != null && ang != null) {
-    orgScore = +((br + ang + Math.max(0, 1 - inter)) / 3).toFixed(3);
-  }
-  return {
-    bestR: br != null ? +br.toFixed(3) : null,
-    intersectRate: inter != null ? +inter.toFixed(3) : null,
-    orgAngle: ang != null ? +ang.toFixed(3) : null,
-    orgScore,
-  };
-}
+/* ⚠ `spatialBias` AND `searchOrganization` MOVED TO `shared/searchMetrics.js`
+   ON 2026-09-19 (imported at the top of this file). They were correct and
+   faithfully cited — and reachable from exactly one place, this parked
+   assessment, so Levels and Survival wrote the tap-ordered positions on every
+   round and nothing ever read them. They are computed on the live path now.
+   Do not re-add a local copy: two implementations of a published measure that
+   drift apart is how one screen reports a different number from another. */
 
 /**
  * Aggregate the per-trial tallies + all inter-tap intervals into a session
@@ -351,7 +234,23 @@ export function computeAssessmentSummary(trials, allTaps, opts = {}) {
   const sdRT = valid.length > 1 ? std(valid) : 0;
   const rtCV = meanRT ? +(sdRT / meanRT).toFixed(2) : null;
 
-  const meanIES = +mean(trials.map((t) => t.ies)).toFixed(1);
+  /* ⚠ `meanIES` WAS THE RATE-CORRECT SCORE, INVERTED IN DIRECTION FROM ITS OWN
+     NAME (fixed 2026-09-19). It averaged `t.ies`, which `computeRoundStats`
+     documents as an RCS-shaped rate where HIGHER is better — and stored it under
+     the name of the Inverse Efficiency Score, where LOWER is better. This store
+     exists precisely to be read longitudinally ("the scientifically valid use is
+     WITHIN a single person OVER TIME"), so anyone doing that read improvement as
+     decline.
+     `iesMs` is the real thing: mean RT ÷ detection, in ms, gated on the Bruyer &
+     Brysbaert (2011) <15% error-rate validity rule — so it is null on trials
+     where IES is not a valid summary, and those must be dropped rather than
+     counted as zero. `meanRate` keeps the old quantity under an honest name.
+     ⚠ Written under a NEW storage key — see saveAssessSession. Old rows cannot
+     be migrated, only distinguished. */
+  const iesVals = trials.map((t) => t.iesMs).filter((v) => Number.isFinite(v));
+  const meanIesMs = iesVals.length ? Math.round(mean(iesVals)) : null;
+  const rateVals = trials.map((t) => t.ies).filter((v) => Number.isFinite(v));
+  const meanRate = rateVals.length ? +mean(rateVals).toFixed(1) : null;
 
   // Fatigue slope: % change in hit rate (hits/sec) from the first to the last
   // trial — the clinical signature of sustained-attention decline across a
@@ -406,7 +305,8 @@ export function computeAssessmentSummary(trials, allTaps, opts = {}) {
     speed: +speed.toFixed(2),
     meanRT,
     rtCV,
-    meanIES,
+    meanIesMs,
+    meanRate,
     fatigueDelta,
     dPrime,
     criterion,
@@ -486,7 +386,13 @@ export function orgBand(score) {
 }
 
 /* --- Persistence ---------------------------------------------------------- */
-const ASSESS_KEY = 'mm_cancel_assess_v1';
+/* ⚠ BUMPED TO v2 ON 2026-09-19, AND v1 IS DELIBERATELY NOT MIGRATED.
+   v1 rows carry `meanIES`, which held a Rate-Correct Score (higher = better)
+   under the Inverse Efficiency Score's name (lower = better). There is no
+   transform that recovers one from the other, so migrating would mean silently
+   relabelling a number as its own opposite. v1 rows are left where they are,
+   unread, rather than converted into confident nonsense. */
+const ASSESS_KEY = 'mm_cancel_assess_v2';
 const HISTORY_CAP = 60;
 
 export function loadAssessHistory() {
@@ -511,7 +417,8 @@ export function saveAssessSession(summary) {
     speed: summary.speed,
     meanRT: summary.meanRT,
     rtCV: summary.rtCV,
-    meanIES: summary.meanIES,
+    meanIesMs: summary.meanIesMs ?? null,
+    meanRate: summary.meanRate ?? null,
     fatigueDelta: summary.fatigueDelta ?? null,
     omissions: summary.totalOmissions,
     commissions: summary.totalCommissions,

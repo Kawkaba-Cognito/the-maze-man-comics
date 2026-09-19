@@ -93,21 +93,39 @@ export const GAME_SCIENCE = {
   'cancel-task': {
     en: {
       title: 'The science',
-      intro: 'Cancellation tasks are standard clinical tools for measuring selective and sustained attention.',
+      /* ⚠ "sustained attention" DROPPED (2026-09-19). A board here runs 5–25 s.
+         The vigilance decrement — what "sustained attention" names — is not
+         reliably reported below 8–10 minutes on task. Claiming to measure it
+         over 20 seconds is a claim the clock cannot support. */
+      intro: 'Cancellation tasks are standard clinical tools for measuring visual selective attention and scanning speed.',
+      /* ⚠ THE FIRST TWO SECTIONS WERE UNSCOPED TRAINING CLAIMS (fixed 2026-09-19).
+         They read "trains you to lock onto what matters and filter out the rest"
+         and "keeps your focus on task over time" — promises about YOU, not about
+         this task, which is exactly the shape SCI-01 exists to catch. Both are
+         now scoped to the board.
+         ⚠ The fourth section is the honest-limits paragraph. It had been written,
+         in both languages, and left sitting unrendered in the game's own dict
+         (`sciParas`, index.jsx) — referenced nowhere. `mot` already carries one;
+         this game did not. Do not remove it. */
       sections: [
-        { h: '🎯 Selective attention', b: 'Tapping only the targets among look-alike distractors trains you to lock onto what matters and filter out the rest.' },
-        { h: '⏱ Sustained attention', b: 'Sweeping the whole field keeps your focus on task over time — the vigilance that fades when attention drifts.' },
-        { h: '👁 Search strategy', b: 'Scanning systematically (row by row) instead of randomly makes your visual search faster and more reliable.' },
+        { h: '🎯 Selective attention', b: 'Picking the targets out of look-alike distractors is the classic measure of selective attention — how well you hold one template in mind and reject everything else.' },
+        { h: '⏱ Staying with it', b: 'Sweeping the whole field, board after board, is what the task asks of you: keeping a search going after the easy finds are gone.' },
+        { h: '👁 Search strategy', b: 'How systematically you scan is measured separately from how many you find — and the research finds the two are largely independent of each other.' },
+        { h: '🎯 Honest limits', b: 'Practice reliably improves performance on this task and on visual search. Broad "far transfer" to everyday attention is debated in the literature (Simons et al., 2016). Use this to train and track these specific skills — not as a medical test.' },
       ],
       foot: 'A steady, organised sweep beats frantic jumping around the grid.',
     },
     ar: {
       title: 'العلم وراء اللعبة',
-      intro: 'مهام الشطب أدوات سريرية معيارية لقياس الانتباه الانتقائي والمستمر.',
+      /* ⚠ حُذف «المستمر» — انظر التعليق الإنجليزي. */
+      intro: 'مهام الشطب أدوات سريرية معيارية لقياس الانتباه البصري الانتقائي وسرعة المسح.',
+      /* ⚠ انظر التعليق الإنجليزي أعلاه: القسمان الأولان كانا وعدَين غير مقيَّدين،
+         والقسم الرابع هو فقرة «الحدود الصادقة» التي كُتبت ولم تُعرض قط. */
       sections: [
-        { h: '🎯 الانتباه الانتقائي', b: 'الضغط على الأهداف فقط وسط مشتّتات مشابهة يدرّبك على التركيز على المهم وتصفية الباقي.' },
-        { h: '⏱ الانتباه المستمر', b: 'مسح كامل الحقل يُبقي تركيزك على المهمة عبر الزمن — اليقظة التي تتلاشى حين يشرد الانتباه.' },
-        { h: '👁 استراتيجية البحث', b: 'المسح المنظّم (صفاً صفاً) بدل العشوائي يجعل بحثك البصري أسرع وأكثر موثوقية.' },
+        { h: '🎯 الانتباه الانتقائي', b: 'انتقاء الأهداف من بين مشتّتات مشابهة هو المقياس الكلاسيكي للانتباه الانتقائي — أي قدرتك على حفظ صورة هدف واحد ورفض ما عداه.' },
+        { h: '⏱ المواصلة', b: 'مسح كامل الحقل، لوحةً بعد لوحة، هو ما تطلبه المهمة: أن تُكمل البحث بعد أن تنتهي الأهداف السهلة.' },
+        { h: '👁 استراتيجية البحث', b: 'يُقاس مدى انتظام مسحك بمعزل عن عدد ما تجده — والبحث العلمي يجد أن الاثنين مستقلّان إلى حدّ بعيد.' },
+        { h: '🎯 الحدود الصادقة', b: 'التمرّن يُحسّن الأداء في هذه المهمة وفي البحث البصري بشكل موثوق. أمّا «الانتقال البعيد» إلى الانتباه في الحياة اليومية فمُختلَف عليه في الأدبيات (سيمونز وزملاؤه، ٢٠١٦). استخدمها لتدريب هذه المهارات ومتابعتها تحديداً — لا كاختبار طبي.' },
       ],
       foot: 'المسح الثابت المنظّم أفضل من القفز المحموم في الشبكة.',
     },

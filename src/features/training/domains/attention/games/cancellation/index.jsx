@@ -17,6 +17,11 @@ import {
   shapesAreArtSafe,
 } from '../../../../shared/shapeArt';
 import { createStaircase } from './staircase';
+import {
+  searchOrganization,
+  spatialBias,
+  organisationBand,
+} from '../../../../shared/searchMetrics.js';
 import { useApp } from '../../../../../../context/AppContext';
 import { loadJson, saveJson } from '../../../../../../lib/storage';
 import {
@@ -56,6 +61,7 @@ import {
   fqIndexInSection,
   fqSetsForLevel,
   fqMechanicsAt,
+  FQ_WRONG_TAP_PENALTY_SEC,
 } from '../../../../shared/focusQuestData';
 import {
   TrainingMenuBar,
@@ -101,28 +107,38 @@ function mergeChallengePlayerStats(prev, stats, errCount, nm) {
   const n = rounds.length;
   let iesSum = 0;
   let timeSum = 0;
-  let accSum = 0;
-  let avgRtSum = 0;
   let tpsSum = 0;
   let scoreSum = 0;
   let errSum = 0;
+  let cpSum = 0;
+  /* ⚠ `acc` AND `avgRt` CAN BE null SINCE 2026-09-19 — a round with no responses
+     no longer fabricates 100% / 999ms (see computeRoundStats). Summing a null
+     silently yields NaN and renders as "NaN%", so they are averaged over the
+     rounds that actually HAVE a value, and an all-null set returns null. */
+  const accVals = [];
+  const rtVals = [];
   for (const r of rounds) {
-    iesSum += r.ies;
-    timeSum += r.timeUsed;
-    accSum += r.acc;
-    avgRtSum += r.avgRt;
-    tpsSum += r.tps;
-    scoreSum += r.score;
-    errSum += r.errors;
+    iesSum += r.ies || 0;
+    timeSum += r.timeUsed || 0;
+    tpsSum += r.tps || 0;
+    scoreSum += r.score || 0;
+    errSum += r.errors || 0;
+    cpSum += typeof r.cp === 'number' ? r.cp : 0;
+    if (typeof r.acc === 'number') accVals.push(r.acc);
+    if (typeof r.avgRt === 'number') rtVals.push(r.avgRt);
   }
+  const avg = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : null);
+  const accMean = avg(accVals);
+  const rtMean = avg(rtVals);
   return {
     nm,
     rounds,
     ies: +(iesSum / n).toFixed(1),
     timeUsed: +(timeSum / n).toFixed(1),
     errors: errSum,
-    acc: Math.round(accSum / n),
-    avgRt: Math.round(avgRtSum / n),
+    cp: cpSum,
+    acc: accMean != null ? Math.round(accMean) : null,
+    avgRt: rtMean != null ? Math.round(rtMean) : null,
     tps: +(tpsSum / n).toFixed(3),
     score: +(scoreSum / n).toFixed(1),
   };
@@ -283,6 +299,47 @@ function CxResultsExtra({ kind, t, bandTitle, nextBand, prevBest }) {
 }
 
 /**
+ * THE SECOND FACTOR, on the results screen — how the board was searched, as
+ * distinct from how much of it was cleared.
+ *
+ * ⚠ IT IS DELIBERATELY NOT SCORED AND NOT RANKED. There is no "good" search
+ * order to beat: a systematic sweep is faster on a dense board, and the
+ * literature reports organisation as largely independent of how much you find
+ * (Mark et al. 2004). Presenting it as a fourth thing to win would turn an
+ * observation into a target and teach people to perform tidiness for the meter.
+ *
+ * ⚠ IT RENDERS NOTHING RATHER THAN A ZERO when there were too few taps to read
+ * a path. `searchOrganization` returns nulls below its own gate; a "0.00" in
+ * that case would look like a measurement of a very bad search.
+ *
+ * ⚠ AND NOTHING RATHER THAN AN APOLOGY EITHER. Caught by playing level 1 rather
+ * than by any gate: the early ladder deals THREE targets a wave, which is two
+ * moves — below what best-r, the angle measure or a crossing count can mean
+ * anything on. The first build printed "Not enough taps this round to read a
+ * search path" there, so the block would have spent the first several levels
+ * explaining its own absence. A player who has never seen this block is not
+ * confused by not seeing it; it simply appears once there is a path to describe.
+ */
+function CxSearchBlock({ t, org }) {
+  if (!org) return null;
+  const band = organisationBand(org.orgScore);
+  if (!band) return null;
+  const bandLabel =
+    band === 'systematic' ? t.searchSystematic : band === 'mixed' ? t.searchMixed : t.searchScattered;
+  const n = (v) => (v == null ? '—' : v.toFixed(2));
+  return (
+    <div className="cx-res cx-res--search">
+      <div className="cx-res-head">{t.searchTitle}</div>
+      <div className="cx-res-sub"><b>{bandLabel}</b></div>
+      <div className="cx-res-sub">
+        {t.searchSweep} {n(org.bestR)} · {t.searchCrossings} {n(org.intersectRate)} · {t.searchGrid} {n(org.orgAngle)}
+      </div>
+      <div className="cx-res-sub cx-res-sub--fine">{t.searchHint}</div>
+    </div>
+  );
+}
+
+/**
  * Single consolidated play bar: back · target chip · live stats · pause, then
  * one slim time bar. Replaces the old stacked header + stats row + cue band +
  * two progress bars so the grid (the real task) gets the vertical space.
@@ -338,7 +395,12 @@ const UI = {
     adaptResMeta: (tr, rev) => `${tr} rounds · ${rev} reversals`,
     adaptRoundLabel: (n) => `Round ${n}`,
     adaptAgain: 'Test again',
-    menuHint: 'Visual search training: bind features, suppress distractors, and respond quickly—like lab tasks for attention and cognitive control.',
+    /* ⚠ "bind features" WAS A STALE CLAIM. Colour conjunction was retired on
+       2026-08-09 (`computeConjunctionStrength` returns a literal 0, and
+       focusQuestData.js says so in as many words). The board has not asked
+       anyone to bind a shape to a colour for over a year. What it does ask is
+       that you hold a target template and reject look-alikes. */
+    menuHint: 'Visual search training: hold a target in mind, reject the look-alikes, and sweep the field—like lab tasks for selective attention.',
     challengeSub: 'Same board for everyone · pick a difficulty · pass the device · best score wins',
     ready: (n) => `Ready — ${n}`,
     goReady: 'Start round',
@@ -352,14 +414,40 @@ const UI = {
     restart: 'Restart level',
     quitLose: 'Progress on this round will be lost.',
     chalRoundsHint: 'Each player plays once per round · New fair grid each round',
+    /* `a` arrives PRE-FORMATTED ('87%' or '—'), because accuracy can legitimately
+       be null now — a round with no responses has no accuracy, and `null%` is
+       what a bare `${a}%` would have rendered. */
     chalResDetail: (nr, t, e, a, tp) =>
       nr > 1
-        ? `${nr}× · ${t}s avg · ${e} err total · ${a}% · ${tp} t/s`
-        : `${t}s · ${e} err · ${a}% · ${tp} t/s`,
-    efficiency: 'Efficiency score',
-    efficiencyHint: 'Higher is better · combines speed and accuracy',
+        ? `${nr}× · ${t}s avg · ${e} err total · ${a} · ${tp} t/s`
+        : `${t}s · ${e} err · ${a} · ${tp} t/s`,
     targetsFound: 'Targets found',
     accuracy: 'Accuracy',
+    /* ⚠ `accuracy` ABOVE IS NOT RENDERED ON THE LEVEL RESULTS ANY MORE, and the
+       reason is the whole point of this pass. It labelled `found/(found+errors)`
+       — a PRECISION — so a half-cleared board with no wrong taps read 100%.
+       The two measures are now separate and separately labelled: the headline
+       carries detection (found / targets) and `precision` carries the other.
+       See CANCELLATION-TASK-PLAN.md §3.1. */
+    focusScore: 'Focus score',
+    focusScoreHint:
+      'Focus score = targets found − wrong taps (the d2 test’s concentration score). Precision is the share of your taps that were right.',
+    precision: 'Precision',
+    /* ── The second factor. See CANCELLATION-TASK-PLAN.md §2.1 ──────────────
+       ⚠ `searchHint` SAYS THE BLEND IS OURS, on purpose. The three numbers
+       shown are published measures (Dalmaijer et al. 2015); the single word
+       above them is an equal-thirds blend of those three that this app
+       invented. Presenting our composite in the borrowed authority of the
+       literature is the quiet half of the same problem SCI-02 exists for. */
+    searchTitle: 'How you searched',
+    searchSweep: 'Sweep',
+    searchCrossings: 'Crossings',
+    searchGrid: 'Along the grid',
+    searchSystematic: 'Systematic',
+    searchMixed: 'Mixed',
+    searchScattered: 'Scattered',
+    searchHint:
+      'Measured separately from your score — in the research the two are largely independent. “Sweep” is how closely your order followed a row or column, “Crossings” how often your path crossed itself, “Along the grid” how straight your moves were. The one-word summary is this app’s own blend of those three.',
     timeRanOut: 'Time ran out',
     rt: 'Avg RT',
     countdownHint: 'Get ready…',
@@ -455,30 +543,26 @@ const UI = {
     assessHistBest: (n) => `Best index: ${n}`,
     assessHistRecent: 'Recent sessions',
     assessVsPrev: (d) => (d > 0 ? `▲ +${d}` : d < 0 ? `▼ ${d}` : '— 0'),
-    sciTitle: 'Why this trains your brain',
-    sciParas: [
-      'This is a cancellation task — one of the most validated attention paradigms in neuropsychology (Mesulam symbol cancellation), used to measure selective and sustained attention, processing speed, and inhibitory control.',
-      'Difficulty follows visual-search theory: Easy/Medium are feature search (Treisman & Gelade, 1980); Hard is conjunction search where you must bind shape and colour (Wolfe, Guided Search). Per-level time limits are derived from published search-slope estimates.',
-      'Scoring uses real psychometrics: Inverse Efficiency Score (Townsend & Ashby, 1983) and Rate-Correct Score (Woltz & Was, 2006), with reaction-time trimming (Whelan, 2008). Reaction-time variability is included because elevated intra-individual variability is a robust marker of attentional lapses (Castellanos, 2005).',
-      'Honest limits: practice reliably improves performance on this task and on visual search; broad "far transfer" to everyday attention is debated in the literature (Simons et al., 2016). Use this to train and track these specific skills — not as a medical test.',
-    ],
+    /* ⚠ `sciTitle` / `sciParas` DELETED 2026-09-19 — they were declared here and
+       referenced NOWHERE in the file. The best-written text in the game was
+       unreachable, under a title ("Why this trains your brain") that SCI-01
+       would not permit anyway. Two of the four paragraphs had also gone stale:
+       they described a three-tier Easy/Medium/Hard structure retired in
+       2026-08-28, and claimed Hard is conjunction search where "you must bind
+       shape and colour" — conjunction was retired 2026-08-09.
+       The honest-limits paragraph, which was the good one, now lives in
+       `gameScience.js` under `cancel-task` and actually renders, in both
+       languages, via the HubScienceLink already mounted in this file.
+       Do not re-add a second copy here. */
     sciClose: 'Close',
-    // ── Master Prompt Step 9 — "The Inked Atlas" ────────────────────────
-    // Six chapter titles/subtitles for the level-select bands. Bands 2, 4
-    // and 6 deliberately share their subtitle with bands 1, 3, 5's own
-    // named mechanic (FQ_MECHANIC_LABELS, focusQuestData.js) — those two
-    // halves of each tier add no NEW mechanic, only load, and audit:fq's
-    // own invariant is that time-per-target falls across the whole climb,
-    // so "more targets, less time for each" is true of them by construction.
-    // ⚠ If you ever change one half's wording, change the other to match.
-    cxBands: [
-      { title: 'First Light', sub: 'Find every target' },
-      { title: 'Open Field', sub: 'More targets, less time for each' },
-      { title: 'Crowded Sky', sub: 'A denser board' },
-      { title: 'Deep Field', sub: 'More targets, less time for each' },
-      { title: 'Twin Signals', sub: 'Look-alike distractors' },
-      { title: 'Far Orbit', sub: 'More targets, less time for each' },
-    ],
+    /* ⚠ `cxBands` DELETED 2026-09-19. It was a SECOND list of the same six
+       worlds, and the two disagreed: it called band 3 "Crowded Sky · A denser
+       board" while the map and the rule card call it "Frost Hollow · hunt two
+       shapes" — band 3 introduces the DUAL target, not density. Clearing level
+       20 therefore promised one thing and the next screen taught another.
+       The results callout reads `FQ_SECTIONS` + `FQ_MECHANIC_LABELS` now, the
+       same source the level map already used. One name, one place.
+       Do not re-add a parallel list here; put world copy in focusQuestData.js. */
     cxNodeSub: (tc, sec, waves) => `${tc} targets · ${sec}s · ${waves} waves`,
     cxBandCleared: (title) => `Band cleared — ${title}`,
     cxNextBand: (title, sub) => `Next: ${title} · ${sub}`,
@@ -521,7 +605,9 @@ const UI = {
     adaptResMeta: (tr, rev) => `${tr} جولات · ${rev} انعكاسات`,
     adaptRoundLabel: (n) => `جولة ${n}`,
     adaptAgain: 'أعد الاختبار',
-    menuHint: 'تدريب بحث بصري: ربط السمات، كبح المشتتات، والاستجابة بسرعة—كمهام الانتباه في العلوم المعرفية.',
+    /* ⚠ «ربط السمات» كان ادعاءً قديماً — أُلغي التزاوج اللوني في ٢٠٢٦-٠٨-٠٩.
+       انظر التعليق الإنجليزي. */
+    menuHint: 'تدريب بحث بصري: احفظ الهدف في ذهنك، تجاهل الأشباه، وامسح الحقل كلّه—كمهام الانتباه الانتقائي في المختبر.',
     challengeSub: 'نفس اللوحة للجميع · اختر الصعوبة · مرّر الجهاز',
     ready: (n) => `جاهز — ${n}`,
     goReady: 'ابدأ الجولة',
@@ -538,14 +624,30 @@ const UI = {
     yesQuit: 'نعم',
     keep: 'إكمال',
     chalRoundsHint: 'كل لاعب يلعب مرة في الجولة · شبكة جديدة عادلة كل جولة',
+    /* `a` يصل مُنسَّقاً مسبقاً — انظر التعليق الإنجليزي. */
     chalResDetail: (nr, t, e, a, tp) =>
       nr > 1
-        ? `${nr}× · ${t}s معدل · ${e} أخطاء المجموع · ${a}% · ${tp} هدف/ث`
-        : `${t}s · ${e} أخطاء · ${a}% · ${tp} هدف/ث`,
-    efficiency: 'درجة الكفاءة',
-    efficiencyHint: 'الأعلى أفضل · تجمع السرعة والدقة',
+        ? `${nr}× · ${t}s معدل · ${e} أخطاء المجموع · ${a} · ${tp} هدف/ث`
+        : `${t}s · ${e} أخطاء · ${a} · ${tp} هدف/ث`,
     targetsFound: 'الأهداف الموجودة',
     accuracy: 'الدقة',
+    /* ⚠ الترجمة العربية كانت تستخدم «الدقة» للمفهومين معاً — انظر التعليق
+       الإنجليزي أعلاه. القياسان صارا منفصلين الآن. */
+    focusScore: 'درجة التركيز',
+    focusScoreHint:
+      'درجة التركيز = الأهداف الموجودة − النقرات الخاطئة (درجة التركيز في اختبار d2). أمّا الإتقان فهو نسبة نقراتك الصحيحة.',
+    precision: 'الإتقان',
+    /* ── العامل الثاني — انظر التعليق الإنجليزي. `searchHint` يذكر صراحةً أن
+       الخلاصة من تأليف التطبيق لا من الأدبيات. */
+    searchTitle: 'كيف بحثت',
+    searchSweep: 'المسح',
+    searchCrossings: 'التقاطعات',
+    searchGrid: 'محاذاة الشبكة',
+    searchSystematic: 'منهجي',
+    searchMixed: 'متفاوت',
+    searchScattered: 'متبعثر',
+    searchHint:
+      'يُقاس بمعزل عن درجتك — والبحث العلمي يجد الاثنين مستقلّين إلى حدّ بعيد. «المسح» مدى اتّباع ترتيبك لصفّ أو عمود، و«التقاطعات» كم مرّة تقاطع مسارك مع نفسه، و«محاذاة الشبكة» مدى استقامة حركاتك. أمّا الكلمة الواحدة فهي خلاصة من تأليف هذا التطبيق لهذه المقاييس الثلاثة.',
     timeRanOut: 'انتهى الوقت',
     rt: 'متوسط زمن الاستجابة',
     countdownHint: 'استعد…',
@@ -635,25 +737,11 @@ const UI = {
     assessHistBest: (n) => `أفضل مؤشر: ${n}`,
     assessHistRecent: 'الجلسات الأخيرة',
     assessVsPrev: (d) => (d > 0 ? `▲ +${d}` : d < 0 ? `▼ ${d}` : '— 0'),
-    sciTitle: 'لماذا يدرّب دماغك',
-    sciParas: [
-      'هذه مهمة إلغاء — من أكثر نماذج قياس الانتباه توثيقاً في علم النفس العصبي (مهمة ميسولام)، تُستخدم لقياس الانتباه الانتقائي والمستمر وسرعة المعالجة وكبح الاستجابة.',
-      'تتبع الصعوبة نظرية البحث البصري: السهل/المتوسط بحث سمة (Treisman & Gelade, 1980)؛ والصعب بحث اقتران حيث تربط الشكل واللون (Wolfe). حدود الوقت لكل مستوى مشتقة من تقديرات منشورة لميل البحث.',
-      'التقييم يستخدم مقاييس نفسية حقيقية: درجة الكفاءة العكسية (Townsend & Ashby, 1983) ودرجة المعدل الصحيح (Woltz & Was, 2006)، مع تشذيب لأزمنة الاستجابة (Whelan, 2008). ويُدرَج تباين زمن الاستجابة لأن ارتفاعه مؤشر قوي على هفوات الانتباه (Castellanos, 2005).',
-      'حدود صادقة: التمرين يحسّن الأداء في هذه المهمة وفي البحث البصري بشكل موثوق؛ أما الانتقال الواسع إلى الانتباه اليومي فمختلَف عليه علمياً (Simons et al., 2016). استخدمه لتدريب وتتبّع هذه المهارات تحديداً — لا كاختبار طبي.',
-    ],
+    /* ⚠ حُذف `sciTitle` / `sciParas` — انظر التعليق الإنجليزي. النص انتقل إلى
+       `gameScience.js` حيث يُعرض فعلاً. لا تُعِد نسخة ثانية هنا. */
     sciClose: 'إغلاق',
-    // ── Master Prompt Step 9 — نفس الفصول الستة بالعربية، معجميًا مطابقة
-    // لبنود ٢ و٤ و٦ (لا تضيف آلية جديدة، فقط حِمل أكبر — طابِق أي تعديل
-    // لاحق في كلا الشطرين). أرقام هندية عربية عبر toLocaleString('ar-EG'). ──
-    cxBands: [
-      { title: 'الضوء الأول', sub: 'جد كل الأهداف' },
-      { title: 'الحقل المفتوح', sub: 'أهداف أكثر، ووقت أقل لكل هدف' },
-      { title: 'سماء مزدحمة', sub: 'لوحة أكثف' },
-      { title: 'الحقل العميق', sub: 'أهداف أكثر، ووقت أقل لكل هدف' },
-      { title: 'إشارات متشابهة', sub: 'مشتّتات متشابهة' },
-      { title: 'المدار البعيد', sub: 'أهداف أكثر، ووقت أقل لكل هدف' },
-    ],
+    /* ⚠ حُذفت `cxBands` — كانت قائمة ثانية لنفس العوالم الستة وتناقض الخريطة.
+       انظر التعليق الإنجليزي. أسماء العوالم في `FQ_SECTIONS` وحدها. */
     /* ⚠ ٣–١٠ takes the plural (جولات) and ١١+ the singular accusative (جولة).
        The ladder only ever asks for 3–8, so the second branch is defensive —
        but a number-carrying string that only happens to be right is how the EN
@@ -817,6 +905,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const endRoundRef = useRef((_won) => {});
   const trialLogRef = useRef(null);
   const freeStageRef = useRef(0);
+  /* Per-ROUND search paths for the whole survival run. Kept separate rather
+     than concatenated: each board is its own search, and joining two boards'
+     paths invents a jump between them that would report a tidy player as
+     chaotic. Same reason the level's waves stay separate. */
+  const freeSearchRef = useRef([]);
   const freeRoundsWonRef = useRef(0);
   const freeLivesRef = useRef(FREE_LIVES);
   const [freeLives, setFreeLives] = useState(FREE_LIVES);
@@ -946,8 +1039,16 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const persistLevel = useCallback(
     (r, stats, f, e, stars = 0) => {
       const p = { ...profile, tel: [...(profile.tel || [])], done: { ...doneMap } };
+      /* ⚠ `ladderLv` IS RECORDED SINCE 2026-09-19 BECAUSE `lv` CANNOT ANSWER
+         "which world was this?". `r.lv` is the AUTHORED level the round was
+         built from (1–100 within a tier); on the ladder that is a tier index,
+         which is the same confusion that once made the in-play HUD read L23 for
+         ladder level 5. The world-completion review needs the rung.
+         `sv` marks the stats version: rows without it carry an `acc` that is a
+         PRECISION, not a detection, so a longitudinal reader must check. */
       p.tel.push({
         lv: r.lv,
+        ladderLv: r.ladderLv ?? null,
         diff: r.diff,
         won: stats.won,
         timeUsed: stats.timeUsed,
@@ -955,10 +1056,14 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         found: f,
         tc: r.tc,
         acc: stats.acc,
+        cp: stats.cp,
+        precision: stats.precision,
         score: stats.score,
         ies: stats.ies,
         tps: stats.tps,
         avgRt: stats.avgRt,
+        sv: stats.sv ?? null,
+        mode: r.mode || null,
         ts: new Date().toISOString(),
       });
       if (stats.won && r.mode === 'level') {
@@ -1133,6 +1238,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
 
   const startFreeMode = useCallback(() => {
     freeStageRef.current = 0;
+    freeSearchRef.current = [];
     freeRoundsWonRef.current = 0;
     freeLivesRef.current = FREE_LIVES;
     freeScoreRef.current = 0;
@@ -1331,18 +1437,45 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       // Center-of-Cancellation and spatial-omission analysis. No `ok`/`rt`, so
       // shared RT metrics skip it.
       if (!r.assessPractice) {
+        /* ⚠ THE CONTEXT FIELDS BELOW ARE NOT DECORATION (added 2026-09-19).
+           Without them the stored round is uninterpretable after the fact:
+           - `noGoTotal` — the record flagged each no-go TAP but never how many
+             no-go items were on the board, so the commission RATE on forbidden
+             objects, which is the whole inhibition measure world 4 exists to
+             create, was unreconstructable. A numerator with no denominator.
+           - `nCells` / `nDistractors` — the SDT noise count. Still an assumption
+             (an un-foveated distractor is not a correct rejection), but at least
+             a recorded one rather than one re-derived as grid² by a later reader
+             on a board that has not been square since the reflow landed.
+           - `interference`, `poolSize`, `target` — the same behaviour means
+             different things on a 25%-same-hue board and a 94% one. Without
+             these, two rows that look identical are not comparable. */
+        const nCells = Array.isArray(r.cells) ? r.cells.length : (r.cols || r.grid) * (r.rows || r.grid);
+        const noGoTotal = Array.isArray(r.cells) ? r.cells.filter((cell) => cell && cell.isNoGo).length : 0;
+        const tcHere = targetTc || r.tc;
         trialLogRef.current?.trial({
           kind: 'round',
           found: f,
           errors: e,
-          omissions: Math.max(0, (targetTc || r.tc) - f),
+          omissions: Math.max(0, tcHere - f),
+          tc: tcHere,
           timeUsed: stats.timeUsed,
+          tlim: r.tlim ?? null,
           won,
           grid: r.grid,
           // Board shape travels with the round so a CoC read on stored history
           // can tell a 7×9 from a 9×9 rather than assuming grid².
           cols: r.cols || r.grid,
           rows: r.rows || r.grid,
+          nCells,
+          nDistractors: Math.max(0, nCells - tcHere),
+          noGoTotal,
+          interference: typeof r.interference === 'number' ? r.interference : null,
+          poolSize: Array.isArray(r.pool) ? r.pool.length : null,
+          target: r.target ?? null,
+          target2: r.target2 ?? null,
+          mode: r.mode || null,
+          ladderLv: r.ladderLv ?? null,
           foundPos: foundSeq,
           omitPos,
         });
@@ -1391,6 +1524,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         return;
       }
       if (r.mode === 'free') {
+        // Every completed round contributes its path — the failed one too. How
+        // you searched a board you ran out of time on is exactly as real as how
+        // you searched one you cleared, and dropping it would bias the measure
+        // toward the boards that went well.
+        freeSearchRef.current.push({ foundSeq, omitPos });
         if (won) {
           // Cleared the round — bank the clear bonus and ramp to a harder stage.
           // 'win' already played at the START of the clear-celebration hold.
@@ -1446,6 +1584,8 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         awardFreeRun('cancel', rw);
         setLastResult({
           type: 'free', roundsWon: rw, score: runScore, lastR: r, prevBest, prevBestScore,
+          org: searchOrganization(freeSearchRef.current),
+          spatial: spatialBias(freeSearchRef.current),
         });
         setPhase('freeRes');
         setPlayStep('idle');
@@ -1487,6 +1627,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
             errors: e,
             timeUsed: stats.timeUsed,
             ies: stats.ies,
+            // The real Inverse Efficiency Score, ms, lower-is-better, already
+            // validity-gated. Carried so the summary can average the published
+            // measure instead of the rate that wore its name. null is expected
+            // and must be filtered, not counted — see computeAssessmentSummary.
+            iesMs: stats.iesMs ?? null,
             grid: r.grid,
             foundSeq, // tap-ordered found positions → CoC + scan laterality
             omitPos, // missed targets → CoC extent + omission map
@@ -1593,6 +1738,14 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       // once, on the true totals, not averaged from three roundings.
       levelWaveStatsRef.current.push({
         found: f, errors: e, tc: targetTc || r.tc, tlim, tl, taps: [...tapsRef.current],
+        /* Tap-ordered positions + the targets never reached. These are what the
+           search-organisation measures are computed FROM (see searchMetrics.js),
+           and until 2026-09-19 they were written to the trial log on every round
+           and read by nothing outside the parked assessment. Each wave is its
+           own search, so they stay per-wave and are averaged, never concatenated
+           — joining two boards' paths would invent a giant jump between them and
+           report a tidy player as chaotic. */
+        foundSeq, omitPos,
       });
       const waveIdx = r.waveIdx ?? 0;
       if (waveIdx + 1 < (r.wavesTotal ?? LEVEL_WAVES)) {
@@ -1616,6 +1769,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         tlim: aggTlim, tl: aggTl, found: aggFound, errors: aggErrors,
         tc: aggTc, taps: aggTaps, diff: r.diff, won: true,
       });
+      /* THE SECOND FACTOR. Computed per wave and averaged across the level.
+         Independent of everything above it: how completely you cleared the board
+         and how systematically you searched it correlate at r_s = -0.14 (n.s.)
+         in the literature, so this is not a restatement of the score. */
+      levelStats.org = searchOrganization(waves);
+      levelStats.spatial = spatialBias(waves);
       trialLogRef.current?.finish({ won: true, waves: waves.length });
       trialLogRef.current = null;
       awardLadderWin('cancel', r.ladderLv ?? r.lv, FQ_LADDER_LEVELS);
@@ -1655,10 +1814,33 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         starMap[lad] = Math.max(starMap[lad] || 0, earnedStars);
         let starSum = 0;
         for (let i = firstLv; i <= lad; i += 1) starSum += starMap[i] || 0;
-        const rows = (profile.tel || []).filter((x) => x && x.won && typeof x.acc === 'number');
-        const recent = rows.slice(-30);
-        const acc = recent.length
-          ? Math.round(recent.reduce((s, x) => s + x.acc, 0) / recent.length)
+        /* ⚠ FILTERED TO THIS WORLD'S TEN RUNGS (2026-09-19). It used to be
+           `rows.slice(-30)` — the last thirty won rows ANYWHERE, unfiltered by
+           world or mode, so finishing level 30 after grinding level 3 for stars
+           showed the grind. The comment above already said "the telemetry rows
+           for those levels"; the code did not do that.
+           ⚠ And only `sv >= 2` rows count: earlier rows stored a PRECISION under
+           `acc`, so averaging them together would mix two different measures
+           into one percentage. Early in the migration this means fewer rows —
+           the level just finished is the fallback, which is honest. */
+        const rows = (profile.tel || []).filter(
+          (x) =>
+            x &&
+            x.won &&
+            typeof x.acc === 'number' &&
+            (x.sv || 0) >= 2 &&
+            x.mode === 'level' &&
+            typeof x.ladderLv === 'number' &&
+            x.ladderLv >= firstLv &&
+            x.ladderLv <= lad,
+        );
+        /* One row per rung, most recent attempt, so a replayed level does not
+           weigh ten times more than one played once. */
+        const byRung = new Map();
+        for (const x of rows) byRung.set(x.ladderLv, x);
+        const picked = [...byRung.values()];
+        const acc = picked.length
+          ? Math.round(picked.reduce((s, x) => s + x.acc, 0) / picked.length)
           : Math.round(levelStats.acc || 0);
         setSectionReview({
           section: sec,
@@ -2148,6 +2330,17 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     const ord = (roundOrdRef.current += 1);
     const tOn = gridOnsetRef.current ? Math.round(now - gridOnsetRef.current) : null;
     const tapCols = r.cols || r.grid;
+    /* ⚠ `rt` USED TO CARRY TWO DIFFERENT QUANTITIES UNDER ONE NAME (fixed
+       2026-09-19). `lastTapRef` is re-stamped at grid onset, so the interval on
+       the FIRST response is a search-onset latency and on every later one it is
+       an inter-response interval — and `trialLog.js` declares `rt` contractual
+       ("response time in ms"), so `metrics.js` consumed both as RTs for meanRt,
+       sdRt, ies and postErrorSlowing.
+       They are now separate fields. A cancellation board has ONE onset and N
+       responses, so a per-target RT from stimulus onset does not exist and
+       cannot; what exists is one latency plus N−1 intervals, and they must not
+       be averaged together. `rt` is kept as an alias ONLY for the first
+       response, which is the one that genuinely is a reaction time. */
     const posFields = {
       idx,
       row: Math.floor(idx / tapCols),
@@ -2156,6 +2349,15 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       ord,
       ...(ord === 1 ? { lead: true } : {}),
       ...(tOn != null ? { tOn } : {}),
+      /* The first response gets `onsetMs` (and `rt`, which it really is); every
+         later one gets `iriMs`. Never both, so a consumer cannot silently mix. */
+      ...(ord === 1
+        ? tOn != null
+          ? { onsetMs: tOn, rt: tOn }
+          : {}
+        : itt != null
+          ? { iriMs: Math.round(itt) }
+          : {}),
       /* A tap on the forbidden object is a COMMISSION ERROR, not an ordinary
          miss, and the two mean different things: one is a failure of search,
          the other a failure to withhold. Flagged in the record so the
@@ -2173,7 +2375,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         /* ⚠ Not while the coach is open — see the note on the false-alarm
            write below. A guided tap is not a measurement. */
         if (!coachOpenRef.current) {
-          trialLogRef.current?.trial({ ...(itt != null ? { rt: Math.round(itt) } : {}), ok: true, ...posFields });
+          trialLogRef.current?.trial({ ok: true, ...posFields });
         }
       }
       foundIdxRef.current.add(idx);
@@ -2260,7 +2462,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
        * built by a psychologist; a demonstration must not enter the record.
        */
       if (!coachOpenRef.current) {
-        trialLogRef.current?.trial({ ...(itt != null ? { rt: Math.round(itt) } : {}), ok: false, ...posFields });
+        trialLogRef.current?.trial({ ok: false, ...posFields });
       }
     }
     playSfx(isAssess ? 'click' : 'error');
@@ -2276,7 +2478,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
      * thing is the point of a tutorial; it must be free.
      */
     if (!isAssess && !coachOpenRef.current) {
-      pendingPenaltyRef.current += 3;
+      pendingPenaltyRef.current += FQ_WRONG_TAP_PENALTY_SEC;
       setPenaltyFlash({ id: now });
       clearTimeout(penaltyFlashTimeoutRef.current);
       penaltyFlashTimeoutRef.current = setTimeout(() => setPenaltyFlash(null), 650);
@@ -2550,13 +2752,12 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           }}
           onPick={(lv) => openLevel(lv)}
           /*
-           * ⚠ THE CHAPTER CARDS COME FROM THE WORLDS NOW, not from `t.cxBands`.
-           * Two lists of the same six things is how a map ends up saying
-           * "First Light" while the rule card two taps later says "Ember
-           * Reach" — the same one-name-one-place rule the Detective line-up
-           * had to learn. `cxBands` is left in the dictionary because the
-           * results screen's band-cleared callout still reads it; when that
-           * moves over too, it can go.
+           * ⚠ THE CHAPTER CARDS COME FROM THE WORLDS. Two lists of the same six
+           * things is how a map ends up saying "First Light" while the rule card
+           * two taps later says "Ember Reach" — the same one-name-one-place rule
+           * the Detective line-up had to learn. The duplicate (`t.cxBands`) was
+           * deleted on 2026-09-19 once the results callout moved here too; it
+           * had drifted, describing the dual-target world as "a denser board".
            */
           bands={FQ_SECTIONS.map((s) => ({
             title: isAr ? s.ar : s.en,
@@ -2906,10 +3107,24 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         const justClosedBand = lastResult.stats.won
           && clearedLadderLv % 10 === 0
           && clearedLadderLv > 0
-          && clearedLadderLv < FQ_LADDER_LEVELS
-          && Array.isArray(t.cxBands);
+          && clearedLadderLv < FQ_LADDER_LEVELS;
         const bandIdx = justClosedBand ? clearedLadderLv / 10 - 1 : -1;
         const nextBandIdx = bandIdx + 1;
+        /* ⚠ READS THE WORLDS, NOT `t.cxBands` (2026-09-19) — the move the
+           comment on the level map said was pending. It mattered more than
+           tidiness: `cxBands[2]` described band 3 as "A denser board" when band
+           3 is the two-shape DUAL hunt, so clearing level 20 promised density
+           and the map two taps later said the target changes. Three names, two
+           descriptions, one world. Same one-name-one-place rule the Detective
+           line-up had to learn. `cxBands` is now deleted from both dicts. */
+        const bandCard = (i) => {
+          const s = FQ_SECTIONS[i];
+          if (!s) return null;
+          return {
+            title: isAr ? s.ar : s.en,
+            sub: FQ_MECHANIC_LABELS[s.mech]?.[isAr ? 'ar' : 'en'] || (isAr ? s.arSub : s.enSub),
+          };
+        };
         /*
          * ⚠ A PENDING WORLD REVIEW INTERCEPTS EVERY EXIT FROM THE RESULTS,
          * not just the one button someone remembered to wire. Finishing the
@@ -2931,14 +3146,28 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               title={lastResult.stats.won ? t.resultsLevelPass : t.timeRanOut}
               tone={lastResult.stats.won ? 'success' : 'retry'}
               headline={{ value: `${lastResult.found}/${targetCount}`, label: t.targetsFound }}
+              /* ⚠ THE HEADLINE ALREADY CARRIES DETECTION, so an "Accuracy %"
+                 tile beside it was either redundant (if honest) or a lie (as it
+                 was). The tiles now show the two things the headline does NOT:
+                 Focus score (d2 CP — the reliable composite) and Precision.
+                 A null renders as '—', never as a fabricated perfect score. */
               stats={[
-                { value: Math.round(lastResult.stats.ies), label: t.efficiency },
+                { value: lastResult.stats.cp, label: t.focusScore },
                 { value: `${lastResult.stats.timeUsed}s`, label: t.time },
-                { value: `${lastResult.stats.acc}%`, label: t.accuracy },
+                {
+                  value:
+                    lastResult.stats.precision != null
+                      ? `${Math.round(lastResult.stats.precision * 100)}%`
+                      : '—',
+                  label: t.precision,
+                },
                 { value: lastResult.errors, label: t.err },
-                { value: `${lastResult.stats.avgRt}ms`, label: t.rt },
+                {
+                  value: lastResult.stats.avgRt != null ? `${lastResult.stats.avgRt}ms` : '—',
+                  label: t.rt,
+                },
               ]}
-              notes={[t.efficiencyHint]}
+              notes={[t.focusScoreHint]}
               actions={[
                 /* ⚠ GATED ON THE LADDER POSITION, NOT THE AUTHORED LEVEL
                    (2026-09-18). This read `lastResult.r.lv <
@@ -2980,17 +3209,24 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
               ]}
               onMenu={leaveResults}
               playSfx={playSfx}
-              extra={justClosedBand && t.cxBands[bandIdx] && t.cxBands[nextBandIdx] ? (
-                <CxResultsExtra
-                  kind="band"
-                  t={t}
-                  bandTitle={t.cxBands[bandIdx].title}
-                  nextBand={{
-                    ...t.cxBands[nextBandIdx],
-                    sigil: BAND_SIGIL[nextBandIdx % BAND_SIGIL.length],
-                  }}
-                />
-              ) : null}
+              /* The search block sits ABOVE the band callout: it describes the
+                 level just played, the callout announces the next world. */
+              extra={(
+                <>
+                  <CxSearchBlock t={t} org={lastResult.stats.org} />
+                  {justClosedBand && bandCard(bandIdx) && bandCard(nextBandIdx) ? (
+                    <CxResultsExtra
+                      kind="band"
+                      t={t}
+                      bandTitle={bandCard(bandIdx).title}
+                      nextBand={{
+                        ...bandCard(nextBandIdx),
+                        sigil: BAND_SIGIL[nextBandIdx % BAND_SIGIL.length],
+                      }}
+                    />
+                  ) : null}
+                </>
+              )}
             />
           </div>
         );
@@ -3017,9 +3253,16 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
             extra={(() => {
               const rwBeat = (lastResult.roundsWon ?? 0) > (lastResult.prevBest ?? 0);
               const scoreBeat = (lastResult.score ?? 0) > (lastResult.prevBestScore ?? 0);
-              if (!rwBeat && !scoreBeat) return null;
               const prevBest = rwBeat ? (lastResult.prevBest ?? 0) : (lastResult.prevBestScore ?? 0);
-              return <CxResultsExtra kind="best" t={t} prevBest={prevBest} />;
+              return (
+                <>
+                  {/* Survival pools every round of the run, the failed one too. */}
+                  <CxSearchBlock t={t} org={lastResult.org} />
+                  {rwBeat || scoreBeat ? (
+                    <CxResultsExtra kind="best" t={t} prevBest={prevBest} />
+                  ) : null}
+                </>
+              );
             })()}
           />
         </div>
@@ -3112,7 +3355,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                       row.rounds?.length || 1,
                       row.timeUsed,
                       row.errors,
-                      row.acc,
+                      row.acc != null ? `${row.acc}%` : '—',
                       row.tps,
                     )}
                   </div>

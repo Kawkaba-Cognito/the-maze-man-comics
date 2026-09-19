@@ -153,6 +153,90 @@ const url = (p) => new URL(`../src/features/training/domains/${p}`, import.meta.
   }
 }
 
+/* ── Cancellation ───────────────────────────────────────────────────────────
+ * ⚠ ADDED 2026-09-19. THIS GAME WAS NEVER IN THIS FILE, despite CLAUDE.md
+ * describing the gate as covering "every level of every tier and across
+ * survival". It covered keep-track, paired-associates, task-switch and
+ * story-grid. Cancellation's only pacing guarantee was audit:fq's >=1.0x
+ * expert-pace ratio, which is a claim about a whole board, not about the time
+ * available to perceive one item.
+ *
+ * THE FLOOR, and where it comes from. Eye-movement data on visual search gives
+ * the dwell a single item actually costs:
+ *      distractor  188 ms (easy search)  ->  249 ms (difficult)
+ *      target      301 ms                ->  393 ms
+ *      ordinary fixation ~170 ms
+ * Below roughly 190 ms per board item, the task stops measuring selective
+ * attention and starts measuring nothing — the same conclusion this file
+ * reached for four other games from a completely different direction.
+ *
+ * ⚠ THE UNIT IS MS PER BOARD ITEM, NOT PER TARGET. A cancellation board is
+ * cleared by inspecting items, most of which are distractors; dividing the
+ * clock by the TARGET count would report a board with 6 targets among 42
+ * distractors as generous. `audit:fq` already gates per-target pace. This gates
+ * what the other one cannot see: whether there is time to look at the board.
+ *
+ * ⚠ The floor is deliberately well UNDER the 188 ms dwell figure. A player does
+ * not fixate every item — guidance means large parts of a board are rejected
+ * peripherally, which is exactly what `interference` manipulates. 60 ms/item is
+ * a "there is time to look at this at all" floor, not a model of the search.
+ */
+{
+  const fqUrl = new URL('../src/features/training/shared/focusQuestData.js', import.meta.url);
+  const {
+    FQ_LADDER_LEVELS, fqSetsForLevel, fqWaveShape, ladderToTier, PLAY_BOARD,
+    survivalStageToDiffLv, prepareFreeRound, FQ_WRONG_TAP_PENALTY_SEC,
+  } = await import(fqUrl);
+
+  const CANCEL_MIN_MS_PER_ITEM = 60;
+  let min = Infinity; let where = '';
+  const see = (ms, label) => { if (ms < min) { min = ms; where = label; } };
+
+  for (let lv = 1; lv <= FQ_LADDER_LEVELS; lv += 1) {
+    const { diff } = ladderToTier(lv);
+    const board = PLAY_BOARD[diff];
+    const cells = board.cols * board.rows;
+    const waves = fqSetsForLevel(lv);
+    for (let w = 0; w < waves; w += 1) {
+      const shape = fqWaveShape(lv, w);
+      see(Math.round((shape.time * 1000) / cells), `L${lv} wave ${w + 1}`);
+    }
+  }
+  for (let stage = 0; stage < 15; stage += 1) {
+    const { diff, lv } = survivalStageToDiffLv(stage);
+    const r = prepareFreeRound(diff, lv, stage);
+    const cells = Array.isArray(r.cells) ? r.cells.length : (r.cols || r.grid) * (r.rows || r.grid);
+    see(Math.round((r.tlim * 1000) / cells), `survival stage ${stage}`);
+  }
+  rows.push(['cancel-task', 'ms per board item', min, CANCEL_MIN_MS_PER_ITEM, where]);
+  if (min < CANCEL_MIN_MS_PER_ITEM) {
+    fail(`cancel-task: ${min}ms per board item at ${where} — floor is ${CANCEL_MIN_MS_PER_ITEM}ms`);
+  }
+
+  /* Difficulty must still grow through LOAD, not only by taking time away —
+     the same second assertion every other game in this file carries. */
+  const first = fqWaveShape(1, 0);
+  const last = fqWaveShape(FQ_LADDER_LEVELS, fqSetsForLevel(FQ_LADDER_LEVELS) - 1);
+  const firstCells = PLAY_BOARD[ladderToTier(1).diff].cols * PLAY_BOARD[ladderToTier(1).diff].rows;
+  const lastCells = PLAY_BOARD[ladderToTier(FQ_LADDER_LEVELS).diff].cols
+    * PLAY_BOARD[ladderToTier(FQ_LADDER_LEVELS).diff].rows;
+  if (!(last.tc > first.tc && lastCells > firstCells)) {
+    fail('cancel-task: difficulty no longer grows through LOAD (targets and set size)');
+  }
+
+  /* ⚠ THE PENALTY IS REPORTED, NOT GATED — it is a real term in what a human
+     meets and it is in no other gate, but Levels has no error cap, so "the
+     clock after N wrong taps" has no defined worst case to assert against.
+     Printed so the number is at least visible somewhere. */
+  const worstWave = fqWaveShape(FQ_LADDER_LEVELS, fqSetsForLevel(FQ_LADDER_LEVELS) - 1);
+  const afterThree = worstWave.time - 3 * FQ_WRONG_TAP_PENALTY_SEC;
+  rows.push([
+    'cancel-task', 'clock after 3 wrong taps',
+    Math.round((afterThree * 1000) / lastCells), 0,
+    `L${FQ_LADDER_LEVELS} last wave: ${worstWave.time}s -> ${afterThree}s`,
+  ]);
+}
+
 /* ── Report ─────────────────────────────────────────────────────────────── */
 console.log('audit-pacing: tightest value a player can meet, per game.\n');
 for (const [game, what, got, floor, where] of rows) {
