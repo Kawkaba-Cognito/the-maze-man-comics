@@ -62,6 +62,7 @@ import {
   fqSetsForLevel,
   fqMechanicsAt,
   FQ_WRONG_TAP_PENALTY_SEC,
+  FQ_NOGO_EXTRA_PENALTY_SEC,
   fqWaveDifficultyLogit,
   fqLadderDifficultyLogit,
   fqLadderLevelForDifficulty,
@@ -497,6 +498,11 @@ const UI = {
        ⚠ And the "no reliable change" line is written to be READ AS FINE, not as
        a failure. It is the most common honest outcome, and an app that frames
        it as disappointing is teaching people to distrust a true result. */
+    /* ⚠ "around level n" and "a good fit", never "your level is n". The estimate
+       carries a standard error of ~0.6 logits at the point this first appears,
+       which is most of a band — stating it as a fact would be a precision the
+       measurement does not have. */
+    suggestLevel: (n) => `around level ${n} is a good fit right now`,
     progTitle: 'Since you started',
     progUp: 'Your level on this task has risen by more than measurement noise.',
     progDown: 'Your level on this task has fallen by more than measurement noise.',
@@ -705,6 +711,8 @@ const UI = {
       'يُقاس بمعزل عن درجتك — والبحث العلمي يجد الاثنين مستقلّين إلى حدّ بعيد. «المسح» مدى اتّباع ترتيبك لصفّ أو عمود، و«التقاطعات» كم مرّة تقاطع مسارك مع نفسه، و«محاذاة الشبكة» مدى استقامة حركاتك. أمّا الكلمة الواحدة فهي خلاصة من تأليف هذا التطبيق لهذه المقاييس الثلاثة.',
     /* ── التغيّر الموثوق — انظر التعليق الإنجليزي. كل جملة مقيّدة بـ«في هذه
        المهمة»، وسطر «لا تغيّر» مكتوب ليُقرأ كنتيجة طبيعية لا كإخفاق. */
+    /* «حوالى» لا «مستواك هو» — انظر التعليق الإنجليزي. */
+    suggestLevel: (n) => `المستوى ${n} تقريباً مناسب لك الآن`,
     progTitle: 'منذ أن بدأت',
     progUp: 'ارتفع مستواك في هذه المهمة بما يتجاوز خطأ القياس.',
     progDown: 'انخفض مستواك في هذه المهمة بما يتجاوز خطأ القياس.',
@@ -2688,7 +2696,11 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
      * thing is the point of a tutorial; it must be free.
      */
     if (!isAssess && !coachOpenRef.current) {
-      pendingPenaltyRef.current += FQ_WRONG_TAP_PENALTY_SEC;
+      /* The forbidden object costs more than an ordinary miss — see
+         FQ_NOGO_EXTRA_PENALTY_SEC. Without this, band 4's whole rule was a
+         label: "something to leave alone" that cost nothing to touch. */
+      pendingPenaltyRef.current += FQ_WRONG_TAP_PENALTY_SEC
+        + (c.isNoGo ? FQ_NOGO_EXTRA_PENALTY_SEC : 0);
       setPenaltyFlash({ id: now });
       clearTimeout(penaltyFlashTimeoutRef.current);
       penaltyFlashTimeoutRef.current = setTimeout(() => setPenaltyFlash(null), 650);
@@ -2936,7 +2948,19 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           playSfx={playSfx}
           onBack={() => setPhase('hub')}
           title={t.title}
-          blurb={t.ladderBlurb(FQ_LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
+          /* ⚠ THE SUGGESTION IS ADVICE, NOT A GATE, and it appears only once the
+             ability estimate is settled (n >= 20). Below that theta still picks
+             Survival's boards — where being slightly wrong costs one slightly-off
+             board — but it is not shown as if it were a finding. Unlocking is
+             untouched: you can open any level you have reached, and a player who
+             beat level 40 beat level 40. */
+          blurb={(() => {
+            const base = t.ladderBlurb(FQ_LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'));
+            const ab = abilityRef.current;
+            if (!isSettled(ab)) return base;
+            const suggested = fqLadderLevelForDifficulty(ab.theta);
+            return `${base} · ${t.suggestLevel(suggested.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}`;
+          })()}
           count={FQ_LADDER_LEVELS}
           isUnlocked={(lv) => (lv === 1 || lv <= ladderReached + 1
             || !!doneMap[`lad-${lv - 1}`] || !!doneMap[`lad-${lv}`])}

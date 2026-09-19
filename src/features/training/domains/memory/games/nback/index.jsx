@@ -26,7 +26,8 @@ const UI = {
   en: {
     hub: 'N-Back', tag: 'working memory', replayTutorial: 'How to play',
     freeMode: 'Survival mode', levelMode: 'Level mode', challengeMode: 'Pass n Play',
-    scienceLink: '🔬 Why this trains your brain', hubMapAria: 'Modes',
+    // "Why this trains your brain" retired 2026-09-20 — see HubScienceLink.jsx.
+    scienceLink: '🔬 The science', hubMapAria: 'Modes',
     hubNodeFreeHint: 'Adaptive — N rises with your accuracy',
     hubNodeLevelsHint: '100 levels · fixed N, faster pace',
     hubNodeChallengeHint: 'Same stream for all · pick a difficulty',
@@ -59,7 +60,7 @@ const UI = {
   ar: {
     hub: 'العودة-N', tag: 'ذاكرة عاملة', replayTutorial: 'كيف ألعب',
     freeMode: 'وضع البقاء', levelMode: 'وضع المستويات', challengeMode: 'مرّر والعب',
-    scienceLink: '🔬 لماذا يدرّب دماغك', hubMapAria: 'الأوضاع',
+    scienceLink: '🔬 العلم وراء اللعبة', hubMapAria: 'الأوضاع',
     hubNodeFreeHint: 'تكيّفي — يرتفع N مع دقّتك',
     hubNodeLevelsHint: '١٠٠ مستوى · N ثابت وإيقاع أسرع',
     hubNodeChallengeHint: 'نفس التدفّق للجميع · اختر الصعوبة',

@@ -18,7 +18,7 @@ Opened 2026-09-19. Multi-session: work through the phases in order, tick the box
 | **4** | Elo rating | ✅ **DONE 2026-09-19** — all 6 items; θ verified converging in simulation *and* in the running game. Two advisory UI surfaces deliberately unbuilt (see 4.5). |
 | **5** | Practice-corrected reliability | ✅ **DONE 2026-09-19** — both items, gates green |
 
-**ALL FIVE PHASES BUILT.** What remains is not a phase: it is the four decisions in **§9**, the two advisory UI surfaces in 4.5, and the open questions in §8.
+**ALL FIVE PHASES BUILT, AND ALL OF §9 DECIDED AND BUILT (2026-09-20).** The clock now derives from the honest model — one model generates difficulty and gates it, with no legacy shadow. What remains is only §8's open questions and the coach trigger noted in 4.5.
 
 **Shipped:** phases 1–3 deployed 2026-09-19; phases 4–5 deployed 2026-09-20.
 
@@ -31,6 +31,7 @@ Opened 2026-09-19. Multi-session: work through the phases in order, tick the box
 | Date | Session did | Left open |
 |---|---|---|
 | 2026-09-19 | Audit (4 agents), research, this plan | Phase 1 starting |
+| 2026-09-20 | **§9 resolved and built.** Clock migrated onto the honest model; mechanic double-count removed structurally; `b` gained a load term; `audit:fq` feasibility promoted from report to gate; `audit:curves` re-pointed at difficulty; `lookalikes`→`samehue`; no-go penalty; tier-seam resets fixed; science panel retitled across all 18 games; start-level suggestion built. All gates green, clean build, verified on screen. ⚠ **A PowerShell `Set-Content` rewrite double-encoded `focusQuestData.js`** (1119 mojibake) — repaired via a cp1252 reverse map. **Never rewrite source with Get-Content/Set-Content in this repo.** | §8's open questions; the 4.5 coach trigger. |
 | 2026-09-20 | **DEPLOYED (phases 4–5).** Commit `41c5fc9` on both remotes; CI green; `gh-pages` reads "Deploy: built from 41c5fc9"; Pages `status: built`. **Verified on production**: a live Survival run moved θ from **−3.23 to −0.73 over 9 boards**, the boards climbing with it (20→35 cells, 3→9 targets), no baseline written before n = 20 (the display gate holds), zero exceptions. | §9's four decisions · 4.5's two UI surfaces · §8. |
 | 2026-09-20 | **Phase 5 complete — all five phases built.** IRT standard error for θ, pooled and practice-corrected RCI, a change-since-baseline sentence on the Survival results. Also fixed `assessmentNorms.js`'s extensionless imports, which had made it unloadable in Node. All gates green (incl. `audit:sec`), clean build. 15/15 in `verify-phase5.mjs`. | Deploying phases 4–5. Then: §9's four decisions, 4.5's two UI surfaces, §8. |
 | 2026-09-19 | **Phase 4 complete.** `shared/abilityElo.js` + the authored difficulty tables; Survival now deals from θ; the dead staircase branch removed; the rating banks a measurement. All gates green, clean build. 20/20 in `verify-phase4.mjs`; θ verified moving in a live run. ⚠ **Also fixed a Phase 3 bug found here**: the `audit:pacing` survival loop was calling `prepareFreeRound` with three arguments and measuring stage 0 fifteen times. | Phase 5. **Not yet deployed.** |
@@ -345,7 +346,34 @@ Tick a box only when the change is **made and verified**. Note what you verified
 
 ---
 
-## 9. DECISIONS WAITING ON THE OWNER (opened 2026-09-19)
+## 9. DECISIONS — ALL RESOLVED 2026-09-20
+
+The owner decided all four, plus the two smaller items. **Nothing in this section is open.** Kept as the record of what was chosen and why, because each one changes what a player meets.
+
+| # | Decision | Chosen |
+|---|---|---|
+| 9.1 | Endgame difficulty | **Move the whole clock onto the honest model** (owner: "the best scientific and long term option") |
+| 9.2 | `lookalikes` | **Rename to what it does** — `samehue` |
+| 9.3 | `forbidden` | **Make a no-go tap cost more** (+2 s on top of the ordinary 3 s) |
+| 9.4 | Tier-seam resets | **Fixed** — pool size and eccentricity now climb across all 60 rungs |
+| — | Science panel title | **Retitled** "The science" / «العلم وراء اللعبة», all 18 games |
+| — | 4.5 advisory UI | **Built** — the start-level suggestion; the coach trigger is still not built |
+
+### What 9.1 actually took
+
+The clock is generated from `expertTargetSecForBoard` now, and the superseded flat model no longer participates. Three consequences worth knowing:
+
+- **The mechanic double-count died structurally, not arithmetically.** `drift` ×1.12 and `dual` ×1.15 used to multiply the CLOCK while `per` knew nothing about them. They are priced into the model now (`mechanicSearchMult`, applied to the *search* term only — a drifting field makes finding harder, not tapping), so the mechanic appears on both sides of `time / (per·tc)` and cannot be counted twice.
+- **Feasibility became structural.** `time / (per·tc)` reduces to the wave headroom, whose floor is above 1. So `audit:fq`'s feasibility check was **promoted from a report to a gate**: a wave under 1.0× is no longer a tuning argument, it means the derivation broke.
+- **The headroom endpoints had to be re-derived** (2.60 → **2.20**, 1.22 → **1.34**). They are multiples of expert pace and expert changed. The end could not stay at 1.22: as a level *average* it puts the last wave at 1.05× against a 1.03 floor, and `Math.round` alone was enough to push it under — after which the cross-level ratchet carried the loss forward and compounded it. Measured worst wave on the first build: **0.875×**, on a clock derived from the very model it was violating.
+
+**And `b` had to learn about load.** It was `−3·ln(generosity)`, so once the ratchet drove the top of the ladder onto the floor, **every level from L40 up rated identically** — twenty levels called equally hard while the board went 35→48 cells and the same-hue field 83%→94%. `b` now carries tightness *and* absolute work (`need` = expert seconds), and both `audit:fq` and `audit:curves` gate on it instead of on seconds-per-target, which had stopped describing difficulty.
+
+Final shape: **b −3.36 → +2.65** across the ladder, monotone, worst wave **1.031×**, 0 of 330 under 1.0×.
+
+---
+
+## 9-ARCHIVE. The decisions as they were originally posed (2026-09-19)
 
 All four change what a player meets, which is why they stopped at the boundary the "hold the current feel" instruction drew. None is a bug to fix quietly.
 

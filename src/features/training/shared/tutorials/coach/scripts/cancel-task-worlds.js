@@ -118,8 +118,14 @@ export const CANCEL_WORLD_LESSONS = {
     ],
   },
 
-  lookalikes: {
-    id: 'lookalikes',
+  /* ⚠ Renamed from `lookalikes` on 2026-09-20 — see FQ_LADDER. Note the STEPS
+     below never needed changing: they already taught the colour field
+     ("the distractors start borrowing the target's colour"), which is what the
+     band actually does. It was the mechanic's name and its rule-card label that
+     described a shape manipulation no code implemented. The lesson was right
+     and the label was lying about it. */
+  samehue: {
+    id: 'samehue',
     steps: [
       {
         point: null,

@@ -455,11 +455,33 @@ for (const [key, spec] of Object.entries({
     mod: '../shared/focusQuestData.js',
     bands: (m) => m.FQ_LADDER,
     levels: (m) => m.FQ_LADDER_LEVELS,
+    /* ⚠ GATED ON DIFFICULTY (`b`), NOT ON SECONDS-PER-TARGET, since 2026-09-20.
+     *
+     * `secPerTarget` was a fair proxy while the expert model was FLAT — every
+     * board in a tier was priced identically, so less time per target could only
+     * mean harder. The clock is derived from the honest Fitts+search model now,
+     * which prices a 48-cell 94%-same-hue board at more than twice a 20-cell
+     * pop-out. Under it, seconds-per-target RISES inside bands 2 and 3 while the
+     * levels get unambiguously harder, because the load grows faster than the
+     * clock does. This gate failed on exactly that and it was right to — the
+     * assertion had stopped describing difficulty.
+     *
+     * `fqLadderDifficultyLogit` is the quantity that does: tightness of the
+     * clock AND absolute work, on the same scale the Elo placement reads. It
+     * also reads the DEALT board (`fqWaveShape`), where `ladderLvCfg` mixed the
+     * square curriculum's target count with the reflowed clock — a ratio for a
+     * board nobody is ever dealt.
+     */
     cfg: (m) => (lv) => {
-      const c = m.ladderLvCfg(lv);
-      return { tc: c.tc, secPerTarget: c.time / Math.max(1, c.tc), grid: c.grid };
+      const waves = m.fqSetsForLevel(lv);
+      const last = m.fqWaveShape(lv, waves - 1);
+      return {
+        tc: last.tc,
+        difficulty: m.fqLadderDifficultyLogit(lv),
+        grid: m.ladderLvCfg(lv).grid,
+      };
     },
-    fields: { tc: 'up', secPerTarget: 'down' },
+    fields: { tc: 'up', difficulty: 'up' },
     bandField: 'grid',
     identity: (m) => (lv) => { const { diff, li } = m.ladderToTier(lv); return `${diff}-${li}`; },
   },

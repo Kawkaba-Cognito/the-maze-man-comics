@@ -344,6 +344,29 @@ export function expertTargetSec(diff) {
 export const FQ_WRONG_TAP_PENALTY_SEC = 3;
 
 /**
+ * Extra cost for tapping the FORBIDDEN object, on top of the ordinary wrong-tap
+ * penalty. Band 4's mechanic, made real on 2026-09-20.
+ *
+ * ⚠ UNTIL NOW "SOMETHING TO LEAVE ALONE" COST NOTHING TO TOUCH. The no-go was a
+ * trialLog flag and a HUD chip; tapping it scored exactly like tapping any other
+ * distractor. The rule card told the player to withhold and the board did not
+ * care whether they did — the same defect as `lookalikes` declaring a mechanic
+ * no code read, and in a way worse, because this one is the game's only measure
+ * of response inhibition and the thing being measured had no stakes.
+ *
+ * ⚠ THE COST IS TIME, NOT AN ERROR MULTIPLIER, and that is deliberate. Error
+ * COUNTS are the least reliable thing this task produces — the minimal
+ * detectable change in cancellation error counts is 135–219% of the mean error
+ * count (Ruff 2&7, N=101) — so doubling an error would amplify the noisiest
+ * signal on the board. Time is continuous, is already the currency the player
+ * reasons in, and shows up in a measure that IS reliable.
+ *
+ * ⚠ It applies in Levels and Survival only. The assessment stays feedback-free
+ * (`!isAssess`), and a tap during the coach's lesson still costs nothing.
+ */
+export const FQ_NOGO_EXTRA_PENALTY_SEC = 2;
+
+/**
  * The clock a board grants, minus what a given number of wrong taps costs.
  * The honest denominator when asking what time a REAL player has, as opposed
  * to the flawless one `audit:fq` certifies.
@@ -491,9 +514,33 @@ export function searchSlopeMsPerItem(interference) {
  * The superseded model multiplied a constant by `tc`, so adding distractors —
  * the thing that actually makes a search harder — changed nothing it could see.
  */
-export function expertTargetSecForBoard({ cols, rows, cells, tc, interference }) {
+/**
+ * What a mechanic does to the cost of SEARCH, as a multiplier.
+ *
+ * ⚠ THESE USED TO BE MULTIPLIERS ON THE CLOCK AND THAT WAS THE DOUBLE-COUNT.
+ * `drift` bought ×1.12 of extra time and `dual` ×1.15, applied to `tlim` — while
+ * `per` knew nothing about either. So the gate compared a clock that already
+ * contained the compensation against a model that did not, and the same 12% was
+ * banked as headroom and spent as headroom at once. Six waves sat at 0.982–0.995×
+ * once the multipliers were treated as what they are.
+ *
+ * Pricing them into the model instead removes the bug structurally rather than
+ * by arithmetic: the mechanic now appears on BOTH sides of `time / (per · tc)`,
+ * so it can never be counted twice.
+ *
+ * ⚠ THEY SCALE SEARCH, NOT THE MOTOR TERM. A drifting field and a two-shape
+ * hunt make FINDING the target harder; neither makes the thumb slower. Applying
+ * them to the whole per-target cost would have inflated the tap along with the
+ * search — small, but wrong in a way that grows with board size.
+ */
+export function mechanicSearchMult(mech) {
+  const has = (k) => (mech instanceof Set ? mech.has(k) : !!(mech && mech[k]));
+  return (has('drift') ? FQ_DRIFT_TIME_MULT : 1) * (has('dual') ? FQ_DUAL_TIME_MULT : 1);
+}
+
+export function expertTargetSecForBoard({ cols, rows, cells, tc, interference, mech }) {
   const nCells = Math.max(1, cells ?? cols * rows);
-  const searchMs = searchSlopeMsPerItem(interference) * nCells;
+  const searchMs = searchSlopeMsPerItem(interference) * nCells * mechanicSearchMult(mech);
   const motor = motorMsForBoard({ cols, rows, cells: nCells, tc });
   return (searchMs + motor) / 1000;
 }
@@ -536,14 +583,37 @@ export function expertTargetSecForBoard({ cols, rows, cells, tc, interference })
  * ═══════════════════════════════════════════════════════════════════════════ */
 const LADDER_LOGIT_SCALE = 3.0;
 
+/* Weight on absolute LOAD, and the board it is measured against.
+ *
+ * ⚠ GENEROSITY ALONE IS NOT DIFFICULTY, and leaving the load term out produced
+ * a measurable failure rather than an inelegance. `b` was `-3·ln(clock/need)`,
+ * so two boards granted the same MULTIPLE of expert pace scored identically —
+ * and once the cross-level ratchet had driven the top of the ladder onto the
+ * feasibility floor, every level from L40 up came out at the same `b`. Twenty
+ * levels rated equally hard, while the board went from 35 cells to 48 and the
+ * same-hue field from 83% to 94%.
+ *
+ * A board needing 20 seconds of expert work at 1.03× is plainly harder than one
+ * needing 5 seconds at 1.03×: the pace is the same, the amount of sustained
+ * selective attention is four times greater. `need` — expert seconds of work —
+ * is exactly that quantity, and it already carries set size, interference and
+ * the mechanics, because it comes out of the honest model.
+ *
+ * ⚠ LOAD_REF_SEC is a scale origin, not a threshold. It only fixes where b = 0
+ * sits; moving it slides the whole ladder without changing any spacing. */
+const LADDER_LOAD_SCALE = 1.0;
+const LOAD_REF_SEC = 1.6;
+
 /** Difficulty in logits for one built board. */
-export function boardDifficultyLogit({ cols, rows, cells, tc, tlimSec, interference }) {
+export function boardDifficultyLogit({ cols, rows, cells, tc, tlimSec, interference, mech }) {
   const nCells = Math.max(1, cells ?? cols * rows);
   const n = Math.max(1, tc || 1);
-  const per = expertTargetSecForBoard({ cols, rows, cells: nCells, tc: n, interference });
+  const per = expertTargetSecForBoard({ cols, rows, cells: nCells, tc: n, interference, mech });
   const need = per * n;
   if (!(need > 0) || !(tlimSec > 0)) return 0;
-  return +(-LADDER_LOGIT_SCALE * Math.log(tlimSec / need)).toFixed(4);
+  const tightness = -LADDER_LOGIT_SCALE * Math.log(tlimSec / need);
+  const load = LADDER_LOAD_SCALE * Math.log(need / LOAD_REF_SEC);
+  return +(tightness + load).toFixed(4);
 }
 
 let _ladderLogits = null;
@@ -560,7 +630,7 @@ export function fqLadderDifficultyTable() {
     const last = fqWaveShape(lv, waves - 1);
     const b = boardDifficultyLogit({
       cols: board.cols, rows: board.rows, cells,
-      tc: last.tc, tlimSec: last.time, interference: fqLadderInterference(lv),
+      tc: last.tc, tlimSec: last.time, interference: fqLadderInterference(lv), mech: fqMechanicsAt(lv),
     });
     running = Math.max(running, b);
     out.push(running);
@@ -599,6 +669,7 @@ export function fqWaveDifficultyLogit(lv, waveIdx = 0) {
     tc: shape.tc,
     tlimSec: shape.time,
     interference: fqLadderInterference(n),
+    mech: fqMechanicsAt(n),
   });
 }
 
@@ -892,7 +963,20 @@ export const FQ_LADDER = [
      that on the first run. */
   /* L21-30 */ { diff: 'medium', half: 0, adds: ['dual'] },
   /* L31–40 */ { diff: 'medium', half: 1, adds: ['forbidden'] },
-  /* L41–50 */ { diff: 'hard', half: 0, adds: ['lookalikes'] },
+  /* ⚠ `lookalikes` BECAME `samehue` ON 2026-09-20, because `lookalikes`
+     described something no code did. Nothing read the flag, and `audit:fq`
+     actively FORBIDS the same-motif pools that would have implemented it as a
+     shape manipulation ("a distractor shows a target object — that is the
+     retired colour conjunction"). The rule card promised a mechanic the board
+     could not deliver.
+     What band five actually does is real, and is the same construct in a
+     different feature: `fqLadderInterference` reaches 0.85–0.92 here, so
+     89–94% of distractors wear the TARGET'S COLOUR. That is a Duncan &
+     Humphreys target–distractor similarity manipulation — in hue rather than
+     in shape — and it is the strongest lever this game has.
+     ⚠ It is not NEW at L41; interference has climbed since L3. What is new is
+     that the field becomes near-total, which is what the copy now says. */
+  /* L41–50 */ { diff: 'hard', half: 0, adds: ['samehue'] },
   /* L51–60 */ { diff: 'hard', half: 1, adds: ['drift'] },
 ];
 
@@ -946,9 +1030,9 @@ export const FQ_SECTIONS = [
     enSub: 'Something to leave alone', arSub: 'شيء لا يُلمس',
   },
   {
-    id: 'verdant', mech: 'lookalikes', sigil: 'warp-gate',
+    id: 'verdant', mech: 'samehue', sigil: 'warp-gate',
     en: 'Verdant Drift', ar: 'الانجراف الأخضر',
-    enSub: 'Near-twins everywhere', arSub: 'أشباه في كل مكان',
+    enSub: 'Almost everything is the target colour', arSub: 'يكاد كل شيء يحمل لون الهدف',
   },
   {
     id: 'void', mech: 'drift', sigil: 'supernova',
@@ -1023,7 +1107,7 @@ export const FQ_MECHANIC_LABELS = {
   denser: { en: 'A denser board', ar: 'لوحة أكثف' },
   dual: { en: 'Two shapes to find', ar: 'شكلان تبحث عنهما' },
   forbidden: { en: 'One object is off limits', ar: 'شيء واحد ممنوع لمسه' },
-  lookalikes: { en: 'Look-alike distractors', ar: 'مشتّتات متشابهة' },
+  samehue: { en: 'Nearly every distractor wears the target colour', ar: 'تكاد كل المشتّتات تحمل لون الهدف' },
   drift: { en: 'The field drifts', ar: 'الحقل ينجرف' },
 };
 
@@ -1063,9 +1147,9 @@ export const FQ_MECHANIC_TEACH = {
     en: { what: 'One object is off limits. Find the targets and leave it alone.', why: 'Not acting is its own skill — holding back a tap you have already started is response inhibition.' },
     ar: { what: 'شيء واحد ممنوع. جد الأهداف واتركه.', why: 'الامتناع مهارة بذاته — كبح نقرة بدأت بالفعل هو كبح الاستجابة.' },
   },
-  lookalikes: {
-    en: { what: 'The distractors now share features with the target.', why: 'The more a distractor resembles the target, the closer you must look at each one.' },
-    ar: { what: 'صارت المشتّتات تشبه الهدف في بعض ملامحه.', why: 'كلما أشبه المشتّت الهدف، لزمك نظر أدق في كل واحد.' },
+  samehue: {
+    en: { what: 'Almost every distractor is now the target’s colour, so colour stops narrowing the search.', why: 'Colour was doing the work for you: a target in its own hue announces itself before you look. Take that away and every object has to be identified by shape.' },
+    ar: { what: 'صار لون الهدف يعمّ المشتّتات تقريباً، فلم يعد اللون يضيّق البحث.', why: 'كان اللون يقوم بالعمل عنك: هدف بلونٍ خاص يُعلن عن نفسه قبل أن تنظر. وبزواله صار لا بدّ من تمييز كل شيء بشكله.' },
   },
   drift: {
     en: { what: 'The field drifts while you work. You get a little more time for it.', why: 'A moving field stops you relying on where things were — search has to keep updating.' },
@@ -1156,8 +1240,30 @@ const FQ_LADDER_TIME_FLOOR_SEC = 5;
  * hardest board a level deals is TIGHTER than the old flat value while the
  * level as a whole opens gentler. The felt ceiling goes down, not up.
  */
-const FQ_LADDER_HEADROOM_START = 2.60;
-const FQ_LADDER_HEADROOM_END = 1.22;
+/*
+ * ⚠ RE-DERIVED 2026-09-20, WHEN THE CLOCK MOVED ONTO THE HONEST MODEL.
+ *
+ * These are multiples of EXPERT PACE, so they only mean anything relative to
+ * whatever "expert" is — and expert changed. The superseded flat model priced a
+ * 94%-same-hue hard board at 988 ms per target; the honest one prices it at
+ * 1290. The same 1.22 endpoint against a bigger denominator is a far tighter
+ * level, which is the correction working.
+ *
+ * ⚠ THE END COULD NOT STAY AT 1.22. It is a level AVERAGE and the last wave runs
+ * at 0.86x of it — 1.05x expert — against a wave floor of 1.03. Those two nearly
+ * collide, and `Math.round` on the clock was enough to push the last wave under
+ * the floor; the feasibility clamp then had to override the "never easier than
+ * the level before" cap on four steps, which is a pacing defect rather than a
+ * safety one. 1.34 puts the last wave at 1.15x, leaving the rounding somewhere
+ * to go.
+ *
+ * ⚠ THE START CAME DOWN, and that is the honest model too, in the other
+ * direction: it prices a 20-cell pop-out board at 541 ms rather than 700, so
+ * 2.60x of the old number was really 3.4x of the true one. The opening levels
+ * were more generous than anybody intended. 2.20 restores the intent.
+ */
+const FQ_LADDER_HEADROOM_START = 2.20;
+const FQ_LADDER_HEADROOM_END = 1.34;
 
 /*
  * ── WITHIN A LEVEL: THE WAVES CLIMB (2026-09-18) ───────────────────────────
@@ -1303,10 +1409,17 @@ function fqLadderWaveTable() {
   for (let n = 1; n <= FQ_LADDER_LEVELS; n += 1) {
     const { diff, cells, tc: tcBase } = fqLadderRoundShape(n);
     const waves = fqSetsForLevel(n);
-    const per = expertTargetSecForSetSize(diff, cells);
     const mech = fqMechanicsAt(n);
-    const mult = (mech.has('drift') ? FQ_DRIFT_TIME_MULT : 1)
-      * (mech.has('dual') ? FQ_DUAL_TIME_MULT : 1);
+    /* ⚠ `per` IS NOW PER-WAVE, NOT PER-LEVEL (2026-09-20). The honest model
+       depends on the target count through the motor term — targets sitting
+       further apart cost more to reach — so a level's waves, which differ in
+       `tc` by design, do not share one expert time. The superseded flat model
+       had no such dependency, which is why one value per level used to do. */
+    const board = PLAY_BOARD[diff];
+    const interference = fqLadderInterference(n);
+    const perFor = (tc) => expertTargetSecForBoard({
+      cols: board.cols, rows: board.rows, cells, tc, interference, mech,
+    });
     /* Targets stay a sparse minority however hard the wave gets — the same cap
        `reflowTargetCount` applies, for the same reason. */
     const tcCap = Math.max(3, Math.min(
@@ -1323,17 +1436,42 @@ function fqLadderWaveTable() {
         FQ_WAVE_HR_FLOOR,
         base * fqWaveScale(w, waves, FQ_WAVE_HR_FIRST, FQ_WAVE_HR_LAST),
       );
+      /* ⚠ NO `mult` ANY MORE. The mechanic cost lives inside `perFor` (see
+         mechanicSearchMult), so it is already in `need` — multiplying it onto
+         the clock as well is exactly the double-count this migration removed.
+         The consequence is that `time / (per·tc)` now reduces to `hr`, which is
+         why feasibility became structural rather than something a gate hopes
+         to find: no wave can be dealt below FQ_WAVE_HR_FLOOR × expert. */
+      const per = perFor(tc);
       const need = per * tc;
-      let time = Math.max(FQ_LADDER_TIME_FLOOR_SEC, Math.round(need * hr * mult));
+      /* ⚠ THE FEASIBILITY FLOOR IS APPLIED LAST AND BEATS THE MONOTONE CAP.
+         Without it the cross-level ratchet decays below 1.0 and cannot recover:
+         `Math.round` on the clock and `Math.floor` on the cap each shave a
+         fraction, `prevLastRealised` carries the shaved value into the next
+         level, and it compounds. Measured on the first build of this migration,
+         the worst wave came out at 0.875x — under the expert floor, on a clock
+         DERIVED from the expert model, which should be impossible.
+         Where the two rules conflict, feasibility wins: a level that is flat
+         against the one before is a pacing disappointment, a level nobody can
+         finish is the bug this game has already shipped once (11s granted for
+         44.5s of work). */
+      const minTime = Math.ceil(need * FQ_WAVE_HR_FLOOR);
+      let time = Math.max(FQ_LADDER_TIME_FLOOR_SEC, minTime, Math.round(need * hr));
       if (w === waves - 1) {
         // The level's hardest board may not be softer than the last level's.
-        const capped = Math.floor(need * prevLastRealised * mult);
-        time = Math.max(FQ_LADDER_TIME_FLOOR_SEC, Math.min(time, capped));
+        const capped = Math.floor(need * prevLastRealised);
+        time = Math.max(FQ_LADDER_TIME_FLOOR_SEC, minTime, Math.min(time, capped));
       }
       row.push({ tc, time });
     }
     const last = row[row.length - 1];
-    prevLastRealised = (last.time / mult) / (per * last.tc);
+    /* Clamped for the same reason: an un-clamped ratchet remembers the rounding
+       loss and passes it on, so one level's shaved second becomes every later
+       level's ceiling. */
+    prevLastRealised = Math.max(
+      FQ_WAVE_HR_FLOOR,
+      last.time / (perFor(last.tc) * last.tc),
+    );
     out.push(row);
   }
   fqLadderWaves = out;
@@ -1384,7 +1522,60 @@ export function fqLadderRoundOpts(lv, waveIdx = 0) {
     tlimSec: time,
     tcOverride: tc,
     interference: fqLadderInterference(n),
+    /* ⚠ TWO MORE LEVERS THAT RESET AT THE TIER SEAMS, fixed 2026-09-20 — the
+       same class of bug as the clock, found by the same audit and left unfixed
+       because neither is gated on the ladder path.
+       Measured on the dealt rounds before this:
+         poolSize   4→11 across band 1-2, then 11→5 at L21, then 7→4 at L41
+         eccentricity 0.12→0.37, then 0.37→0.30 at L21, 0.55→0.50 at L41
+       Both are real difficulty levers — distractor heterogeneity (Duncan &
+       Humphreys) and crowding (Bouma) — and both went BACKWARDS twice on a
+       ladder whose whole promise is that it climbs. They reset for the same
+       reason the clock did: `prepareLevelRound` is handed TIER coordinates and
+       re-derives them from the tier's own level index, which restarts at 1. */
+    poolIndexOverride: fqLadderPoolIndex(n),
+    eccentricityOverride: fqLadderEccentricity(n),
   };
+}
+
+/* The distractor pool, as a monotone walk over the ladder rather than three
+   restarts. Expressed as an index into the tier's own POOL_SEQUENCE so the
+   authored pools are untouched — only which one a rung gets. */
+let _ladderPoolIdx = null;
+export function fqLadderPoolIndex(lv) {
+  if (!_ladderPoolIdx) {
+    /* ⚠ THE RATCHET IS ON POOL SIZE, NOT ON THE INDEX, and the difference is a
+       real bug rather than a nicety. Each tier has its OWN `POOL_SEQUENCE`,
+       sorted by size, and the lists do not line up: a fractional index that is
+       fair across sixty rungs still hands medium's opening pool (5 objects)
+       to L21 straight after easy's closing pool (6). Measured on the dealt
+       board, that left one drop — 6→5 at the seam — which is the very thing
+       this fix exists to remove, just moved one level along.
+       Walking the index up until the SIZE is at least the previous rung's
+       makes the guarantee about the quantity that matters: how many different
+       objects the player has to tell the target from. */
+    const table = [];
+    let prevSize = 0;
+    for (let n = 1; n <= FQ_LADDER_LEVELS; n += 1) {
+      const { diff } = ladderToTier(n);
+      const list = POOL_SEQUENCE[diff] || POOL_SEQUENCE.easy;
+      const u = (n - 1) / (FQ_LADDER_LEVELS - 1);
+      let idx = Math.max(0, Math.min(list.length - 1, Math.floor(u * list.length)));
+      while (idx < list.length - 1 && list[idx].length < prevSize) idx += 1;
+      prevSize = Math.max(prevSize, list[idx].length);
+      table.push(idx);
+    }
+    _ladderPoolIdx = table;
+  }
+  const n = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+  return _ladderPoolIdx[n - 1];
+}
+
+/** Eccentricity bias, monotone across the ladder. See fqLadderPoolIndex. */
+export function fqLadderEccentricity(lv) {
+  const n = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+  const u = (n - 1) / (FQ_LADDER_LEVELS - 1);
+  return +(0.12 + u * (0.75 - 0.12)).toFixed(2);
 }
 
 /**
@@ -2156,13 +2347,24 @@ export function prepareLevelRound(diff, lv, opts = {}) {
    * previous set's target makes the change guaranteed, which is the only
    * version worth announcing or measuring.
    */
-  const choices = opts.avoidTarget && cfg.pool.length > 1
-    ? cfg.pool.filter((s) => s !== opts.avoidTarget)
+  /* ⚠ A caller-supplied pool index wins over the tier's own. The ladder passes
+     one so distractor heterogeneity climbs across all sixty rungs instead of
+     restarting three times; every other caller (Survival, Pass n Play, the
+     assessment) passes nothing and keeps the authored tier behaviour exactly. */
+  const pool = Number.isInteger(opts.poolIndexOverride)
+    ? (POOL_SEQUENCE[diff] || POOL_SEQUENCE.easy)[
+      Math.max(0, Math.min((POOL_SEQUENCE[diff] || POOL_SEQUENCE.easy).length - 1, opts.poolIndexOverride))
+    ]
     : cfg.pool;
+  const choices = opts.avoidTarget && pool.length > 1
+    ? pool.filter((s) => s !== opts.avoidTarget)
+    : pool;
   const lockedTarget = choices[Math.floor(Math.random() * choices.length)];
   const lockedCol = pal[Math.floor(Math.random() * pal.length)];
   const searchMode = 'categorical';
-  const eccentricityBias = computeEccentricityBias(lv - 1, diff);
+  const eccentricityBias = Number.isFinite(opts.eccentricityOverride)
+    ? opts.eccentricityOverride
+    : computeEccentricityBias(lv - 1, diff);
   /*
    * The thumb-safe board is the DEFAULT now, not something a caller opts into.
    * Levels is where most of the play happens, and leaving it square meant the
@@ -2216,9 +2418,9 @@ export function prepareLevelRound(diff, lv, opts = {}) {
    * exactly that ("distractor pool empty") — a crash rather than a bad board,
    * which is the right failure but not one to reach at runtime.
    */
-  const tgt2 = opts.dual && cfg.pool.length >= 3
+  const tgt2 = opts.dual && pool.length >= 3
     ? (() => {
-      const others = cfg.pool.filter((s) => s !== lockedTarget);
+      const others = pool.filter((s) => s !== lockedTarget);
       return others[Math.floor(Math.random() * others.length)] ?? null;
     })()
     : null;
@@ -2250,7 +2452,10 @@ export function prepareLevelRound(diff, lv, opts = {}) {
     );
   const built = buildCellsFromParams(
     board,
-    cfg.pool,
+    /* ⚠ The RESOLVED pool, not `cfg.pool`. Missing this one would have made the
+       override cosmetic: the target would be picked from the ladder's pool
+       while the board was filled from the tier's. */
+    pool,
     tc,
     diff,
     { tgt: lockedTarget, tgt2, tgtCol: lockedCol, eccentricityBias, conjunction: cfg.conjunction },
@@ -2305,7 +2510,10 @@ export function prepareLevelRound(diff, lv, opts = {}) {
     grid: board.cols,
     cols: board.cols,
     rows: board.rows,
-    pool: cfg.pool,
+    // The pool the board was actually built from — the trial log records its
+    // size, and recording the tier's while dealing the ladder's would make the
+    // stored `poolSize` describe a board nobody played.
+    pool,
     tc: targetCount,
     tlim,
     target: built.tgt,

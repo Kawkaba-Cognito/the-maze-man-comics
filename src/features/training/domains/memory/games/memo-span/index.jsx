@@ -43,7 +43,8 @@ const UI = {
   en: {
     ...STR_COMMON.en,
     hubMemory: 'Memo Span',
-    nbackMode: 'N-Back', scienceLink: '🔬 Why this trains your brain', tipLabel: 'Strategy',
+    // "Why this trains your brain" retired 2026-09-20 — see HubScienceLink.jsx.
+    nbackMode: 'N-Back', scienceLink: '🔬 The science', tipLabel: 'Strategy',
     hubNodeFreeHint: 'Endless · 3 lives · sequence grows',
     hubNodeLevelsHint: 'Watch · tap back · 100 levels',
     hubNodeNbackHint: 'Match the object N steps back · working memory',
@@ -90,7 +91,7 @@ const UI = {
   ar: {
     ...STR_COMMON.ar,
     hubMemory: 'مدى الذاكرة',
-    nbackMode: 'العودة-N', scienceLink: '🔬 لماذا يدرّب دماغك', tipLabel: 'استراتيجية',
+    nbackMode: 'العودة-N', scienceLink: '🔬 العلم وراء اللعبة', tipLabel: 'استراتيجية',
     hubNodeFreeHint: 'لا ينتهي · ٣ أرواح · يطول التسلسل',
     hubNodeLevelsHint: 'شاهد · أعد التسلسل · ١٠٠ مستوى',
     hubNodeNbackHint: 'طابق الشيء قبل N خطوات · ذاكرة عاملة',
