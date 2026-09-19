@@ -17,8 +17,14 @@
  * + progress). The age comparison is a guideline, clearly labelled as such.
  * ========================================================================== */
 
-import { ASSESS_DOMAINS, ageBand } from './assessmentProfile';
-import { clamp } from '../../../lib/math';
+/* ⚠ EXPLICIT .js EXTENSIONS, DELIBERATELY. Vite resolves extensionless paths;
+   plain Node does not — and this module now carries the reliable-change maths
+   (`reliableChangeCorrected`, `reliableChangePooled`), which has to be testable
+   and gateable outside a browser. Dropping an extension here breaks the GATES,
+   not the app, which is the kind of failure that only shows up in CI. This file
+   has cost that already: the Phase 5 verification could not load it. */
+import { ASSESS_DOMAINS, ageBand } from './assessmentProfile.js';
+import { clamp } from '../../../lib/math.js';
 
 /** Age-trajectory multipliers on the reference mean, by age-band id. */
 const CURVES = {
@@ -143,6 +149,65 @@ export function reliableChangeRaw(delta, sd, r) {
     rci: +rci.toFixed(2),
     reliable: Math.abs(rci) >= 1.96,
     direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat',
+  };
+}
+
+/**
+ * RCI corrected for the PRACTICE EFFECT (Chelune, Naugle, Lüders, Sedlak &
+ * Awad, 1993) — the form that is honest for a task somebody plays repeatedly.
+ *
+ *      RCI = (post − pre − practiceGain) / S_diff
+ *
+ * ⚠ THE UNCORRECTED RCI OVER-REPORTS IMPROVEMENT ON ANY REPEATED TASK, and
+ * cancellation is one of the worst offenders in the literature. Measured
+ * retest gains with no intervention at all: Ruff 2&7 at four weeks, ADS +7.0
+ * and CSS +11.4; UCancellation at one week, significant Concentration
+ * Performance gains on every row (t(49) = −7.11, t(52) = −10.32). A training
+ * app that reports those as progress is reporting repetition.
+ *
+ * ⚠ `practiceGain` MUST COME FROM A COMPARABLE CONTROL GROUP OVER THE SAME
+ * INTERVAL. There is no such figure for this game's own boards, so callers that
+ * have no norm must pass 0 and say, in the copy, that the change is on this
+ * task — never that an ability improved. Passing a guessed gain is worse than
+ * passing none: it would silently suppress real change.
+ */
+export function reliableChangeCorrected(delta, sd, r, practiceGain = 0) {
+  if (delta == null || !sd) return null;
+  const sdiff = sd * Math.sqrt(1 - (r ?? 0.7)) * Math.SQRT2;
+  if (!sdiff) return null;
+  const adjusted = delta - (practiceGain || 0);
+  const rci = adjusted / sdiff;
+  return {
+    rci: +rci.toFixed(2),
+    reliable: Math.abs(rci) >= 1.96,
+    direction: adjusted > 0 ? 'up' : adjusted < 0 ? 'down' : 'flat',
+    practiceGain: practiceGain || 0,
+    corrected: !!practiceGain,
+  };
+}
+
+/**
+ * RCI from two measurements that carry their OWN standard errors:
+ *
+ *      RCI = (post − pre) / sqrt( SE_pre² + SE_post² )
+ *
+ * The general form; the familiar `SEM·√2` is its special case, where both
+ * measurements share one SEM. Use this whenever precision differs between the
+ * two — which is exactly the case for an adaptive ability estimate, whose error
+ * shrinks as more boards are played (see `abilityStandardError`). Treating a
+ * 20-board baseline and a 200-board follow-up as equally precise would make
+ * every later comparison look more significant than it is.
+ */
+export function reliableChangePooled(delta, sePre, sePost) {
+  if (delta == null || !(sePre > 0) || !(sePost > 0)) return null;
+  const sdiff = Math.sqrt(sePre * sePre + sePost * sePost);
+  if (!sdiff) return null;
+  const rci = delta / sdiff;
+  return {
+    rci: +rci.toFixed(2),
+    reliable: Math.abs(rci) >= 1.96,
+    direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat',
+    sdiff: +sdiff.toFixed(3),
   };
 }
 

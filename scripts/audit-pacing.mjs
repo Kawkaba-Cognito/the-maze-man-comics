@@ -203,8 +203,11 @@ const url = (p) => new URL(`../src/features/training/domains/${p}`, import.meta.
     }
   }
   for (let stage = 0; stage < 15; stage += 1) {
-    const { diff, lv } = survivalStageToDiffLv(stage);
-    const r = prepareFreeRound(diff, lv, stage);
+    /* ⚠ ONE ARGUMENT — see the note in focusQuestData's survival table. The
+       first version of this loop passed (diff, lv, stage), which coerced the
+       difficulty STRING to stage 0, so this gate measured stage 0 fifteen times
+       and passed on it. A gate reading the wrong input is worse than no gate.  */
+    const r = prepareFreeRound(stage);
     const cells = Array.isArray(r.cells) ? r.cells.length : (r.cols || r.grid) * (r.rows || r.grid);
     see(Math.round((r.tlim * 1000) / cells), `survival stage ${stage}`);
   }

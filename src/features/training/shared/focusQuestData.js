@@ -498,6 +498,171 @@ export function expertTargetSecForBoard({ cols, rows, cells, tc, interference })
   return (searchMs + motor) / 1000;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+ * AUTHORED BOARD DIFFICULTY, IN LOGITS  (`b` in the Rasch/Elo sense)
+ *
+ * Every level and every survival stage gets a difficulty on the same scale the
+ * player's ability lives on, so `P(clear) = 1/(1+exp(-(theta-b)))` means
+ * something. See shared/abilityElo.js for the ability half.
+ *
+ * The quantity it is built from is GENEROSITY — the clock a board grants over
+ * what the honest model says an expert needs:
+ *
+ *      R = time / (expertTargetSecForBoard(board) * tc)
+ *      b = -SCALE * ln(R)
+ *
+ * R = 1 (exactly expert pace) is b = 0. More generous is negative, tighter is
+ * positive. The log is what makes it a difficulty rather than a ratio: halving
+ * the spare time is the same step wherever you start from.
+ *
+ * ⚠ SCALE IS OURS AND IT SETS THE SHAPE OF THE WHOLE LADDER. It converts "how
+ * much spare time" into "how much harder", and nothing in the literature fixes
+ * it, because no published study has measured clear-rates on these boards. It
+ * is chosen so the 60 rungs span a usable range rather than a flat one: at 3.0
+ * the ladder runs about -3.4 to 0 logits, i.e. a player at theta = 0 clears L1
+ * almost always and L60 about half the time. Re-fit it the moment real
+ * clear-rate telemetry exists — that is the honest calibration, and this is a
+ * placeholder for it.
+ *
+ * ⚠ MONOTONICITY IS ENFORCED BY A RUNNING MAX, NOT ASSUMED. `audit:fq` gates
+ * the LEGACY model's ratio, not this one, so the honest R is not guaranteed
+ * non-increasing across levels — and a ladder whose level 37 is rated easier
+ * than 36 would let the Elo target walk backwards. Content owns monotonicity
+ * (CANCELLATION-TASK-PLAN.md §2.5), so it is imposed here rather than hoped for.
+ *
+ * ⚠ MEASURED ON THE LAST WAVE, matching `audit:fq`: the hardest board a level
+ * deals is the level's difficulty. Averaging would let a long level hide an
+ * easy finish behind a generous opening.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+const LADDER_LOGIT_SCALE = 3.0;
+
+/** Difficulty in logits for one built board. */
+export function boardDifficultyLogit({ cols, rows, cells, tc, tlimSec, interference }) {
+  const nCells = Math.max(1, cells ?? cols * rows);
+  const n = Math.max(1, tc || 1);
+  const per = expertTargetSecForBoard({ cols, rows, cells: nCells, tc: n, interference });
+  const need = per * n;
+  if (!(need > 0) || !(tlimSec > 0)) return 0;
+  return +(-LADDER_LOGIT_SCALE * Math.log(tlimSec / need)).toFixed(4);
+}
+
+let _ladderLogits = null;
+/** Frozen, monotone difficulty for every ladder level. Built once. */
+export function fqLadderDifficultyTable() {
+  if (_ladderLogits) return _ladderLogits;
+  const out = [];
+  let running = -Infinity;
+  for (let lv = 1; lv <= FQ_LADDER_LEVELS; lv += 1) {
+    const { diff } = ladderToTier(lv);
+    const board = PLAY_BOARD[diff];
+    const cells = board.cols * board.rows;
+    const waves = fqSetsForLevel(lv);
+    const last = fqWaveShape(lv, waves - 1);
+    const b = boardDifficultyLogit({
+      cols: board.cols, rows: board.rows, cells,
+      tc: last.tc, tlimSec: last.time, interference: fqLadderInterference(lv),
+    });
+    running = Math.max(running, b);
+    out.push(running);
+  }
+  _ladderLogits = out;
+  return out;
+}
+
+export function fqLadderDifficultyLogit(lv) {
+  const t = fqLadderDifficultyTable();
+  const n = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+  return t[n - 1];
+}
+
+/**
+ * Difficulty of ONE wave, not of its level.
+ *
+ * ⚠ The ability update uses this rather than the level's own `b`, and the
+ * difference matters: a level is 3–8 waves and failing wave 2 of 8 ends it, so
+ * scoring that failure against the LAST wave's difficulty would credit the
+ * player with having faced a board they never saw. Each wave is its own trial.
+ *
+ * ⚠ Deliberately NOT running-maxed. The monotonicity guarantee is a promise
+ * about the ladder a player climbs, level to level; inside a level the wave
+ * ramp is its own curve and the Elo update wants each board's real difficulty.
+ */
+export function fqWaveDifficultyLogit(lv, waveIdx = 0) {
+  const n = Math.min(FQ_LADDER_LEVELS, Math.max(1, Math.round(Number(lv) || 1)));
+  const { diff } = ladderToTier(n);
+  const board = PLAY_BOARD[diff];
+  const shape = fqWaveShape(n, waveIdx);
+  return boardDifficultyLogit({
+    cols: board.cols,
+    rows: board.rows,
+    cells: board.cols * board.rows,
+    tc: shape.tc,
+    tlimSec: shape.time,
+    interference: fqLadderInterference(n),
+  });
+}
+
+/** The ladder level whose authored difficulty is closest to `b`. */
+export function fqLadderLevelForDifficulty(b) {
+  const t = fqLadderDifficultyTable();
+  let best = 1;
+  let bestGap = Infinity;
+  for (let i = 0; i < t.length; i += 1) {
+    const gap = Math.abs(t[i] - b);
+    if (gap < bestGap) { bestGap = gap; best = i + 1; }
+  }
+  return best;
+}
+
+/**
+ * The survival stage whose board sits closest to `b`.
+ *
+ * ⚠ Survival SATURATES at stage 14 — every stage from 14 on deals the identical
+ * board (hard L100, 48 cells, 15 targets, 20 s), so there is nothing above it
+ * to select. A theta beyond that simply pins there, which is the same ceiling
+ * the open-loop ramp already had; Elo does not invent difficulty that the
+ * curriculum does not contain.
+ */
+let _survivalLogits = null;
+export function fqSurvivalDifficultyTable() {
+  if (_survivalLogits) return _survivalLogits;
+  const out = [];
+  let running = -Infinity;
+  for (let stage = 0; stage < 15; stage += 1) {
+    /* ⚠ ONE ARGUMENT. `prepareFreeRound(stageIndex)` derives diff and lv itself.
+       Passing (diff, lv, stage) reads the DIFFICULTY STRING as the stage index,
+       which coerces to 0 — so every stage returns stage 0's board and the table
+       comes out flat. Caught by a round-trip test, not by anything throwing. */
+    const r = prepareFreeRound(stage);
+    const cells = Array.isArray(r.cells) ? r.cells.length : (r.cols || r.grid) * (r.rows || r.grid);
+    const b = boardDifficultyLogit({
+      cols: r.cols || r.grid, rows: r.rows || r.grid, cells,
+      tc: r.tc, tlimSec: r.tlim, interference: r.interference,
+    });
+    running = Math.max(running, b);
+    out.push(running);
+  }
+  _survivalLogits = out;
+  return out;
+}
+
+export function fqSurvivalStageForDifficulty(b) {
+  const t = fqSurvivalDifficultyTable();
+  let best = 0;
+  let bestGap = Infinity;
+  for (let i = 0; i < t.length; i += 1) {
+    const gap = Math.abs(t[i] - b);
+    if (gap < bestGap) { bestGap = gap; best = i; }
+  }
+  return best;
+}
+
+export function fqSurvivalDifficultyLogit(stage) {
+  const t = fqSurvivalDifficultyTable();
+  const s = Math.max(0, Math.round(Number(stage) || 0));
+  return t[Math.min(t.length - 1, s)];
+}
+
 /**
  * Clock headroom over expert pace: generous while the player is learning the
  * tier, tight at the top of it — but never below 1, because below 1 the level

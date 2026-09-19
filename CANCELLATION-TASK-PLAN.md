@@ -15,10 +15,12 @@ Opened 2026-09-19. Multi-session: work through the phases in order, tick the box
 | **1** | Measurement truth | ✅ **DONE 2026-09-19** — all 8 items, gates green, verified in a browser |
 | **2** | Surface the second factor (search organisation) | ✅ **DONE 2026-09-19** — all 4 items, gates green, verified in a browser |
 | **3** | The difficulty model + its gates | ✅ **DONE 2026-09-19** — 3.1 · 3.2 · 3.3 · 3.4 · 3.8 built and shipped. ⚠ **3.5 / 3.6 / 3.7 are deliberately NOT built** — each changes what a player meets, which the "hold the current feel" instruction ruled out, so they are parked as decisions in **§9**. Phase 3 is closed for building; it is not closed for deciding. |
-| **4** | Elo rating | ⬜ not started — **start here** |
-| **5** | Practice-corrected reliability | ⬜ not started |
+| **4** | Elo rating | ✅ **DONE 2026-09-19** — all 6 items; θ verified converging in simulation *and* in the running game. Two advisory UI surfaces deliberately unbuilt (see 4.5). |
+| **5** | Practice-corrected reliability | ✅ **DONE 2026-09-19** — both items, gates green |
 
-**Shipped:** phases 1–3 deployed to production on 2026-09-19.
+**ALL FIVE PHASES BUILT.** What remains is not a phase: it is the four decisions in **§9**, the two advisory UI surfaces in 4.5, and the open questions in §8.
+
+**Shipped:** phases 1–3 deployed 2026-09-19; phases 4–5 deployed 2026-09-20.
 
 **Owner decisions already made — do not relitigate:**
 - All five phases are in scope (owner, 2026-09-19).
@@ -29,6 +31,8 @@ Opened 2026-09-19. Multi-session: work through the phases in order, tick the box
 | Date | Session did | Left open |
 |---|---|---|
 | 2026-09-19 | Audit (4 agents), research, this plan | Phase 1 starting |
+| 2026-09-20 | **Phase 5 complete — all five phases built.** IRT standard error for θ, pooled and practice-corrected RCI, a change-since-baseline sentence on the Survival results. Also fixed `assessmentNorms.js`'s extensionless imports, which had made it unloadable in Node. All gates green (incl. `audit:sec`), clean build. 15/15 in `verify-phase5.mjs`. | Deploying phases 4–5. Then: §9's four decisions, 4.5's two UI surfaces, §8. |
+| 2026-09-19 | **Phase 4 complete.** `shared/abilityElo.js` + the authored difficulty tables; Survival now deals from θ; the dead staircase branch removed; the rating banks a measurement. All gates green, clean build. 20/20 in `verify-phase4.mjs`; θ verified moving in a live run. ⚠ **Also fixed a Phase 3 bug found here**: the `audit:pacing` survival loop was calling `prepareFreeRound` with three arguments and measuring stage 0 fifteen times. | Phase 5. **Not yet deployed.** |
 | 2026-09-19 | **DEPLOYED.** Commit `6546bd1` pushed to both remotes (origin + cognitive/Play). CI ran all twelve gates green and published; `gh-pages` head reads "Deploy: built from 6546bd1"; Pages build `status: built`. **Verified on the live site** — production boots, the honest-limits section renders, none of the retired claims survive, zero page exceptions. | Phase 4, and the four decisions in §9. |
 | 2026-09-19 | **Phase 3 part done.** Honest split Fitts+search model built, calibrated and documented; slope now driven by interference; `cancel-task` added to `audit:pacing`; the 3 s penalty named and reported. `audit:fq` gained a non-blocking honest-model report. All gates green, clean build. | **§9 — four decisions.** The honest model says 13 of 330 waves sit under 1.0× expert at L46–L60. 3.5/3.6/3.7 all change the board and stopped at the "hold the feel" line. |
 | 2026-09-19 | **Phase 2 complete.** New `shared/searchMetrics.js`; metrics computed on the live path in Levels and Survival; `CxSearchBlock` on both results screens. All gates green, clean build. 20/20 in `verify-phase2.mjs`; block confirmed on screen (`review/cancellation-science-2026-09-19/shots/09-survival-results.png`). | Phase 3. **Noticed and NOT chased: the app background rendered flat beige in the headless dev run** (both level and survival screenshots). Could be the headless/dev environment rather than a regression — unverified either way, worth one check before blaming anything. |
@@ -279,17 +283,35 @@ Tick a box only when the change is **made and verified**. Note what you verified
 
 ### Phase 4 — Elo
 
-- [ ] **4.1** `theta` store, Rasch update, K decay with floor, population-mean seed (§3.6) — new module
-- [ ] **4.2** Authored `b_k` per level, frozen, monotone — derived once from §3.4
-- [ ] **4.3** Survival generates from `θ − 1.658` instead of the open-loop stage ramp
-- [ ] **4.4** Fix the `FREE_LIVES` dead branch — `index.jsx:1412` comments "adaptive staircase: clear → +1, fail → −1", but `FREE_LIVES = 1` and the counter is never incremented, so the branch is unreachable. Delete the comment or make it true.
-- [ ] **4.5** θ advises start level, coach trigger, wave-ramp *span* (not endpoints — endpoints stay authored so the cross-level cap and the feasibility proof are untouched). **Never gates.**
-- [ ] **4.6** `rating.js`: bank a measured quantity instead of rounds-survived. ⚠ `updateRating(key, level)` takes a scalar level **by contract across all 18 games** — this needs its own verification pass. Level mode currently never calls it at all.
+- [x] **4.1** `shared/abilityElo.js` — pure maths, no storage, so the gates can import it. Rasch 1PL, Pelánek decaying K with a **floor of 0.10** (the decay handles initial uncertainty; the floor handles non-stationarity — an un-floored K eventually refuses to notice that a player has improved), `DISPLAY_MIN_N = 20`, target 0.84.
+- [x] **4.2** `fqLadderDifficultyTable` / `fqWaveDifficultyLogit` / `fqSurvivalDifficultyTable` in `focusQuestData.js`, derived from the **honest** model (§3.1) as `b = −3·ln(generosity)` and frozen by a running max. Measured span: **L1 b = −3.38 → L60 b = +0.14**, i.e. 97% → 46% clear probability for a player at θ = 0.
+- [x] **4.3** Survival deals `fqSurvivalStageForDifficulty(θ − 1.658)`. ⚠ Clamped with `Math.max(prev+1, …)` so a cleared round never deals an easier board — Elo is the target, not a licence to walk backwards mid-run. That is what the one life is for.
+- [x] **4.4** Dead branch removed. It was an open-loop ramp wearing a staircase's comment, and **the comment is why nobody noticed**. The convergence it described is real now and lives in θ, across sessions rather than within one run.
+- [x] **4.5** θ drives board selection and **never gates** progression. ⚠ **Two advisory surfaces are NOT built**: the start-level hint on the level map, and the coach trigger at low `E(θ, b)`. Both are UI in `CancelPlanetPath` / the coach, and both would be hidden below `DISPLAY_MIN_N` anyway.
+- [x] **4.6** `awardFreeRun('cancel', …)` now banks **the ladder level whose authored difficulty equals this player's ability**, gated on `isSettled` (n ≥ 20); below that the old round count is banked meanwhile. ⚠ **The 18-game contract is untouched** — `updateRating(key, level)` still takes a scalar level, and this is still a level; it is simply derived from θ rather than from luck. No other game changes.
+
+**Phase 4 notes — three bugs the tests caught, all of which would have shipped silently:**
+
+- **`prepareFreeRound` takes ONE argument.** I called it `(diff, lv, stage)`; it reads the difficulty *string* as the stage index, which coerces to 0 — so the survival difficulty table came out flat. ⚠ **The same mistake was in the `audit:pacing` block added in Phase 3**, meaning that gate had been measuring stage 0 fifteen times and passing on it. A gate reading the wrong input is worse than no gate. Both fixed; a round-trip assertion now covers it.
+- **Time-weighted outcomes do not converge against a plain Rasch expectation**, and two versions were measured failing before the third worked. Klinkenberg's HSHS rule maps a clear into [0.5, 1], so against this game's target of E = 0.84 a clear using 40% of the clock scores 0.80 — *below* E — and θ falls on a win: simulated against five known abilities it recovered none (true +2 → −1.12). A shrunken variant still carried a constant −1.2 logit bias, and the algebra says exactly why: with a typical win scoring 0.90 the fixed point is 0.90·p = 0.84, i.e. p = 0.933, so θ settles where the true clear rate is 93% rather than 84%. **`S` must be an unbiased estimator of the quantity `E` predicts.** The outcome is binary now — which is also what this file's own rule required, since speed is *instrument* and must not drive the controller. Full record in `abilityElo.js`.
+- **The seeding never ran.** A lazy `ability()` accessor was written and never called, so `abilityRef` stayed null and θ would have started every player at 0 regardless of their ladder progress. eslint's unused-variable warning was the only signal — seeding silently not happening looks exactly like seeding.
+
+**Phase 4 verification:** `scratchpad/verify-phase4.mjs`, 20/20 — including a **convergence simulation** that recovers five known abilities (−2 … +2) within 0.52 logits over 60 boards, and round-trips difficulty → level → difficulty. Then driven in the real game: a live Survival run moved θ from **−3.23 to −1.57 over seven clears**, with the boards climbing alongside it (20 cells → 35, 3 targets → 8), and the value persisted to `mm_cancel_fq_v1.ability`.
 
 ### Phase 5 — Practice-corrected reliability
 
-- [ ] **5.1** `reliableChangeCorrected(delta, sd, r, practiceGain)` in `assessmentNorms.js`
-- [ ] **5.2** Any progress surface uses it. Nothing trends raw errors (§2.2).
+- [x] **5.1** `reliableChangeCorrected(delta, sd, r, practiceGain)` (Chelune et al. 1993) **and** `reliableChangePooled(delta, sePre, sePost)` in `assessmentNorms.js`, plus `abilityStandardError(n, p)` in `abilityElo.js`.
+- [x] **5.2** The Survival results carry a change-since-baseline sentence, gated on a settled estimate and an existing baseline, scoped to **this task** in both languages. Errors are trended nowhere.
+
+**Phase 5 notes:**
+
+- **θ carries its own measurement error, so it did not need a borrowed reliability coefficient.** Fisher information for the 1PL model is `P(1−P)` per item and information adds, so `SE(θ) = 1/√(n·P(1−P))`. Measured at the 0.84 target: **0.61 logits at n = 20, 0.39 at n = 50, 0.27 at n = 100.** ⚠ Targeting 0.84 rather than 0.50 costs about **46% of the information per board** — a deliberate trade of precision for a success rate people will keep playing at, and it shows up as a wider error bar instead of being hidden.
+- **The pooled form is not pedantry.** A 20-board baseline is far noisier than a 200-board follow-up, and `SEM·√2` assumes they are equal. Measured on the same +1.0 logit change: pretending both sides are 200-board precise gives **RCI 3.67 — "reliable"**; accounting for the real baseline gives **1.56 — not beyond noise.** The naive form would have announced improvement that is not there.
+- **`assessmentNorms.js` could not be loaded by plain Node**, because it imported `./assessmentProfile` and `../../../lib/math` without extensions — the trap CLAUDE.md documents. Found by the Phase 5 verification failing to import it. Fixed, so the reliable-change maths is now testable and gateable outside a browser.
+- ⚠ **No practice-gain norm exists for this game's boards, so the displayed comparison is UNCORRECTED** and the copy is scoped accordingly ("your level *on this task*"). `reliableChangeCorrected` exists and takes the gain as a parameter for when a norm does. **Do not invent one** — a guessed gain silently suppresses real change, which is worse than reporting an uncorrected one honestly labelled.
+- **The flat case speaks too.** A progress readout that only appears when the number rose is a celebration, not a measurement — and since practice effects guarantee it eventually rises, one that only speaks then is guaranteed to flatter. The "no change beyond normal variation" line is written to read as an ordinary result, not a failure.
+
+**Phase 5 verification:** `scratchpad/verify-phase5.mjs`, 15/15 — the standard-error curve, the pooled RCI refusing to call a +0.3 logit rise improvement while accepting +2.0, the precision-asymmetry demonstration above, and a practice-corrected change of exactly the practice gain reporting as **flat**.
 
 ---
 

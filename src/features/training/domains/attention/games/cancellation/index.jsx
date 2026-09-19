@@ -62,7 +62,21 @@ import {
   fqSetsForLevel,
   fqMechanicsAt,
   FQ_WRONG_TAP_PENALTY_SEC,
+  fqWaveDifficultyLogit,
+  fqLadderDifficultyLogit,
+  fqLadderLevelForDifficulty,
+  fqSurvivalDifficultyLogit,
+  fqSurvivalStageForDifficulty,
 } from '../../../../shared/focusQuestData';
+import {
+  freshAbility,
+  updateAbility,
+  difficultyForP,
+  isSettled,
+  abilityStandardError,
+  DISPLAY_MIN_N,
+} from '../../../../shared/abilityElo.js';
+import { reliableChangePooled } from '../../../../assessment/assessmentNorms';
 import {
   TrainingMenuBar,
   TrainingPauseModal,
@@ -320,6 +334,33 @@ function CxResultsExtra({ kind, t, bandTitle, nextBand, prevBest }) {
  * explaining its own absence. A player who has never seen this block is not
  * confused by not seeing it; it simply appears once there is a path to describe.
  */
+/**
+ * Change in ability since the baseline, on the Survival results.
+ *
+ * ⚠ IT REPORTS THE FLAT CASE TOO, and that is the point of having it. A
+ * progress readout that only ever appears when the number went up is a
+ * celebration, not a measurement — and since practice effects guarantee the
+ * number eventually goes up, one that only speaks then is guaranteed to be
+ * flattering rather than true.
+ *
+ * ⚠ THE RAW LOGIT AND THE RCI ARE NOT SHOWN. Neither means anything to a
+ * player, and a number on screen carries authority a sentence does not
+ * (SCI-02's lesson). The sentence is the finding.
+ */
+function CxProgressBlock({ t, prog }) {
+  if (!prog) return null;
+  const line = prog.reliable
+    ? (prog.direction === 'up' ? t.progUp : t.progDown)
+    : t.progFlat;
+  return (
+    <div className="cx-res cx-res--search">
+      <div className="cx-res-head">{t.progTitle}</div>
+      <div className="cx-res-sub">{line}</div>
+      <div className="cx-res-sub cx-res-sub--fine">{t.progHint(prog.baseN)}</div>
+    </div>
+  );
+}
+
 function CxSearchBlock({ t, org }) {
   if (!org) return null;
   const band = organisationBand(org.orgScore);
@@ -448,6 +489,20 @@ const UI = {
     searchScattered: 'Scattered',
     searchHint:
       'Measured separately from your score — in the research the two are largely independent. “Sweep” is how closely your order followed a row or column, “Crossings” how often your path crossed itself, “Along the grid” how straight your moves were. The one-word summary is this app’s own blend of those three.',
+    /* ── Reliable change. See CANCELLATION-TASK-PLAN.md §3.7 ──────────────────
+       ⚠ EVERY ONE OF THESE SAYS "ON THIS TASK", and that is not hedging. The
+       claim the evidence supports is that practice improves performance on the
+       trained task; broad transfer to everyday attention is contested. Dropping
+       those three words turns a defensible sentence into an SCI-01 problem.
+       ⚠ And the "no reliable change" line is written to be READ AS FINE, not as
+       a failure. It is the most common honest outcome, and an app that frames
+       it as disappointing is teaching people to distrust a true result. */
+    progTitle: 'Since you started',
+    progUp: 'Your level on this task has risen by more than measurement noise.',
+    progDown: 'Your level on this task has fallen by more than measurement noise.',
+    progFlat: 'No change beyond normal variation yet — which is what most short stretches look like.',
+    progHint: (n) =>
+      `Compared with your first ${n} boards, using a reliable-change criterion (Jacobson & Truax, 1991). Scores wobble on their own, so only movement bigger than that wobble is reported as change.`,
     timeRanOut: 'Time ran out',
     rt: 'Avg RT',
     countdownHint: 'Get ready…',
@@ -648,6 +703,14 @@ const UI = {
     searchScattered: 'متبعثر',
     searchHint:
       'يُقاس بمعزل عن درجتك — والبحث العلمي يجد الاثنين مستقلّين إلى حدّ بعيد. «المسح» مدى اتّباع ترتيبك لصفّ أو عمود، و«التقاطعات» كم مرّة تقاطع مسارك مع نفسه، و«محاذاة الشبكة» مدى استقامة حركاتك. أمّا الكلمة الواحدة فهي خلاصة من تأليف هذا التطبيق لهذه المقاييس الثلاثة.',
+    /* ── التغيّر الموثوق — انظر التعليق الإنجليزي. كل جملة مقيّدة بـ«في هذه
+       المهمة»، وسطر «لا تغيّر» مكتوب ليُقرأ كنتيجة طبيعية لا كإخفاق. */
+    progTitle: 'منذ أن بدأت',
+    progUp: 'ارتفع مستواك في هذه المهمة بما يتجاوز خطأ القياس.',
+    progDown: 'انخفض مستواك في هذه المهمة بما يتجاوز خطأ القياس.',
+    progFlat: 'لا تغيّر يتجاوز التذبذب المعتاد بعد — وهذا ما تبدو عليه معظم الفترات القصيرة.',
+    progHint: (n) =>
+      `مقارنةً بأول ${n.toLocaleString('ar-EG')} لوحة لعبتها، وفق معيار التغيّر الموثوق (جاكوبسون وتراكس، ١٩٩١). الدرجات تتذبذب من تلقاء نفسها، لذا لا يُعلَن عن تغيّر إلا إذا تجاوز ذلك التذبذب.`,
     timeRanOut: 'انتهى الوقت',
     rt: 'متوسط زمن الاستجابة',
     countdownHint: 'استعد…',
@@ -904,6 +967,98 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   const winPlayedRef = useRef(false);
   const endRoundRef = useRef((_won) => {});
   const trialLogRef = useRef(null);
+  /* ── ABILITY (theta), the Rasch/Elo rating ────────────────────────────────
+   * Held in a ref so an update mid-round cannot cause a re-render of a live
+   * board, and mirrored into the profile so it survives the session.
+   *
+   * ⚠ IT ADVISES AND NEVER GATES. Progression is unlocked by clearing levels,
+   * exactly as before; theta chooses which survival board to deal next and
+   * which level to SUGGEST. A player who beat level 40 beat level 40.
+   *
+   * ⚠ Seeded from the player's own ladder progress, which is the best prior
+   * available on a device with no backend — the alternative, a global zero,
+   * would open a returning player's first survival run at a board far below
+   * them and spend twenty trials climbing back. */
+  const abilityRef = useRef(null);
+  /* The profile, readable from a callback with no deps. `ensureAbility` runs
+     inside endRound, which must not re-create itself every time the profile
+     changes — that would tear down and rebuild the round-ending path mid-round. */
+  const profileRef = useRef(profile);
+  useEffect(() => { profileRef.current = profile; }, [profile]);
+  /* ⚠ EVERY READ GOES THROUGH HERE. An earlier version had a lazy accessor that
+     nothing ever called, so the ref stayed null and the seeding below never ran
+     — theta would have started every player at 0 regardless of their ladder
+     progress. eslint caught it as an unused variable, which is the only signal
+     there was: seeding silently not happening looks exactly like seeding. */
+  const ensureAbility = useCallback(() => {
+    if (!abilityRef.current) {
+      const stored = profileRef.current?.ability;
+      abilityRef.current = stored && Number.isFinite(stored.theta)
+        ? stored
+        : freshAbility(fqLadderDifficultyLogit(
+          Math.max(1, fqMigrateLadderReached(profileRef.current?.done || {}) || 1),
+        ));
+    }
+    return abilityRef.current;
+  }, []);
+  /** Record one board against theta. `b` is that board's difficulty in logits. */
+  const bankAbility = useCallback((b, cleared) => {
+    const prev = ensureAbility();
+    const next = updateAbility(prev, { b, cleared });
+    abilityRef.current = next;
+    setProfile((p) => {
+      /* ⚠ THE BASELINE IS TAKEN ONCE, AT THE MOMENT THE ESTIMATE FIRST BECOMES
+         SHOWABLE, and never moved afterwards. Re-baselining on every session
+         would make "have you improved?" unanswerable: each comparison would be
+         against a version of you that already included the improvement.
+         Taken at n = DISPLAY_MIN_N rather than at n = 1 because theta's first
+         boards are dominated by the seed and by a K of ~1.0 — a baseline there
+         would be measuring the cold start, not the player. */
+      const baseline = p.abilityBaseline
+        || (next.n >= DISPLAY_MIN_N
+          ? { theta: next.theta, n: next.n, ts: new Date().toISOString() }
+          : null);
+      const merged = {
+        ...p,
+        ability: { theta: next.theta, n: next.n },
+        ...(baseline ? { abilityBaseline: baseline } : {}),
+      };
+      saveProfile(merged);
+      return merged;
+    });
+    return next;
+  }, [ensureAbility]);
+
+  /**
+   * Change in ability since the baseline, or null when there is nothing
+   * defensible to say.
+   *
+   * ⚠ IT REPORTS "BEYOND MEASUREMENT NOISE", NOT "BETTER". Cognitive scores
+   * move on their own — sleep, time of day, motivation — and an app that
+   * celebrates every upward wobble is teaching a false lesson about the user's
+   * own mind. |RCI| >= 1.96 (Jacobson & Truax 1991) is the criterion, and each
+   * side carries its own standard error because a 20-board baseline is far less
+   * precise than a 200-board follow-up.
+   *
+   * ⚠ THE CLAIM IS SCOPED TO THIS TASK, and that scoping is load-bearing rather
+   * than cautious. Practice effects on cancellation are large and one-way
+   * (Ruff 2&7: +11.4 on controlled-search speed at four weeks, with no
+   * intervention), so a rise here is exactly what repetition produces. Saying
+   * "on this task" is what makes reporting it honest at all — see the claim
+   * boundary in CANCELLATION-TASK-PLAN.md §2.4.
+   */
+  const abilityProgress = useCallback(() => {
+    const ab = abilityRef.current;
+    const base = profileRef.current?.abilityBaseline;
+    if (!ab || !isSettled(ab) || !base || !Number.isFinite(base.theta)) return null;
+    if (ab.n <= base.n) return null;
+    const sePre = abilityStandardError(base.n);
+    const sePost = abilityStandardError(ab.n);
+    const rc = reliableChangePooled(ab.theta - base.theta, sePre, sePost);
+    if (!rc) return null;
+    return { ...rc, delta: +(ab.theta - base.theta).toFixed(3), n: ab.n, baseN: base.n };
+  }, []);
+
   const freeStageRef = useRef(0);
   /* Per-ROUND search paths for the whole survival run. Kept separate rather
      than concatenated: each board is its own search, and joining two boards'
@@ -1529,6 +1684,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         // you searched one you cleared, and dropping it would bias the measure
         // toward the boards that went well.
         freeSearchRef.current.push({ foundSeq, omitPos });
+        // …and its outcome against that stage's difficulty. Survival is where
+        // theta converges fastest: many short boards, each with a known `b`.
+        bankAbility(fqSurvivalDifficultyLogit(r.freeStage ?? freeStageRef.current), won);
         if (won) {
           // Cleared the round — bank the clear bonus and ramp to a harder stage.
           // 'win' already played at the START of the clear-celebration hold.
@@ -1538,7 +1696,18 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           freeScoreRef.current += clearPts;
           setFreeScore(freeScoreRef.current);
           freeRoundsWonRef.current += 1;
-          freeStageRef.current += 1;
+          /* ⚠ THE NEXT BOARD COMES FROM THETA, NOT FROM A COUNTER (2026-09-19).
+             It used to be `freeStageRef.current += 1` — an open-loop ramp keyed
+             to how many rounds you had survived, which meant two players with
+             very different ability met exactly the same sequence of boards, and
+             the ramp saturated at stage 14 regardless of who was playing.
+             Now the stage is chosen so the board sits at the 0.84 success
+             target for THIS player's current estimate.
+             ⚠ `Math.max(prev + 1, …)` keeps survival a climb: a cleared round
+             never deals an easier board next. Elo is the target, not a licence
+             to walk backwards mid-run — that is what the one life is for. */
+          const targetStage = fqSurvivalStageForDifficulty(difficultyForP(abilityRef.current.theta));
+          freeStageRef.current = Math.max(freeStageRef.current + 1, targetStage);
           setPauseOpen(false);
           void beginFreeRoundAtStage(freeStageRef.current, { skipCueSound: true });
           return;
@@ -1547,12 +1716,25 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         freeStreakRef.current = 0;
         freeLivesRef.current = Math.max(0, freeLivesRef.current - 1);
         setFreeLives(freeLivesRef.current);
+        /* ⚠ THIS BRANCH WAS DEAD CODE DESCRIBING A STAIRCASE THAT DID NOT EXIST
+           (removed 2026-09-19). Its comment read "adaptive staircase: clear →
+           +1, fail → −1, so the stage converges on the player's threshold" —
+           but `FREE_LIVES` is 1 and the counter is only ever set or decremented,
+           never raised, so the first failure took it 1 → 0 and the branch could
+           never run. Survival was an open-loop ramp wearing a staircase's
+           comment, and that comment is the reason nobody noticed.
+           The convergence it described is real now and lives in theta (see
+           bankAbility and the stage selection above), which works across
+           sessions rather than within a single run.
+           ⚠ If FREE_LIVES ever rises above 1, the retry board must come from
+           `fqSurvivalStageForDifficulty(difficultyForP(theta))` — NOT from
+           stage − 1, which would reintroduce the open loop. */
         if (freeLivesRef.current > 0) {
-          // Lives left — step DOWN one stage (adaptive staircase: clear → +1,
-          // fail → −1, so the stage converges on the player's threshold).
           playSfx('error');
           setPauseOpen(false);
-          freeStageRef.current = Math.max(0, freeStageRef.current - 1);
+          freeStageRef.current = fqSurvivalStageForDifficulty(
+            difficultyForP(abilityRef.current.theta),
+          );
           void beginFreeRoundAtStage(freeStageRef.current);
           return;
         }
@@ -1581,11 +1763,35 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
         });
         trialLogRef.current?.finish({ roundsWon: rw, score: runScore });
         trialLogRef.current = null;
-        awardFreeRun('cancel', rw);
+        /* ⚠ THE RATING NOW BANKS A MEASUREMENT, NOT A COUNT (2026-09-19).
+           It used to be `awardFreeRun('cancel', rw)` — rw being how many rounds
+           you survived on one life. Not accuracy, not RT, not d-prime: a count,
+           with a single life's variance on top, which then set a band from
+           Developing to Elite and drove the Daily Workout's difficulty. A fast,
+           sloppy player outranked an accurate, deliberate one.
+           What is banked instead is the ladder level whose authored difficulty
+           equals this player's ability — an estimate built from every board
+           they have finished, in Levels and Survival, each scored against a
+           known `b`.
+           ⚠ THE 18-GAME CONTRACT IS UNTOUCHED. `updateRating(key, level)` still
+           takes a scalar level, and this is still a level; it is simply derived
+           from theta rather than from luck. No other game changes.
+           ⚠ Gated on `isSettled` (n >= 20). Before that, theta is still steering
+           the boards — where being slightly wrong costs a slightly-off board —
+           but it is not yet asserted as a measurement, so the old count is
+           banked meanwhile. Same cold-start posture as personalization. */
+        const ab = abilityRef.current;
+        awardFreeRun(
+          'cancel',
+          isSettled(ab) ? fqLadderLevelForDifficulty(ab.theta) : rw,
+        );
         setLastResult({
           type: 'free', roundsWon: rw, score: runScore, lastR: r, prevBest, prevBestScore,
           org: searchOrganization(freeSearchRef.current),
           spatial: spatialBias(freeSearchRef.current),
+          /* Read AFTER this run's boards have been banked, so the comparison
+             includes the run the player just finished rather than lagging it. */
+          progress: abilityProgress(),
         });
         setPhase('freeRes');
         setPlayStep('idle');
@@ -1727,11 +1933,15 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       if (!won) {
         trialLogRef.current?.finish({ won, waveIdx: r.waveIdx, wavesTotal: r.wavesTotal });
         trialLogRef.current = null;
+        /* One board, one trial, scored against THAT WAVE's difficulty — not the
+           level's, which belongs to the last wave and may never have been seen. */
+        bankAbility(fqWaveDifficultyLogit(r.ladderLv ?? r.lv, r.waveIdx ?? 0), false);
         persistLevel(r, stats, f, e);
         setLastResult({ type: 'level', stats, r, won, found: f, errors: e });
         setPhase('res');
         return;
       }
+      bankAbility(fqWaveDifficultyLogit(r.ladderLv ?? r.lv, r.waveIdx ?? 0), true);
 
       // Cleared this wave. Bank its RAW inputs (not the already-rounded
       // per-wave stats) so a multi-wave level's final numbers are computed
@@ -1855,7 +2065,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       });
       setPhase('res');
     },
-    [stopTimer, persistLevel, playSfx, beginFreeRoundAtStage, beginAssessmentTrial, beginAdaptiveTrial, onAssessmentComplete, awardFreeRun, awardLadderWin, profile],
+    [stopTimer, persistLevel, playSfx, beginFreeRoundAtStage, beginAssessmentTrial, beginAdaptiveTrial, onAssessmentComplete, awardFreeRun, awardLadderWin, profile, bankAbility, abilityProgress],
   );
 
   useEffect(() => {
@@ -3258,6 +3468,10 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                 <>
                   {/* Survival pools every round of the run, the failed one too. */}
                   <CxSearchBlock t={t} org={lastResult.org} />
+                  {/* Change since baseline — appears only once the estimate is
+                      settled (n >= 20) and a baseline exists, and it speaks
+                      whether the news is good, bad or nothing. */}
+                  <CxProgressBlock t={t} prog={lastResult.progress} />
                   {rwBeat || scoreBeat ? (
                     <CxResultsExtra kind="best" t={t} prevBest={prevBest} />
                   ) : null}
