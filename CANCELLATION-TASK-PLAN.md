@@ -1,10 +1,10 @@
 # CANCELLATION TASK PLAN
 
 **The scientific rebuild of the Cancellation game (`cancel-task`).**
-Opened 2026-09-19. Multi-session: work through the phases in order, tick the boxes, leave the notes.
+Opened 2026-09-19, **finished and deployed 2026-09-20.** This is a record, not a queue.
 
-> **If you are picking this up cold, read §1 and §2 (10 minutes), then find the first unticked box in §5.**
-> Everything you need is in this file. The long-form evidence is in `review/cancellation-science-2026-09-19/` — `01-AUDIT.md` (what is wrong, with file:line), `02-SCIENCE.md` (the literature, with URLs), `03-SPEC.md` (the first draft of this plan). You do not need to read them to continue, but cite them rather than re-deriving.
+> **If you are picking this up cold: read §0, then §1–2 (10 minutes).** §1–2 are the rules the game is built on and they still govern any change to it. There is no unticked box to find — §5's phases are all complete.
+> The long-form evidence is in `review/cancellation-science-2026-09-19/` — `01-AUDIT.md` (what was wrong, with file:line), `02-SCIENCE.md` (the literature, with URLs), `03-SPEC.md` (the first draft of this plan). Cite them rather than re-deriving.
 
 ---
 
@@ -23,6 +23,11 @@ All five phases are built, all six decisions in §9 are made and shipped, and th
 | **A** | **d′ counts every distractor as inspected.** Sensitivity is `z(H) − z(F)`, and `F` needs the distractors the player looked at and rejected. The game counts all of them; real search never inspects all of them, and there is no eye tracker. | **Unreachable.** It lives only inside the assessment, which `ComicsScreen.jsx` replaces with `AssessmentComingSoon`. Fix it *when the assessment is unparked*, not before — either estimate the inspected region from the cancellation path (already stored), or drop the d′ label and state the assumption. |
 | **B** | **No Arabic search norms exist.** Where a person starts scanning is a real diagnostic, and left-to-right readers start top-left. An Arabic reader should start top-**right**; there is no published normative data for cancellation in Arabic script. | **Needs users, not code.** `scanLat` is computed and deliberately never shown. Showing it against an English-reader baseline would misread half the audience. Revisit once there is a consented population to norm on — i.e. after Supabase. |
 
+### Housekeeping left in the tree (deliberate, not forgotten)
+
+- **The review board moved because of this work, and was NOT acked.** `npm run review:since` reports `SCI-01` (no outcome claims found) and `SCI-03` (reliable-change references 21 → 28) as changed. Both are our improvements. Run **`npm run review:ack`** to make them the new baseline, or the next session will see them as fresh findings and investigate its own predecessor. Left un-acked because accepting a new normal is the owner's call, not a tidy-up.
+- **Untracked, and correctly so:** `review/*-audit-*/` screenshot folders (~2.4 MB of PNGs — matches how every previous review round was handled; the `.md` files in those folders ARE tracked) and `public/Assets/attention/cancel-path-bg.webp`, which is **referenced from no `src` file**, so it carries no 404 risk. ⚠ If anything in `src` ever starts referencing that webp, it must be `git add`ed in the same commit — untracked art resolves fine in dev and 404s in production, and no gate catches it.
+
 ### If you want to keep improving this game anyway
 
 Nothing below is owed, and none of it is blocked:
@@ -40,8 +45,8 @@ Nothing below is owed, and none of it is blocked:
 |---|---|---|
 | **1** | Measurement truth | ✅ **DONE 2026-09-19** — all 8 items, gates green, verified in a browser |
 | **2** | Surface the second factor (search organisation) | ✅ **DONE 2026-09-19** — all 4 items, gates green, verified in a browser |
-| **3** | The difficulty model + its gates | ✅ **DONE 2026-09-19** — 3.1 · 3.2 · 3.3 · 3.4 · 3.8 built and shipped. ⚠ **3.5 / 3.6 / 3.7 are deliberately NOT built** — each changes what a player meets, which the "hold the current feel" instruction ruled out, so they are parked as decisions in **§9**. Phase 3 is closed for building; it is not closed for deciding. |
-| **4** | Elo rating | ✅ **DONE 2026-09-19** — all 6 items; θ verified converging in simulation *and* in the running game. Two advisory UI surfaces deliberately unbuilt (see 4.5). |
+| **3** | The difficulty model + its gates | ✅ **DONE** — 3.1 · 3.2 · 3.3 · 3.4 · 3.8 on 2026-09-19; **3.5 · 3.6 · 3.7 on 2026-09-20**, once §9 was decided. All eight built and shipped. |
+| **4** | Elo rating | ✅ **DONE** — all 6 items 2026-09-19; θ verified converging in simulation *and* in the running game. **Both advisory UI surfaces built 2026-09-20.** ⚠ A persistence bug in this phase shipped and was caught on 2026-09-20 — see the session log. |
 | **5** | Practice-corrected reliability | ✅ **DONE 2026-09-19** — both items, gates green |
 
 **ALL FIVE PHASES BUILT, AND ALL OF §9 DECIDED AND BUILT (2026-09-20).** The clock now derives from the honest model — one model generates difficulty and gates it, with no legacy shadow. What remains is only §8's open questions and the coach trigger noted in 4.5.
