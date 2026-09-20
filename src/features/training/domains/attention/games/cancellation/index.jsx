@@ -75,6 +75,7 @@ import {
   difficultyForP,
   isSettled,
   abilityStandardError,
+  expectedClear,
   DISPLAY_MIN_N,
 } from '../../../../shared/abilityElo.js';
 import { reliableChangePooled } from '../../../../assessment/assessmentNorms';
@@ -176,6 +177,18 @@ function loadProfile() {
          costing the Wellbeing SRBAI ratings their persistence. Anything new
          stored on this profile must be listed here too. */
       stars: parsed.stars && typeof parsed.stars === 'object' ? parsed.stars : {},
+      /* ⚠ ADDED 2026-09-20, AND IT HAD BEEN BROKEN SINCE PHASE 4 SHIPPED.
+         `ability` is the Rasch/Elo estimate; without it here, every session
+         started from the seed again — theta could never accumulate, the
+         baseline could never be taken, and nothing theta-derived could ever
+         reach `isSettled`. It verified green at the time because the check
+         read localStorage inside the SAME session, where the ref is already
+         warm; only a reload exposes it. Exactly the failure the comment above
+         describes, walked into anyway. */
+      ability: parsed.ability && typeof parsed.ability === 'object'
+        && Number.isFinite(parsed.ability.theta) ? parsed.ability : null,
+      abilityBaseline: parsed.abilityBaseline && typeof parsed.abilityBaseline === 'object'
+        && Number.isFinite(parsed.abilityBaseline.theta) ? parsed.abilityBaseline : null,
     };
   }
   return { tel: [], done: {}, freeBest: 0, freeBestScore: 0, stars: {} };
@@ -270,11 +283,24 @@ function CancellationTarget({ round, cells, size, isAr }) {
 
 
 /** Universe constellation — 3 main mode planets + small 3D satellite. */
-function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
+function FqAttentionLightModes({ t, isAr, onFree, onLevels, onChallenge, playSfx, levelsHintExtra }) {
   // The game is now 3D everywhere — no separate "3D" tile; each mode is 3D.
+  /* ⚠ THE SUGGESTION RIDES THE LEVEL-MODE HINT, not the level map's `blurb`.
+     The first build appended it to `blurb` — which `CancelPlanetPath` accepts
+     and DELIBERATELY DOES NOT RENDER: the hero title/blurb strip was removed on
+     purpose so the map opens standing in Ember Reach. So the text existed, was
+     correct, and was passed to a prop with no output. Caught by driving the
+     screen; nothing else could have seen it.
+     The hub is the better home anyway — it is where the player decides whether
+     to go to Levels at all. */
   const items = [
     { k: 'free', lb: t.freeMode, hint: t.hubNodeFreeHint, on: onFree },
-    { k: 'levels', lb: t.levelMode, hint: t.hubNodeLevelsHint, on: onLevels },
+    {
+      k: 'levels',
+      lb: t.levelMode,
+      hint: levelsHintExtra ? `${t.hubNodeLevelsHint} · ${levelsHintExtra}` : t.hubNodeLevelsHint,
+      on: onLevels,
+    },
     { k: 'chal', lb: t.challengeMode, hint: t.hubNodeChallengeHint, on: onChallenge },
   ];
   // ⚠ 2026-09-13, owner: the mode-pick screen had drifted away from every other
@@ -503,6 +529,11 @@ const UI = {
        which is most of a band — stating it as a fact would be a precision the
        measurement does not have. */
     suggestLevel: (n) => `around level ${n} is a good fit right now`,
+    /* ⚠ "Show me the rule again", not "You need help". The button appears
+       because a model predicts a low chance on this board — which is a
+       statement about the board, not about the player, and the label has to
+       stay on the right side of that line. */
+    remindRule: 'Show me the rule again',
     progTitle: 'Since you started',
     progUp: 'Your level on this task has risen by more than measurement noise.',
     progDown: 'Your level on this task has fallen by more than measurement noise.',
@@ -713,6 +744,8 @@ const UI = {
        المهمة»، وسطر «لا تغيّر» مكتوب ليُقرأ كنتيجة طبيعية لا كإخفاق. */
     /* «حوالى» لا «مستواك هو» — انظر التعليق الإنجليزي. */
     suggestLevel: (n) => `المستوى ${n} تقريباً مناسب لك الآن`,
+    /* «أعد عرض القاعدة» لا «تحتاج مساعدة» — انظر التعليق الإنجليزي. */
+    remindRule: 'أعد عرض القاعدة',
     progTitle: 'منذ أن بدأت',
     progUp: 'ارتفع مستواك في هذه المهمة بما يتجاوز خطأ القياس.',
     progDown: 'انخفض مستواك في هذه المهمة بما يتجاوز خطأ القياس.',
@@ -1056,7 +1089,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
    * boundary in CANCELLATION-TASK-PLAN.md §2.4.
    */
   const abilityProgress = useCallback(() => {
-    const ab = abilityRef.current;
+    const ab = ensureAbility();
     const base = profileRef.current?.abilityBaseline;
     if (!ab || !isSettled(ab) || !base || !Number.isFinite(base.theta)) return null;
     if (ab.n <= base.n) return null;
@@ -1065,7 +1098,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
     const rc = reliableChangePooled(ab.theta - base.theta, sePre, sePost);
     if (!rc) return null;
     return { ...rc, delta: +(ab.theta - base.theta).toFixed(3), n: ab.n, baseN: base.n };
-  }, []);
+  }, [ensureAbility]);
 
   const freeStageRef = useRef(0);
   /* Per-ROUND search paths for the whole survival run. Kept separate rather
@@ -1714,7 +1747,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
              ⚠ `Math.max(prev + 1, …)` keeps survival a climb: a cleared round
              never deals an easier board next. Elo is the target, not a licence
              to walk backwards mid-run — that is what the one life is for. */
-          const targetStage = fqSurvivalStageForDifficulty(difficultyForP(abilityRef.current.theta));
+          const targetStage = fqSurvivalStageForDifficulty(difficultyForP(ensureAbility().theta));
           freeStageRef.current = Math.max(freeStageRef.current + 1, targetStage);
           setPauseOpen(false);
           void beginFreeRoundAtStage(freeStageRef.current, { skipCueSound: true });
@@ -1741,7 +1774,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           playSfx('error');
           setPauseOpen(false);
           freeStageRef.current = fqSurvivalStageForDifficulty(
-            difficultyForP(abilityRef.current.theta),
+            difficultyForP(ensureAbility().theta),
           );
           void beginFreeRoundAtStage(freeStageRef.current);
           return;
@@ -1788,7 +1821,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
            the boards — where being slightly wrong costs a slightly-off board —
            but it is not yet asserted as a measurement, so the old count is
            banked meanwhile. Same cold-start posture as personalization. */
-        const ab = abilityRef.current;
+        const ab = ensureAbility();
         awardFreeRun(
           'cancel',
           isSettled(ab) ? fqLadderLevelForDifficulty(ab.theta) : rw,
@@ -2073,7 +2106,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
       });
       setPhase('res');
     },
-    [stopTimer, persistLevel, playSfx, beginFreeRoundAtStage, beginAssessmentTrial, beginAdaptiveTrial, onAssessmentComplete, awardFreeRun, awardLadderWin, profile, bankAbility, abilityProgress],
+    [stopTimer, persistLevel, playSfx, beginFreeRoundAtStage, beginAssessmentTrial, beginAdaptiveTrial, onAssessmentComplete, awardFreeRun, awardLadderWin, profile, bankAbility, abilityProgress, ensureAbility],
   );
 
   useEffect(() => {
@@ -2900,6 +2933,15 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                 onFree={startFreeMode}
                 onLevels={() => setPhase('levels')}
                 onChallenge={() => setPhase('chal')}
+                /* Advice, never a gate — unlocking is untouched, and a player
+                   who beat level 40 beat level 40. Silent until the estimate is
+                   settled (n >= 20), because below that it is mostly the seed. */
+                levelsHintExtra={(() => {
+                  const ab = ensureAbility();
+                  if (!isSettled(ab)) return null;
+                  const suggested = fqLadderLevelForDifficulty(ab.theta);
+                  return t.suggestLevel(suggested.toLocaleString(isAr ? 'ar-EG' : 'en-US'));
+                })()}
               />
               <HubScienceLink gameId="cancel-task" isAr={isAr} playSfx={playSfx} />
             </div>
@@ -2948,19 +2990,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           playSfx={playSfx}
           onBack={() => setPhase('hub')}
           title={t.title}
-          /* ⚠ THE SUGGESTION IS ADVICE, NOT A GATE, and it appears only once the
-             ability estimate is settled (n >= 20). Below that theta still picks
-             Survival's boards — where being slightly wrong costs one slightly-off
-             board — but it is not shown as if it were a finding. Unlocking is
-             untouched: you can open any level you have reached, and a player who
-             beat level 40 beat level 40. */
-          blurb={(() => {
-            const base = t.ladderBlurb(FQ_LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'));
-            const ab = abilityRef.current;
-            if (!isSettled(ab)) return base;
-            const suggested = fqLadderLevelForDifficulty(ab.theta);
-            return `${base} · ${t.suggestLevel(suggested.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}`;
-          })()}
+          blurb={t.ladderBlurb(FQ_LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
           count={FQ_LADDER_LEVELS}
           isUnlocked={(lv) => (lv === 1 || lv <= ladderReached + 1
             || !!doneMap[`lad-${lv - 1}`] || !!doneMap[`lad-${lv}`])}
@@ -3430,6 +3460,45 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
                     openLevel((lastResult.r.ladderLv ?? 1) + 1);
                   },
                 } : null,
+                /* ── THE COACH TRIGGER (Phase 4.5, built 2026-09-20) ─────────
+                 * Dr Kawkab offers the world's rule again when the ability
+                 * model expects this board to be beyond the player — a failed
+                 * level whose predicted clear probability is under 50%.
+                 *
+                 * ⚠ IT IS AN OFFER, NEVER AN INTERRUPTION. It sits beside Retry
+                 * as one more button; it does not take over the screen, and it
+                 * does not appear on a level the player passed. Help that
+                 * arrives uninvited after a loss reads as being told off.
+                 *
+                 * ⚠ AND IT ONLY SPEAKS WHEN IT KNOWS SOMETHING. Gated on
+                 * `isSettled` (n >= 20) like every other theta-derived surface:
+                 * below that the estimate is mostly the seed, so "we think this
+                 * is too hard for you" would be a guess wearing a measurement's
+                 * clothes. It also needs the world to HAVE a rule — band 1
+                 * introduces the task itself and has nothing to re-teach.
+                 *
+                 * ⚠ Re-teaching does not clear `markRuleSeen`: this is a
+                 * reminder the player asked for, not the first-time lesson, so
+                 * it must not change what the next new world does. */
+                (() => {
+                  if (lastResult.stats.won) return null;
+                  const ab = ensureAbility(); // never the raw ref — see the map blurb
+                  if (!isSettled(ab)) return null;
+                  const lad = lastResult.r.ladderLv ?? 1;
+                  const section = fqSectionOf(lad);
+                  if (!section?.mech || !FQ_MECHANIC_TEACH[section.mech]) return null;
+                  if (expectedClear(ab.theta, fqLadderDifficultyLogit(lad)) >= 0.5) return null;
+                  return {
+                    key: 'rule',
+                    label: t.remindRule,
+                    variant: 'ghost',
+                    onClick: () => {
+                      setLastResult(null);
+                      setPendingRule({ lv: lad, section, mech: section.mech });
+                      setPhase('rule');
+                    },
+                  };
+                })(),
                 {
                   key: 'retry',
                   label: lastResult.stats.won ? t.replay : t.retry,

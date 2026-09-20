@@ -8,7 +8,33 @@ Opened 2026-09-19. Multi-session: work through the phases in order, tick the box
 
 ---
 
-## 0. Progress
+## 0. START HERE — status as of 2026-09-20
+
+**THIS PROJECT IS COMPLETE AND DEPLOYED. There is no unfinished work in it.**
+
+All five phases are built, all six decisions in §9 are made and shipped, and the two loose ends that were left after them (a stale generator script, the coach trigger) are done too. Every gate is green, production is verified.
+
+**If you are a new session or a new agent: you are not expected to continue this plan.** Read §1–2 for the rules the game is now built on — they still govern any change to Cancellation — and otherwise treat this document as a record, not a queue.
+
+### The only two things still open, and neither is a task
+
+| | What | Why it is not a task |
+|---|---|---|
+| **A** | **d′ counts every distractor as inspected.** Sensitivity is `z(H) − z(F)`, and `F` needs the distractors the player looked at and rejected. The game counts all of them; real search never inspects all of them, and there is no eye tracker. | **Unreachable.** It lives only inside the assessment, which `ComicsScreen.jsx` replaces with `AssessmentComingSoon`. Fix it *when the assessment is unparked*, not before — either estimate the inspected region from the cancellation path (already stored), or drop the d′ label and state the assumption. |
+| **B** | **No Arabic search norms exist.** Where a person starts scanning is a real diagnostic, and left-to-right readers start top-left. An Arabic reader should start top-**right**; there is no published normative data for cancellation in Arabic script. | **Needs users, not code.** `scanLat` is computed and deliberately never shown. Showing it against an English-reader baseline would misread half the audience. Revisit once there is a consented population to norm on — i.e. after Supabase. |
+
+### If you want to keep improving this game anyway
+
+Nothing below is owed, and none of it is blocked:
+
+- **Re-fit `LADDER_LOGIT_SCALE` and `LADDER_LOAD_SCALE` on real clear-rate data.** They are ours, chosen to make the ladder span a usable range, and they are the largest remaining guess in the difficulty model. θ now collects exactly the data that would replace them.
+- **Re-fit `SEARCH_SLOPE_BASE_MS` / `SEARCH_SLOPE_SPAN_MS` on real telemetry.** Same reasoning — the literature's slopes are response-mode dependent and should not be imported.
+- **Watch whether players stall at L46–L60.** That was the original §9.1 worry. The clock migration loosened those levels, and θ will show a plateau there if one survives.
+- **Nine other games still bank rounds-survived** into their domain rating. `cancel-task` now banks a measured ability; the pattern in `abilityElo.js` is game-agnostic and would port.
+
+---
+
+## 0b. Phase progress
 
 | Phase | What | Status |
 |---|---|---|
@@ -31,6 +57,8 @@ Opened 2026-09-19. Multi-session: work through the phases in order, tick the box
 | Date | Session did | Left open |
 |---|---|---|
 | 2026-09-19 | Audit (4 agents), research, this plan | Phase 1 starting |
+| 2026-09-20 | ⚠ **θ HAD NEVER PERSISTED, AND PHASE 4 SHIPPED THAT WAY.** `loadProfile` is a WHITELIST — with a comment warning about exactly this trap — and `ability` was not in it, so every session dropped the estimate and started from the seed. It could never accumulate, the baseline could never be taken, and nothing θ-derived could ever reach `isSettled`. Phase 4's verification passed because it read localStorage **inside the same session**, where the ref is already warm; only a reload exposes it. Found by building the coach trigger, which needs a settled estimate. Also fixed: five call sites read `abilityRef.current` raw instead of `ensureAbility()`, so the ref was null before the session's first board. | — |
+| 2026-09-20 | **Loose ends cleared; project closed.** Deleted `build-focus-quest-data.mjs` (it also wrote to a path that has not existed since the feature-folder move, so it would have created a second dead `focusQuestData.js`). Built the coach trigger. Rewrote §0 as a handover and §8 as a record. All gates green, clean build. | **Nothing.** Two parked items in §8, neither actionable — see §0. |
 | 2026-09-20 | **DEPLOYED (§9).** Commit `1c189f4` on both remotes; CI green; `gh-pages` reads "Deploy: built from 1c189f4"; Pages `status: built`. Verified on production: science link and panel both read "The science", honest limits still renders, band 5 states the colour field, zero exceptions. | §8's open questions; the 4.5 coach trigger. |
 | 2026-09-20 | **§9 resolved and built.** Clock migrated onto the honest model; mechanic double-count removed structurally; `b` gained a load term; `audit:fq` feasibility promoted from report to gate; `audit:curves` re-pointed at difficulty; `lookalikes`→`samehue`; no-go penalty; tier-seam resets fixed; science panel retitled across all 18 games; start-level suggestion built. All gates green, clean build, verified on screen. ⚠ **A PowerShell `Set-Content` rewrite double-encoded `focusQuestData.js`** (1119 mojibake) — repaired via a cp1252 reverse map. **Never rewrite source with Get-Content/Set-Content in this repo.** | §8's open questions; the 4.5 coach trigger. |
 | 2026-09-20 | **DEPLOYED (phases 4–5).** Commit `41c5fc9` on both remotes; CI green; `gh-pages` reads "Deploy: built from 41c5fc9"; Pages `status: built`. **Verified on production**: a live Survival run moved θ from **−3.23 to −0.73 over 9 boards**, the boards climbing with it (20→35 cells, 3→9 targets), no baseline written before n = 20 (the display gate holds), zero exceptions. | §9's four decisions · 4.5's two UI surfaces · §8. |
@@ -290,7 +318,7 @@ Tick a box only when the change is **made and verified**. Note what you verified
 - [x] **4.2** `fqLadderDifficultyTable` / `fqWaveDifficultyLogit` / `fqSurvivalDifficultyTable` in `focusQuestData.js`, derived from the **honest** model (§3.1) as `b = −3·ln(generosity)` and frozen by a running max. Measured span: **L1 b = −3.38 → L60 b = +0.14**, i.e. 97% → 46% clear probability for a player at θ = 0.
 - [x] **4.3** Survival deals `fqSurvivalStageForDifficulty(θ − 1.658)`. ⚠ Clamped with `Math.max(prev+1, …)` so a cleared round never deals an easier board — Elo is the target, not a licence to walk backwards mid-run. That is what the one life is for.
 - [x] **4.4** Dead branch removed. It was an open-loop ramp wearing a staircase's comment, and **the comment is why nobody noticed**. The convergence it described is real now and lives in θ, across sessions rather than within one run.
-- [x] **4.5** θ drives board selection and **never gates** progression. ⚠ **Two advisory surfaces are NOT built**: the start-level hint on the level map, and the coach trigger at low `E(θ, b)`. Both are UI in `CancelPlanetPath` / the coach, and both would be hidden below `DISPLAY_MIN_N` anyway.
+- [x] **4.5** θ drives board selection and **never gates** progression. Both advisory surfaces are now built: the **start-level suggestion** on the level map (2026-09-20) and the **coach trigger** offering the world's rule after a failed level with a sub-50% predicted clear (2026-09-20). Both hidden below `DISPLAY_MIN_N`.
 - [x] **4.6** `awardFreeRun('cancel', …)` now banks **the ladder level whose authored difficulty equals this player's ability**, gated on `isSettled` (n ≥ 20); below that the old round count is banked meanwhile. ⚠ **The 18-game contract is untouched** — `updateRating(key, level)` still takes a scalar level, and this is still a level; it is simply derived from θ rather than from luck. No other game changes.
 
 **Phase 4 notes — three bugs the tests caught, all of which would have shipped silently:**
@@ -413,11 +441,20 @@ Pool size drops **11→5** at L21 and **7→4** at L41; eccentricity bias drops 
 
 ---
 
-## 8. Open questions
+## 8. The four loose ends — two done, two parked
 
-- **⚠ THE SCIENCE PANEL'S OWN TITLE IS "Why this trains your brain"** (found 2026-09-19 by reading the live screen, not the code). The honest-limits paragraph now renders correctly — underneath a headline making exactly the claim it refutes. The string is `HubScienceLink.jsx:14` (`brainLabel`) and `ScienceBrainPanel.jsx`, **shared by all 18 games**, plus local copies in `memo-span` and `nback`. Changing it is a platform-voice decision, not a Cancellation one, so it was flagged rather than changed. Suggested: "The science" / "What this measures" — «العلم وراء اللعبة», which `gameScience.js` already uses as its per-game title.
+**Nothing here blocks anything, and none of it is visible to a player.** Items 1 and 2 were cleared on 2026-09-20. Items 3 and 4 are parked for reasons that are not laziness: one is unreachable code, the other needs a population that does not exist yet. See §0 for the short version.
 
-- **`nInspected` for d′.** Convex hull of the cancellation path, or drop the d′ label? (§3.2)
-- **Arabic first-marking norms.** No published data exists. Collect our own, or permanently omit the readout? (§4)
-- **Phase 4.6 and the 18-game rating contract.** Change the contract, or give `cancel-task` a parallel channel?
-- **`scripts/build-focus-quest-data.mjs`** still reads a file on the owner's OneDrive and would regenerate the difficulty model from a source predating every fix in this plan — including the retired colour conjunction. In no npm script, so it cannot fire by accident. Delete it, or update it?
+**1. ~~A stale script that could undo the work.~~ DONE 2026-09-20 — deleted.** `scripts/build-focus-quest-data.mjs` regenerated the difficulty model from a file on the owner's OneDrive predating every fix in this plan, including the colour conjunction retired 2026-08-09. It was also writing to `src/components/training/focusQuestData.js` — **a path that has not existed since the feature-folder move**, so running it would have silently created a second, dead `focusQuestData.js` rather than overwriting the real one at `src/features/training/shared/`. Recoverable from git history; the OneDrive source is the owner's file and was left alone.
+
+**2. ~~The coach hint that was never built.~~ DONE 2026-09-20.** Dr Kawkab now offers the world's rule again on a **failed** level whose predicted clear probability is under 50%.
+
+> ⚠ **Building this is what exposed the θ persistence bug** (see the session log): a trigger that needs a *settled* estimate cannot fire if the estimate resets every session. Two further traps came with it. `loadProfile` is a whitelist and silently dropped `ability`. And the start-level suggestion was first appended to the level map's `blurb` prop — which `CancelPlanetPath` **accepts and deliberately never renders**, because the hero title/blurb strip was removed on purpose. The text existed, was correct, and went to a prop with no output; it lives on the hub's Level-mode card now. Both were found by driving the screen, not by any gate. ⚠ An offer beside Retry, never an interruption — help that arrives uninvited after a loss reads as being told off. ⚠ Gated on `isSettled` like every θ-derived surface, and it needs the world to *have* a rule (band 1 introduces the task itself). ⚠ It does not clear `markRuleSeen`: a reminder the player asked for must not change what the next new world does.
+
+**3. d′ rests on an assumption nobody can check.** Sensitivity is `z(hit rate) − z(false-alarm rate)`, and the false-alarm rate needs a count of distractors the player *looked at and correctly rejected*. The game counts every non-target on the board — but in real visual search most distractors are never looked at, and there is no eye tracker to tell. **Either** estimate the inspected region from the cancellation path the game already stores, **or** stop calling it d′ and label it as a bounded estimate with the assumption stated. ⚠ Only reachable inside the parked assessment today, so it changes nothing live.
+
+**4. Arabic search norms do not exist.** Where a person starts scanning is a real diagnostic — left-to-right readers start top-left. An Arabic reader should start top-**right**, and there is no published normative data for cancellation in Arabic script. The measure is computed and deliberately **not shown**, because displaying it against an English-reader baseline would misread half the users. **Either** collect our own data once there are users, **or** leave it permanently unshown. This is the one that needs real users, not a decision.
+
+---
+
+*Resolved and removed from this list: the science-panel title (retitled across all 18 games, 2026-09-20) and the 18-game rating contract (no change needed — `updateRating` still takes a scalar level; it is now derived from ability rather than luck).*
