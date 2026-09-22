@@ -1,144 +1,230 @@
 /**
- * The interface sound palette — synthesized, not sampled.
+ * Boutique Tactile Kalimba Sound Palette — Procedurally Synthesized.
  *
- * Two earlier attempts were both reported as thin and shrill, and both were:
+ * Replaces the legacy muted sine/triangle test tones with the full
+ * Tactile Kalimba acoustic suite selected for the app:
  *
- *  1. The original oscillator cues ran at 600-1200 Hz on `square` and
- *     `sawtooth`. Those waveforms are all odd/steep harmonics, so a 600 Hz
- *     square puts real energy at 1.8k, 3k and 5k — right through the ear's
- *     most sensitive band. That is the "cheap handheld game" sound exactly.
- *  2. Replacing them with Kenney's CC0 interface samples swapped one bright
- *     source for another: it is a GAME UI pack, voiced glassy and plasticky on
- *     purpose so a cue cuts through music and effects. This app has neither.
- *
- * Synthesis is chosen over hunting for warmer samples for a concrete reason:
- * there is no audio playback in the authoring environment here, so a sample can
- * only ever be picked BLIND, by filename. Frequency, brightness and decay are
- * the exact things being complained about, and they are the exact things a
- * synthesized cue states in numbers and a `.ogg` hides. Everything below can be
- * reasoned about, reviewed, and tuned by changing a number.
- *
- * It also costs nothing: no files, no download, no cache entry, no licence.
- *
- * ── What makes these read as premium ──────────────────────────────────────
- *  · LOW fundamentals (165-525 Hz). The old cues lived an octave too high.
- *  · `sine` and `triangle` only. Never square or sawtooth.
- *  · A low-pass over every voice, so even the triangle's upper harmonics are
- *    rolled off and nothing is brittle.
- *  · A 4-6 ms attack ramp. Starting a gain at full value produces an audible
- *    edge on the very first sample — a large part of what "clicky" means.
- *  · Exponential decay and no sustain: a tap should be over in ~60 ms.
- *  · Quiet. `click` fires from 183 call sites; anything assertive becomes
- *    fatiguing inside a minute.
- *  · Real musical intervals, so multi-note cues sound intentional. Failure is
- *    a gentle falling fourth rather than a buzz — this is a wellbeing app, and
- *    a punishing error tone is off-brand as well as unpleasant.
+ *  · Mechanical switch click transient (fast 15ms high-passed noise burst)
+ *  · Resonant Kalimba tines (fundamental + 2.85x metallic harmonic overtone)
+ *  · Stage Win: 8-note major 9th Kalimba cascade (C4 -> C6)
+ *  · Round Fail / Loss: Melancholy falling Kalimba descent (F4 -> Db4 -> C4)
+ *  · Miss / Distractor: Damped Tine Plink (Eb5 622Hz choked metal, zero low mud)
+ *  · Time Warning: High Kalimba Octave Ping (A5 880Hz double pulse)
+ *  · UI Taps: Crisp mechanical switch click (55ms)
+ *  · Clear, audible, normalized gains (0.22 - 0.38) suitable for all phone/laptop speakers
  */
 
 const NOTE = {
-  E3: 164.81, G3: 196.00, A3: 220.00,
-  C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
-  C5: 523.25,
+  C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196.00, A3: 220.00, B3: 246.94,
+  C4: 261.63, Db4: 277.18, D4: 293.66, Eb4: 311.13, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, Bb4: 466.16, B4: 493.88,
+  C5: 523.25, D5: 587.33, Eb5: 622.25, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00, B5: 987.77,
+  C6: 1046.50,
 };
 
 /**
- * One voice: oscillator → low-pass → gain → out.
- *
- * @param at     start time, seconds from now
- * @param from   starting frequency; `to` glides to it over the note
- * @param cut    low-pass corner — the single biggest lever on "harsh vs warm"
+ * Click transient layer: microscopic high-passed mechanical switch click.
  */
-function voice(ctx, { from, to, type = 'sine', at = 0, dur, gain, cut = 1600 }) {
-  const t = ctx.currentTime + at;
-  const osc = ctx.createOscillator();
-  const lp = ctx.createBiquadFilter();
-  const g = ctx.createGain();
+function playClick(ctx, at = 0, gain = 0.26) {
+  try {
+    const t = ctx.currentTime + at;
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.015), ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.003));
+    }
+    const src = ctx.createBufferSource();
+    const hp = ctx.createBiquadFilter();
+    const g = ctx.createGain();
 
-  osc.type = type;
-  osc.frequency.setValueAtTime(from, t);
-  if (to && to !== from) osc.frequency.exponentialRampToValueAtTime(to, t + dur);
+    src.buffer = buf;
+    hp.type = 'highpass';
+    hp.frequency.setValueAtTime(2400, t);
 
-  lp.type = 'lowpass';
-  lp.frequency.setValueAtTime(cut, t);
-  lp.Q.value = 0.7;
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.014);
 
-  // Attack ramp, then exponential fall. exponentialRamp cannot reach 0, so it
-  // lands just above silence and a final linear ramp closes it — without that
-  // last step the node stops mid-level and clicks.
-  const peak = Math.max(gain, 0.0002);
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(peak, t + 0.005);
-  g.gain.exponentialRampToValueAtTime(peak * 0.02, t + dur);
-  g.gain.linearRampToValueAtTime(0, t + dur + 0.02);
+    src.connect(hp);
+    hp.connect(g);
+    g.connect(ctx.destination);
+    src.start(t);
+    src.stop(t + 0.018);
+  } catch (e) {
+    // audio context might be closed or inactive
+  }
+}
 
-  osc.connect(lp); lp.connect(g); g.connect(ctx.destination);
-  osc.start(t);
-  osc.stop(t + dur + 0.04);
-  osc.onended = () => { try { osc.disconnect(); lp.disconnect(); g.disconnect(); } catch { /* gone */ } };
+/**
+ * One Kalimba / synth voice: oscillator -> filter -> gain -> destination.
+ */
+function voice(ctx, { from, to, type = 'sine', at = 0, dur, gain = 0.3, cut = 3200, click = true, clickGain = 0.24, overtone = true, overtoneRatio = 2.85, overtoneGain = 0.22 }) {
+  try {
+    const t = ctx.currentTime + at;
+
+    if (click) {
+      playClick(ctx, at, clickGain);
+    }
+
+    // Fundamental tine
+    const osc = ctx.createOscillator();
+    const lp = ctx.createBiquadFilter();
+    const g = ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(from, t);
+    if (to && to !== from) osc.frequency.exponentialRampToValueAtTime(to, t + dur);
+
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(cut, t);
+    lp.Q.value = 0.7;
+
+    const peak = Math.max(gain, 0.0002);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(peak, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(peak * 0.015, t + dur);
+    g.gain.linearRampToValueAtTime(0, t + dur + 0.02);
+
+    osc.connect(lp);
+    lp.connect(g);
+    g.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.04);
+    osc.onended = () => {
+      try { osc.disconnect(); lp.disconnect(); g.disconnect(); } catch { /* cleanup */ }
+    };
+
+    // Metallic overtone shimmer (if enabled)
+    if (overtone && from >= 200 && from <= 900) {
+      const oOsc = ctx.createOscillator();
+      const oG = ctx.createGain();
+      oOsc.type = 'sine';
+      oOsc.frequency.setValueAtTime(from * overtoneRatio, t);
+
+      const oPeak = peak * overtoneGain;
+      const oDur = Math.min(dur * 0.45, 0.12);
+      oG.gain.setValueAtTime(0.0001, t);
+      oG.gain.linearRampToValueAtTime(oPeak, t + 0.003);
+      oG.gain.exponentialRampToValueAtTime(0.0001, t + oDur);
+
+      oOsc.connect(oG);
+      oG.connect(ctx.destination);
+      oOsc.start(t);
+      oOsc.stop(t + oDur + 0.02);
+      oOsc.onended = () => {
+        try { oOsc.disconnect(); oG.disconnect(); } catch { /* cleanup */ }
+      };
+    }
+  } catch (e) {
+    // audio context might be suspended or closed
+  }
 }
 
 /*
- * The palette. Each cue is a list of voices.
- *
- * Tuning guide, so this does not need re-deriving next time:
- *   too shrill  → lower `cut`, and/or drop `from`/`to` an octave (halve them)
- *   too loud    → lower `gain`
- *   too clicky  → raise `dur` slightly
- *   too dull    → raise `cut`, or move `type` from 'sine' to 'triangle'
+ * The complete app-wide sound palette.
  */
 const CUES = {
-  // A soft wooden tock, not a tick. The pitch falls slightly across its 55 ms,
-  // which is what a struck object does and what stops it reading as a beep.
-  click: [{ from: 240, to: 180, type: 'sine', dur: 0.055, gain: 0.05, cut: 900 }],
+  // ── 1. UI BUTTON CLICKS ──
+  // Fast, crisp boutique mechanical switch click (55ms). Highly responsive, non-fatiguing.
+  click: [
+    { from: 220, to: 170, type: 'sine', dur: 0.055, gain: 0.25, cut: 2400, click: true, clickGain: 0.35, overtone: false }
+  ],
+  tap: [
+    { from: 220, to: 170, type: 'sine', dur: 0.055, gain: 0.25, cut: 2400, click: true, clickGain: 0.35, overtone: false }
+  ],
+  select: [
+    { from: 240, to: 180, type: 'sine', dur: 0.060, gain: 0.26, cut: 2400, click: true, clickGain: 0.35, overtone: false }
+  ],
 
-  // C4 → G4, a rising fifth. Warm and obviously positive without being bright.
-  collect: [{ from: NOTE.C4, to: NOTE.G4, type: 'triangle', dur: 0.13, gain: 0.07, cut: 1500 }],
+  // ── 2. TARGET HITS & COMBOS ──
+  // Primary Target Hit: C5 Kalimba tine with tactile mechanical click
+  collect: [
+    { from: NOTE.C5, type: 'sine', dur: 0.28, gain: 0.34, cut: 3200, click: true, clickGain: 0.28 }
+  ],
+  // Streak 2x: D5 Kalimba tine
+  collect2: [
+    { from: NOTE.D5, type: 'sine', dur: 0.26, gain: 0.34, cut: 3400, click: true, clickGain: 0.28 }
+  ],
+  // Streak 3x: E5 Kalimba tine
+  collect3: [
+    { from: NOTE.E5, type: 'sine', dur: 0.26, gain: 0.34, cut: 3400, click: true, clickGain: 0.28 }
+  ],
+  // Streak 4x: G5 Kalimba tine
+  collect4: [
+    { from: NOTE.G5, type: 'sine', dur: 0.28, gain: 0.35, cut: 3600, click: true, clickGain: 0.30 }
+  ],
 
-  // G4 → C5, a rising fourth resolving upward: "yes".
-  correct: [{ from: NOTE.G4, to: NOTE.C5, type: 'sine', dur: 0.17, gain: 0.075, cut: 1700 }],
+  // ── 3. CORRECT RESPONSE / PUZZLE SOLVED ──
+  // Rising fifth G4 -> C5 with ringing Kalimba tine resonance
+  correct: [
+    { from: NOTE.G4, at: 0.00, type: 'sine', dur: 0.22, gain: 0.30, cut: 3000, click: true, clickGain: 0.22 },
+    { from: NOTE.C5, at: 0.08, type: 'sine', dur: 0.40, gain: 0.36, cut: 3400, click: true, clickGain: 0.25 }
+  ],
 
-  // A major arpeggio, C4-E4-G4-C5, notes overlapping slightly so it rings as a
-  // chord rather than four separate beeps. The last note is the longest.
+  // ── 4. STAGE CLEAR & LEVEL VICTORY ──
+  // Celebratory 8-note major 9th Kalimba cascade: C4, E4, G4, B4, D5, E5, G5, C6
   win: [
-    { from: NOTE.C4, at: 0.00, type: 'triangle', dur: 0.20, gain: 0.055, cut: 1500 },
-    { from: NOTE.E4, at: 0.07, type: 'triangle', dur: 0.20, gain: 0.055, cut: 1500 },
-    { from: NOTE.G4, at: 0.14, type: 'triangle', dur: 0.22, gain: 0.055, cut: 1600 },
-    { from: NOTE.C5, at: 0.21, type: 'sine', dur: 0.38, gain: 0.065, cut: 1800 },
+    { from: NOTE.C4, at: 0.00, type: 'sine', dur: 0.22, gain: 0.28, cut: 2800, click: true, clickGain: 0.20 },
+    { from: NOTE.E4, at: 0.07, type: 'sine', dur: 0.22, gain: 0.28, cut: 2800, click: true, clickGain: 0.20 },
+    { from: NOTE.G4, at: 0.14, type: 'sine', dur: 0.24, gain: 0.30, cut: 3000, click: true, clickGain: 0.20 },
+    { from: NOTE.B4, at: 0.21, type: 'sine', dur: 0.24, gain: 0.30, cut: 3000, click: true, clickGain: 0.20 },
+    { from: NOTE.D5, at: 0.28, type: 'sine', dur: 0.26, gain: 0.32, cut: 3200, click: true, clickGain: 0.22 },
+    { from: NOTE.E5, at: 0.35, type: 'sine', dur: 0.26, gain: 0.32, cut: 3200, click: true, clickGain: 0.22 },
+    { from: NOTE.G5, at: 0.42, type: 'sine', dur: 0.30, gain: 0.34, cut: 3400, click: true, clickGain: 0.24 },
+    { from: NOTE.C6, at: 0.50, type: 'sine', dur: 1.20, gain: 0.40, cut: 4000, click: true, clickGain: 0.28, overtone: true }
+  ],
+  clear: [
+    { from: NOTE.C4, at: 0.00, type: 'sine', dur: 0.22, gain: 0.28, cut: 2800, click: true, clickGain: 0.20 },
+    { from: NOTE.E4, at: 0.07, type: 'sine', dur: 0.22, gain: 0.28, cut: 2800, click: true, clickGain: 0.20 },
+    { from: NOTE.G4, at: 0.14, type: 'sine', dur: 0.24, gain: 0.30, cut: 3000, click: true, clickGain: 0.20 },
+    { from: NOTE.B4, at: 0.21, type: 'sine', dur: 0.24, gain: 0.30, cut: 3000, click: true, clickGain: 0.20 },
+    { from: NOTE.D5, at: 0.28, type: 'sine', dur: 0.26, gain: 0.32, cut: 3200, click: true, clickGain: 0.22 },
+    { from: NOTE.E5, at: 0.35, type: 'sine', dur: 0.26, gain: 0.32, cut: 3200, click: true, clickGain: 0.22 },
+    { from: NOTE.G5, at: 0.42, type: 'sine', dur: 0.30, gain: 0.34, cut: 3400, click: true, clickGain: 0.24 },
+    { from: NOTE.C6, at: 0.50, type: 'sine', dur: 1.20, gain: 0.40, cut: 4000, click: true, clickGain: 0.28, overtone: true }
   ],
 
-  // A3 → E3, a falling fourth, low and soft. It says "not that" rather than
-  // buzzing at the player.
-  error: [{ from: NOTE.A3, to: NOTE.E3, type: 'sine', dur: 0.22, gain: 0.07, cut: 1000 }],
+  // ── 5. MISS / DISTRACTOR TAP (USER CHOSEN: 4A Damped Tine Plink) ──
+  // Choked Eb5 kalimba tine (622Hz) + switch click. Fast 90ms decay, crisp, dry, zero mud.
+  wrong: [
+    { from: NOTE.Eb5, type: 'sine', dur: 0.09, gain: 0.35, cut: 3400, click: true, clickGain: 0.40, overtone: true, overtoneRatio: 2.85, overtoneGain: 0.30 }
+  ],
+  miss: [
+    { from: NOTE.Eb5, type: 'sine', dur: 0.09, gain: 0.35, cut: 3400, click: true, clickGain: 0.40, overtone: true, overtoneRatio: 2.85, overtoneGain: 0.30 }
+  ],
 
-  // The same gesture, quieter and shorter: Word Maze fires this on a rejected
-  // letter, which is a nudge mid-flow, not a failed round.
-  wrong: [{ from: NOTE.G3, to: NOTE.E3, type: 'sine', dur: 0.15, gain: 0.05, cut: 900 }],
+  // ── 6. ROUND FAILURE / LOSS (Sad Kalimba Descent) ──
+  // Melancholy descending kalimba chords F4 -> Db4 -> C4
+  error: [
+    { from: NOTE.F4, at: 0.00, type: 'sine', dur: 0.32, gain: 0.32, cut: 2600, click: true, clickGain: 0.20 },
+    { from: NOTE.Db4, at: 0.16, type: 'sine', dur: 0.35, gain: 0.32, cut: 2400, click: true, clickGain: 0.20 },
+    { from: NOTE.C4, at: 0.34, type: 'sine', dur: 0.65, gain: 0.35, cut: 2200, click: true, clickGain: 0.20 }
+  ],
+  fail: [
+    { from: NOTE.F4, at: 0.00, type: 'sine', dur: 0.32, gain: 0.32, cut: 2600, click: true, clickGain: 0.20 },
+    { from: NOTE.Db4, at: 0.16, type: 'sine', dur: 0.35, gain: 0.32, cut: 2400, click: true, clickGain: 0.20 },
+    { from: NOTE.C4, at: 0.34, type: 'sine', dur: 0.65, gain: 0.35, cut: 2200, click: true, clickGain: 0.20 }
+  ],
 
-  // A streak ladder for consecutive correct hits on a search board (e.g.
-  // Cancellation): the same `collect` voice, transposed up one scale degree
-  // each step, capped before it reaches anything shrill. Named steps rather
-  // than a parameterised pitch on purpose — CUES stays the one place to check
-  // every sound this app can make.
-  collect2: [{ from: NOTE.D4, to: NOTE.A4, type: 'triangle', dur: 0.13, gain: 0.065, cut: 1600 }],
-  collect3: [{ from: NOTE.E4, to: NOTE.B4, type: 'triangle', dur: 0.13, gain: 0.065, cut: 1700 }],
-  collect4: [{ from: NOTE.F4, to: NOTE.C5, type: 'triangle', dur: 0.13, gain: 0.07, cut: 1800 }],
-
-  // A stationary, low, doubled note for a time-running-out warning. Every
-  // other multi-note cue in this palette GLIDES up or down, and a falling
-  // interval already means "wrong" here (see `wrong`/`error` below) — a
-  // falling warning read as a failure tone. Holding one pitch flat is what
-  // makes it unambiguous: nothing else in CUES sits still.
+  // ── 7. TIME WARNING (USER CHOSEN: 8B High Kalimba Ping) ──
+  // Urgent crystal-clear high Kalimba A5 double-pulse (880Hz) spaced 140ms apart.
   warn: [
-    { from: NOTE.A3, to: NOTE.A3, type: 'sine', at: 0.00, dur: 0.08, gain: 0.045, cut: 1000 },
-    { from: NOTE.A3, to: NOTE.A3, type: 'sine', at: 0.20, dur: 0.08, gain: 0.05, cut: 1000 },
+    { from: NOTE.A5, at: 0.00, type: 'sine', dur: 0.15, gain: 0.36, cut: 4000, click: true, clickGain: 0.25 },
+    { from: NOTE.A5, at: 0.14, type: 'sine', dur: 0.18, gain: 0.38, cut: 4000, click: true, clickGain: 0.28 }
+  ],
+  alert: [
+    { from: NOTE.A5, at: 0.00, type: 'sine', dur: 0.15, gain: 0.36, cut: 4000, click: true, clickGain: 0.25 },
+    { from: NOTE.A5, at: 0.14, type: 'sine', dur: 0.18, gain: 0.38, cut: 4000, click: true, clickGain: 0.28 }
   ],
 
-  // A rising 3-note countdown phrase (C4→E4→G4), replacing 3 identical
-  // button-click sounds — the round arming should feel like an ascent, not
-  // three presses of Back. Resolves into `correct` on GO.
-  count1: [{ from: NOTE.C4, type: 'sine', dur: 0.10, gain: 0.045, cut: 900 }],
-  count2: [{ from: NOTE.E4, type: 'sine', dur: 0.10, gain: 0.05, cut: 950 }],
-  count3: [{ from: NOTE.G4, type: 'sine', dur: 0.10, gain: 0.055, cut: 1000 }],
+  // ── 8. COUNTDOWN (3, 2, 1) ──
+  // Ascending kalimba arming phrase (C4 -> E4 -> G4) resolving into correct (C5) on GO
+  count1: [{ from: NOTE.C4, type: 'sine', dur: 0.16, gain: 0.28, cut: 2400, click: true, clickGain: 0.22 }],
+  count2: [{ from: NOTE.E4, type: 'sine', dur: 0.16, gain: 0.30, cut: 2600, click: true, clickGain: 0.24 }],
+  count3: [{ from: NOTE.G4, type: 'sine', dur: 0.18, gain: 0.32, cut: 2800, click: true, clickGain: 0.26 }],
+
+  // ── 9. HINT / ASSIST ──
+  hint: [
+    { from: NOTE.E5, type: 'sine', dur: 0.30, gain: 0.30, cut: 3200, click: true, clickGain: 0.20, overtone: true }
+  ],
 };
 
 /** Every cue name this module can play — the fallback list in AppContext. */

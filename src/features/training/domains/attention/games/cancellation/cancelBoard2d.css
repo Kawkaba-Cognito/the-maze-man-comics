@@ -393,17 +393,28 @@ html[data-home-theme='dark'] .cancellation-task-game .game2d-piece__art {
     text-align: center;
   }
 
-  /* The round timer follows the board, not the rail — it is glanced at while
-     searching, so it belongs on the axis the eye is already scanning. */
+  /* The round timer is centered directly above the board — cleanly nestled in
+     the safe zone between the top celestial border and the grid, right on the
+     axis the eye is scanning without obscuring any background artwork. */
   .cancellation-task-game .ct-fq-cbw {
     position: absolute;
-    inset: 12px 12px auto 284px;
-    width: auto;
+    top: clamp(46px, 9vh, 74px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(calc(100vw - 568px), 420px);
+    height: 7px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--game-ink) 12%, var(--play-surface-flat));
+    border: 1px solid color-mix(in srgb, var(--game-ink) 18%, transparent);
+    overflow: hidden;
     margin-bottom: 0;
+    box-shadow: 0 1px 4px var(--fx-shadow-soft);
   }
 
   .cancellation-task-game[dir='rtl'] .ct-fq-cbw {
-    inset: 12px 284px auto 12px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
   }
 
   /* ⚠ RE-TUNED (2026-09-12, owner: "align the squares more into the centre
@@ -430,7 +441,7 @@ html[data-home-theme='dark'] .cancellation-task-game .game2d-piece__art {
      itself still flips sides on its own rule above; this padding no longer
      needs to know which side that is. */
   .cancellation-task-game .cb2d-wrap {
-    padding: 12px 284px;
+    padding: clamp(48px, 9.5vh, 90px) 284px;
   }
 }
 

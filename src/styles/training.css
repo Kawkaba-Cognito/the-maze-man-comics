@@ -10126,11 +10126,22 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .
  * single value silently applies it to the gradient and leaves the image on
  * the inherited `cover`. */
 .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before {
-    background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-        url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg.webp");
-    background-size: 100% 100%, 100% 100%;
-    background-position: center, center;
-    background-repeat: no-repeat, no-repeat;
+    background-image:
+        url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-top.webp"),
+        url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-bottom.webp"),
+        var(--play-surface);
+    background-size:
+        auto clamp(42px, 8.5vh, 85px),
+        auto clamp(42px, 8.5vh, 85px),
+        cover;
+    background-position:
+        top center,
+        bottom center,
+        center center;
+    background-repeat:
+        no-repeat,
+        no-repeat,
+        no-repeat;
 }
 /* ⚠ Dark-graded pair (2026-09-12, Codex) — the exact "revisit with a dark-
  * graded variant" this file's own Round 3/4 history named as follow-up
@@ -10140,11 +10151,22 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .
  * the same theme selector — the two must move together, or dark theme
  * gets either dark-on-dark pieces or a light chip on the beige art. */
 html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before {
-    background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-        url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg-dark.webp");
-    background-size: 100% 100%, 100% 100%;
-    background-position: center, center;
-    background-repeat: no-repeat, no-repeat;
+    background-image:
+        url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-top.webp"),
+        url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-bottom.webp"),
+        var(--play-surface-deep);
+    background-size:
+        auto clamp(42px, 8.5vh, 85px),
+        auto clamp(42px, 8.5vh, 85px),
+        cover;
+    background-position:
+        top center,
+        bottom center,
+        center center;
+    background-repeat:
+        no-repeat,
+        no-repeat,
+        no-repeat;
 }
 
 .ct-domain-game-stage[data-training-domain="speed"]:has([data-gameplay-active='true'])::before {
@@ -10215,20 +10237,42 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .
      * `100% 100%` — see the note on the landscape rule above for why
      * `cover` would eat both bands on a 1366x577 desktop. */
     .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before {
-        background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-            url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg-portrait.webp");
-        background-size: cover, cover;
-        background-position: center, center;
-        background-repeat: no-repeat, no-repeat;
+        background-image:
+            url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-top.webp"),
+            url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-bottom.webp"),
+            var(--play-surface);
+        background-size:
+            100% auto,
+            100% auto,
+            cover;
+        background-position:
+            top center,
+            bottom center,
+            center center;
+        background-repeat:
+            no-repeat,
+            no-repeat,
+            no-repeat;
     }
-    /* Dark-graded portrait half — same asset shape and `cover` reasoning
+    /* Dark-graded portrait half — same asset shape and reasoning
        as the light rule directly above. */
     html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before {
-        background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-            url("/the-maze-man-comics/Assets/attention/cancel-starchart-bg-dark-portrait.webp");
-        background-size: cover, cover;
-        background-position: center, center;
-        background-repeat: no-repeat, no-repeat;
+        background-image:
+            url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-top.webp"),
+            url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-bottom.webp"),
+            var(--play-surface-deep);
+        background-size:
+            100% auto,
+            100% auto,
+            cover;
+        background-position:
+            top center,
+            bottom center,
+            center center;
+        background-repeat:
+            no-repeat,
+            no-repeat,
+            no-repeat;
     }
     .ct-domain-game-stage[data-training-domain="speed"]:has([data-gameplay-active='true'])::before {
         background-image: linear-gradient(var(--game-veil), var(--game-veil)),

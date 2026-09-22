@@ -867,7 +867,9 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
   // straight into free play; the workout shell owns timing and exit.
   const workoutLaunched = useRef(false);
   useEffect(() => {
-    if (workoutMode && !workoutLaunched.current) { workoutLaunched.current = true; startFreeMode(); }
+    const p = new URLSearchParams(window.location.search);
+    const autoPlay = p.get('play') === '1' || p.get('mode') === 'survival';
+    if ((workoutMode || autoPlay) && !workoutLaunched.current) { workoutLaunched.current = true; startFreeMode(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workoutMode]);
   const settings = loadGameSettings();

@@ -45,7 +45,13 @@ function GameLoading({ isAr }) {
 export default function ComicsScreen() {
   const { currentLang, assessmentRequested, consumeAssessmentRequest, playSfx, setImmersive } = useApp();
   const isAr = currentLang === 'ar';
-  const [screen, setScreen] = useState('hub');
+  const [screen, setScreen] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('game') ? 'game' : 'hub';
+    } catch {
+      return 'hub';
+    }
+  });
 
   // Hide the bottom tab bar on any view below the radial hub (picker, game, assessment).
   useEffect(() => {
@@ -60,8 +66,20 @@ export default function ComicsScreen() {
       consumeAssessmentRequest();
     }
   }, [assessmentRequested, consumeAssessmentRequest]);
-  const [activeDomain, setActiveDomain] = useState('memory');
-  const [activeGame, setActiveGame] = useState(null);
+  const [activeDomain, setActiveDomain] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('domain') || 'attention';
+    } catch {
+      return 'attention';
+    }
+  });
+  const [activeGame, setActiveGame] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('game') || null;
+    } catch {
+      return null;
+    }
+  });
   const [pickList, setPickList] = useState([]);
 
   const GameView = activeGame ? getLazyGame(activeGame) : null;
