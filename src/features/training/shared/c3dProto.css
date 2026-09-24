@@ -604,3 +604,30 @@
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* ── Spaceport Countdown ───────────────────────────────────────────────── */
+.ct-space-countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--play-surface) 60%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+.ct-space-countdown-num {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: clamp(3.5rem, 12vw, 6rem);
+  font-weight: 900;
+  color: var(--game-accent);
+  text-shadow: 0 4px 20px var(--fx-shadow-soft);
+  animation: ct-space-cd-pop 0.35s ease-out;
+}
+@keyframes ct-space-cd-pop {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+

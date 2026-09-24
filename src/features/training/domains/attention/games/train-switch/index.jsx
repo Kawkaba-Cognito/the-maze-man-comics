@@ -4,6 +4,7 @@ import { GAME_STIMULUS_6, GAME_FX, GAME_COLORS } from '../../../../shared/gamePa
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
+import { createTrialLog } from '../../../../shared/trialLog';
 import { startCanvasLoop } from '../../../../shared/canvasLoop';
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
 import { TRAIN_SWITCH_COACH } from '../../../../shared/tutorials/coach/scripts/train-switch';
@@ -57,8 +58,8 @@ const lerpN = (a, b, t) => a + (b - a) * t;
  *
  * Re-exported so CarPark3DProto.jsx keeps importing them from './index'.
  */
-export { LADDER, LADDER_LEVELS, levelCfg, waveCfg } from './carParkData.js';
-import { LADDER_LEVELS, levelCfg, waveCfg } from './carParkData.js';
+export { LADDER, LADDER_LEVELS, levelCfg, waveCfg, SPACESHIP_BANDS, SPACESHIP_SECTIONS, SPACESHIP_HELP, spaceshipSublabel } from './carParkData.js';
+import { LADDER_LEVELS, levelCfg, waveCfg, SPACESHIP_BANDS, SPACESHIP_SECTIONS, SPACESHIP_HELP, spaceshipSublabel } from './carParkData.js';
 const PP_TRAINS = 16;
 
 // build a grid-embedded routing tree (garage → junctions → scattered parking bays)
@@ -403,7 +404,7 @@ function TrainSwitchEngine({ mode, level, seed, attempt, onResult, onExit, isAr,
         ctx.beginPath(); ctx.roundRect(s.x - sw / 2 - 2, s.y - sw / 2 + 2, sw + 4, sw + 4, 8); ctx.fill();
         ctx.fillStyle = s.colorHex;
         ctx.beginPath(); ctx.roundRect(s.x - sw / 2, s.y - sw / 2, sw, sw, 7); ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = Math.max(2, sw * 0.09);
+        ctx.strokeStyle = 'rgba(254, 254, 254, 0.95)'; ctx.lineWidth = Math.max(2, sw * 0.09);
         ctx.beginPath(); ctx.roundRect(s.x - sw / 2, s.y - sw / 2, sw, sw, 7); ctx.stroke();
         ctx.fillStyle = '#fff';
         ctx.font = `900 ${Math.round(sw * 0.58)}px system-ui, sans-serif`;
@@ -607,7 +608,14 @@ export default function TrainSwitchGame({ onBack, workoutMode = false }) {
         pass: { en: 'Same spaceport for all · pass the device', ar: 'نفس الميناء الفضائي للجميع · مرّر الجهاز' },
       }}
       /* ONE LADDER — no easy/med/hard. See carParkData.js LADDER. */
-      ladder={{ levels: LADDER_LEVELS }}
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: SPACESHIP_BANDS(isAr),
+        sections: SPACESHIP_SECTIONS,
+        help: SPACESHIP_HELP(isAr),
+        sublabel: (lv) => spaceshipSublabel(lv, isAr),
+      }}
       pass={{ trials: PP_TRAINS, scoreLabel: { en: 'docked', ar: 'رست' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}

@@ -77,3 +77,61 @@ export function levelConfig(level) {
     f,
   };
 }
+
+export const MOT_SECTIONS = [
+  { id: 'frost', nameEn: 'Frost Hollow', nameAr: 'فجوة الجليد' },
+  { id: 'ember', nameEn: 'Ember Reach', nameAr: 'أفق الجمر' },
+  { id: 'dust', nameEn: 'The Dust Sea', nameAr: 'بحر الغبار' },
+  { id: 'tempest', nameEn: 'The Tempest', nameAr: 'العاصفة' },
+];
+
+export const MOT_BANDS = (isAr) => [
+  {
+    title: isAr ? 'سُدُم التائهين' : 'Nebula Drifters',
+    sub: isAr ? 'تتبّع هدفين معاً' : 'Track 2 targets simultaneously',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'سرب الكويكبات' : 'Asteroid Swarm',
+    sub: isAr ? 'تتبّع ٣ أهداف معاً' : 'Track 3 targets simultaneously',
+    sigil: 'meteor-cluster',
+  },
+  {
+    title: isAr ? 'التوهج الشمسي' : 'Solar Flare',
+    sub: isAr ? 'تتبّع ٤ أهداف معاً' : 'Track 4 targets simultaneously',
+    sigil: 'solar-flare',
+  },
+  {
+    title: isAr ? 'أفق الجاذبية' : 'Event Horizon',
+    sub: isAr ? 'تتبّع ٥ أهداف — حدّ السعة' : 'Track 5 targets — capacity limit',
+    sigil: 'supernova',
+  },
+];
+
+export function motSublabel(level, isAr) {
+  const cfg = levelConfig(level);
+  if (isAr) {
+    const tLabel = cfg.targets === 2 ? 'هدفان' : `${cfg.targets} أهداف`;
+    return `${tLabel} · ${cfg.total} نقاط`;
+  }
+  return `${cfg.targets} targets · ${cfg.total} dots`;
+}
+
+export const MOT_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفضائية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار تتبّع الأهداف' : 'Target Tracking Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٤٠ مستوى مقسمة على ٤ قطاعات كونية تتصاعد صعوبتها تدريجياً.' },
+        { k: 'الأهداف', v: 'تبدأ بمراقبة هدفين وتصل إلى ٥ أهداف مع زيادة كثافة النقاط والسرعة.' },
+        { k: 'المهمة', v: 'احفظ النقاط المضيئة بعينيك أثناء تحركها، ثم حددها جميعاً عند التوقف.' },
+        { k: 'النجوم', v: 'احصل على النجوم بدقة الاختيار دون أخطاء.' },
+      ]
+    : [
+        { k: 'The Journey', v: '40 levels across 4 cosmic sectors with escalating difficulty.' },
+        { k: 'The Targets', v: 'Starts with 2 targets and escalates to 5 with increasing dot swarm density.' },
+        { k: 'The Objective', v: 'Track highlighted dots with your eyes as they drift, then select them when frozen.' },
+        { k: 'Stars', v: 'Earn up to 3 stars per level by identifying all targets without errors.' },
+      ],
+});

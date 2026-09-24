@@ -13,6 +13,8 @@ import { summarizeMot } from './motMetrics';
 import { createSpeedStaircase } from './speedStaircase';
 import { saveMotAssess, motAssessReport, speedIndex } from './motAssessStore';
 import { clamp, lerp } from '../../../../../../lib/math';
+import { useJuice } from '../../../../shared/juice/useJuice';
+import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 
 // The arena. 2D since the 3D scene was retired — this game's look is the
 // platform palette's reference, so the 2D board reproduces it directly.
@@ -54,8 +56,8 @@ const ASSESS_TRACK_MS = 6000;
 // a big sparse field is why this used to be trivially easy.
 //
 // `total` = objects in the arena (the density knob); `targets` = load.
-export { MOT_CAP, LADDER, LADDER_LEVELS, levelConfig } from './motData.js';
-import { MOT_CAP, LADDER_LEVELS, levelConfig } from './motData.js';
+export { MOT_CAP, LADDER, LADDER_LEVELS, levelConfig, MOT_BANDS, MOT_SECTIONS, MOT_HELP, motSublabel } from './motData.js';
+import { MOT_CAP, LADDER_LEVELS, levelConfig, MOT_BANDS, MOT_SECTIONS, MOT_HELP, motSublabel } from './motData.js';
 
 // Survival/free + pass-n-play: r = escalation index. Reaches peak by ~r=16.
 export function freeConfig(r) {
@@ -164,6 +166,9 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
   const coachOpen = coach?.open || false;
   const coachHoldRef = useRef(Boolean(coach?.enabled && coach?.armed && mode === 'free'));
 
+  const juice = useJuice();
+  const [countdown, setCountdown] = useState(null);
+  const countdownTimerRef = useRef(null);
   const [phase, setPhase] = useState('cue');
   const [score, setScore] = useState(0);
   const [picksLeft, setPicksLeft] = useState(0);
@@ -396,11 +401,47 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
     setPicksLeft(cfg.targets);
     updateHud();
     setMsg(isAr ? `راقب ${cfg.targets} أهداف` : `Watch the ${cfg.targets} targets…`);
-    setPhaseBoth('cue');
-    clearTimeout(timerRef.current);
+    const launchCue = () => {
+      setMsg(isAr ? `راقب ${cfg.targets} أهداف` : `Watch the ${cfg.targets} targets…`);
+      setPhaseBoth('cue');
+      clearTimeout(timerRef.current);
+      const cueMs = clamp(800 + cfg.targets * 450, CUE_MS, 3000);
+      timerRef.current = setTimeout(() => {
+        setMsg(isAr ? `تابع ${cfg.targets} أهداف بعينيك…` : `Track ${cfg.targets} targets with your eyes…`);
+        setPhaseBoth('track');
+        timerRef.current = setTimeout(() => {
+          setMsg(isAr ? `اضغط الأهداف (${cfg.targets})` : `Tap the ${cfg.targets} targets`);
+          setPhaseBoth('respond');
+        }, cfg.trackMs);
+      }, cueMs);
+    };
+    if (roundIdxRef.current === 0 && freeRoundRef.current === 0 && mode !== 'assess' && !coachHoldRef.current) {
+      setCountdown(3);
+      playSfx?.('click');
+      clearTimeout(countdownTimerRef.current);
+      countdownTimerRef.current = setTimeout(() => {
+        setCountdown(2);
+        playSfx?.('click');
+        countdownTimerRef.current = setTimeout(() => {
+          setCountdown(1);
+          playSfx?.('click');
+          countdownTimerRef.current = setTimeout(() => {
+            setCountdown(0);
+            playSfx?.('go');
+            countdownTimerRef.current = setTimeout(() => {
+              setCountdown(null);
+              launchCue();
+            }, 300);
+          }, 300);
+        }, 300);
+      }, 300);
+    } else {
+      launchCue();
+    }
+    // timer managed in launchCue
     // Encoding time scales with the number of targets to remember (~0.45s each)
     // so more targets get a fair chance to be encoded before tracking starts.
-    const cueMs = clamp(800 + cfg.targets * 450, CUE_MS, 3000);
+    /* const cueMs = clamp(800 + cfg.targets * 450, CUE_MS, 3000);
     timerRef.current = setTimeout(() => {
       setMsg(isAr ? `تابع ${cfg.targets} أهداف بعينيك…` : `Track ${cfg.targets} targets with your eyes…`);
       setPhaseBoth('track');
@@ -408,7 +449,7 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
         setMsg(isAr ? `اضغط الأهداف (${cfg.targets})` : `Tap the ${cfg.targets} targets`);
         setPhaseBoth('respond');
       }, cfg.trackMs);
-    }, cueMs);
+    }, cueMs); */
   }, [fit, isAr, mode, nextParams, setPhaseBoth, updateHud, rng]);
   /* Published so the coach can start the first round when the lesson ends —
      `endCoach` is declared above `startRound`, so it cannot call it directly. */
@@ -446,7 +487,7 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
       rightHit,
     });
     setPhaseBoth('result');
-    if (perfect) { playSfx?.('win'); scoreRef.current += 10; setScore(scoreRef.current); awardPoints?.(3); setMsg(isAr ? 'ممتاز ✓' : 'Perfect ✓'); }
+    if (perfect) { juice.celebrate(); playSfx?.('win'); scoreRef.current += 10; setScore(scoreRef.current); awardPoints?.(3); setMsg(isAr ? 'ممتاز ✓' : 'Perfect ✓'); }
     else { playSfx?.('lose'); setMsg(isAr ? `${correct}/${k} صحيحة` : `${correct}/${k} correct`); }
 
     clearTimeout(timerRef.current);
@@ -502,11 +543,13 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
     if (hit.selected) { hit.selected = false; setPicksLeft((p) => p + 1); playSfx?.('click'); return; }
     const sel = dotsRef.current.filter((d) => d.selected).length;
     if (sel >= cfgRef.current.targets) return;
-    hit.selected = true; playSfx?.('click');
+    hit.selected = true;
+    if (hit.target) { juice.hit(); playSfx?.('click'); }
+    else { juice.miss(); playSfx?.('click'); }
     const left = cfgRef.current.targets - (sel + 1);
     setPicksLeft(left);
     if (left === 0) { clearTimeout(timerRef.current); timerRef.current = setTimeout(evaluate, 280); }
-  }, [evaluate, playSfx]);
+  }, [evaluate, playSfx, juice]);
 
   useEffect(() => {
     fit();
@@ -536,6 +579,7 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
       window.removeEventListener('resize', onResize);
       cancelAnimationFrame(rafRef.current);
       clearTimeout(timerRef.current);
+      clearTimeout(countdownTimerRef.current);
       trialLogRef.current?.discard();
       trialLogRef.current = null;
     };
@@ -642,6 +686,12 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
             onPickDot={pickDot}
             isAr={isAr}
           />
+          <JuiceLayer toast={juice.toast} burst={juice.burst} />
+          {countdown != null && (
+            <div className="ct-mot-countdown" aria-live="assertive">
+              <span className="ct-mot-countdown-num">{countdown > 0 ? countdown : (isAr ? 'انطلق!' : 'GO!')}</span>
+            </div>
+          )}
         </div>
         {coachOpen && (
           <DomCoach
@@ -689,7 +739,14 @@ export default function MotGame({ onBack, workoutMode = false, assessmentOnly = 
         pass: { en: 'Same dots for all · pass the device', ar: 'نفس النقاط للجميع · مرّر الجهاز' },
       }}
       /* ONE LADDER — no easy/med/hard. See motData.js LADDER. */
-      ladder={{ levels: LADDER_LEVELS }}
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: MOT_BANDS(isAr),
+        sections: MOT_SECTIONS,
+        help: MOT_HELP(isAr),
+        sublabel: (lv) => motSublabel(lv, isAr),
+      }}
       pass={{ trials: 6, scoreLabel: { en: 'perfect', ar: 'مثالية' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}

@@ -89,7 +89,7 @@ export default function MotBoard2D({ dotsRef, fieldRef, phaseRef, phase, interac
       paintSky(ctx, w, h);
 
       ctx.save();
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillStyle = 'rgba(254, 254, 254, 0.55)';
       for (const s of specks) {
         ctx.beginPath();
         ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);

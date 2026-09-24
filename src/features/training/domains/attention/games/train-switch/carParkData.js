@@ -113,3 +113,68 @@ export function waveCfg(wave) {
     wave: true,
   };
 }
+
+export const SPACESHIP_SECTIONS = [
+  { id: 'frost', nameEn: 'Orbital Frost', nameAr: 'صقيع المدار' },
+  { id: 'dust', nameEn: 'Solar Dust', nameAr: 'غبار الشمس' },
+  { id: 'tempest', nameEn: 'Ion Tempest', nameAr: 'عاصفة الأيونات' },
+  { id: 'ember', nameEn: 'Plasma Core', nameAr: 'قلب البلازما' },
+  { id: 'void', nameEn: 'Deep Void', nameAr: 'الفراغ السحيق' },
+];
+
+export const SPACESHIP_BANDS = (isAr) => [
+  {
+    title: isAr ? 'المرفأ المداري ألفا' : 'Orbital Dock Alpha',
+    sub: isAr ? 'سفينة واحدة · ٣ ألوان' : '1 ship at once · 3 colors',
+    sigil: 'docking-hub',
+  },
+  {
+    title: isAr ? 'العبور الكوني' : 'Cosmic Transit',
+    sub: isAr ? 'سفينتان معاً · ٤ ألوان' : '2 ships at once · 4 colors',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'ملتقى السدم' : 'Nebula Crossroads',
+    sub: isAr ? '٣ سفن معاً · ٤ ألوان' : '3 ships at once · 4 colors',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'أسطول الفضاء العميق' : 'Deep Space Fleet',
+    sub: isAr ? '٤ سفن معاً — حدّ الانتباه' : '4 ships at once · capacity limit',
+    sigil: 'space-fighter',
+  },
+  {
+    title: isAr ? 'محطة فرط السرعة' : 'Hyperspace Terminal',
+    sub: isAr ? '٥ سفن معاً · ٦ ألوان — تجاوز الحد' : '5 ships at once · 6 colors · overload',
+    sigil: 'warp-gate',
+  },
+];
+
+export function spaceshipSublabel(level, isAr) {
+  const cfg = levelCfg(level);
+  if (isAr) {
+    const sLabel = cfg.maxC === 1 ? 'سفينة واحدة' : `${cfg.maxC} سفن`;
+    return `${sLabel} · ${cfg.colors} ألوان · ${cfg.target} للرسو`;
+  }
+  return `${cfg.maxC} ship${cfg.maxC > 1 ? 's' : ''} · ${cfg.colors} colors · ${cfg.target} target`;
+}
+
+export const SPACESHIP_HELP = (isAr) => ({
+  open: isAr ? 'دليل المحطة الفضائية' : 'Spaceport Flight Guide',
+  title: isAr ? 'مسار سفينة الفضاء' : 'Spaceship Flight Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٥٠ مستوى مقسمة على ٥ قطاعات كونية تتصاعد صعوبتها تدريجياً.' },
+        { k: 'المفترقات', v: 'المس المفاتيح الدائرية لتغيير اتجاه السكك الفضائية وتوجيه كل سفينة.' },
+        { k: 'منصات الرسو', v: 'وجّه كل سفينة لتصل إلى منصة الرسو المطابقة تماماً للونها.' },
+        { k: 'الانتباه المتعدد', v: 'تزداد السفن المتزامنة تدريجياً حتى تصل إلى ٥ سفن تبحر معاً في نفس الوقت.' },
+      ]
+    : [
+        { k: 'The Journey', v: '50 levels across 5 cosmic sectors with escalating routing challenge.' },
+        { k: 'Junctions', v: 'Tap circled junction switches to re-route energy tracks before ships arrive.' },
+        { k: 'Docking Pads', v: 'Guide each colored ship to dock at its matching color pad.' },
+        { k: 'Divided Attention', v: 'Manage multiple concurrent ships, stepping up from 1 ship to 5 overloaded.' },
+      ],
+});
+

@@ -5,6 +5,9 @@ import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
 import { TRAIN_SWITCH_COACH } from '../../../../shared/tutorials/coach/scripts/train-switch';
 import { makeRng } from '../../../../shared/rng';
+import { createTrialLog } from '../../../../shared/trialLog';
+import { useJuice } from '../../../../shared/juice/useJuice';
+import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 // SAME engine as the 2D game: real road-tree generator, wave escalation, palette.
 import { generate, waveCfg, levelCfg, PAL } from './index';
 import '../../../../shared/c3dProto.css';
@@ -142,6 +145,12 @@ export default function CarPark3DProto({
   const [waveFlash, setWaveFlash] = useState(null);
   const [bootError, setBootError] = useState(null);
   const [forkStates, setForkStates] = useState([]);
+  const juice = useJuice();
+  const juiceRef = useRef(juice);
+  juiceRef.current = juice;
+  const trialLogRef = useRef(null);
+  const [countdown, setCountdown] = useState(null);
+  const [pauseOpen, setPauseOpen] = useState(false);
 
   /* Open the lesson once a Survival run is live — the junction buttons only
      exist while `phase === 'run'`, and step 3 points at one. */
@@ -591,6 +600,7 @@ export default function CarPark3DProto({
     const finishRun = (won = false) => {
       if (g.finished) return;
       g.finished = true;
+      trialLogRef.current?.finish({ won, routed: g.routed, wave: g.wave });
       // Levels / Pass-n-Play hand their result back to ModeShell (unlock / next
       // player); Survival owns its game-over screen and banks XP.
       if (g.mode === 'levels') { onResultRef.current?.({ won, score: g.routed }); return; }
@@ -720,23 +730,39 @@ export default function CarPark3DProto({
         if (tr.t >= 1) {
           const at = tr.to;
           if (at.kind === 'station' || at.children.length === 0) {
-            if (at.colorHex === tr.target) {
+            const ok = at.colorHex === tr.target;
+            if (ok) {
               g.routed += 1;
               setRouted(g.routed);
+              juiceRef.current?.hit();
               playSfxRef.current?.('collect');
               flashBay(at, true);
             } else {
               g.wrong += 1;
               g.lives -= 1;
               setLives(g.lives);
+              juiceRef.current?.miss();
               playSfxRef.current?.('error');
               flashBay(at, false);
             }
+            trialLogRef.current?.trial({
+              ok,
+              routed: g.routed,
+              wrong: g.wrong,
+              lives: g.lives,
+              target: tr.target,
+              landed: at.colorHex,
+              wave: g.wave,
+            });
             g.waveResolved += 1;
             carGroup.remove(tr.mesh);
             disposeObject(tr.mesh);
             if (g.lives <= 0) { finishRun(false); return; }
-            if (g.mode === 'levels' && g.routed >= g.target) { finishRun(true); return; }
+            if (g.mode === 'levels' && g.routed >= g.target) {
+              juiceRef.current?.celebrate();
+              finishRun(true);
+              return;
+            }
             continue;
           }
           tr.from = at;
@@ -765,6 +791,7 @@ export default function CarPark3DProto({
           waveFlashOn.current = true;
           setWave(g.wave);
           setWaveFlash(t.waveBanner(g.wave));
+          juiceRef.current?.celebrate();
           playSfxRef.current?.('win');
         }
       } else if (g.mode === 'passplay' && g.spawned >= g.budget && g.trains.length === 0) {
@@ -813,6 +840,24 @@ export default function CarPark3DProto({
       toggleFork: (index) => toggleFork(forkMeshes[index]),
       start: () => {
         const { mode: m, level: lv, attempt: at } = modeCfgRef.current;
+        trialLogRef.current?.discard();
+        trialLogRef.current = createTrialLog({ game: 'train-switch', mode: m, meta: { level: lv } });
+        setCountdown(3);
+        playSfxRef.current?.('click');
+        let cd = 3;
+        const cdTimer = setInterval(() => {
+          cd -= 1;
+          if (cd > 0) {
+            setCountdown(cd);
+            playSfxRef.current?.('click');
+          } else if (cd === 0) {
+            setCountdown(0);
+            playSfxRef.current?.('go');
+          } else {
+            clearInterval(cdTimer);
+            setCountdown(null);
+          }
+        }, 320);
         g.finished = false;
         g.mode = m;
         g.escalate = m === 'free';
@@ -844,6 +889,7 @@ export default function CarPark3DProto({
 
     return () => {
       g.finished = true;
+      trialLogRef.current?.discard();
       el.removeEventListener('pointerdown', onDown);
       clearNet();
       disposeObject(ground);
@@ -904,6 +950,14 @@ export default function CarPark3DProto({
         ) : null
       }
     >
+      <JuiceLayer toast={juice.toast} burst={juice.burst} />
+      {countdown != null && (
+        <div className="ct-space-countdown" aria-live="assertive">
+          <span className="ct-space-countdown-num">
+            {countdown > 0 ? countdown : (isAr ? 'انطلق!' : 'ENGAGE!')}
+          </span>
+        </div>
+      )}
       {phase === 'run' && forkStates.length > 0 ? (
         <div className="ct-spaceport-access-wrap">
           <span className="ct-spaceport-access-label">

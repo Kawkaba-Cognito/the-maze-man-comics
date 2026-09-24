@@ -15,6 +15,7 @@ import { TUTORIAL_UI } from './tutorials/tutorialContent';
 import { useCoachRun } from './tutorials/coach/useCoachRun';
 import { coachIdFor } from './tutorials/coach/coachRegistry';
 import PlayResults from './PlayResults';
+import PlanetPath from './PlanetPath/PlanetPath.jsx';
 
 /*
  * ModeShell — the standard 3-mode flow shared by the newer training games,
@@ -386,8 +387,31 @@ export default function ModeShell({
     );
   }
 
-  // ── Level grid (100) ──
+  // ── Level grid or Planet Path (100) ──
   if (phase === 'levels') {
+    if (ladder?.planetPath) {
+      return (
+        <PlanetPath
+          isAr={isAr}
+          playSfx={playSfx}
+          onBack={isLadder ? goMenu : () => setPhase('diff')}
+          title={isLadder ? T : `${dm[diff]?.label ?? ''}`}
+          blurb={isLadder
+            ? t.ladderBlurb(effCount.toLocaleString(isAr ? 'ar-EG' : 'en-US'))
+            : (isAr ? `${T} · ${levelCountLabel} مستويات · افتح بالترتيب` : `${T} · ${levelCountLabel} levels · unlock in order`)}
+          count={effCount}
+          isUnlocked={ladder.isUnlocked || isUnlocked}
+          isDone={ladder.isDone || isDone}
+          sublabel={ladder.sublabel || ((lv) => `L${lv}`)}
+          onPick={(lv) => { setLevel(lv); setMode('levels'); setPhase('play'); }}
+          bands={ladder.bands}
+          sections={ladder.sections}
+          stars={ladder.stars || ((lv) => (prog.stars || {})[lv] || 0)}
+          help={ladder.help}
+          bandSigils={ladder.bandSigils}
+        />
+      );
+    }
     return (
       <TrainingLevelGrid
         isAr={isAr} playSfx={playSfx}
