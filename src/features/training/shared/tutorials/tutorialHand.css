@@ -72,6 +72,16 @@
   100% { transform: rotate(-3deg) scale(1); }
 }
 
+/* Active awaiting state: gentle rhythmic pulse to beckon interaction */
+.ct-tut-hand.is-awaiting:not(.ct-tut-hand--avoid):not(.is-tapping) img {
+  animation: ct-tut-hand-await 1.4s ease-in-out infinite;
+}
+
+@keyframes ct-tut-hand-await {
+  0%, 100% { transform: rotate(-3deg) scale(1); }
+  50%      { transform: rotate(-1deg) scale(1.08) translateY(-2px); }
+}
+
 /*
  * ⚠ THE "DO NOT TAP THIS" STATE.
  *

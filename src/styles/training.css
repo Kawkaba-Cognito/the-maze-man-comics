@@ -9044,22 +9044,146 @@ html[data-home-theme='light'] .ct-domain-pick .ct-mph-planet-name {
     pointer-events: auto;
     /* Published as a custom property so the component can clamp `left` by HALF
        THE BUBBLE'S OWN WIDTH. A percentage clamp cannot know this number. */
-    --ctc-bw: min(300px, 74vw);
+    --ctc-bw: min(320px, 86vw);
     width: var(--ctc-bw);
-    background: var(--surface-raised);
-    border: 2px solid #e3d6c4;
-    border-radius: 16px;
-    padding: 11px 13px 9px;
-    box-shadow: 3px 3px 0 rgba(26, 18, 8, 0.22);
+    background: linear-gradient(180deg, rgba(255, 252, 246, 0.97) 0%, rgba(246, 239, 226, 0.95) 100%);
+    border: 1.5px solid rgba(184, 142, 60, 0.38);
+    border-radius: 18px;
+    padding: 10px 14px 10px;
+    box-shadow:
+        0 8px 24px rgba(24, 18, 10, 0.16),
+        0 2px 6px rgba(184, 142, 60, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     z-index: 2;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.ct-coach-bubble--awaiting {
+    border-color: rgba(212, 148, 28, 0.75);
+    box-shadow:
+        0 10px 30px rgba(212, 148, 28, 0.2),
+        0 0 0 1px rgba(212, 148, 28, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.ct-coach-bubble-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(184, 142, 60, 0.16);
+}
+
+.ct-coach-avatar-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ct-coach-avatar-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #c59b27;
+    box-shadow: 0 0 8px rgba(197, 155, 39, 0.8);
+    flex-shrink: 0;
+}
+
+.ct-coach-avatar-name {
+    font-size: 11px;
+    font-weight: 800;
+    color: #7d5408;
+    letter-spacing: 0.04em;
+    font-family: 'Outfit', 'Cairo', sans-serif;
+    white-space: nowrap;
+}
+
+.ct-coach-header-right {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ct-coach-mode-pill {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(184, 142, 60, 0.1);
+    color: #8a6418;
+    border: 1px solid rgba(184, 142, 60, 0.22);
+    font-family: 'Outfit', 'Cairo', sans-serif;
+    white-space: nowrap;
+}
+
+.ct-coach-mode-pill--active {
+    background: linear-gradient(180deg, #fdf1d4 0%, #f7dfa3 100%);
+    color: #754b00;
+    border-color: #d69719;
+    font-weight: 800;
+    box-shadow: 0 0 8px rgba(214, 151, 25, 0.35);
+}
+
+.ct-coach-step-pill {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink-dim, #7a6e5d);
+    font-family: 'Outfit', 'Cairo', sans-serif;
+    white-space: nowrap;
+}
+
+.ct-coach-progress-bar {
+    display: flex;
+    gap: 3px;
+    margin-bottom: 7px;
+    width: 100%;
+}
+
+.ct-coach-progress-seg {
+    flex: 1;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(166, 124, 46, 0.16);
+    transition: all 0.25s ease;
+}
+
+.ct-coach-progress-seg.is-done {
+    background: #c59b27;
+    opacity: 0.75;
+}
+
+.ct-coach-progress-seg.is-active {
+    background: #b88e3c;
+    box-shadow: 0 0 6px rgba(184, 142, 60, 0.6);
+    transform: scaleY(1.3);
 }
 
 .ct-coach-bubble p {
     margin: 0;
+    font-weight: 600;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: #231c12;
+    font-family: 'Outfit', 'Cairo', sans-serif;
+}
+
+.ct-coach-await-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 11px;
     font-weight: 700;
-    font-size: 14px;
-    line-height: 1.45;
-    color: #2d2210;
+    color: #8c5d04;
+    background: rgba(224, 155, 38, 0.12);
+    padding: 3px 8px;
+    border-radius: 7px;
+    border: 1px dashed rgba(216, 155, 28, 0.4);
+    font-family: 'Outfit', 'Cairo', sans-serif;
 }
 
 .ct-coach-btns {
@@ -9067,14 +9191,14 @@ html[data-home-theme='light'] .ct-domain-pick .ct-mph-planet-name {
     justify-content: flex-end;
     align-items: center;
     gap: 8px;
-    margin-top: 9px;
+    margin-top: 8px;
 }
 
 .ct-coach-bubble button {
     pointer-events: auto;
     font: inherit;
     font-weight: 800;
-    font-size: 13px;
+    font-size: 12.5px;
     border-radius: 10px;
     cursor: pointer;
 }
@@ -9092,16 +9216,176 @@ html[data-home-theme='light'] .ct-domain-pick .ct-mph-planet-name {
 .ct-coach-skip {
     background: none;
     border: none;
-    color: var(--ink-dim);
-    padding: 11px 10px;
+    color: var(--ink-dim, #7a6e5d);
+    padding: 9px 8px;
+    font-size: 12px;
     text-decoration: underline;
+    opacity: 0.85;
+    transition: opacity 0.2s ease;
+}
+
+.ct-coach-skip:hover {
+    opacity: 1;
 }
 
 .ct-coach-next {
-    background: linear-gradient(180deg, var(--color-amber), #c9923a);
-    border: 1px solid rgba(90, 60, 15, 0.45);
-    color: #2d2210;
-    padding: 7px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(180deg, #dca43b 0%, #b88220 100%);
+    border: 1px solid rgba(130, 85, 12, 0.5);
+    color: #ffffff;
+    padding: 6px 14px;
+    box-shadow: 0 2px 6px rgba(184, 130, 32, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+    transition: all 0.2s ease;
+}
+
+.ct-coach-next:hover {
+    transform: translateY(-0.5px);
+    box-shadow: 0 3px 9px rgba(184, 130, 32, 0.42);
+}
+
+.ct-coach-next--play {
+    background: linear-gradient(180deg, #37a755 0%, #247539 100%);
+    border-color: rgba(20, 85, 35, 0.6);
+    box-shadow: 0 2px 7px rgba(46, 140, 68, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.ct-coach-next-arr {
+    font-size: 13px;
+    transition: transform 0.2s ease;
+}
+
+/* ── Interactive Target Spotlight & Halo ────────────────── */
+.ct-coach-target-ring {
+    position: absolute;
+    border-radius: 14px;
+    pointer-events: none;
+    z-index: 6;
+}
+
+.ct-coach-target-pulse {
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    border: 2px solid rgba(197, 155, 39, 0.65);
+    box-shadow: 0 0 14px rgba(197, 155, 39, 0.3);
+    animation: ct-coach-ring-glow 2s ease-in-out infinite;
+}
+
+.ct-coach-target-ring.is-awaiting .ct-coach-target-pulse {
+    border: 2px solid #e09b26;
+    box-shadow: 0 0 18px rgba(224, 155, 38, 0.6), inset 0 0 10px rgba(224, 155, 38, 0.2);
+    animation: ct-coach-pulse-fast 1.2s ease-in-out infinite;
+}
+
+.ct-coach-target-ripple {
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    border: 2px solid rgba(224, 155, 38, 0.75);
+    opacity: 0;
+    animation: ct-coach-ripple 1.8s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+}
+
+.ct-coach-target-ripple--delay {
+    animation-delay: 0.9s;
+}
+
+.ct-coach-target-badge {
+    position: absolute;
+    bottom: calc(100% + 7px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    background: #231c12;
+    color: #ffd666;
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 999px;
+    box-shadow: 0 3px 9px rgba(0, 0, 0, 0.35), 0 0 10px rgba(255, 214, 102, 0.35);
+    border: 1px solid rgba(255, 214, 102, 0.45);
+    pointer-events: none;
+    animation: ct-coach-badge-bounce 1.6s ease-in-out infinite;
+    font-family: 'Outfit', 'Cairo', sans-serif;
+}
+
+.ct-coach-target-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ffd666;
+    box-shadow: 0 0 6px #ffd666;
+}
+
+.ct-coach-target-ring.is-avoid .ct-coach-target-pulse {
+    border-color: rgba(215, 55, 45, 0.85);
+    box-shadow: 0 0 16px rgba(215, 55, 45, 0.38);
+}
+
+.ct-coach-target-avoid-badge {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    background: #5b1310;
+    color: #ffcccc;
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 100, 90, 0.55);
+    font-family: 'Outfit', 'Cairo', sans-serif;
+}
+
+.ct-coach-target-success {
+    position: absolute;
+    inset: -6px;
+    border-radius: inherit;
+    background: radial-gradient(circle, rgba(50, 205, 100, 0.35) 0%, transparent 75%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: ct-coach-burst 0.75s ease-out forwards;
+}
+
+.ct-coach-success-icon {
+    font-size: 24px;
+    font-weight: 900;
+    color: #2ecc71;
+    text-shadow: 0 0 12px rgba(46, 204, 113, 0.8);
+}
+
+@keyframes ct-coach-ring-glow {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50%      { opacity: 0.95; transform: scale(1.025); }
+}
+
+@keyframes ct-coach-pulse-fast {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50%      { transform: scale(1.035); opacity: 1; }
+}
+
+@keyframes ct-coach-ripple {
+    0%   { transform: scale(0.95); opacity: 0.85; }
+    100% { transform: scale(1.42); opacity: 0; }
+}
+
+@keyframes ct-coach-badge-bounce {
+    0%, 100% { transform: translate(-50%, 0); }
+    50%      { transform: translate(-50%, -3px); }
+}
+
+@keyframes ct-coach-burst {
+    0%   { transform: scale(0.7); opacity: 1; }
+    60%  { transform: scale(1.25); opacity: 0.9; }
+    100% { transform: scale(1.45); opacity: 0; }
 }
 
 /* Kawkab watches from a bottom corner — never over the board, because a teacher

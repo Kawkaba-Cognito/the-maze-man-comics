@@ -70,7 +70,18 @@ export default function CancelTaskCoach({
       .map((s) => ({ ...s, speech: isAr ? s.ar : s.en })),
     [isAr, script],
   );
-  const [stepIdx, setStepIdx] = useState(0);
+  const [stepIdx, setStepIdx] = useState(() => {
+    try {
+      const p = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('step');
+      if (p !== null) {
+        const parsed = parseInt(p, 10);
+        if (!isNaN(parsed) && parsed >= 0 && parsed < steps.length) return parsed;
+      }
+    } catch {
+      /* ignore */
+    }
+    return 0;
+  });
   const step = steps[stepIdx];
   const isLast = stepIdx === steps.length - 1;
 
@@ -160,6 +171,8 @@ export default function CancelTaskCoach({
          "tap it" step. */
       stranded={step.awaitTap && cellIdx == null}
       isLast={isLast}
+      stepIdx={stepIdx}
+      totalSteps={steps.length}
       onNext={advance}
       onSkip={onSkip}
     />

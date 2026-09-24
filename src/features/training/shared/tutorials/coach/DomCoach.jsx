@@ -41,7 +41,18 @@ export default function DomCoach({
     () => pack.steps.map((s) => ({ ...s, speech: isAr ? s.ar : s.en })),
     [pack, isAr],
   );
-  const [stepIdx, setStepIdx] = useState(0);
+  const [stepIdx, setStepIdx] = useState(() => {
+    try {
+      const p = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('step');
+      if (p !== null) {
+        const parsed = parseInt(p, 10);
+        if (!isNaN(parsed) && parsed >= 0 && parsed < steps.length) return parsed;
+      }
+    } catch {
+      /* ignore */
+    }
+    return 0;
+  });
   const step = steps[stepIdx];
   const isLast = stepIdx === steps.length - 1;
 
@@ -70,6 +81,8 @@ export default function DomCoach({
       variant={step.point && step.avoid ? 'avoid' : 'point'}
       awaiting={step.awaitTap}
       isLast={isLast}
+      stepIdx={stepIdx}
+      totalSteps={steps.length}
       onNext={advance}
       onSkip={onSkip}
     />

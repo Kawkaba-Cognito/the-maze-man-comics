@@ -78,7 +78,17 @@ export function useCoachRun(coachId, { onReplay } = {}) {
 
   /* Read once on mount: `shouldRunOnboarding` hits localStorage, and the answer
      must not change under the game mid-session. */
-  const [armed, setArmed] = useState(() => (enabled ? shouldRunOnboarding(coachId) : false));
+  const [armed, setArmed] = useState(() => {
+    if (!enabled) return false;
+    try {
+      if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('coach') === '1') {
+        return true;
+      }
+    } catch {
+      /* ignore */
+    }
+    return shouldRunOnboarding(coachId);
+  });
 
   /** The lesson is on screen — the game decides when a round is pointable. */
   const begin = useCallback(() => {

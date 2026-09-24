@@ -136,7 +136,7 @@ function sizeFor(target, small) {
   return Math.round(Math.max(HAND_MIN, Math.min(cap, t * HAND_RATIO)));
 }
 
-export default function TutorialHand({ target, tapSignal = 0, variant = 'point' }) {
+export default function TutorialHand({ target, tapSignal = 0, variant = 'point', isAwaiting = false }) {
   const [tapping, setTapping] = useState(false);
   const lastSignal = useRef(tapSignal);
   const [small, setSmall] = useState(false);
@@ -162,7 +162,7 @@ export default function TutorialHand({ target, tapSignal = 0, variant = 'point' 
 
   return (
     <div
-      className={`ct-tut-hand ct-tut-hand--${variant}${tapping ? ' is-tapping' : ''}`}
+      className={`ct-tut-hand ct-tut-hand--${variant}${tapping ? ' is-tapping' : ''}${isAwaiting ? ' is-awaiting' : ''}`}
       aria-hidden="true"
       style={{
         left: `${target.x * 100}%`,

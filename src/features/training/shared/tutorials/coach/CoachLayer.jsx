@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import TutorialHand, { handHeightFor } from '../TutorialHand';
 import KawkabSprite from '../../KawkabSprite';
 
@@ -34,9 +34,27 @@ import KawkabSprite from '../../KawkabSprite';
  */
 
 const UI = {
-  en: { skip: 'Skip', next: 'Next', play: "Got it — let's play!", coachLabel: 'Tutorial — Dr Kawkab' },
+  en: {
+    skip: 'Skip',
+    next: 'Next',
+    play: "Got it — let's play!",
+    coachLabel: 'Tutorial — Dr Kawkab',
+    teacher: 'Dr. Kawkab',
+    guide: 'Coach Guide',
+    interactive: 'Interactive Step',
+    awaitHint: 'Tap the highlighted target on the board',
+    stepOf: (i, n) => `Step ${i} of ${n}`,
+  },
   ar: {
-    skip: 'تخطّي', next: 'التالي', play: 'فهمت — لنلعب!', coachLabel: 'الشرح — د. كوكب',
+    skip: 'تخطّي',
+    next: 'التالي',
+    play: 'فهمت — لنلعب!',
+    coachLabel: 'الشرح — د. كوكب',
+    teacher: 'د. كوكب',
+    guide: 'إرشاد المدرب',
+    interactive: 'خطوة تفاعلية',
+    awaitHint: 'المس الهدف المميّز على اللوحة للمتابعة',
+    stepOf: (i, n) => `الخطوة ${i} من ${n}`,
   },
 };
 
@@ -58,20 +76,27 @@ export default function CoachLayer({
   awaiting = false,
   stranded: strandedProp,
   isLast = false,
-  /*
-   * Optional. Attaches to this overlay's own root, so a caller can measure a DOM
-   * anchor against THE EXACT BOX THE HAND IS DRAWN IN rather than against a
-   * stage element it hopes is the same. They usually are — the games all set
-   * `position: relative` on their stage deliberately — but "usually" is how the
-   * hand ends up a header's height out, and cancellation genuinely needs it: the
-   * HUD chip it points at lives outside the board wrap the cells are measured
-   * against.
-   */
+  stepIdx = 0,
+  totalSteps = 1,
   hostRef,
   onNext,
   onSkip,
 }) {
   const t = UI[isAr ? 'ar' : 'en'];
+
+  // Success celebration when await condition is met
+  const [burstActive, setBurstActive] = useState(false);
+  const prevTapRef = useRef(tapSignal);
+
+  useEffect(() => {
+    if (tapSignal > prevTapRef.current) {
+      setBurstActive(true);
+      playSfx?.('correct');
+      const timer = window.setTimeout(() => setBurstActive(false), 850);
+      return () => window.clearTimeout(timer);
+    }
+    prevTapRef.current = tapSignal;
+  }, [tapSignal, playSfx]);
 
   /*
    * ⚠ Escape leaves the lesson. On an await step there is no Next button
@@ -107,18 +132,6 @@ export default function CoachLayer({
   /*
    * Bubble rides beside the hand while pointing; otherwise it sits low and
    * centred, clear of the board so the player can still see all of it.
-   *
-   * ⚠ IT HAS TO FLIP BELOW THE HAND NEAR THE TOP OF THE BOARD, AND FOR THE WHOLE
-   * TOP HALF — not just the top third. On the above-hand branch `top` is the
-   * bubble's BOTTOM edge (anchored with `translateY(-100%)`), so the box grows
-   * UPWARD from there and a clamp on `top` cannot keep its head out of the HUD
-   * band. At y = 0.5 the bottom edge sits at 34%: on a 500px-tall wrap that is
-   * 170px, comfortably clear of the ~96px HUD reserve whatever the bubble's
-   * height turns out to be.
-   *
-   * Found by looking at it. A target in the top row put the first instruction a
-   * new player ever reads half off-screen, with the Skip/Next row hanging above
-   * the viewport — and it rendered perfectly the whole time.
    */
   const nearTop = anchor && anchor.y < 0.5;
 
@@ -126,60 +139,23 @@ export default function CoachLayer({
    * Kawkab's default corner is bottom / inline-end. Flip him to the other side
    * when the hand is standing in it, so the teacher never covers the thing the
    * lesson is pointing at.
-   *
-   * `inlineEndFrac` converts the anchor's physical x into a logical one, which
-   * is the whole reason this is not a bare `anchor.x > 0.62`.
    */
   const inlineEndFrac = anchor ? (isAr ? 1 - anchor.x : anchor.x) : 0;
-  /*
-   * ⚠ NO `y` TEST — HE HAS TO DODGE THE BUBBLE, NOT ONLY THE HAND, and the
-   * bubble is the bigger object. The first version of this flipped only when
-   * the HAND was low on his side (`inlineEndFrac > 0.6 && anchor.y > 0.52`),
-   * which measured clean on the hand and immediately collided with the bubble:
-   * on cancellation step 2 the anchor sits HIGH (y 0.37), so the bubble takes
-   * the below-hand branch and lands low at y 413–504 — squarely in the corner
-   * he had just been pulled into.
-   *
-   * The bubble's centre tracks the hand's x whichever branch it takes, so one
-   * test on x covers both objects. With no anchor at all the bubble parks
-   * centred and narrow (≤300px), which clears the corner on its own.
-   */
   const kawkabFlipped = Boolean(anchor) && inlineEndFrac > 0.55;
+
   const bubbleStyle = anchor
     ? {
-      /*
-       * ⚠ CLAMPED IN THE BUBBLE'S OWN WIDTH, NOT THE CONTAINER'S. A percentage
-       * clamp cannot know how wide the bubble is: at `width: min(300px, 74vw)`
-       * on a 390px phone the bubble is 289px, so with `translateX(-50%)` its
-       * centre has to stay between 37% and 63% to stay on screen — and the old
-       * 12%–88% clamp let it sit at 12%, putting a third of the first
-       * instruction outside `.ct-fq-play { overflow: hidden }`.
-       *
-       * `clamp()` does the arithmetic in CSS, where the real width is known.
-       * The vertical half of this bug was found by looking; the horizontal half
-       * was not checked at the time.
-       */
       left: `clamp(calc(var(--ctc-bw) / 2 + 6px), ${anchor.x * 100}%, calc(100% - var(--ctc-bw) / 2 - 6px))`,
-      /*
-       * The below-hand branch additionally floors at the HUD reserve, so a
-       * `pointer-events: auto` panel can never sit on the back and pause
-       * buttons — this app has shipped unpressable chrome three times (see
-       * CLAUDE.md), and only real hit-testing catches it.
-       */
-      /*
-       * ⚠ THE BELOW-HAND GAP IS IN THE HAND'S OWN PIXELS, NOT A PERCENTAGE OF
-       * THE STAGE. It was `anchor.y*100 + 14`, and 14% of Target Tracking's
-       * 449px-tall board is 63px — against a hand that hangs 87px below its
-       * fingertip. Measured result: the bubble sat ON the hand in both mot and
-       * speed-match on desktop. A percentage of a container can never reliably
-       * clear a fixed-size sprite; ask the sprite how tall it is.
-       */
       top: nearTop
         ? `max(calc(var(--fq-hud-reserve, 96px) + 8px), calc(${anchor.y * 100}% + ${handHeightFor(anchor) + 14}px))`
         : `${anchor.y * 100 - 16}%`,
       transform: nearTop ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
     }
     : { left: '50%', bottom: '13%', transform: 'translateX(-50%)' };
+
+  // Calculated geometry for the interactive spotlight ring
+  const targetW = anchor ? Math.max(38, (anchor.tw || 48) + 12) : 48;
+  const targetH = anchor ? Math.max(38, (anchor.th || 48) + 12) : 48;
 
   return (
     <div
@@ -188,7 +164,47 @@ export default function CoachLayer({
       dir={isAr ? 'rtl' : 'ltr'}
       style={{ position: 'absolute', inset: 0, zIndex: 6, pointerEvents: 'none' }}
     >
-      <TutorialHand target={anchor} tapSignal={tapSignal} variant={variant} />
+      {/* ── Interactive Target Spotlight & Beacon Halo ────────────────── */}
+      {anchor && (
+        <div
+          className={`ct-coach-target-ring ${awaiting ? 'is-awaiting' : ''} ${variant === 'avoid' ? 'is-avoid' : ''} ${burstActive ? 'is-bursting' : ''}`}
+          style={{
+            position: 'absolute',
+            left: `${anchor.x * 100}%`,
+            top: `${anchor.y * 100}%`,
+            width: `${targetW}px`,
+            height: `${targetH}px`,
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            zIndex: 6,
+          }}
+          aria-hidden="true"
+        >
+          <div className="ct-coach-target-pulse" />
+          {awaiting && (
+            <>
+              <div className="ct-coach-target-ripple" />
+              <div className="ct-coach-target-ripple ct-coach-target-ripple--delay" />
+              <div className="ct-coach-target-badge">
+                <span className="ct-coach-target-badge-dot" />
+                <span>{isAr ? 'جرّب الآن' : 'Your Turn'}</span>
+              </div>
+            </>
+          )}
+          {variant === 'avoid' && (
+            <div className="ct-coach-target-avoid-badge">
+              <span>✕</span> {isAr ? 'تجنب هذا' : 'Avoid'}
+            </div>
+          )}
+          {burstActive && (
+            <div className="ct-coach-target-success">
+              <span className="ct-coach-success-icon">✓</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <TutorialHand target={anchor} tapSignal={tapSignal} variant={variant} isAwaiting={awaiting} />
 
       {/*
         * ⚠ ARIA, because none of this is visible to assistive tech otherwise.
@@ -199,46 +215,68 @@ export default function CoachLayer({
         * announces each step as it changes; `role="dialog"` says what it is.
         */}
       <div
-        className="ct-coach-bubble"
+        className={`ct-coach-bubble ${awaiting ? 'ct-coach-bubble--awaiting' : ''}`}
         role="dialog"
         aria-live="polite"
         aria-label={t.coachLabel}
         style={{ position: 'absolute', ...bubbleStyle }}
       >
-        <p>{speech}</p>
+        <div className="ct-coach-bubble-header">
+          <div className="ct-coach-avatar-chip">
+            <span className="ct-coach-avatar-dot" />
+            <span className="ct-coach-avatar-name">{t.teacher}</span>
+          </div>
+          <div className="ct-coach-header-right">
+            <span className={`ct-coach-mode-pill ${awaiting ? 'ct-coach-mode-pill--active' : ''}`}>
+              {awaiting ? t.interactive : t.guide}
+            </span>
+            {totalSteps > 1 && (
+              <span className="ct-coach-step-pill">{t.stepOf(stepIdx + 1, totalSteps)}</span>
+            )}
+          </div>
+        </div>
+
+        {totalSteps > 1 && (
+          <div className="ct-coach-progress-bar" aria-hidden="true">
+            {Array.from({ length: totalSteps }).map((_, i) => (
+              <span
+                key={i}
+                className={`ct-coach-progress-seg ${i < stepIdx ? 'is-done' : ''} ${i === stepIdx ? 'is-active' : ''}`}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="ct-coach-bubble-body">
+          <p>{speech}</p>
+          {awaiting && !stranded && (
+            <div className="ct-coach-await-hint" aria-hidden="true">
+              <span>👆</span> {t.awaitHint}
+            </div>
+          )}
+        </div>
+
         <div className="ct-coach-btns">
           <button type="button" className="ct-coach-skip" onClick={() => { playSfx?.('click'); onSkip?.(); }}>
             {t.skip}
           </button>
           {showNext && (
-            <button type="button" className="ct-coach-next" onClick={onNext}>
-              {isLast ? t.play : t.next}
+            <button
+              type="button"
+              className={`ct-coach-next ${isLast ? 'ct-coach-next--play' : ''}`}
+              onClick={() => { playSfx?.('click'); onNext?.(); }}
+            >
+              <span>{isLast ? t.play : t.next}</span>
+              {!isLast && <span className="ct-coach-next-arr" aria-hidden="true">{isAr ? '←' : '→'}</span>}
             </button>
           )}
         </div>
       </div>
 
-      {/*
-        * ⚠ KAWKAB MOVES OUT OF THE HAND'S WAY. He used to be pinned to the
-        * inline-end bottom corner unconditionally, on the reasoning that the
-        * hand "favours the board's left/top where scanning tends to start".
-        * That is true of where scanning starts and not true of where the hand
-        * ends up: it goes wherever the step's anchor is, and on any step whose
-        * target sits low on the inline-end side he was standing on it.
-        *
-        * So the corner is chosen per step. `nearKawkab` is the bottom
-        * inline-end quadrant in LOGICAL terms — mirrored under RTL, because
-        * `inset-inline-end` is the right edge in English and the LEFT edge in
-        * Arabic, and a check written in physical x would send him TOWARD the
-        * hand in one of the two languages. Same family as the string trap in
-        * CLAUDE.md: the second half is the one that gets missed.
-        */}
       <div
         className={`ct-coach-kawkab${kawkabFlipped ? ' is-flipped' : ''}`}
         aria-hidden="true"
       >
-        {/* width:100% so the responsive box in training.css keeps controlling
-            him, rather than an inline size fighting it. */}
         <KawkabSprite size={78} style={{ width: '100%' }} />
       </div>
     </div>

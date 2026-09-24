@@ -176,8 +176,15 @@ export default function ModeShell({
     saveProg(storageKey, migrated);
     return migrated;
   });
-  const [phase, setPhase] = useState(workoutMode ? 'play' : 'menu');
-  const [mode, setMode] = useState(workoutMode ? 'free' : null);
+  const urlCoach = (() => {
+    try {
+      return typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('coach') === '1';
+    } catch {
+      return false;
+    }
+  })();
+  const [phase, setPhase] = useState((workoutMode || urlCoach) ? 'play' : 'menu');
+  const [mode, setMode] = useState((workoutMode || urlCoach) ? 'free' : null);
   const [diff, setDiff] = useState(null);
   const [level, setLevel] = useState(null);
   const [result, setResult] = useState(null);
@@ -190,7 +197,7 @@ export default function ModeShell({
   const [ppResults, setPpResults] = useState(null);
   const scoresRef = useRef([]);
   const seedRef = useRef(1);
-  const freeSeedRef = useRef(workoutMode ? freshSurvivalSeed() : null);
+  const freeSeedRef = useRef((workoutMode || urlCoach) ? freshSurvivalSeed() : null);
 
   /* Ladder games pass no `diffLabels` — they have no difficulties to label. */
   const dm = useMemo(() => Object.fromEntries(DIFF_KEYS.map((k) => [

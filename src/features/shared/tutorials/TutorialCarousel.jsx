@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 const UI = {
   en: {
@@ -7,8 +7,9 @@ const UI = {
     dontShow: "Don't show again",
     next: 'Next',
     startPractice: 'Start Practice',
-    swipe: 'Swipe for more',
-    stepOf: (n, t) => `${n} / ${t}`,
+    swipe: 'Swipe or use arrow keys',
+    stepOf: (n, t) => `Step ${n} of ${t}`,
+    interactive: 'Interactive Preview',
   },
   ar: {
     skipPlay: 'تخطّي الشرح والعب!',
@@ -16,8 +17,9 @@ const UI = {
     dontShow: 'لا تُظهر مرة أخرى',
     next: 'التالي',
     startPractice: 'ابدأ التمرين',
-    swipe: 'اسحب للمزيد',
-    stepOf: (n, t) => `${n} / ${t}`,
+    swipe: 'اسحب أو استخدم الأسهم',
+    stepOf: (n, t) => `الخطوة ${n} من ${t}`,
+    interactive: 'معاينة تفاعلية',
   },
 };
 
@@ -34,11 +36,10 @@ export default function TutorialCarousel({
   const t = UI[isAr ? 'ar' : 'en'];
   const [idx, setIdx] = useState(0);
   const [dontShow, setDontShow] = useState(false);
+  const [diagramPing, setDiagramPing] = useState(false);
   const touchRef = useRef({ x: 0, y: 0 });
 
   const total = steps.length;
-  // NOTE: all hooks must run before any early return (Rules of Hooks). `go` is
-  // therefore declared here, above the empty-steps guard below.
   const go = useCallback(
     (next) => {
       playSfx?.('click');
@@ -48,22 +49,40 @@ export default function TutorialCarousel({
   );
 
   const step = steps[idx];
-  if (!step || total === 0) return null;
-
   const isLast = idx === total - 1;
   const rtl = isAr;
 
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     playSfx?.('click');
     if (mode === 'rules-only') onClose?.({ dontShowAgain: dontShow });
     else onSkipAll?.();
-  };
+  }, [mode, onClose, onSkipAll, playSfx, dontShow]);
 
-  const handlePrimary = () => {
+  const handlePrimary = useCallback(() => {
     playSfx?.('click');
     if (isLast) onFinish?.({ dontShowAgain: dontShow });
     else go(idx + 1);
-  };
+  }, [isLast, onFinish, dontShow, go, idx, playSfx]);
+
+  // Keyboard navigation: Left/Right arrows and Escape
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleSkip();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        go(rtl ? idx - 1 : idx + 1);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        go(rtl ? idx + 1 : idx - 1);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [go, handleSkip, idx, rtl]);
+
+  if (!step || total === 0) return null;
 
   const onTouchStart = (e) => {
     const p = e.changedTouches?.[0] || e.touches?.[0];
@@ -78,6 +97,12 @@ export default function TutorialCarousel({
     if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return;
     if (dx < 0) go(rtl ? idx - 1 : idx + 1);
     else go(rtl ? idx + 1 : idx - 1);
+  };
+
+  const handleDiagramClick = () => {
+    playSfx?.('tap');
+    setDiagramPing(true);
+    setTimeout(() => setDiagramPing(false), 450);
   };
 
   const primaryLabel = isLast
@@ -96,7 +121,21 @@ export default function TutorialCarousel({
     >
       <div className="mm-tut-card">
         <header className="mm-tut-header">
-          <div className="mm-tut-title-pill">{title}</div>
+          <div className="mm-tut-header-top">
+            <div className="mm-tut-title-pill">{title}</div>
+            <span className="mm-tut-step-badge">{t.stepOf(idx + 1, total)}</span>
+          </div>
+
+          <div className="mm-tut-progress-bar" aria-hidden="true">
+            {steps.map((_, i) => (
+              <span
+                key={i}
+                className={`mm-tut-progress-seg ${i < idx ? 'is-done' : ''} ${i === idx ? 'is-active' : ''}`}
+                onClick={() => go(i)}
+              />
+            ))}
+          </div>
+
           {step.title ? <h2 className="mm-tut-step-title">{step.title}</h2> : null}
         </header>
 
@@ -104,7 +143,15 @@ export default function TutorialCarousel({
           <p className="mm-tut-body">{step.body}</p>
 
           {step.diagram ? (
-            <div className="mm-tut-diagram">{step.diagram}</div>
+            <div
+              className={`mm-tut-diagram mm-tut-diagram--interactive ${diagramPing ? 'is-pinging' : ''}`}
+              onClick={handleDiagramClick}
+              role="button"
+              tabIndex={0}
+              aria-label={t.interactive}
+            >
+              {step.diagram}
+            </div>
           ) : step.icon ? (
             <div className="mm-tut-icon" aria-hidden="true">{step.icon}</div>
           ) : null}
@@ -123,7 +170,7 @@ export default function TutorialCarousel({
         <footer className="mm-tut-footer">
           <div className="mm-tut-footer-meta">
             <span className="mm-tut-swipe-hint">{t.swipe}</span>
-            <span className="mm-tut-page">{t.stepOf(idx + 1, total)}</span>
+            <span className="mm-tut-page">{idx + 1} / {total}</span>
           </div>
 
           <div className="mm-tut-dots" role="tablist" aria-label={title}>
@@ -153,7 +200,8 @@ export default function TutorialCarousel({
               {mode === 'rules-only' ? t.skipClose : t.skipPlay}
             </button>
             <button type="button" className="mm-tut-btn mm-tut-btn--pri" onClick={handlePrimary}>
-              {primaryLabel}
+              <span>{primaryLabel}</span>
+              {!isLast && <span className="mm-tut-btn-arr">{rtl ? '←' : '→'}</span>}
             </button>
           </div>
         </footer>

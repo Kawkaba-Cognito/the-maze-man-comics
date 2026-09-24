@@ -108,7 +108,13 @@ export default function PuzzlesScreen() {
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
   const canContinue = hasEnteredLabyrinth();
 
-  const [activeGame, setActiveGame] = useState(null);
+  const [activeGame, setActiveGame] = useState(() => {
+    try {
+      return typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('puzzle') : null;
+    } catch {
+      return null;
+    }
+  });
   const [category, setCategory] = useState(null);
   const [voidRunnerOpen, setVoidRunnerOpen] = useState(false);
 
