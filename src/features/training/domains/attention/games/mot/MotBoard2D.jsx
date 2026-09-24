@@ -101,21 +101,75 @@ export default function MotBoard2D({ dotsRef, fieldRef, phaseRef, phase, interac
       const dots = dotsRef.current;
       if (!f || !f.w || !Array.isArray(dots)) return true;
 
-      // Arena bounds — the dots bounce off this, so it has to be visible or the
-      // bounces look arbitrary.
+      // Subtle astrolabe astronomical guide markings (Cancellation Task celestial echo)
+      const cx = f.x0 + f.w / 2;
+      const cy = f.y0 + f.h / 2;
+      const maxR = Math.min(f.w, f.h) * 0.42;
       ctx.save();
       ctx.strokeStyle = GAME_COLORS.accent.fill;
-      ctx.globalAlpha = 0.4;
-      ctx.lineWidth = 2;
-      const rad = 14;
+      ctx.globalAlpha = 0.12;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 6]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, maxR * 0.45, 0, Math.PI * 2);
+      ctx.arc(cx, cy, maxR * 0.9, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx - maxR * 0.98, cy);
+      ctx.lineTo(cx + maxR * 0.98, cy);
+      ctx.moveTo(cx, cy - maxR * 0.98);
+      ctx.lineTo(cx, cy + maxR * 0.98);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // Arena bounds with corner accents — the dots bounce off this
+      ctx.save();
+      ctx.strokeStyle = GAME_COLORS.accent.fill;
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = 2.5;
+      const rad = 16;
       ctx.beginPath();
       ctx.roundRect(f.x0, f.y0, f.w, f.h, rad);
+      ctx.stroke();
+
+      // Astrolabe corner ticks
+      const cr = 14;
+      ctx.globalAlpha = 0.75;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(f.x0, f.y0 + cr); ctx.lineTo(f.x0, f.y0); ctx.lineTo(f.x0 + cr, f.y0);
+      ctx.moveTo(f.x0 + f.w - cr, f.y0); ctx.lineTo(f.x0 + f.w, f.y0); ctx.lineTo(f.x0 + f.w, f.y0 + cr);
+      ctx.moveTo(f.x0, f.y0 + f.h - cr); ctx.lineTo(f.x0, f.y0 + f.h); ctx.lineTo(f.x0 + cr, f.y0 + f.h);
+      ctx.moveTo(f.x0 + f.w - cr, f.y0 + f.h); ctx.lineTo(f.x0 + f.w, f.y0 + f.h); ctx.lineTo(f.x0 + f.w, f.y0 + f.h - cr);
       ctx.stroke();
       ctx.restore();
 
       const phase = phaseRef.current;
       for (const d of dots) {
         drawPiece(ctx, { x: d.x, y: d.y, r: d.r, state: stateOf(d, phase) });
+      }
+
+      // In cue phase, render pulsing celestial beacon halos around target dots
+      if (phase === 'cue') {
+        const pulse = 1 + 0.12 * Math.sin(now * 0.007);
+        ctx.save();
+        ctx.strokeStyle = GAME_COLORS.accent.fill;
+        for (const d of dots) {
+          if (d.target) {
+            ctx.globalAlpha = 0.55;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(d.x, d.y, d.r * 1.85 * pulse, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 0.28;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(d.x, d.y, d.r * 2.6 * pulse, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
       }
       return true;
     };

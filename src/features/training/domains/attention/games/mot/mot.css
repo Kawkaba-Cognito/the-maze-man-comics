@@ -7,7 +7,7 @@
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
-  background: var(--play-surface);
+  background: transparent;
   color: var(--play-ink);
   font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
 }
@@ -33,6 +33,10 @@
   width: min(100%, 42rem);
   flex: 0 0 auto;
   margin-inline: auto;
+  border: 1px solid color-mix(in srgb, var(--game-accent) 45%, var(--line));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--play-surface-flat) 92%, var(--game-accent) 8%);
+  box-shadow: 0 4px 18px var(--fx-shadow-soft);
 }
 
 .ct-mot-play {
@@ -42,13 +46,41 @@
   flex: 1 1 auto;
   margin-inline: auto;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--game-accent) 42%, var(--line));
-  border-radius: 22px;
-  background: var(--play-surface);
+  border: 2px solid color-mix(in srgb, var(--game-accent) 60%, var(--line));
+  border-radius: 26px;
+  background-color: var(--play-surface-flat);
+  background-image: var(--play-surface);
   box-shadow:
-    0 16px 38px var(--fx-shadow-soft),
-    inset 0 1px 0 var(--fx-glint);
+    0 18px 44px var(--fx-shadow-deep),
+    0 0 0 1px color-mix(in srgb, var(--game-accent) 24%, transparent),
+    inset 0 1px 1px var(--fx-glint);
   touch-action: none;
+}
+
+.ct-mot-play::before,
+.ct-mot-play::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 2;
+  border-color: color-mix(in srgb, var(--game-accent) 70%, var(--game-ink));
+  border-style: solid;
+}
+
+.ct-mot-play::before {
+  top: 8px;
+  inset-inline-start: 8px;
+  border-width: 2px 0 0 2px;
+  border-top-left-radius: 6px;
+}
+
+.ct-mot-play::after {
+  bottom: 8px;
+  inset-inline-end: 8px;
+  border-width: 0 2px 2px 0;
+  border-bottom-right-radius: 6px;
 }
 
 .ct-mot-spark {
@@ -136,24 +168,39 @@
 .ct-mot-countdown {
   position: absolute;
   inset: 0;
-  z-index: 10;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--play-surface) 65%, transparent);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: radial-gradient(circle at center, color-mix(in srgb, var(--play-surface-flat) 84%, transparent) 0%, color-mix(in srgb, var(--play-surface-flat) 44%, transparent) 75%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   pointer-events: none;
+}
+.ct-mot-countdown::before {
+  content: '';
+  position: absolute;
+  width: clamp(140px, 32vw, 220px);
+  height: clamp(140px, 32vw, 220px);
+  border-radius: 50%;
+  border: 2px dashed color-mix(in srgb, var(--game-accent) 65%, transparent);
+  animation: ct-mot-cd-spin 8s linear infinite;
 }
 .ct-mot-countdown-num {
   font-family: 'DM Mono', ui-monospace, monospace;
   font-size: clamp(3.5rem, 12vw, 6rem);
   font-weight: 900;
   color: var(--game-accent);
-  text-shadow: 0 4px 20px var(--fx-shadow-soft);
-  animation: ct-mot-cd-pop 0.35s ease-out;
+  text-shadow:
+    0 0 28px color-mix(in srgb, var(--game-accent) 60%, transparent),
+    0 4px 20px var(--fx-shadow-soft);
+  animation: ct-mot-cd-pop 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 @keyframes ct-mot-cd-pop {
-  from { transform: scale(0.6); opacity: 0; }
+  from { transform: scale(0.5); opacity: 0; }
   to   { transform: scale(1); opacity: 1; }
+}
+@keyframes ct-mot-cd-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
