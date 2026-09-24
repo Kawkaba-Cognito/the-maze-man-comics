@@ -437,26 +437,76 @@
  * inline style; keeping the whole title treatment HERE means one source of
  * truth rather than a half-live inline block fighting a stylesheet.
  */
+.rh-training-title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  flex: 1;
+  min-width: 0;
+  margin: 0 auto;
+  overflow: visible;
+}
+
 .rh-training-title {
-  /* Wide enough for the full 18-character caps setting. A 300px cap here
-     clipped it to "COGNITIVE TRAIN" on desktop; the phone rule below narrows
-     it again for small screens. */
-  max-width: 380px !important;
-  font-family: 'Cinzel', 'Cormorant Garamond', serif !important;
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: center !important;
+  gap: 0.36em !important;
+  width: 100%;
+  max-width: 440px !important;
+  margin: 0 auto !important;
+  text-align: center !important;
+  font-family: 'Syne', -apple-system, BlinkMacSystemFont, sans-serif !important;
   font-size: 24px !important;
-  font-weight: 700 !important;
-  letter-spacing: 2.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.8px !important;
   text-transform: uppercase !important;
   white-space: nowrap !important;
   opacity: 0.95;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 22px rgba(232, 172, 78, 0.5);
+  line-height: 1.15;
+}
+
+.rh-title-word {
+  flex: 1 1 0%;
+}
+
+.rh-title-word--first {
+  text-align: end !important;
+}
+
+.rh-title-word--second {
+  text-align: start !important;
 }
 
 [dir='rtl'] .rh-training-title {
   font-family: 'Cairo', sans-serif !important;
   font-size: 22px !important;
-  letter-spacing: 1px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
   text-transform: none !important;
+  gap: 0.32em !important;
+}
+
+/* G2: Art Deco Stepped Winged Chevron */
+.rh-training-chevron {
+  width: min(250px, 68vw);
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 280 / 24;
+  margin: 3px auto 0 !important;
+  display: block;
+  pointer-events: none;
+  overflow: visible;
+  transition: width 0.2s ease;
+}
+
+[dir='rtl'] .rh-training-chevron {
+  width: min(180px, 50vw);
 }
 
 .rh-training-intro {
@@ -483,7 +533,19 @@
 
 .rh-training-hub--desktop .rh-training-title {
   font-size: 26px !important;
-  letter-spacing: 3px !important;
+  letter-spacing: 2px !important;
+  max-width: 480px !important;
+}
+
+.rh-training-hub--desktop .rh-training-chevron {
+  width: 320px !important;
+  height: auto !important;
+  aspect-ratio: 280 / 24;
+  margin: 4px auto 0 !important;
+}
+
+[dir='rtl'] .rh-training-hub--desktop .rh-training-chevron {
+  width: 210px !important;
 }
 
 .rh-training-hub--desktop .rh-training-intro {
@@ -640,21 +702,70 @@
 
 @media (max-width: 520px) {
   .rh-training-header {
-    padding-inline: 14px !important;
+    padding-inline: 12px !important;
+    padding-top: max(10px, env(safe-area-inset-top)) !important;
+    padding-bottom: 6px !important;
+  }
+
+  .rh-header-slot {
+    width: 36px !important;
   }
 
   .rh-training-title {
-    /* 220px clamped an 18-character Cinzel title whose glyphs need ~275px,
-       so it overflowed into the language button. */
-    max-width: 292px !important;
-    font-size: 21px !important;
-    letter-spacing: 1.5px !important;
+    max-width: 250px !important;
+    font-size: clamp(13px, 3.8vw, 16px) !important;
+    letter-spacing: 0.8px !important;
+    gap: 0.3em !important;
+  }
+
+  [dir='rtl'] .rh-training-title {
+    font-size: clamp(14px, 4vw, 17.5px) !important;
+    letter-spacing: 0 !important;
+  }
+
+  .rh-training-chevron {
+    width: clamp(155px, 44vw, 195px) !important;
+    height: auto !important;
+    aspect-ratio: 280 / 24;
+    margin: 2px auto 0 !important;
+  }
+
+  [dir='rtl'] .rh-training-chevron {
+    width: clamp(130px, 38vw, 165px) !important;
   }
 
   .rh-training-intro {
-    max-width: calc(100vw - 30px) !important;
-    padding: 7px 13px !important;
+    max-width: calc(100vw - 32px) !important;
+    padding: 6px 12px !important;
     font-size: 12px !important;
     line-height: 1.38 !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .rh-training-header {
+    padding-inline: 8px !important;
+  }
+
+  .rh-header-slot {
+    width: 30px !important;
+  }
+
+  .rh-training-title {
+    max-width: 200px !important;
+    font-size: 12.5px !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  [dir='rtl'] .rh-training-title {
+    font-size: 13.5px !important;
+  }
+
+  .rh-training-chevron {
+    width: 140px !important;
+  }
+
+  [dir='rtl'] .rh-training-chevron {
+    width: 120px !important;
   }
 }

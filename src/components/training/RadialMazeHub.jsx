@@ -761,7 +761,9 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
 
       {/* Top bar — sticky so “Training” stays visible while the hub scrolls */}
       <div className="app-chrome-bar rh-training-header" style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: 'grid',
+        gridTemplateColumns: '1fr minmax(0, auto) 1fr',
+        alignItems: 'center',
         padding: 'max(14px, env(safe-area-inset-top)) 18px 12px',
         position: 'sticky', top: 0, zIndex: 20,
         /* Fades the page out from under the sticky title rather than drawing a
@@ -778,16 +780,34 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
          * under the sticky title, which is what actually keeps it readable;
          * the blur was only ever doing that job a second time, badly. */
       }}>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }} />
-        {/* Type treatment lives entirely in trainingHubPremium.css
-            (`.rh-training-title`), which already carried !important rules that
-            silently beat anything set here. Setting font properties inline
-            again would just recreate a half-dead override. */}
-        <div className="rh-training-title" style={chrome.title}>
-          {isAr ? 'التدريب المعرفي' : 'Cognitive Training'}
+        <div className="rh-header-slot rh-header-slot--left" style={{ justifySelf: 'start', display: 'flex', alignItems: 'center' }} />
+        {/* Type treatment lives in trainingHubPremium.css (.rh-training-title).
+            G2: Art Deco Stepped Winged Chevron below the Syne / Cairo title.
+            Two balanced word spans ensure the center gap and chevron diamond are
+            100% co-axial on the exact screen centerline in both EN and AR. */}
+        <div className="rh-training-title-wrap">
+          <div className="rh-training-title" style={chrome.title}>
+            <span className="rh-title-word rh-title-word--first">{isAr ? 'التدريب' : 'Cognitive'}</span>
+            <span className="rh-title-word rh-title-word--second">{isAr ? 'المعرفي' : 'Training'}</span>
+          </div>
+          <svg
+            className="rh-training-chevron"
+            viewBox="0 0 280 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            {/* Stepped chevron left */}
+            <path d="M 20,4 L 120,4 L 135,14" stroke="#a67c2e" strokeWidth="1.4" />
+            <path d="M 40,8 L 120,8 L 132,16" stroke="#c59b27" strokeWidth="0.9" opacity="0.75" />
+            {/* Stepped chevron right */}
+            <path d="M 260,4 L 160,4 L 145,14" stroke="#a67c2e" strokeWidth="1.4" />
+            <path d="M 240,8 L 160,8 L 148,16" stroke="#c59b27" strokeWidth="0.9" opacity="0.75" />
+            {/* Center Faceted Diamond */}
+            <polygon points="140,8 147,14 140,20 133,14" fill="#c59b27" stroke="#7a5510" strokeWidth="0.7" />
+          </svg>
         </div>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-          <button type="button" style={chrome.langBtn} onClick={toggleLang}>
+        <div className="rh-header-slot rh-header-slot--right" style={{ justifySelf: 'end', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <button type="button" style={chrome.langBtn} onClick={toggleLang} aria-label={isAr ? 'Switch to English' : 'التبديل إلى العربية'}>
             {isAr ? 'EN' : 'عر'}
           </button>
         </div>

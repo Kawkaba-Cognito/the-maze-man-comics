@@ -142,10 +142,15 @@
   box-shadow: none !important;
 }
 
-.app-stage--universe:has(.rh-hub-stage).rh-training-hub .app-chrome-bar > div:nth-child(2) {
+.app-stage--universe:has(.rh-hub-stage).rh-training-hub .app-chrome-bar > div:nth-child(2),
+.rh-training-hub .rh-training-title {
   color: var(--bone-ink) !important;
   /* No amber glow: a glow is light emitted, and nothing emits light on paper. */
   text-shadow: none !important;
+}
+
+.rh-training-hub .rh-training-chevron {
+  filter: drop-shadow(0 1px 1px rgba(32, 29, 24, 0.08));
 }
 
 .rh-training-hub .rh-training-intro,
