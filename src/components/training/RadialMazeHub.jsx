@@ -815,18 +815,33 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
 
       {/* Orienting caption — mirrors the Home / Wellbeing intro line so a
           first-time user knows the map is interactive and what the glowing
-          figure at its centre is for. */}
-      <p className="rh-training-intro" style={{
+          figure at its centre is for. Structured into primary and secondary guidance. */}
+      <div className="rh-training-intro" style={{
         position: 'relative', zIndex: 4,
-        margin: '4px auto 0', maxWidth: 330, padding: '0 22px',
-        textAlign: 'center', color: chrome.muted,
+        margin: '6px auto 0',
+        padding: '0 16px',
+        textAlign: 'center',
         fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
-        fontSize: 14, lineHeight: 1.55, fontWeight: 500,
       }}>
-        {isAr
-          ? 'اختر مجالًا معرفيًا، أو افتح التقييم للحصول على خط أساس شامل.'
-          : 'Select a cognitive domain, or open Assessment for a complete baseline.'}
-      </p>
+        <div className="rh-intro-pill">
+          <span className="rh-intro-item rh-intro-item--primary">
+            <span className="rh-intro-bullet" aria-hidden="true">✦</span>
+            <span className="rh-intro-text">
+              {isAr ? 'اختر مجالاً معرفياً للتدريب' : 'Select a cognitive domain'}
+            </span>
+          </span>
+          <span className="rh-intro-divider" aria-hidden="true">•</span>
+          <span className="rh-intro-item rh-intro-item--secondary">
+            <span className="rh-intro-text">
+              {isAr ? (
+                <>أو افتح <span className="rh-intro-accent">التقييم</span> لخط أساس شامل</>
+              ) : (
+                <>or open <span className="rh-intro-accent">Assessment</span> for a complete baseline</>
+              )}
+            </span>
+          </span>
+        </div>
+      </div>
 
 
       {/*

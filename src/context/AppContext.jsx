@@ -61,7 +61,13 @@ export function AppProvider({ children }) {
   const [character, setCharacterState] = useState(readCharacter);
   const [owned, setOwned] = useState(() => readJSON(OWNED_KEY, {}));
   const [equipped, setEquipped] = useState(() => readJSON(EQUIP_KEY, {}));
-  const [currentLang, setCurrentLang] = useState('en');
+  const [currentLang, setCurrentLang] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('lang') || 'en';
+    } catch {
+      return 'en';
+    }
+  });
   // App opens on the Home universe ('habits' tab hosts HomeScreen), not Training.
   const [activeTab, setActiveTab] = useState(() => {
     try {

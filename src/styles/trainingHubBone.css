@@ -154,6 +154,7 @@
 }
 
 .rh-training-hub .rh-training-intro,
+.app-stage--universe:has(.rh-hub-stage).rh-training-hub > .app-chrome-bar + div.rh-training-intro,
 .app-stage--universe:has(.rh-hub-stage).rh-training-hub > .app-chrome-bar + p {
   color: var(--bone-ink-dim) !important;
   background: transparent !important;
@@ -161,6 +162,24 @@
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+.rh-training-hub .rh-intro-pill {
+  background: var(--bone-raised) !important;
+  border: 1px solid var(--bone-line) !important;
+  box-shadow: 0 1px 2px var(--bone-shadow) !important;
+}
+
+.rh-training-hub .rh-intro-item--primary .rh-intro-text {
+  color: var(--bone-ink) !important;
+}
+
+.rh-training-hub .rh-intro-item--secondary .rh-intro-text {
+  color: var(--bone-ink-dim) !important;
+}
+
+.rh-training-hub .rh-intro-accent {
+  color: var(--bone-accent) !important;
 }
 
 /* Language button in the top bar. */
