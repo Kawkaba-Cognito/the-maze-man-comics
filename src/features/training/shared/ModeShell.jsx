@@ -16,6 +16,7 @@ import { useCoachRun } from './tutorials/coach/useCoachRun';
 import { coachIdFor } from './tutorials/coach/coachRegistry';
 import PlayResults from './PlayResults';
 import PlanetPath from './PlanetPath/PlanetPath.jsx';
+import '../domains/attention/games/cancellation/cancelAtlas.css';
 
 /*
  * ModeShell — the standard 3-mode flow shared by the newer training games,
@@ -103,8 +104,12 @@ export default function ModeShell({
   /* { levels } — presence switches this game to the single ladder. See
      migrateToLadder above and shared/difficulty.js for the model. */
   ladder = null,
+  /* Optional explicit flag to apply the Inked Atlas theme across all screens.
+     Defaults to true if ladder?.planetPath is truthy (e.g. mot, train-switch) or attention games. */
+  atlas = false,
 }) {
   const gameId = gameIdProp || scienceId;
+  const isAtlas = Boolean(atlas || ladder?.planetPath || scienceId === 'mot' || scienceId === 'train-switch' || gameId === 'mot' || gameId === 'train-switch');
   const tutorial = useTrainingTutorial(gameId, isAr);
   const meta = getTrainingMeta(gameId);
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
@@ -184,8 +189,15 @@ export default function ModeShell({
       return false;
     }
   })();
-  const [phase, setPhase] = useState((workoutMode || urlCoach) ? 'play' : 'menu');
-  const [mode, setMode] = useState((workoutMode || urlCoach) ? 'free' : null);
+  const urlPhase = (() => {
+    try {
+      const q = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('phase') : null;
+      if (q && ['menu', 'levels', 'free-intro', 'pp-setup', 'play'].includes(q)) return q;
+    } catch { /* ignore */ }
+    return null;
+  })();
+  const [phase, setPhase] = useState(urlPhase || ((workoutMode || urlCoach) ? 'play' : 'menu'));
+  const [mode, setMode] = useState(urlPhase === 'free-intro' ? 'free' : (workoutMode || urlCoach) ? 'free' : null);
   const [diff, setDiff] = useState(null);
   const [level, setLevel] = useState(null);
   const [result, setResult] = useState(null);
@@ -336,17 +348,19 @@ export default function ModeShell({
   // ── Survival intro ──
   if (phase === 'free-intro') {
     return (
-      <SurvivalIntro
-        isAr={isAr}
-        playSfx={playSfx}
-        onBack={goMenu}
-        title={survivalIntro?.title ? (isAr ? survivalIntro.title.ar : survivalIntro.title.en) : undefined}
-        body={survivalIntro?.body ? (isAr ? survivalIntro.body.ar : survivalIntro.body.en) : undefined}
-        onReady={() => {
-          freeSeedRef.current = freshSurvivalSeed();
-          setPhase('play');
-        }}
-      />
+      <div className={isAtlas ? 'cx-atlas' : undefined} style={{ display: 'contents' }}>
+        <SurvivalIntro
+          isAr={isAr}
+          playSfx={playSfx}
+          onBack={goMenu}
+          title={survivalIntro?.title ? (isAr ? survivalIntro.title.ar : survivalIntro.title.en) : undefined}
+          body={survivalIntro?.body ? (isAr ? survivalIntro.body.ar : survivalIntro.body.en) : undefined}
+          onReady={() => {
+            freeSeedRef.current = freshSurvivalSeed();
+            setPhase('play');
+          }}
+        />
+      </div>
     );
   }
 
@@ -363,27 +377,30 @@ export default function ModeShell({
       ...extraItems,
     ];
     return (
-      <>
+      <div className={isAtlas ? 'cx-atlas' : undefined} style={{ display: 'contents' }}>
         <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={onBack} title={T} tag={t.tag} hub
+          shellClassName={isAtlas ? 'cx-atlas' : ''}
           onReplayTutorial={replayTutorial} replayHint={tutLabels.replayTutorial}>
           <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />
           <HubScienceLink gameId={scienceId} isAr={isAr} playSfx={playSfx} />
         </TrainingScreenShell>
         {onboardingLayer}
-      </>
+      </div>
     );
   }
 
   // ── Difficulty (Levels) ──
   if (phase === 'diff') {
     return (
-      <TrainingDifficultySelect
-        isAr={isAr} playSfx={playSfx} onBack={goMenu}
-        title={t.pickDiff}
-        blurb={isAr ? `${T} · ٣ صعوبات · ${levelCountLabel} مستويات لكلّ منها · افتح بالترتيب` : `${T} · 3 difficulties · ${levelCountLabel} levels each · unlock in order`}
-        diffKeys={DIFF_KEYS} dm={dm}
-        onPick={(k) => { setDiff(k); setPhase('levels'); }}
-      />
+      <div className={isAtlas ? 'cx-atlas' : undefined} style={{ display: 'contents' }}>
+        <TrainingDifficultySelect
+          isAr={isAr} playSfx={playSfx} onBack={goMenu}
+          title={t.pickDiff}
+          blurb={isAr ? `${T} · ٣ صعوبات · ${levelCountLabel} مستويات لكلّ منها · افتح بالترتيب` : `${T} · 3 difficulties · ${levelCountLabel} levels each · unlock in order`}
+          diffKeys={DIFF_KEYS} dm={dm}
+          onPick={(k) => { setDiff(k); setPhase('levels'); }}
+        />
+      </div>
     );
   }
 
@@ -391,39 +408,44 @@ export default function ModeShell({
   if (phase === 'levels') {
     if (ladder?.planetPath) {
       return (
-        <PlanetPath
-          isAr={isAr}
-          playSfx={playSfx}
+        <div className={isAtlas ? 'cx-atlas' : undefined} style={{ display: 'contents' }}>
+          <PlanetPath
+            isAr={isAr}
+            playSfx={playSfx}
+            onBack={isLadder ? goMenu : () => setPhase('diff')}
+            title={isLadder ? T : `${dm[diff]?.label ?? ''}`}
+            blurb={isLadder
+              ? t.ladderBlurb(effCount.toLocaleString(isAr ? 'ar-EG' : 'en-US'))
+              : (isAr ? `${T} · ${levelCountLabel} مستويات · افتح بالترتيب` : `${T} · ${levelCountLabel} levels · unlock in order`)}
+            count={effCount}
+            isUnlocked={ladder.isUnlocked || isUnlocked}
+            isDone={ladder.isDone || isDone}
+            sublabel={ladder.sublabel || ((lv) => `L${lv}`)}
+            onPick={(lv) => { setLevel(lv); setMode('levels'); setPhase('play'); }}
+            bands={ladder.bands}
+            sections={ladder.sections}
+            stars={ladder.stars || ((lv) => (prog.stars || {})[lv] || 0)}
+            help={ladder.help}
+            bandSigils={ladder.bandSigils}
+            shellClassName={isAtlas ? 'cx-page cpp-page cx-atlas' : 'cx-page cpp-page'}
+          />
+        </div>
+      );
+    }
+    return (
+      <div className={isAtlas ? 'cx-atlas' : undefined} style={{ display: 'contents' }}>
+        <TrainingLevelGrid
+          isAr={isAr} playSfx={playSfx}
           onBack={isLadder ? goMenu : () => setPhase('diff')}
           title={isLadder ? T : `${dm[diff]?.label ?? ''}`}
           blurb={isLadder
             ? t.ladderBlurb(effCount.toLocaleString(isAr ? 'ar-EG' : 'en-US'))
             : (isAr ? `${T} · ${levelCountLabel} مستويات · افتح بالترتيب` : `${T} · ${levelCountLabel} levels · unlock in order`)}
-          count={effCount}
-          isUnlocked={ladder.isUnlocked || isUnlocked}
-          isDone={ladder.isDone || isDone}
-          sublabel={ladder.sublabel || ((lv) => `L${lv}`)}
+          count={effCount} isUnlocked={isUnlocked} isDone={isDone}
+          sublabel={(lv) => `L${lv}`}
           onPick={(lv) => { setLevel(lv); setMode('levels'); setPhase('play'); }}
-          bands={ladder.bands}
-          sections={ladder.sections}
-          stars={ladder.stars || ((lv) => (prog.stars || {})[lv] || 0)}
-          help={ladder.help}
-          bandSigils={ladder.bandSigils}
         />
-      );
-    }
-    return (
-      <TrainingLevelGrid
-        isAr={isAr} playSfx={playSfx}
-        onBack={isLadder ? goMenu : () => setPhase('diff')}
-        title={isLadder ? T : `${dm[diff]?.label ?? ''}`}
-        blurb={isLadder
-          ? t.ladderBlurb(effCount.toLocaleString(isAr ? 'ar-EG' : 'en-US'))
-          : (isAr ? `${T} · ${levelCountLabel} مستويات · افتح بالترتيب` : `${T} · ${levelCountLabel} levels · unlock in order`)}
-        count={effCount} isUnlocked={isUnlocked} isDone={isDone}
-        sublabel={(lv) => `L${lv}`}
-        onPick={(lv) => { setLevel(lv); setMode('levels'); setPhase('play'); }}
-      />
+      </div>
     );
   }
 
@@ -451,18 +473,20 @@ export default function ModeShell({
       },
     ];
     return (
-      <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-        <PlayResults
-          isAr={isAr}
-          title={result.won ? t.levelCleared : t.notQuite}
-          tone={result.won ? 'success' : 'retry'}
-          headline={{ value: `L${result.level}`, label: dm[result.diff]?.label || t.levelMode }}
-          stats={Number.isFinite(score) ? [{ value: score, label: t.score }] : []}
-          notes={result.summary ? [result.summary] : []}
-          actions={actions}
-          onMenu={() => { setPhase('levels'); setResult(null); }}
-          playSfx={playSfx}
-        />
+      <div className={isAtlas ? 'cx-atlas' : undefined} style={{ display: 'contents' }}>
+        <div className={`ct-fq-training-shell ct-fq-training-shell--hub-light${isAtlas ? ' cx-atlas' : ''}`}>
+          <PlayResults
+            isAr={isAr}
+            title={result.won ? t.levelCleared : t.notQuite}
+            tone={result.won ? 'success' : 'retry'}
+            headline={{ value: `L${result.level}`, label: dm[result.diff]?.label || t.levelMode }}
+            stats={Number.isFinite(score) ? [{ value: score, label: t.score }] : []}
+            notes={result.summary ? [result.summary] : []}
+            actions={actions}
+            onMenu={() => { setPhase('levels'); setResult(null); }}
+            playSfx={playSfx}
+          />
+        </div>
       </div>
     );
   }
@@ -470,29 +494,31 @@ export default function ModeShell({
   // ── Pass n Play: setup ──
   if (phase === 'pp-setup') {
     return (
-      <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={goMenu}>
-        <PassPlaySetup
-          isAr={isAr}
-          playSfx={playSfx}
-          diffKeys={ppKeys}
-          diffLabels={ppDm}
-          diff={ppDiff}
-          onDiffChange={setPpDiff}
-          players={players}
-          onPlayersChange={setPlayers}
-          rounds={rounds}
-          onRoundsChange={setRounds}
-          roundOptions={[1, 2, 3, 4, 5]}
-          onStart={startPass}
-          labels={{
-            difficulty: isLadder ? t.ladderPickLevel : t.chalPickDiff,
-            players: t.players,
-            addPlayer: t.addPl,
-            rounds: t.chalRounds,
-            start: <><Sword size="1em" weight="fill" style={{ verticalAlign: '-0.15em', marginInlineEnd: 6 }} />{t.goReady}</>,
-          }}
-        />
-      </TrainingScreenShell>
+      <div className={isAtlas ? 'cx-atlas' : undefined} style={{ display: 'contents' }}>
+        <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={goMenu} shellClassName={isAtlas ? 'cx-atlas' : ''}>
+          <PassPlaySetup
+            isAr={isAr}
+            playSfx={playSfx}
+            diffKeys={ppKeys}
+            diffLabels={ppDm}
+            diff={ppDiff}
+            onDiffChange={setPpDiff}
+            players={players}
+            onPlayersChange={setPlayers}
+            rounds={rounds}
+            onRoundsChange={setRounds}
+            roundOptions={[1, 2, 3, 4, 5]}
+            onStart={startPass}
+            labels={{
+              difficulty: isLadder ? t.ladderPickLevel : t.chalPickDiff,
+              players: t.players,
+              addPlayer: t.addPl,
+              rounds: t.chalRounds,
+              start: <><Sword size="1em" weight="fill" style={{ verticalAlign: '-0.15em', marginInlineEnd: 6 }} />{t.goReady}</>,
+            }}
+          />
+        </TrainingScreenShell>
+      </div>
     );
   }
 
@@ -500,41 +526,45 @@ export default function ModeShell({
   if (phase === 'pp-handoff' && ppView) {
     const name = players[ppView.playerIdx].trim() || `Player ${ppView.playerIdx + 1}`;
     return (
-      <TrainingChallengeHandoff
-        isAr={isAr}
-        kicker={t.challengeMode}
-        playerName={name}
-        roundLine={t.roundNofM(ppView.roundIdx + 1, rounds)}
-        instruction={t.passInstruction}
-        bullets={[
-          t.chalBulletSame,
-          t.chalBulletPass,
-        ]}
-        startLabel={t.readyName(name)}
-        onStart={() => setPhase('pp-play')}
-        playSfx={playSfx}
-      />
+      <div className={isAtlas ? 'cx-atlas' : undefined} style={{ display: 'contents' }}>
+        <TrainingChallengeHandoff
+          isAr={isAr}
+          kicker={t.challengeMode}
+          playerName={name}
+          roundLine={t.roundNofM(ppView.roundIdx + 1, rounds)}
+          instruction={t.passInstruction}
+          bullets={[
+            t.chalBulletSame,
+            t.chalBulletPass,
+          ]}
+          startLabel={t.readyName(name)}
+          onStart={() => setPhase('pp-play')}
+          playSfx={playSfx}
+        />
+      </div>
     );
   }
 
   // ── Pass n Play: results ──
   if (phase === 'pp-results' && ppResults) {
     return (
-      <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={goMenu} title={t.resultsChalTitle}>
-        <div className="ct-pp-results">
-          {ppResults.map((r, i) => (
-            <div key={r.name} className={`ct-pp-res-row${i === 0 ? ' win' : ''}`}>
-              <span className="ct-pp-rank">{i === 0 ? '🏆' : i + 1}</span>
-              <span className="ct-pp-name">{r.name}</span>
-              <span className="ct-pp-score">{r.total} {isAr ? passCfg.scoreLabel.ar : passCfg.scoreLabel.en}</span>
+      <div className={isAtlas ? 'cx-atlas' : undefined} style={{ display: 'contents' }}>
+        <TrainingScreenShell isAr={isAr} playSfx={playSfx} onBack={goMenu} title={t.resultsChalTitle} shellClassName={isAtlas ? 'cx-atlas' : ''}>
+          <div className="ct-pp-results">
+            {ppResults.map((r, i) => (
+              <div key={r.name} className={`ct-pp-res-row${i === 0 ? ' win' : ''}`}>
+                <span className="ct-pp-rank">{i === 0 ? '🏆' : i + 1}</span>
+                <span className="ct-pp-name">{r.name}</span>
+                <span className="ct-pp-score">{r.total} {isAr ? passCfg.scoreLabel.ar : passCfg.scoreLabel.en}</span>
+              </div>
+            ))}
+            <div className="ct-training-modal-actions" style={{ marginTop: 16 }}>
+              <button className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); setPhase('pp-setup'); setPpResults(null); }}>{t.freePlayAgain}</button>
+              <button className="ct-training-btn ct-training-btn--ghost" onClick={() => { playSfx?.('click'); goMenu(); }}>{t.menu}</button>
             </div>
-          ))}
-          <div className="ct-training-modal-actions" style={{ marginTop: 16 }}>
-            <button className="ct-training-btn ct-training-btn--pri" onClick={() => { playSfx?.('click'); setPhase('pp-setup'); setPpResults(null); }}>{t.freePlayAgain}</button>
-            <button className="ct-training-btn ct-training-btn--ghost" onClick={() => { playSfx?.('click'); goMenu(); }}>{t.menu}</button>
           </div>
-        </div>
-      </TrainingScreenShell>
+        </TrainingScreenShell>
+      </div>
     );
   }
 

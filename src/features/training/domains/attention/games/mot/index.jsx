@@ -595,7 +595,7 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
       ? series.map((v, i) => `${((i / (series.length - 1)) * 200).toFixed(1)},${(40 - (Math.max(0, Math.min(100, v)) / 100) * 40).toFixed(1)}`).join(' ')
       : null;
     return (
-      <div className="ct-mot-root" dir={isAr ? 'rtl' : 'ltr'}>
+      <div className="ct-mot-root cx-atlas" dir={isAr ? 'rtl' : 'ltr'}>
         <PlayResults
           isAr={isAr}
           title={isAr ? 'تقييم التتبّع' : 'Tracking assessment'}
@@ -631,7 +631,7 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
 
   if (over && isSurvival) {
     return (
-      <div className="ct-mot-root" dir={isAr ? 'rtl' : 'ltr'}>
+      <div className="ct-mot-root cx-atlas" dir={isAr ? 'rtl' : 'ltr'}>
         <PlayResults
           isAr={isAr}
           title={isAr ? 'انتهى البقاء!' : 'Survival over!'}
@@ -657,7 +657,7 @@ export function MotEngine({ mode, level, seed, attempt, onResult, onExit, isAr, 
       ? (isAr ? `${cfgRef.current.targets} أهداف` : `${cfgRef.current.targets} targets`)
       : null;
   return (
-    <div className="ct-mot-root" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className="ct-mot-root cx-atlas" dir={isAr ? 'rtl' : 'ltr'}>
       <PlayHud
         t={{}}
         playStep="running"

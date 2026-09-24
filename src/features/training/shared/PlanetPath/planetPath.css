@@ -14,6 +14,33 @@
   margin-top: 0;
 }
 
+/* Hero title & sub in Inked Atlas voice */
+.cx-atlas .ct-lv-grid-wrap:has(.cpp-path) .ct-lv-hero-title {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: clamp(2.2rem, 7vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  line-height: 0.96;
+  margin-block: 10px 12px;
+  text-wrap: balance;
+  color: var(--game-ink);
+}
+.cx-atlas .ct-lv-grid-wrap:has(.cpp-path) .ct-lv-hero-sub {
+  max-width: 34rem;
+  margin-bottom: 22px;
+  font-size: clamp(0.9rem, 3.2vw, 1rem);
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  line-height: 1.4;
+  text-wrap: balance;
+  color: var(--fq-mut, var(--ink-dim));
+}
+[dir='rtl'] .cx-atlas .ct-lv-grid-wrap:has(.cpp-path) .ct-lv-hero-title,
+[dir='rtl'] .cx-atlas .ct-lv-grid-wrap:has(.cpp-path) .ct-lv-hero-sub {
+  font-family: 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+
 .cpp-trail {
   position: absolute;
   inset: 0;

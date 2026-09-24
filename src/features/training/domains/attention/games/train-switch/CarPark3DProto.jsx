@@ -915,6 +915,7 @@ export default function CarPark3DProto({
 
   return (
     <C3dProtoChrome
+      rootClassName="cx-atlas"
       isAr={isAr}
       title={t.title}
       tag={t.tag}

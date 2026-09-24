@@ -1248,3 +1248,214 @@
   opacity: 0.78;
   line-height: 1.15;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * INKED ATLAS: ATTENTION GAMES GAMEPLAY UNIFICATION
+ * ══════════════════════════════════════════════════════════════════════════
+ * Brings Target Tracking (mot) and Spaceship (train-switch) gameplay to the
+ * identical visual standard as Cancellation Task:
+ *  - Antique celestial star-chart top/bottom bands framing the viewport
+ *  - Proper vertical clearance ensuring zero collision with star bands
+ *  - Inked Atlas plate & readout styling with Cormorant Garamond / Cairo typography
+ *  - Perfectly centered arena / deck alignment across desktop & mobile
+ */
+
+/* ── Target Tracking (mot) Inked Atlas Gameplay ────────────────────────── */
+.cx-atlas.ct-mot-root {
+  padding-top: clamp(46px, 8.5vh, 80px);
+  padding-bottom: clamp(48px, 9vh, 84px);
+  box-sizing: border-box;
+}
+
+@media (max-width: 899px), (orientation: portrait) {
+  .cx-atlas.ct-mot-root {
+    padding-top: clamp(42px, 7.5vh, 58px);
+    padding-bottom: calc(clamp(42px, 7.5vh, 58px) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.cx-atlas .ct-mot-workspace {
+  box-sizing: border-box;
+  padding: 8px 16px;
+}
+
+.cx-atlas .ct-mot-instruction {
+  border: 1px solid color-mix(in srgb, var(--game-accent) 32%, var(--line));
+  border-radius: var(--cx-r-plate);
+  background: color-mix(in srgb, var(--surface-raised) 95%, transparent);
+  box-shadow: 0 6px 22px var(--fx-shadow-soft);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.cx-atlas .ct-mot-instruction .ct-training-status-text {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+  color: var(--game-ink);
+}
+[dir='rtl'] .cx-atlas .ct-mot-instruction .ct-training-status-text {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+  letter-spacing: 0;
+  font-size: 1.15rem;
+}
+
+.cx-atlas .ct-mot-instruction .ct-training-status-meta {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 600;
+  color: var(--color-amber);
+  background: color-mix(in srgb, var(--color-amber) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-amber) 30%, transparent);
+  border-radius: var(--cx-r-pill);
+  padding: 2px 10px;
+}
+
+.cx-atlas .ct-mot-play {
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 55%, var(--line));
+  border-radius: var(--cx-r-plate);
+  box-shadow:
+    0 14px 38px var(--fx-shadow-deep),
+    0 0 0 1px color-mix(in srgb, var(--game-accent) 22%, transparent),
+    inset 0 1px 1px var(--fx-glint);
+}
+
+.cx-atlas .ct-mot-play::before,
+.cx-atlas .ct-mot-play::after {
+  border-color: color-mix(in srgb, var(--game-accent) 85%, var(--universe-ink));
+  border-width: 2px;
+}
+
+/* ── Spaceship (train-switch) Inked Atlas Gameplay ─────────────────────── */
+/* Antique celestial star-chart top/bottom bands overlay over 3D deck view */
+.cx-atlas.c3d-root::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-bottom.webp");
+  background-size:
+    auto clamp(42px, 8.5vh, 85px),
+    auto clamp(42px, 8.5vh, 85px);
+  background-position:
+    top center,
+    bottom center;
+  background-repeat:
+    no-repeat,
+    no-repeat;
+}
+
+@media (orientation: portrait) {
+  .cx-atlas.c3d-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-bottom.webp");
+    background-size:
+      100% auto,
+      100% auto;
+  }
+}
+
+html[data-home-theme='dark'] .cx-atlas.c3d-root::before {
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-bottom.webp");
+}
+@media (orientation: portrait) {
+  html[data-home-theme='dark'] .cx-atlas.c3d-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-bottom.webp");
+  }
+}
+
+/* Clear the top celestial band for HUD controls */
+.cx-atlas.c3d-root .c3d-ui--overlay {
+  padding-top: clamp(48px, 9vh, 84px);
+  z-index: 5;
+}
+@media (max-width: 899px), (orientation: portrait) {
+  .cx-atlas.c3d-root .c3d-ui--overlay {
+    padding-top: clamp(42px, 7.5vh, 58px);
+  }
+}
+
+.cx-atlas.c3d-root .ct-training-play-header {
+  pointer-events: auto;
+}
+
+.cx-atlas.c3d-root .ct-fq-bar {
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--game-accent) 28%, var(--line));
+  border-radius: var(--cx-r-plate);
+  padding: 4px 12px;
+  box-shadow: 0 4px 16px var(--fx-shadow-soft);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.cx-atlas.c3d-root .c3d-hint {
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--game-accent) 26%, var(--line));
+  border-radius: var(--cx-r-pill);
+  padding: 5px 16px;
+  color: var(--game-ink);
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.82rem;
+  box-shadow: 0 2px 10px var(--fx-shadow-soft);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+
+/* Game over banner in Inked Atlas aesthetic */
+.cx-atlas.c3d-root .c3d-banner--over {
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 40%, var(--line));
+  border-radius: var(--cx-r-plate);
+  box-shadow: 0 16px 48px var(--fx-shadow-deep);
+  color: var(--game-ink);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 24px 28px;
+}
+
+.cx-atlas.c3d-root .c3d-banner--over > span {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: clamp(1.8rem, 6vw, 2.4rem);
+  font-weight: 700;
+  color: var(--game-ink);
+  letter-spacing: 0.02em;
+}
+[dir='rtl'] .cx-atlas.c3d-root .c3d-banner--over > span {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+  letter-spacing: 0;
+}
+
+.cx-atlas.c3d-root .c3d-banner-meta {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  color: var(--fq-mut);
+  font-weight: 600;
+}
+
+.cx-atlas.c3d-root .c3d-cta {
+  background: var(--color-amber);
+  color: var(--game-ink);
+  border: 1px solid color-mix(in srgb, var(--color-amber) 30%, var(--universe-ink));
+  border-radius: var(--cx-r-pill);
+  font-weight: 700;
+  box-shadow: 0 4px 14px var(--fx-shadow-soft);
+}
+
+.cx-atlas.c3d-root .c3d-cta--ghost {
+  background: color-mix(in srgb, var(--surface-raised) 85%, transparent);
+  color: var(--game-ink);
+  border: 1px solid var(--line);
+}

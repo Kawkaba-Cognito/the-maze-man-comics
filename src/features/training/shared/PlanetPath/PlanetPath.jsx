@@ -236,7 +236,7 @@ export default function PlanetPath({
   sections = DEFAULT_SECTIONS,
   help,
   bandSigils,
-  shellClassName = 'cx-page cpp-page',
+  shellClassName = 'cx-page cpp-page cx-atlas',
 }) {
   const [helpOpen, setHelpOpen] = useState(false);
 
