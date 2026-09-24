@@ -834,9 +834,9 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           <span className="rh-intro-item rh-intro-item--secondary">
             <span className="rh-intro-text">
               {isAr ? (
-                <>أو افتح <span className="rh-intro-accent">التقييم</span> لخط أساس شامل</>
+                <>أو افتح <button type="button" className="rh-intro-accent" onClick={onOpenAssessment}>التقييم</button> لخط أساس شامل</>
               ) : (
-                <>or open <span className="rh-intro-accent">Assessment</span> for a complete baseline</>
+                <>or open <button type="button" className="rh-intro-accent" onClick={onOpenAssessment}>Assessment</button> for a complete baseline</>
               )}
             </span>
           </span>
