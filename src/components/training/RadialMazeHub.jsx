@@ -816,30 +816,23 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
       {/* Orienting caption — mirrors the Home / Wellbeing intro line so a
           first-time user knows the map is interactive and what the glowing
           figure at its centre is for. Structured into primary and secondary guidance. */}
+      {/* Orienting caption — clean, small, organized typography without any enclosing rectangle */}
       <div className="rh-training-intro" style={{
         position: 'relative', zIndex: 4,
-        margin: '6px auto 0',
+        margin: '4px auto 0',
         padding: '0 16px',
         textAlign: 'center',
         fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
       }}>
-        <div className="rh-intro-pill">
-          <span className="rh-intro-item rh-intro-item--primary">
-            <span className="rh-intro-bullet" aria-hidden="true">✦</span>
-            <span className="rh-intro-text">
-              {isAr ? 'اختر مجالاً معرفياً للتدريب' : 'Select a cognitive domain'}
-            </span>
-          </span>
-          <span className="rh-intro-divider" aria-hidden="true">•</span>
-          <span className="rh-intro-item rh-intro-item--secondary">
-            <span className="rh-intro-text">
-              {isAr ? (
-                <>أو افتح <button type="button" className="rh-intro-accent" onClick={onOpenAssessment}>التقييم</button> لخط أساس شامل</>
-              ) : (
-                <>or open <button type="button" className="rh-intro-accent" onClick={onOpenAssessment}>Assessment</button> for a complete baseline</>
-              )}
-            </span>
-          </span>
+        <div className="rh-intro-line rh-intro-line--primary">
+          {isAr ? 'اختر مجالاً معرفياً للتدريب' : 'Select a cognitive domain'}
+        </div>
+        <div className="rh-intro-line rh-intro-line--secondary">
+          {isAr ? (
+            <>أو افتح <button type="button" className="rh-intro-accent-btn" onClick={onOpenAssessment}>التقييم</button> لخط أساس شامل</>
+          ) : (
+            <>or open <button type="button" className="rh-intro-accent-btn" onClick={onOpenAssessment}>Assessment</button> for a complete baseline</>
+          )}
         </div>
       </div>
 

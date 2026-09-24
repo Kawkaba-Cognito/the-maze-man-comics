@@ -519,52 +519,65 @@
   text-align: center !important;
 }
 
-.rh-intro-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 4px 16px;
-  border-radius: 999px;
-  background: var(--bone-raised, rgba(255, 255, 255, 0.4));
-  border: 1px solid var(--bone-line, rgba(166, 124, 46, 0.18));
-  box-shadow: 0 1px 2px rgba(32, 29, 24, 0.04);
+.rh-intro-line {
+  white-space: nowrap;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  text-align: center;
 }
 
-.rh-intro-item {
-  display: inline-flex;
-  align-items: center;
-}
-
-.rh-intro-bullet {
-  color: #c59b27;
-  font-size: 10px;
-  margin-inline-end: 5px;
-  opacity: 0.9;
-}
-
-.rh-intro-divider {
-  color: var(--bone-line, rgba(166, 124, 46, 0.35));
-  font-size: 11px;
-}
-
-.rh-intro-item--primary .rh-intro-text {
-  font-size: 13px;
+.rh-intro-line--primary {
+  font-size: 12.5px;
   font-weight: 600;
+  letter-spacing: 0.25px;
   color: var(--bone-ink, #201d18);
-  letter-spacing: 0.2px;
+  line-height: 1.35;
+  opacity: 0.92;
 }
 
-.rh-intro-item--secondary .rh-intro-text {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--bone-ink-dim, #635b4f);
-}
-
-.rh-intro-accent {
+[dir='rtl'] .rh-intro-line--primary {
+  font-size: 13.5px;
   font-weight: 700;
-  color: #a67c2e;
+  letter-spacing: 0;
+}
+
+.rh-intro-line--secondary {
+  font-size: 11.5px;
+  font-weight: 500;
   letter-spacing: 0.1px;
+  color: var(--bone-ink-dim, #635b4f);
+  line-height: 1.35;
+  opacity: 0.8;
+}
+
+[dir='rtl'] .rh-intro-line--secondary {
+  font-size: 12px;
+}
+
+.rh-intro-accent-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  color: var(--bone-accent, #a67c2e);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  text-decoration: underline dotted rgba(166, 124, 46, 0.45);
+  text-underline-offset: 2px;
+  cursor: pointer;
+  display: inline;
+  transition: all 0.2s ease;
+}
+
+.rh-intro-accent-btn:hover {
+  color: #7d5408;
+  text-decoration: underline solid rgba(166, 124, 46, 0.8);
 }
 
 .rh-hub-stage--desktop {
@@ -795,26 +808,22 @@
     margin: 5px auto 0 !important;
   }
 
-  .rh-intro-pill {
-    flex-direction: column !important;
-    gap: 2px !important;
-    padding: 5px 14px !important;
-    border-radius: 12px !important;
-    max-width: 330px;
+  .rh-intro-line--primary {
+    font-size: 12px !important;
+    letter-spacing: 0.2px !important;
   }
 
-  .rh-intro-divider {
-    display: none !important;
+  [dir='rtl'] .rh-intro-line--primary {
+    font-size: 13px !important;
   }
 
-  .rh-intro-item--primary .rh-intro-text {
-    font-size: 12.5px !important;
-    line-height: 1.35 !important;
+  .rh-intro-line--secondary {
+    font-size: 11px !important;
+    letter-spacing: 0.05px !important;
   }
 
-  .rh-intro-item--secondary .rh-intro-text {
+  [dir='rtl'] .rh-intro-line--secondary {
     font-size: 11.5px !important;
-    line-height: 1.35 !important;
   }
 }
 
@@ -846,15 +855,11 @@
     width: 160px !important;
   }
 
-  .rh-intro-pill {
-    padding: 4px 10px !important;
+  .rh-intro-line--primary {
+    font-size: 11px !important;
   }
 
-  .rh-intro-item--primary .rh-intro-text {
-    font-size: 11.5px !important;
-  }
-
-  .rh-intro-item--secondary .rh-intro-text {
-    font-size: 10.5px !important;
+  .rh-intro-line--secondary {
+    font-size: 10px !important;
   }
 }

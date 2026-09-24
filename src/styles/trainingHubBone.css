@@ -166,142 +166,116 @@
   max-width: 680px !important;
 }
 
-.rh-training-hub .rh-intro-item {
-  display: inline-flex !important;
-  align-items: center !important;
-  white-space: nowrap !important;
-}
-
-.rh-training-hub .rh-intro-pill {
-  display: inline-flex !important;
+.rh-training-hub .rh-training-intro {
+  display: flex !important;
+  flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 10px !important;
-  padding: 5px 18px !important;
-  border-radius: 999px !important;
-  /* Multi-stop satin warm parchment wash */
-  background: linear-gradient(180deg, rgba(255, 252, 246, 0.88) 0%, rgba(243, 237, 224, 0.75) 100%) !important;
-  /* Dual-border effect: burnished gold outer rim with bevel highlight */
-  border: 1px solid rgba(184, 142, 60, 0.38) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 0 rgba(166, 124, 46, 0.14),
-    0 2px 7px rgba(32, 29, 24, 0.05),
-    0 0 16px rgba(212, 175, 55, 0.09) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  position: relative !important;
-  transition: all 0.25s ease !important;
+  gap: 2px !important;
+  margin-top: 4px !important;
+  padding: 0 16px !important;
+  max-width: 480px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-/* Delicate hairline inner framing */
-.rh-training-hub .rh-intro-pill::after {
-  content: '';
-  position: absolute;
-  inset: 2px;
-  border-radius: 999px;
-  border: 1px solid rgba(184, 142, 60, 0.16);
-  pointer-events: none;
+.rh-training-hub .rh-intro-line {
+  white-space: nowrap !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  text-align: center !important;
 }
 
-.rh-training-hub .rh-intro-bullet {
-  color: #c59b27 !important;
-  font-size: 8px !important;
-  margin-inline-end: 6px !important;
-  filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.6));
-}
-
-.rh-training-hub .rh-intro-divider {
-  color: rgba(166, 124, 46, 0.38) !important;
-  font-size: 9px !important;
-}
-
-.rh-training-hub .rh-intro-item--primary .rh-intro-text {
-  font-size: 11.5px !important;
-  font-weight: 700 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.12em !important;
+.rh-training-hub .rh-intro-line--primary {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.25px !important;
   color: var(--bone-ink) !important;
+  line-height: 1.35 !important;
+  opacity: 0.92 !important;
 }
 
-[dir='rtl'] .rh-training-hub .rh-intro-item--primary .rh-intro-text {
-  font-size: 13px !important;
-  font-weight: 800 !important;
-  text-transform: none !important;
+[dir='rtl'] .rh-training-hub .rh-intro-line--primary {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
   letter-spacing: 0 !important;
 }
 
-.rh-training-hub .rh-intro-item--secondary .rh-intro-text {
-  font-size: 12px !important;
+.rh-training-hub .rh-intro-line--secondary {
+  font-size: 11.5px !important;
   font-weight: 500 !important;
+  letter-spacing: 0.1px !important;
   color: var(--bone-ink-dim) !important;
-  letter-spacing: 0.02em !important;
+  line-height: 1.35 !important;
+  opacity: 0.8 !important;
 }
 
-[dir='rtl'] .rh-training-hub .rh-intro-item--secondary .rh-intro-text {
+[dir='rtl'] .rh-training-hub .rh-intro-line--secondary {
   font-size: 12px !important;
 }
 
-/* Assessment framed as a burnished gold micro-badge button */
-.rh-training-hub .rh-intro-accent {
-  display: inline-flex !important;
-  align-items: center !important;
-  padding: 1px 8px !important;
-  margin: 0 4px !important;
-  border-radius: 999px !important;
-  background: linear-gradient(180deg, rgba(212, 175, 55, 0.2) 0%, rgba(166, 124, 46, 0.12) 100%) !important;
-  border: 1px solid rgba(166, 124, 46, 0.44) !important;
-  color: #7d5408 !important;
+.rh-training-hub .rh-intro-accent-btn {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color: var(--bone-accent) !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
   font-weight: 700 !important;
-  font-size: 11px !important;
-  letter-spacing: 0.03em !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 1px 2px rgba(32, 29, 24, 0.05) !important;
-  text-decoration: none !important;
+  text-decoration: underline dotted rgba(166, 124, 46, 0.45) !important;
+  text-underline-offset: 2px !important;
   cursor: pointer !important;
+  display: inline !important;
   transition: all 0.2s ease !important;
 }
 
-.rh-training-hub .rh-intro-accent:hover {
-  background: linear-gradient(180deg, rgba(212, 175, 55, 0.3) 0%, rgba(166, 124, 46, 0.2) 100%) !important;
-  border-color: rgba(166, 124, 46, 0.7) !important;
-  color: #634202 !important;
-  transform: translateY(-0.5px);
+.rh-training-hub .rh-intro-accent-btn:hover {
+  color: #7d5408 !important;
+  text-decoration: underline solid rgba(166, 124, 46, 0.8) !important;
 }
 
 @media (max-width: 520px) {
-  .rh-training-hub .rh-intro-pill {
-    flex-direction: column !important;
-    gap: 3px !important;
-    padding: 6px 16px !important;
-    border-radius: 14px !important;
-    max-width: min(330px, 88vw) !important;
+  .rh-training-hub .rh-training-intro {
+    margin-top: 3px !important;
+    gap: 1px !important;
+    padding: 0 10px !important;
   }
 
-  .rh-training-hub .rh-intro-pill::after {
-    border-radius: 11px !important;
+  .rh-training-hub .rh-intro-line--primary {
+    font-size: 12px !important;
+    letter-spacing: 0.2px !important;
   }
 
-  .rh-training-hub .rh-intro-divider {
-    display: none !important;
+  [dir='rtl'] .rh-training-hub .rh-intro-line--primary {
+    font-size: 13px !important;
   }
 
-  .rh-training-hub .rh-intro-item--primary .rh-intro-text {
+  .rh-training-hub .rh-intro-line--secondary {
     font-size: 11px !important;
-    letter-spacing: 0.1em !important;
+    letter-spacing: 0.05px !important;
   }
 
-  [dir='rtl'] .rh-training-hub .rh-intro-item--primary .rh-intro-text {
-    font-size: 12.5px !important;
-    letter-spacing: 0 !important;
+  [dir='rtl'] .rh-training-hub .rh-intro-line--secondary {
+    font-size: 11.5px !important;
   }
+}
 
-  .rh-training-hub .rh-intro-item--secondary .rh-intro-text {
+@media (max-width: 360px) {
+  .rh-training-hub .rh-intro-line--primary {
     font-size: 11px !important;
   }
 
-  .rh-training-hub .rh-intro-accent {
-    font-size: 10.5px !important;
-    padding: 0 6px !important;
+  .rh-training-hub .rh-intro-line--secondary {
+    font-size: 10px !important;
   }
 }
 
