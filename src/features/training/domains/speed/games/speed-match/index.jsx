@@ -1,43 +1,33 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useApp } from '../../../../../../context/AppContext';
+import ModeShell from '../../../../shared/ModeShell';
 import {
-  TrainingMenuBar,
   TrainingPlayHeader,
   TrainingPauseModal,
   TrainingQuitModal,
-  TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
-import { TrainingLevelGrid, TrainingModeList } from '../../../../shared/TrainingScreens';
-import HubScienceLink from '../../../../shared/HubScienceLink';
-import SurvivalIntro from '../../../../shared/SurvivalIntro';
-import PassPlaySetup from '../../../../shared/PassPlaySetup';
+import { IconBack, IconPause } from '../../../../shared/TrainingIcons';
 import { freshSurvivalSeed } from '../../../../shared/survival';
 import { makeRng } from '../../../../shared/rng';
 import { useJuice } from '../../../../shared/juice/useJuice';
 import { JuiceLayer } from '../../../../shared/juice/JuiceLayer';
 import { ratingLabels } from '../../../../shared/juice/juiceUtils';
 import { createTrialLog } from '../../../../shared/trialLog';
-import { loadGameSettings } from '../../../../shared/focusQuestData';
 import AssessmentReady from '../../../../assessment/AssessmentReady';
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
-import { useCoachRun } from '../../../../shared/tutorials/coach/useCoachRun';
-import { coachIdFor } from '../../../../shared/tutorials/coach/coachRegistry';
 import { SPEED_MATCH_COACH } from '../../../../shared/tutorials/coach/scripts/speed-match';
-import { TUTORIAL_UI } from '../../../../shared/tutorials/tutorialContent';
 import { STR_COMMON } from '../../../../shared/trainingStrings';
-import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import {
   SH,
   SM_PP_DEPTHS,
+  LADDER,
   LADDER_LEVELS,
-  migrateLadderReached,
   specForLevel,
   buildLegend,
   growLegend,
   pickItem,
   summarize,
   gradeBlock,
-  isLevelUnlocked,
   prepareLevelBlock,
   prepareChallengeSeed,
   prepareChallengeBlock,
@@ -46,44 +36,43 @@ import {
   mulberry32,
   TIME_BANK,
   bankGainMs,
+  SPEED_MATCH_BANDS,
+  SPEED_MATCH_SECTIONS,
+  SPEED_MATCH_HELP,
+  speedMatchSublabel,
 } from './speedMatchData';
+import '../../../attention/games/cancellation/cancelAtlas.css';
 
-// No board import: this game renders its own 2D board below (LegendBar, the
-// probe card and the number pad). Retiring the 3D scene needed no replacement
-// component — the DOM board was always there, just hidden by the --3d shell.
-
-const PROFILE_KEY = 'mm_speedmatch_v1';
-function loadProfile() {
-  try {
-    const j = JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}');
-    return { done: j.done || {}, bestFree: j.bestFree ?? 0, bestStreak: j.bestStreak ?? 0 };
-  } catch {
-    return { done: {}, bestFree: 0, bestStreak: 0 };
-  }
-}
-function saveProfile(p) {
-  try {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
-  } catch {
-    /* ignore */
-  }
-}
+export {
+  SH,
+  SM_PP_DEPTHS,
+  LADDER,
+  LADDER_LEVELS,
+  specForLevel,
+  buildLegend,
+  growLegend,
+  pickItem,
+  summarize,
+  gradeBlock,
+  prepareLevelBlock,
+  prepareChallengeSeed,
+  prepareChallengeBlock,
+  freeLegendSize,
+  freeItemPoints,
+  mulberry32,
+  TIME_BANK,
+  bankGainMs,
+  SPEED_MATCH_BANDS,
+  SPEED_MATCH_SECTIONS,
+  SPEED_MATCH_HELP,
+  speedMatchSublabel,
+};
 
 const UI = {
   en: {
     ...STR_COMMON.en,
     hub: 'Speed Match',
     title: 'Speed Match',
-    hubMapAria: 'Modes — choose a path',
-    hubNodeFreeHint: 'Endless · time bank · gets faster',
-    hubNodeLevelsHint: '60 levels · one ladder · unlock in order',
-    hubNodeChallengeHint: 'Same key for all · pick a depth',
-    freeIntroBody:
-      'Match the symbol to its number. You have one time bank that keeps ticking down — every correct match adds time, a wrong tap subtracts it. As you go, the key grows and each correct match returns less time, so you must get faster to stay alive. The run ends when the time bank empties.',
-    challengeSub: 'Same key & symbols for everyone · pick a depth · pass the device',
-    chalRoundsHint: 'Each player plays once per round · new fair key each round',
-    chalBulletSame: 'Same key and symbol order for everyone this round',
-    chalMeta: (label, sec) => `${label} · ${sec}s`,
     key: 'Key',
     tapNumber: 'Tap the number that matches the symbol',
     countdown: 'Get ready…',
@@ -93,8 +82,6 @@ const UI = {
     restart: 'Restart',
     levelHeader: (lv) => `L${lv}`,
     targetSub: (n) => `Reach ${n} correct`,
-    resultsLevelPass: 'Level passed',
-    resultsLevelRetry: 'Try again',
     speedScore: 'Speed score',
     ipm: 'Matches / min',
     accuracy: 'Accuracy',
@@ -102,14 +89,7 @@ const UI = {
     rtVar: 'RT variability',
     ies: 'Efficiency',
     iesHint: 'IES · lower is better',
-    metricsNote: 'Matches/min is your processing-speed score. RT variability tracks how steady you are; efficiency (IES) blends speed and accuracy.',
     ms: 'ms',
-    freeCorrect: (n) => `Matches: ${n}`,
-    freeBest: (n) => `Best score: ${n}`,
-    chalResDetail: (nr, c, acc, rt) =>
-      nr > 1
-        ? `${nr}× · ${c} correct avg · ${acc}% · ${rt ?? '—'}ms`
-        : `${c} correct · ${acc}% · ${rt ?? '—'}ms`,
     perfect: 'Lightning fast!',
     good: 'Quick work',
     tryAgain: 'Keep practicing',
@@ -125,16 +105,6 @@ const UI = {
     ...STR_COMMON.ar,
     hub: 'مطابقة سريعة',
     title: 'مطابقة سريعة',
-    hubMapAria: 'الأوضاع — اختر مسارًا',
-    hubNodeFreeHint: 'لا ينتهي · بنك وقت · يتسارع',
-    hubNodeLevelsHint: '٦٠ مستوى · سلّم واحد · بالترتيب',
-    hubNodeChallengeHint: 'نفس المفتاح للجميع · اختر العمق',
-    freeIntroBody:
-      'طابق الرمز مع رقمه. لديك بنك وقت واحد يتناقص باستمرار — كل مطابقة صحيحة تضيف وقتاً والنقر الخاطئ يخصم منه. كلما تقدمت يكبر المفتاح وتعيد كل مطابقة وقتاً أقل، فعليك أن تتسارع لتبقى. تنتهي المحاولة عند نفاد بنك الوقت.',
-    challengeSub: 'نفس المفتاح والرموز للجميع · اختر العمق · مرّر الجهاز',
-    chalRoundsHint: 'كل لاعب يلعب مرة في الجولة · مفتاح عادل جديد كل جولة',
-    chalBulletSame: 'نفس المفتاح وترتيب الرموز للجميع في هذه الجولة',
-    chalMeta: (label, sec) => `${label} · ${sec}ث`,
     key: 'المفتاح',
     tapNumber: 'اضغط الرقم المطابق للرمز',
     countdown: 'استعد…',
@@ -144,8 +114,6 @@ const UI = {
     restart: 'إعادة',
     levelHeader: (lv) => `مستوى ${lv}`,
     targetSub: (n) => `اجمع ${n} صحيحة`,
-    resultsLevelPass: 'المستوى اجتُاز',
-    resultsLevelRetry: 'حاول مجددًا',
     speedScore: 'درجة السرعة',
     ipm: 'مطابقات / دقيقة',
     accuracy: 'الدقة',
@@ -153,14 +121,7 @@ const UI = {
     rtVar: 'تغيّر زمن الاستجابة',
     ies: 'الكفاءة',
     iesHint: 'IES · الأقل أفضل',
-    metricsNote: 'المطابقات/دقيقة هي درجة سرعة معالجتك. تغيّر زمن الاستجابة يقيس ثباتك؛ والكفاءة (IES) تمزج السرعة والدقة.',
     ms: 'ملث',
-    freeCorrect: (n) => `مطابقات: ${n}`,
-    freeBest: (n) => `أفضل نقاط: ${n}`,
-    chalResDetail: (nr, c, acc, rt) =>
-      nr > 1
-        ? `${nr}× · ${c} صحيحة بالمتوسط · ${acc}% · ${rt ?? '—'}ملث`
-        : `${c} صحيحة · ${acc}% · ${rt ?? '—'}ملث`,
     perfect: 'سرعة البرق!',
     good: 'عمل سريع',
     tryAgain: 'واصل التدريب',
@@ -174,10 +135,6 @@ const UI = {
   },
 };
 
-// Parse each shape's SVG markup into a real React element ONCE (cached), so the
-// shape is rendered as a React-managed SVG child instead of being injected as an
-// HTML string (same fix already applied in cancellation/index.jsx after it caused
-// an intermittent "empty square" render bug there).
 const FALLBACK_SHAPE_EL = <circle cx="50" cy="50" r="38" fill="currentColor" />;
 const shapeElCache = Object.create(null);
 function getShapeEl(shape) {
@@ -206,7 +163,6 @@ function getShapeEl(shape) {
   return el;
 }
 
-/** Crisp SVG glyph from the shared SH set. */
 function SmSymbol({ shape, size = 48, color = 'var(--game-ink)', className }) {
   return (
     <svg
@@ -226,7 +182,7 @@ function LegendBar({ legend, t }) {
     <div className="ct-sm-legend" aria-label={t.key}>
       {legend.map((p) => (
         <div className="ct-sm-legend-pair" key={p.digit}>
-          <SmSymbol shape={p.symbol} size={26} />
+          <SmSymbol shape={p.symbol} size={28} />
           <span className="ct-sm-legend-digit">{p.digit}</span>
         </div>
       ))}
@@ -234,60 +190,28 @@ function LegendBar({ legend, t }) {
   );
 }
 
-/** Light hub mode list (shared visual with the other games). */
-function SpeedModes({ t, isAr, onFree, onLevels, onChallenge, playSfx }) {
-  const items = [
-    { k: 'free', ic: '♾️', lb: t.freeMode, hint: t.hubNodeFreeHint, on: onFree, mod: 'ct-fq-attn-mode--free' },
-    { k: 'levels', ic: '🎯', lb: t.levelMode, hint: t.hubNodeLevelsHint, on: onLevels, mod: 'ct-fq-attn-mode--levels' },
-    { k: 'chal', ic: '⚔️', lb: t.challengeMode, hint: t.hubNodeChallengeHint, on: onChallenge, mod: 'ct-fq-attn-mode--chal' },
-  ];
-  return <TrainingModeList items={items} isAr={isAr} playSfx={playSfx} />;
-}
-
-export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAutoPlay = false, assessmentMode = false, onAssessmentComplete, onAssessmentExit, assessmentLabel, assessmentStep, assessmentDomainId = 'speed' }) {
-  const { playSfx, currentLang, awardLadderWin, awardFreeRun } = useApp();
-  const isAr = currentLang === 'ar';
+export function SpeedMatchEngine({
+  mode = 'free',
+  level = 1,
+  seed = null,
+  attempt = null,
+  onResult,
+  onExit,
+  isAr = false,
+  playSfx,
+  awardFreeRun,
+  awardLadderWin,
+  coach,
+  assessmentMode = false,
+}) {
   const t = isAr ? UI.ar : UI.en;
-  // Workout and direct-play entries skip the hub and start Survival.
-  const workoutLaunched = useRef(false);
-  useEffect(() => {
-    if ((workoutMode || cosmosAutoPlay) && !workoutLaunched.current) {
-      workoutLaunched.current = true;
-      startFreeMode();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutMode, cosmosAutoPlay]);
-  const settings = loadGameSettings();
-
-  const juice = useJuice();
-  const rLabels = ratingLabels(isAr);
-  /*
-   * ── The live-board coach (COACH-PLAN.md Phase 1) ──
-   *
-   * This game runs its OWN mode state machine rather than ModeShell, so it wires
-   * the coach itself — the same as cancellation. `tutLayer` (the retired rules
-   * carousel) is gone with it: a game must never open a slide deck and a live
-   * lesson on the same first visit.
-   *
-   * ⚠ The id is versioned (`speed-match@coach1`, from coachRegistry.js). The
-   * carousel this replaces already wrote a `'speed-match'` flag for every player
-   * who has opened the game, so under the plain id the lesson would reach fresh
-   * installs only, silently.
-   */
   const stageRef = useRef(null);
-  const startFreeModeRef = useRef(null);
-  const coach = useCoachRun(coachIdFor('speed-match'), {
-    onReplay: () => startFreeModeRef.current?.(),
-  });
-  const coachOpen = coach.open;
-  const coachOpenRef = coach.openRef;
-  const openTutorial = coach.replay;
-  const tutReplayHint = TUTORIAL_UI[isAr ? 'ar' : 'en'].replayTutorial;
+  const juice = useJuice();
+  const juiceRef = useRef(juice);
+  juiceRef.current = juice;
+  const rLabels = ratingLabels(isAr);
 
-  const [profile, setProfile] = useState(() => loadProfile());
-  const [phase, setPhase] = useState(assessmentMode ? 'assessStart' : 'hub');
-
-  const [playStep, setPlayStep] = useState('idle');
+  const [playStep, setPlayStep] = useState('countdown');
   const [cdVal, setCdVal] = useState(3);
   const [legend, setLegend] = useState([]);
   const [item, setItem] = useState(null);
@@ -295,29 +219,10 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
   const [pressedKey, setPressedKey] = useState(null);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
-  const [lastResult, setLastResult] = useState(null);
 
-  // Live display values (repainted from the loop / answer handler).
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [correct, setCorrect] = useState(0);
-  const [, setTick] = useState(0);
-
-  // Challenge / pass-n-play
-  const [chalNames, setChalNames] = useState(['Player 1', 'Player 2']);
-  const [chalSeed, setChalSeed] = useState(null);
-  const [chalIdx, setChalIdx] = useState(0);
-  const [chalScores, setChalScores] = useState([]);
-  const [chalTurnOpen, setChalTurnOpen] = useState(false);
-  const [chalRoundsTotal, setChalRoundsTotal] = useState(1);
-  const [chalRoundIdx, setChalRoundIdx] = useState(0);
-  const [chalDiff, setChalDiff] = useState('mid');
-  const chalDiffRef = useRef('mid');
-  const chalIdxRef = useRef(0);
-  const chalNamesRef = useRef(chalNames);
-  const chalScoresRef = useRef([]);
-  const chalRoundsTotalRef = useRef(1);
-  const chalCycleRef = useRef(0);
 
   const blockRef = useRef(null);
   const rngRef = useRef(Math.random);
@@ -329,66 +234,30 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
   const lastDigitRef = useRef(0);
   const itemRef = useRef(null);
   const answeredRef = useRef(false);
-  const blockEndAtRef = useRef(0); // assessment only (fixed-window SDMT)
+  const blockEndAtRef = useRef(0);
   const itemStartRef = useRef(0);
-  // Adaptive time bank (training modes): bankRef ms remaining, capped at bankMax.
   const bankRef = useRef(TIME_BANK.startMs);
   const bankMaxRef = useRef(TIME_BANK.maxMs);
-  const runStartRef = useRef(0); // when 'running' began (for elapsed/throughput)
+  const runStartRef = useRef(0);
   const rafRef = useRef(0);
   const runIdRef = useRef(0);
   const endedRef = useRef(false);
   const trialLogRef = useRef(null);
   const assessMotorRef = useRef(null);
-  const beginMotorBlockRef = useRef(() => {});
-  const beginMainAssessRef = useRef(() => {});
-  const playStepRef = useRef('idle');
+  const playStepRef = useRef('countdown');
   const pauseRef = useRef(false);
   const fbTimerRef = useRef(0);
 
-  // Memoised so `ladderReached` below does not recompute on every render.
-  const doneMap = useMemo(() => profile.done || {}, [profile.done]);
-  /* One-time conversion of the old per-tier record into a ladder position.
-     Unlocked, not ticked — a ✓ on a level nobody played is a lie. */
-  const ladderReached = useMemo(() => migrateLadderReached(doneMap), [doneMap]);
-  const PP_DEPTH_KEYS = Object.keys(SM_PP_DEPTHS);
-  const PP_DEPTH_LABELS = Object.fromEntries(
-    PP_DEPTH_KEYS.map((k) => [k, { label: `L${SM_PP_DEPTHS[k]}` }]),
-  );
-
-  const finishBlockRef = useRef(() => {});
-  const nextItemRef = useRef(() => {});
+  const coachOpenRef = coach?.openRef;
 
   useEffect(() => { playStepRef.current = playStep; }, [playStep]);
   useEffect(() => { pauseRef.current = pauseOpen; }, [pauseOpen]);
-  useEffect(() => { chalIdxRef.current = chalIdx; }, [chalIdx]);
-  useEffect(() => { chalNamesRef.current = chalNames; }, [chalNames]);
 
   const stopLoop = useCallback(() => {
     runIdRef.current += 1;
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = 0;
   }, []);
-
-  const clearPlay = useCallback(() => {
-    stopLoop();
-    if (fbTimerRef.current) clearTimeout(fbTimerRef.current);
-    blockRef.current = null;
-    endedRef.current = false;
-    setPlayStep('idle');
-    playStepRef.current = 'idle';
-    setPauseOpen(false);
-    setQuitOpen(false);
-    setItem(null);
-    setFeedback(null);
-    setChalTurnOpen(false);
-  }, [stopLoop]);
-
-  useEffect(() => () => {
-    stopLoop();
-    if (fbTimerRef.current) clearTimeout(fbTimerRef.current);
-    trialLogRef.current?.discard();
-  }, [stopLoop]);
 
   const flash = useCallback((kind) => {
     if (fbTimerRef.current) clearTimeout(fbTimerRef.current);
@@ -399,14 +268,8 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
   const nextItem = useCallback((now) => {
     const block = blockRef.current;
     if (!block) return;
-    // Survival grows the key as you progress (more symbols = harder scan); the
-    // adaptive time bank supplies the speed pressure. No per-item deadline.
     if (block.mode === 'free') {
       const size = freeLegendSize(correctRef.current);
-      /* growLegend, NOT buildLegend. buildLegend reshuffles the entire pool and
-         reassigns every digit, so growing the key silently invalidated every
-         mapping the player had memorised and scored their learned answers as
-         wrong. Grow appends the new symbols and leaves the rest alone. */
       if (block.legend.length < size) {
         block.legend = growLegend(block.legend, size, rngRef.current);
         setLegend(block.legend);
@@ -419,18 +282,6 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
     itemStartRef.current = now;
     setItem(it);
   }, []);
-  useEffect(() => { nextItemRef.current = nextItem; }, [nextItem]);
-
-  const persistLevelDone = useCallback((lv) => {
-    setProfile((prev) => {
-      // ⚠ Flat `lad-N` keys. The old `easy-12` keys are left on disk untouched —
-      // migrateLadderReached reads them once, and keeping them makes this
-      // reversible. localStorage has no undo.
-      const next = { ...prev, done: { ...prev.done, [`lad-${lv}`]: true } };
-      saveProfile(next);
-      return next;
-    });
-  }, []);
 
   const finishBlock = useCallback(() => {
     if (endedRef.current) return;
@@ -438,8 +289,7 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
     stopLoop();
     const block = blockRef.current;
     if (!block) { endedRef.current = false; return; }
-    // Assessment uses its fixed window; training is self-paced under the time
-    // bank, so throughput is measured over the actual elapsed play time.
+
     const elapsedSec = block.assessStage
       ? block.spec.durationSec
       : Math.max(1, (performance.now() - runStartRef.current) / 1000);
@@ -449,126 +299,72 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
     if (assessmentMode) {
       const stage = block.assessStage || 'main';
       if (stage === 'practice') {
-        // Practice timer lapsed without 4 correct — proceed anyway.
         trialLogRef.current?.discard();
         trialLogRef.current = null;
-        beginMotorBlockRef.current();
+        beginMotorBlock();
         return;
       }
       if (stage === 'motor') {
         trialLogRef.current?.discard();
         trialLogRef.current = null;
         assessMotorRef.current = summary;
-        playSfx('win');
-        beginMainAssessRef.current();
+        playSfx?.('win');
+        beginMainAssess();
         return;
       }
-      // Main 90s block: score the cognitive component. The motor ratio
-      // (substitution rate / pure tapping rate) isolates lookup speed from
-      // finger speed — the reason clinical SDMT/DSST use a copy/baseline condition.
       const motorIpm = assessMotorRef.current?.itemsPerMin || null;
       const ratio = motorIpm ? Math.min(1, summary.itemsPerMin / motorIpm) : null;
-      const speed = Math.min(1, summary.itemsPerMin / 46);
-      const score = Math.round(100 * (ratio != null
-        ? 0.55 * speed + 0.15 * Math.min(1, ratio / 0.6) + 0.3 * summary.accuracy
-        : 0.7 * speed + 0.3 * summary.accuracy));
+      const speedScore = Math.min(1, summary.itemsPerMin / 46);
+      const finalScore = Math.round(100 * (ratio != null
+        ? 0.55 * speedScore + 0.15 * Math.min(1, ratio / 0.6) + 0.3 * summary.accuracy
+        : 0.7 * speedScore + 0.3 * summary.accuracy));
       trialLogRef.current?.finish({
-        score,
+        score: finalScore,
         motorIpm,
         ipm: summary.itemsPerMin,
         acc: summary.accuracyPct,
       });
       trialLogRef.current = null;
-      playSfx('win');
+      playSfx?.('win');
       const line = `${summary.itemsPerMin}/min · ${summary.accuracyPct}%${motorIpm ? ` · ${t.motor} ${motorIpm}/min` : ''}`;
       blockRef.current = null;
-      onAssessmentComplete?.({ score, line });
+      onResult?.({ score: finalScore, line });
       return;
     }
 
     trialLogRef.current?.finish({ score: grade.score, won: grade.won });
     trialLogRef.current = null;
 
-    if (block.mode === 'challenge') {
-      const idx = chalIdxRef.current;
-      const names = chalNamesRef.current;
-      const base = [...chalScoresRef.current];
-      const snap = { correct: summary.correct, accuracyPct: summary.accuracyPct, meanRt: summary.meanRt, score: grade.score };
-      const prev = base[idx];
-      const rounds = [...(prev?.rounds || []), snap];
-      const avgCorrect = Math.round(rounds.reduce((s, r) => s + r.correct, 0) / rounds.length);
-      base[idx] = { nm: names[idx], rounds, correct: avgCorrect, last: snap };
-      chalScoresRef.current = base;
-      setChalScores(base);
-      playSfx('win');
-      const nextIdx = idx + 1;
-      if (nextIdx < names.length) {
-        setChalIdx(nextIdx);
-        setChalTurnOpen(true);
-        setPhase('play');
-        setPlayStep('idle');
-        blockRef.current = null;
-        endedRef.current = false;
-      } else {
-        const cycle = chalCycleRef.current;
-        if (cycle + 1 < chalRoundsTotalRef.current) {
-          chalCycleRef.current = cycle + 1;
-          setChalRoundIdx(chalCycleRef.current);
-          setChalSeed(prepareChallengeSeed(chalDiffRef.current));
-          setChalIdx(0);
-          chalIdxRef.current = 0;
-          setChalTurnOpen(true);
-          setPhase('play');
-          setPlayStep('idle');
-          blockRef.current = null;
-          endedRef.current = false;
-        } else {
-          setLastResult({ type: 'challenge', rows: base });
-          setPhase('chalRes');
-          setPlayStep('idle');
-          blockRef.current = null;
-        }
-      }
+    if (block.mode === 'passplay') {
+      playSfx?.('win');
+      onResult?.({ score: grade.score, correct: summary.correct });
       return;
     }
 
-    // level
-    if (grade.won) { playSfx('win'); persistLevelDone(block.lv); awardLadderWin('speed-match', block.lv, LADDER_LEVELS); }
-    else playSfx('error');
-    setLastResult({ type: 'level', block, summary, grade });
-    setPhase('res');
-    setPlayStep('idle');
-    blockRef.current = null;
-  }, [stopLoop, playSfx, persistLevelDone, assessmentMode, onAssessmentComplete, t.motor, awardLadderWin]);
-  useEffect(() => { finishBlockRef.current = finishBlock; }, [finishBlock]);
+    if (grade.won) {
+      playSfx?.('win');
+      awardLadderWin?.('speed-match', block.lv, LADDER_LEVELS);
+    } else {
+      playSfx?.('error');
+    }
+    onResult?.({ won: grade.won, score: grade.score, summary, grade });
+  }, [stopLoop, playSfx, assessmentMode, t.motor, awardLadderWin, onResult]);
 
   const finishFreeRun = useCallback(() => {
     if (endedRef.current) return;
     endedRef.current = true;
     stopLoop();
-    playSfx('error');
+    playSfx?.('error');
     const runScore = scoreRef.current;
     const c = correctRef.current;
-    // Summarize the whole run over actual elapsed play time (research-grade
-    // metrics: matches/min, accuracy, RT variability, IES).
     const elapsedSec = Math.max(1, (performance.now() - runStartRef.current) / 1000);
     const summary = summarize(eventsRef.current, elapsedSec);
-    setProfile((prev) => {
-      let next = { ...prev };
-      let changed = false;
-      if (runScore > (prev.bestFree ?? 0)) { next = { ...next, bestFree: runScore }; changed = true; }
-      if (c > (prev.bestStreak ?? 0)) { next = { ...next, bestStreak: c }; changed = true; }
-      if (changed) saveProfile(next);
-      return changed ? next : prev;
-    });
+
     trialLogRef.current?.finish({ correct: c, score: runScore, level: Math.floor(c / 5) });
     trialLogRef.current = null;
-    awardFreeRun('speed', Math.floor(c / 5));
-    setLastResult({ type: 'free', score: runScore, correct: c, summary });
-    setPhase('freeRes');
-    setPlayStep('idle');
-    blockRef.current = null;
-  }, [stopLoop, playSfx, awardFreeRun]);
+    awardFreeRun?.('speed', Math.floor(c / 5));
+    onResult?.({ score: runScore, correct: c, summary });
+  }, [stopLoop, playSfx, awardFreeRun, onResult]);
 
   const startLoop = useCallback(() => {
     stopLoop();
@@ -576,33 +372,34 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
     let last = performance.now();
     const loop = (ts) => {
       if (runIdRef.current !== myRun) return;
-      /* ⚠ The time bank stops for the lesson exactly as it does for the pause
-         modal. Reading must never drain a run. */
-      if (pauseRef.current || coachOpenRef.current) { rafRef.current = requestAnimationFrame(loop); last = ts; return; }
-      const block = blockRef.current;
-      if (!block) return;
-      const dt = ts - last;
+      if (coachOpenRef?.current || pauseRef.current) {
+        last = ts;
+        rafRef.current = requestAnimationFrame(loop);
+        return;
+      }
+      const dt = Math.min(100, ts - last);
       last = ts;
-      if (block.assessStage) {
-        // Standardized assessment: fixed-window SDMT.
-        if (ts >= blockEndAtRef.current) { finishBlockRef.current(); return; }
+      const b = blockRef.current;
+      if (!b) return;
+
+      if (b.assessStage) {
+        if (ts >= blockEndAtRef.current) {
+          finishBlock();
+          return;
+        }
       } else {
-        // Training: the adaptive time bank drains in real time; empty = run over.
         bankRef.current -= dt;
         if (bankRef.current <= 0) {
           bankRef.current = 0;
-          if (block.mode === 'free') finishFreeRun(); else finishBlockRef.current();
+          if (b.mode === 'free') finishFreeRun();
+          else finishBlock();
           return;
         }
       }
-      setTick((n) => (n + 1) % 1000000);
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
-    /* `coachOpenRef` is a ref and never changes identity, but it arrives from
-       `useCoachRun` rather than a local `useRef`, so the lint rule cannot tell.
-       Listing it does not re-create this callback. */
-  }, [stopLoop, finishFreeRun, coachOpenRef]);
+  }, [stopLoop, finishFreeRun, finishBlock, coachOpenRef]);
 
   const answer = useCallback((digit) => {
     if (playStepRef.current !== 'running' || pauseRef.current) return;
@@ -619,43 +416,40 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
     trialLogRef.current?.trial({ rt, ok: isRight, key: block.legend.length });
     setPressedKey(digit);
     setTimeout(() => setPressedKey(null), 120);
-    const bankMode = !block.assessStage; // free / level / challenge use the time bank
+
+    const bankMode = !block.assessStage;
     if (isRight) {
-      playSfx('click');
-      juice.hit({ rtMs: rt, limitMs: 1600 });
+      playSfx?.('click');
+      juiceRef.current?.hit({ rtMs: rt, limitMs: 1600 });
       correctRef.current += 1;
       comboRef.current += 1;
       setCorrect(correctRef.current);
       setCombo(comboRef.current);
       if (bankMode) {
-        // Reward time (less as the key grows) + score points.
         bankRef.current = Math.min(bankMaxRef.current, bankRef.current + bankGainMs(block.legend.length));
         scoreRef.current += freeItemPoints(comboRef.current);
         setScore(scoreRef.current);
       }
-      // Assessment practice ends once the player shows they get it (4 correct).
       if (block.assessStage === 'practice' && correctRef.current >= 4) {
-        playSfx('win');
-        beginMotorBlockRef.current();
+        playSfx?.('win');
+        beginMotorBlock();
         return;
       }
-      // Levels clear by reaching the target (before the bank empties).
       if (bankMode && block.mode === 'level' && correctRef.current >= block.spec.targetCorrect) {
         flash('hit');
         finishBlock();
         return;
       }
       flash('hit');
-      nextItemRef.current(now);
+      nextItem(now);
     } else {
-      playSfx('error');
-      juice.miss();
+      playSfx?.('error');
+      juiceRef.current?.miss();
       wrongRef.current += 1;
       comboRef.current = 0;
       setCombo(0);
       flash('miss');
       if (bankMode) {
-        // A wrong match costs time; if it empties the bank, the run is over.
         bankRef.current -= TIME_BANK.penaltyMs;
         if (bankRef.current <= 0) {
           bankRef.current = 0;
@@ -663,37 +457,13 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
           return;
         }
       }
-      nextItemRef.current(now);
+      nextItem(now);
     }
-  }, [playSfx, flash, finishFreeRun, finishBlock, juice]);
+  }, [playSfx, flash, finishFreeRun, finishBlock, nextItem]);
 
-  // Countdown → running.
-  useEffect(() => {
-    if (phase !== 'play' || playStep !== 'countdown') return undefined;
-    if (cdVal <= 0) {
-      const now = performance.now();
-      const block = blockRef.current;
-      runStartRef.current = now;
-      if (block && block.assessStage) {
-        blockEndAtRef.current = now + block.spec.durationSec * 1000;
-      } else if (block) {
-        bankRef.current = TIME_BANK.startMs; // fresh adaptive time bank
-      }
-      setPlayStep('running');
-      playStepRef.current = 'running';
-      nextItemRef.current(now);
-      startLoop();
-      return undefined;
-    }
-    const id = setTimeout(() => setCdVal((c) => c - 1), 650);
-    return () => clearTimeout(id);
-  }, [phase, playStep, cdVal, startLoop]);
-
-  const beginBlock = useCallback((block, rng) => {
+  const initBlock = useCallback((block, rng) => {
     stopLoop();
     runIdRef.current += 1;
-    // Per-trial science log — free / level / assessment runs only (challenge
-    // is hot-seat party play; tutorial never reaches beginBlock).
     trialLogRef.current?.discard();
     trialLogRef.current = block.mode === 'free' || block.mode === 'level'
       ? createTrialLog({
@@ -711,141 +481,147 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
     scoreRef.current = 0;
     lastDigitRef.current = 0;
     endedRef.current = false;
-    juice.reset();
+    juiceRef.current?.reset();
     setLegend(block.legend);
     setItem(null);
     setScore(0);
     setCombo(0);
     setCorrect(0);
     setFeedback(null);
-    setPhase('play');
     setPauseOpen(false);
     setQuitOpen(false);
     setCdVal(3);
     setPlayStep('countdown');
-  }, [stopLoop, assessmentMode, juice]);
+  }, [stopLoop, assessmentMode]);
 
-  const startFreeMode = useCallback(() => {
-    const block = { mode: 'free', diff: 'free', lv: 0, spec: { durationSec: 0, remapEvery: 0, pairCount: 4 }, legend: buildLegend(4) };
-    beginBlock(block, makeRng(freshSurvivalSeed()));
-  }, [beginBlock]);
-  startFreeModeRef.current = startFreeMode;
-
-  /* Open the lesson once a Survival round is actually running and pointable —
-     after the countdown, so the hand never points at a "3, 2, 1" card. */
-  useEffect(() => {
-    if (!coach.armed || coach.open) return;
-    if (phase !== 'play' || playStep !== 'running') return;
-    if (blockRef.current?.mode !== 'free' || pauseOpen || quitOpen) return;
-    coach.begin();
-  }, [coach, phase, playStep, pauseOpen, quitOpen]);
-
-  /* Never strand it on a screen with no board — it would hold the time bank
-     forever. Any exit from a running round ends the lesson. */
-  useEffect(() => {
-    if (!coach.open) return;
-    if (phase !== 'play' || playStep !== 'running') coach.end();
-  }, [coach, phase, playStep]);
-
-  const startLevel = useCallback((lv) => {
-    beginBlock(prepareLevelBlock(lv), Math.random);
-  }, [beginBlock]);
-
-  /* --- Standardized assessment: practice → motor baseline → 120s SDMT ------
-   * Clinical SDMT uses 90–120 s; we use 120 s for stronger test–retest reliability
-   * in a digital battery (Smith 1982; Jaeger 2018). */
   const beginMotorBlock = useCallback(() => {
     const spec = { diff: 'medium', lv: 0, pairCount: 6, durationSec: 25, targetCorrect: 999, minAcc: 0, remapEvery: 0, itemMs: 0 };
-    const legend = Array.from({ length: 6 }, (_, i) => ({ digit: i + 1, symbol: null }));
-    beginBlock({ mode: 'level', diff: 'medium', lv: 0, spec, legend, assessStage: 'motor' }, Math.random);
-  }, [beginBlock]);
-  useEffect(() => { beginMotorBlockRef.current = beginMotorBlock; }, [beginMotorBlock]);
+    const lg = Array.from({ length: 6 }, (_, i) => ({ digit: i + 1, symbol: null }));
+    initBlock({ mode: 'level', diff: 'medium', lv: 0, spec, legend: lg, assessStage: 'motor' }, Math.random);
+  }, [initBlock]);
 
   const beginMainAssess = useCallback(() => {
     const spec = { diff: 'medium', lv: 0, pairCount: 6, durationSec: 120, targetCorrect: 999, minAcc: 0.8, remapEvery: 0, itemMs: 0 };
-    beginBlock({ mode: 'level', diff: 'medium', lv: 0, spec, legend: buildLegend(6), assessStage: 'main' }, Math.random);
-  }, [beginBlock]);
-  useEffect(() => { beginMainAssessRef.current = beginMainAssess; }, [beginMainAssess]);
+    initBlock({ mode: 'level', diff: 'medium', lv: 0, spec, legend: buildLegend(6), assessStage: 'main' }, Math.random);
+  }, [initBlock]);
 
   const startAssessment = useCallback(() => {
     assessMotorRef.current = null;
     const spec = { diff: 'medium', lv: 0, pairCount: 4, durationSec: 60, targetCorrect: 4, minAcc: 0, remapEvery: 0, itemMs: 0 };
-    beginBlock({ mode: 'level', diff: 'medium', lv: 0, spec, legend: buildLegend(4), assessStage: 'practice' }, Math.random);
-  }, [beginBlock]);
+    initBlock({ mode: 'level', diff: 'medium', lv: 0, spec, legend: buildLegend(4), assessStage: 'practice' }, Math.random);
+  }, [initBlock]);
 
-  const openChallenge = () => {
-    const names = chalNames.map((s, i) => s.trim() || `Player ${i + 1}`);
-    if (names.length < 2) { window.alert(t.needTwo); return; }
-    clearPlay();
-    setChalNames(names);
-    chalRoundsTotalRef.current = chalRoundsTotal;
-    chalDiffRef.current = chalDiff;
-    chalCycleRef.current = 0;
-    setChalRoundIdx(0);
-    setChalSeed(prepareChallengeSeed(chalDiffRef.current));
-    setChalIdx(0);
-    chalIdxRef.current = 0;
-    const initial = names.map((nm) => ({ nm, rounds: [] }));
-    chalScoresRef.current = initial;
-    setChalScores(initial);
-    setChalTurnOpen(true);
-    setPhase('play');
-  };
+  // Keyboard navigation for desktop: keys 1..9
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (playStepRef.current !== 'running' || pauseRef.current) return;
+      const num = parseInt(e.key, 10);
+      if (num >= 1 && num <= 9) {
+        answer(num);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [answer]);
 
-  const startChallengeBlock = () => {
-    if (!chalSeed) return;
-    setChalTurnOpen(false);
-    beginBlock(prepareChallengeBlock(chalSeed), mulberry32(chalSeed.seed));
-    playSfx('click');
-  };
+  // Countdown timer
+  useEffect(() => {
+    if (playStep !== 'countdown') return undefined;
+    if (cdVal <= 0) {
+      const now = performance.now();
+      const block = blockRef.current;
+      runStartRef.current = now;
+      if (block && block.assessStage) {
+        blockEndAtRef.current = now + block.spec.durationSec * 1000;
+      } else if (block) {
+        bankRef.current = TIME_BANK.startMs;
+      }
+      setPlayStep('running');
+      playStepRef.current = 'running';
+      nextItem(now);
+      startLoop();
+      return undefined;
+    }
+    const id = setTimeout(() => setCdVal((c) => c - 1), 650);
+    return () => clearTimeout(id);
+  }, [playStep, cdVal, startLoop, nextItem]);
+
+  // Initial mount: load round based on mode
+  useEffect(() => {
+    if (assessmentMode) {
+      startAssessment();
+      return;
+    }
+    if (mode === 'levels') {
+      initBlock(prepareLevelBlock(level), makeRng(seed || Date.now()));
+    } else if (mode === 'passplay') {
+      const cSeed = prepareChallengeSeed('mid');
+      if (seed) cSeed.seed = seed;
+      initBlock(prepareChallengeBlock(cSeed), mulberry32(cSeed.seed));
+    } else {
+      // free / survival
+      const blk = {
+        mode: 'free',
+        diff: 'free',
+        lv: 0,
+        spec: { durationSec: 0, remapEvery: 0, pairCount: 4 },
+        legend: buildLegend(4),
+      };
+      initBlock(blk, makeRng(seed || freshSurvivalSeed()));
+    }
+    return () => {
+      stopLoop();
+      if (fbTimerRef.current) clearTimeout(fbTimerRef.current);
+      trialLogRef.current?.discard();
+    };
+  }, [mode, level, seed, assessmentMode, initBlock, startAssessment, stopLoop]);
+
+  // Live coach hookup
+  useEffect(() => {
+    if (!coach?.armed || coach?.open) return;
+    if (playStep !== 'running') return;
+    if (blockRef.current?.mode !== 'free' || pauseOpen || quitOpen) return;
+    coach.begin();
+  }, [coach, playStep, pauseOpen, quitOpen]);
+
+  useEffect(() => {
+    if (!coach?.open) return;
+    if (playStep !== 'running') coach.end();
+  }, [coach, playStep]);
 
   const onPause = () => {
     if (playStepRef.current !== 'running') return;
-    // Halt the loop first. The time bank pauses naturally (the loop stops
-    // draining it); only the assessment's fixed window needs its deadline saved.
     pauseRef.current = true;
     const now = performance.now();
     if (blockRef.current?.assessStage) blockRef.current.__blockRem = blockEndAtRef.current - now;
     setPauseOpen(true);
   };
+
   const onResume = () => {
     const now = performance.now();
     if (blockRef.current?.assessStage && blockRef.current.__blockRem != null) {
       blockEndAtRef.current = now + blockRef.current.__blockRem;
       blockRef.current.__blockRem = null;
     }
-    itemStartRef.current = now; // don't count paused time against this item's RT
+    itemStartRef.current = now;
     pauseRef.current = false;
     setPauseOpen(false);
   };
 
   const confirmQuit = () => {
     setQuitOpen(false);
-    const mode = blockRef.current?.mode;
     trialLogRef.current?.discard();
     trialLogRef.current = null;
-    clearPlay();
-    if (assessmentMode) { (onAssessmentExit || onBack)?.(); return; }
-    if (cosmosAutoPlay) { onBack?.(); return; }
-    if (mode === 'challenge') setPhase('chal');
-    else if (mode === 'level') setPhase('levels');
-    else setPhase('hub');
-  };
-
-  const exitToHub = () => {
-    setLastResult(null);
-    clearPlay();
-    if (cosmosAutoPlay) onBack?.();
-    else setPhase('hub');
+    stopLoop();
+    onExit?.();
   };
 
   const block = blockRef.current;
   const isAssess = !!block?.assessStage;
   const now = performance.now();
-  // Assessment: fixed-window countdown. Training: the adaptive time bank.
   const blockTimeLeft = isAssess && playStep === 'running'
     ? Math.max(0, Math.ceil((blockEndAtRef.current - now) / 1000))
-    : isAssess ? block.spec.durationSec : 0;
+    : isAssess ? block?.spec?.durationSec || 0 : 0;
   const bankSec = block && !isAssess ? Math.max(0, bankRef.current / 1000) : 0;
   const bankPct = block && !isAssess ? Math.max(0, Math.min(1, bankRef.current / (bankMaxRef.current || 1))) : 0;
 
@@ -854,351 +630,224 @@ export default function SpeedMatchGame({ onBack, workoutMode = false, cosmosAuto
     if (block.assessStage === 'practice') return { title: t.assessPractice, subtitle: t.assessPracticeSub };
     if (block.assessStage === 'motor') return { title: t.assessMotor, subtitle: t.assessMotorSub };
     if (block.assessStage === 'main') return { title: t.assessMain, subtitle: t.assessMainSub };
-    if (block.mode === 'free') return { title: t.freeHeader, subtitle: '' };
-    if (block.mode === 'challenge') {
-      return {
-        title: t.challengeHeader,
-        subtitle: chalRoundsTotal > 1 ? `${t.roundNofM(chalRoundIdx + 1, chalRoundsTotal)} · ${chalNames[chalIdx] ?? ''}` : (chalNames[chalIdx] ?? ''),
-      };
-    }
+    if (block.mode === 'free') return { title: t.title, subtitle: isAr ? 'البقاء' : 'Survival' };
+    if (block.mode === 'passplay') return { title: t.title, subtitle: isAr ? 'مرّر والعب' : 'Pass & Play' };
     return { title: t.levelHeader(block.lv), subtitle: t.targetSub(block.spec.targetCorrect) };
   })();
 
-  const starLabel = lastResult?.grade?.stars === 3 ? t.perfect : lastResult?.grade?.stars === 2 ? t.good : t.tryAgain;
-
   return (
-    <div className="cancellation-task-game ct-sm-root" dir={isAr ? 'rtl' : 'ltr'}>
-      {phase === 'assessStart' && (
+    <div className="cx-atlas ct-sm-play" data-gameplay-active="true" dir={isAr ? 'rtl' : 'ltr'}>
+      <header className="ct-training-play-header">
+        <button
+          type="button"
+          className="ct-training-chrome-btn"
+          aria-label={isAr ? 'خروج' : 'Exit'}
+          onClick={() => { playSfx?.('click'); setQuitOpen(true); }}
+        >
+          <IconBack size={18} c="currentColor" />
+        </button>
+        <div className="ct-training-play-header-body">
+          <div className="ct-training-play-title">{header.title}</div>
+          <div className="ct-training-play-sub">{header.subtitle}</div>
+        </div>
+        <button
+          type="button"
+          className="ct-training-chrome-btn"
+          aria-label={isAr ? 'إيقاف' : 'Pause'}
+          onClick={() => { playSfx?.('click'); onPause(); }}
+        >
+          <IconPause size={18} c="currentColor" />
+        </button>
+      </header>
+
+      <div
+        className={`ct-sm-stage ct-juice-host${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}${juice.shake ? ' ct-juice-shake' : ''}`}
+        ref={stageRef}
+      >
+        {playStep === 'countdown' && (
+          <div className="c3d-countdown-wrap ct-countdown-overlay">
+            <div className="c3d-countdown-ring" />
+            <div className="c3d-countdown-val">{cdVal > 0 ? cdVal : (isAr ? 'ابدأ' : 'GO')}</div>
+          </div>
+        )}
+
+        <JuiceLayer
+          combo={juice.combo}
+          particle={juice.particle}
+          rtFx={juice.rtFx}
+          toast={juice.toast}
+          burst={juice.burst}
+          ratingLabels={rLabels}
+          showCombo={false}
+        />
+
+        {block?.assessStage !== 'motor' && legend.length > 0 && (
+          <div className="ct-sm-legend-wrap" data-fq-chrome data-coach="legend">
+            <div className="ct-sm-legend-label">{t.key}</div>
+            <LegendBar legend={legend} t={t} />
+          </div>
+        )}
+
+        <div className="ct-sm-hud" data-fq-chrome>
+          {isAssess ? (
+            <>
+              <span className="ct-sm-hud-stat ct-sm-hud-time">{blockTimeLeft}s</span>
+              <span className="ct-sm-hud-stat">{t.correct} {correct}</span>
+              <span className="ct-sm-hud-stat">×{combo}</span>
+            </>
+          ) : (
+            <>
+              <span className="ct-sm-hud-stat ct-sm-hud-time">{bankSec.toFixed(1)}s</span>
+              <span className="ct-sm-hud-stat">{t.correct} {correct}{block?.mode === 'level' ? `/${block.spec.targetCorrect}` : ''}</span>
+              <span className="ct-sm-hud-stat">{t.combo} ×{combo}</span>
+              {block?.mode === 'free' && <span className="ct-sm-hud-stat">{t.score} {score}</span>}
+            </>
+          )}
+        </div>
+
+        {!isAssess && (
+          <div className="ct-sm-itembar" data-fq-chrome aria-hidden="true" data-coach="bank">
+            <div
+              className="ct-sm-itembar-fill"
+              style={{
+                width: `${bankPct * 100}%`,
+                background: bankPct > 0.4
+                  ? 'linear-gradient(90deg, #d4af37, #f6e27a)'
+                  : 'linear-gradient(90deg, #e8a07a, #c97a7a)',
+              }}
+            />
+          </div>
+        )}
+
+        <div className="ct-sm-card" aria-live="polite" data-coach="card">
+          {item ? (
+            block?.assessStage === 'motor'
+              ? <div className="ct-sm-countdown">{item.digit}</div>
+              : <SmSymbol shape={item.symbol} className="ct-sm-symbol" size={110} />
+          ) : null}
+        </div>
+
+        <div className="ct-sm-pad" role="group" aria-label={t.tapNumber} data-coach="pad">
+          {legend.map((p) => (
+            <button
+              key={p.digit}
+              type="button"
+              className={`ct-sm-key${pressedKey === p.digit ? ' ct-sm-key--press' : ''}`}
+              disabled={playStep !== 'running'}
+              onClick={() => answer(p.digit)}
+            >
+              {p.digit}
+            </button>
+          ))}
+        </div>
+
+        {coach?.open && (
+          <DomCoach
+            isAr={isAr}
+            playSfx={playSfx}
+            stageRef={stageRef}
+            pack={SPEED_MATCH_COACH}
+            satisfiedFor={() => correct > 0}
+            onFinish={() => coach.end()}
+            onSkip={() => coach.end()}
+          />
+        )}
+      </div>
+
+      <TrainingPauseModal
+        open={pauseOpen}
+        labels={{ paused: t.paused, resume: t.resume, restart: t.restart, quitMenu: t.quitMenu }}
+        showRestart={false}
+        onResume={onResume}
+        onQuit={confirmQuit}
+      />
+
+      <TrainingQuitModal
+        open={quitOpen}
+        labels={{ quitTitle: t.quitTitle, quitMessage: t.quitMessage, stay: t.stay, quitConfirm: t.quitConfirm }}
+        onCancel={() => setQuitOpen(false)}
+        onConfirm={confirmQuit}
+      />
+    </div>
+  );
+}
+
+export default function SpeedMatchGame({
+  onBack,
+  workoutMode = false,
+  assessmentMode = false,
+  onAssessmentComplete,
+  onAssessmentExit,
+  assessmentLabel,
+  assessmentStep,
+  assessmentDomainId = 'speed',
+}) {
+  const { playSfx, currentLang, awardLadderWin, awardFreeRun } = useApp();
+  const isAr = currentLang === 'ar';
+
+  if (assessmentMode) {
+    return (
+      <div className="cx-atlas" style={{ display: 'contents' }}>
         <AssessmentReady
           isAr={isAr}
           label={assessmentLabel}
           step={assessmentStep}
           domainId={assessmentDomainId}
-          onStart={startAssessment}
+          onStart={() => {}}
           onBack={onAssessmentExit || onBack}
           playSfx={playSfx}
         />
-      )}
-      {phase === 'hub' && (
-        <>
-          <div className="ct-fq-training-shell ct-fq-training-shell--mode-cosmos">
-            <div className="ct-fq-screen ct-fq-training-screen ct-fq-training-screen--hub">
-              <TrainingMenuBar
-                onBack={onBack}
-                playSfx={playSfx}
-                hubSpaced
-                variant="paper"
-                onReplayTutorial={openTutorial}
-                replayHint={tutReplayHint}
-                center={
-                  <div className="ct-fq-hub-attn-head">
-                    <div className="ct-fq-hub-attn-big">{t.hub}</div>
-                    <div className="ct-fq-hub-attn-sub">{t.tag}</div>
-                  </div>
-                }
-              />
-              <SpeedModes
-                t={t}
-                isAr={isAr}
-                playSfx={playSfx}
-                onFree={() => setPhase('freeIntro')}
-                onLevels={() => setPhase('levels')}
-                onChallenge={() => setPhase('chal')}
-              />
-              <HubScienceLink gameId="speed-match" isAr={isAr} playSfx={playSfx} />
-            </div>
-          </div>
-          {/* The rules carousel used to render here. It is gone: this game now
-              teaches on the live board, and running both would open a slide deck
-              and then a lesson on the same first visit. */}
-        </>
-      )}
-
-      {phase === 'freeIntro' && (
-        <SurvivalIntro
+        <SpeedMatchEngine
+          mode="assess"
+          level={1}
+          seed={null}
+          attempt={null}
+          onResult={onAssessmentComplete}
+          onExit={onAssessmentExit || onBack}
           isAr={isAr}
           playSfx={playSfx}
-          title={t.freeIntroTitle}
-          body={t.freeIntroBody}
-          onReady={startFreeMode}
-          onBack={() => setPhase('hub')}
+          awardFreeRun={awardFreeRun}
+          awardLadderWin={awardLadderWin}
+          assessmentMode={true}
         />
-      )}
+      </div>
+    );
+  }
 
-      {/* ⚠ The `diff` phase is gone (2026-08-28, the ladder). Level mode goes
-          straight from the hub to ONE grid — no Easy/Medium/Hard screen. */}
-      {phase === 'levels' && (
-        <TrainingLevelGrid
+  return (
+    <ModeShell
+      storageKey="mm_speedmatch_v1"
+      scienceId="speed-match"
+      gameId="speed-match"
+      title={{ en: 'Speed Match', ar: 'مطابقة سريعة' }}
+      hints={{
+        free: { en: 'Match symbols to numbers · keep the time bank full', ar: 'طابق الرموز بالأرقام · حافظ على خزان الوقت ممتلئاً' },
+        levels: { en: '60 levels · one more symbol every 10', ar: '٦٠ مستوى · رمز إضافي كل ١٠ مستويات' },
+        pass: { en: 'Same symbols for all · pass the device', ar: 'نفس الرموز للجميع · مرّر الجهاز' },
+      }}
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: SPEED_MATCH_BANDS(isAr),
+        sections: SPEED_MATCH_SECTIONS,
+        help: SPEED_MATCH_HELP(isAr),
+        sublabel: (lv) => speedMatchSublabel(lv, isAr),
+      }}
+      pass={{ trials: 1, scoreLabel: { en: 'matches', ar: 'مطابقة' }, lowerBetter: false }}
+      isAr={isAr}
+      playSfx={playSfx}
+      onBack={onBack}
+      workoutMode={workoutMode}
+      renderEngine={(p) => (
+        <SpeedMatchEngine
+          key={`speed-match-${p.mode}-${p.diff}-${p.level}-${p.seed}`}
+          {...p}
           isAr={isAr}
           playSfx={playSfx}
-          onBack={() => setPhase('hub')}
-          title={t.title}
-          blurb={t.ladderBlurb(LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
-          count={LADDER_LEVELS}
-          isUnlocked={(lv) => isLevelUnlocked(lv, doneMap, ladderReached)}
-          isDone={(lv) => !!doneMap[`lad-${lv}`]}
-          sublabel={(lv) => {
-            const spec = specForLevel(lv);
-            return `${spec.pairCount}◆·${spec.targetCorrect}`;
-          }}
-          onPick={(lv) => startLevel(lv)}
+          awardFreeRun={awardFreeRun}
+          awardLadderWin={awardLadderWin}
         />
       )}
-
-      {phase === 'chal' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar
-              onBack={() => { clearPlay(); setPhase('hub'); }}
-              playSfx={playSfx}
-              variant="paper"
-            />
-            <PassPlaySetup
-              isAr={isAr}
-              playSfx={playSfx}
-              subtitle={t.challengeSub}
-              diffKeys={PP_DEPTH_KEYS}
-              diffLabels={PP_DEPTH_LABELS}
-              diff={chalDiff}
-              onDiffChange={setChalDiff}
-              players={chalNames}
-              onPlayersChange={setChalNames}
-              rounds={chalRoundsTotal}
-              onRoundsChange={setChalRoundsTotal}
-              onStart={() => { playSfx('click'); openChallenge(); }}
-              labels={{
-                difficulty: t.chalPickDiff,
-                players: t.players,
-                addPlayer: t.addPl,
-                rounds: t.chalRounds,
-                roundsHint: t.chalRoundsHint,
-                start: t.startCh,
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {phase === 'play' && chalTurnOpen && !block && chalNames[chalIdx] && (
-        <TrainingChallengeHandoff
-          isAr={isAr}
-          kicker={t.chalTurnKicker}
-          playerName={chalNames[chalIdx]}
-          roundLine={chalRoundsTotal > 1 ? t.roundNofM(chalRoundIdx + 1, chalRoundsTotal) : null}
-          metaLine={`L${chalSeed?.lv ?? SM_PP_DEPTHS.mid} · ${chalSeed?.spec?.pairCount ?? 6} ${isAr ? 'رموز' : 'symbols'}`}
-          instruction={t.handTo(chalNames[chalIdx])}
-          bullets={[t.chalBulletSame, t.chalBulletPass]}
-          startLabel={t.goReady}
-          onStart={startChallengeBlock}
-          playSfx={playSfx}
-        />
-      )}
-
-      {phase === 'play' && block && (
-        <div className="ct-sm-play" data-gameplay-active="true">
-          <TrainingPlayHeader
-            isAr={isAr}
-            title={header.title}
-            subtitle={header.subtitle}
-            playSfx={playSfx}
-            onMenu={() => setQuitOpen(true)}
-            onPause={onPause}
-            pauseAriaLabel={t.paused}
-          />
-          <div className={`ct-sm-stage ct-juice-host${feedback === 'hit' ? ' ct-sm-stage--hit' : feedback === 'miss' ? ' ct-sm-stage--miss' : ''}${juice.shake ? ' ct-juice-shake' : ''}`} ref={stageRef}>
-            {playStep === 'countdown' && (
-              <div className="ct-sm-countdown">{cdVal > 0 ? cdVal : t.go}</div>
-            )}
-            <JuiceLayer
-              combo={juice.combo}
-              particle={juice.particle}
-              rtFx={juice.rtFx}
-              toast={juice.toast}
-              burst={juice.burst}
-              ratingLabels={rLabels}
-              showCombo={false}
-            />
-            {block.assessStage !== 'motor' && (
-              <div className="ct-sm-legend-wrap" data-fq-chrome data-coach="legend">
-                <div className="ct-sm-legend-label">{t.key}</div>
-                <LegendBar legend={legend} t={t} />
-              </div>
-            )}
-
-            <div className="ct-sm-hud" data-fq-chrome>
-              {isAssess ? (
-                <>
-                  <span className="ct-sm-hud-stat ct-sm-hud-time">{blockTimeLeft}s</span>
-                  <span className="ct-sm-hud-stat">{t.correct} {correct}</span>
-                  <span className="ct-sm-hud-stat">×{combo}</span>
-                </>
-              ) : (
-                <>
-                  <span className="ct-sm-hud-stat ct-sm-hud-time">{bankSec.toFixed(1)}s</span>
-                  <span className="ct-sm-hud-stat">{t.correct} {correct}{block.mode === 'level' ? `/${block.spec.targetCorrect}` : ''}</span>
-                  <span className="ct-sm-hud-stat">{t.combo} ×{combo}</span>
-                  {block.mode === 'free' && <span className="ct-sm-hud-stat">{t.score} {score}</span>}
-                </>
-              )}
-            </div>
-
-            {!isAssess && (
-              <div className="ct-sm-itembar" data-fq-chrome aria-hidden="true" data-coach="bank">
-                <div className="ct-sm-itembar-fill" style={{ width: `${bankPct * 100}%`, background: bankPct > 0.4 ? 'linear-gradient(90deg,#6b9e7a,#7ab87a)' : 'linear-gradient(90deg,#e8a07a,#c97a7a)' }} />
-              </div>
-            )}
-
-            <div className="ct-sm-card" aria-live="polite" data-coach="card">
-              {playStep === 'countdown' ? (
-                <div className="ct-sm-countdown">{cdVal > 0 ? cdVal : t.go}</div>
-              ) : item ? (
-                block.assessStage === 'motor'
-                  ? <div className="ct-sm-countdown">{item.digit}</div>
-                  : <SmSymbol shape={item.symbol} className="ct-sm-symbol" />
-              ) : null}
-            </div>
-
-            <div className="ct-sm-pad" role="group" aria-label={t.tapNumber} data-coach="pad">
-              {legend.map((p) => (
-                <button
-                  key={p.digit}
-                  type="button"
-                  className={`ct-sm-key${pressedKey === p.digit ? ' ct-sm-key--press' : ''}`}
-                  disabled={playStep !== 'running'}
-                  onClick={() => answer(p.digit)}
-                >
-                  {p.digit}
-                </button>
-              ))}
-            </div>
-
-            {coachOpen && (
-              <DomCoach
-                isAr={isAr}
-                playSfx={playSfx}
-                stageRef={stageRef}
-                pack={SPEED_MATCH_COACH}
-                /* A scored answer having landed, not the key press — `answer`
-                   ignores taps outside `running`, so a press during the
-                   countdown must not advance the lesson either. */
-                satisfiedFor={() => correct > 0}
-                onFinish={() => coach.end()}
-                onSkip={() => coach.end()}
-              />
-            )}
-          </div>
-
-          <TrainingPauseModal
-            open={pauseOpen}
-            labels={{ paused: t.paused, resume: t.resume, restart: t.restart, quitMenu: t.quitMenu }}
-            showRestart
-            onResume={onResume}
-            onRestart={() => {
-              setPauseOpen(false);
-              const b = blockRef.current;
-              if (!b) return;
-              if (b.mode === 'level') startLevel(b.lv);
-              else if (b.mode === 'free') startFreeMode();
-              else startChallengeBlock();
-            }}
-            onQuitMenu={() => { setPauseOpen(false); setQuitOpen(true); }}
-          />
-          <TrainingQuitModal
-            open={quitOpen}
-            labels={{ quitQ: t.quitQ, quitLose: t.quitLose, yesQuit: t.yesQuit, keep: t.keep }}
-            onConfirmQuit={confirmQuit}
-            onKeepPlaying={() => setQuitOpen(false)}
-          />
-        </div>
-      )}
-
-      {phase === 'res' && lastResult?.type === 'level' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar
-              onBack={() => { setLastResult(null); clearPlay(); setPhase('levels'); }}
-              playSfx={playSfx}
-              variant="paper"
-              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{lastResult.grade.won ? t.resultsLevelPass : t.resultsLevelRetry}</div></div>}
-            />
-            {lastResult.grade.won && (
-              <div style={{ textAlign: 'center', fontSize: '1.5rem', color: 'var(--game-accent)', marginTop: 8, fontWeight: 700 }}>
-                {'★'.repeat(lastResult.grade.stars)} <span style={{ fontSize: '0.85rem', color: 'var(--ink-dim)' }}>{starLabel}</span>
-              </div>
-            )}
-            <div className={`ct-fq-sbig ct-fq-band-text-${lastResult.grade.score >= 75 ? 'high' : lastResult.grade.score >= 50 ? 'mid' : 'low'}`}>{lastResult.grade.score}</div>
-            <div className="ct-fq-ies-lbl">{t.speedScore}</div>
-            <div className="ct-fq-rm ct-fq-rm-training ct-fq-assess-grid">
-              <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.itemsPerMin}</div><div className="ct-fq-rl">{t.ipm}</div></div>
-              <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.accuracyPct}%</div><div className="ct-fq-rl">{t.accuracy}</div></div>
-              <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.meanRt != null ? `${lastResult.summary.meanRt}${t.ms}` : '—'}</div><div className="ct-fq-rl">{t.meanRt}</div></div>
-              <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.icv != null ? `${Math.round(lastResult.summary.icv * 100)}%` : '—'}</div><div className="ct-fq-rl">{t.rtVar}</div></div>
-              <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.ies != null ? lastResult.summary.ies : '—'}</div><div className="ct-fq-rl">{t.ies}<span className="ct-sm-rl-hint"> · {t.iesHint}</span></div></div>
-            </div>
-            <p className="ct-sm-metrics-note">{t.metricsNote}</p>
-            <div className="ct-fq-row">
-              {lastResult.grade.won && lastResult.block.lv < LADDER_LEVELS && (
-                <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); setLastResult(null); startLevel(lastResult.block.lv + 1); }}>{t.nextLv}</button>
-              )}
-              <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { playSfx('click'); setLastResult(null); startLevel(lastResult.block.lv); }}>{t.retry}</button>
-              <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { setLastResult(null); clearPlay(); setPhase('levels'); }}>{t.menu}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {phase === 'freeRes' && lastResult?.type === 'free' && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar
-              onBack={exitToHub}
-              playSfx={playSfx}
-              variant="paper"
-              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.freeGameOver}</div></div>}
-            />
-            <div className="ct-fq-sbig">{lastResult.score ?? 0}</div>
-            <div className="ct-fq-ies-lbl">{t.score}</div>
-            <div className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 10, fontWeight: 700 }}>{t.freeCorrect(lastResult.correct)}</div>
-            {lastResult.summary && (
-              <div className="ct-fq-rm ct-fq-rm-training ct-fq-assess-grid" style={{ marginTop: 12 }}>
-                <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.itemsPerMin}</div><div className="ct-fq-rl">{t.ipm}</div></div>
-                <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.accuracyPct}%</div><div className="ct-fq-rl">{t.accuracy}</div></div>
-                <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.meanRt != null ? `${lastResult.summary.meanRt}${t.ms}` : '—'}</div><div className="ct-fq-rl">{t.meanRt}</div></div>
-                <div className="ct-fq-rmi"><div className="ct-fq-rv">{lastResult.summary.icv != null ? `${Math.round(lastResult.summary.icv * 100)}%` : '—'}</div><div className="ct-fq-rl">{t.rtVar}</div></div>
-              </div>
-            )}
-            <p className="ct-fq-sub ct-fq-training-blurb" style={{ marginTop: 10 }}>{t.freeBest(profile.bestFree ?? 0)}</p>
-            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { playSfx('click'); setLastResult(null); startFreeMode(); }}>{t.freePlayAgain}</button>
-            <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={exitToHub}>{t.menu}</button>
-          </div>
-        </div>
-      )}
-
-      {phase === 'chalRes' && lastResult?.type === 'challenge' && lastResult.rows && (
-        <div className="ct-fq-training-shell ct-fq-training-shell--hub-light">
-          <div className="ct-fq-screen ct-fq-training-screen">
-            <TrainingMenuBar
-              onBack={() => { setLastResult(null); clearPlay(); setPhase('hub'); }}
-              playSfx={playSfx}
-              variant="paper"
-              center={<div style={{ textAlign: 'center' }}><div className="ct-fq-training-title ct-fq-training-title-sm">{t.resultsChalTitle}</div></div>}
-            />
-            {[...lastResult.rows].sort((a, b) => b.correct - a.correct).map((row, i) => (
-              <div key={row.nm} className={`ct-fq-lbr ct-fq-lbr-training ${i === 0 ? 'win' : ''}`}>
-                <div className="ct-fq-lbrk">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</div>
-                <div>
-                  <div className="ct-fq-lbnm">{row.nm}</div>
-                  <div className="ct-fq-lbdt">{t.chalResDetail(row.rounds?.length || 1, row.correct, row.last?.accuracyPct ?? 0, row.last?.meanRt)}</div>
-                </div>
-                <div className="ct-fq-lbsc">{row.correct}</div>
-              </div>
-            ))}
-            <button type="button" className="ct-fq-btn ct-fq-btn-pri" onClick={() => { setLastResult(null); clearPlay(); setPhase('chal'); setChalSeed(null); }}>{t.newCh}</button>
-            <button type="button" className="ct-fq-btn ct-fq-btn-ghost" onClick={() => { setLastResult(null); clearPlay(); setPhase('hub'); }}>{t.menu}</button>
-          </div>
-        </div>
-      )}
-
-    </div>
+    />
   );
 }

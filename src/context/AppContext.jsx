@@ -71,7 +71,9 @@ export function AppProvider({ children }) {
   // App opens on the Home universe ('habits' tab hosts HomeScreen), not Training.
   const [activeTab, setActiveTab] = useState(() => {
     try {
-      return new URLSearchParams(window.location.search).get('tab') || 'habits';
+      const q = new URLSearchParams(window.location.search);
+      if (q.get('game')) return 'comics';
+      return q.get('tab') || 'habits';
     } catch {
       return 'habits';
     }

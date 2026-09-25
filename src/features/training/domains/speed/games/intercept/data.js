@@ -1214,3 +1214,89 @@ export function summarise(log) {
 
 /** A level is passed if the gate survives — visible the whole way through. */
 export const levelPassed = (hpLeft) => hpLeft > 0;
+
+export const INTERCEPT_SECTIONS = [
+  'nebula', 'asteroid-belt', 'solar-flare', 'supernova', 'void',
+  'tempest', 'ember', 'volcano', 'basalt', 'storm',
+];
+
+export const INTERCEPT_BANDS = (isAr) => [
+  {
+    title: isAr ? 'المحيط الخارجي' : 'Outer Perimeter',
+    sub: isAr ? 'ضرب مباشر على المدى' : 'Direct strike on your stretch',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'منطقة الكبح' : 'Inhibition Zone',
+    sub: isAr ? 'اترك اللون الخطأ' : 'Leave the wrong colour alone',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'مستودعات التفجير' : 'Explosive Depots',
+    sub: isAr ? 'استهدف البراميل لانفجار جماعي' : 'Target barrels for cluster blast',
+    sigil: 'meteor-cluster',
+  },
+  {
+    title: isAr ? 'طليعة الدروع' : 'Iron Vanguard',
+    sub: isAr ? 'المدرعون يحتاجون ضربتين' : 'Armoured marchers require two strikes',
+    sigil: 'solar-flare',
+  },
+  {
+    title: isAr ? 'مظلة الظلال' : 'Shadow Canopy',
+    sub: isAr ? 'مدى مخفي · تقدير الموقع' : 'Hidden stretch · extrapolate position',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'الإشارات المتغيرة' : 'Shifting Signals',
+    sub: isAr ? 'اللون الآمن يتبدل ديناميكياً' : 'Safe colour shuffles dynamically',
+    sigil: 'warp-gate',
+  },
+  {
+    title: isAr ? 'بطارية الصواريخ' : 'Missile Battery',
+    sub: isAr ? 'صاروخ طائر يتطلب التقدير المسبق' : 'Flying missile requires lead time',
+    sigil: 'space-fighter',
+  },
+  {
+    title: isAr ? 'ربط الأسلحة' : 'Weapon Bounds',
+    sub: isAr ? 'أعداء مخصصون لأسلحة محددة' : 'Marchers bound to designated weapons',
+    sigil: 'docking-hub',
+  },
+  {
+    title: isAr ? 'هاون الحصار' : 'Siege Mortar',
+    sub: isAr ? 'هاون ثقيل يسحق المجموعات عن بعد' : 'Heavy mortar clears groups at range',
+    sigil: 'supernova',
+  },
+  {
+    title: isAr ? 'اقتحام العدائين' : 'Sprint Breach',
+    sub: isAr ? 'عداؤون سريعون يكسرون الصفوف' : 'Fast sprinters break formation',
+    sigil: 'supernova',
+  },
+];
+
+export function interceptSublabel(level, isAr) {
+  const cfg = levelCfg(level);
+  if (isAr) {
+    return `${cfg.count} أعداء · بوابة ${cfg.hp || 10} نقطة`;
+  }
+  return `${cfg.count} marchers · gate ${cfg.hp || 10} HP`;
+}
+
+export const INTERCEPT_HELP = (isAr) => ({
+  open: isAr ? 'دليل دفاع الصدع' : 'Rift Defense Guide',
+  title: isAr ? 'مسار الاعتراض' : 'Intercept Rift Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '١٠٠ مستوى مقسمة على ١٠ قطاعات مع أسلحة وعقبات جديدة كل ١٠ مستويات.' },
+        { k: 'الأبراج والأسلحة', v: 'اضغط على السلاح المناسب عندما يعبر الأعداء في مداه المحدد.' },
+        { k: 'اللون الخطأ', v: 'احذر ضرب الألوان غير المعادية — ضربهم يعتبر خطأً جسيماً.' },
+        { k: 'المظلة والمستقبل', v: 'في الغابة المخفية، قدّر موقع العدو واضربه في التوقيت المناسب.' },
+      ]
+    : [
+        { k: 'The Journey', v: '100 levels across 10 sectors introducing layered defense mechanics.' },
+        { k: 'Weapons', v: 'Fire your turret, missile, or mortar as marchers enter each weapon\'s range.' },
+        { k: 'No-Go Colour', v: 'Hold fire for non-threat colours — striking them is a penalty.' },
+        { k: 'Canopy & Prediction', v: 'Under the trees, strike where your mental model predicts they are.' },
+      ],
+});
+

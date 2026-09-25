@@ -20,6 +20,7 @@
 import {
   BAND_SIZE, ladderFraction, mechanicsAt,
 } from '../../../../shared/difficulty.js';
+import { clamp, lerp } from '../../../../../../lib/math.js';
 
 /** Floor for the gate interval, asserted by audit:pacing. */
 export const MG_MIN_GAP = 450;
@@ -96,3 +97,108 @@ export function levelCfg(level) {
     f,
   };
 }
+
+export const MATH_GATES_SECTIONS = [
+  'nebula', 'asteroid-belt', 'solar-flare', 'supernova', 'void',
+];
+
+export const MATH_GATES_BANDS = (isAr) => [
+  {
+    title: isAr ? 'بهو السديم' : 'Nebula Concourse',
+    sub: isAr ? 'جمع وطرح · ٥ أرواح' : 'Addition & subtraction · 5 lives',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'المضائق المدارية' : 'Orbital Straits',
+    sub: isAr ? 'أعداد أكبر · ٤ أرواح' : 'Higher magnitude · 4 lives',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'التقاطع الشمسي' : 'Solar Cross',
+    sub: isAr ? 'دخول الضرب · ٤ أرواح' : 'Multiplication arrives · 4 lives',
+    sigil: 'solar-flare',
+  },
+  {
+    title: isAr ? 'بوابات النباض' : 'Pulsar Gates',
+    sub: isAr ? 'جداءات مركبة · ٣ أرواح' : 'Complex products · 3 lives',
+    sigil: 'meteor-cluster',
+  },
+  {
+    title: isAr ? 'القسم الكوني' : 'Cosmic Divide',
+    sub: isAr ? 'دخول القسمة · ٣ أرواح' : 'Division arrives · 3 lives',
+    sigil: 'supernova',
+  },
+];
+
+export function mathGatesSublabel(level, isAr) {
+  const cfg = levelCfg(level);
+  const opsStr = cfg.ops.join(' ');
+  if (isAr) {
+    return `${opsStr} · هدف ${cfg.target} · ${cfg.lives} أرواح`;
+  }
+  return `${opsStr} · ${cfg.target} gates · ${cfg.lives} lives`;
+}
+
+export const MATH_GATES_HELP = (isAr) => ({
+  open: isAr ? 'دليل مسار البوابات' : 'Gates Flight Guide',
+  title: isAr ? 'مسار بوابات الحساب' : 'Math Gates Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٥٠ مستوى مقسمة على ٥ قطاعات كونية تتصاعد صعوبة عملياتها الحسابية.' },
+        { k: 'المعادلة', v: 'تظهر المعادلة في الأعلى، وتتحرك ثلاث بوابات نحو الأسفل.' },
+        { k: 'التوجيه', v: 'المس الحارة المناسبة للتوجيه نحو البوابة التي تحمل الناتج الصحيح.' },
+        { k: 'العمليات', v: 'تبدأ بالجمع والطرح، وينضم الضرب عند المستوى ٢١ والقسمة عند ٤١.' },
+      ]
+    : [
+        { k: 'The Journey', v: '50 levels across 5 cosmic sectors testing mental math and rapid lane shifting.' },
+        { k: 'Equation', v: 'Solve the equation displayed at the top before the gates arrive.' },
+        { k: 'Steering', v: 'Tap the left, center, or right lane to steer into the gate with the correct answer.' },
+        { k: 'Operations', v: 'Starts with + and −, unlocking multiplication at L21 and division at L41.' },
+      ],
+});
+
+export function genGate(cfg, f, rng) {
+  const ops = cfg?.ops?.length ? cfg.ops : ['+', '-'];
+  const mag = cfg?.mag ?? 0;
+  const op = ops[Math.floor(rng() * ops.length)];
+  const ri = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
+  let a, b, ans;
+  if (op === '+') {
+    const hi = mag === 0 ? 9 + Math.round(f * 12) : mag === 1 ? 20 + Math.round(f * 25) : 40 + Math.round(f * 55);
+    a = ri(1, hi); b = ri(1, hi); ans = a + b;
+  } else if (op === '-') {
+    const hi = mag === 0 ? 9 + Math.round(f * 12) : mag === 1 ? 25 + Math.round(f * 30) : 50 + Math.round(f * 60);
+    a = ri(2, hi); b = ri(1, a); ans = a - b;
+  } else if (op === '×') {
+    const hi = 9 + Math.round(f * (mag === 1 ? 2 : 4));
+    a = ri(2, hi); b = ri(2, hi); ans = a * b;
+  } else { // ÷
+    const dh = 9 + Math.round(f * 3), qh = 9 + Math.round(f * 3);
+    b = ri(2, dh); const q = ri(2, qh); a = b * q; ans = q;
+  }
+
+  const nearDelta = clamp(Math.round(lerp(8, 2, f) / 2) * 2, 2, 10);
+  const deltas = new Set();
+  if (op === '×' && a % 2 === 0 && a <= 8 && ans - a > 0) {
+    deltas.add(rng() < 0.5 ? a : -a);
+  }
+  let guard = 0;
+  while (deltas.size < 2 && guard++ < 80) {
+    const step = nearDelta + 2 * Math.floor(rng() * 3);
+    const d = step * (rng() < 0.5 ? -1 : 1);
+    if (d !== 0 && ans + d >= 0) deltas.add(d);
+  }
+  const opts = new Set([ans]);
+  for (const d of deltas) { if (opts.size < 3) opts.add(ans + d); }
+  let g2 = 0;
+  while (opts.size < 3 && g2++ < 40) {
+    const d = (2 + 2 * Math.floor(rng() * 5)) * (rng() < 0.5 ? -1 : 1);
+    if (ans + d >= 0) opts.add(ans + d);
+  }
+  while (opts.size < 3) opts.add(ans + opts.size * 2 + 2);
+  const arr = [...opts];
+  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+  return { text: `${a} ${op} ${b}`, answer: ans, options: arr, correctLane: arr.indexOf(ans), op, a, b, split: nearDelta };
+}
+

@@ -32,78 +32,31 @@ const DESCEND_SEC = 3.8;
  * `audit:curves` can import and gate it. Re-exported here so nothing
  * downstream changes.
  */
-export { LADDER, LADDER_LEVELS, levelCfg, MG_MIN_GAP, survivalGap } from './mathGatesData.js';
-import { LADDER_LEVELS, levelCfg, survivalGap } from './mathGatesData.js';
+export {
+  LADDER,
+  LADDER_LEVELS,
+  levelCfg,
+  MG_MIN_GAP,
+  survivalGap,
+  MATH_GATES_BANDS,
+  MATH_GATES_SECTIONS,
+  MATH_GATES_HELP,
+  mathGatesSublabel,
+  genGate,
+} from './mathGatesData.js';
+import {
+  LADDER_LEVELS,
+  levelCfg,
+  survivalGap,
+  MATH_GATES_BANDS,
+  MATH_GATES_SECTIONS,
+  MATH_GATES_HELP,
+  mathGatesSublabel,
+  genGate,
+} from './mathGatesData.js';
 
 const PP_GATES = 12;
 
-
-/*
- * Equation + distractor generation, grounded in numerical-cognition research:
- *  • Problem-size effect — operand magnitude scales with the level/survival ramp,
- *    and the operation hierarchy (+ < − < × < ÷) drives base difficulty (large
- *    facts move from retrieval to procedure; PSE is strongest for ×). [Campbell;
- *    Núñez-Peña].
- *  • Numerical distance effect — the NEAREST wrong answer governs how hard the
- *    choice is. The split shrinks far→near as difficulty rises (easy ≈ ±8,
- *    hard ≈ ±2). [Dehaene; arithmetic-verification distance studies].
- *  • Plausible, parity-matched lures — all deltas are EVEN, so every option
- *    shares the answer's parity; the odd/even shortcut is removed and a real
- *    comparison is forced. For × we also seed a table-confusion operand error
- *    (ans ± a) when it is parity-safe.
- */
-/*
- * ⚠ Takes a CONFIG, not a tier name (2026-08-28, the ladder). `cfg.ops` is the
- * operator set and `cfg.mag` (0/1/2) the number-magnitude band — the same three
- * magnitude branches this used to select with `diff === 'easy'` etc., now a
- * config value so nothing outside mathGatesData.js knows tiers ever existed.
- */
-export function genGate(cfg, f, rng) {
-  const ops = cfg?.ops?.length ? cfg.ops : ['+', '-'];
-  const mag = cfg?.mag ?? 0;
-  const op = ops[Math.floor(rng() * ops.length)];
-  const ri = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
-  let a, b, ans;
-  if (op === '+') {
-    const hi = mag === 0 ? 9 + Math.round(f * 12) : mag === 1 ? 20 + Math.round(f * 25) : 40 + Math.round(f * 55);
-    a = ri(1, hi); b = ri(1, hi); ans = a + b;
-  } else if (op === '-') {
-    const hi = mag === 0 ? 9 + Math.round(f * 12) : mag === 1 ? 25 + Math.round(f * 30) : 50 + Math.round(f * 60);
-    a = ri(2, hi); b = ri(1, a); ans = a - b;
-  } else if (op === '×') {
-    const hi = 9 + Math.round(f * (mag === 1 ? 2 : 4));
-    a = ri(2, hi); b = ri(2, hi); ans = a * b;
-  } else { // ÷
-    const dh = 9 + Math.round(f * 3), qh = 9 + Math.round(f * 3);
-    b = ri(2, dh); const q = ri(2, qh); a = b * q; ans = q;
-  }
-
-  // Nearest-distractor distance (the discriminability driver): far when easy,
-  // down to ±2 when hard. Even, so parity never gives the answer away.
-  const nearDelta = clamp(Math.round(lerp(8, 2, f) / 2) * 2, 2, 10);
-  const deltas = new Set();
-  // Multiplication table-confusion lure (ans ± a), only if it preserves parity.
-  if (op === '×' && a % 2 === 0 && a <= 8 && ans - a > 0) {
-    deltas.add(rng() < 0.5 ? a : -a);
-  }
-  let guard = 0;
-  while (deltas.size < 2 && guard++ < 80) {
-    const step = nearDelta + 2 * Math.floor(rng() * 3); // nearDelta, +2, +4
-    const d = step * (rng() < 0.5 ? -1 : 1);
-    if (d !== 0 && ans + d >= 0) deltas.add(d);
-  }
-  const opts = new Set([ans]);
-  for (const d of deltas) { if (opts.size < 3) opts.add(ans + d); }
-  let g2 = 0;
-  while (opts.size < 3 && g2++ < 40) {
-    const d = (2 + 2 * Math.floor(rng() * 5)) * (rng() < 0.5 ? -1 : 1);
-    if (ans + d >= 0) opts.add(ans + d);
-  }
-  while (opts.size < 3) opts.add(ans + opts.size * 2 + 2);
-  const arr = [...opts];
-  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
-  return { text: `${a} ${op} ${b}`, answer: ans, options: arr, correctLane: arr.indexOf(ans), op, a, b, split: nearDelta };
-}
 
 /* --- Research-grade metric layer ----------------------------------------- */
 const _mean = (xs) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
@@ -524,7 +477,14 @@ export default function MathGatesGame({ onBack, workoutMode = false }) {
         pass: { en: 'Same equations for all · pass the device', ar: 'نفس المعادلات للجميع · مرّر الجهاز' },
       }}
       /* ONE LADDER — no easy/med/hard. See mathGatesData.js LADDER. */
-      ladder={{ levels: LADDER_LEVELS }}
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: MATH_GATES_BANDS(isAr),
+        sections: MATH_GATES_SECTIONS,
+        help: MATH_GATES_HELP(isAr),
+        sublabel: (lv) => mathGatesSublabel(lv, isAr),
+      }}
       pass={{ trials: PP_GATES, scoreLabel: { en: 'correct', ar: 'صحيح' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}

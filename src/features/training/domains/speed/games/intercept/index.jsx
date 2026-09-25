@@ -10,6 +10,7 @@ import { startCanvasLoop } from '../../../../shared/canvasLoop';
 import {
   BASE_HP, BLAST_FRAC, KIND, RING_AT, TOWER_AT, TRAIL,
   buildWave, LADDER_LEVELS, levelCfg, levelPassed, passCfg, posAt, summarise, survivalCfg,
+  INTERCEPT_BANDS, INTERCEPT_SECTIONS, INTERCEPT_HELP, interceptSublabel,
 } from './data.js';
 import './intercept.css';
 
@@ -1245,7 +1246,7 @@ export function InterceptEngine({
     /* `.ic-root` is `position: fixed; inset: 0`, and it is the only element that
        contains BOTH the status bar and the field — so it is the box the coach's
        anchors are measured in. */
-    <div className="ic-root" dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef} data-gameplay-active={step === 'run' ? 'true' : undefined}>
+    <div className="cx-atlas ic-root" dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef} data-gameplay-active={step === 'run' ? 'true' : undefined}>
       {coachOpen && (
         <DomCoach
           isAr={isAr}
@@ -1488,7 +1489,14 @@ export default function InterceptGame({ onBack, workoutMode = false }) {
         pass: { en: UI.en.hintPass, ar: UI.ar.hintPass },
       }}
       /* ONE LADDER — no easy/med/hard. See data.js LADDER. */
-      ladder={{ levels: LADDER_LEVELS }}
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: INTERCEPT_BANDS(isAr),
+        sections: INTERCEPT_SECTIONS,
+        help: INTERCEPT_HELP(isAr),
+        sublabel: (lv) => interceptSublabel(lv, isAr),
+      }}
       pass={{ trials: 1, scoreLabel: { en: 'cut down', ar: 'أُسقطوا' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}

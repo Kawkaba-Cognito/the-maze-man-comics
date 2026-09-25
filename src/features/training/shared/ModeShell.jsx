@@ -109,7 +109,14 @@ export default function ModeShell({
   atlas = false,
 }) {
   const gameId = gameIdProp || scienceId;
-  const isAtlas = Boolean(atlas || ladder?.planetPath || scienceId === 'mot' || scienceId === 'train-switch' || gameId === 'mot' || gameId === 'train-switch');
+  const isAtlas = Boolean(
+    atlas ||
+    ladder?.planetPath ||
+    scienceId === 'mot' || scienceId === 'train-switch' ||
+    scienceId === 'speed-match' || scienceId === 'math-gates' || scienceId === 'intercept' ||
+    gameId === 'mot' || gameId === 'train-switch' ||
+    gameId === 'speed-match' || gameId === 'math-gates' || gameId === 'intercept'
+  );
   const tutorial = useTrainingTutorial(gameId, isAr);
   const meta = getTrainingMeta(gameId);
   const tutLabels = TUTORIAL_UI[isAr ? 'ar' : 'en'];
@@ -197,7 +204,7 @@ export default function ModeShell({
     return null;
   })();
   const [phase, setPhase] = useState(urlPhase || ((workoutMode || urlCoach) ? 'play' : 'menu'));
-  const [mode, setMode] = useState(urlPhase === 'free-intro' ? 'free' : (workoutMode || urlCoach) ? 'free' : null);
+  const [mode, setMode] = useState(urlPhase === 'free-intro' || urlPhase === 'play' ? 'free' : (workoutMode || urlCoach) ? 'free' : null);
   const [diff, setDiff] = useState(null);
   const [level, setLevel] = useState(null);
   const [result, setResult] = useState(null);

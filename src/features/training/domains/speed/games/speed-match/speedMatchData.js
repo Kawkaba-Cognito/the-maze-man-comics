@@ -352,3 +352,68 @@ export function prepareChallengeBlock(cSeed) {
   const legend = buildLegend(spec.pairCount, mulberry32(cSeed.seed));
   return { mode: 'challenge', lv: spec.lv, spec, legend, seed: cSeed.seed };
 }
+
+export const SPEED_MATCH_SECTIONS = [
+  'nebula', 'asteroid-belt', 'solar-flare', 'supernova', 'void', 'tempest',
+];
+
+export const SPEED_MATCH_BANDS = (isAr) => [
+  {
+    title: isAr ? 'نواة الأبراج' : 'Constellation Core',
+    sub: isAr ? '٤ أزواج رموز · وتيرة تأسيسية' : '4 symbol pairs · Foundational pace',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'النقوش المدارية' : 'Orbital Glyphs',
+    sub: isAr ? '٥ أزواج رموز · توسيع المفتاح' : '5 symbol pairs · Expanding key',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'الشفرة الشمسية' : 'Solar Cipher',
+    sub: isAr ? '٦ أزواج رموز · فك سريع' : '6 symbol pairs · Accelerated lookup',
+    sigil: 'solar-flare',
+  },
+  {
+    title: isAr ? 'المصفوفة النجمية' : 'Astral Matrix',
+    sub: isAr ? '٧ أزواج رموز · معالجة مكثفة' : '7 symbol pairs · High throughput',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'دفق النباض' : 'Pulsar Surge',
+    sub: isAr ? '٨ أزواج رموز · استجابة خاطفة' : '8 symbol pairs · Rapid response',
+    sigil: 'meteor-cluster',
+  },
+  {
+    title: isAr ? 'ملتقى الذروة' : 'Zenith Nexus',
+    sub: isAr ? '٩ أزواج رموز · أقصى حدود المعالجة' : '9 symbol pairs · Peak processing limit',
+    sigil: 'supernova',
+  },
+];
+
+export function speedMatchSublabel(level, isAr) {
+  const spec = specForLevel(level);
+  if (isAr) {
+    return `${spec.pairCount} رموز · هدف ${spec.targetCorrect}`;
+  }
+  return `${spec.pairCount} pairs · ${spec.targetCorrect} target`;
+}
+
+export const SPEED_MATCH_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفلكية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار المطابقة السريعة' : 'Speed Match Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٦٠ مستوى مقسمة على ٦ قطاعات تصاعدية في سرعة المعالجة.' },
+        { k: 'المفتاح', v: 'انظر إلى مفتاح الرموز في الأعلى لمعرفة الرقم المقترن بكل رمز.' },
+        { k: 'الاستجابة', v: 'اضغط الرقم المقابل للرمز المعروض في البطاقة بأسرع وأدق ما يمكن.' },
+        { k: 'خزان الوقت', v: 'الإجابة الصحيحة تمنحك وقتاً إضافياً، والخطأ يستنزف الوقت.' },
+      ]
+    : [
+        { k: 'The Journey', v: '60 levels across 6 celestial sectors with escalating processing speed demand.' },
+        { k: 'The Key', v: 'Check the symbol-digit legend at the top to see each symbol\'s assigned number.' },
+        { k: 'Response', v: 'Tap the matching digit on the pad as quickly and accurately as possible.' },
+        { k: 'Time Bank', v: 'Correct matches add precious seconds to your bank; errors cost time.' },
+      ],
+});
+

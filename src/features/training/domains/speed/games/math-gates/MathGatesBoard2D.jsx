@@ -5,7 +5,7 @@ import { assetUrl } from '../../../../../../lib/assetUrl';
 import { GAME_COLORS, GAME_INK, GAME_STIMULUS, shadeOf } from '../../../../shared/gamePalette';
 import { makeRng } from '../../../../shared/rng';
 import { clamp } from '../../../../../../lib/math';
-import { genGate, levelCfg, LADDER_LEVELS } from './index';
+import { genGate, levelCfg, LADDER_LEVELS } from './mathGatesData.js';
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
 import { MATH_GATES_COACH } from '../../../../shared/tutorials/coach/scripts/math-gates';
 import '../../../../shared/c3dProto.css';
@@ -321,9 +321,10 @@ export default function MathGatesBoard2D({
      * slower, which is if anything easier to read. */
     const eqBandBottom = () => {
       const eqSize = Math.round(Math.min(W * 0.085, H * 0.11, 60));
-      return (H * 0.125 + eqSize * 1.5) / H;
+      const by = Math.max(160, H * 0.20);
+      return (by + eqSize * 1.5) / H;
     };
-    const runTop = () => Math.min(0.42, eqBandBottom() + 0.025);
+    const runTop = () => Math.min(0.48, eqBandBottom() + 0.025);
 
     const frame = (dt) => {
       /*
@@ -399,11 +400,11 @@ export default function MathGatesBoard2D({
          * is sized in CSS pixels that change with the viewport; 0.125 clears the
          * bar at every height the play area is given, with margin to spare.
          */
-        const by = H * 0.125;
+        const by = Math.max(160, H * 0.20);
         const bh = eqSize * 1.5;
-        ctx.fillStyle = 'rgba(242, 236, 228, 0.92)';
+        ctx.fillStyle = 'rgba(242, 236, 228, 0.95)';
         ctx.beginPath();
-        ctx.roundRect(bx, by, tw + padX * 2, bh, 16);
+        ctx.roundRect(bx, by, tw + padX * 2, bh, 18);
         ctx.fill();
         ctx.lineWidth = 2.5;
         ctx.strokeStyle = GAME_INK;
@@ -570,6 +571,7 @@ export default function MathGatesBoard2D({
   return (
     <C3dProtoChrome
       isAr={isAr}
+      rootClassName="cx-atlas"
       title={isAr ? 'بوابات الحساب' : 'Math Gates'}
       tag={isAr ? 'تدريب' : 'training'}
       /* Instructions only when the player is NOT playing.

@@ -1459,3 +1459,406 @@ html[data-home-theme='dark'] .cx-atlas.c3d-root::before {
   color: var(--game-ink);
   border: 1px solid var(--line);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * INKED ATLAS: SPEED GAMES GAMEPLAY UNIFICATION
+ * ══════════════════════════════════════════════════════════════════════════
+ * Brings Speed Match, Math Gates, and Intercept to the Cancellation Task
+ * celestial cartography visual standard:
+ *  - Antique celestial star-chart top/bottom bands framing the viewport
+ *  - Vertical clearance ensuring zero collision with star bands & safe areas
+ *  - Inked Atlas plate & card styling with DM Mono & Cormorant Garamond typography
+ *  - Responsive alignment across desktop & mobile
+ */
+
+/* ── Speed Match Inked Atlas Gameplay ─────────────────────────────────── */
+.cx-atlas.ct-sm-play {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding-top: clamp(48px, 9vh, 84px);
+  padding-bottom: calc(clamp(48px, 9vh, 84px) + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--play-surface-flat);
+  background-image: var(--play-surface);
+}
+
+.cx-atlas.ct-sm-play::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  pointer-events: none;
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-bottom.webp");
+  background-size:
+    auto clamp(42px, 8.5vh, 85px),
+    auto clamp(42px, 8.5vh, 85px);
+  background-position:
+    top center,
+    bottom center;
+  background-repeat:
+    no-repeat,
+    no-repeat;
+}
+
+@media (orientation: portrait) {
+  .cx-atlas.ct-sm-play::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-bottom.webp");
+    background-size:
+      100% auto,
+      100% auto;
+  }
+}
+
+html[data-home-theme='dark'] .cx-atlas.ct-sm-play::before {
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-bottom.webp");
+}
+@media (orientation: portrait) {
+  html[data-home-theme='dark'] .cx-atlas.ct-sm-play::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-bottom.webp");
+  }
+}
+
+@media (max-width: 899px), (orientation: portrait) {
+  .cx-atlas.ct-sm-play {
+    padding-top: clamp(42px, 7.5vh, 58px);
+    padding-bottom: calc(clamp(42px, 7.5vh, 58px) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.cx-atlas.ct-sm-play .ct-training-play-header {
+  position: relative;
+  z-index: 5;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.cx-atlas .ct-sm-stage {
+  position: relative;
+  z-index: 5;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: clamp(6px, 1.4vh, 14px);
+  padding: 4px 14px;
+  box-sizing: border-box;
+}
+
+.cx-atlas .ct-sm-legend-wrap {
+  width: min(100%, 480px);
+  text-align: center;
+}
+
+.cx-atlas .ct-sm-legend-label {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-amber);
+  margin-bottom: 4px;
+}
+
+.cx-atlas .ct-sm-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 16px;
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 40%, var(--line));
+  border-radius: var(--cx-r-plate);
+  box-shadow: 0 4px 18px var(--fx-shadow-soft);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 8px 12px;
+}
+
+.cx-atlas .ct-sm-legend-pair {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.cx-atlas .ct-sm-legend-digit {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--color-amber);
+}
+
+.cx-atlas .ct-sm-hud {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  width: min(100%, 480px);
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--game-accent) 30%, var(--line));
+  border-radius: var(--cx-r-pill);
+  padding: 5px 16px;
+  box-shadow: 0 2px 10px var(--fx-shadow-soft);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 600;
+  font-size: clamp(0.85rem, 3.2vw, 0.96rem);
+  color: var(--game-ink);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.cx-atlas .ct-sm-hud-time {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 700;
+  color: var(--color-amber);
+  font-size: clamp(1rem, 4vw, 1.25rem);
+}
+
+.cx-atlas .ct-sm-itembar {
+  width: min(100%, 480px);
+  height: 8px;
+  border-radius: var(--cx-r-pill);
+  background: color-mix(in srgb, var(--line) 45%, transparent);
+  border: 1px solid color-mix(in srgb, var(--game-accent) 35%, var(--line));
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--universe-ink) 15%, transparent);
+}
+
+.cx-atlas .ct-sm-itembar-fill {
+  height: 100%;
+  border-radius: var(--cx-r-pill);
+  transition: width 0.05s linear;
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+}
+
+.cx-atlas .ct-sm-card {
+  width: min(100%, 380px);
+  min-height: clamp(120px, 22vh, 180px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  border: 2px solid color-mix(in srgb, var(--game-accent) 55%, var(--line));
+  border-radius: var(--cx-r-plate);
+  box-shadow:
+    0 14px 38px var(--fx-shadow-deep),
+    0 0 0 1px color-mix(in srgb, var(--game-accent) 22%, transparent),
+    inset 0 1px 1px var(--fx-glint);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.cx-atlas .ct-sm-symbol {
+  width: clamp(80px, 24vmin, 150px) !important;
+  height: auto !important;
+  filter: drop-shadow(0 2px 8px var(--fx-shadow-soft));
+}
+
+.cx-atlas .ct-sm-pad {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(8px, 1.8vw, 12px);
+  width: min(100%, 480px);
+}
+
+.cx-atlas .ct-sm-key {
+  width: clamp(56px, 15.5vw, 76px);
+  height: clamp(56px, 15.5vw, 76px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--cx-r-plate);
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  box-shadow:
+    0 4px 0 color-mix(in srgb, var(--game-accent) 50%, var(--universe-ink)),
+    0 6px 14px var(--fx-shadow-soft);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: clamp(1.4rem, 6vw, 1.85rem);
+  font-weight: 700;
+  color: var(--game-ink);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.05s ease, box-shadow 0.05s ease, background 0.05s ease;
+}
+
+.cx-atlas .ct-sm-key:active,
+.cx-atlas .ct-sm-key--press {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--game-accent) 50%, var(--universe-ink)),
+    0 2px 6px var(--fx-shadow-soft);
+  background: color-mix(in srgb, var(--color-amber) 24%, var(--surface-raised));
+}
+
+/* ── Intercept Inked Atlas Gameplay ───────────────────────────────────── */
+.cx-atlas.ic-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: clamp(48px, 9vh, 84px);
+  padding-bottom: calc(clamp(48px, 9vh, 84px) + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  background: var(--play-surface-flat);
+  background-image: var(--play-surface);
+  color: var(--play-ink);
+  font-family: 'Outfit', system-ui, sans-serif;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.cx-atlas.ic-root::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  pointer-events: none;
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-bottom.webp");
+  background-size:
+    auto clamp(42px, 8.5vh, 85px),
+    auto clamp(42px, 8.5vh, 85px);
+  background-position:
+    top center,
+    bottom center;
+  background-repeat:
+    no-repeat,
+    no-repeat;
+}
+
+@media (orientation: portrait) {
+  .cx-atlas.ic-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-bottom.webp");
+    background-size:
+      100% auto,
+      100% auto;
+  }
+}
+
+html[data-home-theme='dark'] .cx-atlas.ic-root::before {
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-bottom.webp");
+}
+@media (orientation: portrait) {
+  html[data-home-theme='dark'] .cx-atlas.ic-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-bottom.webp");
+  }
+}
+
+@media (max-width: 899px), (orientation: portrait) {
+  .cx-atlas.ic-root {
+    padding-top: clamp(42px, 7.5vh, 58px);
+    padding-bottom: calc(clamp(42px, 7.5vh, 58px) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.cx-atlas.ic-root .ct-training-play-header {
+  position: relative;
+  z-index: 12;
+  pointer-events: auto;
+}
+
+.cx-atlas .ic-status {
+  position: relative;
+  z-index: 12;
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--game-accent) 28%, var(--line));
+  border-radius: var(--cx-r-plate);
+  padding: 6px 14px;
+  box-shadow: 0 4px 16px var(--fx-shadow-soft);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  margin-bottom: 8px;
+}
+
+.cx-atlas .ic-field {
+  position: relative;
+  z-index: 11;
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 55%, var(--line));
+  border-radius: var(--cx-r-plate);
+  box-shadow:
+    0 14px 38px var(--fx-shadow-deep),
+    0 0 0 1px color-mix(in srgb, var(--game-accent) 22%, transparent),
+    inset 0 1px 1px var(--fx-glint);
+  overflow: hidden;
+}
+
+.cx-atlas .ic-weapon {
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 40%, var(--line));
+  border-radius: var(--cx-r-plate);
+  box-shadow: 0 4px 14px var(--fx-shadow-soft);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.cx-atlas .ic-weapon-name {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+}
+[dir='rtl'] .cx-atlas .ic-weapon-name {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+  letter-spacing: 0;
+  font-size: 1.05rem;
+}
+
+.cx-atlas .ic-weapon-key {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 600;
+  color: var(--color-amber);
+}
+
+.cx-atlas .ic-panel {
+  position: relative;
+  z-index: 12;
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 40%, var(--line));
+  border-radius: var(--cx-r-plate);
+  box-shadow: 0 16px 44px var(--fx-shadow-deep);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.cx-atlas .ic-panel h3 {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: clamp(1.4rem, 5vw, 1.8rem);
+  font-weight: 700;
+  color: var(--game-ink);
+}
+[dir='rtl'] .cx-atlas .ic-panel h3 {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+}
+
