@@ -11,6 +11,7 @@ import { assetUrl } from '../../../../../../lib/assetUrl';
 import {
   ACTIONS, BACKGROUNDS, CHARS,
   buildQuestions, LADDER_LEVELS, levelCfg, levelPassed, makeStory, passCfg, survivalCfg,
+  STORY_GRID_BANDS, STORY_GRID_SECTIONS, STORY_GRID_HELP, storyGridSublabel,
 } from './data.js';
 
 /*
@@ -588,7 +589,7 @@ export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr
   const optSize = Math.round(fsz * (question && question.ref ? 0.78 : 0.92));
 
   return (
-    <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef} data-gameplay-active={phase !== 'reveal' ? 'true' : undefined}>
+    <div style={rootStyle} className={`cx-atlas ct-sg-root${cosmos ? ' c3d-embed-root' : ''}`} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef} data-gameplay-active={phase !== 'reveal' ? 'true' : undefined}>
       <style>{ANIM_CSS}</style>
       {coachOpen && phase === 'watch' && (
         <DomCoach
@@ -623,11 +624,12 @@ export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr
         return (
           <div style={S.center}>
             <div
+              className="ct-sg-card ct-sg-watch-card"
               style={{ ...cardStyle, touchAction: 'pan-y', ...(cosmos ? { transform: 'perspective(900px) rotateX(3deg)', transformOrigin: 'center top' } : null) }}
               {...swipe}
             >
-              {storyTitle && <div style={titleStyle}>📖 {storyTitle}</div>}
-              <div style={{ ...S.timerChip, ...(timeLeft <= 5 ? S.timerLow : null) }} data-coach="timer">⏱ {timeLeft}s · {t.watchTag}</div>
+              {storyTitle && <div className="ct-sg-title" style={titleStyle}>📖 {storyTitle}</div>}
+              <div className="ct-sg-timer" style={{ ...S.timerChip, ...(timeLeft <= 5 ? S.timerLow : null) }} data-coach="timer">⏱ {timeLeft}s · {t.watchTag}</div>
               <div style={{ position: 'relative' }} data-coach="panel">
                 <span style={S.badge}>{watchIdx + 1}</span>
                 <PanelStage key={watchIdx} panel={g} size={bigSize()} say={resolveSay(g)} />
@@ -651,7 +653,7 @@ export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr
       {/* ASK — Kawkab's questions: pick, then confirm */}
       {phase === 'ask' && question && (
         <div style={S.gameBody}>
-          <div style={rebuildStyle}>
+          <div className="ct-sg-card ct-sg-ask-card" style={rebuildStyle}>
             <div style={S.askHead}>
               <img src={KAWKAB_URL} alt="" aria-hidden="true" style={{ ...S.mascot, height: Math.round(80 / KAWKAB_ASPECT) }} />
               <div style={S.askHeadText}>
@@ -673,7 +675,7 @@ export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr
               </div>
             </div>
 
-            <div style={cosmos ? { ...S.qText, color: '#f0e2c0' } : S.qText}>
+            <div className="ct-sg-qtext" style={cosmos ? { ...S.qText, color: '#f0e2c0' } : S.qText}>
               {isAr ? question.prompt.ar : question.prompt.en}
             </div>
 
@@ -762,7 +764,7 @@ export function StoryEngine({ mode, level, seed, attempt, onResult, onExit, isAr
       {/* REVEAL — the score, the story read back, and its moral */}
       {reveal && (
         <div style={S.gameBody}>
-          <div style={rebuildStyle}>
+          <div className="ct-sg-card ct-sg-reveal-card" style={rebuildStyle}>
             <div style={S.instr}>{result.n === result.m ? t.perfect : t.score(result.n, result.m)}</div>
             <div style={S.marks}>
               {marks.map((ok, i) => (
@@ -803,14 +805,22 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
     <ModeShell
       storageKey="mm_memory_storytime"
       scienceId="story-grid"
+      gameId="story-grid"
       title={{ en: 'Story Time', ar: 'وقت القصة' }}
       hints={{
         free: { en: 'Endless · stories grow harder', ar: 'لا ينتهي · قصص أصعب' },
         levels: { en: '60 levels · a new twist every 10', ar: '٦٠ مستوى · جديد كل ١٠' },
         pass: { en: 'Same story and questions for all · most right wins', ar: 'نفس القصة والأسئلة للجميع · الأكثر صحة يفوز' },
       }}
-      /* ONE LADDER — no easy/med/hard. See data.js LADDER. */
-      ladder={{ levels: LADDER_LEVELS }}
+      /* ONE LADDER with celestial PlanetPath map */
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: STORY_GRID_BANDS(isAr),
+        sections: STORY_GRID_SECTIONS,
+        help: STORY_GRID_HELP(isAr),
+        sublabel: (lv) => storyGridSublabel(lv, isAr),
+      }}
       pass={{ trials: 3, scoreLabel: { en: 'correct', ar: 'صحيحة' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
@@ -831,11 +841,11 @@ export default function StoryGridGame({ onBack, workoutMode = false }) {
 
 const S = {
   root: { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--play-surface)', color: 'var(--play-ink)', fontFamily: "'Outfit', system-ui, sans-serif" },
-  cosmosRoot: { background: 'transparent', color: '#f0e2c0', zIndex: 81 },
+  cosmosRoot: { background: 'transparent', color: 'var(--game-ink)', zIndex: 81 },
   cosmosCard: {
-    background: 'rgba(12,10,8,0.72)',
-    border: '1px solid rgba(232,172,78,0.4)',
-    boxShadow: '0 0 28px rgba(232,172,78,0.18), 0 12px 32px rgba(0,0,0,0.45)',
+    background: 'color-mix(in srgb, var(--surface-raised) 92%, transparent)',
+    border: '1px solid color-mix(in srgb, var(--game-accent) 40%, var(--line))',
+    boxShadow: '0 0 28px color-mix(in srgb, var(--game-accent) 18%, transparent), 0 12px 32px var(--fx-shadow-deep)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
   },

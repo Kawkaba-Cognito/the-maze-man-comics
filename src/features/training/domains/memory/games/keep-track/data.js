@@ -286,3 +286,63 @@ export function isCorrect(typed, expected) {
   if (a === b) return true;
   return b.length >= 5 && editDistance(a, b) <= 1;
 }
+
+export const KEEP_TRACK_SECTIONS = [
+  'nebula', 'asteroid-belt', 'solar-flare', 'supernova', 'void',
+];
+
+export const KEEP_TRACK_BANDS = (isAr) => [
+  {
+    title: isAr ? 'مدار المراقبة' : 'Observation Orbit',
+    sub: isAr ? 'فئتان متبوعتان · رصد أولي' : '2 target categories · Initial tracking',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'تيار التشتيت' : 'Distractor Current',
+    sub: isAr ? 'فئتان مع ملهيات · توسيع المسبار' : '2 targets with distractors · Expanded pool',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'الملتقى الثلاثي' : 'Triple Nexus',
+    sub: isAr ? '٣ فئات متزامنة · تحديث مستمر' : '3 targets simultaneous · Continuous update',
+    sigil: 'solar-flare',
+  },
+  {
+    title: isAr ? 'مخزن الذاكرة' : 'Memory Buffer',
+    sub: isAr ? '٣ فئات في تيار أوسع · غربلة دقيقة' : '3 targets in wider stream · Deep filtering',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'الذروة الرباعية' : 'Quad Zenith',
+    sub: isAr ? '٤ فئات متوازية · أقصى تحديث لركائز الذاكرة' : '4 targets parallel · Peak working memory load',
+    sigil: 'supernova',
+  },
+];
+
+export function keepTrackSublabel(level, isAr) {
+  const cfg = levelCfg(level);
+  if (isAr) {
+    return `${cfg.targets} فئات · تيار من ${cfg.stream}`;
+  }
+  return `${cfg.targets} targets · ${cfg.stream} stream`;
+}
+
+export const KEEP_TRACK_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفلكية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار تتبّع الذاكرة' : 'Keep Track Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٥٠ مستوى مقسمة على ٥ قطاعات سماوية لتدريب تحديث الذاكرة العاملة.' },
+        { k: 'الهدف', v: 'احفظ الفئات المستهدفة المحددة في بداية كل جولة.' },
+        { k: 'التحديث', v: 'أثناء تدفق الكلمات، احتفظ بآخر كلمة ظهرت لكل فئة مستهدفة واستبدل السابقة.' },
+        { k: 'الاسترجاع', v: 'في النهاية، اكتب الكلمة الأخيرة لكل فئة مستهدفة بدقة.' },
+      ]
+    : [
+        { k: 'The Journey', v: '50 levels across 5 celestial sectors training working-memory updating.' },
+        { k: 'Targets', v: 'Memorise the specified target categories shown at the start of each round.' },
+        { k: 'Updating', v: 'As the stream flows, remember only the LAST word seen in each target category, overwriting previous ones.' },
+        { k: 'Recall', v: 'At the end, report the final word for each target category accurately.' },
+      ],
+});
+

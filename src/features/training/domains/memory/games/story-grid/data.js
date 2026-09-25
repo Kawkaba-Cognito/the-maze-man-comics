@@ -625,3 +625,68 @@ export function buildQuestions(story, rng, cfg) {
   }
   return out.slice(0, count);
 }
+
+export const STORY_GRID_SECTIONS = [
+  'nebula', 'asteroid-belt', 'solar-flare', 'supernova', 'void', 'tempest',
+];
+
+export const STORY_GRID_BANDS = (isAr) => [
+  {
+    title: isAr ? 'مدار الحكايات' : 'Tale Orbit',
+    sub: isAr ? '٤ مشاهد · ٤ أسئلة · وتيرة استكشاف' : '4 scenes · 4 questions · Foundational story',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'خيوط السرد' : 'Narrative Threads',
+    sub: isAr ? '٤ مشاهد · ٥ أسئلة · استرجاع أعمق' : '4 scenes · 5 questions · Deeper recall',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'ملحمة الفصول' : 'Chapter Saga',
+    sub: isAr ? '٥ مشاهد · ٥ أسئلة · اتساع التسلسل' : '5 scenes · 5 questions · Expanded arc',
+    sigil: 'solar-flare',
+  },
+  {
+    title: isAr ? 'نسيج الذكريات' : 'Memory Tapestry',
+    sub: isAr ? '٥ مشاهد · ٦ أسئلة · تفاصيل دقيقة' : '5 scenes · 6 questions · Intricate details',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'متاهة الخيارات' : 'Choice Labyrinth',
+    sub: isAr ? '٥ مشاهد · ٦ أسئلة · ٤ خيارات' : '5 scenes · 6 questions · 4 options',
+    sigil: 'meteor-cluster',
+  },
+  {
+    title: isAr ? 'أفق الملحمة' : 'Epic Horizon',
+    sub: isAr ? '٦ مشاهد كاملة · ٦ أسئلة · أقصى استيعاب قصصي' : '6 scenes · 6 questions · Peak narrative retention',
+    sigil: 'supernova',
+  },
+];
+
+export function storyGridSublabel(level, isAr) {
+  const cfg = levelCfg(level);
+  if (isAr) {
+    return `${cfg.len} مشاهد · ${cfg.questions} أسئلة · ${cfg.opts} خيارات`;
+  }
+  return `${cfg.len} scenes · ${cfg.questions} questions · ${cfg.opts} opts`;
+}
+
+export const STORY_GRID_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفلكية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار شبكة الحكاية' : 'Story Time Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٦٠ مستوى مقسمة على ٦ قطاعات سماوية لتحدي الذاكرة العرضية وتذكر الأحداث.' },
+        { k: 'المشاهدة', v: 'اقرأ القصة وشاهد تفاصيل المشاهد والشخصيات قبل انتهاء وقت المشاهدة.' },
+        { k: 'الاسترجاع', v: 'أجب عن أسئلة كوكب حول تسلسل الأحداث والمواقع والتفاصيل.' },
+        { k: 'الدقة', v: 'كل إجابة صحيحة تقربك من اجتياز المستوى؛ راجع بعناية.' },
+      ]
+    : [
+        { k: 'The Journey', v: '60 levels across 6 celestial sectors challenging episodic memory and narrative recall.' },
+        { k: 'Observation', v: 'Read the story and absorb scene details, characters, and actions before the clock runs out.' },
+        { k: 'Recall', v: 'Answer Kawkab\'s questions about chronology, characters, places, and events.' },
+        { k: 'Precision', v: 'Each correct answer builds your score towards clearing the level.' },
+      ],
+});
+

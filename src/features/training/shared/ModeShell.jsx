@@ -114,8 +114,10 @@ export default function ModeShell({
     ladder?.planetPath ||
     scienceId === 'mot' || scienceId === 'train-switch' ||
     scienceId === 'speed-match' || scienceId === 'math-gates' || scienceId === 'intercept' ||
+    scienceId === 'keep-track' || scienceId === 'story-grid' || scienceId === 'paired-associates' ||
     gameId === 'mot' || gameId === 'train-switch' ||
-    gameId === 'speed-match' || gameId === 'math-gates' || gameId === 'intercept'
+    gameId === 'speed-match' || gameId === 'math-gates' || gameId === 'intercept' ||
+    gameId === 'keep-track' || gameId === 'story-grid' || gameId === 'paired-associates'
   );
   const tutorial = useTrainingTutorial(gameId, isAr);
   const meta = getTrainingMeta(gameId);

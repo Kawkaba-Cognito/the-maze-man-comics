@@ -430,7 +430,7 @@ export default function PairedAssociates3DProto({
   return (
     <C3dProtoChrome
       isAr={isAr}
-      rootClassName={`ct-pal3d-root ct-pal3d-root--${phase}`}
+      rootClassName={`cx-atlas ct-pal3d-root ct-pal3d-root--${phase}`}
       title={isAr ? 'مطابقة الأزواج' : 'Pair Match'}
       question={question ? <span className="ct-pal3d-question">{question}</span> : ''}
       chip={phaseLabel}

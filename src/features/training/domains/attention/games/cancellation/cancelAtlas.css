@@ -1862,3 +1862,325 @@ html[data-home-theme='dark'] .cx-atlas.ic-root::before {
   font-family: 'Cairo', 'Cormorant Garamond', serif;
 }
 
+/* ── MEMORY DOMAIN — KEEP TRACK ─────────────────────────────────────────── */
+.cx-atlas.ct-kt-root::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  pointer-events: none;
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-bottom.webp");
+  background-size:
+    auto clamp(42px, 8.5vh, 85px),
+    auto clamp(42px, 8.5vh, 85px);
+  background-position:
+    top center,
+    bottom center;
+  background-repeat:
+    no-repeat,
+    no-repeat;
+}
+
+@media (orientation: portrait) {
+  .cx-atlas.ct-kt-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-bottom.webp");
+    background-size:
+      100% auto,
+      100% auto;
+  }
+}
+
+html[data-home-theme='dark'] .cx-atlas.ct-kt-root::before {
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-bottom.webp");
+}
+@media (orientation: portrait) {
+  html[data-home-theme='dark'] .cx-atlas.ct-kt-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-bottom.webp");
+  }
+}
+
+@media (max-width: 899px), (orientation: portrait) {
+  .cx-atlas.ct-kt-root {
+    padding-top: clamp(42px, 7.5vh, 58px);
+    padding-bottom: calc(clamp(42px, 7.5vh, 58px) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.cx-atlas.ct-kt-root .ct-training-play-header {
+  position: relative;
+  z-index: 12;
+  pointer-events: auto;
+}
+
+.cx-atlas .ct-kt-panel {
+  position: relative;
+  z-index: 11;
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 35%, var(--line));
+  border-radius: var(--cx-r-plate);
+  box-shadow: 0 14px 40px var(--fx-shadow-deep);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: clamp(16px, 3.5vw, 28px);
+  box-sizing: border-box;
+}
+
+.cx-atlas .ct-kt-h {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: clamp(1.4rem, 5vw, 1.9rem);
+  font-weight: 700;
+  color: var(--game-ink);
+  letter-spacing: 0.02em;
+}
+[dir='rtl'] .cx-atlas .ct-kt-h {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+  letter-spacing: 0;
+}
+
+.cx-atlas .ct-kt-sub {
+  font-size: 0.95rem;
+  color: var(--ink-dim);
+}
+
+.cx-atlas .ct-kt-word {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: clamp(30px, 8vw, 54px);
+  font-weight: 700;
+  color: var(--game-ink);
+}
+[dir='rtl'] .cx-atlas .ct-kt-word {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+}
+
+.cx-atlas .ct-kt-wordcat {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.16em;
+  color: var(--color-amber);
+}
+
+.cx-atlas .ct-kt-count {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--color-amber);
+  letter-spacing: 0.08em;
+}
+
+.cx-atlas .ct-kt-stimulus {
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 30%, var(--line));
+  border-radius: var(--cx-r-plate);
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  box-shadow: 0 8px 24px var(--fx-shadow-soft);
+}
+
+.cx-atlas .ct-kt-stimulus.is-tracked {
+  border-color: color-mix(in srgb, var(--game-accent) 70%, var(--line));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--game-accent) 30%, transparent), 0 8px 28px var(--fx-shadow-soft);
+}
+
+.cx-atlas .ct-kt-cat {
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--game-accent) 14%, transparent);
+  color: var(--game-accent);
+  font-weight: 700;
+}
+
+.cx-atlas .ct-kt-cat--dim {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-dim);
+}
+
+.cx-atlas .ct-kt-cat--dim.is-active {
+  border-color: var(--game-accent);
+  background: color-mix(in srgb, var(--game-accent) 18%, transparent);
+  color: var(--game-accent);
+}
+
+.cx-atlas .ct-kt-field input {
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 35%, var(--line));
+  border-radius: var(--cx-r-readout);
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  color: var(--game-ink);
+}
+
+.cx-atlas .ct-kt-field input:focus-visible {
+  outline: 2px solid var(--game-accent);
+  border-color: var(--game-accent);
+}
+
+.cx-atlas .ct-kt-mark {
+  border: 1px solid color-mix(in srgb, var(--game-accent) 30%, var(--line));
+  border-radius: var(--cx-r-readout);
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+}
+
+.cx-atlas .ct-kt-mark.ok {
+  border-color: color-mix(in srgb, var(--game-ok) 65%, var(--line));
+}
+
+/* ── MEMORY DOMAIN — STORY TIME ─────────────────────────────────────────── */
+.cx-atlas.ct-sg-root::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  pointer-events: none;
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-bottom.webp");
+  background-size:
+    auto clamp(42px, 8.5vh, 85px),
+    auto clamp(42px, 8.5vh, 85px);
+  background-position:
+    top center,
+    bottom center;
+  background-repeat:
+    no-repeat,
+    no-repeat;
+}
+
+@media (orientation: portrait) {
+  .cx-atlas.ct-sg-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-bottom.webp");
+    background-size:
+      100% auto,
+      100% auto;
+  }
+}
+
+html[data-home-theme='dark'] .cx-atlas.ct-sg-root::before {
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-bottom.webp");
+}
+@media (orientation: portrait) {
+  html[data-home-theme='dark'] .cx-atlas.ct-sg-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-bottom.webp");
+  }
+}
+
+@media (max-width: 899px), (orientation: portrait) {
+  .cx-atlas.ct-sg-root {
+    padding-top: clamp(42px, 7.5vh, 58px);
+    padding-bottom: calc(clamp(42px, 7.5vh, 58px) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.cx-atlas.ct-sg-root .ct-training-play-header {
+  position: relative;
+  z-index: 12;
+  pointer-events: auto;
+}
+
+.cx-atlas .ct-sg-card {
+  position: relative;
+  z-index: 11;
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent) !important;
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 38%, var(--line)) !important;
+  border-radius: var(--cx-r-plate) !important;
+  box-shadow: 0 14px 42px var(--fx-shadow-deep) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.cx-atlas .ct-sg-title {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif !important;
+  font-size: clamp(1.3rem, 4.5vw, 1.7rem) !important;
+  font-weight: 700 !important;
+  color: var(--game-ink) !important;
+  letter-spacing: 0.02em;
+}
+[dir='rtl'] .cx-atlas .ct-sg-title {
+  font-family: 'Cairo', 'Cormorant Garamond', serif !important;
+  letter-spacing: 0;
+}
+
+.cx-atlas .ct-sg-timer {
+  font-family: 'DM Mono', ui-monospace, monospace !important;
+  font-weight: 700 !important;
+  font-size: 0.88rem !important;
+  color: var(--color-amber) !important;
+  border: 1px solid color-mix(in srgb, var(--game-accent) 45%, var(--line)) !important;
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent) !important;
+  border-radius: var(--cx-r-pill) !important;
+}
+
+.cx-atlas .ct-sg-qtext {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif !important;
+  font-size: clamp(1.15rem, 3.8vw, 1.45rem) !important;
+  font-weight: 700 !important;
+  color: var(--game-ink) !important;
+}
+[dir='rtl'] .cx-atlas .ct-sg-qtext {
+  font-family: 'Cairo', 'Cormorant Garamond', serif !important;
+}
+
+.cx-atlas .ct-sg-cap {
+  font-size: 0.95rem !important;
+  color: var(--game-ink) !important;
+  line-height: 1.55 !important;
+}
+
+/* ── MEMORY DOMAIN — PAIR MATCH (3D PROTO) ──────────────────────────────── */
+.cx-atlas.ct-pal3d-root .c3d-question {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-weight: 700;
+  color: var(--game-ink);
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 42%, var(--line));
+  border-radius: var(--cx-r-pill);
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  box-shadow: 0 10px 28px var(--fx-shadow-soft);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+[dir='rtl'] .cx-atlas.ct-pal3d-root .c3d-question {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+}
+
+.cx-atlas.ct-pal3d-root .ct-pal-access-wrap {
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 35%, var(--line));
+  border-radius: var(--cx-r-plate);
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  box-shadow: 0 14px 38px var(--fx-shadow-deep);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.cx-atlas.ct-pal3d-root .ct-pal-access-btn {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 1.05rem;
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 30%, var(--line));
+  border-radius: var(--cx-r-readout);
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  color: var(--game-ink);
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 4px 12px var(--fx-shadow-soft);
+}
+
+.cx-atlas.ct-pal3d-root .ct-pal-access-btn:hover {
+  border-color: var(--game-accent);
+  color: var(--color-amber);
+}
+
+

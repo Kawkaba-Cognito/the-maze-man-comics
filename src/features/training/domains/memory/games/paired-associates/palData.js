@@ -125,3 +125,73 @@ export function buildPalTrial(cfg, rng) {
   const studyOrder = [...boxIdxs].sort(() => rng() - 0.5);
   return { boxes, boxIdxs, cueOrder, studyOrder, total: K };
 }
+
+export const PAL_SECTIONS = [
+  'nebula', 'asteroid-belt', 'solar-flare', 'supernova', 'void', 'tempest', 'zenith',
+];
+
+export const PAL_BANDS = (isAr) => [
+  {
+    title: isAr ? 'نواة الأزواج' : 'Pair Core',
+    sub: isAr ? '٤ صناديق · زوجان · استذكار أولي' : '4 boxes · 2 pairs · Foundational binding',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'المصفوفة المدارية' : 'Orbital Matrix',
+    sub: isAr ? '٦ صناديق · ٣ أزواج · توسيع المواقع' : '6 boxes · 3 pairs · Spatial expansion',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'الربط النجمي' : 'Stellar Binding',
+    sub: isAr ? '٨ صناديق · ٤ أزواج · ربط مكاني متعدد' : '8 boxes · 4 pairs · Multi-location binding',
+    sigil: 'solar-flare',
+  },
+  {
+    title: isAr ? 'حقل الكوكبات' : 'Constellation Field',
+    sub: isAr ? '١٠ صناديق · ٥ أزواج · تركيز عالي' : '10 boxes · 5 pairs · High-density field',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'الشبكة السداسية' : 'Hexad Grid',
+    sub: isAr ? '١٢ صندوقاً · ٦ أزواج · شبكة متكاملة' : '12 boxes · 6 pairs · Complete grid',
+    sigil: 'meteor-cluster',
+  },
+  {
+    title: isAr ? 'دفق النباض' : 'Pulsar Surge',
+    sub: isAr ? '١٢ صندوقاً · ٧ أزواج · سعة فائقة' : '12 boxes · 7 pairs · High capacity',
+    sigil: 'supernova',
+  },
+  {
+    title: isAr ? 'ملتقى الذروة' : 'Zenith Nexus',
+    sub: isAr ? '١٢ صندوقاً · ٨ أزواج · أقصى حدود الربط البصري' : '12 boxes · 8 pairs · Peak visual-spatial recall',
+    sigil: 'black-hole',
+  },
+];
+
+export function palSublabel(level, isAr) {
+  const cfg = levelCfg(level);
+  if (isAr) {
+    return `${cfg.boxes} صناديق · ${cfg.pairs} أزواج`;
+  }
+  return `${cfg.boxes} boxes · ${cfg.pairs} pairs`;
+}
+
+export const PAL_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفلكية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار مطابقة الأزواج' : 'Pair Match Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٧٠ مستوى مقسمة على ٧ قطاعات سماوية لاختبار الذاكرة الترابطية المكانية.' },
+        { k: 'الملاحظة', v: 'راقب الصناديق وهي تفتح لتكشف عن الرموز، واحفظ موقع كل رمز.' },
+        { k: 'المطابقة', v: 'عندما يُعرض رمز في المنتصف، اضغط على الصندوق الذي كان يختبئ فيه.' },
+        { k: 'الدقة', v: 'تجنب فتح الصناديق الخاطئة للحفاظ على محاولاتك واجتياز الجولة.' },
+      ]
+    : [
+        { k: 'The Journey', v: '70 levels across 7 celestial sectors testing visual-spatial paired-associate learning.' },
+        { k: 'Observation', v: 'Watch the boxes open sequentially and remember which symbol belongs in which box.' },
+        { k: 'Recall', v: 'When a target symbol appears in the center, tap the box where it was hidden.' },
+        { k: 'Accuracy', v: 'Avoid incorrect guesses to maintain your attempts and clear the level.' },
+      ],
+});
+

@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo, Suspense } fr
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
+import { createTrialLog } from '../../../../shared/trialLog';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
 import { PAIRED_ASSOCIATES_COACH } from '../../../../shared/tutorials/coach/scripts/paired-associates';
@@ -27,8 +28,12 @@ const PairedAssociates3DProto = lazyWithRetry(() => import('./PairedAssociates3D
  */
 export {
   SYMBOLS, STUDY_GAP, PAL_MIN_STUDY, LADDER, LADDER_LEVELS, levelCfg, palFreeCfg, buildPalTrial,
+  PAL_BANDS, PAL_SECTIONS, PAL_HELP, palSublabel,
 } from './palData.js';
-import { SYMBOLS, STUDY_GAP, PAL_MIN_STUDY, LADDER_LEVELS, levelCfg, palFreeCfg, buildPalTrial } from './palData.js';
+import {
+  SYMBOLS, STUDY_GAP, PAL_MIN_STUDY, LADDER_LEVELS, levelCfg, palFreeCfg, buildPalTrial,
+  PAL_BANDS, PAL_SECTIONS, PAL_HELP, palSublabel,
+} from './palData.js';
 
 const ROUNDS_PER_LEVEL = 3;
 const LEVEL_WIN = 2; // perfect trials needed
@@ -49,6 +54,7 @@ export function PalEngine({
   coach,
 }) {
   const rng = useMemo(() => (seed != null ? makeRng(seed) : Math.random), [seed]);
+  const trialLogRef = useRef(null);
   const ppTrials = mode === 'passplay' ? (attempt?.trials ?? 3) : 0;
   const ppCorrectRef = useRef(0);
   const ppDoneRef = useRef(0);
@@ -138,6 +144,7 @@ export function PalEngine({
         trialIdxRef.current += 1;
         if (perfect) wonRef.current += 1;
         if (trialIdxRef.current >= ROUNDS_PER_LEVEL) {
+          trialLogRef.current?.finish?.({ result: { won: wonRef.current >= LEVEL_WIN, score: scoreRef.current } });
           onResult({
             won: wonRef.current >= LEVEL_WIN,
             score: scoreRef.current,
@@ -151,6 +158,7 @@ export function PalEngine({
         ppCorrectRef.current += correctRef.current;
         ppDoneRef.current += 1;
         if (ppDoneRef.current >= ppTrials) {
+          trialLogRef.current?.finish?.({ result: { score: ppCorrectRef.current } });
           onResult({ score: ppCorrectRef.current });
           return true;
         }
@@ -282,6 +290,7 @@ export function PalEngine({
           symbol: cur.symbol,
         };
       }
+      trialLogRef.current?.trial({ ok, symbol: cur.symbol, chosenIdx: hit, targetIdx: cur.boxIdx });
       setSceneFeedback({ correctIdx: cur.boxIdx, wrongIdx: ok ? -1 : hit, symbol: cur.symbol });
       setScenePhase('feedback');
       cueIdxRef.current += 1;
@@ -294,12 +303,21 @@ export function PalEngine({
   );
 
   useEffect(() => {
+    trialLogRef.current = createTrialLog({
+      game: 'paired-associates',
+      mode: mode === 'free' ? 'free' : mode === 'passplay' ? 'challenge' : 'level',
+      meta: { lv: level, mode },
+    });
     newTrial();
-    return () => clearTimeout(timerRef.current);
+    return () => {
+      trialLogRef.current?.discard?.();
+      clearTimeout(timerRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const exitGame = () => {
+    trialLogRef.current?.finish?.({ result: { mode, score: scoreRef.current } });
     if (mode === 'free') awardFreeRun?.('pairedAssoc', bestRef.current);
     onExit?.();
   };
@@ -357,6 +375,7 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
     <ModeShell
       storageKey="mm_mem_pal"
       scienceId="paired-associates"
+      gameId="paired-associates"
       title={{ en: 'Pair Match', ar: 'مطابقة الأزواج' }}
       hints={{
         free: { en: 'Endless practice — pairs grow', ar: 'تدريب مفتوح — تزداد الأزواج' },
@@ -366,8 +385,15 @@ export default function PairedAssociatesGame({ onBack, workoutMode = false }) {
           ar: 'نفس الأزواج للجميع · مرّر الجهاز',
         },
       }}
-      /* ONE LADDER — no easy/med/hard. See palData.js LADDER. */
-      ladder={{ levels: LADDER_LEVELS }}
+      /* ONE LADDER with celestial PlanetPath map */
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: PAL_BANDS(isAr),
+        sections: PAL_SECTIONS,
+        help: PAL_HELP(isAr),
+        sublabel: (lv) => palSublabel(lv, isAr),
+      }}
       pass={{
         trials: 3,
         scoreLabel: { en: 'correct', ar: 'صحيحة' },

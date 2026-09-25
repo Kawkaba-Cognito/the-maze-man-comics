@@ -9,6 +9,7 @@ import PlayResults from '../../../../shared/PlayResults';
 import { assetUrl } from '../../../../../../lib/assetUrl';
 import {
   CATEGORIES, LADDER_LEVELS, levelCfg, survivalCfg, buildRound, isCorrect,
+  KEEP_TRACK_BANDS, KEEP_TRACK_SECTIONS, KEEP_TRACK_HELP, keepTrackSublabel,
 } from './data';
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
 import { KEEP_TRACK_COACH } from '../../../../shared/tutorials/coach/scripts/keep-track';
@@ -306,7 +307,7 @@ function KeepTrackEngine({
   }
 
   return (
-    <div className="ct-training-root ct-kt-root" dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active={step === 'stream' || step === 'recall' ? 'true' : undefined}>
+    <div className="cx-atlas ct-training-root ct-kt-root" dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active={step === 'stream' || step === 'recall' ? 'true' : undefined}>
       {/* The shared PLAY header, not TrainingMenuBar — that one is the hub/lobby
           bar (full width, 18px gutter) and using it mid-play put this game's
           back button in a different place and size from every other game's.
@@ -487,9 +488,15 @@ export default function KeepTrackGame({ onBack, workoutMode = false }) {
         levels: { en: UI.en.hintLevels, ar: UI.ar.hintLevels },
         pass: { en: UI.en.hintPass, ar: UI.ar.hintPass },
       }}
-      /* ONE LADDER — no easy/med/hard, so no `diffLabels` and no `levelCount`.
-         See data.js LADDER and shared/difficulty.js. */
-      ladder={{ levels: LADDER_LEVELS }}
+      /* ONE LADDER with celestial PlanetPath map */
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: KEEP_TRACK_BANDS(isAr),
+        sections: KEEP_TRACK_SECTIONS,
+        help: KEEP_TRACK_HELP(isAr),
+        sublabel: (lv) => keepTrackSublabel(lv, isAr),
+      }}
       pass={{ trials: 4, scoreLabel: { en: 'recalled', ar: 'تذكّر' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
