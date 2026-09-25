@@ -1644,7 +1644,7 @@ html[data-home-theme='dark'] .cx-atlas.ct-sm-play::before {
   height: 100%;
   border-radius: var(--cx-r-pill);
   transition: width 0.05s linear;
-  box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color-amber) 50%, transparent);
 }
 
 .cx-atlas .ct-sm-card {

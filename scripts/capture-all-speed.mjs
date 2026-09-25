@@ -8,7 +8,7 @@ if (!existsSync('review/speed')) {
 }
 
 async function waitForReady(ws) {
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 40; i++) {
     const isReady = await new Promise((resolve) => {
       const handler = (event) => {
         const d = JSON.parse(event.data);
@@ -24,14 +24,14 @@ async function waitForReady(ws) {
         params: {
           expression: `
             (() => {
-              const body = document.body ? document.body.innerText.trim() : '';
-              if (body === 'Loading…' || body === 'جارِ التحميل…' || body === '') return false;
+              const body = document.body ? document.body.innerText : '';
+              if (body.toLowerCase().includes('loading') || body.includes('تحميل') || !body.trim()) return false;
               const found = document.querySelector('.cpp-path') ||
-                            document.querySelector('.ct-sm-play') ||
-                            document.querySelector('.c3d-root') ||
-                            document.querySelector('.ic-root') ||
-                            document.querySelector('.ct-mode-list') ||
-                            document.querySelector('.ct-fq-screen');
+                            document.querySelector('.ct-sm-pad') ||
+                            document.querySelector('.c3d-root canvas') ||
+                            document.querySelector('.ic-field') ||
+                            document.querySelector('.ic-panel') ||
+                            document.querySelector('.ct-mph-constellation');
               return !!found;
             })()
           `,
@@ -41,10 +41,10 @@ async function waitForReady(ws) {
     });
 
     if (isReady) {
-      await new Promise(r => setTimeout(r, 800)); // allow render & animation settle
+      await new Promise(r => setTimeout(r, 1000));
       return true;
     }
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => setTimeout(r, 350));
   }
   return false;
 }
@@ -94,24 +94,25 @@ async function run() {
       { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=speed-match&phase=menu', out: 'review/speed/sm-hub-mobile.png', w: 390, h: 844 },
       { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=speed-match&phase=levels', out: 'review/speed/sm-levels-desktop.png', w: 1200, h: 850 },
       { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=speed-match&phase=levels', out: 'review/speed/sm-levels-mobile.png', w: 390, h: 844 },
-      { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=speed-match&phase=play', out: 'review/speed/sm-play-desktop.png', w: 1200, h: 850 },
-      { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=speed-match&phase=play', out: 'review/speed/sm-play-mobile.png', w: 390, h: 844 },
+      { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=speed-match&phase=play', out: 'review/speed/sm-play-desktop.png', w: 1200, h: 850, waitMs: 2600 },
+      { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=speed-match&phase=play', out: 'review/speed/sm-play-mobile.png', w: 390, h: 844, waitMs: 2600 },
 
       // Math Gates
       { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=math-gates&phase=menu', out: 'review/speed/mg-hub-desktop.png', w: 1200, h: 850 },
       { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=math-gates&phase=menu', out: 'review/speed/mg-hub-mobile.png', w: 390, h: 844 },
       { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=math-gates&phase=levels', out: 'review/speed/mg-levels-desktop.png', w: 1200, h: 850 },
       { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=math-gates&phase=levels', out: 'review/speed/mg-levels-mobile.png', w: 390, h: 844 },
-      { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=math-gates&phase=play', out: 'review/speed/mg-play-desktop.png', w: 1200, h: 850 },
-      { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=math-gates&phase=play', out: 'review/speed/mg-play-mobile.png', w: 390, h: 844 },
+      { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=math-gates&phase=play', out: 'review/speed/mg-play-desktop.png', w: 1200, h: 850, waitMs: 800 },
+      { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=math-gates&phase=play', out: 'review/speed/mg-play-mobile.png', w: 390, h: 844, waitMs: 800 },
 
       // Intercept
       { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=intercept&phase=menu', out: 'review/speed/ic-hub-desktop.png', w: 1200, h: 850 },
       { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=intercept&phase=menu', out: 'review/speed/ic-hub-mobile.png', w: 390, h: 844 },
       { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=intercept&phase=levels', out: 'review/speed/ic-levels-desktop.png', w: 1200, h: 850 },
       { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=intercept&phase=levels', out: 'review/speed/ic-levels-mobile.png', w: 390, h: 844 },
-      { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=intercept&phase=play', out: 'review/speed/ic-play-desktop.png', w: 1200, h: 850 },
-      { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=intercept&phase=play', out: 'review/speed/ic-play-mobile.png', w: 390, h: 844 },
+      { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=intercept&phase=play', out: 'review/speed/ic-brief-desktop.png', w: 1200, h: 850 },
+      { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=intercept&phase=play', out: 'review/speed/ic-play-desktop.png', w: 1200, h: 850, evalJs: '(() => { const b = document.querySelector(".ic-panel button"); if (b) b.click(); })()', evalWait: 1500 },
+      { url: 'http://localhost:5173/the-maze-man-comics/?tab=comics&game=intercept&phase=play', out: 'review/speed/ic-play-mobile.png', w: 390, h: 844, evalJs: '(() => { const b = document.querySelector(".ic-panel button"); if (b) b.click(); })()', evalWait: 1500 },
     ];
 
     for (const t of tasks) {
@@ -127,15 +128,48 @@ async function run() {
         }
       }));
 
-      // 2. Navigate
-      ws.send(JSON.stringify({
-        id: 11,
-        method: 'Page.navigate',
-        params: { url: t.url }
-      }));
+      // 2. Navigate and wait for page to actually load
+      await new Promise((resolve) => {
+        const handler = (event) => {
+          const d = JSON.parse(event.data);
+          if (d.method === 'Page.loadEventFired') {
+            ws.removeEventListener('message', handler);
+            resolve();
+          }
+        };
+        ws.addEventListener('message', handler);
+        ws.send(JSON.stringify({
+          id: 11,
+          method: 'Page.navigate',
+          params: { url: t.url }
+        }));
+      });
 
       // 3. Wait for game ready
       await waitForReady(ws);
+
+      // Optional action before capture (e.g. click to dismiss banner or wait for countdown)
+      if (t.waitMs) {
+        await new Promise(r => setTimeout(r, t.waitMs));
+      }
+      if (t.evalJs) {
+        await new Promise((resolve) => {
+          const handler = (event) => {
+            const d = JSON.parse(event.data);
+            if (d.id === 888) {
+              ws.removeEventListener('message', handler);
+              resolve();
+            }
+          };
+          ws.addEventListener('message', handler);
+          ws.send(JSON.stringify({
+            id: 888,
+            method: 'Runtime.evaluate',
+            params: { expression: t.evalJs }
+          }));
+        });
+        await new Promise(r => setTimeout(r, t.evalWait || 1200));
+      }
 
       // 4. Capture screenshot
       const b64 = await new Promise((resolve) => {

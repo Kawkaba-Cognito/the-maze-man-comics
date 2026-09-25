@@ -712,8 +712,8 @@ export function SpeedMatchEngine({
               style={{
                 width: `${bankPct * 100}%`,
                 background: bankPct > 0.4
-                  ? 'linear-gradient(90deg, #d4af37, #f6e27a)'
-                  : 'linear-gradient(90deg, #e8a07a, #c97a7a)',
+                  ? 'linear-gradient(90deg, var(--color-amber), var(--color-amber-bright))'
+                  : 'linear-gradient(90deg, var(--game-accent), var(--game-bad))',
               }}
             />
           </div>

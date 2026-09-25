@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 478,
+    "raw-colour": 477,
     "stacked-backdrops": 2,
     "conditional-background": 1
   },
@@ -86,9 +86,6 @@
     },
     "src/features/training/domains/speed/games/math-gates/MathGatesBoard2D.jsx": {
       "raw-colour": 2
-    },
-    "src/features/training/domains/speed/games/speed-match/index.jsx": {
-      "raw-colour": 1
     },
     "src/features/training/domains/speed/games/trail-making/index.jsx": {
       "raw-colour": 10
