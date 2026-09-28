@@ -231,6 +231,15 @@ src/
   - `trialLog.js` / `metrics.js` — per-trial capture + RT psychometrics (IES, ICV, d′), capped localStorage.
 - **Two game generations coexist**: pre-ModeShell monoliths that run their own mode state machines (cancellation ~1.9k lines, rush-hour, speed-match — they also embed assessment batteries), and ModeShell games (3–8× smaller). **Copy a ModeShell game** (e.g. `math-gates`, `detective`) for new work, not a monolith.
 
+### The Inked Atlas & PlanetPath Standard (18/18 Games Unified — 2026-09-28)
+
+All 18 cognitive training games across all 5 active domains are unified to the **"The Inked Atlas" / Cancellation Task aesthetic standard**:
+- **Framing & Viewport**: Antique celestial star-chart top/bottom frieze bands (`cancel-starchart-band-*.webp`) framing the screen in light, dark, and portrait orientations (`cancelAtlas.css`).
+- **Surface & Materiality**: Textured parchment (`var(--surface-raised)`), gold filigree highlights (`var(--game-accent)`, `var(--fx-glint)`), and zero raw hex colors (governed by `npm run audit:design`).
+- **Typography & Audio**: Cormorant Garamond / Cinzel for headings, Cairo for Arabic typography, DM Mono for data chips, and tactile Kalimba micro-audio (`playSfx`).
+- **Cosmic Progression (`PlanetPath`)**: Every game's Levels mode presents an interactive celestial star-chart path with 5–6 thematic bands, level metadata chips, and bilingual help modals (`<PlanetPath ...>`).
+- **Trial Logging & Metrics**: `createTrialLog` is wired across 15/18 games to record per-trial latency and accuracy (`audit:consistency` scores 15/18 at 22/22★; the 3 remaining — `cancel-task`, `rush-hour`, `wordle` — run bespoke multi-mode state machines exempt from `ModeShell` and achieve their maximum score of 19/22).
+
 ### Benched games (complete but unreachable — see BENCHED.md in each)
 
 `flexibility/games/wisconsin` (Card Sort, WCST) and `flexibility/games/brixton` (Kawkab Hops, Brixton) were benched 2026-08-09 and replaced by `task-switch` + `sort-shift`. Neither was badly built; the domain was running the SAME LOOP twice — infer a hidden rule from sparse feedback, then notice it silently changed — and that loop punishes the player for the trial after a switch that is unguessable by design. Their BENCHED.md files carry the reasoning and, for Brixton, the measured 8% of top-tier rounds unsolvable at any demo length.
