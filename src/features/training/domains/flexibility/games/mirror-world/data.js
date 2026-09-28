@@ -247,3 +247,65 @@ export function levelPassed(sum) {
   const bar = Math.max(HIT_DEG, (sum.rotation || 0) * 0.4);
   return sum.late <= bar;
 }
+
+export const MIRROR_WORLD_SECTIONS = [
+  'nebula', 'asteroid-belt', 'solar-flare', 'supernova', 'void',
+];
+
+export const MIRROR_WORLD_BANDS = (isAr) => [
+  {
+    title: isAr ? 'أفق المنشور' : 'Prism Horizon',
+    sub: isAr ? '٤ اتجاهات · تكيّف تدريجي لطيف' : '4 directions · Gentle guided ramp',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'الانجراف السداسي' : 'Hexagonal Drift',
+    sub: isAr ? '٦ اتجاهات · توسيع مجال الانحراف' : '6 directions · Expanded distortion field',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'حقل الانكسار' : 'Refraction Field',
+    sub: isAr ? '٦ اتجاهات · جولات تكيف ممتدة' : '6 directions · Extended adaptation reaches',
+    sigil: 'solar-flare',
+  },
+  {
+    title: isAr ? 'الشبكة الثمانية' : 'Octagonal Lattice',
+    sub: isAr ? '٨ اتجاهات · دقة تصويب محيطية كاملة' : '8 directions · Full perimeter accuracy',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'المرآة الباردة' : 'Cold Mirror',
+    sub: isAr ? '٨ اتجاهات · انحراف مفاجئ بلا تدرّج' : '8 directions · Cold-start abrupt distortion',
+    sigil: 'supernova',
+  },
+];
+
+export function mirrorWorldSublabel(level, isAr) {
+  const blocks = levelSchedule(level);
+  const adapt = blocks.find((b) => b.role === 'adaptation') || blocks[1];
+  const targets = adapt?.targets ?? 8;
+  const rot = adapt?.rotation ?? 20;
+  if (isAr) {
+    return `${targets} اتجاهات · زاوية ${rot}°`;
+  }
+  return `${targets} targets · ${rot}° rotation`;
+}
+
+export const MIRROR_WORLD_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفلكية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار عالم المرآة' : 'Mirror World Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٥٠ مستوى مقسمة على ٥ قطاعات سماوية لتدريب التكيف الحركي البصري اللاإرادي.' },
+        { k: 'الانطلاق', v: 'انطلق بإصبعك أو المؤشر من النقطة المركزية نحو الهدف المحدد.' },
+        { k: 'التكيّف', v: 'في منتصف الجولة، ينحرف المؤشر بزاوية خفية؛ دماغك سيتعلم التعويض تلقائياً.' },
+        { k: 'الأثر اللاحق', v: 'عند عودة المؤشر لطبيعته، ستلاحظ انحراف يدك في الاتجاه المعاكس.' },
+      ]
+    : [
+        { k: 'The Journey', v: '50 levels across 5 celestial sectors training visuomotor recalibration.' },
+        { k: 'The Reach', v: 'Flick your finger or cursor from the central home dot toward the highlighted target.' },
+        { k: 'Adaptation', v: 'Midway through, cursor feedback rotates. Your brain recalibrates implicitly.' },
+        { k: 'Aftereffect', v: 'When the perturbation clears in washout, your reaches briefly drift the other way.' },
+      ],
+});

@@ -2183,4 +2183,302 @@ html[data-home-theme='dark'] .cx-atlas.ct-sg-root::before {
   color: var(--color-amber);
 }
 
+/* ── FLEXIBILITY DOMAIN — INKED ATLAS STYLING ──────────────────────────── */
+.cx-atlas.ct-ts-root::before,
+.cx-atlas.ct-mw-root::before,
+.cx-atlas.ct-ss-root::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  pointer-events: none;
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-bottom.webp");
+  background-size:
+    auto clamp(42px, 8.5vh, 85px),
+    auto clamp(42px, 8.5vh, 85px);
+  background-position:
+    top center,
+    bottom center;
+  background-repeat:
+    no-repeat,
+    no-repeat;
+}
+
+@media (orientation: portrait) {
+  .cx-atlas.ct-ts-root::before,
+  .cx-atlas.ct-mw-root::before,
+  .cx-atlas.ct-ss-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-bottom.webp");
+    background-size:
+      100% auto,
+      100% auto;
+  }
+}
+
+html[data-home-theme='dark'] .cx-atlas.ct-ts-root::before,
+html[data-home-theme='dark'] .cx-atlas.ct-mw-root::before,
+html[data-home-theme='dark'] .cx-atlas.ct-ss-root::before {
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-bottom.webp");
+}
+@media (orientation: portrait) {
+  html[data-home-theme='dark'] .cx-atlas.ct-ts-root::before,
+  html[data-home-theme='dark'] .cx-atlas.ct-mw-root::before,
+  html[data-home-theme='dark'] .cx-atlas.ct-ss-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-bottom.webp");
+  }
+}
+
+@media (max-width: 899px), (orientation: portrait) {
+  .cx-atlas.ct-ts-root,
+  .cx-atlas.ct-mw-root,
+  .cx-atlas.ct-ss-root {
+    padding-top: clamp(42px, 7.5vh, 58px);
+    padding-bottom: calc(clamp(42px, 7.5vh, 58px) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.cx-atlas.ct-ts-root .ct-training-play-header,
+.cx-atlas.ct-mw-root .ct-training-play-header,
+.cx-atlas.ct-ss-root .ct-training-play-header {
+  position: relative;
+  z-index: 12;
+  pointer-events: auto;
+}
+
+/* ── Task Switch Inked Atlas Elements ── */
+.cx-atlas .ct-ts-cue {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: clamp(1rem, 3.8vw, 1.25rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--game-accent);
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 45%, var(--line));
+  border-radius: var(--cx-r-pill);
+  box-shadow: 0 4px 18px var(--fx-shadow-soft);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+[dir='rtl'] .cx-atlas .ct-ts-cue {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+  letter-spacing: 0;
+}
+
+.cx-atlas .ct-ts-stim {
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 35%, var(--line));
+  border-radius: var(--cx-r-plate);
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 10px 28px var(--fx-shadow-soft);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.cx-atlas .ct-ts-shape {
+  border-width: 2.5px;
+  border-color: color-mix(in srgb, var(--game-accent) 60%, var(--game-ink));
+  box-shadow: 0 6px 18px var(--fx-shadow-soft);
+}
+
+.cx-atlas .ct-ts-verdict {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+}
+
+.cx-atlas .ct-ts-key {
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 38%, var(--line));
+  border-radius: var(--cx-r-plate);
+  background: color-mix(in srgb, var(--surface-raised) 95%, transparent);
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 6px 18px var(--fx-shadow-soft);
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+[dir='rtl'] .cx-atlas .ct-ts-key {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+}
+
+.cx-atlas .ct-ts-key:active {
+  box-shadow: inset 0 2px 4px var(--fx-shadow-soft);
+  border-color: var(--game-accent);
+}
+
+.cx-atlas .ct-ts-key small {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.14em;
+  color: var(--color-amber);
+}
+
+.cx-atlas .ct-ts-chip {
+  border-color: color-mix(in srgb, var(--game-accent) 60%, var(--game-ink));
+}
+
+.cx-atlas .ct-ts-over-card {
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 45%, var(--line));
+  border-radius: var(--cx-r-plate);
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  box-shadow: 0 18px 48px var(--fx-shadow-deep);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.cx-atlas .ct-ts-over-title {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-weight: 700;
+  font-size: clamp(1.4rem, 5vw, 1.85rem);
+  color: var(--game-ink);
+}
+[dir='rtl'] .cx-atlas .ct-ts-over-title {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+}
+
+/* ── Mirror World Inked Atlas Elements ── */
+.cx-atlas .ct-mw-cue {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: clamp(0.95rem, 3.5vw, 1.15rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--game-accent);
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--game-accent) 40%, var(--line));
+  border-radius: var(--cx-r-pill);
+  padding: 4px 16px;
+  box-shadow: 0 4px 14px var(--fx-shadow-soft);
+}
+[dir='rtl'] .cx-atlas .ct-mw-cue {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+  letter-spacing: 0;
+}
+
+.cx-atlas .ct-mw-pad {
+  border: 2px solid color-mix(in srgb, var(--game-accent) 45%, var(--line));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--game-accent) 15%, transparent), 0 14px 42px var(--fx-shadow-deep);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.cx-atlas .ct-mw-count {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--color-amber);
+  letter-spacing: 0.08em;
+}
+
+.cx-atlas .ct-mw-direction-btn {
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 35%, var(--line));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface-raised) 95%, transparent);
+  color: var(--game-ink);
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 4px 12px var(--fx-shadow-soft);
+}
+.cx-atlas .ct-mw-direction-btn:hover {
+  border-color: var(--game-accent);
+  color: var(--color-amber);
+}
+
+/* ── Sort Shift Inked Atlas Elements ── */
+.cx-atlas .ct-ss-msg {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: clamp(1rem, 3.8vw, 1.25rem);
+  font-weight: 700;
+  color: var(--game-ink);
+}
+[dir='rtl'] .cx-atlas .ct-ss-msg {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+}
+
+.cx-atlas .ct-ss-card {
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 35%, var(--line));
+  border-radius: var(--cx-r-plate);
+  background: color-mix(in srgb, var(--surface-raised) 95%, transparent);
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 6px 18px var(--fx-shadow-soft);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.cx-atlas .ct-ss-card.is-picked {
+  border-color: var(--game-accent);
+  background: color-mix(in srgb, var(--game-accent) 22%, var(--surface-raised));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--game-accent) 40%, transparent), 0 8px 24px var(--fx-shadow-soft);
+}
+
+.cx-atlas .ct-ss-pip {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 700;
+  border: 1.5px solid color-mix(in srgb, var(--color-amber) 60%, var(--game-ink));
+  box-shadow: 0 2px 8px var(--fx-shadow-soft);
+}
+
+.cx-atlas .ct-ss-word {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: clamp(0.95rem, 3vw, 1.15rem);
+  font-weight: 700;
+  color: var(--game-ink);
+  letter-spacing: 0.03em;
+}
+[dir='rtl'] .cx-atlas .ct-ss-word {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+  letter-spacing: 0;
+}
+
+.cx-atlas .ct-ss-glyph {
+  border-color: color-mix(in srgb, var(--game-accent) 60%, var(--game-ink));
+}
+
+.cx-atlas .ct-ss-rule {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  border: 1px dashed color-mix(in srgb, var(--game-accent) 40%, var(--line));
+  border-radius: var(--cx-r-pill);
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+}
+
+.cx-atlas .ct-ss-rule.is-found {
+  border: 1.5px solid color-mix(in srgb, var(--game-ok) 65%, var(--line));
+  background: color-mix(in srgb, var(--game-ok) 14%, transparent);
+  color: var(--game-ok);
+}
+
+.cx-atlas .ct-ss-rule.is-missed {
+  border: 1.5px solid color-mix(in srgb, var(--game-bad) 65%, var(--line));
+  background: color-mix(in srgb, var(--game-bad) 14%, transparent);
+  color: var(--game-bad);
+}
+
+.cx-atlas .ct-ss-over-card {
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 45%, var(--line));
+  border-radius: var(--cx-r-plate);
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  box-shadow: 0 18px 48px var(--fx-shadow-deep);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.cx-atlas .ct-ss-over-title {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-weight: 700;
+  font-size: clamp(1.4rem, 5vw, 1.85rem);
+  color: var(--game-ink);
+}
+[dir='rtl'] .cx-atlas .ct-ss-over-title {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+}
+
+
 

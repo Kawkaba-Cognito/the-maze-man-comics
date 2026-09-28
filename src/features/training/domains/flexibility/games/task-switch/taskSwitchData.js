@@ -122,3 +122,64 @@ export function makeTrial(rng, prevTask, pSwitch) {
 
 export const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
+export const TASK_SWITCH_SECTIONS = [
+  'nebula', 'asteroid-belt', 'solar-flare', 'supernova', 'void',
+];
+
+export const TASK_SWITCH_BANDS = (isAr) => [
+  {
+    title: isAr ? 'مدار التركيز' : 'Focus Orbit',
+    sub: isAr ? '٣٠٪ تبديل · فترات إعداد مريحة' : '30% switches · Generous preparation',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'تيارات التبديل' : 'Shifting Streams',
+    sub: isAr ? '٤٠٪ تبديل · تسريع وتيرة الاستجابة' : '40% switches · Accelerated cadence',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'النبض المتناوب' : 'Alternating Pulse',
+    sub: isAr ? '٥٠٪ تبديل · تناوب متكافئ بين القواعد' : '50% switches · Balanced rule alternation',
+    sigil: 'solar-flare',
+  },
+  {
+    title: isAr ? 'إعادة التشكيل السريع' : 'Rapid Reconfiguration',
+    sub: isAr ? '٥٨٪ تبديل · مهلة تفكير أقصر' : '58% switches · Tightened response window',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'ذروة المرونة' : 'Cognitive Zenith',
+    sub: isAr ? '٦٥٪ تبديل · أقصى متطلبات لتبديل الانتباه' : '65% switches · Peak set-shifting load',
+    sigil: 'supernova',
+  },
+];
+
+export function taskSwitchSublabel(level, isAr) {
+  const cfg = tsCfg('levels', level);
+  const sw = Math.round(cfg.pSwitch * 100);
+  const dl = (cfg.deadline / 1000).toFixed(1);
+  if (isAr) {
+    return `${sw}٪ تبديل · مهلة ${dl}ث`;
+  }
+  return `${sw}% switch · ${dl}s limit`;
+}
+
+export const TASK_SWITCH_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفلكية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار تبديل المهمة' : 'Task Switch Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٥٠ مستوى مقسمة على ٥ قطاعات سماوية لتدريب كفاءة تبديل القواعد المعرفية.' },
+        { k: 'الإشارة', v: 'اقرأ الإشارة العلوية فور ظهورها: إما "اللون" أو "الشكل".' },
+        { k: 'المفاتيح', v: 'الأزرار ثابتة دائماً: اليسار (أحمر/دائرة)، اليمين (أزرق/مربع).' },
+        { k: 'كلفة التبديل', v: 'يقيس الاختبار الفارق الزمني عندما تتغيّر القاعدة مقارنة بتكرارها.' },
+      ]
+    : [
+        { k: 'The Journey', v: '50 levels across 5 celestial sectors training rule-switching cognitive agility.' },
+        { k: 'The Cue', v: 'Read the top cue immediately upon appearance: either Colour or Shape.' },
+        { k: 'Fixed Keys', v: 'The response mapping never shifts: Left is Red/Circle, Right is Blue/Square.' },
+        { k: 'Switch Cost', v: 'Measures how efficiently your brain reconfigures when the active rule changes.' },
+      ],
+});
+

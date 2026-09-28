@@ -7,7 +7,11 @@ import { survivalRampFromRemaining } from '../../../../shared/survival';
 import { useSurvivalCountdown, SurvivalCountdownBar } from '../../../../shared/SurvivalCountdown';
 import KawkabSprite from '../../../../shared/KawkabSprite';
 import { GAME_STIMULUS } from '../../../../shared/gamePalette';
-import { SORT_SETS, ruleForTrio, setsForTier, levelCfg, LADDER_LEVELS } from './sets';
+import { createTrialLog } from '../../../../shared/trialLog';
+import {
+  SORT_SETS, ruleForTrio, setsForTier, levelCfg, LADDER_LEVELS,
+  SORT_SHIFT_BANDS, SORT_SHIFT_SECTIONS, SORT_SHIFT_HELP, sortShiftSublabel,
+} from './sets';
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
 import { SORT_SHIFT_COACH } from '../../../../shared/tutorials/coach/scripts/sort-shift';
 import './sortShift.css';
@@ -67,6 +71,7 @@ export function SortShiftEngine({
   const setsDoneRef = useRef(0);
   const finishedRef = useRef(false);
   const rampRef = useRef(0);
+  const trialLogRef = useRef(null);
 
   const [setDef, setSetDef] = useState(null);
   const [order, setOrder] = useState([]);       // shuffled card indices
@@ -151,6 +156,7 @@ export function SortShiftEngine({
   const finishSurvival = useCallback(() => {
     if (finishedRef.current) return;
     finishedRef.current = true;
+    trialLogRef.current?.save();
     setOver({ score: scoreRef.current, sets: clearedRef.current, rules: rulesRef.current });
     awardFreeRun?.('sort-shift', clearedRef.current);
     playSfx?.('error');
@@ -163,10 +169,17 @@ export function SortShiftEngine({
   useEffect(() => {
     finishedRef.current = false;
     rngRef.current = makeRng((seed ?? 1) >>> 0);
+    trialLogRef.current?.discard();
+    trialLogRef.current = createTrialLog({
+      game: 'sort-shift',
+      mode: mode === 'passplay' ? 'challenge' : mode,
+      meta: { lv: level },
+    });
     scoreRef.current = 0; clearedRef.current = 0; rulesRef.current = 0; setsDoneRef.current = 0;
     setScore(0); setOver(null);
     refillQueue();
     dealSet();
+    return () => { trialLogRef.current?.discard(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, mode, level]);
 
@@ -190,6 +203,7 @@ export function SortShiftEngine({
     if (!isSurvival && setsDoneRef.current >= targetSets) {
       if (finishedRef.current) return;
       finishedRef.current = true;
+      trialLogRef.current?.save();
       if (mode === 'levels') onResult?.({ won: clearedRef.current >= targetSets, score: scoreRef.current });
       else onResult?.({ score: rulesRef.current });
       return;
@@ -208,6 +222,12 @@ export function SortShiftEngine({
   const submit = () => {
     if (!setDef || picked.length !== 3 || revealed || finishedRef.current) return;
     const rule = ruleForTrio(setDef, picked);
+    trialLogRef.current?.record({
+      set: setDef.id,
+      rule: rule ? rule.key : null,
+      ok: Boolean(rule && !found.includes(rule.key)),
+      score: scoreRef.current,
+    });
     if (!rule) {
       setMsg({ text: t.nothing, tone: 'bad' });
       playSfx?.('lose');
@@ -250,7 +270,7 @@ export function SortShiftEngine({
   if (!setDef) return null;
 
   return (
-    <div className="ct-ss-root" dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active={!over ? 'true' : undefined}>
+    <div className="cx-atlas ct-training-root ct-ss-root" dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active={!over ? 'true' : undefined}>
       <header className="ct-training-play-header">
         <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); onExit?.(); }}><IconBack size={18} c="currentColor" /></button>
         <div className="ct-training-play-header-body">
@@ -371,8 +391,15 @@ export default function SortShiftGame({ onBack, workoutMode = false }) {
         levels: { en: '50 levels · harder sets hide the rule in meaning', ar: '٥٠ مستوى · القواعد الأصعب في المعنى' },
         pass: { en: 'Same cards for everyone · pass the device', ar: 'نفس البطاقات للجميع · مرّر الجهاز' },
       }}
-      /* ONE LADDER — no easy/med/hard. See sets.js LADDER. */
-      ladder={{ levels: LADDER_LEVELS }}
+      /* ONE LADDER with celestial PlanetPath map */
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: SORT_SHIFT_BANDS(isAr),
+        sections: SORT_SHIFT_SECTIONS,
+        help: SORT_SHIFT_HELP(isAr),
+        sublabel: (lv) => sortShiftSublabel(lv, isAr),
+      }}
       pass={{ trials: SS_PP_TRIALS, scoreLabel: { en: 'rules found', ar: 'قواعد' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}

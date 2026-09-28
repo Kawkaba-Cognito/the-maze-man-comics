@@ -51,8 +51,12 @@ const BLUE = GAME_STIMULUS[3];
  */
 export {
   TS_PP_TRIALS, TS_LEVEL_TRIALS, TS_WIN_ACC, TS_MIN_CSI, TS_MIN_DEADLINE, LADDER, LADDER_LEVELS, tsCfg, makeTrial, mean,
+  TASK_SWITCH_SECTIONS, TASK_SWITCH_BANDS, taskSwitchSublabel, TASK_SWITCH_HELP,
 } from './taskSwitchData.js';
-import { TS_PP_TRIALS, TS_LEVEL_TRIALS, TS_WIN_ACC, LADDER_LEVELS, tsCfg, makeTrial, mean } from './taskSwitchData.js';
+import {
+  TS_PP_TRIALS, TS_LEVEL_TRIALS, TS_WIN_ACC, LADDER_LEVELS, tsCfg, makeTrial, mean,
+  TASK_SWITCH_SECTIONS, TASK_SWITCH_BANDS, taskSwitchSublabel, TASK_SWITCH_HELP,
+} from './taskSwitchData.js';
 
 export function TaskSwitchEngine({
   mode, level, seed, attempt, onResult, onExit,
@@ -279,7 +283,7 @@ export function TaskSwitchEngine({
   const incM = mean(hits.filter((d) => !d.congruent).map((d) => d.rt));
 
   return (
-    <div className="ct-ts-root" dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active={!over ? 'true' : undefined}>
+    <div className="cx-atlas ct-training-root ct-ts-root" dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active={!over ? 'true' : undefined}>
       <header className="ct-training-play-header">
         <button className="ct-training-chrome-btn" aria-label={t.menu} onClick={() => { playSfx?.('click'); onExit?.(); }}><IconBack size={18} c="currentColor" /></button>
         <div className="ct-training-play-header-body">
@@ -398,8 +402,15 @@ export default function TaskSwitchGame({ onBack, workoutMode = false }) {
         levels: { en: '50 levels · shorter warning, more switching', ar: '٥٠ مستوى · تحذير أقصر وتبديل أكثر' },
         pass: { en: 'Same trials for everyone · pass the device', ar: 'نفس المحاولات للجميع · مرّر الجهاز' },
       }}
-      /* ONE LADDER — no easy/med/hard. See taskSwitchData.js LADDER. */
-      ladder={{ levels: LADDER_LEVELS }}
+      /* ONE LADDER with celestial PlanetPath map */
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: TASK_SWITCH_BANDS(isAr),
+        sections: TASK_SWITCH_SECTIONS,
+        help: TASK_SWITCH_HELP(isAr),
+        sublabel: (lv) => taskSwitchSublabel(lv, isAr),
+      }}
       pass={{ trials: TS_PP_TRIALS, scoreLabel: { en: 'correct', ar: 'صحيحة' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}

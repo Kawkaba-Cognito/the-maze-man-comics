@@ -230,3 +230,63 @@ export function levelCfg(level) {
 export function pickSetTier(cfg, rng) {
   return pickWeighted(cfg.tiers, rng) || 'easy';
 }
+
+export const SORT_SHIFT_SECTIONS = [
+  'nebula', 'asteroid-belt', 'solar-flare', 'supernova', 'void',
+];
+
+export const SORT_SHIFT_BANDS = (isAr) => [
+  {
+    title: isAr ? 'التصنيف الحسي' : 'Perceptual Sorting',
+    sub: isAr ? 'قاعدتان مطلوبتان · خصائص بصرية مباشرة' : '2 rules required · Visual features',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'الثلاثية الكاملة' : 'Complete Triad',
+    sub: isAr ? '٣ قواعد مطلوبة · استيفاء أبعاد البطاقات' : '3 rules required · Full dimensional search',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'تحوّل المفاهيم' : 'Conceptual Shift',
+    sub: isAr ? 'دخول التصنيفات الوظيفية · دلالات الاستخدام' : 'Functional categories · Real-world utility',
+    sigil: 'solar-flare',
+  },
+  {
+    title: isAr ? 'الأبعاد المجرّدة' : 'Abstract Dimensions',
+    sub: isAr ? 'صفات مجردة ومتداخلة · تمييز جوهري' : 'Abstract traits · Deep attribute discovery',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'قمة التصنيف' : 'Master Taxonomy',
+    sub: isAr ? 'أعلى تركيز للبطاقات المعقدة · غربلة دلالية' : 'Peak complex cards · Advanced semantic splits',
+    sigil: 'supernova',
+  },
+];
+
+export function sortShiftSublabel(level, isAr) {
+  const cfg = levelCfg(level);
+  const tierName = cfg.tiers.hard ? (isAr ? 'متقدمة' : 'advanced') : (cfg.tiers.med ? (isAr ? 'متوسطة' : 'intermediate') : (isAr ? 'أساسية' : 'foundational'));
+  if (isAr) {
+    return `${cfg.rules} قواعد · بطاقات ${tierName}`;
+  }
+  return `${cfg.rules} rules · ${tierName} cards`;
+}
+
+export const SORT_SHIFT_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفلكية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار رتّبها بطريقة أخرى' : 'Sort Shift Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٥٠ مستوى مقسمة على ٥ قطاعات سماوية لتدريب التوليد الإدراكي والمرونة التكيفية.' },
+        { k: 'التقسيم', v: 'اختر ٣ بطاقات تشترك في ميزة موحدة وتقسم الستة بالتساوي (٣ مقابل ٣).' },
+        { k: 'التبديل التوليدي', v: 'بعد تأكيد قاعدة، ابحث عن بعد تصنيفي مختلف تماماً لنفس المجموعة.' },
+        { k: 'العمق الدلالي', v: 'في المستويات العليا، لا تقتصر القواعد على الشكل واللون، بل تتعداها إلى المعنى والاستخدام.' },
+      ]
+    : [
+        { k: 'The Journey', v: '50 levels across 5 celestial sectors training generative cognitive flexibility.' },
+        { k: 'The Triad Split', v: 'Select 3 cards that share a common rule, dividing the set exactly 3-and-3.' },
+        { k: 'Generative Shift', v: 'Once a rule is confirmed, abandon that mental set and discover a completely different split.' },
+        { k: 'Semantic Depth', v: 'Higher sectors move beyond color and shape into function, origin, and abstract meaning.' },
+      ],
+});

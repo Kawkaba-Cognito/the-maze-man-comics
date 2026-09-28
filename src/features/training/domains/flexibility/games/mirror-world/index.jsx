@@ -8,6 +8,7 @@ import {
   ROLE, HIT_DEG, LADDER_LEVELS,
   levelSchedule, survivalSchedule, passSchedule,
   perturb, angularError, targetAngles, aimAngles, summarise, levelPassed,
+  MIRROR_WORLD_BANDS, MIRROR_WORLD_SECTIONS, MIRROR_WORLD_HELP, mirrorWorldSublabel,
 } from './data';
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
 import { MIRROR_WORLD_COACH } from '../../../../shared/tutorials/coach/scripts/mirror-world';
@@ -344,7 +345,7 @@ function MirrorEngine({
     : mode === 'passplay' ? `${t.challengeHeader}` : `${t.levelMode} · L${level}`;
 
   return (
-    <div className="ct-mw-root" dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active={step === 'reach' ? 'true' : undefined}>
+    <div className="cx-atlas ct-training-root ct-mw-root" dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active={step === 'reach' ? 'true' : undefined}>
       {/* The shared PLAY header, not TrainingMenuBar — that is the hub/lobby bar
           and using it mid-play sat this game's back button at a different size
           and gutter from the rest. The pause had its own glyph too
@@ -465,8 +466,15 @@ export default function MirrorWorldGame({ onBack, workoutMode = false }) {
         levels: { en: UI.en.hintLevels, ar: UI.ar.hintLevels },
         pass: { en: UI.en.hintPass, ar: UI.ar.hintPass },
       }}
-      /* ONE LADDER — no easy/med/hard. See data.js LADDER. */
-      ladder={{ levels: LADDER_LEVELS }}
+      /* ONE LADDER with celestial PlanetPath map */
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: MIRROR_WORLD_BANDS(isAr),
+        sections: MIRROR_WORLD_SECTIONS,
+        help: MIRROR_WORLD_HELP(isAr),
+        sublabel: (lv) => mirrorWorldSublabel(lv, isAr),
+      }}
       pass={{ trials: 1, scoreLabel: { en: 'on target', ar: 'إصابات' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}
