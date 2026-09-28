@@ -526,3 +526,62 @@ export function passCfg() {
 export function levelPassed(cleared, total) {
   return cleared >= total - (total >= 3 ? 1 : 0);
 }
+
+export const GATEKEEPER_SECTIONS = [
+  'nebula', 'asteroid-belt', 'solar-flare', 'supernova', 'void',
+];
+
+export const GATEKEEPER_BANDS = (isAr) => [
+  {
+    title: isAr ? 'البوابة الخارجية' : 'The Outer Gate',
+    sub: isAr ? '٥ مسابير · قوانين أحادية السمة' : '5 probes · Single-attribute laws',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'الحجاب المخطط' : 'The Striped Veil',
+    sub: isAr ? 'دخول الأنماط المخططة · ٤ سمات متوازية' : 'Striped traits enter · 4 orthogonal attributes',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'الملتقى الثنائي' : 'Dual Nexus',
+    sub: isAr ? 'اقتران القوانين (و / أو) · استنتاج مركب' : 'Conjunctive laws (AND / OR) · Compound induction',
+    sigil: 'solar-flare',
+  },
+  {
+    title: isAr ? 'بوابة الاستبعاد' : 'The Exclusion Gate',
+    sub: isAr ? 'قوانين الإقصاء والانفصال · ٤ مسابير فقط' : 'Exclusion & contradiction · 4-probe budget',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'قلعة الحارس' : "Haris's Citadel",
+    sub: isAr ? 'أعلى درجات الاستدلال · ٣ مسابير لاختبار الفرضيات' : 'Peak inductive challenge · 3-probe budget',
+    sigil: 'supernova',
+  },
+];
+
+export function gatekeeperSublabel(level, isAr) {
+  const cfg = levelCfg(level);
+  if (isAr) {
+    return `${cfg.probes} مسابير · ${cfg.gates} بوابات`;
+  }
+  return `${cfg.probes} probes · ${cfg.gates} gates`;
+}
+
+export const GATEKEEPER_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفلكية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار بوابة الاستدلال' : 'Gatekeeper Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٥٠ مستوى مقسمة على ٥ قطاعات سماوية لتدريب استنتاج القوانين عبر اختبار الفرضيات النشط.' },
+        { k: 'المسبار', v: 'أرسل مسافرين من الحامل إلى البوابة لترى ختم الحارس بالدخول أو المنع.' },
+        { k: 'الاستنتاج', v: 'لاحظ السمات المشتركة (الفصيلة، الشكل، الأقمار، الخطوط) لمعرفة قانون البوابة السري.' },
+        { k: 'القرار', v: 'اختر المسافر الوحيد من الثلاثي النهائي الذي يحقق شروط العبور المؤكدة.' },
+      ]
+    : [
+        { k: 'The Journey', v: '50 levels across 5 celestial sectors training inductive rule discovery via active hypothesis testing.' },
+        { k: 'The Probe', v: 'Send test travellers from your tray to the gate to observe Haris stamp them IN or OUT.' },
+        { k: 'Induction', v: 'Narrow down which attributes (folk, shape, moons, fill) define the gate’s secret law.' },
+        { k: 'The Decision', v: 'Send the one traveller from the final trio that is logically guaranteed to pass under all surviving laws.' },
+      ],
+});

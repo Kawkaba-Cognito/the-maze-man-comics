@@ -11,6 +11,8 @@ import {
 } from '../../../../shared/TrainingChrome';
 import PassPlaySetup from '../../../../shared/PassPlaySetup';
 import { TrainingLevelGrid, TrainingModeList, TrainingScreenShell } from '../../../../shared/TrainingScreens';
+import PlanetPath from '../../../../shared/PlanetPath/PlanetPath.jsx';
+import '../../../attention/games/cancellation/cancelAtlas.css';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import { useJuice } from '../../../../shared/juice/useJuice';
@@ -36,6 +38,11 @@ import {
   loadRhProgress,
   saveRhProgress,
   rhFreeParPoints,
+  RH_BANDS,
+  RH_SECTIONS,
+  rhSublabel,
+  rhLevelStars,
+  RH_HELP,
 } from './data';
 import RhWorker from './rh-worker.js?worker';
 import { getCuratedRushHourAssessBoards } from './curated-levels';
@@ -1289,6 +1296,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
           title={t.title}
           tag={t.training}
           hub
+          shellClassName="cx-atlas"
           onReplayTutorial={openTutorial}
           replayHint={tutReplayHint}
         >
@@ -1332,7 +1340,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
     const pad = `max(48px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left))`;
     return (
       <div
-        className="cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light"
+        className="cx-atlas cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light"
         dir={isAr ? 'rtl' : 'ltr'}
         style={{
           minHeight: '100%',
@@ -1386,7 +1394,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
     const pad = `max(48px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left))`;
     return withCosmos(
       <div
-        className={`cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light${isCosmos ? ' c3d-embed-root' : ''}`}
+        className={`cx-atlas cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light${isCosmos ? ' c3d-embed-root' : ''}`}
         data-c3d-embed={isCosmos || undefined}
         dir={isAr ? 'rtl' : 'ltr'}
         style={{
@@ -1448,7 +1456,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
     const sorted = [...lastRhChalRows].sort((a, b) => a.rankScore - b.rankScore);
     return (
       <div
-        className="cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light"
+        className="cx-atlas cancellation-task-game ct-fq-training-shell ct-fq-training-shell--hub-light"
         dir={isAr ? 'rtl' : 'ltr'}
         style={{
           minHeight: '100%',
@@ -1540,31 +1548,41 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
     const doneMap = progress.done || {};
     const ladderReached = rhMigrateLadderReached(doneMap);
     return (
-      <TrainingLevelGrid
-        isAr={isAr}
-        playSfx={playSfx}
-        onBack={() => setPhase('hub')}
-        title={t.title}
-        blurb={t.ladderBlurb(RH_LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
-        count={RH_LADDER_LEVELS}
-        isUnlocked={(lv) => (lv === 1 || lv <= ladderReached + 1
-          || !!doneMap[`lad-${lv - 1}`] || !!doneMap[`lad-${lv}`])}
-        isDone={(lv) => !!doneMap[`lad-${lv}`]}
-        sublabel={(lv) => {
-          const best = progress.best?.[`lad-${lv}`];
-          return best != null ? `★ ${best}` : '—';
-        }}
-        onPick={(lv) => {
-          // The board still comes from the AUTHORED bank — the ladder only
-          // decides which authored (tier, level) this rung plays.
-          const { diff, li } = rhLadderToTier(lv);
-          setDiffKey(diff);
-          setLevelIndex(li);
-          ladderLvRef.current = lv;
-          setPlayMode('levels');
-          setPhase('play');
-        }}
-      />
+      <div className="cx-atlas" style={{ display: 'contents' }}>
+        <PlanetPath
+          isAr={isAr}
+          playSfx={playSfx}
+          onBack={() => setPhase('hub')}
+          title={t.title}
+          blurb={t.ladderBlurb(RH_LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
+          count={RH_LADDER_LEVELS}
+          isUnlocked={(lv) => (lv === 1 || lv <= ladderReached + 1
+            || !!doneMap[`lad-${lv - 1}`] || !!doneMap[`lad-${lv}`])}
+          isDone={(lv) => !!doneMap[`lad-${lv}`]}
+          sublabel={(lv) => {
+            const best = progress.best?.[`lad-${lv}`];
+            return rhSublabel(lv, isAr, best);
+          }}
+          stars={(lv) => {
+            const best = progress.best?.[`lad-${lv}`];
+            return rhLevelStars(lv, best);
+          }}
+          bands={RH_BANDS(isAr)}
+          sections={RH_SECTIONS}
+          help={RH_HELP(isAr)}
+          shellClassName="cx-page cpp-page cx-atlas"
+          onPick={(lv) => {
+            // The board still comes from the AUTHORED bank — the ladder only
+            // decides which authored (tier, level) this rung plays.
+            const { diff, li } = rhLadderToTier(lv);
+            setDiffKey(diff);
+            setLevelIndex(li);
+            ladderLvRef.current = lv;
+            setPlayMode('levels');
+            setPhase('play');
+          }}
+        />
+      </div>
     );
   }
 
@@ -1572,7 +1590,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   if ((generating || !levelDef) && !(playMode === 'challenge' && chalTurnOpen)) {
     return withCosmos(
       <div
-        className={`cancellation-task-game${isCosmos ? ' c3d-embed-root' : ''}`}
+        className={`cx-atlas ct-training-root rh-atlas-root cancellation-task-game${isCosmos ? ' c3d-embed-root' : ''}`}
         data-c3d-embed={isCosmos || undefined}
         dir={isAr ? 'rtl' : 'ltr'}
         style={{
@@ -1603,7 +1621,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
 
   return withCosmos(
     <div
-      className={`ct-rh-play cancellation-task-game${isCosmos ? ' c3d-embed-root' : ''}`}
+      className={`cx-atlas ct-training-root rh-atlas-root ct-rh-play cancellation-task-game${isCosmos ? ' c3d-embed-root' : ''}`}
       data-gameplay-active="true"
       data-c3d-embed={isCosmos || undefined}
       dir={isAr ? 'rtl' : 'ltr'}

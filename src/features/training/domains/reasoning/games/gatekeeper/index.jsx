@@ -9,6 +9,7 @@ import PlanetFolk, { folkName } from './PlanetFolk';
 import {
   buildGate, cardKey, informationOf, LADDER_LEVELS, lawHolds, levelCfg, levelPassed,
   passCfg, ruleSpace, survivors, survivalCfg,
+  GATEKEEPER_BANDS, GATEKEEPER_SECTIONS, gatekeeperSublabel, GATEKEEPER_HELP,
 } from './data.js';
 import { FAMILY, T, attrWords, familyIndex, lawText } from './strings.js';
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
@@ -319,7 +320,7 @@ export function GatekeeperEngine({
   const stampedKeys = new Set(stamped.map((s) => cardKey(s.card)));
 
   return (
-    <div className={`gk-root${cosmos ? ' gk-root--cosmos' : ''}`} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef} data-gameplay-active="true">
+    <div className={`cx-atlas ct-training-root gk-root${cosmos ? ' gk-root--cosmos' : ''}`} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef} data-gameplay-active="true">
       <Header t={t} sub={hudSub} pause={pause} cosmos={cosmos} isAr={isAr} playSfx={playSfx} />
       {pause.modal}
 
@@ -578,8 +579,15 @@ export default function GatekeeperGame({ onBack, workoutMode = false }) {
         levels: { en: '50 levels · a new kind of law every 10', ar: '٥٠ مستوى · قانون جديد كل ١٠' },
         pass: { en: 'Same gates for all · most cleared wins', ar: 'نفس البوابات للجميع · الأكثر عبوراً يفوز' },
       }}
-      /* ONE LADDER — no easy/med/hard. See data.js LADDER. */
-      ladder={{ levels: LADDER_LEVELS }}
+      /* ONE LADDER with celestial PlanetPath map */
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: GATEKEEPER_BANDS(isAr),
+        sections: GATEKEEPER_SECTIONS,
+        help: GATEKEEPER_HELP(isAr),
+        sublabel: (lv) => gatekeeperSublabel(lv, isAr),
+      }}
       pass={{ trials: 1, scoreLabel: { en: 'gates', ar: 'بوابات' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}

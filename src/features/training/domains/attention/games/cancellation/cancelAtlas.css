@@ -2480,5 +2480,164 @@ html[data-home-theme='dark'] .cx-atlas.ct-ss-root::before {
   font-family: 'Cairo', 'Cormorant Garamond', serif;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+ * INKED ATLAS: REASONING GAMES GAMEPLAY UNIFICATION
+ * ══════════════════════════════════════════════════════════════════════════
+ * Unifies Gatekeeper (The Gate), Detective (Hotel Oddity), and Rush Hour
+ * (Block Escape) to the Inked Atlas aesthetic standard:
+ *  - Antique celestial star-chart top/bottom bands framing the viewport
+ *  - Vertical clearance preventing collision with frieze star bands
+ *  - Gold filigree styling and parchment raised surfaces
+ *  - Cormorant Garamond, Cinzel, Cairo & DM Mono typography
+ */
+
+/* ── Reasoning Games Viewport Framing ─────────────────────────────────── */
+.cx-atlas.gk-root::before,
+.cx-atlas.ct-det-root::before,
+.cx-atlas.rh-atlas-root::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-bottom.webp");
+  background-size:
+    auto clamp(42px, 8.5vh, 85px),
+    auto clamp(42px, 8.5vh, 85px);
+  background-position:
+    top center,
+    bottom center;
+  background-repeat:
+    no-repeat,
+    no-repeat;
+}
+
+@media (orientation: portrait) {
+  .cx-atlas.gk-root::before,
+  .cx-atlas.ct-det-root::before,
+  .cx-atlas.rh-atlas-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-bottom.webp");
+    background-size:
+      100% auto,
+      100% auto;
+  }
+}
+
+html[data-home-theme='dark'] .cx-atlas.gk-root::before,
+html[data-home-theme='dark'] .cx-atlas.ct-det-root::before,
+html[data-home-theme='dark'] .cx-atlas.rh-atlas-root::before {
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-bottom.webp");
+}
+@media (orientation: portrait) {
+  html[data-home-theme='dark'] .cx-atlas.gk-root::before,
+  html[data-home-theme='dark'] .cx-atlas.ct-det-root::before,
+  html[data-home-theme='dark'] .cx-atlas.rh-atlas-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-bottom.webp");
+  }
+}
+
+/* Header clearance */
+.cx-atlas.gk-root .ct-training-play-header,
+.cx-atlas.ct-det-root .ct-training-play-header,
+.cx-atlas.rh-atlas-root .ct-training-play-header {
+  position: relative;
+  z-index: 5;
+  padding-top: clamp(10px, 2.5vh, 24px);
+}
+
+/* ── The Gate (Gatekeeper) Atlas Enhancements ─────────────────────────── */
+.cx-atlas .gk-card {
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 45%, var(--line));
+  border-radius: var(--cx-r-plate);
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 12px 36px var(--fx-shadow-deep);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.cx-atlas .gk-h2 {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-size: clamp(1.15rem, 4vw, 1.45rem);
+  font-weight: 700;
+  color: var(--game-ink);
+  letter-spacing: 0.04em;
+}
+[dir='rtl'] .cx-atlas .gk-h2 {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+  letter-spacing: 0;
+}
+
+.cx-atlas .gk-trav {
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 35%, var(--line));
+  border-radius: var(--cx-r-plate);
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 4px 14px var(--fx-shadow-soft);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cx-atlas .gk-trav:hover {
+  border-color: var(--game-accent);
+  box-shadow: 0 0 0 1px var(--game-accent), 0 6px 18px var(--fx-shadow-soft);
+}
+
+.cx-atlas .gk-seal {
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 60%, var(--game-ink));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color-amber) 35%, transparent);
+}
+
+.cx-atlas .gk-chip,
+.cx-atlas .gk-lens {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  border-radius: var(--cx-r-pill);
+}
+
+.cx-atlas .gk-lens {
+  border-color: var(--game-accent);
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 3px 10px var(--fx-shadow-soft);
+}
+
+/* ── Detective (Hotel Oddity) Atlas Enhancements ──────────────────────── */
+.cx-atlas.ct-det-root .ct-det-card,
+.cx-atlas.ct-det-root [style*="min(100%, 480px)"] {
+  border-radius: var(--cx-r-plate);
+}
+
+.cx-atlas.ct-det-root button[aria-label] {
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* ── Block Escape (Rush Hour) Atlas Enhancements ─────────────────────── */
+.cx-atlas.rh-atlas-root .ct-rh-board {
+  border: 2px solid color-mix(in srgb, var(--game-accent) 65%, var(--line));
+  border-radius: var(--cx-r-plate);
+  background: color-mix(in srgb, var(--surface-raised) 92%, var(--play-surface));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--game-accent) 25%, transparent),
+    0 16px 44px var(--fx-shadow-deep),
+    inset 0 1px 1px var(--fx-glint);
+}
+
+.cx-atlas.rh-atlas-root .ct-rh-hud {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 700;
+  color: var(--color-amber);
+}
+
+.cx-atlas.rh-atlas-root .ct-rh-nudge-ovl {
+  border-color: var(--game-accent);
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  box-shadow: 0 2px 8px var(--fx-shadow-soft);
+}
+
 
 

@@ -11,6 +11,7 @@ import { assetUrl } from '../../../../../../lib/assetUrl';
 import {
   TRAITS, buildCase, evalStatement, LADDER_LEVELS, levelCfg, levelPassed, nameOf as nameOfId,
   passCfg, scoreClearAll, survivalCfg,
+  DETECTIVE_BANDS, DETECTIVE_SECTIONS, detectiveSublabel, DETECTIVE_HELP,
 } from './data.js';
 import { T, ruleText, sayText, sceneText } from './strings.js';
 
@@ -471,7 +472,7 @@ export function DetectiveEngine({
   }
 
   return (
-    <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef} data-gameplay-active="true">
+    <div style={rootStyle} className={`cx-atlas ct-training-root ct-det-root${cosmos ? ' c3d-embed-root' : ''}`} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'} ref={coachRootRef} data-gameplay-active="true">
       <Header t={t} sub={hudSub} pause={pause} cosmos={cosmos} isAr={isAr} playSfx={playSfx} />
       {pause.modal}
       {coachOpen && (
@@ -992,8 +993,15 @@ export default function DetectiveGame({ onBack, workoutMode = false }) {
         levels: { en: '50 levels · a new kind of clue every 10', ar: '٥٠ مستوى · دليل جديد كل ١٠' },
         pass: { en: 'Same cases for all · most solved wins', ar: 'نفس القضايا للجميع · الأكثر حلاً يفوز' },
       }}
-      /* ONE LADDER — no easy/med/hard. See data.js LADDER. */
-      ladder={{ levels: LADDER_LEVELS }}
+      /* ONE LADDER with celestial PlanetPath map */
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: DETECTIVE_BANDS(isAr),
+        sections: DETECTIVE_SECTIONS,
+        help: DETECTIVE_HELP(isAr),
+        sublabel: (lv) => detectiveSublabel(lv, isAr),
+      }}
       pass={{ trials: 1, scoreLabel: { en: 'solved', ar: 'محلولة' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}

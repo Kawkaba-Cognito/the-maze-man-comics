@@ -236,3 +236,81 @@ export function mergeRhChallengeRow(prev, snap, nm) {
   const rankScore = avgMoves * 10 + avgSec;
   return { nm, rounds, avgMoves, avgSec, rankScore };
 }
+
+export const RH_SECTIONS = [
+  'ember', 'dust', 'frost', 'tempest', 'verdant', 'void',
+];
+
+export const RH_BANDS = (isAr) => [
+  {
+    title: isAr ? 'الانطلاق الحر' : 'Clear Departure',
+    sub: isAr ? 'مسارات مباشرة · ٤ إلى ٨ حركات' : 'Direct routes · 4 to 8 moves',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'الممر الضيق' : 'Narrow Corridor',
+    sub: isAr ? 'إزاحة كتلتي عقبة · فتح المسار' : 'Two-block shifts · Opening lines',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'تقاطع الحشود' : 'Dense Junction',
+    sub: isAr ? 'شاحنات ثلاثية · تفريغ متعدد الخطوات' : 'Long trucks appear · Multi-step clears',
+    sigil: 'meteor-cluster',
+  },
+  {
+    title: isAr ? 'المتاهة الملتوية' : 'Complex Labyrinth',
+    sub: isAr ? 'أقفال متبادلة · التخطيط المسبق' : 'Reciprocal locks · Planning ahead',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'أفق الازدحام' : 'Gridlock Horizon',
+    sub: isAr ? 'ازدحام خانق · تسلسل خطوات دقيق' : 'Severe congestion · Precise sequences',
+    sigil: 'warp-gate',
+  },
+  {
+    title: isAr ? 'الهروب الملكي' : 'The Sovereign Escape',
+    sub: isAr ? 'قمة التعقيد المكاني · لا مجال للخطأ' : 'Grandmaster layouts · Zero-margin moves',
+    sigil: 'supernova',
+  },
+];
+
+export function rhSublabel(level, isAr, best) {
+  const { diff, li } = rhLadderToTier(level);
+  if (best != null) {
+    return isAr ? `${best} حركة` : `${best} moves`;
+  }
+  const lvl = getCuratedRushHourLevel(diff, li);
+  if (lvl?.par) {
+    return isAr ? `المعيار ${lvl.par}` : `Par ${lvl.par}`;
+  }
+  return `L${level}`;
+}
+
+export function rhLevelStars(level, best) {
+  if (best == null) return 0;
+  const { diff, li } = rhLadderToTier(level);
+  const lvl = getCuratedRushHourLevel(diff, li);
+  if (!lvl?.par) return 1;
+  if (best <= lvl.par) return 3;
+  if (best <= lvl.par + 3) return 2;
+  return 1;
+}
+
+export const RH_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفلكية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار هروب الكتل' : 'Block Escape Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٦٠ مستوى مقسمة على ٦ قطاعات سماوية مصممة يدوياً لتطوير التخطيط المكاني والتفكير الاستراتيجي.' },
+        { k: 'الهدف', v: 'حرّك المركبة الرئيسية عبر بوابة الخروج على الجانب المقابل من اللوحة.' },
+        { k: 'الحركة', v: 'اسحب السيارات والشاحنات على طول مسارها (أفقياً أو رأسياً فقط) لإخلاء الطريق.' },
+        { k: 'المعيار', v: 'حقق أقل عدد ممكن من الحركات للوصول إلى المعيار الذهبي (Par).' },
+      ]
+    : [
+        { k: 'The Journey', v: '60 curated levels across 6 cosmic sectors developing spatial foresight and sequential planning.' },
+        { k: 'The Goal', v: 'Maneuver the primary amber block through the exit gate on the opposite edge of the grid.' },
+        { k: 'Movement', v: 'Slide obstructing vehicles strictly along their axis (horizontal or vertical) to clear the exit corridor.' },
+        { k: 'Par Efficiency', v: 'Solve each board in the fewest moves possible to match the optimal gold par target.' },
+      ],
+});

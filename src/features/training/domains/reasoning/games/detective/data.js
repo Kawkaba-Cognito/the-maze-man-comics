@@ -597,3 +597,62 @@ export function scoreClearAll(picked, answer) {
   const falseAlarms = got.filter((p) => !want.includes(p)).length;
   return { ok: hits === want.length && falseAlarms === 0, hits, misses: want.length - hits, falseAlarms };
 }
+
+export const DETECTIVE_SECTIONS = [
+  'nebula', 'asteroid-belt', 'solar-flare', 'supernova', 'void',
+];
+
+export const DETECTIVE_BANDS = (isAr) => [
+  {
+    title: isAr ? 'التحقيق الأولي' : 'The First Inquiry',
+    sub: isAr ? '٣ مشتبهين · إفادات مباشرة بسيطة' : '3 suspects · Direct blunt testimony',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'شهادات متشابكة' : 'Tangled Testimonies',
+    sub: isAr ? 'إفادات متداخلة · رصد الصدق والكذب' : 'Cross-statements · Truth & liar probes',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'دائرة الأربعة' : 'The Circle of Four',
+    sub: isAr ? '٤ مشتبهين · ادعاءات وصفية وتقييم الأدلة' : '4 suspects · Meta-claims & verdict evaluation',
+    sigil: 'solar-flare',
+  },
+  {
+    title: isAr ? 'الأثر المادي' : 'Physical Trace',
+    sub: isAr ? 'أدلة عينية وإحصاء الكاذبين · تبرئة الأبرياء' : 'Physical evidence & liar counts · Clear innocents',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'اللغز الأكبر' : 'Grand Mystery',
+    sub: isAr ? '٥ مشتبهين كاملين · تحديد الدليل الحاسم' : 'Full 5-suspect ring · Pinpoint key evidence',
+    sigil: 'supernova',
+  },
+];
+
+export function detectiveSublabel(level, isAr) {
+  const cfg = levelCfg(level);
+  if (isAr) {
+    return `${cfg.suspects} مشتبهين · ${cfg.cases} قضايا`;
+  }
+  return `${cfg.suspects} suspects · ${cfg.cases} cases`;
+}
+
+export const DETECTIVE_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفلكية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار المحقق كوكب' : 'Detective Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٥٠ قضية مقسمة على ٥ قطاعات سماوية لتدريب التفكير المنطقي الاستنتاجي.' },
+        { k: 'المشتبه بهم', v: 'كل شخص في دائرة الاشتباه إما صادق دائماً أو كاذب دائماً في نفس القضية.' },
+        { k: 'جدول الحقيقة', v: 'طابق أقوال المشتبهين مع قاعدة القضية لمعرفة العوالم المنطقية الممكنة.' },
+        { k: 'الأدلة المادية', v: 'استعن بآثار الأقدام والقبعات والنظارات لترجيح الحل عندما يتسع الاحتمال.' },
+      ]
+    : [
+        { k: 'The Journey', v: '50 cases across 5 celestial sectors developing deductive propositional logic.' },
+        { k: 'The Suspects', v: 'Each person is either a dedicated truth-teller or a persistent liar for the whole case.' },
+        { k: 'Truth Table', v: 'Cross-examine statements against the case rule to find logically consistent worlds.' },
+        { k: 'Physical Traces', v: 'Use muddy boots, hats, or umbrellas to break ties when statements leave possibilities open.' },
+      ],
+});
