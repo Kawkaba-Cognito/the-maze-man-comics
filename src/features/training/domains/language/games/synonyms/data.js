@@ -273,3 +273,62 @@ export const TRIALS = [
   },
   ...TRIALS_EXTRA,
 ];
+
+export const SYNONYMS_SECTIONS = [
+  'ember', 'dust', 'frost', 'tempest', 'void',
+];
+
+export const SYNONYMS_BANDS = (isAr) => [
+  {
+    title: isAr ? 'الرابط الأول' : 'The First Link',
+    sub: isAr ? 'كلمتان · الفئات والشاذ' : '2 words · Category & Odd One Out',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'عوالم القياس' : 'Analogous Realms',
+    sub: isAr ? 'دخول القياس اللفظي (أ:ب :: ج:؟)' : 'Verbal analogies enter (A:B :: C:?)',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'الأزواج المتطابقة' : 'Matching Pairs',
+    sub: isAr ? '٤ بلاطات · حدد الزوج المشترك' : '4 tiles · Select the hidden pair',
+    sigil: 'meteor-cluster',
+  },
+  {
+    title: isAr ? 'التيارات المجرّدة' : 'Abstract Currents',
+    sub: isAr ? 'المجاز والوظائف والروابط المجرّدة' : 'Metaphor, function & abstract ties',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'ذروة البلاغة' : 'Lexical Mastery',
+    sub: isAr ? 'الفروق الدلالية الدقيقة · ٦٠٪ صعب' : 'Deep semantic nuance · 60% hard',
+    sigil: 'supernova',
+  },
+];
+
+export function synonymsSublabel(level, isAr) {
+  const cfg = levelCfg(level);
+  if (isAr) {
+    return `${cfg.kindCount} أنماط أسئلة · مستوى ${level}`;
+  }
+  return `${cfg.kindCount} question types · Level ${level}`;
+}
+
+export const SYNONYMS_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفلكية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار روابط الكلمات' : 'Word Links Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٥٠ مستوى مقسمة على ٥ قطاعات فلكية لتدريب الفهم اللفظي والاستدلال الدلالي.' },
+        { k: 'الأنماط', v: 'مرادفات وفئات في البداية، ثم ينضم القياس اللفظي وتطابق الأزواج والمفاهيم المجرّدة.' },
+        { k: 'البقاء', v: 'في وضع البقاء، أجب عن أكبر قدر من الأسئلة خلال ٦٠ ثانية مع الحفاظ على الدقة.' },
+        { k: 'النجوم', v: 'احصل على النجوم بتحقيق دقة ٧٢٪ فأعلى في كل مستوى.' },
+      ]
+    : [
+        { k: 'The Journey', v: '50 levels across 5 cosmic sectors cultivating verbal reasoning and semantic relations.' },
+        { k: 'Mechanics', v: 'Starts with categories and odd-one-out, introducing analogies, pair matching, and abstract links.' },
+        { k: 'Survival', v: 'In 60-second survival, solve as many semantic puzzles as possible before time runs out.' },
+        { k: 'Progression', v: 'Earn stars and unlock nodes by achieving at least 72% accuracy on each level.' },
+      ],
+});

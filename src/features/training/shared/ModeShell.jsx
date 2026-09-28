@@ -117,11 +117,13 @@ export default function ModeShell({
     scienceId === 'keep-track' || scienceId === 'story-grid' || scienceId === 'paired-associates' ||
     scienceId === 'task-switch' || scienceId === 'mirror-world' || scienceId === 'sort-shift' ||
     scienceId === 'gatekeeper' || scienceId === 'detective' || scienceId === 'rush-hour' ||
+    scienceId === 'synonyms' || scienceId === 'trivia' || scienceId === 'wordle' ||
     gameId === 'mot' || gameId === 'train-switch' ||
     gameId === 'speed-match' || gameId === 'math-gates' || gameId === 'intercept' ||
     gameId === 'keep-track' || gameId === 'story-grid' || gameId === 'paired-associates' ||
     gameId === 'task-switch' || gameId === 'mirror-world' || gameId === 'sort-shift' ||
-    gameId === 'gatekeeper' || gameId === 'detective' || gameId === 'rush-hour'
+    gameId === 'gatekeeper' || gameId === 'detective' || gameId === 'rush-hour' ||
+    gameId === 'synonyms' || gameId === 'trivia' || gameId === 'wordle'
   );
   const tutorial = useTrainingTutorial(gameId, isAr);
   const meta = getTrainingMeta(gameId);

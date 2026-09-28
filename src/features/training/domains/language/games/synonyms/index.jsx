@@ -6,7 +6,11 @@ import PlayResults from '../../../../shared/PlayResults';
 import { useGamePause } from '../../../../shared/useGamePause';
 import { makeRng } from '../../../../shared/rng';
 import { SURVIVAL_MS, survivalRamp, survivalTier } from '../../../../shared/survival';
-import { RELATION, LADDER_LEVELS, levelCfg, pickTrialTier } from './data';
+import { createTrialLog } from '../../../../shared/trialLog';
+import {
+  RELATION, LADDER_LEVELS, levelCfg, pickTrialTier,
+  SYNONYMS_BANDS, SYNONYMS_SECTIONS, synonymsSublabel, SYNONYMS_HELP,
+} from './data';
 import { CATEGORIES } from '../odd-one-out/data';
 import { markSeen, pickTrial } from './trialBank';
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
@@ -186,11 +190,31 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
   const [fb, setFb] = useState(null);
   const [picked, setPicked] = useState([]);
 
+  const trialStartRef = useRef(performance.now());
+  const trialLogRef = useRef(null);
+
+  useEffect(() => {
+    trialLogRef.current = createTrialLog({ game: 'synonyms', mode, meta: { level } });
+    return () => {
+      trialLogRef.current?.finish({
+        rounds: totalRef.current,
+        correct: correctRef.current,
+        score: scoreRef.current,
+      });
+      trialLogRef.current = null;
+    };
+  }, [mode, level]);
+
   const finishSurvival = useCallback(() => {
     if (finishedRef.current) return;
     finishedRef.current = true;
     lockRef.current = true;
     clearTimeout(timerRef.current);
+    trialLogRef.current?.finish({
+      rounds: totalRef.current,
+      correct: correctRef.current,
+      score: scoreRef.current,
+    });
     setOver({ score: scoreRef.current, correct: correctRef.current });
     awardFreeRun?.('synonyms', correctRef.current);
     playSfx?.('error');
@@ -207,6 +231,7 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
     lockRef.current = false;
     setFb(null);
     setPicked([]);
+    trialStartRef.current = performance.now();
     const n = trialNumRef.current;
     const ramp = isSurvival ? survivalRamp(performance.now() - survT0Ref.current) : 0;
     const rng = makeRng(((seed ?? 1) >>> 0) + n * 7919 + runId * 104729);
@@ -230,6 +255,13 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
     setFb({ ok });
     totalRef.current += 1;
     trialNumRef.current += 1;
+    const durationMs = Math.round(performance.now() - trialStartRef.current);
+    trialLogRef.current?.recordTrial({
+      correct: ok,
+      durationMs,
+      kind: trialRef.current?.kind,
+      tier: trialRef.current?.tier,
+    });
     if (ok) {
       const bonus = 10 + Math.min(comboRef.current, 8) * 2;
       scoreRef.current += bonus; correctRef.current += 1; comboRef.current += 1;
@@ -243,6 +275,12 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
     timerRef.current = setTimeout(() => {
       if (mode === 'levels' && totalRef.current >= PER_LEVEL) {
         const acc = correctRef.current / PER_LEVEL;
+        trialLogRef.current?.finish({
+          won: acc >= WIN_ACC,
+          score: scoreRef.current,
+          rounds: totalRef.current,
+          correct: correctRef.current,
+        });
         onResult({ won: acc >= WIN_ACC, score: scoreRef.current, summary: `${correctRef.current}/${PER_LEVEL} (${Math.round(acc * 100)}%)` });
         return;
       }
@@ -335,7 +373,7 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
   const title = isAr ? 'روابط الكلمات' : 'Word Links';
 
   const rootStyle = cosmos ? { ...S.root, ...S.cosmosRoot } : S.root;
-  const embedCls = cosmos ? 'c3d-embed-root' : undefined;
+  const embedCls = `cx-atlas ct-training-root synonyms-root${cosmos ? ' c3d-embed-root' : ''}`;
 
   if (over && isSurvival) {
     return (
@@ -472,8 +510,15 @@ export default function WordLinksGame({ onBack, workoutMode = false }) {
         levels: { en: '50 levels · analogies at 11, pair match at 21', ar: '٥٠ مستوى · القياس عند ١١ والأزواج عند ٢١' },
         pass: { en: 'Hard mix for everyone · pass the device', ar: 'مزيج صعب للجميع · مرّر الجهاز' },
       }}
-      /* ONE LADDER — no easy/med/hard. See data.js LADDER. */
-      ladder={{ levels: LADDER_LEVELS }}
+      /* ONE LADDER with celestial PlanetPath map */
+      ladder={{
+        levels: LADDER_LEVELS,
+        planetPath: true,
+        bands: SYNONYMS_BANDS(isAr),
+        sections: SYNONYMS_SECTIONS,
+        help: SYNONYMS_HELP(isAr),
+        sublabel: (lv) => synonymsSublabel(lv, isAr),
+      }}
       pass={{ trials: PP_TRIALS, scoreLabel: { en: 'correct', ar: 'صحيحة' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}

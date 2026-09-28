@@ -2639,5 +2639,146 @@ html[data-home-theme='dark'] .cx-atlas.rh-atlas-root::before {
   box-shadow: 0 2px 8px var(--fx-shadow-soft);
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+ * INKED ATLAS: LANGUAGE GAMES GAMEPLAY UNIFICATION
+ * ══════════════════════════════════════════════════════════════════════════
+ * Unifies Word Links (Synonyms), Trivia (Staircase), and Word Maze (Wordle)
+ * to the Inked Atlas aesthetic standard:
+ *  - Antique celestial star-chart top/bottom bands framing the viewport
+ *  - Vertical clearance preventing collision with frieze star bands
+ *  - Gold filigree styling and parchment raised surfaces
+ *  - Cormorant Garamond, Cinzel, Cairo & DM Mono typography
+ */
+
+/* ── Language Games Viewport Framing ─────────────────────────────────── */
+.cx-atlas.synonyms-root::before,
+.cx-atlas.trivia-root::before,
+.cx-atlas.ct-wordle-root::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-bottom.webp");
+  background-size:
+    auto clamp(42px, 8.5vh, 85px),
+    auto clamp(42px, 8.5vh, 85px);
+  background-position:
+    top center,
+    bottom center;
+  background-repeat:
+    no-repeat,
+    no-repeat;
+}
+
+@media (orientation: portrait) {
+  .cx-atlas.synonyms-root::before,
+  .cx-atlas.trivia-root::before,
+  .cx-atlas.ct-wordle-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-bottom.webp");
+    background-size:
+      100% auto,
+      100% auto;
+  }
+}
+
+html[data-home-theme='dark'] .cx-atlas.synonyms-root::before,
+html[data-home-theme='dark'] .cx-atlas.trivia-root::before,
+html[data-home-theme='dark'] .cx-atlas.ct-wordle-root::before {
+  background-image:
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-top.webp"),
+    url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-bottom.webp");
+}
+@media (orientation: portrait) {
+  html[data-home-theme='dark'] .cx-atlas.synonyms-root::before,
+  html[data-home-theme='dark'] .cx-atlas.trivia-root::before,
+  html[data-home-theme='dark'] .cx-atlas.ct-wordle-root::before {
+    background-image:
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-top.webp"),
+      url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-bottom.webp");
+  }
+}
+
+/* Header clearance */
+.cx-atlas.synonyms-root .ct-training-play-header,
+.cx-atlas.trivia-root .ct-training-play-header,
+.cx-atlas.ct-wordle-root .ct-training-play-header {
+  position: relative;
+  z-index: 5;
+  padding-top: clamp(10px, 2.5vh, 24px);
+}
+
+/* ── Word Links (Synonyms) Atlas Enhancements ─────────────────────────── */
+.cx-atlas.synonyms-root button[type="button"] {
+  border-radius: var(--cx-r-plate);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cx-atlas.synonyms-root button[type="button"]:hover {
+  border-color: var(--game-accent);
+  box-shadow: 0 0 0 1px var(--game-accent), 0 4px 14px var(--fx-shadow-soft);
+}
+
+/* ── Trivia (Staircase) Atlas Enhancements ───────────────────────────── */
+.cx-atlas.trivia-root .topic-chip,
+.cx-atlas.trivia-root [style*="topicChip"] {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  border-radius: var(--cx-r-pill);
+}
+
+.cx-atlas.trivia-root [style*="qCard"] {
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 45%, var(--line));
+  border-radius: var(--cx-r-plate);
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 12px 36px var(--fx-shadow-deep);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.cx-atlas.trivia-root [style*="qText"] {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+[dir='rtl'] .cx-atlas.trivia-root [style*="qText"] {
+  font-family: 'Cairo', 'Cormorant Garamond', serif;
+  letter-spacing: 0;
+}
+
+/* ── Word Maze (Wordle) Atlas Enhancements ────────────────────────────── */
+.cx-atlas.ct-wordle-root .ct-wordle-board,
+.cx-atlas.ct-wordle-root .ct-wordle-in-fq {
+  border-radius: var(--cx-r-plate);
+}
+
+.cx-atlas.ct-wordle-root .ct-wordle-cell {
+  border-radius: var(--cx-r-plate);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 700;
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--surface-raised) 95%, transparent);
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 4px 12px var(--fx-shadow-soft);
+  transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+[dir='rtl'] .cx-atlas.ct-wordle-root .ct-wordle-cell {
+  font-family: 'Cairo', 'DM Mono', monospace;
+  font-weight: 800;
+}
+
+.cx-atlas.ct-wordle-root .ct-wordle-cell--selected {
+  border-color: var(--game-accent);
+  background: color-mix(in srgb, var(--game-accent) 22%, var(--surface-raised));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--game-accent) 45%, transparent), 0 6px 18px var(--fx-shadow-soft);
+}
+
+
 
 

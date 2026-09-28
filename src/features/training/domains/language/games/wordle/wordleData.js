@@ -431,3 +431,62 @@ export function compareWordleChallengeRows(a, b) {
   if (b.vfs !== a.vfs) return b.vfs - a.vfs;
   return b.totalScore - a.totalScore;
 }
+
+export const WORDLE_SECTIONS = [
+  'ember', 'dust', 'frost', 'tempest', 'void',
+];
+
+export const WORDLE_BANDS = (isAr) => [
+  {
+    title: isAr ? 'الكوكبة الأولى' : 'The First Constellation',
+    sub: isAr ? 'شبكة ٤×٤ · ٣+ حروف · ٤ كلمات' : '4×4 grid · 3+ letter words · 4 words',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'الحروف المتشابكة' : 'Woven Glyphs',
+    sub: isAr ? 'شبكة ٤×٤ · التقاط سريع · ٦ كلمات' : '4×4 grid · Fast spotting · 6 words',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'المصفوفة الموسّعة' : 'Expanded Matrix',
+    sub: isAr ? 'شبكة ٥×٥ · بحر الحروف الموسع · ٨ كلمات' : '5×5 grid · Vast letter sea · 8 words',
+    sigil: 'meteor-cluster',
+  },
+  {
+    title: isAr ? 'الأفق الممتد' : 'Long Horizons',
+    sub: isAr ? '٤ أحرف كحد أدنى · مسارات دقيقة' : '4-letter minimum · Strict paths',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'المتاهة الكبرى' : 'The Grand Maze',
+    sub: isAr ? '١٢ كلمة في ٥٥ث · ذروة الطلاقة اللفظية' : '12 words in 55s · Verbal fluency summit',
+    sigil: 'supernova',
+  },
+];
+
+export function wordleSublabel(level, isAr) {
+  const spec = specificationForLevel(level);
+  if (isAr) {
+    return `${spec.targetWords} كلمات · ${spec.timeSec}ث`;
+  }
+  return `${spec.targetWords} words · ${spec.timeSec}s`;
+}
+
+export const WORDLE_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفلكية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار متاهة الكلمات' : 'Word Maze Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٥٠ مستوى مقسمة على ٥ قطاعات سماوية لتدريب الطلاقة اللفظية والمسح البصري السريع.' },
+        { k: 'الربط', v: 'اسحب عبر الأحرف المتجاورة (أفقياً أو رأسياً أو قطرياً) لتهجئة الكلمات الصحيحة.' },
+        { k: 'الأهداف', v: 'حقق عدد الكلمات المطلوب قبل انتهاء الوقت المحدد لكل لوحة.' },
+        { k: 'التعقيد', v: 'تتوسع الشبكة من ٤×٤ إلى ٥×٥ مع رفع الحد الأدنى لطول الكلمة إلى ٤ أحرف.' },
+      ]
+    : [
+        { k: 'The Journey', v: '50 levels across 5 cosmic sectors training verbal fluency and fast orthographic scanning.' },
+        { k: 'Connecting', v: 'Drag through adjacent letters (horizontal, vertical, or diagonal) to trace valid words.' },
+        { k: 'The Goal', v: 'Find the target quota of words on each grid before the countdown expires.' },
+        { k: 'Escalation', v: 'The grid expands from 4×4 to 5×5, and minimum word length increases to 4 letters.' },
+      ],
+});

@@ -3,6 +3,7 @@ import { IconBack } from '../../../../shared/TrainingIcons';
 import { useApp } from '../../../../../../context/AppContext';
 import ModeShell from '../../../../shared/ModeShell';
 import { makeRng } from '../../../../shared/rng';
+import { createTrialLog } from '../../../../shared/trialLog';
 import { lazyWithRetry } from '../../../../../../lib/lazyWithRetry';
 
 const MathGatesBoard2D = lazyWithRetry(() => import('./MathGatesBoard2D'), 'math-gates-2d');
@@ -141,6 +142,7 @@ export function MathGatesEngine({ mode, level, seed, attempt, onResult, onExit, 
   const stateRef = useRef(null);
   const finishedRef = useRef(false);
   const resolveRef = useRef(() => {}); // commit an answer (set inside the loop effect)
+  const trialLogRef = useRef(null);
 
   const [runId, setRunId] = useState(0);
   const [over, setOver] = useState(null);
@@ -175,6 +177,7 @@ export function MathGatesEngine({ mode, level, seed, attempt, onResult, onExit, 
     const g = stateRef.current;
     const elapsedSec = (performance.now() - g.t0) / 1000;
     const summary = summarizeGates(g.events, elapsedSec);
+    trialLogRef.current?.finish({ passed: g.passed, target: cfg.target, summary });
     if (mode === 'free') { setOver({ score: g.passed, metrics: summary }); awardFreeRun?.('mathGates', g.passed); playSfx('error'); return; }
     if (mode === 'levels') {
       const won = g.passed >= cfg.target;
@@ -217,6 +220,7 @@ export function MathGatesEngine({ mode, level, seed, attempt, onResult, onExit, 
     };
     stateRef.current = g;
     finishedRef.current = false;
+    trialLogRef.current = createTrialLog({ game: 'math-gates', mode, meta: { level } });
 
     const spawnGate = () => {
       // Survival escalates the equation TIER and magnitude by SKILL — how many
@@ -249,6 +253,15 @@ export function MathGatesEngine({ mode, level, seed, attempt, onResult, onExit, 
       // Decision time = onset → last steer (null if the runner never moved).
       const rtMs = g.lastMoveAt != null ? Math.round(g.lastMoveAt - g.gate.shownAt) : null;
       g.events.push({ op: eqo.op, a: eqo.a, b: eqo.b, answer: eqo.answer, chosen: eqo.options[lane], correct: ok, rtMs, isSwitch, split: eqo.split });
+      trialLogRef.current?.recordTrial({
+        trialNumber: g.gatesPlayed,
+        correct: ok,
+        rtMs,
+        item: `${eqo.a} ${eqo.op} ${eqo.b} = ${eqo.answer}`,
+        answer: eqo.options[lane],
+        expected: eqo.answer,
+        isSwitch,
+      });
       g.prevOp = eqo.op;
       if (ok) {
         g.passed += 1; g.combo += 1; if (g.combo > g.bestCombo) g.bestCombo = g.combo;
@@ -360,7 +373,15 @@ export function MathGatesEngine({ mode, level, seed, attempt, onResult, onExit, 
         setHud(hudCache);
       }
     };
-    return startCanvasLoop({ wrap: wrapRef.current, rafRef, resize, frame });
+    const stopLoop = startCanvasLoop({ wrap: wrapRef.current, rafRef, resize, frame });
+    return () => {
+      trialLogRef.current?.finish({
+        interrupted: true,
+        passed: stateRef.current?.passed ?? 0,
+      });
+      trialLogRef.current = null;
+      stopLoop?.();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runId, seed]);
 

@@ -4,8 +4,12 @@ import ModeShell from '../../../../shared/ModeShell';
 import PlayHud from '../../../../shared/PlayHud';
 import { useGamePause } from '../../../../shared/useGamePause';
 import { makeRng } from '../../../../shared/rng';
+import { createTrialLog } from '../../../../shared/trialLog';
 import { TRIVIA, TRIVIA_CATEGORIES, TABLE_FOR } from './triviaData';
-import { LADDER_LEVELS as TRIVIA_LADDER_LEVELS, levelCfg as triviaLevelCfg } from './triviaLadder.js';
+import {
+  LADDER_LEVELS as TRIVIA_LADDER_LEVELS, levelCfg as triviaLevelCfg,
+  TRIVIA_BANDS, TRIVIA_SECTIONS, triviaSublabel, TRIVIA_HELP,
+} from './triviaLadder.js';
 import { generateFor } from './procedural';
 
 import KawkabSprite from '../../../../shared/KawkabSprite';
@@ -227,6 +231,20 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
   const stageRef = useRef(null);
   const coachOpen = coach?.open || false;
 
+  const trialStartRef = useRef(performance.now());
+  const trialLogRef = useRef(null);
+
+  useEffect(() => {
+    trialLogRef.current = createTrialLog({ game: 'trivia', mode, meta: { level } });
+    return () => {
+      trialLogRef.current?.finish({
+        score: stepRef.current,
+        mistakes: mistakesRef.current,
+      });
+      trialLogRef.current = null;
+    };
+  }, [mode, level]);
+
   const tiersFor = useCallback(() => {
     if (mode === 'levels') return triviaLevelCfg(level).sets;
     if (mode === 'passplay') return triviaLevelCfg(level || 25).sets;
@@ -241,6 +259,7 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
   const present = useCallback(() => {
     const item = queueRef.current[qIdxRef.current % queueRef.current.length];
     const opts = shuffleR(item.q.o.map((pair, i) => ({ en: pair[0], ar: pair[1], correct: i === item.q.a })), rng);
+    trialStartRef.current = performance.now();
     setQ(item);
     setOptions(opts);
     setPicked(null);
@@ -270,6 +289,11 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
   }, [seed]);
 
   const finishStaircase = useCallback((reachedTop) => {
+    trialLogRef.current?.finish({
+      won: reachedTop,
+      score: stepRef.current,
+      mistakes: mistakesRef.current,
+    });
     if (mode === 'levels') {
       onResult({ won: reachedTop, score: stepRef.current, summary: reachedTop ? t.summaryWin(stepsRef.current) : t.summaryLose(stepRef.current, stepsRef.current) });
       return;
@@ -296,6 +320,13 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
     if (picked != null) return;
     const opt = options[idx];
     setPicked(idx);
+    const durationMs = Math.round(performance.now() - trialStartRef.current);
+    trialLogRef.current?.recordTrial({
+      correct: opt.correct,
+      durationMs,
+      questionId: q?.id,
+      difficulty: q?.q?.d,
+    });
     if (persist && q) { const seen = loadSeen(); seen[q.id] = Date.now(); saveSeen(seen); }
     if (opt.correct) {
       playSfx?.('collect');
@@ -345,7 +376,7 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
   useEffect(() => {
     if (coachOpen && (over || pickCats || !q)) coach?.end();
   }, [coachOpen, over, pickCats, q, coach]);
-  const embedCls = cosmos ? 'c3d-embed-root' : undefined;
+  const embedCls = `cx-atlas ct-training-root trivia-root${cosmos ? ' c3d-embed-root' : ''}`;
 
   if (over && mode === 'free') {
     return (
@@ -522,8 +553,15 @@ export default function TriviaGame({ onBack, workoutMode = false }) {
         levels: { en: '50 levels · a new topic each · ★★★★ from 31', ar: '٥٠ مستوى · موضوع جديد كل مستوى · ★★★★ من ٣١' },
         pass: { en: 'Same questions for all · climb highest', ar: 'نفس الأسئلة للجميع · من يصعد أعلى' },
       }}
-      /* ONE LADDER — no easy/med/hard. See TRIVIA_LADDER above. */
-      ladder={{ levels: TRIVIA_LADDER_LEVELS }}
+      /* ONE LADDER with celestial PlanetPath map */
+      ladder={{
+        levels: TRIVIA_LADDER_LEVELS,
+        planetPath: true,
+        bands: TRIVIA_BANDS(isAr),
+        sections: TRIVIA_SECTIONS,
+        help: TRIVIA_HELP(isAr),
+        sublabel: (lv) => triviaSublabel(lv, isAr),
+      }}
       pass={{ trials: 1, scoreLabel: { en: 'steps', ar: 'درجات' }, lowerBetter: false }}
       isAr={isAr}
       playSfx={playSfx}

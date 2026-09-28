@@ -62,3 +62,62 @@ export function levelCfg(level) {
 export function pickStar(cfg, rng) {
   return Number(pickWeighted(cfg.stars, rng) || 1);
 }
+
+export const TRIVIA_SECTIONS = [
+  'ember', 'dust', 'frost', 'tempest', 'void',
+];
+
+export const TRIVIA_BANDS = (isAr) => [
+  {
+    title: isAr ? 'فلك المعرفة العامة' : 'The Realm of Recall',
+    sub: isAr ? '٥ درجات · حقائق تأسيسية' : '5 steps · Foundational facts',
+    sigil: 'star',
+  },
+  {
+    title: isAr ? 'طبقات الاستقصاء' : 'Deeper Strata',
+    sub: isAr ? '٦ درجات · علوم وتاريخ وسيط' : '6 steps · Intermediate science & history',
+    sigil: 'comet',
+  },
+  {
+    title: isAr ? 'خزائن التخصص' : 'Specialist Archives',
+    sub: isAr ? '★★★ أسئلة متخصصة · معلومات دقيقة' : '★★★ Specialist tier · Nuanced trivia',
+    sigil: 'meteor-cluster',
+  },
+  {
+    title: isAr ? 'مرقى الخبراء' : 'The Expert Ascent',
+    sub: isAr ? '٧ درجات · بداية أسئلة الخبراء ★★★★' : '7 steps · ★★★★ Expert pool begins',
+    sigil: 'nebula-bolt',
+  },
+  {
+    title: isAr ? 'قمة الموسوعية' : 'Summit of Erudition',
+    sub: isAr ? '٨ درجات · ٤٥٪ من أسئلة النخبة' : '8 steps · 45% Expert questions',
+    sigil: 'supernova',
+  },
+];
+
+export function triviaSublabel(level, isAr) {
+  const cfg = levelCfg(level);
+  if (isAr) {
+    return `${cfg.steps} درجات للصعود`;
+  }
+  return `${cfg.steps} steps to summit`;
+}
+
+export const TRIVIA_HELP = (isAr) => ({
+  open: isAr ? 'دليل الخريطة الفلكية' : 'Cosmic Map Guide',
+  title: isAr ? 'مسار سلم المعلومات' : 'Trivia Staircase Path',
+  close: isAr ? 'فهمت' : 'Got it',
+  rows: isAr
+    ? [
+        { k: 'الرحلة', v: '٥٠ مستوى مقسمة على ٥ قطاعات كونية تتدرج في عمق المعلومات عبر ٢٤ موضوعاً.' },
+        { k: 'السلّم', v: 'يصعد كوكب درجة واحدة مع كل إجابة صحيحة. بلّغه القمة لاجتياز المستوى.' },
+        { k: 'المحاولات', v: 'لديك ٣ محاولات (قلوب). الخطأ الثالث يُسقطك من السلّم.' },
+        { k: 'المستويات', v: 'تزداد درجات السلّم من ٥ إلى ٨ درجات، وتتصاعد الأسئلة نحو درجة الخبير ★★★★.' },
+      ]
+    : [
+        { k: 'The Journey', v: '50 levels across 5 cosmic sectors spanning 24 diverse encyclopedic domains.' },
+        { k: 'The Staircase', v: 'Kawkab climbs one step per correct answer. Reach the summit to pass the level.' },
+        { k: 'Mistake Cap', v: 'You have 3 hearts. Three wrong answers end the ascent.' },
+        { k: 'Progression', v: 'Steps increase from 5 to 8, while difficulty ramps into the ★★★★ expert tier.' },
+      ],
+});

@@ -8,6 +8,7 @@ import { clamp } from '../../../../../../lib/math';
 import { genGate, levelCfg, LADDER_LEVELS } from './mathGatesData.js';
 import DomCoach from '../../../../shared/tutorials/coach/DomCoach';
 import { MATH_GATES_COACH } from '../../../../shared/tutorials/coach/scripts/math-gates';
+import { createTrialLog } from '../../../../shared/trialLog';
 import '../../../../shared/c3dProto.css';
 // nowMs() = performance.now() minus paused time, so the pause menu really
 // stops this game's clock. See shared/pauseStore.js.
@@ -104,6 +105,7 @@ export default function MathGatesBoard2D({
      `.c3d-canvas`, but outside that element's `aria-hidden`. */
   const coachHostRef = useRef(null);
   const apiRef = useRef({});
+  const trialLogRef = useRef(null);
   /* The runner's artwork — the same black-planet Kawkab the Training hub uses.
    * Loaded once here rather than per frame; the draw loop skips it until
    * `complete`, so a slow load costs a few frames of an empty lane, never a
@@ -229,6 +231,7 @@ export default function MathGatesBoard2D({
     const finishRun = (won = false) => {
       if (s.finished) return;
       s.finished = true;
+      trialLogRef.current?.finish({ passed: s.passedN, target: cfg.target, won });
       if (mode === 'levels') {
         resultRef.current?.({ won, score: s.passedN, summary: `${s.passedN}/${cfg.target}` });
         return;
@@ -247,6 +250,13 @@ export default function MathGatesBoard2D({
       const eq = s.gate.eq;
       s.gatesPlayed += 1;
       const ok = s.lane === eq.correctLane;
+      trialLogRef.current?.recordTrial({
+        trialNumber: s.gatesPlayed,
+        correct: ok,
+        item: `${eq.text} = ${eq.answer}`,
+        answer: eq.options[s.lane],
+        expected: eq.answer,
+      });
       if (ok) {
         s.passedN += 1;
         s.comboN += 1;
@@ -529,6 +539,7 @@ export default function MathGatesBoard2D({
     const start = () => {
       s.started = true;
       s.finished = false;
+      trialLogRef.current = createTrialLog({ game: 'math-gates', mode, meta: { level } });
       s.lane = 1;
       s.runnerX = laneCentre(1);
       s.gate = null;
@@ -549,6 +560,8 @@ export default function MathGatesBoard2D({
     if (!s.started) start();
 
     return () => {
+      trialLogRef.current?.finish({ interrupted: true, passed: s.passedN });
+      trialLogRef.current = null;
       canvas.removeEventListener('pointerdown', onDown);
       window.removeEventListener('keydown', onKey);
       stop();

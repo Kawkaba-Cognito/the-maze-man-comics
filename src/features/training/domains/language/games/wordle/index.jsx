@@ -8,6 +8,8 @@ import {
   TrainingChallengeHandoff,
 } from '../../../../shared/TrainingChrome';
 import { TrainingLevelGrid } from '../../../../shared/TrainingScreens';
+import PlanetPath from '../../../../shared/PlanetPath/PlanetPath.jsx';
+import '../../../attention/games/cancellation/cancelAtlas.css';
 import HubScienceLink from '../../../../shared/HubScienceLink';
 import SurvivalIntro from '../../../../shared/SurvivalIntro';
 import PassPlaySetup from '../../../../shared/PassPlaySetup';
@@ -43,6 +45,10 @@ import {
   freeWordPoints,
   mergeWordleChallengeRow,
   compareWordleChallengeRows,
+  WORDLE_BANDS,
+  WORDLE_SECTIONS,
+  wordleSublabel,
+  WORDLE_HELP,
 } from './wordleData';
 import { loadWordleProfile, saveWordleProfile } from './wordleProgress';
 import { prewarmLinkTrie } from './linkDictionary';
@@ -667,7 +673,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
 
   return wrapCosmos(
     <div
-      className={`cancellation-task-game ct-fq-root ct-wordle-root${isCosmos ? ' c3d-embed-root' : ''}`}
+      className={`cx-atlas ct-training-root ct-wordle-root cancellation-task-game ct-fq-root${isCosmos ? ' c3d-embed-root' : ''}`}
       data-c3d-embed={isCosmos || undefined}
       dir={isAr ? 'rtl' : 'ltr'}
     >
@@ -730,21 +736,24 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
       {/* ⚠ The `diff` phase is gone (2026-08-28, the ladder). Level mode goes
           straight from the hub to ONE grid — no Easy/Medium/Hard screen. */}
       {phase === 'levels' && (
-        <TrainingLevelGrid
-          isAr={isAr}
-          playSfx={playSfx}
-          onBack={() => { clearPlay(); setPhase('hub'); }}
-          title={t.hub}
-          blurb={t.ladderBlurb(LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
-          count={LADDER_LEVELS}
-          isUnlocked={(lv) => isWordleLevelUnlocked(lv, doneMap, ladderReached)}
-          isDone={(lv) => !!doneMap[`lad-${lv}`]}
-          sublabel={(lv) => {
-            const spec = specificationForLevel(lv);
-            return `${spec.targetWords}w·${spec.timeSec}s`;
-          }}
-          onPick={(lv) => startLevelGame(lv)}
-        />
+        <div className="cx-atlas" style={{ display: 'contents' }}>
+          <PlanetPath
+            isAr={isAr}
+            playSfx={playSfx}
+            onBack={() => { clearPlay(); setPhase('hub'); }}
+            title={t.hub}
+            blurb={t.ladderBlurb(LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
+            count={LADDER_LEVELS}
+            isUnlocked={(lv) => isWordleLevelUnlocked(lv, doneMap, ladderReached)}
+            isDone={(lv) => !!doneMap[`lad-${lv}`]}
+            sublabel={(lv) => wordleSublabel(lv, isAr)}
+            bands={WORDLE_BANDS(isAr)}
+            sections={WORDLE_SECTIONS}
+            help={WORDLE_HELP(isAr)}
+            shellClassName="cx-page cpp-page cx-atlas"
+            onPick={(lv) => startLevelGame(lv)}
+          />
+        </div>
       )}
 
       {phase === 'chal' && (
