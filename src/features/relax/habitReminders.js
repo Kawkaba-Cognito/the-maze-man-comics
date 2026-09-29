@@ -29,17 +29,24 @@ const isNative = () => {
   try { return Capacitor?.isNativePlatform?.() === true; } catch { return false; }
 };
 
+const MAX_HABIT_SLOTS = 30;
+
 function habitNotifId(st, habitId) {
   const i = st.habits.findIndex((h) => h.id === habitId);
-  return HABIT_NOTIF_BASE + Math.max(0, i);
+  return HABIT_NOTIF_BASE + Math.max(0, i) * 10;
 }
 
 export async function syncNativeHabitReminders(st = loadHabits(), lang = 'en') {
   if (!isNative()) return;
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications');
-    const ids = st.habits.map((_, i) => HABIT_NOTIF_BASE + i);
-    await LocalNotifications.cancel({ notifications: ids.map((id) => ({ id })) });
+    const cancelIds = [];
+    for (let slot = 0; slot < MAX_HABIT_SLOTS; slot++) {
+      for (let day = 0; day < 8; day++) {
+        cancelIds.push(HABIT_NOTIF_BASE + slot * 10 + day);
+      }
+    }
+    await LocalNotifications.cancel({ notifications: cancelIds.map((id) => ({ id })) });
     if (!st.settings?.remindersEnabled) return;
     const notifications = [];
     for (const h of st.habits) {
@@ -97,7 +104,16 @@ export function wasHabitNotifiedToday(habitId) {
 }
 
 function markHabitNotifiedToday(habitId) {
-  try { localStorage.setItem(notifiedKey(habitId), '1'); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(notifiedKey(habitId), '1');
+    const today = todayKey();
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(NOTIFIED_KEY) && !k.endsWith(today)) {
+        localStorage.removeItem(k);
+      }
+    }
+  } catch { /* ignore */ }
 }
 
 export function fireHabitWebNotification(habit, lang = 'en') {

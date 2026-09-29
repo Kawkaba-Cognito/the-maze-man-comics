@@ -201,7 +201,7 @@ export const INSIGHTS_TAB_CSS = `
 .hb-ins-bar-head { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px; }
 .hb-ins-bar-label { font-size:13px; font-weight:700; color:${INK}; min-width:0; }
 .hb-ins-bar-pct { font-size:12px; font-weight:800; color:${SUB}; flex-shrink:0; }
-.hb-ins-bar-track { height:8px; background:#efe6d6; border-radius:999px; overflow:hidden; }
+.hb-ins-bar-track { height:8px; background:var(--rx-hair, rgba(0,0,0,0.1)); border-radius:999px; overflow:hidden; }
 .hb-ins-bar-fill { height:100%; border-radius:999px; transition:width .35s ease; }
 .hb-ins-skip-row { display:flex; justify-content:space-between; padding:8px 10px; background:${CARD}; border:2px solid ${LINE}; border-radius:10px; margin-bottom:6px; font-size:13px; color:${INK}; }
 .hb-ins-skip-row b { color:${GOLD}; }

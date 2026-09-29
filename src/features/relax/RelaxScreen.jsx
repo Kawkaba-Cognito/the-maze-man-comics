@@ -119,9 +119,9 @@ function MbsrTracker({ onBack }) {
   const [pickedDate, setPickedDate] = useState(today);
 
   useEffect(() => {
-    const sd = lsGet('mbsr_startDate');
-    const cp = lsGet('mbsr_completed');
-    const nt = lsGet('mbsr_notes');
+    const sd = lsGet('rx_mbsr_startDate') || lsGet('mbsr_startDate');
+    const cp = lsGet('rx_mbsr_completed') || lsGet('mbsr_completed');
+    const nt = lsGet('rx_mbsr_notes') || lsGet('mbsr_notes');
     if (sd) setStartDate(sd);
     let n = {};
     if (cp) { try { setCompleted(JSON.parse(cp)); } catch { /* ignore */ } }
@@ -144,7 +144,7 @@ function MbsrTracker({ onBack }) {
       setCompleted((prev) => {
         if (prev[today]) return prev;
         const n = { ...prev, [today]: true };
-        lsSet('mbsr_completed', JSON.stringify(n));
+        lsSet('rx_mbsr_completed', JSON.stringify(n));
         markWellbeingPracticeDone('mbsr');
         return n;
       });
@@ -161,7 +161,7 @@ function MbsrTracker({ onBack }) {
     setCompleted((prev) => {
       const done = !prev[key];
       const n = { ...prev, [key]: done };
-      lsSet('mbsr_completed', JSON.stringify(n));
+      lsSet('rx_mbsr_completed', JSON.stringify(n));
       if (done) markWellbeingPracticeDone('mbsr');
       return n;
     });
@@ -170,20 +170,20 @@ function MbsrTracker({ onBack }) {
   const setTarget = (min) => { setTimerActive(false); setTimerSeconds(0); setTimerTarget(min * 60); playSfx?.('click'); };
   const toggleTimer = () => { playSfx?.('click'); setTimerActive((a) => !a); };
   const resetTimer = () => { setTimerActive(false); setTimerSeconds(0); };
-  const confirmStart = () => { setStartDate(pickedDate); lsSet('mbsr_startDate', pickedDate); setShowModal(false); playSfx?.('click'); };
-  const saveNote = () => { const v = draft.trim(); if (!v) return; setNotes((prev) => { const n = { ...prev, [today]: v }; lsSet('mbsr_notes', JSON.stringify(n)); return n; }); setSavedFlash(true); playSfx?.('click'); };
+  const confirmStart = () => { setStartDate(pickedDate); lsSet('rx_mbsr_startDate', pickedDate); setShowModal(false); playSfx?.('click'); };
+  const saveNote = () => { const v = draft.trim(); if (!v) return; setNotes((prev) => { const n = { ...prev, [today]: v }; lsSet('rx_mbsr_notes', JSON.stringify(n)); return n; }); setSavedFlash(true); playSfx?.('click'); };
 
   const circ = 2 * Math.PI * 54;
   const circOffset = circ * (1 - Math.min(timerSeconds / timerTarget, 1));
   const p = todayPhase;
 
   return (
-    <div className="rx-wb rx-root" dir="ltr">
+    <div className="rx-wb rx-root" dir={isAr ? 'rtl' : 'ltr'}>
       <style>{CSS}</style>
       <style>{SAFETY_CSS}</style>
       <div className="rx-app">
         <div className="header">
-          <button className="rx-back" onClick={onBack} aria-label="Back">‹</button>
+          <button className="rx-back" onClick={onBack} aria-label={isAr ? 'رجوع' : 'Back'}>{isAr ? '›' : '‹'}</button>
           <div className="header-row">
             <div>
               {/* ⚠ IT IS NOT CALLED "MBSR" ANY MORE (2026-09-07). MBSR is a
@@ -406,7 +406,7 @@ function MbsrTracker({ onBack }) {
 
               <div className="dos-head" style={{ color: '#2e8b57' }}>✅ The DOs</div>
               {DOS.map((d) => (
-                <div key={d.title} className="do-card" style={{ background: '#eef7f0', borderColor: '#bfe0c8' }}>
+                <div key={d.title} className="do-card" style={{ background: 'color-mix(in srgb, #2e8b57 12%, var(--surface))', borderColor: 'color-mix(in srgb, #2e8b57 32%, transparent)' }}>
                   <div className="do-icon">{d.icon}</div>
                   <div><div className="do-title" style={{ color: '#2e8b57' }}>{d.title}</div><div className="do-text">{d.text}</div></div>
                 </div>
@@ -414,7 +414,7 @@ function MbsrTracker({ onBack }) {
 
               <div className="dos-head" style={{ color: '#c0564e', marginTop: 8 }}>❌ The DON'Ts</div>
               {DONTS.map((d) => (
-                <div key={d.title} className="do-card" style={{ background: '#fdeeec', borderColor: '#ecc9bd' }}>
+                <div key={d.title} className="do-card" style={{ background: 'color-mix(in srgb, #c0564e 12%, var(--surface))', borderColor: 'color-mix(in srgb, #c0564e 32%, transparent)' }}>
                   <div className="do-icon">{d.icon}</div>
                   <div><div className="do-title" style={{ color: '#c0564e' }}>{d.title}</div><div className="do-text">{d.text}</div></div>
                 </div>
@@ -453,7 +453,7 @@ function MbsrTracker({ onBack }) {
               <div className="disclaimer">This is a self-guided practice for calm and focus — not medical treatment.</div>
               {/* The tracker root already carries `rx-wb`, which is what scopes
                   the --rx-* tokens SafetyNote styles itself with. */}
-              <SafetyNote isAr={false} />
+              <SafetyNote isAr={isAr} />
             </>
           )}
         </div>
@@ -498,7 +498,7 @@ const CSS = `
 .rx-root { position:fixed; inset:0; z-index:50; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--rx-ground); color:${INK}; font-family:${SANS}; }
 .rx-root *, .rx-root *::before, .rx-root *::after { box-sizing:border-box; }
 .rx-app { max-width:480px; margin:0 auto; padding-bottom:80px; position:relative; }
-.rx-back { position:absolute; top:14px; left:12px; z-index:20; width:36px; height:36px; border-radius:10px; border:1px solid ${LINE}; background:${CARD}; color:${INK}; font-size:22px; line-height:1; cursor:pointer; box-shadow:var(--elev-rest); }
+.rx-back { position:absolute; top:14px; inset-inline-start:12px; z-index:20; width:36px; height:36px; border-radius:10px; border:1px solid ${LINE}; background:${CARD}; color:${INK}; font-size:22px; line-height:1; cursor:pointer; box-shadow:var(--elev-rest); }
 .rx-root .header { padding:24px 20px 16px; background:linear-gradient(180deg, color-mix(in srgb, var(--rx-ground) 88%, white) 0%, var(--rx-ground) 100%); }
 .rx-root .header-row { display:flex; justify-content:space-between; align-items:flex-start; padding-left:42px; }
 .rx-root .header-sub { font-size:11px; letter-spacing:3px; color:${GOLD_TEXT}; text-transform:uppercase; margin-bottom:4px; font-weight:700; }
@@ -899,7 +899,7 @@ function NeedStrip({ cat, isAr, playSfx, onOpen }) {
   );
 }
 
-function RelaxMenu({ isAr, onOpen, playSfx, initialCategory = null, initialGroup = 'program' }) {
+function RelaxMenu({ isAr, onOpen, onOpenDaily, playSfx, initialCategory = null, initialGroup = 'program' }) {
   const { appTheme, toggleLang } = useApp();
   const dark = appTheme !== 'light';
   const [openCat, setOpenCat] = useState(initialCategory); // category id, or 'favorites'
@@ -1319,19 +1319,32 @@ function RelaxMenu({ isAr, onOpen, playSfx, initialCategory = null, initialGroup
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => { playSfx?.('click'); setOpenCat('favorites'); }}
-        className="rx-fade rx-landing-favs"
-      >
-        <Star size={16} weight="fill" color={FAV_GOLD} aria-hidden="true" />
-        {favs.length
-          ? (isAr ? `${favs.length} ممارسة محفوظة` : `${favs.length} saved practice${favs.length > 1 ? 's' : ''}`)
-          : (isAr ? 'المفضّلة' : 'Favorites')}
-        {isAr
-          ? <CaretLeft size={13} weight="bold" color={FAV_GOLD} aria-hidden="true" />
-          : <CaretRight size={13} weight="bold" color={FAV_GOLD} aria-hidden="true" />}
-      </button>
+      <div className="rx-fade rx-landing-pills">
+        <button
+          type="button"
+          onClick={() => { playSfx?.('click'); setOpenCat('favorites'); }}
+          className="rx-landing-pill"
+        >
+          <Star size={15} weight="fill" color={FAV_GOLD} aria-hidden="true" />
+          {favs.length
+            ? (isAr ? `${favs.length} ممارسة محفوظة` : `${favs.length} saved practice${favs.length > 1 ? 's' : ''}`)
+            : (isAr ? 'المفضّلة' : 'Favorites')}
+          {isAr
+            ? <CaretLeft size={12} weight="bold" color={FAV_GOLD} aria-hidden="true" />
+            : <CaretRight size={12} weight="bold" color={FAV_GOLD} aria-hidden="true" />}
+        </button>
+        <button
+          type="button"
+          onClick={() => { playSfx?.('click'); onOpenDaily?.(); }}
+          className="rx-landing-pill"
+        >
+          <span aria-hidden="true" style={{ fontSize: 13 }}>🌱</span>
+          {isAr ? 'العادات اليومية' : 'Daily Habits'}
+          {isAr
+            ? <CaretLeft size={12} weight="bold" color={FAV_GOLD} aria-hidden="true" />
+            : <CaretRight size={12} weight="bold" color={FAV_GOLD} aria-hidden="true" />}
+        </button>
+      </div>
 
 
       {CATEGORIES.map((c, idx) => {
@@ -1514,6 +1527,13 @@ function RelaxMenu({ isAr, onOpen, playSfx, initialCategory = null, initialGroup
           color:#f0b66a; font-size:13px; font-weight:700; cursor:pointer; }
         .rx-landing-head { position:absolute; top:calc(20px + env(safe-area-inset-top)); left:0; right:0; z-index:3;
           text-align:center; padding:0 60px; pointer-events:none; }
+        .rx-landing-pills { position:absolute; top:calc(112px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+          z-index:3; display:flex; align-items:center; justify-content:center; gap:8px; max-width:min(94vw, 480px); flex-wrap:wrap; }
+        .rx-landing-pill { display:inline-flex; align-items:center; gap:6px; padding:8px 14px;
+          border-radius:100px; border:1px solid rgba(240,182,106,0.4); background:rgba(24,20,34,0.58);
+          backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+          box-shadow:0 6px 20px rgba(0,0,0,0.35);
+          color:#ffe9ae; cursor:pointer; font-family:inherit; font-weight:700; font-size:12.5px; white-space:nowrap; }
         .rx-landing-favs { position:absolute; top:calc(112px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
           z-index:3; display:flex; align-items:center; gap:8px; padding:9px 18px; max-width:min(92vw, 420px);
           border-radius:100px; border:1px solid rgba(240,182,106,0.4); background:rgba(24,20,34,0.58);
@@ -1526,12 +1546,15 @@ function RelaxMenu({ isAr, onOpen, playSfx, initialCategory = null, initialGroup
            on top of the field it just handed to the planets. */
         @media (max-height: 720px) {
           .rx-landing-head { top:calc(14px + env(safe-area-inset-top)); }
+          .rx-landing-pills { top:calc(100px + env(safe-area-inset-top)); }
+          .rx-landing-pill { padding:6px 12px; font-size:11.5px; }
           .rx-landing-favs { top:calc(100px + env(safe-area-inset-top)); padding:7px 15px; font-size:12.5px; }
           .rx-landing-lang { top:calc(10px + env(safe-area-inset-top)); height:34px; min-width:34px; }
           .rx-landing-hint { bottom:calc(84px + env(safe-area-inset-bottom)); font-size:11.5px; }
         }
         @media (max-height: 620px) {
           .rx-landing-head { top:calc(10px + env(safe-area-inset-top)); }
+          .rx-landing-pills { top:calc(90px + env(safe-area-inset-top)); }
           .rx-landing-favs { top:calc(90px + env(safe-area-inset-top)); }
           .rx-landing-hint { bottom:calc(80px + env(safe-area-inset-bottom)); }
         }
@@ -1600,6 +1623,28 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
     } catch { /* ignore */ }
     return 'menu';
   });
+
+  useEffect(() => {
+    if (entry === 'daily') setView('daily');
+  }, [entry]);
+
+  useEffect(() => {
+    const checkOpenDaily = () => {
+      try {
+        if (sessionStorage.getItem(OPEN_DAILY_KEY) === '1') {
+          sessionStorage.removeItem(OPEN_DAILY_KEY);
+          setView('daily');
+        }
+      } catch { /* ignore */ }
+    };
+    checkOpenDaily();
+    window.addEventListener('focus', checkOpenDaily);
+    window.addEventListener('storage', checkOpenDaily);
+    return () => {
+      window.removeEventListener('focus', checkOpenDaily);
+      window.removeEventListener('storage', checkOpenDaily);
+    };
+  }, []);
   const [returnTo, setReturnTo] = useState(entry === 'daily' ? 'daily' : 'menu');
   const [resumeCategory, setResumeCategory] = useState(null);
   const [resumeGroup, setResumeGroup] = useState('program');
@@ -1658,6 +1703,7 @@ export default function RelaxScreen({ entry = 'menu' } = {}) {
       initialCategory={resumeCategory}
       initialGroup={resumeGroup}
       onHome={() => { playSfx?.('click'); switchTab('habits'); }}
+      onOpenDaily={() => openPractice('daily', 'landing')}
       onOpen={(id, categoryId, categoryGroup) => openPractice(id, 'menu', categoryId, categoryGroup)}
     />
   );
@@ -1693,7 +1739,7 @@ const MENU_CSS = `
 .rx-root::-webkit-scrollbar-thumb { background:var(--universe-line); border:2px solid transparent; border-radius:999px; background-clip:padding-box; }
 .rx-root *, .rx-root *::before, .rx-root *::after { box-sizing:border-box; }
 .rx-root .rx-app { max-width:480px; margin:0 auto; padding-bottom:110px; position:relative; z-index:3; }
-.rx-root .rx-back { position:absolute; top:max(14px, env(safe-area-inset-top)); left:12px; z-index:20; width:36px; height:36px; border-radius:999px;
+.rx-root .rx-back { position:absolute; top:max(14px, env(safe-area-inset-top)); inset-inline-start:12px; z-index:20; width:36px; height:36px; border-radius:999px;
   border:1px solid var(--universe-line); background:var(--universe-glass-strong); color:var(--universe-ink); font-size:22px; line-height:1; cursor:pointer;
   box-shadow:0 4px 14px rgba(0,0,0,0.35); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
 .rx-root .header { padding:max(24px, calc(12px + env(safe-area-inset-top))) 20px 18px; background:transparent; }

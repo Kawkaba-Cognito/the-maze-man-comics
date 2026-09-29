@@ -92,7 +92,7 @@ export default function PracticeShell({ title, accent, accentLit, isAr, onBack, 
         <div className="rxp-head">
           <button className="rxp-back" onClick={onBack} aria-label="Back">‹</button>
           <div className="rxp-title serif">{title}</div>
-          <div style={{ width: 36 }} />
+          <div style={{ width: 44 }} />
         </div>
         <PracticeArtContext.Provider value={pillarArt}>
           {children}
@@ -166,8 +166,10 @@ const BASE_CSS = `
  * padded field around it so the screen reads as composed rather than abandoned.
  */
 .rxp-app { width:100%; max-width:560px; margin:0 auto; min-height:100%; display:flex; flex-direction:column; padding-bottom:40px; position:relative; z-index:2; }
-.rxp-head { position:sticky; top:0; z-index:8; display:flex; align-items:center; justify-content:space-between; padding:calc(14px + env(safe-area-inset-top)) 16px 10px; background:color-mix(in srgb, var(--rx-ground) 72%, transparent); border-bottom:1px solid color-mix(in srgb, var(--rx-line) 58%, transparent); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
-.rxp-back { width:36px; height:36px; border-radius:11px; border:1px solid ${LINE}; background:${CARD}; color:${INK}; font-size:22px; line-height:1; cursor:pointer; box-shadow:var(--elev-rest); }
+.rxp-head { position:sticky; top:0; z-index:8; display:flex; align-items:center; justify-content:space-between; padding:calc(12px + env(safe-area-inset-top)) 16px 10px; background:color-mix(in srgb, var(--rx-ground) 72%, transparent); border-bottom:1px solid color-mix(in srgb, var(--rx-line) 58%, transparent); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
+.rxp-head::after { content:''; position:absolute; bottom:-1px; inset-inline:0; height:1px; background:linear-gradient(90deg, transparent, color-mix(in srgb, var(--rx-hue) 45%, transparent), transparent); }
+.rxp-back { min-width:44px; min-height:44px; width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; border-radius:12px; border:1px solid ${LINE}; background:${CARD}; color:${INK}; font-size:22px; line-height:1; cursor:pointer; box-shadow:var(--elev-rest); transition:transform .15s, box-shadow .15s; }
+[dir='rtl'] .rxp-back { transform: scaleX(-1); }
 .rxp-back:active { box-shadow:var(--elev-press); }
 .rxp-title { font-family:${SERIF}; font-size:var(--rx-fs-display); font-weight:600; line-height:1.12; letter-spacing:.01em; color:${INK}; }
 .rxp-root .serif { font-family:${SERIF}; font-weight:600; }
@@ -241,7 +243,7 @@ const BASE_CSS = `
  * so the practice is visibly part of the area it was opened from.
  */
 .rxp-hero { width:118px; height:118px; margin:2px auto 6px; position:relative; display:flex; align-items:center; justify-content:center; }
-.rxp-hero .rx-body { border:1px solid color-mix(in srgb, var(--rx-hue-lit) 62%, var(--rx-line)); box-shadow:0 16px 36px color-mix(in srgb, var(--rx-hue) 32%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--rx-hue-lit) 30%, transparent); }
+.rxp-hero .rx-body { display:flex; align-items:center; justify-content:center; border:1px solid color-mix(in srgb, var(--rx-hue-lit) 62%, var(--rx-line)); box-shadow:0 16px 36px color-mix(in srgb, var(--rx-hue) 32%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--rx-hue-lit) 30%, transparent); }
 .rxp-hero-art { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; }
 .rxp-hero-glyph { position:relative; z-index:1; font-size:38px; line-height:1; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.45)); }
 /* Riding on a photo rather than the plain CSS sphere — a bit more contact

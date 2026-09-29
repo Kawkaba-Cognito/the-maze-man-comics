@@ -212,7 +212,7 @@ const TEXT = {
     savedNote: 'يعرض هذا نتيجتك الأخيرة.',
     prompt: 'أرى نفسي:',
     left: 'أرفض بشدّة', right: 'أوافق بشدّة',
-    back: '‹ السابق',
+    back: '› السابق',
     tryScenarios: 'لنجرّبها',
     skipScenarios: 'تخطَّ إلى نتيجتي ←',
     scenarioProgress: (n, total) => `التجربة ${n} من ${total}`,
@@ -410,7 +410,7 @@ export default function PersonalityQuiz({ onBack }) {
             <button
               type="button"
               onClick={() => setIndex(index - 1)}
-              style={{ background: 'none', border: 'none', color: SUB, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', alignSelf: isAr ? 'flex-end' : 'flex-start', padding: 0 }}
+              style={{ background: 'none', border: 'none', color: SUB, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start', minHeight: 44, display: 'inline-flex', alignItems: 'center', padding: '6px 4px' }}
             >
               {t.back}
             </button>
@@ -455,7 +455,7 @@ export default function PersonalityQuiz({ onBack }) {
           ) : (
             <>
               <div style={{
-                padding: '13px 15px', borderRadius: 12, background: `${ACCENT}14`, borderInlineStart: `4px solid ${ACCENT}`,
+                padding: '13px 15px', borderRadius: 12, background: `color-mix(in srgb, ${ACCENT} 12%, transparent)`, borderInlineStart: `4px solid ${ACCENT}`,
                 fontSize: 13, lineHeight: 1.6, color: SUB,
               }}>
                 {isAr ? scenario.reactionAr : scenario.reactionEn}
@@ -487,7 +487,7 @@ export default function PersonalityQuiz({ onBack }) {
               </DeeperScience>
             </TraitBar>
           ))}
-          <div style={{ marginTop: 6, padding: '14px 16px', borderRadius: 14, background: `${ACCENT}14`, border: `1.5px solid ${ACCENT}40` }}>
+          <div style={{ marginTop: 6, padding: '14px 16px', borderRadius: 14, background: `color-mix(in srgb, ${ACCENT} 12%, transparent)`, border: `1.5px solid color-mix(in srgb, ${ACCENT} 35%, transparent)` }}>
             <div style={{ fontWeight: 800, fontSize: 13.5, color: ACCENT, marginBottom: 6 }}>{t.closingTitle}</div>
             <div style={{ fontSize: 12.5, lineHeight: 1.6, color: SUB }}>{t.closing}</div>
           </div>

@@ -116,6 +116,13 @@
   --rx-relationships-ink: #7c2f47;
   --rx-personality-ink: #6f3a18;
 
+  /* Heatmap intensity ramp: light ground -> green completion */
+  --rx-heat-0: var(--rx-card);
+  --rx-heat-1: #c8e6c9;
+  --rx-heat-2: #9fd4a3;
+  --rx-heat-3: #6fae7a;
+  --rx-heat-4: #3a7a48;
+
   /* The area currently in play. Set inline per orb / per category screen so
      one hue drives the sphere, its atmosphere, its heading and its controls. */
   --rx-hue: var(--rx-calm-core);
@@ -148,6 +155,13 @@ html[data-home-theme='dark'] .rx-wb {
   --rx-meaning-ink: var(--rx-meaning-lit);
   --rx-relationships-ink: var(--rx-relationships-lit);
   --rx-personality-ink: var(--rx-personality-lit);
+
+  /* Heatmap intensity ramp: dark ground -> luminous glowing green completion */
+  --rx-heat-0: var(--rx-hair);
+  --rx-heat-1: #254d2e;
+  --rx-heat-2: #3a7246;
+  --rx-heat-3: #5cae6e;
+  --rx-heat-4: #8fe39f;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -376,15 +390,39 @@ html[data-home-theme='light'] .rx-wb .rx-cat-orb {
  * letter-spacing declarations (mostly eyebrows/uppercase labels, correctly
  * tracked for LATIN caps); this guard neutralises all of them under RTL in
  * one place rather than hunting each one down. */
-[dir='rtl'] .rx-wb, [dir='rtl'] .rx-wb * { letter-spacing: normal; }
-/* ⚠ `--rx-display` (Cormorant Garamond) has no Arabic glyphs at all, so any
-   title using it was silently falling through to Georgia → a generic serif
-   under RTL. Arabic titles take Cairo at a heavier weight instead, since
-   Cairo has no true serif; 700 is what reads as "titled" rather than "body"
-   at these sizes. */
+[dir='rtl'] .rx-wb,
+[dir='rtl'] .rx-wb *,
+[dir='rtl'] .rx-root,
+[dir='rtl'] .rx-root * {
+  letter-spacing: normal !important;
+}
+[dir='rtl'] .rx-wb .header-sub,
+[dir='rtl'] .rx-wb .hb-domain-tag,
+[dir='rtl'] .rx-wb .hb-auto,
+[dir='rtl'] .rx-wb .hb-hero-label {
+  text-transform: none !important;
+}
+/* Cairo 700 replaces Cormorant Garamond across all titles, prompts, and numerals in Arabic */
 [dir='rtl'] .rx-wb .serif,
 [dir='rtl'] .rx-wb .rxp-title,
-[dir='rtl'] .rx-wb .header-title {
-  font-family: 'Cairo', sans-serif;
+[dir='rtl'] .rx-wb .header-title,
+[dir='rtl'] .rx-wb .qz-item-text,
+[dir='rtl'] .rx-wb .cn-setup,
+[dir='rtl'] .rx-wb .cn-action-title,
+[dir='rtl'] .rx-wb .ws-read-h,
+[dir='rtl'] .rx-wb .ws-done,
+[dir='rtl'] .rx-wb .brk-word,
+[dir='rtl'] .rx-wb .grd-count,
+[dir='rtl'] .rx-wb .pmr-num,
+[dir='rtl'] .rx-wb .sr-se,
+[dir='rtl'] .rx-wb .ci-delta-cell b,
+[dir='rtl'] .rx-wb .hb-title,
+[dir='rtl'] .rx-wb .hb-hero-num,
+[dir='rtl'] .rx-wb .hb-modal-title,
+[dir='rtl'] .rx-wb .hb-ins-title,
+[dir='rtl'] .rx-wb .hb-reflect-title,
+[dir='rtl'] .rx-wb [style*="Cormorant Garamond"],
+[dir='rtl'] .rx-root [style*="Cormorant Garamond"] {
+  font-family: 'Cairo', system-ui, sans-serif !important;
   font-weight: 700;
 }

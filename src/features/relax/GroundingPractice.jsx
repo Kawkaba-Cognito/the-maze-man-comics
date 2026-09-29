@@ -214,7 +214,7 @@ const CSS = `
 .grd-coach { font-size:13px; color:${SUB}; line-height:1.6; max-width:320px; }
 .grd-hint { font-size:13px; color:${FAINT}; }
 .grd-pips { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:8px; }
-.grd-pip { width:42px; height:42px; border-radius:50%; border:1px solid var(--rx-hair); background:var(--rx-card); cursor:pointer; transition:all .18s; box-shadow:var(--elev-rest); }
+.grd-pip { width:44px; height:44px; border-radius:50%; border:1px solid var(--rx-hair); background:var(--rx-card); cursor:pointer; transition:all .18s; box-shadow:var(--elev-rest); }
 .grd-pip.on { background:var(--rx-hue); border-color:var(--rx-hue); transform:scale(1.08); }
 .grd-pip:disabled { opacity:0.5; cursor:default; }
 .grd-pip.on:disabled { opacity:1; }

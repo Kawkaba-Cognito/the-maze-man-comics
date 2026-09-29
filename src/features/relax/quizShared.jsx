@@ -13,7 +13,7 @@ export const QUIZ_CSS = `
 .qz-progress { font-size:12px; color:${SUB}; font-weight:700; text-align:center; letter-spacing:1px; text-transform:uppercase; }
 .qz-item-text { font-family:${SERIF}; font-size:var(--rx-fs-title); font-weight:600; color:${INK}; text-align:center; line-height:1.35; padding:0 4px; }
 .qz-likert { display:flex; gap:6px; justify-content:space-between; }
-.qz-likert-btn { flex:1; aspect-ratio:1; border-radius:12px; border:1px solid ${LINE}; background:${CARD}; color:${SUB}; font-weight:600; font-size:14px; cursor:pointer; font-family:inherit; transition:border-color .15s, background .15s, color .15s; box-shadow:var(--elev-rest); }
+.qz-likert-btn { flex:1; aspect-ratio:1; min-height:44px; min-width:36px; border-radius:12px; border:1px solid ${LINE}; background:${CARD}; color:${SUB}; font-weight:600; font-size:14px; cursor:pointer; font-family:inherit; transition:border-color .15s, background .15s, color .15s; box-shadow:var(--elev-rest); }
 .qz-likert-btn.on { border-color:var(--rx-hue); background:var(--rx-hue); color:#fff; }
 .qz-likert-labels { display:flex; justify-content:space-between; font-size:11px; color:${FAINT}; margin-top:6px; line-height:1.4; gap:10px; }
 .qz-likert-labels span { max-width:44%; }

@@ -115,7 +115,9 @@ const CSS = `
 .slp-track { min-height:44px; display:flex; align-items:center; gap:8px; padding:10px 16px; border-radius:999px; border:1px solid var(--rx-hair); background:var(--rx-card); color:${SUB}; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; box-shadow:var(--elev-rest); }
 .slp-track.on { border-color:${ACCENT}; background:color-mix(in srgb, ${ACCENT} 18%, var(--rx-card)); color:var(--rx-ink); }
 .slp-track-ic { font-size:18px; }
-.slp-play { width:84px; height:84px; border-radius:50%; border:1px solid color-mix(in srgb, ${ACCENT_LIT} 65%, transparent); background:linear-gradient(135deg,${ACCENT_LIT},${ACCENT}); color:#fff; font-size:30px; cursor:pointer; box-shadow:var(--elev-raise); margin-top:6px; }
+.slp-play { width:84px; height:84px; border-radius:50%; border:1px solid color-mix(in srgb, ${ACCENT_LIT} 58%, transparent); background:linear-gradient(180deg, ${ACCENT}, color-mix(in srgb, ${ACCENT} 78%, black)); color:#fff; font-size:30px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:var(--elev-raise); margin-top:6px; transition:box-shadow .18s, filter .18s; }
+.slp-play:hover { filter:saturate(1.08) brightness(1.03); box-shadow:var(--elev-raise); }
+.slp-play:active { box-shadow:var(--elev-press); }
 .slp-playLabel { font-size:13px; font-weight:700; color:${SUB}; margin-top:-8px; }
 .slp-volume { display:flex; align-items:center; gap:10px; width:100%; max-width:280px; margin-top:8px; }
 .slp-volume input[type="range"] { flex:1; }

@@ -275,7 +275,7 @@ const TEXT = {
     retake: 'أعد الاختبار',
     savedNote: 'يعرض هذا نتيجتك الأخيرة.',
     left: 'أرفض بشدّة', right: 'أوافق بشدّة',
-    back: '‹ السابق',
+    back: '› السابق',
     tryScenarios: 'لنجرّبها',
     skipScenarios: 'تخطَّ إلى نتيجتي ←',
     scenarioProgress: (n, total) => `التجربة ${n} من ${total}`,
@@ -552,7 +552,7 @@ export default function RelationshipQuiz({ onBack }) {
             <button
               type="button"
               onClick={() => setIndex(index - 1)}
-              style={{ background: 'none', border: 'none', color: SUB, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', alignSelf: isAr ? 'flex-end' : 'flex-start', padding: 0 }}
+              style={{ background: 'none', border: 'none', color: SUB, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start', minHeight: 44, display: 'inline-flex', alignItems: 'center', padding: '6px 4px' }}
             >
               {t.back}
             </button>
@@ -597,7 +597,7 @@ export default function RelationshipQuiz({ onBack }) {
           ) : (
             <>
               <div style={{
-                padding: '13px 15px', borderRadius: 12, background: `${ACCENT}14`, borderInlineStart: `4px solid ${ACCENT}`,
+                padding: '13px 15px', borderRadius: 12, background: `color-mix(in srgb, ${ACCENT} 12%, transparent)`, borderInlineStart: `4px solid ${ACCENT}`,
                 fontSize: 13, lineHeight: 1.6, color: SUB,
               }}>
                 {isAr ? scenario.reactionAr : scenario.reactionEn}
@@ -631,7 +631,7 @@ export default function RelationshipQuiz({ onBack }) {
             <p className="qz-dim-note">{t.dimNote}</p>
           </div>
           <p style={{ fontSize: 14, lineHeight: 1.6, color: SUB, textAlign: 'center' }}>{isAr ? styleInfo.descAr : styleInfo.descEn}</p>
-          <div style={{ padding: '13px 15px', borderRadius: 12, background: `${styleInfo.color}14`, borderInlineStart: `4px solid ${styleInfo.color}` }}>
+          <div style={{ padding: '13px 15px', borderRadius: 12, background: `color-mix(in srgb, ${styleInfo.color} 12%, transparent)`, borderInlineStart: `4px solid ${styleInfo.color}` }}>
             <div style={{ fontSize: 13, lineHeight: 1.6, color: SUB }}>{isAr ? styleInfo.tipAr : styleInfo.tipEn}</div>
             <DeeperScience moreLabel={t.moreLabel} lessLabel={t.lessLabel}>
               {isAr ? styleInfo.deeperAr : styleInfo.deeperEn}
@@ -639,7 +639,7 @@ export default function RelationshipQuiz({ onBack }) {
           </div>
 
           {tally && (
-            <div style={{ padding: '13px 15px', borderRadius: 12, background: '#efe6d6' }}>
+            <div style={{ padding: '13px 15px', borderRadius: 12, background: 'var(--surface-raised, rgba(255,255,255,0.06))', border: '1px solid var(--border-subtle, rgba(0,0,0,0.08))' }}>
               <div style={{ fontWeight: 800, fontSize: 13, color: ACCENT, marginBottom: 5 }}>{t.recapTitle}</div>
               <div style={{ fontSize: 12.5, lineHeight: 1.6, color: SUB }}>
                 {tallyMatchesStyle(tally, result.style)
@@ -652,11 +652,11 @@ export default function RelationshipQuiz({ onBack }) {
             </div>
           )}
 
-          <div style={{ marginTop: 6, padding: '14px 16px', borderRadius: 14, background: `${ACCENT}14`, border: `1.5px solid ${ACCENT}40` }}>
+          <div style={{ marginTop: 6, padding: '14px 16px', borderRadius: 14, background: `color-mix(in srgb, ${ACCENT} 12%, transparent)`, border: `1.5px solid color-mix(in srgb, ${ACCENT} 35%, transparent)` }}>
             <div style={{ fontWeight: 800, fontSize: 13.5, color: ACCENT, marginBottom: 6 }}>{t.statTitle}</div>
             <div style={{ fontSize: 12.5, lineHeight: 1.6, color: SUB }}>{t.stat}</div>
           </div>
-          <div style={{ padding: '14px 16px', borderRadius: 14, background: '#efe6d6' }}>
+          <div style={{ padding: '14px 16px', borderRadius: 14, background: 'var(--surface-raised, rgba(255,255,255,0.06))', border: '1px solid var(--border-subtle, rgba(0,0,0,0.08))' }}>
             <div style={{ fontWeight: 800, fontSize: 13.5, color: ACCENT, marginBottom: 6 }}>{t.changeTitle}</div>
             <div style={{ fontSize: 12.5, lineHeight: 1.6, color: SUB }}>{t.change}</div>
           </div>
@@ -686,13 +686,9 @@ const QUAD_CSS = `
 .qz-dim-row b { font-size:15px; color:var(--rx-ink); font-variant-numeric:tabular-nums; }
 .qz-dim-note { margin:4px 0 0; font-size:11.5px; line-height:1.55; color:${FAINT}; }
 .qz-quad-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; }
-.qz-quad { position:relative; width:100%; max-width:280px; aspect-ratio:1; margin:0 auto; border-radius:16px; border:2px solid #e3d6c4; background:#fffdf8; }
+.qz-quad { position:relative; width:100%; max-width:280px; aspect-ratio:1; margin:0 auto; border-radius:16px; border:2px solid var(--rx-hair); background:var(--rx-card); box-shadow:var(--elev-rest); }
 .qz-quad-cell { position:absolute; width:50%; padding:8px; font-size:10.5px; font-weight:800; line-height:1.25; text-align:center; }
-.qz-quad-axis { position:absolute; background:#e3d6c4; }
-.qz-quad-dot { position:absolute; width:16px; height:16px; border-radius:50%; background:#1a1208; border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.3); transform:translate(-50%,-50%); }
+.qz-quad-axis { position:absolute; background:var(--rx-hair); }
+.qz-quad-dot { position:absolute; width:18px; height:18px; border-radius:50%; background:var(--rx-hue); border:2.5px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.35); transform:translate(-50%,-50%); z-index:3; }
 .qz-quad-axislabel-y, .qz-quad-axislabel-x { font-size:10px; font-weight:800; color:${SUB}; }
-[data-home-theme='dark'] .qz-quad { border-color:rgba(212,168,80,0.25); background:#211a10; }
-[data-home-theme='dark'] .qz-quad-axis { background:rgba(212,168,80,0.25); }
-[data-home-theme='dark'] .qz-quad-dot { border-color:#211a10; }
-[data-home-theme='dark'] .qz-quad-axislabel-y, [data-home-theme='dark'] .qz-quad-axislabel-x { color:#c9b384; }
 `;

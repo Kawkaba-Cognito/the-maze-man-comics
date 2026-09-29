@@ -4,6 +4,7 @@ import PracticeShell, { PracticeHero, INK, SUB, FAINT, LINE, CARD, SERIF } from 
 import { QUIZ_CSS, KawkabSay, DeeperScience } from './quizShared';
 import { markWellbeingPracticeDone } from './habitState';
 import { loadJson, saveJson } from '../../lib/storage';
+import SafetyNote from './SafetyNote';
 
 /*
  * Good News — the Relationships pillar's first actual PRACTICE.
@@ -266,6 +267,7 @@ export default function ConnectPractice({ onBack }) {
           <div className="qz-intro-meta">{t.meta}</div>
           <p className="qz-cite">{t.cite}</p>
           <button className="rxp-primary" onClick={() => { playSfx?.('click'); setPhase('scenario'); }}>{t.start}</button>
+          <SafetyNote isAr={isAr} />
         </div>
       )}
 
@@ -354,6 +356,7 @@ export default function ConnectPractice({ onBack }) {
             </div>
           )}
           <button className="rxp-ghost" onClick={onBack}>{t.back}</button>
+          <SafetyNote isAr={isAr} />
         </div>
       )}
     </PracticeShell>

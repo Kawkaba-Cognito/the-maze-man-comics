@@ -796,7 +796,28 @@ Verified after every change: 4 viewport × theme combinations, all five tabs unb
 
 ⚠ **THERE IS NO WELLBEING PLANET ART, AND THAT IS WHY THE OLD ONES ARE STILL THERE.** Every painted set under `public/Assets/domain-planets/` (`premium-2026`, `celestial-mist-2026`, `graphite-mist-2026`, `materials-2026`) covers the six **training domains** only. `planetIconUrl` therefore hands the five wellbeing pillars Microsoft Fluent emoji (`herb.webp`, `crescent_moon.webp`, …), inside the category headers and `PracticeHero` as well as on the landing. Five paintings — calm / sleep / meaning / relationships / personality — is the fix, and the art has to be made before it can be wired.
 
-⚠ **THE DAILY HABITS SCREEN COULD NOT BE REACHED IN TESTING, and the SRBAI UI is therefore UNVERIFIED ON SCREEN.** `switchTab('wellbeing')` *deliberately removes* `rx_open_daily` (AppContext), while `switchTab('habits')` sets it — so Daily opens only via the Home tab routing onward into the `'relax'` view. Driving that route headlessly never rendered `DailyHabits` in dev **or** production. Whether that is a harness limitation or a real routing break is unresolved and worth a look; the SRBAI code and its persistence fix are sound, but nobody has watched them run.
+⚠ **THE DAILY HABITS SCREEN IS NOW FULLY REACHABLE DIRECTLY (resolved 2026-09-29)**: Added a dedicated "Daily Habits" / "العادات اليومية" pill on the Wellbeing constellation landing, wired via `onOpenDaily` in `RelaxScreen.jsx` with reactive `sessionStorage` sync (`OPEN_DAILY_KEY`). It is also scoped under `.rx-wb rx-root` so all design tokens and typography resolve.
+
+### Wellbeing Multi-Specialization Audit & Premium Polish (2026-09-29)
+
+Full audit executed across clinical/protocol standards, habits/systems engine, and luxury visual theming:
+- **Habits Engine & Reminders (`habitState.js`, `habitReminders.js`)**:
+  - `computeStreak()`: fixed morning streak reset bug where an incomplete habit today terminated streak prematurely; unscheduled days (e.g. weekdays-only habits on weekends) are properly skipped rather than breaking streak.
+  - `exportHabitsData()`: added `automaticity` (SRBAI) and `reminderDismiss` to whitelist to prevent data loss on backup/restore.
+  - `deleteHabit()`: automatically cleans dangling `stackAfter` references pointing to deleted habit.
+  - `habitReminders.js`: native Android/iOS notification IDs strided (`HABIT_NOTIF_BASE + slot * 10 + day`) eliminating ID collisions between habits and day offsets; cancellation cancels all slots; stale notification markers automatically pruned.
+  - DOM nesting in `DailyHabits.jsx`: `.hb-body` changed from button to div, preventing accordion collapse on child interactions.
+- **Clinical & Protocol Standards**:
+  - `ConnectPractice.jsx` & `MbsrTracker`: mounted `<SafetyNote isAr={isAr} />` on intro and completion screens.
+  - `MbsrTracker`: full Arabic RTL support (`dir="rtl"`, Cairo font, flipped back arrow) and DOs/DONTs theme-adaptive color-mix.
+- **Visual Design, Contrast & Theming**:
+  - Replaced invalid `${ACCENT}14` / `${ACCENT}40` CSS concatenations in `RelationshipQuiz.jsx` and `PersonalityQuiz.jsx` with `color-mix(in srgb, ${ACCENT} 12%, transparent)` and `35%`.
+  - Inverted dark mode `.qz-quad-dot` invisible pin bug: now uses high-contrast `var(--rx-hue)` with 2.5px white border and shadow.
+  - `IkigaiPractice.jsx`: replaced hardcoded `#fffdf8`, `#fff8ef`, and obsolete `[data-home-theme='dark']` palette with tokens (`var(--rx-card)`, `color-mix`).
+  - `PmrPractice.jsx` & `PracticeCheckIn.jsx`: fixed light-mode low contrast on release count (`.pmr-num`), action labels (`.pmr-action`), and `.ci-best` (switched to `var(--rx-meaning-ink)`).
+  - `PracticeShell.jsx`: 44px back button touch area, RTL arrow flip, header accent line, and flex centering for `.rxp-hero .rx-body`.
+  - `DailyHabits.jsx`: progress ring numbers wrapped in `<bdi dir="ltr">`, RTL stacking arrow reversed, and theme-adaptive heatmap ramp (`--rx-heat-0` to `--rx-heat-4`) added so 100% completion glows bright in dark mode.
+  - Ratchet: raw colour count reduced from 459 to 435 in `scripts/design-baseline.json`.
 
 ### Six reports from a phone, and the one that made a game unfinishable (2026-09-08)
 

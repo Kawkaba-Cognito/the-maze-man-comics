@@ -177,9 +177,9 @@ export function CheckInResult({ isAr, practice, before, after, practiceNames }) 
   return (
     <div className="ci-result">
       {hasBoth && (
-        <div className="ci-delta" dir="ltr">
+        <div className="ci-delta" dir={isAr ? 'rtl' : 'ltr'}>
           <span className="ci-delta-cell"><b>{before}</b><small>{t.was}</small></span>
-          <span className="ci-delta-arrow" aria-hidden="true">→</span>
+          <span className="ci-delta-arrow" aria-hidden="true">{isAr ? '←' : '→'}</span>
           <span className={`ci-delta-cell ci-delta-cell--now${drop > 0 ? ' good' : ''}`}><b>{after}</b><small>{t.now}</small></span>
         </div>
       )}
@@ -214,7 +214,7 @@ export const CHECKIN_CSS = `
 .ci-q { margin:0; font-size:14.5px; color:${SUB}; line-height:1.6; text-align:center; max-width:320px; }
 .ci-scale-wrap { width:100%; max-width:400px; }
 .ci-scale { display:flex; gap:4px; }
-.ci-pip { flex:1; aspect-ratio:1; min-width:0; border-radius:9px; border:1px solid ${LINE}; background:${CARD};
+.ci-pip { flex:1; min-height:40px; aspect-ratio:1; min-width:0; border-radius:9px; border:1px solid ${LINE}; background:${CARD};
   color:${SUB}; font-weight:800; font-size:12px; cursor:pointer; font-family:inherit; padding:0;
   transition:border-color .15s, background .15s, color .15s; box-shadow:var(--elev-rest); }
 .ci-pip.on { border-color:var(--rx-hue); background:var(--rx-hue); color:#fff; }
@@ -232,7 +232,7 @@ export const CHECKIN_CSS = `
 .ci-delta-arrow { font-size:22px; color:${FAINT}; }
 .ci-headline { font-family:${SERIF}; font-size:26px; font-weight:600; color:${INK}; text-align:center; }
 .ci-body { margin:0; font-size:13.5px; color:${SUB}; line-height:1.65; text-align:center; max-width:340px; }
-.ci-best { font-size:12.5px; font-weight:800; color:var(--rx-meaning-lit); }
+.ci-best { font-size:12.5px; font-weight:800; color:var(--rx-meaning-ink); }
 .ci-tier { width:100%; max-width:340px; padding:11px 14px; border-radius:13px; border:1px solid ${LINE}; background:${CARD}; box-shadow:var(--elev-rest); }
 .ci-tier-row { display:flex; justify-content:space-between; align-items:baseline; }
 .ci-tier-label { font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:${FAINT}; }

@@ -182,9 +182,7 @@ export default function Who5Practice({ onBack }) {
   const [justScored, setJustScored] = useState(null);
 
   const shown = justScored ?? last;
-  const prev = justScored
-    ? store.entries[store.entries.length - 2] || null
-    : store.entries[store.entries.length - 2] || null;
+  const prev = store.entries[store.entries.length - 2] || null;
 
   const start = () => {
     playSfx?.('click');

@@ -122,8 +122,8 @@ function IkigaiDiagram({
           <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
         <radialGradient id="ikg-centre-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#fff3d6" />
-          <stop offset="100%" stopColor="#fdeecb" />
+          <stop offset="0%" stopColor="var(--rx-meaning-lit)" stopOpacity="0.85" />
+          <stop offset="100%" stopColor="var(--rx-meaning-core)" stopOpacity="0.45" />
         </radialGradient>
       </defs>
 
@@ -139,7 +139,7 @@ function IkigaiDiagram({
           <g key={q.id} className={`ikg-quad${done ? ' ikg-quad--done' : ''}${on ? ' ikg-quad--active' : ''}`}>
             <circle
               cx={p.cx} cy={p.cy} r={R}
-              fill={done || on ? q.fill : 'rgba(255,253,248,0.12)'}
+              fill={done || on ? q.fill : 'color-mix(in srgb, var(--rx-card) 60%, transparent)'}
               stroke={on ? q.color : done ? q.color : LINE}
               strokeWidth={on ? 3.2 : done ? 2.4 : 1.4}
               className="ikg-circle"
@@ -174,7 +174,7 @@ function IkigaiDiagram({
         cx={CX} cy={CY}
         r={centreLit ? (large ? 42 : 38) : 30}
         className={`ikg-centre${centreLit ? ' ikg-centre--lit' : ''}`}
-        fill={centreLit ? 'url(#ikg-centre-glow)' : '#fff8ef'}
+        fill={centreLit ? 'url(#ikg-centre-glow)' : 'color-mix(in srgb, var(--rx-meaning-core) 15%, var(--rx-card))'}
         filter={centreLit ? 'url(#ikg-glow)' : undefined}
       />
       {centreLit && centreLines.length ? (
@@ -454,7 +454,7 @@ const CSS = `
 .ikg-svg { width:min(300px,92vw); height:auto; display:block; margin:0 auto; }
 .ikg-svg--compact { width:min(220px,78vw); }
 .ikg-svg--large { width:min(340px,96vw); }
-.ikg-backdrop { fill:#fffdf8; stroke:${LINE}; stroke-width:1.5; }
+.ikg-backdrop { fill:${CARD}; stroke:${LINE}; stroke-width:1.5; }
 .ikg-svg--reveal .ikg-quad--done { animation:ikg-pop .5s ease-out both; }
 .ikg-svg--reveal .ikg-centre--lit { animation:ikg-centre-pulse 1.4s ease-in-out infinite; }
 .ikg-svg--answers .ikg-quad--done .ikg-circle { stroke-width:2.6; }
@@ -478,10 +478,10 @@ const CSS = `
 .ikg-q-title { margin:0; font-size:26px; color:${INK}; line-height:1.15; }
 .ikg-q-hint { margin:0; font-size:14px; color:${SUB}; line-height:1.55; }
 .ikg-input { width:100%; padding:14px 16px; border-radius:14px; border:2px solid ${LINE}; background:${CARD}; font-family:inherit; font-size:15px; line-height:1.55; color:${INK}; resize:vertical; min-height:100px; }
-.ikg-input--centre { border-color:${ACCENT}; background:#fff8ef; text-align:center; font-family:${SERIF}; font-size:18px; font-weight:600; min-height:72px; }
-.ikg-input:focus { outline:none; border-color:${ACCENT}; box-shadow:0 0 0 3px rgba(201,162,75,0.2); }
+.ikg-input--centre { border-color:${ACCENT}; background:color-mix(in srgb, ${ACCENT} 12%, ${CARD}); text-align:center; font-family:${SERIF}; font-size:18px; font-weight:600; min-height:72px; }
+.ikg-input:focus { outline:none; border-color:${ACCENT}; box-shadow:0 0 0 3px color-mix(in srgb, ${ACCENT} 25%, transparent); }
 .ikg-dots { display:flex; gap:10px; justify-content:center; }
-.ikg-dot { width:10px; height:10px; border-radius:50%; background:#e8dfd0; transition:transform .15s, background .15s; }
+.ikg-dot { width:10px; height:10px; border-radius:50%; background:var(--rx-hair); transition:transform .15s, background .15s; }
 .ikg-dot.done { background:var(--dot-c, ${ACCENT}); opacity:0.55; }
 .ikg-dot.on { background:var(--dot-c, ${ACCENT}); transform:scale(1.4); opacity:1; }
 .ikg-reveal-wrap { gap:14px; }
@@ -493,9 +493,9 @@ const CSS = `
 .ikg-final-header { display:flex; flex-direction:column; align-items:center; gap:4px; }
 .ikg-map-title { margin:0; font-size:28px; color:${INK}; text-align:center; }
 .ikg-saved-date { font-size:11px; font-weight:700; color:${SUB}; letter-spacing:0.5px; }
-.ikg-final-hero { background:${CARD}; border:2px solid ${LINE}; border-radius:22px; padding:12px 6px 6px; box-shadow:5px 5px 0 rgba(26,18,8,0.07); animation:ikg-hero-in .6s ease-out both; }
+.ikg-final-hero { background:${CARD}; border:2px solid ${LINE}; border-radius:22px; padding:12px 6px 6px; box-shadow:var(--elev-raise); animation:ikg-hero-in .6s ease-out both; }
 @keyframes ikg-hero-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-.ikg-final-centre { text-align:center; padding:18px 20px; background:linear-gradient(180deg,#fff8ef 0%,#fdeecb 100%); border:2px solid ${ACCENT}; border-radius:16px; box-shadow:0 4px 16px rgba(201,162,75,0.15); }
+.ikg-final-centre { text-align:center; padding:18px 20px; background:linear-gradient(180deg, color-mix(in srgb, ${ACCENT} 14%, ${CARD}) 0%, color-mix(in srgb, ${ACCENT} 24%, ${CARD}) 100%); border:2px solid ${ACCENT}; border-radius:16px; box-shadow:0 8px 24px color-mix(in srgb, ${ACCENT} 16%, transparent); }
 .ikg-final-label { display:block; font-size:10px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:${SUB}; margin-bottom:6px; }
 .ikg-final-word { margin:0; font-size:clamp(24px,6.5vw,34px); color:${INK}; line-height:1.15; }
 .ikg-section-label { font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:${SUB}; margin-top:4px; }
@@ -508,23 +508,5 @@ const CSS = `
 .ikg-overlap-card.on { opacity:1; border-color:color-mix(in srgb, var(--ov) 55%, ${LINE}); background:color-mix(in srgb, var(--ov) 8%, ${CARD}); }
 .ikg-overlap-name { display:block; font-size:12px; font-weight:900; color:var(--ov, ${SUB}); margin-bottom:3px; }
 .ikg-overlap-snippet { font-size:12px; color:${SUB}; line-height:1.4; }
-[data-home-theme='dark'] .ikg-intro,
-[data-home-theme='dark'] .ikg-step-meta,
-[data-home-theme='dark'] .ikg-q-hint,
-[data-home-theme='dark'] .ikg-saved-date,
-[data-home-theme='dark'] .ikg-final-label,
-[data-home-theme='dark'] .ikg-section-label,
-[data-home-theme='dark'] .ikg-overlap-snippet { color:#c9b384; }
-[data-home-theme='dark'] .ikg-q-title,
-[data-home-theme='dark'] .ikg-reveal-msg,
-[data-home-theme='dark'] .ikg-reveal-answer,
-[data-home-theme='dark'] .ikg-map-title,
-[data-home-theme='dark'] .ikg-final-word,
-[data-home-theme='dark'] .ikg-map-text { color:#f0e2c0; }
-[data-home-theme='dark'] .ikg-input,
-[data-home-theme='dark'] .ikg-map-card,
-[data-home-theme='dark'] .ikg-overlap-card { background:#211a10; border-color:rgba(212,168,80,0.25); color:#f0e2c0; }
-[data-home-theme='dark'] .ikg-input--centre,
-[data-home-theme='dark'] .ikg-overlap-card.on { background:#332818; }
 .ikg-overlap-snippet.muted { opacity:0.7; }
 `;

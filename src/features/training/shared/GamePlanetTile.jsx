@@ -68,8 +68,9 @@ function ensureCss() {
 .gpt-sphere {
   position: absolute; inset: 0; z-index: 2; border-radius: 50%; pointer-events: none;
   background:
-    radial-gradient(circle at 33% 27%, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.07) 20%, transparent 45%),
-    radial-gradient(circle at 50% 50%, transparent 46%, rgba(0,0,0,0.32) 80%, rgba(4,3,10,0.70) 100%);
+    radial-gradient(circle at 33% 27%, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.04) 25%, transparent 55%),
+    radial-gradient(circle at 50% 50%, transparent 72%, rgba(4,3,10,0.35) 100%);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--mph-accent, var(--game-accent)) 45%, transparent);
 }
 /* A slow diagonal glint that sweeps across the orb — the "shine". Clipped to the
    circle by this layer's own overflow, so it never touches the glow/ring. */

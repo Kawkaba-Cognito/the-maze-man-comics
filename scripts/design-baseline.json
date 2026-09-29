@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 459,
+    "raw-colour": 435,
     "stacked-backdrops": 2,
     "conditional-background": 1
   },
@@ -97,7 +97,7 @@
       "raw-colour": 1
     },
     "src/features/relax/DailyHabits.jsx": {
-      "raw-colour": 99,
+      "raw-colour": 96,
       "conditional-background": 1
     },
     "src/features/relax/HabitInsightsTab.jsx": {
@@ -116,7 +116,7 @@
       "raw-colour": 7
     },
     "src/features/relax/IkigaiPractice.jsx": {
-      "raw-colour": 24
+      "raw-colour": 10
     },
     "src/features/relax/PersonalityQuiz.jsx": {
       "raw-colour": 5
@@ -134,10 +134,10 @@
       "raw-colour": 2
     },
     "src/features/relax/RelationshipQuiz.jsx": {
-      "raw-colour": 13
+      "raw-colour": 5
     },
     "src/features/relax/RelaxScreen.jsx": {
-      "raw-colour": 63,
+      "raw-colour": 64,
       "stacked-backdrops": 1
     },
     "src/features/relax/SleepSoundsPractice.jsx": {

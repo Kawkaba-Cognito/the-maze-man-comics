@@ -296,7 +296,7 @@ export function domainById(id) {
 
 function mbsrDoneOn(date) {
   try {
-    const cp = JSON.parse(localStorage.getItem('mbsr_completed'));
+    const cp = JSON.parse(localStorage.getItem('rx_mbsr_completed') || localStorage.getItem('mbsr_completed'));
     return !!cp?.[date];
   } catch { return false; }
 }
@@ -410,13 +410,19 @@ export function graceRemaining(st = loadHabits(), d = new Date()) {
 export function computeStreak(st = loadHabits()) {
   let streak = 0;
   const d = new Date();
-  for (;;) {
+  let checkingToday = true;
+  for (let step = 0; step < 3650; step++) {
     const key = todayKey(d);
     const habits = getTodayHabits(st, key);
-    if (!habits.length) break;
-    const allDone = habits.every((h) => isHabitDone(h, st, key));
-    if (!allDone) break;
-    streak += 1;
+    if (habits.length > 0) {
+      const allDone = habits.every((h) => isHabitDone(h, st, key));
+      if (!allDone) {
+        if (!checkingToday) break;
+      } else {
+        streak += 1;
+      }
+    }
+    checkingToday = false;
     d.setDate(d.getDate() - 1);
   }
   return streak;
@@ -541,6 +547,9 @@ export function deleteHabit(habitId) {
     return st;
   }
   st.habits = st.habits.filter((x) => x.id !== habitId);
+  for (const item of st.habits) {
+    if (item.stackAfter === habitId) item.stackAfter = null;
+  }
   return saveHabits(st);
 }
 
@@ -890,6 +899,8 @@ export function exportHabitsData(st = loadHabits()) {
     graceUsed: st.graceUsed,
     life: st.life,
     settings: st.settings,
+    automaticity: st.automaticity || {},
+    reminderDismiss: st.reminderDismiss || {},
   }, null, 2);
 }
 

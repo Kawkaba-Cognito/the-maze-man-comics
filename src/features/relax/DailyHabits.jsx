@@ -45,7 +45,7 @@ const GOLD = 'var(--rx-meaning-core)';
 const SERIF = "'Cormorant Garamond', Georgia, serif";
 const SANS = "'Outfit', system-ui, sans-serif";
 
-const HEAT = ['#efe6d6', '#c8e6c9', '#9fd4a3', '#6fae7a', '#3a7a48'];
+const HEAT = ['var(--rx-heat-0)', 'var(--rx-heat-1)', 'var(--rx-heat-2)', 'var(--rx-heat-3)', 'var(--rx-heat-4)'];
 
 function ProgressRing({ done, total, allDone }) {
   const R = 46;
@@ -56,7 +56,7 @@ function ProgressRing({ done, total, allDone }) {
   return (
     <div className="hb-ring">
       <svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
-        <circle cx="60" cy="60" r={R} fill="none" stroke="#efe6d6" strokeWidth={SW} />
+        <circle cx="60" cy="60" r={R} fill="none" stroke="var(--rx-hair, rgba(0,0,0,0.1))" strokeWidth={SW} />
         <circle
           cx="60" cy="60" r={R} fill="none"
           stroke={allDone ? '#6fae7a' : 'url(#hbGrad)'} strokeWidth={SW} strokeLinecap="round"
@@ -71,7 +71,7 @@ function ProgressRing({ done, total, allDone }) {
         </defs>
       </svg>
       <div className="hb-ring-center">
-        {allDone ? <span className="hb-ring-check">✓</span> : <b>{done}<span>/{total}</span></b>}
+        {allDone ? <span className="hb-ring-check">✓</span> : <bdi dir="ltr"><b>{done}<span>/{total}</span></b></bdi>}
       </div>
     </div>
   );
@@ -357,11 +357,11 @@ export default function DailyHabits({ isAr, playSfx, onBack, onOpenPractice }) {
   };
 
   return (
-    <div className="rx-root" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className="rx-wb rx-root" dir={isAr ? 'rtl' : 'ltr'}>
       <style>{CSS}</style>
       <div className="rx-app">
         <div className="header">
-          {onBack && <button className="rx-back" onClick={onBack} aria-label="Back">‹</button>}
+          {onBack && <button className="rx-back" onClick={onBack} aria-label={isAr ? "رجوع" : "Back"}>{isAr ? "›" : "‹"}</button>}
           <div style={{ paddingInlineStart: onBack ? 42 : 0 }}>
             <div className="header-sub" style={{ color: '#6fae7a' }}>{isAr ? 'عادات' : 'Habits'}</div>
             <div className="header-title serif">{t.title}</div>
@@ -415,7 +415,7 @@ export default function DailyHabits({ isAr, playSfx, onBack, onOpenPractice }) {
                 <div key={ci} className="hb-stack-chain">
                   {chain.map((h, hi) => (
                     <React.Fragment key={h.id}>
-                      {hi > 0 && <span className="hb-stack-arrow">→</span>}
+                      {hi > 0 && <span className="hb-stack-arrow">{isAr ? '←' : '→'}</span>}
                       <span className="hb-stack-item">{h.icon} {habitTitle(h, isAr)}</span>
                     </React.Fragment>
                   ))}
@@ -480,7 +480,8 @@ export default function DailyHabits({ isAr, playSfx, onBack, onOpenPractice }) {
                   >
                     {done ? '✓' : isSkip ? '—' : ''}
                   </button>
-                  <button type="button" className="hb-body hb-body-btn" onClick={() => setExpanded(open ? null : habit.id)}>
+                  <div className="hb-body">
+                    <div className="hb-body-head hb-body-btn" role="button" tabIndex={0} onClick={() => setExpanded(open ? null : habit.id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded(open ? null : habit.id); } }}>
                     <div className="hb-title">
                       <span>{habit.icon || dom.icon}</span>
                       {habitTitle(habit, isAr)}
@@ -495,6 +496,7 @@ export default function DailyHabits({ isAr, playSfx, onBack, onOpenPractice }) {
                       )}
                     </div>
                     <div className="hb-hint">{habitRecipe(habit, isAr)}</div>
+                    </div>
                     {open && (
                       <div className="hb-recipe">
                         <div><b>{isAr ? 'بعد أن' : 'After'}</b> {isAr ? (habit.anchorAr || habit.anchorEn) : (habit.anchorEn || habit.anchorAr)}</div>
@@ -539,7 +541,7 @@ export default function DailyHabits({ isAr, playSfx, onBack, onOpenPractice }) {
                         )}
                       </div>
                     )}
-                  </button>
+                  </div>
                   <div className="hb-actions">
                     {habit.type === 'link' && habit.practiceId && !done && (
                       <button
@@ -581,7 +583,11 @@ export default function DailyHabits({ isAr, playSfx, onBack, onOpenPractice }) {
                   type="checkbox"
                   checked={st.settings?.remindersEnabled !== false}
                   onChange={(e) => {
-                    const next = setRemindersEnabled(e.target.checked);
+                    const checked = e.target.checked;
+                    if (checked && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+                      try { Notification.requestPermission(); } catch {}
+                    }
+                    const next = setRemindersEnabled(checked);
                     setSt(next);
                     syncHabitReminders(next, isAr ? 'ar' : 'en');
                   }}
@@ -697,7 +703,7 @@ ${AUTOMATICITY_CSS}
 .hb-tab-dot { position:absolute; top:6px; inset-inline-end:8px; width:8px; height:8px; border-radius:50%; background:#c86f8f; }
 .rx-root *, .rx-root *::before, .rx-root *::after { box-sizing:border-box; }
 .rx-root .rx-app { max-width:480px; margin:0 auto; padding-bottom:80px; position:relative; }
-.rx-root .rx-back { position:absolute; top:14px; left:12px; z-index:20; width:36px; height:36px; border-radius:10px; border:2px solid ${LINE}; background:${CARD}; color:#141210; font-size:22px; line-height:1; cursor:pointer; }
+.rx-root .rx-back { position:absolute; top:14px; inset-inline-start:12px; z-index:20; width:36px; height:36px; border-radius:10px; border:2px solid ${LINE}; background:${CARD}; color:#141210; font-size:22px; line-height:1; cursor:pointer; }
 .rx-root .header { padding:24px 20px 18px; background:linear-gradient(180deg,#fffaf3 0%,var(--color-training-palette-surface,#fff7f2) 100%); }
 .rx-root .header-sub { font-size:11px; letter-spacing:3px; text-transform:uppercase; margin-bottom:4px; font-weight:700; }
 .rx-root .header-title { font-family:${SERIF}; font-size:34px; font-weight:600; line-height:1.04; color:${INK}; }
@@ -756,7 +762,7 @@ ${AUTOMATICITY_CSS}
 .hb-section-title { font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:${SUB}; margin-bottom:10px; }
 .hb-heat-grid { display:flex; gap:3px; overflow-x:auto; padding-bottom:4px; }
 .hb-heat-col { display:flex; flex-direction:column; gap:3px; }
-.hb-heat-cell { width:12px; height:12px; border-radius:3px; flex-shrink:0; background:#f5efe6; }
+.hb-heat-cell { width:12px; height:12px; border-radius:3px; flex-shrink:0; background:var(--rx-heat-0); }
 .hb-heat-legend { display:flex; align-items:center; gap:4px; margin-top:8px; font-size:10px; color:${FAINT}; }
 .hb-heat-dot { width:10px; height:10px; border-radius:2px; }
 .hb-add-btn { width:100%; padding:13px; border-radius:12px; border:2px solid #6fae7a; background:#e8f5ea; color:#3a7a48; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; margin-bottom:10px; }
@@ -853,5 +859,5 @@ ${AUTOMATICITY_CSS}
 [data-home-theme='dark'] .hb-field input { background:#1a140c; border-color:rgba(212,168,80,0.25); color:#f0e2c0; }
 [data-home-theme='dark'] .hb-freq { background:#1a140c; border-color:rgba(212,168,80,0.25); color:#c9b384; }
 [data-home-theme='dark'] .hb-freq.on { border-color:#e8ac4e; background:#332818; color:#f0e2c0; }
-[data-home-theme='dark'] .hb-heat-cell { background:#2a2114; }
+[data-home-theme='dark'] .hb-heat-cell { background:var(--rx-heat-0); }
 `;

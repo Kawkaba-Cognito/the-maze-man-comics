@@ -430,8 +430,8 @@ const CSS = `
 .sr-stat { padding:11px; border-radius:12px; border:1px solid ${LINE}; background:${CARD}; text-align:center; }
 .sr-stat b { display:block; font-size:19px; color:${INK}; font-variant-numeric:tabular-nums; }
 .sr-stat span { font-size:10.5px; font-weight:700; color:${SUB}; }
-.sr-bars { display:flex; align-items:flex-end; gap:4px; height:88px; padding:8px; border-radius:12px; border:1px solid ${LINE}; background:${CARD}; }
-.sr-bar-col { flex:1; height:100%; display:flex; align-items:flex-end; }
-.sr-bar { width:100%; border-radius:4px 4px 2px 2px; background:var(--rx-hue-lit); }
+.sr-bars { display:flex; align-items:flex-end; justify-content:center; gap:6px; height:88px; padding:8px 12px; border-radius:12px; border:1px solid ${LINE}; background:${CARD}; }
+.sr-bar-col { flex:1; max-width:28px; height:100%; display:flex; align-items:flex-end; }
+.sr-bar { width:100%; border-radius:4px 4px 2px 2px; background:var(--rx-hue); }
 .sr-band { margin:0; font-size:13px; color:${SUB}; line-height:1.7; }
 `;
