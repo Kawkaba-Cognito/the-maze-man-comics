@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 462,
+    "raw-colour": 459,
     "stacked-backdrops": 2,
     "conditional-background": 1
   },
@@ -42,7 +42,7 @@
       "raw-colour": 14
     },
     "src/features/training/domains/language/games/synonyms/index.jsx": {
-      "raw-colour": 2
+      "raw-colour": 1
     },
     "src/features/training/domains/memory/games/memo-span/index.jsx": {
       "raw-colour": 11
@@ -60,10 +60,10 @@
       "raw-colour": 15
     },
     "src/features/training/domains/memory/games/story-grid/index.jsx": {
-      "raw-colour": 12
+      "raw-colour": 11
     },
     "src/features/training/domains/reasoning/games/detective/index.jsx": {
-      "raw-colour": 5
+      "raw-colour": 4
     },
     "src/features/training/domains/reasoning/games/gatekeeper/gatekeeper.css": {
       "raw-colour": 14

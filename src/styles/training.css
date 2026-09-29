@@ -9893,7 +9893,17 @@ html[data-home-theme='light'] .ct-ms-root:has(.ct-fq-training-shell--mode-cosmos
 .ct-domain-game-stage .ct-fq-play,
 .ct-domain-game-stage .ct-sm-play,
 .ct-domain-game-stage .ct-ms-play,
-.ct-domain-game-stage .ct-rh-play {
+.ct-domain-game-stage .ct-rh-play,
+.ct-domain-game-stage .ct-kt-root,
+.ct-domain-game-stage .ct-ts-root,
+.ct-domain-game-stage .ct-mw-root,
+.ct-domain-game-stage .ct-ss-root,
+.ct-domain-game-stage .gk-root,
+.ct-domain-game-stage .ct-det-root,
+.ct-domain-game-stage .synonyms-root,
+.ct-domain-game-stage .trivia-root,
+.ct-domain-game-stage .ct-wordle-root,
+.ct-domain-game-stage .ct-sg-root {
     background-color: transparent !important;
     background-image: none !important;
 }

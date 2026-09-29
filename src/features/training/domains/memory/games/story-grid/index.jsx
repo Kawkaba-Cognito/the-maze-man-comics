@@ -152,7 +152,7 @@ export function CharacterArt({ id, size, mood = 'ready' }) {
 function BgSwatch({ bgId, size = 50 }) {
   const cfg = BACKGROUNDS[bgId];
   return (
-    <div style={{ position: 'relative', width: size, height: size * 0.82, borderRadius: 9, overflow: 'hidden', background: cfg.bg, border: '2px solid #cdbfa6' }}>
+    <div style={{ position: 'relative', width: size, height: size * 0.82, borderRadius: 9, overflow: 'hidden', background: cfg.bg, border: '2px solid var(--line)' }}>
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '24%', background: cfg.ground, opacity: 0.9 }} />
       <span style={{ position: 'absolute', top: 3, insetInlineStart: 5, fontSize: 16 }}><Emoji char={cfg.chip} /></span>
     </div>

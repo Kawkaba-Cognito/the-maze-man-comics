@@ -453,7 +453,7 @@ export function DetectiveEngine({
     const n = solvedCount;
     const m = results.length;
     return (
-      <div style={rootStyle} className={cosmos ? 'c3d-embed-root' : undefined} dir={isAr ? 'rtl' : 'ltr'}>
+      <div style={rootStyle} className={`cx-atlas ct-training-root ct-det-root${cosmos ? ' c3d-embed-root' : ''}`} data-c3d-embed={cosmos || undefined} dir={isAr ? 'rtl' : 'ltr'}>
         <Header t={t} sub={hudSub} pause={pause} cosmos={cosmos} isAr={isAr} playSfx={playSfx} />
         {pause.modal}
         <div style={S.body}>
@@ -1038,7 +1038,7 @@ const S = {
   card: {
     width: 'min(100%, 480px)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 11,
     background: 'var(--surface-raised)', border: '2px solid var(--line)', borderRadius: 22,
-    padding: '14px 12px 16px', boxShadow: '4px 4px 0 rgba(26,18,8,0.1)',
+    padding: '14px 12px 16px', boxShadow: 'var(--fx-shadow-soft)',
   },
   hud: {
     width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',

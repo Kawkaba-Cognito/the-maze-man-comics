@@ -475,7 +475,7 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
       {/* staircase + lives + topic */}
       <div style={S.stairWrap} data-coach="stairs">
         <div style={S.livesRow}>
-          <span style={S.topicChip}>{category.emoji} {isAr ? category.ar : category.en}</span>
+          <span style={S.topicChip} className="topic-chip">{category.emoji} {isAr ? category.ar : category.en}</span>
           <span style={S.hearts} aria-label={`${LIVES - mistakes} lives`}>
             {'♥'.repeat(Math.max(0, LIVES - mistakes))}<span style={{ opacity: 0.25 }}>{'♥'.repeat(Math.max(0, mistakes))}</span>
           </span>
@@ -487,9 +487,9 @@ export function TriviaEngine({ mode, level, seed, attempt, onResult, onExit, isA
       {q && (
         <div style={S.qWrap}>
           <div style={{ ...S.feedback, color: wasCorrect ? 'var(--success)' : 'var(--danger)' }}>{feedback || t.step(Math.min(step + 1, steps), steps)}</div>
-          <div style={S.qCard}>
+          <div style={S.qCard} className="trivia-qcard">
             <span style={S.qStars} data-coach="stars">{'★'.repeat(q.q.d)}</span>
-            <span style={S.qText}>{isAr ? q.q.ar : q.q.en}</span>
+            <span style={S.qText} className="trivia-qtext">{isAr ? q.q.ar : q.q.en}</span>
           </div>
           <div style={S.opts} data-coach="options">
             {options.map((o, i) => {
@@ -583,7 +583,7 @@ const S = {
   hearts: { fontSize: 16, color: 'var(--danger)', letterSpacing: 1 },
   qWrap: { position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 10, padding: '6px 16px calc(20px + env(safe-area-inset-bottom))', overflowY: 'auto' },
   feedback: { fontWeight: 900, fontSize: 15, minHeight: 20 },
-  qCard: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'var(--surface-raised)', border: '2px solid var(--line)', borderRadius: 18, padding: '14px 18px', maxWidth: 430, width: '100%', boxShadow: '3px 3px 0 rgba(26,18,8,0.12)' },
+  qCard: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'var(--surface-raised)', border: '2px solid var(--line)', borderRadius: 18, padding: '14px 18px', maxWidth: 430, width: '100%', boxShadow: 'var(--fx-shadow-soft)' },
   qStars: { fontSize: 11, fontWeight: 900, color: 'var(--game-accent-edge)', letterSpacing: 2 },
   qText: { fontWeight: 800, fontSize: 'clamp(15.5px, 4.4vw, 19px)', color: 'var(--ink)', textAlign: 'center', lineHeight: 1.35 },
   opts: { display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 430 },

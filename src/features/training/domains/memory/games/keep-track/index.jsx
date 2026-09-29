@@ -286,7 +286,7 @@ function KeepTrackEngine({
 
   if (step === 'over') {
     return (
-      <div className="ct-training-root ct-kt-root" dir={isAr ? 'rtl' : 'ltr'}>
+      <div className="cx-atlas ct-training-root ct-kt-root" dir={isAr ? 'rtl' : 'ltr'}>
         <PlayResults
           isAr={isAr}
           title={t.runOver}
@@ -307,7 +307,7 @@ function KeepTrackEngine({
   }
 
   return (
-    <div className="cx-atlas ct-training-root ct-kt-root" dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active={step === 'stream' || step === 'recall' ? 'true' : undefined}>
+    <div className="cx-atlas ct-training-root ct-kt-root" dir={isAr ? 'rtl' : 'ltr'} data-gameplay-active={step !== 'over' ? 'true' : undefined}>
       {/* The shared PLAY header, not TrainingMenuBar — that one is the hub/lobby
           bar (full width, 18px gutter) and using it mid-play put this game's
           back button in a different place and size from every other game's.

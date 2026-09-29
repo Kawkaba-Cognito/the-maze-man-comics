@@ -1262,7 +1262,7 @@
 
 /* ── Target Tracking (mot) Inked Atlas Gameplay ────────────────────────── */
 .cx-atlas.ct-mot-root {
-  padding-top: clamp(46px, 8.5vh, 80px);
+  padding-top: clamp(48px, 9vh, 84px);
   padding-bottom: clamp(48px, 9vh, 84px);
   box-sizing: border-box;
 }
@@ -2195,6 +2195,7 @@ html[data-home-theme='dark'] .cx-atlas.ct-sg-root::before {
   box-shadow: 0 14px 38px var(--fx-shadow-deep);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  bottom: calc(clamp(42px, 7.5vh, 58px) + env(safe-area-inset-bottom, 0px));
 }
 
 .cx-atlas.ct-pal3d-root .ct-pal-access-btn {
@@ -2662,7 +2663,19 @@ html[data-home-theme='dark'] .cx-atlas.rh-atlas-root::before {
 /* ── Detective (Hotel Oddity) Atlas Enhancements ──────────────────────── */
 .cx-atlas.ct-det-root .ct-det-card,
 .cx-atlas.ct-det-root [style*="min(100%, 480px)"] {
-  border-radius: var(--cx-r-plate);
+  border-radius: var(--cx-r-plate) !important;
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent) !important;
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 45%, var(--line)) !important;
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 12px 36px var(--fx-shadow-deep) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.cx-atlas.ct-det-root [style*="font-display"] {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif !important;
+}
+[dir='rtl'] .cx-atlas.ct-det-root [style*="font-display"] {
+  font-family: 'Cairo', 'Cormorant Garamond', serif !important;
 }
 
 .cx-atlas.ct-det-root button[aria-label] {
@@ -2785,6 +2798,23 @@ html[data-home-theme='dark'] .cx-atlas.ct-wordle-root::before {
 }
 
 /* ── Word Links (Synonyms) Atlas Enhancements ─────────────────────────── */
+.cx-atlas.synonyms-root [style*="wordCard"],
+.cx-atlas.synonyms-root [style*="anWord"],
+.cx-atlas.synonyms-root button[style*="opt"],
+.cx-atlas.synonyms-root button[style*="pairTile"] {
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent) !important;
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 40%, var(--line)) !important;
+  border-radius: var(--cx-r-plate) !important;
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 8px 24px var(--fx-shadow-soft);
+}
+
+.cx-atlas.synonyms-root [style*="prompt"] {
+  font-family: 'Cormorant Garamond', 'Cinzel', serif !important;
+}
+[dir='rtl'] .cx-atlas.synonyms-root [style*="prompt"] {
+  font-family: 'Cairo', 'Cormorant Garamond', serif !important;
+}
+
 .cx-atlas.synonyms-root button[type="button"] {
   border-radius: var(--cx-r-plate);
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
@@ -2802,50 +2832,100 @@ html[data-home-theme='dark'] .cx-atlas.ct-wordle-root::before {
   border-radius: var(--cx-r-pill);
 }
 
+.cx-atlas.trivia-root .trivia-qcard,
 .cx-atlas.trivia-root [style*="qCard"] {
-  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
-  border: 1.5px solid color-mix(in srgb, var(--game-accent) 45%, var(--line));
-  border-radius: var(--cx-r-plate);
-  box-shadow: inset 0 1px 0 var(--fx-glint), 0 12px 36px var(--fx-shadow-deep);
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent) !important;
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 45%, var(--line)) !important;
+  border-radius: var(--cx-r-plate) !important;
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 12px 36px var(--fx-shadow-deep) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
+.cx-atlas.trivia-root .trivia-qtext,
 .cx-atlas.trivia-root [style*="qText"] {
-  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-family: 'Cormorant Garamond', 'Cinzel', serif !important;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
+[dir='rtl'] .cx-atlas.trivia-root .trivia-qtext,
 [dir='rtl'] .cx-atlas.trivia-root [style*="qText"] {
-  font-family: 'Cairo', 'Cormorant Garamond', serif;
+  font-family: 'Cairo', 'Cormorant Garamond', serif !important;
   letter-spacing: 0;
 }
 
 /* ── Word Maze (Wordle) Atlas Enhancements ────────────────────────────── */
 .cx-atlas.ct-wordle-root .ct-wordle-board,
+.cx-atlas.ct-wordle-root .ct-wordle-link-board,
 .cx-atlas.ct-wordle-root .ct-wordle-in-fq {
   border-radius: var(--cx-r-plate);
 }
 
-.cx-atlas.ct-wordle-root .ct-wordle-cell {
-  border-radius: var(--cx-r-plate);
-  font-family: 'DM Mono', ui-monospace, monospace;
-  font-weight: 700;
-  border: 1.5px solid color-mix(in srgb, var(--game-accent) 35%, var(--line));
-  background: color-mix(in srgb, var(--surface-raised) 95%, transparent);
-  box-shadow: inset 0 1px 0 var(--fx-glint), 0 4px 12px var(--fx-shadow-soft);
+.cx-atlas.ct-wordle-root .ct-wordle-cell,
+.cx-atlas.ct-wordle-root .ct-wordle-link-cell {
+  border-radius: var(--cx-r-plate) !important;
+  font-family: 'DM Mono', ui-monospace, monospace !important;
+  font-weight: 700 !important;
+  border: 1.5px solid color-mix(in srgb, var(--game-accent) 35%, var(--line)) !important;
+  background: color-mix(in srgb, var(--surface-raised) 95%, transparent) !important;
+  box-shadow: inset 0 1px 0 var(--fx-glint), 0 4px 12px var(--fx-shadow-soft) !important;
   transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
 }
 
-[dir='rtl'] .cx-atlas.ct-wordle-root .ct-wordle-cell {
-  font-family: 'Cairo', 'DM Mono', monospace;
-  font-weight: 800;
+.cx-atlas.ct-wordle-root .ct-wordle-link-letter {
+  font-family: 'DM Mono', ui-monospace, monospace !important;
+  font-weight: 700 !important;
+  color: var(--game-ink) !important;
 }
 
-.cx-atlas.ct-wordle-root .ct-wordle-cell--selected {
-  border-color: var(--game-accent);
-  background: color-mix(in srgb, var(--game-accent) 22%, var(--surface-raised));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--game-accent) 45%, transparent), 0 6px 18px var(--fx-shadow-soft);
+[dir='rtl'] .cx-atlas.ct-wordle-root .ct-wordle-cell,
+[dir='rtl'] .cx-atlas.ct-wordle-root .ct-wordle-link-cell,
+[dir='rtl'] .cx-atlas.ct-wordle-root .ct-wordle-link-letter {
+  font-family: 'Cairo', 'DM Mono', monospace !important;
+  font-weight: 800 !important;
+}
+
+.cx-atlas.ct-wordle-root .ct-wordle-cell--selected,
+.cx-atlas.ct-wordle-root .ct-wordle-link-cell--active {
+  border-color: var(--game-accent) !important;
+  background: color-mix(in srgb, var(--game-accent) 22%, var(--surface-raised)) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--game-accent) 45%, transparent), 0 6px 18px var(--fx-shadow-soft) !important;
+}
+
+.cx-atlas.ct-wordle-root .ct-wordle-link-cell--active .ct-wordle-link-letter {
+  color: var(--game-accent) !important;
+}
+
+.cx-atlas.ct-wordle-root .ct-wordle-link-order {
+  color: var(--game-accent) !important;
+}
+
+.cx-atlas.ct-wordle-root .ct-wordle-link-draft {
+  font-family: 'DM Mono', ui-monospace, monospace !important;
+  color: var(--game-ink) !important;
+}
+
+[dir='rtl'] .cx-atlas.ct-wordle-root .ct-wordle-link-draft {
+  font-family: 'Cairo', 'DM Mono', monospace !important;
+}
+
+.cx-atlas.ct-wordle-root .ct-wordle-found-panel {
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--cx-r-plate) !important;
+}
+
+.cx-atlas.ct-wordle-root .ct-wordle-found-chip {
+  background: color-mix(in srgb, var(--game-accent) 25%, var(--surface-raised)) !important;
+  color: var(--game-ink) !important;
+  border: 1px solid color-mix(in srgb, var(--game-accent) 45%, var(--line)) !important;
+  font-family: 'DM Mono', ui-monospace, monospace !important;
+  font-weight: 700 !important;
+  border-radius: var(--cx-r-pill) !important;
+}
+
+[dir='rtl'] .cx-atlas.ct-wordle-root .ct-wordle-found-chip {
+  font-family: 'Cairo', 'DM Mono', monospace !important;
 }
 
 

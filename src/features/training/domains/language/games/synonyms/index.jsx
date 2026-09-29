@@ -330,11 +330,13 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
 
   const pickOption = (opt) => {
     if (lockRef.current || trialRef.current?.kind === 'pair') return;
+    playSfx?.('click');
     resolve(!!opt.correct);
   };
 
   const togglePair = (key) => {
     if (lockRef.current || trialRef.current?.kind !== 'pair') return;
+    playSfx?.('click');
     setPicked((prev) => {
       if (prev.includes(key)) return prev.filter((k) => k !== key);
       const next = prev.length >= 2 ? [key] : [...prev, key];
@@ -584,7 +586,7 @@ const S = {
   survTrack: { position: 'relative', zIndex: 1, height: 3, background: 'var(--line)', flexShrink: 0 },
   survFill: { height: '100%', transition: 'width 0.08s linear' },
   overWrap: { position: 'relative', zIndex: 1, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  overCard: { background: CARD, border: `1px solid ${LINE}`, borderRadius: 20, padding: '32px 28px', textAlign: 'center', maxWidth: 340, width: '100%', boxShadow: '0 8px 30px rgba(26,18,8,0.08)' },
+  overCard: { background: CARD, border: `1px solid ${LINE}`, borderRadius: 20, padding: '32px 28px', textAlign: 'center', maxWidth: 340, width: '100%', boxShadow: '0 8px 30px var(--fx-shadow-soft)' },
   overTitle: { margin: '0 0 6px', fontWeight: 800, fontSize: 22, color: INK },
   overSub: { margin: 0, fontWeight: 600, color: SUB },
   btnPri: { padding: '12px 22px', borderRadius: 12, border: 'none', background: ACC, color: '#fff', fontWeight: 800, cursor: 'pointer' },

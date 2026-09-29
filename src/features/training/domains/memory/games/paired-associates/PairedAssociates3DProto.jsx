@@ -135,11 +135,13 @@ export default function PairedAssociates3DProto({
     if (!wrap || boxes.length === 0) return undefined;
 
     const desktopLayout = wrap.clientWidth >= 900 && wrap.clientHeight >= 600;
+    const isDark = typeof document !== 'undefined' && document.documentElement.dataset.homeTheme === 'dark';
     const boot = bootC3dScene(wrap, {
       fov: desktopLayout ? 44 : 48,
       fitHalf: 4.1,
       bloom: false,
       stars: false,
+      deep: isDark,
     });
     if (boot.error) {
       setBootError(isAr ? 'تعذّر تشغيل ثلاثي الأبعاد' : 'Could not start 3D');

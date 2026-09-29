@@ -830,7 +830,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
             }}
             onPause={handlePauseOpen}
           />
-          <div className="ct-fq-g-wrap" ref={coachRootRef} style={{ position: 'relative' }}>
+          <div className="ct-fq-g-wrap" ref={coachRootRef} style={{ position: 'relative' }} data-gameplay-active="true">
             {coachOpen && (
               <DomCoach
                 isAr={isAr}

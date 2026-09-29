@@ -283,14 +283,14 @@ export function GatekeeperEngine({
         : `Gate ${roundsRef.current + 1} · best ${bestRef.current}`);
 
   if (!gate) {
-    return <div className={`gk-root${cosmos ? ' gk-root--cosmos' : ''}`} dir={isAr ? 'rtl' : 'ltr'} />;
+    return <div className={`cx-atlas ct-training-root gk-root${cosmos ? ' gk-root--cosmos' : ''}`} dir={isAr ? 'rtl' : 'ltr'} />;
   }
 
   /* ── the run is over ── */
   if (done) {
     const sharp = infoRef.current.n ? infoRef.current.sum / infoRef.current.n : 0;
     return (
-      <div className={`gk-root${cosmos ? ' gk-root--cosmos' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>
+      <div className={`cx-atlas ct-training-root gk-root${cosmos ? ' gk-root--cosmos' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>
         <Header t={t} sub={hudSub} pause={pause} cosmos={cosmos} isAr={isAr} playSfx={playSfx} />
         {pause.modal}
         <div className="gk-body">
