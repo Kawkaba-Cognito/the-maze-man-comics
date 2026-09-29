@@ -588,5 +588,5 @@ const S = {
   overTitle: { margin: '0 0 6px', fontWeight: 800, fontSize: 22, color: INK },
   overSub: { margin: 0, fontWeight: 600, color: SUB },
   btnPri: { padding: '12px 22px', borderRadius: 12, border: 'none', background: ACC, color: '#fff', fontWeight: 800, cursor: 'pointer' },
-  btnGhost: { padding: '12px 20px', borderRadius: 12, border: `1px solid ${LINE}`, background: '#fff', fontWeight: 700, color: INK, cursor: 'pointer' },
+  btnGhost: { padding: '12px 20px', borderRadius: 12, border: `1px solid ${LINE}`, background: CARD, fontWeight: 700, color: INK, cursor: 'pointer' },
 };

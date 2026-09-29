@@ -1375,5 +1375,5 @@ const S = {
     background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer',
     boxShadow: '3px 3px 0 var(--ink-outline)',
   },
-  primaryOff: { background: '#c9bfae', borderColor: '#a89a82', boxShadow: 'none', cursor: 'default' },
+  primaryOff: { background: 'var(--surface-sunken)', borderColor: 'var(--line)', opacity: 0.6, boxShadow: 'none', cursor: 'default' },
 };

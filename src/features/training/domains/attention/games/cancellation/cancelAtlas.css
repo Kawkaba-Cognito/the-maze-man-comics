@@ -1274,6 +1274,12 @@
   }
 }
 
+.cx-atlas.ct-mot-root .ct-training-play-header {
+  position: relative;
+  z-index: 5;
+  pointer-events: auto;
+}
+
 .cx-atlas .ct-mot-workspace {
   box-sizing: border-box;
   padding: 8px 16px;
@@ -1327,8 +1333,11 @@
 }
 
 /* ── Spaceship (train-switch) Inked Atlas Gameplay ─────────────────────── */
-/* Antique celestial star-chart top/bottom bands overlay over 3D deck view */
-.cx-atlas.c3d-root::before {
+/* Antique celestial star-chart top/bottom bands overlay over 3D deck and game views */
+.cx-atlas.c3d-root::before,
+.cx-atlas.ct-mot-root::before,
+.cx-atlas.ct-pal3d-root::before,
+.cx-atlas.cancellation-task-game::before {
   content: '';
   position: absolute;
   top: 0;
@@ -1352,7 +1361,10 @@
 }
 
 @media (orientation: portrait) {
-  .cx-atlas.c3d-root::before {
+  .cx-atlas.c3d-root::before,
+  .cx-atlas.ct-mot-root::before,
+  .cx-atlas.ct-pal3d-root::before,
+  .cx-atlas.cancellation-task-game::before {
     background-image:
       url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-top.webp"),
       url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-bottom.webp");
@@ -1362,13 +1374,19 @@
   }
 }
 
-html[data-home-theme='dark'] .cx-atlas.c3d-root::before {
+html[data-home-theme='dark'] .cx-atlas.c3d-root::before,
+html[data-home-theme='dark'] .cx-atlas.ct-mot-root::before,
+html[data-home-theme='dark'] .cx-atlas.ct-pal3d-root::before,
+html[data-home-theme='dark'] .cx-atlas.cancellation-task-game::before {
   background-image:
     url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-top.webp"),
     url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-bottom.webp");
 }
 @media (orientation: portrait) {
-  html[data-home-theme='dark'] .cx-atlas.c3d-root::before {
+  html[data-home-theme='dark'] .cx-atlas.c3d-root::before,
+  html[data-home-theme='dark'] .cx-atlas.ct-mot-root::before,
+  html[data-home-theme='dark'] .cx-atlas.ct-pal3d-root::before,
+  html[data-home-theme='dark'] .cx-atlas.cancellation-task-game::before {
     background-image:
       url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-top.webp"),
       url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-bottom.webp");
@@ -1376,12 +1394,14 @@ html[data-home-theme='dark'] .cx-atlas.c3d-root::before {
 }
 
 /* Clear the top celestial band for HUD controls */
-.cx-atlas.c3d-root .c3d-ui--overlay {
+.cx-atlas.c3d-root .c3d-ui--overlay,
+.cx-atlas.ct-pal3d-root .c3d-ui--overlay {
   padding-top: clamp(48px, 9vh, 84px);
   z-index: 5;
 }
 @media (max-width: 899px), (orientation: portrait) {
-  .cx-atlas.c3d-root .c3d-ui--overlay {
+  .cx-atlas.c3d-root .c3d-ui--overlay,
+  .cx-atlas.ct-pal3d-root .c3d-ui--overlay {
     padding-top: clamp(42px, 7.5vh, 58px);
   }
 }
@@ -1910,6 +1930,11 @@ html[data-home-theme='dark'] .cx-atlas.ct-kt-root::before {
   }
 }
 
+.cx-atlas.ct-kt-root {
+  box-sizing: border-box;
+  padding-top: clamp(48px, 9vh, 84px);
+  padding-bottom: clamp(48px, 9vh, 84px);
+}
 @media (max-width: 899px), (orientation: portrait) {
   .cx-atlas.ct-kt-root {
     padding-top: clamp(42px, 7.5vh, 58px);
@@ -2080,6 +2105,11 @@ html[data-home-theme='dark'] .cx-atlas.ct-sg-root::before {
   }
 }
 
+.cx-atlas.ct-sg-root {
+  box-sizing: border-box;
+  padding-top: clamp(48px, 9vh, 84px);
+  padding-bottom: clamp(48px, 9vh, 84px);
+}
 @media (max-width: 899px), (orientation: portrait) {
   .cx-atlas.ct-sg-root {
     padding-top: clamp(42px, 7.5vh, 58px);
@@ -2239,6 +2269,13 @@ html[data-home-theme='dark'] .cx-atlas.ct-ss-root::before {
   }
 }
 
+.cx-atlas.ct-ts-root,
+.cx-atlas.ct-mw-root,
+.cx-atlas.ct-ss-root {
+  box-sizing: border-box;
+  padding-top: clamp(48px, 9vh, 84px);
+  padding-bottom: clamp(48px, 9vh, 84px);
+}
 @media (max-width: 899px), (orientation: portrait) {
   .cx-atlas.ct-ts-root,
   .cx-atlas.ct-mw-root,
@@ -2547,13 +2584,29 @@ html[data-home-theme='dark'] .cx-atlas.rh-atlas-root::before {
   }
 }
 
-/* Header clearance */
+/* Viewport and header clearance */
+.cx-atlas.gk-root,
+.cx-atlas.ct-det-root,
+.cx-atlas.rh-atlas-root {
+  box-sizing: border-box;
+  padding-top: clamp(48px, 9vh, 84px);
+  padding-bottom: clamp(48px, 9vh, 84px);
+}
+@media (max-width: 899px), (orientation: portrait) {
+  .cx-atlas.gk-root,
+  .cx-atlas.ct-det-root,
+  .cx-atlas.rh-atlas-root {
+    padding-top: clamp(42px, 7.5vh, 58px);
+    padding-bottom: calc(clamp(42px, 7.5vh, 58px) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 .cx-atlas.gk-root .ct-training-play-header,
 .cx-atlas.ct-det-root .ct-training-play-header,
 .cx-atlas.rh-atlas-root .ct-training-play-header {
   position: relative;
   z-index: 5;
-  padding-top: clamp(10px, 2.5vh, 24px);
+  pointer-events: auto;
 }
 
 /* ── The Gate (Gatekeeper) Atlas Enhancements ─────────────────────────── */
@@ -2706,13 +2759,29 @@ html[data-home-theme='dark'] .cx-atlas.ct-wordle-root::before {
   }
 }
 
-/* Header clearance */
+/* Viewport and header clearance */
+.cx-atlas.synonyms-root,
+.cx-atlas.trivia-root,
+.cx-atlas.ct-wordle-root {
+  box-sizing: border-box;
+  padding-top: clamp(48px, 9vh, 84px);
+  padding-bottom: clamp(48px, 9vh, 84px);
+}
+@media (max-width: 899px), (orientation: portrait) {
+  .cx-atlas.synonyms-root,
+  .cx-atlas.trivia-root,
+  .cx-atlas.ct-wordle-root {
+    padding-top: clamp(42px, 7.5vh, 58px);
+    padding-bottom: calc(clamp(42px, 7.5vh, 58px) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 .cx-atlas.synonyms-root .ct-training-play-header,
 .cx-atlas.trivia-root .ct-training-play-header,
 .cx-atlas.ct-wordle-root .ct-training-play-header {
   position: relative;
   z-index: 5;
-  padding-top: clamp(10px, 2.5vh, 24px);
+  pointer-events: auto;
 }
 
 /* ── Word Links (Synonyms) Atlas Enhancements ─────────────────────────── */

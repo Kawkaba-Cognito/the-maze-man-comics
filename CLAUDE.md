@@ -231,14 +231,17 @@ src/
   - `trialLog.js` / `metrics.js` — per-trial capture + RT psychometrics (IES, ICV, d′), capped localStorage.
 - **Two game generations coexist**: pre-ModeShell monoliths that run their own mode state machines (cancellation ~1.9k lines, rush-hour, speed-match — they also embed assessment batteries), and ModeShell games (3–8× smaller). **Copy a ModeShell game** (e.g. `math-gates`, `detective`) for new work, not a monolith.
 
-### The Inked Atlas & PlanetPath Standard (18/18 Games Unified — 2026-09-28)
+### The Inked Atlas & PlanetPath Standard (18/18 Games Unified & Audited — 2026-09-29)
 
-All 18 cognitive training games across all 5 active domains are unified to the **"The Inked Atlas" / Cancellation Task aesthetic standard**:
-- **Framing & Viewport**: Antique celestial star-chart top/bottom frieze bands (`cancel-starchart-band-*.webp`) framing the screen in light, dark, and portrait orientations (`cancelAtlas.css`).
-- **Surface & Materiality**: Textured parchment (`var(--surface-raised)`), gold filigree highlights (`var(--game-accent)`, `var(--fx-glint)`), and zero raw hex colors (governed by `npm run audit:design`).
+All 18 cognitive training games across all 5 active domains are unified and audited to the **"The Inked Atlas" / Cancellation Task aesthetic and architectural standard**:
+- **Framing & Viewport**: Antique celestial star-chart top/bottom frieze bands (`cancel-starchart-band-*.webp`) framing the screen in light, dark, landscape, and portrait orientations (`cancelAtlas.css`).
+- **Universal Gameplay Surface**: Active gameplay across all 18 games renders on the standardized Inked Atlas parchment surface (`var(--play-surface)` / `var(--play-surface-deep)` in dark mode) via `.ct-domain-game-stage:has([data-gameplay-active='true'])::before`, eliminating all legacy/distracting domain illustrations (`domain-backgrounds-2026-v2`) from active rounds.
+- **Root & HUD Clearances**: Every game root implements standard viewport clearance (`clamp(48px, 9vh, 84px)` on desktop, `clamp(42px, 7.5vh, 58px) + env(safe-area-inset-bottom)` on mobile/portrait), ensuring HUD controls, instructions, and interactive boards never collide with celestial bands or system gesture bars.
+- **Surface & Materiality**: Textured parchment (`var(--surface-raised)`), gold filigree highlights (`var(--game-accent)`, `var(--fx-glint)`), and zero raw hex colors in CSS/JSX gameplay (governed by `npm run audit:design`, ratcheted down to 462).
 - **Typography & Audio**: Cormorant Garamond / Cinzel for headings, Cairo for Arabic typography, DM Mono for data chips, and tactile Kalimba micro-audio (`playSfx`).
 - **Cosmic Progression (`PlanetPath`)**: Every game's Levels mode presents an interactive celestial star-chart path with 5–6 thematic bands, level metadata chips, and bilingual help modals (`<PlanetPath ...>`).
 - **Trial Logging & Metrics**: `createTrialLog` is wired across 15/18 games to record per-trial latency and accuracy (`audit:consistency` scores 15/18 at 22/22★; the 3 remaining — `cancel-task`, `rush-hour`, `wordle` — run bespoke multi-mode state machines exempt from `ModeShell` and achieve their maximum score of 19/22).
+- **Automated Verification**: Governed by `scripts/audit-clearance-and-frieze.mjs` (18/18 verified) and `scripts/audit-inked-atlas.mjs` (18/18 clean).
 
 ### Benched games (complete but unreachable — see BENCHED.md in each)
 

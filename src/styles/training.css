@@ -10317,19 +10317,11 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .
  * Same-day visual trial, not a shipped call; this is the flag to revisit
  * before it becomes one. Later rule wins on source order — same selector,
  * no specificity trick needed; delete this block to restore 55%/65%. */
-.ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true']),
-.ct-domain-game-stage:has(.ct-mot-play[data-gameplay-active='true']),
-.ct-domain-game-stage:has(.c3d-root[data-gameplay-active='true']) {
+.ct-domain-game-stage:has([data-gameplay-active='true']) {
     --training-art-scrim: 0%;
 }
-html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true']),
-html[data-home-theme='dark'] .ct-domain-game-stage:has(.ct-mot-play[data-gameplay-active='true']),
-html[data-home-theme='dark'] .ct-domain-game-stage:has(.c3d-root[data-gameplay-active='true']) {
+html[data-home-theme='dark'] .ct-domain-game-stage:has([data-gameplay-active='true']) {
     --training-art-scrim: 0%;
-}
-.ct-domain-game-stage[data-training-domain="attention"]:has([data-gameplay-active='true'])::before {
-    background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-        url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/attention.webp");
 }
 
 /* ⚠ TRIAL (2026-09-12, owner: "let's try star chart in the real game in
@@ -10413,9 +10405,7 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.c3d-root[data-gameplay-a
  * value belongs to the veil gradient, the second to the image — so writing a
  * single value silently applies it to the gradient and leaves the image on
  * the inherited `cover`. */
-.ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before,
-.ct-domain-game-stage:has(.ct-mot-play[data-gameplay-active='true'])::before,
-.ct-domain-game-stage:has(.c3d-root[data-gameplay-active='true'])::before {
+.ct-domain-game-stage:has([data-gameplay-active='true'])::before {
     background-image:
         url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-top.webp"),
         url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-bottom.webp"),
@@ -10440,9 +10430,7 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.c3d-root[data-gameplay-a
  * pair above. cancelBoard2d.css flips the piece-chip colour to match in
  * the same theme selector — the two must move together, or dark theme
  * gets either dark-on-dark pieces or a light chip on the beige art. */
-html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before,
-html[data-home-theme='dark'] .ct-domain-game-stage:has(.ct-mot-play[data-gameplay-active='true'])::before,
-html[data-home-theme='dark'] .ct-domain-game-stage:has(.c3d-root[data-gameplay-active='true'])::before {
+html[data-home-theme='dark'] .ct-domain-game-stage:has([data-gameplay-active='true'])::before {
     background-image:
         url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-top.webp"),
         url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-bottom.webp"),
@@ -10460,32 +10448,7 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.c3d-root[data-gameplay-a
         no-repeat,
         no-repeat;
 }
-
-.ct-domain-game-stage[data-training-domain="speed"]:has([data-gameplay-active='true'])::before {
-    background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-        url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/speed.webp");
-}
-.ct-domain-game-stage[data-training-domain="memory"]:has([data-gameplay-active='true'])::before {
-    background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-        url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/memory.webp");
-}
-.ct-domain-game-stage[data-training-domain="language"]:has([data-gameplay-active='true'])::before {
-    background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-        url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/language.webp");
-}
-.ct-domain-game-stage[data-training-domain="reasoning"]:has([data-gameplay-active='true'])::before {
-    background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-        url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/reasoning.webp");
-}
-.ct-domain-game-stage[data-training-domain="flexibility"]:has([data-gameplay-active='true'])::before {
-    background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-        url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/desktop/flexibility.webp");
-}
 @media (orientation: portrait) {
-    .ct-domain-game-stage[data-training-domain="attention"]:has([data-gameplay-active='true'])::before {
-        background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-            url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/attention.webp");
-    }
     /* ⚠ Cancellation's star-chart trial, portrait half (2026-09-12) — Codex
      * generated a genuine 9:16 recompose, downsized to ~220KB, empty-centre
      * composition (see below). Same higher-specificity :has() selector as
@@ -10528,9 +10491,7 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.c3d-root[data-gameplay-a
      * the thing the four-sided art made impossible. Landscape still needs
      * `100% 100%` — see the note on the landscape rule above for why
      * `cover` would eat both bands on a 1366x577 desktop. */
-    .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before,
-    .ct-domain-game-stage:has(.ct-mot-play[data-gameplay-active='true'])::before,
-    .ct-domain-game-stage:has(.c3d-root[data-gameplay-active='true'])::before {
+    .ct-domain-game-stage:has([data-gameplay-active='true'])::before {
         background-image:
             url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-top.webp"),
             url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-portrait-bottom.webp"),
@@ -10550,9 +10511,7 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.c3d-root[data-gameplay-a
     }
     /* Dark-graded portrait half — same asset shape and reasoning
        as the light rule directly above. */
-    html[data-home-theme='dark'] .ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true'])::before,
-    html[data-home-theme='dark'] .ct-domain-game-stage:has(.ct-mot-play[data-gameplay-active='true'])::before,
-    html[data-home-theme='dark'] .ct-domain-game-stage:has(.c3d-root[data-gameplay-active='true'])::before {
+    html[data-home-theme='dark'] .ct-domain-game-stage:has([data-gameplay-active='true'])::before {
         background-image:
             url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-top.webp"),
             url("/the-maze-man-comics/Assets/attention/cancel-starchart-band-dark-portrait-bottom.webp"),
@@ -10569,26 +10528,6 @@ html[data-home-theme='dark'] .ct-domain-game-stage:has(.c3d-root[data-gameplay-a
             no-repeat,
             no-repeat,
             no-repeat;
-    }
-    .ct-domain-game-stage[data-training-domain="speed"]:has([data-gameplay-active='true'])::before {
-        background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-            url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/speed.webp");
-    }
-    .ct-domain-game-stage[data-training-domain="memory"]:has([data-gameplay-active='true'])::before {
-        background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-            url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/memory.webp");
-    }
-    .ct-domain-game-stage[data-training-domain="language"]:has([data-gameplay-active='true'])::before {
-        background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-            url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/language.webp");
-    }
-    .ct-domain-game-stage[data-training-domain="reasoning"]:has([data-gameplay-active='true'])::before {
-        background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-            url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/reasoning.webp");
-    }
-    .ct-domain-game-stage[data-training-domain="flexibility"]:has([data-gameplay-active='true'])::before {
-        background-image: linear-gradient(var(--game-veil), var(--game-veil)),
-            url("/the-maze-man-comics/Assets/training/domain-backgrounds-2026-v2/mobile/flexibility.webp");
     }
 }
 

@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 473,
+    "raw-colour": 462,
     "stacked-backdrops": 2,
     "conditional-background": 1
   },
@@ -15,7 +15,7 @@
       "raw-colour": 19
     },
     "src/features/training/domains/attention/games/train-switch/index.jsx": {
-      "raw-colour": 21
+      "raw-colour": 17
     },
     "src/features/training/domains/flexibility/games/brixton/Brixton3DProto.jsx": {
       "raw-colour": 5
@@ -42,7 +42,7 @@
       "raw-colour": 14
     },
     "src/features/training/domains/language/games/synonyms/index.jsx": {
-      "raw-colour": 3
+      "raw-colour": 2
     },
     "src/features/training/domains/memory/games/memo-span/index.jsx": {
       "raw-colour": 11
@@ -60,10 +60,10 @@
       "raw-colour": 15
     },
     "src/features/training/domains/memory/games/story-grid/index.jsx": {
-      "raw-colour": 17
+      "raw-colour": 12
     },
     "src/features/training/domains/reasoning/games/detective/index.jsx": {
-      "raw-colour": 6
+      "raw-colour": 5
     },
     "src/features/training/domains/reasoning/games/gatekeeper/gatekeeper.css": {
       "raw-colour": 14

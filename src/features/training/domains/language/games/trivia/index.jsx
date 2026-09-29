@@ -610,5 +610,5 @@ const S = {
   overSub: { margin: 0, fontWeight: 700, color: 'var(--ink-dim)' },
   btnRow: { display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 14 },
   primary: { padding: '12px 26px', borderRadius: 14, border: '2px solid var(--ink-outline)', background: 'var(--success)', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '3px 3px 0 var(--ink-outline)' },
-  ghost: { padding: '12px 18px', borderRadius: 14, border: '2px solid var(--line)', background: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer', color: 'var(--ink-dim)' },
+  ghost: { padding: '12px 18px', borderRadius: 14, border: '2px solid var(--line)', background: 'var(--surface-raised)', fontWeight: 800, fontSize: 14, cursor: 'pointer', color: 'var(--ink-dim)' },
 };
