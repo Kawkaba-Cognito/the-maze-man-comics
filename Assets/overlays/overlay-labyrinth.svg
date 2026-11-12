@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="mazeGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#996515" stop-opacity="0.75"/>
+      <stop offset="50%" stop-color="#c59b27" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#7a4f08" stop-opacity="0.70"/>
+    </linearGradient>
+    <radialGradient id="mazeAura" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#c59b27" stop-opacity="0.12"/>
+      <stop offset="60%" stop-color="#c59b27" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#c59b27" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Ambient warm maze aura -->
+  <circle cx="500" cy="350" r="380" fill="url(#mazeAura)"/>
+
+  <!-- Outer Labyrinth Border Band -->
+  <circle cx="500" cy="350" r="450" stroke="url(#mazeGold)" stroke-width="1.8" opacity="0.6"/>
+  <circle cx="500" cy="350" r="435" stroke="url(#mazeGold)" stroke-width="0.8" stroke-dasharray="6 4" opacity="0.45"/>
+  <circle cx="500" cy="350" r="410" stroke="url(#mazeGold)" stroke-width="1.2" opacity="0.5"/>
+
+  <!-- Concentric Labyrinth Pathways (Concentric Meanders) -->
+  <!-- Ring 11 to Ring 1 -->
+  <circle cx="500" cy="350" r="380" stroke="url(#mazeGold)" stroke-width="1.4" opacity="0.65"/>
+  <circle cx="500" cy="350" r="350" stroke="url(#mazeGold)" stroke-width="1.2" opacity="0.6"/>
+  <circle cx="500" cy="350" r="320" stroke="url(#mazeGold)" stroke-width="1.2" opacity="0.55"/>
+  <circle cx="500" cy="350" r="290" stroke="url(#mazeGold)" stroke-width="1.2" opacity="0.5"/>
+  <circle cx="500" cy="350" r="260" stroke="url(#mazeGold)" stroke-width="1.2" opacity="0.45"/>
+  <circle cx="500" cy="350" r="230" stroke="url(#mazeGold)" stroke-width="1.2" opacity="0.45"/>
+  <circle cx="500" cy="350" r="200" stroke="url(#mazeGold)" stroke-width="1.2" opacity="0.4"/>
+  <circle cx="500" cy="350" r="170" stroke="url(#mazeGold)" stroke-width="1.2" opacity="0.4"/>
+  <circle cx="500" cy="350" r="140" stroke="url(#mazeGold)" stroke-width="1.4" opacity="0.5"/>
+  <circle cx="500" cy="350" r="105" stroke="url(#mazeGold)" stroke-width="2.0" opacity="0.75"/>
+
+  <!-- Labyrinth Wall Breaks & Sector Quadrants -->
+  <g stroke="url(#mazeGold)" stroke-width="1.6" opacity="0.55">
+    <!-- Vertical and Horizontal axis stops -->
+    <line x1="500" y1="140" x2="500" y2="170"/>
+    <line x1="500" y1="200" x2="500" y2="230"/>
+    <line x1="500" y1="260" x2="500" y2="290"/>
+    <line x1="500" y1="320" x2="500" y2="350"/>
+
+    <line x1="500" y1="350" x2="500" y2="380"/>
+    <line x1="500" y1="410" x2="500" y2="440"/>
+    <line x1="500" y1="470" x2="500" y2="500"/>
+    <line x1="500" y1="530" x2="500" y2="560"/>
+
+    <!-- Left & Right axis stops -->
+    <line x1="290" y1="350" x2="320" y2="350"/>
+    <line x1="350" y1="350" x2="380" y2="350"/>
+    <line x1="620" y1="350" x2="650" y2="350"/>
+    <line x1="680" y1="350" x2="710" y2="350"/>
+  </g>
+
+  <!-- Sacred Geometry Seed of Life rosette in the heart of the labyrinth -->
+  <g stroke="url(#mazeGold)" stroke-width="1.0" opacity="0.45">
+    <circle cx="500" cy="350" r="50"/>
+    <circle cx="500" cy="300" r="50"/>
+    <circle cx="500" cy="400" r="50"/>
+    <circle cx="456.7" cy="325" r="50"/>
+    <circle cx="543.3" cy="325" r="50"/>
+    <circle cx="456.7" cy="375" r="50"/>
+    <circle cx="543.3" cy="375" r="50"/>
+  </g>
+
+  <!-- Greek Key Meander Framing Corners -->
+  <g stroke="url(#mazeGold)" stroke-width="1.2" opacity="0.45">
+    <!-- Top-Left -->
+    <path d="M 50,120 L 50,50 L 120,50 L 120,80 L 80,80 L 80,100 L 100,100 L 100,120"/>
+    <!-- Top-Right -->
+    <path d="M 950,120 L 950,50 L 880,50 L 880,80 L 920,80 L 920,100 L 900,100 L 900,120"/>
+    <!-- Bottom-Left -->
+    <path d="M 50,580 L 50,650 L 120,650 L 120,620 L 80,620 L 80,600 L 100,600 L 100,580"/>
+    <!-- Bottom-Right -->
+    <path d="M 950,580 L 950,650 L 880,650 L 880,620 L 920,620 L 920,600 L 900,600 L 900,580"/>
+  </g>
+</svg>
