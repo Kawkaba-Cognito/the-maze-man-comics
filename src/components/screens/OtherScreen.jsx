@@ -30,9 +30,9 @@ function AppearancePanel({ isAr, chrome, appTheme, setAppTheme, playSfx, onBack 
     {
       id: 'light',
       swatch: 'other-theme-swatch--light',
-      en: 'Light', ar: 'فاتح',
-      descEn: 'Warm parchment tones, bright rooms.',
-      descAr: 'ألوان دافئة تشبه الرَق، مناسبة للغرف المضيئة.',
+      en: 'Light Blue', ar: 'أزرق سماوي',
+      descEn: 'Crisp light blue sky, bright and clear.',
+      descAr: 'أزرق نيزك السماوي، مشرق ومريح للعين.',
     },
   ];
   return (

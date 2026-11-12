@@ -51,21 +51,14 @@
      WARMED to the Beige family 2026-08-07 — Cool Silver was a cool blue-grey and
      fought the warm chrome beside it. Measured against --ink: surface 9.1:1,
      surface-raised 11.5:1. */
-  --surface: #c6bda9;
-  --surface-raised: #ded5c4;
-  --ink: #201d18;
-  --ink-dim: #524b3f;
-  /* Bronze, deepened from the previous #b8845d. That value came off Home's own
-     sky (ZenUniverse.jsx SKY.css — its 86% stop), but on Tide Dusk's darker,
-     more saturated ground it no longer had the contrast to act as an accent.
-     This holds the same hue family and buys back the separation. */
-  --accent: #7d5233;
-  --accent-bright: #a06c45;
-  /* Stepped down with the surfaces so a rule still separates from the board it
-     sits on — the old #ddd3c6 was a warm hairline tuned for a cream ground and
-     would all but vanish on Cool Silver. */
-  --line: #b0a48d;
-  --danger: #944b3b;
+  --surface: #e6f3fc;
+  --surface-raised: #ffffff;
+  --ink: #0f172a;
+  --ink-dim: #475569;
+  --accent: #f5a623;
+  --accent-bright: #fbbf24;
+  --line: #bae6fd;
+  --danger: #ef4444;
 
   /* ─── Home's sky, in a light key ───────────────────────────────────────
      Home ("Your Universe") is a DUSK: cool slate at the zenith ramping down

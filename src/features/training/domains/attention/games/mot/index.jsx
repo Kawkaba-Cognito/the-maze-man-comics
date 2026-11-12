@@ -758,3 +758,6 @@ export default function MotGame({ onBack, workoutMode = false, assessmentOnly = 
     />
   );
 }
+
+
+export { default as DuolingoMot } from './DuolingoMot';

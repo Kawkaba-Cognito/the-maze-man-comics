@@ -1,14 +1,12 @@
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import { Play } from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
 import {
   PUZZLE_CATEGORIES, getPuzzle, puzzlesInCategory,
 } from '../../features/puzzles/registry';
 import { getLazyPuzzle } from '../../features/puzzles/lazyGames';
 import { PUZZLE_UI } from '../../features/puzzles/shared/puzzleStrings';
-import { IconBack } from '../../features/training/shared/TrainingIcons';
-import AtmosphericBackground from '../shared/AtmosphericBackground';
-import { useThemedChrome } from '../../hooks/useThemedChrome';
-import { hasEnteredLabyrinth } from '../../features/campaign/campaignProgress';
+import NayzakHeader from '../shared/NayzakHeader';
 import { lazyWithRetry } from '../../lib/lazyWithRetry';
 import { assetUrl } from '../../lib/assetUrl';
 
@@ -17,9 +15,6 @@ const VoidRunnerLazy = lazyWithRetry(
   'void-runner',
 );
 
-/** Per-world vertical scatter, so four categories read as a sky not a row. */
-const PZ_DRIFT = [-0.14, 0.12, -0.05, 0.15];
-
 const CATEGORY_ART = {
   numbers: 'Assets/puzzle-studio/category-art-2026/numbers.webp',
   logic: 'Assets/puzzle-studio/category-art-2026/logic.webp',
@@ -27,7 +22,6 @@ const CATEGORY_ART = {
   group: 'Assets/puzzle-studio/category-art-2026/group.webp',
 };
 
-/** Purpose-built art for every puzzle moon, grouped by the registry IDs. */
 const GAME_ART = {
   sudoku: 'Assets/puzzle-studio/game-art-2026/sudoku.webp',
   kenken: 'Assets/puzzle-studio/game-art-2026/kenken.webp',
@@ -50,63 +44,34 @@ const GAME_ART = {
   thewheel: 'Assets/puzzle-studio/game-art-2026/thewheel.webp',
 };
 
-function StudioAtmosphere() {
-  return (
-    <>
-      <AtmosphericBackground strength="hub" photo={false} />
-      <div className="pz-studio-nebula pz-studio-nebula--one" aria-hidden="true" />
-      <div className="pz-studio-nebula pz-studio-nebula--two" aria-hidden="true" />
-      <div className="pz-studio-stars" aria-hidden="true" />
-    </>
-  );
-}
-
-function StudioHeader({
-  title, backLabel, onBack, isAr, toggleLang, playSfx, iconColor,
-}) {
-  return (
-    <header className="pz-studio-header">
-      <div className="pz-studio-header-slot">
-        <button
-          type="button"
-          className="pz-studio-chrome-btn"
-          onClick={() => { playSfx('click'); onBack(); }}
-          aria-label={backLabel}
-        >
-          <IconBack size={19} c={iconColor} />
-        </button>
-      </div>
-      <div className="pz-studio-header-title">{title}</div>
-      <div className="pz-studio-header-slot pz-studio-header-slot--end">
-        <button
-          type="button"
-          className="pz-studio-lang"
-          onClick={() => { playSfx('click'); toggleLang(); }}
-        >
-          {isAr ? 'EN' : 'عر'}
-        </button>
-      </div>
-    </header>
-  );
-}
-
 function GameLoading({ isAr }) {
   return (
-    <div className="pz-studio-loading">
-      <span className="pz-studio-loading-mark" aria-hidden="true">✦</span>
-      {isAr ? 'جارِ التحميل…' : 'Loading…'}
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#FAF7F2',
+        color: '#0F172A',
+        fontFamily: "'Cairo', 'Outfit', system-ui, sans-serif",
+        fontSize: 17,
+        fontWeight: 800,
+        gap: 10,
+      }}
+    >
+      <span style={{ fontSize: 34 }}>🧩</span>
+      <span>{isAr ? 'جارِ التحميل…' : 'Loading…'}</span>
     </div>
   );
 }
 
 export default function PuzzlesScreen() {
-  const {
-    switchTab, currentLang, toggleLang, playSfx, requestContinueMaze, setImmersive,
-  } = useApp();
+  const { currentLang, playSfx, setImmersive } = useApp();
   const isAr = currentLang === 'ar';
-  const chrome = useThemedChrome(isAr, { universe: true });
   const t = PUZZLE_UI[isAr ? 'ar' : 'en'];
-  const canContinue = hasEnteredLabyrinth();
 
   const [activeGame, setActiveGame] = useState(() => {
     try {
@@ -148,7 +113,7 @@ export default function PuzzlesScreen() {
     return (
       <div
         className={`pz-studio-game pz-theme-${activePuzzle?.category || 'logic'}`}
-        style={{ '--pz-puzzle-accent': activePuzzle?.accent || '#5ec6b6' }}
+        style={{ '--pz-puzzle-accent': activePuzzle?.accent || '#2586F7' }}
         dir={isAr ? 'rtl' : 'ltr'}
       >
         <Suspense fallback={<GameLoading isAr={isAr} />}>
@@ -158,154 +123,128 @@ export default function PuzzlesScreen() {
     );
   }
 
-  if (!category) {
+  // Category Puzzle List View (Duolingo Style Rows)
+  if (category) {
     return (
-      <div className="pz-studio pz-studio--hub" dir={isAr ? 'rtl' : 'ltr'}>
-        <StudioAtmosphere />
-        <StudioHeader
-          title={t.hubTitle}
-          backLabel={isAr ? 'رجوع' : 'Back'}
-          onBack={() => switchTab('comics')}
-          isAr={isAr}
-          toggleLang={toggleLang}
-          playSfx={playSfx}
-          iconColor={chrome.text}
+      <div className="nayzak-page" dir={isAr ? 'rtl' : 'ltr'}>
+        <NayzakHeader
+          title={isAr ? activeCategory?.nameAr : activeCategory?.name}
+          subtitle={isAr ? `${categoryPuzzles.length} ألغاز` : `${categoryPuzzles.length} puzzles`}
+          onBack={() => setCategory(null)}
+          backLabel={isAr ? 'الفئات' : 'Categories'}
         />
 
-        {/*
-          The hub is a constellation, not a card stack.
-
-          It used to be a white editorial page: a 3.6rem navy grotesque, four
-          bordered cards with drop shadows and a 🚀 emoji in a rounded square —
-          a different product from the dusk universe every other landing sits
-          on. The categories are worlds now, drawn with the same orb treatment
-          as Kawnera's library and the Training hub's domains, and Void Runner
-          is the largest of them because it is the featured one.
-        */}
-        <main className="pz-studio-main pz-hub">
-          <section className="pz-studio-intro">
-            <span className="pz-studio-kicker">{isAr ? 'اختر طريقتك في التفكير' : 'Choose how you want to think'}</span>
-            <h1>{t.hubTitle}</h1>
-            <p>{t.hubSub}</p>
-          </section>
-
-          <button
-            type="button"
-            className="pz-feature-world"
-            onClick={() => { playSfx('click'); setVoidRunnerOpen(true); }}
-          >
-            {/* Void Runner has no cover art, so its world is drawn: a dark
-                body with its own horizon glow, which is also what the game
-                looks like. No emoji — the app does not use them as artwork. */}
-            <span className="pz-orb pz-orb--void" aria-hidden="true">
-              <i className="pz-orb-void-glow" />
-              <i className="pz-orb-shade" />
-              <i className="pz-orb-rim" />
-            </span>
-            <span className="pz-feature-copy">
-              <small>{isAr ? 'العالم المميّز' : 'FEATURED WORLD'}</small>
-              <b>{isAr ? 'عدّاء الفراغ' : 'Void Runner'}</b>
-              <i>{isAr ? 'ردّ فعل مكاني في رحلة سريعة' : 'Fast spatial reactions in an endless flight'}</i>
-            </span>
-          </button>
-
-          <section className="pz-constellation" aria-label={isAr ? 'فئات الألغاز' : 'Puzzle categories'}>
-            {PUZZLE_CATEGORIES.map((item, i) => (
-              <button
-                type="button"
-                key={item.id}
-                className={`pz-world pz-theme-${item.id}`}
-                style={{ '--world': item.accent, '--drift': PZ_DRIFT[i % PZ_DRIFT.length] }}
-                onClick={() => { playSfx('click'); setCategory(item.id); }}
+        <main className="duo-puzzle-container">
+          <div role="list">
+            {categoryPuzzles.map((puzzle) => (
+              <div
+                key={puzzle.id}
+                className="duo-puzzle-row"
+                onClick={() => {
+                  playSfx?.('pop');
+                  setActiveGame(puzzle.gameKey);
+                }}
+                role="listitem"
               >
-                <span className="pz-orb" aria-hidden="true">
+                <div className="duo-puzzle-thumb">
                   <img
-                    src={assetUrl(CATEGORY_ART[item.id])}
-                    alt=""
-                    decoding="async"
+                    src={assetUrl(GAME_ART[puzzle.id])}
+                    alt={isAr ? puzzle.nameAr : puzzle.name}
                     draggable="false"
                   />
-                  <i className="pz-orb-shade" />
-                  <i className="pz-orb-rim" />
-                </span>
-                <span className="pz-world-name">{isAr ? item.nameAr : item.name}</span>
-                <span className="pz-world-desc">{isAr ? item.descAr : item.desc}</span>
-              </button>
-            ))}
-          </section>
+                </div>
 
-          {canContinue && (
-            <button
-              type="button"
-              className="pz-studio-continue"
-              onClick={() => { playSfx('click'); requestContinueMaze(); }}
-            >
-              {isAr ? 'تابع المتاهة' : 'Continue maze'}
-            </button>
-          )}
+                <div className="duo-puzzle-info">
+                  <h2 className="duo-puzzle-title">{isAr ? puzzle.nameAr : puzzle.name}</h2>
+                  <div className="duo-puzzle-meta">
+                    <span>{isAr ? puzzle.descAr : puzzle.desc}</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="duo-play-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    playSfx?.('pop');
+                    setActiveGame(puzzle.gameKey);
+                  }}
+                >
+                  <Play size={14} weight="fill" />
+                  <span>{isAr ? 'العب' : 'Play'}</span>
+                </button>
+              </div>
+            ))}
+          </div>
         </main>
       </div>
     );
   }
 
+  // Duolingo-Themed Puzzles Hub
   return (
-    <div
-      className={`pz-studio pz-studio--category pz-theme-${category}`}
-      dir={isAr ? 'rtl' : 'ltr'}
-    >
-      <StudioAtmosphere />
-      <StudioHeader
-        title={isAr ? activeCategory?.nameAr : activeCategory?.name}
-        backLabel={isAr ? 'الفئات' : 'Categories'}
-        onBack={() => setCategory(null)}
-        isAr={isAr}
-        toggleLang={toggleLang}
-        playSfx={playSfx}
-        iconColor={chrome.text}
-      />
+    <div className="nayzak-page" dir={isAr ? 'rtl' : 'ltr'}>
+      <NayzakHeader showLogo showStats showLang />
 
-      {/*
-        The category screen is the hub one level down: the category itself is
-        the big world, and each puzzle inside it is a small moon of that world.
-        `pz-hub` carries the orb and constellation styling so both screens are
-        drawn by one set of rules rather than two that drift apart.
-      */}
-      <main className="pz-studio-main pz-hub pz-cat">
-        <section className="pz-cat-hero" style={{ '--world': activeCategory?.accent }}>
-          <span className="pz-orb pz-orb--lg" aria-hidden="true">
-            <img src={assetUrl(CATEGORY_ART[category])} alt="" decoding="async" draggable="false" />
-            <i className="pz-orb-shade" />
-            <i className="pz-orb-rim" />
-          </span>
-          <div className="pz-cat-id">
-            <span className="pz-studio-kicker">{isAr ? 'فئة الألغاز' : 'Puzzle category'}</span>
-            <h1>{isAr ? activeCategory?.nameAr : activeCategory?.name}</h1>
-            <p>{isAr ? activeCategory?.descAr : activeCategory?.desc}</p>
+      <main className="duo-puzzle-container">
+        {/* Duolingo Hero Header Banner */}
+        <div className="duo-puzzle-banner">
+          <div>
+            <span className="duo-unit-badge">{isAr ? 'استوديو العقل' : 'MIND STUDIO'}</span>
+            <h1 className="duo-unit-title">{isAr ? 'تحديات وألغاز ذكية' : 'Puzzles & Challenges'}</h1>
+            <p className="duo-unit-desc">{isAr ? 'اختر فئة وابدأ تدريب ذكائك اليوم' : 'Pick a category and sharpen your mind'}</p>
           </div>
-        </section>
+          <div className="duo-puzzle-banner-icon">🧩</div>
+        </div>
 
-        <section className="pz-constellation pz-constellation--moons" aria-label={isAr ? 'الألعاب' : 'Games'}>
-          {categoryPuzzles.map((puzzle, i) => (
+        {/* Featured Spotlight 3D Card (Void Runner) */}
+        <div
+          className="duo-spotlight-card"
+          onClick={() => {
+            playSfx?.('pop');
+            setVoidRunnerOpen(true);
+          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setVoidRunnerOpen(true); }}
+        >
+          <div className="duo-spotlight-icon-wrap">☄️</div>
+          <div className="duo-spotlight-content">
+            <span className="duo-tag">{isAr ? 'مميز اليوم' : 'Daily Featured'}</span>
+            <h2 className="duo-spotlight-title">
+              {isAr ? 'عدّاء الفراغ' : 'Void Runner'}
+            </h2>
+            <div className="duo-spotlight-desc">
+              {isAr ? 'رحلة فضائية سريعة لاختبار ردة الفعل والتركيز' : 'Fast spatial flight challenge'}
+            </div>
+          </div>
+          <button type="button" className="duo-play-btn">
+            <Play size={14} weight="fill" />
+            <span>{isAr ? 'العب' : 'Play'}</span>
+          </button>
+        </div>
+
+        {/* Duolingo 2x2 Category Grid */}
+        <section className="duo-cat-grid" aria-label={isAr ? 'فئات الألغاز' : 'Puzzle categories'}>
+          {PUZZLE_CATEGORIES.map((item) => (
             <button
+              key={item.id}
               type="button"
-              key={puzzle.id}
-              className="pz-world pz-world--moon"
-              style={{ '--world': puzzle.accent, '--drift': PZ_DRIFT[i % PZ_DRIFT.length] }}
-              onClick={() => { playSfx('click'); setActiveGame(puzzle.gameKey); }}
+              className="duo-cat-card"
+              onClick={() => {
+                playSfx?.('pop');
+                setCategory(item.id);
+              }}
             >
-              <span className="pz-orb pz-orb--moon" aria-hidden="true">
-                <img
-                  className="pz-orb-game-art"
-                  src={assetUrl(GAME_ART[puzzle.id])}
-                  alt=""
-                  decoding="async"
-                  draggable="false"
-                />
-                <i className="pz-orb-shade" />
-                <i className="pz-orb-rim" />
-              </span>
-              <span className="pz-world-name">{isAr ? puzzle.nameAr : puzzle.name}</span>
-              <span className="pz-world-desc">{isAr ? puzzle.descAr : puzzle.desc}</span>
+              <div className="duo-cat-img-wrap">
+                <img src={assetUrl(CATEGORY_ART[item.id])} alt="" draggable="false" />
+              </div>
+              <div className="duo-cat-name">
+                {isAr ? item.nameAr : item.name}
+              </div>
+              <div className="duo-cat-desc">
+                {isAr ? item.descAr : item.desc}
+              </div>
             </button>
           ))}
         </section>

@@ -1,0 +1,128 @@
+[
+  {
+    "id": "cancel-task",
+    "path": "Assets/cc0-experiments/cancel-task.webp",
+    "label": "Snellen Visual Acuity Calibration (1862)",
+    "author": "Herman Snellen (Public Domain / CC0)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Snellen_Chart.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "mot",
+    "path": "Assets/cc0-experiments/mot.webp",
+    "label": "Cloud Chamber Subatomic Particle Tracks",
+    "author": "Cloud Chamber Laboratory (CC BY-SA / CC0)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/76/Particle_Tracks_in_AWAN_Expansion_Cloud_Chamber.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "train-switch",
+    "path": "Assets/cc0-experiments/train-switch.webp",
+    "label": "NASA Apollo Spacecraft Docking Probe (1968)",
+    "author": "NASA Public Domain",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/89/Apollo_docking_system_S68-50869.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "speed-match",
+    "path": "Assets/cc0-experiments/speed-match.webp",
+    "label": "Silicon Microchip Integrated Circuit Die",
+    "author": "Microarchitecture Lab (Public Domain / CC0)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c2/Realtek_RTL8201BL_-_02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "void-runner",
+    "path": "Assets/cc0-experiments/void-runner.webp",
+    "label": "Total Internal Reflection Optical Waveguides",
+    "author": "Optics Laboratory (Public Domain / CC0)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/49/Fibreoptic.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "intercept",
+    "path": "Assets/cc0-experiments/intercept.webp",
+    "label": "Plan Position Indicator Radar Cathode Tube (1945)",
+    "author": "US Navy / Signal Corps (Public Domain)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/ff/SG_Radar_Console_1945.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "story-grid",
+    "path": "Assets/cc0-experiments/story-grid.webp",
+    "label": "Sequential Locomotion Chronophotography (1878)",
+    "author": "Eadweard Muybridge (Public Domain)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/73/The_Horse_in_Motion.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "memo-span",
+    "path": "Assets/cc0-experiments/memo-span.webp",
+    "label": "Clinical Human Electroencephalogram Trace",
+    "author": "NIH / Clinical Neurophysiology (Public Domain)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/d/df/EEG_record_of_brain_activity_and_wave_patterns_from_a_sleeping_boy.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "nback",
+    "path": "Assets/cc0-experiments/nback.webp",
+    "label": "Mysterium Cosmographicum Polyhedral Lattice (1596)",
+    "author": "Johannes Kepler (Public Domain)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/19/Kepler-solar-system-1.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "word-race",
+    "path": "Assets/cc0-experiments/word-race.webp",
+    "label": "Gutenberg Movable Lead Type Sorts Matrix",
+    "author": "Vintage Typography Archive (CC0 / Public Domain)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e2/Early_letterpress_with_lead_type_%2825792503796%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "synonyms",
+    "path": "Assets/cc0-experiments/synonyms.webp",
+    "label": "Human Cerebellum Purkinje Neural Network (1899)",
+    "author": "Santiago Ramón y Cajal (Public Domain)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/77/Cajal_-_a_purkinje_neuron_from_the_human_cerebellum.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "staircase",
+    "path": "Assets/cc0-experiments/staircase.webp",
+    "label": "Brass Astronomical Planispheric Astrolabe",
+    "author": "The Metropolitan Museum of Art (CC0 Open Access)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/84/Planispheric_Astrolabe_MET_DP105325.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "rush-hour",
+    "path": "Assets/cc0-experiments/rush-hour.webp",
+    "label": "Classic 15-Puzzle Sliding Permutation Grid (1880)",
+    "author": "Noyes Chapman / Sam Loyd (Public Domain)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/91/15-puzzle.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "math-gates",
+    "path": "Assets/cc0-experiments/math-gates.webp",
+    "label": "Pascaline Mechanical Arithmetic Engine (1642)",
+    "author": "Blaise Pascal (Public Domain)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d8/Pascaline_calculator_front.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "detective",
+    "path": "Assets/cc0-experiments/detective.webp",
+    "label": "Forensic Dactyloscopy Friction Ridge Bifurcation",
+    "author": "Sir Francis Galton / Henry Archive (Public Domain)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/13/Fingerprint_-_Central_Pocket_Loop_Whorl.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "spatial-stroop",
+    "path": "Assets/cc0-experiments/spatial-stroop.webp",
+    "label": "Newtonian Optical Prism Chromatic Refraction",
+    "author": "Sir Isaac Newton Opticks (Public Domain)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/58/Dispersive_prism.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "task-switch",
+    "path": "Assets/cc0-experiments/task-switch.webp",
+    "label": "Mechanical Dual-Balance Clockwork Escapement (1879)",
+    "author": "Horological Museum Archive (Public Domain)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/48/Leon_l_gallet_pocket_watch_movement_1879.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  },
+  {
+    "id": "puzzles",
+    "path": "Assets/cc0-experiments/puzzles.webp",
+    "label": "Chartres Cathedral Classical Labyrinth Pavement (1200)",
+    "author": "Medieval Sacred Geometry (Public Domain)",
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/42/ModernChartresStyleLabyrinth.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+  }
+]

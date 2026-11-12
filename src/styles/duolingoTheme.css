@@ -1,0 +1,669 @@
+/* ==========================================================================
+   Duolingo-Grade Responsive Layout & Alignment System (Mobile & Desktop)
+   ========================================================================== */
+
+/* Universal Layout & Overflow Guards */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  width: 100%;
+  -webkit-text-size-adjust: 100%;
+  background: #faf7f2;
+}
+
+#root, #ui-shell, .nayzak-page {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.nayzak-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #faf7f2;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ==========================================================================
+   Header Alignment & Desktop Max-Width Centering
+   ========================================================================== */
+.nayzak-header.duo-styled-header {
+  height: 64px;
+  background: #ffffff;
+  border-bottom: 2px solid #e5e5e5;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.duo-header-inner {
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (min-width: 1024px) {
+  .nayzak-header.duo-styled-header {
+    height: 72px;
+  }
+  .duo-header-inner {
+    max-width: 680px;
+  }
+}
+
+.duo-header-logo-wrap {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+  flex-shrink: 0;
+}
+
+.duo-header-logo-wrap:hover {
+  transform: scale(1.04);
+}
+
+.duo-stats-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (min-width: 400px) {
+  .duo-stats-group {
+    gap: 12px;
+  }
+}
+
+.duo-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 3.5px solid #e5e5e5;
+  cursor: default;
+  transition: transform 0.1s ease;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .duo-stat-pill {
+    padding: 7px 14px;
+    font-size: 14px;
+  }
+}
+
+.duo-stat-pill--streak {
+  color: #ff7800;
+}
+
+.duo-stat-pill--energy {
+  color: #2586f7;
+}
+
+.duo-lang-pill {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 14px;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #64748b;
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 3.5px solid #e5e5e5;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s ease;
+  white-space: nowrap;
+  margin-left: 6px;
+}
+
+[dir="rtl"] .duo-lang-pill {
+  margin-left: 0;
+  margin-right: 6px;
+}
+
+/* ==========================================================================
+   Home Screen & Course Ladder Layout
+   ========================================================================== */
+.duo-home-container {
+  min-height: calc(100vh - 64px);
+  min-height: calc(100dvh - 64px);
+  padding: 20px 16px 140px;
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  .duo-home-container {
+    max-width: 680px;
+    padding-top: 32px;
+    padding-bottom: 160px;
+  }
+}
+
+/* Section Selector Header */
+.duo-section-selector {
+  width: 100%;
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 5px solid #e5e5e5;
+  border-radius: 22px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: all 0.1s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.duo-section-selector:hover {
+  border-color: #2586f7;
+  transform: translateY(-2px);
+}
+
+.duo-section-selector:active {
+  transform: translateY(2px);
+  border-bottom-width: 3px;
+}
+
+.duo-sec-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.duo-sec-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+}
+
+.duo-sec-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.duo-sec-kicker {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #ff7800;
+  letter-spacing: 0.06em;
+}
+
+.duo-sec-name {
+  font-size: 16px;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 1px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.duo-sec-change-btn {
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #2586f7;
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  padding: 6px 12px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Mascot Callout Card */
+.duo-mascot-card {
+  width: 100%;
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 5px solid #e5e5e5;
+  border-radius: 22px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  box-sizing: border-box;
+}
+
+.duo-mascot-avatar {
+  font-size: 38px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.duo-mascot-speech {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1.45;
+  flex: 1;
+}
+
+.duo-mascot-speech span {
+  color: #ff7800;
+}
+
+/* ==========================================================================
+   Winding Serpentine Learning Path (Fixed Symmetrical Zig-Zag)
+   ========================================================================== */
+.duo-path-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 52px; /* Generous vertical gap to avoid tooltip collisions with upper labels */
+  padding-bottom: 40px;
+}
+
+.duo-step-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* LTR Zig-Zag Offsets */
+.duo-step-item.pos-center { transform: translateX(0); }
+.duo-step-item.pos-left { transform: translateX(-42px); }
+.duo-step-item.pos-far-left { transform: translateX(-68px); }
+.duo-step-item.pos-right { transform: translateX(42px); }
+.duo-step-item.pos-far-right { transform: translateX(68px); }
+
+/* RTL Zig-Zag Offsets (Flipped Negatives) */
+[dir="rtl"] .duo-step-item.pos-left { transform: translateX(42px); }
+[dir="rtl"] .duo-step-item.pos-far-left { transform: translateX(68px); }
+[dir="rtl"] .duo-step-item.pos-right { transform: translateX(-42px); }
+[dir="rtl"] .duo-step-item.pos-far-right { transform: translateX(-68px); }
+
+@media (min-width: 768px) {
+  .duo-step-item.pos-left { transform: translateX(-56px); }
+  .duo-step-item.pos-far-left { transform: translateX(-90px); }
+  .duo-step-item.pos-right { transform: translateX(56px); }
+  .duo-step-item.pos-far-right { transform: translateX(90px); }
+
+  [dir="rtl"] .duo-step-item.pos-left { transform: translateX(56px); }
+  [dir="rtl"] .duo-step-item.pos-far-left { transform: translateX(90px); }
+  [dir="rtl"] .duo-step-item.pos-right { transform: translateX(-56px); }
+  [dir="rtl"] .duo-step-item.pos-far-right { transform: translateX(-90px); }
+}
+
+/* 3D Circular Node Buttons */
+.duo-node-btn {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (min-width: 1024px) {
+  .duo-node-btn {
+    width: 82px;
+    height: 82px;
+    font-size: 36px;
+  }
+}
+
+.duo-node-btn.is-active {
+  background: #2586f7;
+  box-shadow: 0 8px 0 #106ad6, 0 14px 22px rgba(37, 134, 247, 0.38);
+  color: #ffffff;
+}
+
+.duo-node-btn.is-active:active {
+  transform: translateY(6px);
+  box-shadow: 0 2px 0 #106ad6, 0 4px 8px rgba(37, 134, 247, 0.3);
+}
+
+.duo-node-btn.is-completed {
+  background: #ffc21c;
+  box-shadow: 0 8px 0 #d99f00, 0 12px 18px rgba(255, 194, 28, 0.3);
+  color: #ffffff;
+}
+
+.duo-node-btn.is-completed:active {
+  transform: translateY(6px);
+  box-shadow: 0 2px 0 #d99f00;
+}
+
+.duo-node-btn.is-locked {
+  background: #e2e8f0;
+  box-shadow: 0 8px 0 #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.duo-node-ring {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 4px dashed #ff7800;
+  animation: duo-spin 18s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes duo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Floating Bouncing Speech Tooltip Badge */
+.duo-active-bubble {
+  position: absolute;
+  top: -46px;
+  background: #ffffff;
+  color: #2586f7;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 14px;
+  border-radius: 14px;
+  border: 2px solid #e5e5e5;
+  border-bottom: 4px solid #e5e5e5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+  animation: duo-bounce 1.4s ease-in-out infinite;
+  z-index: 10;
+}
+
+.duo-active-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 7px solid #e5e5e5;
+}
+
+@keyframes duo-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.duo-node-label {
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #1e293b;
+  text-align: center;
+  max-width: 140px;
+  line-height: 1.35;
+}
+
+/* ==========================================================================
+   Duolingo Modal Sheet: Switch Section / Category
+   ========================================================================== */
+.duo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .duo-modal-overlay {
+    align-items: center;
+    padding: 24px;
+  }
+}
+
+.duo-modal-sheet {
+  background: #ffffff;
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 85vh;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  animation: slideUpSheet 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@media (min-width: 768px) {
+  .duo-modal-sheet {
+    border-radius: 28px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  }
+}
+
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.duo-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.duo-modal-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 0;
+}
+
+.duo-modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  border: none;
+  font-size: 18px;
+  font-weight: 900;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s ease;
+}
+
+.duo-modal-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.duo-modal-items {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+
+.duo-sheet-item {
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 4px solid #e5e5e5;
+  border-radius: 20px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.duo-sheet-item:hover {
+  border-color: #2586f7;
+  transform: translateY(-1px);
+}
+
+.duo-sheet-item.is-active {
+  border-color: #2586f7;
+  background: #eff6ff;
+}
+
+.duo-cat-badge-count {
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Duolingo Docked Bottom Navigation Bar
+   ========================================================================== */
+.app-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(68px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #ffffff;
+  border-top: 2px solid #e5e5e5;
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 100;
+  max-width: 620px;
+  margin: 0 auto;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  .app-tabbar {
+    max-width: 680px;
+    height: 72px;
+    border-radius: 24px 24px 0 0;
+  }
+}
+
+.app-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  user-select: none;
+  border-radius: 14px;
+  height: 52px;
+}
+
+.app-tab:hover {
+  color: #1e293b;
+}
+
+.app-tab.is-active {
+  color: #2586f7;
+  background: #eff6ff;
+}
+
+.app-tab.is-active .app-tab-ic {
+  transform: scale(1.08);
+}
+
+
+/* ==========================================================================
+   Global Guards: Completely Hide Floating Tabbar During Modals & Game Sessions
+   ========================================================================== */
+
+/* When any game session is open */
+body:has(.duo-game-screen) .app-tabbar,
+.ui-shell:has(.duo-game-screen) ~ .app-tabbar,
+body:has(.ct-domain-game-stage) .app-tabbar,
+body:has(.pz-studio-game) .app-tabbar {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* When the section selection modal drawer is open */
+body:has(.duo-modal-overlay) .app-tabbar,
+.ui-shell:has(.duo-modal-overlay) ~ .app-tabbar {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

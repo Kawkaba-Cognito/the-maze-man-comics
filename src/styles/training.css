@@ -3619,8 +3619,8 @@ html[data-home-theme='light'] #screen-comics:has(.ct-domain-pick) {
     width: 100%;
     max-width: 720px;
     margin: 0 auto;
-    padding: max(52px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 6px
-        max(14px, env(safe-area-inset-left));
+    padding: calc(max(48px, env(safe-area-inset-top, 0px)) + 8px) max(14px, env(safe-area-inset-right, 0px)) 8px
+        max(14px, env(safe-area-inset-left, 0px));
     position: relative;
     direction: ltr;
     z-index: 6;

@@ -385,3 +385,19 @@
     color: #fff;
 }
 .stg-btn--danger:hover { filter: brightness(1.05); }
+
+/* Responsive desktop centering */
+.stg-scroll {
+  max-width: 540px;
+  margin: 0 auto;
+  width: 100%;
+}
+/* RTL Back button chevron mirroring */
+.stg-screen[dir='rtl'] .stg-back svg {
+  transform: scaleX(-1);
+}
+/* Primary button contrast */
+.stg-btn--primary {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}

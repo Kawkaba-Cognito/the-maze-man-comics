@@ -1902,7 +1902,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
                         textShadow: '0 1px 3px rgba(0,0,0,0.45)',
                       }}
                     >
-                      {isAr ? '◂' : '▸'}
+                      ▸
                     </div>
                   </div>
                 ) : (

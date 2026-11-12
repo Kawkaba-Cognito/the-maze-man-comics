@@ -13,7 +13,7 @@
   border-radius: 17px;
   background: var(--universe-glass-strong);
   color: var(--universe-ink);
-  box-shadow: 0 6px 20px rgb(0 0 0 / 20%);
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.1), 0 1px 3px rgba(0, 0, 0, 0.04);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   display: flex;

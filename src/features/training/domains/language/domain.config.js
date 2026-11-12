@@ -20,7 +20,7 @@ const language = {
       progress: 0,
       gameKey: 'wordle',
       tier: 'free',
-      loader: () => import('./games/wordle'),
+      loader: () => import('./games/wordle/DuolingoWordle'),
     },
     {
       id: 'fluency',
@@ -32,7 +32,7 @@ const language = {
       progress: 0,
       gameKey: 'synonyms',
       tier: 'free',
-      loader: () => import('./games/synonyms'),
+      loader: () => import('./games/synonyms/DuolingoSynonyms'),
     },
     {
       id: 'trivia',
@@ -44,7 +44,7 @@ const language = {
       progress: 0,
       gameKey: 'trivia',
       tier: 'free',
-      loader: () => import('./games/trivia'),
+      loader: () => import('./games/trivia/DuolingoTrivia'),
     },
   ],
 };

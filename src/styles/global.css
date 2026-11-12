@@ -37,40 +37,64 @@
     --universe-gold: #b8845d;
     --universe-horizon: #ddaf80;
 
-    /* ── LIGHT / BEIGE — the default ──
-       Values promoted from the Training hub trial, where they were tuned
-       against Kawkab and measured: body ink 9.7:1, secondary 5.0:1,
-       accent 4.8:1. Secondary and accent are near their floor; darkening the
-       ground further breaks the accent first. */
-    --universe-ink: #201d18;
-    --universe-muted: #524b3f;
-    --universe-accent: #1f4f85;
-    --universe-glass: #e2dbcc;
-    --universe-glass-strong: #eae4d8;
-    --universe-line: #a3957c;
-    --universe-dusk: #cfc4b0;
+    /* ── NAYZAK LIGHT OBSERVATORY (Default) ── */
+    --universe-ink: #0f172a;
+    --universe-muted: #475569;
+    --universe-accent: #f5a623;
+    --universe-accent-deep: #d97706;
+    --universe-accent-blue: #0284c7;
+    --universe-accent-cyan: #00d2ff;
+    --universe-glass: rgba(255, 255, 255, 0.90);
+    --universe-glass-strong: #ffffff;
+    --universe-glass-subtle: rgba(241, 245, 249, 0.85);
+    --universe-line: rgba(2, 132, 199, 0.18);
+    --universe-line-gold: rgba(245, 166, 35, 0.35);
+    --universe-dusk: #f4f7fb;
+    --universe-sky-gradient: radial-gradient(120% 85% at 50% 0%, #e0f2fe 0%, #f4f7fb 55%, #fef9ef 100%);
+
+    /* Elevation & Tactile Press */
+    --elev-card: 0 10px 30px -6px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(2, 132, 199, 0.06);
+    --elev-rest: 0 4px 14px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    --elev-raise: 0 10px 24px rgba(2, 132, 199, 0.16), inset 0 1px 0 #ffffff;
+    --elev-press: inset 0 2px 5px rgba(15, 23, 42, 0.12);
 }
 
-/* ── DARK / OBSIDIAN ──
-   Flat near-black rather than true #000: pure black smears on OLED during
-   scroll, and a hair of lift keeps panel edges readable. The accent is
-   Kawkab's own blue lifted for a dark ground, so the character and the UI
-   agree in both themes instead of the UI running amber against a blue
-   mascot. */
+/* ── DARK / OBSIDIAN OBSERVATORY ── */
 html[data-home-theme='dark'] {
-    --universe-ink: #ededee;
-    --universe-muted: #8d8d92;
-    --universe-accent: #5bb8e8;
-    --universe-glass: #151517;
-    --universe-glass-strong: #1b1b1e;
-    --universe-line: #2b2b30;
-    --universe-dusk: #0a0a0b;
+    --universe-ink: #f8fafc;
+    --universe-muted: #94a3b8;
+    --universe-accent: #fbbf24;
+    --universe-accent-deep: #f59e0b;
+    --universe-accent-blue: #38bdf8;
+    --universe-accent-cyan: #00d2ff;
+    --universe-glass: rgba(15, 23, 42, 0.82);
+    --universe-glass-strong: #0f172a;
+    --universe-glass-subtle: rgba(30, 41, 59, 0.65);
+    --universe-line: rgba(56, 189, 248, 0.22);
+    --universe-line-gold: rgba(251, 191, 36, 0.32);
+    --universe-dusk: #070b14;
+    --universe-sky-gradient: radial-gradient(120% 85% at 50% 0%, #0f1e36 0%, #070b14 65%, #05070d 100%);
+
+    --elev-card: 0 14px 36px -6px rgba(0, 0, 0, 0.6), 0 0 1px 1px rgba(56, 189, 248, 0.14);
+    --elev-rest: 0 6px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --elev-raise: 0 12px 28px rgba(0, 210, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    --elev-press: inset 0 2px 6px rgba(0, 0, 0, 0.65);
 }
 
 * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; }
 /* Follows the theme now — it used to be pinned to the old cosmos navy, which
    showed through as a dark rim around every light screen. */
 body { overflow: hidden; min-height: 100dvh; background-color: var(--universe-dusk); }
+
+/* Global RTL font: ensure all Arabic UI renders natively in Cairo */
+[dir='rtl'],
+[dir='rtl'] body,
+[dir='rtl'] button,
+[dir='rtl'] input,
+[dir='rtl'] textarea,
+[dir='rtl'] select {
+    font-family: 'Cairo', 'Outfit', system-ui, sans-serif;
+}
 
 /* ── STATIC BACKGROUND POSTER (responsive) ── */
 /* Mobile default: 9:16 portrait image — WebP for speed, CSS handles fallback */
@@ -168,22 +192,23 @@ html[data-home-theme='dark'] body {
 }
 .back-to-menu-btn:hover { background: rgba(255, 150, 30, 0.2); }
 
-/* Light glass chrome while Home (dawn stage) is active */
+/* Light glass chrome while Home is active */
 body:has(#screen-home.active) .back-to-menu-btn,
 body:has(#screen-home.active) #lang-btn {
-    background: rgba(255, 252, 246, 0.78);
-    border: 1px solid rgba(170, 140, 80, 0.35);
-    box-shadow: 0 4px 14px rgba(100, 80, 40, 0.12);
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(2, 132, 199, 0.22);
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
     border-radius: 999px;
-    color: #5f4824;
+    color: #0f172a;
     text-shadow: none;
-    font-family: 'Outfit', system-ui, sans-serif;
+    font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
     font-weight: 700;
     letter-spacing: 0.02em;
 }
 body:has(#screen-home.active) .back-to-menu-btn:hover,
 body:has(#screen-home.active) #lang-btn:hover {
-    background: rgba(255, 252, 246, 0.95);
+    background: #ffffff;
+    border-color: rgba(2, 132, 199, 0.45);
 }
 /* Dark home chrome */
 html[data-home-theme='dark'] body:has(#screen-home.active) .back-to-menu-btn,
@@ -1726,35 +1751,38 @@ html[data-home-theme='dark'] .rx-root .rx-cat-divider {
     border-color: rgba(170, 140, 80, 0.28) !important;
 }
 
-/* ── App bottom tab bar — universe / Home (dark cosmos default) ── */
+/* ── App bottom tab bar — 5-destination floating glass dock ── */
 .app-tabbar {
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
     right: auto;
-    bottom: 0;
+    bottom: 8px;
     z-index: 80;
-    width: min(100%, 520px);
+    width: min(calc(100% - 20px), 540px);
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    align-items: stretch;
-    justify-items: stretch;
-    gap: 2px;
-    padding: 8px 6px max(10px, env(safe-area-inset-bottom));
-    background: rgba(10, 8, 18, 0.92);
-    border-top: 1px solid rgba(232, 172, 78, 0.28);
-    box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    align-items: center;
+    justify-items: center;
+    gap: 4px;
+    padding: 6px 8px max(6px, env(safe-area-inset-bottom));
+    background: var(--universe-glass);
+    border: 1px solid var(--universe-line);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 24px;
 }
 @media (min-width: 768px) {
     .app-tabbar {
-        width: min(100%, 600px);
-        gap: 4px;
-        padding: 10px 12px max(12px, env(safe-area-inset-bottom));
+        width: min(100%, 560px);
+        gap: 6px;
+        padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+        bottom: 12px;
     }
 }
 .app-tab {
+    position: relative;
     appearance: none;
     border: none;
     background: transparent;
@@ -1767,19 +1795,20 @@ html[data-home-theme='dark'] .rx-root .rx-cat-divider {
     min-width: 0;
     width: 100%;
     height: 100%;
-    padding: 8px 2px;
-    border-radius: 14px;
-    color: #b9a878;
-    font-family: 'Outfit', system-ui, sans-serif;
+    padding: 6px 4px;
+    border-radius: 16px;
+    color: var(--universe-muted);
+    font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
     transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
 .app-tab-ic {
     display: inline-flex;
-    font-size: clamp(1.1rem, 3.4vw, 1.28rem);
+    font-size: clamp(1.2rem, 3.4vw, 1.34rem);
     line-height: 1;
+    transition: transform 0.15s ease;
 }
 .app-tab-lbl {
-    font-size: clamp(0.62rem, 2.2vw, 0.74rem);
+    font-size: clamp(0.68rem, 2.2vw, 0.76rem);
     font-weight: 700;
     letter-spacing: 0.01em;
     line-height: 1.1;
@@ -1790,44 +1819,83 @@ html[data-home-theme='dark'] .rx-root .rx-cat-divider {
     text-align: center;
 }
 .app-tab.is-active {
-    color: #f0e2c0;
-    background: rgba(232, 172, 78, 0.2);
+    color: var(--universe-accent-blue);
+    background: rgba(2, 132, 199, 0.10);
+    font-weight: 800;
 }
-.app-tab:active { transform: scale(0.96); }
+.app-tab.is-active .app-tab-ic {
+    transform: translateY(-1px) scale(1.08);
+}
+.app-tab:active { transform: scale(0.95); }
+
+/* Center Hero Workout Tab */
+.app-tab--hero {
+    color: #f5a623;
+}
+.app-tab--hero .app-tab-ic--hero {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f5a623 0%, #d97706 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(245, 166, 35, 0.45);
+    margin-top: -8px;
+    margin-bottom: 2px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.app-tab--hero.is-active .app-tab-ic--hero {
+    transform: translateY(-2px) scale(1.12);
+    box-shadow: 0 6px 20px rgba(245, 166, 35, 0.65), 0 0 0 2px #ffffff;
+}
+.app-tab--hero.is-active {
+    color: #d97706;
+    background: transparent;
+}
+html[data-home-theme='dark'] .app-tab--hero.is-active {
+    color: #fbbf24;
+}
+
+/* Subtle Active Indicator Pip */
+.app-tab-pip {
+    position: absolute;
+    bottom: 2px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--universe-accent-blue);
+    box-shadow: 0 0 6px var(--universe-accent-blue);
+}
+.app-tab--hero .app-tab-pip {
+    background: var(--universe-accent);
+    box-shadow: 0 0 6px var(--universe-accent);
+}
+
 html[dir='rtl'] .app-tab-lbl,
 [dir='rtl'] .app-tab-lbl { font-family: 'Cairo', sans-serif; letter-spacing: 0; }
 
-/* Light dawn variant when Appearance = light */
-/*
- * The tab bar is on EVERY screen, so it was the loudest thing still speaking
- * the old palette: a dark slab pinned across the bottom of a beige app. It was
- * dark in "light" mode too — a leftover from when light meant the dusk sunset,
- * where a dark bar was correct.
- *
- * Driven by the tokens now, so it follows the theme with everything else.
- */
 html[data-home-theme='light'] .app-tabbar {
-    background: var(--universe-glass-strong);
-    border-top-color: var(--universe-line);
-    box-shadow: 0 -6px 22px rgba(32, 29, 24, 0.10);
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(2, 132, 199, 0.18);
+    box-shadow: 0 10px 32px rgba(2, 132, 199, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
 }
-html[data-home-theme='light'] .app-tab { color: var(--universe-muted); }
+html[data-home-theme='light'] .app-tab { color: #64748b; }
 html[data-home-theme='light'] .app-tab.is-active {
-    color: var(--universe-accent);
-    /* A tint of the accent rather than the old amber wash — on beige that wash
-       was invisible, so the active tab had no state at all. */
-    background: rgba(31, 79, 133, 0.12);
+    color: #0284c7;
+    background: rgba(2, 132, 199, 0.10);
 }
 
 html[data-home-theme='dark'] .app-tabbar {
-    background: var(--universe-glass-strong);
-    border-top-color: var(--universe-line);
-    box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.55);
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
-html[data-home-theme='dark'] .app-tab { color: var(--universe-muted); }
+html[data-home-theme='dark'] .app-tab { color: #94a3b8; }
 html[data-home-theme='dark'] .app-tab.is-active {
-    color: var(--universe-accent);
-    background: rgba(91, 184, 232, 0.16);
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.14);
 }
 
 /* Leave room above the tab bar for tabbed screens */
@@ -1895,27 +1963,38 @@ html[data-home-theme='dark'] .app-tab.is-active {
     align-items: center;
     gap: 12px;
     width: 100%;
-    padding: 14px 16px;
+    padding: 14px 18px;
     border-radius: 16px;
-    border: 1px solid rgba(232, 172, 78, 0.34);
-    background: rgba(14, 12, 24, 0.72);
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(2, 132, 199, 0.22);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 4px 16px rgba(2, 132, 199, 0.08);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    color: #e8d4a8;
-    font-family: 'Outfit', system-ui, sans-serif;
+    color: #0f172a;
+    font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
     font-weight: 700;
     font-size: 0.98rem;
     text-align: start;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+}
+.other-menu-item:hover {
+    background: #ffffff;
+    border-color: rgba(2, 132, 199, 0.45);
+    box-shadow: 0 6px 22px rgba(2, 132, 199, 0.14);
 }
 html[data-home-theme='light'] .other-menu-item {
-    background: var(--universe-glass);
-    border-color: var(--universe-line);
-    color: var(--universe-ink);
-    box-shadow: 0 6px 20px rgba(22, 15, 30, 0.28);
+    background: #ffffff;
+    border-color: rgba(2, 132, 199, 0.2);
+    color: #0f172a;
+    box-shadow: 0 4px 16px rgba(2, 132, 199, 0.08);
+}
+html[data-home-theme='light'] .other-menu-item:hover {
+    background: #f8fbfe;
+    border-color: rgba(2, 132, 199, 0.45);
+    box-shadow: 0 6px 22px rgba(2, 132, 199, 0.14);
 }
 .other-menu-item:active { transform: scale(0.98); }
-.other-menu-ic { display: inline-flex; font-size: 1.25rem; line-height: 1; flex-shrink: 0; }
+.other-menu-ic { display: inline-flex; font-size: 1.25rem; line-height: 1; flex-shrink: 0; color: #0284c7; }
 .other-menu-lbl { flex: 1; min-width: 0; }
 .other-menu-chev { opacity: 0.55; font-size: 1.2rem; }
 [dir='rtl'] .other-menu-item { font-family: 'Cairo', sans-serif; }
@@ -1990,8 +2069,9 @@ html[data-home-theme='light'] .other-support-text {
     text-decoration: none;
 }
 html[data-home-theme='light'] .other-support-link {
-    color: var(--universe-ink);
-    background: rgba(240, 182, 106, 0.2);
+    background: rgba(2, 132, 199, 0.1);
+    color: #0284c7;
+    border: 1px solid rgba(2, 132, 199, 0.25);
 }
 .other-theme-card {
     display: flex;
@@ -2017,8 +2097,8 @@ html[data-home-theme='light'] .other-theme-card {
     box-shadow: 0 6px 20px rgba(22, 15, 30, 0.24);
 }
 .other-theme-card.sel {
-    border-color: #c8943e;
-    box-shadow: 0 0 0 1px rgba(200, 148, 62, 0.35);
+    border-color: #0284c7;
+    box-shadow: 0 0 0 1.5px rgba(2, 132, 199, 0.4);
 }
 .other-theme-swatch {
     width: 44px;
@@ -2028,7 +2108,8 @@ html[data-home-theme='light'] .other-theme-card {
     border: 1px solid rgba(0, 0, 0, 0.15);
 }
 .other-theme-swatch--light {
-    background: linear-gradient(160deg, #fdf6ea 0%, #e9d9b8 100%);
+    background: linear-gradient(160deg, #ffffff 0%, #e6f3fc 100%);
+    border: 1px solid rgba(2, 132, 199, 0.25);
 }
 .other-theme-swatch--dark {
     background: linear-gradient(160deg, #201640 0%, #05040c 100%);
@@ -2874,7 +2955,7 @@ body {
 html[data-home-theme] .rh-training-hub.app-stage--universe,
 html[data-home-theme] .app-stage--universe,
 html[data-home-theme] #screen-comics .app-stage {
-    background-color: transparent !important;
+    background-color: var(--universe-dusk) !important;
     background-image: none !important;
 }
 

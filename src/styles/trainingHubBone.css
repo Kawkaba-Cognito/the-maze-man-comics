@@ -109,8 +109,12 @@
 /* ── Ground ─────────────────────────────────────────────────────────────── */
 
 .rh-training-hub.app-stage--universe {
-  background: var(--bone-bg) !important;
+  background: var(--universe-sky-gradient) !important;
   color: var(--bone-ink) !important;
+}
+
+html[data-home-theme='dark'] .rh-training-hub.app-stage--universe {
+  background: radial-gradient(circle at 50% 20%, #111a2e 0%, #070b14 70%) !important;
 }
 
 /* UniverseStage paints the dusk and its blobs behind everything. Flat ground
@@ -132,6 +136,15 @@
 .rh-training-hub .rh-hub-sky::after,
 .rh-training-hub .rh-hub-stage::before {
   display: none !important;
+}
+
+/* In dark mode, re-enable starfield and nebulae so celestial planets glow against deep space */
+html[data-home-theme='dark'] .rh-training-hub .rh-hub-sky,
+html[data-home-theme='dark'] .rh-training-hub .rh-hub-nebula,
+html[data-home-theme='dark'] .rh-training-hub .rh-hub-stars,
+html[data-home-theme='dark'] .rh-training-hub .rh-hub-shoot,
+html[data-home-theme='dark'] .rh-training-hub .rh-hub-dust {
+  display: block !important;
 }
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
@@ -221,21 +234,13 @@
 }
 
 .rh-training-hub .rh-intro-accent-btn {
-  background: transparent !important;
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  color: var(--bone-accent) !important;
-  font-family: inherit !important;
-  font-size: inherit !important;
-  font-weight: 700 !important;
-  text-decoration: underline dotted rgba(166, 124, 46, 0.45) !important;
-  text-underline-offset: 2px !important;
-  cursor: pointer !important;
-  display: inline !important;
-  transition: all 0.2s ease !important;
+    color: #0369a1 !important;
+    text-decoration: underline dotted rgba(3, 105, 161, 0.45) !important;
+    font-weight: 800 !important;
+}
+.rh-training-hub .rh-intro-accent-btn:hover {
+    color: #075985 !important;
+    text-decoration-color: #075985 !important;
 }
 
 .rh-training-hub .rh-intro-accent-btn:hover {
@@ -290,79 +295,88 @@
 /* ── Domain captions ────────────────────────────────────────────────────── */
 
 .rh-training-hub .rh-domain-label {
-  background: var(--bone-raised) !important;
-  border: 1px solid var(--bone-line-strong) !important;
-  color: var(--bone-ink) !important;
-  box-shadow: 0 1px 2px var(--bone-shadow) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  background: var(--universe-glass-strong) !important;
+  border: 1.5px solid var(--universe-line) !important;
+  color: var(--universe-ink) !important;
+  box-shadow: var(--elev-card) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-radius: 999px !important;
+  font-weight: 700 !important;
 }
 
 .rh-training-hub .rh-domain-label.is-active {
-  border-color: var(--bone-accent) !important;
-  color: var(--bone-accent) !important;
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+  box-shadow: 0 4px 16px rgba(245, 166, 35, 0.35) !important;
 }
+
+
 
 /* ── Corridors and grid ─────────────────────────────────────────────────── */
 
-/*
- * The spokes are drawn with a `stroke` PRESENTATION ATTRIBUTE from JS
- * (rgba(158,177,216,.38) — a pale blue tuned for a dark sky, invisible here).
- * A CSS `stroke` property outranks a presentation attribute, so this recolours
- * them without touching the component. Scoped to the corridor groups so the
- * planet artwork and the nexus ornaments are left alone.
- */
 .rh-training-hub .rh-hub-stage svg > g > path[stroke] {
-  stroke: rgba(32, 29, 24, 0.20) !important;
+  stroke: rgba(2, 132, 199, 0.22) !important;
 }
 
-/*
- * The guide grid goes entirely. On the dusk it was a barely-there amber lattice
- * that implied depth; on paper any visible version of it draws a hard rectangle
- * around the constellation — the map suddenly has a box round it, which reads
- * as a container nobody asked for. Faint grey was tried first and was worse:
- * still a rectangle, just a dirty one.
- */
 .rh-training-hub .rh-hub-stage svg > g > line[stroke] {
   display: none !important;
 }
 
-/* The travelling dots along each corridor were near-white. */
 .rh-training-hub .rh-hub-stage svg > g > circle[fill='#fffefb'] {
-  fill: var(--bone-accent) !important;
-  stroke: var(--bone-accent) !important;
+  fill: #f5a623 !important;
+  stroke: #f5a623 !important;
 }
 
-/* ── Kawkab's plinth ────────────────────────────────────────────────────── */
+/* ── Nayzak Center Nexus Assessment Badge ───────────────────────────────── */
 
-/* The blue halo behind the mascot is additive glow; on paper it is a grey
-   bloom. The character carries its own colour and does not need it. */
-.rh-training-hub .rh-assess-mascot::before {
-  display: none !important;
+.rh-training-hub .rh-assess-badge {
+  display: flex !important;
+  margin: 0 auto !important;
+  width: fit-content !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 5px 14px !important;
+  border-radius: 999px !important;
+  background: var(--universe-glass-strong) !important;
+  border: 1.5px solid var(--universe-accent) !important;
+  color: var(--universe-ink) !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.2px !important;
+  box-shadow: 0 4px 14px rgba(245, 166, 35, 0.28), var(--elev-card) !important;
+  cursor: pointer !important;
+  transition: all 0.22s ease !important;
+  user-select: none !important;
+  white-space: nowrap !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
 }
 
-.rh-training-hub .training-blue-robot__badge {
-  background: var(--bone-raised) !important;
-  border: 1px solid var(--bone-line-strong) !important;
-  color: var(--bone-ink) !important;
-  box-shadow: 0 2px 6px var(--bone-shadow-lift) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+.rh-training-hub .rh-assess-nexus:hover .rh-assess-badge {
+  background: #fffbeb !important;
+  border-color: #00d2ff !important;
+  color: #0284c7 !important;
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 6px 18px rgba(0, 210, 255, 0.4) !important;
 }
 
-.rh-training-hub .training-blue-robot__badge-kicker {
-  color: var(--bone-accent) !important;
+.rh-training-hub .rh-assess-badge-icon {
+  color: #f5a623 !important;
+  font-size: 13px !important;
+  display: inline-block !important;
+  transition: transform 0.3s ease !important;
 }
 
-/* The LABEL needs its own rule. Setting `color` on the badge above does not
- * reach it: trainingHubPremium.css gives `.training-blue-robot__badge-label`
- * a colour of its own, and an element's own declaration always beats an
- * inherited one — specificity never enters into it. That is why "Assessment"
- * stayed near-white (#fff9eb) on the bone pill and vanished, while the kicker
- * above it was fine. */
-.rh-training-hub .training-blue-robot__badge-label {
-  color: var(--bone-ink) !important;
-  text-shadow: none !important;
+.rh-training-hub .rh-assess-nexus:hover .rh-assess-badge-icon {
+  transform: rotate(90deg) scale(1.15) !important;
+  color: #00d2ff !important;
+}
+
+.rh-training-hub .rh-assess-badge-text {
+  color: var(--universe-ink) !important;
+  font-family: 'Cairo', sans-serif !important;
 }
 
 /* ── Puzzle Studio button ───────────────────────────────────────────────── */
@@ -381,7 +395,7 @@ html[data-home-theme] .rh-training-hub .rh-puzzles-cta {
 }
 
 html[data-home-theme] .rh-training-hub .rh-puzzles-cta svg {
-  color: var(--bone-accent) !important;
+    color: #0284c7 !important;
 }
 
 /* ── Hover callout ──────────────────────────────────────────────────────── */

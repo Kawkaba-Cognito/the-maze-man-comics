@@ -76,6 +76,7 @@
 .ct-ts-verdict.is-slow { color: var(--game-bad-fill, #854c49); }
 
 .ct-ts-keys {
+  direction: ltr; /* Keeps Left on the physical left and Right on the physical right in all languages */
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;

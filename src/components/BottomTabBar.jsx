@@ -1,52 +1,54 @@
 import React from 'react';
-import { House, Target, BookOpen, Leaf, DotsThreeOutline } from '@phosphor-icons/react';
+import { House, PuzzlePiece, UserCircle } from '@phosphor-icons/react';
 import { useApp } from '../context/AppContext';
 
-/** Primary app destinations. Home renders the dashboard (HomeScreen); Daily
- * Habits lives inside Wellbeing (RelaxScreen), reached via the rx_open_daily
- * one-shot flag (see AppContext.switchTab) — not through this tab directly,
- * despite the 'habits' screen id below (kept for saved-tab compatibility). */
+/** Streamlined 3-Tab Architecture for Nayzak AI: Home (Training included), Puzzles, Profile */
 export const APP_TABS = [
   { id: 'home', screen: 'habits', Icon: House, en: 'Home', ar: 'الرئيسية' },
-  { id: 'training', screen: 'comics', Icon: Target, en: 'Training', ar: 'تدريب' },
-  { id: 'learn', screen: 'learn', Icon: BookOpen, en: 'Learn', ar: 'تعلّم' },
-  { id: 'wellbeing', screen: 'wellbeing', Icon: Leaf, en: 'Wellbeing', ar: 'عافية' },
-  { id: 'other', screen: 'other', Icon: DotsThreeOutline, en: 'Other', ar: 'المزيد' },
+  { id: 'puzzles', screen: 'puzzles', Icon: PuzzlePiece, en: 'Puzzles', ar: 'الألغاز' },
+  { id: 'profile', screen: 'profile', Icon: UserCircle, en: 'Profile', ar: 'ملفي' },
 ];
 
 const TAB_IDS = new Set(APP_TABS.map((t) => t.id));
 
 /** Normalize nested routes onto a primary tab highlight. */
 export function resolveActiveTabId(activeTab) {
-  if (activeTab === 'habits') return 'home';
-  // Puzzles no longer has its own tab — it's reached from inside Training,
-  // so the tab bar keeps Training highlighted while browsing it.
-  if (activeTab === 'comics' || activeTab === 'home' || activeTab === 'workout' || activeTab === 'puzzles') return 'training';
-  if (activeTab === 'relax') return 'wellbeing';
+  if (
+    activeTab === 'habits'
+    || activeTab === 'home'
+    || activeTab === 'comics'
+    || activeTab === 'games'
+    || activeTab === 'training'
+    || activeTab === 'workout'
+    || activeTab === 'relax'
+    || activeTab === 'wellbeing'
+    || activeTab === 'learn'
+  ) return 'home';
+  if (activeTab === 'puzzles') return 'puzzles';
   if (
     activeTab === 'profile'
     || activeTab === 'pointshop'
     || activeTab === 'shop'
     || activeTab === 'character'
     || activeTab === 'other'
-  ) return 'other';
+  ) return 'profile';
   if (TAB_IDS.has(activeTab)) return activeTab;
-  return null;
+  return 'home';
 }
 
 export default function BottomTabBar() {
-  const { activeTab, switchTab, currentLang } = useApp();
+  const { activeTab, switchTab, currentLang, playSfx } = useApp();
   const isAr = currentLang === 'ar';
   const current = resolveActiveTabId(activeTab);
 
   function onSelect(tab) {
+    playSfx?.('pop');
     if (tab.id === current && activeTab === tab.screen) return;
-    if (tab.id === 'training' && (activeTab === 'comics' || activeTab === 'workout')) return;
     switchTab(tab.screen);
   }
 
   return (
-    <nav className="app-tabbar" aria-label={isAr ? 'التنقّل' : 'Main navigation'} dir="ltr">
+    <nav className="app-tabbar app-tabbar--3" aria-label={isAr ? 'التنقّل الرئيسي' : 'Main navigation'} dir={isAr ? 'rtl' : 'ltr'}>
       {APP_TABS.map((tab) => {
         const active = current === tab.id;
         return (
@@ -58,9 +60,13 @@ export default function BottomTabBar() {
             onClick={() => onSelect(tab)}
           >
             <span className="app-tab-ic" aria-hidden="true">
-              <tab.Icon size="1.28em" weight={active ? 'duotone' : 'regular'} />
+              <tab.Icon
+                size="1.4em"
+                weight={active ? 'fill' : 'regular'}
+              />
             </span>
             <span className="app-tab-lbl">{isAr ? tab.ar : tab.en}</span>
+            {active && <span className="app-tab-pip" aria-hidden="true" />}
           </button>
         );
       })}

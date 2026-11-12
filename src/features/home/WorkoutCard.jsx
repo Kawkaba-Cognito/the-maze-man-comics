@@ -1,34 +1,28 @@
 import React, { useMemo } from 'react';
 import { loadWorkout, isDoneToday } from '../workout/workoutState.js';
-import KawkabSprite from '../training/shared/KawkabSprite.jsx';
+import { assetUrl } from '../../lib/assetUrl.js';
 
 /*
  * A direct, always-available way onto the Daily Workout tab from Home.
- *
- * Before this, the ONLY entry point was ReminderBanner — which only appears
- * once a scheduled reminder time has passed and today isn't done yet
- * (workoutState.reminderDue). A user who opens the app earlier than their
- * reminder, or never set one, had no way to start the workout from Home at
- * all. This is the single highest-value addition to the dashboard: the
- * flagship one-press session gets a button that is just... there.
+ * Features Captain Nayzak (the Father Coach) as the personal workout guide.
  */
 
 const UI = {
   en: {
-    notSetUp: { title: 'Daily workout', sub: 'A few minutes, tuned to you', cta: 'Set up' },
-    ready: (n) => ({ title: 'Today’s workout is ready', sub: `${n} exercise${n === 1 ? '' : 's'}`, cta: 'Start' }),
+    notSetUp: { title: 'Daily Workout with Captain Nayzak', sub: 'Calibrated daily routine', cta: 'Set up' },
+    ready: (n) => ({ title: 'Today’s Workout is Ready', sub: `${n} focused exercise${n === 1 ? '' : 's'}`, cta: 'Start' }),
     done: (streak) => ({
-      title: 'Workout complete',
-      sub: streak > 1 ? `${streak}-day workout streak` : 'Nice work',
+      title: 'Workout Complete!',
+      sub: streak > 1 ? `${streak}-day workout streak with Captain Nayzak` : 'Splendid work today!',
       cta: 'Review',
     }),
   },
   ar: {
-    notSetUp: { title: 'التمرين اليومي', sub: 'دقائق قليلة، مُعدّة لك', cta: 'إعداد' },
-    ready: (n) => ({ title: 'تمرين اليوم جاهز', sub: `${n} تمرين${n === 1 ? '' : 'ات'}`, cta: 'ابدأ' }),
+    notSetUp: { title: 'التمرين اليومي مع الكابتن نيزك', sub: 'جلسة تدريبية مُعدّة لمستواك', cta: 'إعداد' },
+    ready: (n) => ({ title: 'تمرين اليوم جاهز للانطلاق', sub: `${n} تمارينات إدراكية`, cta: 'ابدأ' }),
     done: (streak) => ({
-      title: 'اكتمل التمرين',
-      sub: streak > 1 ? `سلسلة تمارين ${streak} يوم` : 'أحسنت',
+      title: 'اكتمل التمرين بنجاح!',
+      sub: streak > 1 ? `سلسلة تمارين ${streak} يوم مع الكابتن نيزك` : 'أداء رائع ومتميّز!',
       cta: 'مراجعة',
     }),
   },
@@ -52,17 +46,45 @@ export default function WorkoutCard({ isAr, playSfx, onOpenWorkout }) {
       className={`wc wc--${state.kind}`}
       onClick={() => { playSfx?.('click'); onOpenWorkout?.(); }}
     >
-      {/*
-       * Dr Kawkab, not a generic 🧠 — the same mascot every game's coach and
-       * the Training hub's centre already show. The Daily Workout is this
-       * app's own flagship feature; a stock emoji here read as a to-do-app
-       * card that happened to land inside this one. The done state keeps ✅,
-       * which ProgressCard's habit row already uses for the same meaning
-       * elsewhere on this screen — that one was never the generic part.
-       */}
-      {state.kind === 'done'
-        ? <span className="wc-glyph" aria-hidden="true">✅</span>
-        : <KawkabSprite size={40} className="wc-glyph wc-glyph--kawkab" />}
+      {state.kind === 'done' ? (
+        <span className="wc-glyph" aria-hidden="true">✅</span>
+      ) : (
+        <div style={{ position: 'relative', flexShrink: 0, width: 44, height: 44 }}>
+          <img
+            src={assetUrl('Assets/brand/characters/father-coach-avatar.jpg')}
+            alt={isAr ? 'الكابتن نيزك' : 'Captain Nayzak'}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              objectFit: 'cover',
+              boxShadow: '0 0 12px rgba(245, 166, 35, 0.45)',
+              border: '1.5px solid #f5a623',
+              display: 'block',
+            }}
+          />
+          <span
+            style={{
+              position: 'absolute',
+              bottom: -2,
+              right: -2,
+              width: 16,
+              height: 16,
+              borderRadius: '50%',
+              background: '#0284c7',
+              color: '#ffffff',
+              fontSize: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+            }}
+            aria-hidden="true"
+          >
+            ⚡
+          </span>
+        </div>
+      )}
       <span className="wc-text">
         <span className="wc-title">{state.copy.title}</span>
         <span className="wc-sub">{state.copy.sub}</span>

@@ -20,7 +20,7 @@ const speed = {
       progress: 0,
       gameKey: 'speed-match',
       tier: 'free',
-      loader: () => import('./games/speed-match'),
+      loader: () => import('./games/speed-match/DuolingoSpeedMatch'),
     },
     {
       id: 'math-gates',
@@ -32,7 +32,7 @@ const speed = {
       progress: 0,
       gameKey: 'math-gates',
       tier: 'free',
-      loader: () => import('./games/math-gates'),
+      loader: () => import('./games/math-gates/DuolingoMathGates'),
     },
     /*
      * Intercept took Trail Making's slot on 2026-08-14.
@@ -54,7 +54,7 @@ const speed = {
       progress: 0,
       gameKey: 'intercept',
       tier: 'free',
-      loader: () => import('./games/intercept'),
+      loader: () => import('./games/intercept/DuolingoIntercept'),
     },
   ],
 };

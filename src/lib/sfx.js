@@ -227,11 +227,48 @@ const CUES = {
   ],
 };
 
+const CARTOON_AUDIO_MAP = {
+  pop: 'Assets/cartoon/sfx_pop.wav',
+  stamp: 'Assets/cartoon/sfx_stamp.wav',
+  ding: 'Assets/cartoon/sfx_ding.wav',
+  bell: 'Assets/cartoon/sfx_bell.wav',
+  cash: 'Assets/cartoon/sfx_cash.wav',
+  whoosh: 'Assets/cartoon/sfx_whoosh.wav',
+  swoosh: 'Assets/cartoon/sfx_swoosh.wav',
+};
+
+const cartoonAudioCache = new Map();
+
+/** Play authentic edutainment cartoon audio effects from agreeable_people_pleaser_bendia.mp4 */
+export function playCartoonSfx(name) {
+  try {
+    const file = CARTOON_AUDIO_MAP[name];
+    if (!file) return false;
+    let audio = cartoonAudioCache.get(name);
+    if (!audio) {
+      const base = import.meta.env.BASE_URL || '/';
+      const cleanBase = base.endsWith('/') ? base : base + '/';
+      audio = new Audio(cleanBase + file);
+      cartoonAudioCache.set(name, audio);
+    }
+    audio.currentTime = 0;
+    audio.volume = 0.65;
+    audio.play().catch(() => {});
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Every cue name this module can play — the fallback list in AppContext. */
-export const SFX_NAMES = Object.keys(CUES);
+export const SFX_NAMES = [...Object.keys(CUES), ...Object.keys(CARTOON_AUDIO_MAP)];
 
 /** Play a named cue. Silently does nothing for an unknown name. */
 export function playCue(ctx, name) {
+  if (CARTOON_AUDIO_MAP[name]) {
+    playCartoonSfx(name);
+    return true;
+  }
   const cue = CUES[name];
   if (!ctx || !cue) return false;
   try {

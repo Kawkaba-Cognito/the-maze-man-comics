@@ -1,174 +1,56 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useApp } from '../context/AppContext';
 import BottomTabBar, { resolveActiveTabId } from './BottomTabBar';
-import ComicsScreen from './screens/ComicsScreen';
 import PuzzlesScreen from './screens/PuzzlesScreen';
 import ProfileScreen from './screens/ProfileScreen';
-import ShopScreen from './screens/ShopScreen';
-import RewardsShopScreen from './screens/RewardsShopScreen';
-import CharacterScreen from './screens/CharacterScreen';
-import WorkoutScreen from './screens/WorkoutScreen';
-import OtherScreen from './screens/OtherScreen';
-import LearnScreen from './screens/LearnScreen';
 import HomeScreen from './screens/HomeScreen';
-import RelaxScreen from '../features/relax/RelaxScreen';
-import RoomHost from './maze/RoomHost';
 import PaywallModal from './modals/PaywallModal';
-import ReminderBanner from '../features/workout/ReminderBanner';
-import HabitReminderBanner from '../features/relax/HabitReminderBanner';
-import { syncHabitReminders } from '../features/relax/habitReminders';
-import { loadHabits } from '../features/relax/habitState';
-import { LANG } from '../data/langStrings';
 
-function isRelaxTab(tab) {
-  return tab === 'habits' || tab === 'wellbeing' || tab === 'relax';
-}
-
+/**
+ * Streamlined AppShell for Nayzak AI:
+ * - Tab 1: Home (Training & Cartoon Room Stage)
+ * - Tab 2: Puzzles (Puzzle Studio)
+ * - Tab 3: Profile (Stats & Settings)
+ * - Paywall Modal (Nayzak PRO Boundaries Shield)
+ */
 export default function AppShell() {
-  const { activeTab, immersive, mazeVisible, mazeEntryPending, enterMaze, switchTab, toggleLang, currentLang } = useApp();
-  const t = LANG[currentLang];
-  const isAr = currentLang === 'ar';
-  const isTrainingHome = activeTab === 'comics' || activeTab === 'home';
-  /*
-   * Universe-stage screens paint their own cosmos — skip the global door photo.
-   *
-   * This list is the whole reason the Other tab's sub-pages looked like a
-   * different app. `other` was here, but the screens it hands off to were not:
-   * tapping Profile or Shop switches tab, leaves this list, and the shell
-   * unhides `.bg-poster` + `.bg-overlay` + `#maze-photo-layer` behind them — a
-   * cream photo backdrop under pages whose cards are tuned for a dark sky. It
-   * was never a per-page styling problem; it was this condition.
-   *
-   * `workout` and `character` are included for the same reason: both are
-   * reached from Other/Training and both draw their own stage.
-   */
-  const universeLanding = isTrainingHome
-    || activeTab === 'habits'
-    || activeTab === 'learn'
-    || activeTab === 'other'
-    || activeTab === 'profile'
-    || activeTab === 'shop'
-    || activeTab === 'pointshop'
-    || activeTab === 'character'
-    || activeTab === 'workout'
-    || isRelaxTab(activeTab);
-  // Hide the tab bar on any deep view (game / practice / session) — it shows
-  // only on the tab landing pages.
-  const showTabBar = !mazeVisible && !mazeEntryPending && !immersive;
-  const primaryTab = resolveActiveTabId(activeTab);
-
-  useEffect(() => {
-    if (!mazeEntryPending) return;
-    const timer = setTimeout(() => enterMaze(), 4000);
-    return () => clearTimeout(timer);
-  }, [mazeEntryPending, enterMaze]);
-
-  useEffect(() => {
-    syncHabitReminders(loadHabits(), currentLang);
-  }, [currentLang]);
+  const { activeTab, immersive, activeModalGame } = useApp();
+  const currentTab = resolveActiveTabId(activeTab);
+  // Hide bottom tab bar if immersive OR if any modal game is open
+  const showTabBar = !immersive && !activeModalGame;
 
   return (
     <>
-      {/*
-       * The comics-era maze backdrop (a generated maze canvas, plus two
-       * Wikimedia maze photos soft-lighted over everything) was REMOVED on
-       * 2026-08-15. It rendered unconditionally on every screen and was then
-       * hidden again, screen by screen, by a hand-maintained list in
-       * global.css — which had grown to ten selectors and still missed the two
-       * biggest areas, Training and Puzzles. That is why those were the screens
-       * that looked "not clean": a 20%-opacity soft-light texture over a warm
-       * beige product.
-       *
-       * It also hotlinked two images from upload.wikimedia.org on every load —
-       * an outbound request from an app whose stated property is zero network
-       * calls, leaking every user's IP to a third party and carrying a
-       * CC BY-SA attribution obligation nothing satisfied. `audit:sec` missed
-       * it because `no-network-in-src` only inspects JS, not CSS url().
-       *
-       * `.bg-poster` + `.bg-overlay` below are a different thing and stay: a
-       * real themed asset with its legibility scrim, gated to non-universe
-       * screens.
-       */}
-
-      {!mazeVisible && !universeLanding && (
-        <>
-          <div className="bg-poster" />
-          <div className="bg-overlay" />
-        </>
-      )}
-
-      {mazeEntryPending && <div className="maze-transition-overlay" />}
-
       <div
         id="ui-shell"
         className={showTabBar ? 'ui-shell--tabbed' : undefined}
-        style={{ display: mazeVisible ? 'none' : undefined }}
       >
-
-        <div className="floating-hud">
-          {activeTab !== 'comics'
-            && activeTab !== 'home'
-            && activeTab !== 'puzzles'
-            && activeTab !== 'profile'
-            && activeTab !== 'workout'
-            && activeTab !== 'other'
-            && activeTab !== 'learn'
-            && !isRelaxTab(activeTab)
-            && activeTab !== 'pointshop' && (
-            <button
-              id="lang-btn"
-              onClick={toggleLang}
-              style={{ fontFamily: isAr ? "'Cairo',sans-serif" : "'Outfit', system-ui, sans-serif" }}
-            >
-              {t.btn}
-            </button>
-          )}
-        </div>
-
-        {!primaryTab && activeTab !== 'comics' && activeTab !== 'home' && activeTab !== 'puzzles' && activeTab !== 'profile' && activeTab !== 'workout' && activeTab !== 'other' && activeTab !== 'learn' && !isRelaxTab(activeTab) && (
-          <button className="back-btn" onClick={() => switchTab('comics')}>
-            ‹ {isAr ? 'رجوع' : 'BACK'}
-          </button>
-        )}
-
-        <div id="screen-comics" className={`ui-screen ${isTrainingHome ? 'active' : ''}`}><ComicsScreen /></div>
-        <div id="screen-puzzles" className={`ui-screen ${activeTab === 'puzzles' ? 'active' : ''}`}><PuzzlesScreen /></div>
-        <div id="screen-profile" className={`ui-screen ${activeTab === 'profile' ? 'active' : ''}`}><ProfileScreen /></div>
-        <div id="screen-shop" className={`ui-screen ${activeTab === 'shop' ? 'active' : ''}`}><ShopScreen /></div>
-        <div id="screen-pointshop" className={`ui-screen ${activeTab === 'pointshop' ? 'active' : ''}`}><RewardsShopScreen /></div>
-        <div id="screen-character" className={`ui-screen ${activeTab === 'character' ? 'active' : ''}`}>{activeTab === 'character' && <CharacterScreen />}</div>
-        <div id="screen-workout" className={`ui-screen ${activeTab === 'workout' ? 'active' : ''}`}><WorkoutScreen /></div>
-        <div id="screen-other" className={`ui-screen ${activeTab === 'other' ? 'active' : ''}`}>
-          {activeTab === 'other' && <OtherScreen />}
-        </div>
-        <div id="screen-learn" className={`ui-screen ${activeTab === 'learn' ? 'active' : ''}`}>
-          {activeTab === 'learn' && <LearnScreen />}
-        </div>
-        {/*
-          Home keeps its own screen div and stays MOUNTED, hidden with
-          display:none like the other tabs. It used to share #screen-relax with
-          Wellbeing, which forced it to be conditional (the two cannot show at
-          once) — so every visit to Home tore down the particle universe and
-          rebuilt it: 22k particles, seven shader programs and a fresh WebGL
-          context. That rebuild was the lag on returning to Home. ZenUniverse
-          idles instead (HomeScreen drives it via setRunning).
-        */}
-        <div id="screen-home" className={`ui-screen ${activeTab === 'habits' ? 'active' : ''}`}>
+        {/* 1. Home Screen (Includes Cartoon Nayzak Stage + 18 Cognitive Training Games) */}
+        <div
+          id="screen-home"
+          className={`ui-screen ${currentTab === 'home' ? 'active' : ''}`}
+        >
           <HomeScreen />
         </div>
-        <div id="screen-relax" className={`ui-screen ${activeTab === 'wellbeing' || activeTab === 'relax' ? 'active' : ''}`}>
-          {(activeTab === 'wellbeing' || activeTab === 'relax') && (
-            <RelaxScreen key="wellbeing" entry="menu" />
-          )}
+
+        {/* 2. Puzzle Studio (Wordle, Blockburst, Tangram, Rush Hour, etc.) */}
+        <div
+          id="screen-puzzles"
+          className={`ui-screen ${currentTab === 'puzzles' ? 'active' : ''}`}
+        >
+          <PuzzlesScreen />
         </div>
 
+        {/* 3. User Profile & Settings */}
+        <div
+          id="screen-profile"
+          className={`ui-screen ${currentTab === 'profile' ? 'active' : ''}`}
+        >
+          <ProfileScreen />
+        </div>
       </div>
 
       {showTabBar && <BottomTabBar />}
-
-      {mazeVisible && <RoomHost />}
-      {!mazeVisible && <ReminderBanner />}
-      {!mazeVisible && <HabitReminderBanner />}
       <PaywallModal />
     </>
   );

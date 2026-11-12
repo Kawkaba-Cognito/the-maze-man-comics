@@ -9,9 +9,9 @@ import { domainPlanetUrl } from '../../lib/planetIcons';
 import { personalizationEnabled } from '../../features/personalization/neuralPersonalization.js';
 import { recordTrainingSelection } from '../../features/personalization/trainingRecommendations.js';
 
-/** Kawkab at the hub centre. Imported directly, not lazily: it is a 108 KB
- *  image now, so there is no 3D stack left worth deferring. */
-import TrainingHubMascot from './TrainingHubMascot';
+import { assetUrl } from '../../lib/assetUrl';
+import NayzakLogo from '../shared/NayzakLogo';
+import { getDomainGuardian } from '../../data/nayzakCast';
 /* TRIAL: the Bone light ground for this hub. Imported last on purpose — it is a
  * pure overlay over trainingHubPremium/Real3D, so removing this one line
  * restores the dusk hub exactly. See the file header for the trade-offs. */
@@ -492,36 +492,10 @@ function shrinesFor(layout) {
  * West lanes mirror east (180±60). Every vertex snaps to GRID so corridors align
  * with the modular backdrop instead of looking like stray scribbles.
  */
-/*
- * Where each corridor stops short of the centre, and how big the centre's
- * ornaments are. All four numbers are tied to MASCOT_SIZE — they exist to frame
- * Kawkab, so shrinking the character without shrinking them leaves a halo and a
- * glow sized for a figure that is no longer there.
+/**
+ * Solar Star Core nexus radius for maze corridor connection paths.
  */
-/*
- * Kawkab is SMALLER on a phone than on a desktop, which it was not before.
- *
- * The portrait map is scaled to roughly 1:1 on a real handset (a 390x844
- * screen fits the 660-tall box at ~0.96), so every authored unit is a real
- * pixel there — while the same numbers on a laptop are shrunk to ~0.66 and read
- * as roomy. One size therefore cannot serve both: at 120 the character ate the
- * horizontal room the four side captions need, leaving ~12px between a caption
- * and Kawkab's arm. Reported from a device as the planets feeling "strangled".
- */
-const MASCOT_SIZE = { portrait: 104, landscape: 124 };
 const AVATAR_R = 35;
-const NEXUS_GLOW_R = 60;
-const NEXUS_HALO_RX = 33;
-const NEXUS_HALO_RY = 10;
-/*
- * How far below the nexus the orbit ring — and therefore Kawkab's feet — sit.
- * ONE number for both, so the character always stands on its own ring: they
- * used to be set independently (the ellipse at +20, the mascot by a percentage
- * of its own height) and drifted 30px apart. 40 puts the character's mass on
- * the ring's horizontal axis, which is what keeps the centre from reading as
- * top-heavy against the six planets around it.
- */
-const NEXUS_HALO_DY = 40;
 
 function mazeCorridorD(domainId, shrines, nexus) {
   const s = shrines.find(p => p.id === domainId);
@@ -786,9 +760,15 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             Two balanced word spans ensure the center gap and chevron diamond are
             100% co-axial on the exact screen centerline in both EN and AR. */}
         <div className="rh-training-title-wrap">
+          <NayzakLogo
+            variant="compact"
+            size={28}
+            isAr={isAr}
+            style={{ margin: '0 auto 6px', display: 'inline-flex' }}
+          />
           <div className="rh-training-title" style={chrome.title}>
-            <span className="rh-title-word rh-title-word--first">{isAr ? 'التدريب' : 'Cognitive'}</span>
-            <span className="rh-title-word rh-title-word--second">{isAr ? 'المعرفي' : 'Training'}</span>
+            <span className="rh-title-word rh-title-word--first">{isAr ? 'الألعاب' : 'Cognitive'}</span>
+            <span className="rh-title-word rh-title-word--second">{isAr ? 'الإدراكية' : 'Games'}</span>
           </div>
           <svg
             className="rh-training-chevron"
@@ -797,13 +777,13 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             aria-hidden="true"
           >
             {/* Stepped chevron left */}
-            <path d="M 20,4 L 120,4 L 135,14" stroke="#a67c2e" strokeWidth="1.4" />
-            <path d="M 40,8 L 120,8 L 132,16" stroke="#c59b27" strokeWidth="0.9" opacity="0.75" />
+            <path d="M 20,4 L 120,4 L 135,14" stroke="#0284c7" strokeWidth="1.4" />
+            <path d="M 40,8 L 120,8 L 132,16" stroke="#f5a623" strokeWidth="0.9" opacity="0.75" />
             {/* Stepped chevron right */}
-            <path d="M 260,4 L 160,4 L 145,14" stroke="#a67c2e" strokeWidth="1.4" />
-            <path d="M 240,8 L 160,8 L 148,16" stroke="#c59b27" strokeWidth="0.9" opacity="0.75" />
+            <path d="M 260,4 L 160,4 L 145,14" stroke="#0284c7" strokeWidth="1.4" />
+            <path d="M 240,8 L 160,8 L 148,16" stroke="#f5a623" strokeWidth="0.9" opacity="0.75" />
             {/* Center Faceted Diamond */}
-            <polygon points="140,8 147,14 140,20 133,14" fill="#c59b27" stroke="#7a5510" strokeWidth="0.7" />
+            <polygon points="140,8 147,14 140,20 133,14" fill="#f5a623" stroke="#d97706" strokeWidth="0.7" />
           </svg>
         </div>
         <div className="rh-header-slot rh-header-slot--right" style={{ justifySelf: 'end', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
@@ -813,10 +793,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
         </div>
       </div>
 
-      {/* Orienting caption — mirrors the Home / Wellbeing intro line so a
-          first-time user knows the map is interactive and what the glowing
-          figure at its centre is for. Structured into primary and secondary guidance. */}
-      {/* Orienting caption — clean, small, organized typography without any enclosing rectangle */}
+      {/* Orienting caption */}
       <div className="rh-training-intro" style={{
         position: 'relative', zIndex: 4,
         margin: '4px auto 0',
@@ -825,13 +802,15 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
         fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', system-ui, sans-serif",
       }}>
         <div className="rh-intro-line rh-intro-line--primary">
-          {isAr ? 'اختر مجالاً معرفياً للتدريب' : 'Select a cognitive domain'}
+          {isAr
+            ? 'اختر مجالك ولعبتك الإدراكية، أو انقر على النواة لبدء التقييم'
+            : 'Select a cognitive game or tap the core for assessment'}
         </div>
         <div className="rh-intro-line rh-intro-line--secondary">
           {isAr ? (
-            <>أو افتح <button type="button" className="rh-intro-accent-btn" onClick={onOpenAssessment}>التقييم</button> لخط أساس شامل</>
+            <>أو افتح <button type="button" className="rh-intro-accent-btn" onClick={onOpenAssessment}>التقييم اليومي</button> لقياس الأداء الشامل</>
           ) : (
-            <>or open <button type="button" className="rh-intro-accent-btn" onClick={onOpenAssessment}>Assessment</button> for a complete baseline</>
+            <>or open <button type="button" className="rh-intro-accent-btn" onClick={onOpenAssessment}>Daily Assessment</button> for full baseline metrics</>
           )}
         </div>
       </div>
@@ -928,6 +907,17 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               <stop offset="40%" stopColor="#f5a623" stopOpacity="0.3"/>
               <stop offset="100%" stopColor="#f5a623" stopOpacity="0"/>
             </radialGradient>
+            <radialGradient id="nayzakSunBody" cx="35%" cy="30%" r="70%">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+              <stop offset="25%" stopColor="#fef08a" stopOpacity="1" />
+              <stop offset="65%" stopColor="#f5a623" stopOpacity="1" />
+              <stop offset="100%" stopColor="#d97706" stopOpacity="1" />
+            </radialGradient>
+            <radialGradient id="nayzakSunGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#f5a623" stopOpacity="0.55"/>
+              <stop offset="50%" stopColor="#00d2ff" stopOpacity="0.2"/>
+              <stop offset="100%" stopColor="#f5a623" stopOpacity="0"/>
+            </radialGradient>
             <radialGradient id="rh-planet-shade" cx="32%" cy="28%" r="78%">
               <stop offset="0%" stopColor="#fff8e8" stopOpacity="0" />
               <stop offset="55%" stopColor="#0a0812" stopOpacity="0" />
@@ -1002,13 +992,13 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
             );
           })}
 
-          {/* Center Assessment nexus (placeholder until 3D mascot) */}
+          {/* Center Assessment nexus (Nayzak Solar Star Core) */}
           <g
             className="rh-assess-nexus"
             style={{ cursor: 'pointer' }}
             role="button"
             tabIndex={0}
-            aria-label={isAr ? 'ابدأ التقييم' : 'Start assessment'}
+            aria-label={isAr ? 'ابدأ التقييم الإدراكي' : 'Start cognitive assessment'}
             onClick={onOpenAssessment}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -1017,34 +1007,100 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
               }
             }}
           >
-            <circle cx={LY.nexus[0]} cy={LY.nexus[1]} r={NEXUS_GLOW_R} fill="url(#centerGlow)" opacity="0.8">
+            {/* Outer pulsating energy aura */}
+            <circle cx={LY.nexus[0]} cy={LY.nexus[1]} r={56} fill="url(#nayzakSunGlow)">
+              <animate attributeName="r" values="50;62;50" dur="3.6s" repeatCount="indefinite" />
               <animate attributeName="opacity" values="0.55;0.85;0.55" dur="3.6s" repeatCount="indefinite" />
             </circle>
-            <circle cx={LY.nexus[0]} cy={LY.nexus[1]} r={32} fill="none" stroke="rgba(232,172,78,0.45)" strokeWidth="1.2">
-              <animate attributeName="r" values="28;40;28" dur="3.2s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.55;0.08;0.55" dur="3.2s" repeatCount="indefinite" />
-            </circle>
-            {/* The solid "planet" body is gone — the 3D Kawkab mascot (overlaid
-                canvas below) stands here. We keep the orbit ring as a ground
-                halo the mascot floats above. */}
-            <ellipse
-              cx={LY.nexus[0]} cy={LY.nexus[1] + NEXUS_HALO_DY}
-              rx={NEXUS_HALO_RX} ry={NEXUS_HALO_RY}
+
+            {/* Rotating cyan orbital dash ring */}
+            <circle
+              cx={LY.nexus[0]} cy={LY.nexus[1]} r={38}
               fill="none"
-              stroke="rgba(232,172,78,0.5)"
-              strokeWidth="1.1"
-              opacity="0.5"
+              stroke="#0284c7"
+              strokeWidth="1.2"
+              strokeDasharray="4 4"
+              opacity="0.45"
             >
               <animateTransform
                 attributeName="transform"
                 type="rotate"
-                from={`-12 ${LY.nexus[0]} ${LY.nexus[1] + NEXUS_HALO_DY}`}
-                to={`348 ${LY.nexus[0]} ${LY.nexus[1] + NEXUS_HALO_DY}`}
+                from={`0 ${LY.nexus[0]} ${LY.nexus[1]}`}
+                to={`360 ${LY.nexus[0]} ${LY.nexus[1]}`}
+                dur="18s"
+                repeatCount="indefinite"
+              />
+            </circle>
+
+            {/* Orbiting gold halo */}
+            <ellipse
+              cx={LY.nexus[0]} cy={LY.nexus[1]}
+              rx={46} ry={16}
+              fill="none"
+              stroke="#f5a623"
+              strokeWidth="1.4"
+              opacity="0.7"
+            >
+              <animateTransform
+                attributeName="transform"
+                type="rotate"
+                from={`-15 ${LY.nexus[0]} ${LY.nexus[1]}`}
+                to={`345 ${LY.nexus[0]} ${LY.nexus[1]}`}
                 dur="14s"
                 repeatCount="indefinite"
               />
             </ellipse>
-            {/* Assessment label is rendered as a premium DOM badge above the robot. */}
+
+            {/* Solar Core Sphere */}
+            <circle
+              cx={LY.nexus[0]} cy={LY.nexus[1]}
+              r={28}
+              fill="url(#nayzakSunBody)"
+              stroke="#ffffff"
+              strokeWidth="2.5"
+              style={{ filter: 'drop-shadow(0 4px 14px rgba(245,166,35,0.45))' }}
+            >
+              <animate attributeName="r" values="27;29.5;27" dur="2.4s" repeatCount="indefinite" />
+            </circle>
+
+            {/* Radiant Spark Star */}
+            <path
+              d={`M ${LY.nexus[0]} ${LY.nexus[1] - 13} Q ${LY.nexus[0]} ${LY.nexus[1]} ${LY.nexus[0] + 13} ${LY.nexus[1]} Q ${LY.nexus[0]} ${LY.nexus[1]} ${LY.nexus[0]} ${LY.nexus[1] + 13} Q ${LY.nexus[0]} ${LY.nexus[1]} ${LY.nexus[0] - 13} ${LY.nexus[1]} Q ${LY.nexus[0]} ${LY.nexus[1]} ${LY.nexus[0]} ${LY.nexus[1] - 13} Z`}
+              fill="#ffffff"
+              opacity="0.95"
+            >
+              <animateTransform
+                attributeName="transform"
+                type="rotate"
+                from={`0 ${LY.nexus[0]} ${LY.nexus[1]}`}
+                to={`360 ${LY.nexus[0]} ${LY.nexus[1]}`}
+                dur="20s"
+                repeatCount="indefinite"
+              />
+            </path>
+
+            {/* Core pip */}
+            <circle cx={LY.nexus[0]} cy={LY.nexus[1]} r={3.2} fill="#f5a623" />
+
+            {/* Assessment interactive badge */}
+            <foreignObject
+              x={LY.nexus[0] - 70}
+              y={LY.nexus[1] + 28}
+              width="140"
+              height="38"
+              overflow="visible"
+              style={{ pointerEvents: 'auto' }}
+            >
+              <div
+                xmlns="http://www.w3.org/1999/xhtml"
+                className="rh-assess-badge"
+                lang={isAr ? 'ar' : 'en'}
+                dir={isAr ? 'rtl' : 'ltr'}
+              >
+                <span className="rh-assess-badge-icon" aria-hidden="true">✦</span>
+                <span className="rh-assess-badge-text">{isAr ? 'ابدأ التقييم' : 'Start Assessment'}</span>
+              </div>
+            </foreignObject>
           </g>
 
           {/* Domain planets */}
@@ -1091,9 +1147,9 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                   </g>
                 </g>
                 <foreignObject
-                  x={s.x - 64}
+                  x={s.x - 70}
                   y={s.y + 43}
-                  width="128"
+                  width="140"
                   height="38"
                   overflow="visible"
                   style={{ pointerEvents: 'none' }}
@@ -1103,8 +1159,27 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
                     className={`rh-domain-label${isHovered ? ' is-active' : ''}`}
                     lang={isAr ? 'ar' : 'en'}
                     dir={isAr ? 'rtl' : 'ltr'}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      padding: '4px 10px',
+                    }}
                   >
-                    {domainDoorLabel(s.id, isAr)}
+                    <img
+                      src={getDomainGuardian(s.id).avatarUrl}
+                      alt=""
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '1.5px solid var(--universe-accent)',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span>{domainDoorLabel(s.id, isAr)}</span>
                   </div>
                 </foreignObject>
               </g>
@@ -1142,41 +1217,7 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           />
         </Suspense>
 
-        {/* Kawkab — overlaid exactly on the SVG hub nexus. Both layouts put the
-            nexus on the horizontal centre, so left:50% holds for either; the
-            vertical offset has to follow the active map (360 in the portrait
-            360x660 box, 215 in the landscape 760x430 one). Tapping opens the
-            assessment.
 
-            No drop-shadow here any more: the character carries its own halo,
-            and a cast shadow on a glowing translucent body reads as grime. */}
-        <div
-          className="rh-assess-mascot"
-          style={{
-            position: 'absolute',
-            left: '50%',
-            /*
-             * Anchored by the FEET, on the orbit ring drawn at nexus + 20.
-             * This used to be `top: nexus` with `translateY(-70%)`, which put
-             * 70% of the character above the centre line and 30% below — so
-             * Kawkab floated a good 30px above the ring it is meant to stand
-             * on, and read as raised relative to the planets either side of it.
-             * Translating a full -100% from the ring's own y pins the contact
-             * point exactly, and does it without this file needing to know the
-             * artwork's aspect ratio.
-             */
-            top: LY.nexus[1] + NEXUS_HALO_DY,
-            transform: 'translate(-50%, -100%)',
-            zIndex: 5,
-          }}
-        >
-          <TrainingHubMascot
-            size={wide ? MASCOT_SIZE.landscape : MASCOT_SIZE.portrait}
-            isAr={isAr}
-            label={isAr ? 'ابدأ التقييم' : 'Start assessment'}
-            onActivate={onOpenAssessment}
-          />
-        </div>
         </div>
       </div>
 
@@ -1199,10 +1240,10 @@ export default function RadialMazeHub({ onOpenDomain, onOpenAssessment }) {
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '10px 20px', borderRadius: 100,
-            background: 'linear-gradient(180deg, #1f160c 0%, #150e08 100%)',
-            border: '1.5px solid rgba(232,172,78,0.55)',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.55), inset 0 1px 0 rgba(220,170,70,0.12)',
-            color: L.text, cursor: 'pointer',
+            background: 'var(--universe-glass-strong)',
+            border: '1.5px solid var(--universe-line)',
+            boxShadow: 'var(--elev-card)',
+            color: 'var(--universe-ink)', cursor: 'pointer',
             fontFamily: isAr ? "'Cairo', sans-serif" : "'Outfit', sans-serif",
             fontSize: isAr ? 13 : 14, fontWeight: isAr ? 800 : 400, letterSpacing: isAr ? 0 : 0.3,
           }}

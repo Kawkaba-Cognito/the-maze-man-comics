@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useApp } from '../../context/AppContext';
 import RadialMazeHub from '../training/RadialMazeHub';
+import TrainingLabsHub from '../training/TrainingLabsHub';
 import { DOMAINS } from '../training/trainingData';
 import { TrainingScreenShell } from '../../features/training/shared/TrainingScreens';
 import DomainAboutLink from '../../features/training/shared/DomainAboutLink';
@@ -14,6 +15,7 @@ import DomainGameStage from '../../features/training/shared/DomainGameStage';
 import AssessmentComingSoon from '../../features/training/assessment/AssessmentComingSoon';
 import GamePlanetScene from '../../features/training/shared/GamePlanetTile';
 import { GlassBevel } from '../../features/training/shared/AttentionHeaderProtos';
+import { getDomainGuardian } from '../../data/nayzakCast';
 
 /*
  * The loading state every game passes through, shown while its bundle is fetched.
@@ -45,6 +47,7 @@ function GameLoading({ isAr }) {
 export default function ComicsScreen() {
   const { currentLang, assessmentRequested, consumeAssessmentRequest, playSfx, setImmersive } = useApp();
   const isAr = currentLang === 'ar';
+  const [hubMode, setHubMode] = useState('labs');
   const [screen, setScreen] = useState(() => {
     try {
       return new URLSearchParams(window.location.search).get('game') ? 'game' : 'hub';
@@ -142,11 +145,55 @@ export default function ComicsScreen() {
           : {}),
       }}
     >
-      {screen === 'hub' && (
-        <RadialMazeHub
+      {screen === 'hub' && hubMode === 'labs' && (
+        <TrainingLabsHub
           onOpenDomain={openDomain}
           onOpenAssessment={() => setScreen('assessment')}
+          onOpenGame={(gameKey, domainId) => {
+            setActiveDomain(domainId);
+            setActiveGame(gameKey);
+            setScreen('game');
+          }}
+          onSwitchToOrbits={() => setHubMode('orbits')}
         />
+      )}
+      {screen === 'hub' && hubMode === 'orbits' && (
+        <div style={{ position: 'relative', width: '100%', minHeight: '100%' }}>
+          <button
+            type="button"
+            onClick={() => {
+              playSfx?.('click');
+              setHubMode('labs');
+            }}
+            style={{
+              position: 'absolute',
+              top: 18,
+              left: isAr ? 'auto' : 18,
+              right: isAr ? 18 : 'auto',
+              zIndex: 20,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 16px',
+              borderRadius: 9999,
+              background: 'rgba(15, 23, 42, 0.85)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)',
+              color: '#f8fafc',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <span>{isAr ? '→' : '←'}</span>
+            <span>{isAr ? 'شبكة التجارب (Labs Grid)' : 'Labs Grid View'}</span>
+          </button>
+          <RadialMazeHub
+            onOpenDomain={openDomain}
+            onOpenAssessment={() => setScreen('assessment')}
+          />
+        </div>
       )}
       {screen === 'assessment' && (
         <AssessmentComingSoon onBack={backToHub} isAr={isAr} playSfx={playSfx} />
@@ -161,6 +208,70 @@ export default function ComicsScreen() {
         >
           <div className="ct-domain-pick-body">
             <GlassBevel domainName={domainName} domainTag={domainTag} />
+
+            {(() => {
+              const guardian = getDomainGuardian(activeDomain);
+              if (!guardian) return null;
+              return (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 14,
+                    padding: '12px 16px',
+                    borderRadius: 18,
+                    background: 'var(--universe-glass-strong)',
+                    border: '1.5px solid var(--universe-line)',
+                    boxShadow: 'var(--elev-card)',
+                    margin: '12px 0 16px',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                  }}
+                >
+                  <img
+                    src={guardian.avatarUrl}
+                    alt={isAr ? guardian.nameAr : guardian.nameEn}
+                    style={{
+                      width: 46,
+                      height: 46,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: `2px solid ${guardian.accentColor || 'var(--universe-accent)'}`,
+                      boxShadow: `0 0 12px ${guardian.accentColor || 'var(--universe-accent)'}55`,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontWeight: 800,
+                        fontSize: 14,
+                        color: 'var(--universe-ink)',
+                      }}>
+                        {isAr ? guardian.nameAr : guardian.nameEn}
+                      </span>
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: guardian.accentColor || 'var(--universe-accent)',
+                        textTransform: 'uppercase',
+                      }}>
+                        • {isAr ? guardian.roleAr : guardian.roleEn}
+                      </span>
+                    </div>
+                    <p style={{
+                      margin: '3px 0 0',
+                      fontSize: 12,
+                      color: 'var(--universe-muted)',
+                      lineHeight: 1.35,
+                      fontStyle: 'italic',
+                    }}>
+                      "{isAr ? guardian.quoteAr : guardian.quoteEn}"
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             <section
               className="ct-domain-pick-section"

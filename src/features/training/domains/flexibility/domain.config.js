@@ -34,7 +34,7 @@ const flexibility = {
       progress: 0,
       gameKey: 'mirror-world',
       tier: 'free',
-      loader: () => import('./games/mirror-world'),
+      loader: () => import('./games/mirror-world/DuolingoMirrorWorld'),
     },
     /*
      * Task Switch + Sort It Another Way replaced Card Sort (WCST) and Kawkab
@@ -63,7 +63,7 @@ const flexibility = {
       progress: 0,
       gameKey: 'task-switch',
       tier: 'free',
-      loader: () => import('./games/task-switch'),
+      loader: () => import('./games/task-switch/DuolingoTaskSwitch'),
     },
     {
       id: 'sort-shift',

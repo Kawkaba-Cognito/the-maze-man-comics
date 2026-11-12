@@ -672,3 +672,6 @@ const styles = {
   overNote: { marginTop: 10, fontSize: 12.5, lineHeight: 1.45, color: 'var(--ink-dim)', textAlign: 'center' },
   overBtn: { flex: 1, padding: '15px 16px', fontWeight: 900, fontSize: 16, color: '#fff', background: ATT, border: 'none', borderRadius: 12, boxShadow: '3px 3px 0 var(--ink-outline)', cursor: 'pointer', whiteSpace: 'nowrap' },
 };
+
+
+export { default as DuolingoTrainSwitch } from './DuolingoTrainSwitch';

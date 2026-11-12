@@ -49,9 +49,9 @@ const BLOBS_DARK = {
    rgba(196,208,236) — a cool blue, the one hue that cannot appear on paper and
    the thing that made this screen read as a different app from the library. */
 const BLOBS_LIGHT = [
-  { x: '4%', y: '8%', w: 380, h: 250, c: 'rgba(255,253,246,0.62)', dur: 30 },
-  { x: '56%', y: '0%', w: 430, h: 280, c: 'rgba(238,231,213,0.5)', dur: 36 },
-  { x: '42%', y: '52%', w: 480, h: 320, c: 'rgba(226,214,186,0.42)', dur: 42 },
+  { x: '4%', y: '8%', w: 380, h: 250, c: 'rgba(255,255,255,0.75)', dur: 30 },
+  { x: '56%', y: '0%', w: 430, h: 280, c: 'rgba(186,230,253,0.35)', dur: 36 },
+  { x: '42%', y: '52%', w: 480, h: 320, c: 'rgba(224,242,254,0.45)', dur: 42 },
 ];
 
 /* BLOBS_DUSK was removed on 2026-08-15 — see the note at `const blobs` below.
@@ -217,7 +217,7 @@ export default function UniverseStage({
             ? 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 100%)'
             : duskSky
               ? 'linear-gradient(180deg, transparent 0%, rgba(42,28,39,0.24) 100%)'
-              : 'linear-gradient(180deg, transparent 0%, rgba(233,227,210,0.55) 100%)',
+              : 'linear-gradient(180deg, transparent 0%, rgba(230,243,252,0.6) 100%)',
         }}
       />
       <span
@@ -230,7 +230,7 @@ export default function UniverseStage({
                sky's brighter-toward-the-light reading. */
             : duskSky
               ? 'radial-gradient(ellipse 128% 92% at 50% 42%, transparent 58%, rgba(20,14,28,0.34) 100%)'
-              : 'radial-gradient(ellipse 128% 92% at 50% 42%, transparent 62%, rgba(196,183,152,0.2) 100%)',
+              : 'radial-gradient(ellipse 128% 92% at 50% 42%, transparent 62%, rgba(186,230,253,0.2) 100%)',
         }}
       />
     </div>

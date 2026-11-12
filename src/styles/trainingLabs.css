@@ -1,0 +1,1684 @@
+/* ==========================================================================
+   Google Labs Design System for Nayzak Cognitive Training Lab
+   - Clean, crisp light yellow canvas (#fef9c3 / #fffde7)
+   - Zero muddy blurry blobs / stuck color splotches
+   - Real premium WebP paintings for all 18 experiments
+   - Full bilingual support with Arabic as primary (RTL)
+   - Pixel-perfect mobile & desktop responsive alignment
+   - Authentic Google Labs typography, telemetry, and bento cards
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Root Canvas (Clean Light Yellow)
+   -------------------------------------------------------------------------- */
+.training-labs-root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #fef9c3;
+  background-image: 
+    radial-gradient(circle at 50% 0%, #fffef5 0%, #fef9c3 65%, #fef08a 100%),
+    radial-gradient(rgba(161, 98, 7, 0.12) 1.2px, transparent 1.2px);
+  background-size: 100% 100%, 26px 26px;
+  color: #0f172a;
+  font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 0 0 130px;
+  box-sizing: border-box;
+  position: relative;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.training-labs-root[dir="ltr"] {
+  font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.training-labs-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 24px 24px 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* --------------------------------------------------------------------------
+   2. Sticky Top Navigation Bar (High-Precision Frosted Glass)
+   -------------------------------------------------------------------------- */
+.labs-top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+  background: rgba(254, 249, 195, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(180, 130, 20, 0.18);
+  box-shadow: 0 4px 20px -2px rgba(180, 130, 20, 0.08);
+  transition: all 0.25s ease;
+}
+
+.labs-top-bar-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+/* Brand Identity & Google Labs Erlenmeyer Science Flask */
+.labs-top-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.labs-brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+}
+
+.labs-flask-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fbbf24;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 0 10px rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  flex-shrink: 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.labs-brand-lockup:hover .labs-flask-badge {
+  transform: scale(1.05);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+}
+
+.labs-flask-icon {
+  display: block;
+}
+
+.labs-brand-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.labs-brand-title {
+  font-family: 'Syne', 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 14.5px;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.training-labs-root[dir="rtl"] .labs-brand-title {
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.labs-brand-pill {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  padding: 1.5px 6px;
+  border-radius: 6px;
+  background: #0f172a;
+  color: #ffffff;
+}
+
+/* Horizontal Navigation Links (Google Labs Style) */
+.labs-top-nav-links {
+  display: none;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (min-width: 960px) {
+  .labs-top-nav-links {
+    display: flex;
+  }
+}
+
+.labs-top-nav-link {
+  background: transparent;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.labs-top-nav-link:hover {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.labs-top-nav-link.is-active {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(180, 130, 20, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Top Quick Search Launcher */
+.labs-top-search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(180, 130, 20, 0.25);
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+  min-width: 220px;
+  justify-content: space-between;
+}
+
+.labs-top-search-btn:hover {
+  background: #ffffff;
+  border-color: rgba(180, 130, 20, 0.45);
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.labs-kbd-shortcut {
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10.5px;
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  color: #475569;
+}
+
+/* Right Actions & Telemetry */
+.labs-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.labs-top-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(180, 130, 20, 0.22);
+  border-radius: 9999px;
+  padding: 4px 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.labs-top-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+  font-family: ui-monospace, monospace;
+}
+
+/* Language Switcher Pill */
+.labs-top-lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(180, 130, 20, 0.25);
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.labs-top-lang-btn:hover {
+  background: #ffffff;
+  border-color: rgba(180, 130, 20, 0.45);
+  transform: translateY(-1px);
+}
+
+/* Nayzak Pro Golden Button */
+.labs-top-pro-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 1.5px solid #0f172a;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 2px 2px 0px #0f172a;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.labs-top-pro-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #0f172a;
+  filter: brightness(1.08);
+}
+
+.labs-top-pro-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #0f172a;
+}
+
+.labs-pro-star {
+  font-size: 13px;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+}
+
+/* Hub View Toggle (Grid vs 3D Orbits) */
+.labs-top-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(180, 130, 20, 0.25);
+  padding: 3px;
+  border-radius: 9999px;
+  gap: 3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.labs-top-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.labs-top-toggle-btn:hover {
+  color: #0f172a;
+}
+
+.labs-top-toggle-btn.is-active {
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   2. Google Labs Unified Featured Hero Banner (Cinematic Single Hero)
+   -------------------------------------------------------------------------- */
+.labs-featured-hero,
+.labs-spotlight-card {
+  position: relative;
+  border-radius: 24px;
+  padding: 24px;
+  margin-top: 14px;
+  margin-bottom: 28px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(180, 130, 20, 0.22);
+  box-shadow: 0 16px 40px -12px rgba(180, 130, 20, 0.12), 0 4px 16px rgba(0, 0, 0, 0.03);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  overflow: hidden;
+  color: #0f172a;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+@media (min-width: 900px) {
+  .labs-featured-hero,
+  .labs-spotlight-card {
+    grid-template-columns: 1.5fr 1fr;
+    align-items: center;
+    padding: 32px 36px;
+    gap: 32px;
+  }
+}
+
+.labs-featured-hero:hover,
+.labs-spotlight-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(180, 130, 20, 0.42);
+  box-shadow: 0 20px 48px -10px rgba(180, 130, 20, 0.18), 0 6px 18px rgba(0, 0, 0, 0.05);
+}
+
+/* --------------------------------------------------------------------------
+   Atmospheric Nayzak Family Backdrop in Hero Card (Google Flow Observatory)
+   -------------------------------------------------------------------------- */
+.labs-hero-family-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+  z-index: 0;
+}
+
+.labs-hero-family-img {
+  position: absolute;
+  inset: -6%;
+  width: 112%;
+  height: 112%;
+  object-fit: cover;
+  object-position: center 36%;
+  opacity: 0.38;
+  filter: saturate(1.30) brightness(1.05) contrast(1.03);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.6s ease;
+  user-select: none;
+  animation: heroCosmicDrift 28s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.labs-featured-hero:hover .labs-hero-family-img {
+  opacity: 0.48;
+  filter: saturate(1.38) brightness(1.08) contrast(1.06);
+}
+
+@keyframes heroCosmicDrift {
+  0% {
+    transform: scale(1) translate(0%, 0%);
+  }
+  50% {
+    transform: scale(1.035) translate(-1%, -0.8%);
+  }
+  100% {
+    transform: scale(1.018) translate(0.8%, 0.5%);
+  }
+}
+
+/* Warm Hearth Glow Aura - Pulsing warmth from the fireplace */
+.labs-hero-hearth-glow {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  filter: blur(52px);
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.36) 0%, rgba(239, 68, 68, 0.16) 50%, transparent 72%);
+  animation: hearthBreathing 4.5s ease-in-out infinite alternate;
+  z-index: 1;
+}
+
+.training-labs-root[dir="rtl"] .labs-hero-hearth-glow {
+  bottom: -40px;
+  left: 8%;
+}
+
+.training-labs-root[dir="ltr"] .labs-hero-hearth-glow {
+  bottom: -40px;
+  right: 8%;
+}
+
+@keyframes hearthBreathing {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale(1.08);
+  }
+}
+
+/* Animated Celestial Stardust & Fireflies Particle Canvas */
+.labs-hero-stardust-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.stardust-dot {
+  fill: #38bdf8;
+  filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.9));
+  opacity: 0.7;
+}
+
+.stardust-line {
+  stroke: rgba(125, 211, 252, 0.28);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  animation: stardustLinePulse 5s ease-in-out infinite alternate;
+}
+
+.stardust-p1 {
+  animation: stardustTwinkle 3.2s ease-in-out infinite alternate;
+}
+
+.stardust-p2 {
+  fill: #818cf8;
+  animation: stardustTwinkle 4.1s ease-in-out 0.8s infinite alternate;
+}
+
+.stardust-p3 {
+  fill: #fcd34d;
+  animation: stardustTwinkle 2.8s ease-in-out 1.4s infinite alternate;
+}
+
+.stardust-p4 {
+  animation: stardustTwinkle 3.6s ease-in-out 2.1s infinite alternate;
+}
+
+.hearth-spark {
+  fill: #f59e0b;
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.95));
+}
+
+.hearth-s1 {
+  animation: hearthFloat 4s ease-in-out infinite alternate;
+}
+
+.hearth-s2 {
+  animation: hearthFloat 5.2s ease-in-out 1.2s infinite alternate;
+}
+
+.hearth-s3 {
+  animation: hearthFloat 3.8s ease-in-out 2s infinite alternate;
+}
+
+@keyframes stardustTwinkle {
+  0% {
+    opacity: 0.25;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+  100% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes hearthFloat {
+  0% {
+    opacity: 0.35;
+    transform: translateY(0px) scale(0.9);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translateY(-8px) scale(1.2);
+  }
+  100% {
+    opacity: 0.2;
+    transform: translateY(-16px) scale(0.8);
+  }
+}
+
+@keyframes stardustLinePulse {
+  0% {
+    stroke-opacity: 0.15;
+  }
+  100% {
+    stroke-opacity: 0.45;
+  }
+}
+
+/* Frosted Glass Veil: Balances typography contrast with emotional backdrop glow */
+.labs-hero-family-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.training-labs-root[dir="rtl"] .labs-hero-family-veil {
+  background: 
+    radial-gradient(circle at 25% 40%, rgba(245, 158, 11, 0.20) 0%, transparent 62%),
+    linear-gradient(to left, 
+      rgba(255, 255, 255, 0.95) 0%, 
+      rgba(255, 255, 255, 0.86) 34%, 
+      rgba(255, 255, 255, 0.48) 60%, 
+      rgba(255, 255, 255, 0.80) 100%
+    );
+}
+
+.training-labs-root[dir="ltr"] .labs-hero-family-veil {
+  background: 
+    radial-gradient(circle at 75% 40%, rgba(245, 158, 11, 0.20) 0%, transparent 62%),
+    linear-gradient(to right, 
+      rgba(255, 255, 255, 0.95) 0%, 
+      rgba(255, 255, 255, 0.86) 34%, 
+      rgba(255, 255, 255, 0.48) 60%, 
+      rgba(255, 255, 255, 0.80) 100%
+    );
+}
+
+/* --------------------------------------------------------------------------
+   3. Google Labs Section Header (Directly above Filter Strip)
+   Matches labs.google home-carousel__title typography
+   -------------------------------------------------------------------------- */
+.labs-section-header {
+  margin-top: 12px;
+  margin-bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.labs-section-title {
+  font-size: clamp(20px, 2.8vw, 26px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.labs-section-subtitle {
+  font-size: 13.5px;
+  color: #64748b;
+  line-height: 1.6;
+  max-width: 720px;
+  margin: 0;
+}
+
+
+
+.labs-featured-info,
+.labs-spotlight-info {
+  position: relative;
+  z-index: 1;
+}
+
+.labs-featured-badge,
+.labs-spotlight-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #92400e;
+  background: rgba(180, 130, 20, 0.1);
+  border: 1px solid rgba(180, 130, 20, 0.25);
+  padding: 4px 12px;
+  border-radius: 9999px;
+  margin-bottom: 12px;
+}
+
+.labs-featured-badge-dot,
+.labs-spotlight-badge-dot {
+  color: #f59e0b;
+}
+
+.labs-featured-duration,
+.labs-spotlight-duration {
+  background: rgba(2, 132, 199, 0.12);
+  color: #0369a1;
+  border-radius: 9999px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.labs-featured-title,
+.labs-spotlight-title {
+  font-size: clamp(24px, 3.4vw, 34px);
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 10px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.labs-featured-highlight,
+.labs-spotlight-highlight {
+  background: linear-gradient(90deg, #0284c7 0%, #6366f1 50%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.labs-featured-desc,
+.labs-spotlight-desc {
+  font-size: 14.5px;
+  color: #475569;
+  line-height: 1.65;
+  margin: 0 0 22px;
+  max-width: 580px;
+}
+
+.labs-featured-actions,
+.labs-spotlight-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.labs-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+  transition: all 0.2s ease;
+}
+
+.labs-btn-primary:hover {
+  transform: translateY(-2px);
+  background: #1e293b;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.35);
+}
+
+.labs-btn-primary .labs-btn-arrow {
+  transition: transform 0.2s ease;
+}
+
+.training-labs-root[dir="rtl"] .labs-btn-primary:hover .labs-btn-arrow {
+  transform: translateX(-3px);
+}
+
+.training-labs-root[dir="ltr"] .labs-btn-primary:hover .labs-btn-arrow {
+  transform: translateX(3px);
+}
+
+.labs-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(180, 130, 20, 0.28);
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.labs-btn-secondary:hover {
+  background: #ffffff;
+  border-color: rgba(180, 130, 20, 0.45);
+  transform: translateY(-1px);
+}
+
+/* Family Story Action Pill */
+.labs-btn-family {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 18px;
+  border-radius: 9999px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.labs-btn-family:hover {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: rgba(245, 158, 11, 0.6);
+  color: #78350f;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.2);
+}
+
+.labs-btn-family-emoji {
+  font-size: 15px;
+}
+
+/* 6-Pillar Neural Radar & Dignified Coach Dossier */
+.labs-featured-visual,
+.labs-spotlight-visual {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+@media (min-width: 900px) {
+  .labs-featured-visual,
+  .labs-spotlight-visual {
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+  }
+}
+
+.labs-radar-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: 18px;
+  background: rgba(254, 249, 195, 0.55);
+  border: 1px solid rgba(180, 130, 20, 0.22);
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.12);
+  flex-shrink: 0;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.labs-radar-shell:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.22);
+}
+
+.labs-radar-svg {
+  display: block;
+}
+
+.labs-radar-caption {
+  font-size: 10px;
+  font-weight: 800;
+  color: #92400e;
+  letter-spacing: 0.3px;
+  user-select: none;
+}
+
+.labs-coach-dossier {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(180, 130, 20, 0.22);
+  box-shadow: 0 2px 8px rgba(180, 130, 20, 0.06);
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.labs-coach-avatar-lg {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #f59e0b;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+  flex-shrink: 0;
+}
+
+.labs-coach-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.labs-coach-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #b45309;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.labs-coach-name {
+  font-size: 14.5px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.labs-coach-quote {
+  font-size: 12px;
+  color: #475569;
+  font-style: italic;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ==========================================================================
+   Google Labs 6-Pillar Neural Radar Hero Visual
+   ========================================================================== */
+.neural-radar-hero-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.neural-radar-shell {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #070c18;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.4), 0 0 20px rgba(2, 132, 199, 0.15);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+  user-select: none;
+}
+
+.neural-radar-shell:hover,
+.neural-radar-shell:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.5), 0 0 28px rgba(2, 132, 199, 0.35);
+  outline: none;
+}
+
+.neural-radar-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.neural-radar-action-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(3, 7, 18, 0.85);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: 0.3px;
+  backdrop-filter: blur(8px);
+}
+
+.neural-radar-hint-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+.neural-radar-hint-arrow {
+  font-size: 13px;
+  color: #38bdf8;
+  transition: transform 0.2s ease;
+}
+
+.neural-radar-shell:hover .neural-radar-hint-arrow {
+  transform: translateX(3px);
+}
+
+.neural-radar-hero-wrap[dir="rtl"] .neural-radar-shell:hover .neural-radar-hint-arrow {
+  transform: translateX(-3px);
+}
+
+.neural-radar-coach-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(180, 130, 20, 0.25);
+  box-shadow: 0 4px 14px rgba(180, 130, 20, 0.08);
+  backdrop-filter: blur(10px);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.neural-radar-coach-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(245, 158, 11, 0.55);
+  box-shadow: 0 8px 20px rgba(180, 130, 20, 0.16);
+}
+
+.neural-coach-avatar-ring {
+  position: relative;
+  width: 90px;
+  height: 120px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: -24px;
+}
+
+.neural-coach-cartoon-img {
+  width: auto;
+  height: 130px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 14px rgba(15, 23, 42, 0.28));
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.neural-radar-coach-card:hover .neural-coach-cartoon-img {
+  transform: translateY(-4px) scale(1.06);
+}
+
+.neural-coach-status-beacon {
+  position: absolute;
+  bottom: 4px;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #16a34a;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 6px #16a34a;
+}
+
+.neural-radar-hero-wrap[dir="rtl"] .neural-coach-status-beacon {
+  right: auto;
+  left: 0;
+}
+
+/* Comic Stamp Badge from agreeable_people_pleaser_bendia.mp4 */
+.bendia-comic-stamp-sm {
+  align-self: flex-start;
+  display: inline-flex;
+  flex-direction: column;
+  padding: 3px 9px;
+  border: 1.5px dashed #dc2626;
+  border-radius: 6px;
+  background: rgba(254, 242, 242, 0.95);
+  color: #b91c1c;
+  transform: rotate(-1.8deg);
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.08);
+  margin-bottom: 3px;
+}
+
+.bendia-comic-stamp-sm .bendia-stamp-main {
+  font-family: 'Syne', 'Outfit', sans-serif;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.bendia-comic-stamp-sm .bendia-stamp-sub {
+  font-size: 9px;
+  font-weight: 800;
+  opacity: 0.9;
+}
+
+.neural-coach-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.neural-coach-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.neural-coach-name {
+  font-size: 14px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.neural-coach-role-pill {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 1px 8px;
+  border-radius: 9999px;
+}
+
+.neural-coach-quote {
+  font-size: 11px;
+  color: #64748b;
+  font-style: italic;
+  margin: 0;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* --------------------------------------------------------------------------
+   5. Category Filter Chips
+   -------------------------------------------------------------------------- */
+.labs-filter-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 22px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.labs-filter-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.labs-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(180, 130, 20, 0.22);
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.labs-chip:hover {
+  background: #ffffff;
+  border-color: rgba(180, 130, 20, 0.45);
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.labs-chip.is-active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.labs-chip-count {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: rgba(180, 130, 20, 0.15);
+  color: #854d0e;
+  font-weight: 700;
+}
+
+.labs-chip.is-active .labs-chip-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   6. Search & Telemetry Toolbar
+   -------------------------------------------------------------------------- */
+.labs-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+  flex-wrap: wrap;
+}
+
+.labs-search-box {
+  position: relative;
+  flex: 1;
+  max-width: 420px;
+}
+
+.labs-search-input {
+  width: 100%;
+  padding: 11px 40px 11px 42px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1.5px solid rgba(180, 130, 20, 0.25);
+  color: #0f172a;
+  font-size: 13.5px;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.training-labs-root[dir="rtl"] .labs-search-input {
+  padding: 11px 42px 11px 40px;
+  text-align: right;
+}
+
+.labs-search-input:focus {
+  border-color: #0284c7;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
+}
+
+.labs-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+.training-labs-root[dir="rtl"] .labs-search-icon {
+  left: auto;
+  right: 15px;
+}
+
+.labs-search-clear-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.08);
+  border: none;
+  color: #475569;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.training-labs-root[dir="rtl"] .labs-search-clear-btn {
+  right: auto;
+  left: 14px;
+}
+
+.labs-meta-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #334155;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Mode Segmented Switcher (CC0 Archives vs Vector HUD) */
+.labs-mode-segmented {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(180, 130, 20, 0.25);
+  border-radius: 9999px;
+  padding: 3px;
+  gap: 3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.labs-mode-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.labs-mode-seg-btn:hover {
+  color: #0f172a;
+}
+
+.labs-mode-seg-btn.is-active {
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   7. Bento Experiment Cards Grid (Clean, Crisp, Premium)
+   -------------------------------------------------------------------------- */
+.labs-grid-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 480px;
+}
+
+.labs-bento-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 22px;
+}
+
+@media (min-width: 640px) {
+  .labs-bento-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .labs-bento-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 26px;
+  }
+}
+
+/* Base Experiment Card */
+.labs-experiment-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 22px;
+  background: #0f172a;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.16);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  overflow: hidden;
+  box-sizing: border-box;
+  color: #ffffff;
+}
+
+.labs-experiment-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--card-color, #0284c7);
+  box-shadow: 0 18px 36px -10px rgba(0, 0, 0, 0.28), 0 0 20px var(--card-glow, rgba(2, 132, 199, 0.2));
+}
+
+/* 16:9 Media Preview Window using real authored WebP artwork */
+.labs-exp-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  background: #020617;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.labs-exp-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.labs-experiment-card:hover .labs-exp-img {
+  transform: scale(1.05);
+}
+
+/* Overlaid Badges on Image */
+.labs-media-overlay-top {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.labs-code-badge {
+  font-size: 10px;
+  font-family: monospace;
+  font-weight: 700;
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 3px 8px;
+  border-radius: 6px;
+  backdrop-filter: blur(6px);
+}
+
+.labs-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #4ade80;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  padding: 3px 8px;
+  border-radius: 9999px;
+  backdrop-filter: blur(6px);
+}
+
+.labs-live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4ade80;
+}
+
+/* Authentic CC0 Provenance Overlay */
+.labs-media-overlay-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 12px;
+  background: linear-gradient(0deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.7) 65%, transparent 100%);
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+}
+
+.labs-provenance-tag {
+  font-size: 10px;
+  color: #cbd5e1;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.exp-art-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Card Body */
+.labs-exp-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.labs-exp-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.labs-exp-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.labs-launch-arrow {
+  color: #64748b;
+  font-size: 15px;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.labs-experiment-card:hover .labs-launch-arrow {
+  color: #ffffff;
+  transform: translate(2px, -2px);
+}
+
+.training-labs-root[dir="rtl"] .labs-experiment-card:hover .labs-launch-arrow {
+  transform: translate(-2px, -2px);
+}
+
+.labs-domain-chip {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--card-color, #38bdf8);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 3px 9px;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.labs-exp-desc {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 0 0 14px;
+  flex: 1;
+}
+
+/* Card Footer */
+.labs-exp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  color: #64748b;
+}
+
+.labs-paradigm-text {
+  font-family: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 210px;
+  color: #94a3b8;
+}
+
+.labs-duration-badge {
+  font-weight: 700;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+/* Empty State */
+.labs-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 50px 20px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1.5px dashed rgba(180, 130, 20, 0.3);
+  margin: 20px 0;
+  box-shadow: 0 4px 16px rgba(180, 130, 20, 0.08);
+}
+
+.labs-empty-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.labs-empty-desc {
+  font-size: 13.5px;
+  color: #475569;
+  max-width: 460px;
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+
+/* --------------------------------------------------------------------------
+   8. Responsive Alignment (Mobile 360-480px, Tablet 768px, Desktop)
+   -------------------------------------------------------------------------- */
+@media (max-width: 860px) {
+  .labs-top-search-btn {
+    min-width: 140px;
+    padding: 6px 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .labs-top-search-btn {
+    display: none;
+  }
+
+  .labs-top-status-chip {
+    display: none;
+  }
+
+  .labs-top-bar-divider {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .training-labs-root {
+    padding: 0 0 110px;
+  }
+
+  .training-labs-container {
+    padding: 16px 14px 0;
+  }
+
+  .labs-top-bar-inner {
+    padding: 8px 14px;
+    gap: 8px;
+  }
+
+  .labs-top-stats {
+    padding: 3px 8px;
+    gap: 6px;
+  }
+
+  .labs-top-stat-item {
+    font-size: 11px;
+  }
+
+  .labs-top-lang-btn {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  .labs-top-toggle-btn {
+    padding: 4px 8px;
+    font-size: 10.5px;
+  }
+
+  .labs-featured-hero,
+  .labs-spotlight-card {
+    padding: 20px 20px;
+    border-radius: 20px;
+    gap: 20px;
+    margin-bottom: 22px;
+  }
+
+  .labs-featured-title,
+  .labs-spotlight-title {
+    font-size: 21px;
+    line-height: 1.25;
+  }
+
+  .labs-featured-desc,
+  .labs-spotlight-desc {
+    font-size: 13.5px;
+    line-height: 1.55;
+    margin-bottom: 18px;
+  }
+
+  .labs-section-header {
+    margin-top: 6px;
+    margin-bottom: 16px;
+  }
+
+  .labs-section-title {
+    font-size: 20px;
+  }
+
+  .labs-section-subtitle {
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  .labs-spotlight-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .labs-btn-primary,
+  .labs-btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .labs-coach-dossier {
+    flex-direction: column;
+    text-align: center;
+    padding: 14px;
+  }
+
+  .labs-filter-strip {
+    margin-left: -14px;
+    margin-right: -14px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .labs-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .labs-search-box {
+    max-width: 100%;
+  }
+
+  .labs-mode-segmented {
+    width: 100%;
+    justify-content: center;
+  }
+}

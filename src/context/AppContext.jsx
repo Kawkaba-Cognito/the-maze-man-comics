@@ -32,7 +32,7 @@ function readSfxEnabled() {
 }
 
 const DEFAULT_PROFILE = {
-  avatar: '🧠', username: 'MAZE WALKER',
+  avatar: 'Assets/cartoon/nayzak_unified_leader.png', username: 'NAYZAK WALKER',
   streak: 1, lastVisit: null,
   videosWatched: 0, fragments: 0, puzzlesSolved: 0,
   badges: { explorer: false, maze: false, master: false }
@@ -42,6 +42,16 @@ const POINTS_KEY = 'mazeman_points';
 const CHAR_KEY = 'mazeman_character';
 const OWNED_KEY = 'mazeman_owned';
 const EQUIP_KEY = 'mazeman_equipped';
+const CARTOON_KEY = 'mazeman_cartoon_mode';
+
+function readCartoonMode() {
+  try {
+    const val = localStorage.getItem(CARTOON_KEY);
+    return val !== '0';
+  } catch {
+    return true;
+  }
+}
 
 function readCharacter() {
   try {
@@ -63,9 +73,9 @@ export function AppProvider({ children }) {
   const [equipped, setEquipped] = useState(() => readJSON(EQUIP_KEY, {}));
   const [currentLang, setCurrentLang] = useState(() => {
     try {
-      return new URLSearchParams(window.location.search).get('lang') || 'en';
+      return new URLSearchParams(window.location.search).get('lang') || 'ar';
     } catch {
-      return 'en';
+      return 'ar';
     }
   });
   // App opens on the Home universe ('habits' tab hosts HomeScreen), not Training.
@@ -87,13 +97,39 @@ export function AppProvider({ children }) {
   const [mazeStartRoom, setMazeStartRoom] = useState(DEFAULT_FLOOR);
   const [challenge, setChallenge] = useState(null); // recruitment puzzle: { puzzleKey, id, name, power, returnRoom }
   const challengeRef = useRef(null);
-  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('paywall') === '1';
+    } catch {
+      return false;
+    }
+  });
   const [tipOpen, setTipOpen] = useState(false);
   const [profileData, setProfileData] = useState(DEFAULT_PROFILE);
   const audioCtxRef = useRef(null);
   const sfxEnabledRef = useRef(readSfxEnabled());
   const [sfxEnabled, setSfxEnabledState] = useState(() => readSfxEnabled());
   const [appTheme, setAppThemeState] = useState(readAppTheme);
+  const [cartoonMode, setCartoonModeState] = useState(readCartoonMode);
+  const [activeModalGame, setActiveModalGame] = useState(null);
+
+  useEffect(() => {
+    try {
+      if (cartoonMode) {
+        document.body.classList.add('comic-cartoon-active');
+      } else {
+        document.body.classList.remove('comic-cartoon-active');
+      }
+    } catch (e) {}
+  }, [cartoonMode]);
+
+  const toggleCartoonMode = useCallback(() => {
+    setCartoonModeState((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(CARTOON_KEY, next ? '1' : '0'); } catch {}
+      return next;
+    });
+  }, []);
 
   // Load profile on mount
   useEffect(() => { ensureGateProgress(); }, []);
@@ -478,11 +514,13 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={{
       globalXP, points, currentLang, activeTab, immersive, setImmersive, mazeVisible, mazeEntryPending,
+      activeModalGame, setActiveModalGame,
       paywallOpen, tipOpen, profileData,
       character, setCharacter,
       owned, equipped, buyItem, equipItem,
       sfxEnabled, setSfxEnabled,
       appTheme, setAppTheme, toggleAppTheme,
+      cartoonMode, toggleCartoonMode,
       assessmentRequested, openAssessment, consumeAssessmentRequest,
       mazeStartRoom, setMazeStartRoom, openWorkout, leaveWorkout,
       challenge, openPuzzleChallenge, finishChallenge,

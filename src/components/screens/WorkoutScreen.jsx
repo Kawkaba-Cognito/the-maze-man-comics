@@ -14,6 +14,7 @@ import { ANCHORS } from '../../features/training/assessment/paradigmAnchors';
 import { gameRatingByGameKey, ratingBand } from '../../features/training/rating';
 import ReactionTest from '../../features/workout/ReactionTest';
 import WorkoutStats from './WorkoutStats';
+import { NAYZAK_CAST_BY_ID } from '../../data/nayzakCast';
 
 /*
  * DAILY WORKOUT — a hands-free guided session.
@@ -38,23 +39,23 @@ function ProgressRing({ frac, done, total, allDone }) {
   return (
     <div className="wk-ring">
       <svg viewBox="0 0 128 128" width="128" height="128" aria-hidden="true">
-        <circle cx="64" cy="64" r={R} fill="none" stroke="#2a1606" strokeWidth={SW} />
+        <circle cx="64" cy="64" r={R} fill="none" stroke="var(--universe-line)" strokeWidth={SW} />
         <circle
           cx="64" cy="64" r={R} fill="none"
-          stroke={allDone ? '#9be85a' : 'url(#wkRingGrad)'} strokeWidth={SW} strokeLinecap="round"
+          stroke={allDone ? '#00d2ff' : 'url(#wkRingGrad)'} strokeWidth={SW} strokeLinecap="round"
           strokeDasharray={C} strokeDashoffset={off}
           transform="rotate(-90 64 64)" style={{ transition: 'stroke-dashoffset .5s ease' }}
         />
         <defs>
           <linearGradient id="wkRingGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#ffd574" />
-            <stop offset="100%" stopColor="#9be85a" />
+            <stop offset="0%" stopColor="#f5a623" />
+            <stop offset="100%" stopColor="#00d2ff" />
           </linearGradient>
         </defs>
       </svg>
       <div className="wk-ring-center">
         {allDone ? (
-          <span className="wk-ring-check">✓</span>
+          <span className="wk-ring-check" style={{ color: '#00d2ff' }}>✓</span>
         ) : (
           <><b className="wk-ring-frac">{done}<span>/{total}</span></b></>
         )}
@@ -67,6 +68,7 @@ export default function WorkoutScreen() {
   const { currentLang, playSfx, awardPoints, openAssessment, leaveWorkout, setImmersive } = useApp();
   const isAr = currentLang === 'ar';
   const needsAssessment = !hasAssessProfile();
+  const coach = NAYZAK_CAST_BY_ID.coach;
 
   const [st, setSt] = useState(() => ensureToday(loadWorkout()));
   const [view, setView] = useState(st.prefs ? 'plan' : 'setup');
@@ -331,6 +333,20 @@ export default function WorkoutScreen() {
     return (
       <div className="workout-screen wk-trans" dir={isAr ? 'rtl' : 'ltr'}>
         <div className="wk-trans-card">
+          <img
+            src={coach.avatarUrl}
+            alt={isAr ? coach.nameAr : coach.nameEn}
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              objectFit: 'cover',
+              border: '2.5px solid #f5a623',
+              boxShadow: '0 0 16px rgba(245,166,35,0.45)',
+              margin: '0 auto 10px',
+              display: 'block',
+            }}
+          />
           <div className="wk-trans-step">{isAr ? `تمرين ${position} من ${total}` : `Exercise ${position} of ${total}`}</div>
           <div className="wk-trans-glyph" style={{ color: ex.color }} aria-hidden="true">{ex.glyph}</div>
           <div className="wk-trans-name">{ex.gameName}</div>
@@ -363,7 +379,42 @@ export default function WorkoutScreen() {
       <div className="workout-screen" dir={isAr ? 'rtl' : 'ltr'}>
         <button className="workout-back" onClick={() => leaveWorkout()}>‹ {isAr ? 'رجوع' : 'BACK'}</button>
         <div className="workout-title">💪 {isAr ? 'تمرين يومي' : 'Daily Workout'}</div>
-        <p className="workout-sub">{isAr ? 'صمّم تمرينك: اختر هدفك ومدّتك.' : 'Build your workout — pick your goal and how long.'}</p>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          padding: '14px 18px',
+          borderRadius: 20,
+          background: 'var(--universe-glass-strong)',
+          border: '1.5px solid var(--universe-line)',
+          boxShadow: 'var(--elev-card)',
+          margin: '12px 0 16px',
+        }}>
+          <img
+            src={coach.avatarUrl}
+            alt={isAr ? coach.nameAr : coach.nameEn}
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              objectFit: 'cover',
+              border: '2px solid #f5a623',
+              boxShadow: '0 0 14px rgba(245,166,35,0.45)',
+              flexShrink: 0,
+            }}
+          />
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--universe-ink)' }}>
+              {isAr ? coach.nameAr : coach.nameEn}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--universe-accent)', fontWeight: 700 }}>
+              {isAr ? coach.roleAr : coach.roleEn}
+            </div>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--universe-muted)', lineHeight: 1.35 }}>
+              {isAr ? '«أنا هنا لمساعدتك في بناء روتين ذهني يومي يتحدى قدراتك ويزيدك تركيزاً.»' : '“I will guide your daily routine to sharpen your focus and push your cognitive limits.”'}
+            </p>
+          </div>
+        </div>
 
         {assessNudge}
 
@@ -416,6 +467,33 @@ export default function WorkoutScreen() {
         <div className="wk-hero-top">
           <div className="workout-title">{isAr ? 'تمرين اليوم' : "Today's Workout"}</div>
           <div className="workout-streak" title={isAr ? 'سلسلة الأيام' : 'day streak'}>🔥 {st.streak || 0}</div>
+        </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '8px 12px',
+          borderRadius: 14,
+          background: 'var(--universe-glass)',
+          border: '1px solid var(--universe-line)',
+          margin: '4px 0 12px',
+        }}>
+          <img
+            src={coach.avatarUrl}
+            alt={isAr ? coach.nameAr : coach.nameEn}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              objectFit: 'cover',
+              border: '1.5px solid #f5a623',
+              boxShadow: '0 0 10px rgba(245,166,35,0.3)',
+              flexShrink: 0,
+            }}
+          />
+          <div style={{ fontSize: 12, color: 'var(--universe-muted)', fontStyle: 'italic', lineHeight: 1.35 }}>
+            "{isAr ? coach.quoteAr : coach.quoteEn}"
+          </div>
         </div>
         <div className="wk-hero-main">
           <ProgressRing frac={exercises.length ? doneCount / exercises.length : 0} done={doneCount} total={exercises.length} allDone={allDone} />

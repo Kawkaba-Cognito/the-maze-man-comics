@@ -16,6 +16,9 @@ import './styles/puzzleStudioTheme.css';
 // universe, and needs to win over the editorial rules the theme still carries
 // for the category and game screens behind it.
 import './styles/puzzleStudioHub.css';
+import './styles/comicCartoonTheme.css';
+import './styles/duolingoTheme.css';
+import './styles/duolingoGames.css';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import { guardAgainstFraming } from './lib/frameGuard';

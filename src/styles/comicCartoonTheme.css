@@ -1,0 +1,2234 @@
+/* ==========================================================================
+   NAYZAK COMIC CARTOON THEME — INSPIRED BY "AGREEABLE PEOPLE PLEASER" VIDEO
+   Authentic 2D Edutainment Comic Art Style:
+   - Bold 3px-4px ink outlines (#0f172a)
+   - Tactile 4px-6px cartoon offset drop shadows
+   - Comic dialogue bubbles with cartoon tails
+   - Tilted dashed comic stamps and verified badges
+   - Dynamic squash & stretch cartoon keyframe animations
+   - Vibrant edutainment palette: Comic Amber, Emerald YES, Ruby NO, Sky Blue
+   ========================================================================== */
+
+:root {
+  --comic-ink: #0f172a;
+  --comic-white: #ffffff;
+  --comic-parchment: #faf7f2;
+  --comic-paper-dot: #ece5d8;
+  --comic-gold: #ff8a00;
+  --comic-gold-bright: #fbbf24;
+  --comic-blue: #2563eb;
+  --comic-blue-dark: #1d4ed8;
+  --comic-amber-light: #fef3c7;
+  --comic-emerald: #10b981;
+  --comic-emerald-deep: #047857;
+  --comic-emerald-light: #d1fae5;
+  --comic-ruby: #ef4444;
+  --comic-ruby-deep: #b91c1c;
+  --comic-ruby-light: #fee2e2;
+  --comic-sky: #38bdf8;
+  --comic-sky-deep: #0284c7;
+  --comic-border: 2px solid #0f172a;
+  --comic-border-sm: 1.5px solid #e5dccb;
+  --comic-shadow: 0 3px 0 #e5dccb;
+  --comic-shadow-lg: 0 6px 20px rgba(15, 23, 42, 0.08);
+  --comic-shadow-press: 0 1px 0 #e5dccb;
+}
+
+/* ── Minimalist Warm Cream Canvas ── */
+.comic-cartoon-active,
+.comic-cartoon-active .home-dashboard {
+  background: #faf7f2 !important;
+  color: var(--comic-ink) !important;
+}
+
+/* ── Cartoon Living Room Backdrop (Scene 1 from Video) ── */
+.cartoon-room-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 480px;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  opacity: 0.92;
+}
+
+.cartoon-room-svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cartoon-lamp-glow {
+  animation: lampGlowPulse 4s ease-in-out infinite alternate;
+}
+
+@keyframes lampGlowPulse {
+  0% { opacity: 0.18; }
+  100% { opacity: 0.32; }
+}
+
+/* Dark mode comic variation */
+[data-theme="dark"] .comic-cartoon-active,
+[data-theme="dark"] .comic-cartoon-active .home-dashboard {
+  background-color: #0c1222 !important;
+  background-image: radial-gradient(#1e293b 1.5px, transparent 1.5px) !important;
+  background-size: 22px 22px !important;
+  color: #f8fafc !important;
+}
+
+/* ==========================================================================
+   CARTOON STAGE HERO CARD
+   ========================================================================== */
+.cartoon-stage-card {
+  position: relative;
+  width: 100%;
+  border-radius: 28px;
+  background: #ffffff;
+  border: var(--comic-border);
+  box-shadow: var(--comic-shadow-lg);
+  padding: 24px 22px;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] .cartoon-stage-card {
+  background: #111827;
+  border-color: #38bdf8;
+  box-shadow: 6px 6px 0px #000000, 0 0 20px rgba(56, 189, 248, 0.2);
+}
+
+/* Atmospheric Comic Radial Sunburst Backdrop */
+.cartoon-stage-sunburst {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 320px;
+  height: 320px;
+  pointer-events: none;
+  opacity: 0.12;
+  background: radial-gradient(circle, #f59e0b 0%, #38bdf8 60%, transparent 80%);
+  border-radius: 50%;
+  z-index: 0;
+  animation: cartoonSunburstPulse 6s ease-in-out infinite alternate;
+}
+
+@keyframes cartoonSunburstPulse {
+  0% { transform: scale(0.9) rotate(0deg); opacity: 0.08; }
+  100% { transform: scale(1.15) rotate(15deg); opacity: 0.16; }
+}
+
+/* Header Strip inside Stage */
+.cartoon-stage-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.cartoon-stage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #fef3c7;
+  border: 2px solid #0f172a;
+  box-shadow: 2.5px 2.5px 0px #0f172a;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  color: #78350f;
+}
+
+[data-theme="dark"] .cartoon-stage-badge {
+  background: #78350f;
+  color: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.cartoon-stage-subtitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  font-family: 'Cairo', system-ui, sans-serif;
+}
+
+[data-theme="dark"] .cartoon-stage-subtitle {
+  color: #94a3b8;
+}
+
+/* Main Visual Layout: Nayzak Character + Speech Bubble */
+.cartoon-stage-main {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+@media (max-width: 600px) {
+  .cartoon-stage-main {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+  }
+}
+
+/* ── Nayzak Character Interactive Avatar ── */
+.cartoon-nayzak-frame {
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+}
+
+.cartoon-nayzak-img {
+  width: auto;
+  height: 210px;
+  max-width: 190px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 14px rgba(15, 23, 42, 0.22));
+  transform-origin: bottom center;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: cartoonIdleBob 3.5s ease-in-out infinite;
+}
+
+@media (max-width: 480px) {
+  .cartoon-nayzak-img {
+    height: 180px;
+  }
+}
+
+.cartoon-nayzak-frame:hover .cartoon-nayzak-img {
+  transform: scale(1.06) translateY(-4px);
+  filter: drop-shadow(0 14px 20px rgba(15, 23, 42, 0.3));
+}
+
+.cartoon-nayzak-frame:active .cartoon-nayzak-img {
+  animation: cartoonSquash 0.35s ease-out;
+}
+
+/* Natural Edutainment Breathing Cadence */
+@keyframes cartoonIdleBob {
+  0%, 100% {
+    transform: translateY(0px) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-8px) scale(0.98, 1.02);
+  }
+}
+
+/* Elastic Squash and Stretch from Remotion Animation Engine */
+@keyframes cartoonSquash {
+  0% {
+    transform: scale(1.22, 0.82);
+  }
+  40% {
+    transform: scale(0.92, 1.15);
+  }
+  75% {
+    transform: scale(1.05, 0.96);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+
+/* Ground Contact Shadow */
+.cartoon-nayzak-ground-shadow {
+  width: 140px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.25);
+  margin-top: -6px;
+  filter: blur(2px);
+  animation: cartoonShadowPulse 3.5s ease-in-out infinite;
+}
+
+@keyframes cartoonShadowPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(0.85);
+    opacity: 0.15;
+  }
+}
+
+/* Interactive Tap Hint Pill below Nayzak */
+.cartoon-nayzak-tap-hint {
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1.5px solid #0f172a;
+  font-size: 11px;
+  font-weight: 800;
+  color: #0f172a;
+  box-shadow: 1.5px 1.5px 0px #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+[data-theme="dark"] .cartoon-nayzak-tap-hint {
+  background: #1e293b;
+  color: #f8fafc;
+  border-color: #38bdf8;
+}
+
+/* ==========================================================================
+   COMIC DIALOGUE SPEECH BUBBLE
+   ========================================================================== */
+.cartoon-speech-bubble {
+  position: relative;
+  flex: 1;
+  background: #ffffff;
+  border: var(--comic-border);
+  border-radius: 24px;
+  padding: 18px 22px;
+  box-shadow: var(--comic-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 2;
+}
+
+[data-theme="dark"] .cartoon-speech-bubble {
+  background: #1e293b;
+  border-color: #38bdf8;
+  box-shadow: 4px 4px 0px #000000;
+}
+
+/* Comic Speech Bubble Triangle Tail */
+.cartoon-speech-bubble::before {
+  content: '';
+  position: absolute;
+  top: 40px;
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+}
+
+/* Tail pointing right (for Arabic RTL when Nayzak is on the right) */
+[dir="rtl"] .cartoon-speech-bubble::before {
+  right: -16px;
+  border-left: 16px solid #0f172a;
+}
+[dir="rtl"] .cartoon-speech-bubble::after {
+  content: '';
+  position: absolute;
+  top: 42px;
+  right: -12px;
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 14px solid #ffffff;
+}
+
+/* Tail pointing left (for English LTR when Nayzak is on the left) */
+[dir="ltr"] .cartoon-speech-bubble::before {
+  left: -16px;
+  border-right: 16px solid #0f172a;
+}
+[dir="ltr"] .cartoon-speech-bubble::after {
+  content: '';
+  position: absolute;
+  top: 42px;
+  left: -12px;
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-right: 14px solid #ffffff;
+}
+
+[data-theme="dark"] [dir="rtl"] .cartoon-speech-bubble::after {
+  border-left-color: #1e293b;
+}
+[data-theme="dark"] [dir="ltr"] .cartoon-speech-bubble::after {
+  border-right-color: #1e293b;
+}
+
+@media (max-width: 600px) {
+  .cartoon-speech-bubble::before,
+  .cartoon-speech-bubble::after {
+    display: none;
+  }
+}
+
+.cartoon-speech-speaker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cartoon-speaker-name {
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+[data-theme="dark"] .cartoon-speaker-name {
+  color: #38bdf8;
+}
+
+.cartoon-speech-text {
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+[data-theme="dark"] .cartoon-speech-text {
+  color: #f1f5f9;
+}
+
+/* ==========================================================================
+   TILTED DASHED COMIC STAMPS (FROM AGREEABLE VIDEO)
+   ========================================================================== */
+.bendia-comic-stamp {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 2.5px dashed #dc2626;
+  background: rgba(254, 242, 242, 0.95);
+  color: #991b1b;
+  box-shadow: 2.5px 2.5px 0px #0f172a;
+  transform: rotate(-3deg);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.bendia-comic-stamp:hover {
+  transform: rotate(0deg) scale(1.05);
+}
+
+.bendia-comic-stamp.stamp-gold {
+  border-color: #d97706;
+  background: rgba(254, 243, 199, 0.95);
+  color: #78350f;
+  transform: rotate(2.5deg);
+}
+
+.bendia-comic-stamp.stamp-emerald {
+  border-color: #059669;
+  background: rgba(209, 250, 229, 0.95);
+  color: #065f46;
+  transform: rotate(-2deg);
+}
+
+.bendia-stamp-main {
+  font-family: 'Arial Black', Impact, sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.bendia-stamp-sub {
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  margin-top: 1px;
+}
+
+/* ==========================================================================
+   YES / NO DILEMMA CONSOLE (FROM SCENE 1 OF VIDEO)
+   ========================================================================== */
+.cartoon-yesno-console {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 16px 20px;
+  border-radius: 22px;
+  background: #f8fafc;
+  border: 2.5px solid #0f172a;
+  box-shadow: 3px 3px 0px #0f172a;
+  margin: 14px 0;
+  flex-wrap: wrap;
+}
+
+[data-theme="dark"] .cartoon-yesno-console {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+.cartoon-yesno-label {
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #334155;
+  text-align: center;
+  width: 100%;
+}
+
+[data-theme="dark"] .cartoon-yesno-label {
+  color: #cbd5e1;
+}
+
+.cartoon-btn-yes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: var(--comic-emerald);
+  border: 4px solid var(--comic-emerald-deep);
+  box-shadow: 0 8px 18px rgba(16, 185, 129, 0.4), 3px 3px 0px #0f172a;
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.cartoon-btn-yes:hover {
+  transform: scale(1.08) translateY(-3px);
+  box-shadow: 0 12px 24px rgba(16, 185, 129, 0.5), 4px 4px 0px #0f172a;
+}
+
+.cartoon-btn-yes:active {
+  transform: scale(0.96) translateY(2px);
+  box-shadow: 1px 1px 0px #0f172a;
+}
+
+.cartoon-btn-yes-ar {
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.cartoon-btn-yes-en {
+  font-family: 'Arial Black', Impact, sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.cartoon-btn-no {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: var(--comic-ruby);
+  border: 4px solid var(--comic-ruby-deep);
+  box-shadow: 0 8px 18px rgba(239, 68, 68, 0.35), 3px 3px 0px #0f172a;
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.cartoon-btn-no:hover {
+  transform: scale(1.08) translateY(-3px);
+  box-shadow: 0 12px 24px rgba(239, 68, 68, 0.45), 4px 4px 0px #0f172a;
+}
+
+.cartoon-btn-no:active {
+  transform: scale(0.96) translateY(2px);
+  box-shadow: 1px 1px 0px #0f172a;
+}
+
+.cartoon-btn-no-ar {
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.cartoon-btn-no-en {
+  font-family: 'Arial Black', Impact, sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.cartoon-btn-no-lock {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 22px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  animation: lockWiggle 2.5s ease-in-out infinite;
+}
+
+@keyframes lockWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+
+/* ==========================================================================
+   INTERACTIVE POSE PICKER STRIP
+   ========================================================================== */
+.cartoon-pose-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 4px 12px;
+  width: 100%;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cartoon-pose-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid #0f172a;
+  box-shadow: 2px 2px 0px #0f172a;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.15s ease, background 0.15s ease;
+  user-select: none;
+}
+
+.cartoon-pose-btn:hover {
+  transform: translateY(-2px);
+  background: #fef3c7;
+}
+
+.cartoon-pose-btn.is-active {
+  background: #f59e0b;
+  color: #ffffff;
+  border-color: #0f172a;
+  box-shadow: 2px 2px 0px #0f172a;
+}
+
+/* ==========================================================================
+   CARTOON ACTION BUTTONS
+   ========================================================================== */
+.cartoon-actions-row {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.cartoon-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 3px solid #0f172a;
+  box-shadow: var(--comic-shadow);
+  color: #ffffff;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.cartoon-btn-primary:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 5px 5px 0px #0f172a;
+}
+
+.cartoon-btn-primary:active {
+  transform: translateY(2px);
+  box-shadow: 1px 1px 0px #0f172a;
+}
+
+.cartoon-btn-pro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 3px solid #0f172a;
+  box-shadow: var(--comic-shadow);
+  color: #ffffff;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.cartoon-btn-pro:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 5px 5px 0px #0f172a;
+}
+
+.cartoon-btn-pro:active {
+  transform: translateY(2px);
+  box-shadow: 1px 1px 0px #0f172a;
+}
+
+.cartoon-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2.5px solid #0f172a;
+  box-shadow: 3px 3px 0px #0f172a;
+  color: #0f172a;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.cartoon-btn-secondary:hover {
+  transform: translateY(-2px);
+  background: #f1f5f9;
+  box-shadow: 4px 4px 0px #0f172a;
+}
+
+.cartoon-btn-secondary:active {
+  transform: translateY(1px);
+  box-shadow: 1.5px 1.5px 0px #0f172a;
+}
+
+/* ==========================================================================
+   COMIC CARDS ENHANCEMENT ACROSS THE APP (WHEN THEME IS ACTIVE)
+   ========================================================================== */
+.comic-cartoon-active .hd-guardian-card,
+.comic-cartoon-active .progress-card,
+.comic-cartoon-active .workout-card,
+.comic-cartoon-active .domain-snapshot-card,
+.comic-cartoon-active .neural-panel {
+  border: 2.5px solid #0f172a !important;
+  box-shadow: 4px 4px 0px #0f172a !important;
+  border-radius: 22px !important;
+  background: #ffffff !important;
+}
+
+[data-theme="dark"] .comic-cartoon-active .hd-guardian-card,
+[data-theme="dark"] .comic-cartoon-active .progress-card,
+[data-theme="dark"] .comic-cartoon-active .workout-card,
+[data-theme="dark"] .comic-cartoon-active .domain-snapshot-card,
+[data-theme="dark"] .comic-cartoon-active .neural-panel {
+  background: #1e293b !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+
+.comic-cartoon-active .app-tabbar {
+  border-top: 3px solid #0f172a !important;
+  box-shadow: 0 -4px 0px rgba(15, 23, 42, 0.08) !important;
+}
+
+.comic-cartoon-active .app-tab.is-active {
+  transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   MINIMALIST NAYZAK DOOR STAGE (HOME SCREEN DOOR TO TRAINING)
+   ========================================================================== */
+.nayzak-door-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 10px 16px 24px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 2;
+  gap: 18px;
+}
+
+/* Speech bubble above door */
+.door-speech-bubble {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border: 3px solid #0f172a;
+  border-radius: 20px;
+  padding: 14px 18px;
+  box-shadow: 4px 4px 0px #0f172a;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .door-speech-bubble {
+  background: #1e293b;
+  border-color: #38bdf8;
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.door-speech-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .door-speech-header {
+  color: #38bdf8;
+}
+
+.door-speech-greeting {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+[data-theme="dark"] .door-speech-greeting {
+  color: #94a3b8;
+}
+
+.door-speech-text {
+  margin: 0;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #1e293b;
+}
+
+[data-theme="dark"] .door-speech-text {
+  color: #f1f5f9;
+}
+
+/* Main scene: Door + Nayzak side by side on pure minimalist canvas */
+.door-scene-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  perspective: 900px;
+  position: relative;
+  padding-bottom: 14px;
+  border-bottom: 2px solid #e5dccb;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+@media (max-width: 440px) {
+  .door-scene-container {
+    gap: 16px;
+    max-width: 320px;
+  }
+}
+
+/* ── CARTOON DOOR ── */
+.cartoon-door-frame {
+  position: relative;
+  width: 168px;
+  height: 290px;
+  background: #451a03;
+  border: 2.5px solid #0f172a;
+  border-radius: 14px 14px 2px 2px;
+  box-shadow: 0 4px 0 #e5dccb;
+  cursor: pointer;
+  perspective: 900px;
+  flex-shrink: 0;
+  user-select: none;
+  margin-bottom: -14px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+@media (max-width: 440px) {
+  .cartoon-door-frame {
+    width: 146px;
+    height: 256px;
+  }
+}
+
+.cartoon-door-frame:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #d6cbb5;
+}
+
+/* Interior glow behind open door */
+.door-interior-glow {
+  position: absolute;
+  inset: 4px;
+  background: radial-gradient(circle at 50% 60%, #fef08a 0%, #f59e0b 60%, #d97706 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+}
+
+.door-interior-stars {
+  color: #ffffff;
+  font-size: 18px;
+  letter-spacing: 6px;
+  text-shadow: 0 0 10px #ffffff;
+  animation: starsShimmer 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes starsShimmer {
+  0% { opacity: 0.4; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Swinging Door Leaf */
+.cartoon-door-leaf {
+  position: absolute;
+  inset: 4px;
+  background: linear-gradient(135deg, #9a3412 0%, #7c2d12 100%);
+  border: 3px solid #0f172a;
+  border-radius: 8px 8px 0 0;
+  transform-origin: left center;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 12px;
+  box-sizing: border-box;
+}
+
+[dir="rtl"] .cartoon-door-leaf {
+  transform-origin: right center;
+}
+
+/* Door opens on click */
+.cartoon-door-frame.is-open .cartoon-door-leaf {
+  transform: rotateY(-80deg);
+}
+
+[dir="rtl"] .cartoon-door-frame.is-open .cartoon-door-leaf {
+  transform: rotateY(80deg);
+}
+
+/* Inset Wooden Panels */
+.door-inset-panel {
+  border: 2.5px solid #0f172a;
+  background: #b45309;
+  border-radius: 6px;
+  box-shadow: inset 2px 2px 0px rgba(255,255,255,0.2), inset -2px -2px 0px rgba(0,0,0,0.3);
+}
+
+.door-inset-top {
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+}
+
+@media (max-width: 440px) {
+  .door-inset-top {
+    height: 95px;
+  }
+}
+
+.door-panel-sign {
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  color: #fef08a;
+  text-shadow: 1px 1px 0px #0f172a;
+  letter-spacing: 0.5px;
+}
+
+.door-inset-bottom {
+  height: 110px;
+}
+
+@media (max-width: 440px) {
+  .door-inset-bottom {
+    height: 95px;
+  }
+}
+
+/* Golden Brass Doorknob */
+.door-knob {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #facc15;
+  border: 2.5px solid #0f172a;
+  box-shadow: 2px 2px 0px #0f172a;
+}
+
+[dir="rtl"] .door-knob {
+  right: auto;
+  left: 14px;
+}
+
+.door-knob-glint {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+/* Keyhole plate */
+.door-keyhole {
+  position: absolute;
+  top: calc(50% + 18px);
+  right: 21px;
+  width: 8px;
+  height: 12px;
+  background: #0f172a;
+  border-radius: 3px 3px 1px 1px;
+}
+
+[dir="rtl"] .door-keyhole {
+  right: auto;
+  left: 21px;
+}
+
+/* Crown Lintel */
+.door-crown-lintel {
+  position: absolute;
+  top: -24px;
+  left: -8px;
+  right: -8px;
+  height: 24px;
+  background: #78350f;
+  border: 3px solid #0f172a;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 2.5px 2.5px 0px #0f172a;
+}
+
+.door-crown-lintel span {
+  font-family: 'Arial Black', sans-serif;
+  font-size: 9px;
+  font-weight: 900;
+  color: #fef08a;
+  letter-spacing: 0.5px;
+}
+
+/* ── NAYZAK STANDING AT DOOR ── */
+.door-nayzak-standing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  margin-bottom: -14px;
+  transform-origin: bottom center;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.door-nayzak-img {
+  width: auto;
+  height: 235px;
+  max-width: 165px;
+  object-fit: contain;
+  margin-bottom: -14px;
+  filter: drop-shadow(0 6px 10px rgba(15, 23, 42, 0.14));
+  animation: cartoonIdleBob 3.5s ease-in-out infinite;
+}
+
+@media (max-width: 440px) {
+  .door-nayzak-img {
+    height: 205px;
+    max-width: 140px;
+    margin-bottom: -12px;
+  }
+}
+
+.door-nayzak-standing:hover .door-nayzak-img {
+  transform: scale(1.04) translateY(-2px);
+}
+
+.door-nayzak-shadow {
+  display: none;
+}
+
+/* Home Door Vertical Centering (No Scrollbar Clutter) */
+.nayzak-home-door-page {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+}
+
+.nayzak-home-door-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 16px calc(86px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* Tap Door CTA Button — Sleek NAYZAK GAMES Orange */
+.door-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 28px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffb300 0%, #ff7b00 100%);
+  border: 2px solid #0f172a;
+  box-shadow: 0 4px 0 #0f172a;
+  color: #ffffff;
+  font-family: 'Cairo', 'Outfit', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  user-select: none;
+}
+
+.door-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #0f172a;
+}
+
+.door-cta-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #0f172a;
+}
+
+/* ==========================================================================
+   STREAMLINED 3-TAB BOTTOM BAR (MINIMALIST & CENTERED)
+   ========================================================================== */
+.app-tabbar.app-tabbar--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  max-width: 400px !important;
+  width: min(calc(100% - 32px), 400px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  margin: 0 auto !important;
+  padding: 6px 14px max(6px, env(safe-area-inset-bottom)) !important;
+  border-radius: 999px !important;
+  border: 1.5px solid #e5dccb !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  backdrop-filter: blur(12px);
+}
+
+[data-theme="dark"] .app-tabbar.app-tabbar--3 {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border-color: #334155 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+}
+
+.app-tabbar--3 .app-tab {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  padding: 6px 10px !important;
+  color: #64748b !important;
+  transition: transform 0.14s ease, color 0.14s ease !important;
+}
+
+.app-tabbar--3 .app-tab.is-active {
+  color: #2563eb !important;
+  font-weight: 900 !important;
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .app-tabbar--3 .app-tab.is-active {
+  color: #60a5fa !important;
+}
+
+.app-tabbar--3 .app-tab-lbl {
+  font-family: 'Cairo', 'Outfit', system-ui, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+}
+
+/* ==========================================================================
+   MINIMALIST TRAINING ROOM (AIRY, SIMPLE, ZERO CLUTTER)
+   ========================================================================== */
+.training-room-page {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 16px calc(110px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Domain Category Pills Carousel */
+.training-category-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.training-category-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.training-cat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1.5px solid #e5dccb;
+  box-shadow: 0 2px 0 #e5dccb;
+  font-family: 'Cairo', 'Outfit', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.training-cat-pill:hover {
+  transform: translateY(-1px);
+  border-color: #cbd5e1;
+}
+
+.training-cat-pill.is-active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+  box-shadow: 0 2px 0 #ff8a00;
+}
+
+[data-theme="dark"] .training-cat-pill {
+  background: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .training-cat-pill.is-active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+/* Minimalist Single-Column Clean List */
+.training-games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.training-game-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 16px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1.5px solid #e5dccb;
+  box-shadow: 0 3px 0 #e5dccb;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .training-game-row {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: none;
+}
+
+.training-game-row:hover {
+  transform: translateY(-2px);
+  border-color: #0f172a;
+  box-shadow: 0 4px 0 #cbd5e1;
+}
+
+.training-game-row:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.training-game-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 21px;
+  flex-shrink: 0;
+}
+
+.training-game-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.training-game-title {
+  font-family: 'Cairo', 'Outfit', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+[data-theme="dark"] .training-game-title {
+  color: #ffffff;
+}
+
+.training-game-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  font-family: 'Cairo', 'Outfit', system-ui, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="dark"] .training-game-meta {
+  color: #94a3b8;
+}
+
+/* Play button pill — Royal Blue matching NAYZAK GAMES */
+.training-game-play-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+  border: 1.5px solid #0f172a;
+  box-shadow: 0 2px 0 #0f172a;
+  color: #ffffff;
+  font-family: 'Cairo', 'Outfit', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.1s ease;
+  user-select: none;
+}
+
+.training-game-play-btn:hover {
+  filter: brightness(1.05);
+}
+
+.training-game-play-btn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.pz-btn-orange {
+  background: linear-gradient(180deg, #ffb300 0%, #ff7b00 100%) !important;
+}
+
+/* ==========================================================================
+   CARTOON COGNITIVE TRAINING GAMES SECTION (ON HOME)
+   ========================================================================== */
+.cartoon-games-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.cartoon-games-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cartoon-games-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cartoon-games-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #fef3c7;
+  border: 2px solid #0f172a;
+  box-shadow: 2.5px 2.5px 0px #0f172a;
+  font-size: 20px;
+}
+
+.cartoon-games-title {
+  margin: 0;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .cartoon-games-title {
+  color: #f8fafc;
+}
+
+.cartoon-games-badge-count {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  border: 1.5px solid #0f172a;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  color: #0369a1;
+  box-shadow: 1.5px 1.5px 0px #0f172a;
+}
+
+/* Category Filter Chips */
+.cartoon-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cartoon-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid #0f172a;
+  box-shadow: 2px 2px 0px #0f172a;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.15s ease, background 0.15s ease;
+  user-select: none;
+}
+
+.cartoon-chip-btn:hover {
+  transform: translateY(-2px);
+  background: #fef3c7;
+}
+
+.cartoon-chip-btn.is-active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0f172a;
+  box-shadow: 2.5px 2.5px 0px #0f172a;
+}
+
+/* 2-Column Responsive Games Grid */
+.cartoon-games-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 540px) {
+  .cartoon-games-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cartoon-game-card {
+  position: relative;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 2.5px solid #0f172a;
+  box-shadow: 3.5px 3.5px 0px #0f172a;
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+[data-theme="dark"] .cartoon-game-card {
+  background: #1e293b;
+  border-color: #38bdf8;
+  box-shadow: 3.5px 3.5px 0px #000000;
+}
+
+.cartoon-game-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 5px 5px 0px #0f172a;
+}
+
+[data-theme="dark"] .cartoon-game-card:hover {
+  box-shadow: 5px 5px 0px #38bdf8;
+}
+
+.cartoon-game-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cartoon-game-tag {
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1.5px solid #0f172a;
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+.cartoon-game-exp-num {
+  font-family: 'Arial Black', sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  color: #94a3b8;
+}
+
+.cartoon-game-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cartoon-game-name {
+  margin: 0;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .cartoon-game-name {
+  color: #ffffff;
+}
+
+.cartoon-game-subname {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  font-family: 'Outfit', sans-serif;
+}
+
+[data-theme="dark"] .cartoon-game-subname {
+  color: #94a3b8;
+}
+
+.cartoon-game-desc {
+  margin: 4px 0 0;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #475569;
+}
+
+[data-theme="dark"] .cartoon-game-desc {
+  color: #cbd5e1;
+}
+
+.cartoon-game-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: #10b981;
+  border: 2px solid #0f172a;
+  box-shadow: 2px 2px 0px #0f172a;
+  color: #ffffff;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.cartoon-game-action-btn:hover {
+  transform: translateY(-1px);
+  background: #059669;
+}
+
+/* PRO Boundaries Banner on Home */
+.cartoon-pro-banner {
+  position: relative;
+  width: 100%;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 3.5px solid #f59e0b;
+  box-shadow: var(--comic-shadow);
+  padding: 20px 22px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  overflow: hidden;
+  margin-top: 12px;
+  user-select: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cartoon-pro-banner:hover {
+  transform: translateY(-3px);
+  box-shadow: 6px 6px 0px #f59e0b;
+}
+
+.cartoon-pro-shield-icon {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f59e0b;
+  border: 3px solid #ffffff;
+  font-size: 30px;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+}
+
+.cartoon-pro-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cartoon-pro-title {
+  margin: 0;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  color: #f59e0b;
+}
+
+.cartoon-pro-desc {
+  margin: 0;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 12px;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+.cartoon-pro-cta {
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: #f59e0b;
+  border: 2px solid #ffffff;
+  color: #0f172a;
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+  box-shadow: 2px 2px 0px #0f172a;
+}
+
+
+
+/* ==========================================================================
+   UNIFIED NAYZAK GAMES PAGE SHELL (PUZZLES & PROFILE)
+   ========================================================================== */
+.nayzak-page {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #faf7f2;
+  color: #0f172a;
+  font-family: 'Cairo', 'Outfit', system-ui, sans-serif;
+}
+
+[data-theme="dark"] .nayzak-page {
+  background: #0c1222;
+  color: #f8fafc;
+}
+
+.nayzak-clean-container {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 18px 16px calc(110px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Minimalist Puzzles Hub ── */
+.pz-clean-spotlight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1.5px solid #e5dccb;
+  box-shadow: 0 3px 0 #e5dccb;
+  cursor: pointer;
+  transition: transform 0.14s ease, border-color 0.14s ease;
+}
+
+[data-theme="dark"] .pz-clean-spotlight {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: none;
+}
+
+.pz-clean-spotlight:hover {
+  transform: translateY(-2px);
+  border-color: #0f172a;
+}
+
+.pz-clean-spotlight-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.pz-clean-badge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #c2410c;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.pz-clean-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 380px) {
+  .pz-clean-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pz-clean-cat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 18px 12px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1.5px solid #e5dccb;
+  box-shadow: 0 3px 0 #e5dccb;
+  cursor: pointer;
+  transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+[data-theme="dark"] .pz-clean-cat-card {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: none;
+  color: #f8fafc;
+}
+
+.pz-clean-cat-card:hover {
+  transform: translateY(-2px);
+  border-color: #0f172a;
+  box-shadow: 0 4px 0 #cbd5e1;
+}
+
+.pz-clean-cat-art {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1.5px solid #e5dccb;
+  background: #faf7f2;
+}
+
+.pz-clean-cat-art img,
+.pz-clean-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pz-clean-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1.5px solid #e5dccb;
+  background: #faf7f2;
+  flex-shrink: 0;
+}
+
+.pz-clean-cat-name {
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.pz-clean-cat-desc {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+[data-theme="dark"] .pz-clean-cat-desc {
+  color: #94a3b8;
+}
+
+/* ── Minimalist Profile Screen ── */
+.profile-clean-card {
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1.5px solid #e5dccb;
+  box-shadow: 0 3px 0 #e5dccb;
+  padding: 16px 18px;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .profile-clean-card {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: none;
+}
+
+.profile-identity-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 22px 18px;
+}
+
+.profile-avatar-btn {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 2.5px solid #0f172a;
+  background: #fffbeb;
+  padding: 4px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #e5dccb;
+}
+
+.profile-avatar-btn img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: contain;
+  display: block;
+}
+
+.profile-level-badge {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.profile-username {
+  margin: 16px 0 0;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.profile-xp-wrap {
+  width: 100%;
+  max-width: 280px;
+  margin-top: 10px;
+}
+
+.profile-xp-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #f1ece1;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .profile-xp-track {
+  background: #0f172a;
+}
+
+.profile-xp-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffb300 0%, #ff7b00 100%);
+}
+
+.profile-xp-caption {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.profile-pose-picker {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #ebe3d5;
+  width: 100%;
+}
+
+.profile-pose-item {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #e5dccb;
+  background: #faf7f2;
+  padding: 3px;
+  cursor: pointer;
+}
+
+.profile-pose-item.is-selected {
+  border-color: #ff8a00;
+  background: #fffbeb;
+}
+
+.profile-pose-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.profile-stats-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 10px;
+}
+
+.profile-stat-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.profile-stat-val {
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.profile-stat-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.profile-stat-divider {
+  width: 1px;
+  height: 28px;
+  background: #ebe3d5;
+}
+
+.profile-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.profile-section-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.profile-index-pill {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.profile-domain-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-domain-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-domain-label {
+  width: 78px;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.profile-domain-track {
+  flex: 1;
+  height: 7px;
+  border-radius: 999px;
+  background: #f1ece1;
+  overflow: hidden;
+}
+
+.profile-domain-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.profile-domain-val {
+  width: 28px;
+  text-align: end;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.profile-empty-note {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.profile-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.profile-toggle-btn {
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: #faf7f2;
+  border: 1.5px solid #e5dccb;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.profile-toggle-btn.is-on {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+[data-theme="dark"] .profile-toggle-btn {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+.profile-pro-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: #fffbeb;
+  border-color: #fcd34d;
+  box-shadow: 0 3px 0 #fcd34d;
+}
+
+[data-theme="dark"] .profile-pro-card {
+  background: #1e293b;
+  border-color: #f59e0b;
+}
+
+.profile-pro-copy h3 {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.profile-pro-copy p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.profile-pro-btn {
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffb300 0%, #ff7b00 100%);
+  border: 1.5px solid #0f172a;
+  box-shadow: 0 2px 0 #0f172a;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ── Big Centered Enter Training Hero CTA ── */
+.home-enter-training-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: min(100%, 360px);
+  min-height: 82px;
+  padding: 20px 32px;
+  border-radius: 26px;
+  background: linear-gradient(180deg, #ffb300 0%, #ff7b00 100%);
+  border: 3px solid #0f172a;
+  box-shadow: 0 7px 0 #0f172a, 0 18px 36px rgba(255, 123, 0, 0.22);
+  color: #ffffff;
+  font-family: 'Cairo', 'Outfit', system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
+}
+
+.home-enter-training-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 0 #0f172a, 0 22px 42px rgba(255, 123, 0, 0.28);
+  filter: brightness(1.03);
+}
+
+.home-enter-training-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #0f172a;
+}
+
+@media (max-width: 440px) {
+  .home-enter-training-btn {
+    width: min(100%, 310px);
+    min-height: 74px;
+    padding: 18px 26px;
+    font-size: 21px;
+    border-radius: 22px;
+  }
+}
