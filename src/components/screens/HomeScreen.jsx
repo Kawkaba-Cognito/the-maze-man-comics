@@ -1,5 +1,5 @@
 import React, { useState, useCallback, Suspense, useMemo } from 'react';
-import { Lock, Check, CaretDown, X, Sparkle } from '@phosphor-icons/react';
+import { Check, CaretDown, X, Sparkle } from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
 import NayzakHeader from '../shared/NayzakHeader';
 import DomainGameStage from '../../features/training/shared/DomainGameStage';
@@ -42,6 +42,22 @@ function GameLoading({ isAr }) {
   );
 }
 
+function readClaimedGames() {
+  const claimed = new Set();
+  try {
+    for (const storageKey of ['mazeman_claimed_wins', 'mazeman_claimed_free']) {
+      const raw = JSON.parse(localStorage.getItem(storageKey) || '{}') || {};
+      Object.keys(raw).forEach((k) => {
+        const base = k.split(':')[0];
+        if (base) claimed.add(base);
+      });
+    }
+  } catch {
+    /* ignore */
+  }
+  return claimed;
+}
+
 export default function HomeScreen() {
   const { currentLang, playSfx, setActiveModalGame } = useApp();
   const isAr = currentLang === 'ar';
@@ -61,11 +77,9 @@ export default function HomeScreen() {
 
   const GameView = activeGameKey ? getLazyGame(activeGameKey) : null;
 
-  const handleLaunchGame = useCallback((exp, isLocked) => {
-    if (isLocked) {
-      playSfx?.('error');
-      return;
-    }
+  const claimedGames = readClaimedGames();
+
+  const handleLaunchGame = useCallback((exp) => {
     playSfx?.('pop');
     setActiveGameKey(exp.gameKey);
     setActiveModalGame?.(exp.gameKey);
@@ -142,52 +156,54 @@ export default function HomeScreen() {
           </div>
         </div>
 
-        {/* Duolingo Progression Ladder for the Selected Domain */}
+        {/* Duolingo Progression Ladder for the Selected Domain (All Stages Open) */}
         <div className="duo-path-wrapper">
-          {domainGames.map((exp, index) => {
-            const isCompleted = index === 0;
-            const isActive = index === 1 || domainGames.length === 1;
-            const isLocked = index > 1;
-            const posClass = POSITIONS[index % POSITIONS.length];
-            const isFinalStage = index === domainGames.length - 1;
+          {(() => {
+            const firstOpenIdx = domainGames.findIndex((g) => !claimedGames.has(g.gameKey));
+            return domainGames.map((exp, index) => {
+              const isCompleted = claimedGames.has(exp.gameKey);
+              const isActive = index === firstOpenIdx;
+              const posClass = POSITIONS[index % POSITIONS.length];
+              const isFinalStage = index === domainGames.length - 1;
 
-            return (
-              <div key={exp.id} className={`duo-step-item ${posClass}`}>
-                {/* Active Tooltip Badge */}
-                {isActive && (
-                  <div className="duo-active-bubble">
-                    {isAr ? 'المرحلة التالية!' : 'NEXT STAGE!'}
-                  </div>
-                )}
-
-                {/* Chunky 3D Duolingo Node Button */}
-                <button
-                  type="button"
-                  className={`duo-node-btn ${isCompleted ? 'is-completed' : ''} ${isActive ? 'is-active' : ''} ${isLocked ? 'is-locked' : ''}`}
-                  onClick={() => handleLaunchGame(exp, isLocked)}
-                  aria-label={isAr ? exp.titleAr : exp.titleEn}
-                >
-                  {isFinalStage && <div className="duo-node-ring" />}
-
-                  {isCompleted ? (
-                    <Check size={32} weight="bold" color="#ffffff" />
-                  ) : isLocked ? (
-                    <Lock size={28} weight="bold" color="#9e9e9e" />
-                  ) : (
-                    <span>{currentDomain.icon}</span>
+              return (
+                <div key={exp.id} className={`duo-step-item ${posClass}`}>
+                  {/* Active Tooltip Badge */}
+                  {isActive && (
+                    <div className="duo-active-bubble">
+                      {index === 0
+                        ? (isAr ? 'ابدأ هنا!' : 'START!')
+                        : (isAr ? 'المرحلة التالية!' : 'NEXT STAGE!')}
+                    </div>
                   )}
-                </button>
 
-                {/* Node Title & Stage Tag */}
-                <div className="duo-node-label">
-                  <div style={{ fontSize: 11, fontWeight: 900, color: '#ff7800', marginBottom: 2 }}>
-                    {exp.expNum}
+                  {/* Chunky 3D Duolingo Node Button — All Open for Exploration */}
+                  <button
+                    type="button"
+                    className={`duo-node-btn ${isCompleted ? 'is-completed' : isActive ? 'is-active' : 'is-unlocked'}`}
+                    onClick={() => handleLaunchGame(exp)}
+                    aria-label={isAr ? exp.titleAr : exp.titleEn}
+                  >
+                    {isFinalStage && <div className="duo-node-ring" />}
+
+                    {isCompleted ? (
+                      <Check size={32} weight="bold" color="#ffffff" />
+                    ) : (
+                      <span>{currentDomain.icon}</span>
+                    )}
+                  </button>
+
+                  {/* Node Title & Stage Tag */}
+                  <div className="duo-node-label">
+                    <div style={{ fontSize: 11, fontWeight: 900, color: '#ff7800', marginBottom: 2 }}>
+                      {exp.expNum}
+                    </div>
+                    <div>{isAr ? exp.titleAr : exp.titleEn}</div>
                   </div>
-                  <div>{isAr ? exp.titleAr : exp.titleEn}</div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            });
+          })()}
         </div>
       </div>
 

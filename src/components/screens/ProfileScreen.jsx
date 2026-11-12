@@ -72,14 +72,31 @@ export default function ProfileScreen() {
         <section className="duo-identity-card">
           <div
             className="duo-avatar-wrapper"
+            role="button"
+            tabIndex={0}
             onClick={() => {
               playSfx?.('tap');
               setShowPicker((v) => !v);
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                playSfx?.('tap');
+                setShowPicker((v) => !v);
+              }
+            }}
             title={isAr ? 'انقر لتغيير الشخصية' : 'Click to change avatar'}
           >
             <div className="duo-avatar-circle">
-              <img src={resolvedAvatar} alt={profileData.username} draggable="false" />
+              <img
+                src={resolvedAvatar}
+                alt={profileData.username}
+                draggable="false"
+                onError={(e) => {
+                  const fallback = assetUrl('Assets/cartoon/nayzak_unified_leader.png');
+                  if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+                }}
+              />
             </div>
             <span className="duo-level-badge">
               {isAr ? `مستوى ${lv}` : `LVL ${lv}`}
@@ -102,7 +119,7 @@ export default function ProfileScreen() {
           {showPicker && (
             <div className="duo-pose-picker">
               {NAYZAK_CAST.map((c) => {
-                const selected = profileData.avatar === c.avatarUrl;
+                const selected = resolvedAvatar === assetUrl(c.avatarUrl);
                 return (
                   <button
                     key={c.id}
@@ -143,19 +160,19 @@ export default function ProfileScreen() {
           </div>
 
           {latest ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="duo-cog-list">
               {ASSESS_DOMAINS.map((d) => {
                 const v = typeof scores[d] === 'number' ? scores[d] : 0;
                 const col = DOMAINS_BY_ID[d]?.color ?? '#2586F7';
                 return (
-                  <div key={d} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ width: 68, fontSize: 13, fontWeight: 800, color: '#4B4B4B' }}>
+                  <div key={d} className="duo-cog-row">
+                    <span className="duo-cog-label">
                       {isAr ? DOMAIN_DISPLAY[d].ar : DOMAIN_DISPLAY[d].en}
                     </span>
-                    <div className="duo-xp-track" style={{ flex: 1, height: 12 }}>
-                      <div style={{ height: '100%', width: `${v}%`, background: col, borderRadius: 999 }} />
+                    <div className="duo-xp-track duo-cog-track">
+                      <div className="duo-cog-fill" style={{ width: `${v}%`, background: col }} />
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 900, color: '#2A1A16', minWidth: 26, textAlign: 'right' }}>
+                    <span className="duo-cog-score">
                       {scores[d] ?? '—'}
                     </span>
                   </div>
@@ -163,7 +180,7 @@ export default function ProfileScreen() {
               })}
             </div>
           ) : (
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#888888', textAlign: 'center', padding: '12px 0' }}>
+            <p className="duo-empty-note">
               {isAr
                 ? 'العب من مسار التدريب لبناء مؤشرك الإدراكي!'
                 : 'Complete stages on your learning path to build your cognitive profile!'}

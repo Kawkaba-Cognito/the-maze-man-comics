@@ -32,6 +32,16 @@ html, body {
   position: relative;
 }
 
+#screen-home,
+#screen-puzzles,
+#screen-profile {
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #faf7f2;
+}
+
 /* ==========================================================================
    Header Alignment & Desktop Max-Width Centering
    ========================================================================== */
@@ -58,6 +68,25 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.duo-header-inner .nayzak-header-slot--start {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.duo-header-inner .nayzak-header-slot--end {
+  flex: 0 0 auto;
+}
+
+.duo-header-title-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  text-align: start;
 }
 
 @media (min-width: 1024px) {
@@ -304,7 +333,8 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 52px; /* Generous vertical gap to avoid tooltip collisions with upper labels */
+  gap: 54px; /* Generous vertical gap to avoid tooltip collisions with upper labels */
+  padding-top: 28px;
   padding-bottom: 40px;
 }
 
@@ -386,6 +416,21 @@ html, body {
 .duo-node-btn.is-completed:active {
   transform: translateY(6px);
   box-shadow: 0 2px 0 #d99f00;
+}
+
+.duo-node-btn.is-unlocked {
+  background: #58cc02;
+  box-shadow: 0 8px 0 #46a302, 0 12px 18px rgba(88, 204, 2, 0.28);
+  color: #ffffff;
+}
+
+.duo-node-btn.is-unlocked:hover {
+  background: #61dc04;
+}
+
+.duo-node-btn.is-unlocked:active {
+  transform: translateY(6px);
+  box-shadow: 0 2px 0 #46a302, 0 4px 8px rgba(88, 204, 2, 0.24);
 }
 
 .duo-node-btn.is-locked {
@@ -582,67 +627,1024 @@ html, body {
 
 /* ==========================================================================
    Duolingo Docked Bottom Navigation Bar
+   Overrides both global.css (grid/transform) and comicCartoonTheme.css
+   (.app-tabbar.app-tabbar--3 pill/!important rules) so labels never clip.
    ========================================================================== */
-.app-tabbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: calc(68px + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
-  background: #ffffff;
-  border-top: 2px solid #e5e5e5;
-  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.05);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  z-index: 100;
+html .app-tabbar.app-tabbar--3,
+html[data-home-theme] .app-tabbar.app-tabbar--3 {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: 620px !important;
+  margin: 0 auto !important;
+  height: auto !important;
+  min-height: calc(74px + env(safe-area-inset-bottom)) !important;
+  padding: 8px 16px max(10px, env(safe-area-inset-bottom)) !important;
+  background: #ffffff !important;
+  border: 2px solid #e5e5e5 !important;
+  border-bottom: 0 !important;
+  border-radius: 24px 24px 0 0 !important;
+  box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.06) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-around !important;
+  gap: 8px !important;
+  z-index: 100 !important;
+  box-sizing: border-box !important;
+}
+
+@media (min-width: 1024px) {
+  html .app-tabbar.app-tabbar--3,
+  html[data-home-theme] .app-tabbar.app-tabbar--3 {
+    max-width: 680px !important;
+  }
+}
+
+html .app-tabbar.app-tabbar--3 .app-tab,
+html[data-home-theme] .app-tabbar.app-tabbar--3 .app-tab {
+  position: relative;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  flex: 1 1 0% !important;
+  max-width: 150px !important;
+  min-width: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 54px !important;
+  padding: 6px 12px !important;
+  border: 2px solid transparent !important;
+  background: transparent !important;
+  color: #64748b !important;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif !important;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease, transform 0.12s ease !important;
+  user-select: none;
+  border-radius: 16px !important;
+  overflow: visible !important;
+  transform: none !important;
+}
+
+html .app-tabbar.app-tabbar--3 .app-tab:hover,
+html[data-home-theme] .app-tabbar.app-tabbar--3 .app-tab:hover {
+  color: #1e293b !important;
+  background: rgba(15, 23, 42, 0.04) !important;
+}
+
+html .app-tabbar.app-tabbar--3 .app-tab.is-active,
+html[data-home-theme] .app-tabbar.app-tabbar--3 .app-tab.is-active {
+  color: #2586f7 !important;
+  background: #eff6ff !important;
+  border-color: rgba(37, 134, 247, 0.28) !important;
+  font-weight: 900 !important;
+}
+
+html .app-tabbar.app-tabbar--3 .app-tab-ic {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+html .app-tabbar.app-tabbar--3 .app-tab.is-active .app-tab-ic {
+  transform: scale(1.08);
+}
+
+html .app-tabbar.app-tabbar--3 .app-tab-lbl {
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0.01em !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-width: none !important;
+}
+
+[dir='rtl'] .app-tabbar.app-tabbar--3 .app-tab-lbl {
+  font-family: 'Cairo', 'Outfit', system-ui, sans-serif !important;
+  letter-spacing: 0 !important;
+}
+
+html .app-tabbar.app-tabbar--3 .app-tab-pip {
+  display: none !important;
+}
+
+/* ==========================================================================
+   Puzzles Screen (Hub & Category List Views — Duolingo Style)
+   ========================================================================== */
+.duo-puzzle-container {
+  width: 100%;
   max-width: 620px;
   margin: 0 auto;
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
+  padding: 20px 16px calc(124px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   box-sizing: border-box;
 }
 
 @media (min-width: 1024px) {
-  .app-tabbar {
+  .duo-puzzle-container {
     max-width: 680px;
-    height: 72px;
-    border-radius: 24px 24px 0 0;
+    padding-top: 28px;
+    padding-bottom: 140px;
   }
 }
 
-.app-tab {
+.duo-puzzle-banner {
+  width: 100%;
+  background: linear-gradient(135deg, #2586f7 0%, #1d6fe2 100%);
+  border: 2px solid #165ec7;
+  border-bottom: 5px solid #104da8;
+  border-radius: 22px;
+  padding: 20px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+  box-shadow: 0 10px 24px rgba(37, 134, 247, 0.22);
+}
+
+.duo-unit-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.duo-unit-title {
+  margin: 0 0 4px;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: clamp(1.25rem, 4.2vw, 1.55rem);
+  font-weight: 900;
+  line-height: 1.2;
+  color: #ffffff;
+}
+
+.duo-unit-desc {
+  margin: 0;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.duo-puzzle-banner-icon {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+}
+
+.duo-spotlight-card {
+  width: 100%;
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 5px solid #e5e5e5;
+  border-radius: 22px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  text-align: start;
+  box-sizing: border-box;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+
+.duo-spotlight-card:hover {
+  border-color: #2586f7;
+  transform: translateY(-2px);
+}
+
+.duo-spotlight-card:active {
+  transform: translateY(2px);
+  border-bottom-width: 3px;
+}
+
+.duo-spotlight-icon-wrap {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fff4e5 0%, #ffe0b2 100%);
+  border: 2px solid #ffcc80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.duo-spotlight-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.duo-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #fff4e5;
+  border: 1.5px solid #ffd599;
+  color: #d96400;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.duo-spotlight-title {
+  margin: 0;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 900;
+  color: #1e293b;
+  line-height: 1.25;
+}
+
+.duo-spotlight-desc {
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.duo-play-btn {
+  appearance: none;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 14px;
+  background: #58cc02;
+  box-shadow: 0 4px 0 #46a302;
+  color: #ffffff;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.12s ease;
+}
+
+.duo-play-btn:hover {
+  background: #61dc04;
+}
+
+.duo-play-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #46a302;
+}
+
+.duo-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+}
+
+.duo-cat-card {
+  appearance: none;
+  width: 100%;
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 5px solid #e5e5e5;
+  border-radius: 22px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  cursor: pointer;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  box-sizing: border-box;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+
+.duo-cat-card:hover {
+  border-color: #2586f7;
+  transform: translateY(-2px);
+}
+
+.duo-cat-card:active {
+  transform: translateY(2px);
+  border-bottom-width: 3px;
+}
+
+.duo-cat-img-wrap {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 150px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+}
+
+.duo-cat-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.duo-cat-name {
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  color: #1e293b;
+  line-height: 1.25;
+}
+
+.duo-cat-desc {
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+/* Category Puzzle Rows */
+.duo-puzzle-container [role='list'] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.duo-puzzle-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 5px solid #e5e5e5;
+  border-radius: 20px;
+  padding: 12px 14px;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+
+.duo-puzzle-row:hover {
+  border-color: #2586f7;
+  transform: translateY(-2px);
+}
+
+.duo-puzzle-row:active {
+  transform: translateY(2px);
+  border-bottom-width: 3px;
+}
+
+.duo-puzzle-thumb {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2px solid #e5e5e5;
+  background: #f8fafc;
+}
+
+.duo-puzzle-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.duo-puzzle-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: start;
+}
+
+.duo-puzzle-title {
+  margin: 0;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  color: #1e293b;
+  line-height: 1.25;
+}
+
+.duo-puzzle-meta {
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+/* Bottom breathing room for puzzle play views (e.g. Sudoku on mobile) */
+.pz-studio-game .ct-puzzle-play-body {
+  padding-bottom: max(38px, calc(env(safe-area-inset-bottom) + 22px));
+}
+
+/* ==========================================================================
+   Profile Screen (Identity, Stats, Cognitive Index, Settings, PRO Pass)
+   ========================================================================== */
+.duo-profile-container {
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 20px 16px calc(124px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  .duo-profile-container {
+    max-width: 680px;
+    padding-top: 28px;
+    padding-bottom: 140px;
+  }
+}
+
+.duo-identity-card {
+  width: 100%;
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 5px solid #e5e5e5;
+  border-radius: 24px;
+  padding: 24px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+.duo-avatar-wrapper {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  margin-bottom: 4px;
+  user-select: none;
+}
+
+.duo-avatar-wrapper:focus-visible {
+  outline: 3px solid #2586f7;
+  outline-offset: 6px;
+  border-radius: 50%;
+}
+
+.duo-avatar-circle {
+  width: 98px;
+  height: 98px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 4px solid #2586f7;
+  box-shadow: 0 6px 0 #106ad6, 0 12px 22px rgba(37, 134, 247, 0.22);
+  transition: transform 0.14s ease;
+}
+
+.duo-avatar-wrapper:hover .duo-avatar-circle {
+  transform: scale(1.04);
+}
+
+.duo-avatar-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+.duo-level-badge {
+  position: relative;
+  margin-top: -14px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #ffc21c;
+  border: 2px solid #ffffff;
+  box-shadow: 0 3px 0 #d99f00;
+  color: #1e293b;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  z-index: 2;
+}
+
+.duo-profile-name {
+  margin: 4px 0 0;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: #1e293b;
+  letter-spacing: 0.02em;
+}
+
+.duo-xp-container {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.duo-xp-track {
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.08);
+}
+
+.duo-xp-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffc21c 0%, #ff7800 100%);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+  transition: width 0.35s ease;
+}
+
+.duo-xp-label {
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.duo-pose-picker {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 14px;
+  margin-top: 6px;
+  border-top: 2px dashed #e5e5e5;
+}
+
+.duo-pose-btn {
+  appearance: none;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f8fafc;
+  border: 2.5px solid #e5e5e5;
+  border-bottom: 4px solid #cbd5e1;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.12s ease;
+}
+
+.duo-pose-btn:hover {
+  transform: scale(1.06);
+  border-color: #93c5fd;
+}
+
+.duo-pose-btn.is-selected {
+  border-color: #2586f7;
+  border-bottom-color: #106ad6;
+  box-shadow: 0 0 0 3px rgba(37, 134, 247, 0.25);
+  transform: scale(1.06);
+}
+
+.duo-pose-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+.duo-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.duo-stat-card {
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 5px solid #e5e5e5;
+  border-radius: 20px;
+  padding: 14px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 6px 16px;
-  border: none;
-  background: transparent;
-  color: #94a3b8;
+  text-align: center;
+  min-width: 0;
+}
+
+.duo-stat-card-val {
+  display: block;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: clamp(16px, 4.2vw, 20px);
+  font-weight: 900;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.duo-stat-card-lbl {
+  display: block;
   font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
   font-size: 12px;
   font-weight: 800;
-  cursor: pointer;
-  transition: all 0.1s ease;
-  user-select: none;
-  border-radius: 14px;
-  height: 52px;
+  color: #64748b;
+  line-height: 1.2;
 }
 
-.app-tab:hover {
+.duo-section-card {
+  width: 100%;
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 5px solid #e5e5e5;
+  border-radius: 22px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.duo-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.duo-card-title {
+  margin: 0;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 900;
   color: #1e293b;
 }
 
-.app-tab.is-active {
-  color: #2586f7;
-  background: #eff6ff;
+.duo-cog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.app-tab.is-active .app-tab-ic {
-  transform: scale(1.08);
+.duo-cog-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.duo-cog-label {
+  width: 72px;
+  flex-shrink: 0;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.duo-cog-track {
+  flex: 1;
+  height: 12px;
+}
+
+.duo-cog-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.duo-cog-score {
+  min-width: 28px;
+  text-align: end;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  color: #1e293b;
+}
+
+.duo-empty-note {
+  margin: 0;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  text-align: center;
+  padding: 10px 0;
+  line-height: 1.45;
+}
+
+.duo-row-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 2px solid #f1f5f9;
+}
+
+.duo-section-card .duo-row-item:first-of-type {
+  border-top: 0;
+  padding-top: 4px;
+}
+
+.duo-section-card .duo-row-item:last-of-type {
+  padding-bottom: 2px;
+}
+
+.duo-row-label {
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.duo-action-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-bottom: 4px solid #cbd5e1;
+  color: #1e293b;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.08s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.duo-action-btn:hover {
+  border-color: #93c5fd;
+  background: #f8fafc;
+}
+
+.duo-action-btn:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+}
+
+.duo-action-btn.is-active {
+  background: #eff6ff;
+  border-color: #2586f7;
+  border-bottom-color: #106ad6;
+  color: #1d6fe2;
+}
+
+.duo-pro-banner {
+  width: 100%;
+  border-radius: 22px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #2563eb 100%);
+  border: 2px solid #1e40af;
+  border-bottom: 5px solid #091224;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22);
+}
+
+.duo-pro-copy h3 {
+  margin: 0 0 4px;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  color: #ffc21c;
+}
+
+.duo-pro-copy p {
+  margin: 0;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+}
+
+.duo-pro-btn {
+  appearance: none;
+  flex-shrink: 0;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 14px;
+  background: #ffc21c;
+  box-shadow: 0 4px 0 #d99f00;
+  color: #1e293b;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.duo-pro-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #d99f00;
+}
+
+@media (max-width: 359px) {
+  .duo-cat-grid {
+    grid-template-columns: 1fr;
+  }
+  .duo-spotlight-card,
+  .duo-pro-banner {
+    flex-wrap: wrap;
+  }
+  .duo-play-btn,
+  .duo-pro-btn {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   Dark Theme Support (Matches Theme Toggle on Profile)
+   ========================================================================== */
+html[data-home-theme='dark'] body,
+html[data-home-theme='dark'] .nayzak-page,
+html[data-home-theme='dark'] #screen-home,
+html[data-home-theme='dark'] #screen-puzzles,
+html[data-home-theme='dark'] #screen-profile {
+  background: #0f172a;
+}
+
+html[data-home-theme='dark'] .nayzak-header.duo-styled-header {
+  background: #1e293b;
+  border-bottom-color: #334155;
+}
+
+html[data-home-theme='dark'] .duo-stat-pill,
+html[data-home-theme='dark'] .duo-lang-pill,
+html[data-home-theme='dark'] .duo-section-selector,
+html[data-home-theme='dark'] .duo-mascot-card,
+html[data-home-theme='dark'] .duo-active-bubble,
+html[data-home-theme='dark'] .duo-modal-sheet,
+html[data-home-theme='dark'] .duo-sheet-item,
+html[data-home-theme='dark'] .duo-spotlight-card,
+html[data-home-theme='dark'] .duo-cat-card,
+html[data-home-theme='dark'] .duo-puzzle-row,
+html[data-home-theme='dark'] .duo-identity-card,
+html[data-home-theme='dark'] .duo-stat-card,
+html[data-home-theme='dark'] .duo-section-card,
+html[data-home-theme='dark'] .duo-action-btn {
+  background: #1e293b;
+  border-color: #334155;
+  border-bottom-color: #0b1120;
+  color: #f8fafc;
+}
+
+html[data-home-theme='dark'] .duo-stat-pill--streak {
+  color: #ff9c40;
+}
+
+html[data-home-theme='dark'] .duo-stat-pill--energy {
+  color: #60a5fa;
+}
+
+html[data-home-theme='dark'] .duo-lang-pill,
+html[data-home-theme='dark'] .duo-spotlight-desc,
+html[data-home-theme='dark'] .duo-cat-desc,
+html[data-home-theme='dark'] .duo-puzzle-meta,
+html[data-home-theme='dark'] .duo-xp-label,
+html[data-home-theme='dark'] .duo-stat-card-lbl,
+html[data-home-theme='dark'] .duo-empty-note,
+html[data-home-theme='dark'] .duo-row-label,
+html[data-home-theme='dark'] .duo-cog-label {
+  color: #94a3b8;
+}
+
+html[data-home-theme='dark'] .duo-sec-name,
+html[data-home-theme='dark'] .duo-mascot-speech,
+html[data-home-theme='dark'] .duo-node-label,
+html[data-home-theme='dark'] .duo-modal-title,
+html[data-home-theme='dark'] .duo-spotlight-title,
+html[data-home-theme='dark'] .duo-cat-name,
+html[data-home-theme='dark'] .duo-puzzle-title,
+html[data-home-theme='dark'] .duo-profile-name,
+html[data-home-theme='dark'] .duo-stat-card-val,
+html[data-home-theme='dark'] .duo-card-title,
+html[data-home-theme='dark'] .duo-cog-score {
+  color: #f8fafc;
+}
+
+html[data-home-theme='dark'] .duo-sec-change-btn {
+  background: rgba(37, 134, 247, 0.18);
+  border-color: rgba(96, 165, 250, 0.45);
+  color: #93c5fd;
+}
+
+html[data-home-theme='dark'] .duo-active-bubble {
+  color: #60a5fa;
+}
+
+html[data-home-theme='dark'] .duo-active-bubble::after {
+  border-top-color: #334155;
+}
+
+html[data-home-theme='dark'] .duo-xp-track {
+  background: #0f172a;
+}
+
+html[data-home-theme='dark'] .duo-cat-img-wrap,
+html[data-home-theme='dark'] .duo-puzzle-thumb,
+html[data-home-theme='dark'] .duo-pose-btn {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+html[data-home-theme='dark'] .duo-pose-picker,
+html[data-home-theme='dark'] .duo-row-item {
+  border-color: #334155;
+}
+
+html[data-home-theme='dark'] .duo-action-btn.is-active {
+  background: rgba(37, 134, 247, 0.22);
+  border-color: #3b82f6;
+  border-bottom-color: #1d4ed8;
+  color: #93c5fd;
+}
+
+html[data-home-theme='dark'] .duo-tag {
+  background: rgba(255, 120, 0, 0.16);
+  border-color: rgba(255, 167, 38, 0.4);
+  color: #ffb74d;
+}
+
+html[data-home-theme='dark'] .app-tabbar.app-tabbar--3 {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.45) !important;
+}
+
+html[data-home-theme='dark'] .app-tabbar.app-tabbar--3 .app-tab {
+  color: #94a3b8 !important;
+}
+
+html[data-home-theme='dark'] .app-tabbar.app-tabbar--3 .app-tab:hover {
+  color: #f8fafc !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-home-theme='dark'] .app-tabbar.app-tabbar--3 .app-tab.is-active {
+  color: #60a5fa !important;
+  background: rgba(59, 130, 246, 0.16) !important;
+  border-color: rgba(96, 165, 250, 0.35) !important;
 }
 
 

@@ -1,9 +1,19 @@
 import { homeBgPaths, readAppTheme } from './appTheme';
 
-/** Root-relative asset URL — works for GitHub Pages and Capacitor (base `./`). */
+/** Root-relative asset URL — works for GitHub Pages and Capacitor (base `./`), idempotent if already prefixed. */
 export function assetUrl(path) {
-  const clean = String(path).replace(/^\//, '');
-  return `${import.meta.env.BASE_URL}${clean}`;
+  if (!path) return '';
+  const raw = String(path);
+  if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+  const base = import.meta.env.BASE_URL || '/';
+  let clean = raw;
+  if (base && base !== '/' && base !== './') {
+    while (clean.startsWith(base)) {
+      clean = clean.slice(base.length);
+    }
+  }
+  clean = clean.replace(/^(\.?\/)+/, '');
+  return `${base}${clean}`;
 }
 
 /** Point global .bg-poster at the active home light/dark stage. */
