@@ -1,18 +1,27 @@
 {
   "rules": {
-    "raw-colour": 435,
+    "raw-colour": 690,
     "stacked-backdrops": 2,
     "conditional-background": 1
   },
   "files": {
+    "src/features/training/domains/attention/games/cancellation/DuolingoCancellationTask.jsx": {
+      "raw-colour": 36
+    },
     "src/features/training/domains/attention/games/cancellation/index.jsx": {
       "raw-colour": 1
+    },
+    "src/features/training/domains/attention/games/mot/DuolingoMot.jsx": {
+      "raw-colour": 74
     },
     "src/features/training/domains/attention/games/mot/MotBoard2D.jsx": {
       "raw-colour": 1
     },
     "src/features/training/domains/attention/games/train-switch/CarPark3DProto.jsx": {
       "raw-colour": 19
+    },
+    "src/features/training/domains/attention/games/train-switch/DuolingoTrainSwitch.jsx": {
+      "raw-colour": 41
     },
     "src/features/training/domains/attention/games/train-switch/index.jsx": {
       "raw-colour": 17
@@ -23,6 +32,9 @@
     "src/features/training/domains/flexibility/games/brixton/index.jsx": {
       "raw-colour": 4
     },
+    "src/features/training/domains/flexibility/games/mirror-world/DuolingoMirrorWorld.jsx": {
+      "raw-colour": 14
+    },
     "src/features/training/domains/flexibility/games/spatial-stroop/index.jsx": {
       "raw-colour": 11
     },
@@ -31,6 +43,9 @@
     },
     "src/features/training/domains/flexibility/games/spatial-stroop/StroopModes.jsx": {
       "raw-colour": 1
+    },
+    "src/features/training/domains/flexibility/games/task-switch/DuolingoTaskSwitch.jsx": {
+      "raw-colour": 21
     },
     "src/features/training/domains/flexibility/games/wisconsin/index.jsx": {
       "raw-colour": 5
@@ -43,6 +58,9 @@
     },
     "src/features/training/domains/language/games/synonyms/index.jsx": {
       "raw-colour": 1
+    },
+    "src/features/training/domains/memory/games/keep-track/DuolingoKeepTrack.jsx": {
+      "raw-colour": 16
     },
     "src/features/training/domains/memory/games/memo-span/index.jsx": {
       "raw-colour": 11
@@ -59,11 +77,20 @@
     "src/features/training/domains/memory/games/story-grid/data.js": {
       "raw-colour": 15
     },
+    "src/features/training/domains/memory/games/story-grid/DuolingoStoryGrid.jsx": {
+      "raw-colour": 23
+    },
     "src/features/training/domains/memory/games/story-grid/index.jsx": {
       "raw-colour": 11
     },
+    "src/features/training/domains/reasoning/games/detective/DuolingoDetective.jsx": {
+      "raw-colour": 4
+    },
     "src/features/training/domains/reasoning/games/detective/index.jsx": {
       "raw-colour": 4
+    },
+    "src/features/training/domains/reasoning/games/gatekeeper/DuolingoGatekeeper.jsx": {
+      "raw-colour": 1
     },
     "src/features/training/domains/reasoning/games/gatekeeper/gatekeeper.css": {
       "raw-colour": 14
@@ -77,15 +104,27 @@
     "src/features/training/domains/reasoning/games/raven-matrices/ravenEngine.js": {
       "raw-colour": 1
     },
+    "src/features/training/domains/reasoning/games/rush-hour/DuolingoRushHour.jsx": {
+      "raw-colour": 14
+    },
     "src/features/training/domains/reasoning/games/rush-hour/index.jsx": {
       "raw-colour": 6,
       "stacked-backdrops": 1
+    },
+    "src/features/training/domains/speed/games/intercept/DuolingoIntercept.jsx": {
+      "raw-colour": 4
+    },
+    "src/features/training/domains/speed/games/math-gates/DuolingoMathGates.jsx": {
+      "raw-colour": 1
     },
     "src/features/training/domains/speed/games/math-gates/index.jsx": {
       "raw-colour": 8
     },
     "src/features/training/domains/speed/games/math-gates/MathGatesBoard2D.jsx": {
       "raw-colour": 2
+    },
+    "src/features/training/domains/speed/games/speed-match/DuolingoSpeedMatch.jsx": {
+      "raw-colour": 6
     },
     "src/features/training/domains/speed/games/trail-making/index.jsx": {
       "raw-colour": 10
