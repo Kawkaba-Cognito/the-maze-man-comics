@@ -22,7 +22,7 @@ const memory = {
       progress: 0,
       gameKey: 'story-grid',
       tier: 'free',
-      loader: () => import('./games/story-grid/DuolingoStoryGrid'),
+      loader: () => import('./games/story-grid'),
     },
     // Keep Track replaced Dual N-Back here on 2026-08-10. N-Back is benched,
     // not deleted — see games/nback/BENCHED.md for the reasoning.
@@ -36,7 +36,7 @@ const memory = {
       progress: 0,
       gameKey: 'keep-track',
       tier: 'free',
-      loader: () => import('./games/keep-track/DuolingoKeepTrack'),
+      loader: () => import('./games/keep-track'),
     },
     {
       id: 'associative',
@@ -48,7 +48,7 @@ const memory = {
       progress: 0,
       gameKey: 'paired-associates',
       tier: 'free',
-      loader: () => import('./games/paired-associates/DuolingoPairedAssociates'),
+      loader: () => import('./games/paired-associates'),
     },
     { id: 'longterm', name: 'Long-term Memory', gameCount: 1, progress: 0, tier: 'free' },
   ],

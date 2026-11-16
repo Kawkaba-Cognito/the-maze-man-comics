@@ -33,7 +33,6 @@ import {
   RH_DIFF_KEYS,
   RH_LADDER_LEVELS,
   rhLadderToTier,
-  rhMigrateLadderReached,
   isLevelUnlocked,
   loadRhProgress,
   saveRhProgress,
@@ -1546,7 +1545,6 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
   /* ─── Level pick ─── */
   if (phase === 'levels') {
     const doneMap = progress.done || {};
-    const ladderReached = rhMigrateLadderReached(doneMap);
     return (
       <div className="cx-atlas" style={{ display: 'contents' }}>
         <PlanetPath
@@ -1556,8 +1554,7 @@ export default function RushHourGame({ onBack, workoutMode = false, cosmosAutoPl
           title={t.title}
           blurb={t.ladderBlurb(RH_LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
           count={RH_LADDER_LEVELS}
-          isUnlocked={(lv) => (lv === 1 || lv <= ladderReached + 1
-            || !!doneMap[`lad-${lv - 1}`] || !!doneMap[`lad-${lv}`])}
+          isUnlocked={() => true}
           isDone={(lv) => !!doneMap[`lad-${lv}`]}
           sublabel={(lv) => {
             const best = progress.best?.[`lad-${lv}`];

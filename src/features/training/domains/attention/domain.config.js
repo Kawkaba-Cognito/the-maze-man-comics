@@ -23,7 +23,7 @@ const attention = {
       progress: 0,
       gameKey: 'cancel-task',
       tier: 'free',
-      loader: () => import('./games/cancellation/DuolingoCancellationTask'),
+      loader: () => import('./games/cancellation'),
     },
     {
       id: 'mot',
@@ -35,7 +35,7 @@ const attention = {
       progress: 0,
       gameKey: 'mot',
       tier: 'free',
-      loader: () => import('./games/mot/DuolingoMot'),
+      loader: () => import('./games/mot'),
     },
     {
       id: 'posner',
@@ -47,7 +47,7 @@ const attention = {
       progress: 0,
       gameKey: 'train-switch',
       tier: 'free',
-      loader: () => import('./games/train-switch/DuolingoTrainSwitch'),
+      loader: () => import('./games/train-switch'),
     },
   ],
 };

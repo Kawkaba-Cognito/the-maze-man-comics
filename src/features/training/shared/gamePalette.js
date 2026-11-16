@@ -84,39 +84,40 @@
  * read CSS custom properties, so these two MUST move together — if they drift,
  * DOM games and canvas games render different boards.
  */
-export const GAME_SKY = {
-  top: '#dfd7c7',
-  mid: '#d0c7b4',
-  low: '#bfb5a0',
+export const GAME_SKY = Object.freeze({
+  top: '#faf7f2',
+  mid: '#f5f0e6',
+  low: '#efe9dc',
+  bot: '#efe9dc',
   /** For a DOM background. */
-  gradient: 'linear-gradient(180deg, #dfd7c7 0%, #d0c7b4 58%, #bfb5a0 100%)',
+  gradient: 'linear-gradient(180deg, #faf7f2 0%, #f5f0e6 55%, #efe9dc 100%)',
   /** Single-colour fallback (canvas clear, Three.js clear colour). */
-  flat: '#d0c7b4',
-};
+  flat: '#faf7f2',
+});
 
-/** Body text and the outline for light pieces. 8.27:1 on the worst sky stop. */
-export const GAME_INK = '#131e28';
+/** Body text and the outline for light pieces. */
+export const GAME_INK = '#1e293b';
 
 /**
- * The six playfield roles.
+ * The six playfield roles (Duolingo high-contrast palette).
  *   fill   — the shape's body
  *   edge   — its shaded side / lower edge; gives a flat shape form without faking 3D
  *   stroke — what to outline with so the silhouette reads against the sky
  */
-export const GAME_COLORS = {
+export const GAME_COLORS = Object.freeze({
   /** Default piece. Anything not currently saying anything about itself. */
-  item: { fill: '#2f5f86', edge: '#224460', stroke: '#224460' },
+  item: Object.freeze({ fill: '#2586f7', edge: '#106ad6', stroke: '#106ad6' }),
   /** Cued / target / "look at me". The hot state. */
-  accent: { fill: '#d4952f', edge: '#996b22', stroke: GAME_INK },
+  accent: Object.freeze({ fill: '#ff7800', edge: '#cc5a00', stroke: GAME_INK }),
   /** Correct, solved, earned. */
-  ok: { fill: '#386544', edge: '#284931', stroke: '#284931' },
+  ok: Object.freeze({ fill: '#58cc02', edge: '#46a302', stroke: '#46a302' }),
   /** Wrong, missed, lost. */
-  bad: { fill: '#854c49', edge: '#603735', stroke: '#603735' },
+  bad: Object.freeze({ fill: '#ff4b4b', edge: '#ea2b2b', stroke: '#ea2b2b' }),
   /** The player's current pick, mid-decision. */
-  selected: { fill: '#eaf4ff', edge: '#a9b0b8', stroke: GAME_INK },
+  selected: Object.freeze({ fill: '#ddf4ff', edge: '#2586f7', stroke: GAME_INK }),
   /** Spent, disabled, out of play — present but not competing for attention. */
-  muted: { fill: '#545c66', edge: '#3c4249', stroke: '#3c4249' },
-};
+  muted: Object.freeze({ fill: '#94a3b8', edge: '#64748b', stroke: '#64748b' }),
+});
 
 /*
  * ── When colour is the TASK, not the decoration ───────────────────────────
@@ -141,19 +142,23 @@ export const GAME_COLORS = {
  * item / accent / ok above, just more saturated. A stimulus SHOULD be louder
  * than the furniture around it.
  */
-export const GAME_STIMULUS = ['#0072B2', '#E69F00', '#009E73', '#CC79A7'];
+export const GAME_STIMULUS = Object.freeze([
+  '#1cb0f6', // Duolingo Sky Blue
+  '#ff9600', // Duolingo Orange
+  '#58cc02', // Duolingo Feather Green
+  '#ce82ff', // Duolingo Berry Purple
+]);
 
 /**
  * The same set extended to six, for the games that need more than four
  * categories at once (Spaceship matches ships to bays and can run six colours
- * on screen). The two extra hues are the remaining Okabe-Ito entries —
- * vermillion and sky blue — so the extended set is still CVD-safe as a whole.
- * Use GAME_STIMULUS when four is enough; more categories always means less
- * separation, so don't reach for this one by default.
+ * on screen).
  */
-export const GAME_STIMULUS_6 = [
-  '#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9',
-];
+export const GAME_STIMULUS_6 = Object.freeze([
+  ...GAME_STIMULUS,
+  '#2586f7', // Duolingo Royal Blue
+  '#ff4b4b', // Duolingo Cardinal Red
+]);
 
 /*
  * ── The effects nobody had a token for ────────────────────────────────────

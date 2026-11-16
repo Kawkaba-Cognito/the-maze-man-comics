@@ -2994,8 +2994,7 @@ export default function CancellationTaskGame({ onBack, workoutMode = false, asse
           title={t.title}
           blurb={t.ladderBlurb(FQ_LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
           count={FQ_LADDER_LEVELS}
-          isUnlocked={(lv) => (lv === 1 || lv <= ladderReached + 1
-            || !!doneMap[`lad-${lv - 1}`] || !!doneMap[`lad-${lv}`])}
+          isUnlocked={() => true}
           isDone={(lv) => !!doneMap[`lad-${lv}`]}
           /*
            * ⚠ THE SHAPE OF THE ROUND THE PLAYER IS DEALT, not the curriculum's

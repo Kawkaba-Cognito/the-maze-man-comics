@@ -1,54 +1,52 @@
 import React, { useState } from 'react';
-import { assetUrl } from '../../../lib/assetUrl';
+import { Play } from '@phosphor-icons/react';
 
 /*
- * Artistic mode constellation — painted planets on a cosmos stage.
- * Three main worlds (Survival / Levels / Pass n Play) + a small 3D satellite.
+ * Duolingo-styled Mode Hub — chunky 3D cards for Levels, Survival & Pass & Play.
+ * Preserves `.ct-mph*` container and button selectors for full compatibility across
+ * all 18 original training games.
  */
 
-const ART = {
-  free: assetUrl('Assets/mode-planets/survival.webp'),
-  levels: assetUrl('Assets/mode-planets/levels.webp'),
-  chal: assetUrl('Assets/mode-planets/passplay.webp'),
-  proto3d: assetUrl('Assets/mode-planets/proto3d.webp'),
+const MODE_ICON = {
+  levels: '🎯',
+  free: '⚡',
+  chal: '⚔️',
+  proto3d: '🧊',
 };
 
-const ACCENT = {
-  free: 'var(--color-amber)',
-  levels: '#5aabbb',
-  chal: '#d97240',
-  proto3d: '#a880cc',
+const SLOT_CLASS = {
+  free: 'ct-mph-slot--survival',
+  levels: 'ct-mph-slot--levels',
+  chal: 'ct-mph-slot--pass',
+  proto3d: 'ct-mph-slot--sat',
 };
 
-function PlanetButton({
-  modeKey, label, hint, onPick, playSfx, size = 'lg', hovered, setHovered, floatDelay = 0,
-}) {
-  const art = ART[modeKey];
-  const col = ACCENT[modeKey];
-  const isH = hovered === modeKey;
-  const isSat = size === 'sm';
+function ModeCard({ item, isAr, playSfx, hovered, setHovered }) {
+  const modeKey = item.k;
+  const isHot = hovered === modeKey;
+  const icon = MODE_ICON[modeKey] || item.ic || '🎮';
 
   return (
     <button
       type="button"
-      className={`ct-mph-planet ct-mph-planet--${size}${isH ? ' is-hot' : ''}`}
-      style={{ '--mph-accent': col, '--mph-float-delay': `${floatDelay}s` }}
-      onClick={() => { playSfx?.('click'); onPick?.(); }}
+      className={`ct-mph-planet duo-mode-card${isHot ? ' is-hot' : ''}`}
+      onClick={() => { playSfx?.('click'); item.on?.(); }}
       onMouseEnter={() => setHovered(modeKey)}
       onMouseLeave={() => setHovered(null)}
       onFocus={() => setHovered(modeKey)}
       onBlur={() => setHovered(null)}
-      aria-label={hint ? `${label} — ${hint}` : label}
+      aria-label={item.hint ? `${item.lb} — ${item.hint}` : item.lb}
     >
-      <span className="ct-mph-planet-orb" aria-hidden="true">
-        <span className="ct-mph-planet-glow" />
-        <span className="ct-mph-planet-ring" />
-        <img src={art} alt="" className="ct-mph-planet-img" draggable={false} />
-        <span className="ct-mph-planet-shade" />
+      <span className={`duo-mode-icon-wrap duo-mode--${modeKey}`} aria-hidden="true">
+        {icon}
       </span>
       <span className="ct-mph-planet-copy">
-        <span className="ct-mph-planet-name">{label}</span>
-        {!isSat && hint ? <span className="ct-mph-planet-hint">{hint}</span> : null}
+        <span className="ct-mph-planet-name">{item.lb}</span>
+        {item.hint ? <span className="ct-mph-planet-hint">{item.hint}</span> : null}
+      </span>
+      <span className="duo-play-btn duo-mode-play-pill" aria-hidden="true">
+        <Play size={14} weight="fill" />
+        <span>{isAr ? 'العب' : 'Play'}</span>
       </span>
     </button>
   );
@@ -56,99 +54,33 @@ function PlanetButton({
 
 /**
  * @param {{
- *   items: Array<{ k: string, lb: string, hint?: string, on: () => void }>,
+ *   items: Array<{ k: string, lb: string, hint?: string, ic?: string, on: () => void }>,
  *   isAr: boolean,
  *   playSfx?: Function,
  * }} props
  */
-export default function ModePlanetHub({ items, isAr, playSfx }) {
+export default function ModePlanetHub({ items = [], isAr, playSfx }) {
   const [hovered, setHovered] = useState(null);
   const byKey = Object.fromEntries(items.map((it) => [it.k, it]));
-  const free = byKey.free;
-  const levels = byKey.levels;
-  const chal = byKey.chal;
-  const proto = byKey.proto3d;
+  const orderedKeys = ['levels', 'free', 'chal'];
+  const ordered = orderedKeys.map((k) => byKey[k]).filter(Boolean);
+  const extras = items.filter((it) => !orderedKeys.includes(it.k));
+  const cards = [...ordered, ...extras];
 
   return (
-    <div className="ct-mph" dir={isAr ? 'rtl' : 'ltr'}>
-      <div className="ct-mph-sky" aria-hidden="true">
-        <div className="ct-mph-nebula ct-mph-nebula--a" />
-        <div className="ct-mph-nebula ct-mph-nebula--b" />
-        <div className="ct-mph-nebula ct-mph-nebula--c" />
-        <div className="ct-mph-stars ct-mph-stars--a" />
-        <div className="ct-mph-stars ct-mph-stars--b" />
-        <div className="ct-mph-shoot ct-mph-shoot--1" />
-        <div className="ct-mph-shoot ct-mph-shoot--2" />
-        <div className="ct-mph-shoot ct-mph-shoot--3" />
-        <div className="ct-mph-dust" />
-      </div>
-
+    <div className="ct-mph duo-mode-hub" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="ct-mph-constellation" role="group" aria-label={isAr ? 'اختر الوضع' : 'Choose a mode'}>
-        {free && (
-          <div className="ct-mph-slot ct-mph-slot--survival">
-            <PlanetButton
-              modeKey="free"
-              label={free.lb}
-              hint={free.hint}
-              onPick={free.on}
+        {cards.map((item) => (
+          <div key={item.k} className={`ct-mph-slot ${SLOT_CLASS[item.k] || ''}`.trim()}>
+            <ModeCard
+              item={item}
+              isAr={isAr}
               playSfx={playSfx}
-              size="lg"
-              floatDelay={0}
               hovered={hovered}
               setHovered={setHovered}
             />
           </div>
-        )}
-
-        <div className="ct-mph-row">
-          {levels && (
-            <div className="ct-mph-slot ct-mph-slot--levels">
-              <PlanetButton
-                modeKey="levels"
-                label={levels.lb}
-                hint={levels.hint}
-                onPick={levels.on}
-                playSfx={playSfx}
-                size="md"
-                floatDelay={0.7}
-                hovered={hovered}
-                setHovered={setHovered}
-              />
-            </div>
-          )}
-          {chal && (
-            <div className="ct-mph-slot ct-mph-slot--pass">
-              <PlanetButton
-                modeKey="chal"
-                label={chal.lb}
-                hint={chal.hint}
-                onPick={chal.on}
-                playSfx={playSfx}
-                size="md"
-                floatDelay={1.4}
-                hovered={hovered}
-                setHovered={setHovered}
-              />
-            </div>
-          )}
-        </div>
-
-        {proto && (
-          <div className="ct-mph-slot ct-mph-slot--sat">
-            <div className="ct-mph-tether" aria-hidden="true" />
-            <PlanetButton
-              modeKey="proto3d"
-              label={proto.lb}
-              hint={proto.hint}
-              onPick={proto.on}
-              playSfx={playSfx}
-              size="sm"
-              floatDelay={2.1}
-              hovered={hovered}
-              setHovered={setHovered}
-            />
-          </div>
-        )}
+        ))}
       </div>
     </div>
   );

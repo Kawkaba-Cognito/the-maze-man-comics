@@ -30,7 +30,6 @@ import WordleLiveHud from './WordleLiveHud';
 import {
   LADDER_LEVELS,
   WORDLE_PP_DEPTHS,
-  migrateLadderReached,
   WORDLE_FREE_LIVES,
   specificationForLevel,
   prepareFreeRound,
@@ -41,7 +40,6 @@ import {
   trySubmitWord,
   wordFromPath,
   gradeRound,
-  isWordleLevelUnlocked,
   freeWordPoints,
   mergeWordleChallengeRow,
   compareWordleChallengeRows,
@@ -226,9 +224,6 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
   const pauseRef = useRef(false);
 
   const doneMap = useMemo(() => profile.done || {}, [profile.done]);
-  /* One-time conversion of the old per-tier record into a ladder position.
-     Unlocked, not ticked — a ✓ on a level nobody played is a lie. */
-  const ladderReached = useMemo(() => migrateLadderReached(doneMap), [doneMap]);
   const PP_DEPTH_KEYS = Object.keys(WORDLE_PP_DEPTHS);
   const PP_DEPTH_LABELS = Object.fromEntries(
     PP_DEPTH_KEYS.map((k) => [k, { label: `L${WORDLE_PP_DEPTHS[k]}` }]),
@@ -744,7 +739,7 @@ export default function WordleGame({ onBack, workoutMode = false, cosmosAutoPlay
             title={t.hub}
             blurb={t.ladderBlurb(LADDER_LEVELS.toLocaleString(isAr ? 'ar-EG' : 'en-US'))}
             count={LADDER_LEVELS}
-            isUnlocked={(lv) => isWordleLevelUnlocked(lv, doneMap, ladderReached)}
+            isUnlocked={() => true}
             isDone={(lv) => !!doneMap[`lad-${lv}`]}
             sublabel={(lv) => wordleSublabel(lv, isAr)}
             bands={WORDLE_BANDS(isAr)}

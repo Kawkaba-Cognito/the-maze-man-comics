@@ -256,9 +256,9 @@ export function WordLinksEngine({ mode, level, seed, attempt, onResult, onExit, 
     totalRef.current += 1;
     trialNumRef.current += 1;
     const durationMs = Math.round(performance.now() - trialStartRef.current);
-    trialLogRef.current?.recordTrial({
-      correct: ok,
-      durationMs,
+    trialLogRef.current?.trial({
+      rt: durationMs,
+      ok: Boolean(ok),
       kind: trialRef.current?.kind,
       tier: trialRef.current?.tier,
     });

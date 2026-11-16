@@ -20,7 +20,7 @@ const reasoning = {
       progress: 0,
       gameKey: 'rush-hour',
       tier: 'free',
-      loader: () => import('./games/rush-hour/DuolingoRushHour'),
+      loader: () => import('./games/rush-hour'),
     },
     {
       /*
@@ -39,7 +39,7 @@ const reasoning = {
       progress: 0,
       gameKey: 'gatekeeper',
       tier: 'free',
-      loader: () => import('./games/gatekeeper/DuolingoGatekeeper'),
+      loader: () => import('./games/gatekeeper'),
     },
     {
       id: 'planning',
@@ -51,7 +51,7 @@ const reasoning = {
       progress: 0,
       gameKey: 'detective',
       tier: 'free',
-      loader: () => import('./games/detective/DuolingoDetective'),
+      loader: () => import('./games/detective'),
     },
     { id: 'causal', name: 'Causal Reasoning', gameCount: 1, progress: 0, tier: 'free' },
   ],

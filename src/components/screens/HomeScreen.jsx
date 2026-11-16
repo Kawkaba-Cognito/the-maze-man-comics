@@ -94,7 +94,7 @@ export default function HomeScreen() {
   // Active game modal
   if (activeGameKey && GameView) {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 120, background: '#070b14' }}>
+      <div className="duo-game-modal-host">
         <DomainGameStage domainId={activeDomainId}>
           <Suspense fallback={<GameLoading isAr={isAr} />}>
             <GameView onBack={handleExitGame} />

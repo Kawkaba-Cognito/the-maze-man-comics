@@ -249,9 +249,7 @@ export default function ModeShell({
     ? Object.fromEntries(ppKeys.map((k) => [k, { label: `L${ppLadder[k]}` }]))
     : dm), [isLadder, ppLadder, dm]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isUnlocked = useCallback((lv) => (isLadder
-    ? (lv === 1 || lv <= (prog.reached || 0) + 1 || (prog.lad || []).includes(lv - 1))
-    : (lv === 1 || (prog.done?.[diff] || []).includes(lv - 1))), [prog, diff, isLadder]);
+  const isUnlocked = useCallback(() => true, []);
   const isDone = useCallback((lv) => (isLadder
     ? (prog.lad || []).includes(lv)
     : (prog.done?.[diff] || []).includes(lv)), [prog, diff, isLadder]);
@@ -433,7 +431,7 @@ export default function ModeShell({
               ? t.ladderBlurb(effCount.toLocaleString(isAr ? 'ar-EG' : 'en-US'))
               : (isAr ? `${T} · ${levelCountLabel} مستويات · افتح بالترتيب` : `${T} · ${levelCountLabel} levels · unlock in order`)}
             count={effCount}
-            isUnlocked={ladder.isUnlocked || isUnlocked}
+            isUnlocked={() => true}
             isDone={ladder.isDone || isDone}
             sublabel={ladder.sublabel || ((lv) => `L${lv}`)}
             onPick={(lv) => { setLevel(lv); setMode('levels'); setPhase('play'); }}
@@ -464,41 +462,70 @@ export default function ModeShell({
     );
   }
 
-  // ── Levels result ──
+  // ── Levels & Survival result ──
   if (phase === 'result' && result) {
+    const isFreeResult = mode === 'free';
     const isLast = result.level >= effCount;
     const score = Number(result.score);
-    const actions = [
-      result.won && !isLast ? {
-        key: 'next',
-        label: t.nextLv,
-        onClick: () => { setLevel(result.level + 1); setResult(null); setPhase('play'); },
-      } : null,
-      {
-        key: 'replay',
-        label: result.won ? t.replay : t.retry,
-        variant: result.won && !isLast ? 'ghost' : 'primary',
-        onClick: () => { setResult(null); setPhase('play'); },
-      },
-      {
-        key: 'levels',
-        label: t.levels,
-        variant: 'ghost',
-        onClick: () => { setPhase('levels'); setResult(null); },
-      },
-    ];
+    const summaryNote = typeof result.summary === 'string'
+      ? result.summary
+      : (result.summary && typeof result.summary === 'object' && result.summary.correct != null)
+        ? `✓ ${result.summary.correct}${result.summary.accuracyPct != null ? ` · ${result.summary.accuracyPct}%` : ''}${result.summary.itemsPerMin != null ? ` · ${result.summary.itemsPerMin}/min` : ''}`
+        : null;
+    const actions = isFreeResult
+      ? [
+        {
+          key: 'again',
+          label: t.freePlayAgain,
+          variant: 'primary',
+          onClick: () => {
+            freeSeedRef.current = freshSurvivalSeed();
+            setResult(null);
+            setPhase('play');
+          },
+        },
+        {
+          key: 'menu',
+          label: t.menu,
+          variant: 'ghost',
+          onClick: goMenu,
+        },
+      ]
+      : [
+        result.won && !isLast ? {
+          key: 'next',
+          label: t.nextLv,
+          onClick: () => { setLevel(result.level + 1); setResult(null); setPhase('play'); },
+        } : null,
+        {
+          key: 'replay',
+          label: result.won ? t.replay : t.retry,
+          variant: result.won && !isLast ? 'ghost' : 'primary',
+          onClick: () => { setResult(null); setPhase('play'); },
+        },
+        {
+          key: 'levels',
+          label: t.levels,
+          variant: 'ghost',
+          onClick: () => { setPhase('levels'); setResult(null); },
+        },
+      ];
     return (
       <div className={isAtlas ? 'cx-atlas' : undefined} style={{ display: 'contents' }}>
         <div className={`ct-fq-training-shell ct-fq-training-shell--hub-light${isAtlas ? ' cx-atlas' : ''}`}>
           <PlayResults
             isAr={isAr}
-            title={result.won ? t.levelCleared : t.notQuite}
-            tone={result.won ? 'success' : 'retry'}
-            headline={{ value: `L${result.level}`, label: dm[result.diff]?.label || t.levelMode }}
-            stats={Number.isFinite(score) ? [{ value: score, label: t.score }] : []}
-            notes={result.summary ? [result.summary] : []}
+            title={isFreeResult ? t.freeGameOver : (result.won ? t.levelCleared : t.notQuite)}
+            tone={isFreeResult ? 'neutral' : (result.won ? 'success' : 'retry')}
+            headline={isFreeResult
+              ? { value: Number.isFinite(score) ? score : (result.correct ?? 0), label: t.score }
+              : { value: `L${result.level}`, label: dm[result.diff]?.label || t.levelMode }}
+            stats={isFreeResult
+              ? (result.correct != null ? [{ value: `✓${result.correct}`, label: isAr ? 'صحيحة' : 'correct' }] : [])
+              : (Number.isFinite(score) ? [{ value: score, label: t.score }] : [])}
+            notes={summaryNote ? [summaryNote] : []}
             actions={actions}
-            onMenu={() => { setPhase('levels'); setResult(null); }}
+            onMenu={isFreeResult ? goMenu : () => { setPhase('levels'); setResult(null); }}
             playSfx={playSfx}
           />
         </div>

@@ -19,13 +19,13 @@ export const LABS_METRICS = {
 };
 
 export const CATEGORY_CHIPS = [
-  { id: 'all', en: 'All Experiments', ar: 'جميع التجارب', count: 18 },
+  { id: 'all', en: 'All Experiments', ar: 'جميع التجارب', count: 19 },
   { id: 'attention', en: 'Attention', ar: 'الانتباه', count: 3 },
   { id: 'speed', en: 'Speed', ar: 'السرعة', count: 3 },
   { id: 'memory', en: 'Memory', ar: 'الذاكرة', count: 3 },
   { id: 'language', en: 'Language', ar: 'اللغة', count: 3 },
   { id: 'reasoning', en: 'Reasoning', ar: 'الاستدلال', count: 3 },
-  { id: 'flexibility', en: 'Flexibility', ar: 'المرونة', count: 2 },
+  { id: 'flexibility', en: 'Flexibility', ar: 'المرونة', count: 3 },
   { id: 'puzzles', en: 'Puzzles & Mazes', ar: 'الألغاز والمتاهات', count: 1 },
 ];
 
@@ -432,11 +432,34 @@ export const EXPERIMENTS = [
     provenanceAr: 'حركة الساعة الميكانيكية ذات التوازن المزدوج (1879) • ملكية عامة CC0',
     visualType: 'switch-matrix',
   },
+  {
+    id: 'sort-shift',
+    expNum: 'EXP_18',
+    domainId: 'flexibility',
+    gameKey: 'sort-shift',
+    titleEn: 'Sort It Another Way',
+    titleAr: 'رتّبها بطريقة أخرى',
+    tagEn: 'Generative Sorting',
+    tagAr: 'التصنيف الإبداعي المتعدد',
+    descEn: 'Split six cards into two groups of three — then find a completely different rule to split the same six.',
+    descAr: 'قسّم ست بطاقات إلى مجموعتين من ثلاث — ثم اكتشف قاعدة مختلفة تماماً لتقسيم البطاقات نفسها.',
+    paradigm: 'D-KEFS Free-Sorting Paradigm',
+    paradigmAr: 'نموذج التصنيف الحر المتعدد (D-KEFS)',
+    color: '#db2777',
+    duration: '2 min',
+    durationAr: '2 دقيقة',
+    tier: 'Live Experiment',
+    tierAr: 'تجربة حية',
+    imageAsset: assetUrl('Assets/cc0-experiments/task-switch.webp'),
+    provenanceEn: 'Combinatorial Logic Set Partitioning • Archive CC0',
+    provenanceAr: 'تقسيم المجموعات المنطقية التوافقية • ملكية عامة CC0',
+    visualType: 'switch-matrix',
+  },
 
   // ── PUZZLES & ENIGMAS ──
   {
     id: 'puzzles',
-    expNum: 'EXP_18',
+    expNum: 'EXP_19',
     domainId: 'puzzles',
     gameKey: 'puzzles',
     titleEn: 'Puzzle Studio',
