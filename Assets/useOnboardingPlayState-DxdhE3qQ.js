@@ -1,1 +1,0 @@
-import{a as e,n as t}from"./jsx-runtime-DIAExeAg.js";var n=e(t());function r(e,t,r){let i=r.trialActive;return{trialMode:i,displayState:i?r.trialState:e,runTrialOrSet:(0,n.useCallback)((e,n)=>{i?r.applyTrialAction(e):t(n)},[i,r,t])}}export{r as t};
